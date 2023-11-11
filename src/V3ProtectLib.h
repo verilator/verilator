@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Buitd DPI protected C++ and SV
+// DESCRIPTION: Verilator: Build DPI protected C++ and SV
 //
 // Code available from: https://verilator.org
 //

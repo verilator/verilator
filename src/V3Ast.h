@@ -2248,7 +2248,7 @@ public:
     // statement is unlikely to be taken
     virtual bool isUnlikely() const { return false; }
     virtual int instrCount() const { return 0; }
-    // Iff node is identical to anouther node
+    // Iff node is identical to another node
     virtual bool isSame(const AstNode* samep) const {
         return type() == samep->type() && same(samep);
     }

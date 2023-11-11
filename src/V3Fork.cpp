@@ -25,7 +25,7 @@
 // tasks to carry their own frames and as such they require their own
 // variable scopes.
 // There are two mechanisms that work together to achieve that. ForkVisitor
-// moves bodies of forked prcesses into new tasks, which results in them getting their
+// moves bodies of forked processes into new tasks, which results in them getting their
 // own scopes. The original statements get replaced with a call to the task which
 // passes the required variables by value.
 // The second mechanism, DynScopeVisitor, is designed to handle variables which can't be
@@ -249,7 +249,7 @@ private:
 
 //######################################################################
 // Dynamic scope visitor, creates classes and objects for dynamic scoping of variables and
-// replaces references to varibles that need a dynamic scope with references to object's
+// replaces references to variables that need a dynamic scope with references to object's
 // members
 
 class DynScopeVisitor final : public VNVisitor {
@@ -388,7 +388,7 @@ private:
     }
     void visit(AstNodeFTaskRef* nodep) override {
         visit(static_cast<AstNodeExpr*>(nodep));
-        // We are before V3Timing, so unfortnately we need to treat any calls as suspending,
+        // We are before V3Timing, so unfortunately we need to treat any calls as suspending,
         // just to be safe. This might be improved if we could propagate suspendability
         // before doing all the other timing-related stuff.
         m_afterTimingControl = true;

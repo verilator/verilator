@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Bison grammer file
+// DESCRIPTION: Verilator: Bison grammar file
 //
 // Code available from: https://verilator.org
 //
@@ -1054,7 +1054,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yP_SSRIGHTEQ    ">>>="
 
 // [* is not an operator, as "[ * ]" is legal
-// [= and [-> could be repitition operators, but to match [* we don't add them.
+// [= and [-> could be repetition operators, but to match [* we don't add them.
 // '( is not an operator, as "' (" is legal
 
 //********************
@@ -2189,7 +2189,7 @@ struct_union_memberList<memberDTypep>: // IEEE: { struct_union_member }
         ;
 
 struct_union_member<memberDTypep>:     // ==IEEE: struct_union_member
-        //                      // UNSUP random_qualifer not propagagted until have randomize support
+        //                      // UNSUP random_qualifer not propagated until have randomize support
                 random_qualifierE data_type_or_void
         /*mid*/         { GRAMMARP->m_memDTypep = $2; }  // As a list follows, need to attach this dtype to each member.
         /*cont*/    list_of_member_decl_assignments ';'
@@ -5988,7 +5988,7 @@ property_port_itemDirE:
 
 property_declarationBody<nodep>:  // IEEE: part of property_declaration
         //UNSUP assertion_variable_declarationList property_statement_spec  {}
-        //                      // IEEE-2012: Incorectly hasyCOVER ySEQUENCE then property_spec here.
+        //                      // IEEE-2012: Incorrectly has yCOVER ySEQUENCE then property_spec here.
         //                      // Fixed in IEEE 1800-2017
                 property_spec                 { $$ = $1; }
         |       property_spec ';'             { $$ = $1; }
@@ -6301,7 +6301,7 @@ cycle_delay_range<nodep>:  // IEEE: ==cycle_delay_range
                           BBUNSUP($<fl>1, "Unsupported: ## () cycle delay range expression"); }
         //                      // In 1800-2009 ONLY:
         //                      // IEEE: yP_POUNDPOUND constant_primary
-        //                      // UNSUP: This causes a big grammer ambiguity
+        //                      // UNSUP: This causes a big grammar ambiguity
         //                      // as ()'s mismatch between primary and the following statement
         //                      // the sv-ac committee has been asked to clarify  (Mantis 1901)
         |       yP_POUNDPOUND anyrange
@@ -6493,7 +6493,7 @@ trans_list<nodep>:  // ==IEEE: trans_list
 
 trans_set<nodep>:  // ==IEEE: trans_set
                 trans_range_list                        { $$ = $1; }
-        //                      // Note the { => } in the grammer, this is really a list
+        //                      // Note the { => } in the grammar, this is really a list
         |       trans_set yP_EQGT trans_range_list
                         { $$ = $1; BBUNSUP($<fl>2, "Unsupported: cover trans set '=>'"); }
         ;
@@ -6843,7 +6843,7 @@ checker_generate_item<nodep>:  // ==IEEE: checker_generate_item
 
 class_declaration<nodep>:       // ==IEEE: part of class_declaration
         //                      // IEEE-2012: using this also for interface_class_declaration
-        //                      // The classExtendsE rule relys on classFront having the
+        //                      // The classExtendsE rule relies on classFront having the
         //                      // new class scope correct via classFront
                 classFront parameter_port_listE classExtendsE classImplementsE ';'
         /*mid*/         { // Allow resolving types declared in base extends class
@@ -6881,7 +6881,7 @@ classVirtualE<cbool>:
         ;
 
 classExtendsE<classExtendsp>:           // IEEE: part of class_declaration
-        //                      // The classExtendsE rule relys on classFront having the
+        //                      // The classExtendsE rule relies on classFront having the
         //                      // new class scope correct via classFront
                 /* empty */                             { $$ = nullptr; $<scp>$ = nullptr; }
         |       yEXTENDS classExtendsList               { $$ = $2; $<scp>$ = $<scp>2; }

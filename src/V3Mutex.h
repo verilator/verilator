@@ -39,7 +39,7 @@
 
 #define VL_LOCK_SPINS 50000  /// Number of times to spin for a mutex before yielding
 
-// MutexConfig class that allows to configure how mutex and lockgurads behave
+// MutexConfig class that allows to configure how mutex and lockguards behave
 // once configured and locked, it cannot be changed. Configuration and lock needs to be
 // done before starting any additional threads.
 class V3MutexConfig final {

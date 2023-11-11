@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Definitions for thread safety checing
+// DESCRIPTION: Verilator: Definitions for thread safety checking
 //
 // Code available from: https://verilator.org
 //

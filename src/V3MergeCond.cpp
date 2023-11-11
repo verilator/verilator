@@ -223,7 +223,7 @@ class CodeMotionAnalysisVisitor final : public VNVisitorConst {
             }
         }
 
-        // Analyse this statement
+        // Analyze this statement
         analyzeNode(nodep);
 
         // If there is an enclosing statement, propagate properties upwards
@@ -261,7 +261,7 @@ class CodeMotionAnalysisVisitor final : public VNVisitorConst {
             if (!singletonListStart) m_stack.emplace_back(m_hasher);
         }
 
-        // Analyse node
+        // Analyze node
         if (AstNodeStmt* const stmtp = VN_CAST(nodep, NodeStmt)) {
             analyzeStmt(stmtp, /*tryCondMatch:*/ !singletonListStart);
         } else if (AstVarRef* const vrefp = VN_CAST(nodep, VarRef)) {
@@ -281,7 +281,7 @@ class CodeMotionAnalysisVisitor final : public VNVisitorConst {
     }
 
 public:
-    // Analyse the statement list starting at nodep, filling in stmtProperties.
+    // Analyze the statement list starting at nodep, filling in stmtProperties.
     static void analyze(AstNode* nodep, StmtPropertiesAllocator& stmtProperties) {
         CodeMotionAnalysisVisitor{nodep, stmtProperties};
     }
@@ -475,7 +475,7 @@ private:
             AstNode* currp = m_workQueuep->front();
             m_workQueuep->pop();
 
-            // Analyse sub-tree list for code motion and conditional merging
+            // Analyze sub-tree list for code motion and conditional merging
             CodeMotionAnalysisVisitor::analyze(currp, stmtProperties);
             // Perform the code motion within the whole sub-tree list
             if (v3Global.opt.fMergeCondMotion()) {

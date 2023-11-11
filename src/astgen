@@ -647,7 +647,7 @@ def read_types(filename, Nodes, prefix):
                         op = node.getOp(n)
                         if op is None:
                             error(lineno,
-                                  "Alaised op" + str(n) + " is not defined")
+                                  "Aliased op" + str(n) + " is not defined")
                         else:
                             node.addOp(n, ident, *op[1:])
             else:
@@ -700,7 +700,7 @@ def check_types(sortedTypes, prefix, abstractPrefix):
                 hasOrderingError = True
                 pred = expect[node]
                 print(
-                    "{file}:{lineno}: %Error: Definition of '{p}{n}' is out of order. Shold be {where}."
+                    "{file}:{lineno}: %Error: Definition of '{p}{n}' is out of order. Should be {where}."
                     .format(file=file,
                             lineno=node.lineno,
                             p=prefix,
@@ -806,7 +806,7 @@ def write_report(filename):
 
 
 ################################################################################
-# Common code genaration
+# Common code generation
 ################################################################################
 
 
@@ -904,7 +904,7 @@ def write_type_tests(prefix, nodeList):
 
 
 ################################################################################
-# Ast code genaration
+# Ast code generation
 ################################################################################
 
 
@@ -1032,7 +1032,7 @@ def write_ast_yystype(filename):
 
 
 ################################################################################
-# DFG code genaration
+# DFG code generation
 ################################################################################
 
 
@@ -1086,7 +1086,7 @@ def write_dfg_auto_classes(filename):
             fh.write(textwrap.dedent(pattern).format(**fmt))
 
         for node in DfgVertexList:
-            # Only generate code for automatically derieved leaf nodes
+            # Only generate code for automatically derived leaf nodes
             if (node.file is not None) or not node.isLeaf:
                 continue
 
@@ -1106,7 +1106,7 @@ def write_dfg_auto_classes(filename):
 def write_dfg_ast_to_dfg(filename):
     with open_file(filename) as fh:
         for node in DfgVertexList:
-            # Only generate code for automatically derieved leaf nodes
+            # Only generate code for automatically derived leaf nodes
             if (node.file is not None) or (not node.isLeaf):
                 continue
 
@@ -1144,7 +1144,7 @@ def write_dfg_ast_to_dfg(filename):
 def write_dfg_dfg_to_ast(filename):
     with open_file(filename) as fh:
         for node in DfgVertexList:
-            # Only generate code for automatically derieved leaf nodes
+            # Only generate code for automatically derived leaf nodes
             if (node.file is not None) or (not node.isLeaf):
                 continue
 
@@ -1259,7 +1259,7 @@ for node in AstNodeList:
         op = node.getOp(n)
         if op is not None:
             name, monad, kind = op
-            assert monad == "", "Cannot represnt AstNode as DfgVertex"
+            assert monad == "", "Cannot represent AstNode as DfgVertex"
             vertex.addOp(n, name, "", "")
 
 # Compute derived properties over the whole DfgVertex hierarchy

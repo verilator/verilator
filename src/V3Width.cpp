@@ -4318,14 +4318,14 @@ private:
         return valuep;
     }
 
-    static void checkEventAssignement(const AstNodeAssign* const asgnp) {
+    static void checkEventAssignment(const AstNodeAssign* const asgnp) {
         string unsupEvtAsgn;
         if (!usesDynamicScheduler(asgnp->lhsp())) unsupEvtAsgn = "to";
         if (asgnp->rhsp()->dtypep()->isEvent() && !usesDynamicScheduler(asgnp->rhsp())) {
             unsupEvtAsgn += (unsupEvtAsgn.empty() ? "from" : " and from");
         }
         if (!unsupEvtAsgn.empty()) {
-            asgnp->v3warn(E_UNSUPPORTED, "Assignement "
+            asgnp->v3warn(E_UNSUPPORTED, "Assignment "
                                              << unsupEvtAsgn
                                              << " event in statically scheduled context.\n"
                                              << asgnp->warnMore()
@@ -4811,7 +4811,7 @@ private:
         }
 
         if (nodep->hasDType() && nodep->dtypep()->isEvent()) {
-            checkEventAssignement(nodep);
+            checkEventAssignment(nodep);
             v3Global.setAssignsEvents();
         }
     }

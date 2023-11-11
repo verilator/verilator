@@ -14,7 +14,7 @@
 //
 //*************************************************************************
 //
-// Convert and AstModule to a DfgGraph. We proceed by visiting convertable logic blocks (e.g.:
+// Convert and AstModule to a DfgGraph. We proceed by visiting convertible logic blocks (e.g.:
 // AstAssignW of appropriate type and with no delays), recursively constructing DfgVertex instances
 // for the expressions that compose the subject logic block. If all expressions in the current
 // logic block can be converted, then we delete the logic block (now represented in the DfgGraph),

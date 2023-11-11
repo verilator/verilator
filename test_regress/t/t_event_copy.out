@@ -1,17 +1,17 @@
-%Error-UNSUPPORTED: t/t_event_copy.v:100:13: Assignement to and from event in statically scheduled context.
+%Error-UNSUPPORTED: t/t_event_copy.v:100:13: Assignment to and from event in statically scheduled context.
                                            : ... note: In instance 't'
                                            : Static event scheduling won't be able to handle this.
                                            : ... Suggest move the event into a completely dynamic context, eg. a class,  and reference it only from such context.
   100 |          e4 = e3;   
       |             ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_event_copy.v:101:13: Assignement to and from event in statically scheduled context.
+%Error-UNSUPPORTED: t/t_event_copy.v:101:13: Assignment to and from event in statically scheduled context.
                                            : ... note: In instance 't'
                                            : Static event scheduling won't be able to handle this.
                                            : ... Suggest move the event into a completely dynamic context, eg. a class,  and reference it only from such context.
   101 |          e3 = e2;   
       |             ^
-%Error-UNSUPPORTED: t/t_event_copy.v:128:13: Assignement to event in statically scheduled context.
+%Error-UNSUPPORTED: t/t_event_copy.v:128:13: Assignment to event in statically scheduled context.
                                            : ... note: In instance 't'
                                            : Static event scheduling won't be able to handle this.
                                            : ... Suggest move the event into a completely dynamic context, eg. a class,  and reference it only from such context.

@@ -690,7 +690,7 @@ static void verilate(const string& argString) {
         const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
 
         UASSERT(v3Global.opt.hierarchical(), "hierarchical must be set");
-        UASSERT(!v3Global.opt.hierChild(), "This must not be a hierarhcical-child run");
+        UASSERT(!v3Global.opt.hierChild(), "This must not be a hierarchical-child run");
         UASSERT(v3Global.opt.hierBlocks().empty(), "hierarchical-block must not be set");
         if (v3Global.opt.gmake()) {
             v3Global.hierPlanp()->writeCommandArgsFiles(false);

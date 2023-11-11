@@ -198,7 +198,7 @@ private:
             AstBasicDType* const basicp = varp->dtypep()->skipRefp()->basicp();
             UASSERT_OBJ(basicp, varp, "Unexpected randc variable dtype");
             if (basicp->width() > 32) {
-                varp->v3error("Maxiumum implemented width for randc is 32 bits, "
+                varp->v3error("Maximum implemented width for randc is 32 bits, "
                               << varp->prettyNameQ() << " is " << basicp->width() << " bits");
                 varp->isRandC(false);
                 varp->isRand(true);

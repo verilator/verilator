@@ -95,7 +95,7 @@ class DataflowExtractVisitor final : public VNVisitor {
     // VISIT methods
 
     void visit(AstNetlist* nodep) override {
-        // Analyse the whole design
+        // Analyze the whole design
         iterateChildrenConst(nodep);
 
         // Replace candidate expressions only reading combinationally driven signals with variables
