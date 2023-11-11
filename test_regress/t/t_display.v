@@ -19,6 +19,8 @@ module t;
    string     svs = "sv-str";
    reg [31:0] regstr = "meep";
 
+   reg [5:0]  assoc_c[int];
+
    sub sub ();
    sub2 sub2 ();
    sub3 sub3 ();
@@ -156,6 +158,7 @@ module t;
       $display($unsigned(-2));  // 4294967294
       $display("%d", 32'haaaaaaaa);  // 2863311530
       $display(32'haaaaaaaa);  // 2863311530
+      $display("assoc_c=", assoc_c);  // Default to %p
 
       $display("[%0t] %s%s%s", $time,
                "hel", "lo, fr", "om a very long string. Percent %s are literally substituted in.");
