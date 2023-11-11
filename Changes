@@ -537,7 +537,7 @@ Verilator 5.002 2022-10-29
 * Fix null access on optimized-out fork statements (#3658). [Krzysztof Bieganski, Antmicro Ltd]
 * Fix VPI inline module naming mismatch (#3690) (#3694). [Jiuyang Liu]
 * Fix deadlock in timeprecision when using SystemC (#3707). [Kamil Rakoczy, Antmicro Ltd]
-* Fix width mismatch on inside operator (#3714). [Alex Torregrosa]
+* Fix width mismatch on inside operator (#3714). [Àlex Torregrosa]
 
 
 Verilator 4.228 2022-10-01
@@ -767,7 +767,7 @@ Verilator 4.214 2021-10-17
 * Fix removing if statement with side effect in condition (#3131). [Alexander Grobman]
 * Fix --waiver-output for multiline warnings (#2429) (#3141). [Keith Colbert]
 * Fix internal error on bad widths (#3140) (#3145). [Zhanglei Wang]
-* Fix crash on clang 12/13 (#3148). [Kouping Hsu]
+* Fix crash on clang 12/13 (#3148). [Kuoping Hsu]
 * Fix cygwin compile error due to missing -std=gnu++14 (#3149). [Sun Kim]
 * Fix $urandom_range when the range is 0 ... UINT_MAX (#3161). [Iru Cai]
 * Fix constructor-parameter argument comma-separation in C++ (#3162). [Matthew Ballance]
@@ -882,12 +882,12 @@ Verilator 4.202 2021-04-24
 * Mark --no-relative-cfuncs as scheduled for deprecation.
 * Add --coverage-max-width (#2853). [xuejiazidi]
 * Add VerilatedCovContext::forcePerInstance (#2793). [Kevin Laeufer]
-* Add FST SystemC tracing (#2806). [Alex Torregrosa]
+* Add FST SystemC tracing (#2806). [Àlex Torregrosa]
 * Add PINNOTFOUND warning in place of error (#2868). [Udi Finkelstein]
 * Support overlaps in priority case statements (#2864). [Rupert Swarbrick]
 * Support for null ports (#2875). [Udi Finkelstein]
 * Fix class unpacked-array compile error (#2774). [Iru Cai]
-* Fix scope types in FST and VCD traces (#2805). [Alex Torregrosa]
+* Fix scope types in FST and VCD traces (#2805). [Àlex Torregrosa]
 * Fix exceeding command-line ar limit (#2834). [Yinan Xu]
 * Fix false $dumpfile warning on model save (#2834). [Yinan Xu]
 * Fix --timescale-override not suppressing TIMESCALEMOD (#2838). [Kaleb Barrett]
@@ -944,7 +944,7 @@ Verilator 4.110 2021-02-25
 **Minor:**
 
 * Support concat selection (#2721).
-* Support struct scopes when dumping structs to VCD (#2776) [Alex Torregrosa]
+* Support struct scopes when dumping structs to VCD (#2776) [Àlex Torregrosa]
 * Generate SELRANGE for potentially unreachable code (#2625) (#2754) [Pierre-Henri Horrein]
 * For --flatten, override inlining of public and no_inline modules (#2761) [James Hanlon]
 * Fix little endian interface pin swizzling (#2475). [Don Owen]
@@ -955,7 +955,7 @@ Verilator 4.110 2021-02-25
 * Fix class extends with VM_PARALLEL_BUILDS (#2775). [Iru Cai]
 * Fix shifts by > 32 bit values (#2785). [qrq992]
 * Fix examples not flushing vcd (#2787). [Richard E George]
-* Fix little endian packed array pattern assignment (#2795). [Alex Torregrosa]
+* Fix little endian packed array pattern assignment (#2795). [Àlex Torregrosa]
 
 
 Verilator 4.108 2021-01-10
@@ -1431,7 +1431,7 @@ Verilator 4.014 2019-05-08
 **Minor:**
 
 * Add --trace-fst-thread.
-* Support '#' comments in $readmem. (#1411) [Frederick Requin]
+* Support '#' comments in $readmem. (#1411) [Frédéric Requin]
 * Support "'dx" constants. (#1423) [Udi Finkelstein]
 * For FST tracing use LZ4 compression. [Tony Bybell]
 * Add error when use parameters without value. (#1424) [Peter Gerst]
@@ -1701,19 +1701,19 @@ Verilator 3.912 2017-09-23
 
 **Minor:**
 
-* Support or/and/xor array intrinsic methods. (#1210) [Mike Popoloski]
+* Support or/and/xor array intrinsic methods. (#1210) [Michael Popoloski]
 * Support package export. (#1217) [Usuario Eda]
-* Support module port parameters without defaults. (#1213) [Mike Popoloski]
+* Support module port parameters without defaults. (#1213) [Michael Popoloski]
 * Add performance information to --stats file.
 * Simplify VL_CONST_W macro generation for faster compiles.
 * Optimize improvements for Shift-And, and replication constructs.
-* Fix ordering of arrayed cell wide connections. (#1202 partial) [Mike Popoloski]
-* Fix LITENDIAN warning on arrayed cells. (#1202) [Mike Popoloski]
-* Fix enum ranges without colons. (#1204) [Mike Popoloski]
-* Fix GCC noreturn compile error. (#1209) [Mike Popoloski]
-* Fix constant function default parameters. (#1211) [Mike Popoloski]
-* Fix non-colon array of interface modports. (#1212) [Mike Popoloski]
-* Fix .name connections on interfaces. (#1214) [Mike Popoloski]
+* Fix ordering of arrayed cell wide connections. (#1202 partial) [Michael Popoloski]
+* Fix LITENDIAN warning on arrayed cells. (#1202) [Michael Popoloski]
+* Fix enum ranges without colons. (#1204) [Michael Popoloski]
+* Fix GCC noreturn compile error. (#1209) [Michael Popoloski]
+* Fix constant function default parameters. (#1211) [Michael Popoloski]
+* Fix non-colon array of interface modports. (#1212) [Michael Popoloski]
+* Fix .name connections on interfaces. (#1214) [Michael Popoloski]
 * Fix wide array indices causing compile error.
 
 
@@ -1835,8 +1835,8 @@ Verilator 3.888 2016-10-14
 
 **Minor:**
 
-* Add --no-decoration to remove output comments, msg2015. [Frederic Requin]
-* If VM_PARALLEL_BUILDS=1, use OPT_FAST and OPT_SLOW. [Frederic Requin]
+* Add --no-decoration to remove output comments, msg2015. [Frédéric Requin]
+* If VM_PARALLEL_BUILDS=1, use OPT_FAST and OPT_SLOW. [Frédéric Requin]
   Set VM_DEFAULT_RULES=0 for old behavior.
 * Add error on DPI functions > 32 bits. (#1898) [Elliot Mednick]
 * Improve Verilation performance on internal strings. (#1896) [Johan Bjork]
@@ -1872,7 +1872,7 @@ Verilator 3.884 2016-05-18
 * Fix --output-split of constructors. (#1035) [Johan Bjork]
 * Fix removal of empty packages, modules and cells. (#1034) [Johan Bjork]
 * Fix core dump on Arch Linux/GCC 6.1.1. (#1058) [Jannis Harder]
-* Fix $value$plusargs to string. (#1880) [Frederic Requin]
+* Fix $value$plusargs to string. (#1880) [Frédéric Requin]
 
 
 Verilator 3.882 2016-03-01
@@ -1951,13 +1951,13 @@ Verilator 3.876 2015-08-12
 
 **Minor:**
 
-* Add tracing_on, etc to vlt files. (#932) [Frederic Requin]
+* Add tracing_on, etc to vlt files. (#932) [Frédéric Requin]
 * Support extraction of enum bits. (#951) [Jonathon Donaldson]
 * Fix MinGW compiler error. (#927) (#929) [Hans Tichelaar]
 * Fix .c files to be treated as .cpp. (#930) [Jonathon Donaldson]
 * Fix string-to-int space conversion. (#931) [Fabrizio Ferrandi]
 * Fix dpi imports inside generates. [Michael Tresidder]
-* Fix rounding in trace $timescale. (#946) [Frederic Requin]
+* Fix rounding in trace $timescale. (#946) [Frédéric Requin]
 * Fix $fopen with SV string. (#947) [Sven Stucki]
 * Fix hashed error with typedef inside block. (#948) [Sven Stucki]
 * Fix makefile with --coverage. (#953) [Eivind Liland]
@@ -2197,7 +2197,7 @@ Verilator 3.852 2013-09-29
 
 * Support named function and task arguments. [Chris Randall]
 * Report SELRANGE warning for non-generate if. (#675) [Roland Kruse]
-* Fix ordering of $fgetc. (#1808) [Frederic Requin]
+* Fix ordering of $fgetc. (#1808) [Frédéric Requin]
 * Fix --output-split-cfunc to count internal functions. [Chris Randall]
 * Fix crash on 32-bit Ubuntu. (#670) [Mark Jackson Pulver]
 
@@ -2265,7 +2265,7 @@ Verilator 3.846 2013-03-09
 * Fix DETECTARRAY on packed structures. (#610) [Jeremy Bennett]
 * Fix LITENDIAN on unpacked structures. (#614) [Wai Sum Mong]
 * Fix 32-bit OS VPI scan issue. (#615)  [Jeremy Bennett, Rich Porter]
-* Fix opening a VerilatedVcdC file multiple times. (#1774) [Frederic Requin]
+* Fix opening a VerilatedVcdC file multiple times. (#1774) [Frédéric Requin]
 * Fix UNOPTFLAT circular array bounds crossing. (#630) [Jie Xu]
 
 
@@ -3577,7 +3577,7 @@ Verilator 3.460 2005-07-27 Beta
 * Fix false warning when a clock is constant.
 * Fix X/Z in decimal numbers. [Wim Michiels]
 * Fix genvar statements in non-named generate blocks.
-* Fix core dump when missing newline in `define. [David van der bokke]
+* Fix core dump when missing newline in `define. [David van der Bokke]
 
 
 Verilator 3.450 2005-07-12
