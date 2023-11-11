@@ -16,10 +16,21 @@ Verilator 5.019 devel
 * Support compilation with precompiled headers with Make and GCC or CLang.
 * Change include of systemc instead of systemc.h (#4622) (#4623). [Chih-Mao Chen]
   This may require that SystemC programs add 'using namespace sc_core', 'using namespace sc_dt'.
-* Optimize timing-delayed queue (#4584). [qrqiuren]
 
 **Minor:**
 
+* Support ccache when compiling Verilator with CMake (#4678). [Anthony Donlon]
+* Remove deprecated options (#4663). [Geza Lore]
+* Optimize timing-delayed queue (#4584). [qrqiuren]
+* Fix VPI TOP level variable iteration (#3919) (#4618). [Marlon James]
+* Fix scheduling of external force signals (#4577) (#4668). [Geza Lore]
+* Fix a memory leak in V3Fork (#4628). [Krzysztof Boroński]
+* Fix linking parameterized hierarchical blocks and recursive hierarchical blocks (#4654). [Anthony Donlon]
+* Fix identifiers that end with '_' on Windows (#4655). [Anthony Donlon]
+* Fix interface parameters used in loop generate constructs (#4664) (#4665). [Anthony Donlon]
+* Fix MingW compilation (#4675). [David Ledger]
+* Fix trace when using SystemC with certain configurations (#4676). [Anthony Donlon]
+* Fix C++20 compilation errors (#4670).
 
 
 Verilator 5.018 2023-10-30
