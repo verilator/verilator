@@ -669,14 +669,15 @@ private:
             iterateChildrenConst(nodep);
         } else {
             iterateConst(nodep->condp());
-            if (optimizable()) {
-                if (fetchConst(nodep->condp())->num().isNeqZero()) {
-                    iterateConst(nodep->thenp());
-                    newValue(nodep, fetchValue(nodep->thenp()));
-                } else {
-                    iterateConst(nodep->elsep());
-                    newValue(nodep, fetchValue(nodep->elsep()));
-                }
+            if (!optimizable()) return;
+            if (fetchConst(nodep->condp())->num().isNeqZero()) {
+                iterateConst(nodep->thenp());
+                if (!optimizable()) return;
+                newValue(nodep, fetchValue(nodep->thenp()));
+            } else {
+                iterateConst(nodep->elsep());
+                if (!optimizable()) return;
+                newValue(nodep, fetchValue(nodep->elsep()));
             }
         }
     }

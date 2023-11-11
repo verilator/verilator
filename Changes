@@ -31,6 +31,7 @@ Verilator 5.019 devel
 * Fix MingW compilation (#4675). [David Ledger]
 * Fix trace when using SystemC with certain configurations (#4676). [Anthony Donlon]
 * Fix C++20 compilation errors (#4670).
+* Fix 'for' loop with outside variable reference (#4660). [David Harris]
 
 
 Verilator 5.018 2023-10-30
