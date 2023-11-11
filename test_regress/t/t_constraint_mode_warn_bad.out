@@ -32,18 +32,18 @@
                                                    : ... note: In instance 't'
    50 |       if (p.cons.constraint_mode() != 0) $stop;
       |                  ^~~~~~~~~~~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:55:19: constraint_mode ignored (unsupported)
+%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:55:20: constraint_mode ignored (unsupported)
                                                    : ... note: In instance 't'
-   55 |       p.self.cons.constraint_mode(1);
-      |                   ^~~~~~~~~~~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:56:19: constraint_mode ignored (unsupported)
+   55 |       p.other.cons.constraint_mode(1);
+      |                    ^~~~~~~~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:56:20: constraint_mode ignored (unsupported)
                                                    : ... note: In instance 't'
-   56 |       p.self.cons.constraint_mode(0);
-      |                   ^~~~~~~~~~~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:57:23: constraint_mode ignored (unsupported)
+   56 |       p.other.cons.constraint_mode(0);
+      |                    ^~~~~~~~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:57:24: constraint_mode ignored (unsupported)
                                                    : ... note: In instance 't'
-   57 |       if (p.self.cons.constraint_mode() != 0) $stop;
-      |                       ^~~~~~~~~~~~~~~
+   57 |       if (p.other.cons.constraint_mode() != 0) $stop;
+      |                        ^~~~~~~~~~~~~~~
 %Warning-CONSTRAINTIGN: t/t_constraint_mode.v:10:15: Constraint ignored (unsupported)
                                                    : ... note: In instance 't'
    10 |    constraint cons { m_one > 0 && m_one < 2; }
