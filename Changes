@@ -27,11 +27,11 @@ Verilator 5.019 devel
 * Fix a memory leak in V3Fork (#4628). [Krzysztof Boroński]
 * Fix linking parameterized hierarchical blocks and recursive hierarchical blocks (#4654). [Anthony Donlon]
 * Fix identifiers that end with '_' on Windows (#4655). [Anthony Donlon]
+* Fix 'for' loop with outside variable reference (#4660). [David Harris]
 * Fix interface parameters used in loop generate constructs (#4664) (#4665). [Anthony Donlon]
 * Fix MingW compilation (#4675). [David Ledger]
 * Fix trace when using SystemC with certain configurations (#4676). [Anthony Donlon]
 * Fix C++20 compilation errors (#4670).
-* Fix 'for' loop with outside variable reference (#4660). [David Harris]
 
 
 Verilator 5.018 2023-10-30
