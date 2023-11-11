@@ -174,7 +174,7 @@ public:
     uint64_t digestUInt64();  // Return 64-bits of digest
     static void selfTest();  // Test this class
 
-    // Inerting hash data
+    // Inserting hash data
     void insert(const void* datap, size_t length);  // Process data into the digest
     void insert(const string& data) {
         insert(data.data(), data.length());

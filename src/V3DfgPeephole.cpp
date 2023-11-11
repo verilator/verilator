@@ -66,16 +66,16 @@ struct ReductionToBitwiseImpl {};
 template <> struct ReductionToBitwiseImpl<DfgRedAnd> { using type = DfgAnd; };
 template <> struct ReductionToBitwiseImpl<DfgRedOr>  { using type = DfgOr;  };
 template <> struct ReductionToBitwiseImpl<DfgRedXor> { using type = DfgXor; };
-template <typename T_Reductoin>
-using ReductionToBitwise = typename ReductionToBitwiseImpl<T_Reductoin>::type;
+template <typename T_Reduction>
+using ReductionToBitwise = typename ReductionToBitwiseImpl<T_Reduction>::type;
 
 template <typename T_Bitwise>
 struct BitwiseToReductionImpl {};
 template <> struct BitwiseToReductionImpl<DfgAnd> { using type = DfgRedAnd; };
 template <> struct BitwiseToReductionImpl<DfgOr>  { using type = DfgRedOr;  };
 template <> struct BitwiseToReductionImpl<DfgXor> { using type = DfgRedXor; };
-template <typename T_Reductoin>
-using BitwiseToReduction = typename BitwiseToReductionImpl<T_Reductoin>::type;
+template <typename T_Reduction>
+using BitwiseToReduction = typename BitwiseToReductionImpl<T_Reduction>::type;
 
 namespace {
 template<typename Vertex> void foldOp(V3Number& out, const V3Number& src);

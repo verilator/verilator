@@ -117,7 +117,7 @@ class V3ThreadPool final {
         if (!m_mutex.try_lock()) {
             if (m_jobsInProgress != 0) {
                 // ThreadPool shouldn't be destroyed when jobs are running and mutex is locked,
-                // something is wrong. Most likely Verilator is exitting as a result of failed
+                // something is wrong. Most likely Verilator is exiting as a result of failed
                 // assert in critical section. Do nothing, let it exit.
                 return;
             }
@@ -169,7 +169,7 @@ public:
     bool waitIfStopRequested() VL_MT_SAFE VL_EXCLUDES(m_stoppedJobsMutex);
 
     // Waits for future.
-    // This function can be interupted by exclusive access request.
+    // This function can be interrupted by exclusive access request.
     // When other thread requested exclusive access to processing,
     // current thread is stopped and waits until it is resumed.
     // Returns future result
@@ -177,7 +177,7 @@ public:
     static T waitForFuture(std::future<T>& future) VL_MT_SAFE_EXCLUDES(m_mutex);
 
     // Waits for list of futures
-    // This function can be interupted by exclusive access request.
+    // This function can be interrupted by exclusive access request.
     // When other thread requested exclusive access to processing,
     // current thread is stopped and waits until it is resumed.
     // This function uses function overload instead of template

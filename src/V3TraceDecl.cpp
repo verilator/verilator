@@ -259,7 +259,7 @@ private:
             const size_t pos = path.rfind('.');
             const std::string name = path.substr(pos == string::npos ? 0 : pos + 1);
 
-            // Compute the type of the scope beign fixed up
+            // Compute the type of the scope being fixed up
             AstNodeModule* const modp = scopep->aboveCellp()->modp();
             const VTracePrefixType scopeType = VN_IS(modp, Iface)
                                                    ? VTracePrefixType::SCOPE_INTERFACE
@@ -427,7 +427,7 @@ private:
 
                 // Assume only references under the same parent scope reference
                 // the same interface.
-                // TODO: This is not actually correct. An inteface can propagate
+                // TODO: This is not actually correct. An interface can propagate
                 //       upwards and sideways when passed to a port via a downward
                 //       hierarchical reference, which we will miss here.
                 if (!VString::startsWith(refName, parentPath)) continue;

@@ -120,7 +120,7 @@ private:
         // All class types are castable to each other. If they are of different types,
         // a compilation error will be thrown, so an explicit cast is required. Types were
         // already checked by V3Width and dtypep of a condition operator is a type of their
-        // common base class, so both classes can be safetly casted.
+        // common base class, so both classes can be safely casted.
         const AstClassRefDType* const thenClassDtypep
             = VN_CAST(nodep->thenp()->dtypep(), ClassRefDType);
         const AstClassRefDType* const elseClassDtypep
