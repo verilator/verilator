@@ -36,10 +36,11 @@ module t;
 
         while (b) begin
             c = ~c;
-            -> ev ;
+            -> ev;
             #CLK_PERIOD;
         end
 
+        $write("[%0t] Done\n", $time);
         $write("*-* All Finished *-*\n");
         $finish;
     end
