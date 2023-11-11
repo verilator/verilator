@@ -9,7 +9,7 @@ class Packet;
 
    constraint cons { m_one > 0 && m_one < 2; }
 
-   Packet self;
+   Packet other;
 
    task test1;
       // TODO Verilator ignores this setting currently, always returning 0 (constraint off)
@@ -51,10 +51,10 @@ module t (/*AUTOARG*/);
 
       // TODO Verilator ignores this setting currently, always returning 0 (constraint off)
       // TODO test that these control constraints as specified
-      p.self = p;
-      p.self.cons.constraint_mode(1);
-      p.self.cons.constraint_mode(0);
-      if (p.self.cons.constraint_mode() != 0) $stop;
+      p.other = new;
+      p.other.cons.constraint_mode(1);
+      p.other.cons.constraint_mode(0);
+      if (p.other.cons.constraint_mode() != 0) $stop;
 
       p.test1();
 

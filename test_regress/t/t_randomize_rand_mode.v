@@ -7,7 +7,7 @@
 class Packet;
    rand int m_one;
 
-   Packet self;
+   Packet other;
 
    task test1;
       // TODO Verilator ignores this setting currently, always returning 1 (rand on)
