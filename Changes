@@ -16,6 +16,7 @@ Verilator 5.019 devel
 * Support compilation with precompiled headers with Make and GCC or CLang.
 * Change include of systemc instead of systemc.h (#4622) (#4623). [Chih-Mao Chen]
   This may require that SystemC programs add 'using namespace sc_core', 'using namespace sc_dt'.
+* Optimize timing-delayed queue (#4584). [qrqiuren]
 
 **Minor:**
 

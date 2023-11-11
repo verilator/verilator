@@ -53,27 +53,19 @@ void VlCoroutineHandle::dump() const {
 //======================================================================
 // VlDelayScheduler:: Methods
 
-#ifdef VL_DEBUG
-void VlDelayScheduler::VlDelayedCoroutine::dump() const {
-    VL_DBG_MSGF("             Awaiting time %" PRIu64 ": ", m_timestep);
-    m_handle.dump();
-}
-#endif
-
 void VlDelayScheduler::resume() {
 #ifdef VL_DEBUG
     VL_DEBUG_IF(dump(); VL_DBG_MSGF("         Resuming delayed processes\n"););
 #endif
     while (awaitingCurrentTime()) {
-        if (m_queue.front().m_timestep != m_context.time()) {
+        if (m_queue.begin()->first != m_context.time()) {
             VL_FATAL_MT(__FILE__, __LINE__, "",
                         "%Error: Encountered process that should've been resumed at an "
                         "earlier simulation time. Missed a time slot?");
         }
-        // Move max element in the heap to the end
-        std::pop_heap(m_queue.begin(), m_queue.end());
-        VlCoroutineHandle handle = std::move(m_queue.back().m_handle);
-        m_queue.pop_back();
+        // Remove earliest handle
+        VlCoroutineHandle handle = std::move(m_queue.begin()->second);
+        m_queue.erase(m_queue.begin());
         handle.resume();
     }
 }
@@ -82,7 +74,7 @@ uint64_t VlDelayScheduler::nextTimeSlot() const {
     if (empty()) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: There is no next time slot scheduled");
     }
-    return m_queue.front().m_timestep;
+    return m_queue.begin()->first;
 }
 
 #ifdef VL_DEBUG
@@ -91,7 +83,10 @@ void VlDelayScheduler::dump() const {
         VL_DBG_MSGF("         No delayed processes:\n");
     } else {
         VL_DBG_MSGF("         Delayed processes:\n");
-        for (const auto& susp : m_queue) susp.dump();
+        for (const auto& susp : m_queue) {
+            VL_DBG_MSGF("             Awaiting time %" PRIu64 ": ", susp.first);
+            susp.second.dump();
+        }
     }
 }
 #endif
