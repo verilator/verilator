@@ -61,6 +61,7 @@ b: 000001100 000001100
 4294967294
 2863311530
 2863311530
+assoc_c='{}
 [0] hello, from a very long string. Percent %s are literally substituted in.
 hello, from a concatenated string.
 hello, from a concatenated format string [0].

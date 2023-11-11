@@ -4843,6 +4843,21 @@ private:
             } else if (inPct) {
                 inPct = false;
                 bool added = false;
+                const AstNodeDType* const dtypep = argp ? argp->dtypep()->skipRefp() : nullptr;
+                const AstBasicDType* const basicp = dtypep ? dtypep->basicp() : nullptr;
+                if (ch == '?') {  // Unspecified by user, guess
+                    if (argp && argp->isDouble()) {
+                        ch = 'g';
+                    } else if (argp && argp->isString()) {
+                        ch = '@';
+                    } else if (nodep->missingArgChar() == 'd' && argp->isSigned()) {
+                        ch = '~';
+                    } else if (basicp) {
+                        ch = nodep->missingArgChar();
+                    } else {
+                        ch = 'p';
+                    }
+                }
                 switch (std::tolower(ch)) {
                 case '%': break;  // %% - just output a %
                 case 'm': break;  // %m - auto insert "name"
@@ -4871,8 +4886,6 @@ private:
                     break;
                 }
                 case 'p': {  // Pattern
-                    const AstNodeDType* const dtypep = argp ? argp->dtypep()->skipRefp() : nullptr;
-                    const AstBasicDType* const basicp = dtypep ? dtypep->basicp() : nullptr;
                     if (basicp && basicp->isString()) {
                         added = true;
                         newFormat += "\"%@\"";
@@ -4942,19 +4955,6 @@ private:
                         }
                         argp = nextp;
                     }
-                    break;
-                }
-                case '?': {  // Unspecified by user, guess
-                    if (argp && argp->isDouble()) {
-                        ch = 'g';
-                    } else if (argp && argp->isString()) {
-                        ch = '@';
-                    } else if (nodep->missingArgChar() == 'd' && argp->isSigned()) {
-                        ch = '~';
-                    } else {
-                        ch = nodep->missingArgChar();
-                    }
-                    if (argp) argp = VN_AS(argp->nextp(), NodeExpr);
                     break;
                 }
                 default: {  // Most operators, just move to next argument
