@@ -887,7 +887,7 @@ private:
     // ** must track down everywhere V3Const is called and make sure no overlaps.
     // AstVar::user4p           -> Used by variable marking/finding
     // AstJumpLabel::user4      -> bool.  Set when AstJumpGo uses this label
-    // AstEnum::user4           -> bool.  Recursing.
+    // AstEnumItem::user4       -> bool.  Already checked for self references
 
     // STATE
     static constexpr bool m_doShort = true;  // Remove expressions that short circuit
@@ -2744,26 +2744,29 @@ private:
     }
     void visit(AstEnumItemRef* nodep) override {
         iterateChildren(nodep);
-        UASSERT_OBJ(nodep->itemp(), nodep, "Not linked");
-        bool did = false;
-        if (nodep->itemp()->valuep()) {
-            // if (debug()) nodep->itemp()->valuep()->dumpTree("-  visitvaref: ");
-            if (nodep->itemp()->user4()) {
-                nodep->v3error("Recursive enum value: " << nodep->itemp()->prettyNameQ());
+        AstEnumItem* const itemp = nodep->itemp();
+        UASSERT_OBJ(itemp, nodep, "Not linked");
+        if (!itemp->user4SetOnce() && itemp->valuep()) {
+            // Check for recursive self references (this should really not be here..)
+            const bool isRecursive = itemp->valuep()->exists([&](AstEnumItemRef* refp) {  //
+                return refp->itemp() == itemp;
+            });
+            if (isRecursive) {
+                nodep->v3error("Recursive enum value: " << itemp->prettyNameQ());
             } else {
-                nodep->itemp()->user4(true);
-                iterateAndNextNull(nodep->itemp()->valuep());
-                nodep->itemp()->user4(false);
+                // Simplify the value
+                iterate(itemp->valuep());
             }
-            if (AstConst* const valuep = VN_CAST(nodep->itemp()->valuep(), Const)) {
-                const V3Number& num = valuep->num();
-                VL_DO_DANGLING(replaceNum(nodep, num), nodep);
-                did = true;
-            }
+        }
+        bool did = false;
+        if (AstConst* const valuep = VN_CAST(itemp->valuep(), Const)) {
+            const V3Number& num = valuep->num();
+            VL_DO_DANGLING(replaceNum(nodep, num), nodep);
+            did = true;
         }
         if (!did && m_required) {
             nodep->v3error("Expecting expression to be constant, but enum value isn't const: "
-                           << nodep->itemp()->prettyNameQ());
+                           << itemp->prettyNameQ());
         }
     }
 
