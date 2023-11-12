@@ -279,6 +279,28 @@ private:
         visit(static_cast<AstNode*>(nodep));
         addFlags(m_procp, T_FORCES_PROC | T_NEEDS_PROC);
     }
+    void visit(AstWait* nodep) override {
+        AstNodeExpr* const condp = V3Const::constifyEdit(nodep->condp());
+        if (AstConst* const constp = VN_CAST(condp, Const)) {
+            if (!nodep->fileline()->warnIsOff(V3ErrorCode::WAITCONST)) {
+                condp->v3warn(WAITCONST, "Wait statement condition is constant");
+            }
+            if (!constp->isZero()) {
+                // Remove AstWait before we track process as T_SUSPENDER
+                if (AstNode* const stmtsp = nodep->stmtsp()) {
+                    stmtsp->unlinkFrBackWithNext();
+                    nodep->replaceWith(stmtsp);
+                } else {
+                    nodep->unlinkFrBack();
+                }
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
+        }
+        v3Global.setUsesTiming();
+        if (m_procp) addFlags(m_procp, T_SUSPENDEE | T_SUSPENDER | T_NEEDS_PROC);
+        iterateChildren(nodep);
+    }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
@@ -1123,9 +1145,6 @@ private:
         AstNodeExpr* const condp = V3Const::constifyEdit(nodep->condp()->unlinkFrBack());
         auto* const constp = VN_CAST(condp, Const);
         if (constp) {
-            if (!nodep->fileline()->warnIsOff(V3ErrorCode::WAITCONST)) {
-                condp->v3warn(WAITCONST, "Wait statement condition is constant");
-            }
             if (constp->isZero()) {
                 // We have to await forever instead of simply returning in case we're deep in a
                 // callstack
@@ -1136,11 +1155,9 @@ private:
                 nodep->replaceWith(awaitp->makeStmt());
                 if (stmtsp) VL_DO_DANGLING(stmtsp->deleteTree(), stmtsp);
                 VL_DO_DANGLING(condp->deleteTree(), condp);
-            } else if (stmtsp) {
-                // Just put the statements there
-                nodep->replaceWith(stmtsp);
             } else {
-                nodep->unlinkFrBack();
+                nodep->v3fatalSrc("constant wait should have been removed in "
+                                  "TimingSuspendableVisitor::visit(AstWait)");
             }
         } else if (needDynamicTrigger(condp)) {
             // No point in making a sentree, just use the expression as sensitivity
