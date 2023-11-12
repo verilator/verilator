@@ -301,6 +301,7 @@ private:
         }
         // Collect any used variables first, as lhs may also be on rhs
         // Similar code in V3Dead
+        VL_RESTORER(m_sideEffect);
         m_sideEffect = false;
         m_lifep->clearReplaced();
         iterateAndNextNull(nodep->rhsp());
@@ -407,7 +408,9 @@ private:
         iterateChildren(nodep);
         // Enter the function and trace it
         // else is non-inline or public function we optimize separately
-        if (!nodep->funcp()->entryPoint()) {
+        if (nodep->funcp()->entryPoint()) {
+            setNoopt();
+        } else {
             m_tracingCall = true;
             iterate(nodep->funcp());
         }
@@ -416,6 +419,7 @@ private:
         // UINFO(4, "  CFUNC " << nodep << endl);
         if (!m_tracingCall && !nodep->entryPoint()) return;
         m_tracingCall = false;
+        if (nodep->recursive()) setNoopt();
         if (nodep->dpiImportPrototype() && !nodep->dpiPure()) {
             m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
         }
