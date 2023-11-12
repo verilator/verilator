@@ -2405,6 +2405,7 @@ void AstCFunc::dump(std::ostream& str) const {
     if (isVirtual()) str << " [VIRT]";
     if (isCoroutine()) str << " [CORO]";
     if (needProcess()) str << " [NPRC]";
+    if (entryPoint()) str << " [ENTRY]";
 }
 const char* AstCAwait::broken() const {
     BROKEN_RTN(m_sensesp && !m_sensesp->brokeExists());
