@@ -107,6 +107,7 @@ struct VNTypeInfo {
         OP_OPTIONAL,
     } m_opType[4];
     const char* m_opNamep[4];
+    size_t m_sizeof;
 };
 
 class VNType final {
