@@ -238,19 +238,19 @@ private:
     void visit(AstSel* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
-            iterateAndNextNull(nodep->lhsp());
+            iterateAndNextNull(nodep->fromp());
             // Only set lvalues on the from
             m_setRefLvalue = VAccess::NOCHANGE;
-            iterateAndNextNull(nodep->rhsp());
-            iterateAndNextNull(nodep->thsp());
+            iterateAndNextNull(nodep->lsbp());
+            iterateAndNextNull(nodep->widthp());
         }
     }
     void visit(AstNodeSel* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {  // Only set lvalues on the from
-            iterateAndNextNull(nodep->lhsp());
+            iterateAndNextNull(nodep->fromp());
             m_setRefLvalue = VAccess::NOCHANGE;
-            iterateAndNextNull(nodep->rhsp());
+            iterateAndNextNull(nodep->bitp());
         }
     }
     void visit(AstCellArrayRef* nodep) override {

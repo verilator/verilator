@@ -148,7 +148,7 @@ class SliceVisitor final : public VNVisitor {
                         if (AstSliceSel* const slicep = VN_CAST(itemp, SliceSel)) {
                             offset += slicep->declRange().lo();
                             newp = new AstArraySel{nodep->fileline(),
-                                                   slicep->lhsp()->cloneTreePure(false), offset};
+                                                   slicep->fromp()->cloneTreePure(false), offset};
                         } else {
                             newp = new AstArraySel{nodep->fileline(), itemp->cloneTreePure(false),
                                                    offset};

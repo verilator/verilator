@@ -1184,25 +1184,25 @@ public:
     }
     void visit(AstSel* nodep) override {
         // Note ASSIGN checks for this on a LHS
-        emitOpName(nodep, nodep->emitC(), nodep->fromp(), nodep->lsbp(), nodep->thsp());
+        emitOpName(nodep, nodep->emitC(), nodep->fromp(), nodep->lsbp(), nodep->widthp());
     }
     void visit(AstReplicate* nodep) override {
-        if (nodep->lhsp()->widthMin() == 1 && !nodep->isWide()) {
-            UASSERT_OBJ((static_cast<int>(VN_AS(nodep->rhsp(), Const)->toUInt())
-                         * nodep->lhsp()->widthMin())
+        if (nodep->srcp()->widthMin() == 1 && !nodep->isWide()) {
+            UASSERT_OBJ((static_cast<int>(VN_AS(nodep->countp(), Const)->toUInt())
+                         * nodep->srcp()->widthMin())
                             == nodep->widthMin(),
                         nodep, "Replicate non-constant or width miscomputed");
             puts("VL_REPLICATE_");
             emitIQW(nodep);
             puts("OI(");
-            if (nodep->lhsp()) puts(cvtToStr(nodep->lhsp()->widthMin()));
+            if (nodep->srcp()) puts(cvtToStr(nodep->srcp()->widthMin()));
             puts(",");
-            iterateAndNextConstNull(nodep->lhsp());
+            iterateAndNextConstNull(nodep->srcp());
             puts(", ");
-            iterateAndNextConstNull(nodep->rhsp());
+            iterateAndNextConstNull(nodep->countp());
             puts(")");
         } else {
-            emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
+            emitOpName(nodep, nodep->emitC(), nodep->srcp(), nodep->countp(), nullptr);
         }
     }
     void visit(AstStreamL* nodep) override {
@@ -1229,9 +1229,9 @@ public:
     }
     void visit(AstCastDynamic* nodep) override {
         putbs("VL_CAST_DYNAMIC(");
-        iterateAndNextConstNull(nodep->lhsp());
+        iterateAndNextConstNull(nodep->fromp());
         puts(", ");
-        iterateAndNextConstNull(nodep->rhsp());
+        iterateAndNextConstNull(nodep->top());
         puts(")");
     }
     void visit(AstCountBits* nodep) override {
