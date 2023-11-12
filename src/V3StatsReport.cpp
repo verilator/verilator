@@ -181,11 +181,8 @@ StatsReport::StatColl StatsReport::s_allStats;
 // V3Statstic class
 
 void V3Statistic::dump(std::ofstream& os) const {
-    if (perf()) {
-        os << "  " << std::right << std::fixed << std::setprecision(6) << std::setw(9) << count();
-    } else {
-        os << "  " << std::right << std::fixed << std::setprecision(0) << std::setw(9) << count();
-    }
+    os << "  " << std::right << std::fixed << std::setprecision(precision()) << std::setw(9)
+       << value();
 }
 
 //######################################################################
