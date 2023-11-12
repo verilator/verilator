@@ -933,8 +933,8 @@ def write_ast_type_info(filename):
                 ['VNTypeInfo::{0}'.format(s) for s in opTypeList])
             opNameStr = ', '.join(['"{0}"'.format(s) for s in opNameList])
             fh.write(
-                '    {{ "Ast{name}", {{{opTypeStr}}}, {{{opNameStr}}}, sizeof(Ast{name}) }},\n'.
-                format(
+                '    {{ "Ast{name}", {{{opTypeStr}}}, {{{opNameStr}}}, sizeof(Ast{name}) }},\n'
+                .format(
                     name=node.name,
                     opTypeStr=opTypeStr,
                     opNameStr=opNameStr,
