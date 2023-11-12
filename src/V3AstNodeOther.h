@@ -2084,10 +2084,6 @@ public:
         declDirection(fromp->declDirection());
         lifetime(fromp->lifetime());
     }
-    bool gateMultiInputOptimizable() const {
-        // Ok to gate optimize; must return false if propagateAttrFrom would do anything
-        return !isUsedClock();
-    }
     void combineType(const AstVar* typevarp) {
         // This is same as typevarp (for combining input & reg decls)
         // "this" is the input var. typevarp is the reg var.
