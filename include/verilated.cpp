@@ -3246,11 +3246,11 @@ void VlDeleter::deleteAll() VL_EXCLUDES(m_mutex) VL_EXCLUDES(m_deleteMutex) VL_M
             VerilatedLockGuard lock{m_mutex};
             if (m_newGarbage.empty()) break;
             m_deleteMutex.lock();
-            std::swap(m_newGarbage, m_toDelete);
+            std::swap(m_newGarbage, m_deleteNow);
             // m_mutex is unlocked here, so destructors can enqueue new objects
         }
-        for (VlDeletable* const objp : m_toDelete) delete objp;
-        m_toDelete.clear();
+        for (VlDeletable* const objp : m_deleteNow) delete objp;
+        m_deleteNow.clear();
         m_deleteMutex.unlock();
     }
 }
