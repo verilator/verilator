@@ -1499,7 +1499,7 @@ class VlDeleter final {
     // Queue of new objects that should be deleted
     std::vector<VlDeletable*> m_newGarbage VL_GUARDED_BY(m_mutex);
     // Queue of objects currently being deleted (only for deleteAll())
-    std::vector<VlDeletable*> m_toDelete VL_GUARDED_BY(m_deleteMutex);
+    std::vector<VlDeletable*> m_deleteNow VL_GUARDED_BY(m_deleteMutex);
     mutable VerilatedMutex m_mutex;  // Mutex protecting the 'new garbage' queue
     mutable VerilatedMutex m_deleteMutex;  // Mutex protecting the delete queue
 
