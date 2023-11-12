@@ -434,6 +434,21 @@ public:
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
+class AstNodeForeach VL_NOT_FINAL : public AstNodeStmt {
+    // @astgen op1 := arrayp : AstNode
+    // @astgen op2 := stmtsp : List[AstNode]
+public:
+    AstNodeForeach(VNType t, FileLine* fl, AstNode* arrayp, AstNode* stmtsp)
+        : AstNodeStmt(t, fl) {
+        this->arrayp(arrayp);
+        this->addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstNodeForeach;
+    bool isGateOptimizable() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_BRANCH; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
+};
 class AstNodeIf VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := condp : AstNodeExpr
     // @astgen op2 := thensp : List[AstNode]
@@ -965,6 +980,40 @@ public:
     // false, the returned VarScope will have _->dtypep()->sameTree(initp->dtypep()) return true.
     AstVarScope* findConst(AstConst* initp, bool mergeDType);
 };
+class AstConstraint final : public AstNode {
+    // Constraint
+    // @astgen op1 := itemsp : List[AstNode]
+    string m_name;  // Name of constraint
+    bool m_isStatic = false;  // static constraint
+public:
+    AstConstraint(FileLine* fl, const string& name, AstNode* itemsp)
+        : ASTGEN_SUPER_Constraint(fl)
+        , m_name(name) {
+        this->addItemsp(itemsp);
+    }
+    ASTGEN_MEMBERS_AstConstraint;
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+    void isStatic(bool flag) { m_isStatic = flag; }
+    bool isStatic() const { return m_isStatic; }
+};
+class AstConstraintBefore final : public AstNode {
+    // Constraint solve before item
+    // @astgen op1 := lhssp : List[AstNodeExpr]
+    // @astgen op2 := rhssp : List[AstNodeExpr]
+public:
+    AstConstraintBefore(FileLine* fl, AstNodeExpr* lhssp, AstNodeExpr* rhssp)
+        : ASTGEN_SUPER_ConstraintBefore(fl) {
+        this->addLhssp(lhssp);
+        this->addRhssp(rhssp);
+    }
+    ASTGEN_MEMBERS_AstConstraintBefore;
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+};
 class AstDefParam final : public AstNode {
     // A defparam assignment
     // Parents: MODULE
@@ -982,6 +1031,24 @@ public:
     ASTGEN_MEMBERS_AstDefParam;
     bool same(const AstNode*) const override { return true; }
     string path() const { return m_path; }
+};
+class AstDistItem final : public AstNode {
+    // Constraint distribution item
+    // @astgen op1 := rangep : AstNodeExpr
+    // @astgen op2 := weightp : AstNodeExpr
+    bool m_isWhole = false;  // True for weight ':/', false for ':='
+public:
+    AstDistItem(FileLine* fl, AstNodeExpr* rangep, AstNodeExpr* weightp)
+        : ASTGEN_SUPER_DistItem(fl) {
+        this->rangep(rangep);
+        this->weightp(weightp);
+    }
+    ASTGEN_MEMBERS_AstDistItem;
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+    void isWhole(bool flag) { m_isWhole = flag; }
+    bool isWhole() const { return m_isWhole; }
 };
 class AstDpiExport final : public AstNode {
     // We could put an AstNodeFTaskRef instead of the verilog function name,
@@ -1560,10 +1627,11 @@ public:
 class AstTypeTable final : public AstNode {
     // Container for hash of standard data types
     // @astgen op1 := typesp : List[AstNodeDType]
+    AstConstraintRefDType* m_constraintRefp = nullptr;
     AstEmptyQueueDType* m_emptyQueuep = nullptr;
     AstQueueDType* m_queueIndexp = nullptr;
-    AstVoidDType* m_voidp = nullptr;
     AstStreamDType* m_streamp = nullptr;
+    AstVoidDType* m_voidp = nullptr;
     AstBasicDType* m_basicps[VBasicDTypeKwd::_ENUM_MAX]{};
     //
     using DetailedMap = std::map<VBasicTypeKey, AstBasicDType*>;
@@ -1586,10 +1654,11 @@ public:
     AstBasicDType* findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd, const VNumRange& range,
                                      int widthMin, VSigning numeric);
     AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
+    AstConstraintRefDType* findConstraintRefDType(FileLine* fl);
     AstEmptyQueueDType* findEmptyQueueDType(FileLine* fl);
     AstQueueDType* findQueueIndexDType(FileLine* fl);
-    AstVoidDType* findVoidDType(FileLine* fl);
     AstStreamDType* findStreamDType(FileLine* fl);
+    AstVoidDType* findVoidDType(FileLine* fl);
     void clearCache();
     void repairCache();
     void dump(std::ostream& str = std::cout) const override;
@@ -2562,6 +2631,38 @@ public:
     bool same(const AstNode* samep) const override { return true; }  // Ignore name in comments
     virtual bool showAt() const { return m_showAt; }
 };
+class AstConstraintExpr final : public AstNodeStmt {
+    // Constraint expression
+    // @astgen op1 := exprp : AstNodeExpr
+    bool m_isSoft = false;  // Soft constraint expression
+    bool m_isDisableSoft = false;  // Disable soft constraint expression
+public:
+    AstConstraintExpr(FileLine* fl, AstNodeExpr* exprp)
+        : ASTGEN_SUPER_ConstraintExpr(fl) {
+        this->exprp(exprp);
+    }
+    ASTGEN_MEMBERS_AstConstraintExpr;
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+    void isDisableSoft(bool flag) { m_isDisableSoft = flag; }
+    bool isDisableSoft() const { return m_isDisableSoft; }
+    void isSoft(bool flag) { m_isSoft = flag; }
+    bool isSoft() const { return m_isSoft; }
+};
+class AstConstraintUnique final : public AstNodeStmt {
+    // Constraint unique statement
+    // @astgen op1 := rangesp : List[AstNode]
+public:
+    AstConstraintUnique(FileLine* fl, AstNode* rangesp)
+        : ASTGEN_SUPER_ConstraintUnique(fl) {
+        this->addRangesp(rangesp);
+    }
+    ASTGEN_MEMBERS_AstConstraintUnique;
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+};
 class AstContinue final : public AstNodeStmt {
 public:
     explicit AstContinue(FileLine* fl)
@@ -2868,21 +2969,6 @@ public:
     }
     ASTGEN_MEMBERS_AstFireEvent;
     bool isDelayed() const { return m_delayed; }
-};
-class AstForeach final : public AstNodeStmt {
-    // @astgen op1 := arrayp : AstNode
-    // @astgen op2 := stmtsp : List[AstNode]
-public:
-    AstForeach(FileLine* fl, AstNode* arrayp, AstNode* stmtsp)
-        : ASTGEN_SUPER_Foreach(fl) {
-        this->arrayp(arrayp);
-        this->addStmtsp(stmtsp);
-    }
-    ASTGEN_MEMBERS_AstForeach;
-    bool isGateOptimizable() const override { return false; }
-    int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    bool same(const AstNode* /*samep*/) const override { return true; }
-    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
 };
 class AstJumpBlock final : public AstNodeStmt {
     // Block of code including a single JumpLabel, and 0+ JumpGo's to that label
@@ -3539,7 +3625,28 @@ public:
     ASTGEN_MEMBERS_AstGenFor;
 };
 
+// === AstNodeForeach ===
+class AstConstraintForeach final : public AstNodeForeach {
+    // Constraint foreach statement
+public:
+    AstConstraintForeach(FileLine* fl, AstNodeExpr* exprp, AstNode* bodysp)
+        : ASTGEN_SUPER_ConstraintForeach(fl, exprp, bodysp) {}
+    ASTGEN_MEMBERS_AstConstraintForeach;
+};
+class AstForeach final : public AstNodeForeach {
+public:
+    AstForeach(FileLine* fl, AstNode* arrayp, AstNode* stmtsp)
+        : ASTGEN_SUPER_Foreach(fl, arrayp, stmtsp) {}
+    ASTGEN_MEMBERS_AstForeach;
+};
+
 // === AstNodeIf ===
+class AstConstraintIf final : public AstNodeIf {
+public:
+    AstConstraintIf(FileLine* fl, AstNodeExpr* condp, AstNode* thensp, AstNode* elsesp)
+        : ASTGEN_SUPER_ConstraintIf(fl, condp, thensp, elsesp) {}
+    ASTGEN_MEMBERS_AstConstraintIf;
+};
 class AstGenIf final : public AstNodeIf {
 public:
     AstGenIf(FileLine* fl, AstNodeExpr* condp, AstNode* thensp, AstNode* elsesp)

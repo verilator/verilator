@@ -129,7 +129,7 @@ private:
         // Done the loop
         m_insStmtp = nullptr;  // Next thing should be new statement
     }
-    void visit(AstForeach* nodep) override {
+    void visit(AstNodeForeach* nodep) override {
         // Special, as statements need to be put in different places
         // Body insert just before themselves
         m_insStmtp = nullptr;  // First thing should be new statement

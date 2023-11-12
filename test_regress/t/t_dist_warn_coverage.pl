@@ -31,7 +31,6 @@ foreach my $s (
     'Unsupported: Ranges ignored in port-lists',  # Hard to hit
     'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
     # Not yet analyzed
-    ' is not an in/out/inout/param/interface: ',
     ' loading non-variable',
     '--pipe-filter protocol error, unexpected: ',
     '/*verilator sformat*/ can only be applied to last argument of ',

@@ -1447,17 +1447,20 @@ AstNodeDType* AstNode::findBitRangeDType(const VNumRange& range, int widthMin,
 AstBasicDType* AstNode::findInsertSameDType(AstBasicDType* nodep) {
     return v3Global.rootp()->typeTablep()->findInsertSameDType(nodep);
 }
+AstNodeDType* AstNode::findConstraintRefDType() const {
+    return v3Global.rootp()->typeTablep()->findConstraintRefDType(fileline());
+}
 AstNodeDType* AstNode::findEmptyQueueDType() const {
     return v3Global.rootp()->typeTablep()->findEmptyQueueDType(fileline());
 }
 AstNodeDType* AstNode::findQueueIndexDType() const {
     return v3Global.rootp()->typeTablep()->findQueueIndexDType(fileline());
 }
-AstNodeDType* AstNode::findVoidDType() const {
-    return v3Global.rootp()->typeTablep()->findVoidDType(fileline());
-}
 AstNodeDType* AstNode::findStreamDType() const {
     return v3Global.rootp()->typeTablep()->findStreamDType(fileline());
+}
+AstNodeDType* AstNode::findVoidDType() const {
+    return v3Global.rootp()->typeTablep()->findVoidDType(fileline());
 }
 
 static const AstNodeDType* computeCastableBase(const AstNodeDType* nodep) {

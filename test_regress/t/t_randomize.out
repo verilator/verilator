@@ -1,36 +1,31 @@
-%Error-UNSUPPORTED: t/t_randomize.v:11:4: Unsupported: extern constraint
-   11 |    extern constraint ex;
-      |    ^~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Warning-CONSTRAINTIGN: t/t_randomize.v:13:4: Constraint ignored (unsupported)
-   13 |    constraint a { header > 0 && header < 1000; }
-      |    ^~~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize.v:16:15: Constraint ignored (unsupported)
+                                             : ... note: In instance 't'
+   16 |    constraint empty {}
+      |               ^~~~~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
-%Warning-CONSTRAINTIGN: t/t_randomize.v:14:4: Constraint ignored (unsupported)
-   14 |    constraint b {
-      |    ^~~~~~~~~~
-%Warning-CONSTRAINTIGN: t/t_randomize.v:19:4: Constraint ignored (unsupported)
-   19 |    constraint c {
-      |    ^~~~~~~~~~
-%Warning-CONSTRAINTIGN: t/t_randomize.v:23:4: Constraint ignored (unsupported)
-   23 |    constraint d {
-      |    ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_randomize.v:29:29: Unsupported: solve before
-   29 |    constraint order { solve length before header; }
-      |                             ^~~~~~
-%Warning-CONSTRAINTIGN: t/t_randomize.v:29:4: Constraint ignored (unsupported)
-   29 |    constraint order { solve length before header; }
-      |    ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_randomize.v:32:9: Unsupported: dist
-   32 |       x dist { [100:102] :/ 1, 200 := 2, 300 := 5, 400};
-      |         ^~~~
-%Warning-CONSTRAINTIGN: t/t_randomize.v:30:4: Constraint ignored (unsupported)
-   30 |    constraint dis {
-      |    ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_randomize.v:37:1: Unsupported: extern constraint
-   37 | constraint Packet::ex { header > 0 };
-      | ^~~~~~~~~~
-%Error: t/t_randomize.v:37:23: syntax error, unexpected '{'
-   37 | constraint Packet::ex { header > 0 };
-      |                       ^
+%Warning-CONSTRAINTIGN: t/t_randomize.v:18:15: Constraint ignored (unsupported)
+                                             : ... note: In instance 't'
+   18 |    constraint size {
+      |               ^~~~
+%Warning-CONSTRAINTIGN: t/t_randomize.v:25:15: Constraint ignored (unsupported)
+                                             : ... note: In instance 't'
+   25 |    constraint ifs {
+      |               ^~~
+%Warning-CONSTRAINTIGN: t/t_randomize.v:36:15: Constraint ignored (unsupported)
+                                             : ... note: In instance 't'
+   36 |    constraint arr_uniq {
+      |               ^~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize.v:43:15: Constraint ignored (unsupported)
+                                             : ... note: In instance 't'
+   43 |    constraint order { solve length before header; }
+      |               ^~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize.v:45:15: Constraint ignored (unsupported)
+                                             : ... note: In instance 't'
+   45 |    constraint dis {
+      |               ^~~
+%Error-UNSUPPORTED: t/t_randomize.v:14:13: Unsupported: random member variable with type 'int$[0:1]'
+                                         : ... note: In instance 't'
+   14 |    rand int array[2];   
+      |             ^~~~~
 %Error: Exiting due to
