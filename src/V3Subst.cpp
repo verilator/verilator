@@ -219,15 +219,15 @@ class SubstVisitor final : public VNVisitor {
 private:
     // NODE STATE
     // Passed to SubstUseVisitor
-    // AstVar::user1p           -> SubstVar* for usage var, 0=not set yet
+    // AstVar::user1p           -> SubstVar* for usage var, 0=not set yet. Only under CFunc.
     // AstVar::user2            -> int step number for last assignment, 0=not set yet
-    const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
 
     // STATE
-    std::vector<SubstVarEntry*> m_entryps;  // Nodes to delete when we are finished
+    std::deque<SubstVarEntry> m_entries;  // Nodes to delete when we are finished
     int m_ops = 0;  // Number of operators on assign rhs
     int m_assignStep = 0;  // Assignment number to determine var lifetime
+    const AstCFunc* m_funcp = nullptr;  // Current function we are under
     VDouble0 m_statSubsts;  // Statistic tracking
 
     enum {
@@ -237,21 +237,18 @@ private:
 
     // METHODS
     SubstVarEntry* getEntryp(AstVarRef* nodep) {
-        if (!nodep->varp()->user1p()) {
-            SubstVarEntry* const entryp = new SubstVarEntry{nodep->varp()};
-            m_entryps.push_back(entryp);
-            nodep->varp()->user1p(entryp);
-            return entryp;
-        } else {
-            SubstVarEntry* const entryp
-                = reinterpret_cast<SubstVarEntry*>(nodep->varp()->user1p());
-            return entryp;
+        AstVar* const varp = nodep->varp();
+        if (!varp->user1p()) {
+            m_entries.emplace_back(varp);
+            varp->user1p(&m_entries.back());
         }
+        return varp->user1u().to<SubstVarEntry*>();
     }
     bool isSubstVar(AstVar* nodep) { return nodep->isStatementTemp() && !nodep->noSubst(); }
 
     // VISITORS
     void visit(AstNodeAssign* nodep) override {
+        if (!m_funcp) return;
         VL_RESTORER(m_ops);
         m_ops = 0;
         m_assignStep++;
@@ -295,10 +292,11 @@ private:
         }
         if (debug() > 5) newp->dumpTree("-       w_new: ");
         nodep->replaceWith(newp);
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
         ++m_statSubsts;
     }
     void visit(AstWordSel* nodep) override {
+        if (!m_funcp) return;
         iterate(nodep->rhsp());
         AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef);
         const AstConst* const constp = VN_CAST(nodep->rhsp(), Const);
@@ -324,6 +322,7 @@ private:
         }
     }
     void visit(AstVarRef* nodep) override {
+        if (!m_funcp) return;
         // Any variable
         if (nodep->access().isWriteOrRW()) {
             m_assignStep++;
@@ -353,13 +352,19 @@ private:
     }
     void visit(AstVar*) override {}
     void visit(AstConst*) override {}
-    void visit(AstModule* nodep) override {
-        ++m_ops;
-        if (!nodep->isSubstOptimizable()) m_ops = SUBST_MAX_OPS_NA;
+
+    void visit(AstCFunc* nodep) override {
+        UASSERT_OBJ(!m_funcp, nodep, "Should not nest");
+        UASSERT_OBJ(m_entries.empty(), nodep, "References outside functions");
+        VL_RESTORER(m_funcp);
+        m_funcp = nodep;
+
+        const VNUser1InUse m_inuser1;
         iterateChildren(nodep);
-        // Reduce peak memory usage by reclaiming the edited AstNodes
-        doDeletes();
+        for (SubstVarEntry& ip : m_entries) ip.deleteUnusedAssign();
+        m_entries.clear();
     }
+
     void visit(AstNode* nodep) override {
         ++m_ops;
         if (!nodep->isSubstOptimizable()) m_ops = SUBST_MAX_OPS_NA;
@@ -371,10 +376,7 @@ public:
     explicit SubstVisitor(AstNode* nodep) { iterate(nodep); }
     ~SubstVisitor() override {
         V3Stats::addStat("Optimizations, Substituted temps", m_statSubsts);
-        for (SubstVarEntry* ip : m_entryps) {
-            ip->deleteUnusedAssign();
-            delete ip;
-        }
+        UASSERT(m_entries.empty(), "References outside functions");
     }
 };
 
