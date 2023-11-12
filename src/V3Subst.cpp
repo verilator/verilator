@@ -165,7 +165,7 @@ public:
 // See if any variables have changed value since we determined subst value,
 // as a visitor of each AstNode
 
-class SubstUseVisitor final : public VNVisitor {
+class SubstUseVisitor final : public VNVisitorConst {
 private:
     // NODE STATE
     // See SubstVisitor
@@ -197,7 +197,7 @@ private:
     void visit(AstConst*) override {}  // Accelerate
     void visit(AstNode* nodep) override {
         if (!nodep->isPure()) m_ok = false;
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
 
 public:
@@ -205,7 +205,7 @@ public:
     SubstUseVisitor(AstNode* nodep, int origStep)
         : m_origStep{origStep} {
         UINFO(9, "        SubstUseVisitor " << origStep << " " << nodep << endl);
-        iterate(nodep);
+        iterateConst(nodep);
     }
     ~SubstUseVisitor() override = default;
     // METHODS

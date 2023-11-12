@@ -320,7 +320,7 @@ public:
 
 //######################################################################
 
-class BeginRelinkVisitor final : public VNVisitor {
+class BeginRelinkVisitor final : public VNVisitorConst {
     // Replace tasks with new pointer
 private:
     // NODE STATE
@@ -333,13 +333,13 @@ private:
             UINFO(9, "    relinkFTask " << nodep << endl);
             nodep->name(nodep->taskp()->name());
         }
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstVarRef* nodep) override {
         if (nodep->varp()->user1()) {  // It was converted
             UINFO(9, "    relinVarRef " << nodep << endl);
         }
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstIfaceRefDType* nodep) override {
         // May have changed cell names
@@ -347,14 +347,14 @@ private:
         UINFO(8, "   IFACEREFDTYPE " << nodep << endl);
         if (nodep->cellp()) nodep->cellName(nodep->cellp()->name());
         UINFO(8, "       rename to " << nodep << endl);
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     //--------------------
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
-    BeginRelinkVisitor(AstNetlist* nodep, BeginState*) { iterate(nodep); }
+    BeginRelinkVisitor(AstNetlist* nodep, BeginState*) { iterateConst(nodep); }
     ~BeginRelinkVisitor() override = default;
 };
 

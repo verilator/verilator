@@ -37,7 +37,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Find nodes with side effects, to mark as non-expandable
 
-class ExpandOkVisitor final : public VNVisitor {
+class ExpandOkVisitor final : public VNVisitorConst {
 private:
     // NODE STATE
     //  AstNode::user2()        -> bool.  Is pure (along with all children)
@@ -53,7 +53,7 @@ private:
         {
             VL_RESTORER(m_isImpure);
             m_isImpure = false;
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
             selfImpure |= m_isImpure;
             nodep->user2(selfImpure);
         }
@@ -62,7 +62,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit ExpandOkVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit ExpandOkVisitor(AstNetlist* nodep) { iterateConst(nodep); }
     ~ExpandOkVisitor() = default;
 };
 
