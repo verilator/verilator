@@ -561,7 +561,7 @@ private:
             // Convert to AstSelLoopVars so V3LinkDot knows what's being defined
             AstNode* const newp
                 = new AstSelLoopVars{selp->fileline(), selp->fromp()->unlinkFrBack(),
-                                     selp->rhsp()->unlinkFrBackWithNext()};
+                                     selp->bitp()->unlinkFrBackWithNext()};
             selp->replaceWith(newp);
             VL_DO_DANGLING(selp->deleteTree(), selp);
         } else if (VN_IS(bracketp, SelLoopVars)) {

@@ -462,7 +462,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
     void visit(AstWordSel* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
         AstConst* const constp = VN_CAST(nodep->bitp(), Const);
-        CONST_BITOP_RETURN_IF(!constp, nodep->rhsp());
+        CONST_BITOP_RETURN_IF(!constp, nodep->bitp());
         UASSERT_OBJ(m_leafp->wordIdx() == -1, nodep, "Unexpected nested WordSel");
         m_leafp->wordIdx(constp->toSInt());
         iterateConst(nodep->fromp());
@@ -1269,9 +1269,9 @@ private:
         // V3Expand may make a arraysel that exceeds the bounds of the array
         // It was an expression, then got constified.  In reality, the WordSel
         // must be wrapped in a Cond, that will be false.
-        return (VN_IS(nodep->rhsp(), Const) && VN_IS(nodep->fromp(), NodeVarRef)
+        return (VN_IS(nodep->bitp(), Const) && VN_IS(nodep->fromp(), NodeVarRef)
                 && VN_AS(nodep->fromp(), NodeVarRef)->access().isReadOnly()
-                && (static_cast<int>(VN_AS(nodep->rhsp(), Const)->toUInt())
+                && (static_cast<int>(VN_AS(nodep->bitp(), Const)->toUInt())
                     >= VN_AS(nodep->fromp(), NodeVarRef)->varp()->widthWords()));
     }
     bool operandSelFull(const AstSel* nodep) {
@@ -2539,7 +2539,7 @@ private:
         // SEL(REPLICATE(from,rep),lsb,width) => SEL(from,0,width) as long
         // as SEL's width <= b's width
         AstReplicate* const repp = VN_AS(nodep->fromp(), Replicate);
-        AstNodeExpr* const fromp = repp->lhsp();
+        AstNodeExpr* const fromp = repp->srcp();
         AstConst* const lsbp = VN_CAST(nodep->lsbp(), Const);
         if (!lsbp) return false;
         AstNodeExpr* const widthp = nodep->widthp();
@@ -2562,11 +2562,11 @@ private:
     }
     bool operandRepRep(AstReplicate* nodep) {
         // REPLICATE(REPLICATE2(from2,cnt2),cnt1) => REPLICATE(from2,(cnt1+cnt2))
-        AstReplicate* const rep2p = VN_AS(nodep->lhsp(), Replicate);
-        AstNodeExpr* const from2p = rep2p->lhsp();
-        AstConst* const cnt1p = VN_CAST(nodep->rhsp(), Const);
+        AstReplicate* const rep2p = VN_AS(nodep->srcp(), Replicate);
+        AstNodeExpr* const from2p = rep2p->srcp();
+        AstConst* const cnt1p = VN_CAST(nodep->countp(), Const);
         if (!cnt1p) return false;
-        AstConst* const cnt2p = VN_CAST(rep2p->rhsp(), Const);
+        AstConst* const cnt2p = VN_CAST(rep2p->countp(), Const);
         if (!cnt2p) return false;
         //
         from2p->unlinkFrBack();
@@ -2589,15 +2589,15 @@ private:
         AstNodeExpr* from2p = nodep->rhsp();
         uint32_t cnt2 = 1;
         if (VN_IS(from1p, Replicate)) {
-            AstConst* const cnt1p = VN_CAST(VN_CAST(from1p, Replicate)->rhsp(), Const);
+            AstConst* const cnt1p = VN_CAST(VN_CAST(from1p, Replicate)->countp(), Const);
             if (!cnt1p) return false;
-            from1p = VN_AS(from1p, Replicate)->lhsp();
+            from1p = VN_AS(from1p, Replicate)->srcp();
             cnt1 = cnt1p->toUInt();
         }
         if (VN_IS(from2p, Replicate)) {
-            AstConst* const cnt2p = VN_CAST(VN_CAST(from2p, Replicate)->rhsp(), Const);
+            AstConst* const cnt2p = VN_CAST(VN_CAST(from2p, Replicate)->countp(), Const);
             if (!cnt2p) return false;
-            from2p = VN_AS(from2p, Replicate)->lhsp();
+            from2p = VN_AS(from2p, Replicate)->srcp();
             cnt2 = cnt2p->toUInt();
         }
         if (!operandsSame(from1p, from2p)) return false;
@@ -3488,8 +3488,8 @@ private:
     TREEOPA("AstNodeCond{$condp.isNeqZero,    $thenp.castConst, $elsep.castConst}", "replaceWChild(nodep,$thenp)");
     TREEOP ("AstNodeCond{$condp, operandsSame($thenp,,$elsep)}","replaceWChild(nodep,$thenp)");
     // This visit function here must allow for short-circuiting.
-    TREEOPS("AstCond {$lhsp.isZero}",           "replaceWIteratedThs(nodep)");
-    TREEOPS("AstCond {$lhsp.isNeqZero}",        "replaceWIteratedRhs(nodep)");
+    TREEOPS("AstCond {$condp.isZero}",           "replaceWIteratedThs(nodep)");
+    TREEOPS("AstCond {$condp.isNeqZero}",        "replaceWIteratedRhs(nodep)");
     TREEOP ("AstCond{$condp.castNot,       $thenp, $elsep}", "AstCond{$condp->castNot()->lhsp(), $elsep, $thenp}");
     TREEOP ("AstNodeCond{$condp.width1, $thenp.width1,   $thenp.isAllOnes, $elsep}", "AstLogOr {$condp, $elsep}");  // a?1:b == a||b
     TREEOP ("AstNodeCond{$condp.width1, $thenp.width1,   $thenp,    $elsep.isZero, !$elsep.isClassHandleValue}", "AstLogAnd{$condp, $thenp}");  // a?b:0 == a&&b
@@ -3670,9 +3670,9 @@ private:
     // bits end up in the wrong places
     TREEOPV("AstExtend {$lhsp.castExtend}",  "replaceExtend(nodep, VN_AS(nodep->lhsp(), Extend)->lhsp())");
     TREEOPV("AstExtendS{$lhsp.castExtendS}", "replaceExtend(nodep, VN_AS(nodep->lhsp(), ExtendS)->lhsp())");
-    TREEOPV("AstReplicate{$lhsp, $rhsp.isOne, $lhsp->width()==nodep->width()}", "replaceWLhs(nodep)");  // {1{lhs}}->lhs
+    TREEOPV("AstReplicate{$srcp, $countp.isOne, $srcp->width()==nodep->width()}", "replaceWLhs(nodep)");  // {1{lhs}}->lhs
     TREEOPV("AstReplicateN{$lhsp, $rhsp.isOne, $lhsp->width()==nodep->width()}", "replaceWLhs(nodep)");  // {1{lhs}}->lhs
-    TREEOPV("AstReplicate{$lhsp.castReplicate, operandRepRep(nodep)}", "DONE");  // {2{3{lhs}}}->{6{lhs}}
+    TREEOPV("AstReplicate{$srcp.castReplicate, operandRepRep(nodep)}", "DONE");  // {2{3{lhs}}}->{6{lhs}}
     TREEOPV("AstConcat{operandConcatSame(nodep)}", "DONE");  // {a,a}->{2{a}}, {a,2{a}}->{3{a}, etc
     // Next rule because AUTOINST puts the width of bits in
     // to pins, even when the widths are exactly the same across the hierarchy.
@@ -3694,9 +3694,9 @@ private:
     // win if bit select is a constant (otherwise we may need to compute bit index several times)
     TREEOPV("AstSel{$fromp.castBufIf1}",                "replaceSelIntoBiop(nodep)");
     TREEOPV("AstSel{$fromp.castNot}",                   "replaceSelIntoUniop(nodep)");
-    TREEOPV("AstSel{$fromp.castAnd,$lhsp.castConst}",   "replaceSelIntoUniop(nodep)");
-    TREEOPV("AstSel{$fromp.castOr,$lhsp.castConst}",    "replaceSelIntoUniop(nodep)");
-    TREEOPV("AstSel{$fromp.castXor,$lhsp.castConst}",   "replaceSelIntoUniop(nodep)");
+    TREEOPV("AstSel{$fromp.castAnd,$fromp.castConst}",   "replaceSelIntoUniop(nodep)");
+    TREEOPV("AstSel{$fromp.castOr,$fromp.castConst}",    "replaceSelIntoUniop(nodep)");
+    TREEOPV("AstSel{$fromp.castXor,$fromp.castConst}",   "replaceSelIntoUniop(nodep)");
     // This visit function here must allow for short-circuiting.
     TREEOPS("AstLogIf{$lhsp.isZero}",  "replaceNum(nodep, 1)");
     TREEOPV("AstLogIf{$lhsp, $rhsp}",  "AstLogOr{AstLogNot{$lhsp},$rhsp}");

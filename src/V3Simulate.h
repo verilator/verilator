@@ -768,7 +768,7 @@ private:
             outVarrefpRef = varrefp;
             lsbRef = fetchConst(selp->lsbp())->num();
             return;  // And presumably still optimizable()
-        } else if (AstSel* const subselp = VN_CAST(selp->lhsp(), Sel)) {
+        } else if (AstSel* const subselp = VN_CAST(selp->fromp(), Sel)) {
             V3Number sublsb{nodep};
             handleAssignSelRecurse(nodep, subselp, outVarrefpRef, sublsb /*ref*/, depth + 1);
             if (optimizable()) {

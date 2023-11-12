@@ -362,11 +362,11 @@ private:
         }  // end expanding ranged cell
         else if (AstArraySel* const arrselp = VN_CAST(nodep->exprp(), ArraySel)) {
             if (const AstUnpackArrayDType* const arrp
-                = VN_CAST(arrselp->lhsp()->dtypep(), UnpackArrayDType)) {
+                = VN_CAST(arrselp->fromp()->dtypep(), UnpackArrayDType)) {
                 if (!VN_IS(arrp->subDTypep(), IfaceRefDType)) return;
                 // Interface pin attaches to one element of arrayed interface
-                V3Const::constifyParamsEdit(arrselp->rhsp());
-                const AstConst* const constp = VN_CAST(arrselp->rhsp(), Const);
+                V3Const::constifyParamsEdit(arrselp->bitp());
+                const AstConst* const constp = VN_CAST(arrselp->bitp(), Const);
                 if (!constp) {
                     nodep->v3warn(
                         E_UNSUPPORTED,
@@ -374,9 +374,9 @@ private:
                     return;
                 }
                 const string index = AstNode::encodeNumber(constp->toSInt());
-                if (VN_IS(arrselp->lhsp(), SliceSel))
-                    arrselp->lhsp()->v3error("Unsupported: interface slices");
-                const AstVarRef* const varrefp = VN_CAST(arrselp->lhsp(), VarRef);
+                if (VN_IS(arrselp->fromp(), SliceSel))
+                    arrselp->fromp()->v3error("Unsupported: interface slices");
+                const AstVarRef* const varrefp = VN_CAST(arrselp->fromp(), VarRef);
                 UASSERT_OBJ(varrefp, arrselp, "No interface varref under array");
                 AstVarXRef* const newp = new AstVarXRef{
                     nodep->fileline(), varrefp->name() + "__BRA__" + index + "__KET__", "",

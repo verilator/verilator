@@ -267,9 +267,9 @@ private:
                 }
             }
         } else if (const AstWordSel* const wordp = VN_CAST(nodep->lhsp(), WordSel)) {
-            if (AstVarRef* const varrefp = VN_CAST(wordp->lhsp(), VarRef)) {
-                if (VN_IS(wordp->rhsp(), Const) && isSubstVar(varrefp->varp())) {
-                    const int word = VN_AS(wordp->rhsp(), Const)->toUInt();
+            if (AstVarRef* const varrefp = VN_CAST(wordp->fromp(), VarRef)) {
+                if (VN_IS(wordp->bitp(), Const) && isSubstVar(varrefp->varp())) {
+                    const int word = VN_AS(wordp->bitp(), Const)->toUInt();
                     SubstVarEntry* const entryp = getEntryp(varrefp);
                     hit = true;
                     if (m_ops > SUBST_MAX_OPS_SUBST) {
@@ -297,9 +297,9 @@ private:
     }
     void visit(AstWordSel* nodep) override {
         if (!m_funcp) return;
-        iterate(nodep->rhsp());
-        AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef);
-        const AstConst* const constp = VN_CAST(nodep->rhsp(), Const);
+        iterate(nodep->bitp());
+        AstVarRef* const varrefp = VN_CAST(nodep->fromp(), VarRef);
+        const AstConst* const constp = VN_CAST(nodep->bitp(), Const);
         if (varrefp && isSubstVar(varrefp->varp()) && varrefp->access().isReadOnly() && constp) {
             // Nicely formed lvalues handled in NodeAssign
             // Other lvalues handled as unknown mess in AstVarRef
@@ -318,7 +318,7 @@ private:
                 entryp->consumeWord(word);
             }
         } else {
-            iterate(nodep->lhsp());
+            iterate(nodep->fromp());
         }
     }
     void visit(AstVarRef* nodep) override {

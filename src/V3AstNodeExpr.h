@@ -4311,7 +4311,7 @@ class AstSelMinus final : public AstNodePreSel {
     // -: range extraction, perhaps with non-constant selection
     // Gets replaced during link with AstSel
     // @astgen alias op2 := bitp
-    // @astgen alias op3 := widtph
+    // @astgen alias op3 := widthp
 public:
     AstSelMinus(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* bitp, AstNodeExpr* widthp)
         : ASTGEN_SUPER_SelMinus(fl, fromp, bitp, widthp) {}
@@ -4321,7 +4321,7 @@ class AstSelPlus final : public AstNodePreSel {
     // +: range extraction, perhaps with non-constant selection
     // Gets replaced during link with AstSel
     // @astgen alias op2 := bitp
-    // @astgen alias op3 := widtph
+    // @astgen alias op3 := widthp
 public:
     AstSelPlus(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* bitp, AstNodeExpr* widthp)
         : ASTGEN_SUPER_SelPlus(fl, fromp, bitp, widthp) {}
