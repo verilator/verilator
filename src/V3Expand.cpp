@@ -731,7 +731,7 @@ private:
         } else {
             if (isImpure(nodep)) return;
             FileLine* const fl = nodep->fileline();
-            AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* lhsp = nodep->srcp()->unlinkFrBack();
             AstNodeExpr* newp;
             const int lhswidth = lhsp->widthMin();
             if (lhswidth == 1) {
@@ -739,7 +739,7 @@ private:
                 newp = new AstNegate{fl, lhsp};
             } else {
                 UINFO(8, "    REPLICATE " << nodep << endl);
-                const AstConst* const constp = VN_AS(nodep->rhsp(), Const);
+                const AstConst* const constp = VN_AS(nodep->countp(), Const);
                 UASSERT_OBJ(constp, nodep,
                             "Replication value isn't a constant.  Checked earlier!");
                 const uint32_t times = constp->toUInt();
@@ -765,9 +765,9 @@ private:
         UINFO(8, "    Wordize ASSIGN(REPLICATE) " << nodep << endl);
         if (!doExpandWide(rhsp)) return false;
         FileLine* const fl = nodep->fileline();
-        AstNodeExpr* const lhsp = rhsp->lhsp();
+        AstNodeExpr* const lhsp = rhsp->srcp();
         const int lhswidth = lhsp->widthMin();
-        const AstConst* const constp = VN_AS(rhsp->rhsp(), Const);
+        const AstConst* const constp = VN_AS(rhsp->countp(), Const);
         UASSERT_OBJ(constp, rhsp, "Replication value isn't a constant.  Checked earlier!");
         const uint32_t times = constp->toUInt();
         for (int w = 0; w < rhsp->widthWords(); ++w) {
