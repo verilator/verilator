@@ -328,10 +328,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
     // Call all initialize callbacks, which will:
     // - Call decl* for each signal (these eventually call ::declCode)
     // - Store the base code
-    for (uint32_t i = 0; i < m_initCbs.size(); ++i) {
-        const CallbackRecord& cbr = m_initCbs[i];
-        cbr.m_initCb(cbr.m_userp, self(), nextCode());
-    }
+    for (const CallbackRecord& cbr : m_initCbs) cbr.m_initCb(cbr.m_userp, self(), nextCode());
 
     if (expectedCodes && nextCode() != expectedCodes) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
@@ -614,10 +611,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dump(uint64_t timeui) VL_MT_SAFE_EXCLUD
         }
     }
 
-    for (uint32_t i = 0; i < m_cleanupCbs.size(); ++i) {
-        const CallbackRecord& cbr = m_cleanupCbs[i];
-        cbr.m_cleanupCb(cbr.m_userp, self());
-    }
+    for (const CallbackRecord& cbr : m_cleanupCbs) cbr.m_cleanupCb(cbr.m_userp, self());
 
     if (offload() && VL_LIKELY(bufferp)) {
         // Mark end of the offload buffer we just filled
