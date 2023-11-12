@@ -55,15 +55,7 @@ module t (/*AUTOARG*/);
    Packet p;
 
    initial begin
-
-      int v;
-      // TODO not testing constrained values
-      v = p.randomize();
-      if (v != 1) $stop;
-      v = p.randomize() with {};
-      if (v != 1) $stop;
-      // TODO not testing other randomize forms as unused in UVM
-
+      // Not testing use of constraints
       $write("*-* All Finished *-*\n");
       $finish;
    end

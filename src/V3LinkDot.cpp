@@ -235,6 +235,8 @@ public:
             }
         } else if (VN_IS(nodep, Cell)) {
             return "instance";
+        } else if (VN_IS(nodep, Constraint)) {
+            return "constraint";
         } else if (VN_IS(nodep, Task)) {
             return "task";
         } else if (VN_IS(nodep, Func)) {
@@ -1188,6 +1190,11 @@ class LinkDotFindVisitor final : public VNVisitor {
         nodep->varp(newvarp);
         iterate(nodep->exprp());
     }
+    void visit(AstConstraint* nodep) override {
+        VL_RESTORER(m_curSymp);
+        m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
+        iterateChildren(nodep);
+    }
     void visit(AstVar* nodep) override {
         // Var: Remember its name for later resolution
         UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Var not under module?");
@@ -1429,7 +1436,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         // No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
 
-    void visit(AstForeach* nodep) override {
+    void visit(AstNodeForeach* nodep) override {
         // Symbol table needs nodep->name() as the index variable's name
         VL_RESTORER(m_curSymp);
         {
@@ -1810,7 +1817,7 @@ class LinkDotScopeVisitor final : public VNVisitor {
         symp->fallbackp(m_modSymp);
         iterateChildren(nodep);
     }
-    void visit(AstForeach* nodep) override {
+    void visit(AstNodeForeach* nodep) override {
         VSymEnt* const symp = m_statep->insertBlock(m_modSymp, nodep->name(), nodep, nullptr);
         symp->fallbackp(m_modSymp);
         // No recursion, we don't want to pick up variables
@@ -2803,6 +2810,13 @@ private:
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 }
+            } else if (AstConstraint* const consp = VN_CAST(foundp->nodep(), Constraint)) {
+                AstNode* const newp = new AstConstraintRef{nodep->fileline(), consp->name()};
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                ok = true;
+                m_ds.m_dotPos = DP_MEMBER;
+                m_ds.m_dotText = "";
             } else if (AstEnumItem* const valuep = VN_CAST(foundp->nodep(), EnumItem)) {
                 if (allowVar) {
                     AstNode* const newp
@@ -2935,6 +2949,12 @@ private:
                            << nodep->warnMore() << "... Suggest use '"
                            << nodep->classOrPackageNodep()->prettyName() << "#()'");
         }
+    }
+    void visit(AstConstraintRef* nodep) override {
+        if (nodep->user3SetOnce()) return;
+        UINFO(8, "     " << nodep << endl);
+        UINFO(8, "     " << m_ds.ascii() << endl);
+        // No children defined
     }
     void visit(AstVarRef* nodep) override {
         // VarRef: Resolve its reference
@@ -3388,7 +3408,7 @@ private:
         m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
         m_ftaskp = nullptr;
     }
-    void visit(AstForeach* nodep) override {
+    void visit(AstNodeForeach* nodep) override {
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
         VL_RESTORER(m_curSymp);

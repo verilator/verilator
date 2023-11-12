@@ -1062,6 +1062,29 @@ public:
     // May return nullptr on parse failure.
     static AstConst* parseParamLiteral(FileLine* fl, const string& literal);
 };
+class AstConstraintRef final : public AstNodeExpr {
+    // A reference to a constraint identifier
+    // Not saving pointer to constraint yet, as constraint_mode is an unsupported construct
+    // @astgen op4 := scopeNamep : Optional[AstScopeName]
+    AstNodeModule* m_classOrPackagep = nullptr;  // Class/package of the constraint
+    string m_name;  // Name of constraint
+
+public:
+    AstConstraintRef(FileLine* fl, const string& name)
+        : ASTGEN_SUPER_ConstraintRef(fl)
+        , m_name{name} {
+        dtypep(findConstraintRefDType());
+    }
+    ASTGEN_MEMBERS_AstConstraintRef;
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
+    void name(const string& name) override { m_name = name; }
+    AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
+    void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
+
+    string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
+    string emitC() final override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
+};
 class AstCvtDynArrayToPacked final : public AstNodeExpr {
     // Cast from dynamic queue data type to packed array
     // @astgen op1 := fromp : AstNodeExpr
@@ -1905,6 +1928,7 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(true); }
+    bool hasDType() const override { return false; }
 };
 class AstSetAssoc final : public AstNodeExpr {
     // Set an assoc array element and return object, '{}

@@ -1,0 +1,202 @@
+<?xml version="1.0" ?>
+<!-- DESCRIPTION: Verilator output: XML representation of netlist -->
+<verilator_xml>
+  <files>
+    <file id="a" filename="&lt;built-in&gt;" language="1800-2017"/>
+    <file id="b" filename="&lt;command-line&gt;" language="1800-2017"/>
+    <file id="c" filename="input.vc" language="1800-2017"/>
+    <file id="d" filename="t/t_constraint_xml.v" language="1800-2017"/>
+  </files>
+  <module_files>
+    <file id="d" filename="t/t_constraint_xml.v" language="1800-2017"/>
+  </module_files>
+  <cells>
+    <cell loc="d,53,8,53,9" name="t" submodname="t" hier="t"/>
+  </cells>
+  <netlist>
+    <module loc="d,53,8,53,9" name="t" origName="t">
+      <var loc="d,55,11,55,12" name="p" dtype_id="1" vartype="Packet" origName="p"/>
+      <initial loc="d,57,4,57,11">
+        <begin loc="d,57,12,57,17">
+          <display loc="d,59,7,59,13" displaytype="$write">
+            <sformatf loc="d,59,7,59,13" name="*-* All Finished *-*&#10;" dtype_id="2"/>
+          </display>
+          <finish loc="d,60,7,60,14"/>
+        </begin>
+      </initial>
+    </module>
+    <package loc="a,0,0,0,0" name="$unit" origName="__024unit">
+      <class loc="d,7,1,7,6" name="Packet" origName="Packet">
+        <var loc="d,8,13,8,19" name="header" dtype_id="3" vartype="int" origName="header"/>
+        <var loc="d,9,13,9,19" name="length" dtype_id="3" vartype="int" origName="length"/>
+        <var loc="d,10,13,10,22" name="sublength" dtype_id="3" vartype="int" origName="sublength"/>
+        <var loc="d,11,13,11,17" name="if_4" dtype_id="4" vartype="bit" origName="if_4"/>
+        <var loc="d,12,13,12,20" name="iff_5_6" dtype_id="4" vartype="bit" origName="iff_5_6"/>
+        <var loc="d,14,13,14,18" name="array" dtype_id="5" vartype="" origName="array"/>
+        <constraint loc="d,16,15,16,20" name="empty"/>
+        <constraint loc="d,18,15,18,19" name="size">
+          <constraintexpr loc="d,19,18,19,20">
+            <and loc="d,19,18,19,20" dtype_id="6">
+              <lts loc="d,19,14,19,15" dtype_id="6">
+                <const loc="d,19,16,19,17" name="32&apos;sh0" dtype_id="7"/>
+                <varref loc="d,19,7,19,13" name="header" dtype_id="3"/>
+              </lts>
+              <gtes loc="d,19,28,19,30" dtype_id="6">
+                <const loc="d,19,31,19,32" name="32&apos;sh7" dtype_id="7"/>
+                <varref loc="d,19,21,19,27" name="header" dtype_id="3"/>
+              </gtes>
+            </and>
+          </constraintexpr>
+          <constraintexpr loc="d,20,14,20,16">
+            <gtes loc="d,20,14,20,16" dtype_id="6">
+              <const loc="d,20,17,20,19" name="32&apos;shf" dtype_id="7"/>
+              <varref loc="d,20,7,20,13" name="length" dtype_id="3"/>
+            </gtes>
+          </constraintexpr>
+          <constraintexpr loc="d,21,14,21,16">
+            <gtes loc="d,21,14,21,16" dtype_id="6">
+              <varref loc="d,21,7,21,13" name="length" dtype_id="3"/>
+              <varref loc="d,21,17,21,23" name="header" dtype_id="3"/>
+            </gtes>
+          </constraintexpr>
+          <constraintexpr loc="d,22,7,22,13">
+            <varref loc="d,22,7,22,13" name="length" dtype_id="3"/>
+          </constraintexpr>
+        </constraint>
+        <constraint loc="d,25,15,25,18" name="ifs">
+          <if loc="d,26,7,26,9">
+            <lts loc="d,26,18,26,19" dtype_id="6">
+              <const loc="d,26,20,26,21" name="32&apos;sh4" dtype_id="7"/>
+              <varref loc="d,26,11,26,17" name="header" dtype_id="3"/>
+            </lts>
+            <begin>
+              <constraintexpr loc="d,27,15,27,17">
+                <varref loc="d,27,10,27,14" name="if_4" dtype_id="6"/>
+              </constraintexpr>
+            </begin>
+          </if>
+          <if loc="d,29,7,29,9">
+            <or loc="d,29,23,29,25" dtype_id="6">
+              <eq loc="d,29,18,29,20" dtype_id="6">
+                <const loc="d,29,21,29,22" name="32&apos;sh5" dtype_id="7"/>
+                <varref loc="d,29,11,29,17" name="header" dtype_id="3"/>
+              </eq>
+              <eq loc="d,29,33,29,35" dtype_id="6">
+                <const loc="d,29,36,29,37" name="32&apos;sh6" dtype_id="7"/>
+                <varref loc="d,29,26,29,32" name="header" dtype_id="3"/>
+              </eq>
+            </or>
+            <begin>
+              <constraintexpr loc="d,30,18,30,20">
+                <varref loc="d,30,10,30,17" name="iff_5_6" dtype_id="6"/>
+              </constraintexpr>
+            </begin>
+            <begin>
+              <constraintexpr loc="d,32,18,32,20">
+                <not loc="d,32,18,32,20" dtype_id="4">
+                  <varref loc="d,32,10,32,17" name="iff_5_6" dtype_id="4"/>
+                </not>
+              </constraintexpr>
+            </begin>
+          </if>
+        </constraint>
+        <constraint loc="d,36,15,36,23" name="arr_uniq">
+          <constraintforeach loc="d,37,7,37,14">
+            <selloopvars loc="d,37,21,37,22">
+              <varref loc="d,37,16,37,21" name="array" dtype_id="5"/>
+              <var loc="d,37,22,37,23" name="i" dtype_id="8" vartype="integer" origName="i"/>
+            </selloopvars>
+            <constraintexpr loc="d,38,19,38,25">
+              <or loc="d,38,19,38,25" dtype_id="6">
+                <or loc="d,38,19,38,25" dtype_id="6">
+                  <eqwild loc="d,38,27,38,28" dtype_id="6">
+                    <arraysel loc="d,38,15,38,16" dtype_id="3">
+                      <varref loc="d,38,10,38,15" name="array" dtype_id="5"/>
+                      <sel loc="d,38,16,38,17" dtype_id="9">
+                        <varref loc="d,38,16,38,17" name="i" dtype_id="8"/>
+                        <const loc="d,38,16,38,17" name="32&apos;h0" dtype_id="10"/>
+                        <const loc="d,38,16,38,17" name="32&apos;h1" dtype_id="10"/>
+                      </sel>
+                    </arraysel>
+                    <const loc="d,38,27,38,28" name="32&apos;sh2" dtype_id="7"/>
+                  </eqwild>
+                  <eqwild loc="d,38,30,38,31" dtype_id="6">
+                    <arraysel loc="d,38,15,38,16" dtype_id="3">
+                      <varref loc="d,38,10,38,15" name="array" dtype_id="5"/>
+                      <sel loc="d,38,16,38,17" dtype_id="9">
+                        <varref loc="d,38,16,38,17" name="i" dtype_id="8"/>
+                        <const loc="d,38,16,38,17" name="32&apos;h0" dtype_id="10"/>
+                        <const loc="d,38,16,38,17" name="32&apos;h1" dtype_id="10"/>
+                      </sel>
+                    </arraysel>
+                    <const loc="d,38,30,38,31" name="32&apos;sh4" dtype_id="7"/>
+                  </eqwild>
+                </or>
+                <eqwild loc="d,38,33,38,34" dtype_id="6">
+                  <arraysel loc="d,38,15,38,16" dtype_id="3">
+                    <varref loc="d,38,10,38,15" name="array" dtype_id="5"/>
+                    <sel loc="d,38,16,38,17" dtype_id="9">
+                      <varref loc="d,38,16,38,17" name="i" dtype_id="8"/>
+                      <const loc="d,38,16,38,17" name="32&apos;h0" dtype_id="10"/>
+                      <const loc="d,38,16,38,17" name="32&apos;h1" dtype_id="10"/>
+                    </sel>
+                  </arraysel>
+                  <const loc="d,38,33,38,34" name="32&apos;sh6" dtype_id="7"/>
+                </eqwild>
+              </or>
+            </constraintexpr>
+          </constraintforeach>
+          <constraintunique loc="d,40,7,40,13">
+            <arraysel loc="d,40,21,40,22" dtype_id="3">
+              <varref loc="d,40,16,40,21" name="array" dtype_id="5"/>
+              <const loc="d,40,22,40,23" name="1&apos;h0" dtype_id="9"/>
+            </arraysel>
+            <arraysel loc="d,40,31,40,32" dtype_id="3">
+              <varref loc="d,40,26,40,31" name="array" dtype_id="5"/>
+              <const loc="d,40,32,40,33" name="1&apos;h1" dtype_id="9"/>
+            </arraysel>
+          </constraintunique>
+        </constraint>
+        <constraint loc="d,43,15,43,20" name="order">
+          <constraintbefore loc="d,43,23,43,28">
+            <varref loc="d,43,29,43,35" name="length" dtype_id="3"/>
+            <varref loc="d,43,43,43,49" name="header" dtype_id="3"/>
+          </constraintbefore>
+        </constraint>
+        <constraint loc="d,45,15,45,18" name="dis">
+          <constraintexpr loc="d,46,7,46,11">
+            <varref loc="d,46,12,46,21" name="sublength" dtype_id="3"/>
+          </constraintexpr>
+          <constraintexpr loc="d,47,7,47,14">
+            <varref loc="d,47,20,47,29" name="sublength" dtype_id="3"/>
+          </constraintexpr>
+          <constraintexpr loc="d,48,17,48,19">
+            <ltes loc="d,48,17,48,19" dtype_id="6">
+              <varref loc="d,48,7,48,16" name="sublength" dtype_id="3"/>
+              <varref loc="d,48,20,48,26" name="length" dtype_id="3"/>
+            </ltes>
+          </constraintexpr>
+        </constraint>
+        <func loc="d,7,1,7,6" name="new" dtype_id="11"/>
+      </class>
+    </package>
+    <typetable loc="a,0,0,0,0">
+      <basicdtype loc="d,19,14,19,15" id="6" name="logic"/>
+      <basicdtype loc="d,22,21,22,22" id="10" name="logic" left="31" right="0"/>
+      <basicdtype loc="d,59,7,59,13" id="2" name="string"/>
+      <basicdtype loc="d,37,22,37,23" id="8" name="integer" left="31" right="0" signed="true"/>
+      <basicdtype loc="d,8,9,8,12" id="3" name="int" left="31" right="0" signed="true"/>
+      <basicdtype loc="d,11,9,11,12" id="4" name="bit"/>
+      <unpackarraydtype loc="d,14,18,14,19" id="5" sub_dtype_id="3">
+        <range loc="d,14,18,14,19">
+          <const loc="d,14,19,14,20" name="32&apos;h0" dtype_id="10"/>
+          <const loc="d,14,19,14,20" name="32&apos;h1" dtype_id="10"/>
+        </range>
+      </unpackarraydtype>
+      <basicdtype loc="d,29,18,29,20" id="9" name="logic" signed="true"/>
+      <voiddtype loc="d,7,1,7,6" id="11"/>
+      <classrefdtype loc="d,55,4,55,10" id="1" name="Packet"/>
+      <basicdtype loc="d,19,16,19,17" id="7" name="logic" left="31" right="0" signed="true"/>
+    </typetable>
+  </netlist>
+</verilator_xml>

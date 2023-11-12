@@ -4907,7 +4907,7 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         //
         //                      // IEEE: expression_or_dist - here to avoid reduce problems
         //                      // "expr yDIST '{' dist_list '}'"
-        |       ~l~expr yDIST '{' dist_list '}'         { $$ = $1; BBUNSUP($2, "Unsupported: dist"); }
+        |       ~l~expr yDIST '{' dist_list '}'         { $$ = $1; }
         ;
 
 fexpr<nodeExprp>:                   // For use as first part of statement (disambiguates <=)
@@ -7107,21 +7107,29 @@ memberQualOne<qualifiers>:                      // IEEE: property_qualifier + me
 //**********************************************************************
 // Constraints
 
-class_constraint<nodep>:  // ==IEEE: class_constraint
+class_constraint<constraintp>:  // ==IEEE: class_constraint
         //                      // IEEE: constraint_declaration
         //                      // UNSUP: We have the unsupported warning on the randomize() call, so don't bother on
         //                      // constraint blocks. When we support randomize we need to make AST nodes for below rules
-                constraintStaticE yCONSTRAINT idAny constraint_block
-                        { // Variable so we can link and later ignore constraint_mode() methods
-                          $$ = new AstVar{$<fl>3, VVarType::MEMBER, *$3, VFlagBitPacked{}, 1};
-                          $2->v3warn(CONSTRAINTIGN, "Constraint ignored (unsupported)"); }
+                constraintStaticE yCONSTRAINT constraintIdNew constraint_block
+                        { $$ = $3; $$->isStatic($1); $$->addItemsp($4); SYMP->popScope($$); }
+        |       constraintStaticE yCONSTRAINT constraintIdNew '{' '}'
+                        { $$ = $3; $$->isStatic($1); SYMP->popScope($$); }
         //                      // IEEE: constraint_prototype + constraint_prototype_qualifier
-        |       constraintStaticE yCONSTRAINT idAny ';'
-                        { $$ = nullptr; }
-        |       yEXTERN constraintStaticE yCONSTRAINT idAny ';'
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: extern constraint"); }
-        |       yPURE constraintStaticE yCONSTRAINT idAny ';'
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: pure constraint"); }
+        |       constraintStaticE yCONSTRAINT constraintIdNew ';'
+                        { $$ = $3; $$->isStatic($1); SYMP->popScope($$); }
+        |       yEXTERN constraintStaticE yCONSTRAINT constraintIdNew ';'
+                        { $$ = $4; $$->isStatic($1); SYMP->popScope($4);
+                          BBUNSUP($1, "Unsupported: extern constraint"); }
+        |       yPURE constraintStaticE yCONSTRAINT constraintIdNew ';'
+                        { $$ = $4; $$->isStatic($1); SYMP->popScope($4);
+                          BBUNSUP($1, "Unsupported: pure constraint"); }
+        ;
+
+constraintIdNew<constraintp>:  // IEEE: id part of class_constraint
+                idAny/*constraint_identifier*/
+                        { $$ = new AstConstraint{$<fl>1, *$1, nullptr};
+                          SYMP->pushNewUnderNodeOrCurrent($$, nullptr); }
         ;
 
 constraint_block<nodep>:  // ==IEEE: constraint_block
@@ -7136,15 +7144,15 @@ constraint_block_itemList<nodep>:  // IEEE: { constraint_block_item }
 constraint_block_item<nodep>:  // ==IEEE: constraint_block_item
                 constraint_expression                           { $$ = $1; }
         |       ySOLVE solve_before_list yBEFORE solve_before_list ';'
-                        { $$ = nullptr; BBUNSUP($2, "Unsupported: solve before"); }
+                        { $$ = new AstConstraintBefore{$1, $2, $4}; }
         ;
 
-solve_before_list<nodep>:  // ==IEEE: solve_before_list
+solve_before_list<nodeExprp>:  // ==IEEE: solve_before_list
                 constraint_primary                              { $$ = $1; }
         |       solve_before_list ',' constraint_primary        { $$ = addNextNull($1, $3); }
         ;
 
-constraint_primary<nodep>:  // ==IEEE: constraint_primary
+constraint_primary<nodeExprp>:  // ==IEEE: constraint_primary
         //                      // exprScope more general than:
         //                      // [ implicit_class_handle '.' | class_scope ] hierarchical_identifier select
                 exprScope                                       { $$ = $1; }
@@ -7156,21 +7164,32 @@ constraint_expressionList<nodep>:  // ==IEEE: { constraint_expression }
         ;
 
 constraint_expression<nodep>:  // ==IEEE: constraint_expression
-                expr/*expression_or_dist*/ ';'          { $$ = $1; }
+                expr/*expression_or_dist*/ ';'
+                        { $$ = new AstConstraintExpr{$1->fileline(), $1}; }
         //                      // 1800-2012:
-        |       ySOFT expr/*expression_or_dist*/ ';'    { $$ = nullptr; /*UNSUP-no-UVM*/ }
+        |       ySOFT expr/*expression_or_dist*/ ';'
+                        { AstConstraintExpr* const newp = new AstConstraintExpr{$1, $2};
+                          newp->isSoft(true);
+                          $$ = newp; }
         //                      // 1800-2012:
         //                      // IEEE: uniqueness_constraint ';'
-        |       yUNIQUE '{' range_list '}'              { $$ = nullptr; /*UNSUP-no-UVM*/ }
+        |       yUNIQUE '{' range_list '}'
+                        { $$ = new AstConstraintUnique{$1, $3}; }
         //                      // IEEE: expr yP_MINUSGT constraint_set
         //                      // Conflicts with expr:"expr yP_MINUSGT expr"; rule moved there
         //
-        |       yIF '(' expr ')' constraint_set %prec prLOWER_THAN_ELSE { $$ = nullptr; /*UNSUP-UVM*/ }
-        |       yIF '(' expr ')' constraint_set yELSE constraint_set    { $$ = nullptr; /*UNSUP-UVM*/ }
+        |       yIF '(' expr ')' constraint_set %prec prLOWER_THAN_ELSE
+                        { $$ = new AstConstraintIf{$1, $3, $5, nullptr}; }
+        |       yIF '(' expr ')' constraint_set yELSE constraint_set
+                        { $$ = new AstConstraintIf{$1, $3, $5, $7}; }
         //                      // IEEE says array_identifier here, but dotted accepted in VMM + 1800-2009
-        |       yFOREACH '(' idClassSelForeach ')' constraint_set       { $$ = nullptr; /*UNSUP-UVM*/ }
+        |       yFOREACH '(' idClassSelForeach ')' constraint_set
+                        { $$ = new AstConstraintForeach{$1, $3, $5}; }
         //                      // soft is 1800-2012
-        |       yDISABLE ySOFT expr/*constraint_primary*/ ';'   { $$ = nullptr; /*UNSUP-no-UVM*/ }
+        |       yDISABLE ySOFT expr/*constraint_primary*/ ';'
+                        { AstConstraintExpr* const newp = new AstConstraintExpr{$1, $3};
+                          newp->isDisableSoft(true);
+                          $$ = newp; }
         ;
 
 constraint_set<nodep>:  // ==IEEE: constraint_set
@@ -7183,14 +7202,17 @@ dist_list<nodep>:  // ==IEEE: dist_list
         |       dist_list ',' dist_item                 { $$ = addNextNull($1, $3); }
         ;
 
-dist_item<nodep>:  // ==IEEE: dist_item + dist_weight
-                value_range                             { $$ = $1; /* Same as := 1 */ }
-        |       value_range yP_COLONEQ  expr            { $$ = $1; /*UNSUP-no-UVM*/ }
-        |       value_range yP_COLONDIV expr            { $$ = $1; /*UNSUP-no-UVM*/ }
+dist_item<distItemp>:  // ==IEEE: dist_item + dist_weight
+                value_range
+                        { $$ = new AstDistItem{$1->fileline(), $1, new AstConst{$1->fileline(), 1}}; }
+        |       value_range yP_COLONEQ  expr
+                        { $$ = new AstDistItem{$2, $1, $3}; }
+        |       value_range yP_COLONDIV expr
+                        { $$ = new AstDistItem{$2, $1, $3}; $$->isWhole(true); }
         ;
 
 extern_constraint_declaration<nodep>:  // ==IEEE: extern_constraint_declaration
-                constraintStaticE yCONSTRAINT packageClassScopeE idAny
+                constraintStaticE yCONSTRAINT packageClassScopeE idAny constraint_block
                         { $$ = nullptr; BBUNSUP($<fl>2, "Unsupported: extern constraint"); }
         ;
 

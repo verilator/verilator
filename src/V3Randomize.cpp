@@ -358,6 +358,10 @@ private:
         addPrePostCall(nodep, funcp, "post_randomize");
         nodep->user1(false);
     }
+    void visit(AstConstraint* nodep) override {
+        nodep->v3warn(CONSTRAINTIGN, "Constraint ignored (unsupported)");
+        if (!v3Global.opt.xmlOnly()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
     void visit(AstRandCase* nodep) override {
         // RANDCASE
         //   CASEITEM expr1 : stmt1

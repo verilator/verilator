@@ -2121,8 +2121,8 @@ public:
     void dtypeSetUInt32() { dtypep(findUInt32DType()); }  // Twostate
     void dtypeSetUInt64() { dtypep(findUInt64DType()); }  // Twostate
     void dtypeSetEmptyQueue() { dtypep(findEmptyQueueDType()); }
-    void dtypeSetVoid() { dtypep(findVoidDType()); }
     void dtypeSetStream() { dtypep(findStreamDType()); }
+    void dtypeSetVoid() { dtypep(findVoidDType()); }
 
     // Data type locators
     AstNodeDType* findBitDType() const { return findBasicDType(VBasicDTypeKwd::LOGIC); }
@@ -2132,10 +2132,11 @@ public:
     AstNodeDType* findUInt32DType() const { return findBasicDType(VBasicDTypeKwd::UINT32); }
     AstNodeDType* findUInt64DType() const { return findBasicDType(VBasicDTypeKwd::UINT64); }
     AstNodeDType* findCHandleDType() const { return findBasicDType(VBasicDTypeKwd::CHANDLE); }
+    AstNodeDType* findConstraintRefDType() const;
     AstNodeDType* findEmptyQueueDType() const;
-    AstNodeDType* findVoidDType() const;
-    AstNodeDType* findStreamDType() const;
     AstNodeDType* findQueueIndexDType() const;
+    AstNodeDType* findStreamDType() const;
+    AstNodeDType* findVoidDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicRangeDType(const VNumRange& range, int widthMin,
