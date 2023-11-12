@@ -104,8 +104,8 @@ public:
         iterateConst(nodep);
 
         // Shorthand
-        const auto addStat = [&](const std::string& name, double count) {  //
-            V3Stats::addStat(stage, name, count);
+        const auto addStat = [&](const std::string& name, double count, unsigned precision = 0) {
+            V3Stats::addStat(stage, name, count, precision);
         };
 
         // Variable widths
@@ -124,11 +124,23 @@ public:
             }
         }
 
-        // Node types
+        // Node types (also total memory usage)
         const auto typeName = [](int type) { return std::string{VNType{type}.ascii()}; };
+        const auto typeSize = [](int type) { return VNType{type}.typeInfo()->m_sizeof; };
+        size_t totalNodeMemoryUsage = 0;
         for (int t = 0; t < VNType::_ENUM_END; ++t) {
             if (const uint64_t count = m_counters.m_statTypeCount[t]) {
+                totalNodeMemoryUsage += count * typeSize(t);
                 addStat("Node count, " + typeName(t), count);
+            }
+        }
+        addStat("Node memory TOTAL (MiB)", totalNodeMemoryUsage >> 20);
+
+        // Node Memory usage
+        for (int t = 0; t < VNType::_ENUM_END; ++t) {
+            if (const uint64_t count = m_counters.m_statTypeCount[t]) {
+                const double share = 100.0 * count * typeSize(t) / totalNodeMemoryUsage;
+                addStat("Node memory share (%), " + typeName(t), share, 2);
             }
         }
 
