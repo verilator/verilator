@@ -32,7 +32,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Find all split variables in a block
 
-class SplitAsFindVisitor final : public VNVisitor {
+class SplitAsFindVisitor final : public VNVisitorConst {
 private:
     // STATE - across all visitors
     AstVarScope* m_splitVscp = nullptr;  // Variable we want to split
@@ -49,11 +49,11 @@ private:
         // This will break if the m_splitVscp is a "ref" argument to the function,
         // but little we can do.
     }
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit SplitAsFindVisitor(AstAlways* nodep) { iterate(nodep); }
+    explicit SplitAsFindVisitor(AstAlways* nodep) { iterateConst(nodep); }
     ~SplitAsFindVisitor() override = default;
     // METHODS
     AstVarScope* splitVscp() const { return m_splitVscp; }

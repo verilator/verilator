@@ -30,7 +30,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Name state, as a visitor of each AstNode
 
-class NameVisitor final : public VNVisitor {
+class NameVisitor final : public VNVisitorConst {
 private:
     // NODE STATE
     // Cleared on Netlist
@@ -69,7 +69,7 @@ private:
         VL_RESTORER(m_modp);
         {
             m_modp = nodep;
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
     // Add __PVT__ to names of local signals
@@ -82,39 +82,39 @@ private:
     }
     void visit(AstCFunc* nodep) override {
         if (!nodep->user1()) {
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
             rename(nodep, false);
         }
     }
-    void visit(AstVarRef* nodep) override { iterate(nodep->varp()); }
+    void visit(AstVarRef* nodep) override { iterateConst(nodep->varp()); }
     void visit(AstCell* nodep) override {
         if (!nodep->user1()) {
             rename(nodep, (!nodep->modp()->modPublic() && !VN_IS(nodep->modp(), ClassPackage)));
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
     void visit(AstMemberDType* nodep) override {
         if (!nodep->user1()) {
             rename(nodep, true);
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
     void visit(AstMemberSel* nodep) override {
         if (!nodep->user1()) {
             rename(nodep, true);
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
     void visit(AstStructSel* nodep) override {
         if (!nodep->user1()) {
             rename(nodep, true);
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
     void visit(AstScope* nodep) override {
         if (!nodep->user1SetOnce()) {
-            if (nodep->aboveScopep()) iterate(nodep->aboveScopep());
-            if (nodep->aboveCellp()) iterate(nodep->aboveCellp());
+            if (nodep->aboveScopep()) iterateConst(nodep->aboveScopep());
+            if (nodep->aboveCellp()) iterateConst(nodep->aboveCellp());
             // Always recompute name (as many levels above scope may have changed)
             // Same formula as V3Scope
             nodep->name(nodep->isTop()         ? "TOP"
@@ -123,16 +123,16 @@ private:
                             ? ("TOP." + m_modp->name())
                             : (nodep->aboveScopep()->name() + "." + nodep->aboveCellp()->name()));
             nodep->editCountInc();
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
 
     //--------------------
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit NameVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit NameVisitor(AstNetlist* nodep) { iterateConst(nodep); }
     ~NameVisitor() override = default;
 };
 
