@@ -58,8 +58,7 @@ module t (/*AUTOARG*/);
 
       p.test1();
 
-      // TODO test can't redefine constraint_mode
-      // TODO test can't call constraint_mode on non-constraint
+      // TODO for example way to test this, see t_randomize_rand_mode.v
 
       $write("*-* All Finished *-*\n");
       $finish;
