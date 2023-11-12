@@ -284,6 +284,8 @@ inline uint64_t vl_time_stamp64() VL_MT_SAFE {
 # endif
 #endif
 
+// clang-format on
+
 uint64_t VerilatedContext::time() const VL_MT_SAFE {
     // When using non-default context, fastest path is return time
     if (VL_LIKELY(m_s.m_time)) return m_s.m_time;
@@ -310,25 +312,6 @@ uint64_t VerilatedContext::time() const VL_MT_SAFE {
 double vl_time_multiplier(int scale) VL_PURE;
 // Return power of 10. e.g. returns 100 if n==2
 uint64_t vl_time_pow10(int n) VL_PURE;
-
-#ifdef VL_DEBUG
-/// Evaluate statement if VL_DEBUG defined
-# define VL_DEBUG_IFDEF(stmt) \
-    do { \
-        stmt \
-    } while (false)
-/// Evaluate statement if VL_DEBUG defined and Verilated::debug() enabled
-# define VL_DEBUG_IF(stmt) \
-    do { \
-        if (VL_UNLIKELY(Verilated::debug())) {stmt} \
-    } while (false)
-#else
-// We intentionally do not compile the stmt to improve compile speed
-# define VL_DEBUG_IFDEF(stmt) do {} while (false)
-# define VL_DEBUG_IF(stmt) do {} while (false)
-#endif
-
-// clang-format on
 
 //=========================================================================
 // Functional macros/routines

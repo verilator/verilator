@@ -39,6 +39,28 @@
 #include <unordered_set>
 #include <utility>
 
+//=========================================================================
+// Debug functions
+
+#ifdef VL_DEBUG
+/// Evaluate statement if VL_DEBUG defined
+#define VL_DEBUG_IFDEF(stmt) \
+    do { stmt } while (false)
+/// Evaluate statement if VL_DEBUG defined and Verilated::debug() enabled
+#define VL_DEBUG_IF(stmt) \
+    do { \
+        if (VL_UNLIKELY(Verilated::debug())) { stmt } \
+    } while (false)
+#else
+// We intentionally do not compile the stmt to improve compile speed
+#define VL_DEBUG_IFDEF(stmt) \
+    do { \
+    } while (false)
+#define VL_DEBUG_IF(stmt) \
+    do { \
+    } while (false)
+#endif
+
 //===================================================================
 // String formatters (required by below containers)
 
@@ -1534,12 +1556,15 @@ class VlClass VL_NOT_FINAL : public VlDeletable {
     friend class VlClassRef;  // Needed for access to the ref counter and deleter
 
     // MEMBERS
-    std::atomic<size_t> m_counter{0};  // Reference count for this object
+    std::atomic<size_t> m_counter{1};  // Reference count for this object
     VlDeleter* m_deleterp = nullptr;  // The deleter that will delete this object
 
     // METHODS
     // Atomically increments the reference counter
-    void refCountInc() VL_MT_SAFE { ++m_counter; }
+    void refCountInc() VL_MT_SAFE {
+        VL_DEBUG_IFDEF(assert(m_counter););  // If zero, we might have already deleted
+        ++m_counter;
+    }
     // Atomically decrements the reference counter. Assuming VlClassRef semantics are sound, it
     // should never get called at m_counter == 0.
     void refCountDec() VL_MT_SAFE {
@@ -1548,8 +1573,8 @@ class VlClass VL_NOT_FINAL : public VlDeletable {
 
 public:
     // CONSTRUCTORS
-    VlClass() { refCountInc(); }
-    VlClass(const VlClass& copied) { refCountInc(); }
+    VlClass() {}
+    VlClass(const VlClass& copied) {}
     ~VlClass() override = default;
 };
 
@@ -1629,18 +1654,21 @@ public:
     // METHODS
     // Copy and move assignments
     VlClassRef& operator=(const VlClassRef& copied) {
+        if (m_objp == copied.m_objp) return *this;
         refCountDec();
         m_objp = copied.m_objp;
         refCountInc();
         return *this;
     }
     VlClassRef& operator=(VlClassRef&& moved) {
+        if (m_objp == moved.m_objp) return *this;
         refCountDec();
         m_objp = vlstd::exchange(moved.m_objp, nullptr);
         return *this;
     }
     template <typename T_OtherClass>
     VlClassRef& operator=(const VlClassRef<T_OtherClass>& copied) {
+        if (m_objp == copied.m_objp) return *this;
         refCountDec();
         m_objp = copied.m_objp;
         refCountInc();
@@ -1648,6 +1676,7 @@ public:
     }
     template <typename T_OtherClass>
     VlClassRef& operator=(VlClassRef<T_OtherClass>&& moved) {
+        if (m_objp == moved.m_objp) return *this;
         refCountDec();
         m_objp = vlstd::exchange(moved.m_objp, nullptr);
         return *this;
