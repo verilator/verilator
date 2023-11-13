@@ -160,7 +160,6 @@ static void process() {
         //   This requires some width calculations and constant propagation
         V3Param::param(v3Global.rootp());
         V3LinkDot::linkDotParamed(v3Global.rootp());  // Cleanup as made new modules
-        V3LinkLValue::linkLValue(v3Global.rootp());  // Resolve new VarRefs
         V3Error::abortIfErrors();
 
         // Remove any modules that were parameterized and are no longer referenced.
@@ -186,6 +185,8 @@ static void process() {
 
         // Calculate and check widths, edit tree to TRUNC/EXTRACT any width mismatches
         V3Width::width(v3Global.rootp());
+
+        V3LinkLValue::linkLValue(v3Global.rootp());  // Resolve new VarRefs
 
         V3Error::abortIfErrors();
 
