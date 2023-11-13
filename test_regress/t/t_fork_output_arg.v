@@ -11,15 +11,18 @@ class Cls;
    endtask
 endclass
 
-module t();
+task automatic test;
+   int o;
    Cls c = new;
-   initial begin
-      int o;
-      fork
-         c.get_x(o);
-      join_any
-      if (o != 100) $stop;
+   fork
+      c.get_x(o);
+   join_any
+   if (o != 100) $stop;
+endtask
 
+module t();
+   initial begin
+      test();
       $write("*-* All Finished *-*\n");
       $finish;
    end
