@@ -300,6 +300,13 @@ private:
             }
         }
     }
+    void visit(AstCMethodHard* nodep) override {
+        VL_RESTORER(m_setRefLvalue);
+        iterate(nodep->fromp());
+        m_setRefLvalue = VAccess::NOCHANGE;
+        // Arguments have access() assigned in V3Width
+        iterateAndNextNull(nodep->pinsp());
+    }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
