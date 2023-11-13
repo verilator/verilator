@@ -180,6 +180,7 @@ public:
                              bool colorAsSubgraph = false) const VL_MT_DISABLED;
     void dumpDotFilePrefixedAlways(const string& nameComment,
                                    bool colorAsSubgraph = false) const VL_MT_DISABLED;
+    void dumpEdges(std::ostream& os, const V3GraphVertex* vertexp) const VL_MT_DISABLED;
     static void selfTest() VL_MT_DISABLED;
 
     // CALLBACKS

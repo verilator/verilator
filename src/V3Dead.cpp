@@ -79,6 +79,11 @@ private:
 
     // METHODS
 
+    void deleting(AstNode* nodep) {
+        UINFO(9, "  deleting " << nodep << endl);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
+
     void checkAll(AstNode* nodep) {
         if (nodep != nodep->dtypep()) {  // NodeDTypes reference themselves
             if (AstNode* const subnodep = nodep->dtypep()) subnodep->user1Inc();
@@ -239,7 +244,7 @@ private:
         iterateChildren(nodep);
         if (m_elimCells) {
             if (!nodep->varsp()) {
-                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                deleting(nodep);
                 return;
             }
         }
@@ -316,7 +321,7 @@ private:
     void deadCheckTypedefs() {
         for (AstTypedef* typedefp : m_typedefsp) {
             if (shouldDeleteTypedef(typedefp)) {
-                VL_DO_DANGLING(pushDeletep(typedefp->unlinkFrBack()), typedefp);
+                deleting(typedefp);
                 continue;
             }
             checkAll(typedefp);
@@ -349,7 +354,7 @@ private:
                             cellp->modp()->user1Inc(-1);
                         });
                     }
-                    VL_DO_DANGLING(modp->unlinkFrBack()->deleteTree(), modp);
+                    deleting(modp);
                     retry = true;
                 }
             }
@@ -373,7 +378,7 @@ private:
                     UINFO(4, "  Dead AstScope " << scp << endl);
                     scp->aboveScopep()->user1Inc(-1);
                     if (scp->dtypep()) scp->dtypep()->user1Inc(-1);
-                    VL_DO_DANGLING(scp->unlinkFrBack()->deleteTree(), scp);
+                    deleting(scp);
                     *it = nullptr;
                     retry = true;
                 }
@@ -385,7 +390,7 @@ private:
         for (AstCell* cellp : m_cellsp) {
             if (cellp->user1() == 0 && !cellp->modp()->stmtsp()) {
                 cellp->modp()->user1Inc(-1);
-                VL_DO_DANGLING(cellp->unlinkFrBack()->deleteTree(), cellp);
+                deleting(cellp);
             }
         }
     }
@@ -397,7 +402,7 @@ private:
                     if (nodep->user1() == 0) {
                         if (nodep->extendsp()) nodep->extendsp()->user1Inc(-1);
                         if (nodep->classOrPackagep()) nodep->classOrPackagep()->user1Inc(-1);
-                        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                        deleting(nodep);
                         itr = nullptr;
                         retry = true;
                     }
@@ -417,11 +422,11 @@ private:
                     AstNodeAssign* const assp = itr->second;
                     UINFO(4, "    Dead assign " << assp << endl);
                     assp->dtypep()->user1Inc(-1);
-                    VL_DO_DANGLING(assp->unlinkFrBack()->deleteTree(), assp);
+                    deleting(assp);
                 }
                 if (vscp->scopep()) vscp->scopep()->user1Inc(-1);
                 vscp->dtypep()->user1Inc(-1);
-                VL_DO_DANGLING(vscp->unlinkFrBack()->deleteTree(), vscp);
+                deleting(vscp);
             }
         }
         for (bool retry = true; retry;) {
@@ -432,7 +437,7 @@ private:
                 if (varp->user1() == 0) {
                     UINFO(4, "  Dead " << varp << endl);
                     if (varp->dtypep()) varp->dtypep()->user1Inc(-1);
-                    VL_DO_DANGLING(varp->unlinkFrBack()->deleteTree(), varp);
+                    deleting(varp);
                     *it = nullptr;
                     retry = true;
                 }
@@ -440,11 +445,11 @@ private:
         }
         for (std::vector<AstNode*>::iterator it = m_dtypesp.begin(); it != m_dtypesp.end(); ++it) {
             if ((*it)->user1() == 0) {
-                const AstNodeUOrStructDType* classp;
                 // It's possible that there if a reference to each individual member, but
                 // not to the dtype itself.  Check and don't remove the parent dtype if
                 // members are still alive.
-                if ((classp = VN_CAST((*it), NodeUOrStructDType))) {
+                if (const AstNodeUOrStructDType* const classp
+                    = VN_CAST((*it), NodeUOrStructDType)) {
                     bool cont = true;
                     for (AstMemberDType* memberp = classp->membersp(); memberp;
                          memberp = VN_AS(memberp->nextp(), MemberDType)) {
@@ -455,7 +460,7 @@ private:
                     }
                     if (!cont) continue;
                 }
-                VL_DO_DANGLING((*it)->unlinkFrBack()->deleteTree(), *it);
+                deleting(*it);
             }
         }
     }

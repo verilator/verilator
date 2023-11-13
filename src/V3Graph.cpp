@@ -294,6 +294,12 @@ void V3Graph::dumpEdge(std::ostream& os, const V3GraphVertex* vertexp,
         os << '\n';
     }
 }
+void V3Graph::dumpEdges(std::ostream& os, const V3GraphVertex* vertexp) const {
+    for (const V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp())
+        dumpEdge(os, vertexp, edgep);
+    for (const V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp())
+        dumpEdge(os, vertexp, edgep);
+}
 
 void V3Graph::dumpDotFilePrefixed(const string& nameComment, bool colorAsSubgraph) const {
     dumpDotFile(v3Global.debugFilename(nameComment) + ".dot", colorAsSubgraph);
