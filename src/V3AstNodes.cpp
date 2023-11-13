@@ -1986,7 +1986,7 @@ void AstPackageExport::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " -> " << packagep();
 }
-const char* AstPackageExport ::broken() const {
+const char* AstPackageExport::broken() const {
     BROKEN_RTN(!m_packagep || !m_packagep->brokeExists());
     return nullptr;
 }
