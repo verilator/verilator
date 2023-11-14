@@ -70,6 +70,7 @@
 #include "V3Const.h"
 #include "V3Error.h"
 #include "V3Global.h"
+#include "V3LinkLValue.h"
 #include "V3MemberMap.h"
 #include "V3Number.h"
 #include "V3Randomize.h"
@@ -5687,6 +5688,7 @@ class WidthVisitor final : public VNVisitor {
                     AstNodeExpr* const newp = new AstResizeLValue{pinp->fileline(), pinp};
                     relinkHandle.relink(newp);
                 }
+                if (portp->isWritable()) V3LinkLValue::linkLValueSet(pinp);
                 if (!portp->basicp() || portp->basicp()->isOpaque()) {
                     checkClassAssign(nodep, "Function Argument", pinp, portDTypep);
                     userIterate(pinp, WidthVP{portDTypep, FINAL}.p());
