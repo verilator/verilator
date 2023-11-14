@@ -76,6 +76,7 @@
 #include "V3String.h"
 #include "V3Task.h"
 #include "V3WidthCommit.h"
+#include "V3LinkLValue.h"
 
 // More code; this file was getting too large; see actions there
 #define VERILATOR_V3WIDTH_CPP_
@@ -5687,6 +5688,7 @@ class WidthVisitor final : public VNVisitor {
                     AstNodeExpr* const newp = new AstResizeLValue{pinp->fileline(), pinp};
                     relinkHandle.relink(newp);
                 }
+                if (portp->isWritable()) V3LinkLValue::linkLValueSet(pinp);
                 if (!portp->basicp() || portp->basicp()->isOpaque()) {
                     checkClassAssign(nodep, "Function Argument", pinp, portDTypep);
                     userIterate(pinp, WidthVP{portDTypep, FINAL}.p());
