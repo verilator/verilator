@@ -92,7 +92,6 @@ public:
 //######################################################################
 
 class TaskStateVisitor final : public VNVisitor {
-private:
     // NODE STATE
     //  Output:
     //   AstNodeFTask::user3p   // AstScope* this FTask is under
@@ -331,7 +330,6 @@ struct TaskDpiUtils {
 // Task state, as a visitor of each AstNode
 
 class TaskVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Each module:
     //    AstNodeFTask::user1   // True if its been expanded

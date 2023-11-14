@@ -36,7 +36,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Visitor that marks classes needing a randomize() method
 
 class RandomizeMarkVisitor final : public VNVisitorConst {
-private:
     // NODE STATE
     // Cleared on Netlist
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing
@@ -128,7 +127,6 @@ public:
 // Visitor that defines a randomize method where needed
 
 class RandomizeVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Cleared on Netlist
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing

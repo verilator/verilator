@@ -26,7 +26,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Assert class functions
 
 class AssertVisitor final : public VNVisitor {
-private:
     // NODE STATE/TYPES
     // Cleared on netlist
     //  AstNode::user()         -> bool.  True if processed

@@ -41,7 +41,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 
 class UnknownVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Cleared on Netlist
     //  AstSel::user()          -> bool.  Set true if already processed

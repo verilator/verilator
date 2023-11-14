@@ -38,7 +38,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Find nodes with side effects, to mark as non-expandable
 
 class ExpandOkVisitor final : public VNVisitorConst {
-private:
     // NODE STATE
     //  AstNode::user2()        -> bool.  Is pure (along with all children)
     const VNUser2InUse m_inuser2;
@@ -70,7 +69,6 @@ public:
 // Expand state, as a visitor of each AstNode
 
 class ExpandVisitor final : public VNVisitor {
-private:
     // NODE STATE
     //  AstNode::user1()        -> bool.  Processed
     const VNUser1InUse m_inuser1;

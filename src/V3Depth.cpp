@@ -34,7 +34,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 
 class DepthVisitor final : public VNVisitor {
-private:
     // NODE STATE
 
     // STATE

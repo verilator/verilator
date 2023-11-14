@@ -92,7 +92,6 @@ struct GraphAcycEdgeCmp {
 
 // CLASSES
 class GraphAcyc final {
-private:
     using OrigEdgeList
         = std::list<V3GraphEdge*>;  // List of orig edges, see also GraphAcycEdge's decl
     // GRAPH USERS

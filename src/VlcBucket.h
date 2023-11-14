@@ -31,7 +31,6 @@
 // has hit that point with sufficient coverage.
 
 class VlcBuckets final {
-private:
     // MEMBERS
     uint64_t* m_datap = nullptr;  ///< Pointer to first bucket (dynamically allocated)
     uint64_t m_dataSize = 0;  ///< Current entries in m_datap

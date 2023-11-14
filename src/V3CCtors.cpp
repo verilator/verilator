@@ -50,7 +50,6 @@ public:
 };
 
 class V3CCtorsBuilder final {
-private:
     AstNodeModule* const m_modp;  // Current module/class
     const string m_basename;
     const VCtorType m_type;  // What kind of constructor are we creating
@@ -130,7 +129,6 @@ private:
 // Link state, as a visitor of each AstNode
 
 class CCtorsVisitor final : public VNVisitor {
-private:
     // NODE STATE
 
     // STATE

@@ -82,7 +82,6 @@ private:
 // Map a pointer into a id, for e.g. nodep to mtask mappings
 
 class PartPtrIdMap final {
-private:
     // TYPES
     // MEMBERS
     mutable uint64_t m_nextId = 0;

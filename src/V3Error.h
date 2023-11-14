@@ -405,7 +405,6 @@ public:
 // ######################################################################
 class V3Error final {
     // Base class for any object that wants debugging and error reporting
-private:
     // CONSTRUCTORS
     V3Error() {
         std::cerr << ("Static class");

@@ -33,7 +33,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Inst state, as a visitor of each AstNode
 
 class InstVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Cleared each Cell:
     //  AstPin::user1p()        -> bool.  True if created assignment already
@@ -482,7 +481,6 @@ public:
 // Inst static function
 
 class InstStatic final {
-private:
     InstStatic() = default;  // Static class
 
     static AstNodeExpr* extendOrSel(FileLine* fl, AstNodeExpr* rhsp, AstNode* cmpWidthp) {

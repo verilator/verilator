@@ -36,7 +36,6 @@
 // VlcPoint - A coverage point (across all tests)
 
 class VlcPoint final {
-private:
     // MEMBERS
     string m_name;  //< Name of the point
     uint64_t m_pointNum;  //< Point number
@@ -108,7 +107,6 @@ public:
 // VlcPoints - Container of all points
 
 class VlcPoints final {
-private:
     // MEMBERS
     using NameMap = std::map<const std::string, uint64_t>;  // Sorted by name (ordered)
     NameMap m_nameMap;  //< Name to point-number

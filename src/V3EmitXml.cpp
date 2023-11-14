@@ -320,7 +320,6 @@ public:
 // List of module files xml visitor
 
 class ModuleFilesXmlVisitor final : public VNVisitorConst {
-private:
     // MEMBERS
     std::ostream& m_os;
     std::set<std::string> m_modulesCovered;
@@ -367,7 +366,6 @@ public:
 // Hierarchy of Cells visitor
 
 class HierCellsXmlVisitor final : public VNVisitorConst {
-private:
     // MEMBERS
     std::ostream& m_os;
     std::string m_hier;

@@ -80,7 +80,6 @@ constexpr bool operator==(GraphWay::en lhs, const GraphWay& rhs) { return lhs ==
 //============================================================================
 
 class V3Graph VL_NOT_FINAL {
-private:
     // MEMBERS
     V3List<V3GraphVertex*> m_vertices;  // All vertices
 

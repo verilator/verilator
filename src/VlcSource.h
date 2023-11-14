@@ -31,7 +31,6 @@ class VlcPoint;
 // VlcColumnCount - count at specific source file, line and column
 
 class VlcSourceCount final {
-private:
     // TYPES
     using PointsSet = std::set<const VlcPoint*>;
 

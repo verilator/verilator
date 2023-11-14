@@ -47,7 +47,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Cast state, as a visitor of each AstNode
 
 class CastVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Entire netlist:
     //   AstNode::user1()               // bool.  Indicates node is of known size

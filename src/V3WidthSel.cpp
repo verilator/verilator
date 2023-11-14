@@ -37,7 +37,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Width state, as a visitor of each AstNode
 
 class WidthSelVisitor final : public VNVisitor {
-private:
     // IMPORTANT
     //**** This is not a normal visitor, in that all iteration is instead
     //  done by the caller (V3Width).  This avoids duplicating much of the

@@ -60,7 +60,6 @@ static bool s_brokenAllowMidvisitorCheck = false;
 // Table of allocated AstNode pointers
 
 static class AllocTable final {
-private:
     // MEMBERS
     std::unordered_set<const AstNode*> m_allocated;  // Set of all nodes allocated but not freed
 
@@ -122,7 +121,6 @@ void V3Broken::deleted(const AstNode* nodep) { s_allocTable.deleted(nodep); }
 // Table of AstNode pointers that can be linked to via member pointers
 
 static class LinkableTable final {
-private:
     // MEMBERS
     std::unordered_set<const AstNode*> m_linkable;  // Set of all nodes allocated but not freed
 

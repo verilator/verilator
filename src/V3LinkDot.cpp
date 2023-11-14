@@ -116,7 +116,6 @@ public:
 // LinkDot state, as a visitor of each AstNode
 
 class LinkDotState final {
-private:
     // NODE STATE
     // Cleared on Netlist
     //  AstNodeModule::user1p()         // VSymEnt*.      Last symbol created for this node
@@ -1547,7 +1546,6 @@ public:
 //======================================================================
 
 class LinkDotParamVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Cleared on global
     //  *::user1p()             -> See LinkDotState
@@ -2004,7 +2002,6 @@ void LinkDotState::computeIfaceModSyms() {
 //======================================================================
 
 class LinkDotResolveVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Cleared on global
     //  *::user1p()             -> See LinkDotState

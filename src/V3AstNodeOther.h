@@ -34,7 +34,6 @@ class AstNodeBlock VL_NOT_FINAL : public AstNode {
     // A Begin/fork block
     // @astgen op2 := stmtsp : List[AstNode]
     // Parents: statement
-private:
     string m_name;  // Name of block
     bool m_unnamed;  // Originally unnamed (name change does not affect this)
 protected:
@@ -62,7 +61,6 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     // @astgen op3 := stmtsp : List[AstNode]
     // Scope name
     // @astgen op4 := scopeNamep : Optional[AstScopeName]
-private:
     string m_name;  // Name of task
     string m_cname;  // Name of task if DPI import
     uint64_t m_dpiOpenParent = 0;  // DPI import open array, if !=0, how many callees
@@ -205,7 +203,6 @@ class AstNodeFile VL_NOT_FINAL : public AstNode {
     // Emitted Output file
     // Parents:  NETLIST
     // @astgen op1 := tblockp : Optional[AstTextBlock]
-private:
     string m_name;  ///< Filename
 public:
     AstNodeFile(VNType t, FileLine* fl, const string& name)
@@ -223,7 +220,6 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     // @astgen op1 := inlinesp : List[AstNode]
     // @astgen op2 := stmtsp : List[AstNode]
     // @astgen op3 := activesp : List[AstActive]
-private:
     string m_name;  // Name of the module
     const string m_origName;  // Name of the module, ignoring name() changes, for dot lookup
     string m_someInstanceName;  // Hierarchical name of some arbitrary instance of this module.
@@ -453,7 +449,6 @@ class AstNodeIf VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := condp : AstNodeExpr
     // @astgen op2 := thensp : List[AstNode]
     // @astgen op3 := elsesp : List[AstNode]
-private:
     VBranchPred m_branchPred;  // Branch prediction as taken/untaken?
     bool m_isBoundsCheck;  // True if this if node is for assertion/bounds checking
 protected:
@@ -509,7 +504,6 @@ public:
     virtual const char* cFuncPrefixp() const = 0;
 };
 class AstNodeText VL_NOT_FINAL : public AstNode {
-private:
     string m_text;
 
 protected:
@@ -529,7 +523,6 @@ public:
     void text(const string& value) { m_text = value; }
 };
 class AstNodeSimpleText VL_NOT_FINAL : public AstNodeText {
-private:
     bool m_tracking;  // When emit, it's ok to parse the string to do indentation
 public:
     AstNodeSimpleText(VNType t, FileLine* fl, const string& textp, bool tracking = false)
@@ -548,7 +541,6 @@ class AstActive final : public AstNode {
     // Parents:  MODULE | CFUNC
     // @astgen op1 := sensesStorep : Optional[AstSenTree] // Moved into m_sensesp in V3Active
     // @astgen op2 := stmtsp : List[AstNode] // Logic
-private:
     string m_name;
     AstSenTree* m_sensesp;
 
@@ -575,7 +567,6 @@ class AstBind final : public AstNode {
     // Parents: MODULE
     // Children: CELL
     // @astgen op1 := cellsp : List[AstNode]
-private:
     string m_name;  // Binding to name
 public:
     AstBind(FileLine* fl, const string& name, AstNode* cellsp)
@@ -597,7 +588,6 @@ class AstCFunc final : public AstNode {
     // @astgen op2 := initsp : List[AstNode]
     // @astgen op3 := stmtsp : List[AstNode]
     // @astgen op4 := finalsp : List[AstNode]
-private:
     AstScope* m_scopep;
     string m_name;
     string m_cname;  // C name, for dpiExports
@@ -758,7 +748,6 @@ public:
 class AstCUse final : public AstNode {
     // C++ use of a class or #include; indicates need of forward declaration
     // Parents:  NODEMODULE
-private:
     const string m_name;
     const VUseType m_useType;  // What sort of use this is
 
@@ -848,7 +837,6 @@ class AstCellInline final : public AstNode {
     // except for VPI runs where it exists until the end.
     // It is augmented with the scope in V3Scope for VPI.
     // Children: When 2 levels inlined, other CellInline under this
-private:
     string m_name;  // Cell name, possibly {a}__DOT__{b}...
     const string
         m_origModName;  // Original name of the module, ignoring name() changes, for dot lookup
@@ -1054,7 +1042,6 @@ class AstDpiExport final : public AstNode {
     // We could put an AstNodeFTaskRef instead of the verilog function name,
     // however we're not *calling* it, so that seems somehow wrong.
     // (Probably AstNodeFTaskRef should be renamed AstNodeFTaskCall and have-a AstNodeFTaskRef)
-private:
     string m_name;  // Name of function
     string m_cname;  // Name of function on c side
 public:
@@ -1071,7 +1058,6 @@ public:
 class AstElabDisplay final : public AstNode {
     // Parents: stmtlist
     // @astgen op1 := fmtp : List[AstSFormatF]
-private:
     VDisplayType m_displayType;
 
 public:
@@ -1156,7 +1142,6 @@ public:
 };
 class AstIntfRef final : public AstNode {
     // An interface reference
-private:
     string m_name;  // Name of the reference
 public:
     AstIntfRef(FileLine* fl, const string& name)
@@ -1208,7 +1193,6 @@ class AstModportFTaskRef final : public AstNode {
     // The storage for the function itself is inside the
     // interface/instantiator, thus this is a reference
     // PARENT: AstModport
-private:
     string m_name;  // Name of the variable referenced
     AstNodeFTask* m_ftaskp = nullptr;  // Link to the function
     bool m_export;  // Type of the function (import/export)
@@ -1231,7 +1215,6 @@ class AstModportVarRef final : public AstNode {
     // A input/output/etc variable referenced under a modport
     // The storage for the variable itself is inside the interface, thus this is a reference
     // PARENT: AstModport
-private:
     string m_name;  // Name of the variable referenced
     AstVar* m_varp = nullptr;  // Link to the actual Var
     VDirection m_direction;  // Direction of the variable (in/out)
@@ -1320,7 +1303,6 @@ public:
     uint32_t usedMTaskProfilingIDs() const { return m_nextFreeMTaskProfilingID; }
 };
 class AstPackageExport final : public AstNode {
-private:
     // A package export declaration
     string m_name;
     AstPackage* m_packagep;  // Package hierarchy
@@ -1346,7 +1328,6 @@ public:
     ASTGEN_MEMBERS_AstPackageExportStarStar;
 };
 class AstPackageImport final : public AstNode {
-private:
     // A package import declaration
     string m_name;
     AstPackage* m_packagep;  // Package hierarchy
@@ -1366,7 +1347,6 @@ public:
 class AstPin final : public AstNode {
     // A port or parameter assignment on an instantiation
     // @astgen op1 := exprp : Optional[AstNode] // NodeExpr or NodeDType (nullptr if unconnected)
-private:
     int m_pinNum;  // Pin number
     string m_name;  // Pin name, or "" for number based interconnect
     AstVar* m_modVarp = nullptr;  // Input/output this pin connects to on submodule.
@@ -1591,7 +1571,6 @@ public:
     ASTGEN_MEMBERS_AstSplitPlaceholder;
 };
 class AstStrengthSpec final : public AstNode {
-private:
     VStrength m_s0;  // Drive 0 strength
     VStrength m_s1;  // Drive 1 strength
 
@@ -1698,7 +1677,6 @@ public:
 };
 class AstTypedefFwd final : public AstNode {
     // Forward declaration of a type; stripped after netlist parsing is complete
-private:
     string m_name;
 
 public:
@@ -2115,7 +2093,6 @@ class AstVarScope final : public AstNode {
     // varscope for each var in the module
     // Parents: MODULE
     // Children: none
-private:
     AstScope* m_scopep;  // Scope variable is underneath
     AstVar* m_varp;  // [AfterLink] Pointer to variable itself
     bool m_trace : 1;  // Tracing is turned on for this scope
@@ -2184,7 +2161,6 @@ class AstFork final : public AstNodeBlock {
     // @astgen op1 := initsp : List[AstNode]
     // Parents: statement
     // Children: statements
-private:
     VJoinType m_joinType;  // Join keyword type
 public:
     // Node that puts name into the output stream
@@ -2252,7 +2228,6 @@ public:
 class AstCFile final : public AstNodeFile {
     // C++ output file
     // Parents:  NETLIST
-private:
     bool m_slow : 1;  ///< Compile w/o optimization
     bool m_source : 1;  ///< Source file (vs header file)
     bool m_support : 1;  ///< Support file (non systemc)
@@ -2351,7 +2326,6 @@ public:
 };
 class AstModule final : public AstNodeModule {
     // A module declaration
-private:
     const bool m_isProgram;  // Module represents a program
 public:
     AstModule(FileLine* fl, const string& name, bool program = false)
@@ -2813,7 +2787,6 @@ class AstDisplay final : public AstNodeStmt {
     // Parents: stmtlist
     // @astgen op1 := fmtp : AstSFormatF
     // @astgen op2 := filep : Optional[AstNodeExpr] // file (must resolve to a VarRef)
-private:
     VDisplayType m_displayType;
 
 public:
@@ -2972,7 +2945,6 @@ class AstJumpBlock final : public AstNodeStmt {
     // Children: {statement list, with JumpGo and JumpLabel below}
     // @astgen op1 := stmtsp : List[AstNode]
     // @astgen op2 := endStmtsp : List[AstNode]
-private:
     AstJumpLabel* m_labelp = nullptr;  // [After V3Jump] Pointer to declaration
     int m_labelNum = 0;  // Set by V3EmitCSyms to tell final V3Emit what to increment
 public:
@@ -2997,7 +2969,6 @@ class AstJumpGo final : public AstNodeStmt {
     // No support for backward jumps at present
     // Parents:  {statement list with JumpBlock above}
     // Children: none
-private:
     AstJumpLabel* m_labelp;  // [After V3Jump] Pointer to declaration
 public:
     AstJumpGo(FileLine* fl, AstJumpLabel* labelp)
@@ -3021,7 +2992,6 @@ class AstJumpLabel final : public AstNodeStmt {
     // Jump point declaration
     // Parents:  {statement list with JumpBlock above}
     // Children: none
-private:
     AstJumpBlock* m_blockp;  // [After V3Jump] Pointer to declaration
 public:
     AstJumpLabel(FileLine* fl, AstJumpBlock* blockp)
@@ -3262,7 +3232,6 @@ class AstTraceDecl final : public AstNodeStmt {
     // Parents:  {statement list}
     // Expression being traced - Moved to AstTraceInc by V3Trace
     // @astgen op1 := valuep : Optional[AstNodeExpr]
-private:
     uint32_t m_code{0};  // Trace identifier code
     uint32_t m_fidx{0};  // Trace function index
     const string m_showname;  // Name of variable
@@ -3311,7 +3280,6 @@ class AstTraceInc final : public AstNodeStmt {
     // @astgen op1 := precondsp : List[AstNode] // Statements to emit before this node
     // @astgen op2 := valuep : AstNodeExpr // Expression being traced (from decl)
 
-private:
     AstTraceDecl* m_declp;  // Pointer to declaration
     const uint32_t m_baseCode;  // Trace code base value in function containing this AstTraceInc
     const VTraceType m_traceType;  // Is this a const/full/incremental dump
@@ -3650,7 +3618,6 @@ public:
     ASTGEN_MEMBERS_AstGenIf;
 };
 class AstIf final : public AstNodeIf {
-private:
     bool m_uniquePragma = false;  // unique case
     bool m_unique0Pragma = false;  // unique0 case
     bool m_priorityPragma = false;  // priority case

@@ -33,7 +33,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Find all split variables in a block
 
 class SplitAsFindVisitor final : public VNVisitorConst {
-private:
     // STATE - across all visitors
     AstVarScope* m_splitVscp = nullptr;  // Variable we want to split
 
@@ -63,7 +62,6 @@ public:
 // Remove nodes not containing proper references
 
 class SplitAsCleanVisitor final : public VNVisitor {
-private:
     // STATE - across all visitors
     const AstVarScope* const m_splitVscp;  // Variable we want to split
     const bool m_modeMatch;  // Remove matching Vscp, else non-matching
@@ -125,7 +123,6 @@ public:
 // SplitAs class functions
 
 class SplitAsVisitor final : public VNVisitor {
-private:
     // NODE STATE
     //  AstAlways::user()       -> bool.  True if already processed
     const VNUser1InUse m_inuser1;

@@ -195,7 +195,6 @@ public:
 // Collect existing active names
 
 class ActiveNamer final : public VNVisitor {
-private:
     // STATE
     AstScope* m_scopep = nullptr;  // Current scope to add statement to
     AstActive* m_sActivep = nullptr;  // For current scope, the Static active we're building
@@ -306,7 +305,6 @@ AstActive*& ActiveNamer::getSpecialActive<AstSenItem::Combo>() {
 // Latch checking visitor
 
 class ActiveLatchCheckVisitor final : public VNVisitorConst {
-private:
     // NODE STATE
     // Input:
     //  AstVar::user1p // V2LatchGraphVertex* The vertex handling this node
@@ -423,7 +421,6 @@ public:
 // Active class functions
 
 class ActiveVisitor final : public VNVisitor {
-private:
     // NODE STATE
     //  Each call to V3Const::constify
     //   AstVarScope::user1()           bool: This VarScope is referenced in the sensitivity list

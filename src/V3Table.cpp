@@ -145,7 +145,6 @@ public:
 // Table class functions
 
 class TableVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Cleared on each always/assignw
 

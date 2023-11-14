@@ -258,7 +258,6 @@ public:
 // Life state, as a visitor of each AstNode
 
 class LifeVisitor final : public VNVisitor {
-private:
     // STATE
     LifeState* const m_statep;  // Current state
     bool m_sideEffect = false;  // Side effects discovered in assign RHS

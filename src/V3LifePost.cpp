@@ -41,7 +41,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // LifePost class functions
 
 class LifePostElimVisitor final : public VNVisitor {
-private:
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
 
     // NODE STATE
@@ -127,7 +126,6 @@ struct LifePostLocation {
 // LifePost delay elimination
 
 class LifePostDlyVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // AstVarScope::user1()    -> bool: referenced outside _eval__nba
     // AstVarScope::user4()    -> AstVarScope*: Passed to LifePostElim to substitute this var

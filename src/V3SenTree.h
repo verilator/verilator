@@ -32,7 +32,6 @@
 // And provide functions to find/add a new one
 
 class SenTreeFinder final {
-private:
     // STATE
     AstTopScope* const m_topScopep;  // Top scope to add global SenTrees to
     std::unordered_set<VNRef<AstSenTree>> m_trees;  // Set of global SenTrees

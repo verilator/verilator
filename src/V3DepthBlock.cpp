@@ -31,7 +31,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 
 class DepthBlockVisitor final : public VNVisitor {
-private:
     // NODE STATE
 
     // STATE

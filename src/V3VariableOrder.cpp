@@ -36,7 +36,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Establish mtask variable sort order in mtasks mode
 
 class VarTspSorter final : public V3TSP::TspStateBase {
-private:
     // MEMBERS
     const MTaskIdSet& m_mtaskIds;  // Mtask we're ordering
     static unsigned s_serialNext;  // Unique ID to establish serial order

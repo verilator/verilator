@@ -59,7 +59,6 @@ using ModuleStateUser1Allocator = AstUser1Allocator<AstNodeModule, ModuleState>;
 // Visitor that determines which modules will be inlined
 
 class InlineMarkVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Output
     //  AstNodeModule::user1()  // OUTPUT: ModuleState instance (via m_moduleState)
@@ -245,7 +244,6 @@ public:
 // After cell is cloned, relink the new module's contents
 
 class InlineRelinkVisitor final : public VNVisitor {
-private:
     // NODE STATE
     //  Input:
     //   See InlineVisitor
@@ -451,7 +449,6 @@ public:
 // Inline state, as a visitor of each AstNode
 
 class InlineVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Cleared entire netlist
     //  AstIfaceRefDType::user1()  // Whether the cell pointed to by this

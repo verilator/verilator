@@ -92,7 +92,6 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
 // Link state, as a visitor of each AstNode
 
 class LinkCellsVisitor final : public VNVisitor {
-private:
     // NODE STATE
     //  Entire netlist:
     //   AstNodeModule::user1p()        // V3GraphVertex*    Vertex describing this module

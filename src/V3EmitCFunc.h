@@ -116,7 +116,6 @@ public:
 //  Emit statements and expressions
 
 class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
-private:
     VMemberMap m_memberMap;
     AstVarRef* m_wideTempRefp = nullptr;  // Variable that _WW macros should be setting
     int m_labelNum = 0;  // Next label number

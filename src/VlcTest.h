@@ -30,7 +30,6 @@
 // VlcTest - a single testrun i.e. a file containing coverage data
 
 class VlcTest final {
-private:
     // MEMBERS
     string m_name;  //< Name of the test
     double m_computrons;  //< Runtime for the test

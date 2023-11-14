@@ -425,7 +425,6 @@ public:
 // Conditional merging
 
 class MergeCondVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // AstVar::user1        -> bool: Set for variables referenced by m_mgCondp
     //                         (Only below MergeCondVisitor::process).

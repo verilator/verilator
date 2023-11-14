@@ -156,7 +156,6 @@ public:
 // Trace state, as a visitor of each AstNode
 
 class TraceVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // V3Hasher in V3DupFinder
     //  Ast*::user4()                   // V3Hasher calculation

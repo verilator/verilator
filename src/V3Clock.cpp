@@ -39,7 +39,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Convert every WRITE AstVarRef to a READ ref
 
 class ConvertWriteRefsToRead final : public VNVisitor {
-private:
     // MEMBERS
     AstNodeExpr* m_result = nullptr;
 
@@ -67,7 +66,6 @@ public:
 // Clock state, as a visitor of each AstNode
 
 class ClockVisitor final : public VNVisitor {
-private:
     // STATE
     AstCFunc* m_evalp = nullptr;  // The '_eval' function
     AstScope* m_scopep = nullptr;  // Current scope

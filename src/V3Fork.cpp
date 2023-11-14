@@ -61,7 +61,6 @@ public:
 };
 
 class ForkDynScopeFrame final {
-private:
     // MEMBERS
     AstNodeModule* const m_modp;  // Module to insert the scope into
     AstNode* const m_procp;  // Procedure/block associated with that dynscope
@@ -253,7 +252,6 @@ private:
 // members
 
 class DynScopeVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // AstVar::user1()          -> int, timing-control fork nesting level of that variable
     // AstVarRef::user2()       -> bool, 1 = Node is a class handle reference. The handle gets
@@ -456,7 +454,6 @@ public:
 // Fork visitor, transforms asynchronous blocks into separate tasks
 
 class ForkVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // AstNode::user1()         -> bool, 1 = Node was created as a call to an asynchronous task
     // AstVarRef::user2()       -> bool, 1 = Node is a class handle reference. The handle gets

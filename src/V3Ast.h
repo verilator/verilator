@@ -1461,7 +1461,6 @@ public:
 //  string 'this', or 'vlSymsp->...'
 
 class VSelfPointerText final {
-private:
     // STATIC MEMBERS
     // Keep these in shared pointers to avoid branching for special cases
     static const std::shared_ptr<const string> s_emptyp;  // Holds ""

@@ -33,7 +33,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Track interface references under the Cell they reference
 
 class InlineIntfRefVisitor final : public VNVisitor {
-private:
     // NODE STATE
     //   AstVar::user1p()   // AstCell which this Var points to
     const VNUser1InUse m_inuser1;

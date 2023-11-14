@@ -33,7 +33,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 
 class DescopeVisitor final : public VNVisitor {
-private:
     // NODE STATE
     //  Cleared entire netlist
     //   AstCFunc::user()               // bool.  Indicates processing completed
