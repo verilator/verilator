@@ -3328,8 +3328,8 @@ private:
             iterateAndNextNull(nodep->thsp());
         }
 
-        if (nodep->attrp() != nullptr) {
-            AstNode* attrp = nodep->attrp()->unlinkFrBack();
+        if (nodep->attrp()) {
+            AstNode* const attrp = nodep->attrp()->unlinkFrBack();
             VL_DO_DANGLING(attrp->deleteTree(), attrp);
         }
         AstNode* const basefromp = AstArraySel::baseFromp(nodep, false);
