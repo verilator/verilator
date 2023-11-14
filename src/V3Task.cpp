@@ -30,7 +30,6 @@
 #include "V3Const.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
-#include "V3LinkLValue.h"
 
 #include <tuple>
 
@@ -503,7 +502,6 @@ class TaskVisitor final : public VNVisitor {
                 }
             } else if (portp->isInoutish()) {
                 // if (debug() >= 9) pinp->dumpTree("-pinrsize- ");
-                V3LinkLValue::linkLValueSet(pinp);
 
                 AstVarScope* const newvscp
                     = createVarScope(portp, namePrefix + "__" + portp->shortName());
@@ -524,12 +522,6 @@ class TaskVisitor final : public VNVisitor {
                 beginp->addNext(postassp);
                 // if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-pinrsize-out- ");
             } else if (portp->isWritable()) {
-                // Make output variables
-                // Correct lvalue; we didn't know when we linked
-                // This is slightly scary; are we sure no decisions were made
-                // before here based on this not being a lvalue?
-                // Doesn't seem so; V3Unknown uses it earlier, but works ok.
-                V3LinkLValue::linkLValueSet(pinp);
                 // Even if it's referencing a varref, we still make a temporary
                 // Else task(x,x,x) might produce incorrect results
                 AstVarScope* const newvscp
