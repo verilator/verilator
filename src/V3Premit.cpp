@@ -39,7 +39,6 @@ constexpr int STATIC_CONST_MIN_WIDTH = 256;  // Minimum size to extract to stati
 // Premit state, as a visitor of each AstNode
 
 class PremitVisitor final : public VNVisitor {
-private:
     // NODE STATE
     //  AstNodeExpr::user()     -> bool.  True if iterated already
     //  *::user3()              -> Used when visiting AstNodeAssign

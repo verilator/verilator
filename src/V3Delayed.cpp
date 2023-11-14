@@ -63,7 +63,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Delayed state, as a visitor of each AstNode
 
 class DelayedVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Cleared each module:
     //  AstVarScope::user1p()   -> aux

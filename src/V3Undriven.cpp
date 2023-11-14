@@ -265,7 +265,6 @@ public:
 // Undriven state, as a visitor of each AstNode
 
 class UndrivenVisitor final : public VNVisitorConst {
-private:
     // NODE STATE
     // Netlist:
     //  AstVar::user1p          -> UndrivenVar* for usage var, 0=not set yet

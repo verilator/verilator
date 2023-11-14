@@ -26,7 +26,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Visitor that computes node hashes
 
 class HasherVisitor final : public VNVisitorConst {
-private:
     // NODE STATE
     //  AstNode::user4() -> V3Hash.  Hash value of this node (hash of 0 is illegal)
     // VNUser4InUse     in V3Hasher.h

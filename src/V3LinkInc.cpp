@@ -47,7 +47,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 
 class LinkIncVisitor final : public VNVisitor {
-private:
     // TYPES
     enum InsertMode : uint8_t {
         IM_BEFORE,  // Pointing at statement ref is in, insert before this

@@ -31,7 +31,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 
 class ClassVisitor final : public VNVisitor {
-private:
     // NODE STATE
     //  AstClass::user1()       -> bool.  True if iterated already
     //  AstVar::user1p()        -> AstVarScope*  Scope used with this var

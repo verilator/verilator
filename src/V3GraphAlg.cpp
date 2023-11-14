@@ -136,7 +136,6 @@ void V3Graph::removeTransitiveEdges() { GraphAlgRemoveTransitiveEdges{this}.go()
 // Changes color()
 
 class GraphAlgWeakly final : GraphAlg<> {
-private:
     void main() {
         // Initialize state
         m_graphp->clearColors();
@@ -178,7 +177,6 @@ void V3Graph::weaklyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgWeakly{this, edge
 // Changes user() and color()
 
 class GraphAlgStrongly final : GraphAlg<> {
-private:
     uint32_t m_currentDfs = 0;  // DFS count
     std::vector<V3GraphVertex*> m_callTrace;  // List of everything we hit processing so far
 
@@ -269,7 +267,6 @@ void V3Graph::stronglyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgStrongly{this, 
 // Changes user() and rank()
 
 class GraphAlgRank final : GraphAlg<> {
-private:
     void main() {
         // Rank each vertex, ignoring cutable edges
         // Vertex::m_user begin: 1 indicates processing, 2 indicates completed
@@ -325,7 +322,6 @@ void V3Graph::rank(V3EdgeFuncP edgeFuncp) { GraphAlgRank{this, edgeFuncp}; }
 // Changes user()
 
 class GraphAlgRLoops final : GraphAlg<> {
-private:
     std::vector<V3GraphVertex*> m_callTrace;  // List of everything we hit processing so far
     bool m_done = false;  // Exit algorithm
 
@@ -379,7 +375,6 @@ void V3Graph::reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) {
 // Changes user()
 
 class GraphAlgSubtrees final : GraphAlg<> {
-private:
     V3Graph* const m_loopGraphp;
 
     //! Iterate through all connected nodes of a graph with a loop or loops.

@@ -35,7 +35,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 
 class BeginState final {
-private:
     // NODE STATE
     // Entire netlist:
     // AstNodeFTask::user1      -> bool, 1=processed
@@ -55,7 +54,6 @@ public:
 //######################################################################
 
 class BeginVisitor final : public VNVisitor {
-private:
     // STATE
     BeginState* const m_statep;  // Current global state
     AstNodeModule* m_modp = nullptr;  // Current module

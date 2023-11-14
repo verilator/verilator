@@ -42,7 +42,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 
 class LinkJumpVisitor final : public VNVisitor {
-private:
     // NODE STATE
     //  AstNode::user1()    -> AstJumpLabel*, for this block if endOfIter
     //  AstNode::user2()    -> AstJumpLabel*, for this block if !endOfIter

@@ -42,7 +42,6 @@
 
 template <class T_Compare>
 class GraphStream final {
-private:
     // TYPES
     class VxHolder final {
     public:

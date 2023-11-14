@@ -38,7 +38,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Unroll state, as a visitor of each AstNode
 
 class UnrollVisitor final : public VNVisitor {
-private:
     // STATE
     AstVar* m_forVarp;  // Iterator variable
     const AstVarScope* m_forVscp;  // Iterator variable scope (nullptr for generate pass)

@@ -33,7 +33,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Branch state, as a visitor of each AstNode
 
 class BranchVisitor final : public VNVisitorConst {
-private:
     // NODE STATE
     // Entire netlist:
     //  AstFTask::user1()       -> int.  Number of references

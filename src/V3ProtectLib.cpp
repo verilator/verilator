@@ -30,7 +30,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // ProtectLib top-level visitor
 
 class ProtectVisitor final : public VNVisitor {
-private:
     AstVFile* m_vfilep = nullptr;  // DPI-enabled Verilog wrapper
     AstCFile* m_cfilep = nullptr;  // C implementation of DPI functions
     // Verilog text blocks

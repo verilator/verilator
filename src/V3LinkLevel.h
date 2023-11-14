@@ -29,7 +29,6 @@
 //============================================================================
 
 class V3LinkLevel final {
-private:
     using ModVec = std::vector<AstNodeModule*>;
 
     static void timescaling(const ModVec& mods) VL_MT_DISABLED;

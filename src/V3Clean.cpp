@@ -33,7 +33,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Clean state, as a visitor of each AstNode
 
 class CleanVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Entire netlist:
     //  AstNode::user()         -> CleanState.  For this node, 0==UNKNOWN

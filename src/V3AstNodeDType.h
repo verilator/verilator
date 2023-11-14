@@ -34,7 +34,6 @@ class AstNodeDType VL_NOT_FINAL : public AstNode {
     // Ideally width() would migrate to BasicDType as that's where it makes sense,
     // but it's currently so prevalent in the code we leave it here.
     // Note the below members are included in AstTypeTable::Key lookups
-private:
     int m_width = 0;  // (also in AstTypeTable::Key) Bit width of operation
     int m_widthMin
         = 0;  // (also in AstTypeTable::Key) If unsized, bitwidth of minimum implementation
@@ -138,7 +137,6 @@ class AstNodeArrayDType VL_NOT_FINAL : public AstNodeDType {
     // Array data type, ie "some_dtype var_name [2:0]"
     // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
     // @astgen op2 := rangep : Optional[AstRange] // array bounds
-private:
     AstNodeDType* m_refDTypep = nullptr;  // Elements of this type (after widthing)
 
     AstNode* rangenp() const { return reinterpret_cast<AstNode*>(rangep()); }
@@ -198,7 +196,6 @@ public:
 class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     // A struct or union; common handling
     // @astgen op1 := membersp : List[AstMemberDType]
-private:
     // MEMBERS
     string m_name;  // Name from upper typedef, if any
     AstNodeModule* m_classOrPackagep = nullptr;  // Package it will be emitted with
@@ -260,7 +257,6 @@ public:
 class AstEnumItem final : public AstNode {
     // @astgen op1 := rangep : Optional[AstRange] // Range for name appending
     // @astgen op2 := valuep : Optional[AstNodeExpr]
-private:
     string m_name;
 
 public:
@@ -283,7 +279,6 @@ class AstAssocArrayDType final : public AstNodeDType {
     // Associative array data type, ie "[some_dtype]"
     // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
     // @astgen op2 := keyChildDTypep : Optional[AstNodeDType]
-private:
     AstNodeDType* m_refDTypep;  // Elements of this type (after widthing)
     AstNodeDType* m_keyDTypep;  // Keys of this type (after widthing)
 public:
@@ -354,7 +349,6 @@ public:
 class AstBasicDType final : public AstNodeDType {
     // Builtin atomic/vectored data type
     // @astgen op1 := rangep : Optional[AstRange] // Range of variable
-private:
     struct Members {
         VBasicDTypeKwd m_keyword;  // (also in VBasicTypeKey) What keyword created basic type
         VNumRange m_nrange;  // (also in VBasicTypeKey) Numeric msb/lsb (if non-opaque keyword)
@@ -533,7 +527,6 @@ public:
 class AstClassRefDType final : public AstNodeDType {
     // Reference to a class
     // @astgen op1 := paramsp: List[AstPin]
-private:
     AstClass* m_classp;  // data type pointed to, BELOW the AstTypedef
     AstNodeModule* m_classOrPackagep = nullptr;  // Package hierarchy
 public:
@@ -577,7 +570,6 @@ class AstConstDType final : public AstNodeDType {
     // ConstDType are removed in V3LinkLValue and become AstVar::isConst.
     // When more generic types are supported AstConstDType will be propagated further.
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
-private:
     AstNodeDType* m_refDTypep = nullptr;  // Inherit from this base data type
 public:
     AstConstDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp)
@@ -653,7 +645,6 @@ class AstDefImplicitDType final : public AstNodeDType {
     // This allows "var enum {...} a,b" to share the enum definition for both variables
     // After link, these become typedefs
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
-private:
     string m_name;
     void* m_containerp;  // In what scope is the name unique, so we can know what are duplicate
                          // definitions (arbitrary value)
@@ -699,7 +690,6 @@ public:
 class AstDynArrayDType final : public AstNodeDType {
     // Dynamic array data type, ie "[]"
     // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
-private:
     AstNodeDType* m_refDTypep = nullptr;  // Elements of this type (after widthing)
 public:
     AstDynArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp)
@@ -844,7 +834,6 @@ public:
 class AstIfaceRefDType final : public AstNodeDType {
     // Reference to an interface, either for a port, or inside parent cell
     // @astgen op1 := paramsp : List[AstPin]
-private:
     FileLine* m_modportFileline;  // Where modport token was
     string m_cellName;  // "" = no cell, such as when connects to 'input' iface
     string m_ifaceName;  // Interface name
@@ -908,7 +897,6 @@ class AstMemberDType final : public AstNodeDType {
     // PARENT: AstNodeUOrStructDType
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
     // @astgen op3 := valuep : Optional[AstNode]
-private:
     AstNodeDType* m_refDTypep = nullptr;  // Elements of this type (after widthing)
     string m_name;  // Name of variable
     string m_tag;  // Holds the string of the verilator tag -- used in XML output.
@@ -981,7 +969,6 @@ class AstParamTypeDType final : public AstNodeDType {
     // Parents: MODULE
     // A parameter type statement; much like a var or typedef
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
-private:
     const VVarType m_varType;  // Type of variable (for localparam vs. param)
     string m_name;  // Name of variable
 public:
@@ -1051,7 +1038,6 @@ class AstQueueDType final : public AstNodeDType {
     // Queue array data type, ie "[ $ ]"
     // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
     // @astgen op2 := boundp : Optional[AstNodeExpr]
-private:
     AstNodeDType* m_refDTypep = nullptr;  // Elements of this type (after widthing)
 public:
     AstQueueDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstNodeExpr* boundp)
@@ -1113,7 +1099,6 @@ class AstRefDType final : public AstNodeDType {
     // @astgen op1 := typeofp : Optional[AstNode]
     // @astgen op2 := classOrPackageOpp : Optional[AstNodeExpr]
     // @astgen op3 := paramsp : List[AstPin]
-private:
     // Pre-Width must reference the Typeref, not what it points to, as some child
     // types like AstBracketArrayType will disappear and can't lose the handle
     AstTypedef* m_typedefp = nullptr;  // referenced type
@@ -1279,7 +1264,6 @@ public:
 class AstUnsizedArrayDType final : public AstNodeDType {
     // Unsized/open-range Array data type, ie "some_dtype var_name []"
     // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
-private:
     AstNodeDType* m_refDTypep;  // Elements of this type (after widthing)
 public:
     AstUnsizedArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp)
@@ -1346,7 +1330,6 @@ public:
 class AstWildcardArrayDType final : public AstNodeDType {
     // Wildcard index type associative array data type, ie "some_dtype var_name [*]"
     // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
-private:
     AstNodeDType* m_refDTypep;  // Elements of this type (after widthing)
 public:
     AstWildcardArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp)

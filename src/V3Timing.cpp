@@ -108,7 +108,6 @@ static bool hasFlags(AstNode* const nodep, uint8_t flags) { return !(~nodep->use
 //  Detect nodes affected by timing and/or requiring a process
 
 class TimingSuspendableVisitor final : public VNVisitor {
-private:
     // TYPES
     // Vertex of a dependency graph of suspendable nodes, e.g. if a node (process or task) is
     // suspendable, all its dependents should also be suspendable
@@ -450,7 +449,6 @@ public:
 //  Transform nodes affected by timing
 
 class TimingControlVisitor final : public VNVisitor {
-private:
     // NODE STATE
     //  Ast{Always,NodeCCall,Fork,NodeAssign}::user1()  -> bool.         Set true if the node has
     //                                                                   been processed.

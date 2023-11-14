@@ -90,7 +90,6 @@ public:
 // TraceDecl state, as a visitor of each AstNode
 
 class TraceDeclVisitor final : public VNVisitor {
-private:
     // NODE STATE
 
     // STATE

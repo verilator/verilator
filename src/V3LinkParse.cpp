@@ -33,7 +33,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Link state, as a visitor of each AstNode
 
 class LinkParseVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Cleared on netlist
     //  AstNode::user1()        -> bool.  True if processed

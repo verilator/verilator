@@ -31,7 +31,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Name state, as a visitor of each AstNode
 
 class NameVisitor final : public VNVisitorConst {
-private:
     // NODE STATE
     // Cleared on Netlist
     //  AstCell::user1()        -> bool.  Set true if already processed

@@ -40,7 +40,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 
 class ReloopVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // AstCFunc::user1p      -> Var* for temp var, 0=not set yet
     const VNUser1InUse m_inuser1;

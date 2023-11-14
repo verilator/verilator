@@ -166,7 +166,6 @@ public:
 // as a visitor of each AstNode
 
 class SubstUseVisitor final : public VNVisitorConst {
-private:
     // NODE STATE
     // See SubstVisitor
     //
@@ -216,7 +215,6 @@ public:
 // Subst state, as a visitor of each AstNode
 
 class SubstVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Passed to SubstUseVisitor
     // AstVar::user1p           -> SubstVar* for usage var, 0=not set yet. Only under CFunc.

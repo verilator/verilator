@@ -135,7 +135,6 @@ AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
 TimingKit prepareTiming(AstNetlist* const netlistp) {
     if (!v3Global.usesTiming()) return {};
     class AwaitVisitor final : public VNVisitor {
-    private:
         // NODE STATE
         //  AstSenTree::user1()  -> bool.  Set true if the sentree has been visited.
         const VNUser1InUse m_inuser1;
@@ -266,7 +265,6 @@ void transformForks(AstNetlist* const netlistp) {
     if (!v3Global.usesTiming()) return;
     // Transform all forked processes into functions
     class ForkVisitor final : public VNVisitor {
-    private:
         // NODE STATE
         //  AstVar::user1()  -> bool.  Set true if the variable was declared before the current
         //                             fork.

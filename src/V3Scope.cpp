@@ -34,7 +34,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Scope class functions
 
 class ScopeVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // AstVar::user1p           -> AstVarScope replacement for this variable
     // AstCell::user2p          -> AstScope*.  The scope created inside the cell
@@ -335,7 +334,6 @@ public:
 // Scope cleanup -- remove unused activates
 
 class ScopeCleanupVisitor final : public VNVisitor {
-private:
     // STATE
     AstScope* m_scopep = nullptr;  // Current scope we are building
 

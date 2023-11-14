@@ -32,7 +32,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // CoverageJoin state, as a visitor of each AstNode
 
 class CoverageJoinVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // VNUser4InUse     In V3Hasher via V3DupFinder
 

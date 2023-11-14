@@ -36,7 +36,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Coverage state, as a visitor of each AstNode
 
 class CoverageVisitor final : public VNVisitor {
-private:
     // TYPES
     using LinenoSet = std::set<int>;
 

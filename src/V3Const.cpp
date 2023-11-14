@@ -878,7 +878,6 @@ public:
 // Const state, as a visitor of each AstNode
 
 class ConstVisitor final : public VNVisitor {
-private:
     // CONSTANTS
     static constexpr unsigned CONCAT_MERGABLE_MAX_DEPTH = 10;  // Limit alg recursion
 

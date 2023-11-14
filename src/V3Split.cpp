@@ -241,7 +241,6 @@ public:
 // Split class functions
 
 class SplitReorderBaseVisitor VL_NOT_FINAL : public VNVisitor {
-private:
     // NODE STATE
     // AstVarScope::user1p      -> Var SplitNodeVertex* for usage var, 0=not set yet
     // AstVarScope::user2p      -> Var SplitNodeVertex* for delayed assignment var, 0=not set yet
@@ -845,7 +844,6 @@ public:
 };
 
 class SplitVisitor final : public SplitReorderBaseVisitor {
-private:
     // Keys are original always blocks pending delete,
     // values are newly split always blocks pending insertion
     // at the same position as the originals:

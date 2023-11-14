@@ -732,7 +732,6 @@ class AstCellRef final : public AstNodeExpr {
     // As-of-yet unlinkable reference into a cell
     // @astgen op1 := cellp : AstNode
     // @astgen op2 := exprp : AstNodeExpr
-private:
     string m_name;  // Cell name
 public:
     AstCellRef(FileLine* fl, const string& name, AstNode* cellp, AstNodeExpr* exprp)
@@ -751,7 +750,6 @@ public:
 };
 class AstClassOrPackageRef final : public AstNodeExpr {
     // @astgen op1 := paramsp : List[AstPin]
-private:
     string m_name;
     // Node not NodeModule to appease some early parser usage
     AstNode* m_classOrPackageNodep;  // Pointer to class/package referenced
@@ -2012,7 +2010,6 @@ class AstStructSel final : public AstNodeExpr {
     // Parents: math|stmt
     // Children: varref, math
     // @astgen op1 := fromp : AstNodeExpr
-private:
     string m_name;  // Name of the member
 public:
     AstStructSel(FileLine* fl, AstNodeExpr* fromp, const string& name)

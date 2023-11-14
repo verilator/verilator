@@ -45,7 +45,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Dead state, as a visitor of each AstNode
 
 class DeadVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Entire Netlist:
     //  AstNodeModule::user1()  -> int. Count of number of cells referencing this module.

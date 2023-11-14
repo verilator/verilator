@@ -37,7 +37,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Link state, as a visitor of each AstNode
 
 class LinkResolveVisitor final : public VNVisitor {
-private:
     // NODE STATE
     //  Entire netlist:
     //   AstCaseItem::user2()   // bool     Moved default caseitems
@@ -493,7 +492,6 @@ public:
 //      from child cells up to the top module.
 
 class LinkBotupVisitor final : public VNVisitorConst {
-private:
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
 

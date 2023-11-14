@@ -201,7 +201,6 @@ public:
 //######################################################################
 
 class WidthVisitor final : public VNVisitor {
-private:
     // TYPES
     using TableMap = std::map<std::pair<const AstNodeDType*, VAttrType>, AstVar*>;
     using PatVecMap = std::map<int, AstPatMember*>;

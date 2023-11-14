@@ -43,7 +43,6 @@
 // once configured and locked, it cannot be changed. Configuration and lock needs to be
 // done before starting any additional threads.
 class V3MutexConfig final {
-private:
     // Allows to disable mutexes and lockguards.
     // Use carefully as it can cause undefined behavior when used inappropriately.
     // All mutexes needs to be unlocked.
@@ -78,7 +77,6 @@ public:
 /// Mutex, wrapped to allow -fthread_safety checks
 template <typename T>
 class VL_CAPABILITY("mutex") V3MutexImp final {
-private:
     T m_mutex;  // Mutex
 
 public:
