@@ -1851,9 +1851,9 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
             newTaskp->addStmtsp(newAssignp);
         }
         oldNewVars.emplace(portp, newPortp);
-        AstArg* const newArgp
-            = new AstArg{portp->fileline(), portp->name(),
-                         new AstVarRef{portp->fileline(), newPortp, VAccess::READ}};
+        const VAccess pinAccess = portp->isWritable() ? VAccess::WRITE : VAccess::READ;
+        AstArg* const newArgp = new AstArg{portp->fileline(), portp->name(),
+                                           new AstVarRef{portp->fileline(), newPortp, pinAccess}};
         newCallp->addPinsp(newArgp);
     }
     // Create wrapper call to original, passing arguments, adding setting of return value
