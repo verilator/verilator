@@ -288,7 +288,8 @@ void transformForks(AstNetlist* const netlistp) {
             funcp->foreach([&](AstNodeVarRef* refp) {
                 AstVar* const varp = refp->varp();
                 AstBasicDType* const dtypep = varp->dtypep()->basicp();
-                bool passByValue = false;
+                // If not a fork..join, copy. All write refs should've been handled by V3Fork
+                bool passByValue = !m_forkp->joinType().join();
                 if (!varp->isFuncLocal()) {
                     if (VString::startsWith(varp->name(), "__Vintra")) {
                         // Pass it by value to the new function, as otherwise there are issues with
