@@ -220,6 +220,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         case VNType::atSub: op = "bvsub"; break;
         case VNType::atAdd: op = "bvadd"; break;
         case VNType::atLogAnd: op = "and"; break;
+        case VNType::atLogOr: op = "or"; break;
         default:  // LCOV_EXCL_LINE
             nodep->v3fatalSrc("Node needs randomization constraint, but bad case: " << nodep);
             break;
