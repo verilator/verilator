@@ -931,7 +931,7 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
             nodep = VN_AS(nodep, MemberSel)->fromp();
             continue;
         }
-        // AstNodeSelPre stashes the associated variable under an ATTROF
+        // AstNodePreSel stashes the associated variable under an ATTROF
         // of VAttrType::VAR_BASE so it isn't constified
         else if (VN_IS(nodep, AttrOf)) {
             nodep = VN_AS(nodep, AttrOf)->fromp();

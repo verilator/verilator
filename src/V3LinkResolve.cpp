@@ -181,19 +181,6 @@ class LinkResolveVisitor final : public VNVisitor {
             nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
         }
     }
-    void visit(AstNodePreSel* nodep) override {
-        if (!nodep->attrp()) {
-            iterateChildren(nodep);
-            AstNode* const basefromp = AstArraySel::baseFromp(nodep, false);
-            if (VN_IS(basefromp, Replicate)) {
-                // From {...}[...] syntax in IEEE 2017
-                if (basefromp) UINFO(1, "    Related node: " << basefromp << endl);
-            } else {
-                nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::VAR_BASE,
-                                           basefromp->cloneTree(false)});
-            }
-        }
-    }
 
     void visit(AstCaseItem* nodep) override {
         // Move default caseItems to the bottom of the list
