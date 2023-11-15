@@ -367,8 +367,14 @@ inline IData VL_RANDOM_RNG_I(VlRNG& rngr) VL_MT_UNSAFE { return rngr.rand64(); }
 inline QData VL_RANDOM_RNG_Q(VlRNG& rngr) VL_MT_UNSAFE { return rngr.rand64(); }
 extern WDataOutP VL_RANDOM_RNG_W(VlRNG& rngr, int obits, WDataOutP outwp) VL_MT_UNSAFE;
 
-inline bool VL_RANDOMIZE(VlRNG& rngr, IData& valuer) { valuer = VL_RANDOM_RNG_I(rngr); return true; }
-inline bool VL_RANDOMIZE(VlRNG& rngr, QData& valuer) { valuer = VL_RANDOM_RNG_Q(rngr); return true; }
+inline bool VL_RANDOMIZE(IData& valuer, VlRNG& rngr = VlRNG::vl_thread_rng()) {
+    valuer = VL_RANDOM_RNG_I(rngr);
+    return true;
+}
+inline bool VL_RANDOMIZE(QData& valuer, VlRNG& rngr = VlRNG::vl_thread_rng()) {
+    valuer = VL_RANDOM_RNG_Q(rngr);
+    return true;
+}
 
 //===================================================================
 // Readmem/Writemem operation classes
@@ -544,9 +550,9 @@ public:
         if (VL_LIKELY(index >= 0 && index < m_deque.size()))
             m_deque.erase(m_deque.begin() + index);
     }
-    IData randomize() {
+    IData randomize(VlRNG& rngr) {
         for (const auto& i : m_deque) {
-            if (VL_RANDOMIZE(i) == 0) return 0;
+            if (VL_RANDOMIZE(i, rngr) == 0) return 0;
         }
         return 1;
     }
@@ -905,8 +911,8 @@ std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
 }
 
 template <class T_Value>
-int VL_RANDOMIZE(const VlQueue<T_Value>& obj) {
-    return obj.randomize();
+int VL_RANDOMIZE(VlQueue<T_Value>& obj, VlRNG& rngr = VlRNG::vl_thread_rng()) {
+    return obj.randomize(rngr);
 }
 
 //===================================================================
