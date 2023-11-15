@@ -559,6 +559,7 @@ public:
         DYNAMIC_TRIGGER_SCHEDULER,
         FORK_SYNC,
         PROCESS_REFERENCE,
+        RANDOM_GENERATOR,
         // Unsigned and two state; fundamental types
         UINT32,
         UINT64,
@@ -592,6 +593,7 @@ public:
                                             "VlDynamicTriggerScheduler",
                                             "VlFork",
                                             "VlProcessRef",
+                                            "VlRandomizer",
                                             "IData",
                                             "QData",
                                             "LOGIC_IMPLICIT",
@@ -599,20 +601,13 @@ public:
         return names[m_e];
     }
     const char* dpiType() const {
-        static const char* const names[] = {"%E-unk",        "svBit",
-                                            "char",          "void*",
-                                            "char",          "int",
-                                            "%E-integer",    "svLogic",
-                                            "long long",     "double",
-                                            "short",         "%E-time",
-                                            "const char*",   "%E-untyped",
-                                            "dpiScope",      "const char*",
-                                            "%E-mtaskstate", "%E-triggervec",
-                                            "%E-dly-sched",  "%E-trig-sched",
-                                            "%E-dyn-sched",  "%E-fork",
-                                            "%E-proc-ref",   "IData",
-                                            "QData",         "%E-logic-implct",
-                                            " MAX"};
+        static const char* const names[]
+            = {"%E-unk",       "svBit",           "char",          "void*",        "char",
+               "int",          "%E-integer",      "svLogic",       "long long",    "double",
+               "short",        "%E-time",         "const char*",   "%E-untyped",   "dpiScope",
+               "const char*",  "%E-mtaskstate",   "%E-triggervec", "%E-dly-sched", "%E-trig-sched",
+               "%E-dyn-sched", "%E-fork",         "%E-proc-ref",   "%E-rand-gen",  "IData",
+               "QData",        "%E-logic-implct", " MAX"};
         return names[m_e];
     }
     static void selfTest() {
@@ -652,6 +647,7 @@ public:
         case DYNAMIC_TRIGGER_SCHEDULER: return 0;  // opaque
         case FORK_SYNC: return 0;  // opaque
         case PROCESS_REFERENCE: return 0;  // opaque
+        case RANDOM_GENERATOR: return 0;  // opaque
         case UINT32: return 32;
         case UINT64: return 64;
         default: return 0;
@@ -691,7 +687,8 @@ public:
         return (m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
                 || m_e == MTASKSTATE || m_e == TRIGGERVEC || m_e == DELAY_SCHEDULER
                 || m_e == TRIGGER_SCHEDULER || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == FORK_SYNC
-                || m_e == PROCESS_REFERENCE || m_e == DOUBLE || m_e == UNTYPED);
+                || m_e == PROCESS_REFERENCE || m_e == RANDOM_GENERATOR || m_e == DOUBLE
+                || m_e == UNTYPED);
     }
     bool isDouble() const VL_MT_SAFE { return m_e == DOUBLE; }
     bool isEvent() const { return m_e == EVENT; }
