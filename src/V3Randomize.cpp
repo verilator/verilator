@@ -349,6 +349,14 @@ class RandomizeVisitor final : public VNVisitor {
                                            new AstConst{fl, AstConst::Null{}}},
                                 assignp};
                 funcp->addStmtsp(assignIfNotNullp);
+            } else if (const auto* const dynp = VN_CAST(dtypep, DynArrayDType)) {
+                AstVarRef* const refp = new AstVarRef{fl, memberVarp, VAccess::WRITE};
+                AstCMethodHard* const callp = new AstCMethodHard{nodep->fileline(), refp, "randomize"};
+                callp->dtypeSetSigned32();
+                AstAssign* const assignp = new AstAssign{
+                    fl, new AstVarRef{fl, fvarp, VAccess::WRITE},
+                    new AstAnd{fl, new AstVarRef{fl, fvarp, VAccess::READ}, callp}};
+                funcp->addStmtsp(assignp);
             } else {
                 memberp->v3warn(E_UNSUPPORTED, "Unsupported: random member variable with type "
                                                    << memberp->dtypep()->prettyDTypeNameQ());
