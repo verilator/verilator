@@ -58,7 +58,7 @@ void VlDelayScheduler::resume() {
     VL_DEBUG_IF(dump(); VL_DBG_MSGF("         Resuming delayed processes\n"););
 #endif
     while (awaitingCurrentTime()) {
-        if (m_queue.begin()->first != m_context.time()) {
+        if (m_queue.begin()->first.time != m_context.time()) {
             VL_FATAL_MT(__FILE__, __LINE__, "",
                         "%Error: Encountered process that should've been resumed at an "
                         "earlier simulation time. Missed a time slot?");
@@ -74,7 +74,7 @@ uint64_t VlDelayScheduler::nextTimeSlot() const {
     if (empty()) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: There is no next time slot scheduled");
     }
-    return m_queue.begin()->first;
+    return m_queue.begin()->first.time;
 }
 
 #ifdef VL_DEBUG
@@ -84,7 +84,7 @@ void VlDelayScheduler::dump() const {
     } else {
         VL_DBG_MSGF("         Delayed processes:\n");
         for (const auto& susp : m_queue) {
-            VL_DBG_MSGF("             Awaiting time %" PRIu64 ": ", susp.first);
+            VL_DBG_MSGF("             Awaiting time %" PRIu64 ": ", susp.first.time);
             susp.second.dump();
         }
     }

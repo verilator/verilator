@@ -17,7 +17,6 @@ module t;
    wire #PDLY d_param = in;
 
    initial begin
-      #0 in = 1'b1;
       #2 in = 1'b0;
       #100;
       $write("*-* All Finished *-*\n");

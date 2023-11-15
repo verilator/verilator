@@ -896,10 +896,7 @@ class TimingControlVisitor final : public VNVisitor {
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* valuep = V3Const::constifyEdit(nodep->lhsp()->unlinkFrBack());
         auto* const constp = VN_CAST(valuep, Const);
-        if (constp && constp->isZero()) {
-            nodep->v3warn(ZERODLY, "Unsupported: #0 delays do not schedule process resumption in "
-                                   "the Inactive region");
-        } else {
+        if (!constp || !constp->isZero()) {
             // Scale the delay
             if (valuep->dtypep()->isDouble()) {
                 valuep = new AstRToIRoundS{
