@@ -25,8 +25,26 @@ class nba_waiter;
     endtask
 endclass
 
+class Foo;
+    task bar(logic a, logic b);
+        int x;
+        int y;
+        // bar's local vars and intravals could be overwritten by other locals
+        if (a) x <= `DELAY 'hDEAD;
+        if (b) y <= `DELAY 'hBEEF;
+        #2
+        if (x != 'hDEAD) $stop;
+    endtask
+
+   task qux();
+        int x[] = new[1];
+        x[0] <= `DELAY 'hBEEF;  // Segfault check
+    endtask
+endclass
+
 module t;
     nba_waiter waiter = new;
+    Foo foo = new;
     event e;
     int cnt = 0;
 
@@ -42,6 +60,9 @@ module t;
         waiter.wait_for_nba_region;
         if (cnt != 4) $stop;
         if ($time != `TIME_AFTER_SECOND_WAIT) $stop;
+        foo.bar(1, 1);
+        foo.qux();
+        #2
         $write("*-* All Finished *-*\n");
         $finish;
     end
