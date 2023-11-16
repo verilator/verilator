@@ -419,7 +419,7 @@ private:
                 [](AstVarRef* refp) { return refp->varp()->isFuncLocal(); })) {
             nodep->user2(true);
             // Put it in a fork to prevent lifetime issues with the local
-            auto* forkp = new AstFork{nodep->fileline(), "", nullptr};
+            AstFork* const forkp = new AstFork{nodep->fileline(), "", nullptr};
             forkp->joinType(VJoinType::JOIN_NONE);
             nodep->replaceWith(forkp);
             forkp->addStmtsp(nodep);
