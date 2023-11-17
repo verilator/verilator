@@ -148,7 +148,7 @@ static void makeToStringMiddle(AstClass* nodep) {
 static void makeVlRandomize(AstClass* nodep) {
     AstCFunc* const funcp
         = new AstCFunc{nodep->fileline(), "VL_RANDOMIZE", nullptr, "IData"};
-    funcp->argTypes("const VlClassRef<" + EmitCBase::prefixNameProtect(nodep) + ">& obj");
+    funcp->argTypes("VlClassRef<" + EmitCBase::prefixNameProtect(nodep) + ">& obj, VlRNG& rngr = VlRNG::vl_thread_rng()");
     funcp->isMethod(false);
     funcp->isConst(false);
     funcp->isStatic(false);
@@ -177,7 +177,13 @@ void V3Common::commonAll() {
             makeVlToString(classp);
             makeToString(classp);
             makeToStringMiddle(classp);
-            if (classp->needRNG()) makeVlRandomize(classp);
+            // Check if we need to emit VL_RANDOMIZE for the class
+            for (AstNode* itemp = classp->membersp(); itemp; itemp = itemp->nextp()) {
+                if (itemp->origName() == "randomize") {
+                    makeVlRandomize(classp);
+                    break;
+                }
+            }
         } else if (AstIface* const ifacep = VN_CAST(nodep, Iface)) {
             makeVlToString(ifacep);
         }

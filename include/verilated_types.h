@@ -551,7 +551,7 @@ public:
             m_deque.erase(m_deque.begin() + index);
     }
     IData randomize(VlRNG& rngr) {
-        for (const auto& i : m_deque) {
+        for (auto& i : m_deque) {
             if (VL_RANDOMIZE(i, rngr) == 0) return 0;
         }
         return 1;
