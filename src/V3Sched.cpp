@@ -429,7 +429,7 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
                     if (procp->isSuspendable()) {
                         funcp->slow(false);
                         subFuncp = createNewSubFuncp(scopep);
-                        subFuncp->name(subFuncp->name() + "__" + cvtToStr(scopep->user2Inc()));
+                        subFuncp->name(subFuncp->name() + "__Vtiming__" + cvtToStr(scopep->user2Inc()));
                         subFuncp->rtnType("VlCoroutine");
                         if (VN_IS(procp, Always)) {
                             subFuncp->slow(false);
