@@ -157,7 +157,7 @@ Winkel, Jeff Winston, Joshua Wise, Clifford Wolf, Johan Wouters, Paul
 Wright, Tobias Wölfel, Junyi Xi, Ding Xiaoliang, Liu Xiaoyi, Mandy Xu,
 Shanshan Xu, Yinan Xu, SU YANG, Felix Yan, Luke Yang, Amir Yazdanbakhsh,
 Chentai (Seven) Yuan, Florian Zaruba, Mat Zeno, Keyi Zhang, Xi Zhang, Yike
-Zhou, Jiamin Zhu, and Исаак Алексеевич.
+Zhou, Jiamin Zhu.
 
 Thanks to them, and all those we've missed mentioning above, and to those
 whom have wished to remain anonymous.
