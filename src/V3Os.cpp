@@ -305,14 +305,6 @@ void V3Os::filesystemFlush(const string& dirname) {
         if (fd > 0) ::close(fd);
     }
 #else
-    {
-        // Linux kernel may not reread from NFS unless timestamp modified
-        struct timeval tv;
-        gettimeofday(&tv, NULL);
-        const int err = utimes(dirname.c_str(), &tv);
-        // Not an error
-        if (err != 0) UINFO(1, "-Info: File not statable: " << dirname << endl);
-    }
     // Faster to just try both rather than check if a file is a dir.
     if (DIR* const dirp = opendir(dirname.c_str())) {  // LCOV_EXCL_BR_LINE
         closedir(dirp);  // LCOV_EXCL_LINE
@@ -320,6 +312,19 @@ void V3Os::filesystemFlush(const string& dirname) {
         if (fd > 0) ::close(fd);
     }
 #endif
+}
+
+void V3Os::filesystemFlushBuildDir(const string& dirname) {
+    // Attempt to force out written directory, for NFS like file systems.
+#ifndef _MSC_VER
+    // Linux kernel may not reread from NFS unless timestamp modified
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    const int err = utimes(dirname.c_str(), &tv);
+    // Not an error
+    if (err != 0) UINFO(1, "-Info: File not utimed: " << dirname << endl);
+#endif
+    filesystemFlush(dirname);
 }
 
 void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
