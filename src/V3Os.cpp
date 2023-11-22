@@ -47,6 +47,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 #include <dirent.h>
 #include <utime.h>
 #endif
+#include <fcntl.h>
 #include <fstream>
 #include <memory>
 
@@ -76,7 +77,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 # include <sys/time.h>
 # include <sys/wait.h>  // Needed on FreeBSD for WIFEXITED
 # include <unistd.h>  // usleep
-# include <fcntl.h>
 #endif
 // clang-format on
 
@@ -301,7 +301,7 @@ void V3Os::filesystemFlush(const string& dirname) {
     // NFS caches stat() calls so to get up-to-date information must
     // do a open or opendir on the filename.
 #ifdef _MSC_VER
-    if (int fd = ::open(filename.c_str(), O_RDONLY)) {  // LCOV_EXCL_BR_LINE
+    if (int fd = ::open(dirname.c_str(), O_RDONLY)) {  // LCOV_EXCL_BR_LINE
         if (fd > 0) ::close(fd);
     }
 #else
