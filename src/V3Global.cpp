@@ -106,9 +106,9 @@ string V3Global::digitsFilename(int number) {
 
 void V3Global::dumpCheckGlobalTree(const string& stagename, int newNumber, bool doDump) {
     const string treeFilename = v3Global.debugFilename(stagename + ".tree", newNumber);
-    v3Global.rootp()->dumpTreeFile(treeFilename, false, doDump);
+    v3Global.rootp()->dumpTreeFile(treeFilename, doDump);
     if (v3Global.opt.dumpTreeDot()) {
-        v3Global.rootp()->dumpTreeDotFile(treeFilename + ".dot", false, doDump);
+        v3Global.rootp()->dumpTreeDotFile(treeFilename + ".dot", doDump);
     }
     if (v3Global.opt.stats()) V3Stats::statsStage(stagename);
 }

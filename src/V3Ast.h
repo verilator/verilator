@@ -2211,11 +2211,10 @@ public:
     static void dumpTreeGdb(const AstNode* nodep);  // For GDB only
     void dumpTreeAndNext(std::ostream& os = std::cout, const string& indent = "    ",
                          int maxDepth = 0) const;
-    void dumpTreeFile(const string& filename, bool append = false, bool doDump = true,
-                      bool doCheck = true);
+    void dumpTreeFile(const string& filename, bool doDump = true, bool doCheck = true);
     static void dumpTreeFileGdb(const AstNode* nodep, const char* filenamep = nullptr);
     void dumpTreeDot(std::ostream& os = std::cout) const;
-    void dumpTreeDotFile(const string& filename, bool append = false, bool doDump = true);
+    void dumpTreeDotFile(const string& filename, bool doDump = true);
 
     // METHODS - static advancement
     static AstNode* afterCommentp(AstNode* nodep) {
