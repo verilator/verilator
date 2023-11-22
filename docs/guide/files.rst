@@ -50,9 +50,9 @@ For --cc/--sc, it creates:
      - Make include file with class names (from --make gmake)
    * - *{prefix}*\ _hier.mk
      - Make file for hierarchy blocks (from --make gmake)
-   * - *{prefix}*\ _hierMkArgs.f
+   * - *{prefix}*\ __hierMkArgs.f
      - Arguments for hierarchical Verilation (from --make gmake)
-   * - *{prefix}*\ _hierCMakeArgs.f
+   * - *{prefix}*\ __hierCMakeArgs.f
      - Arguments for hierarchical Verilation (from --make cmake)
    * - *{prefix}*\ .h
      - Model header
