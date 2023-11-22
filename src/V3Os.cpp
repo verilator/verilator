@@ -45,6 +45,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 #define PATH_MAX MAX_PATH
 #else
 #include <dirent.h>
+#include <utime.h>
 #endif
 #include <fstream>
 #include <memory>
@@ -58,6 +59,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 # include <bcrypt.h>  // BCryptGenRandom
 # include <chrono>
 # include <direct.h>  // mkdir
+# include <io.h>  // open, read, write, close
 # include <psapi.h>   // GetProcessMemoryInfo
 # include <thread>
 // These macros taken from gdbsupport/gdb_wait.h in binutils-gdb
@@ -74,6 +76,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 # include <sys/time.h>
 # include <sys/wait.h>  // Needed on FreeBSD for WIFEXITED
 # include <unistd.h>  // usleep
+# include <fcntl.h>
 #endif
 // clang-format on
 
@@ -291,6 +294,31 @@ void V3Os::createDir(const string& dirname) {
     _mkdir(dirname.c_str());
 #else
     mkdir(dirname.c_str(), 0777);
+#endif
+}
+
+void V3Os::filesystemFlush(const string& dirname) {
+    // NFS caches stat() calls so to get up-to-date information must
+    // do a open or opendir on the filename.
+#ifdef _MSC_VER
+    if (int fd = ::open(filename.c_str(), O_RDONLY)) {  // LCOV_EXCL_BR_LINE
+        if (fd > 0) ::close(fd);
+    }
+#else
+    {
+        // Linux kernel may not reread from NFS unless timestamp modified
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        const int err = utimes(dirname.c_str(), &tv);
+        // Not an error
+        if (err != 0) UINFO(1, "-Info: File not statable: " << dirname << endl);
+    }
+    // Faster to just try both rather than check if a file is a dir.
+    if (DIR* const dirp = opendir(dirname.c_str())) {  // LCOV_EXCL_BR_LINE
+        closedir(dirp);  // LCOV_EXCL_LINE
+    } else if (int fd = ::open(dirname.c_str(), O_RDONLY)) {  // LCOV_EXCL_BR_LINE
+        if (fd > 0) ::close(fd);
+    }
 #endif
 }
 

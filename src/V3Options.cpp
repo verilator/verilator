@@ -456,23 +456,6 @@ bool V3Options::fileStatNormal(const string& filename) {
     return true;
 }
 
-void V3Options::fileNfsFlush(const string& filename) {
-    // NFS caches stat() calls so to get up-to-date information must
-    // do a open or opendir on the filename.
-    // Faster to just try both rather than check if a file is a dir.
-#ifdef _MSC_VER
-    if (int fd = ::open(filename.c_str(), O_RDONLY)) {  // LCOV_EXCL_BR_LINE
-        if (fd > 0) ::close(fd);
-    }
-#else
-    if (DIR* const dirp = opendir(filename.c_str())) {  // LCOV_EXCL_BR_LINE
-        closedir(dirp);  // LCOV_EXCL_LINE
-    } else if (int fd = ::open(filename.c_str(), O_RDONLY)) {  // LCOV_EXCL_BR_LINE
-        if (fd > 0) ::close(fd);
-    }
-#endif
-}
-
 string V3Options::fileExists(const string& filename) {
     // Surprisingly, for VCS and other simulators, this process
     // is quite slow; presumably because of re-reading each directory

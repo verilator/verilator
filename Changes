@@ -34,6 +34,7 @@ Verilator 5.019 devel
 * Fix MingW compilation (#4675). [David Ledger]
 * Fix trace when using SystemC with certain configurations (#4676). [Anthony Donlon]
 * Fix C++20 compilation errors (#4670).
+* Fix compilers seeing empty input due to file system races (#4708). [Flavien Solt]
 
 
 Verilator 5.018 2023-10-30

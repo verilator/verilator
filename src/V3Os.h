@@ -63,6 +63,7 @@ public:
 
     // METHODS (directory utilities)
     static void createDir(const string& dirname);
+    static void filesystemFlush(const string& dirname);
     static void unlinkRegexp(const string& dir, const string& regexp);
 
     // METHODS (random)
