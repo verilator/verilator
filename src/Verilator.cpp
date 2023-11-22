@@ -637,11 +637,10 @@ static void verilate(const string& argString) {
 
     // Cleanup
     // Ideally we'd do prefix + "_*.*", and prefix + ".*", but this seems
-    // potentially disruptive to old behavior
+    // potentially disruptive to old behavior, and --skip-identical
     V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.dot");
     V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.tree");
     V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.txt");
-    V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*_DepSet_*");
 
     // Internal tests (after option parsing as need debug() setting,
     // and after removing files as may make debug output)
