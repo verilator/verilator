@@ -1237,7 +1237,7 @@ void AstNode::dumpPtrs(std::ostream& os) const {
         // This may cause address sanitizer failures as iterpp can be stale
         // os << "*=" << cvtToHex(*m_iterpp);
     }
-    os << std::endl;
+    os << "\n";
 }
 
 void AstNode::dumpTree(std::ostream& os, const string& indent, int maxDepth) const {
