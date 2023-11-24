@@ -1833,46 +1833,46 @@ string V3Options::parseFileArg(const string& optdir, const string& relfilename) 
 
 void V3Options::showVersion(bool verbose) {
     cout << version();
-    cout << endl;
+    cout << "\n";
     if (!verbose) return;
 
-    cout << endl;
+    cout << "\n";
     cout << "Copyright 2003-2023 by Wilson Snyder.  Verilator is free software; you can\n";
     cout << "redistribute it and/or modify the Verilator internals under the terms of\n";
     cout << "either the GNU Lesser General Public License Version 3 or the Perl Artistic\n";
     cout << "License Version 2.0.\n";
 
-    cout << endl;
+    cout << "\n";
     cout << "See https://verilator.org for documentation\n";
 
-    cout << endl;
+    cout << "\n";
     cout << "Summary of configuration:\n";
     cout << "  Compiled in defaults if not in environment:\n";
-    cout << "    SYSTEMC            = " << DEFENV_SYSTEMC << endl;
-    cout << "    SYSTEMC_ARCH       = " << DEFENV_SYSTEMC_ARCH << endl;
-    cout << "    SYSTEMC_INCLUDE    = " << DEFENV_SYSTEMC_INCLUDE << endl;
-    cout << "    SYSTEMC_LIBDIR     = " << DEFENV_SYSTEMC_LIBDIR << endl;
-    cout << "    VERILATOR_ROOT     = " << DEFENV_VERILATOR_ROOT << endl;
-    cout << "    SystemC system-wide = " << cvtToStr(systemCSystemWide()) << endl;
+    cout << "    SYSTEMC            = " << DEFENV_SYSTEMC << "\n";
+    cout << "    SYSTEMC_ARCH       = " << DEFENV_SYSTEMC_ARCH << "\n";
+    cout << "    SYSTEMC_INCLUDE    = " << DEFENV_SYSTEMC_INCLUDE << "\n";
+    cout << "    SYSTEMC_LIBDIR     = " << DEFENV_SYSTEMC_LIBDIR << "\n";
+    cout << "    VERILATOR_ROOT     = " << DEFENV_VERILATOR_ROOT << "\n";
+    cout << "    SystemC system-wide = " << cvtToStr(systemCSystemWide()) << "\n";
 
     // If update below, also update V3Options::getenvBuiltins()
-    cout << endl;
+    cout << "\n";
     cout << "Environment:\n";
-    cout << "    MAKE               = " << V3Os::getenvStr("MAKE", "") << endl;
-    cout << "    PERL               = " << V3Os::getenvStr("PERL", "") << endl;
-    cout << "    SYSTEMC            = " << V3Os::getenvStr("SYSTEMC", "") << endl;
-    cout << "    SYSTEMC_ARCH       = " << V3Os::getenvStr("SYSTEMC_ARCH", "") << endl;
-    cout << "    SYSTEMC_INCLUDE    = " << V3Os::getenvStr("SYSTEMC_INCLUDE", "") << endl;
-    cout << "    SYSTEMC_LIBDIR     = " << V3Os::getenvStr("SYSTEMC_LIBDIR", "") << endl;
+    cout << "    MAKE               = " << V3Os::getenvStr("MAKE", "") << "\n";
+    cout << "    PERL               = " << V3Os::getenvStr("PERL", "") << "\n";
+    cout << "    SYSTEMC            = " << V3Os::getenvStr("SYSTEMC", "") << "\n";
+    cout << "    SYSTEMC_ARCH       = " << V3Os::getenvStr("SYSTEMC_ARCH", "") << "\n";
+    cout << "    SYSTEMC_INCLUDE    = " << V3Os::getenvStr("SYSTEMC_INCLUDE", "") << "\n";
+    cout << "    SYSTEMC_LIBDIR     = " << V3Os::getenvStr("SYSTEMC_LIBDIR", "") << "\n";
     // wrapper uses VERILATOR_BIN
-    cout << "    VERILATOR_BIN      = " << V3Os::getenvStr("VERILATOR_BIN", "") << endl;
-    cout << "    VERILATOR_ROOT     = " << V3Os::getenvStr("VERILATOR_ROOT", "") << endl;
+    cout << "    VERILATOR_BIN      = " << V3Os::getenvStr("VERILATOR_BIN", "") << "\n";
+    cout << "    VERILATOR_ROOT     = " << V3Os::getenvStr("VERILATOR_ROOT", "") << "\n";
 
     // If update below, also update V3Options::getSupported()
-    cout << endl;
+    cout << "\n";
     cout << "Supported features (compiled-in or forced by environment):\n";
-    cout << "    COROUTINES         = " << getSupported("COROUTINES") << endl;
-    cout << "    SYSTEMC            = " << getSupported("SYSTEMC") << endl;
+    cout << "    COROUTINES         = " << getSupported("COROUTINES") << "\n";
+    cout << "    SYSTEMC            = " << getSupported("SYSTEMC") << "\n";
 }
 
 //======================================================================
@@ -1906,7 +1906,7 @@ void V3Options::setDebugMode(int level) {
     if (!m_dumpLevel.count("tree")) m_dumpLevel["tree"] = 3;  // Don't override if already set.
     m_stats = true;
     m_debugCheck = true;
-    cout << "Starting " << version() << endl;
+    cout << "Starting " << version() << "\n";
 }
 
 unsigned V3Options::debugLevel(const string& tag) const VL_MT_SAFE {

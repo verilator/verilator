@@ -99,9 +99,9 @@ private:
                 nodep->v3warn(ENCAPSULATED, nodep->prettyNameQ()
                                                 << " is hidden as " << how
                                                 << " within this context (IEEE 1800-2017 8.18)\n"
-                                                << nodep->warnContextPrimary() << endl
+                                                << nodep->warnContextPrimary() << "\n"
                                                 << nodep->warnOther()
-                                                << "... Location of definition" << endl
+                                                << "... Location of definition\n"
                                                 << defp->warnContextSecondary());
             }
         }
