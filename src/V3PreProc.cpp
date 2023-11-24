@@ -952,7 +952,7 @@ int V3PreProcImp::getRawToken() {
 void V3PreProcImp::debugToken(int tok, const char* cmtp) {
     static int s_debugFileline = v3Global.opt.debugSrcLevel("fileline");  // --debugi-fileline 9
     if (debug() >= 5) {
-        string buf = string(yyourtext(), yyourleng());
+        string buf{yyourtext(), yyourleng()};
         string::size_type pos;
         while ((pos = buf.find('\n')) != string::npos) buf.replace(pos, 1, "\\n");
         while ((pos = buf.find('\r')) != string::npos) buf.replace(pos, 1, "\\r");
@@ -1533,7 +1533,7 @@ int V3PreProcImp::getFinalToken(string& buf) {
     if (!m_finAhead) {
         m_finAhead = true;
         m_finToken = getStateToken();
-        m_finBuf = string(yyourtext(), yyourleng());
+        m_finBuf = string{yyourtext(), yyourleng()};
     }
     const int tok = m_finToken;
     buf = m_finBuf;
