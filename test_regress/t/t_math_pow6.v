@@ -18,7 +18,7 @@ module t (/*AUTOARG*/
 
    // -- Verilator 621c515 creates code that uses the undeclared function VL_POW_WWI()
    // verilator lint_off WIDTH
-   output [3:0] i65 = 65'd3 ** a; // WWI
+   output [3:0] i65 = 65'd3 ** a; // IWI
    output [3:0] j65 = a ** 65'd3; // IIW
    output [3:0] i33 = 33'd3 ** a; // QQI
    output [3:0] j33 = a ** 33'd3; // IIQ
