@@ -300,7 +300,7 @@ void V3Os::createDir(const string& dirname) {
 void V3Os::filesystemFlush(const string& dirname) {
     // NFS caches stat() calls so to get up-to-date information must
     // do a open or opendir on the filename.
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
     if (int fd = ::open(dirname.c_str(), O_RDONLY)) {  // LCOV_EXCL_BR_LINE
         if (fd > 0) ::close(fd);
     }
@@ -316,7 +316,7 @@ void V3Os::filesystemFlush(const string& dirname) {
 
 void V3Os::filesystemFlushBuildDir(const string& dirname) {
     // Attempt to force out written directory, for NFS like file systems.
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) && !defined(__MINGW32__)
     // Linux kernel may not reread from NFS unless timestamp modified
     struct timeval tv;
     gettimeofday(&tv, NULL);
