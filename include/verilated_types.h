@@ -468,6 +468,12 @@ std::string VL_TO_STRING(const VlWide<T_Words>& obj) {
     return VL_TO_STRING_W(T_Words, obj.data());
 }
 
+template <std::size_t T_Words>
+inline bool VL_RANDOMIZE(VlWide<T_Words>& valuer, VlRNG& rngr = VlRNG::vl_thread_rng()) {
+    VL_RANDOM_W(VL_EDATASIZE*T_Words, valuer);
+    return true;
+}
+
 //===================================================================
 // Verilog queue and dynamic array container
 // There are no multithreaded locks on this; the base variable must

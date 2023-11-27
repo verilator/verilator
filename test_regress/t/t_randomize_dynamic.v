@@ -21,7 +21,7 @@ end
 int N = 10;
 
 class Cls;
-   rand int dyn[];
+   rand bit [127:0] dyn[];
    function new;
       dyn = new[N];
    endfunction
