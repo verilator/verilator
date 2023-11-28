@@ -1221,13 +1221,16 @@ class ConstVisitor final : public VNVisitor {
     }
     bool operandHugeShiftL(const AstNodeBiop* nodep) {
         return (VN_IS(nodep->rhsp(), Const) && !VN_AS(nodep->rhsp(), Const)->num().isFourState()
-                && (VN_AS(nodep->rhsp(), Const)->toUInt() >= static_cast<uint32_t>(nodep->width()))
+                && (!VN_AS(nodep->rhsp(), Const)->num().fitsInUInt()  // > 2^32 shift
+                    || (VN_AS(nodep->rhsp(), Const)->toUInt()
+                        >= static_cast<uint32_t>(nodep->width())))
                 && nodep->lhsp()->isPure());
     }
     bool operandHugeShiftR(const AstNodeBiop* nodep) {
         return (VN_IS(nodep->rhsp(), Const) && !VN_AS(nodep->rhsp(), Const)->num().isFourState()
-                && (VN_AS(nodep->rhsp(), Const)->toUInt()
-                    >= static_cast<uint32_t>(nodep->lhsp()->width()))
+                && (!VN_AS(nodep->rhsp(), Const)->num().fitsInUInt()  // > 2^32 shift
+                    || (VN_AS(nodep->rhsp(), Const)->toUInt()
+                        >= static_cast<uint32_t>(nodep->lhsp()->width())))
                 && nodep->lhsp()->isPure());
     }
     bool operandIsTwo(const AstNode* nodep) {

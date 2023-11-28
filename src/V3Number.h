@@ -638,6 +638,7 @@ public:
     bool isAnyXZ() const;
     bool isAnyZ() const VL_MT_SAFE;
     bool isMsbXZ() const { return bitIsXZ(m_data.width() - 1); }
+    bool fitsInUInt() const VL_MT_SAFE;
     uint32_t toUInt() const VL_MT_SAFE;
     int32_t toSInt() const VL_MT_SAFE;
     uint64_t toUQuad() const VL_MT_SAFE;
