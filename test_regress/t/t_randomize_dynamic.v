@@ -18,6 +18,20 @@ begin \
    if (ok != 1) $stop; \
 end
 
+`define check_randomize(cl, field) \
+begin \
+   longint prev_result; \
+   int ok = 0; \
+   for (int i = 0; i < 10; i++) begin \
+      longint result; \
+      void'(std::randomize(cl)); \
+      result = longint'(field); \
+      if (i > 0 && result != prev_result) ok = 1; \
+      prev_result = result; \
+   end \
+   if (ok != 1) $stop; \
+end
+
 int N = 10;
 
 class Cls;
@@ -30,8 +44,15 @@ endclass
 module t;
    initial begin
       Cls c = new;
+
+      $display("obj.randomize()");
       for (int i = 0; i < N; i++) begin
          `check_rand(c, c.dyn[i]);
+      end
+
+      $display("std::randomize(obj)");
+      for (int i = 0; i < N; i++) begin
+         `check_randomize(c, c.dyn[i]);
       end
 
       $write("*-* All Finished *-*\n");
