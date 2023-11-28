@@ -126,7 +126,7 @@ public:
     }
     AstClass* getClassp(AstNodeFTask* nodep) {
         AstClass* const classp = m_funcToClassMap[nodep];
-        UASSERT_OBJ(classp, nodep, "No class for ctor func");
+        UASSERT_OBJ(classp, nodep, "No class for method");
         return classp;
     }
     void remapFuncClassp(AstNodeFTask* nodep, AstNodeFTask* newp) {
@@ -208,6 +208,10 @@ private:
             if (nodep->dpiImport()) m_curVxp->noInline(true);
             if (nodep->classMethod()) m_curVxp->noInline(true);  // Until V3Task supports it
             if (nodep->recursive()) m_curVxp->noInline(true);
+            if (nodep->classMethod() && nodep->name() == "randomize") {
+                UASSERT_OBJ(m_classp, nodep, "Randomize method not under class");
+                m_funcToClassMap[nodep] = m_classp;
+            }
             if (nodep->isConstructor()) {
                 m_curVxp->noInline(true);
                 m_ctorp = nodep;
@@ -1505,6 +1509,9 @@ class TaskVisitor final : public VNVisitor {
                     nodep->addNextHere(cfuncp);
                     if (nodep->dpiImport() || m_statep->ftaskNoInline(nodep)) {
                         m_statep->ftaskCFuncp(nodep, cfuncp);
+                    }
+                    if (nodep->classMethod() && nodep->name() == "randomize") {
+                        m_statep->getClassp(nodep)->randomize(cfuncp);
                     }
                     iterateIntoFTask(clonedFuncp);  // Do the clone too
                 }

@@ -148,13 +148,13 @@ static void makeToStringMiddle(AstClass* nodep) {
 static void makeVlRandomize(AstClass* nodep) {
     AstCFunc* const funcp
         = new AstCFunc{nodep->fileline(), "VL_RANDOMIZE", nullptr, "IData"};
-    funcp->argTypes("VlClassRef<" + EmitCBase::prefixNameProtect(nodep) + ">& obj, VlRNG& rngr = VlRNG::vl_thread_rng()");
+    funcp->argTypes("VlClassRef<" + EmitCBase::prefixNameProtect(nodep) + ">& obj");
     funcp->isMethod(false);
     funcp->isConst(false);
     funcp->isStatic(false);
     funcp->protect(false);
     funcp->addStmtsp(new AstCStmt{nodep->fileline(), "IData out;\n"});
-    funcp->addStmtsp(new AstCStmt{nodep->fileline(), "if (obj) obj->__VnoInFunc_randomize(nullptr, out);\n"});
+    funcp->addStmtsp(new AstCStmt{nodep->fileline(), "if (obj) obj->" + nodep->randomize()->nameProtect() + "(nullptr, out);\n"});
     AstCExpr* const exprp = new AstCExpr{nodep->fileline(), "out", 0};
     exprp->dtypeSetUInt32();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
@@ -178,12 +178,7 @@ void V3Common::commonAll() {
             makeToString(classp);
             makeToStringMiddle(classp);
             // Check if we need to emit VL_RANDOMIZE for the class
-            for (AstNode* itemp = classp->membersp(); itemp; itemp = itemp->nextp()) {
-                if (itemp->origName() == "randomize") {
-                    makeVlRandomize(classp);
-                    break;
-                }
-            }
+            if (classp->randomize()) { makeVlRandomize(classp); }
         } else if (AstIface* const ifacep = VN_CAST(nodep, Iface)) {
             makeVlToString(ifacep);
         }
