@@ -556,7 +556,9 @@ public:
         if (VL_LIKELY(index >= 0 && index < m_deque.size()))
             m_deque.erase(m_deque.begin() + index);
     }
+    // Randomize elements
     IData randomize(VlRNG& rngr) {
+        // TODO: Random resize once constraints are supported (IEEE 1800-2017 18.4)
         for (auto& i : m_deque) {
             if (VL_RANDOMIZE(i, rngr) == 0) return 0;
         }
