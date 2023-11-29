@@ -283,7 +283,7 @@ class InlineRelinkVisitor final : public VNVisitor {
             // user2p is either a const or a var.
             FileLine* const flp = nodep->fileline();
             AstConst* const exprconstp = VN_CAST(nodep->user2p(), Const);
-            AstVarRef* const exprvarrefp = VN_CAST(nodep->user2p()->cloneTree(false), VarRef);
+            AstVarRef* exprvarrefp = VN_CAST(nodep->user2p(), VarRef);
             UINFO(8, "connectto: " << nodep->user2p() << endl);
             UASSERT_OBJ(exprconstp || exprvarrefp, nodep,
                         "Unknown interconnect type; pinReconnectSimple should have cleared up");
@@ -296,17 +296,19 @@ class InlineRelinkVisitor final : public VNVisitor {
                 // remove the change detection on the output variable.
                 UINFO(9, "public pin assign: " << exprvarrefp << endl);
                 UASSERT_OBJ(!nodep->isNonOutput(), nodep, "Outputs only - inputs use AssignAlias");
-                m_modp->addStmtsp(
-                    new AstAssignW{flp, exprvarrefp, new AstVarRef{flp, nodep, VAccess::READ}});
+                m_modp->addStmtsp(new AstAssignW{flp, exprvarrefp->cloneTree(false),
+                                                 new AstVarRef{flp, nodep, VAccess::READ}});
             } else if (nodep->isSigPublic() && VN_IS(nodep->dtypep(), UnpackArrayDType)) {
                 // Public variable at this end and it is an unpacked array. We need to assign
                 // instead of aliased, because otherwise it will pass V3Slice and invalid
                 // code will be emitted.
                 UINFO(9, "assign to public and unpacked: " << nodep << endl);
+                exprvarrefp = exprvarrefp->cloneTree(false);
                 exprvarrefp->access(VAccess::READ);
                 m_modp->addStmtsp(
                     new AstAssignW{flp, new AstVarRef{flp, nodep, VAccess::WRITE}, exprvarrefp});
             } else if (nodep->isIfaceRef()) {
+                exprvarrefp = exprvarrefp->cloneTree(false);
                 exprvarrefp->access(VAccess::READ);
                 m_modp->addStmtsp(new AstAssignVarScope{
                     flp, new AstVarRef{flp, nodep, VAccess::WRITE}, exprvarrefp});
@@ -316,6 +318,7 @@ class InlineRelinkVisitor final : public VNVisitor {
             } else {
                 // Do to inlining child's variable now within the same
                 // module, so a AstVarRef not AstVarXRef below
+                exprvarrefp = exprvarrefp->cloneTree(false);
                 exprvarrefp->access(VAccess::READ);
                 m_modp->addStmtsp(new AstAssignAlias{
                     flp, new AstVarRef{flp, nodep, VAccess::WRITE}, exprvarrefp});
