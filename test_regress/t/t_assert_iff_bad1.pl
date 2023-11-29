@@ -10,12 +10,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
+top_filename('t_assert_iff.v');
+
 compile(
-    verilator_flags2 => ['--assert --cc --coverage-user'],
+    verilator_flags2 => ['--assert --cc --coverage-user -DFAIL1'],
     );
 
 execute(
-    check_finished => 1,
+    fails => 1,
     );
 
 ok(1);
