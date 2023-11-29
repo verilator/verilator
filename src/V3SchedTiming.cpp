@@ -75,7 +75,7 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
             AstActive* const activep = p.second;
             // Hack to ensure that #0 delays will be executed after any other `act` events.
             // Just handle delayed coroutines last.
-            AstVarRef* schedrefp = VN_AS(
+            AstVarRef* const schedrefp = VN_AS(
                 VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard)->fromp(), VarRef);
             if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
                 dlyShedActivep = activep;
@@ -83,7 +83,7 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
             }
             m_resumeFuncp->addStmtsp(activep);
         }
-        if (dlyShedActivep) { m_resumeFuncp->addStmtsp(dlyShedActivep); }
+        if (dlyShedActivep) m_resumeFuncp->addStmtsp(dlyShedActivep);
     }
     AstCCall* const callp = new AstCCall{m_resumeFuncp->fileline(), m_resumeFuncp};
     callp->dtypeSetVoid();

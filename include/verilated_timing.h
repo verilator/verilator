@@ -150,11 +150,11 @@ public:
 
 enum class VlDelayPhase : bool { ACTIVE, INACTIVE };
 
-struct VlDelayTime {
+struct VlTimePhase {
     uint64_t time;
     VlDelayPhase phase;
 
-    bool operator<(const VlDelayTime& other) const {
+    bool operator<(const VlTimePhase& other) const {
         return (time < other.time) || ((time == other.time) && phase < other.phase);
     }
 };
@@ -166,7 +166,7 @@ struct VlDelayTime {
 class VlDelayScheduler final {
     // TYPES
     // Time-sorted queue of timestamps and handles
-    using VlDelayedCoroutineQueue = std::multimap<const VlDelayTime, VlCoroutineHandle>;
+    using VlDelayedCoroutineQueue = std::multimap<const VlTimePhase, VlCoroutineHandle>;
 
     // MEMBERS
     VerilatedContext& m_context;
@@ -203,7 +203,7 @@ public:
 
             bool await_ready() const { return false; }  // Always suspend
             void await_suspend(std::coroutine_handle<> coro) {
-                queue.emplace(VlDelayTime{delay, phase},
+                queue.emplace(VlTimePhase{delay, phase},
                               VlCoroutineHandle{coro, process, fileline});
             }
             void await_resume() const {}
@@ -212,8 +212,8 @@ public:
         VlDelayPhase phase = (delay == 0) ? VlDelayPhase::INACTIVE : VlDelayPhase::ACTIVE;
         if (phase == VlDelayPhase::INACTIVE) {
             VL_WARN_MT(filename, lineno, VL_UNKNOWN,
-                       "Ran into #0 delay. However, process "
-                       "will be resumed before combinational logic evaluation.");
+                       "Encountered #0 delay. #0 scheduling support is incomplete and the "
+                       "process will be resumed before combinational logic evaluation.");
         }
 
         return Awaitable{process, m_queue, m_context.time() + delay, phase,

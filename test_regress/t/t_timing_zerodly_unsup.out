@@ -1,6 +1,3 @@
-%Warning-ZERODLY: t/t_timing_zerodly_unsup.v:12:13: Unsupported: #0 delays do not schedule process resumption in the Inactive region
-   12 |             #0 if (v) $finish;
-      |             ^
-                  ... For warning description see https://verilator.org/warn/ZERODLY?v=latest
-                  ... Use "/* verilator lint_off ZERODLY */" and lint_on around source to disable this message.
-%Error: Exiting due to
+%Warning: t/t_timing_zerodly_unsup.v:22: Encountered #0 delay. #0 scheduling support is incomplete and the process will be resumed before combinational logic evaluation.
+%Error: t/t_timing_zerodly_unsup.v:23: Verilog $stop
+Aborting...
