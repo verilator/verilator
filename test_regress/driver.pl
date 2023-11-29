@@ -951,7 +951,7 @@ sub compile_vlt_flags {
     unshift @verilator_flags, "--threads $param{threads}" if $param{threads} >= 0;
     unshift @verilator_flags, "--trace-threads 2" if $param{vltmt} && $checkflags =~ /-trace-fst /;
     unshift @verilator_flags, "--debug-partition" if $param{vltmt};
-    unshift @verilator_flags, "-CFLAGS -ggdb -LDFLAGS -ggdb" if $opt_gdbsim;
+    unshift @verilator_flags, "-CFLAGS -ggdb -LDFLAGS -ggdb" if $opt_gdbsim || $opt_rrsim;
     unshift @verilator_flags, "-CFLAGS -fsanitize=address,undefined -LDFLAGS -fsanitize=address,undefined" if $param{sanitize};
     unshift @verilator_flags, "--make gmake" if $param{verilator_make_gmake};
     unshift @verilator_flags, "--make cmake" if $param{verilator_make_cmake};
