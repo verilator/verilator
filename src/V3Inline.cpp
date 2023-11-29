@@ -375,6 +375,7 @@ class InlineRelinkVisitor final : public VNVisitor {
                 return;
             } else if (const AstVarRef* const vrefp = VN_CAST(varp->user2p(), VarRef)) {
                 nodep->varp(vrefp->varp());
+                nodep->classOrPackagep(vrefp->classOrPackagep());
             } else {
                 nodep->v3fatalSrc("Null connection?");
             }
