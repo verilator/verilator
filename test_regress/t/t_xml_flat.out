@@ -64,15 +64,15 @@
             <varref loc="d,14,16,14,17" name="t.d" dtype_id="1"/>
           </assignalias>
           <assignalias loc="d,34,24,34,27" dtype_id="2">
-            <varref loc="d,34,24,34,27" name="t.clk" dtype_id="2"/>
+            <varref loc="d,21,42,21,45" name="t.clk" dtype_id="2"/>
             <varref loc="d,34,24,34,27" name="t.cell1.clk" dtype_id="2"/>
           </assignalias>
           <assignalias loc="d,35,30,35,31" dtype_id="1">
-            <varref loc="d,35,30,35,31" name="t.d" dtype_id="1"/>
+            <varref loc="d,22,42,22,43" name="t.d" dtype_id="1"/>
             <varref loc="d,35,30,35,31" name="t.cell1.d" dtype_id="1"/>
           </assignalias>
           <assignalias loc="d,36,30,36,31" dtype_id="1">
-            <varref loc="d,36,30,36,31" name="t.between" dtype_id="1"/>
+            <varref loc="d,20,14,20,21" name="t.between" dtype_id="1"/>
             <varref loc="d,36,30,36,31" name="t.cell1.q" dtype_id="1"/>
           </assignalias>
           <always loc="d,41,4,41,10">
@@ -87,15 +87,15 @@
             </assigndly>
           </always>
           <assignalias loc="d,48,10,48,13" dtype_id="2">
-            <varref loc="d,48,10,48,13" name="t.clk" dtype_id="2"/>
+            <varref loc="d,27,42,27,45" name="t.clk" dtype_id="2"/>
             <varref loc="d,48,10,48,13" name="t.cell2.clk" dtype_id="2"/>
           </assignalias>
           <assignalias loc="d,49,16,49,17" dtype_id="1">
-            <varref loc="d,49,16,49,17" name="t.between" dtype_id="1"/>
+            <varref loc="d,25,16,25,23" name="t.between" dtype_id="1"/>
             <varref loc="d,49,16,49,17" name="t.cell2.d" dtype_id="1"/>
           </assignalias>
           <assignalias loc="d,50,22,50,23" dtype_id="1">
-            <varref loc="d,50,22,50,23" name="t.q" dtype_id="1"/>
+            <varref loc="d,26,42,26,43" name="t.q" dtype_id="1"/>
             <varref loc="d,50,22,50,23" name="t.cell2.q" dtype_id="1"/>
           </assignalias>
           <contassign loc="d,53,13,53,14" dtype_id="1">

@@ -28,7 +28,7 @@
             <varref loc="d,11,24,11,29" name="top.i_clk" dtype_id="1"/>
           </assignalias>
           <assignalias loc="d,7,24,7,29" dtype_id="1">
-            <varref loc="d,7,24,7,29" name="top.i_clk" dtype_id="1"/>
+            <varref loc="d,12,7,12,8" name="top.i_clk" dtype_id="1"/>
             <varref loc="d,7,24,7,29" name="top.f.i_clk" dtype_id="1"/>
           </assignalias>
         </scope>
