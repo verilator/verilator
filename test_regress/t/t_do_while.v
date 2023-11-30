@@ -52,6 +52,15 @@ module t (/*AUTOARG*/);
       end while (a < 0);
       if (a != 5) $stop;
 
+      a = 1;
+      do begin
+         do begin
+            int x = 1;
+            a += x;
+         end while (a < 3);
+      end while (a < 5);
+      if (a != 5) $stop;
+
       $write("*-* All Finished *-*\n");
       $finish;
    end
