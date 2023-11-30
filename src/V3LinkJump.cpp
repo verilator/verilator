@@ -142,18 +142,18 @@ class LinkJumpVisitor final : public VNVisitor {
             return labelp;
         }
     }
-    void addPrefixToBlocksRecurse(AstNode* nodep) {
-        // Add do_while_ prefix to blocks
+    void addPrefixToBlocksRecurse(const std::string& prefix, AstNode* const nodep) {
+        // Add a prefix to blocks
         // Used to not have blocks with duplicated names
         if (AstBegin* const beginp = VN_CAST(nodep, Begin)) {
-            if (beginp->name() != "") beginp->name("__Vdo_while_" + beginp->name());
+            if (beginp->name() != "") beginp->name(prefix + beginp->name());
         }
 
-        if (nodep->op1p()) addPrefixToBlocksRecurse(nodep->op1p());
-        if (nodep->op2p()) addPrefixToBlocksRecurse(nodep->op2p());
-        if (nodep->op3p()) addPrefixToBlocksRecurse(nodep->op3p());
-        if (nodep->op4p()) addPrefixToBlocksRecurse(nodep->op4p());
-        if (nodep->nextp()) addPrefixToBlocksRecurse(nodep->nextp());
+        if (nodep->op1p()) addPrefixToBlocksRecurse(prefix, nodep->op1p());
+        if (nodep->op2p()) addPrefixToBlocksRecurse(prefix, nodep->op2p());
+        if (nodep->op3p()) addPrefixToBlocksRecurse(prefix, nodep->op3p());
+        if (nodep->op4p()) addPrefixToBlocksRecurse(prefix, nodep->op4p());
+        if (nodep->nextp()) addPrefixToBlocksRecurse(prefix, nodep->nextp());
     }
 
     // VISITORS
@@ -240,7 +240,8 @@ class LinkJumpVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         if (bodyp) {
             AstNode* const copiedBodyp = bodyp->cloneTree(false);
-            addPrefixToBlocksRecurse(copiedBodyp);
+            addPrefixToBlocksRecurse("__Vdo_while1_", copiedBodyp);
+            addPrefixToBlocksRecurse("__Vdo_while2_", bodyp);
             whilep->addHereThisAsNext(copiedBodyp);
         }
     }
