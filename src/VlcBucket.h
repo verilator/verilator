@@ -120,7 +120,7 @@ public:
         for (uint64_t i = 0; i < m_dataSize; ++i) {
             if (hits(i)) std::cout << "," << i;
         }
-        std::cout << std::endl;
+        std::cout << "\n";
     }
 };
 

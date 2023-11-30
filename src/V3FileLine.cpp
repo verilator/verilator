@@ -399,7 +399,7 @@ void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra)
     std::ostringstream nsstr;
     if (lastLineno()) nsstr << this;
     nsstr << sstr.str();
-    nsstr << endl;
+    nsstr << "\n";
     std::ostringstream lstr;
     if (!extra.empty()) {
         lstr << std::setw(ascii().length()) << " "

@@ -896,14 +896,20 @@ string V3Number::toDecimalU() const VL_MT_STABLE {
 //======================================================================
 // ACCESSORS - as numbers
 
+bool V3Number::fitsInUInt() const VL_MT_SAFE {
+    if (isFourState()) return false;
+    // We allow wide numbers that represent values <= 32 bits
+    for (int i = 1; i < words(); ++i) {
+        if (m_data.num()[i].m_value) return false;
+    }
+    return true;
+}
 uint32_t V3Number::toUInt() const VL_MT_SAFE {
     UASSERT(!isFourState(), "toUInt with 4-state " << *this);
     // We allow wide numbers that represent values <= 32 bits
-    for (int i = 1; i < words(); ++i) {
-        if (m_data.num()[i].m_value) {
-            v3error("Value too wide for 32-bits expected in this context " << *this);
-            break;
-        }
+    if (VL_UNCOVERABLE(!fitsInUInt())) {
+        v3error("Value too wide for 32-bits expected in this context "  // LCOV_EXCL_LINE
+                << *this);
     }
     return m_data.num()[0].m_value;
 }

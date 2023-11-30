@@ -80,7 +80,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         } else {
             os << ", shape=box";
         }
-        os << "]" << endl;
+        os << "]\n";
         return;
     }
 
@@ -104,7 +104,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         } else {
             os << ", shape=box3d";
         }
-        os << "]" << endl;
+        os << "]\n";
         return;
     }
 
@@ -121,7 +121,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         }
         os << '"';
         os << ", shape=plain";
-        os << "]" << endl;
+        os << "]\n";
         return;
     }
 
@@ -136,7 +136,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         } else {
             os << ", shape=circle";
         }
-        os << "]" << endl;
+        os << "]\n";
         return;
     }
 
@@ -147,14 +147,14 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     } else {
         os << ", shape=circle";
     }
-    os << "]" << endl;
+    os << "]\n";
 }
 
 // Dump one DfgEdge in Graphviz format
 static void dumpDotEdge(std::ostream& os, const DfgEdge& edge, const string& headlabel) {
     os << toDotId(*edge.sourcep()) << " -> " << toDotId(*edge.sinkp());
     if (!headlabel.empty()) os << " [headlabel=\"" << headlabel << "\"]";
-    os << endl;
+    os << "\n";
 }
 
 // Dump one DfgVertex and all of its source DfgEdges in Graphviz format
@@ -171,17 +171,17 @@ static void dumpDotVertexAndSourceEdges(std::ostream& os, const DfgVertex& vtx) 
 
 void DfgGraph::dumpDot(std::ostream& os, const string& label) const {
     // Header
-    os << "digraph dfg {" << endl;
+    os << "digraph dfg {\n";
     os << "graph [label=\"" << name();
     if (!label.empty()) os << "-" << label;
-    os << "\", labelloc=t, labeljust=l]" << endl;
-    os << "graph [rankdir=LR]" << endl;
+    os << "\", labelloc=t, labeljust=l]\n";
+    os << "graph [rankdir=LR]\n";
 
     // Emit all vertices
     forEachVertex([&](const DfgVertex& vtx) { dumpDotVertexAndSourceEdges(os, vtx); });
 
     // Footer
-    os << "}" << endl;
+    os << "}\n";
 }
 
 void DfgGraph::dumpDotFile(const string& fileName, const string& label) const {
@@ -242,15 +242,15 @@ void DfgGraph::dumpDotUpstreamCone(const string& fileName, const DfgVertex& vtx,
     if (os->fail()) v3fatal("Cannot write to file: " << fileName);
 
     // Header
-    *os << "digraph dfg {" << endl;
-    if (!name.empty()) *os << "graph [label=\"" << name << "\", labelloc=t, labeljust=l]" << endl;
-    *os << "graph [rankdir=LR]" << endl;
+    *os << "digraph dfg {\n";
+    if (!name.empty()) *os << "graph [label=\"" << name << "\", labelloc=t, labeljust=l]\n";
+    *os << "graph [rankdir=LR]\n";
 
     // Dump the cone
     dumpDotUpstreamConeFromVertex(*os, vtx);
 
     // Footer
-    *os << "}" << endl;
+    *os << "}\n";
 
     // Done
     os->close();
@@ -276,15 +276,15 @@ void DfgGraph::dumpDotAllVarConesPrefixed(const string& label) const {
         if (os->fail()) v3fatal("Cannot write to file: " << fileName);
 
         // Header
-        *os << "digraph dfg {" << endl;
-        *os << "graph [label=\"" << coneName << "\", labelloc=t, labeljust=l]" << endl;
-        *os << "graph [rankdir=LR]" << endl;
+        *os << "digraph dfg {\n";
+        *os << "graph [label=\"" << coneName << "\", labelloc=t, labeljust=l]\n";
+        *os << "graph [rankdir=LR]\n";
 
         // Dump this cone
         dumpDotUpstreamConeFromVertex(*os, vtx);
 
         // Footer
-        *os << "}" << endl;
+        *os << "}\n";
 
         // Done with this logic cone
         os->close();

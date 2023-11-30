@@ -768,16 +768,16 @@ public:
         if (needsCleaning) ++resultOps;
 
         if (debug() >= 9) {  // LCOV_EXCL_START
-            cout << "-  Bitop tree considered: " << endl;
+            cout << "-  Bitop tree considered:\n";
             for (AstNodeExpr* const termp : termps) termp->dumpTree("-  Reduced term: ");
             for (const std::pair<AstNodeExpr*, FrozenNodeInfo>& termp : visitor.m_frozenNodes) {
                 termp.first->dumpTree("-  Frozen term with lsb "
                                       + std::to_string(termp.second.m_lsb) + " polarity "
                                       + std::to_string(termp.second.m_polarity) + ": ");
             }
-            cout << "-  Needs flipping: " << needsFlip << endl;
-            cout << "-  Needs cleaning: " << needsCleaning << endl;
-            cout << "-  Size: " << resultOps << " input size: " << visitor.m_ops << endl;
+            cout << "-  Needs flipping: " << needsFlip << "\n";
+            cout << "-  Needs cleaning: " << needsCleaning << "\n";
+            cout << "-  Size: " << resultOps << " input size: " << visitor.m_ops << "\n";
         }  // LCOV_EXCL_END
 
         // Sometimes we have no terms left after ignoring redundant terms
@@ -1221,13 +1221,16 @@ class ConstVisitor final : public VNVisitor {
     }
     bool operandHugeShiftL(const AstNodeBiop* nodep) {
         return (VN_IS(nodep->rhsp(), Const) && !VN_AS(nodep->rhsp(), Const)->num().isFourState()
-                && (VN_AS(nodep->rhsp(), Const)->toUInt() >= static_cast<uint32_t>(nodep->width()))
+                && (!VN_AS(nodep->rhsp(), Const)->num().fitsInUInt()  // > 2^32 shift
+                    || (VN_AS(nodep->rhsp(), Const)->toUInt()
+                        >= static_cast<uint32_t>(nodep->width())))
                 && nodep->lhsp()->isPure());
     }
     bool operandHugeShiftR(const AstNodeBiop* nodep) {
         return (VN_IS(nodep->rhsp(), Const) && !VN_AS(nodep->rhsp(), Const)->num().isFourState()
-                && (VN_AS(nodep->rhsp(), Const)->toUInt()
-                    >= static_cast<uint32_t>(nodep->lhsp()->width()))
+                && (!VN_AS(nodep->rhsp(), Const)->num().fitsInUInt()  // > 2^32 shift
+                    || (VN_AS(nodep->rhsp(), Const)->toUInt()
+                        >= static_cast<uint32_t>(nodep->lhsp()->width())))
                 && nodep->lhsp()->isPure());
     }
     bool operandIsTwo(const AstNode* nodep) {

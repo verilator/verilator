@@ -1046,8 +1046,12 @@ class TimingControlVisitor final : public VNVisitor {
         // Special case for NBA
         if (inAssignDly) {
             // Put it in a fork so it doesn't block
-            auto* const forkp = new AstFork{flp, "", nullptr};
-            forkp->joinType(VJoinType::JOIN_NONE);
+            // Could already be the only thing directly under a fork, reuse that if possible
+            AstFork* forkp = !nodep->nextp() ? VN_CAST(nodep->firstAbovep(), Fork) : nullptr;
+            if (!forkp) {
+                forkp = new AstFork{flp, "", nullptr};
+                forkp->joinType(VJoinType::JOIN_NONE);
+            }
             if (!m_underProcedure) {
                 // If it's in a function, it won't be handled by V3Delayed
                 // Put it behind an additional named event that gets triggered in the NBA region

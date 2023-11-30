@@ -1237,7 +1237,7 @@ void AstNode::dumpPtrs(std::ostream& os) const {
         // This may cause address sanitizer failures as iterpp can be stale
         // os << "*=" << cvtToHex(*m_iterpp);
     }
-    os << std::endl;
+    os << "\n";
 }
 
 void AstNode::dumpTree(std::ostream& os, const string& indent, int maxDepth) const {
@@ -1273,12 +1273,12 @@ void AstNode::dumpTreeAndNext(std::ostream& os, const string& indent, int maxDep
     }
 }
 
-void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump, bool doCheck) {
+void AstNode::dumpTreeFile(const string& filename, bool doDump, bool doCheck) {
     // Not const function as calls checkTree
     if (doDump) {
         {  // Write log & close
             UINFO(2, "Dumping " << filename << endl);
-            const std::unique_ptr<std::ofstream> logsp{V3File::new_ofstream(filename, append)};
+            const std::unique_ptr<std::ofstream> logsp{V3File::new_ofstream(filename)};
             if (logsp->fail()) v3fatal("Can't write " << filename);
             *logsp << "Verilator Tree Dump (format 0x3900) from <e" << std::dec << editCountLast();
             *logsp << "> to <e" << std::dec << editCountGbl() << ">\n";
@@ -1328,10 +1328,10 @@ void AstNode::dumpTreeDot(std::ostream& os) const {
     drawChildren(os, this, m_op4p, "op4");
 }
 
-void AstNode::dumpTreeDotFile(const string& filename, bool append, bool doDump) {
+void AstNode::dumpTreeDotFile(const string& filename, bool doDump) {
     if (doDump) {
         UINFO(2, "Dumping " << filename << endl);
-        const std::unique_ptr<std::ofstream> treedotp{V3File::new_ofstream(filename, append)};
+        const std::unique_ptr<std::ofstream> treedotp{V3File::new_ofstream(filename)};
         if (treedotp->fail()) v3fatal("Can't write " << filename);
         *treedotp << "digraph vTree{\n";
         *treedotp << "\tgraph\t[label=\"" << filename + ".dot"

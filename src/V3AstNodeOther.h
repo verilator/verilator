@@ -1489,6 +1489,7 @@ public:
 class AstSenItem final : public AstNode {
     // Parents:  SENTREE
     // @astgen op1 := sensp : Optional[AstNodeExpr] // Sensitivity expression
+    // @astgen op2 := condp : Optional[AstNodeExpr] // Sensitivity condition
     VEdgeType m_edgeType;  // Edge type
 public:
     class Combo {};  // for constructor type-overload selection
@@ -1497,10 +1498,11 @@ public:
     class Initial {};  // for constructor type-overload selection
     class Final {};  // for constructor type-overload selection
     class Never {};  // for constructor type-overload selection
-    AstSenItem(FileLine* fl, VEdgeType edgeType, AstNodeExpr* senp)
+    AstSenItem(FileLine* fl, VEdgeType edgeType, AstNodeExpr* senp, AstNodeExpr* condp = nullptr)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{edgeType} {
         this->sensp(senp);
+        this->condp(condp);
     }
     AstSenItem(FileLine* fl, Combo)
         : ASTGEN_SUPER_SenItem(fl)

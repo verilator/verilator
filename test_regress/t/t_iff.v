@@ -16,7 +16,7 @@ module t (/*AUTOARG*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [31:0]          result;                 // From test of Test.v
+   wire [63:0]          result;                 // From test of Test.v
    // End of automatics
    Test test (.*);
 
@@ -42,7 +42,7 @@ module t (/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'h390aa8652d33a691
+`define EXPECTED_SUM 64'hd55eb7da9ba3354a
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
          $finish;
@@ -56,7 +56,7 @@ module Test
    input              clk,
    input [63:0]       crc,
    input [31:0]       cyc,
-   output wire [31:0] result);
+   output wire [63:0] result);
 
    wire         enable = crc[32];
    wire [7:0]  d = crc[7:0];

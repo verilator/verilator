@@ -31,7 +31,7 @@
 
 #if 0
 # include <iostream>
-# define VL_TRACE_OFFLOAD_DEBUG(msg) std::cout << "TRACE OFFLOAD THREAD: " << msg << std::endl
+# define VL_TRACE_OFFLOAD_DEBUG(msg) std::cout << "TRACE OFFLOAD THREAD: " << msg << "\n"
 #else
 # define VL_TRACE_OFFLOAD_DEBUG(msg)
 #endif

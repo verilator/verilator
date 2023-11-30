@@ -576,7 +576,10 @@ WDataOutP VL_POW_WWQ(int obits, int lbits, int rbits, WDataOutP owp, const WData
     return VL_POW_WWW(obits, lbits, rbits, owp, lwp, rhsw);
 }
 QData VL_POW_QQW(int, int, int rbits, QData lhs, const WDataInP rwp) VL_MT_SAFE {
-    // Skip check for rhs == 0, as short-circuit doesn't save time
+    const int rwords = VL_WORDS_I(rbits);
+    EData rnz = rwp[0];
+    for (int w = 1; w < rwords; ++w) rnz |= rwp[w];
+    if (!rnz) return 1;  // rwp == 0
     if (VL_UNLIKELY(lhs == 0)) return 0;
     QData power = lhs;
     QData result = 1ULL;

@@ -636,8 +636,10 @@ static void verilate(const string& argString) {
     // --FRONTEND------------------
 
     // Cleanup
-    V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.tree");
+    // Ideally we'd do prefix + "_*.*", and prefix + ".*", but this seems
+    // potentially disruptive to old behavior, and --skip-identical
     V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.dot");
+    V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.tree");
     V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.txt");
 
     // Internal tests (after option parsing as need debug() setting,
@@ -717,6 +719,9 @@ static void verilate(const string& argString) {
                            argString);
     }
 
+    V3Os::filesystemFlushBuildDir(v3Global.opt.makeDir());
+    if (v3Global.opt.hierTop()) V3Os::filesystemFlushBuildDir(v3Global.opt.hierTopDataDir());
+
     // Final writing shouldn't throw warnings, but...
     V3Error::abortIfWarnings();
 }
@@ -747,6 +752,7 @@ static void execBuildJob() {
     UINFO(1, "Start Build\n");
 
     const string cmdStr = buildMakeCmd(v3Global.opt.prefix() + ".mk", "");
+    V3Os::filesystemFlushBuildDir(v3Global.opt.hierTopDataDir());
     const int exit_code = V3Os::system(cmdStr);
     if (exit_code != 0) {
         v3error(cmdStr << " exited with " << exit_code << std::endl);
@@ -759,6 +765,7 @@ static void execHierVerilation() {
     const string makefile = v3Global.opt.prefix() + "_hier.mk ";
     const string target = v3Global.opt.build() ? " hier_build" : " hier_verilation";
     const string cmdStr = buildMakeCmd(makefile, target);
+    V3Os::filesystemFlushBuildDir(v3Global.opt.hierTopDataDir());
     const int exit_code = V3Os::system(cmdStr);
     if (exit_code != 0) {
         v3error(cmdStr << " exited with " << exit_code << std::endl);

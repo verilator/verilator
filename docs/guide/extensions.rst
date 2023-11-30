@@ -23,7 +23,8 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: `error [string]
 
-   This will report an error when encountered, like C++'s #error.
+   This will report an error when the preprocessor emits it, similar to
+   C++'s #error.
 
 .. option:: `line
 

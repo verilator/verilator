@@ -45,7 +45,7 @@ module t (/*AUTOARG*/);
       `checkh((-8'sh1 **  8'sh2),  8'h1  );  // -1^odd=-1, -1^even=1
       `checkh((-8'sh1 **  8'sh3),  8'hff );  // -1^odd=-1, -1^even=1
       `checkh(( 8'h0  **  8'sh3),  8'h0  );  // 0
-      `checkh(( 8'h1  **  8'sh3),  8'h1  );   // 1
+      `checkh(( 8'h1  **  8'sh3),  8'h1  );  // 1
       `checkh(( 8'h3  **  8'sh3),  8'h1b );  // a**b (27)
       `checkh(( 8'sh3 **  8'sh3),  8'h1b );  // a**b (27)
       `checkh(( 8'h6  **  8'sh3),  8'hd8 );  // a**b (216)
