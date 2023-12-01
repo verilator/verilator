@@ -474,12 +474,71 @@ public:
     }
     uint32_t type() const override { return vpiIterator; }
     vpiHandle dovpi_scan() override {
-        if (m_it == m_vec->end()) {
-            delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
-            return nullptr;
+        while (true) {
+            if (m_it == m_vec->end()) {
+                delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
+                return nullptr;
+            }
+            const VerilatedScope::Type type = (*m_it)->type();
+            const VerilatedScope* const modp = *m_it++;
+            if (type == VerilatedScope::SCOPE_MODULE) {
+                return (new VerilatedVpioModule{modp})->castVpiHandle();
+            }
         }
-        const VerilatedScope* const modp = *m_it++;
-        return (new VerilatedVpioModule{modp})->castVpiHandle();
+    }
+};
+
+class VerilatedVpioPackage final : public VerilatedVpioScope {
+    std::string m_name;
+    std::string m_fullname;
+
+public:
+    explicit VerilatedVpioPackage(const VerilatedScope* modulep)
+        : VerilatedVpioScope{modulep} {
+        const char* fullname = m_scopep->name();
+        if (std::strncmp(fullname, "TOP.", 4) == 0) fullname += 4;
+        m_fullname = std::string{fullname} + "::";
+        if (m_fullname == "\\$unit ::") m_fullname = "$unit::";
+        m_name = std::string(m_scopep->identifier());
+        if (m_name == "\\$unit ") m_name = "$unit";
+    }
+    static VerilatedVpioPackage* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioPackage*>(reinterpret_cast<VerilatedVpio*>(h));
+    }
+    uint32_t type() const override { return vpiPackage; }
+    const char* name() const override { return m_name.c_str(); }
+    const char* fullname() const override { return m_fullname.c_str(); }
+};
+
+class VerilatedVpioInstanceIter final : public VerilatedVpio {
+    const std::vector<const VerilatedScope*>* m_vec;
+    std::vector<const VerilatedScope*>::const_iterator m_it;
+
+public:
+    explicit VerilatedVpioInstanceIter(const std::vector<const VerilatedScope*>& vec)
+        : m_vec{&vec} {
+        m_it = m_vec->begin();
+    }
+    ~VerilatedVpioInstanceIter() override = default;
+    static VerilatedVpioInstanceIter* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioInstanceIter*>(reinterpret_cast<VerilatedVpio*>(h));
+    }
+    uint32_t type() const override { return vpiIterator; }
+    vpiHandle dovpi_scan() override {
+        while (true) {
+            if (m_it == m_vec->end()) {
+                delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
+                return nullptr;
+            }
+            const VerilatedScope::Type type = (*m_it)->type();
+            const VerilatedScope* const modp = *m_it++;
+            if (type == VerilatedScope::SCOPE_MODULE) {
+                return (new VerilatedVpioModule{modp})->castVpiHandle();
+            }
+            if (type == VerilatedScope::SCOPE_PACKAGE) {
+                return (new VerilatedVpioPackage{modp})->castVpiHandle();
+            }
+        }
     }
 };
 
@@ -1856,6 +1915,13 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
         const auto it = vlstd::as_const(map)->find(const_cast<VerilatedScope*>(modp));
         if (it == map->end()) return nullptr;
         return ((new VerilatedVpioModuleIter{it->second})->castVpiHandle());
+    }
+    case vpiInstance: {
+        if (object) return nullptr;
+        const VerilatedHierarchyMap* const map = VerilatedImp::hierarchyMap();
+        const auto it = vlstd::as_const(map)->find(nullptr);
+        if (it == map->end()) return nullptr;
+        return ((new VerilatedVpioInstanceIter{it->second})->castVpiHandle());
     }
     default:
         VL_VPI_WARNING_(__FILE__, __LINE__, "%s: Unsupported type %s, nothing will be returned",
