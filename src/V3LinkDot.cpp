@@ -3754,6 +3754,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
+    void visit(AstIfaceRefDType* nodep) override {
+        if (!nodep->ifacep()) return;
+        checkNoDot(nodep);
+        m_usedPins.clear();
+        VL_RESTORER(m_pinSymp);
+        {
+            m_pinSymp = m_statep->getNodeSym(nodep->ifacep());
+            UINFO(4, "(Backto) Link IfaceRefDType: " << nodep << endl);
+            iterateChildren(nodep);
+        }
+    }
+
     void visit(AstAttrOf* nodep) override { iterateChildren(nodep); }
 
     void visit(AstNode* nodep) override {
