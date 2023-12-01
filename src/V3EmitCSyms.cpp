@@ -318,7 +318,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         m_scopes.emplace_back(nodep, m_modp);
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
-            const string type = VN_IS(nodep->modp(), Package) ? "SCOPE_OTHER" : "SCOPE_MODULE";
+            const string type = VN_IS(nodep->modp(), Package) ? "SCOPE_PACKAGE" : "SCOPE_MODULE";
             const string name_pretty = AstNode::vpiName(nodep->shortName());
             const int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.emplace(
@@ -644,7 +644,9 @@ void EmitCSyms::emitScopeHier(bool destroy) {
              ++it) {
             const string name = it->second.m_prettyName;
             if (it->first == "TOP") continue;
-            if ((name.find('.') == string::npos) && (it->second.m_type == "SCOPE_MODULE")) {
+            const string scopeType = it->second.m_type;
+            if ((name.find('.') == string::npos)
+                && (scopeType == "SCOPE_MODULE" || scopeType == "SCOPE_PACKAGE")) {
                 puts("__Vhier." + method + "(0, &" + protect("__Vscope_" + it->second.m_symName)
                      + ");\n");
             }

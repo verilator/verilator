@@ -32,6 +32,7 @@ public:
     TestVpiHandle& operator=(vpiHandle h) {
         release();
         m_handle = h;
+        m_freeit = true;
         return *this;
     }
     void release() {

@@ -627,8 +627,9 @@ class VerilatedScope final {
 public:
     enum Type : uint8_t {
         SCOPE_MODULE,
-        SCOPE_OTHER
-    };  // Type of a scope, currently module is only interesting
+        SCOPE_OTHER,
+        SCOPE_PACKAGE
+    };  // Type of a scope, currently only module and package are interesting
 private:
     // Fastpath:
     VerilatedSyms* m_symsp = nullptr;  // Symbol table
