@@ -57,24 +57,33 @@ void VlDelayScheduler::resume() {
 #ifdef VL_DEBUG
     VL_DEBUG_IF(dump(); VL_DBG_MSGF("         Resuming delayed processes\n"););
 #endif
-    while (awaitingCurrentTime()) {
-        if (m_queue.begin()->first != m_context.time()) {
-            VL_FATAL_MT(__FILE__, __LINE__, "",
-                        "%Error: Encountered process that should've been resumed at an "
-                        "earlier simulation time. Missed a time slot?");
-        }
-        // Remove earliest handle
+    bool resumed = false;
+
+    while (!m_queue.empty() && (m_queue.begin()->first == m_context.time())) {
         VlCoroutineHandle handle = std::move(m_queue.begin()->second);
         m_queue.erase(m_queue.begin());
         handle.resume();
+        resumed = true;
+    }
+
+    if (!m_zeroDelayed.empty()) {
+        for (auto&& handle : m_zeroDelayed) handle.resume();
+        m_zeroDelayed.clear();
+        resumed = true;
+    }
+
+    if (!resumed) {
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    "%Error: Encountered process that should've been resumed at an "
+                    "earlier simulation time. Missed a time slot?\n");
     }
 }
 
 uint64_t VlDelayScheduler::nextTimeSlot() const {
-    if (empty()) {
+    if (!m_queue.empty()) return m_queue.begin()->first;
+    if (m_zeroDelayed.empty())
         VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: There is no next time slot scheduled");
-    }
-    return m_queue.begin()->first;
+    return m_context.time();
 }
 
 #ifdef VL_DEBUG
@@ -83,6 +92,12 @@ void VlDelayScheduler::dump() const {
         VL_DBG_MSGF("         No delayed processes:\n");
     } else {
         VL_DBG_MSGF("         Delayed processes:\n");
+        for (auto& susp : m_zeroDelayed) {
+            VL_DBG_MSGF("             Awaiting #0-delayed resumption, "
+                        "time () %" PRIu64 ": ",
+                        m_context.time());
+            susp.dump();
+        }
         for (const auto& susp : m_queue) {
             VL_DBG_MSGF("             Awaiting time %" PRIu64 ": ", susp.first);
             susp.second.dump();

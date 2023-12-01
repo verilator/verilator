@@ -67,11 +67,22 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
         m_resumeFuncp->isConst(false);
         m_resumeFuncp->declPrivate(true);
         scopeTopp->addBlocksp(m_resumeFuncp);
+
+        // Put all the timing actives in the resume function
+        AstActive* dlyShedActivep = nullptr;
         for (auto& p : m_lbs) {
-            // Put all the timing actives in the resume function
             AstActive* const activep = p.second;
+            // Hack to ensure that #0 delays will be executed after any other `act` events.
+            // Just handle delayed coroutines last.
+            AstVarRef* const schedrefp = VN_AS(
+                VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard)->fromp(), VarRef);
+            if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
+                dlyShedActivep = activep;
+                continue;
+            }
             m_resumeFuncp->addStmtsp(activep);
         }
+        if (dlyShedActivep) m_resumeFuncp->addStmtsp(dlyShedActivep);
     }
     AstCCall* const callp = new AstCCall{m_resumeFuncp->fileline(), m_resumeFuncp};
     callp->dtypeSetVoid();
