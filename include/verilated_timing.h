@@ -164,7 +164,7 @@ class VlDelayScheduler final {
     // MEMBERS
     VerilatedContext& m_context;
     VlDelayedCoroutineQueue m_queue;  // Coroutines to be restored at a certain simulation time
-    std::vector<VlCoroutineHandle> m_zerodelayed;
+    std::vector<VlCoroutineHandle> m_zeroDelayed;
 
 public:
     // CONSTRUCTORS
@@ -177,11 +177,11 @@ public:
     // coroutines)
     uint64_t nextTimeSlot() const;
     // Are there no delayed coroutines awaiting?
-    bool empty() const { return m_queue.empty() && m_zerodelayed.empty(); }
+    bool empty() const { return m_queue.empty() && m_zeroDelayed.empty(); }
     // Are there coroutines to resume at the current simulation time?
     bool awaitingCurrentTime() const {
         return (!m_queue.empty() && (m_queue.begin()->first <= m_context.time()))
-               || !m_zerodelayed.empty();
+               || !m_zeroDelayed.empty();
     }
 #ifdef VL_DEBUG
     void dump() const;
@@ -192,7 +192,7 @@ public:
         struct Awaitable {
             VlProcessRef process;  // Data of the suspended process, null if not needed
             VlDelayedCoroutineQueue& queue;
-            std::vector<VlCoroutineHandle>& queue_zerodly;
+            std::vector<VlCoroutineHandle>& queueZeroDelay;
             uint64_t delay;
             VlDelayPhase phase;
             VlFileLineDebug fileline;
@@ -202,7 +202,7 @@ public:
                 if (phase == VlDelayPhase::ACTIVE) {
                     queue.emplace(delay, VlCoroutineHandle{coro, process, fileline});
                 } else {
-                    queue_zerodly.emplace_back(VlCoroutineHandle{coro, process, fileline});
+                    queueZeroDelay.emplace_back(VlCoroutineHandle{coro, process, fileline});
                 }
             }
             void await_resume() const {}
@@ -218,7 +218,7 @@ public:
 #endif
 
         return Awaitable{process,       m_queue,
-                         m_zerodelayed, m_context.time() + delay,
+                         m_zeroDelayed, m_context.time() + delay,
                          phase,         VlFileLineDebug{filename, lineno}};
     }
 };

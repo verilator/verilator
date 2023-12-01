@@ -64,9 +64,9 @@ void VlDelayScheduler::resume() {
             handle.resume();
             continue;
         }
-        if (!m_zerodelayed.empty()) {
-            for (auto&& handle : m_zerodelayed) handle.resume();
-            m_zerodelayed.clear();
+        if (!m_zeroDelayed.empty()) {
+            for (auto&& handle : m_zeroDelayed) handle.resume();
+            m_zeroDelayed.clear();
             continue;
         }
         VL_FATAL_MT(__FILE__, __LINE__, "",
@@ -77,7 +77,7 @@ void VlDelayScheduler::resume() {
 
 uint64_t VlDelayScheduler::nextTimeSlot() const {
     if (!m_queue.empty()) return m_queue.begin()->first;
-    if (m_zerodelayed.empty())
+    if (m_zeroDelayed.empty())
         VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: There is no next time slot scheduled");
     return m_context.time();
 }
@@ -88,7 +88,7 @@ void VlDelayScheduler::dump() const {
         VL_DBG_MSGF("         No delayed processes:\n");
     } else {
         VL_DBG_MSGF("         Delayed processes:\n");
-        for (auto& susp : m_zerodelayed) {
+        for (auto& susp : m_zeroDelayed) {
             VL_DBG_MSGF("             Awaiting #0-delayed resumption, "
                         "time () %" PRIu64 ": ",
                         m_context.time());

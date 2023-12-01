@@ -68,9 +68,8 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
         m_resumeFuncp->declPrivate(true);
         scopeTopp->addBlocksp(m_resumeFuncp);
 
-        AstActive* dlyShedActivep = nullptr;
-
         // Put all the timing actives in the resume function
+        AstActive* dlyShedActivep = nullptr;
         for (auto& p : m_lbs) {
             AstActive* const activep = p.second;
             // Hack to ensure that #0 delays will be executed after any other `act` events.
