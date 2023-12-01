@@ -164,7 +164,7 @@ class VlDelayScheduler final {
     // MEMBERS
     VerilatedContext& m_context;
     VlDelayedCoroutineQueue m_queue;  // Coroutines to be restored at a certain simulation time
-    std::vector<VlCoroutineHandle> m_zeroDelayed;
+    std::vector<VlCoroutineHandle> m_zeroDelayed; // Coroutines waiting for #0
 
 public:
     // CONSTRUCTORS
