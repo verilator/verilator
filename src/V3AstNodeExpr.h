@@ -180,8 +180,9 @@ public:
 };
 class AstNodeCCall VL_NOT_FINAL : public AstNodeExpr {
     // A call of a C++ function, perhaps a AstCFunc or perhaps globally named
-    // @astgen op2 := argsp : List[AstNodeExpr] // Note: op1 used by some sub-types only
-    AstCFunc* m_funcp;
+    // @astgen op2 := argsp : List[AstNodeExpr]  // Note: op1 used by some sub-types only
+    //
+    // @astgen ptr := m_funcp : AstCFunc  // Function being called
     string m_argTypes;
     bool m_superReference = false;  // Called with super reference
 
@@ -195,8 +196,6 @@ protected:
 public:
     ASTGEN_MEMBERS_AstNodeCCall;
     void dump(std::ostream& str = std::cout) const override;
-    void cloneRelink() override;
-    const char* broken() const override;
     int instrCount() const override { return INSTR_COUNT_CALL; }
     bool same(const AstNode* samep) const override {
         const AstNodeCCall* const asamep = VN_DBG_AS(samep, NodeCCall);
@@ -223,8 +222,11 @@ class AstNodeFTaskRef VL_NOT_FINAL : public AstNodeExpr {
     // op2 used by some sub-types only
     // @astgen op3 := pinsp : List[AstNodeExpr]
     // @astgen op4 := scopeNamep : Optional[AstScopeName]
-    AstNodeFTask* m_taskp = nullptr;  // [AfterLink] Pointer to task referenced
-    AstNodeModule* m_classOrPackagep = nullptr;  // Class/package of the task
+    //
+    // @astgen ptr := m_taskp : Optional[AstNodeFTask]  // [AfterLink] Pointer to task referenced
+    // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Class/package of the task
+    ASTGEN_MEMBERS_AstNodeFTaskRef;  // Gen pointers before other members for performance
+private:
     string m_name;  // Name of variable
     string m_dotted;  // Dotted part of scope the name()ed task/func is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
@@ -244,9 +246,7 @@ protected:
     }
 
 public:
-    ASTGEN_MEMBERS_AstNodeFTaskRef;
     const char* broken() const override;
-    void cloneRelink() override;
     void dump(std::ostream& str = std::cout) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     bool isGateOptimizable() const override;
@@ -486,10 +486,12 @@ public:
 };
 class AstNodeVarRef VL_NOT_FINAL : public AstNodeExpr {
     // An AstVarRef or AstVarXRef
+    // @astgen ptr := m_varp : Optional[AstVar]  // [AfterLink] Pointer to variable itself
+    // @astgen ptr := m_varScopep : Optional[AstVarScope]  // Varscope for hierarchy
+    // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Class/package of the variable
+    ASTGEN_MEMBERS_AstNodeVarRef;  // Gen pointers before other members for performance
+private:
     VAccess m_access;  // Left hand side assignment
-    AstVar* m_varp;  // [AfterLink] Pointer to variable itself
-    AstVarScope* m_varScopep = nullptr;  // Varscope for hierarchy
-    AstNodeModule* m_classOrPackagep = nullptr;  // Class/package of the variable
     VSelfPointerText m_selfPointer
         = VSelfPointerText{VSelfPointerText::Empty()};  // Output code object
                                                         // pointer (e.g.: 'this')
@@ -507,11 +509,8 @@ protected:
     }
 
 public:
-    ASTGEN_MEMBERS_AstNodeVarRef;
     void dump(std::ostream& str) const override;
-    const char* broken() const override;
     int instrCount() const override { return widthInstrs(); }
-    void cloneRelink() override;
     VAccess access() const { return m_access; }
     void access(const VAccess& flag) { m_access = flag; }  // Avoid using this; Set in constructor
     AstVar* varp() const { return m_varp; }  // [After Link] Pointer to variable
@@ -538,7 +537,7 @@ public:
 // === AstNodeExpr ===
 class AstAddrOfCFunc final : public AstNodeExpr {
     // Get address of CFunc
-    AstCFunc* m_funcp;  // Pointer to function itself
+    // @astgen ptr := m_funcp : AstCFunc  // Pointer to function itself
 
 public:
     AstAddrOfCFunc(FileLine* fl, AstCFunc* funcp)
@@ -549,8 +548,6 @@ public:
 
 public:
     ASTGEN_MEMBERS_AstAddrOfCFunc;
-    void cloneRelink() override;
-    const char* broken() const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
@@ -752,7 +749,7 @@ class AstClassOrPackageRef final : public AstNodeExpr {
     // @astgen op1 := paramsp : List[AstPin]
     string m_name;
     // Node not NodeModule to appease some early parser usage
-    AstNode* m_classOrPackageNodep;  // Pointer to class/package referenced
+    // @astgen ptr := m_classOrPackageNodep : Optional[AstNode]  // Class/package referenced
 public:
     AstClassOrPackageRef(FileLine* fl, const string& name, AstNode* classOrPackageNodep,
                          AstPin* paramsp)
@@ -763,15 +760,6 @@ public:
     }
     ASTGEN_MEMBERS_AstClassOrPackageRef;
     // METHODS
-    const char* broken() const override {
-        BROKEN_RTN(m_classOrPackageNodep && !m_classOrPackageNodep->brokeExists());
-        return nullptr;
-    }
-    void cloneRelink() override {
-        if (m_classOrPackageNodep && m_classOrPackageNodep->clonep()) {
-            m_classOrPackageNodep = m_classOrPackageNodep->clonep();
-        }
-    }
     bool same(const AstNode* samep) const override {
         return (m_classOrPackageNodep
                 == VN_DBG_AS(samep, ClassOrPackageRef)->m_classOrPackageNodep);
@@ -1064,7 +1052,8 @@ class AstConstraintRef final : public AstNodeExpr {
     // A reference to a constraint identifier
     // Not saving pointer to constraint yet, as constraint_mode is an unsupported construct
     // @astgen op4 := scopeNamep : Optional[AstScopeName]
-    AstNodeModule* m_classOrPackagep = nullptr;  // Class/package of the constraint
+    //
+    // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Class/package of constraint
     string m_name;  // Name of constraint
 
 public:
@@ -1148,8 +1137,8 @@ public:
     bool cleanOut() const override { return true; }
 };
 class AstEnumItemRef final : public AstNodeExpr {
-    AstEnumItem* m_itemp;  // [AfterLink] Pointer to item
-    AstNodeModule* m_classOrPackagep;  // Class/package in which it was defined
+    // @astgen ptr := m_itemp : AstEnumItem  // [AfterLink] Pointer to item
+    // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Class/package defined in
 public:
     AstEnumItemRef(FileLine* fl, AstEnumItem* itemp, AstNodeModule* classOrPackagep)
         : ASTGEN_SUPER_EnumItemRef(fl)
@@ -1161,8 +1150,6 @@ public:
     void dump(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return itemp()->name(); }
     int instrCount() const override { return 0; }
-    const char* broken() const override;
-    void cloneRelink() override;
     bool same(const AstNode* samep) const override {
         const AstEnumItemRef* const sp = VN_DBG_AS(samep, EnumItemRef);
         return itemp() == sp->itemp();
@@ -1517,10 +1504,11 @@ public:
 };
 class AstMemberSel final : public AstNodeExpr {
     // @astgen op1 := fromp : AstNodeExpr
+    //
+    // @astgen ptr := m_varp : Optional[AstVar]  // Post link, variable in class that is selecting
     // Don't need the class we are extracting from, as the "fromp()"'s datatype can get us to it
     string m_name;
     VAccess m_access;  // Read or write, as in AstNodeVarRef
-    AstVar* m_varp = nullptr;  // Post link, variable within class that is target of selection
 public:
     AstMemberSel(FileLine* fl, AstNodeExpr* fromp, VFlagChildDType, const string& name)
         : ASTGEN_SUPER_MemberSel(fl)
@@ -1535,8 +1523,6 @@ public:
         dtypep(dtp);
     }
     ASTGEN_MEMBERS_AstMemberSel;
-    void cloneRelink() override;
-    const char* broken() const override;
     void dump(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& name) override { m_name = name; }
@@ -4205,11 +4191,6 @@ public:
         this->fromp(fromp);
     }
     ASTGEN_MEMBERS_AstCMethodCall;
-    const char* broken() const override {
-        BROKEN_BASE_RTN(AstNodeCCall::broken());
-        BROKEN_RTN(!fromp());
-        return nullptr;
-    }
 };
 class AstCNew final : public AstNodeCCall {
     // C++ new() call
@@ -4249,11 +4230,6 @@ public:
         this->fromp(fromp);
     }
     ASTGEN_MEMBERS_AstMethodCall;
-    const char* broken() const override {
-        BROKEN_BASE_RTN(AstNodeFTaskRef::broken());
-        BROKEN_RTN(!fromp());
-        return nullptr;
-    }
 };
 class AstNew final : public AstNodeFTaskRef {
     // New as constructor
@@ -4735,15 +4711,14 @@ public:
 class AstCAwait final : public AstNodeUniop {
     // Emit C++'s co_await expression
     // @astgen alias op1 := exprp
-    AstSenTree* m_sensesp;  // Sentree related to this await
+    //
+    // @astgen ptr := m_sensesp : Optional[AstSenTree]  // Sentree related to this await
 public:
     AstCAwait(FileLine* fl, AstNodeExpr* exprp, AstSenTree* sensesp = nullptr)
         : ASTGEN_SUPER_CAwait(fl, exprp)
         , m_sensesp{sensesp} {}
     ASTGEN_MEMBERS_AstCAwait;
     bool isTimingControl() const override { return true; }
-    const char* broken() const override;
-    void cloneRelink() override;
     void dump(std::ostream& str) const override;
     AstSenTree* sensesp() const { return m_sensesp; }
     void clearSensesp() { m_sensesp = nullptr; }

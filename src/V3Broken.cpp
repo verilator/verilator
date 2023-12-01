@@ -164,7 +164,7 @@ private:
 
     void processEnter(AstNode* nodep) {
         nodep->brokenState(m_brokenCntCurrentUnder);
-        const char* const whyp = nodep->broken();
+        const char* const whyp = nodep->brokenGen();
         UASSERT_OBJ(!whyp, nodep,
                     "Broken link in node (or something without maybePointedTo): " << whyp);
         if (!s_brokenAllowMidvisitorCheck) nodep->checkIter();
