@@ -57,18 +57,22 @@ void VlDelayScheduler::resume() {
 #ifdef VL_DEBUG
     VL_DEBUG_IF(dump(); VL_DBG_MSGF("         Resuming delayed processes\n"););
 #endif
-    while (awaitingCurrentTime()) {
-        if (!m_queue.empty() && (m_queue.begin()->first == m_context.time())) {
-            VlCoroutineHandle handle = std::move(m_queue.begin()->second);
-            m_queue.erase(m_queue.begin());
-            handle.resume();
-            continue;
-        }
-        if (!m_zeroDelayed.empty()) {
-            for (auto&& handle : m_zeroDelayed) handle.resume();
-            m_zeroDelayed.clear();
-            continue;
-        }
+    bool resumed = false;
+
+    while (!m_queue.empty() && (m_queue.begin()->first == m_context.time())) {
+        VlCoroutineHandle handle = std::move(m_queue.begin()->second);
+        m_queue.erase(m_queue.begin());
+        handle.resume();
+        resumed = true;
+    }
+
+    if (!m_zeroDelayed.empty()) {
+        for (auto&& handle : m_zeroDelayed) handle.resume();
+        m_zeroDelayed.clear();
+        resumed = true;
+    }
+
+    if (!resumed) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
                     "%Error: Encountered process that should've been resumed at an "
                     "earlier simulation time. Missed a time slot?\n");
