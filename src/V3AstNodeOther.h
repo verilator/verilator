@@ -541,8 +541,9 @@ class AstActive final : public AstNode {
     // Parents:  MODULE | CFUNC
     // @astgen op1 := sensesStorep : Optional[AstSenTree] // Moved into m_sensesp in V3Active
     // @astgen op2 := stmtsp : List[AstNode] // Logic
+    //
+    // @astgen ptr := m_sensesp : Optional[AstSenTree]  // Sensitivity list for this process
     string m_name;
-    AstSenTree* m_sensesp;
 
 public:
     AstActive(FileLine* fl, const string& name, AstSenTree* sensesp)
@@ -554,8 +555,6 @@ public:
     ASTGEN_MEMBERS_AstActive;
     void dump(std::ostream& str = std::cout) const override;
     string name() const override VL_MT_STABLE { return m_name; }
-    const char* broken() const override;
-    void cloneRelink() override;
     // Statements are broken into pieces, as some must come before others.
     void sensesp(AstSenTree* nodep) { m_sensesp = nodep; }
     AstSenTree* sensesp() const { return m_sensesp; }
@@ -588,7 +587,8 @@ class AstCFunc final : public AstNode {
     // @astgen op2 := initsp : List[AstNode]
     // @astgen op3 := stmtsp : List[AstNode]
     // @astgen op4 := finalsp : List[AstNode]
-    AstScope* m_scopep;
+    //
+    // @astgen ptr := m_scopep : Optional[AstScope]  // Scope that function is under
     string m_name;
     string m_cname;  // C name, for dpiExports
     string m_rtnType;  // void, bool, or other return type
@@ -651,8 +651,6 @@ public:
     }
     ASTGEN_MEMBERS_AstCFunc;
     string name() const override VL_MT_STABLE { return m_name; }
-    const char* broken() const override;
-    void cloneRelink() override;
     bool maybePointedTo() const override { return true; }
     void dump(std::ostream& str = std::cout) const override;
     bool same(const AstNode* samep) const override {
@@ -782,11 +780,12 @@ class AstCell final : public AstNode {
     // @astgen op2 := paramsp : List[AstPin] // List of parameter assignments
     // @astgen op3 := rangep : Optional[AstRange] // Range for arrayed instances
     // @astgen op4 := intfRefsp : List[AstIntfRef] // List of interface references, for tracing
+    //
+    // @astgen ptr := m_modp : Optional[AstNodeModule]  // [AfterLink] Pointer to module instanced
     FileLine* m_modNameFileline;  // Where module the cell instances token was
     string m_name;  // Cell name
     string m_origName;  // Original name before dot addition
     string m_modName;  // Module the cell instances
-    AstNodeModule* m_modp = nullptr;  // [AfterLink] Pointer to module instanced
     bool m_hasIfaceVar : 1;  // True if a Var has been created for this cell
     bool m_hasNoParens : 1;  // Instantiation has no parenthesis
     bool m_recursive : 1;  // Self-recursive module
@@ -809,8 +808,8 @@ public:
     }
     ASTGEN_MEMBERS_AstCell;
     // No cloneRelink, we presume cloneee's want the same module linkages
+    void cloneRelink() override {}  // TODO V3Param shouldn't require avoiding cloneRelinkGen
     void dump(std::ostream& str) const override;
-    const char* broken() const override;
     bool maybePointedTo() const override { return true; }
     // ACCESSORS
     string name() const override VL_MT_STABLE { return m_name; }  // * = Cell name
@@ -837,10 +836,9 @@ class AstCellInline final : public AstNode {
     // except for VPI runs where it exists until the end.
     // It is augmented with the scope in V3Scope for VPI.
     // Children: When 2 levels inlined, other CellInline under this
+    // @astgen ptr := m_scopep : Optional[AstScope]  // The scope that the cell is inlined into
     string m_name;  // Cell name, possibly {a}__DOT__{b}...
-    const string
-        m_origModName;  // Original name of the module, ignoring name() changes, for dot lookup
-    AstScope* m_scopep = nullptr;  // The scope that the cell is inlined into
+    const string m_origModName;  // Original name of module, ignoring name() changes, for LinkDot
     VTimescale m_timeunit;  // Parent module time unit
 public:
     AstCellInline(FileLine* fl, const string& name, const string& origModName,
@@ -851,7 +849,6 @@ public:
         , m_timeunit{timeunit} {}
     ASTGEN_MEMBERS_AstCellInline;
     void dump(std::ostream& str) const override;
-    const char* broken() const override;
     // ACCESSORS
     string name() const override VL_MT_STABLE { return m_name; }  // * = Cell name
     string origModName() const { return m_origModName; }  // * = modp()->origName() before inlining
@@ -940,10 +937,11 @@ public:
 class AstConstPool final : public AstNode {
     // Container for const static data
     // @astgen op1 := modulep : AstModule // m_modp below TODO: fix this mess
+    //
+    // @astgen ptr := m_modp : AstModule  // The Module holding the Scope below ...
+    // @astgen ptr := m_scopep : AstScope  // Scope holding the constant variables
     std::unordered_multimap<uint32_t, AstVarScope*> m_tables;  // Constant tables (unpacked arrays)
     std::unordered_multimap<uint32_t, AstVarScope*> m_consts;  // Constant tables (scalars)
-    AstModule* const m_modp;  // The Module holding the Scope below ...
-    AstScope* const m_scopep;  // Scope holding the constant variables
 
     AstVarScope* createNewEntry(const string& name, AstNodeExpr* initp);
 
@@ -951,7 +949,6 @@ public:
     explicit AstConstPool(FileLine* fl);
     ASTGEN_MEMBERS_AstConstPool;
     bool maybePointedTo() const override { return true; }
-    const char* broken() const override;
     void cloneRelink() override { V3ERROR_NA; }
     AstModule* modp() const { return m_modp; }
 
@@ -1193,8 +1190,9 @@ class AstModportFTaskRef final : public AstNode {
     // The storage for the function itself is inside the
     // interface/instantiator, thus this is a reference
     // PARENT: AstModport
+    //
+    // @astgen ptr := m_ftaskp : Optional[AstNodeFTask]  // Link to the function
     string m_name;  // Name of the variable referenced
-    AstNodeFTask* m_ftaskp = nullptr;  // Link to the function
     bool m_export;  // Type of the function (import/export)
 public:
     AstModportFTaskRef(FileLine* fl, const string& name, bool isExport)
@@ -1202,8 +1200,6 @@ public:
         , m_name{name}
         , m_export{isExport} {}
     ASTGEN_MEMBERS_AstModportFTaskRef;
-    const char* broken() const override;
-    void cloneRelink() override;
     void dump(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     bool isImport() const { return !m_export; }
@@ -1215,8 +1211,9 @@ class AstModportVarRef final : public AstNode {
     // A input/output/etc variable referenced under a modport
     // The storage for the variable itself is inside the interface, thus this is a reference
     // PARENT: AstModport
+    //
+    // @astgen ptr := m_varp : Optional[AstVar]  // Link to the actual Var
     string m_name;  // Name of the variable referenced
-    AstVar* m_varp = nullptr;  // Link to the actual Var
     VDirection m_direction;  // Direction of the variable (in/out)
 public:
     AstModportVarRef(FileLine* fl, const string& name, VDirection::en direction)
@@ -1224,8 +1221,6 @@ public:
         , m_name{name}
         , m_direction{direction} {}
     ASTGEN_MEMBERS_AstModportVarRef;
-    const char* broken() const override;
-    void cloneRelink() override;
     void dump(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     void direction(const VDirection& flag) { m_direction = flag; }
@@ -1240,18 +1235,18 @@ class AstNetlist final : public AstNode {
     // @astgen op1 := modulesp : List[AstNodeModule]
     // @astgen op2 := filesp : List[AstNodeFile]
     // @astgen op3 := miscsp : List[AstNode]
-
-    AstTypeTable* const m_typeTablep;  // Reference to top type table, for faster lookup
-    AstConstPool* const m_constPoolp;  // Reference to constant pool, for faster lookup
-    AstPackage* m_dollarUnitPkgp = nullptr;  // $unit
-    AstPackage* m_stdPackagep = nullptr;  // SystemVerilog std package
-    AstCFunc* m_evalp = nullptr;  // The '_eval' function
-    AstCFunc* m_evalNbap = nullptr;  // The '_eval__nba' function
-    AstVarScope* m_dpiExportTriggerp = nullptr;  // The DPI export trigger variable
-    AstVar* m_delaySchedulerp = nullptr;  // The delay scheduler variable
-    AstVarScope* m_nbaEventp = nullptr;  // The NBA event variable
-    AstVarScope* m_nbaEventTriggerp = nullptr;  // If set to 1, the NBA event should get triggered
-    AstTopScope* m_topScopep = nullptr;  // The singleton AstTopScope under the top module
+    //
+    // @astgen ptr := m_typeTablep : AstTypeTable  // Reference to type table, for faster lookup
+    // @astgen ptr := m_constPoolp : AstConstPool  // Reference to constant pool, for faster lookup
+    // @astgen ptr := m_dollarUnitPkgp : Optional[AstPackage]  // $unit
+    // @astgen ptr := m_stdPackagep : Optional[AstPackage]  // SystemVerilog std package
+    // @astgen ptr := m_evalp : Optional[AstCFunc]  // The '_eval' function
+    // @astgen ptr := m_evalNbap : Optional[AstCFunc]  // The '_eval__nba' function
+    // @astgen ptr := m_dpiExportTriggerp : Optional[AstVarScope]  // DPI export trigger variable
+    // @astgen ptr := m_delaySchedulerp : Optional[AstVar]  // Delay scheduler variable
+    // @astgen ptr := m_nbaEventp : Optional[AstVarScope]  // NBA event variable
+    // @astgen ptr := m_nbaEventTriggerp : Optional[AstVarScope]  // NBA event trigger
+    // @astgen ptr := m_topScopep : Optional[AstTopScope]  // Singleton AstTopScope
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
@@ -1261,7 +1256,6 @@ class AstNetlist final : public AstNode {
 public:
     AstNetlist();
     ASTGEN_MEMBERS_AstNetlist;
-    const char* broken() const override;
     void cloneRelink() override { V3ERROR_NA; }
     string name() const override VL_MT_STABLE { return "$root"; }
     void dump(std::ostream& str) const override;
@@ -1304,16 +1298,16 @@ public:
 };
 class AstPackageExport final : public AstNode {
     // A package export declaration
+    //
+    // @astgen ptr := m_packagep : Optional[AstPackage]  // Package hierarchy
     string m_name;
-    AstPackage* m_packagep;  // Package hierarchy
+
 public:
     AstPackageExport(FileLine* fl, AstPackage* packagep, const string& name)
         : ASTGEN_SUPER_PackageExport(fl)
         , m_name{name}
         , m_packagep{packagep} {}
     ASTGEN_MEMBERS_AstPackageExport;
-    const char* broken() const override;
-    void cloneRelink() override;
     void dump(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     AstPackage* packagep() const { return m_packagep; }
@@ -1329,16 +1323,16 @@ public:
 };
 class AstPackageImport final : public AstNode {
     // A package import declaration
+    //
+    // @astgen ptr := m_packagep : Optional[AstPackage]  // Package hierarchy
     string m_name;
-    AstPackage* m_packagep;  // Package hierarchy
+
 public:
     AstPackageImport(FileLine* fl, AstPackage* packagep, const string& name)
         : ASTGEN_SUPER_PackageImport(fl)
         , m_name{name}
         , m_packagep{packagep} {}
     ASTGEN_MEMBERS_AstPackageImport;
-    const char* broken() const override;
-    void cloneRelink() override;
     void dump(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     AstPackage* packagep() const { return m_packagep; }
@@ -1347,10 +1341,11 @@ public:
 class AstPin final : public AstNode {
     // A port or parameter assignment on an instantiation
     // @astgen op1 := exprp : Optional[AstNode] // NodeExpr or NodeDType (nullptr if unconnected)
+    //
+    // @astgen ptr := m_modVarp : Optional[AstVar]  // Input/output connects to on submodule
+    // @astgen ptr := m_modPTypep : Optional[AstParamTypeDType]  // Param type connects to on sub
     int m_pinNum;  // Pin number
     string m_name;  // Pin name, or "" for number based interconnect
-    AstVar* m_modVarp = nullptr;  // Input/output this pin connects to on submodule.
-    AstParamTypeDType* m_modPTypep = nullptr;  // Param type this pin connects to on submodule.
     bool m_param = false;  // Pin connects to parameter
     bool m_svDotName = false;  // Pin is SystemVerilog .name'ed
     bool m_svImplicit = false;  // Pin is SystemVerilog .name'ed, allow implicit
@@ -1363,8 +1358,8 @@ public:
     }
     inline AstPin(FileLine* fl, int pinNum, AstVarRef* varname, AstNode* exprp);
     ASTGEN_MEMBERS_AstPin;
+    void cloneRelink() override {}  // TODO V3Param shouldn't require avoiding cloneRelinkGen
     void dump(std::ostream& str) const override;
-    const char* broken() const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Pin name, ""=go by number
     void name(const string& name) override { m_name = name; }
     string prettyOperatorName() const override;
@@ -1453,12 +1448,14 @@ class AstScope final : public AstNode {
     // Children: NODEBLOCK
     // @astgen op1 := varsp : List[AstVarScope]
     // @astgen op2 := blocksp : List[AstNode] // Logic blocks/AstActive/AstCFunc
+    //
+    // Below scope and cell are nullptr if top scope
+    // @astgen ptr := m_aboveScopep : Optional[AstScope]  // Scope above this one in the hierarchy
+    // @astgen ptr := m_aboveCellp : Optional[AstCell]  // Cell above this in the hierarchy
+    // @astgen ptr := m_modp : AstNodeModule  // Module scope corresponds to
 
     // An AstScope->name() is special: . indicates an uninlined scope, __DOT__ an inlined scope
     string m_name;  // Name
-    AstScope* const m_aboveScopep;  // Scope above this one in the hierarchy (nullptr if top)
-    AstCell* const m_aboveCellp;  // Cell above this in the hierarchy (nullptr if top)
-    AstNodeModule* const m_modp;  // Module scope corresponds to
 public:
     AstScope(FileLine* fl, AstNodeModule* modp, const string& name, AstScope* aboveScopep,
              AstCell* aboveCellp)
@@ -1468,8 +1465,10 @@ public:
         , m_aboveCellp{aboveCellp}
         , m_modp{modp} {}
     ASTGEN_MEMBERS_AstScope;
-    void cloneRelink() override;
-    const char* broken() const override;
+    const char* broken() const override {
+        BROKEN_RTN(!m_modp);
+        return nullptr;
+    }
     bool maybePointedTo() const override { return true; }
     string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     void name(const string& name) override { m_name = name; }
@@ -1608,11 +1607,12 @@ public:
 class AstTypeTable final : public AstNode {
     // Container for hash of standard data types
     // @astgen op1 := typesp : List[AstNodeDType]
-    AstConstraintRefDType* m_constraintRefp = nullptr;
-    AstEmptyQueueDType* m_emptyQueuep = nullptr;
-    AstQueueDType* m_queueIndexp = nullptr;
-    AstStreamDType* m_streamp = nullptr;
-    AstVoidDType* m_voidp = nullptr;
+    //
+    // @astgen ptr := m_constraintRefp : Optional[AstConstraintRefDType]
+    // @astgen ptr := m_emptyQueuep : Optional[AstEmptyQueueDType]
+    // @astgen ptr := m_queueIndexp : Optional[AstQueueDType]
+    // @astgen ptr := m_streamp : Optional[AstStreamDType]
+    // @astgen ptr := m_voidp : Optional[AstVoidDType]
     AstBasicDType* m_basicps[VBasicDTypeKwd::_ENUM_MAX]{};
     //
     using DetailedMap = std::map<VBasicTypeKey, AstBasicDType*>;
@@ -1622,12 +1622,6 @@ public:
     explicit AstTypeTable(FileLine* fl);
     ASTGEN_MEMBERS_AstTypeTable;
     bool maybePointedTo() const override { return true; }
-    const char* broken() const override {
-        BROKEN_RTN(m_emptyQueuep && !m_emptyQueuep->brokeExists());
-        BROKEN_RTN(m_queueIndexp && !m_queueIndexp->brokeExists());
-        BROKEN_RTN(m_voidp && !m_voidp->brokeExists());
-        return nullptr;
-    }
     void cloneRelink() override { V3ERROR_NA; }
     AstBasicDType* findBasicDType(FileLine* fl, VBasicDTypeKwd kwd);
     AstBasicDType* findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd, int width, int widthMin,
@@ -2095,8 +2089,9 @@ class AstVarScope final : public AstNode {
     // varscope for each var in the module
     // Parents: MODULE
     // Children: none
-    AstScope* m_scopep;  // Scope variable is underneath
-    AstVar* m_varp;  // [AfterLink] Pointer to variable itself
+    //
+    // @astgen ptr := m_scopep : Optional[AstScope]  // Scope variable is underneath
+    // @astgen ptr := m_varp : Optional[AstVar]  // [AfterLink] Pointer to variable itself
     bool m_trace : 1;  // Tracing is turned on for this scope
 public:
     AstVarScope(FileLine* fl, AstScope* scopep, AstVar* varp)
@@ -2111,15 +2106,9 @@ public:
     ASTGEN_MEMBERS_AstVarScope;
     void cloneRelink() override {
         if (m_varp && m_varp->clonep()) {
-            m_varp = m_varp->clonep();
             UASSERT(m_scopep->clonep(), "No clone cross link: " << this);
-            m_scopep = m_scopep->clonep();
         }
-    }
-    const char* broken() const override {
-        BROKEN_RTN(m_varp && !m_varp->brokeExists());
-        BROKEN_RTN(m_scopep && !m_scopep->brokeExists());
-        return nullptr;
+        cloneRelinkGen();
     }
     bool maybePointedTo() const override { return true; }
     string name() const override VL_MT_STABLE { return scopep()->name() + "->" + varp()->name(); }
@@ -2262,7 +2251,7 @@ public:
 class AstClass final : public AstNodeModule {
     // @astgen op4 := extendsp : List[AstClassExtends]
     // MEMBERS
-    AstClassPackage* m_classOrPackagep = nullptr;  // Package it will be emitted with
+    // @astgen ptr := m_classOrPackagep : Optional[AstClassPackage]  // Package to be emitted with
     bool m_extended = false;  // Is extension or extended by other classes
     bool m_interfaceClass = false;  // Interface class
     bool m_needRNG = false;  // Need RNG, uses srandom/randomize
@@ -2276,8 +2265,6 @@ public:
     string verilogKwd() const override { return "class"; }
     bool maybePointedTo() const override { return true; }
     void dump(std::ostream& str) const override;
-    const char* broken() const override;
-    void cloneRelink() override;
     bool timescaleMatters() const override { return false; }
     AstClassPackage* classOrPackagep() const VL_MT_SAFE { return m_classOrPackagep; }
     void classOrPackagep(AstClassPackage* classpackagep) { m_classOrPackagep = classpackagep; }
@@ -2302,15 +2289,14 @@ public:
 };
 class AstClassPackage final : public AstNodeModule {
     // The static information portion of a class (treated similarly to a package)
-    AstClass* m_classp
-        = nullptr;  // Class package this is under (weak pointer, hard link is other way)
+    //
+    // @astgen ptr := m_classp : Optional[AstClass]  // Class package this is under
+    //                                     // (weak pointer, hard link is other way)
 public:
     AstClassPackage(FileLine* fl, const string& name)
         : ASTGEN_SUPER_ClassPackage(fl, name) {}
     ASTGEN_MEMBERS_AstClassPackage;
     string verilogKwd() const override { return "classpackage"; }
-    const char* broken() const override;
-    void cloneRelink() override;
     bool timescaleMatters() const override { return false; }
     AstClass* classp() const VL_MT_SAFE { return m_classp; }
     void classp(AstClass* classp) { m_classp = classp; }
@@ -2647,8 +2633,9 @@ public:
 };
 class AstCoverDecl final : public AstNodeStmt {
     // Coverage analysis point declaration
-    AstCoverDecl* m_dataDeclp = nullptr;  // [After V3CoverageJoin] Pointer to duplicate
-                                          // declaration to get data from instead
+    //
+    // [After V3CoverageJoin] Duplicate declaration to get data from instead
+    // @astgen ptr := m_dataDeclp : Optional[AstCoverDecl]
     string m_page;
     string m_text;
     string m_hier;
@@ -2665,14 +2652,10 @@ public:
         , m_offset{offset} {}
     ASTGEN_MEMBERS_AstCoverDecl;
     const char* broken() const override {
-        BROKEN_RTN(m_dataDeclp && !m_dataDeclp->brokeExists());
         if (m_dataDeclp && m_dataDeclp->m_dataDeclp) {  // Avoid O(n^2) accessing
             v3fatalSrc("dataDeclp should point to real data, not be a list");
         }
         return nullptr;
-    }
-    void cloneRelink() override {
-        if (m_dataDeclp && m_dataDeclp->clonep()) m_dataDeclp = m_dataDeclp->clonep();
     }
     void dump(std::ostream& str) const override;
     int instrCount() const override { return 1 + 2 * INSTR_COUNT_LD; }
@@ -2700,19 +2683,13 @@ public:
 };
 class AstCoverInc final : public AstNodeStmt {
     // Coverage analysis point; increment coverage count
-    AstCoverDecl* m_declp;  // [After V3Coverage] Pointer to declaration
+    //
+    // @astgen ptr := m_declp : AstCoverDecl  // [After V3CoverageJoin] Declaration
 public:
     AstCoverInc(FileLine* fl, AstCoverDecl* declp)
         : ASTGEN_SUPER_CoverInc(fl)
         , m_declp{declp} {}
     ASTGEN_MEMBERS_AstCoverInc;
-    const char* broken() const override {
-        BROKEN_RTN(!declp()->brokeExists());
-        return nullptr;
-    }
-    void cloneRelink() override {
-        if (m_declp->clonep()) m_declp = m_declp->clonep();
-    }
     void dump(std::ostream& str) const override;
     int instrCount() const override { return 1 + 2 * INSTR_COUNT_LD; }
     bool same(const AstNode* samep) const override {
@@ -2947,7 +2924,8 @@ class AstJumpBlock final : public AstNodeStmt {
     // Children: {statement list, with JumpGo and JumpLabel below}
     // @astgen op1 := stmtsp : List[AstNode]
     // @astgen op2 := endStmtsp : List[AstNode]
-    AstJumpLabel* m_labelp = nullptr;  // [After V3Jump] Pointer to declaration
+    //
+    // @astgen ptr := m_labelp : AstJumpLabel  // [After V3Jump] Pointer to declaration
     int m_labelNum = 0;  // Set by V3EmitCSyms to tell final V3Emit what to increment
 public:
     // After construction must call ->labelp to associate with appropriate label
@@ -2955,9 +2933,8 @@ public:
         : ASTGEN_SUPER_JumpBlock(fl) {
         this->addStmtsp(stmtsp);
     }
-    const char* broken() const override;
-    void cloneRelink() override;
     ASTGEN_MEMBERS_AstJumpBlock;
+    const char* broken() const override;
     int instrCount() const override { return 0; }
     bool maybePointedTo() const override { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
@@ -2971,14 +2948,14 @@ class AstJumpGo final : public AstNodeStmt {
     // No support for backward jumps at present
     // Parents:  {statement list with JumpBlock above}
     // Children: none
-    AstJumpLabel* m_labelp;  // [After V3Jump] Pointer to declaration
+    //
+    // @astgen ptr := m_labelp : AstJumpLabel  // [After V3Jump] Pointer to declaration
 public:
     AstJumpGo(FileLine* fl, AstJumpLabel* labelp)
         : ASTGEN_SUPER_JumpGo(fl)
         , m_labelp{labelp} {}
     ASTGEN_MEMBERS_AstJumpGo;
     const char* broken() const override;
-    void cloneRelink() override;
     void dump(std::ostream& str) const override;
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
     bool same(const AstNode* samep) const override {
@@ -2994,7 +2971,7 @@ class AstJumpLabel final : public AstNodeStmt {
     // Jump point declaration
     // Parents:  {statement list with JumpBlock above}
     // Children: none
-    AstJumpBlock* m_blockp;  // [After V3Jump] Pointer to declaration
+    // @astgen ptr := m_blockp : AstJumpBlock  // [After V3Jump] Pointer to declaration
 public:
     AstJumpLabel(FileLine* fl, AstJumpBlock* blockp)
         : ASTGEN_SUPER_JumpLabel(fl)
@@ -3005,9 +2982,6 @@ public:
         BROKEN_RTN(!blockp()->brokeExistsAbove());
         BROKEN_RTN(blockp()->labelp() != this);
         return nullptr;
-    }
-    void cloneRelink() override {
-        if (m_blockp->clonep()) m_blockp = m_blockp->clonep();
     }
     void dump(std::ostream& str) const override;
     int instrCount() const override { return 0; }
@@ -3281,29 +3255,22 @@ class AstTraceInc final : public AstNodeStmt {
     // Trace point dump
     // @astgen op1 := precondsp : List[AstNode] // Statements to emit before this node
     // @astgen op2 := valuep : AstNodeExpr // Expression being traced (from decl)
-
-    AstTraceDecl* m_declp;  // Pointer to declaration
+    //
+    // @astgen ptr := m_declp : AstTraceDecl  // Pointer to declaration
     const uint32_t m_baseCode;  // Trace code base value in function containing this AstTraceInc
     const VTraceType m_traceType;  // Is this a const/full/incremental dump
 
 public:
     AstTraceInc(FileLine* fl, AstTraceDecl* declp, VTraceType traceType, uint32_t baseCode = 0)
         : ASTGEN_SUPER_TraceInc(fl)
-        , m_declp{declp}
         , m_baseCode{baseCode}
-        , m_traceType{traceType} {
+        , m_traceType{traceType}
+        , m_declp{declp} {
         dtypeFrom(declp);
         this->valuep(
             declp->valuep()->cloneTree(true));  // TODO: maybe use reference to TraceDecl instead?
     }
     ASTGEN_MEMBERS_AstTraceInc;
-    const char* broken() const override {
-        BROKEN_RTN(!declp()->brokeExists());
-        return nullptr;
-    }
-    void cloneRelink() override {
-        if (m_declp->clonep()) m_declp = m_declp->clonep();
-    }
     void dump(std::ostream& str) const override;
     int instrCount() const override { return 10 + 2 * INSTR_COUNT_LD; }
     bool hasDType() const override { return true; }
