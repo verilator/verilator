@@ -138,7 +138,7 @@
 
 // Defaults for unsupported compiler features
 #ifndef VL_ATTR_ALWINLINE
-# define VL_ATTR_ALWINLINE  ///< Attribute to inline, even when not optimizing
+# define VL_ATTR_ALWINLINE inline  ///< Attribute to inline, even when not optimizing
 #endif
 #ifndef VL_ATTR_NOINLINE
 # define VL_ATTR_NOINLINE  ///< Attribute to never inline, even when optimizing
