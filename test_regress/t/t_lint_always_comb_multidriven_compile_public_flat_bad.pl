@@ -10,12 +10,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-top_filename("t/t_lint_always_comb_multidriven.v");
+top_filename("t/t_lint_always_comb_multidriven_bad.v");
 
 lint(
     verilator_flags2 => ['--public-flat-rw --lint-only'],
     fails => 1,
-    expect_filename => "t/t_lint_always_comb_multidriven.out",
+    expect_filename => "t/t_lint_always_comb_multidriven_bad.out",
     );
 
 ok(1);
