@@ -993,11 +993,9 @@ def write_ast_impl(filename):
                 continue
             emitBlock("const char* Ast{t}::brokenGen() const {{\n",
                       t=node.name)
-            for superClass in node.allSuperClasses:
-                if superClass.name != 'Node':
-                    emitBlock(
-                        "    BROKEN_BASE_RTN(Ast{super}::brokenGen());\n",
-                        super=superClass.name)
+            if node.superClass.name != 'Node':
+                emitBlock("    BROKEN_BASE_RTN(Ast{base}::brokenGen());\n",
+                          base=node.superClass.name)
             for ptr in node.ptrs:
                 if ptr['monad'] == 'Optional':
                     emitBlock(
@@ -1011,10 +1009,9 @@ def write_ast_impl(filename):
             emitBlock("    return Ast{t}::broken(); }}\n", t=node.name)
 
             emitBlock("void Ast{t}::cloneRelinkGen() {{\n", t=node.name)
-            for superClass in node.allSuperClasses:
-                if superClass.name != 'Node':
-                    emitBlock("    Ast{super}::cloneRelinkGen();\n",
-                              super=superClass.name)
+            if node.superClass.name != 'Node':
+                emitBlock("    Ast{base}::cloneRelinkGen();\n",
+                          base=node.superClass.name)
             for ptr in node.ptrs:
                 emitBlock(
                     "    if (m_{name} && m_{name}->clonep()) m_{name} = m_{name}->clonep();\n",
