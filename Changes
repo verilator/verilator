@@ -14,15 +14,19 @@ Verilator 5.019 devel
 **Major:**
 
 * Support compilation with precompiled headers with Make and GCC or CLang.
-* Change include of systemc instead of systemc.h (#4622) (#4623). [Chih-Mao Chen]
+* Change include to systemc instead of systemc.h (#4622) (#4623). [Chih-Mao Chen]
   This may require that SystemC programs add 'using namespace sc_core', 'using namespace sc_dt'.
 
 **Minor:**
 
+* Support `iff` in sensitivity list (#1482) (#4626). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support ccache when compiling Verilator with CMake (#4678). [Anthony Donlon]
 * Support passing constraints to --xml-only output (still otherwise unsupported) (#4683). [Shahid Ikram]
+* Support node memory usage information in --stats (#4684). [Geza Lore]
+* Support vpi_iterate on packages with vpiInstance (#4726). [Todd Strader]
 * Remove deprecated options (#4663). [Geza Lore]
 * Optimize timing-delayed queue (#4584). [qrqiuren]
+* Optimize substitute optimization memory usage (#4687). [Geza Lore]
 * Fix VPI TOP level variable iteration (#3919) (#4618). [Marlon James]
 * Fix display with no % printing assoc array (#4376). [Alex Solomatnikov]
 * Fix scheduling of external force signals (#4577) (#4668). [Geza Lore]
@@ -34,9 +38,18 @@ Verilator 5.019 devel
 * Fix MingW compilation (#4675). [David Ledger]
 * Fix trace when using SystemC with certain configurations (#4676). [Anthony Donlon]
 * Fix C++20 compilation errors (#4670).
+* Fix range access to classes depending on parameter resolution (#4681). [Krzysztof Boroński]
+* Fix select into constant And/Or/Xor pattern (#4689). [Geza Lore]
+* Fix access type of function arguments (#4692) (#4694). [Ryszard Rozak, Antmicro Ltd.]
+* Fix dynamic NBAs with automatic vars (#4696). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix # 0 delays for process resumption, etc. (#4697). [Krzysztof Boroński]
+* Fix conflicted namespace for coroutines (#4701) (#4707). [Jinyan Xu]
 * Fix compilers seeing empty input due to file system races (#4708). [Flavien Solt]
 * Fix shift of > 32-bit number (#4719). [Flavien Solt]
+* Fix Windows include gates in filesystem Flush implementation. (#4720). [William D. Jones]
 * Fix 0**0 with wide numbers (#4721). [Flavien Solt]
+* Fix parameter passing to ports (#4723). [Ryszard Rozak, Antmicro Ltd.]
+* Fix block names of nested do..while loops (#4728). [Ryszard Rozak, Antmicro Ltd.]
 
 
 Verilator 5.018 2023-10-30

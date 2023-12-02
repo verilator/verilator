@@ -1036,6 +1036,7 @@ vltstd
 vluint
 vpi
 vpiDefName
+vpiInstance
 vpiLeftRange
 vpiModule
 vpiSize
