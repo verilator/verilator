@@ -13,7 +13,7 @@ scenarios(vlt => 1);
 compile(
     verilator_flags2 => ['--assert'],
     expect_filename => $Self->{golden_filename},
-    fails => 1,
+    fails => $Self->{vlt_all},
     );
 
 #execute(
