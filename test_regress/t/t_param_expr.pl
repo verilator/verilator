@@ -8,9 +8,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-scenarios(linter => 1);
+scenarios(simulator => 1);
 
-lint(
+compile(
+    );
+
+execute(
+    check_finished => 1,
     );
 
 ok(1);

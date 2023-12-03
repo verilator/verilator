@@ -66,7 +66,7 @@ $scope module top.t.i_delay0 $end
 $var wire 1 * clk $end
 $var wire 8 + in [7:0] $end
 $var wire 8 , out [7:0] $end
-$scope module delay_2 $end
+$scope module delay_hierblk1 $end
 $var parameter 32 - N [31:0] $end
 $var parameter 32 . WIDTH [31:0] $end
 $var wire 1 * clk $end
@@ -82,11 +82,11 @@ $upscope $end
 $upscope $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_delay0.delay_2.genblk1.i_delay $end
+$scope module top.t.i_delay0.delay_hierblk1.genblk1.i_delay $end
 $var wire 1 0 clk $end
 $var wire 8 1 in [7:0] $end
 $var wire 8 2 out [7:0] $end
-$scope module delay_4 $end
+$scope module delay_hierblk3 $end
 $var parameter 32 3 N [31:0] $end
 $var parameter 32 4 WIDTH [31:0] $end
 $var wire 1 0 clk $end
@@ -99,7 +99,7 @@ $scope module top.t.i_delay1 $end
 $var wire 1 6 clk $end
 $var wire 8 7 in [7:0] $end
 $var wire 8 8 out [7:0] $end
-$scope module delay_9 $end
+$scope module delay_hierblk2 $end
 $var parameter 32 9 N [31:0] $end
 $var parameter 32 : WIDTH [31:0] $end
 $var wire 1 6 clk $end
@@ -115,11 +115,11 @@ $upscope $end
 $upscope $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_delay1.delay_9.genblk1.i_delay $end
+$scope module top.t.i_delay1.delay_hierblk2.genblk1.i_delay $end
 $var wire 1 < clk $end
 $var wire 8 = in [7:0] $end
 $var wire 8 > out [7:0] $end
-$scope module delay_2 $end
+$scope module delay_hierblk1 $end
 $var parameter 32 ? N [31:0] $end
 $var parameter 32 @ WIDTH [31:0] $end
 $var wire 1 < clk $end
@@ -135,11 +135,11 @@ $upscope $end
 $upscope $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_delay1.delay_9.genblk1.i_delay.delay_2.genblk1.i_delay $end
+$scope module top.t.i_delay1.delay_hierblk2.genblk1.i_delay.delay_hierblk1.genblk1.i_delay $end
 $var wire 1 B clk $end
 $var wire 8 C in [7:0] $end
 $var wire 8 D out [7:0] $end
-$scope module delay_4 $end
+$scope module delay_hierblk3 $end
 $var parameter 32 E N [31:0] $end
 $var parameter 32 F WIDTH [31:0] $end
 $var wire 1 B clk $end
@@ -216,7 +216,7 @@ $scope module top.t.i_sub2.sub2.i_sub3.i_sub3 $end
 $var wire 1 V clk $end
 $var wire 8 W in [7:0] $end
 $var wire 8 X out [7:0] $end
-$scope module sub3_c $end
+$scope module sub3_hierblk3 $end
 $var parameter 8 Y P0 [7:0] $end
 $var parameter 32 Z UNPACKED_ARRAY[0] [31:0] $end
 $var parameter 32 [ UNPACKED_ARRAY[1] [31:0] $end
@@ -239,11 +239,11 @@ $var wire 8 ^ out [7:0] $end
 $upscope $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_c.i_sub4_0 $end
+$scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_hierblk3.i_sub4_0 $end
 $var wire 1 _ clk $end
 $var wire 8 ` in [7:0] $end
 $var wire 8 a out [7:0] $end
-$scope module sub4_2 $end
+$scope module sub4_hierblk1 $end
 $var parameter 32 b P0 [31:0] $end
 $var real_parameter 64 c P1 $end
 $var real_parameter 64 d P3 $end
@@ -290,7 +290,7 @@ $upscope $end
 $upscope $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_c.i_sub4_0.sub4_2.i_sub5 $end
+$scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_hierblk3.i_sub4_0.sub4_hierblk1.i_sub5 $end
 $var wire 1 $! clk $end
 $var wire 128 %! in[0][0] [127:0] $end
 $var wire 128 &! in[0][1] [127:0] $end
@@ -354,31 +354,31 @@ $upscope $end
 $upscope $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_c.i_sub4_0.sub4_2.i_sub5.sub5.i_sub0 $end
+$scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_hierblk3.i_sub4_0.sub4_hierblk1.i_sub5.sub5.i_sub0 $end
 $var wire 8 E! out[0] [7:0] $end
 $var wire 8 F! out[1] [7:0] $end
-$scope module sub6_f $end
+$scope module sub6_hierblk1 $end
 $var parameter 32 G! P0 [31:0] $end
 $var parameter 32 H! P1 [31:0] $end
 $var wire 8 E! out[0] [7:0] $end
 $var wire 8 F! out[1] [7:0] $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_c.i_sub4_0.sub4_2.i_sub5.sub5.i_sub3 $end
+$scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_hierblk3.i_sub4_0.sub4_hierblk1.i_sub5.sub5.i_sub3 $end
 $var wire 8 I! out[0] [7:0] $end
 $var wire 8 J! out[1] [7:0] $end
-$scope module sub6_9 $end
+$scope module sub6_hierblk2 $end
 $var parameter 32 K! P0 [31:0] $end
 $var parameter 32 L! P1 [31:0] $end
 $var wire 8 I! out[0] [7:0] $end
 $var wire 8 J! out[1] [7:0] $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_c.i_sub4_1 $end
+$scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_hierblk3.i_sub4_1 $end
 $var wire 1 M! clk $end
 $var wire 8 N! in [7:0] $end
 $var wire 8 O! out [7:0] $end
-$scope module sub4_b $end
+$scope module sub4_hierblk2 $end
 $var parameter 32 P! P0 [31:0] $end
 $var real_parameter 64 Q! P1 $end
 $var real_parameter 64 R! P3 $end
@@ -425,7 +425,7 @@ $upscope $end
 $upscope $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_c.i_sub4_1.sub4_b.i_sub5 $end
+$scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_hierblk3.i_sub4_1.sub4_hierblk2.i_sub5 $end
 $var wire 1 p! clk $end
 $var wire 128 q! in[0][0] [127:0] $end
 $var wire 128 r! in[0][1] [127:0] $end
@@ -489,20 +489,20 @@ $upscope $end
 $upscope $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_c.i_sub4_1.sub4_b.i_sub5.sub5.i_sub0 $end
+$scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_hierblk3.i_sub4_1.sub4_hierblk2.i_sub5.sub5.i_sub0 $end
 $var wire 8 3" out[0] [7:0] $end
 $var wire 8 4" out[1] [7:0] $end
-$scope module sub6_f $end
+$scope module sub6_hierblk1 $end
 $var parameter 32 5" P0 [31:0] $end
 $var parameter 32 6" P1 [31:0] $end
 $var wire 8 3" out[0] [7:0] $end
 $var wire 8 4" out[1] [7:0] $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_c.i_sub4_1.sub4_b.i_sub5.sub5.i_sub3 $end
+$scope module top.t.i_sub2.sub2.i_sub3.i_sub3.sub3_hierblk3.i_sub4_1.sub4_hierblk2.i_sub5.sub5.i_sub3 $end
 $var wire 8 7" out[0] [7:0] $end
 $var wire 8 8" out[1] [7:0] $end
-$scope module sub6_9 $end
+$scope module sub6_hierblk2 $end
 $var parameter 32 9" P0 [31:0] $end
 $var parameter 32 :" P1 [31:0] $end
 $var wire 8 7" out[0] [7:0] $end
@@ -513,7 +513,7 @@ $scope module top.t.i_sub3_2 $end
 $var wire 1 ;" clk $end
 $var wire 8 <" in [7:0] $end
 $var wire 8 =" out [7:0] $end
-$scope module sub3_2 $end
+$scope module sub3_hierblk2 $end
 $var parameter 8 >" P0 [7:0] $end
 $var parameter 32 ?" UNPACKED_ARRAY[0] [31:0] $end
 $var parameter 32 @" UNPACKED_ARRAY[1] [31:0] $end
@@ -536,11 +536,11 @@ $var wire 8 C" out [7:0] $end
 $upscope $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub3_2.sub3_2.i_sub4_0 $end
+$scope module top.t.i_sub3_2.sub3_hierblk2.i_sub4_0 $end
 $var wire 1 D" clk $end
 $var wire 8 E" in [7:0] $end
 $var wire 8 F" out [7:0] $end
-$scope module sub4_2 $end
+$scope module sub4_hierblk1 $end
 $var parameter 32 G" P0 [31:0] $end
 $var real_parameter 64 H" P1 $end
 $var real_parameter 64 I" P3 $end
@@ -587,7 +587,7 @@ $upscope $end
 $upscope $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub3_2.sub3_2.i_sub4_0.sub4_2.i_sub5 $end
+$scope module top.t.i_sub3_2.sub3_hierblk2.i_sub4_0.sub4_hierblk1.i_sub5 $end
 $var wire 1 g" clk $end
 $var wire 128 h" in[0][0] [127:0] $end
 $var wire 128 i" in[0][1] [127:0] $end
@@ -651,31 +651,31 @@ $upscope $end
 $upscope $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub3_2.sub3_2.i_sub4_0.sub4_2.i_sub5.sub5.i_sub0 $end
+$scope module top.t.i_sub3_2.sub3_hierblk2.i_sub4_0.sub4_hierblk1.i_sub5.sub5.i_sub0 $end
 $var wire 8 *# out[0] [7:0] $end
 $var wire 8 +# out[1] [7:0] $end
-$scope module sub6_f $end
+$scope module sub6_hierblk1 $end
 $var parameter 32 ,# P0 [31:0] $end
 $var parameter 32 -# P1 [31:0] $end
 $var wire 8 *# out[0] [7:0] $end
 $var wire 8 +# out[1] [7:0] $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub3_2.sub3_2.i_sub4_0.sub4_2.i_sub5.sub5.i_sub3 $end
+$scope module top.t.i_sub3_2.sub3_hierblk2.i_sub4_0.sub4_hierblk1.i_sub5.sub5.i_sub3 $end
 $var wire 8 .# out[0] [7:0] $end
 $var wire 8 /# out[1] [7:0] $end
-$scope module sub6_9 $end
+$scope module sub6_hierblk2 $end
 $var parameter 32 0# P0 [31:0] $end
 $var parameter 32 1# P1 [31:0] $end
 $var wire 8 .# out[0] [7:0] $end
 $var wire 8 /# out[1] [7:0] $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub3_2.sub3_2.i_sub4_1 $end
+$scope module top.t.i_sub3_2.sub3_hierblk2.i_sub4_1 $end
 $var wire 1 2# clk $end
 $var wire 8 3# in [7:0] $end
 $var wire 8 4# out [7:0] $end
-$scope module sub4_b $end
+$scope module sub4_hierblk2 $end
 $var parameter 32 5# P0 [31:0] $end
 $var real_parameter 64 6# P1 $end
 $var real_parameter 64 7# P3 $end
@@ -722,7 +722,7 @@ $upscope $end
 $upscope $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub3_2.sub3_2.i_sub4_1.sub4_b.i_sub5 $end
+$scope module top.t.i_sub3_2.sub3_hierblk2.i_sub4_1.sub4_hierblk2.i_sub5 $end
 $var wire 1 U# clk $end
 $var wire 128 V# in[0][0] [127:0] $end
 $var wire 128 W# in[0][1] [127:0] $end
@@ -786,20 +786,20 @@ $upscope $end
 $upscope $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub3_2.sub3_2.i_sub4_1.sub4_b.i_sub5.sub5.i_sub0 $end
+$scope module top.t.i_sub3_2.sub3_hierblk2.i_sub4_1.sub4_hierblk2.i_sub5.sub5.i_sub0 $end
 $var wire 8 v# out[0] [7:0] $end
 $var wire 8 w# out[1] [7:0] $end
-$scope module sub6_f $end
+$scope module sub6_hierblk1 $end
 $var parameter 32 x# P0 [31:0] $end
 $var parameter 32 y# P1 [31:0] $end
 $var wire 8 v# out[0] [7:0] $end
 $var wire 8 w# out[1] [7:0] $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub3_2.sub3_2.i_sub4_1.sub4_b.i_sub5.sub5.i_sub3 $end
+$scope module top.t.i_sub3_2.sub3_hierblk2.i_sub4_1.sub4_hierblk2.i_sub5.sub5.i_sub3 $end
 $var wire 8 z# out[0] [7:0] $end
 $var wire 8 {# out[1] [7:0] $end
-$scope module sub6_9 $end
+$scope module sub6_hierblk2 $end
 $var parameter 32 |# P0 [31:0] $end
 $var parameter 32 }# P1 [31:0] $end
 $var wire 8 z# out[0] [7:0] $end
@@ -810,7 +810,7 @@ $scope module top.t.i_sub3 $end
 $var wire 1 ~# clk $end
 $var wire 8 !$ in [7:0] $end
 $var wire 8 "$ out [7:0] $end
-$scope module sub3_d $end
+$scope module sub3_hierblk1 $end
 $var parameter 8 #$ P0 [7:0] $end
 $var parameter 32 $$ UNPACKED_ARRAY[0] [31:0] $end
 $var parameter 32 %$ UNPACKED_ARRAY[1] [31:0] $end
@@ -833,11 +833,11 @@ $var wire 8 ($ out [7:0] $end
 $upscope $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub3.sub3_d.i_sub4_0 $end
+$scope module top.t.i_sub3.sub3_hierblk1.i_sub4_0 $end
 $var wire 1 )$ clk $end
 $var wire 8 *$ in [7:0] $end
 $var wire 8 +$ out [7:0] $end
-$scope module sub4_2 $end
+$scope module sub4_hierblk1 $end
 $var parameter 32 ,$ P0 [31:0] $end
 $var real_parameter 64 -$ P1 $end
 $var real_parameter 64 .$ P3 $end
@@ -884,7 +884,7 @@ $upscope $end
 $upscope $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub3.sub3_d.i_sub4_0.sub4_2.i_sub5 $end
+$scope module top.t.i_sub3.sub3_hierblk1.i_sub4_0.sub4_hierblk1.i_sub5 $end
 $var wire 1 L$ clk $end
 $var wire 128 M$ in[0][0] [127:0] $end
 $var wire 128 N$ in[0][1] [127:0] $end
@@ -948,31 +948,31 @@ $upscope $end
 $upscope $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub3.sub3_d.i_sub4_0.sub4_2.i_sub5.sub5.i_sub0 $end
+$scope module top.t.i_sub3.sub3_hierblk1.i_sub4_0.sub4_hierblk1.i_sub5.sub5.i_sub0 $end
 $var wire 8 m$ out[0] [7:0] $end
 $var wire 8 n$ out[1] [7:0] $end
-$scope module sub6_f $end
+$scope module sub6_hierblk1 $end
 $var parameter 32 o$ P0 [31:0] $end
 $var parameter 32 p$ P1 [31:0] $end
 $var wire 8 m$ out[0] [7:0] $end
 $var wire 8 n$ out[1] [7:0] $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub3.sub3_d.i_sub4_0.sub4_2.i_sub5.sub5.i_sub3 $end
+$scope module top.t.i_sub3.sub3_hierblk1.i_sub4_0.sub4_hierblk1.i_sub5.sub5.i_sub3 $end
 $var wire 8 q$ out[0] [7:0] $end
 $var wire 8 r$ out[1] [7:0] $end
-$scope module sub6_9 $end
+$scope module sub6_hierblk2 $end
 $var parameter 32 s$ P0 [31:0] $end
 $var parameter 32 t$ P1 [31:0] $end
 $var wire 8 q$ out[0] [7:0] $end
 $var wire 8 r$ out[1] [7:0] $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub3.sub3_d.i_sub4_1 $end
+$scope module top.t.i_sub3.sub3_hierblk1.i_sub4_1 $end
 $var wire 1 u$ clk $end
 $var wire 8 v$ in [7:0] $end
 $var wire 8 w$ out [7:0] $end
-$scope module sub4_b $end
+$scope module sub4_hierblk2 $end
 $var parameter 32 x$ P0 [31:0] $end
 $var real_parameter 64 y$ P1 $end
 $var real_parameter 64 z$ P3 $end
@@ -1019,7 +1019,7 @@ $upscope $end
 $upscope $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub3.sub3_d.i_sub4_1.sub4_b.i_sub5 $end
+$scope module top.t.i_sub3.sub3_hierblk1.i_sub4_1.sub4_hierblk2.i_sub5 $end
 $var wire 1 :% clk $end
 $var wire 128 ;% in[0][0] [127:0] $end
 $var wire 128 <% in[0][1] [127:0] $end
@@ -1083,20 +1083,20 @@ $upscope $end
 $upscope $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub3.sub3_d.i_sub4_1.sub4_b.i_sub5.sub5.i_sub0 $end
+$scope module top.t.i_sub3.sub3_hierblk1.i_sub4_1.sub4_hierblk2.i_sub5.sub5.i_sub0 $end
 $var wire 8 [% out[0] [7:0] $end
 $var wire 8 \% out[1] [7:0] $end
-$scope module sub6_f $end
+$scope module sub6_hierblk1 $end
 $var parameter 32 ]% P0 [31:0] $end
 $var parameter 32 ^% P1 [31:0] $end
 $var wire 8 [% out[0] [7:0] $end
 $var wire 8 \% out[1] [7:0] $end
 $upscope $end
 $upscope $end
-$scope module top.t.i_sub3.sub3_d.i_sub4_1.sub4_b.i_sub5.sub5.i_sub3 $end
+$scope module top.t.i_sub3.sub3_hierblk1.i_sub4_1.sub4_hierblk2.i_sub5.sub5.i_sub3 $end
 $var wire 8 _% out[0] [7:0] $end
 $var wire 8 `% out[1] [7:0] $end
-$scope module sub6_9 $end
+$scope module sub6_hierblk2 $end
 $var parameter 32 a% P0 [31:0] $end
 $var parameter 32 b% P1 [31:0] $end
 $var wire 8 _% out[0] [7:0] $end

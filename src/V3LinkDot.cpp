@@ -921,6 +921,7 @@ class LinkDotFindVisitor final : public VNVisitor {
     }
     void visit(AstClass* nodep) override {
         UASSERT_OBJ(m_curSymp, nodep, "Class not under module/package/$unit");
+        if (nodep->dead()) return;
         UINFO(8, "   " << nodep << endl);
         VL_RESTORER(m_scope);
         VL_RESTORER(m_classOrPackagep);
@@ -3524,6 +3525,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
     void visit(AstClass* nodep) override {
         if (nodep->user3SetOnce()) return;
+        if (nodep->dead()) return;
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
         VL_RESTORER(m_curSymp);
@@ -3621,7 +3623,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (AstNode* const cpackagep = nodep->classOrPackageOpp()) {
             if (AstClassOrPackageRef* const cpackagerefp = VN_CAST(cpackagep, ClassOrPackageRef)) {
                 const AstClass* const clsp = VN_CAST(cpackagerefp->classOrPackageNodep(), Class);
-                if (clsp && clsp->isParameterized()) {
+                if (clsp && clsp->hasGParam()) {
                     // Unable to link before the instantiation of parameter classes.
                     // The class reference node has to be visited to properly link parameters.
                     iterate(cpackagep);

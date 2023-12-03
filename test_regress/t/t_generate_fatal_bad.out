@@ -2,7 +2,7 @@
                     ... For warning description see https://verilator.org/warn/USERFATAL?v=latest
                     ... Use "/* verilator lint_off USERFATAL */" and lint_on around source to disable this message.
 %Error: t/t_generate_fatal_bad.v:13:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
-                                      : ... note: In instance 't.nested_loop[10].foo2_inst.foo2_loop[1].foo_in_foo2_inst'
+                                      : ... note: In instance 't.genloop[0].foo_inst'
         t/t_generate_fatal_bad.v:9:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
         t/t_generate_fatal_bad.v:13:29: ... Called from 'get_baz()' with parameters:
            bar = ?32?h0

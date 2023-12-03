@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_interface_port_nest_bad.v:7:11: Unsupported: Recursive multiple modules (module instantiates something leading back to itself): 'if1'
+                                                      : ... note: self-recursion (module instantiating itself directly) is supported.
+    7 | interface if1 (
+      |           ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

@@ -290,7 +290,13 @@ class HierBlockUsageCollectVisitor final : public VNVisitorConst {
         if (m_modp && m_modp->hierBlock() && nodep->isIfaceRef() && !nodep->isIfaceParent()) {
             nodep->v3error("Modport cannot be used at the hierarchical block boundary");
         }
-        if (nodep->isGParam() && nodep->overriddenParam()) m_gparams.push_back(nodep);
+        if (nodep->isGParam()) {
+            const AstNode* const valuep = nodep->valuep();
+            // Currently only non-opaque const is supported
+            if (const AstConst* const constp = VN_CAST(valuep, Const)) {
+                if (!constp->isOpaque()) m_gparams.push_back(nodep);
+            }
+        }
     }
 
     void visit(AstNodeExpr*) override {}  // Accelerate

@@ -546,6 +546,14 @@ void V3Dead::deadifyModules(AstNetlist* nodep) {
     V3Global::dumpCheckGlobalTree("deadModules", 0, dumpTreeLevel() >= 6);
 }
 
+void V3Dead::deadifyModuleDTypes(AstNetlist* nodep) {
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    {
+        DeadVisitor{nodep, false, true, false, false, !v3Global.opt.topIfacesSupported()};
+    }  // Destruct before checking
+    V3Global::dumpCheckGlobalTree("deadModules", 0, dumpTreeLevel() >= 6);
+}
+
 void V3Dead::deadifyDTypes(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { DeadVisitor{nodep, false, true, false, false, false}; }  // Destruct before checking

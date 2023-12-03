@@ -30,6 +30,8 @@ class V3Dead final {
 public:
     // Modules, no vars/dtypes
     static void deadifyModules(AstNetlist* nodep) VL_MT_DISABLED;
+    // Modules, with vars/dtypes
+    static void deadifyModuleDTypes(AstNetlist* nodep) VL_MT_DISABLED;
     // Modules, Data types
     static void deadifyDTypes(AstNetlist* nodep) VL_MT_DISABLED;
     static void deadifyDTypesScoped(AstNetlist* nodep) VL_MT_DISABLED;

@@ -2,4 +2,4 @@
                                        : ... note: In instance 't'
    14 |    ClsA #(PARAM+1) a;
       |    ^~~~
-%Error: Internal Error: ../V3Param.cpp:#: should find just-made module
+%Error: Exiting due to

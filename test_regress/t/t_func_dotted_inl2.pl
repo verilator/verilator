@@ -18,8 +18,8 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<instance loc="e,87,.*?" name="t.ma0.mb0" defName="mb" origName="mb0"\/\>/i);
-    file_grep("$out_filename", qr/\<module loc="e,99,.*?" name="mb" origName="mb"\>/i);
+    file_grep("$out_filename", qr/\<instance loc="e,87,.*?" name="t.ma0.mb0" defName="mb\w*" origName="mb0"\/\>/i);
+    file_grep("$out_filename", qr/\<module loc="e,99,.*?" name="mb\w*" origName="mb"\>/i);
 }
 
 execute(

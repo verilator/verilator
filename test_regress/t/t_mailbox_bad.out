@@ -1,4 +1,4 @@
-%Error: t/t_mailbox_bad.v:12:13: Class method 'bad_method' not found in class 'mailbox__Tz1'
+%Error: t/t_mailbox_bad.v:12:13: Class method 'bad_method' not found in class 'mailbox__p1'
                                : ... note: In instance 't'
    12 |       if (m.bad_method() != 0) $stop;
       |             ^~~~~~~~~~

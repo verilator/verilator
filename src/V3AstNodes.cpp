@@ -35,7 +35,7 @@
 
 // We need these here, because the classes they point to aren't defined when we declare the class
 AstIface* AstIfaceRefDType::ifaceViaCellp() const {
-    return ((m_cellp && m_cellp->modp()) ? VN_AS(m_cellp->modp(), Iface) : m_ifacep);
+    return m_cellp ? VN_CAST(m_cellp->modp(), Iface) : m_ifacep;
 }
 
 const char* AstNodeFTaskRef::broken() const {
@@ -1521,6 +1521,18 @@ void AstInitArray::cloneRelink() {
     for (KeyItemMap::iterator it = m_map.begin(); it != m_map.end(); ++it) {
         if (it->second->clonep()) it->second = it->second->clonep();
     }
+}
+
+bool AstInitArray::same(const AstNode* samep) const {
+    const AstInitArray* sp = VN_DBG_AS(samep, InitArray);
+    if (m_map.size() != sp->m_map.size()) return false;
+    auto spIt = sp->m_map.begin();
+    for (const auto& item : m_map) {
+        if (item.first != spIt->first) return false;
+        if (!item.second->sameTree(spIt->second)) return false;
+        ++spIt;
+    }
+    return true;
 }
 void AstInitArray::addIndexValuep(uint64_t index, AstNodeExpr* newp) {
     const auto pair = m_map.emplace(index, nullptr);

@@ -12,7 +12,7 @@
   </module_files>
   <cells>
     <cell loc="d,7,8,7,9" name="t" submodname="t" hier="t">
-      <cell loc="d,20,4,20,9" name="cell1" submodname="mod1__W4" hier="t.cell1"/>
+      <cell loc="d,20,4,20,9" name="cell1" submodname="mod1__p1" hier="t.cell1"/>
       <cell loc="d,25,6,25,11" name="cell2" submodname="mod2" hier="t.cell2"/>
     </cell>
   </cells>
@@ -22,7 +22,7 @@
       <var loc="d,13,10,13,13" name="clk" dtype_id="2" dir="input" pinIndex="2" vartype="logic" origName="clk"/>
       <var loc="d,14,16,14,17" name="d" dtype_id="1" dir="input" pinIndex="3" vartype="logic" origName="d"/>
       <var loc="d,17,22,17,29" name="between" dtype_id="1" vartype="logic" origName="between"/>
-      <instance loc="d,20,4,20,9" name="cell1" defName="mod1__W4" origName="cell1">
+      <instance loc="d,20,4,20,9" name="cell1" defName="mod1__p1" origName="cell1">
         <port loc="d,20,12,20,13" name="q" direction="out" portIndex="1">
           <varref loc="d,20,14,20,21" name="between" dtype_id="1"/>
         </port>
@@ -54,7 +54,7 @@
         <varref loc="d,50,22,50,23" name="q" dtype_id="1"/>
       </contassign>
     </module>
-    <module loc="d,31,8,31,12" name="mod1__W4" origName="mod1">
+    <module loc="d,31,8,31,12" name="mod1__p1" origName="mod1">
       <var loc="d,32,15,32,20" name="WIDTH" dtype_id="3" vartype="logic" origName="WIDTH" param="true">
         <const loc="d,19,18,19,19" name="32&apos;sh4" dtype_id="3"/>
       </var>
