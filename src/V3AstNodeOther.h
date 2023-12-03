@@ -3253,8 +3253,7 @@ public:
 };
 class AstTraceInc final : public AstNodeStmt {
     // Trace point dump
-    // @astgen op1 := precondsp : List[AstNode] // Statements to emit before this node
-    // @astgen op2 := valuep : AstNodeExpr // Expression being traced (from decl)
+    // @astgen op1 := valuep : AstNodeExpr // Expression being traced (from decl)
     //
     // @astgen ptr := m_declp : AstTraceDecl  // Pointer to declaration
     const uint32_t m_baseCode;  // Trace code base value in function containing this AstTraceInc
