@@ -3755,17 +3755,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
 
     void visit(AstIfaceRefDType* nodep) override {
-        if (!nodep->ifacep()) {
-            // If nodep has cellp() set, parameters are children of that AstCell node
-            UASSERT_OBJ(!nodep->paramsp(), nodep, "Port parameters of AstIfaceRefDType without ifacep()");
-            return;
+        if (nodep->paramsp()) {
+            // If there is no parameters, there is no need to visit this node.
+            AstIface* const ifacep = nodep->ifacep();
+            UASSERT_OBJ(ifacep, nodep, "Port parameters of AstIfaceRefDType without ifacep()");
+            if (ifacep->dead()) return;
+            checkNoDot(nodep);
+            m_usedPins.clear();
+            VL_RESTORER(m_pinSymp);
+            m_pinSymp = m_statep->getNodeSym(ifacep);
+            iterate(nodep->paramsp());
         }
-        if(nodep->ifacep()->dead()) return;
-        checkNoDot(nodep);
-        m_usedPins.clear();
-        VL_RESTORER(m_pinSymp);
-        m_pinSymp = m_statep->getNodeSym(nodep->ifacep());
-        iterateChildren(nodep);
     }
 
     void visit(AstAttrOf* nodep) override { iterateChildren(nodep); }
