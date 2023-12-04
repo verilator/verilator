@@ -3755,7 +3755,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
 
     void visit(AstIfaceRefDType* nodep) override {
-        if (!nodep->ifacep()) return;
+        if (!nodep->ifacep() || nodep->ifacep()->dead()) return;
         checkNoDot(nodep);
         m_usedPins.clear();
         VL_RESTORER(m_pinSymp);
