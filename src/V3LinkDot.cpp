@@ -3755,12 +3755,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
 
     void visit(AstIfaceRefDType* nodep) override {
-        if (!nodep->ifacep() || nodep->ifacep()->dead()) return;
+        if (!nodep->ifacep()) {
+            // If nodep has cellp() set, parameters are children of that AstCell node
+            UASSERT_OBJ(!nodep->paramsp(), nodep, "Port parameters of AstIfaceRefDType without ifacep()");
+            return;
+        }
+        if(nodep->ifacep()->dead()) return;
         checkNoDot(nodep);
         m_usedPins.clear();
         VL_RESTORER(m_pinSymp);
         m_pinSymp = m_statep->getNodeSym(nodep->ifacep());
-        UINFO(4, "(Backto) Link IfaceRefDType: " << nodep << endl);
         iterateChildren(nodep);
     }
 
