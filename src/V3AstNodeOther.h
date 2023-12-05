@@ -1713,6 +1713,8 @@ class AstVar final : public AstNode {
     // MTASKSTATE variables
     // @astgen op3 := valuep : Optional[AstNode] // May be a DType for type parameter defaults
     // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse
+    // @astgen ptr := m_sensIfacep : Optional[AstIface]  // Interface type to which reads from this
+    //                                                      var are sensitive
 
     string m_name;  // Name of variable
     string m_origName;  // Original name before dot addition
@@ -1738,7 +1740,6 @@ class AstVar final : public AstNode {
     bool m_usedClock : 1;  // Signal used as a clock
     bool m_usedParam : 1;  // Parameter is referenced (on link; later signals not setup)
     bool m_usedLoopIdx : 1;  // Variable subject of for unrolling
-    bool m_usedVirtIface : 1;  // Signal used through a virtual interface
     bool m_funcLocal : 1;  // Local variable for a function
     bool m_funcLocalSticky : 1;  // As m_funcLocal but remains set if var is moved to a static
     bool m_funcReturn : 1;  // Return variable for a function
@@ -1780,7 +1781,6 @@ class AstVar final : public AstNode {
         m_usedClock = false;
         m_usedParam = false;
         m_usedLoopIdx = false;
-        m_usedVirtIface = false;
         m_sigPublic = false;
         m_sigModPublic = false;
         m_sigUserRdPublic = false;
@@ -1909,6 +1909,7 @@ public:
     }
     void ansi(bool flag) { m_ansi = flag; }
     void declTyped(bool flag) { m_declTyped = flag; }
+    void sensIfacep(AstIface* nodep) { m_sensIfacep = nodep; }
     void attrClocker(VVarAttrClocker flag) { m_attrClocker = flag; }
     void attrFileDescr(bool flag) { m_fileDescr = flag; }
     void attrScClocked(bool flag) { m_scClocked = flag; }
@@ -1919,7 +1920,6 @@ public:
     void usedClock(bool flag) { m_usedClock = flag; }
     void usedParam(bool flag) { m_usedParam = flag; }
     void usedLoopIdx(bool flag) { m_usedLoopIdx = flag; }
-    void usedVirtIface(bool flag) { m_usedVirtIface = flag; }
     void sigPublic(bool flag) { m_sigPublic = flag; }
     void sigModPublic(bool flag) { m_sigModPublic = flag; }
     void sigUserRdPublic(bool flag) {
@@ -2012,7 +2012,6 @@ public:
     bool isUsedClock() const { return m_usedClock; }
     bool isUsedParam() const { return m_usedParam; }
     bool isUsedLoopIdx() const { return m_usedLoopIdx; }
-    bool isUsedVirtIface() const { return m_usedVirtIface; }
     bool isSc() const VL_MT_SAFE { return m_sc; }
     bool isScQuad() const;
     bool isScBv() const;
@@ -2040,6 +2039,7 @@ public:
     bool attrSFormat() const { return m_attrSFormat; }
     bool attrSplitVar() const { return m_attrSplitVar; }
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }
+    AstIface* sensIfacep() const { return m_sensIfacep; }
     VVarAttrClocker attrClocker() const { return m_attrClocker; }
     string verilogKwd() const override;
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
