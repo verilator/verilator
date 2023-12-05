@@ -170,8 +170,6 @@ AstNodeStmt* profExecSectionPop(FileLine* flp) {
 struct EvalLoop {
     // Flag set to true during the first iteration of the loop
     AstVarScope* firstIterp;
-    // The loop continuation flag (set to true to loop again)
-    AstVarScope* continuep = nullptr;
     // The loop itself and statements around it
     AstNodeStmt* stmtsp = nullptr;
 };
@@ -272,7 +270,7 @@ EvalLoop createEvalLoop(AstNetlist* netlistp,  //
     // Prof-exec section pop
     if (v3Global.opt.profExec()) stmtps->addNext(profExecSectionPop(flp));
 
-    return {firstIterFlagp, continueFlagp, stmtps};
+    return {firstIterFlagp, stmtps};
 }
 
 //============================================================================
@@ -1021,7 +1019,9 @@ void createEval(AstNetlist* netlistp,  //
         netlistp->nbaEventTriggerp(nullptr);
 
         AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, nbaEventTriggerp, VAccess::READ}};
-        ifp->addThensp(setVar(topLoop.continuep, 1));
+        // The NBA trigger was set, so some logic must have been executed in the 'act' loop. This
+        // means at least one trigger in the trigger vec is lit. Thus there is no need to set
+        // __VnbaContinue, as it'll be done in the 'nba' loop anyway.
         ifp->addThensp(setVar(nbaEventTriggerp, 0));
         AstCMethodHard* const firep
             = new AstCMethodHard{flp, new AstVarRef{flp, nbaEventp, VAccess::WRITE}, "fire"};
