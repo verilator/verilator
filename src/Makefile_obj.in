@@ -274,6 +274,7 @@ RAW_OBJS_PCH_ASTNOMT = \
 	V3SchedPartition.o \
 	V3SchedReplicate.o \
 	V3SchedTiming.o \
+	V3SchedVirtIface.o \
 	V3Scope.o \
 	V3Scoreboard.o \
 	V3Slice.o \

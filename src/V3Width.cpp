@@ -2741,7 +2741,10 @@ class WidthVisitor final : public VNVisitor {
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
                     nodep->dtypep(foundp->dtypep());
                     nodep->varp(varp);
-                    varp->usedVirtIface(true);
+                    AstIface* const ifacep = adtypep->ifacep();
+                    varp->sensIfacep(ifacep);
+                    nodep->fromp()->foreach(
+                        [ifacep](AstVarRef* const refp) { refp->varp()->sensIfacep(ifacep); });
                     return;
                 }
                 UINFO(1, "found object " << foundp << endl);
