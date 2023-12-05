@@ -1,5 +1,5 @@
 $date
-	Tue Oct 24 11:00:03 2023
+	Tue Dec  5 10:44:06 2023
 
 $end
 $version
@@ -49,19 +49,31 @@ $var logic 8 < unpacked_array[-2] [7:0] $end
 $var logic 8 = unpacked_array[-1] [7:0] $end
 $var logic 8 > unpacked_array[0] [7:0] $end
 $var bit 1 ? LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND $end
-$scope module a_module_instantiation_with_a_very_long_name_that_once_its_signals_get_concatenated_and_inlined_will_almost_certainly_result_in_them_getting_hashed $end
-$var parameter 32 @ PARAM [31:0] $end
+$scope interface sink $end
+$var logic 2 @ state [1:0] $end
 $upscope $end
-$scope module p2 $end
+$scope module a_module_instantiation_with_a_very_long_name_that_once_its_signals_get_concatenated_and_inlined_will_almost_certainly_result_in_them_getting_hashed $end
 $var parameter 32 A PARAM [31:0] $end
 $upscope $end
-$scope module p3 $end
+$scope module p2 $end
 $var parameter 32 B PARAM [31:0] $end
 $upscope $end
+$scope module p3 $end
+$var parameter 32 C PARAM [31:0] $end
+$upscope $end
+$scope module submod $end
+$var wire 1 " clk $end
+$scope interface sink $end
+$var logic 2 @ state [1:0] $end
+$upscope $end
+$attrbegin misc 07 $unit::state_t 4 VAL_A VAL_B VAL_C VAL_D 00 01 10 11 3 $end
+$attrbegin misc 07 "" 3 $end
+$var logic 2 D v_enumed_sub [1:0] $end
+$upscope $end
 $scope module unnamedblk1 $end
-$var integer 32 C b [31:0] $end
+$var integer 32 E b [31:0] $end
 $scope module unnamedblk2 $end
-$var integer 32 D a [31:0] $end
+$var integer 32 F a [31:0] $end
 $upscope $end
 $upscope $end
 $upscope $end
@@ -69,11 +81,13 @@ $upscope $end
 $enddefinitions $end
 #0
 $dumpvars
-b00000000000000000000000000000000 D
-b00000000000000000000000000000000 C
-b00000000000000000000000000000011 B
-b00000000000000000000000000000010 A
-b00000000000000000000000000000100 @
+b00000000000000000000000000000000 F
+b00000000000000000000000000000000 E
+b00 D
+b00000000000000000000000000000011 C
+b00000000000000000000000000000010 B
+b00000000000000000000000000000100 A
+b00 @
 0?
 b00000000 >
 b00000000 =
@@ -126,12 +140,14 @@ b0000000000000000000000000000000100000000000000000000000011111110 7
 b00000000000000000000000000000001 8
 b00000000000000000000000000000010 9
 b111 :
-b00000000000000000000000000000101 C
-b00000000000000000000000000000101 D
+b01 D
+b00000000000000000000000000000101 E
+b00000000000000000000000000000101 F
 #15
 0"
 #20
 1"
+b10 D
 b110 :
 b00000000000000000000000000000100 9
 b00000000000000000000000000000010 8
@@ -151,10 +167,12 @@ b0000 %
 b00 $
 b00000000000000000000000000000010 #
 b111111 ;
+b01 @
 #25
 0"
 #30
 1"
+b10 @
 b110110 ;
 b00000000000000000000000000000011 #
 b11 $
@@ -174,10 +192,12 @@ b0000000000000000000000000000001100000000000000000000000011111100 7
 b00000000000000000000000000000011 8
 b00000000000000000000000000000110 9
 b101 :
+b11 D
 #35
 0"
 #40
 1"
+b00 D
 b100 :
 b00000000000000000000000000001000 9
 b00000000000000000000000000000100 8
@@ -197,10 +217,12 @@ b0000 %
 b00 $
 b00000000000000000000000000000100 #
 b101101 ;
+b11 @
 #45
 0"
 #50
 1"
+b00 @
 b100100 ;
 b00000000000000000000000000000101 #
 b11 $
@@ -220,10 +242,12 @@ b0000000000000000000000000000010100000000000000000000000011111010 7
 b00000000000000000000000000000101 8
 b00000000000000000000000000001010 9
 b011 :
+b01 D
 #55
 0"
 #60
 1"
+b10 D
 b010 :
 b00000000000000000000000000001100 9
 b00000000000000000000000000000110 8
@@ -243,3 +267,4 @@ b0000 %
 b00 $
 b00000000000000000000000000000110 #
 b011011 ;
+b01 @

@@ -6,6 +6,17 @@
 
 bit global_bit;
 
+typedef enum logic [1:0] {VAL_A, VAL_B, VAL_C, VAL_D} state_t;
+
+interface MyIntf;
+   state_t state;
+
+   modport source (input state);
+   modport sink (output state);
+endinterface
+
+
+
 module t (clk);
    input clk;
    integer      cyc = 0;
@@ -74,7 +85,11 @@ module t (clk);
    logic [7:0] unpacked_array[-2:0];
 
    bit         LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND;
+   
+   MyIntf #() sink ();
 
+   sub #() submod(.clk, .sink);
+   
    p #(.PARAM(2)) p2 ();
    p #(.PARAM(3)) p3 ();
 
@@ -116,4 +131,18 @@ endmodule
 module p;
    parameter PARAM = 1;
    initial global_bit = 1;
+endmodule
+
+
+module sub (
+   input clk,
+   MyIntf.sink sink
+);
+   // Having this state_t in here is causes the enum to not show up
+   state_t v_enumed_sub;
+   always @ (posedge clk) begin
+      v_enumed_sub <= state_t'(v_enumed_sub + 2'(1));
+      sink.state <= v_enumed_sub;
+   end
+
 endmodule
