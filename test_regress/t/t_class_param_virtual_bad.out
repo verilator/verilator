@@ -1,0 +1,9 @@
+%Error: t/t_class_param_virtual_bad.v:13:11: Illegal to call 'new' using an abstract virtual class 'VBase' (IEEE 1800-2017 8.21)
+                                           : ... note: In instance 't'
+   13 |       t = new;
+      |           ^~~
+%Error: t/t_class_param_virtual_bad.v:23:28: Illegal to call 'new' using an abstract virtual class 'ClsVirt' (IEEE 1800-2017 8.21)
+                                           : ... note: In instance 't'
+   23 |       ClsVirt#(VBase) cv = new;   
+      |                            ^~~
+%Error: Exiting due to
