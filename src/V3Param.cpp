@@ -919,6 +919,11 @@ class ParamProcessor final {
         nodep->recursive(false);
     }
 
+    void ifaceRefDeparam(AstIfaceRefDType* const nodep, AstNodeModule*& srcModpr) {
+        nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nullptr, false);
+        nodep->ifacep(VN_AS(srcModpr, Iface));
+    }
+
     void classRefDeparam(AstClassOrPackageRef* nodep, AstNodeModule*& srcModpr) {
         if (nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nullptr, false))
             nodep->classOrPackagep(srcModpr);
@@ -948,6 +953,8 @@ public:
 
         if (auto* cellp = VN_CAST(nodep, Cell)) {
             cellDeparam(cellp, srcModpr);
+        } else if (auto* ifaceRefDTypep = VN_CAST(nodep, IfaceRefDType)) {
+            ifaceRefDeparam(ifaceRefDTypep, srcModpr);
         } else if (auto* classRefp = VN_CAST(nodep, ClassRefDType)) {
             classRefDeparam(classRefp, srcModpr);
         } else if (auto* classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
@@ -1042,6 +1049,8 @@ class ParamVisitor final : public VNVisitor {
                     if (VN_IS(classRefp->classOrPackageNodep(), ParamTypeDType)) continue;
                 } else if (const auto* classRefp = VN_CAST(cellp, ClassRefDType)) {
                     srcModp = classRefp->classp();
+                } else if (const auto* ifaceRefp = VN_CAST(cellp, IfaceRefDType)) {
+                    srcModp = ifaceRefp->ifacep();
                 } else {
                     cellp->v3fatalSrc("Expected module parameterization");
                 }
@@ -1136,6 +1145,9 @@ class ParamVisitor final : public VNVisitor {
 
     void visit(AstCell* nodep) override {
         visitCellOrClassRef(nodep, VN_IS(nodep->modp(), Iface));
+    }
+    void visit(AstIfaceRefDType* nodep) override {
+        if (nodep->ifacep()) visitCellOrClassRef(nodep, true);
     }
     void visit(AstClassRefDType* nodep) override { visitCellOrClassRef(nodep, false); }
     void visit(AstClassOrPackageRef* nodep) override { visitCellOrClassRef(nodep, false); }

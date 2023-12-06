@@ -239,6 +239,11 @@ class LinkCellsVisitor final : public VNVisitor {
                 nodep->v3error("Non-interface used as an interface: " << nodep->prettyNameQ());
             }
         }
+        iterateChildren(nodep);
+        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            pinp->param(true);
+            if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
+        }
         // Note cannot do modport resolution here; modports are allowed underneath generates
     }
 
