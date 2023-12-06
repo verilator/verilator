@@ -1592,11 +1592,11 @@ class LinkDotParamVisitor final : public VNVisitor {
             // region.  V3Dead should cleanup.
             // Downstream visitors up until V3Dead need to check for nodep->dead.
             nodep->dead(true);
-        } else {
-            m_modp = nodep;
-            iterateChildren(nodep);
-            m_modp = nullptr;
+            return;
         }
+        VL_RESTORER(m_modp);
+        m_modp = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstPin* nodep) override {
         // Pin: Link to submodule's port
@@ -1766,11 +1766,11 @@ class LinkDotScopeVisitor final : public VNVisitor {
                     "Scopes should only exist right after V3Scope");
         // Using the CELL names, we created all hierarchy.  We now need to match this Scope
         // up with the hierarchy created by the CELL names.
+        VL_RESTORER(m_modSymp);
+        VL_RESTORER(m_scopep);
         m_modSymp = m_statep->getScopeSym(nodep);
         m_scopep = nodep;
         iterateChildren(nodep);
-        m_modSymp = nullptr;
-        m_scopep = nullptr;
     }
     void visit(AstVarScope* nodep) override {
         if (!nodep->varp()->isFuncLocal() && !nodep->varp()->isClassMember()) {
@@ -3400,6 +3400,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
         }
         VL_RESTORER(m_curSymp);
+        VL_RESTORER(m_ftaskp);
         {
             m_ftaskp = nodep;
             m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
@@ -3415,7 +3416,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
         }
         m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
-        m_ftaskp = nullptr;
     }
     void visit(AstNodeForeach* nodep) override {
         UINFO(5, "   " << nodep << endl);
