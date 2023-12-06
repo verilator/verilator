@@ -1,76 +1,142 @@
-// DESCRIPTION: Verilator: Verilog Test module
+// DESCRIPTION: Verilator: Interface parameter getter
 //
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2023 by Antmicro Ltd.
+// A test of the import parameter used with modport
+//
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty, 2015 by Todd Strader
 // SPDX-License-Identifier: CC0-1.0
 
-// See also t_interface_virtual_bad.v
+interface test_if #(parameter integer FOO = 1);
 
-interface PBus #(int unsigned W = 1);
-   logic req, grant;
-   logic [W-1:0] addr, data;
-   modport phy(input addr, ref data);
-endinterface
+   // Interface variable
+   logic        data;
 
-typedef virtual PBus#(8) vpbus_t;
-typedef vpbus_t vpbus2_t;
+   localparam integer BAR = FOO + 1;
 
-class Cls;
-   vpbus2_t fa, fb;
-endclass
+   // Modport
+   modport mp(
+              import  getFoo,
+              output  data
+              );
 
-class Clsgen#(type T = logic);
-   T x[0:3];
-endclass
+   function integer getFoo ();
+      return FOO;
+   endfunction
 
-module t (/*AUTOARG*/);
+endinterface // test_if
 
-   PBus ia(), ib();
-   virtual PBus va, vb;
-   virtual PBus.phy pa, pb;
-   Cls ca, cb;
-   Clsgen#(virtual PBus) gen;
+function integer identity (input integer x);
+   return x;
+endfunction
+
+
+module t (/*AUTOARG*/
+          // Inputs
+          clk
+          );
+   input clk;
+
+    virtual test_if#(.FOO(identity(5))) the_vif;
+
+    test_if #( .FOO (identity(5)) ) the_interface ();
+    test_if #( .FOO (identity(7)) ) array_interface [1:0] ();
+
+   testmod testmod_i (.clk (clk),
+                      .intf (the_interface),
+                      .intf_no_mp (the_interface),
+                      .intf_array (array_interface)
+                      );
+
+   localparam THE_TOP_FOO = the_interface.FOO;
+   localparam THE_TOP_FOO_BITS = $bits({the_interface.FOO, the_interface.FOO});
+   localparam THE_ARRAY_FOO = array_interface[0].FOO;
 
    initial begin
-      va = ia;
-      vb = ia;
-      $display("va==vb? %b", va==vb);
-      $display("va!=vb? %b", va!=vb);
-      vb = ib;
-      $display("va==vb? %b", va==vb);
-      $display("va!=vb? %b", va!=vb);
+      if (THE_TOP_FOO != 5) begin
+         $display("%%Error: THE_TOP_FOO = %0d", THE_TOP_FOO);
+         $stop;
+      end
+      if (THE_TOP_FOO_BITS != 64) begin
+         $display("%%Error: THE_TOP_FOO_BITS = %0d", THE_TOP_FOO_BITS);
+         $stop;
+      end
+      if (THE_ARRAY_FOO != 7) begin
+         $display("%%Error: THE_ARRAY_FOO = %0d", THE_ARRAY_FOO);
+         $stop;
+      end
+   end
 
-      ca = new;
-      cb = new;
-      gen = new;
+endmodule
 
-      va.addr = 8'haa;
-      ia.data = 8'h11;
 
-      vb.addr = 8'hbb;
-      ib.data = 8'h22;
+module testmod
+  (
+   input clk,
+   test_if.mp intf,
+   test_if intf_no_mp,
+   test_if.mp intf_array [1:0]
+   );
 
-      $display("va.addr=%x", va.addr, " va.data=%x", va.data, " ia.addr=%x", ia.addr, " ia.data=%x", ia.data);
-      $display("vb.addr=%x", vb.addr, " vb.data=%x", vb.data, " ib.addr=%x", ib.addr, " ib.data=%x", ib.data);
+   localparam THE_FOO = intf.FOO;
+   localparam THE_OTHER_FOO = intf_no_mp.FOO;
+   localparam THE_ARRAY_FOO = intf_array[0].FOO;
+   localparam THE_BAR = intf.BAR;
+   localparam THE_OTHER_BAR = intf_no_mp.BAR;
+   localparam THE_ARRAY_BAR = intf_array[0].BAR;
 
-      ca.fa = ia;
-      ca.fb = ib;
-      cb.fa = ib;
-      cb.fb = ia;
-      gen.x[0] = va;
-      gen.x[1] = vb;
-
-      pa = va;
-      pb = vb;
-
-      pb.addr = 8'hb0;
-      pa.addr = 8'ha0;
-
-      $display("ca.fa.addr=%x", ca.fa.addr, " ca.fa.data=%x", ca.fa.data, " ca.fa.addr=%x", ca.fb.addr, " ca.fb.data=%x", ca.fb.data);
-      $display("cb.fa.addr=%x", cb.fa.addr, " cb.fa.data=%x", cb.fa.data, " cb.fa.addr=%x", cb.fb.addr, " cb.fb.data=%x", cb.fb.data);
-      $display("gen.x[0].addr=%x", gen.x[0].addr, " gen.x[1].addr=%x", gen.x[1].addr);
-      $display("gen=%p", gen);
-
+   always @(posedge clk) begin
+      if (THE_FOO != 5) begin
+         $display("%%Error: THE_FOO = %0d", THE_FOO);
+         $stop;
+      end
+      if (THE_OTHER_FOO != 5) begin
+         $display("%%Error: THE_OTHER_FOO = %0d", THE_OTHER_FOO);
+         $stop;
+      end
+      if (THE_ARRAY_FOO != 7) begin
+         $display("%%Error: THE_ARRAY_FOO = %0d", THE_ARRAY_FOO);
+         $stop;
+      end
+      if (intf.FOO != 5) begin
+         $display("%%Error: intf.FOO = %0d", intf.FOO);
+         $stop;
+      end
+      if (intf_no_mp.FOO != 5) begin
+         $display("%%Error: intf_no_mp.FOO = %0d", intf_no_mp.FOO);
+         $stop;
+      end
+      if (intf_array[0].FOO != 7) begin
+         $display("%%Error: intf_array[0].FOO = %0d", intf_array[0].FOO);
+         $stop;
+      end
+      //      if (i.getFoo() != 5) begin
+      //         $display("%%Error: i.getFoo() = %0d", i.getFoo());
+      //         $stop;
+      //      end
+      if (THE_BAR != 6) begin
+         $display("%%Error: THE_BAR = %0d", THE_BAR);
+         $stop;
+      end
+      if (THE_OTHER_BAR != 6) begin
+         $display("%%Error: THE_OTHER_BAR = %0d", THE_OTHER_BAR);
+         $stop;
+      end
+      if (THE_ARRAY_BAR != 8) begin
+         $display("%%Error: THE_ARRAY_BAR = %0d", THE_ARRAY_BAR);
+         $stop;
+      end
+      if (intf.BAR != 6) begin
+         $display("%%Error: intf.BAR = %0d", intf.BAR);
+         $stop;
+      end
+      if (intf_no_mp.BAR != 6) begin
+         $display("%%Error: intf_no_mp.BAR = %0d", intf_no_mp.BAR);
+         $stop;
+      end
+      if (intf_array[0].BAR != 8) begin
+         $display("%%Error: intf_array[0].BAR = %0d", intf_array[0].BAR);
+         $stop;
+      end
       $write("*-* All Finished *-*\n");
       $finish;
    end

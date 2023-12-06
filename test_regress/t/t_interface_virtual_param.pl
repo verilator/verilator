@@ -14,7 +14,7 @@ compile(
     );
 
 execute(
-    check_finished => 1,
+    check_finished => 1
     );
 
 ok(1);
