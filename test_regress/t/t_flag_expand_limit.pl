@@ -14,7 +14,7 @@ compile(
     verilator_flags2 => ['--expand-limit 1 --stats -fno-dfg'],
     );
 
-file_grep($Self->{stats}, qr/Optimizations, expand limited\s+(\d+)/i, 4);
+file_grep($Self->{stats}, qr/Optimizations, expand limited\s+(\d+)/i, 3);
 
 ok(1);
 1;

@@ -740,7 +740,6 @@ class EmitCTrace final : EmitCFunc {
     }
 
     void emitTraceChangeOne(AstTraceInc* nodep, int arrayindex) {
-        iterateAndNextConstNull(nodep->precondsp());
         // Note: Both VTraceType::CHANGE and VTraceType::FULL use the 'full' methods
         const std::string func = nodep->traceType() == VTraceType::CHANGE ? "chg" : "full";
         bool emitWidth = true;
