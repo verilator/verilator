@@ -3754,6 +3754,20 @@ class LinkDotResolveVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
+    void visit(AstIfaceRefDType* nodep) override {
+        if (nodep->paramsp()) {
+            // If there is no parameters, there is no need to visit this node.
+            AstIface* const ifacep = nodep->ifacep();
+            UASSERT_OBJ(ifacep, nodep, "Port parameters of AstIfaceRefDType without ifacep()");
+            if (ifacep->dead()) return;
+            checkNoDot(nodep);
+            m_usedPins.clear();
+            VL_RESTORER(m_pinSymp);
+            m_pinSymp = m_statep->getNodeSym(ifacep);
+            iterate(nodep->paramsp());
+        }
+    }
+
     void visit(AstAttrOf* nodep) override { iterateChildren(nodep); }
 
     void visit(AstNode* nodep) override {
