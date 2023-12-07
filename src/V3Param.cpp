@@ -1150,7 +1150,9 @@ class ParamVisitor final : public VNVisitor {
         if (nodep->ifacep()) visitCellOrClassRef(nodep, true);
     }
     void visit(AstClassRefDType* nodep) override { visitCellOrClassRef(nodep, false); }
-    void visit(AstClassOrPackageRef* nodep) override { visitCellOrClassRef(nodep, false); }
+    void visit(AstClassOrPackageRef* nodep) override {
+        if (!VN_IS(nodep->classOrPackageNodep(), Typedef)) visitCellOrClassRef(nodep, false);
+    }
 
     // Make sure all parameters are constantified
     void visit(AstVar* nodep) override {
