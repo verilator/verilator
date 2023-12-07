@@ -3764,7 +3764,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_usedPins.clear();
             VL_RESTORER(m_pinSymp);
             m_pinSymp = m_statep->getNodeSym(ifacep);
-            iterate(nodep->paramsp());
+            iterateAndNextNull(nodep->paramsp());
         }
     }
 
