@@ -8,6 +8,19 @@
 
 FROM ubuntu:22.04
 
+ARG USERNAME=verilator
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+# Create the user
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME -s /bin/bash \
+    && apt-get update \
+    && apt-get install --no-install-recommends -y sudo \
+    && apt-get clean \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME
+
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive \
        apt-get install --no-install-recommends -y \
@@ -50,6 +63,8 @@ RUN git clone https://github.com/veripool/vcddiff.git && \
 COPY build.sh /tmp/build.sh
 
 ENV VERILATOR_AUTHOR_SITE=1
+
+USER $USERNAME
 
 WORKDIR /work
 
