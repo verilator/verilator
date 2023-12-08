@@ -1150,7 +1150,12 @@ class ParamVisitor final : public VNVisitor {
         if (nodep->ifacep()) visitCellOrClassRef(nodep, true);
     }
     void visit(AstClassRefDType* nodep) override { visitCellOrClassRef(nodep, false); }
-    void visit(AstClassOrPackageRef* nodep) override { visitCellOrClassRef(nodep, false); }
+    void visit(AstClassOrPackageRef* nodep) override {
+        // If it points to a typedef it is not really a class reference. That typedef will be
+        // visited anyway (from its parent node), so even if it points to a parameterized class
+        // type, the instance will be created.
+        if (!VN_IS(nodep->classOrPackageNodep(), Typedef)) visitCellOrClassRef(nodep, false);
+    }
 
     // Make sure all parameters are constantified
     void visit(AstVar* nodep) override {
