@@ -170,22 +170,25 @@ AstNodeStmt* profExecSectionPop(FileLine* flp) {
 struct EvalLoop {
     // Flag set to true during the first iteration of the loop
     AstVarScope* firstIterp;
-    // The loop continuation flag (set to true to loop again)
-    AstVarScope* continuep = nullptr;
     // The loop itself and statements around it
     AstNodeStmt* stmtsp = nullptr;
 };
 
 // Create an eval loop with all the trimmings.
-EvalLoop createEvalLoop(AstNetlist* netlistp,  //
-                        const std::string& tag,  // Tag for current phase
-                        const string& name,  // Name of current phase
-                        bool slow,  // Should create slow functions
-                        AstVarScope* trigp,  // The trigger vector
-                        AstCFunc* dumpFuncp,  // Trigger dump function for debugging only
-                        AstNodeStmt* innerp,  // The inner loop, if any
-                        AstNodeStmt* phasePrepp,  // Prep statements run before checking triggers
-                        AstNodeStmt* phaseWorkp  // The work to do if anything triggered
+EvalLoop createEvalLoop(
+    AstNetlist* netlistp,  //
+    const std::string& tag,  // Tag for current phase
+    const string& name,  // Name of current phase
+    bool slow,  // Should create slow functions
+    AstVarScope* trigp,  // The trigger vector
+    AstCFunc* dumpFuncp,  // Trigger dump function for debugging only
+    AstNodeStmt* innerp,  // The inner loop, if any
+    AstNodeStmt* phasePrepp,  // Prep statements run before checking triggers
+    AstNodeStmt* phaseWorkp,  // The work to do if anything triggered
+    // Extra statements to run after the work, even if no triggers fired. This function is
+    // passed a variable, which must be set to true if we must continue and loop again,
+    // and must be unmodified otherwise.
+    std::function<AstNodeStmt*(AstVarScope*)> phaseExtra = [](AstVarScope*) { return nullptr; }  //
 ) {
     const std::string varPrefix = "__V" + tag;
     AstScope* const scopeTopp = netlistp->topScopep()->scopep();
@@ -212,6 +215,9 @@ EvalLoop createEvalLoop(AstNetlist* netlistp,  //
         AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, executeFlagp, VAccess::READ}};
         ifp->addThensp(phaseWorkp);
         phaseFuncp->addStmtsp(ifp);
+
+        // Construct the extra statements
+        if (AstNodeStmt* const extrap = phaseExtra(executeFlagp)) phaseFuncp->addStmtsp(extrap);
 
         // The function returns ture iff it did run the work
         phaseFuncp->rtnType("bool");
@@ -272,7 +278,7 @@ EvalLoop createEvalLoop(AstNetlist* netlistp,  //
     // Prof-exec section pop
     if (v3Global.opt.profExec()) stmtps->addNext(profExecSectionPop(flp));
 
-    return {firstIterFlagp, continueFlagp, stmtps};
+    return {firstIterFlagp, stmtps};
 }
 
 //============================================================================
@@ -1011,25 +1017,27 @@ void createEval(AstNetlist* netlistp,  //
             workp->addNext(createTriggerClearCall(flp, nbaKit.m_vscp));
             //
             return workp;
-        }());
+        }(),
+        // Extra work (not conditional on having had a fired trigger)
+        [&](AstVarScope* continuep) -> AstNodeStmt* {
+            // Check if any dynamic NBAs are pending, if there are any in the design
+            if (!netlistp->nbaEventp()) return nullptr;
+            AstVarScope* const nbaEventp = netlistp->nbaEventp();
+            AstVarScope* const nbaEventTriggerp = netlistp->nbaEventTriggerp();
+            UASSERT(nbaEventTriggerp, "NBA event trigger var should exist");
+            netlistp->nbaEventp(nullptr);
+            netlistp->nbaEventTriggerp(nullptr);
 
-    // If the NBA event exists, trigger it in 'nba'
-    if (AstVarScope* const nbaEventp = netlistp->nbaEventp()) {
-        AstVarScope* const nbaEventTriggerp = netlistp->nbaEventTriggerp();
-        UASSERT(nbaEventTriggerp, "NBA event trigger var should exist");
-        netlistp->nbaEventp(nullptr);
-        netlistp->nbaEventTriggerp(nullptr);
-
-        AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, nbaEventTriggerp, VAccess::READ}};
-        ifp->addThensp(setVar(topLoop.continuep, 1));
-        ifp->addThensp(setVar(nbaEventTriggerp, 0));
-        AstCMethodHard* const firep
-            = new AstCMethodHard{flp, new AstVarRef{flp, nbaEventp, VAccess::WRITE}, "fire"};
-        firep->dtypeSetVoid();
-        ifp->addThensp(firep->makeStmt());
-        // actLoop.stmtsp happens to be the head of the loop body inside the NBA loop...
-        actLoop.stmtsp->addNext(ifp);
-    }
+            // If a dynamic NBA is pending, clear the pending flag and fire the commit event
+            AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, nbaEventTriggerp, VAccess::READ}};
+            ifp->addThensp(setVar(continuep, 1));
+            ifp->addThensp(setVar(nbaEventTriggerp, 0));
+            AstCMethodHard* const firep
+                = new AstCMethodHard{flp, new AstVarRef{flp, nbaEventp, VAccess::WRITE}, "fire"};
+            firep->dtypeSetVoid();
+            ifp->addThensp(firep->makeStmt());
+            return ifp;
+        });
 
     if (!obsKit.empty()) {
         // Create the Observed eval loop, which becomes the top level loop.
