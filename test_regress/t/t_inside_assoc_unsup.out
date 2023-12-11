@@ -1,5 +1,6 @@
-%Error: t/t_inside_assoc_unsup.v:12:15: Unsupported: inside (set membership operator) on associative array
-                                      : ... note: In instance 't'
+%Error-UNSUPPORTED: t/t_inside_assoc_unsup.v:12:15: Unsupported: inside (set membership operator) on associative array
+                                                  : ... note: In instance 't'
    12 |       m = (10 inside {assoc});
       |               ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to
