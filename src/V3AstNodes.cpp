@@ -2252,6 +2252,7 @@ void AstCMethodHard::setPurity() {
                                                           {"first", false},
                                                           {"init", false},
                                                           {"insert", false},
+                                                          {"inside", true},
                                                           {"isFired", true},
                                                           {"isTriggered", true},
                                                           {"join", false},

@@ -613,6 +613,14 @@ public:
         m_deque.insert(m_deque.begin() + index, value);
     }
 
+    // inside (set membership operator)
+    bool inside(const T_Value& value) const {
+        for (const auto& val: m_deque) {
+            if (val == value) return true;
+        }
+        return false;
+    }
+
     // Return slice q[lsb:msb]
     VlQueue slice(int32_t lsb, int32_t msb) const {
         VlQueue out;
