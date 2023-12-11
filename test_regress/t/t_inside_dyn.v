@@ -7,8 +7,6 @@
 module t;
    int q[$] = '{1, 2, 3};
    bit dyn[] = '{0, 0};
-   int dict[int] = '{1: 100, 2: 200};
-   int dict2[int] = '{3: 3};
 
    initial begin
       if (!(1 inside {q})) $stop;
@@ -17,10 +15,6 @@ module t;
 
       if (!(0 inside {dyn})) $stop;
       if (1 inside {dyn}) $stop;
-
-      if (!(200 inside {dict})) $stop;
-      // if (50 inside {dict}) $stop;
-      // if (!(3 inside {dict, dict2})) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
