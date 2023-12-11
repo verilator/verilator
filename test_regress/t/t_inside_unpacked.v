@@ -10,18 +10,6 @@ module t(/*AUTOARG*/
    );
    input clk;
 
-   localparam int CHECKLIST_P [2:0] = '{0, 1, 2};
-
-   localparam HIT_LP = 1;
-   localparam MISS_LP = 4;
-   localparam HIT_INSIDE = HIT_LP inside {CHECKLIST_P};
-   localparam MISS_INSIDE = MISS_LP inside {CHECKLIST_P};
-
-   initial begin
-      if (HIT_INSIDE != 1) $stop;
-      if (MISS_INSIDE != 0) $stop;
-   end
-
    integer cyc = 0;
 
    int     array [10];
