@@ -615,10 +615,7 @@ public:
 
     // inside (set membership operator)
     bool inside(const T_Value& value) const {
-        for (const auto& val : m_deque) {
-            if (val == value) return true;
-        }
-        return false;
+        return std::find(m_deque.begin(), m_deque.end(), value) != m_deque.end();
     }
 
     // Return slice q[lsb:msb]
@@ -1318,10 +1315,7 @@ public:
 
     // inside (set membership operator)
     bool inside(const T_Value& value) const {
-        for (const auto& val : m_storage) {
-            if (val == value) return true;
-        }
-        return false;
+        return std::find(std::begin(m_storage), std::end(m_storage), value) != std::end(m_storage);
     }
 
     void sort() { std::sort(std::begin(m_storage), std::end(m_storage)); }

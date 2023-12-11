@@ -2563,9 +2563,8 @@ class WidthVisitor final : public VNVisitor {
                 inewp->dtypeSetBit();
                 inewp->didWidth(true);
             } else if (VN_IS(itemDtp, AssocArrayDType)) {
-                nodep->v3warn(
-                    E_UNSUPPORTED,
-                    "Unsupported: inside (set membership operator) on associative array");
+                nodep->v3error("Inside operator not specified on associative arrays (IEEE "
+                               "1800-2017 11.4.13)");
                 continue;
             } else {
                 inewp = AstEqWild::newTyped(itemp->fileline(), nodep->exprp()->cloneTreePure(true),
