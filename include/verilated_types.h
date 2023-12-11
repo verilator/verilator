@@ -615,7 +615,7 @@ public:
 
     // inside (set membership operator)
     bool inside(const T_Value& value) const {
-        for (const auto& val: m_deque) {
+        for (const auto& val : m_deque) {
             if (val == value) return true;
         }
         return false;
@@ -1318,7 +1318,7 @@ public:
 
     // inside (set membership operator)
     bool inside(const T_Value& value) const {
-        for (const auto& val: m_storage) {
+        for (const auto& val : m_storage) {
             if (val == value) return true;
         }
         return false;
