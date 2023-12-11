@@ -1,0 +1,5 @@
+%Error: t/t_inside_assoc_unsup.v:12:15: Unsupported: inside (set membership operator) on associative array
+                                      : ... note: In instance 't'
+   12 |       m = (10 inside {assoc});
+      |               ^~~~~~
+%Error: Exiting due to
