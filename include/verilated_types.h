@@ -1316,6 +1316,14 @@ public:
     bool operator==(const VlUnpacked<T_Value, T_Depth>& that) const { return !neq(that); }
     bool operator!=(const VlUnpacked<T_Value, T_Depth>& that) { return neq(that); }
 
+    // inside (set membership operator)
+    bool inside(const T_Value& value) const {
+        for (const auto& val: m_storage) {
+            if (val == value) return true;
+        }
+        return false;
+    }
+
     void sort() { std::sort(std::begin(m_storage), std::end(m_storage)); }
     template <typename Func>
     void sort(Func with_func) {
