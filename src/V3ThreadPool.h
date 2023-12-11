@@ -27,6 +27,7 @@
 #include <condition_variable>
 #include <functional>
 #include <future>
+#include <iostream>
 #include <list>
 #include <mutex>
 #include <queue>
@@ -125,8 +126,18 @@ class V3ThreadPool final {
         // wrong. This won't make things worse to an user - the program is already terminating at
         // this point anyway, most likely as a result of an error. Using if/abort instead of assert
         // because assert can be disabled.
-        if (VL_UNCOVERABLE(m_exclusiveAccess)) std::abort();
-        if (VL_UNCOVERABLE(m_stopRequested)) std::abort();
+        if (VL_UNCOVERABLE(m_exclusiveAccess)) {
+            std::cerr << "%Error: Internal Error: attempted to destroy Thread Pool with active "
+                         "exclusive access mode"
+                      << std::endl;
+            std::abort();
+        }
+        if (VL_UNCOVERABLE(m_stopRequested)) {
+            std::cerr << "%Error: Internal Error: attempted to destroy Thread Pool with active "
+                         "stop request"
+                      << std::endl;
+            std::abort();
+        }
 
         if (VL_UNCOVERABLE(!m_mutex.try_lock())) {
             if (VL_UNCOVERABLE(m_jobsInProgress != 0)) {
@@ -134,10 +145,15 @@ class V3ThreadPool final {
                 // something is wrong. Most likely Verilator is exiting as a result of failed
                 // assert in critical section. Just returning is dangerous, as threads and this
                 // class' members might keep the program hanging endlessly.
+                std::cerr << "%Error: Internal Error: attempted to destroy Thread Pool with "
+                             "running jobs"
+                          << std::endl;
                 std::abort();
             }
             // Probably an error happened in a call to some V3ThreadPool's method. We can't just
             // unlock m_mutex and be sure that resize(0) handle this well.
+            std::cerr << "%Error: Internal Error: attempted to destroy locked Thread Pool"
+                      << std::endl;
             std::abort();
         } else {
             V3LockGuard lock{m_mutex, std::adopt_lock_t{}};
