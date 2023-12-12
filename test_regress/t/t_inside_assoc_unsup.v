@@ -5,16 +5,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t(/*AUTOARG*/);
-
-   int q[$];
    int assoc[int];
-   int dyn[];
    bit m;
 
    initial begin
-      m = (10 inside {q});
       m = (10 inside {assoc});
-      m = (10 inside {dyn});
    end
 
 endmodule

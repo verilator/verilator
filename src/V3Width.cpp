@@ -2555,16 +2555,16 @@ class WidthVisitor final : public VNVisitor {
                 // Similar logic in V3Case
                 inewp = irangep->newAndFromInside(nodep->exprp(), irangep->lhsp()->unlinkFrBack(),
                                                   irangep->rhsp()->unlinkFrBack());
-            } else if (VN_IS(itemDtp, UnpackArrayDType)) {
-                nodep->v3error("Unsupported: inside (set membership operator) on unpacked array");
-                // Need the AstInside type to persist, then
-                // for parameters, need V3Simulate support.
-                // For non-parameters, need runtime support.
-                continue;
-            } else if (VN_IS(itemDtp, AssocArrayDType) || VN_IS(itemDtp, DynArrayDType)
+            } else if (VN_IS(itemDtp, UnpackArrayDType) || VN_IS(itemDtp, DynArrayDType)
                        || VN_IS(itemDtp, QueueDType)) {
-                nodep->v3error(
-                    "Inside operator not legal on non-unpacked arrays (IEEE 1800-2017 11.4.13)");
+                // Unsupported in parameters
+                inewp = new AstCMethodHard{itemp->fileline(), itemp->unlinkFrBack(), "inside",
+                                           nodep->exprp()->cloneTreePure(true)};
+                inewp->dtypeSetBit();
+                inewp->didWidth(true);
+            } else if (VN_IS(itemDtp, AssocArrayDType)) {
+                nodep->v3error("Inside operator not specified on associative arrays (IEEE "
+                               "1800-2017 11.4.13)");
                 continue;
             } else {
                 inewp = AstEqWild::newTyped(itemp->fileline(), nodep->exprp()->cloneTreePure(true),
