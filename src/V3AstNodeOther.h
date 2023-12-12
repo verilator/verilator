@@ -3213,7 +3213,6 @@ class AstTraceDecl final : public AstNodeStmt {
     const string m_showname;  // Name of variable
     const VNumRange m_bitRange;  // Property of var the trace details
     const VNumRange m_arrayRange;  // Property of var the trace details
-    const uint32_t m_codeInc;  // Code increment
     const VVarType m_varType;  // Type of variable (for localparam vs. param)
     const VDirection m_declDirection;  // Declared direction input/output etc
 public:
@@ -3224,9 +3223,6 @@ public:
         , m_showname{showname}
         , m_bitRange{bitRange}
         , m_arrayRange{arrayRange}
-        , m_codeInc(
-              ((arrayRange.ranged() ? arrayRange.elements() : 1) * valuep->dtypep()->widthWords()
-               * (VL_EDATASIZE / 32)))  // A code is always 32-bits
         , m_varType{varp->varType()}
         , m_declDirection{varp->declDirection()} {
         dtypeFrom(valuep);
@@ -3245,7 +3241,11 @@ public:
     void code(uint32_t code) { m_code = code; }
     uint32_t fidx() const { return m_fidx; }
     void fidx(uint32_t fidx) { m_fidx = fidx; }
-    uint32_t codeInc() const { return m_codeInc; }
+    uint32_t codeInc() const {
+        return (m_arrayRange.ranged() ? m_arrayRange.elements() : 1)
+               * valuep()->dtypep()->widthWords()
+               * (VL_EDATASIZE / 32);  // A code is always 32-bits
+    }
     const VNumRange& bitRange() const { return m_bitRange; }
     const VNumRange& arrayRange() const { return m_arrayRange; }
     VVarType varType() const { return m_varType; }
@@ -3266,8 +3266,9 @@ public:
         , m_traceType{traceType}
         , m_declp{declp} {
         dtypeFrom(declp);
-        this->valuep(
-            declp->valuep()->cloneTree(true));  // TODO: maybe use reference to TraceDecl instead?
+        // Note: A clone is necessary (instead of using declp()->valuep()),
+        // for insertion of local temporaries in V3Premit
+        valuep(declp->valuep()->cloneTree(true));
     }
     ASTGEN_MEMBERS_AstTraceInc;
     void dump(std::ostream& str) const override;

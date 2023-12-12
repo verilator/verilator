@@ -238,10 +238,7 @@ class CleanVisitor final : public VNVisitor {
             if (AstNodeExpr* const exprp = VN_CAST(argp, NodeExpr)) ensureClean(exprp);
         }
     }
-    void visit(AstTraceDecl* nodep) override {
-        // No cleaning, or would loose pointer to enum
-        iterateChildren(nodep);
-    }
+    void visit(AstTraceDecl* nodep) override {}  // Nothing to do here
     void visit(AstTraceInc* nodep) override {
         iterateChildren(nodep);
         ensureCleanAndNext(nodep->valuep());
