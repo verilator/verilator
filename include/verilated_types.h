@@ -613,6 +613,11 @@ public:
         m_deque.insert(m_deque.begin() + index, value);
     }
 
+    // inside (set membership operator)
+    bool inside(const T_Value& value) const {
+        return std::find(m_deque.begin(), m_deque.end(), value) != m_deque.end();
+    }
+
     // Return slice q[lsb:msb]
     VlQueue slice(int32_t lsb, int32_t msb) const {
         VlQueue out;
@@ -1307,6 +1312,11 @@ public:
     void assign(const VlUnpacked<T_Value, T_Depth>& that) { *this = that; }
     bool operator==(const VlUnpacked<T_Value, T_Depth>& that) const { return !neq(that); }
     bool operator!=(const VlUnpacked<T_Value, T_Depth>& that) { return neq(that); }
+
+    // inside (set membership operator)
+    bool inside(const T_Value& value) const {
+        return std::find(std::begin(m_storage), std::end(m_storage), value) != std::end(m_storage);
+    }
 
     void sort() { std::sort(std::begin(m_storage), std::end(m_storage)); }
     template <typename Func>
