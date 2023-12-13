@@ -2492,6 +2492,20 @@ sub file_grep {
     }
 }
 
+sub file_grep_count {
+    my $self = (ref $_[0] ? shift : $Self);
+    my $filename = shift;
+    my $regexp = shift;
+    my $expcount = shift;
+    return if $self->errors || $self->skips;
+
+    my $contents = $self->file_contents($filename);
+    my $count = () = $contents =~ /$regexp/g;
+    if ($count != $expcount) {
+        $self->error("file_grep_count: $filename: Got='$count' Expected='$expcount' for regexp: $regexp\n");
+    }
+}
+
 sub file_grep_any {
     my $self = $Self;
     my @filenames = @{$_[0]}; shift;
