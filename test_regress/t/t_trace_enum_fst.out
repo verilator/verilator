@@ -1,0 +1,35 @@
+$date
+	Tue Dec 19 07:15:22 2023
+
+$end
+$version
+	fstWriter
+$end
+$timescale
+	1ps
+$end
+$scope module top $end
+$attrbegin misc 07 $unit::state_t 4 VAL_A VAL_B VAL_C VAL_D 00 01 10 11 1 $end
+$attrbegin misc 07 t.other_state_t 3 VAL_X VAL_Y VAL_Z 00 01 10 2 $end
+$var wire 1 ! clk $end
+$scope module t $end
+$var wire 1 ! clk $end
+$scope interface sink $end
+$attrbegin misc 07 "" 1 $end
+$var logic 2 " state [1:0] $end
+$upscope $end
+$attrbegin misc 07 "" 1 $end
+$var logic 2 # v_enumed [1:0] $end
+$attrbegin misc 07 "" 2 $end
+$var logic 2 $ v_other_enumed [1:0] $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$dumpvars
+#0
+b00 $
+b00 #
+b00 "
+0!
+#10
+1!

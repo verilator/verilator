@@ -143,7 +143,7 @@ public:
     constexpr operator en() const { return m_e; }
     bool fst() const { return m_e == FST; }
     bool vcd() const { return m_e == VCD; }
-    string classBase() const {
+    string classBase() const VL_MT_SAFE {
         static const char* const names[] = {"VerilatedVcd", "VerilatedFst"};
         return names[m_e];
     }
@@ -643,7 +643,7 @@ public:
     bool fTable() const { return m_fTable; }
     bool fTaskifyAll() const { return m_fTaskifyAll; }
 
-    string traceClassBase() const { return m_traceFormat.classBase(); }
+    string traceClassBase() const VL_MT_SAFE { return m_traceFormat.classBase(); }
     string traceClassLang() const { return m_traceFormat.classBase() + (systemC() ? "Sc" : "C"); }
     string traceSourceBase() const { return m_traceFormat.sourceName(); }
     string traceSourceLang() const VL_MT_SAFE {
