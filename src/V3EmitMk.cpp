@@ -146,7 +146,7 @@ public:
         } else if (!v3Global.opt.libCreate().empty()) {
             of.puts("default: lib" + v3Global.opt.libCreate() + "\n");
         } else {
-            of.puts("default: " + v3Global.opt.prefix() + "__ALL.a\n");
+            of.puts("default: lib" + v3Global.opt.prefix() + "\n");
         }
         of.puts("\n### Constants...\n");
         of.puts("# Perl executable (from $PERL)\n");
@@ -239,13 +239,12 @@ public:
 
         if (v3Global.opt.exe()) {
             of.puts("\n### Link rules... (from --exe)\n");
+            // let default rule depend on '{prefix}__ALL.a', for compatibility
             of.puts(v3Global.opt.exeName()
                     + ": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a $(VM_HIER_LIBS)\n");
             of.puts("\t$(LINK) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) $(LIBS) $(SC_LIBS) -o $@\n");
             of.puts("\n");
-        }
-
-        if (!v3Global.opt.libCreate().empty()) {
+        } else if (!v3Global.opt.libCreate().empty()) {
             const string libCreateDeps = "$(VK_OBJS) $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) "
                                          + v3Global.opt.libCreate() + ".o $(VM_HIER_LIBS)";
             of.puts("\n### Library rules from --lib-create\n");
@@ -272,6 +271,14 @@ public:
                 of.puts("lib" + v3Global.opt.libCreate() + ": " + v3Global.opt.libCreateName(false)
                         + " " + v3Global.opt.libCreateName(true) + "\n");
             }
+        } else {
+            const string libname = "lib" + v3Global.opt.prefix() + ".a";
+            of.puts("\n### Library rules (default lib mode)\n");
+            // The rule to create .a is defined in verilated.mk, so just define dependency here.
+            of.puts(libname + ": $(VK_OBJS) $(VK_USER_OBJS) $(VM_HIER_LIBS)\n");
+            of.puts("libverilated.a: $(VK_GLOBAL_OBJS)\n");
+            // let default rule depend on '{prefix}__ALL.a', for compatibility
+            of.puts("lib" + v3Global.opt.prefix() + ": " + libname + " libverilated.a $(VM_PREFIX)__ALL.a\n");
         }
 
         of.puts("\n");

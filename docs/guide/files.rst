@@ -145,6 +145,10 @@ After running Make, the C++ compiler may produce the following:
      - Intermediate objects
    * - *{prefix}*\
      - Final executable (from --exe)
+   * - lib\ *{prefix}*\ .a
+     - Final archive (default lib mode)
+   * - libverilated.a
+     - Runtime for verilated model (default lib mode)
    * - *{prefix}*\ __ALL.a
      - Library of all Verilated objects
    * - *{prefix}*\ __ALL.cpp
