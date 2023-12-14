@@ -278,7 +278,8 @@ public:
             of.puts(libname + ": $(VK_OBJS) $(VK_USER_OBJS) $(VM_HIER_LIBS)\n");
             of.puts("libverilated.a: $(VK_GLOBAL_OBJS)\n");
             // let default rule depend on '{prefix}__ALL.a', for compatibility
-            of.puts("lib" + v3Global.opt.prefix() + ": " + libname + " libverilated.a $(VM_PREFIX)__ALL.a\n");
+            of.puts("lib" + v3Global.opt.prefix() + ": " + libname
+                    + " libverilated.a $(VM_PREFIX)__ALL.a\n");
         }
 
         of.puts("\n");

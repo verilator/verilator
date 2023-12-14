@@ -7,9 +7,8 @@
 //
 //*************************************************************************
 
-#include "svdpi.h"
 #include "Vt_flag_lib_dpi__Dpi.h"
+#include "svdpi.h"
+
 #include <iostream>
-void write_all_finished() {
-    std::cout << "*-* All Finished *-*" << std::endl;
-}
+void write_all_finished() { std::cout << "*-* All Finished *-*" << std::endl; }
