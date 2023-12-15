@@ -79,15 +79,12 @@ int mon_check() {
     while (true) {
         TestVpiHandle handle = vpi_scan(it);
         if (handle == NULL) break;
-        if (strcmp("t", vpi_get_str(vpiName, handle))) {
-            return __LINE__;
-        } else {
-            if (found_t) return __LINE__;
-            found_t = true;
-        }
+        CHECK_RESULT_CSTR("t", vpi_get_str(vpiName, handle))
+        CHECK_RESULT_Z(found_t)
+        found_t = true;
     }
     it.freed();
-    if (!found_t) return __LINE__;
+    CHECK_RESULT_NZ(found_t);
 
     it = vpi_iterate(vpiInstance, NULL);
 
@@ -100,25 +97,25 @@ int mon_check() {
         const char* name = vpi_get_str(vpiName, handle);
         const char* fullname = vpi_get_str(vpiFullName, handle);
         if (!strcmp("t", name)) {
-            if (strcmp("t", fullname)) return __LINE__;
-            if (found_t) return __LINE__;
+            CHECK_RESULT_CSTR("t", fullname)
+            CHECK_RESULT_Z(found_t)
             found_t = true;
         } else if (!strcmp("somepackage", name)) {
-            if (strcmp("somepackage::", fullname)) return __LINE__;
-            if (found_somepackage) return __LINE__;
+            CHECK_RESULT_CSTR("somepackage::", fullname)
+            CHECK_RESULT_Z(found_somepackage)
             found_somepackage = true;
         } else if (!strcmp("$unit", name)) {
-            if (strcmp("$unit::", fullname)) return __LINE__;
-            if (found_dollar_unit) return __LINE__;
+            CHECK_RESULT_CSTR("$unit::", fullname)
+            CHECK_RESULT_Z(found_dollar_unit)
             found_dollar_unit = true;
         } else {
-            return __LINE__;
+            CHECK_RESULT_NZ(0)
         }
     }
     it.freed();
-    if (!found_t) return __LINE__;
-    if (!found_somepackage) return __LINE__;
-    if (!found_dollar_unit) return __LINE__;
+    CHECK_RESULT_NZ(found_t)
+    CHECK_RESULT_NZ(found_somepackage)
+    CHECK_RESULT_NZ(found_dollar_unit)
 
     return 0;  // Ok
 }
