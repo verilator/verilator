@@ -1786,7 +1786,7 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
         }
         // Do the split
         if (VL_LIKELY(pos != std::string::npos)) {
-            basename.erase(0, pos + 1 + (isPackage ? 1 : 0));
+            basename.erase(0, pos + (isPackage ? 2 : 1));
             scopename = scopeAndName.substr(0, pos);
             if (scopename == "$unit") scopename = "\\$unit ";
         }
