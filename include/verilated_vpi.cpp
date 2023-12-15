@@ -1744,15 +1744,19 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
     const VerilatedVpioScope* const voScopep = VerilatedVpioScope::castp(scope);
     std::string scopeAndName = namep;
     if (voScopep) {
-        scopeAndName = std::string{voScopep->fullname()} + "." + namep;
+        const bool scopeIsPackage = VerilatedVpioPackage::castp(scope) != nullptr;
+        scopeAndName = std::string{voScopep->fullname()} + (scopeIsPackage ? "" : ".") + namep;
         namep = const_cast<PLI_BYTE8*>(scopeAndName.c_str());
     }
     {
         // This doesn't yet follow the hierarchy in the proper way
+        bool isPackage = false;
         scopep = Verilated::threadContextp()->scopeFind(namep);
         if (scopep) {  // Whole thing found as a scope
             if (scopep->type() == VerilatedScope::SCOPE_MODULE) {
                 return (new VerilatedVpioModule{scopep})->castVpiHandle();
+            } else if (scopep->type() == VerilatedScope::SCOPE_PACKAGE) {
+                return (new VerilatedVpioPackage{scopep})->castVpiHandle();
             } else {
                 return (new VerilatedVpioScope{scopep})->castVpiHandle();
             }
@@ -1768,17 +1772,23 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
                 while (i < scopeAndName.length() && scopeAndName[i] != ' ') ++i;
                 ++i;  // Proc ' ', it should always be there. Then grab '.' on next cycle
             } else {
-                while (i < scopeAndName.length() && scopeAndName[i] != '.') ++i;
+                while (i < scopeAndName.length()
+                       && (scopeAndName[i] != '.'
+                           && (i + 1 >= scopeAndName.length() || scopeAndName[i] != ':'
+                               || scopeAndName[i + 1] != ':')))
+                    ++i;
                 if (i < scopeAndName.length()) {
                     prevpos = pos;
                     pos = i++;
+                    if (scopeAndName[i - 1] == ':') isPackage = true;
                 }
             }
         }
         // Do the split
         if (VL_LIKELY(pos != std::string::npos)) {
-            basename.erase(0, pos + 1);
+            basename.erase(0, pos + (isPackage ? 2 : 1));
             scopename = scopeAndName.substr(0, pos);
+            if (scopename == "$unit") scopename = "\\$unit ";
         }
         if (prevpos == std::string::npos) {
             // scopename is a toplevel (no '.' separator), so search in our TOP ports first.

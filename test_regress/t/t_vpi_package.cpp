@@ -84,6 +84,12 @@ int count_params(TestVpiHandle& handle, int expectedParams) {
     return 0;
 }
 
+int check_handle(char* name, vpiHandle scopeHandle) {
+    const TestVpiHandle handle = vpi_handle_by_name(name, scopeHandle);
+    CHECK_RESULT_NZ(handle)
+    return 0;
+}
+
 int mon_check() {
 #ifdef TEST_VERBOSE
     printf("-mon_check()\n");
@@ -141,6 +147,14 @@ int mon_check() {
     CHECK_RESULT_Z(count_params(unitHandle, 1));
     CHECK_RESULT_Z(count_params(pkgHandle, 2));
     CHECK_RESULT_Z(count_params(tHandle, 3));
+
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("someOtherInt"), tHandle))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("t.someOtherInt"), NULL))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("someInt"), pkgHandle))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("somepackage::someInt"), NULL))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("dollarUnitInt"), unitHandle))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("$unit::dollarUnitInt"), NULL))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("somepackage"), NULL))
 
     return 0;  // Ok
 }
