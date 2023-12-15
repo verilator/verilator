@@ -2131,3 +2131,49 @@ List Of Warnings
    Inactive region. Such processes do get resumed in the same time slot
    somewhere in the Active region. Issued only if Verilator is run with the
    :vlopt:`--timing` option.
+
+.. option:: ZEROREPL
+
+   Warns that zero is used as the replication value in the replication
+   operator.
+
+   Faulty example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 3
+
+         module dut
+            #(parameter int MY_PARAM = 0);
+           reg [7:0] data;
+           always @* begin
+             data = {MY_PARAM{1'b0}}; //<--- WARNING
+           end
+         endmodule
+
+   Results in the following error:
+
+   .. code-block::
+
+       %Error-ZEROREPL: test.v:5:22: Replication value of 0 is only legal under a concatenation (IEEE 1800-2017 11.4.12.1)
+
+   Note that in some cases, this warning may be false, when a condition
+   upstream or downstream of the access means the zero replication will
+   never execute or be used.
+
+   Repaired example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 3
+
+         module dut
+            #(parameter int MY_PARAM = 0);
+           reg [7:0] data;
+           always @* begin
+             if (MY_PARAM > 0)
+               // verilator lint_off ZEROREPL
+               data = {MY_PARAM{1'b0}}; //<--- WARNING
+               // verilator lint_on ZEROREPL
+           end
+         endmodule
