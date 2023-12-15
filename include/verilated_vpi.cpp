@@ -120,6 +120,7 @@ public:
     virtual const char* fullname() const { return "<null>"; }
     virtual const char* defname() const { return "<null>"; }
     virtual uint32_t type() const { return 0; }
+    virtual uint32_t constType() const { return vpiUndefined; }
     virtual uint32_t size() const { return 0; }
     virtual const VerilatedRange* rangep() const { return nullptr; }
     virtual vpiHandle dovpi_scan() { return nullptr; }
@@ -158,6 +159,7 @@ public:
         return dynamic_cast<VerilatedVpioConst*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     uint32_t type() const override { return vpiConstant; }
+    uint32_t constType() const override { return vpiDecConst; }
     int32_t num() const { return m_num; }
 };
 
@@ -204,6 +206,18 @@ public:
         return dynamic_cast<VerilatedVpioParam*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     uint32_t type() const override { return vpiParameter; }
+    uint32_t constType() const override {
+        switch (m_varp->vltype()) {
+        case VLVT_UINT8:
+        case VLVT_UINT16:
+        case VLVT_UINT32:
+        case VLVT_UINT64:
+        case VLVT_WDATA: return vpiDecConst;
+        case VLVT_STRING: return vpiStringConst;
+        case VLVT_REAL: return vpiRealConst;
+        default: return vpiUndefined;
+        }
+    }
     void* varDatap() const { return m_varp->datap(); }
 };
 
@@ -1959,6 +1973,11 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
         const VerilatedVpio* const vop = VerilatedVpio::castp(object);
         if (VL_UNLIKELY(!vop)) return 0;
         return vop->type();
+    }
+    case vpiConstType: {
+        const VerilatedVpio* const vop = VerilatedVpio::castp(object);
+        if (VL_UNLIKELY(!vop)) return 0;
+        return vop->constType();
     }
     case vpiDirection: {
         // By forethought, the directions already are vpi enumerated
