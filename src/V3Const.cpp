@@ -41,6 +41,14 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+#define TREE_SKIP_VISIT(...)
+#define TREEOP1(...)
+#define TREEOPA(...)
+#define TREEOP(...)
+#define TREEOPS(...)
+#define TREEOPC(...)
+#define TREEOPV(...)
+
 //######################################################################
 // Utilities
 

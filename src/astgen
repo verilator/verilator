@@ -245,8 +245,8 @@ class Cpt:
                     self.output_func(lambda self: self._output_line())
                     self.tree_line(func)
                     didln = False
-                elif not re.match(r'^\s*/[/\*]\s*TREE', line) and re.search(
-                        r'\s+TREE', line):
+                elif not re.match(r'^\s*(#define|/[/\*])\s*TREE',
+                                  line) and re.search(r'\s+TREE', line):
                     self.error("Unknown astgen line: " + line)
                 else:
                     self.print(line)
