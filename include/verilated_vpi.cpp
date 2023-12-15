@@ -382,10 +382,12 @@ class VerilatedVpioVarIter final : public VerilatedVpio {
     VerilatedVarNameMap::const_iterator m_it;
     bool m_started = false;
     const VerilatedScope* m_topscopep = nullptr;
+    bool m_onlyParams;
 
 public:
-    explicit VerilatedVpioVarIter(const VerilatedVpioScope* vop)
-        : m_scopep{vop->scopep()} {
+    explicit VerilatedVpioVarIter(const VerilatedVpioScope* vop, bool onlyParams = false)
+        : m_scopep{vop->scopep()}
+        , m_onlyParams{onlyParams} {
         if (VL_UNLIKELY(vop->toplevel()))
             // This is a toplevel, so get TOP scope to search for ports during vpi_scan.
             m_topscopep = Verilated::threadContextp()->scopeFind("TOP");
@@ -396,7 +398,11 @@ public:
     }
     uint32_t type() const override { return vpiIterator; }
     vpiHandle dovpi_scan() override {
-        if (VL_LIKELY(m_scopep->varsp())) {
+        if (VL_UNLIKELY(!m_scopep->varsp())) {
+            delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
+            return nullptr;  // End of list - only one deep
+        }
+        while (true) {
             const VerilatedVarNameMap* const varsp = m_scopep->varsp();
             if (VL_UNLIKELY(!m_started)) {
                 m_it = varsp->begin();
@@ -411,14 +417,13 @@ public:
                 delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
                 return nullptr;
             }
+            if (m_onlyParams && !m_it->second.isParam()) continue;
             if (VL_UNLIKELY(m_topscopep)) {
                 if (const VerilatedVar* topvarp = m_topscopep->varFind(m_it->second.name()))
                     return ((new VerilatedVpioVar{topvarp, m_topscopep})->castVpiHandle());
             }
             return ((new VerilatedVpioVar{&(m_it->second), m_scopep})->castVpiHandle());
         }
-        delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
-        return nullptr;  // End of list - only one deep
     }
 };
 
@@ -1921,6 +1926,11 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
         const VerilatedVpioScope* const vop = VerilatedVpioScope::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
         return ((new VerilatedVpioVarIter{vop})->castVpiHandle());
+    }
+    case vpiParameter: {
+        const VerilatedVpioScope* const vop = VerilatedVpioScope::castp(object);
+        if (VL_UNLIKELY(!vop)) return nullptr;
+        return ((new VerilatedVpioVarIter{vop, true})->castVpiHandle());
     }
     case vpiModule: {
         const VerilatedVpioModule* const vop = VerilatedVpioModule::castp(object);
