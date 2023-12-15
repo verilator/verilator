@@ -85,9 +85,8 @@ int count_params(TestVpiHandle& handle, int expectedParams) {
 }
 
 int check_handle(char* name, vpiHandle scopeHandle) {
-    TestVpiHandle handle = vpi_handle_by_name(name, scopeHandle);
+    const TestVpiHandle handle = vpi_handle_by_name(name, scopeHandle);
     CHECK_RESULT_NZ(handle)
-
     return 0;
 }
 
