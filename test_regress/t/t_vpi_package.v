@@ -12,12 +12,15 @@ parameter int dollarUnitInt /*verilator public_flat_rd*/ = 3;
 
 package somepackage;
    parameter int someInt /*verilator public_flat_rd*/ = 5;
+   parameter int anotherInt /*verilator public_flat_rd*/ = 6;
 endpackage
 
 module t (/*AUTOARG*/
    ); /*verilator public_module*/
 
    parameter int someOtherInt /* verilator public_flat_rd*/ = 7;
+   parameter int yetAnotherInt /* verilator public_flat_rd*/ = 9;
+   parameter int stillAnotherInt /* verilator public_flat_rd*/ = 17;
 
    integer status;
 

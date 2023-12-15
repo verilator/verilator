@@ -68,12 +68,29 @@
     }
 
 extern "C" {
+int count_params(TestVpiHandle& handle, int expectedParams) {
+    TestVpiHandle it = vpi_iterate(vpiParameter, handle);
+    CHECK_RESULT_NZ(it)
+
+    int params = 0;
+    while (true) {
+        TestVpiHandle handle = vpi_scan(it);
+        if (handle == NULL) break;
+        params++;
+    }
+    it.freed();
+    CHECK_RESULT(params, expectedParams);
+
+    return 0;
+}
+
 int mon_check() {
 #ifdef TEST_VERBOSE
     printf("-mon_check()\n");
 #endif
 
     TestVpiHandle it = vpi_iterate(vpiModule, NULL);
+    CHECK_RESULT_NZ(it)
 
     bool found_t = false;
     while (true) {
@@ -87,10 +104,11 @@ int mon_check() {
     CHECK_RESULT_NZ(found_t);
 
     it = vpi_iterate(vpiInstance, NULL);
+    CHECK_RESULT_NZ(it)
 
-    found_t = false;
-    bool found_somepackage = false;
-    bool found_dollar_unit = false;
+    TestVpiHandle pkgHandle = NULL;
+    TestVpiHandle tHandle = NULL;
+    TestVpiHandle unitHandle = NULL;
     while (true) {
         TestVpiHandle handle = vpi_scan(it);
         if (handle == NULL) break;
@@ -98,24 +116,31 @@ int mon_check() {
         const char* fullname = vpi_get_str(vpiFullName, handle);
         if (!strcmp("t", name)) {
             CHECK_RESULT_CSTR("t", fullname)
-            CHECK_RESULT_Z(found_t)
-            found_t = true;
+            CHECK_RESULT_Z(tHandle)
+            tHandle = handle;
+            handle.freed();
         } else if (!strcmp("somepackage", name)) {
             CHECK_RESULT_CSTR("somepackage::", fullname)
-            CHECK_RESULT_Z(found_somepackage)
-            found_somepackage = true;
+            CHECK_RESULT_Z(pkgHandle)
+            pkgHandle = handle;
+            handle.freed();
         } else if (!strcmp("$unit", name)) {
             CHECK_RESULT_CSTR("$unit::", fullname)
-            CHECK_RESULT_Z(found_dollar_unit)
-            found_dollar_unit = true;
+            CHECK_RESULT_Z(unitHandle)
+            unitHandle = handle;
+            handle.freed();
         } else {
             CHECK_RESULT_NZ(0)
         }
     }
     it.freed();
-    CHECK_RESULT_NZ(found_t)
-    CHECK_RESULT_NZ(found_somepackage)
-    CHECK_RESULT_NZ(found_dollar_unit)
+    CHECK_RESULT_NZ(pkgHandle)
+    CHECK_RESULT_NZ(tHandle)
+    CHECK_RESULT_NZ(unitHandle)
+
+    CHECK_RESULT_Z(count_params(unitHandle, 1));
+    CHECK_RESULT_Z(count_params(pkgHandle, 2));
+    CHECK_RESULT_Z(count_params(tHandle, 3));
 
     return 0;  // Ok
 }
