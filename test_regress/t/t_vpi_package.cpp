@@ -148,13 +148,13 @@ int mon_check() {
     CHECK_RESULT_Z(count_params(pkgHandle, 2));
     CHECK_RESULT_Z(count_params(tHandle, 3));
 
-    CHECK_RESULT_Z(check_handle((PLI_BYTE8*)"someOtherInt", tHandle))
-    CHECK_RESULT_Z(check_handle((PLI_BYTE8*)"t.someOtherInt", NULL))
-    CHECK_RESULT_Z(check_handle((PLI_BYTE8*)"someInt", pkgHandle))
-    CHECK_RESULT_Z(check_handle((PLI_BYTE8*)"somepackage::someInt", NULL))
-    CHECK_RESULT_Z(check_handle((PLI_BYTE8*)"dollarUnitInt", unitHandle))
-    CHECK_RESULT_Z(check_handle((PLI_BYTE8*)"$unit::dollarUnitInt", NULL))
-    CHECK_RESULT_Z(check_handle((PLI_BYTE8*)"somepackage", NULL))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("someOtherInt"), tHandle))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("t.someOtherInt"), NULL))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("someInt"), pkgHandle))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("somepackage::someInt"), NULL))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("dollarUnitInt"), unitHandle))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("$unit::dollarUnitInt"), NULL))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("somepackage"), NULL))
 
     return 0;  // Ok
 }
