@@ -2141,13 +2141,13 @@ List Of Warnings
 
    .. code-block:: sv
       :linenos:
-      :emphasize-lines: 3
+      :emphasize-lines: 5
 
          module dut
             #(parameter int MY_PARAM = 0);
            reg [7:0] data;
            always @* begin
-             data = {MY_PARAM{1'b0}}; //<--- WARNING
+             data = {MY_PARAM{1'b1}}; //<--- WARNING
            end
          endmodule
 
@@ -2165,15 +2165,12 @@ List Of Warnings
 
    .. code-block:: sv
       :linenos:
-      :emphasize-lines: 3
+      :emphasize-lines: 2
 
          module dut
-            #(parameter int MY_PARAM = 0);
+            #(parameter int MY_PARAM = 1); //<--- REPAIRED
            reg [7:0] data;
            always @* begin
-             if (MY_PARAM > 0)
-               // verilator lint_off ZEROREPL
-               data = {MY_PARAM{1'b0}}; //<--- WARNING
-               // verilator lint_on ZEROREPL
+             data = {MY_PARAM{1'b1}};
            end
          endmodule
