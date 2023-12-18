@@ -2135,7 +2135,7 @@ List Of Warnings
 .. option:: ZEROREPL
 
    Warns that zero is used as the replication value in the replication
-   operator.
+   operator. This is specified as an error by IEEE 1800-2017 11.4.12.1.
 
    Faulty example:
 
