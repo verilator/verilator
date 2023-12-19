@@ -520,6 +520,7 @@ static inline void VL_ASSIGNBIT_WO(int bit, WDataOutP owp) VL_MT_SAFE {
             const uint32_t msb_data = VL_SEL_IWII((obits) + 1, (rwp).data(), lsb, (obits)-lsb); \
             *chunkp = msb_data & VL_MASK_E((obits)-lsb); \
         } \
+        _butemp.set(0, *(rwp).data() & 1); \
         (svar).write(_butemp); \
     }
 
