@@ -793,9 +793,8 @@ class EmitCTrace final : EmitCFunc {
             typesFp()->puts("};\n");
             typesFp()->puts("tracep->declDTypeEnum(" + cvtToStr(enumNum) + ", \""
                             + nodep->prettyName() + "\", " + cvtToStr(nvals) + ", "
-                            + cvtToStr(nodep->widthMin()) + ", "
-                            + protect("__VenumItemNames") + ", "
-                            + protect("__VenumItemValues") + ");\n");
+                            + cvtToStr(nodep->widthMin()) + ", " + protect("__VenumItemNames")
+                            + ", " + protect("__VenumItemValues") + ");\n");
             typesFp()->puts("}\n");
             m_typeSplitSize += 3;
         }
