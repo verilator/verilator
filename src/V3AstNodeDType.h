@@ -811,6 +811,7 @@ public:
     TableMap& tableMap() { return m_tableMap; }
     const TableMap& tableMap() const { return m_tableMap; }
 };
+
 class AstIfaceRefDType final : public AstNodeDType {
     // Reference to an interface, either for a port, or inside parent cell
     // @astgen op1 := paramsp : List[AstPin]
@@ -846,6 +847,7 @@ public:
         addParamsp(paramsp);
     }
     ASTGEN_MEMBERS_AstIfaceRefDType;
+
     // METHODS
     void dump(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;

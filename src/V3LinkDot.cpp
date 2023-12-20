@@ -919,6 +919,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             UINFO(5, "Module not under any CELL or top - dead module: " << nodep << endl);
         }
     }
+
     void visit(AstClass* nodep) override {
         UASSERT_OBJ(m_curSymp, nodep, "Class not under module/package/$unit");
         UINFO(8, "   " << nodep << endl);
@@ -3537,61 +3538,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_ds.m_dotSymp = m_curSymp = m_modSymp = m_statep->getNodeSym(nodep);
             m_modp = nodep;
             int next = 0;
-            for (AstClassExtends* cextp = nodep->extendsp(); cextp;
-                 cextp = VN_AS(cextp->nextp(), ClassExtends)) {
-                // Replace abstract reference with hard pointer
-                // Will need later resolution when deal with parameters
-                if (++next == 2 && !nodep->isInterfaceClass() && !cextp->isImplements()) {
-                    cextp->v3error("Multiple inheritance illegal on non-interface classes"
-                                   " (IEEE 1800-2017 8.13)");
-                }
-                iterate(cextp);
-                if (m_statep->forPrimary()) {
-                    if (cextp->parameterized()) {
-                        // Parameters in extends statement.
-                        // The class can't be resolved in the current pass.
-                        m_extendsParam.insert(nodep);
-                        m_insideClassExtParam = true;
-                    }
-                    if (AstClassRefDType* const classRefp
-                        = VN_CAST(cextp->childDTypep(), ClassRefDType)) {
-                        AstClass* const classp = classRefp->classp();
-                        if (classp != nodep) iterate(classp);
-                        if (m_extendsParam.find(classp) != m_extendsParam.end()) {
-                            // One of its super classes has parameters in extends statement.
-                            // Some links may not be resolved in the first pass.
-                            m_extendsParam.insert(nodep);
-                            m_insideClassExtParam = true;
-                        }
-                    }
-                }
-
-                if (AstClass* const baseClassp = cextp->classOrNullp()) {
-                    // Already converted. Update symbol table to link unlinked members.
-                    // Base class has to be visited in a case if its extends statement
-                    // needs to be handled. Recursive inheritance was already checked.
-                    // Must be here instead of in LinkDotParam to handle
-                    // "class (type T) extends T".
-                    if (baseClassp == nodep) {
-                        cextp->v3error("Attempting to extend class " << nodep->prettyNameQ()
-                                                                     << " from itself");
-                    } else if (cextp->isImplements() && !baseClassp->isInterfaceClass()) {
-                        cextp->v3error("Attempting to implement from non-interface class "
-                                       << baseClassp->prettyNameQ() << '\n'
-                                       << "... Suggest use 'extends'");
-                    } else if (!cextp->isImplements() && !nodep->isInterfaceClass()
-                               && baseClassp->isInterfaceClass()) {
-                        cextp->v3error("Attempting to extend from interface class "
-                                       << baseClassp->prettyNameQ() << '\n'
-                                       << "... Suggest use 'implements'");
-                    }
-                    baseClassp->isExtended(true);
-                    nodep->isExtended(true);
-                    iterate(baseClassp);
-                    importSymbolsFromExtended(nodep, cextp);
-                    continue;
-                }
-            }
             m_ds.m_dotSymp = m_curSymp;
 
             iterateChildren(nodep);
