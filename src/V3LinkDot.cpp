@@ -3537,7 +3537,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
             // Until overridden by a SCOPE
             m_ds.m_dotSymp = m_curSymp = m_modSymp = m_statep->getNodeSym(nodep);
             m_modp = nodep;
-            int next = 0;
             m_ds.m_dotSymp = m_curSymp;
 
             iterateChildren(nodep);
