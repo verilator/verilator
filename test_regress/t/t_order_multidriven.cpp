@@ -7,7 +7,7 @@
 #include "verilated.h"
 #include "verilated_vcd_c.h"
 
-#include "Vt_order_multidriven.h"
+#include VM_PREFIX_INCLUDE
 
 double sc_time_stamp() { return 0; }
 

@@ -5,7 +5,7 @@
 
 #include <verilated.h>
 
-#include "Vt_mem_slot.h"
+#include VM_PREFIX_INCLUDE
 
 #include <cstdlib>
 

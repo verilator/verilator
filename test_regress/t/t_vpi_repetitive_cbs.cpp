@@ -20,7 +20,7 @@
 #include "verilated.h"
 #include "verilated_vpi.h"
 
-#include "Vt_vpi_repetitive_cbs.h"
+#include VM_PREFIX_INCLUDE
 #endif
 
 #include <cstdio>

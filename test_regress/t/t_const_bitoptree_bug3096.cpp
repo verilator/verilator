@@ -9,7 +9,7 @@
 //
 //*************************************************************************
 
-#include <Vt_const_bitoptree_bug3096.h>
+#include VM_PREFIX_INCLUDE
 #include <cassert>
 #include <iostream>
 

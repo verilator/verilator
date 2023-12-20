@@ -8,7 +8,7 @@
 
 #include <verilated.h>
 
-#include "Vt_order_quad.h"
+#include VM_PREFIX_INCLUDE
 
 //======================================================================
 

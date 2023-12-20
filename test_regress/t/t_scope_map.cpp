@@ -10,7 +10,7 @@
 #include <verilated_syms.h>
 #include <verilated_vcd_c.h>
 
-#include "Vt_scope_map.h"
+#include VM_PREFIX_INCLUDE
 
 #include <map>
 #include <string>

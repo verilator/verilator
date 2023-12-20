@@ -5,7 +5,7 @@
 
 #include <verilated.h>
 
-#include "Vt_math_imm2.h"
+#include VM_PREFIX_INCLUDE
 
 double sc_time_stamp() { return 0; }
 

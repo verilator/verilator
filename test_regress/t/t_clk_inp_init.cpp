@@ -2,11 +2,7 @@
 // any use, without warranty, 2020 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-// Test defines
-// Generated header
-#include "Vt_clk_inp_init.h"
-// General headers
-#include "verilated.h"
+#include VM_PREFIX_INCLUDE
 
 void oneTest(int argc, char** argv, int seed) {
     uint64_t sim_time = 1000;
