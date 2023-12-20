@@ -47,7 +47,7 @@ Verilator 5.019 devel
 * Fix compilers seeing empty input due to file system races (#4708). [Flavien Solt]
 * Fix shift of > 32-bit number (#4719). [Flavien Solt]
 * Fix Windows include gates in filesystem Flush implementation. (#4720). [William D. Jones]
-* Fix 0**0 with wide numbers (#4721). [Flavien Solt]
+* Fix power operator with wide numbers and constants (#4721) (#4763). [Flavien Solt]
 * Fix parameter passing to ports (#4723). [Ryszard Rozak, Antmicro Ltd.]
 * Fix block names of nested do..while loops (#4728). [Ryszard Rozak, Antmicro Ltd.]
 

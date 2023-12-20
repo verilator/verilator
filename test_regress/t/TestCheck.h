@@ -12,6 +12,8 @@
 #ifndef TEST_CHECK_H_
 #define TEST_CHECK_H_
 
+#include <iostream>
+
 extern int errors;
 
 #ifdef TEST_VERBOSE

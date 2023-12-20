@@ -482,6 +482,11 @@ V3Number& V3Number::setAllBitsXRemoved() {
         }
     }
 }
+V3Number& V3Number::setValue1() {
+    m_data.num()[0] = {1, 0};
+    for (int i = 1; i < words(); i++) m_data.num()[i] = {0, 0};
+    return *this;
+}
 
 V3Number& V3Number::setMask(int nbits) {
     setZero();
@@ -2139,18 +2144,18 @@ V3Number& V3Number::opPow(const V3Number& lhs, const V3Number& rhs, bool lsign, 
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
-    if (rhs.isEqZero()) return setQuad(1);  // Overrides lhs 0 -> return 0
+    if (rhs.isEqZero()) return setValue1();  // Overrides lhs 0 -> return 1
     // We may want to special case when the lhs is 2, so we can get larger outputs
     if (rsign && rhs.isNegative()) {
         if (lhs.isEqZero()) {
             return setAllBitsXRemoved();
         } else if (lhs.isEqOne()) {
-            return setQuad(1);
+            return setValue1();
         } else if (lsign && lhs.isEqAllOnes()) {
             if (rhs.bitIs1(0)) {
                 return setAllBits1();  // -1^odd=-1
             } else {
-                return setQuad(1);  // -1^even=1
+                return setValue1();  // -1^even=1
             }
         }
         return setZero();

@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2005 by Wilson Snyder.
+// any use, without warranty, 2023 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
 `define STRINGIFY(x) `"x`"
@@ -235,6 +235,11 @@ module t (/*AUTOARG*/
          $write("- cyc%0d: %0x**%0x = sh %0x\n", cyc, a, b, shifted);
 `endif
          // Constant versions
+         `checkh(67'h0 ** 21'h0, 67'h1);
+         `checkh(67'h1 ** 21'h0, 67'h1);
+         `checkh(67'h2 ** 21'h0, 67'h1);
+         `checkh(67'h0 ** 21'h1, 67'h0);
+         `checkh(67'h0 ** 21'h4, 67'h0);
          `checkh(67'h1 ** 21'h31, 67'h1);
          `checkh(67'h2 ** 21'h10, 67'h10000);
          `checkh(67'd10 ** 21'h3, 67'h3e8);
