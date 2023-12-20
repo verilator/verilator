@@ -414,7 +414,9 @@ class DynScopeVisitor final : public VNVisitor {
     void visit(AstAssignDly* nodep) override {
         if (m_procp && !nodep->user2()  // Unhandled AssignDly in function/task
             && nodep->lhsp()->exists(  // And writes to a local variable
-                [](AstVarRef* refp) { return refp->varp()->isFuncLocal(); })) {
+                [](AstVarRef* refp) {
+                    return refp->access().isWriteOrRW() && refp->varp()->isFuncLocal();
+                })) {
             nodep->user2(true);
             // Put it in a fork to prevent lifetime issues with the local
             AstFork* const forkp = new AstFork{nodep->fileline(), "", nullptr};
