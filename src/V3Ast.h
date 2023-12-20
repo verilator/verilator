@@ -1472,10 +1472,10 @@ class VSelfPointerText final {
 public:
     // CONSTRUCTORS
     class Empty {};  // for creator type-overload selection
-    VSelfPointerText(Empty)
+    explicit VSelfPointerText(Empty)
         : m_strp{s_emptyp} {}
     class This {};  // for creator type-overload selection
-    VSelfPointerText(This)
+    explicit VSelfPointerText(This)
         : m_strp{s_thisp} {}
     VSelfPointerText(This, const string& field)
         : m_strp{std::make_shared<const string>("this->" + field)} {}

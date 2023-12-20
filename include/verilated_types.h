@@ -130,7 +130,7 @@ public:
     VlProcess()
         : m_state{RUNNING} {}
     // Construct child process of parent
-    VlProcess(VlProcessRef parentp)
+    explicit VlProcess(VlProcessRef parentp)
         : m_state{RUNNING}
         , m_parentp{parentp} {
         m_parentp->attach(this);

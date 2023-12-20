@@ -1288,8 +1288,8 @@ void schedule(AstNetlist* netlistp) {
             if (it != actTimingDomains.end()) out = it->second;
             if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggeredAct);
             if (vscp->varp()->sensIfacep()) {
-                const auto it = vifTriggeredAct.find(vscp->varp()->sensIfacep());
-                if (it != vifTriggeredAct.end()) out.push_back(it->second);
+                const auto sit = vifTriggeredAct.find(vscp->varp()->sensIfacep());
+                if (sit != vifTriggeredAct.end()) out.push_back(sit->second);
             }
         });
     splitCheck(actFuncp);
@@ -1325,8 +1325,8 @@ void schedule(AstNetlist* netlistp) {
                 if (it != timingDomains.end()) out = it->second;
                 if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggered);
                 if (vscp->varp()->sensIfacep()) {
-                    const auto it = vifTriggered.find(vscp->varp()->sensIfacep());
-                    if (it != vifTriggered.end()) out.push_back(it->second);
+                    const auto sit = vifTriggered.find(vscp->varp()->sensIfacep());
+                    if (sit != vifTriggered.end()) out.push_back(sit->second);
                 }
             });
 

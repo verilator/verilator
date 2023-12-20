@@ -3287,7 +3287,7 @@ public:
 };
 class AstTracePopPrefix final : public AstNodeStmt {
 public:
-    AstTracePopPrefix(FileLine* fl)
+    explicit AstTracePopPrefix(FileLine* fl)
         : ASTGEN_SUPER_TracePopPrefix(fl) {}
     ASTGEN_MEMBERS_AstTracePopPrefix;
     bool same(const AstNode* samep) const override { return false; }
