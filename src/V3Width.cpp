@@ -2941,7 +2941,7 @@ class WidthVisitor final : public VNVisitor {
             methodCallQueue(nodep, adtypep);
         } else if (AstClassRefDType* const adtypep = VN_CAST(fromDtp, ClassRefDType)) {
             methodCallClass(nodep, adtypep);
-        } else if(AstIfaceRefDType* const adtypep = VN_CAST(fromDtp, IfaceRefDType)) {
+        } else if (AstIfaceRefDType* const adtypep = VN_CAST(fromDtp, IfaceRefDType)) {
             methodCallIfaceRef(nodep, adtypep);
         } else if (AstUnpackArrayDType* const adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
             methodCallUnpack(nodep, adtypep);
@@ -3552,11 +3552,11 @@ class WidthVisitor final : public VNVisitor {
                 nodep->classOrPackagep(ifacep);
                 if (VN_IS(ftaskp, Task)) nodep->dtypeSetVoid();
                 processFTaskRefArgs(nodep);
+            }
+            return;
         }
-        return;
-      }
-      nodep->v3error( "Member reference from interface to " << nodep->prettyNameQ()
-          << " is not referencing a valid task or function ");
+        nodep->v3error("Member reference from interface to "
+                       << nodep->prettyNameQ() << " is not referencing a valid task or function ");
     }
     void methodCallClass(AstMethodCall* nodep, AstClassRefDType* adtypep) {
         // No need to width-resolve the class, as it was done when we did the child
