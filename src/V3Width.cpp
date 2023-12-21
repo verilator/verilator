@@ -3555,7 +3555,9 @@ class WidthVisitor final : public VNVisitor {
         }
         return;
       }
-      nodep->dtypeSetSigned32();  // Guess on error
+      nodep->v3error( "" << nodep->prettyNameQ() 
+          << " is not referencing a valid task or function "
+          << nodep->fileline());
     }
     void methodCallClass(AstMethodCall* nodep, AstClassRefDType* adtypep) {
         // No need to width-resolve the class, as it was done when we did the child

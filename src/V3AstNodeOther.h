@@ -2311,9 +2311,6 @@ public:
     // get false warnings if we enable this
     string verilogKwd() const override { return "interface"; }
     bool timescaleMatters() const override { return false; }
-    // JMC add AstNode
-    AstNode* membersp() const { return stmtsp(); }
-    void addMembersp(AstNode* nodep) { addStmtsp(nodep); }
 };
 class AstModule final : public AstNodeModule {
     // A module declaration
