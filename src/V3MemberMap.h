@@ -74,6 +74,16 @@ private:
                     if (AstClass::isCacheableChild(itemp)) memberInsert(mmapr, itemp);
                 }
             }
+        } else if (const AstIface* const anodep = VN_CAST(nodep, Iface)) {
+            for (AstNode* itemp = anodep->stmtsp(); itemp; itemp = itemp->nextp()) {
+                if (const AstScope* const scopep = VN_CAST(itemp, Scope)) {
+                    for (AstNode* blockp = scopep->blocksp(); blockp; blockp = blockp->nextp()) {
+                        memberInsert(mmapr, blockp);
+                    }
+                } else {
+                    memberInsert(mmapr, itemp);
+                }
+            }
         } else if (const AstNodeUOrStructDType* const anodep
                    = VN_CAST(nodep, NodeUOrStructDType)) {
             for (AstNode* itemp = anodep->membersp(); itemp; itemp = itemp->nextp()) {
