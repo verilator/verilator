@@ -3555,7 +3555,7 @@ class WidthVisitor final : public VNVisitor {
         }
         return;
       }
-      nodep->v3error( "" << nodep->prettyNameQ() 
+      nodep->v3error( "" << nodep->prettyNameQ()
           << " is not referencing a valid task or function "
           << nodep->fileline());
     }

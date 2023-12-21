@@ -13,8 +13,8 @@ class DriverStim;
 
     v_if.reset();
     forever begin
-      x++; 
-      y++; 
+      x++;
+      y++;
 
       $display("[DriverStim] initiating calculation, x: %8b y: %8b", x, y);
       v_if.initiate_calculation(x, y);
@@ -57,7 +57,7 @@ module example(
   input  logic rstn,
   input  logic[7:0] x,
   input  logic[7:0] y,
-  output logic[8:0] z 
+  output logic[8:0] z
   );
 
   // 8 bit full adder
