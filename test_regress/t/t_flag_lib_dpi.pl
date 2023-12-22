@@ -24,7 +24,7 @@ run(logfile => "$Self->{obj_dir}/vlt_compile.log",
 
 run(logfile => "$Self->{obj_dir}/cxx_compile.log",
     cmd => ["cd $Self->{obj_dir}"
-            . " && $ENV{CXX} -o Vt_flag_lib_dpi libVt_flag_lib_dpi.a libverilated.a"
+            . " && $ENV{CXX} -o Vt_flag_lib_dpi libVt_flag_lib_dpi.a libverilated.a -lpthread -latomic"
             . " && ./Vt_flag_lib_dpi"],
     check_finished => 1,
     );
