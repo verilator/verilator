@@ -291,7 +291,7 @@ class DeadVisitor final : public VNVisitor {
             checkAll(nodep);
             // Has to be direct assignment without any EXTRACTing.
             AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef);
-            if (varrefp && !m_sideEffect
+            if (varrefp && !m_sideEffect && v3Global.opt.fDeadAssigns()
                 && varrefp->varScopep()) {  // For simplicity, we only remove post-scoping
                 m_assignMap.emplace(varrefp->varScopep(), nodep);
                 checkAll(varrefp);  // Must track reference to dtype()
@@ -387,7 +387,7 @@ class DeadVisitor final : public VNVisitor {
 
     void deadCheckCells() {
         for (AstCell* cellp : m_cellsp) {
-            if (cellp->user1() == 0 && !cellp->modp()->stmtsp()) {
+            if (cellp->user1() == 0 && !cellp->modp()->stmtsp() && v3Global.opt.fDeadCells()) {
                 cellp->modp()->user1Inc(-1);
                 deleting(cellp);
             }

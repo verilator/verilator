@@ -1215,6 +1215,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-fdfg-pre-inline", FOnOff, &m_fDfgPreInline);
     DECL_OPTION("-fdfg-post-inline", FOnOff, &m_fDfgPostInline);
+    DECL_OPTION("-fdead-assigns", FOnOff, &m_fDeadAssigns);
+    DECL_OPTION("-fdead-cells", FOnOff, &m_fDeadCells);
     DECL_OPTION("-fexpand", FOnOff, &m_fExpand);
     DECL_OPTION("-fgate", FOnOff, &m_fGate);
     DECL_OPTION("-finline", FOnOff, &m_fInline);
@@ -1953,6 +1955,8 @@ void V3Options::optimize(int level) {
     m_fDedupe = flag;
     m_fDfgPreInline = flag;
     m_fDfgPostInline = flag;
+    m_fDeadAssigns = flag;
+    m_fDeadCells = flag;
     m_fExpand = flag;
     m_fGate = flag;
     m_fInline = flag;
