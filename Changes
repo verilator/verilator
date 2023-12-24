@@ -50,6 +50,7 @@ Verilator 5.019 devel
 * Fix power operator with wide numbers and constants (#4721) (#4763). [Flavien Solt]
 * Fix parameter passing to ports (#4723). [Ryszard Rozak, Antmicro Ltd.]
 * Fix block names of nested do..while loops (#4728). [Ryszard Rozak, Antmicro Ltd.]
+* Fix $finish twice to no longer exit (#4757). [Tim Hutt]
 
 
 Verilator 5.018 2023-10-30

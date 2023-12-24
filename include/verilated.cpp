@@ -107,16 +107,9 @@ thread_local Verilated::ThreadLocal Verilated::t_s;
 
 #ifndef VL_USER_FINISH  ///< Define this to override the vl_finish function
 void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
-    if (false && hier) {}
+    if (false && hier) {}  // Unused argument
     VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
         "- %s:%d: Verilog $finish\n", filename, linenum);
-    if (Verilated::threadContextp()->gotFinish()) {
-        VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
-            "- %s:%d: Second verilog $finish, exiting\n", filename, linenum);
-        Verilated::runFlushCallbacks();
-        Verilated::runExitCallbacks();
-        std::exit(0);
-    }
     Verilated::threadContextp()->gotFinish(true);
 }
 #endif
