@@ -11,6 +11,7 @@ module t (/*AUTOARG*/);
    always @(i, j) $display("[%0t] B %0d %0d", $time, i, j);
 
    // See issue #4237
+
    initial begin
       for(i = 1; i < 3 ; i = i + 1) begin
          $display("");
