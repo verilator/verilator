@@ -743,6 +743,7 @@ libext
 libgoogle
 libsystemc
 libtcmalloc
+libverilated
 linkers
 linter
 linux
@@ -913,6 +914,7 @@ sVerilator
 sawatzke
 sc
 scalared
+sccache
 sccanf
 seg
 setuphold

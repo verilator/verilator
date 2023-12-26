@@ -395,7 +395,7 @@ How do I get faster build times?
 * Use a recent compiler.  Newer compilers tend to be faster.
 
 * Compile in parallel on many machines and use caching; see the web for the
-  ccache, distcc, and icecream packages. ccache will skip GCC runs between
+  ccache, sccache, distcc, or icecream packages. ccache will skip GCC runs between
   identical source builds, even across different users.  If ccache was
   installed when Verilator was built, it is used, or see OBJCACHE
   environment variable to override this. Also see the

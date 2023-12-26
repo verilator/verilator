@@ -29,7 +29,7 @@ associated programs.
 .. option:: OBJCACHE
 
    Optionally specifies a caching or distribution program to place in front
-   of all runs of the C++ compiler.  For example, "ccache".  If using
+   of all runs of the C++ compiler.  For example, "ccache" or "sccache".  If using
    :command:`distcc` or :command:`icecc`/:command:`icecream`, they would
    generally be run under :command:`ccache`; see the documentation for
    those programs.  If OBJCACHE is not set, and at configure time ccache
