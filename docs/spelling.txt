@@ -585,6 +585,7 @@ desassign
 destructor
 detections
 dev
+devcontainer
 devel
 dir
 displayb
@@ -1037,6 +1038,7 @@ vlt
 vltstd
 vluint
 vpi
+vpiConstType
 vpiDefName
 vpiInstance
 vpiLeftRange

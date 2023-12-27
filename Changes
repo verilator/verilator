@@ -19,14 +19,26 @@ Verilator 5.019 devel
 
 **Minor:**
 
+* Add devcontainer support (#4748). [Stefan Wallentowitz]
 * Support `iff` in sensitivity list (#1482) (#4626). [Krzysztof Bieganski, Antmicro Ltd.]
+* Support parameterized virtual interfaces (#4047) (#4743). [Ryszard Rozak, Antmicro Ltd.]
+* Support --timing triggers for virtual interfaces (#4673). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support ccache when compiling Verilator with CMake (#4678). [Anthony Donlon]
 * Support passing constraints to --xml-only output (still otherwise unsupported) (#4683). [Shahid Ikram]
 * Support node memory usage information in --stats (#4684). [Geza Lore]
+* Support vpiConstType in vpi_get() (#4761). [Todd Strader]
 * Support vpi_iterate on packages with vpiInstance (#4726). [Todd Strader]
+* Support multiple parameters in virtual interfaces (#4745). [Ryszard Rozak, Antmicro Ltd.]
+* Support user C/C++ code in final archive, and make a lib{model}.a (#4749) (#4754). [Fan Shupei]
+* Support inside operator on unpacked arrays and queues (#4751). [Ryszard Rozak, Antmicro Ltd.]
+* Support VPI parameter iteration (#4765). [Todd Strader]
+* Support packages in vpi_handle_by_name() (#4768). [Todd Strader]
+* Support invoking interface methods on virtual interface variables (#4774) (#4775). [Jordan McConnon]
 * Remove deprecated options (#4663). [Geza Lore]
 * Optimize timing-delayed queue (#4584). [qrqiuren]
 * Optimize substitute optimization memory usage (#4687). [Geza Lore]
+* Optimize wide primitive operations with -Oz (#4733). [Geza Lore]
+* Optimize V3Premit performance etc. (#4736). [Geza Lore]
 * Fix VPI TOP level variable iteration (#3919) (#4618). [Marlon James]
 * Fix display with no % printing assoc array (#4376). [Alex Solomatnikov]
 * Fix scheduling of external force signals (#4577) (#4668). [Geza Lore]
@@ -34,10 +46,12 @@ Verilator 5.019 devel
 * Fix linking parameterized hierarchical blocks and recursive hierarchical blocks (#4654). [Anthony Donlon]
 * Fix identifiers that end with '_' on Windows (#4655). [Anthony Donlon]
 * Fix 'for' loop with outside variable reference (#4660). [David Harris]
+* Fix tracing FST enums (#4661) (#4756). [Todd Strader]
 * Fix interface parameters used in loop generate constructs (#4664) (#4665). [Anthony Donlon]
+* Fix C++20 compilation errors (#4670).
+* Fix deadlocks in error handler (#4672). [Mariusz Glebocki, Antmicro Ltd.]
 * Fix MingW compilation (#4675). [David Ledger]
 * Fix trace when using SystemC with certain configurations (#4676). [Anthony Donlon]
-* Fix C++20 compilation errors (#4670).
 * Fix range access to classes depending on parameter resolution (#4681). [Krzysztof Boroński]
 * Fix select into constant And/Or/Xor pattern (#4689). [Geza Lore]
 * Fix access type of function arguments (#4692) (#4694). [Ryszard Rozak, Antmicro Ltd.]
@@ -50,7 +64,11 @@ Verilator 5.019 devel
 * Fix power operator with wide numbers and constants (#4721) (#4763). [Flavien Solt]
 * Fix parameter passing to ports (#4723). [Ryszard Rozak, Antmicro Ltd.]
 * Fix block names of nested do..while loops (#4728). [Ryszard Rozak, Antmicro Ltd.]
+* Fix class name in error on 'new' on virtual class (#4739). [Ryszard Rozak, Antmicro Ltd.]
+* Fix typedefs pointing to parameterized classes (#4747). [Ryszard Rozak, Antmicro Ltd.]
 * Fix $finish twice to no longer exit (#4757). [Tim Hutt]
+* Fix dynamic NBA conditions (#4773). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix `V3Fork` stage to run only if `--timing` is set (#4778). [Krzysztof Bieganski, Antmicro Ltd.]
 
 
 Verilator 5.018 2023-10-30
