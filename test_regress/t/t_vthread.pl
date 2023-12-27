@@ -11,6 +11,8 @@ use IO::File;
 
 scenarios(vlt => 1);
 
+$Self->{sanitize} = 0;  # GCC takes too long otherwise
+
 sub gen {
     my $filename = shift;
     my $n = shift;
