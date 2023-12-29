@@ -1035,11 +1035,11 @@ Coding Conventions
 ==================
 
 
-Compiler Version and C++11
+Compiler Version and C++14
 --------------------------
 
-Verilator requires C11. Verilator does not require any newer versions, but
-is maintained to build successfully with C14/C17/C20.
+Verilator requires C14. Verilator does not require any newer versions, but
+is maintained to build successfully with C17/C20.
 
 
 Indentation and Naming Style
