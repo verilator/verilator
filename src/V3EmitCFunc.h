@@ -767,7 +767,13 @@ public:
             }
         }
         putbs(", ");
+        puts("(vlSymsp->_vm_contextp__->");
+        if (VN_IS(nodep, ReadMem))
+            puts("readMemPathPrefix() + ");
+        else
+            puts("writeMemPathPrefix() + ");
         emitCvtPackStr(nodep->filenamep());
+        puts(")");
         putbs(", ");
         {
             const bool need_ptr = !VN_IS(nodep->memp()->dtypep(), AssocArrayDType);
