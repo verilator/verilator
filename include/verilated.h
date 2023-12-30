@@ -418,6 +418,10 @@ protected:
     // List of free descriptors in the MCT region [4, 32)
     std::vector<IData> m_fdFreeMct VL_GUARDED_BY(m_fdMutex);
 
+    // optional prefix to $readmem/$writemem path
+    std::string m_readMemPathPrefix;
+    std::string m_writeMemPathPrefix;
+
     // Magic to check for bad construction
     static constexpr uint64_t MAGIC = 0xC35F9A6E5298EE6EULL;  // SHA256 "VerilatedContext"
     uint64_t m_magic = MAGIC;
@@ -559,6 +563,14 @@ public:
     /// dpiImport/Export context.  This function may change in future
     /// releases - contact the authors before production use.
     void scopesDump() const VL_MT_SAFE;
+
+    // get/set path prefix for $readmem
+    std::string readMemPathPrefix() const VL_MT_SAFE;
+    void readMemPathPrefix(const std::string &prefix) VL_MT_SAFE;
+
+    // get/set path prefix for $writemem
+    std::string writeMemPathPrefix() const VL_MT_SAFE;
+    void writeMemPathPrefix(const std::string &prefix) VL_MT_SAFE;
 
     // METHODS - public but for internal use only
 

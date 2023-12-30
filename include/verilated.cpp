@@ -2837,6 +2837,29 @@ const VerilatedScopeNameMap* VerilatedContext::scopeNameMap() VL_MT_SAFE {
 }
 
 //======================================================================
+// VerilatedContext:: Methods - read/writeMemPathPrefix
+
+std::string VerilatedContext::readMemPathPrefix() const VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_readMemPathPrefix;
+}
+
+void VerilatedContext::readMemPathPrefix(const std::string &prefix) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    m_readMemPathPrefix = prefix;
+}
+
+std::string VerilatedContext::writeMemPathPrefix() const VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_writeMemPathPrefix;
+}
+
+void VerilatedContext::writeMemPathPrefix(const std::string &prefix) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    m_writeMemPathPrefix = prefix;
+}
+
+//======================================================================
 // VerilatedSyms:: Methods
 
 VerilatedSyms::VerilatedSyms(VerilatedContext* contextp)
