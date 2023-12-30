@@ -1032,6 +1032,7 @@ static inline QData VL_MULS_QQQ(int lbits, QData lhs, QData rhs) VL_PURE {
 static inline WDataOutP VL_MULS_WWW(int lbits, WDataOutP owp, WDataInP const lwp,
                                     WDataInP const rwp) VL_MT_SAFE {
     const int words = VL_WORDS_I(lbits);
+    VL_DEBUG_IFDEF(assert(words <= VL_MULS_MAX_WORDS););
     // cppcheck-suppress variableScope
     WData lwstore[VL_MULS_MAX_WORDS];  // Fixed size, as MSVC++ doesn't allow [words] here
     // cppcheck-suppress variableScope
@@ -1102,21 +1103,22 @@ static inline QData VL_MODDIVS_QQQ(int lbits, QData lhs, QData rhs) VL_PURE {
 
 static inline WDataOutP VL_DIVS_WWW(int lbits, WDataOutP owp, WDataInP const lwp,
                                     WDataInP const rwp) VL_MT_SAFE {
-    const int words = VL_WORDS_I(lbits);
-    const EData lsign = VL_SIGN_E(lbits, lwp[words - 1]);
-    const EData rsign = VL_SIGN_E(lbits, rwp[words - 1]);
+    const int lwords = VL_WORDS_I(lbits);
+    const EData lsign = VL_SIGN_E(lbits, lwp[lwords - 1]);
+    const EData rsign = VL_SIGN_E(lbits, rwp[lwords - 1]);
+    VL_DEBUG_IFDEF(assert(lwords <= VL_MULS_MAX_WORDS););
     // cppcheck-suppress variableScope
     WData lwstore[VL_MULS_MAX_WORDS];  // Fixed size, as MSVC++ doesn't allow [words] here
     // cppcheck-suppress variableScope
     WData rwstore[VL_MULS_MAX_WORDS];
     WDataInP ltup = lwp;
     WDataInP rtup = rwp;
-    if (lsign) ltup = _vl_clean_inplace_w(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), lwstore, lwp));
-    if (rsign) rtup = _vl_clean_inplace_w(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), rwstore, rwp));
+    if (lsign) ltup = _vl_clean_inplace_w(lbits, VL_NEGATE_W(lwords, lwstore, lwp));
+    if (rsign) rtup = _vl_clean_inplace_w(lbits, VL_NEGATE_W(lwords, rwstore, rwp));
     if ((lsign && !rsign) || (!lsign && rsign)) {
         WData qNoSign[VL_MULS_MAX_WORDS];
         VL_DIV_WWW(lbits, qNoSign, ltup, rtup);
-        _vl_clean_inplace_w(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), owp, qNoSign));
+        _vl_clean_inplace_w(lbits, VL_NEGATE_W(lwords, owp, qNoSign));
         return owp;
     } else {
         return VL_DIV_WWW(lbits, owp, ltup, rtup);
@@ -1124,21 +1126,22 @@ static inline WDataOutP VL_DIVS_WWW(int lbits, WDataOutP owp, WDataInP const lwp
 }
 static inline WDataOutP VL_MODDIVS_WWW(int lbits, WDataOutP owp, WDataInP const lwp,
                                        WDataInP const rwp) VL_MT_SAFE {
-    const int words = VL_WORDS_I(lbits);
-    const EData lsign = VL_SIGN_E(lbits, lwp[words - 1]);
-    const EData rsign = VL_SIGN_E(lbits, rwp[words - 1]);
+    const int lwords = VL_WORDS_I(lbits);
+    const EData lsign = VL_SIGN_E(lbits, lwp[lwords - 1]);
+    const EData rsign = VL_SIGN_E(lbits, rwp[lwords - 1]);
+    VL_DEBUG_IFDEF(assert(lwords <= VL_MULS_MAX_WORDS););
     // cppcheck-suppress variableScope
     WData lwstore[VL_MULS_MAX_WORDS];  // Fixed size, as MSVC++ doesn't allow [words] here
     // cppcheck-suppress variableScope
     WData rwstore[VL_MULS_MAX_WORDS];
     WDataInP ltup = lwp;
     WDataInP rtup = rwp;
-    if (lsign) ltup = _vl_clean_inplace_w(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), lwstore, lwp));
-    if (rsign) rtup = _vl_clean_inplace_w(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), rwstore, rwp));
+    if (lsign) ltup = _vl_clean_inplace_w(lbits, VL_NEGATE_W(lwords, lwstore, lwp));
+    if (rsign) rtup = _vl_clean_inplace_w(lbits, VL_NEGATE_W(lwords, rwstore, rwp));
     if (lsign) {  // Only dividend sign matters for modulus
         WData qNoSign[VL_MULS_MAX_WORDS];
         VL_MODDIV_WWW(lbits, qNoSign, ltup, rtup);
-        _vl_clean_inplace_w(lbits, VL_NEGATE_W(VL_WORDS_I(lbits), owp, qNoSign));
+        _vl_clean_inplace_w(lbits, VL_NEGATE_W(lwords, owp, qNoSign));
         return owp;
     } else {
         return VL_MODDIV_WWW(lbits, owp, ltup, rtup);

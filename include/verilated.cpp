@@ -444,6 +444,8 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WData
 
     const int uw = VL_WORDS_I(umsbp1);  // aka "m" in the algorithm
     const int vw = VL_WORDS_I(vmsbp1);  // aka "n" in the algorithm
+    VL_DEBUG_IFDEF(assert(uw <= VL_MULS_MAX_WORDS););
+    VL_DEBUG_IFDEF(assert(vw <= VL_MULS_MAX_WORDS););
 
     if (vw == 1) {  // Single divisor word breaks rest of algorithm
         uint64_t k = 0;
@@ -542,6 +544,8 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WData
 WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lwp,
                      const WDataInP rwp) VL_MT_SAFE {
     // obits==lbits, rbits can be different
+    const int owords = VL_WORDS_I(obits);
+    VL_DEBUG_IFDEF(assert(owords <= VL_MULS_MAX_WORDS););
     owp[0] = 1;
     for (int i = 1; i < VL_WORDS_I(obits); i++) owp[i] = 0;
     // cppcheck-has-bug-suppress variableScope
@@ -553,11 +557,11 @@ WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lw
     for (int bit = 0; bit < rbits; bit++) {
         if (bit > 0) {  // power = power*power
             VL_ASSIGN_W(obits, lastpowstore, powstore);
-            VL_MUL_W(VL_WORDS_I(obits), powstore, lastpowstore, lastpowstore);
+            VL_MUL_W(owords, powstore, lastpowstore, lastpowstore);
         }
         if (VL_BITISSET_W(rwp, bit)) {  // out *= power
             VL_ASSIGN_W(obits, lastoutstore, owp);
-            VL_MUL_W(VL_WORDS_I(obits), owp, lastoutstore, powstore);
+            VL_MUL_W(owords, owp, lastoutstore, powstore);
         }
     }
     return owp;
@@ -653,8 +657,10 @@ double VL_ITOR_D_W(int lbits, const WDataInP lwp) VL_PURE {
 }
 double VL_ISTOR_D_W(int lbits, const WDataInP lwp) VL_MT_SAFE {
     if (!VL_SIGN_W(lbits, lwp)) return VL_ITOR_D_W(lbits, lwp);
+    const int words = VL_WORDS_I(lbits);
+    VL_DEBUG_IFDEF(assert(words <= VL_MULS_MAX_WORDS););
     uint32_t pos[VL_MULS_MAX_WORDS + 1];  // Fixed size, as MSVC++ doesn't allow [words] here
-    VL_NEGATE_W(VL_WORDS_I(lbits), pos, lwp);
+    VL_NEGATE_W(words, pos, lwp);
     _vl_clean_inplace_w(lbits, pos);
     return -VL_ITOR_D_W(lbits, pos);
 }
