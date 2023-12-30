@@ -465,27 +465,25 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WData
 
     // Zero for ease of debugging and to save having to zero for shifts
     // Note +1 as loop will use extra word
-    for (int i = 0; i < words + 1; ++i) { un[i] = vn[i] = 0; }
+    for (int i = 0; i < words + 1; ++i) un[i] = vn[i] = 0;
 
     // Algorithm requires divisor MSB to be set
     // Copy and shift to normalize divisor so MSB of vn[vw-1] is set
     const int s = 31 - VL_BITBIT_I(vmsbp1 - 1);  // shift amount (0...31)
-    const uint32_t shift_mask = s ? 0xffffffff : 0;  // otherwise >> 32 won't mask the value
-    for (int i = vw - 1; i > 0; --i) {
-        vn[i] = (rwp[i] << s) | (shift_mask & (rwp[i - 1] >> (32 - s)));
-    }
-    vn[0] = rwp[0] << s;
-
     // Copy and shift dividend by same amount; may set new upper word
     if (s) {
+        for (int i = vw - 1; i > 0; --i) vn[i] = (rwp[i] << s) | (rwp[i - 1] >> (32 - s));
+        vn[0] = rwp[0] << s;
         un[uw] = lwp[uw - 1] >> (32 - s);
+        for (int i = uw - 1; i > 0; --i) un[i] = (lwp[i] << s) | (lwp[i - 1] >> (32 - s));
+        un[0] = lwp[0] << s;
     } else {
+        for (int i = vw - 1; i > 0; --i) vn[i] = rwp[i];
+        vn[0] = rwp[0];
         un[uw] = 0;
+        for (int i = uw - 1; i > 0; --i) un[i] = lwp[i];
+        un[0] = lwp[0];
     }
-    for (int i = uw - 1; i > 0; --i) {
-        un[i] = (lwp[i] << s) | (shift_mask & (lwp[i - 1] >> (32 - s)));
-    }
-    un[0] = lwp[0] << s;
 
     // Main loop
     for (int j = uw - vw; j >= 0; --j) {
@@ -529,8 +527,10 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WData
 
     if (is_modulus) {  // modulus
         // Need to reverse normalization on copy to output
-        for (int i = 0; i < vw; ++i) {
-            owp[i] = (un[i] >> s) | (shift_mask & (un[i + 1] << (32 - s)));
+        if (s) {
+            for (int i = 0; i < vw; ++i) owp[i] = (un[i] >> s) | (un[i + 1] << (32 - s));
+        } else {
+            for (int i = 0; i < vw; ++i) owp[i] = un[i];
         }
         for (int i = vw; i < words; ++i) owp[i] = 0;
         return owp;
