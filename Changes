@@ -70,6 +70,7 @@ Verilator 5.019 devel
 * Fix $finish twice to no longer exit (#4757). [Tim Hutt]
 * Fix dynamic NBA conditions (#4773). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix `V3Fork` stage to run only if `--timing` is set (#4778). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix max multiply width and add runtime assertions if too small. (#4781)
 
 
 Verilator 5.018 2023-10-30
