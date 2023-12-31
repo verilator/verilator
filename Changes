@@ -35,6 +35,7 @@ Verilator 5.019 devel
 * Support packages in vpi_handle_by_name() (#4768). [Todd Strader]
 * Support invoking interface methods on virtual interface variables (#4774) (#4775). [Jordan McConnon]
 * Remove deprecated options (#4663). [Geza Lore]
+* Remove older compiler support; require C++14 or newer (#4784) (#4786).
 * Optimize timing-delayed queue (#4584). [qrqiuren]
 * Optimize substitute optimization memory usage (#4687). [Geza Lore]
 * Optimize wide primitive operations with -Oz (#4733). [Geza Lore]
