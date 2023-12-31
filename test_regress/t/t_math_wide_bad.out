@@ -2,10 +2,10 @@
    23 |    assign r = real'(a);
       |               ^~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_math_wide_bad.v:22:18: Unsupported: operator POWSS operator of 576 bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h
+%Error-UNSUPPORTED: t/t_math_wide_bad.v:22:18: Unsupported: operator POWSS operator of 5472 bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h
    22 |    assign z2 = a ** 3;
       |                  ^~
-%Error-UNSUPPORTED: t/t_math_wide_bad.v:21:17: Unsupported: operator MULS operator of 576 bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h
+%Error-UNSUPPORTED: t/t_math_wide_bad.v:21:17: Unsupported: operator MULS operator of 5472 bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h
    21 |    assign z = a * b;
       |                 ^
 %Error: Exiting due to
