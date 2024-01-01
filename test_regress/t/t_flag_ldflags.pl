@@ -10,16 +10,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-my $m32 = $Self->cfg_with_m32 ? "-m32" : "";
-
 run(cmd => ["cd $Self->{obj_dir}"
-            . " && $ENV{CXX} $m32 -c ../../t/t_flag_ldflags_a.cpp"
+            . " && $ENV{CXX} -c ../../t/t_flag_ldflags_a.cpp"
             . " && ar -cr t_flag_ldflags_a.a t_flag_ldflags_a.o"
             . " && ranlib t_flag_ldflags_a.a "],
     check_finished => 0);
 run(cmd => ["cd $Self->{obj_dir}"
-            . " && $ENV{CXX} $m32 -fPIC -c ../../t/t_flag_ldflags_so.cpp"
-            . " && $ENV{CXX} $m32 -shared -o t_flag_ldflags_so.so -lc t_flag_ldflags_so.o"],
+            . " && $ENV{CXX} -fPIC -c ../../t/t_flag_ldflags_so.cpp"
+            . " && $ENV{CXX} -shared -o t_flag_ldflags_so.so -lc t_flag_ldflags_so.o"],
     check_finished => 0);
 
 compile(

@@ -640,7 +640,6 @@ sub new {
                          ? " -Wl,-undefined,dynamic_lookup"
                          : " -export-dynamic")
                       . ($opt_verbose ? " -DTEST_VERBOSE=1" : "")
-                      . (cfg_with_m32() ? " -m32" : "")
                       . " -o $self->{obj_dir}/libvpi.so"],
         tool_c_flags => [],
         # ATSIM
@@ -2430,13 +2429,6 @@ our $_Cfg_with_ccache;
 sub cfg_with_ccache {
     $_Cfg_with_ccache ||= `grep "OBJCACHE \?= ccache" "$ENV{VERILATOR_ROOT}/include/verilated.mk"` ne "";
     return $_Cfg_with_ccache;
-}
-
-our $_Cfg_with_m32;
-
-sub cfg_with_m32 {
-    $_Cfg_with_m32 ||= `grep "CXX.*=.*-m32" "$ENV{VERILATOR_ROOT}/include/verilated.mk"` ne "";
-    return $_Cfg_with_m32;
 }
 
 sub tries {
