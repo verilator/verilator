@@ -36,7 +36,7 @@ module t ();
    initial
      begin : initial_blk2
      	#(100ns);
-	$display("Error: We should not get here");
+	$display("%%Error: We should not get here");
 	$finish(1);
      end
 
@@ -52,13 +52,13 @@ module t ();
      begin : last_blk
      	if (should_be_2 != 2)
 	begin
-		$display("Error: should_be_2 = %0d", 
+		$display("%%Error: should_be_2 = %0d", 
 			               should_be_2);
 		$stop;
 	end
        	if (should_be_3 != 3)
 	begin
-	       	$display("Error: should_be_3 = %0d",
+	       	$display("%%Error: should_be_3 = %0d",
 				       should_be_3);
 		$stop;
 	end
