@@ -305,7 +305,8 @@ uint64_t VerilatedContext::time() const VL_MT_SAFE {
 // Time scaled from 1-per-precision into a module's time units ("Unit"-ed, not "United")
 // Optimized assuming scale is always constant.
 // Can't use multiply in Q flavor, as might lose precision
-#define VL_TIME_UNITED_Q(scale) (VL_TIME_Q() / static_cast<QData>(scale))
+#define VL_TIME_ROUND(t,p) (((t) + ((p)/2)) / (p)) 
+#define VL_TIME_UNITED_Q(scale) VL_TIME_ROUND(VL_TIME_Q(), static_cast<QData>(scale))
 #define VL_TIME_UNITED_D(scale) (VL_TIME_D() / static_cast<double>(scale))
 
 // Return time precision as multiplier of time units
