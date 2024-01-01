@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1839,7 +1839,7 @@ void V3Options::showVersion(bool verbose) {
     if (!verbose) return;
 
     cout << "\n";
-    cout << "Copyright 2003-2023 by Wilson Snyder.  Verilator is free software; you can\n";
+    cout << "Copyright 2003-2024 by Wilson Snyder.  Verilator is free software; you can\n";
     cout << "redistribute it and/or modify the Verilator internals under the terms of\n";
     cout << "either the GNU Lesser General Public License Version 3 or the Perl Artistic\n";
     cout << "License Version 2.0.\n";

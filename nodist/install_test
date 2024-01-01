@@ -118,7 +118,7 @@ parser = argparse.ArgumentParser(
 Verilator kit.  It isn't part of the normal "make test" due to the number
 of builds required.""",
     epilog=
-    """Copyright 2009-2023 by Wilson Snyder. This program is free software; you
+    """Copyright 2009-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
