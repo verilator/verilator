@@ -10,7 +10,7 @@
 # Then 'make maintainer-dist'
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[5.019 devel],
+AC_INIT([Verilator],[5.020 2024-01-01],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 
