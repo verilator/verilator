@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -67,11 +67,22 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
         m_resumeFuncp->isConst(false);
         m_resumeFuncp->declPrivate(true);
         scopeTopp->addBlocksp(m_resumeFuncp);
+
+        // Put all the timing actives in the resume function
+        AstActive* dlyShedActivep = nullptr;
         for (auto& p : m_lbs) {
-            // Put all the timing actives in the resume function
             AstActive* const activep = p.second;
+            // Hack to ensure that #0 delays will be executed after any other `act` events.
+            // Just handle delayed coroutines last.
+            AstVarRef* const schedrefp = VN_AS(
+                VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard)->fromp(), VarRef);
+            if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
+                dlyShedActivep = activep;
+                continue;
+            }
             m_resumeFuncp->addStmtsp(activep);
         }
+        if (dlyShedActivep) m_resumeFuncp->addStmtsp(dlyShedActivep);
     }
     AstCCall* const callp = new AstCCall{m_resumeFuncp->fileline(), m_resumeFuncp};
     callp->dtypeSetVoid();
@@ -135,7 +146,6 @@ AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
 TimingKit prepareTiming(AstNetlist* const netlistp) {
     if (!v3Global.usesTiming()) return {};
     class AwaitVisitor final : public VNVisitor {
-    private:
         // NODE STATE
         //  AstSenTree::user1()  -> bool.  Set true if the sentree has been visited.
         const VNUser1InUse m_inuser1;
@@ -266,7 +276,6 @@ void transformForks(AstNetlist* const netlistp) {
     if (!v3Global.usesTiming()) return;
     // Transform all forked processes into functions
     class ForkVisitor final : public VNVisitor {
-    private:
         // NODE STATE
         //  AstVar::user1()  -> bool.  Set true if the variable was declared before the current
         //                             fork.
@@ -288,7 +297,8 @@ void transformForks(AstNetlist* const netlistp) {
             funcp->foreach([&](AstNodeVarRef* refp) {
                 AstVar* const varp = refp->varp();
                 AstBasicDType* const dtypep = varp->dtypep()->basicp();
-                bool passByValue = false;
+                // If not a fork..join, copy. All write refs should've been handled by V3Fork
+                bool passByValue = !m_forkp->joinType().join();
                 if (!varp->isFuncLocal()) {
                     if (VString::startsWith(varp->name(), "__Vintra")) {
                         // Pass it by value to the new function, as otherwise there are issues with

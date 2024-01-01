@@ -1,54 +1,51 @@
-%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:10:4: Constraint ignored (unsupported)
-   10 |    constraint a { one > 0 && one < 2; }
-      |    ^~~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:16:12: constraint_mode ignored (unsupported)
+                                                   : ... note: In instance 't'
+   16 |       cons.constraint_mode(1);
+      |            ^~~~~~~~~~~~~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
-%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:14:11: rand_mode ignored (unsupported)
+%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:17:12: constraint_mode ignored (unsupported)
                                                    : ... note: In instance 't'
-   14 |       one.rand_mode(0);
-      |           ^~~~~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:15:11: rand_mode ignored (unsupported)
+   17 |       cons.constraint_mode(0);
+      |            ^~~~~~~~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:18:16: constraint_mode ignored (unsupported)
                                                    : ... note: In instance 't'
-   15 |       one.rand_mode(1);
-      |           ^~~~~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:16:15: rand_mode ignored (unsupported)
-                                                   : ... note: In instance 't'
-   16 |       if (one.rand_mode() != 1) $stop;
-      |               ^~~~~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:19:9: constraint_mode ignored (unsupported)
+   18 |       if (cons.constraint_mode() != 0) $stop;
+      |                ^~~~~~~~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:42:9: Unsupported: 'constraint_mode' called on object
                                                   : ... note: In instance 't'
-   19 |       a.constraint_mode(1);
+   42 |       p.constraint_mode(0);
       |         ^~~~~~~~~~~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:20:9: constraint_mode ignored (unsupported)
+%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:43:9: Unsupported: 'constraint_mode' called on object
                                                   : ... note: In instance 't'
-   20 |       a.constraint_mode(0);
+   43 |       p.constraint_mode(1);
       |         ^~~~~~~~~~~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:21:13: constraint_mode ignored (unsupported)
+%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:48:14: constraint_mode ignored (unsupported)
                                                    : ... note: In instance 't'
-   21 |       if (a.constraint_mode() != 0) $stop;
-      |             ^~~~~~~~~~~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:41:13: rand_mode ignored (unsupported)
+   48 |       p.cons.constraint_mode(1);
+      |              ^~~~~~~~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:49:14: constraint_mode ignored (unsupported)
                                                    : ... note: In instance 't'
-   41 |       p.one.rand_mode(0);
-      |             ^~~~~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:42:13: rand_mode ignored (unsupported)
+   49 |       p.cons.constraint_mode(0);
+      |              ^~~~~~~~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:50:18: constraint_mode ignored (unsupported)
                                                    : ... note: In instance 't'
-   42 |       p.one.rand_mode(1);
-      |             ^~~~~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:43:17: rand_mode ignored (unsupported)
+   50 |       if (p.cons.constraint_mode() != 0) $stop;
+      |                  ^~~~~~~~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:55:20: constraint_mode ignored (unsupported)
                                                    : ... note: In instance 't'
-   43 |       if (p.one.rand_mode() != 1) $stop;
-      |                 ^~~~~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:46:11: constraint_mode ignored (unsupported)
+   55 |       p.other.cons.constraint_mode(1);
+      |                    ^~~~~~~~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:56:20: constraint_mode ignored (unsupported)
                                                    : ... note: In instance 't'
-   46 |       p.a.constraint_mode(1);
-      |           ^~~~~~~~~~~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:47:11: constraint_mode ignored (unsupported)
+   56 |       p.other.cons.constraint_mode(0);
+      |                    ^~~~~~~~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:57:24: constraint_mode ignored (unsupported)
                                                    : ... note: In instance 't'
-   47 |       p.a.constraint_mode(0);
-      |           ^~~~~~~~~~~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:48:15: constraint_mode ignored (unsupported)
+   57 |       if (p.other.cons.constraint_mode() != 0) $stop;
+      |                        ^~~~~~~~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_mode.v:10:15: Constraint ignored (unsupported)
                                                    : ... note: In instance 't'
-   48 |       if (p.a.constraint_mode() != 0) $stop;
-      |               ^~~~~~~~~~~~~~~
+   10 |    constraint cons { m_one > 0 && m_one < 2; }
+      |               ^~~~
 %Error: Exiting due to

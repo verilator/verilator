@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -95,7 +95,7 @@ class DataflowExtractVisitor final : public VNVisitor {
     // VISIT methods
 
     void visit(AstNetlist* nodep) override {
-        // Analyse the whole design
+        // Analyze the whole design
         iterateChildrenConst(nodep);
 
         // Replace candidate expressions only reading combinationally driven signals with variables

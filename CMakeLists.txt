@@ -4,7 +4,7 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -15,7 +15,7 @@
 cmake_minimum_required(VERSION 3.15)
 cmake_policy(SET CMP0091 NEW) # Use MSVC_RUNTIME_LIBRARY to select the runtime
 project(Verilator
-    VERSION 5.018
+    VERSION 5.020
     HOMEPAGE_URL https://verilator.org
     LANGUAGES CXX
 )
@@ -35,7 +35,7 @@ if (NOT WIN32)
     message(WARNING "CMake support on Linux/OSX is experimental.")
 endif()
 
-if (MSVC)
+if (WIN32)
     if (DEFINED ENV{WIN_FLEX_BISON})
         set(WIN_FLEX_BISON "$ENV{WIN_FLEX_BISON}")
     endif()
@@ -46,6 +46,27 @@ if (MSVC)
         message(FATAL_ERROR "Please install https://github.com/lexxmark/winflexbison and set WIN_FLEX_BISON environment variable. Please use install cmake target after a successful build.")
     endif()
     set(CMAKE_CXX_STANDARD 20)
+endif()
+
+set(OBJCACHE "" CACHE STRING "Path for ccache, auto-detected if empty")
+option(OBJCACHE_ENABLED "Compile Verilator with ccache" ON)
+
+if (OBJCACHE_ENABLED)
+    if (OBJCACHE STREQUAL "")
+        find_program(OBJCACHE_PATH ccache)
+        if (OBJCACHE_PATH STREQUAL "OBJCACHE_PATH-NOTFOUND")
+            set(OBJCACHE_PATH "")
+        endif()
+    else()
+        set(OBJCACHE_PATH "${OBJCACHE}")
+    endif()
+    if (NOT OBJCACHE_PATH STREQUAL "")
+        execute_process(COMMAND "${OBJCACHE_PATH}" --version
+                OUTPUT_VARIABLE objcache_version)
+        string(REGEX MATCH "[^\n\r]+" objcache_version "${objcache_version}")
+        message(STATUS "Found ccache: ${OBJCACHE_PATH} (\"${objcache_version}\")")
+        set(CMAKE_CXX_COMPILER_LAUNCHER "${OBJCACHE_PATH}")
+    endif()
 endif()
 
 find_package(BISON)

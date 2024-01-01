@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -90,7 +90,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 static string V3HierCommandArgsFileName(const string& prefix, bool forCMake) {
     return v3Global.opt.makeDir() + "/" + prefix
-           + (forCMake ? "_hierCMakeArgs.f" : "_hierMkArgs.f");
+           + (forCMake ? "__hierCMakeArgs.f" : "__hierMkArgs.f");
 }
 
 static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of, bool forCMake) {
@@ -236,7 +236,7 @@ string V3HierBlock::commandArgsFileName(bool forCMake) const {
 
 //######################################################################
 // Collect how hierarchical blocks are used
-class HierBlockUsageCollectVisitor final : public VNVisitor {
+class HierBlockUsageCollectVisitor final : public VNVisitorConst {
     // NODE STATE
     // AstNode::user1()            -> bool. Processed
     const VNUser1InUse m_inuser1;
@@ -266,7 +266,7 @@ class HierBlockUsageCollectVisitor final : public VNVisitor {
         }
         prevGParams.swap(m_gparams);
 
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
 
         if (nodep->hierBlock()) {
             m_planp->add(nodep, m_gparams);
@@ -280,7 +280,7 @@ class HierBlockUsageCollectVisitor final : public VNVisitor {
         // Visit used module here to know that the module is hier_block or not.
         // This visitor behaves almost depth first search
         if (AstModule* const modp = VN_CAST(nodep->modp(), Module)) {
-            iterate(modp);
+            iterateConst(modp);
             m_referred.insert(modp);
         }
         // Nothing to do for interface because hierarchical block does not exist
@@ -294,12 +294,12 @@ class HierBlockUsageCollectVisitor final : public VNVisitor {
     }
 
     void visit(AstNodeExpr*) override {}  // Accelerate
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     HierBlockUsageCollectVisitor(V3HierBlockPlan* planp, AstNetlist* netlist)
         : m_planp{planp} {
-        iterateChildren(netlist);
+        iterateChildrenConst(netlist);
     }
 };
 

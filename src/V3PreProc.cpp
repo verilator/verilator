@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2000-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2000-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -455,7 +455,7 @@ void V3PreProcImp::comment(const string& text) {
     if (!vlcomment && !synth) return;  // Short-circuit
 
     while (std::isspace(*cp)) ++cp;
-    string cmd = commentCleanup(string(cp));
+    string cmd = commentCleanup(string{cp});
     // cmd now is comment without extra spaces and "verilator" prefix
 
     if (synth) {
@@ -952,17 +952,17 @@ int V3PreProcImp::getRawToken() {
 void V3PreProcImp::debugToken(int tok, const char* cmtp) {
     static int s_debugFileline = v3Global.opt.debugSrcLevel("fileline");  // --debugi-fileline 9
     if (debug() >= 5) {
-        string buf = string(yyourtext(), yyourleng());
+        string buf{yyourtext(), yyourleng()};
         string::size_type pos;
-        while ((pos = buf.find('\n')) != string::npos) { buf.replace(pos, 1, "\\n"); }
-        while ((pos = buf.find('\r')) != string::npos) { buf.replace(pos, 1, "\\r"); }
+        while ((pos = buf.find('\n')) != string::npos) buf.replace(pos, 1, "\\n");
+        while ((pos = buf.find('\r')) != string::npos) buf.replace(pos, 1, "\\r");
         const string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
-        fprintf(stderr, "%s: %s %s %s(%d) dr%d:  <%d>%-10s: %s\n", flcol.c_str(), cmtp,
-                (m_off ? "of" : "on"), procStateName(state()), static_cast<int>(m_states.size()),
-                static_cast<int>(m_defRefs.size()), m_lexp->currentStartState(), tokenName(tok),
-                buf.c_str());
+        UINFO(0, flcol << ": " << cmtp << " " << (m_off ? "of" : "on") << " "
+                       << procStateName(state()) << "(" << static_cast<int>(m_states.size())
+                       << ") dr" << m_defRefs.size() << ":  <" << m_lexp->currentStartState()
+                       << ">" << tokenName(tok) << ": " << buf << endl);
         if (s_debugFileline >= 9) {
-            std::cerr << m_lexp->m_tokFilelinep->warnContextSecondary() << endl;
+            std::cout << m_lexp->m_tokFilelinep->warnContextSecondary() << endl;
         }
     }
 }
@@ -1533,15 +1533,14 @@ int V3PreProcImp::getFinalToken(string& buf) {
     if (!m_finAhead) {
         m_finAhead = true;
         m_finToken = getStateToken();
-        m_finBuf = string(yyourtext(), yyourleng());
+        m_finBuf = string{yyourtext(), yyourleng()};
     }
     const int tok = m_finToken;
     buf = m_finBuf;
     if (false && debug() >= 5) {
         const string bufcln = V3PreLex::cleanDbgStrg(buf);
         const string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
-        fprintf(stderr, "%s: FIN:      %-10s: %s\n", flcol.c_str(), tokenName(tok),
-                bufcln.c_str());
+        UINFO(0, flcol << ": FIN:      " << tokenName(tok) << ": " << bufcln << endl);
     }
     // Track `line
     const char* bufp = buf.c_str();
@@ -1555,8 +1554,9 @@ int V3PreProcImp::getFinalToken(string& buf) {
                 = (m_lexp->m_tokFilelinep->lastLineno() - m_finFilelinep->lastLineno())) {
                 if (debug() >= 5) {
                     const string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
-                    fprintf(stderr, "%s: FIN: readjust, fin at %d  request at %d\n", flcol.c_str(),
-                            m_finFilelinep->lastLineno(), m_lexp->m_tokFilelinep->lastLineno());
+                    UINFO(0, flcol << ": FIN: readjust, fin at " << m_finFilelinep->lastLineno()
+                                   << "  request at " << m_lexp->m_tokFilelinep->lastLineno()
+                                   << endl);
                 }
                 m_finFilelinep->filename(m_lexp->m_tokFilelinep->filename());
                 m_finFilelinep->lineno(m_lexp->m_tokFilelinep->lastLineno());
@@ -1565,7 +1565,7 @@ int V3PreProcImp::getFinalToken(string& buf) {
                     // Output stream is behind, send newlines to get back in sync
                     // (Most likely because we're completing a disabled `endif)
                     if (m_preprocp->keepWhitespace()) {
-                        buf = string(outBehind, '\n');
+                        buf = std::string(outBehind, '\n');  // () for char repeat
                         return VP_TEXT;
                     }
                 } else {
@@ -1600,8 +1600,7 @@ string V3PreProcImp::getline() {
         if (debug() >= 5) {
             const string bufcln = V3PreLex::cleanDbgStrg(buf);
             const string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
-            fprintf(stderr, "%s: GETFETC:  %-10s: %s\n", flcol.c_str(), tokenName(tok),
-                    bufcln.c_str());
+            UINFO(0, flcol << ": GETFETC:  " << tokenName(tok) << ": " << bufcln << endl);
         }
         if (tok == VP_EOF) {
             // Add a final newline, if the user forgot the final \n.
@@ -1621,7 +1620,7 @@ string V3PreProcImp::getline() {
     if (debug() >= 4) {
         const string lncln = V3PreLex::cleanDbgStrg(theLine);
         const string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
-        fprintf(stderr, "%s: GETLINE:  %s\n", flcol.c_str(), lncln.c_str());
+        UINFO(0, flcol << ": GETLINE:  " << lncln << endl);
     }
     return theLine;
 }

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -97,18 +97,17 @@ AstNode* AstNode::abovep() const {
 string AstNode::encodeName(const string& namein) {
     // Encode signal name raw from parser, then not called again on same signal
     string out;
-    for (string::const_iterator pos = namein.begin(); pos != namein.end(); ++pos) {
+    out.reserve(namein.size());
+    for (auto pos = namein.begin(); pos != namein.end(); ++pos) {
         if ((pos == namein.begin()) ? std::isalpha(pos[0])  // digits can't lead identifiers
                                     : std::isalnum(pos[0])) {
             out += pos[0];
         } else if (pos[0] == '_') {
+            out += pos[0];
+            if (pos + 1 == namein.end()) break;
             if (pos[1] == '_') {
-                out += "_";
-                out += "__05F";  // hex(_) = 0x5F
                 ++pos;
-                if (pos == namein.end()) break;
-            } else {
-                out += pos[0];
+                out += "__05F";  // hex(_) = 0x5F
             }
         } else {
             // Need the leading 0 so this will never collide with
@@ -1238,7 +1237,7 @@ void AstNode::dumpPtrs(std::ostream& os) const {
         // This may cause address sanitizer failures as iterpp can be stale
         // os << "*=" << cvtToHex(*m_iterpp);
     }
-    os << std::endl;
+    os << "\n";
 }
 
 void AstNode::dumpTree(std::ostream& os, const string& indent, int maxDepth) const {
@@ -1274,12 +1273,12 @@ void AstNode::dumpTreeAndNext(std::ostream& os, const string& indent, int maxDep
     }
 }
 
-void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump, bool doCheck) {
+void AstNode::dumpTreeFile(const string& filename, bool doDump, bool doCheck) {
     // Not const function as calls checkTree
     if (doDump) {
         {  // Write log & close
             UINFO(2, "Dumping " << filename << endl);
-            const std::unique_ptr<std::ofstream> logsp{V3File::new_ofstream(filename, append)};
+            const std::unique_ptr<std::ofstream> logsp{V3File::new_ofstream(filename)};
             if (logsp->fail()) v3fatal("Can't write " << filename);
             *logsp << "Verilator Tree Dump (format 0x3900) from <e" << std::dec << editCountLast();
             *logsp << "> to <e" << std::dec << editCountGbl() << ">\n";
@@ -1329,10 +1328,10 @@ void AstNode::dumpTreeDot(std::ostream& os) const {
     drawChildren(os, this, m_op4p, "op4");
 }
 
-void AstNode::dumpTreeDotFile(const string& filename, bool append, bool doDump) {
+void AstNode::dumpTreeDotFile(const string& filename, bool doDump) {
     if (doDump) {
         UINFO(2, "Dumping " << filename << endl);
-        const std::unique_ptr<std::ofstream> treedotp{V3File::new_ofstream(filename, append)};
+        const std::unique_ptr<std::ofstream> treedotp{V3File::new_ofstream(filename)};
         if (treedotp->fail()) v3fatal("Can't write " << filename);
         *treedotp << "digraph vTree{\n";
         *treedotp << "\tgraph\t[label=\"" << filename + ".dot"
@@ -1448,17 +1447,20 @@ AstNodeDType* AstNode::findBitRangeDType(const VNumRange& range, int widthMin,
 AstBasicDType* AstNode::findInsertSameDType(AstBasicDType* nodep) {
     return v3Global.rootp()->typeTablep()->findInsertSameDType(nodep);
 }
+AstNodeDType* AstNode::findConstraintRefDType() const {
+    return v3Global.rootp()->typeTablep()->findConstraintRefDType(fileline());
+}
 AstNodeDType* AstNode::findEmptyQueueDType() const {
     return v3Global.rootp()->typeTablep()->findEmptyQueueDType(fileline());
 }
 AstNodeDType* AstNode::findQueueIndexDType() const {
     return v3Global.rootp()->typeTablep()->findQueueIndexDType(fileline());
 }
-AstNodeDType* AstNode::findVoidDType() const {
-    return v3Global.rootp()->typeTablep()->findVoidDType(fileline());
-}
 AstNodeDType* AstNode::findStreamDType() const {
     return v3Global.rootp()->typeTablep()->findStreamDType(fileline());
+}
+AstNodeDType* AstNode::findVoidDType() const {
+    return v3Global.rootp()->typeTablep()->findVoidDType(fileline());
 }
 
 static const AstNodeDType* computeCastableBase(const AstNodeDType* nodep) {

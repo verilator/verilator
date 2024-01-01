@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -224,7 +224,7 @@ public:
     uint32_t driverIndex(size_t idx) const { return m_driverData[idx].second; }
 
     DfgVertex* driverAt(size_t idx) const {
-        const DfgEdge* const edgep = findSourceEdge([=](const DfgEdge&, size_t i) {  //
+        const DfgEdge* const edgep = findSourceEdge([this, idx](const DfgEdge&, size_t i) {  //
             return driverIndex(i) == idx;
         });
         return edgep ? edgep->sourcep() : nullptr;

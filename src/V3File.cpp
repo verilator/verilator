@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -191,7 +191,7 @@ void V3FileDependImp::writeTimes(const string& filename, const string& cmdlineIn
         // Read stats of files we create after we're done making them
         // (except for this file, of course)
         DependFile* const dfp = const_cast<DependFile*>(&(*iter));
-        V3Options::fileNfsFlush(dfp->filename());
+        V3Os::filesystemFlush(dfp->filename());
         dfp->loadStats();
         off_t showSize = iter->size();
         ino_t showIno = iter->ino();
@@ -256,7 +256,7 @@ bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn
         *ifp >> quote;
         const string chkFilename = V3Os::getline(*ifp, '"');
 
-        V3Options::fileNfsFlush(chkFilename);
+        V3Os::filesystemFlush(chkFilename);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
         struct stat chkStat;
         const int err = stat(chkFilename.c_str(), &chkStat);

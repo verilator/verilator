@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -283,8 +283,8 @@ class ForceConvertVisitor final : public VNVisitor {
         // If this signal is marked externally forceable, create the public force signals
         if (nodep->varp()->isForceable()) {
             const ForceComponentsVarScope& fc = getForceComponents(nodep);
-            fc.m_enVscp->varp()->sigPublic(true);
-            fc.m_valVscp->varp()->sigPublic(true);
+            fc.m_enVscp->varp()->sigUserRWPublic(true);
+            fc.m_valVscp->varp()->sigUserRWPublic(true);
         }
     }
 

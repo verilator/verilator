@@ -1,6 +1,0 @@
-%Warning-ZERODLY: t/t_delay_var.v:20:7: Unsupported: #0 delays do not schedule process resumption in the Inactive region
-   20 |       #0 in = 1'b1;
-      |       ^
-                  ... For warning description see https://verilator.org/warn/ZERODLY?v=latest
-                  ... Use "/* verilator lint_off ZERODLY */" and lint_on around source to disable this message.
-%Error: Exiting due to

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -454,23 +454,6 @@ bool V3Options::fileStatNormal(const string& filename) {
     if (err != 0) return false;
     if (S_ISDIR(sstat.st_mode)) return false;
     return true;
-}
-
-void V3Options::fileNfsFlush(const string& filename) {
-    // NFS caches stat() calls so to get up-to-date information must
-    // do a open or opendir on the filename.
-    // Faster to just try both rather than check if a file is a dir.
-#ifdef _MSC_VER
-    if (int fd = ::open(filename.c_str(), O_RDONLY)) {  // LCOV_EXCL_BR_LINE
-        if (fd > 0) ::close(fd);
-    }
-#else
-    if (DIR* const dirp = opendir(filename.c_str())) {  // LCOV_EXCL_BR_LINE
-        closedir(dirp);  // LCOV_EXCL_LINE
-    } else if (int fd = ::open(filename.c_str(), O_RDONLY)) {  // LCOV_EXCL_BR_LINE
-        if (fd > 0) ::close(fd);
-    }
-#endif
 }
 
 string V3Options::fileExists(const string& filename) {
@@ -967,7 +950,7 @@ string V3Options::argString(int argc, char** argv) {
     string opts;
     for (int i = 0; i < argc; ++i) {
         if (i != 0) opts += " ";
-        opts += string(argv[i]);
+        opts += string{argv[i]};
     }
     return opts;
 }
@@ -1232,6 +1215,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-fdfg-pre-inline", FOnOff, &m_fDfgPreInline);
     DECL_OPTION("-fdfg-post-inline", FOnOff, &m_fDfgPostInline);
+    DECL_OPTION("-fdead-assigns", FOnOff, &m_fDeadAssigns);
+    DECL_OPTION("-fdead-cells", FOnOff, &m_fDeadCells);
     DECL_OPTION("-fexpand", FOnOff, &m_fExpand);
     DECL_OPTION("-fgate", FOnOff, &m_fGate);
     DECL_OPTION("-finline", FOnOff, &m_fInline);
@@ -1330,47 +1315,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-O2", CbCall, [this]() { optimize(2); });
     DECL_OPTION("-O3", CbCall, [this]() { optimize(3); });
 
-    DECL_OPTION("-O", CbPartialMatch, [this, fl](const char* optp) {
-        // Optimization, e.g. -O1rX
-        // LCOV_EXCL_START
-        fl->v3warn(DEPRECATED, "Option -O<letter> is deprecated. "
-                               "Use -f<optimization> or -fno-<optimization> instead.");
-        for (const char* cp = optp; *cp; ++cp) {
-            const bool flag = std::isupper(*cp);
-            switch (std::tolower(*cp)) {
-            case '0': optimize(0); break;
-            case '1': optimize(1); break;
-            case '2': optimize(2); break;
-            case '3': optimize(3); break;
-            case 'a': m_fTable = flag; break;  // == -fno-table
-            case 'b': m_fCombine = flag; break;  // == -fno-combine
-            case 'c': m_fConst = flag; break;  // == -fno-const
-            case 'd': m_fDedupe = flag; break;  // == -fno-dedup
-            case 'e': m_fCase = flag; break;  // == -fno-case
-            case 'g': m_fGate = flag; break;  // == -fno-gate
-            case 'i': m_fInline = flag; break;  // == -fno-inline
-            case 'k': m_fSubstConst = flag; break;  // == -fno-subst-const
-            case 'l': m_fLife = flag; break;  // == -fno-life
-            case 'm': m_fAssemble = flag; break;  // == -fno-assemble
-            case 'o': m_fConstBitOpTree = flag; break;  // == -fno-const-bit-op-tree
-            case 'p':
-                m_public = !flag;
-                break;  // With -Op so flag=0, we want public on so few optimizations done
-            case 'r': m_fReorder = flag; break;  // == -fno-reorder
-            case 's': m_fSplit = flag; break;  // == -fno-split
-            case 't': m_fLifePost = flag; break;  // == -fno-life-post
-            case 'u': m_fSubst = flag; break;  // == -fno-subst
-            case 'v': m_fReloop = flag; break;  // == -fno-reloop
-            case 'w': m_fMergeCond = flag; break;  // == -fno-merge-cond
-            case 'x': m_fExpand = flag; break;  // == -fno-expand
-            case 'y': m_fAcycSimp = flag; break;  // == -fno-acyc-simp
-            case 'z': m_fLocalize = flag; break;  // == -fno-localize
-            default:
-                break;  // No error, just ignore
-                // LCOV_EXCL_STOP
-            }
-        }
-    });
     DECL_OPTION("-o", Set, &m_exeName);
     DECL_OPTION("-order-clock-delay", CbOnOff, [fl](bool /*flag*/) {
         fl->v3warn(DEPRECATED, "Option order-clock-delay is deprecated and has no effect.");
@@ -1417,11 +1361,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                 [this]() { m_profC = m_profCFuncs = true; });  // Renamed
     DECL_OPTION("-prof-exec", OnOff, &m_profExec);
     DECL_OPTION("-prof-pgo", OnOff, &m_profPgo);
-    DECL_OPTION("-prof-threads", CbOnOff, [this, fl](bool flag) {
-        fl->v3warn(DEPRECATED, "Option --prof-threads is deprecated. "
-                               "Use --prof-exec and --prof-pgo instead.");
-        m_profExec = m_profPgo = flag;
-    });
     DECL_OPTION("-protect-ids", OnOff, &m_protectIds);
     DECL_OPTION("-protect-key", Set, &m_protectKey);
     DECL_OPTION("-protect-lib", CbVal, [this](const char* valp) {
@@ -1687,7 +1626,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
 
     DECL_OPTION("-y", CbVal, [this, &optdir](const char* valp) {
-        addIncDirUser(parseFileArg(optdir, string(valp)));
+        addIncDirUser(parseFileArg(optdir, string{valp}));
     });
     parser.finalize();
 
@@ -1896,46 +1835,46 @@ string V3Options::parseFileArg(const string& optdir, const string& relfilename) 
 
 void V3Options::showVersion(bool verbose) {
     cout << version();
-    cout << endl;
+    cout << "\n";
     if (!verbose) return;
 
-    cout << endl;
-    cout << "Copyright 2003-2023 by Wilson Snyder.  Verilator is free software; you can\n";
+    cout << "\n";
+    cout << "Copyright 2003-2024 by Wilson Snyder.  Verilator is free software; you can\n";
     cout << "redistribute it and/or modify the Verilator internals under the terms of\n";
     cout << "either the GNU Lesser General Public License Version 3 or the Perl Artistic\n";
     cout << "License Version 2.0.\n";
 
-    cout << endl;
+    cout << "\n";
     cout << "See https://verilator.org for documentation\n";
 
-    cout << endl;
+    cout << "\n";
     cout << "Summary of configuration:\n";
     cout << "  Compiled in defaults if not in environment:\n";
-    cout << "    SYSTEMC            = " << DEFENV_SYSTEMC << endl;
-    cout << "    SYSTEMC_ARCH       = " << DEFENV_SYSTEMC_ARCH << endl;
-    cout << "    SYSTEMC_INCLUDE    = " << DEFENV_SYSTEMC_INCLUDE << endl;
-    cout << "    SYSTEMC_LIBDIR     = " << DEFENV_SYSTEMC_LIBDIR << endl;
-    cout << "    VERILATOR_ROOT     = " << DEFENV_VERILATOR_ROOT << endl;
-    cout << "    SystemC system-wide = " << cvtToStr(systemCSystemWide()) << endl;
+    cout << "    SYSTEMC            = " << DEFENV_SYSTEMC << "\n";
+    cout << "    SYSTEMC_ARCH       = " << DEFENV_SYSTEMC_ARCH << "\n";
+    cout << "    SYSTEMC_INCLUDE    = " << DEFENV_SYSTEMC_INCLUDE << "\n";
+    cout << "    SYSTEMC_LIBDIR     = " << DEFENV_SYSTEMC_LIBDIR << "\n";
+    cout << "    VERILATOR_ROOT     = " << DEFENV_VERILATOR_ROOT << "\n";
+    cout << "    SystemC system-wide = " << cvtToStr(systemCSystemWide()) << "\n";
 
     // If update below, also update V3Options::getenvBuiltins()
-    cout << endl;
+    cout << "\n";
     cout << "Environment:\n";
-    cout << "    MAKE               = " << V3Os::getenvStr("MAKE", "") << endl;
-    cout << "    PERL               = " << V3Os::getenvStr("PERL", "") << endl;
-    cout << "    SYSTEMC            = " << V3Os::getenvStr("SYSTEMC", "") << endl;
-    cout << "    SYSTEMC_ARCH       = " << V3Os::getenvStr("SYSTEMC_ARCH", "") << endl;
-    cout << "    SYSTEMC_INCLUDE    = " << V3Os::getenvStr("SYSTEMC_INCLUDE", "") << endl;
-    cout << "    SYSTEMC_LIBDIR     = " << V3Os::getenvStr("SYSTEMC_LIBDIR", "") << endl;
+    cout << "    MAKE               = " << V3Os::getenvStr("MAKE", "") << "\n";
+    cout << "    PERL               = " << V3Os::getenvStr("PERL", "") << "\n";
+    cout << "    SYSTEMC            = " << V3Os::getenvStr("SYSTEMC", "") << "\n";
+    cout << "    SYSTEMC_ARCH       = " << V3Os::getenvStr("SYSTEMC_ARCH", "") << "\n";
+    cout << "    SYSTEMC_INCLUDE    = " << V3Os::getenvStr("SYSTEMC_INCLUDE", "") << "\n";
+    cout << "    SYSTEMC_LIBDIR     = " << V3Os::getenvStr("SYSTEMC_LIBDIR", "") << "\n";
     // wrapper uses VERILATOR_BIN
-    cout << "    VERILATOR_BIN      = " << V3Os::getenvStr("VERILATOR_BIN", "") << endl;
-    cout << "    VERILATOR_ROOT     = " << V3Os::getenvStr("VERILATOR_ROOT", "") << endl;
+    cout << "    VERILATOR_BIN      = " << V3Os::getenvStr("VERILATOR_BIN", "") << "\n";
+    cout << "    VERILATOR_ROOT     = " << V3Os::getenvStr("VERILATOR_ROOT", "") << "\n";
 
     // If update below, also update V3Options::getSupported()
-    cout << endl;
+    cout << "\n";
     cout << "Supported features (compiled-in or forced by environment):\n";
-    cout << "    COROUTINES         = " << getSupported("COROUTINES") << endl;
-    cout << "    SYSTEMC            = " << getSupported("SYSTEMC") << endl;
+    cout << "    COROUTINES         = " << getSupported("COROUTINES") << "\n";
+    cout << "    SYSTEMC            = " << getSupported("SYSTEMC") << "\n";
 }
 
 //======================================================================
@@ -1969,7 +1908,7 @@ void V3Options::setDebugMode(int level) {
     if (!m_dumpLevel.count("tree")) m_dumpLevel["tree"] = 3;  // Don't override if already set.
     m_stats = true;
     m_debugCheck = true;
-    cout << "Starting " << version() << endl;
+    cout << "Starting " << version() << "\n";
 }
 
 unsigned V3Options::debugLevel(const string& tag) const VL_MT_SAFE {
@@ -2016,6 +1955,8 @@ void V3Options::optimize(int level) {
     m_fDedupe = flag;
     m_fDfgPreInline = flag;
     m_fDfgPostInline = flag;
+    m_fDeadAssigns = flag;
+    m_fDeadCells = flag;
     m_fExpand = flag;
     m_fGate = flag;
     m_fInline = flag;

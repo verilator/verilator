@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -320,7 +320,6 @@ public:
 // List of module files xml visitor
 
 class ModuleFilesXmlVisitor final : public VNVisitorConst {
-private:
     // MEMBERS
     std::ostream& m_os;
     std::set<std::string> m_modulesCovered;
@@ -367,7 +366,6 @@ public:
 // Hierarchy of Cells visitor
 
 class HierCellsXmlVisitor final : public VNVisitorConst {
-private:
     // MEMBERS
     std::ostream& m_os;
     std::string m_hier;

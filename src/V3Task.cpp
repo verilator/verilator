@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -30,7 +30,6 @@
 #include "V3Const.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
-#include "V3LinkLValue.h"
 
 #include <tuple>
 
@@ -92,7 +91,6 @@ public:
 //######################################################################
 
 class TaskStateVisitor final : public VNVisitor {
-private:
     // NODE STATE
     //  Output:
     //   AstNodeFTask::user3p   // AstScope* this FTask is under
@@ -273,8 +271,6 @@ public:
     // CONSTRUCTORS
     explicit TaskStateVisitor(AstNetlist* nodep) {
         m_curVxp = new TaskCodeVertex{&m_callGraph};
-        AstNode::user3ClearTree();
-        AstNode::user4ClearTree();
         //
         iterate(nodep);
         //
@@ -333,7 +329,6 @@ struct TaskDpiUtils {
 // Task state, as a visitor of each AstNode
 
 class TaskVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Each module:
     //    AstNodeFTask::user1   // True if its been expanded
@@ -507,7 +502,6 @@ private:
                 }
             } else if (portp->isInoutish()) {
                 // if (debug() >= 9) pinp->dumpTree("-pinrsize- ");
-                V3LinkLValue::linkLValueSet(pinp);
 
                 AstVarScope* const newvscp
                     = createVarScope(portp, namePrefix + "__" + portp->shortName());
@@ -528,12 +522,6 @@ private:
                 beginp->addNext(postassp);
                 // if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-pinrsize-out- ");
             } else if (portp->isWritable()) {
-                // Make output variables
-                // Correct lvalue; we didn't know when we linked
-                // This is slightly scary; are we sure no decisions were made
-                // before here based on this not being a lvalue?
-                // Doesn't seem so; V3Unknown uses it earlier, but works ok.
-                V3LinkLValue::linkLValueSet(pinp);
                 // Even if it's referencing a varref, we still make a temporary
                 // Else task(x,x,x) might produce incorrect results
                 AstVarScope* const newvscp
@@ -1863,9 +1851,9 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
             newTaskp->addStmtsp(newAssignp);
         }
         oldNewVars.emplace(portp, newPortp);
-        AstArg* const newArgp
-            = new AstArg{portp->fileline(), portp->name(),
-                         new AstVarRef{portp->fileline(), newPortp, VAccess::READ}};
+        const VAccess pinAccess = portp->isWritable() ? VAccess::WRITE : VAccess::READ;
+        AstArg* const newArgp = new AstArg{portp->fileline(), portp->name(),
+                                           new AstVarRef{portp->fileline(), newPortp, pinAccess}};
         newCallp->addPinsp(newArgp);
     }
     // Create wrapper call to original, passing arguments, adding setting of return value

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -49,7 +49,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 
 class CaseLintVisitor final : public VNVisitorConst {
-private:
     const AstNodeCase* m_caseExprp
         = nullptr;  // Under a CASE value node, if so the relevant case statement
 
@@ -115,7 +114,6 @@ public:
 // Case state, as a visitor of each AstNode
 
 class CaseVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Cleared each Case
     //  AstIf::user3()          -> bool.  Set true to indicate clone not needed

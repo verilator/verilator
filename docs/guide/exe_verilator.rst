@@ -1,4 +1,4 @@
-.. Copyright 2003-2023 by Wilson Snyder.
+.. Copyright 2003-2024 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 verilator Arguments
@@ -1036,7 +1036,7 @@ Summary:
 
 .. option:: --prof-threads
 
-   Deprecated. Same as --prof-exec and --prof-pgo together.
+   Removed in 5.020. Was an alias for --prof-exec and --prof-pgo together.
 
 .. option:: --protect-ids
 
@@ -1363,13 +1363,13 @@ Summary:
    Enable FST waveform tracing in the model. This overrides
    :vlopt:`--trace`.  See also :vlopt:`--trace-threads` option.
 
-.. option:: --trace-max-array *depth*
+.. option:: --trace-max-array <depth>
 
    Rarely needed.  Specify the maximum array depth of a signal that may be
    traced.  Defaults to 32, as tracing large arrays may greatly slow traced
    simulations.
 
-.. option:: --trace-max-width *width*
+.. option:: --trace-max-width <width>
 
    Rarely needed.  Specify the maximum bit width of a signal that may be
    traced.  Defaults to 256, as tracing large vectors may greatly slow
@@ -1386,7 +1386,7 @@ Summary:
    format constraints, this may result in significantly slower trace times
    and larger trace files.
 
-.. option:: --trace-threads *threads*
+.. option:: --trace-threads <threads>
 
    Enable waveform tracing using separate threads. This is typically faster
    in simulation runtime but uses more total compute. This option only
@@ -1427,12 +1427,12 @@ Summary:
    Rarely needed.  Specifies the maximum number of loop iterations that may be
    unrolled.  See also :option:`BLKLOOPINIT` warning.
 
-.. option:: --unroll-stmts *statements*
+.. option:: --unroll-stmts <statements>
 
    Rarely needed.  Specifies the maximum number of statements in a loop for
    that loop to be unrolled. See also :option:`BLKLOOPINIT` warning.
 
-.. option:: --unused-regexp *regexp*
+.. option:: --unused-regexp <regexp>
 
    Rarely needed.  Specifies a simple regexp with \* and ? that, if a signal
    name matches, will suppress the :option:`UNUSED` warning.  Defaults to
@@ -1444,7 +1444,7 @@ Summary:
    into Verilator.  (Similar to :command:`perl -V`.)  See also
    :vlopt:`--getenv` option.
 
-.. option:: -v *filename*
+.. option:: -v <filename>
 
    Read the filename as a Verilog library.  Any modules in the file may be
    used to resolve instances in the top-level module, otherwise, they are
@@ -1481,7 +1481,7 @@ Summary:
 
    Enable the use of VPI and linking against the :file:`verilated_vpi.cpp` files.
 
-.. option:: --waiver-output *filename*
+.. option:: --waiver-output <filename>
 
    Generate a waiver file that contains all waiver statements to suppress
    the warnings emitted during this Verilator run. This, in particular, is

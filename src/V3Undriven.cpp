@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -265,7 +265,6 @@ public:
 // Undriven state, as a visitor of each AstNode
 
 class UndrivenVisitor final : public VNVisitorConst {
-private:
     // NODE STATE
     // Netlist:
     //  AstVar::user1p          -> UndrivenVar* for usage var, 0=not set yet

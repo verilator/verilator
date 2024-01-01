@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -37,7 +37,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Width state, as a visitor of each AstNode
 
 class WidthSelVisitor final : public VNVisitor {
-private:
     // IMPORTANT
     //**** This is not a normal visitor, in that all iteration is instead
     //  done by the caller (V3Width).  This avoids duplicating much of the
@@ -216,7 +215,7 @@ private:
         if (debug() >= 9) nodep->backp()->dumpTree("-  SELBT0: ");
         // lhsp/rhsp do not need to be constant
         AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
-        AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();  // bit we're extracting
+        AstNodeExpr* const rhsp = nodep->bitp()->unlinkFrBack();  // bit we're extracting
         if (debug() >= 9) nodep->dumpTree("-  SELBT2: ");
         const FromData fromdata = fromDataForArray(nodep, fromp);
         AstNodeDType* const ddtypep = fromdata.m_dtypep;
@@ -354,8 +353,8 @@ private:
         AstNodeDType* const ddtypep = fromdata.m_dtypep;
         const VNumRange fromRange = fromdata.m_fromRange;
         if (VN_IS(ddtypep, QueueDType)) {
-            AstNodeExpr* const qleftp = nodep->rhsp()->unlinkFrBack();
-            AstNodeExpr* const qrightp = nodep->thsp()->unlinkFrBack();
+            AstNodeExpr* const qleftp = nodep->leftp()->unlinkFrBack();
+            AstNodeExpr* const qrightp = nodep->rightp()->unlinkFrBack();
             AstNodeExpr* const qleftBacknessp = selQueueBackness(qleftp);
             AstNodeExpr* const qrightBacknessp = selQueueBackness(qrightp);
             // Use special methods to refer to back rather than math using
@@ -381,8 +380,8 @@ private:
                                "First value of [a:b] isn't a constant, maybe you want +: or -:");
         checkConstantOrReplace(nodep->rightp(),
                                "Second value of [a:b] isn't a constant, maybe you want +: or -:");
-        AstNodeExpr* const msbp = nodep->rhsp()->unlinkFrBack();
-        AstNodeExpr* const lsbp = nodep->thsp()->unlinkFrBack();
+        AstNodeExpr* const msbp = nodep->leftp()->unlinkFrBack();
+        AstNodeExpr* const lsbp = nodep->rightp()->unlinkFrBack();
         int32_t msb = VN_AS(msbp, Const)->toSInt();
         int32_t lsb = VN_AS(lsbp, Const)->toSInt();
         const int32_t elem = (msb > lsb) ? (msb - lsb + 1) : (lsb - msb + 1);

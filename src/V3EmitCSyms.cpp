@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -152,25 +152,23 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
     static string scopeDecodeIdentifier(const string& scpname) {
         string out = scpname;
-        // Remove hierarchy
-        string::size_type pos = out.rfind('.');
+        string::size_type pos = string::npos;
 
-        // If there's more than one ident and an escape, find the true last ident
-        if (pos != string::npos && scpname.find('\\') != string::npos) {
-            size_t i = 0;
-            // always makes progress
-            while (i < scpname.length()) {
-                if (scpname[i] == '\\') {
-                    while (i < scpname.length() && scpname[i] != ' ') ++i;
-                    ++i;  // Proc ' ', it should always be there. Then grab '.' on next cycle
-                } else {
-                    while (i < scpname.length() && scpname[i] != '.') ++i;
-                    if (i < scpname.length()) { pos = i++; }
-                }
+        // Remove hierarchy
+        size_t i = 0;
+        // always makes progress
+        while (i < scpname.length()) {
+            if (scpname[i] == '\\') {
+                while (i < scpname.length() && scpname[i] != ' ') ++i;
+                ++i;  // Proc ' ', it should always be there. Then grab '.' on next cycle
+            } else {
+                while (i < scpname.length() && scpname[i] != '.') ++i;
+                if (i < scpname.length()) pos = i++;
             }
         }
 
         if (pos != std::string::npos) out.erase(0, pos + 1);
+
         // Decode all escaped characters
         while ((pos = out.find("__0")) != string::npos) {
             unsigned int x;
@@ -230,7 +228,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                     }
                     // UINFO(9, "For " << scopep->name() << " - " << varp->name() << "  Scp "
                     // << scpName << "Var " << varBase << endl);
-                    const string varBasePretty = AstNode::prettyName(VName::dehash(varBase));
+                    const string varBasePretty = AstNode::vpiName(VName::dehash(varBase));
                     const string scpPretty = AstNode::prettyName(VName::dehash(scpName));
                     const string scpSym = scopeSymString(VName::dehash(scpName));
                     // UINFO(9, " scnameins sp " << scpName << " sp " << scpPretty << " ss "
@@ -320,7 +318,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         m_scopes.emplace_back(nodep, m_modp);
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
-            const string type = VN_IS(nodep->modp(), Package) ? "SCOPE_OTHER" : "SCOPE_MODULE";
+            const string type = VN_IS(nodep->modp(), Package) ? "SCOPE_PACKAGE" : "SCOPE_MODULE";
             const string name_pretty = AstNode::vpiName(nodep->shortName());
             const int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.emplace(
@@ -646,7 +644,9 @@ void EmitCSyms::emitScopeHier(bool destroy) {
              ++it) {
             const string name = it->second.m_prettyName;
             if (it->first == "TOP") continue;
-            if ((name.find('.') == string::npos) && (it->second.m_type == "SCOPE_MODULE")) {
+            const string scopeType = it->second.m_type;
+            if ((name.find('.') == string::npos)
+                && (scopeType == "SCOPE_MODULE" || scopeType == "SCOPE_PACKAGE")) {
                 puts("__Vhier." + method + "(0, &" + protect("__Vscope_" + it->second.m_symName)
                      + ");\n");
             }

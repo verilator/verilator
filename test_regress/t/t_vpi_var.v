@@ -13,8 +13,10 @@ import "DPI-C" context function int mon_check();
 `endif
 
 module t (/*AUTOARG*/
+   // Outputs
+   x,
    // Inputs
-   clk
+   clk, a
    );
 
 `ifdef VERILATOR
@@ -24,6 +26,9 @@ extern "C" int mon_check();
 `endif
 
    input clk;
+
+   input [7:0] a;
+   output reg [7:0] x;
 
    reg          onebit          /*verilator public_flat_rw @(posedge clk) */;
    reg [2:1]    twoone          /*verilator public_flat_rw @(posedge clk) */;

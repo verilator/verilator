@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -42,7 +42,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 
 class LinkJumpVisitor final : public VNVisitor {
-private:
     // NODE STATE
     //  AstNode::user1()    -> AstJumpLabel*, for this block if endOfIter
     //  AstNode::user2()    -> AstJumpLabel*, for this block if !endOfIter
@@ -143,18 +142,18 @@ private:
             return labelp;
         }
     }
-    void addPrefixToBlocksRecurse(AstNode* nodep) {
-        // Add do_while_ prefix to blocks
+    void addPrefixToBlocksRecurse(const std::string& prefix, AstNode* const nodep) {
+        // Add a prefix to blocks
         // Used to not have blocks with duplicated names
         if (AstBegin* const beginp = VN_CAST(nodep, Begin)) {
-            if (beginp->name() != "") beginp->name("__Vdo_while_" + beginp->name());
+            if (beginp->name() != "") beginp->name(prefix + beginp->name());
         }
 
-        if (nodep->op1p()) addPrefixToBlocksRecurse(nodep->op1p());
-        if (nodep->op2p()) addPrefixToBlocksRecurse(nodep->op2p());
-        if (nodep->op3p()) addPrefixToBlocksRecurse(nodep->op3p());
-        if (nodep->op4p()) addPrefixToBlocksRecurse(nodep->op4p());
-        if (nodep->nextp()) addPrefixToBlocksRecurse(nodep->nextp());
+        if (nodep->op1p()) addPrefixToBlocksRecurse(prefix, nodep->op1p());
+        if (nodep->op2p()) addPrefixToBlocksRecurse(prefix, nodep->op2p());
+        if (nodep->op3p()) addPrefixToBlocksRecurse(prefix, nodep->op3p());
+        if (nodep->op4p()) addPrefixToBlocksRecurse(prefix, nodep->op4p());
+        if (nodep->nextp()) addPrefixToBlocksRecurse(prefix, nodep->nextp());
     }
 
     // VISITORS
@@ -241,11 +240,12 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         if (bodyp) {
             AstNode* const copiedBodyp = bodyp->cloneTree(false);
-            addPrefixToBlocksRecurse(copiedBodyp);
+            addPrefixToBlocksRecurse("__Vdo_while1_", copiedBodyp);
+            addPrefixToBlocksRecurse("__Vdo_while2_", bodyp);
             whilep->addHereThisAsNext(copiedBodyp);
         }
     }
-    void visit(AstForeach* nodep) override {
+    void visit(AstNodeForeach* nodep) override {
         VL_RESTORER(m_loopp);
         {
             m_loopp = nodep;

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -34,7 +34,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Scope class functions
 
 class ScopeVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // AstVar::user1p           -> AstVarScope replacement for this variable
     // AstCell::user2p          -> AstScope*.  The scope created inside the cell
@@ -335,7 +334,6 @@ public:
 // Scope cleanup -- remove unused activates
 
 class ScopeCleanupVisitor final : public VNVisitor {
-private:
     // STATE
     AstScope* m_scopep = nullptr;  // Current scope we are building
 

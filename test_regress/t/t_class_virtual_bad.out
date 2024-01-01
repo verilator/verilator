@@ -1,4 +1,4 @@
-%Error: t/t_class_virtual_bad.v:12:17: Illegal to call 'new' using an abstract virtual class (IEEE 1800-2017 8.21)
+%Error: t/t_class_virtual_bad.v:12:17: Illegal to call 'new' using an abstract virtual class 'VBase' (IEEE 1800-2017 8.21)
                                      : ... note: In instance 't'
    12 |       VBase b = new;   
       |                 ^~~

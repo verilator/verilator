@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -91,7 +91,7 @@ class SenExprBuilder final {
     }
     AstVarScope* getPrev(AstNodeExpr* exprp) {
         FileLine* const flp = exprp->fileline();
-        const auto rdCurr = [=]() { return getCurr(exprp); };
+        const auto rdCurr = [this, exprp]() { return getCurr(exprp); };
 
         AstNode* scopeExprp = exprp;
         if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) scopeExprp = refp->varScopep();
@@ -155,8 +155,10 @@ class SenExprBuilder final {
         FileLine* const flp = senItemp->fileline();
         AstNodeExpr* const senp = senItemp->sensp();
 
-        const auto currp = [=]() { return getCurr(senp); };
-        const auto prevp = [=]() { return new AstVarRef{flp, getPrev(senp), VAccess::READ}; };
+        const auto currp = [this, senp]() { return getCurr(senp); };
+        const auto prevp = [this, flp, senp]() {
+            return new AstVarRef{flp, getPrev(senp), VAccess::READ};
+        };
         const auto lsb = [=](AstNodeExpr* opp) { return new AstSel{flp, opp, 0, 1}; };
 
         // All event signals should be 1-bit at this point
@@ -223,7 +225,9 @@ public:
         for (AstSenItem* senItemp = senTreep->sensesp(); senItemp;
              senItemp = VN_AS(senItemp->nextp(), SenItem)) {
             const auto& pair = createTerm(senItemp);
-            if (AstNodeExpr* const termp = pair.first) {
+            if (AstNodeExpr* termp = pair.first) {
+                AstNodeExpr* const condp = senItemp->condp();
+                if (condp) termp = new AstAnd{flp, condp->cloneTreePure(false), termp};
                 resultp = resultp ? new AstOr{flp, resultp, termp} : termp;
                 firedAtInitialization |= pair.second;
             }

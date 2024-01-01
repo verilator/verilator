@@ -5,36 +5,50 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Packet;
-   rand int header;
-   rand int length;
+   rand int header;  // 0..7
+   rand int length;  // 0..15
+   rand int sublength; // 0..15
+   rand bit if_4;
+   rand bit iff_5_6;
 
-   extern constraint ex;
+   rand int array[2];  // 2,4,6
 
-   constraint a { header > 0 && header < 1000; }
-   constraint b {
-      if (64 > header) {
-         header < (64'h1 << length);
+   constraint empty {}
+
+   constraint size {
+      header > 0 && header <= 7;
+      length <= 15;
+      length >= header;
+      length dist { [0:1], [2:5] :/ 2, 6 := 6, 7 := 10, 1};
+   }
+
+   constraint ifs {
+      if (header > 4) {
+         if_4 == '1;
+      }
+      if (header == 5 || header == 6) {
+         iff_5_6 == '1;
+      } else {
+         iff_5_6 == '0;
       }
    }
-   constraint c {
-      header >= length - 10;
-      header <= length;
-   }
-   constraint d {
-      foreach (in_use[i]) {
-         !(start_offset <= in_use[i].Xend_offsetX &&
-           start_offset + length - 1 >= in_use[i].Xstart_offsetX);
+
+   constraint arr_uniq {
+      foreach (array[i]) {
+         array[i] inside {2, 4, 6};
       }
+      unique { array[0], array[1] }
    }
+
    constraint order { solve length before header; }
+
    constraint dis {
-      disable soft x;
-      x dist { [100:102] :/ 1, 200 := 2, 300 := 5, 400};
+      soft sublength;
+      disable soft sublength;
+      sublength <= length;
    }
 
 endclass
-
-constraint Packet::ex { header > 0 };
 
 module t (/*AUTOARG*/);
 
@@ -43,15 +57,12 @@ module t (/*AUTOARG*/);
    initial begin
 
       int v;
+      // TODO not testing constrained values
       v = p.randomize();
-      if (v != 1) $stop;
-      v = p.randomize(1);
-      if (v != 1) $stop;
-      v = p.randomize(1, 2);
       if (v != 1) $stop;
       v = p.randomize() with {};
       if (v != 1) $stop;
-      // Not testing other randomize forms as unused in UVM
+      // TODO not testing other randomize forms as unused in UVM
 
       $write("*-* All Finished *-*\n");
       $finish;

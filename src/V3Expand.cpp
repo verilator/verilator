@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -37,8 +37,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Find nodes with side effects, to mark as non-expandable
 
-class ExpandOkVisitor final : public VNVisitor {
-private:
+class ExpandOkVisitor final : public VNVisitorConst {
     // NODE STATE
     //  AstNode::user2()        -> bool.  Is pure (along with all children)
     const VNUser2InUse m_inuser2;
@@ -53,7 +52,7 @@ private:
         {
             VL_RESTORER(m_isImpure);
             m_isImpure = false;
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
             selfImpure |= m_isImpure;
             nodep->user2(selfImpure);
         }
@@ -62,7 +61,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit ExpandOkVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit ExpandOkVisitor(AstNetlist* nodep) { iterateConst(nodep); }
     ~ExpandOkVisitor() = default;
 };
 
@@ -70,7 +69,6 @@ public:
 // Expand state, as a visitor of each AstNode
 
 class ExpandVisitor final : public VNVisitor {
-private:
     // NODE STATE
     //  AstNode::user1()        -> bool.  Processed
     const VNUser1InUse m_inuser1;
@@ -731,7 +729,7 @@ private:
         } else {
             if (isImpure(nodep)) return;
             FileLine* const fl = nodep->fileline();
-            AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* lhsp = nodep->srcp()->unlinkFrBack();
             AstNodeExpr* newp;
             const int lhswidth = lhsp->widthMin();
             if (lhswidth == 1) {
@@ -739,7 +737,7 @@ private:
                 newp = new AstNegate{fl, lhsp};
             } else {
                 UINFO(8, "    REPLICATE " << nodep << endl);
-                const AstConst* const constp = VN_AS(nodep->rhsp(), Const);
+                const AstConst* const constp = VN_AS(nodep->countp(), Const);
                 UASSERT_OBJ(constp, nodep,
                             "Replication value isn't a constant.  Checked earlier!");
                 const uint32_t times = constp->toUInt();
@@ -765,9 +763,9 @@ private:
         UINFO(8, "    Wordize ASSIGN(REPLICATE) " << nodep << endl);
         if (!doExpandWide(rhsp)) return false;
         FileLine* const fl = nodep->fileline();
-        AstNodeExpr* const lhsp = rhsp->lhsp();
+        AstNodeExpr* const lhsp = rhsp->srcp();
         const int lhswidth = lhsp->widthMin();
-        const AstConst* const constp = VN_AS(rhsp->rhsp(), Const);
+        const AstConst* const constp = VN_AS(rhsp->countp(), Const);
         UASSERT_OBJ(constp, rhsp, "Replication value isn't a constant.  Checked earlier!");
         const uint32_t times = constp->toUInt();
         for (int w = 0; w < rhsp->widthWords(); ++w) {

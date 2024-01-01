@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -107,16 +107,9 @@ thread_local Verilated::ThreadLocal Verilated::t_s;
 
 #ifndef VL_USER_FINISH  ///< Define this to override the vl_finish function
 void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
-    if (false && hier) {}
+    if (false && hier) {}  // Unused argument
     VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
         "- %s:%d: Verilog $finish\n", filename, linenum);
-    if (Verilated::threadContextp()->gotFinish()) {
-        VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
-            "- %s:%d: Second verilog $finish, exiting\n", filename, linenum);
-        Verilated::runFlushCallbacks();
-        Verilated::runExitCallbacks();
-        std::exit(0);
-    }
     Verilated::threadContextp()->gotFinish(true);
 }
 #endif
@@ -451,6 +444,8 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WData
 
     const int uw = VL_WORDS_I(umsbp1);  // aka "m" in the algorithm
     const int vw = VL_WORDS_I(vmsbp1);  // aka "n" in the algorithm
+    VL_DEBUG_IFDEF(assert(uw <= VL_MULS_MAX_WORDS););
+    VL_DEBUG_IFDEF(assert(vw <= VL_MULS_MAX_WORDS););
 
     if (vw == 1) {  // Single divisor word breaks rest of algorithm
         uint64_t k = 0;
@@ -472,27 +467,25 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WData
 
     // Zero for ease of debugging and to save having to zero for shifts
     // Note +1 as loop will use extra word
-    for (int i = 0; i < words + 1; ++i) { un[i] = vn[i] = 0; }
+    for (int i = 0; i < words + 1; ++i) un[i] = vn[i] = 0;
 
     // Algorithm requires divisor MSB to be set
     // Copy and shift to normalize divisor so MSB of vn[vw-1] is set
     const int s = 31 - VL_BITBIT_I(vmsbp1 - 1);  // shift amount (0...31)
-    const uint32_t shift_mask = s ? 0xffffffff : 0;  // otherwise >> 32 won't mask the value
-    for (int i = vw - 1; i > 0; --i) {
-        vn[i] = (rwp[i] << s) | (shift_mask & (rwp[i - 1] >> (32 - s)));
-    }
-    vn[0] = rwp[0] << s;
-
     // Copy and shift dividend by same amount; may set new upper word
     if (s) {
+        for (int i = vw - 1; i > 0; --i) vn[i] = (rwp[i] << s) | (rwp[i - 1] >> (32 - s));
+        vn[0] = rwp[0] << s;
         un[uw] = lwp[uw - 1] >> (32 - s);
+        for (int i = uw - 1; i > 0; --i) un[i] = (lwp[i] << s) | (lwp[i - 1] >> (32 - s));
+        un[0] = lwp[0] << s;
     } else {
+        for (int i = vw - 1; i > 0; --i) vn[i] = rwp[i];
+        vn[0] = rwp[0];
         un[uw] = 0;
+        for (int i = uw - 1; i > 0; --i) un[i] = lwp[i];
+        un[0] = lwp[0];
     }
-    for (int i = uw - 1; i > 0; --i) {
-        un[i] = (lwp[i] << s) | (shift_mask & (lwp[i - 1] >> (32 - s)));
-    }
-    un[0] = lwp[0] << s;
 
     // Main loop
     for (int j = uw - vw; j >= 0; --j) {
@@ -536,8 +529,10 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WData
 
     if (is_modulus) {  // modulus
         // Need to reverse normalization on copy to output
-        for (int i = 0; i < vw; ++i) {
-            owp[i] = (un[i] >> s) | (shift_mask & (un[i + 1] << (32 - s)));
+        if (s) {
+            for (int i = 0; i < vw; ++i) owp[i] = (un[i] >> s) | (un[i + 1] << (32 - s));
+        } else {
+            for (int i = 0; i < vw; ++i) owp[i] = un[i];
         }
         for (int i = vw; i < words; ++i) owp[i] = 0;
         return owp;
@@ -549,6 +544,8 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WData
 WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lwp,
                      const WDataInP rwp) VL_MT_SAFE {
     // obits==lbits, rbits can be different
+    const int owords = VL_WORDS_I(obits);
+    VL_DEBUG_IFDEF(assert(owords <= VL_MULS_MAX_WORDS););
     owp[0] = 1;
     for (int i = 1; i < VL_WORDS_I(obits); i++) owp[i] = 0;
     // cppcheck-has-bug-suppress variableScope
@@ -560,11 +557,11 @@ WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lw
     for (int bit = 0; bit < rbits; bit++) {
         if (bit > 0) {  // power = power*power
             VL_ASSIGN_W(obits, lastpowstore, powstore);
-            VL_MUL_W(VL_WORDS_I(obits), powstore, lastpowstore, lastpowstore);
+            VL_MUL_W(owords, powstore, lastpowstore, lastpowstore);
         }
         if (VL_BITISSET_W(rwp, bit)) {  // out *= power
             VL_ASSIGN_W(obits, lastoutstore, owp);
-            VL_MUL_W(VL_WORDS_I(obits), owp, lastoutstore, powstore);
+            VL_MUL_W(owords, owp, lastoutstore, powstore);
         }
     }
     return owp;
@@ -576,7 +573,10 @@ WDataOutP VL_POW_WWQ(int obits, int lbits, int rbits, WDataOutP owp, const WData
     return VL_POW_WWW(obits, lbits, rbits, owp, lwp, rhsw);
 }
 QData VL_POW_QQW(int, int, int rbits, QData lhs, const WDataInP rwp) VL_MT_SAFE {
-    // Skip check for rhs == 0, as short-circuit doesn't save time
+    const int rwords = VL_WORDS_I(rbits);
+    EData rnz = rwp[0];
+    for (int w = 1; w < rwords; ++w) rnz |= rwp[w];
+    if (!rnz) return 1;  // rwp == 0
     if (VL_UNLIKELY(lhs == 0)) return 0;
     QData power = lhs;
     QData result = 1ULL;
@@ -657,8 +657,10 @@ double VL_ITOR_D_W(int lbits, const WDataInP lwp) VL_PURE {
 }
 double VL_ISTOR_D_W(int lbits, const WDataInP lwp) VL_MT_SAFE {
     if (!VL_SIGN_W(lbits, lwp)) return VL_ITOR_D_W(lbits, lwp);
+    const int words = VL_WORDS_I(lbits);
+    VL_DEBUG_IFDEF(assert(words <= VL_MULS_MAX_WORDS););
     uint32_t pos[VL_MULS_MAX_WORDS + 1];  // Fixed size, as MSVC++ doesn't allow [words] here
-    VL_NEGATE_W(VL_WORDS_I(lbits), pos, lwp);
+    VL_NEGATE_W(words, pos, lwp);
     _vl_clean_inplace_w(lbits, pos);
     return -VL_ITOR_D_W(lbits, pos);
 }
@@ -2710,14 +2712,11 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
                         "Exiting due to command line argument (not an error)");
         } else if (arg == "+verilator+noassert") {
             assertOn(false);
-        } else if (commandArgVlUint64(arg, "+verilator+prof+exec+start+", u64)
-                   || commandArgVlUint64(arg, "+verilator+prof+threads+start+", u64)) {
+        } else if (commandArgVlUint64(arg, "+verilator+prof+exec+start+", u64)) {
             profExecStart(u64);
-        } else if (commandArgVlUint64(arg, "+verilator+prof+exec+window+", u64, 1)
-                   || commandArgVlUint64(arg, "+verilator+prof+threads+window+", u64, 1)) {
+        } else if (commandArgVlUint64(arg, "+verilator+prof+exec+window+", u64, 1)) {
             profExecWindow(u64);
-        } else if (commandArgVlString(arg, "+verilator+prof+exec+file+", str)
-                   || commandArgVlString(arg, "+verilator+prof+threads+file+", str)) {
+        } else if (commandArgVlString(arg, "+verilator+prof+exec+file+", str)) {
             profExecFilename(str);
         } else if (commandArgVlString(arg, "+verilator+prof+vlt+file+", str)) {
             profVltFilename(str);
@@ -3249,11 +3248,11 @@ void VlDeleter::deleteAll() VL_EXCLUDES(m_mutex) VL_EXCLUDES(m_deleteMutex) VL_M
             VerilatedLockGuard lock{m_mutex};
             if (m_newGarbage.empty()) break;
             m_deleteMutex.lock();
-            std::swap(m_newGarbage, m_toDelete);
+            std::swap(m_newGarbage, m_deleteNow);
             // m_mutex is unlocked here, so destructors can enqueue new objects
         }
-        for (VlDeletable* const objp : m_toDelete) delete objp;
-        m_toDelete.clear();
+        for (VlDeletable* const objp : m_deleteNow) delete objp;
+        m_deleteNow.clear();
         m_deleteMutex.unlock();
     }
 }

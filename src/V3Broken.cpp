@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -60,7 +60,6 @@ static bool s_brokenAllowMidvisitorCheck = false;
 // Table of allocated AstNode pointers
 
 static class AllocTable final {
-private:
     // MEMBERS
     std::unordered_set<const AstNode*> m_allocated;  // Set of all nodes allocated but not freed
 
@@ -122,7 +121,6 @@ void V3Broken::deleted(const AstNode* nodep) { s_allocTable.deleted(nodep); }
 // Table of AstNode pointers that can be linked to via member pointers
 
 static class LinkableTable final {
-private:
     // MEMBERS
     std::unordered_set<const AstNode*> m_linkable;  // Set of all nodes allocated but not freed
 
@@ -166,7 +164,7 @@ private:
 
     void processEnter(AstNode* nodep) {
         nodep->brokenState(m_brokenCntCurrentUnder);
-        const char* const whyp = nodep->broken();
+        const char* const whyp = nodep->brokenGen();
         UASSERT_OBJ(!whyp, nodep,
                     "Broken link in node (or something without maybePointedTo): " << whyp);
         if (!s_brokenAllowMidvisitorCheck) nodep->checkIter();

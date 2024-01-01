@@ -1,9 +1,0 @@
-%Error: t/t_assert_procedural_clk.v:21:13: Unsupported: Procedural concurrent assertion with clocking event inside always (IEEE 1800-2017 16.14.6)
-                                         : ... note: In instance 't'
-   21 |             assume property (@(posedge clk) cyc == 9);
-      |             ^~~~~~
-%Error: t/t_assert_procedural_clk.v:22:13: Unsupported: Procedural concurrent assertion with clocking event inside always (IEEE 1800-2017 16.14.6)
-                                         : ... note: In instance 't'
-   22 |             assume property (@(negedge clk) cyc == 9);
-      |             ^~~~~~
-%Error: Exiting due to

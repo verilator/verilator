@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser(
     For documentation see
     https://verilator.org/guide/latest/exe_verilator_ccache_report.html""",
     epilog=
-    """Copyright 2002-2023 by Wilson Snyder. This program is free software; you
+    """Copyright 2002-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

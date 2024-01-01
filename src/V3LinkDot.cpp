@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -116,7 +116,6 @@ public:
 // LinkDot state, as a visitor of each AstNode
 
 class LinkDotState final {
-private:
     // NODE STATE
     // Cleared on Netlist
     //  AstNodeModule::user1p()         // VSymEnt*.      Last symbol created for this node
@@ -235,6 +234,8 @@ public:
             }
         } else if (VN_IS(nodep, Cell)) {
             return "instance";
+        } else if (VN_IS(nodep, Constraint)) {
+            return "constraint";
         } else if (VN_IS(nodep, Task)) {
             return "task";
         } else if (VN_IS(nodep, Func)) {
@@ -918,6 +919,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             UINFO(5, "Module not under any CELL or top - dead module: " << nodep << endl);
         }
     }
+
     void visit(AstClass* nodep) override {
         UASSERT_OBJ(m_curSymp, nodep, "Class not under module/package/$unit");
         UINFO(8, "   " << nodep << endl);
@@ -1188,6 +1190,11 @@ class LinkDotFindVisitor final : public VNVisitor {
         nodep->varp(newvarp);
         iterate(nodep->exprp());
     }
+    void visit(AstConstraint* nodep) override {
+        VL_RESTORER(m_curSymp);
+        m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
+        iterateChildren(nodep);
+    }
     void visit(AstVar* nodep) override {
         // Var: Remember its name for later resolution
         UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Var not under module?");
@@ -1429,7 +1436,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         // No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
 
-    void visit(AstForeach* nodep) override {
+    void visit(AstNodeForeach* nodep) override {
         // Symbol table needs nodep->name() as the index variable's name
         VL_RESTORER(m_curSymp);
         {
@@ -1540,7 +1547,6 @@ public:
 //======================================================================
 
 class LinkDotParamVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Cleared on global
     //  *::user1p()             -> See LinkDotState
@@ -1587,11 +1593,11 @@ private:
             // region.  V3Dead should cleanup.
             // Downstream visitors up until V3Dead need to check for nodep->dead.
             nodep->dead(true);
-        } else {
-            m_modp = nodep;
-            iterateChildren(nodep);
-            m_modp = nullptr;
+            return;
         }
+        VL_RESTORER(m_modp);
+        m_modp = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstPin* nodep) override {
         // Pin: Link to submodule's port
@@ -1761,11 +1767,11 @@ class LinkDotScopeVisitor final : public VNVisitor {
                     "Scopes should only exist right after V3Scope");
         // Using the CELL names, we created all hierarchy.  We now need to match this Scope
         // up with the hierarchy created by the CELL names.
+        VL_RESTORER(m_modSymp);
+        VL_RESTORER(m_scopep);
         m_modSymp = m_statep->getScopeSym(nodep);
         m_scopep = nodep;
         iterateChildren(nodep);
-        m_modSymp = nullptr;
-        m_scopep = nullptr;
     }
     void visit(AstVarScope* nodep) override {
         if (!nodep->varp()->isFuncLocal() && !nodep->varp()->isClassMember()) {
@@ -1810,7 +1816,7 @@ class LinkDotScopeVisitor final : public VNVisitor {
         symp->fallbackp(m_modSymp);
         iterateChildren(nodep);
     }
-    void visit(AstForeach* nodep) override {
+    void visit(AstNodeForeach* nodep) override {
         VSymEnt* const symp = m_statep->insertBlock(m_modSymp, nodep->name(), nodep, nullptr);
         symp->fallbackp(m_modSymp);
         // No recursion, we don't want to pick up variables
@@ -1997,7 +2003,6 @@ void LinkDotState::computeIfaceModSyms() {
 //======================================================================
 
 class LinkDotResolveVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Cleared on global
     //  *::user1p()             -> See LinkDotState
@@ -2537,7 +2542,7 @@ private:
         // m_curSymp is symbol table of outer expression
         // m_ds.m_dotSymp is symbol table relative to "."'s above now
         UASSERT_OBJ(m_ds.m_dotSymp, nodep, "nullptr lookup symbol table");
-        // Generally resolved during Primay, but might be at param time under AstUnlinkedRef
+        // Generally resolved during Primary, but might be at param time under AstUnlinkedRef
         UASSERT_OBJ(m_statep->forPrimary() || m_statep->forPrearray(), nodep,
                     "ParseRefs should no longer exist");
         const DotStates lastStates = m_ds;
@@ -2803,6 +2808,13 @@ private:
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 }
+            } else if (AstConstraint* const consp = VN_CAST(foundp->nodep(), Constraint)) {
+                AstNode* const newp = new AstConstraintRef{nodep->fileline(), consp->name()};
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                ok = true;
+                m_ds.m_dotPos = DP_MEMBER;
+                m_ds.m_dotText = "";
             } else if (AstEnumItem* const valuep = VN_CAST(foundp->nodep(), EnumItem)) {
                 if (allowVar) {
                     AstNode* const newp
@@ -2935,6 +2947,12 @@ private:
                            << nodep->warnMore() << "... Suggest use '"
                            << nodep->classOrPackageNodep()->prettyName() << "#()'");
         }
+    }
+    void visit(AstConstraintRef* nodep) override {
+        if (nodep->user3SetOnce()) return;
+        UINFO(8, "     " << nodep << endl);
+        UINFO(8, "     " << m_ds.ascii() << endl);
+        // No children defined
     }
     void visit(AstVarRef* nodep) override {
         // VarRef: Resolve its reference
@@ -3326,7 +3344,19 @@ private:
             m_ds.init(m_curSymp);
             iterateAndNextNull(nodep->rhsp());
             iterateAndNextNull(nodep->thsp());
-            iterateAndNextNull(nodep->attrp());
+        }
+
+        if (nodep->attrp()) {
+            AstNode* const attrp = nodep->attrp()->unlinkFrBack();
+            VL_DO_DANGLING(attrp->deleteTree(), attrp);
+        }
+        AstNode* const basefromp = AstArraySel::baseFromp(nodep, false);
+        if (VN_IS(basefromp, Replicate)) {
+            // From {...}[...] syntax in IEEE 2017
+            if (basefromp) UINFO(1, "    Related node: " << basefromp << endl);
+        } else {
+            nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::VAR_BASE,
+                                       basefromp->cloneTree(false)});
         }
     }
     void visit(AstMemberSel* nodep) override {
@@ -3371,6 +3401,7 @@ private:
             }
         }
         VL_RESTORER(m_curSymp);
+        VL_RESTORER(m_ftaskp);
         {
             m_ftaskp = nodep;
             m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
@@ -3386,9 +3417,8 @@ private:
             }
         }
         m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
-        m_ftaskp = nullptr;
     }
-    void visit(AstForeach* nodep) override {
+    void visit(AstNodeForeach* nodep) override {
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
         VL_RESTORER(m_curSymp);
@@ -3724,6 +3754,22 @@ private:
         }
         iterateChildren(nodep);
     }
+
+    void visit(AstIfaceRefDType* nodep) override {
+        if (nodep->paramsp()) {
+            // If there is no parameters, there is no need to visit this node.
+            AstIface* const ifacep = nodep->ifacep();
+            UASSERT_OBJ(ifacep, nodep, "Port parameters of AstIfaceRefDType without ifacep()");
+            if (ifacep->dead()) return;
+            checkNoDot(nodep);
+            m_usedPins.clear();
+            VL_RESTORER(m_pinSymp);
+            m_pinSymp = m_statep->getNodeSym(ifacep);
+            iterateAndNextNull(nodep->paramsp());
+        }
+    }
+
+    void visit(AstAttrOf* nodep) override { iterateChildren(nodep); }
 
     void visit(AstNode* nodep) override {
         checkNoDot(nodep);

@@ -1,4 +1,4 @@
-%Error: t/t_implements_new_bad.v:13:11: Illegal to call 'new' using an abstract virtual class (IEEE 1800-2017 8.21)
+%Error: t/t_implements_new_bad.v:13:11: Illegal to call 'new' using an abstract virtual class 'Icls' (IEEE 1800-2017 8.21)
                                       : ... note: In instance 't'
    13 |       c = new;   
       |           ^~~

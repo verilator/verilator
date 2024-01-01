@@ -1,6 +1,0 @@
-%Error-NOTIMING: t/t_assigndly_dynamic_notiming.v:10:13: Delayed assignment in a non-inlined function/task requires --timing
-                                                       : ... note: In instance '$unit::foo'
-   10 |         qux <= '1;
-      |             ^~
-                 ... For error description see https://verilator.org/warn/NOTIMING?v=latest
-%Error: Exiting due to

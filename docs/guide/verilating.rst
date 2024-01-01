@@ -1,4 +1,4 @@
-.. Copyright 2003-2023 by Wilson Snyder.
+.. Copyright 2003-2024 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 **********
@@ -7,9 +7,13 @@ Verilating
 
 Verilator may be used in five major ways:
 
+* With the :vlopt:`--binary` option, Verilator will translate the design
+  into an executable, via generating C++ and compiling it.  See
+  :ref:`Binary, C++ and SystemC Generation`.
+
 * With the :vlopt:`--cc` or :vlopt:`--sc` options, Verilator will translate
-  the design into C++ or SystemC code, respectively.  See :ref:`C++ and
-  SystemC Generation`.
+  the design into C++ or SystemC code, respectively.  See :ref:`Binary, C++
+  and SystemC Generation`.
 
 * With the :vlopt:`--lint-only` option, Verilator will lint the design to
   check for warnings but will not typically create any output files.
@@ -24,13 +28,15 @@ Verilator may be used in five major ways:
   expanded.
 
 
-.. _C++ and SystemC Generation:
+.. _Binary, C++ and SystemC Generation:
 
-C++ and SystemC Generation
-==========================
+Binary, C++ and SystemC Generation
+==================================
 
 Verilator will translate a SystemVerilog design into C++ with the
-:vlopt:`--cc` option, or into SystemC with the :vlopt:`--sc` option.
+:vlopt:`--cc` option, or into SystemC with the :vlopt:`--sc` option.  It
+will translate into C++ and compile it into an executable binary with the
+:vlopt:`--binary` option.
 
 When using these options:
 
@@ -45,14 +51,19 @@ When using these options:
    The prefix is set with :vlopt:`--prefix`, or defaults to the name of the
    top module.
 
-#. If :vlopt:`--exe` is used, Verilator creates makefiles to generate a
-   simulation executable, otherwise, it creates makefiles to generate an
-   archive (.a) containing the objects.
+#. If :vlopt:`--binary` or :vlopt:`--main` is used, Verilator creates a C++
+   top wrapper to read command line arguments, create the model, and
+   execute the model.
 
-#. If :vlopt:`--build` option was used, it calls :ref:`GNU Make` or
-   :ref:`CMake` to build the model.
+#. If :vlopt:`--binary` or :vlopt:`--exe` is used, Verilator creates
+   makefiles to generate a simulation executable, otherwise, it creates
+   makefiles to generate an archive (.a) containing the objects.
 
-Once a model is built, it is then typically run, see :ref:`Simulating`.
+#. If :vlopt:`--binary` or :vlopt:`--build` is used, it calls :ref:`GNU
+   Make` or :ref:`CMake` to build the model.
+
+Once a model is built, the next step is typically for the user to run it,
+see :ref:`Simulating`.
 
 
 .. _Hierarchical Verilation:

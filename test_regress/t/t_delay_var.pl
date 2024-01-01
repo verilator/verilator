@@ -13,8 +13,6 @@ scenarios(vlt => 1);
 compile(
     verilator_flags2 => ["--exe --main --timing"],
     make_main => 0,
-    fails => $Self->{vlt},
-    expect_filename => $Self->{golden_filename},
     );
 
 execute(

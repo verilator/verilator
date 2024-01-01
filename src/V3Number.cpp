@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -482,6 +482,11 @@ V3Number& V3Number::setAllBitsXRemoved() {
         }
     }
 }
+V3Number& V3Number::setValue1() {
+    m_data.num()[0] = {1, 0};
+    for (int i = 1; i < words(); i++) m_data.num()[i] = {0, 0};
+    return *this;
+}
 
 V3Number& V3Number::setMask(int nbits) {
     setZero();
@@ -896,14 +901,20 @@ string V3Number::toDecimalU() const VL_MT_STABLE {
 //======================================================================
 // ACCESSORS - as numbers
 
+bool V3Number::fitsInUInt() const VL_MT_SAFE {
+    if (isFourState()) return false;
+    // We allow wide numbers that represent values <= 32 bits
+    for (int i = 1; i < words(); ++i) {
+        if (m_data.num()[i].m_value) return false;
+    }
+    return true;
+}
 uint32_t V3Number::toUInt() const VL_MT_SAFE {
     UASSERT(!isFourState(), "toUInt with 4-state " << *this);
     // We allow wide numbers that represent values <= 32 bits
-    for (int i = 1; i < words(); ++i) {
-        if (m_data.num()[i].m_value) {
-            v3error("Value too wide for 32-bits expected in this context " << *this);
-            break;
-        }
+    if (VL_UNCOVERABLE(!fitsInUInt())) {
+        v3error("Value too wide for 32-bits expected in this context "  // LCOV_EXCL_LINE
+                << *this);
     }
     return m_data.num()[0].m_value;
 }
@@ -2133,18 +2144,18 @@ V3Number& V3Number::opPow(const V3Number& lhs, const V3Number& rhs, bool lsign, 
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
-    if (rhs.isEqZero()) return setQuad(1);  // Overrides lhs 0 -> return 0
+    if (rhs.isEqZero()) return setValue1();  // Overrides lhs 0 -> return 1
     // We may want to special case when the lhs is 2, so we can get larger outputs
     if (rsign && rhs.isNegative()) {
         if (lhs.isEqZero()) {
             return setAllBitsXRemoved();
         } else if (lhs.isEqOne()) {
-            return setQuad(1);
+            return setValue1();
         } else if (lsign && lhs.isEqAllOnes()) {
             if (rhs.bitIs1(0)) {
                 return setAllBits1();  // -1^odd=-1
             } else {
-                return setQuad(1);  // -1^even=1
+                return setValue1();  // -1^even=1
             }
         }
         return setZero();

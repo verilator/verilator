@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -35,7 +35,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 
 class BeginState final {
-private:
     // NODE STATE
     // Entire netlist:
     // AstNodeFTask::user1      -> bool, 1=processed
@@ -55,7 +54,6 @@ public:
 //######################################################################
 
 class BeginVisitor final : public VNVisitor {
-private:
     // STATE
     BeginState* const m_statep;  // Current global state
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -320,7 +318,7 @@ public:
 
 //######################################################################
 
-class BeginRelinkVisitor final : public VNVisitor {
+class BeginRelinkVisitor final : public VNVisitorConst {
     // Replace tasks with new pointer
 private:
     // NODE STATE
@@ -333,13 +331,13 @@ private:
             UINFO(9, "    relinkFTask " << nodep << endl);
             nodep->name(nodep->taskp()->name());
         }
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstVarRef* nodep) override {
         if (nodep->varp()->user1()) {  // It was converted
             UINFO(9, "    relinVarRef " << nodep << endl);
         }
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstIfaceRefDType* nodep) override {
         // May have changed cell names
@@ -347,14 +345,14 @@ private:
         UINFO(8, "   IFACEREFDTYPE " << nodep << endl);
         if (nodep->cellp()) nodep->cellName(nodep->cellp()->name());
         UINFO(8, "       rename to " << nodep << endl);
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     //--------------------
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
-    BeginRelinkVisitor(AstNetlist* nodep, BeginState*) { iterate(nodep); }
+    BeginRelinkVisitor(AstNetlist* nodep, BeginState*) { iterateConst(nodep); }
     ~BeginRelinkVisitor() override = default;
 };
 

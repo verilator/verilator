@@ -1,0 +1,5 @@
+%Error: t/t_virtual_interface_method_bad.v:11:10: Member reference from interface to 'x' is not referencing a valid task or function 
+                                                : ... note: In instance 't'
+   11 |     v_if.x();
+      |          ^
+%Error: Exiting due to

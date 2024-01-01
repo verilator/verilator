@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1414,7 +1414,7 @@ void OrderProcess::process(bool multiThreaded) {
     // edges) will have its own color, and corresponds to a loop in the
     // original graph. However the new graph will be acyclic (the removed
     // edges are actually still there, just with weight 0).
-    UINFO(2, "  Acyclic & Order...\n");
+    UINFO(2, "  Acyclic and Order...\n");
     m_graph.acyclic(&V3GraphEdge::followAlwaysTrue);
     if (dumpGraphLevel()) m_graph.dumpDotFilePrefixed(m_tag + "_orderg_acyc");
 

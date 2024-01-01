@@ -1035,11 +1035,11 @@ Coding Conventions
 ==================
 
 
-Compiler Version and C++11
+Compiler Version and C++14
 --------------------------
 
-Verilator requires C11. Verilator does not require any newer versions, but
-is maintained to build successfully with C14/C17/C20.
+Verilator requires C14. Verilator does not require any newer versions, but
+is maintained to build successfully with C17/C20.
 
 
 Indentation and Naming Style
@@ -2237,7 +2237,7 @@ xsim_flags / xsim_flags2 / xsim_run_flags
 Distribution
 ============
 
-Copyright 2008-2023 by Wilson Snyder. Verilator is free software; you can
+Copyright 2008-2024 by Wilson Snyder. Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
 General Public License Version 3 or the Perl Artistic License Version 2.0.
 

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -66,7 +66,7 @@ public:
     static string topClassName() VL_MT_SAFE {  // Return name of top wrapper module
         return v3Global.opt.prefix();
     }
-    static string prefixNameProtect(const AstNode* nodep) {  // C++ name with prefix
+    static string prefixNameProtect(const AstNode* nodep) VL_MT_STABLE {  // C++ name with prefix
         return v3Global.opt.modPrefix() + "_" + VIdProtect::protect(nodep->name());
     }
     static bool isAnonOk(const AstVar* varp) {

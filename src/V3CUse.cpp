@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -33,7 +33,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Visit within a module all nodes and data types they reference, finding
 // any classes so we can make sure they are defined when Verilated code
 // compiles
-class CUseVisitor final : public VNVisitor {
+class CUseVisitor final : public VNVisitorConst {
     // NODE STATE
     //  AstNode::user1()     -> bool.  True if already visited
     const VNUser1InUse m_inuser1;
@@ -56,44 +56,44 @@ class CUseVisitor final : public VNVisitor {
     }
     void visit(AstCFunc* nodep) override {
         if (nodep->user1SetOnce()) return;
-        iterateAndNextNull(nodep->argsp());
-        iterateAndNextNull(nodep->stmtsp());
+        iterateAndNextConstNull(nodep->argsp());
+        iterateAndNextConstNull(nodep->stmtsp());
     }
     void visit(AstCCall* nodep) override { return; }
     void visit(AstCReturn* nodep) override {
         UASSERT(!nodep->user1SetOnce(), "Visited same return twice.");
-        iterate(nodep->lhsp()->dtypep());
+        iterateConst(nodep->lhsp()->dtypep());
     }
     void visit(AstNodeDType* nodep) override {
-        if (nodep->virtRefDTypep()) iterate(nodep->virtRefDTypep());
-        if (nodep->virtRefDType2p()) iterate(nodep->virtRefDType2p());
+        if (nodep->virtRefDTypep()) iterateConst(nodep->virtRefDTypep());
+        if (nodep->virtRefDType2p()) iterateConst(nodep->virtRefDType2p());
 
         // Add a CUse for every struct that requires a declaration
         AstNodeUOrStructDType* const stypep = VN_CAST(nodep->skipRefp(), NodeUOrStructDType);
         if (stypep && stypep->classOrPackagep()) {
             addNewUse(nodep, VUseType::INT_INCLUDE, stypep->classOrPackagep()->name());
-            iterateChildren(stypep);
+            iterateChildrenConst(stypep);
         } else if (AstClassRefDType* const classp = VN_CAST(nodep->skipRefp(), ClassRefDType)) {
             addNewUse(nodep, VUseType::INT_FWD_CLASS, classp->name());
         }
     }
     void visit(AstNode* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
-        if (nodep->dtypep()) iterate(nodep->dtypep());
-        iterateChildren(nodep);
+        if (nodep->dtypep()) iterateConst(nodep->dtypep());
+        iterateChildrenConst(nodep);
     }
     void visit(AstCell* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         // Currently no IMP_INCLUDE because we include __Syms which has them all
         addNewUse(nodep, VUseType::INT_FWD_CLASS, nodep->modp()->name());
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
 
 public:
     // CONSTRUCTORS
     explicit CUseVisitor(AstNodeModule* modp)
         : m_modp(modp) {
-        iterate(modp);
+        iterateConst(modp);
 
         for (auto& used : m_didUse) {
             AstCUse* const newp = new AstCUse{used.second.first, used.second.second, used.first};

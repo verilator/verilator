@@ -11,7 +11,7 @@
 
 #include "verilated.h"
 
-#include "Vt_var_overwidth_bad.h"
+#include VM_PREFIX_INCLUDE
 
 //======================================================================
 

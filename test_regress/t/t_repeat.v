@@ -26,12 +26,8 @@ module t (/*AUTOARG*/);
       end
       if (times != 10) $stop;
       //
-      // verilator lint_off INFINITELOOP
-      forever begin
-         // verilator lint_on INFINITELOOP
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
+      $write("*-* All Finished *-*\n");
+      $finish;
    end
 
 endmodule

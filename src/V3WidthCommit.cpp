@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -99,9 +99,9 @@ private:
                 nodep->v3warn(ENCAPSULATED, nodep->prettyNameQ()
                                                 << " is hidden as " << how
                                                 << " within this context (IEEE 1800-2017 8.18)\n"
-                                                << nodep->warnContextPrimary() << endl
+                                                << nodep->warnContextPrimary() << "\n"
                                                 << nodep->warnOther()
-                                                << "... Location of definition" << endl
+                                                << "... Location of definition\n"
                                                 << defp->warnContextSecondary());
             }
         }

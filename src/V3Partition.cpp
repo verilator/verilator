@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -418,7 +418,6 @@ using MergeCandidateScoreboard = V3Scoreboard<MergeCandidate, MergeCandidateKey>
 
 // Information associated with scoreboarding a merge candidate
 class MergeCandidate VL_NOT_FINAL : public MergeCandidateScoreboard::Node {
-private:
     // Only the known subclasses can create or delete one of these
     friend class SiblingMC;
     friend class MTaskEdge;
@@ -1056,7 +1055,6 @@ private:
 };
 
 class PartPropagateCpSelfTest final {
-private:
     // MEMBERS
     V3Graph m_graph;  // A graph
     std::array<LogicMTask*, 50> m_vx;  // All vertices within the graph
@@ -1236,7 +1234,6 @@ static void partRedirectEdgesFrom(V3Graph* graphp, LogicMTask* recipientp, Logic
 
 // Perform edge or sibling contraction on the partition graph
 class PartContraction final {
-private:
     // TYPES
     // New CP information for mtaskp reflecting an upcoming merge
     struct NewCp {
@@ -1846,7 +1843,6 @@ private:
 // Scan node, indicate whether it contains a call to a DPI imported
 // routine.
 class DpiImportCallVisitor final : public VNVisitor {
-private:
     bool m_hasDpiHazard = false;  // Found a DPI import call.
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
     // METHODS
@@ -1964,7 +1960,6 @@ private:
 //     parallel mode.
 //
 class PartFixDataHazards final {
-private:
     // TYPES
     using TasksByRank = std::map<uint32_t /*rank*/, std::set<LogicMTask*, MTaskIdLessThan>>;
 

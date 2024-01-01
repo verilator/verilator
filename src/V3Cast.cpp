@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -47,7 +47,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Cast state, as a visitor of each AstNode
 
 class CastVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Entire netlist:
     //   AstNode::user1()               // bool.  Indicates node is of known size
@@ -120,7 +119,7 @@ private:
         // All class types are castable to each other. If they are of different types,
         // a compilation error will be thrown, so an explicit cast is required. Types were
         // already checked by V3Width and dtypep of a condition operator is a type of their
-        // common base class, so both classes can be safetly casted.
+        // common base class, so both classes can be safely casted.
         const AstClassRefDType* const thenClassDtypep
             = VN_CAST(nodep->thenp()->dtypep(), ClassRefDType);
         const AstClassRefDType* const elseClassDtypep

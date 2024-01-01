@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -82,7 +82,6 @@ private:
 // Map a pointer into a id, for e.g. nodep to mtask mappings
 
 class PartPtrIdMap final {
-private:
     // TYPES
     // MEMBERS
     mutable uint64_t m_nextId = 0;

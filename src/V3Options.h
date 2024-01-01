@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -143,7 +143,7 @@ public:
     constexpr operator en() const { return m_e; }
     bool fst() const { return m_e == FST; }
     bool vcd() const { return m_e == VCD; }
-    string classBase() const {
+    string classBase() const VL_MT_SAFE {
         static const char* const names[] = {"VerilatedVcd", "VerilatedFst"};
         return names[m_e];
     }
@@ -363,6 +363,8 @@ private:
     bool m_fDfgPeephole = true; // main switch: -fno-dfg-peephole
     bool m_fDfgPreInline;    // main switch: -fno-dfg-pre-inline and -fno-dfg
     bool m_fDfgPostInline;   // main switch: -fno-dfg-post-inline and -fno-dfg
+    bool m_fDeadAssigns;     // main switch: -fno-dead-assigns: remove dead assigns
+    bool m_fDeadCells;   // main switch: -fno-dead-cells: remove dead cells
     bool m_fExpand;      // main switch: -fno-expand: expansion of C macros
     bool m_fGate;        // main switch: -fno-gate: gate wire elimination
     bool m_fInline;      // main switch: -fno-inline: module inlining
@@ -626,6 +628,8 @@ public:
     bool fDfgPeepholeEnabled(const std::string& name) const {
         return !m_fDfgPeepholeDisabled.count(name);
     }
+    bool fDeadAssigns() const { return m_fDeadAssigns; }
+    bool fDeadCells() const { return m_fDeadCells; }
     bool fExpand() const { return m_fExpand; }
     bool fGate() const { return m_fGate; }
     bool fInline() const { return m_fInline; }
@@ -643,7 +647,7 @@ public:
     bool fTable() const { return m_fTable; }
     bool fTaskifyAll() const { return m_fTaskifyAll; }
 
-    string traceClassBase() const { return m_traceFormat.classBase(); }
+    string traceClassBase() const VL_MT_SAFE { return m_traceFormat.classBase(); }
     string traceClassLang() const { return m_traceFormat.classBase() + (systemC() ? "Sc" : "C"); }
     string traceSourceBase() const { return m_traceFormat.sourceName(); }
     string traceSourceLang() const VL_MT_SAFE {
@@ -697,7 +701,6 @@ public:
     void filePathLookedMsg(FileLine* fl, const string& modname);
     V3LangCode fileLanguage(const string& filename);
     static bool fileStatNormal(const string& filename);
-    static void fileNfsFlush(const string& filename);
 
     // METHODS (other OS)
     static void throwSigsegv();

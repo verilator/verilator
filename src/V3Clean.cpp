@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -33,7 +33,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Clean state, as a visitor of each AstNode
 
 class CleanVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Entire netlist:
     //  AstNode::user()         -> CleanState.  For this node, 0==UNKNOWN
@@ -239,10 +238,7 @@ private:
             if (AstNodeExpr* const exprp = VN_CAST(argp, NodeExpr)) ensureClean(exprp);
         }
     }
-    void visit(AstTraceDecl* nodep) override {
-        // No cleaning, or would loose pointer to enum
-        iterateChildren(nodep);
-    }
+    void visit(AstTraceDecl* nodep) override {}  // Nothing to do here
     void visit(AstTraceInc* nodep) override {
         iterateChildren(nodep);
         ensureCleanAndNext(nodep->valuep());

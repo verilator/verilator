@@ -1,4 +1,4 @@
-.. Copyright 2003-2023 by Wilson Snyder.
+.. Copyright 2003-2024 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _Simulation Runtime Arguments:
@@ -64,15 +64,18 @@ Summary:
 
 .. option:: +verilator+prof+threads+file+<filename>
 
-   Deprecated. Alias for :vlopt:`+verilator+prof+exec+file+\<filename\>`
+   Removed in 5.020. Was an alias for
+   :vlopt:`+verilator+prof+exec+file+\<filename\>`
 
 .. option:: +verilator+prof+threads+start+<value>
 
-   Deprecated. Alias for :vlopt:`+verilator+prof+exec+start+\<value\>`
+   Removed in 5.020. Was an alias for
+   :vlopt:`+verilator+prof+exec+start+\<value\>`
 
 .. option:: +verilator+prof+threads+window+<value>
 
-   Deprecated. Alias for :vlopt:`+verilator+prof+exec+window+\<value\>`
+   Removed in 5.020. Was an alias for
+   :vlopt:`+verilator+prof+exec+window+\<value\>`
 
 .. option:: +verilator+prof+vlt+file+<filename>
 

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -36,7 +36,6 @@
 // VlcPoint - A coverage point (across all tests)
 
 class VlcPoint final {
-private:
     // MEMBERS
     string m_name;  //< Name of the point
     uint64_t m_pointNum;  //< Point number
@@ -108,7 +107,6 @@ public:
 // VlcPoints - Container of all points
 
 class VlcPoints final {
-private:
     // MEMBERS
     using NameMap = std::map<const std::string, uint64_t>;  // Sorted by name (ordered)
     NameMap m_nameMap;  //< Name to point-number

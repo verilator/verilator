@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2010-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2010-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -610,7 +610,7 @@ void V3Config::applyIgnores(FileLine* filelinep) {
 }
 
 void V3Config::applyModule(AstNodeModule* modulep) {
-    const string& modname = modulep->name();
+    const string& modname = modulep->origName();
     V3ConfigModule* modp = V3ConfigResolver::s().modules().resolve(modname);
     if (modp) modp->apply(modulep);
 }

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -125,8 +125,6 @@ public:
     // METHODS
     void begin() {
         // Start a new if/else tracking graph
-        // See NODE STATE comment in ActiveLatchCheckVisitor
-        AstNode::user1ClearTree();
         m_curVertexp = new LatchDetectGraphVertex{this, "ROOT"};
     }
     // Clear out userp field of referenced outputs on destruction
@@ -197,7 +195,6 @@ public:
 // Collect existing active names
 
 class ActiveNamer final : public VNVisitor {
-private:
     // STATE
     AstScope* m_scopep = nullptr;  // Current scope to add statement to
     AstActive* m_sActivep = nullptr;  // For current scope, the Static active we're building
@@ -308,7 +305,6 @@ AstActive*& ActiveNamer::getSpecialActive<AstSenItem::Combo>() {
 // Latch checking visitor
 
 class ActiveLatchCheckVisitor final : public VNVisitorConst {
-private:
     // NODE STATE
     // Input:
     //  AstVar::user1p // V2LatchGraphVertex* The vertex handling this node
@@ -425,7 +421,6 @@ public:
 // Active class functions
 
 class ActiveVisitor final : public VNVisitor {
-private:
     // NODE STATE
     //  Each call to V3Const::constify
     //   AstVarScope::user1()           bool: This VarScope is referenced in the sensitivity list

@@ -1,0 +1,8 @@
+{
+	"name": "Verilator Build Environment",
+
+	"build": {
+        "dockerfile": "../ci/docker/buildenv/Dockerfile"
+    }
+
+}

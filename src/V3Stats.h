@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -68,7 +68,8 @@ public:
 class V3Statistic final {
     // A statistical entry we want published into the database
     const string m_name;  ///< Name of this statistic
-    double m_count;  ///< Count of occurrences/ value
+    double m_value;  ///< Value of statistic (count, ratio, etc.)
+    unsigned m_precision;  ///< Precision to print with (number of fractional digits)
     const string m_stage;  ///< Runtime stage
     const bool m_sumit;  ///< Do summation of similar stats
     const bool m_perf;  ///< Performance section
@@ -77,20 +78,22 @@ public:
     // METHODS
     string stage() const VL_MT_SAFE { return m_stage; }
     string name() const VL_MT_SAFE { return m_name; }
-    double count() const VL_MT_SAFE { return m_count; }
+    double value() const VL_MT_SAFE { return m_value; }
+    unsigned precision() const VL_MT_SAFE { return m_precision; }
     bool sumit() const VL_MT_SAFE { return m_sumit; }
     bool perf() const VL_MT_SAFE { return m_perf; }
     bool printit() const VL_MT_SAFE { return m_printit; }
     virtual void dump(std::ofstream& os) const VL_MT_SAFE;
     void combineWith(V3Statistic* otherp) {
-        m_count += otherp->count();
+        m_value += otherp->value();
         otherp->m_printit = false;
     }
     // CONSTRUCTORS
-    V3Statistic(const string& stage, const string& name, double count, bool sumit = false,
-                bool perf = false)
+    V3Statistic(const string& stage, const string& name, double value, unsigned precision,
+                bool sumit = false, bool perf = false)
         : m_name{name}
-        , m_count{count}
+        , m_value{value}
+        , m_precision{precision}
         , m_stage{stage}
         , m_sumit{sumit}
         , m_perf{perf} {}
@@ -102,17 +105,18 @@ public:
 class V3Stats final {
 public:
     static void addStat(const V3Statistic&);
-    static void addStat(const string& stage, const string& name, double count) {
-        addStat(V3Statistic{stage, name, count});
+    static void addStat(const string& stage, const string& name, double value,
+                        unsigned precision = 0) {
+        addStat(V3Statistic{stage, name, value, precision});
     }
-    static void addStat(const string& name, double count) {
-        addStat(V3Statistic{"*", name, count});
+    static void addStat(const string& name, double value, unsigned precision = 0) {
+        addStat(V3Statistic{"*", name, value, precision});
     }
     static void addStatSum(const string& name, double count) {
-        addStat(V3Statistic{"*", name, count, true});
+        addStat(V3Statistic{"*", name, count, 0, true});
     }
-    static void addStatPerf(const string& name, double count) {
-        addStat(V3Statistic{"*", name, count, true, true});
+    static void addStatPerf(const string& name, double value) {
+        addStat(V3Statistic{"*", name, value, 6, true, true});
     }
     /// Called each stage
     static void statsStage(const string& name);

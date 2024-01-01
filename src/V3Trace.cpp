@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -156,7 +156,6 @@ public:
 // Trace state, as a visitor of each AstNode
 
 class TraceVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // V3Hasher in V3DupFinder
     //  Ast*::user4()                   // V3Hasher calculation
@@ -202,40 +201,24 @@ private:
         UINFO(9, "Finding duplicates\n");
         // Note uses user4
         V3DupFinder dupFinder;  // Duplicate code detection
-        // Hash all of the values the traceIncs need
-        for (const V3GraphVertex* itp = m_graph.verticesBeginp(); itp;
-             itp = itp->verticesNextp()) {
-            if (const TraceTraceVertex* const vvertexp = itp->cast<const TraceTraceVertex>()) {
-                const AstTraceDecl* const nodep = vvertexp->nodep();
-                if (nodep->valuep()) {
-                    UASSERT_OBJ(nodep->valuep()->backp() == nodep, nodep,
-                                "Trace duplicate back needs consistency,"
-                                " so we can map duplicates back to TRACEINCs");
-                    // Just keep one node in the map and point all duplicates to this node
-                    if (dupFinder.findDuplicate(nodep->valuep()) == dupFinder.end()) {
-                        dupFinder.insert(nodep->valuep());
-                    }
-                }
-            }
-        }
-        // Find if there are any duplicates
+        // Hash all of the traced values and find if there are any duplicates
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
             if (TraceTraceVertex* const vvertexp = itp->cast<TraceTraceVertex>()) {
                 const AstTraceDecl* const nodep = vvertexp->nodep();
-                if (nodep->valuep() && !vvertexp->duplicatep()) {
-                    const auto dupit = dupFinder.findDuplicate(nodep->valuep());
-                    if (dupit != dupFinder.end()) {
-                        const AstTraceDecl* const dupDeclp
-                            = VN_AS(dupit->second->backp(), TraceDecl);
-                        UASSERT_OBJ(dupDeclp, nodep, "Trace duplicate of wrong type");
-                        TraceTraceVertex* const dupvertexp
-                            = dupDeclp->user1u().toGraphVertex()->cast<TraceTraceVertex>();
-                        UINFO(8, "  Orig " << nodep << endl);
-                        UINFO(8, "   dup " << dupDeclp << endl);
-                        // Mark the hashed node as the original and our
-                        // iterating node as duplicated
-                        vvertexp->duplicatep(dupvertexp);
-                    }
+                UASSERT_OBJ(!vvertexp->duplicatep(), nodep, "Should not be a duplicate");
+                const auto dupit = dupFinder.findDuplicate(nodep->valuep());
+                if (dupit == dupFinder.end()) {
+                    dupFinder.insert(nodep->valuep());
+                } else {
+                    const AstTraceDecl* const dupDeclp = VN_AS(dupit->second->backp(), TraceDecl);
+                    UASSERT_OBJ(dupDeclp, nodep, "Trace duplicate of wrong type");
+                    TraceTraceVertex* const dupvertexp
+                        = dupDeclp->user1u().toGraphVertex()->cast<TraceTraceVertex>();
+                    UINFO(8, "  Orig " << nodep << endl);
+                    UINFO(8, "   dup " << dupDeclp << endl);
+                    // Mark the hashed node as the original and our
+                    // iterating node as duplicated
+                    vvertexp->duplicatep(dupvertexp);
                 }
             }
         }
@@ -595,8 +578,9 @@ private:
             UASSERT_OBJ(declp->code() == 0, declp,
                         "Canonical node should not have code assigned yet");
             declp->code(m_code);
-            m_code += declp->codeInc();
-            m_statUniqCodes += declp->codeInc();
+            const uint32_t codeInc = declp->codeInc();
+            m_code += codeInc;
+            m_statUniqCodes += codeInc;
             ++m_statUniqSigs;
 
             // If this is a const signal, add the AstTraceInc

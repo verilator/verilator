@@ -28,6 +28,7 @@ our @Exempt_Files_List = qw(
     ci/coverage-upload.sh
     docs/CONTRIBUTING.rst
     docs/CONTRIBUTORS
+    docs/README.rst
     docs/_static
     docs/gen
     docs/spelling.txt

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -92,7 +92,6 @@ void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
 // Link state, as a visitor of each AstNode
 
 class LinkCellsVisitor final : public VNVisitor {
-private:
     // NODE STATE
     //  Entire netlist:
     //   AstNodeModule::user1p()        // V3GraphVertex*    Vertex describing this module
@@ -160,7 +159,6 @@ private:
 
     // VISITs
     void visit(AstNetlist* nodep) override {
-        AstNode::user1ClearTree();
         readModNames();
         iterateChildren(nodep);
         // Find levels in graph
@@ -240,6 +238,11 @@ private:
             } else {
                 nodep->v3error("Non-interface used as an interface: " << nodep->prettyNameQ());
             }
+        }
+        iterateChildren(nodep);
+        for (AstPin* pinp = nodep->paramsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            pinp->param(true);
+            if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
         }
         // Note cannot do modport resolution here; modports are allowed underneath generates
     }

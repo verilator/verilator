@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -39,7 +39,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Convert every WRITE AstVarRef to a READ ref
 
 class ConvertWriteRefsToRead final : public VNVisitor {
-private:
     // MEMBERS
     AstNodeExpr* m_result = nullptr;
 
@@ -67,7 +66,6 @@ public:
 // Clock state, as a visitor of each AstNode
 
 class ClockVisitor final : public VNVisitor {
-private:
     // STATE
     AstCFunc* m_evalp = nullptr;  // The '_eval' function
     AstScope* m_scopep = nullptr;  // Current scope

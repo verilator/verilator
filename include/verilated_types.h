@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -38,6 +38,28 @@
 #include <string>
 #include <unordered_set>
 #include <utility>
+
+//=========================================================================
+// Debug functions
+
+#ifdef VL_DEBUG
+/// Evaluate statement if VL_DEBUG defined
+#define VL_DEBUG_IFDEF(stmt) \
+    do { stmt } while (false)
+/// Evaluate statement if VL_DEBUG defined and Verilated::debug() enabled
+#define VL_DEBUG_IF(stmt) \
+    do { \
+        if (VL_UNLIKELY(Verilated::debug())) { stmt } \
+    } while (false)
+#else
+// We intentionally do not compile the stmt to improve compile speed
+#define VL_DEBUG_IFDEF(stmt) \
+    do { \
+    } while (false)
+#define VL_DEBUG_IF(stmt) \
+    do { \
+    } while (false)
+#endif
 
 //===================================================================
 // String formatters (required by below containers)
@@ -108,7 +130,7 @@ public:
     VlProcess()
         : m_state{RUNNING} {}
     // Construct child process of parent
-    VlProcess(VlProcessRef parentp)
+    explicit VlProcess(VlProcessRef parentp)
         : m_state{RUNNING}
         , m_parentp{parentp} {
         m_parentp->attach(this);
@@ -589,6 +611,11 @@ public:
     void insert(int32_t index, const T_Value& value) {
         if (VL_UNLIKELY(index < 0 || index > m_deque.size())) return;
         m_deque.insert(m_deque.begin() + index, value);
+    }
+
+    // inside (set membership operator)
+    bool inside(const T_Value& value) const {
+        return std::find(m_deque.begin(), m_deque.end(), value) != m_deque.end();
     }
 
     // Return slice q[lsb:msb]
@@ -1286,6 +1313,11 @@ public:
     bool operator==(const VlUnpacked<T_Value, T_Depth>& that) const { return !neq(that); }
     bool operator!=(const VlUnpacked<T_Value, T_Depth>& that) { return neq(that); }
 
+    // inside (set membership operator)
+    bool inside(const T_Value& value) const {
+        return std::find(std::begin(m_storage), std::end(m_storage), value) != std::end(m_storage);
+    }
+
     void sort() { std::sort(std::begin(m_storage), std::end(m_storage)); }
     template <typename Func>
     void sort(Func with_func) {
@@ -1499,7 +1531,7 @@ class VlDeleter final {
     // Queue of new objects that should be deleted
     std::vector<VlDeletable*> m_newGarbage VL_GUARDED_BY(m_mutex);
     // Queue of objects currently being deleted (only for deleteAll())
-    std::vector<VlDeletable*> m_toDelete VL_GUARDED_BY(m_deleteMutex);
+    std::vector<VlDeletable*> m_deleteNow VL_GUARDED_BY(m_deleteMutex);
     mutable VerilatedMutex m_mutex;  // Mutex protecting the 'new garbage' queue
     mutable VerilatedMutex m_deleteMutex;  // Mutex protecting the delete queue
 
@@ -1534,12 +1566,15 @@ class VlClass VL_NOT_FINAL : public VlDeletable {
     friend class VlClassRef;  // Needed for access to the ref counter and deleter
 
     // MEMBERS
-    std::atomic<size_t> m_counter{0};  // Reference count for this object
+    std::atomic<size_t> m_counter{1};  // Reference count for this object
     VlDeleter* m_deleterp = nullptr;  // The deleter that will delete this object
 
     // METHODS
     // Atomically increments the reference counter
-    void refCountInc() VL_MT_SAFE { ++m_counter; }
+    void refCountInc() VL_MT_SAFE {
+        VL_DEBUG_IFDEF(assert(m_counter););  // If zero, we might have already deleted
+        ++m_counter;
+    }
     // Atomically decrements the reference counter. Assuming VlClassRef semantics are sound, it
     // should never get called at m_counter == 0.
     void refCountDec() VL_MT_SAFE {
@@ -1548,8 +1583,8 @@ class VlClass VL_NOT_FINAL : public VlDeletable {
 
 public:
     // CONSTRUCTORS
-    VlClass() { refCountInc(); }
-    VlClass(const VlClass& copied) { refCountInc(); }
+    VlClass() {}
+    VlClass(const VlClass& copied) {}
     ~VlClass() override = default;
 };
 
@@ -1629,18 +1664,21 @@ public:
     // METHODS
     // Copy and move assignments
     VlClassRef& operator=(const VlClassRef& copied) {
+        if (m_objp == copied.m_objp) return *this;
         refCountDec();
         m_objp = copied.m_objp;
         refCountInc();
         return *this;
     }
     VlClassRef& operator=(VlClassRef&& moved) {
+        if (m_objp == moved.m_objp) return *this;
         refCountDec();
         m_objp = vlstd::exchange(moved.m_objp, nullptr);
         return *this;
     }
     template <typename T_OtherClass>
     VlClassRef& operator=(const VlClassRef<T_OtherClass>& copied) {
+        if (m_objp == copied.m_objp) return *this;
         refCountDec();
         m_objp = copied.m_objp;
         refCountInc();
@@ -1648,6 +1686,7 @@ public:
     }
     template <typename T_OtherClass>
     VlClassRef& operator=(VlClassRef<T_OtherClass>&& moved) {
+        if (m_objp == moved.m_objp) return *this;
         refCountDec();
         m_objp = vlstd::exchange(moved.m_objp, nullptr);
         return *this;

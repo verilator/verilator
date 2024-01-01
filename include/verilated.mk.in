@@ -2,7 +2,7 @@
 ######################################################################
 # DESCRIPTION: Makefile commands for all verilated target files
 #
-# Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -11,7 +11,7 @@
 
 # Tool names.
 # These are computed at configuration time, and most are not ?=
-# to avoid picking up potentilly incorrect Make implicit variables
+# to avoid picking up potentially incorrect Make implicit variables
 AR = @AR@
 CXX = @CXX@
 LINK = @CXX@
@@ -154,7 +154,7 @@ ifeq ($(VM_SC),1)
   LDFLAGS  += $(SYSTEMC_CXX_FLAGS) $(addprefix -L, $(SYSTEMC_LIBDIR))
   SC_LIBS   = -lsystemc
  ifneq ($(wildcard $(SYSTEMC_LIBDIR)/*numeric_bit*),)
-  # Systemc 1.2.1beta
+  # SystemC 1.2.1beta
   SC_LIBS   += -lnumeric_bit -lqt
  endif
 endif

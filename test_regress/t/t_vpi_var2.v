@@ -23,8 +23,10 @@ module t
 /* verilator public_off */
 )
 (/*AUTOARG*/
+   // Outputs
+   x,
    // Inputs
-   clk
+   clk, a
    );
 
 `ifdef VERILATOR
@@ -34,6 +36,10 @@ extern "C" int mon_check();
 `endif
 
    input clk;
+
+   input [7:0] a /* verilator public_flat_rw */;
+   output reg [7:0] x /* verilator public_flat_rw */;
+
 /*verilator public_flat_rw_on @(posedge clk)*/
    reg          onebit;
    reg [2:1]    twoone;

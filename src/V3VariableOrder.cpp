@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -36,7 +36,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Establish mtask variable sort order in mtasks mode
 
 class VarTspSorter final : public V3TSP::TspStateBase {
-private:
     // MEMBERS
     const MTaskIdSet& m_mtaskIds;  // Mtask we're ordering
     static unsigned s_serialNext;  // Unique ID to establish serial order

@@ -90,8 +90,8 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     export VERILATOR_TEST_NO_GPROF=1 # gprof is a bit different on FreeBSD, disable
   fi
 
-  # Run sanitize on Ubuntu 20.04 only
-  [ "$CI_RUNS_ON" = 'ubuntu-20.04' ] && [ "$CI_M32" = "" ] && sanitize='--sanitize' || sanitize=''
+  # Run sanitize on Ubuntu 22.04 only
+  [ "$CI_RUNS_ON" = 'ubuntu-22.04' ] && [ "$CI_M32" = "" ] && sanitize='--sanitize' || sanitize=''
 
   # Run the specified test
   ccache -z

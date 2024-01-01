@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -45,7 +45,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Dead state, as a visitor of each AstNode
 
 class DeadVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Entire Netlist:
     //  AstNodeModule::user1()  -> int. Count of number of cells referencing this module.
@@ -78,6 +77,11 @@ private:
     AstSelLoopVars* m_selloopvarsp = nullptr;  // Current loop vars
 
     // METHODS
+
+    void deleting(AstNode* nodep) {
+        UINFO(9, "  deleting " << nodep << endl);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
 
     void checkAll(AstNode* nodep) {
         if (nodep != nodep->dtypep()) {  // NodeDTypes reference themselves
@@ -239,7 +243,7 @@ private:
         iterateChildren(nodep);
         if (m_elimCells) {
             if (!nodep->varsp()) {
-                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                deleting(nodep);
                 return;
             }
         }
@@ -287,7 +291,7 @@ private:
             checkAll(nodep);
             // Has to be direct assignment without any EXTRACTing.
             AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef);
-            if (varrefp && !m_sideEffect
+            if (varrefp && !m_sideEffect && v3Global.opt.fDeadAssigns()
                 && varrefp->varScopep()) {  // For simplicity, we only remove post-scoping
                 m_assignMap.emplace(varrefp->varScopep(), nodep);
                 checkAll(varrefp);  // Must track reference to dtype()
@@ -316,7 +320,7 @@ private:
     void deadCheckTypedefs() {
         for (AstTypedef* typedefp : m_typedefsp) {
             if (shouldDeleteTypedef(typedefp)) {
-                VL_DO_DANGLING(pushDeletep(typedefp->unlinkFrBack()), typedefp);
+                deleting(typedefp);
                 continue;
             }
             checkAll(typedefp);
@@ -349,7 +353,7 @@ private:
                             cellp->modp()->user1Inc(-1);
                         });
                     }
-                    VL_DO_DANGLING(modp->unlinkFrBack()->deleteTree(), modp);
+                    deleting(modp);
                     retry = true;
                 }
             }
@@ -357,7 +361,7 @@ private:
     }
     bool mightElimVar(AstVar* nodep) const {
         if (nodep->isSigPublic()) return false;  // Can't elim publics!
-        if (nodep->isIO() || nodep->isClassMember() || nodep->isUsedVirtIface()) return false;
+        if (nodep->isIO() || nodep->isClassMember() || nodep->sensIfacep()) return false;
         if (nodep->isTemp() && !nodep->isTrace()) return true;
         return m_elimUserVars;  // Post-Trace can kill most anything
     }
@@ -373,7 +377,7 @@ private:
                     UINFO(4, "  Dead AstScope " << scp << endl);
                     scp->aboveScopep()->user1Inc(-1);
                     if (scp->dtypep()) scp->dtypep()->user1Inc(-1);
-                    VL_DO_DANGLING(scp->unlinkFrBack()->deleteTree(), scp);
+                    deleting(scp);
                     *it = nullptr;
                     retry = true;
                 }
@@ -383,9 +387,9 @@ private:
 
     void deadCheckCells() {
         for (AstCell* cellp : m_cellsp) {
-            if (cellp->user1() == 0 && !cellp->modp()->stmtsp()) {
+            if (cellp->user1() == 0 && !cellp->modp()->stmtsp() && v3Global.opt.fDeadCells()) {
                 cellp->modp()->user1Inc(-1);
-                VL_DO_DANGLING(cellp->unlinkFrBack()->deleteTree(), cellp);
+                deleting(cellp);
             }
         }
     }
@@ -397,7 +401,7 @@ private:
                     if (nodep->user1() == 0) {
                         if (nodep->extendsp()) nodep->extendsp()->user1Inc(-1);
                         if (nodep->classOrPackagep()) nodep->classOrPackagep()->user1Inc(-1);
-                        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                        deleting(nodep);
                         itr = nullptr;
                         retry = true;
                     }
@@ -417,11 +421,11 @@ private:
                     AstNodeAssign* const assp = itr->second;
                     UINFO(4, "    Dead assign " << assp << endl);
                     assp->dtypep()->user1Inc(-1);
-                    VL_DO_DANGLING(assp->unlinkFrBack()->deleteTree(), assp);
+                    deleting(assp);
                 }
                 if (vscp->scopep()) vscp->scopep()->user1Inc(-1);
                 vscp->dtypep()->user1Inc(-1);
-                VL_DO_DANGLING(vscp->unlinkFrBack()->deleteTree(), vscp);
+                deleting(vscp);
             }
         }
         for (bool retry = true; retry;) {
@@ -432,7 +436,7 @@ private:
                 if (varp->user1() == 0) {
                     UINFO(4, "  Dead " << varp << endl);
                     if (varp->dtypep()) varp->dtypep()->user1Inc(-1);
-                    VL_DO_DANGLING(varp->unlinkFrBack()->deleteTree(), varp);
+                    deleting(varp);
                     *it = nullptr;
                     retry = true;
                 }
@@ -440,11 +444,11 @@ private:
         }
         for (std::vector<AstNode*>::iterator it = m_dtypesp.begin(); it != m_dtypesp.end(); ++it) {
             if ((*it)->user1() == 0) {
-                const AstNodeUOrStructDType* classp;
                 // It's possible that there if a reference to each individual member, but
                 // not to the dtype itself.  Check and don't remove the parent dtype if
                 // members are still alive.
-                if ((classp = VN_CAST((*it), NodeUOrStructDType))) {
+                if (const AstNodeUOrStructDType* const classp
+                    = VN_CAST((*it), NodeUOrStructDType)) {
                     bool cont = true;
                     for (AstMemberDType* memberp = classp->membersp(); memberp;
                          memberp = VN_AS(memberp->nextp(), MemberDType)) {
@@ -455,7 +459,7 @@ private:
                     }
                     if (!cont) continue;
                 }
-                VL_DO_DANGLING((*it)->unlinkFrBack()->deleteTree(), *it);
+                deleting(*it);
             }
         }
     }

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -47,7 +47,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 
 class LinkIncVisitor final : public VNVisitor {
-private:
     // TYPES
     enum InsertMode : uint8_t {
         IM_BEFORE,  // Pointing at statement ref is in, insert before this
@@ -129,7 +128,7 @@ private:
         // Done the loop
         m_insStmtp = nullptr;  // Next thing should be new statement
     }
-    void visit(AstForeach* nodep) override {
+    void visit(AstNodeForeach* nodep) override {
         // Special, as statements need to be put in different places
         // Body insert just before themselves
         m_insStmtp = nullptr;  // First thing should be new statement

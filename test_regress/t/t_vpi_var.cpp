@@ -22,6 +22,9 @@
 #ifdef T_VPI_VAR2
 #include "Vt_vpi_var2.h"
 #include "Vt_vpi_var2__Dpi.h"
+#elif defined(T_VPI_VAR3)
+#include "Vt_vpi_var3.h"
+#include "Vt_vpi_var3__Dpi.h"
 #else
 #include "Vt_vpi_var.h"
 #include "Vt_vpi_var__Dpi.h"
@@ -440,6 +443,79 @@ int _mon_check_varlist() {
     return 0;
 }
 
+int _mon_check_ports() {
+#ifdef TEST_VERBOSE
+    printf("-mon_check_ports()\n");
+#endif
+    // test writing to input port
+    TestVpiHandle vh1 = VPI_HANDLE("a");
+    TEST_CHECK_NZ(vh1);
+
+    PLI_INT32 d;
+    d = vpi_get(vpiType, vh1);
+    if (TestSimulator::is_verilator()) {
+        TEST_CHECK_EQ(d, vpiReg);
+    } else {
+        TEST_CHECK_EQ(d, vpiNet);
+    }
+
+    const char* portFullName;
+    if (TestSimulator::is_verilator()) {
+        portFullName = "TOP.a";
+    } else {
+        portFullName = "t.a";
+    }
+
+    const char* name = vpi_get_str(vpiFullName, vh1);
+    TEST_CHECK_EQ(strcmp(name, portFullName), 0);
+    std::string handleName1 = name;
+
+    s_vpi_value v;
+    v.format = vpiIntVal;
+    vpi_get_value(vh1, &v);
+    TEST_CHECK_EQ(v.value.integer, 0);
+
+    s_vpi_time t;
+    t.type = vpiSimTime;
+    t.high = 0;
+    t.low = 0;
+    v.value.integer = 2;
+    vpi_put_value(vh1, &v, &t, vpiNoDelay);
+    v.value.integer = 100;
+    vpi_get_value(vh1, &v);
+    TEST_CHECK_EQ(v.value.integer, 2);
+
+    // get handle of toplevel module
+    TestVpiHandle vht = VPI_HANDLE("");
+    TEST_CHECK_NZ(vht);
+
+    d = vpi_get(vpiType, vht);
+    TEST_CHECK_EQ(d, vpiModule);
+
+    TestVpiHandle vhi = vpi_iterate(vpiReg, vht);
+    TEST_CHECK_NZ(vhi);
+
+    TestVpiHandle vh11;
+    std::string handleName2;
+    while ((vh11 = vpi_scan(vhi))) {
+        const char* fn = vpi_get_str(vpiFullName, vh11);
+#ifdef TEST_VERBOSE
+        printf("       scanned %s\n", fn);
+#endif
+        if (0 == strcmp(fn, portFullName)) {
+            handleName2 = fn;
+            break;
+        }
+    }
+    TEST_CHECK_NZ(vh11);  // If get zero we never found the variable
+    vhi.release();
+    TEST_CHECK_EQ(vpi_get(vpiType, vh11), vpiReg);
+
+    TEST_CHECK_EQ(handleName1, handleName2);
+
+    return errors;
+}
+
 int _mon_check_getput() {
     TestVpiHandle vh2 = VPI_HANDLE("onebit");
     CHECK_RESULT_NZ(vh2);
@@ -792,6 +868,10 @@ extern "C" int mon_check() {
     if (int status = _mon_check_var()) return status;
     if (int status = _mon_check_varlist()) return status;
     if (int status = _mon_check_var_long_name()) return status;
+// Ports are not public_flat_rw in t_vpi_var
+#if defined(T_VPI_VAR2) || defined(T_VPI_VAR3)
+    if (int status = _mon_check_ports()) return status;
+#endif
     if (int status = _mon_check_getput()) return status;
     if (int status = _mon_check_getput_iter()) return status;
     if (int status = _mon_check_quad()) return status;

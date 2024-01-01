@@ -8,7 +8,7 @@
 
 #include <verilated.h>
 
-#include "Vt_dpi_vams.h"
+#include VM_PREFIX_INCLUDE
 
 //======================================================================
 

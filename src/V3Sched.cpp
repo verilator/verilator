@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -170,22 +170,25 @@ AstNodeStmt* profExecSectionPop(FileLine* flp) {
 struct EvalLoop {
     // Flag set to true during the first iteration of the loop
     AstVarScope* firstIterp;
-    // The loop continuation flag (set to true to loop again)
-    AstVarScope* continuep = nullptr;
     // The loop itself and statements around it
     AstNodeStmt* stmtsp = nullptr;
 };
 
 // Create an eval loop with all the trimmings.
-EvalLoop createEvalLoop(AstNetlist* netlistp,  //
-                        const std::string& tag,  // Tag for current phase
-                        const string& name,  // Name of current phase
-                        bool slow,  // Should create slow functions
-                        AstVarScope* trigp,  // The trigger vector
-                        AstCFunc* dumpFuncp,  // Trigger dump function for debugging only
-                        AstNodeStmt* innerp,  // The inner loop, if any
-                        AstNodeStmt* phasePrepp,  // Prep statements run before checking triggers
-                        AstNodeStmt* phaseWorkp  // The work to do if anything triggered
+EvalLoop createEvalLoop(
+    AstNetlist* netlistp,  //
+    const std::string& tag,  // Tag for current phase
+    const string& name,  // Name of current phase
+    bool slow,  // Should create slow functions
+    AstVarScope* trigp,  // The trigger vector
+    AstCFunc* dumpFuncp,  // Trigger dump function for debugging only
+    AstNodeStmt* innerp,  // The inner loop, if any
+    AstNodeStmt* phasePrepp,  // Prep statements run before checking triggers
+    AstNodeStmt* phaseWorkp,  // The work to do if anything triggered
+    // Extra statements to run after the work, even if no triggers fired. This function is
+    // passed a variable, which must be set to true if we must continue and loop again,
+    // and must be unmodified otherwise.
+    std::function<AstNodeStmt*(AstVarScope*)> phaseExtra = [](AstVarScope*) { return nullptr; }  //
 ) {
     const std::string varPrefix = "__V" + tag;
     AstScope* const scopeTopp = netlistp->topScopep()->scopep();
@@ -212,6 +215,9 @@ EvalLoop createEvalLoop(AstNetlist* netlistp,  //
         AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, executeFlagp, VAccess::READ}};
         ifp->addThensp(phaseWorkp);
         phaseFuncp->addStmtsp(ifp);
+
+        // Construct the extra statements
+        if (AstNodeStmt* const extrap = phaseExtra(executeFlagp)) phaseFuncp->addStmtsp(extrap);
 
         // The function returns ture iff it did run the work
         phaseFuncp->rtnType("bool");
@@ -272,7 +278,7 @@ EvalLoop createEvalLoop(AstNetlist* netlistp,  //
     // Prof-exec section pop
     if (v3Global.opt.profExec()) stmtps->addNext(profExecSectionPop(flp));
 
-    return {firstIterFlagp, continueFlagp, stmtps};
+    return {firstIterFlagp, stmtps};
 }
 
 //============================================================================
@@ -429,7 +435,8 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
                     if (procp->isSuspendable()) {
                         funcp->slow(false);
                         subFuncp = createNewSubFuncp(scopep);
-                        subFuncp->name(subFuncp->name() + "__" + cvtToStr(scopep->user2Inc()));
+                        subFuncp->name(subFuncp->name() + "__Vtiming__"
+                                       + cvtToStr(scopep->user2Inc()));
                         subFuncp->rtnType("VlCoroutine");
                         if (VN_IS(procp, Always)) {
                             subFuncp->slow(false);
@@ -507,16 +514,16 @@ struct TriggerKit {
         m_funcp->stmtsp()->addHereThisAsNext(callp->makeStmt());
     }
 
-    // Utility to set then clear the dpiExportTrigger trigger
-    void addDpiExportTriggerAssignment(AstVarScope* dpiExportTriggerVscp, uint32_t index) const {
-        FileLine* const flp = dpiExportTriggerVscp->fileline();
+    // Utility to set then clear an extra trigger
+    void addExtraTriggerAssignment(AstVarScope* extraTriggerVscp, uint32_t index) const {
+        FileLine* const flp = extraTriggerVscp->fileline();
         AstVarRef* const vrefp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
         AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "set"};
         callp->addPinsp(new AstConst{flp, index});
-        callp->addPinsp(new AstVarRef{flp, dpiExportTriggerVscp, VAccess::READ});
+        callp->addPinsp(new AstVarRef{flp, extraTriggerVscp, VAccess::READ});
         callp->dtypeSetVoid();
         AstNode* const stmtp = callp->makeStmt();
-        stmtp->addNext(new AstAssign{flp, new AstVarRef{flp, dpiExportTriggerVscp, VAccess::WRITE},
+        stmtp->addNext(new AstAssign{flp, new AstVarRef{flp, extraTriggerVscp, VAccess::WRITE},
                                      new AstConst{flp, AstConst::BitFalse{}}});
         m_funcp->stmtsp()->addHereThisAsNext(stmtp);
     }
@@ -574,6 +581,17 @@ public:
     size_t size() const { return m_descriptions.size(); }
     const string& description(size_t index) const { return m_descriptions[index]; }
 };
+
+//============================================================================
+// Helper that creates virtual interface trigger resets
+
+void addVirtIfaceTriggerAssignments(const VirtIfaceTriggers& virtIfaceTriggers,
+                                    size_t vifTriggerIndex, const TriggerKit& actTrig) {
+    for (const auto& p : virtIfaceTriggers) {
+        actTrig.addExtraTriggerAssignment(p.second, vifTriggerIndex);
+        ++vifTriggerIndex;
+    }
+}
 
 //============================================================================
 // Create a TRIGGERVEC and the related TriggerKit for the given AstSenTree vector
@@ -807,7 +825,8 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
 // Order the replicated combinational logic to create the 'ico' region
 
 AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
-                             SenExprBuilder& senExprBuilder, LogicByScope& logic) {
+                             SenExprBuilder& senExprBuilder, LogicByScope& logic,
+                             const VirtIfaceTriggers& virtIfaceTriggers) {
     // Nothing to do if no combinational logic is sensitive to top level inputs
     if (logic.empty()) return nullptr;
 
@@ -833,6 +852,10 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
     const size_t dpiExportTriggerIndex = dpiExportTriggerVscp
                                              ? extraTriggers.allocate("DPI export trigger")
                                              : std::numeric_limits<unsigned>::max();
+    const size_t firstVifTriggerIndex = extraTriggers.size();
+    for (const auto& p : virtIfaceTriggers) {
+        extraTriggers.allocate("virtual interface: " + p.first->name());
+    }
 
     // Gather the relevant sensitivity expressions and create the trigger kit
     const auto& senTreeps = getSenTreesUsedBy({&logic});
@@ -840,8 +863,9 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
         = createTriggers(netlistp, initFuncp, senExprBuilder, senTreeps, "ico", extraTriggers);
 
     if (dpiExportTriggerVscp) {
-        trig.addDpiExportTriggerAssignment(dpiExportTriggerVscp, dpiExportTriggerIndex);
+        trig.addExtraTriggerAssignment(dpiExportTriggerVscp, dpiExportTriggerIndex);
     }
+    addVirtIfaceTriggerAssignments(virtIfaceTriggers, firstVifTriggerIndex, trig);
 
     // Remap sensitivities
     remapSensitivities(logic, trig.m_map);
@@ -858,6 +882,8 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
     AstSenTree* const dpiExportTriggered
         = dpiExportTriggerVscp ? createTriggerSenTree(netlistp, trig.m_vscp, dpiExportTriggerIndex)
                                : nullptr;
+    const auto& vifTriggered
+        = virtIfaceTriggers.makeIfaceToSensMap(netlistp, firstVifTriggerIndex, trig.m_vscp);
 
     // Create and Order the body function
     AstCFunc* const icoFuncp
@@ -868,6 +894,10 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
                                  out.push_back(inputChanged);
                              }
                              if (varp->isWrittenByDpi()) out.push_back(dpiExportTriggered);
+                             if (vscp->varp()->sensIfacep()) {
+                                 const auto it = vifTriggered.find(vscp->varp()->sensIfacep());
+                                 if (it != vifTriggered.end()) out.push_back(it->second);
+                             }
                          });
     splitCheck(icoFuncp);
 
@@ -987,25 +1017,27 @@ void createEval(AstNetlist* netlistp,  //
             workp->addNext(createTriggerClearCall(flp, nbaKit.m_vscp));
             //
             return workp;
-        }());
+        }(),
+        // Extra work (not conditional on having had a fired trigger)
+        [&](AstVarScope* continuep) -> AstNodeStmt* {
+            // Check if any dynamic NBAs are pending, if there are any in the design
+            if (!netlistp->nbaEventp()) return nullptr;
+            AstVarScope* const nbaEventp = netlistp->nbaEventp();
+            AstVarScope* const nbaEventTriggerp = netlistp->nbaEventTriggerp();
+            UASSERT(nbaEventTriggerp, "NBA event trigger var should exist");
+            netlistp->nbaEventp(nullptr);
+            netlistp->nbaEventTriggerp(nullptr);
 
-    // If the NBA event exists, trigger it in 'nba'
-    if (AstVarScope* const nbaEventp = netlistp->nbaEventp()) {
-        AstVarScope* const nbaEventTriggerp = netlistp->nbaEventTriggerp();
-        UASSERT(nbaEventTriggerp, "NBA event trigger var should exist");
-        netlistp->nbaEventp(nullptr);
-        netlistp->nbaEventTriggerp(nullptr);
-
-        AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, nbaEventTriggerp, VAccess::READ}};
-        ifp->addThensp(setVar(topLoop.continuep, 1));
-        ifp->addThensp(setVar(nbaEventTriggerp, 0));
-        AstCMethodHard* const firep
-            = new AstCMethodHard{flp, new AstVarRef{flp, nbaEventp, VAccess::WRITE}, "fire"};
-        firep->dtypeSetVoid();
-        ifp->addThensp(firep->makeStmt());
-        // actLoop.stmtsp happens to be the head of the loop body inside the NBA loop...
-        actLoop.stmtsp->addNext(ifp);
-    }
+            // If a dynamic NBA is pending, clear the pending flag and fire the commit event
+            AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, nbaEventTriggerp, VAccess::READ}};
+            ifp->addThensp(setVar(continuep, 1));
+            ifp->addThensp(setVar(nbaEventTriggerp, 0));
+            AstCMethodHard* const firep
+                = new AstCMethodHard{flp, new AstVarRef{flp, nbaEventp, VAccess::WRITE}, "fire"};
+            firep->dtypeSetVoid();
+            ifp->addThensp(firep->makeStmt());
+            return ifp;
+        });
 
     if (!obsKit.empty()) {
         // Create the Observed eval loop, which becomes the top level loop.
@@ -1070,6 +1102,21 @@ void createEval(AstNetlist* netlistp,  //
 }  // namespace
 
 //============================================================================
+// Helper that builds virtual interface trigger sentrees
+
+VirtIfaceTriggers::IfaceSensMap
+VirtIfaceTriggers::makeIfaceToSensMap(AstNetlist* const netlistp, size_t vifTriggerIndex,
+                                      AstVarScope* trigVscp) const {
+    std::map<const AstIface*, AstSenTree*> ifaceToSensMap;
+    for (const auto& p : *this) {
+        ifaceToSensMap.emplace(
+            std::make_pair(p.first, createTriggerSenTree(netlistp, trigVscp, vifTriggerIndex)));
+        ++vifTriggerIndex;
+    }
+    return ifaceToSensMap;
+}
+
+//============================================================================
 // Top level entry-point to scheduling
 
 void schedule(AstNetlist* netlistp) {
@@ -1079,7 +1126,10 @@ void schedule(AstNetlist* netlistp) {
         V3Stats::addStat("Scheduling, " + name, size);
     };
 
-    // Step 0. Prepare timing-related logic and external domains
+    // Step 0. Prepare external domains for timing and virtual interfaces
+    // Create extra triggers for virtual interfaces
+    const auto& virtIfaceTriggers = makeVirtIfaceTriggers(netlistp);
+    // Prepare timing-related logic and external domains
     TimingKit timingKit = prepareTiming(netlistp);
 
     // Step 1. Gather and classify all logic in the design
@@ -1144,8 +1194,8 @@ void schedule(AstNetlist* netlistp) {
     }
 
     // Step 7: Create input combinational logic loop
-    AstNode* const icoLoopp
-        = createInputCombLoop(netlistp, initp, senExprBuilder, logicReplicas.m_ico);
+    AstNode* const icoLoopp = createInputCombLoop(netlistp, initp, senExprBuilder,
+                                                  logicReplicas.m_ico, virtIfaceTriggers);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-ico");
 
     // Step 8: Create the pre/act/nba triggers
@@ -1156,6 +1206,10 @@ void schedule(AstNetlist* netlistp) {
     const size_t dpiExportTriggerIndex = dpiExportTriggerVscp
                                              ? extraTriggers.allocate("DPI export trigger")
                                              : std::numeric_limits<unsigned>::max();
+    const size_t firstVifTriggerIndex = extraTriggers.size();
+    for (const auto& p : virtIfaceTriggers) {
+        extraTriggers.allocate("virtual interface: " + p.first->name());
+    }
 
     const auto& senTreeps = getSenTreesUsedBy({&logicRegions.m_pre,  //
                                                &logicRegions.m_act,  //
@@ -1170,8 +1224,9 @@ void schedule(AstNetlist* netlistp) {
     if (timingKit.m_postUpdates) actTrig.m_funcp->addStmtsp(timingKit.m_postUpdates);
 
     if (dpiExportTriggerVscp) {
-        actTrig.addDpiExportTriggerAssignment(dpiExportTriggerVscp, dpiExportTriggerIndex);
+        actTrig.addExtraTriggerAssignment(dpiExportTriggerVscp, dpiExportTriggerIndex);
     }
+    addVirtIfaceTriggerAssignments(virtIfaceTriggers, firstVifTriggerIndex, actTrig);
 
     AstVarScope* const actTrigVscp = actTrig.m_vscp;
     AstVarScope* const preTrigVscp = scopeTopp->createTempLike("__VpreTriggered", actTrigVscp);
@@ -1223,12 +1278,19 @@ void schedule(AstNetlist* netlistp) {
               ? createTriggerSenTree(netlistp, actTrig.m_vscp, dpiExportTriggerIndex)
               : nullptr;
 
+    const auto& vifTriggeredAct
+        = virtIfaceTriggers.makeIfaceToSensMap(netlistp, firstVifTriggerIndex, actTrig.m_vscp);
+
     AstCFunc* const actFuncp = V3Order::order(
         netlistp, {&logicRegions.m_pre, &logicRegions.m_act, &logicReplicas.m_act}, trigToSenAct,
         "act", false, false, [&](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
             auto it = actTimingDomains.find(vscp);
             if (it != actTimingDomains.end()) out = it->second;
             if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggeredAct);
+            if (vscp->varp()->sensIfacep()) {
+                const auto sit = vifTriggeredAct.find(vscp->varp()->sensIfacep());
+                if (sit != vifTriggeredAct.end()) out.push_back(sit->second);
+            }
         });
     splitCheck(actFuncp);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-act");
@@ -1252,6 +1314,8 @@ void schedule(AstNetlist* netlistp) {
             = dpiExportTriggerVscp
                   ? createTriggerSenTree(netlistp, trigVscp, dpiExportTriggerIndex)
                   : nullptr;
+        const auto& vifTriggered
+            = virtIfaceTriggers.makeIfaceToSensMap(netlistp, firstVifTriggerIndex, trigVscp);
 
         const auto& timingDomains = timingKit.remapDomains(trigMap);
         AstCFunc* const funcp = V3Order::order(
@@ -1260,6 +1324,10 @@ void schedule(AstNetlist* netlistp) {
                 auto it = timingDomains.find(vscp);
                 if (it != timingDomains.end()) out = it->second;
                 if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggered);
+                if (vscp->varp()->sensIfacep()) {
+                    const auto sit = vifTriggered.find(vscp->varp()->sensIfacep());
+                    if (sit != vifTriggered.end()) out.push_back(sit->second);
+                }
             });
 
         // Create the trigger dumping function, which is the same as act trigger

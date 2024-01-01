@@ -27,6 +27,8 @@
 
 #include "verilated.h"
 
+#include <vector>
+
 // clang-format off
 // Some preprocessor magic to support both Clang and GCC coroutines with both libc++ and libstdc++
 #if defined _LIBCPP_VERSION  // libc++
@@ -36,15 +38,15 @@
 # endif
 # include <experimental/coroutine>
   namespace std {
-      using namespace experimental; // Bring std::experimental into the std namespace
+      using namespace experimental;  // Bring std::experimental into the std namespace
   }
 #else
-# if defined __clang__ && defined __GLIBCXX__
+# if defined __clang__ && defined __GLIBCXX__ && !defined __cpp_impl_coroutine
 #  define __cpp_impl_coroutine 1  // Clang doesn't define this, but it's needed for libstdc++
 # endif
 # include <coroutine>
 # if __clang_major__ < 14
-   namespace std { // Bring coroutine library into std::experimental, as Clang < 14 expects it to be there
+   namespace std {  // Bring coroutine library into std::experimental, as Clang < 14 expects it to be there
        namespace experimental {
            using namespace std;
        }
@@ -148,29 +150,21 @@ public:
 #endif
 };
 
+enum class VlDelayPhase : bool { ACTIVE, INACTIVE };
+
 //=============================================================================
 // VlDelayScheduler stores coroutines to be resumed at a certain simulation time. If the current
 // time is equal to a coroutine's resume time, the coroutine gets resumed.
 
 class VlDelayScheduler final {
     // TYPES
-    struct VlDelayedCoroutine {
-        uint64_t m_timestep;  // Simulation time when the coroutine should be resumed
-        VlCoroutineHandle m_handle;  // The suspended coroutine to be resumed
-
-        // Comparison operator for std::push_heap(), std::pop_heap()
-        bool operator<(const VlDelayedCoroutine& other) const {
-            return m_timestep > other.m_timestep;
-        }
-#ifdef VL_DEBUG
-        void dump() const;
-#endif
-    };
-    using VlDelayedCoroutineQueue = std::vector<VlDelayedCoroutine>;
+    // Time-sorted queue of timestamps and handles
+    using VlDelayedCoroutineQueue = std::multimap<uint64_t, VlCoroutineHandle>;
 
     // MEMBERS
     VerilatedContext& m_context;
     VlDelayedCoroutineQueue m_queue;  // Coroutines to be restored at a certain simulation time
+    std::vector<VlCoroutineHandle> m_zeroDelayed;  // Coroutines waiting for #0
 
 public:
     // CONSTRUCTORS
@@ -183,10 +177,11 @@ public:
     // coroutines)
     uint64_t nextTimeSlot() const;
     // Are there no delayed coroutines awaiting?
-    bool empty() const { return m_queue.empty(); }
+    bool empty() const { return m_queue.empty() && m_zeroDelayed.empty(); }
     // Are there coroutines to resume at the current simulation time?
     bool awaitingCurrentTime() const {
-        return !empty() && m_queue.front().m_timestep <= m_context.time();
+        return (!m_queue.empty() && (m_queue.begin()->first <= m_context.time()))
+               || !m_zeroDelayed.empty();
     }
 #ifdef VL_DEBUG
     void dump() const;
@@ -197,19 +192,34 @@ public:
         struct Awaitable {
             VlProcessRef process;  // Data of the suspended process, null if not needed
             VlDelayedCoroutineQueue& queue;
+            std::vector<VlCoroutineHandle>& queueZeroDelay;
             uint64_t delay;
+            VlDelayPhase phase;
             VlFileLineDebug fileline;
 
             bool await_ready() const { return false; }  // Always suspend
             void await_suspend(std::coroutine_handle<> coro) {
-                queue.push_back({delay, VlCoroutineHandle{coro, process, fileline}});
-                // Move last element to the proper place in the max-heap
-                std::push_heap(queue.begin(), queue.end());
+                if (phase == VlDelayPhase::ACTIVE) {
+                    queue.emplace(delay, VlCoroutineHandle{coro, process, fileline});
+                } else {
+                    queueZeroDelay.emplace_back(VlCoroutineHandle{coro, process, fileline});
+                }
             }
             void await_resume() const {}
         };
-        return Awaitable{process, m_queue, m_context.time() + delay,
-                         VlFileLineDebug{filename, lineno}};
+
+        VlDelayPhase phase = (delay == 0) ? VlDelayPhase::INACTIVE : VlDelayPhase::ACTIVE;
+#ifdef VL_DEBUG
+        if (phase == VlDelayPhase::INACTIVE) {
+            VL_WARN_MT(filename, lineno, VL_UNKNOWN,
+                       "Encountered #0 delay. #0 scheduling support is incomplete and the "
+                       "process will be resumed before combinational logic evaluation.");
+        }
+#endif
+
+        return Awaitable{process,       m_queue,
+                         m_zeroDelayed, m_context.time() + delay,
+                         phase,         VlFileLineDebug{filename, lineno}};
     }
 };
 

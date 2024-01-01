@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -137,7 +137,7 @@ public:
     void checkRemoveAssign(const LifeMap::iterator& it) {
         const AstVar* const varp = it->first->varp();
         LifeVarEntry* const entp = &(it->second);
-        if (!varp->isSigPublic() && !varp->isUsedVirtIface()) {
+        if (!varp->isSigPublic() && !varp->sensIfacep()) {
             // Rather than track what sigs AstUCFunc/AstUCStmt may change,
             // we just don't optimize any public sigs
             // Check the var entry, and remove if appropriate
@@ -178,7 +178,7 @@ public:
         const auto pair = m_map.emplace(nodep, LifeVarEntry::CONSUMED{});
         if (!pair.second) {
             if (AstConst* const constp = pair.first->second.constNodep()) {
-                if (!varrefp->varp()->isSigPublic() && !varrefp->varp()->isUsedVirtIface()) {
+                if (!varrefp->varp()->isSigPublic() && !varrefp->varp()->sensIfacep()) {
                     // Aha, variable is constant; substitute in.
                     // We'll later constant propagate
                     UINFO(4, "     replaceconst: " << varrefp << endl);
@@ -258,7 +258,6 @@ public:
 // Life state, as a visitor of each AstNode
 
 class LifeVisitor final : public VNVisitor {
-private:
     // STATE
     LifeState* const m_statep;  // Current state
     bool m_sideEffect = false;  // Side effects discovered in assign RHS
@@ -301,6 +300,7 @@ private:
         }
         // Collect any used variables first, as lhs may also be on rhs
         // Similar code in V3Dead
+        VL_RESTORER(m_sideEffect);
         m_sideEffect = false;
         m_lifep->clearReplaced();
         iterateAndNextNull(nodep->rhsp());
@@ -407,7 +407,9 @@ private:
         iterateChildren(nodep);
         // Enter the function and trace it
         // else is non-inline or public function we optimize separately
-        if (!nodep->funcp()->entryPoint()) {
+        if (nodep->funcp()->entryPoint()) {
+            setNoopt();
+        } else {
             m_tracingCall = true;
             iterate(nodep->funcp());
         }
@@ -416,6 +418,7 @@ private:
         // UINFO(4, "  CFUNC " << nodep << endl);
         if (!m_tracingCall && !nodep->entryPoint()) return;
         m_tracingCall = false;
+        if (nodep->recursive()) setNoopt();
         if (nodep->dpiImportPrototype() && !nodep->dpiPure()) {
             m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
         }

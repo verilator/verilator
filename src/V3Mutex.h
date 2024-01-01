@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2023 by Wilson Snyder.  This program is free software; you can
+// Copyright 2005-2024 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -39,11 +39,10 @@
 
 #define VL_LOCK_SPINS 50000  /// Number of times to spin for a mutex before yielding
 
-// MutexConfig class that allows to configure how mutex and lockgurads behave
+// MutexConfig class that allows to configure how mutex and lockguards behave
 // once configured and locked, it cannot be changed. Configuration and lock needs to be
 // done before starting any additional threads.
 class V3MutexConfig final {
-private:
     // Allows to disable mutexes and lockguards.
     // Use carefully as it can cause undefined behavior when used inappropriately.
     // All mutexes needs to be unlocked.
@@ -78,7 +77,6 @@ public:
 /// Mutex, wrapped to allow -fthread_safety checks
 template <typename T>
 class VL_CAPABILITY("mutex") V3MutexImp final {
-private:
     T m_mutex;  // Mutex
 
 public:

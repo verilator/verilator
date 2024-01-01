@@ -1,0 +1,115 @@
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:22:13: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   22 |       m_one.rand_mode(0);
+      |             ^~~~~~~~~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:23:136: rand_mode ignored (unsupported)
+                                                        : ... note: In instance 't'
+   23 |       do if ((m_one.rand_mode()) !== (1)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_randomize_rand_mode.v",23, (m_one.rand_mode()), (1)); $stop; end while(0);;
+      |                                                                                                                                        ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:23:21: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   23 |       do if ((m_one.rand_mode()) !== (1)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_randomize_rand_mode.v",23, (m_one.rand_mode()), (1)); $stop; end while(0);;
+      |                     ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:24:13: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   24 |       m_two.rand_mode(0);
+      |             ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:25:136: rand_mode ignored (unsupported)
+                                                        : ... note: In instance 't'
+   25 |       do if ((m_two.rand_mode()) !== (1)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_randomize_rand_mode.v",25, (m_two.rand_mode()), (1)); $stop; end while(0);;
+      |                                                                                                                                        ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:25:21: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   25 |       do if ((m_two.rand_mode()) !== (1)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_randomize_rand_mode.v",25, (m_two.rand_mode()), (1)); $stop; end while(0);;
+      |                     ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:44:17: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   44 |       if (m_one.rand_mode() != 1) $stop;
+      |                 ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:45:17: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   45 |       if (m_two.rand_mode() != 1) $stop;
+      |                 ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:28:13: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   28 |       m_one.rand_mode(0);
+      |             ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:29:136: rand_mode ignored (unsupported)
+                                                        : ... note: In instance 't'
+   29 |       do if ((m_one.rand_mode()) !== (1)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_randomize_rand_mode.v",29, (m_one.rand_mode()), (1)); $stop; end while(0);;
+      |                                                                                                                                        ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:29:21: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   29 |       do if ((m_one.rand_mode()) !== (1)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_randomize_rand_mode.v",29, (m_one.rand_mode()), (1)); $stop; end while(0);;
+      |                     ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:30:13: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   30 |       m_two.rand_mode(1);
+      |             ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:31:136: rand_mode ignored (unsupported)
+                                                        : ... note: In instance 't'
+   31 |       do if ((m_two.rand_mode()) !== (1)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_randomize_rand_mode.v",31, (m_two.rand_mode()), (1)); $stop; end while(0);;
+      |                                                                                                                                        ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:31:21: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   31 |       do if ((m_two.rand_mode()) !== (1)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_randomize_rand_mode.v",31, (m_two.rand_mode()), (1)); $stop; end while(0);;
+      |                     ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:85:15: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   85 |       p.m_one.rand_mode(0);
+      |               ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:86:140: rand_mode ignored (unsupported)
+                                                        : ... note: In instance 't'
+   86 |       do if ((p.m_one.rand_mode()) !== (1)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_randomize_rand_mode.v",86, (p.m_one.rand_mode()), (1)); $stop; end while(0);;
+      |                                                                                                                                            ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:86:23: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   86 |       do if ((p.m_one.rand_mode()) !== (1)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_randomize_rand_mode.v",86, (p.m_one.rand_mode()), (1)); $stop; end while(0);;
+      |                       ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:87:15: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   87 |       p.m_two.rand_mode(0);
+      |               ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:88:140: rand_mode ignored (unsupported)
+                                                        : ... note: In instance 't'
+   88 |       do if ((p.m_two.rand_mode()) !== (1)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_randomize_rand_mode.v",88, (p.m_two.rand_mode()), (1)); $stop; end while(0);;
+      |                                                                                                                                            ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:88:23: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   88 |       do if ((p.m_two.rand_mode()) !== (1)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_randomize_rand_mode.v",88, (p.m_two.rand_mode()), (1)); $stop; end while(0);;
+      |                       ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:91:15: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   91 |       p.m_one.rand_mode(0);
+      |               ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:92:140: rand_mode ignored (unsupported)
+                                                        : ... note: In instance 't'
+   92 |       do if ((p.m_one.rand_mode()) !== (1)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_randomize_rand_mode.v",92, (p.m_one.rand_mode()), (1)); $stop; end while(0);;
+      |                                                                                                                                            ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:92:23: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   92 |       do if ((p.m_one.rand_mode()) !== (1)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_randomize_rand_mode.v",92, (p.m_one.rand_mode()), (1)); $stop; end while(0);;
+      |                       ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:93:15: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   93 |       p.m_two.rand_mode(1);
+      |               ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:94:140: rand_mode ignored (unsupported)
+                                                        : ... note: In instance 't'
+   94 |       do if ((p.m_two.rand_mode()) !== (1)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_randomize_rand_mode.v",94, (p.m_two.rand_mode()), (1)); $stop; end while(0);;
+      |                                                                                                                                            ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:94:23: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+   94 |       do if ((p.m_two.rand_mode()) !== (1)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_randomize_rand_mode.v",94, (p.m_two.rand_mode()), (1)); $stop; end while(0);;
+      |                       ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:97:9: rand_mode ignored (unsupported)
+                                                      : ... note: In instance 't'
+   97 |       p.rand_mode(1);
+      |         ^~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_rand_mode.v:100:9: rand_mode ignored (unsupported)
+                                                       : ... note: In instance 't'
+  100 |       p.rand_mode(0);
+      |         ^~~~~~~~~
+%Error: Exiting due to

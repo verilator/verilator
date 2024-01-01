@@ -9,7 +9,7 @@
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 
-#include "Vt_trace_open_wrong_order_bad.h"
+#include VM_PREFIX_INCLUDE
 
 int main(int argc, char** argv) {
     VerilatedContext ctx;

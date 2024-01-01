@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -29,7 +29,6 @@
 //============================================================================
 
 class V3LinkLevel final {
-private:
     using ModVec = std::vector<AstNodeModule*>;
 
     static void timescaling(const ModVec& mods) VL_MT_DISABLED;

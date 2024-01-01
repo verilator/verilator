@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -32,7 +32,6 @@
 // And provide functions to find/add a new one
 
 class SenTreeFinder final {
-private:
     // STATE
     AstTopScope* const m_topScopep;  // Top scope to add global SenTrees to
     std::unordered_set<VNRef<AstSenTree>> m_trees;  // Set of global SenTrees

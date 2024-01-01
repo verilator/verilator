@@ -7,7 +7,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -25,7 +25,7 @@
 // tasks to carry their own frames and as such they require their own
 // variable scopes.
 // There are two mechanisms that work together to achieve that. ForkVisitor
-// moves bodies of forked prcesses into new tasks, which results in them getting their
+// moves bodies of forked processes into new tasks, which results in them getting their
 // own scopes. The original statements get replaced with a call to the task which
 // passes the required variables by value.
 // The second mechanism, DynScopeVisitor, is designed to handle variables which can't be
@@ -61,7 +61,6 @@ public:
 };
 
 class ForkDynScopeFrame final {
-private:
     // MEMBERS
     AstNodeModule* const m_modp;  // Module to insert the scope into
     AstNode* const m_procp;  // Procedure/block associated with that dynscope
@@ -249,15 +248,15 @@ private:
 
 //######################################################################
 // Dynamic scope visitor, creates classes and objects for dynamic scoping of variables and
-// replaces references to varibles that need a dynamic scope with references to object's
+// replaces references to variables that need a dynamic scope with references to object's
 // members
 
 class DynScopeVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // AstVar::user1()          -> int, timing-control fork nesting level of that variable
     // AstVarRef::user2()       -> bool, 1 = Node is a class handle reference. The handle gets
     //                                       modified in the context of this reference.
+    // AstAssignDly::user2()    -> bool, true if already visited
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
 
@@ -270,8 +269,8 @@ private:
     int m_forkDepth = 0;  // Number of asynchronous forks we are currently under
     bool m_afterTimingControl = false;  // A timing control might've be executed in the current
                                         // process
-    size_t m_id;  // Unique ID for a frame
-    size_t m_class_id;  // Unique ID for a frame class
+    size_t m_id = 0;  // Unique ID for a frame
+    size_t m_class_id = 0;  // Unique ID for a frame class
 
     // METHODS
 
@@ -313,11 +312,8 @@ private:
     }
 
     static bool hasAsyncFork(AstNode* nodep) {
-        bool afork = false;
-        nodep->foreach([&](AstFork* forkp) {
-            if (!forkp->joinType().join()) afork = true;
-        });
-        return afork;
+        return nodep->exists([](AstFork* forkp) { return !forkp->joinType().join(); })
+               || nodep->exists([](AstAssignDly*) { return true; });
     }
 
     void bindNodeToDynScope(AstNode* nodep, ForkDynScopeFrame* frame) {
@@ -388,7 +384,7 @@ private:
     }
     void visit(AstNodeFTaskRef* nodep) override {
         visit(static_cast<AstNodeExpr*>(nodep));
-        // We are before V3Timing, so unfortnately we need to treat any calls as suspending,
+        // We are before V3Timing, so unfortunately we need to treat any calls as suspending,
         // just to be safe. This might be improved if we could propagate suspendability
         // before doing all the other timing-related stuff.
         m_afterTimingControl = true;
@@ -414,6 +410,22 @@ private:
             nodep->lhsp()->user2(true);
         }
         visit(static_cast<AstNodeStmt*>(nodep));
+    }
+    void visit(AstAssignDly* nodep) override {
+        if (m_procp && !nodep->user2()  // Unhandled AssignDly in function/task
+            && nodep->lhsp()->exists(  // And writes to a local variable
+                [](AstVarRef* refp) {
+                    return refp->access().isWriteOrRW() && refp->varp()->isFuncLocal();
+                })) {
+            nodep->user2(true);
+            // Put it in a fork to prevent lifetime issues with the local
+            AstFork* const forkp = new AstFork{nodep->fileline(), "", nullptr};
+            forkp->joinType(VJoinType::JOIN_NONE);
+            nodep->replaceWith(forkp);
+            forkp->addStmtsp(nodep);
+        } else {
+            iterateChildren(nodep);
+        }
     }
     void visit(AstNode* nodep) override {
         if (nodep->isTimingControl()) m_afterTimingControl = true;
@@ -445,14 +457,17 @@ public:
 
         if (typesAdded) v3Global.rootp()->typeTablep()->repairCache();
     }
-    ~DynScopeVisitor() override = default;
+    ~DynScopeVisitor() override {
+        std::set<ForkDynScopeFrame*> frames;
+        for (auto node_frame : m_frames) { frames.insert(node_frame.second); }
+        for (auto* frame : frames) { delete frame; }
+    }
 };
 
 //######################################################################
 // Fork visitor, transforms asynchronous blocks into separate tasks
 
 class ForkVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // AstNode::user1()         -> bool, 1 = Node was created as a call to an asynchronous task
     // AstVarRef::user2()       -> bool, 1 = Node is a class handle reference. The handle gets

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -31,7 +31,6 @@
 // has hit that point with sufficient coverage.
 
 class VlcBuckets final {
-private:
     // MEMBERS
     uint64_t* m_datap = nullptr;  ///< Pointer to first bucket (dynamically allocated)
     uint64_t m_dataSize = 0;  ///< Current entries in m_datap
@@ -121,7 +120,7 @@ public:
         for (uint64_t i = 0; i < m_dataSize; ++i) {
             if (hits(i)) std::cout << "," << i;
         }
-        std::cout << std::endl;
+        std::cout << "\n";
     }
 };
 

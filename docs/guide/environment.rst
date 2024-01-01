@@ -1,4 +1,4 @@
-.. Copyright 2003-2023 by Wilson Snyder.
+.. Copyright 2003-2024 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 Environment
@@ -6,21 +6,6 @@ Environment
 
 This section describes the environment variables used by Verilator and
 associated programs.
-
-.. option:: AR
-
-   Optionally overrides the default :command:`ar` (archive) binary used by
-   the Verilated makefiles. If AR is not set, the version found at
-   configure time is used.
-
-.. option:: CXX
-
-   Optionally overrides the default compiler binary used by the Verilated
-   makefiles. If CXX is not set, the version found at configure time is
-   used.  Note the default flags passed to the compiler are determined at
-   configuration time, so changing the CXX compiler version using this
-   variable, as opposed to passing it at configuration time, may not give
-   desired results.
 
 .. option:: LD_LIBRARY_PATH
 
@@ -44,17 +29,11 @@ associated programs.
 .. option:: OBJCACHE
 
    Optionally specifies a caching or distribution program to place in front
-   of all runs of the C++ compiler.  For example, "ccache".  If using
+   of all runs of the C++ compiler.  For example, "ccache" or "sccache".  If using
    :command:`distcc` or :command:`icecc`/:command:`icecream`, they would
    generally be run under :command:`ccache`; see the documentation for
    those programs.  If OBJCACHE is not set, and at configure time ccache
    was present, ccache will be used as a default.
-
-.. option:: PYTHON3
-
-   Optionally overrides the default :command:`python3` binary used by the
-   Verilated makefiles. If PYTHON3 is not set, the version found at
-   configure time is used.
 
 .. option:: SYSTEMC
 
@@ -138,3 +117,46 @@ associated programs.
    ``VERILATOR_ROOT`` to point to the new version.
 
    See :ref:`Installation` for more details.
+
+
+Make Variables
+==============
+
+This section describes the make variables used by Verilator. These may be
+set by passing them to make e.g. ``make CXX=my-gcc ...``.
+
+.. option:: AR
+
+   Optionally overrides the default :command:`ar` (archive) binary used by
+   the Verilated makefiles. If AR is not set, the version found at
+   configure time is used.
+
+.. option:: CXX
+
+   Optionally overrides the default compiler binary used by the Verilated
+   makefiles. If CXX is not set, the version found at configure time is
+   used.  Note the default flags passed to the compiler are determined at
+   configuration time, so changing the CXX compiler version using this
+   variable, as opposed to passing it at configuration time, may not give
+   desired results.
+
+.. option:: LINK
+
+   Optionally overrides the default linker binary used by the Verilated
+   makefiles. If LINK is not set, the version found at configure time is
+   used.  Note the default flags passed to the linker are determined at
+   configuration time, so changing the LINK version using this variable, as
+   opposed to passing it at configuration time, may not give desired
+   results.
+
+.. option:: PERL
+
+   Optionally overrides the default :command:`perl` binary used by the
+   Verilated makefiles. If PERL is not set, the version found at configure
+   time, and compiled into the Verilator binary, is used.
+
+.. option:: PYTHON3
+
+   Optionally overrides the default :command:`python3` binary used by the
+   Verilated makefiles. If PYTHON3 is not set, the version found at
+   configure time is used.

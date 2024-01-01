@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -234,10 +234,12 @@ static void process() {
             V3Inst::dearrayAll(v3Global.rootp());
             V3LinkDot::linkDotArrayed(v3Global.rootp());
 
-            // Generate classes and tasks required to maintain proper lifetimes for references in
-            // forks
-            V3Fork::makeDynamicScopes(v3Global.rootp());
-            V3Fork::makeTasks(v3Global.rootp());
+            if (v3Global.opt.timing().isSetTrue()) {
+                // Generate classes and tasks required to maintain proper lifetimes for references
+                // in forks
+                V3Fork::makeDynamicScopes(v3Global.rootp());
+                V3Fork::makeTasks(v3Global.rootp());
+            }
 
             // Task inlining & pushing BEGINs names to variables/cells
             // Begin processing must be after Param, before module inlining
@@ -636,8 +638,10 @@ static void verilate(const string& argString) {
     // --FRONTEND------------------
 
     // Cleanup
-    V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.tree");
+    // Ideally we'd do prefix + "_*.*", and prefix + ".*", but this seems
+    // potentially disruptive to old behavior, and --skip-identical
     V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.dot");
+    V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.tree");
     V3Os::unlinkRegexp(v3Global.opt.hierTopDataDir(), v3Global.opt.prefix() + "_*.txt");
 
     // Internal tests (after option parsing as need debug() setting,
@@ -690,7 +694,7 @@ static void verilate(const string& argString) {
         const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
 
         UASSERT(v3Global.opt.hierarchical(), "hierarchical must be set");
-        UASSERT(!v3Global.opt.hierChild(), "This must not be a hierarhcical-child run");
+        UASSERT(!v3Global.opt.hierChild(), "This must not be a hierarchical-child run");
         UASSERT(v3Global.opt.hierBlocks().empty(), "hierarchical-block must not be set");
         if (v3Global.opt.gmake()) {
             v3Global.hierPlanp()->writeCommandArgsFiles(false);
@@ -716,6 +720,9 @@ static void verilate(const string& argString) {
                                + "__verFiles.dat",
                            argString);
     }
+
+    V3Os::filesystemFlushBuildDir(v3Global.opt.makeDir());
+    if (v3Global.opt.hierTop()) V3Os::filesystemFlushBuildDir(v3Global.opt.hierTopDataDir());
 
     // Final writing shouldn't throw warnings, but...
     V3Error::abortIfWarnings();
@@ -747,6 +754,7 @@ static void execBuildJob() {
     UINFO(1, "Start Build\n");
 
     const string cmdStr = buildMakeCmd(v3Global.opt.prefix() + ".mk", "");
+    V3Os::filesystemFlushBuildDir(v3Global.opt.hierTopDataDir());
     const int exit_code = V3Os::system(cmdStr);
     if (exit_code != 0) {
         v3error(cmdStr << " exited with " << exit_code << std::endl);
@@ -759,6 +767,7 @@ static void execHierVerilation() {
     const string makefile = v3Global.opt.prefix() + "_hier.mk ";
     const string target = v3Global.opt.build() ? " hier_build" : " hier_verilation";
     const string cmdStr = buildMakeCmd(makefile, target);
+    V3Os::filesystemFlushBuildDir(v3Global.opt.hierTopDataDir());
     const int exit_code = V3Os::system(cmdStr);
     if (exit_code != 0) {
         v3error(cmdStr << " exited with " << exit_code << std::endl);

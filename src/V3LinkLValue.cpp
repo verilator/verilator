@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -28,7 +28,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Link state, as a visitor of each AstNode
 
 class LinkLValueVisitor final : public VNVisitor {
-private:
     // NODE STATE
 
     // STATE
@@ -238,19 +237,19 @@ private:
     void visit(AstSel* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
-            iterateAndNextNull(nodep->lhsp());
+            iterateAndNextNull(nodep->fromp());
             // Only set lvalues on the from
             m_setRefLvalue = VAccess::NOCHANGE;
-            iterateAndNextNull(nodep->rhsp());
-            iterateAndNextNull(nodep->thsp());
+            iterateAndNextNull(nodep->lsbp());
+            iterateAndNextNull(nodep->widthp());
         }
     }
     void visit(AstNodeSel* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {  // Only set lvalues on the from
-            iterateAndNextNull(nodep->lhsp());
+            iterateAndNextNull(nodep->fromp());
             m_setRefLvalue = VAccess::NOCHANGE;
-            iterateAndNextNull(nodep->rhsp());
+            iterateAndNextNull(nodep->bitp());
         }
     }
     void visit(AstCellArrayRef* nodep) override {

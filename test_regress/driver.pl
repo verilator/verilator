@@ -333,22 +333,23 @@ use strict;
 sub new {
     my $class = shift;
     my $self = {
-        # Parameters
+        # Arguments
         driver_log_filename => undef,
         quiet => 0,
         # Counts
         all_cnt => 0,
         left_cnt => 0,
-        ok_cnt => 0,
-        fail1_cnt => 0,
+        ok_cnt => 0,  # Argument passed when rerunning
+        fail1_cnt => 0,  # Argument passed when rerunning
         fail_cnt => 0,
-        skip_cnt => 0,
+        skip_cnt => 0,  # Argument passed when rerunning
         skip_msgs => [],
         fail_msgs => [],
         fail_tests => [],
         # Per-task identifiers
         running_ids => {},
-        @_};
+        @_  # All legal arguments shown immediately above
+    };
     bless $self, $class;
     return $self;
 }
@@ -357,7 +358,11 @@ sub fail_count { return $_[0]->{fail_cnt}; }
 
 sub one_test {
     my $self = shift;
-    my @params = @_;
+    my @params = (# Parameters:
+                  # pl_filename =>
+                  # rerun_skipping =>
+                  # {scenario_name} => 1
+                  @_);  # All legal arguments shown immediately above
     my %params = (@params);
     $self->{all_cnt}++;
     $self->{left_cnt}++;
@@ -484,7 +489,7 @@ sub print_summary {
     my $self = shift;
     my %params = (force => 0, # Force printing
                   show_running => 0, # Show running processes
-                  @_);
+                  @_);  # All legal arguments shown immediately above
     if (!$self->{quiet} || $params{force}
         || ($self->{left_cnt} < 5)
         || (time() - ($self->{_last_summary_time} || 0) >= 15)) {  # Don't show for interactive gdb etc
@@ -564,7 +569,7 @@ sub defineOpt {
 
 sub new {
     my $class = shift;
-    my $self = {@_};
+    my $self = {@_};  # Supports arbitrary arguments
 
     $self->{name} ||= $2 if $self->{pl_filename} =~ m!^(.*/)?([^/]*)\.pl$!;
 
@@ -787,8 +792,7 @@ sub skip {
 
 sub scenarios {
     my $self = (ref $_[0] ? shift : $Self);
-    my %params = (@_);
-    # Called from tests as: scenarios(...);
+    my %params = (@_);  # Called from tests as: scenarios(...);
     # to specify which scenarios this test runs under.
     #  Where ... is one cases listed in All_Scenarios
     if ((scalar keys %params) < 1) {
@@ -903,7 +907,8 @@ sub clean_objs {
 
 sub compile_vlt_cmd {
     my $self = (ref $_[0] ? shift : $Self);
-    my %param = (%{$self}, @_);  # Default arguments are from $self
+    my %param = (%{$self},  # Default arguments are from $self
+                 @_);  # Supports arbitrary arguments
     return 1 if $self->errors || $self->skips;
 
     my @vlt_cmd = (
@@ -918,7 +923,8 @@ sub compile_vlt_cmd {
 
 sub compile_vlt_flags {
     my $self = (ref $_[0] ? shift : $Self);
-    my %param = (%{$self}, @_);  # Default arguments are from $self
+    my %param = (%{$self},  # Default arguments are from $self
+                 @_);  # Supports arbitrary arguments
     return 1 if $self->errors || $self->skips;
 
     my $checkflags = (' '.join(' ',
@@ -951,7 +957,7 @@ sub compile_vlt_flags {
     unshift @verilator_flags, "--threads $param{threads}" if $param{threads} >= 0;
     unshift @verilator_flags, "--trace-threads 2" if $param{vltmt} && $checkflags =~ /-trace-fst /;
     unshift @verilator_flags, "--debug-partition" if $param{vltmt};
-    unshift @verilator_flags, "-CFLAGS -ggdb -LDFLAGS -ggdb" if $opt_gdbsim;
+    unshift @verilator_flags, "-CFLAGS -ggdb -LDFLAGS -ggdb" if $opt_gdbsim || $opt_rrsim;
     unshift @verilator_flags, "-CFLAGS -fsanitize=address,undefined -LDFLAGS -fsanitize=address,undefined" if $param{sanitize};
     unshift @verilator_flags, "--make gmake" if $param{verilator_make_gmake};
     unshift @verilator_flags, "--make cmake" if $param{verilator_make_cmake};
@@ -988,14 +994,15 @@ sub lint {
                  make_top_shell => 0,
                  verilator_flags2 => ["--lint-only"],
                  verilator_make_gmake => 0,
-                 @_);
+                 @_);  # Supports arbitrary arguments
     $self->compile(%param);
 }
 
 sub compile {
     my $self = (ref $_[0] ? shift : $Self);
     my %param = (tee => 1,
-                 %{$self}, @_);  # Default arguments are from $self
+                 %{$self},  # Default arguments are from $self
+                 @_);  # Supports arbitrary arguments
     return 1 if $self->errors || $self->skips;
     $self->oprint("Compile\n") if $self->{verbose};
 
@@ -1254,7 +1261,8 @@ sub compile {
 sub execute {
     my $self = (ref $_[0] ? shift : $Self);
     return 1 if $self->errors || $self->skips;
-    my %param = (%{$self}, @_);  # Default arguments are from $self
+    my %param = (%{$self},  # Default arguments are from $self
+                 @_);  # Supports arbitrary arguments
     # params may be expect or {tool}_expect
     $self->oprint("Run\n") if $self->{verbose};
 
@@ -1402,8 +1410,6 @@ sub inline_checks {
     my $self = (ref $_[0] ? shift : $Self);
     return 1 if $self->errors || $self->skips;
     return 1 if !$self->{vlt_all};
-
-    my %param = (%{$self}, @_);  # Default arguments are from $self
 
     my $covfn = $Self->{coverage_filename};
     my $contents = $self->file_contents($covfn);
@@ -1592,15 +1598,21 @@ sub vm_prefix {
 
 sub run {
     my $self = (ref $_[0] ? shift : $Self);
-    $self->_run(@_);
+    $self->_run(@_);  # See _run() for arguments
 }
 
 sub _run {
     my $self = (ref $_[0] ? shift : $Self);
     my %param = (tee => 1,
-                 #entering =>  # Print entering directory information
-                 #verilator_run =>  # Move gcov data to parallel area
-                 @_);
+                 # cmd => [...]
+                 # check_finished => 0  # Check for All Finished
+                 # entering =>  # Print entering directory information
+                 # expect =>  # Regexp to expect in output
+                 # expect_filename =>  # Filename that should match logfile
+                 # fails => 0  # Command should fail
+                 # logfile =>  # Filename to write putput to
+                 # verilator_run =>  # Move gcov data to parallel area
+                 @_);  # All legal arguments shown immediately above
 
     my $command = join(' ', @{$param{cmd}});
     $command = "time $command" if $opt_benchmark && $command !~ /^cd /;
@@ -1760,7 +1772,8 @@ sub _try_regex {
     #  1 if $text ~= /$regex/ms
     #  0 if no match
     # -1 if $regex is invalid, doesn't compile
-    my ($text, $regex) = @_;
+    my $text = shift;
+    my $regex = shift;
     my $result;
     {
         local $@;
@@ -2492,6 +2505,20 @@ sub file_grep {
     }
 }
 
+sub file_grep_count {
+    my $self = (ref $_[0] ? shift : $Self);
+    my $filename = shift;
+    my $regexp = shift;
+    my $expcount = shift;
+    return if $self->errors || $self->skips;
+
+    my $contents = $self->file_contents($filename);
+    my $count = () = $contents =~ /$regexp/g;
+    if ($count != $expcount) {
+        $self->error("file_grep_count: $filename: Got='$count' Expected='$expcount' for regexp: $regexp\n");
+    }
+}
+
 sub file_grep_any {
     my $self = $Self;
     my @filenames = @{$_[0]}; shift;
@@ -2564,12 +2591,12 @@ sub file_sed {
 
 sub extract {
     my $self = (ref $_[0] ? shift : $Self);
-    my %param = (  #in =>,
-        #out =>
-        regexp => qr/.*/,
-        lineno_adjust => -9999,
-        lines => undef,  #'#, #-#',
-        @_);
+    my %param = (#in =>,
+                 #out =>
+                 regexp => qr/.*/,
+                 lineno_adjust => -9999,
+                 lines => undef,  #'#, #-#',
+                 @_);  # All legal arguments shown immediately above
 
     my $temp_fn = $param{out};
     $temp_fn =~ s!.*/!!g;
@@ -2700,7 +2727,7 @@ See docs/internals.rst in the distribution for more information.
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

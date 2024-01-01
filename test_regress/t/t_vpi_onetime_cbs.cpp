@@ -23,7 +23,7 @@
 #include "verilated.h"
 #include "verilated_vpi.h"
 
-#include "Vt_vpi_onetime_cbs.h"
+#include VM_PREFIX_INCLUDE
 
 #endif
 

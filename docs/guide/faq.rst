@@ -1,4 +1,4 @@
-.. Copyright 2003-2023 by Wilson Snyder.
+.. Copyright 2003-2024 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ******************************
@@ -220,12 +220,6 @@ This is done for you if you are using the Verilator :vlopt:`--binary` or
 You can call :code:`->trace()` on multiple Verilated objects with the same
 trace file if you want all data to land in the same output file.
 
-When using SystemC 2.3, the SystemC library must have been built with the
-experimental simulation phase callback-based tracing disabled. This is
-disabled by default when building SystemC with its configure based build
-system, but when building SystemC with CMake, you must pass
-``-DENABLE_PHASE_CALLBACKS_TRACING=OFF`` to disable this feature.
-
 
 How do I generate FST waveforms (traces) in C++ or SystemC?
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -401,7 +395,7 @@ How do I get faster build times?
 * Use a recent compiler.  Newer compilers tend to be faster.
 
 * Compile in parallel on many machines and use caching; see the web for the
-  ccache, distcc, and icecream packages. ccache will skip GCC runs between
+  ccache, sccache, distcc, or icecream packages. ccache will skip GCC runs between
   identical source builds, even across different users.  If ccache was
   installed when Verilator was built, it is used, or see OBJCACHE
   environment variable to override this. Also see the

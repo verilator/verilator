@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -80,7 +80,6 @@ constexpr bool operator==(GraphWay::en lhs, const GraphWay& rhs) { return lhs ==
 //============================================================================
 
 class V3Graph VL_NOT_FINAL {
-private:
     // MEMBERS
     V3List<V3GraphVertex*> m_vertices;  // All vertices
 
@@ -180,6 +179,7 @@ public:
                              bool colorAsSubgraph = false) const VL_MT_DISABLED;
     void dumpDotFilePrefixedAlways(const string& nameComment,
                                    bool colorAsSubgraph = false) const VL_MT_DISABLED;
+    void dumpEdges(std::ostream& os, const V3GraphVertex* vertexp) const VL_MT_DISABLED;
     static void selfTest() VL_MT_DISABLED;
 
     // CALLBACKS

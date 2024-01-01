@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -241,7 +241,6 @@ public:
 // Split class functions
 
 class SplitReorderBaseVisitor VL_NOT_FINAL : public VNVisitor {
-private:
     // NODE STATE
     // AstVarScope::user1p      -> Var SplitNodeVertex* for usage var, 0=not set yet
     // AstVarScope::user2p      -> Var SplitNodeVertex* for delayed assignment var, 0=not set yet
@@ -845,7 +844,6 @@ public:
 };
 
 class SplitVisitor final : public SplitReorderBaseVisitor {
-private:
     // Keys are original always blocks pending delete,
     // values are newly split always blocks pending insertion
     // at the same position as the originals:

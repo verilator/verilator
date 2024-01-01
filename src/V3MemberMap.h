@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -72,6 +72,16 @@ private:
                     }
                 } else {
                     if (AstClass::isCacheableChild(itemp)) memberInsert(mmapr, itemp);
+                }
+            }
+        } else if (const AstIface* const anodep = VN_CAST(nodep, Iface)) {
+            for (AstNode* itemp = anodep->stmtsp(); itemp; itemp = itemp->nextp()) {
+                if (const AstScope* const scopep = VN_CAST(itemp, Scope)) {
+                    for (AstNode* blockp = scopep->blocksp(); blockp; blockp = blockp->nextp()) {
+                        memberInsert(mmapr, blockp);
+                    }
+                } else {
+                    memberInsert(mmapr, itemp);
                 }
             }
         } else if (const AstNodeUOrStructDType* const anodep

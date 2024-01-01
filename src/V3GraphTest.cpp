@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -149,22 +149,22 @@ class V3GraphTestVars final : public V3GraphTest {
 public:
     string name() override { return "vars"; }
     void runTest() override {
-        V3Graph* gp = &m_graph;
+        V3Graph* const gp = &m_graph;
 
-        V3GraphTestVertex* clk = new V3GraphTestVarVertex{gp, "$clk"};
+        V3GraphTestVertex* const clk = new V3GraphTestVarVertex{gp, "$clk"};
 
-        V3GraphTestVertex* a = new V3GraphTestVarVertex{gp, "$a"};
-        V3GraphTestVertex* a_dly = new V3GraphTestVarVertex{gp, "$a_dly"};
-        V3GraphTestVertex* a_dlyblk = new V3GraphTestVarVertex{gp, "$a_dlyblk"};
-        V3GraphTestVertex* b = new V3GraphTestVarVertex{gp, "$b"};
-        V3GraphTestVertex* b_dly = new V3GraphTestVarVertex{gp, "$b_dly"};
-        V3GraphTestVertex* b_dlyblk = new V3GraphTestVarVertex{gp, "$b_dlyblk"};
-        V3GraphTestVertex* c = new V3GraphTestVarVertex{gp, "$c"};
-        V3GraphTestVertex* i = new V3GraphTestVarVertex{gp, "$i"};
+        V3GraphTestVertex* const a = new V3GraphTestVarVertex{gp, "$a"};
+        V3GraphTestVertex* const a_dly = new V3GraphTestVarVertex{gp, "$a_dly"};
+        V3GraphTestVertex* const a_dlyblk = new V3GraphTestVarVertex{gp, "$a_dlyblk"};
+        V3GraphTestVertex* const b = new V3GraphTestVarVertex{gp, "$b"};
+        V3GraphTestVertex* const b_dly = new V3GraphTestVarVertex{gp, "$b_dly"};
+        V3GraphTestVertex* const b_dlyblk = new V3GraphTestVarVertex{gp, "$b_dlyblk"};
+        V3GraphTestVertex* const c = new V3GraphTestVarVertex{gp, "$c"};
+        V3GraphTestVertex* const i = new V3GraphTestVarVertex{gp, "$i"};
 
-        V3GraphTestVertex* ap = new V3GraphTestVarVertex{gp, "$a_pre"};
-        V3GraphTestVertex* bp = new V3GraphTestVarVertex{gp, "$b_pre"};
-        V3GraphTestVertex* cp = new V3GraphTestVarVertex{gp, "$c_pre"};
+        V3GraphTestVertex* const ap = new V3GraphTestVarVertex{gp, "$a_pre"};
+        V3GraphTestVertex* const bp = new V3GraphTestVarVertex{gp, "$b_pre"};
+        V3GraphTestVertex* const cp = new V3GraphTestVarVertex{gp, "$c_pre"};
 
         V3GraphTestVertex* n;
 
@@ -185,7 +185,7 @@ public:
             new V3GraphEdge{gp, n, i, 2};
         }
 
-        V3GraphTestVertex* posedge = n = new V3GraphTestVertex{gp, "*posedge clk*"};
+        V3GraphTestVertex* const posedge = n = new V3GraphTestVertex{gp, "*posedge clk*"};
         { new V3GraphEdge{gp, clk, n, 2}; }
 
         // AssignPre's     VarRefs on LHS:  generate special BLK
@@ -257,6 +257,9 @@ public:
 
         gp->acyclic(&V3GraphEdge::followAlwaysTrue);
         gp->order();
+
+        // Test debug function
+        gp->dumpEdges(std::cout, ap);
 
         dumpSelf();
     }

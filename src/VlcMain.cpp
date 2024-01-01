@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -103,16 +103,16 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
 
 void VlcOptions::showVersion(bool verbose) {
     std::cout << version();
-    std::cout << endl;
+    std::cout << "\n";
     if (!verbose) return;
 
-    std::cout << endl;
-    std::cout << "Copyright 2003-2023 by Wilson Snyder.  Verilator is free software; you can\n";
+    std::cout << "\n";
+    std::cout << "Copyright 2003-2024 by Wilson Snyder.  Verilator is free software; you can\n";
     std::cout << "redistribute it and/or modify the Verilator internals under the terms of\n";
     std::cout << "either the GNU Lesser General Public License Version 3 or the Perl Artistic\n";
     std::cout << "License Version 2.0.\n";
 
-    std::cout << endl;
+    std::cout << "\n";
     std::cout << "See https://verilator.org for documentation\n";
 }
 

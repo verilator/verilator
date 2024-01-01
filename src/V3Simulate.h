@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -559,7 +559,8 @@ private:
             AstNode* const valuep = nodep->itemp()->valuep();
             if (valuep) {
                 iterateAndNextConstNull(valuep);
-                if (optimizable()) newValue(nodep, fetchValue(valuep));
+                if (!optimizable()) return;
+                newValue(nodep, fetchValue(valuep));
             } else {
                 clearOptimizable(nodep, "No value found for enum item");  // LCOV_EXCL_LINE
             }
@@ -611,13 +612,13 @@ private:
             iterateChildrenConst(nodep);
         } else {
             iterateConst(nodep->lhsp());
-            if (optimizable()) {
-                if (fetchConst(nodep->lhsp())->num().isNeqZero()) {
-                    iterateConst(nodep->rhsp());
-                    newValue(nodep, fetchValue(nodep->rhsp()));
-                } else {
-                    newValue(nodep, fetchValue(nodep->lhsp()));  // a zero
-                }
+            if (!optimizable()) return;
+            if (fetchConst(nodep->lhsp())->num().isNeqZero()) {
+                iterateConst(nodep->rhsp());
+                if (!optimizable()) return;
+                newValue(nodep, fetchValue(nodep->rhsp()));
+            } else {
+                newValue(nodep, fetchValue(nodep->lhsp()));  // a zero
             }
         }
     }
@@ -629,13 +630,13 @@ private:
             iterateChildrenConst(nodep);
         } else {
             iterateConst(nodep->lhsp());
-            if (optimizable()) {
-                if (fetchConst(nodep->lhsp())->num().isNeqZero()) {
-                    newValue(nodep, fetchValue(nodep->lhsp()));  // a one
-                } else {
-                    iterateConst(nodep->rhsp());
-                    newValue(nodep, fetchValue(nodep->rhsp()));
-                }
+            if (!optimizable()) return;
+            if (fetchConst(nodep->lhsp())->num().isNeqZero()) {
+                newValue(nodep, fetchValue(nodep->lhsp()));  // a one
+            } else {
+                iterateConst(nodep->rhsp());
+                if (!optimizable()) return;
+                newValue(nodep, fetchValue(nodep->rhsp()));
             }
         }
     }
@@ -647,15 +648,14 @@ private:
             iterateChildrenConst(nodep);
         } else {
             iterateConst(nodep->lhsp());
-            if (optimizable()) {
-                if (fetchConst(nodep->lhsp())->num().isEqZero()) {
-                    const AstConst cnst{nodep->fileline(), AstConst::WidthedValue{}, 1,
-                                        1};  // a one
-                    newValue(nodep, &cnst);  // a one
-                } else {
-                    iterateConst(nodep->rhsp());
-                    newValue(nodep, fetchValue(nodep->rhsp()));
-                }
+            if (!optimizable()) return;
+            if (fetchConst(nodep->lhsp())->num().isEqZero()) {
+                const AstConst cnst{nodep->fileline(), AstConst::WidthedValue{}, 1, 1};  // a one
+                newValue(nodep, &cnst);  // a one
+            } else {
+                iterateConst(nodep->rhsp());
+                if (!optimizable()) return;
+                newValue(nodep, fetchValue(nodep->rhsp()));
             }
         }
     }
@@ -669,14 +669,15 @@ private:
             iterateChildrenConst(nodep);
         } else {
             iterateConst(nodep->condp());
-            if (optimizable()) {
-                if (fetchConst(nodep->condp())->num().isNeqZero()) {
-                    iterateConst(nodep->thenp());
-                    newValue(nodep, fetchValue(nodep->thenp()));
-                } else {
-                    iterateConst(nodep->elsep());
-                    newValue(nodep, fetchValue(nodep->elsep()));
-                }
+            if (!optimizable()) return;
+            if (fetchConst(nodep->condp())->num().isNeqZero()) {
+                iterateConst(nodep->thenp());
+                if (!optimizable()) return;
+                newValue(nodep, fetchValue(nodep->thenp()));
+            } else {
+                iterateConst(nodep->elsep());
+                if (!optimizable()) return;
+                newValue(nodep, fetchValue(nodep->elsep()));
             }
         }
     }
@@ -767,7 +768,7 @@ private:
             outVarrefpRef = varrefp;
             lsbRef = fetchConst(selp->lsbp())->num();
             return;  // And presumably still optimizable()
-        } else if (AstSel* const subselp = VN_CAST(selp->lhsp(), Sel)) {
+        } else if (AstSel* const subselp = VN_CAST(selp->fromp(), Sel)) {
             V3Number sublsb{nodep};
             handleAssignSelRecurse(nodep, subselp, outVarrefpRef, sublsb /*ref*/, depth + 1);
             if (optimizable()) {
@@ -815,10 +816,9 @@ private:
             iterateChildrenConst(nodep);
         } else if (optimizable()) {
             iterateAndNextConstNull(nodep->rhsp());
-            if (optimizable()) {
-                AstNode* const vscp = varOrScope(VN_CAST(nodep->lhsp(), VarRef));
-                assignOutValue(nodep, vscp, fetchValue(nodep->rhsp()));
-            }
+            if (!optimizable()) return;
+            AstNode* const vscp = varOrScope(VN_CAST(nodep->lhsp(), VarRef));
+            assignOutValue(nodep, vscp, fetchValue(nodep->rhsp()));
         }
     }
     void visit(AstArraySel* nodep) override {

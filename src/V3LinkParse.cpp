@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -33,7 +33,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Link state, as a visitor of each AstNode
 
 class LinkParseVisitor final : public VNVisitor {
-private:
     // NODE STATE
     // Cleared on netlist
     //  AstNode::user1()        -> bool.  True if processed
@@ -242,6 +241,10 @@ private:
         }
     }
     void visit(AstNodeDType* nodep) override { visitIterateNodeDType(nodep); }
+    void visit(AstConstraint* nodep) override {
+        v3Global.useRandomizeMethods(true);
+        iterateChildren(nodep);
+    }
     void visit(AstEnumDType* nodep) override {
         if (nodep->name() == "") {
             nodep->name(nameFromTypedef(nodep));  // Might still remain ""
@@ -533,7 +536,7 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
-    void visit(AstForeach* nodep) override {
+    void visit(AstNodeForeach* nodep) override {
         // FOREACH(array, loopvars, body)
         UINFO(9, "FOREACH " << nodep << endl);
         cleanFileline(nodep);
@@ -557,7 +560,7 @@ private:
             // Convert to AstSelLoopVars so V3LinkDot knows what's being defined
             AstNode* const newp
                 = new AstSelLoopVars{selp->fileline(), selp->fromp()->unlinkFrBack(),
-                                     selp->rhsp()->unlinkFrBackWithNext()};
+                                     selp->bitp()->unlinkFrBackWithNext()};
             selp->replaceWith(newp);
             VL_DO_DANGLING(selp->deleteTree(), selp);
         } else if (VN_IS(bracketp, SelLoopVars)) {

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -148,6 +148,27 @@ public:
     TimingKit(TimingKit&&) = default;
     TimingKit& operator=(TimingKit&&) = default;
 };
+
+class VirtIfaceTriggers final {
+    using IfaceTrigger = std::pair<const AstIface*, AstVarScope*>;
+    using IfaceTriggerVec = std::vector<IfaceTrigger>;
+    using IfaceSensMap = std::map<const AstIface*, AstSenTree*>;
+    IfaceTriggerVec m_triggers;
+
+public:
+    void emplace_back(IfaceTrigger&& p) { m_triggers.emplace_back(std::move(p)); }
+    IfaceTriggerVec::const_iterator begin() const { return m_triggers.begin(); }
+    IfaceTriggerVec::const_iterator end() const { return m_triggers.end(); }
+    IfaceSensMap makeIfaceToSensMap(AstNetlist* netlistp, size_t vifTriggerIndex,
+                                    AstVarScope* trigVscp) const;
+    VL_UNCOPYABLE(VirtIfaceTriggers);
+    VirtIfaceTriggers() = default;
+    VirtIfaceTriggers(VirtIfaceTriggers&&) = default;
+    VirtIfaceTriggers& operator=(VirtIfaceTriggers&&) = default;
+};
+
+// Creates trigger vars for signals driven via virtual interfaces
+VirtIfaceTriggers makeVirtIfaceTriggers(AstNetlist* nodep) VL_MT_DISABLED;
 
 // Creates the timing kit and marks variables written by suspendables
 TimingKit prepareTiming(AstNetlist* const netlistp) VL_MT_DISABLED;

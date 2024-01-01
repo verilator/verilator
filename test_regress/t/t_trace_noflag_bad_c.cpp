@@ -9,7 +9,7 @@
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 
-#include "Vt_trace_noflag_bad.h"
+#include VM_PREFIX_INCLUDE
 
 int main(int argc, char** argv) {
     std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};

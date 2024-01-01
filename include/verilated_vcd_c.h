@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -301,12 +301,12 @@ public:
 
     // Set time units (s/ms, defaults to ns)
     // Users should not need to call this, as for Verilated models, these
-    // propage from the Verilated default timeunit
+    // propagate from the Verilated default timeunit
     void set_time_unit(const char* unit) VL_MT_SAFE { m_sptrace.set_time_unit(unit); }
     void set_time_unit(const std::string& unit) VL_MT_SAFE { m_sptrace.set_time_unit(unit); }
     // Set time resolution (s/ms, defaults to ns)
     // Users should not need to call this, as for Verilated models, these
-    // propage from the Verilated default timeprecision
+    // propagate from the Verilated default timeprecision
     void set_time_resolution(const char* unit) VL_MT_SAFE { m_sptrace.set_time_resolution(unit); }
     void set_time_resolution(const std::string& unit) VL_MT_SAFE {
         m_sptrace.set_time_resolution(unit);
