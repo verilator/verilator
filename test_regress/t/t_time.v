@@ -17,7 +17,7 @@ module t ();
 
    longint should_be_2, should_be_3;
    real should_be_1p6, should_be_3p2;
-        
+
    initial
     begin : initial_blk1
      should_be_2 = 0;
@@ -52,7 +52,7 @@ module t ();
      begin : last_blk
       if (should_be_2 != 2)
        begin
-        $display("%%Error: should_be_2 = %0d", 
+        $display("%%Error: should_be_2 = %0d",
                  should_be_2);
         $stop;
       end
@@ -73,4 +73,3 @@ module t ();
      end
 
 endmodule
-
