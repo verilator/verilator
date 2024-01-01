@@ -101,9 +101,6 @@ LDFLAGS  += $(CFG_LDFLAGS_VERILATED)
 #OPT = -ggdb -DPRINTINITSTR
 CPPFLAGS += $(OPT)
 
-CPPFLAGS += $(M32)
-LDFLAGS  += $(M32)
-
 # On macOS, specify all weak symbols as dynamic_lookup.
 # Otherwise, you get undefined symbol errors.
 ifeq ($(UNAME_S),Darwin)
