@@ -77,22 +77,30 @@ int mon_check() {
     CHECK_RESULT_NZ(intHandle)
     PLI_INT32 intConstType = vpi_get(vpiConstType, intHandle);
     CHECK_RESULT(intConstType, vpiDecConst)
+    const char* intConstTypeStr = vpi_get_str(vpiConstType, intHandle);
+    CHECK_RESULT_CSTR(intConstTypeStr, "vpiDecConst")
 
     TestVpiHandle realHandle = vpi_handle_by_name((PLI_BYTE8*)"t.realParam", NULL);
     CHECK_RESULT_NZ(realHandle)
     PLI_INT32 realConstType = vpi_get(vpiConstType, realHandle);
     CHECK_RESULT(realConstType, vpiRealConst)
+    const char* realConstTypeStr = vpi_get_str(vpiConstType, realHandle);
+    CHECK_RESULT_CSTR(realConstTypeStr, "vpiRealConst")
 
     TestVpiHandle strHandle = vpi_handle_by_name((PLI_BYTE8*)"t.strParam", NULL);
     CHECK_RESULT_NZ(strHandle)
     PLI_INT32 strConstType = vpi_get(vpiConstType, strHandle);
     CHECK_RESULT(strConstType, vpiStringConst)
+    const char* strConstTypeStr = vpi_get_str(vpiConstType, strHandle);
+    CHECK_RESULT_CSTR(strConstTypeStr, "vpiStringConst")
 
     TestVpiHandle sigHandle = vpi_handle_by_name((PLI_BYTE8*)"t.signal", NULL);
     CHECK_RESULT_NZ(sigHandle)
     PLI_INT32 sigConstType = vpi_get(vpiConstType, sigHandle);
     // t.signal is not constant
     CHECK_RESULT(sigConstType, vpiUndefined)
+    const char* sigConstTypeStr = vpi_get_str(vpiConstType, sigHandle);
+    CHECK_RESULT_CSTR(sigConstTypeStr, "*undefined*")
     TestVpiHandle leftHandle = vpi_handle(vpiLeftRange, sigHandle);
     CHECK_RESULT_NZ(leftHandle)
     PLI_INT32 leftConstType = vpi_get(vpiConstType, leftHandle);

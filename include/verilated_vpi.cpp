@@ -855,6 +855,7 @@ public:
     static const char* strFromVpiMethod(PLI_INT32 vpiVal) VL_PURE;
     static const char* strFromVpiCallbackReason(PLI_INT32 vpiVal) VL_PURE;
     static const char* strFromVpiProp(PLI_INT32 vpiVal) VL_PURE;
+    static const char* strFromVpiConstType(PLI_INT32 vpiVal) VL_PURE;
 };
 
 //======================================================================
@@ -1372,6 +1373,23 @@ const char* VerilatedVpiError::strFromVpiProp(PLI_INT32 vpiVal) VL_PURE {
     if (vpiVal == vpiUndefined) return "vpiUndefined";
     return names[(vpiVal <= vpiIsProtected) ? vpiVal : 0];
 }
+const char* VerilatedVpiError::strFromVpiConstType(PLI_INT32 constType) VL_PURE {
+    // clang-format off
+    static const char* const names[] = {
+        "*undefined*",
+        "vpiDecConst",
+        "vpiRealConst",
+        "vpiBinaryConst",
+        "vpiOctConst",
+        "vpiHexConst",
+        "vpiStringConst",
+        "vpiIntConst",
+        "vpiTimeConst",
+    };
+    // clang-format on
+    if (VL_UNCOVERABLE(constType < 0)) return names[0];
+    return names[(constType <= vpiTimeConst) ? constType : 0];
+}
 
 #define SELF_CHECK_RESULT_CSTR(got, exp) \
     if (0 != std::strcmp((got), (exp))) { \
@@ -1643,6 +1661,15 @@ void VerilatedVpiError::selfTest() VL_MT_UNSAFE_ONE {
     SELF_CHECK_ENUM_STR(strFromVpiProp, vpiOffset);
     SELF_CHECK_ENUM_STR(strFromVpiProp, vpiStop);
     SELF_CHECK_ENUM_STR(strFromVpiProp, vpiIsProtected);
+
+    SELF_CHECK_ENUM_STR(strFromVpiConstType, vpiDecConst);
+    SELF_CHECK_ENUM_STR(strFromVpiConstType, vpiRealConst);
+    SELF_CHECK_ENUM_STR(strFromVpiConstType, vpiBinaryConst);
+    SELF_CHECK_ENUM_STR(strFromVpiConstType, vpiOctConst);
+    SELF_CHECK_ENUM_STR(strFromVpiConstType, vpiHexConst);
+    SELF_CHECK_ENUM_STR(strFromVpiConstType, vpiStringConst);
+    SELF_CHECK_ENUM_STR(strFromVpiConstType, vpiIntConst);
+    SELF_CHECK_ENUM_STR(strFromVpiConstType, vpiTimeConst);
 }
 
 #undef SELF_CHECK_ENUM_STR
@@ -2046,6 +2073,11 @@ PLI_BYTE8* vpi_get_str(PLI_INT32 property, vpiHandle object) {
     }
     case vpiType: {
         return const_cast<PLI_BYTE8*>(VerilatedVpiError::strFromVpiObjType(vop->type()));
+    }
+    case vpiConstType: {
+        const PLI_INT32 constType = vpi_get(vpiConstType, object);
+        VL_VPI_ERROR_RESET_();
+        return const_cast<PLI_BYTE8*>(VerilatedVpiError::strFromVpiConstType(constType));
     }
     default:
         VL_VPI_WARNING_(__FILE__, __LINE__, "%s: Unsupported type %s, nothing will be returned",
