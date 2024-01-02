@@ -419,10 +419,19 @@ public:
             }
             if (m_onlyParams && !m_it->second.isParam()) continue;
             if (VL_UNLIKELY(m_topscopep)) {
-                if (const VerilatedVar* topvarp = m_topscopep->varFind(m_it->second.name()))
-                    return ((new VerilatedVpioVar{topvarp, m_topscopep})->castVpiHandle());
+                if (const VerilatedVar* topvarp = m_topscopep->varFind(m_it->second.name())) {
+                    if (topvarp->isParam()) {
+                        return ((new VerilatedVpioParam{topvarp, m_topscopep})->castVpiHandle());
+                    } else {
+                        return ((new VerilatedVpioVar{topvarp, m_topscopep})->castVpiHandle());
+                    }
+                }
             }
-            return ((new VerilatedVpioVar{&(m_it->second), m_scopep})->castVpiHandle());
+            if (m_it->second.isParam()) {
+                return ((new VerilatedVpioParam{&(m_it->second), m_scopep})->castVpiHandle());
+            } else {
+                return ((new VerilatedVpioVar{&(m_it->second), m_scopep})->castVpiHandle());
+            }
         }
     }
 };
