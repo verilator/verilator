@@ -165,6 +165,7 @@ public:
         WIDTHTRUNC,     // Width mismatch- lhs < rhs
         WIDTHXZEXPAND,  // Width mismatch- lhs > rhs xz filled
         ZERODLY,        // #0 delay
+        ZEROREPL,       // Replication width of zero
         _ENUM_MAX
         // ***Add new elements below also***
     };
@@ -210,7 +211,7 @@ public:
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
             "UNPACKED", "UNSIGNED", "UNUSEDGENVAR", "UNUSEDPARAM", "UNUSEDSIGNAL",
             "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
-            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT",  "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY",
+            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT",  "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL",
             " MAX"
         };
         // clang-format on
@@ -228,7 +229,7 @@ public:
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BLKANDNBLK || m_e == BLKLOOPINIT
                 || m_e == CONTASSREG || m_e == ENCAPSULATED || m_e == ENDLABEL || m_e == ENUMVALUE
                 || m_e == IMPURE || m_e == PINNOTFOUND || m_e == PKGNODECL
-                || m_e == PROCASSWIRE  // Says IEEE
+                || m_e == PROCASSWIRE || m_e == ZEROREPL  // Says IEEE
         );
     }
     // Warnings to mention manual
