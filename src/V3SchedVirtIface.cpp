@@ -225,7 +225,7 @@ VirtIfaceTriggers makeVirtIfaceTriggers(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     if (v3Global.hasVirtIfaces()) {
         VirtIfaceVisitor visitor{nodep};
-        V3Global::dumpCheckGlobalTree("sched_vif", 0, dumpTreeLevel() >= 6);
+        V3Global::dumpCheckGlobalTree("sched_vif", 0, dumpTreeEitherLevel() >= 6);
         return visitor.take_triggers();
     }
     return {};

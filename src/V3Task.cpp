@@ -1982,5 +1982,5 @@ void V3Task::taskAll(AstNetlist* nodep) {
         TaskStateVisitor visitors{nodep};
         const TaskVisitor visitor{nodep, &visitors};
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("task", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("task", 0, dumpTreeEitherLevel() >= 3);
 }

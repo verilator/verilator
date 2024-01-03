@@ -151,7 +151,7 @@ static void process() {
         if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Link");
         if (v3Global.opt.debugExitUvm23()) {
             V3Error::abortIfErrors();
-            if (v3Global.opt.xmlOnly()) V3EmitXml::emitxml();
+            if (v3Global.opt.serializeOnly()) V3EmitXml::emitxml();
             cout << "--debug-exit-uvm23: Exiting after UVM-supported pass\n";
             std::exit(0);
         }
@@ -168,7 +168,8 @@ static void process() {
         v3Global.checkTree();
 
         // Create a hierarchical Verilation plan
-        if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && v3Global.opt.hierarchical()) {
+        if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()
+            && v3Global.opt.hierarchical()) {
             V3HierBlockPlan::createPlan(v3Global.rootp());
             // If a plan is created, further analysis is not necessary.
             // The actual Verilation will be done based on this plan.
@@ -179,7 +180,7 @@ static void process() {
         }
         if (v3Global.opt.debugExitUvm()) {
             V3Error::abortIfErrors();
-            if (v3Global.opt.xmlOnly()) V3EmitXml::emitxml();
+            if (v3Global.opt.serializeOnly()) V3EmitXml::emitxml();
             cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
             std::exit(0);
         }
@@ -215,7 +216,7 @@ static void process() {
         //
         V3Assert::assertAll(v3Global.rootp());
 
-        if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
+        if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
             // Add top level wrapper with instance pointing to old top
             // Move packages to under new top
             // Must do this after we know parameters and dtypes (as don't clone dtype decls)
@@ -225,7 +226,7 @@ static void process() {
         // Propagate constants into expressions
         if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAllLint(v3Global.rootp());
 
-        if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
+        if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
             // Split packed variables into multiple pieces to resolve UNOPTFLAT.
             // should be after constifyAllLint() which flattens to 1D bit vector
             V3SplitVar::splitVariable(v3Global.rootp());
@@ -250,7 +251,7 @@ static void process() {
             V3Tristate::tristateAll(v3Global.rootp());
         }
 
-        if (!v3Global.opt.xmlOnly()) {
+        if (!v3Global.opt.serializeOnly()) {
             // Move assignments from X into MODULE temps.
             // (Before flattening, so each new X variable is shared between all scopes of that
             // module.)
@@ -268,7 +269,7 @@ static void process() {
             V3DfgOptimizer::optimize(v3Global.rootp(), " pre inline");
         }
 
-        if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
+        if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
             // Module inlining
             // Cannot remove dead variables after this, as alias information for final
             // V3Scope's V3LinkDot is in the AstVar.
@@ -298,7 +299,7 @@ static void process() {
 
         // --FLATTENING---------------
 
-        if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
+        if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
             // We're going to flatten the hierarchy, so as many optimizations that
             // can be done as possible should be before this....
 
@@ -318,25 +319,25 @@ static void process() {
 
         // --SCOPE BASED OPTIMIZATIONS--------------
 
-        if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
+        if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
             // Cleanup
             V3Const::constifyAll(v3Global.rootp());
             V3Dead::deadifyDTypesScoped(v3Global.rootp());
             v3Global.checkTree();
         }
 
-        if (!v3Global.opt.xmlOnly()) {
+        if (!v3Global.opt.serializeOnly()) {
             // Convert case statements to if() blocks.  Must be after V3Unknown
             // Must be before V3Task so don't need to deal with task in case value compares
             V3Case::caseAll(v3Global.rootp());
         }
 
-        if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
+        if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
             // Inline all tasks
             V3Task::taskAll(v3Global.rootp());
         }
 
-        if (!v3Global.opt.xmlOnly()) {
+        if (!v3Global.opt.serializeOnly()) {
             // Add __PVT's
             // After V3Task so task internal variables will get renamed
             V3Name::nameAll(v3Global.rootp());
@@ -449,7 +450,7 @@ static void process() {
 
         // --MODULE OPTIMIZATIONS--------------
 
-        if (!v3Global.opt.xmlOnly()) {
+        if (!v3Global.opt.serializeOnly()) {
             // Split deep blocks to appease MSVC++.  Must be before Localize.
             if (!v3Global.opt.lintOnly() && v3Global.opt.compLimitBlocks()) {
                 V3DepthBlock::depthBlockAll(v3Global.rootp());
@@ -472,7 +473,7 @@ static void process() {
 
         // --GENERATION------------------
 
-        if (!v3Global.opt.xmlOnly()) {
+        if (!v3Global.opt.serializeOnly()) {
             // Remove unused vars
             V3Const::constifyAll(v3Global.rootp());
             V3Dead::deadifyAll(v3Global.rootp());
@@ -489,24 +490,24 @@ static void process() {
         }
 
         // Expand macros and wide operators into C++ primitives
-        if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && v3Global.opt.fExpand()) {
+        if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly() && v3Global.opt.fExpand()) {
             V3Expand::expandAll(v3Global.rootp());
         }
 
         // Propagate constants across WORDSEL arrayed temporaries
-        if (!v3Global.opt.xmlOnly() && v3Global.opt.fSubst()) {
+        if (!v3Global.opt.serializeOnly() && v3Global.opt.fSubst()) {
             // Constant folding of expanded stuff
             V3Const::constifyCpp(v3Global.rootp());
             V3Subst::substituteAll(v3Global.rootp());
         }
 
-        if (!v3Global.opt.xmlOnly() && v3Global.opt.fSubstConst()) {
+        if (!v3Global.opt.serializeOnly() && v3Global.opt.fSubstConst()) {
             // Constant folding of substitutions
             V3Const::constifyCpp(v3Global.rootp());
             V3Dead::deadifyAll(v3Global.rootp());
         }
 
-        if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly()) {
+        if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()) {
             if (v3Global.opt.fMergeCond()) {
                 // Merge conditionals
                 V3MergeCond::mergeAll(v3Global.rootp());
@@ -531,11 +532,11 @@ static void process() {
         }
 
         V3Error::abortIfErrors();
-        if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly()) {  //
+        if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()) {  //
             V3CCtors::cctorsAll();
         }
 
-        if (!v3Global.opt.xmlOnly() && v3Global.opt.mtasks()) {
+        if (!v3Global.opt.serializeOnly() && v3Global.opt.mtasks()) {
             // Finalize our MTask cost estimates and pack the mtasks into
             // threads. Must happen pre-EmitC which relies on the packing
             // order. Must happen post-V3LifePost which changes the relative
@@ -543,7 +544,8 @@ static void process() {
             V3Partition::finalize(v3Global.rootp());
         }
 
-        if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {
+        if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()
+            && !v3Global.opt.dpiHdrOnly()) {
             // Add common methods/etc to modules
             V3Common::commonAll();
 
@@ -555,7 +557,8 @@ static void process() {
         }
 
         // Output the text
-        if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {
+        if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()
+            && !v3Global.opt.dpiHdrOnly()) {
             // emitcInlines is first, as it may set needHInlines which other emitters read
             V3EmitC::emitcInlines();
             V3EmitC::emitcSyms();
@@ -567,13 +570,13 @@ static void process() {
             V3EmitC::emitcSyms(true);
         }
     }
-    if (!v3Global.opt.xmlOnly()
+    if (!v3Global.opt.serializeOnly()
         && !v3Global.opt.dpiHdrOnly()) {  // Unfortunately we have some lint checks in emitcImp.
         V3EmitC::emitcImp();
     }
     {
         const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
-        if (v3Global.opt.xmlOnly()
+        if (v3Global.opt.serializeOnly()
             // Check XML when debugging to make sure no missing node types
             || (v3Global.opt.debugCheck() && !v3Global.opt.lintOnly()
                 && !v3Global.opt.dpiHdrOnly())) {
@@ -590,7 +593,8 @@ static void process() {
             V3EmitC::emitcFiles();
         }
 
-        if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {
+        if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()
+            && !v3Global.opt.dpiHdrOnly()) {
             if (v3Global.opt.main()) V3EmitCMain::emit();
 
             // V3EmitMk/V3EmitCMake must be after all other emitters,
@@ -679,7 +683,7 @@ static void verilate(const string& argString) {
     }
 
     // Final steps
-    V3Global::dumpCheckGlobalTree("final", 990, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("final", 990, dumpTreeEitherLevel() >= 3);
 
     V3Error::abortIfErrors();
 

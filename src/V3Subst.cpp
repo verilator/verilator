@@ -384,5 +384,5 @@ public:
 void V3Subst::substituteAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { SubstVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("subst", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("subst", 0, dumpTreeEitherLevel() >= 3);
 }

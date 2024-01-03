@@ -172,5 +172,5 @@ void V3Common::commonAll() {
             if (!dtypep->packed()) makeVlToString(dtypep);
         }
     }
-    V3Global::dumpCheckGlobalTree("common", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("common", 0, dumpTreeEitherLevel() >= 3);
 }

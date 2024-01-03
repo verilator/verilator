@@ -160,5 +160,5 @@ public:
 void V3Depth::depthAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { DepthVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("depth", 0, dumpTreeLevel() >= 6);
+    V3Global::dumpCheckGlobalTree("depth", 0, dumpTreeEitherLevel() >= 6);
 }

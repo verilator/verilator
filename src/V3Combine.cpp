@@ -235,5 +235,5 @@ public:
 void V3Combine::combineAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     CombineVisitor::apply(nodep);
-    V3Global::dumpCheckGlobalTree("combine", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("combine", 0, dumpTreeEitherLevel() >= 3);
 }
