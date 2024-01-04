@@ -29,8 +29,14 @@ module Core(
    SimpleIntf intf
 );
 
-   // NOTE: When this line is commented out the test will pass
+   // NOTE: When this line is commented out the test will pass (old)
    localparam intf_symbolsPerBeatDivBy2 = intf.symbolsPerBeatDivBy2;
+
+   initial begin
+      if (intf.symbolsPerBeatDivBy2 != intf_symbolsPerBeatDivBy2) begin
+         $display("%%Error: param = %0d", intf.symbolsPerBeatDivBy2);
+      end
+   end
 
    localparam int core_intf_symbolsPerBeat = 64;
    SimpleIntf #(.symbolsPerBeat(core_intf_symbolsPerBeat)) core_intf ();
