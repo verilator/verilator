@@ -10,14 +10,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-compile(
-    expect_filename => $Self->{golden_filename},
-    fails => $Self->{vlt_all},  # Verilator unsupported, bug468"
+execute(
+    check_finished => 1,
     );
-
-#execute(
-#    check_finished => 1,
-#    );
 
 ok(1);
 1;

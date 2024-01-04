@@ -103,6 +103,7 @@ public:
     bool m_modportImpExpLastIsExport
         = false;  // Last import_export statement in modportPortsDecl is an export
 
+    int m_anonInstId = 0;  // Counter for anonymous UPD instances
     int m_pinNum = -1;  // Pin number currently parsing
     std::stack<int> m_pinStack;  // Queue of pin numbers being parsed
 
@@ -133,7 +134,7 @@ public:
         string newtext = GRAMMARP->unquoteString(fileline, text);
         return new AstText{fileline, newtext};
     }
-    AstNode* createCellOrIfaceRef(FileLine* fileline, const string& name, AstPin* pinlistp,
+    AstNode* createCellOrIfaceRef(FileLine* fileline, string name, AstPin* pinlistp,
                                   AstNodeRange* rangelistp, bool parens) {
         // Must clone m_instParamp as may be comma'ed list of instances
         VSymEnt* const foundp = SYMP->symCurrentp()->findIdFallback(name);
@@ -147,6 +148,11 @@ public:
             m_varDeclTyped = true;
             AstVar* const nodep = createVariable(fileline, name, rangelistp, nullptr);
             return nodep;
+        }
+        if (name.empty()) {
+            // UDPs can have empty instance names. Assigning unique names for them to prevent any
+            // conflicts
+            name = "__ANON" + cvtToStr(m_anonInstId++);
         }
         AstCell* const nodep = new AstCell{
             fileline,
@@ -3203,10 +3209,8 @@ instnameParen<nodep>:
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, $4, $2, true); }
         |       id instRangeListE
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, nullptr, $2, false); }
-        //UNSUP instRangeListE '(' cellpinListE ')'      { UNSUP } // UDP
-        //                      // Adding above and switching to the Verilog-Perl syntax
-        //                      // causes a shift conflict due to use of idClassSel inside exprScope.
-        //                      // It also breaks allowing "id foo;" instantiation syntax.
+        |       '(' cellpinListE ')'  // When UDP have empty name, unpacked dimensions must not be used
+                        { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, "", $2, nullptr, true); }
         ;
 
 instRangeListE<nodeRangep>:
