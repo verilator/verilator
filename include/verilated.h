@@ -971,6 +971,7 @@ void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
         } else if (sc_res == sc_core::sc_time(1, sc_core::SC_FS)) {
             sc_prec = 15;
         }
+        // SC_AS, SC_ZS, SC_YS not supported as no Verilog equivalent; will error below
 #endif
     }
 #if VM_SC
