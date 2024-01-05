@@ -76,7 +76,7 @@ public:
     ~TraceActivityVertex() override = default;
     // ACCESSORS
     AstNode* insertp() const {
-        if (!m_insertp) v3fatalSrc("Null insertp; probably called on a special always/slow.");
+        UASSERT(m_insertp, "Null insertp; probably called on a special always/slow");
         return m_insertp;
     }
     string name() const override {

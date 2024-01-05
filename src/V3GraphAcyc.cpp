@@ -65,7 +65,7 @@ private:
     using OrigEdgeList = std::list<V3GraphEdge*>;  // List of orig edges, see also GraphAcyc's decl
     V3GraphEdge* origEdgep() const {
         const OrigEdgeList* const oEListp = static_cast<OrigEdgeList*>(userp());
-        if (!oEListp) v3fatalSrc("No original edge associated with acyc edge " << this);
+        UASSERT(oEListp, "No original edge associated with acyc edge " << this);
         return (oEListp->front());
     }
 

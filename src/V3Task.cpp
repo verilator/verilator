@@ -1033,11 +1033,10 @@ class TaskVisitor final : public VNVisitor {
 
                     if (portp->isDpiOpenArray()) {
                         AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
-                        if (VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, QueueDType)) {
-                            v3fatalSrc("Passing dynamic array or queue as actual argument to DPI "
-                                       "open array is not yet supported");
-                        }
-
+                        UASSERT_OBJ(!VN_IS(dtypep, DynArrayDType) && !VN_IS(dtypep, QueueDType),
+                                    portp,
+                                    "Passing dynamic array or queue as actual argument to DPI "
+                                    "open array is not yet supported");
                         // Ideally we'd make a table of variable
                         // characteristics, and reuse it wherever we can
                         // At least put them into the module's CTOR as static?

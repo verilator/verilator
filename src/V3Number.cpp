@@ -429,7 +429,7 @@ V3Number& V3Number::setLongS(int32_t value) {
     return *this;
 }
 V3Number& V3Number::setDouble(double value) {
-    if (VL_UNCOVERABLE(width() != 64)) v3fatalSrc("Real operation on wrong sized number");
+    UASSERT(width() == 64, "Real operation on wrong sized number");
     m_data.setDouble();
     union {
         double d;
@@ -920,9 +920,7 @@ uint32_t V3Number::toUInt() const VL_MT_SAFE {
 }
 
 double V3Number::toDouble() const VL_MT_SAFE {
-    if (VL_UNCOVERABLE(!isDouble() || width() != 64)) {
-        v3fatalSrc("Real operation on wrong sized/non-real number");
-    }
+    UASSERT(isDouble() && width() == 64, "Real operation on wrong sized/non-real number");
     union {
         double d;
         uint32_t u[2];
@@ -2395,7 +2393,7 @@ V3Number& V3Number::opRToIRoundS(const V3Number& lhs) {
 V3Number& V3Number::opRealToBits(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_DOUBLE_ARGS1(lhs);
-    if (lhs.width() != 64 || width() != 64) v3fatalSrc("Real operation on wrong sized number");
+    UASSERT(lhs.width() == 64 && width() == 64, "Real operation on wrong sized number");
     union {
         double m_d;
         uint64_t m_v;
@@ -2405,7 +2403,7 @@ V3Number& V3Number::opRealToBits(const V3Number& lhs) {
 }
 V3Number& V3Number::opBitsToRealD(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
-    if (lhs.width() != 64 || width() != 64) v3fatalSrc("Real operation on wrong sized number");
+    UASSERT(lhs.width() == 64 && width() == 64, "Real operation on wrong sized number");
     union {
         double m_d;
         uint64_t m_v;

@@ -302,7 +302,7 @@ private:
     }
     void scoreboardPopStmt() {
         // UINFO(9, "    pop" << endl);
-        if (m_stmtStackps.empty()) v3fatalSrc("Stack underflow");
+        UASSERT(!m_stmtStackps.empty(), "Stack underflow");
         m_stmtStackps.pop_back();
     }
 
