@@ -1,0 +1,26 @@
+[0] clkb is 1
+[5e-07] clkb is 0
+[1e-06] clkb is 1
+[1.5e-06] clkb is 0
+[1.75e-06] Initial finishing, clkb = 0
+[2e-06] clkb is 1
+[2.5e-06] clkb is 0
+[3e-06] clkb is 1
+[3.5e-06] clkb is 0
+[4e-06] clkb is 1
+[4.5e-06] clkb is 0
+[5e-06] clkb is 1
+[5.5e-06] clkb is 0
+[6e-06] clkb is 1
+[6.5e-06] clkb is 0
+[7e-06] clkb is 1
+[7.5e-06] clkb is 0
+[8e-06] clkb is 1
+[8.5e-06] clkb is 0
+[9e-06] clkb is 1
+[9.5e-06] clkb is 0
+[1e-05] clkb is 1
+[1e-05] Finishing (TOP.t.bot)
+*-* All Finished *-*
+[10500] final (TOP.t)
+[1.05e-05] final (TOP.t.bot) count was 21

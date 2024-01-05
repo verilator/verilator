@@ -14,7 +14,7 @@ Verilator 5.021 devel
 **Minor:**
 
 * Remove deprecated 32-bit pointer mode (`gcc -m32`).
-
+* Fix delays using wrong timeunits when modules inlined (#4806). [Paul Wright]
 
 
 Verilator 5.020 2024-01-01

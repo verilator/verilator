@@ -536,6 +536,13 @@ class LinkParseVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
+    void visit(AstDelay* nodep) override {
+        cleanFileline(nodep);
+        UASSERT_OBJ(m_modp, nodep, "Delay not under module");
+        nodep->timeunit(m_modp->timeunit());
+        iterateChildren(nodep);
+    }
+
     void visit(AstNodeForeach* nodep) override {
         // FOREACH(array, loopvars, body)
         UINFO(9, "FOREACH " << nodep << endl);
