@@ -25,8 +25,8 @@ module t (/*AUTOARG*/
       if (cyc==0) begin
       end
       else if (cyc<90) begin
-         if (o1 != !cyc[0]) $stop;
-         if (o2 !=  cyc[0]) $stop;
+         if (o1 !=  cyc[0]) $stop;
+         if (o2 != !cyc[0]) $stop;
       end
       else if (cyc==99) begin
          $write("*-* All Finished *-*\n");
