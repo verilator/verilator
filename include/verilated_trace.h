@@ -209,11 +209,11 @@ private:
         // (the one in Ubuntu 14.04 with GCC 4.8.4 in particular) use the
         // assignment operator on inserting into collections, so they don't work
         // with const fields...
-        const union {  // The callback
-            initCb_t m_initCb;
-            dumpCb_t m_dumpCb;
-            dumpOffloadCb_t m_dumpOffloadCb;
-            cleanupCb_t m_cleanupCb;
+        union {  // The callback
+            const initCb_t m_initCb;
+            const dumpCb_t m_dumpCb;
+            const dumpOffloadCb_t m_dumpOffloadCb;
+            const cleanupCb_t m_cleanupCb;
         };
         const uint32_t m_fidx;  // The index of the tracing function
         void* const m_userp;  // The user pointer to pass to the callback (the symbol table)
