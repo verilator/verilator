@@ -71,7 +71,7 @@ public:
         : m_startNodep{nodep}
         , m_assertNoDups{assertNoDups}
         , m_osp{osp} {
-        if (nodep) iterateConst(nodep);
+        iterateConstNull(nodep);
     }
     ~InstrCountVisitor() override = default;
 
@@ -208,12 +208,12 @@ private:
         const uint32_t elseCount = m_instrCount;
 
         reset();
-        if (ifCount < elseCount) {
-            m_instrCount = savedCount + elseCount;
-            if (nodep->thenp()) nodep->thenp()->user2(0);  // Don't dump it
-        } else {
+        if (ifCount >= elseCount) {
             m_instrCount = savedCount + ifCount;
             if (nodep->elsep()) nodep->elsep()->user2(0);  // Don't dump it
+        } else {
+            m_instrCount = savedCount + elseCount;
+            if (nodep->thenp()) nodep->thenp()->user2(0);  // Don't dump it
         }
     }
     void visit(AstCAwait* nodep) override {

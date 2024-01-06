@@ -13,6 +13,7 @@ Verilator 5.021 devel
 
 **Minor:**
 
+* Add predicted stack overflow warning (#4799).
 * Remove deprecated 32-bit pointer mode (`gcc -m32`).
 * Fix delays using wrong timeunits when modules inlined (#4806). [Paul Wright]
 

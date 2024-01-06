@@ -20,6 +20,8 @@
 #include "V3EmitCBase.h"
 #include "V3LanguageWords.h"
 #include "V3PartitionGraph.h"
+#include "V3StackCount.h"
+#include "V3Stats.h"
 
 #include <algorithm>
 #include <map>
@@ -809,6 +811,14 @@ void EmitCSyms::emitSymImp() {
         ++m_numStmts;
     }
     puts("{\n");
+
+    {
+        puts("    // Check resources\n");
+        uint64_t stackSize = V3StackCount::count(v3Global.rootp());
+        if (v3Global.opt.debugStackCheck()) stackSize += 1024 * 1024 * 1024;
+        V3Stats::addStat("Stack size prediction (bytes)", stackSize);
+        puts("    Verilated::stackCheck(" + cvtToStr(stackSize) + ");\n");
+    }
 
     if (v3Global.opt.profPgo()) {
         puts("// Configure profiling for PGO\n");

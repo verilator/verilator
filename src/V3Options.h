@@ -243,6 +243,7 @@ private:
     bool m_debugPartition = false;  // main switch: --debug-partition
     bool m_debugProtect = false;    // main switch: --debug-protect
     bool m_debugSelfTest = false;   // main switch: --debug-self-test
+    bool m_debugStackCheck = false;  // main switch: --debug-stack-check
     bool m_decoration = true;       // main switch: --decoration
     bool m_dpiHdrOnly = false;      // main switch: --dpi-hdr-only
     bool m_exe = false;             // main switch: --exe
@@ -471,6 +472,7 @@ public:
     bool debugPartition() const { return m_debugPartition; }
     bool debugProtect() const VL_MT_SAFE { return m_debugProtect; }
     bool debugSelfTest() const { return m_debugSelfTest; }
+    bool debugStackCheck() const { return m_debugStackCheck; }
     bool decoration() const VL_MT_SAFE { return m_decoration; }
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
     bool dumpDefines() const { return m_dumpLevel.count("defines") && m_dumpLevel.at("defines"); }

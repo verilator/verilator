@@ -71,6 +71,11 @@
 # include <execinfo.h>
 # define _VL_HAVE_STACKTRACE
 #endif
+#if defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
+# include <sys/time.h>
+# include <sys/resource.h>
+# define _VL_HAVE_GETRLIMIT
+#endif
 
 #include "verilated_threads.h"
 // clang-format on
@@ -2993,6 +2998,29 @@ void Verilated::scTraceBeforeElaborationError() VL_MT_SAFE {
                 "%Error: Verilated*Sc::open(...) was called before sc_core::sc_start(). "
                 "Run sc_core::sc_start(sc_core::SC_ZERO_TIME) before opening a wave file.");
     VL_UNREACHABLE;
+}
+
+void Verilated::stackCheck(QData needSize) VL_MT_UNSAFE {
+    // Slowpath - Called only when constructing
+#ifdef _VL_HAVE_GETRLIMIT
+    QData haveSize = 0;
+    rlimit rlim;
+    if (0 == getrlimit(RLIMIT_STACK, &rlim)) {
+        haveSize = rlim.rlim_cur;
+        if (haveSize == RLIM_INFINITY) haveSize = rlim.rlim_max;
+        if (haveSize == RLIM_INFINITY) haveSize = 0;
+    }
+    // VL_PRINTF_MT("-Info: stackCheck(%" PRIu64 ") have %" PRIu64 "\n", needSize, haveSize);
+    // Check for 1.5x need, but suggest 2x so small model increase won't cause warning
+    // if the user follows the suggestions
+    if (VL_UNLIKELY(haveSize && needSize && haveSize < (needSize + needSize / 2))) {
+        VL_PRINTF_MT("%%Warning: System has stack size %" PRIu64 " kb"
+                     " which may be too small; suggest at least 'ulimit -c %" PRIu64 "'\n",
+                     haveSize / 1024, (needSize * 2) / 1024);
+    }
+#else
+    if (false && needSize) {}  // Unused argument
+#endif
 }
 
 void Verilated::mkdir(const char* dirname) VL_MT_UNSAFE {

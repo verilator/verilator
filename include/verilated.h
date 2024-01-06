@@ -898,6 +898,7 @@ public:
     static void overWidthError(const char* signame) VL_ATTR_NORETURN VL_MT_SAFE;
     static void scTimePrecisionError(int sc_prec, int vl_prec) VL_ATTR_NORETURN VL_MT_SAFE;
     static void scTraceBeforeElaborationError() VL_ATTR_NORETURN VL_MT_SAFE;
+    static void stackCheck(QData needSize) VL_MT_UNSAFE;
 
     // Internal: Get and set DPI context
     static const VerilatedScope* dpiScope() VL_MT_SAFE { return t_s.t_dpiScopep; }
