@@ -26,11 +26,11 @@
 
 #if SYSTEMC_VERSION >= 20140417 && SYSTEMC_VERSION < 20231124
 // SystemC's simulation phase callback introduced in 2.3.1, and removed since 3.0.0 (PubRev)
-#define _VERILATOR_SYSTEMC_HAS_PHASE_CALLBACK
+#define _VL_HAVE_SYSTEMC_PHASE_CALLBACK
 #endif
 #if SYSTEMC_VERSION >= 20231124
 // SystemC's stage callback introduced in 3.0.0 (PubRev)
-#define _VERILATOR_SYSTEMC_HAS_STAGE_CALLBACK
+#define _VL_HAVE_SYSTEMC_STAGE_CALLBACK
 #endif
 
 //=============================================================================
@@ -54,7 +54,7 @@
 /// instead.
 
 class VerilatedScTraceBase VL_NOT_FINAL : private sc_core::sc_object,
-#ifdef _VERILATOR_SYSTEMC_HAS_STAGE_CALLBACK
+#ifdef _VL_HAVE_SYSTEMC_STAGE_CALLBACK
                                           private sc_core::sc_stage_callback_if,
 #endif
                                           private sc_core::sc_trace_file {
@@ -65,7 +65,7 @@ class VerilatedScTraceBase VL_NOT_FINAL : private sc_core::sc_object,
 public:
     void enableDeltaCycles(bool flag = true) {
         using namespace sc_core;
-#ifdef _VERILATOR_SYSTEMC_HAS_PHASE_CALLBACK
+#ifdef _VL_HAVE_SYSTEMC_PHASE_CALLBACK
         // Save old report handler before overriding it
         const auto oldHandler = sc_report_handler::get_handler();
         // Override the old handler to hide 'phase callbacks not enabled' message
@@ -79,7 +79,7 @@ public:
         // Restore the old handler
         sc_report_handler::set_handler(oldHandler);
 #endif
-#ifdef _VERILATOR_SYSTEMC_HAS_STAGE_CALLBACK
+#ifdef _VL_HAVE_SYSTEMC_STAGE_CALLBACK
         if (flag) {
             sc_register_stage_callback(*this, SC_POST_UPDATE);
         } else {
@@ -103,13 +103,13 @@ protected:
         // needed to be removed here
         if (m_traceFileAdded) simcontext()->remove_trace_file(this);
 #endif
-#ifdef _VERILATOR_SYSTEMC_HAS_STAGE_CALLBACK
+#ifdef _VL_HAVE_SYSTEMC_STAGE_CALLBACK
         sc_unregister_stage_callback(*this, SC_PRE_TIMESTEP | SC_POST_UPDATE);
 #endif
     };
     void registerTraceCallback() {
         using namespace sc_core;
-#ifdef _VERILATOR_SYSTEMC_HAS_PHASE_CALLBACK
+#ifdef _VL_HAVE_SYSTEMC_PHASE_CALLBACK
         // Save old report handler before overriding it
         const auto oldHandler = sc_report_handler::get_handler();
         // Override the old handler to hide 'phase callbacks not enabled' message
@@ -123,12 +123,12 @@ protected:
             simcontext()->add_trace_file(this);
             m_traceFileAdded = true;
 #endif
-#ifdef _VERILATOR_SYSTEMC_HAS_PHASE_CALLBACK
+#ifdef _VL_HAVE_SYSTEMC_PHASE_CALLBACK
         }
         // Restore the old handler
         sc_report_handler::set_handler(oldHandler);
 #endif
-#ifdef _VERILATOR_SYSTEMC_HAS_STAGE_CALLBACK
+#ifdef _VL_HAVE_SYSTEMC_STAGE_CALLBACK
         sc_register_stage_callback(*this, SC_PRE_TIMESTEP);
 #endif
     }
@@ -154,11 +154,12 @@ protected:
     }
 
     // METHODS - for SC kernel
-#ifdef _VERILATOR_SYSTEMC_HAS_PHASE_CALLBACK
+#ifdef _VL_HAVE_SYSTEMC_PHASE_CALLBACK
     // Override sc_object. Called if using phase callback
     void simulation_phase_callback() final { cycle(); }
 #endif
-#ifdef _VERILATOR_SYSTEMC_HAS_STAGE_CALLBACK
+#ifdef _VL_HAVE_SYSTEMC_STAGE_CALLBACK
+    // Override sc_stage_callback_if. Called if using stage callback
     void stage_callback(const sc_core::sc_stage&) final { cycle(); }
 #endif
     // Override sc_trace_file. Called if using trace file
@@ -233,11 +234,11 @@ private:
 #undef DECL_TRACE_METHOD_B
 };
 
-#ifdef _VERILATOR_SYSTEMC_HAS_PHASE_CALLBACK
-#undef _VERILATOR_SYSTEMC_HAS_PHASE_CALLBACK
+#ifdef _VL_HAVE_SYSTEMC_PHASE_CALLBACK
+#undef _VL_HAVE_SYSTEMC_PHASE_CALLBACK
 #endif
-#ifdef _VERILATOR_SYSTEMC_HAS_STAGE_CALLBACK
-#undef _VERILATOR_SYSTEMC_HAS_STAGE_CALLBACK
+#ifdef _VL_HAVE_SYSTEMC_STAGE_CALLBACK
+#undef _VL_HAVE_SYSTEMC_STAGE_CALLBACK
 #endif
 
 #endif  // Guard
