@@ -152,7 +152,7 @@ public:
         if (name.empty()) {
             // UDPs can have empty instance names. Assigning unique names for them to prevent any
             // conflicts
-            name = "__ANON" + cvtToStr(m_anonInstId++);
+            name = "__anon" + cvtToStr(m_anonInstId++);
         }
         AstCell* const nodep = new AstCell{
             fileline,
@@ -3209,7 +3209,7 @@ instnameParen<nodep>:
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, $4, $2, true); }
         |       id instRangeListE
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, nullptr, $2, false); }
-        |       '(' cellpinListE ')'  // When UDP have empty name, unpacked dimensions must not be used
+        |       '(' cellpinListE ')'  // When UDP has empty name, unpacked dimensions must not be used
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, "", $2, nullptr, true); }
         ;
 
