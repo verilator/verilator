@@ -705,7 +705,6 @@ class LinkParseVisitor final : public VNVisitor {
             // UDPs can have empty instance names. Assigning unique names for them to prevent any
             // conflicts
             const string newName = "$unnamedudp" + cvtToStr(++m_anonUdpId);
-            UINFO(0, nodep << newName << endl);
             nodep->name(newName);
             nodep->origName(newName);
         }
