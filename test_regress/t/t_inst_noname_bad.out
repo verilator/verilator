@@ -1,0 +1,7 @@
+%Error: t/t_inst_noname_bad.v:8:5: Instance of module must be named
+    8 |     m ();
+      |     ^
+%Error: t/t_inst_noname_bad.v:9:5: Instance of module must be named
+    9 |     m ();
+      |     ^
+%Error: Exiting due to
