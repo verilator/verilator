@@ -26,6 +26,7 @@ use POSIX qw(strftime);
 use lib ".";
 use Time::HiRes qw(usleep);
 use Digest::MD5 qw(md5);
+use POSIX;
 
 $::Driver = 1;
 $::Have_Forker = 0;
@@ -132,6 +133,11 @@ if (! GetOptions(
 
 $opt_jobs = calc_jobs() if defined $opt_jobs && $opt_jobs == 0;
 $Fork->max_proc($opt_jobs);
+
+my $use_debugger = $opt_gdb || $opt_gdbbt || $opt_gdbsim || $opt_rr || $opt_rrsim;
+if ($opt_jobs > 1 && $use_debugger) {
+   die "%Error: Unable to use -j > 1 with --gdb* and --rr* options"
+}
 
 if ((scalar keys %opt_scenarios) < 1) {
     $opt_scenarios{dist} = 1;
@@ -1646,8 +1652,14 @@ sub _run {
         if ($param{logfile}) {
             $logfh = IO::File->new(">$param{logfile}") or die "%Error: Can't open $param{logfile}";
         }
+        my $backup_fg_group = POSIX::tcgetpgrp(0);
         my $pid = fork();
         if ($pid) {  # Parent
+            if($use_debugger) {
+                # Let gdb take care of signals send from keyboard
+                POSIX::setpgid($pid, 0); # put child in separate process group
+                POSIX::tcsetpgrp(0, $pid); # make this group a foreground one
+            }
             close CHILDWR;
             print "driver: Entering directory '",
                 File::Spec->rel2abs($param{entering}), "'\n" if $param{entering};
@@ -1688,6 +1700,11 @@ sub _run {
             exit($? ? 10 : 0);  # $?>>8 misses coredumps
         }
         waitpid($pid, 0);
+        if($use_debugger) {
+            # restore old foreground group
+            local $SIG{TTOU} = 'IGNORE'; # modyfing terminal settings from bg proccess results in SIGTTOU
+            POSIX::tcsetpgrp(0, $backup_fg_group);
+        }
         $status = $? || 0;
     }
     flush STDOUT;
