@@ -97,7 +97,7 @@ protected:
     };
     ~VerilatedScTraceBase() override {
         using namespace sc_core;
-#if SYSTEMC_VERSION >= 20140417 && SYSTEMC_VERSION < 20231124
+#ifdef _VL_HAVE_SYSTEMC_PHASE_CALLBACK
         // remove_trace_file added in 2.3.1 and removed in 3.0.0
         // Phase callback is automatically unregistered in ~sc_object(). Only the trace file is
         // needed to be removed here
