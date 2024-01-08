@@ -75,7 +75,9 @@ int count_params(TestVpiHandle& handle, int expectedParams) {
     int params = 0;
     while (true) {
         TestVpiHandle handle = vpi_scan(it);
-        if (handle == NULL) break;
+        if (!handle) break;
+        const int vpi_type = vpi_get(vpiType, handle);
+        CHECK_RESULT(vpi_type, vpiParameter);
         params++;
     }
     it.freed();

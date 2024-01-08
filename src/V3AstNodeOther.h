@@ -2728,6 +2728,7 @@ class AstDelay final : public AstNodeStmt {
     // Delay statement
     // @astgen op1 := lhsp : AstNodeExpr // Delay value
     // @astgen op2 := stmtsp : List[AstNode] // Statements under delay
+    VTimescale m_timeunit;  // Delay's time unit
     const bool m_isCycle;  // True if it is a cycle delay
 
 public:
@@ -2739,8 +2740,10 @@ public:
     ASTGEN_MEMBERS_AstDelay;
     void dump(std::ostream& str) const override;
     bool isTimingControl() const override { return true; }
-    bool isCycleDelay() const { return m_isCycle; }
     bool same(const AstNode* /*samep*/) const override { return true; }
+    void timeunit(const VTimescale& flag) { m_timeunit = flag; }
+    VTimescale timeunit() const { return m_timeunit; }
+    bool isCycleDelay() const { return m_isCycle; }
 };
 class AstDisable final : public AstNodeStmt {
     string m_name;  // Name of block

@@ -206,7 +206,7 @@ public:
     }
     void lifeToAbove() {
         // Any varrefs under a if/else branch affect statements outside and after the if/else
-        if (!m_aboveLifep) v3fatalSrc("Pushing life when already at the top level");
+        UASSERT(m_aboveLifep, "Pushing life when already at the top level");
         for (auto& itr : m_map) {
             AstVarScope* const nodep = itr.first;
             m_aboveLifep->complexAssignFind(nodep);

@@ -56,6 +56,7 @@ class LinkParseVisitor final : public VNVisitor {
     AstNodeDType* m_dtypep = nullptr;  // Current data type
     AstNodeExpr* m_defaultInSkewp = nullptr;  // Current default input skew
     AstNodeExpr* m_defaultOutSkewp = nullptr;  // Current default output skew
+    int m_anonUdpId = 0;  // Counter for anonymous UDP instances
     int m_genblkAbove = 0;  // Begin block number of if/case/for above
     int m_genblkNum = 0;  // Begin block number, 0=none seen
     int m_beginDepth = 0;  // How many begin blocks above current node within current AstNodeModule
@@ -536,6 +537,13 @@ class LinkParseVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
+    void visit(AstDelay* nodep) override {
+        cleanFileline(nodep);
+        UASSERT_OBJ(m_modp, nodep, "Delay not under module");
+        nodep->timeunit(m_modp->timeunit());
+        iterateChildren(nodep);
+    }
+
     void visit(AstNodeForeach* nodep) override {
         // FOREACH(array, loopvars, body)
         UINFO(9, "FOREACH " << nodep << endl);
@@ -614,6 +622,7 @@ class LinkParseVisitor final : public VNVisitor {
         V3Config::applyModule(nodep);
 
         VL_RESTORER(m_modp);
+        VL_RESTORER(m_anonUdpId);
         VL_RESTORER(m_genblkAbove);
         VL_RESTORER(m_genblkNum);
         VL_RESTORER(m_beginDepth);
@@ -624,6 +633,7 @@ class LinkParseVisitor final : public VNVisitor {
             // Classes inherit from upper package
             if (m_modp && nodep->timeunit().isNone()) nodep->timeunit(m_modp->timeunit());
             m_modp = nodep;
+            m_anonUdpId = 0;
             m_genblkAbove = 0;
             m_genblkNum = 0;
             m_beginDepth = 0;
@@ -691,6 +701,19 @@ class LinkParseVisitor final : public VNVisitor {
             iterateChildren(nodep);
         } else {
             iterateChildren(nodep);
+        }
+    }
+    void visit(AstCell* nodep) override {
+        if (nodep->origName().empty()) {
+            if (!VN_IS(nodep->modp(), Primitive)) {  // Module/Program/Iface
+                nodep->modNameFileline()->v3error("Instance of " << nodep->modp()->verilogKwd()
+                                                                 << " must be named");
+            }
+            // UDPs can have empty instance names. Assigning unique names for them to prevent any
+            // conflicts
+            const string newName = "$unnamedudp" + cvtToStr(++m_anonUdpId);
+            nodep->name(newName);
+            nodep->origName(newName);
         }
     }
     void visit(AstGenCase* nodep) override {

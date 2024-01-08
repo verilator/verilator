@@ -605,7 +605,7 @@ VInFilter::~VInFilter() {
 }
 
 bool VInFilter::readWholefile(const string& filename, VInFilter::StrList& outl) {
-    if (!m_impp) v3fatalSrc("readWholefile on invalid filter");
+    UASSERT(m_impp, "readWholefile on invalid filter");
     return m_impp->readWholefile(filename, outl);
 }
 

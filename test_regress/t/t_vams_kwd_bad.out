@@ -2,7 +2,7 @@
    12 |    int above;
       |        ^~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: t/t_vams_kwd_bad.v:12:13: syntax error, unexpected ';', expecting IDENTIFIER or randomize
+%Error: t/t_vams_kwd_bad.v:12:13: syntax error, unexpected ';', expecting IDENTIFIER or '(' or randomize
    12 |    int above;
       |             ^
 %Error-UNSUPPORTED: t/t_vams_kwd_bad.v:13:8: Unsupported: AMS reserved word not implemented: 'abs'

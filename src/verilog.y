@@ -3203,10 +3203,8 @@ instnameParen<nodep>:
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, $4, $2, true); }
         |       id instRangeListE
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, nullptr, $2, false); }
-        //UNSUP instRangeListE '(' cellpinListE ')'      { UNSUP } // UDP
-        //                      // Adding above and switching to the Verilog-Perl syntax
-        //                      // causes a shift conflict due to use of idClassSel inside exprScope.
-        //                      // It also breaks allowing "id foo;" instantiation syntax.
+        |       '(' cellpinListE ')'  // When UDP has empty name, unpacked dimensions must not be used
+                        { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, "", $2, nullptr, true); }
         ;
 
 instRangeListE<nodeRangep>:

@@ -162,11 +162,10 @@ class SplitAsVisitor final : public VNVisitor {
             if (splitVscp) {
                 UINFO(3, "Split  " << nodep << endl);
                 UINFO(3, "   For " << splitVscp << endl);
-                if (splitVscp == lastSplitVscp) {
-                    // We did this last time!  Something's stuck!
-                    nodep->v3fatalSrc("Infinite loop in isolate_assignments removal for: "
-                                      << splitVscp->prettyNameQ());
-                }
+                // If we did this last time!  Something's stuck!
+                UASSERT_OBJ(splitVscp != lastSplitVscp, nodep,
+                            "Infinite loop in isolate_assignments removal for: "
+                                << splitVscp->prettyNameQ());
                 lastSplitVscp = splitVscp;
                 splitAlways(nodep, splitVscp);
                 ++m_statSplits;

@@ -256,9 +256,8 @@ void V3Error::init() {
         describedEachWarn(static_cast<V3ErrorCode>(i), false);
         pretendError(static_cast<V3ErrorCode>(i), V3ErrorCode{i}.pretendError());
     }
-    if (VL_UNCOVERABLE(string{V3ErrorCode{V3ErrorCode::_ENUM_MAX}.ascii()} != " MAX")) {
-        v3fatalSrc("Enum table in V3ErrorCode::EC_ascii() is munged");
-    }
+    UASSERT(std::string{V3ErrorCode{V3ErrorCode::_ENUM_MAX}.ascii()} == " MAX",
+            "Enum table in V3ErrorCode::EC_ascii() is munged");
 }
 
 string V3Error::lineStr(const char* filename, int lineno) VL_PURE {

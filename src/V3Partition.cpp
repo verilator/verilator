@@ -2777,7 +2777,7 @@ void V3Partition::go(V3Graph* mtasksp) {
     mtasksp->orderPreRanked();
 
     const int targetParFactor = v3Global.opt.threads();
-    if (targetParFactor < 2) v3fatalSrc("We should not reach V3Partition when --threads <= 1");
+    UASSERT(targetParFactor >= 2, "Should not reach V3Partition when --threads <= 1");
 
     // Set cpLimit to roughly totalGraphCost / nThreads
     //
