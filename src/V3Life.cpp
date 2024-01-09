@@ -503,5 +503,5 @@ void V3Life::lifeAll(AstNetlist* nodep) {
         LifeTopVisitor{nodep, &state};
     }  // Destruct before checking
     VIsCached::clearCacheTree();  // Removing assignments may affect isPure
-    V3Global::dumpCheckGlobalTree("life", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("life", 0, dumpTreeEitherLevel() >= 3);
 }

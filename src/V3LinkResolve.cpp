@@ -515,5 +515,5 @@ void V3LinkResolve::linkResolve(AstNetlist* rootp) {
         const LinkResolveVisitor visitor{rootp};
         LinkBotupVisitor{rootp};
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("linkresolve", 0, dumpTreeLevel() >= 6);
+    V3Global::dumpCheckGlobalTree("linkresolve", 0, dumpTreeEitherLevel() >= 6);
 }

@@ -602,7 +602,7 @@ public:
 void V3Case::caseAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { CaseVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("case", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("case", 0, dumpTreeEitherLevel() >= 3);
 }
 void V3Case::caseLint(AstNodeCase* nodep) {
     UINFO(4, __FUNCTION__ << ": " << endl);

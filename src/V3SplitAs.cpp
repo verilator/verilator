@@ -192,5 +192,5 @@ public:
 void V3SplitAs::splitAsAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { SplitAsVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("splitas", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("splitas", 0, dumpTreeEitherLevel() >= 3);
 }

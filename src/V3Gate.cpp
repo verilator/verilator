@@ -1381,5 +1381,5 @@ void V3Gate::gateAll(AstNetlist* netlistp) {
         if (dumpGraphLevel() >= 3) graphp->dumpDotFilePrefixed("gate_final");
     }
 
-    V3Global::dumpCheckGlobalTree("gate", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("gate", 0, dumpTreeEitherLevel() >= 3);
 }
