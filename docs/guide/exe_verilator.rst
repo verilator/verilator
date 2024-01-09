@@ -1450,6 +1450,10 @@ Summary:
    used to resolve instances in the top-level module, otherwise, they are
    ignored.  Note "-v" is relatively standard across Verilog tools.
 
+.. option:: --valgrind
+
+   Run Verilator under `Valgrind <https://valgrind.org/>`_.
+
 .. option:: --no-verilate
 
    When using :vlopt:`--build`, disable the generation of C++/SystemC code, and

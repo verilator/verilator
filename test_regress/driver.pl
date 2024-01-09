@@ -86,6 +86,7 @@ my %opt_scenarios;
 my $opt_site;
 my $opt_stop;
 my $opt_trace;
+my $opt_valgrind;
 my $opt_verbose;
 my $Opt_Verilated_Debug;
 our $Opt_Verilation = 1;
@@ -111,6 +112,7 @@ if (! GetOptions(
           "site!"       => \$opt_site,
           "stop!"       => \$opt_stop,
           "trace!"      => \$opt_trace,
+          "valgrind!"   => \$opt_valgrind,
           "verbose!"    => \$opt_verbose,
           "verilation!"         => \$Opt_Verilation,  # Undocumented debugging
           "verilated-debug!"    => \$Opt_Verilated_Debug,
@@ -972,6 +974,7 @@ sub _compile_vlt_flags {
     unshift @verilator_flags, "-CFLAGS -fsanitize=address,undefined -LDFLAGS -fsanitize=address,undefined" if $param{sanitize};
     unshift @verilator_flags, "--make gmake" if $param{verilator_make_gmake};
     unshift @verilator_flags, "--make cmake" if $param{verilator_make_cmake};
+    unshift @verilator_flags, "--valgrind" if $opt_valgrind;
     unshift @verilator_flags, "--exe" if
         $param{make_main} && $param{verilator_make_gmake};
     unshift @verilator_flags, "../" . $self->{main_filename} if
@@ -1765,6 +1768,7 @@ sub _run {
                 $wholefile =~ s/^- [^\n]+\n//mig;
                 $wholefile =~ s/^- [a-z.0-9]+:\d+:[^\n]+\n//mig;
                 $wholefile =~ s/^dot [^\n]+\n//mig;
+                $wholefile =~ s/^==[0-9]+== [^\n]+\n//mig; # valgrind
 
                 # Compare
                 my $quoted = quotemeta($param{expect});
@@ -2277,6 +2281,7 @@ sub files_identical {
                     && !/^libgcov.*/
                     && !/--- \/tmp\//  # t_difftree.pl
                     && !/\+\+\+ \/tmp\//  # t_difftree.pl
+                    && !/^==[0-9]+== ?[^\n]*\n/  # valgrind
             } @l1;
             @l1 = map {
                 while (s/(Internal Error: [^\n]+\.(cpp|h)):[0-9]+/$1:#/g) {}
