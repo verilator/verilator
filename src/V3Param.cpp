@@ -870,7 +870,7 @@ class ParamProcessor final {
             UINFO(8, "Cell parameters all match original values, skipping expansion.\n");
             // If it's the first use of the default instance, create a copy and store it in user3p.
             // user3p will also be used to check if the default instance is used.
-            if (!srcModpr->user3p()) {
+            if (!srcModpr->user3p() && (VN_IS(srcModpr, Class) || VN_IS(srcModpr, Iface))) {
                 AstNodeModule* nodeCopyp = srcModpr->cloneTree(false);
                 // It is a temporary copy of the original class node, stored in order to create
                 // another instances. It is needed only during class instantiation.
