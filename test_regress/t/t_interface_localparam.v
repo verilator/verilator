@@ -6,21 +6,26 @@
 
 interface SimpleIntf
 #(
-   parameter int symbolsPerBeat = 16
+   parameter int val = 28
 )
 ();
 
    // This value is calculated incorrectly for other instances of
    // this interface when it is accessed via the HDL for any other
    // instance of this interface
-   localparam int symbolsPerBeatDivBy2  = symbolsPerBeat/2;
+   localparam int valDiv2  = val/2;
+   localparam int valDiv4  = valDiv2/2;
 
-   localparam bit mismatch = (symbolsPerBeat != (2*symbolsPerBeatDivBy2) );
+   localparam bit mismatch2 = (val != (2*valDiv2) );
+   localparam bit mismatch4 = (val != (4*valDiv4) );
 
    initial begin
-      $write("%m: symbolsPerBeat %0d, symbolsPerBeatDivBy2 %0d, mismatch %0d\n",
-             symbolsPerBeat, symbolsPerBeatDivBy2, mismatch);
-      if (mismatch) $stop;
+      $write("%m: val %0d, valDiv2 %0d, mismatch2 %0d\n",
+             val, valDiv2, mismatch2);
+      $write("%m: val %0d, valDiv4 %0d, mismatch4 %0d\n",
+             val, valDiv4, mismatch2);
+      if (mismatch2) $stop;
+      if (mismatch4) $stop;
    end
 
 endinterface
@@ -29,18 +34,16 @@ module Core(
    SimpleIntf intf
 );
 
-   // NOTE: When this line is commented out the test will pass (old)
-   localparam intf_symbolsPerBeatDivBy2 = intf.symbolsPerBeatDivBy2;
+   // this will constify and valDiv2 will have the default value
+   localparam valDiv4Upper = intf.valDiv2;
+
+   SimpleIntf #(.val(68)) core_intf ();
 
    initial begin
-      if (intf.symbolsPerBeatDivBy2 != intf_symbolsPerBeatDivBy2) begin
-         $display("%%Error: param = %0d", intf.symbolsPerBeatDivBy2);
+      if (intf.valDiv2 != valDiv4Upper) begin
+         $display("%%Error: param = %0d", intf.valDiv2);
       end
    end
-
-   localparam int core_intf_symbolsPerBeat = 64;
-   SimpleIntf #(.symbolsPerBeat(core_intf_symbolsPerBeat)) core_intf ();
-
 endmodule
 
 module t();
