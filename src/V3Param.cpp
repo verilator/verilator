@@ -825,7 +825,7 @@ class ParamProcessor final {
         }
     }
 
-    void storeOriginalParams(AstClass* const classp) {
+    void storeOriginalParams(AstNodeModule* const classp) {
         for (AstNode* stmtp = classp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             AstNode* originalParamp = nullptr;
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
@@ -870,13 +870,13 @@ class ParamProcessor final {
             UINFO(8, "Cell parameters all match original values, skipping expansion.\n");
             // If it's the first use of the default instance, create a copy and store it in user3p.
             // user3p will also be used to check if the default instance is used.
-            if (!srcModpr->user3p() && VN_IS(srcModpr, Class)) {
-                AstClass* classCopyp = VN_AS(srcModpr, Class)->cloneTree(false);
+            if (!srcModpr->user3p() && (VN_IS(srcModpr, Class) || VN_IS(srcModpr, Iface))) {
+                AstNodeModule* nodeCopyp = srcModpr->cloneTree(false);
                 // It is a temporary copy of the original class node, stored in order to create
                 // another instances. It is needed only during class instantiation.
-                m_deleter.pushDeletep(classCopyp);
-                srcModpr->user3p(classCopyp);
-                storeOriginalParams(classCopyp);
+                m_deleter.pushDeletep(nodeCopyp);
+                srcModpr->user3p(nodeCopyp);
+                storeOriginalParams(nodeCopyp);
             }
         } else {
             const string newname
