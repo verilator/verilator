@@ -174,7 +174,7 @@ void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum,
 
     if (dtypenum > 0) fstWriterEmitEnumTableRef(m_fst, m_local2fstdtype[dtypenum]);
 
-    fstVarDir varDir;
+    fstVarDir varDir = FST_VD_IMPLICIT;
     switch (direction) {
     case VerilatedTraceSigDirection::INOUT: varDir = FST_VD_INOUT; break;
     case VerilatedTraceSigDirection::OUTPUT: varDir = FST_VD_OUTPUT; break;
