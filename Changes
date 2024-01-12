@@ -17,6 +17,7 @@ Verilator 5.021 devel
 * Remove deprecated 32-bit pointer mode (`gcc -m32`).
 * Fix delays using wrong timeunits when modules inlined (#4806). [Paul Wright]
 * Fix lint_off disables on preprocessor warnings (#4703). [Srinivasan Venkataramanan]
+* Fix mis-splitting of dump control functions (#4821). [Fan Shupei]
 
 
 Verilator 5.020 2024-01-01
