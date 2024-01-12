@@ -940,6 +940,7 @@ stdin
 stdout
 stime
 stmts
+str
 strcasecmp
 stringification
 stringified
@@ -1047,6 +1048,7 @@ vpiSize
 vpiSuppressVal
 vpiTimeUnit
 vpiType
+vpiUndefined
 vpm
 vpp
 warmup

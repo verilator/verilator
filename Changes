@@ -15,8 +15,16 @@ Verilator 5.021 devel
 
 * Add predicted stack overflow warning (#4799).
 * Remove deprecated 32-bit pointer mode (`gcc -m32`).
-* Fix delays using wrong timeunits when modules inlined (#4806). [Paul Wright]
+* Change zero replication width error to ZEROREPL warning (#4753) (#4762). [Pengcheng Xu]
+* Support `vpiConstType` in `vpi_get_str()` (#4797). [Marlon James]
+* Support SystemC 3.0.0 public review version (#4805) (#4807). [Anthony Donlon]
+* Support parsing anonymous primitive instantiations (#4809). [Anthony Donlon]
+* Fix localparam elaboration (#3858) (#4794). [Andrew Nolte]
 * Fix lint_off disables on preprocessor warnings (#4703). [Srinivasan Venkataramanan]
+* Fix $time not rounding up (#4790) (#4792). [Paul Wright]
+* Fix `vpi_get()` and `vpi_get64()` to return vpiUndefined on errors (#4795). [Marlon James]
+* Fix VPI parameter iteration (#4798). [Marlon James]
+* Fix delays using wrong timeunit when modules inlined (#4806). [Paul Wright]
 * Fix mis-splitting of dump control functions (#4821). [Fan Shupei]
 
 
