@@ -286,7 +286,7 @@ public:
             m_lazyDecls.declared(nodep);  // Defined here, so no longer needs declaration
             if (!nodep->isStatic()) {  // Standard prologue
                 m_useSelfForThis = true;
-                puts("if (false && vlSelf) {}  // Prevent unused\n");
+                puts("(void)vlSelf;  // Prevent unused variable warning\n");
                 if (!VN_IS(m_modp, Class)) puts(symClassAssign());
             }
         }

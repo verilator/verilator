@@ -533,7 +533,7 @@ class TraceVisitor final : public VNVisitor {
                     addInitStr("const uint32_t base VL_ATTR_UNUSED = "
                                "vlSymsp->__Vm_baseCode + "
                                + cvtToStr(baseCode) + ";\n");
-                    addInitStr("if (false && bufp) {}  // Prevent unused\n");
+                    addInitStr("(void)bufp;  // Prevent unused variable warning\n");
                 } else {
                     addInitStr("uint32_t* const oldp VL_ATTR_UNUSED = "
                                "bufp->oldp(vlSymsp->__Vm_baseCode + "

@@ -112,7 +112,8 @@ thread_local Verilated::ThreadLocal Verilated::t_s;
 
 #ifndef VL_USER_FINISH  ///< Define this to override the vl_finish function
 void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
-    if (false && hier) {}  // Unused argument
+    // hier is unused in the default implementation.
+    (void)hier;
     VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
         "- %s:%d: Verilog $finish\n", filename, linenum);
     Verilated::threadContextp()->gotFinish(true);
@@ -140,7 +141,8 @@ void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
 
 #ifndef VL_USER_FATAL  ///< Define this to override the vl_fatal function
 void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
-    if (false && hier) {}
+    // hier is unused in the default implementation.
+    (void)hier;
     Verilated::threadContextp()->gotError(true);
     Verilated::threadContextp()->gotFinish(true);
     if (filename && filename[0]) {
@@ -178,7 +180,8 @@ void vl_stop_maybe(const char* filename, int linenum, const char* hier, bool may
 
 #ifndef VL_USER_WARN  ///< Define this to override the vl_warn function
 void vl_warn(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
-    if (false && hier) {}
+    // hier is unused in the default implementation.
+    (void)hier;
     if (filename && filename[0]) {
         // Not VL_PRINTF_MT, already on main thread
         VL_PRINTF("%%Warning: %s:%d: %s\n", filename, linenum, msg);
