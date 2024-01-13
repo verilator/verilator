@@ -293,7 +293,7 @@ class EmitCImp final : EmitCFunc {
         }
 
         puts("\nvoid " + modName + "::" + protect("__Vconfigure") + "(bool first) {\n");
-        puts("if (false && first) {}  // Prevent unused\n");
+        puts("(void)first;  // Prevent unused variable warning\n");
         if (v3Global.opt.coverage()) {
             puts(modName + "__" + protect("_configure_coverage") + "(this, first);\n");
         }
