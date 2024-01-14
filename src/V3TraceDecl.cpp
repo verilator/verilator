@@ -260,11 +260,10 @@ class TraceDeclVisitor final : public VNVisitor {
 
             // Compute the type of the scope being fixed up
             const AstCell* const cellp = scopep->aboveCellp();
-            const VTracePrefixType scopeType = cellp ? (
-                VN_IS((cellp->modp()), Iface)
-                                ? VTracePrefixType::SCOPE_INTERFACE
-                                : VTracePrefixType::SCOPE_MODULE
-                ) : VTracePrefixType::SCOPE_MODULE;
+            const VTracePrefixType scopeType
+                = cellp ? (VN_IS((cellp->modp()), Iface) ? VTracePrefixType::SCOPE_INTERFACE
+                                                         : VTracePrefixType::SCOPE_MODULE)
+                        : VTracePrefixType::SCOPE_MODULE;
 
             // Push the scope prefix
             AstNodeStmt* const pushp = new AstTracePushPrefix{flp, name, scopeType};
