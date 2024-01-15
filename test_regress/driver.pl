@@ -134,8 +134,8 @@ if (! GetOptions(
 $opt_jobs = calc_jobs() if defined $opt_jobs && $opt_jobs == 0;
 $Fork->max_proc($opt_jobs);
 
-my $use_debugger = $opt_gdb || $opt_gdbbt || $opt_gdbsim || $opt_rr || $opt_rrsim;
-if ($opt_jobs > 1 && $use_debugger) {
+my $interactive_debugger = $opt_gdb || $opt_gdbsim || $opt_rr || $opt_rrsim;
+if ($opt_jobs > 1 && $interactive_debugger) {
    die "%Error: Unable to use -j > 1 with --gdb* and --rr* options"
 }
 
@@ -457,7 +457,7 @@ sub wait_and_report {
     while ($::Fork->is_any_left) {
         $::Fork->poll;
         if ((time() - ($self->{_last_summary_time} || 0) >= 30)
-            && (!$opt_gdb && !$opt_gdbsim)) {  # Don't show for interactive gdb etc
+            && !$interactive_debugger) {  # Don't show for interactive gdb etc
             $self->print_summary(force => 1, show_running => 1);
         }
         Time::HiRes::usleep 100 * 1000;
@@ -498,7 +498,7 @@ sub print_summary {
                   @_);  # All legal arguments shown immediately above
     if (!$self->{quiet} || $params{force}
         || ($self->{left_cnt} < 5)
-        || (time() - ($self->{_last_summary_time} || 0) >= 15)) {  # Don't show for interactive gdb etc
+        || (time() - ($self->{_last_summary_time} || 0) >= 15)) {
         $self->{_last_summary_time} = time();
         print STDERR ("==SUMMARY: " . $self->sprint_summary . "\n");
         if ($params{show_running}) {
@@ -1655,10 +1655,10 @@ sub _run {
         my $backup_fg_group = POSIX::tcgetpgrp(0);
         my $pid = fork();
         if ($pid) {  # Parent
-            if($use_debugger) {
+            if ($interactive_debugger) {
                 # Let gdb take care of signals send from keyboard
-                POSIX::setpgid($pid, 0); # put child in separate process group
-                POSIX::tcsetpgrp(0, $pid); # make this group a foreground one
+                POSIX::setpgid($pid, 0);  # Put child in separate process group
+                POSIX::tcsetpgrp(0, $pid);  # Make this group a foreground one
             }
             close CHILDWR;
             print "driver: Entering directory '",
@@ -1700,9 +1700,9 @@ sub _run {
             exit($? ? 10 : 0);  # $?>>8 misses coredumps
         }
         waitpid($pid, 0);
-        if($use_debugger) {
-            # restore old foreground group
-            local $SIG{TTOU} = 'IGNORE'; # modyfing terminal settings from bg proccess results in SIGTTOU
+        if ($interactive_debugger) {
+            # Restore old foreground group
+            local $SIG{TTOU} = 'IGNORE';  # Ignore SIGTTOU from modyfing terminal settings in bg proccess
             POSIX::tcsetpgrp(0, $backup_fg_group);
         }
         $status = $? || 0;
