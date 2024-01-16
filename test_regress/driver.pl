@@ -26,6 +26,7 @@ use POSIX qw(strftime);
 use lib ".";
 use Time::HiRes qw(usleep);
 use Digest::MD5 qw(md5);
+use POSIX;
 
 $::Driver = 1;
 $::Have_Forker = 0;
@@ -132,6 +133,11 @@ if (! GetOptions(
 
 $opt_jobs = calc_jobs() if defined $opt_jobs && $opt_jobs == 0;
 $Fork->max_proc($opt_jobs);
+
+my $interactive_debugger = $opt_gdb || $opt_gdbsim || $opt_rr || $opt_rrsim;
+if ($opt_jobs > 1 && $interactive_debugger) {
+   die "%Error: Unable to use -j > 1 with --gdb* and --rr* options"
+}
 
 if ((scalar keys %opt_scenarios) < 1) {
     $opt_scenarios{dist} = 1;
@@ -451,7 +457,7 @@ sub wait_and_report {
     while ($::Fork->is_any_left) {
         $::Fork->poll;
         if ((time() - ($self->{_last_summary_time} || 0) >= 30)
-            && (!$opt_gdb && !$opt_gdbsim)) {  # Don't show for interactive gdb etc
+            && !$interactive_debugger) {  # Don't show for interactive gdb etc
             $self->print_summary(force => 1, show_running => 1);
         }
         Time::HiRes::usleep 100 * 1000;
@@ -492,7 +498,7 @@ sub print_summary {
                   @_);  # All legal arguments shown immediately above
     if (!$self->{quiet} || $params{force}
         || ($self->{left_cnt} < 5)
-        || (time() - ($self->{_last_summary_time} || 0) >= 15)) {  # Don't show for interactive gdb etc
+        || (time() - ($self->{_last_summary_time} || 0) >= 15)) {
         $self->{_last_summary_time} = time();
         print STDERR ("==SUMMARY: " . $self->sprint_summary . "\n");
         if ($params{show_running}) {
@@ -1645,8 +1651,14 @@ sub _run {
         if ($param{logfile}) {
             $logfh = IO::File->new(">$param{logfile}") or die "%Error: Can't open $param{logfile}";
         }
+        my $backup_fg_group = POSIX::tcgetpgrp(0);
         my $pid = fork();
         if ($pid) {  # Parent
+            if ($interactive_debugger) {
+                # Let gdb take care of signals send from keyboard
+                POSIX::setpgid($pid, 0);  # Put child in separate process group
+                POSIX::tcsetpgrp(0, $pid);  # Make this group a foreground one
+            }
             close CHILDWR;
             print "driver: Entering directory '",
                 File::Spec->rel2abs($param{entering}), "'\n" if $param{entering};
@@ -1687,6 +1699,11 @@ sub _run {
             exit($? ? 10 : 0);  # $?>>8 misses coredumps
         }
         waitpid($pid, 0);
+        if ($interactive_debugger) {
+            # Restore old foreground group
+            local $SIG{TTOU} = 'IGNORE';  # Ignore SIGTTOU from modyfing terminal settings in bg proccess
+            POSIX::tcsetpgrp(0, $backup_fg_group);
+        }
         $status = $? || 0;
     }
     flush STDOUT;
