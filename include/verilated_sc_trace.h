@@ -186,6 +186,7 @@ private:
     // SystemC 2.1.v1
 
     void write_comment(const std::string&) override {}
+    void trace(sc_core::sc_trace_file*) const override {}
     void trace(const unsigned int&, const std::string&, const char**) override {}
 
 #define DECL_TRACE_METHOD_A(tp) \
