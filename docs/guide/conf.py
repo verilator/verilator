@@ -45,7 +45,7 @@ def setup(app):
 # -- Project information
 
 project = 'Verilator'
-copyright = '2022 by Wilson Snyder, under LGPL-3.0 or Artistic-2.0'
+copyright = '2024 by Wilson Snyder, under LGPL-3.0 or Artistic-2.0'
 author = 'Wilson Snyder'
 
 # The master toctree document.
