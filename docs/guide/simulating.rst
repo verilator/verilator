@@ -505,21 +505,12 @@ documentation.
 Runtime Debugging
 =================
 
-To debug a Verilated executable, use the standard GNU debugger ``gdb`` or a
-similar tool, e.g.:
-
-   .. code-block:: bash
-
-      gdb obj_dir/Vmodel
-        run {Vmodel_command_arguments}
-        {segmentation faults}
-        bt
-
-Typically you will want to have debugger symbols inserted by the compiler,
-assertions enabled in the C library, assertions enabled in the Verilated
-library, and the sanitizer enabled to look for bad memory or undefined
-operations. (These options slow down the executable, so do this only when
-debugging.) To enable these, Verilate with:
+To debug a Verilated executable, typically you will want to have debugger
+symbols inserted by the compiler, assertions enabled in the C library,
+assertions enabled in the Verilated library, and the sanitizer enabled to
+look for bad memory or undefined operations. (These options slow down the
+executable, so do this only when debugging.) To enable these, Verilate
+with:
 
    .. code-block:: bash
 
@@ -532,3 +523,13 @@ The :vlopt:`-CFLAGS` and/or :vlopt:`-LDFLAGS` options used here pass the
 following argument into the generated Makefile for use as compiler or
 linker options respectively.  If you are using your own Makefiles, adapt
 appropriately to pass the suggested flags to the compiler and linker.
+
+Once you have a debugging-enabled executable, run it using the the standard
+GNU debugger ``gdb`` or a similar tool, and create a backtrace; e.g.:
+
+   .. code-block:: bash
+
+      gdb obj_dir/Vmodel
+        run {Vmodel_command_arguments}
+        {segmentation faults}
+        bt
