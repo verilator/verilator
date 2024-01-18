@@ -1116,6 +1116,7 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
 void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
     // private: Check a tree and children
     UASSERT_OBJ(prevBackp == this->backp(), this, "Back node inconsistent");
+    // cppcheck-suppress danglingTempReference
     const VNTypeInfo& typeInfo = *type().typeInfo();
     for (int i = 1; i <= 4; i++) {
         AstNode* nodep = nullptr;
@@ -1126,6 +1127,7 @@ void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
         case 4: nodep = op4p(); break;
         default: this->v3fatalSrc("Bad case"); break;
         }
+        // cppcheck-suppress danglingTempReference
         const char* opName = typeInfo.m_opNamep[i - 1];
         switch (typeInfo.m_opType[i - 1]) {
         case VNTypeInfo::OP_UNUSED:
@@ -1142,7 +1144,7 @@ void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
         case VNTypeInfo::OP_LIST:
             if (const AstNode* const headp = nodep) {
                 const AstNode* backp = this;
-                const AstNode* tailp = headp;
+                const AstNode* tailp;
                 const AstNode* opp = headp;
                 do {
                     opp->checkTreeIter(backp);

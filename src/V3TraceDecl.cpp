@@ -391,9 +391,8 @@ class TraceDeclVisitor final : public VNVisitor {
                 } else {
                     // This is a subscope: insert a placeholder to be fixed up later
                     AstCell* const cellp = entry.cellp();
-                    FileLine* const flp = cellp->fileline();
-                    AstNodeStmt* const stmtp
-                        = new AstComment{flp, "Cell init for: " + cellp->prettyName()};
+                    AstNodeStmt* const stmtp = new AstComment{
+                        cellp->fileline(), "Cell init for: " + cellp->prettyName()};
                     addToSubFunc(stmtp);
                     m_cellInitPlaceholders.emplace_back(nodep, cellp, stmtp);
                 }

@@ -2693,7 +2693,7 @@ std::pair<int, char**> VerilatedContextImp::argc_argv() VL_MT_SAFE_EXCLUDES(m_ar
         int in = 0;
         for (const auto& i : m_args.m_argVec) {
             s_argvp[in] = new char[i.length() + 1];
-            std::strcpy(s_argvp[in], i.c_str());
+            std::memcpy(s_argvp[in], i.c_str(), i.length() + 1);
             ++in;
         }
         s_argvp[s_argc] = nullptr;

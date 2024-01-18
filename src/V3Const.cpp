@@ -542,9 +542,8 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
             restorer.disableRestore();  // Now all checks passed
         } else if (nodep->type() == m_rootp->type()) {  // And, Or, Xor
             incrOps(nodep, __LINE__);
-            VL_RESTORER(m_leafp);
-
             for (const bool right : {false, true}) {
+                VL_RESTORER(m_leafp);
                 Restorer restorer{*this};
                 LeafInfo leafInfo{m_lsb};
                 m_leafp = &leafInfo;

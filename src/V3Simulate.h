@@ -456,12 +456,12 @@ private:
                     clearOptimizable(nodep, "Var write & read");
                 }
                 m_varAux(vscp).usage |= VU_RV;
-                const bool isConst = (nodep->varp()->isConst() || nodep->varp()->isParam())
-                                     && nodep->varp()->valuep();
+                const bool varIsConst = (nodep->varp()->isConst() || nodep->varp()->isParam())
+                                        && nodep->varp()->valuep();
                 AstNodeExpr* const valuep
-                    = isConst ? fetchValueNull(nodep->varp()->valuep()) : nullptr;
+                    = varIsConst ? fetchValueNull(nodep->varp()->valuep()) : nullptr;
                 // Propagate PARAM constants for constant function analysis
-                if (isConst && valuep) {
+                if (varIsConst && valuep) {
                     if (!m_checkOnly && optimizable()) newValue(vscp, valuep);
                 } else {
                     if (m_checkOnly) varRefCb(nodep);

@@ -237,6 +237,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                     // << scpSym << endl);
                     if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
                     if (m_scopeNames.find(scpSym) == m_scopeNames.end()) {
+                        // cppcheck-suppress stlFindInsert
                         m_scopeNames.emplace(scpSym,
                                              ScopeData{scpSym, scpPretty, 0, "SCOPE_OTHER"});
                     }
@@ -341,6 +342,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                                  ScopeFuncData(nodep, m_cfuncp, m_modp));
         } else {
             if (m_scopeNames.find(nodep->scopeDpiName()) == m_scopeNames.end()) {
+                // cppcheck-suppress stlFindInsert
                 m_scopeNames.emplace(nodep->scopeDpiName(),
                                      ScopeData{nodep->scopeDpiName(), nodep->scopePrettyDpiName(),
                                                timeunit, "SCOPE_OTHER"});
