@@ -59,7 +59,7 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <unordered_set>
+#include <unordered_map>
 #include <vector>
 // <iostream> avoided to reduce compile time
 #include <atomic>
@@ -425,6 +425,8 @@ protected:
     static constexpr uint64_t MAGIC = 0xC35F9A6E5298EE6EULL;  // SHA256 "VerilatedContext"
     uint64_t m_magic = MAGIC;
 
+    std::unordered_map<std::string, bool> m_assertStatus;
+
 private:
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedContext);
@@ -440,6 +442,14 @@ public:
     void assertOn(bool flag) VL_MT_SAFE;
     /// Return if assertions enabled
     bool assertOn() const VL_MT_SAFE { return m_s.m_assertOn; }
+    // Toggle assertion for scoped assert
+    void assertOnFor(const std::string& scope, bool flag) { m_assertStatus[scope] = flag; }
+    // Return if scoped assert is on
+    bool assertOnFor(const std::string& scope) {
+        if (!assertOn()) return false;
+        const auto status = m_assertStatus.find(scope);
+        return status == m_assertStatus.end() ? true : status->second;
+    }
     /// Enable calculation of unused signals (for traces)
     void calcUnusedSigs(bool flag) VL_MT_SAFE;
     /// Return if calculating of unused signals (for traces)

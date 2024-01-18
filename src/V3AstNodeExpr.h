@@ -585,6 +585,33 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(true); }
 };
+class AstAssertCtlCheck final : public AstNodeExpr {
+    // @astgen op1 := scopep : AstScopeName
+    const bool m_controlled;
+
+public:
+    AstAssertCtlCheck(FileLine* fl, bool isControlled);
+    ASTGEN_MEMBERS_AstAssertCtlCheck;
+    bool hasDType() const override { return false; }
+    string name() const override;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    bool controlled() const { return m_controlled; }
+};
+class AstAssertInstance final : public AstNodeExpr {
+    const string m_name;  // scope, kept under name to show it on the graph
+
+public:
+    AstAssertInstance(FileLine* fl, const string& name)
+        : ASTGEN_SUPER_AssertInstance(fl)
+        , m_name{name} {}
+    ASTGEN_MEMBERS_AstAssertInstance;
+    string name() const override { return m_name; }
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+};
 class AstAttrOf final : public AstNodeExpr {
     // Return a value of a attribute, for example a LSB or array LSB of a signal
     // @astgen op1 := fromp : Optional[AstNode] // Expr or DType

@@ -18,12 +18,20 @@
 
 #include "V3Assert.h"
 
+#include "V3Global.h"
+#include "V3Graph.h"
 #include "V3Stats.h"
+
+#include <list>
+#include <type_traits>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 // Assert class functions
+
+static void setAssertNotControlled(AstNode* const nodep) { nodep->user4(true); }
+static bool isAssertControlled(const AstNode* const nodep) { return !nodep->user4(); }
 
 class AssertVisitor final : public VNVisitor {
     // TYPES
@@ -112,20 +120,23 @@ class AssertVisitor final : public VNVisitor {
         varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
         return varrefp;
     }
-    AstNode* newIfAssertOn(AstNode* nodep, assertType_e assertType) {
+    AstNodeExpr* newIfAssertOnCond(FileLine* fl, assertType_e assertType, bool isControlled) {
+        // If assertions are off, have constant propagation rip them out later
+        // This allows syntax errors and such to be detected normally.
+        if (assertType == ASSERT_TYPE_INTRINSIC)
+            return static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitTrue{}});
+        else if (assertTypeOn(assertType))
+            return static_cast<AstNodeExpr*>(new AstAssertCtlCheck{fl, isControlled});
+
+        return static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitFalse{}});
+    }
+
+    AstNode* newIfAssertOn(AstNode* nodep, assertType_e assertType, bool isControlled = false) {
         // Add a internal if to check assertions are on.
         // Don't make this a AND term, as it's unlikely to need to test this.
         FileLine* const fl = nodep->fileline();
 
-        // If assertions are off, have constant propagation rip them out later
-        // This allows syntax errors and such to be detected normally.
-        AstNodeExpr* const condp
-            = assertType == ASSERT_TYPE_INTRINSIC
-                  ? static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitTrue{}})
-              : assertTypeOn(assertType)
-                  ? static_cast<AstNodeExpr*>(
-                      new AstCExpr{fl, "vlSymsp->_vm_contextp__->assertOn()", 1})
-                  : static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitFalse{}});
+        AstNodeExpr* const condp = newIfAssertOnCond(fl, assertType, isControlled);
         AstNodeIf* const newp = new AstIf{fl, condp, nodep};
         newp->isBoundsCheck(true);  // To avoid LATCH warning
         newp->user1(true);  // Don't assert/cover this if
@@ -202,15 +213,16 @@ class AssertVisitor final : public VNVisitor {
             }
             const assertType_e assertType
                 = VN_IS(nodep, AssertIntrinsic) ? ASSERT_TYPE_INTRINSIC : ASSERT_TYPE_SVA;
-            if (passsp) passsp = newIfAssertOn(passsp, assertType);
-            if (failsp) failsp = newIfAssertOn(failsp, assertType);
+
+            if (passsp) passsp = newIfAssertOn(passsp, assertType, isAssertControlled(nodep));
+            if (failsp) failsp = newIfAssertOn(failsp, assertType, isAssertControlled(nodep));
             if (!passsp && !failsp) failsp = newFireAssertUnchecked(nodep, "'assert' failed.");
             ifp = new AstIf{nodep->fileline(), propp, passsp, failsp};
             ifp->isBoundsCheck(true);  // To avoid LATCH warning
             // It's more LIKELY that we'll take the nullptr if clause
             // than the sim-killing else clause:
             ifp->branchPred(VBranchPred::BP_LIKELY);
-            bodysp = newIfAssertOn(ifp, assertType);
+            bodysp = newIfAssertOn(ifp, assertType, isAssertControlled(nodep));
         } else {
             nodep->v3fatalSrc("Unknown node type");
         }
@@ -571,11 +583,281 @@ public:
     }
 };
 
+class AssertCtlVisitor final : public VNVisitor {
+    // TYPES
+    class DepVtx VL_NOT_FINAL : public V3GraphVertex {
+        VL_RTTI_IMPL(DepVtx, V3GraphVertex)
+        AstNode* const m_nodep;  // AST node represented by this graph vertex
+
+        // ACCESSORS
+        string name() const override {
+            return cvtToHex(nodep()) + ' ' + nodep()->prettyTypeName();
+        }
+        FileLine* fileline() const override { return nodep()->fileline(); }
+        string dotColor() const override {
+            if (VN_IS(nodep(), Module)) {
+                if (hasFlags(nodep(), M_HAS_ASSERT)) {
+                    if (hasFlags(nodep(), M_HAS_ASSERTCTL)) return "green";
+                    return "red";
+                }
+                if (hasFlags(nodep(), M_HAS_ASSERTCTL)) return "blue";
+                return "black";
+            } else if (VN_IS(nodep(), AssertInstance)) {
+                return "orange";
+            } else if (VN_IS(nodep(), AssertCtl)) {
+                return "magenta";
+            }
+            return "gray";
+        }
+
+    public:
+        // CONSTRUCTORS
+        DepVtx(V3Graph* graphp, AstNode* nodep)
+            : V3GraphVertex{graphp}
+            , m_nodep{nodep} {}
+        ~DepVtx() override = default;
+
+        // ACCESSORS
+        virtual AstNode* nodep() const VL_MT_STABLE { return m_nodep; }
+    };
+
+    enum ModuleFlag : uint8_t { M_HAS_ASSERT = 1 << 0, M_HAS_ASSERTCTL = 1 << 1 };
+    using ModuleFlagType = std::underlying_type<ModuleFlag>::type;
+
+    // NODE STATE
+    //  AstModule::user1()  -> DependencyVertex*.  Vertex in m_assertGraph
+    //  AstModule::user2()  -> int.                ModuleFlag
+    //  AstModule::user3()  -> bool.               Visited?
+    const VNUser1InUse m_user1InUse;
+    const VNUser2InUse m_user2InUse;
+    const VNUser3InUse m_user3InUse;
+
+    // STATE
+    V3Graph m_assertGraph;
+    AstNode* m_parentp = nullptr;
+    std::list<string> m_hierarchicalName;
+    bool m_moduleInCell = false;
+
+    static void addFlags(AstNode* const nodep, ModuleFlagType flags) {
+        nodep->user2(nodep->user2() | flags);
+    }
+    static bool hasFlags(const AstNode* const nodep, ModuleFlagType flags) {
+        return !(~nodep->user2() & flags);
+    }
+
+    // METHODS
+    // Get or create the dependency vertex for the given node
+    DepVtx* getDepVtx(AstNode* const nodep) {
+        if (!nodep->user1p()) nodep->user1p(new DepVtx{&m_assertGraph, nodep});
+        return nodep->user1u().to<DepVtx*>();
+    }
+
+    bool passFlag(const AstNode* const from, AstNode* const to, ModuleFlag flag) {
+        if (hasFlags(from, flag) && !hasFlags(to, flag)) {
+            addFlags(to, flag);
+            return true;
+        }
+        return false;
+    }
+
+    void propagateBackwardAssert(DepVtx* const vxp) {
+        const AstNode* const parentp = vxp->nodep();
+        for (V3GraphEdge* edgep = vxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
+            auto* const depVxp = static_cast<DepVtx*>(edgep->fromp());
+            AstNode* const depp = depVxp->nodep();
+            if (!hasFlags(depp, M_HAS_ASSERT) && passFlag(parentp, depp, M_HAS_ASSERT))
+                propagateBackwardAssert(depVxp);
+        }
+    }
+
+    void propagateForwardCtl(DepVtx* const vxp) {
+        const AstNode* const parentp = vxp->nodep();
+        for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+            auto* const depVxp = static_cast<DepVtx*>(edgep->top());
+            AstNode* const depp = depVxp->nodep();
+            if (!hasFlags(depp, M_HAS_ASSERTCTL) && passFlag(parentp, depp, M_HAS_ASSERTCTL))
+                propagateForwardCtl(depVxp);
+        }
+    }
+
+    void propagate() {
+        for (V3GraphVertex* vxp = m_assertGraph.verticesBeginp(); vxp;
+             vxp = vxp->verticesNextp()) {
+            auto* const depVxp = static_cast<DepVtx*>(vxp);
+            if (hasFlags(depVxp->nodep(), M_HAS_ASSERT)) propagateBackwardAssert(depVxp);
+            if (hasFlags(depVxp->nodep(), M_HAS_ASSERTCTL)) propagateForwardCtl(depVxp);
+        }
+    }
+
+    bool hasLinkedAssertCtl(const DepVtx* const vxp) {
+        for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+            const auto* const depVxp = static_cast<DepVtx*>(edgep->top());
+            if (VN_IS(depVxp->nodep(), AssertCtl) && edgep->fromp() == vxp) return true;
+        }
+
+        return false;
+    }
+
+    void markAssertCtlVtxUseless(DepVtx* const vxp) {
+        // Assert controls with empty scope are ignored
+        vxp->nodep()->name("");
+    }
+    void markAssertVtxNotControlled(DepVtx* const vxp) {
+        for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+            auto* const depVxp = static_cast<DepVtx*>(edgep->top());
+            AstNode* const depp = depVxp->nodep();
+            if (VN_IS(depp, Assert) && edgep->fromp() == vxp) setAssertNotControlled(depp);
+        }
+    }
+
+    void removeUselessAssertCtls(DepVtx* const vxp) {
+        for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+            auto* const depVxp = static_cast<DepVtx*>(edgep->top());
+            const AstNode* const depp = depVxp->nodep();
+
+            if (edgep->fromp() != vxp) continue;
+
+            if (VN_IS(depp, AssertCtl)) markAssertCtlVtxUseless(depVxp);
+            if (VN_IS(depp, AssertInstance)) markAssertVtxNotControlled(depVxp);
+        }
+    }
+
+    void collectUsedAssertScopes(const DepVtx* const vxp, std::set<string>& hierNames) {
+        for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+            auto* const depVxp = static_cast<DepVtx*>(edgep->top());
+            const AstNode* const depp = depVxp->nodep();
+            if (VN_IS(depp, AssertInstance)) hierNames.emplace(depp->name());
+            collectUsedAssertScopes(depVxp, hierNames);
+        }
+    }
+
+    auto collectUsedAssertScopes(const DepVtx* const vxp) {
+        std::set<string> assertScopes{};
+        collectUsedAssertScopes(vxp, assertScopes);
+        return assertScopes;
+    }
+
+    void assignAssertScopesToCtl(DepVtx* const vxp, const std::set<string>& assertScopes) {
+        for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+            const auto* const depVxp = static_cast<DepVtx*>(edgep->top());
+            if (auto* const ctlp = VN_CAST(depVxp->nodep(), AssertCtl)) {
+                ctlp->hierarchicalNames(assertScopes);
+            }
+        }
+    }
+
+    void assignScopesToAsserts(DepVtx* const vxp) {
+        for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+            auto* const depVxp = static_cast<DepVtx*>(edgep->top());
+            const AstNode* const depp = depVxp->nodep();
+            if (VN_IS(depp, Module)) {
+                if (hasFlags(depp, M_HAS_ASSERT | M_HAS_ASSERTCTL) && hasLinkedAssertCtl(depVxp)) {
+                    UINFO(9, "found vertex with both assert and assertctl: '" << depp->name()
+                                                                              << "'" << endl);
+                    const auto assertScopes = collectUsedAssertScopes(depVxp);
+                    assignAssertScopesToCtl(depVxp, assertScopes);
+                } else if (!hasFlags(depp, M_HAS_ASSERT | M_HAS_ASSERTCTL)) {
+                    UINFO(9, "found useless assert ctl: '" << depp->name() << "'" << endl);
+                    removeUselessAssertCtls(depVxp);
+                }
+            }
+        }
+    }
+
+    void assignScopesToAsserts() {
+        for (V3GraphVertex* vxp = m_assertGraph.verticesBeginp(); vxp;
+             vxp = vxp->verticesNextp()) {
+            auto* const depVxp = static_cast<DepVtx*>(vxp);
+            assignScopesToAsserts(depVxp);
+        }
+    }
+
+    string concatNameLevels() {
+        UASSERT(!m_hierarchicalName.empty(),
+                "Hierarchical name should be populated in AstModule visitor!");
+        string name{};
+        for (const auto& level : m_hierarchicalName) { name += level + "."; }
+        name.pop_back();  // remove last dot
+        return name;
+    }
+
+    // VISITORS
+    void visit(AstModule* nodep) override {
+        // ignore non-top modules not traversed through cell references
+        if (!m_moduleInCell && nodep->level() > 2) return;
+        if (nodep->level() <= 2) m_hierarchicalName.emplace_back(nodep->name());
+        new V3GraphEdge{&m_assertGraph, getDepVtx(m_parentp), getDepVtx(nodep), 1};
+
+        VL_RESTORER(m_parentp);
+        {
+            m_parentp = nodep;
+            iterateChildren(nodep);
+        }
+    }
+    void visit(AstCell* nodep) override {
+        VL_RESTORER(m_moduleInCell);
+        VL_RESTORER(m_hierarchicalName);
+
+        m_moduleInCell = true;
+        if (AstModule* const modp = VN_CAST(nodep->modp(), Module)) {
+            m_hierarchicalName.emplace_back(nodep->name());
+            iterate(modp);
+        }
+    }
+    void visit(AstBegin* nodep) override {
+        VL_RESTORER(m_hierarchicalName);
+
+        // handle named blocks
+        if (!nodep->name().empty()) m_hierarchicalName.emplace_back(nodep->name());
+        iterateChildren(nodep);
+    }
+    void visit(AstTask* nodep) override {
+        VL_RESTORER(m_hierarchicalName);
+
+        // handle asserts under functions
+        if (!nodep->name().empty()) m_hierarchicalName.emplace_back(nodep->name());
+        iterateChildren(nodep);
+    }
+    void visit(AstAssert* nodep) override {
+        addFlags(m_parentp, M_HAS_ASSERT);
+
+        auto* const instancep = new AstAssertInstance{nodep->fileline(), concatNameLevels()};
+
+        new V3GraphEdge{&m_assertGraph, getDepVtx(m_parentp), getDepVtx(instancep), 1};
+        new V3GraphEdge{&m_assertGraph, getDepVtx(instancep), getDepVtx(nodep), 1};
+    }
+    void visit(AstAssertCtl* nodep) override {
+        if (nodep->user3SetOnce()) return;
+        addFlags(m_parentp, M_HAS_ASSERTCTL);
+
+        nodep->name(concatNameLevels());
+
+        new V3GraphEdge{&m_assertGraph, getDepVtx(m_parentp), getDepVtx(nodep), 1};
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    // CONSTRUCTORS
+    explicit AssertCtlVisitor(AstNetlist* nodep)
+        : m_parentp(nodep) {
+        iterateChildren(nodep);
+        propagate();
+        assignScopesToAsserts();
+        if (dumpGraphLevel() >= 6) m_assertGraph.dumpDotFilePrefixed("assert-graph");
+    }
+    ~AssertCtlVisitor() = default;
+};
+
 //######################################################################
 // Top Assert class
 
 void V3Assert::assertAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { AssertVisitor{nodep}; }  // Destruct before checking
+    {
+        //  AstAssert::user4()  -> bool.               Is not controlled by assert control?
+        const VNUser4InUse m_user4InUse;
+        { AssertCtlVisitor{nodep}; }
+        { AssertVisitor{nodep}; }  // Destruct before checking
+    }
     V3Global::dumpCheckGlobalTree("assert", 0, dumpTreeEitherLevel() >= 3);
 }

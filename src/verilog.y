@@ -807,6 +807,9 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_ACOSH        "$acosh"
 %token<fl>              yD_ASIN         "$asin"
 %token<fl>              yD_ASINH        "$asinh"
+%token<fl>              yD_ASSERTKILL   "$assertkill"
+%token<fl>              yD_ASSERTOFF    "$assertoff"
+%token<fl>              yD_ASSERTON     "$asserton"
 %token<fl>              yD_ATAN         "$atan"
 %token<fl>              yD_ATAN2        "$atan2"
 %token<fl>              yD_ATANH        "$atanh"
@@ -4219,6 +4222,10 @@ system_t_call<nodeStmtp>:       // IEEE: system_tf_call (as task)
         |       yD_FATAL    '(' expr ',' exprDispList ')'
                         { $$ = new AstDisplay{$1, VDisplayType::DT_FATAL, nullptr, $5};
                           $$->addNext(new AstStop{$1, false}); DEL($3); }
+        //
+        |       yD_ASSERTKILL parenE                    { $$ = new AstAssertCtl{$<fl>1, VAssertCtlType::OFF}; }
+        |       yD_ASSERTOFF parenE                     { $$ = new AstAssertCtl{$<fl>1, VAssertCtlType::OFF}; }
+        |       yD_ASSERTON parenE                     { $$ = new AstAssertCtl{$<fl>1, VAssertCtlType::ON}; }
         //
         |       yD_MONITOROFF parenE                    { $$ = new AstMonitorOff{$1, true}; }
         |       yD_MONITORON parenE                     { $$ = new AstMonitorOff{$1, false}; }

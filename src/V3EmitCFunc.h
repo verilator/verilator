@@ -122,6 +122,7 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     int m_splitSize = 0;  // # of cfunc nodes placed into output file
     bool m_inUC = false;  // Inside an AstUCStmt or AstUCExpr
     bool m_emitConstInit = false;  // Emitting constant initializer
+    int m_assertCtlNum = 0;  // Next assertCtl number
 
     // State associated with processing $display style string formatting
     struct EmitDispState final {
@@ -751,6 +752,15 @@ public:
         putns(nodep, "VL_TESTPLUSARGS_I(");
         emitCvtPackStr(nodep->searchp());
         puts(")");
+    }
+    void visit(AstAssertCtlCheck* nodep) override {
+        if (nodep->controlled()) {
+            puts("vlSymsp->_vm_contextp__->assertOnFor(\"");
+            puts(nodep->name());
+            puts("\")");
+        } else {
+            puts("vlSymsp->_vm_contextp__->assertOn()");
+        }
     }
     void visit(AstFError* nodep) override {
         putns(nodep, "VL_FERROR_I");
@@ -1454,6 +1464,35 @@ public:
         // invoke the graph and wait for it to complete. Emitting the children does just that.
         UASSERT_OBJ(!nodep->mTaskBodiesp(), nodep, "These should have been lowered");
         iterateChildrenConst(nodep);
+    }
+    void visit(AstAssertCtl* nodep) override {
+        switch (nodep->ctlType()) {
+        case VAssertCtlType::OFF:
+        case VAssertCtlType::ON: {
+            if (nodep->hierarchicalNames().empty() || nodep->name().empty()) break;
+
+            const auto arraySize = std::to_string(nodep->hierarchicalNames().size());
+            string assertName = nodep->name() + std::to_string(m_assertCtlNum);
+            std::replace(assertName.begin(), assertName.end(), '.', '_');
+            const auto arrayName = assertName + "_assertions";
+
+            string stmt
+                = "constexpr std::array<const char*, " + arraySize + "> " + arrayName + " = {\n";
+            for (const auto& assertName : nodep->hierarchicalNames()) {
+                stmt += "\"" + assertName + "\",\n";
+            }
+            stmt += "};\n";
+            stmt += "for (const char* name : " + arrayName
+                    + ") {\n"
+                      "   vlSymsp->_vm_contextp__->assertOnFor(name, "
+                    + (nodep->ctlType() == VAssertCtlType::ON ? "true" : "false") + ");\n";
+            stmt += "}\n";
+            puts(stmt);
+            ++m_assertCtlNum;
+            break;
+        }
+        default: nodep->v3fatalSrc("Bad case, unexpected " << nodep->ctlType().ascii());
+        }
     }
 
     // Default

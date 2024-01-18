@@ -1177,6 +1177,13 @@ AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
     return pair.first->second;
 }
 
+AstAssertCtlCheck::AstAssertCtlCheck(FileLine* fl, bool isControlled)
+    : ASTGEN_SUPER_AssertCtlCheck(fl)
+    , m_controlled(isControlled) {
+    this->scopep(new AstScopeName{fl, true});
+}
+string AstAssertCtlCheck::name() const { return scopep()->scopePrettySymName(); }
+
 AstConstPool::AstConstPool(FileLine* fl)
     : ASTGEN_SUPER_ConstPool(fl)
     , m_modp{new AstModule{fl, "@CONST-POOL@"}}
