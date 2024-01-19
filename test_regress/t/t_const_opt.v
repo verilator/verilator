@@ -62,7 +62,7 @@ module t(/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'hf5498264b93d4b48
+`define EXPECTED_SUM 64'h7f4e4dade589ada1
 
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
@@ -93,10 +93,11 @@ module Test(/*AUTOARG*/
    logic bug3786_out;
    logic bug3824_out;
    logic bug4059_out;
+   logic bug4832_out;
 
    output logic o;
 
-   logic [14:0] tmp;
+   logic [15:0] tmp;
    assign o = ^tmp;
 
    always_ff @(posedge clk) begin
@@ -127,6 +128,7 @@ module Test(/*AUTOARG*/
       tmp[12]<= bug3786_out;
       tmp[13]<= bug3824_out;
       tmp[14]<= bug4059_out;
+      tmp[15]<= bug4832_out;
    end
 
    bug3182 i_bug3182(.in(d[4:0]), .out(bug3182_out));
@@ -138,6 +140,7 @@ module Test(/*AUTOARG*/
    bug3786 i_bug3786(.clk(clk), .in(d), .out(bug3786_out));
    bug3824 i_bug3824(.clk(clk), .in(d), .out(bug3824_out));
    bug4059 i_bug4059(.clk(clk), .in(d), .out(bug4059_out));
+   bug4832 i_bug4832(.clk(clk), .in(d), .out(bug4832_out));
 
 endmodule
 
@@ -394,4 +397,28 @@ module bug4059(input wire clk, input wire [31:0] in, output wire out);
    wire _012_ = ~(_010_ ^ _011_);
    wire _013_ = ~(_009_ ^ _012_);
    assign out = ~(_006_ ^ _013_);
+endmodule
+
+/// See issue #4832
+//  !(d[32 + 3] & in[3]) & d[32 + 22]
+//  was wrongly transformed to
+//  !d[32 + 3] & d[32 + 22] & !in[3]
+//  A subtree under NOT should be untouched, but was not.
+//  Testing OR subtree too.
+module bug4832(input wire clk, input wire [31:0] in, output out);
+   logic [95:0] d;
+   always_ff @(posedge clk)
+      d <= {d[63:0], in};
+
+   logic [31:0] tmp_and;
+   logic [31:0] tmp_or;
+   logic result_and;
+   logic result_or;
+   assign tmp_and = (d[63:32] & in) >> 3;
+   assign tmp_or = (d[63:32] | in) >> 8;
+   always_ff @(posedge clk) begin
+      result_and <= !tmp_and[0] & d[32 + 22];
+      result_or <= !tmp_or[0] | d[32 + 21];
+   end
+   assign out = result_and ^ result_or;
 endmodule
