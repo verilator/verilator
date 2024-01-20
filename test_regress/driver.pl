@@ -1883,7 +1883,7 @@ sub _make_main {
     print $fh "    srand48(5);\n";  # Ensure determinism
     print $fh "    contextp->randReset(" . $self->{verilated_randReset} . ");\n"
         if defined $self->{verilated_randReset};
-    print $fh "    topp.reset(new ${vm_prefix}(\"top\"));\n";
+    print $fh "    topp.reset(new ${vm_prefix}{\"top\"});\n";
     print $fh "    contextp->internalsDump()\n;" if $self->{verilated_debug};
 
     my $set;

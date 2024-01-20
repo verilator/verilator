@@ -361,7 +361,8 @@ private:
         return true;
     }
     bool readContentsFilter(const string& filename, StrList& outl) {
-        if (filename != "" || outl.empty()) {}  // Prevent unused
+        (void)filename;  // Prevent unused variable warning
+        (void)outl;  // Prevent unused variable warning
 #ifdef INFILTER_PIPE
         writeFilter("read \"" + filename + "\"\n");
         const string line = readFilterLine();
@@ -484,7 +485,7 @@ private:
         }
     }
     void startFilter(const string& command) {
-        if (command == "") {}  // Prevent Unused
+        (void)command;  // Prevent Unused variable warning
 #ifdef INFILTER_PIPE
         int fd_stdin[2];  // Can't use std::array
         int fd_stdout[2];  // Can't use std::array
