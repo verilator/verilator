@@ -42,7 +42,7 @@ int main(int argc, char** argv, char**) {
     topp->final();
 
 #if VM_COVERAGE
-    contextp->coveragep()->write("obj_vlt/t_cover_else_points/coverage.dat");
+    contextp->coveragep()->write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage.dat");
 #endif
 
     return 0;
