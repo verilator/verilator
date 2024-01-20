@@ -2031,7 +2031,7 @@ sub _make_main {
 
     if ($self->{coverage}) {
         $fh->print("#if VM_COVERAGE\n");
-        $fh->print("    VerilatedCov::write(\"", $self->{coverage_filename}, "\");\n");
+        $fh->print("    contextp->coveragep()->write(\"", $self->{coverage_filename}, "\");\n");
         $fh->print("#endif  // VM_COVERAGE\n");
     }
     if ($self->{trace}) {
