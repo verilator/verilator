@@ -13,7 +13,7 @@ scenarios(linter => 1);
 lint(
     fails => 1,
     expect_filename => $Self->{golden_filename},
-);
+    );
 
 ok(1);
 1;
