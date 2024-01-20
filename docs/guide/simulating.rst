@@ -230,14 +230,20 @@ Coverage Collection
 When any coverage flag is used to Verilate, Verilator will add appropriate
 coverage point insertions into the model and collect the coverage data.
 
-To get the coverage data from the model, in the user wrapper code,
-typically at the end once a test passes, call
-:code:`Verilated::threadContextp()->coveragep()->write` with an argument of the filename for
-the coverage data file to write coverage data to (typically
-"logs/coverage.dat").
+To get the coverage data from the model, write the coverage with either:
+
+1. Using :vlopt:`--binary` or :vlopt:`--main`, and Verilator will dump
+   coverage when the test completes to the filename specified with
+   :vlopt:`+verilator+coverage+file+\<filename\>`.
+
+2. In the user wrapper code, typically at the end once a test passes, call
+   :code:`Verilated::threadContextp()->coveragep()->write` with an argument
+   of the filename for the coverage data file to write coverage data to
+   (typically "logs/coverage.dat").
 
 Run each of your tests in different directories, potentially in parallel.
-Each test will create a :file:`logs/coverage.dat` file.
+Each test will create the file specified above,
+e.g. :file:`logs/coverage.dat`.
 
 After running all of the tests, execute the :command:`verilator_coverage`
 command, passing arguments pointing to the filenames of all the
