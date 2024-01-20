@@ -18,7 +18,6 @@ compile(
                          "-LDFLAGS -fsanitize=address,undefined"],
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,
-    make_main => 0,
     );
 
 execute(

@@ -14,7 +14,6 @@ compile(
     verilator_flags2 => ['--exe --build --main --sc'],
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,
-    make_main => 0,
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

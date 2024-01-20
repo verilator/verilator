@@ -14,7 +14,6 @@ top_filename("t/t_timing_off.v");
 
 compile(
     verilator_flags2 => ["--exe --main --timing t/t_vlt_timing.vlt"],
-    make_main => 0,
     );
 
 execute(
