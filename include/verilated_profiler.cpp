@@ -106,7 +106,7 @@ VerilatedVirtualBase* VlExecutionProfiler::construct(VerilatedContext& context) 
     if (VlThreadPool* const threadPoolp = static_cast<VlThreadPool*>(context.threadPoolp())) {
         for (int i = 0; i < threadPoolp->numThreads(); ++i) {
             // Data to pass to worker thread initialization
-            struct Data {
+            struct Data final {
                 VlExecutionProfiler* const selfp;
                 const uint32_t threadId;
             } data{selfp, static_cast<uint32_t>(i + 1)};

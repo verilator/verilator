@@ -126,7 +126,7 @@ void VlcTop::writeInfo(const string& filename) {
 
 //********************************************************************
 
-struct CmpComputrons {
+struct CmpComputrons final {
     bool operator()(const VlcTest* lhsp, const VlcTest* rhsp) const {
         if (lhsp->computrons() != rhsp->computrons()) {
             return lhsp->computrons() < rhsp->computrons();

@@ -124,7 +124,7 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     bool m_emitConstInit = false;  // Emitting constant initializer
 
     // State associated with processing $display style string formatting
-    struct EmitDispState {
+    struct EmitDispState final {
         string m_format;  // "%s" and text from user
         std::vector<char> m_argsChar;  // Format of each argument to be printed
         std::vector<AstNode*> m_argsp;  // Each argument to be printed

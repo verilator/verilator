@@ -57,7 +57,7 @@ class WidthSelVisitor final : public VNVisitor {
     }
 
     // RETURN TYPE
-    struct FromData {
+    struct FromData final {
         AstNodeDType* const m_errp;  // Node that was found, for error reporting if not known type
         AstNodeDType* const m_dtypep;  // Data type for the 'from' slice
         VNumRange m_fromRange;  // Numeric range bounds for the 'from' slice

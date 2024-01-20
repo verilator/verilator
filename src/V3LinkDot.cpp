@@ -2038,7 +2038,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     bool m_explicitSuperNew = false;  // Hit a "super.new" call inside a "new" function
     std::map<AstNode*, AstPin*> m_usedPins;  // Pin used in this cell, map to duplicate
 
-    struct DotStates {
+    struct DotStates final {
         DotPosition m_dotPos;  // Scope part of dotted resolution
         VSymEnt* m_dotSymp;  // SymEnt for dotted AstParse lookup
         const AstDot* m_dotp;  // Current dot

@@ -43,7 +43,7 @@ class CombineVisitor final : VNVisitor {
 
     // TYPES
     using funcit_t = std::list<AstCFunc*>::iterator;
-    struct CFuncs {
+    struct CFuncs final {
         std::list<AstCFunc*> m_fast;
         std::list<AstCFunc*> m_slow;
     };

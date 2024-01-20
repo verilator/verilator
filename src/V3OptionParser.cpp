@@ -26,7 +26,7 @@
 
 //######################################################################
 // V3OptionParser::Impl
-struct V3OptionParser::Impl {
+struct V3OptionParser::Impl final {
     // TYPES
 
     // Setting for isOnOffAllowed() and isPartialMatchAllowed()

@@ -39,7 +39,7 @@ class CoverageVisitor final : public VNVisitor {
     // TYPES
     using LinenoSet = std::set<int>;
 
-    struct ToggleEnt {
+    struct ToggleEnt final {
         const string m_comment;  // Comment for coverage dump
         AstNodeExpr* m_varRefp;  // How to get to this element
         AstNodeExpr* m_chgRefp;  // How to get to this element
@@ -54,7 +54,7 @@ class CoverageVisitor final : public VNVisitor {
         }
     };
 
-    struct CheckState {  // State save-restored on each new coverage scope/block
+    struct CheckState final {  // State save-restored on each new coverage scope/block
         bool m_on = false;  // Should this block get covered?
         bool m_inModOff = false;  // In module with no coverage
         int m_handle = 0;  // Opaque handle for index into line tracking

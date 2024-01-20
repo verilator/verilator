@@ -98,7 +98,7 @@ using MTaskIdSet = std::set<int>;  // Set of mtaskIds for Var sorting
 
 //######################################################################
 
-struct VNTypeInfo {
+struct VNTypeInfo final {
     const char* m_namep;
     enum uint8_t {
         OP_UNUSED,

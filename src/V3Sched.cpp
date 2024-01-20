@@ -167,7 +167,7 @@ AstNodeStmt* profExecSectionPop(FileLine* flp) {
     return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();\n"};
 }
 
-struct EvalLoop {
+struct EvalLoop final {
     // Flag set to true during the first iteration of the loop
     AstVarScope* firstIterp;
     // The loop itself and statements around it
@@ -491,7 +491,7 @@ void createFinal(AstNetlist* netlistp, const LogicClasses& logicClasses) {
 //============================================================================
 // A TriggerKit holds all the components related to a TRIGGERVEC variable
 
-struct TriggerKit {
+struct TriggerKit final {
     // The TRIGGERVEC AstVarScope representing these trigger flags
     AstVarScope* const m_vscp;
     // The AstCFunc that computes the current active triggers
@@ -532,7 +532,7 @@ struct TriggerKit {
 //============================================================================
 // EvalKit groups items that have to be passed to createEval() for a given eval region
 
-struct EvalKit {
+struct EvalKit final {
     // The TRIGGERVEC AstVarScope representing the region's trigger flags
     AstVarScope* const m_vscp = nullptr;
     // The AstCFunc that computes the region's active triggers

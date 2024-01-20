@@ -45,7 +45,7 @@ static const int INLINE_MODS_SMALLER = 100;  // If a mod is < this # nodes, can 
 
 namespace {
 
-struct ModuleState {
+struct ModuleState final {
     bool m_inlined = false;  // Whether to inline this module
     unsigned m_cellRefs = 0;  // Number of AstCells instantiating this module
     std::vector<AstCell*> m_childCells;  // AstCells under this module (to speed up traversal)

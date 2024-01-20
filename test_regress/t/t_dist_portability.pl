@@ -87,15 +87,18 @@ sub vsnprintf {
 sub final {
     # Note do not do test_regress, as VPI files need to compile without verilatedos.h
     my $files = "src/*.c* src/*.h include/*.c* include/*.h";
-    my $cmd = "cd $root && grep -n -P '(class)' $files | sort";
+    my $cmd = "cd $root && grep -n -P '(class|struct)' $files | sort";
     print "C $cmd\n";
     my $grep = `$cmd`;
     my %names;
     foreach my $line (split /\n/, $grep) {
-        if ($line =~ /:\s*class /) {
+        if ($line =~ /:\s*(class|struct) /) {
             next if $line =~ /final|VL_NOT_FINAL/;
             next if $line =~ /{}/;  # e.g. 'class Foo {};'
             next if $line =~ /;/;  # e.g. 'class Foo;'
+            next if $line =~ /(class|struct)\s+{/;  # e.g. anon 'class {'
+            next if $line =~ /struct std::/;
+            next if $line !~ /{/;
             print "$line\n";
             $names{$1} = 1;
         }

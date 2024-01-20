@@ -204,7 +204,7 @@ private:
     friend Buffer;
     friend OffloadBuffer;
 
-    struct CallbackRecord {
+    struct CallbackRecord final {
         // Note: would make these fields const, but some old STL implementations
         // (the one in Ubuntu 14.04 with GCC 4.8.4 in particular) use the
         // assignment operator on inserting into collections, so they don't work
@@ -238,7 +238,7 @@ private:
     bool m_offload = false;  // Use the offload thread
     bool m_parallel = false;  // Use parallel tracing
 
-    struct ParallelWorkerData {
+    struct ParallelWorkerData final {
         const dumpCb_t m_cb;  // The callback
         void* const m_userp;  // The use pointer to pass to the callback
         Buffer* const m_bufp;  // The buffer pointer to pass to the callback
