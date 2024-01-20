@@ -1,12 +1,3 @@
-/*--------------------------------------------------------------------
-File Name :
-Purpose :
-Creation Date :
-Last Modified : Fri 19 Jan 2024 09:41:39 PM EST
-Created By :
-History :
-Copyright (c) ChipIC
---------------------------------------------------------------------*/
 #include "verilated.h"
 
 #include "Vt_cover_else_points.h"
