@@ -12,8 +12,6 @@ scenarios(vlt => 1);
 
 compile(
     verilator_flags2 => ['--binary --debug-stack-check'],
-    verilator_make_cmake => 0,
-    verilator_make_gmake => 0,
     );
 
 execute();

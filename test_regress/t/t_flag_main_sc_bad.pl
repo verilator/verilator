@@ -12,8 +12,6 @@ scenarios(vlt => 1);
 
 lint(
     verilator_flags2 => ['--exe --build --main --sc'],
-    verilator_make_cmake => 0,
-    verilator_make_gmake => 0,
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

@@ -17,8 +17,6 @@ compile(
                         "-Mdir $Self->{obj_dir}",
                         "--debug-check", ],
     verilator_flags2 => ['--binary'],
-    verilator_make_cmake => 0,
-    verilator_make_gmake => 0,
     );
 
 execute(

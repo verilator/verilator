@@ -1023,6 +1023,10 @@ sub compile {
     $param{threads} = ::calc_threads($Vltmt_threads) if $param{threads} < 0 && $param{vltmt};
     $param{context_threads} = $param{threads} >= 1 ? $param{threads} : 1 if !$param{context_threads};
     $param{make_main} = 0 if ($checkflags =~ / -?-main\b/ || $checkflags =~ / -?-binary\b/);
+    if ($checkflags =~ / -?-build\b/ || $checkflags =~ / -?-binary\b/) {
+        $param{verilator_make_cmake} = 0;
+        $param{verilator_make_gmake} = 0;
+    }
 
     $self->{threads} = $param{threads};
     $self->{context_threads} = $param{context_threads};

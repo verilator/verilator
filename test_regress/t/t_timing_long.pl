@@ -57,8 +57,6 @@ gen($Self->{top_filename});
 if ($Self->have_coroutines) {
     compile(
         verilator_flags2 => ["--exe --build --main --tim" . "ing"],
-        verilator_make_cmake => 0,
-        verilator_make_gmake => 0,
         make_top => 1,
         );
 
@@ -69,8 +67,6 @@ if ($Self->have_coroutines) {
 
 compile(
     verilator_flags2 => ["--exe --build --main --no-timing -Wno-STMTDLY"],
-    verilator_make_cmake => 0,
-    verilator_make_gmake => 0,
     make_top => 1,
     );
 
