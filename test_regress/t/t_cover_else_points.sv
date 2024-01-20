@@ -3,14 +3,15 @@
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2008 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
-module t  ;
+module t_cover_else_points  ;
     logic        is_su_mode;
     logic        is_em_emul;
     logic        is_ata_emul;
+/* verilator lint_off UNUSEDSIGNAL */
     logic [3:0]  user_word_cnt;
+/* verilator lint_on UNUSEDSIGNAL */
     logic        page;
     logic [6:0]  cfg;
-
     initial begin
        is_su_mode    =1'b1; 
        is_em_emul    =1'b0; 
@@ -42,6 +43,18 @@ module t  ;
        page          =1'b1; 
        cfg           =7'h60; 
        #100;
+       is_su_mode    =1'b0; 
+       is_em_emul    =1'b0; 
+       is_ata_emul   =1'b1; 
+       page          =1'b1; 
+       cfg           =7'h40; 
+       #100;
+       is_su_mode    =1'b0; 
+       is_em_emul    =1'b0; 
+       is_ata_emul   =1'b1; 
+       page          =1'b0; 
+       cfg           =7'h50; 
+       #100;
        $write("*-* All Finished *-*\n");
        $finish;
     end
@@ -54,7 +67,9 @@ module t  ;
          .o_user_word_count( user_word_cnt)
     );
 endmodule
+/* verilator lint_off DECLFILENAME */
 module a (
+/* verilator lint_on DECLFILENAME */
     input logic        i_is_su_mode , 
     input logic        i_page ,
     input logic [6:0]  i_cfg        ,

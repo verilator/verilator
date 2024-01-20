@@ -1,0 +1,312 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: SystemVerilog Test module
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain, for
+        // any use, without warranty, 2008 by Wilson Snyder.
+        // SPDX-License-Identifier: CC0-1.0
+        module t_cover_else_points  ;
+%000002     logic        is_su_mode;
+-000002  point: comment=is_su_mode
+%000002     logic        is_em_emul;
+-000002  point: comment=is_em_emul
+%000001     logic        is_ata_emul;
+-000001  point: comment=is_ata_emul
+        /* verilator lint_off UNUSEDSIGNAL */
+%000000     logic [3:0]  user_word_cnt;
+-000002  point: comment=user_word_cnt[0]
+-000002  point: comment=user_word_cnt[1]
+-000001  point: comment=user_word_cnt[2]
+-000000  point: comment=user_word_cnt[3]
+        /* verilator lint_on UNUSEDSIGNAL */
+%000002     logic        page;
+-000002  point: comment=page
+%000001     logic [6:0]  cfg;
+-000002  point: comment=cfg[0]
+-000002  point: comment=cfg[1]
+-000002  point: comment=cfg[2]
+-000000  point: comment=cfg[3]
+-000003  point: comment=cfg[4]
+-000002  point: comment=cfg[5]
+-000001  point: comment=cfg[6]
+%000001     initial begin
+-000001  point: comment=block
+%000001        is_su_mode    =1'b1; 
+-000001  point: comment=block
+%000001        is_em_emul    =1'b0; 
+-000001  point: comment=block
+%000001        is_ata_emul   =1'b0; 
+-000001  point: comment=block
+%000001        page          =1'b0; 
+-000001  point: comment=block
+%000001        cfg           =7'h05; 
+-000001  point: comment=block
+%000001        #100;
+-000001  point: comment=block
+%000001        is_su_mode    =1'b0; 
+-000001  point: comment=block
+%000001        is_em_emul    =1'b1; 
+-000001  point: comment=block
+%000001        is_ata_emul   =1'b0; 
+-000001  point: comment=block
+%000001        page          =1'b0; 
+-000001  point: comment=block
+%000001        cfg           =7'h06; 
+-000001  point: comment=block
+%000001        #100;
+-000001  point: comment=block
+%000001        is_su_mode    =1'b0; 
+-000001  point: comment=block
+%000001        is_em_emul    =1'b0; 
+-000001  point: comment=block
+%000001        is_ata_emul   =1'b1; 
+-000001  point: comment=block
+%000001        page          =1'b0; 
+-000001  point: comment=block
+%000001        cfg           =7'h10; 
+-000001  point: comment=block
+%000001        #100;
+-000001  point: comment=block
+%000001        is_su_mode    =1'b0; 
+-000001  point: comment=block
+%000001        is_em_emul    =1'b0; 
+-000001  point: comment=block
+%000001        is_ata_emul   =1'b1; 
+-000001  point: comment=block
+%000001        page          =1'b1; 
+-000001  point: comment=block
+%000001        cfg           =7'h60; 
+-000001  point: comment=block
+%000001        #100;
+-000001  point: comment=block
+%000001        is_su_mode    =1'b0; 
+-000001  point: comment=block
+%000001        is_em_emul    =1'b0; 
+-000001  point: comment=block
+%000001        is_ata_emul   =1'b1; 
+-000001  point: comment=block
+%000001        page          =1'b1; 
+-000001  point: comment=block
+%000001        cfg           =7'h60; 
+-000001  point: comment=block
+%000001        #100;
+-000001  point: comment=block
+%000001        is_su_mode    =1'b0; 
+-000001  point: comment=block
+%000001        is_em_emul    =1'b0; 
+-000001  point: comment=block
+%000001        is_ata_emul   =1'b1; 
+-000001  point: comment=block
+%000001        page          =1'b1; 
+-000001  point: comment=block
+%000001        cfg           =7'h40; 
+-000001  point: comment=block
+%000001        #100;
+-000001  point: comment=block
+%000001        is_su_mode    =1'b0; 
+-000001  point: comment=block
+%000001        is_em_emul    =1'b0; 
+-000001  point: comment=block
+%000001        is_ata_emul   =1'b1; 
+-000001  point: comment=block
+%000001        page          =1'b0; 
+-000001  point: comment=block
+%000001        cfg           =7'h50; 
+-000001  point: comment=block
+%000001        #100;
+-000001  point: comment=block
+%000001        $write("*-* All Finished *-*\n");
+-000001  point: comment=block
+%000001        $finish;
+-000001  point: comment=block
+            end
+            a a_inst(
+                 .i_is_su_mode     ( is_su_mode   ), 
+                 .i_page           ( page         ),
+                 .i_cfg            ( cfg          ),
+                 .i_is_em_emul     ( is_em_emul   ),
+                 .i_is_ata_emul    ( is_ata_emul  ),
+                 .o_user_word_count( user_word_cnt)
+            );
+        endmodule
+        /* verilator lint_off DECLFILENAME */
+        module a (
+        /* verilator lint_on DECLFILENAME */
+%000002     input logic        i_is_su_mode , 
+-000002  point: comment=i_is_su_mode
+%000002     input logic        i_page ,
+-000002  point: comment=i_page
+%000001     input logic [6:0]  i_cfg        ,
+-000002  point: comment=i_cfg[0]
+-000002  point: comment=i_cfg[1]
+-000002  point: comment=i_cfg[2]
+-000000  point: comment=i_cfg[3]
+-000003  point: comment=i_cfg[4]
+-000002  point: comment=i_cfg[5]
+-000001  point: comment=i_cfg[6]
+%000002     input logic        i_is_em_emul ,
+-000002  point: comment=i_is_em_emul
+%000001     input logic        i_is_ata_emul,
+-000001  point: comment=i_is_ata_emul
+%000000     output logic [3:0] o_user_word_count
+-000002  point: comment=o_user_word_count[0]
+-000002  point: comment=o_user_word_count[1]
+-000001  point: comment=o_user_word_count[2]
+-000000  point: comment=o_user_word_count[3]
+        );
+%000001     always_comb begin
+-000001  point: comment=block
+%000001         o_user_word_count='0;
+-000001  point: comment=block
+%000001         if (i_is_su_mode == 1'b1) begin
+-000001  point: comment=elsif
+%000001                 o_user_word_count    =  4'b0000;  
+-000001  point: comment=elsif
+                end 
+%000002         else if (i_is_em_emul == 1'b1 ) begin 
+-000002  point: comment=elsif
+%000002                 case(i_cfg[3:0])
+-000002  point: comment=elsif
+%000000                   4'b0101: begin
+-000000  point: comment=case
+%000000                         o_user_word_count    =  4'b0000;  
+-000000  point: comment=case
+                          end
+%000002                   4'b0110: begin
+-000002  point: comment=case
+%000002                         o_user_word_count    =  4'b0001;  
+-000002  point: comment=case
+                          end
+%000000                   4'b0111: begin
+-000000  point: comment=case
+%000000                         o_user_word_count    =  4'b0010;  
+-000000  point: comment=case
+                          end
+%000000                   4'b1000: begin
+-000000  point: comment=case
+%000000                         o_user_word_count    =  4'b0011;  
+-000000  point: comment=case
+                          end
+%000000                   4'b1001: begin
+-000000  point: comment=case
+%000000                         o_user_word_count    =  4'b0100;  
+-000000  point: comment=case
+                          end
+%000000                   4'b1010: begin
+-000000  point: comment=case
+%000000                         o_user_word_count    =  4'b0101;  
+-000000  point: comment=case
+                          end
+%000000                   4'b1011: begin
+-000000  point: comment=case
+%000000                         o_user_word_count    =  4'b0110;  
+-000000  point: comment=case
+                          end
+%000000                   4'b1100: begin
+-000000  point: comment=case
+%000000                         o_user_word_count    =  4'b0111;  
+-000000  point: comment=case
+                          end
+%000000                   4'b1101: begin
+-000000  point: comment=case
+%000000                         o_user_word_count    =  4'b1000;  
+-000000  point: comment=case
+                          end
+%000000                   default: begin
+-000000  point: comment=case
+%000000                         o_user_word_count    =  4'b0011; 
+-000000  point: comment=case
+                          end
+                        endcase
+                end 
+%000000         else if (i_is_ata_emul == 1'b1) begin 
++000012  point: comment=if
+-000000  point: comment=else
+ 000012                 case(i_cfg[6:4]) 
++000012  point: comment=if
+%000000                   3'b000: begin 
+-000000  point: comment=case
+%000000                         o_user_word_count    =  4'b0000;  
+-000000  point: comment=case
+                          end
+%000002                   3'b001: begin 
+-000002  point: comment=case
+%000002                         o_user_word_count    =  4'b0000;  
+-000002  point: comment=case
+                          end
+%000000                   3'b010: begin 
+-000000  point: comment=case
+%000000                         o_user_word_count    =  4'b0001;  
+-000000  point: comment=case
+                          end
+%000000                   3'b011: begin 
+-000000  point: comment=case
+%000000                         o_user_word_count    =  4'b0010;  
+-000000  point: comment=case
+                          end
+%000002                   3'b100: begin 
+-000002  point: comment=case
+%000000                       if (i_page == 1'b1) begin
+-000002  point: comment=if
+-000000  point: comment=else
+%000002                         o_user_word_count    =  4'b0010; 
+-000002  point: comment=if
+%000000                       end else begin
+-000000  point: comment=else
+%000000                         o_user_word_count    =  4'b0011;  
+-000000  point: comment=else
+                              end
+                          end
+%000004                   3'b101: begin 
+-000004  point: comment=case
+%000004                       if (i_page == 1'b1) begin
+-000000  point: comment=if
+-000004  point: comment=else
+%000000                         o_user_word_count    =  4'b0010; 
+-000000  point: comment=if
+%000004                       end else begin
+-000004  point: comment=else
+%000004                         o_user_word_count    =  4'b0100;  
+-000004  point: comment=else
+                              end
+                          end
+%000004                   3'b110: begin 
+-000004  point: comment=case
+%000000                       if (i_page == 1'b1) begin
+-000004  point: comment=if
+-000000  point: comment=else
+%000004                         o_user_word_count    =  4'b0010; 
+-000004  point: comment=if
+%000000                       end else begin
+-000000  point: comment=else
+%000000                         o_user_word_count    =  4'b0101;  
+-000000  point: comment=else
+                              end
+                          end
+%000000                   3'b111: begin 
+-000000  point: comment=case
+%000000                       if (i_page == 1'b1) begin
+-000000  point: comment=if
+-000000  point: comment=else
+%000000                         o_user_word_count    =  4'b0010; 
+-000000  point: comment=if
+%000000                       end else begin
+-000000  point: comment=else
+%000000                         o_user_word_count    =  4'b0110;  
+-000000  point: comment=else
+                              end
+                          end
+%000000                   default: begin 
+-000000  point: comment=case
+%000000                         o_user_word_count    =  4'b0010; 
+-000000  point: comment=case
+                          end
+                        endcase
+                end 
+%000000         else begin       // default
+-000000  point: comment=else
+%000000                         o_user_word_count    =  4'b0000;  
+-000000  point: comment=else
+                end
+            end
+        endmodule
+        
