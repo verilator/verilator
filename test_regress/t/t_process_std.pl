@@ -13,7 +13,7 @@ scenarios(simulator => 1);
 top_filename("t/t_process.v");
 
 compile(
-    v_flags2 => ["+define+T_PROCESS+std::process", "--timing"],
+    v_flags2 => ["--binary --timing", "+define+T_PROCESS+std::process"],
     );
 
 execute(

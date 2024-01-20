@@ -16,7 +16,7 @@ top_filename("t/t_delay_incr.v");
 
 compile(
     timing_loop => 1,
-    verilator_flags2 => ['--timing -Wno-ZERODLY'],
+    verilator_flags2 => ['--binary --timing -Wno-ZERODLY'],
     );
 
 execute(

@@ -14,7 +14,7 @@ top_filename("t/t_wait.v");
 
 compile(
     timing_loop => 1,
-    verilator_flags2 => ["--timing -Wno-WAITCONST"],
+    verilator_flags2 => ["--binary --timing -Wno-WAITCONST"],
     );
 
 execute(
