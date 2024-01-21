@@ -12,17 +12,14 @@ scenarios(simulator => 1);
 
 top_filename("t/t_cover_else_points.sv");
 golden_filename("t/t_cover_else_points.out");
+
 compile(
-    verilator_flags2 => [ "--exe $Self->{t_dir}/$Self->{name}.cpp  --coverage  --timing -Wall" ],
-    make_main =>0,
+    verilator_flags2 => [ "--binary   --coverage  --timing -Wall" ],
     );
 
-#compile(
-#    verilator_flags2 => [ "--exe --main  --coverage  --timing -Wall" ],
-#    make_main =>0,
-#    );
 
 execute(
+    all_run_flags => [" +verilator+coverage+file+$Self->{obj_dir}/coverage.dat"],
     check_finished => 1,
     );
 
