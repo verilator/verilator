@@ -1892,6 +1892,8 @@ class ConstVisitor final : public VNVisitor {
     }
     void replaceShiftOp(AstNodeBiop* nodep) {
         UINFO(5, "SHIFT(AND(a,b),CONST)->AND(SHIFT(a,CONST),SHIFT(b,CONST)) " << nodep << endl);
+        const int width = nodep->width();
+        const int widthMin = nodep->widthMin();
         VNRelinker handle;
         nodep->unlinkFrBack(&handle);
         AstNodeBiop* const lhsp = VN_AS(nodep->lhsp(), NodeBiop);
@@ -1908,6 +1910,7 @@ class ConstVisitor final : public VNVisitor {
         AstNodeBiop* const newp = lhsp;
         newp->lhsp(shift1p);
         newp->rhsp(shift2p);
+        newp->dtypeChgWidth(width, widthMin);  // The new AND must have width of the original SHIFT
         handle.relink(newp);
         iterate(newp);  // Further reduce, either node may have more reductions.
     }
