@@ -910,6 +910,19 @@ sub clean_objs {
     system("rm", "-rf", glob("$self->{obj_dir}/*"));
 }
 
+sub _checkflags {
+    my $self = shift;
+    my %param = (@_);
+    my $checkflags = (' '.join(' ',
+                               @{$param{v_flags}},
+                               @{$param{v_flags2}},
+                               @{$param{verilator_flags}},
+                               @{$param{verilator_flags2}},
+                               @{$param{verilator_flags3}})
+                      .' ');
+    return $checkflags;
+}
+
 sub compile_vlt_cmd {
     my $self = (ref $_[0] ? shift : $Self);
     my %param = (%{$self},  # Default arguments are from $self
@@ -918,7 +931,7 @@ sub compile_vlt_cmd {
 
     my @vlt_cmd = (
         "perl", "$ENV{VERILATOR_ROOT}/bin/verilator",
-        $self->compile_vlt_flags(%param),
+        $self->_compile_vlt_flags(%param),
         $param{top_filename},
         @{$param{v_other_filenames}},
         $param{stdout_filename} ? "> " . $param{stdout_filename} : ""
@@ -926,19 +939,12 @@ sub compile_vlt_cmd {
     return @vlt_cmd;
 }
 
-sub compile_vlt_flags {
-    my $self = (ref $_[0] ? shift : $Self);
-    my %param = (%{$self},  # Default arguments are from $self
-                 @_);  # Supports arbitrary arguments
+sub _compile_vlt_flags {
+    my $self = shift;
+    my %param = (@_);  # Supports arbitrary arguments from compile_vlt_cmd
     return 1 if $self->errors || $self->skips;
 
-    my $checkflags = (' '.join(' ',
-                               @{$param{v_flags}},
-                               @{$param{v_flags2}},
-                               @{$param{verilator_flags}},
-                               @{$param{verilator_flags2}},
-                               @{$param{verilator_flags3}})
-                      .' ');
+    my $checkflags = $self->_checkflags(%param);
     die "%Error: specify threads via 'threads =>' argument, not as a command line option" unless ($checkflags !~ /(^|\s)-?-threads\s/);
     $self->{coverage} = 1 if ($checkflags =~ /-coverage\b/);
     $self->{savable} = 1 if ($checkflags =~ /-savable\b/);
@@ -1013,12 +1019,19 @@ sub compile {
 
     die "%Error: 'threads =>' argument must be <= 1 for vlt scenario" if $param{vlt} && $param{threads} > 1;
     # Compute automatic parameter values
+    my $checkflags = $self->_checkflags(%param);
     $param{threads} = ::calc_threads($Vltmt_threads) if $param{threads} < 0 && $param{vltmt};
     $param{context_threads} = $param{threads} >= 1 ? $param{threads} : 1 if !$param{context_threads};
+    $param{make_main} = 0 if ($checkflags =~ / -?-main\b/ || $checkflags =~ / -?-binary\b/);
+    if ($checkflags =~ / -?-build\b/ || $checkflags =~ / -?-binary\b/) {
+        $param{verilator_make_cmake} = 0;
+        $param{verilator_make_gmake} = 0;
+    }
+
     $self->{threads} = $param{threads};
     $self->{context_threads} = $param{context_threads};
 
-    compile_vlt_cmd(%param);
+    $self->compile_vlt_cmd(%param);
 
     my $define_opt = defineOpt($self->{xsim});
     if (join(' ', @{$self->{v_flags}}) !~ /TEST_DUMPFILE/) {
@@ -1188,7 +1201,7 @@ sub compile {
         }
 
         if ($param{verilator_make_cmake}) {
-            my @vlt_args = $self->compile_vlt_flags(%param);
+            my @vlt_args = $self->_compile_vlt_flags(%param);
             $self->oprint("Running cmake\n") if $self->{verbose};
             mkdir $self->{obj_dir};
             my @csources = ();
@@ -1883,7 +1896,7 @@ sub _make_main {
     print $fh "    srand48(5);\n";  # Ensure determinism
     print $fh "    contextp->randReset(" . $self->{verilated_randReset} . ");\n"
         if defined $self->{verilated_randReset};
-    print $fh "    topp.reset(new ${vm_prefix}(\"top\"));\n";
+    print $fh "    topp.reset(new ${vm_prefix}{\"top\"});\n";
     print $fh "    contextp->internalsDump()\n;" if $self->{verilated_debug};
 
     my $set;
@@ -2018,7 +2031,7 @@ sub _make_main {
 
     if ($self->{coverage}) {
         $fh->print("#if VM_COVERAGE\n");
-        $fh->print("    VerilatedCov::write(\"", $self->{coverage_filename}, "\");\n");
+        $fh->print("    contextp->coveragep()->write(\"", $self->{coverage_filename}, "\");\n");
         $fh->print("#endif  // VM_COVERAGE\n");
     }
     if ($self->{trace}) {

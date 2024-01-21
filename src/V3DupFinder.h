@@ -33,7 +33,7 @@
 
 //============================================================================
 
-struct V3DupFinderUserSame {
+struct V3DupFinderUserSame VL_NOT_FINAL {
     // Functor for V3DupFinder::findDuplicate
     virtual bool isSame(AstNode*, AstNode*) = 0;
     V3DupFinderUserSame() = default;

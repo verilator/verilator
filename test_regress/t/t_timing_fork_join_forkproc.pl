@@ -14,7 +14,6 @@ top_filename("t/t_timing_fork_join.v");
 
 compile(
     verilator_flags2 => ["--exe --main --timing --ftaskify-all-forked"],
-    make_main => 0,
     );
 
 execute(

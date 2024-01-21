@@ -20,7 +20,6 @@ compile(
 
 compile(
     verilator_flags2 => ["--exe --main --timing -Wno-UNOPTFLAT"],
-    make_main => 0,
     );
 
 execute(

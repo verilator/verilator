@@ -27,7 +27,7 @@
 //######################################################################
 // GraphPCNode
 
-struct GraphPCNode {
+struct GraphPCNode final {
     // User data for each node in GraphPathChecker.
     //
     // Like the LogicMTasks's, store before and after CPs for the nodes in

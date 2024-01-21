@@ -100,8 +100,16 @@ private:
         puts("}\n");
         puts("\n");
 
-        puts("// Final model cleanup\n");
+        puts("// Execute 'final' processes\n");
         puts("topp->final();\n");
+        puts("\n");
+
+        if (v3Global.opt.coverage()) {
+            puts("// Write coverage data (since Verilated with --coverage)\n");
+            puts("contextp->coveragep()->write();\n");
+            puts("\n");
+        }
+
         puts("return 0;\n");
         puts("}\n");
 

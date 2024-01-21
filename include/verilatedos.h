@@ -612,7 +612,7 @@ static inline double VL_ROUND(double n) {
 namespace vlstd {
 
 template <typename T>
-struct reverse_wrapper {
+struct reverse_wrapper final {
     const T& m_v;
 
     explicit reverse_wrapper(const T& a_v)

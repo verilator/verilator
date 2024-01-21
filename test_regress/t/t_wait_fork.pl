@@ -12,7 +12,6 @@ scenarios(linter => 1);
 
 compile(
     verilator_flags2 => ["--exe --main --timing"],
-    make_main => 0,
     );
 
 execute(

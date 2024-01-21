@@ -14,7 +14,6 @@ top_filename("t/t_timing_trace.v");
 
 compile(
     verilator_flags2 => ["--exe --main --timing --trace-fst -Wno-MINTYPMAXDLY"],
-    make_main => 0,
     );
 
 execute(

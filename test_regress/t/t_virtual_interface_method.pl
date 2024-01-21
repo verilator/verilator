@@ -13,7 +13,6 @@ scenarios(simulator => 1);
 compile(
     v_flags2 => ["--binary"],
     verilator_make_gmake => 0,
-    make_main => 0,
     );
 
 execute(

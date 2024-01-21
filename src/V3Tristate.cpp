@@ -408,7 +408,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     AstUser3Allocator<AstVar, AuxAstVar> m_varAux;
 
     // TYPES
-    struct RefStrength {
+    struct RefStrength final {
         AstVarRef* m_varrefp;
         VStrength m_strength;
         RefStrength(AstVarRef* varrefp, VStrength strength)

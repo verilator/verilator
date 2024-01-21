@@ -51,11 +51,10 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
                 if (line[secspace] == '\'' && line[secspace + 1] == ' ') break;
             }
             const string point = line.substr(3, secspace - 3);
-            uint64_t hits = std::atoll(line.c_str() + secspace + 1);
+            const uint64_t hits = std::atoll(line.c_str() + secspace + 1);
             // UINFO(9,"   point '"<<point<<"'"<<" "<<hits<<endl);
 
-            uint64_t pointnum = points().findAddPoint(point, hits);
-            if (pointnum) {}  // Prevent unused
+            const uint64_t pointnum = points().findAddPoint(point, hits);
             if (opt.rank()) {  // Only if ranking - uses a lot of memory
                 if (hits >= VlcBuckets::sufficient()) {
                     points().pointNumber(pointnum).testsCoveringInc();
@@ -127,7 +126,7 @@ void VlcTop::writeInfo(const string& filename) {
 
 //********************************************************************
 
-struct CmpComputrons {
+struct CmpComputrons final {
     bool operator()(const VlcTest* lhsp, const VlcTest* rhsp) const {
         if (lhsp->computrons() != rhsp->computrons()) {
             return lhsp->computrons() < rhsp->computrons();

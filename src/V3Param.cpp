@@ -248,7 +248,7 @@ class ParamProcessor final {
 
     // STATE
     using CloneMap = std::unordered_map<const AstNode*, AstNode*>;
-    struct ModInfo {
+    struct ModInfo final {
         AstNodeModule* const m_modp;  // Module with specified name
         CloneMap m_cloneMap;  // Map of old-varp -> new cloned varp
         explicit ModInfo(AstNodeModule* modp)

@@ -30,7 +30,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Levelizing class functions
 
-struct CmpLevel {
+struct CmpLevel final {
     bool operator()(const AstNodeModule* lhsp, const AstNodeModule* rhsp) const {
         return lhsp->level() < rhsp->level();
     }

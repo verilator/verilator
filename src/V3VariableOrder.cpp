@@ -78,7 +78,7 @@ class VariableOrder final {
     //  AstVar::user1()    -> attributes, via m_attributes
     const VNUser1InUse m_user1InUse;  // AstVar
 
-    struct VarAttributes {
+    struct VarAttributes final {
         uint32_t stratum;  // Roughly equivalent to alignment requirement, to avoid padding
         bool anonOk;  // Can be emitted as part of anonymous structure
     };

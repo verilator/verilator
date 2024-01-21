@@ -64,7 +64,7 @@ int main() {
     coverw[5] = 300;
 
 #ifdef T_COVER_LIB
-    TEST_CHECK_CSTR(covContextp->defaultFilename(), "coverage.dat");
+    TEST_CHECK_EQ(covContextp->defaultFilename(), "coverage.dat");
     covContextp->write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage1.dat");
     covContextp->forcePerInstance(true);
     covContextp->write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage1_per_instance.dat");
@@ -74,16 +74,20 @@ int main() {
     covContextp->zero();
     covContextp->write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage3.dat");
     covContextp->clear();
-    covContextp->write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage4.dat");
+    Verilated::defaultContextp()->coverageFilename(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage4.dat");
+    TEST_CHECK_EQ(covContextp->defaultFilename(), VL_STRINGIFY(TEST_OBJ_DIR) "/coverage4.dat");
+    covContextp->write();  // Uses defaultFilename()
 #elif defined(T_COVER_LIB_LEGACY)
-    TEST_CHECK_CSTR(VerilatedCov::defaultFilename(), "coverage.dat");
+    TEST_CHECK_EQ(VerilatedCov::defaultFilename(), "coverage.dat");
     VerilatedCov::write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage1.dat");
     VerilatedCov::clearNonMatch("kept_");
     VerilatedCov::write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage2.dat");
     VerilatedCov::zero();
     VerilatedCov::write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage3.dat");
     VerilatedCov::clear();
-    VerilatedCov::write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage4.dat");
+    Verilated::defaultContextp()->coverageFilename(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage4.dat");
+    TEST_CHECK_EQ(VerilatedCov::defaultFilename(), VL_STRINGIFY(TEST_OBJ_DIR) "/coverage4.dat");
+    VerilatedCov::write();  // Uses defaultFilename()
 #else
 #error
 #endif

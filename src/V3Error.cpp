@@ -27,7 +27,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 //======================================================================
 
-struct v3errorIniter {
+struct v3errorIniter final {
     v3errorIniter() { V3Error::init(); }
 };
 v3errorIniter v3errorInit;

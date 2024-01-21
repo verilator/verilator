@@ -95,7 +95,7 @@ public:
 // Location within the execution graph, identified by an mtask
 // and a sequence number within the mtask:
 
-struct LifeLocation {
+struct LifeLocation final {
     const ExecMTask* mtaskp = nullptr;
     uint32_t sequence = 0;
 
@@ -113,7 +113,7 @@ public:
     }
 };
 
-struct LifePostLocation {
+struct LifePostLocation final {
     LifeLocation loc;
     AstAssignPost* nodep = nullptr;
     LifePostLocation() = default;
