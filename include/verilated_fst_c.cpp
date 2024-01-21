@@ -29,6 +29,7 @@
 // GTKWave configuration
 #define HAVE_LIBPTHREAD
 #define FST_WRITER_PARALLEL
+#define LZ4_DISABLE_DEPRECATE_WARNINGS
 
 // Include the GTKWave implementation directly
 #define FST_CONFIG_INCLUDE "fst_config.h"
