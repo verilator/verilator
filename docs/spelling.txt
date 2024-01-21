@@ -902,6 +902,7 @@ recrem
 redeclaring
 regs
 reloop
+replaceShiftOp
 resetall
 respecified
 rodata
@@ -1015,6 +1016,7 @@ unsup
 untyped
 urandom
 uselib
+utimes
 uwire
 uwires
 vc
