@@ -3360,7 +3360,8 @@ senitem<senItemp>:              // IEEE: part of event_expression, non-'OR' ',' 
         ;
 
 senitemVar<senItemp>:
-                idClassSel                              { $$ = new AstSenItem{$1->fileline(), VEdgeType::ET_CHANGED, $1}; }
+                idClassSel
+                        { $$ = new AstSenItem{$1->fileline(), VEdgeType::ET_CHANGED, $1}; }
         ;
 
 senitemEdge<senItemp>:          // IEEE: part of event_expression
@@ -6064,6 +6065,13 @@ property_spec<propSpecp>:               // IEEE: property_spec
                 '@' '(' senitemEdge ')' yDISABLE yIFF '(' expr ')' pexpr
                         { $$ = new AstPropSpec{$1, $3, $8, $10}; }
         |       '@' '(' senitemEdge ')' pexpr           { $$ = new AstPropSpec{$1, $3, nullptr, $5}; }
+        //                              // Disable applied after the event occurs,
+        //                              // so no existing AST can represent this
+        |       yDISABLE yIFF '(' expr ')' '@' '(' senitemEdge ')' pexpr
+                        { $$ = new AstPropSpec{$1, $8, nullptr, new AstLogOr{$1, $4, $10}};
+                          BBUNSUP($<fl>1, "Unsupported: property '(disable iff (...) @ (...)'\n"
+                                  + $<fl>1->warnMore()
+                                  + "... Suggest use property '(@(...) disable iff (...))'"); }
         //UNSUP remove above
         |       yDISABLE yIFF '(' expr ')' pexpr        { $$ = new AstPropSpec{$4->fileline(), nullptr, $4, $6}; }
         |       pexpr                                   { $$ = new AstPropSpec{$1->fileline(), nullptr, nullptr, $1}; }
