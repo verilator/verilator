@@ -86,7 +86,6 @@ my %opt_scenarios;
 my $opt_site;
 my $opt_stop;
 my $opt_trace;
-my $opt_valgrind;
 my $opt_verbose;
 my $Opt_Verilated_Debug;
 our $Opt_Verilation = 1;
@@ -112,7 +111,6 @@ if (! GetOptions(
           "site!"       => \$opt_site,
           "stop!"       => \$opt_stop,
           "trace!"      => \$opt_trace,
-          "valgrind!"   => \$opt_valgrind,
           "verbose!"    => \$opt_verbose,
           "verilation!"         => \$Opt_Verilation,  # Undocumented debugging
           "verilated-debug!"    => \$Opt_Verilated_Debug,
@@ -974,7 +972,6 @@ sub _compile_vlt_flags {
     unshift @verilator_flags, "-CFLAGS -fsanitize=address,undefined -LDFLAGS -fsanitize=address,undefined" if $param{sanitize};
     unshift @verilator_flags, "--make gmake" if $param{verilator_make_gmake};
     unshift @verilator_flags, "--make cmake" if $param{verilator_make_cmake};
-    unshift @verilator_flags, "--valgrind" if $opt_valgrind;
     unshift @verilator_flags, "--exe" if
         $param{make_main} && $param{verilator_make_gmake};
     unshift @verilator_flags, "../" . $self->{main_filename} if
