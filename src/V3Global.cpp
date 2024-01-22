@@ -113,6 +113,30 @@ void V3Global::dumpCheckGlobalTree(const string& stagename, int newNumber, bool 
     if (v3Global.opt.stats()) V3Stats::statsStage(stagename);
 }
 
+void V3Global::idPtrMapDumpJson(std::ostream& os) {
+    std::string sep = "\n  ";
+    os << "\"pointers\": {";
+    for (const auto& itr : m_ptrToId) {
+        os << sep << '"' << itr.second << "\": \"" << cvtToHex(itr.first) << '"';
+        sep = ",\n  ";
+    }
+    os << "\n }";
+}
+
+void V3Global::saveJsonPtrFieldName(const std::string& fieldName) {
+    m_jsonPtrNames.insert(fieldName);
+}
+
+void V3Global::ptrNamesDumpJson(std::ostream& os) {
+    std::string sep = "\n  ";
+    os << "\"ptrFieldNames\": [";
+    for (const auto& itr : m_jsonPtrNames) {
+        os << sep << '"' << itr << '"';
+        sep = ",\n  ";
+    }
+    os << "\n ]";
+}
+
 const std::string& V3Global::ptrToId(const void* p) {
     const auto pair = m_ptrToId.emplace(p, "");
     if (pair.second) {

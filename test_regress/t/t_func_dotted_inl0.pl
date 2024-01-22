@@ -11,17 +11,17 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 top_filename("t/t_func_dotted.v");
-my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
+my $out_filename = "$Self->{obj_dir}/V$Self->{name}.tree.json";
 
 compile(
-    v_flags2 => ['+define+ATTRIBUTES', '+define+NOUSE_INLINE',],
+    v_flags2 => ['--no-json-edit-nums', '+define+ATTRIBUTES', '+define+NOUSE_INLINE',],
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<module loc="e,84,.*?" name="ma" origName="ma" public="true"\>/i);
-    file_grep("$out_filename", qr/\<module loc="e,99,.*?" name="mb" origName="mb" public="true"\>/i);
-    file_grep("$out_filename", qr/\<module loc="e,127,.*?" name="mc" origName="mc" public="true"\>/i);
-    file_grep("$out_filename", qr/\<module loc="e,127,.*?" name="mc__PB1" origName="mc" public="true"\>/i);
+    file_grep("$out_filename", qr/{"type":"MODULE","name":"ma","addr":"[^"]*","loc":"e,84:[^"]*","origName":"ma","level":3,"modPublic":true,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": \[\],/);
+    file_grep("$out_filename", qr/{"type":"MODULE","name":"mb","addr":"[^"]*","loc":"e,99:[^"]*","origName":"mb","level":4,"modPublic":true,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": \[\],/);
+    file_grep("$out_filename", qr/{"type":"MODULE","name":"mc","addr":"[^"]*","loc":"e,127:[^"]*","origName":"mc","level":5,"modPublic":true,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": \[\],/);
+    file_grep("$out_filename", qr/{"type":"MODULE","name":"mc__PB1","addr":"[^"]*","loc":"e,127:[^"]*","origName":"mc","level":5,"modPublic":true,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": \[\],/);
 }
 
 execute(

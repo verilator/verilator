@@ -13,16 +13,16 @@ scenarios(vlt_all => 1);
 top_filename("t/t_trace_public.v");
 golden_filename("t/t_trace_public.out");
 
-my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
+my $out_filename = "$Self->{obj_dir}/V$Self->{name}.tree.json";
 
 compile(
     make_top_shell => 0,
     make_main => 0,
-    v_flags2 => ["--trace --exe $Self->{t_dir}/t_trace_public_sig.cpp $Self->{t_dir}/t_trace_public_sig.vlt"],
+    v_flags2 => ["--trace --exe $Self->{t_dir}/t_trace_public_sig.cpp $Self->{t_dir}/t_trace_public_sig.vlt --no-json-edit-nums"],
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<var loc="f,47,.*?" name="GSR" dtype_id="1" vartype="logic" origName="GSR" public="true" public_flat_rd="true" public_flat_rw="true"\/\>/i);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"GSR","addr":"[^"]*","loc":"f,47:[^"]*","origName":"GSR","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":true,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"VSTATIC","varType":"VAR","sensIfacep":"UNLINKED","childDTypep": \[\],"delayp": \[\],"valuep": \[\],"attrsp": \[\]/);
 }
 
 execute(

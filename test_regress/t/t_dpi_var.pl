@@ -9,19 +9,19 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 scenarios(simulator => 1);
-my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
+my $out_filename = "$Self->{obj_dir}/V$Self->{name}.tree.json";
 
 compile(
     make_top_shell => 0,
     make_main => 0,
-    verilator_flags2 => ["-DATTRIBUTES --exe --no-l2name $Self->{t_dir}/t_dpi_var.cpp"],
+    verilator_flags2 => ["--no-json-edit-nums", "-DATTRIBUTES --exe --no-l2name $Self->{t_dir}/t_dpi_var.cpp"],
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<var loc="e,56,.*?" name="formatted" dtype_id="\d+" dir="input" vartype="string" origName="formatted" sformat="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,77,.*?" name="t.sub.in" dtype_id="\d+" vartype="int" origName="in" public="true" public_flat_rd="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,78,.*?" name="t.sub.fr_a" dtype_id="\d+" vartype="int" origName="fr_a" public="true" public_flat_rd="true" public_flat_rw="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,79,.*?" name="t.sub.fr_b" dtype_id="\d+" vartype="int" origName="fr_b" public="true" public_flat_rd="true" public_flat_rw="true"\/\>/i);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"formatted","addr":"[^"]*","loc":"e,56:[^"]*","origName":"formatted","isSc":false,"isPrimaryIO":false,"direction":"INPUT","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":true,"attrClocker":"UNKNOWN","lifetime":"VAUTOM","varType":"PORT","sensIfacep":"UNLINKED","childDTypep": \[\],"delayp": \[\],"valuep": \[\],"attrsp": \[\]/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"t.sub.in","addr":"[^"]*","loc":"e,77:[^"]*","origName":"in","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":true,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"NONE","varType":"PORT","sensIfacep":"UNLINKED","childDTypep": \[\],"delayp": \[\],"valuep": \[\],"attrsp": \[\]/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"t.sub.fr_b","addr":"[^"]*","loc":"e,79:[^"]*","origName":"fr_b","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":true,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"NONE","varType":"PORT","sensIfacep":"UNLINKED","childDTypep": \[\],"delayp": \[\],"valuep": \[\],"attrsp": \[\]/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"t.sub.in","addr":"[^"]*","loc":"e,77:[^"]*","origName":"in","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":true,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"NONE","varType":"PORT","sensIfacep":"UNLINKED","childDTypep": \[\],"delayp": \[\],"valuep": \[\],"attrsp": \[\]/);
 }
 
 execute(

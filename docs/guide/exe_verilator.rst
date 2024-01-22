@@ -1766,18 +1766,47 @@ Summary:
       iterations. This may be another indication of problems with the
       modeled design that should be addressed.
 
+.. option:: --json-only
+
+   Create JSON output only, do not create any other output.
+
+   The JSON format is intended to be used to leverage Verilator's parser and
+   elaboration to feed to other downstream tools. For details on the format, see
+   the Verilator Internals manual. Be aware that the JSON
+   format is still evolving; there will be some changes in future versions.
+
+   This option disables some more agressive transformations and dumps only final
+   state of AST.
+
+.. option:: --json-only-meta-output <filename>
+
+   Specifies the filename for the metadata output file (`.tree.meta.json`) of --json-only.
+   Using this option automatically sets :vlopt:`--json-only`.
+
+.. option:: --json-only-output <filename>
+
+   Specifies the filename for the main output file (`.tree.json`) of --json-only.
+   Using this option automatically sets :vlopt:`--json-only`.
+
 .. option:: --xml-only
 
    Create XML output only, do not create any other output.
 
    The XML format is intended to be used to leverage Verilator's parser and
-   elaboration to feed to other downstream tools. Be aware that the XML
-   format is still evolving; there will be some changes in future versions.
+   elaboration to feed to other downstream tools.
+
+   .. note::
+
+      This feature is deprecated in favor of :vlopt:`--json-only`.
 
 .. option:: --xml-output <filename>
 
    Specifies the filename for the XML output file. Using this option
    automatically sets :vlopt:`--xml-only`.
+
+   .. note::
+
+      This feature is deprecated in favor of :vlopt:`--json-only`.
 
 .. option:: -y <dir>
 

@@ -88,6 +88,19 @@ void FileLineSingleton::fileNameNumMapDumpXml(std::ostream& os) {
     os << "</files>\n";
 }
 
+void FileLineSingleton::fileNameNumMapDumpJson(std::ostream& os) {
+    std::string sep = "\n  ";
+    os << "\"files\": {";
+    for (const auto& itr : m_namemap) {
+        os << sep << '"' << filenameLetters(itr.second) << '"' << ": {\"filename\":\""
+           << V3OutFormatter::quoteNameControls(itr.first) << '"' << ", \"realpath\":\""
+           << V3OutFormatter::quoteNameControls(V3Os::filenameRealPath(itr.first)) << '"'
+           << ", \"language\":\"" << numberToLang(itr.second).ascii() << "\"}";
+        sep = ",\n  ";
+    }
+    os << "\n }";
+}
+
 FileLineSingleton::msgEnSetIdx_t FileLineSingleton::addMsgEnBitSet(const MsgEnBitSet& bitSet)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
     V3LockGuard lock{m_mutex};

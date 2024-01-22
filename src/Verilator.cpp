@@ -119,6 +119,17 @@ static void reportStatsIfEnabled() {
     }
 }
 
+static void emitXmlOrJson(bool forceJson = false) VL_MT_DISABLED {
+    if (v3Global.opt.xmlOnly()) V3EmitXml::emitxml();
+    if (v3Global.opt.jsonOnly() || forceJson) {
+        const string filename
+            = (v3Global.opt.jsonOnlyOutput().empty()
+                   ? v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".tree.json"
+                   : v3Global.opt.jsonOnlyOutput());
+        v3Global.rootp()->dumpTreeJsonFile(filename);
+    }
+}
+
 static void process() {
     {
         const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
@@ -151,7 +162,7 @@ static void process() {
         if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Link");
         if (v3Global.opt.debugExitUvm23()) {
             V3Error::abortIfErrors();
-            if (v3Global.opt.serializeOnly()) V3EmitXml::emitxml();
+            if (v3Global.opt.serializeOnly()) emitXmlOrJson();
             cout << "--debug-exit-uvm23: Exiting after UVM-supported pass\n";
             std::exit(0);
         }
@@ -180,7 +191,7 @@ static void process() {
         }
         if (v3Global.opt.debugExitUvm()) {
             V3Error::abortIfErrors();
-            if (v3Global.opt.serializeOnly()) V3EmitXml::emitxml();
+            if (v3Global.opt.serializeOnly()) emitXmlOrJson();
             cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
             std::exit(0);
         }
@@ -577,10 +588,10 @@ static void process() {
     {
         const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
         if (v3Global.opt.serializeOnly()
-            // Check XML when debugging to make sure no missing node types
+            // Check JSON when debugging to make sure no missing node types
             || (v3Global.opt.debugCheck() && !v3Global.opt.lintOnly()
                 && !v3Global.opt.dpiHdrOnly())) {
-            V3EmitXml::emitxml();
+            emitXmlOrJson(true);
         }
 
         // Output DPI protected library files
@@ -684,6 +695,13 @@ static void verilate(const string& argString) {
 
     // Final steps
     V3Global::dumpCheckGlobalTree("final", 990, dumpTreeEitherLevel() >= 3);
+    if (v3Global.opt.jsonOnly()) {
+        const string filename
+            = (v3Global.opt.jsonOnlyMetaOutput().empty()
+                   ? v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".tree.meta.json"
+                   : v3Global.opt.jsonOnlyMetaOutput());
+        v3Global.rootp()->dumpJsonMetaFile(filename);
+    }
 
     V3Error::abortIfErrors();
 

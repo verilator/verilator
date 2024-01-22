@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 lint(
-    verilator_flags2 => ["--xml-only", "--timing"],
+    verilator_flags2 => ["--json-only", "--timing"],
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

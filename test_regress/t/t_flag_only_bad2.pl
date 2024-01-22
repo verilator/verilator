@@ -12,7 +12,7 @@ scenarios(vlt => 1);
 top_filename("t/t_flag_main.v");
 
 lint(
-    verilator_flags2 => ["--build -E -Wno-fatal --dpi-hdr-only --lint-only --xml-only"],
+    verilator_flags2 => ["--build -E -Wno-fatal --dpi-hdr-only --lint-only --json-only"],
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

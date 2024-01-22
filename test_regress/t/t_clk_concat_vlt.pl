@@ -11,17 +11,17 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 top_filename("t/t_clk_concat.v");
-my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
+my $out_filename = "$Self->{obj_dir}/V$Self->{name}.tree.json";
 
 compile(
-    verilator_flags2 => ["t/t_clk_concat.vlt"],
+    verilator_flags2 => ["--no-json-edit-nums", "t/t_clk_concat.vlt"],
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<var loc="f,78,.*?" name="clk0" .*dir="input" .*vartype="logic" origName="clk0" clocker="true" public="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="f,79,.*?" name="clk1" .*dir="input" .*vartype="logic" origName="clk1" clocker="true" public="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="f,80,.*?" name="clk2" .*dir="input" .*vartype="logic" origName="clk2" clocker="true" public="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="f,82,.*?" name="data_in" .*dir="input" .*vartype="logic" origName="data_in" clocker="false" public="true"\/\>/i);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"clk0","addr":"[^"]*","loc":"f,78:[^"]*","origName":"clk0","isSc":false,"isPrimaryIO":true,"direction":"INPUT","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":true,"isSigPublic":true,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"clker","lifetime":"NONE","varType":"PORT","sensIfacep":"UNLINKED","childDTypep": \[\],"delayp": \[\],"valuep": \[\],"attrsp": \[\]/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"clk1","addr":"[^"]*","loc":"f,79:[^"]*","origName":"clk1","isSc":false,"isPrimaryIO":true,"direction":"INPUT","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":true,"isSigPublic":true,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"clker","lifetime":"NONE","varType":"PORT","sensIfacep":"UNLINKED","childDTypep": \[\],"delayp": \[\],"valuep": \[\],"attrsp": \[\]/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"clk2","addr":"[^"]*","loc":"f,80:[^"]*","origName":"clk2","isSc":false,"isPrimaryIO":true,"direction":"INPUT","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":true,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"clker","lifetime":"NONE","varType":"PORT","sensIfacep":"UNLINKED","childDTypep": \[\],"delayp": \[\],"valuep": \[\],"attrsp": \[\]/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"data_in","addr":"[^"]*","loc":"f,82:[^"]*","origName":"data_in","isSc":false,"isPrimaryIO":true,"direction":"INPUT","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":true,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"non_clker","lifetime":"NONE","varType":"PORT","sensIfacep":"UNLINKED","childDTypep": \[\],"delayp": \[\],"valuep": \[\],"attrsp": \[\]/);
 }
 
 execute(

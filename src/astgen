@@ -1020,6 +1020,29 @@ def write_ast_impl(filename):
 
             emitBlock("}}\n")
 
+            emitBlock("void Ast{t}::dumpJsonGen(std::ostream& str) const {{\n",
+                      t=node.name)
+            if node.superClass.name != 'Node':
+                emitBlock("    Ast{base}::dumpJson(str);\n",
+                          base=node.superClass.name)
+            for ptr in node.ptrs:
+                emitBlock("    dumpJsonPtr(str, \"{name}\", m_{name});\n",
+                          name=ptr['name'])
+            emitBlock("}}\n")
+
+            emitBlock(
+                "void Ast{t}::dumpTreeJsonOpGen(std::ostream& str, const string& indent) const {{\n",
+                t=node.name)
+            for i in range(1, 5):
+                op = node.getOp(i)
+                if op is None:
+                    continue
+                name, _, _ = op
+                emitBlock(
+                    "    dumpNodeListJson(str, {name}(), \"{name}\", indent);\n",
+                    name=name)
+            emitBlock("}}\n")
+
 
 def write_ast_macros(filename):
     with open_file(filename) as fh:
@@ -1066,6 +1089,8 @@ def write_ast_macros(filename):
             Ast{t}* addNext(Ast{t}* nodep) {{ return static_cast<Ast{t}*>(AstNode::addNext(this, nodep)); }}
             const char* brokenGen() const override;
             void cloneRelinkGen() override;
+            void dumpTreeJsonOpGen(std::ostream& str, const string& indent) const override;
+            void dumpJsonGen(std::ostream& str) const;
             ''',
                       t=node.name)
 

@@ -34,6 +34,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 class AstNetlist;
 class V3HierBlockPlan;
@@ -125,6 +126,9 @@ class V3Global final {
     std::unordered_map<const void*, std::string>
         m_ptrToId;  // The actual 'address' <=> 'short string' bijection
 
+    // Names of fields that were dumped by dumpJsonPtr()
+    std::unordered_set<std::string> m_jsonPtrNames;
+
 public:
     // Options
     V3Options opt;  // All options; let user see them directly
@@ -184,6 +188,9 @@ public:
     bool useParallelBuild() const { return m_useParallelBuild; }
     void useRandomizeMethods(bool flag) { m_useRandomizeMethods = flag; }
     bool useRandomizeMethods() const { return m_useRandomizeMethods; }
+    void saveJsonPtrFieldName(const std::string& fieldName);
+    void ptrNamesDumpJson(std::ostream& os);
+    void idPtrMapDumpJson(std::ostream& os);
     const std::string& ptrToId(const void* p);
 };
 
