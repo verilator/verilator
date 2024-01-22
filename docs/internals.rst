@@ -1707,14 +1707,14 @@ Structure:
 ::
 
   {
-    /* here go attributes that are common to all types of nodes */
+    /* Attributes that are common to all types of nodes */
     "type": "VAR",
     "name": "cyc",
     /* by default adresses and filenames are dumped by short/stable ids rather than by real val */
     "addr": "(H)",
     "loc": "a,25:12,26:15", /* fileid,firstLine:firstCol,lastLine:lastCol */
     "editNum": 602,
-    /* here go fields that are specific to VAR nodes: */
+    /* Fields that are specific to AstVar nodes:  */
     "origName": "cyc",
     "isSc": false,
     "ioDirection": "NONE",
@@ -1734,7 +1734,7 @@ Structure:
     "attrClocker": "UNKNOWN",
     "lifetime": "NONE",
     "varType": "VAR",
-    /* here go lists of child nodes (which use similar structure as their parent): */
+    /* Lists of child nodes (which use similar structure as their parent): */
     "childDTypep": [ /* ... */ ],
     "delayp": [ /* ... */ ],
     "valuep": [ /* ... */ ],
@@ -1743,29 +1743,30 @@ Structure:
 
 .tree.meta.json Output
 ----------------
-.tree.meta.json is meant for storing metadata that is shared by whole tree
 
-Besides de-duplication of data shared between multiple stages, .meta.json enables us to offload
+.tree.meta.json contains metadata that is common across the whole AST tree.
+
+Besides de-duplication of data shared between multiple stages, .meta.json enables offloading
 unstable data (that can vary from machine-to-machine or run-to-run) from main .tree.json.
-This offloading allows us for example to use byte-to-byte comparisons of AST dumps in tests
+This offloading allows, for example, to use byte-to-byte comparisons of AST dumps in tests.
 
 ::
 
   {"files": {
-    /* map id to filename, and other metadata */
+    /* Map id to filename, and other metadata */
     "d": {"filename":"/home/ant/tmp/verilator/include/verilated_std.sv", "realpath":"/home/ant/tmp/verilator/include/verilated_std.sv", "language":"1800-2017"},
     "a": {"filename":"<built-in>", "realpath":"<built-in>", "language":"1800-2017"},
     "b": {"filename":"<command-line>", "realpath":"<command-line>", "language":"1800-2017"},
     "c": {"filename":"input.vc", "realpath":"/home/ant/tmp/verilator/test_regress/input.vc", "language":"1800-2017"},
     "e": {"filename":"t/t_EXAMPLE.v", "realpath":"/home/ant/tmp/verilator/test_regress/t/t_EXAMPLE.v", "language":"1800-2017"}
    },"pointers": {
-    /* map id to real address */
+    /* Map id to real address */
     "(AG)": "0x562997289180",
     "(YF)": "0x5629971c50b0",
     "(WF)": "0x5629971e7ae0",
     /* ... /*
    },"ptrFieldNames": [
-    /* list of fields that are used for storing pointers */
+    /* List of fields that are used for storing pointers */
     "aboveScopep",
     "voidp",
     "addr",
