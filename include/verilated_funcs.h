@@ -1290,7 +1290,8 @@ static inline void _vl_insert_WI(WDataOutP iowp, IData ld, int hbit, int lbit,
             const EData linsmask = (VL_MASK_E((VL_EDATASIZE - 1) - loffset + 1)) << loffset;
             const int nbitsonright = VL_EDATASIZE - loffset;  // bits that end up in lword
             iowp[lword] = (iowp[lword] & ~linsmask) | ((lde << loffset) & linsmask);
-            // Prevent unsafe write where lword was final writable location and hword is out-of-bounds.
+            // Prevent unsafe write where lword was final writable location and hword is
+            // out-of-bounds.
             if (VL_LIKELY(!(hword == rword && roffset == 0))) {
                 iowp[hword]
                     = (iowp[hword] & ~hinsmask) | ((lde >> nbitsonright) & (hinsmask & cleanmask));
