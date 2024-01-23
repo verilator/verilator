@@ -254,6 +254,7 @@ private:
     bool m_main = false;            // main switch: --main
     bool m_outFormatOk = false;     // main switch: --cc, --sc or --sp was specified
     bool m_pedantic = false;        // main switch: --Wpedantic
+    bool m_pinsInoutEnables = false;// main switch: --pins-inout-enables
     bool m_pinsScUint = false;      // main switch: --pins-sc-uint
     bool m_pinsScBigUint = false;   // main switch: --pins-sc-biguint
     bool m_pinsUint8 = false;       // main switch: --pins-uint8
@@ -493,6 +494,7 @@ public:
     bool outFormatOk() const { return m_outFormatOk; }
     bool keepTempFiles() const { return (V3Error::debugDefault() != 0); }
     bool pedantic() const { return m_pedantic; }
+    bool pinsInoutEnables() const { return m_pinsInoutEnables; }
     bool pinsScUint() const { return m_pinsScUint; }
     bool pinsScBigUint() const { return m_pinsScBigUint; }
     bool pinsUint8() const { return m_pinsUint8; }
