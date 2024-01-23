@@ -11,7 +11,6 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt_all => 1);
 
 top_filename("t/t_trace_public.v");
-golden_filename("t/t_trace_public.out");
 
 my $out_filename = "$Self->{obj_dir}/V$Self->{name}.tree.json";
 
@@ -22,13 +21,15 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/{"type":"VAR","name":"GSR","addr":"[^"]*","loc":"f,47:[^"]*","origName":"GSR","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":true,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"VSTATIC","varType":"VAR","sensIfacep":"UNLINKED","childDTypep": \[\],"delayp": \[\],"valuep": \[\],"attrsp": \[\]/);
+    golden_filename("t/t_trace_public_sig_vlt.out");
+    files_identical($out_filename, $Self->{golden_filename});
 }
 
 execute(
     check_finished => 1,
     );
 
+golden_filename("t/t_trace_public.out");
 vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
 
 # vcd_identical doesn't detect "$var a.b;" vs "$scope module a; $var b;"

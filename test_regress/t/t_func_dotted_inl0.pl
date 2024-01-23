@@ -18,10 +18,7 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/{"type":"MODULE","name":"ma","addr":"[^"]*","loc":"e,84:[^"]*","origName":"ma","level":3,"modPublic":true,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": \[\],/);
-    file_grep("$out_filename", qr/{"type":"MODULE","name":"mb","addr":"[^"]*","loc":"e,99:[^"]*","origName":"mb","level":4,"modPublic":true,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": \[\],/);
-    file_grep("$out_filename", qr/{"type":"MODULE","name":"mc","addr":"[^"]*","loc":"e,127:[^"]*","origName":"mc","level":5,"modPublic":true,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": \[\],/);
-    file_grep("$out_filename", qr/{"type":"MODULE","name":"mc__PB1","addr":"[^"]*","loc":"e,127:[^"]*","origName":"mc","level":5,"modPublic":true,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": \[\],/);
+    files_identical($out_filename, $Self->{golden_filename});
 }
 
 execute(

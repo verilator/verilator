@@ -18,8 +18,7 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/{"type":"CELL","name":"t.ma0.mb0","addr":"[^"]*","loc":"f,87:[^"]*","origName":"mb0","recursive":false,"modp":"[^"]*","pinsp": \[\],"paramsp": \[\],"rangep": \[\],"intfRefsp": \[\]/);
-    file_grep("$out_filename", qr/{"type":"MODULE","name":"mb","addr":"[^"]*","loc":"f,99:[^"]*","origName":"mb","level":4,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": \[\],/);
+    files_identical($out_filename, $Self->{golden_filename});
 }
 
 execute(

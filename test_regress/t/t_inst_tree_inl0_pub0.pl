@@ -18,12 +18,7 @@ compile(
 );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/{"type":"MODULE","name":"l1","addr":"[^"]*","loc":"f,56:[^"]*","origName":"l1","level":3,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": \[\],/);
-    file_grep("$out_filename", qr/{"type":"MODULE","name":"l2","addr":"[^"]*","loc":"f,62:[^"]*","origName":"l2","level":4,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": \[\],/);
-    file_grep("$out_filename", qr/{"type":"MODULE","name":"l3","addr":"[^"]*","loc":"f,69:[^"]*","origName":"l3","level":5,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": \[\],/);
-    file_grep("$out_filename", qr/{"type":"MODULE","name":"l4","addr":"[^"]*","loc":"f,76:[^"]*","origName":"l4","level":6,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": \[\],/);
-    file_grep("$out_filename", qr/{"type":"MODULE","name":"l5__P1","addr":"[^"]*","loc":"f,83:[^"]*","origName":"l5","level":7,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": \[\],/);
-    file_grep("$out_filename", qr/{"type":"MODULE","name":"l5__P2","addr":"[^"]*","loc":"f,83:[^"]*","origName":"l5","level":7,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": \[\],/);
+    files_identical($out_filename, $Self->{golden_filename});
 }
 
 execute(
