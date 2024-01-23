@@ -1,3 +1,10 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2024 by Paul Wright.
+// SPDX-License-Identifier: CC0-1.0
+
+// A submodule to ensure that __en and __out propagate upwards
 module
    t_sub_io
      (
@@ -13,6 +20,8 @@ module
 
 endmodule
 
+// The top module
+// __en and __out should be added for the inout ports
 module
    t_tri_top_en_out
      (
@@ -29,8 +38,8 @@ module
    timeunit 1ns;
    timeprecision 1ps;
 
-   bit 	    rand_bit;
-   
+   bit      rand_bit;
+
    assign single_bit_io       = 1'bz;
    assign bidir_single_bit_io = drv_en ? rand_bit : 1'bz;
    assign bus_64_io           = {64{1'bz}};
@@ -40,57 +49,57 @@ module
 
    initial
      begin
-	rand_bit = (($urandom_range(1,0) & 'd1) == 'd1);
-	#(1ns) $display("1ns");
-	rand_bit = ~rand_bit;
-	#(1ns) $display("2ns");
-	rand_bit = ~rand_bit;
-	#(1ns);
+        rand_bit = (($urandom_range(1,0) & 'd1) == 'd1);
+        #(1ns) $display("1ns");
+        rand_bit = ~rand_bit;
+        #(1ns) $display("2ns");
+        rand_bit = ~rand_bit;
+        #(1ns);
         $write("*-* All Finished *-*\n");
-       	$finish(1);
+        $finish(1);
      end
 
    final
      begin
-	$display("All done at %t", $time);
+        $display("All done at %t", $time);
      end
-   
+
    always @(drv_en
-	    or 
-	    bidir_single_bit_io
-	    or 
-	    bidir_bus_64_io
-	    or 
-	    bidir_bus_128_io)
+            or
+            bidir_single_bit_io
+            or
+            bidir_bus_64_io
+            or
+            bidir_bus_128_io)
      begin
-	$display("rand_bit = %b", rand_bit);
-	if (drv_en)
-	  begin
-	     $display("bidir_single_bit_io = %b", bidir_single_bit_io);
-	     $display("bidir_bus_64_io = %b", bidir_bus_64_io);
-	     $display("bidir_bus_128_io = %b", bidir_bus_128_io);
+        $display("rand_bit = %b", rand_bit);
+        if (drv_en)
+          begin
+             $display("bidir_single_bit_io = %b", bidir_single_bit_io);
+             $display("bidir_bus_64_io = %b", bidir_bus_64_io);
+             $display("bidir_bus_128_io = %b", bidir_bus_128_io);
 
-	     if (bidir_single_bit_io != rand_bit)
-	       begin
-		  $display("%%Error: bidir_single_bit_io is wrong");
-	       end
+             if (bidir_single_bit_io != rand_bit)
+               begin
+                  $display("%%Error: bidir_single_bit_io is wrong");
+               end
 
-	     if (bidir_bus_64_io != {64{rand_bit}})
-	       begin
-		  $display("%%Error: bidir_bus_64_io is wrong");
-		  $display("Should be bidir_bus_64_io = %b", {64{rand_bit}});
-	       end
+             if (bidir_bus_64_io != {64{rand_bit}})
+               begin
+                  $display("%%Error: bidir_bus_64_io is wrong");
+                  $display("Should be bidir_bus_64_io = %b", {64{rand_bit}});
+               end
 
-	     if (bidir_bus_128_io != {128{rand_bit}})
-	       begin
-		  $display("%%Error: bidir_bus_128_io is wrong");
-		  $display("Should be bidir_bus_128 = %b", {128{rand_bit}});
-	       end
-	  end
+             if (bidir_bus_128_io != {128{rand_bit}})
+               begin
+                  $display("%%Error: bidir_bus_128_io is wrong");
+                  $display("Should be bidir_bus_128 = %b", {128{rand_bit}});
+               end
+          end
      end
-  
-  t_sub_io 
-    t_sub_io 
+
+  t_sub_io
+    t_sub_io
       (
        .my_io  (sub_io),
        .drv_en (drv_en),
