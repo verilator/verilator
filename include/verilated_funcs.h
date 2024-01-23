@@ -1266,6 +1266,7 @@ static inline void _vl_insert_QQ(QData& lhsr, QData ld, int hbit, int lbit, int 
 }
 static inline void _vl_insert_WI(WDataOutP iowp, IData ld, int hbit, int lbit,
                                  int rbits = 0) VL_MT_SAFE {
+    // Insert value ld into iowp at bit slice [hbit:lbit]. iowp is rbits wide.
     const int hoffset = VL_BITBIT_E(hbit);
     const int loffset = VL_BITBIT_E(lbit);
     const int roffset = VL_BITBIT_E(rbits);
@@ -1276,7 +1277,7 @@ static inline void _vl_insert_WI(WDataOutP iowp, IData ld, int hbit, int lbit,
 
     if (hoffset == VL_SIZEBITS_E && loffset == 0) {
         // Fast and common case, word based insertion
-        iowp[VL_BITWORD_E(lbit)] = ld & cleanmask;
+        iowp[lword] = ld & cleanmask;
     } else {
         const EData lde = static_cast<EData>(ld);
         if (hword == lword) {  // know < EData bits because above checks it
@@ -1289,8 +1290,11 @@ static inline void _vl_insert_WI(WDataOutP iowp, IData ld, int hbit, int lbit,
             const EData linsmask = (VL_MASK_E((VL_EDATASIZE - 1) - loffset + 1)) << loffset;
             const int nbitsonright = VL_EDATASIZE - loffset;  // bits that end up in lword
             iowp[lword] = (iowp[lword] & ~linsmask) | ((lde << loffset) & linsmask);
-            iowp[hword]
-                = (iowp[hword] & ~hinsmask) | ((lde >> nbitsonright) & (hinsmask & cleanmask));
+            // Prevent unsafe write where lword was final writable location and hword is out-of-bounds.
+            if (!(hword == rword && roffset == 0)) {
+                iowp[hword]
+                    = (iowp[hword] & ~hinsmask) | ((lde >> nbitsonright) & (hinsmask & cleanmask));
+            }
         }
     }
 }
