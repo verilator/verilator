@@ -10,13 +10,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-top_filename("t/t_cover_else_points.sv");
-golden_filename("t/t_cover_else_points.out");
-
 compile(
     verilator_flags2 => [ "--binary   --coverage  --timing -Wall" ],
     );
-
 
 execute(
     all_run_flags => [" +verilator+coverage+file+$Self->{obj_dir}/coverage.dat"],
@@ -34,7 +30,7 @@ run(cmd => ["../bin/verilator_coverage",
     verilator_run => 1,
     );
 
-files_identical("$Self->{obj_dir}/annotated/t_cover_else_points.sv", $Self->{golden_filename});
+files_identical("$Self->{obj_dir}/annotated/t_cover_else_points.v", $Self->{golden_filename});
 
 ok(1);
 1;
