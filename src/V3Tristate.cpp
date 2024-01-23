@@ -486,8 +486,15 @@ class TristateVisitor final : public TristateBaseVisitor {
     AstVar* getCreateEnVarp(AstVar* invarp) {
         // Return the master __en for the specified input variable
         if (!invarp->user1p()) {
-            AstVar* const newp = new AstVar{invarp->fileline(), VVarType::MODULETEMP,
+            AstVar* const newp = new AstVar{invarp->fileline(),
+                                            v3Global.opt.pinsInoutEnables() ?
+                                             VVarType::PORT : VVarType::MODULETEMP,
                                             invarp->name() + "__en", invarp};
+            if (v3Global.opt.pinsInoutEnables()) {
+                newp->primaryIO(true);
+                newp->direction(VDirection::OUTPUT);
+                UINFO(9, "       primaryIO(true) " << newp << endl);
+            }
             UINFO(9, "       newenv " << newp << endl);
             modAddStmtp(invarp, newp);
             invarp->user1p(newp);  // find envar given invarp
@@ -538,8 +545,14 @@ class TristateVisitor final : public TristateBaseVisitor {
     AstVar* getCreateOutVarp(AstVar* invarp) {
         // Return the master __out for the specified input variable
         if (!m_varAux(invarp).outVarp) {
-            AstVar* const newp = new AstVar{invarp->fileline(), VVarType::MODULETEMP,
+            AstVar* const newp = new AstVar{invarp->fileline(),
+                                            v3Global.opt.pinsInoutEnables() ?
+                                             VVarType::PORT : VVarType::MODULETEMP,
                                             invarp->name() + "__out", invarp};
+            if (v3Global.opt.pinsInoutEnables()) {
+                newp->primaryIO(true);
+                UINFO(9, "       primaryIO(true) " << newp << endl);
+            }
             UINFO(9, "       newout " << newp << endl);
             modAddStmtp(invarp, newp);
             m_varAux(invarp).outVarp = newp;  // find outvar given invarp
@@ -718,7 +731,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         AstVar* envarp = nullptr;
         AstVar* outvarp = nullptr;  // __out
         AstVar* lhsp = invarp;  // Variable to assign drive-value to (<in> or __out)
-        if (!nodep->isTop() && invarp->isIO()) {
+        if (((!nodep->isTop()) || v3Global.opt.pinsInoutEnables()) && invarp->isIO()) {
             // This var becomes an input
             invarp->varType2In();  // convert existing port to type input
             // Create an output port (__out)
@@ -1584,6 +1597,11 @@ class TristateVisitor final : public TristateBaseVisitor {
                                      outModVarp->name(),  // should be {var}"__out"
                                      outexprp};
                 outpinp->modVarp(outModVarp);
+                // Optionally preserve the added pin as a primaryIO
+                if (v3Global.opt.pinsInoutEnables()) {
+                    outModVarp->primaryIO(true);
+                    UINFO(9, "       primaryIO(true) " << outpinp << endl);
+                }
                 UINFO(9, "       newpin " << outpinp << endl);
                 outpinp->user2(U2_BOTH);  // don't iterate the pin later
                 nodep->addNextHere(outpinp);
