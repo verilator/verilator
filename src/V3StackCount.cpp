@@ -58,7 +58,7 @@ class StackCountVisitor final : public VNVisitorConst {
 
 public:
     // CONSTRUCTORS
-    StackCountVisitor(AstNode* nodep) { iterateConstNull(nodep); }
+    explicit StackCountVisitor(AstNode* nodep) { iterateConstNull(nodep); }
     ~StackCountVisitor() override = default;
 
     // METHODS

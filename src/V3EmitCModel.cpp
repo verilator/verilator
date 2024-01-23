@@ -548,7 +548,7 @@ class EmitCModel final : public EmitCFunc {
              + +"::trace()' shall not be called after '" + v3Global.opt.traceClassBase()
              + "C::open()'.\");\n");
         puts(/**/ "}\n");
-        puts(/**/ "if (false && levels && options) {}  // Prevent unused\n");
+        puts(/**/ "(void)levels; (void)options; // Prevent unused variable warning\n");
         puts(/**/ "tfp->spTrace()->addModel(this);\n");
         puts(/**/ "tfp->spTrace()->addInitCb(&" + protect("trace_init") + ", &(vlSymsp->TOP));\n");
         puts(/**/ topModNameProtected + "__" + protect("trace_register")

@@ -2840,8 +2840,9 @@ public:
     ASTGEN_MEMBERS_AstDumpCtl;
     string verilogKwd() const override { return ctlType().ascii(); }
     bool isGateOptimizable() const override { return false; }
-    bool isPredictOptimizable() const override { return false; }
     bool isOutputter() override { return true; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() override { return false; }
     virtual bool cleanOut() const { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
     VDumpCtlType ctlType() const { return m_ctlType; }

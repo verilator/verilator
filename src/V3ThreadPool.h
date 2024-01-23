@@ -38,7 +38,7 @@
 // Callable, type-erased wrapper for std::packaged_task<Signature> with any Signature.
 class VAnyPackagedTask final {
     // TYPES
-    struct PTWrapperBase {
+    struct PTWrapperBase VL_NOT_FINAL {
         virtual ~PTWrapperBase() {}
         virtual void operator()() = 0;
     };

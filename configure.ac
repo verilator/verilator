@@ -424,7 +424,6 @@ m4_foreach([cflag],[
         [-Wno-c++11-narrowing],
         [-Wno-constant-logical-operand],
         [-Wno-non-pod-varargs],
-        [-Wno-overloaded-virtual],
         [-Wno-parentheses-equality],
         [-Wno-shadow],
         [-Wno-sign-compare],

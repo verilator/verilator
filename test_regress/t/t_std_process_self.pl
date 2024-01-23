@@ -12,12 +12,10 @@ scenarios(simulator => 1);
 
 lint(
     verilator_flags2 => ["--exe --main --timing"],
-    make_main => 0,
     );
 
 lint(
     verilator_flags2 => ["--exe --main --timing --DUSE_STD_PREFIX"],
-    make_main => 0,
     );
 
 ok(1);

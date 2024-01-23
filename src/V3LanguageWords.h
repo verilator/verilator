@@ -28,7 +28,7 @@ class V3LanguageWords final {
     // List of common reserved keywords
 private:
     using KeywordMap = std::map<const string, std::string>;
-    struct Singleton {
+    struct Singleton final {
         KeywordMap s_kwdMap;  // List of keywords, and what language applies
         Singleton() { init(); }
         void addKwd(const string& kwd, const string& why) { s_kwdMap.emplace(kwd, why); }

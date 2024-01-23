@@ -14,9 +14,6 @@ top_filename("t/t_cxx_equal_to.v");
 
 compile(
     verilator_flags2 => ['--binary --timing --trace'],
-    verilator_make_cmake => 0,
-    verilator_make_gmake => 0,
-    make_main => 0,
     );
 
 execute(

@@ -12,7 +12,7 @@ scenarios(simulator => 1);
 
 compile(
     expect_filename => $Self->{golden_filename},
-    verilator_flags2 => ['--timing'],
+    verilator_flags2 => ['--binary --timing'],
     fails => $Self->{vlt_all},
     );
 

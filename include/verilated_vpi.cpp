@@ -507,9 +507,9 @@ public:
                 delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
                 return nullptr;
             }
-            const VerilatedScope::Type type = (*m_it)->type();
+            const VerilatedScope::Type itype = (*m_it)->type();
             const VerilatedScope* const modp = *m_it++;
-            if (type == VerilatedScope::SCOPE_MODULE) {
+            if (itype == VerilatedScope::SCOPE_MODULE) {
                 return (new VerilatedVpioModule{modp})->castVpiHandle();
             }
         }
@@ -523,9 +523,9 @@ class VerilatedVpioPackage final : public VerilatedVpioScope {
 public:
     explicit VerilatedVpioPackage(const VerilatedScope* modulep)
         : VerilatedVpioScope{modulep} {
-        const char* fullname = m_scopep->name();
-        if (std::strncmp(fullname, "TOP.", 4) == 0) fullname += 4;
-        m_fullname = std::string{fullname} + "::";
+        const char* sfullname = m_scopep->name();
+        if (std::strncmp(sfullname, "TOP.", 4) == 0) sfullname += 4;
+        m_fullname = std::string{sfullname} + "::";
         if (m_fullname == "\\$unit ::") m_fullname = "$unit::";
         m_name = std::string(m_scopep->identifier());
         if (m_name == "\\$unit ") m_name = "$unit";
@@ -558,12 +558,12 @@ public:
                 delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
                 return nullptr;
             }
-            const VerilatedScope::Type type = (*m_it)->type();
+            const VerilatedScope::Type itype = (*m_it)->type();
             const VerilatedScope* const modp = *m_it++;
-            if (type == VerilatedScope::SCOPE_MODULE) {
+            if (itype == VerilatedScope::SCOPE_MODULE) {
                 return (new VerilatedVpioModule{modp})->castVpiHandle();
             }
-            if (type == VerilatedScope::SCOPE_PACKAGE) {
+            if (itype == VerilatedScope::SCOPE_PACKAGE) {
                 return (new VerilatedVpioPackage{modp})->castVpiHandle();
             }
         }
@@ -604,7 +604,7 @@ public:
     void invalidate() { m_id = 0; }
 };
 
-struct VerilatedVpiTimedCbsCmp {
+struct VerilatedVpiTimedCbsCmp final {
     // Ordering sets keyed by time, then callback unique id
     bool operator()(const std::pair<QData, uint64_t>& a,
                     const std::pair<QData, uint64_t>& b) const {

@@ -533,7 +533,7 @@ class TraceVisitor final : public VNVisitor {
                     addInitStr("const uint32_t base VL_ATTR_UNUSED = "
                                "vlSymsp->__Vm_baseCode + "
                                + cvtToStr(baseCode) + ";\n");
-                    addInitStr("if (false && bufp) {}  // Prevent unused\n");
+                    addInitStr("(void)bufp;  // Prevent unused variable warning\n");
                 } else {
                     addInitStr("uint32_t* const oldp VL_ATTR_UNUSED = "
                                "bufp->oldp(vlSymsp->__Vm_baseCode + "
@@ -918,5 +918,5 @@ public:
 void V3Trace::traceAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { TraceVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("trace", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("trace", 0, dumpTreeEitherLevel() >= 3);
 }

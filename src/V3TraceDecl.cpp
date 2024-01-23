@@ -259,10 +259,11 @@ class TraceDeclVisitor final : public VNVisitor {
             const std::string name = path.substr(pos == string::npos ? 0 : pos + 1);
 
             // Compute the type of the scope being fixed up
-            AstNodeModule* const modp = scopep->aboveCellp()->modp();
-            const VTracePrefixType scopeType = VN_IS(modp, Iface)
-                                                   ? VTracePrefixType::SCOPE_INTERFACE
-                                                   : VTracePrefixType::SCOPE_MODULE;
+            const AstCell* const cellp = scopep->aboveCellp();
+            const VTracePrefixType scopeType
+                = cellp ? (VN_IS((cellp->modp()), Iface) ? VTracePrefixType::SCOPE_INTERFACE
+                                                         : VTracePrefixType::SCOPE_MODULE)
+                        : VTracePrefixType::SCOPE_MODULE;
 
             // Push the scope prefix
             AstNodeStmt* const pushp = new AstTracePushPrefix{flp, name, scopeType};
@@ -390,9 +391,8 @@ class TraceDeclVisitor final : public VNVisitor {
                 } else {
                     // This is a subscope: insert a placeholder to be fixed up later
                     AstCell* const cellp = entry.cellp();
-                    FileLine* const flp = cellp->fileline();
-                    AstNodeStmt* const stmtp
-                        = new AstComment{flp, "Cell init for: " + cellp->prettyName()};
+                    AstNodeStmt* const stmtp = new AstComment{
+                        cellp->fileline(), "Cell init for: " + cellp->prettyName()};
                     addToSubFunc(stmtp);
                     m_cellInitPlaceholders.emplace_back(nodep, cellp, stmtp);
                 }
@@ -691,5 +691,5 @@ public:
 void V3TraceDecl::traceDeclAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { TraceDeclVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("tracedecl", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("tracedecl", 0, dumpTreeEitherLevel() >= 3);
 }

@@ -102,6 +102,8 @@ protected:
         // Phase callback is automatically unregistered in ~sc_object(). Only the trace file is
         // needed to be removed here
         if (m_traceFileAdded) simcontext()->remove_trace_file(this);
+#else
+        (void)m_traceFileAdded;
 #endif
 #ifdef _VL_HAVE_SYSTEMC_STAGE_CALLBACK
         sc_unregister_stage_callback(*this, SC_PRE_TIMESTEP | SC_POST_UPDATE);
@@ -184,6 +186,7 @@ private:
     // SystemC 2.1.v1
 
     void write_comment(const std::string&) override {}
+    void trace(sc_core::sc_trace_file*) const override {}
     void trace(const unsigned int&, const std::string&, const char**) override {}
 
 #define DECL_TRACE_METHOD_A(tp) \

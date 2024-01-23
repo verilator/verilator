@@ -42,7 +42,7 @@
 // Types
 
 // Class to sort maps keyed by const char*'s
-struct VerilatedCStrCmp {
+struct VerilatedCStrCmp final {
     bool operator()(const char* a, const char* b) const { return std::strcmp(a, b) < 0; }
 };
 

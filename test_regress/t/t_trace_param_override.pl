@@ -12,7 +12,6 @@ scenarios(simulator => 1);
 
 compile(
     verilator_flags2 => ["--exe --main --trace -GPOVERRODE=31"],
-    make_main => 0,
     );
 
 execute(

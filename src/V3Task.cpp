@@ -284,7 +284,7 @@ public:
 //######################################################################
 // DPI related utility functions
 
-struct TaskDpiUtils {
+struct TaskDpiUtils final {
     static std::vector<std::pair<AstUnpackArrayDType*, int>>
     unpackDimsAndStrides(AstNodeDType* dtypep) {
         std::vector<std::pair<AstUnpackArrayDType*, int>> dimStrides;
@@ -1981,5 +1981,5 @@ void V3Task::taskAll(AstNetlist* nodep) {
         TaskStateVisitor visitors{nodep};
         const TaskVisitor visitor{nodep, &visitors};
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("task", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("task", 0, dumpTreeEitherLevel() >= 3);
 }

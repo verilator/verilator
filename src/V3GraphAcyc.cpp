@@ -80,7 +80,7 @@ public:
 
 //--------------------------------------------------------------------
 
-struct GraphAcycEdgeCmp {
+struct GraphAcycEdgeCmp final {
     bool operator()(const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
         if (lhsp->weight() > rhsp->weight()) return true;  // LHS goes first
         if (lhsp->weight() < rhsp->weight()) return false;  // RHS goes first

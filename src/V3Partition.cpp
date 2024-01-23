@@ -154,7 +154,7 @@ static void partCheckCachedScoreVsActual(uint32_t cached, uint32_t actual) {
 //=============================================================================
 // We keep MTaskEdge graph edges in a PairingHeap, sorted by score and id
 
-struct EdgeKey {
+struct EdgeKey final {
     // Node: Structure layout chosen to minimize padding in PairingHeao<*>::Node
     uint64_t m_id;  // Unique ID part of edge score
     uint32_t m_score;  // Score part of ID
@@ -183,7 +183,7 @@ public:
     // TYPES
     using VxList = std::list<MTaskMoveVertex*>;
 
-    struct CmpLogicMTask {
+    struct CmpLogicMTask final {
         bool operator()(const LogicMTask* ap, const LogicMTask* bp) const {
             return ap->id() < bp->id();
         }
@@ -404,7 +404,7 @@ struct MTaskIdLessThan final {
     }
 };
 
-struct MergeCandidateKey {
+struct MergeCandidateKey final {
     // Note: Structure layout chosen to minimize padding in PairingHeao<*>::Node
     uint64_t m_id;  // Unique ID part of edge score
     uint32_t m_score;  // Score part of ID
@@ -895,7 +895,7 @@ class PartPropagateCp final {
     // TYPES
 
     // We keep pending vertices in a heap during critical path propagation
-    struct PendingKey {
+    struct PendingKey final {
         LogicMTask* m_mtaskp;  // The vertex in the heap
         uint32_t m_score;  // The score of this entry
         void increase(uint32_t score) {
@@ -1236,7 +1236,7 @@ static void partRedirectEdgesFrom(V3Graph* graphp, LogicMTask* recipientp, Logic
 class PartContraction final {
     // TYPES
     // New CP information for mtaskp reflecting an upcoming merge
-    struct NewCp {
+    struct NewCp final {
         uint32_t cp;
         uint32_t propagateCp;
         bool propagate;
@@ -1673,7 +1673,7 @@ private:
         // and swap these sorting records very efficiently. With this the standard library sorting
         // functions are efficient enough and using more optimized methods (e.g.: sorting networks)
         // has no measurable benefit.
-        struct alignas(16) SortingRecord {
+        struct alignas(16) SortingRecord final {
             uint64_t m_id;
             uint32_t m_cp;
             uint8_t m_idx;
@@ -2170,7 +2170,7 @@ public:
     static constexpr uint32_t UNASSIGNED = 0xffffffff;
 
     // TYPES
-    struct MTaskState {
+    struct MTaskState final {
         uint32_t completionTime = 0;  // Estimated time this mtask will complete
         uint32_t threadId = UNASSIGNED;  // Thread id this MTask is assigned to
         const ExecMTask* nextp = nullptr;  // Next MTask on same thread after this
@@ -2320,7 +2320,7 @@ void ThreadSchedule::dumpDotFile(const V3Graph& graph, const string& filename) c
 // "padding" avoids tight "layovers" at cross-thread dependencies.
 class PartPackMTasks final {
     // TYPES
-    struct MTaskCmp {
+    struct MTaskCmp final {
         bool operator()(const ExecMTask* ap, const ExecMTask* bp) const {
             return ap->id() < bp->id();
         }

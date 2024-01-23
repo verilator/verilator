@@ -13,7 +13,7 @@ scenarios(vlt => 1);
 top_filename("t/t_fork.v");
 
 compile(
-    verilator_flags2 => ["--timing"],
+    verilator_flags2 => ["--binary --timing"],
     );
 
 execute(

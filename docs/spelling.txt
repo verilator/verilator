@@ -902,6 +902,7 @@ recrem
 redeclaring
 regs
 reloop
+replaceShiftOp
 resetall
 respecified
 rodata
@@ -940,6 +941,7 @@ stdin
 stdout
 stime
 stmts
+str
 strcasecmp
 stringification
 stringified
@@ -1014,6 +1016,7 @@ unsup
 untyped
 urandom
 uselib
+utimes
 uwire
 uwires
 vc
@@ -1047,6 +1050,7 @@ vpiSize
 vpiSuppressVal
 vpiTimeUnit
 vpiType
+vpiUndefined
 vpm
 vpp
 warmup

@@ -4411,10 +4411,8 @@ class WidthVisitor final : public VNVisitor {
 
     static bool usesDynamicScheduler(AstNode* nodep) {
         UASSERT_OBJ(nodep->dtypep()->isEvent(), nodep, "Node does not have an event dtype");
-
-        AstVarRef* vrefp;
         while (true) {
-            vrefp = VN_CAST(nodep, VarRef);
+            AstVarRef* const vrefp = VN_CAST(nodep, VarRef);
             if (vrefp) return usesDynamicScheduler(vrefp);
             if (VN_IS(nodep, MemberSel)) {
                 return true;
@@ -7620,7 +7618,7 @@ void V3Width::width(AstNetlist* nodep) {
         WidthRemoveVisitor rvisitor;
         (void)rvisitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("width", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("width", 0, dumpTreeEitherLevel() >= 3);
 }
 //! Single node parameter propagation
 //! Smaller step... Only do a single node for parameter propagation

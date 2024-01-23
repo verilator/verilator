@@ -14,7 +14,7 @@ top_filename("t/t_altera_lpm.v");
 (my $module = $Self->{name}) =~ s/.*t_altera_//;
 
 compile(
-    verilator_flags2 => ["--top-module ${module}", "--no-timing"]
+    verilator_flags2 => ["--top-module ${module}", "--binary --no-timing"]
     );
 
 ok(1);

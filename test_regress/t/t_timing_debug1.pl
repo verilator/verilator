@@ -14,7 +14,6 @@ top_filename("t/t_timing_sched.v");
 
 compile(
     verilator_flags2 => ["--exe --main --timing"],
-    make_main => 0,
     );
 
 execute(

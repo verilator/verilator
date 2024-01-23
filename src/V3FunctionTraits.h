@@ -42,7 +42,7 @@ struct FunctionTraits<ReturnType (ClassType::*)(Args...) const> VL_NOT_FINAL {
 
     // Type of arguments
     template <std::size_t I>
-    struct arg {
+    struct arg final {
         using type = typename std::tuple_element<I, std::tuple<Args...>>::type;
     };
 };

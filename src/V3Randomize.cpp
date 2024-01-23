@@ -435,7 +435,7 @@ void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
         const RandomizeMarkVisitor markVisitor{nodep};
         RandomizeVisitor{nodep};
     }
-    V3Global::dumpCheckGlobalTree("randomize", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("randomize", 0, dumpTreeEitherLevel() >= 3);
 }
 
 AstFunc* V3Randomize::newRandomizeFunc(AstClass* nodep) {

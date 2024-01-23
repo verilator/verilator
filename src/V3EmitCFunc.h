@@ -124,7 +124,7 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     bool m_emitConstInit = false;  // Emitting constant initializer
 
     // State associated with processing $display style string formatting
-    struct EmitDispState {
+    struct EmitDispState final {
         string m_format;  // "%s" and text from user
         std::vector<char> m_argsChar;  // Format of each argument to be printed
         std::vector<AstNode*> m_argsp;  // Each argument to be printed
@@ -286,7 +286,7 @@ public:
             m_lazyDecls.declared(nodep);  // Defined here, so no longer needs declaration
             if (!nodep->isStatic()) {  // Standard prologue
                 m_useSelfForThis = true;
-                puts("if (false && vlSelf) {}  // Prevent unused\n");
+                puts("(void)vlSelf;  // Prevent unused variable warning\n");
                 if (!VN_IS(m_modp, Class)) puts(symClassAssign());
             }
         }

@@ -1237,5 +1237,5 @@ void V3Timing::timingAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     TimingSuspendableVisitor susVisitor{nodep};
     if (v3Global.usesTiming()) TimingControlVisitor{nodep};
-    V3Global::dumpCheckGlobalTree("timing", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("timing", 0, dumpTreeEitherLevel() >= 3);
 }

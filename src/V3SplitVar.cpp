@@ -122,7 +122,7 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-struct SplitVarImpl {
+struct SplitVarImpl VL_NOT_FINAL {
     // NODE STATE
     //  AstNodeModule::user1()  -> Block number counter for generating unique names
     const VNUser1InUse m_user1InUse;  // Only used in SplitUnpackedVarVisitor
@@ -239,7 +239,7 @@ static void warnNoSplit(const AstVar* varp, const AstNode* wherep, const char* r
 // AstSliceSel  -> Create a temporary variable and refer the variable
 
 // Compare AstNode* to get deterministic ordering when showing messages.
-struct AstNodeComparator {
+struct AstNodeComparator final {
     bool operator()(const AstNode* ap, const AstNode* bp) const {
         const int lineComp = ap->fileline()->operatorCompare(*bp->fileline());
         if (lineComp != 0) return lineComp < 0;
@@ -346,7 +346,7 @@ public:
 };
 
 // Found nodes for SplitPackedVarVisitor
-struct RefsInModule {
+struct RefsInModule final {
     std::set<AstVar*, AstNodeComparator> m_vars;
     std::set<AstVarRef*, AstNodeComparator> m_refs;
     std::set<AstSel*, AstNodeComparator> m_sels;
@@ -356,7 +356,7 @@ public:
     void add(AstVarRef* nodep) { m_refs.insert(nodep); }
     void add(AstSel* nodep) { m_sels.insert(nodep); }
     void remove(AstNode* nodep) {
-        struct Visitor : public VNVisitor {
+        struct Visitor final : public VNVisitor {
             RefsInModule& m_parent;
             void visit(AstNode* nodep) override { iterateChildren(nodep); }
             void visit(AstVar* nodep) override { m_parent.m_vars.erase(nodep); }
@@ -812,7 +812,7 @@ public:
     }
     AstVar* varp() const { return m_varp; }
 
-    struct Match {
+    struct Match final {
         bool operator()(int bit, const SplitNewVar& a) const {
             return bit < a.m_lsb + a.m_bitwidth;
         }
@@ -854,7 +854,7 @@ public:
 
 // How a variable is used
 class PackedVarRef final {
-    struct SortByFirst {
+    struct SortByFirst final {
         bool operator()(const std::pair<int, bool>& a, const std::pair<int, bool>& b) const {
             if (a.first == b.first) return a.second < b.second;
             return a.first < b.first;
@@ -1242,9 +1242,9 @@ void V3SplitVar::splitVariable(AstNetlist* nodep) {
         const SplitUnpackedVarVisitor visitor{nodep};
         refs = visitor.getPackedVarRefs();
     }
-    V3Global::dumpCheckGlobalTree("split_var", 0, dumpTreeLevel() >= 9);
+    V3Global::dumpCheckGlobalTree("split_var", 0, dumpTreeEitherLevel() >= 9);
     { SplitPackedVarVisitor{nodep, refs}; }
-    V3Global::dumpCheckGlobalTree("split_var", 0, dumpTreeLevel() >= 9);
+    V3Global::dumpCheckGlobalTree("split_var", 0, dumpTreeEitherLevel() >= 9);
 }
 
 bool V3SplitVar::canSplitVar(const AstVar* varp) {

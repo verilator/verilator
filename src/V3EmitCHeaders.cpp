@@ -296,9 +296,9 @@ class EmitCHeader final : public EmitCConstInit {
     void emitAll(const AstNodeModule* modp) {
         // Include files required by this AstNodeModule
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
-            if (classp->extendsp()) {
-                puts("#include \""
-                     + prefixNameProtect(classp->extendsp()->classp()->classOrPackagep())
+            for (const AstClassExtends* extp = classp->extendsp(); extp;
+                 extp = VN_AS(extp->nextp(), ClassExtends)) {
+                puts("#include \"" + prefixNameProtect(extp->classp()->classOrPackagep())
                      + ".h\"\n");
             }
         }
