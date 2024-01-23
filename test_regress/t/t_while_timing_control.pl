@@ -14,7 +14,7 @@ $Self->{main_time_multiplier} = 10e-7 / 10e-9;
 
 compile(
     timing_loop => 1,
-    verilator_flags2 => ['--timing -Wno-ZERODLY'],
+    verilator_flags2 => ['--binary --timing -Wno-ZERODLY'],
     );
 
 execute(

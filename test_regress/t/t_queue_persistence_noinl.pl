@@ -18,7 +18,7 @@ if (!$Self->have_coroutines) {
 else {
     compile(
         timing_loop => 1,
-        verilator_flags2 => ["--timing --fno-inline +define+TEST_NOINLINE"],
+        verilator_flags2 => ["--binary --timing --fno-inline +define+TEST_NOINLINE"],
         );
 
     execute(

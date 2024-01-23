@@ -610,11 +610,11 @@ void V3Inst::checkOutputShort(AstPin* nodep) {
 void V3Inst::instAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { InstVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("inst", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("inst", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3Inst::dearrayAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { InstDeVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("dearray", 0, dumpTreeLevel() >= 6);
+    V3Global::dumpCheckGlobalTree("dearray", 0, dumpTreeEitherLevel() >= 6);
 }

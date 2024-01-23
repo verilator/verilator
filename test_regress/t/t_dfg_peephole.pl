@@ -59,8 +59,6 @@ close $wrFile;
 compile(
     verilator_flags2 => ["--stats", "--build", "-fno-dfg", "+incdir+$Self->{obj_dir}",
                          "-Mdir", "$Self->{obj_dir}/obj_ref", "--prefix", "Vref"],
-    verilator_make_gmake => 0,
-    verilator_make_cmake => 0
     );
 
 # Compile optimized - also builds executable
@@ -72,8 +70,6 @@ compile(
                          "-CFLAGS \"-I .. -I ../obj_ref\"",
                          "../obj_ref/Vref__ALL.a",
                          "../../t/$Self->{name}.cpp"],
-    verilator_make_gmake => 0,
-    verilator_make_cmake => 0
     );
 
 # Execute test to check equivalence

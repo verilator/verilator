@@ -14,7 +14,7 @@ lint(
     fails => 1,
     verilator_flags2 => ['--stats'],
     expect_filename => $Self->{golden_filename},
-);
+    );
 
 ok(1);
 1;

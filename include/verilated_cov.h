@@ -96,12 +96,13 @@ class VerilatedCovContext VL_NOT_FINAL : public VerilatedVirtualBase {
 
 public:
     // METHODS
-    /// Return default filename
-    static const char* defaultFilename() VL_PURE { return "coverage.dat"; }
+    /// Return default filename, may override with +verilator+coverage+file
+    std::string defaultFilename() VL_MT_SAFE;
     /// Make all data per_instance, overriding point's per_instance
     void forcePerInstance(bool flag) VL_MT_SAFE;
     /// Write all coverage data to a file
-    void write(const char* filenamep = defaultFilename()) VL_MT_SAFE;
+    void write(const std::string& filename) VL_MT_SAFE;
+    void write() VL_MT_SAFE { write(defaultFilename()); }
     /// Clear coverage points (and call delete on all items)
     void clear() VL_MT_SAFE;
     /// Clear items not matching the provided string
@@ -170,11 +171,10 @@ class VerilatedCov final {
 public:
     // METHODS
     /// Return default filename for the current thread
-    static const char* defaultFilename() VL_PURE { return VerilatedCovContext::defaultFilename(); }
+    static std::string defaultFilename() VL_MT_SAFE { return threadCovp()->defaultFilename(); }
     /// Write all coverage data to a file for the current thread
-    static void write(const char* filenamep = defaultFilename()) VL_MT_SAFE {
-        threadCovp()->write(filenamep);
-    }
+    static void write(const std::string filename) VL_MT_SAFE { threadCovp()->write(filename); }
+    static void write() VL_MT_SAFE { write(defaultFilename()); }
     /// Clear coverage points (and call delete on all items) for the current thread
     static void clear() VL_MT_SAFE { threadCovp()->clear(); }
     /// Clear items not matching the provided string for the current thread

@@ -45,7 +45,7 @@ enum V3ImportProperty : uint8_t { iprop_NONE, iprop_CONTEXT, iprop_PURE };
 //============================================================================
 // Member qualifiers
 
-struct VMemberQualifiers {
+struct VMemberQualifiers final {
     union {
         uint32_t m_flags;
         struct {
@@ -99,7 +99,7 @@ struct VMemberQualifiers {
 // Parser YYSType, e.g. for parser's yylval
 // We can't use bison's %union as we want to pass the fileline with all tokens
 
-struct V3ParseBisonYYSType {
+struct V3ParseBisonYYSType final {
     FileLine* fl;
     AstNode* scp;  // Symbol table scope for future lookups
     int token;  // Read token, aka tok

@@ -48,7 +48,7 @@ class GateEitherVertex VL_NOT_FINAL : public V3GraphVertex {
     bool m_dedupable = true;  // True if this node should be able to be deduped
     bool m_consumed = false;  // Output goes to something meaningful
 public:
-    GateEitherVertex(V3Graph* graphp)
+    explicit GateEitherVertex(V3Graph* graphp)
         : V3GraphVertex{graphp} {}
     ~GateEitherVertex() override = default;
 
@@ -811,8 +811,9 @@ class GateInline final {
                 // If the consumer logic writes one of the variables that the substitution
                 // is reading, then we would get a cycles, so we cannot do that.
                 bool canInline = true;
-                for (V3GraphEdge* edgep = dstVtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                    const GateVarVertex* const consVVertexp = edgep->top()->as<GateVarVertex>();
+                for (V3GraphEdge* dedgep = dstVtxp->outBeginp(); dedgep;
+                     dedgep = dedgep->outNextp()) {
+                    const GateVarVertex* const consVVertexp = dedgep->top()->as<GateVarVertex>();
                     if (readVscps.count(consVVertexp->varScp())) {
                         canInline = false;
                         break;
@@ -1327,7 +1328,7 @@ class GateUnused final {
         }
     }
 
-    GateUnused(GateGraph& graph)
+    explicit GateUnused(GateGraph& graph)
         : m_graph{graph} {
         mark();  // Mark all used vertices
         remove();  // Remove unused vertices
@@ -1381,5 +1382,5 @@ void V3Gate::gateAll(AstNetlist* netlistp) {
         if (dumpGraphLevel() >= 3) graphp->dumpDotFilePrefixed("gate_final");
     }
 
-    V3Global::dumpCheckGlobalTree("gate", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("gate", 0, dumpTreeEitherLevel() >= 3);
 }

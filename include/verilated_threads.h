@@ -127,7 +127,7 @@ public:
 class VlWorkerThread final {
 private:
     // TYPES
-    struct ExecRec {
+    struct ExecRec final {
         VlExecFnp m_fnp = nullptr;  // Function to execute
         VlSelfP m_selfp = nullptr;  // Symbol table to execute
         bool m_evenCycle = false;  // Even/odd for flag alternation

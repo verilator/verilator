@@ -62,7 +62,7 @@ module t(/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'hf5498264b93d4b48
+`define EXPECTED_SUM 64'hd1610f7181cbc1b4
 
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
@@ -93,10 +93,12 @@ module Test(/*AUTOARG*/
    logic bug3786_out;
    logic bug3824_out;
    logic bug4059_out;
+   logic bug4832_out;
+   logic bug4837_out;
 
    output logic o;
 
-   logic [14:0] tmp;
+   logic [16:0] tmp;
    assign o = ^tmp;
 
    always_ff @(posedge clk) begin
@@ -127,6 +129,8 @@ module Test(/*AUTOARG*/
       tmp[12]<= bug3786_out;
       tmp[13]<= bug3824_out;
       tmp[14]<= bug4059_out;
+      tmp[15]<= bug4832_out;
+      tmp[16]<= bug4837_out;
    end
 
    bug3182 i_bug3182(.in(d[4:0]), .out(bug3182_out));
@@ -138,6 +142,8 @@ module Test(/*AUTOARG*/
    bug3786 i_bug3786(.clk(clk), .in(d), .out(bug3786_out));
    bug3824 i_bug3824(.clk(clk), .in(d), .out(bug3824_out));
    bug4059 i_bug4059(.clk(clk), .in(d), .out(bug4059_out));
+   bug4832 i_bug4832(.clk(clk), .in(d), .out(bug4832_out));
+   bug4837 i_bug4837(.clk(clk), .in(d), .out(bug4837_out));
 
 endmodule
 
@@ -394,4 +400,53 @@ module bug4059(input wire clk, input wire [31:0] in, output wire out);
    wire _012_ = ~(_010_ ^ _011_);
    wire _013_ = ~(_009_ ^ _012_);
    assign out = ~(_006_ ^ _013_);
+endmodule
+
+/// See issue #4832
+//  !(d[32 + 3] & in[3]) & d[32 + 22]
+//  was wrongly transformed to
+//  !d[32 + 3] & d[32 + 22] & !in[3]
+//  A subtree under NOT should be untouched, but was not.
+//  Testing OR subtree too.
+module bug4832(input wire clk, input wire [31:0] in, output out);
+   logic [95:0] d;
+   always_ff @(posedge clk)
+      d <= {d[63:0], in};
+
+   logic [31:0] tmp_and;
+   logic [31:0] tmp_or;
+   logic result_and;
+   logic result_or;
+   assign tmp_and = (d[63:32] & in) >> 3;
+   assign tmp_or = (d[63:32] | in) >> 8;
+   always_ff @(posedge clk) begin
+      result_and <= !tmp_and[0] & d[32 + 22];
+      result_or <= !tmp_or[0] | d[32 + 21];
+   end
+   assign out = result_and ^ result_or;
+endmodule
+
+/// See issue #4837 and $4841
+// replaceShiftOp() in V3Const did not update widthMin, then bit-op-tree opt.
+// was wrongly triggered for the subtree.
+// replaceShiftOp() transforms as below:
+//    SHIFT(AND(a,b),CONST)->AND(SHIFT(a,CONST),SHIFT(b,CONST))
+// AND after the transformation must have same minWidth as the original SHIFT
+// e.g. SHIFTL(AND(a, b), 1) => AND(SHIFTL(a, 1), SHIFTL(b, 1))
+//      AND in the result must have 1 bit larger widthMin than the original AND
+module bug4837(input wire clk, input wire [31:0] in, output out);
+   logic [95:0] d;
+   always_ff @(posedge clk)
+      d <= {d[63:0], in};
+
+   wire celloutsig_0z;
+   wire [1:0] celloutsig_1z;
+   wire celloutsig_2z;
+   wire [95:0] out_data;
+   assign celloutsig_0z = d[83] < d[74];
+   assign celloutsig_1z = { d[54], celloutsig_0z } & { d[42], celloutsig_0z };
+   assign celloutsig_2z = d[65:64] < d[83:82];
+   assign { out_data[33:32], out_data[0] } = { celloutsig_1z, celloutsig_2z };
+
+   assign out = out_data[33] ^ out_data[32] ^ out_data[0];
 endmodule

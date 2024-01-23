@@ -71,6 +71,11 @@
 # include <execinfo.h>
 # define _VL_HAVE_STACKTRACE
 #endif
+#if defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
+# include <sys/time.h>
+# include <sys/resource.h>
+# define _VL_HAVE_GETRLIMIT
+#endif
 
 #include "verilated_threads.h"
 // clang-format on
@@ -107,7 +112,8 @@ thread_local Verilated::ThreadLocal Verilated::t_s;
 
 #ifndef VL_USER_FINISH  ///< Define this to override the vl_finish function
 void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
-    if (false && hier) {}  // Unused argument
+    // hier is unused in the default implementation.
+    (void)hier;
     VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
         "- %s:%d: Verilog $finish\n", filename, linenum);
     Verilated::threadContextp()->gotFinish(true);
@@ -135,7 +141,8 @@ void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
 
 #ifndef VL_USER_FATAL  ///< Define this to override the vl_fatal function
 void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
-    if (false && hier) {}
+    // hier is unused in the default implementation.
+    (void)hier;
     Verilated::threadContextp()->gotError(true);
     Verilated::threadContextp()->gotFinish(true);
     if (filename && filename[0]) {
@@ -173,7 +180,8 @@ void vl_stop_maybe(const char* filename, int linenum, const char* hier, bool may
 
 #ifndef VL_USER_WARN  ///< Define this to override the vl_warn function
 void vl_warn(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
-    if (false && hier) {}
+    // hier is unused in the default implementation.
+    (void)hier;
     if (filename && filename[0]) {
         // Not VL_PRINTF_MT, already on main thread
         VL_PRINTF("%%Warning: %s:%d: %s\n", filename, linenum, msg);
@@ -2422,6 +2430,7 @@ VerilatedContext::VerilatedContext()
     : m_impdatap{new VerilatedContextImpData} {
     Verilated::lastContextp(this);
     Verilated::threadContextp(this);
+    m_ns.m_coverageFilename = "coverage.dat";
     m_ns.m_profExecFilename = "profile_exec.dat";
     m_ns.m_profVltFilename = "profile.vlt";
     m_fdps.resize(31);
@@ -2456,6 +2465,14 @@ void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
 void VerilatedContext::calcUnusedSigs(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_calcUnusedSigs = flag;
+}
+void VerilatedContext::coverageFilename(const std::string& flag) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    m_ns.m_coverageFilename = flag;
+}
+std::string VerilatedContext::coverageFilename() const VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_ns.m_coverageFilename;
 }
 void VerilatedContext::dumpfile(const std::string& flag) VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
     const VerilatedLockGuard lock{m_timeDumpMutex};
@@ -2685,7 +2702,7 @@ std::pair<int, char**> VerilatedContextImp::argc_argv() VL_MT_SAFE_EXCLUDES(m_ar
         int in = 0;
         for (const auto& i : m_args.m_argVec) {
             s_argvp[in] = new char[i.length() + 1];
-            std::strcpy(s_argvp[in], i.c_str());
+            std::memcpy(s_argvp[in], i.c_str(), i.length() + 1);
             ++in;
         }
         s_argvp[s_argc] = nullptr;
@@ -2697,7 +2714,9 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
     if (0 == std::strncmp(arg.c_str(), "+verilator+", std::strlen("+verilator+"))) {
         std::string str;
         uint64_t u64;
-        if (arg == "+verilator+debug") {
+        if (commandArgVlString(arg, "+verilator+coverage+file+", str)) {
+            coverageFilename(str);
+        } else if (arg == "+verilator+debug") {
             Verilated::debug(4);
         } else if (commandArgVlUint64(arg, "+verilator+debugi+", u64, 0,
                                       std::numeric_limits<int>::max())) {
@@ -2993,6 +3012,29 @@ void Verilated::scTraceBeforeElaborationError() VL_MT_SAFE {
                 "%Error: Verilated*Sc::open(...) was called before sc_core::sc_start(). "
                 "Run sc_core::sc_start(sc_core::SC_ZERO_TIME) before opening a wave file.");
     VL_UNREACHABLE;
+}
+
+void Verilated::stackCheck(QData needSize) VL_MT_UNSAFE {
+    // Slowpath - Called only when constructing
+#ifdef _VL_HAVE_GETRLIMIT
+    QData haveSize = 0;
+    rlimit rlim;
+    if (0 == getrlimit(RLIMIT_STACK, &rlim)) {
+        haveSize = rlim.rlim_cur;
+        if (haveSize == RLIM_INFINITY) haveSize = rlim.rlim_max;
+        if (haveSize == RLIM_INFINITY) haveSize = 0;
+    }
+    // VL_PRINTF_MT("-Info: stackCheck(%" PRIu64 ") have %" PRIu64 "\n", needSize, haveSize);
+    // Check for 1.5x need, but suggest 2x so small model increase won't cause warning
+    // if the user follows the suggestions
+    if (VL_UNLIKELY(haveSize && needSize && haveSize < (needSize + needSize / 2))) {
+        VL_PRINTF_MT("%%Warning: System has stack size %" PRIu64 " kb"
+                     " which may be too small; suggest 'ulimit -c %" PRIu64 "' or larger\n",
+                     haveSize / 1024, (needSize * 2) / 1024);
+    }
+#else
+    if (false && needSize) {}  // Unused argument
+#endif
 }
 
 void Verilated::mkdir(const char* dirname) VL_MT_UNSAFE {

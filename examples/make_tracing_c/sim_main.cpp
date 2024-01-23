@@ -20,9 +20,6 @@ double sc_time_stamp() { return 0; }
 int main(int argc, char** argv) {
     // This is a more complicated example, please also see the simpler examples/make_hello_c.
 
-    // Prevent unused variable warnings
-    if (false && argc && argv) {}
-
     // Create logs/ directory in case we have traces to put under it
     Verilated::mkdir("logs");
 

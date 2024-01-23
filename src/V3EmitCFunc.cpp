@@ -732,7 +732,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
             string out;
             if (varp->valuep()) {
                 const AstConst* const constp = VN_AS(varp->valuep(), Const);
-                if (!constp) varp->v3fatalSrc("non-const initializer for variable");
+                UASSERT_OBJ(constp, varp, "non-const initializer for variable");
                 for (int w = 0; w < varp->widthWords(); ++w) {
                     out += varNameProtected + suffix + "[" + cvtToStr(w) + "] = ";
                     out += cvtToStr(constp->num().edataWord(w)) + "U;\n";

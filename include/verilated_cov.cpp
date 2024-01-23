@@ -106,6 +106,7 @@ private:
     using ItemList = std::deque<VerilatedCovImpItem*>;
 
     // MEMBERS
+    VerilatedContext* const m_contextp;  // Context VerilatedCovImp is pointed-to by
     mutable VerilatedMutex m_mutex;  // Protects all members
     ValueIndexMap m_valueIndexes VL_GUARDED_BY(m_mutex);  // Unique arbitrary value for values
     IndexValueMap m_indexValues VL_GUARDED_BY(m_mutex);  // Unique arbitrary value for keys
@@ -120,7 +121,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    VerilatedCovImp() = default;
+    VerilatedCovImp(VerilatedContext* contextp)
+        : m_contextp{contextp} {}
     VL_UNCOPYABLE(VerilatedCovImp);
 
 protected:
@@ -253,6 +255,7 @@ private:
 
 public:
     // PUBLIC METHODS
+    std::string defaultFilename() VL_MT_SAFE { return m_contextp->coverageFilename(); }
     void forcePerInstance(const bool flag) VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock{m_mutex};
@@ -354,7 +357,7 @@ public:
         m_insertp = nullptr;
     }
 
-    void write(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
+    void write(const std::string& filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock{m_mutex};
         selftest();
@@ -426,6 +429,7 @@ public:
 //=============================================================================
 // VerilatedCovContext
 
+std::string VerilatedCovContext::defaultFilename() VL_MT_SAFE { return impp()->defaultFilename(); }
 void VerilatedCovContext::forcePerInstance(bool flag) VL_MT_SAFE {
     impp()->forcePerInstance(flag);
 }
@@ -434,7 +438,9 @@ void VerilatedCovContext::clearNonMatch(const char* matchp) VL_MT_SAFE {
     impp()->clearNonMatch(matchp);
 }
 void VerilatedCovContext::zero() VL_MT_SAFE { impp()->zero(); }
-void VerilatedCovContext::write(const char* filenamep) VL_MT_SAFE { impp()->write(filenamep); }
+void VerilatedCovContext::write(const std::string& filename) VL_MT_SAFE {
+    impp()->write(filename);
+}
 void VerilatedCovContext::_inserti(uint32_t* itemp) VL_MT_SAFE {
     impp()->inserti(new VerilatedCoverItemSpec<uint32_t>{itemp});
 }
@@ -516,7 +522,7 @@ VerilatedCovContext* VerilatedContext::coveragep() VL_MT_SAFE {
         const VerilatedLockGuard lock{s_mutex};
         // cppcheck-suppress identicalInnerCondition
         if (VL_LIKELY(!m_coveragep)) {  // LCOV_EXCL_LINE // Not redundant, prevents race
-            m_coveragep.reset(new VerilatedCovImp);
+            m_coveragep.reset(new VerilatedCovImp{this});
         }
     }
     return reinterpret_cast<VerilatedCovContext*>(m_coveragep.get());

@@ -13,7 +13,7 @@ scenarios(simulator => 1);
 top_filename("t/t_math_signed5.v");
 
 compile(
-    verilator_flags2 => ['--timing'],
+    verilator_flags2 => ['--binary --timing'],
     timing_loop => 1,
     );
 

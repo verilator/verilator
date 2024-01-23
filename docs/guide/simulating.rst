@@ -230,14 +230,20 @@ Coverage Collection
 When any coverage flag is used to Verilate, Verilator will add appropriate
 coverage point insertions into the model and collect the coverage data.
 
-To get the coverage data from the model, in the user wrapper code,
-typically at the end once a test passes, call
-:code:`Verilated::threadContextp()->coveragep()->write` with an argument of the filename for
-the coverage data file to write coverage data to (typically
-"logs/coverage.dat").
+To get the coverage data from the model, write the coverage with either:
+
+1. Using :vlopt:`--binary` or :vlopt:`--main`, and Verilator will dump
+   coverage when the test completes to the filename specified with
+   :vlopt:`+verilator+coverage+file+\<filename\>`.
+
+2. In the user wrapper code, typically at the end once a test passes, call
+   :code:`Verilated::threadContextp()->coveragep()->write` with an argument
+   of the filename for the coverage data file to write coverage data to
+   (typically "logs/coverage.dat").
 
 Run each of your tests in different directories, potentially in parallel.
-Each test will create a :file:`logs/coverage.dat` file.
+Each test will create the file specified above,
+e.g. :file:`logs/coverage.dat`.
 
 After running all of the tests, execute the :command:`verilator_coverage`
 command, passing arguments pointing to the filenames of all the
@@ -505,13 +511,31 @@ documentation.
 Runtime Debugging
 =================
 
-To debug a Verilated executable, use the standard GNU debugger ``gdb`` or a
-similar tool. Typically you will want to have debugger symbols inserted by
-the compiler, assertions enabled in the C library, and assertions enabled
-in the Verilated library. (These options slow down the executable, so do
-this only when debugging.) To enable this, Verilate with:
+To debug a Verilated executable, typically you will want to have debugger
+symbols inserted by the compiler, assertions enabled in the C library,
+assertions enabled in the Verilated library, and the sanitizer enabled to
+look for bad memory or undefined operations. (These options slow down the
+executable, so do this only when debugging.) To enable these, Verilate
+with:
 
-    -CFLAGS -ggdb  -LDFLAGS -ggdb  -CFLAGS -DVL_DEBUG=1  -CFLAGS -D_GLIBCXX_DEBUG
+   .. code-block:: bash
 
-The :vlopt:`-CFLAGS` and/or :vlopt:`-LDFLAGS` options pass arguments
-directly to the compiler or linker.
+      -CFLAGS -ggdb  -LDFLAGS -ggdb
+      -CFLAGS -DVL_DEBUG=1
+      -CFLAGS -D_GLIBCXX_DEBUG
+      -CFLAGS -fsanitize=address,undefined  -LDFLAGS -fsanitize=address,undefined
+
+The :vlopt:`-CFLAGS` and/or :vlopt:`-LDFLAGS` options used here pass the
+following argument into the generated Makefile for use as compiler or
+linker options respectively.  If you are using your own Makefiles, adapt
+appropriately to pass the suggested flags to the compiler and linker.
+
+Once you have a debugging-enabled executable, run it using the the standard
+GNU debugger ``gdb`` or a similar tool, and create a backtrace; e.g.:
+
+   .. code-block:: bash
+
+      gdb obj_dir/Vmodel
+        run {Vmodel_command_arguments}
+        {segmentation faults}
+        bt

@@ -149,6 +149,7 @@ set(HEADERS
     V3Split.h
     V3SplitAs.h
     V3SplitVar.h
+    V3StackCount.h
     V3Stats.h
     V3StdFuture.h
     V3String.h
@@ -258,8 +259,8 @@ set(COMMON_SOURCES
     V3LinkDot.cpp
     V3LinkInc.cpp
     V3LinkJump.cpp
-    V3LinkLevel.cpp
     V3LinkLValue.cpp
+    V3LinkLevel.cpp
     V3LinkParse.cpp
     V3LinkResolve.cpp
     V3Localize.cpp
@@ -289,6 +290,7 @@ set(COMMON_SOURCES
     V3Split.cpp
     V3SplitAs.cpp
     V3SplitVar.cpp
+    V3StackCount.cpp
     V3Stats.cpp
     V3StatsReport.cpp
     V3String.cpp
