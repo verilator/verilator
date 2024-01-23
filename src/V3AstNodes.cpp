@@ -1369,13 +1369,13 @@ void dumpNodeListJson(std::ostream& os, const AstNode* nodep, const std::string&
     if (nodep == NULL) {  // empty list, print inline
         os << SQUOT(listName) << ": []";
     } else {
-        os << "\n" << indent << SQUOT(listName) << ": [\n";
-        os << indent + " ";  // we have to indent 1st node here as dumpTreeJson() only indents '}'
+        os << "\n" << indent + " " << SQUOT(listName) << ": [\n";
         for (; nodep; nodep = nodep->nextp()) {
-            nodep->dumpTreeJson(os, indent + " ");
+            nodep->dumpTreeJson(os, indent + "  ");
             if (nodep->nextp()) os << ",";
+            os << "\n";
         }
-        os << "]";
+        os << indent << "]";
     }
 }
 
@@ -1390,7 +1390,7 @@ static void dumpFileInfo(std::ostream& os, const FileLine* fileinfop) {
 
 void AstNode::dumpTreeJson(std::ostream& os, const string& indent) const {
     // TODO: dump dtype
-    os << "{" << SQUOT("type") << ":" << SQUOT(typeName());
+    os << indent << "{" << SQUOT("type") << ":" << SQUOT(typeName());
     dumpJsonStr(os, "name", V3OutFormatter::quoteNameControls(prettyName()));
     dumpJsonPtr(os, "addr", this);
     dumpFileInfo(os, fileline());
@@ -1398,8 +1398,8 @@ void AstNode::dumpTreeJson(std::ostream& os, const string& indent) const {
     if (v3Global.opt.jsonEditNums()) dumpJsonNum(os, "editNum", editCount());
 #endif
     dumpJson(os);
-    dumpTreeJsonOpGen(os, indent + " ");
-    os << "\n" << indent << "}";
+    dumpTreeJsonOpGen(os, indent);
+    os << "}";
 }
 
 void AstNodeProcedure::dump(std::ostream& str) const {
