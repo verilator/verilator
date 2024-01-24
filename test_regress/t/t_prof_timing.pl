@@ -8,15 +8,22 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-scenarios(vlt => 1);
+scenarios(vlt_all => 1);
 
-top_filename("t_prof.v");
+top_filename("t/t_prof.v");
+
+# TODO below might no longer be required as configure checks for -pg
+if ($ENV{VERILATOR_TEST_NO_GPROF}) {
+    skip("Skipping due to VERILATOR_TEST_NO_GPROF");
+} else {
+    dotest();
+}
 
 ok(1);
 
 sub dotest {
     compile(
-        verilator_flags2 => ["--stats --prof-c"],
+        verilator_flags2 => ["--stats --prof-cfuncs --binary"],
         );
 
     unlink $_ foreach (glob "$Self->{obj_dir}/gmon.out.*");
@@ -33,6 +40,16 @@ sub dotest {
 
     run(cmd => ["cd $Self->{obj_dir} && gprof $Self->{vm_prefix} $gmon_base > gprof.log"],
         check_finished => 0);
+
+    run(cmd => ["cd $Self->{obj_dir} && $ENV{VERILATOR_ROOT}/bin/verilator_profcfunc gprof.log > profcfuncs.log"],
+        check_finished => 0);
+
+    file_grep("$Self->{obj_dir}/profcfuncs.log", qr/Overall summary by/);
+#   Appears that GCC 11.4 has a bug whereby it doesn't trace function calls
+#   within coroutines; CLang seems to work correctly.
+#   file_grep("$Self->{obj_dir}/profcfuncs.log", qr/VLib + VL_POWSS_QQQ/);
+    file_grep("$Self->{obj_dir}/profcfuncs.log", qr/VLib + VL_WRITEF/);
+    file_grep("$Self->{obj_dir}/profcfuncs.log", qr/VBlock + t_prof:/);
 }
 
 1;

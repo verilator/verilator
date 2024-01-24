@@ -4,11 +4,17 @@
 // any use, without warranty, 2021 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t(/*AUTOARG*/
-   // Inputs
+module t(
+`ifdef T_PROF
    clk
+`endif
    );
+`ifdef T_PROF
    input clk;
+`else
+   bit clk;
+   initial forever begin #5; clk = !clk; end
+`endif
 
    integer cyc = 0;
    wire [63:0] result;

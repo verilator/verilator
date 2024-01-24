@@ -279,13 +279,17 @@ profiled C++ code functions.
 
 To use profiling:
 
-#. Use Verilator's :vlopt:`--prof-cfuncs`.
+#. Make sure the Verilog code will call `$finish` at the end of simulation
+   (otherwise the C library may not correctly create the `gmon.out` file in
+   the later steps below).
+#. Run Verilator, adding the :vlopt:`--prof-cfuncs` option.
 #. Build and run the simulation model.
-#. The model will create gmon.out.
-#. Run :command:`gprof` to see where in the C++ code the time is spent.
-#. Run the gprof output through the :command:`verilator_profcfunc` program,
-   and it will tell you what Verilog line numbers on which most of the time
-   is being spent.
+#. The model will create `gmon.out`.
+#. Run :command:`gprof gmon.out > gprof.log` to see where in the C++ code
+   the time is spent.
+#. Run :command:`verilator_profcfunc gprof.log > profcfunc.log` to take the
+   gprof output and translate into output showing the Verilog line numbers
+   on which most of the time is being spent.
 
 
 .. _Execution Profiling:

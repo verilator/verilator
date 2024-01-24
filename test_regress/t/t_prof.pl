@@ -21,7 +21,7 @@ ok(1);
 
 sub dotest {
     compile(
-        verilator_flags2 => ["--stats --prof-cfuncs"],
+        verilator_flags2 => ["--stats --prof-cfuncs +define+T_PROF"],
         );
 
     unlink $_ foreach (glob "$Self->{obj_dir}/gmon.out.*");
@@ -36,15 +36,15 @@ sub dotest {
     $gmon_path or error("Profiler did not create a gmon.out");
     (my $gmon_base = $gmon_path) =~ s!.*[/\\]!!;
 
-    run(cmd => ["cd $Self->{obj_dir} && gprof $Self->{vm_prefix} $gmon_base > gprof.out"],
+    run(cmd => ["cd $Self->{obj_dir} && gprof $Self->{vm_prefix} $gmon_base > gprof.log"],
         check_finished => 0);
 
-    run(cmd => ["cd $Self->{obj_dir} && $ENV{VERILATOR_ROOT}/bin/verilator_profcfunc gprof.out > cfuncs.out"],
+    run(cmd => ["cd $Self->{obj_dir} && $ENV{VERILATOR_ROOT}/bin/verilator_profcfunc gprof.log > profcfuncs.log"],
         check_finished => 0);
 
-    file_grep("$Self->{obj_dir}/cfuncs.out", qr/Overall summary by/);
-    file_grep("$Self->{obj_dir}/cfuncs.out", qr/VLib + VL_POWSS_QQQ/);
-    file_grep("$Self->{obj_dir}/cfuncs.out", qr/VBlock + t_prof:/);
+    file_grep("$Self->{obj_dir}/profcfuncs.log", qr/Overall summary by/);
+    file_grep("$Self->{obj_dir}/profcfuncs.log", qr/VLib + VL_POWSS_QQQ/);
+    file_grep("$Self->{obj_dir}/profcfuncs.log", qr/VBlock + t_prof:/);
 }
 
 1;
