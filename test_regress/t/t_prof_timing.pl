@@ -15,6 +15,8 @@ top_filename("t/t_prof.v");
 # TODO below might no longer be required as configure checks for -pg
 if ($ENV{VERILATOR_TEST_NO_GPROF}) {
     skip("Skipping due to VERILATOR_TEST_NO_GPROF");
+} elsif (!$Self->have_coroutines) {
+    skip("No coroutine support");
 } else {
     dotest();
 }
