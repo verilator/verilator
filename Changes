@@ -29,6 +29,7 @@ Verilator 5.021 devel
 * Fix delays using wrong timeunit when modules inlined (#4806). [Paul Wright]
 * Fix warnings in verilated_sc_trace.h for Clang. (#4807) (#4827). [Anthony Donlon]
 * Fix null pointer dereference (#4810) (#4825). [Adrian Sampson]
+* Fix compilation error on multi-inherited interface class usage (#4819).
 * Fix maybe-uninitialized compiler warning (#4820) (#4822). [Larry Doolittle]
 * Fix mis-splitting of dump control functions (#4821). [Fan Shupei]
 * Fix wrong utimes() parameter (#4829). [Szymon Gizler]

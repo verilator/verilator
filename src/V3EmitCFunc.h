@@ -248,6 +248,32 @@ public:
         return nullptr;
     }
 
+    void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp, bool top, bool& firstr) {
+        for (const AstClassExtends* extp = classp->extendsp(); extp;
+             extp = VN_AS(extp->nextp(), ClassExtends)) {
+            if (extp->classp()->useVirtualPublic()) {
+                // It's a c++ virtual class (diamond relation)
+                // Must get the subclasses initialized first
+                putConstructorSubinit(extp->classp(), cfuncp, false, firstr);
+            }
+            puts(firstr ? "" : "\n, ");
+            firstr = false;
+            puts(prefixNameProtect(extp->classp()));
+            if (constructorNeedsProcess(extp->classp())) {
+                puts("(vlProcess, vlSymsp");
+            } else {
+                puts("(vlSymsp");
+            }
+            if (top) {
+                const AstCNew* const superNewCallp = getSuperNewCallRecursep(cfuncp->stmtsp());
+                UASSERT_OBJ(superNewCallp, cfuncp, "super.new call not found");
+                putCommaIterateNext(superNewCallp->argsp(), true);
+            }
+            puts(")");
+            top = false;
+        }
+    }
+
     // VISITORS
     using EmitCConstInit::visit;
     void visit(AstCFunc* nodep) override {
@@ -265,20 +291,13 @@ public:
         if (nodep->isInline()) puts("VL_INLINE_OPT ");
         emitCFuncHeader(nodep, m_modp, /* withScope: */ true);
 
-        if (!nodep->baseCtors().empty()) {
-            puts(": ");
-            puts(nodep->baseCtors());
+        if (nodep->isConstructor()) {
             const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
-            // Find call to super.new to get the arguments
-            if (classp && constructorNeedsProcess(classp)) {
-                puts("(vlProcess, vlSymsp");
-            } else {
-                puts("(vlSymsp");
+            if (nodep->isConstructor() && classp && classp->extendsp()) {
+                puts("\n    : ");
+                bool first = true;
+                putConstructorSubinit(classp, nodep, true, first /*ref*/);
             }
-            const AstCNew* const superNewCallp = getSuperNewCallRecursep(nodep->stmtsp());
-            UASSERT_OBJ(superNewCallp, nodep, "super.new call not found");
-            putCommaIterateNext(superNewCallp->argsp(), true);
-            puts(")");
         }
         puts(" {\n");
 

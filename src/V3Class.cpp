@@ -49,12 +49,39 @@ class ClassVisitor final : public VNVisitor {
 
     // METHODS
 
+    bool recurseImplements(AstClass* nodep, bool setit) {
+        // Returns true to set useVirtualPublic().
+        // If there's an implements of an interface class then we have
+        // multiple classes that point to same object, that need same
+        // VlClass (the diamond problem). C++ will require we use 'virtual
+        // public' for VlClass.  So, we need the interface class, and all
+        // classes above, and any below using any implements to use
+        // 'virtual public' via useVirtualPublic().
+        if (nodep->useVirtualPublic()) return true;  // Short-circuit
+        if (nodep->isInterfaceClass()) setit = true;
+        for (const AstClassExtends* extp = nodep->extendsp(); extp;
+             extp = VN_AS(extp->nextp(), ClassExtends)) {
+            if (recurseImplements(extp->classp(), setit)) setit = true;
+        }
+        if (setit) {
+            nodep->useVirtualPublic(true);
+            for (const AstClassExtends* extp = nodep->extendsp(); extp;
+                 extp = VN_AS(extp->nextp(), ClassExtends)) {
+                (void)recurseImplements(extp->classp(), true);
+            }
+        }
+        return setit;
+    }
+
+    // VISITORS
+
     void visit(AstClass* nodep) override {
         if (nodep->user1SetOnce()) return;
         // Move this class
         nodep->name(m_prefix + nodep->name());
         nodep->unlinkFrBack();
         v3Global.rootp()->addModulesp(nodep);
+        (void)recurseImplements(nodep, false);
         // Make containing package
         // Note origName is the same as the class origName so errors look correct
         AstClassPackage* const packagep

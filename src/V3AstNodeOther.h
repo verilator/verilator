@@ -593,7 +593,6 @@ class AstCFunc final : public AstNode {
     string m_cname;  // C name, for dpiExports
     string m_rtnType;  // void, bool, or other return type
     string m_argTypes;  // Argument types
-    string m_baseCtors;  // Base class constructor
     string m_ifdef;  // #ifdef symbol around this function
     VBoolOrUnknown m_isConst;  // Function is declared const (*this not changed)
     bool m_isStatic : 1;  // Function is static (no need for a 'this' pointer)
@@ -656,8 +655,7 @@ public:
     bool same(const AstNode* samep) const override {
         const AstCFunc* const asamep = VN_DBG_AS(samep, CFunc);
         return ((isTrace() == asamep->isTrace()) && (rtnTypeVoid() == asamep->rtnTypeVoid())
-                && (argTypes() == asamep->argTypes()) && (baseCtors() == asamep->baseCtors())
-                && isLoose() == asamep->isLoose()
+                && (argTypes() == asamep->argTypes()) && isLoose() == asamep->isLoose()
                 && (!(dpiImportPrototype() || dpiExportImpl()) || name() == asamep->name()));
     }
     //
@@ -689,8 +687,6 @@ public:
     void funcPublic(bool flag) { m_funcPublic = flag; }
     void argTypes(const string& str) { m_argTypes = str; }
     string argTypes() const { return m_argTypes; }
-    void baseCtors(const string& str) { m_baseCtors = str; }
-    string baseCtors() const { return m_baseCtors; }
     void ifdef(const string& str) { m_ifdef = str; }
     string ifdef() const { return m_ifdef; }
     bool isConstructor() const { return m_isConstructor; }
@@ -2255,8 +2251,9 @@ class AstClass final : public AstNodeModule {
     bool m_extended = false;  // Is extension or extended by other classes
     bool m_interfaceClass = false;  // Interface class
     bool m_needRNG = false;  // Need RNG, uses srandom/randomize
-    bool m_virtual = false;  // Virtual class
     bool m_parameterized = false;  // Parameterized class
+    bool m_useVirtualPublic = false;  // Subclasses need virtual public as uses interface class
+    bool m_virtual = false;  // Virtual class
 
 public:
     AstClass(FileLine* fl, const string& name)
@@ -2274,12 +2271,14 @@ public:
     void isExtended(bool flag) { m_extended = flag; }
     bool isInterfaceClass() const { return m_interfaceClass; }
     void isInterfaceClass(bool flag) { m_interfaceClass = flag; }
+    bool isParameterized() const { return m_parameterized; }
+    void isParameterized(bool flag) { m_parameterized = flag; }
     bool isVirtual() const { return m_virtual; }
     void isVirtual(bool flag) { m_virtual = flag; }
     bool needRNG() const { return m_needRNG; }
     void needRNG(bool flag) { m_needRNG = flag; }
-    bool isParameterized() const { return m_parameterized; }
-    void isParameterized(bool flag) { m_parameterized = flag; }
+    bool useVirtualPublic() const { return m_useVirtualPublic; }
+    void useVirtualPublic(bool flag) { m_useVirtualPublic = flag; }
     // Return true if this class is an extension of base class (SLOW)
     // Accepts nullptrs
     static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);

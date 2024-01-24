@@ -1406,6 +1406,7 @@ void AstClass::dump(std::ostream& str) const {
     if (isExtended()) str << " [EXT]";
     if (isInterfaceClass()) str << " [IFCCLS]";
     if (isVirtual()) str << " [VIRT]";
+    if (useVirtualPublic()) str << " [VIRPUB]";
 }
 void AstClassExtends::dump(std::ostream& str) const {
     this->AstNode::dump(str);

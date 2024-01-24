@@ -1223,13 +1223,7 @@ class TaskVisitor final : public VNVisitor {
         }
         cfuncp->isVirtual(nodep->isVirtual());
         cfuncp->dpiPure(nodep->dpiPure());
-        if (nodep->name() == "new") {
-            cfuncp->isConstructor(true);
-            AstClass* const classp = m_statep->getClassp(nodep);
-            if (classp->extendsp()) {
-                cfuncp->baseCtors(EmitCBase::prefixNameProtect(classp->extendsp()->classp()));
-            }
-        }
+        if (nodep->name() == "new") cfuncp->isConstructor(true);
         if (cfuncp->dpiExportImpl()) cfuncp->cname(nodep->cname());
 
         if (!nodep->dpiImport() && !nodep->taskPublic()) {

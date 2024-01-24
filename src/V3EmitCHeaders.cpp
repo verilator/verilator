@@ -316,9 +316,14 @@ class EmitCHeader final : public EmitCConstInit {
         if (!VN_IS(modp, Class)) puts("alignas(VL_CACHE_LINE_BYTES) ");
         puts(prefixNameProtect(modp));
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
-            puts(" : public ");
+            const string virtpub = classp->useVirtualPublic() ? "virtual public " : "public ";
+            puts(" : " + virtpub);
             if (classp->extendsp()) {
-                puts(prefixNameProtect(classp->extendsp()->classp()));
+                for (const AstClassExtends* extp = classp->extendsp(); extp;
+                     extp = VN_AS(extp->nextp(), ClassExtends)) {
+                    puts(prefixNameProtect(extp->classp()));
+                    if (extp->nextp()) puts(", " + virtpub);
+                }
             } else {
                 puts("VlClass");
             }
