@@ -28,7 +28,7 @@ run(cmd => ["../bin/verilator_coverage",
             "$Self->{obj_dir}/coverage.dat",
             ],
     verilator_run => 1,
-    ) if !$self->errors && !$self->skips;
+    ) if !$Self->errors && !$Self->skips;
 
 files_identical("$Self->{obj_dir}/annotated/t_cover_else_points.v", $Self->{golden_filename});
 
