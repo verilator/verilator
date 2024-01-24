@@ -248,7 +248,8 @@ public:
         return nullptr;
     }
 
-    void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp, bool top,                std::set<AstClass*> &doneClassesr) {
+    void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp, bool top,
+                               std::set<AstClass*>& doneClassesr) {
         for (const AstClassExtends* extp = classp->extendsp(); extp;
              extp = VN_AS(extp->nextp(), ClassExtends)) {
             if (extp->classp()->useVirtualPublic()) {
