@@ -474,6 +474,7 @@ AC_SUBST(CFG_LDFLAGS_VERILATED)
 # pthreads is harmless otherwise.
 CFG_LIBS="$LIBS $CFG_LIBS"
 _MY_LDLIBS_CHECK_OPT(CFG_LIBS, -lpthread)
+_MY_LDLIBS_CHECK_OPT(CFG_LIBS, -latomic)
 
 # Check libraries for MingW
 _MY_LDLIBS_CHECK_OPT(CFG_LIBS, -lbcrypt)

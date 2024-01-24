@@ -248,16 +248,18 @@ public:
         return nullptr;
     }
 
-    void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp, bool top, bool& firstr) {
+    void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp, bool top,                std::set<AstClass*> &doneClassesr) {
         for (const AstClassExtends* extp = classp->extendsp(); extp;
              extp = VN_AS(extp->nextp(), ClassExtends)) {
             if (extp->classp()->useVirtualPublic()) {
                 // It's a c++ virtual class (diamond relation)
                 // Must get the subclasses initialized first
-                putConstructorSubinit(extp->classp(), cfuncp, false, firstr);
+                putConstructorSubinit(extp->classp(), cfuncp, false, doneClassesr);
             }
-            puts(firstr ? "" : "\n, ");
-            firstr = false;
+            // Diamond pattern with same base class twice?
+            if (doneClassesr.find(extp->classp()) != doneClassesr.end()) continue;
+            puts(doneClassesr.empty() ? "" : "\n    , ");
+            doneClassesr.emplace(extp->classp());
             puts(prefixNameProtect(extp->classp()));
             if (constructorNeedsProcess(extp->classp())) {
                 puts("(vlProcess, vlSymsp");
@@ -295,8 +297,8 @@ public:
             const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
             if (nodep->isConstructor() && classp && classp->extendsp()) {
                 puts("\n    : ");
-                bool first = true;
-                putConstructorSubinit(classp, nodep, true, first /*ref*/);
+                std::set<AstClass*> doneClasses;
+                putConstructorSubinit(classp, nodep, true, doneClasses /*ref*/);
             }
         }
         puts(" {\n");
