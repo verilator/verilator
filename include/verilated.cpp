@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -71,6 +71,11 @@
 # include <execinfo.h>
 # define _VL_HAVE_STACKTRACE
 #endif
+#if defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
+# include <sys/time.h>
+# include <sys/resource.h>
+# define _VL_HAVE_GETRLIMIT
+#endif
 
 #include "verilated_threads.h"
 // clang-format on
@@ -107,16 +112,10 @@ thread_local Verilated::ThreadLocal Verilated::t_s;
 
 #ifndef VL_USER_FINISH  ///< Define this to override the vl_finish function
 void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
-    if (false && hier) {}
+    // hier is unused in the default implementation.
+    (void)hier;
     VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
         "- %s:%d: Verilog $finish\n", filename, linenum);
-    if (Verilated::threadContextp()->gotFinish()) {
-        VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
-            "- %s:%d: Second verilog $finish, exiting\n", filename, linenum);
-        Verilated::runFlushCallbacks();
-        Verilated::runExitCallbacks();
-        std::exit(0);
-    }
     Verilated::threadContextp()->gotFinish(true);
 }
 #endif
@@ -142,7 +141,8 @@ void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
 
 #ifndef VL_USER_FATAL  ///< Define this to override the vl_fatal function
 void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
-    if (false && hier) {}
+    // hier is unused in the default implementation.
+    (void)hier;
     Verilated::threadContextp()->gotError(true);
     Verilated::threadContextp()->gotFinish(true);
     if (filename && filename[0]) {
@@ -180,7 +180,8 @@ void vl_stop_maybe(const char* filename, int linenum, const char* hier, bool may
 
 #ifndef VL_USER_WARN  ///< Define this to override the vl_warn function
 void vl_warn(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
-    if (false && hier) {}
+    // hier is unused in the default implementation.
+    (void)hier;
     if (filename && filename[0]) {
         // Not VL_PRINTF_MT, already on main thread
         VL_PRINTF("%%Warning: %s:%d: %s\n", filename, linenum, msg);
@@ -451,6 +452,8 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WData
 
     const int uw = VL_WORDS_I(umsbp1);  // aka "m" in the algorithm
     const int vw = VL_WORDS_I(vmsbp1);  // aka "n" in the algorithm
+    VL_DEBUG_IFDEF(assert(uw <= VL_MULS_MAX_WORDS););
+    VL_DEBUG_IFDEF(assert(vw <= VL_MULS_MAX_WORDS););
 
     if (vw == 1) {  // Single divisor word breaks rest of algorithm
         uint64_t k = 0;
@@ -472,27 +475,25 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WData
 
     // Zero for ease of debugging and to save having to zero for shifts
     // Note +1 as loop will use extra word
-    for (int i = 0; i < words + 1; ++i) { un[i] = vn[i] = 0; }
+    for (int i = 0; i < words + 1; ++i) un[i] = vn[i] = 0;
 
     // Algorithm requires divisor MSB to be set
     // Copy and shift to normalize divisor so MSB of vn[vw-1] is set
     const int s = 31 - VL_BITBIT_I(vmsbp1 - 1);  // shift amount (0...31)
-    const uint32_t shift_mask = s ? 0xffffffff : 0;  // otherwise >> 32 won't mask the value
-    for (int i = vw - 1; i > 0; --i) {
-        vn[i] = (rwp[i] << s) | (shift_mask & (rwp[i - 1] >> (32 - s)));
-    }
-    vn[0] = rwp[0] << s;
-
     // Copy and shift dividend by same amount; may set new upper word
     if (s) {
+        for (int i = vw - 1; i > 0; --i) vn[i] = (rwp[i] << s) | (rwp[i - 1] >> (32 - s));
+        vn[0] = rwp[0] << s;
         un[uw] = lwp[uw - 1] >> (32 - s);
+        for (int i = uw - 1; i > 0; --i) un[i] = (lwp[i] << s) | (lwp[i - 1] >> (32 - s));
+        un[0] = lwp[0] << s;
     } else {
+        for (int i = vw - 1; i > 0; --i) vn[i] = rwp[i];
+        vn[0] = rwp[0];
         un[uw] = 0;
+        for (int i = uw - 1; i > 0; --i) un[i] = lwp[i];
+        un[0] = lwp[0];
     }
-    for (int i = uw - 1; i > 0; --i) {
-        un[i] = (lwp[i] << s) | (shift_mask & (lwp[i - 1] >> (32 - s)));
-    }
-    un[0] = lwp[0] << s;
 
     // Main loop
     for (int j = uw - vw; j >= 0; --j) {
@@ -536,8 +537,10 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WData
 
     if (is_modulus) {  // modulus
         // Need to reverse normalization on copy to output
-        for (int i = 0; i < vw; ++i) {
-            owp[i] = (un[i] >> s) | (shift_mask & (un[i + 1] << (32 - s)));
+        if (s) {
+            for (int i = 0; i < vw; ++i) owp[i] = (un[i] >> s) | (un[i + 1] << (32 - s));
+        } else {
+            for (int i = 0; i < vw; ++i) owp[i] = un[i];
         }
         for (int i = vw; i < words; ++i) owp[i] = 0;
         return owp;
@@ -549,6 +552,8 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, const WDataInP lwp, const WData
 WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lwp,
                      const WDataInP rwp) VL_MT_SAFE {
     // obits==lbits, rbits can be different
+    const int owords = VL_WORDS_I(obits);
+    VL_DEBUG_IFDEF(assert(owords <= VL_MULS_MAX_WORDS););
     owp[0] = 1;
     for (int i = 1; i < VL_WORDS_I(obits); i++) owp[i] = 0;
     // cppcheck-has-bug-suppress variableScope
@@ -560,11 +565,11 @@ WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lw
     for (int bit = 0; bit < rbits; bit++) {
         if (bit > 0) {  // power = power*power
             VL_ASSIGN_W(obits, lastpowstore, powstore);
-            VL_MUL_W(VL_WORDS_I(obits), powstore, lastpowstore, lastpowstore);
+            VL_MUL_W(owords, powstore, lastpowstore, lastpowstore);
         }
         if (VL_BITISSET_W(rwp, bit)) {  // out *= power
             VL_ASSIGN_W(obits, lastoutstore, owp);
-            VL_MUL_W(VL_WORDS_I(obits), owp, lastoutstore, powstore);
+            VL_MUL_W(owords, owp, lastoutstore, powstore);
         }
     }
     return owp;
@@ -660,8 +665,10 @@ double VL_ITOR_D_W(int lbits, const WDataInP lwp) VL_PURE {
 }
 double VL_ISTOR_D_W(int lbits, const WDataInP lwp) VL_MT_SAFE {
     if (!VL_SIGN_W(lbits, lwp)) return VL_ITOR_D_W(lbits, lwp);
+    const int words = VL_WORDS_I(lbits);
+    VL_DEBUG_IFDEF(assert(words <= VL_MULS_MAX_WORDS););
     uint32_t pos[VL_MULS_MAX_WORDS + 1];  // Fixed size, as MSVC++ doesn't allow [words] here
-    VL_NEGATE_W(VL_WORDS_I(lbits), pos, lwp);
+    VL_NEGATE_W(words, pos, lwp);
     _vl_clean_inplace_w(lbits, pos);
     return -VL_ITOR_D_W(lbits, pos);
 }
@@ -2423,6 +2430,7 @@ VerilatedContext::VerilatedContext()
     : m_impdatap{new VerilatedContextImpData} {
     Verilated::lastContextp(this);
     Verilated::threadContextp(this);
+    m_ns.m_coverageFilename = "coverage.dat";
     m_ns.m_profExecFilename = "profile_exec.dat";
     m_ns.m_profVltFilename = "profile.vlt";
     m_fdps.resize(31);
@@ -2457,6 +2465,14 @@ void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
 void VerilatedContext::calcUnusedSigs(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_calcUnusedSigs = flag;
+}
+void VerilatedContext::coverageFilename(const std::string& flag) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    m_ns.m_coverageFilename = flag;
+}
+std::string VerilatedContext::coverageFilename() const VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_ns.m_coverageFilename;
 }
 void VerilatedContext::dumpfile(const std::string& flag) VL_MT_SAFE_EXCLUDES(m_timeDumpMutex) {
     const VerilatedLockGuard lock{m_timeDumpMutex};
@@ -2686,7 +2702,7 @@ std::pair<int, char**> VerilatedContextImp::argc_argv() VL_MT_SAFE_EXCLUDES(m_ar
         int in = 0;
         for (const auto& i : m_args.m_argVec) {
             s_argvp[in] = new char[i.length() + 1];
-            std::strcpy(s_argvp[in], i.c_str());
+            std::memcpy(s_argvp[in], i.c_str(), i.length() + 1);
             ++in;
         }
         s_argvp[s_argc] = nullptr;
@@ -2698,7 +2714,9 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
     if (0 == std::strncmp(arg.c_str(), "+verilator+", std::strlen("+verilator+"))) {
         std::string str;
         uint64_t u64;
-        if (arg == "+verilator+debug") {
+        if (commandArgVlString(arg, "+verilator+coverage+file+", str)) {
+            coverageFilename(str);
+        } else if (arg == "+verilator+debug") {
             Verilated::debug(4);
         } else if (commandArgVlUint64(arg, "+verilator+debugi+", u64, 0,
                                       std::numeric_limits<int>::max())) {
@@ -2994,6 +3012,29 @@ void Verilated::scTraceBeforeElaborationError() VL_MT_SAFE {
                 "%Error: Verilated*Sc::open(...) was called before sc_core::sc_start(). "
                 "Run sc_core::sc_start(sc_core::SC_ZERO_TIME) before opening a wave file.");
     VL_UNREACHABLE;
+}
+
+void Verilated::stackCheck(QData needSize) VL_MT_UNSAFE {
+    // Slowpath - Called only when constructing
+#ifdef _VL_HAVE_GETRLIMIT
+    QData haveSize = 0;
+    rlimit rlim;
+    if (0 == getrlimit(RLIMIT_STACK, &rlim)) {
+        haveSize = rlim.rlim_cur;
+        if (haveSize == RLIM_INFINITY) haveSize = rlim.rlim_max;
+        if (haveSize == RLIM_INFINITY) haveSize = 0;
+    }
+    // VL_PRINTF_MT("-Info: stackCheck(%" PRIu64 ") have %" PRIu64 "\n", needSize, haveSize);
+    // Check for 1.5x need, but suggest 2x so small model increase won't cause warning
+    // if the user follows the suggestions
+    if (VL_UNLIKELY(haveSize && needSize && haveSize < (needSize + needSize / 2))) {
+        VL_PRINTF_MT("%%Warning: System has stack size %" PRIu64 " kb"
+                     " which may be too small; suggest 'ulimit -c %" PRIu64 "' or larger\n",
+                     haveSize / 1024, (needSize * 2) / 1024);
+    }
+#else
+    if (false && needSize) {}  // Unused argument
+#endif
 }
 
 void Verilated::mkdir(const char* dirname) VL_MT_UNSAFE {

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -498,6 +498,8 @@ class EmitCModel final : public EmitCFunc {
         putSectionDelimiter("Trace configuration");
 
         // Forward declaration
+        puts("\nvoid " + topModNameProtected + "__" + protect("trace_decl_types") + "("
+             + v3Global.opt.traceClassBase() + "* tracep);\n");
         puts("\nvoid " + topModNameProtected + "__" + protect("trace_init_top") + "("
              + topModNameProtected + "* vlSelf, " + v3Global.opt.traceClassBase()
              + "* tracep);\n");
@@ -516,6 +518,7 @@ class EmitCModel final : public EmitCFunc {
         puts("vlSymsp->__Vm_baseCode = code;\n");
         puts("tracep->pushPrefix(std::string{vlSymsp->name()}, "
              "VerilatedTracePrefixType::SCOPE_MODULE);\n");
+        puts(topModNameProtected + "__" + protect("trace_decl_types") + "(tracep);\n");
         puts(topModNameProtected + "__" + protect("trace_init_top") + "(vlSelf, tracep);\n");
         puts("tracep->popPrefix();\n");
         puts("}\n");
@@ -545,7 +548,7 @@ class EmitCModel final : public EmitCFunc {
              + +"::trace()' shall not be called after '" + v3Global.opt.traceClassBase()
              + "C::open()'.\");\n");
         puts(/**/ "}\n");
-        puts(/**/ "if (false && levels && options) {}  // Prevent unused\n");
+        puts(/**/ "(void)levels; (void)options; // Prevent unused variable warning\n");
         puts(/**/ "tfp->spTrace()->addModel(this);\n");
         puts(/**/ "tfp->spTrace()->addInitCb(&" + protect("trace_init") + ", &(vlSymsp->TOP));\n");
         puts(/**/ topModNameProtected + "__" + protect("trace_register")

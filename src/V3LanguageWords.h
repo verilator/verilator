@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -28,7 +28,7 @@ class V3LanguageWords final {
     // List of common reserved keywords
 private:
     using KeywordMap = std::map<const string, std::string>;
-    struct Singleton {
+    struct Singleton final {
         KeywordMap s_kwdMap;  // List of keywords, and what language applies
         Singleton() { init(); }
         void addKwd(const string& kwd, const string& why) { s_kwdMap.emplace(kwd, why); }

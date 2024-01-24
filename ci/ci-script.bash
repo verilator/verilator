@@ -21,12 +21,6 @@ fatal() {
   echo "ERROR: $(basename "$0"): $1" >&2; exit 1;
 }
 
-if [ "$CI_M32" = "0" ]; then
-  unset CI_M32
-elif [ "$CI_M32" != "1" ]; then
-  fatal "\$CI_M32 must be '0' or '1'";
-fi
-
 if [ "$CI_OS_NAME" = "linux" ]; then
   export MAKE=make
   NPROC=$(nproc)
@@ -46,7 +40,7 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
 
   if [ "$COVERAGE" != 1 ]; then
     autoconf
-    ./configure --enable-longtests --enable-ccwarn ${CI_M32:+--enable-m32}
+    ./configure --enable-longtests --enable-ccwarn
     ccache -z
     "$MAKE" -j "$NPROC" -k
     # 22.04: ccache -s -v
@@ -90,8 +84,8 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     export VERILATOR_TEST_NO_GPROF=1 # gprof is a bit different on FreeBSD, disable
   fi
 
-  # Run sanitize on Ubuntu 20.04 only
-  [ "$CI_RUNS_ON" = 'ubuntu-20.04' ] && [ "$CI_M32" = "" ] && sanitize='--sanitize' || sanitize=''
+  # Run sanitize on Ubuntu 22.04 only
+  [ "$CI_RUNS_ON" = 'ubuntu-22.04' ] && sanitize='--sanitize' || sanitize=''
 
   # Run the specified test
   ccache -z

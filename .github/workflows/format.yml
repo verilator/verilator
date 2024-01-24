@@ -16,10 +16,9 @@ jobs:
       CI_OS_NAME: linux
       CI_RUNS_ON: ubuntu-22.04
       CI_COMMIT: ${{ github.sha }}
-      CI_M32: 0
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install packages for build

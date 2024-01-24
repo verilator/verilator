@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -41,7 +41,7 @@ public:
 
     // Just a pointer to a heap Node, but with special accessors to help keep back pointers
     // consistent.
-    struct Link {
+    struct Link final {
         Node* m_ptr = nullptr;  // The managed pointer
 
         Link() = default;
@@ -89,7 +89,7 @@ public:
     };
 
     // A single node in the pairing heap tree
-    struct Node {
+    struct Node VL_NOT_FINAL {
         Link m_next;  // Next in list of sibling heaps
         Link m_kids;  // Head of list of child heaps
         Node** m_ownerpp = nullptr;  // Pointer to the Link pointer pointing to this heap

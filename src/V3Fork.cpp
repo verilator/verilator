@@ -7,7 +7,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -414,7 +414,9 @@ class DynScopeVisitor final : public VNVisitor {
     void visit(AstAssignDly* nodep) override {
         if (m_procp && !nodep->user2()  // Unhandled AssignDly in function/task
             && nodep->lhsp()->exists(  // And writes to a local variable
-                [](AstVarRef* refp) { return refp->varp()->isFuncLocal(); })) {
+                [](AstVarRef* refp) {
+                    return refp->access().isWriteOrRW() && refp->varp()->isFuncLocal();
+                })) {
             nodep->user2(true);
             // Put it in a fork to prevent lifetime issues with the local
             AstFork* const forkp = new AstFork{nodep->fileline(), "", nullptr};
@@ -657,11 +659,11 @@ public:
 void V3Fork::makeDynamicScopes(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { DynScopeVisitor{nodep}; }
-    V3Global::dumpCheckGlobalTree("fork_dynscope", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("fork_dynscope", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3Fork::makeTasks(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { ForkVisitor{nodep}; }
-    V3Global::dumpCheckGlobalTree("fork", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("fork", 0, dumpTreeEitherLevel() >= 3);
 }

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -429,7 +429,7 @@ V3Number& V3Number::setLongS(int32_t value) {
     return *this;
 }
 V3Number& V3Number::setDouble(double value) {
-    if (VL_UNCOVERABLE(width() != 64)) v3fatalSrc("Real operation on wrong sized number");
+    UASSERT(width() == 64, "Real operation on wrong sized number");
     m_data.setDouble();
     union {
         double d;
@@ -481,6 +481,11 @@ V3Number& V3Number::setAllBitsXRemoved() {
             return setAllBits0();
         }
     }
+}
+V3Number& V3Number::setValue1() {
+    m_data.num()[0] = {1, 0};
+    for (int i = 1; i < words(); i++) m_data.num()[i] = {0, 0};
+    return *this;
 }
 
 V3Number& V3Number::setMask(int nbits) {
@@ -915,9 +920,7 @@ uint32_t V3Number::toUInt() const VL_MT_SAFE {
 }
 
 double V3Number::toDouble() const VL_MT_SAFE {
-    if (VL_UNCOVERABLE(!isDouble() || width() != 64)) {
-        v3fatalSrc("Real operation on wrong sized/non-real number");
-    }
+    UASSERT(isDouble() && width() == 64, "Real operation on wrong sized/non-real number");
     union {
         double d;
         uint32_t u[2];
@@ -2139,18 +2142,18 @@ V3Number& V3Number::opPow(const V3Number& lhs, const V3Number& rhs, bool lsign, 
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
-    if (rhs.isEqZero()) return setQuad(1);  // Overrides lhs 0 -> return 0
+    if (rhs.isEqZero()) return setValue1();  // Overrides lhs 0 -> return 1
     // We may want to special case when the lhs is 2, so we can get larger outputs
     if (rsign && rhs.isNegative()) {
         if (lhs.isEqZero()) {
             return setAllBitsXRemoved();
         } else if (lhs.isEqOne()) {
-            return setQuad(1);
+            return setValue1();
         } else if (lsign && lhs.isEqAllOnes()) {
             if (rhs.bitIs1(0)) {
                 return setAllBits1();  // -1^odd=-1
             } else {
-                return setQuad(1);  // -1^even=1
+                return setValue1();  // -1^even=1
             }
         }
         return setZero();
@@ -2390,7 +2393,7 @@ V3Number& V3Number::opRToIRoundS(const V3Number& lhs) {
 V3Number& V3Number::opRealToBits(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_DOUBLE_ARGS1(lhs);
-    if (lhs.width() != 64 || width() != 64) v3fatalSrc("Real operation on wrong sized number");
+    UASSERT(lhs.width() == 64 && width() == 64, "Real operation on wrong sized number");
     union {
         double m_d;
         uint64_t m_v;
@@ -2400,7 +2403,7 @@ V3Number& V3Number::opRealToBits(const V3Number& lhs) {
 }
 V3Number& V3Number::opBitsToRealD(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
-    if (lhs.width() != 64 || width() != 64) v3fatalSrc("Real operation on wrong sized number");
+    UASSERT(lhs.width() == 64 && width() == 64, "Real operation on wrong sized number");
     union {
         double m_d;
         uint64_t m_v;

@@ -14,7 +14,7 @@ scenarios(linter => 1);
 
 lint(
     fails => 1
-);
+    );
 
 ok(1);
 1;

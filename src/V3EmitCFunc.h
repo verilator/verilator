@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -124,7 +124,7 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     bool m_emitConstInit = false;  // Emitting constant initializer
 
     // State associated with processing $display style string formatting
-    struct EmitDispState {
+    struct EmitDispState final {
         string m_format;  // "%s" and text from user
         std::vector<char> m_argsChar;  // Format of each argument to be printed
         std::vector<AstNode*> m_argsp;  // Each argument to be printed
@@ -248,6 +248,35 @@ public:
         return nullptr;
     }
 
+    void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp, bool top,
+                               std::set<AstClass*>& doneClassesr) {
+        for (const AstClassExtends* extp = classp->extendsp(); extp;
+             extp = VN_AS(extp->nextp(), ClassExtends)) {
+            if (extp->classp()->useVirtualPublic()) {
+                // It's a c++ virtual class (diamond relation)
+                // Must get the subclasses initialized first
+                putConstructorSubinit(extp->classp(), cfuncp, false, doneClassesr);
+            }
+            // Diamond pattern with same base class twice?
+            if (doneClassesr.find(extp->classp()) != doneClassesr.end()) continue;
+            puts(doneClassesr.empty() ? "" : "\n    , ");
+            doneClassesr.emplace(extp->classp());
+            puts(prefixNameProtect(extp->classp()));
+            if (constructorNeedsProcess(extp->classp())) {
+                puts("(vlProcess, vlSymsp");
+            } else {
+                puts("(vlSymsp");
+            }
+            if (top) {
+                const AstCNew* const superNewCallp = getSuperNewCallRecursep(cfuncp->stmtsp());
+                UASSERT_OBJ(superNewCallp, cfuncp, "super.new call not found");
+                putCommaIterateNext(superNewCallp->argsp(), true);
+            }
+            puts(")");
+            top = false;
+        }
+    }
+
     // VISITORS
     using EmitCConstInit::visit;
     void visit(AstCFunc* nodep) override {
@@ -265,20 +294,13 @@ public:
         if (nodep->isInline()) puts("VL_INLINE_OPT ");
         emitCFuncHeader(nodep, m_modp, /* withScope: */ true);
 
-        if (!nodep->baseCtors().empty()) {
-            puts(": ");
-            puts(nodep->baseCtors());
+        if (nodep->isConstructor()) {
             const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
-            // Find call to super.new to get the arguments
-            if (classp && constructorNeedsProcess(classp)) {
-                puts("(vlProcess, vlSymsp");
-            } else {
-                puts("(vlSymsp");
+            if (nodep->isConstructor() && classp && classp->extendsp()) {
+                puts("\n    : ");
+                std::set<AstClass*> doneClasses;
+                putConstructorSubinit(classp, nodep, true, doneClasses /*ref*/);
             }
-            const AstCNew* const superNewCallp = getSuperNewCallRecursep(nodep->stmtsp());
-            UASSERT_OBJ(superNewCallp, nodep, "super.new call not found");
-            putCommaIterateNext(superNewCallp->argsp(), true);
-            puts(")");
         }
         puts(" {\n");
 
@@ -286,7 +308,7 @@ public:
             m_lazyDecls.declared(nodep);  // Defined here, so no longer needs declaration
             if (!nodep->isStatic()) {  // Standard prologue
                 m_useSelfForThis = true;
-                puts("if (false && vlSelf) {}  // Prevent unused\n");
+                puts("(void)vlSelf;  // Prevent unused variable warning\n");
                 if (!VN_IS(m_modp, Class)) puts(symClassAssign());
             }
         }
@@ -993,14 +1015,14 @@ public:
     }
     void visit(AstTime* nodep) override {
         puts("VL_TIME_UNITED_Q(");
-        if (nodep->timeunit().isNone()) nodep->v3fatalSrc("$time has no units");
+        UASSERT_OBJ(!nodep->timeunit().isNone(), nodep, "$time has no units");
         puts(cvtToStr(nodep->timeunit().multiplier()
                       / v3Global.rootp()->timeprecision().multiplier()));
         puts(")");
     }
     void visit(AstTimeD* nodep) override {
         puts("VL_TIME_UNITED_D(");
-        if (nodep->timeunit().isNone()) nodep->v3fatalSrc("$realtime has no units");
+        UASSERT_OBJ(!nodep->timeunit().isNone(), nodep, "$realtime has no units");
         puts(cvtToStr(nodep->timeunit().multiplier()
                       / v3Global.rootp()->timeprecision().multiplier()));
         puts(")");

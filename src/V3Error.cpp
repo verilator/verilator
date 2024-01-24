@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -27,7 +27,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 //======================================================================
 
-struct v3errorIniter {
+struct v3errorIniter final {
     v3errorIniter() { V3Error::init(); }
 };
 v3errorIniter v3errorInit;
@@ -256,9 +256,8 @@ void V3Error::init() {
         describedEachWarn(static_cast<V3ErrorCode>(i), false);
         pretendError(static_cast<V3ErrorCode>(i), V3ErrorCode{i}.pretendError());
     }
-    if (VL_UNCOVERABLE(string{V3ErrorCode{V3ErrorCode::_ENUM_MAX}.ascii()} != " MAX")) {
-        v3fatalSrc("Enum table in V3ErrorCode::EC_ascii() is munged");
-    }
+    UASSERT(std::string{V3ErrorCode{V3ErrorCode::_ENUM_MAX}.ascii()} == " MAX",
+            "Enum table in V3ErrorCode::EC_ascii() is munged");
 }
 
 string V3Error::lineStr(const char* filename, int lineno) VL_PURE {

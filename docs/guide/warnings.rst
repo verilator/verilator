@@ -1,4 +1,4 @@
-.. Copyright 2003-2023 by Wilson Snyder.
+.. Copyright 2003-2024 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 *******************
@@ -2131,3 +2131,46 @@ List Of Warnings
    Inactive region. Such processes do get resumed in the same time slot
    somewhere in the Active region. Issued only if Verilator is run with the
    :vlopt:`--timing` option.
+
+.. option:: ZEROREPL
+
+   Warns that zero is used as the replication value in the replication
+   operator. This is specified as an error by IEEE 1800-2017 11.4.12.1.
+
+   Faulty example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 5
+
+         module dut
+            #(parameter int MY_PARAM = 0);
+           reg [7:0] data;
+           always @* begin
+             data = {MY_PARAM{1'b1}}; //<--- WARNING
+           end
+         endmodule
+
+   Results in the following error:
+
+   .. code-block::
+
+       %Error-ZEROREPL: test.v:5:22: Replication value of 0 is only legal under a concatenation (IEEE 1800-2017 11.4.12.1)
+
+   Note that in some cases, this warning may be false, when a condition
+   upstream or downstream of the access means the zero replication will
+   never execute or be used.
+
+   Repaired example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 2
+
+         module dut
+            #(parameter int MY_PARAM = 1); //<--- REPAIRED
+           reg [7:0] data;
+           always @* begin
+             data = {MY_PARAM{1'b1}};
+           end
+         endmodule

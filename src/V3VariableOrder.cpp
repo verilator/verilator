@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -78,7 +78,7 @@ class VariableOrder final {
     //  AstVar::user1()    -> attributes, via m_attributes
     const VNUser1InUse m_user1InUse;  // AstVar
 
-    struct VarAttributes {
+    struct VarAttributes final {
         uint32_t stratum;  // Roughly equivalent to alignment requirement, to avoid padding
         bool anonOk;  // Can be emitted as part of anonymous structure
     };
@@ -202,5 +202,5 @@ void V3VariableOrder::orderAll() {
          modp = VN_AS(modp->nextp(), NodeModule)) {
         VariableOrder::processModule(modp);
     }
-    V3Global::dumpCheckGlobalTree("variableorder", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("variableorder", 0, dumpTreeEitherLevel() >= 3);
 }

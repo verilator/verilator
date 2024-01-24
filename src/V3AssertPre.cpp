@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -189,7 +189,9 @@ private:
                 m_clockingp->addNextHere(new AstAlwaysObserved{
                     flp, new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, forkp});
                 if (v3Global.opt.timing().isSetTrue()) {
-                    assignp->timingControlp(new AstDelay{flp, skewp->unlinkFrBack(), false});
+                    AstDelay* const delayp = new AstDelay{flp, skewp->unlinkFrBack(), false};
+                    delayp->timeunit(m_modp->timeunit());
+                    assignp->timingControlp(delayp);
                 } else if (v3Global.opt.timing().isSetFalse()) {
                     nodep->v3warn(E_NOTIMING,
                                   "Clocking output skew greater than #0 requires --timing");
@@ -493,5 +495,5 @@ public:
 void V3AssertPre::assertPreAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { AssertPreVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("assertpre", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("assertpre", 0, dumpTreeEitherLevel() >= 3);
 }

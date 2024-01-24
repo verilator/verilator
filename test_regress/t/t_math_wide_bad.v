@@ -11,11 +11,11 @@ module t (/*AUTOARG*/
    a, b
    );
 
-   input signed [17*32 : 0] a;
-   input signed [17*32 : 0] b;
+   input signed [170*32 : 0] a;
+   input signed [170*32 : 0] b;
 
-   output signed [17*32 : 0] z;
-   output signed [17*32 : 0] z2;
+   output signed [170*32 : 0] z;
+   output signed [170*32 : 0] z2;
    output real r;
 
    assign z = a * b;

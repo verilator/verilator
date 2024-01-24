@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -318,9 +318,7 @@ void V3Os::filesystemFlushBuildDir(const string& dirname) {
     // Attempt to force out written directory, for NFS like file systems.
 #if !defined(_MSC_VER) && !defined(__MINGW32__)
     // Linux kernel may not reread from NFS unless timestamp modified
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    const int err = utimes(dirname.c_str(), &tv);
+    const int err = utimes(dirname.c_str(), nullptr);
     // Not an error
     if (err != 0) UINFO(1, "-Info: File not utimed: " << dirname << endl);
 #endif

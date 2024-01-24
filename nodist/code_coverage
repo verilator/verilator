@@ -348,7 +348,7 @@ files. Run as:
   cd $VERILATOR_ROOT
   nodist/code_coverage""",
     epilog=
-    """Copyright 2019-2023 by Wilson Snyder. This program is free software; you
+    """Copyright 2019-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

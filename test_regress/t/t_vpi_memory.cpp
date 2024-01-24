@@ -152,10 +152,10 @@ void _mem_check(const char* name, int size, int left, int right, int words) {
         // make sure trying to get properties that don't exist
         // doesn't crash
         TestVpiHandle iter_h = vpi_iterate(vpiMemoryWord, mem_h);
-        int should_be_0 = vpi_get(vpiSize, iter_h);
-        TEST_CHECK_EQ(should_be_0, 0);
-        should_be_0 = vpi_get(vpiIndex, iter_h);
-        TEST_CHECK_EQ(should_be_0, 0);
+        int should_be_undefined = vpi_get(vpiSize, iter_h);
+        TEST_CHECK_EQ(should_be_undefined, vpiUndefined);
+        should_be_undefined = vpi_get(vpiIndex, iter_h);
+        TEST_CHECK_EQ(should_be_undefined, vpiUndefined);
         vpiHandle should_be_NULL = vpi_handle(vpiLeftRange, iter_h);
         TEST_CHECK_EQ(should_be_NULL, 0);
         should_be_NULL = vpi_handle(vpiRightRange, iter_h);

@@ -7,7 +7,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -225,7 +225,7 @@ VirtIfaceTriggers makeVirtIfaceTriggers(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     if (v3Global.hasVirtIfaces()) {
         VirtIfaceVisitor visitor{nodep};
-        V3Global::dumpCheckGlobalTree("sched_vif", 0, dumpTreeLevel() >= 6);
+        V3Global::dumpCheckGlobalTree("sched_vif", 0, dumpTreeEitherLevel() >= 6);
         return visitor.take_triggers();
     }
     return {};

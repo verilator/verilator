@@ -245,8 +245,8 @@ class Cpt:
                     self.output_func(lambda self: self._output_line())
                     self.tree_line(func)
                     didln = False
-                elif not re.match(r'^\s*/[/\*]\s*TREE', line) and re.search(
-                        r'\s+TREE', line):
+                elif not re.match(r'^\s*(#define|/[/\*])\s*TREE',
+                                  line) and re.search(r'\s+TREE', line):
                     self.error("Unknown astgen line: " + line)
                 else:
                     self.print(line)
@@ -1287,7 +1287,7 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
     description="""Generate V3Ast headers to reduce C++ code duplication.""",
     epilog=
-    """Copyright 2002-2023 by Wilson Snyder. This program is free software; you
+    """Copyright 2002-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

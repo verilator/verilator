@@ -8,7 +8,7 @@
 
 #include "verilated.h"
 
-#include "Vt_gantt_two.h"
+#include VM_PREFIX_INCLUDE
 
 #include <memory>
 

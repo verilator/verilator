@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -100,8 +100,16 @@ private:
         puts("}\n");
         puts("\n");
 
-        puts("// Final model cleanup\n");
+        puts("// Execute 'final' processes\n");
         puts("topp->final();\n");
+        puts("\n");
+
+        if (v3Global.opt.coverage()) {
+            puts("// Write coverage data (since Verilated with --coverage)\n");
+            puts("contextp->coveragep()->write();\n");
+            puts("\n");
+        }
+
         puts("return 0;\n");
         puts("}\n");
 

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -122,7 +122,7 @@ class ExtractCyclicComponents final {
     static constexpr size_t UNASSIGNED = std::numeric_limits<size_t>::max();
 
     // TYPES
-    struct VertexState {
+    struct VertexState final {
         size_t index = UNASSIGNED;  // Used by Pearce's algorithm for detecting SCCs
         size_t component = UNASSIGNED;  // Result component number (0 stays in input graph)
         bool merged = false;  // Visited in the merging pass

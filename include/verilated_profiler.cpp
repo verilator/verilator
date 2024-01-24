@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2012-2023 by Wilson Snyder. This program is free software; you can
+// Copyright 2012-2024 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -106,7 +106,7 @@ VerilatedVirtualBase* VlExecutionProfiler::construct(VerilatedContext& context) 
     if (VlThreadPool* const threadPoolp = static_cast<VlThreadPool*>(context.threadPoolp())) {
         for (int i = 0; i < threadPoolp->numThreads(); ++i) {
             // Data to pass to worker thread initialization
-            struct Data {
+            struct Data final {
                 VlExecutionProfiler* const selfp;
                 const uint32_t threadId;
             } data{selfp, static_cast<uint32_t>(i + 1)};

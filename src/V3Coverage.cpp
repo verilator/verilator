@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -39,7 +39,7 @@ class CoverageVisitor final : public VNVisitor {
     // TYPES
     using LinenoSet = std::set<int>;
 
-    struct ToggleEnt {
+    struct ToggleEnt final {
         const string m_comment;  // Comment for coverage dump
         AstNodeExpr* m_varRefp;  // How to get to this element
         AstNodeExpr* m_chgRefp;  // How to get to this element
@@ -54,7 +54,7 @@ class CoverageVisitor final : public VNVisitor {
         }
     };
 
-    struct CheckState {  // State save-restored on each new coverage scope/block
+    struct CheckState final {  // State save-restored on each new coverage scope/block
         bool m_on = false;  // Should this block get covered?
         bool m_inModOff = false;  // In module with no coverage
         int m_handle = 0;  // Opaque handle for index into line tracking
@@ -556,5 +556,5 @@ public:
 void V3Coverage::coverage(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { CoverageVisitor{rootp}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("coverage", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("coverage", 0, dumpTreeEitherLevel() >= 3);
 }

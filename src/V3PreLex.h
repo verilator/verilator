@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2000-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2000-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -162,6 +162,7 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
     int m_streamDepth = 0;  // Depth of stream processing
     YY_BUFFER_STATE m_bufferState;  // Flex state
     FileLine* m_tokFilelinep;  // Starting position of current token
+    std::deque<FileLine> m_lexLintState;  // Current lint state for save/restore
 
     // State to lexer
     static V3PreLex* s_currentLexp;  ///< Current lexing point
@@ -209,6 +210,9 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
         }
     }
     void warnBackslashSpace();
+    void verilatorCmtLint(const char* textp, bool warnOff);
+    void verilatorCmtLintRestore();
+    void verilatorCmtLintSave();
     // Called by V3PreProc.cpp to inform lexer
     void pushStateDefArg(int level);
     void pushStateDefForm();

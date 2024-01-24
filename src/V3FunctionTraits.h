@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -42,7 +42,7 @@ struct FunctionTraits<ReturnType (ClassType::*)(Args...) const> VL_NOT_FINAL {
 
     // Type of arguments
     template <std::size_t I>
-    struct arg {
+    struct arg final {
         using type = typename std::tuple_element<I, std::tuple<Args...>>::type;
     };
 };

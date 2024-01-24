@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -162,11 +162,10 @@ class SplitAsVisitor final : public VNVisitor {
             if (splitVscp) {
                 UINFO(3, "Split  " << nodep << endl);
                 UINFO(3, "   For " << splitVscp << endl);
-                if (splitVscp == lastSplitVscp) {
-                    // We did this last time!  Something's stuck!
-                    nodep->v3fatalSrc("Infinite loop in isolate_assignments removal for: "
-                                      << splitVscp->prettyNameQ());
-                }
+                // If we did this last time!  Something's stuck!
+                UASSERT_OBJ(splitVscp != lastSplitVscp, nodep,
+                            "Infinite loop in isolate_assignments removal for: "
+                                << splitVscp->prettyNameQ());
                 lastSplitVscp = splitVscp;
                 splitAlways(nodep, splitVscp);
                 ++m_statSplits;
@@ -193,5 +192,5 @@ public:
 void V3SplitAs::splitAsAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { SplitAsVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("splitas", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("splitas", 0, dumpTreeEitherLevel() >= 3);
 }

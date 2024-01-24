@@ -8,7 +8,7 @@
 
 #include <verilated.h>
 
-#include "Vt_func_rand.h"
+#include VM_PREFIX_INCLUDE
 
 double sc_time_stamp() { return 0; }
 

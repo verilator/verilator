@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -361,7 +361,8 @@ private:
         return true;
     }
     bool readContentsFilter(const string& filename, StrList& outl) {
-        if (filename != "" || outl.empty()) {}  // Prevent unused
+        (void)filename;  // Prevent unused variable warning
+        (void)outl;  // Prevent unused variable warning
 #ifdef INFILTER_PIPE
         writeFilter("read \"" + filename + "\"\n");
         const string line = readFilterLine();
@@ -484,7 +485,7 @@ private:
         }
     }
     void startFilter(const string& command) {
-        if (command == "") {}  // Prevent Unused
+        (void)command;  // Prevent Unused variable warning
 #ifdef INFILTER_PIPE
         int fd_stdin[2];  // Can't use std::array
         int fd_stdout[2];  // Can't use std::array
@@ -605,7 +606,7 @@ VInFilter::~VInFilter() {
 }
 
 bool VInFilter::readWholefile(const string& filename, VInFilter::StrList& outl) {
-    if (!m_impp) v3fatalSrc("readWholefile on invalid filter");
+    UASSERT(m_impp, "readWholefile on invalid filter");
     return m_impp->readWholefile(filename, outl);
 }
 

@@ -4,7 +4,7 @@
 // without warranty, 2008 by Lane Brooks.
 // SPDX-License-Identifier: CC0-1.0
 
-#include "Vt_tri_pullup.h"
+#include VM_PREFIX_INCLUDE
 
 VM_PREFIX* tb = nullptr;
 

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -67,10 +67,10 @@ class V3CCtorsBuilder final {
         string preventUnusedStmt;
         if (m_type.isClass()) {
             funcp->argTypes(EmitCBase::symClassVar());
-            preventUnusedStmt = "if (false && vlSymsp) {}  // Prevent unused\n";
+            preventUnusedStmt = "(void)vlSymsp;  // Prevent unused variable warning\n";
         } else if (m_type.isCoverage()) {
             funcp->argTypes("bool first");
-            preventUnusedStmt = "if (false && first) {}  // Prevent unused\n";
+            preventUnusedStmt = "(void)first;  // Prevent unused variable warning\n";
         }
         if (!preventUnusedStmt.empty()) {
             funcp->addStmtsp(new AstCStmt{m_modp->fileline(), preventUnusedStmt});
@@ -252,5 +252,5 @@ void V3CCtors::cctorsAll() {
     UINFO(2, __FUNCTION__ << ": " << endl);
     evalAsserts();
     { CCtorsVisitor{v3Global.rootp()}; }
-    V3Global::dumpCheckGlobalTree("cctors", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("cctors", 0, dumpTreeEitherLevel() >= 3);
 }

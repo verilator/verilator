@@ -189,7 +189,7 @@ public:
     // Used by coroutines for co_awaiting a certain simulation time
     auto delay(uint64_t delay, VlProcessRef process, const char* filename = VL_UNKNOWN,
                int lineno = 0) {
-        struct Awaitable {
+        struct Awaitable final {
             VlProcessRef process;  // Data of the suspended process, null if not needed
             VlDelayedCoroutineQueue& queue;
             std::vector<VlCoroutineHandle>& queueZeroDelay;
@@ -260,7 +260,7 @@ public:
                  const char* filename = VL_UNKNOWN, int lineno = 0) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Suspending process waiting for %s at %s:%d\n",
                                 eventDescription, filename, lineno););
-        struct Awaitable {
+        struct Awaitable final {
             VlCoroutineVec& suspended;  // Coros waiting on trigger
             VlProcessRef process;  // Data of the suspended process, null if not needed
             VlFileLineDebug fileline;
@@ -308,7 +308,7 @@ class VlDynamicTriggerScheduler final {
 
     // METHODS
     auto awaitable(VlProcessRef process, VlCoroutineVec& queue, const char* filename, int lineno) {
-        struct Awaitable {
+        struct Awaitable final {
             VlProcessRef process;  // Data of the suspended process, null if not needed
             VlCoroutineVec& suspended;  // Coros waiting on trigger
             VlFileLineDebug fileline;
@@ -362,7 +362,7 @@ public:
 // VlForever is a helper awaitable type for suspending coroutines forever. Used for constant
 // wait statements.
 
-struct VlForever {
+struct VlForever final {
     bool await_ready() const { return false; }  // Always suspend
     void await_suspend(std::coroutine_handle<> coro) const { coro.destroy(); }
     void await_resume() const {}
@@ -374,7 +374,7 @@ struct VlForever {
 class VlForkSync final {
     // VlJoin stores the handle of a suspended coroutine that did a fork..join or fork..join_any.
     // If the counter reaches 0, the suspended coroutine shall be resumed.
-    struct VlJoin {
+    struct VlJoin final {
         size_t m_counter = 0;  // When reaches 0, resume suspended coroutine
         VlCoroutineHandle m_susp;  // Coroutine to resume
     };
@@ -393,7 +393,7 @@ public:
         assert(m_join);
         VL_DEBUG_IF(
             VL_DBG_MSGF("             Awaiting join of fork at: %s:%d\n", filename, lineno););
-        struct Awaitable {
+        struct Awaitable final {
             VlProcessRef process;  // Data of the suspended process, null if not needed
             const std::shared_ptr<VlJoin> join;  // Join to await on
             VlFileLineDebug fileline;
@@ -415,7 +415,7 @@ public:
 class VlCoroutine final {
 private:
     // TYPES
-    struct VlPromise {
+    struct VlPromise final {
         std::coroutine_handle<> m_continuation;  // Coroutine to resume after this one finishes
         VlCoroutine* m_corop = nullptr;  // Pointer to the coroutine return object
 

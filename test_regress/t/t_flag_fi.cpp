@@ -8,7 +8,7 @@
 
 #include <verilated.h>
 
-#include "Vt_flag_fi.h"
+#include VM_PREFIX_INCLUDE
 
 //======================================================================
 

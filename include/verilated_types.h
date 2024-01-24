@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -130,7 +130,7 @@ public:
     VlProcess()
         : m_state{RUNNING} {}
     // Construct child process of parent
-    VlProcess(VlProcessRef parentp)
+    explicit VlProcess(VlProcessRef parentp)
         : m_state{RUNNING}
         , m_parentp{parentp} {
         m_parentp->attach(this);
@@ -611,6 +611,11 @@ public:
     void insert(int32_t index, const T_Value& value) {
         if (VL_UNLIKELY(index < 0 || index > m_deque.size())) return;
         m_deque.insert(m_deque.begin() + index, value);
+    }
+
+    // inside (set membership operator)
+    bool inside(const T_Value& value) const {
+        return std::find(m_deque.begin(), m_deque.end(), value) != m_deque.end();
     }
 
     // Return slice q[lsb:msb]
@@ -1308,6 +1313,11 @@ public:
     bool operator==(const VlUnpacked<T_Value, T_Depth>& that) const { return !neq(that); }
     bool operator!=(const VlUnpacked<T_Value, T_Depth>& that) { return neq(that); }
 
+    // inside (set membership operator)
+    bool inside(const T_Value& value) const {
+        return std::find(std::begin(m_storage), std::end(m_storage), value) != std::end(m_storage);
+    }
+
     void sort() { std::sort(std::begin(m_storage), std::end(m_storage)); }
     template <typename Func>
     void sort(Func with_func) {
@@ -1582,7 +1592,7 @@ public:
 // Represents the null pointer. Used for setting VlClassRef to null instead of
 // via nullptr_t, to prevent the implicit conversion of 0 to nullptr.
 
-struct VlNull {
+struct VlNull final {
     operator bool() const { return false; }
 };
 
@@ -1741,7 +1751,7 @@ template <typename T_Sampled>
 class VlSampleQueue final {
     // TYPES
     // Type representing a single value sample at a point in time
-    struct VlSample {
+    struct VlSample final {
         uint64_t m_timestamp;  // Timestamp at which the value was sampled
         T_Sampled m_value;  // The sampled value
     };

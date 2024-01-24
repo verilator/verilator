@@ -43,8 +43,6 @@ if ( ! -e $Self->{obj_dir} . '/Vt_flag_verilate.mk' ) {
 
 # Just build, no Verilation. .tree must not be saved even with --dump-tree option.
 compile(  # Don't call cmake nor gmake from driver.pl. Just build here
-    verilator_make_cmake => 0,
-    verilator_make_gmake => 0,
     verilator_flags2 => ['--exe --cc --build --no-verilate',
                          '../' . $Self->{main_filename},
                          '--debugi 1 --dump-tree --dump-tree-addrids'],

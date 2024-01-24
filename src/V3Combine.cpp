@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -43,7 +43,7 @@ class CombineVisitor final : VNVisitor {
 
     // TYPES
     using funcit_t = std::list<AstCFunc*>::iterator;
-    struct CFuncs {
+    struct CFuncs final {
         std::list<AstCFunc*> m_fast;
         std::list<AstCFunc*> m_slow;
     };
@@ -235,5 +235,5 @@ public:
 void V3Combine::combineAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     CombineVisitor::apply(nodep);
-    V3Global::dumpCheckGlobalTree("combine", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("combine", 0, dumpTreeEitherLevel() >= 3);
 }

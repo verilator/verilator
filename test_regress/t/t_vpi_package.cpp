@@ -68,57 +68,95 @@
     }
 
 extern "C" {
+int count_params(TestVpiHandle& handle, int expectedParams) {
+    TestVpiHandle it = vpi_iterate(vpiParameter, handle);
+    CHECK_RESULT_NZ(it)
+
+    int params = 0;
+    while (true) {
+        TestVpiHandle handle = vpi_scan(it);
+        if (!handle) break;
+        const int vpi_type = vpi_get(vpiType, handle);
+        CHECK_RESULT(vpi_type, vpiParameter);
+        params++;
+    }
+    it.freed();
+    CHECK_RESULT(params, expectedParams);
+
+    return 0;
+}
+
+int check_handle(char* name, vpiHandle scopeHandle) {
+    const TestVpiHandle handle = vpi_handle_by_name(name, scopeHandle);
+    CHECK_RESULT_NZ(handle)
+    return 0;
+}
+
 int mon_check() {
 #ifdef TEST_VERBOSE
     printf("-mon_check()\n");
 #endif
 
     TestVpiHandle it = vpi_iterate(vpiModule, NULL);
+    CHECK_RESULT_NZ(it)
 
     bool found_t = false;
     while (true) {
         TestVpiHandle handle = vpi_scan(it);
         if (handle == NULL) break;
-        if (strcmp("t", vpi_get_str(vpiName, handle))) {
-            return __LINE__;
-        } else {
-            if (found_t) return __LINE__;
-            found_t = true;
-        }
+        CHECK_RESULT_CSTR("t", vpi_get_str(vpiName, handle))
+        CHECK_RESULT_Z(found_t)
+        found_t = true;
     }
     it.freed();
-    if (!found_t) return __LINE__;
+    CHECK_RESULT_NZ(found_t);
 
     it = vpi_iterate(vpiInstance, NULL);
+    CHECK_RESULT_NZ(it)
 
-    found_t = false;
-    bool found_somepackage = false;
-    bool found_dollar_unit = false;
+    TestVpiHandle pkgHandle = NULL;
+    TestVpiHandle tHandle = NULL;
+    TestVpiHandle unitHandle = NULL;
     while (true) {
         TestVpiHandle handle = vpi_scan(it);
         if (handle == NULL) break;
         const char* name = vpi_get_str(vpiName, handle);
         const char* fullname = vpi_get_str(vpiFullName, handle);
         if (!strcmp("t", name)) {
-            if (strcmp("t", fullname)) return __LINE__;
-            if (found_t) return __LINE__;
-            found_t = true;
+            CHECK_RESULT_CSTR("t", fullname)
+            CHECK_RESULT_Z(tHandle)
+            tHandle = handle;
+            handle.freed();
         } else if (!strcmp("somepackage", name)) {
-            if (strcmp("somepackage::", fullname)) return __LINE__;
-            if (found_somepackage) return __LINE__;
-            found_somepackage = true;
+            CHECK_RESULT_CSTR("somepackage::", fullname)
+            CHECK_RESULT_Z(pkgHandle)
+            pkgHandle = handle;
+            handle.freed();
         } else if (!strcmp("$unit", name)) {
-            if (strcmp("$unit::", fullname)) return __LINE__;
-            if (found_dollar_unit) return __LINE__;
-            found_dollar_unit = true;
+            CHECK_RESULT_CSTR("$unit::", fullname)
+            CHECK_RESULT_Z(unitHandle)
+            unitHandle = handle;
+            handle.freed();
         } else {
-            return __LINE__;
+            CHECK_RESULT_NZ(0)
         }
     }
     it.freed();
-    if (!found_t) return __LINE__;
-    if (!found_somepackage) return __LINE__;
-    if (!found_dollar_unit) return __LINE__;
+    CHECK_RESULT_NZ(pkgHandle)
+    CHECK_RESULT_NZ(tHandle)
+    CHECK_RESULT_NZ(unitHandle)
+
+    CHECK_RESULT_Z(count_params(unitHandle, 1));
+    CHECK_RESULT_Z(count_params(pkgHandle, 2));
+    CHECK_RESULT_Z(count_params(tHandle, 3));
+
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("someOtherInt"), tHandle))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("t.someOtherInt"), NULL))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("someInt"), pkgHandle))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("somepackage::someInt"), NULL))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("dollarUnitInt"), unitHandle))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("$unit::dollarUnitInt"), NULL))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("somepackage"), NULL))
 
     return 0;  // Ok
 }

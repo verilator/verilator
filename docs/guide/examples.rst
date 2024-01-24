@@ -1,4 +1,4 @@
-.. Copyright 2003-2023 by Wilson Snyder.
+.. Copyright 2003-2024 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _Examples:
@@ -9,6 +9,7 @@ Examples
 
 This section covers the following examples:
 
+* :ref:`Example Create-Binary Execution`
 * :ref:`Example C++ Execution`
 * :ref:`Example SystemC Execution`
 * :ref:`Examples in the Distribution`

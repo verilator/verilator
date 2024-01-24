@@ -4,17 +4,15 @@
 // any use, without warranty, 2020 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t(/*AUTOARG*/);
+module Mod_Dead;
+endmodule
 
-   int q[$];
-   int assoc[int];
-   int dyn[];
-   bit m;
+module t (/*AUTOARG*/);
+
+   Mod_Dead cell_keptdead();
 
    initial begin
-      m = (10 inside {q});
-      m = (10 inside {assoc});
-      m = (10 inside {dyn});
+      $write("*-* All Finished *-*\n");
+      $finish;
    end
-
 endmodule

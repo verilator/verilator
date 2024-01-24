@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -206,7 +206,7 @@ public:
     }
     void lifeToAbove() {
         // Any varrefs under a if/else branch affect statements outside and after the if/else
-        if (!m_aboveLifep) v3fatalSrc("Pushing life when already at the top level");
+        UASSERT(m_aboveLifep, "Pushing life when already at the top level");
         for (auto& itr : m_map) {
             AstVarScope* const nodep = itr.first;
             m_aboveLifep->complexAssignFind(nodep);
@@ -503,5 +503,5 @@ void V3Life::lifeAll(AstNetlist* nodep) {
         LifeTopVisitor{nodep, &state};
     }  // Destruct before checking
     VIsCached::clearCacheTree();  // Removing assignments may affect isPure
-    V3Global::dumpCheckGlobalTree("life", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("life", 0, dumpTreeEitherLevel() >= 3);
 }

@@ -508,7 +508,7 @@ BISON GRAMMAR EXTENSIONS
     If the bison version is >= the specified version, include the given
     command.
 
-Copyright 2002-2023 by Wilson Snyder. This program is free software; you
+Copyright 2002-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

@@ -4,7 +4,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
 #include VM_PREFIX_INCLUDE
-#include "Vt_sc_names.h"
 
 using namespace sc_core;
 

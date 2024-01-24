@@ -12,7 +12,7 @@ scenarios(simulator => 1);
 
 top_filename("t/t_process.v");
 
-compile(
+lint(
     expect_filename => $Self->{golden_filename},
     v_flags2 => ["+define+T_PROCESS+std::process", "--no-timing"],
     fails => 1,

@@ -23,13 +23,23 @@ int main(int argc, char** argv) {
     srand48(5);
 
     const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX};
-    topp->inc = 1;
     topp->clk = false;
+    topp->inc1 = 1;
+    topp->eval();
+    topp->inc2 = 1;
     topp->eval();
 
+    bool flop = true;
     while (!contextp->gotFinish() && contextp->time() < 100000) {
         contextp->timeInc(5);
-        if (topp->clk) topp->inc += 1;
+        if (topp->clk) {
+            if (flop) {
+                topp->inc1 += 1;
+            } else {
+                topp->inc2 += 1;
+            }
+            flop = !flop;
+        }
         topp->clk = !topp->clk;
         topp->eval();
     }

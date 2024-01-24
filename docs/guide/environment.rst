@@ -1,4 +1,4 @@
-.. Copyright 2003-2023 by Wilson Snyder.
+.. Copyright 2003-2024 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 Environment
@@ -29,7 +29,7 @@ associated programs.
 .. option:: OBJCACHE
 
    Optionally specifies a caching or distribution program to place in front
-   of all runs of the C++ compiler.  For example, "ccache".  If using
+   of all runs of the C++ compiler.  For example, "ccache" or "sccache".  If using
    :command:`distcc` or :command:`icecc`/:command:`icecream`, they would
    generally be run under :command:`ccache`; see the documentation for
    those programs.  If OBJCACHE is not set, and at configure time ccache

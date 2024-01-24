@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -30,7 +30,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Levelizing class functions
 
-struct CmpLevel {
+struct CmpLevel final {
     bool operator()(const AstNodeModule* lhsp, const AstNodeModule* rhsp) const {
         return lhsp->level() < rhsp->level();
     }
@@ -82,7 +82,7 @@ void V3LinkLevel::modSortByLevel() {
     UASSERT_OBJ(!v3Global.rootp()->modulesp(), v3Global.rootp(), "Unlink didn't work");
     for (AstNodeModule* nodep : mods) v3Global.rootp()->addModulesp(nodep);
     UINFO(9, "modSortByLevel() done\n");  // Comment required for gcc4.6.3 / bug666
-    V3Global::dumpCheckGlobalTree("cells", false, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("cells", false, dumpTreeEitherLevel() >= 3);
 }
 
 void V3LinkLevel::timescaling(const ModVec& mods) {
@@ -178,7 +178,7 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
         }
     }
 
-    V3Global::dumpCheckGlobalTree("wraptop", 0, dumpTreeLevel() >= 6);
+    V3Global::dumpCheckGlobalTree("wraptop", 0, dumpTreeEitherLevel() >= 6);
 }
 
 void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {

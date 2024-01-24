@@ -585,6 +585,7 @@ desassign
 destructor
 detections
 dev
+devcontainer
 devel
 dir
 displayb
@@ -743,6 +744,7 @@ libext
 libgoogle
 libsystemc
 libtcmalloc
+libverilated
 linkers
 linter
 linux
@@ -900,6 +902,7 @@ recrem
 redeclaring
 regs
 reloop
+replaceShiftOp
 resetall
 respecified
 rodata
@@ -913,6 +916,7 @@ sVerilator
 sawatzke
 sc
 scalared
+sccache
 sccanf
 seg
 setuphold
@@ -937,6 +941,7 @@ stdin
 stdout
 stime
 stmts
+str
 strcasecmp
 stringification
 stringified
@@ -1011,6 +1016,7 @@ unsup
 untyped
 urandom
 uselib
+utimes
 uwire
 uwires
 vc
@@ -1035,6 +1041,7 @@ vlt
 vltstd
 vluint
 vpi
+vpiConstType
 vpiDefName
 vpiInstance
 vpiLeftRange
@@ -1043,6 +1050,7 @@ vpiSize
 vpiSuppressVal
 vpiTimeUnit
 vpiType
+vpiUndefined
 vpm
 vpp
 warmup

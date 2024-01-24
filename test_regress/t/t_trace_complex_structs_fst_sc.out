@@ -1,5 +1,5 @@
 $date
-	Tue Oct 24 11:01:32 2023
+	Thu Dec 14 10:35:37 2023
 
 $end
 $version
@@ -9,6 +9,8 @@ $timescale
 	1ps
 $end
 $scope module top $end
+$attrbegin misc 07 t.enumed_t 4 ZERO ONE TWO THREE 00000000000000000000000000000000 00000000000000000000000000000001 00000000000000000000000000000010 00000000000000000000000000000011 1 $end
+$attrbegin misc 07 t.enumb_t 4 BZERO BONE BTWO BTHREE 000 001 010 011 2 $end
 $scope module $unit $end
 $var bit 1 ! global_bit $end
 $upscope $end
@@ -75,12 +77,10 @@ $upscope $end
 $scope struct v_str32x2[1] $end
 $var logic 32 C data [31:0] $end
 $upscope $end
-$attrbegin misc 07 t.enumed_t 4 ZERO ONE TWO THREE 00000000000000000000000000000000 00000000000000000000000000000001 00000000000000000000000000000010 00000000000000000000000000000011 1 $end
 $attrbegin misc 07 "" 1 $end
 $var int 32 D v_enumed [31:0] $end
 $attrbegin misc 07 "" 1 $end
 $var int 32 E v_enumed2 [31:0] $end
-$attrbegin misc 07 t.enumb_t 4 BZERO BONE BTWO BTHREE 000 001 010 011 2 $end
 $attrbegin misc 07 "" 2 $end
 $var logic 3 F v_enumb [2:0] $end
 $scope struct v_enumb2_str $end
@@ -102,8 +102,8 @@ $upscope $end
 $upscope $end
 $upscope $end
 $enddefinitions $end
-#0
 $dumpvars
+#0
 b00000000000000000000000000000000 N
 b00000000000000000000000000000000 M
 0L
@@ -150,7 +150,6 @@ b00 ,
 b00000000000000000000000000000000 #
 0"
 1!
-$end
 #10
 1"
 b00000000000000000000000000000001 #

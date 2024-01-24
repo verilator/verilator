@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -204,16 +204,16 @@ private:
     friend Buffer;
     friend OffloadBuffer;
 
-    struct CallbackRecord {
+    struct CallbackRecord final {
         // Note: would make these fields const, but some old STL implementations
         // (the one in Ubuntu 14.04 with GCC 4.8.4 in particular) use the
         // assignment operator on inserting into collections, so they don't work
         // with const fields...
-        const union {  // The callback
-            initCb_t m_initCb;
-            dumpCb_t m_dumpCb;
-            dumpOffloadCb_t m_dumpOffloadCb;
-            cleanupCb_t m_cleanupCb;
+        union {  // The callback
+            const initCb_t m_initCb;
+            const dumpCb_t m_dumpCb;
+            const dumpOffloadCb_t m_dumpOffloadCb;
+            const cleanupCb_t m_cleanupCb;
         };
         const uint32_t m_fidx;  // The index of the tracing function
         void* const m_userp;  // The user pointer to pass to the callback (the symbol table)
@@ -238,7 +238,7 @@ private:
     bool m_offload = false;  // Use the offload thread
     bool m_parallel = false;  // Use parallel tracing
 
-    struct ParallelWorkerData {
+    struct ParallelWorkerData final {
         const dumpCb_t m_cb;  // The callback
         void* const m_userp;  // The use pointer to pass to the callback
         Buffer* const m_bufp;  // The buffer pointer to pass to the callback

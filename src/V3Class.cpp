@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -49,12 +49,39 @@ class ClassVisitor final : public VNVisitor {
 
     // METHODS
 
+    bool recurseImplements(AstClass* nodep, bool setit) {
+        // Returns true to set useVirtualPublic().
+        // If there's an implements of an interface class then we have
+        // multiple classes that point to same object, that need same
+        // VlClass (the diamond problem). C++ will require we use 'virtual
+        // public' for VlClass.  So, we need the interface class, and all
+        // classes above, and any below using any implements to use
+        // 'virtual public' via useVirtualPublic().
+        if (nodep->useVirtualPublic()) return true;  // Short-circuit
+        if (nodep->isInterfaceClass()) setit = true;
+        for (const AstClassExtends* extp = nodep->extendsp(); extp;
+             extp = VN_AS(extp->nextp(), ClassExtends)) {
+            if (recurseImplements(extp->classp(), setit)) setit = true;
+        }
+        if (setit) {
+            nodep->useVirtualPublic(true);
+            for (const AstClassExtends* extp = nodep->extendsp(); extp;
+                 extp = VN_AS(extp->nextp(), ClassExtends)) {
+                (void)recurseImplements(extp->classp(), true);
+            }
+        }
+        return setit;
+    }
+
+    // VISITORS
+
     void visit(AstClass* nodep) override {
         if (nodep->user1SetOnce()) return;
         // Move this class
         nodep->name(m_prefix + nodep->name());
         nodep->unlinkFrBack();
         v3Global.rootp()->addModulesp(nodep);
+        (void)recurseImplements(nodep, false);
         // Make containing package
         // Note origName is the same as the class origName so errors look correct
         AstClassPackage* const packagep
@@ -240,5 +267,5 @@ public:
 void V3Class::classAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { ClassVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("class", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("class", 0, dumpTreeEitherLevel() >= 3);
 }

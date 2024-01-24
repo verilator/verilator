@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -732,7 +732,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
             string out;
             if (varp->valuep()) {
                 const AstConst* const constp = VN_AS(varp->valuep(), Const);
-                if (!constp) varp->v3fatalSrc("non-const initializer for variable");
+                UASSERT_OBJ(constp, varp, "non-const initializer for variable");
                 for (int w = 0; w < varp->widthWords(); ++w) {
                     out += varNameProtected + suffix + "[" + cvtToStr(w) + "] = ";
                     out += cvtToStr(constp->num().edataWord(w)) + "U;\n";

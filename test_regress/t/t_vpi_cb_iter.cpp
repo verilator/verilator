@@ -12,7 +12,8 @@
 #include "verilated.h"
 #include "verilated_vpi.h"
 
-#include "Vt_vpi_cb_iter.h"
+#include VM_PREFIX_INCLUDE
+
 #include "vpi_user.h"
 
 #include <cstdio>

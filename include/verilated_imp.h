@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2009-2023 by Wilson Snyder. This program is free software; you can
+// Copyright 2009-2024 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -54,7 +54,7 @@ class VerilatedScope;
 class VerilatedMsg final {
 public:
     // TYPES
-    struct Cmp {
+    struct Cmp final {
         bool operator()(const VerilatedMsg& a, const VerilatedMsg& b) const {
             return a.mtaskId() < b.mtaskId();
         }
@@ -221,7 +221,7 @@ class VerilatedContextImp final : VerilatedContext {
     // Internal note: Globals may multi-construct, see verilated.cpp top.
 
     // Medium speed, so uses singleton accessing
-    struct Statics {
+    struct Statics final {
         VerilatedMutex s_randMutex;  // Mutex protecting s_randSeedEpoch
         // Number incrementing on each reseed, 0=illegal
         int s_randSeedEpoch = 1;  // Reads ok, wish had a VL_WRITE_GUARDED_BY(s_randMutex)

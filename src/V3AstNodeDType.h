@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -339,7 +339,7 @@ public:
 class AstBasicDType final : public AstNodeDType {
     // Builtin atomic/vectored data type
     // @astgen op1 := rangep : Optional[AstRange] // Range of variable
-    struct Members {
+    struct Members final {
         VBasicDTypeKwd m_keyword;  // (also in VBasicTypeKey) What keyword created basic type
         VNumRange m_nrange;  // (also in VBasicTypeKey) Numeric msb/lsb (if non-opaque keyword)
         bool operator==(const Members& rhs) const {
@@ -811,6 +811,7 @@ public:
     TableMap& tableMap() { return m_tableMap; }
     const TableMap& tableMap() const { return m_tableMap; }
 };
+
 class AstIfaceRefDType final : public AstNodeDType {
     // Reference to an interface, either for a port, or inside parent cell
     // @astgen op1 := paramsp : List[AstPin]
@@ -846,6 +847,7 @@ public:
         addParamsp(paramsp);
     }
     ASTGEN_MEMBERS_AstIfaceRefDType;
+
     // METHODS
     void dump(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;

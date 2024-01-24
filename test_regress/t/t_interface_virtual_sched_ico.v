@@ -10,11 +10,13 @@ endinterface
 
 module top (
     clk,
-    inc
+    inc1,
+    inc2
 );
 
   input clk;
-  input [31:0] inc;
+  input [31:0] inc1;
+  input [31:0] inc2;
   int cyc = 0;
 
   If intf1();
@@ -22,12 +24,12 @@ module top (
   virtual If vif1 = intf1;
   virtual If vif2 = intf2;
 
-  assign vif1.inc  = inc;
-  assign intf2.inc = inc;
+  assign vif1.inc  = inc1;
+  assign intf2.inc = inc2;
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
-    if (cyc >= 4) begin
+    if (cyc >= 8) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -45,7 +45,7 @@ static const int INLINE_MODS_SMALLER = 100;  // If a mod is < this # nodes, can 
 
 namespace {
 
-struct ModuleState {
+struct ModuleState final {
     bool m_inlined = false;  // Whether to inline this module
     unsigned m_cellRefs = 0;  // Number of AstCells instantiating this module
     std::vector<AstCell*> m_childCells;  // AstCells under this module (to speed up traversal)
@@ -640,5 +640,5 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
         }
     }
 
-    V3Global::dumpCheckGlobalTree("inline", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("inline", 0, dumpTreeEitherLevel() >= 3);
 }

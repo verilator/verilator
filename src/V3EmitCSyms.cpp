@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -20,6 +20,8 @@
 #include "V3EmitCBase.h"
 #include "V3LanguageWords.h"
 #include "V3PartitionGraph.h"
+#include "V3StackCount.h"
+#include "V3Stats.h"
 
 #include <algorithm>
 #include <map>
@@ -37,7 +39,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     const VNUser1InUse m_inuser1;
 
     // TYPES
-    struct ScopeData {
+    struct ScopeData final {
         const string m_symName;
         const string m_prettyName;
         const int m_timeunit;
@@ -49,7 +51,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             , m_timeunit{timeunit}
             , m_type{type} {}
     };
-    struct ScopeFuncData {
+    struct ScopeFuncData final {
         AstScopeName* const m_scopep;
         AstCFunc* const m_cfuncp;
         AstNodeModule* const m_modp;
@@ -58,7 +60,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             , m_cfuncp{funcp}
             , m_modp{modp} {}
     };
-    struct ScopeVarData {
+    struct ScopeVarData final {
         const string m_scopeName;
         const string m_varBasePretty;
         AstVar* const m_varp;
@@ -77,12 +79,12 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     using ModVarPair = std::pair<AstNodeModule*, AstVar*>;
     using ScopeNameList = std::vector<std::string>;
     using ScopeNameHierarchy = std::map<const std::string, ScopeNameList>;
-    struct CmpName {
+    struct CmpName final {
         bool operator()(const ScopeModPair& lhsp, const ScopeModPair& rhsp) const {
             return lhsp.first->name() < rhsp.first->name();
         }
     };
-    struct CmpDpi {
+    struct CmpDpi final {
         bool operator()(const AstCFunc* lhsp, const AstCFunc* rhsp) const {
             if (lhsp->dpiImportPrototype() != rhsp->dpiImportPrototype()) {
                 // cppcheck-suppress comparisonOfFuncReturningBoolError
@@ -235,6 +237,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                     // << scpSym << endl);
                     if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
                     if (m_scopeNames.find(scpSym) == m_scopeNames.end()) {
+                        // cppcheck-suppress stlFindInsert
                         m_scopeNames.emplace(scpSym,
                                              ScopeData{scpSym, scpPretty, 0, "SCOPE_OTHER"});
                     }
@@ -339,6 +342,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                                  ScopeFuncData(nodep, m_cfuncp, m_modp));
         } else {
             if (m_scopeNames.find(nodep->scopeDpiName()) == m_scopeNames.end()) {
+                // cppcheck-suppress stlFindInsert
                 m_scopeNames.emplace(nodep->scopeDpiName(),
                                      ScopeData{nodep->scopeDpiName(), nodep->scopePrettyDpiName(),
                                                timeunit, "SCOPE_OTHER"});
@@ -809,6 +813,14 @@ void EmitCSyms::emitSymImp() {
         ++m_numStmts;
     }
     puts("{\n");
+
+    {
+        puts("    // Check resources\n");
+        uint64_t stackSize = V3StackCount::count(v3Global.rootp());
+        if (v3Global.opt.debugStackCheck()) stackSize += 1024 * 1024 * 1024;
+        V3Stats::addStat("Stack size prediction (bytes)", stackSize);
+        puts("    Verilated::stackCheck(" + cvtToStr(stackSize) + ");\n");
+    }
 
     if (v3Global.opt.profPgo()) {
         puts("// Configure profiling for PGO\n");

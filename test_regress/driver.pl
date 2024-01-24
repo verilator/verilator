@@ -26,6 +26,7 @@ use POSIX qw(strftime);
 use lib ".";
 use Time::HiRes qw(usleep);
 use Digest::MD5 qw(md5);
+use POSIX;
 
 $::Driver = 1;
 $::Have_Forker = 0;
@@ -132,6 +133,11 @@ if (! GetOptions(
 
 $opt_jobs = calc_jobs() if defined $opt_jobs && $opt_jobs == 0;
 $Fork->max_proc($opt_jobs);
+
+my $interactive_debugger = $opt_gdb || $opt_gdbsim || $opt_rr || $opt_rrsim;
+if ($opt_jobs > 1 && $interactive_debugger) {
+   die "%Error: Unable to use -j > 1 with --gdb* and --rr* options"
+}
 
 if ((scalar keys %opt_scenarios) < 1) {
     $opt_scenarios{dist} = 1;
@@ -333,22 +339,23 @@ use strict;
 sub new {
     my $class = shift;
     my $self = {
-        # Parameters
+        # Arguments
         driver_log_filename => undef,
         quiet => 0,
         # Counts
         all_cnt => 0,
         left_cnt => 0,
-        ok_cnt => 0,
-        fail1_cnt => 0,
+        ok_cnt => 0,  # Argument passed when rerunning
+        fail1_cnt => 0,  # Argument passed when rerunning
         fail_cnt => 0,
-        skip_cnt => 0,
+        skip_cnt => 0,  # Argument passed when rerunning
         skip_msgs => [],
         fail_msgs => [],
         fail_tests => [],
         # Per-task identifiers
         running_ids => {},
-        @_};
+        @_  # All legal arguments shown immediately above
+    };
     bless $self, $class;
     return $self;
 }
@@ -357,7 +364,11 @@ sub fail_count { return $_[0]->{fail_cnt}; }
 
 sub one_test {
     my $self = shift;
-    my @params = @_;
+    my @params = (# Parameters:
+                  # pl_filename =>
+                  # rerun_skipping =>
+                  # {scenario_name} => 1
+                  @_);  # All legal arguments shown immediately above
     my %params = (@params);
     $self->{all_cnt}++;
     $self->{left_cnt}++;
@@ -446,7 +457,7 @@ sub wait_and_report {
     while ($::Fork->is_any_left) {
         $::Fork->poll;
         if ((time() - ($self->{_last_summary_time} || 0) >= 30)
-            && (!$opt_gdb && !$opt_gdbsim)) {  # Don't show for interactive gdb etc
+            && !$interactive_debugger) {  # Don't show for interactive gdb etc
             $self->print_summary(force => 1, show_running => 1);
         }
         Time::HiRes::usleep 100 * 1000;
@@ -484,10 +495,10 @@ sub print_summary {
     my $self = shift;
     my %params = (force => 0, # Force printing
                   show_running => 0, # Show running processes
-                  @_);
+                  @_);  # All legal arguments shown immediately above
     if (!$self->{quiet} || $params{force}
         || ($self->{left_cnt} < 5)
-        || (time() - ($self->{_last_summary_time} || 0) >= 15)) {  # Don't show for interactive gdb etc
+        || (time() - ($self->{_last_summary_time} || 0) >= 15)) {
         $self->{_last_summary_time} = time();
         print STDERR ("==SUMMARY: " . $self->sprint_summary . "\n");
         if ($params{show_running}) {
@@ -564,7 +575,7 @@ sub defineOpt {
 
 sub new {
     my $class = shift;
-    my $self = {@_};
+    my $self = {@_};  # Supports arbitrary arguments
 
     $self->{name} ||= $2 if $self->{pl_filename} =~ m!^(.*/)?([^/]*)\.pl$!;
 
@@ -635,7 +646,6 @@ sub new {
                          ? " -Wl,-undefined,dynamic_lookup"
                          : " -export-dynamic")
                       . ($opt_verbose ? " -DTEST_VERBOSE=1" : "")
-                      . (cfg_with_m32() ? " -m32" : "")
                       . " -o $self->{obj_dir}/libvpi.so"],
         tool_c_flags => [],
         # ATSIM
@@ -787,8 +797,7 @@ sub skip {
 
 sub scenarios {
     my $self = (ref $_[0] ? shift : $Self);
-    my %params = (@_);
-    # Called from tests as: scenarios(...);
+    my %params = (@_);  # Called from tests as: scenarios(...);
     # to specify which scenarios this test runs under.
     #  Where ... is one cases listed in All_Scenarios
     if ((scalar keys %params) < 1) {
@@ -901,26 +910,9 @@ sub clean_objs {
     system("rm", "-rf", glob("$self->{obj_dir}/*"));
 }
 
-sub compile_vlt_cmd {
-    my $self = (ref $_[0] ? shift : $Self);
-    my %param = (%{$self}, @_);  # Default arguments are from $self
-    return 1 if $self->errors || $self->skips;
-
-    my @vlt_cmd = (
-        "perl", "$ENV{VERILATOR_ROOT}/bin/verilator",
-        $self->compile_vlt_flags(%param),
-        $param{top_filename},
-        @{$param{v_other_filenames}},
-        $param{stdout_filename} ? "> " . $param{stdout_filename} : ""
-    );
-    return @vlt_cmd;
-}
-
-sub compile_vlt_flags {
-    my $self = (ref $_[0] ? shift : $Self);
-    my %param = (%{$self}, @_);  # Default arguments are from $self
-    return 1 if $self->errors || $self->skips;
-
+sub _checkflags {
+    my $self = shift;
+    my %param = (@_);
     my $checkflags = (' '.join(' ',
                                @{$param{v_flags}},
                                @{$param{v_flags2}},
@@ -928,6 +920,31 @@ sub compile_vlt_flags {
                                @{$param{verilator_flags2}},
                                @{$param{verilator_flags3}})
                       .' ');
+    return $checkflags;
+}
+
+sub compile_vlt_cmd {
+    my $self = (ref $_[0] ? shift : $Self);
+    my %param = (%{$self},  # Default arguments are from $self
+                 @_);  # Supports arbitrary arguments
+    return 1 if $self->errors || $self->skips;
+
+    my @vlt_cmd = (
+        "perl", "$ENV{VERILATOR_ROOT}/bin/verilator",
+        $self->_compile_vlt_flags(%param),
+        $param{top_filename},
+        @{$param{v_other_filenames}},
+        $param{stdout_filename} ? "> " . $param{stdout_filename} : ""
+    );
+    return @vlt_cmd;
+}
+
+sub _compile_vlt_flags {
+    my $self = shift;
+    my %param = (@_);  # Supports arbitrary arguments from compile_vlt_cmd
+    return 1 if $self->errors || $self->skips;
+
+    my $checkflags = $self->_checkflags(%param);
     die "%Error: specify threads via 'threads =>' argument, not as a command line option" unless ($checkflags !~ /(^|\s)-?-threads\s/);
     $self->{coverage} = 1 if ($checkflags =~ /-coverage\b/);
     $self->{savable} = 1 if ($checkflags =~ /-savable\b/);
@@ -988,25 +1005,33 @@ sub lint {
                  make_top_shell => 0,
                  verilator_flags2 => ["--lint-only"],
                  verilator_make_gmake => 0,
-                 @_);
+                 @_);  # Supports arbitrary arguments
     $self->compile(%param);
 }
 
 sub compile {
     my $self = (ref $_[0] ? shift : $Self);
     my %param = (tee => 1,
-                 %{$self}, @_);  # Default arguments are from $self
+                 %{$self},  # Default arguments are from $self
+                 @_);  # Supports arbitrary arguments
     return 1 if $self->errors || $self->skips;
     $self->oprint("Compile\n") if $self->{verbose};
 
     die "%Error: 'threads =>' argument must be <= 1 for vlt scenario" if $param{vlt} && $param{threads} > 1;
     # Compute automatic parameter values
+    my $checkflags = $self->_checkflags(%param);
     $param{threads} = ::calc_threads($Vltmt_threads) if $param{threads} < 0 && $param{vltmt};
     $param{context_threads} = $param{threads} >= 1 ? $param{threads} : 1 if !$param{context_threads};
+    $param{make_main} = 0 if ($checkflags =~ / -?-main\b/ || $checkflags =~ / -?-binary\b/);
+    if ($checkflags =~ / -?-build\b/ || $checkflags =~ / -?-binary\b/) {
+        $param{verilator_make_cmake} = 0;
+        $param{verilator_make_gmake} = 0;
+    }
+
     $self->{threads} = $param{threads};
     $self->{context_threads} = $param{context_threads};
 
-    compile_vlt_cmd(%param);
+    $self->compile_vlt_cmd(%param);
 
     my $define_opt = defineOpt($self->{xsim});
     if (join(' ', @{$self->{v_flags}}) !~ /TEST_DUMPFILE/) {
@@ -1176,7 +1201,7 @@ sub compile {
         }
 
         if ($param{verilator_make_cmake}) {
-            my @vlt_args = $self->compile_vlt_flags(%param);
+            my @vlt_args = $self->_compile_vlt_flags(%param);
             $self->oprint("Running cmake\n") if $self->{verbose};
             mkdir $self->{obj_dir};
             my @csources = ();
@@ -1254,7 +1279,8 @@ sub compile {
 sub execute {
     my $self = (ref $_[0] ? shift : $Self);
     return 1 if $self->errors || $self->skips;
-    my %param = (%{$self}, @_);  # Default arguments are from $self
+    my %param = (%{$self},  # Default arguments are from $self
+                 @_);  # Supports arbitrary arguments
     # params may be expect or {tool}_expect
     $self->oprint("Run\n") if $self->{verbose};
 
@@ -1402,8 +1428,6 @@ sub inline_checks {
     my $self = (ref $_[0] ? shift : $Self);
     return 1 if $self->errors || $self->skips;
     return 1 if !$self->{vlt_all};
-
-    my %param = (%{$self}, @_);  # Default arguments are from $self
 
     my $covfn = $Self->{coverage_filename};
     my $contents = $self->file_contents($covfn);
@@ -1592,15 +1616,21 @@ sub vm_prefix {
 
 sub run {
     my $self = (ref $_[0] ? shift : $Self);
-    $self->_run(@_);
+    $self->_run(@_);  # See _run() for arguments
 }
 
 sub _run {
     my $self = (ref $_[0] ? shift : $Self);
     my %param = (tee => 1,
-                 #entering =>  # Print entering directory information
-                 #verilator_run =>  # Move gcov data to parallel area
-                 @_);
+                 # cmd => [...]
+                 # check_finished => 0  # Check for All Finished
+                 # entering =>  # Print entering directory information
+                 # expect =>  # Regexp to expect in output
+                 # expect_filename =>  # Filename that should match logfile
+                 # fails => 0  # Command should fail
+                 # logfile =>  # Filename to write putput to
+                 # verilator_run =>  # Move gcov data to parallel area
+                 @_);  # All legal arguments shown immediately above
 
     my $command = join(' ', @{$param{cmd}});
     $command = "time $command" if $opt_benchmark && $command !~ /^cd /;
@@ -1634,8 +1664,14 @@ sub _run {
         if ($param{logfile}) {
             $logfh = IO::File->new(">$param{logfile}") or die "%Error: Can't open $param{logfile}";
         }
+        my $backup_fg_group = POSIX::tcgetpgrp(0);
         my $pid = fork();
         if ($pid) {  # Parent
+            if ($interactive_debugger) {
+                # Let gdb take care of signals send from keyboard
+                POSIX::setpgid($pid, 0);  # Put child in separate process group
+                POSIX::tcsetpgrp(0, $pid);  # Make this group a foreground one
+            }
             close CHILDWR;
             print "driver: Entering directory '",
                 File::Spec->rel2abs($param{entering}), "'\n" if $param{entering};
@@ -1676,6 +1712,11 @@ sub _run {
             exit($? ? 10 : 0);  # $?>>8 misses coredumps
         }
         waitpid($pid, 0);
+        if ($interactive_debugger) {
+            # Restore old foreground group
+            local $SIG{TTOU} = 'IGNORE';  # Ignore SIGTTOU from modyfing terminal settings in bg proccess
+            POSIX::tcsetpgrp(0, $backup_fg_group);
+        }
         $status = $? || 0;
     }
     flush STDOUT;
@@ -1760,7 +1801,8 @@ sub _try_regex {
     #  1 if $text ~= /$regex/ms
     #  0 if no match
     # -1 if $regex is invalid, doesn't compile
-    my ($text, $regex) = @_;
+    my $text = shift;
+    my $regex = shift;
     my $result;
     {
         local $@;
@@ -1854,7 +1896,7 @@ sub _make_main {
     print $fh "    srand48(5);\n";  # Ensure determinism
     print $fh "    contextp->randReset(" . $self->{verilated_randReset} . ");\n"
         if defined $self->{verilated_randReset};
-    print $fh "    topp.reset(new ${vm_prefix}(\"top\"));\n";
+    print $fh "    topp.reset(new ${vm_prefix}{\"top\"});\n";
     print $fh "    contextp->internalsDump()\n;" if $self->{verilated_debug};
 
     my $set;
@@ -1989,7 +2031,7 @@ sub _make_main {
 
     if ($self->{coverage}) {
         $fh->print("#if VM_COVERAGE\n");
-        $fh->print("    VerilatedCov::write(\"", $self->{coverage_filename}, "\");\n");
+        $fh->print("    contextp->coveragep()->write(\"", $self->{coverage_filename}, "\");\n");
         $fh->print("#endif  // VM_COVERAGE\n");
     }
     if ($self->{trace}) {
@@ -2419,13 +2461,6 @@ sub cfg_with_ccache {
     return $_Cfg_with_ccache;
 }
 
-our $_Cfg_with_m32;
-
-sub cfg_with_m32 {
-    $_Cfg_with_m32 ||= `grep "CXX.*=.*-m32" "$ENV{VERILATOR_ROOT}/include/verilated.mk"` ne "";
-    return $_Cfg_with_m32;
-}
-
 sub tries {
     # Number of retries when reading logfiles, generally only need many
     # retries when system is busy running a lot of tests
@@ -2489,6 +2524,20 @@ sub file_grep {
         $self->error("File_grep: $filename: Regexp not found: $regexp\n");
     } elsif (defined($expvalue) && $expvalue ne $1) {
         $self->error("File_grep: $filename: Got='$1' Expected='$expvalue' in regexp: $regexp\n");
+    }
+}
+
+sub file_grep_count {
+    my $self = (ref $_[0] ? shift : $Self);
+    my $filename = shift;
+    my $regexp = shift;
+    my $expcount = shift;
+    return if $self->errors || $self->skips;
+
+    my $contents = $self->file_contents($filename);
+    my $count = () = $contents =~ /$regexp/g;
+    if ($count != $expcount) {
+        $self->error("file_grep_count: $filename: Got='$count' Expected='$expcount' for regexp: $regexp\n");
     }
 }
 
@@ -2564,12 +2613,12 @@ sub file_sed {
 
 sub extract {
     my $self = (ref $_[0] ? shift : $Self);
-    my %param = (  #in =>,
-        #out =>
-        regexp => qr/.*/,
-        lineno_adjust => -9999,
-        lines => undef,  #'#, #-#',
-        @_);
+    my %param = (#in =>,
+                 #out =>
+                 regexp => qr/.*/,
+                 lineno_adjust => -9999,
+                 lines => undef,  #'#, #-#',
+                 @_);  # All legal arguments shown immediately above
 
     my $temp_fn = $param{out};
     $temp_fn =~ s!.*/!!g;
@@ -2700,7 +2749,7 @@ See docs/internals.rst in the distribution for more information.
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

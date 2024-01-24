@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2000-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2000-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1180,9 +1180,7 @@ int V3PreProcImp::getStateToken() {
                 stateChange(ps_DEFARG);
                 goto next_tok;
             } else {
-                if (VL_UNCOVERABLE(m_defRefs.empty())) {
-                    v3fatalSrc("Shouldn't be in DEFPAREN w/o active defref");
-                }
+                UASSERT(!m_defRefs.empty(), "Shouldn't be in DEFPAREN w/o active defref");
                 const VDefineRef* const refp = &(m_defRefs.top());
                 error(std::string{"Expecting ( to begin argument list for define reference `"}
                       + refp->name() + "\n");
@@ -1191,9 +1189,7 @@ int V3PreProcImp::getStateToken() {
             }
         }
         case ps_DEFARG: {
-            if (VL_UNCOVERABLE(m_defRefs.empty())) {
-                v3fatalSrc("Shouldn't be in DEFARG w/o active defref");
-            }
+            UASSERT(!m_defRefs.empty(), "Shouldn't be in DEFARG w/o active defref");
             VDefineRef* refp = &(m_defRefs.top());
             refp->nextarg(refp->nextarg() + m_lexp->m_defValue);
             m_lexp->m_defValue = "";
@@ -1218,9 +1214,7 @@ int V3PreProcImp::getStateToken() {
                     statePop();
                     if (state()
                         == ps_JOIN) {  // Handle {left}```FOO(ARG) where `FOO(ARG) might be empty
-                        if (VL_UNCOVERABLE(m_joinStack.empty())) {
-                            v3fatalSrc("`` join stack empty, but in a ``");
-                        }
+                        UASSERT(!m_joinStack.empty(), "`` join stack empty, but in a ``");
                         const string lhs = m_joinStack.top();
                         m_joinStack.pop();
                         out.insert(0, lhs);
@@ -1308,9 +1302,7 @@ int V3PreProcImp::getStateToken() {
         }
         case ps_JOIN: {
             if (tok == VP_SYMBOL || tok == VP_TEXT) {
-                if (VL_UNCOVERABLE(m_joinStack.empty())) {
-                    v3fatalSrc("`` join stack empty, but in a ``");
-                }
+                UASSERT(!m_joinStack.empty(), "`` join stack empty, but in a ``");
                 const string lhs = m_joinStack.top();
                 m_joinStack.pop();
                 UINFO(5, "`` LHS:" << lhs << endl);
@@ -1446,9 +1438,7 @@ int V3PreProcImp::getStateToken() {
                     if (m_defRefs.empty()) {
                         // Just output the substitution
                         if (state() == ps_JOIN) {  // Handle {left}```FOO where `FOO might be empty
-                            if (VL_UNCOVERABLE(m_joinStack.empty())) {
-                                v3fatalSrc("`` join stack empty, but in a ``");
-                            }
+                            UASSERT(!m_joinStack.empty(), "`` join stack empty, but in a ``");
                             const string lhs = m_joinStack.top();
                             m_joinStack.pop();
                             out.insert(0, lhs);

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -593,7 +593,6 @@ class AstCFunc final : public AstNode {
     string m_cname;  // C name, for dpiExports
     string m_rtnType;  // void, bool, or other return type
     string m_argTypes;  // Argument types
-    string m_baseCtors;  // Base class constructor
     string m_ifdef;  // #ifdef symbol around this function
     VBoolOrUnknown m_isConst;  // Function is declared const (*this not changed)
     bool m_isStatic : 1;  // Function is static (no need for a 'this' pointer)
@@ -656,8 +655,7 @@ public:
     bool same(const AstNode* samep) const override {
         const AstCFunc* const asamep = VN_DBG_AS(samep, CFunc);
         return ((isTrace() == asamep->isTrace()) && (rtnTypeVoid() == asamep->rtnTypeVoid())
-                && (argTypes() == asamep->argTypes()) && (baseCtors() == asamep->baseCtors())
-                && isLoose() == asamep->isLoose()
+                && (argTypes() == asamep->argTypes()) && isLoose() == asamep->isLoose()
                 && (!(dpiImportPrototype() || dpiExportImpl()) || name() == asamep->name()));
     }
     //
@@ -689,8 +687,6 @@ public:
     void funcPublic(bool flag) { m_funcPublic = flag; }
     void argTypes(const string& str) { m_argTypes = str; }
     string argTypes() const { return m_argTypes; }
-    void baseCtors(const string& str) { m_baseCtors = str; }
-    string baseCtors() const { return m_baseCtors; }
     void ifdef(const string& str) { m_ifdef = str; }
     string ifdef() const { return m_ifdef; }
     bool isConstructor() const { return m_isConstructor; }
@@ -2255,8 +2251,9 @@ class AstClass final : public AstNodeModule {
     bool m_extended = false;  // Is extension or extended by other classes
     bool m_interfaceClass = false;  // Interface class
     bool m_needRNG = false;  // Need RNG, uses srandom/randomize
-    bool m_virtual = false;  // Virtual class
     bool m_parameterized = false;  // Parameterized class
+    bool m_useVirtualPublic = false;  // Subclasses need virtual public as uses interface class
+    bool m_virtual = false;  // Virtual class
 
 public:
     AstClass(FileLine* fl, const string& name)
@@ -2274,12 +2271,14 @@ public:
     void isExtended(bool flag) { m_extended = flag; }
     bool isInterfaceClass() const { return m_interfaceClass; }
     void isInterfaceClass(bool flag) { m_interfaceClass = flag; }
+    bool isParameterized() const { return m_parameterized; }
+    void isParameterized(bool flag) { m_parameterized = flag; }
     bool isVirtual() const { return m_virtual; }
     void isVirtual(bool flag) { m_virtual = flag; }
     bool needRNG() const { return m_needRNG; }
     void needRNG(bool flag) { m_needRNG = flag; }
-    bool isParameterized() const { return m_parameterized; }
-    void isParameterized(bool flag) { m_parameterized = flag; }
+    bool useVirtualPublic() const { return m_useVirtualPublic; }
+    void useVirtualPublic(bool flag) { m_useVirtualPublic = flag; }
     // Return true if this class is an extension of base class (SLOW)
     // Accepts nullptrs
     static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);
@@ -2728,6 +2727,7 @@ class AstDelay final : public AstNodeStmt {
     // Delay statement
     // @astgen op1 := lhsp : AstNodeExpr // Delay value
     // @astgen op2 := stmtsp : List[AstNode] // Statements under delay
+    VTimescale m_timeunit;  // Delay's time unit
     const bool m_isCycle;  // True if it is a cycle delay
 
 public:
@@ -2739,8 +2739,10 @@ public:
     ASTGEN_MEMBERS_AstDelay;
     void dump(std::ostream& str) const override;
     bool isTimingControl() const override { return true; }
-    bool isCycleDelay() const { return m_isCycle; }
     bool same(const AstNode* /*samep*/) const override { return true; }
+    void timeunit(const VTimescale& flag) { m_timeunit = flag; }
+    VTimescale timeunit() const { return m_timeunit; }
+    bool isCycleDelay() const { return m_isCycle; }
 };
 class AstDisable final : public AstNodeStmt {
     string m_name;  // Name of block
@@ -2837,8 +2839,9 @@ public:
     ASTGEN_MEMBERS_AstDumpCtl;
     string verilogKwd() const override { return ctlType().ascii(); }
     bool isGateOptimizable() const override { return false; }
-    bool isPredictOptimizable() const override { return false; }
     bool isOutputter() override { return true; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() override { return false; }
     virtual bool cleanOut() const { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
     VDumpCtlType ctlType() const { return m_ctlType; }
@@ -3213,7 +3216,6 @@ class AstTraceDecl final : public AstNodeStmt {
     const string m_showname;  // Name of variable
     const VNumRange m_bitRange;  // Property of var the trace details
     const VNumRange m_arrayRange;  // Property of var the trace details
-    const uint32_t m_codeInc;  // Code increment
     const VVarType m_varType;  // Type of variable (for localparam vs. param)
     const VDirection m_declDirection;  // Declared direction input/output etc
 public:
@@ -3224,9 +3226,6 @@ public:
         , m_showname{showname}
         , m_bitRange{bitRange}
         , m_arrayRange{arrayRange}
-        , m_codeInc(
-              ((arrayRange.ranged() ? arrayRange.elements() : 1) * valuep->dtypep()->widthWords()
-               * (VL_EDATASIZE / 32)))  // A code is always 32-bits
         , m_varType{varp->varType()}
         , m_declDirection{varp->declDirection()} {
         dtypeFrom(valuep);
@@ -3245,7 +3244,11 @@ public:
     void code(uint32_t code) { m_code = code; }
     uint32_t fidx() const { return m_fidx; }
     void fidx(uint32_t fidx) { m_fidx = fidx; }
-    uint32_t codeInc() const { return m_codeInc; }
+    uint32_t codeInc() const {
+        return (m_arrayRange.ranged() ? m_arrayRange.elements() : 1)
+               * valuep()->dtypep()->widthWords()
+               * (VL_EDATASIZE / 32);  // A code is always 32-bits
+    }
     const VNumRange& bitRange() const { return m_bitRange; }
     const VNumRange& arrayRange() const { return m_arrayRange; }
     VVarType varType() const { return m_varType; }
@@ -3253,8 +3256,7 @@ public:
 };
 class AstTraceInc final : public AstNodeStmt {
     // Trace point dump
-    // @astgen op1 := precondsp : List[AstNode] // Statements to emit before this node
-    // @astgen op2 := valuep : AstNodeExpr // Expression being traced (from decl)
+    // @astgen op1 := valuep : AstNodeExpr // Expression being traced (from decl)
     //
     // @astgen ptr := m_declp : AstTraceDecl  // Pointer to declaration
     const uint32_t m_baseCode;  // Trace code base value in function containing this AstTraceInc
@@ -3267,8 +3269,9 @@ public:
         , m_traceType{traceType}
         , m_declp{declp} {
         dtypeFrom(declp);
-        this->valuep(
-            declp->valuep()->cloneTree(true));  // TODO: maybe use reference to TraceDecl instead?
+        // Note: A clone is necessary (instead of using declp()->valuep()),
+        // for insertion of local temporaries in V3Premit
+        valuep(declp->valuep()->cloneTree(true));
     }
     ASTGEN_MEMBERS_AstTraceInc;
     void dump(std::ostream& str) const override;
@@ -3287,7 +3290,7 @@ public:
 };
 class AstTracePopPrefix final : public AstNodeStmt {
 public:
-    AstTracePopPrefix(FileLine* fl)
+    explicit AstTracePopPrefix(FileLine* fl)
         : ASTGEN_SUPER_TracePopPrefix(fl) {}
     ASTGEN_MEMBERS_AstTracePopPrefix;
     bool same(const AstNode* samep) const override { return false; }

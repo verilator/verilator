@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -3203,10 +3203,8 @@ instnameParen<nodep>:
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, $4, $2, true); }
         |       id instRangeListE
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, nullptr, $2, false); }
-        //UNSUP instRangeListE '(' cellpinListE ')'      { UNSUP } // UDP
-        //                      // Adding above and switching to the Verilog-Perl syntax
-        //                      // causes a shift conflict due to use of idClassSel inside exprScope.
-        //                      // It also breaks allowing "id foo;" instantiation syntax.
+        |       '(' cellpinListE ')'  // When UDP has empty name, unpacked dimensions must not be used
+                        { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, "", $2, nullptr, true); }
         ;
 
 instRangeListE<nodeRangep>:
@@ -3362,7 +3360,8 @@ senitem<senItemp>:              // IEEE: part of event_expression, non-'OR' ',' 
         ;
 
 senitemVar<senItemp>:
-                idClassSel                              { $$ = new AstSenItem{$1->fileline(), VEdgeType::ET_CHANGED, $1}; }
+                idClassSel
+                        { $$ = new AstSenItem{$1->fileline(), VEdgeType::ET_CHANGED, $1}; }
         ;
 
 senitemEdge<senItemp>:          // IEEE: part of event_expression
@@ -6066,6 +6065,13 @@ property_spec<propSpecp>:               // IEEE: property_spec
                 '@' '(' senitemEdge ')' yDISABLE yIFF '(' expr ')' pexpr
                         { $$ = new AstPropSpec{$1, $3, $8, $10}; }
         |       '@' '(' senitemEdge ')' pexpr           { $$ = new AstPropSpec{$1, $3, nullptr, $5}; }
+        //                              // Disable applied after the event occurs,
+        //                              // so no existing AST can represent this
+        |       yDISABLE yIFF '(' expr ')' '@' '(' senitemEdge ')' pexpr
+                        { $$ = new AstPropSpec{$1, $8, nullptr, new AstLogOr{$1, $4, $10}};
+                          BBUNSUP($<fl>1, "Unsupported: property '(disable iff (...) @ (...)'\n"
+                                  + $<fl>1->warnMore()
+                                  + "... Suggest use property '(@(...) disable iff (...))'"); }
         //UNSUP remove above
         |       yDISABLE yIFF '(' expr ')' pexpr        { $$ = new AstPropSpec{$4->fileline(), nullptr, $4, $6}; }
         |       pexpr                                   { $$ = new AstPropSpec{$1->fileline(), nullptr, nullptr, $1}; }

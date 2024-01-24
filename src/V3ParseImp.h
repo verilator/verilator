@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2009-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2009-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -45,7 +45,7 @@ enum V3ImportProperty : uint8_t { iprop_NONE, iprop_CONTEXT, iprop_PURE };
 //============================================================================
 // Member qualifiers
 
-struct VMemberQualifiers {
+struct VMemberQualifiers final {
     union {
         uint32_t m_flags;
         struct {
@@ -99,7 +99,7 @@ struct VMemberQualifiers {
 // Parser YYSType, e.g. for parser's yylval
 // We can't use bison's %union as we want to pass the fileline with all tokens
 
-struct V3ParseBisonYYSType {
+struct V3ParseBisonYYSType final {
     FileLine* fl;
     AstNode* scp;  // Symbol table scope for future lookups
     int token;  // Read token, aka tok

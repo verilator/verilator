@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -296,9 +296,9 @@ class EmitCHeader final : public EmitCConstInit {
     void emitAll(const AstNodeModule* modp) {
         // Include files required by this AstNodeModule
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
-            if (classp->extendsp()) {
-                puts("#include \""
-                     + prefixNameProtect(classp->extendsp()->classp()->classOrPackagep())
+            for (const AstClassExtends* extp = classp->extendsp(); extp;
+                 extp = VN_AS(extp->nextp(), ClassExtends)) {
+                puts("#include \"" + prefixNameProtect(extp->classp()->classOrPackagep())
                      + ".h\"\n");
             }
         }
@@ -316,9 +316,14 @@ class EmitCHeader final : public EmitCConstInit {
         if (!VN_IS(modp, Class)) puts("alignas(VL_CACHE_LINE_BYTES) ");
         puts(prefixNameProtect(modp));
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
-            puts(" : public ");
+            const string virtpub = classp->useVirtualPublic() ? "virtual public " : "public ";
+            puts(" : " + virtpub);
             if (classp->extendsp()) {
-                puts(prefixNameProtect(classp->extendsp()->classp()));
+                for (const AstClassExtends* extp = classp->extendsp(); extp;
+                     extp = VN_AS(extp->nextp(), ClassExtends)) {
+                    puts(prefixNameProtect(extp->classp()));
+                    if (extp->nextp()) puts(", " + virtpub);
+                }
             } else {
                 puts("VlClass");
             }

@@ -12,7 +12,6 @@ scenarios(simulator => 1);
 
 compile(
     verilator_flags2 => ["--exe --main --no-timing -Wall"],
-    make_main => 0,
     );
 
 execute(

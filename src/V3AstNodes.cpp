@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1406,6 +1406,7 @@ void AstClass::dump(std::ostream& str) const {
     if (isExtended()) str << " [EXT]";
     if (isInterfaceClass()) str << " [IFCCLS]";
     if (isVirtual()) str << " [VIRT]";
+    if (useVirtualPublic()) str << " [VIRPUB]";
 }
 void AstClassExtends::dump(std::ostream& str) const {
     this->AstNode::dump(str);
@@ -2252,6 +2253,7 @@ void AstCMethodHard::setPurity() {
                                                           {"first", false},
                                                           {"init", false},
                                                           {"insert", false},
+                                                          {"inside", true},
                                                           {"isFired", true},
                                                           {"isTriggered", true},
                                                           {"join", false},

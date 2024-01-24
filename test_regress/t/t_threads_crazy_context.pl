@@ -10,10 +10,6 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt_all => 1);
 
-if ($Self->cfg_with_m32) {
-    skip("Does not work with -m32 (resource unavailable)");
-}
-
 top_filename("t/t_threads_crazy.v");
 
 compile(

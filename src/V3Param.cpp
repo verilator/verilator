@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -248,7 +248,7 @@ class ParamProcessor final {
 
     // STATE
     using CloneMap = std::unordered_map<const AstNode*, AstNode*>;
-    struct ModInfo {
+    struct ModInfo final {
         AstNodeModule* const m_modp;  // Module with specified name
         CloneMap m_cloneMap;  // Map of old-varp -> new cloned varp
         explicit ModInfo(AstNodeModule* modp)
@@ -825,7 +825,7 @@ class ParamProcessor final {
         }
     }
 
-    void storeOriginalParams(AstClass* const classp) {
+    void storeOriginalParams(AstNodeModule* const classp) {
         for (AstNode* stmtp = classp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             AstNode* originalParamp = nullptr;
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
@@ -870,13 +870,13 @@ class ParamProcessor final {
             UINFO(8, "Cell parameters all match original values, skipping expansion.\n");
             // If it's the first use of the default instance, create a copy and store it in user3p.
             // user3p will also be used to check if the default instance is used.
-            if (!srcModpr->user3p() && VN_IS(srcModpr, Class)) {
-                AstClass* classCopyp = VN_AS(srcModpr, Class)->cloneTree(false);
+            if (!srcModpr->user3p() && (VN_IS(srcModpr, Class) || VN_IS(srcModpr, Iface))) {
+                AstNodeModule* nodeCopyp = srcModpr->cloneTree(false);
                 // It is a temporary copy of the original class node, stored in order to create
                 // another instances. It is needed only during class instantiation.
-                m_deleter.pushDeletep(classCopyp);
-                srcModpr->user3p(classCopyp);
-                storeOriginalParams(classCopyp);
+                m_deleter.pushDeletep(nodeCopyp);
+                srcModpr->user3p(nodeCopyp);
+                storeOriginalParams(nodeCopyp);
             }
         } else {
             const string newname
@@ -919,6 +919,11 @@ class ParamProcessor final {
         nodep->recursive(false);
     }
 
+    void ifaceRefDeparam(AstIfaceRefDType* const nodep, AstNodeModule*& srcModpr) {
+        nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nullptr, false);
+        nodep->ifacep(VN_AS(srcModpr, Iface));
+    }
+
     void classRefDeparam(AstClassOrPackageRef* nodep, AstNodeModule*& srcModpr) {
         if (nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nullptr, false))
             nodep->classOrPackagep(srcModpr);
@@ -948,6 +953,8 @@ public:
 
         if (auto* cellp = VN_CAST(nodep, Cell)) {
             cellDeparam(cellp, srcModpr);
+        } else if (auto* ifaceRefDTypep = VN_CAST(nodep, IfaceRefDType)) {
+            ifaceRefDeparam(ifaceRefDTypep, srcModpr);
         } else if (auto* classRefp = VN_CAST(nodep, ClassRefDType)) {
             classRefDeparam(classRefp, srcModpr);
         } else if (auto* classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
@@ -1042,6 +1049,8 @@ class ParamVisitor final : public VNVisitor {
                     if (VN_IS(classRefp->classOrPackageNodep(), ParamTypeDType)) continue;
                 } else if (const auto* classRefp = VN_CAST(cellp, ClassRefDType)) {
                     srcModp = classRefp->classp();
+                } else if (const auto* ifaceRefp = VN_CAST(cellp, IfaceRefDType)) {
+                    srcModp = ifaceRefp->ifacep();
                 } else {
                     cellp->v3fatalSrc("Expected module parameterization");
                 }
@@ -1137,8 +1146,16 @@ class ParamVisitor final : public VNVisitor {
     void visit(AstCell* nodep) override {
         visitCellOrClassRef(nodep, VN_IS(nodep->modp(), Iface));
     }
+    void visit(AstIfaceRefDType* nodep) override {
+        if (nodep->ifacep()) visitCellOrClassRef(nodep, true);
+    }
     void visit(AstClassRefDType* nodep) override { visitCellOrClassRef(nodep, false); }
-    void visit(AstClassOrPackageRef* nodep) override { visitCellOrClassRef(nodep, false); }
+    void visit(AstClassOrPackageRef* nodep) override {
+        // If it points to a typedef it is not really a class reference. That typedef will be
+        // visited anyway (from its parent node), so even if it points to a parameterized class
+        // type, the instance will be created.
+        if (!VN_IS(nodep->classOrPackageNodep(), Typedef)) visitCellOrClassRef(nodep, false);
+    }
 
     // Make sure all parameters are constantified
     void visit(AstVar* nodep) override {
@@ -1462,5 +1479,5 @@ public:
 void V3Param::param(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { ParamVisitor{rootp}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("param", 0, dumpTreeLevel() >= 6);
+    V3Global::dumpCheckGlobalTree("param", 0, dumpTreeEitherLevel() >= 6);
 }
