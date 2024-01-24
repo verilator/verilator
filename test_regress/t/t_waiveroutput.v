@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t_waiveroutput;
-   reg width_warn = 2'b11;  // Width warning - must be line 18
+   reg width_warn = 2'b11;  // Width warning - must be line 8
 
    // verilator lint_off UNUSEDSIGNAL
    // verilator lint_off WIDTHTRUNC

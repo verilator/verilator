@@ -16,7 +16,7 @@ my $waiver_filename = "t/$Self->{name}.vlt";
 top_filename("t/t_waiveroutput.v");
 
 compile(
-    v_flags2 => [$waiver_filename, '--waiver-output', $out_filename],
+    v_flags2 => ['-Wall', $waiver_filename, '--waiver-output', $out_filename],
     );
 
 files_identical("$out_filename", $Self->{golden_filename});
