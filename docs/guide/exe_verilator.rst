@@ -1211,6 +1211,40 @@ Summary:
    Run Verilator and record with the :command:`rr` command.  See
    `https://rr-project.org <https://rr-project.org>`_.
 
+.. option:: --runtime-debug
+
+   Enable including debug assertions in the generated model. This may
+   significantly decrease model performance. This option will only work
+   with gcc/clang.
+
+   This option has the same effect as the following flags:
+
+   :vlopt:`--decorations node`
+     Instructs Verilator to add comments to the Verilated C++ code to
+     assist determining what Verilog code was responsible for each C++
+     statement.
+
+   ``-CFLAGS -ggdb  -LDFLAGS -ggdb``
+     Instructs the compiler and linker to enable debugger symbols.
+
+   ``-CFLAGS -fsanitize=address,undefined  -LDFLAGS -fsanitize=address,undefined``
+     Instructs the compiler and linker to enable the address sanitizer, and
+     undefined behavior sanitizer.
+
+   ``-CFLAGS -D_GLIBCXX_DEBUG``
+     Instructs the compiler to enable C++ library (glibc) internal
+     assertions to find library-misuse issues.
+
+   ``-CFLAGS -DVL_DEBUG=1``
+     Instructs the compiler to enable Verilator's runtime assertions and
+     debug capabilities.  To enable debug print messages at runtime, see
+     :vlopt:`+verilator+debug`.
+
+   The :vlopt:`-CFLAGS` and/or :vlopt:`-LDFLAGS` options used here pass the
+   following argument into the generated Makefile for use as compiler or
+   linker options respectively.  If you are using your own Makefiles, adapt
+   appropriately to pass the suggested flags to the compiler and linker.
+
 .. option:: --savable
 
    Enable including save and restore functions in the generated model.  See

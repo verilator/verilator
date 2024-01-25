@@ -515,36 +515,30 @@ documentation.
 Runtime Debugging
 =================
 
-To debug a Verilated executable, typically you will want to have debugger
-symbols inserted by the compiler, assertions enabled in the C library,
-assertions enabled in the Verilated library, and the sanitizer enabled to
-look for bad memory or undefined operations. (These options slow down the
-executable, so do this only when debugging.) To enable these, Verilate
-with:
+To debug a Verilated executable, Verilate with :vlopt:`--runtime-debug`.
+This will instruct the compiler to insert debugger, and enable various
+library assertions. These options slow down the executable, so do this
+only when debugging.
 
-   .. code-block:: bash
-
-      --decorations node
-      -CFLAGS -ggdb  -LDFLAGS -ggdb
-      -CFLAGS -DVL_DEBUG=1
-      -CFLAGS -D_GLIBCXX_DEBUG
-      -CFLAGS -fsanitize=address,undefined  -LDFLAGS -fsanitize=address,undefined
-
-The :vlopt:`--decorations node` option used here will add comments to the
-Verilated C++ code to indicate what Verilog code was responsible, which may
-assist debug readability.
-
-The :vlopt:`-CFLAGS` and/or :vlopt:`-LDFLAGS` options used here pass the
-following argument into the generated Makefile for use as compiler or
-linker options respectively.  If you are using your own Makefiles, adapt
-appropriately to pass the suggested flags to the compiler and linker.
+If you are using your own Makefiles, adapt appropriately to pass the
+options documented under :vlopt:`--runtime-debug` to the compiler and
+linker.
 
 Once you have a debugging-enabled executable, run it using the the standard
 GNU debugger ``gdb`` or a similar tool, and create a backtrace; e.g.:
 
    .. code-block:: bash
 
-      gdb obj_dir/Vmodel
-        run {Vmodel_command_arguments}
-        {segmentation faults}
+      gdb obj_dir/Vtop
+        run {Vtop_command_arguments}
+        {Vtop prints output, perhaps a segmentation faults}
         bt
+
+Rarely the bug may disappear with :vlopt:`--runtime-debug`; if so, try
+instead using the sub-options that :vlopt:`--runtime-debug` documents, to
+find the maximum subset that still shows the issue.  E.g. it is likely that
+using `-CFLAGS -D_GLIBCXX_DEBUG` will not hide any bug, so may be used.
+
+Using :vlopt:`--runtime-debug` or `-CFLAGS -DVL_DEBUG=1` will only print a
+message if something goes wrong.  To enable debug print messages at
+runtime, additionally use the :vlopt:`+verilator+debug` runtime option.

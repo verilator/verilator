@@ -416,6 +416,7 @@ detailed descriptions of these arguments.
     --reloop-limit              Minimum iterations for forming loops
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
     --rr                        Run Verilator and record with rr
+    --runtime-debug             Enable model runtime debugging
     --savable                   Enable model save-restore
     --sc                        Create SystemC output
     --no-skip-identical         Disable skipping identical output

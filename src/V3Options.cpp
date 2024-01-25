@@ -1406,6 +1406,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-report-unoptflat", OnOff, &m_reportUnoptflat);
     DECL_OPTION("-rr", CbCall, []() {});  // Processed only in bin/verilator shell
+    DECL_OPTION("-runtime-debug", CbCall, [this, fl]() {
+        decorations(fl, "node");
+        addCFlags("-ggdb");
+        addLdLibs("-ggdb");
+        addCFlags("-fsanitize=address,undefined");
+        addLdLibs("-fsanitize=address,undefined");
+        addCFlags("-D_GLIBCXX_DEBUG");
+        addCFlags("-DVL_DEBUG=1");
+    });
 
     DECL_OPTION("-savable", OnOff, &m_savable);
     DECL_OPTION("-sc", CbCall, [this]() {
