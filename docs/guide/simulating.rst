@@ -524,10 +524,15 @@ with:
 
    .. code-block:: bash
 
+      --decorations node
       -CFLAGS -ggdb  -LDFLAGS -ggdb
       -CFLAGS -DVL_DEBUG=1
       -CFLAGS -D_GLIBCXX_DEBUG
       -CFLAGS -fsanitize=address,undefined  -LDFLAGS -fsanitize=address,undefined
+
+The :vlopt:`--decorations node` option used here will add comments to the
+Verilated C++ code to indicate what Verilog code was responsible, which may
+assist debug readability.
 
 The :vlopt:`-CFLAGS` and/or :vlopt:`-LDFLAGS` options used here pass the
 following argument into the generated Makefile for use as compiler or

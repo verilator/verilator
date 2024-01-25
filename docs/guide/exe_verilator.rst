@@ -304,12 +304,40 @@ Summary:
    detailed messages.  See :vlopt:`--debug` for other implications of
    enabling debug.
 
+.. option:: --decorations none
+
+.. option:: --decorations medium
+
+.. option:: --decorations node
+
+   When creating output Verilated code, set level of comment and whitespace
+   decoration.
+
+   With "--decorations none",
+     Minimize comments, white space, symbol names, and other decorative
+     items, at the cost of reduced readability. This may assist C++ compile
+     times. This will not typically change the ultimate model's
+     performance, but may in some cases.  See also :vlopt:`--no-decoration`
+     option.
+
+   With "--decorations medium",
+     The default, put a small amount of comments and white space, for
+     typical level of readability.
+
+   With "--decorations node",
+     Include comments indicating what caused generation of the following
+     text, including what node pointer (corresponding to
+     :vlopt:`--dump-tree` .tree printed data), and the source Verilog
+     filename and line number.  If subsequent following statements etc have
+     the same filename/line number these comments are omitted.  This
+     enables easy debug when looking at the C++ code to determine what
+     Verilog source may be related.  As node pointers are not stable
+     between different Verilator runs, this may harm compile caching and
+     should only be used for debug.
+
 .. option:: --no-decoration
 
-   When creating output Verilated code, minimize comments, white space,
-   symbol names, and other decorative items, at the cost of reduced
-   readability. This may assist C++ compile times. This will not typically
-   change the ultimate model's performance, but may in some cases.
+   Alias for ``--decorations none``.
 
 .. option:: --default-language <value>
 

@@ -6,7 +6,7 @@ Deprecations
 
 The following deprecated items are scheduled for future removal:
 
-C++11 compiler support
+C++14 compiler support
   Verilator currently requires a C++20 or newer compiler for timing, and a
   C++14 or newer compiler for both compiling Verilator and compiling
   Verilated models with --no-timing.

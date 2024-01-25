@@ -695,15 +695,28 @@ int V3OutFormatter::endLevels(const char* strg) {
     return levels;
 }
 
-void V3OutFormatter::puts(const char* strg) {
+void V3OutFormatter::putns(const AstNode* nodep, const char* strg) {
     if (!v3Global.opt.decoration()) {
         putsOutput(strg);
         return;
     }
+
     if (m_prependIndent && strg[0] != '\n') {
         putsNoTracking(indentSpaces(endLevels(strg)));
         m_prependIndent = false;
     }
+
+    if (nodep && v3Global.opt.decorationNodes() && !v3Global.opt.protectIds()
+        && (m_sourceLastFilenameno != nodep->fileline()->filenameno()
+            || m_sourceLastLineno != nodep->fileline()->firstLineno())
+        && FileLine::builtInFilename() != nodep->fileline()->filename()) {
+        m_sourceLastLineno = nodep->fileline()->firstLineno();
+        m_sourceLastFilenameno = nodep->fileline()->filenameno();
+        putsNoTracking("/*" + nodep->fileline()->filename() + ":"
+                       + cvtToStr(nodep->fileline()->lineno()) + " " + cvtToStr((void*)nodep)
+                       + "*/");
+    }
+
     bool notstart = false;
     bool wordstart = true;
     bool equalsForBracket = false;  // Looking for "= {"

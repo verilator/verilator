@@ -16,6 +16,7 @@ Verilator 5.021 devel
 * Add predicted stack overflow warning (#4799).
 * Add +verilator+coverage+file runtime option.
 * Add --main support for dumping coverage.
+* Add '--decorations node' for inserting debug comments into emitted code.
 * Remove deprecated 32-bit pointer mode (`gcc -m32`).
 * Change zero replication width error to ZEROREPL warning (#4753) (#4762). [Pengcheng Xu]
 * Support `vpiConstType` in `vpi_get_str()` (#4797). [Marlon James]
