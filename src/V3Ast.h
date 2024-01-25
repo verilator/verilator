@@ -684,7 +684,7 @@ public:
             /* UNKNOWN:                   */ "",  // Should not be traced
             /* BIT:                       */ "BIT",
             /* BYTE:                      */ "BYTE",
-            /* CHANDLE:                   */ "",
+            /* CHANDLE:                   */ "LONGINT",
             /* EVENT:                     */ "EVENT",
             /* INT:                       */ "INT",
             /* INTEGER:                   */ "INTEGER",

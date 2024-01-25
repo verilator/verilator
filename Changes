@@ -37,6 +37,7 @@ Verilator 5.021 devel
 * Fix wrong utimes() parameter (#4829). [Szymon Gizler]
 * Fix incorrect bit-op-tree NOT optimization (#4832) (#4847). [Yutetsu TAKATSUKASA]
 * Fix width calculation in replaceShiftOp (#4837) (#4841) (#4849). [Yutetsu TAKATSUKASA]
+* Fix tracing chandles (#4860). [Nathan Graybeal]
 
 
 Verilator 5.020 2024-01-01
