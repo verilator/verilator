@@ -13,12 +13,14 @@ scenarios(vlt => 1);
 compile(
     make_top_shell => 0,
     make_main => 0,
-    verilator_flags2 => ["--exe --timing --pins-inout-enables", "$Self->{t_dir}/$Self->{name}.cpp"],
+    verilator_flags2 => ["--exe --timing --pins-inout-enables", "$Self->{t_dir}/t_tri_top_en_out.cpp"],
     );
 
-execute(
-    check_finished => 1,
-    );
-
-ok(1);
+if ($Self->{errors}) {
+   print "Compile fails, but expected and required\n";
+   $Self->{errors} = 0;
+   ok(1)
+} else {
+   error("Compile should have failed but did not");
+}
 1;
