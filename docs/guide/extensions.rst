@@ -594,6 +594,23 @@ or "`ifdef`"'s may break other tools.
    Re-enable waveform tracing for all future signals or instances that are
    declared.
 
+.. option:: /*verilator&32;unroll_disable*/
+
+   Used in a statement position to indicate the immediately following loop
+   at the same statement level should not be unrolled by Verilator,
+   ignoring :vlopt:`--unroll-count`.  This is similar to clang's ``#pragma
+   clang loop unroll(disable)``.
+
+   This option does not currently disable the C++ compiler's unrolling (or
+   not) of any loops that make it through to the Verilated C++ code.
+
+.. option:: /*verilator&32;unroll_full*/
+
+   Rarely needed. Used in a statement position to indicate the immediately
+   following loop at the same statement level should always be fully
+   unrolled by Verilator, ignoring :vlopt:`--unroll-count`.  This is
+   similar to clang's ``#pragma clang loop unroll(full)``.
+
 .. option:: $stacktrace
 
    Called as a task, print a stack trace.  Called as a function, return a

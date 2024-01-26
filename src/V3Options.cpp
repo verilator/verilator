@@ -959,6 +959,16 @@ VTimescale V3Options::timeComputeUnit(const VTimescale& flag) const {
     }
 }
 
+int V3Options::unrollCountAdjusted(const VOptionBool& full, bool generate, bool simulate) {
+    int count = unrollCount();
+    // std::max to avoid rollover if unrollCount is e.g. std::numeric_limits<int>::max()
+    // With /*verilator unroll_full*/ still have a limit to avoid infinite loops
+    if (full.isSetTrue()) count = std::max(count, count * 1024);
+    if (generate) count = std::max(count, count * 16);
+    if (simulate) count = std::max(count, count * 16);
+    return count;
+}
+
 //######################################################################
 // V3 Options utilities
 

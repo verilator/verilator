@@ -2010,6 +2010,13 @@ bool AstVar::same(const AstNode* samep) const {
     const AstVar* const asamep = VN_DBG_AS(samep, Var);
     return name() == asamep->name() && varType() == asamep->varType();
 }
+void AstWhile::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (unrollFull().isSetTrue())
+        str << " [unrollfull]";
+    else if (unrollFull().isSetFalse())
+        str << " [unrolldis]";
+}
 void AstScope::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " [abovep=" << nodeAddr(aboveScopep()) << "]";

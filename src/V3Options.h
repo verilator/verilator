@@ -564,6 +564,7 @@ public:
         return useTraceParallel() ? threads() : useTraceOffload() ? 1 : 0;
     }
     int unrollCount() const { return m_unrollCount; }
+    int unrollCountAdjusted(const VOptionBool& full, bool generate, bool simulate);
     int unrollStmts() const { return m_unrollStmts; }
     int verilateJobs() const { return m_verilateJobs; }
 

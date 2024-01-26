@@ -3349,6 +3349,7 @@ class AstWhile final : public AstNodeStmt {
     // @astgen op2 := condp : AstNodeExpr
     // @astgen op3 := stmtsp : List[AstNode]
     // @astgen op4 := incsp : List[AstNode]
+    VOptionBool m_unrollFull;  // Full, disable, or default unrolling
 public:
     AstWhile(FileLine* fl, AstNodeExpr* condp, AstNode* stmtsp = nullptr, AstNode* incsp = nullptr)
         : ASTGEN_SUPER_While(fl) {
@@ -3357,12 +3358,15 @@ public:
         this->addIncsp(incsp);
     }
     ASTGEN_MEMBERS_AstWhile;
+    void dump(std::ostream& str) const override;
     bool isGateOptimizable() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
     bool same(const AstNode* /*samep*/) const override { return true; }
     // Stop statement searchback here
     void addNextStmt(AstNode* newp, AstNode* belowp) override;
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
+    void unrollFull(const VOptionBool flag) { m_unrollFull = flag; }
+    VOptionBool unrollFull() const { return m_unrollFull; }
 };
 
 // === AstNodeAssign ===

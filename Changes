@@ -16,7 +16,9 @@ Verilator 5.021 devel
 * Add predicted stack overflow warning (#4799).
 * Add +verilator+coverage+file runtime option.
 * Add --runtime-debug for Verilated executable runtime debugging.
-* Add '--decorations node' for inserting debug comments into emitted code.
+* Add `--decorations node` for inserting debug comments into emitted code.
+* Add `unroll_disable` and `unroll_full` loop control metacomments (#3260). [Jiaxun Yang]
+
 * Remove deprecated 32-bit pointer mode (`gcc -m32`).
 * Change zero replication width error to ZEROREPL warning (#4753) (#4762). [Pengcheng Xu]
 * Support dumping coverage with --main.

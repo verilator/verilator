@@ -292,6 +292,8 @@ public:
         NO_INLINE_TASK,
         PUBLIC_MODULE,
         PUBLIC_TASK,
+        UNROLL_DISABLE,
+        UNROLL_FULL,
         FULL_CASE,
         PARALLEL_CASE,
         ENUM_SIZE

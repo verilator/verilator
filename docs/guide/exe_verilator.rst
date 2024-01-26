@@ -1219,7 +1219,7 @@ Summary:
 
    This option has the same effect as the following flags:
 
-   :vlopt:`--decorations node`
+   :vlopt:`--decorations node <--decorations>`
      Instructs Verilator to add comments to the Verilated C++ code to
      assist determining what Verilog code was responsible for each C++
      statement.
@@ -1486,13 +1486,17 @@ Summary:
 
 .. option:: --unroll-count <loops>
 
-   Rarely needed.  Specifies the maximum number of loop iterations that may be
-   unrolled.  See also :option:`BLKLOOPINIT` warning.
+   Rarely needed.  Specifies the maximum number of loop iterations that may
+   be unrolled.  See also :option:`BLKLOOPINIT` warning, and
+   :option:`/*verilator&32;unroll_disable*/` and
+   :option:`/*verilator&32;unroll_full*/` metacomments.
 
 .. option:: --unroll-stmts <statements>
 
    Rarely needed.  Specifies the maximum number of statements in a loop for
-   that loop to be unrolled. See also :option:`BLKLOOPINIT` warning.
+   that loop to be unrolled.  See also :option:`BLKLOOPINIT` warning, and
+   :option:`/*verilator&32;unroll_disable*/` and
+   :option:`/*verilator&32;unroll_full*/` metacomments.
 
 .. option:: --unused-regexp <regexp>
 
