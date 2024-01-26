@@ -80,6 +80,7 @@ public:
         UASSERT_OBJ(!m_instance.initialized(), m_procp, "Dynamic scope already instantiated.");
 
         m_instance.m_classp = new AstClass{m_procp->fileline(), generateDynScopeClassName()};
+        UINFO(9, "new dynscope class " << m_instance.m_classp << endl);
         m_instance.m_refDTypep
             = new AstClassRefDType{m_procp->fileline(), m_instance.m_classp, nullptr};
         v3Global.rootp()->typeTablep()->addTypesp(m_instance.m_refDTypep);
@@ -88,6 +89,7 @@ public:
                          generateDynScopeHandleName(m_procp), m_instance.m_refDTypep};
         m_instance.m_handlep->funcLocal(true);
         m_instance.m_handlep->lifetime(VLifetime::AUTOMATIC);
+        UINFO(9, "new dynscope var " << m_instance.m_handlep << endl);
 
         return m_instance;
     }
@@ -112,6 +114,7 @@ public:
             varp->varType(VVarType::MEMBER);
             varp->lifetime(VLifetime::AUTOMATIC);
             varp->usedLoopIdx(false);  // No longer unrollable
+            UINFO(9, "insert DynScope member " << varp << endl);
             m_instance.m_classp->addStmtsp(varp);
         }
 
@@ -235,9 +238,9 @@ private:
     AstNode* getProcStmts() {
         AstNode* stmtsp = nullptr;
         if (!m_procp) return nullptr;
-        if (AstBegin* beginp = VN_CAST(m_procp, Begin)) {
+        if (AstBegin* const beginp = VN_CAST(m_procp, Begin)) {
             stmtsp = beginp->stmtsp();
-        } else if (AstNodeFTask* taskp = VN_CAST(m_procp, NodeFTask)) {
+        } else if (AstNodeFTask* const taskp = VN_CAST(m_procp, NodeFTask)) {
             stmtsp = taskp->stmtsp();
         } else {
             m_procp->v3fatalSrc("m_procp is not a begin block or a procedure");
@@ -316,8 +319,8 @@ class DynScopeVisitor final : public VNVisitor {
                || nodep->exists([](AstAssignDly*) { return true; });
     }
 
-    void bindNodeToDynScope(AstNode* nodep, ForkDynScopeFrame* frame) {
-        m_frames.emplace(nodep, frame);
+    void bindNodeToDynScope(AstNode* nodep, ForkDynScopeFrame* framep) {
+        m_frames.emplace(nodep, framep);
     }
 
     bool needsDynScope(const AstVarRef* refp) const {
@@ -360,7 +363,7 @@ class DynScopeVisitor final : public VNVisitor {
         if (nodep->initsp()) framep = pushDynScopeFrame(nodep);
 
         for (AstNode* stmtp = nodep->initsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstVar* varp = VN_CAST(stmtp, Var)) {
+            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                 // This can be probably optimized to detect cases in which dynscopes
                 // could be avoided
                 if (!framep->instance().initialized()) framep->createInstancePrototype();
@@ -423,6 +426,7 @@ class DynScopeVisitor final : public VNVisitor {
             forkp->joinType(VJoinType::JOIN_NONE);
             nodep->replaceWith(forkp);
             forkp->addStmtsp(nodep);
+            UINFO(9, "assign new fork " << forkp << endl);
         } else {
             iterateChildren(nodep);
         }
@@ -441,17 +445,15 @@ public:
         // Commit changes to AST
         bool typesAdded = false;
         for (auto frameIt : m_frames) {
-            ForkDynScopeFrame* frame = frameIt.second;
-            if (!frame->instance().initialized()) continue;
-
-            if (!frame->linked()) {
-                frame->populateClass();
-                frame->linkNodes(m_memberMap);
+            ForkDynScopeFrame* const framep = frameIt.second;
+            if (!framep->instance().initialized()) continue;
+            if (!framep->linked()) {
+                framep->populateClass();
+                framep->linkNodes(m_memberMap);
                 typesAdded = true;
             }
-
-            if (AstVarRef* refp = VN_CAST(frameIt.first, VarRef)) {
-                if (frame->captured(refp->varp())) replaceWithMemberSel(refp, frame->instance());
+            if (AstVarRef* const refp = VN_CAST(frameIt.first, VarRef)) {
+                if (framep->captured(refp->varp())) replaceWithMemberSel(refp, framep->instance());
             }
         }
 
@@ -459,8 +461,8 @@ public:
     }
     ~DynScopeVisitor() override {
         std::set<ForkDynScopeFrame*> frames;
-        for (auto node_frame : m_frames) { frames.insert(node_frame.second); }
-        for (auto* frame : frames) { delete frame; }
+        for (auto node_frame : m_frames) frames.insert(node_frame.second);
+        for (auto* framep : frames) delete framep;
     }
 };
 
@@ -496,6 +498,7 @@ class ForkVisitor final : public VNVisitor {
             varp->direction(VDirection::INPUT);
             varp->funcLocal(true);
             varp->lifetime(VLifetime::AUTOMATIC);
+            UINFO(9, "new capture var " << varp << endl);
             m_capturedVarsp = AstNode::addNext(m_capturedVarsp, varp);
             // Use the original ref as an argument for call
             m_capturedVarRefsp
@@ -545,22 +548,23 @@ class ForkVisitor final : public VNVisitor {
         VNRelinker handle;
         AstTask* taskp = nullptr;
 
-        if (AstBegin* beginp = VN_CAST(nodep, Begin)) {
+        if (AstBegin* const beginp = VN_CAST(nodep, Begin)) {
             UASSERT(beginp->stmtsp(), "No stmtsp\n");
             const string taskName = generateTaskName(beginp, "fork_begin");
             taskp
                 = makeTask(beginp->fileline(), beginp->stmtsp()->unlinkFrBackWithNext(), taskName);
             beginp->unlinkFrBack(&handle);
             VL_DO_DANGLING(beginp->deleteTree(), beginp);
-        } else if (AstNodeStmt* stmtp = VN_CAST(nodep, NodeStmt)) {
+        } else if (AstNodeStmt* const stmtp = VN_CAST(nodep, NodeStmt)) {
             const string taskName = generateTaskName(stmtp, "fork_stmt");
             taskp = makeTask(stmtp->fileline(), stmtp->unlinkFrBack(&handle), taskName);
-        } else if (AstFork* forkp = VN_CAST(nodep, Fork)) {
+        } else if (AstFork* const forkp = VN_CAST(nodep, Fork)) {
             const string taskName = generateTaskName(forkp, "fork_nested");
             taskp = makeTask(forkp->fileline(), forkp->unlinkFrBack(&handle), taskName);
         }
 
         m_modp->addStmtsp(taskp);
+        UINFO(9, "new " << taskp << endl);
 
         AstTaskRef* const taskrefp
             = new AstTaskRef{nodep->fileline(), taskp->name(), m_capturedVarRefsp};
