@@ -4,31 +4,61 @@
 // any use, without warranty, 2024 by Paul Wright.
 // SPDX-License-Identifier: CC0-1.0
 
-
 #include "verilated.h"
+<<<<<<< HEAD
 #ifdef T_TRI_TOP_EN_OUT_INVALID
 #include "Vt_tri_top_en_out_invalid.h"
 #else
+||||||| 39eb8ee9a
+=======
+
+>>>>>>> 918537f7fdbc90d6d36ee1556de6a91320985275
 #include "Vt_tri_top_en_out.h"
+<<<<<<< HEAD
 #endif
+||||||| 39eb8ee9a
+=======
+
+>>>>>>> 918537f7fdbc90d6d36ee1556de6a91320985275
 #include <cstdio>
 
 //======================
 
 int main(int argc, char** argv, char**) {
+<<<<<<< HEAD
   int error_cnt;
   // Setup context, defaults, and parse command line
   Verilated::debug(0);
   const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
   contextp->commandArgs(argc, argv);
+||||||| 39eb8ee9a
+  // Setup context, defaults, and parse command line
+  Verilated::debug(0);
+  const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+  contextp->commandArgs(argc, argv);
+=======
+    // Setup context, defaults, and parse command line
+    Verilated::debug(0);
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    contextp->commandArgs(argc, argv);
+>>>>>>> 918537f7fdbc90d6d36ee1556de6a91320985275
 
+<<<<<<< HEAD
   // Construct the Verilated model, from Vtop.h generated from Verilating
 #ifdef T_TRI_TOP_EN_OUT_INVALID
   const std::unique_ptr<Vt_tri_top_en_out_invalid> topp{new Vt_tri_top_en_out_invalid{contextp.get()}};
 #else
   const std::unique_ptr<Vt_tri_top_en_out> topp{new Vt_tri_top_en_out{contextp.get()}};
 #endif
+||||||| 39eb8ee9a
+  // Construct the Verilated model, from Vtop.h generated from Verilating
+  const std::unique_ptr<Vt_tri_top_en_out> topp{new Vt_tri_top_en_out{contextp.get()}};
+=======
+    // Construct the Verilated model, from Vtop.h generated from Verilating
+    const std::unique_ptr<Vt_tri_top_en_out> topp{new Vt_tri_top_en_out{contextp.get()}};
+>>>>>>> 918537f7fdbc90d6d36ee1556de6a91320985275
 
+<<<<<<< HEAD
   // Initial input
   topp->drv_en = 0;
   topp->single_bit_io = 0;
@@ -53,16 +83,50 @@ int main(int argc, char** argv, char**) {
 #endif
 
   error_cnt = 0;
+||||||| 39eb8ee9a
+  // Initial input
+  topp->drv_en = 1;
+  topp->single_bit_io = 0;
+  topp->bidir_single_bit_io = 0;
+  topp->bus_64_io = 0;
+  topp->bidir_bus_64_io = 0;
+  topp->bus_128_io[0] = 0;
+  topp->bus_128_io[1] = 0;
+  topp->bus_128_io[2] = 0;
+  topp->bus_128_io[3] = 0;
+  topp->bidir_bus_128_io[0] = 0;
+  topp->bidir_bus_128_io[1] = 0;
+  topp->bidir_bus_128_io[2] = 0;
+  topp->bidir_bus_128_io[3] = 0;
+  topp->sub_io = 0;
+=======
+    // Initial input
+    topp->drv_en = 1;
+    topp->single_bit_io = 0;
+    topp->bidir_single_bit_io = 0;
+    topp->bus_64_io = 0;
+    topp->bidir_bus_64_io = 0;
+    topp->bus_128_io[0] = 0;
+    topp->bus_128_io[1] = 0;
+    topp->bus_128_io[2] = 0;
+    topp->bus_128_io[3] = 0;
+    topp->bidir_bus_128_io[0] = 0;
+    topp->bidir_bus_128_io[1] = 0;
+    topp->bidir_bus_128_io[2] = 0;
+    topp->bidir_bus_128_io[3] = 0;
+    topp->sub_io = 0;
+>>>>>>> 918537f7fdbc90d6d36ee1556de6a91320985275
 
-  // Simulate until $finish
-  while (!contextp->gotFinish()) {
-    // Evaluate model
-    topp->eval();
+    // Simulate until $finish
+    while (!contextp->gotFinish()) {
+        // Evaluate model
+        topp->eval();
 
-    // Advance time (to scheduled events)
-    if (!topp->eventsPending()) break;
-    contextp->time(topp->nextTimeSlot());
+        // Advance time (to scheduled events)
+        if (!topp->eventsPending()) break;
+        contextp->time(topp->nextTimeSlot());
 
+<<<<<<< HEAD
     // We want to check that the __en and __out signals can be accessed
     printf("Info:(cpp): drv_en = %x\n", topp->drv_en);
     printf("Info:(cpp): bidir_single_bit_io__en = %x\n", topp->bidir_single_bit_io__en);
@@ -73,7 +137,28 @@ int main(int argc, char** argv, char**) {
     topp->bidir_bus_128_io[1],
     topp->bidir_bus_128_io[0]);
     printf("Info:(cpp): sub_io__en = %x\n", topp->sub_io__en);
+||||||| 39eb8ee9a
+    // We want to check that the __en and __out signals can be accessed
 
+    printf("bidir_single_bit_io__en = %x\n", topp->bidir_single_bit_io__en);
+    printf("bidir_bus_64_io__en = %x\n", (unsigned int)topp->bidir_bus_64_io__en);
+    printf("bidir_bus_128_io__en = %x,%x,%x,%x\n",
+    topp->bidir_bus_128_io[3],
+    topp->bidir_bus_128_io[2],
+    topp->bidir_bus_128_io[1],
+    topp->bidir_bus_128_io[0]);
+    printf("sub_io__en = %x\n", topp->sub_io__en);
+=======
+        // We want to check that the __en and __out signals can be accessed
+
+        printf("bidir_single_bit_io__en = %x\n", topp->bidir_single_bit_io__en);
+        printf("bidir_bus_64_io__en = %x\n", (unsigned int)topp->bidir_bus_64_io__en);
+        printf("bidir_bus_128_io__en = %x,%x,%x,%x\n", topp->bidir_bus_128_io[3],
+               topp->bidir_bus_128_io[2], topp->bidir_bus_128_io[1], topp->bidir_bus_128_io[0]);
+        printf("sub_io__en = %x\n", topp->sub_io__en);
+>>>>>>> 918537f7fdbc90d6d36ee1556de6a91320985275
+
+<<<<<<< HEAD
     printf("Info:(cpp): bidir_single_bit_io = %x\n", topp->bidir_single_bit_io__out);
     printf("Info:(cpp): bidir_bus_64_io = %x\n", (unsigned int)topp->bidir_bus_64_io__out);
     printf("Info:(cpp): bidir_bus_128_io = %x,%x,%x,%x\n",
@@ -158,14 +243,46 @@ int main(int argc, char** argv, char**) {
     } // if (loop_done)
     if (error_cnt != 0) break;
   }
+||||||| 39eb8ee9a
+    printf("bidir_single_bit_io = %x\n", topp->bidir_single_bit_io__out);
+    printf("bidir_bus_64_io = %x\n", (unsigned int)topp->bidir_bus_64_io__out);
+    printf("bidir_bus_128_io = %x,%x,%x,%x\n",
+    topp->bidir_bus_128_io__out[3],
+    topp->bidir_bus_128_io__out[2],
+    topp->bidir_bus_128_io__out[1],
+    topp->bidir_bus_128_io__out[0]);
+    printf("sub_io = %x\n", topp->sub_io__out);
+  }
+=======
+        printf("bidir_single_bit_io = %x\n", topp->bidir_single_bit_io__out);
+        printf("bidir_bus_64_io = %x\n", (unsigned int)topp->bidir_bus_64_io__out);
+        printf("bidir_bus_128_io = %x,%x,%x,%x\n", topp->bidir_bus_128_io__out[3],
+               topp->bidir_bus_128_io__out[2], topp->bidir_bus_128_io__out[1],
+               topp->bidir_bus_128_io__out[0]);
+        printf("sub_io = %x\n", topp->sub_io__out);
+    }
+>>>>>>> 918537f7fdbc90d6d36ee1556de6a91320985275
 
+<<<<<<< HEAD
   if (!contextp->gotFinish()) {
     printf("Info:(cpp): Exiting without $finish; no events left, time was %ld\n",
     contextp->time());
     puts("Info:(cpp): final next:");
   }
+||||||| 39eb8ee9a
+  if (!contextp->gotFinish()) {
+    printf("Exiting without $finish; no events left, time was %ld\n",
+    contextp->time());
+    puts("final next:");
+  }
+=======
+    if (!contextp->gotFinish()) {
+        printf("Exiting without $finish; no events left, time was %ld\n", contextp->time());
+        puts("final next:");
+    }
+>>>>>>> 918537f7fdbc90d6d36ee1556de6a91320985275
 
-  // Final model cleanup
-  topp->final();
-  return 0;
+    // Final model cleanup
+    topp->final();
+    return 0;
 }
