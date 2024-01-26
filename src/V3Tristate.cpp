@@ -487,8 +487,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Return the master __en for the specified input variable
         if (!invarp->user1p()) {
             AstVar* const newp = new AstVar{invarp->fileline(),
-                                            v3Global.opt.pinsInoutEnables() ?
-                                             VVarType::PORT : VVarType::MODULETEMP,
+                                            v3Global.opt.pinsInoutEnables() ? VVarType::PORT
+                                                                            : VVarType::MODULETEMP,
                                             invarp->name() + "__en", invarp};
             if (v3Global.opt.pinsInoutEnables()) {
                 newp->primaryIO(true);
@@ -546,8 +546,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Return the master __out for the specified input variable
         if (!m_varAux(invarp).outVarp) {
             AstVar* const newp = new AstVar{invarp->fileline(),
-                                            v3Global.opt.pinsInoutEnables() ?
-                                             VVarType::PORT : VVarType::MODULETEMP,
+                                            v3Global.opt.pinsInoutEnables() ? VVarType::PORT
+                                                                            : VVarType::MODULETEMP,
                                             invarp->name() + "__out", invarp};
             if (v3Global.opt.pinsInoutEnables()) {
                 newp->primaryIO(true);
