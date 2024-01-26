@@ -416,7 +416,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             , m_strength{strength} {}
     };
     using RefStrengthVec = std::vector<RefStrength>;
-    using VarMap = std::unordered_map<AstVar*, RefStrengthVec*>;
+    using VarMap = std::map<AstVar*, RefStrengthVec*>;
     using Assigns = std::vector<AstAssignW*>;
     using VarToAssignsMap = std::map<AstVar*, Assigns>;
     enum : uint8_t {
@@ -632,9 +632,9 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Now go through the lhs driver map and generate the output
         // enable logic for any tristates.
         // Note there might not be any drivers.
-        for (VarMap::iterator nextit, it = m_lhsmap.begin(); it != m_lhsmap.end(); it = nextit) {
-            nextit = it;
-            ++nextit;
+        for (auto varp : vars) {  // Use vector instead of m_lhsmap iteration for node stability
+            const auto it = m_lhsmap.find(varp);
+            if (it == m_lhsmap.end()) continue;
             AstVar* const invarp = it->first;
             RefStrengthVec* refsp = it->second;
             // Figure out if this var needs tristate expanded.

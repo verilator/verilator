@@ -64,6 +64,7 @@ class ForkDynScopeFrame final {
     // MEMBERS
     AstNodeModule* const m_modp;  // Module to insert the scope into
     AstNode* const m_procp;  // Procedure/block associated with that dynscope
+    std::deque<AstVar*> m_captureOrder;  // Variables to be moved into the dynscope
     std::set<AstVar*> m_captures;  // Variables to be moved into the dynscope
     ForkDynScopeInstance m_instance;  // Nodes to be injected into the AST to create the dynscope
     const size_t m_class_id;  // Dynscope class ID
@@ -95,7 +96,10 @@ public:
     }
 
     const ForkDynScopeInstance& instance() const { return m_instance; }
-    void captureVarInsert(AstVar* varp) { m_captures.insert(varp); }
+    void captureVarInsert(AstVar* varp) {
+        auto r = m_captures.emplace(varp);
+        if (r.second) m_captureOrder.push_back(varp);
+    }
     bool captured(AstVar* varp) { return m_captures.count(varp) != 0; }
     AstNode* procp() const { return m_procp; }
 
@@ -103,7 +107,7 @@ public:
         UASSERT_OBJ(m_instance.initialized(), m_procp, "No DynScope prototype");
 
         // Move variables into the class
-        for (AstVar* varp : m_captures) {
+        for (AstVar* varp : m_captureOrder) {
             if (varp->direction() == VDirection::INPUT) {
                 varp = varp->cloneTree(false);
                 varp->direction(VDirection::NONE);
@@ -157,7 +161,7 @@ public:
             new AstVarRef{m_procp->fileline(), m_instance.m_handlep, VAccess::WRITE}, newp};
 
         AstNode* initsp = nullptr;  // Arguments need to be copied
-        for (AstVar* varp : m_captures) {
+        for (AstVar* varp : m_captureOrder) {
             if (varp->direction() != VDirection::INPUT) continue;
 
             AstMemberSel* const memberselp = new AstMemberSel{
@@ -266,8 +270,8 @@ class DynScopeVisitor final : public VNVisitor {
     // STATE
     AstNodeModule* m_modp = nullptr;  // Module we are currently under
     AstNode* m_procp = nullptr;  // Function/task/block we are currently under
-    std::map<AstNode*, ForkDynScopeFrame*>
-        m_frames;  // Mapping from nodes to related DynScopeFrames
+    std::deque<AstNode*> m_frameOrder;  // Ordered list of frames (for determinism)
+    std::map<AstNode*, ForkDynScopeFrame*> m_frames;  // Map nodes to related DynScopeFrames
     VMemberMap m_memberMap;  // Class member look-up
     int m_forkDepth = 0;  // Number of asynchronous forks we are currently under
     bool m_afterTimingControl = false;  // A timing control might've be executed in the current
@@ -294,6 +298,7 @@ class DynScopeVisitor final : public VNVisitor {
             = new ForkDynScopeFrame{m_modp, procp, m_class_id++, m_id++};
         auto r = m_frames.emplace(procp, framep);
         UASSERT_OBJ(r.second, m_modp, "Procedure already contains a frame");
+        m_frameOrder.push_back(procp);
         return framep;
     }
 
@@ -320,7 +325,8 @@ class DynScopeVisitor final : public VNVisitor {
     }
 
     void bindNodeToDynScope(AstNode* nodep, ForkDynScopeFrame* framep) {
-        m_frames.emplace(nodep, framep);
+        auto r = m_frames.emplace(nodep, framep);
+        if (r.second) m_frameOrder.push_back(nodep);
     }
 
     bool needsDynScope(const AstVarRef* refp) const {
@@ -444,15 +450,18 @@ public:
 
         // Commit changes to AST
         bool typesAdded = false;
-        for (auto frameIt : m_frames) {
-            ForkDynScopeFrame* const framep = frameIt.second;
+        for (auto orderp : m_frameOrder) {
+            UINFO(9, "Frame commit " << orderp << endl);
+            auto frameIt = m_frames.find(orderp);
+            UASSERT_OBJ(frameIt != m_frames.end(), orderp, "m_frames didn't contain m_frameOrder");
+            ForkDynScopeFrame* framep = frameIt->second;
             if (!framep->instance().initialized()) continue;
             if (!framep->linked()) {
                 framep->populateClass();
                 framep->linkNodes(m_memberMap);
                 typesAdded = true;
             }
-            if (AstVarRef* const refp = VN_CAST(frameIt.first, VarRef)) {
+            if (AstVarRef* const refp = VN_CAST(frameIt->first, VarRef)) {
                 if (framep->captured(refp->varp())) replaceWithMemberSel(refp, framep->instance());
             }
         }
