@@ -10,7 +10,7 @@
 #ifdef T_TRI_TOP_EN_OUT_INVALID
 #include "Vt_tri_top_en_out_invalid.h"
 #else
-    ||||||| 39eb8ee9a
+    || || || | 39eb8ee9a
 =======
 
 >>>>>>> 918537f7fdbc90d6d36ee1556de6a91320985275
@@ -19,10 +19,10 @@
 
 >>>>>>> 918537f7fdbc90d6d36ee1556de6a91320985275
 #include "Vt_tri_top_en_out.h"
-    <<<<<<< HEAD
+        < < < < < < < HEAD
 <<<<<<< HEAD
 #endif
-    ||||||| 39eb8ee9a
+    || || || | 39eb8ee9a
 =======
 
 >>>>>>> 918537f7fdbc90d6d36ee1556de6a91320985275
@@ -32,10 +32,10 @@
 >>>>>>> 918537f7fdbc90d6d36ee1556de6a91320985275
 #include <cstdio>
 
-    //======================
+                 //======================
 
-    int
-    main(int argc, char** argv, char**) {
+                 int
+                 main(int argc, char** argv, char**) {
 <<<<<<< HEAD
 <<<<<<< HEAD
     int error_cnt;
@@ -75,10 +75,10 @@
 #else
     const std::unique_ptr<Vt_tri_top_en_out> topp{new Vt_tri_top_en_out{contextp.get()}};
 #endif
-    ||||||| 39eb8ee9a
-        // Construct the Verilated model, from Vtop.h generated from Verilating
-        const std::unique_ptr<Vt_tri_top_en_out>
-            topp{new Vt_tri_top_en_out{contextp.get()}};
+    || || || | 39eb8ee9a
+                 // Construct the Verilated model, from Vtop.h generated from Verilating
+                 const std::unique_ptr<Vt_tri_top_en_out>
+                     topp{new Vt_tri_top_en_out{contextp.get()}};
 =======
     // Construct the Verilated model, from Vtop.h generated from Verilating
     const std::unique_ptr<Vt_tri_top_en_out> topp{new Vt_tri_top_en_out{contextp.get()}};
