@@ -60,7 +60,7 @@ protected:
             const auto& mapr = nodep->map();
             for (const auto& itr : mapr) {
                 if (comma++) putbs(",\n");
-                puts(cvtToStr(itr.first));
+                putns(nodep, cvtToStr(itr.first));
                 ofp()->printf("%" PRIx64 "ULL", itr.first);
                 ofp()->putsNoTracking(":");
                 ofp()->putsNoTracking("{");
@@ -102,17 +102,17 @@ protected:
         UASSERT_OBJ(!num.isFourState(), nodep, "4-state value in constant pool");
         const AstNodeDType* const dtypep = nodep->dtypep();
         if (num.isNull()) {
-            puts("VlNull{}");
+            putns(nodep, "VlNull{}");
         } else if (num.isString()) {
             // Note: putsQuoted does not track indentation, so we use this instead
-            puts("\"");
+            putns(nodep, "\"");
             puts(num.toString());
             puts("\"");
         } else if (dtypep->isWide()) {
             const uint32_t size = dtypep->widthWords();
             // Note the double {{ initializer. The first { starts the initializer of the VlWide,
             // and the second starts the initializer of m_storage within the VlWide.
-            puts("{");
+            putns(nodep, "{");
             ofp()->putsNoTracking("{");
             if (m_inUnpacked) puts(" // VlWide " + cvtToStr(m_unpackedWord));
             puts("\n");
@@ -129,11 +129,13 @@ protected:
                 = !m_inUnpacked && (static_cast<int>(dnum) == dnum && -1000 < dnum && dnum < 1000)
                       ? "%3.1f"  // Force decimal point
                       : "%.17e";  // %e always yields a float literal
+            putns(nodep, "");
             ofp()->printf(fmt, dnum);
         } else if (dtypep->isQuad()) {
             const uint64_t qnum = static_cast<uint64_t>(num.toUQuad());
             const char* const fmt
                 = !m_inUnpacked && (qnum < 10) ? ("%" PRIx64 "ULL") : ("0x%016" PRIx64 "ULL");
+            putns(nodep, "");
             ofp()->printf(fmt, qnum);
         } else {
             const uint32_t unum = num.toUInt();
@@ -141,6 +143,7 @@ protected:
                                     : (dtypep->widthMin() > 16)  ? ("0x%08" PRIx32 "U")
                                     : (dtypep->widthMin() > 8)   ? ("0x%04" PRIx32 "U")
                                                                  : ("0x%02" PRIx32 "U");
+            putns(nodep, "");
             ofp()->printf(fmt, unum);
         }
     }

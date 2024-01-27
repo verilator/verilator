@@ -89,10 +89,12 @@ public:
     // METHODS
     V3OutCFile* ofp() const VL_MT_SAFE { return m_ofp; }
     void puts(const string& str) { ofp()->puts(str); }
+    void putns(const AstNode* nodep, const string& str) { ofp()->putns(nodep, str); }
     void putsHeader() { ofp()->putsHeader(); }
     void putbs(const string& str) { ofp()->putbs(str); }
-    void putsDecoration(const string& str) {
-        if (v3Global.opt.decoration()) puts(str);
+    void putnbs(const AstNode* nodep, const string& str) { ofp()->putnbs(nodep, str); }
+    void putsDecoration(const AstNode* nodep, const string& str) {
+        if (v3Global.opt.decoration()) putns(nodep, str);
     }
     void putsQuoted(const string& str) { ofp()->putsQuoted(str); }
     void ensureNewLine() { ofp()->ensureNewLine(); }

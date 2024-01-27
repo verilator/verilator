@@ -292,6 +292,8 @@ public:
         NO_INLINE_TASK,
         PUBLIC_MODULE,
         PUBLIC_TASK,
+        UNROLL_DISABLE,
+        UNROLL_FULL,
         FULL_CASE,
         PARALLEL_CASE,
         ENUM_SIZE
@@ -684,7 +686,7 @@ public:
             /* UNKNOWN:                   */ "",  // Should not be traced
             /* BIT:                       */ "BIT",
             /* BYTE:                      */ "BYTE",
-            /* CHANDLE:                   */ "",
+            /* CHANDLE:                   */ "LONGINT",
             /* EVENT:                     */ "EVENT",
             /* INT:                       */ "INT",
             /* INTEGER:                   */ "INTEGER",

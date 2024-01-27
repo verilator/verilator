@@ -411,7 +411,8 @@ void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra)
     } else if (!V3Error::s().errorContexted()) {
         nsstr << warnContextPrimary();
     }
-    if (!m_waive) V3Waiver::addEntry(V3Error::s().errorCode(), filename(), sstr.str());
+    if (!warnIsOff(V3Error::s().errorCode()) && !m_waive)
+        V3Waiver::addEntry(V3Error::s().errorCode(), filename(), sstr.str());
     V3Error::v3errorEnd(nsstr, lstr.str());
 }
 

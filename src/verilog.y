@@ -988,6 +988,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVL_SPLIT_VAR             "/*verilator split_var*/"
 %token<strp>            yVL_TAG                   "/*verilator tag*/"
 %token<fl>              yVL_TRACE_INIT_TASK       "/*verilator trace_init_task*/"
+%token<fl>              yVL_UNROLL_DISABLE        "/*verilator unroll_disable*/"
+%token<fl>              yVL_UNROLL_FULL           "/*verilator unroll_full*/"
 
 %token<fl>              yP_TICK         "'"
 %token<fl>              yP_TICKBRA      "'{"
@@ -3679,6 +3681,10 @@ statementFor<beginp>:           // IEEE: part of statement
 statementVerilatorPragmas<nodep>:
                 yVL_COVERAGE_BLOCK_OFF
                         { $$ = new AstPragma{$1, VPragmaType::COVERAGE_BLOCK_OFF}; }
+        |       yVL_UNROLL_DISABLE
+                        { $$ = new AstPragma{$1, VPragmaType::UNROLL_DISABLE}; }
+        |       yVL_UNROLL_FULL
+                        { $$ = new AstPragma{$1, VPragmaType::UNROLL_FULL}; }
         ;
 
 foperator_assignment<nodep>:    // IEEE: operator_assignment (for first part of expression)

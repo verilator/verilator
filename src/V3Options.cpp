@@ -444,6 +444,23 @@ void V3Options::ccSet() {  // --cc
     m_systemC = false;
 }
 
+void V3Options::decorations(FileLine* fl, const string& arg) {  // --decorations
+    if (arg == "none") {
+        m_decoration = false;
+        m_decorationNodes = false;
+    } else if (arg == "node") {
+        m_decoration = true;
+        m_decorationNodes = true;
+    } else if (arg == "medium") {
+        m_decoration = true;
+        m_decorationNodes = false;
+    } else {
+        fl->v3fatal("Unknown setting for --decorations: '"
+                    << arg << "'\n"
+                    << fl->warnMore() << "... Suggest 'none', 'medium', or 'node'");
+    }
+}
+
 //######################################################################
 // File searching
 
@@ -942,6 +959,16 @@ VTimescale V3Options::timeComputeUnit(const VTimescale& flag) const {
     }
 }
 
+int V3Options::unrollCountAdjusted(const VOptionBool& full, bool generate, bool simulate) {
+    int count = unrollCount();
+    // std::max to avoid rollover if unrollCount is e.g. std::numeric_limits<int>::max()
+    // With /*verilator unroll_full*/ still have a limit to avoid infinite loops
+    if (full.isSetTrue()) count = std::max(count, count * 1024);
+    if (generate) count = std::max(count, count * 16);
+    if (simulate) count = std::max(count, count * 16);
+    return count;
+}
+
 //######################################################################
 // V3 Options utilities
 
@@ -1167,7 +1194,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-debug-self-test", OnOff, &m_debugSelfTest).undocumented();
     DECL_OPTION("-debug-sigsegv", CbCall, throwSigsegv).undocumented();  // See also --debug-abort
     DECL_OPTION("-debug-stack-check", OnOff, &m_debugStackCheck).undocumented();
-    DECL_OPTION("-decoration", OnOff, &m_decoration);
+    DECL_OPTION("-decoration", CbCall, [this, fl]() { decorations(fl, "medium"); });
+    DECL_OPTION("-decorations", CbVal, [this, fl](const char* optp) { decorations(fl, optp); });
+    DECL_OPTION("-no-decoration", CbCall, [this, fl]() { decorations(fl, "none"); });
     DECL_OPTION("-dpi-hdr-only", OnOff, &m_dpiHdrOnly);
     DECL_OPTION("-dump-", CbPartialMatch, [this](const char* optp) { m_dumpLevel[optp] = 3; });
     DECL_OPTION("-no-dump-", CbPartialMatch, [this](const char* optp) { m_dumpLevel[optp] = 0; });
@@ -1384,10 +1413,19 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-relative-includes", OnOff, &m_relativeIncludes);
     DECL_OPTION("-reloop-limit", CbVal, [this, fl](const char* valp) {
         m_reloopLimit = std::atoi(valp);
-        if (m_reloopLimit < 2) { fl->v3error("--reloop-limit must be >= 2: " << valp); }
+        if (m_reloopLimit < 2) fl->v3error("--reloop-limit must be >= 2: " << valp);
     });
     DECL_OPTION("-report-unoptflat", OnOff, &m_reportUnoptflat);
     DECL_OPTION("-rr", CbCall, []() {});  // Processed only in bin/verilator shell
+    DECL_OPTION("-runtime-debug", CbCall, [this, fl]() {
+        decorations(fl, "node");
+        addCFlags("-ggdb");
+        addLdLibs("-ggdb");
+        addCFlags("-fsanitize=address,undefined");
+        addLdLibs("-fsanitize=address,undefined");
+        addCFlags("-D_GLIBCXX_DEBUG");
+        addCFlags("-DVL_DEBUG=1");
+    });
 
     DECL_OPTION("-savable", OnOff, &m_savable);
     DECL_OPTION("-sc", CbCall, [this]() {

@@ -47,7 +47,6 @@ class UnrollVisitor final : public VNVisitor {
     bool m_varModeReplace;  // Replacing varrefs
     bool m_varAssignHit;  // Assign var hit
     bool m_generate;  // Expand single generate For loop
-    int m_unrollLimit;  // Unrolling limit
     string m_beginName;  // What name to give begin iterations
     VDouble0 m_statLoops;  // Statistic tracking
     VDouble0 m_statIters;  // Statistic tracking
@@ -80,6 +79,7 @@ class UnrollVisitor final : public VNVisitor {
 
     bool forUnrollCheck(
         AstNode* const nodep,
+        const VOptionBool& unrollFull,  // Pragma unroll_full, unroll_disable
         AstNode* const initp,  // Maybe under nodep (no nextp), or standalone (ignore nextp)
         AstNode* const precondsp, AstNode* condp,
         AstNode* const incp,  // Maybe under nodep or in bodysp
@@ -90,6 +90,8 @@ class UnrollVisitor final : public VNVisitor {
         if (precondsp) UINFO(6, "    Pcon " << precondsp << endl);
         if (condp) UINFO(6, "    Cond " << condp << endl);
         if (incp) UINFO(6, "    Inc  " << incp << endl);
+
+        if (unrollFull.isSetFalse()) return cantUnroll(nodep, "pragma unroll_disable");
 
         // Initial value check
         AstAssign* const initAssp = VN_CAST(initp, Assign);
@@ -156,22 +158,25 @@ class UnrollVisitor final : public VNVisitor {
 
             // Check whether to we actually want to try and unroll.
             int loops;
-            if (!countLoops(initAssp, condp, incp, m_unrollLimit, loops)) {
+            const int limit = v3Global.opt.unrollCountAdjusted(unrollFull, m_generate, false);
+            if (!countLoops(initAssp, condp, incp, limit, loops)) {
                 return cantUnroll(nodep, "Unable to simulate loop");
             }
 
             // Less than 10 statements in the body?
-            int bodySize = 0;
-            int bodyLimit = v3Global.opt.unrollStmts();
-            if (loops > 0) bodyLimit = v3Global.opt.unrollStmts() / loops;
-            if (bodySizeOverRecurse(precondsp, bodySize /*ref*/, bodyLimit)
-                || bodySizeOverRecurse(bodysp, bodySize /*ref*/, bodyLimit)
-                || bodySizeOverRecurse(incp, bodySize /*ref*/, bodyLimit)) {
-                return cantUnroll(nodep, "too many statements");
+            if (!unrollFull.isSetTrue()) {
+                int bodySize = 0;
+                int bodyLimit = v3Global.opt.unrollStmts();
+                if (loops > 0) bodyLimit = v3Global.opt.unrollStmts() / loops;
+                if (bodySizeOverRecurse(precondsp, bodySize /*ref*/, bodyLimit)
+                    || bodySizeOverRecurse(bodysp, bodySize /*ref*/, bodyLimit)
+                    || bodySizeOverRecurse(incp, bodySize /*ref*/, bodyLimit)) {
+                    return cantUnroll(nodep, "too many statements");
+                }
             }
         }
         // Finally, we can do it
-        if (!forUnroller(nodep, initAssp, condp, precondsp, incp, bodysp)) {
+        if (!forUnroller(nodep, unrollFull, initAssp, condp, precondsp, incp, bodysp)) {
             return cantUnroll(nodep, "Unable to unroll loop");
         }
         VL_DANGLING(nodep);
@@ -259,8 +264,8 @@ class UnrollVisitor final : public VNVisitor {
         return true;
     }
 
-    bool forUnroller(AstNode* nodep, AstAssign* initp, AstNode* condp, AstNode* precondsp,
-                     AstNode* incp, AstNode* bodysp) {
+    bool forUnroller(AstNode* nodep, const VOptionBool& unrollFull, AstAssign* initp,
+                     AstNode* condp, AstNode* precondsp, AstNode* incp, AstNode* bodysp) {
         UINFO(9, "forUnroller " << nodep << endl);
         V3Number loopValue{nodep};
         if (!simulateTree(initp->rhsp(), nullptr, initp, loopValue)) {  //
@@ -329,11 +334,14 @@ class UnrollVisitor final : public VNVisitor {
                     }
 
                     ++m_statIters;
-                    if (++times / 3 > m_unrollLimit) {
+                    const int limit
+                        = v3Global.opt.unrollCountAdjusted(unrollFull, m_generate, false);
+                    if (++times / 3 > limit) {
                         nodep->v3error(
                             "Loop unrolling took too long;"
-                            " probably this is an infinite loop, or set --unroll-count above "
-                            << m_unrollLimit);
+                            " probably this is an infinite loop, "
+                            " or use /*verilator unroll_full*/, or set --unroll-count above "
+                            << times);
                         break;
                     }
 
@@ -396,7 +404,8 @@ class UnrollVisitor final : public VNVisitor {
                 if (incp == stmtsp) stmtsp = nullptr;
             }
             // And check it
-            if (forUnrollCheck(nodep, initp, nodep->precondsp(), nodep->condp(), incp, stmtsp)) {
+            if (forUnrollCheck(nodep, nodep->unrollFull(), initp, nodep->precondsp(),
+                               nodep->condp(), incp, stmtsp)) {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Did replacement
             }
         }
@@ -420,8 +429,8 @@ class UnrollVisitor final : public VNVisitor {
                 // condition, but they'll become while's which can be
                 // deleted by V3Const.
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-            } else if (forUnrollCheck(nodep, nodep->initsp(), nullptr, nodep->condp(),
-                                      nodep->incsp(), nodep->stmtsp())) {
+            } else if (forUnrollCheck(nodep, VOptionBool{}, nodep->initsp(), nullptr,
+                                      nodep->condp(), nodep->incsp(), nodep->stmtsp())) {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Did replacement
             } else {
                 nodep->v3error("For loop doesn't have genvar index, or is malformed");
@@ -478,12 +487,6 @@ public:
         m_varModeReplace = false;
         m_varAssignHit = false;
         m_generate = generate;
-        m_unrollLimit = v3Global.opt.unrollCount();
-        if (generate) {
-            m_unrollLimit = std::numeric_limits<int>::max() / 16 > m_unrollLimit
-                                ? m_unrollLimit * 16
-                                : std::numeric_limits<int>::max();
-        }
         m_beginName = beginName;
     }
     void process(AstNode* nodep, bool generate, const string& beginName) {

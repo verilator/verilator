@@ -29,6 +29,10 @@ Summary:
    Enable simulation runtime debugging.  Equivalent to
    :vlopt:`+verilator+debugi+4 <+verilator+debugi+\<value\>>`.
 
+   To be useful, the model typically must first be compiled with debug
+   capabilities by Verilating with :vlopt:`--runtime-debug` or `-CFLAGS
+   -DVL_DEBUG=1`.
+
 .. option:: +verilator+debugi+<value>
 
    Enable simulation runtime debugging at the provided level.

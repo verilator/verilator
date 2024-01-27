@@ -307,7 +307,6 @@ detailed descriptions of these arguments.
     --build-dep-bin <filename>  Override build dependency Verilator binary
     --build-jobs <jobs>         Parallelism for --build
     --cc                        Create C++ output
-    --cdc                       Clock domain crossing analysis
      -CFLAGS <flags>            C++ compiler arguments for makefile
     --clk <signal-name>         Mark specified signal as clock
     --no-clk <signal-name>      Prevent marking specified signal as clock
@@ -325,7 +324,8 @@ detailed descriptions of these arguments.
     --no-debug-leak             Disable leaking memory in --debug mode
     --debugi <level>            Enable debugging at a specified level
     --debugi-<srcfile> <level>  Enable debugging a source file at a level
-    --no-decoration             Disable comments and symbol decorations
+    --decorations <level>       Set output comment and spacing level
+    --no-decoration             Disable comments and lower spacing level
     --default-language <lang>   Default language to parse
      +define+<var>=<value>      Set preprocessor define
     --dpi-hdr-only              Only produce the DPI header file
@@ -334,6 +334,7 @@ detailed descriptions of these arguments.
     --dump-graph                Enable dumping V3Graphs to .dot files
     --dump-tree                 Enable dumping Ast .tree files
     --dump-tree-addrids         Use short identifiers instead of addresses
+    --dump-tree-dot             Enable dumping Ast .tree.dot debug files
     --dump-<srcfile>            Enable dumping everything in source file
     --dumpi-dfg <level>         Enable dumping DfgGraphs to .dot files at level
     --dumpi-graph <level>       Enable dumping V3Graphs to .dot files at level
@@ -347,6 +348,8 @@ detailed descriptions of these arguments.
      -f <file>                  Parse arguments from a file
      -FI <file>                 Force include of a file
     --flatten                   Force inlining of all modules, tasks and functions
+    --future0 <option>          Ignore an option for compatibility
+    --future1 <option>          Ignore an option with argument for compatibility
      -fno-<optimization>        Disable internal optimization stage
      -G<name>=<value>           Overwrite top-level parameter
     --gate-stmts <value>        Tune gate optimizer depth
@@ -383,7 +386,6 @@ detailed descriptions of these arguments.
      -O3                        High-performance optimizations
      -O<optimization-letter>    Selectable optimizations
      -o <executable>            Name of final executable
-    --no-order-clock-delay      Disable ordering clock enable assignments
     --output-split <statements>          Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split model functions
     --output-split-ctrace <statements>   Split tracing functions
@@ -404,7 +406,8 @@ detailed descriptions of these arguments.
     --protect-ids               Hash identifier names for obscurity
     --protect-key <key>         Key for symbol protection
     --protect-lib <name>        Create a DPI protected library
-    --public                    Debugging; see docs
+    --public                    Mark signals as public; see docs
+    --public-depth <level>      Mark public to specified module depth
     --public-params             Mark all parameters as public_flat
     --public-flat-rw            Mark all variables, etc as public_flat_rw
      -pvalue+<name>=<value>     Overwrite toplevel parameter
@@ -413,6 +416,7 @@ detailed descriptions of these arguments.
     --reloop-limit              Minimum iterations for forming loops
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
     --rr                        Run Verilator and record with rr
+    --runtime-debug             Enable model runtime debugging
     --savable                   Enable model save-restore
     --sc                        Create SystemC output
     --no-skip-identical         Disable skipping identical output
@@ -484,6 +488,7 @@ description of these arguments.
 
      +verilator+debug                  Enable debugging
      +verilator+debugi+<value>         Enable debugging at a level
+     +verilator+coverage+file+<filename>   Set coverage output filename
      +verilator+error+limit+<value>    Set error limit
      +verilator+help                   Display help
      +verilator+noassert               Disable assert checking

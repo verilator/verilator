@@ -688,6 +688,7 @@ genvars
 getenv
 getline
 ggdb
+glibc
 gmake
 gmon
 gotFinish

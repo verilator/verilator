@@ -203,7 +203,7 @@ class EmitCImp final : EmitCFunc {
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isStatic()) {
-                    puts(varp->vlArgType(true, false, false, modName));
+                    putns(varp, varp->vlArgType(true, false, false, modName));
                     puts(";\n");
                 }
             }
@@ -217,15 +217,15 @@ class EmitCImp final : EmitCFunc {
                 if (varp->isParam()) {
                     if (first) {
                         puts("\n");
-                        putsDecoration("// Parameter definitions for " + modName + "\n");
+                        putsDecoration(modp, "// Parameter definitions for " + modName + "\n");
                         first = false;
                     }
                     UASSERT_OBJ(varp->valuep(), nodep, "No init for a param?");
                     // Only C++ LiteralTypes can be constexpr
                     const bool canBeConstexpr = varp->dtypep()->isLiteralType();
-                    puts(canBeConstexpr ? "constexpr " : "const ");
+                    putns(varp, canBeConstexpr ? "constexpr " : "const ");
                     const string scopedName = modName + "::" + varp->nameProtect();
-                    puts(varp->dtypep()->cType(scopedName, false, false));
+                    putns(varp, varp->dtypep()->cType(scopedName, false, false));
                     if (!canBeConstexpr) {
                         puts(" = ");
                         emitConstInit(varp->valuep());
@@ -244,7 +244,8 @@ class EmitCImp final : EmitCFunc {
                          "(" + modName + "* vlSelf);");
         puts("\n");
 
-        puts(modName + "::" + modName + "(" + symClassName() + "* symsp, const char* v__name)\n");
+        putns(modp,
+              modName + "::" + modName + "(" + symClassName() + "* symsp, const char* v__name)\n");
         puts("    : VerilatedModule{v__name}\n");
 
         ofp()->indentInc();
@@ -254,19 +255,19 @@ class EmitCImp final : EmitCFunc {
                     = VN_CAST(varp->dtypeSkipRefp(), BasicDType)) {
                     if (dtypep->keyword().isMTaskState()) {
                         puts(", ");
-                        puts(varp->nameProtect());
+                        putns(varp, varp->nameProtect());
                         puts("(");
                         iterateConst(varp->valuep());
                         puts(")\n");
                     } else if (varp->isIO() && varp->isSc()) {
                         puts(", ");
-                        puts(varp->nameProtect());
+                        putns(varp, varp->nameProtect());
                         puts("(");
                         putsQuoted(varp->nameProtect());
                         puts(")\n");
                     } else if (dtypep->isDelayScheduler()) {
                         puts(", ");
-                        puts(varp->nameProtect());
+                        putns(varp, varp->nameProtect());
                         puts("{*symsp->_vm_contextp__}\n");
                     }
                 }
@@ -277,7 +278,7 @@ class EmitCImp final : EmitCFunc {
 
         puts(" {\n");
 
-        putsDecoration("// Reset structure values\n");
+        putsDecoration(modp, "// Reset structure values\n");
         puts(modName + "__" + protect("_ctor_var_reset") + "(this);\n");
         emitTextSection(modp, VNType::atScCtor);
 
@@ -339,7 +340,7 @@ class EmitCImp final : EmitCFunc {
     }
     void emitDestructorImp(const AstNodeModule* modp) {
         puts("\n");
-        puts(prefixNameProtect(modp) + "::~" + prefixNameProtect(modp) + "() {\n");
+        putns(modp, prefixNameProtect(modp) + "::~" + prefixNameProtect(modp) + "() {\n");
         emitTextSection(modp, VNType::atScDtor);
         puts("}\n");
         splitSizeInc(10);
@@ -352,8 +353,8 @@ class EmitCImp final : EmitCFunc {
                 const string funcname = de ? "__Vdeserialize" : "__Vserialize";
                 const string op = de ? ">>" : "<<";
                 // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-                puts("void " + prefixNameProtect(modp) + "::" + protect(funcname) + "(" + classname
-                     + "& os) {\n");
+                putns(modp, "void " + prefixNameProtect(modp) + "::" + protect(funcname) + "("
+                                + classname + "& os) {\n");
                 // Place a computed checksum to ensure proper structure save/restore formatting
                 // OK if this hash includes some things we won't dump, since
                 // just looking for loading the wrong model
@@ -414,7 +415,7 @@ class EmitCImp final : EmitCFunc {
                                 puts("; " + ivar + " < " + cvtToStr(elementp->widthWords()));
                                 puts("; ++" + ivar + ") {\n");
                             }
-                            puts("os" + op + varp->nameProtect());
+                            putns(varp, "os" + op + varp->nameProtect());
                             for (int v = 0; v < vects; ++v) puts("[__Vi" + cvtToStr(v) + "]");
                             puts(";\n");
                             for (int v = 0; v < vects; ++v) puts("}\n");
@@ -773,7 +774,7 @@ class EmitCTrace final : EmitCFunc {
             m_enumNumMap[nodep] = enumNum;
             int nvals = 0;
             typesFp()->puts("{\n");
-            typesFp()->puts("const char* " + protect("__VenumItemNames") + "[]\n");
+            typesFp()->putns(nodep, "const char* " + protect("__VenumItemNames") + "[]\n");
             typesFp()->puts("= {");
             for (AstEnumItem* itemp = nodep->itemsp(); itemp;
                  itemp = VN_AS(itemp->nextp(), EnumItem)) {
@@ -817,26 +818,28 @@ class EmitCTrace final : EmitCFunc {
         // Note: Both VTraceType::CHANGE and VTraceType::FULL use the 'full' methods
         const std::string func = nodep->traceType() == VTraceType::CHANGE ? "chg" : "full";
         bool emitWidth = true;
+        string stype;
         if (nodep->dtypep()->basicp()->isDouble()) {
-            puts("bufp->" + func + "Double");
+            stype = "Double";
             emitWidth = false;
         } else if (nodep->isWide() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep)) {
-            puts("bufp->" + func + "WData");
+            stype = "WData";
         } else if (nodep->isQuad()) {
-            puts("bufp->" + func + "QData");
+            stype = "QData";
         } else if (nodep->declp()->widthMin() > 16) {
-            puts("bufp->" + func + "IData");
+            stype = "IData";
         } else if (nodep->declp()->widthMin() > 8) {
-            puts("bufp->" + func + "SData");
+            stype = "SData";
         } else if (nodep->declp()->widthMin() > 1) {
-            puts("bufp->" + func + "CData");
+            stype = "CData";
         } else if (nodep->dtypep()->basicp()->isEvent()) {
-            puts("bufp->" + func + "Event");
+            stype = "Event";
             emitWidth = false;
         } else {
-            puts("bufp->" + func + "Bit");
+            stype = "Bit";
             emitWidth = false;
         }
+        putns(nodep, "bufp->" + func + stype);
 
         const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
         const uint32_t code = nodep->declp()->code() + offset;
@@ -906,17 +909,18 @@ class EmitCTrace final : EmitCFunc {
         EmitCFunc::visit(nodep);
     }
     void visit(AstTracePushPrefix* nodep) override {
-        puts("tracep->pushPrefix(");
+        putns(nodep, "tracep->pushPrefix(");
         putsQuoted(VIdProtect::protectWordsIf(nodep->prefix(), nodep->protect()));
         puts(", VerilatedTracePrefixType::");
         puts(nodep->prefixType().ascii());
         puts(");\n");
     }
     void visit(AstTracePopPrefix* nodep) override {  //
-        puts("tracep->popPrefix();\n");
+        putns(nodep, "tracep->popPrefix();\n");
     }
     void visit(AstTraceDecl* nodep) override {
         const int enumNum = emitTraceDeclDType(nodep->dtypep());
+        putns(nodep, "");
         if (nodep->arrayRange().ranged()) {
             puts("for (int i = 0; i < " + cvtToStr(nodep->arrayRange().elements()) + "; ++i) {\n");
             emitTraceInitOne(nodep, enumNum);
@@ -946,7 +950,7 @@ class EmitCTrace final : EmitCFunc {
         if (m_slow) openNextTypesFile();
         // Emit functions
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (AstCFunc* const funcp = VN_CAST(nodep, CFunc)) { iterateConst(funcp); }
+            if (AstCFunc* const funcp = VN_CAST(nodep, CFunc)) iterateConst(funcp);
         }
         // Close output file
         VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);

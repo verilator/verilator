@@ -64,7 +64,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
         } \
     } while (false)
 
-    putbs("");
+    putnbs(nodep, "");
     for (string::const_iterator pos = format.begin(); pos != format.end(); ++pos) {
         if (pos[0] == ',') {
             // Remember we need to add one, but don't do yet to avoid ",)"
@@ -106,7 +106,8 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                                 "Wide Op w/ no temp, perhaps missing op in V3EmitC?");
                     COMMA;
                     if (!m_wideTempRefp->selfPointer().isEmpty()) {
-                        emitDereference(m_wideTempRefp->selfPointerProtect(m_useSelfForThis));
+                        emitDereference(m_wideTempRefp,
+                                        m_wideTempRefp->selfPointerProtect(m_useSelfForThis));
                     }
                     puts(m_wideTempRefp->varp()->nameProtect());
                     m_wideTempRefp = nullptr;
@@ -170,13 +171,13 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
         bool isStmt = false;
         if (const AstFScanF* const dispp = VN_CAST(nodep, FScanF)) {
             isStmt = false;
-            puts("VL_FSCANF_IX(");
+            putns(nodep, "VL_FSCANF_IX(");
             iterateConst(dispp->filep());
             puts(",");
         } else if (const AstSScanF* const dispp = VN_CAST(nodep, SScanF)) {
             isStmt = false;
             checkMaxWords(dispp->fromp());
-            puts("VL_SSCANF_I");
+            putns(nodep, "VL_SSCANF_I");
             emitIQW(dispp->fromp());
             puts("X(");
             puts(cvtToStr(dispp->fromp()->widthMin()));
@@ -186,11 +187,11 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
         } else if (const AstDisplay* const dispp = VN_CAST(nodep, Display)) {
             isStmt = true;
             if (dispp->filep()) {
-                puts("VL_FWRITEF(");
+                putns(nodep, "VL_FWRITEF(");
                 iterateConst(dispp->filep());
                 puts(",");
             } else {
-                puts("VL_WRITEF(");
+                putns(nodep, "VL_WRITEF(");
             }
         } else if (const AstSFormat* const dispp = VN_CAST(nodep, SFormat)) {
             isStmt = true;
@@ -201,7 +202,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
             putbs(",");
         } else if (VN_IS(nodep, SFormatF)) {
             isStmt = false;
-            puts("VL_SFORMATF_NX(");
+            putns(nodep, "VL_SFORMATF_NX(");
         } else {
             nodep->v3fatalSrc("Unknown displayEmit node type");
         }
@@ -409,7 +410,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstScopeName* scopenamep, const stri
 
 void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPointer,
                               bool inProcess) {
-    puts("(");
+    putns(nodep, "(");
     bool comma = false;
     if (nodep->funcp()->isLoose() && !nodep->funcp()->isStatic()) {
         UASSERT_OBJ(!selfPointer.empty(), nodep, "Call to loose method without self pointer");
@@ -436,29 +437,29 @@ void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPoint
     puts(")");
 }
 
-void EmitCFunc::emitDereference(const string& pointer) {
+void EmitCFunc::emitDereference(AstNode* nodep, const string& pointer) {
     if (pointer[0] == '(' && pointer[1] == '&') {
         // remove "address of" followed by immediate dereference
         // Note: this relies on only the form '(&OBJECT)' being used by Verilator
-        puts(pointer.substr(2, pointer.length() - 3));
+        putns(nodep, pointer.substr(2, pointer.length() - 3));
         puts(".");
     } else {
-        puts(pointer);
+        putns(nodep, pointer);
         puts("->");
     }
 }
 
 void EmitCFunc::emitCvtPackStr(AstNode* nodep) {
     if (const AstConst* const constp = VN_CAST(nodep, Const)) {
-        putbs("std::string{");
+        putnbs(nodep, "std::string{");
         putsQuoted(constp->num().toString());
         puts("}");
     } else if (VN_IS(nodep->dtypep(), StreamDType)) {
-        putbs("VL_CVT_PACK_STR_ND(");
+        putnbs(nodep, "VL_CVT_PACK_STR_ND(");
         iterateAndNextConstNull(nodep);
         puts(")");
     } else {
-        putbs("VL_CVT_PACK_STR_N");
+        putnbs(nodep, "VL_CVT_PACK_STR_N");
         emitIQW(nodep);
         puts("(");
         if (nodep->isWide()) {
@@ -472,7 +473,7 @@ void EmitCFunc::emitCvtPackStr(AstNode* nodep) {
 }
 
 void EmitCFunc::emitCvtWideArray(AstNode* nodep, AstNode* fromp) {
-    putbs("VL_CVT_W_A(");
+    putnbs(nodep, "VL_CVT_W_A(");
     iterateConst(nodep);
     puts(", ");
     iterateConst(fromp);
@@ -482,12 +483,13 @@ void EmitCFunc::emitCvtWideArray(AstNode* nodep, AstNode* fromp) {
 
 void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string& assignString) {
     // Put out constant set to the specified variable, or given variable in a string
+    putns(nodep, "");
     if (nodep->num().isNull()) {
-        puts("VlNull{}");
+        putns(nodep, "VlNull{}");
     } else if (nodep->num().isFourState()) {
         nodep->v3warn(E_UNSUPPORTED, "Unsupported: 4-state numbers in this context");
     } else if (nodep->num().isString()) {
-        putbs("std::string{");
+        putnbs(nodep, "std::string{");
         putsQuoted(nodep->num().toString());
         puts("}");
     } else if (nodep->isWide()) {
@@ -501,14 +503,14 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
         }
         {  // Upper e.g. 8 words
             if (chunks) {
-                putbs("VL_CONSTHI_W_");
+                putnbs(nodep, "VL_CONSTHI_W_");
                 puts(cvtToStr(VL_WORDS_I(upWidth)));
                 puts("X(");
                 puts(cvtToStr(nodep->widthMin()));
                 puts(",");
                 puts(cvtToStr(chunks * EMITC_NUM_CONSTW * VL_EDATASIZE));
             } else {
-                putbs("VL_CONST_W_");
+                putnbs(nodep, "VL_CONST_W_");
                 puts(cvtToStr(VL_WORDS_I(upWidth)));
                 puts("X(");
                 puts(cvtToStr(nodep->widthMin()));
@@ -518,7 +520,7 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
                 puts(assignString);
             } else {
                 if (!assigntop->selfPointer().isEmpty()) {
-                    emitDereference(assigntop->selfPointerProtect(m_useSelfForThis));
+                    emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
                 }
                 puts(assigntop->varp()->nameProtect());
             }
@@ -540,7 +542,7 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
                 puts(assignString);
             } else {
                 if (!assigntop->selfPointer().isEmpty()) {
-                    emitDereference(assigntop->selfPointerProtect(m_useSelfForThis));
+                    emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
                 }
                 puts(assigntop->varp()->nameProtect());
             }
@@ -648,7 +650,7 @@ void EmitCFunc::emitVarReset(AstVar* varp) {
             varp->v3fatalSrc("InitArray under non-arrayed var");
         }
     } else {
-        puts(emitVarResetRecurse(varp, varNameProtected, dtypep, 0, ""));
+        putns(varp, emitVarResetRecurse(varp, varNameProtected, dtypep, 0, ""));
     }
 }
 

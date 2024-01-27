@@ -31,7 +31,7 @@ sub dotest {
     $gmon_path or error("Profiler did not create a gmon.out");
     (my $gmon_base = $gmon_path) =~ s!.*[/\\]!!;
 
-    run(cmd => ["cd $Self->{obj_dir} && gprof $Self->{vm_prefix} $gmon_base > gprof.out"],
+    run(cmd => ["cd $Self->{obj_dir} && gprof $Self->{vm_prefix} $gmon_base > gprof.log"],
         check_finished => 0);
 }
 

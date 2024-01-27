@@ -245,6 +245,7 @@ private:
     bool m_debugSelfTest = false;   // main switch: --debug-self-test
     bool m_debugStackCheck = false;  // main switch: --debug-stack-check
     bool m_decoration = true;       // main switch: --decoration
+    bool m_decorationNodes = false;  // main switch: --decoration=nodes
     bool m_dpiHdrOnly = false;      // main switch: --dpi-hdr-only
     bool m_exe = false;             // main switch: --exe
     bool m_flatten = false;         // main switch: --flatten
@@ -431,6 +432,7 @@ public:
     void addForceInc(const string& filename);
     bool available() const VL_MT_SAFE { return m_available; }
     void ccSet();
+    void decorations(FileLine* fl, const string& filename);
     void notify() VL_MT_DISABLED;
 
     // ACCESSORS (options)
@@ -475,6 +477,7 @@ public:
     bool debugSelfTest() const { return m_debugSelfTest; }
     bool debugStackCheck() const { return m_debugStackCheck; }
     bool decoration() const VL_MT_SAFE { return m_decoration; }
+    bool decorationNodes() const VL_MT_SAFE { return m_decorationNodes; }
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
     bool dumpDefines() const { return m_dumpLevel.count("defines") && m_dumpLevel.at("defines"); }
     bool dumpTreeDot() const {
@@ -563,6 +566,7 @@ public:
         return useTraceParallel() ? threads() : useTraceOffload() ? 1 : 0;
     }
     int unrollCount() const { return m_unrollCount; }
+    int unrollCountAdjusted(const VOptionBool& full, bool generate, bool simulate);
     int unrollStmts() const { return m_unrollStmts; }
     int verilateJobs() const { return m_verilateJobs; }
 

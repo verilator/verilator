@@ -106,19 +106,19 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
 
 void EmitCBaseVisitorConst::emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp,
                                             bool withScope) {
-    if (funcp->slow()) puts("VL_ATTR_COLD ");
+    if (funcp->slow()) putns(funcp, "VL_ATTR_COLD ");
     if (!funcp->isConstructor() && !funcp->isDestructor()) {
-        puts(funcp->rtnTypeVoid());
+        putns(funcp, funcp->rtnTypeVoid());
         puts(" ");
     }
     if (withScope) {
         if (funcp->dpiExportDispatcher()) {
-            puts(topClassName() + "::");
+            putns(funcp, topClassName() + "::");
         } else if (funcp->isProperMethod()) {
-            puts(prefixNameProtect(modp) + "::");
+            putns(funcp, prefixNameProtect(modp) + "::");
         }
     }
-    puts(funcNameProtect(funcp, modp));
+    putns(funcp, funcNameProtect(funcp, modp));
     puts("(" + cFuncArgs(funcp) + ")");
     if (funcp->isConst().trueKnown() && funcp->isProperMethod()) puts(" const");
 }
@@ -126,16 +126,16 @@ void EmitCBaseVisitorConst::emitCFuncHeader(const AstCFunc* funcp, const AstNode
 void EmitCBaseVisitorConst::emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp,
                                           bool cLinkage) {
     ensureNewLine();
-    if (!funcp->ifdef().empty()) puts("#ifdef " + funcp->ifdef() + "\n");
-    if (cLinkage) puts("extern \"C\" ");
-    if (funcp->isStatic() && funcp->isProperMethod()) puts("static ");
+    if (!funcp->ifdef().empty()) putns(funcp, "#ifdef " + funcp->ifdef() + "\n");
+    if (cLinkage) putns(funcp, "extern \"C\" ");
+    if (funcp->isStatic() && funcp->isProperMethod()) putns(funcp, "static ");
     if (funcp->isVirtual()) {
         UASSERT_OBJ(funcp->isProperMethod(), funcp, "Virtual function is not a proper method");
-        puts("virtual ");
+        putns(funcp, "virtual ");
     }
     emitCFuncHeader(funcp, modp, /* withScope: */ false);
-    puts(";\n");
-    if (!funcp->ifdef().empty()) puts("#endif  // " + funcp->ifdef() + "\n");
+    putns(funcp, ";\n");
+    if (!funcp->ifdef().empty()) putns(funcp, "#endif  // " + funcp->ifdef() + "\n");
 }
 
 void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
@@ -146,21 +146,21 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
         // This isn't very robust and may need cleanup for other data types
         for (const AstUnpackArrayDType* arrayp = VN_CAST(nodep->dtypeSkipRefp(), UnpackArrayDType);
              arrayp; arrayp = VN_CAST(arrayp->subDTypep()->skipRefp(), UnpackArrayDType)) {
-            puts("[" + cvtToStr(arrayp->elementsConst()) + "]");
+            putns(arrayp, "[" + cvtToStr(arrayp->elementsConst()) + "]");
         }
     };
 
     if (nodep->isIO() && nodep->isSc()) {
         UASSERT_OBJ(basicp, nodep, "Unimplemented: Outputting this data type");
         if (nodep->attrScClocked() && nodep->isReadOnly()) {
-            puts("sc_core::sc_in_clk ");
+            putns(nodep, "sc_core::sc_in_clk ");
         } else {
             if (nodep->isInoutish()) {
-                puts("sc_core::sc_inout<");
+                putns(nodep, "sc_core::sc_inout<");
             } else if (nodep->isWritable()) {
-                puts("sc_core::sc_out<");
+                putns(nodep, "sc_core::sc_out<");
             } else if (nodep->isNonOutput()) {
-                puts("sc_core::sc_in<");
+                putns(nodep, "sc_core::sc_in<");
             } else {
                 nodep->v3fatalSrc("Unknown type");
             }
@@ -168,20 +168,20 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
             puts("> ");
         }
         if (asRef) {
-            if (refNeedParens) puts("(");
-            puts("&");
+            if (refNeedParens) putns(nodep, "(");
+            putns(nodep, "&");
         }
-        puts(nodep->nameProtect());
+        putns(nodep, nodep->nameProtect());
         if (asRef && refNeedParens) { puts(")"); }
         emitDeclArrayBrackets(nodep);
         puts(";\n");
     } else if (nodep->isIO() && basicp && !basicp->isOpaque()) {
         if (nodep->isInoutish()) {
-            puts("VL_INOUT");
+            putns(nodep, "VL_INOUT");
         } else if (nodep->isWritable()) {
-            puts("VL_OUT");
+            putns(nodep, "VL_OUT");
         } else if (nodep->isNonOutput()) {
-            puts("VL_IN");
+            putns(nodep, "VL_IN");
         } else {
             nodep->v3fatalSrc("Unknown type");
         }
@@ -221,7 +221,7 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
                                   && name.substr(name.size() - suffix.size()) == suffix;
             if (beStatic) puts("static thread_local ");
         }
-        puts(nodep->vlArgType(true, false, false, "", asRef));
+        putns(nodep, nodep->vlArgType(true, false, false, "", asRef));
         puts(";\n");
     }
 }
@@ -246,10 +246,10 @@ void EmitCBaseVisitorConst::emitTextSection(const AstNodeModule* modp, VNType ty
             if (nodep->type() == type) {
                 if (last_line != nodep->fileline()->lineno()) {
                     if (last_line < 0) {
-                        puts("\n//*** Below code from `systemc in Verilog file\n");
+                        putns(nodep, "\n//*** Below code from `systemc in Verilog file\n");
                     }
-                    putsDecoration(
-                        ifNoProtect("// From `systemc at " + nodep->fileline()->ascii() + "\n"));
+                    putsDecoration(nodep, ifNoProtect("// From `systemc at "
+                                                      + nodep->fileline()->ascii() + "\n"));
                     last_line = nodep->fileline()->lineno();
                 }
                 ofp()->putsNoTracking(textp->text());

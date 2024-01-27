@@ -279,13 +279,17 @@ profiled C++ code functions.
 
 To use profiling:
 
-#. Use Verilator's :vlopt:`--prof-cfuncs`.
+#. Make sure the Verilog code will call `$finish` at the end of simulation
+   (otherwise the C library may not correctly create the `gmon.out` file in
+   the later steps below).
+#. Run Verilator, adding the :vlopt:`--prof-cfuncs` option.
 #. Build and run the simulation model.
-#. The model will create gmon.out.
-#. Run :command:`gprof` to see where in the C++ code the time is spent.
-#. Run the gprof output through the :command:`verilator_profcfunc` program,
-   and it will tell you what Verilog line numbers on which most of the time
-   is being spent.
+#. The model will create `gmon.out`.
+#. Run :command:`gprof gmon.out > gprof.log` to see where in the C++ code
+   the time is spent.
+#. Run :command:`verilator_profcfunc gprof.log > profcfunc.log` to take the
+   gprof output and translate into output showing the Verilog line numbers
+   on which most of the time is being spent.
 
 
 .. _Execution Profiling:
@@ -511,31 +515,30 @@ documentation.
 Runtime Debugging
 =================
 
-To debug a Verilated executable, typically you will want to have debugger
-symbols inserted by the compiler, assertions enabled in the C library,
-assertions enabled in the Verilated library, and the sanitizer enabled to
-look for bad memory or undefined operations. (These options slow down the
-executable, so do this only when debugging.) To enable these, Verilate
-with:
+To debug a Verilated executable, Verilate with :vlopt:`--runtime-debug`.
+This will instruct the compiler to insert debugger, and enable various
+library assertions. These options slow down the executable, so do this
+only when debugging.
 
-   .. code-block:: bash
-
-      -CFLAGS -ggdb  -LDFLAGS -ggdb
-      -CFLAGS -DVL_DEBUG=1
-      -CFLAGS -D_GLIBCXX_DEBUG
-      -CFLAGS -fsanitize=address,undefined  -LDFLAGS -fsanitize=address,undefined
-
-The :vlopt:`-CFLAGS` and/or :vlopt:`-LDFLAGS` options used here pass the
-following argument into the generated Makefile for use as compiler or
-linker options respectively.  If you are using your own Makefiles, adapt
-appropriately to pass the suggested flags to the compiler and linker.
+If you are using your own Makefiles, adapt appropriately to pass the
+options documented under :vlopt:`--runtime-debug` to the compiler and
+linker.
 
 Once you have a debugging-enabled executable, run it using the the standard
 GNU debugger ``gdb`` or a similar tool, and create a backtrace; e.g.:
 
    .. code-block:: bash
 
-      gdb obj_dir/Vmodel
-        run {Vmodel_command_arguments}
-        {segmentation faults}
+      gdb obj_dir/Vtop
+        run {Vtop_command_arguments}
+        {Vtop prints output, perhaps a segmentation faults}
         bt
+
+Rarely the bug may disappear with :vlopt:`--runtime-debug`; if so, try
+instead using the sub-options that :vlopt:`--runtime-debug` documents, to
+find the maximum subset that still shows the issue.  E.g. it is likely that
+using `-CFLAGS -D_GLIBCXX_DEBUG` will not hide any bug, so may be used.
+
+Using :vlopt:`--runtime-debug` or `-CFLAGS -DVL_DEBUG=1` will only print a
+message if something goes wrong.  To enable debug print messages at
+runtime, additionally use the :vlopt:`+verilator+debug` runtime option.

@@ -49,6 +49,7 @@ module t (clk);
    real         v_real;
    real         v_arr_real [2];
    string       v_string;
+   chandle	v_chandle;
 
    string       v_assoc[string];
    initial v_assoc["key"] = "value";
