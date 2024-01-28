@@ -829,10 +829,11 @@ void V3OutFormatter::putBreak() {
 void V3OutFormatter::putsQuoted(const string& strg) {
     // Quote \ and " for use inside C programs
     // Don't use to quote a filename for #include - #include doesn't \ escape.
-    putcNoTracking('"');
     const string quoted = quoteNameControls(strg);
+    putcNoTracking('"');
     for (const char c : quoted) putcNoTracking(c);
     putcNoTracking('"');
+    if (strg.find('\0') != std::string::npos) putcNoTracking('s');  // C++14 std::string
 }
 void V3OutFormatter::putsNoTracking(const string& strg) {
     if (!v3Global.opt.decoration()) {

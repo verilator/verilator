@@ -42,6 +42,7 @@ Verilator 5.021 devel
 * Fix unsafe write in wide array insertion (#4850) (#4855). [Paul Swirhun]
 * Fix NOT when checking EQ/NEQ under AND/OR tree (#4857) (#4863). [Yutetsu TAKATSUKASA]
 * Fix tracing chandles (#4860). [Nathan Graybeal]
+* Fix $fwrite of null (#4862). [Jose Tejada]
 
 
 Verilator 5.020 2024-01-01

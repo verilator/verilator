@@ -125,19 +125,20 @@ extern void VL_FCLOSE_I(IData fdi) VL_MT_SAFE;
 extern IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi,
                         IData start, IData count) VL_MT_SAFE;
 
-extern void VL_WRITEF(const char* formatp, ...) VL_MT_SAFE;
-extern void VL_FWRITEF(IData fpi, const char* formatp, ...) VL_MT_SAFE;
+extern void VL_WRITEF(const std::string& format, ...) VL_MT_SAFE;
+extern void VL_FWRITEF(IData fpi, const std::string& format, ...) VL_MT_SAFE;
 
-extern IData VL_FSCANF_IX(IData fpi, const char* formatp, ...) VL_MT_SAFE;
-extern IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...) VL_MT_SAFE;
-extern IData VL_SSCANF_IQX(int lbits, QData ld, const char* formatp, ...) VL_MT_SAFE;
-extern IData VL_SSCANF_IWX(int lbits, WDataInP const lwp, const char* formatp, ...) VL_MT_SAFE;
+extern IData VL_FSCANF_IX(IData fpi, const std::string& format, ...) VL_MT_SAFE;
+extern IData VL_SSCANF_IIX(int lbits, IData ld, const std::string& format, ...) VL_MT_SAFE;
+extern IData VL_SSCANF_IQX(int lbits, QData ld, const std::string& format, ...) VL_MT_SAFE;
+extern IData VL_SSCANF_IWX(int lbits, WDataInP const lwp, const std::string& format,
+                           ...) VL_MT_SAFE;
 
-extern void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...) VL_MT_SAFE;
-extern void VL_SFORMAT_X(int obits, SData& destr, const char* formatp, ...) VL_MT_SAFE;
-extern void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...) VL_MT_SAFE;
-extern void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...) VL_MT_SAFE;
-extern void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) VL_MT_SAFE;
+extern void VL_SFORMAT_X(int obits, CData& destr, const std::string& format, ...) VL_MT_SAFE;
+extern void VL_SFORMAT_X(int obits, SData& destr, const std::string& format, ...) VL_MT_SAFE;
+extern void VL_SFORMAT_X(int obits, IData& destr, const std::string& format, ...) VL_MT_SAFE;
+extern void VL_SFORMAT_X(int obits, QData& destr, const std::string& format, ...) VL_MT_SAFE;
+extern void VL_SFORMAT_X(int obits, void* destp, const std::string& format, ...) VL_MT_SAFE;
 
 extern void VL_STACKTRACE() VL_MT_SAFE;
 extern std::string VL_STACKTRACE_N() VL_MT_SAFE;
@@ -2290,10 +2291,11 @@ extern void VL_READMEM_N(bool hex, int bits, QData depth, int array_lsb,
 extern void VL_WRITEMEM_N(bool hex, int bits, QData depth, int array_lsb,
                           const std::string& filename, const void* memp, QData start,
                           QData end) VL_MT_SAFE;
-extern IData VL_SSCANF_INX(int lbits, const std::string& ld, const char* formatp, ...) VL_MT_SAFE;
-extern void VL_SFORMAT_X(int obits_ignored, std::string& output, const char* formatp,
+extern IData VL_SSCANF_INX(int lbits, const std::string& ld, const std::string& format,
+                           ...) VL_MT_SAFE;
+extern void VL_SFORMAT_X(int obits_ignored, std::string& output, const std::string& format,
                          ...) VL_MT_SAFE;
-extern std::string VL_SFORMATF_NX(const char* formatp, ...) VL_MT_SAFE;
+extern std::string VL_SFORMATF_NX(const std::string& format, ...) VL_MT_SAFE;
 extern void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suffix, int width,
                                VerilatedContext* contextp) VL_MT_SAFE;
 extern IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_MT_SAFE;

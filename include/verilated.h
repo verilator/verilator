@@ -73,6 +73,8 @@
 #endif
 // clang-format on
 
+using namespace std::literals;  // "<std::string literal>"s; see SF.7 core guideline
+
 //=============================================================================
 // Switches
 
