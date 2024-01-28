@@ -294,7 +294,7 @@ public:  // But only for verilated*.cpp
             std::fill(m_fdps.begin() + start, m_fdps.end(), static_cast<FILE*>(nullptr));
             m_fdFree.resize(excess);
             for (std::size_t i = 0, id = start; i < m_fdFree.size(); ++i, ++id) {
-                m_fdFree[i] = id;
+                m_fdFree[i] = static_cast<IData>(id);
             }
         }
         const IData idx = m_fdFree.back();

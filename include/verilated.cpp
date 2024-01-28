@@ -791,7 +791,7 @@ std::string _vl_vsformat_time(char* tmp, T ld, int timeunit, bool left, size_t w
         }
     }
 
-    const int needmore = width - digits;
+    const int needmore = static_cast<int>(width) - digits;
     std::string padding;
     if (needmore > 0) padding.append(needmore, ' ');  // Pad with spaces
     return left ? (tmp + padding) : (padding + tmp);
@@ -947,9 +947,9 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
                         } else {
                             append = VL_DECIMAL_NW(lbits, lwp);
                         }
-                        digits = append.length();
+                        digits = static_cast<int>(append.length());
                     }
-                    const int needmore = width - digits;
+                    const int needmore = static_cast<int>(width) - digits;
                     if (needmore > 0) {
                         std::string padding;
                         if (left) {
@@ -976,9 +976,9 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
                         append = t_tmp;
                     } else {
                         append = VL_DECIMAL_NW(lbits, lwp);
-                        digits = append.length();
+                        digits = static_cast<int>(append.length());
                     }
-                    const int needmore = width - digits;
+                    const int needmore = static_cast<int>(width) - digits;
                     if (needmore > 0) {
                         std::string padding;
                         if (left) {
@@ -1044,7 +1044,7 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
                     }
                     }  // switch
 
-                    const int needmore = width - digits;
+                    const int needmore = static_cast<int>(width) - digits;
                     if (needmore > 0) {
                         std::string padding;
                         if (left) {
