@@ -594,7 +594,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
             const V3Number& compNum = constp->num();
 
             auto setPolarities = [this, &compNum](const LeafInfo& ref, const V3Number* maskp) {
-                const bool maskFlip = isOrTree();
+                const bool maskFlip = isAndTree() ^ ref.polarity();
                 int constantWidth = compNum.width();
                 if (maskp) constantWidth = std::max(constantWidth, maskp->width());
                 const int maxBitIdx = std::max(ref.lsb() + constantWidth, ref.msb() + 1);
