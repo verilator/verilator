@@ -586,6 +586,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
         } else if ((isAndTree() && VN_IS(nodep, Eq)) || (isOrTree() && VN_IS(nodep, Neq))) {
             Restorer restorer{*this};
             CONST_BITOP_RETURN_IF(!m_polarity, nodep);
+            CONST_BITOP_RETURN_IF(m_lsb, nodep);  // the result of EQ/NE is 1 bit width
             const AstNode* lhsp = nodep->lhsp();
             if (const AstCCast* const castp = VN_CAST(lhsp, CCast)) lhsp = castp->lhsp();
             const AstConst* const constp = VN_CAST(lhsp, Const);
