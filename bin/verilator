@@ -32,6 +32,7 @@ my $opt_rr;
 my $opt_gdbbt;
 my $opt_quiet_exit;
 my $opt_unlimited_stack = 1;
+my $opt_valgrind;
 
 # No arguments can't do anything useful.  Give help
 if ($#ARGV < 0) {
@@ -59,6 +60,7 @@ if (! GetOptions(
           "quiet-exit!"      => \$opt_quiet_exit,
           "rr!"              => \$opt_rr,
           "unlimited-stack!" => \$opt_unlimited_stack,
+          "valgrind!"        => \$opt_valgrind,
           # Additional parameters
           "<>"               => sub {},      # Ignored
     )) {
@@ -109,6 +111,18 @@ if ($opt_gdb) {
          . " -ex \"run " . join(' ', @quoted_sw)."\""
          . " -ex 'set width 0'"
          . " -ex 'bt' -ex 'quit'");
+} elsif ($opt_valgrind) {
+    # Run under valgrind
+    my $valgrind_bin = ($ENV{VERILATOR_VALGRIND} || "valgrind --error-exitcode=1 --max-stackframe=2815880"
+        # Magic number sugested by valgrind, may need to be increased in future
+        # if you get warnings. See: https://valgrind.org/docs/manual/manual-core.html#opt.max-stackframe
+        );
+
+    run (ulimit_stack_unlimited()
+         . aslr_off()
+         . $valgrind_bin
+         . " " . verilator_bin()
+         . " " . join(' ', @quoted_sw));
 } elsif ($Debug) {
     # Debug
     run(ulimit_stack_unlimited()
@@ -453,6 +467,7 @@ detailed descriptions of these arguments.
     --unused-regexp <regexp>    Tune UNUSED lint signals
      -V                         Verbose version and config
      -v <filename>              Verilog library
+    --valgrind                  Run Verilator under valgrind
     --verilate-jobs             Job threads for Verilation stage
     --no-verilate               Skip Verilation and just compile previously Verilated code
      +verilog1995ext+<ext>      Synonym for +1364-1995ext+<ext>

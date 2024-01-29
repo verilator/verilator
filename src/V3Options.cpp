@@ -1539,6 +1539,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-v", CbVal, [this, &optdir](const char* valp) {
         V3Options::addLibraryFile(parseFileArg(optdir, valp));
     });
+    DECL_OPTION("-valgrind", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-verilate-jobs", CbVal, [this, fl](const char* valp) {
         int val = std::atoi(valp);
         if (val < 0) {

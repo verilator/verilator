@@ -1937,6 +1937,9 @@ driver.pl Non-Scenario Arguments
 --trace
   Set the simulator specific flags to request waveform tracing.
 
+--valgrind
+  Same as ``verilator --valgrind``: Run Verilator under `Valgrind <https://valgrind.org/>`_.
+
 --verbose
   Compile and run the test in verbose mode. This means ``TEST_VERBOSE``
   will be defined for the test (Verilog and any C++/SystemC wrapper).

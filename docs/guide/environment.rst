@@ -118,6 +118,11 @@ associated programs.
 
    See :ref:`Installation` for more details.
 
+.. option:: VERILATOR_VALGRIND
+
+   If set, the command to run when using the :vlopt:`--valgrind` option, such as
+   "valgrind --tool=callgrind".  If not specified, it will use "valgrind".
+
 
 Make Variables
 ==============
