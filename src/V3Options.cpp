@@ -1584,7 +1584,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-Wno-", CbPartialMatch, [fl, &parser](const char* optp) VL_MT_DISABLED {
         if (!FileLine::globalWarnOff(optp, true)) {
-            const string fullopt = std::string{"-Wno-"} + optp;
+            const string fullopt = "-Wno-"s + optp;
             fl->v3fatal("Unknown warning specified: " << fullopt
                                                       << parser.getSuggestion(fullopt.c_str()));
         }
@@ -1606,7 +1606,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         const V3ErrorCode code{optp};
         if (code == V3ErrorCode::EC_ERROR) {
             if (!isFuture(optp)) {
-                const string fullopt = std::string{"-Wwarn-"} + optp;
+                const string fullopt = "-Wwarn-"s + optp;
                 fl->v3fatal("Unknown warning specified: "
                             << fullopt << parser.getSuggestion(fullopt.c_str()));
             }

@@ -273,7 +273,7 @@ class CoverageVisitor final : public VNVisitor {
                 //      We'll do this, and make the if(...) coverinc later.
 
                 // Add signal to hold the old value
-                const string newvarname = std::string{"__Vtogcov__"} + nodep->shortName();
+                const string newvarname = "__Vtogcov__"s + nodep->shortName();
                 FileLine* const fl_nowarn = new FileLine{nodep->fileline()};
                 fl_nowarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
                 AstVar* const chgVarp
@@ -284,7 +284,7 @@ class CoverageVisitor final : public VNVisitor {
                 // This is necessarily an O(n^2) expansion, which is why
                 // we limit coverage to signals with < 256 bits.
 
-                ToggleEnt newvec{std::string{""}, new AstVarRef{fl_nowarn, nodep, VAccess::READ},
+                ToggleEnt newvec{""s, new AstVarRef{fl_nowarn, nodep, VAccess::READ},
                                  new AstVarRef{fl_nowarn, chgVarp, VAccess::WRITE}};
                 toggleVarRecurse(nodep->dtypeSkipRefp(), 0, newvec, nodep, chgVarp);
                 newvec.cleanup();
@@ -308,8 +308,7 @@ class CoverageVisitor final : public VNVisitor {
                 for (int index_docs = bdtypep->lo(); index_docs < bdtypep->hi() + 1;
                      ++index_docs) {
                     const int index_code = index_docs - bdtypep->lo();
-                    ToggleEnt newent{above.m_comment + std::string{"["} + cvtToStr(index_docs)
-                                         + "]",
+                    ToggleEnt newent{above.m_comment + "["s + cvtToStr(index_docs) + "]",
                                      new AstSel{varp->fileline(), above.m_varRefp->cloneTree(true),
                                                 index_code, 1},
                                      new AstSel{varp->fileline(), above.m_chgRefp->cloneTree(true),
@@ -323,7 +322,7 @@ class CoverageVisitor final : public VNVisitor {
         } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
                 const int index_code = index_docs - adtypep->lo();
-                ToggleEnt newent{above.m_comment + std::string{"["} + cvtToStr(index_docs) + "]",
+                ToggleEnt newent{above.m_comment + "["s + cvtToStr(index_docs) + "]",
                                  new AstArraySel{varp->fileline(),
                                                  above.m_varRefp->cloneTree(true), index_code},
                                  new AstArraySel{varp->fileline(),
@@ -336,7 +335,7 @@ class CoverageVisitor final : public VNVisitor {
             for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
                 const AstNodeDType* const subtypep = adtypep->subDTypep()->skipRefp();
                 const int index_code = index_docs - adtypep->lo();
-                ToggleEnt newent{above.m_comment + std::string{"["} + cvtToStr(index_docs) + "]",
+                ToggleEnt newent{above.m_comment + "["s + cvtToStr(index_docs) + "]",
                                  new AstSel{varp->fileline(), above.m_varRefp->cloneTree(true),
                                             index_code * subtypep->width(), subtypep->width()},
                                  new AstSel{varp->fileline(), above.m_chgRefp->cloneTree(true),
@@ -351,7 +350,7 @@ class CoverageVisitor final : public VNVisitor {
                      itemp = VN_AS(itemp->nextp(), MemberDType)) {
                     AstNodeDType* const subtypep = itemp->subDTypep()->skipRefp();
                     const int index_code = itemp->lsb();
-                    ToggleEnt newent{above.m_comment + std::string{"."} + itemp->name(),
+                    ToggleEnt newent{above.m_comment + "."s + itemp->name(),
                                      new AstSel{varp->fileline(), above.m_varRefp->cloneTree(true),
                                                 index_code, subtypep->width()},
                                      new AstSel{varp->fileline(), above.m_chgRefp->cloneTree(true),
@@ -369,8 +368,7 @@ class CoverageVisitor final : public VNVisitor {
                         varp->fileline(), above.m_varRefp->cloneTree(true), itemp->name()};
                     varRefp->dtypep(subtypep);
                     chgRefp->dtypep(subtypep);
-                    ToggleEnt newent{above.m_comment + std::string{"."} + itemp->name(), varRefp,
-                                     chgRefp};
+                    ToggleEnt newent{above.m_comment + "."s + itemp->name(), varRefp, chgRefp};
                     toggleVarRecurse(subtypep, depth + 1, newent, varp, chgVarp);
                     newent.cleanup();
                 }
@@ -379,7 +377,7 @@ class CoverageVisitor final : public VNVisitor {
             // Arbitrarily handle only the first member of the union
             if (const AstMemberDType* const itemp = adtypep->membersp()) {
                 AstNodeDType* const subtypep = itemp->subDTypep()->skipRefp();
-                ToggleEnt newent{above.m_comment + std::string{"."} + itemp->name(),
+                ToggleEnt newent{above.m_comment + "."s + itemp->name(),
                                  above.m_varRefp->cloneTree(true),
                                  above.m_chgRefp->cloneTree(true)};
                 toggleVarRecurse(subtypep, depth + 1, newent, varp, chgVarp);

@@ -91,7 +91,7 @@ public:
     void reinsert(AstNode* nodep, VSymEnt* parentp, string name) {
         if (!parentp) parentp = symCurrentp();
         if (name == "") {  // New name with space in name so can't collide with users
-            name = std::string{" anon"} + nodep->type().ascii() + cvtToStr(++s_anonNum);
+            name = " anon"s + nodep->type().ascii() + cvtToStr(++s_anonNum);
         }
         parentp->reinsert(name, findNewTable(nodep));
     }

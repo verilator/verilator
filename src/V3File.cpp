@@ -877,26 +877,26 @@ string V3OutFormatter::quoteNameControls(const string& namein,
         // Encode chars into XML string
         for (const char c : namein) {
             if (c == '"') {
-                out += std::string{"&quot;"};
+                out += "&quot;"s;
             } else if (c == '\'') {
-                out += std::string{"&apos;"};
+                out += "&apos;"s;
             } else if (c == '<') {
-                out += std::string{"&lt;"};
+                out += "&lt;"s;
             } else if (c == '>') {
-                out += std::string{"&gt;"};
+                out += "&gt;"s;
             } else if (c == '&') {
-                out += std::string{"&amp;"};
+                out += "&amp;"s;
             } else if (std::isprint(c)) {
                 out += c;
             } else {
-                out += std::string{"&#"} + cvtToStr((unsigned int)(c & 0xff)) + ";";
+                out += "&#"s + cvtToStr((unsigned int)(c & 0xff)) + ";";
             }
         }
     } else {
         // Encode control chars into C style escapes
         for (const char c : namein) {
             if (c == '\\' || c == '"') {
-                out += std::string{"\\"} + c;
+                out += "\\"s + c;
             } else if (c == '\n') {
                 out += "\\n";
             } else if (c == '\r') {
@@ -907,8 +907,8 @@ string V3OutFormatter::quoteNameControls(const string& namein,
                 out += c;
             } else {
                 // This will also cover \a etc
-                const string octal = std::string{"\\"} + cvtToStr((c >> 6) & 3)
-                                     + cvtToStr((c >> 3) & 7) + cvtToStr(c & 7);
+                const string octal
+                    = "\\"s + cvtToStr((c >> 6) & 3) + cvtToStr((c >> 3) & 7) + cvtToStr(c & 7);
                 out += octal;
             }
         }
@@ -955,8 +955,7 @@ void V3OutFile::putsForceIncs() {
 void V3OutCFile::putsGuard() {
     UASSERT(!m_guard, "Already called putsGuard in emit file");
     m_guard = true;
-    string var
-        = VString::upcase(std::string{"VERILATED_"} + V3Os::filenameNonDir(filename()) + "_");
+    string var = VString::upcase("VERILATED_"s + V3Os::filenameNonDir(filename()) + "_");
     for (char& c : var) {
         if (!std::isalnum(c)) c = '_';
     }

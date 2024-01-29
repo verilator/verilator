@@ -205,7 +205,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         putqs(nodep, "end\n");
     }
     void visit(AstComment* nodep) override {
-        puts(std::string{"// "} + nodep->name() + "\n");
+        puts("// "s + nodep->name() + "\n");
         iterateChildrenConst(nodep);
     }
     void visit(AstContinue*) override {
@@ -747,7 +747,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     void visit(AstCell*) override {}  // Handled outside the Visit class
     // Default
     void visit(AstNode* nodep) override {
-        puts(std::string{"\n???? // "} + nodep->prettyTypeName() + "\n");
+        puts("\n???? // "s + nodep->prettyTypeName() + "\n");
         iterateChildrenConst(nodep);
         // Not v3fatalSrc so we keep processing
         if (!m_suppressUnknown) {

@@ -367,7 +367,7 @@ class ParamProcessor final {
         const auto pair = m_valueMap.emplace(hash, 0);
         if (pair.second) pair.first->second = m_nextValue++;
         num = pair.first->second;
-        return std::string{"z"} + cvtToStr(num);
+        return "z"s + cvtToStr(num);
     }
     string moduleCalcName(const AstNodeModule* srcModp, const string& longname) {
         string newname = longname;

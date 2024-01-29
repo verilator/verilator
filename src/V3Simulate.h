@@ -366,7 +366,7 @@ private:
         // Call for node types we know we can't handle
         checkNodeInfo(nodep);
         if (optimizable()) {
-            clearOptimizable(nodep, std::string{"Known unhandled node type "} + nodep->typeName());
+            clearOptimizable(nodep, "Known unhandled node type "s + nodep->typeName());
         }
     }
     void badNodeType(AstNode* nodep) {
@@ -1130,7 +1130,7 @@ private:
                                 nodep, "Argument for $display like statement is not constant");
                             break;
                         }
-                        const string pformat = std::string{"%"} + width + pos[0];
+                        const string pformat = "%"s + width + pos[0];
                         result += constp->num().displayed(nodep, pformat);
                     } else {
                         switch (std::tolower(pos[0])) {

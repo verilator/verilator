@@ -714,8 +714,8 @@ class TraceVisitor final : public VNVisitor {
         m_regFuncp->addStmtsp(new AstText{fl, ", vlSelf);\n", true});
 
         // Clear global activity flag
-        cleanupFuncp->addStmtsp(new AstCStmt{m_topScopep->fileline(),
-                                             std::string{"vlSymsp->__Vm_activity = false;\n"}});
+        cleanupFuncp->addStmtsp(
+            new AstCStmt{m_topScopep->fileline(), "vlSymsp->__Vm_activity = false;\n"s});
 
         // Clear fine grained activity flags
         for (uint32_t i = 0; i < m_activityNumber; ++i) {

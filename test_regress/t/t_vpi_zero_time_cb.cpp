@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
         void* lib = dlopen(filenamep, RTLD_LAZY);
         void* bootstrap = dlsym(lib, "vpi_compat_bootstrap");
         if (!bootstrap) {
-            const std::string msg = std::string{"%Error: Could not dlopen "} + filenamep;
+            const std::string msg = "%Error: Could not dlopen "s + filenamep;
             vl_fatal(__FILE__, __LINE__, "main", msg.c_str());
         }
         ((void (*)(void))bootstrap)();
