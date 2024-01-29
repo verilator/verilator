@@ -45,7 +45,7 @@ class NameVisitor final : public VNVisitorConst {
     void rename(AstNode* nodep, bool addPvt) {
         if (!nodep->user1()) {  // Not already done
             if (addPvt) {
-                const string newname = std::string{"__PVT__"} + nodep->name();
+                const string newname = "__PVT__"s + nodep->name();
                 nodep->name(newname);
                 nodep->editCountInc();
             } else if (VN_IS(nodep, CFunc) && VN_AS(nodep, CFunc)->isConstructor()) {
@@ -54,7 +54,7 @@ class NameVisitor final : public VNVisitorConst {
                 if (rsvd != "") {
                     nodep->v3warn(SYMRSVDWORD,
                                   "Symbol matches " + rsvd + ": " << nodep->prettyNameQ());
-                    const string newname = std::string{"__SYM__"} + nodep->name();
+                    const string newname = "__SYM__"s + nodep->name();
                     nodep->name(newname);
                     nodep->editCountInc();
                 }

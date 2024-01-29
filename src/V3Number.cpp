@@ -851,7 +851,7 @@ string V3Number::toDecimalS() const VL_MT_STABLE {
     if (isNegative()) {
         V3Number lhsNoSign = *this;
         lhsNoSign.opNegate(*this);
-        return std::string{"-"} + lhsNoSign.toDecimalU();
+        return "-"s + lhsNoSign.toDecimalU();
     } else {
         return toDecimalU();
     }

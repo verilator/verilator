@@ -1972,7 +1972,7 @@ public:
     static string prettyName(const string& namein) VL_PURE;  // Name for printing out to the user
     static string vpiName(const string& namein);  // Name for vpi access
     static string prettyNameQ(const string& namein) {  // Quoted pretty name (for errors)
-        return std::string{"'"} + prettyName(namein) + "'";
+        return "'"s + prettyName(namein) + "'";
     }
     // Encode user name into internal C representation
     static string encodeName(const string& namein);

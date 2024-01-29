@@ -156,7 +156,7 @@ public:
         // Branch predictions
         for (int t = 0; t < VBranchPred::_ENUM_END; ++t) {
             if (const uint64_t c = m_counters.m_statPred[t]) {
-                addStat(std::string{"Branch prediction, "} + VBranchPred{t}.ascii(), c);
+                addStat("Branch prediction, "s + VBranchPred{t}.ascii(), c);
             }
         }
     }

@@ -250,7 +250,7 @@ public:
         if (candidate.empty()) {
             return "";
         } else {
-            return std::string{"... Suggested alternative: '"} + candidate + "'";
+            return "... Suggested alternative: '"s + candidate + "'";
         }
     }
     static void selfTest();

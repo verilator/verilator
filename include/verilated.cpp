@@ -943,7 +943,7 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
                         if (VL_SIGN_E(lbits, lwp[VL_WORDS_I(lbits) - 1])) {
                             VlWide<VL_VALUE_STRING_MAX_WIDTH / 4 + 2> neg;
                             VL_NEGATE_W(VL_WORDS_I(lbits), neg, lwp);
-                            append = std::string{"-"} + VL_DECIMAL_NW(lbits, neg);
+                            append = "-"s + VL_DECIMAL_NW(lbits, neg);
                         } else {
                             append = VL_DECIMAL_NW(lbits, lwp);
                         }
@@ -1085,7 +1085,7 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
                     }
                     break;
                 default: {  // LCOV_EXCL_START
-                    const std::string msg = std::string{"Unknown _vl_vsformat code: "} + pos[0];
+                    const std::string msg = "Unknown _vl_vsformat code: "s + pos[0];
                     VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
                     break;
                 }  // LCOV_EXCL_STOP
@@ -1367,7 +1367,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     break;
                 }
                 default: {  // LCOV_EXCL_START
-                    const std::string msg = std::string{"Unknown _vl_vsscanf code: "} + pos[0];
+                    const std::string msg = "Unknown _vl_vsscanf code: "s + pos[0];
                     VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
                     break;
                 }  // LCOV_EXCL_STOP
@@ -1727,7 +1727,7 @@ std::string VL_STACKTRACE_N() VL_MT_SAFE {
     if (!strings) return "Unable to backtrace\n";
 
     std::string result = "Backtrace:\n";
-    for (int j = 0; j < nptrs; j++) result += std::string{strings[j]} + std::string{"\n"};
+    for (int j = 0; j < nptrs; j++) result += std::string{strings[j]} + "\n"s;
     free(strings);
     return result;
 }
@@ -2990,7 +2990,7 @@ void Verilated::nullPointerError(const char* filename, int linenum) VL_MT_SAFE {
 
 void Verilated::overWidthError(const char* signame) VL_MT_SAFE {
     // Slowpath - Called only when signal sets too high of a bit
-    const std::string msg = (std::string{"Testbench C set input '"} + signame
+    const std::string msg = ("Testbench C set input '"s + signame
                              + "' to value that overflows what the signal's width can fit");
     VL_FATAL_MT("unknown", 0, "", msg.c_str());
     VL_UNREACHABLE;
@@ -3212,8 +3212,7 @@ void VerilatedScope::varInsert(int finalize, const char* namep, void* datap, boo
         } else {
             // We could have a linked list of ranges, but really this whole thing needs
             // to be generalized to support structs and unions, etc.
-            const std::string msg
-                = std::string{"Unsupported multi-dimensional public varInsert: "} + namep;
+            const std::string msg = "Unsupported multi-dimensional public varInsert: "s + namep;
             VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
         }
     }
@@ -3233,10 +3232,9 @@ VerilatedVar* VerilatedScope::varFind(const char* namep) const VL_MT_SAFE_POSTIN
 
 void* VerilatedScope::exportFindNullError(int funcnum) VL_MT_SAFE {
     // Slowpath - Called only when find has failed
-    const std::string msg
-        = (std::string{"Testbench C called '"} + VerilatedImp::exportName(funcnum)
-           + "' but scope wasn't set, perhaps due to dpi import call without "
-           + "'context', or missing svSetScope. See IEEE 1800-2017 35.5.3.");
+    const std::string msg = ("Testbench C called '"s + VerilatedImp::exportName(funcnum)
+                             + "' but scope wasn't set, perhaps due to dpi import call without "
+                             + "'context', or missing svSetScope. See IEEE 1800-2017 35.5.3.");
     VL_FATAL_MT("unknown", 0, "", msg.c_str());
     return nullptr;
 }
@@ -3244,7 +3242,7 @@ void* VerilatedScope::exportFindNullError(int funcnum) VL_MT_SAFE {
 void* VerilatedScope::exportFindError(int funcnum) const VL_MT_SAFE {
     // Slowpath - Called only when find has failed
     const std::string msg
-        = (std::string{"Testbench C called '"} + VerilatedImp::exportName(funcnum)
+        = ("Testbench C called '"s + VerilatedImp::exportName(funcnum)
            + "' but this DPI export function exists only in other scopes, not scope '" + name()
            + "'");
     VL_FATAL_MT("unknown", 0, "", msg.c_str());

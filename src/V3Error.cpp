@@ -111,7 +111,7 @@ string V3ErrorGuarded::warnMore() VL_REQUIRES(m_mutex) { return string(msgPrefix
 
 void V3ErrorGuarded::suppressThisWarning() VL_REQUIRES(m_mutex) {
 #ifndef V3ERROR_NO_GLOBAL_
-    V3Stats::addStatSum(std::string{"Warnings, Suppressed "} + errorCode().ascii(), 1);
+    V3Stats::addStatSum("Warnings, Suppressed "s + errorCode().ascii(), 1);
 #endif
     errorSuppressed(true);
 }

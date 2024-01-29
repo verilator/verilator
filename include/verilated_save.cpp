@@ -114,8 +114,7 @@ void VerilatedDeserialize::trailer() VL_MT_UNSAFE_ONE {
     if (VL_UNLIKELY(os.readDiffers(VLTSAVE_TRAILER_STR, std::strlen(VLTSAVE_TRAILER_STR)))) {
         const std::string fn = filename();
         const std::string msg
-            = std::string{"Can't deserialize; file has wrong end-of-file signature: "}
-              + filename();
+            = "Can't deserialize; file has wrong end-of-file signature: "s + filename();
         VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
         // Die before we close() as close would infinite loop
     }

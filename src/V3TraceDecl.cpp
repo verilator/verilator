@@ -240,7 +240,7 @@ class TraceDeclVisitor final : public VNVisitor {
 
     void addIgnore(const char* why) {
         ++m_statIgnSigs;
-        std::string cmt = std::string{"Tracing: "} + m_traName + " // Ignored: " + why;
+        std::string cmt = "Tracing: "s + m_traName + " // Ignored: " + why;
         if (debug() > 3 && m_traVscp) std::cout << "- " << m_traVscp->fileline() << cmt << endl;
     }
 
