@@ -109,12 +109,12 @@ class DfgGraph final {
         // cppcheck-suppress noExplicitConstructor
         UserDataInUse(UserDataInUse&& that) {
             UASSERT(that.m_graphp, "Moving from empty");
-            m_graphp = vlstd::exchange(that.m_graphp, nullptr);
+            m_graphp = std::exchange(that.m_graphp, nullptr);
         }
         VL_UNCOPYABLE(UserDataInUse);
         UserDataInUse& operator=(UserDataInUse&& that) {
             UASSERT(that.m_graphp, "Moving from empty");
-            m_graphp = vlstd::exchange(that.m_graphp, nullptr);
+            m_graphp = std::exchange(that.m_graphp, nullptr);
             return *this;
         }
 

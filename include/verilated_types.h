@@ -1648,7 +1648,7 @@ public:
     }
     // cppcheck-suppress noExplicitConstructor
     VlClassRef(VlClassRef&& moved)
-        : m_objp{vlstd::exchange(moved.m_objp, nullptr)} {}
+        : m_objp{std::exchange(moved.m_objp, nullptr)} {}
     // cppcheck-suppress noExplicitConstructor
     template <typename T_OtherClass>
     VlClassRef(const VlClassRef<T_OtherClass>& copied)
@@ -1658,7 +1658,7 @@ public:
     // cppcheck-suppress noExplicitConstructor
     template <typename T_OtherClass>
     VlClassRef(VlClassRef<T_OtherClass>&& moved)
-        : m_objp{vlstd::exchange(moved.m_objp, nullptr)} {}
+        : m_objp{std::exchange(moved.m_objp, nullptr)} {}
     ~VlClassRef() { refCountDec(); }
 
     // METHODS
@@ -1673,7 +1673,7 @@ public:
     VlClassRef& operator=(VlClassRef&& moved) {
         if (m_objp == moved.m_objp) return *this;
         refCountDec();
-        m_objp = vlstd::exchange(moved.m_objp, nullptr);
+        m_objp = std::exchange(moved.m_objp, nullptr);
         return *this;
     }
     template <typename T_OtherClass>
@@ -1688,7 +1688,7 @@ public:
     VlClassRef& operator=(VlClassRef<T_OtherClass>&& moved) {
         if (m_objp == moved.m_objp) return *this;
         refCountDec();
-        m_objp = vlstd::exchange(moved.m_objp, nullptr);
+        m_objp = std::exchange(moved.m_objp, nullptr);
         return *this;
     }
     // Assign with nullptr
