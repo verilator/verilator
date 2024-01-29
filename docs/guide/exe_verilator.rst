@@ -1452,7 +1452,8 @@ Summary:
 
 .. option:: --valgrind
 
-   Run Verilator under `Valgrind <https://valgrind.org/>`_.
+   Run Verilator under `Valgrind <https://valgrind.org/>`_.  The command may be
+   changed with :option:`VERILATOR_VALGRIND`.
 
 .. option:: --no-verilate
 
