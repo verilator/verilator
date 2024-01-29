@@ -286,7 +286,7 @@ public:
     static VerilatedVpioScope* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioScope*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    uint32_t type() const override { return vpiScope; }
+    uint32_t type() const override { return vpiGenScope; }
     const VerilatedScope* scopep() const { return m_scopep; }
     const char* name() const override { return m_scopep->name(); }
     const char* fullname() const override { return m_scopep->name(); }
