@@ -1710,7 +1710,7 @@ Structure:
     /* Attributes that are common to all types of nodes */
     "type": "VAR",
     "name": "cyc",
-    /* by default adresses and filenames are dumped by short/stable ids rather than by real val */
+    /* By default addresses and filenames use short/stable ids rather than real value */
     "addr": "(H)",
     "loc": "a,25:12,26:15", /* fileid,firstLine:firstCol,lastLine:lastCol */
     "editNum": 602,
