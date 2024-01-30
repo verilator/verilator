@@ -1712,7 +1712,7 @@ Structure:
     "name": "cyc",
     /* By default addresses and filenames use short/stable ids rather than real value */
     "addr": "(H)",
-    "loc": "a,25:12,26:15", /* fileid,firstLine:firstCol,lastLine:lastCol */
+    "loc": "a,25:12,26:15", /* "fileid,firstLine:firstCol,lastLine:endCol" (endCol is right exclusive) */
     "editNum": 602,
     /* Fields that are specific to AstVar nodes:  */
     "origName": "cyc",
