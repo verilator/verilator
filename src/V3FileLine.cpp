@@ -203,7 +203,7 @@ string FileLine::xmlDetailedLocation() const {
 }
 
 string FileLine::lineDirectiveStrg(int enterExit) const {
-    return std::string{"`line "} + cvtToStr(lastLineno()) + " \""
+    return "`line "s + cvtToStr(lastLineno()) + " \""
            + V3OutFormatter::quoteNameControls(filename()) + "\" " + cvtToStr(enterExit) + "\n";
 }
 

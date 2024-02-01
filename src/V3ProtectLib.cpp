@@ -149,18 +149,16 @@ class ProtectVisitor final : public VNVisitor {
         // Timescale
         if (v3Global.opt.hierChild() && v3Global.rootp()->timescaleSpecified()) {
             // Emit timescale for hierarchical Verilation if input HDL specifies timespec
-            txtp->addText(fl, std::string{"timeunit "} + modp->timeunit().ascii() + ";\n");
-            txtp->addText(fl, std::string{"timeprecision "}
-                                  + +v3Global.rootp()->timeprecision().ascii() + ";\n");
+            txtp->addText(fl, "timeunit "s + modp->timeunit().ascii() + ";\n");
+            txtp->addText(fl,
+                          "timeprecision "s + +v3Global.rootp()->timeprecision().ascii() + ";\n");
         } else {
             addComment(txtp, fl,
                        "Precision of submodule"
                        " (commented out to avoid requiring timescale on all modules)");
+            addComment(txtp, fl, "timeunit "s + v3Global.rootp()->timeunit().ascii() + ";");
             addComment(txtp, fl,
-                       std::string{"timeunit "} + v3Global.rootp()->timeunit().ascii() + ";");
-            addComment(txtp, fl,
-                       std::string{"timeprecision "} + v3Global.rootp()->timeprecision().ascii()
-                           + ";\n");
+                       "timeprecision "s + v3Global.rootp()->timeprecision().ascii() + ";\n");
         }
 
         // DPI declarations

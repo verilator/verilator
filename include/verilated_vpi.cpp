@@ -1402,8 +1402,7 @@ const char* VerilatedVpiError::strFromVpiConstType(PLI_INT32 constType) VL_PURE 
 
 #define SELF_CHECK_RESULT_CSTR(got, exp) \
     if (0 != std::strcmp((got), (exp))) { \
-        const std::string msg \
-            = std::string{"%Error: "} + "GOT = '" + (got) + "'" + "  EXP = '" + (exp) + "'"; \
+        const std::string msg = "%Error: GOT = '"s + (got) + "'" + "  EXP = '" + (exp) + "'"; \
         VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str()); \
     }
 

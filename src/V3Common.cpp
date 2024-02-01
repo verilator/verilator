@@ -98,7 +98,7 @@ static void makeToString(AstClass* nodep) {
     funcp->isStatic(false);
     funcp->protect(false);
     AstCExpr* const exprp
-        = new AstCExpr{nodep->fileline(), R"(std::string{"'{"} + to_string_middle() + "}")", 0};
+        = new AstCExpr{nodep->fileline(), R"("'{"s + to_string_middle() + "}")", 0};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
     nodep->addStmtsp(funcp);

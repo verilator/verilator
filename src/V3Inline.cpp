@@ -421,13 +421,11 @@ class InlineRelinkVisitor final : public VNVisitor {
         // To keep correct visual order, must add before other Text's
         AstText* afterp = nodep->scopeAttrp();
         if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->addScopeAttrp(
-            new AstText{nodep->fileline(), std::string{"__DOT__"} + m_cellp->name()});
+        nodep->addScopeAttrp(new AstText{nodep->fileline(), "__DOT__"s + m_cellp->name()});
         if (afterp) nodep->addScopeAttrp(afterp);
         afterp = nodep->scopeEntrp();
         if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->addScopeEntrp(
-            new AstText{nodep->fileline(), std::string{"__DOT__"} + m_cellp->name()});
+        nodep->addScopeEntrp(new AstText{nodep->fileline(), "__DOT__"s + m_cellp->name()});
         if (afterp) nodep->addScopeEntrp(afterp);
         iterateChildren(nodep);
     }

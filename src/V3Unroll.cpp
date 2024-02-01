@@ -59,7 +59,7 @@ class UnrollVisitor final : public VNVisitor {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Can't unroll generate for; " << reason);
         UINFO(3, "   Can't Unroll: " << reason << " :" << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree("-  cant: ");
-        V3Stats::addStatSum(std::string{"Unrolling gave up, "} + reason, 1);
+        V3Stats::addStatSum("Unrolling gave up, "s + reason, 1);
         return false;
     }
 

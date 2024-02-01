@@ -51,7 +51,7 @@ void mon_class_name(const char* namep) {
 #endif
     // Check the C's calling name of "" doesn't lead to extra dots in the name()
     if (namep && namep[0] == '.')
-        vl_fatal(__FILE__, __LINE__, "", (std::string{"Unexp class name "} + namep).c_str());
+        vl_fatal(__FILE__, __LINE__, "", ("Unexp class name "s + namep).c_str());
 }
 
 extern "C" void mon_scope_name(const char* namep);
@@ -61,9 +61,9 @@ void mon_scope_name(const char* namep) {
     VL_PRINTF("-     mon_scope_name('%s', \"%s\");\n", modp, namep);
 #endif
     if (std::strcmp(namep, "t.sub"))
-        vl_fatal(__FILE__, __LINE__, "", (std::string{"Unexp scope name "} + namep).c_str());
+        vl_fatal(__FILE__, __LINE__, "", ("Unexp scope name "s + namep).c_str());
     if (std::strcmp(modp, "t.sub"))
-        vl_fatal(__FILE__, __LINE__, "", (std::string{"Unexp dpiscope name "} + modp).c_str());
+        vl_fatal(__FILE__, __LINE__, "", ("Unexp dpiscope name "s + modp).c_str());
 }
 
 extern "C" void mon_register_b(const char* namep, int isOut);

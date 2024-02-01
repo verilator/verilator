@@ -168,11 +168,11 @@ private:
                                          const std::string& value) VL_PURE {
         std::string name;
         if (key.length() == 1 && std::isalpha(key[0])) {
-            name += std::string{"\001"} + key;
+            name += "\001"s + key;
         } else {
-            name += std::string{"\001"} + dequote(key);
+            name += "\001"s + dequote(key);
         }
-        name += std::string{"\002"} + dequote(value);
+        name += "\002"s + dequote(value);
         return name;
     }
     static std::string combineHier(const std::string& old, const std::string& add) VL_PURE {
@@ -364,7 +364,7 @@ public:
 
         std::ofstream os{filename};
         if (os.fail()) {
-            const std::string msg = std::string{"%Error: Can't write '"} + filename + "'";
+            const std::string msg = "%Error: Can't write '"s + filename + "'";
             VL_FATAL_MT("", 0, "", msg.c_str());
             return;
         }

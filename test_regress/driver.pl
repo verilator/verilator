@@ -1765,6 +1765,7 @@ sub _run {
                 $wholefile =~ s/^- [^\n]+\n//mig;
                 $wholefile =~ s/^- [a-z.0-9]+:\d+:[^\n]+\n//mig;
                 $wholefile =~ s/^dot [^\n]+\n//mig;
+                $wholefile =~ s/^==[0-9]+== [^\n]+\n//mig; # valgrind
 
                 # Compare
                 my $quoted = quotemeta($param{expect});
@@ -2277,6 +2278,7 @@ sub files_identical {
                     && !/^libgcov.*/
                     && !/--- \/tmp\//  # t_difftree.pl
                     && !/\+\+\+ \/tmp\//  # t_difftree.pl
+                    && !/^==[0-9]+== ?[^\n]*\n/  # valgrind
             } @l1;
             @l1 = map {
                 while (s/(Internal Error: [^\n]+\.(cpp|h)):[0-9]+/$1:#/g) {}

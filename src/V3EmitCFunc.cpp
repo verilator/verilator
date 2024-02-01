@@ -171,7 +171,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
         bool isStmt = false;
         if (const AstFScanF* const dispp = VN_CAST(nodep, FScanF)) {
             isStmt = false;
-            putns(nodep, "VL_FSCANF_IX(");
+            putns(nodep, "VL_FSCANF_INX(");
             iterateConst(dispp->filep());
             puts(",");
         } else if (const AstSScanF* const dispp = VN_CAST(nodep, SScanF)) {
@@ -179,7 +179,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
             checkMaxWords(dispp->fromp());
             putns(nodep, "VL_SSCANF_I");
             emitIQW(dispp->fromp());
-            puts("X(");
+            puts("NX(");
             puts(cvtToStr(dispp->fromp()->widthMin()));
             puts(",");
             iterateConst(dispp->fromp());
@@ -187,26 +187,27 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
         } else if (const AstDisplay* const dispp = VN_CAST(nodep, Display)) {
             isStmt = true;
             if (dispp->filep()) {
-                putns(nodep, "VL_FWRITEF(");
+                putns(nodep, "VL_FWRITEF_NX(");
                 iterateConst(dispp->filep());
                 puts(",");
             } else {
-                putns(nodep, "VL_WRITEF(");
+                putns(nodep, "VL_WRITEF_NX(");
             }
         } else if (const AstSFormat* const dispp = VN_CAST(nodep, SFormat)) {
             isStmt = true;
-            puts("VL_SFORMAT_X(");
+            puts("VL_SFORMAT_NX(");
             puts(cvtToStr(dispp->lhsp()->widthMin()));
             putbs(",");
             iterateConst(dispp->lhsp());
             putbs(",");
         } else if (VN_IS(nodep, SFormatF)) {
             isStmt = false;
-            putns(nodep, "VL_SFORMATF_NX(");
+            putns(nodep, "VL_SFORMATF_N_NX(");
         } else {
             nodep->v3fatalSrc("Unknown displayEmit node type");
         }
         ofp()->putsQuoted(m_emitDispState.m_format);
+        ofp()->puts(",0");  // MSVC++ requires va_args to not be off reference
         // Arguments
         for (unsigned i = 0; i < m_emitDispState.m_argsp.size(); i++) {
             const char fmt = m_emitDispState.m_argsChar[i];

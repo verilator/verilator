@@ -586,6 +586,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
         } else if ((isAndTree() && VN_IS(nodep, Eq)) || (isOrTree() && VN_IS(nodep, Neq))) {
             Restorer restorer{*this};
             CONST_BITOP_RETURN_IF(!m_polarity, nodep);
+            CONST_BITOP_RETURN_IF(m_lsb, nodep);  // the result of EQ/NE is 1 bit width
             const AstNode* lhsp = nodep->lhsp();
             if (const AstCCast* const castp = VN_CAST(lhsp, CCast)) lhsp = castp->lhsp();
             const AstConst* const constp = VN_CAST(lhsp, Const);
@@ -594,7 +595,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
             const V3Number& compNum = constp->num();
 
             auto setPolarities = [this, &compNum](const LeafInfo& ref, const V3Number* maskp) {
-                const bool maskFlip = isOrTree();
+                const bool maskFlip = isAndTree() ^ ref.polarity();
                 int constantWidth = compNum.width();
                 if (maskp) constantWidth = std::max(constantWidth, maskp->width());
                 const int maxBitIdx = std::max(ref.lsb() + constantWidth, ref.msb() + 1);

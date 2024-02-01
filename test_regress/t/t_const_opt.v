@@ -62,7 +62,7 @@ module t(/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'hd1610f7181cbc1b4
+`define EXPECTED_SUM 64'h4c5aa8d19cd13750
 
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
@@ -95,10 +95,12 @@ module Test(/*AUTOARG*/
    logic bug4059_out;
    logic bug4832_out;
    logic bug4837_out;
+   logic bug4857_out;
+   logic bug4864_out;
 
    output logic o;
 
-   logic [16:0] tmp;
+   logic [18:0] tmp;
    assign o = ^tmp;
 
    always_ff @(posedge clk) begin
@@ -131,6 +133,8 @@ module Test(/*AUTOARG*/
       tmp[14]<= bug4059_out;
       tmp[15]<= bug4832_out;
       tmp[16]<= bug4837_out;
+      tmp[17]<= bug4857_out;
+      tmp[18]<= bug4864_out;
    end
 
    bug3182 i_bug3182(.in(d[4:0]), .out(bug3182_out));
@@ -144,6 +148,8 @@ module Test(/*AUTOARG*/
    bug4059 i_bug4059(.clk(clk), .in(d), .out(bug4059_out));
    bug4832 i_bug4832(.clk(clk), .in(d), .out(bug4832_out));
    bug4837 i_bug4837(.clk(clk), .in(d), .out(bug4837_out));
+   bug4857 i_bug4857(.clk(clk), .in(d), .out(bug4857_out));
+   bug4864 i_bug4864(.clk(clk), .in(d), .out(bug4864_out));
 
 endmodule
 
@@ -449,4 +455,91 @@ module bug4837(input wire clk, input wire [31:0] in, output out);
    assign { out_data[33:32], out_data[0] } = { celloutsig_1z, celloutsig_2z };
 
    assign out = out_data[33] ^ out_data[32] ^ out_data[0];
+endmodule
+
+// See issue #4857
+// (1'b0 != (!a)) | b was wrongly optimized to
+// (a | b) & 1'b1
+// polarity was not considered when traversing NEQ under AND/OR tree
+module bug4857(input wire clk, input wire [31:0] in, output out);
+   logic [95:0] d;
+   always_ff @(posedge clk)
+      d <= {d[63:0], in};
+
+   wire celloutsig_12z;
+   wire celloutsig_15z;
+   wire celloutsig_17z;
+   wire celloutsig_4z;
+   wire celloutsig_67z;
+   wire celloutsig_9z;
+   logic [95:0] in_data;
+   logic result;
+
+   // verilator lint_off UNDRIVEN
+   wire [95:0] out_data;
+   // verilator lint_on UNDRIVEN
+
+   assign celloutsig_4z = ~(in_data[72] & in_data[43]);  // 1
+   assign celloutsig_67z = | { in_data[64], celloutsig_12z }; // 0
+   assign celloutsig_15z = in_data[43] & ~(celloutsig_4z); // 0
+   assign celloutsig_9z = celloutsig_17z & ~(in_data[43]); // 00000000
+   assign celloutsig_17z = celloutsig_15z & ~(in_data[43]);// 0
+   assign celloutsig_12z = celloutsig_4z != celloutsig_9z; // 1
+   assign out_data[32] = celloutsig_67z; // 1
+
+   assign in_data = d;
+   always_ff @ (posedge clk)
+      result <= out_data[32];
+   assign out = result;
+endmodule
+
+
+// See issue #4864
+//  (((in_data[32*1] & 32'h3000000 != 0)        |  (in_data[32*2 + 25])| (sig_b != 9'b0)) >> 4) | sig_b[2]
+// was wrongly optimized as below.
+//   ((in_data[32]   & 32'h30000000) != 0 >> 0) |  (in_data[32*2 + 29])|((sig_b & 9'h1f4) != 0)
+// The result of EQ/NE is just 1 bit width, so EQ/NE under SHFITR cannot be treated as a multi-bit term
+// such as AND/OR.
+module bug4864(input wire clk, input wire [31:0] in, output wire out);
+   logic [159:0] clkin_data = '0;
+   logic [95:0] in_data = '0;
+   int cycle = 0;
+   always @(posedge clk) begin
+      if (in[0]) begin
+         cycle <= cycle + 1;
+         if (cycle == 0) begin
+            clkin_data <= 160'hFFFFFFFF_00000000_00000000_00000000_00000000;
+         end else if (cycle == 1) begin
+            in_data <= 96'h00000000_FFFFFFFF_00000000;
+         end else begin
+            clkin_data <= 160'hFFFFFFFF_00000000_00000000_00000000_FFFFFFFF;
+         end
+      end
+   end
+
+   wire moveme;
+   wire sig_a;
+   reg [8:0] sig_b;
+   wire sig_c;
+   wire [20:0] sig_d;
+   reg sig_e;
+
+   logic myfirst, mysecond;
+   assign myfirst  = 1'b0;
+   assign mysecond = 1'b0;
+
+   always_ff @(posedge clkin_data[0], posedge myfirst, posedge mysecond)
+      if (myfirst) sig_e <= 1'b0;
+      else if (mysecond) sig_e <= 1'b1;
+      else if (clkin_data[128]) sig_e <= sig_d[7];
+
+   always_ff @(posedge clkin_data[128])
+      sig_b <= '0;
+
+   assign sig_a = in_data[89]; // 1'b0;
+   assign sig_c = | { in_data[61:60], sig_b, sig_a };
+   assign sig_d = ~ { moveme, 6'b0, sig_b, 1'b0, sig_c, 3'b0 };
+   assign moveme = 1'b1;
+
+   assign out = sig_e;
 endmodule
