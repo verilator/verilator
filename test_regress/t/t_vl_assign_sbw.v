@@ -15,4 +15,15 @@ module t(
    logic tmp = $c(0);
    typedef logic[255:0] biguint;
    assign out = in + biguint'(tmp);
+
+   always @(out) begin
+      if (in !== 1) begin
+         $write("'in' mismatch: (1 !== %d)\n", logic'(in));
+         $stop;
+      end
+      else if (out !== 1) begin
+         $write("'out' mismatch: (1 !== %d)\n", logic'(out));
+         $stop;
+      end
+   end
 endmodule

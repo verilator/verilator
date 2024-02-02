@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 #include VM_PREFIX_INCLUDE
+
 #include <systemc.h>
 
 #include <sysc/kernel/sc_simcontext.h>
@@ -19,11 +20,17 @@ int sc_main(int argc, char* argv[]) {
     tb->in(in);
     tb->out(out);
 
+    bool pass = out.read().iszero();
+
     sc_start(1, SC_NS);
 
-    if (out == val) VL_PRINTF("*-* All Finished *-*\n");
+    pass &= !out.read().iszero();
+    pass &= out == val;
 
     tb->final();
     VL_DO_DANGLING(delete tb, tb);
+
+    if (pass) { VL_PRINTF("*-* All Finished *-*\n"); }
+
     return 0;
 }
