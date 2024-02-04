@@ -49,7 +49,7 @@ jobs:
     - name: Zip up repository
       run: Compress-Archive -LiteralPath install -DestinationPath verilator.zip
     - name: Upload zip archive
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         path: ${{ github.workspace }}/repo/verilator.zip
         name: verilator-win.zip
