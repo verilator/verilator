@@ -2208,9 +2208,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
     VSymEnt* getThisClassSymp() {
         VSymEnt* classSymp = m_ds.m_dotSymp;
-        do {
+        while (classSymp && !VN_IS(classSymp->nodep(), Class)) {
             classSymp = classSymp->parentp();
-        } while (classSymp && !VN_IS(classSymp->nodep(), Class));
+        }
         return classSymp;
     }
     void importImplementsClass(AstClass* implementsClassp, VSymEnt* interfaceSymp,
