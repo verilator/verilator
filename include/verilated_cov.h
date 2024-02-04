@@ -74,16 +74,6 @@ class VerilatedCovImp;
     } while (false)
 
 //=============================================================================
-// Convert VL_COVER_INSERT value arguments to strings, is \internal
-
-template <class T>
-std::string vlCovCvtToStr(const T& t) VL_PURE {
-    std::ostringstream os;
-    os << t;
-    return os.str();
-}
-
-//=============================================================================
 //  VerilatedCov
 /// Per-VerilatedContext coverage data class.
 /// All public methods in this class are thread safe.
