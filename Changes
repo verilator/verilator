@@ -25,7 +25,6 @@ Verilator 5.021 devel
 * Support SystemC 3.0.0 public review version (#4805) (#4807). [Anthony Donlon]
 * Support parsing anonymous primitive instantiations (#4809). [Anthony Donlon]
 * Fix to not emit already waived warnings in waiver output (#4574) (#4818). [Jonathan Schröter]
-* Fix `this` in member initialization (#4710). [eliasphanna]
 * Fix localparam elaboration (#3858) (#4794). [Andrew Nolte]
 * Fix lint_off disables on preprocessor warnings (#4703). [Srinivasan Venkataramanan]
 * Fix $time not rounding up (#4790) (#4792). [Paul Wright]
