@@ -49,10 +49,9 @@ void AstNode::dumpJsonBool(std::ostream& os, const std::string& name, bool val) 
 void AstNode::dumpJsonStr(std::ostream& os, const std::string& name, const std::string& val) {
     os << "," << SQUOT(name) << ":" << SQUOT(V3OutFormatter::quoteNameControls(val));
 }
-void AstNode::dumpJsonPtr(std::ostream& os, const std::string& name, const AstNode* const valp,
-                        const std::string& unlink_msg) {
-    std::string addr = unlink_msg;
+void AstNode::dumpJsonPtr(std::ostream& os, const std::string& name, const AstNode* const valp) {
     v3Global.saveJsonPtrFieldName(name);
+    std::string addr = "UNLINKED";
     if (valp) addr = (v3Global.opt.jsonIds() ? v3Global.ptrToId(valp) : cvtToHex(valp));
     os << "," << SQUOT(name) << ":" << SQUOT(addr);
 }
