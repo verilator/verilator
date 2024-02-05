@@ -33,27 +33,22 @@
 #include <string>
 #include <vector>
 
-// Shorthands for dumping JSON.
-
-// SQOUT - stream quote - print x surrounded with quotes. Example: cout << SQUOT("something")
-#define SQUOT(x) '"' << (x) << '"'
-
 // Routines for dumping dict fields (NOTE: due to leading ',' they can't be used for first field in
 // dict)
 void AstNode::dumpJsonNum(std::ostream& os, const std::string& name, int64_t val) {
-    os << "," << SQUOT(name) << ":" << val;
+    os << "," << '"' << name << '"' << ":" << val;
 }
 void AstNode::dumpJsonBool(std::ostream& os, const std::string& name, bool val) {
-    os << "," << SQUOT(name) << ":" << (val ? "true" : "false");
+    os << "," << '"' << name << '"' << ":" << (val ? "true" : "false");
 }
 void AstNode::dumpJsonStr(std::ostream& os, const std::string& name, const std::string& val) {
-    os << "," << SQUOT(name) << ":" << SQUOT(V3OutFormatter::quoteNameControls(val));
+    os << "," << '"' << name << '"' << ":" << '"' << V3OutFormatter::quoteNameControls(val) << '"';
 }
 void AstNode::dumpJsonPtr(std::ostream& os, const std::string& name, const AstNode* const valp) {
     v3Global.saveJsonPtrFieldName(name);
     std::string addr = "UNLINKED";
     if (valp) addr = (v3Global.opt.jsonIds() ? v3Global.ptrToId(valp) : cvtToHex(valp));
-    os << "," << SQUOT(name) << ":" << SQUOT(addr);
+    os << "," << '"' << name << '"' << ":" << '"' << addr << '"';
 }
 
 // Shorthands for dumping fields that use func name as key
@@ -1363,9 +1358,9 @@ void dumpNodeListJson(std::ostream& os, const AstNode* nodep, const std::string&
                       const string& indent) {
     os << ",";
     if (nodep == NULL) {  // empty list, print inline
-        os << SQUOT(listName) << ": []";
+        os << '"' << listName << '"' << ": []";
     } else {
-        os << "\n" << indent + " " << SQUOT(listName) << ": [\n";
+        os << "\n" << indent + " " << '"' << listName << '"' << ": [\n";
         for (; nodep; nodep = nodep->nextp()) {
             nodep->dumpTreeJson(os, indent + "  ");
             if (nodep->nextp()) os << ",";
@@ -1382,12 +1377,12 @@ static void dumpFileInfo(std::ostream& os, const FileLine* fileinfop) {
         = cvtToStr(fileinfop->firstLineno()) + ":" + cvtToStr(fileinfop->firstColumn());
     const std::string end
         = cvtToStr(fileinfop->lastLineno()) + ":" + cvtToStr(fileinfop->lastColumn());
-    os << "," << SQUOT("loc") << ":" << SQUOT(filename + "," + begin + "," + end);
+    os << "," << '"' << "loc" << '"' << ":" << '"' << filename + "," + begin + "," + end << '"';
 }
 
 void AstNode::dumpTreeJson(std::ostream& os, const string& indent) const {
     // TODO: dump dtype
-    os << indent << "{" << SQUOT("type") << ":" << SQUOT(typeName());
+    os << indent << "{" << '"' << "type" << '"' << ":" << '"' << typeName() << '"';
     dumpJsonStr(os, "name", V3OutFormatter::quoteNameControls(prettyName()));
     dumpJsonPtr(os, "addr", this);
     dumpFileInfo(os, fileline());
@@ -1652,7 +1647,7 @@ void AstInitArray::dump(std::ostream& str) const {
     dumpInitList(str);
 }
 void AstInitArray::dumpJson(std::ostream& str) const {
-    str << ',' << SQUOT("initList") << ':' << '"';
+    str << ',' << '"' << "initList" << '"' << ':' << '"';
     dumpInitList(str);
     str << '"';
     dumpJsonGen(str);
@@ -2073,7 +2068,7 @@ void AstMTaskBody::dump(std::ostream& str) const {
     m_execMTaskp->dump(str);
 }
 void AstMTaskBody::dumpJson(std::ostream& str) const {
-    str << ',' << SQUOT("execMTask") << ':' << '"';
+    str << ',' << '"' << "execMTask" << '"' << ':' << '"';
     m_execMTaskp->dump(str);  // TODO: Consider dumping it as json object
     str << '"';
     dumpJsonGen(str);
