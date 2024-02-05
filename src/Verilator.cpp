@@ -119,15 +119,17 @@ static void reportStatsIfEnabled() {
     }
 }
 
-static void emitXmlOrJson(bool forceJson = false) VL_MT_DISABLED {
+static void emitJson() VL_MT_DISABLED {
+    const string filename
+        = (v3Global.opt.jsonOnlyOutput().empty()
+               ? v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".tree.json"
+               : v3Global.opt.jsonOnlyOutput());
+    v3Global.rootp()->dumpTreeJsonFile(filename);
+}
+
+static void emitXmlOrJson() VL_MT_DISABLED {
     if (v3Global.opt.xmlOnly()) V3EmitXml::emitxml();
-    if (v3Global.opt.jsonOnly() || forceJson) {
-        const string filename
-            = (v3Global.opt.jsonOnlyOutput().empty()
-                   ? v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".tree.json"
-                   : v3Global.opt.jsonOnlyOutput());
-        v3Global.rootp()->dumpTreeJsonFile(filename);
-    }
+    if (v3Global.opt.jsonOnly()) emitJson();
 }
 
 static void process() {
@@ -587,11 +589,12 @@ static void process() {
     }
     {
         const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
-        if (v3Global.opt.serializeOnly()
-            // Check JSON when debugging to make sure no missing node types
-            || (v3Global.opt.debugCheck() && !v3Global.opt.lintOnly()
-                && !v3Global.opt.dpiHdrOnly())) {
-            emitXmlOrJson(true);
+        if (v3Global.opt.serializeOnly()) {
+            emitXmlOrJson();
+        } else if (v3Global.opt.debugCheck() && !v3Global.opt.lintOnly() && !v3Global.opt.dpiHdrOnly()) {
+            // Check XML/JSON when debugging to make sure no missing node types
+            V3EmitXml::emitxml();
+            emitJson();
         }
 
         // Output DPI protected library files
