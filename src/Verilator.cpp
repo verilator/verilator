@@ -591,7 +591,8 @@ static void process() {
         const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
         if (v3Global.opt.serializeOnly()) {
             emitXmlOrJson();
-        } else if (v3Global.opt.debugCheck() && !v3Global.opt.lintOnly() && !v3Global.opt.dpiHdrOnly()) {
+        } else if (v3Global.opt.debugCheck() && !v3Global.opt.lintOnly()
+                   && !v3Global.opt.dpiHdrOnly()) {
             // Check XML/JSON when debugging to make sure no missing node types
             V3EmitXml::emitxml();
             emitJson();

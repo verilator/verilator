@@ -1391,7 +1391,9 @@ void AstNode::dumpTreeJson(std::ostream& os, const string& indent) const {
     if (hasDType()) {
         dumpJsonPtrFunc(os, dtypep);
     } else {  // V3Broken will throw an error
-        if (dtypep()) dumpJsonStr(os, "dtypep", " %Error-dtype-exp=null,got=" + nodeAddr(dtypep()));
+        if (dtypep()) {
+            dumpJsonStr(os, "dtypep", " %Error-dtype-exp=null,got=" + nodeAddr(dtypep()));
+        }
     }
     dumpJson(os);
     dumpTreeJsonOpGen(os, indent);
