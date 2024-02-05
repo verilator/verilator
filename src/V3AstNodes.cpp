@@ -1381,7 +1381,6 @@ static void dumpFileInfo(std::ostream& os, const FileLine* fileinfop) {
 }
 
 void AstNode::dumpTreeJson(std::ostream& os, const string& indent) const {
-    // TODO: dump dtype
     os << indent << "{" << '"' << "type" << '"' << ":" << '"' << typeName() << '"';
     dumpJsonStr(os, "name", V3OutFormatter::quoteNameControls(prettyName()));
     dumpJsonPtr(os, "addr", this);
@@ -1389,6 +1388,11 @@ void AstNode::dumpTreeJson(std::ostream& os, const string& indent) const {
 #ifdef VL_DEBUG
     if (v3Global.opt.jsonEditNums()) dumpJsonNum(os, "editNum", editCount());
 #endif
+    if (hasDType()) {
+        dumpJsonPtrFunc(os, dtypep);
+    } else {  // V3Broken will throw an error
+        if (dtypep()) dumpJsonStr(os, "dtypep", " %Error-dtype-exp=null,got=" + nodeAddr(dtypep()));
+    }
     dumpJson(os);
     dumpTreeJsonOpGen(os, indent);
     os << "}";
