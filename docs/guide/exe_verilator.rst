@@ -1788,6 +1788,14 @@ Summary:
    Specifies the filename for the main output file (`.tree.json`) of --json-only.
    Using this option automatically sets :vlopt:`--json-only`.
 
+.. option:: --no-json-edit-nums
+
+   Don't dump editNum in .tree.json files.
+
+.. option:: --no-json-ids
+
+   Don't use short identifiers instead of adresses/paths in .tree.json.
+
 .. option:: --xml-only
 
    Create XML output only, do not create any other output.
