@@ -1383,7 +1383,8 @@ static void dumpFileInfo(std::ostream& os, const FileLine* fileinfop) {
         = v3Global.opt.jsonIds() ? fileinfop->filenameLetters() : fileinfop->filename();
     const std::string begin
         = cvtToStr(fileinfop->firstLineno()) + ":" + cvtToStr(fileinfop->firstColumn());
-    const std::string end = cvtToStr(fileinfop->lastLineno()) + ":" + cvtToStr(fileinfop->lastColumn());
+    const std::string end
+        = cvtToStr(fileinfop->lastLineno()) + ":" + cvtToStr(fileinfop->lastColumn());
     os << "," << SQUOT("loc") << ":" << SQUOT(filename + "," + begin + "," + end);
 }
 
