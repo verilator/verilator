@@ -92,7 +92,7 @@ void FileLineSingleton::fileNameNumMapDumpJson(std::ostream& os) {
     std::string sep = "\n  ";
     os << "\"files\": {";
     for (const auto& itr : m_namemap) {
-        std::string name
+        const std::string name
             = itr.first == V3Options::getStdPackagePath() ? "<verilated_std>" : itr.first;
         os << sep << '"' << filenameLetters(itr.second) << '"' << ": {\"filename\":\"" << name
            << '"' << ", \"realpath\":\""

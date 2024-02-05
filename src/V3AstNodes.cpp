@@ -238,7 +238,6 @@ void AstBasicDType::cvtRangeConst() {
 }
 
 int AstBasicDType::widthAlignBytes() const {
-
     if (width() <= 8) {
         return 1;
     } else if (width() <= 16) {
@@ -1380,11 +1379,11 @@ void dumpNodeListJson(std::ostream& os, const AstNode* nodep, const std::string&
 }
 
 static void dumpFileInfo(std::ostream& os, const FileLine* fileinfop) {
-    std::string filename
+    const std::string filename
         = v3Global.opt.jsonIds() ? fileinfop->filenameLetters() : fileinfop->filename();
-    std::string begin
+    const std::string begin
         = cvtToStr(fileinfop->firstLineno()) + ":" + cvtToStr(fileinfop->firstColumn());
-    std::string end = cvtToStr(fileinfop->lastLineno()) + ":" + cvtToStr(fileinfop->lastColumn());
+    const std::string end = cvtToStr(fileinfop->lastLineno()) + ":" + cvtToStr(fileinfop->lastColumn());
     os << "," << SQUOT("loc") << ":" << SQUOT(filename + "," + begin + "," + end);
 }
 
