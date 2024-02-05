@@ -2309,6 +2309,12 @@ protected:
     // Use instead VNVisitor::iterateSubtreeReturnEdits
     AstNode* iterateSubtreeReturnEdits(VNVisitor& v);
 
+    static void dumpJsonNum(std::ostream& os, const std::string& name, int64_t val);
+    static void dumpJsonBool(std::ostream& os, const std::string& name, bool val);
+    static void dumpJsonStr(std::ostream& os, const std::string& name, const std::string& val);
+    static void dumpJsonPtr(std::ostream& os, const std::string& name, const AstNode* const valp,
+                            const std::string& unlink_msg="UNLINKED");
+
 private:
     void iterateListBackwardsConst(VNVisitorConst& v);
 
