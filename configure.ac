@@ -428,6 +428,7 @@ m4_foreach([cflag],[
         [-Wno-shadow],
         [-Wno-sign-compare],
         [-Wno-tautological-bitwise-compare],
+        [-Wno-tautological-compare],
         [-Wno-uninitialized],
         [-Wno-unused-but-set-parameter],
         [-Wno-unused-but-set-variable],

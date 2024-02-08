@@ -44,6 +44,7 @@ Verilator 5.021 devel
 * Fix NOT when checking EQ/NEQ under AND/OR tree (#4857) (#4863). [Yutetsu TAKATSUKASA]
 * Fix tracing chandles (#4860). [Nathan Graybeal]
 * Fix $fwrite of null (#4862). [Jose Tejada]
+* Fix GCC tautological-compare warnings.
 
 
 Verilator 5.020 2024-01-01
