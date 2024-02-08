@@ -26,6 +26,11 @@ module t (/*AUTOARG*/
 
    str_t stoggle; initial stoggle='0;
 
+   union {
+      real val1;  // TODO use bit [7:0] here
+      real val2;  // TODO use bit [3:0] here
+   } utoggle;
+
    const reg aconst = '0;
 
    reg [1:0][1:0] ptoggle; initial ptoggle=0;
@@ -71,6 +76,7 @@ module t (/*AUTOARG*/
          toggle <= '0;
          stoggle.u <= toggle;
          stoggle.b <= toggle;
+         utoggle.val1 <= real'(cyc[7:0]);
          ptoggle[0][0] <= toggle;
          if (cyc==3) begin
             toggle <= '1;
