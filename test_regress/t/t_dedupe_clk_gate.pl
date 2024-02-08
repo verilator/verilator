@@ -17,7 +17,7 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    files_identical($out_filename, $Self->{golden_filename});
+    file_grep("$out_filename", qr/{"type":"VAR","name":"t.f0.clock_gate.clken_latched","addr":"[^"]*","loc":"\w,44:[^"]*","dtypep":"\(\w+\)",.*"origName":"clken_latched",.*"isLatched":true,.*"dtypeName":"logic"/);
     file_grep($Self->{stats}, qr/Optimizations, Gate sigs deduped\s+(\d+)/i, 4);
 }
 

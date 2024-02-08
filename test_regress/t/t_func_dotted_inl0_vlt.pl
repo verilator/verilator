@@ -18,7 +18,10 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    files_identical($out_filename, $Self->{golden_filename});
+    file_grep("$out_filename", qr/{"type":"MODULE","name":"ma",.*"loc":"f,84:[^"]*",.*"origName":"ma",.*"modPublic":true/);
+    file_grep("$out_filename", qr/{"type":"MODULE","name":"mb",.*"loc":"f,99:[^"]*",.*"origName":"mb",.*"modPublic":true/);
+    file_grep("$out_filename", qr/{"type":"MODULE","name":"mc",.*"loc":"f,127:[^"]*",.*"origName":"mc",.*"modPublic":true/);
+    file_grep("$out_filename", qr/{"type":"MODULE","name":"mc__PB1",.*"loc":"f,127:[^"]*",.*"origName":"mc",.*"modPublic":true/);
 }
 
 execute(

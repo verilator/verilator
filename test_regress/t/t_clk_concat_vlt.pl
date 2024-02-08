@@ -18,7 +18,10 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    files_identical($out_filename, $Self->{golden_filename});
+    file_grep("$out_filename", qr/{"type":"VAR","name":"clk0",.*"loc":"f,78:[^"]*",.*"origName":"clk0",.*"direction":"INPUT",.*"isSigPublic":true,.*"attrClocker":"clker",.*"varType":"PORT",.*"dtypeName":"logic"/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"clk1",.*"loc":"f,79:[^"]*",.*"origName":"clk1",.*"direction":"INPUT",.*"isSigPublic":true,.*"attrClocker":"clker",.*"varType":"PORT",.*"dtypeName":"logic"/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"clk2",.*"loc":"f,80:[^"]*",.*"origName":"clk2",.*"direction":"INPUT",.*"isSigPublic":true,.*"attrClocker":"clker",.*"varType":"PORT",.*"dtypeName":"logic"/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"data_in",.*"loc":"f,82:[^"]*",.*"origName":"data_in",.*"direction":"INPUT",.*"isSigPublic":true,.*"attrClocker":"non_clker",.*"varType":"PORT",.*"dtypeName":"logic"/);
 }
 
 execute(

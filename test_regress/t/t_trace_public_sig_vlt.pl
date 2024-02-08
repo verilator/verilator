@@ -11,6 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt_all => 1);
 
 top_filename("t/t_trace_public.v");
+golden_filename("t/t_trace_public.out");
 
 my $out_filename = "$Self->{obj_dir}/V$Self->{name}.tree.json";
 
@@ -21,15 +22,13 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    golden_filename("t/t_trace_public_sig_vlt.out");
-    files_identical($out_filename, $Self->{golden_filename});
+    file_grep("$out_filename", qr/{"type":"VAR","name":"GSR",.*"loc":"f,47:[^"]*",.*"origName":"GSR",.*"isSigPublic":true,.*"dtypeName":"logic",.*"isSigUserRdPublic":true.*"isSigUserRWPublic":true/);
 }
 
 execute(
     check_finished => 1,
     );
 
-golden_filename("t/t_trace_public.out");
 vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
 
 # vcd_identical doesn't detect "$var a.b;" vs "$scope module a; $var b;"

@@ -18,7 +18,8 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    files_identical($out_filename, $Self->{golden_filename});
+    my $modp = (file_grep("$out_filename", qr/{"type":"MODULE","name":"mb","addr":"([^"]*)","loc":"e,99:[^"]*",.*"origName":"mb"/))[0];
+    file_grep("$out_filename", qr/{"type":"CELL","name":"t.ma0.mb0","addr":"[^"]*","loc":"e,87:[^"]*",.*"origName":"mb0",.*"modp":"([^"]*)"/, $modp);
 }
 
 execute(

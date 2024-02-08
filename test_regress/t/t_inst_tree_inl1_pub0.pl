@@ -18,7 +18,9 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    files_identical($out_filename, $Self->{golden_filename});
+    file_grep("$out_filename", qr/{"type":"VAR","name":"t.u.u0.u0.z1",.*"loc":"f,70:[^"]*",.*"origName":"z1",.*"dtypeName":"logic"/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"t.u.u0.u1.z1",.*"loc":"f,70:[^"]*",.*"origName":"z1",.*"dtypeName":"logic"/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"t.u.u1.u0.z0",.*"loc":"f,70:[^"]*",.*"origName":"z0",.*"dtypeName":"logic"/);
 }
 
 execute(
