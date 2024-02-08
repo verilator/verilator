@@ -2292,7 +2292,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "attrClocker", (attrClocker().unknown() ? "UNKNOWN" : attrClocker().ascii()));
     dumpJsonStr(str, "lifetime", lifetime().ascii());
     dumpJsonStr(str, "varType", varType().ascii());
-    if(dtypep()) dumpJsonStr(str, "dtypeName", dtypep()->name());
+    if (dtypep()) dumpJsonStr(str, "dtypeName", dtypep()->name());
     dumpJsonBoolFunc(str, isSigUserRdPublic);
     dumpJsonBoolFunc(str, isSigUserRWPublic);
     dumpJsonBoolFunc(str, isGParam);
