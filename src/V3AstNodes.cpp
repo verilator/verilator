@@ -2146,8 +2146,15 @@ void AstCoverDecl::dump(std::ostream& str) const {
     if (!page().empty()) str << " page=" << page();
     if (!linescov().empty()) str << " lc=" << linescov();
     if (this->dataDeclNullp()) {
+        static bool s_recursing = false;
         str << " -> ";
-        this->dataDeclNullp()->dump(str);
+        if (s_recursing) {
+            str << "%ErrorRECURSIVE";
+        } else {
+            s_recursing = true;
+            this->dataDeclNullp()->dump(str);
+            s_recursing = false;
+        }
     } else {
         if (binNum()) str << " bin" << std::dec << binNum();
     }
