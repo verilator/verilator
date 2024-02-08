@@ -20,7 +20,8 @@
 // | -gC6="32'h600D600D" | 32'h600D600D| 32'h600D600D| UNSUPPORTED | 32'h600D600D|
 // | -gC7='AB CD'        | AB CD       | UNSUPPORTED | UNSUPPORTED | UNSUPPORTED |
 
-`define check(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: Wrong parameter value", `__FILE__,`__LINE__); $stop; end while(0);
+`define stop $stop
+`define check(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: Wrong parameter value", `__FILE__,`__LINE__); `stop; end while(0);
 
 module t;
    parameter string1 = "Original String";

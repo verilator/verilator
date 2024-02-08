@@ -19,6 +19,7 @@ module t ();
    initial b = 3'b111;
 
    initial begin
+      #1;
       if (signed_out !== 1'b0) begin
          $display("%%Error: bad signed comparison %b < %b: got=%d exp=%d", a, b, signed_out, 1'b0);
          $stop;

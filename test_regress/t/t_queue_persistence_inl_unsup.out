@@ -1,5 +1,5 @@
-%Error-TASKNSVAR: t/t_queue_persistence.v:30:13: Unsupported: ref argument of inlined function/task is not a simple variable
-   30 |       func(q[1]);
+%Error-TASKNSVAR: t/t_queue_persistence.v:31:13: Unsupported: ref argument of inlined function/task is not a simple variable
+   31 |       func(q[1]);
       |             ^
                   ... For error description see https://verilator.org/warn/TASKNSVAR?v=latest
 %Error: Exiting due to
