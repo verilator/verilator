@@ -1176,6 +1176,9 @@ private:
         }
     }
 
+    // Ignore coverage - from a function we're inlining
+    void visit(AstCoverInc* nodep) override {}
+
     // ====
     // Known Bad
     void visit(AstCMethodHard* nodep) override {
