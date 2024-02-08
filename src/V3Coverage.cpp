@@ -395,6 +395,8 @@ class CoverageVisitor final : public VNVisitor {
                     newent.cleanup();
                 }
             }
+        } else if (VN_IS(dtypep, QueueDType)) {
+            // Not covered
         } else {
             dtypep->v3fatalSrc("Unexpected node data type in toggle coverage generation: "
                                << dtypep->prettyTypeName());
