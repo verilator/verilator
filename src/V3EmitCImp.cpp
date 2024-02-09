@@ -324,13 +324,14 @@ class EmitCImp final : EmitCFunc {
             // Used for second++ instantiation of identical bin
             puts("if (!enable) count32p = &fake_zero_count;\n");
             puts("*count32p = 0;\n");
-            puts("VL_COVER_INSERT(vlSymsp->_vm_contextp__->coveragep(), count32p,");
+            puts("VL_COVER_INSERT(vlSymsp->_vm_contextp__->coveragep(), VerilatedModule::name(), "
+                 "count32p,");
             puts("  \"filename\",filenamep,");
             puts("  \"lineno\",lineno,");
             puts("  \"column\",column,\n");
             // Need to move hier into scopes and back out if do this
             // puts( "\"hier\",std::string{vlSymsp->name()} + hierp,");
-            puts("\"hier\",std::string{name()} + hierp,");
+            puts("\"hier\",std::string{VerilatedModule::name()} + hierp,");
             puts("  \"page\",pagep,");
             puts("  \"comment\",commentp,");
             puts("  (linescovp[0] ? \"linescov\" : \"\"), linescovp);\n");
