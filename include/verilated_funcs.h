@@ -2340,5 +2340,168 @@ inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, double& rdr)
 extern IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_SAFE;
 
 //======================================================================
+// bitHelper
+
+template <typename OutWordT, typename InWordT>
+void alignedBitHelper2(OutWordT* outWords, uint32_t outLsB, const InWordT* inWords, uint32_t inLsB,
+                       uint32_t width) {
+    if (width == 0) return;
+    uint32_t outSize = sizeof(OutWordT);
+    uint32_t outIndexOff = outLsB / outSize;
+    uint32_t outByteOff = outLsB % outSize;
+
+    uint32_t inSize = sizeof(InWordT);
+    uint32_t inIndexOff = inLsB / inSize;
+    uint32_t inByteOff = inLsB % inSize;
+
+    OutWordT widthMask
+        = width >= outSize * 8 ? ~(OutWordT)0 : (((OutWordT)1 << width) - 1) << (8 * outByteOff);
+    OutWordT outMask = 0;
+    OutWordT outWord = 0;
+
+    uint32_t cnt = 0;
+    while (width) {
+        uint8_t byte = uint8_t(inWords[inIndexOff] >> (8 * inByteOff));
+        outWord |= (OutWordT)byte << (8 * outByteOff);
+        outMask |= (OutWordT)0xffU << (8 * outByteOff);
+        ++inByteOff;
+        if (inByteOff == inSize) {
+            inByteOff = 0;
+            ++inIndexOff;
+        }
+        ++outByteOff;
+        ++cnt;
+        if (outByteOff == outSize || cnt * 8 >= width) {
+            outMask &= widthMask;
+            outWords[outIndexOff] = (outWord & outMask) | (outWords[outIndexOff] & ~outMask);
+            outWord = 0;
+            outByteOff = 0;
+            ++outIndexOff;
+            width -= std::min(cnt * 8, width);
+            cnt = 0;
+            widthMask = width >= outSize * 8 ? ~(OutWordT)0 : ((OutWordT)1 << width) - 1;
+        }
+    }
+}
+
+template <typename OutWordT, typename InWordT>
+void alignedBitHelper(OutWordT* outWords, uint32_t outLsB, const InWordT* inWords, uint32_t inLsb,
+                      uint32_t width) {
+    if (width == 0) return;
+    if (inLsb % 8 == 0) {
+        alignedBitHelper2(outWords, outLsB, inWords, inLsb / 8, width);
+        return;
+    }
+    // inLsb % 8 != 0
+    uint32_t outSize = sizeof(OutWordT);
+    uint32_t outIndexOff = outLsB / outSize;
+    uint32_t outByteOff = outLsB % outSize;
+
+    uint32_t inSize = sizeof(InWordT);
+    uint32_t inIndexOff = inLsb / 8 / inSize;
+    uint32_t inByteOff = (inLsb / 8) % inSize;
+    uint32_t inBitOff = inLsb % 8;
+
+    OutWordT outWord = 0;
+    OutWordT outMask = 0;
+    OutWordT widthMask;
+    if (width + outByteOff * 8 >= outSize * 8)
+        widthMask = ~(OutWordT)0;
+    else
+        widthMask = ((OutWordT)1 << (width + outByteOff * 8)) - 1;
+
+    uint8_t byte = uint8_t(inWords[inIndexOff] >> (8 * inByteOff)) >> inBitOff;
+    uint32_t validBits = 8 - inBitOff;
+
+    ++inByteOff;
+    if (inByteOff == inSize) {
+        inByteOff = 0;
+        ++inIndexOff;
+    }
+    uint32_t cnt = 0;
+    while (width) {
+        if (validBits >= width) {
+            outWord = (OutWordT)byte << (8 * outByteOff);
+            outMask = (((OutWordT)1 << width) - 1) << (8 * outByteOff);
+            outWords[outIndexOff] = (outWords[outIndexOff] & ~outMask) | (outWord & outMask);
+            return;
+        }
+        uint8_t newByte = uint8_t(inWords[inIndexOff] >> (8 * inByteOff));
+        byte |= newByte << validBits;
+        outWord |= (OutWordT)byte << (8 * outByteOff);
+        outMask |= (OutWordT)0xffU << (8 * outByteOff);
+        byte = newByte >> (8 - validBits);
+
+        ++outByteOff;
+        ++cnt;
+        if (outByteOff == outSize || cnt * 8 + validBits >= width) {
+            outMask &= widthMask;
+            outWords[outIndexOff] = (outWord & outMask) | (outWords[outIndexOff] & ~outMask);
+            outWord = 0;
+            width -= std::min(cnt * 8, width);
+            cnt = 0;
+
+            if (outByteOff == outSize) {
+                outByteOff = 0;
+                ++outIndexOff;
+            }
+            if (width >= outSize * 8)
+                widthMask = ~(OutWordT)0;
+            else
+                widthMask = ((OutWordT)1 << width) - 1;
+        }
+        ++inByteOff;
+        if (inByteOff == inSize) {
+            inByteOff = 0;
+            ++inIndexOff;
+        }
+    }
+}
+
+template <typename OutWordT, typename InWordT>
+void bitHelper(OutWordT* outWords, uint32_t outLsb, const InWordT* inWords, uint32_t inLsb,
+               uint32_t width) {
+    uint32_t outBitOff = outLsb % 8;
+    if (outBitOff == 0) {
+        alignedBitHelper(outWords, outLsb / 8, inWords, inLsb, width);
+        return;
+    }
+    uint32_t left = 8 - outBitOff;
+    if (width > left)
+        alignedBitHelper(outWords, (outLsb + left) / 8, inWords, inLsb + left, width - left);
+
+    uint32_t outSize = sizeof(OutWordT);
+    uint32_t outIndexOff = outLsb / 8 / outSize;
+    uint32_t outByteOff = (outLsb / 8) % outSize;
+
+    // Arithmetic operators in C++ don't accept operands smaller than
+    // int(Integral promotion), so we can't do a shift on uint8_t directly.
+    OutWordT outMask = (OutWordT(0xffU << outBitOff) & 0xffU) << (8 * outByteOff);
+
+    uint32_t inSize = sizeof(InWordT);
+    uint32_t inIndexOff = inLsb / 8 / inSize;
+    uint32_t inByteOff = (inLsb / 8) % inSize;
+    uint32_t inBitOff = inLsb % 8;
+
+    uint8_t byte = uint8_t(inWords[inIndexOff] >> (8 * inByteOff)) >> inBitOff;
+    uint32_t validBits = 8 - inBitOff;
+
+    if (validBits >= left) {
+        outWords[outIndexOff] = (outWords[outIndexOff] & ~outMask)
+                                | ((OutWordT(byte) << (8 * outByteOff + outBitOff)) & outMask);
+        return;
+    }
+    ++inByteOff;
+    if (inByteOff == inSize) {
+        inByteOff = 0;
+        ++inIndexOff;
+    }
+    uint8_t newByte = uint8_t(inWords[inIndexOff] >> (8 * inByteOff));
+    byte |= newByte << validBits;
+    outWords[outIndexOff] = (outWords[outIndexOff] & ~outMask)
+                            | ((OutWordT(byte) << (8 * outByteOff + outBitOff)) & outMask);
+}
+
+//======================================================================
 
 #endif  // Guard
