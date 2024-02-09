@@ -1373,9 +1373,9 @@ void dumpNodeListJson(std::ostream& os, const AstNode* nodep, const std::string&
 static void dumpFileInfo(std::ostream& os, const FileLine* fileinfop) {
     const std::string filename
         = v3Global.opt.jsonIds() ? fileinfop->filenameLetters() : fileinfop->filename();
-    os << ",\"loc\":\"" << filename << ',' << fileinfop->firstLineno()
-       << ':' << fileinfop->firstColumn() << ',' << fileinfop->lastLineno()
-       << ':' << fileinfop->lastColumn() << '"';
+    os << ",\"loc\":\"" << filename << ',' << fileinfop->firstLineno() << ':'
+       << fileinfop->firstColumn() << ',' << fileinfop->lastLineno() << ':'
+       << fileinfop->lastColumn() << '"';
 }
 
 void AstNode::dumpTreeJson(std::ostream& os, const string& indent) const {
