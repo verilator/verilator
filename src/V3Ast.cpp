@@ -1337,18 +1337,18 @@ void AstNode::dumpTreeJsonFile(const string& filename, bool doDump) {
     const std::unique_ptr<std::ofstream> treejsonp{V3File::new_ofstream(filename)};
     if (treejsonp->fail()) v3fatal("Can't write " << filename);
     dumpTreeJson(*treejsonp);
-    *treejsonp << "\n";
+    *treejsonp << '\n';
 }
 
 void AstNode::dumpJsonMetaFile(const string& filename) {
     UINFO(2, "Dumping " << filename << endl);
     const std::unique_ptr<std::ofstream> treejsonp{V3File::new_ofstream(filename)};
     if (treejsonp->fail()) v3fatal("Can't write " << filename);
-    *treejsonp << "{";
+    *treejsonp << '{';
     FileLine::fileNameNumMapDumpJson(*treejsonp);
-    *treejsonp << ",";
+    *treejsonp << ',';
     v3Global.idPtrMapDumpJson(*treejsonp);
-    *treejsonp << ",";
+    *treejsonp << ',';
     v3Global.ptrNamesDumpJson(*treejsonp);
     *treejsonp << "}\n";
 }
