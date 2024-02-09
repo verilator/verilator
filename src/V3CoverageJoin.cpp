@@ -50,37 +50,36 @@ class CoverageJoinVisitor final : public VNVisitor {
         for (AstCoverToggle* nodep : m_toggleps) dupFinder.insert(nodep->origp());
         // Find if there are any duplicates
         for (AstCoverToggle* nodep : m_toggleps) {
-            // nodep->backp() is null if we already detected it's a duplicate and unlinked it.
-            if (nodep->backp()) {
-                // Want to choose a base node, and keep finding duplicates that are identical.
-                // This prevents making chains where a->b, then c->d, then b->c, as we'll
-                // find a->b, a->c, a->d directly.
-                while (true) {
-                    const auto dupit = dupFinder.findDuplicate(nodep->origp());
-                    if (dupit == dupFinder.end()) break;
-                    //
-                    const AstNode* const duporigp = dupit->second;
-                    // Note hashed will point to the original variable (what's
-                    // duplicated), not the covertoggle, but we need to get back to the
-                    // covertoggle which is immediately above, so:
-                    AstCoverToggle* const removep = VN_AS(duporigp->backp(), CoverToggle);
-                    UASSERT_OBJ(removep, nodep, "CoverageJoin duplicate of wrong type");
-                    UINFO(8, "  Orig " << nodep << " -->> " << nodep->incp()->declp() << endl);
-                    UINFO(8, "   dup " << removep << " -->> " << removep->incp()->declp() << endl);
-                    // The CoverDecl the duplicate pointed to now needs to point to the
-                    // original's data. I.e. the duplicate will get the coverage number
-                    // from the non-duplicate
-                    AstCoverDecl* const datadeclp = nodep->incp()->declp()->dataDeclThisp();
-                    removep->incp()->declp()->dataDeclp(datadeclp);
-                    UINFO(8, "   new " << removep->incp()->declp() << endl);
-                    // Mark the found node as a duplicate of the first node
-                    // (Not vice-versa as we have the iterator for the found node)
-                    removep->unlinkFrBack();
-                    VL_DO_DANGLING(pushDeletep(removep), removep);
-                    // Remove node from comparison so don't hit it again
-                    dupFinder.erase(dupit);
-                    ++m_statToggleJoins;
-                }
+            // nodep->backp() is null if we already detected it's a duplicate and unlinked earlier
+            if (!nodep->backp()) continue;
+            // Want to choose a base node, and keep finding duplicates that are identical.
+            // This prevents making chains where a->b, then c->d, then b->c, as we'll
+            // find a->b, a->c, a->d directly.
+            while (true) {
+                const auto dupit = dupFinder.findDuplicate(nodep->origp());
+                if (dupit == dupFinder.end()) break;
+                const AstNode* const duporigp = dupit->second;
+                // Remove node from comparison so don't hit it again
+                dupFinder.erase(dupit);
+                //
+                // Note dupFinder will point to the original toggle-increment equation (what's
+                // duplicated), not the covertoggle, but we need to get back to the
+                // covertoggle which is immediately above, so:
+                AstCoverToggle* const removep = VN_AS(duporigp->backp(), CoverToggle);
+                UASSERT_OBJ(removep, nodep, "CoverageJoin duplicate of wrong type");
+                UINFO(8, "  Orig " << nodep << " -->> " << nodep->incp()->declp() << endl);
+                UINFO(8, "   dup " << removep << " -->> " << removep->incp()->declp() << endl);
+                // The CoverDecl the duplicate pointed to now needs to point to the
+                // original's data. I.e. the duplicate will get the coverage number
+                // from the non-duplicate
+                AstCoverDecl* const datadeclp = nodep->incp()->declp()->dataDeclThisp();
+                removep->incp()->declp()->dataDeclp(datadeclp);
+                UINFO(8, "   new " << removep->incp()->declp() << endl);
+                // Mark the found node as a duplicate of the first node
+                // (Not vice-versa as we have the iterator for the found node)
+                removep->unlinkFrBack();
+                VL_DO_DANGLING(pushDeletep(removep), removep);
+                ++m_statToggleJoins;
             }
         }
     }
