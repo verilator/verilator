@@ -2100,7 +2100,6 @@ void AstTypeTable::dump(std::ostream& str) const {
 }
 void AstTypeTable::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
-    // TODO (maybe? most of info is already dumped in typesp)
 }
 void AstAssocArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
