@@ -2098,9 +2098,7 @@ void AstTypeTable::dump(std::ostream& str) const {
     }
     // Note get newline from caller too.
 }
-void AstTypeTable::dumpJson(std::ostream& str) const {
-    dumpJsonGen(str);
-}
+void AstTypeTable::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstAssocArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "[assoc-" << nodeAddr(keyDTypep()) << "]";
