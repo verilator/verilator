@@ -17,8 +17,12 @@ module t;
    wire #PDLY d_param = in;
 
    initial begin
-      #2 in = 1'b0;
+      #2 in = 1'b1;
       #100;
+      if (d_const != 1) $stop;
+      if (d_int != 1) $stop;
+      if (d_real != 1) $stop;
+      if (d_param != 1) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end
