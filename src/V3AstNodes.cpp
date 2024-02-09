@@ -1357,7 +1357,7 @@ void AstNode::dump(std::ostream& str) const {
 void dumpNodeListJson(std::ostream& os, const AstNode* nodep, const std::string& listName,
                       const string& indent) {
     os << ",";
-    if (nodep == NULL) {  // empty list, print inline
+    if (!nodep) {  // empty list, print inline
         os << '"' << listName << '"' << ": []";
     } else {
         os << "\n" << indent + " " << '"' << listName << '"' << ": [\n";
@@ -1373,11 +1373,9 @@ void dumpNodeListJson(std::ostream& os, const AstNode* nodep, const std::string&
 static void dumpFileInfo(std::ostream& os, const FileLine* fileinfop) {
     const std::string filename
         = v3Global.opt.jsonIds() ? fileinfop->filenameLetters() : fileinfop->filename();
-    const std::string begin
-        = cvtToStr(fileinfop->firstLineno()) + ":" + cvtToStr(fileinfop->firstColumn());
-    const std::string end
-        = cvtToStr(fileinfop->lastLineno()) + ":" + cvtToStr(fileinfop->lastColumn());
-    os << "," << '"' << "loc" << '"' << ":" << '"' << filename + "," + begin + "," + end << '"';
+    os << "," << '"' << "loc" << '"' << ":" << '"' << filename << "," << fileinfop->firstLineno()
+       << ':' << fileinfop->firstColumn() << ',' << fileinfop->lastLineno()
+       << ':' << fileinfop->lastColumn() << '"';
 }
 
 void AstNode::dumpTreeJson(std::ostream& os, const string& indent) const {

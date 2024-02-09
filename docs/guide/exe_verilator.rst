@@ -1775,8 +1775,8 @@ Summary:
    the Verilator Internals manual. Be aware that the JSON
    format is still evolving; there will be some changes in future versions.
 
-   This option disables some more agressive transformations and dumps only final
-   state of AST.
+   This option disables some more agressive transformations and dumps only the
+   final state of the AST.
 
 .. option:: --json-only-meta-output <filename>
 
@@ -1790,7 +1790,8 @@ Summary:
 
 .. option:: --no-json-edit-nums
 
-   Don't dump editNum in .tree.json files.
+   Don't dump editNum in .tree.json files.  This may make the file more
+   run-to-run stable for easier comparison.
 
 .. option:: --no-json-ids
 
