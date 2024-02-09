@@ -4,10 +4,10 @@
 ######################################################################
 
 import argparse
+import json
 import os
 import subprocess
-import tempfile
-import xml.etree.ElementTree as ET
+from tempfile import NamedTemporaryFile
 # from pprint import pprint, pformat
 
 #######################################################################
@@ -22,19 +22,23 @@ class VlHierGraph:
             output_filename='graph.dot'):  # output filename
         self.debug = debug
         self.next_vertex_number = 0
-        self.name_to_number = {}
+        self.addr_to_number = {}
 
-        with tempfile.NamedTemporaryFile() as xml_temp:
+        with NamedTemporaryFile() as tree_temp, NamedTemporaryFile(
+        ) as meta_temp:
             vargs = [
-                '--xml-output',
-                xml_temp.name,
+                '--json-only-output',
+                tree_temp.name,
+                '--json-only-meta-output',
+                meta_temp.name,
                 '--bbox-sys',  # Parse some stuff can't translate
                 '--bbox-unsup',
-                '--prefix vlxml'
-            ]  # So we know name of .xml output
+                '--prefix vljson'
+            ]
             vargs += verilator_args
             self.run_verilator(vargs)
-            self.tree = ET.parse(xml_temp.name)
+            self.tree = json.load(tree_temp)
+            self.meta = json.load(meta_temp)
 
         with open(output_filename, "w", encoding="utf8") as fh:
             # For more serious purposes, use the python graphviz package instead
@@ -46,31 +50,45 @@ class VlHierGraph:
             )
             fh.write("  edge [fontsize=6]")
             # Find cells
-            root = self.tree.getroot()
-            netlist = root.find('netlist')
-            for module in netlist.findall('module'):
+            modules = self.flatten(self.tree, lambda n: n['type'] == "MODULE")
+            top_module = True
+            for mod in modules:
                 # origNames are before parameterization, name if after
-                mod_name = module.get('name')
-                mod_number = self.name_to_vertex_number(mod_name)
-                fh.write("  n%d [label=\"%s\"" % (mod_number, mod_name))
-                if module.get('topModule'):
+                mod_number = self.addr_to_vertex_number(mod['addr'])
+                fh.write("  n%d [label=\"%s\"" % (mod_number, mod['name']))
+                if top_module:
                     fh.write(" color=\"red\" rank=1")
+                    top_module = False
                 fh.write("];\n")
 
-                for instance in module.findall('instance'):
-                    inst_name = instance.get('name')
-                    def_name = instance.get('defName')
-                    def_number = self.name_to_vertex_number(def_name)
+                cells = self.flatten(mod, lambda n: n['type'] == "CELL")
+                for cell in cells:
+                    def_number = self.addr_to_vertex_number(cell['modp'])
                     fh.write("  n%d->n%d [label=\"%s\"];\n" %
-                             (mod_number, def_number, inst_name))
+                             (mod_number, def_number, cell['name']))
 
             fh.write("}\n")
 
-    def name_to_vertex_number(self, name):
-        if name not in self.name_to_number:
+    def flatten(self, node, accept_cb=lambda n: True):
+        """Flatten tree to list using DFS.
+        accept_cb(node) should return True for nodes you want to save"""
+        arr = []
+        self.dfs(node, lambda n: accept_cb(n) and arr.append(n))
+        return arr
+
+    def dfs(self, node, node_cb):
+        """Traverse given tree using DFS and apply node_cb(node) on each one"""
+        node_cb(node)
+        for _, v in node.items():
+            if isinstance(v, list):  # childlist
+                for child in v:
+                    self.dfs(child, node_cb)
+
+    def addr_to_vertex_number(self, name):
+        if name not in self.addr_to_number:
             self.next_vertex_number += 1
-            self.name_to_number[name] = self.next_vertex_number
-        return self.name_to_number[name]
+            self.addr_to_number[name] = self.next_vertex_number
+        return self.addr_to_number[name]
 
     def run_verilator(self, vargs):
         """Run Verilator command, check errors"""
@@ -94,7 +112,7 @@ if __name__ == '__main__':
         allow_abbrev=False,
         formatter_class=argparse.RawTextHelpFormatter,
         description=
-        """Example of using Verilator XML output to create a .dot file showing the
+        """Example of using Verilator JSON output to create a .dot file showing the
 design module hierarchy.
 
 Example usage:

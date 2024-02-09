@@ -1,0 +1,54 @@
+{"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","typeTablep":"(C)","constPoolp":"(D)","dollarUnitPkgp":"UNLINKED","stdPackagep":"UNLINKED","evalp":"UNLINKED","evalNbap":"UNLINKED","dpiExportTriggerp":"UNLINKED","delaySchedulerp":"UNLINKED","nbaEventp":"UNLINKED","nbaEventTriggerp":"UNLINKED","topScopep":"UNLINKED",
+ "modulesp": [
+  {"type":"MODULE","name":"test","addr":"(E)","loc":"d,22:8,22:12","origName":"test","level":2,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
+   "stmtsp": [
+    {"type":"VAR","name":"N","addr":"(F)","loc":"d,24:12,24:13","dtypep":"(G)","origName":"N","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":true,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"VSTATIC","varType":"GENVAR","dtypeName":"integer","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"BEGIN","name":"FOR_GENERATE","addr":"(H)","loc":"d,25:14,25:17","generate":true,"genfor":false,"implied":true,"needProcess":false,"unnamed":false,"genforp": [],"stmtsp": []},
+    {"type":"BEGIN","name":"FOR_GENERATE[0]","addr":"(I)","loc":"d,27:21,27:31","generate":true,"genfor":false,"implied":false,"needProcess":false,"unnamed":false,"genforp": [],
+     "stmtsp": [
+      {"type":"CELL","name":"submod_for","addr":"(J)","loc":"d,27:21,27:31","origName":"submod_for","recursive":false,"modp":"(K)","pinsp": [],"paramsp": [],"rangep": [],"intfRefsp": []},
+      {"type":"BEGIN","name":"genblk1","addr":"(L)","loc":"d,28:19,28:24","generate":true,"genfor":false,"implied":false,"needProcess":false,"unnamed":true,"genforp": [],
+       "stmtsp": [
+        {"type":"CELL","name":"submod_2","addr":"(M)","loc":"d,29:25,29:33","origName":"submod_2","recursive":false,"modp":"(K)","pinsp": [],"paramsp": [],"rangep": [],"intfRefsp": []}
+      ]},
+      {"type":"CELL","name":"submod_3","addr":"(N)","loc":"d,31:21,31:29","origName":"submod_3","recursive":false,"modp":"(K)","pinsp": [],"paramsp": [],"rangep": [],"intfRefsp": []}
+    ]},
+    {"type":"BEGIN","name":"FOR_GENERATE[1]","addr":"(O)","loc":"d,27:21,27:31","generate":true,"genfor":false,"implied":false,"needProcess":false,"unnamed":false,"genforp": [],
+     "stmtsp": [
+      {"type":"CELL","name":"submod_for","addr":"(P)","loc":"d,27:21,27:31","origName":"submod_for","recursive":false,"modp":"(K)","pinsp": [],"paramsp": [],"rangep": [],"intfRefsp": []},
+      {"type":"BEGIN","name":"genblk1","addr":"(Q)","loc":"d,28:19,28:24","generate":true,"genfor":false,"implied":false,"needProcess":false,"unnamed":true,"genforp": [],
+       "stmtsp": [
+        {"type":"CELL","name":"submod_2","addr":"(R)","loc":"d,29:25,29:33","origName":"submod_2","recursive":false,"modp":"(K)","pinsp": [],"paramsp": [],"rangep": [],"intfRefsp": []}
+      ]},
+      {"type":"CELL","name":"submod_3","addr":"(S)","loc":"d,31:21,31:29","origName":"submod_3","recursive":false,"modp":"(K)","pinsp": [],"paramsp": [],"rangep": [],"intfRefsp": []}
+    ]}
+  ],"activesp": []},
+  {"type":"MODULE","name":"submod","addr":"(K)","loc":"d,10:8,10:14","origName":"submod","level":3,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
+   "stmtsp": [
+    {"type":"BEGIN","name":"submod_gen","addr":"(T)","loc":"d,12:19,12:29","generate":true,"genfor":false,"implied":false,"needProcess":false,"unnamed":false,"genforp": [],
+     "stmtsp": [
+      {"type":"VAR","name":"l1_sig","addr":"(U)","loc":"d,13:14,13:20","dtypep":"(V)","origName":"l1_sig","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"VSTATIC","varType":"WIRE","dtypeName":"logic","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
+      {"type":"BEGIN","name":"nested_gen","addr":"(W)","loc":"d,14:23,14:33","generate":true,"genfor":false,"implied":false,"needProcess":false,"unnamed":false,"genforp": [],
+       "stmtsp": [
+        {"type":"CELL","name":"submod_nested","addr":"(X)","loc":"d,15:21,15:34","origName":"submod_nested","recursive":false,"modp":"(Y)","pinsp": [],"paramsp": [],"rangep": [],"intfRefsp": []}
+      ]},
+      {"type":"CELL","name":"submod_l1","addr":"(Z)","loc":"d,17:17,17:26","origName":"submod_l1","recursive":false,"modp":"(Y)","pinsp": [],"paramsp": [],"rangep": [],"intfRefsp": []}
+    ]},
+    {"type":"CELL","name":"submod_l0","addr":"(AB)","loc":"d,19:13,19:22","origName":"submod_l0","recursive":false,"modp":"(Y)","pinsp": [],"paramsp": [],"rangep": [],"intfRefsp": []}
+  ],"activesp": []},
+  {"type":"MODULE","name":"submod2","addr":"(Y)","loc":"d,7:8,7:15","origName":"submod2","level":4,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],"stmtsp": [],"activesp": []}
+],"filesp": [],
+ "miscsp": [
+  {"type":"TYPETABLE","name":"","addr":"(C)","loc":"a,0:0,0:0","constraintRefp":"UNLINKED","emptyQueuep":"UNLINKED","queueIndexp":"UNLINKED","streamp":"UNLINKED","voidp":"UNLINKED",
+   "typesp": [
+    {"type":"BASICDTYPE","name":"integer","addr":"(G)","loc":"d,24:12,24:13","dtypep":"(G)","keyword":"integer","range":"31:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(V)","loc":"d,13:14,13:20","dtypep":"(V)","keyword":"logic","generic":true,"rangep": []}
+  ]},
+  {"type":"CONSTPOOL","name":"","addr":"(D)","loc":"a,0:0,0:0",
+   "modulep": [
+    {"type":"MODULE","name":"@CONST-POOL@","addr":"(BB)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","level":0,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
+     "stmtsp": [
+      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(CB)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(BB)","varsp": [],"blocksp": []}
+    ],"activesp": []}
+  ]}
+]}

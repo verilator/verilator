@@ -796,14 +796,15 @@ void V3Options::notify() VL_MT_DISABLED {
     if (!outFormatOk() && v3Global.opt.main()) ccSet();  // --main implies --cc if not provided
     if (!outFormatOk() && !dpiHdrOnly() && !lintOnly() && !preprocOnly() && !serializeOnly()) {
         v3fatal("verilator: Need --binary, --cc, --sc, --dpi-hdr-only, --lint-only, "
-                "--xml-only or --E option");
+                "--xml-only, --json-only or --E option");
     }
 
     if (m_build && (m_gmake || m_cmake)) {
         cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }
 
-    // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, and m_xmlOnly are mutually exclusive
+    // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, m_jsonOnly and m_xmlOnly are mutually
+    // exclusive
     std::vector<std::string> backendFlags;
     if (m_build) {
         if (m_binary)
@@ -815,6 +816,7 @@ void V3Options::notify() VL_MT_DISABLED {
     if (m_dpiHdrOnly) backendFlags.push_back("--dpi-hdr-only");
     if (m_lintOnly) backendFlags.push_back("--lint-only");
     if (m_xmlOnly) backendFlags.push_back("--xml-only");
+    if (m_jsonOnly) backendFlags.push_back("--json-only");
     if (backendFlags.size() > 1) {
         std::string backendFlagsString = backendFlags.front();
         for (size_t i = 1; i < backendFlags.size(); i++) {
@@ -1203,6 +1205,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-dumpi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
         m_dumpLevel[optp] = std::atoi(valp);
     });
+    DECL_OPTION("-json-edit-nums", OnOff, &m_jsonEditNums);
+    DECL_OPTION("-json-ids", OnOff, &m_jsonIds);
     DECL_OPTION("-E", CbOnOff, [this](bool flag) {
         if (flag) m_std = false;
         m_preprocOnly = flag;
@@ -1663,6 +1667,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-xml-output", CbVal, [this](const char* valp) {
         m_xmlOutput = valp;
         m_xmlOnly = true;
+    });
+    DECL_OPTION("-json-only", OnOff, &m_jsonOnly);
+    DECL_OPTION("-json-only-output", CbVal, [this](const char* valp) {
+        m_jsonOnlyOutput = valp;
+        m_jsonOnly = true;
+    });
+    DECL_OPTION("-json-only-meta-output", CbVal, [this](const char* valp) {
+        m_jsonOnlyMetaOutput = valp;
+        m_jsonOnly = true;
     });
 
     DECL_OPTION("-y", CbVal, [this, &optdir](const char* valp) {

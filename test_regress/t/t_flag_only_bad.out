@@ -1,2 +1,2 @@
-%Error: The following cannot be used together: --binary, -E, --dpi-hdr-only, --lint-only, --xml-only. Suggest see manual
+%Error: The following cannot be used together: --binary, -E, --dpi-hdr-only, --lint-only, --xml-only, --json-only. Suggest see manual
 %Error: Exiting due to

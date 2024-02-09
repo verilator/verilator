@@ -2527,6 +2527,7 @@ sub file_grep {
     } elsif (defined($expvalue) && $expvalue ne $1) {
         $self->error("File_grep: $filename: Got='$1' Expected='$expvalue' in regexp: $regexp\n");
     }
+    return @{^CAPTURE};
 }
 
 sub file_grep_count {

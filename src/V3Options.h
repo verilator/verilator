@@ -292,6 +292,7 @@ private:
     bool m_vpi = false;             // main switch: --vpi
     bool m_xInitialEdge = false;    // main switch: --x-initial-edge
     bool m_xmlOnly = false;         // main switch: --xml-only
+    bool m_jsonOnly = false;        // main switch: --json-only
 
     int         m_buildJobs = -1;    // main switch: --build-jobs, -j
     int         m_convergeLimit = 100;  // main switch: --converge-limit
@@ -302,6 +303,8 @@ private:
     int         m_ifDepth = 0;      // main switch: --if-depth
     int         m_inlineMult = 2000;   // main switch: --inline-mult
     int         m_instrCountDpi = 200;   // main switch: --instr-count-dpi
+    bool        m_jsonEditNums = true; // main switch: --no-json-edit-nums
+    bool        m_jsonIds = true; // main switch: --no-json-ids
     VOptionBool m_makeDepend;  // main switch: -MMD
     int         m_maxNumWidth = 65536;  // main switch: --max-num-width
     int         m_moduleRecursion = 100;  // main switch: --module-recursion-depth
@@ -348,6 +351,8 @@ private:
     string      m_xAssign;      // main switch: --x-assign
     string      m_xInitial;     // main switch: --x-initial
     string      m_xmlOutput;    // main switch: --xml-output
+    string      m_jsonOnlyOutput;    // main switch: --json-only-output
+    string      m_jsonOnlyMetaOutput;    // main switch: --json-only-meta-output
 
     // Language is now held in FileLine, on a per-node basis. However we still
     // have a concept of the default language at a global level.
@@ -519,7 +524,8 @@ public:
     bool vpi() const { return m_vpi; }
     bool xInitialEdge() const { return m_xInitialEdge; }
     bool xmlOnly() const { return m_xmlOnly; }
-    bool serializeOnly() const { return m_xmlOnly; }
+    bool jsonOnly() const { return m_jsonOnly; }
+    bool serializeOnly() const { return m_xmlOnly || m_jsonOnly; }
     bool topIfacesSupported() const { return lintOnly() && !hierarchical(); }
 
     int buildJobs() const VL_MT_SAFE { return m_buildJobs; }
@@ -531,6 +537,8 @@ public:
     int ifDepth() const { return m_ifDepth; }
     int inlineMult() const { return m_inlineMult; }
     int instrCountDpi() const { return m_instrCountDpi; }
+    bool jsonEditNums() const { return m_jsonEditNums; }
+    bool jsonIds() const { return m_jsonIds; }
     VOptionBool makeDepend() const { return m_makeDepend; }
     int maxNumWidth() const { return m_maxNumWidth; }
     int moduleRecursionDepth() const { return m_moduleRecursion; }
@@ -600,6 +608,8 @@ public:
     string xAssign() const { return m_xAssign; }
     string xInitial() const { return m_xInitial; }
     string xmlOutput() const { return m_xmlOutput; }
+    string jsonOnlyOutput() const { return m_jsonOnlyOutput; }
+    string jsonOnlyMetaOutput() const { return m_jsonOnlyMetaOutput; }
 
     const V3StringSet& cppFiles() const { return m_cppFiles; }
     const V3StringList& cFlags() const { return m_cFlags; }
