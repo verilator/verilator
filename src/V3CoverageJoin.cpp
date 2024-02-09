@@ -48,6 +48,8 @@ class CoverageJoinVisitor final : public VNVisitor {
         V3DupFinder dupFinder;  // Duplicate code detection
         // Hash all of the original signals we toggle cover
         for (AstCoverToggle* nodep : m_toggleps) dupFinder.insert(nodep->origp());
+        if (dumpLevel() || debug() >= 9)
+            dupFinder.dumpFile(v3Global.debugFilename("coveragejoin") + ".hash", false);
         // Find if there are any duplicates
         for (AstCoverToggle* nodep : m_toggleps) {
             // nodep->backp() is null if we already detected it's a duplicate and unlinked earlier
@@ -85,7 +87,8 @@ class CoverageJoinVisitor final : public VNVisitor {
     }
 
     // VISITORS
-    void visit(AstNetlist* nodep) override {
+    void visit(AstActive* nodep) override {
+        m_toggleps.clear();
         // Find all Coverage's
         iterateChildren(nodep);
         // Simplify

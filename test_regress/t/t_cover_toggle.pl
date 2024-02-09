@@ -23,7 +23,7 @@ inline_checks();
 
 file_grep_not("$Self->{obj_dir}/coverage.dat", "largeish");
 
-file_grep($Self->{stats}, qr/Coverage, Toggle points joined\s+(\d+)/i, 25)
+file_grep($Self->{stats}, qr/Coverage, Toggle points joined\s+(\d+)/i, 23)
     if $Self->{vlt_all};
 
 run(cmd => ["../bin/verilator_coverage",

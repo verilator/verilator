@@ -2653,7 +2653,7 @@ public:
     const char* broken() const override {
         if (m_dataDeclp
             && (m_dataDeclp == this || m_dataDeclp->m_dataDeclp)) {  // Avoid O(n^2) accessing
-            v3fatalSrc("dataDeclp should point to real data, not be a list");
+            v3fatalSrc("dataDeclp should point to real data, not be a list: " << cvtToHex(this));
         }
         return nullptr;
     }

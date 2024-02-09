@@ -46,6 +46,7 @@ Verilator 5.021 devel
 * Fix $fwrite of null (#4862). [Jose Tejada]
 * Fix GCC tautological-compare warnings.
 * Fix compile error on structs with queues (and ignore toggle coverage on queues).
+* Fix toggle coverage dataDeclp error on multi-edge driven signals.
 
 
 Verilator 5.020 2024-01-01
