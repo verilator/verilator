@@ -208,9 +208,9 @@ class ClassVisitor final : public VNVisitor {
         for (const AstMemberDType* itemp = dtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             AstNodeUOrStructDType* const subp = itemp->getChildStructp();
-            // Recurse only into anonymous unpacked structs inside this definition,
-            // other unpacked structs will be reached from another typedefs
-            if (subp && !subp->packed() && subp->name().empty()) setStructModulep(subp);
+            // Recurse only into anonymous structs inside this definition,
+            // other structs will be reached from another typedefs
+            if (subp && subp->name().empty()) setStructModulep(subp);
         }
     }
     void visit(AstTypedef* nodep) override {

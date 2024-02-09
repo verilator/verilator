@@ -225,7 +225,7 @@ class EmitCHeader final : public EmitCConstInit {
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             AstNodeUOrStructDType* const subp = itemp->getChildStructp();
-            if (subp && !subp->packed()) {
+            if (subp && (!subp->packed() || sdtypep->packed())) {
                 // Recurse if it belongs to the current module
                 if (subp->classOrPackagep() == modp) {
                     emitStructDecl(modp, subp, emitted);

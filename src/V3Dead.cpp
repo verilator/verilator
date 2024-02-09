@@ -328,7 +328,7 @@ class DeadVisitor final : public VNVisitor {
     }
     bool shouldDeleteTypedef(AstTypedef* typedefp) {
         if (auto* const structp = VN_CAST(typedefp->subDTypep(), NodeUOrStructDType)) {
-            if (structp->user1()) return false;
+            if (structp->user1() && !structp->packed()) return false;
         }
         return m_elimCells && !typedefp->attrPublic();
     }
