@@ -219,7 +219,7 @@ class ClassVisitor final : public VNVisitor {
         if (m_classPackagep) m_classPackagep->addStmtsp(nodep->unlinkFrBack());
 
         AstNodeUOrStructDType* const dtypep = VN_CAST(nodep->dtypep(), NodeUOrStructDType);
-        if (dtypep && !dtypep->packed()) {
+        if (dtypep) {
             dtypep->name(nodep->name());
             setStructModulep(dtypep);
         }

@@ -18,6 +18,7 @@
 
 #include "V3EmitC.h"
 #include "V3EmitCConstInit.h"
+#include "V3UniqueNames.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -31,6 +32,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Internal EmitC implementation
 
 class EmitCHeader final : public EmitCConstInit {
+    V3UniqueNames m_names;
     // METHODS
 
     void decorateFirst(bool& first, const string& str) {
@@ -231,6 +233,13 @@ class EmitCHeader final : public EmitCConstInit {
                 }
             }
         }
+        if (sdtypep->packed()) {
+            emitPackedUOrSBody(sdtypep);
+        } else {
+            emitUnpackedUOrSBody(sdtypep);
+        }
+    }
+    void emitUnpackedUOrSBody(AstNodeUOrStructDType* sdtypep) {
         putns(sdtypep, sdtypep->verilogKwd());  // "struct"/"union"
         puts(" " + EmitCBase::prefixNameProtect(sdtypep) + " {\n");
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
@@ -254,8 +263,125 @@ class EmitCHeader final : public EmitCConstInit {
         puts("return !(*this == rhs);\n}\n");
         puts("};\n");
     }
+
+    // `retOrArg` should be prefixed by `&` or suffixed by `.data()` depending on its type
+    void emitPackedMember(const AstNodeDType* dtypep, const std::string& fieldname,
+                          const std::string& offset, const std::string& funcname,
+                          const std::string& retOrArg) {
+        // func name start with `get` or set
+        bool getfunc = funcname[0] == 'g';
+        dtypep = dtypep->skipRefp();
+        if (const auto* adtypep = VN_CAST(dtypep, PackArrayDType)) {
+            std::string index = m_names.get("__i");
+            std::string forloop = "for (int " + index + " = 0; " + index + " < "
+                                  + std::to_string(adtypep->elementsConst()) + "; ++" + index
+                                  + ") {\n";
+            puts(forloop);
+            std::string offsetInLoop
+                = offset + " + " + index + " * " + std::to_string(adtypep->subDTypep()->width());
+            std::string newName = fieldname + "[" + index + "]";
+            emitPackedMember(adtypep->subDTypep(), newName, offsetInLoop, funcname, retOrArg);
+            puts("}\n");
+        } else if (const auto* const adtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
+            std::string tmp = m_names.get("__tmp");
+            std::string suffixName = dtypep->isWide() ? tmp + ".data()" : "&" + tmp;
+            if (getfunc) {  // Emit `get` func;
+                // auto __tmp = field.get();
+                puts("auto " + tmp + " = " + fieldname + "." + funcname + "();\n");
+                // bitHelper(&ret, offset, &__tmp, 0, width);
+                puts("bitHelper(" + retOrArg + ", " + offset + ", " + suffixName + ", 0, "
+                     + std::to_string(adtypep->width()) + ");\n");
+            } else {  // Emit `set` func
+                std::string tmptype = adtypep->cTypeFromWidth();
+                // type tmp;
+                puts(tmptype + " " + tmp + ";\n");
+                // bitHelper(&__tmp, 0, &retOrArg, offset, width);
+                puts("bitHelper(" + suffixName + ", 0, " + retOrArg + ", " + offset + ", "
+                     + std::to_string(adtypep->width()) + ");\n");
+                // field.set(__tmp);
+                puts(fieldname + "." + funcname + "(" + tmp + ");\n");
+            }
+        } else {
+            UASSERT_OBJ(VN_IS(dtypep, EnumDType) || VN_IS(dtypep, BasicDType), dtypep,
+                        "Unsupported type in packed struct or union");
+            std::string suffixName = dtypep->isWide() ? fieldname + ".data()" : "&" + fieldname;
+            if (getfunc) {  // Emit `get` func;
+                // bitHelper(&ret, offset, &field, 0, width);
+                puts("bitHelper(" + retOrArg + ", " + offset + ", " + suffixName + ", 0, "
+                     + std::to_string(dtypep->width()) + ");\n");
+            } else {  // Emit `set` func
+                // bitHelper(&field, 0, &retOrArg, offset, width);
+                puts("bitHelper(" + suffixName + ", 0, " + retOrArg + ", " + offset + ", "
+                     + std::to_string(dtypep->width()) + ");\n");
+            }
+        }
+    }
+    void emitPackedUOrSBody(AstNodeUOrStructDType* sdtypep) {
+        putns(sdtypep, sdtypep->verilogKwd());  // "struct"/"union"
+        puts(" " + EmitCBase::prefixNameProtect(sdtypep) + " {\n");
+
+        string getFuncName, setFuncName;
+        bool hasGetField = false, hasSetField = false;
+        AstMemberDType *itemp, *lastItemp;
+        AstMemberDType* witemp = nullptr;
+        // LSB is first field in C, so loop backwards
+        for (lastItemp = sdtypep->membersp(); lastItemp && lastItemp->nextp();
+             lastItemp = VN_AS(lastItemp->nextp(), MemberDType)) {
+            if (lastItemp->width() == sdtypep->width()) witemp = lastItemp;
+        }
+        for (itemp = lastItemp; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
+            std::string protectedName = itemp->nameProtect();
+            hasGetField |= protectedName == "get";
+            hasSetField |= protectedName == "set";
+            m_names.get(protectedName);
+            putns(itemp, itemp->dtypep()->cpackedType(protectedName));
+            puts(";\n");
+        }
+        // Emit constructor to zero all bytes
+        puts(EmitCBase::prefixNameProtect(sdtypep) + "() { memset(this, 0, sizeof(*this)); }\n");
+
+        const std::string retArgName = m_names.get("__v");
+        const std::string suffixName
+            = sdtypep->isWide() ? retArgName + ".data()" : "&" + retArgName;
+        const std::string retArgType = sdtypep->cTypeFromWidth();
+
+        // Emit `get` member function
+        getFuncName = hasGetField ? m_names.get("get") : "get";
+        puts(retArgType + " " + getFuncName + "() const {\n");
+        puts(retArgType + " " + retArgName + ";\n");
+        if (VN_IS(sdtypep, StructDType)) {
+            for (itemp = lastItemp; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
+                emitPackedMember(itemp->dtypep(), itemp->nameProtect(),
+                                 std::to_string(itemp->lsb()), getFuncName, suffixName);
+            }
+        } else {
+            // We only need to fill the widest field of union
+            emitPackedMember(witemp->dtypep(), witemp->nameProtect(),
+                             std::to_string(witemp->lsb()), getFuncName, suffixName);
+        }
+        puts("return " + retArgName + ";\n");
+        puts("}\n");
+
+        // Emit `set` member function
+        setFuncName = hasSetField ? m_names.get("set") : "set";
+        puts("void " + setFuncName + "(" + retArgType + " " + retArgName + ") {\n");
+        if (VN_IS(sdtypep, StructDType)) {
+            for (itemp = lastItemp; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
+                emitPackedMember(itemp->dtypep(), itemp->nameProtect(),
+                                 std::to_string(itemp->lsb()), setFuncName, suffixName);
+            }
+        } else {
+            // We only need to fill the widest field of union
+            emitPackedMember(witemp->dtypep(), witemp->nameProtect(),
+                             std::to_string(witemp->lsb()), setFuncName, suffixName);
+        }
+
+        puts("}\n");
+
+        puts("};\n");
+        m_names.reset();
+    }
     void emitStructs(const AstNodeModule* modp) {
-        bool first = true;
         // Track structs that've been emitted already
         std::set<AstNodeUOrStructDType*> emitted;
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
@@ -264,8 +390,6 @@ class EmitCHeader final : public EmitCConstInit {
             AstNodeUOrStructDType* const sdtypep
                 = VN_CAST(tdefp->dtypep()->skipRefToEnump(), NodeUOrStructDType);
             if (!sdtypep) continue;
-            if (sdtypep->packed()) continue;
-            decorateFirst(first, "\n// UNPACKED STRUCT TYPES\n");
             emitStructDecl(modp, sdtypep, emitted);
         }
     }
