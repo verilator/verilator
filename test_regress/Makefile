@@ -102,9 +102,9 @@ TEST_SNAP_DIR ?= snapshot
 # Command to diff directories
 TEST_DIFF_TOOL ?= $(if $(shell which icdiff), icdiff -N -r, diff -r)
 
-TEST_SNAP_IGNORE := *.status *.log *.dat *.d *.o *.a *.so *stats.txt *.html \
-                    *.includecache *.out *.fst *.fst.vcd  *.tree *.dot \
-                    *.csv *.xml *.hash *.cmake gmon.out.* CMakeFiles \
+TEST_SNAP_IGNORE := *.status *.log *.dat *.d *.o *.a *.so *stats*.txt *.html \
+                    *.includecache *.out *.fst *.fst.vcd *.tree *.tree.json \
+                    *.dot *.csv *.xml *.hash *.cmake gmon.out.* CMakeFiles \
                     profile_exec.vcd t_pgo_threads
 
 define TEST_SNAP_template
