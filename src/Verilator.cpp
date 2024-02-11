@@ -279,7 +279,7 @@ static void process() {
 
         if (v3Global.opt.fDfgPreInline()) {
             // Pre inline DFG optimization
-            V3DfgOptimizer::optimize(v3Global.rootp(), " pre inline");
+            V3DfgOptimizer::optimize(v3Global.rootp(), "pre inline");
         }
 
         if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {

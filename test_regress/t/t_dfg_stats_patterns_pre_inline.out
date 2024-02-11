@@ -1,0 +1,50 @@
+DFG 'pre inline' patterns with depth 1
+            3 (NOT vA:a)*:a
+            2 (AND _A:a _B:a):a
+            2 (REPLICATE _A:a cA:a)*:b
+            1 (AND _A:a _B:a)*:a
+            1 (CONCAT '0:a _A:b):A
+            1 (NOT _A:a):a
+            1 (REPLICATE _A:1 cA:a)*:b
+            1 (REPLICATE _A:a cA:b)*:b
+            1 (REPLICATE _A:a cA:b)*:c
+            1 (SEL@0 _A:a):1
+            1 (SEL@0 _A:a):b
+            1 (SEL@A _A:a):1
+
+DFG 'pre inline' patterns with depth 2
+            2 (AND (NOT vA:a)*:a (NOT vB:a)*:a):a
+            1 (AND (NOT vA:a)*:a (NOT vB:a)*:a)*:a
+            1 (CONCAT '0:a (REPLICATE _A:a cA:a)*:b):A
+            1 (NOT (REPLICATE _A:a cA:b)*:b):b
+            1 (REPLICATE (NOT _A:a):a cA:a)*:b
+            1 (REPLICATE (REPLICATE _A:1 cA:a)*:b cB:a)*:c
+            1 (REPLICATE (REPLICATE _A:a cA:b)*:b cA:b)*:c
+            1 (REPLICATE (REPLICATE _A:a cA:b)*:c cA:b)*:b
+            1 (REPLICATE (SEL@A _A:a):1 cA:b)*:c
+            1 (SEL@0 (AND _A:a _B:a)*:a):1
+            1 (SEL@0 (REPLICATE _A:a cA:a)*:b):c
+            1 (SEL@A (AND _A:a _B:a)*:a):1
+
+DFG 'pre inline' patterns with depth 3
+            1 (CONCAT '0:a (REPLICATE (REPLICATE _A:b cA:a)*:a cA:a)*:c):A
+            1 (NOT (REPLICATE (REPLICATE _A:a cA:b)*:c cA:b)*:b):b
+            1 (REPLICATE (NOT (REPLICATE _A:a cA:b)*:b):b cA:b)*:c
+            1 (REPLICATE (REPLICATE (REPLICATE _A:1 cA:a)*:b cB:a)*:c cB:a)*:a
+            1 (REPLICATE (REPLICATE (REPLICATE _A:a cA:b)*:c cA:b)*:b cA:b)*:d
+            1 (REPLICATE (REPLICATE (SEL@A _A:a):1 cA:b)*:c cB:b)*:d
+            1 (REPLICATE (SEL@A (AND _A:a _B:a)*:a):1 cA:b)*:c
+            1 (SEL@0 (AND (NOT vA:a)*:a (NOT vB:a)*:a)*:a):1
+            1 (SEL@0 (REPLICATE (NOT _A:a):a cA:a)*:b):c
+            1 (SEL@A (AND (NOT vA:a)*:a (NOT vB:a)*:a)*:a):1
+
+DFG 'pre inline' patterns with depth 4
+            1 (CONCAT '0:a (REPLICATE (REPLICATE (REPLICATE _A:b cA:a)*:c cA:a)*:a cA:a)*:d):A
+            1 (NOT (REPLICATE (REPLICATE (REPLICATE _A:1 cA:a)*:b cB:a)*:c cB:a)*:a):a
+            1 (REPLICATE (NOT (REPLICATE (REPLICATE _A:a cA:b)*:c cA:b)*:b):b cA:b)*:d
+            1 (REPLICATE (REPLICATE (REPLICATE (REPLICATE _A:1 cA:a)*:b cB:a)*:c cB:a)*:a cB:a)*:d
+            1 (REPLICATE (REPLICATE (REPLICATE (SEL@A _A:a):1 cA:b)*:c cB:b)*:d cB:b)*:b
+            1 (REPLICATE (REPLICATE (SEL@A (AND _A:a _B:a)*:a):1 cA:b)*:c cB:b)*:d
+            1 (REPLICATE (SEL@A (AND (NOT vA:a)*:a (NOT vB:a)*:a)*:a):1 cA:b)*:c
+            1 (SEL@0 (REPLICATE (NOT (REPLICATE _A:a cA:b)*:b):b cA:b)*:c):d
+
