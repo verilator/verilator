@@ -345,11 +345,15 @@ class AssertVisitor final : public VNVisitor {
                     AstIf* const zeroIfp
                         = new AstIf{nodep->fileline(),
                                     new AstLogNot{nodep->fileline(), propp->cloneTreePure(false)}};
+                    AstNodeExpr* const exprp = nodep->exprp();
+                    const string valFmt = cvtToStr(exprp->dtypep()->widthMin()) + "'h%X";
                     if (!allow_none)
                         zeroIfp->addThensp(
-                            newFireAssert(nodep, caseTypeStr + ", but none matched"));
-                    zeroIfp->addElsesp(
-                        newFireAssert(nodep, caseTypeStr + ", but multiple matches found"));
+                            newFireAssert(nodep, caseTypeStr + ", but none matched for " + valFmt,
+                                          exprp->cloneTreePure(false)));
+                    zeroIfp->addElsesp(newFireAssert(
+                        nodep, caseTypeStr + ", but multiple matches found for " + valFmt,
+                        exprp->cloneTreePure(false)));
                     ohotIfp->addThensp(zeroIfp);
                     ohotIfp->isBoundsCheck(true);  // To avoid LATCH warning
                     ohotIfp->branchPred(VBranchPred::BP_UNLIKELY);
