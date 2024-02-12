@@ -338,7 +338,8 @@ class EmitCHeader final : public EmitCConstInit {
             puts(";\n");
         }
         // Emit constructor to zero all bytes
-        puts(EmitCBase::prefixNameProtect(sdtypep) + "() { memset(this, 0, sizeof(*this)); }\n");
+        puts(EmitCBase::prefixNameProtect(sdtypep)
+             + "() { memset(reinterpret_cast<void*>(this), 0, sizeof(*this)); }\n");
 
         const std::string retArgName = m_names.get("__v");
         const std::string suffixName
