@@ -328,6 +328,9 @@ class AssertVisitor final : public VNVisitor {
                     }
                     // Empty case means no property
                     if (!propp) propp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+                    const string caseTypeStr = nodep->parallelPragma() ? "synthesis parallel_case"
+                                               : nodep->uniquePragma() ? "unique case"
+                                                                       : "unique0 case";
 
                     const bool allow_none = has_default || nodep->unique0Pragma();
                     AstNodeExpr* const ohot
@@ -337,8 +340,7 @@ class AssertVisitor final : public VNVisitor {
                                           new AstOneHot{nodep->fileline(), propp}));
                     AstIf* const ifp = new AstIf{
                         nodep->fileline(), new AstLogNot{nodep->fileline(), ohot},
-                        newFireAssert(nodep,
-                                      "synthesis parallel_case, but multiple matches found")};
+                        newFireAssert(nodep, caseTypeStr + ", but multiple matches found")};
                     ifp->isBoundsCheck(true);  // To avoid LATCH warning
                     ifp->branchPred(VBranchPred::BP_UNLIKELY);
                     nodep->addNotParallelp(ifp);
