@@ -331,19 +331,27 @@ class AssertVisitor final : public VNVisitor {
                     const string caseTypeStr = nodep->parallelPragma() ? "synthesis parallel_case"
                                                : nodep->uniquePragma() ? "unique case"
                                                                        : "unique0 case";
-
                     const bool allow_none = has_default || nodep->unique0Pragma();
-                    AstNodeExpr* const ohot
-                        = (allow_none ? static_cast<AstNodeExpr*>(
-                               new AstOneHot0{nodep->fileline(), propp})
-                                      : static_cast<AstNodeExpr*>(
-                                          new AstOneHot{nodep->fileline(), propp}));
-                    AstIf* const ifp = new AstIf{
-                        nodep->fileline(), new AstLogNot{nodep->fileline(), ohot},
-                        newFireAssert(nodep, caseTypeStr + ", but multiple matches found")};
-                    ifp->isBoundsCheck(true);  // To avoid LATCH warning
-                    ifp->branchPred(VBranchPred::BP_UNLIKELY);
-                    nodep->addNotParallelp(ifp);
+                    // The following assertion lools as below.
+                    // if (!$onehot(propp)) begin
+                    //     if (propp == '0) begin if (!allow_none) $error("none match"); end
+                    //     else $error("multiple match");
+                    // end
+                    AstNodeExpr* const ohot = new AstOneHot{nodep->fileline(), propp};
+                    AstIf* const ohotIfp
+                        = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), ohot}};
+                    AstIf* const zeroIfp
+                        = new AstIf{nodep->fileline(),
+                                    new AstLogNot{nodep->fileline(), propp->cloneTreePure(false)}};
+                    if (!allow_none)
+                        zeroIfp->addThensp(
+                            newFireAssert(nodep, caseTypeStr + ", but none matched"));
+                    zeroIfp->addElsesp(
+                        newFireAssert(nodep, caseTypeStr + ", but multiple matches found"));
+                    ohotIfp->addThensp(zeroIfp);
+                    ohotIfp->isBoundsCheck(true);  // To avoid LATCH warning
+                    ohotIfp->branchPred(VBranchPred::BP_UNLIKELY);
+                    nodep->addNotParallelp(ohotIfp);
                 }
             }
         }
