@@ -26,6 +26,9 @@
 
 #include "V3UniqueNames.h"
 
+#include <queue>
+#include <unordered_set>
+
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
@@ -46,6 +49,9 @@ class ClassVisitor final : public VNVisitor {
     const AstNodeFTask* m_ftaskp = nullptr;  // Current task
     std::vector<std::pair<AstNode*, AstScope*>> m_toScopeMoves;
     std::vector<std::pair<AstNode*, AstNodeModule*>> m_toPackageMoves;
+    std::unordered_set<AstTypedef*> m_Typedefps;
+    std::unordered_set<AstNodeUOrStructDType*> m_sdtypes;
+    std::queue<AstNodeUOrStructDType*> m_pubSdtypes;
 
     // METHODS
 
@@ -204,6 +210,7 @@ class ClassVisitor final : public VNVisitor {
         dtypep->classOrPackagep(m_classPackagep ? m_classPackagep : m_modp);
         dtypep->name(
             m_names.get(dtypep->name() + (VN_IS(dtypep, UnionDType) ? "__union" : "__struct")));
+        if (dtypep->packed()) m_sdtypes.insert(dtypep);
 
         for (const AstMemberDType* itemp = dtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
@@ -215,10 +222,14 @@ class ClassVisitor final : public VNVisitor {
     }
     void visit(AstTypedef* nodep) override {
         if (nodep->user1SetOnce()) return;
+        AstNodeUOrStructDType* const dtypep = VN_CAST(nodep->dtypep(), NodeUOrStructDType);
+        if (dtypep && dtypep->packed()) {
+            m_Typedefps.insert(nodep);
+            if (nodep->attrPublic()) m_pubSdtypes.push(dtypep);
+        }
         iterateChildren(nodep);
         if (m_classPackagep) m_classPackagep->addStmtsp(nodep->unlinkFrBack());
 
-        AstNodeUOrStructDType* const dtypep = VN_CAST(nodep->dtypep(), NodeUOrStructDType);
         if (dtypep) {
             dtypep->name(nodep->name());
             setStructModulep(dtypep);
@@ -257,6 +268,27 @@ public:
             UINFO(9, "moving " << nodep << " to " << modp << endl);
             nodep->unlinkFrBack();
             modp->addStmtsp(nodep);
+        }
+        // BFS to mark public typedefs.
+        std::unordered_set<AstNodeUOrStructDType*> pubSdtypes;
+        while (!m_pubSdtypes.empty()) {
+            AstNodeUOrStructDType* dtypep = m_pubSdtypes.front();
+            m_pubSdtypes.pop();
+            pubSdtypes.insert(dtypep);
+            for (const AstMemberDType* itemp = dtypep->membersp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                AstNodeUOrStructDType* const subp = itemp->getChildStructp();
+                if (subp) m_pubSdtypes.push(subp);
+            }
+        }
+        for (AstTypedef* typedefp : m_Typedefps) {
+            AstNodeUOrStructDType* sdtypep = VN_AS(typedefp->dtypep(), NodeUOrStructDType);
+            if (pubSdtypes.count(sdtypep)) typedefp->attrPublic(true);
+        }
+        // Clear package pointer of non-public packed struct / union type, which will never be
+        // exported.
+        for (AstNodeUOrStructDType* sdtypep : m_sdtypes) {
+            if (!pubSdtypes.count(sdtypep)) sdtypep->classOrPackagep(nullptr);
         }
     }
 };
