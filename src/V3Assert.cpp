@@ -118,19 +118,21 @@ class AssertVisitor final : public VNVisitor {
         return newp;
     }
 
-    AstNode* newFireAssertUnchecked(AstNode* nodep, const string& message) {
+    AstNode* newFireAssertUnchecked(AstNode* nodep, const string& message,
+                                    AstNodeExpr* exprsp = nullptr) {
         // Like newFireAssert() but omits the asserts-on check
         AstDisplay* const dispp
             = new AstDisplay{nodep->fileline(), VDisplayType::DT_ERROR, message, nullptr, nullptr};
         dispp->fmtp()->timeunit(m_modp->timeunit());
         AstNode* const bodysp = dispp;
         replaceDisplay(dispp, "%%Error");  // Convert to standard DISPLAY format
+        if (exprsp) dispp->fmtp()->exprsp()->addNext(exprsp);
         bodysp->addNext(new AstStop{nodep->fileline(), true});
         return bodysp;
     }
 
-    AstNode* newFireAssert(AstNode* nodep, const string& message) {
-        AstNode* bodysp = newFireAssertUnchecked(nodep, message);
+    AstNode* newFireAssert(AstNode* nodep, const string& message, AstNodeExpr* exprsp = nullptr) {
+        AstNode* bodysp = newFireAssertUnchecked(nodep, message, exprsp);
         bodysp = newIfAssertOn(bodysp, false);
         return bodysp;
     }
