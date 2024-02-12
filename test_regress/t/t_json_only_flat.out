@@ -131,7 +131,7 @@
           {"type":"VARREF","name":"t.between","addr":"(ZC)","loc":"d,17:22,17:29","dtypep":"(H)","access":"RD","varp":"(O)","varScopep":"(HB)","classOrPackagep":"UNLINKED"}
         ],
          "lhsp": [
-          {"type":"VARREF","name":"q","addr":"(AD)","loc":"d,15:22,15:23","dtypep":"(H)","access":"WR","varp":"(G)","varScopep":"(BB)","classOrPackagep":"UNLINKED"}
+          {"type":"VARREF","name":"q","addr":"(AD)","loc":"d,53:13,53:14","dtypep":"(H)","access":"WR","varp":"(G)","varScopep":"(BB)","classOrPackagep":"UNLINKED"}
         ],"timingControlp": [],"strengthSpecp": []}
       ]}
     ]}

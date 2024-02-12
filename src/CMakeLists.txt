@@ -219,6 +219,7 @@ set(COMMON_SOURCES
     V3DfgOptimizer.cpp
     V3DfgPasses.cpp
     V3DfgPeephole.cpp
+    V3DfgRegularize.cpp
     V3DupFinder.cpp
     V3Timing.cpp
     V3EmitCBase.cpp

@@ -51,7 +51,7 @@
       <var loc="d,50,22,50,23" name="q" dtype_id="1" dir="output" pinIndex="3" vartype="logic" origName="q"/>
       <contassign loc="d,53,13,53,14" dtype_id="1">
         <varref loc="d,49,16,49,17" name="d" dtype_id="1"/>
-        <varref loc="d,50,22,50,23" name="q" dtype_id="1"/>
+        <varref loc="d,53,13,53,14" name="q" dtype_id="1"/>
       </contassign>
     </module>
     <module loc="d,31,8,31,12" name="mod1__W4" origName="mod1">

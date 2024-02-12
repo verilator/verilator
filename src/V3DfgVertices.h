@@ -40,6 +40,7 @@
 
 class DfgVertexVar VL_NOT_FINAL : public DfgVertexVariadic {
     AstVar* const m_varp;  // The AstVar associated with this vertex (not owned by this vertex)
+    bool m_hasDfgRefs = false;  // This AstVar is referenced in a different DFG of the module
     bool m_hasModRefs = false;  // This AstVar is referenced outside the DFG, but in the module
     bool m_hasExtRefs = false;  // This AstVar is referenced from outside the module
 
@@ -62,11 +63,13 @@ public:
     bool isDrivenByDfg() const { return arity() > 0; }
 
     AstVar* varp() const { return m_varp; }
+    bool hasDfgRefs() const { return m_hasDfgRefs; }
+    void setHasDfgRefs() { m_hasDfgRefs = true; }
     bool hasModRefs() const { return m_hasModRefs; }
     void setHasModRefs() { m_hasModRefs = true; }
     bool hasExtRefs() const { return m_hasExtRefs; }
     void setHasExtRefs() { m_hasExtRefs = true; }
-    bool hasRefs() const { return m_hasModRefs || m_hasExtRefs; }
+    bool hasNonLocalRefs() const { return hasDfgRefs() || hasModRefs() || hasExtRefs(); }
 
     // Variable cannot be removed, even if redundant in the DfgGraph (might be used externally)
     bool keep() const {
