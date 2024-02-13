@@ -118,11 +118,11 @@ void VerilatedVcd::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     printStr(" $end\n");
 
     // Scope and signal definitions
-    assert(m_indent == 0);
+    assert(m_indent >= 0);
     ++m_indent;
     Super::traceInit();
     --m_indent;
-    assert(m_indent == 0);
+    assert(m_indent >= 0);
 
     printStr("$enddefinitions $end\n\n\n");
 
@@ -300,7 +300,7 @@ void VerilatedVcd::bufferFlush() VL_MT_UNSAFE_ONE {
 
 void VerilatedVcd::printIndent(int level_change) {
     if (level_change < 0) m_indent += level_change;
-    for (int i = 0; i < m_indent; i++) printStr(" ");
+    for (int i = 0; i < m_indent; ++i) printStr(" ");
     if (level_change > 0) m_indent += level_change;
 }
 

@@ -50,7 +50,7 @@ private:
     bool m_isOpen = false;  // True indicates open file
     std::string m_filename;  // Filename we're writing to (if open)
     uint64_t m_rolloverSize = 0;  // File size to rollover at
-    unsigned m_indent = 0;  // Indentation depth
+    int m_indent = 0;  // Indentation depth
 
     char* m_wrBufp;  // Output buffer
     char* m_wrFlushp;  // Output buffer flush trigger location
