@@ -118,19 +118,21 @@ class AssertVisitor final : public VNVisitor {
         return newp;
     }
 
-    AstNode* newFireAssertUnchecked(AstNode* nodep, const string& message) {
+    AstNode* newFireAssertUnchecked(AstNode* nodep, const string& message,
+                                    AstNodeExpr* exprsp = nullptr) {
         // Like newFireAssert() but omits the asserts-on check
         AstDisplay* const dispp
             = new AstDisplay{nodep->fileline(), VDisplayType::DT_ERROR, message, nullptr, nullptr};
         dispp->fmtp()->timeunit(m_modp->timeunit());
         AstNode* const bodysp = dispp;
         replaceDisplay(dispp, "%%Error");  // Convert to standard DISPLAY format
+        if (exprsp) dispp->fmtp()->exprsp()->addNext(exprsp);
         bodysp->addNext(new AstStop{nodep->fileline(), true});
         return bodysp;
     }
 
-    AstNode* newFireAssert(AstNode* nodep, const string& message) {
-        AstNode* bodysp = newFireAssertUnchecked(nodep, message);
+    AstNode* newFireAssert(AstNode* nodep, const string& message, AstNodeExpr* exprsp = nullptr) {
+        AstNode* bodysp = newFireAssertUnchecked(nodep, message, exprsp);
         bodysp = newIfAssertOn(bodysp, false);
         return bodysp;
     }
@@ -328,20 +330,32 @@ class AssertVisitor final : public VNVisitor {
                     }
                     // Empty case means no property
                     if (!propp) propp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
-
                     const bool allow_none = has_default || nodep->unique0Pragma();
-                    AstNodeExpr* const ohot
-                        = (allow_none ? static_cast<AstNodeExpr*>(
-                               new AstOneHot0{nodep->fileline(), propp})
-                                      : static_cast<AstNodeExpr*>(
-                                          new AstOneHot{nodep->fileline(), propp}));
-                    AstIf* const ifp = new AstIf{
-                        nodep->fileline(), new AstLogNot{nodep->fileline(), ohot},
-                        newFireAssert(nodep,
-                                      "synthesis parallel_case, but multiple matches found")};
-                    ifp->isBoundsCheck(true);  // To avoid LATCH warning
-                    ifp->branchPred(VBranchPred::BP_UNLIKELY);
-                    nodep->addNotParallelp(ifp);
+                    // The following assertion lools as below.
+                    // if (!$onehot(propp)) begin
+                    //     if (propp == '0) begin if (!allow_none) $error("none match"); end
+                    //     else $error("multiple match");
+                    // end
+                    AstNodeExpr* const ohot = new AstOneHot{nodep->fileline(), propp};
+                    AstIf* const ohotIfp
+                        = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), ohot}};
+                    AstIf* const zeroIfp
+                        = new AstIf{nodep->fileline(),
+                                    new AstLogNot{nodep->fileline(), propp->cloneTreePure(false)}};
+                    AstNodeExpr* const exprp = nodep->exprp();
+                    const string pragmaStr = nodep->pragmaString();
+                    const string valFmt = "'" + cvtToStr(exprp->dtypep()->widthMin()) + "'h%X'";
+                    if (!allow_none)
+                        zeroIfp->addThensp(
+                            newFireAssert(nodep, pragmaStr + ", but none matched for " + valFmt,
+                                          exprp->cloneTreePure(false)));
+                    zeroIfp->addElsesp(newFireAssert(
+                        nodep, pragmaStr + ", but multiple matches found for " + valFmt,
+                        exprp->cloneTreePure(false)));
+                    ohotIfp->addThensp(zeroIfp);
+                    ohotIfp->isBoundsCheck(true);  // To avoid LATCH warning
+                    ohotIfp->branchPred(VBranchPred::BP_UNLIKELY);
+                    nodep->addNotParallelp(ohotIfp);
                 }
             }
         }
