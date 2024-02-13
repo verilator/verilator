@@ -19,7 +19,6 @@
 
 // clang-format off
 
-#include <optional>
 #ifndef VL_CPPCHECK
 #if !defined(VL_SUB_T) || !defined(VL_BUF_T)
 # error "This file should be included in trace format implementations"
@@ -249,7 +248,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::shutdownOffloadWorker() {
     waitForOffloadBuffer(bufferp);
     // Join the thread and delete it
     m_workerThread->join();
-    m_workerThread = std::nullopt;
+    m_workerThread.reset(nullptr);
 }
 
 //=============================================================================
@@ -370,8 +369,8 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
         m_offloadBufferSize = nextCode() + numSignals() * 2 + 4;
 
         // Start the worker thread
-        m_workerThread
-            = std::thread{&VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain, this};
+        m_workerThread.reset(
+            new std::thread{&VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain, this});
     }
 }
 
