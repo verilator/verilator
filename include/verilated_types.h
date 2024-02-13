@@ -107,7 +107,7 @@ constexpr IData VL_CLOG2_CE_Q(QData lhs) VL_PURE {
 // Metadata of processes
 class VlProcess;
 
-using VlProcessRef = std::shared_ptr<VlProcess>;
+using VlProcessRef = VlProcess*;
 
 class VlProcess final {
     // MEMBERS

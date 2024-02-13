@@ -380,7 +380,7 @@ class VlForkSync final {
     };
 
     // The join info is shared among all forked processes
-    std::shared_ptr<VlJoin> m_join;
+    VlJoin m_join;
 
 public:
     // Create the join object and set the counter to the specified number
@@ -395,7 +395,7 @@ public:
             VL_DBG_MSGF("             Awaiting join of fork at: %s:%d\n", filename, lineno););
         struct Awaitable final {
             VlProcessRef process;  // Data of the suspended process, null if not needed
-            const std::shared_ptr<VlJoin> join;  // Join to await on
+            VlJoin join;  // Join to await on
             VlFileLineDebug fileline;
 
             bool await_ready() { return join->m_counter == 0; }  // Suspend if join still exists

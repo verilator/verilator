@@ -62,8 +62,8 @@ std::ostream& operator<<(std::ostream& os, VNType rhs);
 //######################################################################
 // VSelfPointerText
 
-const std::shared_ptr<const string> VSelfPointerText::s_emptyp = std::make_shared<string>("");
-const std::shared_ptr<const string> VSelfPointerText::s_thisp = std::make_shared<string>("this");
+const string VSelfPointerText::s_emptyp = "";
+const string VSelfPointerText::s_thisp = "this";
 
 string VSelfPointerText::protect(bool useSelfForThis, bool protect) const {
     const string& sp
