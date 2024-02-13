@@ -204,10 +204,13 @@ sub aslr_off {
 
 sub ulimit_stack_unlimited {
     return "" if !$opt_unlimited_stack;
-    system("ulimit -s unlimited 2>/dev/null");
+    # Beware that with pthreads, ulimit -s unlimited only applies to the
+    # main thread, while additional threads would have default stack size.
+    my $limit = 32*1024*1024;  # 32GiB (units in 1KiB)
+    system("ulimit -s $limit 2>/dev/null");
     my $status = $?;
     if ($status == 0) {
-        return "ulimit -s unlimited 2>/dev/null; exec ";
+        return "ulimit -s $limit 2>/dev/null; exec ";
     } else {
         return "";
     }
