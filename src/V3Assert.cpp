@@ -344,7 +344,7 @@ class AssertVisitor final : public VNVisitor {
                                     new AstLogNot{nodep->fileline(), propp->cloneTreePure(false)}};
                     AstNodeExpr* const exprp = nodep->exprp();
                     const string pragmaStr = nodep->pragmaString();
-                    const string valFmt = cvtToStr(exprp->dtypep()->widthMin()) + "'h%X";
+                    const string valFmt = "'" + cvtToStr(exprp->dtypep()->widthMin()) + "'h%X'";
                     if (!allow_none)
                         zeroIfp->addThensp(
                             newFireAssert(nodep, pragmaStr + ", but none matched for " + valFmt,
