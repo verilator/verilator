@@ -36,6 +36,7 @@
 
 #include <deque>
 #include <thread>
+#include <optional>
 
 // clang-format on
 
@@ -317,7 +318,7 @@ protected:
 
 private:
     // The offload worker thread itself
-    std::unique_ptr<std::thread> m_workerThread;
+    std::optional<std::thread> m_workerThread;
 
     // Get a new offload buffer that can be populated. May block if none available
     uint32_t* getOffloadBuffer();
