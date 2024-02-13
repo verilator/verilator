@@ -2733,6 +2733,22 @@ AstAlways* AstAssignW::convertToAlways() {
     return newp;
 }
 
+string AstCase::pragmaString() const {
+    if (fullPragma() && parallelPragma())
+        return "synthesis full_case parallel_case";
+    else if (fullPragma())
+        return "synthesis full_case";
+    else if (parallelPragma())
+        return "synthesis parallel_case";
+    else if (uniquePragma())
+        return "unique case";
+    else if (unique0Pragma())
+        return "unique0 case";
+    else if (priorityPragma())
+        return "priority case";
+    return "";
+}
+
 void AstDelay::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     if (isCycleDelay()) str << " [CYCLE]";

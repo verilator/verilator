@@ -330,9 +330,6 @@ class AssertVisitor final : public VNVisitor {
                     }
                     // Empty case means no property
                     if (!propp) propp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
-                    const string caseTypeStr = nodep->parallelPragma() ? "synthesis parallel_case"
-                                               : nodep->uniquePragma() ? "unique case"
-                                                                       : "unique0 case";
                     const bool allow_none = has_default || nodep->unique0Pragma();
                     // The following assertion lools as below.
                     // if (!$onehot(propp)) begin
@@ -346,13 +343,14 @@ class AssertVisitor final : public VNVisitor {
                         = new AstIf{nodep->fileline(),
                                     new AstLogNot{nodep->fileline(), propp->cloneTreePure(false)}};
                     AstNodeExpr* const exprp = nodep->exprp();
+                    const string pragmaStr = nodep->pragmaString();
                     const string valFmt = cvtToStr(exprp->dtypep()->widthMin()) + "'h%X";
                     if (!allow_none)
                         zeroIfp->addThensp(
-                            newFireAssert(nodep, caseTypeStr + ", but none matched for " + valFmt,
+                            newFireAssert(nodep, pragmaStr + ", but none matched for " + valFmt,
                                           exprp->cloneTreePure(false)));
                     zeroIfp->addElsesp(newFireAssert(
-                        nodep, caseTypeStr + ", but multiple matches found for " + valFmt,
+                        nodep, pragmaStr + ", but multiple matches found for " + valFmt,
                         exprp->cloneTreePure(false)));
                     ohotIfp->addThensp(zeroIfp);
                     ohotIfp->isBoundsCheck(true);  // To avoid LATCH warning

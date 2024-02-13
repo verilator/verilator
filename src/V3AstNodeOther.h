@@ -3560,6 +3560,7 @@ public:
     void unique0Pragma(bool flag) { m_unique0Pragma = flag; }
     bool priorityPragma() const { return m_priorityPragma; }
     void priorityPragma(bool flag) { m_priorityPragma = flag; }
+    string pragmaString() const;
 };
 class AstGenCase final : public AstNodeCase {
     // Generate Case statement
