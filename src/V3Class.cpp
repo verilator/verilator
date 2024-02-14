@@ -274,11 +274,12 @@ public:
         while (!m_pubSdtypes.empty()) {
             AstNodeUOrStructDType* dtypep = m_pubSdtypes.front();
             m_pubSdtypes.pop();
-            pubSdtypes.insert(dtypep);
-            for (const AstMemberDType* itemp = dtypep->membersp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
-                AstNodeUOrStructDType* const subp = itemp->getChildStructp();
-                if (subp) m_pubSdtypes.push(subp);
+            if (pubSdtypes.insert(dtypep).second) {
+                for (const AstMemberDType* itemp = dtypep->membersp(); itemp;
+                     itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                    AstNodeUOrStructDType* const subp = itemp->getChildStructp();
+                    if (subp) m_pubSdtypes.push(subp);
+                }
             }
         }
         for (AstTypedef* typedefp : m_Typedefps) {

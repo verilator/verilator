@@ -365,7 +365,7 @@ class EmitCHeader final : public EmitCConstInit {
 
         // Emit `set` member function
         setFuncName = hasSetField ? m_names.get("set") : "set";
-        puts("void " + setFuncName + "(" + retArgType + " " + retArgName + ") {\n");
+        puts("void " + setFuncName + "(const " + retArgType + "& " + retArgName + ") {\n");
         if (VN_IS(sdtypep, StructDType)) {
             for (itemp = lastItemp; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
                 emitPackedMember(itemp->dtypep(), itemp->nameProtect(),

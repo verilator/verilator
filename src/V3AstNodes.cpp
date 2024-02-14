@@ -1765,7 +1765,8 @@ AstNodeUOrStructDType* AstMemberDType::getChildStructp() const {
     while (AstNodeArrayDType* const asubdtp = VN_CAST(subdtp, NodeArrayDType)) {
         subdtp = asubdtp->subDTypep();
     }
-    return VN_CAST(subdtp, NodeUOrStructDType);  // Maybe nullptr
+    // It's possible that `subdtp` is still a ref type, so skip it.
+    return VN_CAST(subdtp->skipRefp(), NodeUOrStructDType);  // Maybe nullptr
 }
 
 bool AstMemberSel::same(const AstNode* samep) const {
