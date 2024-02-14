@@ -96,11 +96,6 @@ public:
 class VlCoroutineHandle final {
     VL_UNCOPYABLE(VlCoroutineHandle);
 
-    VlCoroutineHandle(VlCoroutineHandle&& other)
-        : m_coro(std::move(other.m_coro))
-        , m_process(std::move(other.m_process))
-        , m_fileline(other.m_fileline) {}
-
     // MEMBERS
     std::coroutine_handle<> m_coro;  // The wrapped coroutine handle
     VlProcessRef m_process;  // Data of the suspended process, null if not needed
@@ -382,38 +377,30 @@ class VlForkSync final {
     struct VlJoin final {
         size_t m_counter = 0;  // When reaches 0, resume suspended coroutine
         VlCoroutineHandle m_susp;  // Coroutine to resume
-
-        VlJoin(VlJoin& other)
-            : m_counter(other.m_counter)
-            , m_susp(std::move(other.m_susp)) {}
-
-        VlJoin(size_t counter, VlCoroutineHandle handle)
-            : m_counter(counter)
-            , m_susp(std::move(handle)) {}
     };
 
     // The join info is shared among all forked processes
-    VlJoin m_join;
+    std::shared_ptr<VlJoin> m_join;
 
 public:
     // Create the join object and set the counter to the specified number
-    void init(size_t count, VlProcessRef process) { m_join = VlJoin(count, {process}); }
+    void init(size_t count, VlProcessRef process) { m_join.reset(new VlJoin{count, {process}}); }
     // Called whenever any of the forked processes finishes. If the join counter reaches 0, the
     // main process gets resumed
     void done(const char* filename = VL_UNKNOWN, int lineno = 0);
     // Used by coroutines for co_awaiting a join
     auto join(VlProcessRef process, const char* filename = VL_UNKNOWN, int lineno = 0) {
-        //assert(m_join);
+        assert(m_join);
         VL_DEBUG_IF(
             VL_DBG_MSGF("             Awaiting join of fork at: %s:%d\n", filename, lineno););
         struct Awaitable final {
             VlProcessRef process;  // Data of the suspended process, null if not needed
-            VlJoin join;  // Join to await on
+            const std::shared_ptr<VlJoin> join;  // Join to await on
             VlFileLineDebug fileline;
 
-            bool await_ready() { return join.m_counter == 0; }  // Suspend if join still exists
+            bool await_ready() { return join->m_counter == 0; }  // Suspend if join still exists
             void await_suspend(std::coroutine_handle<> coro) {
-                join.m_susp = {coro, process, fileline};
+                join->m_susp = {coro, process, fileline};
             }
             void await_resume() const {}
         };
