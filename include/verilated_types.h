@@ -225,7 +225,7 @@ public:
     virtual void clearTriggered() = 0;
 };
 
-class VlEvent final : public VlEventBase {
+class VlEvent : public VlEventBase {
     // MEMBERS
 private:
     bool m_fired = false;  // Fired on this scheduling iteration
@@ -246,10 +246,7 @@ public:
     void clearTriggered() override { m_triggered = false; }
 };
 
-class VlAssignableEvent final : public VlEventBase {
-private:
-    bool m_fired = false;  // Fired on this scheduling iteration
-    bool m_triggered = false;  // Triggered state of event persisting until next time step
+class VlAssignableEvent final : public VlEvent {
 public:
     // Constructor
     VlAssignableEvent() {}
