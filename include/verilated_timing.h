@@ -384,13 +384,13 @@ class VlForkSync final {
 
 public:
     // Create the join object and set the counter to the specified number
-    void init(size_t count, VlProcessRef process) { m_join.reset(new VlJoin{count, {process}}); }
+    void init(size_t count, VlProcessRef process) { m_join = VlJoin{count, {process}}; }
     // Called whenever any of the forked processes finishes. If the join counter reaches 0, the
     // main process gets resumed
     void done(const char* filename = VL_UNKNOWN, int lineno = 0);
     // Used by coroutines for co_awaiting a join
     auto join(VlProcessRef process, const char* filename = VL_UNKNOWN, int lineno = 0) {
-        assert(m_join);
+        //assert(m_join);
         VL_DEBUG_IF(
             VL_DBG_MSGF("             Awaiting join of fork at: %s:%d\n", filename, lineno););
         struct Awaitable final {
@@ -398,9 +398,9 @@ public:
             VlJoin join;  // Join to await on
             VlFileLineDebug fileline;
 
-            bool await_ready() { return join->m_counter == 0; }  // Suspend if join still exists
+            bool await_ready() { return join.m_counter == 0; }  // Suspend if join still exists
             void await_suspend(std::coroutine_handle<> coro) {
-                join->m_susp = {coro, process, fileline};
+                join.m_susp = {coro, process, fileline};
             }
             void await_resume() const {}
         };
