@@ -227,6 +227,7 @@ public:
 
 class VlEvent final : public VlEventBase {
     // MEMBERS
+private:
     bool m_fired = false;  // Fired on this scheduling iteration
     bool m_triggered = false;  // Triggered state of event persisting until next time step
 
@@ -245,19 +246,21 @@ public:
     void clearTriggered() override { m_triggered = false; }
 };
 
-class VlAssignableEvent final : public std::shared_ptr<VlEvent>, public VlEventBase {
+class VlAssignableEvent final : public VlEventBase {
+private:
+    bool m_fired = false;  // Fired on this scheduling iteration
+    bool m_triggered = false;  // Triggered state of event persisting until next time step
 public:
     // Constructor
-    VlAssignableEvent()
-        : std::shared_ptr<VlEvent>(new VlEvent) {}
+    VlAssignableEvent() {}
     ~VlAssignableEvent() override = default;
 
     // METHODS
-    void fire() override { (*this)->m_fired = (*this)->m_triggered = true; }
-    bool isFired() const override { return (*this)->m_fired; }
-    bool isTriggered() const override { return (*this)->m_triggered; }
-    void clearFired() override { (*this)->m_fired = false; }
-    void clearTriggered() override { (*this)->m_triggered = false; }
+    void fire() override { (*this).m_fired = (*this).m_triggered = true; }
+    bool isFired() const override { return (*this).m_fired; }
+    bool isTriggered() const override { return (*this).m_triggered; }
+    void clearFired() override { (*this).m_fired = false; }
+    void clearTriggered() override { (*this).m_triggered = false; }
 };
 
 inline std::string VL_TO_STRING(const VlEventBase& e);
@@ -267,12 +270,12 @@ inline std::string VL_TO_STRING(const VlEvent& e) {
 }
 
 inline std::string VL_TO_STRING(const VlAssignableEvent& e) {
-    return "&{ " + VL_TO_STRING(*e) + " }";
+    return "&{ " + VL_TO_STRING(e) + " }";
 }
 
 inline std::string VL_TO_STRING(const VlEventBase& e) {
-    if (const VlAssignableEvent& assignable = dynamic_cast<const VlAssignableEvent&>(e)) {
-        return VL_TO_STRING(assignable);
+    if (const VlAssignableEvent* assignable = &dynamic_cast<const VlAssignableEvent&>(e)) {
+        return VL_TO_STRING(*assignable);
     }
     return "triggered="s + (e.isTriggered() ? "true" : "false");
 }
