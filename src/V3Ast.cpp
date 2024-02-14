@@ -62,8 +62,8 @@ std::ostream& operator<<(std::ostream& os, VNType rhs);
 //######################################################################
 // VSelfPointerText
 
-const string VSelfPointerText::s_emptyp = "";
-const string VSelfPointerText::s_thisp = "this";
+const string VSelfPointerText::s_empty = "";
+const string VSelfPointerText::s_this = "this";
 
 string VSelfPointerText::protect(bool useSelfForThis, bool protect) const {
     const string& sp

@@ -1467,33 +1467,33 @@ public:
 class VSelfPointerText final {
     // STATIC MEMBERS
     // Keep these in shared pointers to avoid branching for special cases
-    static const string s_emptyp;  // Holds ""
-    static const string s_thisp;  // Holds "this"
+    static const string s_empty;  // Holds ""
+    static const string s_this;  // Holds "this"
 
     // MEMBERS
-    string m_strp;
+    string m_str;
 
 public:
     // CONSTRUCTORS
     class Empty {};  // for creator type-overload selection
     explicit VSelfPointerText(Empty)
-        : m_strp{s_emptyp} {}
+        : m_str{s_empty} {}
     class This {};  // for creator type-overload selection
     explicit VSelfPointerText(This)
-        : m_strp{s_thisp} {}
+        : m_str{s_this} {}
     VSelfPointerText(This, const string& field)
-        : m_strp("this->" + field) {}
+        : m_str("this->" + field) {}
     class VlSyms {};  // for creator type-overload selection
     VSelfPointerText(VlSyms, const string& field)
-        : m_strp("(&vlSymsp->" + field + ')') {}
+        : m_str("(&vlSymsp->" + field + ')') {}
 
     // METHODS
-    bool isEmpty() const { return m_strp == s_emptyp; }
-    bool isVlSym() const { return m_strp.find("vlSymsp") != string::npos; }
-    bool hasThis() const { return m_strp == s_thisp || VString::startsWith(m_strp, "this"); }
+    bool isEmpty() const { return m_str == s_empty; }
+    bool isVlSym() const { return m_str.find("vlSymsp") != string::npos; }
+    bool hasThis() const { return m_str == s_this || VString::startsWith(m_str, "this"); }
     string protect(bool useSelfForThis, bool protect) const;
-    const std::string& asString() const { return m_strp; }
-    bool operator==(const VSelfPointerText& other) const { return m_strp == other.m_strp; }
+    const std::string& asString() const { return m_str; }
+    bool operator==(const VSelfPointerText& other) const { return m_str == other.m_str; }
 };
 
 //######################################################################
@@ -2493,11 +2493,11 @@ public:
         foreachImpl<const T_Node>(this, f, /* visitNext: */ true);
     }
 
-    // Given a predicate 'p' that takes a single argument of some AstNode subtype 'T_Node',
-    // return true if and only if there exists a node of type 'T_Node' in the tree rooted at
-    // this node, that satisfies the predicate 'p'. Returns false if no node of type 'T_Node'
-    // is present. Traversal is performed in some arbitrary order and is terminated as soon as
-    // the result can be determined.
+    // Given a predicate 'p' that takes a single argument of some AstNode subtype 'T_Node', return
+    // true if and only if there exists a node of type 'T_Node' in the tree rooted at this node,
+    // that satisfies the predicate 'p'. Returns false if no node of type 'T_Node' is present.
+    // Traversal is performed in some arbitrary order and is terminated as soon as the result can
+    // be determined.
     template <typename Callable>
     bool exists(Callable&& p) {
         using T_Node = typename Arg0NoPointerNoCV<Callable>::type;
