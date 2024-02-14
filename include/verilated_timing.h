@@ -382,10 +382,6 @@ class VlForkSync final {
             : m_counter(other.m_counter)
             , m_susp(std::move(other.m_susp)) {}
 
-        VlJoin(VlJoin&& other) noexcept
-            : m_counter(other.m_counter)
-            , m_susp(std::move(other.m_susp)) {}
-
         VlJoin(size_t counter, VlCoroutineHandle handle)
             : m_counter(counter)
             , m_susp(std::move(handle)) {}
