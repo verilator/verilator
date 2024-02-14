@@ -96,6 +96,11 @@ public:
 class VlCoroutineHandle final {
     VL_UNCOPYABLE(VlCoroutineHandle);
 
+    VlCoroutineHandle(VlCoroutineHandle&& other)
+        : m_coro(std::move(other.m_coro))
+        , m_process(std::move(other.m_process))
+        , m_fileline(other.m_fileline) {}
+
     // MEMBERS
     std::coroutine_handle<> m_coro;  // The wrapped coroutine handle
     VlProcessRef m_process;  // Data of the suspended process, null if not needed
@@ -392,9 +397,7 @@ class VlForkSync final {
 
 public:
     // Create the join object and set the counter to the specified number
-    void init(size_t count, VlProcessRef process) {
-        m_join = VlJoin(count, VlCoroutineHandle{{}, process, {}});
-    }
+    void init(size_t count, VlProcessRef process) { m_join = VlJoin(count, {process}); }
     // Called whenever any of the forked processes finishes. If the join counter reaches 0, the
     // main process gets resumed
     void done(const char* filename = VL_UNKNOWN, int lineno = 0);
