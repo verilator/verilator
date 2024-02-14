@@ -377,6 +377,20 @@ class VlForkSync final {
     struct VlJoin final {
         size_t m_counter = 0;  // When reaches 0, resume suspended coroutine
         VlCoroutineHandle m_susp;  // Coroutine to resume
+
+        VlJoin(VlJoin& other) {
+            m_counter = other.m_counter;
+            m_susp = std::move(other.m_susp);
+        }
+
+        VlJoin(VlJoin&& other) {
+            m_counter = std::move(other.m_counter);
+            m_susp = std::move(other.m_susp);
+        }
+
+        VlJoin(size_t counter, VlCoroutineHandle handle)
+            : m_counter(counter)
+            , m_susp(std::move(handle)) {}
     };
 
     // The join info is shared among all forked processes
