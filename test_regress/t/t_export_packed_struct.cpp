@@ -60,30 +60,30 @@ int main(int argc, char** argv) {
     {
         IN_T in1, in2;
         OUT_T out;
-        in1.__PVT__a = 0x12345678;  // 0b0001_0010_0011_0100_0101_0110_0111_1000
-        in1.__PVT__b[0] = 0x1;  // 0b000001
-        in1.__PVT__b[1] = 0x2;  // 0b000010
-        in1.__PVT__b[2] = 0x3;  // 0b000011
-        in1.__PVT__b[3] = 0x4;  // 0b000100
-        in1.__PVT__c.__PVT__a = 0x5;  // 0b000101
-        in2.__PVT__a = 0x11111111;
-        in2.__PVT__b[0] = 0x10;
-        in2.__PVT__b[1] = 0x20;
-        in2.__PVT__b[2] = 0x30;
-        in2.__PVT__b[3] = 0x30;
-        in2.__PVT__c.__PVT__a = 0x20;
+        in1.a = 0x12345678;
+        in1.__SYM__nullptr[0] = 0x1;
+        in1.__SYM__nullptr[1] = 0x2;
+        in1.__SYM__nullptr[2] = 0x3;
+        in1.__SYM__nullptr[3] = 0x4;
+        in1.get__0.a = 0x5;
+        in2.a = 0x11111111;
+        in2.__SYM__nullptr[0] = 0x10;
+        in2.__SYM__nullptr[1] = 0x20;
+        in2.__SYM__nullptr[2] = 0x30;
+        in2.__SYM__nullptr[3] = 0x30;
+        in2.get__0.a = 0x20;
 
         adder->op1 = in1.get();
         adder->op2 = in2.get();
         adder->eval();
         out.set(adder->out);
 
-        TEST_CHECK_EQ(out.__PVT__b[0], 0x11);
-        TEST_CHECK_EQ(out.__PVT__b[1], 0x22);
-        TEST_CHECK_EQ(out.__PVT__b[2], 0x33);
-        TEST_CHECK_EQ(out.__PVT__b[3], 0x34);
-        TEST_CHECK_EQ(out.__PVT__c.__PVT__a, 0x25);
-        TEST_CHECK_EQ(out.__PVT__a, 0x23456789);
+        TEST_CHECK_EQ(out.__SYM__nullptr[0], 0x11);
+        TEST_CHECK_EQ(out.__SYM__nullptr[1], 0x22);
+        TEST_CHECK_EQ(out.__SYM__nullptr[2], 0x33);
+        TEST_CHECK_EQ(out.__SYM__nullptr[3], 0x34);
+        TEST_CHECK_EQ(out.get__0.a, 0x25);
+        TEST_CHECK_EQ(out.a, 0x23456789);
     }
 
     printf("*-* All Finished *-*\n");

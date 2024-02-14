@@ -13,13 +13,13 @@ typedef union packed {
 
 typedef struct packed {
   logic [40:0]   a;
-  udata6_t [3:0] b;
-  sub_t          c;
+  udata6_t [3:0] nullptr;  // name confict test
+  sub_t          get;      // name confict test
 } in_t  /*verilator public*/;
 
 typedef struct packed {
-  udata6_t [3:0] b;
-  sub_t          c;
+  udata6_t [3:0] nullptr;
+  sub_t          get;
   logic [40:0]   a;
 } out_t  /*verilator public*/;
 
@@ -31,9 +31,9 @@ module add (
   assign out.a = op1.a + op2.a;
   generate
     for (genvar i = 0; i < 4; ++i) begin
-      assign out.b[i] = op1.b[i] + op2.b[i];
+      assign out.nullptr[i] = op1.nullptr[i] + op2.nullptr[i];
     end
   endgenerate
-  assign out.c.a = op1.c.a + op2.c.a;
+  assign out.get.a = op1.get.a + op2.get.a;
 
 endmodule

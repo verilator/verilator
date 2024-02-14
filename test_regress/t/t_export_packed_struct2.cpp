@@ -78,8 +78,8 @@ int main(int argc, char** argv) {
         for (int i = 0; i < 3; ++i)
             for (int j = 0; j < 3; ++j)
                 for (int k = 0; k < 3; ++k)
-                    VL_SET_WQ(in.__PVT__b[i][j][k].__PVT__a, 0x1234123412341234UL);
-        in.__PVT__anon.__PVT__a = 0x1;
+                    VL_SET_WQ(in.b[i][j][k].a, 0x1234123412341234UL);
+        in.anon.a = 0x1;
 
         adder->op1 = in.get();
         adder->eval();
@@ -90,18 +90,18 @@ int main(int argc, char** argv) {
         for (int i = 0; i < 3; ++i)
             for (int j = 0; j < 3; ++j)
                 for (int k = 0; k < 3; ++k) {
-                    TEST_CHECK_EQ(tmp.__PVT__b[i][j][k].__PVT__a[0], 0x12341234);
-                    TEST_CHECK_EQ(tmp.__PVT__b[i][j][k].__PVT__a[1], 0x12341234);
+                    TEST_CHECK_EQ(tmp.b[i][j][k].a[0], 0x12341234);
+                    TEST_CHECK_EQ(tmp.b[i][j][k].a[1], 0x12341234);
                 }
-        TEST_CHECK_EQ(tmp.__PVT__a, 0x1);
+        TEST_CHECK_EQ(tmp.a, 0x1);
 
         for (int i = 0; i < 3; ++i)
             for (int j = 0; j < 3; ++j)
                 for (int k = 0; k < 3; ++k) {
-                    TEST_CHECK_EQ(out.__PVT__b[i][j][k].__PVT__a[0], 0x24682468);
-                    TEST_CHECK_EQ(out.__PVT__b[i][j][k].__PVT__a[1], 0x24682468);
+                    TEST_CHECK_EQ(out.b[i][j][k].a[0], 0x24682468);
+                    TEST_CHECK_EQ(out.b[i][j][k].a[1], 0x24682468);
                 }
-        TEST_CHECK_EQ(out.__PVT__anon.__PVT__a, 0x0);
+        TEST_CHECK_EQ(out.anon.a, 0x0);
     }
 
     printf("*-* All Finished *-*\n");
