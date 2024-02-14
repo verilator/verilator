@@ -14,15 +14,17 @@ Verilator 5.021 devel
 **Minor:**
 
 * Add predicted stack overflow warning (#4799).
-* Add +verilator+coverage+file runtime option.
-* Add --runtime-debug for Verilated executable runtime debugging.
+* Add `+verilator+coverage+file` runtime option.
+* Add `--runtime-debug` for Verilated executable runtime debugging.
 * Add `--decorations node` for inserting debug comments into emitted code.
 * Add `unroll_disable` and `unroll_full` loop control metacomments (#3260). [Jiaxun Yang]
-* Add --json-only and related JSON dumping (#4715) (#4831). [Szymon Gizler, Antmicro Ltd.]
+* Add `--json-only` and related JSON dumping (#4715) (#4831). [Szymon Gizler, Antmicro Ltd.]
+* Add `--valgrind` switch (#4828). [Szymon Gizler]
 * Remove deprecated 32-bit pointer mode (`gcc -m32`).
 * Deprecate --xml-only and XML dumping (#4715) (#4831).
 * Change zero replication width error to ZEROREPL warning (#4753) (#4762). [Pengcheng Xu]
-* Support dumping coverage with --main.
+* Support dumping coverage with `--main`.
+* Support dumping DFG patterns with `--stats` (#4889). [Geza Lore]
 * Support `vpiConstType` in `vpi_get_str()` (#4797). [Marlon James]
 * Support SystemC 3.0.0 public review version (#4805) (#4807). [Anthony Donlon]
 * Support parsing anonymous primitive instantiations (#4809). [Anthony Donlon]
@@ -46,9 +48,14 @@ Verilator 5.021 devel
 * Fix NOT when checking EQ/NEQ under AND/OR tree (#4857) (#4863). [Yutetsu TAKATSUKASA]
 * Fix tracing chandles (#4860). [Nathan Graybeal]
 * Fix $fwrite of null (#4862). [Jose Tejada]
+* Fix -fno-const-bit-op-tree wrong runtime result (#4864) (#4867). [Yutetsu TAKATSUKASA]
+* Fix SystemC biguint sign desynchronization (#4870). [Bartłomiej Chmiel]
+* Fix incorrect temporary insertion in loop conditions with statements (#4873). [Geza Lore]
+* Fix timing with expr on assign LHS (#4880). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix assertion for unique case (#4892). [Yutetsu TAKATSUKASA]
 * Fix GCC tautological-compare warnings.
 * Fix compile error on structs with queues (and ignore toggle coverage on queues).
-* Fix toggle coverage dataDeclp error on multi-edge driven signals.
+* Fix toggle coverage error on multi-edge driven signals.
 
 
 Verilator 5.020 2024-01-01

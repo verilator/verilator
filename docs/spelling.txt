@@ -180,6 +180,7 @@ Jannis
 Jasen
 Jens
 Jeras
+Jiaxun
 Jiuyang
 Joannou
 Joly
@@ -519,6 +520,7 @@ buildenv
 bv
 bvs
 callValueCbs
+callgrind
 casex
 casez
 casted
@@ -583,6 +585,7 @@ der
 dereference
 desassign
 destructor
+desynchronization
 detections
 dev
 devcontainer
@@ -613,6 +616,7 @@ dut
 dx
 dynarray
 elab
+eliasphanna
 elike
 elsif
 endcase
@@ -733,6 +737,7 @@ ish
 isunbounded
 isunknown
 jobserver
+json
 jwoutersymatra
 killua
 lang
@@ -1020,6 +1025,7 @@ uselib
 utimes
 uwire
 uwires
+valgrind
 vc
 vcd
 vcddiff

@@ -23,12 +23,12 @@ resulting model's C++ or SystemC code is output as .cpp and .h files. This
 is referred to as "Verilating", and the process is "to Verilate"; the
 output is a "Verilated" model.
 
-2. For simulation, a small-user written C++ wrapper file is required, the
+2. For simulation, a small user-written C++ wrapper file is required, the
 "wrapper".  This wrapper defines the C++ standard function "main()", which
 instantiates the Verilated model as a C++/SystemC object.
 
 3. The user C++ wrapper, the files created by Verilator, a "runtime
-library" provided by Verilator, and, if applicable SystemC libraries are
+library" provided by Verilator, and, if applicable, SystemC libraries are
 then compiled using a C++ compiler to create a simulation executable.
 
 4. The resulting executable will perform the actual simulation during
