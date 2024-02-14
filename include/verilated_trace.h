@@ -36,7 +36,6 @@
 
 #include <deque>
 #include <thread>
-#include <optional>
 
 // clang-format on
 
