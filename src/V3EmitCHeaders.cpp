@@ -289,7 +289,7 @@ class EmitCHeader final : public EmitCConstInit {
                 puts("bitHelper(" + retOrArg + ", " + offset + ", " + suffixName + ", 0, "
                      + std::to_string(adtypep->width()) + ");\n");
             } else {  // Emit `set` func
-                std::string tmptype = adtypep->cTypeFromWidth();
+                std::string tmptype = AstCDType::typeToHold(adtypep->width());
                 // type tmp;
                 puts(tmptype + " " + tmp + ";\n");
                 // bitHelper(&__tmp, 0, &retOrArg, offset, width);
@@ -335,7 +335,7 @@ class EmitCHeader final : public EmitCConstInit {
         const std::string retArgName = m_names.get("__v");
         const std::string suffixName
             = sdtypep->isWide() ? retArgName + ".data()" : "&" + retArgName;
-        const std::string retArgType = sdtypep->cTypeFromWidth();
+        const std::string retArgType = AstCDType::typeToHold(sdtypep->width());
 
         // Emit `get` member function
         puts(retArgType + " get() const {\n");

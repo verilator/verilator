@@ -172,8 +172,11 @@ class RandomizeVisitor final : public VNVisitor {
     }
 
     AstCDType* findVlRandCDType(FileLine* fl, uint64_t items) {
+        int width = 0;
+        uint64_t tmp = items;
+        do { width++; } while (tmp >>= 1);
         // For 8 items we need to have a 9 item LFSR so items is max count
-        const std::string type = AstCDType::typeToHold(items);
+        const std::string type = AstCDType::typeToHold(width);
         const std::string name = "VlRandC<" + type + ", " + cvtToStr(items) + "ULL>";
         // Create or reuse (to avoid duplicates) randomization object dtype
         const auto pair = m_randcDtypes.emplace(name, nullptr);

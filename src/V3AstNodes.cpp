@@ -738,19 +738,6 @@ public:
     }
 };
 
-string AstNodeDType::cTypeFromWidth() const {
-    if (width() <= 8)
-        return "CData";
-    else if (width() <= 16)
-        return "SData";
-    else if (width() <= VL_IDATASIZE)
-        return "IData";
-    else if (isQuad())
-        return "QData";
-    else
-        return "VlWide<" + cvtToStr(widthWords()) + ">";
-}
-
 string AstNodeDType::cpackedType(const string& name) const {
     const CTypeRecursed info = cpackedTypeRecurse();
     return info.render(name, false);
@@ -770,7 +757,7 @@ AstNodeDType::CTypeRecursed AstNodeDType::cpackedTypeRecurse() const {
                     "Unsupported type in packed struct or union");
         const string bitvec
             = !v3Global.opt.protectIds() ? "/*" + cvtToStr(dtypep->width() - 1) + ":0*/" : "";
-        info.m_type = cTypeFromWidth() + bitvec;
+        info.m_type = AstCDType::typeToHold(width()) + bitvec;
     }
     return info;
 }
