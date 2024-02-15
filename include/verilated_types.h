@@ -229,17 +229,7 @@ public:
     virtual bool isTriggered() const = 0;
     virtual void clearFired() = 0;
     virtual void clearTriggered() = 0;
-    std::string toString() const {
-        std::string result = "triggered="s + (isTriggered() ? "true" : "false");
-        switch (eventType) {
-        case eBase: break;
-        case eAssignable: {
-            result = "&{  }";
-        } break;
-        case eAll: break;
-        }
-        return result;
-    }
+    std::string toString() const { return "triggered="s + (isTriggered() ? "true" : "false"); }
     friend std::string VL_TO_STRING(const VlEventBase* e);
 };
 
@@ -277,11 +267,18 @@ public:
     void clearTriggered() final { m_triggered = false; }
 };
 
+inline std::string VL_TO_STRING(const VlEventBase& e);
+
 inline std::string VL_TO_STRING(const VlEvent& e) { return e.toString(); }
 
-inline std::string VL_TO_STRING(const VlAssignableEvent& e) { return e.toString(); }
+inline std::string VL_TO_STRING(const VlAssignableEvent& e) { return "&{ " + e.toString() + " }"; }
 
-inline std::string VL_TO_STRING(const VlEventBase& e) { return e.toString(); }
+inline std::string VL_TO_STRING(const VlEventBase& e) {
+    if (const VlAssignableEvent* assignable = dynamic_cast<const VlAssignableEvent*>(&e)) {
+        return VL_TO_STRING(*assignable);
+    }
+    return "triggered="s + (e.isTriggered() ? "true" : "false");
+}
 
 //===================================================================
 // Random
