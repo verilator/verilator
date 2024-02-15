@@ -217,22 +217,27 @@ public:
 
 enum EventType {
     eAssignable,
+    eBase,
     eAll,
 };
 
-class VlEvent final {
+class VlEvent VL_NOT_FINAL {
 
     // MEMBERS
-private:
+protected:
     bool m_fired = false;  // Fired on this scheduling iteration
     bool m_triggered = false;  // Triggered state of event persisting until next time step
-    const EventType m_type = EventType::eAll;
+    EventType m_type = EventType::eBase;
     friend enum EventType;
+    friend class VlAssignableEvent;
 
 public:
     // CONSTRUCTOR
-    VlEvent(EventType type = EventType::eAll)
-        : m_type(type) {}
+    VlEvent() = default;
+    VlEvent(VlEvent& other)
+        : m_fired(other.m_fired)
+        , m_triggered(other.m_triggered)
+        , m_type(other.m_type) {}
     ~VlEvent() = default;
 
     // METHODS
@@ -245,6 +250,9 @@ public:
     std::string toString() const {
         std::string result;
         switch (m_type) {
+        case EventType::eBase: {
+            result = "triggered=" + std::string(isTriggered() ? "true" : "false");
+        } break;
         case EventType::eAssignable: {
             result = "triggered=" + std::string(isTriggered() ? "true" : "false");
         } break;
@@ -252,6 +260,13 @@ public:
         } break;
         }
         return result;
+    }
+};
+
+class VlAssignableEvent final : public VlEvent {
+    VlAssignableEvent()
+        : VlEvent() {
+        m_type = EventType::eAssignable;
     }
 };
 

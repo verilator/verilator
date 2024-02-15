@@ -460,7 +460,7 @@ void EmitCSyms::emitSymHdr() {
     }
     if (v3Global.hasEvents()) {
         if (v3Global.assignsEvents()) {
-            puts("std::vector<VlEvent> __Vm_triggeredEvents;\n");
+            puts("std::vector<VlAssignableEvent> __Vm_triggeredEvents;\n");
         } else {
             puts("std::vector<VlEvent*> __Vm_triggeredEvents;\n");
         }
@@ -534,7 +534,7 @@ void EmitCSyms::emitSymHdr() {
 
     if (v3Global.hasEvents()) {
         if (v3Global.assignsEvents()) {
-            puts("void enqueueTriggeredEventForClearing(VlEvent& event) {\n");
+            puts("void enqueueTriggeredEventForClearing(VlAssignableEvent& event) {\n");
         } else {
             puts("void enqueueTriggeredEventForClearing(VlEvent& event) {\n");
         }
