@@ -215,7 +215,12 @@ public:
 //===================================================================
 // SystemVerilog event type
 
+enum EventType { eBase, eAssignable, eAll };
+
 class VlEventBase VL_NOT_FINAL {
+protected:
+    EventType eventType = EventType::eBase;
+
 public:
     virtual ~VlEventBase() = default;
 
@@ -224,6 +229,18 @@ public:
     virtual bool isTriggered() const = 0;
     virtual void clearFired() = 0;
     virtual void clearTriggered() = 0;
+    std::string toString() const {
+        std::string result = "triggered="s + (isTriggered() ? "true" : "false");
+        switch (eventType) {
+        case eBase: break;
+        case eAssignable: {
+            result = "&{ " + result + " }";
+        } break;
+        case eAll: break;
+        }
+        return result;
+    }
+    friend std::string VL_TO_STRING(const VlEventBase* e);
 };
 
 class VlEvent VL_NOT_FINAL : public VlEventBase {
@@ -246,10 +263,10 @@ public:
     void clearTriggered() override { m_triggered = false; }
 };
 
-class VlAssignableEvent final : public VlEvent, public VlEventBase {
+class VlAssignableEvent final : public VlEvent {
 public:
     // Constructor
-    VlAssignableEvent() {}
+    VlAssignableEvent() { eventType = EventType::eAssignable; }
     ~VlAssignableEvent() override = default;
 
     // METHODS
@@ -260,22 +277,7 @@ public:
     void clearTriggered() final { m_triggered = false; }
 };
 
-inline std::string VL_TO_STRING(const VlEventBase& e);
-
-inline std::string VL_TO_STRING(const VlEvent& e) {
-    return "triggered="s + (e.isTriggered() ? "true" : "false");
-}
-
-inline std::string VL_TO_STRING(const VlAssignableEvent& e) {
-    return "&{ " + VL_TO_STRING(e) + " }";
-}
-
-inline std::string VL_TO_STRING(const VlEventBase& e) {
-    if (const VlAssignableEvent* assignable = dynamic_cast<const VlAssignableEvent*>(&e)) {
-        return VL_TO_STRING(*assignable);
-    }
-    return "triggered="s + (e.isTriggered() ? "true" : "false");
-}
+inline std::string VL_TO_STRING(const VlEventBase* e) { return e->toString(); }
 
 //===================================================================
 // Random
