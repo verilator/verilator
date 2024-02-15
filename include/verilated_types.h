@@ -214,69 +214,43 @@ public:
 //===================================================================
 // SystemVerilog event type
 
-class VlEventBase VL_NOT_FINAL {
-public:
-    virtual ~VlEventBase() = default;
-
-    virtual void fire() = 0;
-    virtual bool isFired() const = 0;
-    virtual bool isTriggered() const = 0;
-    virtual void clearFired() = 0;
-    virtual void clearTriggered() = 0;
+enum class EventType {
+    eAssignable,
+    eAll,
 };
 
-class VlEvent : public VlEventBase {
+class VlEvent {
     // MEMBERS
 private:
     bool m_fired = false;  // Fired on this scheduling iteration
     bool m_triggered = false;  // Triggered state of event persisting until next time step
+    EventType m_type = EventType::eAll;
 
 public:
     // CONSTRUCTOR
-    VlEvent() = default;
-    ~VlEvent() override = default;
-
-    friend std::string VL_TO_STRING(const VlEvent& e);
-    friend class VlAssignableEvent;
-    // METHODS
-    void fire() override { m_fired = m_triggered = true; }
-    bool isFired() const override { return m_fired; }
-    bool isTriggered() const override { return m_triggered; }
-    void clearFired() override { m_fired = false; }
-    void clearTriggered() override { m_triggered = false; }
-};
-
-class VlAssignableEvent final : public VlEvent {
-public:
-    // Constructor
-    VlAssignableEvent() {}
-    ~VlAssignableEvent() override = default;
+    VlEvent(EventType type = EventType::eAll)
+        : m_type(type) {}
+    ~VlEvent() = default;
 
     // METHODS
-    void fire() override { (*this).m_fired = (*this).m_triggered = true; }
-    bool isFired() const override { return (*this).m_fired; }
-    bool isTriggered() const override { return (*this).m_triggered; }
-    void clearFired() override { (*this).m_fired = false; }
-    void clearTriggered() override { (*this).m_triggered = false; }
-};
-
-inline std::string VL_TO_STRING(const VlEventBase& e);
-
-inline std::string VL_TO_STRING(const VlEvent& e) {
-    return "triggered="s + (e.isTriggered() ? "true" : "false");
-}
-
-inline std::string VL_TO_STRING(const VlAssignableEvent& e) {
-    return "&{ " + VL_TO_STRING(e) + " }";
-}
-
-inline std::string VL_TO_STRING(const VlEventBase& e) {
-    if (const VlAssignableEvent* assignable = &dynamic_cast<const VlAssignableEvent&>(e)) {
-        return VL_TO_STRING(*assignable);
+    void fire() { m_fired = m_triggered = true; }
+    bool isFired() const { return m_fired; }
+    bool isTriggered() const { return m_triggered; }
+    void clearFired() { m_fired = false; }
+    void clearTriggered() { m_triggered = false; }
+    EventType getType() { return m_type; }
+    std::string toString() {
+        std::string result;
+        switch (m_type) {
+        case EventType::eAssignable: {
+            result = "triggered=" + std::string(isTriggered() ? "true" : "false");
+        } break;
+        case EventType::eAll: {
+        } break;
+        }
+        return result;
     }
-    return "triggered="s + (e.isTriggered() ? "true" : "false");
-}
-
+};
 //===================================================================
 // Random
 
