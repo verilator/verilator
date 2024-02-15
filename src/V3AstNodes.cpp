@@ -738,73 +738,66 @@ public:
     }
 };
 
-string AstNodeDType::cpackedType(const string& name) const {
-    const CTypeRecursed info = cpackedTypeRecurse();
-    return info.render(name, false);
-}
-
-AstNodeDType::CTypeRecursed AstNodeDType::cpackedTypeRecurse() const {
-    CTypeRecursed info;
-    const AstNodeDType* const dtypep = this->skipRefp();
-    if (const auto* const adtypep = VN_CAST(dtypep, PackArrayDType)) {
-        CTypeRecursed sub = adtypep->subDTypep()->cpackedTypeRecurse();
-        info.m_type = std::move(sub.m_type);
-        info.m_dims = "[" + cvtToStr(adtypep->elementsConst()) + "]" + sub.m_dims;
-    } else if (const auto* const adtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
-        info.m_type = EmitCBase::prefixNameProtect(adtypep);
-    } else {
-        UASSERT_OBJ(VN_IS(dtypep, EnumDType) || VN_IS(dtypep, BasicDType), this,
-                    "Unsupported type in packed struct or union");
-        const string bitvec
-            = !v3Global.opt.protectIds() ? "/*" + cvtToStr(dtypep->width() - 1) + ":0*/" : "";
-        info.m_type = AstCDType::typeToHold(width()) + bitvec;
-    }
-    return info;
-}
-
-string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef) const {
-    const CTypeRecursed info = cTypeRecurse(false);
+string AstNodeDType::cType(const string& name, bool /*forFunc*/, bool isRef, bool packed) const {
+    const CTypeRecursed info = cTypeRecurse(false, packed);
     return info.render(name, isRef);
 }
 
-AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
+AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packed) const {
     // Legacy compound argument currently just passed through and unused
     CTypeRecursed info;
 
     const AstNodeDType* const dtypep = this->skipRefp();
     if (const auto* const adtypep = VN_CAST(dtypep, AssocArrayDType)) {
-        const CTypeRecursed key = adtypep->keyDTypep()->cTypeRecurse(true);
-        const CTypeRecursed val = adtypep->subDTypep()->cTypeRecurse(true);
+        UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
+        const CTypeRecursed key = adtypep->keyDTypep()->cTypeRecurse(true, false);
+        const CTypeRecursed val = adtypep->subDTypep()->cTypeRecurse(true, false);
         info.m_type = "VlAssocArray<" + key.m_type + ", " + val.m_type + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, CDType)) {
+        UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
         info.m_type = adtypep->name();
     } else if (const auto* const adtypep = VN_CAST(dtypep, WildcardArrayDType)) {
-        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true);
+        UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
+        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true, false);
         info.m_type = "VlAssocArray<std::string, " + sub.m_type + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, DynArrayDType)) {
-        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true);
+        UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
+        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true, false);
         info.m_type = "VlQueue<" + sub.m_type + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, QueueDType)) {
-        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true);
+        UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
+        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true, false);
         info.m_type = "VlQueue<" + sub.m_type;
         // + 1 below as VlQueue uses 0 to mean unlimited, 1 to mean size() max is 1
         if (adtypep->boundp()) info.m_type += ", " + cvtToStr(adtypep->boundConst() + 1);
         info.m_type += ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, SampleQueueDType)) {
-        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true);
+        UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
+        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(true, false);
         info.m_type = "VlSampleQueue<" + sub.m_type + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, ClassRefDType)) {
+        UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
         info.m_type = "VlClassRef<" + EmitCBase::prefixNameProtect(adtypep) + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, IfaceRefDType)) {
+        UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
         info.m_type = EmitCBase::prefixNameProtect(adtypep->ifaceViaCellp()) + "*";
     } else if (const auto* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
         if (adtypep->isCompound()) compound = true;
-        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(compound);
+        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(compound, false);
         info.m_type = "VlUnpacked<" + sub.m_type;
         info.m_type += ", " + cvtToStr(adtypep->declRange().elements());
         info.m_type += ">";
-    } else if (VN_IS(dtypep, NodeUOrStructDType) && !VN_AS(dtypep, NodeUOrStructDType)->packed()) {
+    } else if (packed && (VN_IS(dtypep, PackArrayDType))) {
+        const auto* const adtypep = VN_CAST(dtypep, PackArrayDType);
+        CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(false, true);
+        info.m_type = std::move(sub.m_type);
+        info.m_dims = "[" + cvtToStr(adtypep->elementsConst()) + "]" + sub.m_dims;
+    } else if (VN_IS(dtypep, NodeUOrStructDType)
+               && (!VN_AS(dtypep, NodeUOrStructDType)->packed() || packed)) {
         const auto* const sdtypep = VN_AS(dtypep, NodeUOrStructDType);
+        UASSERT_OBJ(!packed || sdtypep->packed(), this,
+                    "Unsupported type for packed struct or union");
         info.m_type = EmitCBase::prefixNameProtect(sdtypep);
     } else if (const AstBasicDType* const bdtypep = dtypep->basicp()) {
         // We don't print msb()/lsb() as multidim packed would require recursion,
@@ -847,6 +840,9 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound) const {
         } else if (dtypep->isWide()) {
             info.m_type = "VlWide<" + cvtToStr(dtypep->widthWords()) + ">" + bitvec;
         }
+        // CData, SData, IData, QData or VlWide are packed type.
+        bool packedType = info.m_type[2] == 'a' || info.m_type[2] == 'W';
+        UASSERT_OBJ(!packed || packedType, this, "Unsupported type for packed struct or union");
     } else {
         v3fatalSrc("Unknown data type in var type emitter: " << dtypep->prettyName());
     }

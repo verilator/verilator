@@ -126,15 +126,13 @@ public:
     const char* charIQWN() const {
         return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I");
     }
-    string cType(const string& name, bool forFunc, bool isRef) const;
-    string cpackedType(const string& name) const;
+    string cType(const string& name, bool forFunc, bool isRef, bool packed=false) const;
     // Represents a C++ LiteralType? (can be constexpr)
     bool isLiteralType() const VL_MT_STABLE;
 
 private:
     class CTypeRecursed;
-    CTypeRecursed cTypeRecurse(bool compound) const;
-    CTypeRecursed cpackedTypeRecurse() const;
+    CTypeRecursed cTypeRecurse(bool compound, bool packed) const;
 };
 class AstNodeArrayDType VL_NOT_FINAL : public AstNodeDType {
     // Array data type, ie "some_dtype var_name [2:0]"

@@ -325,7 +325,7 @@ class EmitCHeader final : public EmitCConstInit {
             if (lastItemp->width() == sdtypep->width()) witemp = lastItemp;
         }
         for (itemp = lastItemp; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
-            putns(itemp, itemp->dtypep()->cpackedType(itemp->nameProtect()));
+            putns(itemp, itemp->dtypep()->cType(itemp->nameProtect(), false, false, true));
             puts(";\n");
         }
         // Emit constructor to zero all bytes
