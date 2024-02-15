@@ -269,9 +269,13 @@ public:
 
 inline std::string VL_TO_STRING(const VlEventBase& e);
 
-inline std::string VL_TO_STRING(const VlEvent& e) { return e.toString(); }
+inline std::string VL_TO_STRING(const VlEvent& e) {
+    return "triggered="s + (e.isTriggered() ? "true" : "false");
+}
 
-inline std::string VL_TO_STRING(const VlAssignableEvent& e) { return "&{ " + e.toString() + " }"; }
+inline std::string VL_TO_STRING(const VlAssignableEvent& e) {
+    return "&{ " + "triggered="s + (e.isTriggered() ? "true" : "false") + " }";
+}
 
 inline std::string VL_TO_STRING(const VlEventBase& e) {
     if (const VlAssignableEvent* assignable = dynamic_cast<const VlAssignableEvent*>(&e)) {
