@@ -24,6 +24,7 @@
 #ifndef VERILATOR_VERILATED_TYPES_H_
 #define VERILATOR_VERILATED_TYPES_H_
 
+#include "verilatedos.h"
 #ifndef VERILATOR_VERILATED_H_INTERNAL_
 #error "verilated_types.h should only be included by verilated.h"
 #endif
@@ -214,17 +215,18 @@ public:
 //===================================================================
 // SystemVerilog event type
 
-enum class EventType {
-    eAssignable,
-    eAll,
-};
-
-class VlEvent {
+class VlEvent VL_FINAL {
+public:
+    enum class EventType {
+        eAssignable,
+        eAll,
+    };
     // MEMBERS
 private:
     bool m_fired = false;  // Fired on this scheduling iteration
     bool m_triggered = false;  // Triggered state of event persisting until next time step
-    EventType m_type = EventType::eAll;
+    const EventType m_type = EventType::eAll;
+    friend enum EventType;
 
 public:
     // CONSTRUCTOR
