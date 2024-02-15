@@ -253,6 +253,9 @@ public:
         return result;
     }
 };
+
+inline std::string VL_TO_STRING(VlEvent& e) { return e.toString(); }
+
 //===================================================================
 // Random
 
