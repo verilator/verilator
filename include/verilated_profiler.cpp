@@ -179,10 +179,10 @@ void VlExecutionProfiler::dump(const char* filenamep, uint64_t tickEnd)
     // Copy /proc/cpuinfo into this output so verilator_gantt can be run on
     // a different machine
     {
-        const std::unique_ptr<std::ifstream> ifp{new std::ifstream{"/proc/cpuinfo"}};
-        if (!ifp->fail()) {
+        std::ifstream ifile{"/proc/cpuinfo"};
+        if (!ifile.fail()) {
             std::string line;
-            while (std::getline(*ifp, line)) { fprintf(fp, "VLPROFPROC %s\n", line.c_str()); }
+            while (std::getline(ifile, line)) fprintf(fp, "VLPROFPROC %s\n", line.c_str());
         }
     }
 

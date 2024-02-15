@@ -214,7 +214,7 @@ class VerilatedVcdBuffer VL_NOT_FINAL {
     // Implementation of VerilatedTraceBuffer interface
     // Implementations of duck-typed methods for VerilatedTraceBuffer. These are
     // called from only one place (the full* methods), so always inline them.
-    VL_ATTR_ALWINLINE void emitEvent(uint32_t code, const VlEventBase* newval);
+    VL_ATTR_ALWINLINE void emitEvent(uint32_t code, const VlEvent* newval);
     VL_ATTR_ALWINLINE void emitBit(uint32_t code, CData newval);
     VL_ATTR_ALWINLINE void emitCData(uint32_t code, CData newval, int bits);
     VL_ATTR_ALWINLINE void emitSData(uint32_t code, SData newval, int bits);

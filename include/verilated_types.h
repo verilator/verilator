@@ -24,6 +24,7 @@
 #ifndef VERILATOR_VERILATED_TYPES_H_
 #define VERILATOR_VERILATED_TYPES_H_
 
+#include "verilatedos.h"
 #ifndef VERILATOR_VERILATED_H_INTERNAL_
 #error "verilated_types.h should only be included by verilated.h"
 #endif
@@ -113,7 +114,7 @@ class VlProcess final {
     // MEMBERS
     int m_state;  // Current state of the process
     VlProcessRef m_parentp = nullptr;  // Parent process, if exists
-    std::set<VlProcess*> m_children;  // Active child processes
+    std::unordered_set<VlProcess*> m_children;  // Active child processes
 
 public:
     // TYPES
@@ -214,7 +215,12 @@ public:
 //===================================================================
 // SystemVerilog event type
 
+enum EventType { eBase, eAssignable, eAll };
+
 class VlEventBase VL_NOT_FINAL {
+protected:
+    EventType eventType = EventType::eBase;
+
 public:
     virtual ~VlEventBase() = default;
 
@@ -223,9 +229,11 @@ public:
     virtual bool isTriggered() const = 0;
     virtual void clearFired() = 0;
     virtual void clearTriggered() = 0;
+    std::string toString() const { return "triggered="s + (isTriggered() ? "true" : "false"); }
+    friend std::string VL_TO_STRING(const VlEventBase* e);
 };
 
-class VlEvent final : public VlEventBase {
+class VlEvent VL_NOT_FINAL : public VlEventBase {
     // MEMBERS
     bool m_fired = false;  // Fired on this scheduling iteration
     bool m_triggered = false;  // Triggered state of event persisting until next time step
@@ -245,19 +253,18 @@ public:
     void clearTriggered() override { m_triggered = false; }
 };
 
-class VlAssignableEvent final : public std::shared_ptr<VlEvent>, public VlEventBase {
+class VlAssignableEvent final : public VlEvent {
 public:
     // Constructor
-    VlAssignableEvent()
-        : std::shared_ptr<VlEvent>(new VlEvent) {}
+    VlAssignableEvent() { eventType = EventType::eAssignable; }
     ~VlAssignableEvent() override = default;
 
     // METHODS
-    void fire() override { (*this)->m_fired = (*this)->m_triggered = true; }
-    bool isFired() const override { return (*this)->m_fired; }
-    bool isTriggered() const override { return (*this)->m_triggered; }
-    void clearFired() override { (*this)->m_fired = false; }
-    void clearTriggered() override { (*this)->m_triggered = false; }
+    void fire() final { m_fired = m_triggered = true; }
+    bool isFired() const final { return m_fired; }
+    bool isTriggered() const final { return m_triggered; }
+    void clearFired() final { m_fired = false; }
+    void clearTriggered() final { m_triggered = false; }
 };
 
 inline std::string VL_TO_STRING(const VlEventBase& e);
@@ -267,12 +274,12 @@ inline std::string VL_TO_STRING(const VlEvent& e) {
 }
 
 inline std::string VL_TO_STRING(const VlAssignableEvent& e) {
-    return "&{ " + VL_TO_STRING(*e) + " }";
+    return "&{ " + "triggered="s + (e.isTriggered() ? "true" : "false") + " }";
 }
 
 inline std::string VL_TO_STRING(const VlEventBase& e) {
-    if (const VlAssignableEvent& assignable = dynamic_cast<const VlAssignableEvent&>(e)) {
-        return VL_TO_STRING(assignable);
+    if (const VlAssignableEvent* assignable = dynamic_cast<const VlAssignableEvent*>(&e)) {
+        return VL_TO_STRING(*assignable);
     }
     return "triggered="s + (e.isTriggered() ? "true" : "false");
 }
@@ -661,7 +668,7 @@ public:
     void shuffle() { std::shuffle(m_deque.begin(), m_deque.end(), VlURNG{}); }
     VlQueue unique() const {
         VlQueue out;
-        std::set<T_Value> saw;
+        std::unordered_set<T_Value> saw;
         for (const auto& i : m_deque) {
             const auto it = saw.find(i);
             if (it == saw.end()) {
@@ -674,7 +681,7 @@ public:
     template <typename Func>
     VlQueue unique(Func with_func) const {
         VlQueue out;
-        std::set<decltype(with_func(0, m_deque[0]))> saw;
+        std::unordered_set<decltype(with_func(0, m_deque[0]))> saw;
         for (const auto& i : m_deque) {
             const auto i_mapped = with_func(0, i);
             const auto it = saw.find(i_mapped);
@@ -688,7 +695,7 @@ public:
     VlQueue<IData> unique_index() const {
         VlQueue<IData> out;
         IData index = 0;
-        std::set<T_Value> saw;
+        std::unordered_set<T_Value> saw;
         for (const auto& i : m_deque) {
             const auto it = saw.find(i);
             if (it == saw.end()) {
@@ -703,7 +710,7 @@ public:
     VlQueue<IData> unique_index(Func with_func) const {
         VlQueue<IData> out;
         IData index = 0;
-        std::set<decltype(with_func(0, m_deque[0]))> saw;
+        std::unordered_set<decltype(with_func(0, m_deque[0]))> saw;
         for (const auto& i : m_deque) {
             const auto i_mapped = with_func(index, i);
             auto it = saw.find(i_mapped);
@@ -1007,7 +1014,7 @@ public:
     // Methods
     VlQueue<T_Value> unique() const {
         VlQueue<T_Value> out;
-        std::set<T_Value> saw;
+        std::unordered_set<T_Value> saw;
         for (const auto& i : m_map) {
             auto it = saw.find(i.second);
             if (it == saw.end()) {
@@ -1022,7 +1029,7 @@ public:
         VlQueue<T_Value> out;
         T_Key default_key;
         using WithType = decltype(with_func(m_map.begin()->first, m_map.begin()->second));
-        std::set<WithType> saw;
+        std::unordered_set<WithType> saw;
         for (const auto& i : m_map) {
             const auto i_mapped = with_func(default_key, i.second);
             const auto it = saw.find(i_mapped);
@@ -1035,7 +1042,7 @@ public:
     }
     VlQueue<T_Key> unique_index() const {
         VlQueue<T_Key> out;
-        std::set<T_Key> saw;
+        std::unordered_set<T_Key> saw;
         for (const auto& i : m_map) {
             auto it = saw.find(i.second);
             if (it == saw.end()) {
@@ -1049,7 +1056,7 @@ public:
     VlQueue<T_Key> unique_index(Func with_func) const {
         VlQueue<T_Key> out;
         using WithType = decltype(with_func(m_map.begin()->first, m_map.begin()->second));
-        std::set<WithType> saw;
+        std::unordered_set<WithType> saw;
         for (const auto& i : m_map) {
             const auto i_mapped = with_func(i.first, i.second);
             auto it = saw.find(i_mapped);
@@ -1346,7 +1353,7 @@ public:
     void shuffle() { std::shuffle(std::begin(m_storage), std::end(m_storage), VlURNG{}); }
     VlQueue<T_Value> unique() const {
         VlQueue<T_Value> out;
-        std::set<T_Value> saw;
+        std::unordered_set<T_Value> saw;
         for (const auto& i : m_storage) {
             const auto it = saw.find(i);
             if (it == saw.end()) {
@@ -1359,7 +1366,7 @@ public:
     template <typename Func>
     VlQueue<T_Value> unique(Func with_func) const {
         VlQueue<T_Value> out;
-        std::set<T_Value> saw;
+        std::unordered_set<T_Value> saw;
         for (const auto& i : m_storage) {
             const auto i_mapped = with_func(0, i);
             const auto it = saw.find(i_mapped);
@@ -1373,7 +1380,7 @@ public:
     VlQueue<T_Key> unique_index() const {
         VlQueue<T_Key> out;
         IData index = 0;
-        std::set<T_Value> saw;
+        std::unordered_set<T_Value> saw;
         for (const auto& i : m_storage) {
             const auto it = saw.find(i);
             if (it == saw.end()) {
