@@ -277,7 +277,11 @@ public:
     void clearTriggered() final { m_triggered = false; }
 };
 
-inline std::string VL_TO_STRING(const VlEventBase* e) { return e->toString(); }
+inline std::string VL_TO_STRING(const VlEvent& e) { return e.toString(); }
+
+inline std::string VL_TO_STRING(const VlAssignableEvent& e) { return e.toString(); }
+
+inline std::string VL_TO_STRING(const VlEventBase& e) { return e.toString(); }
 
 //===================================================================
 // Random
