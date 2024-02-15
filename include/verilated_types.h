@@ -259,10 +259,11 @@ public:
     }
 };
 
-class VlAssignableEvent final : public VlEvent {
+class VlAssignableEvent final : public VlEvent, std::shared_ptr<VlEvent> {
 public:
     VlAssignableEvent()
-        : VlEvent() {
+        : VlEvent()
+        , std::shared_ptr<VlEvent>(new VlEvent) {
         m_type = EventType::eAssignable;
     }
 };
