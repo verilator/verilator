@@ -215,7 +215,7 @@ public:
 //===================================================================
 // SystemVerilog event type
 
-enum class EventType {
+enum EventType {
     eAssignable,
     eAll,
 };
