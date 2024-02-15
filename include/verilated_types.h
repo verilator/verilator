@@ -24,7 +24,6 @@
 #ifndef VERILATOR_VERILATED_TYPES_H_
 #define VERILATOR_VERILATED_TYPES_H_
 
-#include "verilatedos.h"
 #ifndef VERILATOR_VERILATED_H_INTERNAL_
 #error "verilated_types.h should only be included by verilated.h"
 #endif
@@ -108,7 +107,7 @@ constexpr IData VL_CLOG2_CE_Q(QData lhs) VL_PURE {
 // Metadata of processes
 class VlProcess;
 
-using VlProcessRef = std::shared_ptr<VlProcess>;
+using VlProcessRef = VlProcess*;
 
 class VlProcess final {
     // MEMBERS
@@ -215,60 +214,68 @@ public:
 //===================================================================
 // SystemVerilog event type
 
-enum EventType {
-    eAssignable,
-    eBase,
-    eAll,
+class VlEventBase VL_NOT_FINAL {
+public:
+    virtual ~VlEventBase() = default;
+
+    virtual void fire() = 0;
+    virtual bool isFired() const = 0;
+    virtual bool isTriggered() const = 0;
+    virtual void clearFired() = 0;
+    virtual void clearTriggered() = 0;
 };
 
-class VlEvent VL_NOT_FINAL {
-
+class VlEvent final : public VlEventBase {
     // MEMBERS
-protected:
     bool m_fired = false;  // Fired on this scheduling iteration
     bool m_triggered = false;  // Triggered state of event persisting until next time step
-    EventType m_type = EventType::eBase;
-    friend enum EventType;
-    friend class VlAssignableEvent;
 
 public:
     // CONSTRUCTOR
     VlEvent() = default;
-    ~VlEvent() = default;
+    ~VlEvent() override = default;
+
+    friend std::string VL_TO_STRING(const VlEvent& e);
+    friend class VlAssignableEvent;
+    // METHODS
+    void fire() override { m_fired = m_triggered = true; }
+    bool isFired() const override { return m_fired; }
+    bool isTriggered() const override { return m_triggered; }
+    void clearFired() override { m_fired = false; }
+    void clearTriggered() override { m_triggered = false; }
+};
+
+class VlAssignableEvent final : public std::shared_ptr<VlEvent>, public VlEventBase {
+public:
+    // Constructor
+    VlAssignableEvent()
+        : std::shared_ptr<VlEvent>(new VlEvent) {}
+    ~VlAssignableEvent() override = default;
 
     // METHODS
-    void fire() { m_fired = m_triggered = true; }
-    bool isFired() const { return m_fired; }
-    bool isTriggered() const { return m_triggered; }
-    void clearFired() { m_fired = false; }
-    void clearTriggered() { m_triggered = false; }
-    EventType getType() { return m_type; }
-    std::string toString() const {
-        std::string result = "triggered=" + std::string(isTriggered() ? "true" : "false");
-        ;
-        switch (m_type) {
-        case EventType::eBase: {
-        } break;
-        case EventType::eAssignable: {
-            result = "&{ " + result + "}";
-        } break;
-        case EventType::eAll: {
-        } break;
-        }
-        return result;
-    }
+    void fire() override { (*this)->m_fired = (*this)->m_triggered = true; }
+    bool isFired() const override { return (*this)->m_fired; }
+    bool isTriggered() const override { return (*this)->m_triggered; }
+    void clearFired() override { (*this)->m_fired = false; }
+    void clearTriggered() override { (*this)->m_triggered = false; }
 };
 
-class VlAssignableEvent final : public VlEvent, std::shared_ptr<VlEvent> {
-public:
-    VlAssignableEvent()
-        : VlEvent()
-        , std::shared_ptr<VlEvent>(new VlEvent) {
-        m_type = EventType::eAssignable;
-    }
-};
+inline std::string VL_TO_STRING(const VlEventBase& e);
 
-inline std::string VL_TO_STRING(const VlEvent& e) { return e.toString(); }
+inline std::string VL_TO_STRING(const VlEvent& e) {
+    return "triggered="s + (e.isTriggered() ? "true" : "false");
+}
+
+inline std::string VL_TO_STRING(const VlAssignableEvent& e) {
+    return "&{ " + VL_TO_STRING(*e) + " }";
+}
+
+inline std::string VL_TO_STRING(const VlEventBase& e) {
+    if (const VlAssignableEvent& assignable = dynamic_cast<const VlAssignableEvent&>(e)) {
+        return VL_TO_STRING(assignable);
+    }
+    return "triggered="s + (e.isTriggered() ? "true" : "false");
+}
 
 //===================================================================
 // Random
