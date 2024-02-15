@@ -244,13 +244,13 @@ public:
     void clearTriggered() { m_triggered = false; }
     EventType getType() { return m_type; }
     std::string toString() const {
-        std::string result;
+        std::string result = "triggered=" + std::string(isTriggered() ? "true" : "false");
+        ;
         switch (m_type) {
         case EventType::eBase: {
-            result = "triggered=" + std::string(isTriggered() ? "true" : "false");
         } break;
         case EventType::eAssignable: {
-            result = "triggered=" + std::string(isTriggered() ? "true" : "false");
+            result = "&{ " + result + "}";
         } break;
         case EventType::eAll: {
         } break;
