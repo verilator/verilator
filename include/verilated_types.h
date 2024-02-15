@@ -215,12 +215,8 @@ public:
 //===================================================================
 // SystemVerilog event type
 
-enum EventType { eBase, eAssignable, eAll };
-
 class VlEventBase VL_NOT_FINAL {
 protected:
-    EventType eventType = EventType::eBase;
-
 public:
     virtual ~VlEventBase() = default;
 
@@ -229,8 +225,6 @@ public:
     virtual bool isTriggered() const = 0;
     virtual void clearFired() = 0;
     virtual void clearTriggered() = 0;
-    std::string toString() const { return "triggered="s + (isTriggered() ? "true" : "false"); }
-    friend std::string VL_TO_STRING(const VlEventBase* e);
 };
 
 class VlEvent VL_NOT_FINAL : public VlEventBase {
@@ -253,18 +247,19 @@ public:
     void clearTriggered() override { m_triggered = false; }
 };
 
-class VlAssignableEvent final : public VlEvent {
+class VlAssignableEvent final : public std::shared_ptr<VlEvent>, public VlEventBase {
 public:
     // Constructor
-    VlAssignableEvent() { eventType = EventType::eAssignable; }
+    VlAssignableEvent()
+        : std::shared_ptr<VlEvent>(new VlEvent) {}
     ~VlAssignableEvent() override = default;
 
     // METHODS
-    void fire() final { m_fired = m_triggered = true; }
-    bool isFired() const final { return m_fired; }
-    bool isTriggered() const final { return m_triggered; }
-    void clearFired() final { m_fired = false; }
-    void clearTriggered() final { m_triggered = false; }
+    void fire() final { (*this)->m_fired = (*this)->m_triggered = true; }
+    bool isFired() const final { return (*this)->m_fired; }
+    bool isTriggered() const final { return (*this)->m_triggered; }
+    void clearFired() final { (*this)->m_fired = false; }
+    void clearTriggered() final { (*this)->m_triggered = false; }
 };
 
 inline std::string VL_TO_STRING(const VlEventBase& e);
