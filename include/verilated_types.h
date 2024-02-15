@@ -242,7 +242,7 @@ public:
     void clearFired() { m_fired = false; }
     void clearTriggered() { m_triggered = false; }
     EventType getType() { return m_type; }
-    std::string toString() {
+    std::string toString() const {
         std::string result;
         switch (m_type) {
         case EventType::eAssignable: {
@@ -255,7 +255,7 @@ public:
     }
 };
 
-inline std::string VL_TO_STRING(VlEvent& e) { return e.toString(); }
+inline std::string VL_TO_STRING(const VlEvent& e) { return e.toString(); }
 
 //===================================================================
 // Random
