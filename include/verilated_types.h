@@ -234,10 +234,6 @@ protected:
 public:
     // CONSTRUCTOR
     VlEvent() = default;
-    VlEvent(VlEvent& other)
-        : m_fired(other.m_fired)
-        , m_triggered(other.m_triggered)
-        , m_type(other.m_type) {}
     ~VlEvent() = default;
 
     // METHODS
@@ -264,6 +260,7 @@ public:
 };
 
 class VlAssignableEvent final : public VlEvent {
+public:
     VlAssignableEvent()
         : VlEvent() {
         m_type = EventType::eAssignable;
