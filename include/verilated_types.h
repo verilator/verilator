@@ -215,12 +215,13 @@ public:
 //===================================================================
 // SystemVerilog event type
 
-class VlEvent VL_FINAL {
-public:
-    enum class EventType {
-        eAssignable,
-        eAll,
-    };
+enum class EventType {
+    eAssignable,
+    eAll,
+};
+
+class VlEvent final {
+
     // MEMBERS
 private:
     bool m_fired = false;  // Fired on this scheduling iteration
