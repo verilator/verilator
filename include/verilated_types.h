@@ -234,7 +234,7 @@ public:
         switch (eventType) {
         case eBase: break;
         case eAssignable: {
-            result = "&{ " + result + " }";
+            result = "&{  }";
         } break;
         case eAll: break;
         }
