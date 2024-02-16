@@ -46,6 +46,7 @@
 #include "V3MemberMap.h"
 
 #include <set>
+#include <unordered_set>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -65,7 +66,7 @@ class ForkDynScopeFrame final {
     AstNodeModule* const m_modp;  // Module to insert the scope into
     AstNode* const m_procp;  // Procedure/block associated with that dynscope
     std::deque<AstVar*> m_captureOrder;  // Variables to be moved into the dynscope
-    std::set<AstVar*> m_captures;  // Variables to be moved into the dynscope
+    std::unordered_set<AstVar*> m_captures;  // Variables to be moved into the dynscope
     ForkDynScopeInstance m_instance;  // Nodes to be injected into the AST to create the dynscope
     const size_t m_class_id;  // Dynscope class ID
     const size_t m_id;  // Dynscope ID
@@ -469,7 +470,7 @@ public:
         if (typesAdded) v3Global.rootp()->typeTablep()->repairCache();
     }
     ~DynScopeVisitor() override {
-        std::set<ForkDynScopeFrame*> frames;
+        std::unordered_set<ForkDynScopeFrame*> frames;
         for (auto node_frame : m_frames) frames.insert(node_frame.second);
         for (auto* framep : frames) delete framep;
     }
@@ -491,7 +492,7 @@ class ForkVisitor final : public VNVisitor {
     int m_forkDepth = 0;  // Nesting level of asynchronous forks
     bool m_newProcess = false;  // True if we are directly under an asynchronous fork.
     AstVar* m_capturedVarsp = nullptr;  // Local copies of captured variables
-    std::set<AstVar*> m_forkLocalsp;  // Variables local to a given fork
+    std::unordered_set<AstVar*> m_forkLocalsp;  // Variables local to a given fork
     AstArg* m_capturedVarRefsp = nullptr;  // References to captured variables (as args)
     size_t m_id = 0;  // Unique ID for a task
 

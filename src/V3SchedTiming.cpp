@@ -158,7 +158,7 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
         AstNodeStmt*& m_postUpdatesr;  // Post updates for the trigger eval function
         // Additional var sensitivities
         std::map<const AstVarScope*, std::set<AstSenTree*>>& m_externalDomains;
-        std::set<AstSenTree*> m_processDomains;  // Sentrees from the current process
+        std::unordered_set<AstSenTree*> m_processDomains;  // Sentrees from the current process
         // Variables written by suspendable processes
         std::vector<AstVarScope*> m_writtenBySuspendable;
 
