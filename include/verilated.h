@@ -59,6 +59,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_set>
 #include <vector>
 // <iostream> avoided to reduce compile time
 #include <atomic>
