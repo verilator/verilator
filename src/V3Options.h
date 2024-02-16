@@ -159,7 +159,7 @@ constexpr bool operator==(const TraceFormat& lhs, TraceFormat::en rhs) { return 
 constexpr bool operator==(TraceFormat::en lhs, const TraceFormat& rhs) { return lhs == rhs.m_e; }
 
 using V3StringList = std::vector<std::string>;
-using V3StringSet = std::set<std::string>;
+using V3StringSet = std::unordered_set<std::string>;
 
 // ######################################################################
 

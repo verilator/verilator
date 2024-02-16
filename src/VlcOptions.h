@@ -31,7 +31,7 @@
 //######################################################################
 // V3Options - Command line options
 
-using VlStringSet = std::set<std::string>;
+using VlStringSet = std::unordered_set<std::string>;
 
 class VlcOptions final {
     // MEMBERS (general options)

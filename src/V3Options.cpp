@@ -406,7 +406,7 @@ string V3Options::allArgsString() const VL_MT_SAFE {
 
 // Delete some options for Verilation of the hierarchical blocks.
 string V3Options::allArgsStringForHierBlock(bool forTop) const {
-    std::set<string> vFiles;
+    std::unordered_set<string> vFiles;
     for (const auto& vFile : m_vFiles) vFiles.insert(vFile);
     string out;
     for (std::list<string>::const_iterator it = m_impp->m_allArgs.begin();

@@ -220,7 +220,7 @@ private:
     std::array<EdgeHeap, GraphWay::NUM_WAYS> m_edgeHeap;
 
     // MTasks for which a SiblingMC exists with 'this' as the higher ID MTask (m_ap in SiblingMC)
-    std::set<LogicMTask*> m_siblings;
+    std::unordered_set<LogicMTask*> m_siblings;
     // List of SiblingMCs for which this is the higher ID MTask (m_ap in SiblingMC)
     V3List<SiblingMC*> m_aSiblingMCs;
     // List of SiblingMCs for which this is the lower ID MTask (m_bp in SiblingMC)
@@ -244,7 +244,7 @@ public:
     }
 
     // METHODS
-    std::set<LogicMTask*>& siblings() { return m_siblings; };
+    std::unordered_set<LogicMTask*>& siblings() { return m_siblings; };
     V3List<SiblingMC*>& aSiblingMCs() { return m_aSiblingMCs; };
     V3List<SiblingMC*>& bSiblingMCs() { return m_bSiblingMCs; };
 
@@ -922,7 +922,8 @@ class PartPropagateCp final {
     std::vector<std::unique_ptr<PendingHeapNode[]>> m_allocated;  // Allocated heap nodes
 
     const bool m_slowAsserts;  // Enable nontrivial asserts
-    std::set<LogicMTask*> m_seen;  // Used only with slow asserts to check mtasks visited only once
+    std::unordered_set<LogicMTask*>
+        m_seen;  // Used only with slow asserts to check mtasks visited only once
 
 public:
     // CONSTRUCTORS

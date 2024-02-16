@@ -217,7 +217,7 @@ class EmitCHeader final : public EmitCConstInit {
         }
     }
     void emitStructDecl(const AstNodeModule* modp, AstNodeUOrStructDType* sdtypep,
-                        std::set<AstNodeUOrStructDType*>& emitted) {
+                        std::unordered_set<AstNodeUOrStructDType*>& emitted) {
         if (emitted.count(sdtypep) > 0) return;
         emitted.insert(sdtypep);
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
@@ -257,7 +257,7 @@ class EmitCHeader final : public EmitCConstInit {
     void emitStructs(const AstNodeModule* modp) {
         bool first = true;
         // Track structs that've been emitted already
-        std::set<AstNodeUOrStructDType*> emitted;
+        std::unordered_set<AstNodeUOrStructDType*> emitted;
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             const AstTypedef* const tdefp = VN_CAST(nodep, Typedef);
             if (!tdefp) continue;
@@ -382,7 +382,7 @@ class EmitCHeader final : public EmitCConstInit {
         if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");
         if (v3Global.usesTiming()) puts("#include \"verilated_timing.h\"\n");
 
-        std::set<string> cuse_set;
+        std::unordered_set<string> cuse_set;
         auto add_to_cuse_set = [&](string s) { cuse_set.insert(s); };
 
         forModCUse(modp, VUseType::INT_FWD_CLASS | VUseType::INT_INCLUDE, add_to_cuse_set);
