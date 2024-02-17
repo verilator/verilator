@@ -114,7 +114,7 @@ public:
     }
     testIndex newTest(const string& name, uint64_t testrun, double comp) {
         VlcTest const test = VlcTest{name, testrun, comp};
-        m_tests.push_back(test);
+        m_tests.emplace_back(test);
         return m_tests.size() - 1;
     }
     void clearUser() {
