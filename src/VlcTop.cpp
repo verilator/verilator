@@ -141,9 +141,12 @@ void VlcTop::rank() {
     // Sort by computrons, so fast tests get selected first
     std::vector<VlcTests::testIndex> bytime;
     bytime.reserve(m_tests.size());
+    // TODO: Depending on how much we have to use the push_back, this might be parallelized
+    // With #pragma omp parallel for
     for (size_t i = 0; i < m_tests.size(); i++) {
         if (m_tests[i].bucketsCovered()) {  // else no points, so can't help us
-            bytime.push_back(i);
+            // In case of parallel, this is the critical section
+            bytime.emplace_back(i);
         }
     }
     sort(bytime.begin(), bytime.end(), computronsComparator);  // Sort the vector
@@ -166,9 +169,11 @@ void VlcTop::rank() {
         }
         VlcTest* bestTestp = nullptr;
         uint64_t bestRemain = 0;
+        // TODO: Depending on the dataPopCount time implications, this could be parallelized
         for (const auto testIdx : bytime) {
             if (!m_tests[testIdx].rank()) {
                 uint64_t remain = m_tests[testIdx].buckets().dataPopCount(remaining);
+                // In case of parallel, this is the critical section
                 if (remain > bestRemain) {
                     bestTestp = &m_tests[testIdx];
                     bestRemain = remain;
