@@ -130,12 +130,13 @@ void VlcTop::rank() {
     UINFO(2, "rank...\n");
     uint64_t nextrank = 1;
 
-    auto CmpComputrons = [this](const VlcTests::testIndex lhsp, const VlcTests::testIndex rhsp) {
-        if (m_tests[lhsp].computrons() != m_tests[rhsp].computrons()) {
-            return m_tests[lhsp].computrons() < m_tests[rhsp].computrons();
-        }
-        return m_tests[lhsp].bucketsCovered() > m_tests[rhsp].bucketsCovered();
-    };
+    auto computronsComparator
+        = [this](const VlcTests::testIndex lhsp, const VlcTests::testIndex rhsp) {
+              if (m_tests[lhsp].computrons() != m_tests[rhsp].computrons()) {
+                  return m_tests[lhsp].computrons() < m_tests[rhsp].computrons();
+              }
+              return m_tests[lhsp].bucketsCovered() > m_tests[rhsp].bucketsCovered();
+          };
 
     // Sort by computrons, so fast tests get selected first
     std::vector<VlcTests::testIndex> bytime;
@@ -145,7 +146,7 @@ void VlcTop::rank() {
             bytime.push_back(i);
         }
     }
-    sort(bytime.begin(), bytime.end(), CmpComputrons);  // Sort the vector
+    sort(bytime.begin(), bytime.end(), computronsComparator);  // Sort the vector
 
     VlcBuckets remaining;
     for (const auto& i : m_points) {
