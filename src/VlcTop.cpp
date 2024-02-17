@@ -14,14 +14,14 @@
 //
 //*************************************************************************
 
+#include "VlcTest.h"
 #define VL_MT_DISABLED_CODE_UNIT 1
-
-#include "VlcTop.h"
 
 #include "V3Error.h"
 #include "V3Os.h"
 
 #include "VlcOptions.h"
+#include "VlcTop.h"
 
 #include <algorithm>
 #include <fstream>
@@ -40,7 +40,7 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
     }
 
     // Testrun and computrons argument unsupported as yet
-    VlcTest* const testp = tests().newTest(filename, 0, 0);
+    VlcTests::testIndex const testIndex = tests().newTest(filename, 0, 0);
 
     while (!is.eof()) {
         const string line = V3Os::getline(is);
@@ -58,7 +58,7 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
             if (opt.rank()) {  // Only if ranking - uses a lot of memory
                 if (hits >= VlcBuckets::sufficient()) {
                     points().pointNumber(pointnum).testsCoveringInc();
-                    testp->buckets().addData(pointnum, hits);
+                    m_tests[testIndex].buckets().addData(pointnum, hits);
                 }
             }
         }
@@ -126,27 +126,26 @@ void VlcTop::writeInfo(const string& filename) {
 
 //********************************************************************
 
-struct CmpComputrons final {
-    bool operator()(const VlcTest* lhsp, const VlcTest* rhsp) const {
-        if (lhsp->computrons() != rhsp->computrons()) {
-            return lhsp->computrons() < rhsp->computrons();
-        }
-        return lhsp->bucketsCovered() > rhsp->bucketsCovered();
-    }
-};
-
 void VlcTop::rank() {
     UINFO(2, "rank...\n");
     uint64_t nextrank = 1;
 
+    auto CmpComputrons = [this](const VlcTests::testIndex lhsp, const VlcTests::testIndex rhsp) {
+        if (m_tests[lhsp].computrons() != m_tests[rhsp].computrons()) {
+            return m_tests[lhsp].computrons() < m_tests[rhsp].computrons();
+        }
+        return m_tests[lhsp].bucketsCovered() > m_tests[rhsp].bucketsCovered();
+    };
+
     // Sort by computrons, so fast tests get selected first
-    std::vector<VlcTest*> bytime;
-    for (const auto& testp : m_tests) {
-        if (testp->bucketsCovered()) {  // else no points, so can't help us
-            bytime.push_back(testp);
+    std::vector<VlcTests::testIndex> bytime;
+    bytime.reserve(m_tests.size());
+    for (size_t i = 0; i < m_tests.size(); i++) {
+        if (m_tests[i].bucketsCovered()) {  // else no points, so can't help us
+            bytime.push_back(i);
         }
     }
-    sort(bytime.begin(), bytime.end(), CmpComputrons());  // Sort the vector
+    sort(bytime.begin(), bytime.end(), CmpComputrons);  // Sort the vector
 
     VlcBuckets remaining;
     for (const auto& i : m_points) {
@@ -166,11 +165,11 @@ void VlcTop::rank() {
         }
         VlcTest* bestTestp = nullptr;
         uint64_t bestRemain = 0;
-        for (const auto& testp : bytime) {
-            if (!testp->rank()) {
-                uint64_t remain = testp->buckets().dataPopCount(remaining);
+        for (const auto testIdx : bytime) {
+            if (!m_tests[testIdx].rank()) {
+                uint64_t remain = m_tests[testIdx].buckets().dataPopCount(remaining);
                 if (remain > bestRemain) {
-                    bestTestp = testp;
+                    bestTestp = &m_tests[testIdx];
                     bestRemain = remain;
                 }
             }
