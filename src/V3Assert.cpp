@@ -127,7 +127,7 @@ class AssertVisitor final : public VNVisitor {
         AstNode* const bodysp = dispp;
         replaceDisplay(dispp, "%%Error");  // Convert to standard DISPLAY format
         if (exprsp) dispp->fmtp()->exprsp()->addNext(exprsp);
-        bodysp->addNext(new AstStop{nodep->fileline(), true});
+        if (v3Global.opt.stopFail()) bodysp->addNext(new AstStop{nodep->fileline(), true});
         return bodysp;
     }
 
