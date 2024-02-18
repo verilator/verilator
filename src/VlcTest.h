@@ -48,16 +48,16 @@ public:
     ~VlcTest() = default;
 
     // ACCESSORS
-    [[nodiscard]] inline const string& name() const { return m_name; }
-    [[nodiscard]] inline double computrons() const { return m_computrons; }
-    [[nodiscard]] inline uint64_t testrun() const { return m_testrun; }
-    [[nodiscard]] inline VlcBuckets& buckets() { return m_buckets; }
-    [[nodiscard]] inline uint64_t bucketsCovered() const { return m_buckets.bucketsCovered(); }
-    [[nodiscard]] inline uint64_t rank() const { return m_rank; }
-    inline void rank(uint64_t flag) { m_rank = flag; }
-    [[nodiscard]] inline uint64_t rankPoints() const { return m_rankPoints; }
-    inline void rankPoints(uint64_t flag) { m_rankPoints = flag; }
-    [[nodiscard]] inline uint64_t user() const { return m_user; }
+    [[nodiscard]] const string& name() const { return m_name; }
+    [[nodiscard]] double computrons() const { return m_computrons; }
+    [[nodiscard]] uint64_t testrun() const { return m_testrun; }
+    [[nodiscard]] VlcBuckets& buckets() { return m_buckets; }
+    [[nodiscard]] uint64_t bucketsCovered() const { return m_buckets.bucketsCovered(); }
+    [[nodiscard]] uint64_t rank() const { return m_rank; }
+    void rank(uint64_t flag) { m_rank = flag; }
+    [[nodiscard]] uint64_t rankPoints() const { return m_rankPoints; }
+    void rankPoints(uint64_t flag) { m_rankPoints = flag; }
+    [[nodiscard]] uint64_t user() const { return m_user; }
     void user(uint64_t flag) { m_user = flag; }
 
     // METHODS
@@ -123,11 +123,11 @@ public:
 
     VlcTest& operator[](size_t idx) { return m_tests[idx]; }
 
-    inline void reserve(size_t n) { m_tests.reserve(n); }
+    void reserve(size_t n) { m_tests.reserve(n); }
 
-    inline void shrink_to_fit() { m_tests.shrink_to_fit(); }
+    void shrink_to_fit() { m_tests.shrink_to_fit(); }
 
-    [[nodiscard]] inline size_t size() const { return m_tests.size(); }
+    [[nodiscard]] size_t size() const { return m_tests.size(); }
 };
 
 //######################################################################
