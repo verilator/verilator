@@ -120,6 +120,14 @@ public:
     void clearUser() {
         for (auto& test : m_tests) test.user(0);
     }
+
+    VlcTest& operator[](size_t idx) { return m_tests[idx]; }
+
+    void reserve(size_t n) { m_tests.reserve(n); }
+
+    void resize(size_t n) { m_tests.resize(n); }
+
+    void shrink_to_fit() { m_tests.shrink_to_fit(); }
 };
 
 //######################################################################
