@@ -244,7 +244,7 @@ public:
     }
 
     // METHODS
-    std::unordered_set<LogicMTask*>& siblings() { return m_siblings; };
+    std::set<LogicMTask*>& siblings() { return m_siblings; };
     V3List<SiblingMC*>& aSiblingMCs() { return m_aSiblingMCs; };
     V3List<SiblingMC*>& bSiblingMCs() { return m_bSiblingMCs; };
 
