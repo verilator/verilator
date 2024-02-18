@@ -123,11 +123,11 @@ public:
 
     VlcTest& operator[](size_t idx) { return m_tests[idx]; }
 
-    void reserve(size_t n) { m_tests.reserve(n); }
+    inline void reserve(size_t n) { m_tests.reserve(n); }
 
-    void resize(size_t n) { m_tests.resize(n); }
+    inline void shrink_to_fit() { m_tests.shrink_to_fit(); }
 
-    void shrink_to_fit() { m_tests.shrink_to_fit(); }
+    [[nodiscard]] inline size_t size() const { return m_tests.size(); }
 };
 
 //######################################################################
