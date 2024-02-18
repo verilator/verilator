@@ -1,0 +1,7 @@
+%Error: t/t_scope_resolution_op_bad.v:14:34: MODULE cannot be the left operand of a scope resolution operator (IEEE 1800-2017 8.23)
+   14 |   localparam integer MOD_PARAM = mod::PARAM;
+      |                                  ^~~
+%Error: t/t_scope_resolution_op_bad.v:15:33: IFACE cannot be the left operand of a scope resolution operator (IEEE 1800-2017 8.23)
+   15 |   localparam integer IF_PARAM = mod_if::PARAM;
+      |                                 ^~~~~~
+%Error: Exiting due to
