@@ -313,6 +313,7 @@ detailed descriptions of these arguments.
      +1800-2012ext+<ext>        Use SystemVerilog 2012 with file extension <ext>
      +1800-2017ext+<ext>        Use SystemVerilog 2017 with file extension <ext>
     --assert                    Enable all assertions
+    --assert-case               Enable unique/unique0/priority case related checks
     --autoflush                 Flush streams after all $displays
     --bbox-sys                  Blackbox unknown $system calls
     --bbox-unsup                Blackbox unsupported language features

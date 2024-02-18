@@ -87,6 +87,10 @@ Summary:
 
    Enable all assertions.
 
+.. option:: --assert-case
+
+   Enable unique/unique0/priority case related checks.
+
 .. option:: --autoflush
 
    After every $display or $fdisplay, flush the output stream.  This

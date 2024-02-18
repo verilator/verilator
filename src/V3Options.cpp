@@ -1105,6 +1105,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
 
     // Minus options
     DECL_OPTION("-assert", OnOff, &m_assert);
+    DECL_OPTION("-assert-case", OnOff, &m_assertCase);
     DECL_OPTION("-autoflush", OnOff, &m_autoflush);
 
     DECL_OPTION("-bbox-sys", OnOff, &m_bboxSys);
