@@ -322,7 +322,7 @@ public:
 class ModuleFilesXmlVisitor final : public VNVisitorConst {
     // MEMBERS
     std::ostream& m_os;
-    std::set<std::string> m_modulesCovered;
+    std::unordered_set<std::string> m_modulesCovered;
     std::deque<FileLine*> m_nodeModules;
 
     // METHODS
