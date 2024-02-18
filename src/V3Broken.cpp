@@ -143,7 +143,7 @@ class BrokenCheckVisitor final : public VNVisitorConst {
 
     // STATE - across all visitors
     // All local variables declared in current function
-    std::unordered_set<const AstVar*> m_localVars;
+    std::set<const AstVar*> m_localVars;
     // Variable references in current function that do not reference an in-scope local
     std::map<const AstVar*, const AstNodeVarRef*> m_suspectRefs;
     // Local variables declared in the scope of the current statement

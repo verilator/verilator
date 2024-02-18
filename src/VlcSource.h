@@ -22,7 +22,6 @@
 
 #include <map>
 #include <set>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -33,7 +32,7 @@ class VlcPoint;
 
 class VlcSourceCount final {
     // TYPES
-    using PointsSet = std::unordered_set<const VlcPoint*>;
+    using PointsSet = std::set<const VlcPoint*>;
 
     // MEMBERS
     const int m_lineno;  ///< Line number

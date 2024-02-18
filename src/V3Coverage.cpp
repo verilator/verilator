@@ -37,7 +37,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class CoverageVisitor final : public VNVisitor {
     // TYPES
-    using LinenoSet = std::unordered_set<int>;
+    using LinenoSet = std::set<int>;
 
     struct ToggleEnt final {
         const string m_comment;  // Comment for coverage dump

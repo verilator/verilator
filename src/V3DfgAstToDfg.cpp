@@ -314,7 +314,7 @@ class AstToDfgVisitor final : public VNVisitor {
             // Vertices that might have become unused due to multiple driver resolution. Having
             // multiple drivers is an error and is hence assumed to be rare, so performance is
             // not very important, set will suffice.
-            std::unordered_set<DfgVertex*> prune;
+            std::set<DfgVertex*> prune;
 
             // Fix multiply driven ranges
             for (auto it = drivers.begin(); it != drivers.end();) {

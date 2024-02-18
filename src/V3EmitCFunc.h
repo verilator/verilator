@@ -44,7 +44,7 @@ class EmitCLazyDecls final : public VNVisitorConst {
     std::unordered_set<string> m_emittedManually;  // Set of names already declared manually.
     EmitCBaseVisitorConst& m_emitter;  // For access to file output
     bool m_needsBlankLine = false;  // Emit blank line if any declarations were emitted (cosmetic)
-    std::unordered_set<AstNode*> m_emitted;  // -> in set. Already emitted decl for symbols.
+    std::set<AstNode*> m_emitted;  // -> in set. Already emitted decl for symbols.
 
     // METHODS
     bool declaredOnce(AstNode* nodep) { return m_emitted.insert(nodep).second; }
@@ -249,7 +249,7 @@ public:
     }
 
     void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp, bool top,
-                               std::unordered_set<AstClass*>& doneClassesr) {
+                               std::set<AstClass*>& doneClassesr) {
         for (const AstClassExtends* extp = classp->extendsp(); extp;
              extp = VN_AS(extp->nextp(), ClassExtends)) {
             if (extp->classp()->useVirtualPublic()) {
@@ -298,7 +298,7 @@ public:
             const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
             if (nodep->isConstructor() && classp && classp->extendsp()) {
                 puts("\n    : ");
-                std::unordered_set<AstClass*> doneClasses;
+                std::set<AstClass*> doneClasses;
                 putConstructorSubinit(classp, nodep, true, doneClasses /*ref*/);
             }
         }
