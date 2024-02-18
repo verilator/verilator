@@ -1,6 +1,6 @@
 [0] -Info: t_assert_synth.v:115: top.t.test_info: Start of $info test
 [0] -Info: t_assert_synth.v:116: top.t.test_info: Middle of $info test
 [0] -Info: t_assert_synth.v:117: top.t.test_info: End of $info test
-[40] %Error: t_assert_synth.v:31: Assertion failed in top.t: synthesis full_case, but non-match found
+[40] %Error: t_assert_synth.v:31: Assertion failed in top.t: synthesis full_case, but non-match found for '2'h3'
 %Error: t/t_assert_synth.v:31: Verilog $stop
 Aborting...

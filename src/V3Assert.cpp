@@ -286,13 +286,16 @@ class AssertVisitor final : public VNVisitor {
                  itemp = VN_AS(itemp->nextp(), CaseItem)) {
                 if (itemp->isDefault()) has_default = true;
             }
+            const string valFmt = "'" + cvtToStr(nodep->exprp()->dtypep()->widthMin()) + "'h%X'";
             if (nodep->fullPragma() || nodep->priorityPragma()) {
                 // Need to add a default if there isn't one already
                 ++m_statAsFull;
                 if (!has_default) {
                     nodep->addItemsp(new AstCaseItem{
                         nodep->fileline(), nullptr /*DEFAULT*/,
-                        newFireAssert(nodep, "synthesis full_case, but non-match found")});
+                        newFireAssert(
+                            nodep, nodep->pragmaString() + ", but non-match found for " + valFmt,
+                            nodep->exprp()->cloneTreePure(false))});
                 }
             }
             if (nodep->parallelPragma() || nodep->uniquePragma() || nodep->unique0Pragma()) {
@@ -344,7 +347,6 @@ class AssertVisitor final : public VNVisitor {
                                     new AstLogNot{nodep->fileline(), propp->cloneTreePure(false)}};
                     AstNodeExpr* const exprp = nodep->exprp();
                     const string pragmaStr = nodep->pragmaString();
-                    const string valFmt = "'" + cvtToStr(exprp->dtypep()->widthMin()) + "'h%X'";
                     if (!allow_none)
                         zeroIfp->addThensp(
                             newFireAssert(nodep, pragmaStr + ", but none matched for " + valFmt,
