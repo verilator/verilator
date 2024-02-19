@@ -63,6 +63,45 @@ static std::string get_solver() {
 // VlRandomizer:: Methods
 
 void VlRandomVar::emit(std::ostream& s) const { s << m_name; }
+void VlRandomConst::emit(std::ostream& s) const {
+    s << "#b";
+    for (int i = 0; i < m_width; i++) { s << ((m_val & (1ULL << (m_width - i - 1))) ? '1' : '0'); }
+}
+void VlRandomBinOp::emit(std::ostream& s) const {
+    s << '(' << m_op << ' ';
+    m_lhs->emit(s);
+    s << ' ';
+    m_rhs->emit(s);
+    s << ')';
+}
+void VlRandomExtract::emit(std::ostream& s) const {
+    s << "((_ extract " << m_idx << ' ' << m_idx << ") ";
+    m_expr->emit(s);
+    s << ')';
+}
+
+std::shared_ptr<const VlRandomExpr> VlRandomizer::random_constraint(int bits) {
+    unsigned long long hash = rand() & ((1 << bits) - 1);
+    std::shared_ptr<const VlRandomExpr> concat = nullptr;
+    std::vector<std::shared_ptr<const VlRandomExpr>> varbits;
+    for (const auto& var : m_vars) {
+        for (int i = 0; i < var.second->width(); i++)
+            varbits.emplace_back(std::make_shared<const VlRandomExtract>(var.second, i));
+    }
+    for (int i = 0; i < bits; i++) {
+        std::shared_ptr<const VlRandomExpr> bit = nullptr;
+        for (unsigned j = 0; j * 2 < varbits.size(); j++) {
+            unsigned idx = j + rand() % (varbits.size() - j);
+            auto sel = varbits[idx];
+            std::swap(varbits[idx], varbits[j]);
+            bit = bit == nullptr ? sel : std::make_shared<const VlRandomBinOp>("bvxor", bit, sel);
+        }
+        concat = concat == nullptr ? bit
+                                   : std::make_shared<const VlRandomBinOp>("concat", concat, bit);
+    }
+    return std::make_shared<const VlRandomBinOp>(
+        "=", concat, std::make_shared<const VlRandomConst>(hash, bits));
+}
 
 bool VlRandomizer::next() {
     std::string cmd = get_solver();
@@ -80,6 +119,9 @@ bool VlRandomizer::next() {
           << "))\n";
     }
     for (const auto& constraint : m_constraints) { f << "(assert " << constraint << ")\n"; }
+    f << "(assert ";
+    random_constraint(HASH_LEN)->emit(f);
+    f << ")\n";
     f << "\n(check-sat)\n";
     f << "(get-value (";
     for (const auto& var : m_vars) { f << var.second->name() << ' '; }
@@ -98,7 +140,7 @@ bool VlRandomizer::next() {
             msg << "Error processing output of `" << comm << "' command";
             VL_WARN_MT("", 0, "randomize", msg.str().c_str());
         }
-        if (WIFSIGNALED(ec) || WEXITSTATUS(ec) > (rc == 2 ? 0 : 1)) {
+        if (rc != 1 && (WIFSIGNALED(ec) || WEXITSTATUS(ec) > (rc == 2 ? 0 : 1))) {
             std::stringstream msg;
             msg << "Command `" << comm
                 << "' failed: " << (WIFSIGNALED(ec) ? "terminated by signal" : "exit status")

@@ -58,6 +58,41 @@ public:
     virtual void set(unsigned long long val) const { *(T*)ref() = val; }
 };
 
+class VlRandomConst final : public VlRandomExpr {
+    const unsigned long long m_val;
+    const int m_width;
+
+public:
+    VlRandomConst(unsigned long long val, int width)
+        : m_val{val}
+        , m_width{width} {}
+    void emit(std::ostream& s) const;
+};
+
+class VlRandomExtract final : public VlRandomExpr {
+    const std::shared_ptr<const VlRandomExpr> m_expr;
+    const unsigned m_idx;
+
+public:
+    VlRandomExtract(std::shared_ptr<const VlRandomExpr> expr, unsigned idx)
+        : m_expr{expr}
+        , m_idx{idx} {}
+    void emit(std::ostream& s) const;
+};
+
+class VlRandomBinOp final : public VlRandomExpr {
+    const char* m_op;
+    const std::shared_ptr<const VlRandomExpr> m_lhs, m_rhs;
+
+public:
+    VlRandomBinOp(const char* op, std::shared_ptr<const VlRandomExpr> lhs,
+                  std::shared_ptr<const VlRandomExpr> rhs)
+        : m_op{op}
+        , m_lhs{lhs}
+        , m_rhs{rhs} {}
+    void emit(std::ostream& s) const;
+};
+
 //=============================================================================
 // VlRandomizer is the object holding constraints and variable references.
 
@@ -69,6 +104,7 @@ class VlRandomizer final {
     size_t m_capacity;
 
     // PRIVATE METHODS
+    std::shared_ptr<const VlRandomExpr> random_constraint(int bits);
     int parse_solution(FILE* file);
 
 public:
