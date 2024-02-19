@@ -1280,6 +1280,10 @@ Summary:
 
    Prevents parsing standard library.
 
+.. option:: --no-stop-fail
+
+   Don't call $stop when assertion fails. Simulation will continue.
+
 .. option:: --structs-packed
 
    Converts all unpacked structures to packed structures, and issues an
