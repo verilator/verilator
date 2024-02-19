@@ -621,13 +621,13 @@ void V3ParseImp::tokenPipelineSym() {
                 } else {
                     token = yaID__ETC;
                 }
+            } else if (!m_afterColonColon && *(yylval.strp) == "std") {
+                v3Global.setUsesStdPackage();
             } else if (token == yaID__CC) {
                 if (VN_IS(scp, Module) || VN_IS(scp, Iface)) {
                     yylval.fl->v3error(scp->typeName() << " cannot be the left operand of a "
                                        "scope resolution operator (IEEE 1800-2017 8.23)");
                 }
-            } else if (!m_afterColonColon && *(yylval.strp) == "std") {
-                v3Global.setUsesStdPackage();
             }
         } else {  // Not found
             yylval.scp = nullptr;
