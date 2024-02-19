@@ -1282,7 +1282,7 @@ Summary:
 
 .. option:: --no-stop-fail
 
-   Not to call $stop when assertion fails. Simulation continues.
+   Don't call $stop when assertion fails. Simulation will continue.
 
 .. option:: --structs-packed
 
