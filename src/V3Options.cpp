@@ -1442,6 +1442,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_stats |= flag;
     });
     DECL_OPTION("-std", OnOff, &m_std);
+    DECL_OPTION("-stop-fail", OnOff, &m_stopFail);
     DECL_OPTION("-structs-packed", OnOff, &m_structsPacked);
     DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2017; });
 
