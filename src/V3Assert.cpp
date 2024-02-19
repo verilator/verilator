@@ -286,7 +286,10 @@ class AssertVisitor final : public VNVisitor {
                  itemp = VN_AS(itemp->nextp(), CaseItem)) {
                 if (itemp->isDefault()) has_default = true;
             }
-            const string valFmt = "'" + cvtToStr(nodep->exprp()->dtypep()->widthMin()) + "'h%X'";
+            const AstNodeDType* exprDtypep = nodep->exprp()->dtypep()->skipRefp();
+            string valFmt;
+            if (exprDtypep->isIntegralOrPacked())
+                valFmt = " for '" + cvtToStr(exprDtypep->widthMin()) + "'h%X'";
             if (nodep->fullPragma() || nodep->priorityPragma()) {
                 // Need to add a default if there isn't one already
                 ++m_statAsFull;
@@ -294,8 +297,8 @@ class AssertVisitor final : public VNVisitor {
                     nodep->addItemsp(new AstCaseItem{
                         nodep->fileline(), nullptr /*DEFAULT*/,
                         newFireAssert(
-                            nodep, nodep->pragmaString() + ", but non-match found for " + valFmt,
-                            nodep->exprp()->cloneTreePure(false))});
+                            nodep, nodep->pragmaString() + ", but non-match found" + valFmt,
+                            valFmt.empty() ? nullptr : nodep->exprp()->cloneTreePure(false))});
                 }
             }
             if (nodep->parallelPragma() || nodep->uniquePragma() || nodep->unique0Pragma()) {
@@ -349,11 +352,11 @@ class AssertVisitor final : public VNVisitor {
                     const string pragmaStr = nodep->pragmaString();
                     if (!allow_none)
                         zeroIfp->addThensp(
-                            newFireAssert(nodep, pragmaStr + ", but none matched for " + valFmt,
-                                          exprp->cloneTreePure(false)));
-                    zeroIfp->addElsesp(newFireAssert(
-                        nodep, pragmaStr + ", but multiple matches found for " + valFmt,
-                        exprp->cloneTreePure(false)));
+                            newFireAssert(nodep, pragmaStr + ", but none matched" + valFmt,
+                                          valFmt.empty() ? nullptr : exprp->cloneTreePure(false)));
+                    zeroIfp->addElsesp(
+                        newFireAssert(nodep, pragmaStr + ", but multiple matches found" + valFmt,
+                                      valFmt.empty() ? nullptr : exprp->cloneTreePure(false)));
                     ohotIfp->addThensp(zeroIfp);
                     ohotIfp->isBoundsCheck(true);  // To avoid LATCH warning
                     ohotIfp->branchPred(VBranchPred::BP_UNLIKELY);

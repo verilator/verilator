@@ -12,7 +12,7 @@ scenarios(simulator => 1);
 top_filename("t/t_assert_unique_case_bad.v");
 
 compile(
-    verilator_flags2 => ["-x-assign 0 --assert --no-stop-fail"],
+    verilator_flags2 => ["-x-assign 0 --assert --no-stop-fail +define+NO_STOP_FAIL"],
     );
 
 execute(
