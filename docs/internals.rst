@@ -1980,6 +1980,9 @@ simultaneously.
 --vltmt
   Run Verilator tests in multithreaded mode.
 
+--xrun
+  Run Cadence Xcelium simulator tests.
+
 --xsim
   Run Xilinx XSim simulator tests.
 

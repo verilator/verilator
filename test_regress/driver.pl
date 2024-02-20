@@ -52,6 +52,7 @@ our %All_Scenarios
        ms    => ["linter", "simulator", "simulator_st", "ms"],
        nc    => ["linter", "simulator", "simulator_st", "nc"],
        vcs   => ["linter", "simulator", "simulator_st", "vcs"],
+       xrun  => ["linter", "simulator", "simulator_st", "xrun"],
        xsim  => ["linter", "simulator", "simulator_st", "xsim"],
        vlt   => ["linter", "simulator", "simulator_st", "vlt_all", "vlt"],
        vltmt => [          "simulator",                 "vlt_all", "vltmt"],
@@ -125,6 +126,7 @@ if (! GetOptions(
           "vlt!"        => sub { $opt_scenarios{vlt} = $_[1]; },
           "vltmt!"      => sub { $opt_scenarios{vltmt} = $_[1]; },
           "vcs!"        => sub { $opt_scenarios{vcs} = $_[1]; },
+          "xrun!"       => sub { $opt_scenarios{xrun} = $_[1]; },
           "xsim!"       => sub { $opt_scenarios{xsim} = $_[1]; },
           "<>"          => \&parameter,
     )) {
@@ -589,6 +591,7 @@ sub new {
     $self->{scenario} ||= "nc" if $self->{nc};
     $self->{scenario} ||= "ms" if $self->{ms};
     $self->{scenario} ||= "iv" if $self->{iv};
+    $self->{scenario} ||= "xrun" if $self->{xrun};
     $self->{scenario} ||= "xsim" if $self->{xsim};
 
     foreach my $dir (@::Test_Dirs) {
@@ -690,6 +693,12 @@ sub new {
         ms_flags2 => [],  # Overridden in some sim files
         ms_pli => 1,  # need to use pli
         ms_run_flags => [split(/\s+/, "-lib $self->{obj_dir}/work -c -do 'run -all;quit' ")],
+        # Xcelium (xrun)
+        xrun => 0,
+        xrun_define => 'XRUN',
+        xrun_flags => [], # doesn't really have a compile step
+        xrun_flags2 => [],  # Overridden in some sim files
+        xrun_run_flags => [split(/\s+/, "-64 -access +rwc -newsv -sv -xmlibdirname $self->{obj_dir}/work -l $self->{obj_dir}/history -quiet -plinowarn ")],
         # XSim
         xsim => 0,
         xsim_define => 'XSIM',
@@ -1138,6 +1147,10 @@ sub compile {
                     fails=>$param{fails},
                     cmd=>\@cmd);
     }
+    elsif ($param{xrun}) {
+        $param{tool_define} ||= $param{xrun_define};
+        $self->_make_top() if $param{make_top_shell};
+    }
     elsif ($param{xsim}) {
         $param{tool_define} ||= $param{xsim_define};
         $self->_make_top() if $param{make_top_shell};
@@ -1359,6 +1372,25 @@ sub execute {
                     %param,
                     expect=>$param{vcs_run_expect},  # non-verilator expect isn't the same
                     expect_filename=>$param{vcs_run_expect_filename},
+                    );
+    }
+    elsif ($param{xrun}) {
+        my @pli_opt = ();
+        if ($param{use_libvpi}) {
+            unshift @pli_opt, "-loadvpi $self->{obj_dir}/libvpi.so:vpi_compat_bootstrap";
+        }
+        $self->_run(logfile=>"$self->{obj_dir}/xrun_sim.log",
+                    fails=>$param{fails},
+                    cmd=>["echo q | " . $run_env . ($ENV{VERILATOR_XRUN} || "xrun "),
+                          @{$param{xrun_run_flags}},
+                          @{$param{xrun_flags2}},
+                          @{$param{all_run_flags}},
+                          @{pli_opt},
+                            $param{top_filename},
+                          ],
+                    %param,
+                    expect=>$param{xrun_run_expect},  # non-verilator expect isn't the same
+                    expect_filename=>$param{xrun_run_expect_filename},
                     );
     }
     elsif ($param{xsim}) {
