@@ -625,8 +625,8 @@ void V3ParseImp::tokenPipelineSym() {
                 v3Global.setUsesStdPackage();
             } else if (token == yaID__CC) {
                 if (VN_IS(scp, Module) || VN_IS(scp, Iface)) {
-                    yylval.fl->v3error(scp->typeName() << " cannot be the left operand of a "
-                                       "scope resolution operator (IEEE 1800-2017 8.23)");
+                    yylval.fl->v3error(scp->prettyTypeName() << " cannot be the left operand of "
+                                       "a scope resolution operator (IEEE 1800-2017 8.23)");
                 }
             }
         } else {  // Not found
