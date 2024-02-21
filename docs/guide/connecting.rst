@@ -500,7 +500,7 @@ the user should call:
      any delayed events pending,
    * :code:`designp->nextTimeSlot()`, which returns the simulation time of the
      next delayed event. This method can only be called if
-     :code:`designp->nextTimeSlot()` returned :code:`true`.
+     :code:`designp->eventsPending()` returned :code:`true`.
 
 Call :code:`eventsPending()` to check if you should continue with the
 simulation, and then :code:`nextTimeSlot()` to move simulation time forward.
