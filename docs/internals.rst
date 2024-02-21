@@ -1701,7 +1701,7 @@ Similarly, the ``NETLIST`` has a list of modules referred to by its
 
 ``.tree.json``` is an alternative dump format to ``.tree`` that is meant for
 programmatic processing (e.g. with `astsee <https://github.com/antmicro/astsee>`_).
-To enable this dump format, use :vlopt:`--json-only`.
+To enable this dump format, use :vlopt:`--dump-tree-json` or :vlopt:`--json-only`.
 
 Structure:
 ::
@@ -1743,8 +1743,8 @@ Structure:
 
 .tree.meta.json Output
 ----------------
-
-.tree.meta.json contains metadata that is common across the whole AST tree.
+.tree.meta.json contains metadata that is common across the whole AST tree
+(in case of --dump-tree-json, multiple trees share one meta file).
 
 Besides de-duplication of data shared between multiple stages, .meta.json enables offloading
 unstable data (that can vary from machine-to-machine or run-to-run) from main .tree.json.

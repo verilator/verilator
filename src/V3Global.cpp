@@ -16,12 +16,15 @@
 
 #include "V3PchAstMT.h"
 
+#include "V3Error.h"
 #include "V3File.h"
 #include "V3HierBlock.h"
 #include "V3LinkCells.h"
 #include "V3Parse.h"
 #include "V3ParseSym.h"
 #include "V3Stats.h"
+
+VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 // V3Global
@@ -106,7 +109,10 @@ string V3Global::digitsFilename(int number) {
 
 void V3Global::dumpCheckGlobalTree(const string& stagename, int newNumber, bool doDump) {
     const string treeFilename = v3Global.debugFilename(stagename + ".tree", newNumber);
-    v3Global.rootp()->dumpTreeFile(treeFilename, doDump);
+    if (dumpTreeLevel()) v3Global.rootp()->dumpTreeFile(treeFilename, doDump);
+    if (dumpTreeJsonLevel()) {
+        v3Global.rootp()->dumpTreeJsonFile(treeFilename + ".json", doDump);
+    }
     if (v3Global.opt.dumpTreeDot()) {
         v3Global.rootp()->dumpTreeDotFile(treeFilename + ".dot", doDump);
     }

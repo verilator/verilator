@@ -700,7 +700,7 @@ static void verilate(const string& argString) {
 
     // Final steps
     V3Global::dumpCheckGlobalTree("final", 990, dumpTreeEitherLevel() >= 3);
-    if (v3Global.opt.jsonOnly()) {
+    if (v3Global.opt.jsonOnly() || dumpTreeJsonLevel()) {
         const string filename
             = (v3Global.opt.jsonOnlyMetaOutput().empty()
                    ? v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".tree.meta.json"
