@@ -126,7 +126,7 @@ Those developing Verilator itself may also want these (see internals.rst):
 ::
 
    sudo apt-get install clang clang-format-14 cmake gdb gprof graphviz lcov
-   sudo apt-get install python3-clang yapf3 bear
+   sudo apt-get install python3-clang yapf3 bear jq
    sudo pip3 install sphinx sphinx_rtd_theme sphinxcontrib-spelling breathe ruff
    cpan install Pod::Perldoc
    cpan install Parallel::Forker

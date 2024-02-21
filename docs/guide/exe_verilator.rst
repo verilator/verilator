@@ -413,6 +413,12 @@ Summary:
    :vlopt:`--debug --no-dump-tree <--dump-tree>` may be useful if the dump
    files are large and not desired.
 
+.. option:: --dump-tree-json
+
+   Rarely needed.  Enable dumping Ast .json.tree debug files with dumping level 3,
+   which dumps the standard critical stages.  For details on the format, see
+   the Verilator Internals manual.
+
 .. option:: --dump-tree-dot
 
    Rarely needed.  Enable dumping Ast .tree.dot debug files in Graphviz
@@ -446,6 +452,11 @@ Summary:
 .. option:: --dumpi-tree <level>
 
    Rarely needed - for developer use.  Set internal Ast dumping level
+   globally to the specified value.
+
+.. option:: --dumpi-tree-json <level>
+
+   Rarely needed - for developer use.  Set internal Ast JSON dumping level
    globally to the specified value.
 
 .. option:: --dumpi-<srcfile> <level>
@@ -1798,7 +1809,8 @@ Summary:
    format is still evolving; there will be some changes in future versions.
 
    This option disables some more aggressive transformations and dumps only
-   the final state of the AST.
+   the final state of the AST. For more granular and unaltered dumps, meant
+   mainly for debugging see :vlopt:`--dump-tree-json`.
 
 .. option:: --json-only-meta-output <filename>
 
