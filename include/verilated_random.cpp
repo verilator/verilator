@@ -31,8 +31,8 @@
 
 static const char* solvers[] = {
     "z3 ",
-    "cvc5 --lang=smt2 ",
-    "cvc4 --lang=smt2 ",
+    "cvc5 --lang=smt2 --incremental ",
+    "cvc4 --lang=smt2 --incremental ",
 };
 
 static std::string get_solver() {
@@ -119,6 +119,10 @@ bool VlRandomizer::next() {
           << "))\n";
     }
     for (const auto& constraint : m_constraints) { f << "(assert " << constraint << ")\n"; }
+    f << "\n(check-sat)\n";
+    f << "(get-value (";
+    for (const auto& var : m_vars) { f << var.second->name() << ' '; }
+    f << "))\n";
     f << "(assert ";
     random_constraint(HASH_LEN)->emit(f);
     f << ")\n";
@@ -172,7 +176,10 @@ int VlRandomizer::parse_solution(FILE* solver) {
         n = getdelim(&m_line, &m_capacity, ' ', solver);
         if (n <= 1) return 2;
 
-        std::string name{m_line, (size_t)n - 1};
+        const char* name_expr = (char*)memrchr(m_line, '(', n);
+        name_expr = name_expr ? name_expr + 1 : m_line;
+        size_t name_len = n - (name_expr - m_line) - 1;
+        std::string name{name_expr, name_len};
 
         n = getdelim(&m_line, &m_capacity, ')', solver);
         if (n <= 0) return 2;
