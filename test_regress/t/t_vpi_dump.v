@@ -13,6 +13,14 @@ typedef struct packed {
    int              sel;  // select
 } t_bus;
 
+interface TestInterface();
+
+   logic [31:0] addr;
+   modport source (input addr);
+
+endinterface
+
+
 module t (  /*AUTOARG*/
     // Outputs
     x,
@@ -57,6 +65,8 @@ module t (  /*AUTOARG*/
    t_bus bus1;
 
    sub sub ();
+
+   TestInterface intf_arr[2]();
 
 
    initial begin

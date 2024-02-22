@@ -74,7 +74,7 @@ void dpi_show(svScope obj) {
 void vpi_show(vpiHandle obj) {
     const char* namep;
     if (obj) {
-        namep = vpi_get_str(vpiName, obj);
+        namep = vpi_get_str(vpiFullName, obj);
     } else {
         namep = "global";
     }
