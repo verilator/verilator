@@ -160,7 +160,7 @@ bom             [\357\273\277]
                           BEGIN(ENCBASE64);
                           return VP_TEXT; }
 <PRAGMAPRT>("begin_protected"|"end_protected"|"end")[\n\r]  { FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
-<PRAGMAPRT>"version="[^\n\r]*[\n\r] {
+<PRAGMAPRT>"version"{wsn}*={wsn}*[^\n\r]*[\n\r] {
                           FL_FWDC;
                           linenoInc();
                           BEGIN(INITIAL);
