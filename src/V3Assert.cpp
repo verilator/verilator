@@ -27,9 +27,9 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class AssertVisitor final : public VNVisitor {
     // TYPES
-    enum assertType_e {
+    enum assertType_e : uint8_t {
         ASSERT_TYPE_INTRINSIC,  // AstNodeAssertIntrinsinc
-        ASSERT_TYPE_USER_DEFINED,  // SVA, PSL
+        ASSERT_TYPE_SVA,  // SVA, PSL
         ASSERT_TYPE_CASE,  // unique/unique0/priority case related checks
         ASSERT_TYPE_IF  // unique/unique0/priority if related checks
     };
@@ -54,6 +54,12 @@ class AssertVisitor final : public VNVisitor {
     bool m_inSampled = false;  // True inside a sampled expression
 
     // METHODS
+    static bool assertTypeOn(assertType_e assertType) {
+        if (assertType == ASSERT_TYPE_INTRINSIC) return true;
+        if (v3Global.opt.assertOn()) return true;
+        if (assertType == ASSERT_TYPE_CASE && v3Global.opt.assertCaseOn()) return true;
+        return false;
+    }
     string assertDisplayMessage(AstNode* nodep, const string& prefix, const string& message,
                                 VDisplayType severity) {
         if (severity == VDisplayType::DT_ERROR || severity == VDisplayType::DT_FATAL) {
@@ -116,8 +122,7 @@ class AssertVisitor final : public VNVisitor {
         AstNodeExpr* const condp
             = assertType == ASSERT_TYPE_INTRINSIC
                   ? static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitTrue{}})
-              : ((assertType == ASSERT_TYPE_CASE && v3Global.opt.assertCaseOn())
-                 || v3Global.opt.assertOn())
+              : assertTypeOn(assertType)
                   ? static_cast<AstNodeExpr*>(
                       new AstCExpr{fl, "vlSymsp->_vm_contextp__->assertOn()", 1})
                   : static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitFalse{}});
@@ -196,7 +201,7 @@ class AssertVisitor final : public VNVisitor {
                 ++m_statAsNotImm;
             }
             const assertType_e assertType
-                = VN_IS(nodep, AssertIntrinsic) ? ASSERT_TYPE_INTRINSIC : ASSERT_TYPE_USER_DEFINED;
+                = VN_IS(nodep, AssertIntrinsic) ? ASSERT_TYPE_INTRINSIC : ASSERT_TYPE_SVA;
             if (passsp) passsp = newIfAssertOn(passsp, assertType);
             if (failsp) failsp = newIfAssertOn(failsp, assertType);
             if (!passsp && !failsp) failsp = newFireAssertUnchecked(nodep, "'assert' failed.");
