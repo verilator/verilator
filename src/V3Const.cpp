@@ -3302,6 +3302,12 @@ class ConstVisitor final : public VNVisitor {
                 } else {
                     nodep->unlinkFrBack();
                 }
+
+                if (!m_modp || !m_modp->hasParameterList()) {
+                    nodep->v3warn(UNUSEDLOOP, "Loop is not used and will be optimized out");
+                    nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDLOOP, true);
+                }
+
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (nodep->condp()->isNeqZero()) {
                 if (!thisWhileHasJumpDelay) {

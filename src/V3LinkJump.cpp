@@ -34,6 +34,7 @@
 #include "V3LinkJump.h"
 
 #include "V3AstUserAllocator.h"
+#include "V3Error.h"
 
 #include <vector>
 
@@ -254,6 +255,8 @@ class LinkJumpVisitor final : public VNVisitor {
         AstWhile* const whilep = new AstWhile{nodep->fileline(), condp, bodyp};
         if (!m_unrollFull.isDefault()) whilep->unrollFull(m_unrollFull);
         m_unrollFull = VOptionBool::OPT_DEFAULT_FALSE;
+        // no unused warning for converted AstDoWhile
+        nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDLOOP, true);
         nodep->replaceWith(whilep);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         if (bodyp) {

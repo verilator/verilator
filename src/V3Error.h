@@ -152,6 +152,7 @@ public:
         UNPACKED,       // Unsupported unpacked
         UNSIGNED,       // Comparison is constant due to unsigned arithmetic
         UNUSEDGENVAR,   // No receivers for genvar
+        UNUSEDLOOP,     // Loop is unused
         UNUSEDPARAM,    // No receivers for parameters
         UNUSEDSIGNAL,   // No receivers for signals
         USERERROR,      // Elaboration time $error
@@ -210,7 +211,7 @@ public:
             "STATICVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD",
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
-            "UNPACKED", "UNSIGNED", "UNUSEDGENVAR", "UNUSEDPARAM", "UNUSEDSIGNAL",
+            "UNPACKED", "UNSIGNED", "UNUSEDGENVAR",  "UNUSEDLOOP" ,"UNUSEDPARAM", "UNUSEDSIGNAL",
             "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
             "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT",  "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL",
             " MAX"
@@ -254,12 +255,13 @@ public:
                 || m_e == BLKSEQ || m_e == DEFPARAM || m_e == DECLFILENAME || m_e == EOFNEWLINE
                 || m_e == GENUNNAMED || m_e == IMPORTSTAR || m_e == INCABSPATH
                 || m_e == PINCONNECTEMPTY || m_e == PINNOCONNECT || m_e == SYNCASYNCNET
-                || m_e == UNDRIVEN || m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM
-                || m_e == UNUSEDSIGNAL || m_e == VARHIDDEN);
+                || m_e == UNDRIVEN || m_e == UNUSEDGENVAR || m_e == UNUSEDLOOP
+                || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL || m_e == VARHIDDEN);
     }
     // Warnings that are unused only
     bool unusedError() const VL_MT_SAFE {
-        return (m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL);
+        return (m_e == UNUSEDGENVAR || m_e == UNUSEDLOOP || m_e == UNUSEDPARAM
+                || m_e == UNUSEDSIGNAL);
     }
 
     V3ErrorCode renamedTo() const {
@@ -275,7 +277,8 @@ public:
             return (m_e == WIDTHEXPAND || m_e == WIDTHTRUNC || m_e == WIDTHXZEXPAND);
         }
         if (other == V3ErrorCode::I_UNUSED) {
-            return (m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL);
+            return (m_e == UNUSEDGENVAR || m_e == UNUSEDLOOP || m_e == UNUSEDPARAM
+                    || m_e == UNUSEDSIGNAL);
         }
         return false;
     }
