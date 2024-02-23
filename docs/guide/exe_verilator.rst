@@ -85,7 +85,11 @@ Summary:
 
 .. option:: --assert
 
-   Enable all assertions.
+   Enable all assertions. Implies :vlopt:`--assert-case`.
+
+.. option:: --assert-case
+
+   Enable unique/unique0/priority case related checks.
 
 .. option:: --autoflush
 

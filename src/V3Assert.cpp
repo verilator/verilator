@@ -26,6 +26,13 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Assert class functions
 
 class AssertVisitor final : public VNVisitor {
+    // TYPES
+    enum assertType_e : uint8_t {
+        ASSERT_TYPE_INTRINSIC,  // AstNodeAssertIntrinsinc
+        ASSERT_TYPE_SVA,  // SVA, PSL
+        ASSERT_TYPE_CASE,  // unique/unique0/priority case related checks
+        ASSERT_TYPE_IF  // unique/unique0/priority if related checks
+    };
     // NODE STATE/TYPES
     // Cleared on netlist
     //  AstNode::user()         -> bool.  True if processed
@@ -47,6 +54,12 @@ class AssertVisitor final : public VNVisitor {
     bool m_inSampled = false;  // True inside a sampled expression
 
     // METHODS
+    static bool assertTypeOn(assertType_e assertType) {
+        if (assertType == ASSERT_TYPE_INTRINSIC) return true;
+        if (v3Global.opt.assertOn()) return true;
+        if (assertType == ASSERT_TYPE_CASE && v3Global.opt.assertCaseOn()) return true;
+        return false;
+    }
     string assertDisplayMessage(AstNode* nodep, const string& prefix, const string& message,
                                 VDisplayType severity) {
         if (severity == VDisplayType::DT_ERROR || severity == VDisplayType::DT_FATAL) {
@@ -99,7 +112,7 @@ class AssertVisitor final : public VNVisitor {
         varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
         return varrefp;
     }
-    AstNode* newIfAssertOn(AstNode* nodep, bool force) {
+    AstNode* newIfAssertOn(AstNode* nodep, assertType_e assertType) {
         // Add a internal if to check assertions are on.
         // Don't make this a AND term, as it's unlikely to need to test this.
         FileLine* const fl = nodep->fileline();
@@ -107,8 +120,9 @@ class AssertVisitor final : public VNVisitor {
         // If assertions are off, have constant propagation rip them out later
         // This allows syntax errors and such to be detected normally.
         AstNodeExpr* const condp
-            = force ? static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitTrue{}})
-              : v3Global.opt.assertOn()
+            = assertType == ASSERT_TYPE_INTRINSIC
+                  ? static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitTrue{}})
+              : assertTypeOn(assertType)
                   ? static_cast<AstNodeExpr*>(
                       new AstCExpr{fl, "vlSymsp->_vm_contextp__->assertOn()", 1})
                   : static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitFalse{}});
@@ -131,9 +145,10 @@ class AssertVisitor final : public VNVisitor {
         return bodysp;
     }
 
-    AstNode* newFireAssert(AstNode* nodep, const string& message, AstNodeExpr* exprsp = nullptr) {
+    AstNode* newFireAssert(AstNode* nodep, assertType_e assertType, const string& message,
+                           AstNodeExpr* exprsp = nullptr) {
         AstNode* bodysp = newFireAssertUnchecked(nodep, message, exprsp);
-        bodysp = newIfAssertOn(bodysp, false);
+        bodysp = newIfAssertOn(bodysp, assertType);
         return bodysp;
     }
 
@@ -185,16 +200,17 @@ class AssertVisitor final : public VNVisitor {
             } else {
                 ++m_statAsNotImm;
             }
-            const bool force = VN_IS(nodep, AssertIntrinsic);
-            if (passsp) passsp = newIfAssertOn(passsp, force);
-            if (failsp) failsp = newIfAssertOn(failsp, force);
+            const assertType_e assertType
+                = VN_IS(nodep, AssertIntrinsic) ? ASSERT_TYPE_INTRINSIC : ASSERT_TYPE_SVA;
+            if (passsp) passsp = newIfAssertOn(passsp, assertType);
+            if (failsp) failsp = newIfAssertOn(failsp, assertType);
             if (!passsp && !failsp) failsp = newFireAssertUnchecked(nodep, "'assert' failed.");
             ifp = new AstIf{nodep->fileline(), propp, passsp, failsp};
             ifp->isBoundsCheck(true);  // To avoid LATCH warning
             // It's more LIKELY that we'll take the nullptr if clause
             // than the sim-killing else clause:
             ifp->branchPred(VBranchPred::BP_LIKELY);
-            bodysp = newIfAssertOn(ifp, force);
+            bodysp = newIfAssertOn(ifp, assertType);
         } else {
             nodep->v3fatalSrc("Unknown node type");
         }
@@ -265,9 +281,9 @@ class AssertVisitor final : public VNVisitor {
                 = ((allow_none || hasDefaultElse)
                        ? static_cast<AstNodeExpr*>(new AstOneHot0{nodep->fileline(), propp})
                        : static_cast<AstNodeExpr*>(new AstOneHot{nodep->fileline(), propp}));
-            AstIf* const checkifp
-                = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), ohot},
-                            newFireAssert(nodep, "'unique if' statement violated"), newifp};
+            AstIf* const checkifp = new AstIf{
+                nodep->fileline(), new AstLogNot{nodep->fileline(), ohot},
+                newFireAssert(nodep, ASSERT_TYPE_IF, "'unique if' statement violated"), newifp};
             checkifp->isBoundsCheck(true);  // To avoid LATCH warning
             checkifp->branchPred(VBranchPred::BP_UNLIKELY);
             nodep->replaceWith(checkifp);
@@ -296,9 +312,10 @@ class AssertVisitor final : public VNVisitor {
                 if (!has_default) {
                     nodep->addItemsp(new AstCaseItem{
                         nodep->fileline(), nullptr /*DEFAULT*/,
-                        newFireAssert(
-                            nodep, nodep->pragmaString() + ", but non-match found" + valFmt,
-                            valFmt.empty() ? nullptr : nodep->exprp()->cloneTreePure(false))});
+                        newFireAssert(nodep, ASSERT_TYPE_CASE,
+                                      nodep->pragmaString() + ", but non-match found" + valFmt,
+                                      valFmt.empty() ? nullptr
+                                                     : nodep->exprp()->cloneTreePure(false))});
                 }
             }
             if (nodep->parallelPragma() || nodep->uniquePragma() || nodep->unique0Pragma()) {
@@ -351,11 +368,12 @@ class AssertVisitor final : public VNVisitor {
                     AstNodeExpr* const exprp = nodep->exprp();
                     const string pragmaStr = nodep->pragmaString();
                     if (!allow_none)
-                        zeroIfp->addThensp(
-                            newFireAssert(nodep, pragmaStr + ", but none matched" + valFmt,
-                                          valFmt.empty() ? nullptr : exprp->cloneTreePure(false)));
+                        zeroIfp->addThensp(newFireAssert(
+                            nodep, ASSERT_TYPE_CASE, pragmaStr + ", but none matched" + valFmt,
+                            valFmt.empty() ? nullptr : exprp->cloneTreePure(false)));
                     zeroIfp->addElsesp(
-                        newFireAssert(nodep, pragmaStr + ", but multiple matches found" + valFmt,
+                        newFireAssert(nodep, ASSERT_TYPE_CASE,
+                                      pragmaStr + ", but multiple matches found" + valFmt,
                                       valFmt.empty() ? nullptr : exprp->cloneTreePure(false)));
                     ohotIfp->addThensp(zeroIfp);
                     ohotIfp->isBoundsCheck(true);  // To avoid LATCH warning
