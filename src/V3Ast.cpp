@@ -1199,6 +1199,23 @@ void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
 }
 
 // cppcheck-suppress unusedFunction  // Debug only
+char* AstNode::dumpTreeJsonGdb(const AstNode* nodep) {
+    if (!nodep) return strdup("{\"addr\":\"NULL\"}\n");
+    std::stringstream nodepStream;
+    nodep->dumpTreeJson(nodepStream);
+    const std::string str = nodepStream.rdbuf()->str();
+    return strdup(str.c_str());
+}
+// cppcheck-suppress unusedFunction  // Debug only
+// identity func to allow for passing already done dumps to jtree
+char* AstNode::dumpTreeJsonGdb(const char* str) { return strdup(str); }
+// cppcheck-suppress unusedFunction  // Debug only
+// allow for passing pointer literals like 0x42.. without manual cast
+char* AstNode::dumpTreeJsonGdb(intptr_t nodep) {
+    if (!nodep) return strdup("{\"addr\":\"NULL\"}\n");
+    return dumpTreeJsonGdb((const AstNode*)nodep);
+}
+// cppcheck-suppress unusedFunction  // Debug only
 void AstNode::dumpGdb(const AstNode* nodep) {  // For GDB only  // LCOV_EXCL_LINE
     if (!nodep) {
         cout << "<nullptr>" << endl;
@@ -1365,10 +1382,11 @@ void AstNode::dumpTreeJsonFile(const string& filename, bool doDump) {
     *treejsonp << '\n';
 }
 
+void AstNode::dumpJsonMetaFileGdb(const char* filename) { dumpJsonMetaFile(filename); }
 void AstNode::dumpJsonMetaFile(const string& filename) {
     UINFO(2, "Dumping " << filename << endl);
     const std::unique_ptr<std::ofstream> treejsonp{V3File::new_ofstream(filename)};
-    if (treejsonp->fail()) v3fatal("Can't write " << filename);
+    if (treejsonp->fail()) v3fatalStatic("Can't write " << filename);
     *treejsonp << '{';
     FileLine::fileNameNumMapDumpJson(*treejsonp);
     *treejsonp << ',';

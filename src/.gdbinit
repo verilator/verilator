@@ -20,6 +20,26 @@ document pnt
   Verilator: Print AstNode NODEP's tree
 end
 
+# Source python-based gdb config with jshow/jdiff definitions
+# (Stored in separate file, so it can be highlighted/linted/formatted as Python)
+python
+import os
+if "VERILATOR_ROOT" in os.environ:
+  gdbinit_py = os.environ["VERILATOR_ROOT"] + "/src/.gdbinit.py"
+  gdb.execute("source" + gdbinit_py)
+end
+
+define jstash
+  call (char*) &(AstNode::dumpTreeJsonGdb($arg0)[0])
+end
+document jstash
+Verilator: Perform a JSON dump of the given AST node and save it in value history (e.g. $1) for later
+inspection using jtree. The node can be a pointer identifier or an address literal.
+end
+
+alias -a js=jstash
+alias -a jt=jtree
+
 define dtf
   call AstNode::dumpTreeFileGdb($arg0, 0)
 end
