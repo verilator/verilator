@@ -2158,6 +2158,9 @@ public:
     string warnOther() const VL_REQUIRES(V3Error::s().m_mutex) { return fileline()->warnOther(); }
 
     virtual void dump(std::ostream& str = std::cout) const;
+    static char* dumpTreeJsonGdb(const AstNode* nodep);  // For GDB only, free()d by caller
+    static char* dumpTreeJsonGdb(const char* str);  // For GDB only, free()d by caller
+    static char* dumpTreeJsonGdb(intptr_t nodep);  // For GDB only, free()d by caller
     static void dumpGdb(const AstNode* nodep);  // For GDB only
     void dumpGdbHeader() const;
 
@@ -2219,7 +2222,8 @@ public:
     virtual void dumpTreeJsonOpGen(std::ostream& os, const string& indent) const {};
     void dumpTreeJson(std::ostream& os, const string& indent = "") const;
     void dumpTreeJsonFile(const string& filename, bool doDump = true);
-    void dumpJsonMetaFile(const string& filename);
+    static void dumpJsonMetaFileGdb(const char* filename);
+    static void dumpJsonMetaFile(const string& filename);
 
     // Render node address for dumps. By default this is just the address
     // printed as hex, but with --dump-tree-addrids we map addresses to short

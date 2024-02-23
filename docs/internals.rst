@@ -1846,6 +1846,20 @@ To print a node:
    pnt nodep
    # or: call dumpTreeGdb(nodep)  # aliased to "pnt" in src/.gdbinit
 
+``src/.gdbinit`` and ``src/.gdbinit.py`` define handy utilities for working with
+JSON AST dumps. For example:
+
+* ``jstash nodep`` - Perform a JSON AST dump and save it into GDB value history (e.g. ``$1``)
+* ``jtree nodep`` - Perform a JSON AST dump and pretty print it using ``astsee_verilator``.
+* ``jtree $1`` - Pretty print a dump that was previously saved by ``jstash``.
+* ``jtree nodep -d '.file, .timeunit'`` - Perform a JSON AST dump, filter out some fields and pretty print it.
+* ``jtree 0x55555613dca0`` - Pretty print using address literal (rather than actual pointer).
+* ``jtree $1 nodep`` - Diff ``nodep`` against an older dump.
+
+A detailed description of ``jstash`` and ``jtree`` can be displayed using ``gdb``'s ``help`` command.
+
+These commands require `astsee <https://github.com/antmicro/astsee>`_ to be installed.
+
 When GDB halts, it is useful to understand that the backtrace will commonly
 show the iterator functions between each invocation of ``visit`` in the
 backtrace. You will typically see a frame sequence something like:

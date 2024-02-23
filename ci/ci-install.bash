@@ -92,8 +92,8 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     sudo apt-get update ||
     sudo apt-get update
     # libfl-dev needed for internal coverage's test runs
-    sudo apt-get install gdb gtkwave lcov libfl-dev ccache ||
-    sudo apt-get install gdb gtkwave lcov libfl-dev ccache
+    sudo apt-get install gdb gtkwave lcov libfl-dev ccache jq ||
+    sudo apt-get install gdb gtkwave lcov libfl-dev ccache jq
     # Required for test_regress/t/t_dist_attributes.pl
     if [ "$CI_RUNS_ON" = "ubuntu-22.04" ]; then
       sudo apt-get install python3-clang mold ||
@@ -106,10 +106,10 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   elif [ "$CI_OS_NAME" = "osx" ]; then
     brew update
     # brew cask install gtkwave # fst2vcd hangs at launch, so don't bother
-    brew install ccache perl
+    brew install ccache perl jq
   elif [ "$CI_OS_NAME" = "freebsd" ]; then
     # fst2vcd fails with "Could not open '<input file>', exiting."
-    sudo pkg install -y ccache gmake perl5 python3
+    sudo pkg install -y ccache gmake perl5 python3 jq
   else
     fatal "Unknown os: '$CI_OS_NAME'"
   fi
@@ -121,6 +121,9 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   install-vcddiff
   # Workaround -fsanitize=address crash
   sudo sysctl -w vm.mmap_rnd_bits=28
+
+  printf "add-auto-load-safe-path %s/test_regress/.gdbinit\n" "$PWD" >> ~/.gdbinit
+  PIP_BREAK_SYSTEM_PACKAGES=1 sudo pip install git+https://github.com/antmicro/astsee.git@f863e96b59fd996610df3fe071c05c5f441cf785
 else
   ##############################################################################
   # Unknown build stage
