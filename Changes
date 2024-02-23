@@ -15,12 +15,13 @@ Verilator 5.021 devel
 
 * Add predicted stack overflow warning (#4799).
 * Add `+verilator+coverage+file` runtime option.
-* Add `--runtime-debug` for Verilated executable runtime debugging.
+* Add `--assert-case` option (#4919). [Yutetsu TAKATSUKASA]
 * Add `--decorations node` for inserting debug comments into emitted code.
-* Add `unroll_disable` and `unroll_full` loop control metacomments (#3260). [Jiaxun Yang]
 * Add `--json-only` and related JSON dumping (#4715) (#4831). [Szymon Gizler, Antmicro Ltd.]
-* Add `--valgrind` switch (#4828). [Szymon Gizler]
 * Add `--[no]-stop-fail` option for continuing after assertions (#4904). [Yutetsu TAKATSUKASA]
+* Add `--runtime-debug` for Verilated executable runtime debugging.
+* Add `--valgrind` switch (#4828). [Szymon Gizler]
+* Add `unroll_disable` and `unroll_full` loop control metacomments (#3260). [Jiaxun Yang]
 * Remove deprecated 32-bit pointer mode (`gcc -m32`).
 * Deprecate --xml-only and XML dumping (#4715) (#4831).
 * Change zero replication width error to ZEROREPL warning (#4753) (#4762). [Pengcheng Xu]
@@ -59,6 +60,8 @@ Verilator 5.021 devel
 * Fix compile error on structs with queues (and ignore toggle coverage on queues).
 * Fix toggle coverage error on multi-edge driven signals.
 * Fix whitespace in `pragma protect version` (#4902) (#4914). [Paul Swirhun]
+* Fix incorrect code generation for change expression on typedefed unpacked array (#4915). [Geza Lore]
+* Fix inconsistent driver resolution with typedefs (#4917). [Geza Lore]
 
 
 Verilator 5.020 2024-01-01
