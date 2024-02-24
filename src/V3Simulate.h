@@ -366,7 +366,7 @@ private:
         // Call for node types we know we can't handle
         checkNodeInfo(nodep);
         if (optimizable()) {
-            clearOptimizable(nodep, std::string{"Known unhandled node type "} + nodep->typeName());
+            clearOptimizable(nodep, "Known unhandled node type "s + nodep->typeName());
         }
     }
     void badNodeType(AstNode* nodep) {
@@ -392,9 +392,6 @@ private:
         }
         UASSERT_OBJ(vscp, nodep, "Not linked");
         return vscp;
-    }
-    int unrollCount() const {
-        return m_params ? v3Global.opt.unrollCount() * 16 : v3Global.opt.unrollCount();
     }
     bool jumpingOver(const AstNode* nodep) const {
         // True to jump over this node - all visitors must call this up front
@@ -456,12 +453,12 @@ private:
                     clearOptimizable(nodep, "Var write & read");
                 }
                 m_varAux(vscp).usage |= VU_RV;
-                const bool isConst = (nodep->varp()->isConst() || nodep->varp()->isParam())
-                                     && nodep->varp()->valuep();
+                const bool varIsConst = (nodep->varp()->isConst() || nodep->varp()->isParam())
+                                        && nodep->varp()->valuep();
                 AstNodeExpr* const valuep
-                    = isConst ? fetchValueNull(nodep->varp()->valuep()) : nullptr;
+                    = varIsConst ? fetchValueNull(nodep->varp()->valuep()) : nullptr;
                 // Propagate PARAM constants for constant function analysis
-                if (isConst && valuep) {
+                if (varIsConst && valuep) {
                     if (!m_checkOnly && optimizable()) newValue(vscp, valuep);
                 } else {
                     if (m_checkOnly) varRefCb(nodep);
@@ -960,10 +957,11 @@ private:
                 }
                 iterateAndNextConstNull(nodep->stmtsp());
                 iterateAndNextConstNull(nodep->incsp());
-                if (loops++ > unrollCount() * 16) {
+                if (loops++ > v3Global.opt.unrollCountAdjusted(VOptionBool{}, m_params, true)) {
                     clearOptimizable(nodep, "Loop unrolling took too long; probably this is an"
-                                            "infinite loop, or set --unroll-count above "
-                                                + cvtToStr(unrollCount()));
+                                            "infinite loop, or use /*verilator unroll_full*/, or "
+                                            "set --unroll-count above "
+                                                + cvtToStr(loops));
                     break;
                 }
             }
@@ -999,11 +997,12 @@ private:
                 if (jumpingOver(nodep)) break;
 
                 // Prep for next loop
-                if (loops++ > unrollCount() * 16) {
-                    clearOptimizable(nodep,
-                                     "Loop unrolling took too long; probably this is an infinite"
-                                     " loop, or set --unroll-count above "
-                                         + cvtToStr(unrollCount()));
+                if (loops++
+                    > v3Global.opt.unrollCountAdjusted(nodep->unrollFull(), m_params, true)) {
+                    clearOptimizable(nodep, "Loop unrolling took too long; probably this is an"
+                                            "infinite loop, or use /*verilator unroll_full*/, or "
+                                            "set --unroll-count above "
+                                                + cvtToStr(loops));
                     break;
                 }
             }
@@ -1131,7 +1130,7 @@ private:
                                 nodep, "Argument for $display like statement is not constant");
                             break;
                         }
-                        const string pformat = std::string{"%"} + width + pos[0];
+                        const string pformat = "%"s + width + pos[0];
                         result += constp->num().displayed(nodep, pformat);
                     } else {
                         switch (std::tolower(pos[0])) {
@@ -1176,6 +1175,9 @@ private:
             }
         }
     }
+
+    // Ignore coverage - from a function we're inlining
+    void visit(AstCoverInc* nodep) override {}
 
     // ====
     // Known Bad

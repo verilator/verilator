@@ -76,7 +76,7 @@ public:
     ~TraceActivityVertex() override = default;
     // ACCESSORS
     AstNode* insertp() const {
-        if (!m_insertp) v3fatalSrc("Null insertp; probably called on a special always/slow.");
+        UASSERT(m_insertp, "Null insertp; probably called on a special always/slow");
         return m_insertp;
     }
     string name() const override {
@@ -533,7 +533,7 @@ class TraceVisitor final : public VNVisitor {
                     addInitStr("const uint32_t base VL_ATTR_UNUSED = "
                                "vlSymsp->__Vm_baseCode + "
                                + cvtToStr(baseCode) + ";\n");
-                    addInitStr("if (false && bufp) {}  // Prevent unused\n");
+                    addInitStr("(void)bufp;  // Prevent unused variable warning\n");
                 } else {
                     addInitStr("uint32_t* const oldp VL_ATTR_UNUSED = "
                                "bufp->oldp(vlSymsp->__Vm_baseCode + "
@@ -714,8 +714,8 @@ class TraceVisitor final : public VNVisitor {
         m_regFuncp->addStmtsp(new AstText{fl, ", vlSelf);\n", true});
 
         // Clear global activity flag
-        cleanupFuncp->addStmtsp(new AstCStmt{m_topScopep->fileline(),
-                                             std::string{"vlSymsp->__Vm_activity = false;\n"}});
+        cleanupFuncp->addStmtsp(
+            new AstCStmt{m_topScopep->fileline(), "vlSymsp->__Vm_activity = false;\n"s});
 
         // Clear fine grained activity flags
         for (uint32_t i = 0; i < m_activityNumber; ++i) {
@@ -918,5 +918,5 @@ public:
 void V3Trace::traceAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { TraceVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("trace", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("trace", 0, dumpTreeEitherLevel() >= 3);
 }

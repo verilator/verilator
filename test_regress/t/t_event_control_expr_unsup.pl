@@ -12,7 +12,7 @@ scenarios(vlt => 1);  # no vltmt, as AstMemberSel is unhandled in V3InstrCount
 
 top_filename("t_event_control_expr.v");
 
-compile(
+lint(
     verilator_flags2 => ['-DUNSUP'],
     fails => 1,
     expect_filename => $Self->{golden_filename},

@@ -1,0 +1,13 @@
+%Warning-REDEFMACRO: t/t_pp_dupdef_pragma_bad.v:11:19: Redefining existing define: 'DUP', with different value: 'b_bad'
+                     t/t_pp_dupdef_pragma_bad.v:11:19: ... Location of previous definition, with value: 'a'
+                     ... For warning description see https://verilator.org/warn/REDEFMACRO?v=latest
+                     ... Use "/* verilator lint_off REDEFMACRO */" and lint_on around source to disable this message.
+%Warning-REDEFMACRO: t/t_pp_dupdef_pragma_bad.v:16:19: Redefining existing define: 'DUP', with different value: 'd_bad'
+                     t/t_pp_dupdef_pragma_bad.v:16:19: ... Location of previous definition, with value: 'c_nowarn'
+%Warning-REDEFMACRO: t/t_pp_dupdef_pragma_bad.v:21:19: Redefining existing define: 'DUP', with different value: 'f_bad'
+                     t/t_pp_dupdef_pragma_bad.v:21:19: ... Location of previous definition, with value: 'e_nowarn'
+%Warning-REDEFMACRO: t/t_pp_dupdef_pragma_bad.v:26:19: Redefining existing define: 'DUP', with different value: 'k_bad'
+                     t/t_pp_dupdef_pragma_bad.v:26:19: ... Location of previous definition, with value: 'j_nowarn'
+%Warning-REDEFMACRO: t/t_pp_dupdef_pragma_bad.v:31:19: Redefining existing define: 'DUP', with different value: 'm_bad'
+                     t/t_pp_dupdef_pragma_bad.v:31:19: ... Location of previous definition, with value: 'l_nowarn'
+%Error: Exiting due to

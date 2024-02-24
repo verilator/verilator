@@ -112,7 +112,7 @@ SUBDIRS = docs src test_regress \
 	examples/make_tracing_c \
 	examples/make_tracing_sc \
 	examples/make_protect_lib \
-	examples/xml_py \
+	examples/json_py \
 
 INFOS = verilator.html verilator.pdf
 
@@ -269,7 +269,7 @@ installdata:
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_c
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_sc
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/cmake_protect_lib
-	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/xml_py
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/json_py
 	cd $(srcdir) \
 	; for p in $(VL_INST_DATA_SRCDIR_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
@@ -305,7 +305,7 @@ uninstall:
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_c
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_sc
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/cmake_protect_lib
-	-rmdir $(DESTDIR)$(pkgdatadir)/examples/xml_py
+	-rmdir $(DESTDIR)$(pkgdatadir)/examples/json_py
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples
 	-rmdir $(DESTDIR)$(pkgdatadir)
 	-rmdir $(DESTDIR)$(pkgconfigdir)
@@ -340,7 +340,7 @@ CPPCHECK_FLAGS = --enable=all --inline-suppr \
 	--suppress=useStlAlgorithm
 CPPCHECK_FLAGS += --xml
 CPPCHECK_DEP = $(subst .cpp,.cppcheck,$(CHECK_CPP))
-CPPCHECK_INC = -I$(srcdir)/include -I$(srcdir)/src/obj_dbg -I$(srcdir)/src
+CPPCHECK_INC = -I$(srcdir)/include -I$(srcdir)/include/gtkwave -I$(srcdir)/include/vltstd -I$(srcdir)/src/obj_dbg -I$(srcdir)/src
 
 cppcheck: cppcheck-1 cppcheck-2 cppcheck-3 cppcheck-4 cppcheck-5 cppcheck-6 cppcheck-7 cppcheck-8
 cppcheck-1:
@@ -399,8 +399,8 @@ PY_PROGRAMS = \
 	bin/verilator_gantt \
 	bin/verilator_includer \
 	bin/verilator_profcfunc \
-	examples/xml_py/vl_file_copy \
-	examples/xml_py/vl_hier_graph \
+	examples/json_py/vl_file_copy \
+	examples/json_py/vl_hier_graph \
 	docs/guide/conf.py \
 	docs/bin/vl_sphinx_extract \
 	docs/bin/vl_sphinx_fix \

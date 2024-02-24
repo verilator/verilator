@@ -77,6 +77,7 @@ class FileLineSingleton final {
         m_languages.clear();
     }
     void fileNameNumMapDumpXml(std::ostream& os);
+    void fileNameNumMapDumpJson(std::ostream& os);
     static string filenameLetters(fileNameIdx_t fileno) VL_PURE;
 
     // Add given bitset to the interned bitsets, return interned index
@@ -310,6 +311,9 @@ public:
         return defaultFileLine().warnOff(code, flag);
     }
     static void fileNameNumMapDumpXml(std::ostream& os) { singleton().fileNameNumMapDumpXml(os); }
+    static void fileNameNumMapDumpJson(std::ostream& os) {
+        singleton().fileNameNumMapDumpJson(os);
+    }
 
     // METHODS - Called from netlist
     // Merge warning disables from another fileline

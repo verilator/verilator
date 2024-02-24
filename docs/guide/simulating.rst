@@ -230,14 +230,20 @@ Coverage Collection
 When any coverage flag is used to Verilate, Verilator will add appropriate
 coverage point insertions into the model and collect the coverage data.
 
-To get the coverage data from the model, in the user wrapper code,
-typically at the end once a test passes, call
-:code:`Verilated::threadContextp()->coveragep()->write` with an argument of the filename for
-the coverage data file to write coverage data to (typically
-"logs/coverage.dat").
+To get the coverage data from the model, write the coverage with either:
+
+1. Using :vlopt:`--binary` or :vlopt:`--main`, and Verilator will dump
+   coverage when the test completes to the filename specified with
+   :vlopt:`+verilator+coverage+file+\<filename\>`.
+
+2. In the user wrapper code, typically at the end once a test passes, call
+   :code:`Verilated::threadContextp()->coveragep()->write` with an argument
+   of the filename for the coverage data file to write coverage data to
+   (typically "logs/coverage.dat").
 
 Run each of your tests in different directories, potentially in parallel.
-Each test will create a :file:`logs/coverage.dat` file.
+Each test will create the file specified above,
+e.g. :file:`logs/coverage.dat`.
 
 After running all of the tests, execute the :command:`verilator_coverage`
 command, passing arguments pointing to the filenames of all the
@@ -273,13 +279,17 @@ profiled C++ code functions.
 
 To use profiling:
 
-#. Use Verilator's :vlopt:`--prof-cfuncs`.
+#. Make sure the Verilog code will call `$finish` at the end of simulation
+   (otherwise the C library may not correctly create the `gmon.out` file in
+   the later steps below).
+#. Run Verilator, adding the :vlopt:`--prof-cfuncs` option.
 #. Build and run the simulation model.
-#. The model will create gmon.out.
-#. Run :command:`gprof` to see where in the C++ code the time is spent.
-#. Run the gprof output through the :command:`verilator_profcfunc` program,
-   and it will tell you what Verilog line numbers on which most of the time
-   is being spent.
+#. The model will create `gmon.out`.
+#. Run :command:`gprof gmon.out > gprof.log` to see where in the C++ code
+   the time is spent.
+#. Run :command:`verilator_profcfunc gprof.log > profcfunc.log` to take the
+   gprof output and translate into output showing the Verilog line numbers
+   on which most of the time is being spent.
 
 
 .. _Execution Profiling:
@@ -505,13 +515,30 @@ documentation.
 Runtime Debugging
 =================
 
-To debug a Verilated executable, use the standard GNU debugger ``gdb`` or a
-similar tool. Typically you will want to have debugger symbols inserted by
-the compiler, assertions enabled in the C library, and assertions enabled
-in the Verilated library. (These options slow down the executable, so do
-this only when debugging.) To enable this, Verilate with:
+To debug a Verilated executable, Verilate with :vlopt:`--runtime-debug`.
+This will instruct the compiler to insert debugger, and enable various
+library assertions. These options slow down the executable, so do this
+only when debugging.
 
-    -CFLAGS -ggdb  -LDFLAGS -ggdb  -CFLAGS -DVL_DEBUG=1  -CFLAGS -D_GLIBCXX_DEBUG
+If you are using your own Makefiles, adapt appropriately to pass the
+options documented under :vlopt:`--runtime-debug` to the compiler and
+linker.
 
-The :vlopt:`-CFLAGS` and/or :vlopt:`-LDFLAGS` options pass arguments
-directly to the compiler or linker.
+Once you have a debugging-enabled executable, run it using the the standard
+GNU debugger ``gdb`` or a similar tool, and create a backtrace; e.g.:
+
+   .. code-block:: bash
+
+      gdb obj_dir/Vtop
+        run {Vtop_command_arguments}
+        {Vtop prints output, perhaps a segmentation faults}
+        bt
+
+Rarely the bug may disappear with :vlopt:`--runtime-debug`; if so, try
+instead using the sub-options that :vlopt:`--runtime-debug` documents, to
+find the maximum subset that still shows the issue.  E.g. it is likely that
+using `-CFLAGS -D_GLIBCXX_DEBUG` will not hide any bug, so may be used.
+
+Using :vlopt:`--runtime-debug` or `-CFLAGS -DVL_DEBUG=1` will only print a
+message if something goes wrong.  To enable debug print messages at
+runtime, additionally use the :vlopt:`+verilator+debug` runtime option.

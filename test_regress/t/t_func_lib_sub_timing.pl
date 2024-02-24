@@ -13,7 +13,7 @@ scenarios(vlt => 1);  # UNOPTTHREADS in vltmt
 top_filename("t/t_func_lib_sub.v");
 
 compile(
-    verilator_flags2 => ["--timing"],
+    verilator_flags2 => ["--binary --timing"],
     );
 
 # No execute

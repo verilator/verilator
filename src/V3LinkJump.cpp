@@ -55,6 +55,7 @@ class LinkJumpVisitor final : public VNVisitor {
     bool m_loopInc = false;  // In loop increment
     bool m_inFork = false;  // Under fork
     int m_modRepeatNum = 0;  // Repeat counter
+    VOptionBool m_unrollFull;  // Pragma full, disable, or default unrolling
     std::vector<AstNodeBlock*> m_blockStack;  // All begin blocks above current node
 
     // METHODS
@@ -175,12 +176,24 @@ class LinkJumpVisitor final : public VNVisitor {
     void visit(AstNodeBlock* nodep) override {
         UINFO(8, "  " << nodep << endl);
         VL_RESTORER(m_inFork);
+        VL_RESTORER(m_unrollFull);
         m_blockStack.push_back(nodep);
         {
             m_inFork = m_inFork || VN_IS(nodep, Fork);
             iterateChildren(nodep);
         }
         m_blockStack.pop_back();
+    }
+    void visit(AstPragma* nodep) override {
+        if (nodep->pragType() == VPragmaType::UNROLL_DISABLE) {
+            m_unrollFull = VOptionBool::OPT_FALSE;
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        } else if (nodep->pragType() == VPragmaType::UNROLL_FULL) {
+            m_unrollFull = VOptionBool::OPT_TRUE;
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        } else {
+            iterateChildren(nodep);
+        }
     }
     void visit(AstRepeat* nodep) override {
         // So later optimizations don't need to deal with them,
@@ -205,14 +218,17 @@ class LinkJumpVisitor final : public VNVisitor {
             nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::READ}, zerosp};
         AstNode* const bodysp = nodep->stmtsp();
         if (bodysp) bodysp->unlinkFrBackWithNext();
-        AstNode* newp = new AstWhile{nodep->fileline(), condp, bodysp, decp};
-        initsp = initsp->addNext(newp);
-        newp = initsp;
-        nodep->replaceWith(newp);
+        AstWhile* const whilep = new AstWhile{nodep->fileline(), condp, bodysp, decp};
+        if (!m_unrollFull.isDefault()) whilep->unrollFull(m_unrollFull);
+        m_unrollFull = VOptionBool::OPT_DEFAULT_FALSE;
+        initsp = initsp->addNext(whilep);
+        nodep->replaceWith(initsp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstWhile* nodep) override {
         // Don't need to track AstRepeat/AstFor as they have already been converted
+        if (!m_unrollFull.isDefault()) nodep->unrollFull(m_unrollFull);
+        m_unrollFull = VOptionBool::OPT_DEFAULT_FALSE;
         VL_RESTORER(m_loopp);
         VL_RESTORER(m_loopInc);
         {
@@ -236,6 +252,8 @@ class LinkJumpVisitor final : public VNVisitor {
         AstNodeExpr* const condp = nodep->condp() ? nodep->condp()->unlinkFrBack() : nullptr;
         AstNode* const bodyp = nodep->stmtsp() ? nodep->stmtsp()->unlinkFrBack() : nullptr;
         AstWhile* const whilep = new AstWhile{nodep->fileline(), condp, bodyp};
+        if (!m_unrollFull.isDefault()) whilep->unrollFull(m_unrollFull);
+        m_unrollFull = VOptionBool::OPT_DEFAULT_FALSE;
         nodep->replaceWith(whilep);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         if (bodyp) {
@@ -348,5 +366,5 @@ public:
 void V3LinkJump::linkJump(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { LinkJumpVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("linkjump", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("linkjump", 0, dumpTreeEitherLevel() >= 3);
 }

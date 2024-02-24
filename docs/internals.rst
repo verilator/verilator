@@ -1696,6 +1696,84 @@ Similarly, the ``NETLIST`` has a list of modules referred to by its
 ``op1p()`` pointer.
 
 
+.tree.json Output
+-----------------
+
+``.tree.json``` is an alternative dump format to ``.tree`` that is meant for
+programmatic processing (e.g. with `astsee <https://github.com/antmicro/astsee>`_).
+To enable this dump format, use :vlopt:`--json-only`.
+
+Structure:
+::
+
+  {
+    /* Attributes that are common to all types of nodes */
+    "type": "VAR",
+    "name": "cyc",
+    /* By default addresses and filenames use short/stable ids rather than real value */
+    "addr": "(H)",
+    "loc": "a,25:12,26:15", /* "fileid,firstLine:firstCol,lastLine:endCol" (endCol is right exclusive) */
+    "editNum": 602,
+    /* Fields that are specific to AstVar nodes:  */
+    "origName": "cyc",
+    "isSc": false,
+    "ioDirection": "NONE",
+    "isConst": false,
+    "isPullup": false,
+    "isPulldown": false,
+    "isUsedClock": false,
+    "isSigPublic": false,
+    "isLatched": false,
+    "isUsedLoopIdx": false,
+    "noReset": false,
+    "attrIsolateAssign": false,
+    "attrFileDescr": false,
+    "isDpiOpenArray": false,
+    "isFuncReturn": false,
+    "isFuncLocal": false,
+    "attrClocker": "UNKNOWN",
+    "lifetime": "NONE",
+    "varType": "VAR",
+    /* Lists of child nodes (which use similar structure as their parent): */
+    "childDTypep": [ /* ... */ ],
+    "delayp": [ /* ... */ ],
+    "valuep": [ /* ... */ ],
+    "attrsp": [ /* ... */ ]
+  }
+
+.tree.meta.json Output
+----------------
+
+.tree.meta.json contains metadata that is common across the whole AST tree.
+
+Besides de-duplication of data shared between multiple stages, .meta.json enables offloading
+unstable data (that can vary from machine-to-machine or run-to-run) from main .tree.json.
+This offloading allows, for example, to use byte-to-byte comparisons of AST dumps in tests.
+
+::
+
+  {"files": {
+    /* Map id to filename, and other metadata */
+    "d": {"filename":"/home/ant/tmp/verilator/include/verilated_std.sv", "realpath":"/home/ant/tmp/verilator/include/verilated_std.sv", "language":"1800-2017"},
+    "a": {"filename":"<built-in>", "realpath":"<built-in>", "language":"1800-2017"},
+    "b": {"filename":"<command-line>", "realpath":"<command-line>", "language":"1800-2017"},
+    "c": {"filename":"input.vc", "realpath":"/home/ant/tmp/verilator/test_regress/input.vc", "language":"1800-2017"},
+    "e": {"filename":"t/t_EXAMPLE.v", "realpath":"/home/ant/tmp/verilator/test_regress/t/t_EXAMPLE.v", "language":"1800-2017"}
+   },"pointers": {
+    /* Map id to real address */
+    "(AG)": "0x562997289180",
+    "(YF)": "0x5629971c50b0",
+    "(WF)": "0x5629971e7ae0",
+    /* ... /*
+   },"ptrFieldNames": [
+    /* List of fields that are used for storing pointers */
+    "aboveScopep",
+    "voidp",
+    "addr",
+    /* ... */
+ ]}
+
+
 .tree.dot Output
 ----------------
 
@@ -1937,6 +2015,9 @@ driver.pl Non-Scenario Arguments
 --trace
   Set the simulator specific flags to request waveform tracing.
 
+--valgrind
+  Same as ``verilator --valgrind``: Run Verilator under `Valgrind <https://valgrind.org/>`_.
+
 --verbose
   Compile and run the test in verbose mode. This means ``TEST_VERBOSE``
   will be defined for the test (Verilog and any C++/SystemC wrapper).
@@ -1979,6 +2060,9 @@ simultaneously.
 
 --vltmt
   Run Verilator tests in multithreaded mode.
+
+--xrun
+  Run Cadence Xcelium simulator tests.
 
 --xsim
   Run Xilinx XSim simulator tests.

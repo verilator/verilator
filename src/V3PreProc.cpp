@@ -329,7 +329,7 @@ FileLine* V3PreProcImp::defFileline(const string& name) {
 void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
                           const string& params, bool cmdline) {
     UINFO(4, "DEFINE '" << name << "' as '" << value << "' params '" << params << "'" << endl);
-    if (!V3LanguageWords::isKeyword(std::string{"`"} + name).empty()) {
+    if (!V3LanguageWords::isKeyword("`"s + name).empty()) {
         fl->v3error("Attempting to define built-in directive: '`" << name
                                                                   << "' (IEEE 1800-2017 22.5.1)");
     } else {
@@ -887,7 +887,7 @@ void V3PreProcImp::dumpDefines(std::ostream& os) {
 
 void V3PreProcImp::candidateDefines(VSpellCheck* spellerp) {
     for (DefinesMap::const_iterator it = m_defines.begin(); it != m_defines.end(); ++it) {
-        spellerp->pushCandidate(std::string{"`"} + it->first);
+        spellerp->pushCandidate("`"s + it->first);
     }
 }
 
@@ -1107,7 +1107,7 @@ int V3PreProcImp::getStateToken() {
                 // IE, `ifdef `MACRO(x): Substitute and come back here when state pops.
                 break;
             } else {
-                error(std::string{"Expecting define name. Found: "} + tokenName(tok) + "\n");
+                error("Expecting define name. Found: "s + tokenName(tok) + "\n");
                 goto next_tok;
             }
         }
@@ -1128,8 +1128,7 @@ int V3PreProcImp::getStateToken() {
                     goto next_tok;
                 }
             } else {
-                error(std::string{"Expecting define formal arguments. Found: "} + tokenName(tok)
-                      + "\n");
+                error("Expecting define formal arguments. Found: "s + tokenName(tok) + "\n");
                 goto next_tok;
             }
         }
@@ -1165,8 +1164,7 @@ int V3PreProcImp::getStateToken() {
                     define(fileline(), m_lastSym, value, formals, false);
                 }
             } else {
-                const string msg
-                    = std::string{"Bad define text, unexpected "} + tokenName(tok) + "\n";
+                const string msg = "Bad define text, unexpected "s + tokenName(tok) + "\n";
                 v3fatalSrc(msg);
             }
             statePop();
@@ -1180,20 +1178,16 @@ int V3PreProcImp::getStateToken() {
                 stateChange(ps_DEFARG);
                 goto next_tok;
             } else {
-                if (VL_UNCOVERABLE(m_defRefs.empty())) {
-                    v3fatalSrc("Shouldn't be in DEFPAREN w/o active defref");
-                }
+                UASSERT(!m_defRefs.empty(), "Shouldn't be in DEFPAREN w/o active defref");
                 const VDefineRef* const refp = &(m_defRefs.top());
-                error(std::string{"Expecting ( to begin argument list for define reference `"}
-                      + refp->name() + "\n");
+                error("Expecting ( to begin argument list for define reference `"s + refp->name()
+                      + "\n");
                 statePop();
                 goto next_tok;
             }
         }
         case ps_DEFARG: {
-            if (VL_UNCOVERABLE(m_defRefs.empty())) {
-                v3fatalSrc("Shouldn't be in DEFARG w/o active defref");
-            }
+            UASSERT(!m_defRefs.empty(), "Shouldn't be in DEFARG w/o active defref");
             VDefineRef* refp = &(m_defRefs.top());
             refp->nextarg(refp->nextarg() + m_lexp->m_defValue);
             m_lexp->m_defValue = "";
@@ -1218,9 +1212,7 @@ int V3PreProcImp::getStateToken() {
                     statePop();
                     if (state()
                         == ps_JOIN) {  // Handle {left}```FOO(ARG) where `FOO(ARG) might be empty
-                        if (VL_UNCOVERABLE(m_joinStack.empty())) {
-                            v3fatalSrc("`` join stack empty, but in a ``");
-                        }
+                        UASSERT(!m_joinStack.empty(), "`` join stack empty, but in a ``");
                         const string lhs = m_joinStack.top();
                         m_joinStack.pop();
                         out.insert(0, lhs);
@@ -1288,7 +1280,7 @@ int V3PreProcImp::getStateToken() {
                 break;
             } else {
                 statePop();
-                error(std::string{"Expecting include filename. Found: "} + tokenName(tok) + "\n");
+                error("Expecting include filename. Found: "s + tokenName(tok) + "\n");
                 goto next_tok;
             }
         }
@@ -1301,16 +1293,14 @@ int V3PreProcImp::getStateToken() {
                 statePop();
                 goto next_tok;
             } else {
-                error(std::string{"Expecting `error string. Found: "} + tokenName(tok) + "\n");
+                error("Expecting `error string. Found: "s + tokenName(tok) + "\n");
                 statePop();
                 goto next_tok;
             }
         }
         case ps_JOIN: {
             if (tok == VP_SYMBOL || tok == VP_TEXT) {
-                if (VL_UNCOVERABLE(m_joinStack.empty())) {
-                    v3fatalSrc("`` join stack empty, but in a ``");
-                }
+                UASSERT(!m_joinStack.empty(), "`` join stack empty, but in a ``");
                 const string lhs = m_joinStack.top();
                 m_joinStack.pop();
                 UINFO(5, "`` LHS:" << lhs << endl);
@@ -1346,7 +1336,7 @@ int V3PreProcImp::getStateToken() {
                 // multiline "..." without \ escapes.
                 // The spec is silent about this either way; simulators vary
                 std::replace(out.begin(), out.end(), '\n', ' ');
-                unputString(std::string{"\""} + out + "\"");
+                unputString("\""s + out + "\"");
                 statePop();
                 goto next_tok;
             } else if (tok == VP_EOF) {
@@ -1430,7 +1420,7 @@ int V3PreProcImp::getStateToken() {
                 } else {
                     // We want final text of `name, but that would cause
                     // recursion, so use a special character to get it through
-                    unputDefrefString(std::string{"`\032"} + name);
+                    unputDefrefString("`\032"s + name);
                     goto next_tok;
                 }
             } else {
@@ -1446,9 +1436,7 @@ int V3PreProcImp::getStateToken() {
                     if (m_defRefs.empty()) {
                         // Just output the substitution
                         if (state() == ps_JOIN) {  // Handle {left}```FOO where `FOO might be empty
-                            if (VL_UNCOVERABLE(m_joinStack.empty())) {
-                                v3fatalSrc("`` join stack empty, but in a ``");
-                            }
+                            UASSERT(!m_joinStack.empty(), "`` join stack empty, but in a ``");
                             const string lhs = m_joinStack.top();
                             m_joinStack.pop();
                             out.insert(0, lhs);
@@ -1520,7 +1508,7 @@ int V3PreProcImp::getStateToken() {
         case VP_DEFFORM:  // Handled by state=ps_DEFFORM;
         case VP_DEFVALUE:  // Handled by state=ps_DEFVALUE;
         default:  // LCOV_EXCL_LINE
-            v3fatalSrc(std::string{"Internal error: Unexpected token "} + tokenName(tok) + "\n");
+            v3fatalSrc("Internal error: Unexpected token "s + tokenName(tok) + "\n");
             break;  // LCOV_EXCL_LINE
         }
         return tok;

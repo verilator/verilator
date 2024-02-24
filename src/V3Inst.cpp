@@ -521,13 +521,14 @@ public:
         }
         const AstVarRef* const connectRefp = VN_CAST(pinp->exprp(), VarRef);
         const AstVarXRef* const connectXRefp = VN_CAST(pinp->exprp(), VarXRef);
-        const AstBasicDType* const pinBasicp
-            = VN_CAST(pinVarp->dtypep(), BasicDType);  // Maybe nullptr
-        const AstBasicDType* connBasicp = nullptr;
+        const AstNodeDType* const pinDTypep = pinVarp->dtypep()->skipRefp();
+        const AstBasicDType* const pinBasicp = VN_CAST(pinDTypep, BasicDType);
+        const AstNodeDType* const connDTypep
+            = connectRefp ? connectRefp->varp()->dtypep()->skipRefp() : nullptr;
+        const AstBasicDType* const connBasicp = VN_CAST(connDTypep, BasicDType);
         AstAssignW* assignp = nullptr;
-        if (connectRefp) connBasicp = VN_CAST(connectRefp->varp()->dtypep(), BasicDType);
         //
-        if (!alwaysCvt && connectRefp && connectRefp->varp()->dtypep()->sameTree(pinVarp->dtypep())
+        if (!alwaysCvt && connectRefp && connDTypep->sameTree(pinDTypep)
             && !connectRefp->varp()->isSc()) {  // Need the signal as a 'shell' to convert types
             // Done. Same data type
         } else if (!alwaysCvt && connectRefp && connectRefp->varp()->isIfaceRef()) {
@@ -610,11 +611,11 @@ void V3Inst::checkOutputShort(AstPin* nodep) {
 void V3Inst::instAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { InstVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("inst", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("inst", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3Inst::dearrayAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { InstDeVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("dearray", 0, dumpTreeLevel() >= 6);
+    V3Global::dumpCheckGlobalTree("dearray", 0, dumpTreeEitherLevel() >= 6);
 }

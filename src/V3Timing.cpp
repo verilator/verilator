@@ -472,7 +472,6 @@ class TimingControlVisitor final : public VNVisitor {
     AstScope* m_scopep = nullptr;  // Current scope
     AstActive* m_activep = nullptr;  // Current active
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
-    double m_timescaleFactor = 1.0;  // Factor to scale delays by
     int m_forkCnt = 0;  // Number of forks inside a module
     bool m_underJumpBlock = false;  // True if we are inside of a jump-block
     bool m_underProcedure = false;  // True if we are under an always or initial
@@ -548,8 +547,10 @@ class TimingControlVisitor final : public VNVisitor {
         return stmtp == nodep ? nullptr : stmtp;
     }
     // Calculate the factor to scale delays by
-    double calculateTimescaleFactor(VTimescale timeunit) const {
-        int scalePowerOfTen = timeunit.powerOfTen() - m_netlistp->timeprecision().powerOfTen();
+    double calculateTimescaleFactor(AstNode* nodep, VTimescale timeunit) const {
+        UASSERT_OBJ(!timeunit.isNone(), nodep, "timenunit must be set");
+        const int scalePowerOfTen
+            = timeunit.powerOfTen() - m_netlistp->timeprecision().powerOfTen();
         return std::pow(10.0, scalePowerOfTen);
     }
     // Creates the global delay scheduler variable
@@ -782,8 +783,6 @@ class TimingControlVisitor final : public VNVisitor {
         UASSERT(!m_classp, "Module or class under class");
         VL_RESTORER(m_classp);
         m_classp = VN_CAST(nodep, Class);
-        VL_RESTORER(m_timescaleFactor);
-        m_timescaleFactor = calculateTimescaleFactor(nodep->timeunit());
         VL_RESTORER(m_forkCnt);
         m_forkCnt = 0;
         iterateChildren(nodep);
@@ -895,20 +894,20 @@ class TimingControlVisitor final : public VNVisitor {
                     "Cycle delays should have been handled in V3AssertPre");
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* valuep = V3Const::constifyEdit(nodep->lhsp()->unlinkFrBack());
-        auto* const constp = VN_CAST(valuep, Const);
+        AstConst* const constp = VN_CAST(valuep, Const);
         if (!constp || !constp->isZero()) {
             // Scale the delay
+            const double timescaleFactor = calculateTimescaleFactor(nodep, nodep->timeunit());
             if (valuep->dtypep()->isDouble()) {
                 valuep = new AstRToIRoundS{
-                    flp,
-                    new AstMulD{flp, valuep,
-                                new AstConst{flp, AstConst::RealDouble{}, m_timescaleFactor}}};
+                    flp, new AstMulD{flp, valuep,
+                                     new AstConst{flp, AstConst::RealDouble{}, timescaleFactor}}};
                 valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
             } else {
                 valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
                 valuep = new AstMul{flp, valuep,
                                     new AstConst{flp, AstConst::Unsized64{},
-                                                 static_cast<uint64_t>(m_timescaleFactor)}};
+                                                 static_cast<uint64_t>(timescaleFactor)}};
             }
         }
         // Replace self with a 'co_await dlySched.delay(<valuep>)'
@@ -1238,5 +1237,5 @@ void V3Timing::timingAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     TimingSuspendableVisitor susVisitor{nodep};
     if (v3Global.usesTiming()) TimingControlVisitor{nodep};
-    V3Global::dumpCheckGlobalTree("timing", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("timing", 0, dumpTreeEitherLevel() >= 3);
 }

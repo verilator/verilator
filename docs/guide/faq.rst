@@ -226,12 +226,14 @@ How do I generate FST waveforms (traces) in C++ or SystemC?
 
 FST is a trace file format developed by GTKWave.  Verilator provides basic
 FST support.  To dump traces in FST format, add the :vlopt:`--trace-fst`
-option to Verilator and either A. use :code:`$dumpfile & $dumpvars` in
-Verilog as described in the VCD example above,
+option to Verilator and either:
+
+Use :code:`$dumpfile & $dumpvars` in Verilog as described in the VCD
+example above,
 
 Or, in C++ change the include described in the VCD example above:
 
-.. code-block:: C++
+  .. code-block:: C++
 
       #include "verilated_fst_c.h"
       VerilatedFstC* tfp = new VerilatedFstC;
@@ -239,14 +241,14 @@ Or, in C++ change the include described in the VCD example above:
 
 Or, in SystemC, change the include described in the VCD example above:
 
-.. code-block:: C++
+  .. code-block:: C++
 
       #include "verilated_fst_sc.h"
       VerilatedFstC* tfp = new VerilatedFstSc;
 
 
-Currently, supporting FST and VCD in a single simulation is impossible, but
-such requirement should be rare.  You can however ifdef around the trace
+Currently, supporting FST and VCD in a single simulation is not supported,
+but such usage should be unlikely.  You can however ifdef around the trace
 format in your C++ main loop, and select VCD or FST at compile time.
 
 

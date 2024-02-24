@@ -65,7 +65,7 @@ private:
     using OrigEdgeList = std::list<V3GraphEdge*>;  // List of orig edges, see also GraphAcyc's decl
     V3GraphEdge* origEdgep() const {
         const OrigEdgeList* const oEListp = static_cast<OrigEdgeList*>(userp());
-        if (!oEListp) v3fatalSrc("No original edge associated with acyc edge " << this);
+        UASSERT(oEListp, "No original edge associated with acyc edge " << this);
         return (oEListp->front());
     }
 
@@ -80,7 +80,7 @@ public:
 
 //--------------------------------------------------------------------
 
-struct GraphAcycEdgeCmp {
+struct GraphAcycEdgeCmp final {
     bool operator()(const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
         if (lhsp->weight() > rhsp->weight()) return true;  // LHS goes first
         if (lhsp->weight() < rhsp->weight()) return false;  // RHS goes first

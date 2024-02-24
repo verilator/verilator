@@ -838,7 +838,7 @@ class OrderProcess final {
                                    int& newStmtsr);
 
     // processMTask* routines schedule threaded execution
-    struct MTaskState {
+    struct MTaskState final {
         AstMTaskBody* m_mtaskBodyp = nullptr;
         std::list<const OrderLogicVertex*> m_logics;
         ExecMTask* m_execMTaskp = nullptr;

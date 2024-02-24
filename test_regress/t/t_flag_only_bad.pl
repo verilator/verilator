@@ -11,10 +11,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 top_filename("t/t_flag_main.v");
 
-compile(
-    verilator_make_cmake => 0,
-    verilator_make_gmake => 0,
-    verilator_flags2 => ["--binary -E --dpi-hdr-only --lint-only --xml-only -Wall"],
+lint(
+    verilator_flags2 => ["--binary -E --dpi-hdr-only --lint-only --xml-only --json-only -Wall"],
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

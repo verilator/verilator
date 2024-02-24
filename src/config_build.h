@@ -67,6 +67,7 @@
 using string = std::string;
 using std::cout;
 using std::endl;
+using namespace std::literals;  // "<std::string literal>"s; see SF.7 core guideline
 
 //**********************************************************************
 //**** OS and compiler specifics

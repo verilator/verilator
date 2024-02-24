@@ -32,6 +32,7 @@ my $opt_rr;
 my $opt_gdbbt;
 my $opt_quiet_exit;
 my $opt_unlimited_stack = 1;
+my $opt_valgrind;
 
 # No arguments can't do anything useful.  Give help
 if ($#ARGV < 0) {
@@ -59,6 +60,7 @@ if (! GetOptions(
           "quiet-exit!"      => \$opt_quiet_exit,
           "rr!"              => \$opt_rr,
           "unlimited-stack!" => \$opt_unlimited_stack,
+          "valgrind!"        => \$opt_valgrind,
           # Additional parameters
           "<>"               => sub {},      # Ignored
     )) {
@@ -109,6 +111,18 @@ if ($opt_gdb) {
          . " -ex \"run " . join(' ', @quoted_sw)."\""
          . " -ex 'set width 0'"
          . " -ex 'bt' -ex 'quit'");
+} elsif ($opt_valgrind) {
+    # Run under valgrind
+    my $valgrind_bin = ($ENV{VERILATOR_VALGRIND} || "valgrind --error-exitcode=1 --max-stackframe=2815880"
+        # Magic number sugested by valgrind, may need to be increased in future
+        # if you get warnings. See: https://valgrind.org/docs/manual/manual-core.html#opt.max-stackframe
+        );
+
+    run (ulimit_stack_unlimited()
+         . aslr_off()
+         . $valgrind_bin
+         . " " . verilator_bin()
+         . " " . join(' ', @quoted_sw));
 } elsif ($Debug) {
     # Debug
     run(ulimit_stack_unlimited()
@@ -299,6 +313,7 @@ detailed descriptions of these arguments.
      +1800-2012ext+<ext>        Use SystemVerilog 2012 with file extension <ext>
      +1800-2017ext+<ext>        Use SystemVerilog 2017 with file extension <ext>
     --assert                    Enable all assertions
+    --assert-case               Enable unique/unique0/priority case related checks
     --autoflush                 Flush streams after all $displays
     --bbox-sys                  Blackbox unknown $system calls
     --bbox-unsup                Blackbox unsupported language features
@@ -307,7 +322,6 @@ detailed descriptions of these arguments.
     --build-dep-bin <filename>  Override build dependency Verilator binary
     --build-jobs <jobs>         Parallelism for --build
     --cc                        Create C++ output
-    --cdc                       Clock domain crossing analysis
      -CFLAGS <flags>            C++ compiler arguments for makefile
     --clk <signal-name>         Mark specified signal as clock
     --no-clk <signal-name>      Prevent marking specified signal as clock
@@ -325,7 +339,8 @@ detailed descriptions of these arguments.
     --no-debug-leak             Disable leaking memory in --debug mode
     --debugi <level>            Enable debugging at a specified level
     --debugi-<srcfile> <level>  Enable debugging a source file at a level
-    --no-decoration             Disable comments and symbol decorations
+    --decorations <level>       Set output comment and spacing level
+    --no-decoration             Disable comments and lower spacing level
     --default-language <lang>   Default language to parse
      +define+<var>=<value>      Set preprocessor define
     --dpi-hdr-only              Only produce the DPI header file
@@ -334,6 +349,7 @@ detailed descriptions of these arguments.
     --dump-graph                Enable dumping V3Graphs to .dot files
     --dump-tree                 Enable dumping Ast .tree files
     --dump-tree-addrids         Use short identifiers instead of addresses
+    --dump-tree-dot             Enable dumping Ast .tree.dot debug files
     --dump-<srcfile>            Enable dumping everything in source file
     --dumpi-dfg <level>         Enable dumping DfgGraphs to .dot files at level
     --dumpi-graph <level>       Enable dumping V3Graphs to .dot files at level
@@ -347,6 +363,8 @@ detailed descriptions of these arguments.
      -f <file>                  Parse arguments from a file
      -FI <file>                 Force include of a file
     --flatten                   Force inlining of all modules, tasks and functions
+    --future0 <option>          Ignore an option for compatibility
+    --future1 <option>          Ignore an option with argument for compatibility
      -fno-<optimization>        Disable internal optimization stage
      -G<name>=<value>           Overwrite top-level parameter
     --gate-stmts <value>        Tune gate optimizer depth
@@ -383,7 +401,6 @@ detailed descriptions of these arguments.
      -O3                        High-performance optimizations
      -O<optimization-letter>    Selectable optimizations
      -o <executable>            Name of final executable
-    --no-order-clock-delay      Disable ordering clock enable assignments
     --output-split <statements>          Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split model functions
     --output-split-ctrace <statements>   Split tracing functions
@@ -404,7 +421,8 @@ detailed descriptions of these arguments.
     --protect-ids               Hash identifier names for obscurity
     --protect-key <key>         Key for symbol protection
     --protect-lib <name>        Create a DPI protected library
-    --public                    Debugging; see docs
+    --public                    Mark signals as public; see docs
+    --public-depth <level>      Mark public to specified module depth
     --public-params             Mark all parameters as public_flat
     --public-flat-rw            Mark all variables, etc as public_flat_rw
      -pvalue+<name>=<value>     Overwrite toplevel parameter
@@ -413,12 +431,14 @@ detailed descriptions of these arguments.
     --reloop-limit              Minimum iterations for forming loops
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
     --rr                        Run Verilator and record with rr
+    --runtime-debug             Enable model runtime debugging
     --savable                   Enable model save-restore
     --sc                        Create SystemC output
     --no-skip-identical         Disable skipping identical output
     --stats                     Create statistics file
     --stats-vars                Provide statistics on variables
     --no-std                    Prevent parsing standard library
+    --no-stop-fail              Do not call $stop when assertion fails
     --structs-packed            Convert all unpacked structures to packed structures
      -sv                        Enable SystemVerilog parsing
      +systemverilogext+<ext>    Synonym for +1800-2017ext+<ext>
@@ -449,6 +469,7 @@ detailed descriptions of these arguments.
     --unused-regexp <regexp>    Tune UNUSED lint signals
      -V                         Verbose version and config
      -v <filename>              Verilog library
+    --valgrind                  Run Verilator under valgrind
     --verilate-jobs             Job threads for Verilation stage
     --no-verilate               Skip Verilation and just compile previously Verilated code
      +verilog1995ext+<ext>      Synonym for +1364-1995ext+<ext>
@@ -471,6 +492,11 @@ detailed descriptions of these arguments.
     --x-assign <mode>           Assign non-initial Xs to this value
     --x-initial <mode>          Assign initial Xs to this value
     --x-initial-edge            Enable initial X->0 and X->1 edge triggers
+    --no-json-edit-nums         Don't dump editNum in .tree.json files
+    --no-json-ids               Don't use short identifiers instead of adresses/paths in .tree.json
+    --json-only                 Create JSON parser output (.tree.json and .meta.json)
+    --json-only-output          .tree.json output filename
+    --json-only-meta-output     .tree.meta.json output filename
     --xml-only                  Create XML parser output
     --xml-output                XML output filename
      -y <dir>                   Directory to search for modules
@@ -484,6 +510,7 @@ description of these arguments.
 
      +verilator+debug                  Enable debugging
      +verilator+debugi+<value>         Enable debugging at a level
+     +verilator+coverage+file+<filename>   Set coverage output filename
      +verilator+error+limit+<value>    Set error limit
      +verilator+help                   Display help
      +verilator+noassert               Disable assert checking

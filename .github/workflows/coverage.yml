@@ -11,7 +11,6 @@ on:
 env:
   CI_OS_NAME: linux
   CI_COMMIT: ${{ github.sha }}
-  CI_M32: 0
   COVERAGE: 1
   VERILATOR_ARCHIVE: verilator-coverage-${{ github.sha }}.tar.gz
 
@@ -31,7 +30,7 @@ jobs:
     steps:
 
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: repo
 
@@ -46,7 +45,7 @@ jobs:
       run: tar --posix -c -z -f ${{ env.VERILATOR_ARCHIVE }} repo
 
     - name: Upload tar archive
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         path: ${{ github.workspace }}/${{ env.VERILATOR_ARCHIVE }}
         name: ${{ env.VERILATOR_ARCHIVE }}
@@ -81,7 +80,7 @@ jobs:
     steps:
 
     - name: Download tar archive
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: ${{ env.VERILATOR_ARCHIVE }}
         path: ${{ github.workspace }}

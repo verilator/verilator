@@ -19,7 +19,7 @@
       |                    ^~~~~~~~~~~~~~
 %Error: t/t_func_const_bad.v:36:20: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_infinite'
                                   : ... note: In instance 't'
-        t/t_func_const_bad.v:38:7: ... Location of non-constant WHILE: Loop unrolling took too long; probably this is an infinite loop, or set --unroll-count above 1024
+        t/t_func_const_bad.v:38:7: ... Location of non-constant WHILE: Loop unrolling took too long; probably this is aninfinite loop, or use /*verilator unroll_full*/, or set --unroll-count above 16386
         t/t_func_const_bad.v:36:20: ... Called from 'f_bad_infinite()' with parameters:
            a = ?32?h3
    36 |    localparam B4 = f_bad_infinite(3);

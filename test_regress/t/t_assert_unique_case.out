@@ -1,0 +1,19 @@
+[0] %Error: t_assert_unique_case_bad.v:56: Assertion failed in top.t: priority case, but non-match found
+match_item0
+[20] %Error: t_assert_unique_case_bad.v:47: Assertion failed in top.t: unique case, but none matched
+match_item0
+match_item0
+[40] %Error: t_assert_unique_case_bad.v:47: Assertion failed in top.t: unique case, but none matched
+match_item0
+match_item0
+[60] %Error: t_assert_unique_case_bad.v:47: Assertion failed in top.t: unique case, but none matched
+match_item0
+match_item0
+[80] %Error: t_assert_unique_case_bad.v:47: Assertion failed in top.t: unique case, but none matched
+match_item0
+[90] %Error: t_assert_unique_case_bad.v:47: Assertion failed in top.t: unique case, but none matched
+match_item0
+[90] %Error: t_assert_unique_case_bad.v:38: Assertion failed in top.t: unique case, but multiple matches found for '12'h388'
+*-* All Finished *-*
+[100] %Error: t_assert_unique_case_bad.v:47: Assertion failed in top.t: unique case, but none matched
+match_item0

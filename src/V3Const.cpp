@@ -41,6 +41,14 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+#define TREE_SKIP_VISIT(...)
+#define TREEOP1(...)
+#define TREEOPA(...)
+#define TREEOP(...)
+#define TREEOPS(...)
+#define TREEOPC(...)
+#define TREEOPV(...)
+
 //######################################################################
 // Utilities
 
@@ -533,10 +541,11 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
             CONST_BITOP_RETURN_IF(m_failed, nodep->rhsp());
             restorer.disableRestore();  // Now all checks passed
         } else if (nodep->type() == m_rootp->type()) {  // And, Or, Xor
+            // subtree under NOT can be optimized only in XOR tree.
+            CONST_BITOP_RETURN_IF(!m_polarity && !isXorTree(), nodep);
             incrOps(nodep, __LINE__);
-            VL_RESTORER(m_leafp);
-
             for (const bool right : {false, true}) {
+                VL_RESTORER(m_leafp);
                 Restorer restorer{*this};
                 LeafInfo leafInfo{m_lsb};
                 m_leafp = &leafInfo;
@@ -549,6 +558,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
                     // Reach past a cast then add to frozen nodes to be added to final reduction
                     if (const AstCCast* const castp = VN_CAST(opp, CCast)) opp = castp->lhsp();
                     const bool pol = isXorTree() || m_polarity;  // Only AND/OR tree needs polarity
+                    UASSERT(pol, "AND/OR tree expects m_polarity==true");
                     m_frozenNodes.emplace_back(opp, FrozenNodeInfo{pol, m_lsb});
                     m_failed = origFailed;
                     continue;
@@ -576,6 +586,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
         } else if ((isAndTree() && VN_IS(nodep, Eq)) || (isOrTree() && VN_IS(nodep, Neq))) {
             Restorer restorer{*this};
             CONST_BITOP_RETURN_IF(!m_polarity, nodep);
+            CONST_BITOP_RETURN_IF(m_lsb, nodep);  // the result of EQ/NE is 1 bit width
             const AstNode* lhsp = nodep->lhsp();
             if (const AstCCast* const castp = VN_CAST(lhsp, CCast)) lhsp = castp->lhsp();
             const AstConst* const constp = VN_CAST(lhsp, Const);
@@ -584,7 +595,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
             const V3Number& compNum = constp->num();
 
             auto setPolarities = [this, &compNum](const LeafInfo& ref, const V3Number* maskp) {
-                const bool maskFlip = isOrTree();
+                const bool maskFlip = isAndTree() ^ ref.polarity();
                 int constantWidth = compNum.width();
                 if (maskp) constantWidth = std::max(constantWidth, maskp->width());
                 const int maxBitIdx = std::max(ref.lsb() + constantWidth, ref.msb() + 1);
@@ -1430,16 +1441,22 @@ class ConstVisitor final : public VNVisitor {
 
     static bool operandsSame(AstNode* node1p, AstNode* node2p) {
         // For now we just detect constants & simple vars, though it could be more generic
-        if (VN_IS(node1p, Const) && VN_IS(node2p, Const)) {
-            return node1p->sameGateTree(node2p);
-        } else if (VN_IS(node1p, VarRef) && VN_IS(node2p, VarRef)) {
+        if (VN_IS(node1p, Const) && VN_IS(node2p, Const)) return node1p->sameGateTree(node2p);
+        if (VN_IS(node1p, VarRef) && VN_IS(node2p, VarRef)) {
             // Avoid comparing widthMin's, which results in lost optimization attempts
             // If cleanup sameGateTree to be smarter, this can be restored.
             // return node1p->sameGateTree(node2p);
             return node1p->isSame(node2p);
-        } else {
-            return false;
         }
+        // Pattern created by coverage-line; avoid compiler tautological-compare warning
+        if (AstAnd* const and1p = VN_CAST(node1p, And)) {
+            if (AstAnd* const and2p = VN_CAST(node2p, And)) {
+                if (VN_IS(and1p->lhsp(), Const) && VN_IS(and1p->rhsp(), NodeVarRef)
+                    && VN_IS(and2p->lhsp(), Const) && VN_IS(and2p->rhsp(), NodeVarRef))
+                    return node1p->sameGateTree(node2p);
+            }
+        }
+        return false;
     }
     bool ifSameAssign(const AstNodeIf* nodep) {
         const AstNodeAssign* const thensp = VN_CAST(nodep->thensp(), NodeAssign);
@@ -1882,6 +1899,8 @@ class ConstVisitor final : public VNVisitor {
     }
     void replaceShiftOp(AstNodeBiop* nodep) {
         UINFO(5, "SHIFT(AND(a,b),CONST)->AND(SHIFT(a,CONST),SHIFT(b,CONST)) " << nodep << endl);
+        const int width = nodep->width();
+        const int widthMin = nodep->widthMin();
         VNRelinker handle;
         nodep->unlinkFrBack(&handle);
         AstNodeBiop* const lhsp = VN_AS(nodep->lhsp(), NodeBiop);
@@ -1898,6 +1917,7 @@ class ConstVisitor final : public VNVisitor {
         AstNodeBiop* const newp = lhsp;
         newp->lhsp(shift1p);
         newp->rhsp(shift2p);
+        newp->dtypeChgWidth(width, widthMin);  // The new AND must have width of the original SHIFT
         handle.relink(newp);
         iterate(newp);  // Further reduce, either node may have more reductions.
     }
@@ -3873,7 +3893,7 @@ void V3Const::constifyAllLint(AstNetlist* nodep) {
         ConstVisitor visitor{ConstVisitor::PROC_V_WARN, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("const", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("const", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3Const::constifyCpp(AstNetlist* nodep) {
@@ -3882,7 +3902,7 @@ void V3Const::constifyCpp(AstNetlist* nodep) {
         ConstVisitor visitor{ConstVisitor::PROC_CPP, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("const_cpp", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("const_cpp", 0, dumpTreeEitherLevel() >= 3);
 }
 
 AstNode* V3Const::constifyEdit(AstNode* nodep) {
@@ -3906,7 +3926,7 @@ void V3Const::constifyAllLive(AstNetlist* nodep) {
         ConstVisitor visitor{ConstVisitor::PROC_LIVE, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("const", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("const", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3Const::constifyAll(AstNetlist* nodep) {
@@ -3916,7 +3936,7 @@ void V3Const::constifyAll(AstNetlist* nodep) {
         ConstVisitor visitor{ConstVisitor::PROC_V_EXPENSIVE, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("const", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("const", 0, dumpTreeEitherLevel() >= 3);
 }
 
 AstNode* V3Const::constifyExpensiveEdit(AstNode* nodep) {

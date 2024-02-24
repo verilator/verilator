@@ -20,7 +20,7 @@
 
 class ScoreboardTestElem;
 
-struct Key {
+struct Key final {
     // Node: Structure layout chosen to minimize padding in PairingHeao<*>::Node
     uint64_t m_id;  // Unique ID part of edge score
     uint32_t m_score;  // Score part of ID

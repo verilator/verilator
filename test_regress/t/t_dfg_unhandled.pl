@@ -14,7 +14,7 @@ compile(
     verilator_flags2 => ["--stats"],
     );
 
-file_grep($Self->{stats}, qr/Optimizations, DFG  pre inline Ast2Dfg, non-representable \(impure\)\s+(\d+)/i, 1);
+file_grep($Self->{stats}, qr/Optimizations, DFG pre inline Ast2Dfg, non-representable \(impure\)\s+(\d+)/i, 1);
 
 ok(1);
 1;

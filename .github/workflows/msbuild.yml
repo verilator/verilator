@@ -32,11 +32,11 @@ jobs:
     name: run on windows
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         path: repo
     - name: Cache $CCACHE_DIR
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{ env.CCACHE_DIR }}
         key: msbuild-msvc-cmake
@@ -49,7 +49,7 @@ jobs:
     - name: Zip up repository
       run: Compress-Archive -LiteralPath install -DestinationPath verilator.zip
     - name: Upload zip archive
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         path: ${{ github.workspace }}/repo/verilator.zip
         name: verilator-win.zip

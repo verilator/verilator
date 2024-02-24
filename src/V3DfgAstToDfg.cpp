@@ -77,7 +77,7 @@ class AstToDfgVisitor final : public VNVisitor {
 
     // TYPES
     // Represents a driver during canonicalization
-    struct Driver {
+    struct Driver final {
         FileLine* m_fileline;
         DfgVertex* m_vtxp;
         uint32_t m_lsb;

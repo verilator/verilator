@@ -27,12 +27,6 @@ fatal() {
   echo "ERROR: $(basename "$0"): $1" >&2; exit 1;
 }
 
-if [ "$CI_M32" = "0" ]; then
-  unset CI_M32
-elif [ "$CI_M32" != "1" ]; then
-  fatal "\$CI_M32 must be '0' or '1'";
-fi
-
 if [ "$CI_OS_NAME" = "linux" ]; then
   MAKE=make
 elif [ "$CI_OS_NAME" = "osx" ]; then
@@ -77,10 +71,6 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
     if [ "$COVERAGE" = 1 ]; then
       yes yes | sudo cpan -fi Parallel::Forker
     fi
-    if [ "$CI_M32" = 1 ]; then
-      sudo apt-get install gcc-multilib g++-multilib ||
-      sudo apt-get install gcc-multilib g++-multilib
-    fi
   elif [ "$CI_OS_NAME" = "osx" ]; then
     brew update
     brew install ccache perl gperftools
@@ -113,10 +103,6 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     if [ "$CI_RUNS_ON" = "ubuntu-20.04" ] || [ "$CI_RUNS_ON" = "ubuntu-22.04" ]; then
       sudo apt-get install libsystemc-dev ||
       sudo apt-get install libsystemc-dev
-    fi
-    if [ "$CI_M32" = 1 ]; then
-      sudo apt-get install lib32z1-dev gcc-multilib g++-multilib ||
-      sudo apt-get install lib32z1-dev gcc-multilib g++-multilib
     fi
   elif [ "$CI_OS_NAME" = "osx" ]; then
     brew update

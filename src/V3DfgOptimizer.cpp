@@ -25,6 +25,8 @@
 #include "V3AstUserAllocator.h"
 #include "V3Dfg.h"
 #include "V3DfgPasses.h"
+#include "V3DfgPatternStats.h"
+#include "V3File.h"
 #include "V3Graph.h"
 #include "V3UniqueNames.h"
 
@@ -233,7 +235,7 @@ void V3DfgOptimizer::extract(AstNetlist* netlistp) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     // Extract more optimization candidates
     DataflowExtractVisitor::apply(netlistp);
-    V3Global::dumpCheckGlobalTree("dfg-extract", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("dfg-extract", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
@@ -251,6 +253,8 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
     netlistp->foreach([](const AstVarXRef* xrefp) { xrefp->varp()->user2(true); });
 
     V3DfgOptimizationContext ctx{label};
+
+    V3DfgPatternStats patternStats;
 
     // Run the optimization phase
     for (AstNode* nodep = netlistp->modulesp(); nodep; nodep = nodep->nextp()) {
@@ -295,10 +299,34 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
             dfg->addGraph(*component);
         }
 
+        // Accumulate patterns from the optimized graph for reporting
+        if (v3Global.opt.stats()) patternStats.accumulate(*dfg);
+
         // Convert back to Ast
         if (dumpDfgLevel() >= 8) dfg->dumpDotFilePrefixed(ctx.prefix() + "whole-optimized");
         AstModule* const resultModp = V3DfgPasses::dfgToAst(*dfg, ctx);
         UASSERT_OBJ(resultModp == modp, modp, "Should be the same module");
     }
-    V3Global::dumpCheckGlobalTree("dfg-optimize", 0, dumpTreeLevel() >= 3);
+
+    // Print the collected patterns
+    if (v3Global.opt.stats()) {
+        // Label to lowercase, without spaces
+        std::string ident = label;
+        std::transform(ident.begin(), ident.end(), ident.begin(), [](unsigned char c) {  //
+            return c == ' ' ? '_' : std::tolower(c);
+        });
+
+        // File to dump to
+        const std::string filename = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix()
+                                     + "__stats_dfg_patterns__" + ident + ".txt";
+
+        // Open, write, close
+        std::ofstream* const ofp = V3File::new_ofstream(filename);
+        if (ofp->fail()) v3fatal("Can't write " << filename);
+        patternStats.dump(label, *ofp);
+        ofp->close();
+        VL_DO_DANGLING(delete ofp, ofp);
+    }
+
+    V3Global::dumpCheckGlobalTree("dfg-optimize", 0, dumpTreeEitherLevel() >= 3);
 }

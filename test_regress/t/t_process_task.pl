@@ -12,7 +12,6 @@ scenarios(simulator => 1);
 
 compile(
     v_flags2 => ["--exe --main --timing"],
-    make_main => 0,
     );
 
 execute(

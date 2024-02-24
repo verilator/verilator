@@ -263,7 +263,7 @@ public:
 inline std::string VL_TO_STRING(const VlEventBase& e);
 
 inline std::string VL_TO_STRING(const VlEvent& e) {
-    return std::string{"triggered="} + (e.isTriggered() ? "true" : "false");
+    return "triggered="s + (e.isTriggered() ? "true" : "false");
 }
 
 inline std::string VL_TO_STRING(const VlAssignableEvent& e) {
@@ -274,7 +274,7 @@ inline std::string VL_TO_STRING(const VlEventBase& e) {
     if (const VlAssignableEvent& assignable = dynamic_cast<const VlAssignableEvent&>(e)) {
         return VL_TO_STRING(assignable);
     }
-    return std::string{"triggered="} + (e.isTriggered() ? "true" : "false");
+    return "triggered="s + (e.isTriggered() ? "true" : "false");
 }
 
 //===================================================================
@@ -1592,7 +1592,7 @@ public:
 // Represents the null pointer. Used for setting VlClassRef to null instead of
 // via nullptr_t, to prevent the implicit conversion of 0 to nullptr.
 
-struct VlNull {
+struct VlNull final {
     operator bool() const { return false; }
 };
 
@@ -1648,7 +1648,7 @@ public:
     }
     // cppcheck-suppress noExplicitConstructor
     VlClassRef(VlClassRef&& moved)
-        : m_objp{vlstd::exchange(moved.m_objp, nullptr)} {}
+        : m_objp{std::exchange(moved.m_objp, nullptr)} {}
     // cppcheck-suppress noExplicitConstructor
     template <typename T_OtherClass>
     VlClassRef(const VlClassRef<T_OtherClass>& copied)
@@ -1658,7 +1658,7 @@ public:
     // cppcheck-suppress noExplicitConstructor
     template <typename T_OtherClass>
     VlClassRef(VlClassRef<T_OtherClass>&& moved)
-        : m_objp{vlstd::exchange(moved.m_objp, nullptr)} {}
+        : m_objp{std::exchange(moved.m_objp, nullptr)} {}
     ~VlClassRef() { refCountDec(); }
 
     // METHODS
@@ -1673,7 +1673,7 @@ public:
     VlClassRef& operator=(VlClassRef&& moved) {
         if (m_objp == moved.m_objp) return *this;
         refCountDec();
-        m_objp = vlstd::exchange(moved.m_objp, nullptr);
+        m_objp = std::exchange(moved.m_objp, nullptr);
         return *this;
     }
     template <typename T_OtherClass>
@@ -1688,7 +1688,7 @@ public:
     VlClassRef& operator=(VlClassRef<T_OtherClass>&& moved) {
         if (m_objp == moved.m_objp) return *this;
         refCountDec();
-        m_objp = vlstd::exchange(moved.m_objp, nullptr);
+        m_objp = std::exchange(moved.m_objp, nullptr);
         return *this;
     }
     // Assign with nullptr
@@ -1751,7 +1751,7 @@ template <typename T_Sampled>
 class VlSampleQueue final {
     // TYPES
     // Type representing a single value sample at a point in time
-    struct VlSample {
+    struct VlSample final {
         uint64_t m_timestamp;  // Timestamp at which the value was sampled
         T_Sampled m_value;  // The sampled value
     };

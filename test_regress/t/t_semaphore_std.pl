@@ -14,7 +14,6 @@ top_filename("t/t_semaphore.v");
 
 compile(
     verilator_flags2 => ["--exe --main --timing -Wall -DSEMAPHORE_T=std::semaphore"],
-    make_main => 0,
     );
 
 execute(

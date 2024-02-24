@@ -19,14 +19,14 @@ int main(int argc, char** argv) {
     // e.g. examples/c_tracing.
 
     // Construct a VerilatedContext to hold simulation time, etc.
-    VerilatedContext* contextp = new VerilatedContext;
+    VerilatedContext* const contextp = new VerilatedContext;
 
     // Pass arguments so Verilated code can see them, e.g. $value$plusargs
     // This needs to be called before you create any model
     contextp->commandArgs(argc, argv);
 
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
-    Vtop* top = new Vtop{contextp};
+    Vtop* const top = new Vtop{contextp};
 
     // Simulate until $finish
     while (!contextp->gotFinish()) {

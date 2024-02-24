@@ -33,7 +33,7 @@
 
 //============================================================================
 
-struct V3DupFinderUserSame {
+struct V3DupFinderUserSame VL_NOT_FINAL {
     // Functor for V3DupFinder::findDuplicate
     virtual bool isSame(AstNode*, AstNode*) = 0;
     V3DupFinderUserSame() = default;
@@ -45,18 +45,18 @@ class V3DupFinder final : private std::multimap<V3Hash, AstNode*> {
     using Super = std::multimap<V3Hash, AstNode*>;
 
     // MEMBERS
-    const V3Hasher* const m_hasherp = nullptr;  // Pointer to owned hasher
+    const V3Hasher* const m_hasherOwnedp = nullptr;  // Pointer to owned hasher
     const V3Hasher& m_hasher;  // Reference to hasher
 
 public:
     // CONSTRUCTORS
     V3DupFinder()
-        : m_hasherp{new V3Hasher}
-        , m_hasher{*m_hasherp} {}
+        : m_hasherOwnedp{new V3Hasher}
+        , m_hasher{*m_hasherOwnedp} {}
     explicit V3DupFinder(const V3Hasher& hasher)
         : m_hasher{hasher} {}
     ~V3DupFinder() {
-        if (m_hasherp) delete m_hasherp;
+        if (m_hasherOwnedp) delete m_hasherOwnedp;
     }
 
     // METHODS

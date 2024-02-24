@@ -8,12 +8,68 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
+Verilator 5.022 2024-04-24
+==========================
+
+**Minor:**
+
+* Add predicted stack overflow warning (#4799).
+* Add `+verilator+coverage+file` runtime option.
+* Add `--assert-case` option (#4919). [Yutetsu TAKATSUKASA]
+* Add `--decorations node` for inserting debug comments into emitted code.
+* Add `--json-only` and related JSON dumping (#4715) (#4831). [Szymon Gizler, Antmicro Ltd.]
+* Add `--[no]-stop-fail` option for continuing after assertions (#4904). [Yutetsu TAKATSUKASA]
+* Add `--runtime-debug` for Verilated executable runtime debugging.
+* Add `--valgrind` switch (#4828). [Szymon Gizler]
+* Add `unroll_disable` and `unroll_full` loop control metacomments (#3260). [Jiaxun Yang]
+* Remove deprecated 32-bit pointer mode (`gcc -m32`).
+* Deprecate --xml-only and XML dumping (#4715) (#4831).
+* Change zero replication width error to ZEROREPL warning (#4753) (#4762). [Pengcheng Xu]
+* Improve message for priority case assertion failure (#4905). [Yutetsu TAKATSUKASA]
+* Support dumping coverage with `--main`.
+* Support dumping DFG patterns with `--stats` (#4889). [Geza Lore]
+* Support `vpiConstType` in `vpi_get_str()` (#4797). [Marlon James]
+* Support SystemC 3.0.0 public review version (#4805) (#4807). [Anthony Donlon]
+* Support parsing anonymous primitive instantiations (#4809). [Anthony Donlon]
+* Fix to not emit already waived warnings in waiver output (#4574) (#4818). [Jonathan Schröter]
+* Fix `this` in member initialization (#4710). [eliasphanna]
+* Fix localparam elaboration (#3858) (#4794). [Andrew Nolte]
+* Fix lint_off disables on preprocessor warnings (#4703). [Srinivasan Venkataramanan]
+* Fix $time not rounding up (#4790) (#4792). [Paul Wright]
+* Fix `vpi_get()` and `vpi_get64()` to return vpiUndefined on errors (#4795). [Marlon James]
+* Fix VPI parameter iteration (#4798). [Marlon James]
+* Fix delays using wrong timeunit when modules inlined (#4806). [Paul Wright]
+* Fix warnings in verilated_sc_trace.h for Clang. (#4807) (#4827). [Anthony Donlon]
+* Fix null pointer dereference (#4810) (#4825). [Adrian Sampson]
+* Fix compilation error on multi-inherited interface class usage (#4819).
+* Fix maybe-uninitialized compiler warning (#4820) (#4822). [Larry Doolittle]
+* Fix mis-splitting of dump control functions (#4821). [Fan Shupei]
+* Fix wrong utimes() parameter (#4829). [Szymon Gizler]
+* Fix incorrect bit-op-tree NOT optimization (#4832) (#4847). [Yutetsu TAKATSUKASA]
+* Fix width calculation in replaceShiftOp (#4837) (#4841) (#4849). [Yutetsu TAKATSUKASA]
+* Fix unsafe write in wide array insertion (#4850) (#4855). [Paul Swirhun]
+* Fix NOT when checking EQ/NEQ under AND/OR tree (#4857) (#4863). [Yutetsu TAKATSUKASA]
+* Fix tracing chandles (#4860). [Nathan Graybeal]
+* Fix $fwrite of null (#4862). [Jose Tejada]
+* Fix -fno-const-bit-op-tree wrong runtime result (#4864) (#4867). [Yutetsu TAKATSUKASA]
+* Fix SystemC biguint sign desynchronization (#4870). [Bartłomiej Chmiel]
+* Fix incorrect temporary insertion in loop conditions with statements (#4873). [Geza Lore]
+* Fix timing with expr on assign LHS (#4880). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix assertion for unique case (#4892). [Yutetsu TAKATSUKASA]
+* Fix GCC tautological-compare warnings.
+* Fix compile error on structs with queues (and ignore toggle coverage on queues).
+* Fix toggle coverage error on multi-edge driven signals.
+* Fix whitespace in `pragma protect version` (#4902) (#4914). [Paul Swirhun]
+* Fix incorrect code generation for change expression on typedefed unpacked array (#4915). [Geza Lore]
+* Fix inconsistent driver resolution with typedefs (#4917). [Geza Lore]
+
+
 Verilator 5.020 2024-01-01
 ==========================
 
 **Major:**
 
-* Support compilation with precompiled headers with Make and GCC or CLang.
+* Support compilation with precompiled headers with Make, and GCC or CLang.
 * Change include to systemc instead of systemc.h (#4622) (#4623). [Chih-Mao Chen]
   This may require that SystemC programs add 'using namespace sc_core', 'using namespace sc_dt'.
 
@@ -271,7 +327,7 @@ Verilator 5.012 2023-06-13
 * Optimize VPI callValueCbs (#4155). [Hennadii Chernyshchyk]
 * Configure for faster C++ linking using 'mold', if it is installed.
 * Fix crash on duplicate imported modules (#3231). [Robert Balas]
-* Fix false WIDTHEXPAND on array declarations (#3959). [JOTEGO]
+* Fix false WIDTHEXPAND on array declarations (#3959). [Jose Tejada]
 * Fix marking overridden methods as coroutines (#4120) (#4169). [Krzysztof Bieganski, Antmicro Ltd]
 * Fix SystemC signal copy macro use (#4135). [Josep Sans]
 * Fix duplicate static names in blocks in functions (#4144) (#4160). [Stefan Wallentowitz]

@@ -37,43 +37,29 @@ jobs:
         compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
-        # m32 1 is deprecated, not here to speed up regressions
-        m32: [0]
-        exclude:
-          # Build pull requests only with ubuntu-22.04 and without m32
-          # - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-18.04' || 'do-not-exclude' }}
-          # - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-20.04' || 'do-not-exclude' }}
-          # - m32: ${{ github.event_name == 'pull_request' && 1              || 'do-not-exclude' }}
-          # Build -m32 only on ubuntu-22.04 clang++
-          - {os: ubuntu-18.04, m32: 1}
-          - {os: ubuntu-20.04, m32: 1}
-          - compiler: { cc: gcc, cxx: g++ }
-            m32: 1
         include:
           # Build GCC 10 on ubuntu-20.04
           - os: ubuntu-20.04
             compiler: { cc: gcc-10, cxx: g++-10 }
-            m32: 0
     runs-on: ${{ matrix.os }}
-    name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }} ${{ matrix.m32 && '| -m32' || '' }}
+    name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
     env:
       CI_BUILD_STAGE_NAME: build
       CI_RUNS_ON: ${{ matrix.os }}
-      CI_M32: ${{ matrix.m32 }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      CACHE_BASE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}-m32=${{ matrix.m32 }}
+      CACHE_BASE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}
       CCACHE_MAXSIZE: 1000M # Per build matrix entry (* 5 = 5000M in total)
-      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}${{ matrix.m32 && '-m32' || '' }}.tar.gz
+      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
     steps:
 
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: repo
 
     - name: Cache $CCACHE_DIR
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       env:
         CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache
       with:
@@ -93,7 +79,7 @@ jobs:
       run: tar --posix -c -z -f ${{ env.VERILATOR_ARCHIVE }} repo
 
     - name: Upload tar archive
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         path: ${{ github.workspace }}/${{ env.VERILATOR_ARCHIVE }}
         name: ${{ env.VERILATOR_ARCHIVE }}
@@ -108,40 +94,28 @@ jobs:
         compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
-        m32: [0]
         suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, vltmt-0, vltmt-1]
-        exclude:
-          # Build pull requests only with ubuntu-22.04 and without m32
-          # - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-18.04' || 'do-not-exclude' }}
-          # - os:  ${{ github.event_name == 'pull_request' && 'ubuntu-20.04' || 'do-not-exclude' }}
-          # - m32: ${{ github.event_name == 'pull_request' && 1              || 'do-not-exclude' }}
-          # Build -m32 only on ubuntu-22.04
-          - {os: ubuntu-18.04, m32: 1}
-          - {os: ubuntu-20.04, m32: 1}
-          - compiler: { cc: gcc, cxx: g++ }
-            m32: 1
         include:
-          # Test with GCC 10 on ubuntu-20.04 without m32
-          - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, m32: 0, suite: dist-vlt-0}
-          - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, m32: 0, suite: dist-vlt-1}
-          - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, m32: 0, suite: dist-vlt-2}
-          - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, m32: 0, suite: vltmt-0}
-          - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, m32: 0, suite: vltmt-1}
+          # Test with GCC 10 on ubuntu-20.04
+          - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, suite: dist-vlt-0}
+          - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, suite: dist-vlt-1}
+          - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, suite: dist-vlt-2}
+          - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, suite: vltmt-0}
+          - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, suite: vltmt-1}
     runs-on: ${{ matrix.os }}
-    name: Test | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.suite }} ${{ matrix.m32 && '| -m32' || '' }}
+    name: Test | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.suite }}
     env:
       CI_BUILD_STAGE_NAME: test
       CI_RUNS_ON: ${{ matrix.os }}
-      CI_M32: ${{ matrix.m32 }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      CACHE_BASE_KEY: test-${{ matrix.os }}-${{ matrix.compiler.cc }}-m32=${{ matrix.m32 }}-${{ matrix.suite }}
+      CACHE_BASE_KEY: test-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.suite }}
       CCACHE_MAXSIZE: 100M # Per build per suite (* 5 * 5 = 2500M in total)
-      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}${{ matrix.m32 && '-m32' || '' }}.tar.gz
+      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
     steps:
 
     - name: Download tar archive
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: ${{ env.VERILATOR_ARCHIVE }}
         path: ${{ github.workspace }}
@@ -151,7 +125,7 @@ jobs:
       run: tar -x -z -f ${{ env.VERILATOR_ARCHIVE }}
 
     - name: Cache $CCACHE_DIR
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       env:
         CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache
       with:
@@ -174,10 +148,9 @@ jobs:
     env:
       CI_BUILD_STAGE_NAME: build
       CI_RUNS_ON: ubuntu-22.04
-      CI_M32: 0
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: repo
 

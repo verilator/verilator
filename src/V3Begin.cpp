@@ -366,5 +366,5 @@ void V3Begin::debeginAll(AstNetlist* nodep) {
         { BeginVisitor{nodep, &state}; }
         if (state.anyFuncInBegin()) { BeginRelinkVisitor{nodep, &state}; }
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("begin", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("begin", 0, dumpTreeEitherLevel() >= 3);
 }

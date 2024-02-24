@@ -2030,7 +2030,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     int m_modportNum = 0;  // Uniqueify modport numbers
     bool m_inSens = false;  // True if in senitem
-    std::set<std::string> m_ifClassImpNames;  // Names imported from interface class
+    std::map<std::string, AstNode*> m_ifClassImpNames;  // Names imported from interface class
     std::set<AstClass*> m_extendsParam;  // Classes that have a parameterized super class
                                          // (except the default instances)
                                          // They are added to the set only in linkDotPrimary.
@@ -2038,7 +2038,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     bool m_explicitSuperNew = false;  // Hit a "super.new" call inside a "new" function
     std::map<AstNode*, AstPin*> m_usedPins;  // Pin used in this cell, map to duplicate
 
-    struct DotStates {
+    struct DotStates final {
         DotPosition m_dotPos;  // Scope part of dotted resolution
         VSymEnt* m_dotSymp;  // SymEnt for dotted AstParse lookup
         const AstDot* m_dotp;  // Current dot
@@ -2208,9 +2208,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
     VSymEnt* getThisClassSymp() {
         VSymEnt* classSymp = m_ds.m_dotSymp;
-        do {
+        while (classSymp && !VN_IS(classSymp->nodep(), Class)) {
             classSymp = classSymp->parentp();
-        } while (classSymp && !VN_IS(classSymp->nodep(), Class));
+        }
         return classSymp;
     }
     void importImplementsClass(AstClass* implementsClassp, VSymEnt* interfaceSymp,
@@ -2235,9 +2235,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                      << "... Location of interface class's function\n"
                                      << interfaceSubp->warnContextSecondary());
                     }
-                    if (!existsInChild
-                        && m_ifClassImpNames.find(interfaceSubp->name())
-                               != m_ifClassImpNames.end()) {
+                    const auto it = m_ifClassImpNames.find(interfaceSubp->name());
+                    if (!existsInChild && it != m_ifClassImpNames.end()
+                        && it->second != interfaceSubp) {  // Not exact same function from diamond
                         implementsClassp->v3error(
                             "Class " << implementsClassp->prettyNameQ() << " implements "
                                      << interfaceClassp->prettyNameQ()
@@ -2249,7 +2249,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                      << "... Location of interface class's function\n"
                                      << interfaceSubp->warnContextSecondary());
                     }
-                    m_ifClassImpNames.emplace(interfaceSubp->name());
+                    m_ifClassImpNames.emplace(interfaceSubp->name(), interfaceSubp);
                 }
             }
         }
@@ -3791,18 +3791,24 @@ public:
 
 void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
     VIsCached::clearCacheTree();  // Avoid using any stale isPure
-    if (debug() >= 5 || dumpTreeLevel() >= 9) {
+    if (dumpTreeEitherLevel() >= 9) {
+        V3Global::dumpCheckGlobalTree("prelinkdot");
+    } else if (debug() >= 5) {  // on high dbg level, dump even if not explicitly told to
         v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot.tree"));
     }
     LinkDotState state{rootp, step};
     const LinkDotFindVisitor visitor{rootp, &state};
-    if (debug() >= 5 || dumpTreeLevel() >= 9) {
+    if (dumpTreeEitherLevel() >= 9) {
+        V3Global::dumpCheckGlobalTree("prelinkdot-find");
+    } else if (debug() >= 5) {
         v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-find.tree"));
     }
     if (step == LDS_PRIMARY || step == LDS_PARAMED) {
         // Initial link stage, resolve parameters
         const LinkDotParamVisitor visitors{rootp, &state};
-        if (debug() >= 5 || dumpTreeLevel() >= 9) {
+        if (dumpTreeEitherLevel() >= 9) {
+            V3Global::dumpCheckGlobalTree("prelinkdot-param");
+        } else if (debug() >= 5) {
             v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-param.tree"));
         }
     } else if (step == LDS_ARRAYED) {
@@ -3811,7 +3817,9 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
         // process AstScope's.  This needs to be separate pass after whole hierarchy graph created.
         const LinkDotScopeVisitor visitors{rootp, &state};
         v3Global.assertScoped(true);
-        if (debug() >= 5 || dumpTreeLevel() >= 9) {
+        if (dumpTreeEitherLevel() >= 9) {
+            V3Global::dumpCheckGlobalTree("prelinkdot-scoped");
+        } else if (debug() >= 5) {
             v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-scoped.tree"));
         }
     } else {
@@ -3829,23 +3837,23 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
 void V3LinkDot::linkDotPrimary(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     linkDotGuts(nodep, LDS_PRIMARY);
-    V3Global::dumpCheckGlobalTree("linkdot", 0, dumpTreeLevel() >= 6);
+    V3Global::dumpCheckGlobalTree("linkdot", 0, dumpTreeEitherLevel() >= 6);
 }
 
 void V3LinkDot::linkDotParamed(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     linkDotGuts(nodep, LDS_PARAMED);
-    V3Global::dumpCheckGlobalTree("linkdotparam", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("linkdotparam", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3LinkDot::linkDotArrayed(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     linkDotGuts(nodep, LDS_ARRAYED);
-    V3Global::dumpCheckGlobalTree("linkdot", 0, dumpTreeLevel() >= 6);
+    V3Global::dumpCheckGlobalTree("linkdot", 0, dumpTreeEitherLevel() >= 6);
 }
 
 void V3LinkDot::linkDotScope(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     linkDotGuts(nodep, LDS_SCOPED);
-    V3Global::dumpCheckGlobalTree("linkdot", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("linkdot", 0, dumpTreeEitherLevel() >= 3);
 }

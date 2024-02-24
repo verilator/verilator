@@ -525,5 +525,5 @@ public:
 void V3Unknown::unknownAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { UnknownVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("unknown", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("unknown", 0, dumpTreeEitherLevel() >= 3);
 }

@@ -444,6 +444,23 @@ void V3Options::ccSet() {  // --cc
     m_systemC = false;
 }
 
+void V3Options::decorations(FileLine* fl, const string& arg) {  // --decorations
+    if (arg == "none") {
+        m_decoration = false;
+        m_decorationNodes = false;
+    } else if (arg == "node") {
+        m_decoration = true;
+        m_decorationNodes = true;
+    } else if (arg == "medium") {
+        m_decoration = true;
+        m_decorationNodes = false;
+    } else {
+        fl->v3fatal("Unknown setting for --decorations: '"
+                    << arg << "'\n"
+                    << fl->warnMore() << "... Suggest 'none', 'medium', or 'node'");
+    }
+}
+
 //######################################################################
 // File searching
 
@@ -777,16 +794,17 @@ void V3Options::notify() VL_MT_DISABLED {
     FileLine* const cmdfl = new FileLine{FileLine::commandLineFilename()};
 
     if (!outFormatOk() && v3Global.opt.main()) ccSet();  // --main implies --cc if not provided
-    if (!outFormatOk() && !dpiHdrOnly() && !lintOnly() && !preprocOnly() && !xmlOnly()) {
+    if (!outFormatOk() && !dpiHdrOnly() && !lintOnly() && !preprocOnly() && !serializeOnly()) {
         v3fatal("verilator: Need --binary, --cc, --sc, --dpi-hdr-only, --lint-only, "
-                "--xml-only or --E option");
+                "--xml-only, --json-only or --E option");
     }
 
     if (m_build && (m_gmake || m_cmake)) {
         cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }
 
-    // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, and m_xmlOnly are mutually exclusive
+    // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, m_jsonOnly and m_xmlOnly are mutually
+    // exclusive
     std::vector<std::string> backendFlags;
     if (m_build) {
         if (m_binary)
@@ -798,6 +816,7 @@ void V3Options::notify() VL_MT_DISABLED {
     if (m_dpiHdrOnly) backendFlags.push_back("--dpi-hdr-only");
     if (m_lintOnly) backendFlags.push_back("--lint-only");
     if (m_xmlOnly) backendFlags.push_back("--xml-only");
+    if (m_jsonOnly) backendFlags.push_back("--json-only");
     if (backendFlags.size() > 1) {
         std::string backendFlagsString = backendFlags.front();
         for (size_t i = 1; i < backendFlags.size(); i++) {
@@ -847,14 +866,14 @@ void V3Options::notify() VL_MT_DISABLED {
             !v3Global.opt.dpiHdrOnly()  //
             && !v3Global.opt.lintOnly()  //
             && !v3Global.opt.preprocOnly()  //
-            && !v3Global.opt.xmlOnly());
+            && !v3Global.opt.serializeOnly());
     }
     if (v3Global.opt.makeDepend().isDefault()) {
         v3Global.opt.m_makeDepend.setTrueOrFalse(  //
             !v3Global.opt.dpiHdrOnly()  //
             && !v3Global.opt.lintOnly()  //
             && !v3Global.opt.preprocOnly()  //
-            && !v3Global.opt.xmlOnly());
+            && !v3Global.opt.serializeOnly());
     }
 
     if (trace()) {
@@ -940,6 +959,16 @@ VTimescale V3Options::timeComputeUnit(const VTimescale& flag) const {
     } else {
         return flag;
     }
+}
+
+int V3Options::unrollCountAdjusted(const VOptionBool& full, bool generate, bool simulate) {
+    int count = unrollCount();
+    // std::max to avoid rollover if unrollCount is e.g. std::numeric_limits<int>::max()
+    // With /*verilator unroll_full*/ still have a limit to avoid infinite loops
+    if (full.isSetTrue()) count = std::max(count, count * 1024);
+    if (generate) count = std::max(count, count * 16);
+    if (simulate) count = std::max(count, count * 16);
+    return count;
 }
 
 //######################################################################
@@ -1076,6 +1105,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
 
     // Minus options
     DECL_OPTION("-assert", OnOff, &m_assert);
+    DECL_OPTION("-assert-case", OnOff, &m_assertCase);
     DECL_OPTION("-autoflush", OnOff, &m_autoflush);
 
     DECL_OPTION("-bbox-sys", OnOff, &m_bboxSys);
@@ -1166,13 +1196,18 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-debug-protect", OnOff, &m_debugProtect).undocumented();
     DECL_OPTION("-debug-self-test", OnOff, &m_debugSelfTest).undocumented();
     DECL_OPTION("-debug-sigsegv", CbCall, throwSigsegv).undocumented();  // See also --debug-abort
-    DECL_OPTION("-decoration", OnOff, &m_decoration);
+    DECL_OPTION("-debug-stack-check", OnOff, &m_debugStackCheck).undocumented();
+    DECL_OPTION("-decoration", CbCall, [this, fl]() { decorations(fl, "medium"); });
+    DECL_OPTION("-decorations", CbVal, [this, fl](const char* optp) { decorations(fl, optp); });
+    DECL_OPTION("-no-decoration", CbCall, [this, fl]() { decorations(fl, "none"); });
     DECL_OPTION("-dpi-hdr-only", OnOff, &m_dpiHdrOnly);
     DECL_OPTION("-dump-", CbPartialMatch, [this](const char* optp) { m_dumpLevel[optp] = 3; });
     DECL_OPTION("-no-dump-", CbPartialMatch, [this](const char* optp) { m_dumpLevel[optp] = 0; });
     DECL_OPTION("-dumpi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
         m_dumpLevel[optp] = std::atoi(valp);
     });
+    DECL_OPTION("-json-edit-nums", OnOff, &m_jsonEditNums);
+    DECL_OPTION("-json-ids", OnOff, &m_jsonIds);
     DECL_OPTION("-E", CbOnOff, [this](bool flag) {
         if (flag) m_std = false;
         m_preprocOnly = flag;
@@ -1382,10 +1417,19 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-relative-includes", OnOff, &m_relativeIncludes);
     DECL_OPTION("-reloop-limit", CbVal, [this, fl](const char* valp) {
         m_reloopLimit = std::atoi(valp);
-        if (m_reloopLimit < 2) { fl->v3error("--reloop-limit must be >= 2: " << valp); }
+        if (m_reloopLimit < 2) fl->v3error("--reloop-limit must be >= 2: " << valp);
     });
     DECL_OPTION("-report-unoptflat", OnOff, &m_reportUnoptflat);
     DECL_OPTION("-rr", CbCall, []() {});  // Processed only in bin/verilator shell
+    DECL_OPTION("-runtime-debug", CbCall, [this, fl]() {
+        decorations(fl, "node");
+        addCFlags("-ggdb");
+        addLdLibs("-ggdb");
+        addCFlags("-fsanitize=address,undefined");
+        addLdLibs("-fsanitize=address,undefined");
+        addCFlags("-D_GLIBCXX_DEBUG");
+        addCFlags("-DVL_DEBUG=1");
+    });
 
     DECL_OPTION("-savable", OnOff, &m_savable);
     DECL_OPTION("-sc", CbCall, [this]() {
@@ -1399,6 +1443,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_stats |= flag;
     });
     DECL_OPTION("-std", OnOff, &m_std);
+    DECL_OPTION("-stop-fail", OnOff, &m_stopFail);
     DECL_OPTION("-structs-packed", OnOff, &m_structsPacked);
     DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2017; });
 
@@ -1500,6 +1545,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-v", CbVal, [this, &optdir](const char* valp) {
         V3Options::addLibraryFile(parseFileArg(optdir, valp));
     });
+    DECL_OPTION("-valgrind", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-verilate-jobs", CbVal, [this, fl](const char* valp) {
         int val = std::atoi(valp);
         if (val < 0) {
@@ -1545,7 +1591,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-Wno-", CbPartialMatch, [fl, &parser](const char* optp) VL_MT_DISABLED {
         if (!FileLine::globalWarnOff(optp, true)) {
-            const string fullopt = std::string{"-Wno-"} + optp;
+            const string fullopt = "-Wno-"s + optp;
             fl->v3fatal("Unknown warning specified: " << fullopt
                                                       << parser.getSuggestion(fullopt.c_str()));
         }
@@ -1567,7 +1613,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         const V3ErrorCode code{optp};
         if (code == V3ErrorCode::EC_ERROR) {
             if (!isFuture(optp)) {
-                const string fullopt = std::string{"-Wwarn-"} + optp;
+                const string fullopt = "-Wwarn-"s + optp;
                 fl->v3fatal("Unknown warning specified: "
                             << fullopt << parser.getSuggestion(fullopt.c_str()));
             }
@@ -1623,6 +1669,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-xml-output", CbVal, [this](const char* valp) {
         m_xmlOutput = valp;
         m_xmlOnly = true;
+    });
+    DECL_OPTION("-json-only", OnOff, &m_jsonOnly);
+    DECL_OPTION("-json-only-output", CbVal, [this](const char* valp) {
+        m_jsonOnlyOutput = valp;
+        m_jsonOnly = true;
+    });
+    DECL_OPTION("-json-only-meta-output", CbVal, [this](const char* valp) {
+        m_jsonOnlyMetaOutput = valp;
+        m_jsonOnly = true;
     });
 
     DECL_OPTION("-y", CbVal, [this, &optdir](const char* valp) {

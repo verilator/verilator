@@ -19,6 +19,24 @@ endclass
 class Cls implements IclsBoth;
 endclass
 
+
+// This is not a collision - diamond
+interface class Ibase;
+   pure virtual function int fn();
+endclass
+
+interface class Ic1 extends Ibase;
+   pure virtual function int fn1();
+endclass
+
+interface class Ic2 extends Ibase;
+   pure virtual function int fn2();
+endclass
+
+interface class Ic3 extends Ic1, Ic2;
+endclass
+
+
 module t (/*AUTOARG*/);
    Cls c;
 endmodule

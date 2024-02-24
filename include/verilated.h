@@ -73,6 +73,8 @@
 #endif
 // clang-format on
 
+using namespace std::literals;  // "<std::string literal>"s; see SF.7 core guideline
+
 //=============================================================================
 // Switches
 
@@ -349,7 +351,7 @@ protected:
     // Slow path variables
     mutable VerilatedMutex m_mutex;  // Mutex for most s_s/s_ns members
 
-    struct Serialized {  // All these members serialized/deserialized
+    struct Serialized final {  // All these members serialized/deserialized
         // No std::strings or pointers or will serialize badly!
         // Fast path
         bool m_assertOn = true;  // Assertions are enabled
@@ -379,12 +381,13 @@ protected:
     std::string m_timeFormatSuffix VL_GUARDED_BY(m_timeDumpMutex);  // $timeformat printf format
     std::string m_dumpfile VL_GUARDED_BY(m_timeDumpMutex);  // $dumpfile setting
 
-    struct NonSerialized {  // Non-serialized information
+    struct NonSerialized final {  // Non-serialized information
         // These are reloaded from on command-line settings, so do not need to persist
         // Fast path
         uint64_t m_profExecStart = 1;  // +prof+exec+start time
         uint32_t m_profExecWindow = 2;  // +prof+exec+window size
         // Slow path
+        std::string m_coverageFilename;  // +coverage+file filename
         std::string m_profExecFilename;  // +prof+exec+file filename
         std::string m_profVltFilename;  // +prof+vlt filename
     } m_ns;
@@ -392,7 +395,7 @@ protected:
     mutable VerilatedMutex m_argMutex;  // Protect m_argVec, m_argVecLoaded
     // no need to be save-restored (serialized) the
     // assumption is that the restore is allowed to pass different arguments
-    struct NonSerializedCommandArgs {
+    struct NonSerializedCommandArgs final {
         // Medium speed
         std::vector<std::string> m_argVec;  // Argument list
         bool m_argVecLoaded = false;  // Ever loaded argument list
@@ -575,6 +578,10 @@ public:
     VerilatedVirtualBase* threadPoolpOnClone();
     VerilatedVirtualBase*
     enableExecutionProfiler(VerilatedVirtualBase* (*construct)(VerilatedContext&));
+
+    // Internal: coverage
+    void coverageFilename(const std::string& flag) VL_MT_SAFE;
+    std::string coverageFilename() const VL_MT_SAFE;
 
     // Internal: $dumpfile
     void dumpfile(const std::string& flag) VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
@@ -898,6 +905,7 @@ public:
     static void overWidthError(const char* signame) VL_ATTR_NORETURN VL_MT_SAFE;
     static void scTimePrecisionError(int sc_prec, int vl_prec) VL_ATTR_NORETURN VL_MT_SAFE;
     static void scTraceBeforeElaborationError() VL_ATTR_NORETURN VL_MT_SAFE;
+    static void stackCheck(QData needSize) VL_MT_UNSAFE;
 
     // Internal: Get and set DPI context
     static const VerilatedScope* dpiScope() VL_MT_SAFE { return t_s.t_dpiScopep; }
@@ -971,6 +979,7 @@ void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
         } else if (sc_res == sc_core::sc_time(1, sc_core::SC_FS)) {
             sc_prec = 15;
         }
+        // SC_AS, SC_ZS, SC_YS not supported as no Verilog equivalent; will error below
 #endif
     }
 #if VM_SC

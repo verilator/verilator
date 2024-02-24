@@ -25,7 +25,7 @@
 // Holds list of types as template parameter pack.
 // Useful in compile-time code generation.
 template <typename... TN>
-struct VTypeList {
+struct VTypeList final {
     template <typename... UN>
     constexpr VTypeList<TN..., UN...> operator+(VTypeList<UN...>) const {
         return {};
@@ -36,7 +36,7 @@ struct VTypeList {
 // Can be safely used as a return or argument type, and even instantiated, without triggering any
 // potential limitations or effects of the held type.
 template <typename T>
-struct VTypeWrapper {
+struct VTypeWrapper final {
     using type_t = T;
 };
 

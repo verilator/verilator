@@ -247,7 +247,6 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
         void visit(AstExprStmt* nodep) override { iterateChildren(nodep); }
 
         //--------------------
-        void visit(AstNodeExpr*) override {}  // Accelerate
         void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     public:
@@ -429,7 +428,7 @@ void transformForks(AstNetlist* const netlistp) {
         ~ForkVisitor() override = default;
     };
     ForkVisitor{netlistp};
-    V3Global::dumpCheckGlobalTree("sched_forks", 0, dumpTreeLevel() >= 6);
+    V3Global::dumpCheckGlobalTree("sched_forks", 0, dumpTreeEitherLevel() >= 6);
 }
 
 }  // namespace V3Sched

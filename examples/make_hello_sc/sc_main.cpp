@@ -25,7 +25,7 @@ int sc_main(int argc, char* argv[]) {
     // e.g. examples/c_tracing.
 
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
-    Vtop* top = new Vtop{"top"};
+    Vtop* const top = new Vtop{"top"};
 
     // Pass arguments so Verilated code can see them, e.g. $value$plusargs
     // This needs to be called before you create any model

@@ -422,12 +422,12 @@ void V3Graph::subtreeLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp, V3Grap
 //######################################################################
 // Algorithms - sorting
 
-struct GraphSortVertexCmp {
+struct GraphSortVertexCmp final {
     bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
         return lhsp->sortCmp(rhsp) < 0;
     }
 };
-struct GraphSortEdgeCmp {
+struct GraphSortEdgeCmp final {
     bool operator()(const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
         return lhsp->sortCmp(rhsp) < 0;
     }

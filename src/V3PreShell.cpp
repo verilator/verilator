@@ -102,8 +102,8 @@ protected:
             // intervening +<lang>ext+ options since it was first encountered.
             FileLine* const modfileline = new FileLine{modfilename};
             modfileline->language(v3Global.opt.fileLanguage(modfilename));
-            V3Parse::ppPushText(parsep, (std::string{"`begin_keywords \""}
-                                         + modfileline->language().ascii() + "\"\n"));
+            V3Parse::ppPushText(
+                parsep, ("`begin_keywords \""s + modfileline->language().ascii() + "\"\n"));
             // FileLine tracks and frees modfileline
         }
 

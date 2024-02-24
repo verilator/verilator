@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_assert_iff_clk_unsup.v:20:21: Unsupported: property '(disable iff (...) @ (...)'
+                                                    : ... Suggest use property '(@(...) disable iff (...))'
+   20 |    assert property (disable iff (cyc < 5) @(posedge clk) cyc >= 5);
+      |                     ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

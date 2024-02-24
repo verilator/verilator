@@ -50,7 +50,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class ForceConvertVisitor final : public VNVisitor {
     // TYPES
-    struct ForceComponentsVar {
+    struct ForceComponentsVar final {
         AstVar* const m_rdVarp;  // New variable to replace read references with
         AstVar* const m_valVarp;  // Forced value
         AstVar* const m_enVarp;  // Force enabled signal
@@ -76,7 +76,7 @@ class ForceConvertVisitor final : public VNVisitor {
         }
     };
 
-    struct ForceComponentsVarScope {
+    struct ForceComponentsVarScope final {
         AstVarScope* const m_rdVscp;  // New variable to replace read references with
         AstVarScope* const m_enVscp;  // Force enabled signal
         AstVarScope* const m_valVscp;  // Forced value
@@ -328,5 +328,5 @@ void V3Force::forceAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     if (!v3Global.hasForceableSignals()) return;
     ForceConvertVisitor::apply(nodep);
-    V3Global::dumpCheckGlobalTree("force", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("force", 0, dumpTreeEitherLevel() >= 3);
 }

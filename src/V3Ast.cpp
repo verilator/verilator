@@ -22,6 +22,7 @@
 
 #include <iomanip>
 #include <memory>
+#include <sstream>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -1116,6 +1117,7 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
 void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
     // private: Check a tree and children
     UASSERT_OBJ(prevBackp == this->backp(), this, "Back node inconsistent");
+    // cppcheck-suppress danglingTempReference
     const VNTypeInfo& typeInfo = *type().typeInfo();
     for (int i = 1; i <= 4; i++) {
         AstNode* nodep = nullptr;
@@ -1126,6 +1128,7 @@ void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
         case 4: nodep = op4p(); break;
         default: this->v3fatalSrc("Bad case"); break;
         }
+        // cppcheck-suppress danglingTempReference
         const char* opName = typeInfo.m_opNamep[i - 1];
         switch (typeInfo.m_opType[i - 1]) {
         case VNTypeInfo::OP_UNUSED:
@@ -1142,7 +1145,7 @@ void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
         case VNTypeInfo::OP_LIST:
             if (const AstNode* const headp = nodep) {
                 const AstNode* backp = this;
-                const AstNode* tailp = headp;
+                const AstNode* tailp;
                 const AstNode* opp = headp;
                 do {
                     opp->checkTreeIter(backp);
@@ -1326,6 +1329,28 @@ void AstNode::dumpTreeDot(std::ostream& os) const {
     drawChildren(os, this, m_op2p, "op2");
     drawChildren(os, this, m_op3p, "op3");
     drawChildren(os, this, m_op4p, "op4");
+}
+
+void AstNode::dumpTreeJsonFile(const string& filename, bool doDump) {
+    if (!doDump) return;
+    UINFO(2, "Dumping " << filename << endl);
+    const std::unique_ptr<std::ofstream> treejsonp{V3File::new_ofstream(filename)};
+    if (treejsonp->fail()) v3fatal("Can't write " << filename);
+    dumpTreeJson(*treejsonp);
+    *treejsonp << '\n';
+}
+
+void AstNode::dumpJsonMetaFile(const string& filename) {
+    UINFO(2, "Dumping " << filename << endl);
+    const std::unique_ptr<std::ofstream> treejsonp{V3File::new_ofstream(filename)};
+    if (treejsonp->fail()) v3fatal("Can't write " << filename);
+    *treejsonp << '{';
+    FileLine::fileNameNumMapDumpJson(*treejsonp);
+    *treejsonp << ',';
+    v3Global.idPtrMapDumpJson(*treejsonp);
+    *treejsonp << ',';
+    v3Global.ptrNamesDumpJson(*treejsonp);
+    *treejsonp << "}\n";
 }
 
 void AstNode::dumpTreeDotFile(const string& filename, bool doDump) {

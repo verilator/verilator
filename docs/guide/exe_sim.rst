@@ -19,10 +19,19 @@ Summary:
    .. include:: ../_build/gen/args_verilated.rst
 
 
+.. option:: +verilator+coverage+file+<filename>
+
+   When a model was Verilated using :vlopt:`--coverage`, sets the filename
+   to write coverage data into.  Defaults to :file:`coverage.dat`.
+
 .. option:: +verilator+debug
 
    Enable simulation runtime debugging.  Equivalent to
    :vlopt:`+verilator+debugi+4 <+verilator+debugi+\<value\>>`.
+
+   To be useful, the model typically must first be compiled with debug
+   capabilities by Verilating with :vlopt:`--runtime-debug` or `-CFLAGS
+   -DVL_DEBUG=1`.
 
 .. option:: +verilator+debugi+<value>
 

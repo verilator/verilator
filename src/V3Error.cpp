@@ -27,7 +27,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 //======================================================================
 
-struct v3errorIniter {
+struct v3errorIniter final {
     v3errorIniter() { V3Error::init(); }
 };
 v3errorIniter v3errorInit;
@@ -111,7 +111,7 @@ string V3ErrorGuarded::warnMore() VL_REQUIRES(m_mutex) { return string(msgPrefix
 
 void V3ErrorGuarded::suppressThisWarning() VL_REQUIRES(m_mutex) {
 #ifndef V3ERROR_NO_GLOBAL_
-    V3Stats::addStatSum(std::string{"Warnings, Suppressed "} + errorCode().ascii(), 1);
+    V3Stats::addStatSum("Warnings, Suppressed "s + errorCode().ascii(), 1);
 #endif
     errorSuppressed(true);
 }
@@ -256,9 +256,8 @@ void V3Error::init() {
         describedEachWarn(static_cast<V3ErrorCode>(i), false);
         pretendError(static_cast<V3ErrorCode>(i), V3ErrorCode{i}.pretendError());
     }
-    if (VL_UNCOVERABLE(string{V3ErrorCode{V3ErrorCode::_ENUM_MAX}.ascii()} != " MAX")) {
-        v3fatalSrc("Enum table in V3ErrorCode::EC_ascii() is munged");
-    }
+    UASSERT(std::string{V3ErrorCode{V3ErrorCode::_ENUM_MAX}.ascii()} == " MAX",
+            "Enum table in V3ErrorCode::EC_ascii() is munged");
 }
 
 string V3Error::lineStr(const char* filename, int lineno) VL_PURE {

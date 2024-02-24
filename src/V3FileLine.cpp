@@ -88,6 +88,21 @@ void FileLineSingleton::fileNameNumMapDumpXml(std::ostream& os) {
     os << "</files>\n";
 }
 
+void FileLineSingleton::fileNameNumMapDumpJson(std::ostream& os) {
+    std::string sep = "\n  ";
+    os << "\"files\": {";
+    for (const auto& itr : m_namemap) {
+        const std::string name
+            = itr.first == V3Options::getStdPackagePath() ? "<verilated_std>" : itr.first;
+        os << sep << '"' << filenameLetters(itr.second) << '"' << ": {\"filename\":\"" << name
+           << '"' << ", \"realpath\":\""
+           << V3OutFormatter::quoteNameControls(V3Os::filenameRealPath(itr.first)) << '"'
+           << ", \"language\":\"" << numberToLang(itr.second).ascii() << "\"}";
+        sep = ",\n  ";
+    }
+    os << "\n }";
+}
+
 FileLineSingleton::msgEnSetIdx_t FileLineSingleton::addMsgEnBitSet(const MsgEnBitSet& bitSet)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
     V3LockGuard lock{m_mutex};
@@ -203,7 +218,7 @@ string FileLine::xmlDetailedLocation() const {
 }
 
 string FileLine::lineDirectiveStrg(int enterExit) const {
-    return std::string{"`line "} + cvtToStr(lastLineno()) + " \""
+    return "`line "s + cvtToStr(lastLineno()) + " \""
            + V3OutFormatter::quoteNameControls(filename()) + "\" " + cvtToStr(enterExit) + "\n";
 }
 
@@ -411,7 +426,8 @@ void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra)
     } else if (!V3Error::s().errorContexted()) {
         nsstr << warnContextPrimary();
     }
-    if (!m_waive) V3Waiver::addEntry(V3Error::s().errorCode(), filename(), sstr.str());
+    if (!warnIsOff(V3Error::s().errorCode()) && !m_waive)
+        V3Waiver::addEntry(V3Error::s().errorCode(), filename(), sstr.str());
     V3Error::v3errorEnd(nsstr, lstr.str());
 }
 

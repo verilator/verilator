@@ -54,7 +54,7 @@ class VerilatedScope;
 class VerilatedMsg final {
 public:
     // TYPES
-    struct Cmp {
+    struct Cmp final {
         bool operator()(const VerilatedMsg& a, const VerilatedMsg& b) const {
             return a.mtaskId() < b.mtaskId();
         }
@@ -221,7 +221,7 @@ class VerilatedContextImp final : VerilatedContext {
     // Internal note: Globals may multi-construct, see verilated.cpp top.
 
     // Medium speed, so uses singleton accessing
-    struct Statics {
+    struct Statics final {
         VerilatedMutex s_randMutex;  // Mutex protecting s_randSeedEpoch
         // Number incrementing on each reseed, 0=illegal
         int s_randSeedEpoch = 1;  // Reads ok, wish had a VL_WRITE_GUARDED_BY(s_randMutex)
@@ -294,7 +294,7 @@ public:  // But only for verilated*.cpp
             std::fill(m_fdps.begin() + start, m_fdps.end(), static_cast<FILE*>(nullptr));
             m_fdFree.resize(excess);
             for (std::size_t i = 0, id = start; i < m_fdFree.size(); ++i, ++id) {
-                m_fdFree[i] = id;
+                m_fdFree[i] = static_cast<IData>(id);
             }
         }
         const IData idx = m_fdFree.back();
@@ -552,7 +552,7 @@ public:
         const VerilatedLockGuard lock{s().m_exportMutex};
         const auto& it = s().m_exportMap.find(namep);
         if (VL_LIKELY(it != s().m_exportMap.end())) return it->second;
-        const std::string msg = (std::string{"%Error: Testbench C called "} + namep
+        const std::string msg = ("%Error: Testbench C called "s + namep
                                  + " but no such DPI export function name exists in ANY model");
         VL_FATAL_MT("unknown", 0, "", msg.c_str());
         return -1;

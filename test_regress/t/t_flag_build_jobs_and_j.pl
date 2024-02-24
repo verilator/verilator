@@ -12,8 +12,6 @@ scenarios(simulator => 1);
 top_filename("t/t_flag_make_cmake.v");
 
 compile(
-    verilator_make_cmake => 0,
-    verilator_make_gmake => 0,
     verilator_flags2 => ['--exe --cc --build -j 10 --build-jobs 2 --stats',
                          '../' . $Self->{main_filename}],
     );

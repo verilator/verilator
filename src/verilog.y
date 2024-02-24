@@ -384,7 +384,7 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
 static void ERRSVKWD(FileLine* fileline, const string& tokname) {
     static int toldonce = 0;
     fileline->v3error(
-        std::string{"Unexpected '"} + tokname + "': '" + tokname
+        "Unexpected '"s + tokname + "': '" + tokname
         + "' is a SystemVerilog keyword misused as an identifier."
         + (!toldonce++ ? "\n" + fileline->warnMore()
                              + "... Suggest modify the Verilog-2001 code to avoid SV keywords,"
@@ -988,6 +988,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVL_SPLIT_VAR             "/*verilator split_var*/"
 %token<strp>            yVL_TAG                   "/*verilator tag*/"
 %token<fl>              yVL_TRACE_INIT_TASK       "/*verilator trace_init_task*/"
+%token<fl>              yVL_UNROLL_DISABLE        "/*verilator unroll_disable*/"
+%token<fl>              yVL_UNROLL_FULL           "/*verilator unroll_full*/"
 
 %token<fl>              yP_TICK         "'"
 %token<fl>              yP_TICKBRA      "'{"
@@ -3203,10 +3205,8 @@ instnameParen<nodep>:
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, $4, $2, true); }
         |       id instRangeListE
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, nullptr, $2, false); }
-        //UNSUP instRangeListE '(' cellpinListE ')'      { UNSUP } // UDP
-        //                      // Adding above and switching to the Verilog-Perl syntax
-        //                      // causes a shift conflict due to use of idClassSel inside exprScope.
-        //                      // It also breaks allowing "id foo;" instantiation syntax.
+        |       '(' cellpinListE ')'  // When UDP has empty name, unpacked dimensions must not be used
+                        { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, "", $2, nullptr, true); }
         ;
 
 instRangeListE<nodeRangep>:
@@ -3362,7 +3362,8 @@ senitem<senItemp>:              // IEEE: part of event_expression, non-'OR' ',' 
         ;
 
 senitemVar<senItemp>:
-                idClassSel                              { $$ = new AstSenItem{$1->fileline(), VEdgeType::ET_CHANGED, $1}; }
+                idClassSel
+                        { $$ = new AstSenItem{$1->fileline(), VEdgeType::ET_CHANGED, $1}; }
         ;
 
 senitemEdge<senItemp>:          // IEEE: part of event_expression
@@ -3680,6 +3681,10 @@ statementFor<beginp>:           // IEEE: part of statement
 statementVerilatorPragmas<nodep>:
                 yVL_COVERAGE_BLOCK_OFF
                         { $$ = new AstPragma{$1, VPragmaType::COVERAGE_BLOCK_OFF}; }
+        |       yVL_UNROLL_DISABLE
+                        { $$ = new AstPragma{$1, VPragmaType::UNROLL_DISABLE}; }
+        |       yVL_UNROLL_FULL
+                        { $$ = new AstPragma{$1, VPragmaType::UNROLL_FULL}; }
         ;
 
 foperator_assignment<nodep>:    // IEEE: operator_assignment (for first part of expression)
@@ -6066,6 +6071,13 @@ property_spec<propSpecp>:               // IEEE: property_spec
                 '@' '(' senitemEdge ')' yDISABLE yIFF '(' expr ')' pexpr
                         { $$ = new AstPropSpec{$1, $3, $8, $10}; }
         |       '@' '(' senitemEdge ')' pexpr           { $$ = new AstPropSpec{$1, $3, nullptr, $5}; }
+        //                              // Disable applied after the event occurs,
+        //                              // so no existing AST can represent this
+        |       yDISABLE yIFF '(' expr ')' '@' '(' senitemEdge ')' pexpr
+                        { $$ = new AstPropSpec{$1, $8, nullptr, new AstLogOr{$1, $4, $10}};
+                          BBUNSUP($<fl>1, "Unsupported: property '(disable iff (...) @ (...)'\n"
+                                  + $<fl>1->warnMore()
+                                  + "... Suggest use property '(@(...) disable iff (...))'"); }
         //UNSUP remove above
         |       yDISABLE yIFF '(' expr ')' pexpr        { $$ = new AstPropSpec{$4->fileline(), nullptr, $4, $6}; }
         |       pexpr                                   { $$ = new AstPropSpec{$1->fileline(), nullptr, nullptr, $1}; }

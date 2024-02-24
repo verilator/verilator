@@ -122,8 +122,15 @@ class ClockVisitor final : public VNVisitor {
         AstNodeExpr* const origp = nodep->origp()->unlinkFrBack();
         AstNodeExpr* const changeWrp = nodep->changep()->unlinkFrBack();
         AstNodeExpr* const changeRdp = ConvertWriteRefsToRead::main(changeWrp->cloneTree(false));
-        AstIf* const newp
-            = new AstIf{nodep->fileline(), new AstXor{nodep->fileline(), origp, changeRdp}, incp};
+        AstNodeExpr* comparedp = nullptr;
+        // Xor will optimize better than Eq, when CoverToggle has bit selects,
+        // but can only use Xor with non-opaque types
+        if (const AstBasicDType* const bdtypep
+            = VN_CAST(origp->dtypep()->skipRefp(), BasicDType)) {
+            if (!bdtypep->isOpaque()) comparedp = new AstXor{nodep->fileline(), origp, changeRdp};
+        }
+        if (!comparedp) comparedp = AstEq::newTyped(nodep->fileline(), origp, changeRdp);
+        AstIf* const newp = new AstIf{nodep->fileline(), comparedp, incp};
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
@@ -217,5 +224,5 @@ public:
 void V3Clock::clockAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { ClockVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("clock", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("clock", 0, dumpTreeEitherLevel() >= 3);
 }

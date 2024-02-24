@@ -176,8 +176,10 @@ class PremitVisitor final : public VNVisitor {
     if (stmtp->user1SetOnce()) return; \
     VL_RESTORER(m_assignLhs); \
     VL_RESTORER(m_stmtp); \
+    VL_RESTORER(m_inWhileCondp); \
     m_assignLhs = false; \
-    m_stmtp = stmtp
+    m_stmtp = stmtp; \
+    m_inWhileCondp = nullptr
 
     void visit(AstWhile* nodep) override {
         UINFO(4, "  WHILE  " << nodep << endl);
@@ -345,5 +347,5 @@ public:
 void V3Premit::premitAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { PremitVisitor{nodep}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("premit", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("premit", 0, dumpTreeEitherLevel() >= 3);
 }

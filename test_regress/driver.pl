@@ -26,6 +26,7 @@ use POSIX qw(strftime);
 use lib ".";
 use Time::HiRes qw(usleep);
 use Digest::MD5 qw(md5);
+use POSIX;
 
 $::Driver = 1;
 $::Have_Forker = 0;
@@ -51,6 +52,7 @@ our %All_Scenarios
        ms    => ["linter", "simulator", "simulator_st", "ms"],
        nc    => ["linter", "simulator", "simulator_st", "nc"],
        vcs   => ["linter", "simulator", "simulator_st", "vcs"],
+       xrun  => ["linter", "simulator", "simulator_st", "xrun"],
        xsim  => ["linter", "simulator", "simulator_st", "xsim"],
        vlt   => ["linter", "simulator", "simulator_st", "vlt_all", "vlt"],
        vltmt => [          "simulator",                 "vlt_all", "vltmt"],
@@ -124,6 +126,7 @@ if (! GetOptions(
           "vlt!"        => sub { $opt_scenarios{vlt} = $_[1]; },
           "vltmt!"      => sub { $opt_scenarios{vltmt} = $_[1]; },
           "vcs!"        => sub { $opt_scenarios{vcs} = $_[1]; },
+          "xrun!"       => sub { $opt_scenarios{xrun} = $_[1]; },
           "xsim!"       => sub { $opt_scenarios{xsim} = $_[1]; },
           "<>"          => \&parameter,
     )) {
@@ -132,6 +135,11 @@ if (! GetOptions(
 
 $opt_jobs = calc_jobs() if defined $opt_jobs && $opt_jobs == 0;
 $Fork->max_proc($opt_jobs);
+
+my $interactive_debugger = $opt_gdb || $opt_gdbsim || $opt_rr || $opt_rrsim;
+if ($opt_jobs > 1 && $interactive_debugger) {
+   die "%Error: Unable to use -j > 1 with --gdb* and --rr* options"
+}
 
 if ((scalar keys %opt_scenarios) < 1) {
     $opt_scenarios{dist} = 1;
@@ -451,7 +459,7 @@ sub wait_and_report {
     while ($::Fork->is_any_left) {
         $::Fork->poll;
         if ((time() - ($self->{_last_summary_time} || 0) >= 30)
-            && (!$opt_gdb && !$opt_gdbsim)) {  # Don't show for interactive gdb etc
+            && !$interactive_debugger) {  # Don't show for interactive gdb etc
             $self->print_summary(force => 1, show_running => 1);
         }
         Time::HiRes::usleep 100 * 1000;
@@ -492,7 +500,7 @@ sub print_summary {
                   @_);  # All legal arguments shown immediately above
     if (!$self->{quiet} || $params{force}
         || ($self->{left_cnt} < 5)
-        || (time() - ($self->{_last_summary_time} || 0) >= 15)) {  # Don't show for interactive gdb etc
+        || (time() - ($self->{_last_summary_time} || 0) >= 15)) {
         $self->{_last_summary_time} = time();
         print STDERR ("==SUMMARY: " . $self->sprint_summary . "\n");
         if ($params{show_running}) {
@@ -583,6 +591,7 @@ sub new {
     $self->{scenario} ||= "nc" if $self->{nc};
     $self->{scenario} ||= "ms" if $self->{ms};
     $self->{scenario} ||= "iv" if $self->{iv};
+    $self->{scenario} ||= "xrun" if $self->{xrun};
     $self->{scenario} ||= "xsim" if $self->{xsim};
 
     foreach my $dir (@::Test_Dirs) {
@@ -640,7 +649,6 @@ sub new {
                          ? " -Wl,-undefined,dynamic_lookup"
                          : " -export-dynamic")
                       . ($opt_verbose ? " -DTEST_VERBOSE=1" : "")
-                      . (cfg_with_m32() ? " -m32" : "")
                       . " -o $self->{obj_dir}/libvpi.so"],
         tool_c_flags => [],
         # ATSIM
@@ -685,6 +693,12 @@ sub new {
         ms_flags2 => [],  # Overridden in some sim files
         ms_pli => 1,  # need to use pli
         ms_run_flags => [split(/\s+/, "-lib $self->{obj_dir}/work -c -do 'run -all;quit' ")],
+        # Xcelium (xrun)
+        xrun => 0,
+        xrun_define => 'XRUN',
+        xrun_flags => [], # doesn't really have a compile step
+        xrun_flags2 => [],  # Overridden in some sim files
+        xrun_run_flags => [split(/\s+/, "-64 -access +rwc -newsv -sv -xmlibdirname $self->{obj_dir}/work -l $self->{obj_dir}/history -quiet -plinowarn ")],
         # XSim
         xsim => 0,
         xsim_define => 'XSIM',
@@ -905,6 +919,19 @@ sub clean_objs {
     system("rm", "-rf", glob("$self->{obj_dir}/*"));
 }
 
+sub _checkflags {
+    my $self = shift;
+    my %param = (@_);
+    my $checkflags = (' '.join(' ',
+                               @{$param{v_flags}},
+                               @{$param{v_flags2}},
+                               @{$param{verilator_flags}},
+                               @{$param{verilator_flags2}},
+                               @{$param{verilator_flags3}})
+                      .' ');
+    return $checkflags;
+}
+
 sub compile_vlt_cmd {
     my $self = (ref $_[0] ? shift : $Self);
     my %param = (%{$self},  # Default arguments are from $self
@@ -913,7 +940,7 @@ sub compile_vlt_cmd {
 
     my @vlt_cmd = (
         "perl", "$ENV{VERILATOR_ROOT}/bin/verilator",
-        $self->compile_vlt_flags(%param),
+        $self->_compile_vlt_flags(%param),
         $param{top_filename},
         @{$param{v_other_filenames}},
         $param{stdout_filename} ? "> " . $param{stdout_filename} : ""
@@ -921,19 +948,12 @@ sub compile_vlt_cmd {
     return @vlt_cmd;
 }
 
-sub compile_vlt_flags {
-    my $self = (ref $_[0] ? shift : $Self);
-    my %param = (%{$self},  # Default arguments are from $self
-                 @_);  # Supports arbitrary arguments
+sub _compile_vlt_flags {
+    my $self = shift;
+    my %param = (@_);  # Supports arbitrary arguments from compile_vlt_cmd
     return 1 if $self->errors || $self->skips;
 
-    my $checkflags = (' '.join(' ',
-                               @{$param{v_flags}},
-                               @{$param{v_flags2}},
-                               @{$param{verilator_flags}},
-                               @{$param{verilator_flags2}},
-                               @{$param{verilator_flags3}})
-                      .' ');
+    my $checkflags = $self->_checkflags(%param);
     die "%Error: specify threads via 'threads =>' argument, not as a command line option" unless ($checkflags !~ /(^|\s)-?-threads\s/);
     $self->{coverage} = 1 if ($checkflags =~ /-coverage\b/);
     $self->{savable} = 1 if ($checkflags =~ /-savable\b/);
@@ -1008,12 +1028,19 @@ sub compile {
 
     die "%Error: 'threads =>' argument must be <= 1 for vlt scenario" if $param{vlt} && $param{threads} > 1;
     # Compute automatic parameter values
+    my $checkflags = $self->_checkflags(%param);
     $param{threads} = ::calc_threads($Vltmt_threads) if $param{threads} < 0 && $param{vltmt};
     $param{context_threads} = $param{threads} >= 1 ? $param{threads} : 1 if !$param{context_threads};
+    $param{make_main} = 0 if ($checkflags =~ / -?-main\b/ || $checkflags =~ / -?-binary\b/);
+    if ($checkflags =~ / -?-build\b/ || $checkflags =~ / -?-binary\b/) {
+        $param{verilator_make_cmake} = 0;
+        $param{verilator_make_gmake} = 0;
+    }
+
     $self->{threads} = $param{threads};
     $self->{context_threads} = $param{context_threads};
 
-    compile_vlt_cmd(%param);
+    $self->compile_vlt_cmd(%param);
 
     my $define_opt = defineOpt($self->{xsim});
     if (join(' ', @{$self->{v_flags}}) !~ /TEST_DUMPFILE/) {
@@ -1133,6 +1160,10 @@ sub compile {
                     fails=>$param{fails},
                     cmd=>\@cmd);
     }
+    elsif ($param{xrun}) {
+        $param{tool_define} ||= $param{xrun_define};
+        $self->_make_top() if $param{make_top_shell};
+    }
     elsif ($param{xsim}) {
         $param{tool_define} ||= $param{xsim_define};
         $self->_make_top() if $param{make_top_shell};
@@ -1183,7 +1214,7 @@ sub compile {
         }
 
         if ($param{verilator_make_cmake}) {
-            my @vlt_args = $self->compile_vlt_flags(%param);
+            my @vlt_args = $self->_compile_vlt_flags(%param);
             $self->oprint("Running cmake\n") if $self->{verbose};
             mkdir $self->{obj_dir};
             my @csources = ();
@@ -1354,6 +1385,25 @@ sub execute {
                     %param,
                     expect=>$param{vcs_run_expect},  # non-verilator expect isn't the same
                     expect_filename=>$param{vcs_run_expect_filename},
+                    );
+    }
+    elsif ($param{xrun}) {
+        my @pli_opt = ();
+        if ($param{use_libvpi}) {
+            unshift @pli_opt, "-loadvpi $self->{obj_dir}/libvpi.so:vpi_compat_bootstrap";
+        }
+        $self->_run(logfile=>"$self->{obj_dir}/xrun_sim.log",
+                    fails=>$param{fails},
+                    cmd=>["echo q | " . $run_env . ($ENV{VERILATOR_XRUN} || "xrun "),
+                          @{$param{xrun_run_flags}},
+                          @{$param{xrun_flags2}},
+                          @{$param{all_run_flags}},
+                          @{pli_opt},
+                            $param{top_filename},
+                          ],
+                    %param,
+                    expect=>$param{xrun_run_expect},  # non-verilator expect isn't the same
+                    expect_filename=>$param{xrun_run_expect_filename},
                     );
     }
     elsif ($param{xsim}) {
@@ -1646,8 +1696,14 @@ sub _run {
         if ($param{logfile}) {
             $logfh = IO::File->new(">$param{logfile}") or die "%Error: Can't open $param{logfile}";
         }
+        my $backup_fg_group = POSIX::tcgetpgrp(0);
         my $pid = fork();
         if ($pid) {  # Parent
+            if ($interactive_debugger) {
+                # Let gdb take care of signals send from keyboard
+                POSIX::setpgid($pid, 0);  # Put child in separate process group
+                POSIX::tcsetpgrp(0, $pid);  # Make this group a foreground one
+            }
             close CHILDWR;
             print "driver: Entering directory '",
                 File::Spec->rel2abs($param{entering}), "'\n" if $param{entering};
@@ -1688,6 +1744,11 @@ sub _run {
             exit($? ? 10 : 0);  # $?>>8 misses coredumps
         }
         waitpid($pid, 0);
+        if ($interactive_debugger) {
+            # Restore old foreground group
+            local $SIG{TTOU} = 'IGNORE';  # Ignore SIGTTOU from modyfing terminal settings in bg proccess
+            POSIX::tcsetpgrp(0, $backup_fg_group);
+        }
         $status = $? || 0;
     }
     flush STDOUT;
@@ -1736,6 +1797,7 @@ sub _run {
                 $wholefile =~ s/^- [^\n]+\n//mig;
                 $wholefile =~ s/^- [a-z.0-9]+:\d+:[^\n]+\n//mig;
                 $wholefile =~ s/^dot [^\n]+\n//mig;
+                $wholefile =~ s/^==[0-9]+== [^\n]+\n//mig; # valgrind
 
                 # Compare
                 my $quoted = quotemeta($param{expect});
@@ -1867,7 +1929,7 @@ sub _make_main {
     print $fh "    srand48(5);\n";  # Ensure determinism
     print $fh "    contextp->randReset(" . $self->{verilated_randReset} . ");\n"
         if defined $self->{verilated_randReset};
-    print $fh "    topp.reset(new ${vm_prefix}(\"top\"));\n";
+    print $fh "    topp.reset(new ${vm_prefix}{\"top\"});\n";
     print $fh "    contextp->internalsDump()\n;" if $self->{verilated_debug};
 
     my $set;
@@ -2002,7 +2064,7 @@ sub _make_main {
 
     if ($self->{coverage}) {
         $fh->print("#if VM_COVERAGE\n");
-        $fh->print("    VerilatedCov::write(\"", $self->{coverage_filename}, "\");\n");
+        $fh->print("    contextp->coveragep()->write(\"", $self->{coverage_filename}, "\");\n");
         $fh->print("#endif  // VM_COVERAGE\n");
     }
     if ($self->{trace}) {
@@ -2248,6 +2310,7 @@ sub files_identical {
                     && !/^libgcov.*/
                     && !/--- \/tmp\//  # t_difftree.pl
                     && !/\+\+\+ \/tmp\//  # t_difftree.pl
+                    && !/^==[0-9]+== ?[^\n]*\n/  # valgrind
             } @l1;
             @l1 = map {
                 while (s/(Internal Error: [^\n]+\.(cpp|h)):[0-9]+/$1:#/g) {}
@@ -2432,13 +2495,6 @@ sub cfg_with_ccache {
     return $_Cfg_with_ccache;
 }
 
-our $_Cfg_with_m32;
-
-sub cfg_with_m32 {
-    $_Cfg_with_m32 ||= `grep "CXX.*=.*-m32" "$ENV{VERILATOR_ROOT}/include/verilated.mk"` ne "";
-    return $_Cfg_with_m32;
-}
-
 sub tries {
     # Number of retries when reading logfiles, generally only need many
     # retries when system is busy running a lot of tests
@@ -2503,6 +2559,7 @@ sub file_grep {
     } elsif (defined($expvalue) && $expvalue ne $1) {
         $self->error("File_grep: $filename: Got='$1' Expected='$expvalue' in regexp: $regexp\n");
     }
+    return @{^CAPTURE};
 }
 
 sub file_grep_count {

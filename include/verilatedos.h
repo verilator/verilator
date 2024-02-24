@@ -260,7 +260,7 @@
 //=========================================================================
 // C++-2014
 
-#if __cplusplus >= 201402L || defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(VL_CPPCHECK) || defined(_MSC_VER)
+#if __cplusplus >= 201402L || defined(VL_CPPCHECK) || defined(_MSC_VER)
 #else
 # error "Verilator requires a C++14 or newer compiler"
 #endif
@@ -612,7 +612,7 @@ static inline double VL_ROUND(double n) {
 namespace vlstd {
 
 template <typename T>
-struct reverse_wrapper {
+struct reverse_wrapper final {
     const T& m_v;
 
     explicit reverse_wrapper(const T& a_v)

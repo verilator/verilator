@@ -52,7 +52,9 @@ module testMod
    (input wire [2:0] data_i);
 
    typedef logic [63:0]    time_t;
+   // verilator lint_off MULTIDRIVEN
    time_t [2:0] last_transition;
+   // verilator lint_on MULTIDRIVEN
    genvar b;
 
    generate

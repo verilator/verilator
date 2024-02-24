@@ -78,7 +78,7 @@ class VariableOrder final {
     //  AstVar::user1()    -> attributes, via m_attributes
     const VNUser1InUse m_user1InUse;  // AstVar
 
-    struct VarAttributes {
+    struct VarAttributes final {
         uint32_t stratum;  // Roughly equivalent to alignment requirement, to avoid padding
         bool anonOk;  // Can be emitted as part of anonymous structure
     };
@@ -202,5 +202,5 @@ void V3VariableOrder::orderAll() {
          modp = VN_AS(modp->nextp(), NodeModule)) {
         VariableOrder::processModule(modp);
     }
-    V3Global::dumpCheckGlobalTree("variableorder", 0, dumpTreeLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("variableorder", 0, dumpTreeEitherLevel() >= 3);
 }

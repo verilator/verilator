@@ -12,7 +12,7 @@ scenarios(simulator => 1);
 
 top_filename("t/t_timing_off.v");
 
-compile(
+lint(
     verilator_flags2 => ["--no-timing"],
     fails => 1,
     expect_filename => $Self->{golden_filename},

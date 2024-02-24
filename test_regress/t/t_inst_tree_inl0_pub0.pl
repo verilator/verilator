@@ -11,19 +11,19 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 top_filename("t/t_inst_tree.v");
-my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
+my $out_filename = "$Self->{obj_dir}/V$Self->{name}.tree.json";
 
 compile(
-    v_flags2 => ["$Self->{t_dir}/$Self->{name}.vlt"],
+    v_flags2 => ["--no-json-edit-nums", "$Self->{t_dir}/$Self->{name}.vlt"],
 );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<module loc="f,56,.*?" name="l1" origName="l1"\>/i);
-    file_grep("$out_filename", qr/\<module loc="f,62,.*?" name="l2" origName="l2"\>/i);
-    file_grep("$out_filename", qr/\<module loc="f,69,.*?" name="l3" origName="l3"\>/i);
-    file_grep("$out_filename", qr/\<module loc="f,76,.*?" name="l4" origName="l4"\>/i);
-    file_grep("$out_filename", qr/\<module loc="f,83,.*?" name="l5__P2" origName="l5"\>/i);
-    file_grep("$out_filename", qr/\<module loc="f,83,.*?" name="l5__P1" origName="l5"\>/i);
+    file_grep("$out_filename", qr/{"type":"MODULE","name":"l1",.*"loc":"f,56:[^"]*",.*"origName":"l1"/);
+    file_grep("$out_filename", qr/{"type":"MODULE","name":"l2",.*"loc":"f,62:[^"]*",.*"origName":"l2"/);
+    file_grep("$out_filename", qr/{"type":"MODULE","name":"l3",.*"loc":"f,69:[^"]*",.*"origName":"l3"/);
+    file_grep("$out_filename", qr/{"type":"MODULE","name":"l4",.*"loc":"f,76:[^"]*",.*"origName":"l4"/);
+    file_grep("$out_filename", qr/{"type":"MODULE","name":"l5__P1",.*"loc":"f,83:[^"]*",.*"origName":"l5"/);
+    file_grep("$out_filename", qr/{"type":"MODULE","name":"l5__P2",.*"loc":"f,83:[^"]*",.*"origName":"l5"/);
 }
 
 execute(

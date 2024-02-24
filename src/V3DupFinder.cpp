@@ -53,6 +53,7 @@ V3DupFinder::iterator V3DupFinder::findDuplicate(AstNode* nodep, V3DupFinderUser
 }
 
 void V3DupFinder::dumpFile(const string& filename, bool tree) {
+    UINFO(2, "Dumping " << filename << endl);
     const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
     if (logp->fail()) v3fatal("Can't write " << filename);
 
