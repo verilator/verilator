@@ -47,7 +47,7 @@ class NameVisitor final : public VNVisitorConst {
     // Rename struct / union field properly
     std::vector<V3UniqueNames> m_nameStack;
 
-    void renameKeyword(AstNode* nodep) {
+    void renameKeywordCheck(AstNode* nodep) {
         const std::string rsvd = V3LanguageWords::isKeyword(nodep->name());
         if (rsvd != "") {
             nodep->v3warn(SYMRSVDWORD, "Symbol matches " + rsvd + ": " << nodep->prettyNameQ());
@@ -66,7 +66,7 @@ class NameVisitor final : public VNVisitorConst {
                 nodep->editCountInc();
             } else if (VN_IS(nodep, CFunc) && VN_AS(nodep, CFunc)->isConstructor()) {
             } else {
-                renameKeyword(nodep);
+                renameKeywordCheck(nodep);
             }
             nodep->user1(1);
         }
@@ -113,7 +113,7 @@ class NameVisitor final : public VNVisitorConst {
     void visit(AstMemberDType* nodep) override {
         if (!nodep->user1()) {
             if (!m_nameStack.empty()) { // Packed member field
-                renameKeyword(nodep);
+                renameKeywordCheck(nodep);
                 nodep->name(m_nameStack.back().get(nodep->name()));
                 nodep->user1(1);
             } else {

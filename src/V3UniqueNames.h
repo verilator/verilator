@@ -39,13 +39,13 @@ private:
 
     std::map<std::string, unsigned> m_multiplicity;  // Suffix number for given key
 
-    const runMode mode = NORMAL;
+    const runMode m_mode = NORMAL; // Ad suffix or not
 
 public:
     V3UniqueNames() = default;
     explicit V3UniqueNames(const std::string& prefix, runMode mode = NORMAL)
         : m_prefix{prefix}
-        , mode(mode) {
+        , m_mode(mode) {
         if (!m_prefix.empty()) {
             UASSERT(VString::startsWith(m_prefix, "__V"), "Prefix must start with '__V'");
             UASSERT(!VString::endsWith(m_prefix, "_"), "Prefix must not end with '_'");
@@ -55,7 +55,7 @@ public:
     // Return argument, prepended with the prefix if any, then appended with a unique suffix each
     // time we are called with the same argument.
     std::string get(const std::string& name) {
-        if (mode == NO_SUFFIX) {
+        if (m_mode == NO_SUFFIX) {
             if (m_multiplicity.count(name) == 0) {
                 m_multiplicity[name] = 0;
                 return name;

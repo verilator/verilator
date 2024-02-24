@@ -269,19 +269,19 @@ class EmitCHeader final : public EmitCConstInit {
                           const std::string& offset, bool getfunc, const std::string& retOrArg) {
         dtypep = dtypep->skipRefp();
         if (const auto* adtypep = VN_CAST(dtypep, PackArrayDType)) {
-            std::string index = m_names.get("__i");
-            std::string forloop = "for (int " + index + " = 0; " + index + " < "
+            const std::string index = m_names.get("__Vi");
+            const std::string forloop = "for (int " + index + " = 0; " + index + " < "
                                   + std::to_string(adtypep->elementsConst()) + "; ++" + index
                                   + ") {\n";
             puts(forloop);
-            std::string offsetInLoop
+            const std::string offsetInLoop
                 = offset + " + " + index + " * " + std::to_string(adtypep->subDTypep()->width());
-            std::string newName = fieldname + "[" + index + "]";
+            const std::string newName = fieldname + "[" + index + "]";
             emitPackedMember(adtypep->subDTypep(), newName, offsetInLoop, getfunc, retOrArg);
             puts("}\n");
         } else if (auto* adtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
-            std::string tmp = m_names.get("__tmp");
-            std::string suffixName = dtypep->isWide() ? tmp + ".data()" : "&" + tmp;
+            const std::string tmp = m_names.get("__Vtmp");
+            const std::string suffixName = dtypep->isWide() ? tmp + ".data()" : "&" + tmp;
             if (getfunc) {  // Emit `get` func;
                 // auto __tmp = field.get();
                 puts("auto " + tmp + " = " + fieldname + ".get();\n");
@@ -289,7 +289,7 @@ class EmitCHeader final : public EmitCConstInit {
                 puts("vlBitHelper(" + retOrArg + ", " + offset + ", " + suffixName + ", 0, "
                      + std::to_string(adtypep->width()) + ");\n");
             } else {  // Emit `set` func
-                std::string tmptype = AstCDType::typeToHold(adtypep->width());
+                const std::string tmptype = AstCDType::typeToHold(adtypep->width());
                 // type tmp;
                 puts(tmptype + " " + tmp + ";\n");
                 // vlBitHelper(&__tmp, 0, &retOrArg, offset, width);
@@ -301,7 +301,7 @@ class EmitCHeader final : public EmitCConstInit {
         } else {
             UASSERT_OBJ(VN_IS(dtypep, EnumDType) || VN_IS(dtypep, BasicDType), dtypep,
                         "Unsupported type in packed struct or union");
-            std::string suffixName = dtypep->isWide() ? fieldname + ".data()" : "&" + fieldname;
+            const std::string suffixName = dtypep->isWide() ? fieldname + ".data()" : "&" + fieldname;
             if (getfunc) {  // Emit `get` func;
                 // vlBitHelper(&ret, offset, &field, 0, width);
                 puts("vlBitHelper(" + retOrArg + ", " + offset + ", " + suffixName + ", 0, "

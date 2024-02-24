@@ -283,7 +283,7 @@ public:
             }
         }
         for (AstTypedef* typedefp : m_Typedefps) {
-            AstNodeUOrStructDType* sdtypep = VN_AS(typedefp->dtypep(), NodeUOrStructDType);
+            AstNodeUOrStructDType* const sdtypep = VN_AS(typedefp->dtypep(), NodeUOrStructDType);
             if (pubSdtypes.count(sdtypep)) typedefp->attrPublic(true);
         }
         // Clear package pointer of non-public packed struct / union type, which will never be
