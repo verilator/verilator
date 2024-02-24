@@ -25,7 +25,7 @@
 #include "V3Hasher.h"
 
 #include <string>
-#include <unordered_map>
+#include <map>
 
 class V3UniqueNames final {
 public:
@@ -37,7 +37,7 @@ public:
 private:
     const std::string m_prefix;  // Prefix to attach to all names
 
-    std::unordered_map<std::string, unsigned> m_multiplicity;  // Suffix number for given key
+    std::map<std::string, unsigned> m_multiplicity;  // Suffix number for given key
 
     const runMode mode = NORMAL;
 

@@ -27,7 +27,7 @@
 #include "V3UniqueNames.h"
 
 #include <queue>
-#include <unordered_set>
+#include <set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -49,8 +49,8 @@ class ClassVisitor final : public VNVisitor {
     const AstNodeFTask* m_ftaskp = nullptr;  // Current task
     std::vector<std::pair<AstNode*, AstScope*>> m_toScopeMoves;
     std::vector<std::pair<AstNode*, AstNodeModule*>> m_toPackageMoves;
-    std::unordered_set<AstTypedef*> m_Typedefps;
-    std::unordered_set<AstNodeUOrStructDType*> m_sdtypes;
+    std::set<AstTypedef*> m_Typedefps;
+    std::set<AstNodeUOrStructDType*> m_sdtypes;
     std::queue<AstNodeUOrStructDType*> m_pubSdtypes;
 
     // METHODS
@@ -270,7 +270,7 @@ public:
             modp->addStmtsp(nodep);
         }
         // BFS to mark public typedefs.
-        std::unordered_set<AstNodeUOrStructDType*> pubSdtypes;
+        std::set<AstNodeUOrStructDType*> pubSdtypes;
         while (!m_pubSdtypes.empty()) {
             AstNodeUOrStructDType* dtypep = m_pubSdtypes.front();
             m_pubSdtypes.pop();
