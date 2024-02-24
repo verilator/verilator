@@ -841,7 +841,11 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "VlWide<" + cvtToStr(dtypep->widthWords()) + ">" + bitvec;
         }
         // CData, SData, IData, QData or VlWide are packed type.
-        bool packedType = info.m_type[2] == 'a' || info.m_type[2] == 'W';
+        bool packedType = VString::startsWith(info.m_type, "CData")
+                          || VString::startsWith(info.m_type, "SData")
+                          || VString::startsWith(info.m_type, "IData")
+                          || VString::startsWith(info.m_type, "QData")
+                          || VString::startsWith(info.m_type, "VlWide");
         UASSERT_OBJ(!packed || packedType, this, "Unsupported type for packed struct or union");
     } else {
         v3fatalSrc("Unknown data type in var type emitter: " << dtypep->prettyName());
