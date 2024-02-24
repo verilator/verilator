@@ -2340,17 +2340,27 @@ inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, double& rdr)
 extern IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_SAFE;
 
 //======================================================================
-// bitHelper
+// vlBitHelper
 
+// This function is a `memcpy` at bit level actually. It copies `width` bits from `inWords` array
+// starting at `inLsb` to `outWords` array starting at `outLsb`. Template argument `InWordT` and
+// `OutWordT` gives the type of `inWords` and `outWords` respectively and must be integral type.
+// If `clean` is true, vlBitHelper will zero upper bits of `outWords`.
+// Its function overlaps with `VL_ASSIGNSEL_XX` slightly with some performance degrading, but a
+// more general and powerful version, for no argument to specify input offset in `VL_ASSIGNSEL_XX`
+// functions.
+// Currently, the only user of this function is exported packed struct / union to copy its bits
+// between its fields and verilator's internal data representation.
 template <typename OutWordT, typename InWordT>
-void bitHelper(OutWordT* outWords, uint32_t outLsb, const InWordT* inWords, uint32_t inLsb,
-               uint32_t width) {
+void vlBitHelper(OutWordT* outWords, uint32_t outLsb, const InWordT* inWords, uint32_t inLsb,
+                 uint32_t width, bool clean = true) {
     if (width == 0) return;
-    uint32_t outSizeb = sizeof(OutWordT) * 8;
+    constexpr uint32_t outSizeb = sizeof(OutWordT) * 8;
     uint32_t outIndexOff = outLsb / outSizeb;
     uint32_t outBitOff = outLsb % outSizeb;
+    const uint32_t lastOutIndex = (outLsb + width - 1) / outSizeb;
 
-    uint32_t inSizeb = sizeof(InWordT) * 8;
+    constexpr uint32_t inSizeb = sizeof(InWordT) * 8;
     uint32_t inIndexOff = inLsb / inSizeb;
     uint32_t inbitOff = inLsb % inSizeb;
 
@@ -2359,16 +2369,26 @@ void bitHelper(OutWordT* outWords, uint32_t outLsb, const InWordT* inWords, uint
 
     InWordT inword = 0;
     OutWordT outword = 0;
-    while (width > 0) {
-        uint32_t readBits = outSizeb - needBits - outBitOff;
+    while (outIndexOff <= lastOutIndex) {
+        const uint32_t readBits = outSizeb - needBits - outBitOff;
         if (validBits >= needBits || validBits + readBits >= width) {
-            OutWordT widthMask
-                = outBitOff + width >= outSizeb ? ~(OutWordT)0 : (((OutWordT)1 << width) - 1);
-            widthMask <<= outBitOff;
+            const OutWordT widthMask
+                = ((outBitOff + width >= outSizeb) ? ~(OutWordT)0 : (((OutWordT)1 << width) - 1))
+                  << outBitOff;
 
             outword |= (OutWordT)inword << (outSizeb - needBits);
-            outWords[outIndexOff] = (outWords[outIndexOff] & ~widthMask) | (outword & widthMask);
-            if (width <= outSizeb - outBitOff) return;
+
+            if (outIndexOff != lastOutIndex || !clean) {
+                outWords[outIndexOff]
+                    = (outWords[outIndexOff] & ~widthMask) | (outword & widthMask);
+            } else {
+                // Clean upper bits of word in `outWords`
+                const OutWordT cleanmask = ((1 << width) << outBitOff) - 1;
+                outWords[outIndexOff]
+                    = (outWords[outIndexOff] & ~widthMask & cleanmask) | (outword & widthMask);
+            }
+
+            if (width <= outSizeb - outBitOff) break;
             width -= outSizeb - outBitOff;
 
             if (needBits >= inSizeb)

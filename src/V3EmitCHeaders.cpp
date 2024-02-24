@@ -285,15 +285,15 @@ class EmitCHeader final : public EmitCConstInit {
             if (getfunc) {  // Emit `get` func;
                 // auto __tmp = field.get();
                 puts("auto " + tmp + " = " + fieldname + ".get();\n");
-                // bitHelper(&ret, offset, &__tmp, 0, width);
-                puts("bitHelper(" + retOrArg + ", " + offset + ", " + suffixName + ", 0, "
+                // vlBitHelper(&ret, offset, &__tmp, 0, width);
+                puts("vlBitHelper(" + retOrArg + ", " + offset + ", " + suffixName + ", 0, "
                      + std::to_string(adtypep->width()) + ");\n");
             } else {  // Emit `set` func
                 std::string tmptype = AstCDType::typeToHold(adtypep->width());
                 // type tmp;
                 puts(tmptype + " " + tmp + ";\n");
-                // bitHelper(&__tmp, 0, &retOrArg, offset, width);
-                puts("bitHelper(" + suffixName + ", 0, " + retOrArg + ", " + offset + ", "
+                // vlBitHelper(&__tmp, 0, &retOrArg, offset, width);
+                puts("vlBitHelper(" + suffixName + ", 0, " + retOrArg + ", " + offset + ", "
                      + std::to_string(adtypep->width()) + ");\n");
                 // field.set(__tmp);
                 puts(fieldname + ".set(" + tmp + ");\n");
@@ -303,12 +303,12 @@ class EmitCHeader final : public EmitCConstInit {
                         "Unsupported type in packed struct or union");
             std::string suffixName = dtypep->isWide() ? fieldname + ".data()" : "&" + fieldname;
             if (getfunc) {  // Emit `get` func;
-                // bitHelper(&ret, offset, &field, 0, width);
-                puts("bitHelper(" + retOrArg + ", " + offset + ", " + suffixName + ", 0, "
+                // vlBitHelper(&ret, offset, &field, 0, width);
+                puts("vlBitHelper(" + retOrArg + ", " + offset + ", " + suffixName + ", 0, "
                      + std::to_string(dtypep->width()) + ");\n");
             } else {  // Emit `set` func
-                // bitHelper(&field, 0, &retOrArg, offset, width);
-                puts("bitHelper(" + suffixName + ", 0, " + retOrArg + ", " + offset + ", "
+                // vlBitHelper(&field, 0, &retOrArg, offset, width);
+                puts("vlBitHelper(" + suffixName + ", 0, " + retOrArg + ", " + offset + ", "
                      + std::to_string(dtypep->width()) + ");\n");
             }
         }
@@ -328,9 +328,6 @@ class EmitCHeader final : public EmitCConstInit {
             putns(itemp, itemp->dtypep()->cType(itemp->nameProtect(), false, false, true));
             puts(";\n");
         }
-        // Emit constructor to zero all bytes
-        puts(EmitCBase::prefixNameProtect(sdtypep)
-             + "() { memset(reinterpret_cast<void*>(this), 0, sizeof(*this)); }\n");
 
         const std::string retArgName = m_names.get("__v");
         const std::string suffixName

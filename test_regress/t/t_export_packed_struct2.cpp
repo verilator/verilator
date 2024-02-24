@@ -10,15 +10,15 @@
 //*************************************************************************
 
 #include <verilated.h>
+
 #include <ios>
 #include <iostream>
 
 #include VM_PREFIX_INCLUDE
 #include VM_PREFIX_ROOT_INCLUDE
 
-#include "Vt_export_packed_struct2___024unit__03a__03acls_in__Vclpkg.h"
-
 #include "TestCheck.h"
+#include "Vt_export_packed_struct2___024unit__03a__03acls_in__Vclpkg.h"
 
 /*
 // Packed struct in package
@@ -77,14 +77,15 @@ int main(int argc, char** argv) {
         OUT_T out;
         for (int i = 0; i < 3; ++i)
             for (int j = 0; j < 3; ++j)
-                for (int k = 0; k < 3; ++k)
-                    VL_SET_WQ(in.b[i][j][k].a, 0x1234123412341234UL);
+                for (int k = 0; k < 3; ++k) VL_SET_WQ(in.b[i][j][k].a, 0x1234123412341234UL);
         in.anon.a = 0x1;
 
         adder->op1 = in.get();
         adder->eval();
         out.set(adder->out);
 
+        tmp.a = 0xff;
+        // `set` function should clear upper bits of `tmp.a`
         tmp.set(adder->rootp->add__DOT__op2->__PVT__in);
 
         for (int i = 0; i < 3; ++i)
