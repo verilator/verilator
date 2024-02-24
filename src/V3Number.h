@@ -662,6 +662,8 @@ public:
 
     // STATICS
     static int log2b(uint32_t num);
+    // Use different name may reduce mistakes
+    static int log2bl(uint64_t num);
 
     // MATH
     // "this" is the output, as we need the output width before some computations

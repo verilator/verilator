@@ -396,6 +396,11 @@ int V3Number::log2b(uint32_t num) {
     return 0;
 }
 
+int V3Number::log2bl(uint64_t num) {
+    if (num >> 32) return 32 + log2b(num >> 32);
+    return log2b(num);
+}
+
 //======================================================================
 // Setters
 
