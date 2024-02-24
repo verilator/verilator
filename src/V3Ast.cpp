@@ -1111,68 +1111,6 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
             && (ignNext || sameTreeIter(node1p->m_nextp, node2p->m_nextp, false, gateOnly)));
 }
 
-//======================================================================
-// Debugging
-
-void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
-    // private: Check a tree and children
-    UASSERT_OBJ(prevBackp == this->backp(), this, "Back node inconsistent");
-    // cppcheck-suppress danglingTempReference
-    const VNTypeInfo& typeInfo = *type().typeInfo();
-    for (int i = 1; i <= 4; i++) {
-        AstNode* nodep = nullptr;
-        switch (i) {
-        case 1: nodep = op1p(); break;
-        case 2: nodep = op2p(); break;
-        case 3: nodep = op3p(); break;
-        case 4: nodep = op4p(); break;
-        default: this->v3fatalSrc("Bad case"); break;
-        }
-        // cppcheck-suppress danglingTempReference
-        const char* opName = typeInfo.m_opNamep[i - 1];
-        switch (typeInfo.m_opType[i - 1]) {
-        case VNTypeInfo::OP_UNUSED:
-            UASSERT_OBJ(!nodep, this, typeInfo.m_namep << " must not use " << opName << "()");
-            break;
-        case VNTypeInfo::OP_USED:
-            UASSERT_OBJ(nodep, this,
-                        typeInfo.m_namep << " must have non nullptr " << opName << "()");
-            UASSERT_OBJ(!nodep->nextp(), this,
-                        typeInfo.m_namep << "::" << opName
-                                         << "() cannot have a non nullptr nextp()");
-            nodep->checkTreeIter(this);
-            break;
-        case VNTypeInfo::OP_LIST:
-            if (const AstNode* const headp = nodep) {
-                const AstNode* backp = this;
-                const AstNode* tailp;
-                const AstNode* opp = headp;
-                do {
-                    opp->checkTreeIter(backp);
-                    UASSERT_OBJ(opp == headp || !opp->nextp() || !opp->m_headtailp, opp,
-                                "Headtailp should be null in middle of lists");
-                    backp = tailp = opp;
-                    opp = opp->nextp();
-                } while (opp);
-                UASSERT_OBJ(headp->m_headtailp == tailp, headp,
-                            "Tail in headtailp is inconsistent");
-                UASSERT_OBJ(tailp->m_headtailp == headp, tailp,
-                            "Head in headtailp is inconsistent");
-            }
-            break;
-        case VNTypeInfo::OP_OPTIONAL:
-            if (nodep) {
-                UASSERT_OBJ(!nodep->nextp(), this,
-                            typeInfo.m_namep << "::" << opName
-                                             << "() cannot have a non-nullptr nextp()");
-                nodep->checkTreeIter(this);
-            }
-            break;
-        default: this->v3fatalSrc("Bad case"); break;
-        }
-    }
-}
-
 // cppcheck-suppress unusedFunction  // Debug only
 void AstNode::dumpGdb(const AstNode* nodep) {  // For GDB only  // LCOV_EXCL_LINE
     if (!nodep) {
