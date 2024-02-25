@@ -13,6 +13,8 @@ Verilator 5.023 devel
 
 **Minor:**
 
+* Fix invalid cast on string structure creation (#4921). [esynr3z]
+
 
 Verilator 5.022 2024-02-24
 ==========================

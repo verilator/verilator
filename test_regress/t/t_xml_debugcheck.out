@@ -637,11 +637,9 @@
           <and loc="d,11,8,11,9" dtype_id="9">
             <const loc="d,11,8,11,9" name="32&apos;h1" dtype_id="14"/>
             <not loc="d,11,8,11,9" dtype_id="9">
-              <ccast loc="d,11,8,11,9" dtype_id="9">
-                <cmethodhard loc="d,11,8,11,9" name="any" dtype_id="9">
-                  <varref loc="d,11,8,11,9" name="__VactTriggered" dtype_id="9"/>
-                </cmethodhard>
-              </ccast>
+              <cmethodhard loc="d,11,8,11,9" name="any" dtype_id="9">
+                <varref loc="d,11,8,11,9" name="__VactTriggered" dtype_id="9"/>
+              </cmethodhard>
             </not>
           </and>
           <begin>
@@ -666,11 +664,9 @@
           <and loc="d,11,8,11,9" dtype_id="9">
             <const loc="d,11,8,11,9" name="32&apos;h1" dtype_id="14"/>
             <not loc="d,11,8,11,9" dtype_id="9">
-              <ccast loc="d,11,8,11,9" dtype_id="9">
-                <cmethodhard loc="d,11,8,11,9" name="any" dtype_id="9">
-                  <varref loc="d,11,8,11,9" name="__VnbaTriggered" dtype_id="9"/>
-                </cmethodhard>
-              </ccast>
+              <cmethodhard loc="d,11,8,11,9" name="any" dtype_id="9">
+                <varref loc="d,11,8,11,9" name="__VnbaTriggered" dtype_id="9"/>
+              </cmethodhard>
             </not>
           </and>
           <begin>

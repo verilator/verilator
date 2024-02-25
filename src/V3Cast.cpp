@@ -212,6 +212,11 @@ class CastVisitor final : public VNVisitor {
     void visit(AstCMethodCall* nodep) override {
         iterateChildren(nodep);
         ensureNullChecked(nodep->fromp());
+        nodep->user1(true);
+    }
+    void visit(AstCMethodHard* nodep) override {
+        iterateChildren(nodep);
+        nodep->user1(true);
     }
     void visit(AstMemberSel* nodep) override {
         iterateChildren(nodep);
