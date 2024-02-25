@@ -1309,6 +1309,27 @@ static inline void _vl_insert_WI(WDataOutP iowp, IData ld, int hbit, int lbit,
     }
 }
 
+// This function is added to copy bits from lwp[hbit:lbit] to low bits of lhsr. rbits is
+// real width of lshr
+static inline void _vl_insert_IW(IData& lhsr, WDataInP const lwp, int hbit, int lbit,
+                                 int rbits = 0) {
+    const int hoffset = VL_BITBIT_E(hbit);
+    const int loffset = VL_BITBIT_E(lbit);
+    const int hword = VL_BITWORD_E(hbit);
+    const int lword = VL_BITWORD_E(lbit);
+    const IData cleanmask = VL_MASK_I(rbits);
+    if (hword == lword) {
+        const IData insmask = (VL_MASK_I(hoffset - loffset + 1));
+        lhsr = (lhsr & ~insmask) | ((lwp[lword] >> loffset) & (insmask & cleanmask));
+    } else {
+        const int nbitsonright = VL_IDATASIZE - loffset;  // bits that filled by lword
+        const IData hinsmask = (VL_MASK_E(hoffset - 0 + 1)) << nbitsonright;
+        const IData linsmask = VL_MASK_E(VL_EDATASIZE - loffset);
+        lhsr = (lhsr & ~linsmask) | ((lwp[lword] >> loffset) & (linsmask & cleanmask));
+        lhsr = (lhsr & ~hinsmask) | ((lwp[hword] << nbitsonright) & (hinsmask & cleanmask));
+    }
+}
+
 // INTERNAL: Stuff large LHS bit 0++ into OUTPUT at specified offset
 // lwp may be "dirty"
 static inline void _vl_insert_WW(WDataOutP iowp, WDataInP const lwp, int hbit, int lbit,
@@ -2083,6 +2104,97 @@ static inline void VL_ASSIGNSEL_WW(int rbits, int obits, int lsb, WDataOutP iowp
     _vl_insert_WW(iowp, rwp, lsb + obits - 1, lsb, rbits);
 }
 
+//====================================================
+// Range assignments
+
+// These additional functions copy bits range [obis+roffset-1:roffset] from rhs to lower bits
+// of lhs. Rhs should always be wider than lhs.
+static inline void VL_ASSIGNSEL_II(int rbits, int obits, CData& lhsr, IData rhs,
+                                   int roffset) VL_PURE {
+    _vl_insert_II(lhsr, rhs >> roffset, obits - 1, 0, rbits);
+}
+static inline void VL_ASSIGNSEL_II(int rbits, int obits, SData& lhsr, IData rhs,
+                                   int roffset) VL_PURE {
+    _vl_insert_II(lhsr, rhs >> roffset, obits - 1, 0, rbits);
+}
+static inline void VL_ASSIGNSEL_II(int rbits, int obits, IData& lhsr, IData rhs,
+                                   int roffset) VL_PURE {
+    _vl_insert_II(lhsr, rhs >> roffset, obits - 1, 0, rbits);
+}
+static inline void VL_ASSIGNSEL_IQ(int rbits, int obits, CData& lhsr, QData rhs,
+                                   int roffset) VL_PURE {
+    // it will be truncated to right CData mask
+    const CData cleanmask = VL_MASK_I(rbits);
+    const CData insmask = VL_MASK_I(obits);
+    lhsr = (lhsr & ~insmask) | (static_cast<CData>(rhs >> roffset) & (insmask & cleanmask));
+}
+static inline void VL_ASSIGNSEL_IQ(int rbits, int obits, SData& lhsr, QData rhs,
+                                   int roffset = 0) VL_PURE {
+    // it will be truncated to right CData mask
+    const SData cleanmask = VL_MASK_I(rbits);
+    const SData insmask = VL_MASK_I(obits);
+    lhsr = (lhsr & ~insmask) | (static_cast<SData>(rhs >> roffset) & (insmask & cleanmask));
+}
+static inline void VL_ASSIGNSEL_IQ(int rbits, int obits, IData& lhsr, QData rhs,
+                                   int roffset) VL_PURE {
+    const IData cleanmask = VL_MASK_I(rbits);
+    const IData insmask = VL_MASK_I(obits);
+    lhsr = (lhsr & ~insmask) | (static_cast<IData>(rhs >> roffset) & (insmask & cleanmask));
+}
+
+static inline void VL_ASSIGNSEL_QQ(int rbits, int obits, QData& lhsr, QData rhs,
+                                   int roffset) VL_PURE {
+    _vl_insert_QQ(lhsr, rhs >> roffset, obits - 1, 0, rbits);
+}
+
+static inline void VL_ASSIGNSEL_IW(int rbits, int obits, CData& lhsr, WDataInP const rhs,
+                                   int roffset) VL_MT_SAFE {
+    IData l = static_cast<IData>(lhsr);
+    _vl_insert_IW(l, rhs, roffset + obits - 1, roffset, rbits);
+    lhsr = static_cast<CData>(l);
+}
+static inline void VL_ASSIGNSEL_IW(int rbits, int obits, SData& lhsr, WDataInP const rhs,
+                                   int roffset) VL_MT_SAFE {
+    IData l = static_cast<IData>(lhsr);
+    _vl_insert_IW(l, rhs, roffset + obits - 1, roffset, rbits);
+    lhsr = static_cast<SData>(l);
+}
+static inline void VL_ASSIGNSEL_IW(int rbits, int obits, IData& lhsr, WDataInP const rhs,
+                                   int roffset) VL_MT_SAFE {
+    _vl_insert_IW(lhsr, rhs, roffset + obits - 1, roffset, rbits);
+}
+static inline void VL_ASSIGNSEL_QW(int rbits, int obits, QData& lhsr, WDataInP const rhs,
+                                   int roffset) VL_MT_SAFE {
+    // assert VL_QDATASIZE >= rbits > VL_IDATASIZE;
+    IData low = static_cast<IData>(lhsr);
+    IData high = static_cast<IData>(lhsr >> VL_IDATASIZE);
+    if (obits <= VL_IDATASIZE) {
+        _vl_insert_IW(low, rhs, obits + roffset - 1, roffset, VL_IDATASIZE);
+    } else {
+        _vl_insert_IW(low, rhs, roffset + VL_IDATASIZE - 1, roffset, VL_IDATASIZE);
+        _vl_insert_IW(high, rhs, roffset + obits - 1, roffset + VL_IDATASIZE,
+                      rbits - VL_IDATASIZE);
+    }
+    lhsr = (static_cast<QData>(high) << VL_IDATASIZE) | low;
+}
+
+static inline void VL_ASSIGNSEL_WW(int rbits, int obits, WDataOutP iowp, WDataInP const rwp,
+                                   int roffset) VL_MT_SAFE {
+    // assert rbits > VL_QDATASIZE
+    const int wordoff = roffset / VL_EDATASIZE;
+    const int lsb = roffset & VL_SIZEBITS_E;
+    const int upperbits = lsb == 0 ? 0 : VL_EDATASIZE - lsb;
+    // If roffset is not aligned, we copy some bits to align it.
+    if (lsb != 0) {
+        const int w = obits < upperbits ? obits : upperbits;
+        const int insmask = VL_MASK_E(w);
+        iowp[0] = (iowp[0] & ~insmask) | ((rwp[wordoff] >> lsb) & insmask);
+        if (w == obits) return;
+        obits -= w;
+    }
+    _vl_insert_WW(iowp, rwp + wordoff + (lsb != 0), upperbits + obits - 1, upperbits, rbits);
+}
+
 //======================================================================
 // Triops
 
@@ -2340,79 +2452,4 @@ inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, double& rdr)
 extern IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_SAFE;
 
 //======================================================================
-// vlBitHelper
-
-// This function is a `memcpy` at bit level actually. It copies `width` bits from `inWords` array
-// starting at `inLsb` to `outWords` array starting at `outLsb`. Template argument `InWordT` and
-// `OutWordT` gives the type of `inWords` and `outWords` respectively and must be integral type.
-// If `clean` is true, vlBitHelper will zero upper bits of `outWords`.
-// Its function overlaps with `VL_ASSIGNSEL_XX` slightly with some performance degrading, but a
-// more general and powerful version, for no argument to specify input offset in `VL_ASSIGNSEL_XX`
-// functions.
-// Currently, the only user of this function is exported packed struct / union to copy its bits
-// between its fields and verilator's internal data representation.
-template <typename OutWordT, typename InWordT>
-void vlBitHelper(OutWordT* outWords, uint32_t outLsb, const InWordT* inWords, uint32_t inLsb,
-                 uint32_t width, bool clean = true) {
-    if (width == 0) return;
-    constexpr uint32_t outSizeb = sizeof(OutWordT) * 8;
-    uint32_t outIndexOff = outLsb / outSizeb;
-    uint32_t outBitOff = outLsb % outSizeb;
-    const uint32_t lastOutIndex = (outLsb + width - 1) / outSizeb;
-
-    constexpr uint32_t inSizeb = sizeof(InWordT) * 8;
-    uint32_t inIndexOff = inLsb / inSizeb;
-    uint32_t inbitOff = inLsb % inSizeb;
-
-    uint32_t validBits = 0;
-    uint32_t needBits = outSizeb - outBitOff;
-
-    InWordT inword = 0;
-    OutWordT outword = 0;
-    while (outIndexOff <= lastOutIndex) {
-        const uint32_t readBits = outSizeb - needBits - outBitOff;
-        if (validBits >= needBits || validBits + readBits >= width) {
-            const OutWordT widthMask
-                = ((outBitOff + width >= outSizeb) ? ~(OutWordT)0 : (((OutWordT)1 << width) - 1))
-                  << outBitOff;
-
-            outword |= (OutWordT)inword << (outSizeb - needBits);
-
-            if (outIndexOff != lastOutIndex || !clean) {
-                outWords[outIndexOff]
-                    = (outWords[outIndexOff] & ~widthMask) | (outword & widthMask);
-            } else {
-                // Clean upper bits of word in `outWords`
-                const OutWordT cleanmask = ((1 << width) << outBitOff) - 1;
-                outWords[outIndexOff]
-                    = (outWords[outIndexOff] & ~widthMask & cleanmask) | (outword & widthMask);
-            }
-
-            if (width <= outSizeb - outBitOff) break;
-            width -= outSizeb - outBitOff;
-
-            if (needBits >= inSizeb)
-                inword = 0;
-            else
-                inword >>= needBits;
-            validBits -= needBits;
-            needBits = outSizeb;
-
-            outIndexOff++;
-            outBitOff = 0;
-            outword = 0;
-        } else {
-            outword |= (OutWordT)inword << (outSizeb - needBits);
-            needBits -= validBits;
-
-            inword = inWords[inIndexOff] >> inbitOff;
-            validBits = inSizeb - inbitOff;
-            inIndexOff++;
-            inbitOff = 0;
-        }
-    }
-}
-
-//======================================================================
-
 #endif  // Guard
