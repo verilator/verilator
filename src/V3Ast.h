@@ -2002,7 +2002,7 @@ public:
 
     // TODO stomp these width functions out, and call via dtypep() instead
     inline int width() const VL_MT_STABLE;
-    inline int widthMin() const;
+    inline int widthMin() const VL_MT_STABLE;
     int widthMinV() const {
         return v3Global.widthMinUsage() == VWidthMinUsage::VERILOG_WIDTH ? widthMin() : width();
     }

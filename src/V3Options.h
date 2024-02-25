@@ -484,7 +484,7 @@ public:
     bool debugProtect() const VL_MT_SAFE { return m_debugProtect; }
     bool debugSelfTest() const { return m_debugSelfTest; }
     bool debugStackCheck() const { return m_debugStackCheck; }
-    bool debugWidth() const { return m_debugWidth; }
+    bool debugWidth() const VL_PURE { return m_debugWidth; }
     bool decoration() const VL_MT_SAFE { return m_decoration; }
     bool decorationNodes() const VL_MT_SAFE { return m_decorationNodes; }
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }

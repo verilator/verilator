@@ -26,7 +26,7 @@
 // Inline METHODS
 
 int AstNode::width() const VL_MT_STABLE { return dtypep() ? dtypep()->width() : 0; }
-int AstNode::widthMin() const { return dtypep() ? dtypep()->widthMin() : 0; }
+int AstNode::widthMin() const VL_MT_STABLE { return dtypep() ? dtypep()->widthMin() : 0; }
 bool AstNode::width1() const {  // V3Const uses to know it can optimize
     return dtypep() && dtypep()->width() == 1;
 }
