@@ -2129,7 +2129,7 @@ static inline void VL_ASSIGNSEL_IQ(int rbits, int obits, CData& lhsr, QData rhs,
     lhsr = (lhsr & ~insmask) | (static_cast<CData>(rhs >> roffset) & (insmask & cleanmask));
 }
 static inline void VL_ASSIGNSEL_IQ(int rbits, int obits, SData& lhsr, QData rhs,
-                                   int roffset = 0) VL_PURE {
+                                   int roffset) VL_PURE {
     // it will be truncated to right CData mask
     const SData cleanmask = VL_MASK_I(rbits);
     const SData insmask = VL_MASK_I(obits);
