@@ -1324,21 +1324,26 @@ void AstWhile::addNextStmt(AstNode* newp, AstNode* belowp) {
 // Debugging
 
 static void checkBitWidth(const AstNode* nodep) VL_MT_STABLE {
+    auto dumpSmall = [](const AstNodeExpr* exprp) -> string {
+        std::ostringstream ss;
+        exprp->dtypep()->dumpSmall(ss);
+        return ss.str();
+    };
     if (const AstNodeBiop* const biopp = VN_CAST(nodep, NodeBiop)) {
         // Simple bitwise ops
         if (VN_IS(biopp, And) || VN_IS(biopp, Or) || VN_IS(biopp, Xor)) {
             UASSERT_OBJ(biopp->lhsp()->widthMin() == biopp->rhsp()->widthMin(), biopp,
-                        "widthMin mismatch LHS:" << biopp->lhsp()->widthMin()
-                                                 << " RHS:" << biopp->rhsp()->widthMin());
+                        "widthMin mismatch LHS:" << dumpSmall(biopp->lhsp())
+                                                 << " RHS:" << dumpSmall(biopp->rhsp()));
             UASSERT_OBJ(biopp->widthMin() == biopp->lhsp()->widthMin(), biopp,
-                        "widthMin mismatch OUT:" << biopp->widthMin()
-                                                 << " LHS:" << biopp->lhsp()->widthMin());
+                        "widthMin mismatch OUT:" << dumpSmall(biopp)
+                                                 << " LHS:" << dumpSmall(biopp->lhsp()));
         }
     } else if (const AstNodeUniop* const uniopp = VN_CAST(nodep, NodeUniop)) {
         if (VN_IS(uniopp, Not)) {
             UASSERT_OBJ(uniopp->widthMin() == uniopp->lhsp()->widthMin(), uniopp,
-                        "widthMin mismatch OUT:" << uniopp->widthMin()
-                                                 << " IN:" << uniopp->lhsp()->widthMin());
+                        "widthMin mismatch OUT:" << dumpSmall(uniopp)
+                                                 << " IN:" << dumpSmall(uniopp->lhsp()));
         }
     }
 }
