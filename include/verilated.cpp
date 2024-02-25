@@ -814,7 +814,7 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
     bool widthSet = false;
     bool left = false;
     size_t width = 0;
-    for (std::string::const_iterator pos = format.begin(); pos != format.end(); ++pos) {
+    for (std::string::const_iterator pos = format.cbegin(); pos != format.cend(); ++pos) {
         if (!inPct && pos[0] == '%') {
             pctit = pos;
             inPct = true;
@@ -1212,8 +1212,8 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     IData got = 0;
     bool inPct = false;
     bool inIgnore = false;
-    std::string::const_iterator pos = format.begin();
-    for (; pos != format.end() && !_vl_vsss_eof(fp, floc); ++pos) {
+    std::string::const_iterator pos = format.cbegin();
+    for (; pos != format.cend() && !_vl_vsss_eof(fp, floc); ++pos) {
         // VL_DBG_MSGF("_vlscan fmt='"<<pos[0]<<"' floc="<<floc<<" file='"<<_vl_vsss_peek(fp, floc,
         // fromp, fstr)<<"'\n");
         if (!inPct && pos[0] == '%') {
@@ -2786,7 +2786,7 @@ bool VerilatedContextImp::commandArgVlUint64(const std::string& arg, const std::
             VL_FATAL_MT("COMMAND_LINE", 0, "", msg.c_str());
         };
 
-        if (std::any_of(str.begin(), str.end(), [](int c) { return !std::isdigit(c); })) fail();
+        if (std::any_of(str.cbegin(), str.cend(), [](int c) { return !std::isdigit(c); })) fail();
         char* end;
         valuer = std::strtoull(str.c_str(), &end, 10);
         if (errno == ERANGE) fail("Value out of range of uint64_t");

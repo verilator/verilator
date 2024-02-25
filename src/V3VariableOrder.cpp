@@ -107,7 +107,7 @@ class VariableOrder final {
     void tspSortVars(std::vector<AstVar*>& varps) {
         // Map from "MTask affinity" -> "variable list"
         std::map<const MTaskIdSet, std::vector<AstVar*>> m2v;
-        for (AstVar* const varp : varps) { m2v[varp->mtaskIds()].push_back(varp); }
+        for (AstVar* const varp : varps) m2v[varp->mtaskIds()].push_back(varp);
 
         // Create a TSP sort state for each unique MTaskIdSet, except for the empty set
         V3TSP::StateVec states;
@@ -125,7 +125,7 @@ class VariableOrder final {
         // Helper function to sort given vector, then append to 'varps'
         const auto sortAndAppend = [this, &varps](std::vector<AstVar*>& subVarps) {
             simpleSortVars(subVarps);
-            for (AstVar* const varp : subVarps) { varps.push_back(varp); }
+            for (AstVar* const varp : subVarps) varps.push_back(varp);
         };
 
         // Enumerate by sorted MTaskIdSet, sort within the set separately

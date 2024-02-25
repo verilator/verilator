@@ -394,7 +394,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     }
 
     // Print ranks
-    for (auto dotRank : ranks) {
+    for (const auto& dotRank : ranks) {
         *logp << "\t{ rank=";
         if (dotRank != "sink" && dotRank != "source" && dotRank != "min" && dotRank != "max") {
             *logp << "same";

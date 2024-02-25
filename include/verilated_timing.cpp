@@ -59,7 +59,7 @@ void VlDelayScheduler::resume() {
 #endif
     bool resumed = false;
 
-    while (!m_queue.empty() && (m_queue.begin()->first == m_context.time())) {
+    while (!m_queue.empty() && (m_queue.cbegin()->first == m_context.time())) {
         VlCoroutineHandle handle = std::move(m_queue.begin()->second);
         m_queue.erase(m_queue.begin());
         handle.resume();
@@ -80,7 +80,7 @@ void VlDelayScheduler::resume() {
 }
 
 uint64_t VlDelayScheduler::nextTimeSlot() const {
-    if (!m_queue.empty()) return m_queue.begin()->first;
+    if (!m_queue.empty()) return m_queue.cbegin()->first;
     if (m_zeroDelayed.empty())
         VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: There is no next time slot scheduled");
     return m_context.time();
