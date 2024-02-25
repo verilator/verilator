@@ -53,7 +53,7 @@ public:
     // ACCESSORS
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    virtual void dumpSmall(std::ostream& str) const;
+    virtual void dumpSmall(std::ostream& str) const VL_MT_STABLE;
     bool hasDType() const override { return true; }
     /// Require VlUnpacked, instead of [] for POD elements.
     /// A non-POD object is always compound, but some POD elements

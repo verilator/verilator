@@ -2000,7 +2000,7 @@ void AstNodeDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, generic);
     dumpJsonGen(str);
 }
-void AstNodeDType::dumpSmall(std::ostream& str) const {
+void AstNodeDType::dumpSmall(std::ostream& str) const VL_MT_STABLE {
     str << "(" << (generic() ? "G/" : "") << ((isSigned() && !isDouble()) ? "s" : "")
         << (isNosign() ? "n" : "") << (isDouble() ? "d" : "") << (isString() ? "str" : "");
     if (!isDouble() && !isString()) str << "w" << (widthSized() ? "" : "u") << width();
