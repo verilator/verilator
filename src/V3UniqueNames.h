@@ -24,12 +24,12 @@
 
 #include "V3Hasher.h"
 
-#include <string>
 #include <map>
+#include <string>
 
 class V3UniqueNames final {
 public:
-    enum runMode {
+    enum runMode : uint8_t {
         NORMAL,
         NO_SUFFIX  // V3UniqueNames will not add a suffix to the name if it is unique.
     };
@@ -39,7 +39,7 @@ private:
 
     std::map<std::string, unsigned> m_multiplicity;  // Suffix number for given key
 
-    const runMode m_mode = NORMAL; // Ad suffix or not
+    const runMode m_mode = NORMAL;  // Ad suffix or not
 
 public:
     V3UniqueNames() = default;

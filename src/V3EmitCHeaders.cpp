@@ -272,26 +272,20 @@ class EmitCHeader final : public EmitCConstInit {
         puts("VL_ASSIGNSEL_");
         puts(lhstype->charIQWN());
         puts(rhstype->charIQWN());
-        // Put lhs width
-        puts("(" + std::to_string(lhstype->width()) + ", ");
+        puts("(" + std::to_string(lhstype->width()) + ", ");  // LHS width
         if (getfunc) {
-            // Put number of copy bits
-            puts(std::to_string(rhstype->width()) + ", ");
-            // Put lhs offset
-            puts(off + ", ");
+            puts(std::to_string(rhstype->width()) + ", ");  // Number of copy bits
+            puts(off + ", ");  // LHS offset
         } else {
-            // Put number of copy bits, use widthTototalBytes to
+            // Number of copy bits. Use widthTototalBytes to
             // make VL_ASSIGNSEL_XX clear upper unused bits for us.
             // puts(std::to_string(lhstype->width()) + ", ");
             puts(std::to_string(lhstype->widthTotalBytes() * 8) + ", ");
         }
-        // Put lhs data
-        puts(lhsdata + ", ");
-        // Put rhs data
-        puts(rhsdata);
+        puts(lhsdata + ", ");  // LHS data
+        puts(rhsdata);  // RHS data
         if (!getfunc) {
-            // Put rhs offset
-            puts(", " + off);
+            puts(", " + off);  // RHS offset
         }
         puts(");\n");
     }
@@ -303,10 +297,9 @@ class EmitCHeader final : public EmitCConstInit {
         dtypep = dtypep->skipRefp();
         if (const auto* adtypep = VN_CAST(dtypep, PackArrayDType)) {
             const std::string index = m_names.get("__Vi");
-            const std::string forloop = "for (int " + index + " = 0; " + index + " < "
-                                        + std::to_string(adtypep->elementsConst()) + "; ++" + index
-                                        + ") {\n";
-            puts(forloop);
+            puts("for (int " + index + " = 0; " + index + " < "
+                 + std::to_string(adtypep->elementsConst()) + "; ++" + index + ") {\n");
+
             const std::string offsetInLoop
                 = offset + " + " + index + " * " + std::to_string(adtypep->subDTypep()->width());
             const std::string newName = fieldname + "[" + index + "]";
@@ -347,7 +340,8 @@ class EmitCHeader final : public EmitCConstInit {
         putns(sdtypep, sdtypep->verilogKwd());  // "struct"/"union"
         puts(" " + EmitCBase::prefixNameProtect(sdtypep) + " {\n");
 
-        AstMemberDType *itemp, *lastItemp;
+        AstMemberDType* itemp;
+        AstMemberDType* lastItemp;
         AstMemberDType* witemp = nullptr;
         // LSB is first field in C, so loop backwards
         for (lastItemp = sdtypep->membersp(); lastItemp && lastItemp->nextp();

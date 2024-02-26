@@ -45,7 +45,7 @@ class NameVisitor final : public VNVisitorConst {
     const AstNodeModule* m_modp = nullptr;  // Current module
 
     // Rename struct / union field properly
-    std::vector<V3UniqueNames> m_nameStack;
+    std::vector<V3UniqueNames> m_nameStack;  // Hierarchy-based renames
 
     void renameKeywordCheck(AstNode* nodep) {
         const std::string rsvd = V3LanguageWords::isKeyword(nodep->name());
@@ -112,7 +112,7 @@ class NameVisitor final : public VNVisitorConst {
     }
     void visit(AstMemberDType* nodep) override {
         if (!nodep->user1()) {
-            if (!m_nameStack.empty()) { // Packed member field
+            if (!m_nameStack.empty()) {  // Packed member field
                 renameKeywordCheck(nodep);
                 nodep->name(m_nameStack.back().get(nodep->name()));
                 nodep->user1(1);

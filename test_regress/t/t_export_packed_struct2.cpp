@@ -75,13 +75,15 @@ int main(int argc, char** argv) {
         IN_T in;
         IN2_T tmp;
         OUT_T out;
-        for (int i = 0; i < 3; ++i)
-            for (int j = 0; j < 3; ++j)
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
                 for (int k = 0; k < 3; ++k) {
                     VL_SET_WQ(in.b[i][j][k].a, 0x1234123412341234UL);
                     // Set last bit zero and upper bits one
                     in.b[i][j][k].a[2] = 0xfe;
                 }
+            }
+        }
         in.anon.a = 0x1;
 
         adder->op1 = in.get();
@@ -92,22 +94,26 @@ int main(int argc, char** argv) {
         // `set` function should clear upper bits of `tmp.a`
         tmp.set(adder->rootp->add__DOT__op2->__PVT__in);
 
-        for (int i = 0; i < 3; ++i)
-            for (int j = 0; j < 3; ++j)
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
                 for (int k = 0; k < 3; ++k) {
                     TEST_CHECK_EQ(tmp.b[i][j][k].a[0], 0x12341234);
                     TEST_CHECK_EQ(tmp.b[i][j][k].a[1], 0x12341234);
                     TEST_CHECK_EQ(tmp.b[i][j][k].a[2], 0);
                 }
+            }
+        }
         TEST_CHECK_EQ(tmp.a, 0x1);
 
-        for (int i = 0; i < 3; ++i)
-            for (int j = 0; j < 3; ++j)
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
                 for (int k = 0; k < 3; ++k) {
                     TEST_CHECK_EQ(out.b[i][j][k].a[0], 0x24682468);
                     TEST_CHECK_EQ(out.b[i][j][k].a[1], 0x24682468);
                     TEST_CHECK_EQ(out.b[i][j][k].a[2], 0x0);
                 }
+            }
+        }
         TEST_CHECK_EQ(out.anon.a, 0x0);
     }
 

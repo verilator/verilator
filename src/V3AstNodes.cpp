@@ -789,13 +789,13 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
         info.m_type += ", " + cvtToStr(adtypep->declRange().elements());
         info.m_type += ">";
     } else if (packed && (VN_IS(dtypep, PackArrayDType))) {
-        const auto* const adtypep = VN_CAST(dtypep, PackArrayDType);
-        CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(false, true);
+        const AstPackArrayDType* const adtypep = VN_CAST(dtypep, PackArrayDType);
+        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(false, true);
         info.m_type = std::move(sub.m_type);
         info.m_dims = "[" + cvtToStr(adtypep->elementsConst()) + "]" + sub.m_dims;
     } else if (VN_IS(dtypep, NodeUOrStructDType)
                && (!VN_AS(dtypep, NodeUOrStructDType)->packed() || packed)) {
-        const auto* const sdtypep = VN_AS(dtypep, NodeUOrStructDType);
+        const AstNodeUOrStructDType* const sdtypep = VN_AS(dtypep, NodeUOrStructDType);
         UASSERT_OBJ(!packed || sdtypep->packed(), this,
                     "Unsupported type for packed struct or union");
         info.m_type = EmitCBase::prefixNameProtect(sdtypep);
@@ -841,11 +841,11 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "VlWide<" + cvtToStr(dtypep->widthWords()) + ">" + bitvec;
         }
         // CData, SData, IData, QData or VlWide are packed type.
-        bool packedType = VString::startsWith(info.m_type, "CData")
-                          || VString::startsWith(info.m_type, "SData")
-                          || VString::startsWith(info.m_type, "IData")
-                          || VString::startsWith(info.m_type, "QData")
-                          || VString::startsWith(info.m_type, "VlWide");
+        const bool packedType = VString::startsWith(info.m_type, "CData")
+                                || VString::startsWith(info.m_type, "SData")
+                                || VString::startsWith(info.m_type, "IData")
+                                || VString::startsWith(info.m_type, "QData")
+                                || VString::startsWith(info.m_type, "VlWide");
         UASSERT_OBJ(!packed || packedType, this, "Unsupported type for packed struct or union");
     } else {
         v3fatalSrc("Unknown data type in var type emitter: " << dtypep->prettyName());

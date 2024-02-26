@@ -2452,4 +2452,5 @@ inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, double& rdr)
 extern IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_SAFE;
 
 //======================================================================
+
 #endif  // Guard
