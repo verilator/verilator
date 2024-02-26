@@ -2108,62 +2108,62 @@ static inline void VL_ASSIGNSEL_WW(int rbits, int obits, int lsb, WDataOutP iowp
 // Range assignments
 
 // These additional functions copy bits range [obis+roffset-1:roffset] from rhs to lower bits
-// of lhs. Rhs should always be wider than lhs.
-static inline void VL_ASSIGNSEL_II(int rbits, int obits, CData& lhsr, IData rhs,
+// of lhs(select before assigning). Rhs should always be wider than lhs.
+static inline void VL_SELASSIGN_II(int rbits, int obits, CData& lhsr, IData rhs,
                                    int roffset) VL_PURE {
     _vl_insert_II(lhsr, rhs >> roffset, obits - 1, 0, rbits);
 }
-static inline void VL_ASSIGNSEL_II(int rbits, int obits, SData& lhsr, IData rhs,
+static inline void VL_SELASSIGN_II(int rbits, int obits, SData& lhsr, IData rhs,
                                    int roffset) VL_PURE {
     _vl_insert_II(lhsr, rhs >> roffset, obits - 1, 0, rbits);
 }
-static inline void VL_ASSIGNSEL_II(int rbits, int obits, IData& lhsr, IData rhs,
+static inline void VL_SELASSIGN_II(int rbits, int obits, IData& lhsr, IData rhs,
                                    int roffset) VL_PURE {
     _vl_insert_II(lhsr, rhs >> roffset, obits - 1, 0, rbits);
 }
-static inline void VL_ASSIGNSEL_IQ(int rbits, int obits, CData& lhsr, QData rhs,
+static inline void VL_SELASSIGN_IQ(int rbits, int obits, CData& lhsr, QData rhs,
                                    int roffset) VL_PURE {
     // it will be truncated to right CData mask
     const CData cleanmask = VL_MASK_I(rbits);
     const CData insmask = VL_MASK_I(obits);
     lhsr = (lhsr & ~insmask) | (static_cast<CData>(rhs >> roffset) & (insmask & cleanmask));
 }
-static inline void VL_ASSIGNSEL_IQ(int rbits, int obits, SData& lhsr, QData rhs,
+static inline void VL_SELASSIGN_IQ(int rbits, int obits, SData& lhsr, QData rhs,
                                    int roffset) VL_PURE {
     // it will be truncated to right CData mask
     const SData cleanmask = VL_MASK_I(rbits);
     const SData insmask = VL_MASK_I(obits);
     lhsr = (lhsr & ~insmask) | (static_cast<SData>(rhs >> roffset) & (insmask & cleanmask));
 }
-static inline void VL_ASSIGNSEL_IQ(int rbits, int obits, IData& lhsr, QData rhs,
+static inline void VL_SELASSIGN_IQ(int rbits, int obits, IData& lhsr, QData rhs,
                                    int roffset) VL_PURE {
     const IData cleanmask = VL_MASK_I(rbits);
     const IData insmask = VL_MASK_I(obits);
     lhsr = (lhsr & ~insmask) | (static_cast<IData>(rhs >> roffset) & (insmask & cleanmask));
 }
 
-static inline void VL_ASSIGNSEL_QQ(int rbits, int obits, QData& lhsr, QData rhs,
+static inline void VL_SELASSIGN_QQ(int rbits, int obits, QData& lhsr, QData rhs,
                                    int roffset) VL_PURE {
     _vl_insert_QQ(lhsr, rhs >> roffset, obits - 1, 0, rbits);
 }
 
-static inline void VL_ASSIGNSEL_IW(int rbits, int obits, CData& lhsr, WDataInP const rhs,
+static inline void VL_SELASSIGN_IW(int rbits, int obits, CData& lhsr, WDataInP const rhs,
                                    int roffset) VL_MT_SAFE {
     IData l = static_cast<IData>(lhsr);
     _vl_insert_IW(l, rhs, roffset + obits - 1, roffset, rbits);
     lhsr = static_cast<CData>(l);
 }
-static inline void VL_ASSIGNSEL_IW(int rbits, int obits, SData& lhsr, WDataInP const rhs,
+static inline void VL_SELASSIGN_IW(int rbits, int obits, SData& lhsr, WDataInP const rhs,
                                    int roffset) VL_MT_SAFE {
     IData l = static_cast<IData>(lhsr);
     _vl_insert_IW(l, rhs, roffset + obits - 1, roffset, rbits);
     lhsr = static_cast<SData>(l);
 }
-static inline void VL_ASSIGNSEL_IW(int rbits, int obits, IData& lhsr, WDataInP const rhs,
+static inline void VL_SELASSIGN_IW(int rbits, int obits, IData& lhsr, WDataInP const rhs,
                                    int roffset) VL_MT_SAFE {
     _vl_insert_IW(lhsr, rhs, roffset + obits - 1, roffset, rbits);
 }
-static inline void VL_ASSIGNSEL_QW(int rbits, int obits, QData& lhsr, WDataInP const rhs,
+static inline void VL_SELASSIGN_QW(int rbits, int obits, QData& lhsr, WDataInP const rhs,
                                    int roffset) VL_MT_SAFE {
     // assert VL_QDATASIZE >= rbits > VL_IDATASIZE;
     IData low = static_cast<IData>(lhsr);
@@ -2178,7 +2178,7 @@ static inline void VL_ASSIGNSEL_QW(int rbits, int obits, QData& lhsr, WDataInP c
     lhsr = (static_cast<QData>(high) << VL_IDATASIZE) | low;
 }
 
-static inline void VL_ASSIGNSEL_WW(int rbits, int obits, WDataOutP iowp, WDataInP const rwp,
+static inline void VL_SELASSIGN_WW(int rbits, int obits, WDataOutP iowp, WDataInP const rwp,
                                    int roffset) VL_MT_SAFE {
     // assert rbits > VL_QDATASIZE
     const int wordoff = roffset / VL_EDATASIZE;

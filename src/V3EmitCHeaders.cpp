@@ -265,11 +265,11 @@ class EmitCHeader final : public EmitCConstInit {
     }
 
     // getfunc: VL_ASSIGNSEL_XX(rbits, obits, off, lhsdata, rhsdata);
-    // !getfunc: VL_ASSIGNSEL_XX(rbits, obits, lhsdata, rhsdata, off);
+    // !getfunc: VL_SELASSIGN_XX(rbits, obits, lhsdata, rhsdata, off);
     void emitVlAssign(const AstNodeDType* const lhstype, const AstNodeDType* rhstype,
                       const std::string& off, const std::string& lhsdata,
                       const std::string& rhsdata, bool getfunc) {
-        puts("VL_ASSIGNSEL_");
+        puts(getfunc ? "VL_ASSIGNSEL_" : "VL_SELASSIGN_");
         puts(lhstype->charIQWN());
         puts(rhstype->charIQWN());
         puts("(" + std::to_string(lhstype->width()) + ", ");  // LHS width
@@ -278,7 +278,7 @@ class EmitCHeader final : public EmitCConstInit {
             puts(off + ", ");  // LHS offset
         } else {
             // Number of copy bits. Use widthTototalBytes to
-            // make VL_ASSIGNSEL_XX clear upper unused bits for us.
+            // make VL_SELASSIGN_XX clear upper unused bits for us.
             // puts(std::to_string(lhstype->width()) + ", ");
             puts(std::to_string(lhstype->widthTotalBytes() * 8) + ", ");
         }
@@ -318,7 +318,7 @@ class EmitCHeader final : public EmitCConstInit {
                 const std::string tmptype = AstCDType::typeToHold(dtypep->width());
                 // type tmp;
                 puts(tmptype + " " + tmp + ";\n");
-                // VL_ASSIGNSEL_XX(rbits, obits, lhsdata, rhsdata, roffset);
+                // VL_SELASSIGN_XX(rbits, obits, lhsdata, rhsdata, roffset);
                 emitVlAssign(dtypep, parentDtypep, offset, suffixName, retOrArg, getfunc);
                 // field.set(__tmp);
                 puts(fieldname + ".set(" + tmp + ");\n");
@@ -331,7 +331,7 @@ class EmitCHeader final : public EmitCConstInit {
                 // VL_ASSIGNSEL_XX(rbits, obits, lsb, lhsdata, rhsdata);
                 emitVlAssign(parentDtypep, dtypep, offset, retOrArg, suffixName, getfunc);
             } else {  // Emit `set` func
-                // VL_ASSIGNSEL_XX(rbits, obits, lhsdata, rhsdata, roffset);
+                // VL_SELASSIGN_XX(rbits, obits, lhsdata, rhsdata, roffset);
                 emitVlAssign(dtypep, parentDtypep, offset, suffixName, retOrArg, getfunc);
             }
         }

@@ -103,7 +103,7 @@ class NameVisitor final : public VNVisitorConst {
     }
     void visit(AstNodeUOrStructDType* nodep) override {
         if (nodep->packed()) {
-            m_nameStack.emplace_back("", V3UniqueNames::NO_SUFFIX);
+            m_nameStack.emplace_back("", false);
             m_nameStack.back().get("get");
             m_nameStack.back().get("set");
         }

@@ -28,24 +28,17 @@
 #include <string>
 
 class V3UniqueNames final {
-public:
-    enum runMode : uint8_t {
-        NORMAL,
-        NO_SUFFIX  // V3UniqueNames will not add a suffix to the name if it is unique.
-    };
-
-private:
     const std::string m_prefix;  // Prefix to attach to all names
 
     std::map<std::string, unsigned> m_multiplicity;  // Suffix number for given key
 
-    const runMode m_mode = NORMAL;  // Ad suffix or not
+    const bool m_addSuffix = true;  // Ad suffix or not
 
 public:
     V3UniqueNames() = default;
-    explicit V3UniqueNames(const std::string& prefix, runMode mode = NORMAL)
+    explicit V3UniqueNames(const std::string& prefix, bool addSuffix = true)
         : m_prefix{prefix}
-        , m_mode(mode) {
+        , m_addSuffix(addSuffix) {
         if (!m_prefix.empty()) {
             UASSERT(VString::startsWith(m_prefix, "__V"), "Prefix must start with '__V'");
             UASSERT(!VString::endsWith(m_prefix, "_"), "Prefix must not end with '_'");
@@ -55,7 +48,7 @@ public:
     // Return argument, prepended with the prefix if any, then appended with a unique suffix each
     // time we are called with the same argument.
     std::string get(const std::string& name) {
-        if (m_mode == NO_SUFFIX) {
+        if (!m_addSuffix) {
             if (m_multiplicity.count(name) == 0) {
                 m_multiplicity[name] = 0;
                 return name;
