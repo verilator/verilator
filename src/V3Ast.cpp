@@ -1114,31 +1114,6 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
 //======================================================================
 // Debugging
 
-void AstNode::checkBitWidth(const AstNode* nodep) VL_MT_STABLE {
-    auto dumpSmall = [](const AstNodeExpr* exprp) VL_MT_STABLE {
-        std::ostringstream ss;
-        exprp->dtypep()->dumpSmall(ss);
-        return ss.str();
-    };
-    if (const AstNodeBiop* const biopp = VN_CAST(nodep, NodeBiop)) {
-        // Simple bitwise ops
-        if (VN_IS(biopp, And) || VN_IS(biopp, Or) || VN_IS(biopp, Xor)) {
-            UASSERT_OBJ(biopp->lhsp()->widthMin() == biopp->rhsp()->widthMin(), biopp,
-                        "widthMin mismatch LHS:" << dumpSmall(biopp->lhsp())
-                                                 << " RHS:" << dumpSmall(biopp->rhsp()));
-            UASSERT_OBJ(biopp->widthMin() == biopp->lhsp()->widthMin(), biopp,
-                        "widthMin mismatch OUT:" << dumpSmall(biopp)
-                                                 << " LHS:" << dumpSmall(biopp->lhsp()));
-        }
-    } else if (const AstNodeUniop* const uniopp = VN_CAST(nodep, NodeUniop)) {
-        if (VN_IS(uniopp, Not)) {
-            UASSERT_OBJ(uniopp->widthMin() == uniopp->lhsp()->widthMin(), uniopp,
-                        "widthMin mismatch OUT:" << dumpSmall(uniopp)
-                                                 << " IN:" << dumpSmall(uniopp->lhsp()));
-        }
-    }
-}
-
 void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
     // private: Check a tree and children
     UASSERT_OBJ(prevBackp == this->backp(), this, "Back node inconsistent");
@@ -1196,8 +1171,31 @@ void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
         default: this->v3fatalSrc("Bad case"); break;
         }
     }
-    if (v3Global.opt.debugWidth() && v3Global.widthMinUsage() == VWidthMinUsage::VERILOG_WIDTH)
-        checkBitWidth(this);
+    if (v3Global.opt.debugWidth() && v3Global.widthMinUsage() == VWidthMinUsage::VERILOG_WIDTH) {
+        if (const AstNodeExpr* const exprp = VN_CAST(this, NodeExpr)) {
+            const char* const whyp = exprp->widthMismatch();
+            if (whyp) {
+                auto dtypeStr = [](const AstNodeExpr* exprp) VL_MT_STABLE {
+                    std::ostringstream ss;
+                    exprp->dtypep()->dumpSmall(ss);
+                    return ss.str();
+                };
+                if (const AstNodeUniop* const uniopp = VN_CAST(exprp, NodeUniop)) {
+                    UASSERT_OBJ(!whyp, uniopp,
+                                "widthMismatch detected " << whyp << "OUT:" << dtypeStr(uniopp)
+                                                          << " LHS:" << dtypeStr(uniopp->lhsp()));
+                } else if (const AstNodeBiop* const biopp = VN_CAST(exprp, NodeBiop)) {
+                    UASSERT_OBJ(!whyp, biopp,
+                                "widthMismatch detected " << whyp << "OUT:" << dtypeStr(biopp)
+                                                          << " LHS:" << dtypeStr(biopp->lhsp())
+                                                          << " RHS:" << dtypeStr(biopp->rhsp()));
+                } else {
+                    UASSERT_OBJ(false, exprp,
+                                "widthMismatch detected " << whyp << " in an unexpected type");
+                }
+            }
+        }
+    }
 }
 
 // cppcheck-suppress unusedFunction  // Debug only

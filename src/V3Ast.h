@@ -1844,7 +1844,6 @@ class AstNode VL_NOT_FINAL {
 private:
     AstNode* cloneTreeIter(bool needPure);
     AstNode* cloneTreeIterList(bool needPure);
-    static void checkBitWidth(const AstNode* nodep) VL_MT_STABLE;
     void checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE;
     bool gateTreeIter() const;
     static bool sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext,
