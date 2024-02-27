@@ -12,7 +12,7 @@ scenarios(vlt => 1);
 
 # Hit the debug statements in the preprocessor for internal coverage
 
-run(cmd => ["../bin/verilator",
+run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator",
             "-E",
             "t/t_preproc_debugi.v",
             "--debug",

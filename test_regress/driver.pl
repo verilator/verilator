@@ -12,6 +12,8 @@ BEGIN {
     }
     $ENV{MAKE} ||= "make";
     $ENV{CXX} ||= "c++";
+    !defined $ENV{TEST_REGRESS} or die "TEST_REGRESS environment variable is already set";
+    $ENV{TEST_REGRESS} = Cwd::getcwd();
 }
 
 use Getopt::Long;
@@ -2484,7 +2486,7 @@ sub _vcd_read {
 our $_Cxx_Version;
 
 sub cxx_version {
-    $_Cxx_Version ||= `$ENV{MAKE} -C $ENV{VERILATOR_ROOT}/test_regress -f Makefile print-cxx-version`;
+    $_Cxx_Version ||= `$ENV{MAKE} -C $ENV{TEST_REGRESS} -f Makefile print-cxx-version`;
     return $_Cxx_Version;
 }
 

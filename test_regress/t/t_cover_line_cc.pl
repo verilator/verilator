@@ -24,7 +24,7 @@ execute(
 # Read the input .v file and do any CHECK_COVER requests
 inline_checks();
 
-run(cmd => ["../bin/verilator_coverage",
+run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_coverage",
             "--annotate-points",
             "--annotate", "$Self->{obj_dir}/annotated",
             "$Self->{obj_dir}/coverage.dat"],
@@ -34,7 +34,7 @@ run(cmd => ["../bin/verilator_coverage",
 files_identical("$Self->{obj_dir}/annotated/t_cover_line.v", $Self->{golden_filename});
 
 # Also try lcov
-run(cmd => ["../bin/verilator_coverage",
+run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_coverage",
             "--write-info", "$Self->{obj_dir}/coverage.info",
             "$Self->{obj_dir}/coverage.dat"],
     verilator_run => 1,

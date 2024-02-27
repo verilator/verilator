@@ -16,7 +16,7 @@
 default: test
 
 # This must point to the root of the VERILATOR kit
-VERILATOR_ROOT := $(shell pwd)/..
+VERILATOR_ROOT ?= $(shell pwd)/..
 export VERILATOR_ROOT
 
 # Pick up PERL and other variable settings

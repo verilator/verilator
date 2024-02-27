@@ -13,8 +13,13 @@ use JSON::PP;
 use IO::File;
 
 scenarios(dist => 1);
+
+my $root = "..";
+
 if ($ENV{VERILATOR_TEST_NO_ATTRIBUTES}) {
     skip("Skipping due to VERILATOR_TEST_NO_ATTRIBUTES");
+} elsif (!-r "$root/.git") {
+    skip("Not in a git repository");
 } else {
     check();
 }

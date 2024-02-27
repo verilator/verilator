@@ -20,7 +20,7 @@ execute(
     check_finished => 1,
     );
 
-run(cmd => ["../bin/verilator_coverage",
+run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_coverage",
             "--annotate-points",
             "--annotate", "$Self->{obj_dir}/annotated",
             "$Self->{obj_dir}/coverage.dat",
