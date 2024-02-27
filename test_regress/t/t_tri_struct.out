@@ -1,0 +1,34 @@
+%Error-UNSUPPORTED: t/t_tri_struct.v:20:31: Unsupported: Inout/tristate with non-bit/logic data type: REFDTYPE 'u_struct_t'
+                                          : ... note: In instance 't.u_mh'
+   20 | module u_mh (inout u_struct_t u_i, inout u_struct_t u_o);
+      |                               ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_tri_struct.v:20:53: Unsupported: Inout/tristate with non-bit/logic data type: REFDTYPE 'u_struct_t'
+                                          : ... note: In instance 't.u_mh'
+   20 | module u_mh (inout u_struct_t u_i, inout u_struct_t u_o);
+      |                                                     ^~~
+%Error-UNSUPPORTED: t/t_tri_struct.v:15:31: Unsupported: Inout/tristate with non-bit/logic data type: REFDTYPE 'p_struct_t'
+                                          : ... note: In instance 't.p_mh'
+   15 | module p_mh (inout p_struct_t p_i, inout p_struct_t p_o);
+      |                               ^~~
+%Error-UNSUPPORTED: t/t_tri_struct.v:15:53: Unsupported: Inout/tristate with non-bit/logic data type: REFDTYPE 'p_struct_t'
+                                          : ... note: In instance 't.p_mh'
+   15 | module p_mh (inout p_struct_t p_i, inout p_struct_t p_o);
+      |                                                     ^~~
+%Error-UNSUPPORTED: t/t_tri_struct.v:26:15: Unsupported: Inout/tristate with non-bit/logic data type: REFDTYPE 'p_struct_t'
+                                          : ... note: In instance 't'
+   26 |    p_struct_t p_i, p_o;
+      |               ^~~
+%Error-UNSUPPORTED: t/t_tri_struct.v:26:20: Unsupported: Inout/tristate with non-bit/logic data type: REFDTYPE 'p_struct_t'
+                                          : ... note: In instance 't'
+   26 |    p_struct_t p_i, p_o;
+      |                    ^~~
+%Error-UNSUPPORTED: t/t_tri_struct.v:27:15: Unsupported: Inout/tristate with non-bit/logic data type: REFDTYPE 'u_struct_t'
+                                          : ... note: In instance 't'
+   27 |    u_struct_t u_i, u_o;
+      |               ^~~
+%Error-UNSUPPORTED: t/t_tri_struct.v:27:20: Unsupported: Inout/tristate with non-bit/logic data type: REFDTYPE 'u_struct_t'
+                                          : ... note: In instance 't'
+   27 |    u_struct_t u_i, u_o;
+      |                    ^~~
+%Error: Exiting due to

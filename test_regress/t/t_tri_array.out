@@ -7,6 +7,10 @@
                                          : ... note: In instance 't'
    28 |       Pad pad0 (.pad(pad[g]),
       |                         ^
+%Error-UNSUPPORTED: t/t_tri_array.v:19:17: Unsupported: Inout/tristate with non-bit/logic data type: UNPACKARRAYDTYPE
+                                         : ... note: In instance 't'
+   19 |    tri          pad [NPAD-1:0];   
+      |                 ^~~
 %Error: t/t_tri_array.v:25:25: Select from non-array BASICDTYPE 'bit'
                              : ... note: In instance 't'
    25 |       Pad pad1 (.pad(pad[g]),
