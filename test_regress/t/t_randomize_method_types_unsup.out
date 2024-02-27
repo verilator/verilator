@@ -1,12 +1,11 @@
+%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:17:25: Unsupported: random member variable with type 'int[]'
+   17 |    constraint dynsize { dynarr.size < 20; }
+      |                         ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:12:13: Unsupported: random member variable with type 'int[string]'
                                                             : ... note: In instance 't'
    12 |    rand int assocarr[string];
       |             ^~~~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:13:13: Unsupported: random member variable with type 'int[]'
-                                                            : ... note: In instance 't'
-   13 |    rand int dynarr[];
-      |             ^~~~~~
 %Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:14:13: Unsupported: random member variable with type 'int$[0:4]'
                                                             : ... note: In instance 't'
    14 |    rand int unpackarr[5];
