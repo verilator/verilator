@@ -2757,3 +2757,22 @@ void AstDelay::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isCycleDelay);
     dumpJsonGen(str);
 }
+const char* AstAnd::widthMismatch() const VL_MT_STABLE {
+    BROKEN_RTN(lhsp()->widthMin() != rhsp()->widthMin());
+    BROKEN_RTN(lhsp()->widthMin() != widthMin());
+    return nullptr;
+}
+const char* AstOr::widthMismatch() const VL_MT_STABLE {
+    BROKEN_RTN(lhsp()->widthMin() != rhsp()->widthMin());
+    BROKEN_RTN(lhsp()->widthMin() != widthMin());
+    return nullptr;
+}
+const char* AstXor::widthMismatch() const VL_MT_STABLE {
+    BROKEN_RTN(lhsp()->widthMin() != rhsp()->widthMin());
+    BROKEN_RTN(lhsp()->widthMin() != widthMin());
+    return nullptr;
+}
+const char* AstNot::widthMismatch() const VL_MT_STABLE {
+    BROKEN_RTN(lhsp()->widthMin() != widthMin());
+    return nullptr;
+}
