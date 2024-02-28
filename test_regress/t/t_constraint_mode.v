@@ -30,9 +30,7 @@ module t (/*AUTOARG*/);
       p = new;
       v = p.randomize();
       if (v != 1) $stop;
-`ifndef VERILATOR
       if (p.m_one != 1) $stop;
-`endif
 
       // IEEE: function void object[.constraint_identifier].constraint_mode(bit on_off);
       // IEEE: function int object.constraint_identifier.constraint_mode();
