@@ -3075,36 +3075,18 @@ static void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t th
         addStrStmt("vlSelf->" + name + +".waitUntilUpstreamDone(even_cycle);\n");
     }
 
-    if (v3Global.opt.profExec()) {
-        const string& id = cvtToStr(mtaskp->id());
-        const string& predictStart = cvtToStr(mtaskp->predictStart());
-        addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskBegin(" + id + ", " + predictStart
-                   + ");\n");
-    }
     if (v3Global.opt.profPgo()) {
         // No lock around startCounter, as counter numbers are unique per thread
-        addStrStmt("vlSymsp->_vm_pgoProfiler.startCounter(" + cvtToStr(mtaskp->profilerId())
+        addStrStmt("vlSymsp->_vm_pgoProfiler.startCounter(" + std::to_string(mtaskp->profilerId())
                    + ");\n");
     }
 
-    //
-    addStrStmt("Verilated::mtaskId(" + cvtToStr(mtaskp->id()) + ");\n");
-
-    // Move the actual body of calls to leaf functions into this function
+    // Move the actual body into this function
     funcp->addStmtsp(mtaskp->bodyp()->unlinkFrBack());
-
-    // Flush message queue
-    addStrStmt("Verilated::endOfThreadMTask(vlSymsp->__Vm_evalMsgQp);\n");
 
     if (v3Global.opt.profPgo()) {
         // No lock around stopCounter, as counter numbers are unique per thread
-        addStrStmt("vlSymsp->_vm_pgoProfiler.stopCounter(" + cvtToStr(mtaskp->profilerId())
-                   + ");\n");
-    }
-    if (v3Global.opt.profExec()) {
-        const string& id = cvtToStr(mtaskp->id());
-        const string& predictConst = cvtToStr(mtaskp->cost());
-        addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskEnd(" + id + ", " + predictConst
+        addStrStmt("vlSymsp->_vm_pgoProfiler.stopCounter(" + std::to_string(mtaskp->profilerId())
                    + ");\n");
     }
 
@@ -3211,6 +3193,55 @@ static void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
     }
 }
 
+static void wrapMTaskBodies(AstExecGraph* const execGraphp) {
+    FileLine* const flp = execGraphp->fileline();
+    const string& tag = execGraphp->name();
+    AstNodeModule* const modp = v3Global.rootp()->topModulep();
+
+    for (AstMTaskBody* mtaskBodyp = execGraphp->mTaskBodiesp(); mtaskBodyp;
+         mtaskBodyp = VN_AS(mtaskBodyp->nextp(), MTaskBody)) {
+        ExecMTask* const mtaskp = mtaskBodyp->execMTaskp();
+        const std::string name = tag + "_mtask" + std::to_string(mtaskp->id());
+        AstCFunc* const funcp = new AstCFunc{flp, name, nullptr};
+        funcp->isLoose(true);
+        modp->addStmtsp(funcp);
+
+        // Helper function to make the code a bit more legible
+        const auto addStrStmt = [=](const string& stmt) -> void {  //
+            funcp->addStmtsp(new AstCStmt{flp, stmt});
+        };
+
+        if (v3Global.opt.profExec()) {
+            const string& id = std::to_string(mtaskp->id());
+            const string& predictStart = std::to_string(mtaskp->predictStart());
+            addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskBegin(" + id + ", " + predictStart
+                       + ");\n");
+        }
+
+        // Set mtask ID in the run-time system
+        addStrStmt("Verilated::mtaskId(" + std::to_string(mtaskp->id()) + ");\n");
+
+        // Run body
+        funcp->addStmtsp(mtaskBodyp->stmtsp()->unlinkFrBackWithNext());
+
+        // Flush message queue
+        addStrStmt("Verilated::endOfThreadMTask(vlSymsp->__Vm_evalMsgQp);\n");
+
+        if (v3Global.opt.profExec()) {
+            const string& id = std::to_string(mtaskp->id());
+            const string& predictConst = std::to_string(mtaskp->cost());
+            addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskEnd(" + id + ", " + predictConst
+                       + ");\n");
+        }
+
+        // AstMTask will simply contain a call
+        AstCCall* const callp = new AstCCall{flp, funcp};
+        callp->selfPointer(VSelfPointerText{VSelfPointerText::This{}});
+        callp->dtypeSetVoid();
+        mtaskBodyp->addStmtsp(callp->makeStmt());
+    }
+}
+
 static void implementExecGraph(AstExecGraph* const execGraphp) {
     // Nothing to be done if there are no MTasks in the graph at all.
     if (execGraphp->depGraphp()->empty()) return;
@@ -3238,6 +3269,9 @@ void V3Partition::finalize(AstNetlist* netlistp) {
         // ExecMTask.
         fillinCosts(execGraphp->depGraphp());
         finalizeCosts(execGraphp->depGraphp());
+
+        // Wrap each MTask body into a CFunc for better profiling/debugging
+        wrapMTaskBodies(execGraphp);
 
         // Replace the graph body with its multi-threaded implementation.
         implementExecGraph(execGraphp);
