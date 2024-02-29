@@ -39,6 +39,7 @@ class RandomizeMarkVisitor final : public VNVisitorConst {
     // NODE STATE
     // Cleared on Netlist
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing
+    //  AstConstraintExpr::user1() -> bool.  Set true to indicate state-dependent
     //  AstNodeExpr::user1()    -> bool.  Set true to indicate constraint expression depending on a
     //                                    randomized variable
     const VNUser1InUse m_inuser1;
@@ -120,7 +121,12 @@ class RandomizeMarkVisitor final : public VNVisitorConst {
         iterateChildrenConst(nodep);
     }
     void visit(AstNodeVarRef* nodep) override {
-        if (!m_constraintp || !nodep->varp()->isRand()) return;
+        if (!m_constraintp) return;
+        if (!nodep->varp()->isRand()) {
+            m_constraintp->user1(true);
+            nodep->v3warn(CONSTRAINTIGN, "State-dependent constraint ignored (unsupported)");
+            return;
+        }
         for (AstNode* backp = nodep; !VN_IS(backp, ConstraintExpr); backp = backp->backp())
             backp->user1(true);
     }
@@ -307,6 +313,7 @@ class RandomizeVisitor final : public VNVisitor {
     // NODE STATE
     // Cleared on Netlist
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing
+    //  AstConstraintExpr::user1() -> bool.  Set true to indicate state-dependent
     //  AstEnumDType::user2()   -> AstVar*.  Pointer to table with enum values
     //  AstClass::user3()       -> AstFunc*. Pointer to randomize() method of a class
     //  AstVar::user4()         -> bool. Handled in constraints
@@ -571,10 +578,10 @@ class RandomizeVisitor final : public VNVisitor {
 
         while (nodep->itemsp()) {
             AstConstraintExpr* condsp = VN_CAST(nodep->itemsp(), ConstraintExpr);
-            if (!condsp) {
+            if (!condsp || condsp->user1()) {
                 nodep->itemsp()->v3warn(CONSTRAINTIGN,
                                         "Constraint expression ignored (unsupported)");
-                nodep->itemsp()->unlinkFrBack();
+                pushDeletep(nodep->itemsp()->unlinkFrBack());
                 continue;
             }
             condsp->unlinkFrBack();
