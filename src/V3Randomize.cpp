@@ -217,8 +217,16 @@ class ConstraintExprVisitor final : public VNVisitor {
         case VNType::atGteS: op = "bvsge"; break;
         case VNType::atLte: op = "bvule"; break;
         case VNType::atLteS: op = "bvsle"; break;
-        case VNType::atSub: op = "bvsub"; break;
         case VNType::atAdd: op = "bvadd"; break;
+        case VNType::atSub: op = "bvsub"; break;
+        case VNType::atMul: op = "bvmul"; break;
+        case VNType::atDiv: op = "bvdiv"; break;
+        case VNType::atModDiv: op = "bvmod"; break;
+        case VNType::atAnd: op = "bvand"; break;
+        case VNType::atOr: op = "bvor"; break;
+        case VNType::atXor: op = "bvxor"; break;
+        case VNType::atShiftL: op = "bvshl"; break;
+        case VNType::atShiftR: op = "bvshr"; break;
         case VNType::atLogAnd: op = "and"; break;
         case VNType::atLogOr: op = "or"; break;
         default:  // LCOV_EXCL_LINE
@@ -227,6 +235,26 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         auto* const newp = new AstSFormatF{nodep->fileline(), "(" + op + " %@ %@)", false, lhsp};
         newp->addExprsp(rhsp);
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    void visit(AstNodeUniop* nodep) override {
+        if (!nodep->user1()) {
+            editFormat(nodep);
+            return;
+        }
+        iterateChildren(nodep);
+        AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+        std::string op;
+        switch (nodep->type()) {
+        case VNType::atNot: op = "bvnot"; break;
+        case VNType::atNegate: op = "bvneg"; break;
+        case VNType::atLogNot: op = "not"; break;
+        default:  // LCOV_EXCL_LINE
+            nodep->v3fatalSrc("Node needs randomization constraint, but bad case: " << nodep);
+            break;
+        }
+        auto* const newp = new AstSFormatF{nodep->fileline(), "(" + op + " %@)", false, lhsp};
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
@@ -475,10 +503,10 @@ class RandomizeVisitor final : public VNVisitor {
             }
         }
         if (m_modp->user4p()) {
-            AstNodeExpr* const solverCallp = new AstCMethodHard{
-                fl,
-                new AstVarRef{nodep->fileline(), VN_AS(m_modp->user4p(), Var), VAccess::READWRITE},
-                "next"};
+            AstNode* argsp = new AstVarRef{nodep->fileline(), VN_AS(m_modp->user4p(), Var),
+                                           VAccess::READWRITE};
+            argsp->addNext(new AstText{fl, ".next(__Vm_rng)"});
+            AstNodeExpr* const solverCallp = new AstCExpr{fl, argsp};
             solverCallp->dtypeSetBit();
             beginValp = beginValp ? new AstAnd{fl, beginValp, solverCallp} : solverCallp;
         }

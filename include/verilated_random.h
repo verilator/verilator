@@ -104,13 +104,13 @@ class VlRandomizer final {
     size_t m_capacity;
 
     // PRIVATE METHODS
-    std::shared_ptr<const VlRandomExpr> random_constraint(int bits);
+    std::shared_ptr<const VlRandomExpr> random_constraint(VlRNG& rngr, int bits);
     int parse_solution(FILE* file);
 
 public:
     // METHODS
     // Finds the next solution satisfying the constraints
-    bool next();
+    bool next(VlRNG& rngr);
     template <typename T>
     void write_var(T& var, int width, const char* name) {
         auto it = m_vars.find(name);
