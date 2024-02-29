@@ -80,8 +80,8 @@ void VlRandomExtract::emit(std::ostream& s) const {
     s << ')';
 }
 
-std::shared_ptr<const VlRandomExpr> VlRandomizer::random_constraint(int bits) {
-    unsigned long long hash = rand() & ((1 << bits) - 1);
+std::shared_ptr<const VlRandomExpr> VlRandomizer::random_constraint(VlRNG& rngr, int bits) {
+    unsigned long long hash = VL_RANDOM_RNG_I(rngr) & ((1 << bits) - 1);
     std::shared_ptr<const VlRandomExpr> concat = nullptr;
     std::vector<std::shared_ptr<const VlRandomExpr>> varbits;
     for (const auto& var : m_vars) {
@@ -91,7 +91,7 @@ std::shared_ptr<const VlRandomExpr> VlRandomizer::random_constraint(int bits) {
     for (int i = 0; i < bits; i++) {
         std::shared_ptr<const VlRandomExpr> bit = nullptr;
         for (unsigned j = 0; j * 2 < varbits.size(); j++) {
-            unsigned idx = j + rand() % (varbits.size() - j);
+            unsigned idx = j + VL_RANDOM_RNG_I(rngr) % (varbits.size() - j);
             auto sel = varbits[idx];
             std::swap(varbits[idx], varbits[j]);
             bit = bit == nullptr ? sel : std::make_shared<const VlRandomBinOp>("bvxor", bit, sel);
@@ -103,7 +103,7 @@ std::shared_ptr<const VlRandomExpr> VlRandomizer::random_constraint(int bits) {
         "=", concat, std::make_shared<const VlRandomConst>(hash, bits));
 }
 
-bool VlRandomizer::next() {
+bool VlRandomizer::next(VlRNG& rngr) {
     std::string cmd = get_solver();
     if (cmd == "") return false;
 
@@ -124,7 +124,7 @@ bool VlRandomizer::next() {
     for (const auto& var : m_vars) { f << var.second->name() << ' '; }
     f << "))\n";
     f << "(assert ";
-    random_constraint(HASH_LEN)->emit(f);
+    random_constraint(rngr, HASH_LEN)->emit(f);
     f << ")\n";
     f << "\n(check-sat)\n";
     f << "(get-value (";
