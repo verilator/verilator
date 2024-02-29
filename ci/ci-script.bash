@@ -40,7 +40,7 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
 
   if [ "$COVERAGE" != 1 ]; then
     autoconf
-    ./configure --enable-longtests --enable-ccwarn
+    ./configure --enable-longtests --enable-ccwarn --prefix="$INSTALL_DIR"
     ccache -z
     "$MAKE" -j "$NPROC" -k
     # 22.04: ccache -s -v
@@ -87,23 +87,37 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   # Run sanitize on Ubuntu 22.04 only
   [ "$CI_RUNS_ON" = 'ubuntu-22.04' ] && sanitize='--sanitize' || sanitize=''
 
+  TEST_REGRESS=test_regress
+  if [ "$CI_RELOC" == 1 ]; then
+     # Testing that the installation is relocatable.
+     "$MAKE" install
+     mkdir -p "$RELOC_DIR"
+     mv "$INSTALL_DIR" "$RELOC_DIR/relocated-install"
+     export VERILATOR_ROOT="$RELOC_DIR/relocated-install/share/verilator"
+     TEST_REGRESS="$RELOC_DIR/test_regress"
+     mv test_regress "$TEST_REGRESS"
+     # Feeling brave?
+     find . -delete
+     ls -la .
+  fi
+
   # Run the specified test
   ccache -z
   case $TESTS in
     dist-vlt-0)
-      "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=0/3
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=0/3
       ;;
     dist-vlt-1)
-      "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=1/3
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=1/3
       ;;
     dist-vlt-2)
-      "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=2/3
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=2/3
       ;;
     vltmt-0)
-      "$MAKE" -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
       ;;
     vltmt-1)
-      "$MAKE" -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
       ;;
     coverage-all)
       nodist/code_coverage --stages 1-
