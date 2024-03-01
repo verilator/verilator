@@ -473,7 +473,8 @@ class UnknownVisitor final : public VNVisitor {
                        // Making a scalar would break if we're making an array
                        && !VN_IS(nodep->dtypep()->skipRefp(), NodeArrayDType)
                        && !(VN_IS(nodep->dtypep()->skipRefp(), NodeUOrStructDType)
-                       && !VN_CAST(nodep->dtypep()->skipRefp(), NodeUOrStructDType)->packed())) {
+                            && !VN_CAST(nodep->dtypep()->skipRefp(), NodeUOrStructDType)
+                                    ->packed())) {
                 // ARRAYSEL(...) -> COND(LT(bit<maxbit), ARRAYSEL(...), {width{1'bx}})
                 VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
