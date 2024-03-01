@@ -642,6 +642,11 @@ class LinkParseVisitor final : public VNVisitor {
             if (m_lifetime.isNone()) {
                 m_lifetime = VN_IS(nodep, Class) ? VLifetime::AUTOMATIC : VLifetime::STATIC;
             }
+            if (nodep->name() == "TOP") {
+                // May mess up scope resolution and cause infinite loop
+                nodep->v3warn(E_UNSUPPORTED, "Module cannot be named 'TOP' as conflicts with "
+                                             "Verilator top-level internals");
+            }
             iterateChildren(nodep);
         }
         m_valueModp = nodep;

@@ -13,6 +13,7 @@ Verilator 5.023 devel
 
 **Minor:**
 
+* Add warning on 'TOP'-named modules (#4935). [Yanglin Xun]
 * Fix invalid cast on string structure creation (#4921). [esynr3z]
 
 
