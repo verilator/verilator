@@ -64,6 +64,7 @@ set(HEADERS
     V3Dfg.h
     V3DfgOptimizer.h
     V3DfgPasses.h
+    V3DfgPatternStats.h
     V3DfgPeephole.h
     V3DfgVertices.h
     V3DupFinder.h
