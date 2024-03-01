@@ -1309,8 +1309,7 @@ static inline void _vl_insert_WI(WDataOutP iowp, IData ld, int hbit, int lbit,
     }
 }
 
-// This function is added to copy bits from lwp[hbit:lbit] to low bits of lhsr. rbits is
-// real width of lshr
+// Copy bits from lwp[hbit:lbit] to low bits of lhsr. rbits is real width of lshr
 static inline void _vl_insert_IW(IData& lhsr, WDataInP const lwp, int hbit, int lbit,
                                  int rbits = 0) VL_MT_SAFE {
     const int hoffset = VL_BITBIT_E(hbit);
