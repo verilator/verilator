@@ -10,11 +10,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(dist => 1);
 
-run(cmd => ["cd $Self->{obj_dir} && $ENV{VERILATOR_ROOT}/bin/verilator_difftree"
-            . " $Self->{t_dir}/t_difftree.a.tree $Self->{t_dir}/t_difftree.b.tree > diff.log"],
-    check_finished => 0);
+if (!-x "$ENV{VERILATOR_ROOT}/bin/verilator_difftree") {
+    skip("No verilator_difftree available")
+}
+else {
+    run(cmd => ["cd $Self->{obj_dir} && $ENV{VERILATOR_ROOT}/bin/verilator_difftree"
+                . " $Self->{t_dir}/t_difftree.a.tree $Self->{t_dir}/t_difftree.b.tree > diff.log"],
+        check_finished => 0);
 
-files_identical("$Self->{obj_dir}/diff.log", $Self->{golden_filename}, 'logfile');
+    files_identical("$Self->{obj_dir}/diff.log", $Self->{golden_filename}, 'logfile');
+}
 
 ok(1);
 

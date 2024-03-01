@@ -9,7 +9,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 run(fails => 0,
-    cmd => ["../bin/verilator", "--help", "--valgrind"],
+    cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator", "--help", "--valgrind"],
     tee => 0,
     verilator_run => 1,
     );

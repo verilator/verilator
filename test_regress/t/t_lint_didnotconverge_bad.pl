@@ -10,24 +10,30 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-compile(
-    verilator_flags2 => ["--prof-cfuncs"],
-    );
+my $root = "..";
 
-execute(
-    fails => 1,
-    expect_filename => $Self->{golden_filename},
-    );
+if (!-r "$root/.git") {
+    skip("Not in a git repository");
+} else {
+    compile(
+        verilator_flags2 => ["--prof-cfuncs"],
+        );
 
-extract(
-    in => $Self->{top_filename},
-    out => "../docs/gen/ex_DIDNOTCONVERGE_faulty.rst",
-    lines => "16-17");
+    execute(
+        fails => 1,
+        expect_filename => $Self->{golden_filename},
+        );
 
-extract(
-    in => $Self->{golden_filename},
-    out => "../docs/gen/ex_DIDNOTCONVERGE_msg.rst",
-    lines => "1-2");
+    extract(
+        in => $Self->{top_filename},
+        out => "../docs/gen/ex_DIDNOTCONVERGE_faulty.rst",
+        lines => "16-17");
+
+    extract(
+        in => $Self->{golden_filename},
+        out => "../docs/gen/ex_DIDNOTCONVERGE_msg.rst",
+        lines => "1-2");
+}
 
 ok(1);
 1;

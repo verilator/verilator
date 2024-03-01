@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator_st => 1);
 
 compile(
-    verilator_flags2 => ['+incdir+../include'],
+    verilator_flags2 => ["+incdir+$ENV{VERILATOR_ROOT}/include"],
     );
 
 execute(

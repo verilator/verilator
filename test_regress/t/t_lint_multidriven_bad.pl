@@ -10,20 +10,26 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(linter => 1);
 
-lint(
-    fails => 1,
-    expect_filename => $Self->{golden_filename},
-    );
+my $root = "..";
 
-extract(
-    in => $Self->{top_filename},
-    out => "../docs/gen/ex_MULTIDRIVEN_faulty.rst",
-    lines => "31-36");
+if (!-r "$root/.git") {
+    skip("Not in a git repository");
+} else {
+    lint(
+        fails => 1,
+        expect_filename => $Self->{golden_filename},
+        );
 
-extract(
-    in => $Self->{golden_filename},
-    out => "../docs/gen/ex_MULTIDRIVEN_msg.rst",
-    lines => "10,11,14");
+    extract(
+        in => $Self->{top_filename},
+        out => "../docs/gen/ex_MULTIDRIVEN_faulty.rst",
+        lines => "31-36");
+
+    extract(
+        in => $Self->{golden_filename},
+        out => "../docs/gen/ex_MULTIDRIVEN_msg.rst",
+        lines => "10,11,14");
+}
 
 ok(1);
 1;

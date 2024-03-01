@@ -15,6 +15,7 @@ use Getopt::Long;
 use FindBin qw($RealBin $RealScript);
 use IO::File;
 use Pod::Usage;
+use Cwd qw(realpath);
 
 use strict;
 use vars qw($Debug @Opt_Verilator_Sw);
@@ -65,6 +66,18 @@ if (! GetOptions(
           "<>"               => sub {},      # Ignored
     )) {
     pod2usage(-exitstatus => 2, -verbose => 0);
+}
+
+my $verilator_root = realpath("$RealBin/..");
+if (defined $ENV{VERILATOR_ROOT}) {
+    if ((!-d $ENV{VERILATOR_ROOT}) || $verilator_root ne realpath($ENV{VERILATOR_ROOT})) {
+        warn "%Error: verilator: VERILATOR_ROOT is set to inconsistent path. Suggest leaving it unset.\n";
+        warn "%Error: VERILATOR_ROOT=$ENV{VERILATOR_ROOT}\n";
+        exit 1;
+    }
+} else {
+    print "export VERILATOR_ROOT='$verilator_root'\n" if $Debug;
+    $ENV{VERILATOR_ROOT} = $verilator_root;
 }
 
 if ($opt_gdbbt && !gdb_works()) {
@@ -151,30 +164,13 @@ sub debug {
 # Builds
 
 sub verilator_bin {
-    my $bin = "";
-    # Use VERILATOR_ROOT if defined, else assume verilator_bin is in the search path
     my $basename = ($ENV{VERILATOR_BIN}
                     || ($Debug ? "verilator_bin_dbg" : "verilator_bin"));
-    if (defined($ENV{VERILATOR_ROOT})) {
-        my $dir = $ENV{VERILATOR_ROOT};
-        if (-x "$dir/bin/$basename"
-            || -x "$dir/bin/$basename.exe") {  # From a "make install" into VERILATOR_ROOT
-            $bin = "$dir/bin/$basename";
-        } else {
-            $bin = "$dir/$basename";  # From pointing to kit directory
-        }
+    if (-x "$RealBin/$basename" || -x "$RealBin/$basename.exe") {
+        return "$RealBin/$basename";
     } else {
-        if (-x "$RealBin/$basename"
-            || -x "$RealBin/$basename.exe") {
-            $bin = "$RealBin/$basename";  # From path/to/verilator with verilator_bin installed
-        } else {
-            $bin = $basename;  # Find in PATH
-        }
-        # Note we don't look under bin/$basename which would be right if running
-        # in the kit dir. Running that would likely break, since
-        # VERILATOR_ROOT wouldn't be set and Verilator won't find internal files.
+        return $basename;  # Find in PATH
     }
-    return $bin;
 }
 
 #######################################################################

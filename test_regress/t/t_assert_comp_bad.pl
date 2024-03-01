@@ -10,53 +10,59 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-compile(
-    verilator_flags2 => ['--assert'],
-    nc_flags2 => ['+assert'],
-    vcs_flags2 => ['-assert svaext'],
-    fails => 1,
-    expect_filename => $Self->{golden_filename},
-    );
+my $root = "..";
 
-extract(
-    in => $Self->{top_filename},
-    out => "../docs/gen/ex_USERWARN_faulty.rst",
-    regexp => qr/\$warn.*User/);
+if (!-r "$root/.git") {
+    skip("Not in a git repository");
+} else {
+    compile(
+        verilator_flags2 => ['--assert'],
+        nc_flags2 => ['+assert'],
+        vcs_flags2 => ['-assert svaext'],
+        fails => 1,
+        expect_filename => $Self->{golden_filename},
+        );
 
-extract(
-    in => $Self->{top_filename},
-    out => "../docs/gen/ex_USERERROR_faulty.rst",
-    regexp => qr/\$error.*User/);
+    extract(
+        in => $Self->{top_filename},
+        out => "../docs/gen/ex_USERWARN_faulty.rst",
+        regexp => qr/\$warn.*User/);
 
-extract(
-    in => $Self->{top_filename},
-    out => "../docs/gen/ex_USERINFO_faulty.rst",
-    regexp => qr/\$info.*User/);
+    extract(
+        in => $Self->{top_filename},
+        out => "../docs/gen/ex_USERERROR_faulty.rst",
+        regexp => qr/\$error.*User/);
 
-extract(
-    in => $Self->{top_filename},
-    out => "../docs/gen/ex_USERFATAL_faulty.rst",
-    regexp => qr/\$fatal.*User/);
+    extract(
+        in => $Self->{top_filename},
+        out => "../docs/gen/ex_USERINFO_faulty.rst",
+        regexp => qr/\$info.*User/);
 
-extract(
-    in => $Self->{golden_filename},
-    out => "../docs/gen/ex_USERWARN_msg.rst",
-    regexp => qr/USERWARN:.* User/);
+    extract(
+        in => $Self->{top_filename},
+        out => "../docs/gen/ex_USERFATAL_faulty.rst",
+        regexp => qr/\$fatal.*User/);
 
-extract(
-    in => $Self->{golden_filename},
-    out => "../docs/gen/ex_USERERROR_msg.rst",
-    regexp => qr/USERERROR:.* User/);
+    extract(
+        in => $Self->{golden_filename},
+        out => "../docs/gen/ex_USERWARN_msg.rst",
+        regexp => qr/USERWARN:.* User/);
 
-extract(
-    in => $Self->{golden_filename},
-    out => "../docs/gen/ex_USERINFO_msg.rst",
-    regexp => qr/-Info:.* User/);
+    extract(
+        in => $Self->{golden_filename},
+        out => "../docs/gen/ex_USERERROR_msg.rst",
+        regexp => qr/USERERROR:.* User/);
 
-extract(
-    in => $Self->{golden_filename},
-    out => "../docs/gen/ex_USERFATAL_msg.rst",
-    regexp => qr/USERFATAL/);
+    extract(
+        in => $Self->{golden_filename},
+        out => "../docs/gen/ex_USERINFO_msg.rst",
+        regexp => qr/-Info:.* User/);
+
+    extract(
+        in => $Self->{golden_filename},
+        out => "../docs/gen/ex_USERFATAL_msg.rst",
+        regexp => qr/USERFATAL/);
+}
 
 ok(1);
 1;

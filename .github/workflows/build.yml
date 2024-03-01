@@ -17,6 +17,8 @@ env:
   CCACHE_COMPRESS: 1
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_LIMIT_MULTIPLE: 0.95
+  INSTALL_DIR: ${{ github.workspace }}/install
+  RELOC_DIR: ${{ github.workspace }}/relloc
 
 defaults:
   run:
@@ -94,6 +96,7 @@ jobs:
         compiler:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
+        reloc: [0]
         suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, vltmt-0, vltmt-1]
         include:
           # Test with GCC 10 on ubuntu-20.04
@@ -102,14 +105,21 @@ jobs:
           - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, suite: dist-vlt-2}
           - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, suite: vltmt-0}
           - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, suite: vltmt-1}
+          # Test relocated installation - on most common platform only
+          - {os: ubuntu-22.04, compiler: { cc: gcc, cxx: g++ }, reloc: 1, suite: dist-vlt-0}
+          - {os: ubuntu-22.04, compiler: { cc: gcc, cxx: g++ }, reloc: 1, suite: dist-vlt-1}
+          - {os: ubuntu-22.04, compiler: { cc: gcc, cxx: g++ }, reloc: 1, suite: dist-vlt-2}
+          - {os: ubuntu-22.04, compiler: { cc: gcc, cxx: g++ }, reloc: 1, suite: vltmt-0}
+          - {os: ubuntu-22.04, compiler: { cc: gcc, cxx: g++ }, reloc: 1, suite: vltmt-1}
     runs-on: ${{ matrix.os }}
-    name: Test | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.suite }}
+    name: Test | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.reloc && 'reloc | ' || '' }} ${{ matrix.suite }}
     env:
       CI_BUILD_STAGE_NAME: test
       CI_RUNS_ON: ${{ matrix.os }}
+      CI_RELOC: ${{ matrix.reloc }}
       CC: ${{ matrix.compiler.cc }}
       CXX: ${{ matrix.compiler.cxx }}
-      CACHE_BASE_KEY: test-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.suite }}
+      CACHE_BASE_KEY: test-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.reloc }}-${{ matrix.suite }}
       CCACHE_MAXSIZE: 100M # Per build per suite (* 5 * 5 = 2500M in total)
       VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
     steps:
