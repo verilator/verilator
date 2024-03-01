@@ -199,9 +199,10 @@ Summary:
 
 .. option:: --compiler <compiler-name>
 
-   Enables workarounds for the specified C++ compiler (list below).
-   This does not change any performance tuning options, but it may
-   in the future.
+   Enables workarounds for the specified C++ compiler (list below).  This
+   does not change any performance tuning options, but it may in the
+   future.  This also does not change default compiler flags; these are
+   determined when Verilator was configured.
 
    clang
      Tune for clang.  This may reduce execution speed as it enables several
