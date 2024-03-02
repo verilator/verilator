@@ -1916,7 +1916,7 @@ void AstNodeDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, generic);
     dumpJsonGen(str);
 }
-void AstNodeDType::dumpSmall(std::ostream& str) const {
+void AstNodeDType::dumpSmall(std::ostream& str) const VL_MT_STABLE {
     str << "(" << (generic() ? "G/" : "") << ((isSigned() && !isDouble()) ? "s" : "")
         << (isNosign() ? "n" : "") << (isDouble() ? "d" : "") << (isString() ? "str" : "");
     if (!isDouble() && !isString()) str << "w" << (widthSized() ? "" : "u") << width();
@@ -2756,4 +2756,23 @@ void AstDelay::dump(std::ostream& str) const {
 void AstDelay::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isCycleDelay);
     dumpJsonGen(str);
+}
+const char* AstAnd::widthMismatch() const VL_MT_STABLE {
+    BROKEN_RTN(lhsp()->widthMin() != rhsp()->widthMin());
+    BROKEN_RTN(lhsp()->widthMin() != widthMin());
+    return nullptr;
+}
+const char* AstOr::widthMismatch() const VL_MT_STABLE {
+    BROKEN_RTN(lhsp()->widthMin() != rhsp()->widthMin());
+    BROKEN_RTN(lhsp()->widthMin() != widthMin());
+    return nullptr;
+}
+const char* AstXor::widthMismatch() const VL_MT_STABLE {
+    BROKEN_RTN(lhsp()->widthMin() != rhsp()->widthMin());
+    BROKEN_RTN(lhsp()->widthMin() != widthMin());
+    return nullptr;
+}
+const char* AstNot::widthMismatch() const VL_MT_STABLE {
+    BROKEN_RTN(lhsp()->widthMin() != widthMin());
+    return nullptr;
 }

@@ -65,6 +65,9 @@ public:
 
     // Wrap This expression into an AstStmtExpr to denote it occurs in statement position
     inline AstStmtExpr* makeStmt();
+    // Returns an error message if widthMin() is not correct otherwise returns nullptr like
+    // broken()
+    virtual const char* widthMismatch() const VL_MT_STABLE { return nullptr; }
 };
 class AstNodeBiop VL_NOT_FINAL : public AstNodeExpr {
     // Binary expression
@@ -3830,6 +3833,7 @@ public:
     bool cleanRhs() const override { return false; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    const char* widthMismatch() const override VL_MT_STABLE;
 };
 class AstMul final : public AstNodeBiComAsv {
 public:
@@ -3924,6 +3928,7 @@ public:
     bool cleanRhs() const override { return false; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    const char* widthMismatch() const override VL_MT_STABLE;
 };
 class AstXor final : public AstNodeBiComAsv {
 public:
@@ -3946,6 +3951,7 @@ public:
     bool cleanRhs() const override { return false; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    const char* widthMismatch() const override VL_MT_STABLE;
 };
 
 // === AstNodeDistBiop ===
@@ -5082,6 +5088,7 @@ public:
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return false; }
     bool sizeMattersLhs() const override { return true; }
+    const char* widthMismatch() const override VL_MT_STABLE;
 };
 class AstNullCheck final : public AstNodeUniop {
     // Return LHS after checking that LHS is non-null

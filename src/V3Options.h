@@ -245,6 +245,7 @@ private:
     bool m_debugProtect = false;    // main switch: --debug-protect
     bool m_debugSelfTest = false;   // main switch: --debug-self-test
     bool m_debugStackCheck = false;  // main switch: --debug-stack-check
+    bool m_debugWidth = false;      // main switch: --debug-width
     bool m_decoration = true;       // main switch: --decoration
     bool m_decorationNodes = false;  // main switch: --decoration=nodes
     bool m_dpiHdrOnly = false;      // main switch: --dpi-hdr-only
@@ -483,6 +484,7 @@ public:
     bool debugProtect() const VL_MT_SAFE { return m_debugProtect; }
     bool debugSelfTest() const { return m_debugSelfTest; }
     bool debugStackCheck() const { return m_debugStackCheck; }
+    bool debugWidth() const VL_PURE { return m_debugWidth; }
     bool decoration() const VL_MT_SAFE { return m_decoration; }
     bool decorationNodes() const VL_MT_SAFE { return m_decorationNodes; }
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }

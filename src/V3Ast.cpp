@@ -1171,6 +1171,31 @@ void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
         default: this->v3fatalSrc("Bad case"); break;
         }
     }
+    if (v3Global.opt.debugWidth() && v3Global.widthMinUsage() == VWidthMinUsage::VERILOG_WIDTH) {
+        if (const AstNodeExpr* const exprp = VN_CAST(this, NodeExpr)) {
+            const char* const whyp = exprp->widthMismatch();
+            if (whyp) {
+                auto dtypeStr = [](const AstNodeExpr* exprp) VL_MT_STABLE {
+                    std::ostringstream ss;
+                    exprp->dtypep()->dumpSmall(ss);
+                    return ss.str();
+                };
+                if (const AstNodeUniop* const uniopp = VN_CAST(exprp, NodeUniop)) {
+                    UASSERT_OBJ(!whyp, uniopp,
+                                "widthMismatch detected " << whyp << "OUT:" << dtypeStr(uniopp)
+                                                          << " LHS:" << dtypeStr(uniopp->lhsp()));
+                } else if (const AstNodeBiop* const biopp = VN_CAST(exprp, NodeBiop)) {
+                    UASSERT_OBJ(!whyp, biopp,
+                                "widthMismatch detected " << whyp << "OUT:" << dtypeStr(biopp)
+                                                          << " LHS:" << dtypeStr(biopp->lhsp())
+                                                          << " RHS:" << dtypeStr(biopp->rhsp()));
+                } else {
+                    UASSERT_OBJ(false, exprp,
+                                "widthMismatch detected " << whyp << " in an unexpected type");
+                }
+            }
+        }
+    }
 }
 
 // cppcheck-suppress unusedFunction  // Debug only

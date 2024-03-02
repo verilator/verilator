@@ -75,16 +75,17 @@ public:
     VWidthMinUsage()
         : m_e{LINT_WIDTH} {}
     // cppcheck-suppress noExplicitConstructor
-    constexpr VWidthMinUsage(en _e)
-        : m_e{_e} {}
+    constexpr VWidthMinUsage(en _e) VL_PURE : m_e{_e} {}
+    constexpr VWidthMinUsage(const VWidthMinUsage& _e) VL_PURE = default;
     explicit VWidthMinUsage(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
+    constexpr VWidthMinUsage& operator=(const VWidthMinUsage& _e) VL_PURE = default;
 };
 constexpr bool operator==(const VWidthMinUsage& lhs, const VWidthMinUsage& rhs) {
     return lhs.m_e == rhs.m_e;
 }
-constexpr bool operator==(const VWidthMinUsage& lhs, VWidthMinUsage::en rhs) {
+constexpr bool operator==(const VWidthMinUsage& lhs, VWidthMinUsage::en rhs) VL_PURE {
     return lhs.m_e == rhs;
 }
 constexpr bool operator==(VWidthMinUsage::en lhs, const VWidthMinUsage& rhs) {
@@ -140,7 +141,7 @@ public:
 
     // ACCESSORS (general)
     AstNetlist* rootp() const VL_MT_SAFE { return m_rootp; }
-    VWidthMinUsage widthMinUsage() const { return m_widthMinUsage; }
+    VWidthMinUsage widthMinUsage() const VL_PURE { return m_widthMinUsage; }
     bool assertDTypesResolved() const { return m_assertDTypesResolved; }
     bool assertScoped() const { return m_assertScoped; }
 
