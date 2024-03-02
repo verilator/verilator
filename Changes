@@ -14,11 +14,10 @@ Verilator 5.023 devel
 **Major:**
 
 * Support 1800-2023 keywords.
-
+* Support 1800-2023 DPI headers, svGetTime/svgGetTimeUnit/svGetTimePrecision methods.
 
 **Minor:**
 
-* Add warning on 'TOP'-named modules (#4935). [Yanglin Xun]
 * Fix invalid cast on string structure creation (#4921). [esynr3z]
 
 

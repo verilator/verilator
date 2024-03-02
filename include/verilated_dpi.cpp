@@ -771,6 +771,36 @@ int svGetCallerInfo(const char** fileNamepp, int* lineNumberp) {
 }
 
 //======================================================================
+// Time
+
+int svGetTime(const svScope scope, svTimeVal* time) {
+    if (VL_UNLIKELY(!time)) return -1;
+    const QData qtime = VL_TIME_Q();
+    VlWide<2> itime;
+    VL_SET_WQ(itime, qtime);
+    time->low = itime[0];
+    time->high = itime[1];
+    return 0;
+}
+
+int svGetTimeUnit(const svScope scope, int32_t* time_unit) {
+    if (VL_UNLIKELY(!time_unit)) return -1;
+    const VerilatedScope* const vscopep = reinterpret_cast<const VerilatedScope*>(scope);
+    if (!vscopep) {  // Null asks for global, not unlikely
+        *time_unit = Verilated::threadContextp()->timeunit();
+    } else {
+        *time_unit = vscopep->timeunit();
+    }
+    return 0;
+}
+
+int svGetTimePrecision(const svScope scope, int32_t* time_precision) {
+    if (VL_UNLIKELY(!time_precision)) return -1;
+    *time_precision = Verilated::threadContextp()->timeprecision();
+    return 0;
+}
+
+//======================================================================
 // Disables
 
 int svIsDisabledState() {
