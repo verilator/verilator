@@ -11,6 +11,11 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 5.023 devel
 ==========================
 
+**Major:**
+
+* Support 1800-2023 keywords.
+
+
 **Minor:**
 
 * Add warning on 'TOP'-named modules (#4935). [Yanglin Xun]

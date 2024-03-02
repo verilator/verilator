@@ -51,6 +51,8 @@ Summary:
 
 .. option:: +1800-2017ext+<ext>
 
+.. option:: +1800-2023ext+<ext>
+
    Specifies the language standard to be used with a specific filename
    extension, <ext>.
 
@@ -349,7 +351,7 @@ Summary:
    Select the language used by default when first processing each
    Verilog file.  The language value must be "VAMS", "1364-1995",
    "1364-2001", "1364-2001-noconfig", "1364-2005", "1800-2005",
-   "1800-2009", "1800-2012", "1800-2017", or "1800+VAMS".
+   "1800-2009", "1800-2012", "1800-2017", "1800-2023", or "1800+VAMS".
 
    Any language associated with a particular file extension (see the
    various +<lang>*\ ext+ options) will be used in preference to the
@@ -362,7 +364,7 @@ Summary:
    ``+<lang>ext+`` options should be used.
 
    If no language is specified, either by this option or ``+<lang>ext+``
-   options, then the latest SystemVerilog language (IEEE 1800-2017) is
+   options, then the latest SystemVerilog language (IEEE 1800-2023) is
    used.
 
 .. option:: +define+<var>=<value>
@@ -1299,12 +1301,12 @@ Summary:
 .. option:: -sv
 
    Specifies SystemVerilog language features should be enabled; equivalent
-   to :vlopt:`--language 1800-2017 <--language>`.  This option is selected
+   to :vlopt:`--language 1800-2023 <--language>`.  This option is selected
    by default; it exists for compatibility with other simulators.
 
 .. option:: +systemverilogext+<ext>
 
-   A synonym for :vlopt:`+1800-2017ext+\<ext\>`.
+   A synonym for :vlopt:`+1800-2023ext+\<ext\>`.
 
 .. option:: --threads <threads>
 

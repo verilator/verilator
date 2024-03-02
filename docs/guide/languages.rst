@@ -62,6 +62,13 @@ Verilator supports the 2017 "for" loop constructs and several cleanups IEEE
 made in 1800-2017.
 
 
+SystemVerilog 2023 (IEEE 1800-2023) Support
+-------------------------------------------
+
+Verilator supports some of the 2023 improvements, including triple-quoted
+string blocks that may include newlines and single quotes.
+
+
 Verilog AMS Support
 -------------------
 
