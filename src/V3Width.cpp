@@ -3188,6 +3188,10 @@ class WidthVisitor final : public VNVisitor {
                                       nodep->name(), withp};
             newp->dtypeFrom(adtypep);
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
+        } else if (nodep->name() == "map") {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Wildcard array 'map' method (IEEE 1800-2023 7.12.5)");
+            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
         } else {
             nodep->v3error("Unknown wildcard associative array method " << nodep->prettyNameQ());
             nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
@@ -3287,6 +3291,10 @@ class WidthVisitor final : public VNVisitor {
                                       nodep->name(), withp};
             newp->dtypep(queueDTypeIndexedBy(adtypep->keyDTypep()));
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
+        } else if (nodep->name() == "map") {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Associative array 'map' method (IEEE 1800-2023 7.12.5)");
+            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
         } else {
             nodep->v3error("Unknown built-in associative array method " << nodep->prettyNameQ());
             nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
@@ -3379,6 +3387,10 @@ class WidthVisitor final : public VNVisitor {
                                       nodep->name(), withp};
             newp->dtypep(newp->findQueueIndexDType());
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
+        } else if (nodep->name() == "map") {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Array 'map' method (IEEE 1800-2023 7.12.5)");
+            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
         }
         return newp;
     }
