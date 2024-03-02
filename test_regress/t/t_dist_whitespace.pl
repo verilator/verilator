@@ -10,6 +10,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(dist => 1);
 
+my $root = "..";
+
 if (!-r "$root/.git") {
     skip("Not in a git repository");
 } else {
