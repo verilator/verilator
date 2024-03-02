@@ -116,7 +116,7 @@ class LinkResolveVisitor final : public VNVisitor {
             if (nodep->name() == "randomize" || nodep->name() == "srandom") {
                 nodep->v3error(nodep->prettyNameQ()
                                << " is a predefined class method; redefinition not allowed"
-                                  " (IEEE 1800-2017 18.6.3)");
+                                  " (IEEE 1800-2023 18.6.3)");
             }
             nodep->classMethod(true);
         }

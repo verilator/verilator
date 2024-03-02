@@ -97,7 +97,7 @@ void V3Number::v3errorEndFatal(const std::ostringstream& str) const
 
 V3Number::V3Number(VerilogStringLiteral, AstNode* nodep, const string& str) {
     // Create a number using a verilog string as the value, thus 8 bits per character.
-    if (str.empty()) {  // IEEE 1800-2017 11.10.3 "" = "\000"
+    if (str.empty()) {  // IEEE 1800-2023 11.10.3 "" = "\000"
         init(nodep, 8);
     } else {
         init(nodep, std::max<int>(str.length() * 8, 1));
@@ -165,7 +165,7 @@ void V3Number::create(const char* sourcep) {
                 || std::atoi(widthn.c_str()) > v3Global.opt.maxNumWidth()) {
                 // atoi might convert large number to negative, so can't tell which
                 v3error("Unsupported: Width of number exceeds implementation limit: "
-                        << sourcep << "  (IEEE 1800-2017 6.9.1)");
+                        << sourcep << "  (IEEE 1800-2023 6.9.1)");
                 width(v3Global.opt.maxNumWidth(), true);
             } else {
                 width(std::atoi(widthn.c_str()), true);
@@ -209,7 +209,7 @@ void V3Number::create(const char* sourcep) {
     }
     if (userSized && m_data.m_autoExtend) {
         v3error("Syntax error: size cannot be provided with '0/'1/'x/'z: "
-                << sourcep << " (IEEE 1800-2017 5.7.1)");
+                << sourcep << " (IEEE 1800-2023 5.7.1)");
     }
 
     int obit = 0;  // Start at LSB
@@ -253,7 +253,7 @@ void V3Number::create(const char* sourcep) {
                                 << ((!sized() && !warned++) ? (
                                         V3Error::warnMore() + "... As that number was unsized"
                                         + " ('d...) it is limited to 32 bits"
-                                          " (IEEE 1800-2017 5.7.1)\n"
+                                          " (IEEE 1800-2023 5.7.1)\n"
                                         + V3Error::warnMore() + "... Suggest adding a size to it.")
                                                             : ""));
                         while (*(cp + 1)) cp++;  // Skip ahead so don't get multiple warnings
@@ -1554,7 +1554,7 @@ V3Number& V3Number::opAtoN(const V3Number& lhs, int base) {
     std::string str = lhs.toString();  // new instance to edit later
     if (base == AstAtoN::ATOREAL) return setDouble(std::atof(str.c_str()));
 
-    // IEEE 1800-2017 6.16.9 says '_' may exist.
+    // IEEE 1800-2023 6.16.9 says '_' may exist.
     str.erase(std::remove(str.begin(), str.end(), '_'), str.end());
 
     errno = 0;

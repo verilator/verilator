@@ -274,7 +274,7 @@ class LinkJumpVisitor final : public VNVisitor {
         iterateChildren(nodep);
         const AstFunc* const funcp = VN_CAST(m_ftaskp, Func);
         if (m_inFork) {
-            nodep->v3error("Return isn't legal under fork (IEEE 1800-2017 9.2.3)");
+            nodep->v3error("Return isn't legal under fork (IEEE 1800-2023 9.2.3)");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         } else if (!m_ftaskp) {

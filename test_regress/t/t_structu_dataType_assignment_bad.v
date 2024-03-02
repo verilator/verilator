@@ -9,7 +9,7 @@
 module top();
 
 
-  typedef struct { // IEEE 1800-2017 10.9.2
+  typedef struct { // IEEE 1800-2023 10.9.2
     int A;
     struct {
     int B, C;

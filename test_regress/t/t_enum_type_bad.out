@@ -1,15 +1,15 @@
-%Error-ENUMVALUE: t/t_enum_type_bad.v:28:11: Implicit conversion to enum 't.e_t' from 'logic[31:0]' (IEEE 1800-2017 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:28:11: Implicit conversion to enum 't.e_t' from 'logic[31:0]' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
    28 |       e = 1;   
       |           ^
                   ... For error description see https://verilator.org/warn/ENUMVALUE?v=latest
-%Error-ENUMVALUE: t/t_enum_type_bad.v:29:11: Implicit conversion to enum 't.o_t' from 't.e_t' (IEEE 1800-2017 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:29:11: Implicit conversion to enum 't.o_t' from 't.e_t' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
    29 |       o = e;   
       |           ^
-%Error-ENUMVALUE: t/t_enum_type_bad.v:35:15: Implicit conversion to enum 't.o_t' from 'ENUMDTYPE 't.e_t'' (IEEE 1800-2017 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:35:15: Implicit conversion to enum 't.o_t' from 'ENUMDTYPE 't.e_t'' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
    35 |       o = str.m_e;   

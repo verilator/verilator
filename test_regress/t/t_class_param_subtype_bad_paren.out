@@ -1,4 +1,4 @@
-%Error: t/t_class_param_subtype.v:32:5: Reference to parameterized class without #() (IEEE 1800-2017 8.25.1)
+%Error: t/t_class_param_subtype.v:32:5: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
                                       : ... Suggest use 'CParam#()'
    32 |     CParam::type_t val_0 = 100;
       |     ^~~~~~

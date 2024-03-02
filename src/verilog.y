@@ -5876,7 +5876,7 @@ assertOrAssume<fl>:
 
 final_zero:                     // IEEE: part of deferred_immediate_assertion_statement
                 '#' yaINTNUM
-                        { if ($2->isNeqZero()) { $<fl>2->v3error("Deferred assertions must use '#0' (IEEE 1800-2017 16.4)"); } }
+                        { if ($2->isNeqZero()) { $<fl>2->v3error("Deferred assertions must use '#0' (IEEE 1800-2023 16.4)"); } }
         //                      // 1800-2012:
         |       yFINAL                                                  { }
         ;

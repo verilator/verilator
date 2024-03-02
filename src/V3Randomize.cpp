@@ -401,7 +401,7 @@ class RandomizeVisitor final : public VNVisitor {
             ifsp = newifp;
         }
         AstDisplay* dispp = new AstDisplay{
-            fl, VDisplayType::DT_ERROR, "All randcase items had 0 weights (IEEE 1800-2017 18.16)",
+            fl, VDisplayType::DT_ERROR, "All randcase items had 0 weights (IEEE 1800-2023 18.16)",
             nullptr, nullptr};
         UASSERT_OBJ(m_modp, nodep, "randcase not under module");
         dispp->fmtp()->timeunit(m_modp->timeunit());

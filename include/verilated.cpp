@@ -1941,7 +1941,7 @@ std::string VL_SUBSTR_N(const std::string& lhs, IData rhs, IData ths) VL_PURE {
 
 IData VL_ATOI_N(const std::string& str, int base) VL_PURE {
     std::string str_mod = str;
-    // IEEE 1800-2017 6.16.9 says '_' may exist.
+    // IEEE 1800-2023 6.16.9 says '_' may exist.
     str_mod.erase(std::remove(str_mod.begin(), str_mod.end(), '_'), str_mod.end());
 
     errno = 0;
@@ -2106,7 +2106,7 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
 
     if (VL_UNLIKELY(m_end != ~0ULL && m_addr <= m_end && !m_anyAddr)) {
         VL_WARN_MT(m_filename.c_str(), m_linenum, "",
-                   "$readmem file ended before specified final address (IEEE 1800-2017 21.4)");
+                   "$readmem file ended before specified final address (IEEE 1800-2023 21.4)");
     }
 
     return false;  // EOF
@@ -3234,7 +3234,7 @@ void* VerilatedScope::exportFindNullError(int funcnum) VL_MT_SAFE {
     // Slowpath - Called only when find has failed
     const std::string msg = ("Testbench C called '"s + VerilatedImp::exportName(funcnum)
                              + "' but scope wasn't set, perhaps due to dpi import call without "
-                             + "'context', or missing svSetScope. See IEEE 1800-2017 35.5.3.");
+                             + "'context', or missing svSetScope. See IEEE 1800-2023 35.5.3.");
     VL_FATAL_MT("unknown", 0, "", msg.c_str());
     return nullptr;
 }

@@ -224,7 +224,7 @@ Scheduling
 ----------
 
 Verilator implements the Active and NBA regions of the SystemVerilog scheduling
-model as described in IEEE 1800-2017 chapter 4, and in particular sections
+model as described in IEEE 1800-2023 chapter 4, and in particular sections
 4.5 and Figure 4.1. The static (Verilation time) scheduling of SystemVerilog
 processes is performed by code in the ``V3Sched`` namespace. The single
 entry point to the scheduling algorithm is ``V3Sched::schedule``. Some
@@ -312,7 +312,7 @@ Scheduling of clocked and combinational logic
 For performance, clocked and combinational logic needs to be ordered.
 Conceptually this minimizes the iterations through the evaluation loop
 presented in the reference algorithm in the SystemVerilog standard (IEEE
-1800-2017 section 4.5), by evaluating logic constructs in data-flow order.
+1800-2023 section 4.5), by evaluating logic constructs in data-flow order.
 Without going into a lot of detail here, accept that well thought out ordering
 is crucial to good simulation performance, and also enables further
 optimizations later on.
@@ -407,7 +407,7 @@ triggered due to a combinational signal change from the previous evaluation
 pass, and a combinational loop settling due to hybrid logic, if the clocked
 logic reads the not yet settled combinationally driven signal. Such a race
 is indeed possible, but our evaluation is consistent with the SystemVerilog
-scheduling semantics (IEEE 1800-2017 chapter 4), and therefore any program
+scheduling semantics (IEEE 1800-2023 chapter 4), and therefore any program
 that exhibits such a race has non-deterministic behavior according to the
 SystemVerilog semantics, so we accept this.
 
@@ -1754,11 +1754,11 @@ This offloading allows, for example, to use byte-to-byte comparisons of AST dump
 
   {"files": {
     /* Map id to filename, and other metadata */
-    "d": {"filename":"/home/ant/tmp/verilator/include/verilated_std.sv", "realpath":"/home/ant/tmp/verilator/include/verilated_std.sv", "language":"1800-2017"},
-    "a": {"filename":"<built-in>", "realpath":"<built-in>", "language":"1800-2017"},
-    "b": {"filename":"<command-line>", "realpath":"<command-line>", "language":"1800-2017"},
-    "c": {"filename":"input.vc", "realpath":"/home/ant/tmp/verilator/test_regress/input.vc", "language":"1800-2017"},
-    "e": {"filename":"t/t_EXAMPLE.v", "realpath":"/home/ant/tmp/verilator/test_regress/t/t_EXAMPLE.v", "language":"1800-2017"}
+    "d": {"filename":"/home/ant/tmp/verilator/include/verilated_std.sv", "realpath":"/home/ant/tmp/verilator/include/verilated_std.sv", "language":"1800-2023"},
+    "a": {"filename":"<built-in>", "realpath":"<built-in>", "language":"1800-2023"},
+    "b": {"filename":"<command-line>", "realpath":"<command-line>", "language":"1800-2023"},
+    "c": {"filename":"input.vc", "realpath":"/home/ant/tmp/verilator/test_regress/input.vc", "language":"1800-2023"},
+    "e": {"filename":"t/t_EXAMPLE.v", "realpath":"/home/ant/tmp/verilator/test_regress/t/t_EXAMPLE.v", "language":"1800-2023"}
    },"pointers": {
     /* Map id to real address */
     "(AG)": "0x562997289180",
@@ -1907,21 +1907,21 @@ Verilator ideally would support all of IEEE, and has the goal to get close
 to full support. However the following IEEE sections and features are not
 anticipated to be ever implemented for the reasons indicated.
 
-IEEE 1800-2017 3.3 modules within modules
+IEEE 1800-2023 3.3 modules within modules
     Little/no tool support, and arguably not a good practice.
-IEEE 1800-2017 6.12 "shortreal"
+IEEE 1800-2023 6.12 "shortreal"
     Little/no tool support, and easily promoted to real.
-IEEE 1800-2017 11.11 Min, typ, max
+IEEE 1800-2023 11.11 Min, typ, max
     No SDF support, so will always use typical.
-IEEE 1800-2017 20.16 Stochastic analysis
+IEEE 1800-2023 20.16 Stochastic analysis
     Little industry use.
-IEEE 1800-2017 20.17 PLA modeling
+IEEE 1800-2023 20.17 PLA modeling
     Little industry use and outdated technology.
-IEEE 1800-2017 31 Timing checks
+IEEE 1800-2023 31 Timing checks
     No longer relevant with static timing analysis tools.
-IEEE 1800-2017 32 SDF annotation
+IEEE 1800-2023 32 SDF annotation
     No longer relevant with static timing analysis tools.
-IEEE 1800-2017 33 Config
+IEEE 1800-2023 33 Config
     Little industry use.
 
 

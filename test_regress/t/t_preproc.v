@@ -164,7 +164,7 @@ endmodule
 //"
 
 //======================================================================
-// Check IEEE1800-2017 `pragma protect encrypted modules
+// Check IEEE 1800-2017 `pragma protect encrypted modules
 module t_lint_pragma_protected;
 
 `pragma protect begin_protected

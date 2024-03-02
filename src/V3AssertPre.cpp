@@ -116,7 +116,7 @@ private:
                     AstNode* const pinp = argp->exprp()->unlinkFrBack();
                     replaceVarRefsWithExprRecurse(propExprp, portp, pinp);
                 }
-                // Handle case with 2 disable iff statement (IEEE 1800-2017 16.12.1)
+                // Handle case with 2 disable iff statement (IEEE 1800-2023 16.12.1)
                 if (nodep->disablep() && propExprp->disablep()) {
                     nodep->v3error("disable iff expression before property call and in its "
                                    "body is not legal");
@@ -160,7 +160,7 @@ private:
         FileLine* const flp = nodep->fileline();
         V3Const::constifyEdit(nodep->skewp());
         if (!VN_IS(nodep->skewp(), Const)) {
-            nodep->skewp()->v3error("Skew must be constant (IEEE 1800-2017 14.4)");
+            nodep->skewp()->v3error("Skew must be constant (IEEE 1800-2023 14.4)");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
@@ -176,7 +176,7 @@ private:
             skewedRefp->user1(true);
             AstAssign* const assignp = new AstAssign{flp, exprp->cloneTreePure(false), skewedRefp};
             if (skewp->isZero()) {
-                // Drive the var in Re-NBA (IEEE 1800-2017 14.16)
+                // Drive the var in Re-NBA (IEEE 1800-2023 14.16)
                 m_clockingp->addNextHere(new AstAlwaysReactive{
                     flp, new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, assignp});
             } else if (skewp->fileline()->timingOn()) {
@@ -206,12 +206,12 @@ private:
             AstVarRef* const refp = new AstVarRef{flp, varp, VAccess::WRITE};
             refp->user1(true);
             if (skewp->num().is1Step()) {
-                // Assign the sampled expression to the clockvar (IEEE 1800-2017 14.13)
+                // Assign the sampled expression to the clockvar (IEEE 1800-2023 14.13)
                 AstSampled* const sampledp = new AstSampled{flp, exprp->cloneTreePure(false)};
                 sampledp->dtypeFrom(exprp);
                 m_clockingp->addNextHere(new AstAssignW{flp, refp, sampledp});
             } else if (skewp->isZero()) {
-                // #0 means the var has to be sampled in Observed (IEEE 1800-2017 14.13)
+                // #0 means the var has to be sampled in Observed (IEEE 1800-2023 14.13)
                 AstAssign* const assignp = new AstAssign{flp, refp, exprp->cloneTreePure(false)};
                 m_clockingp->addNextHere(new AstAlwaysObserved{
                     flp, new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, assignp});
@@ -256,13 +256,13 @@ private:
         if (!nodep->isCycleDelay()) {
             if (m_inSynchDrive) {
                 nodep->v3error("Only cycle delays can be used in synchronous drives"
-                               " (IEEE 1800-2017 14.16)");
+                               " (IEEE 1800-2023 14.16)");
             }
             return;
         }
         if (m_inAssign && !m_inSynchDrive) {
             nodep->v3error("Cycle delays not allowed as intra-assignment delays"
-                           " (IEEE 1800-2017 14.11)");
+                           " (IEEE 1800-2023 14.11)");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
@@ -277,7 +277,7 @@ private:
         }
         if (!m_defaultClockingp) {
             nodep->v3error("Usage of cycle delays requires default clocking"
-                           " (IEEE 1800-2017 14.11)");
+                           " (IEEE 1800-2023 14.11)");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
@@ -302,24 +302,24 @@ private:
     void visit(AstSenTree* nodep) override {
         if (m_inSynchDrive) {
             nodep->v3error("Event controls cannot be used in "
-                           "synchronous drives (IEEE 1800-2017 14.16)");
+                           "synchronous drives (IEEE 1800-2023 14.16)");
         }
     }
     void visit(AstNodeVarRef* nodep) override {
         if (AstClockingItem* const itemp = VN_CAST(nodep->varp()->user1p(), ClockingItem)) {
             if (nodep->access().isReadOrRW() && !nodep->user1()
                 && itemp->direction() == VDirection::OUTPUT) {
-                nodep->v3error("Cannot read from output clockvar (IEEE 1800-2017 14.3)");
+                nodep->v3error("Cannot read from output clockvar (IEEE 1800-2023 14.3)");
             }
             if (nodep->access().isWriteOrRW()) {
                 if (itemp->direction() == VDirection::OUTPUT) {
                     if (!m_inAssignDlyLhs) {
                         nodep->v3error("Only non-blocking assignments can write "
-                                       "to clockvars (IEEE 1800-2017 14.16)");
+                                       "to clockvars (IEEE 1800-2023 14.16)");
                     }
                     if (m_inAssign) m_inSynchDrive = true;
                 } else if (!nodep->user1() && itemp->direction() == VDirection::INPUT) {
-                    nodep->v3error("Cannot write to input clockvar (IEEE 1800-2017 14.3)");
+                    nodep->v3error("Cannot write to input clockvar (IEEE 1800-2023 14.3)");
                 }
             }
         }
@@ -463,7 +463,7 @@ private:
             if (clockingp->isDefault()) {
                 if (m_defaultClockingp) {
                     clockingp->v3error("Only one default clocking block allowed per module"
-                                       " (IEEE 1800-2017 14.12)");
+                                       " (IEEE 1800-2023 14.12)");
                 }
                 m_defaultClockingp = clockingp;
             }

@@ -331,7 +331,7 @@ void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
     UINFO(4, "DEFINE '" << name << "' as '" << value << "' params '" << params << "'" << endl);
     if (!V3LanguageWords::isKeyword("`"s + name).empty()) {
         fl->v3error("Attempting to define built-in directive: '`" << name
-                                                                  << "' (IEEE 1800-2017 22.5.1)");
+                                                                  << "' (IEEE 1800-2023 22.5.1)");
     } else {
         if (defExists(name)) {
             if (!(defValue(name) == value

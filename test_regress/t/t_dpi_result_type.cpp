@@ -48,7 +48,7 @@ typedef uint64_t sv_longint_unsigned_t;
 // Implementations of imported functions
 //======================================================================
 
-// Basic types as per IEEE 1800-2017 35.5.5
+// Basic types as per IEEE 1800-2023 35.5.5
 void i_void() {
     static int n = 0;
     printf("i_void %d\n", n);
@@ -286,7 +286,7 @@ void check_exports() {
 
     e_void();
 
-    // Basic types as per IEEE 1800-2017 35.5.5
+    // Basic types as per IEEE 1800-2023 35.5.5
     if (e_byte() != 10 + n) stop();
     if (e_byte_unsigned() != 20 + n) stop();
     if (e_shortint() != 30 + n) stop();

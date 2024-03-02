@@ -1705,7 +1705,7 @@ public:
     T_Class* operator->() const { return m_objp; }
     // For 'if (ptr)...'
     operator bool() const { return m_objp; }
-    // In SV A == B iff both are handles to the same object (IEEE 1800-2017 8.4)
+    // In SV A == B iff both are handles to the same object (IEEE 1800-2023 8.4)
     template <typename T_OtherClass>
     bool operator==(const VlClassRef<T_OtherClass>& rhs) const {
         return m_objp == rhs.m_objp;

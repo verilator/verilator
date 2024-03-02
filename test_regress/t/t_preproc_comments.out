@@ -281,7 +281,7 @@ endmodule
 
 `line 166 "t/t_preproc.v" 0
 //====================================================================== 
-// Check IEEE1800-2017 `pragma protect encrypted modules 
+// Check IEEE 1800-2017 `pragma protect encrypted modules 
 module t_lint_pragma_protected;
 
 `line 170 "t/t_preproc.v" 0

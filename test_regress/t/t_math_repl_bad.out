@@ -1,4 +1,4 @@
-%Error-ZEROREPL: t/t_math_repl_bad.v:12:14: Replication value of 0 is only legal under a concatenation (IEEE 1800-2017 11.4.12.1)
+%Error-ZEROREPL: t/t_math_repl_bad.v:12:14: Replication value of 0 is only legal under a concatenation (IEEE 1800-2023 11.4.12.1)
                                           : ... note: In instance 't'
    12 |       o = {0 {1'b1}};   
       |              ^

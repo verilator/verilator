@@ -8,17 +8,17 @@
 
 module top();
 
-  typedef struct { // IEEE 1800-2017 5.10
+  typedef struct { // IEEE 1800-2023 5.10
     int a;
     shortint b;
   } ab_struct;
 
-  typedef struct { // IEEE 1800-2017 10.9.2
+  typedef struct { // IEEE 1800-2023 10.9.2
   int x;
   int y;
   } st_struct;
 
-  typedef struct { // IEEE 1800-2017 10.9.2
+  typedef struct { // IEEE 1800-2023 10.9.2
     logic [7:0] a;
     bit b;
     bit signed [31:0] c;
@@ -26,7 +26,7 @@ module top();
   } sa_struct;
 
 
-  typedef struct { // IEEE 1800-2017 10.9.2
+  typedef struct { // IEEE 1800-2023 10.9.2
     int A;
     struct {
     int B, C;
@@ -34,7 +34,7 @@ module top();
   } DEF_struct;
 
 
-  typedef struct { // IEEE 1800-2017 10.9.2
+  typedef struct { // IEEE 1800-2023 10.9.2
     int A;
     struct {
       int B, C;

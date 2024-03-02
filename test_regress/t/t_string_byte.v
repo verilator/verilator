@@ -9,7 +9,7 @@
 
 module t(/*AUTOARG*/);
 
-   // Unpacked byte from string IEEE 1800-2017 5.9
+   // Unpacked byte from string IEEE 1800-2023 5.9
    byte bh[3:0] = "hi2";
    byte bl[0:3] = "lo2";
 

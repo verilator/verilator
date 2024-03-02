@@ -98,7 +98,7 @@ private:
                 UINFO(9, "defclass " << defClassp << endl);
                 nodep->v3warn(ENCAPSULATED, nodep->prettyNameQ()
                                                 << " is hidden as " << how
-                                                << " within this context (IEEE 1800-2017 8.18)\n"
+                                                << " within this context (IEEE 1800-2023 8.18)\n"
                                                 << nodep->warnContextPrimary() << "\n"
                                                 << nodep->warnOther()
                                                 << "... Location of definition\n"
@@ -175,7 +175,7 @@ private:
         if (nodep->classMethod() && nodep->pureVirtual() && classp && !classp->isInterfaceClass()
             && !classp->isVirtual()) {
             nodep->v3error(
-                "Illegal to have 'pure virtual' in non-virtual class (IEEE 1800-2017 8.21)");
+                "Illegal to have 'pure virtual' in non-virtual class (IEEE 1800-2023 8.21)");
         }
     }
     void visit(AstNodeVarRef* nodep) override {

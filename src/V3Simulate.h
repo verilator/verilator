@@ -503,13 +503,13 @@ private:
         }
         if (nodep->dpiImport()) {
             if (m_params) {
-                nodep->v3error("Constant function may not be DPI import (IEEE 1800-2017 13.4.3)");
+                nodep->v3error("Constant function may not be DPI import (IEEE 1800-2023 13.4.3)");
             }
             clearOptimizable(nodep, "DPI import functions aren't simulatable");
         }
         if (nodep->underGenerate()) {
             nodep->v3error(
-                "Constant function may not be declared under generate (IEEE 1800-2017 13.4.3)");
+                "Constant function may not be declared under generate (IEEE 1800-2023 13.4.3)");
             clearOptimizable(nodep, "Constant function called under generate");
         }
         checkNodeInfo(nodep);

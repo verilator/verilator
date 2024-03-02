@@ -74,7 +74,8 @@ Verilog AMS Support
 
 Verilator implements a very small subset of Verilog AMS (Verilog Analog and
 Mixed-Signal Extensions) with the subset corresponding to those VMS
-keywords with near-equivalents in Verilog 2005 or SystemVerilog 2017.
+keywords with near-equivalents in Verilog IEEE 1364 or SystemVerilog
+IEEE 1800.
 
 AMS parsing is enabled with :vlopt:`--language VAMS <--language>` or
 :vlopt:`--language 1800+VAMS <--language>`.

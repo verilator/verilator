@@ -1,8 +1,8 @@
-%Error: t/t_lint_edge_real_bad.v:19:22: Edge event control not legal on real type (IEEE 1800-2017 6.12.1)
+%Error: t/t_lint_edge_real_bad.v:19:22: Edge event control not legal on real type (IEEE 1800-2023 6.12.1)
                                       : ... note: In instance 't'
    19 |    always @ (posedge rbad) $stop;
       |                      ^~~~
-%Error: t/t_lint_edge_real_bad.v:20:22: Edge event control not legal on non-integral type (IEEE 1800-2017 9.4.2)
+%Error: t/t_lint_edge_real_bad.v:20:22: Edge event control not legal on non-integral type (IEEE 1800-2023 9.4.2)
                                       : ... note: In instance 't'
    20 |    always @ (posedge ebad) $stop;
       |                      ^~~~

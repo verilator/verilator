@@ -224,7 +224,7 @@ class ForceConvertVisitor final : public VNVisitor {
         transformWritenVarScopes(resetEnp->lhsp(), [this](AstVarScope* vscp) {
             return getForceComponents(vscp).m_enVscp;
         });
-        // IEEE 1800-2017 10.6.2: If this is a net, and not a variable, then reset the read
+        // IEEE 1800-2023 10.6.2: If this is a net, and not a variable, then reset the read
         // signal directly as well, in case something in the same process reads it later. Also, if
         // it is a variable, and not a net, set the original signal to the forced value, as it
         // needs to retain the forced value until the next procedural update, which might happen on

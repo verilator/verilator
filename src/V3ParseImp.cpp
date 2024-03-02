@@ -636,7 +636,7 @@ void V3ParseImp::tokenPipelineSym() {
                     if (!warned++) {
                         yylval.fl->v3warn(PKGNODECL, "Package/class '" + *yylval.strp
                                                          + "' not found, and needs to be "
-                                                           "predeclared (IEEE 1800-2017 26.3)");
+                                                           "predeclared (IEEE 1800-2023 26.3)");
                     }
                 }
             } else if (token == yaID__LEX) {

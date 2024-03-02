@@ -1144,7 +1144,7 @@ class TaskVisitor final : public VNVisitor {
                     }
                     if (bdtypep->isDpiLogicVec()) {
                         portp->v3error("DPI function may not return a 4-state type "
-                                       "other than a single 'logic' (IEEE 1800-2017 35.5.5)");
+                                       "other than a single 'logic' (IEEE 1800-2023 35.5.5)");
                     }
                 }
             } else if (nodep->taskPublic()) {
@@ -1460,7 +1460,7 @@ class TaskVisitor final : public VNVisitor {
             if (nodep->taskp()->isFunction()) {
                 nodep->v3warn(
                     IGNOREDRETURN,
-                    "Ignoring return value of non-void function (IEEE 1800-2017 13.4.1)");
+                    "Ignoring return value of non-void function (IEEE 1800-2023 13.4.1)");
             }
             nodep->unlinkFrBack();
             VL_DO_DANGLING(nodep->deleteTree(), nodep);

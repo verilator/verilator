@@ -1,4 +1,4 @@
-%Error: t/t_lint_const_func_gen_bad.v:11:30: Constant function may not be declared under generate (IEEE 1800-2017 13.4.3)
+%Error: t/t_lint_const_func_gen_bad.v:11:30: Constant function may not be declared under generate (IEEE 1800-2023 13.4.3)
                                            : ... note: In instance 't'
    11 |       function automatic bit constFunc();
       |                              ^~~~~~~~~

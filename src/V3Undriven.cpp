@@ -380,7 +380,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                 && !nodep->varp()->isDeclTyped()  //
                 && !nodep->varp()->isClassMember() && !nodep->varp()->isFuncLocal()) {
                 nodep->v3warn(PROCASSWIRE, "Procedural assignment to wire, perhaps intended var"
-                                               << " (IEEE 1800-2017 6.5): "
+                                               << " (IEEE 1800-2023 6.5): "
                                                << nodep->prettyNameQ());
             }
             if (m_inContAssign && !nodep->varp()->varType().isContAssignable()
@@ -412,7 +412,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                         nodep->v3warn(
                             MULTIDRIVEN,
                             "Variable written to in always_comb also written by other process"
-                                << " (IEEE 1800-2017 9.2.2.2): " << nodep->prettyNameQ() << '\n'
+                                << " (IEEE 1800-2023 9.2.2.2): " << nodep->prettyNameQ() << '\n'
                                 << nodep->warnOther() << '\n'
                                 << nodep->warnContextPrimary() << '\n'
                                 << entryp->getNodep()->warnOther()
@@ -422,7 +422,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                     if (!m_alwaysCombp && entryp->isDrivenAlwaysCombWhole()) {
                         nodep->v3warn(MULTIDRIVEN,
                                       "Variable also written to in always_comb"
-                                          << " (IEEE 1800-2017 9.2.2.2): " << nodep->prettyNameQ()
+                                          << " (IEEE 1800-2023 9.2.2.2): " << nodep->prettyNameQ()
                                           << '\n'
                                           << nodep->warnOther() << '\n'
                                           << nodep->warnContextPrimary() << '\n'

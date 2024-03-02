@@ -2,11 +2,11 @@
                             : ... note: In instance 't'
    16 |       if ($past(d, num)) $stop;   
       |                    ^~~
-%Error: t/t_past_bad.v:16:11: $past tick value must be constant (IEEE 1800-2017 16.9.3)
+%Error: t/t_past_bad.v:16:11: $past tick value must be constant (IEEE 1800-2023 16.9.3)
                             : ... note: In instance 't'
    16 |       if ($past(d, num)) $stop;   
       |           ^~~~~
-%Error: t/t_past_bad.v:17:20: $past tick value must be >= 1 (IEEE 1800-2017 16.9.3)
+%Error: t/t_past_bad.v:17:20: $past tick value must be >= 1 (IEEE 1800-2023 16.9.3)
                             : ... note: In instance 't'
    17 |       if ($past(d, 0)) $stop;   
       |                    ^

@@ -358,7 +358,7 @@ class LinkCellsVisitor final : public VNVisitor {
             nextp = VN_AS(pinp->nextp(), Pin);
             if (pinp->svDotName()) pinDotName = true;
             if (pinp->dotStar()) {
-                if (pinStar) pinp->v3error("Duplicate .* in an instance (IEEE 1800-2017 23.3.2)");
+                if (pinStar) pinp->v3error("Duplicate .* in an instance (IEEE 1800-2023 23.3.2)");
                 pinStar = true;
                 // Done with this fake pin
                 VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
@@ -379,7 +379,7 @@ class LinkCellsVisitor final : public VNVisitor {
             for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
                 if ((pinStar || pinDotName) && pinp->name().substr(0, 11) == "__pinNumber") {
                     pinp->v3error("Mixing positional and .*/named instantiation connection"
-                                  " (IEEE 1800-2017 23.3.2)");
+                                  " (IEEE 1800-2023 23.3.2)");
                 }
                 if (!pinp->exprp()) {
                     if (pinp->name().substr(0, 11) == "__pinNumber") {

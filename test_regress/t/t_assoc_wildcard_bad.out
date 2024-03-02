@@ -66,7 +66,7 @@
                                      : ... note: In instance 't'
    41 |       a.find_last_index;   
       |         ^~~~~~~~~~~~~~~
-%Error: t/t_assoc_wildcard_bad.v:43:8: Wildcard index must be integral (IEEE 1800-2017 7.8.1)
+%Error: t/t_assoc_wildcard_bad.v:43:8: Wildcard index must be integral (IEEE 1800-2023 7.8.1)
                                      : ... note: In instance 't'
    43 |       a[x] = "bad";
       |        ^

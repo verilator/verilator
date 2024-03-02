@@ -161,8 +161,8 @@ List Of Warnings
 .. option:: BADSTDPRAGMA
 
    An error that a pragma is badly formed, for pragmas defined by IEEE
-   1800-2017.  For example, an empty pragma line, or an incorrectly used
-   'pragma protect'.  Third-party pragmas not defined by IEEE 1800-2017 are
+   1800-2023.  For example, an empty pragma line, or an incorrectly used
+   'pragma protect'.  Third-party pragmas not defined by IEEE 1800-2023 are
    ignored.
 
 
@@ -283,7 +283,7 @@ List Of Warnings
    Unique case statements that select on an enumerated variable, where all
    of the enumerated values are covered by case items, are considered
    complete even if the case statement does not cover illegal
-   non-enumerated values (IEEE 1800-2017 12.5.3).  To check that illegal
+   non-enumerated values (IEEE 1800-2023 12.5.3).  To check that illegal
    values are not hit, use :vlopt:`--assert`.
 
    Ignoring this warning will only suppress the lint check; it will
@@ -479,7 +479,7 @@ List Of Warnings
 
    .. code-block::
 
-         %Warning-DEFPARAM: example.v:5:15: defparam is deprecated (IEEE 1800-2017 C.4.1)
+         %Warning-DEFPARAM: example.v:5:15: defparam is deprecated (IEEE 1800-2023 C.4.1)
                                           : ... Suggest use instantiation with #(.MY_PARAM(...etc...))
 
    To repair use :code:`#(.PARAMETER(...))` syntax. Repaired Example:
@@ -707,7 +707,7 @@ List Of Warnings
 
    .. code-block::
 
-         %Warning-GENUNNAMED: example.v:2:9: Unnamed generate block (IEEE 1800-2017 27.6)
+         %Warning-GENUNNAMED: example.v:2:9: Unnamed generate block (IEEE 1800-2023 27.6)
 
    To fix this assign a label (often with the naming convention prefix of
    :code:`gen_` or :code:`g_`), for example:
@@ -763,7 +763,7 @@ List Of Warnings
 
    .. code-block::
 
-         %Warning-IGNOREDRETURN: example.v:5:9: Ignoring return value of non-void function (IEEE 1800-2017 13.4.1)
+         %Warning-IGNOREDRETURN: example.v:5:9: Ignoring return value of non-void function (IEEE 1800-2023 13.4.1)
 
    The portable way to suppress this warning (in SystemVerilog) is to use a
    void cast, for example:
@@ -1328,7 +1328,7 @@ List Of Warnings
    .. TODO better example
 
    An error that a package/class appears to have been referenced that has not
-   yet been declared.  According to IEEE 1800-2017 26.3, all packages must
+   yet been declared.  According to IEEE 1800-2023 26.3, all packages must
    be declared before being used.
 
 
@@ -1707,7 +1707,7 @@ List Of Warnings
 
    .. code-block::
 
-         %Warning-TIMESCALEMOD: example.v:1:8: Timescale missing on this module as other modules have it (IEEE 1800-2017 3.14.2.3)
+         %Warning-TIMESCALEMOD: example.v:1:8: Timescale missing on this module as other modules have it (IEEE 1800-2023 3.14.2.3)
 
    Recommend using :vlopt:`--timescale` argument, or in front of all
    modules use:
@@ -1949,7 +1949,7 @@ List Of Warnings
 .. option:: USERERROR
 
    A SystemVerilog elaboration-time assertion error was executed.
-   IEEE 1800-2017 20.11 requires this error.
+   IEEE 1800-2023 20.11 requires this error.
 
    Faulty example:
 
@@ -1965,7 +1965,7 @@ List Of Warnings
 .. option:: USERFATAL
 
    A SystemVerilog elaboration-time assertion fatal was executed.
-   IEEE 1800-2017 20.11 requires this error.
+   IEEE 1800-2023 20.11 requires this error.
 
    Faulty example:
 
@@ -1981,7 +1981,7 @@ List Of Warnings
 .. option:: USERINFO
 
    A SystemVerilog elaboration-time assertion print was executed.  This is
-   not an error or warning, and IEEE 1800-2017 20.11 requires this
+   not an error or warning, and IEEE 1800-2023 20.11 requires this
    behavior.
 
    Example:
@@ -1996,7 +1996,7 @@ List Of Warnings
 .. option:: USERWARN
 
    A SystemVerilog elaboration-time assertion warning was executed.
-   IEEE 1800-2017 20.11 requires this warning.
+   IEEE 1800-2023 20.11 requires this warning.
 
    Faulty example:
 
@@ -2135,7 +2135,7 @@ List Of Warnings
 .. option:: ZEROREPL
 
    Warns that zero is used as the replication value in the replication
-   operator. This is specified as an error by IEEE 1800-2017 11.4.12.1.
+   operator. This is specified as an error by IEEE 1800-2023 11.4.12.1.
 
    Faulty example:
 
@@ -2155,7 +2155,7 @@ List Of Warnings
 
    .. code-block::
 
-       %Error-ZEROREPL: test.v:5:22: Replication value of 0 is only legal under a concatenation (IEEE 1800-2017 11.4.12.1)
+       %Error-ZEROREPL: test.v:5:22: Replication value of 0 is only legal under a concatenation (IEEE 1800-2023 11.4.12.1)
 
    Note that in some cases, this warning may be false, when a condition
    upstream or downstream of the access means the zero replication will
