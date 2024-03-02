@@ -100,7 +100,7 @@
           </assignalias>
           <contassign loc="d,53,13,53,14" dtype_id="1">
             <varref loc="d,17,22,17,29" name="t.between" dtype_id="1"/>
-            <varref loc="d,15,22,15,23" name="q" dtype_id="1"/>
+            <varref loc="d,53,13,53,14" name="q" dtype_id="1"/>
           </contassign>
         </scope>
       </topscope>

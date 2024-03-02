@@ -233,6 +233,7 @@ RAW_OBJS_PCH_ASTNOMT = \
 	V3DfgOptimizer.o \
 	V3DfgPasses.o \
 	V3DfgPeephole.o \
+	V3DfgRegularize.o \
 	V3DupFinder.o \
 	V3EmitCMain.o \
 	V3EmitCMake.o \

@@ -329,11 +329,13 @@ class ExtractCyclicComponents final {
                 clonep = new DfgVarArray{m_dfg, aVtxp->varp()};
             }
             UASSERT_OBJ(clonep, &vtx, "Unhandled 'DfgVertexVar' sub-type");
+            if (vtx.hasModRefs()) clonep->setHasModRefs();
+            if (vtx.hasExtRefs()) clonep->setHasExtRefs();
             VertexState& cloneStatep = allocState(*clonep);
             cloneStatep.component = component;
-            // We need to mark both the original and the clone as having additional references
-            vtx.setHasModRefs();
-            clonep->setHasModRefs();
+            // We need to mark both the original and the clone as having references in other DFGs
+            vtx.setHasDfgRefs();
+            clonep->setHasDfgRefs();
         }
         return *clonep;
     }

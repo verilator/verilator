@@ -19,6 +19,7 @@
 #include "V3DfgPasses.h"
 
 #include "V3Dfg.h"
+#include "V3File.h"
 #include "V3Global.h"
 #include "V3String.h"
 
@@ -29,9 +30,16 @@ V3DfgCseContext::~V3DfgCseContext() {
                      m_eliminated);
 }
 
-DfgRemoveVarsContext::~DfgRemoveVarsContext() {
-    V3Stats::addStat("Optimizations, DFG " + m_label + " Remove vars, variables removed",
-                     m_removed);
+V3DfgRegularizeContext::~V3DfgRegularizeContext() {
+    V3Stats::addStat("Optimizations, DFG " + m_label + " Regularize, temporaries introduced",
+                     m_temporariesIntroduced);
+}
+
+V3DfgEliminateVarsContext::~V3DfgEliminateVarsContext() {
+    V3Stats::addStat("Optimizations, DFG " + m_label + " EliminateVars, variables replaced",
+                     m_varsReplaced);
+    V3Stats::addStat("Optimizations, DFG " + m_label + " EliminateVars, variables removed",
+                     m_varsRemoved);
 }
 
 static std::string getPrefix(const std::string& label) {
@@ -62,9 +70,24 @@ V3DfgOptimizationContext::~V3DfgOptimizationContext() {
     V3Stats::addStat(prefix + "Ast2Dfg, non-representable (unknown)", m_nonRepUnknown);
     V3Stats::addStat(prefix + "Ast2Dfg, non-representable (var ref)", m_nonRepVarRef);
     V3Stats::addStat(prefix + "Ast2Dfg, non-representable (width)", m_nonRepWidth);
-    V3Stats::addStat(prefix + "Dfg2Ast, intermediate variables", m_intermediateVars);
-    V3Stats::addStat(prefix + "Dfg2Ast, replaced variables", m_replacedVars);
     V3Stats::addStat(prefix + "Dfg2Ast, result equations", m_resultEquations);
+
+    // Print the collected patterns
+    if (v3Global.opt.stats()) {
+        // Label to lowercase, without spaces
+        std::string ident = m_label;
+        std::transform(ident.begin(), ident.end(), ident.begin(), [](unsigned char c) {  //
+            return c == ' ' ? '_' : std::tolower(c);
+        });
+
+        // File to dump to
+        const std::string filename = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix()
+                                     + "__stats_dfg_patterns__" + ident + ".txt";
+        // Open, write, close
+        const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
+        if (ofp->fail()) v3fatal("Can't write " << filename);
+        m_patternStats.dump(m_label, *ofp);
+    }
 
     // Check the stats are consistent
     UASSERT(m_inputEquations
@@ -161,63 +184,6 @@ void V3DfgPasses::inlineVars(const DfgGraph& dfg) {
     }
 }
 
-void V3DfgPasses::removeVars(DfgGraph& dfg, DfgRemoveVarsContext& ctx) {
-    for (DfgVertexVar *vtxp = dfg.varVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-        nextp = vtxp->verticesNext();
-
-        // We can only eliminate DfgVarPacked vertices at the moment
-        DfgVarPacked* const varp = vtxp->cast<DfgVarPacked>();
-        if (!varp) continue;
-
-        // Can't remove if it has consumers
-        if (varp->hasSinks()) continue;
-
-        // Otherwise if it has drivers
-        if (varp->isDrivenByDfg()) {
-            // Can't remove if read in the module and driven here (i.e.: it's an output of the DFG)
-            if (varp->hasModRefs()) continue;
-
-            // Can't remove if referenced externally, or other special reasons
-            if (varp->keep()) continue;
-
-            // If the driver of this variable is not an inlined vertex, then we would need a
-            // temporary when rendering the graph. Instead of introducing a temporary, keep the
-            // first variable that is driven by that driver. Note that we still remove if the only
-            // sinks we have are variables, as we might be able to remove all of them (we can be
-            // sure the not inlined if we have at least 2 non-variable sinks).
-            if (varp->isDrivenFullyByDfg()) {
-                DfgVertex* const driverp = varp->source(0);
-                if (!driverp->inlined()) {
-                    unsigned nonVarSinks = 0;
-                    const DfgVarPacked* firstp = nullptr;
-                    const bool found = driverp->findSink<DfgVertex>([&](const DfgVertex& sink) {
-                        if (const DfgVarPacked* const sinkVarp = sink.cast<DfgVarPacked>()) {
-                            if (!firstp) firstp = sinkVarp;
-                        } else {
-                            ++nonVarSinks;
-                        }
-                        // We can stop as soon as we found the first var, and 2 non-var sinks
-                        return firstp && nonVarSinks >= 2;
-                    });
-                    // Keep this DfgVarPacked if needed
-                    if (found && firstp == varp) continue;
-                }
-            }
-        }
-
-        // OK, we can delete this DfgVarPacked from the graph.
-
-        // If not referenced outside the DFG, then also delete the referenced AstVar (now unused).
-        if (!varp->hasRefs()) {
-            ++ctx.m_removed;
-            varp->varp()->unlinkFrBack()->deleteTree();
-        }
-
-        // Unlink and delete vertex
-        varp->unlinkDelete(dfg);
-    }
-}
-
 void V3DfgPasses::removeUnused(DfgGraph& dfg) {
     // DfgVertex::user is the next pointer of the work list elements
     const auto userDataInUse = dfg.userDataInUse();
@@ -275,6 +241,120 @@ void V3DfgPasses::removeUnused(DfgGraph& dfg) {
     }
 }
 
+void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
+    const auto userDataInUse = dfg.userDataInUse();
+
+    // Head of work list. Note that we want all next pointers in the list to be non-zero
+    // (including that of the last element). This allows us to do two important things: detect
+    // if an element is in the list by checking for a non-zero next pointer, and easy
+    // prefetching without conditionals. The address of the graph is a good sentinel as it is a
+    // valid memory address, and we can easily check for the end of the list.
+    DfgVertex* const sentinelp = reinterpret_cast<DfgVertex*>(&dfg);
+    DfgVertex* workListp = sentinelp;
+
+    // Add all variables to the initial work list
+    for (DfgVertexVar *vtxp = dfg.varVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+        nextp = vtxp->verticesNext();
+        if (VL_LIKELY(nextp)) VL_PREFETCH_RW(nextp);
+        vtxp->setUser<DfgVertex*>(workListp);
+        workListp = vtxp;
+    }
+
+    const auto addToWorkList = [&](DfgVertex& vtx) {
+        // If already in work list then nothing to do
+        DfgVertex*& nextInWorklistp = vtx.user<DfgVertex*>();
+        if (nextInWorklistp) return;
+        // Actually add to work list.
+        nextInWorklistp = workListp;
+        workListp = &vtx;
+    };
+
+    // Variable replacements to apply in the module
+    std::unordered_map<AstVar*, AstVar*> replacements;
+
+    // Process the work list
+    while (workListp != sentinelp) {
+        // Pick up the head of the work list
+        DfgVertex* const vtxp = workListp;
+        // Detach the head
+        workListp = vtxp->getUser<DfgVertex*>();
+        // Prefetch next item
+        VL_PREFETCH_RW(workListp);
+
+        // Remove unused non-variable vertices
+        if (!vtxp->is<DfgVertexVar>() && !vtxp->hasSinks()) {
+            // Add sources of removed vertex to work list
+            vtxp->forEachSource(addToWorkList);
+            // Remove the unused vertex
+            vtxp->unlinkDelete(dfg);
+        }
+
+        // We can only eliminate DfgVarPacked vertices at the moment
+        DfgVarPacked* const varp = vtxp->cast<DfgVarPacked>();
+        if (!varp) continue;
+
+        // Can't remove if it has external drivers
+        if (!varp->isDrivenFullyByDfg()) continue;
+
+        // Can't remove if must be kept (including external, non module references)
+        if (varp->keep()) continue;
+
+        // Can't remove if referenced in other DFGs of the same module (otherwise might rm twice)
+        if (varp->hasDfgRefs()) continue;
+
+        // If it has multiple sinks, it can't be eliminated
+        if (varp->hasMultipleSinks()) continue;
+
+        if (!varp->hasModRefs()) {
+            // If it is only referenced in this DFG, it can be removed
+            ++ctx.m_varsRemoved;
+            varp->replaceWith(varp->source(0));
+            varp->varp()->unlinkFrBack()->deleteTree();
+        } else if (DfgVarPacked* const canonp = varp->source(0)->cast<DfgVarPacked>()) {
+            // If it's driven from another canonical variable, it can be replaced by that.
+            // However, we don't want to propagate SystemC variables into the design
+            if (canonp->varp()->isSc()) continue;
+            // Note that if this is a duplicate variable, then the canonical variable must
+            // be either kept or have module references. We ensured this earlier when picking
+            // the canonical variable in the regularize pass. Additionally, it's possible
+            // neither of those holds, if an otherwise unreferenced variable drives another one.
+            // In that case it's true that it must not have a source, so it cannot itself be
+            // substituted. This condition can be relaxed if needed by supporting recursive
+            // substitution below.
+            UASSERT_OBJ(canonp->keep() || canonp->hasDfgRefs() || canonp->hasModRefs()
+                            || !canonp->isDrivenByDfg(),
+                        varp, "Canonical variable should be kept or have module refs");
+            ++ctx.m_varsReplaced;
+            UASSERT_OBJ(!varp->hasSinks(), varp, "Variable inlining should make this impossible");
+            const bool newEntry = replacements.emplace(varp->varp(), canonp->varp()).second;
+            UASSERT_OBJ(newEntry, varp->varp(), "Replacement already exists");
+        } else {
+            // Otherwise this *is* the canonical var
+            continue;
+        }
+
+        // Add sources of redundant variable to the work list
+        vtxp->forEachSource(addToWorkList);
+        // Remove the redundant variable
+        vtxp->unlinkDelete(dfg);
+    }
+
+    // Job done if no replacements possible
+    if (replacements.empty()) return;
+
+    // Apply variable replacements in the module
+    VNDeleter deleter;
+    dfg.modulep()->foreach([&](AstVarRef* refp) {
+        const auto it = replacements.find(refp->varp());
+        if (it == replacements.end()) return;
+        refp->replaceWith(new AstVarRef{refp->fileline(), it->second, refp->access()});
+        deleter.pushDeletep(refp);
+    });
+
+    // Remove the replaced variables
+    for (const auto& pair : replacements) pair.first->unlinkFrBack()->deleteTree();
+}
+
 void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
     // There is absolutely nothing useful we can do with a graph of size 2 or less
     if (dfg.size() <= 2) return;
@@ -301,6 +381,8 @@ void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
         // We just did CSE above, so without peephole there is no need to run it again these
         apply(4, "cse1            ", [&]() { cse(dfg, ctx.m_cseContext1); });
     }
-    apply(4, "removeVars      ", [&]() { removeVars(dfg, ctx.m_removeVarsContext); });
+    // Accumulate patterns for reporting
+    if (v3Global.opt.stats()) ctx.m_patternStats.accumulate(dfg);
+    apply(4, "regularize", [&]() { regularize(dfg, ctx.m_regularizeContext); });
     if (dumpDfgLevel() >= 8) dfg.dumpDotAllVarConesPrefixed(ctx.prefix() + "optimized");
 }
