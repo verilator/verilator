@@ -37,8 +37,7 @@ class StatsReport final {
     std::ofstream& os;  ///< Output stream
     static StatColl s_allStats;  ///< All statistics
 
-    void sumit() {
-        os << '\n';
+    static void sumit() {
         // If sumit is set on a statistic, combine with others of same name
         std::multimap<std::string, V3Statistic*> byName;
         // * is always first
@@ -53,9 +52,10 @@ class StatsReport final {
             V3Statistic* repp = itr.second;
             if (lastp && lastp->sumit() && lastp->printit() && lastp->name() == repp->name()
                 && lastp->stage() == repp->stage()) {
-                repp->combineWith(lastp);
+                lastp->combineWith(repp);
+            } else {
+                lastp = repp;
             }
-            lastp = repp;
         }
     }
 
@@ -73,7 +73,7 @@ class StatsReport final {
         }
 
         // Print organized by stage
-        os << "Global Statistics:\n\n";
+        os << "\nGlobal Statistics:\n\n";
         for (const auto& itr : byName) {
             const V3Statistic* repp = itr.second;
             if (repp->perf()) continue;
@@ -81,10 +81,9 @@ class StatsReport final {
             repp->dump(os);
             os << '\n';
         }
-        os << '\n';
 
         // Print organized by stage
-        os << "Performance Statistics:\n\n";
+        os << "\nPerformance Statistics:\n\n";
         for (const auto& itr : byName) {
             const V3Statistic* repp = itr.second;
             if (!repp->perf()) continue;
