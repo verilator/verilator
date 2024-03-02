@@ -1,0 +1,32 @@
+%Error-UNSUPPORTED: t/t_param_type_fwd.v:10:4: Unsupported: 'parameter type' forward type
+   10 |    parameter type enum E_t;
+      |    ^~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_param_type_fwd.v:11:4: Unsupported: 'parameter type' forward type
+   11 |    parameter type struct S_t;
+      |    ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_param_type_fwd.v:12:4: Unsupported: 'parameter type' forward type
+   12 |    parameter type union U_t;
+      |    ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_param_type_fwd.v:13:4: Unsupported: 'parameter type' forward type
+   13 |    parameter type class C_t;
+      |    ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_param_type_fwd.v:14:4: Unsupported: 'parameter type' forward type
+   14 |    parameter type interface class IC_t;
+      |    ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_param_type_fwd.v:17:13: Unsupported: 'parameter type' forward type
+   17 | class Cls #(parameter type enum E_t,
+      |             ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_param_type_fwd.v:18:13: Unsupported: 'parameter type' forward type
+   18 |             parameter type struct S_t,
+      |             ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_param_type_fwd.v:19:13: Unsupported: 'parameter type' forward type
+   19 |             parameter type union U_t,
+      |             ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_param_type_fwd.v:20:13: Unsupported: 'parameter type' forward type
+   20 |             parameter type class C_t,
+      |             ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_param_type_fwd.v:21:13: Unsupported: 'parameter type' forward type
+   21 |             parameter type interface class IC_t);
+      |             ^~~~~~~~~
+%Error: Exiting due to

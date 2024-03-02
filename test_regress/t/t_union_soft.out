@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_union_soft.v:9:10: Unsupported: 'union soft'
+    9 |    union soft {
+      |          ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

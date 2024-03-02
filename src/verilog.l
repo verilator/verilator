@@ -896,6 +896,12 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "<->"                 { FL; return yP_LTMINUSGT; }
 }
 
+  /* SystemVerilog 2023 Operators */
+<S23,SAX,VLT>{
+  "+/-"                 { FL; return yP_PLUSSLASHMINUS; }
+  "+%-"                 { FL; return yP_PLUSPCTMINUS; }
+}
+
   /* Identifiers and numbers */
 <V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,S23,SAX,VLT>{
   {escid}               { FL; yylval.strp = PARSEP->newString
