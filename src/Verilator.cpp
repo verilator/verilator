@@ -678,6 +678,7 @@ static void verilate(const string& argString) {
             V3ScoreboardBase::selfTest();
             V3Partition::selfTest();
             V3Partition::selfTestNormalizeCosts();
+            V3PreShell::selfTest();
             V3Broken::selfTest();
         }
         V3ThreadPool::selfTest();

@@ -127,6 +127,7 @@ public:
         PINNOCONNECT,   // Cell pin not connected
         PINNOTFOUND,    // instance port name not found in it's module
         PKGNODECL,      // Error: Package/class needs to be predeclared
+        PREPROCZERO,    // Preprocessor expression with zero
         PROCASSWIRE,    // Procedural assignment on wire
         PROFOUTOFDATE,  // Profile data out of date
         PROTECTED,      // detected `pragma protected
@@ -203,7 +204,7 @@ public:
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
             "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP",
             "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
-            "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PROCASSWIRE",
+            "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSWIRE",
             "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY",
             "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SPLITVAR",
             "STATICVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
@@ -242,9 +243,10 @@ public:
         return (m_e == ALWCOMBORDER || m_e == ASCRANGE || m_e == BSSPACE || m_e == CASEINCOMPLETE
                 || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
                 || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC
-                || m_e == LATCH || m_e == MISINDENT || m_e == NEWERSTD || m_e == PINMISSING
-                || m_e == REALCVT || m_e == STATICVAR || m_e == UNSIGNED || m_e == WIDTH
-                || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND || m_e == WIDTHXZEXPAND);
+                || m_e == LATCH || m_e == MISINDENT || m_e == NEWERSTD || m_e == PREPROCZERO
+                || m_e == PINMISSING || m_e == REALCVT || m_e == STATICVAR || m_e == UNSIGNED
+                || m_e == WIDTH || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND
+                || m_e == WIDTHXZEXPAND);
     }
     // Warnings that are style only
     bool styleError() const VL_MT_SAFE {

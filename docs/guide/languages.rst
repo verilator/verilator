@@ -68,6 +68,9 @@ SystemVerilog 2023 (IEEE 1800-2023) Support
 Verilator supports some of the 2023 improvements, including triple-quoted
 string blocks that may include newlines and single quotes.
 
+Verilator implements a full IEEE 1800-2023 compliant preprocessor,
+including triple-quoted strings, and \`ifdef expressions.
+
 
 Verilog AMS Support
 -------------------

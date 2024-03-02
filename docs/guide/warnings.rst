@@ -1332,6 +1332,31 @@ List Of Warnings
    be declared before being used.
 
 
+.. option:: PREPROCZERO
+
+   Warns that a preprocessor \`ifdef/\`ifndef expression (added in IEEE
+   1800-2023) evaluates a define value which has a value of :code:`0`.
+   This will evaluate in the expression as :code:`1` because the define has
+   a definition, unlike in the C preprocessor, which evaluates using the
+   define's value (of :code:`1`).
+
+   Referring to a define with an empty value does not give this warning, as
+   in C, the preprocessor will give an error on a preprocessor expression
+   of a define that is empty.
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 5-6
+
+       `define ZERO 0
+       `ifdef (ZERO || ZERO)  //<--- warning PREPROCZERO
+        `error This_will_error_which_might_be_not_the_intent
+       `endif
+
+   The portable way to suppress this warning is to use a define value other
+   than zero to when used in a preprocessor expression.
+
+
 .. option:: PROCASSWIRE
 
    .. TODO better example

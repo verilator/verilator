@@ -42,6 +42,7 @@ public:
     static void undef(const string& name) VL_MT_DISABLED;
     static void dumpDefines(std::ostream& os) VL_MT_DISABLED;
     static void candidateDefines(VSpellCheck* spellerp) VL_MT_DISABLED;
+    static void selfTest() VL_MT_DISABLED;
 };
 
 #endif  // Guard

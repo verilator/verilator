@@ -132,6 +132,7 @@ set(HEADERS
     V3PartitionGraph.h
     V3PchAstMT.h
     V3PchAstNoMT.h
+    V3PreExpr.h
     V3PreLex.h
     V3PreProc.h
     V3PreShell.h

@@ -26,6 +26,7 @@
 #include "V3File.h"
 #include "V3Global.h"
 #include "V3LanguageWords.h"
+#include "V3PreExpr.h"
 #include "V3PreLex.h"
 #include "V3PreShell.h"
 #include "V3String.h"
@@ -134,12 +135,15 @@ public:
         ps_DEFNAME_IFDEF,
         ps_DEFNAME_IFNDEF,
         ps_DEFNAME_ELSIF,
-        ps_DEFFORM,
-        ps_DEFVALUE,
-        ps_DEFPAREN,
         ps_DEFARG,
-        ps_INCNAME,
+        ps_DEFFORM,
+        ps_DEFPAREN,
+        ps_DEFVALUE,
         ps_ERRORNAME,
+        ps_EXPR_IFDEF,
+        ps_EXPR_IFNDEF,
+        ps_EXPR_ELSIF,
+        ps_INCNAME,
         ps_JOIN,
         ps_STRIFY
     };
@@ -147,8 +151,9 @@ public:
         static const char* const states[]
             = {"ps_TOP",           "ps_DEFNAME_UNDEF",  "ps_DEFNAME_DEFINE",
                "ps_DEFNAME_IFDEF", "ps_DEFNAME_IFNDEF", "ps_DEFNAME_ELSIF",
-               "ps_DEFFORM",       "ps_DEFVALUE",       "ps_DEFPAREN",
-               "ps_DEFARG",        "ps_INCNAME",        "ps_ERRORNAME",
+               "ps_DEFARG",        "ps_DEFFORM",        "ps_DEFPAREN",
+               "ps_DEFVALUE",      "ps_ERRORNAME",      "ps_EXPR_IFDEF",
+               "ps_EXPR_IFNDEF",   "ps_EXPR_ELSIF",     "ps_INCNAME",
                "ps_JOIN",          "ps_STRIFY"};
         return states[s];
     }
@@ -183,6 +188,10 @@ public:
 
     // For `` join
     std::stack<string> m_joinStack;  ///< Text on lhs of join
+
+    // for `ifdef () expressions
+    V3PreExpr m_exprParser;  ///< Parser for () expression
+    int m_exprParenLevel = 0;  ///< Number of ( deep in `ifdef () expression
 
     // For getline()
     string m_lineChars;  ///< Characters left for next line
@@ -289,6 +298,8 @@ V3PreProc* V3PreProc::createPreProc(FileLine* fl) {
     preprocp->configure(fl);
     return preprocp;
 }
+
+void V3PreProc::selfTest() VL_MT_DISABLED { V3PreExpr::selfTest(); }
 
 //*************************************************************************
 // Defines
@@ -1098,6 +1109,21 @@ int V3PreProcImp::getStateToken() {
                 goto next_tok;
             } else if (tok == VP_TEXT) {
                 // IE, something like comment between define and symbol
+                if (yyourleng() == 1 && yyourtext()[0] == '('
+                    && (state() == ps_DEFNAME_IFDEF || state() == ps_DEFNAME_IFNDEF
+                        || state() == ps_DEFNAME_ELSIF)) {
+                    UINFO(4, "ifdef() start (\n");
+                    m_lexp->pushStateExpr();
+                    m_exprParser.reset(fileline());
+                    m_exprParenLevel = 1;
+                    switch (state()) {
+                    case ps_DEFNAME_IFDEF: stateChange(ps_EXPR_IFDEF); break;
+                    case ps_DEFNAME_IFNDEF: stateChange(ps_EXPR_IFNDEF); break;
+                    case ps_DEFNAME_ELSIF: stateChange(ps_EXPR_ELSIF); break;
+                    default: v3fatalSrc("bad case");
+                    }
+                    goto next_tok;
+                }
                 if (!m_off) {
                     return tok;
                 } else {
@@ -1108,6 +1134,92 @@ int V3PreProcImp::getStateToken() {
                 break;
             } else {
                 error("Expecting define name. Found: "s + tokenName(tok) + "\n");
+                goto next_tok;
+            }
+        }
+        case ps_EXPR_IFDEF:  // FALLTHRU
+        case ps_EXPR_IFNDEF:  // FALLTHRU
+        case ps_EXPR_ELSIF: {
+            // `ifdef ( *here*
+            FileLine* const flp = m_lexp->m_tokFilelinep;
+            if (tok == VP_SYMBOL) {
+                m_lastSym.assign(yyourtext(), yyourleng());
+                const bool exists = defExists(m_lastSym);
+                if (exists) {
+                    string value = defValue(m_lastSym);
+                    if (VString::removeWhitespace(value) == "0") {
+                        flp->v3warn(
+                            PREPROCZERO,
+                            "Preprocessor expression evaluates define with 0: '"
+                                << m_lastSym << "' with value '" << value
+                                << "'\n"
+                                   "... Suggest change define '"
+                                << m_lastSym
+                                << "' to non-zero value if used in preprocessor expression");
+                    }
+                }
+                m_exprParser.pushInput(V3PreExprToken{flp, exists});
+                goto next_tok;
+            } else if (tok == VP_WHITE) {
+                goto next_tok;
+            } else if (tok == VP_TEXT && yyourleng() == 1 && yyourtext()[0] == '(') {
+                m_exprParser.pushInput(V3PreExprToken{flp, V3PreExprToken::BRA});
+                goto next_tok;
+            } else if (tok == VP_TEXT && yyourleng() == 1 && yyourtext()[0] == ')') {
+                UASSERT(m_exprParenLevel, "Underflow of ); should have exited ps_EXPR earlier?");
+                if (--m_exprParenLevel > 0) {
+                    m_exprParser.pushInput(V3PreExprToken{flp, V3PreExprToken::KET});
+                    goto next_tok;
+                } else {
+                    // Done with parsing expression
+                    bool enable = m_exprParser.result();
+                    UINFO(4, "ifdef() result=" << enable << endl);
+                    if (state() == ps_EXPR_IFDEF || state() == ps_EXPR_IFNDEF) {
+                        if (state() == ps_EXPR_IFNDEF) enable = !enable;
+                        m_ifdefStack.push(VPreIfEntry{enable, false});
+                        if (!enable) parsingOff();
+                        statePop();
+                        goto next_tok;
+                    } else if (state() == ps_EXPR_ELSIF) {
+                        if (m_ifdefStack.empty()) {
+                            error("`elsif with no matching `if\n");
+                        } else {
+                            // Handle `else portion
+                            const VPreIfEntry lastIf = m_ifdefStack.top();
+                            m_ifdefStack.pop();
+                            if (!lastIf.on()) parsingOn();
+                            // Handle `if portion
+                            enable = !lastIf.everOn() && enable;
+                            UINFO(4, "Elsif " << m_lastSym << (enable ? " ON" : " OFF") << endl);
+                            m_ifdefStack.push(VPreIfEntry{enable, lastIf.everOn()});
+                            if (!enable) parsingOff();
+                        }
+                        statePop();
+                    }
+                    goto next_tok;
+                }
+            } else if (tok == VP_TEXT && yyourleng() == 1 && yyourtext()[0] == '!') {
+                m_exprParser.pushInput(V3PreExprToken{flp, V3PreExprToken::LNOT});
+                goto next_tok;
+            } else if (tok == VP_TEXT && yyourleng() == 2 && 0 == strncmp(yyourtext(), "&&", 2)) {
+                m_exprParser.pushInput(V3PreExprToken{flp, V3PreExprToken::LAND});
+                goto next_tok;
+            } else if (tok == VP_TEXT && yyourleng() == 2 && 0 == strncmp(yyourtext(), "||", 2)) {
+                m_exprParser.pushInput(V3PreExprToken{flp, V3PreExprToken::LOR});
+                goto next_tok;
+            } else if (tok == VP_TEXT && yyourleng() == 2 && 0 == strncmp(yyourtext(), "->", 2)) {
+                m_exprParser.pushInput(V3PreExprToken{flp, V3PreExprToken::IMP});
+                goto next_tok;
+            } else if (tok == VP_TEXT && yyourleng() == 3 && 0 == strncmp(yyourtext(), "<->", 3)) {
+                m_exprParser.pushInput(V3PreExprToken{flp, V3PreExprToken::EQV});
+                goto next_tok;
+            } else {
+                if (VString::removeWhitespace(string{yyourtext(), yyourleng()}).empty()) {
+                    return tok;
+                } else {
+                    error(std::string{"Syntax error in `ifdef () expression; unexpected: '"}
+                          + tokenName(tok) + "'\n");
+                }
                 goto next_tok;
             }
         }
