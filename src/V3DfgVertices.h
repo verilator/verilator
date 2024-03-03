@@ -248,7 +248,9 @@ public:
         : DfgVertexVar{dfg, dfgType(), varp, 1u} {}
     ASTGEN_MEMBERS_DfgVarPacked;
 
-    bool isDrivenFullyByDfg() const { return arity() == 1 && source(0)->dtypep() == dtypep(); }
+    bool isDrivenFullyByDfg() const {
+        return arity() == 1 && source(0)->dtypep() == dtypep() && !varp()->isForceable();
+    }
 
     void addDriver(FileLine* flp, uint32_t lsb, DfgVertex* vtxp) {
         m_driverData.emplace_back(flp, lsb);
