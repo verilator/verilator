@@ -170,7 +170,7 @@ void V3DfgPasses::inlineVars(const DfgGraph& dfg) {
                 // We must keep the original driver in certain cases, when swapping them would
                 // not be functionally or technically (implementation reasons) equivalent
                 if (DfgVertexVar* const driverVarp = driverp->cast<DfgVarPacked>()) {
-                    AstVar* const varp = driverVarp->varp();
+                    const AstVar* const varp = driverVarp->varp();
                     // If driven from a SystemC variable
                     if (varp->isSc()) continue;
                     // If the variable is forceable
