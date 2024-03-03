@@ -126,13 +126,13 @@ public:
     const char* charIQWN() const {
         return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I");
     }
-    string cType(const string& name, bool forFunc, bool isRef) const;
+    string cType(const string& name, bool forFunc, bool isRef, bool packed=false) const;
     // Represents a C++ LiteralType? (can be constexpr)
     bool isLiteralType() const VL_MT_STABLE;
 
 private:
     class CTypeRecursed;
-    CTypeRecursed cTypeRecurse(bool compound) const;
+    CTypeRecursed cTypeRecurse(bool compound, bool packed) const;
 };
 class AstNodeArrayDType VL_NOT_FINAL : public AstNodeDType {
     // Array data type, ie "some_dtype var_name [2:0]"
@@ -510,11 +510,17 @@ public:
     int widthAlignBytes() const override { return 8; }  // Assume
     int widthTotalBytes() const override { return 8; }  // Assume
     bool isCompound() const override { return true; }
-    static string typeToHold(uint64_t maxItem) {
-        return (maxItem < (1ULL << 8))    ? "CData"
-               : (maxItem < (1ULL << 16)) ? "SData"
-               : (maxItem < (1ULL << 32)) ? "IData"
-                                          : "QData";
+    static string typeToHold(int width) {
+        if (width <= 8)
+            return "CData";
+        else if (width <= 16)
+            return "SData";
+        else if (width <= VL_IDATASIZE)
+            return "IData";
+        else if (width <= VL_QUADSIZE)
+            return "QData";
+        else
+            return "VlWide<" + std::to_string(VL_WORDS_I(width)) + ">";
     }
 };
 class AstClassRefDType final : public AstNodeDType {

@@ -662,6 +662,7 @@ public:
 
     // STATICS
     static int log2b(uint32_t num);
+    static int log2bQuad(uint64_t num);
 
     // MATH
     // "this" is the output, as we need the output width before some computations

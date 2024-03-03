@@ -26,6 +26,9 @@
 
 #include "V3UniqueNames.h"
 
+#include <queue>
+#include <set>
+
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
@@ -46,6 +49,11 @@ class ClassVisitor final : public VNVisitor {
     const AstNodeFTask* m_ftaskp = nullptr;  // Current task
     std::vector<std::pair<AstNode*, AstScope*>> m_toScopeMoves;
     std::vector<std::pair<AstNode*, AstNodeModule*>> m_toPackageMoves;
+    std::set<AstTypedef*> m_typedefps;  // Contains all typedef nodes
+    std::set<AstNodeUOrStructDType*> m_strDtypeps;  // Contains all packed structs and unions
+    // Contains all public packed structs and unions, using a queue to
+    // mark embedded struct / union public by BFS
+    std::queue<AstNodeUOrStructDType*> m_pubStrDtypeps;
 
     // METHODS
 
@@ -204,22 +212,27 @@ class ClassVisitor final : public VNVisitor {
         dtypep->classOrPackagep(m_classPackagep ? m_classPackagep : m_modp);
         dtypep->name(
             m_names.get(dtypep->name() + (VN_IS(dtypep, UnionDType) ? "__union" : "__struct")));
+        if (dtypep->packed()) m_strDtypeps.insert(dtypep);
 
         for (const AstMemberDType* itemp = dtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             AstNodeUOrStructDType* const subp = itemp->getChildStructp();
-            // Recurse only into anonymous unpacked structs inside this definition,
-            // other unpacked structs will be reached from another typedefs
-            if (subp && !subp->packed() && subp->name().empty()) setStructModulep(subp);
+            // Recurse only into anonymous structs inside this definition,
+            // other structs will be reached from another typedefs
+            if (subp && subp->name().empty()) setStructModulep(subp);
         }
     }
     void visit(AstTypedef* nodep) override {
         if (nodep->user1SetOnce()) return;
+        AstNodeUOrStructDType* const dtypep = VN_CAST(nodep->dtypep(), NodeUOrStructDType);
+        if (dtypep && dtypep->packed()) {
+            m_typedefps.insert(nodep);
+            if (nodep->attrPublic()) m_pubStrDtypeps.push(dtypep);
+        }
         iterateChildren(nodep);
         if (m_classPackagep) m_classPackagep->addStmtsp(nodep->unlinkFrBack());
 
-        AstNodeUOrStructDType* const dtypep = VN_CAST(nodep->dtypep(), NodeUOrStructDType);
-        if (dtypep && !dtypep->packed()) {
+        if (dtypep) {
             dtypep->name(nodep->name());
             setStructModulep(dtypep);
         }
@@ -257,6 +270,28 @@ public:
             UINFO(9, "moving " << nodep << " to " << modp << endl);
             nodep->unlinkFrBack();
             modp->addStmtsp(nodep);
+        }
+        // BFS to mark public typedefs.
+        std::set<AstNodeUOrStructDType*> pubStrDtypeps;
+        while (!m_pubStrDtypeps.empty()) {
+            AstNodeUOrStructDType* const dtypep = m_pubStrDtypeps.front();
+            m_pubStrDtypeps.pop();
+            if (pubStrDtypeps.insert(dtypep).second) {
+                for (const AstMemberDType* itemp = dtypep->membersp(); itemp;
+                     itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                    if (AstNodeUOrStructDType* const subp = itemp->getChildStructp())
+                        m_pubStrDtypeps.push(subp);
+                }
+            }
+        }
+        for (AstTypedef* typedefp : m_typedefps) {
+            AstNodeUOrStructDType* const sdtypep = VN_AS(typedefp->dtypep(), NodeUOrStructDType);
+            if (pubStrDtypeps.count(sdtypep)) typedefp->attrPublic(true);
+        }
+        // Clear package pointer of non-public packed struct / union type, which will never be
+        // exported.
+        for (AstNodeUOrStructDType* sdtypep : m_strDtypeps) {
+            if (!pubStrDtypeps.count(sdtypep)) sdtypep->classOrPackagep(nullptr);
         }
     }
 };

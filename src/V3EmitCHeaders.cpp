@@ -18,6 +18,7 @@
 
 #include "V3EmitC.h"
 #include "V3EmitCConstInit.h"
+#include "V3UniqueNames.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -31,6 +32,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Internal EmitC implementation
 
 class EmitCHeader final : public EmitCConstInit {
+    V3UniqueNames m_names;
     // METHODS
 
     void decorateFirst(bool& first, const string& str) {
@@ -223,7 +225,7 @@ class EmitCHeader final : public EmitCConstInit {
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             AstNodeUOrStructDType* const subp = itemp->getChildStructp();
-            if (subp && !subp->packed()) {
+            if (subp && (!subp->packed() || sdtypep->packed())) {
                 // Recurse if it belongs to the current module
                 if (subp->classOrPackagep() == modp) {
                     emitStructDecl(modp, subp, emitted);
@@ -231,6 +233,13 @@ class EmitCHeader final : public EmitCConstInit {
                 }
             }
         }
+        if (sdtypep->packed()) {
+            emitPackedUOrSBody(sdtypep);
+        } else {
+            emitUnpackedUOrSBody(sdtypep);
+        }
+    }
+    void emitUnpackedUOrSBody(AstNodeUOrStructDType* sdtypep) {
         putns(sdtypep, sdtypep->verilogKwd());  // "struct"/"union"
         puts(" " + EmitCBase::prefixNameProtect(sdtypep) + " {\n");
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
@@ -254,8 +263,135 @@ class EmitCHeader final : public EmitCConstInit {
         puts("return !(*this == rhs);\n}\n");
         puts("};\n");
     }
+
+    // getfunc: VL_ASSIGNSEL_XX(rbits, obits, off, lhsdata, rhsdata);
+    // !getfunc: VL_SELASSIGN_XX(rbits, obits, lhsdata, rhsdata, off);
+    void emitVlAssign(const AstNodeDType* const lhstype, const AstNodeDType* rhstype,
+                      const std::string& off, const std::string& lhsdata,
+                      const std::string& rhsdata, bool getfunc) {
+        puts(getfunc ? "VL_ASSIGNSEL_" : "VL_SELASSIGN_");
+        puts(lhstype->charIQWN());
+        puts(rhstype->charIQWN());
+        puts("(" + std::to_string(lhstype->width()) + ", ");  // LHS width
+        if (getfunc) {
+            puts(std::to_string(rhstype->width()) + ", ");  // Number of copy bits
+            puts(off + ", ");  // LHS offset
+        } else {
+            // Number of copy bits. Use widthTototalBytes to
+            // make VL_SELASSIGN_XX clear upper unused bits for us.
+            // puts(std::to_string(lhstype->width()) + ", ");
+            puts(std::to_string(lhstype->widthTotalBytes() * 8) + ", ");
+        }
+        puts(lhsdata + ", ");  // LHS data
+        puts(rhsdata);  // RHS data
+        if (!getfunc) {
+            puts(", " + off);  // RHS offset
+        }
+        puts(");\n");
+    }
+
+    // `retOrArg` should be prefixed by `&` or suffixed by `.data()` depending on its type
+    void emitPackedMember(const AstNodeDType* parentDtypep, const AstNodeDType* dtypep,
+                          const std::string& fieldname, const std::string& offset, bool getfunc,
+                          const std::string& retOrArg) {
+        dtypep = dtypep->skipRefp();
+        if (const auto* adtypep = VN_CAST(dtypep, PackArrayDType)) {
+            const std::string index = m_names.get("__Vi");
+            puts("for (int " + index + " = 0; " + index + " < "
+                 + std::to_string(adtypep->elementsConst()) + "; ++" + index + ") {\n");
+
+            const std::string offsetInLoop
+                = offset + " + " + index + " * " + std::to_string(adtypep->subDTypep()->width());
+            const std::string newName = fieldname + "[" + index + "]";
+            emitPackedMember(parentDtypep, adtypep->subDTypep(), newName, offsetInLoop, getfunc,
+                             retOrArg);
+            puts("}\n");
+        } else if (VN_IS(dtypep, NodeUOrStructDType)) {
+            const std::string tmp = m_names.get("__Vtmp");
+            const std::string suffixName = dtypep->isWide() ? tmp + ".data()" : tmp;
+            if (getfunc) {  // Emit `get` func;
+                // auto __tmp = field.get();
+                puts("auto " + tmp + " = " + fieldname + ".get();\n");
+                // VL_ASSIGNSEL_XX(rbits, obits, lsb, lhsdata, rhsdata);
+                emitVlAssign(parentDtypep, dtypep, offset, retOrArg, suffixName, getfunc);
+            } else {  // Emit `set` func
+                const std::string tmptype = AstCDType::typeToHold(dtypep->width());
+                // type tmp;
+                puts(tmptype + " " + tmp + ";\n");
+                // VL_SELASSIGN_XX(rbits, obits, lhsdata, rhsdata, roffset);
+                emitVlAssign(dtypep, parentDtypep, offset, suffixName, retOrArg, getfunc);
+                // field.set(__tmp);
+                puts(fieldname + ".set(" + tmp + ");\n");
+            }
+        } else {
+            UASSERT_OBJ(VN_IS(dtypep, EnumDType) || VN_IS(dtypep, BasicDType), dtypep,
+                        "Unsupported type in packed struct or union");
+            const std::string suffixName = dtypep->isWide() ? fieldname + ".data()" : fieldname;
+            if (getfunc) {  // Emit `get` func;
+                // VL_ASSIGNSEL_XX(rbits, obits, lsb, lhsdata, rhsdata);
+                emitVlAssign(parentDtypep, dtypep, offset, retOrArg, suffixName, getfunc);
+            } else {  // Emit `set` func
+                // VL_SELASSIGN_XX(rbits, obits, lhsdata, rhsdata, roffset);
+                emitVlAssign(dtypep, parentDtypep, offset, suffixName, retOrArg, getfunc);
+            }
+        }
+    }
+    void emitPackedUOrSBody(AstNodeUOrStructDType* sdtypep) {
+        putns(sdtypep, sdtypep->verilogKwd());  // "struct"/"union"
+        puts(" " + EmitCBase::prefixNameProtect(sdtypep) + " {\n");
+
+        AstMemberDType* itemp;
+        AstMemberDType* lastItemp;
+        AstMemberDType* witemp = nullptr;
+        // LSB is first field in C, so loop backwards
+        for (lastItemp = sdtypep->membersp(); lastItemp && lastItemp->nextp();
+             lastItemp = VN_AS(lastItemp->nextp(), MemberDType)) {
+            if (lastItemp->width() == sdtypep->width()) witemp = lastItemp;
+        }
+        for (itemp = lastItemp; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
+            putns(itemp, itemp->dtypep()->cType(itemp->nameProtect(), false, false, true));
+            puts(";\n");
+        }
+
+        const std::string retArgName = m_names.get("__v");
+        const std::string suffixName = sdtypep->isWide() ? retArgName + ".data()" : retArgName;
+        const std::string retArgType = AstCDType::typeToHold(sdtypep->width());
+
+        // Emit `get` member function
+        puts(retArgType + " get() const {\n");
+        puts(retArgType + " " + retArgName + ";\n");
+        if (VN_IS(sdtypep, StructDType)) {
+            for (itemp = lastItemp; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
+                emitPackedMember(sdtypep, itemp->dtypep(), itemp->nameProtect(),
+                                 std::to_string(itemp->lsb()), /*getfunc=*/true, suffixName);
+            }
+        } else {
+            // We only need to fill the widest field of union
+            emitPackedMember(sdtypep, witemp->dtypep(), witemp->nameProtect(),
+                             std::to_string(witemp->lsb()), /*getfunc=*/true, suffixName);
+        }
+        puts("return " + retArgName + ";\n");
+        puts("}\n");
+
+        // Emit `set` member function
+        puts("void set(const " + retArgType + "& " + retArgName + ") {\n");
+        if (VN_IS(sdtypep, StructDType)) {
+            for (itemp = lastItemp; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
+                emitPackedMember(sdtypep, itemp->dtypep(), itemp->nameProtect(),
+                                 std::to_string(itemp->lsb()), /*getfunc=*/false, suffixName);
+            }
+        } else {
+            // We only need to fill the widest field of union
+            emitPackedMember(sdtypep, witemp->dtypep(), witemp->nameProtect(),
+                             std::to_string(witemp->lsb()), /*getfunc=*/false, suffixName);
+        }
+
+        puts("}\n");
+
+        puts("};\n");
+        m_names.reset();
+    }
     void emitStructs(const AstNodeModule* modp) {
-        bool first = true;
         // Track structs that've been emitted already
         std::set<AstNodeUOrStructDType*> emitted;
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
@@ -264,8 +400,6 @@ class EmitCHeader final : public EmitCConstInit {
             AstNodeUOrStructDType* const sdtypep
                 = VN_CAST(tdefp->dtypep()->skipRefToEnump(), NodeUOrStructDType);
             if (!sdtypep) continue;
-            if (sdtypep->packed()) continue;
-            decorateFirst(first, "\n// UNPACKED STRUCT TYPES\n");
             emitStructDecl(modp, sdtypep, emitted);
         }
     }
