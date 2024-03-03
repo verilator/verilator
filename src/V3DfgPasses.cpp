@@ -167,9 +167,14 @@ void V3DfgPasses::inlineVars(const DfgGraph& dfg) {
             if (varp->hasSinks() && varp->isDrivenFullyByDfg() && !varp->varp()->isSc()) {
                 DfgVertex* const driverp = varp->source(0);
 
-                // If driven from a SystemC variable, don't inline this variable
+                // We must keep the original driver in certain cases, when swapping them would
+                // not be functionally or technically (implementation reasons) equivalent
                 if (DfgVertexVar* const driverVarp = driverp->cast<DfgVarPacked>()) {
-                    if (driverVarp->varp()->isSc()) continue;
+                    const AstVar* const varp = driverVarp->varp();
+                    // If driven from a SystemC variable
+                    if (varp->isSc()) continue;
+                    // If the variable is forceable
+                    if (varp->isForceable()) continue;
                 }
 
                 varp->forEachSinkEdge([=](DfgEdge& edge) {
