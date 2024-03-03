@@ -378,7 +378,11 @@ private:
             clearOptimizable(nodep,
                              "Unknown node type, perhaps missing visitor in SimulateVisitor");
 #ifdef VL_DEBUG
-            UINFO(0, "Unknown node type in SimulateVisitor: " << nodep->prettyTypeName() << endl);
+            static std::set<VNType> s_typePrinted;
+            const auto pair = s_typePrinted.emplace(nodep->type());
+            if (pair.second)
+                UINFO(0,
+                      "Unknown node type in SimulateVisitor: " << nodep->prettyTypeName() << endl);
 #endif
         }
     }
