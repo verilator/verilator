@@ -190,13 +190,16 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain() {
 
                 //===
                 // Rare commands
-            case VerilatedTraceOffloadCommand::TIME_CHANGE:
+            case VerilatedTraceOffloadCommand::TIME_CHANGE: {
                 VL_TRACE_OFFLOAD_DEBUG("Command TIME_CHANGE " << top);
                 readp -= 1;  // No code in this command, undo increment
-                emitTimeChange(*reinterpret_cast<const uint64_t*>(readp));
+                const uint64_t timeui
+                    = static_cast<uint64_t>(*reinterpret_cast<const uint32_t*>(readp)) << 32ULL
+                      | static_cast<uint64_t>(*reinterpret_cast<const uint32_t*>(readp + 1));
+                emitTimeChange(timeui);
                 readp += 2;
                 continue;
-
+            }
             case VerilatedTraceOffloadCommand::TRACE_BUFFER:
                 VL_TRACE_OFFLOAD_DEBUG("Command TRACE_BUFFER " << top);
                 readp -= 1;  // No code in this command, undo increment
@@ -574,7 +577,10 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dump(uint64_t timeui) VL_MT_SAFE_EXCLUD
 
             // Tell worker to update time point
             m_offloadBufferWritep[0] = VerilatedTraceOffloadCommand::TIME_CHANGE;
-            *reinterpret_cast<uint64_t*>(m_offloadBufferWritep + 1) = timeui;
+            *reinterpret_cast<uint32_t*>(m_offloadBufferWritep + 1)
+                = static_cast<uint32_t>(timeui >> 32ULL);
+            *reinterpret_cast<uint32_t*>(m_offloadBufferWritep + 2)
+                = static_cast<uint32_t>(timeui);
             m_offloadBufferWritep += 3;
         } else {
             // Update time point
