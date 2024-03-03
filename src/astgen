@@ -1192,9 +1192,11 @@ def write_dfg_macros(filename):
             if node.isLeaf:
                 emitBlock('''\
                 static constexpr VDfgType dfgType() {{ return VDfgType::at{t}; }};
+                using Super = Dfg{s};
                 void accept(DfgVisitor& v) override {{ v.visit(this); }}
                 ''',
-                          t=node.name)
+                          t=node.name,
+                          s=node.superClass.name)
 
             for n in range(1, node.arity + 1):
                 name, _, _ = node.getOp(n)

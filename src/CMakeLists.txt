@@ -62,6 +62,7 @@ set(HEADERS
     V3DepthBlock.h
     V3Descope.h
     V3Dfg.h
+    V3DfgCache.h
     V3DfgOptimizer.h
     V3DfgPasses.h
     V3DfgPatternStats.h
@@ -214,6 +215,7 @@ set(COMMON_SOURCES
     V3Descope.cpp
     V3Dfg.cpp
     V3DfgAstToDfg.cpp
+    V3DfgCache.cpp
     V3DfgDecomposition.cpp
     V3DfgDfgToAst.cpp
     V3DfgOptimizer.cpp

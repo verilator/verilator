@@ -58,6 +58,9 @@
 # define VL_ATTR_PRINTF(fmtArgNum) __attribute__((format(printf, (fmtArgNum), (fmtArgNum) + 1)))
 # define VL_ATTR_PURE __attribute__((pure))
 # define VL_ATTR_UNUSED __attribute__((unused))
+#ifndef VL_ATTR_WARN_UNUSED_RESULT
+# define VL_ATTR_WARN_UNUSED_RESULT __attribute__((warn_unused_result))
+#endif
 # if !defined(_WIN32) && !defined(__MINGW32__)
 // All VL_ATTR_WEAK symbols must be marked with the macOS -U linker flag in verilated.mk.in
 #  define VL_ATTR_WEAK __attribute__((weak))
@@ -163,6 +166,9 @@
 #endif
 #ifndef VL_ATTR_UNUSED
 # define VL_ATTR_UNUSED  ///< Attribute that function that may be never used
+#endif
+#ifndef VL_ATTR_WARN_UNUSED_RESULT
+# define VL_ATTR_WARN_UNUSED_RESULT  ///< Attribute that return value of function must be used
 #endif
 #ifndef VL_ATTR_WEAK
 # define VL_ATTR_WEAK  ///< Attribute that function external that is optionally defined
