@@ -19,8 +19,14 @@ Verilator 5.023 devel
 
 **Minor:**
 
-* Fix invalid cast on string structure creation (#4921). [esynr3z]
+* Add DFG 'regularize' pass, and improve variable removal (#4937). [Geza Lore]
+* Support public packed struct / union (#860) (#4878). [Kefa Chen]
+* Change installation to be relocatable (#4927). [Geza Lore]
 * Fix __Vlip undefined error in --freloop (#4824). [Justin Yao Du]
+* Fix invalid cast on string structure creation (#4921). [esynr3z]
+* Fix try-lock spuriously fails (#4931) (#4938). [Kamil Rakoczy]
+* Fix V3Unknown unpacked struct x-assign (#4934). [Yan Xu]
+* Fix DFG removing forceable signals (#4942). [Geza Lore]
 
 
 Verilator 5.022 2024-02-24

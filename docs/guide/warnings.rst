@@ -1346,7 +1346,7 @@ List Of Warnings
 
    .. code-block:: sv
       :linenos:
-      :emphasize-lines: 5-6
+      :emphasize-lines: 2
 
        `define ZERO 0
        `ifdef (ZERO || ZERO)  //<--- warning PREPROCZERO
