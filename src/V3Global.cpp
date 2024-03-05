@@ -16,6 +16,9 @@
 
 #include "V3PchAstMT.h"
 
+#include "V3Global.h"
+
+#include "V3EmitV.h"
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3HierBlock.h"
@@ -117,6 +120,15 @@ void V3Global::dumpCheckGlobalTree(const string& stagename, int newNumber, bool 
         v3Global.rootp()->dumpTreeDotFile(treeFilename + ".dot", doDump);
     }
     if (v3Global.opt.stats()) V3Stats::statsStage(stagename);
+
+    if (doDump && v3Global.opt.debugEmitV()) V3EmitV::debugEmitV(treeFilename + ".v");
+    if (v3Global.opt.debugCheck() || dumpTreeEitherLevel()) {
+        // Error check
+        v3Global.rootp()->checkTree();
+        // Broken isn't part of check tree because it can munge iterp's
+        // set by other steps if it is called in the middle of other operations
+        V3Broken::brokenAll(v3Global.rootp());
+    }
 }
 
 void V3Global::idPtrMapDumpJson(std::ostream& os) {
