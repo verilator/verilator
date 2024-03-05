@@ -240,7 +240,7 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
     UINFO(2, __FUNCTION__ << ": " << endl);
 
     // NODE STATE
-    // AstVar::user1 -> Used by V3DfgPasses::astToDfg
+    // AstVar::user1 -> Used by V3DfgPasses::astToDfg, V3DfgPasses::eliminateVars
     // AstVar::user2 -> bool: Flag indicating referenced by AstVarXRef (set just below)
     // AstVar::user3 -> bool: Flag indicating written by logic not representable as DFG
     //                        (set by V3DfgPasses::astToDfg)

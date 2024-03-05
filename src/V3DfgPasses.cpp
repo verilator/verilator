@@ -274,8 +274,10 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
         workListp = &vtx;
     };
 
-    // Variable replacements to apply in the module
-    std::unordered_map<AstVar*, AstVar*> replacements;
+    // List of variables we are replacing
+    std::vector<AstVar*> replacedVariables;
+    // AstVar::user1p() : AstVar* -> The replacement variables
+    const VNUser1InUse user1InUse;
 
     // Process the work list
     while (workListp != sentinelp) {
@@ -315,24 +317,16 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
             ++ctx.m_varsRemoved;
             varp->replaceWith(varp->source(0));
             varp->varp()->unlinkFrBack()->deleteTree();
-        } else if (DfgVarPacked* const canonp = varp->source(0)->cast<DfgVarPacked>()) {
-            // If it's driven from another canonical variable, it can be replaced by that.
-            // However, we don't want to propagate SystemC variables into the design
-            if (canonp->varp()->isSc()) continue;
-            // Note that if this is a duplicate variable, then the canonical variable must
-            // be either kept or have module references. We ensured this earlier when picking
-            // the canonical variable in the regularize pass. Additionally, it's possible
-            // neither of those holds, if an otherwise unreferenced variable drives another one.
-            // In that case it's true that it must not have a source, so it cannot itself be
-            // substituted. This condition can be relaxed if needed by supporting recursive
-            // substitution below.
-            UASSERT_OBJ(canonp->keep() || canonp->hasDfgRefs() || canonp->hasModRefs()
-                            || !canonp->isDrivenByDfg(),
-                        varp, "Canonical variable should be kept or have module refs");
+        } else if (DfgVarPacked* const driverp = varp->source(0)->cast<DfgVarPacked>()) {
+            // If it's driven from another variable, it can be replaced by that. However, we do not
+            // want to propagate SystemC variables into the design.
+            if (driverp->varp()->isSc()) continue;
+            // Mark it for replacement
             ++ctx.m_varsReplaced;
             UASSERT_OBJ(!varp->hasSinks(), varp, "Variable inlining should make this impossible");
-            const bool newEntry = replacements.emplace(varp->varp(), canonp->varp()).second;
-            UASSERT_OBJ(newEntry, varp->varp(), "Replacement already exists");
+            UASSERT(!varp->varp()->user1p(), "Replacement already exists");
+            replacedVariables.emplace_back(varp->varp());
+            varp->varp()->user1p(driverp->varp());
         } else {
             // Otherwise this *is* the canonical var
             continue;
@@ -345,19 +339,18 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
     }
 
     // Job done if no replacements possible
-    if (replacements.empty()) return;
+    if (replacedVariables.empty()) return;
 
     // Apply variable replacements in the module
     VNDeleter deleter;
     dfg.modulep()->foreach([&](AstVarRef* refp) {
-        const auto it = replacements.find(refp->varp());
-        if (it == replacements.end()) return;
-        refp->replaceWith(new AstVarRef{refp->fileline(), it->second, refp->access()});
-        deleter.pushDeletep(refp);
+        AstVar* varp = refp->varp();
+        while (AstVar* const replacementp = VN_AS(varp->user1p(), Var)) varp = replacementp;
+        refp->varp(varp);
     });
 
     // Remove the replaced variables
-    for (const auto& pair : replacements) pair.first->unlinkFrBack()->deleteTree();
+    for (AstVar* const varp : replacedVariables) varp->unlinkFrBack()->deleteTree();
 }
 
 void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
