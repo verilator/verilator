@@ -23,17 +23,25 @@
 
 #include "V3Dfg.h"
 #include "V3DfgPasses.h"
-#include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
+
+std::string V3DfgRegularizeContext::tmpNamePrefix(DfgGraph& dfg) {
+    V3Hash hash{dfg.modulep()->name()};
+    hash += m_label;
+    std::string name = hash.toString();
+    const uint32_t sequenceNumber = m_multiplicity[name]++;
+    name += '_' + std::to_string(sequenceNumber);
+    return name;
+}
 
 class DfgRegularize final {
     DfgGraph& m_dfg;  // The graph being processed
     V3DfgRegularizeContext& m_ctx;  // The optimization context for stats
 
-    // For generating temporary names
-    V3UniqueNames m_tmpNames{"__VdfgRegularize_" + m_ctx.ident() + "_" + m_dfg.modulep()->name()
-                             + "_tmp"};
+    // Prefix of temporary variable names
+    const std::string m_tmpNamePrefix = "__VdfgRegularize_" + m_ctx.tmpNamePrefix(m_dfg) + '_';
+    size_t m_nTmps = 0;  // Number of temporaries added to this graph - for variable names only
 
     // Return canonical variable that can be used to hold the value of this vertex
     DfgVarPacked* getCanonicalVariable(DfgVertex* vtxp) {
@@ -72,7 +80,7 @@ class DfgRegularize final {
 
         // Add temporary AstVar to containing module
         FileLine* const flp = vtxp->fileline();
-        const std::string name = m_tmpNames.get(vtxp->hash().toString());
+        const std::string name = m_tmpNamePrefix + std::to_string(m_nTmps++);
         AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, vtxp->dtypep()};
         m_dfg.modulep()->addStmtsp(varp);
 
@@ -84,9 +92,6 @@ class DfgRegularize final {
     DfgRegularize(DfgGraph& dfg, V3DfgRegularizeContext& ctx)
         : m_dfg{dfg}
         , m_ctx{ctx} {
-
-        // Used by DfgVertex::hash
-        const auto userDataInUse = m_dfg.userDataInUse();
 
         // Ensure intermediate values used multiple times are written to variables
         for (DfgVertex *vtxp = m_dfg.opVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {

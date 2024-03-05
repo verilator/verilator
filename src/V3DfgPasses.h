@@ -43,18 +43,13 @@ public:
 class V3DfgRegularizeContext final {
     const std::string m_label;  // Label to apply to stats
 
-    const std::string m_ident = [&]() {
-        std::string ident = m_label;
-        std::transform(ident.begin(), ident.end(), ident.begin(), [](unsigned char c) {  //
-            return c == ' ' ? '_' : std::tolower(c);
-        });
-        return ident;
-    }();
+    // Used to generate unique names for different DFGs within the same hashed name
+    std::unordered_map<std::string, uint32_t> m_multiplicity;
 
 public:
     VDouble0 m_temporariesIntroduced;  // Number of temporaries introduced
 
-    const std::string& ident() const { return m_ident; }
+    std::string tmpNamePrefix(DfgGraph&);  // Return prefix to use for given graph
 
     explicit V3DfgRegularizeContext(const std::string& label)
         : m_label{label} {}
