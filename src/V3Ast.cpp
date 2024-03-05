@@ -17,7 +17,6 @@
 #include "V3PchAstMT.h"
 
 #include "V3Broken.h"
-#include "V3EmitV.h"
 #include "V3File.h"
 
 #include <iomanip>
@@ -1318,7 +1317,7 @@ void AstNode::dumpTreeAndNext(std::ostream& os, const string& indent, int maxDep
     }
 }
 
-void AstNode::dumpTreeFile(const string& filename, bool doDump, bool doCheck) {
+void AstNode::dumpTreeFile(const string& filename, bool doDump) {
     // Not const function as calls checkTree
     if (doDump) {
         {  // Write log & close
@@ -1335,14 +1334,6 @@ void AstNode::dumpTreeFile(const string& filename, bool doDump, bool doCheck) {
                 editCountSetLast();  // Next dump can indicate start from here
             }
         }
-    }
-    if (doDump && v3Global.opt.debugEmitV()) V3EmitV::debugEmitV(filename + ".v");
-    if (doCheck && (v3Global.opt.debugCheck() || ::dumpTreeLevel())) {
-        // Error check
-        checkTree();
-        // Broken isn't part of check tree because it can munge iterp's
-        // set by other steps if it is called in the middle of other operations
-        if (AstNetlist* const netp = VN_CAST(this, Netlist)) V3Broken::brokenAll(netp);
     }
 }
 
