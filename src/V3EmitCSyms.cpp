@@ -253,7 +253,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void buildVpiHierarchy() {
         for (ScopeNames::const_iterator it = m_scopeNames.begin(); it != m_scopeNames.end();
              ++it) {
-            if (it->second.m_type != "SCOPE_MODULE") continue;
 
             const string symName = it->second.m_symName;
             string above = symName;

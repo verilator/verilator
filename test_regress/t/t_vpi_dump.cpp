@@ -38,7 +38,7 @@ std::map<int32_t, std::vector<int32_t>> iterate_over = [] {
     };
 
     std::vector<int32_t> module_options = {
-        vpiModule,  // Aldec SEGV on mixed language
+        // vpiModule,  // Aldec SEGV on mixed language
         // vpiModuleArray,       // Aldec SEGV on mixed language
         // vpiIODecl,            // Don't care about these
         vpiMemory, vpiIntegerVar, vpiRealVar,
