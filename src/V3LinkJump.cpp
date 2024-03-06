@@ -229,6 +229,8 @@ class LinkJumpVisitor final : public VNVisitor {
     void visit(AstWhile* nodep) override {
         // Don't need to track AstRepeat/AstFor as they have already been converted
         if (!m_unrollFull.isDefault()) nodep->unrollFull(m_unrollFull);
+        if (m_modp->hasParameterList() || m_modp->hasGParam())
+            nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDLOOP, true);
         m_unrollFull = VOptionBool::OPT_DEFAULT_FALSE;
         VL_RESTORER(m_loopp);
         VL_RESTORER(m_loopInc);
