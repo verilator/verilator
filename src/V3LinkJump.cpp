@@ -34,6 +34,7 @@
 #include "V3LinkJump.h"
 
 #include "V3AstUserAllocator.h"
+#include "V3Error.h"
 
 #include <vector>
 
@@ -228,6 +229,8 @@ class LinkJumpVisitor final : public VNVisitor {
     void visit(AstWhile* nodep) override {
         // Don't need to track AstRepeat/AstFor as they have already been converted
         if (!m_unrollFull.isDefault()) nodep->unrollFull(m_unrollFull);
+        if (m_modp->hasParameterList() || m_modp->hasGParam())
+            nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDLOOP, true);
         m_unrollFull = VOptionBool::OPT_DEFAULT_FALSE;
         VL_RESTORER(m_loopp);
         VL_RESTORER(m_loopInc);
@@ -254,6 +257,8 @@ class LinkJumpVisitor final : public VNVisitor {
         AstWhile* const whilep = new AstWhile{nodep->fileline(), condp, bodyp};
         if (!m_unrollFull.isDefault()) whilep->unrollFull(m_unrollFull);
         m_unrollFull = VOptionBool::OPT_DEFAULT_FALSE;
+        // No unused warning for converted AstDoWhile, as body always executes once
+        nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDLOOP, true);
         nodep->replaceWith(whilep);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         if (bodyp) {

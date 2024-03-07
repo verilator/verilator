@@ -365,6 +365,7 @@ bool FileLine::warnOff(const string& msg, bool flag) {
     // Backward compatibility with msg="UNUSED"
     if (V3ErrorCode::unusedMsg(cmsg)) {
         warnOff(V3ErrorCode::UNUSEDGENVAR, flag);
+        warnOff(V3ErrorCode::UNUSEDLOOP, flag);
         warnOff(V3ErrorCode::UNUSEDPARAM, flag);
         warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
         return true;
@@ -394,6 +395,7 @@ void FileLine::warnStyleOff(bool flag) {
 
 void FileLine::warnUnusedOff(bool flag) {
     warnOff(V3ErrorCode::UNUSEDGENVAR, flag);
+    warnOff(V3ErrorCode::UNUSEDLOOP, flag);
     warnOff(V3ErrorCode::UNUSEDPARAM, flag);
     warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
 }

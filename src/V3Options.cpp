@@ -1577,6 +1577,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-Werror-UNUSED", CbCall, []() {
         V3Error::pretendError(V3ErrorCode::UNUSEDGENVAR, true);
+        V3Error::pretendError(V3ErrorCode::UNUSEDLOOP, true);
         V3Error::pretendError(V3ErrorCode::UNUSEDPARAM, true);
         V3Error::pretendError(V3ErrorCode::UNUSEDSIGNAL, true);
     });
@@ -1630,6 +1631,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-Wwarn-UNUSED", CbCall, []() {
         FileLine::globalWarnUnusedOff(false);
         V3Error::pretendError(V3ErrorCode::UNUSEDGENVAR, false);
+        V3Error::pretendError(V3ErrorCode::UNUSEDLOOP, false);
         V3Error::pretendError(V3ErrorCode::UNUSEDSIGNAL, false);
         V3Error::pretendError(V3ErrorCode::UNUSEDPARAM, false);
     });

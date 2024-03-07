@@ -1312,6 +1312,18 @@ class GateUnused final {
         }
     }
 
+    static void warnUnused(const AstNode* const nodep) {
+        if (nodep->fileline()->warnIsOff(V3ErrorCode::UNUSEDLOOP)) return;
+
+        if (const AstNodeProcedure* const procedurep = VN_CAST(nodep, NodeProcedure)) {
+            if (procedurep->stmtsp())
+                procedurep->stmtsp()->foreach([](const AstWhile* const whilep) {  //
+                    whilep->v3warn(UNUSEDLOOP, "Loop is not used and will be optimized out");
+                    whilep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDLOOP, true);
+                });
+        }
+    }
+
     // Remove unused logic
     void remove() {
         for (V3GraphVertex *vtxp = m_graph.verticesBeginp(), *nextp; vtxp; vtxp = nextp) {
@@ -1319,6 +1331,8 @@ class GateUnused final {
             if (GateLogicVertex* const lVtxp = vtxp->cast<GateLogicVertex>()) {
                 if (!lVtxp->consumed() && lVtxp->activep()) {  // activep is nullptr under cfunc
                     AstNode* const nodep = lVtxp->nodep();
+                    warnUnused(nodep);
+
                     UINFO(8, "    Remove unconsumed " << nodep << endl);
                     nodep->unlinkFrBack();
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);

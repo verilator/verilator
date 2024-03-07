@@ -1,27 +1,27 @@
-%Warning-MISINDENT: t/t_lint_misindent_bad.v:14:9: Misleading indentation
-   14 |         $display("bad1");   
+%Warning-MISINDENT: t/t_lint_misindent_bad.v:16:9: Misleading indentation
+   16 |         $display("bad1");   
       |         ^~~~~~~~
-                    t/t_lint_misindent_bad.v:12:7: ... Expected indentation matching this earlier statement's line:
-   12 |       if (0)
+                    t/t_lint_misindent_bad.v:14:7: ... Expected indentation matching this earlier statement's line:
+   14 |       if (0)
       |       ^~
                     ... For warning description see https://verilator.org/warn/MISINDENT?v=latest
                     ... Use "/* verilator lint_off MISINDENT */" and lint_on around source to disable this message.
-%Warning-MISINDENT: t/t_lint_misindent_bad.v:20:9: Misleading indentation
-   20 |         $display("bad2");   
+%Warning-MISINDENT: t/t_lint_misindent_bad.v:22:9: Misleading indentation
+   22 |         $display("bad2");   
       |         ^~~~~~~~
-                    t/t_lint_misindent_bad.v:16:7: ... Expected indentation matching this earlier statement's line:
-   16 |       if (0)
+                    t/t_lint_misindent_bad.v:18:7: ... Expected indentation matching this earlier statement's line:
+   18 |       if (0)
       |       ^~
-%Warning-MISINDENT: t/t_lint_misindent_bad.v:24:9: Misleading indentation
-   24 |         $display("bad3");   
+%Warning-MISINDENT: t/t_lint_misindent_bad.v:26:9: Misleading indentation
+   26 |         $display("bad3");   
       |         ^~~~~~~~
-                    t/t_lint_misindent_bad.v:22:7: ... Expected indentation matching this earlier statement's line:
-   22 |       for (;0;)
+                    t/t_lint_misindent_bad.v:24:7: ... Expected indentation matching this earlier statement's line:
+   24 |       for (;0;)
       |       ^~~
-%Warning-MISINDENT: t/t_lint_misindent_bad.v:28:9: Misleading indentation
-   28 |         $display("bad4");   
+%Warning-MISINDENT: t/t_lint_misindent_bad.v:30:9: Misleading indentation
+   30 |         $display("bad4");   
       |         ^~~~~~~~
-                    t/t_lint_misindent_bad.v:26:7: ... Expected indentation matching this earlier statement's line:
-   26 |       while (0)
+                    t/t_lint_misindent_bad.v:28:7: ... Expected indentation matching this earlier statement's line:
+   28 |       while (0)
       |       ^~~~~
 %Error: Exiting due to
