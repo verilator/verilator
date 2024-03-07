@@ -14,9 +14,9 @@ module t(/*AUTOARG*/
    input clk;
    input reset_l;
 
-   parametrized_initial#(.PARAM(0)) parametrized_initial0();
-   parametrized_initial#(.PARAM(1)) parametrized_initial1();
-   parametrized_initial#(.PARAM(2)) parametrized_initial2();
+   parametrized_initial#(.REPETITIONS(0)) parametrized_initial0();
+   parametrized_initial#(.REPETITIONS(1)) parametrized_initial1();
+   parametrized_initial#(.REPETITIONS(2)) parametrized_initial2();
    non_parametrized_initial non_parametrized_initial();
 
    with_always with_always(.clk(clk));
@@ -31,7 +31,7 @@ module unused(input clk);
    reg unused_variable_while = 0;
    reg unused_variable_do_while = 0;
    reg unused_variable_for = 0;
-   logic always_false = 0;
+   const logic always_false = 0;
 
    always @(posedge clk) begin
       while(unused_variable_while) begin
@@ -48,85 +48,83 @@ module unused(input clk);
       end
 
       while(always_false) begin
-         $write("This will not be printed");
+         $write("This will not be printed\n");
       end
 
       do begin
-         $write("This will not be printed");
+         $write("This will not be printed\n");
       end while (always_false);
 
       for (int i = 0; always_false; i++)
       begin
-         $write("This will not be printed");
+         $write("This will not be printed\n");
       end
    end
 endmodule
 
 // no warning for loops under parametrized module
-module parametrized_initial #(parameter PARAM = 0);
+module parametrized_initial #(parameter REPETITIONS = 0);
    int prints_while = 0;
    int prints_do_while = 0;
 
-   // loops with evaluation depending on PARAM
+   // loops with evaluation depending on REPETITIONS
    initial begin
-      while(prints_while < PARAM) begin
+      while(prints_while < REPETITIONS) begin
          prints_while = prints_while + 1;
          $write("Writing to console to avoid loop being optimized out\n");
       end
 
-      while(PARAM < 0) begin
+      while(REPETITIONS < 0) begin
          $write("Writing to console to avoid loop being optimized out\n");
       end
 
-      for (int i = 0; i < PARAM; i++) begin
+      for (int i = 0; i < REPETITIONS; i++) begin
          $write("Writing to console to avoid loop being optimized out\n");
       end
 
       do begin
          prints_do_while = prints_do_while + 1;
          $write("Writing to console to avoid loop being optimized out\n");
-      end while (prints_do_while < PARAM);
+      end while (prints_do_while < REPETITIONS);
    end
 
    // loop not changing variable used for output
    int param_unused_while = 0;
-   int param_unused_do_while = 0;
-   int param_unused_for = 0;
    initial begin
-      while(param_unused_while < PARAM) begin
+      while(param_unused_while < REPETITIONS) begin
             param_unused_while = param_unused_while + 1;
       end
    end
 
-   logic param_always_false = 0;
+   const logic always_false = 0;
    // loops with empty bodies
    initial begin
       while(0);
-      while(param_always_false);
-      while(PARAM < 0);
+      while(always_false);
+      while(REPETITIONS < 0);
    end
 endmodule
 
 module non_parametrized_initial;
    int prints_do_while = 0;
-   int PARAM = 0;
+   const int always_zero = 0;
 
-   // loops with evaluation depending on PARAM
+   // loops with evaluation depending on always_zero
    initial begin
-      while(PARAM < 0) begin
-         $write("Writing to console to avoid loop being optimized out\n");
+      while(always_zero < 0) begin
+         $write("This will not be printed\n");
       end
 
       // unrolled - no warning
-      for (int i = 0; i < PARAM; i++) begin
-         $write("Writing to console to avoid loop being optimized out\n");
+      for (int i = 0; i < always_zero; i++) begin
+         $write("This will not be printed\n");
       end
 
       // inlined - no warning
       do begin
          prints_do_while = prints_do_while + 1;
          $write("Writing to console to avoid loop being optimized out\n");
-      end while (prints_do_while < PARAM);
+      end while (prints_do_while < always_zero);
    end
 
    // loop not changing variable used for output
@@ -135,7 +133,7 @@ module non_parametrized_initial;
    int param_unused_for = 0;
    initial begin
       // warning
-      while(param_unused_while < PARAM) begin
+      while(param_unused_while < always_zero) begin
             param_unused_while++;
       end
 
@@ -151,12 +149,12 @@ module non_parametrized_initial;
       end while (param_unused_do_while > 0);
    end
 
-   logic param_always_false = 0;
+   const logic always_false = 0;
    // loops with empty bodies - warning
    initial begin
       while(0);
-      while(param_always_false);
-      while(PARAM < 0);
+      while(always_false);
+      while(always_zero < 0);
 
       // inlined - no warning
       do begin
@@ -169,38 +167,38 @@ endmodule
 
 // warning for all unused loops under always
 module with_always(input clk);
-   logic param_always_false = 0;
+   const logic always_false = 0;
    always @(posedge clk) begin
       while(0);
 
-      while(param_always_false) begin
+      while(always_false) begin
          $write("Test");
       end
    end
 endmodule
 
 module const_condition;
-   logic param_always_false = 0;
+   const logic always_zero = 0;
    // loops with const false condition - warning
    initial begin
-      while(param_always_false) begin
-         $write("This will not be printed");
+      while(always_zero) begin
+         $write("This will not be printed\n");
       end
 
-      for (int i = 0; param_always_false; i++)
+      for (int i = 0; always_zero; i++)
       begin
-         $write("This will not be printed");
+         $write("This will not be printed\n");
       end
 
-      for (int i = 0; i < param_always_false; i++)
+      for (int i = 0; i < always_zero; i++)
       begin
-         $write("This will not be printed");
+         $write("This will not be printed\n");
       end
 
       // inlined - no warning
       do begin
-         $write("This will be printed");
-      end while (param_always_false);
+         $write("This will be printed\n");
+      end while (always_zero);
    end
 endmodule
 
@@ -211,11 +209,11 @@ module loop_with_param;
 
    initial begin
       for (int i = 0; ZERO_PARAM; i++) begin
-         $write("This will not be printed");
+         $write("This will not be printed\n");
       end
 
       while (ZERO_PARAM != ZERO_PARAM) begin
-         $write("This will not be printed");
+         $write("This will not be printed\n");
       end
 
       while(prints > ZERO_PARAM) begin
