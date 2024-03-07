@@ -1514,7 +1514,6 @@ class AstSenItem final : public AstNode {
     VEdgeType m_edgeType;  // Edge type
 public:
     class Combo {};  // for constructor type-overload selection
-    class Illegal {};  // for constructor type-overload selection
     class Static {};  // for constructor type-overload selection
     class Initial {};  // for constructor type-overload selection
     class Final {};  // for constructor type-overload selection
@@ -1528,9 +1527,6 @@ public:
     AstSenItem(FileLine* fl, Combo)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{VEdgeType::ET_COMBO} {}
-    AstSenItem(FileLine* fl, Illegal)
-        : ASTGEN_SUPER_SenItem(fl)
-        , m_edgeType{VEdgeType::ET_ILLEGAL} {}
     AstSenItem(FileLine* fl, Static)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{VEdgeType::ET_STATIC} {}
@@ -1562,7 +1558,6 @@ public:
     bool isStatic() const { return edgeType() == VEdgeType::ET_STATIC; }
     bool isInitial() const { return edgeType() == VEdgeType::ET_INITIAL; }
     bool isFinal() const { return edgeType() == VEdgeType::ET_FINAL; }
-    bool isIllegal() const { return edgeType() == VEdgeType::ET_ILLEGAL; }
     bool isNever() const { return edgeType() == VEdgeType::ET_NEVER; }
 };
 class AstSenTree final : public AstNode {

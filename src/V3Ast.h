@@ -323,7 +323,6 @@ public:
     enum en : uint8_t {
         // These must be in general -> most specific order, as we sort by it
         // in V3Const::visit AstSenTree
-        ET_ILLEGAL,
         // Involving a variable
         ET_CHANGED,  // Value changed
         ET_BOTHEDGE,  // POSEDGE | NEGEDGE (i.e.: 'edge' in Verilog)
@@ -343,8 +342,6 @@ public:
     enum en m_e;
     bool clockedStmt() const {
         static const bool clocked[] = {
-            false,  // ET_ILLEGAL
-
             true,  // ET_CHANGED
             true,  // ET_BOTHEDGE
             true,  // ET_POSEDGE
@@ -368,20 +365,19 @@ public:
         case ET_BOTHEDGE: return ET_BOTHEDGE;
         case ET_POSEDGE: return ET_NEGEDGE;
         case ET_NEGEDGE: return ET_POSEDGE;
-        default: UASSERT_STATIC(0, "Inverting bad edgeType()");
+        default: UASSERT_STATIC(0, "Inverting bad edgeType()"); return ET_NEGEDGE;
         }
-        return VEdgeType::ET_ILLEGAL;
     }
     const char* ascii() const {
         static const char* const names[]
-            = {"%E-edge", "CHANGED", "BOTH",   "POS",     "NEG",   "EVENT", "TRUE",
-               "COMBO",   "HYBRID",  "STATIC", "INITIAL", "FINAL", "NEVER"};
+            = {"CHANGED", "BOTH",   "POS",    "NEG",     "EVENT", "TRUE",
+               "COMBO",   "HYBRID", "STATIC", "INITIAL", "FINAL", "NEVER"};
         return names[m_e];
     }
     const char* verilogKwd() const {
         static const char* const names[]
-            = {"%E-edge", "[changed]", "edge",     "posedge",   "negedge", "[event]", "[true]",
-               "*",       "[hybrid]",  "[static]", "[initial]", "[final]", "[never]"};
+            = {"[changed]", "edge",     "posedge",  "negedge",   "[event]", "[true]",
+               "*",         "[hybrid]", "[static]", "[initial]", "[final]", "[never]"};
         return names[m_e];
     }
     // Return true iff this and the other have mutually exclusive transitions
@@ -397,8 +393,6 @@ public:
         }
         return false;
     }
-    VEdgeType()
-        : m_e{ET_ILLEGAL} {}
     // cppcheck-suppress noExplicitConstructor
     constexpr VEdgeType(en _e)
         : m_e{_e} {}

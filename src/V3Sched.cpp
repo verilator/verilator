@@ -98,7 +98,7 @@ void remapSensitivities(const LogicByScope& lbs,
 }
 
 void invertAndMergeSenTreeMap(
-    std::unordered_map<const AstSenItem*, const AstSenTree*>& result,
+    V3Order::TrigToSenMap& result,
     const std::unordered_map<const AstSenTree*, AstSenTree*>& senTreeMap) {
     for (const auto& pair : senTreeMap) {
         UASSERT_OBJ(!pair.second->sensesp()->nextp(), pair.second, "Should be single AstSenIem");
@@ -791,7 +791,7 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
     remapSensitivities(hybrid, trig.m_map);
 
     // Create the inverse map from trigger ref AstSenTree to original AstSenTree
-    std::unordered_map<const AstSenItem*, const AstSenTree*> trigToSen;
+    V3Order::TrigToSenMap trigToSen;
     invertAndMergeSenTreeMap(trigToSen, trig.m_map);
 
     // First trigger is for pure combinational triggers (first iteration)
@@ -871,7 +871,7 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
     remapSensitivities(logic, trig.m_map);
 
     // Create the inverse map from trigger ref AstSenTree to original AstSenTree
-    std::unordered_map<const AstSenItem*, const AstSenTree*> trigToSen;
+    V3Order::TrigToSenMap trigToSen;
     invertAndMergeSenTreeMap(trigToSen, trig.m_map);
 
     // The trigger top level inputs (first iteration)
@@ -1268,7 +1268,7 @@ void schedule(AstNetlist* netlistp) {
     const auto& actTimingDomains = timingKit.remapDomains(actTrigMap);
 
     // Create the inverse map from trigger ref AstSenTree to original AstSenTree
-    std::unordered_map<const AstSenItem*, const AstSenTree*> trigToSenAct;
+    V3Order::TrigToSenMap trigToSenAct;
     invertAndMergeSenTreeMap(trigToSenAct, preTrigMap);
     invertAndMergeSenTreeMap(trigToSenAct, actTrigMap);
 
@@ -1307,7 +1307,7 @@ void schedule(AstNetlist* netlistp) {
         for (LogicByScope* lbs : logic) remapSensitivities(*lbs, trigMap);
 
         // Create the inverse map from trigger ref AstSenTree to original AstSenTree
-        std::unordered_map<const AstSenItem*, const AstSenTree*> trigToSen;
+        V3Order::TrigToSenMap trigToSen;
         invertAndMergeSenTreeMap(trigToSen, trigMap);
 
         AstSenTree* const dpiExportTriggered
