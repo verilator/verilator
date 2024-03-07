@@ -3300,7 +3300,8 @@ class ConstVisitor final : public VNVisitor {
                 if (nodep->precondsp()) {
                     nodep->replaceWith(nodep->precondsp());
                 } else {
-                    nodep->v3warn(UNUSEDLOOP, "Loop condition is always false; body will never execute");
+                    nodep->v3warn(UNUSEDLOOP,
+                                  "Loop condition is always false; body will never execute");
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDLOOP, true);
                     nodep->unlinkFrBack();
                 }
