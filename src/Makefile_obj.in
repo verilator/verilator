@@ -265,6 +265,7 @@ RAW_OBJS_PCH_ASTNOMT = \
 	V3MergeCond.o \
 	V3Name.o \
 	V3Order.o \
+	V3OrderGraphBuilder.o \
 	V3Param.o \
 	V3Partition.o \
 	V3Premit.o \
