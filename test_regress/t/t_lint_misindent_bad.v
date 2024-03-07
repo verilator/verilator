@@ -6,6 +6,8 @@
 
 // Do not reindent - spaces are critical to this test
 
+// verilator lint_off UNUSEDLOOP
+
 module t (/*AUTOARG*/);
 
    initial begin

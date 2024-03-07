@@ -12,7 +12,7 @@ scenarios(vlt => 1);
 
 lint(
     fails => 1,
-    verilator_flags2 => ["--lint-only -Wall -Wno-DECLFILENAME -Wno-UNUSEDLOOP"],
+    verilator_flags2 => ["--lint-only -Wall -Wno-DECLFILENAME"],
     expect_filename => $Self->{golden_filename},
     );
 
