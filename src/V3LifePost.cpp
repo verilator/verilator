@@ -129,6 +129,7 @@ class LifePostDlyVisitor final : public VNVisitor {
     // NODE STATE
     // AstVarScope::user1()    -> bool: referenced outside _eval__nba
     // AstVarScope::user4()    -> AstVarScope*: Passed to LifePostElim to substitute this var
+    const VNUser1InUse m_inuser1;
     const VNUser4InUse m_inuser4;
 
     // STATE

@@ -32,6 +32,7 @@ class EmitXmlFileVisitor final : public VNVisitorConst {
     // NODE STATE
     // Entire netlist:
     // AstNode::user1           -> uint64_t, number to connect crossrefs
+    const VNUser1InUse m_user1InUse;
 
     // MEMBERS
     V3OutFile* const m_ofp;
