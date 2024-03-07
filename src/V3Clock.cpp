@@ -66,6 +66,9 @@ public:
 // Clock state, as a visitor of each AstNode
 
 class ClockVisitor final : public VNVisitor {
+    // NODE STATE
+    // ???
+    const VNUser1InUse m_user1InUse;
     // STATE
     AstCFunc* m_evalp = nullptr;  // The '_eval' function
     AstScope* m_scopep = nullptr;  // Current scope

@@ -532,6 +532,7 @@ class ProcessMoveBuildGraph final {
 
     // NODE STATE
     // AstSenTree::user1p()     -> AstSenTree:  Original AstSenTree for trigger
+    const VNUser1InUse m_user1InUse;
 
     // TYPES
     using DomainMap = std::map<const AstSenTree*, T_MoveVertex*>;
@@ -1285,10 +1286,12 @@ void OrderProcess::processMTasks() {
     // only logic, and discarding edges we know we can ignore.
     // This is quite similar to the 'm_pomGraph' of the serial code gen:
     V3Graph logicGraph;
-    OrderMTaskMoveVertexMaker create_mtask_vertex(&logicGraph);
-    ProcessMoveBuildGraph<MTaskMoveVertex> mtask_pmbg(&m_graph, &logicGraph, m_trigToSen,
-                                                      &create_mtask_vertex);
-    mtask_pmbg.build();
+    {
+        OrderMTaskMoveVertexMaker create_mtask_vertex(&logicGraph);
+        ProcessMoveBuildGraph<MTaskMoveVertex> mtask_pmbg(&m_graph, &logicGraph, m_trigToSen,
+                                                          &create_mtask_vertex);
+        mtask_pmbg.build();
+    }
 
     // Needed? We do this for m_pomGraph in serial mode, so do it here too:
     logicGraph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
