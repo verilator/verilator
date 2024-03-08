@@ -319,7 +319,7 @@ AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* l
     AstNodeExpr* const bp = new AstLte{fileline(), exprp->cloneTreePure(true), rhsp};
     ap->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
     bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
-    return new AstAnd{fileline(), ap, bp};
+    return new AstLogAnd{fileline(), ap, bp};
 }
 
 AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
