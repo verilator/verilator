@@ -118,7 +118,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
         f << "(declare-fun " << var.second->name() << " () (_ BitVec " << var.second->width()
           << "))\n";
     }
-    for (const auto& constraint : m_constraints) { f << "(assert " << constraint << ")\n"; }
+    for (const std::string& constraint : m_constraints) { f << "(assert " << constraint << ")\n"; }
     f << "\n(check-sat)\n";
     f << "(get-value (";
     for (const auto& var : m_vars) { f << var.second->name() << ' '; }

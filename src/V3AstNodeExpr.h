@@ -97,6 +97,7 @@ public:
     // Signed flavor of nodes with both flavors?
     virtual bool signedFlavor() const { return false; }
     virtual bool stringFlavor() const { return false; }  // N flavor of nodes with both flavors?
+    virtual const char* randomizerOp() const { return nullptr; }
     int instrCount() const override { return widthInstrs(); }
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
@@ -475,6 +476,7 @@ public:
     // Signed flavor of nodes with both flavors?
     virtual bool signedFlavor() const { return false; }
     virtual bool stringFlavor() const { return false; }  // N flavor of nodes with both flavors?
+    virtual const char* randomizerOp() const { return nullptr; }
     int instrCount() const override { return widthInstrs(); }
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
@@ -2525,6 +2527,7 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    virtual const char* randomizerOp() const override { return "="; }
 };
 class AstFGetS final : public AstNodeBiop {
 public:
@@ -2647,6 +2650,7 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    virtual const char* randomizerOp() const override { return "bvugt"; }
 };
 class AstGtD final : public AstNodeBiop {
 public:
@@ -2718,6 +2722,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool signedFlavor() const override { return true; }
+    virtual const char* randomizerOp() const override { return "bvsgt"; }
 };
 class AstGte final : public AstNodeBiop {
 public:
@@ -2740,6 +2745,7 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    virtual const char* randomizerOp() const override { return "bvuge"; }
 };
 class AstGteD final : public AstNodeBiop {
 public:
@@ -2811,6 +2817,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool signedFlavor() const override { return true; }
+    virtual const char* randomizerOp() const override { return "bvsge"; }
 };
 class AstLogAnd final : public AstNodeBiop {
 public:
@@ -2834,6 +2841,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
+    virtual const char* randomizerOp() const override { return "and"; }
 };
 class AstLogIf final : public AstNodeBiop {
 public:
@@ -2856,6 +2864,7 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    virtual const char* randomizerOp() const override { return "=>"; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
 };
 class AstLogOr final : public AstNodeBiop {
@@ -2879,6 +2888,7 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    virtual const char* randomizerOp() const override { return "or"; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
 };
 class AstLt final : public AstNodeBiop {
@@ -2902,6 +2912,7 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    virtual const char* randomizerOp() const override { return "bvult"; }
 };
 class AstLtD final : public AstNodeBiop {
 public:
@@ -2973,6 +2984,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool signedFlavor() const override { return true; }
+    virtual const char* randomizerOp() const override { return "bvslt"; }
 };
 class AstLte final : public AstNodeBiop {
 public:
@@ -2995,6 +3007,7 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    virtual const char* randomizerOp() const override { return "bvule"; }
 };
 class AstLteD final : public AstNodeBiop {
 public:
@@ -3066,6 +3079,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool signedFlavor() const override { return true; }
+    virtual const char* randomizerOp() const override { return "bvsle"; }
 };
 class AstModDiv final : public AstNodeBiop {
 public:
@@ -3088,6 +3102,7 @@ public:
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
+    virtual const char* randomizerOp() const override { return "bvmod"; }
 };
 class AstModDivS final : public AstNodeBiop {
 public:
@@ -3111,6 +3126,7 @@ public:
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
     bool signedFlavor() const override { return true; }
+    virtual const char* randomizerOp() const override { return "bvsmod"; }
 };
 class AstNeqWild final : public AstNodeBiop {
 public:
@@ -3333,6 +3349,7 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return false; }
+    virtual const char* randomizerOp() const override { return "bvshl"; }
 };
 class AstShiftLOvr final : public AstNodeBiop {
     // Like ShiftL but checks for an over shift and returns zeros
@@ -3382,6 +3399,7 @@ public:
     // LHS size might be > output size, so don't want to force size
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    virtual const char* randomizerOp() const override { return "bvlshr"; }
 };
 class AstShiftROvr final : public AstNodeBiop {
     // Like ShiftR but checks for an over shift and returns zeros
@@ -3433,6 +3451,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool signedFlavor() const override { return true; }
+    virtual const char* randomizerOp() const override { return "bvashr"; }
 };
 class AstShiftRSOvr final : public AstNodeBiop {
     // Shift right with sign extension, >>> operator, checks for an over shift and returns zeros
@@ -3482,6 +3501,7 @@ public:
     bool cleanRhs() const override { return false; }
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
+    virtual const char* randomizerOp() const override { return "bvsub"; }
 };
 class AstSubD final : public AstNodeBiop {
 public:
@@ -3558,6 +3578,7 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    virtual const char* randomizerOp() const override { return "="; }
 };
 class AstEqCase final : public AstNodeBiCom {
 public:
@@ -3675,6 +3696,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
+    virtual const char* randomizerOp() const override { return "="; }
 };
 class AstNeq final : public AstNodeBiCom {
 public:
@@ -3815,6 +3837,7 @@ public:
     bool cleanRhs() const override { return false; }
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
+    virtual const char* randomizerOp() const override { return "bvadd"; }
 };
 class AstAddD final : public AstNodeBiComAsv {
 public:
@@ -3862,6 +3885,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     const char* widthMismatch() const override VL_MT_STABLE;
+    virtual const char* randomizerOp() const override { return "bvand"; }
 };
 class AstMul final : public AstNodeBiComAsv {
 public:
@@ -3885,6 +3909,7 @@ public:
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_MUL; }
+    virtual const char* randomizerOp() const override { return "bvmul"; }
 };
 class AstMulD final : public AstNodeBiComAsv {
 public:
@@ -3957,6 +3982,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     const char* widthMismatch() const override VL_MT_STABLE;
+    virtual const char* randomizerOp() const override { return "bvor"; }
 };
 class AstXor final : public AstNodeBiComAsv {
 public:
@@ -3980,6 +4006,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     const char* widthMismatch() const override VL_MT_STABLE;
+    virtual const char* randomizerOp() const override { return "bvxor"; }
 };
 
 // === AstNodeDistBiop ===
@@ -5054,6 +5081,7 @@ public:
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
+    virtual const char* randomizerOp() const override { return "not"; }
 };
 class AstNToI final : public AstNodeUniop {
     // String to any-size integral
@@ -5084,6 +5112,7 @@ public:
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return false; }
     bool sizeMattersLhs() const override { return true; }
+    virtual const char* randomizerOp() const override { return "bvneg"; }
 };
 class AstNegateD final : public AstNodeUniop {
 public:
@@ -5116,6 +5145,7 @@ public:
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return false; }
     bool sizeMattersLhs() const override { return true; }
+    virtual const char* randomizerOp() const override { return "bvnot"; }
     const char* widthMismatch() const override VL_MT_STABLE;
 };
 class AstNullCheck final : public AstNodeUniop {
