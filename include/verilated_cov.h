@@ -165,7 +165,7 @@ public:
     /// Return default filename for the current thread
     static std::string defaultFilename() VL_MT_SAFE { return threadCovp()->defaultFilename(); }
     /// Write all coverage data to a file for the current thread
-    static void write(const std::string filename) VL_MT_SAFE { threadCovp()->write(filename); }
+    static void write(const std::string& filename) VL_MT_SAFE { threadCovp()->write(filename); }
     static void write() VL_MT_SAFE { write(defaultFilename()); }
     /// Clear coverage points (and call delete on all items) for the current thread
     static void clear() VL_MT_SAFE { threadCovp()->clear(); }

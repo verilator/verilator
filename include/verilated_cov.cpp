@@ -121,7 +121,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    VerilatedCovImp(VerilatedContext* contextp)
+    explicit VerilatedCovImp(VerilatedContext* contextp)
         : m_contextp{contextp} {}
     VL_UNCOPYABLE(VerilatedCovImp);
 

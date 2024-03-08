@@ -1220,7 +1220,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
             inPct = true;
             inIgnore = false;
         } else if (!inPct && std::isspace(pos[0])) {  // Format spaces
-            while (std::isspace(pos[1])) pos++;
+            while (std::isspace(pos[1])) ++pos;
             _vl_vsss_skipspace(fp, floc, fromp, fstr);
         } else if (!inPct) {  // Expected Format
             _vl_vsss_skipspace(fp, floc, fromp, fstr);
