@@ -21,9 +21,57 @@
 #include "verilatedos.h"
 
 #include "V3Graph.h"
-#include "V3OrderMoveGraph.h"
+#include "V3OrderGraph.h"
 
 #include <list>
+
+// Similar to OrderMoveVertex, but modified for threaded code generation.
+class MTaskMoveVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(MTaskMoveVertex, V3GraphVertex)
+    //  This could be more compact, since we know m_varp and m_logicp
+    //  cannot both be set. Each MTaskMoveVertex represents a logic node
+    //  or a var node, it can't be both.
+    OrderLogicVertex* const m_logicp;  // Logic represented by this vertex
+    const OrderEitherVertex* const m_varp;  // Var represented by this vertex
+    const AstSenTree* const m_domainp;
+
+public:
+    MTaskMoveVertex(V3Graph* graphp, OrderLogicVertex* logicp, const OrderEitherVertex* varp,
+                    const AstSenTree* domainp) VL_MT_DISABLED : V3GraphVertex{graphp},
+                                                                m_logicp{logicp},
+                                                                m_varp{varp},
+                                                                m_domainp{domainp} {
+        UASSERT(!(logicp && varp), "MTaskMoveVertex: logicp and varp may not both be set!\n");
+    }
+    ~MTaskMoveVertex() override = default;
+
+    // ACCESSORS
+    OrderLogicVertex* logicp() const { return m_logicp; }
+    const OrderEitherVertex* varp() const { return m_varp; }
+    const AstScope* scopep() const { return m_logicp ? m_logicp->scopep() : nullptr; }
+    const AstSenTree* domainp() const { return m_domainp; }
+
+    string dotColor() const override {
+        if (logicp()) {
+            return logicp()->dotColor();
+        } else {
+            return "yellow";
+        }
+    }
+    string name() const override {
+        string nm;
+        if (logicp()) {
+            nm = logicp()->name();
+            nm += (string{"\\nMV:"} + " d=" + cvtToHex(logicp()->domainp()) + " s="
+                   + cvtToHex(logicp()->scopep())
+                   // "color()" represents the mtask ID.
+                   + "\\nt=" + cvtToStr(color()));
+        } else {
+            nm = "nolog\\nt=" + cvtToStr(color());
+        }
+        return nm;
+    }
+};
 
 //*************************************************************************
 // MTasks and graph structures
