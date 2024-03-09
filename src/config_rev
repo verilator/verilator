@@ -22,8 +22,8 @@ Args = parser.parse_args()
 
 os.chdir(Args.directory)
 
-if 'VERILATOR_CUSTOM_REV' in os.environ:
-    rev = os.environ['VERILATOR_CUSTOM_REV']
+if 'VERILATOR_SRC_VERSION' in os.environ:
+    rev = os.environ['VERILATOR_SRC_VERSION']
 else:
     rev = 'UNKNOWN_REV'
 
