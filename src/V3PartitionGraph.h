@@ -32,22 +32,17 @@ class MTaskMoveVertex final : public V3GraphVertex {
     //  cannot both be set. Each MTaskMoveVertex represents a logic node
     //  or a var node, it can't be both.
     OrderLogicVertex* const m_logicp;  // Logic represented by this vertex
-    const OrderEitherVertex* const m_varp;  // Var represented by this vertex
     const AstSenTree* const m_domainp;
 
 public:
-    MTaskMoveVertex(V3Graph* graphp, OrderLogicVertex* logicp, const OrderEitherVertex* varp,
-                    const AstSenTree* domainp) VL_MT_DISABLED : V3GraphVertex{graphp},
+    MTaskMoveVertex(V3Graph& graph, OrderLogicVertex* logicp,
+                    const AstSenTree* domainp) VL_MT_DISABLED : V3GraphVertex{&graph},
                                                                 m_logicp{logicp},
-                                                                m_varp{varp},
-                                                                m_domainp{domainp} {
-        UASSERT(!(logicp && varp), "MTaskMoveVertex: logicp and varp may not both be set!\n");
-    }
+                                                                m_domainp{domainp} {}
     ~MTaskMoveVertex() override = default;
 
     // ACCESSORS
     OrderLogicVertex* logicp() const { return m_logicp; }
-    const OrderEitherVertex* varp() const { return m_varp; }
     const AstScope* scopep() const { return m_logicp ? m_logicp->scopep() : nullptr; }
     const AstSenTree* domainp() const { return m_domainp; }
 
