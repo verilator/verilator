@@ -92,7 +92,7 @@ class OrderGraphBuilder final : public VNVisitor {
     OrderLogicVertex* m_logicVxp = nullptr;  // Current logic block being analyzed
 
     // Map from Trigger reference AstSenItem to the original AstSenTree
-    const std::unordered_map<const AstSenItem*, const AstSenTree*>& m_trigToSen;
+    const V3Order::TrigToSenMap& m_trigToSen;
 
     // Current AstScope being processed
     AstScope* m_scopep = nullptr;
@@ -363,7 +363,7 @@ class OrderGraphBuilder final : public VNVisitor {
 
     // CONSTRUCTOR
     OrderGraphBuilder(AstNetlist* /*nodep*/, const std::vector<V3Sched::LogicByScope*>& coll,
-                      const std::unordered_map<const AstSenItem*, const AstSenTree*>& trigToSen)
+                      const V3Order::TrigToSenMap& trigToSen)
         : m_trigToSen{trigToSen} {
         // Build the graph
         for (const V3Sched::LogicByScope* const lbsp : coll) {
@@ -379,16 +379,16 @@ class OrderGraphBuilder final : public VNVisitor {
 public:
     // Process the netlist and return the constructed ordering graph. It's 'process' because
     // this visitor does change the tree (removes some nodes related to DPI export trigger).
-    static std::unique_ptr<OrderGraph>
-    apply(AstNetlist* nodep, const std::vector<V3Sched::LogicByScope*>& coll,
-          const std::unordered_map<const AstSenItem*, const AstSenTree*>& trigToSen) {
+    static std::unique_ptr<OrderGraph> apply(AstNetlist* nodep,
+                                             const std::vector<V3Sched::LogicByScope*>& coll,
+                                             const V3Order::TrigToSenMap& trigToSen) {
         return std::unique_ptr<OrderGraph>{OrderGraphBuilder{nodep, coll, trigToSen}.m_graphp};
     }
 };
 
-std::unique_ptr<OrderGraph> V3Order::buildOrderGraph(
-    AstNetlist* netlistp,  //
-    const std::vector<V3Sched::LogicByScope*>& coll,  //
-    const std::unordered_map<const AstSenItem*, const AstSenTree*>& trigToSen) {
+std::unique_ptr<OrderGraph>
+V3Order::buildOrderGraph(AstNetlist* netlistp,  //
+                         const std::vector<V3Sched::LogicByScope*>& coll,  //
+                         const V3Order::TrigToSenMap& trigToSen) {
     return OrderGraphBuilder::apply(netlistp, coll, trigToSen);
 }

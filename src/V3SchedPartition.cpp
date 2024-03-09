@@ -185,7 +185,6 @@ class SchedGraphBuilder final : public VNVisitor {
         // Clocked or hybrid logic has explicit sensitivity, so add edge from sensitivity vertex
         if (!m_senTreep->hasCombo()) {
             m_senTreep->foreach([this, nodep, logicVtxp](AstSenItem* senItemp) {
-                if (senItemp->isIllegal()) return;
                 UASSERT_OBJ(senItemp->isClocked() || senItemp->isHybrid(), nodep,
                             "Non-clocked SenItem under clocked SenTree");
                 V3GraphVertex* const eventVtxp = getSenVertex(senItemp);
