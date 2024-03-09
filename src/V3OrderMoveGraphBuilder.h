@@ -52,38 +52,24 @@ class V3OrderMoveGraphBuilder final {
     // TYPES
     using DomainMap = std::map<const AstSenTree*, T_MoveVertex*>;
 
-public:
-    class MoveVertexMaker VL_NOT_FINAL {
-    public:
-        // Clients of ProcessMoveBuildGraph must supply MoveVertexMaker
-        // which creates new T_MoveVertex's. Each new vertex wraps lvertexp
-        // (which may be nullptr.)
-        virtual T_MoveVertex* makeVertexp(OrderLogicVertex* lvertexp,
-                                          const OrderEitherVertex* varVertexp,
-                                          const AstSenTree* domainp)
-            = 0;
-    };
-
-private:
     // MEMBERS
-    const OrderGraph* const m_graphp;  // Input OrderGraph
-    V3Graph* const m_outGraphp;  // Output graph of T_MoveVertex vertices
+    const OrderGraph& m_orderGraph;  // Input OrderGraph
+    // Output graph of T_MoveVertex vertices
+    std::unique_ptr<V3Graph> m_outGraphp{new V3Graph};
     // Map from Trigger reference AstSenItem to the original AstSenTree
     const V3Order::TrigToSenMap& m_trigToSen;
-    MoveVertexMaker* const m_vxMakerp;  // Factory class for T_MoveVertex's
     // Storage for domain -> T_MoveVertex, maps held in OrderVarVertex::userp()
     std::deque<DomainMap> m_domainMaps;
 
-public:
     // CONSTRUCTORS
-    V3OrderMoveGraphBuilder(const OrderGraph* logicGraphp,  // Input graph of OrderLogicVertex etc.
-                            V3Graph* outGraphp,  // Output graph of T_MoveVertex's
-                            const V3Order::TrigToSenMap& trigToSen, MoveVertexMaker* vxMakerp)
-        : m_graphp{logicGraphp}
-        , m_outGraphp{outGraphp}
-        , m_trigToSen{trigToSen}
-        , m_vxMakerp{vxMakerp} {}
+    V3OrderMoveGraphBuilder(const OrderGraph& orderGraph, const V3Order::TrigToSenMap& trigToSen)
+        : m_orderGraph{orderGraph}
+        , m_trigToSen{trigToSen} {
+        build();
+    }
     virtual ~V3OrderMoveGraphBuilder() = default;
+    VL_UNCOPYABLE(V3OrderMoveGraphBuilder);
+    VL_UNMOVABLE(V3OrderMoveGraphBuilder);
 
     // METHODS
     void build() {
@@ -100,9 +86,9 @@ public:
         //      done the forward search, so stop.
 
         // For each logic vertex, make a T_MoveVertex, for each variable vertex, allocate storage
-        for (V3GraphVertex* itp = m_graphp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
+        for (V3GraphVertex* itp = m_orderGraph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
             if (OrderLogicVertex* const lvtxp = itp->cast<OrderLogicVertex>()) {
-                lvtxp->userp(m_vxMakerp->makeVertexp(lvtxp, nullptr, lvtxp->domainp()));
+                lvtxp->userp(new T_MoveVertex{*m_outGraphp, lvtxp, lvtxp->domainp()});
             } else {
                 // This is an OrderVarVertex
                 m_domainMaps.emplace_back();
@@ -110,14 +96,13 @@ public:
             }
         }
         // Build edges between logic vertices
-        for (V3GraphVertex* itp = m_graphp->verticesBeginp(); itp; itp = itp->verticesNextp()) {
+        for (V3GraphVertex* itp = m_orderGraph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
             if (OrderLogicVertex* const lvtxp = itp->cast<OrderLogicVertex>()) {
                 iterateLogicVertex(lvtxp);
             }
         }
     }
 
-private:
     // Returns the AstSenItem that originally corresponds to this AstSenTree, or nullptr if no
     // original AstSenTree, or if the original AstSenTree had multiple AstSenItems.
     const AstSenItem* getOrigSenItem(AstSenTree* senTreep) {
@@ -200,7 +185,7 @@ private:
             if (!vMoveVtxp) continue;
 
             // Add this (variable, domain) as dependent of the logic that writes it.
-            new V3GraphEdge{m_outGraphp, lMoveVtxp, vMoveVtxp, 1};
+            new V3GraphEdge{m_outGraphp.get(), lMoveVtxp, vMoveVtxp, 1};
         }
     }
 
@@ -213,21 +198,24 @@ private:
             if (edgep->weight() == 0) continue;  // Was cut
 
             // OrderGraph is a bipartite graph, so we know it's an OrderLogicVertex
-            const OrderLogicVertex* const lvtxp
-                = static_cast<const OrderLogicVertex*>(edgep->top());
+            const OrderLogicVertex* const lVtxp = edgep->top()->as<OrderLogicVertex>();
 
             // Do not construct dependencies across exclusive domains.
-            if (domainsExclusive(domainp, lvtxp->domainp())) continue;
+            if (domainsExclusive(domainp, lVtxp->domainp())) continue;
 
             // there is a path from this vvtx to a logic vertex. Add the new edge.
-            if (!vMoveVtxp) vMoveVtxp = m_vxMakerp->makeVertexp(nullptr, vvtxp, domainp);
-            T_MoveVertex* const lMoveVxp = static_cast<T_MoveVertex*>(lvtxp->userp());
-            new V3GraphEdge{m_outGraphp, vMoveVtxp, lMoveVxp, 1};
+            if (!vMoveVtxp) vMoveVtxp = new T_MoveVertex{*m_outGraphp, nullptr, domainp};
+            T_MoveVertex* const lMoveVxp = static_cast<T_MoveVertex*>(lVtxp->userp());
+            new V3GraphEdge{m_outGraphp.get(), vMoveVtxp, lMoveVxp, 1};
         }
         return vMoveVtxp;
     }
 
-    VL_UNCOPYABLE(V3OrderMoveGraphBuilder);
+public:
+    static std::unique_ptr<V3Graph> apply(const OrderGraph& orderGraph,
+                                          const V3Order::TrigToSenMap& trigToSen) {
+        return std::move(V3OrderMoveGraphBuilder{orderGraph, trigToSen}.m_outGraphp);
+    }
 };
 
 #endif  // Guard
