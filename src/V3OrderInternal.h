@@ -20,9 +20,11 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3Order.h"
 #include "V3OrderGraph.h"
 #include "V3ThreadSafety.h"
 
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -38,10 +40,27 @@ struct LogicByScope;
 
 namespace V3Order {
 
-std::unique_ptr<OrderGraph>
-buildOrderGraph(AstNetlist* netlistp,  //
-                const std::vector<V3Sched::LogicByScope*>& coll,  //
-                const std::unordered_map<const AstSenItem*, const AstSenTree*>& trigToSen);
+std::unique_ptr<OrderGraph> buildOrderGraph(AstNetlist* netlistp,  //
+                                            const std::vector<V3Sched::LogicByScope*>& coll,  //
+                                            const TrigToSenMap& trigToSen);
+
+void orderOrderGraph(OrderGraph& graph, const std::string& tag);
+
+void processDomains(AstNetlist* netlistp,  //
+                    OrderGraph& graph,  //
+                    const std::string& tag,  //
+                    const TrigToSenMap& trigToSen,  //
+                    const ExternalDomainsProvider& externalDomains);
+
+std::vector<AstActive*> createSerial(const OrderGraph& graph,  //
+                                     const std::string& tag,  //
+                                     const TrigToSenMap& trigToSenMap,  //
+                                     bool slow);
+
+AstExecGraph* createParallel(const OrderGraph& graph,  //
+                             const std::string& tag,  //
+                             const TrigToSenMap& trigToSenMap,  //
+                             bool slow);
 
 };  // namespace V3Order
 

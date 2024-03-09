@@ -123,7 +123,6 @@ set(HEADERS
     V3Order.h
     V3OrderInternal.h
     V3OrderGraph.h
-    V3OrderMoveGraph.h
     V3OrderMoveGraphBuilder.h
     V3Os.h
     V3PairingHeap.h
@@ -278,6 +277,9 @@ set(COMMON_SOURCES
     V3Options.cpp
     V3Order.cpp
     V3OrderGraphBuilder.cpp
+    V3OrderParallel.cpp
+    V3OrderProcessDomains.cpp
+    V3OrderSerial.cpp
     V3Os.cpp
     V3Param.cpp
     V3Partition.cpp

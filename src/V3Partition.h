@@ -22,14 +22,12 @@
 
 #include "V3Graph.h"
 #include "V3OrderGraph.h"
-#include "V3OrderMoveGraph.h"
 #include "V3ThreadSafety.h"
 
 #include <list>
 #include <unordered_map>
 
 class LogicMTask;
-using Vx2MTaskMap = std::unordered_map<const MTaskMoveVertex*, LogicMTask*>;
 
 //*************************************************************************
 /// V3Partition takes the fine-grained logic graph from V3Order and
@@ -76,26 +74,6 @@ private:
     uint32_t setupMTaskDeps(V3Graph* mtasksp) VL_MT_DISABLED;
 
     VL_UNCOPYABLE(V3Partition);
-};
-
-//*************************************************************************
-// Map a pointer into a id, for e.g. nodep to mtask mappings
-
-class PartPtrIdMap final {
-    // TYPES
-    // MEMBERS
-    mutable uint64_t m_nextId = 0;
-    mutable std::unordered_map<const void*, uint64_t> m_id;
-
-public:
-    // CONSTRUCTORS
-    PartPtrIdMap() = default;
-    // METHODS
-    uint64_t findId(const void* ptrp) const {
-        const auto pair = m_id.emplace(ptrp, m_nextId);
-        if (pair.second) ++m_nextId;
-        return pair.first->second;
-    }
 };
 
 #endif  // Guard

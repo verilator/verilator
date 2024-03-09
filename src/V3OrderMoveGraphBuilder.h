@@ -26,6 +26,7 @@
 
 #include "V3Ast.h"
 #include "V3Graph.h"
+#include "V3Order.h"
 #include "V3OrderGraph.h"
 
 template <class T_MoveVertex>
@@ -68,18 +69,16 @@ private:
     const OrderGraph* const m_graphp;  // Input OrderGraph
     V3Graph* const m_outGraphp;  // Output graph of T_MoveVertex vertices
     // Map from Trigger reference AstSenItem to the original AstSenTree
-    const std::unordered_map<const AstSenItem*, const AstSenTree*>& m_trigToSen;
+    const V3Order::TrigToSenMap& m_trigToSen;
     MoveVertexMaker* const m_vxMakerp;  // Factory class for T_MoveVertex's
     // Storage for domain -> T_MoveVertex, maps held in OrderVarVertex::userp()
     std::deque<DomainMap> m_domainMaps;
 
 public:
     // CONSTRUCTORS
-    V3OrderMoveGraphBuilder(
-        const OrderGraph* logicGraphp,  // Input graph of OrderLogicVertex etc.
-        V3Graph* outGraphp,  // Output graph of T_MoveVertex's
-        const std::unordered_map<const AstSenItem*, const AstSenTree*>& trigToSen,
-        MoveVertexMaker* vxMakerp)
+    V3OrderMoveGraphBuilder(const OrderGraph* logicGraphp,  // Input graph of OrderLogicVertex etc.
+                            V3Graph* outGraphp,  // Output graph of T_MoveVertex's
+                            const V3Order::TrigToSenMap& trigToSen, MoveVertexMaker* vxMakerp)
         : m_graphp{logicGraphp}
         , m_outGraphp{outGraphp}
         , m_trigToSen{trigToSen}
