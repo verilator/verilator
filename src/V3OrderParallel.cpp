@@ -34,22 +34,6 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-class OrderMTaskMoveVertexMaker final
-    : public V3OrderMoveGraphBuilder<MTaskMoveVertex>::MoveVertexMaker {
-    V3Graph* m_pomGraphp;
-
-public:
-    explicit OrderMTaskMoveVertexMaker(V3Graph* pomGraphp)
-        : m_pomGraphp{pomGraphp} {}
-    MTaskMoveVertex* makeVertexp(OrderLogicVertex* lvertexp, const OrderEitherVertex* varVertexp,
-                                 const AstSenTree* domainp) override {
-        return new MTaskMoveVertex{m_pomGraphp, lvertexp, varVertexp, domainp};
-    }
-
-private:
-    VL_UNCOPYABLE(OrderMTaskMoveVertexMaker);
-};
-
 // Sort MTaskMoveVertex vertices by domain, then by scope, based on teh order they are encountered
 class OrderVerticesByDomainThenScope final {
     mutable uint64_t m_nextId = 0;  // Next id to use
@@ -82,6 +66,8 @@ struct MTaskVxIdLessThan final {
 
 AstExecGraph* V3Order::createParallel(const OrderGraph& graph, const std::string& tag,
                                       const TrigToSenMap& trigToSen, bool slow) {
+    UINFO(2, "  Constructing parallel code for '" + tag + "'");
+
     // For nondeterminism debug:
     V3Partition::hashGraphDebug(&graph, "V3Order's m_graph");
 
@@ -91,21 +77,16 @@ AstExecGraph* V3Order::createParallel(const OrderGraph& graph, const std::string
     // Now, starting from m_graph, make a slightly-coarsened graph representing
     // only logic, and discarding edges we know we can ignore.
     // This is quite similar to the 'm_pomGraph' of the serial code gen:
-    V3Graph logicGraph;
-    {
-        OrderMTaskMoveVertexMaker create_mtask_vertex(&logicGraph);
-        V3OrderMoveGraphBuilder<MTaskMoveVertex> mtask_pmbg(&graph, &logicGraph, trigToSen,
-                                                            &create_mtask_vertex);
-        mtask_pmbg.build();
-    }
+    const std::unique_ptr<V3Graph> logicGraphp
+        = V3OrderMoveGraphBuilder<MTaskMoveVertex>::apply(graph, trigToSen);
 
     // Needed? We do this for m_pomGraph in serial mode, so do it here too:
-    logicGraph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
+    logicGraphp->removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
 
     // Partition logicGraph into LogicMTask's. The partitioner will annotate
     // each vertex in logicGraph with a 'color' which is really an mtask ID
     // in this context.
-    V3Partition partitioner{&graph, &logicGraph};
+    V3Partition partitioner{&graph, logicGraphp.get()};
     V3Graph mtasks;
     partitioner.go(&mtasks);
 
@@ -124,7 +105,7 @@ AstExecGraph* V3Order::createParallel(const OrderGraph& graph, const std::string
     // This is the order we'll execute logic nodes within the MTask.
     //
     // MTasks may span scopes and domains, so sort by both here:
-    GraphStream<OrderVerticesByDomainThenScope> logicStream{&logicGraph};
+    GraphStream<OrderVerticesByDomainThenScope> logicStream{logicGraphp.get()};
     while (const V3GraphVertex* const vtxp = logicStream.nextp()) {
         const MTaskMoveVertex* const movep = vtxp->as<MTaskMoveVertex>();
         // Only care about logic vertices
