@@ -439,6 +439,7 @@ class MergeCondVisitor final : public VNVisitor {
     // STATE
     VDouble0 m_statMerges;  // Statistic tracking
     VDouble0 m_statMergedItems;  // Statistic tracking
+    VDouble0 m_statCandidateItems;  // Statistic tracking
     VDouble0 m_statLongestList;  // Statistic tracking
 
     AstNode* m_mgFirstp = nullptr;  // First node in merged sequence
@@ -784,6 +785,8 @@ class MergeCondVisitor final : public VNVisitor {
         m_mgNextp = nodep->nextp();
         // If last under parent, done with current list
         if (!m_mgNextp) mergeEnd();
+        // Statistics
+        ++m_statCandidateItems;
         // We did add to the list
         return true;
     }
@@ -871,6 +874,7 @@ public:
     explicit MergeCondVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~MergeCondVisitor() override {
         V3Stats::addStat("Optimizations, MergeCond merges", m_statMerges);
+        V3Stats::addStat("Optimizations, MergeCond candidate items", m_statCandidateItems);
         V3Stats::addStat("Optimizations, MergeCond merged items", m_statMergedItems);
         V3Stats::addStat("Optimizations, MergeCond longest merge", m_statLongestList);
     }
