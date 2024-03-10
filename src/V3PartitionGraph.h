@@ -25,37 +25,11 @@
 
 #include <list>
 
-class MTaskMoveVertex;
-
 //*************************************************************************
 // MTasks and graph structures
 
-class AbstractMTask VL_NOT_FINAL : public V3GraphVertex {
-    VL_RTTI_IMPL(AbstractMTask, V3GraphVertex)
-public:
-    explicit AbstractMTask(V3Graph* graphp) VL_MT_DISABLED : V3GraphVertex{graphp} {}
-    ~AbstractMTask() override = default;
-    virtual uint32_t id() const = 0;
-    virtual uint32_t cost() const = 0;
-};
-
-class AbstractLogicMTask VL_NOT_FINAL : public AbstractMTask {
-    VL_RTTI_IMPL(AbstractLogicMTask, AbstractMTask)
-public:
-    // TYPES
-    using VxList = std::list<MTaskMoveVertex*>;
-    // CONSTRUCTORS
-    explicit AbstractLogicMTask(V3Graph* graphp) VL_MT_DISABLED : AbstractMTask{graphp} {}
-    ~AbstractLogicMTask() override = default;
-    // METHODS
-    // Set of logic vertices in this mtask. Order is not significant.
-    virtual const VxList* vertexListp() const = 0;
-    uint32_t id() const override = 0;  // Unique id of this mtask.
-    uint32_t cost() const override = 0;
-};
-
-class ExecMTask final : public AbstractMTask {
-    VL_RTTI_IMPL(ExecMTask, AbstractMTask)
+class ExecMTask final : public V3GraphVertex {
+    VL_RTTI_IMPL(ExecMTask, V3GraphVertex)
 private:
     AstMTaskBody* const m_bodyp;  // Task body
     const uint32_t m_id;  // Unique id of this mtask.
@@ -71,23 +45,19 @@ private:
 
 public:
     ExecMTask(V3Graph* graphp, AstMTaskBody* bodyp, uint32_t id) VL_MT_DISABLED
-        : AbstractMTask{graphp},
+        : V3GraphVertex{graphp},
           m_bodyp{bodyp},
           m_id{id} {}
     AstMTaskBody* bodyp() const { return m_bodyp; }
-    uint32_t id() const override VL_MT_SAFE { return m_id; }
+    uint32_t id() const VL_MT_SAFE { return m_id; }
     uint32_t priority() const { return m_priority; }
     void priority(uint32_t pri) { m_priority = pri; }
-    uint32_t cost() const override { return m_cost; }
+    uint32_t cost() const { return m_cost; }
     void cost(uint32_t cost) { m_cost = cost; }
     void predictStart(uint64_t time) { m_predictStart = time; }
     uint64_t predictStart() const { return m_predictStart; }
     void profilerId(uint64_t id) { m_profilerId = id; }
     uint64_t profilerId() const { return m_profilerId; }
-    string cFuncName() const {
-        // If this MTask maps to a C function, this should be the name
-        return "__Vmtask"s + "__" + cvtToStr(m_id);
-    }
     string name() const override VL_MT_STABLE { return "mt"s + cvtToStr(id()); }
     string hashName() const { return m_hashName; }
     void hashName(const string& name) { m_hashName = name; }
@@ -96,6 +66,7 @@ public:
         if (priority() || cost()) str << " [pr=" << priority() << " c=" << cvtToStr(cost()) << "]";
     }
 };
+
 inline std::ostream& operator<<(std::ostream& os, const ExecMTask& rhs) {
     rhs.dump(os);
     return os;
