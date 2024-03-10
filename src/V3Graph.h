@@ -188,13 +188,13 @@ public:
         // Total cost of evaluating the whole graph. The ratio of m_totalGraphCost to
         // m_criticalPathCost gives us an estimate of the parallelizability of this graph which is
         // only as good as the guess returned by vertexCost.
-        uint32_t m_totalGraphCost = 0;
+        uint64_t m_totalGraphCost = 0;
 
         // Cost of the critical path, in abstract units (the same units returned by the vertexCost)
-        uint32_t m_criticalPathCost = 0;
+        uint64_t m_criticalPathCost = 0;
 
-        size_t m_vertexCount = 0;  // Number of vertexes in the graph
-        size_t m_edgeCount = 0;  // Number of edges in the grap
+        uint64_t m_vertexCount = 0;  // Number of vertexes in the graph
+        uint64_t m_edgeCount = 0;  // Number of edges in the grap
 
         ParallelismReport() = default;
 
@@ -203,17 +203,17 @@ public:
         ParallelismReport(const ParallelismReport&) = default;
         ParallelismReport& operator=(const ParallelismReport&) = default;
 
-        uint32_t totalGraphCost() const { return m_totalGraphCost; }
-        uint32_t criticalPathCost() const { return m_criticalPathCost; }
-        size_t vertexCount() const { return m_vertexCount; }
-        size_t edgeCount() const { return m_edgeCount; }
+        uint64_t totalGraphCost() const { return m_totalGraphCost; }
+        uint64_t criticalPathCost() const { return m_criticalPathCost; }
+        uint64_t vertexCount() const { return m_vertexCount; }
+        uint64_t edgeCount() const { return m_edgeCount; }
         double parallelismFactor() const {
             return (static_cast<double>(m_totalGraphCost) / m_criticalPathCost);
         }
     };
 
     ParallelismReport parallelismReport(
-        std::function<uint32_t(const V3GraphVertex*)> vertexCost) const VL_MT_DISABLED;
+        std::function<uint64_t(const V3GraphVertex*)> vertexCost) const VL_MT_DISABLED;
 
     // CALLBACKS
     virtual void loopsMessageCb(V3GraphVertex* vertexp) VL_MT_DISABLED;

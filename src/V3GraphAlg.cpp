@@ -525,21 +525,21 @@ double V3Graph::orderDFSIterate(V3GraphVertex* vertexp) {
 class GraphAlgParallelismReport final {
     // MEMBERS
     const V3Graph& m_graph;  // The graph
-    const std::function<uint32_t(const V3GraphVertex*)> m_vertexCost;  // vertex cost function
+    const std::function<uint64_t(const V3GraphVertex*)> m_vertexCost;  // vertex cost function
     V3Graph::ParallelismReport m_report;  // The result report
 
     // CONSTRUCTORS
     explicit GraphAlgParallelismReport(const V3Graph& graph,
-                                       std::function<uint32_t(const V3GraphVertex*)> vertexCost)
+                                       std::function<uint64_t(const V3GraphVertex*)> vertexCost)
         : m_graph{graph}
         , m_vertexCost{vertexCost} {
         // For each node, record the critical path cost from the start
         // of the graph through the end of the node.
-        std::unordered_map<const V3GraphVertex*, uint32_t> critPaths;
+        std::unordered_map<const V3GraphVertex*, uint64_t> critPaths;
         GraphStreamUnordered serialize{&m_graph};
         for (const V3GraphVertex* vertexp; (vertexp = serialize.nextp());) {
             ++m_report.m_vertexCount;
-            uint32_t cpCostToHere = 0;
+            uint64_t cpCostToHere = 0;
             for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
                 ++m_report.m_edgeCount;
                 // For each upstream item, add its critical path cost to
@@ -570,6 +570,6 @@ public:
 };
 
 V3Graph::ParallelismReport
-V3Graph::parallelismReport(std::function<uint32_t(const V3GraphVertex*)> vertexCost) const {
+V3Graph::parallelismReport(std::function<uint64_t(const V3GraphVertex*)> vertexCost) const {
     return GraphAlgParallelismReport::apply(*this, vertexCost);
 }
