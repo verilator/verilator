@@ -52,12 +52,12 @@ void processDomains(AstNetlist* netlistp,  //
                     const TrigToSenMap& trigToSen,  //
                     const ExternalDomainsProvider& externalDomains);
 
-std::vector<AstActive*> createSerial(const OrderGraph& graph,  //
+std::vector<AstActive*> createSerial(const OrderGraph& orderGraph,  //
                                      const std::string& tag,  //
                                      const TrigToSenMap& trigToSenMap,  //
                                      bool slow);
 
-AstExecGraph* createParallel(const OrderGraph& graph,  //
+AstExecGraph* createParallel(const OrderGraph& orderGraph,  //
                              const std::string& tag,  //
                              const TrigToSenMap& trigToSenMap,  //
                              bool slow);
