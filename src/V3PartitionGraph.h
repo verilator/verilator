@@ -25,48 +25,7 @@
 
 #include <list>
 
-// Similar to OrderMoveVertex, but modified for threaded code generation.
-class MTaskMoveVertex final : public V3GraphVertex {
-    VL_RTTI_IMPL(MTaskMoveVertex, V3GraphVertex)
-    //  This could be more compact, since we know m_varp and m_logicp
-    //  cannot both be set. Each MTaskMoveVertex represents a logic node
-    //  or a var node, it can't be both.
-    OrderLogicVertex* const m_logicp;  // Logic represented by this vertex
-    const AstSenTree* const m_domainp;
-
-public:
-    MTaskMoveVertex(V3Graph& graph, OrderLogicVertex* logicp,
-                    const AstSenTree* domainp) VL_MT_DISABLED : V3GraphVertex{&graph},
-                                                                m_logicp{logicp},
-                                                                m_domainp{domainp} {}
-    ~MTaskMoveVertex() override = default;
-
-    // ACCESSORS
-    OrderLogicVertex* logicp() const { return m_logicp; }
-    const AstScope* scopep() const { return m_logicp ? m_logicp->scopep() : nullptr; }
-    const AstSenTree* domainp() const { return m_domainp; }
-
-    string dotColor() const override {
-        if (logicp()) {
-            return logicp()->dotColor();
-        } else {
-            return "yellow";
-        }
-    }
-    string name() const override {
-        string nm;
-        if (logicp()) {
-            nm = logicp()->name();
-            nm += (string{"\\nMV:"} + " d=" + cvtToHex(logicp()->domainp()) + " s="
-                   + cvtToHex(logicp()->scopep())
-                   // "color()" represents the mtask ID.
-                   + "\\nt=" + cvtToStr(color()));
-        } else {
-            nm = "nolog\\nt=" + cvtToStr(color());
-        }
-        return nm;
-    }
-};
+class MTaskMoveVertex;
 
 //*************************************************************************
 // MTasks and graph structures

@@ -55,6 +55,8 @@ AstCFunc* order(
     const ExternalDomainsProvider& externalDomains
     = [](const AstVarScope*, std::vector<AstSenTree*>&) {}) VL_MT_DISABLED;
 
+void selfTestParallel();
+
 };  // namespace V3Order
 
 #endif  // Guard

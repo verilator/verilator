@@ -48,6 +48,7 @@
 #include "V3EmitMk.h"
 #include "V3EmitV.h"
 #include "V3EmitXml.h"
+#include "V3ExecGraph.h"
 #include "V3Expand.h"
 #include "V3File.h"
 #include "V3Force.h"
@@ -71,10 +72,10 @@
 #include "V3Localize.h"
 #include "V3MergeCond.h"
 #include "V3Name.h"
+#include "V3Order.h"
 #include "V3Os.h"
 #include "V3Param.h"
 #include "V3ParseSym.h"
-#include "V3Partition.h"
 #include "V3PreShell.h"
 #include "V3Premit.h"
 #include "V3ProtectLib.h"
@@ -550,11 +551,10 @@ static void process() {
         }
 
         if (!v3Global.opt.serializeOnly() && v3Global.opt.mtasks()) {
-            // Finalize our MTask cost estimates and pack the mtasks into
-            // threads. Must happen pre-EmitC which relies on the packing
-            // order. Must happen post-V3LifePost which changes the relative
-            // costs of mtasks.
-            V3Partition::finalize(v3Global.rootp());
+            // Implement the ExecGraphs by packing mtasks to thread.
+            // This should happen as late as possible (after all optimizations)
+            // as it relies on cost estimates.
+            V3ExecGraph::implement(v3Global.rootp());
         }
 
         if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()
@@ -676,8 +676,8 @@ static void verilate(const string& argString) {
             V3Graph::selfTest();
             V3TSP::selfTest();
             V3ScoreboardBase::selfTest();
-            V3Partition::selfTest();
-            V3Partition::selfTestNormalizeCosts();
+            V3Order::selfTestParallel();
+            V3ExecGraph::selfTest();
             V3PreShell::selfTest();
             V3Broken::selfTest();
         }
