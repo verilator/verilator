@@ -176,6 +176,7 @@ using EdgeHeap = PairingHeap<EdgeKey>;
 // LogicMTask
 
 class LogicMTask final : public AbstractLogicMTask {
+    VL_RTTI_IMPL(LogicMTask, AbstractLogicMTask)
     template <GraphWay::en T_Way>
     friend class PartPropagateCp;
 
@@ -729,87 +730,6 @@ void MergeCandidate::rescore() {
         m_key.m_score = 1 + edgeScore(static_cast<const MTaskEdge*>(this));
     }
 }
-
-//######################################################################
-// PartParallelismEst - Estimate parallelism of graph
-
-class PartParallelismEst final {
-    // MEMBERS
-    const V3Graph* const m_graphp;  // Mtask-containing graph
-
-    // Total cost of evaluating the whole graph.
-    // The ratio of m_totalGraphCost to longestCpCost gives us an estimate
-    // of the parallelizability of this graph which is only as good as the
-    // guess returned by LogicMTask::cost().
-    uint32_t m_totalGraphCost = 0;
-
-    // Cost of the longest critical path, in abstract units (the same units
-    // returned by the vertexCost)
-    uint32_t m_longestCpCost = 0;
-
-    size_t m_vertexCount = 0;  // Number of vertexes calculated
-    size_t m_edgeCount = 0;  // Number of edges calculated
-
-public:
-    // CONSTRUCTORS
-    explicit PartParallelismEst(const V3Graph* graphp)
-        : m_graphp{graphp} {}
-
-    // METHODS
-    uint32_t totalGraphCost() const { return m_totalGraphCost; }
-    uint32_t longestCritPathCost() const { return m_longestCpCost; }
-    size_t vertexCount() const { return m_vertexCount; }
-    size_t edgeCount() const { return m_edgeCount; }
-    double parallelismFactor() const {
-        return (static_cast<double>(m_totalGraphCost) / m_longestCpCost);
-    }
-    void traverse() {
-        // For each node, record the critical path cost from the start
-        // of the graph through the end of the node.
-        std::unordered_map<const V3GraphVertex*, uint32_t> critPaths;
-        GraphStreamUnordered serialize{m_graphp};
-        for (const V3GraphVertex* vertexp; (vertexp = serialize.nextp());) {
-            ++m_vertexCount;
-            uint32_t cpCostToHere = 0;
-            for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                ++m_edgeCount;
-                // For each upstream item, add its critical path cost to
-                // the cost of this edge, to form a new candidate critical
-                // path cost to the current node. Whichever is largest is
-                // the critical path to reach the start of this node.
-                cpCostToHere = std::max(cpCostToHere, critPaths[edgep->fromp()]);
-            }
-            // Include the cost of the current vertex in the critical
-            // path, so it represents the critical path to the end of
-            // this vertex.
-            cpCostToHere += vertexCost(vertexp);
-            critPaths[vertexp] = cpCostToHere;
-            m_longestCpCost = std::max(m_longestCpCost, cpCostToHere);
-            // Tally the total cost contributed by vertices.
-            m_totalGraphCost += vertexCost(vertexp);
-        }
-    }
-    void statsReport(const string& stage) const {
-        V3Stats::addStat("MTask graph, " + stage + ", critical path cost", m_longestCpCost);
-        V3Stats::addStat("MTask graph, " + stage + ", total graph cost", m_totalGraphCost);
-        V3Stats::addStat("MTask graph, " + stage + ", mtask count", m_vertexCount);
-        V3Stats::addStat("MTask graph, " + stage + ", edge count", m_edgeCount);
-        V3Stats::addStat("MTask graph, " + stage + ", parallelism factor", parallelismFactor());
-    }
-    void debugReport() const {
-        UINFO(0, "    Critical path cost = " << m_longestCpCost << endl);
-        UINFO(0, "    Total graph cost = " << m_totalGraphCost << endl);
-        UINFO(0, "    MTask vertex count = " << m_vertexCount << endl);
-        UINFO(0, "    Edge count = " << m_edgeCount << endl);
-        UINFO(0, "    Parallelism factor = " << parallelismFactor() << endl);
-    }
-    static uint32_t vertexCost(const V3GraphVertex* vertexp) {
-        return vertexp->as<const AbstractMTask>()->cost();
-    }
-
-private:
-    VL_UNCOPYABLE(PartParallelismEst);
-};
 
 //######################################################################
 
@@ -1758,20 +1678,13 @@ private:
                            chain_len * 2, nullptr, nullptr, false /* slowAsserts */};
         ec.go();
 
-        PartParallelismEst check{&mtasks};
-        check.traverse();
+        // All vertices should merge into one
+        UASSERT_SELFTEST(
+            bool, mtasks.verticesBeginp() && !mtasks.verticesBeginp()->verticesNextp(), true);
 
         const uint64_t endUsecs = V3Os::timeUsecs();
         const uint64_t elapsedUsecs = endUsecs - startUsecs;
 
-        if (debug() >= 6) {
-            UINFO(0, "Chain self test stats:\n");
-            check.debugReport();
-            UINFO(0, "Elapsed usecs = " << elapsedUsecs << "\n");
-        }
-
-        // All vertices should merge into one
-        UASSERT_SELFTEST(size_t, check.vertexCount(), 1);
         return elapsedUsecs;
     }
 
@@ -1811,20 +1724,15 @@ private:
         partInitCriticalPaths(&mtasks);
         PartContraction{&mtasks, 20, nullptr, nullptr, true}.go();
 
-        PartParallelismEst check{&mtasks};
-        check.traverse();
+        const auto report = mtasks.parallelismReport(
+            [](const V3GraphVertex* vtxp) { return vtxp->as<const LogicMTask>()->cost(); });
 
         // Checking exact values here is maybe overly precise.  What we're
-        // mostly looking for is a healthy reduction in the number of
-        // mtasks.
-        if (debug() >= 5) {
-            UINFO(0, "X self test stats:\n");
-            check.debugReport();
-        }
-        UASSERT_SELFTEST(uint32_t, check.longestCritPathCost(), 19);
-        UASSERT_SELFTEST(uint32_t, check.totalGraphCost(), 101);
-        UASSERT_SELFTEST(uint32_t, check.vertexCount(), 14);
-        UASSERT_SELFTEST(uint32_t, check.edgeCount(), 13);
+        // mostly looking for is a healthy reduction in the number of mtasks.
+        UASSERT_SELFTEST(uint32_t, report.criticalPathCost(), 19);
+        UASSERT_SELFTEST(uint32_t, report.totalGraphCost(), 101);
+        UASSERT_SELFTEST(uint32_t, report.vertexCount(), 14);
+        UASSERT_SELFTEST(uint32_t, report.edgeCount(), 13);
     }
 
 public:
@@ -2581,13 +2489,21 @@ void V3Partition::debugMTaskGraphStats(const V3Graph* graphp, const string& stag
     // Look only at the cost of each mtask, neglect communication cost.
     // This will show us how much parallelism we expect, assuming cache-miss
     // costs are minor and the cost of running logic is the dominant cost.
-    PartParallelismEst vertexParEst{graphp};
-    vertexParEst.traverse();
-    vertexParEst.statsReport(stage);
+    const auto report = graphp->parallelismReport(
+        [](const V3GraphVertex* vtxp) { return vtxp->as<const AbstractMTask>()->cost(); });
+    V3Stats::addStat("MTask graph, " + stage + ", critical path cost", report.criticalPathCost());
+    V3Stats::addStat("MTask graph, " + stage + ", total graph cost", report.totalGraphCost());
+    V3Stats::addStat("MTask graph, " + stage + ", mtask count", report.vertexCount());
+    V3Stats::addStat("MTask graph, " + stage + ", edge count", report.edgeCount());
+    V3Stats::addStat("MTask graph, " + stage + ", parallelism factor", report.parallelismFactor());
     if (debug() >= 4) {
         UINFO(0, "\n");
-        UINFO(0, "  Parallelism estimate for based on mtask costs:\n");
-        vertexParEst.debugReport();
+        UINFO(0, "    MTask Parallelism estimate based costs at stage" << stage << ":\n");
+        UINFO(0, "    Critical path cost = " << report.criticalPathCost() << "\n");
+        UINFO(0, "    Total graph cost = " << report.totalGraphCost() << "\n");
+        UINFO(0, "    MTask vertex count = " << report.vertexCount() << "\n");
+        UINFO(0, "    Edge count = " << report.edgeCount() << "\n");
+        UINFO(0, "    Parallelism factor = " << report.parallelismFactor() << "\n");
     }
 }
 
@@ -3041,13 +2957,21 @@ static void finalizeCosts(V3Graph* execMTaskGraphp) {
     }
 
     // Record summary stats for final m_tasks graph.
-    // (More verbose stats are available with --debugi-V3Partition >= 3.)
-    PartParallelismEst parEst{execMTaskGraphp};
-    parEst.traverse();
-    parEst.statsReport("final");
+    const auto report = execMTaskGraphp->parallelismReport(
+        [](const V3GraphVertex* vtxp) { return vtxp->as<const ExecMTask>()->cost(); });
+    V3Stats::addStat("MTask graph, final, critical path cost", report.criticalPathCost());
+    V3Stats::addStat("MTask graph, final, total graph cost", report.totalGraphCost());
+    V3Stats::addStat("MTask graph, final, mtask count", report.vertexCount());
+    V3Stats::addStat("MTask graph, final, edge count", report.edgeCount());
+    V3Stats::addStat("MTask graph, final, parallelism factor", report.parallelismFactor());
     if (debug() >= 3) {
-        UINFO(0, "  Final mtask parallelism report:\n");
-        parEst.debugReport();
+        UINFO(0, "\n");
+        UINFO(0, "    Final mtask parallelism report:\n");
+        UINFO(0, "    Critical path cost = " << report.criticalPathCost() << "\n");
+        UINFO(0, "    Total graph cost = " << report.totalGraphCost() << "\n");
+        UINFO(0, "    MTask vertex count = " << report.vertexCount() << "\n");
+        UINFO(0, "    Edge count = " << report.edgeCount() << "\n");
+        UINFO(0, "    Parallelism factor = " << report.parallelismFactor() << "\n");
     }
 }
 

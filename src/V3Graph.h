@@ -26,6 +26,7 @@
 #include "V3ThreadSafety.h"
 
 #include <algorithm>
+#include <functional>
 
 class FileLine;
 class V3Graph;
@@ -181,6 +182,38 @@ public:
                                    bool colorAsSubgraph = false) const VL_MT_DISABLED;
     void dumpEdges(std::ostream& os, const V3GraphVertex* vertexp) const VL_MT_DISABLED;
     static void selfTest() VL_MT_DISABLED;
+
+    class ParallelismReport final {
+        friend class GraphAlgParallelismReport;
+        // Total cost of evaluating the whole graph. The ratio of m_totalGraphCost to
+        // m_criticalPathCost gives us an estimate of the parallelizability of this graph which is
+        // only as good as the guess returned by vertexCost.
+        uint32_t m_totalGraphCost = 0;
+
+        // Cost of the critical path, in abstract units (the same units returned by the vertexCost)
+        uint32_t m_criticalPathCost = 0;
+
+        size_t m_vertexCount = 0;  // Number of vertexes in the graph
+        size_t m_edgeCount = 0;  // Number of edges in the grap
+
+        ParallelismReport() = default;
+
+    public:
+        ~ParallelismReport() = default;
+        ParallelismReport(const ParallelismReport&) = default;
+        ParallelismReport& operator=(const ParallelismReport&) = default;
+
+        uint32_t totalGraphCost() const { return m_totalGraphCost; }
+        uint32_t criticalPathCost() const { return m_criticalPathCost; }
+        size_t vertexCount() const { return m_vertexCount; }
+        size_t edgeCount() const { return m_edgeCount; }
+        double parallelismFactor() const {
+            return (static_cast<double>(m_totalGraphCost) / m_criticalPathCost);
+        }
+    };
+
+    ParallelismReport parallelismReport(
+        std::function<uint32_t(const V3GraphVertex*)> vertexCost) const VL_MT_DISABLED;
 
     // CALLBACKS
     virtual void loopsMessageCb(V3GraphVertex* vertexp) VL_MT_DISABLED;
