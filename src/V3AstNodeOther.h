@@ -2100,8 +2100,7 @@ public:
         m_name = name;
     }
     static AstVar* scVarRecurse(AstNode* nodep);
-    void addProducingMTaskId(int id) { m_mtaskIds.insert(id); }
-    void addConsumingMTaskId(int id) { m_mtaskIds.insert(id); }
+    void addMTaskId(int id) { m_mtaskIds.insert(id); }
     const MTaskIdSet& mtaskIds() const { return m_mtaskIds; }
     void pinNum(int id) { m_pinNum = id; }
     int pinNum() const { return m_pinNum; }
