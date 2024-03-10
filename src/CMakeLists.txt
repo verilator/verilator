@@ -79,6 +79,7 @@ set(HEADERS
     V3EmitV.h
     V3EmitXml.h
     V3Error.h
+    V3ExecGraph.h
     V3Expand.h
     V3File.h
     V3FileLine.h
@@ -130,7 +131,6 @@ set(HEADERS
     V3Parse.h
     V3ParseImp.h
     V3ParseSym.h
-    V3Partition.h
     V3PartitionGraph.h
     V3PchAstMT.h
     V3PchAstNoMT.h
@@ -240,6 +240,7 @@ set(COMMON_SOURCES
     V3EmitV.cpp
     V3EmitXml.cpp
     V3Error.cpp
+    V3ExecGraph.cpp
     V3Expand.cpp
     V3File.cpp
     V3FileLine.cpp
@@ -282,7 +283,6 @@ set(COMMON_SOURCES
     V3OrderSerial.cpp
     V3Os.cpp
     V3Param.cpp
-    V3Partition.cpp
     V3PreShell.cpp
     V3Premit.cpp
     V3ProtectLib.cpp
