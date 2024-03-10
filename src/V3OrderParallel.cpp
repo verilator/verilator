@@ -1714,10 +1714,10 @@ private:
 
         // Checking exact values here is maybe overly precise.  What we're
         // mostly looking for is a healthy reduction in the number of mTaskGraphp.
-        UASSERT_SELFTEST(uint32_t, report.criticalPathCost(), 19);
-        UASSERT_SELFTEST(uint32_t, report.totalGraphCost(), 101);
-        UASSERT_SELFTEST(uint32_t, report.vertexCount(), 14);
-        UASSERT_SELFTEST(uint32_t, report.edgeCount(), 13);
+        UASSERT_SELFTEST(uint64_t, report.criticalPathCost(), 19);
+        UASSERT_SELFTEST(uint64_t, report.totalGraphCost(), 101);
+        UASSERT_SELFTEST(uint64_t, report.vertexCount(), 14);
+        UASSERT_SELFTEST(uint64_t, report.edgeCount(), 13);
     }
 
 public:
