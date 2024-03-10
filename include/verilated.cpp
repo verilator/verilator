@@ -3031,7 +3031,7 @@ void Verilated::stackCheck(QData needSize) VL_MT_UNSAFE {
     // if the user follows the suggestions
     if (VL_UNLIKELY(haveSize && needSize && haveSize < (needSize + needSize / 2))) {
         VL_PRINTF_MT("%%Warning: System has stack size %" PRIu64 " kb"
-                     " which may be too small; suggest 'ulimit -c %" PRIu64 "' or larger\n",
+                     " which may be too small; suggest 'ulimit -s %" PRIu64 "' or larger\n",
                      haveSize / 1024, (needSize * 2) / 1024);
     }
 #else
