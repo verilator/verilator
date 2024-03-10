@@ -23,6 +23,8 @@
 
 #include "V3Global.h"
 #include "V3GraphPathChecker.h"
+#include "V3GraphStream.h"
+#include "V3Stats.h"
 
 #include <algorithm>
 #include <list>
@@ -514,4 +516,60 @@ double V3Graph::orderDFSIterate(V3GraphVertex* vertexp) {
     vertexp->fanout(fanout);
     vertexp->user(2);
     return vertexp->fanout();
+}
+
+//######################################################################
+//######################################################################
+// Algorithms - parallelism report
+
+class GraphAlgParallelismReport final {
+    // MEMBERS
+    const V3Graph& m_graph;  // The graph
+    const std::function<uint32_t(const V3GraphVertex*)> m_vertexCost;  // vertex cost function
+    V3Graph::ParallelismReport m_report;  // The result report
+
+    // CONSTRUCTORS
+    explicit GraphAlgParallelismReport(const V3Graph& graph,
+                                       std::function<uint32_t(const V3GraphVertex*)> vertexCost)
+        : m_graph{graph}
+        , m_vertexCost{vertexCost} {
+        // For each node, record the critical path cost from the start
+        // of the graph through the end of the node.
+        std::unordered_map<const V3GraphVertex*, uint32_t> critPaths;
+        GraphStreamUnordered serialize{&m_graph};
+        for (const V3GraphVertex* vertexp; (vertexp = serialize.nextp());) {
+            ++m_report.m_vertexCount;
+            uint32_t cpCostToHere = 0;
+            for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
+                ++m_report.m_edgeCount;
+                // For each upstream item, add its critical path cost to
+                // the cost of this edge, to form a new candidate critical
+                // path cost to the current node. Whichever is largest is
+                // the critical path to reach the start of this node.
+                cpCostToHere = std::max(cpCostToHere, critPaths[edgep->fromp()]);
+            }
+            // Include the cost of the current vertex in the critical
+            // path, so it represents the critical path to the end of
+            // this vertex.
+            cpCostToHere += m_vertexCost(vertexp);
+            critPaths[vertexp] = cpCostToHere;
+            m_report.m_criticalPathCost = std::max(m_report.m_criticalPathCost, cpCostToHere);
+            // Tally the total cost contributed by vertices.
+            m_report.m_totalGraphCost += m_vertexCost(vertexp);
+        }
+    }
+    ~GraphAlgParallelismReport() = default;
+    VL_UNCOPYABLE(GraphAlgParallelismReport);
+    VL_UNMOVABLE(GraphAlgParallelismReport);
+
+public:
+    static V3Graph::ParallelismReport
+    apply(const V3Graph& graph, std::function<uint32_t(const V3GraphVertex*)> vertexCost) {
+        return GraphAlgParallelismReport(graph, vertexCost).m_report;
+    }
+};
+
+V3Graph::ParallelismReport
+V3Graph::parallelismReport(std::function<uint32_t(const V3GraphVertex*)> vertexCost) const {
+    return GraphAlgParallelismReport::apply(*this, vertexCost);
 }
