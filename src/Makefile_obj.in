@@ -242,6 +242,7 @@ RAW_OBJS_PCH_ASTNOMT = \
 	V3EmitCSyms.o \
 	V3EmitMk.o \
 	V3EmitXml.o \
+	V3ExecGraph.o \
 	V3Expand.o \
 	V3Force.o \
 	V3Fork.o \
@@ -270,7 +271,6 @@ RAW_OBJS_PCH_ASTNOMT = \
 	V3OrderProcessDomains.o \
 	V3OrderSerial.o \
 	V3Param.o \
-	V3Partition.o \
 	V3Premit.o \
 	V3ProtectLib.o \
 	V3Randomize.o \
