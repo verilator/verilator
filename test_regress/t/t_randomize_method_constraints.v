@@ -14,13 +14,14 @@ typedef enum bit[15:0] {
 class Cls;
    constraint A { v inside {ONE, THREE}; }
    constraint B { w == 5; x inside {1,2} || x inside {4,5}; }
-   constraint C { z < 3 * 7; z > 5 + 8; }
+   constraint C { z < 3 * 7; z > 5 + 8; t > 0; }
 
    rand Enum v;
    rand logic[63:0] w;
    rand logic[47:0] x;
    rand logic[31:0] y;
    rand logic[23:0] z;
+   rand logic[79:0] t;
 
    function new;
       v = ONE;
@@ -28,6 +29,7 @@ class Cls;
       x = 0;
       y = 0;
       z = 0;
+      t = 0;
    endfunction
 
 endclass
