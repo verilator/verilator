@@ -20,6 +20,7 @@ Verilator 5.023 devel
 **Minor:**
 
 * Add DFG 'regularize' pass, and improve variable removal (#4937). [Geza Lore]
+* Add error on calling static function without object (#4962).
 * Support public packed struct / union (#860) (#4878). [Kefa Chen]
 * Change installation to be relocatable (#4927). [Geza Lore]
 * Fix __Vlip undefined error in --freloop (#4824). [Justin Yao Du]

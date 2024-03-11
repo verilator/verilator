@@ -5793,6 +5793,12 @@ class WidthVisitor final : public VNVisitor {
         }
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked");
         if (nodep->didWidth()) return;
+        if ((nodep->taskp()->classMethod() && !nodep->taskp()->isStatic())
+            && !VN_IS(m_procedurep, InitialAutomatic)
+            && (!m_ftaskp || !m_ftaskp->classMethod() || m_ftaskp->isStatic())) {
+            nodep->v3error("Cannot call non-static member function "
+                           << nodep->prettyNameQ() << " without object (IEEE 1800-2023 8.10)");
+        }
         userIterate(nodep->taskp(), nullptr);
         // And do the arguments to the task/function too
         processFTaskRefArgs(nodep);
