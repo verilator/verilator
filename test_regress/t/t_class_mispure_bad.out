@@ -1,0 +1,7 @@
+%Error: t/t_class_mispure_bad.v:11:1: Class 'Bar' extends 'Base' but is missing implementation for 'pvfunc' (IEEE 1800-2023 8.26)
+   11 | class Bar extends Base;
+      | ^~~~~
+        t/t_class_mispure_bad.v:8:31: ... Location of interface class's function
+    8 |    pure virtual function void pvfunc();
+      |                               ^~~~~~
+%Error: Exiting due to
