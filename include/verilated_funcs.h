@@ -263,7 +263,7 @@ static inline QData VL_EXTENDSIGN_Q(int lbits, QData lhs) VL_PURE {
 extern void _vl_debug_print_w(int lbits, WDataInP const iwp) VL_MT_SAFE;
 
 //=========================================================================
-// Pli macros
+// Time handling
 
 // clang-format off
 
@@ -321,6 +321,8 @@ uint64_t VerilatedContext::time() const VL_MT_SAFE {
 double vl_time_multiplier(int scale) VL_PURE;
 // Return power of 10. e.g. returns 100 if n==2
 uint64_t vl_time_pow10(int n) VL_PURE;
+// Return time as string with timescale suffix
+std::string vl_timescaled_double(double value, const char* format = "%0.0f%s") VL_PURE;
 
 //=========================================================================
 // Functional macros/routines
