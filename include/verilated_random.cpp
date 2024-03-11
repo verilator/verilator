@@ -22,41 +22,219 @@
 
 #include "verilated_random.h"
 
-#include <fstream>
+#include <iostream>
 #include <sstream>
-
-#include <sys/wait.h>
+#include <streambuf>
 
 #define HASH_LEN 1
+#define HASH_LEN_TOTAL 4
 
-static const char* solvers[] = {
-    "z3 ",
-    "cvc5 --lang=smt2 --incremental ",
-    "cvc4 --lang=smt2 --incremental ",
+// clang-format off
+#if defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
+# define SMT_PIPE  // Allow pipe SMT solving.  Needs fork()
+#endif
+
+#ifdef SMT_PIPE
+# include <sys/wait.h>
+# include <fcntl.h>
+# include <errno.h>
+#endif
+
+#if defined(_WIN32) || defined(__MINGW32__)
+# include <io.h>  // open, read, write, close
+#endif
+// clang-format on
+
+static const char* const* const solvers[] = {
+    (const char* const[]){"z3", "--in", nullptr},
+    (const char* const[]){"cvc5", "--incremental", nullptr},
+    (const char* const[]){"cvc4", "--lang=smtlib2", "--incremental", nullptr},
 };
 
-static std::string get_solver() {
-    static std::string solver;
-    static bool found = false;
-    if (found) return solver;
+class Process final : private std::streambuf, public std::iostream {
+    int m_readFd;
+    int m_writeFd;
+    pid_t m_pid;
+    bool m_pidExited;
+    int m_pidStatus;
+    char m_readBuf[4096];
+    char m_writeBuf[4096];
 
-    for (const char* cmd : solvers) {
-        std::string comm = cmd + std::string{"/dev/null 2>/dev/null"};
-        int ec = system(comm.c_str());
-        if (!ec) {
-            solver = cmd;
-            found = true;
-            return solver;
+public:
+    typedef std::streambuf::traits_type traits_type;
+
+protected:
+    virtual int overflow(int c = traits_type::eof()) override {
+        char c2 = static_cast<char>(c);
+        if (pbase() == pptr()) return 0;
+        size_t size = pptr() - pbase();
+        ssize_t n = ::write(m_writeFd, pbase(), size);
+        if (n == -1) perror("write");
+        if (n <= 0) {
+            wait_report();
+            return traits_type::eof();
         }
+        if (n == size)
+            setp(m_writeBuf, m_writeBuf + sizeof(m_writeBuf));
+        else
+            setp(m_writeBuf + n, m_writeBuf + sizeof(m_writeBuf));
+        if (c != traits_type::eof()) sputc(c2);
+        return 0;
     }
+    virtual int underflow() override {
+        sync();
+        ssize_t n = ::read(m_readFd, m_readBuf, sizeof(m_readBuf));
+        if (n == -1) perror("read");
+        if (n <= 0) {
+            wait_report();
+            return traits_type::eof();
+        }
+        setg(m_readBuf, m_readBuf, m_readBuf + n);
+        return traits_type::to_int_type(m_readBuf[0]);
+    }
+    virtual int sync() override {
+        overflow();
+        return 0;
+    }
+
+public:
+    Process(const char* const* cmd = nullptr)
+        : std::streambuf{}
+        , std::iostream{this}
+        , m_readFd{-1}
+        , m_writeFd{-1}
+        , m_pid{0}
+        , m_pidExited{true} {
+        setp(std::begin(m_writeBuf), std::end(m_writeBuf));
+        setg(m_readBuf, m_readBuf, m_readBuf);
+        open(&cmd);
+    }
+    void wait_report() {
+        if (m_pidExited) return;
+#ifdef SMT_PIPE
+        if (waitpid(m_pid, &m_pidStatus, 0) != m_pid) return;
+        if (m_pidStatus) {
+            std::stringstream msg;
+            msg << "Subprocess command failed: ";
+            if (WIFSIGNALED(m_pidStatus))
+                msg << strsignal(WTERMSIG(m_pidStatus))
+                    << (WCOREDUMP(m_pidStatus) ? " (core dumped)" : "");
+            else if (WIFEXITED(m_pidStatus))
+                msg << "exit status " << WEXITSTATUS(m_pidStatus);
+            VL_WARN_MT("", 0, "randomize", msg.str().c_str());
+        }
+#endif
+        m_pidExited = true;
+        m_pid = 0;
+        close(m_readFd);
+        close(m_writeFd);
+        m_readFd = -1;
+        m_writeFd = -1;
+    }
+
+    bool open(const char* const* const* const cmds, size_t ncmds = 1) {
+        if (!*cmds) return false;
+#ifdef SMT_PIPE
+        int fd_stdin[2];  // Can't use std::array
+        int fd_stdout[2];  // Can't use std::array
+        constexpr int P_RD = 0;
+        constexpr int P_WR = 1;
+
+        if (pipe(fd_stdin) != 0) {
+            perror("Process::open: pipe");
+            return false;
+        }
+        if (pipe(fd_stdout) != 0) {
+            perror("Process::open: pipe");
+            close(fd_stdin[P_RD]);
+            close(fd_stdin[P_WR]);
+            return false;
+        }
+
+        if (fd_stdin[P_RD] <= 2 || fd_stdin[P_WR] <= 2 || fd_stdout[P_RD] <= 2
+            || fd_stdout[P_WR] <= 2) {
+            // We'd have to rearrange all of the FD usages in this case.
+            // Too unlikely; verilator isn't a daemon.
+            fprintf(stderr, "stdin/stdout closed before pipe opened\n");
+            close(fd_stdin[P_RD]);
+            close(fd_stdin[P_WR]);
+            close(fd_stdout[P_RD]);
+            close(fd_stdout[P_WR]);
+            return false;
+        }
+
+        const pid_t pid = fork();
+        if (pid < 0) {
+            perror("Process::open: fork");
+            close(fd_stdin[P_RD]);
+            close(fd_stdin[P_WR]);
+            close(fd_stdout[P_RD]);
+            close(fd_stdout[P_WR]);
+            return false;
+        }
+        if (pid == 0) {
+            // Child
+            close(fd_stdin[P_WR]);
+            dup2(fd_stdin[P_RD], STDIN_FILENO);
+            close(fd_stdout[P_RD]);
+            dup2(fd_stdout[P_WR], STDOUT_FILENO);
+            for (size_t i = 0; i < ncmds; i++) {
+                execvp(cmds[i][0], const_cast<char* const*>(cmds[i]));
+                if (errno != ENOENT) {
+                    std::stringstream msg;
+                    msg << "Process::open: execvp(" << cmds[i][0] << ")";
+                    perror(msg.str().c_str());
+                }
+            }
+            _exit(127);
+        }
+        // Parent
+        m_pid = pid;
+        m_pidExited = false;
+        m_pidStatus = 0;
+        m_readFd = fd_stdout[P_RD];
+        m_writeFd = fd_stdin[P_WR];
+
+        close(fd_stdin[P_RD]);
+        close(fd_stdout[P_WR]);
+
+        return true;
+#else
+        return false;
+#endif
+    }
+};
+
+static Process& get_solver() {
+    static Process s_solver;
+    static bool s_found = false;
+    if (s_found) return s_solver;
+
+    s_solver.open(solvers, sizeof(solvers) / sizeof(solvers[0]));
+    s_solver << "(set-logic QF_BV)\n";
+    s_solver << "(check-sat)\n";
+    s_solver << "(reset)\n";
+    std::string s;
+    getline(s_solver, s);
+    if (s == "sat") {
+        s_found = true;
+        return s_solver;
+    }
+
     std::stringstream msg;
     msg << "No SAT solvers found, please install one of them.  Tried:\n";
-    for (const char* cmd : solvers) msg << "$ " << cmd << '\n';
+    for (const char* const* cmd : solvers) {
+        msg << '$';
+        for (const char* const* arg = cmd; *arg; arg++) msg << ' ' << *arg;
+        msg << '\n';
+    }
 
     VL_WARN_MT("", 0, "randomize", msg.str().c_str());
 
-    found = true;
-    return solver;
+    while (getline(s_solver, s))
+        ;
+    s_found = true;
+    return s_solver;
 }
 
 //======================================================================
@@ -78,6 +256,42 @@ void VlRandomExtract::emit(std::ostream& s) const {
     s << "((_ extract " << m_idx << ' ' << m_idx << ") ";
     m_expr->emit(s);
     s << ')';
+}
+bool VlRandomVar::set(std::string&& val) const {
+    VlWide<VL_WQ_WORDS_E> qowp;
+    VL_SET_WQ(qowp, 0ULL);
+    WDataOutP owp = qowp;
+    int obits = width();
+    if (obits > VL_QUADSIZE) owp = reinterpret_cast<WDataOutP>(ref());
+    int i;
+    for (i = 0; val[i] && val[i] != '#'; i++)
+        ;
+    if (val[i++] != '#') return false;
+    switch (val[i++]) {
+    case 'b': _vl_vsss_based(owp, obits, 1, &val[i], 0, val.size() - i); break;
+    case 'o': _vl_vsss_based(owp, obits, 3, &val[i], 0, val.size() - i); break;
+    case 'h':  // FALLTHRU
+    case 'x': _vl_vsss_based(owp, obits, 4, &val[i], 0, val.size() - i); break;
+    default:
+        VL_WARN_MT(__FILE__, __LINE__, "randomize", "Internal: unable to parse randomized number");
+        return false;
+    }
+    if (obits <= VL_BYTESIZE) {
+        CData* const p = static_cast<CData*>(ref());
+        *p = VL_CLEAN_II(obits, obits, owp[0]);
+    } else if (obits <= VL_SHORTSIZE) {
+        SData* const p = static_cast<SData*>(ref());
+        *p = VL_CLEAN_II(obits, obits, owp[0]);
+    } else if (obits <= VL_IDATASIZE) {
+        IData* const p = static_cast<IData*>(ref());
+        *p = VL_CLEAN_II(obits, obits, owp[0]);
+    } else if (obits <= VL_QUADSIZE) {
+        QData* const p = static_cast<QData*>(ref());
+        *p = VL_CLEAN_QQ(obits, obits, VL_SET_QW(owp));
+    } else {
+        _vl_clean_inplace_w(obits, owp);
+    }
+    return true;
 }
 
 std::shared_ptr<const VlRandomExpr> VlRandomizer::random_constraint(VlRNG& rngr, int bits) {
@@ -104,104 +318,78 @@ std::shared_ptr<const VlRandomExpr> VlRandomizer::random_constraint(VlRNG& rngr,
 }
 
 bool VlRandomizer::next(VlRNG& rngr) {
-    std::string cmd = get_solver();
-    if (cmd == "") return false;
+    Process& f = get_solver();
+    if (!f) return false;
 
-    char filename[] = "/tmp/VrandomXXXXXX";
-    int fd = mkstemp(filename);
-    if (fd == -1) return false;
-    close(fd);
-    std::ofstream f{filename};
     f << "(set-option :produce-models true)\n";
-    f << "(set-logic QF_BV)\n\n";
+    f << "(set-logic QF_BV)\n";
     for (const auto& var : m_vars) {
         f << "(declare-fun " << var.second->name() << " () (_ BitVec " << var.second->width()
           << "))\n";
     }
     for (const std::string& constraint : m_constraints) { f << "(assert " << constraint << ")\n"; }
-    f << "\n(check-sat)\n";
-    f << "(get-value (";
-    for (const auto& var : m_vars) { f << var.second->name() << ' '; }
-    f << "))\n";
-    f << "(assert ";
-    random_constraint(rngr, HASH_LEN)->emit(f);
-    f << ")\n";
-    f << "\n(check-sat)\n";
-    f << "(get-value (";
-    for (const auto& var : m_vars) { f << var.second->name() << ' '; }
-    f << "))\n";
-    f << "(exit)\n";
-    f.close();
+    f << "(check-sat)\n";
 
-    int rc = 3;
-    std::string comm = cmd + filename;
-    FILE* solver = popen(comm.c_str(), "r");
-    if (solver) {
-        rc = parse_solution(solver);
-        int ec = pclose(solver);
-        if (rc == 2) {
-            std::stringstream msg;
-            msg << "Error processing output of `" << comm << "' command";
-            VL_WARN_MT("", 0, "randomize", msg.str().c_str());
-        }
-        if (rc != 1 && (WIFSIGNALED(ec) || WEXITSTATUS(ec) > (rc == 2 ? 0 : 1))) {
-            std::stringstream msg;
-            msg << "Command `" << comm
-                << "' failed: " << (WIFSIGNALED(ec) ? "terminated by signal" : "exit status")
-                << ' ' << (WIFSIGNALED(ec) ? WTERMSIG(ec) : WEXITSTATUS(ec))
-                << (WIFSIGNALED(ec) && WCOREDUMP(ec) ? " (core dumped)" : "");
-            VL_WARN_MT("", 0, "randomize", msg.str().c_str());
-        }
+    int rc = parse_solution(f);
+    if (rc == 1) {
+        // unsat
+        f << "(reset)\n";
+        return false;
+    }
+    if (rc == 2) {
+        // error
+        f << "(reset)\n";
+        return false;
     }
 
-    unlink(filename);
-    return rc == 0;
+    for (int i = 0; i < HASH_LEN_TOTAL && rc == 0; i++) {
+        f << "(assert ";
+        random_constraint(rngr, HASH_LEN)->emit(f);
+        f << ")\n";
+        f << "\n(check-sat)\n";
+        rc = parse_solution(f);
+    }
+
+    f << "(reset)\n";
+    return true;
 }
 
-int VlRandomizer::parse_solution(FILE* solver) {
-    ssize_t n = getline(&m_line, &m_capacity, solver);
-    if (n < 0) return 3;
-    std::string sat{m_line, (size_t)n};
-    if (sat == "unsat\n") return 1;
-    if (sat != "sat\n") { VL_WARN_MT("", 0, "randomize", sat.c_str()); }
+int VlRandomizer::parse_solution(std::iostream& f) {
+    std::string sat;
+    do { std::getline(f, sat); } while (sat == "");
+
+    if (sat == "unsat") return 1;
+    if (sat != "sat") {
+        VL_WARN_MT("", 0, "randomize", sat.c_str());
+        return 2;
+    }
+
+    f << "(get-value (";
+    for (const auto& var : m_vars) { f << var.second->name() << ' '; }
+    f << "))\n";
 
     // Quasi-parse S-expression of the form ((x #xVALUE) (y #bVALUE) (z #xVALUE))
-    n = getdelim(&m_line, &m_capacity, '(', solver);
-    if (n <= 0) return 2;
+    char c;
+    f >> c;
+    if (c != '(') return 2;
 
     for (;;) {
-        n = getdelim(&m_line, &m_capacity, '(', solver);
-        if (n < 0) return 2;
-        if (n == 0 || m_line[n - 1] != '(') break;
-        n = getdelim(&m_line, &m_capacity, ' ', solver);
-        if (n <= 1) return 2;
+        f >> c;
+        if (c == ')') break;
+        if (c != '(') return 2;
 
-        const char* name_expr = (char*)memrchr(m_line, '(', n);
-        name_expr = name_expr ? name_expr + 1 : m_line;
-        size_t name_len = n - (name_expr - m_line) - 1;
-        std::string name{name_expr, name_len};
-
-        n = getdelim(&m_line, &m_capacity, ')', solver);
-        if (n <= 0) return 2;
-
-        const char* value = m_line;
+        std::string name, value;
+        f >> name;
+        std::getline(f, value, ')');
 
         auto it = m_vars.find(name);
         if (it == m_vars.end()) continue;
 
-        int base = 0;
-        if (value[0] == '#') {
-            value++;
-            base = value[0] == 'x' ? 16 : value[0] == 'b' ? 2 : value[0] == 'o' ? 8 : 10;
-            if (base != 10) value++;
-        }
-        unsigned long long val = strtoull(value, nullptr, base);
-        it->second->set(val);
+        it->second->set(std::move(value));
     }
 
     return 0;
 }
-VlRandomizer::~VlRandomizer() { std::free(m_line); }
 
 void VlRandomizer::hard(std::string&& constraint) {
     m_constraints.emplace_back(std::move(constraint));

@@ -34,7 +34,7 @@ class VlRandomExpr VL_NOT_FINAL {
 public:
     virtual void emit(std::ostream& s) const = 0;
 };
-class VlRandomVar VL_NOT_FINAL : public VlRandomExpr {
+class VlRandomVar final : public VlRandomExpr {
     const char* const m_name;
     void* const m_ref;
     const int m_width;
@@ -47,25 +47,20 @@ public:
     const char* name() const { return m_name; }
     int width() const { return m_width; }
     void* ref() const { return m_ref; }
-    virtual void set(unsigned long long) const = 0;
+    bool set(std::string&&) const;
     void emit(std::ostream& s) const;
-};
-template <typename T>
-class VlRandomVarR final : public VlRandomVar {
-public:
-    VlRandomVarR(const char* name, int width, T* ref)
-        : VlRandomVar{name, width, ref} {}
-    virtual void set(unsigned long long val) const { *(T*)ref() = val; }
 };
 
 class VlRandomConst final : public VlRandomExpr {
-    const unsigned long long m_val;
+    const QData m_val;
     const int m_width;
 
 public:
-    VlRandomConst(unsigned long long val, int width)
+    VlRandomConst(QData val, int width)
         : m_val{val}
-        , m_width{width} {}
+        , m_width{width} {
+        assert(width <= sizeof(m_val) * 8);
+    }
     void emit(std::ostream& s) const;
 };
 
@@ -100,12 +95,10 @@ class VlRandomizer final {
     // MEMBERS
     std::vector<std::string> m_constraints;
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;
-    char* m_line = nullptr;
-    size_t m_capacity;
 
     // PRIVATE METHODS
     std::shared_ptr<const VlRandomExpr> random_constraint(VlRNG& rngr, int bits);
-    int parse_solution(FILE* file);
+    int parse_solution(std::iostream& file);
 
 public:
     // METHODS
@@ -115,14 +108,12 @@ public:
     void write_var(T& var, int width, const char* name) {
         auto it = m_vars.find(name);
         if (it != m_vars.end()) return;
-        auto varp = std::make_shared<const VlRandomVarR<T>>(name, width, &var);
-        m_vars[name] = varp;
+        m_vars[name] = std::make_shared<const VlRandomVar>(name, width, &var);
     }
     void hard(std::string&& constraint);
 #ifdef VL_DEBUG
     void dump() const;
 #endif
-    ~VlRandomizer();
 };
 
 #endif  // Guard
