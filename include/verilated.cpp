@@ -2412,6 +2412,22 @@ uint64_t vl_time_pow10(int n) {
     return pow10[n];
 }
 
+std::string vl_timescaled_double(double value, const char* format) VL_PURE {
+    const char* suffixp = "s";
+    // clang-format off
+    if      (value >= 1e0)   { suffixp = "s"; value *= 1e0; }
+    else if (value >= 1e-3)  { suffixp = "ms"; value *= 1e3; }
+    else if (value >= 1e-6)  { suffixp = "us"; value *= 1e6; }
+    else if (value >= 1e-9)  { suffixp = "ns"; value *= 1e9; }
+    else if (value >= 1e-12) { suffixp = "ps"; value *= 1e12; }
+    else if (value >= 1e-15) { suffixp = "fs"; value *= 1e15; }
+    else if (value >= 1e-18) { suffixp = "as"; value *= 1e18; }
+    // clang-format on
+    char valuestr[100];
+    VL_SNPRINTF(valuestr, 100, format, value, suffixp);
+    return std::string{valuestr};  // Gets converted to string, so no ref to stack
+}
+
 void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp,
                        const VerilatedContext* contextp) VL_MT_SAFE {
     VL_PRINTF_MT("Time scale of %s is %s / %s\n", namep, timeunitp,
