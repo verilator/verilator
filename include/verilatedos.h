@@ -643,14 +643,6 @@ T const& as_const(T& v) VL_MT_SAFE {
     return v;
 }
 
-// C++14's std::exchange
-template <class T, class U = T>
-T exchange(T& obj, U&& new_value) {
-    T old_value = std::move(obj);
-    obj = std::forward<U>(new_value);
-    return old_value;
-}
-
 };  // namespace vlstd
 
 //=========================================================================
