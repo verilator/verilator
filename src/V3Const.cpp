@@ -684,7 +684,7 @@ public:
     // Reduction ops are transformed in the same way.
     // &{v[0], v[1]} => 2'b11 == (2'b11 & v)
     static AstNodeExpr* simplify(AstNodeExpr* nodep, int resultWidth, unsigned externalOps,
-                                 VDouble0& reduction, VNDeleter& deleterr) {
+                                 VDouble0& reduction) {
         UASSERT_OBJ(1 <= resultWidth && resultWidth <= 64, nodep, "resultWidth out of range");
 
         // Walk tree, gathering all terms referenced in expression
@@ -727,7 +727,7 @@ public:
                 }
                 // Set width and widthMin precisely
                 resultp->dtypeChgWidth(resultWidth, 1);
-                for (AstNode* const termp : termps) deleterr.pushDeletep(termp);
+                for (AstNode* const termp : termps) VL_DO_DANGLING(termp->deleteTree(), termp);
                 return resultp;
             }
             const ResultTerm result = v->getResultTerm();
@@ -803,7 +803,7 @@ public:
 
         // Only substitute the result if beneficial as determined by operation count
         if (visitor.m_ops <= resultOps) {
-            for (AstNode* const termp : termps) deleterr.pushDeletep(termp);
+            for (AstNode* const termp : termps) VL_DO_DANGLING(termp->deleteTree(), termp);
             return nullptr;
         }
 
@@ -1187,11 +1187,9 @@ class ConstVisitor final : public VNVisitor {
         const AstAnd* const andp = VN_CAST(nodep, And);
         const int width = nodep->width();
         if (andp && isConst(andp->lhsp(), 1)) {  // 1 & BitOpTree
-            newp = ConstBitOpTreeVisitor::simplify(andp->rhsp(), width, 1, m_statBitOpReduction,
-                                                   deleter());
+            newp = ConstBitOpTreeVisitor::simplify(andp->rhsp(), width, 1, m_statBitOpReduction);
         } else {  // BitOpTree
-            newp = ConstBitOpTreeVisitor::simplify(nodep, width, 0, m_statBitOpReduction,
-                                                   deleter());
+            newp = ConstBitOpTreeVisitor::simplify(nodep, width, 0, m_statBitOpReduction);
         }
 
         if (newp) {
