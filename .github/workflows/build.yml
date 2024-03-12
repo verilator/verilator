@@ -97,18 +97,20 @@ jobs:
           - { cc: clang, cxx: clang++ }
           - { cc: gcc,   cxx: g++     }
         reloc: [0]
-        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, vltmt-0, vltmt-1]
+        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, dist-vlt-3, vltmt-0, vltmt-1]
         include:
           # Test with GCC 10 on ubuntu-20.04
           - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, suite: dist-vlt-0}
           - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, suite: dist-vlt-1}
           - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, suite: dist-vlt-2}
+          - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, suite: dist-vlt-3}
           - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, suite: vltmt-0}
           - {os: ubuntu-20.04, compiler: { cc: gcc-10, cxx: g++-10 }, suite: vltmt-1}
           # Test relocated installation - on most common platform only
           - {os: ubuntu-22.04, compiler: { cc: gcc, cxx: g++ }, reloc: 1, suite: dist-vlt-0}
           - {os: ubuntu-22.04, compiler: { cc: gcc, cxx: g++ }, reloc: 1, suite: dist-vlt-1}
           - {os: ubuntu-22.04, compiler: { cc: gcc, cxx: g++ }, reloc: 1, suite: dist-vlt-2}
+          - {os: ubuntu-22.04, compiler: { cc: gcc, cxx: g++ }, reloc: 1, suite: dist-vlt-3}
           - {os: ubuntu-22.04, compiler: { cc: gcc, cxx: g++ }, reloc: 1, suite: vltmt-0}
           - {os: ubuntu-22.04, compiler: { cc: gcc, cxx: g++ }, reloc: 1, suite: vltmt-1}
     runs-on: ${{ matrix.os }}
@@ -137,7 +139,7 @@ jobs:
     - name: Cache $CCACHE_DIR
       uses: actions/cache@v4
       env:
-        CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache
+        CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache2
       with:
         path: ${{ env.CCACHE_DIR }}
         key: ${{ env.CACHE_KEY }}-${{ github.sha }}
