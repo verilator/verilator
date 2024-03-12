@@ -1,0 +1,10 @@
+%Error-PROCASSWIRE: t/t_lint_ftask_output_assign_bad.v:21:11: Passed wire on output or inout subroutine argument, expected expression that is valid on the left hand side of a procedural assignment (IEEE 1800-2023 13.5): 'wire_out'
+                                                            : ... note: In instance 't'
+   21 |     set_f(wire_out, in);
+      |           ^~~~~~~~
+                    ... For error description see https://verilator.org/warn/PROCASSWIRE?v=latest
+%Error-PROCASSWIRE: t/t_lint_ftask_output_assign_bad.v:23:14: Passed wire on output or inout subroutine argument, expected expression that is valid on the left hand side of a procedural assignment (IEEE 1800-2023 13.5): 'wire_out'
+                                                            : ... note: In instance 't'
+   23 |     set_task(wire_out, in);
+      |              ^~~~~~~~
+%Error: Exiting due to
