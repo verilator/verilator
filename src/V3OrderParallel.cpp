@@ -2383,12 +2383,20 @@ class Partitioner final {
             }
         }
 
-        // Set color to indicate an mtaskId on every underlying MTaskMoveVertex.
-        for (V3GraphVertex* itp = m_mTaskGraphp->verticesBeginp(); itp;
-             itp = itp->verticesNextp()) {
-            const LogicMTask* const mtaskp = static_cast<LogicMTask*>(itp);
-            for (MTaskMoveVertex* const mvertexp : mtaskp->vertexList()) {
-                mvertexp->color(mtaskp->id());
+        // Set color to indicate the mtaskId on every underlying logic MTaskMoveVertex.
+        // Remove any MTasks that have no logic in it rerouting the edges.
+        for (V3GraphVertex *vtxp = m_mTaskGraphp->verticesBeginp(), *nextp; vtxp; vtxp = nextp) {
+            nextp = vtxp->verticesNextp();
+            const LogicMTask* const mtaskp = vtxp->as<LogicMTask>();
+            bool empty = true;
+            for (MTaskMoveVertex* const mVtxp : mtaskp->vertexList()) {
+                if (!mVtxp->logicp()) continue;
+                empty = false;
+                mVtxp->color(mtaskp->id());
+            }
+            if (empty) {
+                vtxp->rerouteEdges(m_mTaskGraphp.get());
+                vtxp->unlinkDelete(m_mTaskGraphp.get());
             }
         }
     }
@@ -2516,6 +2524,7 @@ AstExecGraph* V3Order::createParallel(const OrderGraph& orderGraph, const std::s
         // Emit functions with this MTaks's logic, and call them in the body.
         for (const OrderLogicVertex* lVtxp : state.m_logics) emitter.emitLogic(lVtxp);
         for (AstActive* const activep : emitter.getAndClearActiveps()) bodyp->addStmtsp(activep);
+        UASSERT_OBJ(bodyp->stmtsp(), bodyp, "Should not try to create empty MTask");
 
         // Translate the LogicMTask graph into the corresponding ExecMTask
         // graph, which will outlive V3Order and persist for the remainder
