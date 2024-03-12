@@ -503,10 +503,8 @@ class UndrivenVisitor final : public VNVisitorConst {
     }
     void visit(AstNodeFTaskRef* nodep) override {
         VL_RESTORER(m_inFTaskRef);
-        {
-            m_inFTaskRef = true;
-            iterateChildrenConst(nodep);
-        }
+        m_inFTaskRef = true;
+        iterateChildrenConst(nodep);
     }
 
     void visit(AstNodeFTask* nodep) override {
