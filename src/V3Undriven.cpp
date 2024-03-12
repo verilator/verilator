@@ -278,6 +278,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     bool m_inBBox = false;  // In black box; mark as driven+used
     bool m_inContAssign = false;  // In continuous assignment
     bool m_inProcAssign = false;  // In procedural assignment
+    bool m_inFTaskRef = false;  // In function or task call
     bool m_inInoutPin = false;  // Connected to pin that is inout
     const AstNodeFTask* m_taskp = nullptr;  // Current task
     const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
@@ -390,6 +391,13 @@ class UndrivenVisitor final : public VNVisitorConst {
                                   << " (IEEE 1364-2005 6.1; Verilog only, legal in SV): "
                                   << nodep->prettyNameQ());
             }
+            if (m_inFTaskRef && nodep->varp()->varType().isNet()) {
+                nodep->v3warn(
+                    PROCASSWIRE,
+                    "Passed wire on output or inout subroutine argument, expected expression that "
+                    "is valid on the left hand side of a procedural assignment"
+                        << " (IEEE 1800-2023 13.5): " << nodep->prettyNameQ());
+            }
         }
         for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
             UndrivenVarEntry* const entryp = getEntryp(nodep->varp(), usr);
@@ -491,6 +499,13 @@ class UndrivenVisitor final : public VNVisitorConst {
             }
             iterateChildrenConst(nodep);
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep << endl);
+        }
+    }
+    void visit(AstNodeFTaskRef* nodep) override {
+        VL_RESTORER(m_inFTaskRef);
+        {
+            m_inFTaskRef = true;
+            iterateChildrenConst(nodep);
         }
     }
 
