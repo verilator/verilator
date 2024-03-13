@@ -56,6 +56,7 @@ public:
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
     // For documentation on emitC format see EmitCFunc::emitOpName
     virtual string emitC() = 0;
+    virtual string emitSMT() const { V3ERROR_NA_RETURN(""); };
     virtual string emitSimpleOperator() { return ""; }  // "" means not ok to use
     virtual bool emitCheckMaxWords() { return false; }  // Check VL_MULS_MAX_WORDS
     virtual bool cleanOut() const = 0;  // True if output has extra upper bits zero
@@ -97,7 +98,6 @@ public:
     // Signed flavor of nodes with both flavors?
     virtual bool signedFlavor() const { return false; }
     virtual bool stringFlavor() const { return false; }  // N flavor of nodes with both flavors?
-    virtual const char* randomizerOp() const { return nullptr; }
     int instrCount() const override { return widthInstrs(); }
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
@@ -476,7 +476,6 @@ public:
     // Signed flavor of nodes with both flavors?
     virtual bool signedFlavor() const { return false; }
     virtual bool stringFlavor() const { return false; }  // N flavor of nodes with both flavors?
-    virtual const char* randomizerOp() const { return nullptr; }
     int instrCount() const override { return widthInstrs(); }
     bool same(const AstNode*) const override { return true; }
     bool isPure() override;
@@ -2403,6 +2402,7 @@ public:
         out.opConcat(lhs, rhs);
     }
     string emitC() override { return "VL_CONCAT_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(concat %@ %@)"; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return true; }
@@ -2521,13 +2521,13 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f==? %r)"; }
     string emitC() override { return "VL_EQ_%lq(%lW, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(= %@ %@)"; }
     string emitSimpleOperator() override { return "=="; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
-    const char* randomizerOp() const override { return "="; }
 };
 class AstFGetS final : public AstNodeBiop {
 public:
@@ -2644,13 +2644,13 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f> %r)"; }
     string emitC() override { return "VL_GT_%lq(%lW, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(bvugt %@ %@)"; }
     string emitSimpleOperator() override { return ">"; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
-    const char* randomizerOp() const override { return "bvugt"; }
 };
 class AstGtD final : public AstNodeBiop {
 public:
@@ -2715,6 +2715,7 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f> %r)"; }
     string emitC() override { return "VL_GTS_%nq%lq%rq(%lw, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(bvsgt %@ %@)"; }
     string emitSimpleOperator() override { return ""; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
@@ -2722,7 +2723,6 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool signedFlavor() const override { return true; }
-    const char* randomizerOp() const override { return "bvsgt"; }
 };
 class AstGte final : public AstNodeBiop {
 public:
@@ -2739,13 +2739,13 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f>= %r)"; }
     string emitC() override { return "VL_GTE_%lq(%lW, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(bvuge %@ %@)"; }
     string emitSimpleOperator() override { return ">="; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
-    const char* randomizerOp() const override { return "bvuge"; }
 };
 class AstGteD final : public AstNodeBiop {
 public:
@@ -2810,6 +2810,7 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f>= %r)"; }
     string emitC() override { return "VL_GTES_%nq%lq%rq(%lw, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(bvsge %@ %@)"; }
     string emitSimpleOperator() override { return ""; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
@@ -2817,7 +2818,6 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool signedFlavor() const override { return true; }
-    const char* randomizerOp() const override { return "bvsge"; }
 };
 class AstLogAnd final : public AstNodeBiop {
 public:
@@ -2834,6 +2834,7 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f&& %r)"; }
     string emitC() override { return "VL_LOGAND_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(and %@ %@)"; }
     string emitSimpleOperator() override { return "&&"; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
@@ -2841,7 +2842,6 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
-    const char* randomizerOp() const override { return "and"; }
 };
 class AstLogIf final : public AstNodeBiop {
 public:
@@ -2858,13 +2858,13 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f-> %r)"; }
     string emitC() override { return "VL_LOGIF_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(=> %@ %@)"; }
     string emitSimpleOperator() override { return "->"; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
-    const char* randomizerOp() const override { return "=>"; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
 };
 class AstLogOr final : public AstNodeBiop {
@@ -2882,13 +2882,13 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f|| %r)"; }
     string emitC() override { return "VL_LOGOR_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(or %@ %@)"; }
     string emitSimpleOperator() override { return "||"; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
-    const char* randomizerOp() const override { return "or"; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
 };
 class AstLt final : public AstNodeBiop {
@@ -2906,13 +2906,13 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f< %r)"; }
     string emitC() override { return "VL_LT_%lq(%lW, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(bvult %@ %@)"; }
     string emitSimpleOperator() override { return "<"; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
-    const char* randomizerOp() const override { return "bvult"; }
 };
 class AstLtD final : public AstNodeBiop {
 public:
@@ -2977,6 +2977,7 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f< %r)"; }
     string emitC() override { return "VL_LTS_%nq%lq%rq(%lw, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(bvslt %@ %@)"; }
     string emitSimpleOperator() override { return ""; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
@@ -2984,7 +2985,6 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool signedFlavor() const override { return true; }
-    const char* randomizerOp() const override { return "bvslt"; }
 };
 class AstLte final : public AstNodeBiop {
 public:
@@ -3001,13 +3001,13 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f<= %r)"; }
     string emitC() override { return "VL_LTE_%lq(%lW, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(bvule %@ %@)"; }
     string emitSimpleOperator() override { return "<="; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
-    const char* randomizerOp() const override { return "bvule"; }
 };
 class AstLteD final : public AstNodeBiop {
 public:
@@ -3072,6 +3072,7 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f<= %r)"; }
     string emitC() override { return "VL_LTES_%nq%lq%rq(%lw, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(bvsle %@ %@)"; }
     string emitSimpleOperator() override { return ""; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
@@ -3079,7 +3080,6 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool signedFlavor() const override { return true; }
-    const char* randomizerOp() const override { return "bvsle"; }
 };
 class AstModDiv final : public AstNodeBiop {
 public:
@@ -3096,13 +3096,13 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f%% %r)"; }
     string emitC() override { return "VL_MODDIV_%nq%lq%rq(%lw, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(bvmod %@ %@)"; }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
-    const char* randomizerOp() const override { return "bvmod"; }
 };
 class AstModDivS final : public AstNodeBiop {
 public:
@@ -3119,6 +3119,7 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f%% %r)"; }
     string emitC() override { return "VL_MODDIVS_%nq%lq%rq(%lw, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(bvsmod %@ %@)"; }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return true; }
@@ -3126,7 +3127,6 @@ public:
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_DIV; }
     bool signedFlavor() const override { return true; }
-    const char* randomizerOp() const override { return "bvsmod"; }
 };
 class AstNeqWild final : public AstNodeBiop {
 public:
@@ -3341,6 +3341,7 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f<< %r)"; }
     string emitC() override { return "VL_SHIFTL_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(bvshl %@ %@)"; }
     string emitSimpleOperator() override {
         return (rhsp()->isWide() || rhsp()->isQuad()) ? "" : "<<";
     }
@@ -3349,7 +3350,6 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return false; }
-    const char* randomizerOp() const override { return "bvshl"; }
 };
 class AstShiftLOvr final : public AstNodeBiop {
     // Like ShiftL but checks for an over shift and returns zeros
@@ -3390,6 +3390,7 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f>> %r)"; }
     string emitC() override { return "VL_SHIFTR_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(bvlshr %@ %@)"; }
     string emitSimpleOperator() override {
         return (rhsp()->isWide() || rhsp()->isQuad()) ? "" : ">>";
     }
@@ -3399,7 +3400,6 @@ public:
     // LHS size might be > output size, so don't want to force size
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
-    const char* randomizerOp() const override { return "bvlshr"; }
 };
 class AstShiftROvr final : public AstNodeBiop {
     // Like ShiftR but checks for an over shift and returns zeros
@@ -3443,6 +3443,7 @@ public:
         out.opShiftRS(lhs, rhs, lhsp()->widthMinV());
     }
     string emitVerilog() override { return "%k(%l %f>>> %r)"; }
+    string emitSMT() const override { return "(bvashr %@ %@)"; }
     string emitC() override { return "VL_SHIFTRS_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
     string emitSimpleOperator() override { return ""; }
     bool cleanOut() const override { return false; }
@@ -3451,7 +3452,6 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool signedFlavor() const override { return true; }
-    const char* randomizerOp() const override { return "bvashr"; }
 };
 class AstShiftRSOvr final : public AstNodeBiop {
     // Shift right with sign extension, >>> operator, checks for an over shift and returns zeros
@@ -3495,13 +3495,13 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f- %r)"; }
     string emitC() override { return "VL_SUB_%lq(%lW, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(bvsub %@ %@)"; }
     string emitSimpleOperator() override { return "-"; }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return false; }
     bool cleanRhs() const override { return false; }
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
-    const char* randomizerOp() const override { return "bvsub"; }
 };
 class AstSubD final : public AstNodeBiop {
 public:
@@ -3572,13 +3572,13 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f== %r)"; }
     string emitC() override { return "VL_EQ_%lq(%lW, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(= %@ %@)"; }
     string emitSimpleOperator() override { return "=="; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
-    const char* randomizerOp() const override { return "="; }
 };
 class AstEqCase final : public AstNodeBiCom {
 public:
@@ -3689,6 +3689,7 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f<-> %r)"; }
     string emitC() override { return "VL_LOGEQ_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(= %@ %@)"; }
     string emitSimpleOperator() override { return "<->"; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
@@ -3696,7 +3697,6 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
-    const char* randomizerOp() const override { return "="; }
 };
 class AstNeq final : public AstNodeBiCom {
 public:
@@ -3831,13 +3831,13 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f+ %r)"; }
     string emitC() override { return "VL_ADD_%lq(%lW, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(bvadd %@ %@)"; }
     string emitSimpleOperator() override { return "+"; }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return false; }
     bool cleanRhs() const override { return false; }
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
-    const char* randomizerOp() const override { return "bvadd"; }
 };
 class AstAddD final : public AstNodeBiComAsv {
 public:
@@ -3878,6 +3878,7 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f& %r)"; }
     string emitC() override { return "VL_AND_%lq(%lW, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(bvand %@ %@)"; }
     string emitSimpleOperator() override { return "&"; }
     bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
     bool cleanLhs() const override { return false; }
@@ -3885,7 +3886,6 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     const char* widthMismatch() const override VL_MT_STABLE;
-    const char* randomizerOp() const override { return "bvand"; }
 };
 class AstMul final : public AstNodeBiComAsv {
 public:
@@ -3902,6 +3902,7 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f* %r)"; }
     string emitC() override { return "VL_MUL_%lq(%lW, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(bvmul %@ %@)"; }
     string emitSimpleOperator() override { return "*"; }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return true; }
@@ -3909,7 +3910,6 @@ public:
     bool sizeMattersLhs() const override { return true; }
     bool sizeMattersRhs() const override { return true; }
     int instrCount() const override { return widthInstrs() * INSTR_COUNT_INT_MUL; }
-    const char* randomizerOp() const override { return "bvmul"; }
 };
 class AstMulD final : public AstNodeBiComAsv {
 public:
@@ -3975,6 +3975,7 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f| %r)"; }
     string emitC() override { return "VL_OR_%lq(%lW, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(bvor %@ %@)"; }
     string emitSimpleOperator() override { return "|"; }
     bool cleanOut() const override { V3ERROR_NA_RETURN(false); }
     bool cleanLhs() const override { return false; }
@@ -3982,7 +3983,6 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     const char* widthMismatch() const override VL_MT_STABLE;
-    const char* randomizerOp() const override { return "bvor"; }
 };
 class AstXor final : public AstNodeBiComAsv {
 public:
@@ -3999,6 +3999,7 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f^ %r)"; }
     string emitC() override { return "VL_XOR_%lq(%lW, %P, %li, %ri)"; }
+    string emitSMT() const override { return "(bvxor %@ %@)"; }
     string emitSimpleOperator() override { return "^"; }
     bool cleanOut() const override { return false; }  // Lclean && Rclean
     bool cleanLhs() const override { return false; }
@@ -4006,7 +4007,6 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     const char* widthMismatch() const override VL_MT_STABLE;
-    const char* randomizerOp() const override { return "bvxor"; }
 };
 
 // === AstNodeDistBiop ===
@@ -4922,6 +4922,9 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opAssign(lhs); }
     string emitVerilog() override { return "%l"; }
     string emitC() override { return "VL_EXTEND_%nq%lq(%nw,%lw, %P, %li)"; }
+    string emitSMT() const override {
+        return "((_ zero_extend " + cvtToStr(width() - lhsp()->width()) + ") %@)";
+    }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override {
@@ -5077,11 +5080,11 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opLogNot(lhs); }
     string emitVerilog() override { return "%f(! %l)"; }
     string emitC() override { return "VL_LOGNOT_%nq%lq(%nw,%lw, %P, %li)"; }
+    string emitSMT() const override { return "(not %@)"; }
     string emitSimpleOperator() override { return "!"; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
-    const char* randomizerOp() const override { return "not"; }
 };
 class AstNToI final : public AstNodeUniop {
     // String to any-size integral
@@ -5108,11 +5111,11 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opNegate(lhs); }
     string emitVerilog() override { return "%f(- %l)"; }
     string emitC() override { return "VL_NEGATE_%lq(%lW, %P, %li)"; }
+    string emitSMT() const override { return "(bvneg %@)"; }
     string emitSimpleOperator() override { return "-"; }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return false; }
     bool sizeMattersLhs() const override { return true; }
-    const char* randomizerOp() const override { return "bvneg"; }
 };
 class AstNegateD final : public AstNodeUniop {
 public:
@@ -5141,11 +5144,11 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opNot(lhs); }
     string emitVerilog() override { return "%f(~ %l)"; }
     string emitC() override { return "VL_NOT_%lq(%lW, %P, %li)"; }
+    string emitSMT() const override { return "(bvnot %@)"; }
     string emitSimpleOperator() override { return "~"; }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return false; }
     bool sizeMattersLhs() const override { return true; }
-    const char* randomizerOp() const override { return "bvnot"; }
     const char* widthMismatch() const override VL_MT_STABLE;
 };
 class AstNullCheck final : public AstNodeUniop {
