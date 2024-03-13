@@ -2449,6 +2449,7 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if (dpiOpenChild()) str << " [DPIOPENCHILD]";
     if (dpiOpenParent()) str << " [DPIOPENPARENT]";
     if (prototype()) str << " [PROTOTYPE]";
+    if (pureVirtual()) str << " [PUREVIRTUAL]";
     if (recursive()) str << " [RECURSIVE]";
     if (taskPublic()) str << " [PUBLIC]";
     if ((dpiImport() || dpiExport()) && cname() != name()) str << " [c=" << cname() << "]";

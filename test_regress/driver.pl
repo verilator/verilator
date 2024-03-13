@@ -282,8 +282,8 @@ sub calc_threads {
 sub calc_jobs {
     my $ok = max_procs();
     $ok && !$@ or die "%Error: Can't use -j: $@\n";
-    print "driver.pl: Found $ok cores, using -j ", $ok + 1, "\n";
-    return $ok + 1;
+    print "driver.pl: Found $ok cores, using -j ", $ok, "\n";
+    return $ok;
 }
 
 sub _calc_hashset {

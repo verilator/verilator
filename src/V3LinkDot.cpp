@@ -2214,20 +2214,25 @@ class LinkDotResolveVisitor final : public VNVisitor {
         return classSymp;
     }
     void importImplementsClass(AstClass* implementsClassp, VSymEnt* interfaceSymp,
-                               AstClass* interfaceClassp) {
-        UINFO(8, "importImplementsClass to " << implementsClassp << " from " << interfaceClassp
-                                             << endl);
+                               AstClass* baseClassp) {
+        // Also used for standard 'extends' from a base class
+        UINFO(8,
+              "importImplementsClass to " << implementsClassp << " from " << baseClassp << endl);
         for (VSymEnt::const_iterator it = interfaceSymp->begin(); it != interfaceSymp->end();
              ++it) {
             if (AstNode* interfaceSubp = it->second->nodep()) {
                 UINFO(8, "  SymFunc " << interfaceSubp << endl);
                 if (VN_IS(interfaceSubp, NodeFTask)) {
                     const VSymEnt* const foundp = m_curSymp->findIdFlat(interfaceSubp->name());
+                    const AstNodeFTask* const interfaceFuncp = VN_CAST(interfaceSubp, NodeFTask);
+                    if (!interfaceFuncp || !interfaceFuncp->pureVirtual()) continue;
                     bool existsInChild = foundp && !foundp->imported();
+                    const string impOrExtends
+                        = baseClassp->isInterfaceClass() ? " implements " : " extends ";
                     if (!existsInChild && !implementsClassp->isInterfaceClass()) {
                         implementsClassp->v3error(
-                            "Class " << implementsClassp->prettyNameQ() << " implements "
-                                     << interfaceClassp->prettyNameQ()
+                            "Class " << implementsClassp->prettyNameQ() << impOrExtends
+                                     << baseClassp->prettyNameQ()
                                      << " but is missing implementation for "
                                      << interfaceSubp->prettyNameQ() << " (IEEE 1800-2023 8.26)\n"
                                      << implementsClassp->warnContextPrimary() << '\n'
@@ -2239,8 +2244,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (!existsInChild && it != m_ifClassImpNames.end()
                         && it->second != interfaceSubp) {  // Not exact same function from diamond
                         implementsClassp->v3error(
-                            "Class " << implementsClassp->prettyNameQ() << " implements "
-                                     << interfaceClassp->prettyNameQ()
+                            "Class " << implementsClassp->prettyNameQ() << impOrExtends
+                                     << baseClassp->prettyNameQ()
                                      << " but missing inheritance conflict resolution for "
                                      << interfaceSubp->prettyNameQ()
                                      << " (IEEE 1800-2023 8.26.6.2)\n"
@@ -2257,7 +2262,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void importSymbolsFromExtended(AstClass* const nodep, AstClassExtends* const cextp) {
         AstClass* const baseClassp = cextp->classp();
         VSymEnt* const srcp = m_statep->getNodeSym(baseClassp);
-        if (baseClassp->isInterfaceClass()) importImplementsClass(nodep, srcp, baseClassp);
+        importImplementsClass(nodep, srcp, baseClassp);
         if (!cextp->isImplements()) m_curSymp->importFromClass(m_statep->symsp(), srcp);
     }
     void classExtendImport(AstClass* nodep) {
