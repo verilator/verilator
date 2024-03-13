@@ -1256,8 +1256,8 @@ sub compile {
                                 "TEST_OBJ_DIR=$self->{obj_dir}",
                                 "CPPFLAGS_DRIVER=-D" . uc($self->{name}),
                                 ($self->{verbose} ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1" : ""),
-                                ($param{benchmark} ? "" : "OPT_FAST=-O0"),
-                                ($param{benchmark} ? "" : "OPT_GLOBAL=-O0"),
+                                ($param{benchmark} ? "" : "OPT_FAST=-Os"),
+                                ($param{benchmark} ? "" : "OPT_GLOBAL=-Os"),
                                 "$self->{vm_prefix}",  # bypass default rule, as we don't need archive
                                 ($param{make_flags} || ""),
                         ]);
