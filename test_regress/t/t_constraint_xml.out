@@ -69,7 +69,7 @@
           <stmtexpr loc="d,19,18,19,20">
             <cmethodhard loc="d,19,18,19,20" name="hard" dtype_id="6">
               <varref loc="d,19,18,19,20" name="constraint" dtype_id="7"/>
-              <const loc="d,19,18,19,20" name="&quot;(and (bvsgt header #b00000000000000000000000000000000) (bvsle header #b00000000000000000000000000000111))&quot;" dtype_id="2"/>
+              <const loc="d,19,18,19,20" name="&quot;(and (bvsgt header #x00000000) (bvsle header #x00000007))&quot;" dtype_id="2"/>
             </cmethodhard>
           </stmtexpr>
           <stmtexpr loc="d,9,13,9,19">
@@ -85,7 +85,7 @@
           <stmtexpr loc="d,20,14,20,16">
             <cmethodhard loc="d,20,14,20,16" name="hard" dtype_id="6">
               <varref loc="d,20,14,20,16" name="constraint" dtype_id="7"/>
-              <const loc="d,20,14,20,16" name="&quot;(bvsle length #b00000000000000000000000000001111)&quot;" dtype_id="2"/>
+              <const loc="d,20,14,20,16" name="&quot;(bvsle length #x0000000f)&quot;" dtype_id="2"/>
             </cmethodhard>
           </stmtexpr>
           <stmtexpr loc="d,21,14,21,16">

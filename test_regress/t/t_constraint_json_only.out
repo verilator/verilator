@@ -78,7 +78,7 @@
             {"type":"VARREF","name":"constraint","addr":"(EC)","loc":"d,19:18,19:20","dtypep":"(TB)","access":"RW","varp":"(SB)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
           ],
            "pinsp": [
-            {"type":"CONST","name":"\\\"(and (bvsgt header #b00000000000000000000000000000000) (bvsle header #b00000000000000000000000000000111))\\\"","addr":"(FC)","loc":"d,19:18,19:20","dtypep":"(M)"}
+            {"type":"CONST","name":"\\\"(and (bvsgt header #x00000000) (bvsle header #x00000007))\\\"","addr":"(FC)","loc":"d,19:18,19:20","dtypep":"(M)"}
           ]}
         ]},
         {"type":"STMTEXPR","name":"","addr":"(GC)","loc":"d,9:13,9:19",
@@ -103,7 +103,7 @@
             {"type":"VARREF","name":"constraint","addr":"(PC)","loc":"d,20:14,20:16","dtypep":"(TB)","access":"RW","varp":"(SB)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
           ],
            "pinsp": [
-            {"type":"CONST","name":"\\\"(bvsle length #b00000000000000000000000000001111)\\\"","addr":"(QC)","loc":"d,20:14,20:16","dtypep":"(M)"}
+            {"type":"CONST","name":"\\\"(bvsle length #x0000000f)\\\"","addr":"(QC)","loc":"d,20:14,20:16","dtypep":"(M)"}
           ]}
         ]},
         {"type":"STMTEXPR","name":"","addr":"(RC)","loc":"d,21:14,21:16",
