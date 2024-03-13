@@ -750,6 +750,18 @@ string V3Options::getenvVERILATOR_ROOT() {
     return V3Os::filenameCleanup(var);
 }
 
+string V3Options::getenvVERILATOR_SOLVER() {
+    string var = V3Os::getenvStr("VERILATOR_SOLVER", "");
+    // Treat compiled-in DEFENV string literals as C-strings to enable
+    // binary patching for relocatable installs (e.g. conda)
+    string defenv = string{DEFENV_VERILATOR_SOLVER}.c_str();
+    if (var == "" && defenv != "") {
+        var = defenv;
+        V3Os::setenvStr("VERILATOR_SOLVER", var, "Hardcoded at build time");
+    }
+    return var;
+}
+
 string V3Options::getStdPackagePath() {
     return V3Os::filenameJoin(getenvVERILATOR_ROOT(), "include", "verilated_std.sv");
 }

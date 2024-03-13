@@ -37,7 +37,6 @@
 #ifdef SMT_PIPE
 # include <sys/wait.h>
 # include <fcntl.h>
-# include <cerrno>
 #endif
 
 #if defined(_WIN32) || defined(__MINGW32__)
@@ -45,13 +44,14 @@
 #endif
 // clang-format on
 
-static const char* const* const solvers[] = {
-    (const char* const[]){"z3", "--in", nullptr},
-    (const char* const[]){"cvc5", "--incremental", nullptr},
-    (const char* const[]){"cvc4", "--lang=smtlib2", "--incremental", nullptr},
-};
+#ifndef DEFAULT_SOLVER
+#define DEFAULT_SOLVER "z3 --in"
+#endif
+
+static char default_solver[] = DEFAULT_SOLVER;
 
 class Process final : private std::streambuf, public std::iostream {
+    const char* const* m_cmd;
     int m_readFd;
     int m_writeFd;
     pid_t m_pid;
@@ -98,16 +98,17 @@ protected:
     }
 
 public:
-    Process(const char* const* cmd = nullptr)
+    Process(const char* const* const cmd = nullptr)
         : std::streambuf{}
         , std::iostream{this}
+        , m_cmd{cmd}
         , m_readFd{-1}
         , m_writeFd{-1}
         , m_pid{0}
         , m_pidExited{true} {
         setp(std::begin(m_writeBuf), std::end(m_writeBuf));
         setg(m_readBuf, m_readBuf, m_readBuf);
-        open(&cmd);
+        open(cmd);
     }
     void wait_report() {
         if (m_pidExited) return;
@@ -115,14 +116,16 @@ public:
         if (waitpid(m_pid, &m_pidStatus, 0) != m_pid) return;
         if (m_pidStatus) {
             std::stringstream msg;
-            msg << "Subprocess command failed: ";
+            msg << "Subprocess command `" << m_cmd[0];
+            for (const char* const* arg = m_cmd; *arg; arg++) msg << ' ' << *arg;
+            msg << "' failed: ";
             if (WIFSIGNALED(m_pidStatus))
                 msg << strsignal(WTERMSIG(m_pidStatus))
                     << (WCOREDUMP(m_pidStatus) ? " (core dumped)" : "");
             else if (WIFEXITED(m_pidStatus))
                 msg << "exit status " << WEXITSTATUS(m_pidStatus);
             const std::string str = msg.str();
-            VL_WARN_MT("", 0, "randomize", str.c_str());
+            VL_WARN_MT("", 0, "Process", str.c_str());
         }
 #endif
         m_pidExited = true;
@@ -133,9 +136,10 @@ public:
         m_writeFd = -1;
     }
 
-    bool open(const char* const* const* const cmds, size_t ncmds = 1) {
-        if (!*cmds) return false;
+    bool open(const char* const* const cmd) {
 #ifdef SMT_PIPE
+        if (!cmd || !cmd[0]) return false;
+        m_cmd = cmd;
         int fd_stdin[2];  // Can't use std::array
         int fd_stdout[2];  // Can't use std::array
         constexpr int P_RD = 0;
@@ -179,15 +183,11 @@ public:
             dup2(fd_stdin[P_RD], STDIN_FILENO);
             close(fd_stdout[P_RD]);
             dup2(fd_stdout[P_WR], STDOUT_FILENO);
-            for (size_t i = 0; i < ncmds; i++) {
-                execvp(cmds[i][0], const_cast<char* const*>(cmds[i]));
-                if (errno != ENOENT) {
-                    std::stringstream msg;
-                    msg << "Process::open: execvp(" << cmds[i][0] << ")";
-                    const std::string str = msg.str();
-                    perror(str.c_str());
-                }
-            }
+            execvp(cmd[0], const_cast<char* const*>(cmd));
+            std::stringstream msg;
+            msg << "Process::open: execvp(" << cmd[0] << ")";
+            const std::string str = msg.str();
+            perror(str.c_str());
             _exit(127);
         }
         // Parent
@@ -209,34 +209,43 @@ public:
 
 static Process& get_solver() {
     static Process s_solver;
-    static bool s_found = false;
-    if (s_found) return s_solver;
+    static bool s_done = false;
+    if (s_done) return s_solver;
+    s_done = true;
 
-    s_solver.open(solvers, sizeof(solvers) / sizeof(solvers[0]));
+    static std::vector<const char*> s_argv;
+    char* solver = getenv("VERILATOR_SOLVER");
+    if (!solver || !solver[0]) solver = default_solver;
+    s_argv.emplace_back(solver);
+    for (char* arg = solver; *arg; arg++) {
+        if (*arg == ' ') {
+            *arg = '\0';
+            s_argv.emplace_back(arg + 1);
+        }
+    }
+    s_argv.emplace_back(nullptr);
+
+    const char* const* cmd = &s_argv[0];
+    s_solver.open(cmd);
     s_solver << "(set-logic QF_BV)\n";
     s_solver << "(check-sat)\n";
     s_solver << "(reset)\n";
     std::string s;
     getline(s_solver, s);
-    if (s == "sat") {
-        s_found = true;
-        return s_solver;
-    }
+    if (s == "sat") return s_solver;
 
     std::stringstream msg;
-    msg << "No SAT solvers found, please install one of them.\n";
-    for (const char* const* cmd : solvers) {
-        msg << " ... Tried: $";
-        for (const char* const* arg = cmd; *arg; arg++) msg << ' ' << *arg;
-        msg << '\n';
-    }
+    msg << "Unable to communicate with SAT solver, please check its installation or specify a "
+           "different one in VERILATOR_SOLVER environment variable.\n";
+    msg << " ... Tried: $";
+    for (const char* const* arg = cmd; *arg; arg++) msg << ' ' << *arg;
+    msg << '\n';
 
     const std::string str = msg.str();
     VL_WARN_MT("", 0, "randomize", str.c_str());
 
     while (getline(s_solver, s))
         ;
-    s_found = true;
     return s_solver;
 }
 
@@ -402,5 +411,10 @@ void VlRandomizer::hard(std::string&& constraint) {
 }
 
 #ifdef VL_DEBUG
-void VlRandomizer::dump() const { VL_PRINTF("Randomizer seed %d\n", 55); }
+void VlRandomizer::dump() const {
+    for (const std::string& c : m_constraints) { VL_PRINTF("Constraint: %s", c.c_str()); }
+    for (const auto& var : m_vars) {
+        VL_PRINTF("Variable (%d): %s", var.second->width(), var.second->name());
+    }
+}
 #endif

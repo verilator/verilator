@@ -85,6 +85,9 @@ class CMakeEmitter final {
         cmake_set(*of, "VERILATOR_ROOT",
                   V3OutFormatter::quoteNameControls(V3Options::getenvVERILATOR_ROOT()), "PATH",
                   "Path to Verilator kit (from $VERILATOR_ROOT)");
+        cmake_set(*of, "VERILATOR_SOLVER",
+                  V3OutFormatter::quoteNameControls(V3Options::getenvVERILATOR_SOLVER()), "STRING",
+                  "Default SMT solver for constrained randomization (from $VERILATOR_SOLVER)");
 
         *of << "\n### Compiler flags...\n";
 
