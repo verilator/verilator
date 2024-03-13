@@ -154,19 +154,27 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstTask* const m_taskp;  // X_setup_constraint() method of the constraint
     AstVar* const m_genp;  // the VlRandomizer variable of the class
 
-    void editFormat(AstNodeExpr* nodep) {
+    bool editFormat(AstNodeExpr* nodep) {
+        if (nodep->user1()) return false;
         AstSFormatF* const newp = new AstSFormatF{
             nodep->fileline(), (nodep->width() & 3) ? "#b%b" : "#x%x", false, nullptr};
         nodep->replaceWith(newp);
         newp->addExprsp(nodep);
+        return true;
+    }
+    void editSMT(AstNodeExpr* nodep, const std::string& smtExpr, AstNodeExpr* lhsp = nullptr,
+                 AstNodeExpr* rhsp = nullptr) {
+        UASSERT_OBJ(smtExpr != "", nodep,
+                    "Node needs randomization constraint, but no emitSMT: " << nodep);
+        if (rhsp) lhsp->addNext(rhsp);
+        AstSFormatF* const newp = new AstSFormatF{nodep->fileline(), smtExpr, false, lhsp};
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     // VISITORS
     void visit(AstNodeVarRef* nodep) override {
-        if (!nodep->user1()) {
-            editFormat(nodep);
-            return;
-        }
+        if (editFormat(nodep)) return;
 
         nodep->replaceWith(new AstSFormatF{nodep->fileline(), nodep->name(), false, nullptr});
 
@@ -190,58 +198,24 @@ class ConstraintExprVisitor final : public VNVisitor {
             m_taskp->addStmtsp(new AstStmtExpr{varp->fileline(), methodp});
         }
     }
-    void visit(AstExtend* nodep) override {
-        if (!nodep->user1()) {
-            editFormat(nodep);
-            return;
-        }
-        int ext = nodep->width() - nodep->lhsp()->width();
-        iterateChildren(nodep);
-        AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
-        AstNode* const newp = new AstSFormatF{
-            nodep->fileline(), "((_ zero_extend " + cvtToStr(ext) + ") %@)", false, lhsp};
-        nodep->replaceWith(newp);
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-    }
     void visit(AstNodeBiop* nodep) override {
-        if (!nodep->user1()) {
-            editFormat(nodep);
-            return;
-        }
+        if (editFormat(nodep)) return;
+        const std::string smtExpr = nodep->emitSMT();
         iterateChildren(nodep);
-        AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
-        AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
-        lhsp->addNext(rhsp);
-        const char* op = nodep->randomizerOp();
-        UASSERT_OBJ(op, nodep,
-                    "Node needs randomization constraint, but no randomizerOp: " << nodep);
-        AstSFormatF* const newp
-            = new AstSFormatF{nodep->fileline(), std::string{"("} + op + " %@ %@)", false, lhsp};
-        nodep->replaceWith(newp);
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        editSMT(nodep, smtExpr, nodep->lhsp()->unlinkFrBack(), nodep->rhsp()->unlinkFrBack());
     }
     void visit(AstNodeUniop* nodep) override {
-        if (!nodep->user1()) {
-            editFormat(nodep);
-            return;
-        }
+        if (editFormat(nodep)) return;
+        // We need to call emitSMT before iteration, as it can depend on children widths
+        // (AstExtend)
+        const std::string smtExpr = nodep->emitSMT();
         iterateChildren(nodep);
-        AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
-        const char* op = nodep->randomizerOp();
-        UASSERT_OBJ(op, nodep,
-                    "Node needs randomization constraint, but no randomizerOp: " << nodep);
-        AstSFormatF* const newp
-            = new AstSFormatF{nodep->fileline(), std::string{"("} + op + " %@)", false, lhsp};
-        nodep->replaceWith(newp);
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        editSMT(nodep, smtExpr, nodep->lhsp()->unlinkFrBack());
     }
     void visit(AstSFormatF* nodep) override {}
     void visit(AstConstraintExpr* nodep) override { iterateChildren(nodep); }
     void visit(AstCMethodHard* nodep) override {
-        if (!nodep->user1()) {
-            editFormat(nodep);
-            return;
-        }
+        if (editFormat(nodep)) return;
 
         UASSERT_OBJ(nodep->name() == "size", nodep, "Non-size method call in constraints");
 
@@ -256,10 +230,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstNodeExpr* nodep) override {
-        if (!nodep->user1()) {
-            editFormat(nodep);
-            return;
-        }
+        if (editFormat(nodep)) return;
         nodep->v3fatalSrc(
             "Visit function missing? Constraint function missing for math node: " << nodep);
     }
