@@ -1,7 +1,0 @@
-%Error: t/t_class_member_bad3.v:16:12: Static access to non-static member variable 'member'
-   16 |       Foo::member = 1;
-      |            ^~~~~~
-%Error: t/t_class_member_bad3.v:17:12: Static access to non-static task/function 'method'
-   17 |       Foo::method();
-      |            ^~~~~~
-%Error: Exiting due to
