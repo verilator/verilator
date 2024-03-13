@@ -151,8 +151,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     //  AstNodeExpr::user1()    -> bool. Depending on a randomized variable
     // VNUser4InUse    m_inuser4;      (Allocated for use in RandomizeVisitor)
 
-    AstTask* m_taskp;
-    AstVar* m_genp;
+    AstTask* const m_taskp;  // X_setup_constraint() method of the constraint
+    AstVar* const m_genp;  // the VlRandomizer variable of the class
 
     void editFormat(AstNodeExpr* nodep) {
         AstSFormatF* const newp = new AstSFormatF{

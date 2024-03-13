@@ -37,7 +37,7 @@
 #ifdef SMT_PIPE
 # include <sys/wait.h>
 # include <fcntl.h>
-# include <errno.h>
+# include <cerrno>
 #endif
 
 #if defined(_WIN32) || defined(__MINGW32__)
@@ -64,7 +64,7 @@ public:
     typedef std::streambuf::traits_type traits_type;
 
 protected:
-    virtual int overflow(int c = traits_type::eof()) override {
+    int overflow(int c = traits_type::eof()) override {
         char c2 = static_cast<char>(c);
         if (pbase() == pptr()) return 0;
         size_t size = pptr() - pbase();
@@ -81,7 +81,7 @@ protected:
         if (c != traits_type::eof()) sputc(c2);
         return 0;
     }
-    virtual int underflow() override {
+    int underflow() override {
         sync();
         ssize_t n = ::read(m_readFd, m_readBuf, sizeof(m_readBuf));
         if (n == -1) perror("read");
@@ -92,7 +92,7 @@ protected:
         setg(m_readBuf, m_readBuf, m_readBuf + n);
         return traits_type::to_int_type(m_readBuf[0]);
     }
-    virtual int sync() override {
+    int sync() override {
         overflow();
         return 0;
     }
@@ -121,7 +121,8 @@ public:
                     << (WCOREDUMP(m_pidStatus) ? " (core dumped)" : "");
             else if (WIFEXITED(m_pidStatus))
                 msg << "exit status " << WEXITSTATUS(m_pidStatus);
-            VL_WARN_MT("", 0, "randomize", msg.str().c_str());
+            const std::string str = msg.str();
+            VL_WARN_MT("", 0, "randomize", str.c_str());
         }
 #endif
         m_pidExited = true;
@@ -183,7 +184,8 @@ public:
                 if (errno != ENOENT) {
                     std::stringstream msg;
                     msg << "Process::open: execvp(" << cmds[i][0] << ")";
-                    perror(msg.str().c_str());
+                    const std::string str = msg.str();
+                    perror(str.c_str());
                 }
             }
             _exit(127);
@@ -222,14 +224,15 @@ static Process& get_solver() {
     }
 
     std::stringstream msg;
-    msg << "No SAT solvers found, please install one of them.  Tried:\n";
+    msg << "No SAT solvers found, please install one of them.\n";
     for (const char* const* cmd : solvers) {
-        msg << '$';
+        msg << " ... Tried: $";
         for (const char* const* arg = cmd; *arg; arg++) msg << ' ' << *arg;
         msg << '\n';
     }
 
-    VL_WARN_MT("", 0, "randomize", msg.str().c_str());
+    const std::string str = msg.str();
+    VL_WARN_MT("", 0, "randomize", str.c_str());
 
     while (getline(s_solver, s))
         ;
@@ -360,7 +363,10 @@ int VlRandomizer::parse_solution(std::iostream& f) {
 
     if (sat == "unsat") return 1;
     if (sat != "sat") {
-        VL_WARN_MT("", 0, "randomize", sat.c_str());
+        std::stringstream msg;
+        msg << "Solver error: " << sat;
+        const std::string str = msg.str();
+        VL_WARN_MT("", 0, "randomize", str.c_str());
         return 2;
     }
 
