@@ -134,6 +134,30 @@ AC_ARG_ENABLE([longtests],
 AC_SUBST(CFG_WITH_LONGTESTS)
 AC_MSG_RESULT($CFG_WITH_LONGTESTS)
 
+AC_CHECK_PROG(HAVE_Z3,z3,yes)
+AC_CHECK_PROG(HAVE_CVC5,cvc5,yes)
+AC_CHECK_PROG(HAVE_CVC4,cvc4,yes)
+
+# Special Substitutions - CFG_WITH_SOLVER
+AC_MSG_CHECKING(for SMT solver)
+AC_ARG_WITH([solver],
+              [AS_HELP_STRING([--with-solver='z3 --in'],
+                              [set default SMT solver for constrained randomization])],
+              [CFG_WITH_SOLVER="${withval}"],
+              [CFG_WITH_SOLVER=no
+               if test "x$HAVE_CVC4" = "xyes"; then
+                CFG_WITH_SOLVER="cvc4 --lang=smt2 --incremental"
+               fi
+               if test "x$HAVE_CVC5" = "xyes"; then
+                CFG_WITH_SOLVER="cvc5 --incremental"
+               fi
+               if test "x$HAVE_Z3" = "xyes"; then
+                CFG_WITH_SOLVER="z3 --in"
+               fi]
+              )
+AC_SUBST(CFG_WITH_SOLVER)
+AC_MSG_RESULT($CFG_WITH_SOLVER)
+
 # Compiler flags (ensure they are not empty to avoid configure defaults)
 CFLAGS="$CFLAGS "
 CPPFLAGS="$CPPFLAGS "

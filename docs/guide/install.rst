@@ -152,6 +152,17 @@ To make use of Verilator FST tracing you will want `GTKwave
 required at Verilator build time.
 
 
+Install Z3
+^^^^^^^^^^
+
+In order to use constrained randomization you will need to install `Z3 Theorem
+Prover <https://github.com/z3prover/z3#readme>`__, however this is not required
+at Verilator build time. There are other compatible SMT solvers, like CVC5/CVC4,
+but they are not guaranteed to work. Since different solvers are faster for
+different scenarios, you can also specify any solver you like as a run-time
+environment variable :option:`VERILATOR_SOLVER`.
+
+
 .. _Obtain Sources:
 
 Obtain Sources
@@ -193,8 +204,9 @@ Eventual Installation Options
 Before configuring the build, you must decide how you're going to
 eventually install Verilator onto your system. Verilator will be compiling
 the current value of the environment variables :option:`VERILATOR_ROOT`,
-:option:`SYSTEMC_INCLUDE`, and :option:`SYSTEMC_LIBDIR` as defaults into
-the executable, so they must be correct before configuring.
+:option:`VERILATOR_SOLVER`, :option:`SYSTEMC_INCLUDE`, and
+:option:`SYSTEMC_LIBDIR` as defaults into the executable, so they must be
+correct before configuring.
 
 These are the installation options:
 
