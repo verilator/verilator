@@ -709,12 +709,6 @@ class TristateVisitor final : public TristateBaseVisitor {
         ++m_statTriSigs;
         m_tgraph.didProcess(invarp);
 
-        const AstBasicDType* const basicp = VN_CAST(invarp->dtypep()->skipRefp(), BasicDType);
-        if (!basicp || basicp->isOpaque())
-            invarp->v3warn(E_UNSUPPORTED,
-                           "Unsupported: Inout/tristate with non-bit/logic data type: "
-                               << invarp->dtypep()->prettyTypeName());
-
         // If the lhs var is a port, then we need to create ports for
         // the output (__out) and output enable (__en) signals. The
         // original port gets converted to an input. Don't tristate expand
