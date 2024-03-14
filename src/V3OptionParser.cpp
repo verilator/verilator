@@ -119,23 +119,27 @@ V3OPTION_PARSER_DEF_ACT_CB_CLASS(ActionCbPartialMatch, void(const char*), m_cb(o
 V3OPTION_PARSER_DEF_ACT_CB_CLASS(ActionCbPartialMatchVal, void(const char*, const char*),
                                  m_cb(optp, argp), en::VALUE, true);
 
-#define V3OPTION_PARSER_DEF_ACT_CB_CLASS_TEMPLATE(className, classType, funcType, body, ...) \
-    class V3OptionParser::Impl::className<classType> final : public ActionBase<__VA_ARGS__> { \
-        std::function<funcType> m_cb; /* Callback function */ \
-\
-    public: \
-        using CbType = std::function<funcType>; \
-        explicit className(CbType cb) \
-            : m_cb(std::move(cb)) {} \
-        void exec(const char* optp, const char* argp) override { body; } \
-    }
+template <>
+class V3OptionParser::Impl::ActionCbVal<int> final : public ActionBase<en::VALUE> {
+    std::function<void(int)> m_cb;
+
+public:
+    using CbType = std::function<void(int)>;
+    explicit ActionCbVal(CbType cb)
+        : m_cb(std::move(cb)) {}
+    void exec(const char* optp, const char* argp) override { m_cb(std::atoi(argp)); }
+};
 
 template <>
-V3OPTION_PARSER_DEF_ACT_CB_CLASS_TEMPLATE(ActionCbVal, int, void(int), m_cb(std::atoi(argp)),
-                                          en::VALUE);
-template <>
-V3OPTION_PARSER_DEF_ACT_CB_CLASS_TEMPLATE(ActionCbVal, const char*, void(const char*), m_cb(argp),
-                                          en::VALUE);
+class V3OptionParser::Impl::ActionCbVal<const char*> final : public ActionBase<en::VALUE> {
+    std::function<void(const char*)> m_cb;
+
+public:
+    using CbType = std::function<void(const char*)>;
+    explicit ActionCbVal(CbType cb)
+        : m_cb(std::move(cb)) {}
+    void exec(const char* optp, const char* argp) override { m_cb(argp); }
+};
 
 #undef V3OPTION_PARSER_DEF_ACT_CB_CLASS
 
