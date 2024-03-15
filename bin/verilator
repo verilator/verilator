@@ -308,6 +308,7 @@ detailed descriptions of these arguments.
      +1800-2009ext+<ext>        Use SystemVerilog 2009 with file extension <ext>
      +1800-2012ext+<ext>        Use SystemVerilog 2012 with file extension <ext>
      +1800-2017ext+<ext>        Use SystemVerilog 2017 with file extension <ext>
+     +1800-2023ext+<ext>        Use SystemVerilog 2023 with file extension <ext>
     --assert                    Enable all assertions
     --assert-case               Enable unique/unique0/priority case related checks
     --autoflush                 Flush streams after all $displays
@@ -437,7 +438,7 @@ detailed descriptions of these arguments.
     --no-stop-fail              Do not call $stop when assertion fails
     --structs-packed            Convert all unpacked structures to packed structures
      -sv                        Enable SystemVerilog parsing
-     +systemverilogext+<ext>    Synonym for +1800-2017ext+<ext>
+     +systemverilogext+<ext>    Synonym for +1800-2023ext+<ext>
     --threads <threads>         Enable multithreading
     --threads-dpi <mode>        Enable multithreaded DPI
     --threads-max-mtasks <mtasks>  Tune maximum mtask partitioning
