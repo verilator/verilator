@@ -1299,6 +1299,28 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->seedp()) iterateCheckSigned32(nodep, "seed", nodep->seedp(), BOTH);
         }
     }
+    void visit(AstRandomize* nodep) override {
+        UINFO(5, "   RANDOMIZE " << nodep << endl);
+        if (nodep->didWidth()) return;
+        nodep->dtypeSetSigned32();  // Says the spec
+        AstArg* nextp = nullptr;
+        for (AstArg* argp = VN_CAST(nodep->exprsp(), Arg); argp; argp = nextp) {
+            AstNodeExpr* const exprp = argp->exprp()->unlinkFrBack();
+
+            if (AstClassRefDType *classrefp = VN_CAST(exprp->dtypep(), ClassRefDType)) {
+                AstClass* const classp = classrefp->classp();
+                classp->baseMostClassp()->needRNG(true);
+                V3Randomize::newRandomizeFunc(classp);
+                m_memberMap.clear();
+                v3Global.useRandomizeMethods(true);
+            }
+
+            nextp = VN_AS(argp->nextp(), Arg);
+            argp->replaceWith(exprp);
+            VL_DO_DANGLING(pushDeletep(argp), argp);
+        }
+        userIterateAndNext(nodep->exprsp(), WidthVP{SELF, BOTH}.p());
+    }
     void visit(AstURandomRange* nodep) override {
         if (m_vup->prelim()) {
             nodep->dtypeSetUInt32();  // Says the spec
