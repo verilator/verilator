@@ -189,9 +189,9 @@ public:
 
         of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
         of.puts("VM_USER_CFLAGS = \\\n");
-        if (v3Global.useRandomizeMethods())
-            of.puts("\t-DDEFAULT_SOLVER='\""
-                    + V3OutFormatter::quoteNameControls(V3Options::getenvVERILATOR_SOLVER())
+        const std::string solver = V3Options::getenvVERILATOR_SOLVER();
+        if (v3Global.useRandomizeMethods() && solver != "")
+            of.puts("\t-DDEFAULT_SOLVER='\"" + V3OutFormatter::quoteNameControls(solver)
                     + "\"' \\\n");
         if (!v3Global.opt.libCreate().empty()) of.puts("\t-fPIC \\\n");
         const V3StringList& cFlags = v3Global.opt.cFlags();
