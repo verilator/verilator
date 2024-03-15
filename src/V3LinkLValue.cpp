@@ -167,6 +167,13 @@ class LinkLValueVisitor final : public VNVisitor {
             iterateAndNextNull(nodep->seedp());
         }
     }
+    void visit(AstRandomize* nodep) override {
+        VL_RESTORER(m_setRefLvalue);
+        {
+            m_setRefLvalue = VAccess::WRITE;
+            iterateAndNextNull(nodep->exprsp());
+        }
+    }
     void visit(AstReadMem* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         {
