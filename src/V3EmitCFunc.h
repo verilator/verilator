@@ -1016,6 +1016,14 @@ public:
     void visit(AstRandRNG* nodep) override {
         emitOpName(nodep, nodep->emitC(), nullptr, nullptr, nullptr);
     }
+    void visit(AstRandomize* nodep) override {
+        for (AstNode* childp = nodep->exprsp(); childp; childp = childp->nextp()) {
+            puts("VL_RANDOMIZE(");
+            iterateConst(childp);
+            puts(")");
+            if (childp->nextp()) puts(" && ");
+        }
+    }
     void visit(AstTime* nodep) override {
         putns(nodep, "VL_TIME_UNITED_Q(");
         UASSERT_OBJ(!nodep->timeunit().isNone(), nodep, "$time has no units");
