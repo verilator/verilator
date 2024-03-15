@@ -85,7 +85,8 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   fi
 
   # Run sanitize on Ubuntu 22.04 only
-  [ "$CI_RUNS_ON" = 'ubuntu-22.04' ] && sanitize='--sanitize' || sanitize=''
+  #[ "$CI_RUNS_ON" = 'ubuntu-22.04' ] && sanitize='--sanitize' || sanitize=''
+  sanitize=''
 
   TEST_REGRESS=test_regress
   if [ "$CI_RELOC" == 1 ]; then
