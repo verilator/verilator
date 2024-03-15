@@ -1755,6 +1755,21 @@ public:
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool same(const AstNode* /*samep*/) const override { return true; }
 };
+class AstRandomize final : public AstNodeExpr {
+    // @astgen op1 := exprsp : List[AstNode] // VarRefs to randomized Vars
+public:
+    AstRandomize(FileLine* fl, AstNode* exprsp)
+        : ASTGEN_SUPER_Randomize(fl) {
+        this->addExprsp(exprsp);
+    }
+    ASTGEN_MEMBERS_AstRandomize;
+    string emitVerilog() override { return "std::randomize(%l)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool cleanOut() const override { return false; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+};
 class AstRose final : public AstNodeExpr {
     // Verilog $rose
     // @astgen op1 := exprp : AstNodeExpr
