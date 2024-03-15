@@ -374,6 +374,10 @@ class LinkResolveVisitor final : public VNVisitor {
         iterateChildren(nodep);
         expectFormat(nodep, nodep->text(), nodep->exprsp(), true);
     }
+    void visit(AstRandomize* nodep) override {
+        // Overrides an empty visitor for AstNodeExpr
+        iterateChildren(nodep);
+    }
     void visit(AstSFormatF* nodep) override {
         iterateChildren(nodep);
         // Cleanup old-school displays without format arguments
