@@ -1031,6 +1031,90 @@ the evaluation process records a bitmask of variables that might have
 changed; if clear, checking those signals for changes may be skipped.
 
 
+Constrained randomization
+-------------------------
+
+Because general constrained randomization is a co-NP-hard problem, not all
+cases are implemented in Verilator, and an external specialized SMT solver is
+used for any non-obvious ones.
+The ``randomize()`` method spawns an SMT solver in a sub-process. Then the
+solver gets a setup query, then the definition of variables, then all the
+constraints (SMT assertions) about the variables. Since the solver has no
+information about the class' PRNG state, if the problem is satisfiable,
+the solution space is further constrained by adding extra random constraints,
+and querying the values satisfying the problem statement.
+They are currently constructed as fixing a simple xor of randomly chosen bits
+of the variables being randomized.
+
+There are several runtime classes used for handling the randomization defined in
+``verilated_random.h`` and ``verilated_random.cpp``.
+
+
+``VlSubprocess``
+~~~~~~~~~~~~~~~~
+
+Subprocess handle, responsible for keeping track of the resources like child
+PID, read and write file descriptors, and presenting them as a C++ iostream.
+
+
+``VlRandomizer``
+~~~~~~~~~~~~~~~~
+
+Randomizer class, responsible for keeping track of variables and constraints,
+and communicating with the solver subprocess.
+
+The solver gets the constraints in `SMT-LIB2
+<https://smtlib.cs.uiowa.edu/>`__ textual format in the following syntax:
+
+::
+
+    (set-info :smt-lib-version 2.0)
+    (set-option :produce-models true)
+    (set-logic QF_BV)
+
+    (declare-fun v () (_ BitVec 16))
+    (declare-fun w () (_ BitVec 64))
+    (declare-fun x () (_ BitVec 48))
+    (declare-fun z () (_ BitVec 24))
+    (declare-fun t () (_ BitVec 23))
+    (assert (or (= v #x0003) (= v #x0008)))
+    (assert (= w #x0000000000000009))
+    (assert (or (or (= x #x000000000001) (= x #x000000000002)) (or (= x #x000000000004) (= x #x000000000009))))
+    (assert (bvult ((_ zero_extend 8) z) #x00000015))
+    (assert (bvugt ((_ zero_extend 8) z) #x0000000d))
+
+    (check-sat)
+
+The solver responds with either ``sat`` or ``unsat``. Then the initial solution
+is queried with
+
+::
+
+    (get-value (v w x z t ))
+
+The solver then responds with something like
+
+::
+
+    ((v #x0008)
+     (w #x0000000000000005)
+     (x #x000000000002)
+     (z #x000010)
+     (t #b00000000000000000000000))
+
+And then a follow-up query (or a series thereof) is asked, and the solver gets
+reset, so that it can be reused by subsequent randomization attempts.
+
+::
+
+    (assert (= (bvxor (bvxor <...> (bvxor ((_ extract 21 21) z) ((_ extract 39 39) x)) ((_ extract 5 5) w)) <...> ((_ extract 10 10) w)) #b0))
+    (check-sat)
+    (get-value)
+    ...
+    (reset)
+
+
+
 Coding Conventions
 ==================
 
@@ -2123,6 +2207,10 @@ VERILATOR_NCVERILOG
 
 VERILATOR_ROOT
   Standard path to Verilator distribution root; see primary Verilator
+  documentation.
+
+VERILATOR_SOLVER
+  SMT solver command for constrained randomization; see primary Verilator
   documentation.
 
 VERILATOR_TESTS_SITE
