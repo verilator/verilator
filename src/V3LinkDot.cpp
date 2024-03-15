@@ -3241,6 +3241,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                            || nodep->name() == "set_randstate") {
                     if (AstClass* const classp = VN_CAST(m_modp, Class)) {
                         nodep->classOrPackagep(classp);
+                    } else if (nodep->name() == "randomize"
+                            && (dotSymp->nodep()->name().empty() || dotSymp->nodep()->name() == "std")) {
+                            nodep->replaceWith(new AstRandomize{nodep->fileline(),
+                                nodep->pinsp()->unlinkFrBack()});
+                            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                            return;
                     } else {
                         nodep->v3error("Calling implicit class method "
                                        << nodep->prettyNameQ() << " without being under class");
@@ -3615,6 +3621,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
         }
         m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
+    }
+    void visit(AstRandomize* nodep) override {
+        // Created here so should already be resolved.
+        VL_RESTORER(m_ds);
+        {
+            m_ds.init(m_curSymp);
+            iterateChildren(nodep);
+        }
     }
     void visit(AstRefDType* nodep) override {
         // Resolve its reference
