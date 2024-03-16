@@ -31,6 +31,7 @@ Verilator 5.023 devel
 * Fix DFG removing forceable signals (#4942). [Geza Lore]
 * Fix null characters in shortened identifiers (#4946). [Abdul Hameed]
 * Fix assignment of null into struct member (#4952).
+* Fix unpacked structure upper bit cleaning (#4978).
 
 
 Verilator 5.022 2024-02-24
