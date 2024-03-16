@@ -224,6 +224,11 @@ class CleanVisitor final : public VNVisitor {
         iterateChildren(nodep);
         setClean(nodep, true);
     }
+    void visit(AstConsPackMember* nodep) override {
+        iterateChildren(nodep);
+        ensureClean(nodep->rhsp());
+        setClean(nodep, true);
+    }
     void visit(AstSel* nodep) override {
         operandTriop(nodep);
         setClean(nodep, nodep->cleanOut());
