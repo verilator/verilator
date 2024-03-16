@@ -1555,8 +1555,7 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
             return VCastable::ENUM_IMPLICIT;
         if (fromNumericable) return VCastable::ENUM_EXPLICIT;
     } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromConstp, Const)) {
-        if (VN_IS(fromConstp, Const) && VN_AS(fromConstp, Const)->num().isNull())
-            return VCastable::COMPATIBLE;
+        if (fromConstp->isNull()) return VCastable::COMPATIBLE;
     } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromDtp, ClassRefDType)) {
         const auto toClassp = VN_AS(toDtp, ClassRefDType)->classp();
         const auto fromClassp = VN_AS(fromDtp, ClassRefDType)->classp();

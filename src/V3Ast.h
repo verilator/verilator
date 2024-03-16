@@ -2082,6 +2082,7 @@ public:
     // ACCESSORS for specific types
     // Alas these can't be virtual or they break when passed a nullptr
     inline bool isClassHandleValue() const;
+    inline bool isNull() const;
     inline bool isZero() const;
     inline bool isOne() const;
     inline bool isNeqZero() const;

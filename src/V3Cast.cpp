@@ -82,8 +82,7 @@ class CastVisitor final : public VNVisitor {
     }
     void ensureCast(AstNodeExpr* nodep) {
         if (castSize(nodep->backp()) != castSize(nodep) || !nodep->user1()) {
-            const AstConst* const constp = VN_CAST(nodep, Const);
-            if (!(constp && constp->num().isNull())) insertCast(nodep, castSize(nodep->backp()));
+            if (!nodep->isNull()) insertCast(nodep, castSize(nodep->backp()));
         }
     }
     void ensureLower32Cast(AstCCast* nodep) {
@@ -202,7 +201,7 @@ class CastVisitor final : public VNVisitor {
         // Constants are of unknown size if smaller than 33 bits, because
         // we're too lazy to wrap every constant in the universe in
         // ((IData)#).
-        nodep->user1(nodep->isQuad() || nodep->isWide() || nodep->num().isNull());
+        nodep->user1(nodep->isQuad() || nodep->isWide() || nodep->isNull());
     }
 
     // Null dereference protection

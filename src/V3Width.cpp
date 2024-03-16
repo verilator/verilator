@@ -6560,8 +6560,8 @@ class WidthVisitor final : public VNVisitor {
             AstNodeDType* const rhsDtypep = rhsp->dtypep()->skipRefp();
             if (AstClassRefDType* const rhsClassRefp = VN_CAST(rhsDtypep, ClassRefDType)) {
                 if (isBaseClassRecurse(lhsClassRefp->classp(), rhsClassRefp->classp())) return;
-            } else if (auto* const constp = VN_CAST(rhsp, Const)) {
-                if (constp->num().isNull()) return;
+            } else if (rhsp->isNull()) {
+                return;
             }
             nodep->v3error(side << " expects a " << lhsClassRefp->prettyTypeName() << ", got "
                                 << rhsDtypep->prettyTypeName());

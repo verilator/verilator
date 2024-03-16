@@ -49,6 +49,7 @@ bool AstNode::isClassHandleValue() const {
     return (VN_IS(this, Const) && VN_AS(this, Const)->num().isNull())
            || VN_IS(dtypep(), ClassRefDType);
 }
+bool AstNode::isNull() const { return VN_IS(this, Const) && VN_AS(this, Const)->num().isNull(); }
 bool AstNode::isZero() const {
     return (VN_IS(this, Const) && VN_AS(this, Const)->num().isEqZero());
 }
