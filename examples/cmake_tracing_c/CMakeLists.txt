@@ -22,7 +22,6 @@
 cmake_minimum_required(VERSION 3.12)
 cmake_policy(SET CMP0074 NEW)
 project(cmake_tracing_c)
-set (CMAKE_CXX_STANDARD 14)
 
 find_package(verilator HINTS $ENV{VERILATOR_ROOT} ${VERILATOR_ROOT})
 if (NOT verilator_FOUND)
@@ -31,6 +30,7 @@ endif()
 
 # Create a new executable target that will contain all your sources
 add_executable(example ../make_tracing_c/sim_main.cpp)
+target_compile_features(example PUBLIC cxx_std_14)
 
 # Add the Verilated circuit to the target
 verilate(example COVERAGE TRACE

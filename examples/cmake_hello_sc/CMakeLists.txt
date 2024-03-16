@@ -22,7 +22,6 @@
 cmake_minimum_required(VERSION 3.12)
 cmake_policy(SET CMP0074 NEW)
 project(cmake_hello_sc CXX)
-set (CMAKE_CXX_STANDARD 14)
 
 find_package(verilator HINTS $ENV{VERILATOR_ROOT} ${VERILATOR_ROOT})
 if (NOT verilator_FOUND)
@@ -38,6 +37,7 @@ find_package(SystemCLanguage QUIET)
 
 # Create a new executable target that will contain all your sources
 add_executable(example ../make_hello_sc/sc_main.cpp)
+target_compile_features(example PUBLIC cxx_std_14)
 
 set_property(
   TARGET example
