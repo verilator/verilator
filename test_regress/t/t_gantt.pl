@@ -45,6 +45,8 @@ run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_gantt",
 if ($Self->{vltmt}) {
     file_grep("$Self->{obj_dir}/gantt.log", qr/Total threads += 2/i);
     file_grep("$Self->{obj_dir}/gantt.log", qr/Total mtasks += 7/i);
+    # Predicted thread utilization should be less than 100%
+    file_grep_not("$Self->{obj_dir}/gantt.log", qr/Thread utilization =\s*\d\d\d+\.\d+%/i);
 } else {
     file_grep("$Self->{obj_dir}/gantt.log", qr/Total threads += 1/i);
     file_grep("$Self->{obj_dir}/gantt.log", qr/Total mtasks += 0/i);
