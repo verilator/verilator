@@ -14,81 +14,72 @@
 //
 //*************************************************************************
 //
-//  Move graph builder for ordering
+//  OrderMoveGraph implementation and related
 //
 //*************************************************************************
 
-#ifndef VERILATOR_V3ORDERMOVEGRAPHBUILDER_H_
-#define VERILATOR_V3ORDERMOVEGRAPHBUILDER_H_
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3OrderMoveGraph.h"
 
-#include "V3Ast.h"
 #include "V3Graph.h"
-#include "V3Order.h"
-#include "V3OrderGraph.h"
 
-template <class T_MoveVertex>
-class V3OrderMoveGraphBuilder final {
-    // V3OrderMoveGraphBuilder takes as input the fine-grained bipartite OrderGraph of
-    // OrderLogicVertex and OrderVarVertex vertices. It produces a slightly coarsened graph to
-    // drive the code scheduling.
-    //
-    // * For the serial code scheduler, the new graph contains
-    //   nodes of type OrderMoveVertex.
-    //
-    // * For the threaded code scheduler, the new graph contains
-    //   nodes of type MTaskMoveVertex.
-    //
-    // * The difference in output type is abstracted away by the
-    //   'T_MoveVertex' template parameter; ProcessMoveBuildGraph otherwise
-    //   works the same way for both cases.
+VL_DEFINE_DEBUG_FUNCTIONS;
 
+//======================================================================
+// OrderMoveDomScope implementation
+
+OrderMoveDomScope::DomScopeMap OrderMoveDomScope::s_dsMap;
+
+//======================================================================
+// OrderMoveVertex implementation
+
+OrderMoveVertex::OrderMoveVertex(OrderMoveGraph& graph, OrderLogicVertex* lVtxp,
+                                 const AstSenTree* domainp) VL_MT_DISABLED
+    : V3GraphVertex{&graph},
+      m_logicp{lVtxp},
+      m_domScope{OrderMoveDomScope::getOrCreate(domainp, lVtxp ? lVtxp->scopep() : nullptr)} {
+    UASSERT_OBJ(!lVtxp || lVtxp->domainp() == domainp, lVtxp, "Wrong domain for Move vertex");
+}
+
+//======================================================================
+// OrderMoveGraphBuilder - for OrderMoveGraph::build
+
+class OrderMoveGraphBuilder final {
     // NODE STATE
     // AstSenTree::user1p()     -> AstSenTree:  Original AstSenTree for trigger
     const VNUser1InUse m_user1InUse;
 
     // TYPES
-    using DomainMap = std::map<const AstSenTree*, T_MoveVertex*>;
+    using DomainMap = std::map<const AstSenTree*, OrderMoveVertex*>;
 
     // MEMBERS
     const OrderGraph& m_orderGraph;  // Input OrderGraph
-    // Output graph of T_MoveVertex vertices
-    std::unique_ptr<V3Graph> m_outGraphp{new V3Graph};
+    std::unique_ptr<OrderMoveGraph> m_moveGraphp{new OrderMoveGraph};  // Output OrderMoveGraph
     // Map from Trigger reference AstSenItem to the original AstSenTree
     const V3Order::TrigToSenMap& m_trigToSen;
-    // Storage for domain -> T_MoveVertex, maps held in OrderVarVertex::userp()
+    // Storage for domain -> OrderMoveVertex, maps held in OrderVarVertex::userp()
     std::deque<DomainMap> m_domainMaps;
 
     // CONSTRUCTORS
-    V3OrderMoveGraphBuilder(const OrderGraph& orderGraph, const V3Order::TrigToSenMap& trigToSen)
+    OrderMoveGraphBuilder(const OrderGraph& orderGraph, const V3Order::TrigToSenMap& trigToSen)
         : m_orderGraph{orderGraph}
         , m_trigToSen{trigToSen} {
-        build();
-    }
-    virtual ~V3OrderMoveGraphBuilder() = default;
-    VL_UNCOPYABLE(V3OrderMoveGraphBuilder);
-    VL_UNMOVABLE(V3OrderMoveGraphBuilder);
-
-    // METHODS
-    void build() {
         // How this works:
-        //  - Create a T_MoveVertex for each OrderLogicVertex.
-        //  - Following each OrderLogicVertex, search forward in the context of
-        //    its domain...
-        //    * If we encounter another OrderLogicVertex in non-exclusive
-        //      domain, make the T_MoveVertex->T_MoveVertex edge.
-        //    * If we encounter an OrderVarVertex, make a Vertex for the
-        //      (OrderVarVertex, domain) pair and continue to search
-        //      forward in the context of the same domain.  Unless we
-        //      already created that pair, in which case, we've already
-        //      done the forward search, so stop.
+        //  - Create a OrderMoveVertex for each OrderLogicVertex.
+        //  - Following each OrderLogicVertex, search forward in the context of its domain
+        //    - If we encounter another OrderLogicVertex in non-exclusive domain, make the
+        //      OrderMoveVertex->OrderMoveVertex edge.
+        //    - If we encounter an OrderVarVertex, make a Vertex for the (OrderVarVertex, domain)
+        //      pair and continue to search forward in the context of the same domain.  Unless we
+        //      already created that pair, in which case, we've already done the forward search,
+        //      so stop.
 
-        // For each logic vertex, make a T_MoveVertex, for each variable vertex, allocate storage
+        // For each logic vertex, make a OrderMoveVertex, for each variable vertex, allocate
+        // storage
         for (V3GraphVertex* itp = m_orderGraph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
             if (OrderLogicVertex* const lvtxp = itp->cast<OrderLogicVertex>()) {
-                lvtxp->userp(new T_MoveVertex{*m_outGraphp, lvtxp, lvtxp->domainp()});
+                lvtxp->userp(new OrderMoveVertex{*m_moveGraphp, lvtxp, lvtxp->domainp()});
             } else {
                 // This is an OrderVarVertex
                 m_domainMaps.emplace_back();
@@ -101,7 +92,14 @@ class V3OrderMoveGraphBuilder final {
                 iterateLogicVertex(lvtxp);
             }
         }
+        m_moveGraphp->removeRedundantEdgesSum(&V3GraphEdge::followAlwaysTrue);
+        m_moveGraphp->userClearVertices();
     }
+    virtual ~OrderMoveGraphBuilder() = default;
+    VL_UNCOPYABLE(OrderMoveGraphBuilder);
+    VL_UNMOVABLE(OrderMoveGraphBuilder);
+
+    // METHODS
 
     // Returns the AstSenItem that originally corresponds to this AstSenTree, or nullptr if no
     // original AstSenTree, or if the original AstSenTree had multiple AstSenItems.
@@ -161,9 +159,13 @@ class V3OrderMoveGraphBuilder final {
         return fromSenItemp->edgeType().exclusiveEdge(toSenItemp->edgeType());
     }
 
+    void addEdge(OrderMoveVertex* srcp, OrderMoveVertex* dstp) {
+        new V3GraphEdge{m_moveGraphp.get(), srcp, dstp, 1};
+    }
+
     void iterateLogicVertex(const OrderLogicVertex* lvtxp) {
         AstSenTree* const domainp = lvtxp->domainp();
-        T_MoveVertex* const lMoveVtxp = static_cast<T_MoveVertex*>(lvtxp->userp());
+        OrderMoveVertex* const lMoveVtxp = static_cast<OrderMoveVertex*>(lvtxp->userp());
         // Search forward from lvtxp, making new edges from lMoveVtxp forward
         for (V3GraphEdge* edgep = lvtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
             if (edgep->weight() == 0) continue;  // Was cut
@@ -171,11 +173,11 @@ class V3OrderMoveGraphBuilder final {
             // OrderGraph is a bipartite graph, so we know it's an OrderVarVertex
             const OrderVarVertex* const vvtxp = static_cast<const OrderVarVertex*>(edgep->top());
 
-            // Look up T_MoveVertex for this domain on this variable
+            // Look up OrderMoveVertex for this domain on this variable
             DomainMap& mapp = *static_cast<DomainMap*>(vvtxp->userp());
             const auto pair = mapp.emplace(domainp, nullptr);
-            // Reference to the mapped T_MoveVertex
-            T_MoveVertex*& vMoveVtxp = pair.first->second;
+            // Reference to the mapped OrderMoveVertex
+            OrderMoveVertex*& vMoveVtxp = pair.first->second;
 
             // On first encounter, visit downstream logic dependent on this (var, domain)
             if (pair.second) vMoveVtxp = iterateVarVertex(vvtxp, domainp);
@@ -185,14 +187,14 @@ class V3OrderMoveGraphBuilder final {
             if (!vMoveVtxp) continue;
 
             // Add this (variable, domain) as dependent of the logic that writes it.
-            new V3GraphEdge{m_outGraphp.get(), lMoveVtxp, vMoveVtxp, 1};
+            addEdge(lMoveVtxp, vMoveVtxp);
         }
     }
 
-    // Return the T_MoveVertex for this (var, domain) pair, iff it has downstream dependencies,
+    // Return the OrderMoveVertex for this (var, domain) pair, iff it has downstream dependencies,
     // otherwise return nullptr.
-    T_MoveVertex* iterateVarVertex(const OrderVarVertex* vvtxp, AstSenTree* domainp) {
-        T_MoveVertex* vMoveVtxp = nullptr;
+    OrderMoveVertex* iterateVarVertex(const OrderVarVertex* vvtxp, AstSenTree* domainp) {
+        OrderMoveVertex* vMoveVtxp = nullptr;
         // Search forward from vvtxp, making new edges from vMoveVtxp forward
         for (V3GraphEdge* edgep = vvtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
             if (edgep->weight() == 0) continue;  // Was cut
@@ -204,18 +206,24 @@ class V3OrderMoveGraphBuilder final {
             if (domainsExclusive(domainp, lVtxp->domainp())) continue;
 
             // there is a path from this vvtx to a logic vertex. Add the new edge.
-            if (!vMoveVtxp) vMoveVtxp = new T_MoveVertex{*m_outGraphp, nullptr, domainp};
-            T_MoveVertex* const lMoveVxp = static_cast<T_MoveVertex*>(lVtxp->userp());
-            new V3GraphEdge{m_outGraphp.get(), vMoveVtxp, lMoveVxp, 1};
+            if (!vMoveVtxp) vMoveVtxp = new OrderMoveVertex{*m_moveGraphp, nullptr, domainp};
+            OrderMoveVertex* const lMoveVxp = static_cast<OrderMoveVertex*>(lVtxp->userp());
+            addEdge(vMoveVtxp, lMoveVxp);
         }
         return vMoveVtxp;
     }
 
 public:
-    static std::unique_ptr<V3Graph> apply(const OrderGraph& orderGraph,
-                                          const V3Order::TrigToSenMap& trigToSen) {
-        return std::move(V3OrderMoveGraphBuilder{orderGraph, trigToSen}.m_outGraphp);
+    static std::unique_ptr<OrderMoveGraph> apply(const OrderGraph& orderGraph,
+                                                 const V3Order::TrigToSenMap& trigToSen) {
+        return std::move(OrderMoveGraphBuilder{orderGraph, trigToSen}.m_moveGraphp);
     }
 };
 
-#endif  // Guard
+//======================================================================
+// OrderMoveGraph implementation
+
+std::unique_ptr<OrderMoveGraph> OrderMoveGraph::build(const OrderGraph& orderGraph,
+                                                      const V3Order::TrigToSenMap& trigToSen) {
+    return OrderMoveGraphBuilder::apply(orderGraph, trigToSen);
+}

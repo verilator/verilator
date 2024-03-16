@@ -39,6 +39,8 @@ ExecMTask::ExecMTask(V3Graph* graphp, AstMTaskBody* bodyp) VL_MT_DISABLED  //
       m_id{s_nextId++},
       m_hashName{V3Hasher::uncachedHash(bodyp).toString()} {
     UASSERT_OBJ(bodyp->stmtsp(), bodyp, "AstMTaskBody should already be populated for hashing");
+    UASSERT_OBJ(!bodyp->execMTaskp(), bodyp, "AstMTaskBody already linked to an ExecMTask");
+    bodyp->execMTaskp(this);
 }
 
 void ExecMTask::dump(std::ostream& str) const {

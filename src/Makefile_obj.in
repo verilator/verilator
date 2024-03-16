@@ -267,6 +267,7 @@ RAW_OBJS_PCH_ASTNOMT = \
 	V3Name.o \
 	V3Order.o \
 	V3OrderGraphBuilder.o \
+	V3OrderMoveGraph.o \
 	V3OrderParallel.o \
 	V3OrderProcessDomains.o \
 	V3OrderSerial.o \
