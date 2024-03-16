@@ -47,7 +47,7 @@ bool AstNode::isSigned() const VL_MT_STABLE { return dtypep() && dtypep()->isSig
 
 bool AstNode::isClassHandleValue() const {
     return (VN_IS(this, Const) && VN_AS(this, Const)->num().isNull())
-           || VN_IS(dtypep(), ClassRefDType);
+           || (dtypep() && VN_IS(dtypep()->skipRefp(), ClassRefDType));
 }
 bool AstNode::isNull() const { return VN_IS(this, Const) && VN_AS(this, Const)->num().isNull(); }
 bool AstNode::isZero() const {

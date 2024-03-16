@@ -121,14 +121,14 @@ class CastVisitor final : public VNVisitor {
         // already checked by V3Width and dtypep of a condition operator is a type of their
         // common base class, so both classes can be safely casted.
         const AstClassRefDType* const thenClassDtypep
-            = VN_CAST(nodep->thenp()->dtypep(), ClassRefDType);
+            = VN_CAST(nodep->thenp()->dtypep()->skipRefp(), ClassRefDType);
         const AstClassRefDType* const elseClassDtypep
-            = VN_CAST(nodep->elsep()->dtypep(), ClassRefDType);
+            = VN_CAST(nodep->elsep()->dtypep()->skipRefp(), ClassRefDType);
         const bool castRequired = thenClassDtypep && elseClassDtypep
                                   && (thenClassDtypep->classp() != elseClassDtypep->classp());
         if (castRequired) {
             const AstClass* const commonBaseClassp
-                = VN_AS(nodep->dtypep(), ClassRefDType)->classp();
+                = VN_AS(nodep->dtypep()->skipRefp(), ClassRefDType)->classp();
             if (thenClassDtypep->classp() != commonBaseClassp) {
                 AstNodeExpr* thenp = nodep->thenp()->unlinkFrBack();
                 nodep->thenp(new AstCCast{thenp->fileline(), thenp, nodep});
