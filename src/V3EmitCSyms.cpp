@@ -18,8 +18,8 @@
 
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
+#include "V3ExecGraph.h"
 #include "V3LanguageWords.h"
-#include "V3PartitionGraph.h"
 #include "V3StackCount.h"
 #include "V3Stats.h"
 
@@ -500,8 +500,7 @@ void EmitCSyms::emitSymHdr() {
 
     if (v3Global.opt.profPgo()) {
         puts("\n// PGO PROFILING\n");
-        const uint32_t usedMTaskProfilingIDs = v3Global.rootp()->usedMTaskProfilingIDs();
-        puts("VlPgoProfiler<" + cvtToStr(usedMTaskProfilingIDs) + "> _vm_pgoProfiler;\n");
+        puts("VlPgoProfiler<" + std::to_string(ExecMTask::numUsedIds()) + "> _vm_pgoProfiler;\n");
     }
 
     if (!m_scopeNames.empty()) {  // Scope names
@@ -832,7 +831,7 @@ void EmitCSyms::emitSymImp() {
                 for (const V3GraphVertex* vxp = execGraphp->depGraphp()->verticesBeginp(); vxp;
                      vxp = vxp->verticesNextp()) {
                     const ExecMTask* const mtp = static_cast<const ExecMTask*>(vxp);
-                    puts("_vm_pgoProfiler.addCounter(" + cvtToStr(mtp->profilerId()) + ", \""
+                    puts("_vm_pgoProfiler.addCounter(" + cvtToStr(mtp->id()) + ", \""
                          + mtp->hashName() + "\");\n");
                 }
             });

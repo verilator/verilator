@@ -132,7 +132,6 @@ set(HEADERS
     V3Parse.h
     V3ParseImp.h
     V3ParseSym.h
-    V3PartitionGraph.h
     V3PchAstMT.h
     V3PchAstNoMT.h
     V3PreExpr.h
