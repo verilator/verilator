@@ -30,9 +30,11 @@ class ExtendExtendCls extends ExtendCls;
 endclass
 
 module t (/*AUTOARG*/);
+   typedef ExtendCls ExtendCls_t;
+
    initial begin
       Cls cls1 = null, cls2 = null;
-      ExtendCls ext_cls = null;
+      ExtendCls_t ext_cls = null;
       AnotherExtendCls an_ext_cls = null;
       ExtendExtendCls ext_ext_cls = null;
       int r;

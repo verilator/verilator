@@ -1581,26 +1581,26 @@ VCastable AstNode::computeCastable(const AstNodeDType* toDtp, const AstNodeDType
     return castable;
 }
 
-AstNodeDType* AstNode::getCommonClassTypep(AstNode* nodep1, AstNode* nodep2) {
-    // Return the class type that both nodep1 and nodep2 are castable to.
+AstNodeDType* AstNode::getCommonClassTypep(AstNode* node1p, AstNode* node2p) {
+    // Return the class type that both node1p and node2p are castable to.
     // If both are null, return the type of null constant.
     // If one is a class and one is null, return AstClassRefDType that points to that class.
     // If no common class type exists, return nullptr.
 
     // First handle cases with null values and when one class is a super class of the other.
-    if (VN_IS(nodep1, Const)) std::swap(nodep1, nodep2);
+    if (VN_IS(node1p, Const)) std::swap(node1p, node2p);
     {
-        const VCastable castable = computeCastable(nodep1->dtypep(), nodep2->dtypep(), nodep2);
+        const VCastable castable = computeCastable(node1p->dtypep(), node2p->dtypep(), node2p);
         if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE) {
-            return nodep1->dtypep();
+            return node1p->dtypep();
         } else if (castable == VCastable::DYNAMIC_CLASS) {
-            return nodep2->dtypep();
+            return node2p->dtypep();
         }
     }
 
-    AstClassRefDType* classDtypep1 = VN_CAST(nodep1->dtypep(), ClassRefDType);
+    AstClassRefDType* classDtypep1 = VN_CAST(node1p->dtypep(), ClassRefDType);
     while (classDtypep1) {
-        const VCastable castable = computeCastable(classDtypep1, nodep2->dtypep(), nodep2);
+        const VCastable castable = computeCastable(classDtypep1, node2p->dtypep(), node2p);
         if (castable == VCastable::COMPATIBLE) return classDtypep1;
         AstClassExtends* const extendsp = classDtypep1->classp()->extendsp();
         classDtypep1 = extendsp ? VN_AS(extendsp->dtypep(), ClassRefDType) : nullptr;
