@@ -3701,12 +3701,15 @@ statement_item<nodep>:          // IEEE: statement_item
         ;
 
 statementFor<beginp>:           // IEEE: part of statement
-                yFOR '(' for_initialization expr ';' for_stepE ')' stmtBlock
+                yFOR beginForParen for_initialization expr ';' for_stepE ')' stmtBlock
                         { $$ = new AstBegin{$1, "", $3, false, true};
                           $$->addStmtsp(new AstWhile{$1, $4, $8, $6}); }
-        |       yFOR '(' for_initialization ';' for_stepE ')' stmtBlock
+        |       yFOR beginForParen for_initialization ';' for_stepE ')' stmtBlock
                         { $$ = new AstBegin{$1, "", $3, false, true};
                           $$->addStmtsp(new AstWhile{$1, new AstConst{$1, AstConst::BitTrue{}}, $7, $5}); }
+        ;
+beginForParen:  // IEEE: Part of statement (for loop beginning paren)
+                '('                                     { VARRESET(); }
         ;
 
 statementVerilatorPragmas<nodep>:
@@ -3997,7 +4000,16 @@ for_initializationItem<nodep>:          // IEEE: variable_assignment + for_varia
                           $$->addNext(new AstAssign{$4, new AstParseRef{$<fl>3, VParseRefExp::PX_TEXT, *$3}, $5}); }
         //                      // IEEE: variable_assignment
         //                      // UNSUP variable_lvalue below
-        |       varRefBase '=' expr                     { $$ = new AstAssign{$2, $1, $3}; }
+        |       id/*newOrExisting*/ '=' expr
+                        { if (GRAMMARP->m_varDecl) {
+                              AstVar* const varp = VARDONEA($<fl>1, *$1, nullptr, nullptr);
+                              varp->lifetime(VLifetime::AUTOMATIC);
+                              $$ = varp;
+                              $$->addNext(new AstAssign{$2, new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}, $3});
+                          } else {
+                              $$ = new AstAssign{$2, new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}, $3};
+                          }
+                        }
         ;
 
 for_stepE<nodep>:               // IEEE: for_step + empty
