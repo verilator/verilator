@@ -37,6 +37,7 @@ find_package(SystemCLanguage QUIET)
 
 # Create a new executable target that will contain all your sources
 add_executable(example ../make_hello_sc/sc_main.cpp)
+target_compile_features(example PUBLIC cxx_std_14)
 
 set_property(
   TARGET example
