@@ -203,7 +203,6 @@ class PackThreads final {
     const uint32_t m_sandbagNumerator;  // Numerator padding for est runtime
     const uint32_t m_sandbagDenom;  // Denominator padding for est runtime
 
-public:
     // CONSTRUCTORS
     explicit PackThreads(uint32_t nThreads = v3Global.opt.threads(),
                          unsigned sandbagNumerator = 30, unsigned sandbagDenom = 100)
@@ -211,8 +210,8 @@ public:
         , m_sandbagNumerator{sandbagNumerator}
         , m_sandbagDenom{sandbagDenom} {}
     ~PackThreads() = default;
+    VL_UNCOPYABLE(PackThreads);
 
-private:
     // METHODS
     uint32_t completionTime(const ThreadSchedule& schedule, const ExecMTask* mtaskp,
                             uint32_t threadId) {
@@ -256,9 +255,8 @@ private:
         return true;
     }
 
-public:
     // Pack an MTasks from given graph into m_nThreads threads, return the schedule.
-    const ThreadSchedule pack(const V3Graph& mtaskGraph) {
+    ThreadSchedule pack(const V3Graph& mtaskGraph) {
         // The result
         ThreadSchedule schedule{m_nThreads};
 
@@ -350,6 +348,7 @@ public:
         return schedule;
     }
 
+public:
     // SELF TEST
     static void selfTest() {
         V3Graph graph;
@@ -402,8 +401,9 @@ public:
         UASSERT_SELFTEST(uint32_t, packer.completionTime(schedule, t2, 1), 1199);
     }
 
-private:
-    VL_UNCOPYABLE(PackThreads);
+    static const ThreadSchedule apply(const V3Graph& mtaskGraph) {
+        return PackThreads{}.pack(mtaskGraph);
+    }
 };
 
 using EstimateAndProfiled = std::pair<uint64_t, uint64_t>;  // cost est, cost profiled
@@ -780,13 +780,9 @@ void wrapMTaskBodies(AstExecGraph* const execGraphp) {
     }
 }
 
-void implementExecGraph(AstExecGraph* const execGraphp) {
+void implementExecGraph(AstExecGraph* const execGraphp, const ThreadSchedule& schedule) {
     // Nothing to be done if there are no MTasks in the graph at all.
     if (execGraphp->depGraphp()->empty()) return;
-
-    // Schedule the mtasks: statically associate each mtask with a thread,
-    // and determine the order in which each thread will runs its mtasks.
-    const ThreadSchedule& schedule = PackThreads{}.pack(*execGraphp->depGraphp());
 
     // Create a function to be run by each thread. Note this moves all AstMTaskBody nodes form the
     // AstExecGrap into the AstCFunc created
@@ -808,11 +804,15 @@ void implement(AstNetlist* netlistp) {
         fillinCosts(execGraphp->depGraphp());
         finalizeCosts(execGraphp->depGraphp());
 
+        // Schedule the mtasks: statically associate each mtask with a thread,
+        // and determine the order in which each thread will runs its mtasks.
+        const ThreadSchedule& schedule = PackThreads::apply(*execGraphp->depGraphp());
+
         // Wrap each MTask body into a CFunc for better profiling/debugging
         wrapMTaskBodies(execGraphp);
 
         // Replace the graph body with its multi-threaded implementation.
-        implementExecGraph(execGraphp);
+        implementExecGraph(execGraphp, schedule);
     });
 }
 
