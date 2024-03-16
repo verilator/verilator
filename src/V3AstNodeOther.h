@@ -1115,8 +1115,9 @@ class AstExecGraph final : public AstNode {
 
 public:
     explicit AstExecGraph(FileLine* fl, const string& name) VL_MT_DISABLED;
-    ASTGEN_MEMBERS_AstExecGraph;
     ~AstExecGraph() override;
+    ASTGEN_MEMBERS_AstExecGraph;
+    void cloneRelink() override { V3ERROR_NA; }
     const char* broken() const override {
         BROKEN_RTN(!m_depGraphp);
         return nullptr;
@@ -1170,6 +1171,7 @@ public:
     explicit AstMTaskBody(FileLine* fl)
         : ASTGEN_SUPER_MTaskBody(fl) {}
     ASTGEN_MEMBERS_AstMTaskBody;
+    void cloneRelink() override { V3ERROR_NA; }
     const char* broken() const override {
         BROKEN_RTN(!m_execMTaskp);
         return nullptr;
@@ -1267,9 +1269,6 @@ class AstNetlist final : public AstNode {
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
-    uint32_t m_nextFreeMTaskID = 1;  // Next unique MTask ID within netlist
-                                     // starts at 1 so 0 means no MTask ID
-    uint32_t m_nextFreeMTaskProfilingID = 0;  // Next unique ID to use for PGO
 public:
     AstNetlist();
     ASTGEN_MEMBERS_AstNetlist;
@@ -1310,9 +1309,6 @@ public:
     void timeprecisionMerge(FileLine*, const VTimescale& value);
     void timescaleSpecified(bool specified) { m_timescaleSpecified = specified; }
     bool timescaleSpecified() const { return m_timescaleSpecified; }
-    uint32_t allocNextMTaskID() { return m_nextFreeMTaskID++; }
-    uint32_t allocNextMTaskProfilingID() { return m_nextFreeMTaskProfilingID++; }
-    uint32_t usedMTaskProfilingIDs() const { return m_nextFreeMTaskProfilingID; }
 };
 class AstPackageExport final : public AstNode {
     // A package export declaration

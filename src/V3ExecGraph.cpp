@@ -22,17 +22,31 @@
 #include "V3EmitCBase.h"
 #include "V3File.h"
 #include "V3GraphStream.h"
+#include "V3Hasher.h"
 #include "V3InstrCount.h"
 #include "V3Os.h"
-#include "V3PartitionGraph.h"
 #include "V3Stats.h"
-#include "V3UniqueNames.h"
 
 #include <memory>
 #include <unordered_map>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
+
+ExecMTask::ExecMTask(V3Graph* graphp, AstMTaskBody* bodyp) VL_MT_DISABLED  //
+    : V3GraphVertex{graphp},
+      m_bodyp{bodyp},
+      m_id{s_nextId++},
+      m_hashName{V3Hasher::uncachedHash(bodyp).toString()} {
+    UASSERT_OBJ(bodyp->stmtsp(), bodyp, "AstMTaskBody should already be populated for hashing");
+}
+
+void ExecMTask::dump(std::ostream& str) const {
+    str << name() << "." << cvtToHex(this);
+    if (priority() || cost()) str << " [pr=" << priority() << " c=" << cvtToStr(cost()) << "]";
+}
+
+uint32_t ExecMTask::s_nextId = 0;
 
 namespace V3ExecGraph {
 
@@ -352,13 +366,19 @@ public:
     // SELF TEST
     static void selfTest() {
         V3Graph graph;
-        ExecMTask* const t0 = new ExecMTask{&graph, nullptr, 0};
+        FileLine* const flp = v3Global.rootp()->fileline();
+        const auto makeBody = [flp]() {
+            AstMTaskBody* const bodyp = new AstMTaskBody{flp};
+            bodyp->addStmtsp(new AstComment{flp, ""});
+            return bodyp;
+        };
+        ExecMTask* const t0 = new ExecMTask{&graph, makeBody()};
         t0->cost(1000);
         t0->priority(1100);
-        ExecMTask* const t1 = new ExecMTask{&graph, nullptr, 1};
+        ExecMTask* const t1 = new ExecMTask{&graph, makeBody()};
         t1->cost(100);
         t1->priority(100);
-        ExecMTask* const t2 = new ExecMTask{&graph, nullptr, 2};
+        ExecMTask* const t2 = new ExecMTask{&graph, makeBody()};
         t2->cost(100);
         t2->priority(100);
 
@@ -464,8 +484,6 @@ void normalizeCosts(Costs& costs) {
 }
 
 void fillinCosts(V3Graph* execMTaskGraphp) {
-    V3UniqueNames m_uniqueNames;  // For generating unique mtask profile hash names
-
     // Pass 1: See what profiling data applies
     Costs costs;  // For each mtask, costs
 
@@ -473,7 +491,6 @@ void fillinCosts(V3Graph* execMTaskGraphp) {
          vxp = vxp->verticesNextp()) {
         ExecMTask* const mtp = const_cast<V3GraphVertex*>(vxp)->as<ExecMTask>();
         // Compute name of mtask, for hash lookup
-        mtp->hashName(m_uniqueNames.get(mtp->bodyp()));
 
         // This estimate is 64 bits, but the final mtask graph algorithm needs 32 bits
         const uint64_t costEstimate = V3InstrCount::count(mtp->bodyp(), false);
@@ -560,11 +577,6 @@ void finalizeCosts(V3Graph* execMTaskGraphp) {
         }
     }
 
-    // Assign profiler IDs
-    for (V3GraphVertex* vxp = execMTaskGraphp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-        static_cast<ExecMTask*>(vxp)->profilerId(v3Global.rootp()->allocNextMTaskProfilingID());
-    }
-
     // Removing tasks may cause edges that were formerly non-transitive to
     // become transitive. Also we just created new edges around the removed
     // tasks, which could be transitive. Prune out all transitive edges.
@@ -615,7 +627,7 @@ void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t threadId,
 
     if (v3Global.opt.profPgo()) {
         // No lock around startCounter, as counter numbers are unique per thread
-        addStrStmt("vlSymsp->_vm_pgoProfiler.startCounter(" + std::to_string(mtaskp->profilerId())
+        addStrStmt("vlSymsp->_vm_pgoProfiler.startCounter(" + std::to_string(mtaskp->id())
                    + ");\n");
     }
 
@@ -624,7 +636,7 @@ void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t threadId,
 
     if (v3Global.opt.profPgo()) {
         // No lock around stopCounter, as counter numbers are unique per thread
-        addStrStmt("vlSymsp->_vm_pgoProfiler.stopCounter(" + std::to_string(mtaskp->profilerId())
+        addStrStmt("vlSymsp->_vm_pgoProfiler.stopCounter(" + std::to_string(mtaskp->id())
                    + ");\n");
     }
 

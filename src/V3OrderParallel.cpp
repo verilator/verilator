@@ -21,6 +21,7 @@
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Config.h"
+#include "V3ExecGraph.h"
 #include "V3File.h"
 #include "V3Graph.h"
 #include "V3GraphStream.h"
@@ -31,7 +32,6 @@
 #include "V3OrderMoveGraphBuilder.h"
 #include "V3Os.h"
 #include "V3PairingHeap.h"
-#include "V3PartitionGraph.h"
 #include "V3Scoreboard.h"
 #include "V3Stats.h"
 
@@ -242,7 +242,8 @@ private:
     // the end of the vertex. Same units as m_cost.
     std::array<uint32_t, GraphWay::NUM_WAYS> m_critPathCost;
 
-    uint32_t m_serialId;  // Unique MTask ID number
+    const uint32_t m_id;  // Unique LogicMTask ID number
+    static uint32_t s_nextId;  // Next ID number to use
 
     // Count "generations" which are just operations that scan through the
     // graph. We'll mark each node with the last generation that scanned
@@ -265,7 +266,9 @@ private:
 public:
     // CONSTRUCTORS
     LogicMTask(V3Graph* graphp, MTaskMoveVertex* mtmvVxp)
-        : V3GraphVertex{graphp} {
+        : V3GraphVertex{graphp}
+        , m_id{s_nextId++} {
+        UASSERT(s_nextId < 0xFFFFFFFFUL, "Too many mTaskGraphp");
         for (uint32_t& item : m_critPathCost) item = 0;
         if (mtmvVxp) {  // Else null for test
             m_mvertices.push_back(mtmvVxp);
@@ -273,10 +276,6 @@ public:
                 m_cost += V3InstrCount::count(olvp->nodep(), true);
             }
         }
-        // Start at 1, so that 0 indicates no mtask ID.
-        static uint32_t s_nextId = 1;
-        m_serialId = s_nextId++;
-        UASSERT(s_nextId < 0xFFFFFFFFUL, "Too many mTaskGraphp");
     }
 
     // METHODS
@@ -299,8 +298,7 @@ public:
     // Use this instead of pointer-compares to compare LogicMTasks. Avoids
     // nondeterministic output.  Also name mTaskGraphp based on this number in
     // the final C++ output.
-    uint32_t id() const { return m_serialId; }
-    void id(uint32_t id) { m_serialId = id; }
+    uint32_t id() const { return m_id; }
     // Abstract cost of every logic mtask
     uint32_t cost() const VL_MT_SAFE { return m_cost; }
     void setCost(uint32_t cost) { m_cost = cost; }  // For tests only
@@ -353,8 +351,8 @@ public:
         // Display forward and reverse critical path costs. This gives a quick
         // read on whether graph partitioning looks reasonable or bad.
         std::ostringstream out;
-        out << "mt" << m_serialId << "." << this << " [b" << m_critPathCost[GraphWay::FORWARD]
-            << " a" << m_critPathCost[GraphWay::REVERSE] << " c" << cost();
+        out << "mt" << m_id << "." << this << " [b" << m_critPathCost[GraphWay::FORWARD] << " a"
+            << m_critPathCost[GraphWay::REVERSE] << " c" << cost();
         return out.str();
     }
 
@@ -422,6 +420,9 @@ public:
 private:
     VL_UNCOPYABLE(LogicMTask);
 };
+
+// Start at 1, so that 0 indicates no mtask.
+uint32_t LogicMTask::s_nextId = 1;
 
 //######################################################################
 // MTask utility classes
@@ -2360,29 +2361,6 @@ class Partitioner final {
         m_mTaskGraphp->removeTransitiveEdges();
         debugMTaskGraphStats(*m_mTaskGraphp, "transitive1");
 
-        // Reassign MTask IDs onto smaller numbers, which should be more stable
-        // across small logic changes.  Keep MTask IDs in the same relative
-        // order though, otherwise we break CmpLogicMTask for still-existing
-        // EdgeSet's that haven't destructed yet.
-        {
-            using SortedMTaskSet = std::set<LogicMTask*, LogicMTask::CmpLogicMTask>;
-            SortedMTaskSet sorted;
-            for (V3GraphVertex* itp = m_mTaskGraphp->verticesBeginp(); itp;
-                 itp = itp->verticesNextp()) {
-                LogicMTask* const mtaskp = static_cast<LogicMTask*>(itp);
-                sorted.insert(mtaskp);
-            }
-            for (auto it = sorted.begin(); it != sorted.end(); ++it) {
-                // We shouldn't perturb the sort order of the set, despite
-                // changing the IDs, they should all just remain in the same
-                // relative order. Confirm that:
-                const uint32_t nextId = v3Global.rootp()->allocNextMTaskID();
-                UASSERT(nextId <= (*it)->id(), "Should only shrink MTaskIDs here");
-                UINFO(4, "Reassigning MTask id " << (*it)->id() << " to id " << nextId << "\n");
-                (*it)->id(nextId);
-            }
-        }
-
         // Set color to indicate the mtaskId on every underlying logic MTaskMoveVertex.
         // Remove any MTasks that have no logic in it rerouting the edges.
         for (V3GraphVertex *vtxp = m_mTaskGraphp->verticesBeginp(), *nextp; vtxp; vtxp = nextp) {
@@ -2533,7 +2511,9 @@ AstExecGraph* V3Order::createParallel(const OrderGraph& orderGraph, const std::s
         //   and OrderLogicVertex's which are ephemeral to V3Order.
         // - The ExecMTask graph and the AstMTaskBody's produced here
         //   persist until code generation time.
-        state.m_execMTaskp = new ExecMTask{depGraphp, bodyp, mtaskp->id()};
+        state.m_execMTaskp = new ExecMTask{depGraphp, bodyp};
+        UINFO(3, "Final '" << tag << "' LogicMTask " << mtaskp->id() << " maps to ExecMTask"
+                           << state.m_execMTaskp->id() << std::endl);
         // Cross-link each ExecMTask and MTaskBody
         //  Q: Why even have two objects?
         //  A: One is an AstNode, the other is a GraphVertex,
