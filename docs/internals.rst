@@ -1962,6 +1962,10 @@ driver.pl Non-Scenario Arguments
   files with dumping level 3, which dumps the standard critical stages.
   For details on the format see `.tree Output`.
 
+--fail-max <numtests>
+  Set the number of failing tests, after which the driver will stop running
+  additional tests.  Defaults to 20, 0 disables.
+
 --gdb
   Same as ``verilator --gdb``: Run Verilator under the debugger.
 

@@ -73,6 +73,7 @@ our $Vltmt_threads = 3;
 
 $Debug = 0;
 my $opt_benchmark;
+our $Opt_Fail_Max = 20;
 my @opt_tests;
 my $opt_dist;
 my $opt_gdb;
@@ -99,6 +100,7 @@ if (! GetOptions(
           "benchmark:i" => sub { $opt_benchmark = $_[1] ? $_[1] : 1; },
           "debug"       => \&debug,
           #debugi          see parameter()
+          "fail-max=i"  => \$Opt_Fail_Max,
           "gdb!"        => \$opt_gdb,
           "gdbbt!"      => \$opt_gdbbt,
           "gdbsim!"     => \$opt_gdbsim,
@@ -385,6 +387,11 @@ sub one_test {
              # Make an identifier that is unique across all current running jobs
              my $i = 1; while (exists $self->{running_ids}{$i}) { ++$i; }
              $process->{running_id} = $i;
+             if ($::Opt_Fail_Max && $::Opt_Fail_Max <= $self->fail_count) {
+                 print STDERR "== Too many test failures; exceeded --fail-max\n"
+                     if !$self->{_msg_fail_max_skip}++;
+                 $process->{fail_max_skip} = 1;
+             }
              $self->{running_ids}{$process->{running_id}} = 1;
          },
          run_on_start => sub {
@@ -398,13 +405,15 @@ sub one_test {
              my $test = VTest->new(@params,
                                    running_id => $process->{running_id});
              $test->oprint("=" x 50, "\n");
-             unlink $test->{status_filename} if !$params{rerun_skipping};
              $test->_prep;
              if ($params{rerun_skipping}) {
                  print "  ---------- Earlier logfiles below; test was rerunnable = 0\n";
                  system("cat $test->{obj_dir}/*.log");
                  print "  ---------- Earlier logfiles above; test was rerunnable = 0\n";
+             } elsif ($process->{fail_max_skip}) {
+                 $test->skip("Too many test failures; exceeded --fail-max");
              } else {
+                 unlink $test->{status_filename};
                  $test->_read;
              }
              # Don't put anything other than _exit after _read,
