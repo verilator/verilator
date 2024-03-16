@@ -2464,22 +2464,6 @@ AstExecGraph* V3Order::createParallel(const OrderGraph& orderGraph, const std::s
 
         // Add this logic to the per-mtask order
         mtaskStates[mtaskId].m_logics.push_back(movep->logicp());
-
-        // Since we happen to be iterating over every logic node,
-        // take this opportunity to annotate each AstVar with the id's
-        // of mTaskGraphp that consume it and produce it. We'll use this
-        // information in V3EmitC when we lay out var's in memory.
-        const OrderLogicVertex* const logicp = movep->logicp();
-        for (const V3GraphEdge* edgep = logicp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-            const OrderVarVertex* const vVtxp = edgep->fromp()->cast<const OrderVarVertex>();
-            if (!vVtxp) continue;
-            vVtxp->vscp()->varp()->addMTaskId(mtaskId);
-        }
-        for (const V3GraphEdge* edgep = logicp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            const OrderVarVertex* const vVtxp = edgep->top()->cast<const OrderVarVertex>();
-            if (!vVtxp) continue;
-            vVtxp->vscp()->varp()->addMTaskId(mtaskId);
-        }
     }
 
     // Create the AstExecGraph node which represents the execution

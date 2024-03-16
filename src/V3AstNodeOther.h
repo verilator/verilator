@@ -1742,7 +1742,6 @@ class AstVar final : public AstNode {
     VDirection m_declDirection;  // Declared direction input/output etc
     VLifetime m_lifetime;  // Lifetime
     VVarAttrClocker m_attrClocker;
-    MTaskIdSet m_mtaskIds;  // MTaskID's that read or write this var
     int m_pinNum = 0;  // For XML, if non-zero the connection pin number
     bool m_ansi : 1;  // Params or pins declared in the module header, rather than the body
     bool m_declTyped : 1;  // Declared as type (for dedup check)
@@ -2096,8 +2095,6 @@ public:
         m_name = name;
     }
     static AstVar* scVarRecurse(AstNode* nodep);
-    void addMTaskId(int id) { m_mtaskIds.insert(id); }
-    const MTaskIdSet& mtaskIds() const { return m_mtaskIds; }
     void pinNum(int id) { m_pinNum = id; }
     int pinNum() const { return m_pinNum; }
 };
