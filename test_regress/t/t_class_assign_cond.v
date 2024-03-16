@@ -35,6 +35,7 @@ module t (/*AUTOARG*/);
       ExtendCls ext_cls = null;
       AnotherExtendCls an_ext_cls = null;
       ExtendExtendCls ext_ext_cls = null;
+      int r;
 
       cls1 = (cls1 == null) ? cls2 : cls1;
       if (cls1 != null) $stop;
@@ -63,6 +64,25 @@ module t (/*AUTOARG*/);
       an_ext_cls = new(5);
       cls1 = (ext_ext_cls.f != 4) ? ext_ext_cls : an_ext_cls;
       if (cls1.f != 5) $stop;
+
+      ext_cls = new(3);
+      r = $random;
+      cls1 = r[0] ? ext_cls : null;
+      if (cls1 != null && cls1.f != 3) $stop;
+
+      ext_cls = new(3);
+      r = $random;
+      cls1 = r[0] ? null : ext_cls;
+      if (cls1 != null && cls1.f != 3) $stop;
+
+      ext_cls = new(3);
+      r = $random;
+      cls1 = r[0] ? null : null;
+      if (cls1 != null) $stop;
+
+      ext_cls = new(3);
+      cls1 = (ext_cls == null) ? null : null;
+      if (cls1 != null) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

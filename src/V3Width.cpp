@@ -490,7 +490,9 @@ class WidthVisitor final : public VNVisitor {
             //  the expression includes the size of the output too.
             const AstNodeDType* const thenDTypep = nodep->thenp()->dtypep();
             const AstNodeDType* const elseDTypep = nodep->elsep()->dtypep();
-            if (thenDTypep->skipRefp() == elseDTypep->skipRefp()) {
+            if (nodep->thenp()->isNull() && nodep->elsep()->isNull()) {
+                nodep->dtypep(m_vup->dtypeNullp());
+            } else if (thenDTypep->skipRefp() == elseDTypep->skipRefp()) {
                 // TODO might need a broader equation, use the Castable function?
                 nodep->dtypeFrom(thenDTypep);
             } else if (nodep->thenp()->isClassHandleValue()
