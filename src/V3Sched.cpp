@@ -355,14 +355,9 @@ LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
     LogicClasses result;
 
     netlistp->foreach([&](AstScope* scopep) {
-        std::vector<AstActive*> empty;
-
         scopep->foreach([&](AstActive* activep) {
             AstSenTree* const senTreep = activep->sensesp();
-            if (!activep->stmtsp()) {
-                // Some AstActives might be empty due to previous optimizations
-                empty.push_back(activep);
-            } else if (senTreep->hasStatic()) {
+            if (senTreep->hasStatic()) {
                 UASSERT_OBJ(!senTreep->sensesp()->nextp(), activep,
                             "static initializer with additional sensitivities");
                 result.m_static.emplace_back(scopep, activep);
@@ -393,8 +388,6 @@ LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
                 }
             }
         });
-
-        for (AstActive* const activep : empty) activep->unlinkFrBack()->deleteTree();
     });
 
     return result;

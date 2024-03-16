@@ -77,6 +77,21 @@ class ActiveTopVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
+
+        // Delete empty procedures
+        for (AstNode *stmtp = nodep->stmtsp(), *nextp; stmtp; stmtp = nextp) {
+            nextp = stmtp->nextp();
+            if (AstNodeProcedure* const procp = VN_CAST(stmtp, NodeProcedure)) {
+                if (!procp->stmtsp()) VL_DO_DANGLING(pushDeletep(procp->unlinkFrBack()), stmtp);
+            }
+        }
+
+        // Delete empty actives
+        if (!nodep->stmtsp()) {
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
+
         // Move the SENTREE for each active up to the global level.
         // This way we'll easily see what clock domains are identical
         AstSenTree* const wantp = m_finder.getSenTree(sensesp);
