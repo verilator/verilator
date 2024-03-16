@@ -30,6 +30,7 @@ endif()
 
 # Create a new executable target that will contain all your sources
 add_executable(example ../make_hello_c/sim_main.cpp)
+target_compile_features(example PUBLIC cxx_std_14)
 
 # Add the Verilated circuit to the target
 verilate(example

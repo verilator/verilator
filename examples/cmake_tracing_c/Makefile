@@ -31,7 +31,7 @@ endif
 ifeq ($(shell which cmake),)
 TARGET := nocmake
 else
-CMAKE_VERSION := $(shell cmake --version | grep -Po '(\d[\.\d]+)')
+CMAKE_VERSION := $(shell cmake --version | grep -o '[0-9][.0-9]\+')
 CMAKE_MAJOR := $(shell echo $(CMAKE_VERSION) | cut -f1 -d.)
 CMAKE_MINOR := $(shell echo $(CMAKE_VERSION) | cut -f2 -d.)
 CMAKE_GT_3_8 := $(shell [ $(CMAKE_MAJOR) -gt 3 -o \( $(CMAKE_MAJOR) -eq 3 -a $(CMAKE_MINOR) -ge 8 \) ] && echo true)

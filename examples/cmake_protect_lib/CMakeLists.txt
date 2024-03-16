@@ -30,9 +30,12 @@ endif()
 
 # Create the main executable target
 add_executable(example ../make_protect_lib/sim_main.cpp)
+target_compile_features(example PUBLIC cxx_std_14)
 
 # Create a secret library
 add_library(verilated_secret STATIC) # or SHARED for a shared library
+target_compile_features(verilated_secret PUBLIC cxx_std_14)
+
 target_link_libraries(example PRIVATE verilated_secret)
 # To create both libraries on CMake >= 3.12 replace the above 2 lines with the following:
 # add_library(verilated_secret OBJECT)
