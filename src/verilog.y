@@ -3708,8 +3708,8 @@ statementFor<beginp>:           // IEEE: part of statement
                         { $$ = new AstBegin{$1, "", $3, false, true};
                           $$->addStmtsp(new AstWhile{$1, new AstConst{$1, AstConst::BitTrue{}}, $7, $5}); }
         ;
-beginForParen:
-                '(' { VARRESET(); }
+beginForParen:  // IEEE: Part of statement (for loop beginning paren)
+                '('                                     { VARRESET(); }
         ;
 
 statementVerilatorPragmas<nodep>:
