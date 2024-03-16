@@ -563,7 +563,7 @@ static void process() {
             V3Common::commonAll();
 
             // Order variables
-            V3VariableOrder::orderAll();
+            V3VariableOrder::orderAll(v3Global.rootp());
 
             // Create AstCUse to determine what class forward declarations/#includes needed in C
             V3CUse::cUseAll();

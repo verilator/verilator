@@ -49,9 +49,6 @@ class VFlagLogicPacked {};
 class VFlagBitPacked {};
 class VFlagChildDType {};  // Used by parser.y to select constructor that sets childDType
 
-// Used as key for another map, needs operator<, hence not an unordered_set
-using MTaskIdSet = std::set<int>;  // Set of mtaskIds for Var sorting
-
 //######################################################################
 
 // For broken() function, return error string if have a match
