@@ -120,6 +120,8 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   fi
   yes yes | sudo cpan -M $CI_CPAN_REPO -fi Parallel::Forker
   install-vcddiff
+  # Workaround -fsanitize=address crash
+  sudo sysctl -w vm.mmap_rnd_bits=28
 else
   ##############################################################################
   # Unknown build stage
