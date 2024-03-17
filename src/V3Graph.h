@@ -317,9 +317,9 @@ public:
     void rank(uint32_t rank) { m_rank = rank; }
     double fanout() const { return m_fanout; }
     void user(uint32_t user) { m_user = user; }
-    uint32_t user() const { return m_user; }
+    uint32_t user() const VL_MT_STABLE { return m_user; }
     void userp(void* userp) { m_userp = userp; }
-    void* userp() const { return m_userp; }
+    void* userp() const VL_MT_STABLE { return m_userp; }
     // ITERATORS
     V3GraphVertex* verticesNextp() const { return m_vertices.nextp(); }
     V3GraphEdge* inBeginp() const { return m_ins.begin(); }
