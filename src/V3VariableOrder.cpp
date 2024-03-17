@@ -275,9 +275,8 @@ void V3VariableOrder::orderAll(AstNetlist* netlistp) {
     // Gather MTask affinities
     if (v3Global.opt.mtasks()) {
         netlistp->topModulep()->foreach([&](AstExecGraph* execGraphp) {
-            for (const V3GraphVertex* vtxp = execGraphp->depGraphp()->verticesBeginp(); vtxp;
-                 vtxp = vtxp->verticesNextp()) {
-                GatherMTaskAffinity::apply(vtxp->as<const ExecMTask>(), mTaskAffinity);
+            for (const V3GraphVertex& vtx : execGraphp->depGraphp()->vertices()) {
+                GatherMTaskAffinity::apply(vtx.as<const ExecMTask>(), mTaskAffinity);
             }
         });
     }

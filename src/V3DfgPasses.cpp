@@ -109,29 +109,22 @@ void V3DfgPasses::cse(DfgGraph& dfg, V3DfgCseContext& ctx) {
 
         // Pre-hash variables, these are all unique, so just set their hash to a unique value
         uint32_t varHash = 0;
-        for (DfgVertexVar *vtxp = dfg.varVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-            nextp = vtxp->verticesNext();
-            vtxp->user<V3Hash>() = V3Hash{++varHash};
-        }
+        for (DfgVertexVar& vtx : dfg.varVertices()) vtx.user<V3Hash>() = V3Hash{++varHash};
 
         // Similarly pre-hash constants for speed. While we don't combine constants, we do want
         // expressions using the same constants to be combined, so we do need to hash equal
         // constants to equal values.
-        for (DfgConst *vtxp = dfg.constVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-            nextp = vtxp->verticesNext();
-            if (VL_LIKELY(nextp)) VL_PREFETCH_RW(nextp);
+        for (DfgConst* const vtxp : dfg.constVertices().unlinkable()) {
             // Delete unused constants while we are at it.
             if (!vtxp->hasSinks()) {
-                vtxp->unlinkDelete(dfg);
+                VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
                 continue;
             }
             vtxp->user<V3Hash>() = vtxp->num().toHash() + varHash;
         }
 
         // Combine operation vertices
-        for (DfgVertex *vtxp = dfg.opVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-            nextp = vtxp->verticesNext();
-            if (VL_LIKELY(nextp)) VL_PREFETCH_RW(nextp);
+        for (DfgVertex* const vtxp : dfg.opVertices().unlinkable()) {
             // Delete unused nodes while we are at it.
             if (!vtxp->hasSinks()) {
                 vtxp->unlinkDelete(dfg);
@@ -144,7 +137,7 @@ void V3DfgPasses::cse(DfgGraph& dfg, V3DfgCseContext& ctx) {
                 if (candidatep->equals(*vtxp, equalsCache)) {
                     ++ctx.m_eliminated;
                     vtxp->replaceWith(candidatep);
-                    vtxp->unlinkDelete(dfg);
+                    VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
                     replaced = true;
                     break;
                 }
@@ -158,10 +151,9 @@ void V3DfgPasses::cse(DfgGraph& dfg, V3DfgCseContext& ctx) {
     removeUnused(dfg);
 }
 
-void V3DfgPasses::inlineVars(const DfgGraph& dfg) {
-    for (DfgVertexVar *vtxp = dfg.varVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-        nextp = vtxp->verticesNext();
-        if (DfgVarPacked* const varp = vtxp->cast<DfgVarPacked>()) {
+void V3DfgPasses::inlineVars(DfgGraph& dfg) {
+    for (DfgVertexVar& vtx : dfg.varVertices()) {
+        if (DfgVarPacked* const varp = vtx.cast<DfgVarPacked>()) {
             // Don't inline SystemC variables, as SystemC types are not interchangeable with
             // internal types, and hence the variables are not interchangeable either.
             if (varp->hasSinks() && varp->isDrivenFullyByDfg() && !varp->varp()->isSc()) {
@@ -170,11 +162,11 @@ void V3DfgPasses::inlineVars(const DfgGraph& dfg) {
                 // We must keep the original driver in certain cases, when swapping them would
                 // not be functionally or technically (implementation reasons) equivalent
                 if (DfgVertexVar* const driverVarp = driverp->cast<DfgVarPacked>()) {
-                    const AstVar* const varp = driverVarp->varp();
+                    const AstVar* const astVarp = driverVarp->varp();
                     // If driven from a SystemC variable
-                    if (varp->isSc()) continue;
+                    if (astVarp->isSc()) continue;
                     // If the variable is forceable
-                    if (varp->isForceable()) continue;
+                    if (astVarp->isForceable()) continue;
                 }
 
                 varp->forEachSinkEdge([=](DfgEdge& edge) {
@@ -202,16 +194,14 @@ void V3DfgPasses::removeUnused(DfgGraph& dfg) {
     DfgVertex* workListp = sentinelp;
 
     // Add all unused vertices to the work list. This also allocates all DfgVertex::user.
-    for (DfgVertex *vtxp = dfg.opVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-        nextp = vtxp->verticesNext();
-        if (VL_LIKELY(nextp)) VL_PREFETCH_RW(nextp);
-        if (vtxp->hasSinks()) {
+    for (DfgVertex& vtx : dfg.opVertices()) {
+        if (vtx.hasSinks()) {
             // This vertex is used. Allocate user, but don't add to work list.
-            vtxp->setUser<DfgVertex*>(nullptr);
+            vtx.setUser<DfgVertex*>(nullptr);
         } else {
             // This vertex is unused. Add to work list.
-            vtxp->setUser<DfgVertex*>(workListp);
-            workListp = vtxp;
+            vtx.setUser<DfgVertex*>(workListp);
+            workListp = &vtx;
         }
     }
 
@@ -240,9 +230,8 @@ void V3DfgPasses::removeUnused(DfgGraph& dfg) {
     }
 
     // Finally remove unused constants
-    for (DfgConst *vtxp = dfg.constVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-        nextp = vtxp->verticesNext();
-        if (!vtxp->hasSinks()) vtxp->unlinkDelete(dfg);
+    for (DfgConst* const vtxp : dfg.constVertices().unlinkable()) {
+        if (!vtxp->hasSinks()) VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
     }
 }
 
@@ -258,11 +247,9 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
     DfgVertex* workListp = sentinelp;
 
     // Add all variables to the initial work list
-    for (DfgVertexVar *vtxp = dfg.varVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-        nextp = vtxp->verticesNext();
-        if (VL_LIKELY(nextp)) VL_PREFETCH_RW(nextp);
-        vtxp->setUser<DfgVertex*>(workListp);
-        workListp = vtxp;
+    for (DfgVertexVar& vtx : dfg.varVertices()) {
+        vtx.setUser<DfgVertex*>(workListp);
+        workListp = &vtx;
     }
 
     const auto addToWorkList = [&](DfgVertex& vtx) {

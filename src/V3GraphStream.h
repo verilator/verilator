@@ -104,32 +104,27 @@ public:
         , m_last{m_readyVertices.end()}
         , m_way{way} {
         uint32_t pos = 0;
-        for (const V3GraphVertex* vxp = graphp->verticesBeginp(); vxp;
-             vxp = vxp->verticesNextp()) {
+        for (const V3GraphVertex& vtx : graphp->vertices()) {
             // Every vertex initially is waiting, or ready.
             if (way == GraphWay::FORWARD) {
-                if (vxp->inEmpty()) {
-                    const VxHolder newVx{vxp, pos++, 0};
+                if (vtx.inEmpty()) {
+                    const VxHolder newVx{&vtx, pos++, 0};
                     m_readyVertices.insert(newVx);
                 } else {
                     uint32_t depCount = 0;
-                    for (V3GraphEdge* depp = vxp->inBeginp(); depp; depp = depp->inNextp()) {
-                        ++depCount;
-                    }
-                    const VxHolder newVx{vxp, pos++, depCount};
-                    m_waitingVertices.emplace(vxp, newVx);
+                    for (const V3GraphEdge& _ : vtx.inEdges()) ++depCount;
+                    const VxHolder newVx{&vtx, pos++, depCount};
+                    m_waitingVertices.emplace(&vtx, newVx);
                 }
             } else {  // REVERSE
-                if (vxp->outEmpty()) {
-                    const VxHolder newVx{vxp, pos++, 0};
+                if (vtx.outEmpty()) {
+                    const VxHolder newVx{&vtx, pos++, 0};
                     m_readyVertices.insert(newVx);
                 } else {
                     uint32_t depCount = 0;
-                    for (V3GraphEdge* depp = vxp->outBeginp(); depp; depp = depp->outNextp()) {
-                        ++depCount;
-                    }
-                    const VxHolder newVx{vxp, pos++, depCount};
-                    m_waitingVertices.emplace(vxp, newVx);
+                    for (const V3GraphEdge& _ : vtx.outEdges()) ++depCount;
+                    const VxHolder newVx{&vtx, pos++, depCount};
+                    m_waitingVertices.emplace(&vtx, newVx);
                 }
             }
         }
@@ -196,8 +191,8 @@ public:
 private:
     void unblockDeps(const V3GraphVertex* vertexp) {
         if (m_way == GraphWay::FORWARD) {
-            for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                const V3GraphVertex* const toVertexp = edgep->top();
+            for (const V3GraphEdge& edgep : vertexp->outEdges()) {
+                const V3GraphVertex* const toVertexp = edgep.top();
 
                 const auto it = m_waitingVertices.find(toVertexp);
                 UASSERT_OBJ(it != m_waitingVertices.end(), toVertexp,
@@ -208,8 +203,8 @@ private:
                 }
             }
         } else {
-            for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                const V3GraphVertex* const fromVertexp = edgep->fromp();
+            for (const V3GraphEdge& edge : vertexp->inEdges()) {
+                const V3GraphVertex* const fromVertexp = edge.fromp();
 
                 const auto it = m_waitingVertices.find(fromVertexp);
                 UASSERT_OBJ(it != m_waitingVertices.end(), fromVertexp,
@@ -239,7 +234,7 @@ class GraphStreamUnordered final {
 public:
     // CONSTRUCTORS
     VL_UNCOPYABLE(GraphStreamUnordered);
-    explicit GraphStreamUnordered(const V3Graph* graphp, GraphWay way = GraphWay::FORWARD)
+    explicit GraphStreamUnordered(V3Graph* graphp, GraphWay way = GraphWay::FORWARD)
         : m_way{way} {
         if (m_way == GraphWay::FORWARD) {
             init<GraphWay::FORWARD>(graphp);
@@ -272,27 +267,22 @@ public:
 
 private:
     template <uint8_t T_Way>  //
-    VL_ATTR_NOINLINE void init(const V3Graph* graphp) {
+    VL_ATTR_NOINLINE void init(V3Graph* graphp) {
         constexpr GraphWay way{T_Way};
-        constexpr GraphWay inv = way.invert();
         // Assign every vertex without an incoming edge to ready, others to waiting
-        for (V3GraphVertex *vertexp = graphp->verticesBeginp(), *nextp; vertexp; vertexp = nextp) {
-            nextp = vertexp->verticesNextp();
+        for (V3GraphVertex& vertex : graphp->vertices()) {
             uint32_t nDeps = 0;
-            for (V3GraphEdge* edgep = vertexp->beginp(inv); edgep; edgep = edgep->nextp(inv)) {
-                ++nDeps;
-            }
-            vertexp->color(nDeps);  // Using color instead of user, as user might be used by client
-            if (VL_UNLIKELY(nDeps == 0)) m_nextVertices.push_back(vertexp);
+            for (const V3GraphEdge& _ : vertex.edges<way.invert()>()) ++nDeps;
+            vertex.color(nDeps);  // Using color instead of user, as user might be used by client
+            if (VL_UNLIKELY(nDeps == 0)) m_nextVertices.push_back(&vertex);
         }
     }
 
     template <uint8_t T_Way>  //
     VL_ATTR_NOINLINE const V3GraphVertex* unblock(const V3GraphVertex* resultp) {
         constexpr GraphWay way{T_Way};
-        for (V3GraphEdge *edgep = resultp->beginp(way), *nextp; edgep; edgep = nextp) {
-            nextp = edgep->nextp(way);
-            V3GraphVertex* const vertexp = edgep->furtherp(way);
+        for (const V3GraphEdge& edge : resultp->edges<way>()) {
+            V3GraphVertex* const vertexp = edge.furtherp<way>();
 #if VL_DEBUG
             UASSERT_OBJ(vertexp->color() != 0, vertexp, "Should not be on waiting list");
 #endif

@@ -31,7 +31,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // OrderSerial class
 
-std::vector<AstActive*> V3Order::createSerial(const OrderGraph& graph, const std::string& tag,
+std::vector<AstActive*> V3Order::createSerial(OrderGraph& graph, const std::string& tag,
                                               const TrigToSenMap& trigToSen, bool slow) {
 
     UINFO(2, "  Constructing serial code for '" + tag + "'");
@@ -45,9 +45,8 @@ std::vector<AstActive*> V3Order::createSerial(const OrderGraph& graph, const std
     OrderMoveGraphSerializer serializer{*moveGraphp};
 
     // Add initially ready vertices (those with no dependencies) to the serializer as seeds
-    for (V3GraphVertex *vtxp = moveGraphp->verticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-        nextp = vtxp->verticesNextp();
-        if (vtxp->inEmpty()) serializer.addSeed(vtxp->as<OrderMoveVertex>());
+    for (V3GraphVertex& vtx : moveGraphp->vertices()) {
+        if (vtx.inEmpty()) serializer.addSeed(vtx.as<OrderMoveVertex>());
     }
 
     // Emit all logic as they become ready
@@ -68,8 +67,7 @@ std::vector<AstActive*> V3Order::createSerial(const OrderGraph& graph, const std
     }
 
     // Delete the remaining variable vertices
-    for (V3GraphVertex *vtxp = moveGraphp->verticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-        nextp = vtxp->verticesNextp();
+    for (V3GraphVertex* const vtxp : moveGraphp->vertices().unlinkable()) {
         if (!vtxp->as<OrderMoveVertex>()->logicp()) {
             VL_DO_DANGLING(vtxp->unlinkDelete(moveGraphp.get()), vtxp);
         }

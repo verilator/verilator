@@ -847,11 +847,10 @@ void EmitCSyms::emitSymImp() {
         puts("// Configure profiling for PGO\n");
         if (v3Global.opt.mtasks()) {
             v3Global.rootp()->topModulep()->foreach([&](const AstExecGraph* execGraphp) {
-                for (const V3GraphVertex* vxp = execGraphp->depGraphp()->verticesBeginp(); vxp;
-                     vxp = vxp->verticesNextp()) {
-                    const ExecMTask* const mtp = static_cast<const ExecMTask*>(vxp);
-                    puts("_vm_pgoProfiler.addCounter(" + cvtToStr(mtp->id()) + ", \""
-                         + mtp->hashName() + "\");\n");
+                for (const V3GraphVertex& vtx : execGraphp->depGraphp()->vertices()) {
+                    const ExecMTask& mt = static_cast<const ExecMTask&>(vtx);
+                    puts("_vm_pgoProfiler.addCounter(" + cvtToStr(mt.id()) + ", \"" + mt.hashName()
+                         + "\");\n");
                 }
             });
         }

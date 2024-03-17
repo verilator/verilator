@@ -290,13 +290,13 @@ public:
     }
 };
 
-void colorActiveRegion(const V3Graph& graph) {
+void colorActiveRegion(V3Graph& graph) {
     // Work queue for depth first traversal
     std::vector<V3GraphVertex*> queue{};
 
     // Trace from all SchedSenVertex
-    for (V3GraphVertex* vtxp = graph.verticesBeginp(); vtxp; vtxp = vtxp->verticesNextp()) {
-        if (const auto activeEventVtxp = vtxp->cast<SchedSenVertex>()) {
+    for (V3GraphVertex& vtx : graph.vertices()) {
+        if (const auto activeEventVtxp = vtx.cast<SchedSenVertex>()) {
             queue.push_back(activeEventVtxp);
         }
     }
@@ -313,17 +313,15 @@ void colorActiveRegion(const V3Graph& graph) {
         vtx.color(1);
 
         // Enqueue all parent vertices that feed this vertex.
-        for (V3GraphEdge* edgep = vtx.inBeginp(); edgep; edgep = edgep->inNextp()) {
-            queue.push_back(edgep->fromp());
-        }
+        for (V3GraphEdge& edge : vtx.inEdges()) queue.push_back(edge.fromp());
 
         // If this is a logic vertex, also enqueue all variable vertices that are driven from this
         // logic. This will ensure that if a variable is set in the active region, then all
         // settings of that variable will be in the active region.
         if (vtx.is<SchedLogicVertex>()) {
-            for (V3GraphEdge* edgep = vtx.outBeginp(); edgep; edgep = edgep->outNextp()) {
-                UASSERT(edgep->top()->is<SchedVarVertex>(), "Should be var vertex");
-                queue.push_back(edgep->top());
+            for (V3GraphEdge& edge : vtx.outEdges()) {
+                UASSERT(edge.top()->is<SchedVarVertex>(), "Should be var vertex");
+                queue.push_back(edge.top());
             }
         }
     }
@@ -346,8 +344,8 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
 
     LogicRegions result;
 
-    for (V3GraphVertex* vtxp = graphp->verticesBeginp(); vtxp; vtxp = vtxp->verticesNextp()) {
-        if (const auto lvtxp = vtxp->cast<SchedLogicVertex>()) {
+    for (V3GraphVertex& vtx : graphp->vertices()) {
+        if (const auto lvtxp = vtx.cast<SchedLogicVertex>()) {
             LogicByScope& lbs = lvtxp->color() ? result.m_act : result.m_nba;
             AstNode* const logicp = lvtxp->logicp();
             logicp->unlinkFrBack();

@@ -240,20 +240,18 @@ class DfgToAstVisitor final : DfgVisitor {
         // Convert the graph back to combinational assignments
 
         // The graph must have been regularized, so we only need to render assignments
-        for (DfgVertexVar *vtxp = dfg.varVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-            nextp = vtxp->verticesNext();
-
+        for (DfgVertexVar& vtx : dfg.varVertices()) {
             // If there is no driver (this vertex is an input to the graph), then nothing to do.
-            if (!vtxp->isDrivenByDfg()) continue;
+            if (!vtx.isDrivenByDfg()) continue;
 
             // Render packed variable assignments
-            if (const DfgVarPacked* const dfgVarp = vtxp->cast<DfgVarPacked>()) {
+            if (const DfgVarPacked* const dfgVarp = vtx.cast<DfgVarPacked>()) {
                 convertVarDriver(dfgVarp);
                 continue;
             }
 
             // Render array variable assignments
-            convertArrayDiver(vtxp->as<DfgVarArray>());
+            convertArrayDiver(vtx.as<DfgVarArray>());
         }
     }
 

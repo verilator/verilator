@@ -125,7 +125,7 @@ AstModule* dfgToAst(DfgGraph&, V3DfgOptimizationContext&) VL_MT_DISABLED;
 // Common subexpression elimination
 void cse(DfgGraph&, V3DfgCseContext&) VL_MT_DISABLED;
 // Inline fully driven variables
-void inlineVars(const DfgGraph&) VL_MT_DISABLED;
+void inlineVars(DfgGraph&) VL_MT_DISABLED;
 // Peephole optimizations
 void peephole(DfgGraph&, V3DfgPeepholeContext&) VL_MT_DISABLED;
 // Regularize graph. This must be run before converting back to Ast.

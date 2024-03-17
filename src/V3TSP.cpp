@@ -146,6 +146,9 @@ private:
     };
 
     static Vertex* castVertexp(V3GraphVertex* vxp) { return static_cast<Vertex*>(vxp); }
+    static const Vertex* castVertexp(const V3GraphVertex* vxp) {
+        return static_cast<const Vertex*>(vxp);
+    }
 
 public:
     // From *this, populate *mstp with the minimum spanning tree.
@@ -156,8 +159,8 @@ public:
         // Use Prim's algorithm to efficiently construct the MST.
 
         uint32_t vertCount = 0;
-        for (V3GraphVertex* vxp = verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            mstp->addVertex(castVertexp(vxp)->key());
+        for (V3GraphVertex& vtx : vertices()) {
+            mstp->addVertex(castVertexp(&vtx)->key());
             vertCount++;
         }
 
@@ -181,12 +184,12 @@ public:
             // Allocate new edge list
             EdgeList* const newEdgesp = &allocatedEdgeLists[vertIdx++];
             // Gather out edges of this vertex
-            for (V3GraphEdge* edgep = vtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+            for (V3GraphEdge& edge : vtxp->outEdges()) {
                 // Don't add edges leading to vertices we already visited. This is a highly
                 // connected graph, so this greatly reduces the cost of maintaining the pending
                 // set.
-                if (edgep->top()->user() == VertexState::MST_VISITED) continue;
-                newEdgesp->push_back(edgep);
+                if (edge.top()->user() == VertexState::MST_VISITED) continue;
+                newEdgesp->push_back(&edge);
             }
             // If no relevant out edges, then we are done
             if (newEdgesp->empty()) return;
@@ -197,7 +200,7 @@ public:
         };
 
         // To start, choose an arbitrary vertex and visit it.
-        visit(verticesBeginp());
+        visit(vertices().frontp());
 
         // Repeatedly find the least costly edge in the pending set.
         // If it connects to an unvisited node, visit that node and update
@@ -282,14 +285,14 @@ public:
         std::vector<V3GraphEdge*> pendingEdges;
 
         for (Vertex* const fromp : odds) {
-            for (V3GraphEdge* edgep = fromp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                Vertex* const top = castVertexp(edgep->top());
+            for (V3GraphEdge& edge : fromp->outEdges()) {
+                Vertex* const top = castVertexp(edge.top());
                 // There are two edges (in both directions) between these two vertices. Keep one.
                 if (fromp > top) continue;
                 // We only care about edges between the odd-order vertices
                 if (top->user() != VertexState::UNMATCHED_ODD) continue;
                 // Add to candidate list
-                pendingEdges.push_back(edgep);
+                pendingEdges.push_back(&edge);
             }
         }
 
@@ -313,12 +316,12 @@ public:
 
     void combineGraph(const TspGraphTmpl& g) {
         std::unordered_set<uint32_t> edges_done;
-        for (V3GraphVertex* vxp = g.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            const Vertex* const fromp = castVertexp(vxp);
-            for (V3GraphEdge* edgep = fromp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                const Vertex* const top = castVertexp(edgep->top());
-                if (edges_done.insert(getEdgeId(edgep)).second) {
-                    addEdge(fromp->key(), top->key(), edgep->weight());
+        for (const V3GraphVertex& vtx : g.vertices()) {
+            const Vertex* const fromp = castVertexp(&vtx);
+            for (const V3GraphEdge& edge : fromp->outEdges()) {
+                const Vertex* const top = castVertexp(edge.top());
+                if (edges_done.insert(getEdgeId(&edge)).second) {
+                    addEdge(fromp->key(), top->key(), edge.weight());
                 }
             }
         }
@@ -335,12 +338,12 @@ public:
             tour.push_back(cur_vertexp);
 
             // Look for an arbitrary edge we've not yet marked
-            for (V3GraphEdge* edgep = cur_vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                const uint32_t edgeId = getEdgeId(edgep);
+            for (V3GraphEdge& edge : cur_vertexp->outEdges()) {
+                const uint32_t edgeId = getEdgeId(&edge);
                 if (markedEdgesp->end() == markedEdgesp->find(edgeId)) {
                     // This edge is not yet marked, so follow it.
                     markedEdgesp->insert(edgeId);
-                    Vertex* const neighborp = castVertexp(edgep->top());
+                    Vertex* const neighborp = castVertexp(edge.top());
                     UINFO(6, "following edge " << edgeId << " from " << cur_vertexp->key()
                                                << " to " << neighborp->key() << endl);
                     cur_vertexp = neighborp;
@@ -359,8 +362,8 @@ public:
             do {
                 recursed = false;
                 // Look for an arbitrary edge at vxp we've not yet marked
-                for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                    const uint32_t edgeId = getEdgeId(edgep);
+                for (V3GraphEdge& edge : vxp->outEdges()) {
+                    const uint32_t edgeId = getEdgeId(&edge);
                     if (markedEdgesp->end() == markedEdgesp->find(edgeId)) {
                         UINFO(6, "Recursing.\n");
                         findEulerTourRecurse(markedEdgesp, vxp, sortedOutp);
@@ -381,12 +384,12 @@ public:
     void dumpGraph(std::ostream& os, const string& nameComment) const {
         // UINFO(0) as controlled by caller
         os << "At " << nameComment << ", dumping graph. Keys:\n";
-        for (V3GraphVertex* vxp = verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            const Vertex* const tspvp = castVertexp(vxp);
+        for (const V3GraphVertex& vtx : vertices()) {
+            const Vertex* const tspvp = castVertexp(&vtx);
             os << " " << tspvp->key() << '\n';
-            for (V3GraphEdge* edgep = tspvp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                const Vertex* const neighborp = castVertexp(edgep->top());
-                os << "   has edge " << getEdgeId(edgep) << " to " << neighborp->key() << '\n';
+            for (const V3GraphEdge& edge : tspvp->outEdges()) {
+                const Vertex* const neighborp = castVertexp(edge.top());
+                os << "   has edge " << getEdgeId(&edge) << " to " << neighborp->key() << '\n';
             }
         }
     }
@@ -404,18 +407,16 @@ public:
         if (::dumpGraphLevel() >= 6) dumpDotFilePrefixed("findEulerTour");
         std::unordered_set<unsigned /*edgeID*/> markedEdges;
         // Pick a start node
-        Vertex* const start_vertexp = castVertexp(verticesBeginp());
+        Vertex* const start_vertexp = castVertexp(vertices().frontp());
         findEulerTourRecurse(&markedEdges, start_vertexp, sortedOutp);
     }
 
     std::vector<T_Key> getOddDegreeKeys() const {
         std::vector<T_Key> result;
-        for (V3GraphVertex* vxp = verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            const Vertex* const tspvp = castVertexp(vxp);
+        for (const V3GraphVertex& vtx : vertices()) {
+            const Vertex* const tspvp = castVertexp(&vtx);
             uint32_t degree = 0;
-            for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                degree++;
-            }
+            for (const V3GraphEdge& _ : vtx.outEdges()) degree++;
             if (degree & 1) result.push_back(tspvp->key());
         }
         return result;

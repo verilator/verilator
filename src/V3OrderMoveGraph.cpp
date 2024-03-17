@@ -54,7 +54,7 @@ class OrderMoveGraphBuilder final {
     using DomainMap = std::map<const AstSenTree*, OrderMoveVertex*>;
 
     // MEMBERS
-    const OrderGraph& m_orderGraph;  // Input OrderGraph
+    OrderGraph& m_orderGraph;  // Input OrderGraph
     std::unique_ptr<OrderMoveGraph> m_moveGraphp{new OrderMoveGraph};  // Output OrderMoveGraph
     // Map from Trigger reference AstSenItem to the original AstSenTree
     const V3Order::TrigToSenMap& m_trigToSen;
@@ -62,7 +62,7 @@ class OrderMoveGraphBuilder final {
     std::deque<DomainMap> m_domainMaps;
 
     // CONSTRUCTORS
-    OrderMoveGraphBuilder(const OrderGraph& orderGraph, const V3Order::TrigToSenMap& trigToSen)
+    OrderMoveGraphBuilder(OrderGraph& orderGraph, const V3Order::TrigToSenMap& trigToSen)
         : m_orderGraph{orderGraph}
         , m_trigToSen{trigToSen} {
         // How this works:
@@ -77,18 +77,18 @@ class OrderMoveGraphBuilder final {
 
         // For each logic vertex, make a OrderMoveVertex, for each variable vertex, allocate
         // storage
-        for (V3GraphVertex* itp = m_orderGraph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            if (OrderLogicVertex* const lvtxp = itp->cast<OrderLogicVertex>()) {
+        for (V3GraphVertex& vtx : m_orderGraph.vertices()) {
+            if (OrderLogicVertex* const lvtxp = vtx.cast<OrderLogicVertex>()) {
                 lvtxp->userp(new OrderMoveVertex{*m_moveGraphp, lvtxp, lvtxp->domainp()});
             } else {
                 // This is an OrderVarVertex
                 m_domainMaps.emplace_back();
-                itp->userp(&m_domainMaps.back());
+                vtx.userp(&m_domainMaps.back());
             }
         }
         // Build edges between logic vertices
-        for (V3GraphVertex* itp = m_orderGraph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            if (OrderLogicVertex* const lvtxp = itp->cast<OrderLogicVertex>()) {
+        for (V3GraphVertex& vtx : m_orderGraph.vertices()) {
+            if (OrderLogicVertex* const lvtxp = vtx.cast<OrderLogicVertex>()) {
                 iterateLogicVertex(lvtxp);
             }
         }
@@ -167,11 +167,11 @@ class OrderMoveGraphBuilder final {
         AstSenTree* const domainp = lvtxp->domainp();
         OrderMoveVertex* const lMoveVtxp = static_cast<OrderMoveVertex*>(lvtxp->userp());
         // Search forward from lvtxp, making new edges from lMoveVtxp forward
-        for (V3GraphEdge* edgep = lvtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            if (edgep->weight() == 0) continue;  // Was cut
+        for (const V3GraphEdge& edge : lvtxp->outEdges()) {
+            if (edge.weight() == 0) continue;  // Was cut
 
             // OrderGraph is a bipartite graph, so we know it's an OrderVarVertex
-            const OrderVarVertex* const vvtxp = static_cast<const OrderVarVertex*>(edgep->top());
+            const OrderVarVertex* const vvtxp = static_cast<const OrderVarVertex*>(edge.top());
 
             // Look up OrderMoveVertex for this domain on this variable
             DomainMap& mapp = *static_cast<DomainMap*>(vvtxp->userp());
@@ -196,11 +196,11 @@ class OrderMoveGraphBuilder final {
     OrderMoveVertex* iterateVarVertex(const OrderVarVertex* vvtxp, AstSenTree* domainp) {
         OrderMoveVertex* vMoveVtxp = nullptr;
         // Search forward from vvtxp, making new edges from vMoveVtxp forward
-        for (V3GraphEdge* edgep = vvtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            if (edgep->weight() == 0) continue;  // Was cut
+        for (const V3GraphEdge& edge : vvtxp->outEdges()) {
+            if (edge.weight() == 0) continue;  // Was cut
 
             // OrderGraph is a bipartite graph, so we know it's an OrderLogicVertex
-            const OrderLogicVertex* const lVtxp = edgep->top()->as<OrderLogicVertex>();
+            const OrderLogicVertex* const lVtxp = edge.top()->as<OrderLogicVertex>();
 
             // Do not construct dependencies across exclusive domains.
             if (domainsExclusive(domainp, lVtxp->domainp())) continue;
@@ -214,7 +214,7 @@ class OrderMoveGraphBuilder final {
     }
 
 public:
-    static std::unique_ptr<OrderMoveGraph> apply(const OrderGraph& orderGraph,
+    static std::unique_ptr<OrderMoveGraph> apply(OrderGraph& orderGraph,
                                                  const V3Order::TrigToSenMap& trigToSen) {
         return std::move(OrderMoveGraphBuilder{orderGraph, trigToSen}.m_moveGraphp);
     }
@@ -223,7 +223,7 @@ public:
 //======================================================================
 // OrderMoveGraph implementation
 
-std::unique_ptr<OrderMoveGraph> OrderMoveGraph::build(const OrderGraph& orderGraph,
+std::unique_ptr<OrderMoveGraph> OrderMoveGraph::build(OrderGraph& orderGraph,
                                                       const V3Order::TrigToSenMap& trigToSen) {
     return OrderMoveGraphBuilder::apply(orderGraph, trigToSen);
 }

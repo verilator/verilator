@@ -202,8 +202,8 @@ class TraceVisitor final : public VNVisitor {
         // Note uses user4
         V3DupFinder dupFinder;  // Duplicate code detection
         // Hash all of the traced values and find if there are any duplicates
-        for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            if (TraceTraceVertex* const vvertexp = itp->cast<TraceTraceVertex>()) {
+        for (V3GraphVertex& vtx : m_graph.vertices()) {
+            if (TraceTraceVertex* const vvertexp = vtx.cast<TraceTraceVertex>()) {
                 const AstTraceDecl* const nodep = vvertexp->nodep();
                 UASSERT_OBJ(!vvertexp->duplicatep(), nodep, "Should not be a duplicate");
                 const auto dupit = dupFinder.findDuplicate(nodep->valuep());
@@ -227,9 +227,8 @@ class TraceVisitor final : public VNVisitor {
     void graphSimplify(bool initial) {
         if (initial) {
             // Remove all variable nodes
-            for (V3GraphVertex *nextp, *itp = m_graph.verticesBeginp(); itp; itp = nextp) {
-                nextp = itp->verticesNextp();
-                if (TraceVarVertex* const vvertexp = itp->cast<TraceVarVertex>()) {
+            for (V3GraphVertex* const vtxp : m_graph.vertices().unlinkable()) {
+                if (TraceVarVertex* const vvertexp = vtxp->cast<TraceVarVertex>()) {
                     vvertexp->rerouteEdges(&m_graph);
                     vvertexp->unlinkDelete(&m_graph);
                 }
@@ -239,9 +238,8 @@ class TraceVisitor final : public VNVisitor {
             // expansion.
             m_graph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
             // Remove all Cfunc nodes
-            for (V3GraphVertex *nextp, *itp = m_graph.verticesBeginp(); itp; itp = nextp) {
-                nextp = itp->verticesNextp();
-                if (TraceCFuncVertex* const vvertexp = itp->cast<TraceCFuncVertex>()) {
+            for (V3GraphVertex* const vtxp : m_graph.vertices().unlinkable()) {
+                if (TraceCFuncVertex* const vvertexp = vtxp->cast<TraceCFuncVertex>()) {
                     vvertexp->rerouteEdges(&m_graph);
                     vvertexp->unlinkDelete(&m_graph);
                 }
@@ -252,44 +250,42 @@ class TraceVisitor final : public VNVisitor {
         m_graph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
 
         // If there are any edges from a always, keep only the always
-        for (const V3GraphVertex* itp = m_graph.verticesBeginp(); itp;
-             itp = itp->verticesNextp()) {
-            if (const TraceTraceVertex* const vvertexp = itp->cast<const TraceTraceVertex>()) {
+        for (V3GraphVertex& vtx : m_graph.vertices()) {
+            if (TraceTraceVertex* const vvertexp = vtx.cast<TraceTraceVertex>()) {
                 // Search for the incoming always edge
                 const V3GraphEdge* alwaysEdgep = nullptr;
-                for (const V3GraphEdge* edgep = vvertexp->inBeginp(); edgep;
-                     edgep = edgep->inNextp()) {
+                for (const V3GraphEdge& edge : vvertexp->inEdges()) {
                     const TraceActivityVertex* const actVtxp
-                        = edgep->fromp()->as<const TraceActivityVertex>();
+                        = edge.fromp()->as<const TraceActivityVertex>();
                     if (actVtxp->activityAlways()) {
-                        alwaysEdgep = edgep;
+                        alwaysEdgep = &edge;
                         break;
                     }
                 }
                 // If always edge exists, remove all other edges
                 if (alwaysEdgep) {
-                    for (V3GraphEdge *nextp, *edgep = vvertexp->inBeginp(); edgep; edgep = nextp) {
-                        nextp = edgep->inNextp();
-                        if (edgep != alwaysEdgep) edgep->unlinkDelete();
+                    for (V3GraphEdge* const edgep : vvertexp->inEdges().unlinkable()) {
+                        if (edgep != alwaysEdgep) VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
                     }
                 }
             }
         }
 
         // Activity points with no outputs can be removed
-        for (V3GraphVertex *nextp, *itp = m_graph.verticesBeginp(); itp; itp = nextp) {
-            nextp = itp->verticesNextp();
-            if (TraceActivityVertex* const vtxp = itp->cast<TraceActivityVertex>()) {
+        for (V3GraphVertex* const vtxp : m_graph.vertices().unlinkable()) {
+            if (TraceActivityVertex* const aVtxp = vtxp->cast<TraceActivityVertex>()) {
                 // Leave in the always vertex for later use.
-                if (vtxp != m_alwaysVtxp && !vtxp->outBeginp()) vtxp->unlinkDelete(&m_graph);
+                if (aVtxp != m_alwaysVtxp && aVtxp->outEmpty()) {
+                    VL_DO_DANGLING(aVtxp->unlinkDelete(&m_graph), aVtxp);
+                }
             }
         }
     }
 
     uint32_t assignactivityNumbers() {
         uint32_t activityNumber = 1;  // Note 0 indicates "slow" only
-        for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            if (TraceActivityVertex* const vvertexp = itp->cast<TraceActivityVertex>()) {
+        for (V3GraphVertex& vtx : m_graph.vertices()) {
+            if (TraceActivityVertex* const vvertexp = vtx.cast<TraceActivityVertex>()) {
                 if (vvertexp != m_alwaysVtxp) {
                     if (vvertexp->slow()) {
                         vvertexp->activityCode(TraceActivityVertex::ACTIVITY_SLOW);
@@ -306,15 +302,14 @@ class TraceVisitor final : public VNVisitor {
         // Populate sort structure
         traces.clear();
         nNonConstCodes = 0;
-        for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            if (TraceTraceVertex* const vtxp = itp->cast<TraceTraceVertex>()) {
+        for (V3GraphVertex& vtx : m_graph.vertices()) {
+            if (TraceTraceVertex* const vtxp = vtx.cast<TraceTraceVertex>()) {
                 ActCodeSet actSet;
                 UINFO(9, "  Add to sort: " << vtxp << endl);
                 if (debug() >= 9) vtxp->nodep()->dumpTree("-   trnode: ");
-                for (const V3GraphEdge* edgep = vtxp->inBeginp(); edgep;
-                     edgep = edgep->inNextp()) {
+                for (const V3GraphEdge& edge : vtxp->inEdges()) {
                     const TraceActivityVertex* const cfvertexp
-                        = edgep->fromp()->cast<const TraceActivityVertex>();
+                        = edge.fromp()->cast<const TraceActivityVertex>();
                     UASSERT_OBJ(cfvertexp, vtxp->nodep(),
                                 "Should have been function pointing to this trace");
                     UINFO(9, "   Activity: " << cfvertexp << endl);
@@ -444,9 +439,8 @@ class TraceVisitor final : public VNVisitor {
         m_activityVscp = newvscp;
 
         // Insert activity setters
-        for (const V3GraphVertex* itp = m_graph.verticesBeginp(); itp;
-             itp = itp->verticesNextp()) {
-            if (const TraceActivityVertex* const vtxp = itp->cast<const TraceActivityVertex>()) {
+        for (const V3GraphVertex& vtx : m_graph.vertices()) {
+            if (const TraceActivityVertex* const vtxp = vtx.cast<const TraceActivityVertex>()) {
                 if (vtxp->activitySlow()) {
                     // Just set all flags in slow code as it should be rare.
                     // This will be rolled up into a loop by V3Reloop.

@@ -55,6 +55,8 @@
 #endif
 
 class DfgEdge;
+class DfgVertex;
+class DfgGraph;
 class DfgVisitor;
 
 //------------------------------------------------------------------------------
@@ -88,140 +90,6 @@ constexpr bool operator==(VDfgType lhs, VDfgType rhs) { return lhs.m_e == rhs.m_
 constexpr bool operator==(VDfgType lhs, VDfgType::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VDfgType::en lhs, VDfgType rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VDfgType& t) { return os << t.ascii(); }
-
-//------------------------------------------------------------------------------
-// Dataflow graph
-//------------------------------------------------------------------------------
-
-class DfgGraph final {
-    friend class DfgVertex;
-
-    // TYPES
-
-    // RAII handle for DfgVertex user data
-    class UserDataInUse final {
-        DfgGraph* m_graphp;  // The referenced graph
-
-    public:
-        // cppcheck-suppress noExplicitConstructor
-        UserDataInUse(DfgGraph* graphp)
-            : m_graphp{graphp} {}
-        // cppcheck-suppress noExplicitConstructor
-        UserDataInUse(UserDataInUse&& that) {
-            UASSERT(that.m_graphp, "Moving from empty");
-            m_graphp = std::exchange(that.m_graphp, nullptr);
-        }
-        VL_UNCOPYABLE(UserDataInUse);
-        UserDataInUse& operator=(UserDataInUse&& that) {
-            UASSERT(that.m_graphp, "Moving from empty");
-            m_graphp = std::exchange(that.m_graphp, nullptr);
-            return *this;
-        }
-
-        ~UserDataInUse() {
-            if (m_graphp) m_graphp->m_userCurrent = 0;
-        }
-    };
-
-    // MEMBERS
-
-    // Variables and constants make up a significant proportion of vertices (40-50% was observed
-    // in large designs), and they can often be treated specially in algorithms, which in turn
-    // enables significant Verilation performance gains, so we keep these in separate lists for
-    // direct access.
-    V3List<DfgVertex*> m_varVertices;  // The variable vertices in the graph
-    V3List<DfgVertex*> m_constVertices;  // The constant vertices in the graph
-    V3List<DfgVertex*> m_opVertices;  // The operation vertices in the graph
-
-    size_t m_size = 0;  // Number of vertices in the graph
-    uint32_t m_userCurrent = 0;  // Vertex user data generation number currently in use
-    uint32_t m_userCnt = 0;  // Vertex user data generation counter
-    // Parent of the graph (i.e.: the module containing the logic represented by this graph).
-    AstModule* const m_modulep;
-    const string m_name;  // Name of graph (for debugging)
-
-public:
-    // CONSTRUCTOR
-    explicit DfgGraph(AstModule& module, const string& name = "") VL_MT_DISABLED;
-    ~DfgGraph() VL_MT_DISABLED;
-    VL_UNCOPYABLE(DfgGraph);
-
-    // METHODS
-public:
-    // Add DfgVertex to this graph (assumes not yet contained).
-    inline void addVertex(DfgVertex& vtx);
-    // Remove DfgVertex form this graph (assumes it is contained).
-    inline void removeVertex(DfgVertex& vtx);
-    // Number of vertices in this graph
-    size_t size() const { return m_size; }
-    // Parent module
-    AstModule* modulep() const { return m_modulep; }
-    // Name of this graph
-    const string& name() const { return m_name; }
-
-    // Reset Vertex user data
-    UserDataInUse userDataInUse() {
-        UASSERT(!m_userCurrent, "Conflicting use of DfgVertex user data");
-        ++m_userCnt;
-        UASSERT(m_userCnt, "'m_userCnt' overflow");
-        m_userCurrent = m_userCnt;
-        return UserDataInUse{this};
-    }
-
-    // Access to vertex lists for faster iteration in important contexts
-    inline DfgVertexVar* varVerticesBeginp() const;
-    inline DfgVertexVar* varVerticesRbeginp() const;
-    inline DfgConst* constVerticesBeginp() const;
-    inline DfgConst* constVerticesRbeginp() const;
-    inline DfgVertex* opVerticesBeginp() const;
-    inline DfgVertex* opVerticesRbeginp() const;
-
-    // Calls given function 'f' for each vertex in the graph. It is safe to manipulate any vertices
-    // in the graph, or to delete/unlink the vertex passed to 'f' during iteration. It is however
-    // not safe to delete/unlink any vertex in the same graph other than the one passed to 'f'.
-    inline void forEachVertex(std::function<void(DfgVertex&)> f);
-
-    // 'const' variant of 'forEachVertex'. No mutation allowed.
-    inline void forEachVertex(std::function<void(const DfgVertex&)> f) const;
-
-    // Add contents of other graph to this graph. Leaves other graph empty.
-    void addGraph(DfgGraph& other) VL_MT_DISABLED;
-
-    // Split this graph into individual components (unique sub-graphs with no edges between them).
-    // Also removes any vertices that are not weakly connected to any variable.
-    // Leaves 'this' graph empty.
-    std::vector<std::unique_ptr<DfgGraph>> splitIntoComponents(std::string label) VL_MT_DISABLED;
-
-    // Extract cyclic sub-graphs from 'this' graph. Cyclic sub-graphs are those that contain at
-    // least one strongly connected component (SCC) plus any other vertices that feed or sink from
-    // the SCCs, up to a variable boundary. This means that the returned graphs are guaranteed to
-    // be cyclic, but they are not guaranteed to be strongly connected (however, they are always
-    // at least weakly connected). Trivial SCCs that are acyclic (i.e.: vertices that are not part
-    // of a cycle) are left in 'this' graph. This means that at the end 'this' graph is guaranteed
-    // to be a DAG (acyclic). 'this' will not necessarily be a connected graph at the end, even if
-    // it was originally connected.
-    std::vector<std::unique_ptr<DfgGraph>>
-    extractCyclicComponents(std::string label) VL_MT_DISABLED;
-
-    // Dump graph in Graphviz format into the given stream 'os'. 'label' is added to the name of
-    // the graph which is included in the output.
-    void dumpDot(std::ostream& os, const string& label = "") const VL_MT_DISABLED;
-    // Dump graph in Graphviz format into a new file with the given 'fileName'. 'label' is added to
-    // the name of the graph which is included in the output.
-    void dumpDotFile(const string& fileName, const string& label = "") const VL_MT_DISABLED;
-    // Dump graph in Graphviz format into a new automatically numbered debug file. 'label' is
-    // added to the name of the graph, which is included in the file name and the output.
-    void dumpDotFilePrefixed(const string& label = "") const VL_MT_DISABLED;
-    // Dump upstream (source) logic cone starting from given vertex into a file with the given
-    // 'fileName'. 'name' is the name of the graph, which is included in the output.
-    void dumpDotUpstreamCone(const string& fileName, const DfgVertex& vtx,
-                             const string& name = "") const VL_MT_DISABLED;
-    // Dump all individual logic cones driving external variables in Graphviz format into separate
-    // new automatically numbered debug files. 'label' is added to the name of the graph, which is
-    // included in the file names and the output. This is useful for very large graphs that are
-    // otherwise difficult to browse visually due to their size.
-    void dumpDotAllVarConesPrefixed(const string& label = "") const VL_MT_DISABLED;
-};
 
 //------------------------------------------------------------------------------
 // Dataflow graph edge
@@ -264,7 +132,8 @@ class DfgVertex VL_NOT_FINAL {
     using UserDataStorage = void*;  // Storage allocated for user data
 
     // STATE
-    V3ListEnt<DfgVertex*> m_verticesEnt;  // V3List handle of this vertex, kept under the DfgGraph
+    V3ListLinks<DfgVertex> m_links;  // V3List links
+
 protected:
     DfgEdge* m_sinksp = nullptr;  // List of sinks of this vertex
     FileLine* const m_filelinep;  // Source location
@@ -279,6 +148,10 @@ protected:
 
 public:
     virtual ~DfgVertex() VL_MT_DISABLED;
+
+    // List type that can store Vertex (which must be a DfgVertex) instances via m_links
+    template <typename Vertex>
+    using List = V3List<DfgVertex, &DfgVertex::m_links, Vertex>;
 
     // METHODS
 private:
@@ -349,54 +222,15 @@ public:
 
     // Retrieve user data, constructing it fresh on first try.
     template <typename T>
-    T& user() {
-        static_assert(sizeof(T) <= sizeof(UserDataStorage),
-                      "Size of user data type 'T' is too large for allocated storage");
-        static_assert(alignof(T) <= alignof(UserDataStorage),
-                      "Alignment of user data type 'T' is larger than allocated storage");
-        T* const storagep = reinterpret_cast<T*>(&m_userDataStorage);
-        const uint32_t userCurrent = m_graphp->m_userCurrent;
-        UDEBUGONLY(UASSERT_OBJ(userCurrent, this, "DfgVertex user data used without reserving"););
-        if (m_userCnt != userCurrent) {
-            m_userCnt = userCurrent;
-            // cppcheck-has-bug-suppress uninitvar
-            VL_ATTR_UNUSED T* const resultp = new (storagep) T{};
-            UDEBUGONLY(UASSERT_OBJ(resultp == storagep, this, "Something is odd"););
-        }
-        return *storagep;
-    }
+    inline T& user();
 
     // Retrieve user data, must be current.
     template <typename T>
-    T& getUser() {
-        static_assert(sizeof(T) <= sizeof(UserDataStorage),
-                      "Size of user data type 'T' is too large for allocated storage");
-        static_assert(alignof(T) <= alignof(UserDataStorage),
-                      "Alignment of user data type 'T' is larger than allocated storage");
-        T* const storagep = reinterpret_cast<T*>(&m_userDataStorage);
-#if VL_DEBUG
-        const uint32_t userCurrent = m_graphp->m_userCurrent;
-        UASSERT_OBJ(userCurrent, this, "DfgVertex user data used without reserving");
-        UASSERT_OBJ(m_userCnt == userCurrent, this, "DfgVertex user data is stale");
-#endif
-        return *storagep;
-    }
+    inline T& getUser();
 
     // Set user data, becomes current.
     template <typename T>
-    typename std::enable_if<sizeof(T) <= sizeof(void*), void>::type setUser(T value) {
-        static_assert(sizeof(T) <= sizeof(UserDataStorage),
-                      "Size of user data type 'T' is too large for allocated storage");
-        static_assert(alignof(T) <= alignof(UserDataStorage),
-                      "Alignment of user data type 'T' is larger than allocated storage");
-        T* const storagep = reinterpret_cast<T*>(&m_userDataStorage);
-        const uint32_t userCurrent = m_graphp->m_userCurrent;
-#if VL_DEBUG
-        UASSERT_OBJ(userCurrent, this, "DfgVertex user data used without reserving");
-#endif
-        m_userCnt = userCurrent;
-        *storagep = value;
-    }
+    inline void setUser(T value);
 
     // Width of result
     uint32_t width() const {
@@ -448,10 +282,6 @@ public:
 
     // Relink all sinks to be driven from the given new source
     void replaceWith(DfgVertex* newSourcep) VL_MT_DISABLED;
-
-    // Access to vertex list for faster iteration in important contexts
-    DfgVertex* verticesNext() const { return m_verticesEnt.nextp(); }
-    DfgVertex* verticesPrev() const { return m_verticesEnt.prevp(); }
 
     // Calls given function 'f' for each source vertex of this vertex
     // Unconnected source edges are not iterated.
@@ -567,9 +397,6 @@ public:
     virtual const string srcName(size_t idx) const = 0;
 };
 
-// Specializations of privateTypeTest
-#include "V3Dfg__gen_type_tests.h"  // From ./astgen
-
 //------------------------------------------------------------------------------
 // Dfg vertex visitor
 //------------------------------------------------------------------------------
@@ -582,152 +409,6 @@ public:
     virtual void visit(DfgVertex* nodep) = 0;
 #include "V3Dfg__gen_visitor_decls.h"  // From ./astgen
 };
-
-//------------------------------------------------------------------------------
-// Inline method definitions
-//------------------------------------------------------------------------------
-
-void DfgGraph::addVertex(DfgVertex& vtx) {
-    // Note: changes here need to be replicated in DfgGraph::addGraph
-    ++m_size;
-    if (vtx.is<DfgConst>()) {
-        vtx.m_verticesEnt.pushBack(m_constVertices, &vtx);
-    } else if (vtx.is<DfgVertexVar>()) {
-        vtx.m_verticesEnt.pushBack(m_varVertices, &vtx);
-    } else {
-        vtx.m_verticesEnt.pushBack(m_opVertices, &vtx);
-    }
-    vtx.m_userCnt = 0;
-    vtx.m_graphp = this;
-}
-
-void DfgGraph::removeVertex(DfgVertex& vtx) {
-    // Note: changes here need to be replicated in DfgGraph::addGraph
-    --m_size;
-    if (vtx.is<DfgConst>()) {
-        vtx.m_verticesEnt.unlink(m_constVertices, &vtx);
-    } else if (vtx.is<DfgVertexVar>()) {
-        vtx.m_verticesEnt.unlink(m_varVertices, &vtx);
-    } else {
-        vtx.m_verticesEnt.unlink(m_opVertices, &vtx);
-    }
-    vtx.m_userCnt = 0;
-    vtx.m_graphp = nullptr;
-}
-
-void DfgGraph::forEachVertex(std::function<void(DfgVertex&)> f) {
-    for (DfgVertex *vtxp = m_varVertices.begin(), *nextp; vtxp; vtxp = nextp) {
-        nextp = vtxp->verticesNext();
-        f(*vtxp);
-    }
-    for (DfgVertex *vtxp = m_constVertices.begin(), *nextp; vtxp; vtxp = nextp) {
-        nextp = vtxp->verticesNext();
-        f(*vtxp);
-    }
-    for (DfgVertex *vtxp = m_opVertices.begin(), *nextp; vtxp; vtxp = nextp) {
-        nextp = vtxp->verticesNext();
-        f(*vtxp);
-    }
-}
-
-void DfgGraph::forEachVertex(std::function<void(const DfgVertex&)> f) const {
-    for (const DfgVertex* vtxp = m_varVertices.begin(); vtxp; vtxp = vtxp->verticesNext()) {
-        f(*vtxp);
-    }
-    for (const DfgVertex* vtxp = m_constVertices.begin(); vtxp; vtxp = vtxp->verticesNext()) {
-        f(*vtxp);
-    }
-    for (const DfgVertex* vtxp = m_opVertices.begin(); vtxp; vtxp = vtxp->verticesNext()) {
-        f(*vtxp);
-    }
-}
-
-void DfgVertex::forEachSource(std::function<void(DfgVertex&)> f) {
-    const auto pair = sourceEdges();
-    const DfgEdge* const edgesp = pair.first;
-    const size_t arity = pair.second;
-    for (size_t i = 0; i < arity; ++i) {
-        if (DfgVertex* const sourcep = edgesp[i].m_sourcep) f(*sourcep);
-    }
-}
-
-void DfgVertex::forEachSource(std::function<void(const DfgVertex&)> f) const {
-    const auto pair = sourceEdges();
-    const DfgEdge* const edgesp = pair.first;
-    const size_t arity = pair.second;
-    for (size_t i = 0; i < arity; ++i) {
-        if (DfgVertex* const sourcep = edgesp[i].m_sourcep) f(*sourcep);
-    }
-}
-
-void DfgVertex::forEachSink(std::function<void(DfgVertex&)> f) {
-    for (const DfgEdge *edgep = m_sinksp, *nextp; edgep; edgep = nextp) {
-        nextp = edgep->m_nextp;
-        f(*edgep->m_sinkp);
-    }
-}
-
-void DfgVertex::forEachSink(std::function<void(const DfgVertex&)> f) const {
-    for (const DfgEdge* edgep = m_sinksp; edgep; edgep = edgep->m_nextp) f(*edgep->m_sinkp);
-}
-
-void DfgVertex::forEachSourceEdge(std::function<void(DfgEdge&, size_t)> f) {
-    const auto pair = sourceEdges();
-    DfgEdge* const edgesp = pair.first;
-    const size_t arity = pair.second;
-    for (size_t i = 0; i < arity; ++i) f(edgesp[i], i);
-}
-
-void DfgVertex::forEachSourceEdge(std::function<void(const DfgEdge&, size_t)> f) const {
-    const auto pair = sourceEdges();
-    const DfgEdge* const edgesp = pair.first;
-    const size_t arity = pair.second;
-    for (size_t i = 0; i < arity; ++i) f(edgesp[i], i);
-}
-
-void DfgVertex::forEachSinkEdge(std::function<void(DfgEdge&)> f) {
-    for (DfgEdge *edgep = m_sinksp, *nextp; edgep; edgep = nextp) {
-        nextp = edgep->m_nextp;
-        f(*edgep);
-    }
-}
-
-void DfgVertex::forEachSinkEdge(std::function<void(const DfgEdge&)> f) const {
-    for (DfgEdge *edgep = m_sinksp, *nextp; edgep; edgep = nextp) {
-        nextp = edgep->m_nextp;
-        f(*edgep);
-    }
-}
-
-const DfgEdge* DfgVertex::findSourceEdge(std::function<bool(const DfgEdge&, size_t)> p) const {
-    const auto pair = sourceEdges();
-    const DfgEdge* const edgesp = pair.first;
-    const size_t arity = pair.second;
-    for (size_t i = 0; i < arity; ++i) {
-        const DfgEdge& edge = edgesp[i];
-        if (p(edge, i)) return &edge;
-    }
-    return nullptr;
-}
-
-template <typename Vertex>
-Vertex* DfgVertex::findSink(std::function<bool(const Vertex&)> p) const {
-    static_assert(std::is_base_of<DfgVertex, Vertex>::value,
-                  "'Vertex' must be subclass of 'DfgVertex'");
-    for (DfgEdge* edgep = m_sinksp; edgep; edgep = edgep->m_nextp) {
-        if (Vertex* const sinkp = edgep->m_sinkp->cast<Vertex>()) {
-            if (p(*sinkp)) return sinkp;
-        }
-    }
-    return nullptr;
-}
-
-template <typename Vertex>
-Vertex* DfgVertex::findSink() const {
-    static_assert(!std::is_same<DfgVertex, Vertex>::value,
-                  "'Vertex' must be proper subclass of 'DfgVertex'");
-    return findSink<Vertex>([](const Vertex&) { return true; });
-}
 
 //------------------------------------------------------------------------------
 // DfgVertex sub-types follow
@@ -903,20 +584,281 @@ public:
 // The rest of the DfgVertex subclasses are generated by 'astgen' from AstNodeExpr nodes
 #include "V3Dfg__gen_auto_classes.h"
 
-DfgVertexVar* DfgGraph::varVerticesBeginp() const {
-    return static_cast<DfgVertexVar*>(m_varVertices.begin());
+//------------------------------------------------------------------------------
+// Dataflow graph
+//------------------------------------------------------------------------------
+
+class DfgGraph final {
+    friend class DfgVertex;
+
+    // TYPES
+
+    // RAII handle for DfgVertex user data
+    class UserDataInUse final {
+        DfgGraph* m_graphp;  // The referenced graph
+
+    public:
+        // cppcheck-suppress noExplicitConstructor
+        UserDataInUse(DfgGraph* graphp)
+            : m_graphp{graphp} {}
+        // cppcheck-suppress noExplicitConstructor
+        UserDataInUse(UserDataInUse&& that) {
+            UASSERT(that.m_graphp, "Moving from empty");
+            m_graphp = std::exchange(that.m_graphp, nullptr);
+        }
+        VL_UNCOPYABLE(UserDataInUse);
+        UserDataInUse& operator=(UserDataInUse&& that) {
+            UASSERT(that.m_graphp, "Moving from empty");
+            m_graphp = std::exchange(that.m_graphp, nullptr);
+            return *this;
+        }
+
+        ~UserDataInUse() {
+            if (m_graphp) m_graphp->m_userCurrent = 0;
+        }
+    };
+
+    // MEMBERS
+
+    // Variables and constants make up a significant proportion of vertices (40-50% was observed
+    // in large designs), and they can often be treated specially in algorithms, which in turn
+    // enables significant Verilation performance gains, so we keep these in separate lists for
+    // direct access.
+    DfgVertex::List<DfgVertexVar> m_varVertices;  // The variable vertices in the graph
+    DfgVertex::List<DfgConst> m_constVertices;  // The constant vertices in the graph
+    DfgVertex::List<DfgVertex> m_opVertices;  // The operation vertices in the graph
+
+    size_t m_size = 0;  // Number of vertices in the graph
+    uint32_t m_userCurrent = 0;  // Vertex user data generation number currently in use
+    uint32_t m_userCnt = 0;  // Vertex user data generation counter
+    // Parent of the graph (i.e.: the module containing the logic represented by this graph).
+    AstModule* const m_modulep;
+    const string m_name;  // Name of graph (for debugging)
+
+public:
+    // CONSTRUCTOR
+    explicit DfgGraph(AstModule& module, const string& name = "") VL_MT_DISABLED;
+    ~DfgGraph() VL_MT_DISABLED;
+    VL_UNCOPYABLE(DfgGraph);
+
+    // METHODS
+public:
+    // Add DfgVertex to this graph (assumes not yet contained).
+    inline void addVertex(DfgVertex& vtx);
+    // Remove DfgVertex form this graph (assumes it is contained).
+    inline void removeVertex(DfgVertex& vtx);
+    // Number of vertices in this graph
+    size_t size() const { return m_size; }
+    // Parent module
+    AstModule* modulep() const { return m_modulep; }
+    // Name of this graph
+    const string& name() const { return m_name; }
+
+    // Reset Vertex user data
+    UserDataInUse userDataInUse() {
+        UASSERT(!m_userCurrent, "Conflicting use of DfgVertex user data");
+        ++m_userCnt;
+        UASSERT(m_userCnt, "'m_userCnt' overflow");
+        m_userCurrent = m_userCnt;
+        return UserDataInUse{this};
+    }
+
+    // Access to vertex lists
+    DfgVertex::List<DfgVertexVar>& varVertices() { return m_varVertices; }
+    const DfgVertex::List<DfgVertexVar>& varVertices() const { return m_varVertices; }
+    DfgVertex::List<DfgConst>& constVertices() { return m_constVertices; }
+    const DfgVertex::List<DfgConst>& constVertices() const { return m_constVertices; }
+    DfgVertex::List<DfgVertex>& opVertices() { return m_opVertices; }
+    const DfgVertex::List<DfgVertex>& opVertices() const { return m_opVertices; }
+
+    // Calls given function 'f' for each vertex in the graph. It is safe to manipulate any vertices
+    // in the graph, or to delete/unlink the vertex passed to 'f' during iteration. It is however
+    // not safe to delete/unlink any vertex in the same graph other than the one passed to 'f'.
+    inline void forEachVertex(std::function<void(DfgVertex&)> f);
+
+    // 'const' variant of 'forEachVertex'. No mutation allowed.
+    inline void forEachVertex(std::function<void(const DfgVertex&)> f) const;
+
+    // Add contents of other graph to this graph. Leaves other graph empty.
+    void addGraph(DfgGraph& other) VL_MT_DISABLED;
+
+    // Split this graph into individual components (unique sub-graphs with no edges between them).
+    // Also removes any vertices that are not weakly connected to any variable.
+    // Leaves 'this' graph empty.
+    std::vector<std::unique_ptr<DfgGraph>> splitIntoComponents(std::string label) VL_MT_DISABLED;
+
+    // Extract cyclic sub-graphs from 'this' graph. Cyclic sub-graphs are those that contain at
+    // least one strongly connected component (SCC) plus any other vertices that feed or sink from
+    // the SCCs, up to a variable boundary. This means that the returned graphs are guaranteed to
+    // be cyclic, but they are not guaranteed to be strongly connected (however, they are always
+    // at least weakly connected). Trivial SCCs that are acyclic (i.e.: vertices that are not part
+    // of a cycle) are left in 'this' graph. This means that at the end 'this' graph is guaranteed
+    // to be a DAG (acyclic). 'this' will not necessarily be a connected graph at the end, even if
+    // it was originally connected.
+    std::vector<std::unique_ptr<DfgGraph>>
+    extractCyclicComponents(std::string label) VL_MT_DISABLED;
+
+    // Dump graph in Graphviz format into the given stream 'os'. 'label' is added to the name of
+    // the graph which is included in the output.
+    void dumpDot(std::ostream& os, const string& label = "") const VL_MT_DISABLED;
+    // Dump graph in Graphviz format into a new file with the given 'fileName'. 'label' is added to
+    // the name of the graph which is included in the output.
+    void dumpDotFile(const string& fileName, const string& label = "") const VL_MT_DISABLED;
+    // Dump graph in Graphviz format into a new automatically numbered debug file. 'label' is
+    // added to the name of the graph, which is included in the file name and the output.
+    void dumpDotFilePrefixed(const string& label = "") const VL_MT_DISABLED;
+    // Dump upstream (source) logic cone starting from given vertex into a file with the given
+    // 'fileName'. 'name' is the name of the graph, which is included in the output.
+    void dumpDotUpstreamCone(const string& fileName, const DfgVertex& vtx,
+                             const string& name = "") const VL_MT_DISABLED;
+    // Dump all individual logic cones driving external variables in Graphviz format into separate
+    // new automatically numbered debug files. 'label' is added to the name of the graph, which is
+    // included in the file names and the output. This is useful for very large graphs that are
+    // otherwise difficult to browse visually due to their size.
+    void dumpDotAllVarConesPrefixed(const string& label = "") const VL_MT_DISABLED;
+};
+
+// Specializations of privateTypeTest
+#include "V3Dfg__gen_type_tests.h"  // From ./astgen
+
+//------------------------------------------------------------------------------
+// Inline method definitions - for DfgVertex
+//------------------------------------------------------------------------------
+
+template <typename T>
+T& DfgVertex::user() {
+    static_assert(sizeof(T) <= sizeof(UserDataStorage),
+                  "Size of user data type 'T' is too large for allocated storage");
+    static_assert(alignof(T) <= alignof(UserDataStorage),
+                  "Alignment of user data type 'T' is larger than allocated storage");
+    T* const storagep = reinterpret_cast<T*>(&m_userDataStorage);
+    const uint32_t userCurrent = m_graphp->m_userCurrent;
+    UDEBUGONLY(UASSERT_OBJ(userCurrent, this, "DfgVertex user data used without reserving"););
+    if (m_userCnt != userCurrent) {
+        m_userCnt = userCurrent;
+        // cppcheck-has-bug-suppress uninitvar
+        VL_ATTR_UNUSED T* const resultp = new (storagep) T{};
+        UDEBUGONLY(UASSERT_OBJ(resultp == storagep, this, "Something is odd"););
+    }
+    return *storagep;
 }
-DfgVertexVar* DfgGraph::varVerticesRbeginp() const {
-    return static_cast<DfgVertexVar*>(m_varVertices.rbegin());
+
+template <typename T>
+T& DfgVertex::getUser() {
+    static_assert(sizeof(T) <= sizeof(UserDataStorage),
+                  "Size of user data type 'T' is too large for allocated storage");
+    static_assert(alignof(T) <= alignof(UserDataStorage),
+                  "Alignment of user data type 'T' is larger than allocated storage");
+    T* const storagep = reinterpret_cast<T*>(&m_userDataStorage);
+#if VL_DEBUG
+    const uint32_t userCurrent = m_graphp->m_userCurrent;
+    UASSERT_OBJ(userCurrent, this, "DfgVertex user data used without reserving");
+    UASSERT_OBJ(m_userCnt == userCurrent, this, "DfgVertex user data is stale");
+#endif
+    return *storagep;
 }
-DfgConst* DfgGraph::constVerticesBeginp() const {
-    return static_cast<DfgConst*>(m_constVertices.begin());
+
+template <typename T>
+void DfgVertex::setUser(T value) {
+    static_assert(sizeof(T) <= sizeof(UserDataStorage),
+                  "Size of user data type 'T' is too large for allocated storage");
+    static_assert(alignof(T) <= alignof(UserDataStorage),
+                  "Alignment of user data type 'T' is larger than allocated storage");
+    T* const storagep = reinterpret_cast<T*>(&m_userDataStorage);
+    const uint32_t userCurrent = m_graphp->m_userCurrent;
+#if VL_DEBUG
+    UASSERT_OBJ(userCurrent, this, "DfgVertex user data used without reserving");
+#endif
+    m_userCnt = userCurrent;
+    *storagep = value;
 }
-DfgConst* DfgGraph::constVerticesRbeginp() const {
-    return static_cast<DfgConst*>(m_constVertices.rbegin());
+
+void DfgVertex::forEachSource(std::function<void(DfgVertex&)> f) {
+    const auto pair = sourceEdges();
+    const DfgEdge* const edgesp = pair.first;
+    const size_t arity = pair.second;
+    for (size_t i = 0; i < arity; ++i) {
+        if (DfgVertex* const sourcep = edgesp[i].m_sourcep) f(*sourcep);
+    }
 }
-DfgVertex* DfgGraph::opVerticesBeginp() const { return m_opVertices.begin(); }
-DfgVertex* DfgGraph::opVerticesRbeginp() const { return m_opVertices.rbegin(); }
+
+void DfgVertex::forEachSource(std::function<void(const DfgVertex&)> f) const {
+    const auto pair = sourceEdges();
+    const DfgEdge* const edgesp = pair.first;
+    const size_t arity = pair.second;
+    for (size_t i = 0; i < arity; ++i) {
+        if (DfgVertex* const sourcep = edgesp[i].m_sourcep) f(*sourcep);
+    }
+}
+
+void DfgVertex::forEachSink(std::function<void(DfgVertex&)> f) {
+    for (const DfgEdge *edgep = m_sinksp, *nextp; edgep; edgep = nextp) {
+        nextp = edgep->m_nextp;
+        f(*edgep->m_sinkp);
+    }
+}
+
+void DfgVertex::forEachSink(std::function<void(const DfgVertex&)> f) const {
+    for (const DfgEdge* edgep = m_sinksp; edgep; edgep = edgep->m_nextp) f(*edgep->m_sinkp);
+}
+
+void DfgVertex::forEachSourceEdge(std::function<void(DfgEdge&, size_t)> f) {
+    const auto pair = sourceEdges();
+    DfgEdge* const edgesp = pair.first;
+    const size_t arity = pair.second;
+    for (size_t i = 0; i < arity; ++i) f(edgesp[i], i);
+}
+
+void DfgVertex::forEachSourceEdge(std::function<void(const DfgEdge&, size_t)> f) const {
+    const auto pair = sourceEdges();
+    const DfgEdge* const edgesp = pair.first;
+    const size_t arity = pair.second;
+    for (size_t i = 0; i < arity; ++i) f(edgesp[i], i);
+}
+
+void DfgVertex::forEachSinkEdge(std::function<void(DfgEdge&)> f) {
+    for (DfgEdge *edgep = m_sinksp, *nextp; edgep; edgep = nextp) {
+        nextp = edgep->m_nextp;
+        f(*edgep);
+    }
+}
+
+void DfgVertex::forEachSinkEdge(std::function<void(const DfgEdge&)> f) const {
+    for (DfgEdge *edgep = m_sinksp, *nextp; edgep; edgep = nextp) {
+        nextp = edgep->m_nextp;
+        f(*edgep);
+    }
+}
+
+const DfgEdge* DfgVertex::findSourceEdge(std::function<bool(const DfgEdge&, size_t)> p) const {
+    const auto pair = sourceEdges();
+    const DfgEdge* const edgesp = pair.first;
+    const size_t arity = pair.second;
+    for (size_t i = 0; i < arity; ++i) {
+        const DfgEdge& edge = edgesp[i];
+        if (p(edge, i)) return &edge;
+    }
+    return nullptr;
+}
+
+template <typename Vertex>
+Vertex* DfgVertex::findSink(std::function<bool(const Vertex&)> p) const {
+    static_assert(std::is_base_of<DfgVertex, Vertex>::value,
+                  "'Vertex' must be subclass of 'DfgVertex'");
+    for (DfgEdge* edgep = m_sinksp; edgep; edgep = edgep->m_nextp) {
+        if (Vertex* const sinkp = edgep->m_sinkp->cast<Vertex>()) {
+            if (p(*sinkp)) return sinkp;
+        }
+    }
+    return nullptr;
+}
+
+template <typename Vertex>
+Vertex* DfgVertex::findSink() const {
+    static_assert(!std::is_same<DfgVertex, Vertex>::value,
+                  "'Vertex' must be proper subclass of 'DfgVertex'");
+    return findSink<Vertex>([](const Vertex&) { return true; });
+}
 
 bool DfgVertex::isZero() const {
     if (const DfgConst* const constp = cast<DfgConst>()) return constp->isZero();
@@ -926,6 +868,50 @@ bool DfgVertex::isZero() const {
 bool DfgVertex::isOnes() const {
     if (const DfgConst* const constp = cast<DfgConst>()) return constp->isOnes();
     return false;
+}
+
+//------------------------------------------------------------------------------
+// Inline method definitions - for DfgGraph
+//------------------------------------------------------------------------------
+
+void DfgGraph::addVertex(DfgVertex& vtx) {
+    // Note: changes here need to be replicated in DfgGraph::addGraph
+    ++m_size;
+    if (DfgConst* const cVtxp = vtx.cast<DfgConst>()) {
+        m_constVertices.linkBack(cVtxp);
+    } else if (DfgVertexVar* const vVtxp = vtx.cast<DfgVertexVar>()) {
+        m_varVertices.linkBack(vVtxp);
+    } else {
+        m_opVertices.linkBack(&vtx);
+    }
+    vtx.m_userCnt = 0;
+    vtx.m_graphp = this;
+}
+
+void DfgGraph::removeVertex(DfgVertex& vtx) {
+    // Note: changes here need to be replicated in DfgGraph::addGraph
+    --m_size;
+    if (DfgConst* const cVtxp = vtx.cast<DfgConst>()) {
+        m_constVertices.unlink(cVtxp);
+    } else if (DfgVertexVar* const vVtxp = vtx.cast<DfgVertexVar>()) {
+        m_varVertices.unlink(vVtxp);
+    } else {
+        m_opVertices.unlink(&vtx);
+    }
+    vtx.m_userCnt = 0;
+    vtx.m_graphp = nullptr;
+}
+
+void DfgGraph::forEachVertex(std::function<void(DfgVertex&)> f) {
+    for (DfgVertexVar* const vtxp : m_varVertices.unlinkable()) f(*vtxp);
+    for (DfgConst* const vtxp : m_constVertices.unlinkable()) f(*vtxp);
+    for (DfgVertex* const vtxp : m_opVertices.unlinkable()) f(*vtxp);
+}
+
+void DfgGraph::forEachVertex(std::function<void(const DfgVertex&)> f) const {
+    for (const DfgVertexVar& vtx : m_varVertices) f(vtx);
+    for (const DfgConst& vtx : m_constVertices) f(vtx);
+    for (const DfgVertex& vtx : m_opVertices) f(vtx);
 }
 
 #endif

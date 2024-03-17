@@ -83,8 +83,8 @@ class V3OrderProcessDomains final {
         // Buffer to hold external sensitivities
         std::vector<AstSenTree*> externalDomainps;
         // For each vertex
-        for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            OrderEitherVertex* const vtxp = itp->as<OrderEitherVertex>();
+        for (V3GraphVertex& it : m_graph.vertices()) {
+            OrderEitherVertex* const vtxp = it.as<OrderEitherVertex>();
             UINFO(5, "    pdi: " << vtxp << endl);
             // Sequential logic already has its domain set
             if (vtxp->domainp()) continue;
@@ -95,10 +95,10 @@ class V3OrderProcessDomains final {
             if (lvtxp) domainp = lvtxp->hybridp();
 
             // For each incoming edge, examine the source vertex
-            for (V3GraphEdge* edgep = vtxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                OrderEitherVertex* const fromVtxp = edgep->fromp()->as<OrderEitherVertex>();
+            for (V3GraphEdge& edge : vtxp->inEdges()) {
+                OrderEitherVertex* const fromVtxp = edge.fromp()->as<OrderEitherVertex>();
                 // Cut edge
-                if (!edgep->weight()) continue;
+                if (!edge.weight()) continue;
                 //
                 if (!fromVtxp->domainMatters()) continue;
 
@@ -162,14 +162,14 @@ class V3OrderProcessDomains final {
         std::unordered_map<VNRef<const AstSenItem>, const AstSenTree*> trigToSen;
         for (const auto& pair : m_trigToSen) trigToSen.emplace(*pair.first, pair.second);
 
-        for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            if (OrderVarVertex* const vvertexp = itp->cast<OrderVarVertex>()) {
+        for (V3GraphVertex& vtx : m_graph.vertices()) {
+            if (OrderVarVertex* const vvertexp = vtx.cast<OrderVarVertex>()) {
                 string name(vvertexp->vscp()->prettyName());
-                if (itp->is<OrderVarPreVertex>()) {
+                if (vtx.is<OrderVarPreVertex>()) {
                     name += " {PRE}";
-                } else if (itp->is<OrderVarPostVertex>()) {
+                } else if (vtx.is<OrderVarPostVertex>()) {
                     name += " {POST}";
-                } else if (itp->is<OrderVarPordVertex>()) {
+                } else if (vtx.is<OrderVarPordVertex>()) {
                     name += " {PORD}";
                 }
                 std::ostringstream os;

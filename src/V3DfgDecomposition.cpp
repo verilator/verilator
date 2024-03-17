@@ -44,13 +44,12 @@ class SplitIntoComponents final {
         queue.reserve(m_dfg.size());
 
         // any sort of interesting logic must involve a variable, so we only need to iterate them
-        for (DfgVertexVar *vtxp = m_dfg.varVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-            nextp = vtxp->verticesNext();
+        for (DfgVertexVar& vtx : m_dfg.varVertices()) {
             // If already assigned this vertex to a component, then continue
-            if (vtxp->user<size_t>()) continue;
+            if (vtx.user<size_t>()) continue;
 
             // Start depth first traversal at this vertex
-            queue.push_back(vtxp);
+            queue.push_back(&vtx);
 
             // Depth first traversal
             do {
@@ -74,16 +73,15 @@ class SplitIntoComponents final {
         }
     }
 
-    void moveVertices(DfgVertex* headp) {
-        for (DfgVertex *vtxp = headp, *nextp; vtxp; vtxp = nextp) {
-            nextp = vtxp->verticesNext();
-            DfgVertex& vtx = *vtxp;
-            if (const size_t component = vtx.user<size_t>()) {
-                m_dfg.removeVertex(vtx);
-                m_components[component - 1]->addVertex(vtx);
+    template <typename Vertex>
+    void moveVertices(DfgVertex::List<Vertex>& list) {
+        for (DfgVertex* const vtxp : list.unlinkable()) {
+            if (const size_t component = vtxp->user<size_t>()) {
+                m_dfg.removeVertex(*vtxp);
+                m_components[component - 1]->addVertex(*vtxp);
             } else {
                 // This vertex is not connected to a variable and is hence unused, remove here
-                vtx.unlinkDelete(m_dfg);
+                VL_DO_DANGLING(vtxp->unlinkDelete(m_dfg), vtxp);
             }
         }
     }
@@ -101,9 +99,9 @@ class SplitIntoComponents final {
             m_components[i - 1].reset(new DfgGraph{*m_dfg.modulep(), m_prefix + cvtToStr(i - 1)});
         }
         // Move the vertices to the component graphs
-        moveVertices(m_dfg.varVerticesBeginp());
-        moveVertices(m_dfg.constVerticesBeginp());
-        moveVertices(m_dfg.opVerticesBeginp());
+        moveVertices(m_dfg.varVertices());
+        moveVertices(m_dfg.constVertices());
+        moveVertices(m_dfg.opVertices());
         //
         UASSERT(m_dfg.size() == 0, "'this' DfgGraph should have been emptied");
     }
@@ -238,9 +236,8 @@ class ExtractCyclicComponents final {
         // We can leverage some properties of the input graph to gain a bit of speed. Firstly, we
         // know constant nodes have no in edges, so they cannot be part of a non-trivial SCC. Mark
         // them as such without starting a whole traversal.
-        for (DfgConst *vtxp = m_dfg.constVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-            nextp = vtxp->verticesNext();
-            VertexState& vtxState = allocState(*vtxp);
+        for (DfgConst& vtx : m_dfg.constVertices()) {
+            VertexState& vtxState = allocState(vtx);
             vtxState.index = 0;
             vtxState.component = 0;
         }
@@ -248,16 +245,15 @@ class ExtractCyclicComponents final {
         // Next, we know that all SCCs must include a variable (as the input graph was converted
         // from an AST, we can only have a cycle by going through a variable), so we only start
         // traversals through them, and only if we know they have both in and out edges.
-        for (DfgVertexVar *vtxp = m_dfg.varVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-            nextp = vtxp->verticesNext();
-            if (vtxp->arity() > 0 && vtxp->hasSinks()) {
-                VertexState& vtxState = getOrAllocState(*vtxp);
+        for (DfgVertexVar& vtx : m_dfg.varVertices()) {
+            if (vtx.arity() > 0 && vtx.hasSinks()) {
+                VertexState& vtxState = getOrAllocState(vtx);
                 // If not yet visited, start a traversal
-                if (vtxState.index == UNASSIGNED) visitColorSCCs(*vtxp, vtxState);
+                if (vtxState.index == UNASSIGNED) visitColorSCCs(vtx, vtxState);
             } else {
-                VertexState& vtxState = getOrAllocState(*vtxp);
+                VertexState& vtxState = getOrAllocState(vtx);
                 UDEBUGONLY(UASSERT_OBJ(vtxState.index == UNASSIGNED || vtxState.component == 0,
-                                       vtxp, "Non circular variable must be in a trivial SCC"););
+                                       &vtx, "Non circular variable must be in a trivial SCC"););
                 vtxState.index = 0;
                 vtxState.component = 0;
             }
@@ -265,9 +261,8 @@ class ExtractCyclicComponents final {
 
         // Finally, everything we did not visit through the traversal of a variable cannot be in an
         // SCC, (otherwise we would have found it from a variable).
-        for (DfgVertex *vtxp = m_dfg.opVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-            nextp = vtxp->verticesNext();
-            VertexState& vtxState = getOrAllocState(*vtxp);
+        for (DfgVertex& vtx : m_dfg.opVertices()) {
+            VertexState& vtxState = getOrAllocState(vtx);
             if (vtxState.index == UNASSIGNED) {
                 vtxState.index = 0;
                 vtxState.component = 0;
@@ -306,9 +301,7 @@ class ExtractCyclicComponents final {
         // Ensure that component boundaries are always at variables, by merging SCCs. Merging stops
         // at variable boundaries, so we don't need to iterate variables. Constants are reachable
         // from their sinks, or are unused, so we don't need to iterate them either.
-        for (DfgVertex *vtxp = m_dfg.opVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-            nextp = vtxp->verticesNext();
-            DfgVertex& vtx = *vtxp;
+        for (DfgVertex& vtx : m_dfg.opVertices()) {
             // Start DFS from each vertex that is in a non-trivial SCC, and merge everything
             // that is reachable from it into this component.
             if (const size_t target = state(vtx).component) visitMergeSCCs(vtx, target);
@@ -400,8 +393,7 @@ class ExtractCyclicComponents final {
 
     static void packSources(DfgGraph& dfg) {
         // Remove undriven variable sources
-        for (DfgVertexVar *vtxp = dfg.varVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-            nextp = vtxp->verticesNext();
+        for (DfgVertexVar* const vtxp : dfg.varVertices().unlinkable()) {
             if (DfgVarPacked* const varp = vtxp->cast<DfgVarPacked>()) {
                 varp->packSources();
                 if (!varp->hasSinks() && varp->arity() == 0) {
@@ -419,9 +411,9 @@ class ExtractCyclicComponents final {
         }
     }
 
-    void moveVertices(DfgVertex* headp) {
-        for (DfgVertex *vtxp = headp, *nextp; vtxp; vtxp = nextp) {
-            nextp = vtxp->verticesNext();
+    template <typename Vertex>
+    void moveVertices(DfgVertex::List<Vertex>& list) {
+        for (DfgVertex* const vtxp : list.unlinkable()) {
             DfgVertex& vtx = *vtxp;
             if (const size_t component = state(vtx).component) {
                 m_dfg.removeVertex(vtx);
@@ -481,17 +473,12 @@ class ExtractCyclicComponents final {
         // earlier merging of components ensured crossing in fact only happen at variable
         // boundaries). Note that fixing up the edges can create clones of variables. Clones do
         // not need fixing up, so we do not need to iterate them.
-        DfgVertex* const lastp = m_dfg.varVerticesRbeginp();
-        for (DfgVertexVar *vtxp = m_dfg.varVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-            // It is possible the last vertex (with a nullptr for 'nextp') gets cloned, and hence
-            // it's 'nextp' would become none nullptr as the clone is added. However, we don't need
-            // to iterate clones anyway, so it's ok to get the 'nextp' early in the loop.
-            nextp = vtxp->verticesNext();
-            DfgVertexVar& vtx = *vtxp;
+        DfgVertex* const lastp = m_dfg.varVertices().backp();
+        for (DfgVertexVar& vtx : m_dfg.varVertices()) {
             // Fix up the edges crossing components
             fixEdges(vtx);
             // Don't iterate clones added during this loop
-            if (vtxp == lastp) break;
+            if (&vtx == lastp) break;
         }
 
         // Pack sources of variables to remove the now undriven inputs
@@ -507,9 +494,9 @@ class ExtractCyclicComponents final {
 
         // Move other vertices to their component graphs
         // After this, vertex states are invalid as we moved the vertices
-        moveVertices(m_dfg.varVerticesBeginp());
-        moveVertices(m_dfg.constVerticesBeginp());
-        moveVertices(m_dfg.opVerticesBeginp());
+        moveVertices(m_dfg.varVertices());
+        moveVertices(m_dfg.constVertices());
+        moveVertices(m_dfg.opVertices());
 
         // Check results for consistency
         if (VL_UNLIKELY(m_doExpensiveChecks)) {
