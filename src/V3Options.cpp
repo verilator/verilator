@@ -1388,6 +1388,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_pinsScBigUint = flag;
         m_pinsBv = 513;
     });
+    DECL_OPTION("-pins-inout-enables", OnOff, &m_pinsInoutEnables);
     DECL_OPTION("-pins-uint8", OnOff, &m_pinsUint8);
     DECL_OPTION("-pipe-filter", Set, &m_pipeFilter);
     DECL_OPTION("-pp-comments", OnOff, &m_ppComments);
