@@ -35,9 +35,9 @@ public:
     virtual void emit(std::ostream& s) const = 0;
 };
 class VlRandomVar final : public VlRandomExpr {
-    const char* const m_name;
-    void* const m_ref;
-    const int m_width;
+    const char* const m_name;  // variable name
+    void* const m_ref;  // reference to variable data
+    const int m_width;  // variable width in bits
 
 public:
     VlRandomVar(const char* name, int width, void* ref)
@@ -52,8 +52,8 @@ public:
 };
 
 class VlRandomConst final : public VlRandomExpr {
-    const QData m_val;
-    const int m_width;
+    const QData m_val;  // constant value
+    const int m_width;  // constant width in bits
 
 public:
     VlRandomConst(QData val, int width)
@@ -65,8 +65,8 @@ public:
 };
 
 class VlRandomExtract final : public VlRandomExpr {
-    const std::shared_ptr<const VlRandomExpr> m_expr;
-    const unsigned m_idx;
+    const std::shared_ptr<const VlRandomExpr> m_expr;  // sub-expression
+    const unsigned m_idx;  // extracted index
 
 public:
     VlRandomExtract(std::shared_ptr<const VlRandomExpr> expr, unsigned idx)
@@ -76,8 +76,8 @@ public:
 };
 
 class VlRandomBinOp final : public VlRandomExpr {
-    const char* m_op;
-    const std::shared_ptr<const VlRandomExpr> m_lhs, m_rhs;
+    const char* const m_op;  // binary operation identifier
+    const std::shared_ptr<const VlRandomExpr> m_lhs, m_rhs;  // sub-expressions
 
 public:
     VlRandomBinOp(const char* op, std::shared_ptr<const VlRandomExpr> lhs,
@@ -93,8 +93,9 @@ public:
 
 class VlRandomizer final {
     // MEMBERS
-    std::vector<std::string> m_constraints;
-    std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;
+    std::vector<std::string> m_constraints;  // solver-dependent constraints
+    std::map<std::string, std::shared_ptr<const VlRandomVar>>
+        m_vars;  // solver-dependent variables
 
     // PRIVATE METHODS
     std::shared_ptr<const VlRandomExpr> random_constraint(VlRNG& rngr, int bits);
