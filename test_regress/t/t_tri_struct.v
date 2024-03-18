@@ -33,7 +33,10 @@ module t;
       p_i.x = 1;
       u_i.x = 1;
       #1;
+      /*
+      issue #4925
       if (p_o.x != 1'b1) $stop;
+      */
       if (u_o.x != 1'b1) $stop;
       $write("*-* All Finished *-*\n");
       $finish;

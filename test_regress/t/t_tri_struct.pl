@@ -12,13 +12,11 @@ scenarios(simulator_st => 1);
 
 compile(
     verilator_flags2 => ['--exe --main --timing'],
-    fails => $Self->{vlt_all},
-    expect_filename => $Self->{golden_filename},
     );
 
 execute(
     check_finished => 1,
-    ) if !$Self->{vlt};
+    );
 
 ok(1);
 1;
