@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+# pylint: disable=C0114,C0209
+#
+# Copyright 2003-2023 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify the Verilator internals under the terms
+# of either the GNU Lesser General Public License Version 3 or the Perl
+# Artistic License Version 2.0.
+#
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+######################################################################
+
+import sys
+from dataclasses import dataclass, field
+from pathlib import Path
+
+@dataclass
+class BucketData:
+    bucket_id: int
+    size: int = 0
+    filenames: list[str] = field(default_factory=list)
+
+    def __iter__(self):
+        return iter((self.bucket_id, self.size, self.filenames))
+
+
+def get_list(fn: Path) -> tuple[int, list[tuple[int, Path]]]:
+    total_size = 0
+    result: list[tuple[int, Path]] = []
+    files: list[str] = []
+    with fn.open("r") as f:
+        files = f.read().split()
+
+    for f in files:
+        if not f: continue
+        f = Path(f.strip())
+        size = f.stat().st_size
+        total_size += size
+        result.append((size, f))
+
+    return (total_size, result)
+
+
+def main():
+    input_list_file = Path(sys.argv[1])
+    buckets_count = int(sys.argv[2])
+    if buckets_count <= 0:
+        raise ValueError(f"Arg 2: Expected buckets count, got: {sys.argv[2]}")
+    output_name_template = sys.argv[3]
+    if "%" not in output_name_template:
+        raise ValueError(f"Arg 3: template must contain '%': {sys.argv[3]}")
+
+    total_size, input_list = get_list(input_list_file)
+
+    ideal_bucket_size = total_size // buckets_count
+
+    huge_files_num = 0
+    huge_files_size = 0
+    for size, _ in input_list:
+        if size > ideal_bucket_size:
+            huge_files_num += 1
+            huge_files_size += size
+
+    ideal_bucket_size = max(1, total_size - huge_files_size) // max(1, buckets_count - huge_files_num)
+
+    buckets: list[BucketData] = [BucketData(i + 1) for i in range(buckets_count)]
+    for bucket in buckets:
+        while input_list:
+            next_size, next_fn = input_list[0]
+            diff_now = abs(ideal_bucket_size - bucket.size)
+            diff_next = abs(ideal_bucket_size - bucket.size - next_size)
+            if bucket.size == 0 or diff_now > diff_next:
+                bucket.size += next_size
+                bucket.filenames.append(str(next_fn))
+                input_list.pop(0)
+            else:
+                break
+
+    while input_list:
+        next_size, next_fn = input_list[0]
+        buckets[-1].size += next_size
+        buckets[-1].filenames.append(str(next_fn))
+        input_list.pop(0)
+
+    for bucket_id, size, filenames in sorted(buckets, key = lambda b: b.size, reverse = True):
+        #  print(f"Bucket {bucket_id:>2} size: {size:>8}, distance from ideal: {ideal_bucket_size - size:>8}", file=sys.stderr)
+        output_list_file = Path(output_name_template.replace("%", str(bucket_id)))
+        with output_list_file.open("w") as f:
+            f.write("\n".join([f"#include <{fn}>" for fn in filenames]) + "\n")
+
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())
