@@ -156,6 +156,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
     bool editFormat(AstNodeExpr* nodep) {
         if (nodep->user1()) return false;
+        // replace computable expression with SMT constant
         AstSFormatF* const newp = new AstSFormatF{
             nodep->fileline(), (nodep->width() & 3) ? "#b%b" : "#x%x", false, nullptr};
         nodep->replaceWith(newp);
@@ -164,6 +165,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void editSMT(AstNodeExpr* nodep, const std::string& smtExpr, AstNodeExpr* lhsp = nullptr,
                  AstNodeExpr* rhsp = nullptr) {
+        // replace incomputable (result-dependent) expression with SMT expression
         UASSERT_OBJ(smtExpr != "", nodep,
                     "Node needs randomization constraint, but no emitSMT: " << nodep);
         if (rhsp) lhsp->addNext(rhsp);
@@ -175,8 +177,9 @@ class ConstraintExprVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstNodeVarRef* nodep) override {
         if (editFormat(nodep)) return;
-
-        nodep->replaceWith(new AstSFormatF{nodep->fileline(), nodep->name(), false, nullptr});
+        // in SMT just variable name, but we also ensure write_var for the variable
+        const std::string smtName = nodep->name();  // can be anything unique
+        nodep->replaceWith(new AstSFormatF{nodep->fileline(), smtName, false, nullptr});
 
         AstVar* const varp = nodep->varp();
 
@@ -192,7 +195,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             methodp->addPinsp(new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{},
                                            (size_t)varp->width()});
             AstNodeExpr* const varnamep
-                = new AstCExpr{varp->fileline(), "\"" + varp->name() + "\"", varp->width()};
+                = new AstCExpr{varp->fileline(), "\"" + smtName + "\"", varp->width()};
             varnamep->dtypep(varp->dtypep());
             methodp->addPinsp(varnamep);
             m_taskp->addStmtsp(new AstStmtExpr{varp->fileline(), methodp});
