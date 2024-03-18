@@ -178,7 +178,7 @@ void V3Common::commonAll() {
             makeToString(classp);
             makeToStringMiddle(classp);
             // Check if we need to emit VL_RANDOMIZE for the class
-            if (classp->randomize()) { makeVlRandomize(classp); }
+            if (classp->randomize()) makeVlRandomize(classp);
         } else if (AstIface* const ifacep = VN_CAST(nodep, Iface)) {
             makeVlToString(ifacep);
         }

@@ -1760,7 +1760,7 @@ class AstRandomize final : public AstNodeExpr {
 public:
     AstRandomize(FileLine* fl, AstNode* exprsp)
         : ASTGEN_SUPER_Randomize(fl) {
-        this->addExprsp(exprsp);
+        addExprsp(exprsp);
     }
     ASTGEN_MEMBERS_AstRandomize;
     string emitVerilog() override { return "std::randomize(%l)"; }

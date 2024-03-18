@@ -328,7 +328,7 @@ class RandomizeVisitor final : public VNVisitor {
                 AstVarRef* const refp = new AstVarRef{fl, memberVarp, VAccess::WRITE};
                 AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp);
                 funcp->addStmtsp(stmtp);
-            } else if (const auto* const classRefp = VN_CAST(dtypep, ClassRefDType)) {
+            } else if (const AstClassRefDType* const classRefp = VN_CAST(dtypep, ClassRefDType)) {
                 if (classRefp->classp() == nodep) {
                     memberp->v3warn(
                         E_UNSUPPORTED,
@@ -349,7 +349,7 @@ class RandomizeVisitor final : public VNVisitor {
                                            new AstConst{fl, AstConst::Null{}}},
                                 assignp};
                 funcp->addStmtsp(assignIfNotNullp);
-            } else if (const auto* const dynp = VN_CAST(dtypep, DynArrayDType)) {
+            } else if (const AstDynArrayDType* const dynp = VN_CAST(dtypep, DynArrayDType)) {
                 AstNodeExpr* callp = newRandValue(fl, memberVarp, memberVarp->findBasicDType(VBasicDTypeKwd::UINT32));
                 AstAssign* const assignp = new AstAssign{
                     fl, new AstVarRef{fl, fvarp, VAccess::WRITE},

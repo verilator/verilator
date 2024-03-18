@@ -3625,10 +3625,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void visit(AstRandomize* nodep) override {
         // Created here so should already be resolved.
         VL_RESTORER(m_ds);
-        {
-            m_ds.init(m_curSymp);
-            iterateChildren(nodep);
-        }
+        m_ds.init(m_curSymp);
+        iterateChildren(nodep);
     }
     void visit(AstRefDType* nodep) override {
         // Resolve its reference

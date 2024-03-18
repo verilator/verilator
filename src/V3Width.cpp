@@ -1305,8 +1305,9 @@ class WidthVisitor final : public VNVisitor {
         nodep->dtypeSetSigned32();  // Says the spec
         AstArg* nextp = nullptr;
         for (AstArg* argp = VN_CAST(nodep->exprsp(), Arg); argp; argp = nextp) {
-            AstNodeExpr* const exprp = argp->exprp()->unlinkFrBack();
+            nextp = VN_AS(argp->nextp(), Arg);
 
+            AstNodeExpr* const exprp = argp->exprp()->unlinkFrBack();
             if (AstClassRefDType *classrefp = VN_CAST(exprp->dtypep(), ClassRefDType)) {
                 AstClass* const classp = classrefp->classp();
                 classp->baseMostClassp()->needRNG(true);
@@ -1315,7 +1316,6 @@ class WidthVisitor final : public VNVisitor {
                 v3Global.useRandomizeMethods(true);
             }
 
-            nextp = VN_AS(argp->nextp(), Arg);
             argp->replaceWith(exprp);
             VL_DO_DANGLING(pushDeletep(argp), argp);
         }
