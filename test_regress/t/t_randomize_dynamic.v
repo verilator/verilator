@@ -62,7 +62,6 @@ module t;
 
       // Check if arguments of std::randomize
       // end up being different
-      $display("std::randomize(a, b)");
       for (int i = 0; i < N; i++) begin
          void'(std::randomize(a, b));
          if (a.is_equal(b))
