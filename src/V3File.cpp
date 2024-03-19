@@ -950,6 +950,7 @@ V3OutFile::~V3OutFile() {
 void V3OutFile::putsForceIncs() {
     const V3StringList& forceIncs = v3Global.opt.forceIncs();
     for (const string& i : forceIncs) puts("#include \"" + i + "\"\n");
+    puts("#include <variant>\n");
 }
 
 void V3OutCFile::putsGuard() {
