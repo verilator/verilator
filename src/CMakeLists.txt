@@ -4,10 +4,10 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2024 by Wilson Snyder. This program is free software; you
-# can redistribute it and/or modify it under the terms of either the GNU
-# Lesser General Public License Version 3 or the Perl Artistic License
-# Version 2.0.
+# Copyright 2003-2024 by Wilson Snyder.
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 #
 #****************************************************************************/
@@ -480,6 +480,7 @@ set_target_properties(${verilator} PROPERTIES
     MSVC_RUNTIME_LIBRARY  MultiThreaded$<IF:$<CONFIG:Release>,,DebugDLL>
     #JOB_POOL_LINK         one_job      # Linking takes lots of resources
     INTERPROCEDURAL_OPTIMIZATION_RELEASE  $<IF:MINGW,FALSE,TRUE>
+    INCLUDE_DIRECTORIES ${FLEX_INCLUDE_DIR}
 )
 
 add_dependencies(${verilator}
