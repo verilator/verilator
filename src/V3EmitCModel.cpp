@@ -164,18 +164,18 @@ class EmitCModel final : public EmitCFunc {
 
             auto vlwide_end = vlwide_counts.end();
             for(auto vlwide_itr = vlwide_counts.begin(); vlwide_itr != vlwide_end; ++vlwide_itr) {
-                puts("std::size_t to_vector(std::pair<WData*, std::size_t> & data, VlWide<" + cvtToStr(*vlwide_itr) + "> & ioport) { \n"
-                    "   data.first = ioport.data(); \n"
+                puts("std::size_t get_wide(VlWide<" + cvtToStr(*vlwide_itr) + "> * ioport, std::pair<WData*, std::size_t> & data) { \n"
+                    "   data.first = ioport->data(); \n"
                     "   data.second = " + cvtToStr(*vlwide_itr) + "; \n"
                     "   return " + cvtToStr(*vlwide_itr) + "; \n"
                     "}\n"
                 );
             }
 
-            puts("std::size_t to_vector(std::pair<WData*, std::size_t> & data, PortType & ioport) {\n");
+            puts("std::size_t get_wide(PortType & ioport, std::pair<WData*, std::size_t> & data) {\n");
             for(auto vlwide_itr = vlwide_counts.begin(); vlwide_itr != vlwide_end; ++vlwide_itr) {
-               puts("   if(std::holds_alterantive< VlWide<" + cvtToStr(*vlwide_itr) + "> >(ioport)) {\n"
-                    "      return to_vector(std::get< VlWide<" + cvtToStr(*vlwide_itr) +  ">(ioport));\n"
+               puts("   if(std::holds_alternative< VlWide<" + cvtToStr(*vlwide_itr) + "> * >(ioport)) {\n"
+                    "      return get_wide(std::get< VlWide<" + cvtToStr(*vlwide_itr) +  " > * >(ioport), data);\n"
                     "   }\n"
                );
             }
