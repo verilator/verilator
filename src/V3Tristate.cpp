@@ -660,20 +660,19 @@ class TristateVisitor final : public TristateBaseVisitor {
 
         for (auto it = beginStrength; it != endStrength; it++) {
             AstVarRef* refp = it->m_varrefp;
-            const int w = varp->width();
 
             // create the new lhs driver for this var
             AstVar* const newLhsp = new AstVar{varp->fileline(), VVarType::MODULETEMP,
                                                varp->name() + "__out" + cvtToStr(m_unique),
-                                               VFlagBitPacked{}, w};  // 2-state ok; sep enable
+                                               varp};  // 2-state ok; sep enable
             UINFO(9, "       newout " << newLhsp << endl);
             nodep->addStmtsp(newLhsp);
             refp->varp(newLhsp);
 
             // create a new var for this drivers enable signal
-            AstVar* const newEnLhsp = new AstVar{varp->fileline(), VVarType::MODULETEMP,
-                                                 varp->name() + "__en" + cvtToStr(m_unique++),
-                                                 VFlagBitPacked{}, w};  // 2-state ok
+            AstVar* const newEnLhsp
+                = new AstVar{varp->fileline(), VVarType::MODULETEMP,
+                             varp->name() + "__en" + cvtToStr(m_unique++), envarp};  // 2-state ok
             UINFO(9, "       newenlhsp " << newEnLhsp << endl);
             nodep->addStmtsp(newEnLhsp);
 
@@ -710,12 +709,6 @@ class TristateVisitor final : public TristateBaseVisitor {
         ++m_statTriSigs;
         m_tgraph.didProcess(invarp);
 
-        const AstBasicDType* const basicp = VN_CAST(invarp->dtypep()->skipRefp(), BasicDType);
-        if (!basicp || basicp->isOpaque())
-            invarp->v3warn(E_UNSUPPORTED,
-                           "Unsupported: Inout/tristate with non-bit/logic data type: "
-                               << invarp->dtypep()->prettyTypeName());
-
         // If the lhs var is a port, then we need to create ports for
         // the output (__out) and output enable (__en) signals. The
         // original port gets converted to an input. Don't tristate expand
@@ -745,7 +738,6 @@ class TristateVisitor final : public TristateBaseVisitor {
 
         AstNodeExpr* orp = nullptr;
         AstNodeExpr* enp = nullptr;
-        const int w = lhsp->width();
 
         std::sort(refsp->begin(), refsp->end(),
                   [](RefStrength a, RefStrength b) { return a.m_strength > b.m_strength; });
@@ -762,13 +754,13 @@ class TristateVisitor final : public TristateBaseVisitor {
 
             // var__strength variable
             AstVar* varStrengthp = new AstVar{fl, VVarType::MODULETEMP, strengthVarName,
-                                              VFlagBitPacked{}, w};  // 2-state ok; sep enable;
+                                              invarp};  // 2-state ok; sep enable;
             UINFO(9, "       newstrength " << varStrengthp << endl);
             nodep->addStmtsp(varStrengthp);
 
             // var__strength__en variable
             AstVar* enVarStrengthp = new AstVar{fl, VVarType::MODULETEMP, strengthVarName + "__en",
-                                                VFlagBitPacked{}, w};  // 2-state ok;
+                                                invarp};  // 2-state ok;
             UINFO(9, "       newenstrength " << enVarStrengthp << endl);
             nodep->addStmtsp(enVarStrengthp);
 
