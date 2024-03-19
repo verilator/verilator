@@ -1,58 +1,72 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2023 by Antmicro Ltd.
+// any use, without warranty, 2024 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
-
-`define check_rand(cl, field) \
-begin \
-   longint prev_result; \
-   int ok = 0; \
-   for (int i = 0; i < 10; i++) begin \
-      longint result; \
-      void'(cl.randomize()); \
-      result = longint'(field); \
-      if (i > 0 && result != prev_result) ok = 1; \
-      prev_result = result; \
-   end \
-   if (ok != 1) $stop; \
-end
-
-`define check_randomize(cl, field) \
-begin \
-   longint prev_result; \
-   int ok = 0; \
-   for (int i = 0; i < 10; i++) begin \
-      longint result; \
-      void'(std::randomize(cl)); \
-      result = longint'(field); \
-      if (i > 0 && result != prev_result) ok = 1; \
-      prev_result = result; \
-   end \
-   if (ok != 1) $stop; \
-end
 
 int N = 10;
 
 class Cls;
    rand bit [127:0] dyn[];
+
    function new;
       dyn = new[N];
+   endfunction
+
+   function Cls copy;
+      Cls cl = new;
+
+      foreach (dyn[i])
+         cl.dyn[i] = dyn[i];
+      return cl;
+   endfunction
+
+   function bit is_equal(Cls cl);
+      foreach (dyn[i])
+         if (dyn[i] != cl.dyn[i])
+            return 0;
+      return 1;
    endfunction
 endclass
 
 module t;
    initial begin
+      Cls a = new;
+      Cls b = new;
       Cls c = new;
 
-      $display("obj.randomize()");
+      // Check randomization with method call
       for (int i = 0; i < N; i++) begin
-         `check_rand(c, c.dyn[i]);
+         b = a.copy();
+         void'(a.randomize());
+         if (a.is_equal(b))
+            $stop;
       end
 
-      $display("std::randomize(obj)");
+      // Check randomization with std::randomize() call
       for (int i = 0; i < N; i++) begin
-         `check_randomize(c, c.dyn[i]);
+         b = a.copy();
+         void'(std::randomize(a));
+         if (a.is_equal(b))
+            $stop;
+      end
+
+      // Check if second argument of std::randomize
+      // is correctly randomized
+      for (int i = 0; i < N; i++) begin
+         b = a.copy();
+         void'(std::randomize(c, a));
+         if (a.is_equal(b))
+            $stop;
+      end
+
+      // Check if arguments of std::randomize
+      // end up being different
+      $display("std::randomize(a, b)");
+      for (int i = 0; i < N; i++) begin
+         void'(std::randomize(a, b));
+         if (a.is_equal(b))
+            $stop;
       end
 
       $write("*-* All Finished *-*\n");
