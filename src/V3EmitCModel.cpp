@@ -24,6 +24,7 @@
 #include <functional>
 #include <utility>
 #include <vector>
+#include <string>
 #include <map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -130,29 +131,61 @@ class EmitCModel final : public EmitCFunc {
             }
         }
 
-        puts("using PortType = std::variant< \n"
-             "   CData*,\n"
-             "   SData*,\n"
-             "   QData*,\n"
-             "   IData*,\n"
-        );
-
         {
-            std::map<std::string, bool> cached{};
-            std::string cache_str{};
-            for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-                cache_str = "   VlWide<" + cvtToStr(nodep->widthWords()) + "> *,\n";
-                if(cached.find(cache_str) != cached.end()) { continue; }
-                if (const AstVar* const varp = VN_CAST(nodep, Var)) {
-                    if (nodep->isWide()) puts(cache_str);
-                }
-                cached.insert(std::pair<std::string, bool>{cache_str, true});
-            }
-        }
+            puts("using PortType = std::variant< \n"
+                "   CData*,\n"
+                "   SData*,\n"
+                "   QData*,\n"
+                "   IData*,\n"
+            );
 
-        puts("   std::monostate\n"
-             ">;\n"
-        );
+
+            std::vector<std::size_t> vlwide_counts{};
+            {
+                std::map<std::string, bool> cached{};
+                std::string cache_str{}, val{};
+                for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+                    val = cvtToStr(nodep->widthWords());
+                    cache_str = "   VlWide<" + val + "> *,\n";
+                    if(cached.find(cache_str) != cached.end()) { continue; }
+                    if (const AstVar* const varp = VN_CAST(nodep, Var)) {
+                        if (nodep->isWide()) {
+                            puts(cache_str);
+                            vlwide_counts.push_back(std::stoi(val));
+                        }
+                    }
+                    cached.insert(std::pair<std::string, bool>{cache_str, true});
+                }
+            }
+
+            puts("   std::monostate\n"
+                ">;\n"
+            );
+
+            auto vlwide_end = vlwide_counts.end();
+            for(auto vlwide_itr = vlwide_counts.begin(); vlwide_itr != vlwide_end; ++vlwide_itr) {
+                puts("std::size_t to_vector(std::pair<WData*, std::size_t> & data, VlWide<" + cvtToStr(*vlwide_itr) + "> & ioport) { \n"
+                    "   data.first = ioport.data(); \n"
+                    "   data.second = " + cvtToStr(*vlwide_itr) + "; \n"
+                    "   return " + cvtToStr(*vlwide_itr) + "; \n"
+                    "}\n"
+                );
+            }
+
+            puts("std::size_t to_vector(std::pair<WData*, std::size_t> & data, PortType & ioport) {\n");
+            for(auto vlwide_itr = vlwide_counts.begin(); vlwide_itr != vlwide_end; ++vlwide_itr) {
+               puts("   if(std::holds_alterantive< VlWide<" + cvtToStr(*vlwide_itr) + "> >(ioport)) {\n"
+                    "      return to_vector(std::get< VlWide<" + cvtToStr(*vlwide_itr) +  ">(ioport));\n"
+                    "   }\n"
+               );
+            }
+
+            puts("   data.first = nullptr;\n"
+                "   data.second = 0;\n"
+                "   return -1;\n"
+                "}\n"
+            );
+        }
 
         // get func
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
