@@ -6,6 +6,7 @@
 // Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+/* verilator public_on */
 
 typedef struct packed {
    logic [3:0][7:0] adr;  // address
@@ -95,15 +96,19 @@ module t (  /*AUTOARG*/
       end
    endgenerate
 
+   sub_wrapper sub_wrap ();
 
 
-   if (do_generate == 1) begin : cond_scope
-      sub scoped_sub ();
-      parameter int scoped_wire = 1;
-   end else begin : cond_scope_else
-      sub scoped_sub ();
-      parameter int scoped_wire = 2;
-   end
+   generate
+      if (do_generate == 1) begin : cond_scope
+         sub scoped_sub ();
+         parameter int scoped_wire = 1;
+
+         sub_wrapper sub_wrap_gen ();
+      end else begin : cond_scope_else
+         sub scoped_sub_else ();
+      end
+   endgenerate
 
 endmodule : t
 
@@ -138,3 +143,8 @@ module arr;
    end
 
 endmodule : arr
+
+
+module sub_wrapper;
+   sub my_sub ();
+endmodule

@@ -78,6 +78,15 @@ t (vpiModule) t
             subsig1 (vpiReg) t.cond_scope.scoped_sub.subsig1
             subsig2 (vpiReg) t.cond_scope.scoped_sub.subsig2
             vpiParameter:
+        sub_wrap_gen (vpiModule) t.cond_scope.sub_wrap_gen
+            vpiReg:
+            vpiParameter:
+            vpiInternalScope:
+            my_sub (vpiModule) t.cond_scope.sub_wrap_gen.my_sub
+                vpiReg:
+                subsig1 (vpiReg) t.cond_scope.sub_wrap_gen.my_sub.subsig1
+                subsig2 (vpiReg) t.cond_scope.sub_wrap_gen.my_sub.subsig2
+                vpiParameter:
     intf_arr[0] (vpiModule) t.intf_arr[0]
         vpiReg:
         addr (vpiReg) t.intf_arr[0].addr
@@ -286,4 +295,13 @@ t (vpiModule) t
         subsig1 (vpiReg) t.sub.subsig1
         subsig2 (vpiReg) t.sub.subsig2
         vpiParameter:
+    sub_wrap (vpiModule) t.sub_wrap
+        vpiReg:
+        vpiParameter:
+        vpiInternalScope:
+        my_sub (vpiModule) t.sub_wrap.my_sub
+            vpiReg:
+            subsig1 (vpiReg) t.sub_wrap.my_sub.subsig1
+            subsig2 (vpiReg) t.sub_wrap.my_sub.subsig2
+            vpiParameter:
 *-* All Finished *-*

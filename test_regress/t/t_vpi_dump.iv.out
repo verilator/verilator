@@ -53,6 +53,14 @@ t (vpiModule) t
             vpiReg:
             t.cond_scope.scoped_sub.subsig1 (vpiReg) t.cond_scope.scoped_sub.subsig1
             t.cond_scope.scoped_sub.subsig2 (vpiReg) t.cond_scope.scoped_sub.subsig2
+        t.cond_scope.sub_wrap_gen (vpiModule) t.cond_scope.sub_wrap_gen
+            vpiInternalScope:
+            t.cond_scope.sub_wrap_gen.my_sub (vpiModule) t.cond_scope.sub_wrap_gen.my_sub
+                vpiNet:
+                t.cond_scope.sub_wrap_gen.my_sub.redundant (vpiNet) t.cond_scope.sub_wrap_gen.my_sub.redundant
+                vpiReg:
+                t.cond_scope.sub_wrap_gen.my_sub.subsig1 (vpiReg) t.cond_scope.sub_wrap_gen.my_sub.subsig1
+                t.cond_scope.sub_wrap_gen.my_sub.subsig2 (vpiReg) t.cond_scope.sub_wrap_gen.my_sub.subsig2
     t.intf_arr[0] (vpiModule) t.intf_arr[0]
     t.intf_arr[1] (vpiModule) t.intf_arr[1]
     t.outer_scope[1] (vpiGenScope) t.outer_scope[1]
@@ -226,5 +234,13 @@ t (vpiModule) t
         vpiReg:
         t.sub.subsig1 (vpiReg) t.sub.subsig1
         t.sub.subsig2 (vpiReg) t.sub.subsig2
+    t.sub_wrap (vpiModule) t.sub_wrap
+        vpiInternalScope:
+        t.sub_wrap.my_sub (vpiModule) t.sub_wrap.my_sub
+            vpiNet:
+            t.sub_wrap.my_sub.redundant (vpiNet) t.sub_wrap.my_sub.redundant
+            vpiReg:
+            t.sub_wrap.my_sub.subsig1 (vpiReg) t.sub_wrap.my_sub.subsig1
+            t.sub_wrap.my_sub.subsig2 (vpiReg) t.sub_wrap.my_sub.subsig2
 *-* All Finished *-*
-t/t_vpi_dump.v:75: $finish called at 0 (1s)
+t/t_vpi_dump.v:76: $finish called at 0 (1s)
