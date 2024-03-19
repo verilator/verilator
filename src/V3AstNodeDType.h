@@ -469,7 +469,7 @@ public:
         this->elementsp(elementsp);
     }
     ASTGEN_MEMBERS_AstBracketArrayDType;
-    bool similarDType(const AstNodeDType* samep) const override { V3ERROR_NA_RETURN(false); }
+    bool similarDType(const AstNodeDType* samep) const override { return same(samep); }
     AstNodeDType* subDTypep() const override VL_MT_STABLE { return childDTypep(); }
     // METHODS
     // Will be removed in V3Width, which relies on this

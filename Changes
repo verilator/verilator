@@ -33,6 +33,7 @@ Verilator 5.023 devel
 * Fix assignment of null into struct member (#4952).
 * Fix object assignment from conditionals (#4968).
 * Fix unpacked structure upper bit cleaning (#4978).
+* Fix class type as an associative array parameter (#4997).
 
 
 Verilator 5.022 2024-02-24
