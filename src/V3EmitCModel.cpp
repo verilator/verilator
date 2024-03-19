@@ -22,7 +22,9 @@
 
 #include <algorithm>
 #include <functional>
+#include <utility>
 #include <vector>
+#include <map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -102,19 +104,55 @@ class EmitCModel final : public EmitCFunc {
         ofp()->putsPrivate(false);  // public:
         puts("\n"
            "using SelfType = " + topClassName() + "; \n"
-           "using PortType = std::variant< \n"
-           "  std::monostate, \n"
-           "  CData*, \n"
-           "  SData*, \n"
-           "  TData*, \n"
-           "  IData*, \n"
-           "  QData*, \n"
-           "  EData*, \n"
-           "  WData*, \n"
-           "  WDataInP*, \n"
-           "  WDataOutP* \n"
-           ">;\n"
         ); 
+
+        // User accessible IO
+        puts("\n// PORTS\n"
+             "// The application code writes and reads these signals to\n"
+             "// propagate new values into/out from the Verilated model.\n");
+        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
+                if (varp->isPrimaryIO()) {  //
+                    emitVarDecl(varp, /* asRef: */ true);
+                }
+            }
+        }
+        if (optSystemC() && v3Global.usesTiming()) puts("sc_core::sc_event trigger_eval;\n");
+
+        // Cells instantiated by the top level (for access to /* verilator public */)
+        puts("\n// CELLS\n"
+             "// Public to allow access to /* verilator public */ items.\n"
+             "// Otherwise the application code can consider these internals.\n");
+        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
+                putns(cellp, prefixNameProtect(cellp->modp()) + "* const " + cellp->nameProtect()
+                                 + ";\n");
+            }
+        }
+
+        puts("using PortType = std::variant< \n"
+             "   CData*,\n"
+             "   SData*,\n"
+             "   QData*,\n"
+             "   IData*,\n"
+        );
+
+        {
+            std::map<std::string, bool> cached{};
+            std::string cache_str{};
+            for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+                cache_str = "   VlWide<" + cvtToStr(nodep->widthWords()) + "> *,\n";
+                if(cached.find(cache_str) != cached.end()) { continue; }
+                if (const AstVar* const varp = VN_CAST(nodep, Var)) {
+                    if (nodep->isWide()) puts(cache_str);
+                }
+                cached.insert(std::pair<std::string, bool>{cache_str, true});
+            }
+        }
+
+        puts("   std::monostate\n"
+             ">;\n"
+        );
 
         // get func
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
@@ -150,29 +188,6 @@ class EmitCModel final : public EmitCFunc {
              "static inline map_t reflect_values = init_reflect_values();\n"
         );
 
-        // User accessible IO
-        puts("\n// PORTS\n"
-             "// The application code writes and reads these signals to\n"
-             "// propagate new values into/out from the Verilated model.\n");
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
-                if (varp->isPrimaryIO()) {  //
-                    emitVarDecl(varp, /* asRef: */ true);
-                }
-            }
-        }
-        if (optSystemC() && v3Global.usesTiming()) puts("sc_core::sc_event trigger_eval;\n");
-
-        // Cells instantiated by the top level (for access to /* verilator public */)
-        puts("\n// CELLS\n"
-             "// Public to allow access to /* verilator public */ items.\n"
-             "// Otherwise the application code can consider these internals.\n");
-        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
-                putns(cellp, prefixNameProtect(cellp->modp()) + "* const " + cellp->nameProtect()
-                                 + ";\n");
-            }
-        }
 
         // root instance pointer (for access to internals, including public_flat items).
         puts("\n// Root instance pointer to allow access to model internals,\n"

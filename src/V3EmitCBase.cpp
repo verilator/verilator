@@ -139,11 +139,11 @@ void EmitCBaseVisitorConst::emitCFuncDecl(const AstCFunc* funcp, const AstNodeMo
 }
 
 void EmitCBaseVisitorConst::emitVarDeclAccessor(const AstVar* nodep, bool asRef) {
-   puts("PortType get_" + nodep->nameProtect() + "() { return PortType{&" + nodep->nameProtect() + "}; }\n");
+   puts("PortType get_" + nodep->nameProtect() + "() { return &" + nodep->nameProtect() + "; }\n");
 }
 
 void EmitCBaseVisitorConst::emitVarDeclReflectLUTEntries(const AstVar* nodep, bool asRef) {
-   puts("std::make_pair<std::string, function_t>(std::string{" + nodep->nameProtect() + "}, [](SelfType & self) { return self.get_" + nodep->nameProtect() + "(); }),\n");
+   puts("std::make_pair<std::string, function_t>(std::string{\"" + nodep->nameProtect() + "\"}, [](SelfType & self) { return self.get_" + nodep->nameProtect() + "(); }),\n");
 }
 
 void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
