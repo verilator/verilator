@@ -76,7 +76,6 @@ class EmitCModel final : public EmitCFunc {
         if (v3Global.opt.savable()) puts("#include \"verilated_save.h\"\n");
         if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");
         if (v3Global.dpi()) puts("#include \"svdpi.h\"\n");
-
         // Declare foreign instances up front to make C++ happy
         puts("\n");
         puts("class " + symClassName() + ";\n");
@@ -101,6 +100,56 @@ class EmitCModel final : public EmitCFunc {
 
         puts("\n");
         ofp()->putsPrivate(false);  // public:
+        puts("\n"
+           "using SelfType = selftype; \n"
+           "using PortType = std::variant< \n"
+           "  std::monostate, \n"
+           "  CData*, \n"
+           "  SData*, \n"
+           "  TData*, \n"
+           "  IData*, \n"
+           "  QData*, \n"
+           "  EData*, \n"
+           "  WData*, \n"
+           "  WDataInP*, \n"
+           "  WDataOutP* \n"
+           ">;\n"
+        ); 
+
+        // get func
+        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
+                if (varp->isPrimaryIO()) {  //
+                    emitVarDeclAccessor(varp, /* asRef: */ true);
+                }
+            }
+        }
+
+        puts("\n"
+           "using function_t = std::function<PortType(SelfType&)>; \n"
+           "using map_t = std::map<std::string, function_t>; \n"
+           "static map_t init_reflect_values() { \n"
+           "   map_t ret{}; \n"
+           "   std::vector< std::pair<std::string, function_t> > values = { \n"
+        );
+
+        // get func
+        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
+                if (varp->isPrimaryIO()) {  //
+                    emitVarDeclReflectLUTEntries(varp, /* asRef: */ true);
+                }
+            }
+        }
+
+        puts("\n"
+             "   }; \n"
+             "   for(auto v : values) { ret.insert(v); } \n"
+             "   return ret; \n"
+             "} \n"
+             "static inline map_t reflect_values = init_reflect_values();\n"
+        );
+
         // User accessible IO
         puts("\n// PORTS\n"
              "// The application code writes and reads these signals to\n"
