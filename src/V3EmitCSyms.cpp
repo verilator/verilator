@@ -184,7 +184,15 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return out;
     }
 
+    /// (scp, m_vpiScopeCandidates, m_scopeNames) -> m_scopeNames
+    /// Look for parent scopes of scp in m_vpiScopeCandidates (separated by __DOT__ or ".")
+    /// Then add/update entry in m_scopeNames if not already there
     void varHierarchyScopes(string scp) {
+
+        // we want no result to be -1, so use ints
+        string::size_type prd_pos = scp.rfind('.');
+        string::size_type dot_pos = scp.rfind("__DOT__");
+
         while (!scp.empty()) {
             const auto scpit = m_vpiScopeCandidates.find(scopeSymString(scp));
             if ((scpit != m_vpiScopeCandidates.end())
@@ -193,12 +201,16 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 const auto pair = m_scopeNames.emplace(scpit->second.m_symName, scpit->second);
                 if (!pair.second) pair.first->second.m_type = scpit->second.m_type;
             }
-            string::size_type pos = scp.rfind("__DOT__");
-            if (pos == string::npos) {
-                pos = scp.rfind('.');
-                if (pos == string::npos) break;
+
+            // resize and advance pointers
+            if (prd_pos < dot_pos && dot_pos != string::npos) {
+                scp.resize(dot_pos);
+                dot_pos = scp.rfind("__DOT__");
+            } else {
+                if (prd_pos == string::npos) break;
+                scp.resize(prd_pos);
+                prd_pos = scp.rfind('.');
             }
-            scp.resize(pos);
         }
     }
 
