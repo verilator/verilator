@@ -185,6 +185,19 @@ class EmitCModel final : public EmitCFunc {
                 "   return -1;\n"
                 "}\n"
             );
+
+            puts("std::size_t is_wide(PortType & ioport) {\n");
+            for(auto vlwide_itr = vlwide_counts.begin(); vlwide_itr != vlwide_end; ++vlwide_itr) {
+               puts("   if(std::holds_alternative< VlWide<" + cvtToStr(*vlwide_itr) + "> * >(ioport)) {\n"
+                    "      return true;\n"
+                    "   }\n"
+               );
+            }
+
+            puts("   return false;\n"
+                "}\n"
+            );
+
         }
 
         // get func
@@ -198,10 +211,10 @@ class EmitCModel final : public EmitCFunc {
 
         puts("\n"
            "using function_t = std::function<PortType(SelfType&)>; \n"
-           "using map_t = std::map<std::string, function_t>; \n"
+           "using map_t = std::map<std::string, std::pair<bool, function_t> >; \n"
            "static map_t init_reflect_values() { \n"
            "   map_t ret{}; \n"
-           "   std::vector< std::pair<std::string, function_t> > values = { \n"
+           "   std::vector< std::pair<std::string, std::pair<bool, function_t> > > values = { \n"
         );
 
         // get func

@@ -143,7 +143,10 @@ void EmitCBaseVisitorConst::emitVarDeclAccessor(const AstVar* nodep, bool asRef)
 }
 
 void EmitCBaseVisitorConst::emitVarDeclReflectLUTEntries(const AstVar* nodep, bool asRef) {
-   puts("std::make_pair<std::string, function_t>(std::string{\"" + nodep->nameProtect() + "\"}, [](SelfType & self) { return self.get_" + nodep->nameProtect() + "(); }),\n");
+   std::string name{};
+   name = nodep->nameProtect();
+   const std::string is_input = (name.find("in") == std::string::npos) ? "false" : "true";
+   puts("std::make_pair<std::string, std::pair<bool, function_t> >(std::string{\"" + name + "\"}, std::pair<bool, function_t>(" + is_input + ", [](SelfType & self) { return self.get_" + name + "(); })),\n");
 }
 
 void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
