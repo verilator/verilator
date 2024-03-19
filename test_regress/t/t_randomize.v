@@ -37,7 +37,7 @@ class Packet;
       foreach (array[i]) {
          array[i] inside {2, 4, 6};
       }
-      unique { array[0], array[1] }
+      unique { array[0], array[1] };
    }
 
    constraint order { solve length before header; }
