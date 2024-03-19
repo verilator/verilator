@@ -146,15 +146,16 @@ static void makeToStringMiddle(AstClass* nodep) {
     nodep->addStmtsp(funcp);
 }
 static void makeVlRandomize(AstClass* nodep) {
-    AstCFunc* const funcp
-        = new AstCFunc{nodep->fileline(), "VL_RANDOMIZE", nullptr, "IData"};
+    AstCFunc* const funcp = new AstCFunc{nodep->fileline(), "VL_RANDOMIZE", nullptr, "IData"};
     funcp->argTypes("VlClassRef<" + EmitCBase::prefixNameProtect(nodep) + ">& obj");
     funcp->isMethod(false);
     funcp->isConst(false);
     funcp->isStatic(false);
     funcp->protect(false);
     funcp->addStmtsp(new AstCStmt{nodep->fileline(), "IData out;\n"});
-    funcp->addStmtsp(new AstCStmt{nodep->fileline(), "if (obj) obj->" + nodep->randomize()->nameProtect() + "(nullptr, out);\n"});
+    funcp->addStmtsp(
+        new AstCStmt{nodep->fileline(),
+                     "if (obj) obj->" + nodep->randomize()->nameProtect() + "(nullptr, out);\n"});
     AstCExpr* const exprp = new AstCExpr{nodep->fileline(), "out", 0};
     exprp->dtypeSetUInt32();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});

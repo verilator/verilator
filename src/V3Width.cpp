@@ -1308,7 +1308,7 @@ class WidthVisitor final : public VNVisitor {
             nextp = VN_AS(argp->nextp(), Arg);
 
             AstNodeExpr* const exprp = argp->exprp()->unlinkFrBack();
-            if (AstClassRefDType *classrefp = VN_CAST(exprp->dtypep(), ClassRefDType)) {
+            if (AstClassRefDType* classrefp = VN_CAST(exprp->dtypep(), ClassRefDType)) {
                 AstClass* const classp = classrefp->classp();
                 classp->baseMostClassp()->needRNG(true);
                 V3Randomize::newRandomizeFunc(classp);

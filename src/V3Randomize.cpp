@@ -350,7 +350,8 @@ class RandomizeVisitor final : public VNVisitor {
                                 assignp};
                 funcp->addStmtsp(assignIfNotNullp);
             } else if (const AstDynArrayDType* const dynp = VN_CAST(dtypep, DynArrayDType)) {
-                AstNodeExpr* callp = newRandValue(fl, memberVarp, memberVarp->findBasicDType(VBasicDTypeKwd::UINT32));
+                AstNodeExpr* callp = newRandValue(
+                    fl, memberVarp, memberVarp->findBasicDType(VBasicDTypeKwd::UINT32));
                 AstAssign* const assignp = new AstAssign{
                     fl, new AstVarRef{fl, fvarp, VAccess::WRITE},
                     new AstAnd{fl, new AstVarRef{fl, fvarp, VAccess::READ}, callp}};

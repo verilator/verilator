@@ -470,7 +470,7 @@ std::string VL_TO_STRING(const VlWide<T_Words>& obj) {
 
 template <std::size_t T_Words>
 inline bool VL_RANDOMIZE(VlWide<T_Words>& valuer, VlRNG& rngr = VlRNG::vl_thread_rng()) {
-    VL_RANDOM_W(VL_EDATASIZE*T_Words, valuer);
+    VL_RANDOM_W(VL_EDATASIZE * T_Words, valuer);
     return true;
 }
 

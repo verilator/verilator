@@ -3242,16 +3242,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (AstClass* const classp = VN_CAST(m_modp, Class)) {
                         nodep->classOrPackagep(classp);
                     } else if (nodep->name() == "randomize"
-                            && (dotSymp->nodep()->name().empty() || dotSymp->nodep()->name() == "std")) {
-                            if (nodep->pinsp()) {
-                                nodep->replaceWith(new AstRandomize{nodep->fileline(),
-                                    nodep->pinsp()->unlinkFrBackWithNext()});
-                                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                            } else {
-                                nodep->v3warn(E_UNSUPPORTED, "Unsupported: "
+                               && (dotSymp->nodep()->name().empty()
+                                   || dotSymp->nodep()->name() == "std")) {
+                        if (nodep->pinsp()) {
+                            nodep->replaceWith(new AstRandomize{
+                                nodep->fileline(), nodep->pinsp()->unlinkFrBackWithNext()});
+                            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                        } else {
+                            nodep->v3warn(E_UNSUPPORTED,
+                                          "Unsupported: "
                                               << "Scope randomization with std::randomize");
-                            }
-                            return;
+                        }
+                        return;
                     } else {
                         nodep->v3error("Calling implicit class method "
                                        << nodep->prettyNameQ() << " without being under class");
