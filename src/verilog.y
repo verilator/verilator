@@ -7337,7 +7337,7 @@ constraint_expression<nodep>:  // ==IEEE: constraint_expression
                           $$ = newp; }
         //                      // 1800-2012:
         //                      // IEEE: uniqueness_constraint ';'
-        |       yUNIQUE '{' range_list '}'
+        |       yUNIQUE '{' range_list '}' ';'
                         { $$ = new AstConstraintUnique{$1, $3}; }
         //                      // IEEE: expr yP_MINUSGT constraint_set
         //                      // Conflicts with expr:"expr yP_MINUSGT expr"; rule moved there
