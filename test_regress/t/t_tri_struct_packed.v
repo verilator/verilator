@@ -4,23 +4,25 @@
 // any use, without warranty, 2024 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
 
-typedef struct {
+typedef struct packed {
    bit x;
-} u_struct_t;
+} p_struct_t;
 
-module u_mh (inout u_struct_t u_i, inout u_struct_t u_o);
-   assign u_o.x = u_i.x;
+module p_mh (inout p_struct_t p_i, inout p_struct_t p_o);
+   // OK: module p_mh (input p_struct_t p_i, output p_struct_t p_o);
+   assign p_o.x = p_i.x;
 endmodule
 
 module t;
-   u_struct_t u_i, u_o;
+   p_struct_t p_i, p_o;
 
-   u_mh u_mh(u_i, u_o);
+   p_mh p_mh(p_i, p_o);
 
    initial begin
-      u_i.x = 1;
+      p_i.x = 1;
       #1;
-      if (u_o.x != 1'b1) $stop;
+      // issue #4925
+      if (p_o.x != 1'b1) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end
