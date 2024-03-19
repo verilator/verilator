@@ -101,7 +101,7 @@ class EmitCModel final : public EmitCFunc {
         puts("\n");
         ofp()->putsPrivate(false);  // public:
         puts("\n"
-           "using SelfType = selftype; \n"
+           "using SelfType = " + topClassName() + "; \n"
            "using PortType = std::variant< \n"
            "  std::monostate, \n"
            "  CData*, \n"
