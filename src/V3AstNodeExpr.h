@@ -1112,6 +1112,20 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
 };
+class AstCvtPackedToUnpackArray final : public AstNodeExpr {
+    // Cast from packed array to dynamic queue data type
+    // @astgen op1 := fromp : AstNodeExpr
+public:
+    AstCvtPackedToUnpackArray(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
+        : ASTGEN_SUPER_CvtPackedToUnpackArray(fl) {
+        this->fromp(fromp);
+        dtypeFrom(dtp);
+    }
+    ASTGEN_MEMBERS_AstCvtPackedToUnpackArray;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+};
 class AstCvtUnpackArrayToPacked final : public AstNodeExpr {
     // Cast from dynamic queue data type to packed array
     // @astgen op1 := fromp : AstNodeExpr

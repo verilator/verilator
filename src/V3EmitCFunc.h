@@ -462,6 +462,19 @@ public:
             puts(", ");
             rhs = false;
             iterateAndNextConstNull(castp->fromp());
+        } else if (const AstCvtPackedToUnpackArray* const castp
+                   = VN_CAST(nodep->rhsp(), CvtPackedToUnpackArray)) {
+            putns(castp, "VL_ASSIGN_UNPACK_Q<");
+            putbs(castp->dtypep()->subDTypep()->cType("", false, false));
+            puts(", ");
+            puts(cvtToStr(castp->dtypep()->arrayUnpackedElements()));
+            puts(">(");
+            iterateAndNextConstNull(nodep->lhsp());
+            puts(", ");
+            putns(castp->dtypep(), cvtToStr(castp->dtypep()->subDTypep()->widthMin()));
+            puts(", ");
+            rhs = false;
+            iterateAndNextConstNull(castp->fromp());
         } else if (nodep->isWide() && VN_IS(nodep->lhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), CExpr)  //
                    && !VN_IS(nodep->rhsp(), CMethodHard)  //

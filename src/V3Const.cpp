@@ -2194,10 +2194,16 @@ class ConstVisitor final : public VNVisitor {
             } else {
                 streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(), VSigning::UNSIGNED);
             }
-            if (dWidth == 0) {
-                streamp = new AstCvtPackedToDynArray{nodep->fileline(), streamp, dstp->dtypep()};
-            } else if (sWidth > dWidth) {
-                streamp = new AstSel{streamp->fileline(), streamp, sWidth - dWidth, dWidth};
+            if (VN_IS(dstp->dtypep(), UnpackArrayDType)) {
+                streamp
+                    = new AstCvtPackedToUnpackArray{nodep->fileline(), streamp, dstp->dtypep()};
+            } else {
+                if (dWidth == 0) {
+                    streamp
+                        = new AstCvtPackedToDynArray{nodep->fileline(), streamp, dstp->dtypep()};
+                } else if (sWidth > dWidth) {
+                    streamp = new AstSel{streamp->fileline(), streamp, sWidth - dWidth, dWidth};
+                }
             }
             nodep->lhsp(dstp);
             nodep->rhsp(streamp);
@@ -2211,10 +2217,14 @@ class ConstVisitor final : public VNVisitor {
             AstNodeExpr* srcp = nodep->rhsp()->unlinkFrBack();
             const int sWidth = srcp->width();
             const int dWidth = dstp->width();
-            if (dWidth == 0) {
-                srcp = new AstCvtPackedToDynArray{nodep->fileline(), srcp, dstp->dtypep()};
-            } else if (sWidth > dWidth) {
-                srcp = new AstSel{streamp->fileline(), srcp, sWidth - dWidth, dWidth};
+            if (VN_IS(dstp->dtypep(), UnpackArrayDType)) {
+                srcp = new AstCvtPackedToUnpackArray{nodep->fileline(), srcp, dstp->dtypep()};
+            } else {
+                if (dWidth == 0) {
+                    srcp = new AstCvtPackedToDynArray{nodep->fileline(), srcp, dstp->dtypep()};
+                } else if (sWidth > dWidth) {
+                    srcp = new AstSel{streamp->fileline(), srcp, sWidth - dWidth, dWidth};
+                }
             }
             nodep->lhsp(dstp);
             nodep->rhsp(srcp);
