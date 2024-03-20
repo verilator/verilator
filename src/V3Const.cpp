@@ -2168,6 +2168,12 @@ class ConstVisitor final : public VNVisitor {
                                                  "array to a variable of size greater than 64");
                 }
                 srcp = new AstCvtDynArrayToPacked{srcp->fileline(), srcp, srcDTypep};
+            } else if (VN_IS(srcDTypep, UnpackArrayDType)) {
+                if (nodep->lhsp()->widthMin() > 64) {
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assignment of stream of dynamic "
+                                                 "array to a variable of size greater than 64");
+                }
+                srcp = new AstCvtUnpackArrayToPacked{srcp->fileline(), srcp, srcDTypep};
             }
             nodep->rhsp(srcp);
             VL_DO_DANGLING(pushDeletep(streamp), streamp);
