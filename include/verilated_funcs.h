@@ -1579,9 +1579,9 @@ static inline void VL_ASSIGN_DYN_Q(VlQueue<T>& q, int elem_size, int lbits, QDat
 }
 
 template <typename T, std::size_t T_Depth>
-static inline void VL_ASSIGN_UNPACK_Q(VlUnpacked<T, T_Depth>& q, int elem_size, QData from) {
+static inline void VL_ASSIGN_UNPACK_Q(VlUnpacked<T, T_Depth>& q, size_t elem_size, QData from) {
     const QData mask = VL_MASK_Q(elem_size);
-    for (int i = 0; i < T_Depth; ++i) q[i] = (T)((from >> ((T_Depth - 1 - i) * elem_size)) & mask);
+    for (size_t i = 0; i < T_Depth; ++i) q[i] = (T)((from >> ((T_Depth - 1 - i) * elem_size)) & mask);
 }
 
 template <typename T>
@@ -1599,16 +1599,16 @@ static inline QData VL_DYN_TO_Q(const VlQueue<T>& q, int elem_size) {
 }
 
 template <typename T, std::size_t T_Depth>
-static inline IData VL_UNPACK_TO_I(const VlUnpacked<T, T_Depth>& q, int elem_size) {
-    QData ret = 0;
-    for (int i = 0; i < T_Depth; ++i) ret |= q[T_Depth - 1 - i] << (i * elem_size);
+static inline IData VL_UNPACK_TO_I(const VlUnpacked<T, T_Depth>& q, size_t elem_size) {
+    IData ret = 0;
+    for (size_t i = 0; i < T_Depth; ++i) ret |= q[T_Depth - 1 - i] << (i * elem_size);
     return ret;
 }
 
 template <typename T, std::size_t T_Depth>
-static inline QData VL_UNPACK_TO_Q(const VlUnpacked<T, T_Depth>& q, int elem_size) {
+static inline QData VL_UNPACK_TO_Q(const VlUnpacked<T, T_Depth>& q, size_t elem_size) {
     QData ret = 0;
-    for (int i = 0; i < T_Depth; ++i) ret |= q[T_Depth - 1 - i] << (i * elem_size);
+    for (size_t i = 0; i < T_Depth; ++i) ret |= q[T_Depth - 1 - i] << (i * elem_size);
     return ret;
 }
 
