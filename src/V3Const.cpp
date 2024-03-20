@@ -2173,7 +2173,16 @@ class ConstVisitor final : public VNVisitor {
                     nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assignment of stream of dynamic "
                                                  "array to a variable of size greater than 64");
                 }
-                srcp = new AstCvtUnpackArrayToPacked{srcp->fileline(), srcp, srcDTypep};
+                srcp = new AstCvtUnpackArrayToPacked{srcp->fileline(), srcp,
+                                                     nodep->lhsp()->dtypep()};
+                // Handling the case where lhs is wider than rhs by inserting zeros. StreamL does
+                // not require this, since the left streaming operator implicitly handles this.
+                uint32_t packedBits = nodep->lhsp()->widthMin();
+                uint32_t unpackBits
+                    = srcDTypep->arrayUnpackedElements() * srcDTypep->subDTypep()->widthMin();
+                uint32_t offset = packedBits > unpackBits ? packedBits - unpackBits : 0;
+                srcp = new AstShiftL{srcp->fileline(), srcp,
+                                     new AstConst{srcp->fileline(), offset}, 64};
             }
             nodep->rhsp(srcp);
             VL_DO_DANGLING(pushDeletep(streamp), streamp);
@@ -2218,6 +2227,15 @@ class ConstVisitor final : public VNVisitor {
             const int sWidth = srcp->width();
             const int dWidth = dstp->width();
             if (VN_IS(dstp->dtypep(), UnpackArrayDType)) {
+                const int dstBitWidth
+                    = dWidth * VN_AS(dstp->dtypep(), UnpackArrayDType)->arrayUnpackedElements();
+                // Handling the case where rhs is wider than lhs. StreamL does not require this
+                // since the combination of the left streaming operation and the implicit
+                // truncation in VL_ASSIGN_UNPACK automatically selects the left-most bits.
+                if (sWidth > dstBitWidth) {
+                    srcp
+                        = new AstSel{streamp->fileline(), srcp, sWidth - dstBitWidth, dstBitWidth};
+                }
                 srcp = new AstCvtPackedToUnpackArray{nodep->fileline(), srcp, dstp->dtypep()};
             } else {
                 if (dWidth == 0) {
