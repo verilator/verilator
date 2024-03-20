@@ -843,9 +843,10 @@ class WidthVisitor final : public VNVisitor {
                 nodep->v3error("Slice size isn't a constant or basic data type.");
             }
             const AstNodeDType* const lhsDtypep = nodep->lhsp()->dtypep()->skipRefToEnump();
-            if (VN_IS(lhsDtypep, DynArrayDType) || VN_IS(lhsDtypep, QueueDType)) {
+            if (VN_IS(lhsDtypep, DynArrayDType) || VN_IS(lhsDtypep, QueueDType)
+                || VN_IS(lhsDtypep, UnpackArrayDType)) {
                 nodep->dtypeSetStream();
-            } else if (VN_IS(lhsDtypep, UnpackArrayDType) || lhsDtypep->isCompound()) {
+            } else if (lhsDtypep->isCompound()) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: Stream operation on a variable of a type "
                                   << lhsDtypep->prettyDTypeNameQ());

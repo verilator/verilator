@@ -380,6 +380,21 @@ public:
         puts(")");
     }
 
+    void visit(AstCvtUnpackArrayToPacked* nodep) override {
+        putns(nodep, "VL_UNPACK_TO_");
+        emitIQW(nodep);
+        const AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
+        putns(elemDTypep, "<");
+        putbs(elemDTypep->cType("", false, false));
+        puts(",");
+        puts(cvtToStr(nodep->fromp()->dtypep()->arrayUnpackedElements()));
+        puts(">(");
+        iterateAndNextConstNull(nodep->fromp());
+        puts(", ");
+        putns(elemDTypep, cvtToStr(elemDTypep->widthMin()));
+        puts(")");
+    }
+
     void visit(AstNodeAssign* nodep) override {
         bool paren = true;
         bool decind = false;

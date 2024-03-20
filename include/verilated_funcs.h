@@ -1592,6 +1592,13 @@ static inline QData VL_DYN_TO_Q(const VlQueue<T>& q, int elem_size) {
     return ret;
 }
 
+template <typename T, std::size_t T_Depth>
+static inline IData VL_UNPACK_TO_I(const VlUnpacked<T, T_Depth>& q, int elem_size) {
+    QData ret = 0;
+    for (int i = 0; i < T_Depth; ++i) ret |= q[i] << (i * elem_size);
+    return ret;
+}
+
 // Because concats are common and wide, it's valuable to always have a clean output.
 // Thus we specify inputs must be clean, so we don't need to clean the output.
 // Note the bit shifts are always constants, so the adds in these constify out.

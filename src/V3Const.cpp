@@ -2228,6 +2228,14 @@ class ConstVisitor final : public VNVisitor {
                 srcp->unlinkFrBack();
                 streamp->lhsp(new AstCvtDynArrayToPacked{srcp->fileline(), srcp, lhsDtypep});
                 streamp->dtypeFrom(lhsDtypep);
+            } else if (VN_IS(srcDTypep, UnpackArrayDType)) {
+                if (lhsDtypep->widthMin() > 64) {
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assignment of stream of unpacked "
+                                                 "array to a variable of size greater than 64");
+                }
+                srcp->unlinkFrBack();
+                streamp->lhsp(new AstCvtUnpackArrayToPacked{srcp->fileline(), srcp, lhsDtypep});
+                streamp->dtypeFrom(lhsDtypep);
             }
         } else if (m_doV && replaceAssignMultiSel(nodep)) {
             return true;
