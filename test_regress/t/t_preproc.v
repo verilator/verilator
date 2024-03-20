@@ -704,6 +704,10 @@ Second line"""
 `QQQ
 `QQQS("""QQQ defval""")
 
+// string concat bug
+`define IDENTITY(arg) ``arg
+`IDENTITY("string argument")
+
 //======================================================================
 // IEEE mandated predefines
 `undefineall  // undefineall should have no effect on these

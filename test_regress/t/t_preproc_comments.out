@@ -1028,6 +1028,11 @@ Second line"""
 """QQQ defval"""
 
 `line 707 "t/t_preproc.v" 0
+// string concat bug 
+ 
+"string argument"
+
+`line 711 "t/t_preproc.v" 0
 //====================================================================== 
 // IEEE mandated predefines 
   // undefineall should have no effect on these 
@@ -1050,4 +1055,4 @@ predef 2 2
 // After `undefineall above, for testing --dump-defines 
  
 
-`line 729 "t/t_preproc.v" 0
+`line 733 "t/t_preproc.v" 0
