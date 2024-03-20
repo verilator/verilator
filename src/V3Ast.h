@@ -1568,6 +1568,7 @@ protected:
 // clang-format off
 class VNUser1InUse final : VNUserInUseBase {
 protected:
+    friend class VNUser1Accessor;
     friend class AstNode;
     static uint32_t s_userCntGbl;  // Count of which usage of userp() this is
     static bool s_userBusy;  // Count is in use
@@ -1579,6 +1580,7 @@ public:
 };
 class VNUser2InUse final : VNUserInUseBase {
 protected:
+    friend class VNUser2Accessor;
     friend class AstNode;
     static uint32_t s_userCntGbl;  // Count of which usage of userp() this is
     static bool s_userBusy;  // Count is in use
@@ -1590,6 +1592,7 @@ public:
 };
 class VNUser3InUse final : VNUserInUseBase {
 protected:
+    friend class VNUser3Accessor;
     friend class AstNode;
     static uint32_t s_userCntGbl;  // Count of which usage of userp() this is
     static bool s_userBusy;  // Count is in use
@@ -1601,6 +1604,7 @@ public:
 };
 class VNUser4InUse final : VNUserInUseBase {
 protected:
+    friend class VNUser4Accessor;
     friend class AstNode;
     static uint32_t s_userCntGbl;  // Count of which usage of userp() this is
     static bool s_userBusy;  // Count is in use
@@ -1803,6 +1807,11 @@ class AstNode VL_NOT_FINAL {
 
     AstNode* m_clonep = nullptr;  // Pointer to clone/source of node (only for *LAST* cloneTree())
     static int s_cloneCntGbl;  // Count of which userp is set
+
+    friend class VNUser1Accessor;
+    friend class VNUser2Accessor;
+    friend class VNUser3Accessor;
+    friend class VNUser4Accessor;
 
     // This member ordering both allows 64 bit alignment and puts associated data together
     VNUser m_user1u{0};  // Contains any information the user iteration routine wants
