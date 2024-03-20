@@ -1581,7 +1581,8 @@ static inline void VL_ASSIGN_DYN_Q(VlQueue<T>& q, int elem_size, int lbits, QDat
 template <typename T, std::size_t T_Depth>
 static inline void VL_ASSIGN_UNPACK_Q(VlUnpacked<T, T_Depth>& q, size_t elem_size, QData from) {
     const QData mask = VL_MASK_Q(elem_size);
-    for (size_t i = 0; i < T_Depth; ++i) q[i] = (T)((from >> ((T_Depth - 1 - i) * elem_size)) & mask);
+    for (size_t i = 0; i < T_Depth; ++i)
+        q[i] = (T)((from >> ((T_Depth - 1 - i) * elem_size)) & mask);
 }
 
 template <typename T>
