@@ -1411,7 +1411,7 @@ int V3PreProcImp::getStateToken() {
             }
         }
         case ps_JOIN: {
-            if (tok == VP_SYMBOL || tok == VP_TEXT) {
+            if (tok == VP_SYMBOL || tok == VP_TEXT || tok == VP_STRING) {
                 UASSERT(!m_joinStack.empty(), "`` join stack empty, but in a ``");
                 const string lhs = m_joinStack.top();
                 m_joinStack.pop();
@@ -1423,7 +1423,7 @@ int V3PreProcImp::getStateToken() {
                 unputString(out);
                 statePop();
                 goto next_tok;
-            } else if (tok == VP_EOF || tok == VP_WHITE || tok == VP_COMMENT || tok == VP_STRING) {
+            } else if (tok == VP_EOF || tok == VP_WHITE || tok == VP_COMMENT) {
                 // Other compilers just ignore this, so no warning
                 // "Expecting symbol to terminate ``; whitespace etc cannot
                 // follow ``. Found: "+tokenName(tok)+"\n"
