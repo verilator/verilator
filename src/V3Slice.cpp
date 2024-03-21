@@ -226,7 +226,7 @@ class SliceVisitor final : public VNVisitor {
             m_assignError = false;
             if (debug() >= 9) nodep->dumpTree("-  Deslice-In: ");
             AstNodeDType* const dtp = nodep->lhsp()->dtypep()->skipRefp();
-            auto stp = nodep->rhsp();
+            AstNode* stp = nodep->rhsp();
             if (const AstUnpackArrayDType* const arrayp = VN_CAST(dtp, UnpackArrayDType)) {
                 if (!VN_IS(stp, CvtPackedToUnpackArray)) {
                     // Left and right could have different ascending/descending range,
