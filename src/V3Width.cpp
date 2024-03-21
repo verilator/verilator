@@ -4909,6 +4909,33 @@ class WidthVisitor final : public VNVisitor {
             return;
         }
 
+        // Width check for unpacked array stream assignment
+        if (const AstNodeStream* streamp = VN_CAST(nodep->rhsp(), NodeStream)) {
+            if (AstUnpackArrayDType* arr = VN_CAST(streamp->lhsp()->dtypep(), UnpackArrayDType)) {
+                int lwidth = nodep->lhsp()->width();
+                int rwidth = arr->subDTypep()->width() * arr->arrayUnpackedElements();
+                if (lwidth != 0 && lwidth < rwidth) {
+                    nodep->v3widthWarn(lwidth, rwidth,
+                                       "Target fixed size variable ("
+                                           << lwidth << " bits) is narrower than the stream ("
+                                           << rwidth << " bits) (IEEE 1800-2023 11.4.14)");
+                }
+            }
+        }
+        else if (const AstNodeStream* streamp = VN_CAST(nodep->lhsp(), NodeStream)) {
+            if (AstUnpackArrayDType* arr = VN_CAST(streamp->lhsp()->dtypep(), UnpackArrayDType)) {
+                int rwidth = nodep->rhsp()->width();
+                int lwidth = arr->subDTypep()->width() * arr->arrayUnpackedElements();
+                if (rwidth != 0 && rwidth < lwidth) {
+                    nodep->v3widthWarn(lwidth, rwidth,
+                                       "Stream target requires "
+                                           << lwidth
+                                           << " bits, but source expression only provides "
+                                           << rwidth << " bits (IEEE 1800-2023 11.4.14.3)");
+                }
+            }
+        }
+
         if (nodep->hasDType() && nodep->dtypep()->isEvent()) {
             checkEventAssignment(nodep);
             v3Global.setAssignsEvents();
