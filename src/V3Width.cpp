@@ -4921,8 +4921,7 @@ class WidthVisitor final : public VNVisitor {
                                            << rwidth << " bits) (IEEE 1800-2023 11.4.14)");
                 }
             }
-        }
-        else if (const AstNodeStream* streamp = VN_CAST(nodep->lhsp(), NodeStream)) {
+        } else if (const AstNodeStream* streamp = VN_CAST(nodep->lhsp(), NodeStream)) {
             if (AstUnpackArrayDType* arr = VN_CAST(streamp->lhsp()->dtypep(), UnpackArrayDType)) {
                 int rwidth = nodep->rhsp()->width();
                 int lwidth = arr->subDTypep()->width() * arr->arrayUnpackedElements();
