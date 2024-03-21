@@ -863,13 +863,42 @@ public:
     void dumpJson(std::ostream& str) const override;
     // ACCESSORS
     string name() const override VL_MT_STABLE { return m_name; }  // * = Cell name
+    bool maybePointedTo() const override { return true; }
     string origModName() const { return m_origModName; }  // * = modp()->origName() before inlining
     void name(const string& name) override { m_name = name; }
-    void scopep(AstScope* scp) { m_scopep = scp; }
-    AstScope* scopep() const { return m_scopep; }
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VTimescale timeunit() const { return m_timeunit; }
 };
+
+class AstCellInlineScope final : public AstNode {
+    // A particular scoped usage of a Cell Inline
+    // Parents: Scope
+    // Children: none
+    //
+    // @astgen ptr := m_scopep : Optional[AstScope]  // Scope variable is underneath
+    // @astgen ptr := m_cellp : Optional[AstCellInline]  // Cell ref
+    const string m_origModName;  // Original name of module, ignoring name() changes, for LinkDot
+public:
+    AstCellInlineScope(FileLine* fl, AstScope* scopep, AstCellInline* cellp)
+        : ASTGEN_SUPER_CellInlineScope(fl)
+        , m_scopep{scopep}
+        , m_cellp{cellp} {
+        UASSERT_OBJ(scopep, fl, "Scope must be non-null");
+        UASSERT_OBJ(cellp, fl, "CellInline must be non-null");
+    }
+    ASTGEN_MEMBERS_AstCellInlineScope;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    // ACCESSORS
+    string name() const override VL_MT_STABLE { return m_cellp->name(); }
+    bool maybePointedTo() const override { return true; }
+    AstScope* scopep() const VL_MT_STABLE { return m_scopep; }  // Pointer to scope it's under
+    string origModName() const {
+        return m_cellp->origModName();
+    }  // * = modp()->origName() before inlining
+    void scopep(AstScope* nodep) { m_scopep = nodep; }
+};
+
 class AstClassExtends final : public AstNode {
     // class extends class name, or class implements class name
     // Children: List of AstParseRef for packages/classes
@@ -1465,6 +1494,7 @@ class AstScope final : public AstNode {
     // Children: NODEBLOCK
     // @astgen op1 := varsp : List[AstVarScope]
     // @astgen op2 := blocksp : List[AstNode] // Logic blocks/AstActive/AstCFunc
+    // @astgen op3 := inlinesp : List[AstCellInlineScope] // Cell Inlines
     //
     // Below scope and cell are nullptr if top scope
     // @astgen ptr := m_aboveScopep : Optional[AstScope]  // Scope above this one in the hierarchy

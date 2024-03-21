@@ -315,7 +315,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             iterateChildrenConst(nodep);
         }
     }
-    void visit(AstCellInline* nodep) override {
+    void visit(AstCellInlineScope* nodep) override {
         if (v3Global.opt.vpi()) {
             const string type
                 = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER" : "SCOPE_MODULE";
@@ -341,6 +341,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 scopeSymString(nodep->name()),
                 ScopeData{nodep, scopeSymString(nodep->name()), name_pretty, timeunit, type});
         }
+        iterateChildrenConst(nodep);
     }
     void visit(AstScopeName* nodep) override {
         const string name = nodep->scopeSymName();
