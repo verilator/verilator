@@ -20,14 +20,14 @@
 //          If operands are constant, replace this node with constant.
 //*************************************************************************
 
-#include "V3Error.h"
 #define VL_MT_DISABLED_CODE_UNIT 1
 
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Ast.h"
 #include "V3Const.h"
+
+#include "V3Ast.h"
 #include "V3Global.h"
 #include "V3Simulate.h"
 #include "V3Stats.h"
