@@ -20,14 +20,14 @@
 //          If operands are constant, replace this node with constant.
 //*************************************************************************
 
+#include "V3Error.h"
 #define VL_MT_DISABLED_CODE_UNIT 1
 
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Const.h"
-
 #include "V3Ast.h"
+#include "V3Const.h"
 #include "V3Global.h"
 #include "V3Simulate.h"
 #include "V3Stats.h"
@@ -2207,10 +2207,11 @@ class ConstVisitor final : public VNVisitor {
                 streamp
                     = new AstCvtPackedToUnpackArray{nodep->fileline(), streamp, dstp->dtypep()};
             } else {
+                UASSERT(sWidth >= dWidth, "sWidth >= dWidth should have caused an error earlier");
                 if (dWidth == 0) {
                     streamp
                         = new AstCvtPackedToDynArray{nodep->fileline(), streamp, dstp->dtypep()};
-                } else if (sWidth > dWidth) {
+                } else if (sWidth >= dWidth) {
                     streamp = new AstSel{streamp->fileline(), streamp, sWidth - dWidth, dWidth};
                 }
             }
@@ -2238,9 +2239,10 @@ class ConstVisitor final : public VNVisitor {
                 }
                 srcp = new AstCvtPackedToUnpackArray{nodep->fileline(), srcp, dstp->dtypep()};
             } else {
+                UASSERT(sWidth >= dWidth, "sWidth >= dWidth should have caused an error earlier");
                 if (dWidth == 0) {
                     srcp = new AstCvtPackedToDynArray{nodep->fileline(), srcp, dstp->dtypep()};
-                } else if (sWidth > dWidth) {
+                } else if (sWidth >= dWidth) {
                     srcp = new AstSel{streamp->fileline(), srcp, sWidth - dWidth, dWidth};
                 }
             }
