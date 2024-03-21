@@ -1099,6 +1099,8 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
     if (!node1p && !node2p) return true;
     if (!node1p || !node2p) return false;
     if (node1p->type() != node2p->type()) return false;
+    if (!VN_IS(node1p->dtypep(), BasicDType) && (node1p->dtypep() != node2p->dtypep()))
+        return false;
     UASSERT_OBJ(
         (!node1p->dtypep() && !node2p->dtypep()) || (node1p->dtypep() && node2p->dtypep()), node1p,
         "Comparison of a node with dtypep() with a node without dtypep()\n-node2=" << node2p);
