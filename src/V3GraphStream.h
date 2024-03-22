@@ -111,8 +111,7 @@ public:
                     const VxHolder newVx{&vtx, pos++, 0};
                     m_readyVertices.insert(newVx);
                 } else {
-                    uint32_t depCount = 0;
-                    for (const V3GraphEdge& _ : vtx.inEdges()) ++depCount;
+                    const uint32_t depCount = vtx.inEdges().size();
                     const VxHolder newVx{&vtx, pos++, depCount};
                     m_waitingVertices.emplace(&vtx, newVx);
                 }
@@ -121,8 +120,7 @@ public:
                     const VxHolder newVx{&vtx, pos++, 0};
                     m_readyVertices.insert(newVx);
                 } else {
-                    uint32_t depCount = 0;
-                    for (const V3GraphEdge& _ : vtx.outEdges()) ++depCount;
+                    const uint32_t depCount = vtx.outEdges().size();
                     const VxHolder newVx{&vtx, pos++, depCount};
                     m_waitingVertices.emplace(&vtx, newVx);
                 }
@@ -271,8 +269,7 @@ private:
         constexpr GraphWay way{T_Way};
         // Assign every vertex without an incoming edge to ready, others to waiting
         for (V3GraphVertex& vertex : graphp->vertices()) {
-            uint32_t nDeps = 0;
-            for (const V3GraphEdge& _ : vertex.edges<way.invert()>()) ++nDeps;
+            const uint32_t nDeps = vertex.edges<way.invert()>().size();
             vertex.color(nDeps);  // Using color instead of user, as user might be used by client
             if (VL_UNLIKELY(nDeps == 0)) m_nextVertices.push_back(&vertex);
         }

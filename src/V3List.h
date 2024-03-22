@@ -328,6 +328,13 @@ public:
             other.m_lastp = nullptr;
         }
     }
+
+    // This is O(n)!
+    size_t size() const {
+        size_t result = 0;
+        for (auto it = begin(); it != end(); ++it) ++result;
+        return result;
+    }
 };
 
 #endif  // Guard

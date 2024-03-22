@@ -250,8 +250,7 @@ void gatherSCCCandidates(V3GraphVertex* vtxp, std::vector<Candidate>& candidates
             && name.find("__Vdly") == string::npos  // Ignore internal signals
             && name.find("__Vcell") == string::npos) {
             // Also compute the fanout of this vertex
-            unsigned fanout = 0;
-            for (const V3GraphEdge& _ : vtxp->outEdges()) ++fanout;
+            const unsigned fanout = vtxp->outEdges().size();
             candidates.emplace_back(vvtxp, fanout);
         }
     }

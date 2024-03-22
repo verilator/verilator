@@ -198,8 +198,7 @@ public:
     OrderMoveGraphSerializer(OrderMoveGraph& moveGraph) {
         // Set V3GraphVertex::user() to the number of incoming edges (upstream dependencies)
         for (V3GraphVertex& vtx : moveGraph.vertices()) {
-            uint32_t nDeps = 0;
-            for (const V3GraphEdge& _ : vtx.inEdges()) ++nDeps;
+            const uint32_t nDeps = vtx.inEdges().size();
             vtx.user(nDeps);
         }
     }

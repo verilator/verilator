@@ -1216,8 +1216,7 @@ public:
 
                     // Except, if we have too many mTaskGraphp, raise the score
                     // limit and keep going...
-                    unsigned mtaskCount = 0;
-                    for (const V3GraphVertex& _ : m_mTaskGraph.vertices()) ++mtaskCount;
+                    const unsigned mtaskCount = m_mTaskGraph.vertices().size();
                     if (mtaskCount > maxMTasks) {
                         const uint32_t oldLimit = m_scoreLimit;
                         m_scoreLimit = (m_scoreLimit * 120) / 100;
@@ -2129,7 +2128,8 @@ class Partitioner final {
         if (mvtxp->logicp()) return false;
         // Count fan-in, up to 3
         unsigned fanIn = 0;
-        for (const V3GraphEdge& _ : mvtxp->inEdges()) {
+        auto& inEdges = mvtxp->inEdges();
+        for (auto it = inEdges.begin(); it != inEdges.end(); ++it) {
             if (++fanIn == 3) break;
         }
         UDEBUGONLY(UASSERT_OBJ(fanIn <= 3, mvtxp, "Should have stopped counting fanIn"););
@@ -2137,7 +2137,8 @@ class Partitioner final {
         if (fanIn <= 1) return true;
         // Count fan-out, up to 3
         unsigned fanOut = 0;
-        for (const V3GraphEdge& _ : mvtxp->outEdges()) {
+        auto& outEdges = mvtxp->outEdges();
+        for (auto it = outEdges.begin(); it != outEdges.end(); ++it) {
             if (++fanOut == 3) break;
         }
         UDEBUGONLY(UASSERT_OBJ(fanOut <= 3, mvtxp, "Should have stopped counting fanOut"););

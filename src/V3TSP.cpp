@@ -415,8 +415,7 @@ public:
         std::vector<T_Key> result;
         for (const V3GraphVertex& vtx : vertices()) {
             const Vertex* const tspvp = castVertexp(&vtx);
-            uint32_t degree = 0;
-            for (const V3GraphEdge& _ : vtx.outEdges()) degree++;
+            const uint32_t degree = vtx.outEdges().size();
             if (degree & 1) result.push_back(tspvp->key());
         }
         return result;
