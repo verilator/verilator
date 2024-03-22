@@ -111,7 +111,7 @@ public:
         for (V3GraphVertex& vtx : m_graphp->vertices()) {
             V3GraphEdge* deletep = nullptr;
             for (V3GraphEdge& edge : vtx.outEdges()) {
-                if (deletep) VL_DO_DANGLING(deletep->unlinkDelete(), deletep);
+                if (deletep) VL_DO_CLEAR(deletep->unlinkDelete(), deletep = nullptr);
                 // It should be safe to modify the graph, despite using
                 // the GraphPathChecker, as none of the modifications will
                 // change what can be reached from what, nor should they

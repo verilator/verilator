@@ -320,9 +320,9 @@ protected:
         for (V3GraphVertex& vertex : m_graph.vertices()) {
             if (vertex.outEmpty() && vertex.is<SplitVarStdVertex>()) {
                 if (debug() >= 9) {
-                    const SplitVarStdVertex& std = static_cast<SplitVarStdVertex&>(vertex);
-                    UINFO(0, "Will prune deps on var " << std.nodep() << endl);
-                    std.nodep()->dumpTree("-  ");
+                    const SplitVarStdVertex& sVtx = static_cast<SplitVarStdVertex&>(vertex);
+                    UINFO(0, "Will prune deps on var " << sVtx.nodep() << endl);
+                    sVtx.nodep()->dumpTree("-  ");
                 }
                 for (V3GraphEdge& edge : vertex.inEdges()) {
                     SplitEdge& oedge = static_cast<SplitEdge&>(edge);
