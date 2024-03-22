@@ -169,9 +169,12 @@ void vl_stop_maybe(const char* filename, int linenum, const char* hier, bool may
     Verilated::threadContextp()->errorCountInc();
     if (maybe
         && Verilated::threadContextp()->errorCount() < Verilated::threadContextp()->errorLimit()) {
-        VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
-            "-Info: %s:%d: %s\n", filename, linenum,
-            "Verilog $stop, ignored due to +verilator+error+limit");
+        // Do just once when cross error limit
+        if (Verilated::threadContextp()->errorCount() == 1) {
+            VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
+                "-Info: %s:%d: %s\n", filename, linenum,
+                "Verilog $stop, ignored due to +verilator+error+limit");
+        }
     } else {
         vl_stop(filename, linenum, hier);
     }
