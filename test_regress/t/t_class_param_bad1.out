@@ -1,9 +1,17 @@
-%Error-PINNOTFOUND: t/t_class_param_bad1.v:12:11: Parameter not found: 'PARAMBAD'
+%Error-PINNOTFOUND: t/t_class_param_bad1.v:14:11: Parameter not found: 'PARAMBAD'
                                                 : ... Suggested alternative: 'PARAMB'
-   12 |    Cls #(.PARAMBAD(1)) c;   
+   14 |    Cls #(.PARAMBAD(1)) c;   
       |           ^~~~~~~~
                     ... For error description see https://verilator.org/warn/PINNOTFOUND?v=latest
-%Error-PINNOTFOUND: t/t_class_param_bad1.v:13:14: Parameter not found: '__paramNumber2'
-   13 |    Cls #(13, 1) cd;   
+%Error-PINNOTFOUND: t/t_class_param_bad1.v:15:14: Parameter not found: '__paramNumber2'
+   15 |    Cls #(13, 1) cd;   
       |              ^
+%Error-PINNOTFOUND: t/t_class_param_bad1.v:16:22: Parameter not found: '__paramNumber2'
+   16 |    Cls #(.PARAMB(14),) ce;   
+      |                      ^
+%Error-PINNOTFOUND: t/t_class_param_bad1.v:17:13: Parameter not found: '__paramNumber2'
+   17 |    Cls #(14,) cf;   
+      |             ^
 %Error: Exiting due to
+
+TODO: all lines with Cls2 should fail too but they do not!

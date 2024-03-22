@@ -1,0 +1,13 @@
+%Error-PINNOTFOUND: t/t_inst_param_bad.v:50:15: Parameter not found: '__paramNumber2'
+   50 |    N #(.P(13),) n1(
+      |               ^
+                    ... For error description see https://verilator.org/warn/PINNOTFOUND?v=latest
+%Error-PINNOTFOUND: t/t_inst_param_bad.v:55:11: Parameter not found: '__paramNumber2'
+   55 |    N #(14,) n2 (
+      |           ^
+%Error-PINNOTFOUND: t/t_inst_param_bad.v:60:11: Parameter not found: '__paramNumber2'
+   60 |    N #(14,) n3 (
+      |           ^
+%Error: Exiting due to
+
+TODO: all lines with instance M should fail too but they do not!
