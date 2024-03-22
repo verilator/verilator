@@ -85,17 +85,17 @@ class V3List final {
 
     // Iterator class template for V3List. This is just enough to support range based for loops
     // and basic usage. Feel free to extend as required.
-    template <typename IteratorElement>
+    template <typename T_IteratorElement, bool T_Reverse>
     class SimpleItertatorImpl final {
-        static_assert(std::is_same<IteratorElement, T_Element>::value
-                          || std::is_same<IteratorElement, const T_Element>::value,
+        static_assert(std::is_same<T_IteratorElement, T_Element>::value
+                          || std::is_same<T_IteratorElement, const T_Element>::value,
                       "'SimpleItertatorImpl' must be used with element type only");
 
         // The List itself, but nothing else can construct iterators
         template <typename B, V3ListLinks<B> B::*P, typename>
         friend class V3List;
 
-        using IteratorType = SimpleItertatorImpl<IteratorElement>;
+        using IteratorType = SimpleItertatorImpl<T_IteratorElement, T_Reverse>;
 
         T_Base* m_currp;  // Currently iterated element, or 'nullptr' for 'end()' iterator
 
@@ -103,19 +103,28 @@ class V3List final {
         SimpleItertatorImpl(T_Base* elementp)
             : m_currp{elementp} {}
 
+        VL_ATTR_ALWINLINE
+        static T_Base* step(T_Base* currp) {
+            if VL_CONSTEXPR_CXX17 (T_Reverse) {
+                return toLinks(currp).m_prevp;
+            } else {
+                return toLinks(currp).m_nextp;
+            }
+        }
+
     public:
         // Dereference
         VL_ATTR_ALWINLINE
-        IteratorElement& operator*() const {
+        T_IteratorElement& operator*() const {
             UDEBUGONLY(UASSERT(m_currp, "Dereferencing end of list iterator"););
-            prefetch(toLinks(m_currp).m_nextp, m_currp);
-            return *static_cast<IteratorElement*>(m_currp);
+            prefetch(step(m_currp), m_currp);
+            return *static_cast<T_IteratorElement*>(m_currp);
         }
         // Pre increment
         VL_ATTR_ALWINLINE
         IteratorType& operator++() {
             UDEBUGONLY(UASSERT(m_currp, "Pre-incrementing end of list iterator"););
-            m_currp = toLinks(m_currp).m_nextp;
+            m_currp = step(m_currp);
             return *this;
         }
         // Post increment
@@ -123,7 +132,7 @@ class V3List final {
         IteratorType operator++(int) {
             UDEBUGONLY(UASSERT(m_currp, "Post-incrementing end of list iterator"););
             T_Base* const elementp = m_currp;
-            m_currp = toLinks(m_currp).m_nextp;
+            m_currp = step(m_currp);
             return IteratorType{elementp};
         }
         VL_ATTR_ALWINLINE
@@ -132,8 +141,8 @@ class V3List final {
         bool operator!=(const IteratorType& other) const { return m_currp != other.m_currp; }
         // Convert to const iterator
         VL_ATTR_ALWINLINE
-        operator SimpleItertatorImpl<const IteratorElement>() const {
-            return SimpleItertatorImpl<const IteratorElement>{m_currp};
+        operator SimpleItertatorImpl<const T_IteratorElement, T_Reverse>() const {
+            return SimpleItertatorImpl<const T_IteratorElement, T_Reverse>{m_currp};
         }
     };
 
@@ -151,16 +160,16 @@ class V3List final {
 
         // Unlinkable iterator class template. This only supports enough for range based for loops.
         // If you want something fancier, use and manage the direct iterator manually.
-        template <typename IteratorElement>
+        template <typename T_IteratorElement>
         class UnlinkableItertatorImpl final {
-            static_assert(std::is_same<IteratorElement, T_Element>::value
-                              || std::is_same<IteratorElement, const T_Element>::value,
+            static_assert(std::is_same<T_IteratorElement, T_Element>::value
+                              || std::is_same<T_IteratorElement, const T_Element>::value,
                           "'UnlinkableItertatorImpl' must be used with element type only");
 
             // The UnlinkableProxy, but nothing else can construct unlinkable iterators
             friend class UnlinkableProxy;
 
-            using IteratorType = UnlinkableItertatorImpl<IteratorElement>;
+            using IteratorType = UnlinkableItertatorImpl<T_IteratorElement>;
 
             T_Base* m_currp;  // Currently iterated element, or 'nullptr' for 'end()' iterator
             T_Base* m_nextp;  // Next element after current, or 'nullptr' for 'end()' iterator
@@ -177,10 +186,10 @@ class V3List final {
         public:
             // Dereference - Note this returns a pointer.
             VL_ATTR_ALWINLINE
-            IteratorElement* operator*() const {
+            T_IteratorElement* operator*() const {
                 UDEBUGONLY(UASSERT(m_currp, "Dereferencing end of list iterator"););
                 prefetch(m_nextp, m_currp);
-                return static_cast<IteratorElement*>(m_currp);
+                return static_cast<T_IteratorElement*>(m_currp);
             }
             // Pre increment - Keeps hold of current next pointer.
             VL_ATTR_ALWINLINE
@@ -210,8 +219,10 @@ class V3List final {
     };
 
 public:
-    using iterator = SimpleItertatorImpl<T_Element>;
-    using const_iterator = SimpleItertatorImpl<const T_Element>;
+    using iterator = SimpleItertatorImpl<T_Element, /* T_Reverse: */ false>;
+    using const_iterator = SimpleItertatorImpl<const T_Element, /* T_Reverse: */ false>;
+    using reverse_iterator = SimpleItertatorImpl<T_Element, /* T_Reverse: */ true>;
+    using const_reverse_iterator = SimpleItertatorImpl<const T_Element, /* T_Reverse: */ true>;
 
     // CONSTRUCTOR
     V3List() = default;
@@ -242,6 +253,10 @@ public:
     const_iterator begin() const { return const_iterator{m_headp}; }
     iterator end() { return iterator{nullptr}; }
     const_iterator end() const { return const_iterator{nullptr}; }
+    reverse_iterator rbegin() { return reverse_iterator{m_lastp}; }
+    const_reverse_iterator rbegin() const { return const_reverse_iterator{m_lastp}; }
+    reverse_iterator rend() { return reverse_iterator{nullptr}; }
+    const_reverse_iterator rend() const { return const_reverse_iterator{nullptr}; }
 
     // Handle to create unlinkable iterators, which allows unlinking the currently iterated
     // element without invalidating the iterator. However, every other operation that mutates
