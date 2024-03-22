@@ -21,7 +21,7 @@ Verilator 5.023 devel
 
 * Add DFG 'regularize' pass, and improve variable removal (#4937). [Geza Lore]
 * Add error when pass net to function argument (#4132) (#4966). [Fuad Ismail]
-* Add UNUSEDLOOP when unused loop is removed (#4926). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Add `UNUSEDLOOP` when unused loop is removed (#4926). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Add custom version for verilator --version packaging (#4954). [Nolan Poe]
 * Add error on missing pure virtual functions (#4961).
 * Add error on calling static function without object (#4962).
@@ -42,10 +42,10 @@ Verilator 5.023 devel
 * Fix GCC14 warnings on template specialization syntax (#4974) (#4975). [Nolan Poe]
 * Fix unpacked structure upper bit cleaning (#4978).
 * Fix tests on macOS (#4984) (#4985). [Kevin Nygaard]
-* Fix --prof-exec predicted time values (#4988). [Geza Lore]
+* Fix `--prof-exec` predicted time values (#4988). [Geza Lore]
 * Fix class type as an associative array parameter (#4997).
 * Fix inout ports of unpacked stuct type (#5000). [Ryszard Rozak, Antmicro Ltd.]
-* Fix unique {} constraints missing semicolon (#5001)
+* Fix `unique {}` constraints missing semicolon (#5001)
 * Fix preprocessor to respect strings in joins (#5007)
 
 
