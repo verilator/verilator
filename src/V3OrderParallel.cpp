@@ -278,11 +278,9 @@ public:
     MTaskEdge(V3Graph* graphp, LogicMTask* fromp, LogicMTask* top, int weight);
     // METHODS
     template <GraphWay::en T_Way>
-    LogicMTask* furtherMTaskp() const {
-        return reinterpret_cast<LogicMTask*>(this->furtherp<T_Way>());
-    }
-    LogicMTask* fromMTaskp() const { return reinterpret_cast<LogicMTask*>(fromp()); }
-    LogicMTask* toMTaskp() const { return reinterpret_cast<LogicMTask*>(top()); }
+    inline LogicMTask* furtherMTaskp() const;
+    inline LogicMTask* fromMTaskp() const;
+    inline LogicMTask* toMTaskp() const;
     bool mergeWouldCreateCycle() const;
     // Following initial assignment of critical paths, clear this MTaskEdge
     // out of the edge-map for each node and reinsert at a new location
@@ -688,6 +686,13 @@ MTaskEdge::MTaskEdge(V3Graph* graphp, LogicMTask* fromp, LogicMTask* top, int we
     fromp->addRelativeEdge<GraphWay::FORWARD>(this);
     top->addRelativeEdge<GraphWay::REVERSE>(this);
 }
+
+template <GraphWay::en T_Way>
+LogicMTask* MTaskEdge::furtherMTaskp() const {
+    return static_cast<LogicMTask*>(this->furtherp<T_Way>());
+}
+LogicMTask* MTaskEdge::fromMTaskp() const { return static_cast<LogicMTask*>(fromp()); }
+LogicMTask* MTaskEdge::toMTaskp() const { return static_cast<LogicMTask*>(top()); }
 
 bool MTaskEdge::mergeWouldCreateCycle() const {
     return LogicMTask::pathExistsFrom(fromMTaskp(), toMTaskp(), this);
