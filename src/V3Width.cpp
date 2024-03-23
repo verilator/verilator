@@ -464,6 +464,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstTimeUnit* nodep) override {
         nodep->replaceWith(
             new AstConst{nodep->fileline(), AstConst::Signed32{}, nodep->timeunit().powerOfTen()});
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstScopeName* nodep) override {
         nodep->dtypeSetUInt64();  // A pointer, but not that it matters
@@ -918,7 +919,9 @@ class WidthVisitor final : public VNVisitor {
                                                  << nodep->msbConst() << "<" << nodep->lsbConst());
                 width = (nodep->lsbConst() - nodep->msbConst() + 1);
                 nodep->dtypeSetLogicSized(width, VSigning::UNSIGNED);
+                pushDeletep(nodep->widthp());
                 nodep->widthp()->replaceWith(new AstConst(nodep->widthp()->fileline(), width));
+                pushDeletep(nodep->lsbp());
                 nodep->lsbp()->replaceWith(new AstConst{nodep->lsbp()->fileline(), 0});
             }
             // We're extracting, so just make sure the expression is at least wide enough.
@@ -1394,7 +1397,8 @@ class WidthVisitor final : public VNVisitor {
                 newp->dtypeFrom(nodep);
                 UINFO(9, "powOld " << nodep << endl);
                 UINFO(9, "powNew " << newp << endl);
-                VL_DO_DANGLING(nodep->replaceWith(newp), nodep);
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
         }
     }
@@ -1932,6 +1936,7 @@ class WidthVisitor final : public VNVisitor {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Cast to " << nodep->dtp()->prettyTypeName());
             nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     void visit(AstCast* nodep) override {

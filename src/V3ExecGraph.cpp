@@ -369,8 +369,10 @@ public:
     static void selfTest() {
         V3Graph graph;
         FileLine* const flp = v3Global.rootp()->fileline();
-        const auto makeBody = [flp]() {
+        std::vector<AstMTaskBody*> mTaskBodyps;
+        const auto makeBody = [&]() {
             AstMTaskBody* const bodyp = new AstMTaskBody{flp};
+            mTaskBodyps.push_back(bodyp);
             bodyp->addStmtsp(new AstComment{flp, ""});
             return bodyp;
         };
@@ -421,6 +423,8 @@ public:
         UASSERT_SELFTEST(uint32_t, packer.completionTime(schedule, t1, 1), 1130);
         UASSERT_SELFTEST(uint32_t, packer.completionTime(schedule, t2, 0), 1229);
         UASSERT_SELFTEST(uint32_t, packer.completionTime(schedule, t2, 1), 1199);
+
+        for (AstNode* const nodep : mTaskBodyps) nodep->deleteTree();
     }
 
     static const ThreadSchedule apply(const V3Graph& mtaskGraph) {

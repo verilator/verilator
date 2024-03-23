@@ -115,6 +115,7 @@ private:
                     AstArg* const argp = tconnect.second;
                     AstNode* const pinp = argp->exprp()->unlinkFrBack();
                     replaceVarRefsWithExprRecurse(propExprp, portp, pinp);
+                    VL_DO_DANGLING(pushDeletep(pinp), pinp);
                 }
                 // Handle case with 2 disable iff statement (IEEE 1800-2023 16.12.1)
                 if (nodep->disablep() && propExprp->disablep()) {
@@ -273,12 +274,14 @@ private:
         if (constp->isZero()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: ##0 delays");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            VL_DO_DANGLING(valuep->deleteTree(), valuep);
             return;
         }
         if (!m_defaultClockingp) {
             nodep->v3error("Usage of cycle delays requires default clocking"
                            " (IEEE 1800-2023 14.11)");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            VL_DO_DANGLING(valuep->deleteTree(), valuep);
             return;
         }
         AstEventControl* const controlp = new AstEventControl{

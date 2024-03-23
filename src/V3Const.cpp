@@ -1343,7 +1343,8 @@ class ConstVisitor final : public VNVisitor {
             = new AstSel{nodep->fileline(), ap->unlinkFrBack(), newLsb, nodep->widthConst()};
         newp->dtypeFrom(nodep);
         if (debug() >= 9) newp->dumpTree("-  SEL(SH)-ou: ");
-        VL_DO_DANGLING(nodep->replaceWith(newp), nodep);
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
         return true;
     }
 
@@ -1820,16 +1821,20 @@ class ConstVisitor final : public VNVisitor {
         // {llp OP lrp, rlp OP rrp} => {llp, rlp} OP {lrp, rrp}, where OP = AND/OR/XOR
         AstNodeBiop* const lp = VN_AS(nodep->lhsp(), NodeBiop);
         AstNodeBiop* const rp = VN_AS(nodep->rhsp(), NodeBiop);
-        AstNodeExpr* const llp = lp->lhsp()->cloneTreePure(false);
-        AstNodeExpr* const lrp = lp->rhsp()->cloneTreePure(false);
-        AstNodeExpr* const rlp = rp->lhsp()->cloneTreePure(false);
-        AstNodeExpr* const rrp = rp->rhsp()->cloneTreePure(false);
         if (concatMergeable(lp, rp, 0)) {
-            AstConcat* const newlp = new AstConcat{rlp->fileline(), llp, rlp};
-            AstConcat* const newrp = new AstConcat{rrp->fileline(), lrp, rrp};
+            AstNodeExpr* const llp = lp->lhsp();
+            AstNodeExpr* const lrp = lp->rhsp();
+            AstNodeExpr* const rlp = rp->lhsp();
+            AstNodeExpr* const rrp = rp->rhsp();
+            AstConcat* const newlp = new AstConcat{rlp->fileline(), llp->cloneTreePure(false),
+                                                   rlp->cloneTreePure(false)};
+            AstConcat* const newrp = new AstConcat{rrp->fileline(), lrp->cloneTreePure(false),
+                                                   rrp->cloneTreePure(false)};
             // use the lhs to replace the parent concat
-            lp->lhsp()->replaceWith(newlp);
-            lp->rhsp()->replaceWith(newrp);
+            llp->replaceWith(newlp);
+            VL_DO_DANGLING(pushDeletep(llp), llp);
+            lrp->replaceWith(newrp);
+            VL_DO_DANGLING(pushDeletep(lrp), lrp);
             lp->dtypeChgWidthSigned(newlp->width(), newlp->width(), VSigning::UNSIGNED);
             UINFO(5, "merged " << nodep << endl);
             VL_DO_DANGLING(pushDeletep(rp->unlinkFrBack()), rp);

@@ -683,7 +683,8 @@ class GateInline final {
     // METHODS
     void recordSubstitution(AstVarScope* vscp, AstNodeExpr* substp, AstNode* logicp) {
         m_hasPending.emplace(logicp, ++m_ord);  // It's OK if already present
-        m_substitutions(logicp).emplace(vscp, substp->cloneTreePure(false));
+        const auto pair = m_substitutions(logicp).emplace(vscp, nullptr);
+        if (pair.second) pair.first->second = substp->cloneTreePure(false);
     }
 
     void commitSubstitutions(AstNode* logicp) {
