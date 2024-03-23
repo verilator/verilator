@@ -462,7 +462,7 @@ class TaskVisitor final : public VNVisitor {
             UINFO(9, "     Port " << portp << endl);
             UINFO(9, "      pin " << pinp << endl);
             if (inlineTask) {
-                pinp->unlinkFrBack();  // Relinked to assignment below
+                pushDeletep(pinp->unlinkFrBack());  // Cloned in assignment below
                 VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);  // Args no longer needed
             }
             if (portp->isWritable() && VN_IS(pinp, Const)) {
@@ -490,7 +490,6 @@ class TaskVisitor final : public VNVisitor {
                         AstVarScope* const localVscp = varrefp->varScopep();
                         UASSERT_OBJ(localVscp, varrefp, "Null var scope");
                         portp->user2p(localVscp);
-                        pushDeletep(pinp);
                     } else {
                         pinp->v3warn(E_TASKNSVAR, "Unsupported: ref argument of inlined "
                                                   "function/task is not a simple variable");
@@ -506,10 +505,11 @@ class TaskVisitor final : public VNVisitor {
                 AstVarScope* const newvscp
                     = createVarScope(portp, namePrefix + "__" + portp->shortName());
                 portp->user2p(newvscp);
-                if (!inlineTask)
+                if (!inlineTask) {
                     pinp->replaceWith(
                         new AstVarRef{newvscp->fileline(), newvscp, VAccess::READWRITE});
-
+                    pushDeletep(pinp);  // Cloned by connectPortMakeInAssign
+                }
                 // Put input assignment in FRONT of all other statements
                 AstAssign* const preassp = connectPortMakeInAssign(pinp, newvscp, true);
                 if (AstNode* const afterp = beginp->nextp()) {
@@ -527,8 +527,10 @@ class TaskVisitor final : public VNVisitor {
                 AstVarScope* const newvscp
                     = createVarScope(portp, namePrefix + "__" + portp->shortName());
                 portp->user2p(newvscp);
-                if (!inlineTask)
+                if (!inlineTask) {
                     pinp->replaceWith(new AstVarRef{newvscp->fileline(), newvscp, VAccess::WRITE});
+                    pushDeletep(pinp);  // Cloned by connectPortMakeOutAssign
+                }
                 AstAssign* const postassp = connectPortMakeOutAssign(portp, pinp, newvscp, false);
                 // Put assignment BEHIND of all other statements
                 beginp->addNext(postassp);

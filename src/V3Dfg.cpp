@@ -345,10 +345,7 @@ DfgVertex::DfgVertex(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* 
     dfg.addVertex(*this);
 }
 
-DfgVertex::~DfgVertex() {
-    // TODO: It would be best to intern these via AstTypeTable to save the effort
-    if (VN_IS(m_dtypep, UnpackArrayDType)) VL_DO_DANGLING(delete m_dtypep, m_dtypep);
-}
+DfgVertex::~DfgVertex() {}
 
 bool DfgVertex::selfEquals(const DfgVertex& that) const { return true; }
 

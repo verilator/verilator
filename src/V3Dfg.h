@@ -330,10 +330,11 @@ public:
         UDEBUGONLY(UASSERT_OBJ(isSupportedDType(nodep->dtypep()), nodep, "Unsupported dtype"););
         // For simplicity, all packed types are represented with a fixed type
         if (AstUnpackArrayDType* const typep = VN_CAST(nodep->dtypep(), UnpackArrayDType)) {
-            // TODO: these need interning via AstTypeTable otherwise they leak
-            return new AstUnpackArrayDType{typep->fileline(),
-                                           dtypeForWidth(typep->subDTypep()->width()),
-                                           typep->rangep()->cloneTree(false)};
+            AstNodeDType* const dtypep = new AstUnpackArrayDType{
+                typep->fileline(), dtypeForWidth(typep->subDTypep()->width()),
+                typep->rangep()->cloneTree(false)};
+            v3Global.rootp()->typeTablep()->addTypesp(dtypep);
+            return dtypep;
         }
         return dtypeForWidth(nodep->width());
     }

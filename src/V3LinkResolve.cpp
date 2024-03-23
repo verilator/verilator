@@ -80,7 +80,8 @@ class LinkResolveVisitor final : public VNVisitor {
         // Initial assignments under function/tasks can just be simple
         // assignments without the initial
         if (m_ftaskp) {
-            VL_DO_DANGLING(nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext()), nodep);
+            nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     void visit(AstNodeCoverOrAssert* nodep) override {

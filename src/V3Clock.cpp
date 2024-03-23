@@ -53,6 +53,7 @@ class ConvertWriteRefsToRead final : public VNVisitor {
         if (nodep->access().isWriteOnly()) {
             nodep->replaceWith(
                 new AstVarRef{nodep->fileline(), nodep->varScopep(), VAccess::READ});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
 

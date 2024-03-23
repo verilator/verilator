@@ -3515,6 +3515,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (AstClassRefDType* classRefp = VN_CAST(refp->skipRefp(), ClassRefDType)) {
                     // Resolved to a class reference.
                     refp->replaceWith(classRefp->cloneTree(false));
+                    VL_DO_DANGLING(pushDeletep(refp), refp);
                 } else {
                     // Unable to resolve the ref type to a class reference.
                     // Get the value of type parameter passed to the class instance,

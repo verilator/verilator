@@ -1275,7 +1275,7 @@ public:
                 if (SiblingMC* const smcp = mergeCanp->toSiblingMC()) {
                     smcp->unlinkA();
                     smcp->unlinkB();
-                    delete smcp;
+                    VL_DO_DANGLING(delete smcp, smcp);
                 }
                 continue;
             }
@@ -1305,6 +1305,16 @@ public:
 
             // Finally merge this candidate.
             contract(mergeCanp);
+        }
+
+        // Free remaining SiblingMCs
+        while (MergeCandidate* const mergeCanp = m_sb.best()) {
+            m_sb.remove(mergeCanp);
+            if (SiblingMC* const smcp = mergeCanp->toSiblingMC()) {
+                smcp->unlinkA();
+                smcp->unlinkB();
+                VL_DO_DANGLING(delete smcp, smcp);
+            }
         }
     }
 
@@ -1426,7 +1436,7 @@ private:
             // Remove the siblingMC
             mergeSibsp->unlinkA();
             mergeSibsp->unlinkB();
-            VL_DO_DANGLING(delete mergeEdgep, mergeEdgep);
+            VL_DO_DANGLING(delete mergeSibsp, mergeSibsp);
         }
 
         // This also updates cost and stepCost on recipientp

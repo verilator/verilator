@@ -294,6 +294,7 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
             vtxp->forEachSource(addToWorkList);
             // Remove the unused vertex
             vtxp->unlinkDelete(dfg);
+            continue;
         }
 
         // We can only eliminate DfgVarPacked vertices at the moment

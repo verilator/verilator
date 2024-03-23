@@ -5038,7 +5038,7 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         //
         //                      // IEEE: expression_or_dist - here to avoid reduce problems
         //                      // "expr yDIST '{' dist_list '}'"
-        |       ~l~expr yDIST '{' dist_list '}'         { $$ = $1; }
+        |       ~l~expr yDIST '{' dist_list '}'         { $$ = $1; $4->deleteTree(); }
         ;
 
 fexpr<nodeExprp>:                   // For use as first part of statement (disambiguates <=)
