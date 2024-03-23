@@ -195,10 +195,8 @@ class V3List final {
             VL_ATTR_ALWINLINE
             IteratorType& operator++() {
                 UDEBUGONLY(UASSERT(m_currp, "Pre-incrementing end of list iterator"););
-                T_Base* const prevp = m_currp;
                 m_currp = m_nextp;
-                // This compiles to a branchless cmove. At the end, m_nextp is invalid, that's ok.
-                m_nextp = toLinks(m_nextp ? m_nextp : prevp).m_nextp;
+                m_nextp = m_currp ? toLinks(m_currp).m_nextp : nullptr;
                 return *this;
             }
             VL_ATTR_ALWINLINE
