@@ -1655,7 +1655,8 @@ IData VL_SSCANF_INNX(int, const std::string& ld, const std::string& format, int 
                      ...) VL_MT_SAFE {
     va_list ap;
     va_start(ap, argc);
-    const IData got = _vl_vsscanf(nullptr, ld.length() * 8, nullptr, ld, format, ap);
+    const IData got
+        = _vl_vsscanf(nullptr, static_cast<int>(ld.length() * 8), nullptr, ld, format, ap);
     va_end(ap);
     return got;
 }
@@ -2457,7 +2458,8 @@ VerilatedContext::VerilatedContext()
     m_fdps.resize(31);
     std::fill(m_fdps.begin(), m_fdps.end(), static_cast<FILE*>(nullptr));
     m_fdFreeMct.resize(30);
-    for (std::size_t i = 0, id = 1; i < m_fdFreeMct.size(); ++i, ++id) m_fdFreeMct[i] = id;
+    IData id = 1;
+    for (std::size_t i = 0; i < m_fdFreeMct.size(); ++i, ++id) m_fdFreeMct[i] = id;
 }
 
 // Must declare here not in interface, as otherwise forward declarations not known
