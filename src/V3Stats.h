@@ -109,9 +109,14 @@ public:
     // Symbolic names for some statistics that are later read by summaryReport()
     static constexpr const char* STAT_CPP_CHARS = "Output, C++ bytes written";
     static constexpr const char* STAT_CPP_FILES = "Output, C++ files written";
+    static constexpr const char* STAT_CPUTIME = "CPU time, Total (sec)";
     static constexpr const char* STAT_MODEL_SIZE = "Size prediction, Model total (bytes)";
     static constexpr const char* STAT_SOURCE_CHARS = "Input, Verilog bytes read";
     static constexpr const char* STAT_SOURCE_MODULES = "Input, Verilog modules read";
+    static constexpr const char* STAT_WALLTIME = "Wall time, Total (sec)";
+    static constexpr const char* STAT_WALLTIME_BUILD = "Wall time, Build (sec)";
+    static constexpr const char* STAT_WALLTIME_CVT = "Wall time, Conversion (sec)";
+    static constexpr const char* STAT_WALLTIME_ELAB = "Wall time, Elaboration (sec)";
 
     static void addStat(const V3Statistic&);
     static void addStat(const string& stage, const string& name, double value,
@@ -126,6 +131,11 @@ public:
     static void addStatPerf(const string& name, double value) {
         addStat(V3Statistic{"*", name, value, 6, true, true});
     }
+    /// Return value of statistic, or zero if not found
+    static double getStatSum(const string& name);
+    static uint64_t getStatSumQ(const string& name) {
+        return static_cast<uint64_t>(getStatSum(name));
+    }
     /// Called each stage
     static void statsStage(const string& name);
     /// Called by the top level to collect statistics
@@ -135,6 +145,8 @@ public:
     static void statsReport();
     /// Called by debug dumps
     static void infoHeader(std::ofstream& os, const string& prefix);
+    /// Called for final build report
+    static void summaryReport();
 };
 
 #endif  // Guard

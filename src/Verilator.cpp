@@ -136,6 +136,8 @@ static void emitXmlOrJson() VL_MT_DISABLED {
 static void process() {
     {
         const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
+        VlOs::DeltaWallTime elabWallTime{true};
+
         // Sort modules by level so later algorithms don't need to care
         V3LinkLevel::modSortByLevel();
         V3Error::abortIfErrors();
@@ -208,6 +210,10 @@ static void process() {
         V3WidthCommit::widthCommit(v3Global.rootp());
         v3Global.assertDTypesResolved(true);
         v3Global.widthMinUsage(VWidthMinUsage::MATCHES_WIDTH);
+
+        // End of elaboration
+        V3Stats::addStatPerf(V3Stats::STAT_WALLTIME_ELAB, elabWallTime.deltaTime());
+        VlOs::DeltaWallTime cvtWallTime{true};
 
         // Coverage insertion
         //    Before we do dead code elimination and inlining, or we'll lose it.
@@ -582,6 +588,9 @@ static void process() {
         } else if (v3Global.opt.dpiHdrOnly()) {
             V3EmitC::emitcSyms(true);
         }
+
+        // End of conversion
+        V3Stats::addStatPerf(V3Stats::STAT_WALLTIME_CVT, cvtWallTime.deltaTime());
     }
     if (!v3Global.opt.serializeOnly()
         && !v3Global.opt.dpiHdrOnly()) {  // Unfortunately we have some lint checks in emitcImp.
@@ -778,11 +787,14 @@ static void execBuildJob() {
     UASSERT(v3Global.opt.build(), "--build is not specified.");
     UASSERT(v3Global.opt.gmake(), "--build requires GNU Make.");
     UASSERT(!v3Global.opt.cmake(), "--build cannot use CMake.");
+    VlOs::DeltaWallTime buildWallTime{true};
     UINFO(1, "Start Build\n");
 
     const string cmdStr = buildMakeCmd(v3Global.opt.prefix() + ".mk", "");
     V3Os::filesystemFlushBuildDir(v3Global.opt.hierTopDataDir());
     const int exit_code = V3Os::system(cmdStr);
+    V3Stats::addStatPerf(V3Stats::STAT_WALLTIME_BUILD, buildWallTime.deltaTime());
+
     if (exit_code != 0) {
         v3error(cmdStr << " exited with " << exit_code << std::endl);
         std::exit(exit_code);
@@ -807,6 +819,8 @@ static void execHierVerilation() {
 int main(int argc, char** argv) {
     // General initialization
     std::ios::sync_with_stdio();
+    VlOs::DeltaWallTime wallTimeTotal{true};
+    VlOs::DeltaCpuTime cpuTimeTotal{true};
 
     time_t randseed;
     time(&randseed);
@@ -853,6 +867,12 @@ int main(int argc, char** argv) {
         V3PreShell::shutdown();
         v3Global.shutdown();
         FileLine::deleteAllRemaining();
+    }
+
+    if (!v3Global.opt.quietStats() && !v3Global.opt.preprocOnly()) {
+        V3Stats::addStatPerf(V3Stats::STAT_CPUTIME, cpuTimeTotal.deltaTime());
+        V3Stats::addStatPerf(V3Stats::STAT_WALLTIME, wallTimeTotal.deltaTime());
+        V3Stats::summaryReport();
     }
 
     UINFO(1, "Done, Exiting...\n");

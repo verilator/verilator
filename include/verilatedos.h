@@ -343,6 +343,7 @@ extern "C" void __gcov_dump();
 #include <cstdint>
 #include <cinttypes>
 #include <cmath>
+#include <ctime>
 
 #ifndef VL_NO_LEGACY
 using vluint8_t = uint8_t;  ///< 8-bit unsigned type (backward compatibility)
@@ -609,6 +610,45 @@ static inline double VL_ROUND(double n) {
 // Address zero can cause compiler problems
 #define VL_OFFSETOF(type, field) \
     (reinterpret_cast<size_t>(&(reinterpret_cast<type*>(0x10000000)->field)) - 0x10000000)
+
+//=========================================================================
+// Time and performance
+
+namespace VlOs {
+
+extern uint64_t memUsageBytes();  ///< Return memory usage in bytes, or 0 if not implemented
+
+// Internal: Record CPU time, starting point on construction, and current delta from that
+class DeltaCpuTime final {
+    double m_start{};  // Time constructed at
+    static double gettime();
+
+public:
+    // Construct, and if startit is true, start() timer
+    explicit DeltaCpuTime(bool startit) {
+        if (startit) start();
+    }
+    void start() { m_start = gettime(); }  // Start timer; record current time
+    double deltaTime() const {  // Return time between now and start()
+        return (m_start == 0.0) ? 0.0 : gettime() - m_start;
+    }
+};
+// Internal: Record wall time, starting point on construction, and current delta from that
+class DeltaWallTime final {
+    double m_start{};  // Time constructed at
+    static double gettime();
+
+public:
+    // Construct, and if startit is true, start() timer
+    explicit DeltaWallTime(bool startit) {
+        if (startit) start();
+    }
+    void start() { m_start = gettime(); }  // Start timer; record current time
+    double deltaTime() const {  // Return time between now and start()
+        return (m_start == 0.0) ? 0.0 : gettime() - m_start;
+    }
+};
+}  //namespace VlOs
 
 //=========================================================================
 // Conversions

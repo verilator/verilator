@@ -110,6 +110,10 @@ private:
             puts("\n");
         }
 
+        puts("// Print statistical summary report\n");
+        puts("contextp->printStatsSummary();\n");
+        puts("\n");
+
         puts("return 0;\n");
         puts("}\n");
 

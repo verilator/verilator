@@ -1163,10 +1163,19 @@ Summary:
    Overwrites the given parameter(s) of the top-level module. See
    :vlopt:`-G <-G<name>>` for a detailed description.
 
+.. option:: --quiet
+
+   Alias for :vlopt:`--quiet-exit` :vlopt:`--quiet-stats`.
+
 .. option:: --quiet-exit
 
    When exiting due to an error, do not display the "Exiting due to Errors"
    nor "Command Failed" messages.
+
+.. option:: --quiet-stats
+
+   Disable printing the Verilation statistics report, see :ref:`Verilation
+   Summary Report`.
 
 .. option:: --relative-includes
 
