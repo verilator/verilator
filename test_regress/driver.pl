@@ -501,7 +501,7 @@ sub report {
     my $sum = ($self->{fail_cnt} && "FAILED"
                || $self->{skip_cnt} && "PASSED w/SKIPS"
                || "PASSED");
-    $fh->print("TESTS DONE, $sum: " . $self->sprint_summary . "\n");
+    $fh->print("==TESTS DONE, $sum: " . $self->sprint_summary . "\n");
 }
 
 sub print_summary {

@@ -41,10 +41,10 @@ Verilator 5.023 devel
 * Fix object assignment from conditionals (#4968).
 * Fix GCC14 warnings on template specialization syntax (#4974) (#4975). [Nolan Poe]
 * Fix unpacked structure upper bit cleaning (#4978).
-* Fix tests on macOS (#4984) (#4985). [Kevin Nygaard]
+* Fix tests on MacOS (#4984) (#4985). [Kevin Nygaard]
 * Fix `--prof-exec` predicted time values (#4988). [Geza Lore]
 * Fix class type as an associative array parameter (#4997).
-* Fix inout ports of unpacked stuct type (#5000). [Ryszard Rozak, Antmicro Ltd.]
+* Fix inout ports of unpacked struct type (#5000). [Ryszard Rozak, Antmicro Ltd.]
 * Fix `unique {}` constraints missing semicolon (#5001)
 * Fix preprocessor to respect strings in joins (#5007)
 
