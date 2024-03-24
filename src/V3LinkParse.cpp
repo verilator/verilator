@@ -23,6 +23,7 @@
 #include "V3LinkParse.h"
 
 #include "V3Config.h"
+#include "V3Stats.h"
 
 #include <set>
 #include <vector>
@@ -62,6 +63,7 @@ class LinkParseVisitor final : public VNVisitor {
     int m_beginDepth = 0;  // How many begin blocks above current node within current AstNodeModule
     VLifetime m_lifetime = VLifetime::STATIC;  // Propagating lifetime
     bool m_insideLoop = false;  // True if the node is inside a loop
+    VDouble0 m_statModules;  // Number of modules seen
 
     // METHODS
     void cleanFileline(AstNode* nodep) {
@@ -620,6 +622,7 @@ class LinkParseVisitor final : public VNVisitor {
     }
     void visit(AstNodeModule* nodep) override {
         V3Config::applyModule(nodep);
+        ++m_statModules;
 
         VL_RESTORER(m_modp);
         VL_RESTORER(m_anonUdpId);
@@ -915,7 +918,9 @@ public:
         : m_stdPackagep{rootp->stdPackagep()} {
         iterate(rootp);
     }
-    ~LinkParseVisitor() override = default;
+    ~LinkParseVisitor() override {
+        V3Stats::addStatSum(V3Stats::STAT_SOURCE_MODULES, m_statModules);
+    }
 };
 
 //######################################################################

@@ -104,6 +104,11 @@ public:
 
 class V3Stats final {
 public:
+    // Symbolic names for some statistics that are later read by summaryReport()
+    static constexpr const char* STAT_MODEL_SIZE = "Size prediction, Model total (bytes)";
+    static constexpr const char* STAT_SOURCE_CHARS = "Input, Verilog bytes read";
+    static constexpr const char* STAT_SOURCE_MODULES = "Input, Verilog modules read";
+
     static void addStat(const V3Statistic&);
     static void addStat(const string& stage, const string& name, double value,
                         unsigned precision = 0) {

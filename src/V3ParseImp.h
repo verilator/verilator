@@ -152,6 +152,7 @@ class V3ParseImp final {
     std::deque<V3Number*> m_numberps;  // Created numbers for later cleanup
     std::deque<FileLine> m_lexLintState;  // Current lint state for save/restore
     std::deque<string> m_ppBuffers;  // Preprocessor->lex buffer of characters to process
+    size_t m_ppBytes = 0;  // Preprocessor->lex bytes transferred
 
     AstNode* m_tagNodep = nullptr;  // Points to the node to set to m_tag or nullptr to not set.
     VTimescale m_timeLastUnit;  // Last `timescale's unit
@@ -202,6 +203,7 @@ public:
 
     void ppPushText(const string& text) {
         m_ppBuffers.push_back(text);
+        m_ppBytes += text.length();
         if (lexFileline()->contentp()) lexFileline()->contentp()->pushText(text);
     }
     size_t ppInputToLex(char* buf, size_t max_size) VL_MT_DISABLED;
