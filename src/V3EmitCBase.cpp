@@ -67,6 +67,7 @@ AstCFile* EmitCBaseVisitorConst::createCFile(const string& filename, bool slow,
     AstCFile* const cfilep = new AstCFile{v3Global.rootp()->fileline(), filename};
     cfilep->slow(slow);
     cfilep->source(source);
+    if (source) V3Stats::addStatSum(V3Stats::STAT_CPP_FILES, 1);
     return cfilep;
 }
 
