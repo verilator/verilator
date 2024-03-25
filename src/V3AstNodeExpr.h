@@ -593,7 +593,6 @@ public:
     AstAssertCtlCheck(FileLine* fl, bool isControlled);
     ASTGEN_MEMBERS_AstAssertCtlCheck;
     bool hasDType() const override { return false; }
-    string name() const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }

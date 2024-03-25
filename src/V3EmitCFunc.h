@@ -756,7 +756,7 @@ public:
     void visit(AstAssertCtlCheck* nodep) override {
         if (nodep->controlled()) {
             puts("vlSymsp->_vm_contextp__->assertOnFor(\"");
-            puts(nodep->name());
+            puts(nodep->scopep()->scopePrettySymName());
             puts("\")");
         } else {
             puts("vlSymsp->_vm_contextp__->assertOn()");

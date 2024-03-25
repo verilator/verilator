@@ -1182,7 +1182,6 @@ AstAssertCtlCheck::AstAssertCtlCheck(FileLine* fl, bool isControlled)
     , m_controlled(isControlled) {
     this->scopep(new AstScopeName{fl, true});
 }
-string AstAssertCtlCheck::name() const { return scopep()->scopePrettySymName(); }
 
 AstConstPool::AstConstPool(FileLine* fl)
     : ASTGEN_SUPER_ConstPool(fl)
