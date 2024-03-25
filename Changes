@@ -13,6 +13,7 @@ Verilator 5.023 devel
 
 **Major:**
 
+* Add printing summary reports, use `--quiet` or `+verilator+quiet` to suppress (#4909).
 * Support 1800-2023 keywords, and parsing with UNDEFINED warnings.
 * Support 1800-2023 preprocessor ifdef expressions.
 * Support 1800-2023 DPI headers, svGetTime/svgGetTimeUnit/svGetTimePrecision methods.

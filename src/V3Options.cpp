@@ -1415,7 +1415,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_public_params = flag;
         v3Global.dpi(true);
     });
+    DECL_OPTION("-quiet", CbOnOff, [this](bool flag) {
+        m_quietExit = flag;
+        m_quietStats = flag;
+    });
     DECL_OPTION("-quiet-exit", OnOff, &m_quietExit);
+    DECL_OPTION("-quiet-stats", OnOff, &m_quietStats);
 
     DECL_OPTION("-relative-includes", OnOff, &m_relativeIncludes);
     DECL_OPTION("-reloop-limit", CbVal, [this, fl](const char* valp) {

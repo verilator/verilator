@@ -12,6 +12,60 @@ Verilated model's executable.  For the runtime arguments to a simulated
 model, see :ref:`Simulation Runtime Arguments`.
 
 
+.. _Simulation Summary Report:
+
+Simulation Summary Report
+=========================
+
+When simulation finishes, it will print a report to stdout summarizing the
+simulation. This requires the model being Verilated with :vlopt:`--main`.
+The report may be disabled with :vlopt:`+verilator+quiet`.
+
+For example:
+
+.. code-block::
+
+   - S i m u l a t i o n   R e p o r t: Verilator ...
+   - Verilator: End at simtime 123 ns; walltime 1234.001 s; speed 123 ns/s
+   - Verilator: cpu 22.001 s on 4 threads; alloced 123 MB
+
+The information in this report is:
+
+.. describe:: "Verilator ..."
+
+   Program version.
+
+.. describe:: "End at simtime 123 ns"
+
+   Verilog $time at which the model finished or stopped.
+
+.. describe:: "walltime 1234.001 s"
+
+   Real elapsed wall time in seconds.
+
+.. describe:: "speed 123.1 ns/s"
+
+   Simulated time (if non-zero) divided by wall time. e.g. `123 ns/s` means
+   123 simulated nanoseconds took 1 second of wall time; for a model with
+   only a 1 GHz clock that would be equivalent to 123.1 cycles per
+   second. The units are automatically selected to give a number between 1
+   and 1000.  The wall time includes initialization, initial and final
+   process blocks, so indicates a slower speed than if the model had a
+   longer runtime.
+
+.. describe:: "cpu 22 s"
+
+   CPU time used total across all CPU threads in seconds.
+
+.. describe:: "4 threads"
+
+   Number of simultaneous threads used.
+
+.. describe:: "alloced 123 MB"
+
+   Total memory used during simulation in megabytes.
+
+
 .. _Benchmarking & Optimization:
 
 Benchmarking & Optimization

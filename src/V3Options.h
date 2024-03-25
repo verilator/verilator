@@ -271,8 +271,9 @@ private:
     bool m_publicFlatRW = false;    // main switch: --public-flat-rw
     bool m_public_params = false;   // main switch: --public-params
     bool m_quietExit = false;       // main switch: --quiet-exit
-    bool m_relativeIncludes = false; // main switch: --relative-includes
-    bool m_reportUnoptflat = false; // main switch: --report-unoptflat
+    bool m_quietStats = false;      // main switch: --quiet-stats
+    bool m_relativeIncludes = false;  // main switch: --relative-includes
+    bool m_reportUnoptflat = false;  // main switch: --report-unoptflat
     bool m_savable = false;         // main switch: --savable
     bool m_std = true;              // main switch: --std
     bool m_structsPacked = false;   // main switch: --structs-packed
@@ -524,6 +525,7 @@ public:
     bool lintOnly() const VL_MT_SAFE { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
     bool quietExit() const VL_MT_SAFE { return m_quietExit; }
+    bool quietStats() const VL_MT_SAFE { return m_quietStats; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
     bool verilate() const { return m_verilate; }
     bool vpi() const { return m_vpi; }

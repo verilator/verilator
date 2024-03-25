@@ -61,7 +61,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 # include <chrono>
 # include <direct.h>  // mkdir
 # include <io.h>  // open, read, write, close
-# include <psapi.h>   // GetProcessMemoryInfo
 # include <thread>
 // These macros taken from gdbsupport/gdb_wait.h in binutils-gdb
 # ifndef WIFEXITED
@@ -79,6 +78,9 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 # include <unistd.h>  // usleep
 #endif
 // clang-format on
+
+#define VL_ALLOW_VERILATEDOS_C
+#include "verilatedos_c.h"
 
 //######################################################################
 // Environment
@@ -397,7 +399,7 @@ uint64_t V3Os::timeUsecs() {
 
     FILETIME ft;  // contains number of 0.1us intervals since the beginning of 1601 UTC.
     GetSystemTimeAsFileTime(&ft);
-    uint64_t us
+    const uint64_t us
         = ((static_cast<uint64_t>(ft.dwHighDateTime) << 32) + ft.dwLowDateTime + 5ULL) / 10ULL;
     return us - EPOCH_DIFFERENCE_USECS;
 #else
@@ -405,30 +407,6 @@ uint64_t V3Os::timeUsecs() {
     timeval tv;
     if (gettimeofday(&tv, nullptr) < 0) return 0;
     return static_cast<uint64_t>(tv.tv_sec) * 1000000 + tv.tv_usec;
-#endif
-}
-
-uint64_t V3Os::memUsageBytes() {
-#if defined(_WIN32) || defined(__MINGW32__)
-    const HANDLE process = GetCurrentProcess();
-    PROCESS_MEMORY_COUNTERS pmc;
-    if (GetProcessMemoryInfo(process, &pmc, sizeof(pmc))) {
-        // The best we can do using simple Windows APIs is to get the size of the working set.
-        return pmc.WorkingSetSize;
-    }
-    return 0;
-#else
-    // Highly unportable. Sorry
-    const char* const statmFilename = "/proc/self/statm";
-    FILE* const fp = fopen(statmFilename, "r");
-    if (!fp) return 0;
-    uint64_t size, resident, share, text, lib, data, dt;  // All in pages
-    const int items = fscanf(
-        fp, "%" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64,
-        &size, &resident, &share, &text, &lib, &data, &dt);
-    fclose(fp);
-    if (VL_UNCOVERABLE(7 != items)) return 0;
-    return (text + data) * getpagesize();
 #endif
 }
 

@@ -58,6 +58,7 @@ if (! GetOptions(
           # Switches
           "gdb!"             => \$opt_gdb,
           "gdbbt!"           => \$opt_gdbbt,
+          "quiet!"           => \$opt_quiet_exit,  # As -quiet implies -quiet-exit
           "quiet-exit!"      => \$opt_quiet_exit,
           "rr!"              => \$opt_rr,
           "unlimited-stack!" => \$opt_unlimited_stack,
@@ -423,7 +424,9 @@ detailed descriptions of these arguments.
     --public-params             Mark all parameters as public_flat
     --public-flat-rw            Mark all variables, etc as public_flat_rw
      -pvalue+<name>=<value>     Overwrite toplevel parameter
+    --quiet                     Minimize additional printing
     --quiet-exit                Don't print the command on failure
+    --quiet-stats               Don't print statistics
     --relative-includes         Resolve includes relative to current file
     --reloop-limit              Minimum iterations for forming loops
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
@@ -515,6 +518,7 @@ description of these arguments.
      +verilator+prof+exec+start+<value>    Set execution profile starting point
      +verilator+prof+exec+window+<value>   Set execution profile duration
      +verilator+prof+vlt+file+<filename>   Set PGO profile filename
+     +verilator+quiet                      Minimize additional printing
      +verilator+rand+reset+<value>         Set random reset technique
      +verilator+seed+<value>               Set random seed
      +verilator+V                          Show verbose version and config
