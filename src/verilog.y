@@ -4225,7 +4225,7 @@ system_t_call<nodeStmtp>:       // IEEE: system_tf_call (as task)
         //
         |       yD_ASSERTKILL parenE                    { $$ = new AstAssertCtl{$<fl>1, VAssertCtlType::OFF}; }
         |       yD_ASSERTOFF parenE                     { $$ = new AstAssertCtl{$<fl>1, VAssertCtlType::OFF}; }
-        |       yD_ASSERTON parenE                     { $$ = new AstAssertCtl{$<fl>1, VAssertCtlType::ON}; }
+        |       yD_ASSERTON parenE                      { $$ = new AstAssertCtl{$<fl>1, VAssertCtlType::ON}; }
         //
         |       yD_MONITOROFF parenE                    { $$ = new AstMonitorOff{$1, true}; }
         |       yD_MONITORON parenE                     { $$ = new AstMonitorOff{$1, false}; }
