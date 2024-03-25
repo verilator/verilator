@@ -22,7 +22,6 @@
 #include "V3Graph.h"
 #include "V3Stats.h"
 
-#include <list>
 #include <type_traits>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -527,6 +526,7 @@ class AssertVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstAssert* nodep) override {
+        UINFO(1, nodep << " " << nodep->fileline() << endl);
         iterateChildren(nodep);
         newPslAssertion(nodep, nodep->failsp());
     }
@@ -635,7 +635,7 @@ class AssertCtlVisitor final : public VNVisitor {
     // STATE
     V3Graph m_assertGraph;
     AstNode* m_parentp = nullptr;
-    std::list<string> m_hierarchicalName;
+    string m_hierarchicalName{};
     bool m_moduleInCell = false;
 
     static void addFlags(AstNode* const nodep, ModuleFlagType flags) {
@@ -772,20 +772,11 @@ class AssertCtlVisitor final : public VNVisitor {
         }
     }
 
-    string concatNameLevels() {
-        UASSERT(!m_hierarchicalName.empty(),
-                "Hierarchical name should be populated in AstModule visitor!");
-        string name{};
-        for (const string& level : m_hierarchicalName) { name += level + "."; }
-        name.pop_back();  // remove last dot
-        return name;
-    }
-
     // VISITORS
     void visit(AstModule* nodep) override {
         // ignore non-top modules not traversed through cell references
         if (!m_moduleInCell && nodep->level() > 2) return;
-        if (nodep->level() <= 2) m_hierarchicalName.emplace_back(nodep->name());
+        if (nodep->level() <= 2) m_hierarchicalName = nodep->name();
         new V3GraphEdge{&m_assertGraph, getDepVtx(m_parentp), getDepVtx(nodep), 1};
 
         VL_RESTORER(m_parentp);
@@ -800,7 +791,7 @@ class AssertCtlVisitor final : public VNVisitor {
 
         m_moduleInCell = true;
         if (AstModule* const modp = VN_CAST(nodep->modp(), Module)) {
-            m_hierarchicalName.emplace_back(nodep->name());
+            m_hierarchicalName += "." + nodep->name();
             iterate(modp);
         }
     }
@@ -808,21 +799,21 @@ class AssertCtlVisitor final : public VNVisitor {
         VL_RESTORER(m_hierarchicalName);
 
         // handle named blocks
-        if (!nodep->name().empty()) m_hierarchicalName.emplace_back(nodep->name());
+        if (!nodep->name().empty()) m_hierarchicalName += "." + nodep->name();
         iterateChildren(nodep);
     }
     void visit(AstTask* nodep) override {
         VL_RESTORER(m_hierarchicalName);
 
         // handle asserts under functions
-        if (!nodep->name().empty()) m_hierarchicalName.emplace_back(nodep->name());
+        if (!nodep->name().empty()) m_hierarchicalName += "." + nodep->name();
         iterateChildren(nodep);
     }
     void visit(AstAssert* nodep) override {
         addFlags(m_parentp, M_HAS_ASSERT);
 
         AstAssertInstance* const instancep
-            = new AstAssertInstance{nodep->fileline(), concatNameLevels()};
+            = new AstAssertInstance{nodep->fileline(), m_hierarchicalName};
 
         new V3GraphEdge{&m_assertGraph, getDepVtx(m_parentp), getDepVtx(instancep), 1};
         new V3GraphEdge{&m_assertGraph, getDepVtx(instancep), getDepVtx(nodep), 1};
@@ -831,7 +822,7 @@ class AssertCtlVisitor final : public VNVisitor {
         if (nodep->user3SetOnce()) return;
         addFlags(m_parentp, M_HAS_ASSERTCTL);
 
-        nodep->name(concatNameLevels());
+        nodep->name(m_hierarchicalName);
         if (const AstConst* const controlTypep = VN_CAST(nodep->controlTypep(), Const))
             nodep->ctlType(controlTypep->num());
 
