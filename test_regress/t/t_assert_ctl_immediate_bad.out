@@ -1,25 +1,14 @@
 [0] %Error: t_assert_ctl_immediate_bad.v:106: Assertion failed in top.t.module_with_assert: 'assert' failed.
 -Info: t/t_assert_ctl_immediate_bad.v:106: Verilog $stop, ignored due to +verilator+error+limit
 [0] %Error: t_assert_ctl_immediate_bad.v:106: Assertion failed in top.t.empty_module_with_child_assert.module_with_assert: 'assert' failed.
--Info: t/t_assert_ctl_immediate_bad.v:106: Verilog $stop, ignored due to +verilator+error+limit
 [0] %Error: t_assert_ctl_immediate_bad.v:73: Assertion failed in top.t.multiple_asserts: 'assert' failed.
--Info: t/t_assert_ctl_immediate_bad.v:73: Verilog $stop, ignored due to +verilator+error+limit
 [0] %Error: t_assert_ctl_immediate_bad.v:74: Assertion failed in top.t.multiple_asserts: 'assert' failed.
--Info: t/t_assert_ctl_immediate_bad.v:74: Verilog $stop, ignored due to +verilator+error+limit
 [0] %Error: t_assert_ctl_immediate_bad.v:75: Assertion failed in top.t.multiple_asserts: 'assert' failed.
--Info: t/t_assert_ctl_immediate_bad.v:75: Verilog $stop, ignored due to +verilator+error+limit
 [0] %Error: t_assert_ctl_immediate_bad.v:141: Assertion failed in top.t.nested_multiple_assertctl_instances: 'assert' failed.
--Info: t/t_assert_ctl_immediate_bad.v:141: Verilog $stop, ignored due to +verilator+error+limit
 [0] %Error: t_assert_ctl_immediate_bad.v:181: Assertion failed in top.t.assert_function: 'assert' failed.
--Info: t/t_assert_ctl_immediate_bad.v:181: Verilog $stop, ignored due to +verilator+error+limit
 [0] %Error: t_assert_ctl_immediate_bad.v:187: Assertion failed in top.t.assert_function: 'assert' failed.
--Info: t/t_assert_ctl_immediate_bad.v:187: Verilog $stop, ignored due to +verilator+error+limit
 [0] %Error: t_assert_ctl_immediate_bad.v:174: Assertion failed in top.t.assert_function.f_assert: 'assert' failed.
--Info: t/t_assert_ctl_immediate_bad.v:174: Verilog $stop, ignored due to +verilator+error+limit
 [0] %Error: t_assert_ctl_immediate_bad.v:174: Assertion failed in top.t.assert_function.f_assert: 'assert' failed.
--Info: t/t_assert_ctl_immediate_bad.v:174: Verilog $stop, ignored due to +verilator+error+limit
 [10] %Error: t_assert_ctl_immediate_bad.v:57: Assertion failed in top.t.clk_module_with_assert: 'assert' failed.
--Info: t/t_assert_ctl_immediate_bad.v:57: Verilog $stop, ignored due to +verilator+error+limit
 [15] %Error: t_assert_ctl_immediate_bad.v:34: Assertion failed in top.t: 'assert' failed.
--Info: t/t_assert_ctl_immediate_bad.v:34: Verilog $stop, ignored due to +verilator+error+limit
 *-* All Finished *-*
