@@ -217,8 +217,8 @@ private:
         vtxp->user(1);  // Recursed
         UINFO(9, "  Mark tri " << level << "  " << vtxp << endl);
         if (!vtxp->varp()) {  // not a var where we stop the recursion
-            for (V3GraphEdge* edgep = vtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                TristateVertex* const vvertexp = static_cast<TristateVertex*>(edgep->top());
+            for (V3GraphEdge& edge : vtxp->outEdges()) {
+                TristateVertex* const vvertexp = static_cast<TristateVertex*>(edge.top());
                 // Doesn't hurt to not check if already set, but by doing so when we
                 // print out the debug messages, we'll see this node at level 0 instead.
                 if (!vvertexp->isTristate()) {
@@ -229,8 +229,8 @@ private:
         } else {
             // A variable is tristated.  Find all of the LHS VARREFs that
             // drive this signal now need tristate drivers
-            for (V3GraphEdge* edgep = vtxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                TristateVertex* const vvertexp = static_cast<TristateVertex*>(edgep->fromp());
+            for (V3GraphEdge& edge : vtxp->inEdges()) {
+                TristateVertex* const vvertexp = static_cast<TristateVertex*>(edge.fromp());
                 if (const AstVarRef* const refp = VN_CAST(vvertexp->nodep(), VarRef)) {
                     if (refp->access().isWriteOrRW()
                         // Doesn't hurt to not check if already set, but by doing so when we
@@ -254,8 +254,8 @@ private:
         vtxp->user(3);  // Recursed
         UINFO(9, "  Mark feedstri " << level << "  " << vtxp << endl);
         if (!vtxp->varp()) {  // not a var where we stop the recursion
-            for (V3GraphEdge* edgep = vtxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                TristateVertex* const vvertexp = static_cast<TristateVertex*>(edgep->fromp());
+            for (V3GraphEdge& edge : vtxp->inEdges()) {
+                TristateVertex* const vvertexp = static_cast<TristateVertex*>(edge.fromp());
                 // Doesn't hurt to not check if already set, but by doing so when we
                 // print out the debug messages, we'll see this node at level 0 instead.
                 if (!vvertexp->feedsTri()) {
@@ -270,13 +270,13 @@ public:
     // METHODS
     bool empty() const { return m_graph.empty(); }
     void clear() {
-        for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            const TristateVertex* const vvertexp = static_cast<TristateVertex*>(itp);
-            if (vvertexp->isTristate() && !vvertexp->processed()) {
+        for (V3GraphVertex& vtx : m_graph.vertices()) {
+            const TristateVertex& vvertex = static_cast<TristateVertex&>(vtx);
+            if (vvertex.isTristate() && !vvertex.processed()) {
                 // Not v3errorSrc as no reason to stop the world
-                vvertexp->nodep()->v3error("Unsupported tristate construct"
-                                           " (in graph; not converted): "
-                                           << vvertexp->nodep()->prettyTypeName());
+                vvertex.nodep()->v3error("Unsupported tristate construct"
+                                         " (in graph; not converted): "
+                                         << vvertex.nodep()->prettyTypeName());
             }
         }
         m_graph.clear();
@@ -284,11 +284,11 @@ public:
     }
     void graphWalk(AstNodeModule* nodep) {
         UINFO(9, " Walking " << nodep << endl);
-        for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            graphWalkRecurseFwd(static_cast<TristateVertex*>(itp), 0);
+        for (V3GraphVertex& vtx : m_graph.vertices()) {
+            graphWalkRecurseFwd(static_cast<TristateVertex*>(&vtx), 0);
         }
-        for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            graphWalkRecurseBack(static_cast<TristateVertex*>(itp), 0);
+        for (V3GraphVertex& vtx : m_graph.vertices()) {
+            graphWalkRecurseBack(static_cast<TristateVertex*>(&vtx), 0);
         }
         if (dumpGraphLevel() >= 9) m_graph.dumpDotFilePrefixed("tri_pos__" + nodep->name());
     }
@@ -332,10 +332,10 @@ public:
     VarVec tristateVars() {
         // Return all tristate variables
         VarVec v;
-        for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp = itp->verticesNextp()) {
-            const TristateVertex* const vvertexp = static_cast<TristateVertex*>(itp);
-            if (vvertexp->isTristate()) {
-                if (AstVar* const nodep = VN_CAST(vvertexp->nodep(), Var)) v.push_back(nodep);
+        for (const V3GraphVertex& vtx : m_graph.vertices()) {
+            const TristateVertex& vvertex = static_cast<const TristateVertex&>(vtx);
+            if (vvertex.isTristate()) {
+                if (AstVar* const nodep = VN_CAST(vvertex.nodep(), Var)) v.push_back(nodep);
             }
         }
         return v;

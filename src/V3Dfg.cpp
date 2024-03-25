@@ -38,20 +38,21 @@ void DfgGraph::addGraph(DfgGraph& other) {
     m_size += other.m_size;
     other.m_size = 0;
 
-    const auto moveVertexList = [this](V3List<DfgVertex*>& src, V3List<DfgVertex*>& dst) {
-        if (DfgVertex* vtxp = src.begin()) {
-            vtxp->m_verticesEnt.moveAppend(src, dst, vtxp);
-            do {
-                vtxp->m_userCnt = 0;
-                vtxp->m_graphp = this;
-                vtxp = vtxp->verticesNext();
-            } while (vtxp);
-        }
-    };
-
-    moveVertexList(other.m_varVertices, m_varVertices);
-    moveVertexList(other.m_constVertices, m_constVertices);
-    moveVertexList(other.m_opVertices, m_opVertices);
+    for (DfgVertexVar& vtx : other.m_varVertices) {
+        vtx.m_userCnt = 0;
+        vtx.m_graphp = this;
+    }
+    m_varVertices.splice(m_varVertices.end(), other.m_varVertices);
+    for (DfgConst& vtx : other.m_constVertices) {
+        vtx.m_userCnt = 0;
+        vtx.m_graphp = this;
+    }
+    m_constVertices.splice(m_constVertices.end(), other.m_constVertices);
+    for (DfgVertex& vtx : other.m_opVertices) {
+        vtx.m_userCnt = 0;
+        vtx.m_graphp = this;
+    }
+    m_opVertices.splice(m_opVertices.end(), other.m_opVertices);
 }
 
 static const string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&vtx) + '"'; }

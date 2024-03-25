@@ -44,11 +44,11 @@ class DfgRegularize final {
     size_t m_nTmps = 0;  // Number of temporaries added to this graph - for variable names only
 
     // Return canonical variable that can be used to hold the value of this vertex
-    DfgVarPacked* getCanonicalVariable(DfgVertex* vtxp) {
+    DfgVarPacked* getCanonicalVariable(DfgVertex& vtx) {
         // First gather all existing variables fully written by this vertex
         std::vector<DfgVarPacked*> varVtxps;
-        vtxp->forEachSink([&](DfgVertex& vtx) {
-            if (DfgVarPacked* const varVtxp = vtx.cast<DfgVarPacked>()) {
+        vtx.forEachSink([&](DfgVertex& sink) {
+            if (DfgVarPacked* const varVtxp = sink.cast<DfgVarPacked>()) {
                 if (varVtxp->isDrivenFullyByDfg()) varVtxps.push_back(varVtxp);
             }
         });
@@ -79,9 +79,9 @@ class DfgRegularize final {
         ++m_ctx.m_temporariesIntroduced;
 
         // Add temporary AstVar to containing module
-        FileLine* const flp = vtxp->fileline();
+        FileLine* const flp = vtx.fileline();
         const std::string name = m_tmpNamePrefix + std::to_string(m_nTmps++);
-        AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, vtxp->dtypep()};
+        AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, vtx.dtypep()};
         m_dfg.modulep()->addStmtsp(varp);
 
         // Create and return a variable vertex for the temporary
@@ -94,27 +94,25 @@ class DfgRegularize final {
         , m_ctx{ctx} {
 
         // Ensure intermediate values used multiple times are written to variables
-        for (DfgVertex *vtxp = m_dfg.opVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-            nextp = vtxp->verticesNext();
-
+        for (DfgVertex& vtx : m_dfg.opVertices()) {
             // Operations without multiple sinks need no variables
-            if (!vtxp->hasMultipleSinks()) continue;
+            if (!vtx.hasMultipleSinks()) continue;
             // Array selects need no variables, they are just memory references
-            if (vtxp->is<DfgArraySel>()) continue;
+            if (vtx.is<DfgArraySel>()) continue;
 
             // This is an op which has multiple sinks. Ensure it is assigned to a variable.
-            DfgVarPacked* const varp = getCanonicalVariable(vtxp);
+            DfgVarPacked* const varp = getCanonicalVariable(vtx);
             if (varp->arity()) {
                 // Existing variable
                 FileLine* const flp = varp->driverFileLine(0);
                 varp->sourceEdge(0)->unlinkSource();
                 varp->resetSources();
-                vtxp->replaceWith(varp);
-                varp->addDriver(flp, 0, vtxp);
+                vtx.replaceWith(varp);
+                varp->addDriver(flp, 0, &vtx);
             } else {
                 // Temporary variable
-                vtxp->replaceWith(varp);
-                varp->addDriver(vtxp->fileline(), 0, vtxp);
+                vtx.replaceWith(varp);
+                varp->addDriver(vtx.fileline(), 0, &vtx);
             }
         }
     }

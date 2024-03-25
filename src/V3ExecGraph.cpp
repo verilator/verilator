@@ -119,8 +119,8 @@ private:
 
         // Find minimum cost MTask for scaling MTask node widths
         uint32_t minCost = UINT32_MAX;
-        for (const V3GraphVertex* vxp = graph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            if (const ExecMTask* const mtaskp = vxp->cast<const ExecMTask>()) {
+        for (const V3GraphVertex& vtx : graph.vertices()) {
+            if (const ExecMTask* const mtaskp = vtx.cast<const ExecMTask>()) {
                 minCost = minCost > mtaskp->cost() ? mtaskp->cost() : minCost;
             }
         }
@@ -142,17 +142,17 @@ private:
         };
 
         // Emit MTasks
-        for (const V3GraphVertex* vxp = graph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            if (const ExecMTask* const mtaskp = vxp->cast<const ExecMTask>()) emitMTask(mtaskp);
+        for (const V3GraphVertex& vtx : graph.vertices()) {
+            if (const ExecMTask* const mtaskp = vtx.cast<const ExecMTask>()) emitMTask(mtaskp);
         }
 
         // Emit MTask dependency edges
         *logp << "\n  // MTask dependencies\n";
-        for (const V3GraphVertex* vxp = graph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            if (const ExecMTask* const mtaskp = vxp->cast<const ExecMTask>()) {
-                for (V3GraphEdge* edgep = mtaskp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                    const V3GraphVertex* const top = edgep->top();
-                    *logp << "  " << vxp->name() << " -> " << top->name() << "\n";
+        for (const V3GraphVertex& vtx : graph.vertices()) {
+            if (const ExecMTask* const mtaskp = vtx.cast<const ExecMTask>()) {
+                for (const V3GraphEdge& edge : mtaskp->outEdges()) {
+                    const V3GraphVertex* const top = edge.top();
+                    *logp << "  " << vtx.name() << " -> " << top->name() << "\n";
                 }
             }
         }
@@ -173,8 +173,8 @@ public:
     uint32_t crossThreadDependencies(const ExecMTask* mtaskp) const {
         const uint32_t thisThreadId = threadId(mtaskp);
         uint32_t result = 0;
-        for (V3GraphEdge* edgep = mtaskp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-            const ExecMTask* const prevp = edgep->fromp()->as<ExecMTask>();
+        for (const V3GraphEdge& edge : mtaskp->inEdges()) {
+            const ExecMTask* const prevp = edge.fromp()->as<ExecMTask>();
             if (threadId(prevp) != thisThreadId) ++result;
         }
         return result;
@@ -261,8 +261,8 @@ class PackThreads final {
     }
 
     bool isReady(ThreadSchedule& schedule, const ExecMTask* mtaskp) {
-        for (V3GraphEdge* edgeInp = mtaskp->inBeginp(); edgeInp; edgeInp = edgeInp->inNextp()) {
-            const ExecMTask* const prevp = edgeInp->fromp()->as<const ExecMTask>();
+        for (const V3GraphEdge& edgeIn : mtaskp->inEdges()) {
+            const ExecMTask* const prevp = edgeIn.fromp()->as<const ExecMTask>();
             if (schedule.threadId(prevp) == ThreadSchedule::UNASSIGNED) {
                 // This predecessor is not assigned yet
                 return false;
@@ -272,7 +272,7 @@ class PackThreads final {
     }
 
     // Pack an MTasks from given graph into m_nThreads threads, return the schedule.
-    ThreadSchedule pack(const V3Graph& mtaskGraph) {
+    ThreadSchedule pack(V3Graph& mtaskGraph) {
         // The result
         ThreadSchedule schedule{m_nThreads};
 
@@ -283,8 +283,8 @@ class PackThreads final {
         std::set<ExecMTask*, MTaskCmp> readyMTasks;
 
         // Build initial ready list
-        for (V3GraphVertex* vxp = mtaskGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            ExecMTask* const mtaskp = vxp->as<ExecMTask>();
+        for (V3GraphVertex& vtx : mtaskGraph.vertices()) {
+            ExecMTask* const mtaskp = vtx.as<ExecMTask>();
             if (isReady(schedule, mtaskp)) readyMTasks.insert(mtaskp);
         }
 
@@ -303,9 +303,8 @@ class PackThreads final {
                                        << ", skipping thread.\n");
                         break;
                     }
-                    for (V3GraphEdge* edgep = mtaskp->inBeginp(); edgep;
-                         edgep = edgep->inNextp()) {
-                        const ExecMTask* const priorp = edgep->fromp()->as<ExecMTask>();
+                    for (const V3GraphEdge& edge : mtaskp->inEdges()) {
+                        const ExecMTask* const priorp = edge.fromp()->as<ExecMTask>();
                         const uint32_t priorEndTime = completionTime(schedule, priorp, threadId);
                         if (priorEndTime > timeBegin) timeBegin = priorEndTime;
                     }
@@ -343,9 +342,8 @@ class PackThreads final {
             // Update the ready list
             const size_t erased = readyMTasks.erase(bestMtaskp);
             UASSERT_OBJ(erased > 0, bestMtaskp, "Should have erased something?");
-            for (V3GraphEdge* edgeOutp = bestMtaskp->outBeginp(); edgeOutp;
-                 edgeOutp = edgeOutp->outNextp()) {
-                ExecMTask* const nextp = edgeOutp->top()->as<ExecMTask>();
+            for (V3GraphEdge& edgeOut : bestMtaskp->outEdges()) {
+                ExecMTask* const nextp = edgeOut.top()->as<ExecMTask>();
                 // Dependent MTask should not yet be assigned to a thread
                 UASSERT(schedule.threadId(nextp) == ThreadSchedule::UNASSIGNED,
                         "Tasks after one being assigned should not be assigned yet");
@@ -427,7 +425,7 @@ public:
         for (AstNode* const nodep : mTaskBodyps) nodep->deleteTree();
     }
 
-    static const ThreadSchedule apply(const V3Graph& mtaskGraph) {
+    static const ThreadSchedule apply(V3Graph& mtaskGraph) {
         return PackThreads{}.pack(mtaskGraph);
     }
 };
@@ -493,11 +491,8 @@ void fillinCosts(V3Graph* execMTaskGraphp) {
     // Pass 1: See what profiling data applies
     Costs costs;  // For each mtask, costs
 
-    for (const V3GraphVertex* vxp = execMTaskGraphp->verticesBeginp(); vxp;
-         vxp = vxp->verticesNextp()) {
-        ExecMTask* const mtp = const_cast<V3GraphVertex*>(vxp)->as<ExecMTask>();
-        // Compute name of mtask, for hash lookup
-
+    for (V3GraphVertex& vtx : execMTaskGraphp->vertices()) {
+        ExecMTask* const mtp = vtx.as<ExecMTask>();
         // This estimate is 64 bits, but the final mtask graph algorithm needs 32 bits
         const uint64_t costEstimate = V3InstrCount::count(mtp->bodyp(), false);
         const uint64_t costProfiled
@@ -513,9 +508,8 @@ void fillinCosts(V3Graph* execMTaskGraphp) {
 
     int totalEstimates = 0;
     int missingProfiles = 0;
-    for (const V3GraphVertex* vxp = execMTaskGraphp->verticesBeginp(); vxp;
-         vxp = vxp->verticesNextp()) {
-        ExecMTask* const mtp = const_cast<V3GraphVertex*>(vxp)->as<ExecMTask>();
+    for (V3GraphVertex& vtx : execMTaskGraphp->vertices()) {
+        ExecMTask* const mtp = vtx.as<ExecMTask>();
         const uint32_t costEstimate = costs[mtp->id()].first;
         const uint64_t costProfiled = costs[mtp->id()].second;
         UINFO(9, "ce = " << costEstimate << " cp=" << costProfiled << endl);
@@ -550,8 +544,8 @@ void finalizeCosts(V3Graph* execMTaskGraphp) {
         // choice among several ready mtasks, we'll want to start the
         // highest priority one first, so we're always working on the "long
         // pole"
-        for (V3GraphEdge* edgep = mtp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            const ExecMTask* const followp = edgep->top()->as<ExecMTask>();
+        for (V3GraphEdge& edge : mtp->outEdges()) {
+            const ExecMTask* const followp = edge.top()->as<ExecMTask>();
             if ((followp->priority() + mtp->cost()) > mtp->priority()) {
                 mtp->priority(followp->priority() + mtp->cost());
             }
@@ -561,9 +555,8 @@ void finalizeCosts(V3Graph* execMTaskGraphp) {
     // Some MTasks may now have zero cost, eliminate those.
     // (It's common for tasks to shrink to nothing when V3LifePost
     // removes dly assignments.)
-    for (V3GraphVertex* vxp = execMTaskGraphp->verticesBeginp(); vxp;) {
-        ExecMTask* const mtp = vxp->as<ExecMTask>();
-        vxp = vxp->verticesNextp();  // Advance before delete
+    for (V3GraphVertex* const vtxp : execMTaskGraphp->vertices().unlinkable()) {
+        ExecMTask* const mtp = vtxp->as<ExecMTask>();
 
         // Don't rely on checking mtp->cost() == 0 to detect an empty task.
         // Our cost-estimating logic is just an estimate. Instead, check
@@ -571,9 +564,9 @@ void finalizeCosts(V3Graph* execMTaskGraphp) {
         AstMTaskBody* const bodyp = mtp->bodyp();
         if (!bodyp->stmtsp()) {  // Kill this empty mtask
             UINFO(6, "Removing zero-cost " << mtp->name() << endl);
-            for (V3GraphEdge* inp = mtp->inBeginp(); inp; inp = inp->inNextp()) {
-                for (V3GraphEdge* outp = mtp->outBeginp(); outp; outp = outp->outNextp()) {
-                    new V3GraphEdge{execMTaskGraphp, inp->fromp(), outp->top(), 1};
+            for (V3GraphEdge& in : mtp->inEdges()) {
+                for (V3GraphEdge& out : mtp->outEdges()) {
+                    new V3GraphEdge{execMTaskGraphp, in.fromp(), out.top(), 1};
                 }
             }
             VL_DO_DANGLING(mtp->unlinkDelete(execMTaskGraphp), mtp);
@@ -647,8 +640,8 @@ void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t threadId,
     }
 
     // For any dependent mtask that's on another thread, signal one dependency completion.
-    for (V3GraphEdge* edgep = mtaskp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-        const ExecMTask* const nextp = edgep->top()->as<ExecMTask>();
+    for (const V3GraphEdge& edge : mtaskp->outEdges()) {
+        const ExecMTask* const nextp = edge.top()->as<ExecMTask>();
         if (schedule.threadId(nextp) != threadId) {
             addStrStmt("vlSelf->__Vm_mtaskstate_" + cvtToStr(nextp->id())
                        + ".signalUpstreamDone(even_cycle);\n");

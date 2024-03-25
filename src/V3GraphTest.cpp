@@ -259,7 +259,7 @@ public:
         gp->order();
 
         // Test debug function
-        gp->dumpEdges(std::cout, ap);
+        gp->dumpEdges(std::cout, *ap);
 
         dumpSelf();
     }

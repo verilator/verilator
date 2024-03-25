@@ -1533,12 +1533,10 @@ class V3DfgPeephole final : public DfgVisitor {
 
         // Add all vertices to the work list, and to the vertex cache.
         // This also allocates all DfgVertex::user.
-        for (DfgVertex *vtxp = m_dfg.opVerticesBeginp(), *nextp; vtxp; vtxp = nextp) {
-            nextp = vtxp->verticesNext();
-            if (VL_LIKELY(nextp)) VL_PREFETCH_RW(nextp);
-            vtxp->setUser<DfgVertex*>(m_workListp);
-            m_workListp = vtxp;
-            m_cache.cache(vtxp);
+        for (DfgVertex& vtx : m_dfg.opVertices()) {
+            vtx.setUser<DfgVertex*>(m_workListp);
+            m_workListp = &vtx;
+            m_cache.cache(&vtx);
         }
 
         // Process the work list

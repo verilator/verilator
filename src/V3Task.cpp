@@ -153,8 +153,8 @@ private:
                             << vxp->impureNode()->warnContextSecondary());
         }
         // And, we need to check all tasks this task calls
-        for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            checkPurity(nodep, static_cast<TaskBaseVertex*>(edgep->top()));
+        for (V3GraphEdge& edge : vxp->outEdges()) {
+            checkPurity(nodep, static_cast<TaskBaseVertex*>(edge.top()));
         }
     }
     TaskFTaskVertex* getFTaskVertex(AstNodeFTask* nodep) {

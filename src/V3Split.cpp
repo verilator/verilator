@@ -317,17 +317,16 @@ protected:
     }
 
     void pruneDepsOnInputs() {
-        for (V3GraphVertex* vertexp = m_graph.verticesBeginp(); vertexp;
-             vertexp = vertexp->verticesNextp()) {
-            if (!vertexp->outBeginp() && vertexp->is<SplitVarStdVertex>()) {
+        for (V3GraphVertex& vertex : m_graph.vertices()) {
+            if (vertex.outEmpty() && vertex.is<SplitVarStdVertex>()) {
                 if (debug() >= 9) {
-                    const SplitVarStdVertex* const stdp = static_cast<SplitVarStdVertex*>(vertexp);
-                    UINFO(0, "Will prune deps on var " << stdp->nodep() << endl);
-                    stdp->nodep()->dumpTree("-  ");
+                    const SplitVarStdVertex& sVtx = static_cast<SplitVarStdVertex&>(vertex);
+                    UINFO(0, "Will prune deps on var " << sVtx.nodep() << endl);
+                    sVtx.nodep()->dumpTree("-  ");
                 }
-                for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                    SplitEdge* const oedgep = static_cast<SplitEdge*>(edgep);
-                    oedgep->setIgnoreThisStep();
+                for (V3GraphEdge& edge : vertex.inEdges()) {
+                    SplitEdge& oedge = static_cast<SplitEdge&>(edge);
+                    oedge.setIgnoreThisStep();
                 }
             }
         }
@@ -475,19 +474,16 @@ protected:
 
         // For reordering this single block only, mark all logic
         // vertexes not involved with this step as unimportant
-        for (V3GraphVertex* vertexp = m_graph.verticesBeginp(); vertexp;
-             vertexp = vertexp->verticesNextp()) {
-            if (!vertexp->user()) {
-                if (const SplitLogicVertex* const vvertexp = vertexp->cast<SplitLogicVertex>()) {
-                    for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep;
-                         edgep = edgep->inNextp()) {
-                        SplitEdge* const oedgep = static_cast<SplitEdge*>(edgep);
-                        oedgep->setIgnoreThisStep();
+        for (V3GraphVertex& vertex : m_graph.vertices()) {
+            if (!vertex.user()) {
+                if (const SplitLogicVertex* const vvertexp = vertex.cast<SplitLogicVertex>()) {
+                    for (V3GraphEdge& edge : vertex.inEdges()) {
+                        SplitEdge& oedge = static_cast<SplitEdge&>(edge);
+                        oedge.setIgnoreThisStep();
                     }
-                    for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep;
-                         edgep = edgep->outNextp()) {
-                        SplitEdge* const oedgep = static_cast<SplitEdge*>(edgep);
-                        oedgep->setIgnoreThisStep();
+                    for (V3GraphEdge& edge : vertex.outEdges()) {
+                        SplitEdge& oedge = static_cast<SplitEdge&>(edge);
+                        oedge.setIgnoreThisStep();
                     }
                 }
             }
@@ -904,18 +900,17 @@ protected:
         // For any 'if' node whose deps have all been pruned
         // (meaning, its conditional expression only looks at primary
         // inputs) prune all edges that depend on the 'if'.
-        for (V3GraphVertex* vertexp = m_graph.verticesBeginp(); vertexp;
-             vertexp = vertexp->verticesNextp()) {
-            const SplitLogicVertex* const logicp = vertexp->cast<const SplitLogicVertex>();
+        for (V3GraphVertex& vertex : m_graph.vertices()) {
+            SplitLogicVertex* const logicp = vertex.cast<SplitLogicVertex>();
             if (!logicp) continue;
 
             const AstNodeIf* const ifNodep = VN_CAST(logicp->nodep(), NodeIf);
             if (!ifNodep) continue;
 
             bool pruneMe = true;
-            for (V3GraphEdge* edgep = logicp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                const SplitEdge* const oedgep = static_cast<const SplitEdge*>(edgep);
-                if (!oedgep->ignoreThisStep()) {
+            for (const V3GraphEdge& edge : logicp->outEdges()) {
+                const SplitEdge& oedge = static_cast<const SplitEdge&>(edge);
+                if (!oedge.ignoreThisStep()) {
                     // This if conditional depends on something we can't
                     // prune -- a variable generated in the current block.
                     pruneMe = false;
@@ -923,11 +918,11 @@ protected:
                     // When we can't prune dependencies on the conditional,
                     // give a hint about why...
                     if (debug() >= 9) {
-                        V3GraphVertex* vxp = oedgep->top();
+                        V3GraphVertex* vxp = oedge.top();
                         const SplitNodeVertex* const nvxp
                             = static_cast<const SplitNodeVertex*>(vxp);
                         UINFO(0, "Cannot prune if-node due to edge "
-                                     << oedgep << " pointing to node " << nvxp->nodep() << endl);
+                                     << &oedge << " pointing to node " << nvxp->nodep() << endl);
                         nvxp->nodep()->dumpTree("-  ");
                     }
 
@@ -938,9 +933,9 @@ protected:
             if (!pruneMe) continue;
 
             // This if can be split; prune dependencies on it.
-            for (V3GraphEdge* edgep = logicp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-                SplitEdge* const oedgep = static_cast<SplitEdge*>(edgep);
-                oedgep->setIgnoreThisStep();
+            for (V3GraphEdge& edge : logicp->inEdges()) {
+                SplitEdge& oedge = static_cast<SplitEdge&>(edge);
+                oedge.setIgnoreThisStep();
             }
         }
 
