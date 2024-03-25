@@ -30,6 +30,8 @@ module t (/*AUTOARG*/
 
    assert_function assert_function();
 
+   assertcontrol assertcontrol();
+
    always @ (negedge clk) begin
       assert(0);
       $write("*-* All Finished *-*\n");
@@ -190,5 +192,18 @@ module assert_function;
       assert_off();
       f_assert();
       f_assert();
+   end
+endmodule
+
+module assertcontrol;
+   initial begin
+      $assertcontrol(3); // $asserton
+      assert(0);
+      $assertcontrol(4); // $assertoff
+      assert(0);
+      $assertcontrol(3); // $asserton
+      assert(0);
+      $assertcontrol(5); // $assertkill
+      assert(0);
    end
 endmodule

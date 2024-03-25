@@ -1059,10 +1059,24 @@ constexpr bool operator==(VAlwaysKwd::en lhs, const VAlwaysKwd& rhs) { return lh
 
 class VAssertCtlType final {
 public:
-    enum en : uint8_t { OFF, ON };
+    // IEEE 1800-2023 Table 20-5
+    enum en : uint8_t {
+        _TO_BE_EVALUATED = 0,
+        LOCK = 1,
+        UNLOCK = 2,
+        ON = 3,
+        OFF = 4,
+        KILL = 5,
+        PASS_ON = 6,
+        PASS_OFF = 7,
+        FAIL_ON = 8,
+        FAIL_OFF = 9,
+        NONVACUOUS_ON = 10,
+        VACUOUS_OFF = 11
+    };
     enum en m_e;
     VAssertCtlType()
-        : m_e{OFF} {}
+        : m_e{_TO_BE_EVALUATED} {}
     // cppcheck-suppress noExplicitConstructor
     constexpr VAssertCtlType(en _e)
         : m_e{_e} {}
@@ -1070,7 +1084,19 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"$assertoff", "$asserton"};
+        // IEEE 1800-2023 20.11
+        static const char* const names[] = {"",
+                                            "",
+                                            "",
+                                            "$asserton",
+                                            "$assertoff",
+                                            "$assertkill",
+                                            "$assertpasson",
+                                            "$assertpassoff",
+                                            "$assertfailon",
+                                            "$assertfailoff",
+                                            "$assertnonvacuouson",
+                                            "$assertvacuousoff"};
         return names[m_e];
     }
 };

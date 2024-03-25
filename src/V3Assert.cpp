@@ -699,7 +699,7 @@ class AssertCtlVisitor final : public VNVisitor {
     }
 
     void markAssertCtlVtxUseless(DepVtx* const vxp) {
-        // Assert controls with empty scope are ignored
+        // Assert control with empty scope is ignored
         vxp->nodep()->name("");
     }
     void markAssertVtxNotControlled(DepVtx* const vxp) {
@@ -832,6 +832,8 @@ class AssertCtlVisitor final : public VNVisitor {
         addFlags(m_parentp, M_HAS_ASSERTCTL);
 
         nodep->name(concatNameLevels());
+        if (const AstConst* const controlTypep = VN_CAST(nodep->controlTypep(), Const))
+            nodep->ctlType(controlTypep->num());
 
         new V3GraphEdge{&m_assertGraph, getDepVtx(m_parentp), getDepVtx(nodep), 1};
     }
