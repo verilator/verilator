@@ -442,9 +442,9 @@ public:
     void assertOn(bool flag) VL_MT_SAFE;
     /// Return if assertions enabled
     bool assertOn() const VL_MT_SAFE { return m_s.m_assertOn; }
-    // Toggle assertion for scoped assert
+    /// Set if scoped assertion is turned on
     void assertOnFor(const std::string& scope, bool flag) { m_assertStatus[scope] = flag; }
-    // Return if scoped assert is on
+    /// Return if scoped assert is on
     bool assertOnFor(const std::string& scope) {
         if (!assertOn()) return false;
         const auto status = m_assertStatus.find(scope);
