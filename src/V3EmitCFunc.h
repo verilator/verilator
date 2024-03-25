@@ -1471,14 +1471,14 @@ public:
         case VAssertCtlType::ON: {
             if (nodep->hierarchicalNames().empty() || nodep->name().empty()) break;
 
-            const auto arraySize = std::to_string(nodep->hierarchicalNames().size());
+            const string arraySize = std::to_string(nodep->hierarchicalNames().size());
             string assertName = nodep->name() + std::to_string(m_assertCtlNum);
             std::replace(assertName.begin(), assertName.end(), '.', '_');
-            const auto arrayName = assertName + "_assertions";
+            const string arrayName = assertName + "_assertions";
 
             string stmt
                 = "constexpr std::array<const char*, " + arraySize + "> " + arrayName + " = {\n";
-            for (const auto& assertName : nodep->hierarchicalNames()) {
+            for (const string& assertName : nodep->hierarchicalNames()) {
                 stmt += "\"" + assertName + "\",\n";
             }
             stmt += "};\n";

@@ -663,7 +663,7 @@ class AssertCtlVisitor final : public VNVisitor {
     void propagateBackwardAssert(DepVtx* const vxp) {
         const AstNode* const parentp = vxp->nodep();
         for (V3GraphEdge* edgep = vxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-            auto* const depVxp = static_cast<DepVtx*>(edgep->fromp());
+            DepVtx* const depVxp = static_cast<DepVtx*>(edgep->fromp());
             AstNode* const depp = depVxp->nodep();
             if (!hasFlags(depp, M_HAS_ASSERT) && passFlag(parentp, depp, M_HAS_ASSERT))
                 propagateBackwardAssert(depVxp);
@@ -673,7 +673,7 @@ class AssertCtlVisitor final : public VNVisitor {
     void propagateForwardCtl(DepVtx* const vxp) {
         const AstNode* const parentp = vxp->nodep();
         for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            auto* const depVxp = static_cast<DepVtx*>(edgep->top());
+            DepVtx* const depVxp = static_cast<DepVtx*>(edgep->top());
             AstNode* const depp = depVxp->nodep();
             if (!hasFlags(depp, M_HAS_ASSERTCTL) && passFlag(parentp, depp, M_HAS_ASSERTCTL))
                 propagateForwardCtl(depVxp);
@@ -683,7 +683,7 @@ class AssertCtlVisitor final : public VNVisitor {
     void propagate() {
         for (V3GraphVertex* vxp = m_assertGraph.verticesBeginp(); vxp;
              vxp = vxp->verticesNextp()) {
-            auto* const depVxp = static_cast<DepVtx*>(vxp);
+            DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
             if (hasFlags(depVxp->nodep(), M_HAS_ASSERT)) propagateBackwardAssert(depVxp);
             if (hasFlags(depVxp->nodep(), M_HAS_ASSERTCTL)) propagateForwardCtl(depVxp);
         }
@@ -691,7 +691,7 @@ class AssertCtlVisitor final : public VNVisitor {
 
     bool hasLinkedAssertCtl(const DepVtx* const vxp) {
         for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            const auto* const depVxp = static_cast<DepVtx*>(edgep->top());
+            const DepVtx* const depVxp = static_cast<DepVtx*>(edgep->top());
             if (VN_IS(depVxp->nodep(), AssertCtl) && edgep->fromp() == vxp) return true;
         }
 
@@ -704,7 +704,7 @@ class AssertCtlVisitor final : public VNVisitor {
     }
     void markAssertVtxNotControlled(DepVtx* const vxp) {
         for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            auto* const depVxp = static_cast<DepVtx*>(edgep->top());
+            DepVtx* const depVxp = static_cast<DepVtx*>(edgep->top());
             AstNode* const depp = depVxp->nodep();
             if (VN_IS(depp, Assert) && edgep->fromp() == vxp) setAssertNotControlled(depp);
         }
@@ -712,7 +712,7 @@ class AssertCtlVisitor final : public VNVisitor {
 
     void removeUselessAssertCtls(DepVtx* const vxp) {
         for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            auto* const depVxp = static_cast<DepVtx*>(edgep->top());
+            DepVtx* const depVxp = static_cast<DepVtx*>(edgep->top());
             const AstNode* const depp = depVxp->nodep();
 
             if (edgep->fromp() != vxp) continue;
@@ -724,7 +724,7 @@ class AssertCtlVisitor final : public VNVisitor {
 
     void collectUsedAssertScopes(const DepVtx* const vxp, std::set<string>& hierNames) {
         for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            auto* const depVxp = static_cast<DepVtx*>(edgep->top());
+            DepVtx* const depVxp = static_cast<DepVtx*>(edgep->top());
             const AstNode* const depp = depVxp->nodep();
             if (VN_IS(depp, AssertInstance)) hierNames.emplace(depp->name());
             collectUsedAssertScopes(depVxp, hierNames);
@@ -739,8 +739,8 @@ class AssertCtlVisitor final : public VNVisitor {
 
     void assignAssertScopesToCtl(DepVtx* const vxp, const std::set<string>& assertScopes) {
         for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            const auto* const depVxp = static_cast<DepVtx*>(edgep->top());
-            if (auto* const ctlp = VN_CAST(depVxp->nodep(), AssertCtl)) {
+            const DepVtx* const depVxp = static_cast<DepVtx*>(edgep->top());
+            if (AstAssertCtl* const ctlp = VN_CAST(depVxp->nodep(), AssertCtl)) {
                 ctlp->hierarchicalNames(assertScopes);
             }
         }
@@ -748,7 +748,7 @@ class AssertCtlVisitor final : public VNVisitor {
 
     void assignScopesToAsserts(DepVtx* const vxp) {
         for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            auto* const depVxp = static_cast<DepVtx*>(edgep->top());
+            DepVtx* const depVxp = static_cast<DepVtx*>(edgep->top());
             const AstNode* const depp = depVxp->nodep();
             if (VN_IS(depp, Module)) {
                 if (hasFlags(depp, M_HAS_ASSERT | M_HAS_ASSERTCTL) && hasLinkedAssertCtl(depVxp)) {
@@ -767,7 +767,7 @@ class AssertCtlVisitor final : public VNVisitor {
     void assignScopesToAsserts() {
         for (V3GraphVertex* vxp = m_assertGraph.verticesBeginp(); vxp;
              vxp = vxp->verticesNextp()) {
-            auto* const depVxp = static_cast<DepVtx*>(vxp);
+            DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
             assignScopesToAsserts(depVxp);
         }
     }
@@ -776,7 +776,7 @@ class AssertCtlVisitor final : public VNVisitor {
         UASSERT(!m_hierarchicalName.empty(),
                 "Hierarchical name should be populated in AstModule visitor!");
         string name{};
-        for (const auto& level : m_hierarchicalName) { name += level + "."; }
+        for (const string& level : m_hierarchicalName) { name += level + "."; }
         name.pop_back();  // remove last dot
         return name;
     }
@@ -821,7 +821,8 @@ class AssertCtlVisitor final : public VNVisitor {
     void visit(AstAssert* nodep) override {
         addFlags(m_parentp, M_HAS_ASSERT);
 
-        auto* const instancep = new AstAssertInstance{nodep->fileline(), concatNameLevels()};
+        AstAssertInstance* const instancep
+            = new AstAssertInstance{nodep->fileline(), concatNameLevels()};
 
         new V3GraphEdge{&m_assertGraph, getDepVtx(m_parentp), getDepVtx(instancep), 1};
         new V3GraphEdge{&m_assertGraph, getDepVtx(instancep), getDepVtx(nodep), 1};
