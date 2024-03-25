@@ -60,9 +60,11 @@ class OrderMoveVertex final : public V3GraphVertex {
         return nm;
     }
 
+    V3ListLinks<OrderMoveVertex>& links() { return m_links; }
+
 public:
     // List type to store instances of this class
-    using List = V3List<OrderMoveVertex, &OrderMoveVertex::m_links>;
+    using List = V3List<OrderMoveVertex, &OrderMoveVertex::links>;
 
     // CONSTRUCTORS
     OrderMoveVertex(OrderMoveGraph& graph, OrderLogicVertex* lVtxp,
@@ -126,9 +128,11 @@ class OrderMoveDomScope final {
     // Map from Domain/Scope to the corresponding DomScope instance
     static DomScopeMap s_dsMap;
 
+    V3ListLinks<OrderMoveDomScope>& links() { return m_links; }
+
 public:
     // List type to store instances of this class
-    using List = V3List<OrderMoveDomScope, &OrderMoveDomScope::m_links>;
+    using List = V3List<OrderMoveDomScope, &OrderMoveDomScope::links>;
 
     // STATIC MEMBERS
     static OrderMoveDomScope& getOrCreate(const AstSenTree* domainp, const AstScope* scopep) {

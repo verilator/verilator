@@ -33,7 +33,7 @@
 template <typename T_Base>
 class V3ListLinks final {
     // The V3List itself, but nothing else can access the link pointers
-    template <typename B, V3ListLinks<B> B::*, typename>
+    template <typename B, V3ListLinks<B>& (B::*)(), typename>
     friend class V3List;
 
     T_Base* m_nextp = nullptr;  // Next element in list
@@ -56,24 +56,28 @@ public:
 // inside the elements. The template parameters are:
 // - 'T_Base' is the base type of elements that contains the V3ListLinks
 //   instance as a data member.
-// - 'LinksPointer' is a member pointer to the links within 'T_Base'
+// - 'LinksGetter' is a member function pointer that returns a reference to
+//   the links within 'T_Base'. Note that you should be able to use a data
+//   member pointer, instead of a function pointer, but that is buggy in MSVC.
 // - 'T_Element' is the actual type of elements, which must be the same,
 //    or a subtype of 'T_Base'.
-template <typename T_Base, V3ListLinks<T_Base> T_Base::*LinksPointer, typename T_Element = T_Base>
+template <typename T_Base,  //
+          V3ListLinks<T_Base>& (T_Base::*LinksGetter)(),  //
+          typename T_Element = T_Base>
 class V3List final {
     static_assert(std::is_base_of<T_Base, T_Element>::value,
                   "'T_Element' must be a subtype of 'T_Base");
 
-    using ListType = V3List<T_Base, LinksPointer, T_Element>;
+    using ListType = V3List<T_Base, LinksGetter, T_Element>;
 
     // MEMBERS
     T_Base* m_headp = nullptr;
     T_Base* m_lastp = nullptr;
 
-    // Given the T_Element, return the Links. The links are always mutable, even in const elements.
+    // Given the T_Base, return the Links. The links are always mutable, even in const elements.
     VL_ATTR_ALWINLINE
     static V3ListLinks<T_Base>& toLinks(const T_Base* elementp) {
-        return const_cast<T_Base*>(elementp)->*LinksPointer;
+        return (const_cast<T_Base*>(elementp)->*LinksGetter)();
     }
 
     VL_ATTR_ALWINLINE
@@ -92,7 +96,7 @@ class V3List final {
                       "'SimpleItertatorImpl' must be used with element type only");
 
         // The List itself, but nothing else can construct iterators
-        template <typename B, V3ListLinks<B> B::*P, typename>
+        template <typename B, V3ListLinks<B>& (B::*)(), typename>
         friend class V3List;
 
         using IteratorType = SimpleItertatorImpl<T_IteratorElement, T_Reverse>;
@@ -149,8 +153,8 @@ class V3List final {
     // Proxy class for creating unlinkable iterators, so we can use
     // 'for (T_Element* const ptr : list.unlinkable()) list.unlink(ptr);'
     class UnlinkableProxy final {
-        // The List itself, but nothing else can construct Unlinkable
-        template <typename B, V3ListLinks<B> B::*P, typename>
+        // The List itself, but nothing else can construct UnlinkableProxy
+        template <typename B, V3ListLinks<B>& (B::*)(), typename>
         friend class V3List;
 
         ListType& m_list;  // The proxied list
@@ -284,28 +288,14 @@ public:
     // Unlink (remove) and return element at the front. Returns 'nullptr' if the list is empty.
     T_Element* unlinkFront() {
         T_Element* const headp = m_headp;
-        if (headp) {
-            m_headp = static_cast<T_Element*>(toLinks(m_headp).m_nextp);
-            if (m_headp) {
-                toLinks(m_headp).m_prevp = nullptr;
-            } else {
-                m_lastp = nullptr;
-            }
-        }
+        if (headp) unlink(headp);
         return headp;
     }
 
     // Unlink (remove) and return element at the back. Returns 'nullptr' if the list is empty.
     T_Element* unlinkBack() {
         T_Element* const lastp = m_lastp;
-        if (lastp) {
-            m_lastp = toLinks(m_lastp).m_prevp;
-            if (m_lastp) {
-                toLinks(m_lastp).m_nextp = nullptr;
-            } else {
-                m_headp = nullptr;
-            }
-        }
+        if (lastp) unlink(lastp);
         return lastp;
     }
 

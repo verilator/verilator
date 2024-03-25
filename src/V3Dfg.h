@@ -149,9 +149,13 @@ protected:
 public:
     virtual ~DfgVertex() VL_MT_DISABLED;
 
+private:
+    V3ListLinks<DfgVertex>& links() { return m_links; }
+
+public:
     // List type that can store Vertex (which must be a DfgVertex) instances via m_links
     template <typename Vertex>
-    using List = V3List<DfgVertex, &DfgVertex::m_links, Vertex>;
+    using List = V3List<DfgVertex, &DfgVertex::links, Vertex>;
 
     // METHODS
 private:

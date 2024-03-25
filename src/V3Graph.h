@@ -115,10 +115,14 @@ protected:
         init(graphp, fromp, top, old.m_weight, old.m_cutable);
     }
 
+private:
+    V3ListLinks<V3GraphEdge>& oLinks() { return m_oLinks; }
+    V3ListLinks<V3GraphEdge>& iLinks() { return m_iLinks; }
+
 public:
     // List types to store instances of this class
-    using OList = V3List<V3GraphEdge, &V3GraphEdge::m_oLinks>;
-    using IList = V3List<V3GraphEdge, &V3GraphEdge::m_iLinks>;
+    using OList = V3List<V3GraphEdge, &V3GraphEdge::oLinks>;
+    using IList = V3List<V3GraphEdge, &V3GraphEdge::iLinks>;
 
     //! Add DAG from one node to the specified node
     V3GraphEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight,
@@ -220,9 +224,12 @@ protected:
     // CONSTRUCTORS
     V3GraphVertex(V3Graph* graphp, const V3GraphVertex& old) VL_MT_DISABLED;
 
+private:
+    V3ListLinks<V3GraphVertex>& links() { return m_links; }
+
 public:
     // List types to store instances of this class
-    using List = V3List<V3GraphVertex, &V3GraphVertex::m_links>;
+    using List = V3List<V3GraphVertex, &V3GraphVertex::links>;
 
     explicit V3GraphVertex(V3Graph* graphp) VL_MT_DISABLED;
     //! Clone copy constructor. Doesn't copy edges or user/userp.

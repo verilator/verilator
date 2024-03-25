@@ -43,9 +43,13 @@ protected:
     uint32_t m_storedRank = 0;  // Rank held until commit to edge placement
     bool m_onWorkList = false;  // True if already on list of work to do
     bool m_deleted = false;  // True if deleted
+
+private:
+    V3ListLinks<GraphAcycVertex>& links() { return m_links; }
+
 public:
     // List type to store instances of this class
-    using List = V3List<GraphAcycVertex, &GraphAcycVertex::m_links>;
+    using List = V3List<GraphAcycVertex, &GraphAcycVertex::links>;
 
     GraphAcycVertex(V3Graph* graphp, V3GraphVertex* origVertexp)
         : V3GraphVertex{graphp}
