@@ -58,8 +58,8 @@ class AstseeCmd(gdb.Command):
         # We hack `astsee_verilator`'s arg parser to find arguments with nodes
         # After finding them, we replace them with proper files
         astsee_args = astsee.parser.parse_args(gdb.string_to_argv(arg_str))
-        with _vltgdb_tmpfile() as oldfile, _vltgdb_tmpfile() as newfile, _vltgdb_tmpfile(
-        ) as metafile:
+        with _vltgdb_tmpfile() as oldfile, _vltgdb_tmpfile(
+        ) as newfile, _vltgdb_tmpfile() as metafile:
             if astsee_args.file:
                 _vltgdb_fwrite(oldfile, _vltgdb_get_dump(astsee_args.file))
                 astsee_args.file = oldfile.name
