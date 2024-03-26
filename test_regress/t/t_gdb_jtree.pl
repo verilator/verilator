@@ -23,7 +23,7 @@ setenv("VERILATOR_GDB", "gdb --return-child-result --batch-silent --quiet"
                         . " --command $ENV{VERILATOR_ROOT}/src/.gdbinit"
                         . " --command $Self->{t_dir}/t_gdb_jtree.gdb");
 
-top_filename("t/t_EXAMPLE.v");
+top_filename("t/t_dump.v");
 
 lint(v_flags => ["--gdb", "--debug"]);
 

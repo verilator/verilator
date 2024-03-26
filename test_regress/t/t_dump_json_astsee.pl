@@ -18,7 +18,7 @@ scenarios(vlt => 1);
     system($cmd) and do { skip("No astsee installed\n"); return 1 }
 }
 
-top_filename("t/t_EXAMPLE.v");
+top_filename("t/t_dump.v");
 
 lint(
     v_flags => ["--lint-only --dump-tree-json"],

@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-top_filename("t/t_EXAMPLE.v");
+top_filename("t/t_dump.v");
 
 lint(
     v_flags => ["--dump-tree-json --no-json-edit-nums"],
