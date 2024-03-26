@@ -121,8 +121,6 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   install-vcddiff
   # Workaround -fsanitize=address crash
   sudo sysctl -w vm.mmap_rnd_bits=28
-
-  PIP_BREAK_SYSTEM_PACKAGES=1 sudo pip install git+https://github.com/antmicro/astsee.git@f863e96b59fd996610df3fe071c05c5f441cf785
 else
   ##############################################################################
   # Unknown build stage
