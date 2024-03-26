@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_std_randomize_unsup.v:39:21: Unsupported: Scope randomization with std::randomize
+   39 |          void'(std::randomize());
+      |                     ^~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

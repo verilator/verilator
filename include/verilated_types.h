@@ -367,6 +367,15 @@ inline IData VL_RANDOM_RNG_I(VlRNG& rngr) VL_MT_UNSAFE { return rngr.rand64(); }
 inline QData VL_RANDOM_RNG_Q(VlRNG& rngr) VL_MT_UNSAFE { return rngr.rand64(); }
 extern WDataOutP VL_RANDOM_RNG_W(VlRNG& rngr, int obits, WDataOutP outwp) VL_MT_UNSAFE;
 
+inline bool VL_RANDOMIZE(IData& valuer, VlRNG& rngr = VlRNG::vl_thread_rng()) {
+    valuer = VL_RANDOM_RNG_I(rngr);
+    return true;
+}
+inline bool VL_RANDOMIZE(QData& valuer, VlRNG& rngr = VlRNG::vl_thread_rng()) {
+    valuer = VL_RANDOM_RNG_Q(rngr);
+    return true;
+}
+
 //===================================================================
 // Readmem/Writemem operation classes
 
@@ -459,6 +468,12 @@ std::string VL_TO_STRING(const VlWide<T_Words>& obj) {
     return VL_TO_STRING_W(T_Words, obj.data());
 }
 
+template <std::size_t T_Words>
+inline bool VL_RANDOMIZE(VlWide<T_Words>& valuer, VlRNG& rngr = VlRNG::vl_thread_rng()) {
+    VL_RANDOM_W(VL_EDATASIZE * T_Words, valuer);
+    return true;
+}
+
 //===================================================================
 // Verilog queue and dynamic array container
 // There are no multithreaded locks on this; the base variable must
@@ -541,7 +556,14 @@ public:
         if (VL_LIKELY(index >= 0 && index < m_deque.size()))
             m_deque.erase(m_deque.begin() + index);
     }
-
+    // Randomize elements
+    IData randomize(VlRNG& rngr) {
+        // TODO: Random resize once constraints are supported (IEEE 1800-2017 18.4)
+        for (auto& i : m_deque) {
+            if (VL_RANDOMIZE(i, rngr) == 0) return 0;
+        }
+        return 1;
+    }
     // Dynamic array new[] becomes a renew()
     void renew(size_t size) {
         clear();
@@ -894,6 +916,11 @@ public:
 template <class T_Value>
 std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
     return obj.to_string();
+}
+
+template <class T_Value>
+int VL_RANDOMIZE(VlQueue<T_Value>& obj, VlRNG& rngr = VlRNG::vl_thread_rng()) {
+    return obj.randomize(rngr);
 }
 
 //===================================================================
