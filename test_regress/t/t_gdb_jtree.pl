@@ -19,6 +19,8 @@ scenarios(vlt => 1);
 }
 
 setenv("VERILATOR_GDB", "gdb --return-child-result --batch-silent --quiet"
+                        . ' -init-eval-command "set auto-load no"'
+                        . " --command $ENV{VERILATOR_ROOT}/src/.gdbinit"
                         . " --command $Self->{t_dir}/t_gdb_jtree.gdb");
 
 top_filename("t/t_EXAMPLE.v");

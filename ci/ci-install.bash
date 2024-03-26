@@ -122,7 +122,6 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   # Workaround -fsanitize=address crash
   sudo sysctl -w vm.mmap_rnd_bits=28
 
-  printf "add-auto-load-safe-path %s/test_regress/.gdbinit\n" "$PWD" >> ~/.gdbinit
   PIP_BREAK_SYSTEM_PACKAGES=1 sudo pip install git+https://github.com/antmicro/astsee.git@f863e96b59fd996610df3fe071c05c5f441cf785
 else
   ##############################################################################
