@@ -13,18 +13,18 @@ import tempfile
 import gdb  # pylint: disable=import-error
 
 
-def _get_dump(node):
+def _vltgdb_get_dump(node):
     gdb.execute(f'set $_gdb_dump_json_str = AstNode::dumpTreeJsonGdb({node})')
     dump = gdb.execute('printf "%s", $_gdb_dump_json_str', to_string=True)
     gdb.execute('call free($_gdb_dump_json_str)')
     return dump
 
 
-def _tmpfile():
+def _vltgdb_tmpfile():
     return tempfile.NamedTemporaryFile(mode="wt")  # write, text mode
 
 
-def _fwrite(file, s):
+def _vltgdb_fwrite(file, s):
     """Write to file and flush buffer before passing the file to astsee"""
     file.write(s)
     file.flush()
@@ -58,13 +58,13 @@ class AstseeCmd(gdb.Command):
         # We hack `astsee_verilator`'s arg parser to find arguments with nodes
         # After finding them, we replace them with proper files
         astsee_args = astsee.parser.parse_args(gdb.string_to_argv(arg_str))
-        with _tmpfile() as oldfile, _tmpfile() as newfile, _tmpfile(
+        with _vltgdb_tmpfile() as oldfile, _vltgdb_tmpfile() as newfile, _vltgdb_tmpfile(
         ) as metafile:
             if astsee_args.file:
-                _fwrite(oldfile, _get_dump(astsee_args.file))
+                _vltgdb_fwrite(oldfile, _vltgdb_get_dump(astsee_args.file))
                 astsee_args.file = oldfile.name
             if astsee_args.newfile:
-                _fwrite(newfile, _get_dump(astsee_args.newfile))
+                _vltgdb_fwrite(newfile, _vltgdb_get_dump(astsee_args.newfile))
                 astsee_args.newfile = newfile.name
             if astsee_args.meta is None:
                 # pass
