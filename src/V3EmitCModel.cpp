@@ -22,7 +22,10 @@
 
 #include <algorithm>
 #include <functional>
+#include <utility>
 #include <vector>
+#include <string>
+#include <map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -76,7 +79,6 @@ class EmitCModel final : public EmitCFunc {
         if (v3Global.opt.savable()) puts("#include \"verilated_save.h\"\n");
         if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");
         if (v3Global.dpi()) puts("#include \"svdpi.h\"\n");
-
         // Declare foreign instances up front to make C++ happy
         puts("\n");
         puts("class " + symClassName() + ";\n");
@@ -101,6 +103,10 @@ class EmitCModel final : public EmitCFunc {
 
         puts("\n");
         ofp()->putsPrivate(false);  // public:
+        puts("\n"
+           "using SelfType = " + topClassName() + "; \n"
+        ); 
+
         // User accessible IO
         puts("\n// PORTS\n"
              "// The application code writes and reads these signals to\n"
@@ -124,6 +130,110 @@ class EmitCModel final : public EmitCFunc {
                                  + ";\n");
             }
         }
+
+        {
+            puts("using PortType = std::variant< \n"
+                "   CData*,\n"
+                "   SData*,\n"
+                "   QData*,\n"
+                "   IData*,\n"
+            );
+
+
+            std::vector<std::size_t> vlwide_counts{};
+            {
+                std::map<std::string, bool> cached{};
+                std::string cache_str{}, val{};
+                for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+                    val = cvtToStr(nodep->widthWords());
+                    cache_str = "   VlWide<" + val + "> *,\n";
+                    if(cached.find(cache_str) != cached.end()) { continue; }
+                    if (const AstVar* const varp = VN_CAST(nodep, Var)) {
+                        if (nodep->isWide()) {
+                            puts(cache_str);
+                            vlwide_counts.push_back(std::stoi(val));
+                        }
+                    }
+                    cached.insert(std::pair<std::string, bool>{cache_str, true});
+                }
+            }
+
+            puts("   std::monostate\n"
+                ">;\n"
+            );
+
+            auto vlwide_end = vlwide_counts.end();
+            for(auto vlwide_itr = vlwide_counts.begin(); vlwide_itr != vlwide_end; ++vlwide_itr) {
+                puts("std::size_t get_wide(VlWide<" + cvtToStr(*vlwide_itr) + "> * ioport, std::pair<WData*, std::size_t> & data) { \n"
+                    "   data.first = ioport->data(); \n"
+                    "   data.second = " + cvtToStr(*vlwide_itr) + "; \n"
+                    "   return " + cvtToStr(*vlwide_itr) + "; \n"
+                    "}\n"
+                );
+            }
+
+            puts("std::size_t get_wide(PortType & ioport, std::pair<WData*, std::size_t> & data) {\n");
+            for(auto vlwide_itr = vlwide_counts.begin(); vlwide_itr != vlwide_end; ++vlwide_itr) {
+               puts("   if(std::holds_alternative< VlWide<" + cvtToStr(*vlwide_itr) + "> * >(ioport)) {\n"
+                    "      return get_wide(std::get< VlWide<" + cvtToStr(*vlwide_itr) +  " > * >(ioport), data);\n"
+                    "   }\n"
+               );
+            }
+
+            puts("   data.first = nullptr;\n"
+                "   data.second = 0;\n"
+                "   return -1;\n"
+                "}\n"
+            );
+
+            puts("std::size_t is_wide(PortType & ioport) {\n");
+            for(auto vlwide_itr = vlwide_counts.begin(); vlwide_itr != vlwide_end; ++vlwide_itr) {
+               puts("   if(std::holds_alternative< VlWide<" + cvtToStr(*vlwide_itr) + "> * >(ioport)) {\n"
+                    "      return true;\n"
+                    "   }\n"
+               );
+            }
+
+            puts("   return false;\n"
+                "}\n"
+            );
+
+        }
+
+        // get func
+        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
+                if (varp->isPrimaryIO()) {  //
+                    emitVarDeclAccessor(varp, /* asRef: */ true);
+                }
+            }
+        }
+
+        puts("\n"
+           "using function_t = std::function<PortType(SelfType&)>; \n"
+           "using map_t = std::map<std::string, std::pair<bool, function_t> >; \n"
+           "static map_t init_reflect_values() { \n"
+           "   map_t ret{}; \n"
+           "   std::vector< std::pair<std::string, std::pair<bool, function_t> > > values = { \n"
+        );
+
+        // get func
+        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
+                if (varp->isPrimaryIO()) {  //
+                    emitVarDeclReflectLUTEntries(varp, /* asRef: */ true);
+                }
+            }
+        }
+
+        puts("\n"
+             "   }; \n"
+             "   for(auto v : values) { ret.insert(v); } \n"
+             "   return ret; \n"
+             "} \n"
+             "static inline map_t reflect_values = init_reflect_values();\n"
+        );
+
 
         // root instance pointer (for access to internals, including public_flat items).
         puts("\n// Root instance pointer to allow access to model internals,\n"

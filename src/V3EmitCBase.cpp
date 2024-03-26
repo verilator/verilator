@@ -139,6 +139,17 @@ void EmitCBaseVisitorConst::emitCFuncDecl(const AstCFunc* funcp, const AstNodeMo
     if (!funcp->ifdef().empty()) putns(funcp, "#endif  // " + funcp->ifdef() + "\n");
 }
 
+void EmitCBaseVisitorConst::emitVarDeclAccessor(const AstVar* nodep, bool asRef) {
+   puts("PortType get_" + nodep->nameProtect() + "() { return &" + nodep->nameProtect() + "; }\n");
+}
+
+void EmitCBaseVisitorConst::emitVarDeclReflectLUTEntries(const AstVar* nodep, bool asRef) {
+   std::string name{};
+   name = nodep->nameProtect();
+   const std::string is_input = (name.find("in") == std::string::npos) ? "false" : "true";
+   puts("std::make_pair<std::string, std::pair<bool, function_t> >(std::string{\"" + name + "\"}, std::pair<bool, function_t>(" + is_input + ", [](SelfType & self) { return self.get_" + name + "(); })),\n");
+}
+
 void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
     const AstBasicDType* const basicp = nodep->basicp();
     bool refNeedParens = VN_IS(nodep->dtypeSkipRefp(), UnpackArrayDType);
