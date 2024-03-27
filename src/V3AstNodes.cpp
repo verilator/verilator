@@ -1723,7 +1723,7 @@ void AstJumpGo::dump(std::ostream& str) const {
     if (labelp()) {
         labelp()->dump(str);
     } else {
-        str << "%Error:UNLINKED";
+        str << "%E:UNLINKED";
     }
 }
 void AstJumpGo::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
@@ -1738,7 +1738,7 @@ void AstJumpLabel::dump(std::ostream& str) const {
     if (blockp()) {
         blockp()->dump(str);
     } else {
-        str << "%Error:UNLINKED";
+        str << "%E:UNLINKED";
     }
 }
 void AstJumpLabel::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
@@ -1768,7 +1768,7 @@ void AstMemberSel::dump(std::ostream& str) const {
     if (varp()) {
         varp()->dump(str);
     } else {
-        str << "%Error:UNLINKED";
+        str << "%E:UNLINKED";
     }
 }
 void AstMemberSel::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
@@ -2543,7 +2543,7 @@ void AstCoverInc::dump(std::ostream& str) const {
     if (declp()) {
         declp()->dump(str);
     } else {
-        str << "%Error:UNLINKED";
+        str << "%E:UNLINKED";
     }
 }
 void AstCoverInc::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
@@ -2569,7 +2569,7 @@ void AstTraceInc::dump(std::ostream& str) const {
     if (declp()) {
         declp()->dump(str);
     } else {
-        str << "%Error:UNLINKED";
+        str << "%E:UNLINKED";
     }
 }
 void AstTraceInc::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
