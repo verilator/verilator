@@ -4284,9 +4284,14 @@ class WidthVisitor final : public VNVisitor {
              patp = VN_AS(patp->nextp(), PatMember)) {
             patp->dtypep(arrayDtp->subDTypep());
             AstNodeExpr* const valuep = patternMemberValueIterate(patp);
-            AstNode* const keyp = patp->keyp();
-            auto* const newap
-                = new AstSetAssoc{nodep->fileline(), newp, keyp->unlinkFrBack(), valuep};
+            AstNode* keyp = patp->keyp();
+            if (!keyp) {
+                patp->v3error("Missing pattern key (need an expression then a ':')");
+                keyp = new AstConst{nodep->fileline(), AstConst::Signed32{}, 0};
+            } else {
+                keyp->unlinkFrBack();
+            }
+            AstSetAssoc* const newap = new AstSetAssoc{nodep->fileline(), newp, keyp, valuep};
             newap->dtypeFrom(arrayDtp);
             newp = newap;
         }
@@ -4305,7 +4310,7 @@ class WidthVisitor final : public VNVisitor {
             patp->dtypep(arrayDtp->subDTypep());
             AstNodeExpr* const valuep = patternMemberValueIterate(patp);
             AstNode* const keyp = patp->keyp();
-            auto* const newap
+            AstSetWildcard* const newap
                 = new AstSetWildcard{nodep->fileline(), newp, keyp->unlinkFrBack(), valuep};
             newap->dtypeFrom(arrayDtp);
             newp = newap;
@@ -4321,7 +4326,7 @@ class WidthVisitor final : public VNVisitor {
              patp = VN_AS(patp->nextp(), PatMember)) {
             patp->dtypep(arrayp->subDTypep());
             AstNodeExpr* const valuep = patternMemberValueIterate(patp);
-            auto* const newap = new AstConsDynArray{nodep->fileline(), valuep, newp};
+            AstConsDynArray* const newap = new AstConsDynArray{nodep->fileline(), valuep, newp};
             newap->dtypeFrom(arrayp);
             newp = newap;
         }
@@ -4336,7 +4341,7 @@ class WidthVisitor final : public VNVisitor {
              patp = VN_AS(patp->nextp(), PatMember)) {
             patp->dtypep(arrayp->subDTypep());
             AstNodeExpr* const valuep = patternMemberValueIterate(patp);
-            auto* const newap = new AstConsQueue{nodep->fileline(), valuep, newp};
+            AstConsQueue* const newap = new AstConsQueue{nodep->fileline(), valuep, newp};
             newap->dtypeFrom(arrayp);
             newp = newap;
         }
