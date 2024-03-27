@@ -46,9 +46,10 @@ Verilator 5.023 devel
 * Fix `--prof-exec` predicted time values (#4988). [Geza Lore]
 * Fix class type as an associative array parameter (#4997).
 * Fix inout ports of unpacked struct type (#5000). [Ryszard Rozak, Antmicro Ltd.]
-* Fix `unique {}` constraints missing semicolon (#5001)
-* Fix preprocessor to respect strings in joins (#5007)
-* Fix internal error on missing pattern key (#5023)
+* Fix `unique {}` constraints missing semicolon (#5001).
+* Fix preprocessor to respect strings in joins (#5007).
+* Fix $readmem with missing newline (#5019). [Josse Van Delm]
+* Fix internal error on missing pattern key (#5023).
 
 
 Verilator 5.022 2024-02-24

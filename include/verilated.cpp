@@ -2113,7 +2113,8 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
                    "$readmem file ended before specified final address (IEEE 1800-2023 21.4)");
     }
 
-    return false;  // EOF
+    addrr = m_addr;
+    return indata;  // EOF
 }
 void VlReadMem::setData(void* valuep, const std::string& rhs) {
     const QData shift = m_hex ? 4ULL : 1ULL;
@@ -2262,6 +2263,7 @@ void VL_READMEM_N(bool hex,  // Hex format, else binary
         QData addr = 0;
         std::string value;
         if (rmem.get(addr /*ref*/, value /*ref*/)) {
+            // printf("readmem.get [%" PRIu64 "]=%s\n", addr, value.c_str());
             if (VL_UNLIKELY(addr < static_cast<QData>(array_lsb)
                             || addr >= static_cast<QData>(array_lsb + depth))) {
                 VL_FATAL_MT(filename.c_str(), rmem.linenum(), "",
