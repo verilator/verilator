@@ -886,7 +886,7 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
             case '^': {  // Realtime
                 const int lbits = va_arg(ap, int);
                 const double d = va_arg(ap, double);
-                if (lbits) {}  // UNUSED - always 64
+                (void)lbits;  // UNUSED - always 64
                 if (fmt == '^') {  // Realtime
                     if (!widthSet) width = Verilated::threadContextp()->impp()->timeFormatWidth();
                     const int timeunit = va_arg(ap, int);
@@ -3101,7 +3101,7 @@ void Verilated::stackCheck(QData needSize) VL_MT_UNSAFE {
                      haveSize / 1024, (needSize * 2) / 1024);
     }
 #else
-    if (false && needSize) {}  // Unused argument
+    (void)needSize;  // Unused argument
 #endif
 }
 

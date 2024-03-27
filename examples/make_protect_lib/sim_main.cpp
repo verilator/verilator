@@ -17,7 +17,8 @@
 #endif
 
 int main(int argc, char** argv) {
-    if (false && argc && argv) {}
+    (void)argc;
+    (void)argv;
 
     // Construct context to hold simulation time, etc
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};

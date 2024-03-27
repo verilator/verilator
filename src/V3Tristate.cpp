@@ -1691,7 +1691,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 AstVar* const enVarp = getCreateEnVarp(nodep->varp());
                 nodep->user1p(new AstVarRef{nodep->fileline(), enVarp, VAccess::READ});
             }
-            if (m_alhs) {}  // NOP; user1() already passed down from assignment
+            (void)m_alhs;  // NOP; user1() already passed down from assignment
         }
     }
 

@@ -428,7 +428,7 @@ V3Number& V3Number::setLongS(int32_t value) {
         int32_t s;
     } u;
     u.s = value;
-    if (u.s) {}
+    (void)u.s;
     m_data.num()[0].m_value = u.u;
     opCleanThis();
     return *this;
@@ -441,7 +441,7 @@ V3Number& V3Number::setDouble(double value) {
         uint32_t u[2];
     } u;
     u.d = value;
-    if (u.d != 0.0) {}
+    (void)u.d;
     for (int i = 2; i < words(); i++) m_data.num()[i] = {0, 0};
     m_data.num()[0].m_value = u.u[0];
     m_data.num()[1].m_value = u.u[1];
@@ -2374,7 +2374,7 @@ V3Number& V3Number::opRToIRoundS(const V3Number& lhs) {
         uint64_t q;
     } u;
     u.d = v;
-    if (u.d == 0.0) {}
+    (void)u.d;
 
     const int exp = static_cast<int>((u.q >> 52ULL) & VL_MASK_Q(11)) - 1023;
     const int lsb = exp - 52;

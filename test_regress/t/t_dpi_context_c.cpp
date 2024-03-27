@@ -77,7 +77,7 @@ int dpic_line() {
         printf("%%Warning: svGetCallerInfo failed\n");
         return 0;
     }
-    if (svGetCallerInfo(nullptr, nullptr)) {}  // Check doesn't segflt
+    (void)svGetCallerInfo(nullptr, nullptr);  // Check doesn't segflt
     return lineno;
 }
 
@@ -115,7 +115,7 @@ int dpic_save(int value) {
     }
 
     vp.i = value;
-    if (vp.i) {}
+    (void)vp.i;
     if (svPutUserData(scope, &Dpic_Unique, vp.ptr)) {
         printf("%%Warning: svPutUserData failed\n");
         return 0;

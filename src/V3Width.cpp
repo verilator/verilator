@@ -6265,7 +6265,7 @@ class WidthVisitor final : public VNVisitor {
         nodep->dtypeChgSigned(nodep->lhsp()->isSigned());
         const AstNodeBiop* const newp = iterate_shift_final(nodep);
         VL_DANGLING(nodep);
-        if (newp) {}  // Ununused
+        (void)newp;  // Ununused
     }
     void iterate_shift_prelim(AstNodeBiop* nodep) {
         // Shifts
@@ -6617,7 +6617,7 @@ class WidthVisitor final : public VNVisitor {
         AstNodeDType* const expDTypep = underp->findUInt32DType();
         underp
             = iterateCheck(nodep, "file_descriptor", underp, SELF, FINAL, expDTypep, EXTEND_EXP);
-        if (underp) {}  // cppcheck
+        (void)underp;  // cppcheck
     }
     void iterateCheckSigned32(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
         // Coerce child to signed32 if not already. Child is self-determined
@@ -6629,7 +6629,7 @@ class WidthVisitor final : public VNVisitor {
             AstNodeDType* const expDTypep = nodep->findSigned32DType();
             underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         }
-        if (underp) {}  // cppcheck
+        (void)underp;  // cppcheck
     }
     void iterateCheckReal(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
         // Coerce child to real if not already. Child is self-determined
@@ -6645,7 +6645,7 @@ class WidthVisitor final : public VNVisitor {
             AstNodeDType* const expDTypep = nodep->findDoubleDType();
             underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         }
-        if (underp) {}  // cppcheck
+        (void)underp;  // cppcheck
     }
     void iterateCheckString(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
         if (stage & PRELIM) {
@@ -6655,7 +6655,7 @@ class WidthVisitor final : public VNVisitor {
             AstNodeDType* const expDTypep = nodep->findStringDType();
             underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         }
-        if (underp) {}  // cppcheck
+        (void)underp;  // cppcheck
     }
     void iterateCheckTyped(AstNode* nodep, const char* side, AstNode* underp,
                            AstNodeDType* expDTypep, Stage stage) {
@@ -6665,7 +6665,7 @@ class WidthVisitor final : public VNVisitor {
         if (stage & FINAL) {
             underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         }
-        if (underp) {}  // cppcheck
+        (void)underp;  // cppcheck
     }
     void iterateCheckSizedSelf(AstNode* nodep, const char* side, AstNode* underp, Determ determ,
                                Stage stage) {
@@ -6681,7 +6681,7 @@ class WidthVisitor final : public VNVisitor {
         underp = VN_IS(underp, NodeExpr) ? checkCvtUS(VN_AS(underp, NodeExpr)) : underp;
         AstNodeDType* const expDTypep = underp->dtypep();
         underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
-        if (underp) {}  // cppcheck
+        (void)underp;  // cppcheck
     }
     void iterateCheckAssign(AstNode* nodep, const char* side, AstNode* rhsp, Stage stage,
                             AstNodeDType* lhsDTypep) {
@@ -6727,7 +6727,7 @@ class WidthVisitor final : public VNVisitor {
         rhsp = iterateCheck(nodep, side, rhsp, ASSIGN, FINAL, lhsDTypep,
                             lhsStream ? EXTEND_OFF : EXTEND_LHS);
         // if (debug()) nodep->dumpTree("-  checkout: ");
-        if (rhsp) {}  // cppcheck
+        (void)rhsp;  // cppcheck
     }
 
     void iterateCheckBool(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
