@@ -105,7 +105,7 @@ V3Number::V3Number(VerilogStringLiteral, AstNode* nodep, const string& str) {
             const int topos = str.length() - 1 - pos;
             ValueAndX& v = m_data.num()[topos / 4];
             for (int bit = 0; bit < 8; ++bit) {
-                if (str[pos] & (1UL << bit)) { v.m_value |= (1UL << (bit + (topos % 4) * 8)); }
+                if (str[pos] & (1UL << bit)) v.m_value |= (1UL << (bit + (topos % 4) * 8));
             }
         }
     }
@@ -991,7 +991,7 @@ V3Hash V3Number::toHash() const {
     if (isString()) {
         hash += V3Hash{m_data.str()};
     } else {
-        for (int i = 0; i < words(); ++i) { hash += m_data.num()[i].m_value; }
+        for (int i = 0; i < words(); ++i) hash += m_data.num()[i].m_value;
     }
     return hash;
 }
@@ -2053,7 +2053,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     uint32_t vn[VL_MULS_MAX_WORDS + 1];  // v normalized
 
     // Zero for ease of debugging and to save having to zero for shifts
-    for (int i = 0; i < words; i++) { m_data.num()[i].m_value = 0; }
+    for (int i = 0; i < words; i++) m_data.num()[i].m_value = 0;
     for (int i = 0; i < words + 1; i++) { un[i] = vn[i] = 0; }  // +1 as vn may get extra word
 
     // Algorithm requires divisor MSB to be set
@@ -2270,7 +2270,7 @@ V3Number& V3Number::opExtendXZ(const V3Number& lhs, uint32_t lbits) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     setZero();
-    for (int bit = 0; bit < width(); bit++) { setBit(bit, lhs.bitIsExtend(bit, lbits)); }
+    for (int bit = 0; bit < width(); bit++) setBit(bit, lhs.bitIsExtend(bit, lbits));
     return *this;
 }
 
@@ -2499,7 +2499,7 @@ V3Number& V3Number::opReplN(const V3Number& lhs, uint32_t rhsval) {
     NUM_ASSERT_STRING_ARGS1(lhs);
     string out;
     out.reserve(lhs.toString().length() * rhsval);
-    for (unsigned times = 0; times < rhsval; times++) { out += lhs.toString(); }
+    for (unsigned times = 0; times < rhsval; times++) out += lhs.toString();
     return setString(out);
 }
 V3Number& V3Number::opToLowerN(const V3Number& lhs) {

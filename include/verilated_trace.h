@@ -582,7 +582,7 @@ public:
         m_offloadBufferWritep[0] = (bits << 4) | VerilatedTraceOffloadCommand::CHG_WDATA;
         m_offloadBufferWritep[1] = code;
         m_offloadBufferWritep += 2;
-        for (int i = 0; i < (bits + 31) / 32; ++i) { *m_offloadBufferWritep++ = newvalp[i]; }
+        for (int i = 0; i < (bits + 31) / 32; ++i) *m_offloadBufferWritep++ = newvalp[i];
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
     void chgDouble(uint32_t code, double newval) {

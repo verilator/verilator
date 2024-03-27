@@ -866,7 +866,7 @@ class PackedVarRef final {
     static void dedupRefs(std::vector<PackedVarRefEntry>& refs) {
         // Use raw pointer to dedup
         std::map<AstNode*, size_t, AstNodeComparator> nodes;
-        for (size_t i = 0; i < refs.size(); ++i) { nodes.emplace(refs[i].nodep(), i); }
+        for (size_t i = 0; i < refs.size(); ++i) nodes.emplace(refs[i].nodep(), i);
         std::vector<PackedVarRefEntry> vect;
         vect.reserve(nodes.size());
         for (const auto& pair : nodes) vect.push_back(refs[pair.second]);

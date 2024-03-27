@@ -120,7 +120,7 @@ public:
         // Compute the number of MTasks not shared (Hamming distance)
         int cost = 0;
         const size_t size = ExecMTask::numUsedIds();
-        for (size_t i = 0; i < size; ++i) { cost += m_mTaskIds.at(i) ^ otherp->m_mTaskIds.at(i); }
+        for (size_t i = 0; i < size; ++i) cost += m_mTaskIds.at(i) ^ otherp->m_mTaskIds.at(i);
         return cost;
     }
 };

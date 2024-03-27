@@ -198,12 +198,12 @@ class ClassVisitor final : public VNVisitor {
     void visit(AstInitial* nodep) override {
         // But not AstInitialAutomatic, which remains under the class
         iterateChildren(nodep);
-        if (m_packageScopep) { m_toScopeMoves.emplace_back(nodep, m_packageScopep); }
+        if (m_packageScopep) m_toScopeMoves.emplace_back(nodep, m_packageScopep);
     }
     void visit(AstInitialStatic* nodep) override {
         // But not AstInitialAutomatic, which remains under the class
         iterateChildren(nodep);
-        if (m_packageScopep) { m_toScopeMoves.emplace_back(nodep, m_packageScopep); }
+        if (m_packageScopep) m_toScopeMoves.emplace_back(nodep, m_packageScopep);
     }
 
     void setStructModulep(AstNodeUOrStructDType* const dtypep) {

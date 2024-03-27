@@ -342,7 +342,7 @@ class TraceDeclVisitor final : public VNVisitor {
 
         // Gather cells under this scope
         for (AstNode* stmtp = nodep->modp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstCell* const cellp = VN_CAST(stmtp, Cell)) { m_entries.emplace_back(cellp); }
+            if (AstCell* const cellp = VN_CAST(stmtp, Cell)) m_entries.emplace_back(cellp);
         }
 
         if (!m_entries.empty()) {

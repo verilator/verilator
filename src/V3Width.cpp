@@ -1355,7 +1355,7 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstCLog2* nodep) override {
-        if (m_vup->prelim()) { iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH); }
+        if (m_vup->prelim()) iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
     }
     void visit(AstPow* nodep) override {
         // Pow is special, output sign only depends on LHS sign, but

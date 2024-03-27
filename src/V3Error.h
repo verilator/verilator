@@ -272,7 +272,7 @@ public:
     bool isRenamed() const { return renamedTo() != V3ErrorCode{EC_MIN}; }
     bool isUnder(V3ErrorCode other) {
         // backwards compatibility inheritance-like warnings
-        if (m_e == other) { return true; }
+        if (m_e == other) return true;
         if (other == V3ErrorCode::WIDTH) {
             return (m_e == WIDTHEXPAND || m_e == WIDTHTRUNC || m_e == WIDTHXZEXPAND);
         }

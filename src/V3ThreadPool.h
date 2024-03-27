@@ -307,7 +307,7 @@ public:
         if (!V3ThreadPool::s().willExecuteSynchronously()) {
             V3ThreadPool::s().m_stoppedJobsMutex.lock();
 
-            if (V3ThreadPool::s().stopRequested()) { V3ThreadPool::s().waitForResumeRequest(); }
+            if (V3ThreadPool::s().stopRequested()) V3ThreadPool::s().waitForResumeRequest();
             V3ThreadPool::s().stopOtherThreads();
             V3ThreadPool::s().m_exclusiveAccess = true;
         } else {

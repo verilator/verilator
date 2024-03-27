@@ -26,7 +26,7 @@
 EmitCParentModule::EmitCParentModule() {
     const auto setAll = [](AstNodeModule* modp) -> void {
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (VN_IS(nodep, CFunc) || VN_IS(nodep, Var)) { nodep->user4p(modp); }
+            if (VN_IS(nodep, CFunc) || VN_IS(nodep, Var)) nodep->user4p(modp);
         }
     };
     for (AstNode* modp = v3Global.rootp()->modulesp(); modp; modp = modp->nextp()) {
@@ -173,7 +173,7 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
             putns(nodep, "&");
         }
         putns(nodep, nodep->nameProtect());
-        if (asRef && refNeedParens) { puts(")"); }
+        if (asRef && refNeedParens) puts(")");
         emitDeclArrayBrackets(nodep);
         puts(";\n");
     } else if (nodep->isIO() && basicp && !basicp->isOpaque()) {
@@ -203,7 +203,7 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
             puts("&");
         }
         puts(nodep->nameProtect());
-        if (asRef && refNeedParens) { puts(")"); }
+        if (asRef && refNeedParens) puts(")");
         emitDeclArrayBrackets(nodep);
         // If it's a packed struct/array then nodep->width is the whole
         // thing, msb/lsb is just lowest dimension

@@ -555,7 +555,7 @@ public:
         m_fullname_string = std::string{m_fullname} + "::";
         if (m_fullname_string == "\\$unit ::") m_fullname_string = "$unit::";
 
-        if (strcmp(m_name, "\\$unit ") == 0) { m_name = d_unit; }
+        if (strcmp(m_name, "\\$unit ") == 0) m_name = d_unit;
     }
     static VerilatedVpioPackage* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioPackage*>(reinterpret_cast<VerilatedVpio*>(h));

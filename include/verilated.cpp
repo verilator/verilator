@@ -605,7 +605,7 @@ WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP 
         const int words = VL_WORDS_I(obits);
         VL_ZERO_W(obits, owp);
         EData lor = 0;  // 0=all zeros, ~0=all ones, else mix
-        for (int i = 1; i < (words - 1); ++i) { lor |= lwp[i]; }
+        for (int i = 1; i < (words - 1); ++i) lor |= lwp[i];
         lor |= ((lwp[words - 1] == VL_MASK_E(rbits)) ? ~VL_EUL(0) : 0);
         if (lor == 0 && lwp[0] == 0) {  // "X" so return 0
             return owp;
@@ -1439,8 +1439,8 @@ void _vl_string_to_vint(int obits, void* destp, size_t srclen, const char* srcp)
     char* op = reinterpret_cast<char*>(destp);
     if (srclen > bytes) srclen = bytes;  // Don't overflow destination
     size_t i = 0;
-    for (i = 0; i < srclen; ++i) { *op++ = srcp[srclen - 1 - i]; }
-    for (; i < bytes; ++i) { *op++ = 0; }
+    for (i = 0; i < srclen; ++i) *op++ = srcp[srclen - 1 - i];
+    for (; i < bytes; ++i) *op++ = 0;
 }
 
 static IData getLine(std::string& str, IData fpi, size_t maxLen) VL_MT_SAFE {

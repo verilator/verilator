@@ -544,7 +544,7 @@ string VName::dehash(const string& in) {
 
         if (next_dot_pos != string::npos) {
             // Is there a __DOT__ to add to the dehashed version of 'in'?
-            if (!dehashed.empty()) { dehashed += "__DOT__"; }
+            if (!dehashed.empty()) dehashed += "__DOT__";
             last_dot_pos = next_dot_pos + DOT_LEN;
         } else {
             last_dot_pos = string::npos;

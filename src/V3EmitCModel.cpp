@@ -684,14 +684,14 @@ class EmitCModel final : public EmitCFunc {
             iterateConst(funcp);
         }
 
-        if (m_ofp) { VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr); }
+        if (m_ofp) VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
     }
 
     void main(AstNodeModule* modp) {
         m_modp = modp;
         emitHeader(modp);
         emitImplementation(modp);
-        if (v3Global.dpi()) { emitDpiExportDispatchers(modp); }
+        if (v3Global.dpi()) emitDpiExportDispatchers(modp);
     }
 
     // VISITORS

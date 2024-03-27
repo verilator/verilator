@@ -342,7 +342,7 @@ class ParamProcessor final {
             key += " ";
             key += paramValueString(dtypep->subDTypep());
         } else if (const AstBasicDType* const dtypep = VN_CAST(nodep, BasicDType)) {
-            if (dtypep->isSigned()) { key += " signed"; }
+            if (dtypep->isSigned()) key += " signed";
             if (dtypep->isRanged()) {
                 key += "[" + cvtToStr(dtypep->left()) + ":" + cvtToStr(dtypep->right()) + "]";
             }

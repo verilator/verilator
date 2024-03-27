@@ -125,7 +125,7 @@ public:
 
     const std::list<Vertex*> keysToVertexList(const std::vector<T_Key>& odds) {
         std::list<Vertex*> vertices;
-        for (unsigned i = 0; i < odds.size(); ++i) { vertices.push_back(findVertex(odds.at(i))); }
+        for (unsigned i = 0; i < odds.size(); ++i) vertices.push_back(findVertex(odds.at(i)));
         return vertices;
     }
 

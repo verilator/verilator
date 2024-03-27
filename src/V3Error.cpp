@@ -193,7 +193,7 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
                           << endl;
             }
         }
-        if (!msg_additional.empty()) { std::cerr << msg_additional; }
+        if (!msg_additional.empty()) std::cerr << msg_additional;
         // If first warning is not the user's fault (internal/unsupported) then give the website
         // Not later warnings, as a internal may be caused by an earlier problem
         if (tellManual() == 0) {

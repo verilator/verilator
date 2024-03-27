@@ -456,7 +456,7 @@ public:
 private:
     uint32_t bitsValue(int lsb, int nbits) const VL_MT_SAFE {
         uint32_t v = 0;
-        for (int bitn = 0; bitn < nbits; bitn++) { v |= (bitIs1(lsb + bitn) << bitn); }
+        for (int bitn = 0; bitn < nbits; bitn++) v |= (bitIs1(lsb + bitn) << bitn);
         return v;
     }
 

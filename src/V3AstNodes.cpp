@@ -2088,7 +2088,7 @@ void AstSliceSel::dump(std::ostream& str) const {
     if (declRange().ranged()) str << " decl" << declRange();
 }
 void AstSliceSel::dumpJson(std::ostream& str) const {
-    if (declRange().ranged()) { dumpJsonStr(str, "declRange", cvtToStr(declRange())); }
+    if (declRange().ranged()) dumpJsonStr(str, "declRange", cvtToStr(declRange()));
     dumpJsonGen(str);
 }
 void AstMTaskBody::dump(std::ostream& str) const {

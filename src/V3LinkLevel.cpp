@@ -277,7 +277,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                         varp->trace(false);
                     }
 
-                    if (v3Global.opt.noTraceTop() && varp->isIO()) { varp->trace(false); }
+                    if (v3Global.opt.noTraceTop() && varp->isIO()) varp->trace(false);
 
                     AstPin* const pinp = new AstPin{
                         oldvarp->fileline(), 0, varp->name(),

@@ -218,7 +218,7 @@ public:
         m_pinNum = 1;
     }
     void pinPop(FileLine* fl) {
-        if (VL_UNCOVERABLE(m_pinStack.empty())) { fl->v3fatalSrc("Underflow of pin stack"); }
+        if (VL_UNCOVERABLE(m_pinStack.empty())) fl->v3fatalSrc("Underflow of pin stack");
         m_pinNum = m_pinStack.top();
         m_pinStack.pop();
     }
@@ -7488,7 +7488,7 @@ vltOffFront<errcodeen>:
         |       yVLT_LINT_OFF                           { $$ = V3ErrorCode::I_LINT; }
         |       yVLT_LINT_OFF yVLT_D_RULE idAny
                         { const char *codemsg = (*$3).c_str();
-                          if (V3ErrorCode::unusedMsg(codemsg)) {$$ = V3ErrorCode::I_UNUSED; }
+                          if (V3ErrorCode::unusedMsg(codemsg)) $$ = V3ErrorCode::I_UNUSED;
                           else {$$ = V3ErrorCode{codemsg}; }
                           if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown error code: '" << *$3 << "'"); } }
         ;
@@ -7500,7 +7500,7 @@ vltOnFront<errcodeen>:
         |       yVLT_LINT_ON                            { $$ = V3ErrorCode::I_LINT; }
         |       yVLT_LINT_ON yVLT_D_RULE idAny
                         { const char *codemsg = (*$3).c_str();
-                          if (V3ErrorCode::unusedMsg(codemsg)) {$$ = V3ErrorCode::I_UNUSED; }
+                          if (V3ErrorCode::unusedMsg(codemsg)) $$ = V3ErrorCode::I_UNUSED;
                           else {$$ = V3ErrorCode{codemsg}; }
                           if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown error code: '" << *$3 << "'"); } }
         ;

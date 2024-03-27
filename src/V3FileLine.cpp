@@ -406,7 +406,7 @@ bool FileLine::warnIsOff(V3ErrorCode code) const {
     if ((code.lintError() || code.styleError()) && !msgEn().test(V3ErrorCode::I_LINT)) {
         return true;
     }
-    if ((code.unusedError()) && !msgEn().test(V3ErrorCode::I_UNUSED)) { return true; }
+    if ((code.unusedError()) && !msgEn().test(V3ErrorCode::I_UNUSED)) return true;
     return false;
 }
 

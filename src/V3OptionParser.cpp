@@ -162,7 +162,7 @@ V3OptionParser::ActionIfs* V3OptionParser::find(const char* optp) {
         if (act.second->isOnOffAllowed()) {  // Find starts with "-no"
             if (const char* const nop
                 = VString::startsWith(optp, "-no") ? (optp + std::strlen("-no")) : nullptr) {
-                if (act.first == nop || act.first == ("-"s + nop)) { return act.second.get(); }
+                if (act.first == nop || act.first == ("-"s + nop)) return act.second.get();
             }
         } else if (act.second->isPartialMatchAllowed()) {
             if (VString::startsWith(optp, act.first)) return act.second.get();
