@@ -1,0 +1,35 @@
+%Error-UNSUPPORTED: t/t_assert_ctl_unsupported_bad.v:14:7: Unsupported: '' control_type 1
+   14 |       $assertcontrol(1);
+      |       ^~~~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_assert_ctl_unsupported_bad.v:15:7: Unsupported: '' control_type 2
+   15 |       $assertcontrol(2);
+      |       ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsupported_bad.v:16:7: Unsupported: '$assertpasson' control_type 6
+   16 |       $assertcontrol(6);
+      |       ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsupported_bad.v:17:7: Unsupported: '$assertpassoff' control_type 7
+   17 |       $assertcontrol(7);
+      |       ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsupported_bad.v:18:7: Unsupported: '$assertfailon' control_type 8
+   18 |       $assertcontrol(8);
+      |       ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsupported_bad.v:19:7: Unsupported: '$assertfailoff' control_type 9
+   19 |       $assertcontrol(9);
+      |       ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsupported_bad.v:20:7: Unsupported: '$assertnonvacuouson' control_type 10
+   20 |       $assertcontrol(10);
+      |       ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsupported_bad.v:21:7: Unsupported: '$assertvacuousoff' control_type 11
+   21 |       $assertcontrol(11);
+      |       ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsupported_bad.v:27:7: Unexpected control_type (IEEE 1800-2023 Table 20-5)
+   27 |       $assertcontrol(0);
+      |       ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsupported_bad.v:28:7: Unexpected control_type (IEEE 1800-2023 Table 20-5)
+   28 |       $assertcontrol(100);
+      |       ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_unsupported_bad.v:29:7: Unexpected control_type (IEEE 1800-2023 Table 20-5)
+   29 |       $assertcontrol("3");
+      |       ^~~~~~~~~~~~~~
+%Error: Exiting due to

@@ -20,13 +20,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3Ast.h"
 #include "V3EmitCConstInit.h"
 #include "V3Global.h"
 #include "V3MemberMap.h"
-#include "V3ThreadSafety.h"
 
 #include <algorithm>
-#include <map>
 #include <unordered_set>
 #include <vector>
 
@@ -122,6 +121,7 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     int m_splitSize = 0;  // # of cfunc nodes placed into output file
     bool m_inUC = false;  // Inside an AstUCStmt or AstUCExpr
     bool m_emitConstInit = false;  // Emitting constant initializer
+    int m_assertCtlNum = 0;  // Next assertCtl number
 
     // State associated with processing $display style string formatting
     struct EmitDispState final {
@@ -751,6 +751,15 @@ public:
         putns(nodep, "VL_TESTPLUSARGS_I(");
         emitCvtPackStr(nodep->searchp());
         puts(")");
+    }
+    void visit(AstAssertCtlCheck* nodep) override {
+        if (nodep->controlled()) {
+            puts("vlSymsp->_vm_contextp__->assertOnFor(\"");
+            puts(nodep->scopep()->scopePrettySymName());
+            puts("\")");
+        } else {
+            puts("vlSymsp->_vm_contextp__->assertOn()");
+        }
     }
     void visit(AstFError* nodep) override {
         putns(nodep, "VL_FERROR_I");
@@ -1454,6 +1463,54 @@ public:
         // invoke the graph and wait for it to complete. Emitting the children does just that.
         UASSERT_OBJ(!nodep->mTaskBodiesp(), nodep, "These should have been lowered");
         iterateChildrenConst(nodep);
+    }
+    void visit(AstAssertCtl* nodep) override {
+        switch (nodep->ctlType()) {
+        case VAssertCtlType::ON:
+        case VAssertCtlType::OFF:
+        case VAssertCtlType::KILL: {
+            if (nodep->hierarchicalNames().empty() || nodep->name().empty()) break;
+
+            const string arraySize = std::to_string(nodep->hierarchicalNames().size());
+            string assertName = nodep->name() + std::to_string(m_assertCtlNum);
+            std::replace(assertName.begin(), assertName.end(), '.', '_');
+            const string arrayName = assertName + "_assertions";
+
+            string stmt
+                = "constexpr std::array<const char*, " + arraySize + "> " + arrayName + " = {\n";
+            for (const string& assertName : nodep->hierarchicalNames()) {
+                stmt += "\"" + assertName + "\",\n";
+            }
+            stmt += "};\n";
+
+            // assertkill has the same effect as assertoff
+            const string triggerAssertion
+                = nodep->ctlType() == VAssertCtlType::ON ? "true" : "false";
+
+            stmt += "for (const char* name : " + arrayName
+                    + ") {\n"
+                      "   vlSymsp->_vm_contextp__->assertOnFor(name, "
+                    + triggerAssertion + ");\n";
+            stmt += "}\n";
+            puts(stmt);
+            ++m_assertCtlNum;
+            break;
+        }
+        case VAssertCtlType::LOCK:
+        case VAssertCtlType::UNLOCK:
+        case VAssertCtlType::PASS_ON:
+        case VAssertCtlType::PASS_OFF:
+        case VAssertCtlType::FAIL_ON:
+        case VAssertCtlType::FAIL_OFF:
+        case VAssertCtlType::NONVACUOUS_ON:
+        case VAssertCtlType::VACUOUS_OFF:
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: '" << nodep->ctlType().ascii()
+                                                          << "' control_type "
+                                                          << static_cast<int>(nodep->ctlType()));
+            break;
+        default:
+            nodep->v3warn(E_UNSUPPORTED, "Unexpected control_type (IEEE 1800-2023 Table 20-5)");
+        }
     }
 
     // Default

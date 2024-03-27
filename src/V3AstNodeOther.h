@@ -2552,6 +2552,42 @@ public:
     bool isJustOneBodyStmt() const { return stmtsp() && !stmtsp()->nextp(); }
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
 };
+class AstAssertCtl final : public AstNodeStmt {
+    // @astgen op1 := controlTypep : Optional[AstNodeExpr]
+    VAssertCtlType m_ctlType;
+    string m_name;  // scope, kept under name show it on the graph
+    std::set<string> m_hierarchicalNames;
+
+public:
+    explicit AstAssertCtl(FileLine* fl, VAssertCtlType ctlType)
+        : ASTGEN_SUPER_AssertCtl(fl)
+        , m_ctlType{ctlType} {
+        controlTypep(nullptr);
+    }
+    explicit AstAssertCtl(FileLine* fl, AstNodeExpr* controlType)
+        : ASTGEN_SUPER_AssertCtl(fl)
+        , m_ctlType{VAssertCtlType::_TO_BE_EVALUATED} {
+        controlTypep(controlType);
+    }
+    ASTGEN_MEMBERS_AstAssertCtl;
+    string verilogKwd() const override { return m_ctlType.ascii(); }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
+    VAssertCtlType ctlType() const { return m_ctlType; }
+    void ctlType(const V3Number& type) {
+        if (type.isNumber()) m_ctlType = static_cast<VAssertCtlType>(type.toUInt());
+    }
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
+    void name(const string& name) override { m_name = name; }
+    string name() const override { return m_name; }
+    void hierarchicalNames(const std::set<string>& hierarchicalNames) {
+        m_hierarchicalNames = hierarchicalNames;
+    }
+    std::set<string> hierarchicalNames() const { return m_hierarchicalNames; }
+};
 class AstBreak final : public AstNodeStmt {
 public:
     explicit AstBreak(FileLine* fl)

@@ -1177,6 +1177,12 @@ AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
     return pair.first->second;
 }
 
+AstAssertCtlCheck::AstAssertCtlCheck(FileLine* fl, bool isControlled)
+    : ASTGEN_SUPER_AssertCtlCheck(fl)
+    , m_controlled(isControlled) {
+    this->scopep(new AstScopeName{fl, true});
+}
+
 AstConstPool::AstConstPool(FileLine* fl)
     : ASTGEN_SUPER_ConstPool(fl)
     , m_modp{new AstModule{fl, "@CONST-POOL@"}}
@@ -1442,7 +1448,14 @@ void AstAlways::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "keyword", keyword().ascii());
     dumpJsonGen(str);
 }
-
+void AstAssertCtl::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " [" << ctlType().ascii() << "]";
+}
+void AstAssertCtl::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "ctlType", ctlType().ascii());
+    dumpJsonGen(str);
+}
 void AstAttrOf::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " [" << attrType().ascii() << "]";
