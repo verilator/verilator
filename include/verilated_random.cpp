@@ -331,6 +331,7 @@ std::shared_ptr<const VlRandomExpr> VlRandomizer::random_constraint(VlRNG& rngr,
 }
 
 bool VlRandomizer::next(VlRNG& rngr) {
+    if (m_vars.empty()) return true;
     Process& f = get_solver();
     if (!f) return false;
 
