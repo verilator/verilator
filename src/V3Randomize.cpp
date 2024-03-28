@@ -157,10 +157,11 @@ class ConstraintExprVisitor final : public VNVisitor {
     bool editFormat(AstNodeExpr* nodep) {
         if (nodep->user1()) return false;
         // replace computable expression with SMT constant
+        VNRelinker handle;
+        nodep->unlinkFrBack(&handle);
         AstSFormatF* const newp = new AstSFormatF{
-            nodep->fileline(), (nodep->width() & 3) ? "#b%b" : "#x%x", false, nullptr};
-        nodep->replaceWith(newp);
-        newp->addExprsp(nodep);
+            nodep->fileline(), (nodep->width() & 3) ? "#b%b" : "#x%x", false, nodep};
+        handle.relink(newp);
         return true;
     }
     void editSMT(AstNodeExpr* nodep, const std::string& smtExpr, AstNodeExpr* lhsp = nullptr,
