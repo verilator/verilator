@@ -242,6 +242,51 @@ inline std::ostream& operator<<(std::ostream& os, const VAccess& rhs) { return o
 
 // ######################################################################
 
+class VBaseOverride final {
+    bool m_extends : 1;
+    bool m_final : 1;
+    bool m_initial : 1;
+
+public:
+    VBaseOverride()
+        : m_extends{false}
+        , m_final{false}
+        , m_initial{false} {}
+    class Extends {};
+    VBaseOverride(Extends)
+        : m_extends{true}
+        , m_final{false}
+        , m_initial{false} {}
+    class Final {};
+    VBaseOverride(Final)
+        : m_extends{false}
+        , m_final{true}
+        , m_initial{false} {}
+    class Initial {};
+    VBaseOverride(Initial)
+        : m_extends{false}
+        , m_final{false}
+        , m_initial{true} {}
+    void combine(const VBaseOverride& other) {
+        m_extends |= other.m_extends;
+        m_final |= other.m_final;
+        m_initial |= other.m_initial;
+    }
+    bool isAny() const { return m_extends | m_final | m_initial; }
+    bool isExtends() const { return m_extends; }
+    bool isFinal() const { return m_final; }
+    bool isInitial() const { return m_initial; }
+    string ascii() const {
+        string out;
+        if (m_initial) out = VString::dot(out, " ", "initial");
+        if (m_extends) out = VString::dot(out, " ", "extends");
+        if (m_final) out = VString::dot(out, " ", "final");
+        return out;
+    }
+};
+
+// ######################################################################
+
 class VSigning final {
 public:
     enum en : uint8_t {

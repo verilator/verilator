@@ -103,6 +103,7 @@ struct V3ParseBisonYYSType final {
     FileLine* fl;
     AstNode* scp;  // Symbol table scope for future lookups
     int token;  // Read token, aka tok
+    VBaseOverride baseOverride;
     union {
         V3Number* nump;
         string* strp;

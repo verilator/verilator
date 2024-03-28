@@ -87,6 +87,7 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     bool m_underGenerate : 1;  // Under generate (for warning)
     bool m_virtual : 1;  // Virtual method in class
     bool m_needProcess : 1;  // Needs access to VlProcess of the caller
+    VBaseOverride m_baseOverride;  // BaseOverride (inital/final/extends)
     VLifetime m_lifetime;  // Default lifetime of local vars
     VIsCached m_purity;  // Pure state
 
@@ -183,6 +184,8 @@ public:
     bool isVirtual() const { return m_virtual; }
     void setNeedProcess() { m_needProcess = true; }
     bool needProcess() const { return m_needProcess; }
+    void baseOverride(const VBaseOverride& flag) { m_baseOverride = flag; }
+    VBaseOverride baseOverride() const { return m_baseOverride; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
@@ -2272,6 +2275,7 @@ class AstClass final : public AstNodeModule {
     // @astgen op4 := extendsp : List[AstClassExtends]
     // MEMBERS
     // @astgen ptr := m_classOrPackagep : Optional[AstClassPackage]  // Package to be emitted with
+    VBaseOverride m_baseOverride;  // BaseOverride (inital/final/extends)
     bool m_extended = false;  // Is extension or extended by other classes
     bool m_interfaceClass = false;  // Interface class
     bool m_needRNG = false;  // Need RNG, uses srandom/randomize
@@ -2307,6 +2311,8 @@ public:
     // Return true if this class is an extension of base class (SLOW)
     // Accepts nullptrs
     static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);
+    void baseOverride(const VBaseOverride& flag) { m_baseOverride = flag; }
+    VBaseOverride baseOverride() const { return m_baseOverride; }
     // Return the lowest class extended from, or this class
     AstClass* baseMostClassp();
     static bool isCacheableChild(const AstNode* nodep);

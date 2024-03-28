@@ -1539,6 +1539,7 @@ void AstClass::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isExtended);
     dumpJsonBoolFunc(str, isInterfaceClass);
     dumpJsonBoolFunc(str, isVirtual);
+    if (baseOverride().isAny()) dumpJsonStr(str, "baseOverride", baseOverride().ascii());
     dumpJsonGen(str);
 }
 void AstClassExtends::dump(std::ostream& str) const {
@@ -2488,6 +2489,7 @@ void AstNodeFTask::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, prototype);
     dumpJsonBoolFunc(str, recursive);
     dumpJsonBoolFunc(str, taskPublic);
+    if (baseOverride().isAny()) dumpJsonStr(str, "baseOverride", baseOverride().ascii());
     dumpJsonStrFunc(str, cname);
     dumpJsonGen(str);
 }

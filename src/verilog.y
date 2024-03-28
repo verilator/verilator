@@ -4458,6 +4458,7 @@ list_of_argumentsE<nodeExprp>:  // IEEE: [list_of_arguments]
 task_declaration<nodeFTaskp>:   // ==IEEE: task_declaration
                 yTASK dynamic_override_specifiersE lifetimeE taskId tfGuts yENDTASK endLabelE
                         { $$ = $4; $$->addStmtsp($5); SYMP->popScope($$);
+                          $$->baseOverride($2);
                           $$->lifetime($3);
                           GRAMMARP->endLabel($<fl>7, $$, $7); }
         ;
@@ -4472,11 +4473,13 @@ task_prototype<nodeFTaskp>:             // ==IEEE: task_prototype
 function_declaration<nodeFTaskp>:       // IEEE: function_declaration + function_body_declaration
                 yFUNCTION dynamic_override_specifiersE lifetimeE funcId funcIsolateE tfGuts yENDFUNCTION endLabelE
                         { $$ = $4; $4->attrIsolateAssign($5); $$->addStmtsp($6);
+                          $$->baseOverride($2);
                           $$->lifetime($3);
                           SYMP->popScope($$);
                           GRAMMARP->endLabel($<fl>8, $$, $8); }
         |       yFUNCTION dynamic_override_specifiersE lifetimeE funcIdNew funcIsolateE tfNewGuts yENDFUNCTION endLabelE
                         { $$ = $4; $4->attrIsolateAssign($5); $$->addStmtsp($6);
+                          $$->baseOverride($2);
                           $$->lifetime($3);
                           SYMP->popScope($$);
                           GRAMMARP->endLabel($<fl>8, $$, $8); }
@@ -7011,6 +7014,7 @@ classFront<classp>:             // IEEE: part of class_declaration
         //                      // IEEE 1800-2023: lifetimeE replaced with final_specifierE
                 classVirtualE yCLASS final_specifierE lifetimeE idAny/*class_identifier*/
                         { $$ = new AstClass{$2, *$5};
+                          $$->baseOverride($3);
                           $$->isVirtual($1);
                           SYMP->pushNew($<classp>$);
                           v3Global.setHasClasses(); }
@@ -7223,20 +7227,22 @@ class_method<nodep>:            // ==IEEE: class_method
                         { $$ = $3; $2.applyToNodes($3); $3->isExternProto(true); }
         ;
 
-dynamic_override_specifiersE:  // IEEE: dynamic_override_specifiers or empty
-                /* empty */                             { /* UNSUP-2023-ignored */ }
+dynamic_override_specifiersE<baseOverride>:  // IEEE: dynamic_override_specifiers or empty
+                /* empty */                             { $$ = VBaseOverride{}; }
         //                      // IEEE: Expanded [ initial_or_extends_specifier ] [ final_specifier ]
         //                      // Note lifetime used by members is instead under memberQual
-        |       ':' yINITIAL                            { /* UNSUP-2023-ignored */ }
-        |       ':' yEXTENDS                            { /* UNSUP-2023-ignored */ }
-        |       ':' yINITIAL ':' yFINAL                 { /* UNSUP-2023-ignored */ }
-        |       ':' yEXTENDS ':' yFINAL                 { /* UNSUP-2023-ignored */ }
-        |       ':' yFINAL                              { /* UNSUP-2023-ignored */ }
+        |       ':' yINITIAL                            { $$ = VBaseOverride{VBaseOverride::Initial{}}; }
+        |       ':' yEXTENDS                            { $$ = VBaseOverride{VBaseOverride::Extends{}}; }
+        |       ':' yINITIAL ':' yFINAL                 { $$ = VBaseOverride{VBaseOverride::Initial{}};
+                                                          $$.combine(VBaseOverride{VBaseOverride::Final{}}); }
+        |       ':' yEXTENDS ':' yFINAL                 { $$ = VBaseOverride{VBaseOverride::Extends{}};
+                                                          $$.combine(VBaseOverride{VBaseOverride::Final{}}); }
+        |       ':' yFINAL                              { $$ = VBaseOverride{VBaseOverride::Final{}}; }
         ;
 
-final_specifierE:  // ==IEEE: final_specifier (similar to dynamic_override_specifiers)
-                /* empty */                             { }
-        |       ':' yFINAL                              { /* UNSUP-2023-ignored */ }
+final_specifierE<baseOverride>:  // ==IEEE: final_specifier (similar to dynamic_override_specifiers)
+                /* empty */                             { $$ = VBaseOverride{}; }
+        |       ':' yFINAL                              { $$ = VBaseOverride{VBaseOverride::Final{}}; }
         ;
 
 // IEEE: class_constructor_prototype

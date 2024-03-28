@@ -16,16 +16,18 @@ Verilator 5.023 devel
 * Add printing summary reports, use `--quiet` or `+verilator+quiet` to suppress (#4909).
 * Support 1800-2023 keywords, and parsing with UNDEFINED warnings.
 * Support 1800-2023 preprocessor ifdef expressions.
-* Support 1800-2023 DPI headers, svGetTime/svgGetTimeUnit/svGetTimePrecision methods.
 
 **Minor:**
 
+* Change 1800-2023 to be default language version.
 * Add DFG 'regularize' pass, and improve variable removal (#4937). [Geza Lore]
 * Add error when pass net to function argument (#4132) (#4966). [Fuad Ismail]
 * Add `UNUSEDLOOP` when unused loop is removed (#4926). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Add custom version for verilator --version packaging (#4954). [Nolan Poe]
 * Add error on missing pure virtual functions (#4961).
 * Add error on calling static function without object (#4962).
+* Support 1800-2023 DPI headers, svGetTime/svgGetTimeUnit/svGetTimePrecision methods.
+* Support 1800-2023 class and function :initial, :extends, :final virtual overrides (#5025).
 * Support public packed struct / union (#860) (#4878). [Kefa Chen]
 * Support implicitly-typed variable definitions in for-loop initializers (#4945) (#4986). [Kevin Nygaard]
 * Improve installation to be relocatable (#4927). [Geza Lore]
