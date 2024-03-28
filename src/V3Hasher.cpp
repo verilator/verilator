@@ -465,10 +465,8 @@ class HasherVisitor final : public VNVisitorConst {
         });
     }
     void visit(AstCellInline* nodep) override {
-        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [this, nodep]() {
-            m_hash += nodep->name();
-            iterateConstNull(nodep->scopep());
-        });
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN,
+                                     [this, nodep]() { m_hash += nodep->name(); });
     }
     void visit(AstNodeFTask* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [this, nodep]() {  //

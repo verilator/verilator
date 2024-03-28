@@ -288,7 +288,7 @@
             {"type":"VARREF","name":"o_b","addr":"(NF)","loc":"d,25:10,25:13","dtypep":"(K)","access":"WR","varp":"(L)","varScopep":"(U)","classOrPackagep":"UNLINKED"}
           ],"timingControlp": []}
         ]}
-      ]}
+      ],"inlinesp": []}
     ]},
     {"type":"VAR","name":"__Vfunc_vlvbound_test.foo__0__Vfuncout","addr":"(AB)","loc":"d,15:34,15:37","dtypep":"(K)","origName":"__Vfunc_vlvbound_test__DOT__foo__0__Vfuncout","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"NONE","varType":"BLOCKTEMP","dtypeName":"logic","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
     {"type":"VAR","name":"__Vfunc_vlvbound_test.foo__0__val","addr":"(CB)","loc":"d,15:57,15:60","dtypep":"(H)","origName":"__Vfunc_vlvbound_test__DOT__foo__0__val","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"NONE","varType":"BLOCKTEMP","dtypeName":"logic","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
@@ -317,7 +317,7 @@
    "modulep": [
     {"type":"MODULE","name":"@CONST-POOL@","addr":"(OF)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","level":0,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
      "stmtsp": [
-      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(PF)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(OF)","varsp": [],"blocksp": []}
+      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(PF)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(OF)","varsp": [],"blocksp": [],"inlinesp": []}
     ],"activesp": []}
   ]}
 ]}

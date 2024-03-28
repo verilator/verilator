@@ -178,7 +178,9 @@ class ScopeVisitor final : public VNVisitor {
         }
     }
     void visit(AstCellInline* nodep) override {  //
-        nodep->scopep(m_scopep);
+        if (v3Global.opt.vpi()) {
+            m_scopep->addInlinesp(new AstCellInlineScope{nodep->fileline(), m_scopep, nodep});
+        }
     }
     void visit(AstActive* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Actives now made after scoping");

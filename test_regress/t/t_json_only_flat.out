@@ -133,7 +133,7 @@
          "lhsp": [
           {"type":"VARREF","name":"q","addr":"(AD)","loc":"d,53:13,53:14","dtypep":"(H)","access":"WR","varp":"(G)","varScopep":"(BB)","classOrPackagep":"UNLINKED"}
         ],"timingControlp": [],"strengthSpecp": []}
-      ]}
+      ],"inlinesp": []}
     ]}
   ],"activesp": []}
 ],"filesp": [],
@@ -148,7 +148,7 @@
    "modulep": [
     {"type":"MODULE","name":"@CONST-POOL@","addr":"(BD)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","level":0,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
      "stmtsp": [
-      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(CD)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(BD)","varsp": [],"blocksp": []}
+      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(CD)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(BD)","varsp": [],"blocksp": [],"inlinesp": []}
     ],"activesp": []}
   ]}
 ]}

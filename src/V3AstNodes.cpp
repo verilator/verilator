@@ -1503,9 +1503,17 @@ void AstCell::dumpJson(std::ostream& str) const {
 void AstCellInline::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " -> " << origModName();
-    str << " [scopep=" << nodeAddr(scopep()) << "]";
 }
 void AstCellInline::dumpJson(std::ostream& str) const {
+    dumpJsonStrFunc(str, origModName);
+    dumpJsonGen(str);
+}
+void AstCellInlineScope::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " -> " << origModName();
+    str << " [scopep=" << nodeAddr(scopep()) << "]";
+}
+void AstCellInlineScope::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origModName);
     dumpJsonGen(str);
 }

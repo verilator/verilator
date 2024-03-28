@@ -1286,6 +1286,10 @@ sub compile {
     }
 
     if ($param{make_pli}) {
+        # if make_pli is a string and not one
+        if ($param{make_pli} ne "1") {
+            $self->{pli_filename} = $param{make_pli};
+        }
         $self->oprint("Compile vpi\n") if $self->{verbose};
         my @cmd = ($ENV{CXX}, @{$param{pli_flags}},
                    "-D" . $param{tool_define},
