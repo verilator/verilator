@@ -50,6 +50,9 @@
 #ifndef DEFENV_VERILATOR_ROOT
 # define DEFENV_VERILATOR_ROOT ""
 #endif
+#ifndef DEFENV_VERILATOR_SOLVER
+# define DEFENV_VERILATOR_SOLVER ""
+#endif
 // clang-format on
 
 //**********************************************************************

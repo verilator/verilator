@@ -1,12 +1,20 @@
+%Warning-CONSTRAINTIGN: t/t_randomize_method_types_unsup.v:20:30: State-dependent constraint ignored (unsupported)
+                                                                : ... note: In instance 't'
+   20 |    constraint statedep { i < st + 2; }
+      |                              ^~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:19:25: Unsupported: random member variable with type 'int[]'
+   19 |    constraint dynsize { dynarr.size < 20; }
+      |                         ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_method_types_unsup.v:20:28: Constraint expression ignored (unsupported)
+                                                                : ... note: In instance 't'
+   20 |    constraint statedep { i < st + 2; }
+      |                            ^
 %Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:12:13: Unsupported: random member variable with type 'int[string]'
                                                             : ... note: In instance 't'
    12 |    rand int assocarr[string];
       |             ^~~~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:13:13: Unsupported: random member variable with type 'int[]'
-                                                            : ... note: In instance 't'
-   13 |    rand int dynarr[];
-      |             ^~~~~~
 %Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:14:13: Unsupported: random member variable with type 'int$[0:4]'
                                                             : ... note: In instance 't'
    14 |    rand int unpackarr[5];

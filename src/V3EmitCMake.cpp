@@ -85,6 +85,9 @@ class CMakeEmitter final {
         cmake_set(*of, "VERILATOR_ROOT",
                   V3OutFormatter::quoteNameControls(V3Options::getenvVERILATOR_ROOT()), "PATH",
                   "Path to Verilator kit (from $VERILATOR_ROOT)");
+        cmake_set(*of, "VERILATOR_SOLVER",
+                  V3OutFormatter::quoteNameControls(V3Options::getenvVERILATOR_SOLVER()), "STRING",
+                  "Default SMT solver for constrained randomization (from $VERILATOR_SOLVER)");
 
         *of << "\n### Compiler flags...\n";
 
@@ -159,6 +162,9 @@ class CMakeEmitter final {
         }
         if (v3Global.usesTiming()) {
             global.emplace_back("${VERILATOR_ROOT}/include/verilated_timing.cpp");
+        }
+        if (v3Global.useRandomizeMethods()) {
+            global.emplace_back("${VERILATOR_ROOT}/include/verilated_random.cpp");
         }
         global.emplace_back("${VERILATOR_ROOT}/include/verilated_threads.cpp");
         if (v3Global.opt.usesProfiler()) {

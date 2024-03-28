@@ -722,6 +722,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
         return "";
     } else if (basicp && basicp->isDynamicTriggerScheduler()) {
         return "";
+    } else if (basicp && basicp->isRandomGenerator()) {
+        return "";
     } else if (basicp) {
         const bool zeroit
             = (varp->attrFileDescr()  // Zero so we don't do file IO if never $fopen
