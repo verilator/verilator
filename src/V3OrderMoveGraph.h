@@ -110,8 +110,8 @@ class OrderMoveDomScope final {
 
         struct Hash final {
             size_t operator()(const DomScopeMapKey& key) const {
-                V3Hash hash{reinterpret_cast<uintptr_t>(key.m_domainp)};
-                hash += reinterpret_cast<uintptr_t>(key.m_scopep);
+                V3Hash hash{reinterpret_cast<uint64_t>(key.m_domainp)};
+                hash += reinterpret_cast<uint64_t>(key.m_scopep);
                 return hash.value();
             }
         };
