@@ -57,6 +57,7 @@ module t;
       `checkh ((4'd3 inside {[4'd1:4'd2], [4'd3:4'd5]}), 1'b1);
       `checkh ((4'd4 inside {[4'd1:4'd2], [4'd3:4'd5]}), 1'b1);
       `checkh ((4'd5 inside {[4'd1:4'd2], [4'd3:4'd5]}), 1'b1);
+      `checkh ((4.0 inside {[4'd1:4'd2], [4'd3:4'd5]}), 1'b1);
       //
       // Unsupported $ bound
       //
