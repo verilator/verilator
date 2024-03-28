@@ -71,6 +71,7 @@ Deadman
 Debacker
 Deepa
 Defparams
+Delm
 Denio
 Deprecations
 Deroo
@@ -185,6 +186,7 @@ Jiaxun
 Jiuyang
 Joannou
 Joly
+Josse
 Jullien
 Junji
 Junyi

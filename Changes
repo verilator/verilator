@@ -26,10 +26,13 @@ Verilator 5.023 devel
 * Add custom version for verilator --version packaging (#4954). [Nolan Poe]
 * Add error on missing pure virtual functions (#4961).
 * Add error on calling static function without object (#4962).
+* Add JSON AST dumps (#5020). [Szymon Gizler]
 * Support 1800-2023 DPI headers, svGetTime/svgGetTimeUnit/svGetTimePrecision methods.
 * Support 1800-2023 class and function :initial, :extends, :final virtual overrides (#5025).
 * Support public packed struct / union (#860) (#4878). [Kefa Chen]
+* Support stream operation on unpacked array (#4714) (#5006). [Fuad Ismail]
 * Support implicitly-typed variable definitions in for-loop initializers (#4945) (#4986). [Kevin Nygaard]
+* Support inside range with implicit type conversion (#5026). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Improve installation to be relocatable (#4927). [Geza Lore]
 * Improve internal ordering code (#4957) (#4990) (#4994) et al. [Geza Lore]
 * Fix generate blocks in vpi_iterate (#3609) (#4913). [Andrew Nolte]
@@ -51,6 +54,7 @@ Verilator 5.023 devel
 * Fix `unique {}` constraints missing semicolon (#5001).
 * Fix preprocessor to respect strings in joins (#5007).
 * Fix tracing class parameters (#5014).
+* Fix memory leaks (#5016). [Geza Lore]
 * Fix $readmem with missing newline (#5019). [Josse Van Delm]
 * Fix internal error on missing pattern key (#5023).
 
