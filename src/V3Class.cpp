@@ -158,7 +158,7 @@ class ClassVisitor final : public VNVisitor {
                 // have a pointer to it yet
                 m_toScopeMoves.emplace_back(nodep, m_packageScopep);
             }
-            if (!m_ftaskp && nodep->lifetime().isStatic()) {
+            if (!m_ftaskp && (nodep->lifetime().isStatic() || nodep->isParam())) {
                 m_toPackageMoves.emplace_back(nodep, m_classPackagep);
                 // We're really moving the VarScope but we might not
                 // have a pointer to it yet
