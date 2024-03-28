@@ -98,13 +98,14 @@ protected:
     }
 
 public:
-    Process(const char* const* const cmd = nullptr)
+    explicit Process(const char* const* const cmd = nullptr)
         : std::streambuf{}
         , std::iostream{this}
         , m_cmd{cmd}
         , m_readFd{-1}
         , m_writeFd{-1}
         , m_pid{0}
+        , m_pidStatus{0}
         , m_pidExited{true} {
         setp(std::begin(m_writeBuf), std::end(m_writeBuf));
         setg(m_readBuf, m_readBuf, m_readBuf);
