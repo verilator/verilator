@@ -348,10 +348,12 @@ detailed descriptions of these arguments.
     --dump-tree                 Enable dumping Ast .tree files
     --dump-tree-addrids         Use short identifiers instead of addresses
     --dump-tree-dot             Enable dumping Ast .tree.dot debug files
+    --dump-tree-json            Enable dumping Ast .tree.json files and .tree.meta.json file
     --dump-<srcfile>            Enable dumping everything in source file
     --dumpi-dfg <level>         Enable dumping DfgGraphs to .dot files at level
     --dumpi-graph <level>       Enable dumping V3Graphs to .dot files at level
     --dumpi-tree <level>        Enable dumping Ast .tree files at level
+    --dumpi-tree-json <level>   Enable dumping Ast .tree.json files at level
     --dumpi-<srcfile> <level>   Enable dumping everything in source file at level
      -E                         Preprocess, but do not compile
     --error-limit <value>       Abort after this number of errors

@@ -438,6 +438,7 @@ PY_PROGRAMS = \
 	src/cppcheck_filtered \
 	src/flexfix \
 	src/vlcovgen \
+	src/.gdbinit.py \
 	test_regress/t/*.pf \
 	nodist/clang_check_attributes \
 	nodist/code_coverage \

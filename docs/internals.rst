@@ -1701,7 +1701,7 @@ Similarly, the ``NETLIST`` has a list of modules referred to by its
 
 ``.tree.json``` is an alternative dump format to ``.tree`` that is meant for
 programmatic processing (e.g. with `astsee <https://github.com/antmicro/astsee>`_).
-To enable this dump format, use :vlopt:`--json-only`.
+To enable this dump format, use :vlopt:`--dump-tree-json` or :vlopt:`--json-only`.
 
 Structure:
 ::
@@ -1743,8 +1743,8 @@ Structure:
 
 .tree.meta.json Output
 ----------------
-
-.tree.meta.json contains metadata that is common across the whole AST tree.
+.tree.meta.json contains metadata that is common across the whole AST tree
+(in case of --dump-tree-json, multiple trees share one meta file).
 
 Besides de-duplication of data shared between multiple stages, .meta.json enables offloading
 unstable data (that can vary from machine-to-machine or run-to-run) from main .tree.json.
@@ -1845,6 +1845,20 @@ To print a node:
    # or: call dumpGdb(nodep)  # aliased to "pn" in src/.gdbinit
    pnt nodep
    # or: call dumpTreeGdb(nodep)  # aliased to "pnt" in src/.gdbinit
+
+``src/.gdbinit`` and ``src/.gdbinit.py`` define handy utilities for working with
+JSON AST dumps. For example:
+
+* ``jstash nodep`` - Perform a JSON AST dump and save it into GDB value history (e.g. ``$1``)
+* ``jtree nodep`` - Perform a JSON AST dump and pretty print it using ``astsee_verilator``.
+* ``jtree $1`` - Pretty print a dump that was previously saved by ``jstash``.
+* ``jtree nodep -d '.file, .timeunit'`` - Perform a JSON AST dump, filter out some fields and pretty print it.
+* ``jtree 0x55555613dca0`` - Pretty print using address literal (rather than actual pointer).
+* ``jtree $1 nodep`` - Diff ``nodep`` against an older dump.
+
+A detailed description of ``jstash`` and ``jtree`` can be displayed using ``gdb``'s ``help`` command.
+
+These commands require `astsee <https://github.com/antmicro/astsee>`_ to be installed.
 
 When GDB halts, it is useful to understand that the backtrace will commonly
 show the iterator functions between each invocation of ``visit`` in the

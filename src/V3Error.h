@@ -685,7 +685,11 @@ void v3errorEndFatal(std::ostringstream& sstr)
     VL_DEFINE_DUMP(DfgLevel, "dfg"); /* Define 'int dumpDfgLevel()' for --dumpi-level */ \
     VL_DEFINE_DUMP(GraphLevel, "graph"); /* Define 'int dumpGraphLevel()' for dumpi-graph */ \
     VL_DEFINE_DUMP(TreeLevel, "tree"); /* Define 'int dumpTreeLevel()' for dumpi-tree */ \
-    VL_ATTR_UNUSED static int dumpTreeEitherLevel() { return dumpTreeLevel(); } \
+    VL_DEFINE_DUMP(TreeJsonLevel, \
+                   "tree-json"); /* Define 'int dumpTreeJsonLevel()' for dumpi-tree-json */ \
+    VL_ATTR_UNUSED static int dumpTreeEitherLevel() { \
+        return dumpTreeJsonLevel() >= dumpTreeLevel() ? dumpTreeJsonLevel() : dumpTreeLevel(); \
+    } \
     static_assert(true, "")
 
 //----------------------------------------------------------------------
