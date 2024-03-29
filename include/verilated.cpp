@@ -82,6 +82,10 @@
 
 #include "verilated_trace.h"
 
+#ifndef VL_DEFAULT_SOLVER
+#define VL_DEFAULT_SOLVER "z3 --in"
+#endif
+
 // Max characters in static char string for VL_VALUE_STRING
 constexpr unsigned VL_VALUE_STRING_MAX_WIDTH = 8192;
 
@@ -2460,6 +2464,7 @@ VerilatedContext::VerilatedContext()
     m_ns.m_coverageFilename = "coverage.dat";
     m_ns.m_profExecFilename = "profile_exec.dat";
     m_ns.m_profVltFilename = "profile.vlt";
+    m_ns.m_solverProgram = VlOs::getenvStr("VERILATOR_SOLVER", VL_DEFAULT_SOLVER);
     m_fdps.resize(31);
     std::fill(m_fdps.begin(), m_fdps.end(), static_cast<FILE*>(nullptr));
     m_fdFreeMct.resize(30);
@@ -2569,6 +2574,14 @@ void VerilatedContext::profVltFilename(const std::string& flag) VL_MT_SAFE {
 std::string VerilatedContext::profVltFilename() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     return m_ns.m_profVltFilename;
+}
+void VerilatedContext::solverProgram(const std::string& flag) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    m_ns.m_solverProgram = flag;
+}
+std::string VerilatedContext::solverProgram() const VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_ns.m_solverProgram;
 }
 void VerilatedContext::quiet(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};

@@ -1037,16 +1037,17 @@ Constrained randomization
 Because general constrained randomization is a co-NP-hard problem, not all
 cases are implemented in Verilator, and an external specialized SMT solver is
 used for any non-obvious ones.
+
 The ``randomize()`` method spawns an SMT solver in a sub-process. Then the
 solver gets a setup query, then the definition of variables, then all the
 constraints (SMT assertions) about the variables. Since the solver has no
 information about the class' PRNG state, if the problem is satisfiable,
 the solution space is further constrained by adding extra random constraints,
 and querying the values satisfying the problem statement.
-They are currently constructed as fixing a simple xor of randomly chosen bits
-of the variables being randomized.
+The constraint is currently constructed as fixing a simple xor of randomly
+chosen bits of the variables being randomized.
 
-There are several runtime classes used for handling the randomization defined in
+The runtime classes used for handling the randomization are  defined in
 ``verilated_random.h`` and ``verilated_random.cpp``.
 
 
@@ -1086,13 +1087,13 @@ The solver gets the constraints in `SMT-LIB2
     (check-sat)
 
 The solver responds with either ``sat`` or ``unsat``. Then the initial solution
-is queried with
+is queried with:
 
 ::
 
     (get-value (v w x z t ))
 
-The solver then responds with something like
+The solver then responds with e.g.:
 
 ::
 
@@ -1103,7 +1104,7 @@ The solver then responds with something like
      (t #b00000000000000000000000))
 
 And then a follow-up query (or a series thereof) is asked, and the solver gets
-reset, so that it can be reused by subsequent randomization attempts.
+reset, so that it can be reused by subsequent randomization attempts:
 
 ::
 

@@ -121,8 +121,8 @@ associated programs.
 .. option:: VERILATOR_SOLVER
 
    If set, the command to run as a constrained randomization backend, such
-   as "cvc4 --lang=smt2 --incremental".  If not specified, it will use the
-   one supplied or found during configure, or "z3 --in" if empty.
+   as :command:`cvc4 --lang=smt2 --incremental`.  If not specified, it will use
+   the one supplied or found during configure, or :command:`z3 --in` if empty.
 
 .. option:: VERILATOR_VALGRIND
 

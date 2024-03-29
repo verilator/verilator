@@ -145,14 +145,12 @@ AC_ARG_WITH([solver],
                               [set default SMT solver for constrained randomization])],
               [CFG_WITH_SOLVER="${withval}"],
               [CFG_WITH_SOLVER=no
-               if test "x$HAVE_CVC4" = "xyes"; then
-                CFG_WITH_SOLVER="cvc4 --lang=smt2 --incremental"
-               fi
-               if test "x$HAVE_CVC5" = "xyes"; then
-                CFG_WITH_SOLVER="cvc5 --incremental"
-               fi
                if test "x$HAVE_Z3" = "xyes"; then
                 CFG_WITH_SOLVER="z3 --in"
+               elif test "x$HAVE_CVC5" = "xyes"; then
+                CFG_WITH_SOLVER="cvc5 --incremental"
+               elif test "x$HAVE_CVC4" = "xyes"; then
+                CFG_WITH_SOLVER="cvc4 --lang=smt2 --incremental"
                fi]
               )
 AC_SUBST(CFG_WITH_SOLVER)

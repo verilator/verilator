@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2024 by Antmicro Ltd.  This program is free software; you can
+// Copyright 2024 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU Lesser
 // General Public License Version 3 or the Perl Artistic License Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
@@ -44,21 +44,20 @@
 #endif
 // clang-format on
 
-#ifndef DEFAULT_SOLVER
-#define DEFAULT_SOLVER "z3 --in"
-#endif
-
-static char default_solver[] = DEFAULT_SOLVER;
-
 class Process final : private std::streambuf, public std::iostream {
-    const char* const* m_cmd;
-    int m_readFd;
-    int m_writeFd;
-    pid_t m_pid;
-    bool m_pidExited;
-    int m_pidStatus;
-    char m_readBuf[4096];
-    char m_writeBuf[4096];
+    static constexpr int BUFFER_SIZE = 4096;
+    const char* const* m_cmd = nullptr;  // fork() process argv
+#ifdef SMT_PIPE
+    pid_t m_pid = 0;  // fork() process id
+#else
+    int m_pid = 0;  // fork() process id - always zero as disabled
+#endif
+    bool m_pidExited = true;  // If subprocess has exited and can be opened
+    int m_pidStatus = 0;  // fork() process exit status, valid if m_pidExited
+    int m_writeFd = -1;  // File descriptor TO subprocess
+    int m_readFd = -1;  // File descriptor FROM subprocess
+    char m_readBuf[BUFFER_SIZE];
+    char m_writeBuf[BUFFER_SIZE];
 
 public:
     typedef std::streambuf::traits_type traits_type;
@@ -101,16 +100,10 @@ public:
     explicit Process(const char* const* const cmd = nullptr)
         : std::streambuf{}
         , std::iostream{this}
-        , m_cmd{cmd}
-        , m_readFd{-1}
-        , m_writeFd{-1}
-        , m_pid{0}
-        , m_pidStatus{0}
-        , m_pidExited{true} {
-        setp(std::begin(m_writeBuf), std::end(m_writeBuf));
-        setg(m_readBuf, m_readBuf, m_readBuf);
+        , m_cmd{cmd} {
         open(cmd);
     }
+
     void wait_report() {
         if (m_pidExited) return;
 #ifdef SMT_PIPE
@@ -118,7 +111,7 @@ public:
         if (m_pidStatus) {
             std::stringstream msg;
             msg << "Subprocess command `" << m_cmd[0];
-            for (const char* const* arg = m_cmd; *arg; arg++) msg << ' ' << *arg;
+            for (const char* const* arg = m_cmd + 1; *arg; arg++) msg << ' ' << *arg;
             msg << "' failed: ";
             if (WIFSIGNALED(m_pidStatus))
                 msg << strsignal(WTERMSIG(m_pidStatus))
@@ -131,13 +124,23 @@ public:
 #endif
         m_pidExited = true;
         m_pid = 0;
-        close(m_readFd);
-        close(m_writeFd);
-        m_readFd = -1;
-        m_writeFd = -1;
+        closeFds();
+    }
+
+    void closeFds() {
+        if (m_writeFd != -1) {
+            close(m_writeFd);
+            m_writeFd = -1;
+        }
+        if (m_readFd != -1) {
+            close(m_readFd);
+            m_readFd = -1;
+        }
     }
 
     bool open(const char* const* const cmd) {
+        setp(std::begin(m_writeBuf), std::end(m_writeBuf));
+        setg(m_readBuf, m_readBuf, m_readBuf);
 #ifdef SMT_PIPE
         if (!cmd || !cmd[0]) return false;
         m_cmd = cmd;
@@ -215,10 +218,9 @@ static Process& get_solver() {
     s_done = true;
 
     static std::vector<const char*> s_argv;
-    char* solver = getenv("VERILATOR_SOLVER");
-    if (!solver || !solver[0]) solver = default_solver;
-    s_argv.emplace_back(solver);
-    for (char* arg = solver; *arg; arg++) {
+    static std::string s_program = Verilated::threadContextp()->solverProgram();
+    s_argv.emplace_back(&s_program[0]);
+    for (char* arg = &s_program[0]; *arg; arg++) {
         if (*arg == ' ') {
             *arg = '\0';
             s_argv.emplace_back(arg + 1);
@@ -226,7 +228,7 @@ static Process& get_solver() {
     }
     s_argv.emplace_back(nullptr);
 
-    const char* const* cmd = &s_argv[0];
+    const char* const* const cmd = &s_argv[0];
     s_solver.open(cmd);
     s_solver << "(set-logic QF_BV)\n";
     s_solver << "(check-sat)\n";
@@ -241,12 +243,10 @@ static Process& get_solver() {
     msg << " ... Tried: $";
     for (const char* const* arg = cmd; *arg; arg++) msg << ' ' << *arg;
     msg << '\n';
-
     const std::string str = msg.str();
     VL_WARN_MT("", 0, "randomize", str.c_str());
 
-    while (getline(s_solver, s))
-        ;
+    while (getline(s_solver, s)) {}
     return s_solver;
 }
 
@@ -275,10 +275,9 @@ bool VlRandomVar::set(std::string&& val) const {
     VL_SET_WQ(qowp, 0ULL);
     WDataOutP owp = qowp;
     int obits = width();
-    if (obits > VL_QUADSIZE) owp = reinterpret_cast<WDataOutP>(ref());
+    if (obits > VL_QUADSIZE) owp = reinterpret_cast<WDataOutP>(datap());
     int i;
-    for (i = 0; val[i] && val[i] != '#'; i++)
-        ;
+    for (i = 0; val[i] && val[i] != '#'; i++) {}
     if (val[i++] != '#') return false;
     switch (val[i++]) {
     case 'b': _vl_vsss_based(owp, obits, 1, &val[i], 0, val.size() - i); break;
@@ -286,20 +285,21 @@ bool VlRandomVar::set(std::string&& val) const {
     case 'h':  // FALLTHRU
     case 'x': _vl_vsss_based(owp, obits, 4, &val[i], 0, val.size() - i); break;
     default:
-        VL_WARN_MT(__FILE__, __LINE__, "randomize", "Internal: unable to parse randomized number");
+        VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                   "Internal: Unable to parse solver's randomized number");
         return false;
     }
     if (obits <= VL_BYTESIZE) {
-        CData* const p = static_cast<CData*>(ref());
+        CData* const p = static_cast<CData*>(datap());
         *p = VL_CLEAN_II(obits, obits, owp[0]);
     } else if (obits <= VL_SHORTSIZE) {
-        SData* const p = static_cast<SData*>(ref());
+        SData* const p = static_cast<SData*>(datap());
         *p = VL_CLEAN_II(obits, obits, owp[0]);
     } else if (obits <= VL_IDATASIZE) {
-        IData* const p = static_cast<IData*>(ref());
+        IData* const p = static_cast<IData*>(datap());
         *p = VL_CLEAN_II(obits, obits, owp[0]);
     } else if (obits <= VL_QUADSIZE) {
-        QData* const p = static_cast<QData*>(ref());
+        QData* const p = static_cast<QData*>(datap());
         *p = VL_CLEAN_QQ(obits, obits, VL_SET_QW(owp));
     } else {
         _vl_clean_inplace_w(obits, owp);
@@ -332,7 +332,7 @@ std::shared_ptr<const VlRandomExpr> VlRandomizer::random_constraint(VlRNG& rngr,
 
 bool VlRandomizer::next(VlRNG& rngr) {
     if (m_vars.empty()) return true;
-    Process& f = get_solver();
+    std::iostream& f = get_solver();
     if (!f) return false;
 
     f << "(set-option :produce-models true)\n";

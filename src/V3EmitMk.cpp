@@ -191,7 +191,7 @@ public:
         of.puts("VM_USER_CFLAGS = \\\n");
         const std::string solver = V3Options::getenvVERILATOR_SOLVER();
         if (v3Global.useRandomizeMethods() && solver != "")
-            of.puts("\t-DDEFAULT_SOLVER='\"" + V3OutFormatter::quoteNameControls(solver)
+            of.puts("\t-DVL_DEFAULT_SOLVER='\"" + V3OutFormatter::quoteNameControls(solver)
                     + "\"' \\\n");
         if (!v3Global.opt.libCreate().empty()) of.puts("\t-fPIC \\\n");
         const V3StringList& cFlags = v3Global.opt.cFlags();

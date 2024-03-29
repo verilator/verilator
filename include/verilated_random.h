@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2024 by Antmicro Ltd.  This program is free software; you can
+// Copyright 2024 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU Lesser
 // General Public License Version 3 or the Perl Artistic License Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
@@ -35,25 +35,25 @@ public:
     virtual void emit(std::ostream& s) const = 0;
 };
 class VlRandomVar final : public VlRandomExpr {
-    const char* const m_name;  // variable name
-    void* const m_ref;  // reference to variable data
-    const int m_width;  // variable width in bits
+    const char* const m_name;  // Variable name
+    void* const m_datap;  // Reference to variable data
+    const int m_width;  // Variable width in bits
 
 public:
-    VlRandomVar(const char* name, int width, void* ref)
+    VlRandomVar(const char* name, int width, void* datap)
         : m_name{name}
-        , m_ref{ref}
+        , m_datap{datap}
         , m_width{width} {}
     const char* name() const { return m_name; }
     int width() const { return m_width; }
-    void* ref() const { return m_ref; }
+    void* datap() const { return m_datap; }
     bool set(std::string&&) const;
     void emit(std::ostream& s) const;
 };
 
 class VlRandomConst final : public VlRandomExpr {
-    const QData m_val;  // constant value
-    const int m_width;  // constant width in bits
+    const QData m_val;  // Constant value
+    const int m_width;  // Constant width in bits
 
 public:
     VlRandomConst(QData val, int width)
@@ -65,8 +65,8 @@ public:
 };
 
 class VlRandomExtract final : public VlRandomExpr {
-    const std::shared_ptr<const VlRandomExpr> m_expr;  // sub-expression
-    const unsigned m_idx;  // extracted index
+    const std::shared_ptr<const VlRandomExpr> m_expr;  // Sub-expression
+    const unsigned m_idx;  // Extracted index
 
 public:
     VlRandomExtract(std::shared_ptr<const VlRandomExpr> expr, unsigned idx)
@@ -76,8 +76,8 @@ public:
 };
 
 class VlRandomBinOp final : public VlRandomExpr {
-    const char* const m_op;  // binary operation identifier
-    const std::shared_ptr<const VlRandomExpr> m_lhs, m_rhs;  // sub-expressions
+    const char* const m_op;  // Binary operation identifier
+    const std::shared_ptr<const VlRandomExpr> m_lhs, m_rhs;  // Sub-expressions
 
 public:
     VlRandomBinOp(const char* op, std::shared_ptr<const VlRandomExpr> lhs,
@@ -93,9 +93,9 @@ public:
 
 class VlRandomizer final {
     // MEMBERS
-    std::vector<std::string> m_constraints;  // solver-dependent constraints
+    std::vector<std::string> m_constraints;  // Solver-dependent constraints
     std::map<std::string, std::shared_ptr<const VlRandomVar>>
-        m_vars;  // solver-dependent variables
+        m_vars;  // Solver-dependent variables
 
     // PRIVATE METHODS
     std::shared_ptr<const VlRandomExpr> random_constraint(VlRNG& rngr, int bits);
