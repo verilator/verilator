@@ -2584,7 +2584,7 @@ void VerilatedContext::printStatsSummary() VL_MT_UNSAFE {
               simtime.c_str(), walltime, simtimePerf.c_str());
     const double modelMB = VlOs::memUsageBytes() / 1024.0 / 1024.0;
     VL_PRINTF("- Verilator: cpu %0.3f s on %d threads; alloced %0.0f MB\n", cputime,
-              modelThreads(), modelMB);
+              threadsInModels(), modelMB);
 }
 void VerilatedContext::quiet(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
@@ -2666,7 +2666,7 @@ void VerilatedContext::addModel(VerilatedModel* modelp) {
     }
     threadPoolp();  // Ensure thread pool is created, so m_threads cannot change any more
 
-    m_modelThreads += modelp->threads();
+    m_threadsInModels += modelp->threads();
     if (VL_UNLIKELY(modelp->threads() > m_threads)) {
         std::ostringstream msg;
         msg << "VerilatedContext has " << m_threads << " threads but model '"

@@ -409,7 +409,7 @@ protected:
     // Number of threads to use for simulation (size of m_threadPool + 1 for main thread)
     unsigned m_threads = std::thread::hardware_concurrency();
     // Number of threads in added models
-    unsigned m_modelThreads = 0;
+    unsigned m_threadsInModels = 0;
     // The thread pool shared by all models added to this context
     std::unique_ptr<VerilatedVirtualBase> m_threadPool;
     // The execution profiler shared by all models added to this context
@@ -561,7 +561,7 @@ public:
     /// Get number of threads used for simulation (including the main thread)
     unsigned threads() const { return m_threads; }
     /// Get number of threads in added models (for statistical use only)
-    unsigned modelThreads() const { return m_modelThreads; }
+    unsigned threadsInModels() const { return m_threadsInModels; }
     /// Set number of threads used for simulation (including the main thread)
     /// Can only be called before the thread pool is created (before first model is added).
     void threads(unsigned n);
@@ -589,8 +589,8 @@ public:
         return reinterpret_cast<const VerilatedContextImp*>(this);
     }
 
+    // Internal: Model and thread setup
     void addModel(VerilatedModel*);
-
     VerilatedVirtualBase* threadPoolp();
     void prepareClone();
     VerilatedVirtualBase* threadPoolpOnClone();
