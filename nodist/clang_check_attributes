@@ -434,7 +434,7 @@ class CallAnnotationsValidator:
             self.process_translation_unit(translation_unit)
             self._main_source_file = ""
             self._defines = {}
-        elif len(errors):
+        elif len(errors) != 0:
             print(f"%Error: parsing failed: {filename}", file=sys.stderr)
             for error in errors:
                 print(f"        {error}", file=sys.stderr)
