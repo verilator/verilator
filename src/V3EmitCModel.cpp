@@ -196,8 +196,9 @@ class EmitCModel final : public EmitCFunc {
 
         if (v3Global.opt.trace() || !optSystemC()) {
             puts("/// Trace signals in the model; called by application code\n");
-            puts("void trace(" + v3Global.opt.traceClassBase()
-                 + "C* tfp, int levels, int options = 0);\n");
+            // Backward-compatible usage of calling trace() on the model - now part of context
+            puts("void trace(VerilatedTraceBaseC* tfp, int levels, int options = 0) {"
+                 " contextp()->trace(tfp, levels, options); }\n");
         }
         if (v3Global.opt.trace() && optSystemC()) {
             puts("/// SC tracing; avoid overloaded virtual function lint warning\n");
@@ -242,6 +243,10 @@ class EmitCModel final : public EmitCFunc {
         if (v3Global.opt.trace()) {
             puts("std::unique_ptr<VerilatedTraceConfig> traceConfig() const override final;\n");
         }
+
+        ofp()->putsPrivate(true);  // private:
+        puts("// Internal functions - trace registration\n");
+        puts("void traceBaseModel(VerilatedTraceBaseC* tfp, int levels, int options);\n");
 
         puts("};\n");
 
@@ -291,6 +296,10 @@ class EmitCModel final : public EmitCFunc {
         puts("{\n");
         puts("// Register model with the context\n");
         puts("contextp()->addModel(this);\n");
+        if (v3Global.opt.trace())
+            puts("contextp()->traceBaseModelCbAdd(\n"
+                 "[this](VerilatedTraceBaseC* tfp, int levels, int options) {"
+                 " traceBaseModel(tfp, levels, options); });\n");
 
         if (optSystemC()) {
             // Create sensitivity list for when to evaluate the model.
@@ -538,14 +547,10 @@ class EmitCModel final : public EmitCFunc {
                         + "(" + topModNameProtected + "* vlSelf, " + v3Global.opt.traceClassBase()
                         + "* tracep);\n");
 
-        const CFuncVector traceInitFuncps
-            = findFuncps([](const AstCFunc* nodep) { return nodep->dpiTraceInit(); });
-        for (const AstCFunc* const funcp : traceInitFuncps) emitCFuncDecl(funcp, modp);
-
-        // ::trace
+        // ::traceRegisterModel
         puts("\n");
-        putns(modp, "VL_ATTR_COLD void " + topClassName() + "::trace(");
-        puts(v3Global.opt.traceClassBase() + "C* tfp, int levels, int options) {\n");
+        putns(modp, "VL_ATTR_COLD void " + topClassName() + "::traceBaseModel(");
+        puts("VerilatedTraceBaseC* tfp, int levels, int options) {\n");
         if (optSystemC()) {
             puts(/**/ "if (!sc_core::sc_get_curr_simcontext()->elaboration_done()) {\n");
             puts(/****/ "vl_fatal(__FILE__, __LINE__, name(), \"" + topClassName()
@@ -554,47 +559,20 @@ class EmitCModel final : public EmitCFunc {
                     "elaboration.\");\n");
             puts(/**/ "}");
         }
-        puts(/**/ "if (tfp->isOpen()) {\n");
+        puts(/**/ "(void)levels; (void)options;\n");  // Prevent unused variable warning
+        puts(/**/ v3Global.opt.traceClassBase() + "C* const stfp = dynamic_cast<"
+             + v3Global.opt.traceClassBase() + "C*>(tfp);\n");
+        puts(/**/ "if (VL_UNLIKELY(!stfp)) {\n");
         puts(/****/ "vl_fatal(__FILE__, __LINE__, __FILE__,\"'" + topClassName()
-             + +"::trace()' shall not be called after '" + v3Global.opt.traceClassBase()
-             + "C::open()'.\");\n");
+             + "::trace()' called on non-" + v3Global.opt.traceClassBase() + "C object;\"\n"
+             + "\" use --trace-fst with VerilatedFst object,"
+             + " and --trace with VerilatedVcd object\");\n");
         puts(/**/ "}\n");
-        puts(/**/ "(void)levels; (void)options; // Prevent unused variable warning\n");
-        puts(/**/ "tfp->spTrace()->addModel(this);\n");
-        puts(/**/ "tfp->spTrace()->addInitCb(&" + protect("trace_init") + ", &(vlSymsp->TOP));\n");
+        puts(/**/ "stfp->spTrace()->addModel(this);\n");
+        puts(/**/ "stfp->spTrace()->addInitCb(&" + protect("trace_init")
+             + ", &(vlSymsp->TOP));\n");
         puts(/**/ topModNameProtected + "__" + protect("trace_register")
-             + "(&(vlSymsp->TOP), tfp->spTrace());\n");
-
-        if (!traceInitFuncps.empty()) {
-            puts(/**/ "if (levels > 0) {\n");
-            puts(/****/ "const QData tfpq = reinterpret_cast<QData>(tfp);\n");
-            for (const AstCFunc* const funcp : traceInitFuncps) {
-                // Some hackery to locate handle__V for trace_init_task
-                // Considered a pragma on the handle, but that still doesn't help us attach it here
-                string handle = funcp->name();
-                const size_t wr_len = std::strlen("__Vdpiimwrap_");
-                UASSERT_OBJ(handle.substr(0, wr_len) == "__Vdpiimwrap_", funcp,
-                            "Strange trace_init_task function name");
-                handle = "vlSymsp->TOP." + handle.substr(wr_len);
-                const string::size_type pos = handle.rfind("__DOT__");
-                UASSERT_OBJ(pos != string::npos, funcp, "Strange trace_init_task function name");
-                handle = handle.substr(0, pos) + "__DOT__handle___05FV";
-                puts(funcNameProtect(funcp, modp) + "(" + handle
-                     + ", tfpq, levels - 1, options);\n");
-            }
-            puts(/**/ "}\n");
-        }
-
-        puts("}\n");
-    }
-    void emitTraceOffMethods(AstNodeModule* modp) {
-        putSectionDelimiter("Trace configuration");
-        // ::trace
-        puts("\n");
-        putns(modp, "VL_ATTR_COLD void " + topClassName() + "::trace(");
-        puts(v3Global.opt.traceClassBase() + "C* tfp, int levels, int options) {\n");
-        puts(/**/ "vl_fatal(__FILE__, __LINE__, __FILE__,\"'" + topClassName()
-             + +"::trace()' called on model that was Verilated without --trace option\");\n");
+             + "(&(vlSymsp->TOP), stfp->spTrace());\n");
         puts("}\n");
     }
 
@@ -637,11 +615,7 @@ class EmitCModel final : public EmitCFunc {
         emitDestructorImplementation();
         emitStandardMethods1(modp);
         emitStandardMethods2(modp);
-        if (v3Global.opt.trace()) {
-            emitTraceMethods(modp);
-        } else if (!v3Global.opt.systemC()) {
-            emitTraceOffMethods(modp);
-        }
+        if (v3Global.opt.trace()) emitTraceMethods(modp);
         if (v3Global.opt.savable()) emitSerializationFunctions();
 
         VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);

@@ -576,6 +576,10 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: /*verilator&32;trace_init_task*/
 
+   Removed.
+
+   In versions before 5.024:
+
    Attached to a DPI import to indicate that function should be called when
    initializing tracing. This attribute is indented only to be used
    internally in code that Verilator generates when :vlopt:`--lib-create`

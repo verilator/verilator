@@ -2925,6 +2925,37 @@ const VerilatedScopeNameMap* VerilatedContext::scopeNameMap() VL_MT_SAFE {
 }
 
 //======================================================================
+// VerilatedContext:: Methods - trace
+
+void VerilatedContext::trace(VerilatedTraceBaseC* tfp, int levels, int options) VL_MT_SAFE {
+    VL_DEBUG_IF(VL_DBG_MSGF("+ VerilatedContext::trace\n"););
+    if (tfp->isOpen()) {
+        VL_FATAL_MT("", 0, "",
+                    "Testbench C call to 'VerilatedContext::trace()' must not be called"
+                    " after 'VerilatedTrace*::open()'\n");
+        return;
+    }
+    {
+        // Legacy usage may call {modela}->trace(...) then {modelb}->trace(...)
+        // So check for and suppress second and later calls
+        if (tfp->modelConnected()) return;
+        tfp->modelConnected(true);
+    }
+    // We rely on m_ns.m_traceBaseModelCbs being stable when trace() is called
+    // nope: const VerilatedLockGuard lock{m_mutex};
+    if (m_ns.m_traceBaseModelCbs.empty())
+        VL_FATAL_MT("", 0, "",
+                    "Testbench C call to 'VerilatedContext::trace()' requires model(s) Verilated"
+                    " with --trace or --trace-vcd option");
+    for (auto& cbr : m_ns.m_traceBaseModelCbs) cbr(tfp, levels, options);
+}
+void VerilatedContext::traceBaseModelCbAdd(traceBaseModelCb_t cb) VL_MT_SAFE {
+    // Model creation registering a callback for when Verilated::trace() called
+    const VerilatedLockGuard lock{m_mutex};
+    m_ns.m_traceBaseModelCbs.push_back(cb);
+}
+
+//======================================================================
 // VerilatedSyms:: Methods
 
 VerilatedSyms::VerilatedSyms(VerilatedContext* contextp)

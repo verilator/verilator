@@ -125,11 +125,6 @@ class ProtectVisitor final : public VNVisitor {
         addComment(txtp, fl, "Evaluates the library module's final process");
     }
 
-    void traceComment(AstTextBlock* txtp, FileLine* fl) {
-        addComment(txtp, fl, "Enables the library module's tracing");
-        addComment(txtp, fl, "Only usable when used with called from Verilator");
-    }
-
     void createSvFile(FileLine* fl, AstNodeModule* modp) {
         // Comments
         AstTextBlock* const txtp = new AstTextBlock{fl};
@@ -201,18 +196,6 @@ class ProtectVisitor final : public VNVisitor {
         finalComment(txtp, fl);
         txtp->addText(fl, "import \"DPI-C\" function void " + m_libName
                               + "_protectlib_final(chandle handle__V);\n\n");
-
-        if (v3Global.opt.trace() && !v3Global.opt.protectIds()) {
-            txtp->addText(fl, "`ifdef verilator\n");
-            traceComment(txtp, fl);
-            txtp->addText(fl, "import \"DPI-C\" function void " + m_libName
-                                  + "_protectlib_trace(chandle handle__V, "
-                                    "chandle tfp, int levels, int options)"
-                                  + " /*verilator trace_init_task*/;\n");
-            // Note V3EmitCModel.cpp requires the name "handle__V".
-            txtp->addText(fl, "`endif  // verilator\n");
-            txtp->addText(fl, "\n");
-        }
 
         // Local variables
         // Avoid tracing handle, as it is not a stable value, so breaks vcddiff
@@ -403,18 +386,6 @@ class ProtectVisitor final : public VNVisitor {
         txtp->addText(fl, /**/ "handlep__V->final();\n");
         txtp->addText(fl, /**/ "delete handlep__V;\n");
         txtp->addText(fl, "}\n\n");
-
-        if (v3Global.opt.trace() && !v3Global.opt.protectIds()) {
-            traceComment(txtp, fl);
-            txtp->addText(fl, "void " + m_libName
-                                  + "_protectlib_trace(void* vhandlep__V, void* tfp, int levels, "
-                                    "int options) {\n");
-            castPtr(fl, txtp);
-            txtp->addText(fl,
-                          /**/ "handlep__V->trace(static_cast<" + v3Global.opt.traceClassBase()
-                              + "C*>(tfp), levels, options);\n");
-            txtp->addText(fl, "}\n\n");
-        }
 
         txtp->addText(fl, "}\n");
         m_cfilep->tblockp(txtp);

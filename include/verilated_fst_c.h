@@ -192,7 +192,7 @@ class VerilatedFstBuffer VL_NOT_FINAL {
 /// Create a FST dump file in C standalone (no SystemC) simulations.
 /// Also derived for use in SystemC simulations.
 
-class VerilatedFstC VL_NOT_FINAL {
+class VerilatedFstC VL_NOT_FINAL : public VerilatedTraceBaseC {
     VerilatedFst m_sptrace;  // Trace file being created
 
     // CONSTRUCTORS
@@ -208,11 +208,14 @@ public:
     // METHODS - User called
 
     /// Return if file is open
-    bool isOpen() const VL_MT_SAFE { return m_sptrace.isOpen(); }
+    bool isOpen() const override VL_MT_SAFE { return m_sptrace.isOpen(); }
     /// Open a new FST file
     virtual void open(const char* filename) VL_MT_SAFE { m_sptrace.open(filename); }
     /// Close dump
-    void close() VL_MT_SAFE { m_sptrace.close(); }
+    void close() VL_MT_SAFE {
+        m_sptrace.close();
+        modelConnected(false);
+    }
     /// Flush dump
     void flush() VL_MT_SAFE { m_sptrace.flush(); }
     /// Write one cycle of dump data

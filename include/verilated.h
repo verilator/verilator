@@ -101,6 +101,7 @@ class VerilatedScope;
 class VerilatedScopeNameMap;
 template <class, class>
 class VerilatedTrace;
+class VerilatedTraceBaseC;
 class VerilatedTraceConfig;
 class VerilatedVar;
 class VerilatedVarNameMap;
@@ -347,6 +348,10 @@ class VerilatedContext VL_NOT_FINAL {
     friend class VerilatedContextImp;
 
 protected:
+    // TYPES
+    using traceBaseModelCb_t
+        = std::function<void(VerilatedTraceBaseC*, int, int)>;  // Type of traceBaseModel callbacks
+
     // MEMBERS
     // Slow path variables
     mutable VerilatedMutex m_mutex;  // Mutex for most s_s/s_ns members
@@ -393,6 +398,7 @@ protected:
         std::string m_profVltFilename;  // +prof+vlt filename
         VlOs::DeltaCpuTime m_cpuTimeStart{false};  // CPU time, starts when create first model
         VlOs::DeltaWallTime m_wallTimeStart{false};  // Wall time, starts when create first model
+        std::vector<traceBaseModelCb_t> m_traceBaseModelCbs;  // Callbacks to traceRegisterModel
     } m_ns;
 
     mutable VerilatedMutex m_argMutex;  // Protect m_argVec, m_argVecLoaded
@@ -566,6 +572,8 @@ public:
     /// Can only be called before the thread pool is created (before first model is added).
     void threads(unsigned n);
 
+    /// Trace signals in models within the context; called by application code
+    void trace(VerilatedTraceBaseC* tfp, int levels, int options = 0);
     /// Allow traces to at some point be enabled (disables some optimizations)
     void traceEverOn(bool flag) VL_MT_SAFE {
         if (flag) calcUnusedSigs(true);
@@ -623,6 +631,9 @@ public:
     // Internal: Serialization setup
     static constexpr size_t serialized1Size() VL_PURE { return sizeof(m_s); }
     void* serialized1Ptr() VL_MT_UNSAFE { return &m_s; }
+
+    // Internal: trace registration
+    void traceBaseModelCbAdd(traceBaseModelCb_t cb) VL_MT_SAFE;
 
     // Internal: Check magic number
     static void checkMagic(const VerilatedContext* contextp);

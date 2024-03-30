@@ -268,7 +268,7 @@ void VerilatedVcd::bufferFlush() VL_MT_UNSAFE_ONE {
     // We add output data to m_writep.
     // When it gets nearly full we dump it using this routine which calls write()
     // This is much faster than using buffered I/O
-    if (VL_UNLIKELY(!isOpen())) return;
+    if (VL_UNLIKELY(!m_isOpen)) return;
     const char* wp = m_wrBufp;
     while (true) {
         const ssize_t remaining = (m_writep - wp);

@@ -57,6 +57,7 @@ Verilator 5.023 devel
 * Fix memory leaks (#5016). [Geza Lore]
 * Fix $readmem with missing newline (#5019). [Josse Van Delm]
 * Fix internal error on missing pattern key (#5023).
+* Fix tracing replicated hierarchical models (#5027).
 
 
 Verilator 5.022 2024-02-24
