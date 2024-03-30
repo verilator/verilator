@@ -494,8 +494,6 @@ public:
     void gotFinish(bool flag) VL_MT_SAFE;
     /// Return if got a $finish or $stop/error
     bool gotFinish() const VL_MT_SAFE { return m_s.m_gotFinish; }
-    /// Print statistics summary (if not quiet)
-    void printStatsSummary() VL_MT_UNSAFE;
     /// Enable quiet (also prevents need for OS calls to get CPU time)
     void quiet(bool flag) VL_MT_SAFE;
     /// Return if quiet enabled
@@ -516,6 +514,8 @@ public:
     double statCpuTimeSinceStart() const VL_MT_SAFE_EXCLUDES(m_mutex);
     /// Return statistic: Wall time delta from model created until now
     double statWallTimeSinceStart() const VL_MT_SAFE_EXCLUDES(m_mutex);
+    /// Print statistics summary (if not quiet)
+    void statsPrintSummary() VL_MT_UNSAFE;
 
     // Time handling
     /// Returns current simulation time in units of timeprecision().

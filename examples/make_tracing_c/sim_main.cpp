@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
 #endif
 
     // Final simulation summary
-    contextp->printStatsSummary();
+    contextp->statsPrintSummary();
 
     // Return good completion status
     // Don't use exit() or destructor won't get called

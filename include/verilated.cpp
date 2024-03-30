@@ -2567,25 +2567,6 @@ std::string VerilatedContext::profVltFilename() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     return m_ns.m_profVltFilename;
 }
-
-void VerilatedContext::printStatsSummary() VL_MT_UNSAFE {
-    if (quiet()) return;
-    VL_PRINTF("- S i m u l a t i o n   R e p o r t: %s %s\n", Verilated::productName(),
-              Verilated::productVersion());
-    const std::string endwhy = gotError() ? "$stop" : gotFinish() ? "$finish" : "end";
-    const double simtimeInUnits = VL_TIME_Q() * vl_time_multiplier(timeunit())
-                                  * vl_time_multiplier(timeprecision() - timeunit());
-    const std::string simtime = vl_timescaled_double(simtimeInUnits);
-    const double walltime = statWallTimeSinceStart();
-    const double cputime = statCpuTimeSinceStart();
-    const std::string simtimePerf
-        = vl_timescaled_double((cputime != 0.0) ? (simtimeInUnits / cputime) : 0, "%0.3f %s");
-    VL_PRINTF("- Verilator: %s at %s; walltime %0.3f s; speed %s/s\n", endwhy.c_str(),
-              simtime.c_str(), walltime, simtimePerf.c_str());
-    const double modelMB = VlOs::memUsageBytes() / 1024.0 / 1024.0;
-    VL_PRINTF("- Verilator: cpu %0.3f s on %d threads; alloced %0.0f MB\n", cputime,
-              threadsInModels(), modelMB);
-}
 void VerilatedContext::quiet(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_quiet = flag;
@@ -2699,6 +2680,7 @@ VerilatedContext::enableExecutionProfiler(VerilatedVirtualBase* (*construct)(Ver
 
 //======================================================================
 // VerilatedContextImp:: Methods - command line
+
 void VerilatedContextImp::commandArgsGuts(int argc, const char** argv)
     VL_MT_SAFE_EXCLUDES(m_argMutex) {
     const VerilatedLockGuard lock{m_argMutex};
@@ -2884,6 +2866,24 @@ double VerilatedContext::statCpuTimeSinceStart() const VL_MT_SAFE_EXCLUDES(m_mut
 double VerilatedContext::statWallTimeSinceStart() const VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
     return m_ns.m_wallTimeStart.deltaTime();
+}
+void VerilatedContext::statsPrintSummary() VL_MT_UNSAFE {
+    if (quiet()) return;
+    VL_PRINTF("- S i m u l a t i o n   R e p o r t: %s %s\n", Verilated::productName(),
+              Verilated::productVersion());
+    const std::string endwhy = gotError() ? "$stop" : gotFinish() ? "$finish" : "end";
+    const double simtimeInUnits = VL_TIME_Q() * vl_time_multiplier(timeunit())
+                                  * vl_time_multiplier(timeprecision() - timeunit());
+    const std::string simtime = vl_timescaled_double(simtimeInUnits);
+    const double walltime = statWallTimeSinceStart();
+    const double cputime = statCpuTimeSinceStart();
+    const std::string simtimePerf
+        = vl_timescaled_double((cputime != 0.0) ? (simtimeInUnits / cputime) : 0, "%0.3f %s");
+    VL_PRINTF("- Verilator: %s at %s; walltime %0.3f s; speed %s/s\n", endwhy.c_str(),
+              simtime.c_str(), walltime, simtimePerf.c_str());
+    const double modelMB = VlOs::memUsageBytes() / 1024.0 / 1024.0;
+    VL_PRINTF("- Verilator: cpu %0.3f s on %d threads; alloced %0.0f MB\n", cputime,
+              threadsInModels(), modelMB);
 }
 
 //======================================================================

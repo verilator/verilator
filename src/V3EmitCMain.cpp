@@ -111,7 +111,7 @@ private:
         }
 
         puts("// Print statistical summary report\n");
-        puts("contextp->printStatsSummary();\n");
+        puts("contextp->statsPrintSummary();\n");
         puts("\n");
 
         puts("return 0;\n");
