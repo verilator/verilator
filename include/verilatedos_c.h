@@ -38,7 +38,7 @@ namespace VlOs {
 //=========================================================================
 // VlOs::VlGetCpuTime/VlGetWallTime implementation
 
-double DeltaCpuTime::gettime() {
+double DeltaCpuTime::gettime() VL_MT_SAFE {
 #if defined(_WIN32) || defined(__MINGW32__)
     FILETIME lpCreationTime, lpExitTime, lpKernelTime, lpUserTime;
     if (0
@@ -51,11 +51,12 @@ double DeltaCpuTime::gettime() {
 #else
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     timespec ts;
-    if (0 != clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts)) return ts.tv_sec + ts.tv_nsec * 1e-9;
+    if (0 != clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts))  // MT-Safe
+        return ts.tv_sec + ts.tv_nsec * 1e-9;
 #endif
     return 0.0;
 }
-double DeltaWallTime::gettime() {
+double DeltaWallTime::gettime() VL_MT_SAFE {
 #if defined(_WIN32) || defined(__MINGW32__)
     FILETIME ft;  // contains number of 0.1us intervals since the beginning of 1601 UTC.
     GetSystemTimeAsFileTime(&ft);
@@ -65,7 +66,8 @@ double DeltaWallTime::gettime() {
 #else
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     timespec ts;
-    if (0 == clock_gettime(CLOCK_MONOTONIC, &ts)) return ts.tv_sec + ts.tv_nsec * 1e-9;
+    if (0 == clock_gettime(CLOCK_MONOTONIC, &ts))  // MT-Safe
+        return ts.tv_sec + ts.tv_nsec * 1e-9;
     return 0.0;
 #endif
 }
@@ -73,7 +75,7 @@ double DeltaWallTime::gettime() {
 //=========================================================================
 // VlOs::memUsageBytes implementation
 
-uint64_t memUsageBytes() {
+uint64_t memUsageBytes() VL_MT_SAFE {
 #if defined(_WIN32) || defined(__MINGW32__)
     const HANDLE process = GetCurrentProcess();
     PROCESS_MEMORY_COUNTERS pmc;

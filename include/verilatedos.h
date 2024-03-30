@@ -616,35 +616,35 @@ static inline double VL_ROUND(double n) {
 
 namespace VlOs {
 
-extern uint64_t memUsageBytes();  ///< Return memory usage in bytes, or 0 if not implemented
+extern uint64_t memUsageBytes() VL_MT_SAFE;  ///< Return memory usage in bytes, or 0 if unknown
 
 // Internal: Record CPU time, starting point on construction, and current delta from that
 class DeltaCpuTime final {
     double m_start{};  // Time constructed at
-    static double gettime();
+    static double gettime() VL_MT_SAFE;
 
 public:
     // Construct, and if startit is true, start() timer
     explicit DeltaCpuTime(bool startit) {
         if (startit) start();
     }
-    void start() { m_start = gettime(); }  // Start timer; record current time
-    double deltaTime() const {  // Return time between now and start()
+    void start() VL_MT_SAFE { m_start = gettime(); }  // Start timer; record current time
+    double deltaTime() const VL_MT_SAFE {  // Return time between now and start()
         return (m_start == 0.0) ? 0.0 : gettime() - m_start;
     }
 };
 // Internal: Record wall time, starting point on construction, and current delta from that
 class DeltaWallTime final {
     double m_start{};  // Time constructed at
-    static double gettime();
+    static double gettime() VL_MT_SAFE;
 
 public:
     // Construct, and if startit is true, start() timer
     explicit DeltaWallTime(bool startit) {
         if (startit) start();
     }
-    void start() { m_start = gettime(); }  // Start timer; record current time
-    double deltaTime() const {  // Return time between now and start()
+    void start() VL_MT_SAFE { m_start = gettime(); }  // Start timer; record current time
+    double deltaTime() const VL_MT_SAFE {  // Return time between now and start()
         return (m_start == 0.0) ? 0.0 : gettime() - m_start;
     }
 };
