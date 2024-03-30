@@ -1215,7 +1215,6 @@ class TaskVisitor final : public VNVisitor {
         cfuncp->dpiContext(nodep->dpiContext());
         cfuncp->dpiExportImpl(nodep->dpiExport());
         cfuncp->dpiImportWrapper(nodep->dpiImport());
-        cfuncp->dpiTraceInit(nodep->dpiTraceInit());
         cfuncp->recursive(nodep->recursive());
         if (nodep->dpiImport() || nodep->dpiExport()) {
             cfuncp->isStatic(true);

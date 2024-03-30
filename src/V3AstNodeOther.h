@@ -76,7 +76,6 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     bool m_dpiContext : 1;  // DPI import context
     bool m_dpiOpenChild : 1;  // DPI import open array child wrapper
     bool m_dpiTask : 1;  // DPI import task (vs. void function)
-    bool m_dpiTraceInit : 1;  // DPI trace_init
     bool m_isConstructor : 1;  // Class constructor
     bool m_isHideLocal : 1;  // Verilog local
     bool m_isHideProtected : 1;  // Verilog protected
@@ -106,7 +105,6 @@ protected:
         , m_dpiContext{false}
         , m_dpiOpenChild{false}
         , m_dpiTask{false}
-        , m_dpiTraceInit{false}
         , m_isConstructor{false}
         , m_isHideLocal{false}
         , m_isHideProtected{false}
@@ -162,8 +160,6 @@ public:
     bool dpiOpenChild() const { return m_dpiOpenChild; }
     void dpiTask(bool flag) { m_dpiTask = flag; }
     bool dpiTask() const { return m_dpiTask; }
-    void dpiTraceInit(bool flag) { m_dpiTraceInit = flag; }
-    bool dpiTraceInit() const { return m_dpiTraceInit; }
     void isConstructor(bool flag) { m_isConstructor = flag; }
     bool isConstructor() const { return m_isConstructor; }
     bool isHideLocal() const { return m_isHideLocal; }
@@ -630,7 +626,6 @@ class AstCFunc final : public AstNode {
     bool m_dpiExportImpl : 1;  // DPI export implementation (called from DPI dispatcher via lookup)
     bool m_dpiImportPrototype : 1;  // This is the DPI import prototype (i.e.: provided by user)
     bool m_dpiImportWrapper : 1;  // Wrapper for invoking DPI import prototype from generated code
-    bool m_dpiTraceInit : 1;  // DPI trace_init
     bool m_needProcess : 1;  // Needs access to VlProcess of the caller
     bool m_recursive : 1;  // Recursive or part of recursion
 public:
@@ -660,7 +655,6 @@ public:
         m_dpiExportImpl = false;
         m_dpiImportPrototype = false;
         m_dpiImportWrapper = false;
-        m_dpiTraceInit = false;
         m_recursive = false;
     }
     ASTGEN_MEMBERS_AstCFunc;
@@ -734,8 +728,6 @@ public:
     void dpiImportPrototype(bool flag) { m_dpiImportPrototype = flag; }
     bool dpiImportWrapper() const { return m_dpiImportWrapper; }
     void dpiImportWrapper(bool flag) { m_dpiImportWrapper = flag; }
-    void dpiTraceInit(bool flag) { m_dpiTraceInit = flag; }
-    bool dpiTraceInit() const { return m_dpiTraceInit; }
     bool isCoroutine() const { return m_rtnType == "VlCoroutine"; }
     void recursive(bool flag) { m_recursive = flag; }
     bool recursive() const { return m_recursive; }

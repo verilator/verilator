@@ -987,7 +987,6 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVL_SFORMAT               "/*verilator sformat*/"
 %token<fl>              yVL_SPLIT_VAR             "/*verilator split_var*/"
 %token<strp>            yVL_TAG                   "/*verilator tag*/"
-%token<fl>              yVL_TRACE_INIT_TASK       "/*verilator trace_init_task*/"
 %token<fl>              yVL_UNROLL_DISABLE        "/*verilator unroll_disable*/"
 %token<fl>              yVL_UNROLL_FULL           "/*verilator unroll_full*/"
 
@@ -4729,13 +4728,12 @@ array_methodWith<nodeExprp>:
         ;
 
 dpi_import_export<nodep>:       // ==IEEE: dpi_import_export
-                yIMPORT yaSTRING dpi_tf_import_propertyE dpi_importLabelE function_prototype dpi_tf_TraceInitE ';'
+                yIMPORT yaSTRING dpi_tf_import_propertyE dpi_importLabelE function_prototype ';'
                         { $$ = $5;
                           if (*$4 != "") $5->cname(*$4);
                           $5->dpiContext($3 == iprop_CONTEXT);
                           $5->dpiPure($3 == iprop_PURE);
                           $5->dpiImport(true);
-                          $5->dpiTraceInit($6);
                           GRAMMARP->checkDpiVer($1, *$2); v3Global.dpi(true);
                           if ($$->prettyName()[0]=='$') SYMP->reinsert($$, nullptr, $$->prettyName());  // For $SysTF overriding
                           SYMP->reinsert($$); }
@@ -4766,11 +4764,6 @@ dpi_tf_import_propertyE<iprop>: // IEEE: [ dpi_function_import_property + dpi_ta
                 /* empty */                             { $$ = iprop_NONE; }
         |       yCONTEXT                                { $$ = iprop_CONTEXT; }
         |       yPURE                                   { $$ = iprop_PURE; }
-        ;
-
-dpi_tf_TraceInitE<cbool>:       // Verilator extension
-                /* empty */                             { $$ = false; }
-        |       yVL_TRACE_INIT_TASK                     { $$ = true; $<fl>$ = $<fl>1; }
         ;
 
 
