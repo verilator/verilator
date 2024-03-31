@@ -36,10 +36,14 @@
 #  pragma clang diagnostic push
 #  pragma clang diagnostic ignored "-Wdeprecated-experimental-coroutine"
 # endif
-# include <experimental/coroutine>
-  namespace std {
-      using namespace experimental;  // Bring std::experimental into the std namespace
-  }
+# if __clang_major__ >= 15 || __clang_major__ == 14 && __clang_minor__ >= 0 && __clang_patchlevel__ >= 6
+#  include <coroutine>
+# else
+#  include <experimental/coroutine>
+   namespace std {
+       using namespace experimental;  // Bring std::experimental into the std namespace
+   }
+# endif
 #else
 # if defined __clang__ && defined __GLIBCXX__ && !defined __cpp_impl_coroutine
 #  define __cpp_impl_coroutine 1  // Clang doesn't define this, but it's needed for libstdc++
