@@ -13,7 +13,7 @@
     {"type":"CELL","name":"$unit","addr":"(X)","loc":"a,0:0,0:0","origName":"__024unit","recursive":false,"modp":"(E)","pinsp": [],"paramsp": [],"rangep": [],"intfRefsp": []},
     {"type":"TOPSCOPE","name":"","addr":"(H)","loc":"d,11:8,11:9","senTreesp": [],
      "scopep": [
-      {"type":"SCOPE","name":"TOP","addr":"(Y)","loc":"d,11:8,11:9","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(I)","varsp": [],"blocksp": []}
+      {"type":"SCOPE","name":"TOP","addr":"(Y)","loc":"d,11:8,11:9","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(I)","varsp": [],"blocksp": [],"inlinesp": []}
     ]},
     {"type":"CFUNC","name":"_eval_static","addr":"(Z)","loc":"a,0:0,0:0","slow":true,"isStatic":false,"dpiExportDispatcher":false,"dpiExportImpl":false,"dpiImportPrototype":false,"dpiImportWrapper":false,"dpiContext":false,"isConstructor":false,"isDestructor":false,"isVirtual":false,"isCoroutine":false,"needProcess":false,"scopep":"(Y)","argsp": [],"initsp": [],
      "stmtsp": [
@@ -2888,7 +2888,7 @@
         ]}
       ]}
     ],"attrsp": []},
-    {"type":"SCOPE","name":"$unit","addr":"(JQB)","loc":"a,0:0,0:0","aboveScopep":"(Y)","aboveCellp":"(X)","modp":"(E)","varsp": [],"blocksp": []},
+    {"type":"SCOPE","name":"$unit","addr":"(JQB)","loc":"a,0:0,0:0","aboveScopep":"(Y)","aboveCellp":"(X)","modp":"(E)","varsp": [],"blocksp": [],"inlinesp": []},
     {"type":"CFUNC","name":"_ctor_var_reset","addr":"(KQB)","loc":"a,0:0,0:0","slow":true,"isStatic":false,"dpiExportDispatcher":false,"dpiExportImpl":false,"dpiImportPrototype":false,"dpiImportWrapper":false,"dpiContext":false,"isConstructor":false,"isDestructor":false,"isVirtual":false,"isCoroutine":false,"needProcess":false,"scopep":"UNLINKED","argsp": [],"initsp": [],
      "stmtsp": [
       {"type":"CRESET","name":"","addr":"(LQB)","loc":"d,17:12,17:16",
@@ -2992,7 +2992,7 @@
    "modulep": [
     {"type":"MODULE","name":"@CONST-POOL@","addr":"(VRB)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","level":0,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
      "stmtsp": [
-      {"type":"SCOPE","name":"TOP","addr":"(WRB)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(VRB)","varsp": [],"blocksp": []}
+      {"type":"SCOPE","name":"TOP","addr":"(WRB)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(VRB)","varsp": [],"blocksp": [],"inlinesp": []}
     ],"activesp": []}
   ]}
 ]}
