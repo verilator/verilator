@@ -519,7 +519,7 @@
    "modulep": [
     {"type":"MODULE","name":"@CONST-POOL@","addr":"(AI)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","level":0,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
      "stmtsp": [
-      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(BI)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(AI)","varsp": [],"blocksp": []}
+      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(BI)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(AI)","varsp": [],"blocksp": [],"inlinesp": []}
     ],"activesp": []}
   ]}
 ]}
