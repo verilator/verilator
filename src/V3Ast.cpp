@@ -268,7 +268,6 @@ string AstNode::vpiName(const string& namein) {
 
         if (specialChar) {
             if (inEscapedIdent && (specialChar == '[' || specialChar == '.')) {
-                pretty += " ";
                 pretty.insert(lastIdent, "\\");
                 inEscapedIdent = false;
             }
@@ -284,10 +283,7 @@ string AstNode::vpiName(const string& namein) {
             ++pos;
         }
     }
-    if (inEscapedIdent) {
-        pretty += " ";
-        pretty.insert(lastIdent, "\\");
-    }
+    if (inEscapedIdent) { pretty.insert(lastIdent, "\\"); }
     if (pretty[0] == 'T' && pretty.substr(0, 4) == "TOP.") pretty.replace(0, 4, "");
     if (pretty[0] == 'T' && pretty.substr(0, 5) == "TOP->") pretty.replace(0, 5, "");
     return pretty;
