@@ -28,19 +28,19 @@ int main(int argc, char** argv, char**) {
 #endif
     // Initial input
     topp->drv_en = 0;
-    topp->single_bit_io = 0;
-    topp->bidir_single_bit_io = 0;
+    topp->single_bit_io = rand() & 1;
+    topp->bidir_single_bit_io = rand() & 1;
     topp->bus_64_io = 0;
-    topp->bidir_bus_64_io = 0;
+    topp->bidir_bus_64_io = rand() & 0xffffffffffffffff;
     topp->bus_128_io[0] = 0;
     topp->bus_128_io[1] = 0;
     topp->bus_128_io[2] = 0;
     topp->bus_128_io[3] = 0;
-    topp->bidir_bus_128_io[0] = 0;
-    topp->bidir_bus_128_io[1] = 0;
-    topp->bidir_bus_128_io[2] = 0;
-    topp->bidir_bus_128_io[3] = 0;
-    topp->sub_io = 0;
+    topp->bidir_bus_128_io[0] = rand() & 0xffffffff;
+    topp->bidir_bus_128_io[1] = rand() & 0xffffffff;
+    topp->bidir_bus_128_io[2] = rand() & 0xffffffff;
+    topp->bidir_bus_128_io[3] = rand() & 0xffffffff;
+    topp->sub_io = rand() & 1;
     topp->test_en = 1;
 
     srand((unsigned)time(0));
@@ -65,8 +65,8 @@ int main(int argc, char** argv, char**) {
         printf("Info:(cpp): drv_en = %x\n", topp->drv_en);
         printf("Info:(cpp): bidir_single_bit_io__en = %x\n", topp->bidir_single_bit_io__en);
         printf("Info:(cpp): bidir_bus_64_io__en = %x\n", (unsigned int)topp->bidir_bus_64_io__en);
-        printf("Info:(cpp): bidir_bus_128_io__en = %x,%x,%x,%x\n", topp->bidir_bus_128_io[3],
-               topp->bidir_bus_128_io[2], topp->bidir_bus_128_io[1], topp->bidir_bus_128_io[0]);
+        printf("Info:(cpp): bidir_bus_128_io__en = %x,%x,%x,%x\n", topp->bidir_bus_128_io__en[3],
+               topp->bidir_bus_128_io__en[2], topp->bidir_bus_128_io__en[1], topp->bidir_bus_128_io__en[0]);
         printf("Info:(cpp): sub_io__en = %x\n", topp->sub_io__en);
         printf("Info:(cpp): bidir_single_bit_io = %x\n", topp->bidir_single_bit_io__out);
         printf("Info:(cpp): bidir_bus_64_io = %x\n", (unsigned int)topp->bidir_bus_64_io__out);
@@ -74,6 +74,25 @@ int main(int argc, char** argv, char**) {
                topp->bidir_bus_128_io__out[2], topp->bidir_bus_128_io__out[1],
                topp->bidir_bus_128_io__out[0]);
         printf("Info:(cpp): sub_io = %x\n", topp->sub_io__out);
+
+        // Loop back if verilog is driving
+        // Verilator will not do this for itself
+        // We must implement the top-level resolution
+        if (topp->sub_io__en) {
+           topp->sub_io = topp->sub_io__out;
+        }
+        if (topp->bidir_single_bit_io__en) {
+           topp->bidir_single_bit_io = topp->bidir_single_bit_io__out;
+        }
+        // For bus signals, overwrite the bits which are driven by verilog, preserve the others
+        if (topp->bidir_bus_64_io__en) {
+           topp->bidir_bus_64_io = ((~topp->bidir_bus_64_io__en) & topp->bidir_bus_64_io) | (topp->bidir_bus_64_io__en & topp->bidir_bus_64_io__out);
+        }
+        for (int i=0;i<4;i++) {
+          if (topp->bidir_bus_128_io__en[i]) {
+           topp->bidir_bus_128_io[i] = ((~topp->bidir_bus_128_io__en[i]) & topp->bidir_bus_128_io[i]) | (topp->bidir_bus_128_io__en[i] & topp->bidir_bus_128_io__out[i]);
+         }
+        }
 
         // Has the verilog code finished a test loop?
         if (topp->loop_done == 1) {
@@ -136,6 +155,42 @@ int main(int argc, char** argv, char**) {
                 topp->test_en = 0;
             } else {
                 topp->drv_en++;
+
+		// Drive the bits verilog shouldn't be driving
+                if (topp->drv_en & 1) {
+                   topp->single_bit_io = rand() & 1;
+                   topp->bidir_single_bit_io = rand() & 1;
+                   topp->sub_io = rand() & 1;
+		   topp->bidir_bus_64_io = ((rand() & 0xffff) << 0) | (topp->bidir_bus_64_io & 0xffffffffffff0000);
+		   topp->bidir_bus_128_io[0] = rand() & 0xffffffff;
+		} else {
+                   topp->single_bit_io = 0;
+                   topp->bidir_single_bit_io = 0;
+                   topp->sub_io = 0;
+                   topp->bidir_bus_64_io = (topp->bidir_bus_64_io & 0xffffffffffff0000);
+                   topp->bidir_bus_128_io[0] = 0;
+		}
+                if (topp->drv_en & 2) {
+                   topp->bidir_bus_64_io = ((rand() & 0xffff) << 16) | (topp->bidir_bus_64_io & 0xffffffff0000ffff);
+                   topp->bidir_bus_128_io[1] = rand() & 0xffffffff;
+                } else {
+                   topp->bidir_bus_64_io = (topp->bidir_bus_64_io & 0xffffffff0000ffff);
+                   topp->bidir_bus_128_io[1] = 0;
+		}
+                if (topp->drv_en & 4) {
+                   topp->bidir_bus_64_io = (((uint64_t)(rand() & 0xffff)) << 32) | (topp->bidir_bus_64_io & 0xffff0000ffffffff);
+                   topp->bidir_bus_128_io[2] = rand() & 0xffffffff;
+                } else {
+                   topp->bidir_bus_64_io = (topp->bidir_bus_64_io & 0xffff0000ffffffff);
+                   topp->bidir_bus_128_io[2] = 0;
+		}
+                if (topp->drv_en & 8) {
+                   topp->bidir_bus_64_io = (((uint64_t)(rand() & 0xffff)) << 48) | (topp->bidir_bus_64_io & 0x0000ffffffffffff);
+                   topp->bidir_bus_128_io[3] = rand() & 0xffffffff;
+                } else {
+                   topp->bidir_bus_64_io = (topp->bidir_bus_64_io & 0x0000ffffffffffff);
+                   topp->bidir_bus_128_io[3] = 0;
+		}
             }
             // Invert the input side
             topp->bidir_single_bit_io = (~topp->bidir_single_bit_io) & 0x1;
