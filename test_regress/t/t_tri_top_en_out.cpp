@@ -44,17 +44,20 @@ int main(int argc, char** argv, char**) {
     topp->test_en = 1;
 
     srand((unsigned)time(0));
+
+    error_cnt = 0;
+
 #ifdef T_TRI_TOP_EN_OUT_INVALID
     // These should make the compile fail
     // These variables should not be visible
-    error_cnt = topp->internal_sub_io__en;
-    // Use the + operator to satisy the static code checks
-    // (variable reassigned value before old value used)
+    //
+    // Use the + operator to satisfy the static code checks
+    // Variable reassigned value before old value used.
+    // These variables will never be used, as the compile should
+    // fail!
+    error_cnt += topp->internal_sub_io__en;
     error_cnt += topp->internal_sub_io__out;
-    error_cnt++;
 #endif
-
-    error_cnt = 0;
 
     // Simulate until $finish
     while (!contextp->gotFinish()) {
