@@ -10,17 +10,26 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-compile(
+if (system("valgrind --version")) {
+   skip("No valgrind installed");
+}
+elsif (system("$ENV{VERILATOR_ROOT}/bin/verilator -get-supported COROUTINES | grep 1")) {
+   skip("No COROUTINES supported")
+}
+else {
+
+  compile(
     make_top_shell => 0,
     make_main => 0,
     verilator_flags2 => ["--exe --timing --pins-inout-enables", "$Self->{t_dir}/t_tri_top_en_out.cpp"],
     );
 
-if ($Self->{errors}) {
+  if ($Self->{errors}) {
    print "Compile fails, but expected and required\n";
    $Self->{errors} = 0;
    ok(1)
-} else {
-   error("Compile should have failed but did not");
+  } else {
+    error("Compile should have failed but did not");
+  }
 }
 1;
