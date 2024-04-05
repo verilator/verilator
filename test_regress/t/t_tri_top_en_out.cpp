@@ -46,8 +46,12 @@ int main(int argc, char** argv, char**) {
     srand((unsigned)time(0));
 #ifdef T_TRI_TOP_EN_OUT_INVALID
     // These should make the compile fail
+    // These variables should not be visible
     error_cnt = topp->internal_sub_io__en;
-    error_cnt = topp->internal_sub_io__out;
+    // Use the + operator to satisy the static code checks
+    // (variable reassigned value before old value used)
+    error_cnt += topp->internal_sub_io__out;
+    error_cnt++;
 #endif
 
     error_cnt = 0;
