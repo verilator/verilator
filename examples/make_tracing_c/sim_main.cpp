@@ -117,6 +117,9 @@ int main(int argc, char** argv) {
     contextp->coveragep()->write("logs/coverage.dat");
 #endif
 
+    // Final simulation summary
+    contextp->statsPrintSummary();
+
     // Return good completion status
     // Don't use exit() or destructor won't get called
     return 0;

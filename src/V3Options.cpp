@@ -1102,6 +1102,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                 [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2012); });
     DECL_OPTION("+1800-2017ext+", CbPartialMatch,
                 [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2017); });
+    DECL_OPTION("+1800-2023ext+", CbPartialMatch,
+                [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2023); });
 
     // Minus options
     DECL_OPTION("-assert", OnOff, &m_assert);
@@ -1197,6 +1199,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-debug-self-test", OnOff, &m_debugSelfTest).undocumented();
     DECL_OPTION("-debug-sigsegv", CbCall, throwSigsegv).undocumented();  // See also --debug-abort
     DECL_OPTION("-debug-stack-check", OnOff, &m_debugStackCheck).undocumented();
+    DECL_OPTION("-debug-width", OnOff, &m_debugWidth).undocumented();
     DECL_OPTION("-decoration", CbCall, [this, fl]() { decorations(fl, "medium"); });
     DECL_OPTION("-decorations", CbVal, [this, fl](const char* optp) { decorations(fl, optp); });
     DECL_OPTION("-no-decoration", CbCall, [this, fl]() { decorations(fl, "none"); });
@@ -1412,7 +1415,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_public_params = flag;
         v3Global.dpi(true);
     });
+    DECL_OPTION("-quiet", CbOnOff, [this](bool flag) {
+        m_quietExit = flag;
+        m_quietStats = flag;
+    });
     DECL_OPTION("-quiet-exit", OnOff, &m_quietExit);
+    DECL_OPTION("-quiet-stats", OnOff, &m_quietStats);
 
     DECL_OPTION("-relative-includes", OnOff, &m_relativeIncludes);
     DECL_OPTION("-reloop-limit", CbVal, [this, fl](const char* valp) {
@@ -1445,7 +1453,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-std", OnOff, &m_std);
     DECL_OPTION("-stop-fail", OnOff, &m_stopFail);
     DECL_OPTION("-structs-packed", OnOff, &m_structsPacked);
-    DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2017; });
+    DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2023; });
 
     DECL_OPTION("-threads-coarsen", OnOff, &m_threadsCoarsen).undocumented();  // Debug
     DECL_OPTION("-no-threads", CbCall, [this, fl]() {
@@ -1574,6 +1582,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-Werror-UNUSED", CbCall, []() {
         V3Error::pretendError(V3ErrorCode::UNUSEDGENVAR, true);
+        V3Error::pretendError(V3ErrorCode::UNUSEDLOOP, true);
         V3Error::pretendError(V3ErrorCode::UNUSEDPARAM, true);
         V3Error::pretendError(V3ErrorCode::UNUSEDSIGNAL, true);
     });
@@ -1627,6 +1636,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-Wwarn-UNUSED", CbCall, []() {
         FileLine::globalWarnUnusedOff(false);
         V3Error::pretendError(V3ErrorCode::UNUSEDGENVAR, false);
+        V3Error::pretendError(V3ErrorCode::UNUSEDLOOP, false);
         V3Error::pretendError(V3ErrorCode::UNUSEDSIGNAL, false);
         V3Error::pretendError(V3ErrorCode::UNUSEDPARAM, false);
     });

@@ -28,8 +28,8 @@
 
 #include "V3LifePost.h"
 
+#include "V3ExecGraph.h"
 #include "V3GraphPathChecker.h"
-#include "V3PartitionGraph.h"
 #include "V3Stats.h"
 
 #include <memory>  // for std::unique_ptr -> auto_ptr or unique_ptr
@@ -129,6 +129,7 @@ class LifePostDlyVisitor final : public VNVisitor {
     // NODE STATE
     // AstVarScope::user1()    -> bool: referenced outside _eval__nba
     // AstVarScope::user4()    -> AstVarScope*: Passed to LifePostElim to substitute this var
+    const VNUser1InUse m_inuser1;
     const VNUser4InUse m_inuser4;
 
     // STATE
@@ -148,7 +149,7 @@ class LifePostDlyVisitor final : public VNVisitor {
     // Map each dly var to its AstAssignPost* node and the location thereof
     std::unordered_map<const AstVarScope*, LifePostLocation> m_assignposts;
 
-    const V3Graph* m_mtasksGraphp = nullptr;  // Mtask tracking graph
+    V3Graph* m_mtasksGraphp = nullptr;  // Mtask tracking graph
     std::unique_ptr<GraphPathChecker> m_checker;
 
     const AstCFunc* const m_evalNbap;  // The _eval__nba function
@@ -324,9 +325,8 @@ class LifePostDlyVisitor final : public VNVisitor {
             UASSERT_OBJ(!m_mtasksGraphp, nodep, "Cannot handle more than one AstExecGraph");
             m_mtasksGraphp = nodep->depGraphp();
         }
-        for (V3GraphVertex* mtaskVxp = nodep->depGraphp()->verticesBeginp(); mtaskVxp;
-             mtaskVxp = mtaskVxp->verticesNextp()) {
-            const ExecMTask* const mtaskp = mtaskVxp->as<ExecMTask>();
+        for (V3GraphVertex& mtaskVtx : nodep->depGraphp()->vertices()) {
+            const ExecMTask* const mtaskp = mtaskVtx.as<ExecMTask>();
             m_execMTaskp = mtaskp;
             m_sequence = 0;
             iterate(mtaskp->bodyp());

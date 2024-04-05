@@ -7,15 +7,4 @@
                                          : ... note: In instance 't'
    28 |       Pad pad0 (.pad(pad[g]),
       |                         ^
-%Error: t/t_tri_array.v:25:25: Select from non-array BASICDTYPE 'bit'
-                             : ... note: In instance 't'
-   25 |       Pad pad1 (.pad(pad[g]),
-      |                         ^
-%Error: t/t_tri_array.v:28:25: Select from non-array BASICDTYPE 'bit'
-                             : ... note: In instance 't'
-   28 |       Pad pad0 (.pad(pad[g]),
-      |                         ^
-%Error: Internal Error: t/t_tri_array.v:25:22: ../V3Dfg.h:#: DfgVertex is not of expected type, but instead has type 'VARPACKED'
-   25 |       Pad pad1 (.pad(pad[g]),
-      |                      ^~~
-                        ... See the manual at https://verilator.org/verilator_doc.html for more assistance.
+%Error: Exiting due to

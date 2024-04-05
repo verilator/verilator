@@ -97,7 +97,7 @@ void V3Number::v3errorEndFatal(const std::ostringstream& str) const
 
 V3Number::V3Number(VerilogStringLiteral, AstNode* nodep, const string& str) {
     // Create a number using a verilog string as the value, thus 8 bits per character.
-    if (str.empty()) {  // IEEE 1800-2017 11.10.3 "" = "\000"
+    if (str.empty()) {  // IEEE 1800-2023 11.10.3 "" = "\000"
         init(nodep, 8);
     } else {
         init(nodep, std::max<int>(str.length() * 8, 1));
@@ -105,7 +105,7 @@ V3Number::V3Number(VerilogStringLiteral, AstNode* nodep, const string& str) {
             const int topos = str.length() - 1 - pos;
             ValueAndX& v = m_data.num()[topos / 4];
             for (int bit = 0; bit < 8; ++bit) {
-                if (str[pos] & (1UL << bit)) { v.m_value |= (1UL << (bit + (topos % 4) * 8)); }
+                if (str[pos] & (1UL << bit)) v.m_value |= (1UL << (bit + (topos % 4) * 8));
             }
         }
     }
@@ -165,7 +165,7 @@ void V3Number::create(const char* sourcep) {
                 || std::atoi(widthn.c_str()) > v3Global.opt.maxNumWidth()) {
                 // atoi might convert large number to negative, so can't tell which
                 v3error("Unsupported: Width of number exceeds implementation limit: "
-                        << sourcep << "  (IEEE 1800-2017 6.9.1)");
+                        << sourcep << "  (IEEE 1800-2023 6.9.1)");
                 width(v3Global.opt.maxNumWidth(), true);
             } else {
                 width(std::atoi(widthn.c_str()), true);
@@ -209,7 +209,7 @@ void V3Number::create(const char* sourcep) {
     }
     if (userSized && m_data.m_autoExtend) {
         v3error("Syntax error: size cannot be provided with '0/'1/'x/'z: "
-                << sourcep << " (IEEE 1800-2017 5.7.1)");
+                << sourcep << " (IEEE 1800-2023 5.7.1)");
     }
 
     int obit = 0;  // Start at LSB
@@ -253,7 +253,7 @@ void V3Number::create(const char* sourcep) {
                                 << ((!sized() && !warned++) ? (
                                         V3Error::warnMore() + "... As that number was unsized"
                                         + " ('d...) it is limited to 32 bits"
-                                          " (IEEE 1800-2017 5.7.1)\n"
+                                          " (IEEE 1800-2023 5.7.1)\n"
                                         + V3Error::warnMore() + "... Suggest adding a size to it.")
                                                             : ""));
                         while (*(cp + 1)) cp++;  // Skip ahead so don't get multiple warnings
@@ -396,6 +396,11 @@ int V3Number::log2b(uint32_t num) {
     return 0;
 }
 
+int V3Number::log2bQuad(uint64_t num) {
+    if (num >> 32ULL) return 32 + log2b(num >> 32ULL);
+    return log2b(num);
+}
+
 //======================================================================
 // Setters
 
@@ -423,7 +428,7 @@ V3Number& V3Number::setLongS(int32_t value) {
         int32_t s;
     } u;
     u.s = value;
-    if (u.s) {}
+    (void)u.s;
     m_data.num()[0].m_value = u.u;
     opCleanThis();
     return *this;
@@ -436,7 +441,7 @@ V3Number& V3Number::setDouble(double value) {
         uint32_t u[2];
     } u;
     u.d = value;
-    if (u.d != 0.0) {}
+    (void)u.d;
     for (int i = 2; i < words(); i++) m_data.num()[i] = {0, 0};
     m_data.num()[0].m_value = u.u[0];
     m_data.num()[1].m_value = u.u[1];
@@ -986,7 +991,7 @@ V3Hash V3Number::toHash() const {
     if (isString()) {
         hash += V3Hash{m_data.str()};
     } else {
-        for (int i = 0; i < words(); ++i) { hash += m_data.num()[i].m_value; }
+        for (int i = 0; i < words(); ++i) hash += m_data.num()[i].m_value;
     }
     return hash;
 }
@@ -1554,7 +1559,7 @@ V3Number& V3Number::opAtoN(const V3Number& lhs, int base) {
     std::string str = lhs.toString();  // new instance to edit later
     if (base == AstAtoN::ATOREAL) return setDouble(std::atof(str.c_str()));
 
-    // IEEE 1800-2017 6.16.9 says '_' may exist.
+    // IEEE 1800-2023 6.16.9 says '_' may exist.
     str.erase(std::remove(str.begin(), str.end(), '_'), str.end());
 
     errno = 0;
@@ -2048,7 +2053,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     uint32_t vn[VL_MULS_MAX_WORDS + 1];  // v normalized
 
     // Zero for ease of debugging and to save having to zero for shifts
-    for (int i = 0; i < words; i++) { m_data.num()[i].m_value = 0; }
+    for (int i = 0; i < words; i++) m_data.num()[i].m_value = 0;
     for (int i = 0; i < words + 1; i++) { un[i] = vn[i] = 0; }  // +1 as vn may get extra word
 
     // Algorithm requires divisor MSB to be set
@@ -2265,7 +2270,7 @@ V3Number& V3Number::opExtendXZ(const V3Number& lhs, uint32_t lbits) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     setZero();
-    for (int bit = 0; bit < width(); bit++) { setBit(bit, lhs.bitIsExtend(bit, lbits)); }
+    for (int bit = 0; bit < width(); bit++) setBit(bit, lhs.bitIsExtend(bit, lbits));
     return *this;
 }
 
@@ -2369,7 +2374,7 @@ V3Number& V3Number::opRToIRoundS(const V3Number& lhs) {
         uint64_t q;
     } u;
     u.d = v;
-    if (u.d == 0.0) {}
+    (void)u.d;
 
     const int exp = static_cast<int>((u.q >> 52ULL) & VL_MASK_Q(11)) - 1023;
     const int lsb = exp - 52;
@@ -2494,7 +2499,7 @@ V3Number& V3Number::opReplN(const V3Number& lhs, uint32_t rhsval) {
     NUM_ASSERT_STRING_ARGS1(lhs);
     string out;
     out.reserve(lhs.toString().length() * rhsval);
-    for (unsigned times = 0; times < rhsval; times++) { out += lhs.toString(); }
+    for (unsigned times = 0; times < rhsval; times++) out += lhs.toString();
     return setString(out);
 }
 V3Number& V3Number::opToLowerN(const V3Number& lhs) {

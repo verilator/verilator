@@ -339,7 +339,7 @@ class EmitMkHierVerilation final {
         const V3HierBlockPlan::HierVector blocks
             = m_planp->hierBlocksSorted();  // leaf comes first
         // List in order of leaf-last order so that linker can resolve dependency
-        for (auto& block : vlstd::reverse_view(blocks)) {
+        for (const auto& block : vlstd::reverse_view(blocks)) {
             of.puts("\t" + block->hierLib(true) + " \\\n");
         }
         of.puts("\n");

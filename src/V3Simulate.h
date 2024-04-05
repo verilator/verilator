@@ -378,7 +378,11 @@ private:
             clearOptimizable(nodep,
                              "Unknown node type, perhaps missing visitor in SimulateVisitor");
 #ifdef VL_DEBUG
-            UINFO(0, "Unknown node type in SimulateVisitor: " << nodep->prettyTypeName() << endl);
+            static std::set<VNType> s_typePrinted;
+            const auto pair = s_typePrinted.emplace(nodep->type());
+            if (pair.second)
+                UINFO(0,
+                      "Unknown node type in SimulateVisitor: " << nodep->prettyTypeName() << endl);
 #endif
         }
     }
@@ -503,13 +507,13 @@ private:
         }
         if (nodep->dpiImport()) {
             if (m_params) {
-                nodep->v3error("Constant function may not be DPI import (IEEE 1800-2017 13.4.3)");
+                nodep->v3error("Constant function may not be DPI import (IEEE 1800-2023 13.4.3)");
             }
             clearOptimizable(nodep, "DPI import functions aren't simulatable");
         }
         if (nodep->underGenerate()) {
             nodep->v3error(
-                "Constant function may not be declared under generate (IEEE 1800-2017 13.4.3)");
+                "Constant function may not be declared under generate (IEEE 1800-2023 13.4.3)");
             clearOptimizable(nodep, "Constant function called under generate");
         }
         checkNodeInfo(nodep);
@@ -1253,7 +1257,7 @@ public:
     }
     ~SimulateVisitor() override {
         for (const auto& pair : m_constps) {
-            for (AstConst* const constp : pair.second) { delete constp; }
+            for (AstConst* const constp : pair.second) delete constp;
         }
         m_constps.clear();
         for (AstNode* ip : m_reclaimValuesp) delete ip;

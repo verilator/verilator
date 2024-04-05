@@ -58,6 +58,9 @@
 # define VL_ATTR_PRINTF(fmtArgNum) __attribute__((format(printf, (fmtArgNum), (fmtArgNum) + 1)))
 # define VL_ATTR_PURE __attribute__((pure))
 # define VL_ATTR_UNUSED __attribute__((unused))
+#ifndef VL_ATTR_WARN_UNUSED_RESULT
+# define VL_ATTR_WARN_UNUSED_RESULT __attribute__((warn_unused_result))
+#endif
 # if !defined(_WIN32) && !defined(__MINGW32__)
 // All VL_ATTR_WEAK symbols must be marked with the macOS -U linker flag in verilated.mk.in
 #  define VL_ATTR_WEAK __attribute__((weak))
@@ -163,6 +166,9 @@
 #endif
 #ifndef VL_ATTR_UNUSED
 # define VL_ATTR_UNUSED  ///< Attribute that function that may be never used
+#endif
+#ifndef VL_ATTR_WARN_UNUSED_RESULT
+# define VL_ATTR_WARN_UNUSED_RESULT  ///< Attribute that return value of function must be used
 #endif
 #ifndef VL_ATTR_WEAK
 # define VL_ATTR_WEAK  ///< Attribute that function external that is optionally defined
@@ -337,6 +343,7 @@ extern "C" void __gcov_dump();
 #include <cstdint>
 #include <cinttypes>
 #include <cmath>
+#include <ctime>
 
 #ifndef VL_NO_LEGACY
 using vluint8_t = uint8_t;  ///< 8-bit unsigned type (backward compatibility)
@@ -605,6 +612,45 @@ static inline double VL_ROUND(double n) {
     (reinterpret_cast<size_t>(&(reinterpret_cast<type*>(0x10000000)->field)) - 0x10000000)
 
 //=========================================================================
+// Time and performance
+
+namespace VlOs {
+
+extern uint64_t memUsageBytes() VL_MT_SAFE;  ///< Return memory usage in bytes, or 0 if unknown
+
+// Internal: Record CPU time, starting point on construction, and current delta from that
+class DeltaCpuTime final {
+    double m_start{};  // Time constructed at
+    static double gettime() VL_MT_SAFE;
+
+public:
+    // Construct, and if startit is true, start() timer
+    explicit DeltaCpuTime(bool startit) {
+        if (startit) start();
+    }
+    void start() VL_MT_SAFE { m_start = gettime(); }  // Start timer; record current time
+    double deltaTime() const VL_MT_SAFE {  // Return time between now and start()
+        return (m_start == 0.0) ? 0.0 : gettime() - m_start;
+    }
+};
+// Internal: Record wall time, starting point on construction, and current delta from that
+class DeltaWallTime final {
+    double m_start{};  // Time constructed at
+    static double gettime() VL_MT_SAFE;
+
+public:
+    // Construct, and if startit is true, start() timer
+    explicit DeltaWallTime(bool startit) {
+        if (startit) start();
+    }
+    void start() VL_MT_SAFE { m_start = gettime(); }  // Start timer; record current time
+    double deltaTime() const VL_MT_SAFE {  // Return time between now and start()
+        return (m_start == 0.0) ? 0.0 : gettime() - m_start;
+    }
+};
+}  //namespace VlOs
+
+//=========================================================================
 // Conversions
 
 #include <utility>
@@ -635,14 +681,6 @@ reverse_wrapper<T> reverse_view(const T& v) {
 template <class T>
 T const& as_const(T& v) VL_MT_SAFE {
     return v;
-}
-
-// C++14's std::exchange
-template <class T, class U = T>
-T exchange(T& obj, U&& new_value) {
-    T old_value = std::move(obj);
-    obj = std::forward<U>(new_value);
-    return old_value;
 }
 
 };  // namespace vlstd

@@ -1192,9 +1192,11 @@ def write_dfg_macros(filename):
             if node.isLeaf:
                 emitBlock('''\
                 static constexpr VDfgType dfgType() {{ return VDfgType::at{t}; }};
+                using Super = Dfg{s};
                 void accept(DfgVisitor& v) override {{ v.visit(this); }}
                 ''',
-                          t=node.name)
+                          t=node.name,
+                          s=node.superClass.name)
 
             for n in range(1, node.arity + 1):
                 name, _, _ = node.getOp(n)
@@ -1294,7 +1296,7 @@ def write_dfg_dfg_to_ast(filename):
                 "void visit(Dfg{t}* vtxp) override {{\n".format(t=node.name))
             for i in range(node.arity):
                 fh.write(
-                    "    AstNodeExpr* const op{j}p = convertSource(vtxp->source<{i}>());\n"
+                    "    AstNodeExpr* const op{j}p = convertDfgVertexToAstNodeExpr(vtxp->source<{i}>());\n"
                     .format(i=i, j=i + 1))
             fh.write(
                 "    m_resultp = makeNode<Ast{t}>(vtxp".format(t=node.name))

@@ -377,4 +377,7 @@
 %Error-UNSUPPORTED: t/t_covergroup_unsup.v:133:7: Unsupported: cross
   133 |       cross a, b {
       |       ^~~~~
+%Error-UNSUPPORTED: t/t_covergroup_unsup.v:151:4: Unsupported: covergroup
+  151 |    covergroup cg_more extends cg_empty;
+      |    ^~~~~~~~~~
 %Error: Exiting due to

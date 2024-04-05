@@ -164,8 +164,6 @@ class SenExprBuilder final {
 
         // All event signals should be 1-bit at this point
         switch (senItemp->edgeType()) {
-        case VEdgeType::ET_ILLEGAL:
-            return {nullptr, false};  // We already warn for this in V3LinkResolve
         case VEdgeType::ET_CHANGED:
         case VEdgeType::ET_HYBRID:  //
             if (VN_IS(senp->dtypep()->skipRefp(), UnpackArrayDType)) {

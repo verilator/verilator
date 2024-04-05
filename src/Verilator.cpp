@@ -48,6 +48,7 @@
 #include "V3EmitMk.h"
 #include "V3EmitV.h"
 #include "V3EmitXml.h"
+#include "V3ExecGraph.h"
 #include "V3Expand.h"
 #include "V3File.h"
 #include "V3Force.h"
@@ -71,10 +72,10 @@
 #include "V3Localize.h"
 #include "V3MergeCond.h"
 #include "V3Name.h"
+#include "V3Order.h"
 #include "V3Os.h"
 #include "V3Param.h"
 #include "V3ParseSym.h"
-#include "V3Partition.h"
 #include "V3PreShell.h"
 #include "V3Premit.h"
 #include "V3ProtectLib.h"
@@ -135,6 +136,8 @@ static void emitXmlOrJson() VL_MT_DISABLED {
 static void process() {
     {
         const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
+        VlOs::DeltaWallTime elabWallTime{true};
+
         // Sort modules by level so later algorithms don't need to care
         V3LinkLevel::modSortByLevel();
         V3Error::abortIfErrors();
@@ -207,6 +210,10 @@ static void process() {
         V3WidthCommit::widthCommit(v3Global.rootp());
         v3Global.assertDTypesResolved(true);
         v3Global.widthMinUsage(VWidthMinUsage::MATCHES_WIDTH);
+
+        // End of elaboration
+        V3Stats::addStatPerf(V3Stats::STAT_WALLTIME_ELAB, elabWallTime.deltaTime());
+        VlOs::DeltaWallTime cvtWallTime{true};
 
         // Coverage insertion
         //    Before we do dead code elimination and inlining, or we'll lose it.
@@ -550,11 +557,10 @@ static void process() {
         }
 
         if (!v3Global.opt.serializeOnly() && v3Global.opt.mtasks()) {
-            // Finalize our MTask cost estimates and pack the mtasks into
-            // threads. Must happen pre-EmitC which relies on the packing
-            // order. Must happen post-V3LifePost which changes the relative
-            // costs of mtasks.
-            V3Partition::finalize(v3Global.rootp());
+            // Implement the ExecGraphs by packing mtasks to thread.
+            // This should happen as late as possible (after all optimizations)
+            // as it relies on cost estimates.
+            V3ExecGraph::implement(v3Global.rootp());
         }
 
         if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()
@@ -563,7 +569,7 @@ static void process() {
             V3Common::commonAll();
 
             // Order variables
-            V3VariableOrder::orderAll();
+            V3VariableOrder::orderAll(v3Global.rootp());
 
             // Create AstCUse to determine what class forward declarations/#includes needed in C
             V3CUse::cUseAll();
@@ -582,6 +588,9 @@ static void process() {
         } else if (v3Global.opt.dpiHdrOnly()) {
             V3EmitC::emitcSyms(true);
         }
+
+        // End of conversion
+        V3Stats::addStatPerf(V3Stats::STAT_WALLTIME_CVT, cvtWallTime.deltaTime());
     }
     if (!v3Global.opt.serializeOnly()
         && !v3Global.opt.dpiHdrOnly()) {  // Unfortunately we have some lint checks in emitcImp.
@@ -676,8 +685,9 @@ static void verilate(const string& argString) {
             V3Graph::selfTest();
             V3TSP::selfTest();
             V3ScoreboardBase::selfTest();
-            V3Partition::selfTest();
-            V3Partition::selfTestNormalizeCosts();
+            V3Order::selfTestParallel();
+            V3ExecGraph::selfTest();
+            V3PreShell::selfTest();
             V3Broken::selfTest();
         }
         V3ThreadPool::selfTest();
@@ -699,7 +709,7 @@ static void verilate(const string& argString) {
 
     // Final steps
     V3Global::dumpCheckGlobalTree("final", 990, dumpTreeEitherLevel() >= 3);
-    if (v3Global.opt.jsonOnly()) {
+    if (v3Global.opt.jsonOnly() || dumpTreeJsonLevel()) {
         const string filename
             = (v3Global.opt.jsonOnlyMetaOutput().empty()
                    ? v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".tree.meta.json"
@@ -777,11 +787,14 @@ static void execBuildJob() {
     UASSERT(v3Global.opt.build(), "--build is not specified.");
     UASSERT(v3Global.opt.gmake(), "--build requires GNU Make.");
     UASSERT(!v3Global.opt.cmake(), "--build cannot use CMake.");
+    VlOs::DeltaWallTime buildWallTime{true};
     UINFO(1, "Start Build\n");
 
     const string cmdStr = buildMakeCmd(v3Global.opt.prefix() + ".mk", "");
     V3Os::filesystemFlushBuildDir(v3Global.opt.hierTopDataDir());
     const int exit_code = V3Os::system(cmdStr);
+    V3Stats::addStatPerf(V3Stats::STAT_WALLTIME_BUILD, buildWallTime.deltaTime());
+
     if (exit_code != 0) {
         v3error(cmdStr << " exited with " << exit_code << std::endl);
         std::exit(exit_code);
@@ -806,6 +819,8 @@ static void execHierVerilation() {
 int main(int argc, char** argv) {
     // General initialization
     std::ios::sync_with_stdio();
+    VlOs::DeltaWallTime wallTimeTotal{true};
+    VlOs::DeltaCpuTime cpuTimeTotal{true};
 
     time_t randseed;
     time(&randseed);
@@ -852,6 +867,12 @@ int main(int argc, char** argv) {
         V3PreShell::shutdown();
         v3Global.shutdown();
         FileLine::deleteAllRemaining();
+    }
+
+    if (!v3Global.opt.quietStats() && !v3Global.opt.preprocOnly()) {
+        V3Stats::addStatPerf(V3Stats::STAT_CPUTIME, cpuTimeTotal.deltaTime());
+        V3Stats::addStatPerf(V3Stats::STAT_WALLTIME, wallTimeTotal.deltaTime());
+        V3Stats::summaryReport();
     }
 
     UINFO(1, "Done, Exiting...\n");

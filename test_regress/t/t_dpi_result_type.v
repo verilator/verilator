@@ -43,7 +43,7 @@ module t (/*AUTOARG*/
    // Type definitions
    //======================================================================
 
-   // Basic types as per IEEE 1800-2017 35.5.5
+   // Basic types as per IEEE 1800-2023 35.5.5
    typedef byte byte_t;
    typedef byte unsigned byte_unsigned_t;
    typedef shortint      shortint_t;
@@ -73,7 +73,7 @@ module t (/*AUTOARG*/
    // Imports
    //======================================================================
 
-   // Basic types as per IEEE 1800-2017 35.5.5
+   // Basic types as per IEEE 1800-2023 35.5.5
    import "DPI-C" function void              i_void              ();
    import "DPI-C" function byte              i_byte              ();
    import "DPI-C" function byte unsigned     i_byte_unsigned     ();
@@ -130,7 +130,7 @@ module t (/*AUTOARG*/
    // Exports
    //======================================================================
 
-   // Basic types as per IEEE 1800-2017 35.5.5
+   // Basic types as per IEEE 1800-2023 35.5.5
    export "DPI-C" function e_void;
    export "DPI-C" function e_byte;
    export "DPI-C" function e_byte_unsigned;
@@ -193,9 +193,9 @@ module t (/*AUTOARG*/
 
    // Static variables (Note: Verilator strangely assumes everything inside
    // a function is automatic, which is exactly the opposite of the standard
-   // see IEEE 1800-2017 13.3.1 and 13.4.2
+   // see IEEE 1800-2023 13.3.1 and 13.4.2
 
-   // Basic types as per IEEE 1800-2017 35.5.5
+   // Basic types as per IEEE 1800-2023 35.5.5
    int                       n_void = 0;
    function void e_void();
       $display("e_void %1d", n_void);
@@ -446,7 +446,7 @@ module t (/*AUTOARG*/
       for (int i = 0 ; i < 3; i++) begin
          // Check the imports
 
-         // Basic types as per IEEE 1800-2017 35.5.5
+         // Basic types as per IEEE 1800-2023 35.5.5
          i_void();
          if (i_byte()              !==  8'd10 -  8'(i)) $stop;
          if (i_byte_unsigned()     !==  8'd20 -  8'(i)) $stop;

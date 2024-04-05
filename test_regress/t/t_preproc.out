@@ -1025,6 +1025,11 @@ Second line"""
 `line 707 "t/t_preproc.v" 0
  
  
+"string argument"
+
+`line 711 "t/t_preproc.v" 0
+ 
+ 
    
 predef 0 0
 predef 1 1
@@ -1045,4 +1050,4 @@ predef 2 2
  
  
 
-`line 729 "t/t_preproc.v" 0
+`line 733 "t/t_preproc.v" 0

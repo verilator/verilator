@@ -22,7 +22,11 @@ Args = parser.parse_args()
 
 os.chdir(Args.directory)
 
-rev = 'UNKNOWN_REV'
+if 'VERILATOR_SRC_VERSION' in os.environ:
+    rev = os.environ['VERILATOR_SRC_VERSION']
+else:
+    rev = 'UNKNOWN_REV'
+
 data = os.popen('git describe').read()
 
 match = re.search(r'^(v[0-9].*)', data)

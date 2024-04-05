@@ -6,7 +6,7 @@
 
 module t(/*AUTOARG*/);
 
-   let RECURSE(a) = (a == 1) ? 1 : RECURSE(a - 1);  // BAD no recursion per IEEE 1800-2017 11.12
+   let RECURSE(a) = (a == 1) ? 1 : RECURSE(a - 1);  // BAD no recursion per IEEE 1800-2023 11.12
 
    initial begin
       if (RECURSE(1) != 1) $stop;

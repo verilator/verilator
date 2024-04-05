@@ -32,6 +32,7 @@ class EmitXmlFileVisitor final : public VNVisitorConst {
     // NODE STATE
     // Entire netlist:
     // AstNode::user1           -> uint64_t, number to connect crossrefs
+    const VNUser1InUse m_user1InUse;
 
     // MEMBERS
     V3OutFile* const m_ofp;
@@ -262,7 +263,7 @@ class EmitXmlFileVisitor final : public VNVisitorConst {
             puts(" left=\"" + cvtToStr(nodep->left()) + "\"");
             puts(" right=\"" + cvtToStr(nodep->right()) + "\"");
         }
-        if (nodep->isSigned()) { puts(" signed=\"true\""); }
+        if (nodep->isSigned()) puts(" signed=\"true\"");
         puts("/>\n");
     }
     void visit(AstIfaceRefDType* nodep) override {

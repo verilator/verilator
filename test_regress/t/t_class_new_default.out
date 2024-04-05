@@ -1,0 +1,11 @@
+%Error-UNSUPPORTED: t/t_class_new_default.v:10:17: Unsupported: new constructor 'default' argument
+   10 |    function new(default);
+      |                 ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_class_new_default.v:17:24: Unsupported: new constructor 'default' argument
+   17 |    extern function new(default);
+      |                        ^~~~~~~
+%Error-UNSUPPORTED: t/t_class_new_default.v:20:25: Unsupported: new constructor 'default' argument
+   20 | function ClsDefFwd::new(default);
+      |                         ^~~~~~~
+%Error: Exiting due to

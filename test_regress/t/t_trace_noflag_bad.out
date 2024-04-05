@@ -1,2 +1,2 @@
-%Error: Vt_trace_noflag_bad.cpp:101: 'Vt_trace_noflag_bad::trace()' called on model that was Verilated without --trace option
+%Error: Testbench C call to 'VerilatedContext::trace()' requires model(s) Verilated with --trace or --trace-vcd option
 Aborting...

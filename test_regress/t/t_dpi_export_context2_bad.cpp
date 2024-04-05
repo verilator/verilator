@@ -35,11 +35,12 @@ int dpii_task() {
 
     // Check DPI warnings
     svScope scope = svGetScope();  // Will warn
-    if (scope) {}  // Unused
+    (void)scope;  // Unused
     const char* filenamep = "";
     int lineno = 0;
     svGetCallerInfo(&filenamep, &lineno);  // Will warn
-    if (filenamep && lineno) {}  // Unused
+    (void)filenamep;  // Unused
+    (void)lineno;  // Unused
 
     dpix_task();
     return 0;

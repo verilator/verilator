@@ -153,7 +153,7 @@ int main(int argc, char** argv) {
         V3Error::abortIfWarnings();
         if (top.opt.unlink()) {
             const VlStringSet& readFiles = top.opt.readFiles();
-            for (const auto& filename : readFiles) { unlink(filename.c_str()); }
+            for (const auto& filename : readFiles) unlink(filename.c_str());
         }
     }
 

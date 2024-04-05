@@ -92,6 +92,11 @@ Summary:
    profile-guided optimization data runtime filename to dump to.  Defaults
    to :file:`profile.vlt`.
 
+.. option:: +verilator+quiet
+
+   Disable printing the simulation summary report, see :ref:`Simulation
+   Summary Report`.
+
 .. option:: +verilator+rand+reset+<value>
 
    When a model was Verilated using

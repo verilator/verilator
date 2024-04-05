@@ -18,7 +18,7 @@ class u_cache#(type KEY_T=int, type DATA_T=int) extends u_object;
    extern function new(string name="u_cache", size_t max_size = 256);
 endclass
 
-// #() not required below, see IEEE 1800-2017 8.25.1
+// #() not required below, see IEEE 1800-2023 8.25.1
 function u_cache::new(string name="u_cache", u_cache::size_t max_size = 256);
    super.new(name);
    this.m_max_size = max_size;

@@ -66,7 +66,7 @@ module t (/*AUTOARG*/
 `ifndef VCS
 `ifndef VERILATOR
 `ifndef NC
-      // IEEE 1800-2017 5.9 assignment to byte array
+      // IEEE 1800-2023 5.9 assignment to byte array
       unpack1 = "five";
       `checkh(unpack1[0], "f");
       `checkh(unpack1[1], "i");

@@ -33,7 +33,7 @@ module t(/*AUTOARG*/
       $display(">%s< == >< (or > < also legal)", "");
       $display(">%s< == >    <", 32'h0);
 
-      // Numeric context, so IEEE 1800-2017 11.10.3 "" is a "\000"
+      // Numeric context, so IEEE 1800-2023 11.10.3 "" is a "\000"
       if ($bits("") != 8) $stop;
       if ("" != "\000") $stop;
 
@@ -42,7 +42,7 @@ module t(/*AUTOARG*/
       s = "";
       if (s.len != 0) $stop;
 
-      // IEEE 1800-2017 6.16 "\000" assigned to string is ignored
+      // IEEE 1800-2023 6.16 "\000" assigned to string is ignored
       s = "\000yo\000";
       if (s.len != 2) $stop;
       if (s != "yo") $stop;

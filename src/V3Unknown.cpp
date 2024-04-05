@@ -439,11 +439,9 @@ class UnknownVisitor final : public VNVisitor {
             int declElements = -1;
             AstNodeDType* const dtypep = nodep->fromp()->dtypep()->skipRefp();
             UASSERT_OBJ(dtypep, nodep, "Select of non-selectable type");
-            if (const AstNodeArrayDType* const adtypep = VN_CAST(dtypep, NodeArrayDType)) {
-                declElements = adtypep->elementsConst();
-            } else {
-                nodep->v3error("Select from non-array " << dtypep->prettyTypeName());
-            }
+            const AstNodeArrayDType* const adtypep = VN_CAST(dtypep, NodeArrayDType);
+            UASSERT_OBJ(adtypep, nodep, "Select from non-array " << dtypep->prettyTypeName());
+            declElements = adtypep->elementsConst();
             if (debug() >= 9) nodep->dumpTree("-  arraysel_old: ");
 
             // If value MODDIV constant, where constant <= declElements, known ok
@@ -471,7 +469,10 @@ class UnknownVisitor final : public VNVisitor {
                 VL_DO_DANGLING(condp->deleteTree(), condp);
             } else if (!lvalue
                        // Making a scalar would break if we're making an array
-                       && !VN_IS(nodep->dtypep()->skipRefp(), NodeArrayDType)) {
+                       && !VN_IS(nodep->dtypep()->skipRefp(), NodeArrayDType)
+                       && !(VN_IS(nodep->dtypep()->skipRefp(), NodeUOrStructDType)
+                            && !VN_CAST(nodep->dtypep()->skipRefp(), NodeUOrStructDType)
+                                    ->packed())) {
                 // ARRAYSEL(...) -> COND(LT(bit<maxbit), ARRAYSEL(...), {width{1'bx}})
                 VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);

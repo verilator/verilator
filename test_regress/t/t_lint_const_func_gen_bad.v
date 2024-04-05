@@ -6,7 +6,7 @@
 
 module t ();
    if (1) begin: GenConstFunc
-      // IEEE 1800-2017 13.4.3, constant functions shall not be declared inside a
+      // IEEE 1800-2023 13.4.3, constant functions shall not be declared inside a
       //generate block
       function automatic bit constFunc();
          constFunc = 1'b1;

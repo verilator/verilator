@@ -32,41 +32,44 @@ module t (
    assign net_1 = ~cyc[0];
    assign net_8 = ~cyc[1 +: 8];
 
+   wire         obs_1 = net_1;
+   wire [7:0]   obs_8 = net_8;
+
    always @ (posedge clk) begin
-      $display("%d: %x %x", cyc, net_8, net_1);
+      $display("%d: %x %x", cyc, obs_8, obs_1);
 
       if (!rst) begin
          case (cyc)
            3: begin
-              `checkh (net_1, 0);
-              `checkh (net_8, ~cyc[1 +: 8]);
+              `checkh (obs_1, 0);
+              `checkh (obs_8, ~cyc[1 +: 8]);
            end
            4: begin
-              `checkh (net_1, 0);
-              `checkh (net_8, 8'h5f);
+              `checkh (obs_1, 0);
+              `checkh (obs_8, 8'h5f);
            end
            5: begin
-              `checkh (net_1, 1);
-              `checkh (net_8, 8'h5f);
+              `checkh (obs_1, 1);
+              `checkh (obs_8, 8'h5f);
            end
            6, 7: begin
-              `checkh (net_1, 1);
-              `checkh (net_8, 8'hf5);
+              `checkh (obs_1, 1);
+              `checkh (obs_8, 8'hf5);
            end
            8: begin
-              `checkh (net_1, ~cyc[0]);
-              `checkh (net_8, 8'hf5);
+              `checkh (obs_1, ~cyc[0]);
+              `checkh (obs_8, 8'hf5);
            end
            10, 11: begin
-              `checkh (net_1, 1);
-              `checkh (net_8, 8'h5a);
+              `checkh (obs_1, 1);
+              `checkh (obs_8, 8'h5a);
            end
            12, 13: begin
-              `checkh (net_1, 0);
-              `checkh (net_8, 8'ha5);
+              `checkh (obs_1, 0);
+              `checkh (obs_8, 8'ha5);
            end
            default: begin
-              `checkh ({net_8, net_1}, ~cyc[0 +: 9]);
+              `checkh ({obs_8, obs_1}, ~cyc[0 +: 9]);
            end
          endcase
       end

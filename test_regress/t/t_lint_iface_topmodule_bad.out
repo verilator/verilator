@@ -1,4 +1,4 @@
-%Error: t/t_lint_iface_topmodule_bad.v:8:23: Parameter without initial value is never given value (IEEE 1800-2017 6.20.1): 'DW'
+%Error: t/t_lint_iface_topmodule_bad.v:8:23: Parameter without initial value is never given value (IEEE 1800-2023 6.20.1): 'DW'
                                            : ... note: In instance 't'
     8 |     parameter integer DW
       |                       ^~

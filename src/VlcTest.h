@@ -104,7 +104,7 @@ public:
     // CONSTRUCTORS
     VlcTests() = default;
     ~VlcTests() {
-        for (auto it = begin(); it != end(); ++it) { VL_DO_CLEAR(delete *it, *it = nullptr); }
+        for (auto it = begin(); it != end(); ++it) VL_DO_CLEAR(delete *it, *it = nullptr);
     }
 
     // METHODS

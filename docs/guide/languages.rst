@@ -62,12 +62,23 @@ Verilator supports the 2017 "for" loop constructs and several cleanups IEEE
 made in 1800-2017.
 
 
+SystemVerilog 2023 (IEEE 1800-2023) Support
+-------------------------------------------
+
+Verilator supports some of the 2023 improvements, including triple-quoted
+string blocks that may include newlines and single quotes.
+
+Verilator implements a full IEEE 1800-2023 compliant preprocessor,
+including triple-quoted strings, and \`ifdef expressions.
+
+
 Verilog AMS Support
 -------------------
 
 Verilator implements a very small subset of Verilog AMS (Verilog Analog and
 Mixed-Signal Extensions) with the subset corresponding to those VMS
-keywords with near-equivalents in Verilog 2005 or SystemVerilog 2017.
+keywords with near-equivalents in Verilog IEEE 1364 or SystemVerilog
+IEEE 1800.
 
 AMS parsing is enabled with :vlopt:`--language VAMS <--language>` or
 :vlopt:`--language 1800+VAMS <--language>`.

@@ -118,7 +118,7 @@ module t (
    `signal(PUSH_NOT_THROUGH_COND, ~(rand_a[0] ? rand_a[4:0] : 5'hb));
    `signal(REMOVE_NOT_NOT, ~~rand_a);
    `signal(REPLACE_NOT_NEQ, ~(rand_a != rand_b));
-   `signal(REPLACE_NOT_EQ, ~(rand_a == rand_b));
+   `signal(REPLACE_NOT_EQ, ~(srand_a == srand_b));
    `signal(REPLACE_NOT_OF_CONST, ~4'd0);
    `signal(REPLACE_AND_OF_NOT_AND_NOT, ~rand_a[1] & ~rand_b[1]);
    `signal(REPLACE_AND_OF_NOT_AND_NEQ, ~rand_a[2] & (rand_b != 64'd2));

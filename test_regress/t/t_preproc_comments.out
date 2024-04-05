@@ -281,7 +281,7 @@ endmodule
 
 `line 166 "t/t_preproc.v" 0
 //====================================================================== 
-// Check IEEE1800-2017 `pragma protect encrypted modules 
+// Check IEEE 1800-2017 `pragma protect encrypted modules 
 module t_lint_pragma_protected;
 
 `line 170 "t/t_preproc.v" 0
@@ -1028,6 +1028,11 @@ Second line"""
 """QQQ defval"""
 
 `line 707 "t/t_preproc.v" 0
+// string concat bug 
+ 
+"string argument"
+
+`line 711 "t/t_preproc.v" 0
 //====================================================================== 
 // IEEE mandated predefines 
   // undefineall should have no effect on these 
@@ -1050,4 +1055,4 @@ predef 2 2
 // After `undefineall above, for testing --dump-defines 
  
 
-`line 729 "t/t_preproc.v" 0
+`line 733 "t/t_preproc.v" 0

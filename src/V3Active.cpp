@@ -97,8 +97,8 @@ protected:
             result = vertexp->user();
             break;
         case LatchDetectGraphVertex::VT_BLOCK:  // (OR of potentially many siblings)
-            for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-                if (latchCheckInternal(castVertexp(edgep->top()))) {
+            for (V3GraphEdge& edge : vertexp->outEdges()) {
+                if (latchCheckInternal(castVertexp(edge.top()))) {
                     result = true;
                     break;
                 }
@@ -106,9 +106,8 @@ protected:
             break;
         case LatchDetectGraphVertex::VT_BRANCH:  // (AND of both sibling)
                                                  // A BRANCH vertex always has exactly 2 siblings
-            LatchDetectGraphVertex* const ifp = castVertexp(vertexp->outBeginp()->top());
-            LatchDetectGraphVertex* const elsp
-                = castVertexp(vertexp->outBeginp()->outNextp()->top());
+            LatchDetectGraphVertex* const ifp = castVertexp(vertexp->outEdges().frontp()->top());
+            LatchDetectGraphVertex* const elsp = castVertexp(vertexp->outEdges().backp()->top());
             result = latchCheckInternal(ifp) && latchCheckInternal(elsp);
             break;
         }
@@ -170,7 +169,7 @@ public:
         for (const auto& vrp : m_outputs) {
             LatchDetectGraphVertex* const vertp = castVertexp(vrp->varp()->user1p());
             vertp->user(true);  // Identify the output vertex we are checking paths _to_
-            if (!latchCheckInternal(castVertexp(verticesBeginp()))) latch_detected = true;
+            if (!latchCheckInternal(castVertexp(vertices().frontp()))) latch_detected = true;
             if (latch_detected && !latch_expected) {
                 nodep->v3warn(
                     LATCH,

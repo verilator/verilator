@@ -278,6 +278,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     bool m_inBBox = false;  // In black box; mark as driven+used
     bool m_inContAssign = false;  // In continuous assignment
     bool m_inProcAssign = false;  // In procedural assignment
+    bool m_inFTaskRef = false;  // In function or task call
     bool m_inInoutPin = false;  // Connected to pin that is inout
     const AstNodeFTask* m_taskp = nullptr;  // Current task
     const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
@@ -380,7 +381,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                 && !nodep->varp()->isDeclTyped()  //
                 && !nodep->varp()->isClassMember() && !nodep->varp()->isFuncLocal()) {
                 nodep->v3warn(PROCASSWIRE, "Procedural assignment to wire, perhaps intended var"
-                                               << " (IEEE 1800-2017 6.5): "
+                                               << " (IEEE 1800-2023 6.5): "
                                                << nodep->prettyNameQ());
             }
             if (m_inContAssign && !nodep->varp()->varType().isContAssignable()
@@ -389,6 +390,13 @@ class UndrivenVisitor final : public VNVisitorConst {
                               "Continuous assignment to reg, perhaps intended wire"
                                   << " (IEEE 1364-2005 6.1; Verilog only, legal in SV): "
                                   << nodep->prettyNameQ());
+            }
+            if (m_inFTaskRef && nodep->varp()->varType().isNet()) {
+                nodep->v3warn(
+                    PROCASSWIRE,
+                    "Passed wire on output or inout subroutine argument, expected expression that "
+                    "is valid on the left hand side of a procedural assignment"
+                        << " (IEEE 1800-2023 13.5): " << nodep->prettyNameQ());
             }
         }
         for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
@@ -412,7 +420,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                         nodep->v3warn(
                             MULTIDRIVEN,
                             "Variable written to in always_comb also written by other process"
-                                << " (IEEE 1800-2017 9.2.2.2): " << nodep->prettyNameQ() << '\n'
+                                << " (IEEE 1800-2023 9.2.2.2): " << nodep->prettyNameQ() << '\n'
                                 << nodep->warnOther() << '\n'
                                 << nodep->warnContextPrimary() << '\n'
                                 << entryp->getNodep()->warnOther()
@@ -422,7 +430,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                     if (!m_alwaysCombp && entryp->isDrivenAlwaysCombWhole()) {
                         nodep->v3warn(MULTIDRIVEN,
                                       "Variable also written to in always_comb"
-                                          << " (IEEE 1800-2017 9.2.2.2): " << nodep->prettyNameQ()
+                                          << " (IEEE 1800-2023 9.2.2.2): " << nodep->prettyNameQ()
                                           << '\n'
                                           << nodep->warnOther() << '\n'
                                           << nodep->warnContextPrimary() << '\n'
@@ -492,6 +500,11 @@ class UndrivenVisitor final : public VNVisitorConst {
             iterateChildrenConst(nodep);
             if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep << endl);
         }
+    }
+    void visit(AstNodeFTaskRef* nodep) override {
+        VL_RESTORER(m_inFTaskRef);
+        m_inFTaskRef = true;
+        iterateChildrenConst(nodep);
     }
 
     void visit(AstNodeFTask* nodep) override {

@@ -1,10 +1,10 @@
-%Error: t/t_inst_2star_bad.v:12:17: Duplicate .* in an instance (IEEE 1800-2017 23.3.2)
+%Error: t/t_inst_2star_bad.v:12:17: Duplicate .* in an instance (IEEE 1800-2023 23.3.2)
    12 |    sub sub (.*, .*);
       |                 ^~
-%Error: t/t_inst_2star_bad.v:14:13: Mixing positional and .*/named instantiation connection (IEEE 1800-2017 23.3.2)
+%Error: t/t_inst_2star_bad.v:14:13: Mixing positional and .*/named instantiation connection (IEEE 1800-2023 23.3.2)
    14 |    sub sub (foo, .*);
       |             ^~~
-%Error: t/t_inst_2star_bad.v:16:13: Mixing positional and .*/named instantiation connection (IEEE 1800-2017 23.3.2)
+%Error: t/t_inst_2star_bad.v:16:13: Mixing positional and .*/named instantiation connection (IEEE 1800-2023 23.3.2)
    16 |    sub sub (foo, .bar);
       |             ^~~
 %Error: Exiting due to

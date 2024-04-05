@@ -24,18 +24,21 @@
 
 #include "V3Hasher.h"
 
+#include <map>
 #include <string>
-#include <unordered_map>
 
 class V3UniqueNames final {
     const std::string m_prefix;  // Prefix to attach to all names
 
-    std::unordered_map<std::string, unsigned> m_multiplicity;  // Suffix number for given key
+    std::map<std::string, unsigned> m_multiplicity;  // Suffix number for given key
+
+    const bool m_addSuffix = true;  // Ad suffix or not
 
 public:
     V3UniqueNames() = default;
-    explicit V3UniqueNames(const std::string& prefix)
-        : m_prefix{prefix} {
+    explicit V3UniqueNames(const std::string& prefix, bool addSuffix = true)
+        : m_prefix{prefix}
+        , m_addSuffix(addSuffix) {
         if (!m_prefix.empty()) {
             UASSERT(VString::startsWith(m_prefix, "__V"), "Prefix must start with '__V'");
             UASSERT(!VString::endsWith(m_prefix, "_"), "Prefix must not end with '_'");
@@ -45,6 +48,15 @@ public:
     // Return argument, prepended with the prefix if any, then appended with a unique suffix each
     // time we are called with the same argument.
     std::string get(const std::string& name) {
+        if (!m_addSuffix) {
+            if (m_multiplicity.count(name) == 0) {
+                m_multiplicity[name] = 0;
+                return name;
+            } else {
+                return get(name + "__" + cvtToStr(m_multiplicity[name]++));
+            }
+        }
+        // NORMAL mode
         const unsigned num = m_multiplicity[name]++;
         std::string result;
         if (!m_prefix.empty()) {

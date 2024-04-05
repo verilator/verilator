@@ -588,7 +588,7 @@ class ExpandVisitor final : public VNVisitor {
                 VL_DO_DANGLING(destp->deleteTree(), destp);
             } else {
                 UINFO(8, "    ASSIGNSEL(const,narrow) " << nodep << endl);
-                if (destp->isQuad() && !rhsp->isQuad()) { rhsp = new AstCCast{nfl, rhsp, nodep}; }
+                if (destp->isQuad() && !rhsp->isQuad()) rhsp = new AstCCast{nfl, rhsp, nodep};
                 AstNodeExpr* oldvalp = destp->cloneTreePure(true);
                 fixCloneLvalue(oldvalp);
                 if (!ones) oldvalp = new AstAnd{lfl, new AstConst{lfl, maskold}, oldvalp};
@@ -656,7 +656,7 @@ class ExpandVisitor final : public VNVisitor {
                 V3Number maskwidth{nodep, destp->widthMin()};
                 for (int bit = 0; bit < lhsp->widthConst(); bit++) maskwidth.setBit(bit, 1);
 
-                if (destp->isQuad() && !rhsp->isQuad()) { rhsp = new AstCCast{nfl, rhsp, nodep}; }
+                if (destp->isQuad() && !rhsp->isQuad()) rhsp = new AstCCast{nfl, rhsp, nodep};
                 if (!ones) {
                     oldvalp = new AstAnd{
                         lfl,
@@ -741,7 +741,7 @@ class ExpandVisitor final : public VNVisitor {
                 UASSERT_OBJ(constp, nodep,
                             "Replication value isn't a constant.  Checked earlier!");
                 const uint32_t times = constp->toUInt();
-                if (nodep->isQuad() && !lhsp->isQuad()) { lhsp = new AstCCast{fl, lhsp, nodep}; }
+                if (nodep->isQuad() && !lhsp->isQuad()) lhsp = new AstCCast{fl, lhsp, nodep};
                 newp = lhsp->cloneTreePure(true);
                 for (unsigned repnum = 1; repnum < times; repnum++) {
                     const int rhsshift = repnum * lhswidth;

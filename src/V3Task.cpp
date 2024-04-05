@@ -153,8 +153,8 @@ private:
                             << vxp->impureNode()->warnContextSecondary());
         }
         // And, we need to check all tasks this task calls
-        for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            checkPurity(nodep, static_cast<TaskBaseVertex*>(edgep->top()));
+        for (V3GraphEdge& edge : vxp->outEdges()) {
+            checkPurity(nodep, static_cast<TaskBaseVertex*>(edge.top()));
         }
     }
     TaskFTaskVertex* getFTaskVertex(AstNodeFTask* nodep) {
@@ -462,7 +462,7 @@ class TaskVisitor final : public VNVisitor {
             UINFO(9, "     Port " << portp << endl);
             UINFO(9, "      pin " << pinp << endl);
             if (inlineTask) {
-                pinp->unlinkFrBack();  // Relinked to assignment below
+                pushDeletep(pinp->unlinkFrBack());  // Cloned in assignment below
                 VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);  // Args no longer needed
             }
             if (portp->isWritable() && VN_IS(pinp, Const)) {
@@ -490,7 +490,6 @@ class TaskVisitor final : public VNVisitor {
                         AstVarScope* const localVscp = varrefp->varScopep();
                         UASSERT_OBJ(localVscp, varrefp, "Null var scope");
                         portp->user2p(localVscp);
-                        pushDeletep(pinp);
                     } else {
                         pinp->v3warn(E_TASKNSVAR, "Unsupported: ref argument of inlined "
                                                   "function/task is not a simple variable");
@@ -506,10 +505,11 @@ class TaskVisitor final : public VNVisitor {
                 AstVarScope* const newvscp
                     = createVarScope(portp, namePrefix + "__" + portp->shortName());
                 portp->user2p(newvscp);
-                if (!inlineTask)
+                if (!inlineTask) {
                     pinp->replaceWith(
                         new AstVarRef{newvscp->fileline(), newvscp, VAccess::READWRITE});
-
+                    pushDeletep(pinp);  // Cloned by connectPortMakeInAssign
+                }
                 // Put input assignment in FRONT of all other statements
                 AstAssign* const preassp = connectPortMakeInAssign(pinp, newvscp, true);
                 if (AstNode* const afterp = beginp->nextp()) {
@@ -527,8 +527,10 @@ class TaskVisitor final : public VNVisitor {
                 AstVarScope* const newvscp
                     = createVarScope(portp, namePrefix + "__" + portp->shortName());
                 portp->user2p(newvscp);
-                if (!inlineTask)
+                if (!inlineTask) {
                     pinp->replaceWith(new AstVarRef{newvscp->fileline(), newvscp, VAccess::WRITE});
+                    pushDeletep(pinp);  // Cloned by connectPortMakeOutAssign
+                }
                 AstAssign* const postassp = connectPortMakeOutAssign(portp, pinp, newvscp, false);
                 // Put assignment BEHIND of all other statements
                 beginp->addNext(postassp);
@@ -1144,7 +1146,7 @@ class TaskVisitor final : public VNVisitor {
                     }
                     if (bdtypep->isDpiLogicVec()) {
                         portp->v3error("DPI function may not return a 4-state type "
-                                       "other than a single 'logic' (IEEE 1800-2017 35.5.5)");
+                                       "other than a single 'logic' (IEEE 1800-2023 35.5.5)");
                     }
                 }
             } else if (nodep->taskPublic()) {
@@ -1213,7 +1215,6 @@ class TaskVisitor final : public VNVisitor {
         cfuncp->dpiContext(nodep->dpiContext());
         cfuncp->dpiExportImpl(nodep->dpiExport());
         cfuncp->dpiImportWrapper(nodep->dpiImport());
-        cfuncp->dpiTraceInit(nodep->dpiTraceInit());
         cfuncp->recursive(nodep->recursive());
         if (nodep->dpiImport() || nodep->dpiExport()) {
             cfuncp->isStatic(true);
@@ -1460,7 +1461,7 @@ class TaskVisitor final : public VNVisitor {
             if (nodep->taskp()->isFunction()) {
                 nodep->v3warn(
                     IGNOREDRETURN,
-                    "Ignoring return value of non-void function (IEEE 1800-2017 13.4.1)");
+                    "Ignoring return value of non-void function (IEEE 1800-2023 13.4.1)");
             }
             nodep->unlinkFrBack();
             VL_DO_DANGLING(nodep->deleteTree(), nodep);

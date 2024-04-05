@@ -21,6 +21,7 @@
 #include "verilatedos.h"
 
 #include "V3Error.h"
+#include "V3Stats.h"
 
 #include <array>
 #include <fstream>
@@ -207,6 +208,7 @@ class V3OutFile VL_NOT_FINAL : public V3OutFormatter {
     // MEMBERS
     FILE* m_fp = nullptr;
     std::size_t m_usedBytes = 0;  // Number of bytes stored in m_bufferp
+    std::size_t m_writtenBytes = 0;  // Number of bytes written to output
     std::unique_ptr<std::array<char, WRITE_BUFFER_SIZE_BYTES>> m_bufferp;  // Write buffer
 
 public:
@@ -215,16 +217,23 @@ public:
     V3OutFile& operator=(const V3OutFile&) = delete;
     V3OutFile(V3OutFile&&) = delete;
     V3OutFile& operator=(V3OutFile&&) = delete;
-
     ~V3OutFile() override;
+
     void putsForceIncs();
+
+    void statRecordWritten() {
+        writeBlock();
+        V3Stats::addStatSum(V3Stats::STAT_CPP_CHARS, m_writtenBytes);
+    }
 
 private:
     void writeBlock() {
-        if (VL_LIKELY(m_usedBytes > 0)) fwrite(m_bufferp->data(), m_usedBytes, 1, m_fp);
-        m_usedBytes = 0;
+        if (VL_LIKELY(m_usedBytes > 0)) {
+            fwrite(m_bufferp->data(), m_usedBytes, 1, m_fp);
+            m_writtenBytes += m_usedBytes;
+            m_usedBytes = 0;
+        }
     }
-
     // CALLBACKS
     void putcOutput(char chr) override {
         m_bufferp->at(m_usedBytes++) = chr;
@@ -257,7 +266,7 @@ public:
         : V3OutFile{filename, lang} {
         resetPrivate();
     }
-    ~V3OutCFile() override = default;
+    ~V3OutCFile() override { statRecordWritten(); }
     virtual void putsHeader() { puts("// Verilated -*- C++ -*-\n"); }
     virtual void putsIntTopInclude() { putsForceIncs(); }
     virtual void putsGuard();

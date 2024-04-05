@@ -12,11 +12,11 @@ scenarios(dist => 1);
 
 foreach my $prog (
     # See also t_flag_help.pl
-    "../bin/verilator",
-    "../bin/verilator_coverage",
-    #"../bin/verilator_difftree",
-    #"../bin/verilator_gantt",
-    #"../bin/verilator_profcfunc",
+    "$ENV{VERILATOR_ROOT}/bin/verilator",
+    "$ENV{VERILATOR_ROOT}/bin/verilator_coverage",
+    #"$ENV{VERILATOR_ROOT}/bin/verilator_difftree",
+    #"$ENV{VERILATOR_ROOT}/bin/verilator_gantt",
+    #"$ENV{VERILATOR_ROOT}/bin/verilator_profcfunc",
     ) {
     run(fails => 0,
         cmd => ["perl", $prog,

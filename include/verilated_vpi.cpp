@@ -263,33 +263,24 @@ class VerilatedVpioScope VL_NOT_FINAL : public VerilatedVpio {
 protected:
     const VerilatedScope* const m_scopep;
     bool m_toplevel = false;
+    const char* m_name;
+    const char* m_fullname;
 
 public:
     explicit VerilatedVpioScope(const VerilatedScope* scopep)
         : m_scopep{scopep} {
-        std::string scopename = m_scopep->name();
-        std::string::size_type pos = std::string::npos;
-        // Look for '.' not inside escaped identifier
-        size_t i = 0;
-        while (i < scopename.length()) {
-            if (scopename[i] == '\\') {
-                while (i < scopename.length() && scopename[i] != ' ') ++i;
-                ++i;  // Proc ' ', it should always be there. Then grab '.' on next cycle
-            } else {
-                while (i < scopename.length() && scopename[i] != '.') ++i;
-                if (i < scopename.length()) pos = i++;
-            }
-        }
-        if (VL_UNLIKELY(pos == std::string::npos)) m_toplevel = true;
+        m_fullname = m_scopep->name();
+        if (std::strncmp(m_fullname, "TOP.", 4) == 0) m_fullname += 4;
+        m_name = m_scopep->identifier();
     }
     ~VerilatedVpioScope() override = default;
     static VerilatedVpioScope* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioScope*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    uint32_t type() const override { return vpiScope; }
+    uint32_t type() const override { return vpiGenScope; }
     const VerilatedScope* scopep() const { return m_scopep; }
-    const char* name() const override { return m_scopep->name(); }
-    const char* fullname() const override { return m_scopep->name(); }
+    const char* name() const override { return m_name; }
+    const char* fullname() const override { return m_fullname; }
     bool toplevel() const { return m_toplevel; }
 };
 
@@ -469,22 +460,29 @@ public:
 };
 
 class VerilatedVpioModule final : public VerilatedVpioScope {
-    const char* m_name;
-    const char* m_fullname;
 
 public:
     explicit VerilatedVpioModule(const VerilatedScope* modulep)
         : VerilatedVpioScope{modulep} {
-        m_fullname = m_scopep->name();
-        if (std::strncmp(m_fullname, "TOP.", 4) == 0) m_fullname += 4;
-        m_name = m_scopep->identifier();
+        // Look for '.' not inside escaped identifier
+        const std::string scopename = m_fullname;
+        std::string::size_type pos = std::string::npos;
+        size_t i = 0;
+        while (i < scopename.length()) {
+            if (scopename[i] == '\\') {
+                while (i < scopename.length() && scopename[i] != ' ') ++i;
+                ++i;  // Proc ' ', it should always be there. Then grab '.' on next cycle
+            } else {
+                while (i < scopename.length() && scopename[i] != '.') ++i;
+                if (i < scopename.length()) pos = i++;
+            }
+        }
+        if (VL_UNLIKELY(pos == std::string::npos)) m_toplevel = true;
     }
     static VerilatedVpioModule* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioModule*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     uint32_t type() const override { return vpiModule; }
-    const char* name() const override { return m_name; }
-    const char* fullname() const override { return m_fullname; }
 };
 
 class VerilatedVpioModuleIter final : public VerilatedVpio {
@@ -507,8 +505,8 @@ public:
                 delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
                 return nullptr;
             }
-            const VerilatedScope::Type itype = (*m_it)->type();
             const VerilatedScope* const modp = *m_it++;
+            const VerilatedScope::Type itype = modp->type();
             if (itype == VerilatedScope::SCOPE_MODULE) {
                 return (new VerilatedVpioModule{modp})->castVpiHandle();
             }
@@ -516,26 +514,54 @@ public:
     }
 };
 
+class VerilatedVpioScopeIter final : public VerilatedVpio {
+    const std::vector<const VerilatedScope*>* m_vec;
+    std::vector<const VerilatedScope*>::const_iterator m_it;
+
+public:
+    explicit VerilatedVpioScopeIter(const std::vector<const VerilatedScope*>& vec)
+        : m_vec{&vec} {
+        m_it = m_vec->begin();
+    }
+    ~VerilatedVpioScopeIter() override = default;
+    static VerilatedVpioScopeIter* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioScopeIter*>(reinterpret_cast<VerilatedVpio*>(h));
+    }
+    uint32_t type() const override { return vpiIterator; }
+    vpiHandle dovpi_scan() override {
+        while (true) {
+            if (m_it == m_vec->end()) {
+                delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
+                return nullptr;
+            }
+            const VerilatedScope* const modp = *m_it++;
+            const VerilatedScope::Type itype = modp->type();
+            if (itype == VerilatedScope::SCOPE_OTHER) {
+                return (new VerilatedVpioScope{modp})->castVpiHandle();
+            } else if (itype == VerilatedScope::SCOPE_MODULE) {
+                return (new VerilatedVpioModule{modp})->castVpiHandle();
+            }
+        }
+    }
+};
+
+static const char* d_unit = "$unit";
 class VerilatedVpioPackage final : public VerilatedVpioScope {
-    std::string m_name;
-    std::string m_fullname;
+    std::string m_fullname_string;
 
 public:
     explicit VerilatedVpioPackage(const VerilatedScope* modulep)
         : VerilatedVpioScope{modulep} {
-        const char* sfullname = m_scopep->name();
-        if (std::strncmp(sfullname, "TOP.", 4) == 0) sfullname += 4;
-        m_fullname = std::string{sfullname} + "::";
-        if (m_fullname == "\\$unit ::") m_fullname = "$unit::";
-        m_name = std::string(m_scopep->identifier());
-        if (m_name == "\\$unit ") m_name = "$unit";
+        m_fullname_string = std::string{m_fullname} + "::";
+        if (m_fullname_string == "\\$unit ::") m_fullname_string = "$unit::";
+
+        if (strcmp(m_name, "\\$unit ") == 0) m_name = d_unit;
     }
     static VerilatedVpioPackage* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioPackage*>(reinterpret_cast<VerilatedVpio*>(h));
     }
+    const char* fullname() const override { return m_fullname_string.c_str(); }
     uint32_t type() const override { return vpiPackage; }
-    const char* name() const override { return m_name.c_str(); }
-    const char* fullname() const override { return m_fullname.c_str(); }
 };
 
 class VerilatedVpioInstanceIter final : public VerilatedVpio {
@@ -1978,12 +2004,20 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
         return ((new VerilatedVpioVarIter{vop, true})->castVpiHandle());
     }
     case vpiModule: {
-        const VerilatedVpioModule* const vop = VerilatedVpioModule::castp(object);
+        const VerilatedVpioScope* const vop = VerilatedVpioScope::castp(object);
         const VerilatedHierarchyMap* const map = VerilatedImp::hierarchyMap();
         const VerilatedScope* const modp = vop ? vop->scopep() : nullptr;
         const auto it = vlstd::as_const(map)->find(const_cast<VerilatedScope*>(modp));
         if (it == map->end()) return nullptr;
         return ((new VerilatedVpioModuleIter{it->second})->castVpiHandle());
+    }
+    case vpiInternalScope: {
+        const VerilatedVpioScope* const vop = VerilatedVpioScope::castp(object);
+        const VerilatedHierarchyMap* const map = VerilatedImp::hierarchyMap();
+        const VerilatedScope* const modp = vop ? vop->scopep() : nullptr;
+        const auto it = vlstd::as_const(map)->find(const_cast<VerilatedScope*>(modp));
+        if (it == map->end()) return nullptr;
+        return ((new VerilatedVpioScopeIter{it->second})->castVpiHandle());
     }
     case vpiInstance: {
         if (object) return nullptr;

@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_lint_top_bad.v:14:8: Module cannot be named 'TOP' as conflicts with Verilator top-level internals
+   14 | module TOP( 
+      |        ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

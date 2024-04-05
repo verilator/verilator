@@ -169,9 +169,12 @@ void vl_stop_maybe(const char* filename, int linenum, const char* hier, bool may
     Verilated::threadContextp()->errorCountInc();
     if (maybe
         && Verilated::threadContextp()->errorCount() < Verilated::threadContextp()->errorLimit()) {
-        VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
-            "-Info: %s:%d: %s\n", filename, linenum,
-            "Verilog $stop, ignored due to +verilator+error+limit");
+        // Do just once when cross error limit
+        if (Verilated::threadContextp()->errorCount() == 1) {
+            VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
+                "-Info: %s:%d: %s\n", filename, linenum,
+                "Verilog $stop, ignored due to +verilator+error+limit");
+        }
     } else {
         vl_stop(filename, linenum, hier);
     }
@@ -602,7 +605,7 @@ WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP 
         const int words = VL_WORDS_I(obits);
         VL_ZERO_W(obits, owp);
         EData lor = 0;  // 0=all zeros, ~0=all ones, else mix
-        for (int i = 1; i < (words - 1); ++i) { lor |= lwp[i]; }
+        for (int i = 1; i < (words - 1); ++i) lor |= lwp[i];
         lor |= ((lwp[words - 1] == VL_MASK_E(rbits)) ? ~VL_EUL(0) : 0);
         if (lor == 0 && lwp[0] == 0) {  // "X" so return 0
             return owp;
@@ -814,7 +817,7 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
     bool widthSet = false;
     bool left = false;
     size_t width = 0;
-    for (std::string::const_iterator pos = format.begin(); pos != format.end(); ++pos) {
+    for (std::string::const_iterator pos = format.cbegin(); pos != format.cend(); ++pos) {
         if (!inPct && pos[0] == '%') {
             pctit = pos;
             inPct = true;
@@ -883,7 +886,7 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
             case '^': {  // Realtime
                 const int lbits = va_arg(ap, int);
                 const double d = va_arg(ap, double);
-                if (lbits) {}  // UNUSED - always 64
+                (void)lbits;  // UNUSED - always 64
                 if (fmt == '^') {  // Realtime
                     if (!widthSet) width = Verilated::threadContextp()->impp()->timeFormatWidth();
                     const int timeunit = va_arg(ap, int);
@@ -1212,15 +1215,15 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     IData got = 0;
     bool inPct = false;
     bool inIgnore = false;
-    std::string::const_iterator pos = format.begin();
-    for (; pos != format.end() && !_vl_vsss_eof(fp, floc); ++pos) {
+    std::string::const_iterator pos = format.cbegin();
+    for (; pos != format.cend() && !_vl_vsss_eof(fp, floc); ++pos) {
         // VL_DBG_MSGF("_vlscan fmt='"<<pos[0]<<"' floc="<<floc<<" file='"<<_vl_vsss_peek(fp, floc,
         // fromp, fstr)<<"'\n");
         if (!inPct && pos[0] == '%') {
             inPct = true;
             inIgnore = false;
         } else if (!inPct && std::isspace(pos[0])) {  // Format spaces
-            while (std::isspace(pos[1])) pos++;
+            while (std::isspace(pos[1])) ++pos;
             _vl_vsss_skipspace(fp, floc, fromp, fstr);
         } else if (!inPct) {  // Expected Format
             _vl_vsss_skipspace(fp, floc, fromp, fstr);
@@ -1436,8 +1439,8 @@ void _vl_string_to_vint(int obits, void* destp, size_t srclen, const char* srcp)
     char* op = reinterpret_cast<char*>(destp);
     if (srclen > bytes) srclen = bytes;  // Don't overflow destination
     size_t i = 0;
-    for (i = 0; i < srclen; ++i) { *op++ = srcp[srclen - 1 - i]; }
-    for (; i < bytes; ++i) { *op++ = 0; }
+    for (i = 0; i < srclen; ++i) *op++ = srcp[srclen - 1 - i];
+    for (; i < bytes; ++i) *op++ = 0;
 }
 
 static IData getLine(std::string& str, IData fpi, size_t maxLen) VL_MT_SAFE {
@@ -1652,7 +1655,8 @@ IData VL_SSCANF_INNX(int, const std::string& ld, const std::string& format, int 
                      ...) VL_MT_SAFE {
     va_list ap;
     va_start(ap, argc);
-    const IData got = _vl_vsscanf(nullptr, ld.length() * 8, nullptr, ld, format, ap);
+    const IData got
+        = _vl_vsscanf(nullptr, static_cast<int>(ld.length() * 8), nullptr, ld, format, ap);
     va_end(ap);
     return got;
 }
@@ -1941,7 +1945,7 @@ std::string VL_SUBSTR_N(const std::string& lhs, IData rhs, IData ths) VL_PURE {
 
 IData VL_ATOI_N(const std::string& str, int base) VL_PURE {
     std::string str_mod = str;
-    // IEEE 1800-2017 6.16.9 says '_' may exist.
+    // IEEE 1800-2023 6.16.9 says '_' may exist.
     str_mod.erase(std::remove(str_mod.begin(), str_mod.end(), '_'), str_mod.end());
 
     errno = 0;
@@ -2106,10 +2110,11 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
 
     if (VL_UNLIKELY(m_end != ~0ULL && m_addr <= m_end && !m_anyAddr)) {
         VL_WARN_MT(m_filename.c_str(), m_linenum, "",
-                   "$readmem file ended before specified final address (IEEE 1800-2017 21.4)");
+                   "$readmem file ended before specified final address (IEEE 1800-2023 21.4)");
     }
 
-    return false;  // EOF
+    addrr = m_addr;
+    return indata;  // EOF
 }
 void VlReadMem::setData(void* valuep, const std::string& rhs) {
     const QData shift = m_hex ? 4ULL : 1ULL;
@@ -2258,6 +2263,7 @@ void VL_READMEM_N(bool hex,  // Hex format, else binary
         QData addr = 0;
         std::string value;
         if (rmem.get(addr /*ref*/, value /*ref*/)) {
+            // printf("readmem.get [%" PRIu64 "]=%s\n", addr, value.c_str());
             if (VL_UNLIKELY(addr < static_cast<QData>(array_lsb)
                             || addr >= static_cast<QData>(array_lsb + depth))) {
                 VL_FATAL_MT(filename.c_str(), rmem.linenum(), "",
@@ -2412,6 +2418,22 @@ uint64_t vl_time_pow10(int n) {
     return pow10[n];
 }
 
+std::string vl_timescaled_double(double value, const char* format) VL_PURE {
+    const char* suffixp = "s";
+    // clang-format off
+    if      (value >= 1e0)   { suffixp = "s"; value *= 1e0; }
+    else if (value >= 1e-3)  { suffixp = "ms"; value *= 1e3; }
+    else if (value >= 1e-6)  { suffixp = "us"; value *= 1e6; }
+    else if (value >= 1e-9)  { suffixp = "ns"; value *= 1e9; }
+    else if (value >= 1e-12) { suffixp = "ps"; value *= 1e12; }
+    else if (value >= 1e-15) { suffixp = "fs"; value *= 1e15; }
+    else if (value >= 1e-18) { suffixp = "as"; value *= 1e18; }
+    // clang-format on
+    char valuestr[100];
+    VL_SNPRINTF(valuestr, 100, format, value, suffixp);
+    return std::string{valuestr};  // Gets converted to string, so no ref to stack
+}
+
 void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp,
                        const VerilatedContext* contextp) VL_MT_SAFE {
     VL_PRINTF_MT("Time scale of %s is %s / %s\n", namep, timeunitp,
@@ -2438,7 +2460,8 @@ VerilatedContext::VerilatedContext()
     m_fdps.resize(31);
     std::fill(m_fdps.begin(), m_fdps.end(), static_cast<FILE*>(nullptr));
     m_fdFreeMct.resize(30);
-    for (std::size_t i = 0, id = 1; i < m_fdFreeMct.size(); ++i, ++id) m_fdFreeMct[i] = id;
+    IData id = 1;
+    for (std::size_t i = 0; i < m_fdFreeMct.size(); ++i, ++id) m_fdFreeMct[i] = id;
 }
 
 // Must declare here not in interface, as otherwise forward declarations not known
@@ -2544,6 +2567,10 @@ std::string VerilatedContext::profVltFilename() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     return m_ns.m_profVltFilename;
 }
+void VerilatedContext::quiet(bool flag) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    m_s.m_quiet = flag;
+}
 void VerilatedContext::randReset(int val) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_randReset = val;
@@ -2611,8 +2638,16 @@ void VerilatedContext::internalsDump() const VL_MT_SAFE {
 }
 
 void VerilatedContext::addModel(VerilatedModel* modelp) {
+    if (!quiet()) {
+        // CPU time isn't read as starting point until model creation, so that quiet() is set
+        // Thus if quiet(), avoids slow OS read affecting some usages that make many models
+        const VerilatedLockGuard lock{m_mutex};
+        m_ns.m_cpuTimeStart.start();
+        m_ns.m_wallTimeStart.start();
+    }
     threadPoolp();  // Ensure thread pool is created, so m_threads cannot change any more
 
+    m_threadsInModels += modelp->threads();
     if (VL_UNLIKELY(modelp->threads() > m_threads)) {
         std::ostringstream msg;
         msg << "VerilatedContext has " << m_threads << " threads but model '"
@@ -2645,6 +2680,7 @@ VerilatedContext::enableExecutionProfiler(VerilatedVirtualBase* (*construct)(Ver
 
 //======================================================================
 // VerilatedContextImp:: Methods - command line
+
 void VerilatedContextImp::commandArgsGuts(int argc, const char** argv)
     VL_MT_SAFE_EXCLUDES(m_argMutex) {
     const VerilatedLockGuard lock{m_argMutex};
@@ -2741,6 +2777,8 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             profExecFilename(str);
         } else if (commandArgVlString(arg, "+verilator+prof+vlt+file+", str)) {
             profVltFilename(str);
+        } else if (arg == "+verilator+quiet") {
+            quiet(true);
         } else if (commandArgVlUint64(arg, "+verilator+rand+reset+", u64, 0, 2)) {
             randReset(static_cast<int>(u64));
         } else if (commandArgVlUint64(arg, "+verilator+seed+", u64, 1,
@@ -2786,7 +2824,7 @@ bool VerilatedContextImp::commandArgVlUint64(const std::string& arg, const std::
             VL_FATAL_MT("COMMAND_LINE", 0, "", msg.c_str());
         };
 
-        if (std::any_of(str.begin(), str.end(), [](int c) { return !std::isdigit(c); })) fail();
+        if (std::any_of(str.cbegin(), str.cend(), [](int c) { return !std::isdigit(c); })) fail();
         char* end;
         valuer = std::strtoull(str.c_str(), &end, 10);
         if (errno == ERANGE) fail("Value out of range of uint64_t");
@@ -2816,6 +2854,36 @@ uint64_t VerilatedContextImp::randSeedDefault64() const VL_MT_SAFE {
         return ((static_cast<uint64_t>(vl_sys_rand32()) << 32)
                 ^ (static_cast<uint64_t>(vl_sys_rand32())));
     }
+}
+
+//======================================================================
+// VerilatedContext:: Statistics
+
+double VerilatedContext::statCpuTimeSinceStart() const VL_MT_SAFE_EXCLUDES(m_mutex) {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_ns.m_cpuTimeStart.deltaTime();
+}
+double VerilatedContext::statWallTimeSinceStart() const VL_MT_SAFE_EXCLUDES(m_mutex) {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_ns.m_wallTimeStart.deltaTime();
+}
+void VerilatedContext::statsPrintSummary() VL_MT_UNSAFE {
+    if (quiet()) return;
+    VL_PRINTF("- S i m u l a t i o n   R e p o r t: %s %s\n", Verilated::productName(),
+              Verilated::productVersion());
+    const std::string endwhy = gotError() ? "$stop" : gotFinish() ? "$finish" : "end";
+    const double simtimeInUnits = VL_TIME_Q() * vl_time_multiplier(timeunit())
+                                  * vl_time_multiplier(timeprecision() - timeunit());
+    const std::string simtime = vl_timescaled_double(simtimeInUnits);
+    const double walltime = statWallTimeSinceStart();
+    const double cputime = statCpuTimeSinceStart();
+    const std::string simtimePerf
+        = vl_timescaled_double((cputime != 0.0) ? (simtimeInUnits / cputime) : 0, "%0.3f %s");
+    VL_PRINTF("- Verilator: %s at %s; walltime %0.3f s; speed %s/s\n", endwhy.c_str(),
+              simtime.c_str(), walltime, simtimePerf.c_str());
+    const double modelMB = VlOs::memUsageBytes() / 1024.0 / 1024.0;
+    VL_PRINTF("- Verilator: cpu %0.3f s on %d threads; alloced %0.0f MB\n", cputime,
+              threadsInModels(), modelMB);
 }
 
 //======================================================================
@@ -2854,6 +2922,37 @@ const VerilatedScope* VerilatedContext::scopeFind(const char* namep) const VL_MT
 }
 const VerilatedScopeNameMap* VerilatedContext::scopeNameMap() VL_MT_SAFE {
     return &(impp()->m_impdatap->m_nameMap);
+}
+
+//======================================================================
+// VerilatedContext:: Methods - trace
+
+void VerilatedContext::trace(VerilatedTraceBaseC* tfp, int levels, int options) VL_MT_SAFE {
+    VL_DEBUG_IF(VL_DBG_MSGF("+ VerilatedContext::trace\n"););
+    if (tfp->isOpen()) {
+        VL_FATAL_MT("", 0, "",
+                    "Testbench C call to 'VerilatedContext::trace()' must not be called"
+                    " after 'VerilatedTrace*::open()'\n");
+        return;
+    }
+    {
+        // Legacy usage may call {modela}->trace(...) then {modelb}->trace(...)
+        // So check for and suppress second and later calls
+        if (tfp->modelConnected()) return;
+        tfp->modelConnected(true);
+    }
+    // We rely on m_ns.m_traceBaseModelCbs being stable when trace() is called
+    // nope: const VerilatedLockGuard lock{m_mutex};
+    if (m_ns.m_traceBaseModelCbs.empty())
+        VL_FATAL_MT("", 0, "",
+                    "Testbench C call to 'VerilatedContext::trace()' requires model(s) Verilated"
+                    " with --trace or --trace-vcd option");
+    for (auto& cbr : m_ns.m_traceBaseModelCbs) cbr(tfp, levels, options);
+}
+void VerilatedContext::traceBaseModelCbAdd(traceBaseModelCb_t cb) VL_MT_SAFE {
+    // Model creation registering a callback for when Verilated::trace() called
+    const VerilatedLockGuard lock{m_mutex};
+    m_ns.m_traceBaseModelCbs.push_back(cb);
 }
 
 //======================================================================
@@ -3031,11 +3130,11 @@ void Verilated::stackCheck(QData needSize) VL_MT_UNSAFE {
     // if the user follows the suggestions
     if (VL_UNLIKELY(haveSize && needSize && haveSize < (needSize + needSize / 2))) {
         VL_PRINTF_MT("%%Warning: System has stack size %" PRIu64 " kb"
-                     " which may be too small; suggest 'ulimit -c %" PRIu64 "' or larger\n",
+                     " which may be too small; suggest 'ulimit -s %" PRIu64 "' or larger\n",
                      haveSize / 1024, (needSize * 2) / 1024);
     }
 #else
-    if (false && needSize) {}  // Unused argument
+    (void)needSize;  // Unused argument
 #endif
 }
 
@@ -3234,7 +3333,7 @@ void* VerilatedScope::exportFindNullError(int funcnum) VL_MT_SAFE {
     // Slowpath - Called only when find has failed
     const std::string msg = ("Testbench C called '"s + VerilatedImp::exportName(funcnum)
                              + "' but scope wasn't set, perhaps due to dpi import call without "
-                             + "'context', or missing svSetScope. See IEEE 1800-2017 35.5.3.");
+                             + "'context', or missing svSetScope. See IEEE 1800-2023 35.5.3.");
     VL_FATAL_MT("unknown", 0, "", msg.c_str());
     return nullptr;
 }
@@ -3300,3 +3399,7 @@ void VlDeleter::deleteAll() VL_EXCLUDES(m_mutex) VL_EXCLUDES(m_deleteMutex) VL_M
 }
 
 //===========================================================================
+// OS functions (last, so we have minimal OS dependencies above)
+
+#define VL_ALLOW_VERILATEDOS_C
+#include "verilatedos_c.h"

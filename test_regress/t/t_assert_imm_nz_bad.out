@@ -1,4 +1,4 @@
-%Error: t/t_assert_imm_nz_bad.v:13:26: Deferred assertions must use '#0' (IEEE 1800-2017 16.4)
+%Error: t/t_assert_imm_nz_bad.v:13:26: Deferred assertions must use '#0' (IEEE 1800-2023 16.4)
    13 |    labeled_imas: assert #1 (clk);   
       |                          ^
 %Error: Exiting due to

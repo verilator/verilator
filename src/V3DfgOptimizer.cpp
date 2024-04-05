@@ -25,8 +25,6 @@
 #include "V3AstUserAllocator.h"
 #include "V3Dfg.h"
 #include "V3DfgPasses.h"
-#include "V3DfgPatternStats.h"
-#include "V3File.h"
 #include "V3Graph.h"
 #include "V3UniqueNames.h"
 
@@ -242,7 +240,7 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
     UINFO(2, __FUNCTION__ << ": " << endl);
 
     // NODE STATE
-    // AstVar::user1 -> Used by V3DfgPasses::astToDfg and DfgPassed::dfgToAst
+    // AstVar::user1 -> Used by V3DfgPasses::astToDfg, V3DfgPasses::eliminateVars
     // AstVar::user2 -> bool: Flag indicating referenced by AstVarXRef (set just below)
     // AstVar::user3 -> bool: Flag indicating written by logic not representable as DFG
     //                        (set by V3DfgPasses::astToDfg)
@@ -253,8 +251,6 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
     netlistp->foreach([](const AstVarXRef* xrefp) { xrefp->varp()->user2(true); });
 
     V3DfgOptimizationContext ctx{label};
-
-    V3DfgPatternStats patternStats;
 
     // Run the optimization phase
     for (AstNode* nodep = netlistp->modulesp(); nodep; nodep = nodep->nextp()) {
@@ -282,14 +278,6 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
         // Quick sanity check
         UASSERT_OBJ(dfg->size() == 0, nodep, "DfgGraph should have become empty");
 
-        // For each cyclic component
-        for (auto& component : cyclicComponents) {
-            if (dumpDfgLevel() >= 7) component->dumpDotFilePrefixed(ctx.prefix() + "source");
-            // TODO: Apply optimizations safe for cyclic graphs
-            // Add back under the main DFG (we will convert everything back in one go)
-            dfg->addGraph(*component);
-        }
-
         // For each acyclic component
         for (auto& component : acyclicComponents) {
             if (dumpDfgLevel() >= 7) component->dumpDotFilePrefixed(ctx.prefix() + "source");
@@ -299,33 +287,23 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
             dfg->addGraph(*component);
         }
 
-        // Accumulate patterns from the optimized graph for reporting
-        if (v3Global.opt.stats()) patternStats.accumulate(*dfg);
+        // Eliminate redundant variables. Run this on the whole acyclic DFG. It needs to traverse
+        // the module to perform variable substitutions. Doing this by component would do
+        // redundant traversals and can be extremely slow in large modules with many components.
+        V3DfgPasses::eliminateVars(*dfg, ctx.m_eliminateVarsContext);
+
+        // For each cyclic component
+        for (auto& component : cyclicComponents) {
+            if (dumpDfgLevel() >= 7) component->dumpDotFilePrefixed(ctx.prefix() + "source");
+            // TODO: Apply optimizations safe for cyclic graphs
+            // Add back under the main DFG (we will convert everything back in one go)
+            dfg->addGraph(*component);
+        }
 
         // Convert back to Ast
         if (dumpDfgLevel() >= 8) dfg->dumpDotFilePrefixed(ctx.prefix() + "whole-optimized");
         AstModule* const resultModp = V3DfgPasses::dfgToAst(*dfg, ctx);
         UASSERT_OBJ(resultModp == modp, modp, "Should be the same module");
-    }
-
-    // Print the collected patterns
-    if (v3Global.opt.stats()) {
-        // Label to lowercase, without spaces
-        std::string ident = label;
-        std::transform(ident.begin(), ident.end(), ident.begin(), [](unsigned char c) {  //
-            return c == ' ' ? '_' : std::tolower(c);
-        });
-
-        // File to dump to
-        const std::string filename = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix()
-                                     + "__stats_dfg_patterns__" + ident + ".txt";
-
-        // Open, write, close
-        std::ofstream* const ofp = V3File::new_ofstream(filename);
-        if (ofp->fail()) v3fatal("Can't write " << filename);
-        patternStats.dump(label, *ofp);
-        ofp->close();
-        VL_DO_DANGLING(delete ofp, ofp);
     }
 
     V3Global::dumpCheckGlobalTree("dfg-optimize", 0, dumpTreeEitherLevel() >= 3);

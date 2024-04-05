@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_var_ref_static.v:12:22: Unsupported: 'ref static' ports
+   12 |    function void crs(const ref static i);
+      |                      ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_var_ref_static.v:14:21: Unsupported: 'ref static' ports
+   14 |    function void rs(ref static i);
+      |                     ^~~
+%Error: Exiting due to

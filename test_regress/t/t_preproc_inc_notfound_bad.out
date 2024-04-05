@@ -5,9 +5,6 @@
              t/this_file_is_not_found.vh
              t/this_file_is_not_found.vh.v
              t/this_file_is_not_found.vh.sv
-             ../include/this_file_is_not_found.vh
-             ../include/this_file_is_not_found.vh.v
-             ../include/this_file_is_not_found.vh.sv
              this_file_is_not_found.vh
              this_file_is_not_found.vh.v
              this_file_is_not_found.vh.sv

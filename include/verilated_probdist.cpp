@@ -116,7 +116,7 @@ IData VL_DIST_ERLANG(IData& seedr, IData uk, IData umean) VL_MT_SAFE {
         return 0;
     }
     double x = 1.0;
-    for (int32_t i = 1; i <= k; i++) { x = x * _vl_dbase_uniform(seedr, 0, 1); }
+    for (int32_t i = 1; i <= k; i++) x = x * _vl_dbase_uniform(seedr, 0, 1);
     const double a = static_cast<double>(mean);
     const double b = static_cast<double>(k);
     double r = -a * log(x) / b;

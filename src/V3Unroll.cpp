@@ -115,7 +115,7 @@ class UnrollVisitor final : public VNVisitor {
         if (VN_IS(nodep, GenFor) && !m_forVarp->isGenVar()) {
             nodep->v3error("Non-genvar used in generate for: " << m_forVarp->prettyNameQ());
         } else if (!VN_IS(nodep, GenFor) && m_forVarp->isGenVar()) {
-            nodep->v3error("Genvar not legal in non-generate for (IEEE 1800-2017 27.4): "
+            nodep->v3error("Genvar not legal in non-generate for (IEEE 1800-2023 27.4): "
                            << m_forVarp->prettyNameQ() << '\n'
                            << nodep->warnMore()
                            << "... Suggest move for loop upwards to generate-level scope.");

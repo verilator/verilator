@@ -1,4 +1,4 @@
-%Error: t/t_inside_assoc_unsup.v:12:15: Inside operator not specified on associative arrays (IEEE 1800-2017 11.4.13)
+%Error: t/t_inside_assoc_unsup.v:12:15: Inside operator not specified on associative arrays (IEEE 1800-2023 11.4.13)
                                       : ... note: In instance 't'
    12 |       m = (10 inside {assoc});
       |               ^~~~~~

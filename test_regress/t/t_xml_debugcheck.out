@@ -2,13 +2,13 @@
 <!-- DESCRIPTION: Verilator output: XML representation of netlist -->
 <verilator_xml>
   <files>
-    <file id="a" filename="&lt;built-in&gt;" language="1800-2017"/>
-    <file id="b" filename="&lt;command-line&gt;" language="1800-2017"/>
-    <file id="c" filename="input.vc" language="1800-2017"/>
-    <file id="d" filename="t/t_enum_type_methods.v" language="1800-2017"/>
+    <file id="a" filename="&lt;built-in&gt;" language="1800-2023"/>
+    <file id="b" filename="&lt;command-line&gt;" language="1800-2023"/>
+    <file id="c" filename="input.vc" language="1800-2023"/>
+    <file id="d" filename="t/t_enum_type_methods.v" language="1800-2023"/>
   </files>
   <module_files>
-    <file id="d" filename="t/t_enum_type_methods.v" language="1800-2017"/>
+    <file id="d" filename="t/t_enum_type_methods.v" language="1800-2023"/>
   </module_files>
   <cells>
     <cell loc="d,11,8,11,9" name="$root" submodname="$root" hier="$root">
@@ -637,11 +637,9 @@
           <and loc="d,11,8,11,9" dtype_id="9">
             <const loc="d,11,8,11,9" name="32&apos;h1" dtype_id="14"/>
             <not loc="d,11,8,11,9" dtype_id="9">
-              <ccast loc="d,11,8,11,9" dtype_id="9">
-                <cmethodhard loc="d,11,8,11,9" name="any" dtype_id="9">
-                  <varref loc="d,11,8,11,9" name="__VactTriggered" dtype_id="9"/>
-                </cmethodhard>
-              </ccast>
+              <cmethodhard loc="d,11,8,11,9" name="any" dtype_id="9">
+                <varref loc="d,11,8,11,9" name="__VactTriggered" dtype_id="9"/>
+              </cmethodhard>
             </not>
           </and>
           <begin>
@@ -666,11 +664,9 @@
           <and loc="d,11,8,11,9" dtype_id="9">
             <const loc="d,11,8,11,9" name="32&apos;h1" dtype_id="14"/>
             <not loc="d,11,8,11,9" dtype_id="9">
-              <ccast loc="d,11,8,11,9" dtype_id="9">
-                <cmethodhard loc="d,11,8,11,9" name="any" dtype_id="9">
-                  <varref loc="d,11,8,11,9" name="__VnbaTriggered" dtype_id="9"/>
-                </cmethodhard>
-              </ccast>
+              <cmethodhard loc="d,11,8,11,9" name="any" dtype_id="9">
+                <varref loc="d,11,8,11,9" name="__VnbaTriggered" dtype_id="9"/>
+              </cmethodhard>
             </not>
           </and>
           <begin>
@@ -691,6 +687,22 @@
         </if>
       </cfunc>
       <cfunc loc="a,0,0,0,0" name="_eval_act"/>
+      <cfunc loc="a,0,0,0,0" name="_eval_nba">
+        <if loc="d,11,8,11,9">
+          <and loc="d,11,8,11,9" dtype_id="17">
+            <const loc="d,11,8,11,9" name="64&apos;h1" dtype_id="17"/>
+            <cmethodhard loc="d,11,8,11,9" name="word" dtype_id="18">
+              <varref loc="d,11,8,11,9" name="__VnbaTriggered" dtype_id="9"/>
+              <const loc="d,11,8,11,9" name="32&apos;h0" dtype_id="14"/>
+            </cmethodhard>
+          </and>
+          <begin>
+            <stmtexpr loc="d,65,10,65,11">
+              <ccall loc="d,65,10,65,11" dtype_id="7" func="_nba_sequent__TOP__0"/>
+            </stmtexpr>
+          </begin>
+        </if>
+      </cfunc>
       <cfunc loc="d,65,10,65,11" name="_nba_sequent__TOP__0">
         <var loc="d,23,17,23,20" name="__Vdly__t.cyc" dtype_id="4" vartype="integer" origName="__Vdly__t__DOT__cyc"/>
         <creset loc="d,23,17,23,20">
@@ -1510,22 +1522,6 @@
           <varref loc="d,65,10,65,11" name="__Vdly__t.e" dtype_id="11"/>
           <varref loc="d,65,10,65,11" name="t.e" dtype_id="11"/>
         </assignpost>
-      </cfunc>
-      <cfunc loc="a,0,0,0,0" name="_eval_nba">
-        <if loc="d,11,8,11,9">
-          <and loc="d,11,8,11,9" dtype_id="17">
-            <const loc="d,11,8,11,9" name="64&apos;h1" dtype_id="17"/>
-            <cmethodhard loc="d,11,8,11,9" name="word" dtype_id="18">
-              <varref loc="d,11,8,11,9" name="__VnbaTriggered" dtype_id="9"/>
-              <const loc="d,11,8,11,9" name="32&apos;h0" dtype_id="14"/>
-            </cmethodhard>
-          </and>
-          <begin>
-            <stmtexpr loc="d,65,10,65,11">
-              <ccall loc="d,65,10,65,11" dtype_id="7" func="_nba_sequent__TOP__0"/>
-            </stmtexpr>
-          </begin>
-        </if>
       </cfunc>
       <cfunc loc="a,0,0,0,0" name="_eval_phase__act">
         <var loc="d,11,8,11,9" name="__VpreTriggered" dtype_id="6" vartype="VlTriggerVec" origName="__VpreTriggered"/>

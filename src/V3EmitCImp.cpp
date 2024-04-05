@@ -858,7 +858,7 @@ class EmitCTrace final : EmitCFunc {
     void emitTraceValue(AstTraceInc* nodep, int arrayindex) {
         if (AstVarRef* const varrefp = VN_CAST(nodep->valuep(), VarRef)) {
             AstVar* const varp = varrefp->varp();
-            if (varp->isEvent()) { puts("&"); }
+            if (varp->isEvent()) puts("&");
             puts("(");
             if (emitTraceIsScBigUint(nodep)) {
                 puts("(uint32_t*)");

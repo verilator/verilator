@@ -60,22 +60,6 @@ static double timescaleToDouble(const char* unitp) VL_PURE {
     return value;
 }
 
-static std::string doubleToTimescale(double value) VL_PURE {
-    const char* suffixp = "s";
-    // clang-format off
-    if      (value >= 1e0)   { suffixp = "s"; value *= 1e0; }
-    else if (value >= 1e-3)  { suffixp = "ms"; value *= 1e3; }
-    else if (value >= 1e-6)  { suffixp = "us"; value *= 1e6; }
-    else if (value >= 1e-9)  { suffixp = "ns"; value *= 1e9; }
-    else if (value >= 1e-12) { suffixp = "ps"; value *= 1e12; }
-    else if (value >= 1e-15) { suffixp = "fs"; value *= 1e15; }
-    else if (value >= 1e-18) { suffixp = "as"; value *= 1e18; }
-    // clang-format on
-    char valuestr[100];
-    VL_SNPRINTF(valuestr, 100, "%0.0f%s", value, suffixp);
-    return valuestr;  // Gets converted to string, so no ref to stack
-}
-
 //=========================================================================
 // Buffer management
 
@@ -190,13 +174,16 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::offloadWorkerThreadMain() {
 
                 //===
                 // Rare commands
-            case VerilatedTraceOffloadCommand::TIME_CHANGE:
+            case VerilatedTraceOffloadCommand::TIME_CHANGE: {
                 VL_TRACE_OFFLOAD_DEBUG("Command TIME_CHANGE " << top);
                 readp -= 1;  // No code in this command, undo increment
-                emitTimeChange(*reinterpret_cast<const uint64_t*>(readp));
+                const uint64_t timeui
+                    = static_cast<uint64_t>(*reinterpret_cast<const uint32_t*>(readp)) << 32ULL
+                      | static_cast<uint64_t>(*reinterpret_cast<const uint32_t*>(readp + 1));
+                emitTimeChange(timeui);
                 readp += 2;
                 continue;
-
+            }
             case VerilatedTraceOffloadCommand::TRACE_BUFFER:
                 VL_TRACE_OFFLOAD_DEBUG("Command TRACE_BUFFER " << top);
                 readp -= 1;  // No code in this command, undo increment
@@ -418,7 +405,7 @@ bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const std::stri
 
 template <>
 std::string VerilatedTrace<VL_SUB_T, VL_BUF_T>::timeResStr() const {
-    return doubleToTimescale(m_timeRes);
+    return vl_timescaled_double(m_timeRes);
 }
 
 //=========================================================================
@@ -574,7 +561,10 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dump(uint64_t timeui) VL_MT_SAFE_EXCLUD
 
             // Tell worker to update time point
             m_offloadBufferWritep[0] = VerilatedTraceOffloadCommand::TIME_CHANGE;
-            *reinterpret_cast<uint64_t*>(m_offloadBufferWritep + 1) = timeui;
+            *reinterpret_cast<uint32_t*>(m_offloadBufferWritep + 1)
+                = static_cast<uint32_t>(timeui >> 32ULL);
+            *reinterpret_cast<uint32_t*>(m_offloadBufferWritep + 2)
+                = static_cast<uint32_t>(timeui);
             m_offloadBufferWritep += 3;
         } else {
             // Update time point

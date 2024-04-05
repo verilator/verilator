@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(dist => 1);
 
-run(cmd => ["../bin/verilator_coverage",
+run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_coverage",
             "--no-unlink", "--nounlink",
             "--write", "$Self->{obj_dir}/coverage.dat",
             "t/t_vlcov_data_a.dat",

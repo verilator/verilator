@@ -10,8 +10,12 @@ Time scale of t is 1s / 10ns
   acc%0t=12345678901234567890000000000.000000ns acc%0d=12345678901234567890
 [60000000000.000000ns] stime%0t=60000000000.000000ns  stime%0d=60  stime%0f=60.000000
 [60000000000.000000ns] rtime%0t=60000000000.000000ns  rtime%0d=60  rtime%0f=60.000000
+global svGetTime = 0 1,1705032704
+global svGetTimeUnit = 0 0  svGetTmePrecision = 0 -8
 global vpiSimTime = 1,1705032704  vpiScaledRealTime = 6e+09
 global vpiTimeUnit = 0  vpiTimePrecision = -8
+top.t svGetTime = 0 1,1705032704
+top.t svGetTimeUnit = 0 0  svGetTmePrecision = 0 -8
 top.t vpiSimTime = 1,1705032704  vpiScaledRealTime = 60
 top.t vpiTimeUnit = 0  vpiTimePrecision = -8
 *-* All Finished *-*

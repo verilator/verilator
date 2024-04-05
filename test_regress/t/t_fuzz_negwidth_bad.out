@@ -1,16 +1,16 @@
-%Error: t/t_fuzz_negwidth_bad.v:9:9: Unsupported: Width of number exceeds implementation limit: 1231232312312312'd1  (IEEE 1800-2017 6.9.1)
+%Error: t/t_fuzz_negwidth_bad.v:9:9: Unsupported: Width of number exceeds implementation limit: 1231232312312312'd1  (IEEE 1800-2023 6.9.1)
     9 | int c = 1231232312312312'd1;
       |         ^~~~~~~~~~~~~~~~~~~
-%Error: t/t_fuzz_negwidth_bad.v:10:9: Syntax error: size cannot be provided with '0/'1/'x/'z: 12'1 (IEEE 1800-2017 5.7.1)
+%Error: t/t_fuzz_negwidth_bad.v:10:9: Syntax error: size cannot be provided with '0/'1/'x/'z: 12'1 (IEEE 1800-2023 5.7.1)
    10 | int e = 12'1;
       |         ^~~~
-%Error: t/t_fuzz_negwidth_bad.v:11:9: Syntax error: size cannot be provided with '0/'1/'x/'z: 12'0 (IEEE 1800-2017 5.7.1)
+%Error: t/t_fuzz_negwidth_bad.v:11:9: Syntax error: size cannot be provided with '0/'1/'x/'z: 12'0 (IEEE 1800-2023 5.7.1)
    11 | int f = 12'0;
       |         ^~~~
-%Error: t/t_fuzz_negwidth_bad.v:12:9: Syntax error: size cannot be provided with '0/'1/'x/'z: 12'z (IEEE 1800-2017 5.7.1)
+%Error: t/t_fuzz_negwidth_bad.v:12:9: Syntax error: size cannot be provided with '0/'1/'x/'z: 12'z (IEEE 1800-2023 5.7.1)
    12 | int g = 12'z;
       |         ^~~~
-%Error: t/t_fuzz_negwidth_bad.v:13:9: Syntax error: size cannot be provided with '0/'1/'x/'z: 12'x (IEEE 1800-2017 5.7.1)
+%Error: t/t_fuzz_negwidth_bad.v:13:9: Syntax error: size cannot be provided with '0/'1/'x/'z: 12'x (IEEE 1800-2023 5.7.1)
    13 | int h = 12'x;
       |         ^~~~
 %Error: Exiting due to

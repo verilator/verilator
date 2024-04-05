@@ -106,7 +106,7 @@ module t (/*AUTOARG*/);
 
       // Reduction methods
 
-       i = q.sum;
+      i = q.sum;
       `checkh(i, 32'hc);
       i = q.sum with (item + 1);
       `checkh(i, 32'h11);

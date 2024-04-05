@@ -15,7 +15,7 @@ scenarios(dist => 1);
 my $tmp = "$Self->{obj_dir}/copied.dat";
 File::Copy::copy("$Self->{t_dir}/t_vlcov_data_a.dat", $tmp);
 
-run(cmd => ["../bin/verilator_coverage",
+run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_coverage",
             "--unlink",
             $tmp,
             "--write", "$Self->{obj_dir}/output.dat"],

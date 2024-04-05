@@ -47,7 +47,7 @@
       {"type":"VARREF","name":"d","addr":"(IB)","loc":"d,49:16,49:17","dtypep":"(G)","access":"RD","varp":"(Z)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
     ],
      "lhsp": [
-      {"type":"VARREF","name":"q","addr":"(JB)","loc":"d,50:22,50:23","dtypep":"(G)","access":"WR","varp":"(CB)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
+      {"type":"VARREF","name":"q","addr":"(JB)","loc":"d,53:13,53:14","dtypep":"(G)","access":"WR","varp":"(CB)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
     ],"timingControlp": [],"strengthSpecp": []}
   ],"activesp": []},
   {"type":"MODULE","name":"mod1__W4","addr":"(M)","loc":"d,31:8,31:12","origName":"mod1","level":3,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
@@ -95,7 +95,7 @@
    "modulep": [
     {"type":"MODULE","name":"@CONST-POOL@","addr":"(WB)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","level":0,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
      "stmtsp": [
-      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(XB)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(WB)","varsp": [],"blocksp": []}
+      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(XB)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(WB)","varsp": [],"blocksp": [],"inlinesp": []}
     ],"activesp": []}
   ]}
 ]}

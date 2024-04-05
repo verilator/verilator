@@ -17,10 +17,9 @@ compile(
     );
 
 execute(
-    fails => 1
+    fails => 1,
+    expect_filename => $Self->{golden_filename},
     );
-
-file_grep($Self->{run_log_filename}, qr/::trace\(\)' shall not be called after 'VerilatedVcdC::open\(\)'/i);
 
 ok(1);
 1;

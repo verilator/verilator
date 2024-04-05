@@ -14,10 +14,10 @@
 //
 //*************************************************************************
 
-#include "V3PchAstNoMT.h"
+#ifndef VERILATOR_V3DFGPATTERNSTATS_H_
+#define VERILATOR_V3DFGPATTERNSTATS_H_
 
 #include "V3Dfg.h"
-#include "V3DfgPasses.h"
 
 #include <algorithm>
 #include <map>
@@ -195,3 +195,5 @@ public:
         }
     }
 };
+
+#endif

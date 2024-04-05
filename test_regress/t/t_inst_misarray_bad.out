@@ -1,4 +1,4 @@
-%Error: t/t_inst_misarray_bad.v:17:23: Illegal input port connection 'foo', mismatch between port which is an array, and expression which is not an array. (IEEE 1800-2017 7.6)
+%Error: t/t_inst_misarray_bad.v:17:23: Illegal input port connection 'foo', mismatch between port which is an array, and expression which is not an array. (IEEE 1800-2023 7.6)
                                      : ... note: In instance 't'
    17 |                      .foo(foo));   
       |                       ^~~

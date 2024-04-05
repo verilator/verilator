@@ -25,7 +25,7 @@ module t;
       if (SUMS[1] != 4+3) $stop;
       if (SUMS[2] != 4+3+2) $stop;
       if (SUMS[3] != 4+3+2+1) $stop;
-      // According to IEEE 1800-2017 13.4.3
+      // According to IEEE 1800-2023 13.4.3
       // execution at elaboration has no effect on the initial values
       // of the variables used either at simulation time or among
       // multiple invocations of a function at elaboration time

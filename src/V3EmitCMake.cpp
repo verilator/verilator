@@ -199,7 +199,7 @@ class CMakeEmitter final {
                 *of << "target_link_libraries(${TOP_TARGET_NAME}  PRIVATE " << prefix << ")\n";
                 if (!children.empty()) {
                     *of << "target_link_libraries(" << prefix << " INTERFACE";
-                    for (const auto& childr : children) { *of << " " << (childr)->hierPrefix(); }
+                    for (const auto& childr : children) *of << " " << (childr)->hierPrefix();
                     *of << ")\n";
                 }
                 *of << "verilate(" << prefix << " PREFIX " << prefix << " TOP_MODULE "

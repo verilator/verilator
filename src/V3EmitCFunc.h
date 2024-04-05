@@ -380,6 +380,21 @@ public:
         puts(")");
     }
 
+    void visit(AstCvtUnpackArrayToPacked* nodep) override {
+        putns(nodep, "VL_UNPACK_TO_");
+        emitIQW(nodep);
+        const AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
+        putns(elemDTypep, "<");
+        putbs(elemDTypep->cType("", false, false));
+        puts(",");
+        puts(cvtToStr(nodep->fromp()->dtypep()->arrayUnpackedElements()));
+        puts(">(");
+        iterateAndNextConstNull(nodep->fromp());
+        puts(", ");
+        putns(elemDTypep, cvtToStr(elemDTypep->widthMin()));
+        puts(")");
+    }
+
     void visit(AstNodeAssign* nodep) override {
         bool paren = true;
         bool decind = false;
@@ -444,6 +459,19 @@ public:
             putns(castp->dtypep(), cvtToStr(castp->dtypep()->subDTypep()->widthMin()));
             puts(", ");
             puts(cvtToStr(castp->fromp()->widthMin()));
+            puts(", ");
+            rhs = false;
+            iterateAndNextConstNull(castp->fromp());
+        } else if (const AstCvtPackedToUnpackArray* const castp
+                   = VN_CAST(nodep->rhsp(), CvtPackedToUnpackArray)) {
+            putns(castp, "VL_ASSIGN_UNPACK_Q<");
+            putbs(castp->dtypep()->subDTypep()->cType("", false, false));
+            puts(", ");
+            puts(cvtToStr(castp->dtypep()->arrayUnpackedElements()));
+            puts(">(");
+            iterateAndNextConstNull(nodep->lhsp());
+            puts(", ");
+            putns(castp->dtypep(), cvtToStr(castp->dtypep()->subDTypep()->widthMin()));
             puts(", ");
             rhs = false;
             iterateAndNextConstNull(castp->fromp());

@@ -51,6 +51,8 @@ Summary:
 
 .. option:: +1800-2017ext+<ext>
 
+.. option:: +1800-2023ext+<ext>
+
    Specifies the language standard to be used with a specific filename
    extension, <ext>.
 
@@ -199,9 +201,10 @@ Summary:
 
 .. option:: --compiler <compiler-name>
 
-   Enables workarounds for the specified C++ compiler (list below).
-   This does not change any performance tuning options, but it may
-   in the future.
+   Enables workarounds for the specified C++ compiler (list below).  This
+   does not change any performance tuning options, but it may in the
+   future.  This also does not change default compiler flags; these are
+   determined when Verilator was configured.
 
    clang
      Tune for clang.  This may reduce execution speed as it enables several
@@ -348,7 +351,7 @@ Summary:
    Select the language used by default when first processing each
    Verilog file.  The language value must be "VAMS", "1364-1995",
    "1364-2001", "1364-2001-noconfig", "1364-2005", "1800-2005",
-   "1800-2009", "1800-2012", "1800-2017", or "1800+VAMS".
+   "1800-2009", "1800-2012", "1800-2017", "1800-2023", or "1800+VAMS".
 
    Any language associated with a particular file extension (see the
    various +<lang>*\ ext+ options) will be used in preference to the
@@ -361,7 +364,7 @@ Summary:
    ``+<lang>ext+`` options should be used.
 
    If no language is specified, either by this option or ``+<lang>ext+``
-   options, then the latest SystemVerilog language (IEEE 1800-2017) is
+   options, then the latest SystemVerilog language (IEEE 1800-2023) is
    used.
 
 .. option:: +define+<var>=<value>
@@ -410,6 +413,12 @@ Summary:
    :vlopt:`--debug --no-dump-tree <--dump-tree>` may be useful if the dump
    files are large and not desired.
 
+.. option:: --dump-tree-json
+
+   Rarely needed.  Enable dumping Ast .json.tree debug files with dumping level 3,
+   which dumps the standard critical stages.  For details on the format, see
+   the Verilator Internals manual.
+
 .. option:: --dump-tree-dot
 
    Rarely needed.  Enable dumping Ast .tree.dot debug files in Graphviz
@@ -443,6 +452,11 @@ Summary:
 .. option:: --dumpi-tree <level>
 
    Rarely needed - for developer use.  Set internal Ast dumping level
+   globally to the specified value.
+
+.. option:: --dumpi-tree-json <level>
+
+   Rarely needed - for developer use.  Set internal Ast JSON dumping level
    globally to the specified value.
 
 .. option:: --dumpi-<srcfile> <level>
@@ -1160,10 +1174,19 @@ Summary:
    Overwrites the given parameter(s) of the top-level module. See
    :vlopt:`-G <-G<name>>` for a detailed description.
 
+.. option:: --quiet
+
+   Alias for :vlopt:`--quiet-exit` :vlopt:`--quiet-stats`.
+
 .. option:: --quiet-exit
 
    When exiting due to an error, do not display the "Exiting due to Errors"
    nor "Command Failed" messages.
+
+.. option:: --quiet-stats
+
+   Disable printing the Verilation statistics report, see :ref:`Verilation
+   Summary Report`.
 
 .. option:: --relative-includes
 
@@ -1298,12 +1321,12 @@ Summary:
 .. option:: -sv
 
    Specifies SystemVerilog language features should be enabled; equivalent
-   to :vlopt:`--language 1800-2017 <--language>`.  This option is selected
+   to :vlopt:`--language 1800-2023 <--language>`.  This option is selected
    by default; it exists for compatibility with other simulators.
 
 .. option:: +systemverilogext+<ext>
 
-   A synonym for :vlopt:`+1800-2017ext+\<ext\>`.
+   A synonym for :vlopt:`+1800-2023ext+\<ext\>`.
 
 .. option:: --threads <threads>
 
@@ -1786,7 +1809,8 @@ Summary:
    format is still evolving; there will be some changes in future versions.
 
    This option disables some more aggressive transformations and dumps only
-   the final state of the AST.
+   the final state of the AST. For more granular and unaltered dumps, meant
+   mainly for debugging see :vlopt:`--dump-tree-json`.
 
 .. option:: --json-only-meta-output <filename>
 

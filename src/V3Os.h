@@ -71,11 +71,10 @@ public:
     static uint64_t rand64(std::array<uint64_t, 2>& stater);
     static string trueRandom(size_t size) VL_MT_SAFE;
 
-    // METHODS (time & performance)
+    // METHODS (time & performance) (See also VlOs methods)
     static void u_sleep(int64_t usec);  ///< Sleep for a given number of microseconds.
     /// Return wall time since epoch in microseconds, or 0 if not implemented
     static uint64_t timeUsecs();
-    static uint64_t memUsageBytes();  ///< Return memory usage in bytes, or 0 if not implemented
 
     // METHODS (sub command)
     /// Run system command, returns the exit code of the child process.

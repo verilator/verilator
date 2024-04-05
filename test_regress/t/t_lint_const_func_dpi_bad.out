@@ -1,4 +1,4 @@
-%Error: t/t_lint_const_func_dpi_bad.v:8:32: Constant function may not be DPI import (IEEE 1800-2017 13.4.3)
+%Error: t/t_lint_const_func_dpi_bad.v:8:32: Constant function may not be DPI import (IEEE 1800-2023 13.4.3)
                                           : ... note: In instance 't'
     8 |    import "DPI-C" function int dpiFunc();
       |                                ^~~~~~~

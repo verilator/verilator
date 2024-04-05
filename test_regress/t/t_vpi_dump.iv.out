@@ -1,0 +1,246 @@
+t (vpiModule) t
+    vpiNet:
+    t.a (vpiNet) t.a
+    t.clk (vpiNet) t.clk
+    vpiReg:
+    t.x (vpiReg) t.x
+    vpiParameter:
+    t.do_generate (vpiParameter) t.do_generate
+        vpiConstType=vpiBinaryConst
+    t.long_int (vpiParameter) t.long_int
+        vpiConstType=vpiBinaryConst
+    vpiPort:
+    x (vpiPort) (null)
+    clk (vpiPort) (null)
+    a (vpiPort) (null)
+    vpiInternalScope:
+    t.arr[1] (vpiGenScope) t.arr[1]
+        vpiParameter:
+        t.arr[1].i (vpiParameter) t.arr[1].i
+            vpiConstType=vpiBinaryConst
+        vpiInternalScope:
+        t.arr[1].arr (vpiModule) t.arr[1].arr
+            vpiReg:
+            t.arr[1].arr.check (vpiReg) t.arr[1].arr.check
+            t.arr[1].arr.rfr (vpiReg) t.arr[1].arr.rfr
+            t.arr[1].arr.sig (vpiReg) t.arr[1].arr.sig
+            t.arr[1].arr.verbose (vpiReg) t.arr[1].arr.verbose
+            vpiParameter:
+            t.arr[1].arr.LENGTH (vpiParameter) t.arr[1].arr.LENGTH
+                vpiConstType=vpiBinaryConst
+    t.arr[2] (vpiGenScope) t.arr[2]
+        vpiParameter:
+        t.arr[2].i (vpiParameter) t.arr[2].i
+            vpiConstType=vpiBinaryConst
+        vpiInternalScope:
+        t.arr[2].arr (vpiModule) t.arr[2].arr
+            vpiReg:
+            t.arr[2].arr.check (vpiReg) t.arr[2].arr.check
+            t.arr[2].arr.rfr (vpiReg) t.arr[2].arr.rfr
+            t.arr[2].arr.sig (vpiReg) t.arr[2].arr.sig
+            t.arr[2].arr.verbose (vpiReg) t.arr[2].arr.verbose
+            vpiParameter:
+            t.arr[2].arr.LENGTH (vpiParameter) t.arr[2].arr.LENGTH
+                vpiConstType=vpiBinaryConst
+    t.cond_scope (vpiGenScope) t.cond_scope
+        vpiParameter:
+        t.cond_scope.scoped_wire (vpiParameter) t.cond_scope.scoped_wire
+            vpiConstType=vpiBinaryConst
+        vpiInternalScope:
+        t.cond_scope.scoped_sub (vpiModule) t.cond_scope.scoped_sub
+            vpiNet:
+            t.cond_scope.scoped_sub.redundant (vpiNet) t.cond_scope.scoped_sub.redundant
+            vpiReg:
+            t.cond_scope.scoped_sub.subsig1 (vpiReg) t.cond_scope.scoped_sub.subsig1
+            t.cond_scope.scoped_sub.subsig2 (vpiReg) t.cond_scope.scoped_sub.subsig2
+        t.cond_scope.sub_wrap_gen (vpiModule) t.cond_scope.sub_wrap_gen
+            vpiInternalScope:
+            t.cond_scope.sub_wrap_gen.my_sub (vpiModule) t.cond_scope.sub_wrap_gen.my_sub
+                vpiNet:
+                t.cond_scope.sub_wrap_gen.my_sub.redundant (vpiNet) t.cond_scope.sub_wrap_gen.my_sub.redundant
+                vpiReg:
+                t.cond_scope.sub_wrap_gen.my_sub.subsig1 (vpiReg) t.cond_scope.sub_wrap_gen.my_sub.subsig1
+                t.cond_scope.sub_wrap_gen.my_sub.subsig2 (vpiReg) t.cond_scope.sub_wrap_gen.my_sub.subsig2
+    t.intf_arr[0] (vpiModule) t.intf_arr[0]
+    t.intf_arr[1] (vpiModule) t.intf_arr[1]
+    t.outer_scope[1] (vpiGenScope) t.outer_scope[1]
+        vpiParameter:
+        t.outer_scope[1].i (vpiParameter) t.outer_scope[1].i
+            vpiConstType=vpiBinaryConst
+        t.outer_scope[1].scoped_param (vpiParameter) t.outer_scope[1].scoped_param
+            vpiConstType=vpiBinaryConst
+        vpiInternalScope:
+        t.outer_scope[1].inner_scope[1] (vpiGenScope) t.outer_scope[1].inner_scope[1]
+            vpiParameter:
+            t.outer_scope[1].inner_scope[1].j (vpiParameter) t.outer_scope[1].inner_scope[1].j
+                vpiConstType=vpiBinaryConst
+            t.outer_scope[1].inner_scope[1].scoped_param_inner (vpiParameter) t.outer_scope[1].inner_scope[1].scoped_param_inner
+                vpiConstType=vpiBinaryConst
+            vpiInternalScope:
+            t.outer_scope[1].inner_scope[1].arr (vpiModule) t.outer_scope[1].inner_scope[1].arr
+                vpiReg:
+                t.outer_scope[1].inner_scope[1].arr.check (vpiReg) t.outer_scope[1].inner_scope[1].arr.check
+                t.outer_scope[1].inner_scope[1].arr.rfr (vpiReg) t.outer_scope[1].inner_scope[1].arr.rfr
+                t.outer_scope[1].inner_scope[1].arr.sig (vpiReg) t.outer_scope[1].inner_scope[1].arr.sig
+                t.outer_scope[1].inner_scope[1].arr.verbose (vpiReg) t.outer_scope[1].inner_scope[1].arr.verbose
+                vpiParameter:
+                t.outer_scope[1].inner_scope[1].arr.LENGTH (vpiParameter) t.outer_scope[1].inner_scope[1].arr.LENGTH
+                    vpiConstType=vpiBinaryConst
+        t.outer_scope[1].inner_scope[2] (vpiGenScope) t.outer_scope[1].inner_scope[2]
+            vpiParameter:
+            t.outer_scope[1].inner_scope[2].j (vpiParameter) t.outer_scope[1].inner_scope[2].j
+                vpiConstType=vpiBinaryConst
+            t.outer_scope[1].inner_scope[2].scoped_param_inner (vpiParameter) t.outer_scope[1].inner_scope[2].scoped_param_inner
+                vpiConstType=vpiBinaryConst
+            vpiInternalScope:
+            t.outer_scope[1].inner_scope[2].arr (vpiModule) t.outer_scope[1].inner_scope[2].arr
+                vpiReg:
+                t.outer_scope[1].inner_scope[2].arr.check (vpiReg) t.outer_scope[1].inner_scope[2].arr.check
+                t.outer_scope[1].inner_scope[2].arr.rfr (vpiReg) t.outer_scope[1].inner_scope[2].arr.rfr
+                t.outer_scope[1].inner_scope[2].arr.sig (vpiReg) t.outer_scope[1].inner_scope[2].arr.sig
+                t.outer_scope[1].inner_scope[2].arr.verbose (vpiReg) t.outer_scope[1].inner_scope[2].arr.verbose
+                vpiParameter:
+                t.outer_scope[1].inner_scope[2].arr.LENGTH (vpiParameter) t.outer_scope[1].inner_scope[2].arr.LENGTH
+                    vpiConstType=vpiBinaryConst
+        t.outer_scope[1].inner_scope[3] (vpiGenScope) t.outer_scope[1].inner_scope[3]
+            vpiParameter:
+            t.outer_scope[1].inner_scope[3].j (vpiParameter) t.outer_scope[1].inner_scope[3].j
+                vpiConstType=vpiBinaryConst
+            t.outer_scope[1].inner_scope[3].scoped_param_inner (vpiParameter) t.outer_scope[1].inner_scope[3].scoped_param_inner
+                vpiConstType=vpiBinaryConst
+            vpiInternalScope:
+            t.outer_scope[1].inner_scope[3].arr (vpiModule) t.outer_scope[1].inner_scope[3].arr
+                vpiReg:
+                t.outer_scope[1].inner_scope[3].arr.check (vpiReg) t.outer_scope[1].inner_scope[3].arr.check
+                t.outer_scope[1].inner_scope[3].arr.rfr (vpiReg) t.outer_scope[1].inner_scope[3].arr.rfr
+                t.outer_scope[1].inner_scope[3].arr.sig (vpiReg) t.outer_scope[1].inner_scope[3].arr.sig
+                t.outer_scope[1].inner_scope[3].arr.verbose (vpiReg) t.outer_scope[1].inner_scope[3].arr.verbose
+                vpiParameter:
+                t.outer_scope[1].inner_scope[3].arr.LENGTH (vpiParameter) t.outer_scope[1].inner_scope[3].arr.LENGTH
+                    vpiConstType=vpiBinaryConst
+    t.outer_scope[2] (vpiGenScope) t.outer_scope[2]
+        vpiParameter:
+        t.outer_scope[2].i (vpiParameter) t.outer_scope[2].i
+            vpiConstType=vpiBinaryConst
+        t.outer_scope[2].scoped_param (vpiParameter) t.outer_scope[2].scoped_param
+            vpiConstType=vpiBinaryConst
+        vpiInternalScope:
+        t.outer_scope[2].inner_scope[1] (vpiGenScope) t.outer_scope[2].inner_scope[1]
+            vpiParameter:
+            t.outer_scope[2].inner_scope[1].j (vpiParameter) t.outer_scope[2].inner_scope[1].j
+                vpiConstType=vpiBinaryConst
+            t.outer_scope[2].inner_scope[1].scoped_param_inner (vpiParameter) t.outer_scope[2].inner_scope[1].scoped_param_inner
+                vpiConstType=vpiBinaryConst
+            vpiInternalScope:
+            t.outer_scope[2].inner_scope[1].arr (vpiModule) t.outer_scope[2].inner_scope[1].arr
+                vpiReg:
+                t.outer_scope[2].inner_scope[1].arr.check (vpiReg) t.outer_scope[2].inner_scope[1].arr.check
+                t.outer_scope[2].inner_scope[1].arr.rfr (vpiReg) t.outer_scope[2].inner_scope[1].arr.rfr
+                t.outer_scope[2].inner_scope[1].arr.sig (vpiReg) t.outer_scope[2].inner_scope[1].arr.sig
+                t.outer_scope[2].inner_scope[1].arr.verbose (vpiReg) t.outer_scope[2].inner_scope[1].arr.verbose
+                vpiParameter:
+                t.outer_scope[2].inner_scope[1].arr.LENGTH (vpiParameter) t.outer_scope[2].inner_scope[1].arr.LENGTH
+                    vpiConstType=vpiBinaryConst
+        t.outer_scope[2].inner_scope[2] (vpiGenScope) t.outer_scope[2].inner_scope[2]
+            vpiParameter:
+            t.outer_scope[2].inner_scope[2].j (vpiParameter) t.outer_scope[2].inner_scope[2].j
+                vpiConstType=vpiBinaryConst
+            t.outer_scope[2].inner_scope[2].scoped_param_inner (vpiParameter) t.outer_scope[2].inner_scope[2].scoped_param_inner
+                vpiConstType=vpiBinaryConst
+            vpiInternalScope:
+            t.outer_scope[2].inner_scope[2].arr (vpiModule) t.outer_scope[2].inner_scope[2].arr
+                vpiReg:
+                t.outer_scope[2].inner_scope[2].arr.check (vpiReg) t.outer_scope[2].inner_scope[2].arr.check
+                t.outer_scope[2].inner_scope[2].arr.rfr (vpiReg) t.outer_scope[2].inner_scope[2].arr.rfr
+                t.outer_scope[2].inner_scope[2].arr.sig (vpiReg) t.outer_scope[2].inner_scope[2].arr.sig
+                t.outer_scope[2].inner_scope[2].arr.verbose (vpiReg) t.outer_scope[2].inner_scope[2].arr.verbose
+                vpiParameter:
+                t.outer_scope[2].inner_scope[2].arr.LENGTH (vpiParameter) t.outer_scope[2].inner_scope[2].arr.LENGTH
+                    vpiConstType=vpiBinaryConst
+        t.outer_scope[2].inner_scope[3] (vpiGenScope) t.outer_scope[2].inner_scope[3]
+            vpiParameter:
+            t.outer_scope[2].inner_scope[3].j (vpiParameter) t.outer_scope[2].inner_scope[3].j
+                vpiConstType=vpiBinaryConst
+            t.outer_scope[2].inner_scope[3].scoped_param_inner (vpiParameter) t.outer_scope[2].inner_scope[3].scoped_param_inner
+                vpiConstType=vpiBinaryConst
+            vpiInternalScope:
+            t.outer_scope[2].inner_scope[3].arr (vpiModule) t.outer_scope[2].inner_scope[3].arr
+                vpiReg:
+                t.outer_scope[2].inner_scope[3].arr.check (vpiReg) t.outer_scope[2].inner_scope[3].arr.check
+                t.outer_scope[2].inner_scope[3].arr.rfr (vpiReg) t.outer_scope[2].inner_scope[3].arr.rfr
+                t.outer_scope[2].inner_scope[3].arr.sig (vpiReg) t.outer_scope[2].inner_scope[3].arr.sig
+                t.outer_scope[2].inner_scope[3].arr.verbose (vpiReg) t.outer_scope[2].inner_scope[3].arr.verbose
+                vpiParameter:
+                t.outer_scope[2].inner_scope[3].arr.LENGTH (vpiParameter) t.outer_scope[2].inner_scope[3].arr.LENGTH
+                    vpiConstType=vpiBinaryConst
+    t.outer_scope[3] (vpiGenScope) t.outer_scope[3]
+        vpiParameter:
+        t.outer_scope[3].i (vpiParameter) t.outer_scope[3].i
+            vpiConstType=vpiBinaryConst
+        t.outer_scope[3].scoped_param (vpiParameter) t.outer_scope[3].scoped_param
+            vpiConstType=vpiBinaryConst
+        vpiInternalScope:
+        t.outer_scope[3].inner_scope[1] (vpiGenScope) t.outer_scope[3].inner_scope[1]
+            vpiParameter:
+            t.outer_scope[3].inner_scope[1].j (vpiParameter) t.outer_scope[3].inner_scope[1].j
+                vpiConstType=vpiBinaryConst
+            t.outer_scope[3].inner_scope[1].scoped_param_inner (vpiParameter) t.outer_scope[3].inner_scope[1].scoped_param_inner
+                vpiConstType=vpiBinaryConst
+            vpiInternalScope:
+            t.outer_scope[3].inner_scope[1].arr (vpiModule) t.outer_scope[3].inner_scope[1].arr
+                vpiReg:
+                t.outer_scope[3].inner_scope[1].arr.check (vpiReg) t.outer_scope[3].inner_scope[1].arr.check
+                t.outer_scope[3].inner_scope[1].arr.rfr (vpiReg) t.outer_scope[3].inner_scope[1].arr.rfr
+                t.outer_scope[3].inner_scope[1].arr.sig (vpiReg) t.outer_scope[3].inner_scope[1].arr.sig
+                t.outer_scope[3].inner_scope[1].arr.verbose (vpiReg) t.outer_scope[3].inner_scope[1].arr.verbose
+                vpiParameter:
+                t.outer_scope[3].inner_scope[1].arr.LENGTH (vpiParameter) t.outer_scope[3].inner_scope[1].arr.LENGTH
+                    vpiConstType=vpiBinaryConst
+        t.outer_scope[3].inner_scope[2] (vpiGenScope) t.outer_scope[3].inner_scope[2]
+            vpiParameter:
+            t.outer_scope[3].inner_scope[2].j (vpiParameter) t.outer_scope[3].inner_scope[2].j
+                vpiConstType=vpiBinaryConst
+            t.outer_scope[3].inner_scope[2].scoped_param_inner (vpiParameter) t.outer_scope[3].inner_scope[2].scoped_param_inner
+                vpiConstType=vpiBinaryConst
+            vpiInternalScope:
+            t.outer_scope[3].inner_scope[2].arr (vpiModule) t.outer_scope[3].inner_scope[2].arr
+                vpiReg:
+                t.outer_scope[3].inner_scope[2].arr.check (vpiReg) t.outer_scope[3].inner_scope[2].arr.check
+                t.outer_scope[3].inner_scope[2].arr.rfr (vpiReg) t.outer_scope[3].inner_scope[2].arr.rfr
+                t.outer_scope[3].inner_scope[2].arr.sig (vpiReg) t.outer_scope[3].inner_scope[2].arr.sig
+                t.outer_scope[3].inner_scope[2].arr.verbose (vpiReg) t.outer_scope[3].inner_scope[2].arr.verbose
+                vpiParameter:
+                t.outer_scope[3].inner_scope[2].arr.LENGTH (vpiParameter) t.outer_scope[3].inner_scope[2].arr.LENGTH
+                    vpiConstType=vpiBinaryConst
+        t.outer_scope[3].inner_scope[3] (vpiGenScope) t.outer_scope[3].inner_scope[3]
+            vpiParameter:
+            t.outer_scope[3].inner_scope[3].j (vpiParameter) t.outer_scope[3].inner_scope[3].j
+                vpiConstType=vpiBinaryConst
+            t.outer_scope[3].inner_scope[3].scoped_param_inner (vpiParameter) t.outer_scope[3].inner_scope[3].scoped_param_inner
+                vpiConstType=vpiBinaryConst
+            vpiInternalScope:
+            t.outer_scope[3].inner_scope[3].arr (vpiModule) t.outer_scope[3].inner_scope[3].arr
+                vpiReg:
+                t.outer_scope[3].inner_scope[3].arr.check (vpiReg) t.outer_scope[3].inner_scope[3].arr.check
+                t.outer_scope[3].inner_scope[3].arr.rfr (vpiReg) t.outer_scope[3].inner_scope[3].arr.rfr
+                t.outer_scope[3].inner_scope[3].arr.sig (vpiReg) t.outer_scope[3].inner_scope[3].arr.sig
+                t.outer_scope[3].inner_scope[3].arr.verbose (vpiReg) t.outer_scope[3].inner_scope[3].arr.verbose
+                vpiParameter:
+                t.outer_scope[3].inner_scope[3].arr.LENGTH (vpiParameter) t.outer_scope[3].inner_scope[3].arr.LENGTH
+                    vpiConstType=vpiBinaryConst
+    t.sub (vpiModule) t.sub
+        vpiNet:
+        t.sub.redundant (vpiNet) t.sub.redundant
+        vpiReg:
+        t.sub.subsig1 (vpiReg) t.sub.subsig1
+        t.sub.subsig2 (vpiReg) t.sub.subsig2
+    t.sub_wrap (vpiModule) t.sub_wrap
+        vpiInternalScope:
+        t.sub_wrap.my_sub (vpiModule) t.sub_wrap.my_sub
+            vpiNet:
+            t.sub_wrap.my_sub.redundant (vpiNet) t.sub_wrap.my_sub.redundant
+            vpiReg:
+            t.sub_wrap.my_sub.subsig1 (vpiReg) t.sub_wrap.my_sub.subsig1
+            t.sub_wrap.my_sub.subsig2 (vpiReg) t.sub_wrap.my_sub.subsig2
+*-* All Finished *-*
+t/t_vpi_dump.v:76: $finish called at 0 (1s)

@@ -38,20 +38,21 @@ void DfgGraph::addGraph(DfgGraph& other) {
     m_size += other.m_size;
     other.m_size = 0;
 
-    const auto moveVertexList = [this](V3List<DfgVertex*>& src, V3List<DfgVertex*>& dst) {
-        if (DfgVertex* vtxp = src.begin()) {
-            vtxp->m_verticesEnt.moveAppend(src, dst, vtxp);
-            do {
-                vtxp->m_userCnt = 0;
-                vtxp->m_graphp = this;
-                vtxp = vtxp->verticesNext();
-            } while (vtxp);
-        }
-    };
-
-    moveVertexList(other.m_varVertices, m_varVertices);
-    moveVertexList(other.m_constVertices, m_constVertices);
-    moveVertexList(other.m_opVertices, m_opVertices);
+    for (DfgVertexVar& vtx : other.m_varVertices) {
+        vtx.m_userCnt = 0;
+        vtx.m_graphp = this;
+    }
+    m_varVertices.splice(m_varVertices.end(), other.m_varVertices);
+    for (DfgConst& vtx : other.m_constVertices) {
+        vtx.m_userCnt = 0;
+        vtx.m_graphp = this;
+    }
+    m_constVertices.splice(m_constVertices.end(), other.m_constVertices);
+    for (DfgVertex& vtx : other.m_opVertices) {
+        vtx.m_userCnt = 0;
+        vtx.m_graphp = this;
+    }
+    m_opVertices.splice(m_opVertices.end(), other.m_opVertices);
 }
 
 static const string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&vtx) + '"'; }
@@ -74,6 +75,8 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         } else if (varVtxp->hasExtRefs()) {
             os << ", shape=box, style=filled, fillcolor=firebrick2";  // Red
         } else if (varVtxp->hasModRefs()) {
+            os << ", shape=box, style=filled, fillcolor=darkorange1";  // Orange
+        } else if (varVtxp->hasDfgRefs()) {
             os << ", shape=box, style=filled, fillcolor=gold2";  // Yellow
         } else if (varVtxp->keep()) {
             os << ", shape=box, style=filled, fillcolor=grey";
@@ -98,6 +101,8 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         } else if (arrVtxp->hasExtRefs()) {
             os << ", shape=box3d, style=filled, fillcolor=firebrick2";  // Red
         } else if (arrVtxp->hasModRefs()) {
+            os << ", shape=box3d, style=filled, fillcolor=darkorange1";  // Orange
+        } else if (arrVtxp->hasDfgRefs()) {
             os << ", shape=box3d, style=filled, fillcolor=gold2";  // Yellow
         } else if (arrVtxp->keep()) {
             os << ", shape=box3d, style=filled, fillcolor=grey";
@@ -229,7 +234,7 @@ static void dumpDotUpstreamConeFromVertex(std::ostream& os, const DfgVertex& vtx
     // Emit all DfgVarPacked vertices that have external references driven by this vertex
     vtx.forEachSink([&](const DfgVertex& dst) {
         if (const DfgVarPacked* const varVtxp = dst.cast<DfgVarPacked>()) {
-            if (varVtxp->hasRefs()) dumpDotVertexAndSourceEdges(os, dst);
+            if (varVtxp->hasNonLocalRefs()) dumpDotVertexAndSourceEdges(os, dst);
         }
     });
 }
@@ -263,7 +268,7 @@ void DfgGraph::dumpDotAllVarConesPrefixed(const string& label) const {
         // Check if this vertex drives a variable referenced outside the DFG.
         const DfgVarPacked* const sinkp
             = vtx.findSink<DfgVarPacked>([](const DfgVarPacked& sink) {  //
-                  return sink.hasRefs();
+                  return sink.hasNonLocalRefs();
               });
 
         // We only dump cones driving an externally referenced variable
@@ -341,10 +346,7 @@ DfgVertex::DfgVertex(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* 
     dfg.addVertex(*this);
 }
 
-DfgVertex::~DfgVertex() {
-    // TODO: It would be best to intern these via AstTypeTable to save the effort
-    if (VN_IS(m_dtypep, UnpackArrayDType)) VL_DO_DANGLING(delete m_dtypep, m_dtypep);
-}
+DfgVertex::~DfgVertex() {}
 
 bool DfgVertex::selfEquals(const DfgVertex& that) const { return true; }
 

@@ -1,19 +1,16 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2023 by Antmicro Ltd.
+// any use, without warranty, 2019 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-class Foo;
-   int member;
-
-   task method; endtask
-endclass
+timeunit 1us;
+timeprecision 1ns;
 
 module t;
    initial begin
-      Foo foo = new;
-      Foo::member = 1;
-      Foo::method();
+      #10;
+      $write("*-* All Finished *-*\n");
+      $finish;
    end
 endmodule

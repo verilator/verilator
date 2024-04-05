@@ -27,7 +27,7 @@ void V3ThreadPool::resize(unsigned n) VL_MT_UNSAFE VL_EXCLUDES(m_mutex)
     VL_EXCLUDES(m_stoppedJobsMutex) VL_EXCLUDES(V3MtDisabledLock::instance()) {
     // At least one thread (main)
     n = std::max(1u, n);
-    if (n == (m_workers.size() + 1)) { return; }
+    if (n == (m_workers.size() + 1)) return;
     // This function is not thread-safe and can result in race between threads
     UASSERT(V3MutexConfig::s().lockConfig(),
             "Mutex config needs to be locked before starting ThreadPool");
@@ -60,7 +60,7 @@ void V3ThreadPool::resize(unsigned n) VL_MT_UNSAFE VL_EXCLUDES(m_mutex)
 void V3ThreadPool::suspendMultithreading() VL_MT_SAFE VL_EXCLUDES(m_mutex)
     VL_EXCLUDES(m_stoppedJobsMutex) {
     V3LockGuard stoppedJobsLock{m_stoppedJobsMutex};
-    if (!m_workers.empty()) { stopOtherThreads(); }
+    if (!m_workers.empty()) stopOtherThreads();
 
     if (!m_mutex.try_lock()) {
         v3fatal("Tried to suspend thread pool when other thread uses it.");
@@ -75,7 +75,7 @@ void V3ThreadPool::suspendMultithreading() VL_MT_SAFE VL_EXCLUDES(m_mutex)
 
 void V3ThreadPool::resumeMultithreading() VL_MT_SAFE VL_EXCLUDES(m_mutex)
     VL_EXCLUDES(m_stoppedJobsMutex) {
-    if (!m_mutex.try_lock()) { v3fatal("Tried to resume thread pool when other thread uses it."); }
+    if (!m_mutex.try_lock()) v3fatal("Tried to resume thread pool when other thread uses it.");
     {
         V3LockGuard lock{m_mutex, std::adopt_lock_t{}};
         UASSERT(m_multithreadingSuspended, "Multithreading is not suspended");
@@ -103,7 +103,7 @@ void V3ThreadPool::workerJobLoop(int id) VL_MT_SAFE {
                 return !m_queue.empty() || m_shutdown || m_stopRequested;
             });
             if (m_shutdown) return;  // Terminate if requested
-            if (stopRequested()) { continue; }
+            if (stopRequested()) continue;
             // Get the job
             UASSERT(!m_queue.empty(), "Job should be available");
 

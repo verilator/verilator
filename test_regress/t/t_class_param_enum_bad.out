@@ -2,7 +2,7 @@
                                         : ... note: In instance 't'
    20 |       Converter#(bit) conv2 = conv1;
       |                               ^~~~~
-%Error-ENUMVALUE: t/t_class_param_enum_bad.v:21:19: Implicit conversion to enum 'ENUMDTYPE '$unit::enum_t'' from 'logic[31:0]' (IEEE 1800-2017 6.19.3)
+%Error-ENUMVALUE: t/t_class_param_enum_bad.v:21:19: Implicit conversion to enum 'ENUMDTYPE '$unit::enum_t'' from 'logic[31:0]' (IEEE 1800-2023 6.19.3)
                                                   : ... note: In instance 't'
                                                   : ... Suggest use enum's mnemonic, or static cast
    21 |       conv1.toInt(0);

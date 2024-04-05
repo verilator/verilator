@@ -24,7 +24,7 @@ execute(
 # Read the input .v file and do any CHECK_COVER requests
 inline_checks();
 
-run(cmd => ["../bin/verilator_coverage",
+run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_coverage",
             "--annotate-points",
             "--annotate", "$Self->{obj_dir}/annotated",
             "$Self->{obj_dir}/coverage.dat",

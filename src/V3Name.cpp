@@ -24,6 +24,9 @@
 #include "V3Name.h"
 
 #include "V3LanguageWords.h"
+#include "V3UniqueNames.h"
+
+#include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -41,6 +44,19 @@ class NameVisitor final : public VNVisitorConst {
     // STATE - for current visit position (use VL_RESTORER)
     const AstNodeModule* m_modp = nullptr;  // Current module
 
+    // Rename struct / union field properly
+    std::vector<V3UniqueNames> m_nameStack;  // Hierarchy-based renames
+
+    void renameKeywordCheck(AstNode* nodep) {
+        const std::string rsvd = V3LanguageWords::isKeyword(nodep->name());
+        if (rsvd != "") {
+            nodep->v3warn(SYMRSVDWORD, "Symbol matches " + rsvd + ": " << nodep->prettyNameQ());
+            const string newname = "__SYM__"s + nodep->name();
+            nodep->name(newname);
+            nodep->editCountInc();
+        }
+    }
+
     // METHODS
     void rename(AstNode* nodep, bool addPvt) {
         if (!nodep->user1()) {  // Not already done
@@ -50,14 +66,7 @@ class NameVisitor final : public VNVisitorConst {
                 nodep->editCountInc();
             } else if (VN_IS(nodep, CFunc) && VN_AS(nodep, CFunc)->isConstructor()) {
             } else {
-                const string rsvd = V3LanguageWords::isKeyword(nodep->name());
-                if (rsvd != "") {
-                    nodep->v3warn(SYMRSVDWORD,
-                                  "Symbol matches " + rsvd + ": " << nodep->prettyNameQ());
-                    const string newname = "__SYM__"s + nodep->name();
-                    nodep->name(newname);
-                    nodep->editCountInc();
-                }
+                renameKeywordCheck(nodep);
             }
             nodep->user1(1);
         }
@@ -92,9 +101,24 @@ class NameVisitor final : public VNVisitorConst {
             iterateChildrenConst(nodep);
         }
     }
+    void visit(AstNodeUOrStructDType* nodep) override {
+        if (nodep->packed()) {
+            m_nameStack.emplace_back("", false);
+            m_nameStack.back().get("get");
+            m_nameStack.back().get("set");
+        }
+        iterateChildrenConst(nodep);
+        if (nodep->packed()) m_nameStack.pop_back();
+    }
     void visit(AstMemberDType* nodep) override {
         if (!nodep->user1()) {
-            rename(nodep, true);
+            if (!m_nameStack.empty()) {  // Packed member field
+                renameKeywordCheck(nodep);
+                nodep->name(m_nameStack.back().get(nodep->name()));
+                nodep->user1(1);
+            } else {
+                rename(nodep, true);
+            }
             iterateChildrenConst(nodep);
         }
     }
