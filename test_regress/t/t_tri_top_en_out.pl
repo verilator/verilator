@@ -10,15 +10,20 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-compile(
+if (system("valgrind --version")) {
+   skip("No valgrind installed");
+} else {
+
+  compile(
     make_top_shell => 0,
     make_main => 0,
     verilator_flags2 => ["--exe --timing --pins-inout-enables", "$Self->{t_dir}/$Self->{name}.cpp"],
     );
 
-execute(
+  execute(
     check_finished => 1,
     );
+  ok(1);
 
-ok(1);
+}
 1;
