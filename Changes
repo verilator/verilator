@@ -8,7 +8,14 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
-Verilator 5.023 devel
+Verilator 5.025 devel
+==========================
+
+**Minor:**
+
+
+
+Verilator 5.024 2024-04-05
 ==========================
 
 **Major:**
@@ -44,6 +51,7 @@ Verilator 5.023 devel
 * Fix DFG removing forceable signals (#4942). [Geza Lore]
 * Fix null characters in shortened identifiers (#4946). [Abdul Hameed]
 * Fix assignment of null into struct member (#4952).
+* Fix VPI missing scopes 2 (#4965). [Andrew Nolte]
 * Fix object assignment from conditionals (#4968).
 * Fix GCC14 warnings on template specialization syntax (#4974) (#4975). [Nolan Poe]
 * Fix unpacked structure upper bit cleaning (#4978).
