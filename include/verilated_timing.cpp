@@ -67,9 +67,16 @@ void VlDelayScheduler::resume() {
     }
 
     if (!m_zeroDelayed.empty()) {
-        for (auto&& handle : m_zeroDelayed) handle.resume();
-        m_zeroDelayed.clear();
+        // First, we need to move the coroutines out of the queue, as a resumed coroutine can
+        // suspend on #0 again, adding itself to the queue, which can result in reallocating the
+        // queue mid-iteration.
+        // We swap with the m_zeroDlyResumed field to keep the allocated buffer.
+        m_zeroDlyResumed.swap(m_zeroDelayed);
+        for (auto&& handle : m_zeroDlyResumed) handle.resume();
+        m_zeroDlyResumed.clear();
         resumed = true;
+        // We are now in the Active region, so any coroutines added to m_zeroDelayed in the
+        // meantime will have to wait until the next Inactive region.
     }
 
     if (!resumed) {
