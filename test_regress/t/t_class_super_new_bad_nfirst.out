@@ -1,4 +1,4 @@
-%Error: t/t_class_super_new_bad_nfirst.v:18:13: 'super.new' not first statement in new function (IEEE 1800-2017 8.15)
+%Error: t/t_class_super_new_bad_nfirst.v:18:13: 'super.new' not first statement in new function (IEEE 1800-2023 8.15)
    18 |       super.new(imemberc);   
       |             ^~~
         t/t_class_super_new_bad_nfirst.v:17:16: ... Location of earlier statement

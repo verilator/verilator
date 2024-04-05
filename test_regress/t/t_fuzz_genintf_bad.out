@@ -1,4 +1,4 @@
-%Error: t/t_fuzz_genintf_bad.v:24:11: Mixing positional and .*/named instantiation connection (IEEE 1800-2017 23.3.2)
+%Error: t/t_fuzz_genintf_bad.v:24:11: Mixing positional and .*/named instantiation connection (IEEE 1800-2023 23.3.2)
    24 |          j.e(0),
       |           ^
 %Error: Exiting due to

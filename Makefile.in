@@ -112,7 +112,7 @@ SUBDIRS = docs src test_regress \
 	examples/make_tracing_c \
 	examples/make_tracing_sc \
 	examples/make_protect_lib \
-	examples/xml_py \
+	examples/json_py \
 
 INFOS = verilator.html verilator.pdf
 
@@ -203,11 +203,21 @@ verilator.html:
 verilator.pdf: Makefile
 	$(MAKE) -C docs verilator.pdf
 
-# See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
-VL_INST_BIN_FILES = verilator verilator_bin$(EXEEXT) verilator_bin_dbg$(EXEEXT) verilator_coverage_bin_dbg$(EXEEXT) \
-	verilator_ccache_report verilator_coverage verilator_difftree verilator_gantt verilator_includer verilator_profcfunc
-# Some scripts go into both the search path and pkgdatadir,
-# so they can be found by the user, and under $VERILATOR_ROOT.
+# Public executables intended to be invoked directly by the user
+# Don't put wildcards in these variables, it might cause an uninstall of other stuff
+VL_INST_PUBLIC_SCRIPT_FILES = verilator \
+                              verilator_coverage \
+                              verilator_gantt \
+                              verilator_profcfunc \
+
+VL_INST_PUBLIC_BIN_FILES = verilator_bin$(EXEEXT) \
+                           verilator_bin_dbg$(EXEEXT) \
+                           verilator_coverage_bin_dbg$(EXEEXT) \
+
+# Private executabels intended to be invoked by internals
+# Don't put wildcards in these variables, it might cause an uninstall of other stuff
+VL_INST_PRIVATE_SCRIPT_FILES = verilator_ccache_report \
+                               verilator_includer \
 
 VL_INST_INC_BLDDIR_FILES = \
 	include/verilated_config.h \
@@ -226,19 +236,34 @@ VL_INST_DATA_SRCDIR_FILES = \
 	examples/*/Makefile* \
 	examples/*/vl_* \
 
-installbin:
-	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
-	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator $(DESTDIR)$(bindir)/verilator )
-	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_coverage $(DESTDIR)$(bindir)/verilator_coverage )
-	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_gantt $(DESTDIR)$(bindir)/verilator_gantt )
-	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_profcfunc $(DESTDIR)$(bindir)/verilator_profcfunc )
-	( cd bin ; $(INSTALL_PROGRAM) verilator_bin$(EXEEXT) $(DESTDIR)$(bindir)/verilator_bin$(EXEEXT) )
-	( cd bin ; $(INSTALL_PROGRAM) verilator_bin_dbg$(EXEEXT) $(DESTDIR)$(bindir)/verilator_bin_dbg$(EXEEXT) )
-	( cd bin ; $(INSTALL_PROGRAM) verilator_coverage_bin_dbg$(EXEEXT) $(DESTDIR)$(bindir)/verilator_coverage_bin_dbg$(EXEEXT) )
+mkbindirs:
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/bin
-	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_includer $(DESTDIR)$(pkgdatadir)/bin/verilator_includer )
-	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_ccache_report $(DESTDIR)$(pkgdatadir)/bin/verilator_ccache_report )
-	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_difftree $(DESTDIR)$(pkgdatadir)/bin/verilator_difftree )
+	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
+
+installbin: | mkbindirs
+	cd $(srcdir)/bin; \
+	for p in $(VL_INST_PUBLIC_SCRIPT_FILES) ; do \
+	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkgdatadir)/bin/$$p; \
+	done
+	cd bin; \
+	for p in $(VL_INST_PUBLIC_BIN_FILES) ; do \
+	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkgdatadir)/bin/$$p; \
+	done
+	cd $(srcdir)/bin; \
+	for p in $(VL_INST_PRIVATE_SCRIPT_FILES) ; do \
+	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkgdatadir)/bin/$$p; \
+	done
+
+installredirect: installbin | mkbindirs
+	cp ${srcdir}/bin/redirect ${srcdir}/bin/redirect.tmp
+	perl -p -i -e 'use File::Spec;' \
+	           -e' $$path = File::Spec->abs2rel("$(realpath $(DESTDIR)$(pkgdatadir)/bin)", "$(realpath $(DESTDIR)$(bindir))");' \
+	           -e 's/RELPATH.*/"$$path";/g' -- "${srcdir}/bin/redirect.tmp"
+	cd $(srcdir)/bin; \
+	for p in $(VL_INST_PUBLIC_SCRIPT_FILES) $(VL_INST_PUBLIC_BIN_FILES) ; do \
+	  $(INSTALL_PROGRAM) redirect.tmp $(DESTDIR)$(bindir)/$$p; \
+	done
+	rm ${srcdir}/bin/redirect.tmp
 
 # Man files can either be part of the original kit, or built in current directory
 # So important we use $^ so VPATH is searched
@@ -269,7 +294,7 @@ installdata:
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_c
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_sc
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/cmake_protect_lib
-	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/xml_py
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/json_py
 	cd $(srcdir) \
 	; for p in $(VL_INST_DATA_SRCDIR_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
@@ -281,8 +306,11 @@ installdata:
 
 # We don't trust rm -rf, so rmdir instead as it will fail if user put in other files
 uninstall:
-	-cd $(DESTDIR)$(bindir) && rm -f $(VL_INST_BIN_FILES)
-	-cd $(DESTDIR)$(pkgdatadir)/bin && rm -f $(VL_INST_BIN_FILES)
+	-cd $(DESTDIR)$(bindir) && rm -f $(VL_INST_PUBLIC_SCRIPT_FILES)
+	-cd $(DESTDIR)$(bindir) && rm -f $(VL_INST_PUBLIC_BIN_FILES)
+	-cd $(DESTDIR)$(pkgdatadir)/bin && rm -f $(VL_INST_PUBLIC_SCRIPT_FILES)
+	-cd $(DESTDIR)$(pkgdatadir)/bin && rm -f $(VL_INST_PUBLIC_BIN_FILES)
+	-cd $(DESTDIR)$(pkgdatadir)/bin && rm -f $(VL_INST_PRIVATE_SCRIPT_FILES)
 	-cd $(DESTDIR)$(mandir)/man1 && rm -f $(VL_INST_MAN_FILES)
 	-cd $(DESTDIR)$(pkgdatadir) && rm -f $(VL_INST_INC_BLDDIR_FILES)
 	-cd $(DESTDIR)$(pkgdatadir) && rm -f $(VL_INST_INC_SRCDIR_FILES)
@@ -305,13 +333,13 @@ uninstall:
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_c
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_sc
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/cmake_protect_lib
-	-rmdir $(DESTDIR)$(pkgdatadir)/examples/xml_py
+	-rmdir $(DESTDIR)$(pkgdatadir)/examples/json_py
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples
 	-rmdir $(DESTDIR)$(pkgdatadir)
 	-rmdir $(DESTDIR)$(pkgconfigdir)
 
 install: all_nomsg install-all
-install-all: installbin installman installdata install-msg
+install-all: installbin installredirect installman installdata install-msg
 
 install-here: installman info
 
@@ -399,8 +427,8 @@ PY_PROGRAMS = \
 	bin/verilator_gantt \
 	bin/verilator_includer \
 	bin/verilator_profcfunc \
-	examples/xml_py/vl_file_copy \
-	examples/xml_py/vl_hier_graph \
+	examples/json_py/vl_file_copy \
+	examples/json_py/vl_hier_graph \
 	docs/guide/conf.py \
 	docs/bin/vl_sphinx_extract \
 	docs/bin/vl_sphinx_fix \
@@ -410,6 +438,7 @@ PY_PROGRAMS = \
 	src/cppcheck_filtered \
 	src/flexfix \
 	src/vlcovgen \
+	src/.gdbinit.py \
 	test_regress/t/*.pf \
 	nodist/clang_check_attributes \
 	nodist/code_coverage \

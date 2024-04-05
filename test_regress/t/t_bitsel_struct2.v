@@ -4,6 +4,10 @@
 // any use, without warranty, 2013 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+`define stop $stop
+`define checkb(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='b%x exp='b%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+
 module t (/*AUTOARG*/);
 
    typedef struct packed {
@@ -14,9 +18,6 @@ module t (/*AUTOARG*/);
    typedef struct packed {
       c_t [17:16] d;
    } e_t;
-
-`define checkb(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='b%x exp='b%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
-`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
 
    initial begin
       e_t e;

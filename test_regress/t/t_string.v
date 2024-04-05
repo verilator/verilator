@@ -4,8 +4,9 @@
 // any use, without warranty, 2014 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
-`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=\"%s\" exp=\"%s\"\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=\"%s\" exp=\"%s\"\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
 module t (/*AUTOARG*/
    // Inputs
@@ -65,7 +66,7 @@ module t (/*AUTOARG*/
 `ifndef VCS
 `ifndef VERILATOR
 `ifndef NC
-      // IEEE 1800-2017 5.9 assignment to byte array
+      // IEEE 1800-2023 5.9 assignment to byte array
       unpack1 = "five";
       `checkh(unpack1[0], "f");
       `checkh(unpack1[1], "i");

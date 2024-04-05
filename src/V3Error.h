@@ -127,6 +127,7 @@ public:
         PINNOCONNECT,   // Cell pin not connected
         PINNOTFOUND,    // instance port name not found in it's module
         PKGNODECL,      // Error: Package/class needs to be predeclared
+        PREPROCZERO,    // Preprocessor expression with zero
         PROCASSWIRE,    // Procedural assignment on wire
         PROFOUTOFDATE,  // Profile data out of date
         PROTECTED,      // detected `pragma protected
@@ -151,6 +152,7 @@ public:
         UNPACKED,       // Unsupported unpacked
         UNSIGNED,       // Comparison is constant due to unsigned arithmetic
         UNUSEDGENVAR,   // No receivers for genvar
+        UNUSEDLOOP,     // Loop is unused
         UNUSEDPARAM,    // No receivers for parameters
         UNUSEDSIGNAL,   // No receivers for signals
         USERERROR,      // Elaboration time $error
@@ -203,13 +205,13 @@ public:
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
             "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP",
             "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOLATCH", "NULLPORT", "PINCONNECTEMPTY",
-            "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PROCASSWIRE",
+            "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSWIRE",
             "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY",
             "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SPLITVAR",
             "STATICVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT", "TIMESCALEMOD",
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
-            "UNPACKED", "UNSIGNED", "UNUSEDGENVAR", "UNUSEDPARAM", "UNUSEDSIGNAL",
+            "UNPACKED", "UNSIGNED", "UNUSEDGENVAR",  "UNUSEDLOOP" ,"UNUSEDPARAM", "UNUSEDSIGNAL",
             "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
             "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT",  "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL",
             " MAX"
@@ -242,9 +244,10 @@ public:
         return (m_e == ALWCOMBORDER || m_e == ASCRANGE || m_e == BSSPACE || m_e == CASEINCOMPLETE
                 || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
                 || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC
-                || m_e == LATCH || m_e == MISINDENT || m_e == NEWERSTD || m_e == PINMISSING
-                || m_e == REALCVT || m_e == STATICVAR || m_e == UNSIGNED || m_e == WIDTH
-                || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND || m_e == WIDTHXZEXPAND);
+                || m_e == LATCH || m_e == MISINDENT || m_e == NEWERSTD || m_e == PREPROCZERO
+                || m_e == PINMISSING || m_e == REALCVT || m_e == STATICVAR || m_e == UNSIGNED
+                || m_e == WIDTH || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND
+                || m_e == WIDTHXZEXPAND);
     }
     // Warnings that are style only
     bool styleError() const VL_MT_SAFE {
@@ -252,12 +255,13 @@ public:
                 || m_e == BLKSEQ || m_e == DEFPARAM || m_e == DECLFILENAME || m_e == EOFNEWLINE
                 || m_e == GENUNNAMED || m_e == IMPORTSTAR || m_e == INCABSPATH
                 || m_e == PINCONNECTEMPTY || m_e == PINNOCONNECT || m_e == SYNCASYNCNET
-                || m_e == UNDRIVEN || m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM
-                || m_e == UNUSEDSIGNAL || m_e == VARHIDDEN);
+                || m_e == UNDRIVEN || m_e == UNUSEDGENVAR || m_e == UNUSEDLOOP
+                || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL || m_e == VARHIDDEN);
     }
     // Warnings that are unused only
     bool unusedError() const VL_MT_SAFE {
-        return (m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL);
+        return (m_e == UNUSEDGENVAR || m_e == UNUSEDLOOP || m_e == UNUSEDPARAM
+                || m_e == UNUSEDSIGNAL);
     }
 
     V3ErrorCode renamedTo() const {
@@ -268,12 +272,13 @@ public:
     bool isRenamed() const { return renamedTo() != V3ErrorCode{EC_MIN}; }
     bool isUnder(V3ErrorCode other) {
         // backwards compatibility inheritance-like warnings
-        if (m_e == other) { return true; }
+        if (m_e == other) return true;
         if (other == V3ErrorCode::WIDTH) {
             return (m_e == WIDTHEXPAND || m_e == WIDTHTRUNC || m_e == WIDTHXZEXPAND);
         }
         if (other == V3ErrorCode::I_UNUSED) {
-            return (m_e == UNUSEDGENVAR || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL);
+            return (m_e == UNUSEDGENVAR || m_e == UNUSEDLOOP || m_e == UNUSEDPARAM
+                    || m_e == UNUSEDSIGNAL);
         }
         return false;
     }
@@ -680,7 +685,11 @@ void v3errorEndFatal(std::ostringstream& sstr)
     VL_DEFINE_DUMP(DfgLevel, "dfg"); /* Define 'int dumpDfgLevel()' for --dumpi-level */ \
     VL_DEFINE_DUMP(GraphLevel, "graph"); /* Define 'int dumpGraphLevel()' for dumpi-graph */ \
     VL_DEFINE_DUMP(TreeLevel, "tree"); /* Define 'int dumpTreeLevel()' for dumpi-tree */ \
-    VL_ATTR_UNUSED static int dumpTreeEitherLevel() { return dumpTreeLevel(); } \
+    VL_DEFINE_DUMP(TreeJsonLevel, \
+                   "tree-json"); /* Define 'int dumpTreeJsonLevel()' for dumpi-tree-json */ \
+    VL_ATTR_UNUSED static int dumpTreeEitherLevel() { \
+        return dumpTreeJsonLevel() >= dumpTreeLevel() ? dumpTreeJsonLevel() : dumpTreeLevel(); \
+    } \
     static_assert(true, "")
 
 //----------------------------------------------------------------------

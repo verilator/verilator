@@ -139,7 +139,15 @@ class V3ThreadPool final {
             std::abort();
         }
 
-        if (VL_UNCOVERABLE(!m_mutex.try_lock())) {
+        bool m_mutex_locked = m_mutex.try_lock();
+        // try_lock can sometimes spontaneously fail even when mutex is not locked,
+        // make sure this isn't the case
+        for (int i = 0; i < VL_LOCK_SPINS; ++i) {
+            if (VL_LIKELY(m_mutex_locked)) break;
+            VL_CPU_RELAX();
+            m_mutex_locked = m_mutex.try_lock();
+        }
+        if (VL_UNCOVERABLE(!m_mutex_locked)) {
             if (VL_UNCOVERABLE(m_jobsInProgress != 0)) {
                 // ThreadPool shouldn't be destroyed when jobs are running and mutex is locked,
                 // something is wrong. Most likely Verilator is exiting as a result of failed
@@ -299,7 +307,7 @@ public:
         if (!V3ThreadPool::s().willExecuteSynchronously()) {
             V3ThreadPool::s().m_stoppedJobsMutex.lock();
 
-            if (V3ThreadPool::s().stopRequested()) { V3ThreadPool::s().waitForResumeRequest(); }
+            if (V3ThreadPool::s().stopRequested()) V3ThreadPool::s().waitForResumeRequest();
             V3ThreadPool::s().stopOtherThreads();
             V3ThreadPool::s().m_exclusiveAccess = true;
         } else {

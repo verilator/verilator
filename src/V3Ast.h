@@ -31,6 +31,7 @@
 #include "V3Ast__gen_forward_class_decls.h"  // From ./astgen
 
 #include <cmath>
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <set>
@@ -47,9 +48,6 @@ class ExecMTask;
 class VFlagLogicPacked {};
 class VFlagBitPacked {};
 class VFlagChildDType {};  // Used by parser.y to select constructor that sets childDType
-
-// Used as key for another map, needs operator<, hence not an unordered_set
-using MTaskIdSet = std::set<int>;  // Set of mtaskIds for Var sorting
 
 //######################################################################
 
@@ -244,6 +242,51 @@ inline std::ostream& operator<<(std::ostream& os, const VAccess& rhs) { return o
 
 // ######################################################################
 
+class VBaseOverride final {
+    bool m_extends : 1;
+    bool m_final : 1;
+    bool m_initial : 1;
+
+public:
+    VBaseOverride()
+        : m_extends{false}
+        , m_final{false}
+        , m_initial{false} {}
+    class Extends {};
+    VBaseOverride(Extends)
+        : m_extends{true}
+        , m_final{false}
+        , m_initial{false} {}
+    class Final {};
+    VBaseOverride(Final)
+        : m_extends{false}
+        , m_final{true}
+        , m_initial{false} {}
+    class Initial {};
+    VBaseOverride(Initial)
+        : m_extends{false}
+        , m_final{false}
+        , m_initial{true} {}
+    void combine(const VBaseOverride& other) {
+        m_extends |= other.m_extends;
+        m_final |= other.m_final;
+        m_initial |= other.m_initial;
+    }
+    bool isAny() const { return m_extends | m_final | m_initial; }
+    bool isExtends() const { return m_extends; }
+    bool isFinal() const { return m_final; }
+    bool isInitial() const { return m_initial; }
+    string ascii() const {
+        string out;
+        if (m_initial) out = VString::dot(out, " ", "initial");
+        if (m_extends) out = VString::dot(out, " ", "extends");
+        if (m_final) out = VString::dot(out, " ", "final");
+        return out;
+    }
+};
+
+// ######################################################################
+
 class VSigning final {
 public:
     enum en : uint8_t {
@@ -322,7 +365,6 @@ public:
     enum en : uint8_t {
         // These must be in general -> most specific order, as we sort by it
         // in V3Const::visit AstSenTree
-        ET_ILLEGAL,
         // Involving a variable
         ET_CHANGED,  // Value changed
         ET_BOTHEDGE,  // POSEDGE | NEGEDGE (i.e.: 'edge' in Verilog)
@@ -342,8 +384,6 @@ public:
     enum en m_e;
     bool clockedStmt() const {
         static const bool clocked[] = {
-            false,  // ET_ILLEGAL
-
             true,  // ET_CHANGED
             true,  // ET_BOTHEDGE
             true,  // ET_POSEDGE
@@ -367,20 +407,19 @@ public:
         case ET_BOTHEDGE: return ET_BOTHEDGE;
         case ET_POSEDGE: return ET_NEGEDGE;
         case ET_NEGEDGE: return ET_POSEDGE;
-        default: UASSERT_STATIC(0, "Inverting bad edgeType()");
+        default: UASSERT_STATIC(0, "Inverting bad edgeType()"); return ET_NEGEDGE;
         }
-        return VEdgeType::ET_ILLEGAL;
     }
     const char* ascii() const {
         static const char* const names[]
-            = {"%E-edge", "CHANGED", "BOTH",   "POS",     "NEG",   "EVENT", "TRUE",
-               "COMBO",   "HYBRID",  "STATIC", "INITIAL", "FINAL", "NEVER"};
+            = {"CHANGED", "BOTH",   "POS",    "NEG",     "EVENT", "TRUE",
+               "COMBO",   "HYBRID", "STATIC", "INITIAL", "FINAL", "NEVER"};
         return names[m_e];
     }
     const char* verilogKwd() const {
         static const char* const names[]
-            = {"%E-edge", "[changed]", "edge",     "posedge",   "negedge", "[event]", "[true]",
-               "*",       "[hybrid]",  "[static]", "[initial]", "[final]", "[never]"};
+            = {"[changed]", "edge",     "posedge",  "negedge",   "[event]", "[true]",
+               "*",         "[hybrid]", "[static]", "[initial]", "[final]", "[never]"};
         return names[m_e];
     }
     // Return true iff this and the other have mutually exclusive transitions
@@ -396,8 +435,6 @@ public:
         }
         return false;
     }
-    VEdgeType()
-        : m_e{ET_ILLEGAL} {}
     // cppcheck-suppress noExplicitConstructor
     constexpr VEdgeType(en _e)
         : m_e{_e} {}
@@ -2001,7 +2038,7 @@ public:
 
     // TODO stomp these width functions out, and call via dtypep() instead
     inline int width() const VL_MT_STABLE;
-    inline int widthMin() const;
+    inline int widthMin() const VL_MT_STABLE;
     int widthMinV() const {
         return v3Global.widthMinUsage() == VWidthMinUsage::VERILOG_WIDTH ? widthMin() : width();
     }
@@ -2087,6 +2124,7 @@ public:
     // ACCESSORS for specific types
     // Alas these can't be virtual or they break when passed a nullptr
     inline bool isClassHandleValue() const;
+    inline bool isNull() const;
     inline bool isZero() const;
     inline bool isOne() const;
     inline bool isNeqZero() const;
@@ -2165,6 +2203,9 @@ public:
     string warnOther() const VL_REQUIRES(V3Error::s().m_mutex) { return fileline()->warnOther(); }
 
     virtual void dump(std::ostream& str = std::cout) const;
+    static char* dumpTreeJsonGdb(const AstNode* nodep);  // For GDB only, free()d by caller
+    static char* dumpTreeJsonGdb(const char* str);  // For GDB only, free()d by caller
+    static char* dumpTreeJsonGdb(intptr_t nodep);  // For GDB only, free()d by caller
     static void dumpGdb(const AstNode* nodep);  // For GDB only
     void dumpGdbHeader() const;
 
@@ -2215,10 +2256,28 @@ public:
     static void dumpTreeGdb(const AstNode* nodep);  // For GDB only
     void dumpTreeAndNext(std::ostream& os = std::cout, const string& indent = "    ",
                          int maxDepth = 0) const;
-    void dumpTreeFile(const string& filename, bool doDump = true, bool doCheck = true);
+    void dumpTreeFile(const string& filename, bool doDump = true);
     static void dumpTreeFileGdb(const AstNode* nodep, const char* filenamep = nullptr);
     void dumpTreeDot(std::ostream& os = std::cout) const;
     void dumpTreeDotFile(const string& filename, bool doDump = true);
+    virtual void dumpJson(std::ostream& os) const { dumpJsonGen(os); };  // node specific fields
+    // Generated by 'astgen'. Dumps node-specific pointers and calls 'dumpJson()' of parent class
+    // Note that we don't make it virtual as it would result in infinite recursion
+    void dumpJsonGen(std::ostream& os) const {};
+    virtual void dumpTreeJsonOpGen(std::ostream& os, const string& indent) const {};
+    void dumpTreeJson(std::ostream& os, const string& indent = "") const;
+    void dumpTreeJsonFile(const string& filename, bool doDump = true);
+    static void dumpJsonMetaFileGdb(const char* filename);
+    static void dumpJsonMetaFile(const string& filename);
+
+    // Render node address for dumps. By default this is just the address
+    // printed as hex, but with --dump-tree-addrids we map addresses to short
+    // strings with a bijection to aid human readability. Observe that this might
+    // not actually be a unique identifier as the address can get reused after a
+    // node has been freed.
+    static std::string nodeAddr(const AstNode* nodep) {
+        return v3Global.opt.dumpTreeAddrids() ? v3Global.ptrToId(nodep) : cvtToHex(nodep);
+    }
 
     // METHODS - static advancement
     static AstNode* afterCommentp(AstNode* nodep) {
@@ -2290,6 +2349,11 @@ protected:
     void iterateAndNextConst(VNVisitorConst& v);
     // Use instead VNVisitor::iterateSubtreeReturnEdits
     AstNode* iterateSubtreeReturnEdits(VNVisitor& v);
+
+    static void dumpJsonNum(std::ostream& os, const std::string& name, int64_t val);
+    static void dumpJsonBool(std::ostream& os, const std::string& name, bool val);
+    static void dumpJsonStr(std::ostream& os, const std::string& name, const std::string& val);
+    static void dumpJsonPtr(std::ostream& os, const std::string& name, const AstNode* const valp);
 
 private:
     void iterateListBackwardsConst(VNVisitorConst& v);
@@ -2845,5 +2909,7 @@ AstNode* VNVisitor::iterateSubtreeReturnEdits(AstNode* nodep) {
 
 // Inline function definitions need to go last
 #include "V3AstInlines.h"
+void dumpNodeListJson(std::ostream& os, const AstNode* nodep, const std::string& listName,
+                      const string& indent);
 
 #endif  // Guard

@@ -1,4 +1,4 @@
-%Error-ENCAPSULATED: t/t_class_local_bad.v:71:20: 'm_loc' is hidden as 'local' within this context (IEEE 1800-2017 8.18)
+%Error-ENCAPSULATED: t/t_class_local_bad.v:71:20: 'm_loc' is hidden as 'local' within this context (IEEE 1800-2023 8.18)
                                                 : ... note: In instance 't'
    71 |       bad(); if (c.m_loc != 2) $stop;
       |                    ^~~~~
@@ -6,98 +6,98 @@
    15 |    local int m_loc = 2;
       |              ^~~~~
                      ... For error description see https://verilator.org/warn/ENCAPSULATED?v=latest
-%Error-ENCAPSULATED: t/t_class_local_bad.v:72:20: 'm_prot' is hidden as 'protected' within this context (IEEE 1800-2017 8.18)
+%Error-ENCAPSULATED: t/t_class_local_bad.v:72:20: 'm_prot' is hidden as 'protected' within this context (IEEE 1800-2023 8.18)
                                                 : ... note: In instance 't'
    72 |       bad(); if (c.m_prot != 20) $stop;
       |                    ^~~~~~
                      t/t_class_local_bad.v:72:20: ... Location of definition
    16 |    protected int m_prot = 3;
       |                  ^~~~~~
-%Error-ENCAPSULATED: t/t_class_local_bad.v:74:20: 'm_loc' is hidden as 'local' within this context (IEEE 1800-2017 8.18)
+%Error-ENCAPSULATED: t/t_class_local_bad.v:74:20: 'm_loc' is hidden as 'local' within this context (IEEE 1800-2023 8.18)
                                                 : ... note: In instance 't'
    74 |       bad(); if (e.m_loc != 2) $stop;
       |                    ^~~~~
                      t/t_class_local_bad.v:74:20: ... Location of definition
    15 |    local int m_loc = 2;
       |              ^~~~~
-%Error-ENCAPSULATED: t/t_class_local_bad.v:75:20: 'm_prot' is hidden as 'protected' within this context (IEEE 1800-2017 8.18)
+%Error-ENCAPSULATED: t/t_class_local_bad.v:75:20: 'm_prot' is hidden as 'protected' within this context (IEEE 1800-2023 8.18)
                                                 : ... note: In instance 't'
    75 |       bad(); if (e.m_prot != 20) $stop;
       |                    ^~~~~~
                      t/t_class_local_bad.v:75:20: ... Location of definition
    16 |    protected int m_prot = 3;
       |                  ^~~~~~
-%Error-ENCAPSULATED: t/t_class_local_bad.v:77:16: 'f_loc' is hidden as 'local' within this context (IEEE 1800-2017 8.18)
+%Error-ENCAPSULATED: t/t_class_local_bad.v:77:16: 'f_loc' is hidden as 'local' within this context (IEEE 1800-2023 8.18)
                                                 : ... note: In instance 't'
    77 |       bad(); c.f_loc();
       |                ^~~~~
                      t/t_class_local_bad.v:77:16: ... Location of definition
    18 |    local task f_loc; endtask
       |               ^~~~~
-%Error-ENCAPSULATED: t/t_class_local_bad.v:78:16: 'f_prot' is hidden as 'protected' within this context (IEEE 1800-2017 8.18)
+%Error-ENCAPSULATED: t/t_class_local_bad.v:78:16: 'f_prot' is hidden as 'protected' within this context (IEEE 1800-2023 8.18)
                                                 : ... note: In instance 't'
    78 |       bad(); c.f_prot();
       |                ^~~~~~
                      t/t_class_local_bad.v:78:16: ... Location of definition
    19 |    protected task f_prot; endtask
       |                   ^~~~~~
-%Error-ENCAPSULATED: t/t_class_local_bad.v:80:16: 's_loc' is hidden as 'local' within this context (IEEE 1800-2017 8.18)
+%Error-ENCAPSULATED: t/t_class_local_bad.v:80:16: 's_loc' is hidden as 'local' within this context (IEEE 1800-2023 8.18)
                                                 : ... note: In instance 't'
    80 |       bad(); c.s_loc();
       |                ^~~~~
                      t/t_class_local_bad.v:80:16: ... Location of definition
    21 |    static local task s_loc; endtask
       |                      ^~~~~
-%Error-ENCAPSULATED: t/t_class_local_bad.v:81:16: 's_prot' is hidden as 'protected' within this context (IEEE 1800-2017 8.18)
+%Error-ENCAPSULATED: t/t_class_local_bad.v:81:16: 's_prot' is hidden as 'protected' within this context (IEEE 1800-2023 8.18)
                                                 : ... note: In instance 't'
    81 |       bad(); c.s_prot();
       |                ^~~~~~
                      t/t_class_local_bad.v:81:16: ... Location of definition
    22 |    static protected task s_prot; endtask
       |                          ^~~~~~
-%Error-ENCAPSULATED: t/t_class_local_bad.v:83:19: 's_loc' is hidden as 'local' within this context (IEEE 1800-2017 8.18)
+%Error-ENCAPSULATED: t/t_class_local_bad.v:83:19: 's_loc' is hidden as 'local' within this context (IEEE 1800-2023 8.18)
                                                 : ... note: In instance 't'
    83 |       bad(); Cls::s_loc();
       |                   ^~~~~
                      t/t_class_local_bad.v:83:19: ... Location of definition
    21 |    static local task s_loc; endtask
       |                      ^~~~~
-%Error-ENCAPSULATED: t/t_class_local_bad.v:84:19: 's_prot' is hidden as 'protected' within this context (IEEE 1800-2017 8.18)
+%Error-ENCAPSULATED: t/t_class_local_bad.v:84:19: 's_prot' is hidden as 'protected' within this context (IEEE 1800-2023 8.18)
                                                 : ... note: In instance 't'
    84 |       bad(); Cls::s_prot();
       |                   ^~~~~~
                      t/t_class_local_bad.v:84:19: ... Location of definition
    22 |    static protected task s_prot; endtask
       |                          ^~~~~~
-%Error-ENCAPSULATED: t/t_class_local_bad.v:47:18: 'm_loc' is hidden as 'local' within this context (IEEE 1800-2017 8.18)
+%Error-ENCAPSULATED: t/t_class_local_bad.v:47:18: 'm_loc' is hidden as 'local' within this context (IEEE 1800-2023 8.18)
                                                 : ... note: In instance 't'
    47 |       bad(); if (m_loc != 10) $stop;
       |                  ^~~~~
                      t/t_class_local_bad.v:47:18: ... Location of definition
    15 |    local int m_loc = 2;
       |              ^~~~~
-%Error-ENCAPSULATED: t/t_class_local_bad.v:50:14: 'f_loc' is hidden as 'local' within this context (IEEE 1800-2017 8.18)
+%Error-ENCAPSULATED: t/t_class_local_bad.v:50:14: 'f_loc' is hidden as 'local' within this context (IEEE 1800-2023 8.18)
                                                 : ... note: In instance 't'
    50 |       bad(); f_loc();
       |              ^~~~~
                      t/t_class_local_bad.v:50:14: ... Location of definition
    18 |    local task f_loc; endtask
       |               ^~~~~
-%Error-ENCAPSULATED: t/t_class_local_bad.v:53:16: 'f_loc' is hidden as 'local' within this context (IEEE 1800-2017 8.18)
+%Error-ENCAPSULATED: t/t_class_local_bad.v:53:16: 'f_loc' is hidden as 'local' within this context (IEEE 1800-2023 8.18)
                                                 : ... note: In instance 't'
    53 |       bad(); o.f_loc();
       |                ^~~~~
                      t/t_class_local_bad.v:53:16: ... Location of definition
    18 |    local task f_loc; endtask
       |               ^~~~~
-%Error-ENCAPSULATED: t/t_class_local_bad.v:56:14: 's_loc' is hidden as 'local' within this context (IEEE 1800-2017 8.18)
+%Error-ENCAPSULATED: t/t_class_local_bad.v:56:14: 's_loc' is hidden as 'local' within this context (IEEE 1800-2023 8.18)
                                                 : ... note: In instance 't'
    56 |       bad(); s_loc();
       |              ^~~~~
                      t/t_class_local_bad.v:56:14: ... Location of definition
    21 |    static local task s_loc; endtask
       |                      ^~~~~
-%Error-ENCAPSULATED: t/t_class_local_bad.v:59:19: 's_loc' is hidden as 'local' within this context (IEEE 1800-2017 8.18)
+%Error-ENCAPSULATED: t/t_class_local_bad.v:59:19: 's_loc' is hidden as 'local' within this context (IEEE 1800-2023 8.18)
                                                 : ... note: In instance 't'
    59 |       bad(); Cls::s_loc();
       |                   ^~~~~

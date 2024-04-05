@@ -50,6 +50,7 @@ public:
     ASTGEN_MEMBERS_AstNodeExpr;
     // METHODS
     void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     // TODO: The only AstNodeExpr without dtype is AstArg. Otherwise this could be final.
     bool hasDType() const override { return true; }
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
@@ -64,6 +65,9 @@ public:
 
     // Wrap This expression into an AstStmtExpr to denote it occurs in statement position
     inline AstStmtExpr* makeStmt();
+    // Returns an error message if widthMin() is not correct otherwise returns nullptr like
+    // broken()
+    virtual const char* widthMismatch() const VL_MT_STABLE { return nullptr; }
 };
 class AstNodeBiop VL_NOT_FINAL : public AstNodeExpr {
     // Binary expression
@@ -196,6 +200,7 @@ protected:
 public:
     ASTGEN_MEMBERS_AstNodeCCall;
     void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     int instrCount() const override { return INSTR_COUNT_CALL; }
     bool same(const AstNode* samep) const override {
         const AstNodeCCall* const asamep = VN_DBG_AS(samep, NodeCCall);
@@ -248,6 +253,7 @@ protected:
 public:
     const char* broken() const override;
     void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     bool isGateOptimizable() const override;
     string dotted() const { return m_dotted; }  // * = Scope name or ""
@@ -357,6 +363,7 @@ public:
     // cppcheck-suppress functionConst
     void iterateChildren(VNVisitorConst& v) {}
     void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
 };
 class AstNodeTriop VL_NOT_FINAL : public AstNodeExpr {
     // Ternary expression
@@ -377,6 +384,7 @@ public:
     ASTGEN_MEMBERS_AstNodeTriop;
     // METHODS
     void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     // Set out to evaluation of a AstConst'ed
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                                const V3Number& ths)
@@ -458,6 +466,7 @@ public:
     ASTGEN_MEMBERS_AstNodeUniop;
     // METHODS
     void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     // Set out to evaluation of a AstConst'ed lhs
     virtual void numberOperate(V3Number& out, const V3Number& lhs) = 0;
     virtual bool cleanLhs() const = 0;
@@ -510,6 +519,7 @@ protected:
 
 public:
     void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     int instrCount() const override { return widthInstrs(); }
     VAccess access() const { return m_access; }
     void access(const VAccess& flag) { m_access = flag; }  // Avoid using this; Set in constructor
@@ -591,6 +601,7 @@ public:
     ASTGEN_MEMBERS_AstAttrOf;
     VAttrType attrType() const { return m_attrType; }
     void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
 
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -765,6 +776,7 @@ public:
                 == VN_DBG_AS(samep, ClassOrPackageRef)->m_classOrPackageNodep);
     }
     void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     AstNode* classOrPackageNodep() const { return m_classOrPackageNodep; }
     void classOrPackageNodep(AstNode* nodep) { m_classOrPackageNodep = nodep; }
@@ -1100,6 +1112,34 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
 };
+class AstCvtPackedToUnpackArray final : public AstNodeExpr {
+    // Cast from packed array to dynamic queue data type
+    // @astgen op1 := fromp : AstNodeExpr
+public:
+    AstCvtPackedToUnpackArray(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
+        : ASTGEN_SUPER_CvtPackedToUnpackArray(fl) {
+        this->fromp(fromp);
+        dtypeFrom(dtp);
+    }
+    ASTGEN_MEMBERS_AstCvtPackedToUnpackArray;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+};
+class AstCvtUnpackArrayToPacked final : public AstNodeExpr {
+    // Cast from dynamic queue data type to packed array
+    // @astgen op1 := fromp : AstNodeExpr
+public:
+    AstCvtUnpackArrayToPacked(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
+        : ASTGEN_SUPER_CvtUnpackArrayToPacked(fl) {
+        this->fromp(fromp);
+        dtypeFrom(dtp);
+    }
+    ASTGEN_MEMBERS_AstCvtUnpackArrayToPacked;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+};
 class AstDot final : public AstNodeExpr {
     // A dot separating paths in an AstVarXRef, AstFuncRef or AstTaskRef
     // These are eliminated in the link stage
@@ -1120,6 +1160,7 @@ public:
         return new AstDot{fl, true, packageOrClassp, rhsp};
     }
     void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool colon() const { return m_colon; }
 
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -1148,6 +1189,7 @@ public:
     }
     ASTGEN_MEMBERS_AstEnumItemRef;
     void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return itemp()->name(); }
     int instrCount() const override { return 0; }
     bool same(const AstNode* samep) const override {
@@ -1425,6 +1467,9 @@ public:
 
 private:
     KeyItemMap m_map;  // Node value for each array index
+    // METHODS
+    void dumpInitList(std::ostream& str) const;
+
 public:
     AstInitArray(FileLine* fl, AstNodeDType* newDTypep, AstNodeExpr* defaultp)
         : ASTGEN_SUPER_InitArray(fl) {
@@ -1433,6 +1478,7 @@ public:
     }
     ASTGEN_MEMBERS_AstInitArray;
     void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     const char* broken() const override;
     void cloneRelink() override;
     bool same(const AstNode* samep) const override {
@@ -1524,6 +1570,7 @@ public:
     }
     ASTGEN_MEMBERS_AstMemberSel;
     void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& name) override { m_name = name; }
     VAccess access() const { return m_access; }
@@ -1591,6 +1638,7 @@ public:
     }
     ASTGEN_MEMBERS_AstParseRef;
     void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     bool same(const AstNode* samep) const override {
         const AstParseRef* const asamep = VN_DBG_AS(samep, ParseRef);
@@ -1647,6 +1695,7 @@ public:
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs() * 2; }
     void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     bool isDefault() const { return m_default; }
     void isDefault(bool flag) { m_default = flag; }
 };
@@ -1877,6 +1926,7 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     string scopeSymName() const {  // Name for __Vscope variable including children
         return scopeNameFormatter(scopeAttrp());
     }
@@ -3811,6 +3861,7 @@ public:
     bool cleanRhs() const override { return false; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    const char* widthMismatch() const override VL_MT_STABLE;
 };
 class AstMul final : public AstNodeBiComAsv {
 public:
@@ -3905,6 +3956,7 @@ public:
     bool cleanRhs() const override { return false; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    const char* widthMismatch() const override VL_MT_STABLE;
 };
 class AstXor final : public AstNodeBiComAsv {
 public:
@@ -3927,6 +3979,7 @@ public:
     bool cleanRhs() const override { return false; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
+    const char* widthMismatch() const override VL_MT_STABLE;
 };
 
 // === AstNodeDistBiop ===
@@ -4352,6 +4405,7 @@ public:
     int instrCount() const override { return INSTR_COUNT_TIME; }
     bool same(const AstNode* /*samep*/) const override { return true; }
     void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VTimescale timeunit() const { return m_timeunit; }
 };
@@ -4372,6 +4426,7 @@ public:
     int instrCount() const override { return INSTR_COUNT_TIME; }
     bool same(const AstNode* /*samep*/) const override { return true; }
     void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VTimescale timeunit() const { return m_timeunit; }
 };
@@ -4520,6 +4575,7 @@ public:
     }
     ASTGEN_MEMBERS_AstSel;
     void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     void numberOperate(V3Number& out, const V3Number& from, const V3Number& bit,
                        const V3Number& width) override {
         out.opSel(from, bit.toUInt() + width.toUInt() - 1, bit.toUInt());
@@ -4560,6 +4616,7 @@ public:
         , m_declRange{declRange} {}
     ASTGEN_MEMBERS_AstSliceSel;
     void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     void numberOperate(V3Number& out, const V3Number& from, const V3Number& lo,
                        const V3Number& width) override {
         V3ERROR_NA;
@@ -4722,6 +4779,7 @@ public:
     ASTGEN_MEMBERS_AstCAwait;
     bool isTimingControl() const override { return true; }
     void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     AstSenTree* sensesp() const { return m_sensesp; }
     void clearSensesp() { m_sensesp = nullptr; }
     void numberOperate(V3Number& out, const V3Number& lhs) override { V3ERROR_NA; }
@@ -4760,6 +4818,7 @@ public:
         return size() == VN_DBG_AS(samep, CCast)->size();
     }
     void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     //
     int size() const { return m_size; }
 };
@@ -5057,6 +5116,7 @@ public:
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return false; }
     bool sizeMattersLhs() const override { return true; }
+    const char* widthMismatch() const override VL_MT_STABLE;
 };
 class AstNullCheck final : public AstNodeUniop {
     // Return LHS after checking that LHS is non-null
@@ -5252,6 +5312,7 @@ public:
     bool cleanLhs() const override { return false; }
     bool sizeMattersLhs() const override { return false; }
     void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VTimescale timeunit() const { return m_timeunit; }
 };
@@ -5518,6 +5579,7 @@ public:
     ASTGEN_MEMBERS_AstVarRef;
     inline string name() const override;  // * = Var name
     void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     const char* broken() const override;
     bool same(const AstNode* samep) const override;
     inline bool same(const AstVarRef* samep) const;
@@ -5542,6 +5604,7 @@ public:
     ASTGEN_MEMBERS_AstVarXRef;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string dotted() const { return m_dotted; }
     void dotted(const string& dotted) { m_dotted = dotted; }
     string inlinedDots() const { return m_inlinedDots; }

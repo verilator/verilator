@@ -9,19 +9,19 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 scenarios(simulator => 1);
-my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
+my $out_filename = "$Self->{obj_dir}/V$Self->{name}.tree.json";
 
 compile(
     make_top_shell => 0,
     make_main => 0,
-    verilator_flags2 => ["-DATTRIBUTES --exe --no-l2name $Self->{t_dir}/t_dpi_var.cpp"],
+    verilator_flags2 => ["--no-json-edit-nums", "-DATTRIBUTES --exe --no-l2name $Self->{t_dir}/t_dpi_var.cpp"],
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<var loc="e,56,.*?" name="formatted" dtype_id="\d+" dir="input" vartype="string" origName="formatted" sformat="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,77,.*?" name="t.sub.in" dtype_id="\d+" vartype="int" origName="in" public="true" public_flat_rd="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,78,.*?" name="t.sub.fr_a" dtype_id="\d+" vartype="int" origName="fr_a" public="true" public_flat_rd="true" public_flat_rw="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,79,.*?" name="t.sub.fr_b" dtype_id="\d+" vartype="int" origName="fr_b" public="true" public_flat_rd="true" public_flat_rw="true"\/\>/i);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"formatted",.*"loc":"e,56:[^"]*",.*"origName":"formatted",.*"direction":"INPUT",.*"dtypeName":"string",.*"attrSFormat":true/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"t.sub.in",.*"loc":"e,77:[^"]*",.*"origName":"in",.*"dtypeName":"int",.*"isSigUserRdPublic":true/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"t.sub.fr_a",.*"loc":"e,78:[^"]*",.*"origName":"fr_a",.*"dtypeName":"int",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"t.sub.fr_b",.*"loc":"e,79:[^"]*",.*"origName":"fr_b",.*"dtypeName":"int",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true/);
 }
 
 execute(

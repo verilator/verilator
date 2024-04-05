@@ -73,6 +73,7 @@ static void appendDefValue(const char* t, size_t l) { LEXP->appendDefValue(t, l)
 %x DEFFPAR
 %x DEFVAL
 %x ENCBASE64
+%x EXPR
 %x INCMODE
 %x PRAGMA
 %x PRAGMAERR
@@ -160,7 +161,7 @@ bom             [\357\273\277]
                           BEGIN(ENCBASE64);
                           return VP_TEXT; }
 <PRAGMAPRT>("begin_protected"|"end_protected"|"end")[\n\r]  { FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
-<PRAGMAPRT>"version="[^\n\r]*[\n\r] {
+<PRAGMAPRT>"version"{wsn}*={wsn}*[^\n\r]*[\n\r] {
                           FL_FWDC;
                           linenoInc();
                           BEGIN(INITIAL);
@@ -375,6 +376,23 @@ bom             [\357\273\277]
 <DEFCMT><<EOF>>         { FL_FWDC; yyerrorf("EOF in '/* ... */' block comment\n");
                           yyleng=0; return VP_EOF_ERROR; }
 
+        /* Preprocessor expression */
+<EXPR><<EOF>>           { FL_FWDC; linenoInc(); yyerrorf("EOF in unterminated preprocessor expression");
+                          yyleng = 0; return VP_EOF_ERROR; }
+<EXPR>"/*"              { yy_push_state(CMTMODE); yymore(); }
+<EXPR>"//"[^\n\r]*      { FL_FWDC; return VP_COMMENT;}
+<EXPR>"("               { FL_FWDC; return VP_TEXT; }  /* V3PreProc will push another EXPR state to stack */
+<EXPR>")"               { FL_FWDC; yy_pop_state(); return VP_TEXT; }
+<EXPR>"!"               { FL_FWDC; return VP_TEXT; }
+<EXPR>"&&"              { FL_FWDC; return VP_TEXT; }
+<EXPR>"||"              { FL_FWDC; return VP_TEXT; }
+<EXPR>"->"              { FL_FWDC; return VP_TEXT; }
+<EXPR>"<->"             { FL_FWDC; return VP_TEXT; }
+<EXPR>{symb}            { FL_FWDC; return VP_SYMBOL; }
+<EXPR>{crnl}            { FL_FWDC; linenoInc(); yytext=(char*)"\n"; yyleng=1; return VP_WHITE; }
+<EXPR>{wsn}+            { FL_FWDC; return VP_WHITE; }
+<EXPR>.                 { FL_FWDC; return VP_TEXT; }
+
         /* Define arguments (use of a define) */
 <ARGMODE>"/*"           { yy_push_state(CMTMODE); yymore(); }
 <ARGMODE>"//"[^\n\r]*   { FL_FWDC; return VP_COMMENT; }
@@ -481,6 +499,11 @@ void V3PreLex::pushStateDefValue() {
     yy_push_state(DEFVAL);
     m_parenLevel = 0;
     m_defValue = "";
+}
+
+void V3PreLex::pushStateExpr() {
+    // Enter preprocessor expression state
+    yy_push_state(EXPR);
 }
 
 void V3PreLex::pushStateIncFilename() {

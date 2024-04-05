@@ -42,7 +42,7 @@ module t (/*AUTOARG*/
    // Type definitions
    //======================================================================
 
-   // Basic types as per IEEE 1800-2017 35.5.6
+   // Basic types as per IEEE 1800-2023 35.5.6
    typedef byte byte_t;
    typedef byte unsigned byte_unsigned_t;
    typedef shortint      shortint_t;
@@ -102,7 +102,7 @@ module t (/*AUTOARG*/
    // Imports
    //======================================================================
 
-   // Basic types as per IEEE 1800-2017 35.5.6
+   // Basic types as per IEEE 1800-2023 35.5.6
    import "DPI-C" function void i_byte              (output byte              o);
    import "DPI-C" function void i_byte_unsigned     (output byte unsigned     o);
    import "DPI-C" function void i_shortint          (output shortint          o);
@@ -202,7 +202,7 @@ module t (/*AUTOARG*/
    // Exports
    //======================================================================
 
-   // Basic types as per IEEE 1800-2017 35.5.6
+   // Basic types as per IEEE 1800-2023 35.5.6
    export "DPI-C" function e_byte;
    export "DPI-C" function e_byte_unsigned;
    export "DPI-C" function e_shortint;
@@ -302,7 +302,7 @@ module t (/*AUTOARG*/
    // Definitions of exported functions
    //======================================================================
 
-   // Basic types as per IEEE 1800-2017 35.5.6
+   // Basic types as per IEEE 1800-2023 35.5.6
    byte                      n_byte = 0;
    function void e_byte(output byte o);
       o = 8'd10 + n_byte;
@@ -872,7 +872,7 @@ module t (/*AUTOARG*/
          union_4_state_65  x_union_4_state_65;
          union_4_state_128 x_union_4_state_128;
 
-         // Basic types as per IEEE 1800-2017 35.5.6
+         // Basic types as per IEEE 1800-2023 35.5.6
          i_byte(x_byte);                           if (x_byte              !==  8'd10 -  8'(i)) $stop;
          i_byte_unsigned(x_byte_unsigned);         if (x_byte_unsigned     !==  8'd20 -  8'(i)) $stop;
          i_shortint(x_shortint);                   if (x_shortint          !== 16'd30 - 16'(i)) $stop;

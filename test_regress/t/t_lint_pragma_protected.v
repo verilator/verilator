@@ -9,7 +9,11 @@
 module t_lint_pragma_protected;
 
 `pragma protect begin_protected
+// Any amount of whitespace should be ok
 `pragma protect version=1
+`pragma protect version = 1
+`pragma protect version= 1
+`pragma protect version =1
 `pragma protect encrypt_agent="XXXXX"
 `pragma protect encrypt_agent_info="YYYYY"
 `pragma protect data_method="AES128-CBC"

@@ -16,7 +16,7 @@ scenarios(simulator => 1);
 
 $DEBUG_QUIET = "--debug --debugi 0 --gdbbt --no-dump-tree";
 
-run(cmd => ["perl", "../bin/verilator", $DEBUG_QUIET, "-V"],
+run(cmd => ["perl", "$ENV{VERILATOR_ROOT}/bin/verilator", $DEBUG_QUIET, "-V"],
     verilator_run => 1,
     );
 

@@ -80,7 +80,8 @@ class LinkResolveVisitor final : public VNVisitor {
         // Initial assignments under function/tasks can just be simple
         // assignments without the initial
         if (m_ftaskp) {
-            VL_DO_DANGLING(nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext()), nodep);
+            nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     void visit(AstNodeCoverOrAssert* nodep) override {
@@ -116,7 +117,7 @@ class LinkResolveVisitor final : public VNVisitor {
             if (nodep->name() == "randomize" || nodep->name() == "srandom") {
                 nodep->v3error(nodep->prettyNameQ()
                                << " is a predefined class method; redefinition not allowed"
-                                  " (IEEE 1800-2017 18.6.3)");
+                                  " (IEEE 1800-2023 18.6.3)");
             }
             nodep->classMethod(true);
         }

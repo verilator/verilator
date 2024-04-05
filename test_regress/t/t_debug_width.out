@@ -1,0 +1,4 @@
+%Error: Internal Error: t/t_const_opt.v:531:34: ../V3Ast.cpp:#: widthMismatch detected 'lhsp()->widthMin() != rhsp()->widthMin()' @ ../V3AstNodes.cpp:#OUT:(G/wu32/1) LHS:(G/w32) RHS:(G/wu32/1)
+  531 |    always_ff @(posedge clkin_data[0], posedge myfirst, posedge mysecond)
+      |                                  ^
+                        ... See the manual at https://verilator.org/verilator_doc.html for more assistance.

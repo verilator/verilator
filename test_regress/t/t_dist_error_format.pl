@@ -41,6 +41,7 @@ sub formats {
                 $line =~ s/(\$display|\$write).*\".*%(Error|Warning)//;
                 if ($line =~ /(Error|Warning)/
                     && $line !~ /^\s*<sformatf /  # skip XML tag
+                    && $line !~ /^\s*{"type":"/  # skip JSON node
                     && $line !~ /Error-internal-contents-bad/) {
                     # These formats are documented in bin/verilator
                     # Error with fileline

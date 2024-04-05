@@ -1,4 +1,4 @@
-%Warning-MULTIDRIVEN: t/t_lint_always_comb_multidriven_bad.v:26:16: Variable written to in always_comb also written by other process (IEEE 1800-2017 9.2.2.2): 'out1'
+%Warning-MULTIDRIVEN: t/t_lint_always_comb_multidriven_bad.v:26:16: Variable written to in always_comb also written by other process (IEEE 1800-2023 9.2.2.2): 'out1'
                                                                   : ... note: In instance 't'
                       t/t_lint_always_comb_multidriven_bad.v:26:16: 
    26 |    always_comb out1 = d;   
@@ -8,7 +8,7 @@
       |           ^~~~
                       ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
                       ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
-%Warning-MULTIDRIVEN: t/t_lint_always_comb_multidriven_bad.v:29:16: Variable written to in always_comb also written by other process (IEEE 1800-2017 9.2.2.2): 'out2'
+%Warning-MULTIDRIVEN: t/t_lint_always_comb_multidriven_bad.v:29:16: Variable written to in always_comb also written by other process (IEEE 1800-2023 9.2.2.2): 'out2'
                                                                   : ... note: In instance 't'
                       t/t_lint_always_comb_multidriven_bad.v:29:16: 
    29 |    always_comb out2 = 1'b0;   
@@ -16,7 +16,7 @@
                       t/t_lint_always_comb_multidriven_bad.v:28:11: ... Location of other write
    28 |    assign out2 = d;
       |           ^~~~
-%Warning-MULTIDRIVEN: t/t_lint_always_comb_multidriven_bad.v:32:11: Variable also written to in always_comb (IEEE 1800-2017 9.2.2.2): 'out3'
+%Warning-MULTIDRIVEN: t/t_lint_always_comb_multidriven_bad.v:32:11: Variable also written to in always_comb (IEEE 1800-2023 9.2.2.2): 'out3'
                                                                   : ... note: In instance 't'
                       t/t_lint_always_comb_multidriven_bad.v:32:11: 
    32 |    assign out3 = 1'b0;   
@@ -24,7 +24,7 @@
                       t/t_lint_always_comb_multidriven_bad.v:31:16: ... Location of always_comb write
    31 |    always_comb out3 = d;
       |                ^~~~
-%Warning-MULTIDRIVEN: t/t_lint_always_comb_multidriven_bad.v:35:11: Variable also written to in always_comb (IEEE 1800-2017 9.2.2.2): 'out4'
+%Warning-MULTIDRIVEN: t/t_lint_always_comb_multidriven_bad.v:35:11: Variable also written to in always_comb (IEEE 1800-2023 9.2.2.2): 'out4'
                                                                   : ... note: In instance 't'
                       t/t_lint_always_comb_multidriven_bad.v:35:11: 
    35 |    assign out4 = d;   
@@ -32,7 +32,7 @@
                       t/t_lint_always_comb_multidriven_bad.v:34:16: ... Location of always_comb write
    34 |    always_comb out4 = 1'b0;
       |                ^~~~
-%Warning-MULTIDRIVEN: t/t_lint_always_comb_multidriven_bad.v:38:16: Variable written to in always_comb also written by other process (IEEE 1800-2017 9.2.2.2): 'out5'
+%Warning-MULTIDRIVEN: t/t_lint_always_comb_multidriven_bad.v:38:16: Variable written to in always_comb also written by other process (IEEE 1800-2023 9.2.2.2): 'out5'
                                                                   : ... note: In instance 't'
                       t/t_lint_always_comb_multidriven_bad.v:38:16: 
    38 |    always_comb out5 = d;   
@@ -40,7 +40,7 @@
                       t/t_lint_always_comb_multidriven_bad.v:37:16: ... Location of other write
    37 |    always_comb out5 = 1'b0;
       |                ^~~~
-%Warning-MULTIDRIVEN: t/t_lint_always_comb_multidriven_bad.v:41:16: Variable written to in always_comb also written by other process (IEEE 1800-2017 9.2.2.2): 'out6'
+%Warning-MULTIDRIVEN: t/t_lint_always_comb_multidriven_bad.v:41:16: Variable written to in always_comb also written by other process (IEEE 1800-2023 9.2.2.2): 'out6'
                                                                   : ... note: In instance 't'
                       t/t_lint_always_comb_multidriven_bad.v:41:16: 
    41 |    always_comb out6 = 1'b0;   

@@ -6,13 +6,12 @@
 
 module t (/*AUTOARG*/
    // Inputs
-   clk,
-   check_real,
-   check_string
+   clk, check_real, check_array_real, check_string
    );
 
    input clk;
    input real check_real; // Check issue #2741
+   input real check_array_real [1:0];
    input string check_string; // Check issue #2766
 
    typedef struct packed {
@@ -27,6 +26,11 @@ module t (/*AUTOARG*/
 
    str_t stoggle; initial stoggle='0;
 
+   union {
+      real val1;  // TODO use bit [7:0] here
+      real val2;  // TODO use bit [3:0] here
+   } utoggle;
+
    const reg aconst = '0;
 
    reg [1:0][1:0] ptoggle; initial ptoggle=0;
@@ -34,6 +38,11 @@ module t (/*AUTOARG*/
    integer cyc; initial cyc=1;
    wire [7:0] cyc_copy = cyc[7:0];
    wire       toggle_up;
+
+   typedef struct {
+      int q[$];
+   } str_queue_t;
+   str_queue_t str_queue;
 
    alpha a1 (/*AUTOINST*/
              // Outputs
@@ -66,20 +75,23 @@ module t (/*AUTOARG*/
    // CHECK_COVER_MISSING(-1)
 
    always @ (posedge clk) begin
-      if (cyc!=0) begin
+      if (cyc != 0) begin
          cyc <= cyc + 1;
          memory[cyc + 'd100] <= memory[cyc + 'd100] + 2'b1;
          toggle <= '0;
          stoggle.u <= toggle;
          stoggle.b <= toggle;
+         utoggle.val1 <= real'(cyc[7:0]);
          ptoggle[0][0] <= toggle;
-         if (cyc==3) begin
+         if (cyc == 3) begin
+            str_queue.q.push_back(1);
             toggle <= '1;
          end
-         if (cyc==4) begin
+         if (cyc == 4) begin
+            if (str_queue.q.size() != 1) $stop;
             toggle <= '0;
          end
-         else if (cyc==10) begin
+         else if (cyc == 10) begin
             $write("*-* All Finished *-*\n");
             $finish;
          end

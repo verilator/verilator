@@ -30,7 +30,7 @@
 //======================================================================
 
 // These are simple wrappers for the array querying functions themselves,
-// see IEEE 1800-2017 H.12.2. Sadly on the SV side these have different
+// see IEEE 1800-2023 H.12.2. Sadly on the SV side these have different
 // signatures, and hence need to have different names here as well.
 
 // 1 open dimension

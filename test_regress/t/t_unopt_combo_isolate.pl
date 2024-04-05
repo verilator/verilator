@@ -11,19 +11,19 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 top_filename("t/t_unopt_combo.v");
-my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
+my $out_filename = "$Self->{obj_dir}/V$Self->{name}.tree.json";
 
 compile(
-    verilator_flags2 => ["+define+ISOLATE --stats"],
+    verilator_flags2 => ["--no-json-edit-nums +define+ISOLATE --stats"],
     );
 
 if ($Self->{vlt_all}) {
     file_grep($Self->{stats}, qr/Optimizations, isolate_assignments blocks\s+3/i);
-    file_grep("$out_filename", qr/\<var loc="e,23,.*?" name="t.b" dtype_id="\d+" vartype="logic" origName="b" isolate_assignments="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,99,.*?" name="__Vfunc_t.file.get_31_16__0__Vfuncout" dtype_id="\d+" vartype="logic" origName="__Vfunc_t__DOT__file__DOT__get_31_16__0__Vfuncout" isolate_assignments="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,100,.*?" name="__Vfunc_t.file.get_31_16__0__t_crc" dtype_id="\d+" vartype="logic" origName="__Vfunc_t__DOT__file__DOT__get_31_16__0__t_crc" isolate_assignments="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,112,.*?" name="__Vtask_t.file.set_b_d__1__t_crc" dtype_id="\d+" vartype="logic" origName="__Vtask_t__DOT__file__DOT__set_b_d__1__t_crc" isolate_assignments="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="e,113,.*?" name="__Vtask_t.file.set_b_d__1__t_c" dtype_id="\d+" vartype="logic" origName="__Vtask_t__DOT__file__DOT__set_b_d__1__t_c" isolate_assignments="true"\/\>/i);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"t.b",.*"loc":"e,23:[^"]*",.*"origName":"b",.*"attrIsolateAssign":true,.*"dtypeName":"logic"/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"__Vfunc_t.file.get_31_16__0__Vfuncout",.*"loc":"e,99:[^"]*",.*"origName":"__Vfunc_t__DOT__file__DOT__get_31_16__0__Vfuncout",.*"attrIsolateAssign":true,.*"dtypeName":"logic"/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"__Vfunc_t.file.get_31_16__0__t_crc",.*"loc":"e,100:[^"]*",.*"origName":"__Vfunc_t__DOT__file__DOT__get_31_16__0__t_crc",.*"attrIsolateAssign":true,.*"dtypeName":"logic"/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"__Vtask_t.file.set_b_d__1__t_crc",.*"loc":"e,112:[^"]*",.*"origName":"__Vtask_t__DOT__file__DOT__set_b_d__1__t_crc",.*"attrIsolateAssign":true,.*"dtypeName":"logic"/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"__Vtask_t.file.set_b_d__1__t_c",.*"loc":"e,113:[^"]*",.*"origName":"__Vtask_t__DOT__file__DOT__set_b_d__1__t_c",.*"attrIsolateAssign":true,.*"dtypeName":"logic"/);
 }
 
 execute(

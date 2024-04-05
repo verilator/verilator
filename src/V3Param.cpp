@@ -342,7 +342,7 @@ class ParamProcessor final {
             key += " ";
             key += paramValueString(dtypep->subDTypep());
         } else if (const AstBasicDType* const dtypep = VN_CAST(nodep, BasicDType)) {
-            if (dtypep->isSigned()) { key += " signed"; }
+            if (dtypep->isSigned()) key += " signed";
             if (dtypep->isRanged()) {
                 key += "[" + cvtToStr(dtypep->left()) + ":" + cvtToStr(dtypep->right()) + "]";
             }
@@ -899,7 +899,7 @@ class ParamProcessor final {
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (VN_IS(srcModpr, Class) && varp->isParam() && !varp->valuep()) {
                     nodep->v3error("Class parameter without initial value is never given value"
-                                   << " (IEEE 1800-2017 6.20.1): " << varp->prettyNameQ());
+                                   << " (IEEE 1800-2023 6.20.1): " << varp->prettyNameQ());
                 }
             }
         }
@@ -1164,7 +1164,7 @@ class ParamVisitor final : public VNVisitor {
         if (nodep->isParam()) {
             if (!nodep->valuep() && !VN_IS(m_modp, Class)) {
                 nodep->v3error("Parameter without initial value is never given value"
-                               << " (IEEE 1800-2017 6.20.1): " << nodep->prettyNameQ());
+                               << " (IEEE 1800-2023 6.20.1): " << nodep->prettyNameQ());
             } else {
                 V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
             }

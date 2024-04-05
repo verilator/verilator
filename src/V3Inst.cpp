@@ -521,13 +521,14 @@ public:
         }
         const AstVarRef* const connectRefp = VN_CAST(pinp->exprp(), VarRef);
         const AstVarXRef* const connectXRefp = VN_CAST(pinp->exprp(), VarXRef);
-        const AstBasicDType* const pinBasicp
-            = VN_CAST(pinVarp->dtypep(), BasicDType);  // Maybe nullptr
-        const AstBasicDType* connBasicp = nullptr;
+        const AstNodeDType* const pinDTypep = pinVarp->dtypep()->skipRefp();
+        const AstBasicDType* const pinBasicp = VN_CAST(pinDTypep, BasicDType);
+        const AstNodeDType* const connDTypep
+            = connectRefp ? connectRefp->varp()->dtypep()->skipRefp() : nullptr;
+        const AstBasicDType* const connBasicp = VN_CAST(connDTypep, BasicDType);
         AstAssignW* assignp = nullptr;
-        if (connectRefp) connBasicp = VN_CAST(connectRefp->varp()->dtypep(), BasicDType);
         //
-        if (!alwaysCvt && connectRefp && connectRefp->varp()->dtypep()->sameTree(pinVarp->dtypep())
+        if (!alwaysCvt && connectRefp && connDTypep->sameTree(pinDTypep)
             && !connectRefp->varp()->isSc()) {  // Need the signal as a 'shell' to convert types
             // Done. Same data type
         } else if (!alwaysCvt && connectRefp && connectRefp->varp()->isIfaceRef()) {

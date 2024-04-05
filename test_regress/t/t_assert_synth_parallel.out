@@ -1,6 +1,6 @@
 [0] -Info: t_assert_synth.v:115: top.t.test_info: Start of $info test
 [0] -Info: t_assert_synth.v:116: top.t.test_info: Middle of $info test
 [0] -Info: t_assert_synth.v:117: top.t.test_info: End of $info test
-[40] %Error: t_assert_synth.v:50: Assertion failed in top.t: synthesis parallel_case, but multiple matches found
+[40] %Error: t_assert_synth.v:50: Assertion failed in top.t: synthesis full_case parallel_case, but multiple matches found for '1'h1'
 %Error: t/t_assert_synth.v:50: Verilog $stop
 Aborting...

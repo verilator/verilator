@@ -11,16 +11,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 top_filename("t/t_inst_tree.v");
-my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
+my $out_filename = "$Self->{obj_dir}/V$Self->{name}.tree.json";
 
 compile(
-    v_flags2 => ["-fno-dfg-post-inline", "$Self->{t_dir}/t_inst_tree_inl1_pub0.vlt"],
+    v_flags2 => ["--no-json-edit-nums", "-fno-dfg-post-inline", "$Self->{t_dir}/t_inst_tree_inl1_pub0.vlt"],
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<var loc="f,70,.*?" name="t.u.u0.u0.z1" dtype_id="\d+" vartype="logic" origName="z1"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="f,70,.*?" name="t.u.u0.u1.z1" dtype_id="\d+" vartype="logic" origName="z1"\/\>/i);
-    file_grep("$out_filename", qr/\<var loc="f,70,.*?" name="t.u.u1.u0.z0" dtype_id="\d+" vartype="logic" origName="z0"\/\>/i);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"t.u.u0.u0.z1",.*"loc":"f,70:[^"]*",.*"origName":"z1",.*"dtypeName":"logic"/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"t.u.u0.u1.z1",.*"loc":"f,70:[^"]*",.*"origName":"z1",.*"dtypeName":"logic"/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"t.u.u1.u0.z0",.*"loc":"f,70:[^"]*",.*"origName":"z0",.*"dtypeName":"logic"/);
 }
 
 execute(

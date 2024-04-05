@@ -41,7 +41,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class ReloopVisitor final : public VNVisitor {
     // NODE STATE
-    // AstCFunc::user1p      -> Var* for temp var, 0=not set yet
+    // AstCFunc::user1p      -> Var number temp var, 0=not set yet
     const VNUser1InUse m_inuser1;
 
     // STATE
@@ -63,18 +63,11 @@ class ReloopVisitor final : public VNVisitor {
 
     // METHODS
 
-    static AstVar* findCreateVarTemp(FileLine* fl, AstCFunc* cfuncp) {
-        AstVar* varp = VN_AS(cfuncp->user1p(), Var);
-        if (!varp) {
-            const string newvarname{"__Vilp"};
-            varp = new AstVar{fl, VVarType::STMTTEMP, newvarname, VFlagLogicPacked{}, 32};
-            UASSERT_OBJ(cfuncp, fl, "Assignment not under a function");
-            if (cfuncp->initsp())
-                cfuncp->initsp()->addNextHere(varp);
-            else
-                cfuncp->addInitsp(varp);
-            cfuncp->user1p(varp);
-        }
+    static AstVar* createVarTemp(FileLine* fl, AstCFunc* cfuncp) {
+        UASSERT_OBJ(cfuncp, fl, "Assignment not under a function");
+        const string newvarname{"__Vilp" + std::to_string(cfuncp->user1Inc() + 1)};
+        AstVar* const varp
+            = new AstVar{fl, VVarType::STMTTEMP, newvarname, VFlagLogicPacked{}, 32};
         return varp;
     }
     void mergeEnd() {
@@ -93,7 +86,7 @@ class ReloopVisitor final : public VNVisitor {
                 AstNodeAssign* const bodyp = m_mgAssignps.front();
                 UASSERT_OBJ(bodyp->lhsp() == m_mgSelLp, bodyp, "Corrupt queue/state");
                 FileLine* const fl = bodyp->fileline();
-                AstVar* const itp = findCreateVarTemp(fl, m_mgCfuncp);
+                AstVar* const itp = createVarTemp(fl, m_mgCfuncp);
 
                 if (m_mgOffset > 0) {
                     UASSERT_OBJ(m_mgIndexLo >= m_mgOffset, bodyp,
@@ -111,7 +104,8 @@ class ReloopVisitor final : public VNVisitor {
                     new AstAdd{fl, new AstConst{fl, 1}, new AstVarRef{fl, itp, VAccess::READ}}};
                 AstWhile* const whilep = new AstWhile{fl, condp, nullptr, incp};
                 initp->addNext(whilep);
-                bodyp->replaceWith(initp);
+                itp->AstNode::addNext(initp);
+                bodyp->replaceWith(itp);
                 whilep->addStmtsp(bodyp);
 
                 // Replace constant index with new loop index

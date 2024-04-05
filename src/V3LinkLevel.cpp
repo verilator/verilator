@@ -117,7 +117,7 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
                 && nodep->timescaleMatters()) {
                 nodep->v3warn(TIMESCALEMOD,
                               "Timescale missing on this module as other modules have "
-                              "it (IEEE 1800-2017 3.14.2.3)\n"
+                              "it (IEEE 1800-2023 3.14.2.3)\n"
                                   << nodep->warnContextPrimary() << '\n'
                                   << modTimedp->warnOther()
                                   << "... Location of module with timescale\n"
@@ -277,7 +277,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                         varp->trace(false);
                     }
 
-                    if (v3Global.opt.noTraceTop() && varp->isIO()) { varp->trace(false); }
+                    if (v3Global.opt.noTraceTop() && varp->isIO()) varp->trace(false);
 
                     AstPin* const pinp = new AstPin{
                         oldvarp->fileline(), 0, varp->name(),

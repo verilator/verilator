@@ -1,4 +1,4 @@
--Info: t/t_assert_comp_bad.v:10:7: Elaboration system task message (IEEE 1800-2017 20.11)
+-Info: t/t_assert_comp_bad.v:10:7: Elaboration system task message (IEEE 1800-2023 20.11)
                                  : ... note: In instance 't'
    10 |       $info;
       |       ^~~~~
@@ -6,7 +6,7 @@
                                  : ... note: In instance 't'
    11 |       $info("User elaboration-time info");
       |       ^~~~~
-%Warning-USERWARN: t/t_assert_comp_bad.v:12:7: Elaboration system task message (IEEE 1800-2017 20.11)
+%Warning-USERWARN: t/t_assert_comp_bad.v:12:7: Elaboration system task message (IEEE 1800-2023 20.11)
                                              : ... note: In instance 't'
    12 |       $warning;
       |       ^~~~~~~~
@@ -20,7 +20,7 @@
                                              : ... note: In instance 't'
    14 |       $warning(1);   
       |       ^~~~~~~~
-%Warning-USERERROR: t/t_assert_comp_bad.v:15:7: Elaboration system task message (IEEE 1800-2017 20.11)
+%Warning-USERERROR: t/t_assert_comp_bad.v:15:7: Elaboration system task message (IEEE 1800-2023 20.11)
                                               : ... note: In instance 't'
    15 |       $error;
       |       ^~~~~~

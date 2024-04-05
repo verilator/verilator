@@ -544,7 +544,7 @@ string VName::dehash(const string& in) {
 
         if (next_dot_pos != string::npos) {
             // Is there a __DOT__ to add to the dehashed version of 'in'?
-            if (!dehashed.empty()) { dehashed += "__DOT__"; }
+            if (!dehashed.empty()) dehashed += "__DOT__";
             last_dot_pos = next_dot_pos + DOT_LEN;
         } else {
             last_dot_pos = string::npos;
@@ -563,8 +563,13 @@ string VName::hashedName() {
         VHashSha256 hash{m_name};
         const string suffix = "__Vhsh" + hash.digestSymbol();
         if (s_minLength < s_maxLength) {
-            s_dehashMap[suffix] = m_name.substr(s_minLength);
-            m_hashed = m_name.substr(0, s_minLength) + suffix;
+            // Keep a prefix from the original name
+            // Backup over digits so adding __Vhash doesn't look like a encoded hex digit
+            // ("__0__Vhsh")
+            size_t prefLength = s_minLength;
+            while (prefLength >= 1 && m_name[prefLength - 1] != '_') --prefLength;
+            s_dehashMap[suffix] = m_name.substr(prefLength);
+            m_hashed = m_name.substr(0, prefLength) + suffix;
         } else {
             s_dehashMap[suffix] = m_name;
             m_hashed = suffix;

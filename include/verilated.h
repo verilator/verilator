@@ -101,6 +101,7 @@ class VerilatedScope;
 class VerilatedScopeNameMap;
 template <class, class>
 class VerilatedTrace;
+class VerilatedTraceBaseC;
 class VerilatedTraceConfig;
 class VerilatedVar;
 class VerilatedVarNameMap;
@@ -347,6 +348,10 @@ class VerilatedContext VL_NOT_FINAL {
     friend class VerilatedContextImp;
 
 protected:
+    // TYPES
+    using traceBaseModelCb_t
+        = std::function<void(VerilatedTraceBaseC*, int, int)>;  // Type of traceBaseModel callbacks
+
     // MEMBERS
     // Slow path variables
     mutable VerilatedMutex m_mutex;  // Mutex for most s_s/s_ns members
@@ -354,13 +359,14 @@ protected:
     struct Serialized final {  // All these members serialized/deserialized
         // No std::strings or pointers or will serialize badly!
         // Fast path
+        uint64_t m_time = 0;  // Current $time (unscaled), 0=at zero, or legacy
         bool m_assertOn = true;  // Assertions are enabled
         bool m_calcUnusedSigs = false;  // Waves file on, need all signals calculated
         bool m_fatalOnError = true;  // Fatal on $stop/non-fatal error
         bool m_fatalOnVpiError = true;  // Fatal on vpi error/unsupported
         bool m_gotError = false;  // A $finish statement executed
         bool m_gotFinish = false;  // A $finish or $stop statement executed
-        uint64_t m_time = 0;  // Current $time (unscaled), 0=at zero, or legacy
+        bool m_quiet = false;  // Quiet, no summary report
         // Slow path
         int8_t m_timeunit;  // Time unit as 0..15
         int8_t m_timeprecision;  // Time precision as 0..15
@@ -390,6 +396,9 @@ protected:
         std::string m_coverageFilename;  // +coverage+file filename
         std::string m_profExecFilename;  // +prof+exec+file filename
         std::string m_profVltFilename;  // +prof+vlt filename
+        VlOs::DeltaCpuTime m_cpuTimeStart{false};  // CPU time, starts when create first model
+        VlOs::DeltaWallTime m_wallTimeStart{false};  // Wall time, starts when create first model
+        std::vector<traceBaseModelCb_t> m_traceBaseModelCbs;  // Callbacks to traceRegisterModel
     } m_ns;
 
     mutable VerilatedMutex m_argMutex;  // Protect m_argVec, m_argVecLoaded
@@ -405,6 +414,8 @@ protected:
     const std::unique_ptr<VerilatedContextImpData> m_impdatap;
     // Number of threads to use for simulation (size of m_threadPool + 1 for main thread)
     unsigned m_threads = std::thread::hardware_concurrency();
+    // Number of threads in added models
+    unsigned m_threadsInModels = 0;
     // The thread pool shared by all models added to this context
     std::unique_ptr<VerilatedVirtualBase> m_threadPool;
     // The execution profiler shared by all models added to this context
@@ -489,6 +500,10 @@ public:
     void gotFinish(bool flag) VL_MT_SAFE;
     /// Return if got a $finish or $stop/error
     bool gotFinish() const VL_MT_SAFE { return m_s.m_gotFinish; }
+    /// Enable quiet (also prevents need for OS calls to get CPU time)
+    void quiet(bool flag) VL_MT_SAFE;
+    /// Return if quiet enabled
+    bool quiet() const VL_MT_SAFE { return m_s.m_quiet; }
     /// Select initial value of otherwise uninitialized signals.
     /// 0 = Set to zeros
     /// 1 = Set all bits to one
@@ -500,6 +515,13 @@ public:
     void randSeed(int val) VL_MT_SAFE;
     /// Set default random seed, 0 = seed it automatically
     int randSeed() const VL_MT_SAFE { return m_s.m_randSeed; }
+
+    /// Return statistic: CPU time delta from model created until now
+    double statCpuTimeSinceStart() const VL_MT_SAFE_EXCLUDES(m_mutex);
+    /// Return statistic: Wall time delta from model created until now
+    double statWallTimeSinceStart() const VL_MT_SAFE_EXCLUDES(m_mutex);
+    /// Print statistics summary (if not quiet)
+    void statsPrintSummary() VL_MT_UNSAFE;
 
     // Time handling
     /// Returns current simulation time in units of timeprecision().
@@ -544,10 +566,14 @@ public:
 
     /// Get number of threads used for simulation (including the main thread)
     unsigned threads() const { return m_threads; }
+    /// Get number of threads in added models (for statistical use only)
+    unsigned threadsInModels() const { return m_threadsInModels; }
     /// Set number of threads used for simulation (including the main thread)
     /// Can only be called before the thread pool is created (before first model is added).
     void threads(unsigned n);
 
+    /// Trace signals in models within the context; called by application code
+    void trace(VerilatedTraceBaseC* tfp, int levels, int options = 0);
     /// Allow traces to at some point be enabled (disables some optimizations)
     void traceEverOn(bool flag) VL_MT_SAFE {
         if (flag) calcUnusedSigs(true);
@@ -571,8 +597,8 @@ public:
         return reinterpret_cast<const VerilatedContextImp*>(this);
     }
 
+    // Internal: Model and thread setup
     void addModel(VerilatedModel*);
-
     VerilatedVirtualBase* threadPoolp();
     void prepareClone();
     VerilatedVirtualBase* threadPoolpOnClone();
@@ -605,6 +631,9 @@ public:
     // Internal: Serialization setup
     static constexpr size_t serialized1Size() VL_PURE { return sizeof(m_s); }
     void* serialized1Ptr() VL_MT_UNSAFE { return &m_s; }
+
+    // Internal: trace registration
+    void traceBaseModelCbAdd(traceBaseModelCb_t cb) VL_MT_SAFE;
 
     // Internal: Check magic number
     static void checkMagic(const VerilatedContext* contextp);

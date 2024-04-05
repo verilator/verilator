@@ -4,7 +4,8 @@
 // any use, without warranty, 2015 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-`define checkhw(gotv,w,expv) do if (gotv[(w)*32+:$bits(expv)] !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv[(w)*32+:32]), (expv)); $stop; end while(0);
+`define stop $stop
+`define checkhw(gotv,w,expv) do if (gotv[(w)*32+:$bits(expv)] !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv[(w)*32+:32]), (expv)); `stop; end while(0);
 
 module t (/*AUTOARG*/
    // Inputs

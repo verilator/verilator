@@ -139,7 +139,8 @@ class SenExprBuilder final {
                 return prevp;
             }
 
-            if (AstUnpackArrayDType* const dtypep = VN_CAST(exprp->dtypep(), UnpackArrayDType)) {
+            if (AstUnpackArrayDType* const dtypep
+                = VN_CAST(exprp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 AstCMethodHard* const cmhp = new AstCMethodHard{flp, wrPrev(), "assign", rdCurr()};
                 cmhp->dtypeSetVoid();
                 m_postUpdates.push_back(cmhp->makeStmt());
@@ -163,11 +164,9 @@ class SenExprBuilder final {
 
         // All event signals should be 1-bit at this point
         switch (senItemp->edgeType()) {
-        case VEdgeType::ET_ILLEGAL:
-            return {nullptr, false};  // We already warn for this in V3LinkResolve
         case VEdgeType::ET_CHANGED:
         case VEdgeType::ET_HYBRID:  //
-            if (VN_IS(senp->dtypep(), UnpackArrayDType)) {
+            if (VN_IS(senp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 AstCMethodHard* const resultp = new AstCMethodHard{flp, currp(), "neq", prevp()};
                 resultp->dtypeSetBit();
                 return {resultp, true};

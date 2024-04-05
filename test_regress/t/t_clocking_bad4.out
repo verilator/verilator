@@ -1,4 +1,4 @@
-%Error: t/t_clocking_bad4.v:23:15: Skew must be constant (IEEE 1800-2017 14.4)
+%Error: t/t_clocking_bad4.v:23:15: Skew must be constant (IEEE 1800-2023 14.4)
                                  : ... note: In instance 't'
    23 |        input #cyc in;
       |               ^~~
@@ -6,39 +6,39 @@
                                  : ... note: In instance 't'
    24 |        input #(-1) out;
       |                ^
-%Error: t/t_clocking_bad4.v:31:11: Usage of cycle delays requires default clocking (IEEE 1800-2017 14.11)
+%Error: t/t_clocking_bad4.v:31:11: Usage of cycle delays requires default clocking (IEEE 1800-2023 14.11)
                                  : ... note: In instance 't'
    31 |    always ##1;
       |           ^~
-%Error: t/t_clocking_bad4.v:32:15: Only non-blocking assignments can write to clockvars (IEEE 1800-2017 14.16)
+%Error: t/t_clocking_bad4.v:32:15: Only non-blocking assignments can write to clockvars (IEEE 1800-2023 14.16)
                                  : ... note: In instance 't'
    32 |    always cb1.out = clk;
       |               ^~~
-%Error: t/t_clocking_bad4.v:33:15: Only non-blocking assignments can write to clockvars (IEEE 1800-2017 14.16)
+%Error: t/t_clocking_bad4.v:33:15: Only non-blocking assignments can write to clockvars (IEEE 1800-2023 14.16)
                                  : ... note: In instance 't'
    33 |    assign cb1.out = clk;
       |               ^~~
-%Error: t/t_clocking_bad4.v:34:21: Only non-blocking assignments can write to clockvars (IEEE 1800-2017 14.16)
+%Error: t/t_clocking_bad4.v:34:21: Only non-blocking assignments can write to clockvars (IEEE 1800-2023 14.16)
                                  : ... note: In instance 't'
    34 |    always write(cb1.out);
       |                     ^~~
-%Error: t/t_clocking_bad4.v:35:22: Event controls cannot be used in synchronous drives (IEEE 1800-2017 14.16)
+%Error: t/t_clocking_bad4.v:35:22: Event controls cannot be used in synchronous drives (IEEE 1800-2023 14.16)
                                  : ... note: In instance 't'
    35 |    always cb1.out <= @(posedge clk) 1;
       |                      ^
-%Error: t/t_clocking_bad4.v:36:22: Only cycle delays can be used in synchronous drives (IEEE 1800-2017 14.16)
+%Error: t/t_clocking_bad4.v:36:22: Only cycle delays can be used in synchronous drives (IEEE 1800-2023 14.16)
                                  : ... note: In instance 't'
    36 |    always cb1.out <= #1 1;
       |                      ^
-%Error: t/t_clocking_bad4.v:37:18: Cycle delays not allowed as intra-assignment delays (IEEE 1800-2017 14.11)
+%Error: t/t_clocking_bad4.v:37:18: Cycle delays not allowed as intra-assignment delays (IEEE 1800-2023 14.11)
                                  : ... note: In instance 't'
    37 |    always out <= ##1 1;
       |                  ^~
-%Error: t/t_clocking_bad4.v:40:12: Cannot write to input clockvar (IEEE 1800-2017 14.3)
+%Error: t/t_clocking_bad4.v:40:12: Cannot write to input clockvar (IEEE 1800-2023 14.3)
                                  : ... note: In instance 't'
    40 |        cb1.in = 1;
       |            ^~
-%Error: t/t_clocking_bad4.v:41:21: Cannot read from output clockvar (IEEE 1800-2017 14.3)
+%Error: t/t_clocking_bad4.v:41:21: Cannot read from output clockvar (IEEE 1800-2023 14.3)
                                  : ... note: In instance 't'
    41 |        $display(cb1.out);
       |                     ^~~

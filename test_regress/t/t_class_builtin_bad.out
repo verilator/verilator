@@ -1,8 +1,8 @@
-%Error: t/t_class_builtin_bad.v:8:17: The 'rand_mode' method is built-in and cannot be overridden (IEEE 1800-2017 18.8)
+%Error: t/t_class_builtin_bad.v:8:17: The 'rand_mode' method is built-in and cannot be overridden (IEEE 1800-2023 18.8)
                                     : ... note: In instance 't'
     8 |    function int rand_mode(bit onoff);
       |                 ^~~~~~~~~
-%Error: t/t_class_builtin_bad.v:11:17: The 'constraint_mode' method is built-in and cannot be overridden (IEEE 1800-2017 18.9)
+%Error: t/t_class_builtin_bad.v:11:17: The 'constraint_mode' method is built-in and cannot be overridden (IEEE 1800-2023 18.9)
                                      : ... note: In instance 't'
    11 |    function int constraint_mode(bit onoff);
       |                 ^~~~~~~~~~~~~~~

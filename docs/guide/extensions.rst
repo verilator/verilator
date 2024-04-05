@@ -36,8 +36,7 @@ or "`ifdef`"'s may break other tools.
 .. option:: """ [string] """
 
    A triple-quoted block specifies a string that may include newlines and
-   single quotes.  This extension is experimental and may be removed
-   without deprecation.
+   single quotes.  This extension was standardized in IEEE 1800-2023.
 
 .. option:: $c([string], ...);
 
@@ -577,6 +576,10 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: /*verilator&32;trace_init_task*/
 
+   Removed.
+
+   In versions before 5.024:
+
    Attached to a DPI import to indicate that function should be called when
    initializing tracing. This attribute is indented only to be used
    internally in code that Verilator generates when :vlopt:`--lib-create`
@@ -619,4 +622,4 @@ or "`ifdef`"'s may break other tools.
    symbols.  Also, the data represents the C++ stack; the SystemVerilog
    functions/tasks involved may be renamed and/or inlined before becoming
    the C++ functions that may be visible in the stack trace.  This
-   extension is experimental and may be removed without deprecation.
+   extension was standardized in IEEE 1800-2023.

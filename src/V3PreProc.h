@@ -99,6 +99,7 @@ protected:
 public:
     static V3PreProc* createPreProc(FileLine* fl) VL_MT_DISABLED;
     virtual ~V3PreProc() = default;  // LCOV_EXCL_LINE  // Persistent
+    static void selfTest() VL_MT_DISABLED;
 };
 
 #endif  // Guard

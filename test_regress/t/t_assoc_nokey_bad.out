@@ -1,0 +1,9 @@
+%Error: t/t_assoc_nokey_bad.v:12:28: Missing pattern key (need an expression then a ':')
+                                   : ... note: In instance 't'
+   12 |       int dict[string] = '{1, 2};
+      |                            ^
+%Error: t/t_assoc_nokey_bad.v:12:31: Missing pattern key (need an expression then a ':')
+                                   : ... note: In instance 't'
+   12 |       int dict[string] = '{1, 2};
+      |                               ^
+%Error: Exiting due to

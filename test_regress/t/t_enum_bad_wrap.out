@@ -1,4 +1,4 @@
-%Error: t/t_enum_bad_wrap.v:11:19: Enum value illegally wrapped around (IEEE 1800-2017 6.19)
+%Error: t/t_enum_bad_wrap.v:11:19: Enum value illegally wrapped around (IEEE 1800-2023 6.19)
                                  : ... note: In instance 't'
    11 |                   WRAPPED
       |                   ^~~~~~~

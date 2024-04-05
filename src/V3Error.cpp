@@ -193,7 +193,7 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
                           << endl;
             }
         }
-        if (!msg_additional.empty()) { std::cerr << msg_additional; }
+        if (!msg_additional.empty()) std::cerr << msg_additional;
         // If first warning is not the user's fault (internal/unsupported) then give the website
         // Not later warnings, as a internal may be caused by an earlier problem
         if (tellManual() == 0) {
@@ -221,11 +221,15 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
                     tellManual(2);
                 }
 #ifndef V3ERROR_NO_GLOBAL_
-                if (dumpTreeLevel() || debug()) {
+                if (dumpTreeLevel() || dumpTreeJsonLevel() || debug()) {
                     V3Broken::allowMidvisitorCheck(true);
                     const V3ThreadPool::ScopedExclusiveAccess exclusiveAccess;
                     if (dumpTreeLevel()) {
                         v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("final.tree", 990));
+                    }
+                    if (dumpTreeJsonLevel()) {
+                        v3Global.rootp()->dumpTreeJsonFile(
+                            v3Global.debugFilename("final.tree.json", 990));
                     }
                     if (debug()) {
                         execErrorExitCb();

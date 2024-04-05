@@ -22,11 +22,13 @@
 
 #include "V3ThreadSafety.h"
 
+class AstNetlist;
+
 //============================================================================
 
 class V3VariableOrder final {
 public:
-    static void orderAll() VL_MT_DISABLED;
+    static void orderAll(AstNetlist*) VL_MT_DISABLED;
 };
 
 #endif  // Guard

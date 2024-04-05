@@ -12,6 +12,8 @@ BEGIN {
     }
     $ENV{MAKE} ||= "make";
     $ENV{CXX} ||= "c++";
+    !defined $ENV{TEST_REGRESS} or die "TEST_REGRESS environment variable is already set";
+    $ENV{TEST_REGRESS} = Cwd::getcwd();
 }
 
 use Getopt::Long;
@@ -52,6 +54,7 @@ our %All_Scenarios
        ms    => ["linter", "simulator", "simulator_st", "ms"],
        nc    => ["linter", "simulator", "simulator_st", "nc"],
        vcs   => ["linter", "simulator", "simulator_st", "vcs"],
+       xrun  => ["linter", "simulator", "simulator_st", "xrun"],
        xsim  => ["linter", "simulator", "simulator_st", "xsim"],
        vlt   => ["linter", "simulator", "simulator_st", "vlt_all", "vlt"],
        vltmt => [          "simulator",                 "vlt_all", "vltmt"],
@@ -70,6 +73,7 @@ our $Vltmt_threads = 3;
 
 $Debug = 0;
 my $opt_benchmark;
+our $Opt_Fail_Max = 20;
 my @opt_tests;
 my $opt_dist;
 my $opt_gdb;
@@ -96,6 +100,7 @@ if (! GetOptions(
           "benchmark:i" => sub { $opt_benchmark = $_[1] ? $_[1] : 1; },
           "debug"       => \&debug,
           #debugi          see parameter()
+          "fail-max=i"  => \$Opt_Fail_Max,
           "gdb!"        => \$opt_gdb,
           "gdbbt!"      => \$opt_gdbbt,
           "gdbsim!"     => \$opt_gdbsim,
@@ -125,6 +130,7 @@ if (! GetOptions(
           "vlt!"        => sub { $opt_scenarios{vlt} = $_[1]; },
           "vltmt!"      => sub { $opt_scenarios{vltmt} = $_[1]; },
           "vcs!"        => sub { $opt_scenarios{vcs} = $_[1]; },
+          "xrun!"       => sub { $opt_scenarios{xrun} = $_[1]; },
           "xsim!"       => sub { $opt_scenarios{xsim} = $_[1]; },
           "<>"          => \&parameter,
     )) {
@@ -278,8 +284,8 @@ sub calc_threads {
 sub calc_jobs {
     my $ok = max_procs();
     $ok && !$@ or die "%Error: Can't use -j: $@\n";
-    print "driver.pl: Found $ok cores, using -j ", $ok + 1, "\n";
-    return $ok + 1;
+    print "driver.pl: Found $ok cores, using -j ", $ok, "\n";
+    return $ok;
 }
 
 sub _calc_hashset {
@@ -381,6 +387,11 @@ sub one_test {
              # Make an identifier that is unique across all current running jobs
              my $i = 1; while (exists $self->{running_ids}{$i}) { ++$i; }
              $process->{running_id} = $i;
+             if ($::Opt_Fail_Max && $::Opt_Fail_Max <= $self->fail_count) {
+                 print STDERR "== Too many test failures; exceeded --fail-max\n"
+                     if !$self->{_msg_fail_max_skip}++;
+                 $process->{fail_max_skip} = 1;
+             }
              $self->{running_ids}{$process->{running_id}} = 1;
          },
          run_on_start => sub {
@@ -394,13 +405,15 @@ sub one_test {
              my $test = VTest->new(@params,
                                    running_id => $process->{running_id});
              $test->oprint("=" x 50, "\n");
-             unlink $test->{status_filename} if !$params{rerun_skipping};
              $test->_prep;
              if ($params{rerun_skipping}) {
                  print "  ---------- Earlier logfiles below; test was rerunnable = 0\n";
                  system("cat $test->{obj_dir}/*.log");
                  print "  ---------- Earlier logfiles above; test was rerunnable = 0\n";
+             } elsif ($process->{fail_max_skip}) {
+                 $test->skip("Too many test failures; exceeded --fail-max");
              } else {
+                 unlink $test->{status_filename};
                  $test->_read;
              }
              # Don't put anything other than _exit after _read,
@@ -488,7 +501,7 @@ sub report {
     my $sum = ($self->{fail_cnt} && "FAILED"
                || $self->{skip_cnt} && "PASSED w/SKIPS"
                || "PASSED");
-    $fh->print("TESTS DONE, $sum: " . $self->sprint_summary . "\n");
+    $fh->print("==TESTS DONE, $sum: " . $self->sprint_summary . "\n");
 }
 
 sub print_summary {
@@ -589,6 +602,7 @@ sub new {
     $self->{scenario} ||= "nc" if $self->{nc};
     $self->{scenario} ||= "ms" if $self->{ms};
     $self->{scenario} ||= "iv" if $self->{iv};
+    $self->{scenario} ||= "xrun" if $self->{xrun};
     $self->{scenario} ||= "xsim" if $self->{xsim};
 
     foreach my $dir (@::Test_Dirs) {
@@ -690,6 +704,12 @@ sub new {
         ms_flags2 => [],  # Overridden in some sim files
         ms_pli => 1,  # need to use pli
         ms_run_flags => [split(/\s+/, "-lib $self->{obj_dir}/work -c -do 'run -all;quit' ")],
+        # Xcelium (xrun)
+        xrun => 0,
+        xrun_define => 'XRUN',
+        xrun_flags => [], # doesn't really have a compile step
+        xrun_flags2 => [],  # Overridden in some sim files
+        xrun_run_flags => [split(/\s+/, "-64 -access +rwc -newsv -sv -xmlibdirname $self->{obj_dir}/work -l $self->{obj_dir}/history -quiet -plinowarn ")],
         # XSim
         xsim => 0,
         xsim_define => 'XSIM',
@@ -1151,6 +1171,10 @@ sub compile {
                     fails=>$param{fails},
                     cmd=>\@cmd);
     }
+    elsif ($param{xrun}) {
+        $param{tool_define} ||= $param{xrun_define};
+        $self->_make_top() if $param{make_top_shell};
+    }
     elsif ($param{xsim}) {
         $param{tool_define} ||= $param{xsim_define};
         $self->_make_top() if $param{make_top_shell};
@@ -1262,6 +1286,10 @@ sub compile {
     }
 
     if ($param{make_pli}) {
+        # if make_pli is a string and not one
+        if ($param{make_pli} ne "1") {
+            $self->{pli_filename} = $param{make_pli};
+        }
         $self->oprint("Compile vpi\n") if $self->{verbose};
         my @cmd = ($ENV{CXX}, @{$param{pli_flags}},
                    "-D" . $param{tool_define},
@@ -1372,6 +1400,25 @@ sub execute {
                     %param,
                     expect=>$param{vcs_run_expect},  # non-verilator expect isn't the same
                     expect_filename=>$param{vcs_run_expect_filename},
+                    );
+    }
+    elsif ($param{xrun}) {
+        my @pli_opt = ();
+        if ($param{use_libvpi}) {
+            unshift @pli_opt, "-loadvpi $self->{obj_dir}/libvpi.so:vpi_compat_bootstrap";
+        }
+        $self->_run(logfile=>"$self->{obj_dir}/xrun_sim.log",
+                    fails=>$param{fails},
+                    cmd=>["echo q | " . $run_env . ($ENV{VERILATOR_XRUN} || "xrun "),
+                          @{$param{xrun_run_flags}},
+                          @{$param{xrun_flags2}},
+                          @{$param{all_run_flags}},
+                          @{pli_opt},
+                            $param{top_filename},
+                          ],
+                    %param,
+                    expect=>$param{xrun_run_expect},  # non-verilator expect isn't the same
+                    expect_filename=>$param{xrun_run_expect_filename},
                     );
     }
     elsif ($param{xsim}) {
@@ -2452,7 +2499,7 @@ sub _vcd_read {
 our $_Cxx_Version;
 
 sub cxx_version {
-    $_Cxx_Version ||= `$ENV{MAKE} -C $ENV{VERILATOR_ROOT}/test_regress -f Makefile print-cxx-version`;
+    $_Cxx_Version ||= `$ENV{MAKE} -C $ENV{TEST_REGRESS} -f Makefile print-cxx-version`;
     return $_Cxx_Version;
 }
 
@@ -2527,6 +2574,7 @@ sub file_grep {
     } elsif (defined($expvalue) && $expvalue ne $1) {
         $self->error("File_grep: $filename: Got='$1' Expected='$expvalue' in regexp: $regexp\n");
     }
+    return @{^CAPTURE};
 }
 
 sub file_grep_count {

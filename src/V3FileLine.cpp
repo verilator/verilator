@@ -88,6 +88,21 @@ void FileLineSingleton::fileNameNumMapDumpXml(std::ostream& os) {
     os << "</files>\n";
 }
 
+void FileLineSingleton::fileNameNumMapDumpJson(std::ostream& os) {
+    std::string sep = "\n  ";
+    os << "\"files\": {";
+    for (const auto& itr : m_namemap) {
+        const std::string name
+            = itr.first == V3Options::getStdPackagePath() ? "<verilated_std>" : itr.first;
+        os << sep << '"' << filenameLetters(itr.second) << '"' << ": {\"filename\":\"" << name
+           << '"' << ", \"realpath\":\""
+           << V3OutFormatter::quoteNameControls(V3Os::filenameRealPath(itr.first)) << '"'
+           << ", \"language\":\"" << numberToLang(itr.second).ascii() << "\"}";
+        sep = ",\n  ";
+    }
+    os << "\n }";
+}
+
 FileLineSingleton::msgEnSetIdx_t FileLineSingleton::addMsgEnBitSet(const MsgEnBitSet& bitSet)
     VL_MT_SAFE_EXCLUDES(m_mutex) {
     V3LockGuard lock{m_mutex};
@@ -350,6 +365,7 @@ bool FileLine::warnOff(const string& msg, bool flag) {
     // Backward compatibility with msg="UNUSED"
     if (V3ErrorCode::unusedMsg(cmsg)) {
         warnOff(V3ErrorCode::UNUSEDGENVAR, flag);
+        warnOff(V3ErrorCode::UNUSEDLOOP, flag);
         warnOff(V3ErrorCode::UNUSEDPARAM, flag);
         warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
         return true;
@@ -379,6 +395,7 @@ void FileLine::warnStyleOff(bool flag) {
 
 void FileLine::warnUnusedOff(bool flag) {
     warnOff(V3ErrorCode::UNUSEDGENVAR, flag);
+    warnOff(V3ErrorCode::UNUSEDLOOP, flag);
     warnOff(V3ErrorCode::UNUSEDPARAM, flag);
     warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
 }
@@ -389,7 +406,7 @@ bool FileLine::warnIsOff(V3ErrorCode code) const {
     if ((code.lintError() || code.styleError()) && !msgEn().test(V3ErrorCode::I_LINT)) {
         return true;
     }
-    if ((code.unusedError()) && !msgEn().test(V3ErrorCode::I_UNUSED)) { return true; }
+    if ((code.unusedError()) && !msgEn().test(V3ErrorCode::I_UNUSED)) return true;
     return false;
 }
 

@@ -1,4 +1,4 @@
-%Error: t/t_param_noval_bad.v:7:22: Parameter without initial value is never given value (IEEE 1800-2017 6.20.1): 'P'
+%Error: t/t_param_noval_bad.v:7:22: Parameter without initial value is never given value (IEEE 1800-2023 6.20.1): 'P'
                                   : ... note: In instance 't'
     7 | module t #(parameter P);
       |                      ^

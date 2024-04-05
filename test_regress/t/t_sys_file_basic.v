@@ -4,13 +4,12 @@
 // any use, without warranty, 2003 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-`include "verilated.v"
-
 `define STRINGIFY(x) `"x`"
 `define ratio_error(a,b) (((a)>(b) ? ((a)-(b)) : ((b)-(a))) /(a))
-`define checkr(gotv,expv) do if (`ratio_error((gotv),(expv))>0.0001) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
-`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
-`define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+`define stop $stop
+`define checkr(gotv,expv) do if (`ratio_error((gotv),(expv))>0.0001) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
 module t;
    integer file;

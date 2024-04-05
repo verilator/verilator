@@ -148,6 +148,9 @@ module t (/*AUTOARG*/
       }
    endgroup
 
+   covergroup cg_more extends cg_empty;
+   endgroup
+
    always @(posedge clk) begin
       if (cyc == 10) begin
          $write("*-* All Finished *-*\n");

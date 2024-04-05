@@ -1,0 +1,307 @@
+t (vpiModule) t
+    vpiReg:
+    LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND (vpiReg) t.LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND
+    a (vpiReg) TOP.a
+    bus1 (vpiReg) t.bus1
+    clk (vpiReg) TOP.clk
+    count (vpiReg) t.count
+    do_generate (vpiParameter) t.do_generate
+        vpiConstType=vpiDecConst
+    fourthreetwoone (vpiMemory) t.fourthreetwoone
+        vpiMemoryWord:
+        fourthreetwoone (vpiMemoryWord) t.fourthreetwoone[3]
+        fourthreetwoone (vpiMemoryWord) t.fourthreetwoone[4]
+    half_count (vpiReg) t.half_count
+    long_int (vpiParameter) t.long_int
+        vpiConstType=vpiDecConst
+    onebit (vpiReg) t.onebit
+    quads (vpiMemory) t.quads
+        vpiMemoryWord:
+        quads (vpiMemoryWord) t.quads[3]
+        quads (vpiMemoryWord) t.quads[2]
+    real1 (vpiRealVar) t.real1
+    status (vpiReg) t.status
+    str1 (vpiStringVar) t.str1
+    text (vpiReg) t.text
+    text_byte (vpiReg) t.text_byte
+    text_half (vpiReg) t.text_half
+    text_long (vpiReg) t.text_long
+    text_word (vpiReg) t.text_word
+    twoone (vpiReg) t.twoone
+    x (vpiReg) TOP.x
+    vpiParameter:
+    do_generate (vpiParameter) t.do_generate
+        vpiConstType=vpiDecConst
+    long_int (vpiParameter) t.long_int
+        vpiConstType=vpiDecConst
+    vpiInternalScope:
+    arr[1] (vpiGenScope) t.arr[1]
+        vpiReg:
+        vpiParameter:
+        vpiInternalScope:
+        arr (vpiModule) t.arr[1].arr
+            vpiReg:
+            LENGTH (vpiParameter) t.arr[1].arr.LENGTH
+                vpiConstType=vpiDecConst
+            check (vpiReg) t.arr[1].arr.check
+            rfr (vpiReg) t.arr[1].arr.rfr
+            sig (vpiReg) t.arr[1].arr.sig
+            verbose (vpiReg) t.arr[1].arr.verbose
+            vpiParameter:
+            LENGTH (vpiParameter) t.arr[1].arr.LENGTH
+                vpiConstType=vpiDecConst
+    arr[2] (vpiGenScope) t.arr[2]
+        vpiReg:
+        vpiParameter:
+        vpiInternalScope:
+        arr (vpiModule) t.arr[2].arr
+            vpiReg:
+            LENGTH (vpiParameter) t.arr[2].arr.LENGTH
+                vpiConstType=vpiDecConst
+            check (vpiReg) t.arr[2].arr.check
+            rfr (vpiReg) t.arr[2].arr.rfr
+            sig (vpiReg) t.arr[2].arr.sig
+            verbose (vpiReg) t.arr[2].arr.verbose
+            vpiParameter:
+            LENGTH (vpiParameter) t.arr[2].arr.LENGTH
+                vpiConstType=vpiDecConst
+    cond_scope (vpiGenScope) t.cond_scope
+        vpiReg:
+        scoped_wire (vpiParameter) t.cond_scope.scoped_wire
+            vpiConstType=vpiDecConst
+        vpiParameter:
+        scoped_wire (vpiParameter) t.cond_scope.scoped_wire
+            vpiConstType=vpiDecConst
+        vpiInternalScope:
+        scoped_sub (vpiModule) t.cond_scope.scoped_sub
+            vpiReg:
+            subsig1 (vpiReg) t.cond_scope.scoped_sub.subsig1
+            subsig2 (vpiReg) t.cond_scope.scoped_sub.subsig2
+            vpiParameter:
+        sub_wrap_gen (vpiModule) t.cond_scope.sub_wrap_gen
+            vpiReg:
+            vpiParameter:
+            vpiInternalScope:
+            my_sub (vpiModule) t.cond_scope.sub_wrap_gen.my_sub
+                vpiReg:
+                subsig1 (vpiReg) t.cond_scope.sub_wrap_gen.my_sub.subsig1
+                subsig2 (vpiReg) t.cond_scope.sub_wrap_gen.my_sub.subsig2
+                vpiParameter:
+    intf_arr[0] (vpiModule) t.intf_arr[0]
+        vpiReg:
+        addr (vpiReg) t.intf_arr[0].addr
+        vpiParameter:
+    intf_arr[1] (vpiModule) t.intf_arr[1]
+        vpiReg:
+        addr (vpiReg) t.intf_arr[1].addr
+        vpiParameter:
+    outer_scope[1] (vpiGenScope) t.outer_scope[1]
+        vpiReg:
+        scoped_param (vpiParameter) t.outer_scope[1].scoped_param
+            vpiConstType=vpiDecConst
+        vpiParameter:
+        scoped_param (vpiParameter) t.outer_scope[1].scoped_param
+            vpiConstType=vpiDecConst
+        vpiInternalScope:
+        inner_scope[1] (vpiGenScope) t.outer_scope[1].inner_scope[1]
+            vpiReg:
+            scoped_param_inner (vpiParameter) t.outer_scope[1].inner_scope[1].scoped_param_inner
+                vpiConstType=vpiDecConst
+            vpiParameter:
+            scoped_param_inner (vpiParameter) t.outer_scope[1].inner_scope[1].scoped_param_inner
+                vpiConstType=vpiDecConst
+            vpiInternalScope:
+            arr (vpiModule) t.outer_scope[1].inner_scope[1].arr
+                vpiReg:
+                LENGTH (vpiParameter) t.outer_scope[1].inner_scope[1].arr.LENGTH
+                    vpiConstType=vpiDecConst
+                check (vpiReg) t.outer_scope[1].inner_scope[1].arr.check
+                rfr (vpiReg) t.outer_scope[1].inner_scope[1].arr.rfr
+                sig (vpiReg) t.outer_scope[1].inner_scope[1].arr.sig
+                verbose (vpiReg) t.outer_scope[1].inner_scope[1].arr.verbose
+                vpiParameter:
+                LENGTH (vpiParameter) t.outer_scope[1].inner_scope[1].arr.LENGTH
+                    vpiConstType=vpiDecConst
+        inner_scope[2] (vpiGenScope) t.outer_scope[1].inner_scope[2]
+            vpiReg:
+            scoped_param_inner (vpiParameter) t.outer_scope[1].inner_scope[2].scoped_param_inner
+                vpiConstType=vpiDecConst
+            vpiParameter:
+            scoped_param_inner (vpiParameter) t.outer_scope[1].inner_scope[2].scoped_param_inner
+                vpiConstType=vpiDecConst
+            vpiInternalScope:
+            arr (vpiModule) t.outer_scope[1].inner_scope[2].arr
+                vpiReg:
+                LENGTH (vpiParameter) t.outer_scope[1].inner_scope[2].arr.LENGTH
+                    vpiConstType=vpiDecConst
+                check (vpiReg) t.outer_scope[1].inner_scope[2].arr.check
+                rfr (vpiReg) t.outer_scope[1].inner_scope[2].arr.rfr
+                sig (vpiReg) t.outer_scope[1].inner_scope[2].arr.sig
+                verbose (vpiReg) t.outer_scope[1].inner_scope[2].arr.verbose
+                vpiParameter:
+                LENGTH (vpiParameter) t.outer_scope[1].inner_scope[2].arr.LENGTH
+                    vpiConstType=vpiDecConst
+        inner_scope[3] (vpiGenScope) t.outer_scope[1].inner_scope[3]
+            vpiReg:
+            scoped_param_inner (vpiParameter) t.outer_scope[1].inner_scope[3].scoped_param_inner
+                vpiConstType=vpiDecConst
+            vpiParameter:
+            scoped_param_inner (vpiParameter) t.outer_scope[1].inner_scope[3].scoped_param_inner
+                vpiConstType=vpiDecConst
+            vpiInternalScope:
+            arr (vpiModule) t.outer_scope[1].inner_scope[3].arr
+                vpiReg:
+                LENGTH (vpiParameter) t.outer_scope[1].inner_scope[3].arr.LENGTH
+                    vpiConstType=vpiDecConst
+                check (vpiReg) t.outer_scope[1].inner_scope[3].arr.check
+                rfr (vpiReg) t.outer_scope[1].inner_scope[3].arr.rfr
+                sig (vpiReg) t.outer_scope[1].inner_scope[3].arr.sig
+                verbose (vpiReg) t.outer_scope[1].inner_scope[3].arr.verbose
+                vpiParameter:
+                LENGTH (vpiParameter) t.outer_scope[1].inner_scope[3].arr.LENGTH
+                    vpiConstType=vpiDecConst
+    outer_scope[2] (vpiGenScope) t.outer_scope[2]
+        vpiReg:
+        scoped_param (vpiParameter) t.outer_scope[2].scoped_param
+            vpiConstType=vpiDecConst
+        vpiParameter:
+        scoped_param (vpiParameter) t.outer_scope[2].scoped_param
+            vpiConstType=vpiDecConst
+        vpiInternalScope:
+        inner_scope[1] (vpiGenScope) t.outer_scope[2].inner_scope[1]
+            vpiReg:
+            scoped_param_inner (vpiParameter) t.outer_scope[2].inner_scope[1].scoped_param_inner
+                vpiConstType=vpiDecConst
+            vpiParameter:
+            scoped_param_inner (vpiParameter) t.outer_scope[2].inner_scope[1].scoped_param_inner
+                vpiConstType=vpiDecConst
+            vpiInternalScope:
+            arr (vpiModule) t.outer_scope[2].inner_scope[1].arr
+                vpiReg:
+                LENGTH (vpiParameter) t.outer_scope[2].inner_scope[1].arr.LENGTH
+                    vpiConstType=vpiDecConst
+                check (vpiReg) t.outer_scope[2].inner_scope[1].arr.check
+                rfr (vpiReg) t.outer_scope[2].inner_scope[1].arr.rfr
+                sig (vpiReg) t.outer_scope[2].inner_scope[1].arr.sig
+                verbose (vpiReg) t.outer_scope[2].inner_scope[1].arr.verbose
+                vpiParameter:
+                LENGTH (vpiParameter) t.outer_scope[2].inner_scope[1].arr.LENGTH
+                    vpiConstType=vpiDecConst
+        inner_scope[2] (vpiGenScope) t.outer_scope[2].inner_scope[2]
+            vpiReg:
+            scoped_param_inner (vpiParameter) t.outer_scope[2].inner_scope[2].scoped_param_inner
+                vpiConstType=vpiDecConst
+            vpiParameter:
+            scoped_param_inner (vpiParameter) t.outer_scope[2].inner_scope[2].scoped_param_inner
+                vpiConstType=vpiDecConst
+            vpiInternalScope:
+            arr (vpiModule) t.outer_scope[2].inner_scope[2].arr
+                vpiReg:
+                LENGTH (vpiParameter) t.outer_scope[2].inner_scope[2].arr.LENGTH
+                    vpiConstType=vpiDecConst
+                check (vpiReg) t.outer_scope[2].inner_scope[2].arr.check
+                rfr (vpiReg) t.outer_scope[2].inner_scope[2].arr.rfr
+                sig (vpiReg) t.outer_scope[2].inner_scope[2].arr.sig
+                verbose (vpiReg) t.outer_scope[2].inner_scope[2].arr.verbose
+                vpiParameter:
+                LENGTH (vpiParameter) t.outer_scope[2].inner_scope[2].arr.LENGTH
+                    vpiConstType=vpiDecConst
+        inner_scope[3] (vpiGenScope) t.outer_scope[2].inner_scope[3]
+            vpiReg:
+            scoped_param_inner (vpiParameter) t.outer_scope[2].inner_scope[3].scoped_param_inner
+                vpiConstType=vpiDecConst
+            vpiParameter:
+            scoped_param_inner (vpiParameter) t.outer_scope[2].inner_scope[3].scoped_param_inner
+                vpiConstType=vpiDecConst
+            vpiInternalScope:
+            arr (vpiModule) t.outer_scope[2].inner_scope[3].arr
+                vpiReg:
+                LENGTH (vpiParameter) t.outer_scope[2].inner_scope[3].arr.LENGTH
+                    vpiConstType=vpiDecConst
+                check (vpiReg) t.outer_scope[2].inner_scope[3].arr.check
+                rfr (vpiReg) t.outer_scope[2].inner_scope[3].arr.rfr
+                sig (vpiReg) t.outer_scope[2].inner_scope[3].arr.sig
+                verbose (vpiReg) t.outer_scope[2].inner_scope[3].arr.verbose
+                vpiParameter:
+                LENGTH (vpiParameter) t.outer_scope[2].inner_scope[3].arr.LENGTH
+                    vpiConstType=vpiDecConst
+    outer_scope[3] (vpiGenScope) t.outer_scope[3]
+        vpiReg:
+        scoped_param (vpiParameter) t.outer_scope[3].scoped_param
+            vpiConstType=vpiDecConst
+        vpiParameter:
+        scoped_param (vpiParameter) t.outer_scope[3].scoped_param
+            vpiConstType=vpiDecConst
+        vpiInternalScope:
+        inner_scope[1] (vpiGenScope) t.outer_scope[3].inner_scope[1]
+            vpiReg:
+            scoped_param_inner (vpiParameter) t.outer_scope[3].inner_scope[1].scoped_param_inner
+                vpiConstType=vpiDecConst
+            vpiParameter:
+            scoped_param_inner (vpiParameter) t.outer_scope[3].inner_scope[1].scoped_param_inner
+                vpiConstType=vpiDecConst
+            vpiInternalScope:
+            arr (vpiModule) t.outer_scope[3].inner_scope[1].arr
+                vpiReg:
+                LENGTH (vpiParameter) t.outer_scope[3].inner_scope[1].arr.LENGTH
+                    vpiConstType=vpiDecConst
+                check (vpiReg) t.outer_scope[3].inner_scope[1].arr.check
+                rfr (vpiReg) t.outer_scope[3].inner_scope[1].arr.rfr
+                sig (vpiReg) t.outer_scope[3].inner_scope[1].arr.sig
+                verbose (vpiReg) t.outer_scope[3].inner_scope[1].arr.verbose
+                vpiParameter:
+                LENGTH (vpiParameter) t.outer_scope[3].inner_scope[1].arr.LENGTH
+                    vpiConstType=vpiDecConst
+        inner_scope[2] (vpiGenScope) t.outer_scope[3].inner_scope[2]
+            vpiReg:
+            scoped_param_inner (vpiParameter) t.outer_scope[3].inner_scope[2].scoped_param_inner
+                vpiConstType=vpiDecConst
+            vpiParameter:
+            scoped_param_inner (vpiParameter) t.outer_scope[3].inner_scope[2].scoped_param_inner
+                vpiConstType=vpiDecConst
+            vpiInternalScope:
+            arr (vpiModule) t.outer_scope[3].inner_scope[2].arr
+                vpiReg:
+                LENGTH (vpiParameter) t.outer_scope[3].inner_scope[2].arr.LENGTH
+                    vpiConstType=vpiDecConst
+                check (vpiReg) t.outer_scope[3].inner_scope[2].arr.check
+                rfr (vpiReg) t.outer_scope[3].inner_scope[2].arr.rfr
+                sig (vpiReg) t.outer_scope[3].inner_scope[2].arr.sig
+                verbose (vpiReg) t.outer_scope[3].inner_scope[2].arr.verbose
+                vpiParameter:
+                LENGTH (vpiParameter) t.outer_scope[3].inner_scope[2].arr.LENGTH
+                    vpiConstType=vpiDecConst
+        inner_scope[3] (vpiGenScope) t.outer_scope[3].inner_scope[3]
+            vpiReg:
+            scoped_param_inner (vpiParameter) t.outer_scope[3].inner_scope[3].scoped_param_inner
+                vpiConstType=vpiDecConst
+            vpiParameter:
+            scoped_param_inner (vpiParameter) t.outer_scope[3].inner_scope[3].scoped_param_inner
+                vpiConstType=vpiDecConst
+            vpiInternalScope:
+            arr (vpiModule) t.outer_scope[3].inner_scope[3].arr
+                vpiReg:
+                LENGTH (vpiParameter) t.outer_scope[3].inner_scope[3].arr.LENGTH
+                    vpiConstType=vpiDecConst
+                check (vpiReg) t.outer_scope[3].inner_scope[3].arr.check
+                rfr (vpiReg) t.outer_scope[3].inner_scope[3].arr.rfr
+                sig (vpiReg) t.outer_scope[3].inner_scope[3].arr.sig
+                verbose (vpiReg) t.outer_scope[3].inner_scope[3].arr.verbose
+                vpiParameter:
+                LENGTH (vpiParameter) t.outer_scope[3].inner_scope[3].arr.LENGTH
+                    vpiConstType=vpiDecConst
+    sub (vpiModule) t.sub
+        vpiReg:
+        subsig1 (vpiReg) t.sub.subsig1
+        subsig2 (vpiReg) t.sub.subsig2
+        vpiParameter:
+    sub_wrap (vpiModule) t.sub_wrap
+        vpiReg:
+        vpiParameter:
+        vpiInternalScope:
+        my_sub (vpiModule) t.sub_wrap.my_sub
+            vpiReg:
+            subsig1 (vpiReg) t.sub_wrap.my_sub.subsig1
+            subsig2 (vpiReg) t.sub_wrap.my_sub.subsig2
+            vpiParameter:
+*-* All Finished *-*

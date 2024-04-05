@@ -2,13 +2,13 @@
 <!-- DESCRIPTION: Verilator output: XML representation of netlist -->
 <verilator_xml>
   <files>
-    <file id="a" filename="&lt;built-in&gt;" language="1800-2017"/>
-    <file id="b" filename="&lt;command-line&gt;" language="1800-2017"/>
-    <file id="c" filename="input.vc" language="1800-2017"/>
-    <file id="d" filename="t/t_var_port_xml.v" language="1800-2017"/>
+    <file id="a" filename="&lt;built-in&gt;" language="1800-2023"/>
+    <file id="b" filename="&lt;command-line&gt;" language="1800-2023"/>
+    <file id="c" filename="input.vc" language="1800-2023"/>
+    <file id="d" filename="t/t_var_port_xml.v" language="1800-2023"/>
   </files>
   <module_files>
-    <file id="d" filename="t/t_var_port_xml.v" language="1800-2017"/>
+    <file id="d" filename="t/t_var_port_xml.v" language="1800-2023"/>
   </module_files>
   <cells>
     <cell loc="d,18,8,18,11" name="mh2" submodname="mh2" hier="mh2"/>

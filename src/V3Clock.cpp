@@ -53,6 +53,7 @@ class ConvertWriteRefsToRead final : public VNVisitor {
         if (nodep->access().isWriteOnly()) {
             nodep->replaceWith(
                 new AstVarRef{nodep->fileline(), nodep->varScopep(), VAccess::READ});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
 
@@ -66,6 +67,9 @@ public:
 // Clock state, as a visitor of each AstNode
 
 class ClockVisitor final : public VNVisitor {
+    // NODE STATE
+    // ???
+    const VNUser1InUse m_user1InUse;
     // STATE
     AstCFunc* m_evalp = nullptr;  // The '_eval' function
     AstScope* m_scopep = nullptr;  // Current scope
@@ -122,8 +126,15 @@ class ClockVisitor final : public VNVisitor {
         AstNodeExpr* const origp = nodep->origp()->unlinkFrBack();
         AstNodeExpr* const changeWrp = nodep->changep()->unlinkFrBack();
         AstNodeExpr* const changeRdp = ConvertWriteRefsToRead::main(changeWrp->cloneTree(false));
-        AstIf* const newp
-            = new AstIf{nodep->fileline(), new AstXor{nodep->fileline(), origp, changeRdp}, incp};
+        AstNodeExpr* comparedp = nullptr;
+        // Xor will optimize better than Eq, when CoverToggle has bit selects,
+        // but can only use Xor with non-opaque types
+        if (const AstBasicDType* const bdtypep
+            = VN_CAST(origp->dtypep()->skipRefp(), BasicDType)) {
+            if (!bdtypep->isOpaque()) comparedp = new AstXor{nodep->fileline(), origp, changeRdp};
+        }
+        if (!comparedp) comparedp = AstEq::newTyped(nodep->fileline(), origp, changeRdp);
+        AstIf* const newp = new AstIf{nodep->fileline(), comparedp, incp};
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.

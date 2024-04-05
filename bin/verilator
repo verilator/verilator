@@ -15,6 +15,7 @@ use Getopt::Long;
 use FindBin qw($RealBin $RealScript);
 use IO::File;
 use Pod::Usage;
+use Cwd qw(realpath);
 
 use strict;
 use vars qw($Debug @Opt_Verilator_Sw);
@@ -57,6 +58,7 @@ if (! GetOptions(
           # Switches
           "gdb!"             => \$opt_gdb,
           "gdbbt!"           => \$opt_gdbbt,
+          "quiet!"           => \$opt_quiet_exit,  # As -quiet implies -quiet-exit
           "quiet-exit!"      => \$opt_quiet_exit,
           "rr!"              => \$opt_rr,
           "unlimited-stack!" => \$opt_unlimited_stack,
@@ -65,6 +67,18 @@ if (! GetOptions(
           "<>"               => sub {},      # Ignored
     )) {
     pod2usage(-exitstatus => 2, -verbose => 0);
+}
+
+my $verilator_root = realpath("$RealBin/..");
+if (defined $ENV{VERILATOR_ROOT}) {
+    if ((!-d $ENV{VERILATOR_ROOT}) || $verilator_root ne realpath($ENV{VERILATOR_ROOT})) {
+        warn "%Error: verilator: VERILATOR_ROOT is set to inconsistent path. Suggest leaving it unset.\n";
+        warn "%Error: VERILATOR_ROOT=$ENV{VERILATOR_ROOT}\n";
+        exit 1;
+    }
+} else {
+    print "export VERILATOR_ROOT='$verilator_root'\n" if $Debug;
+    $ENV{VERILATOR_ROOT} = $verilator_root;
 }
 
 if ($opt_gdbbt && !gdb_works()) {
@@ -151,30 +165,13 @@ sub debug {
 # Builds
 
 sub verilator_bin {
-    my $bin = "";
-    # Use VERILATOR_ROOT if defined, else assume verilator_bin is in the search path
     my $basename = ($ENV{VERILATOR_BIN}
                     || ($Debug ? "verilator_bin_dbg" : "verilator_bin"));
-    if (defined($ENV{VERILATOR_ROOT})) {
-        my $dir = $ENV{VERILATOR_ROOT};
-        if (-x "$dir/bin/$basename"
-            || -x "$dir/bin/$basename.exe") {  # From a "make install" into VERILATOR_ROOT
-            $bin = "$dir/bin/$basename";
-        } else {
-            $bin = "$dir/$basename";  # From pointing to kit directory
-        }
+    if (-x "$RealBin/$basename" || -x "$RealBin/$basename.exe") {
+        return "$RealBin/$basename";
     } else {
-        if (-x "$RealBin/$basename"
-            || -x "$RealBin/$basename.exe") {
-            $bin = "$RealBin/$basename";  # From path/to/verilator with verilator_bin installed
-        } else {
-            $bin = $basename;  # Find in PATH
-        }
-        # Note we don't look under bin/$basename which would be right if running
-        # in the kit dir. Running that would likely break, since
-        # VERILATOR_ROOT wouldn't be set and Verilator won't find internal files.
+        return $basename;  # Find in PATH
     }
-    return $bin;
 }
 
 #######################################################################
@@ -312,7 +309,9 @@ detailed descriptions of these arguments.
      +1800-2009ext+<ext>        Use SystemVerilog 2009 with file extension <ext>
      +1800-2012ext+<ext>        Use SystemVerilog 2012 with file extension <ext>
      +1800-2017ext+<ext>        Use SystemVerilog 2017 with file extension <ext>
+     +1800-2023ext+<ext>        Use SystemVerilog 2023 with file extension <ext>
     --assert                    Enable all assertions
+    --assert-case               Enable unique/unique0/priority case related checks
     --autoflush                 Flush streams after all $displays
     --bbox-sys                  Blackbox unknown $system calls
     --bbox-unsup                Blackbox unsupported language features
@@ -349,10 +348,12 @@ detailed descriptions of these arguments.
     --dump-tree                 Enable dumping Ast .tree files
     --dump-tree-addrids         Use short identifiers instead of addresses
     --dump-tree-dot             Enable dumping Ast .tree.dot debug files
+    --dump-tree-json            Enable dumping Ast .tree.json files and .tree.meta.json file
     --dump-<srcfile>            Enable dumping everything in source file
     --dumpi-dfg <level>         Enable dumping DfgGraphs to .dot files at level
     --dumpi-graph <level>       Enable dumping V3Graphs to .dot files at level
     --dumpi-tree <level>        Enable dumping Ast .tree files at level
+    --dumpi-tree-json <level>   Enable dumping Ast .tree.json files at level
     --dumpi-<srcfile> <level>   Enable dumping everything in source file at level
      -E                         Preprocess, but do not compile
     --error-limit <value>       Abort after this number of errors
@@ -372,7 +373,7 @@ detailed descriptions of these arguments.
     --generate-key              Create random key for --protect-key
     --getenv <var>              Get environment variable with defaults
     --get-supported <feature>   Get if feature is supported
-    --help                      Display this help
+    --help                      Show this help
     --hierarchical              Enable hierarchical Verilation
      -I<dir>                    Directory to search for includes
     --if-depth <value>          Tune IFDEPTH warning
@@ -425,7 +426,9 @@ detailed descriptions of these arguments.
     --public-params             Mark all parameters as public_flat
     --public-flat-rw            Mark all variables, etc as public_flat_rw
      -pvalue+<name>=<value>     Overwrite toplevel parameter
+    --quiet                     Minimize additional printing
     --quiet-exit                Don't print the command on failure
+    --quiet-stats               Don't print statistics
     --relative-includes         Resolve includes relative to current file
     --reloop-limit              Minimum iterations for forming loops
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
@@ -437,9 +440,10 @@ detailed descriptions of these arguments.
     --stats                     Create statistics file
     --stats-vars                Provide statistics on variables
     --no-std                    Prevent parsing standard library
+    --no-stop-fail              Do not call $stop when assertion fails
     --structs-packed            Convert all unpacked structures to packed structures
      -sv                        Enable SystemVerilog parsing
-     +systemverilogext+<ext>    Synonym for +1800-2017ext+<ext>
+     +systemverilogext+<ext>    Synonym for +1800-2023ext+<ext>
     --threads <threads>         Enable multithreading
     --threads-dpi <mode>        Enable multithreaded DPI
     --threads-max-mtasks <mtasks>  Tune maximum mtask partitioning
@@ -472,7 +476,7 @@ detailed descriptions of these arguments.
     --no-verilate               Skip Verilation and just compile previously Verilated code
      +verilog1995ext+<ext>      Synonym for +1364-1995ext+<ext>
      +verilog2001ext+<ext>      Synonym for +1364-2001ext+<ext>
-    --version                   Displays program version and exits
+    --version                   Show program version and exits
     --vpi                       Enable VPI compiles
     --waiver-output <filename>  Create a waiver file based on the linter warnings
      -Wall                      Enable all style warnings
@@ -490,6 +494,11 @@ detailed descriptions of these arguments.
     --x-assign <mode>           Assign non-initial Xs to this value
     --x-initial <mode>          Assign initial Xs to this value
     --x-initial-edge            Enable initial X->0 and X->1 edge triggers
+    --no-json-edit-nums         Don't dump editNum in .tree.json files
+    --no-json-ids               Don't use short identifiers instead of adresses/paths in .tree.json
+    --json-only                 Create JSON parser output (.tree.json and .meta.json)
+    --json-only-output          .tree.json output filename
+    --json-only-meta-output     .tree.meta.json output filename
     --xml-only                  Create XML parser output
     --xml-output                XML output filename
      -y <dir>                   Directory to search for modules
@@ -501,20 +510,21 @@ description of these arguments.
 
 =for VL_SPHINX_EXTRACT "_build/gen/args_verilated.rst"
 
-     +verilator+debug                  Enable debugging
-     +verilator+debugi+<value>         Enable debugging at a level
+     +verilator+debug                      Enable debugging
+     +verilator+debugi+<value>             Enable debugging at a level
      +verilator+coverage+file+<filename>   Set coverage output filename
-     +verilator+error+limit+<value>    Set error limit
-     +verilator+help                   Display help
-     +verilator+noassert               Disable assert checking
+     +verilator+error+limit+<value>        Set error limit
+     +verilator+help                       Show help
+     +verilator+noassert                   Disable assert checking
      +verilator+prof+exec+file+<filename>  Set execution profile filename
      +verilator+prof+exec+start+<value>    Set execution profile starting point
      +verilator+prof+exec+window+<value>   Set execution profile duration
      +verilator+prof+vlt+file+<filename>   Set PGO profile filename
-     +verilator+rand+reset+<value>     Set random reset technique
-     +verilator+seed+<value>           Set random seed
-     +verilator+V                      Verbose version and config
-     +verilator+version                Show version and exit
+     +verilator+quiet                      Minimize additional printing
+     +verilator+rand+reset+<value>         Set random reset technique
+     +verilator+seed+<value>               Set random seed
+     +verilator+V                          Show verbose version and config
+     +verilator+version                    Show version and exit
 
 
 =head1 DISTRIBUTION

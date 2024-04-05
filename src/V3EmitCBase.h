@@ -70,10 +70,12 @@ public:
         return v3Global.opt.modPrefix() + "_" + VIdProtect::protect(nodep->name());
     }
     static bool isAnonOk(const AstVar* varp) {
+        AstNodeDType* const dtp = varp->dtypep()->skipRefp();
         return v3Global.opt.compLimitMembers() != 0  // Enabled
                && !varp->isStatic()  // Not a static variable
                && !varp->isSc()  // Aggregates can't be anon
-               && !VN_IS(varp->dtypep()->skipRefp(), SampleQueueDType)  // Aggregates can't be anon
+               && !VN_IS(dtp, SampleQueueDType)  // Aggregates can't be anon
+               && !(VN_IS(dtp, NodeUOrStructDType) && !VN_CAST(dtp, NodeUOrStructDType)->packed())
                && (varp->basicp() && !varp->basicp()->isOpaque());  // Aggregates can't be anon
     }
     static bool isConstPoolMod(const AstNode* modp) {

@@ -4,7 +4,8 @@
 // any use, without warranty, 2016 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-`define check(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: %m: Wrong parameter value\n", `__FILE__,`__LINE__); $stop; end while(0);
+`define stop $stop
+`define check(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: %m: Wrong parameter value\n", `__FILE__,`__LINE__); `stop; end while(0);
 
 module t (/*AUTOARG*/
    // Inputs

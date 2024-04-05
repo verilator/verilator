@@ -1,8 +1,8 @@
-%Error-UNSUPPORTED: t/t_mod_interface_array3.v:25:20: Unsupported: Multidimensional instances/interfaces.
-   25 |    a_if iface [2:0][1:0];
+%Error-UNSUPPORTED: t/t_mod_interface_array3.v:26:20: Unsupported: Multidimensional instances/interfaces.
+   26 |    a_if iface [2:0][1:0];
       |                    ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_mod_interface_array3.v:27:18: Unsupported: Multidimensional instances/interfaces.
-   27 |    sub i_sub[2:0][1:0] (.s(str));
+%Error-UNSUPPORTED: t/t_mod_interface_array3.v:28:18: Unsupported: Multidimensional instances/interfaces.
+   28 |    sub i_sub[2:0][1:0] (.s(str));
       |                  ^
 %Error: Exiting due to

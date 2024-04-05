@@ -15,7 +15,7 @@ class Cls;
    bit a;
 endclass
 
-   // IEEE 1800-2017 7.2.1
+   // IEEE 1800-2023 7.2.1
    typedef struct packed {
       real        r;  // BAD
       // verilator lint_off SHORTREAL

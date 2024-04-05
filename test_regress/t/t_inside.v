@@ -4,9 +4,10 @@
 // any use, without warranty, 2013 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t;
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
-`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+module t;
 
    typedef enum logic [1:0]
                 { ZERO  = 2'd0,
@@ -56,6 +57,7 @@ module t;
       `checkh ((4'd3 inside {[4'd1:4'd2], [4'd3:4'd5]}), 1'b1);
       `checkh ((4'd4 inside {[4'd1:4'd2], [4'd3:4'd5]}), 1'b1);
       `checkh ((4'd5 inside {[4'd1:4'd2], [4'd3:4'd5]}), 1'b1);
+      `checkh ((4.0 inside {[4'd1:4'd2], [4'd3:4'd5]}), 1'b1);
       //
       // Unsupported $ bound
       //

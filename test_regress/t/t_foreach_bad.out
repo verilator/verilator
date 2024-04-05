@@ -1,4 +1,4 @@
-%Error: t/t_foreach_bad.v:14:7: Syntax error; foreach missing bracketed loop variable (IEEE 1800-2017 12.7.3)
+%Error: t/t_foreach_bad.v:14:7: Syntax error; foreach missing bracketed loop variable (IEEE 1800-2023 12.7.3)
    14 |       foreach (array);   
       |       ^~~~~~~
 %Error: t/t_foreach_bad.v:18:23: 'foreach' loop variable expects simple variable name

@@ -164,7 +164,7 @@ endmodule
 //"
 
 //======================================================================
-// Check IEEE1800-2017 `pragma protect encrypted modules
+// Check IEEE 1800-2017 `pragma protect encrypted modules
 module t_lint_pragma_protected;
 
 `pragma protect begin_protected
@@ -703,6 +703,10 @@ Second line"""
 `define QQQS(x) x
 `QQQ
 `QQQS("""QQQ defval""")
+
+// string concat bug
+`define IDENTITY(arg) ``arg
+`IDENTITY("string argument")
 
 //======================================================================
 // IEEE mandated predefines

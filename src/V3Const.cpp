@@ -684,7 +684,7 @@ public:
     // Reduction ops are transformed in the same way.
     // &{v[0], v[1]} => 2'b11 == (2'b11 & v)
     static AstNodeExpr* simplify(AstNodeExpr* nodep, int resultWidth, unsigned externalOps,
-                                 VDouble0& reduction, VNDeleter& deleterr) {
+                                 VDouble0& reduction) {
         UASSERT_OBJ(1 <= resultWidth && resultWidth <= 64, nodep, "resultWidth out of range");
 
         // Walk tree, gathering all terms referenced in expression
@@ -727,7 +727,7 @@ public:
                 }
                 // Set width and widthMin precisely
                 resultp->dtypeChgWidth(resultWidth, 1);
-                for (AstNode* const termp : termps) deleterr.pushDeletep(termp);
+                for (AstNode* const termp : termps) VL_DO_DANGLING(termp->deleteTree(), termp);
                 return resultp;
             }
             const ResultTerm result = v->getResultTerm();
@@ -803,7 +803,7 @@ public:
 
         // Only substitute the result if beneficial as determined by operation count
         if (visitor.m_ops <= resultOps) {
-            for (AstNode* const termp : termps) deleterr.pushDeletep(termp);
+            for (AstNode* const termp : termps) VL_DO_DANGLING(termp->deleteTree(), termp);
             return nullptr;
         }
 
@@ -1187,11 +1187,9 @@ class ConstVisitor final : public VNVisitor {
         const AstAnd* const andp = VN_CAST(nodep, And);
         const int width = nodep->width();
         if (andp && isConst(andp->lhsp(), 1)) {  // 1 & BitOpTree
-            newp = ConstBitOpTreeVisitor::simplify(andp->rhsp(), width, 1, m_statBitOpReduction,
-                                                   deleter());
+            newp = ConstBitOpTreeVisitor::simplify(andp->rhsp(), width, 1, m_statBitOpReduction);
         } else {  // BitOpTree
-            newp = ConstBitOpTreeVisitor::simplify(nodep, width, 0, m_statBitOpReduction,
-                                                   deleter());
+            newp = ConstBitOpTreeVisitor::simplify(nodep, width, 0, m_statBitOpReduction);
         }
 
         if (newp) {
@@ -1345,7 +1343,8 @@ class ConstVisitor final : public VNVisitor {
             = new AstSel{nodep->fileline(), ap->unlinkFrBack(), newLsb, nodep->widthConst()};
         newp->dtypeFrom(nodep);
         if (debug() >= 9) newp->dumpTree("-  SEL(SH)-ou: ");
-        VL_DO_DANGLING(nodep->replaceWith(newp), nodep);
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
         return true;
     }
 
@@ -1441,16 +1440,22 @@ class ConstVisitor final : public VNVisitor {
 
     static bool operandsSame(AstNode* node1p, AstNode* node2p) {
         // For now we just detect constants & simple vars, though it could be more generic
-        if (VN_IS(node1p, Const) && VN_IS(node2p, Const)) {
-            return node1p->sameGateTree(node2p);
-        } else if (VN_IS(node1p, VarRef) && VN_IS(node2p, VarRef)) {
+        if (VN_IS(node1p, Const) && VN_IS(node2p, Const)) return node1p->sameGateTree(node2p);
+        if (VN_IS(node1p, VarRef) && VN_IS(node2p, VarRef)) {
             // Avoid comparing widthMin's, which results in lost optimization attempts
             // If cleanup sameGateTree to be smarter, this can be restored.
             // return node1p->sameGateTree(node2p);
             return node1p->isSame(node2p);
-        } else {
-            return false;
         }
+        // Pattern created by coverage-line; avoid compiler tautological-compare warning
+        if (AstAnd* const and1p = VN_CAST(node1p, And)) {
+            if (AstAnd* const and2p = VN_CAST(node2p, And)) {
+                if (VN_IS(and1p->lhsp(), Const) && VN_IS(and1p->rhsp(), NodeVarRef)
+                    && VN_IS(and2p->lhsp(), Const) && VN_IS(and2p->rhsp(), NodeVarRef))
+                    return node1p->sameGateTree(node2p);
+            }
+        }
+        return false;
     }
     bool ifSameAssign(const AstNodeIf* nodep) {
         const AstNodeAssign* const thensp = VN_CAST(nodep->thensp(), NodeAssign);
@@ -1816,16 +1821,20 @@ class ConstVisitor final : public VNVisitor {
         // {llp OP lrp, rlp OP rrp} => {llp, rlp} OP {lrp, rrp}, where OP = AND/OR/XOR
         AstNodeBiop* const lp = VN_AS(nodep->lhsp(), NodeBiop);
         AstNodeBiop* const rp = VN_AS(nodep->rhsp(), NodeBiop);
-        AstNodeExpr* const llp = lp->lhsp()->cloneTreePure(false);
-        AstNodeExpr* const lrp = lp->rhsp()->cloneTreePure(false);
-        AstNodeExpr* const rlp = rp->lhsp()->cloneTreePure(false);
-        AstNodeExpr* const rrp = rp->rhsp()->cloneTreePure(false);
         if (concatMergeable(lp, rp, 0)) {
-            AstConcat* const newlp = new AstConcat{rlp->fileline(), llp, rlp};
-            AstConcat* const newrp = new AstConcat{rrp->fileline(), lrp, rrp};
+            AstNodeExpr* const llp = lp->lhsp();
+            AstNodeExpr* const lrp = lp->rhsp();
+            AstNodeExpr* const rlp = rp->lhsp();
+            AstNodeExpr* const rrp = rp->rhsp();
+            AstConcat* const newlp = new AstConcat{rlp->fileline(), llp->cloneTreePure(false),
+                                                   rlp->cloneTreePure(false)};
+            AstConcat* const newrp = new AstConcat{rrp->fileline(), lrp->cloneTreePure(false),
+                                                   rrp->cloneTreePure(false)};
             // use the lhs to replace the parent concat
-            lp->lhsp()->replaceWith(newlp);
-            lp->rhsp()->replaceWith(newrp);
+            llp->replaceWith(newlp);
+            VL_DO_DANGLING(pushDeletep(llp), llp);
+            lrp->replaceWith(newrp);
+            VL_DO_DANGLING(pushDeletep(lrp), lrp);
             lp->dtypeChgWidthSigned(newlp->width(), newlp->width(), VSigning::UNSIGNED);
             UINFO(5, "merged " << nodep << endl);
             VL_DO_DANGLING(pushDeletep(rp->unlinkFrBack()), rp);
@@ -2164,6 +2173,21 @@ class ConstVisitor final : public VNVisitor {
                                                  "array to a variable of size greater than 64");
                 }
                 srcp = new AstCvtDynArrayToPacked{srcp->fileline(), srcp, srcDTypep};
+            } else if (VN_IS(srcDTypep, UnpackArrayDType)) {
+                if (nodep->lhsp()->widthMin() > 64) {
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assignment of stream of dynamic "
+                                                 "array to a variable of size greater than 64");
+                }
+                srcp = new AstCvtUnpackArrayToPacked{srcp->fileline(), srcp,
+                                                     nodep->lhsp()->dtypep()};
+                // Handling the case where lhs is wider than rhs by inserting zeros. StreamL does
+                // not require this, since the left streaming operator implicitly handles this.
+                const uint32_t packedBits = nodep->lhsp()->widthMin();
+                const uint32_t unpackBits
+                    = srcDTypep->arrayUnpackedElements() * srcDTypep->subDTypep()->widthMin();
+                const uint32_t offset = packedBits > unpackBits ? packedBits - unpackBits : 0;
+                srcp = new AstShiftL{srcp->fileline(), srcp,
+                                     new AstConst{srcp->fileline(), offset}, 64};
             }
             nodep->rhsp(srcp);
             VL_DO_DANGLING(pushDeletep(streamp), streamp);
@@ -2184,10 +2208,17 @@ class ConstVisitor final : public VNVisitor {
             } else {
                 streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(), VSigning::UNSIGNED);
             }
-            if (dWidth == 0) {
-                streamp = new AstCvtPackedToDynArray{nodep->fileline(), streamp, dstp->dtypep()};
-            } else if (sWidth > dWidth) {
-                streamp = new AstSel{streamp->fileline(), streamp, sWidth - dWidth, dWidth};
+            if (VN_IS(dstp->dtypep(), UnpackArrayDType)) {
+                streamp
+                    = new AstCvtPackedToUnpackArray{nodep->fileline(), streamp, dstp->dtypep()};
+            } else {
+                UASSERT(sWidth >= dWidth, "sWidth >= dWidth should have caused an error earlier");
+                if (dWidth == 0) {
+                    streamp
+                        = new AstCvtPackedToDynArray{nodep->fileline(), streamp, dstp->dtypep()};
+                } else if (sWidth >= dWidth) {
+                    streamp = new AstSel{streamp->fileline(), streamp, sWidth - dWidth, dWidth};
+                }
             }
             nodep->lhsp(dstp);
             nodep->rhsp(streamp);
@@ -2201,10 +2232,24 @@ class ConstVisitor final : public VNVisitor {
             AstNodeExpr* srcp = nodep->rhsp()->unlinkFrBack();
             const int sWidth = srcp->width();
             const int dWidth = dstp->width();
-            if (dWidth == 0) {
-                srcp = new AstCvtPackedToDynArray{nodep->fileline(), srcp, dstp->dtypep()};
-            } else if (sWidth > dWidth) {
-                srcp = new AstSel{streamp->fileline(), srcp, sWidth - dWidth, dWidth};
+            if (VN_IS(dstp->dtypep(), UnpackArrayDType)) {
+                const int dstBitWidth
+                    = dWidth * VN_AS(dstp->dtypep(), UnpackArrayDType)->arrayUnpackedElements();
+                // Handling the case where rhs is wider than lhs. StreamL does not require this
+                // since the combination of the left streaming operation and the implicit
+                // truncation in VL_ASSIGN_UNPACK automatically selects the left-most bits.
+                if (sWidth > dstBitWidth) {
+                    srcp
+                        = new AstSel{streamp->fileline(), srcp, sWidth - dstBitWidth, dstBitWidth};
+                }
+                srcp = new AstCvtPackedToUnpackArray{nodep->fileline(), srcp, dstp->dtypep()};
+            } else {
+                UASSERT(sWidth >= dWidth, "sWidth >= dWidth should have caused an error earlier");
+                if (dWidth == 0) {
+                    srcp = new AstCvtPackedToDynArray{nodep->fileline(), srcp, dstp->dtypep()};
+                } else if (sWidth >= dWidth) {
+                    srcp = new AstSel{streamp->fileline(), srcp, sWidth - dWidth, dWidth};
+                }
             }
             nodep->lhsp(dstp);
             nodep->rhsp(srcp);
@@ -2223,6 +2268,14 @@ class ConstVisitor final : public VNVisitor {
                 }
                 srcp->unlinkFrBack();
                 streamp->lhsp(new AstCvtDynArrayToPacked{srcp->fileline(), srcp, lhsDtypep});
+                streamp->dtypeFrom(lhsDtypep);
+            } else if (VN_IS(srcDTypep, UnpackArrayDType)) {
+                if (lhsDtypep->widthMin() > 64) {
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assignment of stream of unpacked "
+                                                 "array to a variable of size greater than 64");
+                }
+                srcp->unlinkFrBack();
+                streamp->lhsp(new AstCvtUnpackArrayToPacked{srcp->fileline(), srcp, lhsDtypep});
                 streamp->dtypeFrom(lhsDtypep);
             }
         } else if (m_doV && replaceAssignMultiSel(nodep)) {
@@ -3294,6 +3347,9 @@ class ConstVisitor final : public VNVisitor {
                 if (nodep->precondsp()) {
                     nodep->replaceWith(nodep->precondsp());
                 } else {
+                    nodep->v3warn(UNUSEDLOOP,
+                                  "Loop condition is always false; body will never execute");
+                    nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDLOOP, true);
                     nodep->unlinkFrBack();
                 }
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);

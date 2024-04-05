@@ -13,3 +13,7 @@ C++14 compiler support
 
   Verilator will require C++20 or newer compilers for both compiling
   Verilator and compiling all Verilated models no sooner than January 2025.
+
+XML output
+  Verilator currently supports XML parser output (enabled with `--xml-only`).
+  Support for `--xml-*` options will be deprecated no sooner than January 2025.

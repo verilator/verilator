@@ -796,14 +796,15 @@ void V3Options::notify() VL_MT_DISABLED {
     if (!outFormatOk() && v3Global.opt.main()) ccSet();  // --main implies --cc if not provided
     if (!outFormatOk() && !dpiHdrOnly() && !lintOnly() && !preprocOnly() && !serializeOnly()) {
         v3fatal("verilator: Need --binary, --cc, --sc, --dpi-hdr-only, --lint-only, "
-                "--xml-only or --E option");
+                "--xml-only, --json-only or --E option");
     }
 
     if (m_build && (m_gmake || m_cmake)) {
         cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }
 
-    // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, and m_xmlOnly are mutually exclusive
+    // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, m_jsonOnly and m_xmlOnly are mutually
+    // exclusive
     std::vector<std::string> backendFlags;
     if (m_build) {
         if (m_binary)
@@ -815,6 +816,7 @@ void V3Options::notify() VL_MT_DISABLED {
     if (m_dpiHdrOnly) backendFlags.push_back("--dpi-hdr-only");
     if (m_lintOnly) backendFlags.push_back("--lint-only");
     if (m_xmlOnly) backendFlags.push_back("--xml-only");
+    if (m_jsonOnly) backendFlags.push_back("--json-only");
     if (backendFlags.size() > 1) {
         std::string backendFlagsString = backendFlags.front();
         for (size_t i = 1; i < backendFlags.size(); i++) {
@@ -1100,9 +1102,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                 [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2012); });
     DECL_OPTION("+1800-2017ext+", CbPartialMatch,
                 [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2017); });
+    DECL_OPTION("+1800-2023ext+", CbPartialMatch,
+                [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2023); });
 
     // Minus options
     DECL_OPTION("-assert", OnOff, &m_assert);
+    DECL_OPTION("-assert-case", OnOff, &m_assertCase);
     DECL_OPTION("-autoflush", OnOff, &m_autoflush);
 
     DECL_OPTION("-bbox-sys", OnOff, &m_bboxSys);
@@ -1194,6 +1199,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-debug-self-test", OnOff, &m_debugSelfTest).undocumented();
     DECL_OPTION("-debug-sigsegv", CbCall, throwSigsegv).undocumented();  // See also --debug-abort
     DECL_OPTION("-debug-stack-check", OnOff, &m_debugStackCheck).undocumented();
+    DECL_OPTION("-debug-width", OnOff, &m_debugWidth).undocumented();
     DECL_OPTION("-decoration", CbCall, [this, fl]() { decorations(fl, "medium"); });
     DECL_OPTION("-decorations", CbVal, [this, fl](const char* optp) { decorations(fl, optp); });
     DECL_OPTION("-no-decoration", CbCall, [this, fl]() { decorations(fl, "none"); });
@@ -1203,6 +1209,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-dumpi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
         m_dumpLevel[optp] = std::atoi(valp);
     });
+    DECL_OPTION("-json-edit-nums", OnOff, &m_jsonEditNums);
+    DECL_OPTION("-json-ids", OnOff, &m_jsonIds);
     DECL_OPTION("-E", CbOnOff, [this](bool flag) {
         if (flag) m_std = false;
         m_preprocOnly = flag;
@@ -1408,7 +1416,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_public_params = flag;
         v3Global.dpi(true);
     });
+    DECL_OPTION("-quiet", CbOnOff, [this](bool flag) {
+        m_quietExit = flag;
+        m_quietStats = flag;
+    });
     DECL_OPTION("-quiet-exit", OnOff, &m_quietExit);
+    DECL_OPTION("-quiet-stats", OnOff, &m_quietStats);
 
     DECL_OPTION("-relative-includes", OnOff, &m_relativeIncludes);
     DECL_OPTION("-reloop-limit", CbVal, [this, fl](const char* valp) {
@@ -1439,8 +1452,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_stats |= flag;
     });
     DECL_OPTION("-std", OnOff, &m_std);
+    DECL_OPTION("-stop-fail", OnOff, &m_stopFail);
     DECL_OPTION("-structs-packed", OnOff, &m_structsPacked);
-    DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2017; });
+    DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2023; });
 
     DECL_OPTION("-threads-coarsen", OnOff, &m_threadsCoarsen).undocumented();  // Debug
     DECL_OPTION("-no-threads", CbCall, [this, fl]() {
@@ -1569,6 +1583,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-Werror-UNUSED", CbCall, []() {
         V3Error::pretendError(V3ErrorCode::UNUSEDGENVAR, true);
+        V3Error::pretendError(V3ErrorCode::UNUSEDLOOP, true);
         V3Error::pretendError(V3ErrorCode::UNUSEDPARAM, true);
         V3Error::pretendError(V3ErrorCode::UNUSEDSIGNAL, true);
     });
@@ -1622,6 +1637,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-Wwarn-UNUSED", CbCall, []() {
         FileLine::globalWarnUnusedOff(false);
         V3Error::pretendError(V3ErrorCode::UNUSEDGENVAR, false);
+        V3Error::pretendError(V3ErrorCode::UNUSEDLOOP, false);
         V3Error::pretendError(V3ErrorCode::UNUSEDSIGNAL, false);
         V3Error::pretendError(V3ErrorCode::UNUSEDPARAM, false);
     });
@@ -1664,6 +1680,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-xml-output", CbVal, [this](const char* valp) {
         m_xmlOutput = valp;
         m_xmlOnly = true;
+    });
+    DECL_OPTION("-json-only", OnOff, &m_jsonOnly);
+    DECL_OPTION("-json-only-output", CbVal, [this](const char* valp) {
+        m_jsonOnlyOutput = valp;
+        m_jsonOnly = true;
+    });
+    DECL_OPTION("-json-only-meta-output", CbVal, [this](const char* valp) {
+        m_jsonOnlyMetaOutput = valp;
+        m_jsonOnly = true;
     });
 
     DECL_OPTION("-y", CbVal, [this, &optdir](const char* valp) {

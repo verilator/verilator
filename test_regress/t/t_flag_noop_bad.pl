@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-run(cmd => ["../bin/verilator",
+run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator",
             "t_flag_noop_bad.v"],
     fails => 1,
     logfile => "$Self->{obj_dir}/sim.log",

@@ -1,4 +1,4 @@
-%Error: t/t_class_param_bad_paren.v:28:11: Reference to parameterized class without #() (IEEE 1800-2017 8.25.1)
+%Error: t/t_class_param_bad_paren.v:28:11: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
                                          : ... Suggest use 'Cls#()'
    28 |       if (Cls::OTHER != 12) $stop;   
       |           ^~~

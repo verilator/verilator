@@ -30,13 +30,16 @@ sub check {
     file_grep($logfile, qr/(DISTRIBUTION|usage:)/i);
 }
 
-check("perl", "../bin/verilator");
-check("perl", "../bin/verilator_coverage");
+check("perl", "$ENV{VERILATOR_ROOT}/bin/verilator");
+check("perl", "$ENV{VERILATOR_ROOT}/bin/verilator_coverage");
 
-check("python3", "../bin/verilator_ccache_report");
-check("python3", "../bin/verilator_difftree");
-check("python3", "../bin/verilator_gantt");
-check("python3", "../bin/verilator_profcfunc");
+check("python3", "$ENV{VERILATOR_ROOT}/bin/verilator_ccache_report");
+check("python3", "$ENV{VERILATOR_ROOT}/bin/verilator_gantt");
+check("python3", "$ENV{VERILATOR_ROOT}/bin/verilator_profcfunc");
+
+if (-x "$ENV{VERILATOR_ROOT}/bin/verilator_difftree") {
+    check("python3", "$ENV{VERILATOR_ROOT}/bin/verilator_difftree");
+}
 
 ok(1);
 1;

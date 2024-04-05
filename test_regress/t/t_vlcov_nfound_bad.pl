@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(dist => 1);
 
 run(fails => 1,
-    cmd => ["../bin/verilator_coverage",
+    cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_coverage",
             "t/t_NOT_FOUND",],
     logfile => $Self->{run_log_filename},
     expect_filename => $Self->{golden_filename},

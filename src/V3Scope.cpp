@@ -178,7 +178,9 @@ class ScopeVisitor final : public VNVisitor {
         }
     }
     void visit(AstCellInline* nodep) override {  //
-        nodep->scopep(m_scopep);
+        if (v3Global.opt.vpi()) {
+            m_scopep->addInlinesp(new AstCellInlineScope{nodep->fileline(), m_scopep, nodep});
+        }
     }
     void visit(AstActive* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Actives now made after scoping");
@@ -290,6 +292,7 @@ class ScopeVisitor final : public VNVisitor {
             m_varScopes.emplace(std::make_pair(nodep, m_scopep), varscp);
             m_scopep->addVarsp(varscp);
         }
+        iterateChildren(nodep);
     }
     void visit(AstVarRef* nodep) override {
         // VarRef needs to point to VarScope

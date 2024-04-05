@@ -4,7 +4,8 @@
 // any use, without warranty, 2020 Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
 module t(/*AUTOARG*/
    // Inputs

@@ -168,6 +168,11 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     if (GRAMMARP->m_varIO == VDirection::NONE && GRAMMARP->m_varDecl == VVarType::PORT) {
         // Just a port list with variable name (not v2k format); AstPort already created
         if (dtypep) fileline->v3warn(E_UNSUPPORTED, "Unsupported: Ranges ignored in port-lists");
+        if (arrayp) VL_DO_DANGLING(arrayp->deleteTree(), arrayp);
+        if (attrsp) {
+            // TODO: Merge attributes across list? Or warn attribute is ignored
+            VL_DO_DANGLING(attrsp->deleteTree(), attrsp);
+        }
         return nullptr;
     }
     if (GRAMMARP->m_varDecl == VVarType::WREAL) {
@@ -243,7 +248,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     } else {
         nodep->trace(allTracingOn(nodep->fileline()));
     }
-    if (nodep->varType().isVPIAccessible()) { nodep->addAttrsp(GRAMMARP->cloneScopedSigAttr()); }
+    if (nodep->varType().isVPIAccessible()) nodep->addAttrsp(GRAMMARP->cloneScopedSigAttr());
 
     // Remember the last variable created, so we can attach attributes to it in later parsing
     GRAMMARP->m_varAttrp = nodep;

@@ -23,12 +23,12 @@ resulting model's C++ or SystemC code is output as .cpp and .h files. This
 is referred to as "Verilating", and the process is "to Verilate"; the
 output is a "Verilated" model.
 
-2. For simulation, a small-user written C++ wrapper file is required, the
+2. For simulation, a small user-written C++ wrapper file is required, the
 "wrapper".  This wrapper defines the C++ standard function "main()", which
 instantiates the Verilated model as a C++/SystemC object.
 
 3. The user C++ wrapper, the files created by Verilator, a "runtime
-library" provided by Verilator, and, if applicable SystemC libraries are
+library" provided by Verilator, and, if applicable, SystemC libraries are
 then compiled using a C++ compiler to create a simulation executable.
 
 4. The resulting executable will perform the actual simulation during
@@ -50,6 +50,6 @@ The best place to get started is to try the :ref:`Examples`.
 .. [#] SystemVerilog is defined by the `Institute of Electrical and
        Electronics Engineers (IEEE) Standard for SystemVerilog - Unified
        Hardware Design, Specification, and Verification Language`, Standard
-       1800, released in 2005, 2009, 2012, and 2017.  The Verilator
-       documentation uses the shorthand e.g., "IEEE 1800-2017", to refer to
-       the, e.g., 2017 version of this standard.
+       1800, released in 2005, 2009, 2012, 2017, and 2023.  The Verilator
+       documentation uses the shorthand e.g., "IEEE 1800-2023", to refer to
+       the, e.g., 2023 version of this standard.

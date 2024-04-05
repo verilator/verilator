@@ -286,7 +286,7 @@ public:
     }
     void update(const V3ConfigFile& file) {
         // Copy in all Attributes
-        for (const auto& itr : file.m_lineAttrs) { m_lineAttrs[itr.first] |= itr.second; }
+        for (const auto& itr : file.m_lineAttrs) m_lineAttrs[itr.first] |= itr.second;
         // Copy in all ignores
         for (const auto& ignLine : file.m_ignLines) m_ignLines.insert(ignLine);
         // Update the iterator after the list has changed

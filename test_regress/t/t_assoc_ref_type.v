@@ -43,26 +43,35 @@ class Baz #(type T=Foo1);
    endfunction
 endclass
 
-module t (/*AUTOARG*/
-   );
+class WBase;
+endclass
+
+class Wrapper#(type VAL_T=int);
+   VAL_T value;
+endclass
+
+module t (/*AUTOARG*/);
+
+   typedef WBase wrap_map_t[string];
+   typedef WBase wrap_queue_t[$];
 
    initial begin
       Bar bar_i = new;
       Baz baz_1_i = new;
       Baz #(Foo2) baz_2_i = new;
 
+      Wrapper#(wrap_map_t) wrap_map = new();
+      Wrapper#(wrap_queue_t) wrap_queue = new();
+
       bar_i.set(1);
       baz_1_i.set(2);
       baz_2_i.set(3);
 
-      if (bar_i.get(1).get_x() == 1 &&
-          baz_1_i.get(2).get_x() == 1 &&
-          baz_2_i.get(3).get_x() == 2) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-      else begin
-         $stop;
-      end
+      if (bar_i.get(1).get_x() != 1) $stop;
+      if (baz_1_i.get(2).get_x() != 1) $stop;
+      if (baz_2_i.get(3).get_x() != 2) $stop;
+
+      $write("*-* All Finished *-*\n");
+      $finish;
    end
 endmodule

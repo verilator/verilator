@@ -50,7 +50,7 @@ private:
     bool m_isOpen = false;  // True indicates open file
     std::string m_filename;  // Filename we're writing to (if open)
     uint64_t m_rolloverSize = 0;  // File size to rollover at
-    unsigned m_indent = 0;  // Indentation depth
+    int m_indent = 0;  // Indentation depth
 
     char* m_wrBufp;  // Output buffer
     char* m_wrFlushp;  // Output buffer flush trigger location
@@ -251,7 +251,7 @@ public:
 /// Class representing a VCD dump file in C standalone (no SystemC)
 /// simulations.  Also derived for use in SystemC simulations.
 
-class VerilatedVcdC VL_NOT_FINAL {
+class VerilatedVcdC VL_NOT_FINAL : public VerilatedTraceBaseC {
     VerilatedVcd m_sptrace;  // Trace file being created
 
     // CONSTRUCTORS
@@ -267,7 +267,7 @@ public:
     // METHODS - User called
 
     /// Return if file is open
-    bool isOpen() const VL_MT_SAFE { return m_sptrace.isOpen(); }
+    bool isOpen() const override VL_MT_SAFE { return m_sptrace.isOpen(); }
     /// Open a new VCD file
     /// This includes a complete header dump each time it is called,
     /// just as if this object was deleted and reconstructed.
@@ -283,7 +283,10 @@ public:
     /// first may be removed.  Cat files together to create viewable vcd.
     void rolloverSize(size_t size) VL_MT_SAFE { m_sptrace.rolloverSize(size); }
     /// Close dump
-    void close() VL_MT_SAFE { m_sptrace.close(); }
+    void close() VL_MT_SAFE {
+        m_sptrace.close();
+        modelConnected(false);
+    }
     /// Flush dump
     void flush() VL_MT_SAFE { m_sptrace.flush(); }
     /// Write one cycle of dump data

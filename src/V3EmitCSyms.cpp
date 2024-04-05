@@ -18,8 +18,8 @@
 
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
+#include "V3ExecGraph.h"
 #include "V3LanguageWords.h"
-#include "V3PartitionGraph.h"
 #include "V3StackCount.h"
 #include "V3Stats.h"
 
@@ -113,6 +113,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     int m_funcNum = 0;  // CFunc split function number
     V3OutCFile* m_ofpBase = nullptr;  // Base (not split) C file
     std::unordered_map<int, bool> m_usesVfinal;  // Split method uses __Vfinal
+    VDouble0 m_statVarScopeBytes;  // Statistic tracking
 
     // METHODS
     void emitSymHdr();
@@ -184,7 +185,15 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return out;
     }
 
+    /// (scp, m_vpiScopeCandidates, m_scopeNames) -> m_scopeNames
+    /// Look for parent scopes of scp in m_vpiScopeCandidates (separated by __DOT__ or ".")
+    /// Then add/update entry in m_scopeNames if not already there
     void varHierarchyScopes(string scp) {
+
+        // we want no result to be -1, so use ints
+        string::size_type prd_pos = scp.rfind('.');
+        string::size_type dot_pos = scp.rfind("__DOT__");
+
         while (!scp.empty()) {
             const auto scpit = m_vpiScopeCandidates.find(scopeSymString(scp));
             if ((scpit != m_vpiScopeCandidates.end())
@@ -193,12 +202,16 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 const auto pair = m_scopeNames.emplace(scpit->second.m_symName, scpit->second);
                 if (!pair.second) pair.first->second.m_type = scpit->second.m_type;
             }
-            string::size_type pos = scp.rfind("__DOT__");
-            if (pos == string::npos) {
-                pos = scp.rfind('.');
-                if (pos == string::npos) break;
+
+            // resize and advance pointers
+            if (prd_pos < dot_pos && dot_pos != string::npos) {
+                scp.resize(dot_pos);
+                dot_pos = scp.rfind("__DOT__");
+            } else {
+                if (prd_pos == string::npos) break;
+                scp.resize(prd_pos);
+                prd_pos = scp.rfind('.');
             }
-            scp.resize(pos);
         }
     }
 
@@ -253,7 +266,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void buildVpiHierarchy() {
         for (ScopeNames::const_iterator it = m_scopeNames.begin(); it != m_scopeNames.end();
              ++it) {
-            if (it->second.m_type != "SCOPE_MODULE") continue;
 
             const string symName = it->second.m_symName;
             string above = symName;
@@ -304,7 +316,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             iterateChildrenConst(nodep);
         }
     }
-    void visit(AstCellInline* nodep) override {
+    void visit(AstCellInlineScope* nodep) override {
         if (v3Global.opt.vpi()) {
             const string type
                 = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER" : "SCOPE_MODULE";
@@ -330,6 +342,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 scopeSymString(nodep->name()),
                 ScopeData{nodep, scopeSymString(nodep->name()), name_pretty, timeunit, type});
         }
+        iterateChildrenConst(nodep);
     }
     void visit(AstScopeName* nodep) override {
         const string name = nodep->scopeSymName();
@@ -355,6 +368,10 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         nameCheck(nodep);
         iterateChildrenConst(nodep);
         if (nodep->isSigUserRdPublic() && !m_cfuncp) m_modVars.emplace_back(m_modp, nodep);
+    }
+    void visit(AstVarScope* nodep) override {
+        iterateChildrenConst(nodep);
+        m_statVarScopeBytes += nodep->varp()->dtypep()->widthTotalBytes();
     }
     void visit(AstCoverDecl* nodep) override {
         // Assign numbers to all bins, so we know how big of an array to use
@@ -501,8 +518,7 @@ void EmitCSyms::emitSymHdr() {
 
     if (v3Global.opt.profPgo()) {
         puts("\n// PGO PROFILING\n");
-        const uint32_t usedMTaskProfilingIDs = v3Global.rootp()->usedMTaskProfilingIDs();
-        puts("VlPgoProfiler<" + cvtToStr(usedMTaskProfilingIDs) + "> _vm_pgoProfiler;\n");
+        puts("VlPgoProfiler<" + std::to_string(ExecMTask::numUsedIds()) + "> _vm_pgoProfiler;\n");
     }
 
     if (!m_scopeNames.empty()) {  // Scope names
@@ -822,19 +838,20 @@ void EmitCSyms::emitSymImp() {
         puts("    // Check resources\n");
         uint64_t stackSize = V3StackCount::count(v3Global.rootp());
         if (v3Global.opt.debugStackCheck()) stackSize += 1024 * 1024 * 1024;
-        V3Stats::addStat("Stack size prediction (bytes)", stackSize);
+        V3Stats::addStat("Size prediction, Stack (bytes)", stackSize);
         puts("    Verilated::stackCheck(" + cvtToStr(stackSize) + ");\n");
+        V3Stats::addStat("Size prediction, Heap, from Var Scopes (bytes)", m_statVarScopeBytes);
+        V3Stats::addStat(V3Stats::STAT_MODEL_SIZE, stackSize + m_statVarScopeBytes);
     }
 
     if (v3Global.opt.profPgo()) {
         puts("// Configure profiling for PGO\n");
         if (v3Global.opt.mtasks()) {
             v3Global.rootp()->topModulep()->foreach([&](const AstExecGraph* execGraphp) {
-                for (const V3GraphVertex* vxp = execGraphp->depGraphp()->verticesBeginp(); vxp;
-                     vxp = vxp->verticesNextp()) {
-                    const ExecMTask* const mtp = static_cast<const ExecMTask*>(vxp);
-                    puts("_vm_pgoProfiler.addCounter(" + cvtToStr(mtp->profilerId()) + ", \""
-                         + mtp->hashName() + "\");\n");
+                for (const V3GraphVertex& vtx : execGraphp->depGraphp()->vertices()) {
+                    const ExecMTask& mt = static_cast<const ExecMTask&>(vtx);
+                    puts("_vm_pgoProfiler.addCounter(" + cvtToStr(mt.id()) + ", \"" + mt.hashName()
+                         + "\");\n");
                 }
             });
         }

@@ -1,0 +1,7 @@
+%Warning-PREPROCZERO: t/t_preproc_preproczero_bad.v:11:10: Preprocessor expression evaluates define with 0: 'ZERO' with value '0'
+... Suggest change define 'ZERO' to non-zero value if used in preprocessor expression
+   11 | `ifdef ( ZERO )
+      |          ^~~~
+                      ... For warning description see https://verilator.org/warn/PREPROCZERO?v=latest
+                      ... Use "/* verilator lint_off PREPROCZERO */" and lint_on around source to disable this message.
+%Error: Exiting due to

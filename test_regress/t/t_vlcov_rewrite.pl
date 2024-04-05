@@ -15,7 +15,7 @@ foreach my $basename ("t_vlcov_data_a.dat",
                       "t_vlcov_data_c.dat",
                       "t_vlcov_data_d.dat",
     ) {
-    run(cmd => ["../bin/verilator_coverage",
+    run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_coverage",
                 "t/${basename}",
                 "--write", "$Self->{obj_dir}/${basename}"
         ],

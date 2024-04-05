@@ -1,4 +1,4 @@
-%Error: t/t_struct_packed_init_bad.v:12:17: Initial values not allowed in packed struct/union (IEEE 1800-2017 7.2.1)
+%Error: t/t_struct_packed_init_bad.v:12:17: Initial values not allowed in packed struct/union (IEEE 1800-2023 7.2.1)
                                           : ... note: In instance 't'
    12 |       bit [3:0] m_lo = P;   
       |                 ^~~~

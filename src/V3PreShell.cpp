@@ -176,3 +176,4 @@ void V3PreShell::dumpDefines(std::ostream& os) { V3PreShellImp::s_preprocp->dump
 void V3PreShell::candidateDefines(VSpellCheck* spellerp) {
     V3PreShellImp::s_preprocp->candidateDefines(spellerp);
 }
+void V3PreShell::selfTest() { V3PreProc::selfTest(); }

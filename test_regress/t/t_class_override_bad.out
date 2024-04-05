@@ -1,0 +1,164 @@
+%Error: t/t_class_override_bad.v:22:26: Member 'get_e' marked ':extends' but no base class function is being extend (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   22 |    function :extends int get_e; return 1; endfunction   
+      |                          ^~~~~
+%Error: t/t_class_override_bad.v:24:33: Member 'get_ef' marked ':extends' but no base class function is being extend (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   24 |    function :extends :final int get_ef; return 1; endfunction   
+      |                                 ^~~~~~
+%Error: t/t_class_override_bad.v:55:26: Member 'get_x_e' marked ':extends' but no base class function is being extend (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   55 |    function :extends int get_x_e; return 1; endfunction   
+      |                          ^~~~~~~
+%Error: t/t_class_override_bad.v:56:33: Member 'get_x_ef' marked ':extends' but no base class function is being extend (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   56 |    function :extends :final int get_x_ef; return 1; endfunction   
+      |                                 ^~~~~~~~
+%Error: t/t_class_override_bad.v:64:26: Member 'get_n_i' is marked ':initial' but is being extended (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   64 |    function :initial int get_n_i; return 1; endfunction   
+      |                          ^~~~~~~
+        t/t_class_override_bad.v:18:17: ... Location of declaration being extended
+   18 |    function int get_n_i; return 1; endfunction
+      |                 ^~~~~~~
+%Error: t/t_class_override_bad.v:65:33: Member 'get_n_if' is marked ':initial' but is being extended (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   65 |    function :initial :final int get_n_if; return 1; endfunction   
+      |                                 ^~~~~~~~
+        t/t_class_override_bad.v:19:17: ... Location of declaration being extended
+   19 |    function int get_n_if; return 1; endfunction
+      |                 ^~~~~~~~
+%Error: t/t_class_override_bad.v:73:26: Member 'get_i_i' is marked ':initial' but is being extended (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   73 |    function :initial int get_i_i; return 1; endfunction   
+      |                          ^~~~~~~
+        t/t_class_override_bad.v:30:26: ... Location of declaration being extended
+   30 |    function :initial int get_i_i; return 1; endfunction
+      |                          ^~~~~~~
+%Error: t/t_class_override_bad.v:74:33: Member 'get_i_if' is marked ':initial' but is being extended (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   74 |    function :initial :final int get_i_if; return 1; endfunction   
+      |                                 ^~~~~~~~
+        t/t_class_override_bad.v:31:26: ... Location of declaration being extended
+   31 |    function :initial int get_i_if; return 1; endfunction
+      |                          ^~~~~~~~
+%Error: t/t_class_override_bad.v:77:17: Member 'get_if_n' is being extended from member marked ':final' (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   77 |    function int get_if_n; return 1; endfunction   
+      |                 ^~~~~~~~
+        t/t_class_override_bad.v:35:33: ... Location of ':final' declaration being extended
+   35 |    function :initial :final int get_if_n; return 1; endfunction
+      |                                 ^~~~~~~~
+%Error: t/t_class_override_bad.v:78:26: Member 'get_if_e' is being extended from member marked ':final' (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   78 |    function :extends int get_if_e; return 1; endfunction   
+      |                          ^~~~~~~~
+        t/t_class_override_bad.v:36:33: ... Location of ':final' declaration being extended
+   36 |    function :initial :final int get_if_e; return 1; endfunction
+      |                                 ^~~~~~~~
+%Error: t/t_class_override_bad.v:79:33: Member 'get_if_ef' is being extended from member marked ':final' (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   79 |    function :extends :final int get_if_ef; return 1; endfunction   
+      |                                 ^~~~~~~~~
+        t/t_class_override_bad.v:37:33: ... Location of ':final' declaration being extended
+   37 |    function :initial :final int get_if_ef; return 1; endfunction
+      |                                 ^~~~~~~~~
+%Error: t/t_class_override_bad.v:80:26: Member 'get_if_i' is marked ':initial' but is being extended (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   80 |    function :initial int get_if_i; return 1; endfunction   
+      |                          ^~~~~~~~
+        t/t_class_override_bad.v:38:33: ... Location of declaration being extended
+   38 |    function :initial :final int get_if_i; return 1; endfunction
+      |                                 ^~~~~~~~
+%Error: t/t_class_override_bad.v:80:26: Member 'get_if_i' is being extended from member marked ':final' (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   80 |    function :initial int get_if_i; return 1; endfunction   
+      |                          ^~~~~~~~
+        t/t_class_override_bad.v:38:33: ... Location of ':final' declaration being extended
+   38 |    function :initial :final int get_if_i; return 1; endfunction
+      |                                 ^~~~~~~~
+%Error: t/t_class_override_bad.v:81:33: Member 'get_if_if' is marked ':initial' but is being extended (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   81 |    function :initial :final int get_if_if; return 1; endfunction   
+      |                                 ^~~~~~~~~
+        t/t_class_override_bad.v:39:33: ... Location of declaration being extended
+   39 |    function :initial :final int get_if_if; return 1; endfunction
+      |                                 ^~~~~~~~~
+%Error: t/t_class_override_bad.v:81:33: Member 'get_if_if' is being extended from member marked ':final' (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   81 |    function :initial :final int get_if_if; return 1; endfunction   
+      |                                 ^~~~~~~~~
+        t/t_class_override_bad.v:39:33: ... Location of ':final' declaration being extended
+   39 |    function :initial :final int get_if_if; return 1; endfunction
+      |                                 ^~~~~~~~~
+%Error: t/t_class_override_bad.v:82:24: Member 'get_if_f' is being extended from member marked ':final' (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   82 |    function :final int get_if_f; return 1; endfunction   
+      |                        ^~~~~~~~
+        t/t_class_override_bad.v:40:33: ... Location of ':final' declaration being extended
+   40 |    function :initial :final int get_if_f; return 1; endfunction
+      |                                 ^~~~~~~~
+%Error: t/t_class_override_bad.v:84:17: Member 'get_f_n' is being extended from member marked ':final' (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   84 |    function int get_f_n; return 1; endfunction   
+      |                 ^~~~~~~
+        t/t_class_override_bad.v:43:24: ... Location of ':final' declaration being extended
+   43 |    function :final int get_f_n; return 1; endfunction
+      |                        ^~~~~~~
+%Error: t/t_class_override_bad.v:85:26: Member 'get_f_e' is being extended from member marked ':final' (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   85 |    function :extends int get_f_e; return 1; endfunction   
+      |                          ^~~~~~~
+        t/t_class_override_bad.v:44:24: ... Location of ':final' declaration being extended
+   44 |    function :final int get_f_e; return 1; endfunction
+      |                        ^~~~~~~
+%Error: t/t_class_override_bad.v:86:33: Member 'get_f_ef' is being extended from member marked ':final' (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   86 |    function :extends :final int get_f_ef; return 1; endfunction   
+      |                                 ^~~~~~~~
+        t/t_class_override_bad.v:45:24: ... Location of ':final' declaration being extended
+   45 |    function :final int get_f_ef; return 1; endfunction
+      |                        ^~~~~~~~
+%Error: t/t_class_override_bad.v:87:26: Member 'get_f_i' is marked ':initial' but is being extended (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   87 |    function :initial int get_f_i; return 1; endfunction   
+      |                          ^~~~~~~
+        t/t_class_override_bad.v:46:24: ... Location of declaration being extended
+   46 |    function :final int get_f_i; return 1; endfunction
+      |                        ^~~~~~~
+%Error: t/t_class_override_bad.v:87:26: Member 'get_f_i' is being extended from member marked ':final' (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   87 |    function :initial int get_f_i; return 1; endfunction   
+      |                          ^~~~~~~
+        t/t_class_override_bad.v:46:24: ... Location of ':final' declaration being extended
+   46 |    function :final int get_f_i; return 1; endfunction
+      |                        ^~~~~~~
+%Error: t/t_class_override_bad.v:88:33: Member 'get_f_if' is marked ':initial' but is being extended (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   88 |    function :initial :final int get_f_if; return 1; endfunction   
+      |                                 ^~~~~~~~
+        t/t_class_override_bad.v:47:24: ... Location of declaration being extended
+   47 |    function :final int get_f_if; return 1; endfunction
+      |                        ^~~~~~~~
+%Error: t/t_class_override_bad.v:88:33: Member 'get_f_if' is being extended from member marked ':final' (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   88 |    function :initial :final int get_f_if; return 1; endfunction   
+      |                                 ^~~~~~~~
+        t/t_class_override_bad.v:47:24: ... Location of ':final' declaration being extended
+   47 |    function :final int get_f_if; return 1; endfunction
+      |                        ^~~~~~~~
+%Error: t/t_class_override_bad.v:89:24: Member 'get_f_f' is being extended from member marked ':final' (IEEE 1800-2023 8.20)
+                                      : ... note: In instance 't'
+   89 |    function :final int get_f_f; return 1; endfunction   
+      |                        ^~~~~~~
+        t/t_class_override_bad.v:48:24: ... Location of ':final' declaration being extended
+   48 |    function :final int get_f_f; return 1; endfunction
+      |                        ^~~~~~~
+%Error: t/t_class_override_bad.v:101:42: Class 'CClsBadExtendsFinal' is being extended from class marked ':final' (IEEE 1800-2023 8.20)
+                                       : ... note: In instance 't'
+  101 | class :final CClsBadExtendsFinal extends CClsF;
+      |                                          ^~~~~
+        t/t_class_override_bad.v:98:1: ... Location of ':final' class being extended
+   98 | class :final CClsF extends CBase;
+      | ^~~~~
+%Error: Exiting due to

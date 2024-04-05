@@ -40,6 +40,7 @@
 
 class DfgVertexVar VL_NOT_FINAL : public DfgVertexVariadic {
     AstVar* const m_varp;  // The AstVar associated with this vertex (not owned by this vertex)
+    bool m_hasDfgRefs = false;  // This AstVar is referenced in a different DFG of the module
     bool m_hasModRefs = false;  // This AstVar is referenced outside the DFG, but in the module
     bool m_hasExtRefs = false;  // This AstVar is referenced from outside the module
 
@@ -52,21 +53,16 @@ public:
         , m_varp{varp} {}
     ASTGEN_MEMBERS_DfgVertexVar;
 
-    DfgVertexVar* verticesNext() const {
-        return static_cast<DfgVertexVar*>(DfgVertex::verticesNext());
-    }
-    DfgVertexVar* verticesPrev() const {
-        return static_cast<DfgVertexVar*>(DfgVertex::verticesPrev());
-    }
-
     bool isDrivenByDfg() const { return arity() > 0; }
 
     AstVar* varp() const { return m_varp; }
+    bool hasDfgRefs() const { return m_hasDfgRefs; }
+    void setHasDfgRefs() { m_hasDfgRefs = true; }
     bool hasModRefs() const { return m_hasModRefs; }
     void setHasModRefs() { m_hasModRefs = true; }
     bool hasExtRefs() const { return m_hasExtRefs; }
     void setHasExtRefs() { m_hasExtRefs = true; }
-    bool hasRefs() const { return m_hasModRefs || m_hasExtRefs; }
+    bool hasNonLocalRefs() const { return hasDfgRefs() || hasModRefs() || hasExtRefs(); }
 
     // Variable cannot be removed, even if redundant in the DfgGraph (might be used externally)
     bool keep() const {
@@ -103,9 +99,6 @@ public:
         : DfgVertex{dfg, dfgType(), flp, dtypeForWidth(width)}
         , m_num{flp, static_cast<int>(width), value} {}
     ASTGEN_MEMBERS_DfgConst;
-
-    DfgConst* verticesNext() const { return static_cast<DfgConst*>(DfgVertex::verticesNext()); }
-    DfgConst* verticesPrev() const { return static_cast<DfgConst*>(DfgVertex::verticesPrev()); }
 
     V3Number& num() { return m_num; }
     const V3Number& num() const { return m_num; }
@@ -245,7 +238,9 @@ public:
         : DfgVertexVar{dfg, dfgType(), varp, 1u} {}
     ASTGEN_MEMBERS_DfgVarPacked;
 
-    bool isDrivenFullyByDfg() const { return arity() == 1 && source(0)->dtypep() == dtypep(); }
+    bool isDrivenFullyByDfg() const {
+        return arity() == 1 && source(0)->dtypep() == dtypep() && !varp()->isForceable();
+    }
 
     void addDriver(FileLine* flp, uint32_t lsb, DfgVertex* vtxp) {
         m_driverData.emplace_back(flp, lsb);

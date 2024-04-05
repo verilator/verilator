@@ -74,7 +74,7 @@ void set_bvals(svLogicVecVal* v, unsigned n) {
     for (unsigned i = 0; i < n; i++) v[i].bval = 0;
 }
 
-// Basic types as per IEEE 1800-2017 35.5.6
+// Basic types as per IEEE 1800-2023 35.5.6
 void i_byte(char* x) {
     static int n = 0;
     if (*x != 10 - n++) stop();
@@ -893,7 +893,7 @@ void check_exports() {
     set_bvals(x_union_4_state_65, 3);
     set_bvals(x_union_4_state_128, 4);
 
-    // Basic types as per IEEE 1800-2017 35.5.6
+    // Basic types as per IEEE 1800-2023 35.5.6
     x_byte = 10 + n;
     e_byte(&x_byte);
     if (x_byte != 110 + n) stop();

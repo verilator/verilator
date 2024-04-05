@@ -3,7 +3,7 @@
       |                          ^~~
                    ... For warning description see https://verilator.org/warn/NEWERSTD?v=latest
                    ... Use "/* verilator lint_off NEWERSTD */" and lint_on around source to disable this message.
-%Error: t/t_param_default_bad.v:7:26: Parameter without initial value is never given value (IEEE 1800-2017 6.20.1): 'Foo'
+%Error: t/t_param_default_bad.v:7:26: Parameter without initial value is never given value (IEEE 1800-2023 6.20.1): 'Foo'
                                     : ... note: In instance 't.foo'
     7 | module m #(parameter int Foo);
       |                          ^~~

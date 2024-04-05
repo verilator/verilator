@@ -1,152 +1,152 @@
-%Error-UNSUPPORTED: t/t_randsequence.v:23:17: Unsupported: randsequence production id
-   23 |          main : one;
+%Error-UNSUPPORTED: t/t_randsequence.v:24:17: Unsupported: randsequence production id
+   24 |          main : one;
       |                 ^~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_randsequence.v:23:15: Unsupported: randsequence production
-   23 |          main : one;
+%Error-UNSUPPORTED: t/t_randsequence.v:24:15: Unsupported: randsequence production
+   24 |          main : one;
       |               ^
-%Error-UNSUPPORTED: t/t_randsequence.v:24:14: Unsupported: randsequence production
-   24 |          one : { o = 1; };
+%Error-UNSUPPORTED: t/t_randsequence.v:25:14: Unsupported: randsequence production
+   25 |          one : { o = 1; };
       |              ^
-%Error-UNSUPPORTED: t/t_randsequence.v:22:7: Unsupported: randsequence
-   22 |       randsequence(main)
+%Error-UNSUPPORTED: t/t_randsequence.v:23:7: Unsupported: randsequence
+   23 |       randsequence(main)
       |       ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_randsequence.v:40:16: Unsupported: randsequence production id
-   40 |          main: one two three;
+%Error-UNSUPPORTED: t/t_randsequence.v:41:16: Unsupported: randsequence production id
+   41 |          main: one two three;
       |                ^~~
-%Error-UNSUPPORTED: t/t_randsequence.v:40:20: Unsupported: randsequence production id
-   40 |          main: one two three;
+%Error-UNSUPPORTED: t/t_randsequence.v:41:20: Unsupported: randsequence production id
+   41 |          main: one two three;
       |                    ^~~
-%Error-UNSUPPORTED: t/t_randsequence.v:40:24: Unsupported: randsequence production id
-   40 |          main: one two three;
+%Error-UNSUPPORTED: t/t_randsequence.v:41:24: Unsupported: randsequence production id
+   41 |          main: one two three;
       |                        ^~~~~
-%Error-UNSUPPORTED: t/t_randsequence.v:40:14: Unsupported: randsequence production
-   40 |          main: one two three;
+%Error-UNSUPPORTED: t/t_randsequence.v:41:14: Unsupported: randsequence production
+   41 |          main: one two three;
       |              ^
-%Error-UNSUPPORTED: t/t_randsequence.v:41:13: Unsupported: randsequence production
-   41 |          two: { do if ((seq) !== (1)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", "t/t_randsequence.v",41, (seq), (1)); $stop; end while(0);; seq = 2; };
-      |             ^
 %Error-UNSUPPORTED: t/t_randsequence.v:42:13: Unsupported: randsequence production
-   42 |          one: { do if ((seq) !== (0)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", "t/t_randsequence.v",42, (seq), (0)); $stop; end while(0);; seq = 1; };
+   42 |          two: { do if ((seq) !== (1)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", "t/t_randsequence.v",42, (seq), (1)); $stop; end while(0);; seq = 2; };
       |             ^
-%Error-UNSUPPORTED: t/t_randsequence.v:43:15: Unsupported: randsequence production
-   43 |          three: { do if ((seq) !== (2)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", "t/t_randsequence.v",43, (seq), (2)); $stop; end while(0);; seq = 3; };
+%Error-UNSUPPORTED: t/t_randsequence.v:43:13: Unsupported: randsequence production
+   43 |          one: { do if ((seq) !== (0)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", "t/t_randsequence.v",43, (seq), (0)); $stop; end while(0);; seq = 1; };
+      |             ^
+%Error-UNSUPPORTED: t/t_randsequence.v:44:15: Unsupported: randsequence production
+   44 |          three: { do if ((seq) !== (2)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", "t/t_randsequence.v",44, (seq), (2)); $stop; end while(0);; seq = 3; };
       |               ^
-%Error-UNSUPPORTED: t/t_randsequence.v:39:7: Unsupported: randsequence
-   39 |       randsequence(main)
+%Error-UNSUPPORTED: t/t_randsequence.v:40:7: Unsupported: randsequence
+   40 |       randsequence(main)
       |       ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_randsequence.v:51:17: Unsupported: randsequence production
-   51 |          unnamed: { seq = 2; };
+%Error-UNSUPPORTED: t/t_randsequence.v:52:17: Unsupported: randsequence production
+   52 |          unnamed: { seq = 2; };
       |                 ^
-%Error-UNSUPPORTED: t/t_randsequence.v:50:7: Unsupported: randsequence
-   50 |       randsequence()
+%Error-UNSUPPORTED: t/t_randsequence.v:51:7: Unsupported: randsequence
+   51 |       randsequence()
       |       ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_randsequence.v:58:17: Unsupported: randsequence production
-   58 |          unnamed: { };
+%Error-UNSUPPORTED: t/t_randsequence.v:59:17: Unsupported: randsequence production
+   59 |          unnamed: { };
       |                 ^
-%Error-UNSUPPORTED: t/t_randsequence.v:57:7: Unsupported: randsequence
-   57 |       randsequence()
+%Error-UNSUPPORTED: t/t_randsequence.v:58:7: Unsupported: randsequence
+   58 |       randsequence()
       |       ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_randsequence.v:65:19: Unsupported: randsequence production id
-   65 |             main: one | two | three := 2;
+%Error-UNSUPPORTED: t/t_randsequence.v:66:19: Unsupported: randsequence production id
+   66 |             main: one | two | three := 2;
       |                   ^~~
-%Error-UNSUPPORTED: t/t_randsequence.v:65:25: Unsupported: randsequence production id
-   65 |             main: one | two | three := 2;
+%Error-UNSUPPORTED: t/t_randsequence.v:66:25: Unsupported: randsequence production id
+   66 |             main: one | two | three := 2;
       |                         ^~~
-%Error-UNSUPPORTED: t/t_randsequence.v:65:31: Unsupported: randsequence production id
-   65 |             main: one | two | three := 2;
+%Error-UNSUPPORTED: t/t_randsequence.v:66:31: Unsupported: randsequence production id
+   66 |             main: one | two | three := 2;
       |                               ^~~~~
-%Error-UNSUPPORTED: t/t_randsequence.v:65:31: Unsupported: randsequence rule
-   65 |             main: one | two | three := 2;
+%Error-UNSUPPORTED: t/t_randsequence.v:66:31: Unsupported: randsequence rule
+   66 |             main: one | two | three := 2;
       |                               ^~~~~
-%Error-UNSUPPORTED: t/t_randsequence.v:65:17: Unsupported: randsequence production
-   65 |             main: one | two | three := 2;
+%Error-UNSUPPORTED: t/t_randsequence.v:66:17: Unsupported: randsequence production
+   66 |             main: one | two | three := 2;
       |                 ^
-%Error-UNSUPPORTED: t/t_randsequence.v:66:16: Unsupported: randsequence production
-   66 |             one: { ++counts[0]; };
-      |                ^
 %Error-UNSUPPORTED: t/t_randsequence.v:67:16: Unsupported: randsequence production
-   67 |             two: { ++counts[1]; };
+   67 |             one: { ++counts[0]; };
       |                ^
-%Error-UNSUPPORTED: t/t_randsequence.v:68:18: Unsupported: randsequence production
-   68 |             three: { ++counts[2]; };
+%Error-UNSUPPORTED: t/t_randsequence.v:68:16: Unsupported: randsequence production
+   68 |             two: { ++counts[1]; };
+      |                ^
+%Error-UNSUPPORTED: t/t_randsequence.v:69:18: Unsupported: randsequence production
+   69 |             three: { ++counts[2]; };
       |                  ^
-%Error-UNSUPPORTED: t/t_randsequence.v:64:10: Unsupported: randsequence
-   64 |          randsequence(main)
+%Error-UNSUPPORTED: t/t_randsequence.v:65:10: Unsupported: randsequence
+   65 |          randsequence(main)
       |          ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_randsequence.v:79:19: Unsupported: randsequence production id
-   79 |             main: one_if;
+%Error-UNSUPPORTED: t/t_randsequence.v:80:19: Unsupported: randsequence production id
+   80 |             main: one_if;
       |                   ^~~~~~
-%Error-UNSUPPORTED: t/t_randsequence.v:79:17: Unsupported: randsequence production
-   79 |             main: one_if;
+%Error-UNSUPPORTED: t/t_randsequence.v:80:17: Unsupported: randsequence production
+   80 |             main: one_if;
       |                 ^
-%Error-UNSUPPORTED: t/t_randsequence.v:80:38: Unsupported: randsequence production id
-   80 |             one_if: if (i % 10 == 0) count_1 else most;
+%Error-UNSUPPORTED: t/t_randsequence.v:81:38: Unsupported: randsequence production id
+   81 |             one_if: if (i % 10 == 0) count_1 else most;
       |                                      ^~~~~~~
-%Error-UNSUPPORTED: t/t_randsequence.v:80:51: Unsupported: randsequence production id
-   80 |             one_if: if (i % 10 == 0) count_1 else most;
+%Error-UNSUPPORTED: t/t_randsequence.v:81:51: Unsupported: randsequence production id
+   81 |             one_if: if (i % 10 == 0) count_1 else most;
       |                                                   ^~~~
-%Error-UNSUPPORTED: t/t_randsequence.v:80:21: Unsupported: randsequence if
-   80 |             one_if: if (i % 10 == 0) count_1 else most;
+%Error-UNSUPPORTED: t/t_randsequence.v:81:21: Unsupported: randsequence if
+   81 |             one_if: if (i % 10 == 0) count_1 else most;
       |                     ^~
-%Error-UNSUPPORTED: t/t_randsequence.v:80:19: Unsupported: randsequence production
-   80 |             one_if: if (i % 10 == 0) count_1 else most;
+%Error-UNSUPPORTED: t/t_randsequence.v:81:19: Unsupported: randsequence production
+   81 |             one_if: if (i % 10 == 0) count_1 else most;
       |                   ^
-%Error-UNSUPPORTED: t/t_randsequence.v:81:20: Unsupported: randsequence production
-   81 |             count_1: { ++counts[1]; };
-      |                    ^
 %Error-UNSUPPORTED: t/t_randsequence.v:82:20: Unsupported: randsequence production
-   82 |             count_2: { ++counts[2]; };
+   82 |             count_1: { ++counts[1]; };
       |                    ^
 %Error-UNSUPPORTED: t/t_randsequence.v:83:20: Unsupported: randsequence production
-   83 |             count_3: { ++counts[3]; };
+   83 |             count_2: { ++counts[2]; };
       |                    ^
 %Error-UNSUPPORTED: t/t_randsequence.v:84:20: Unsupported: randsequence production
-   84 |             count_4: { ++counts[4]; };
+   84 |             count_3: { ++counts[3]; };
       |                    ^
-%Error-UNSUPPORTED: t/t_randsequence.v:85:16: Unsupported: randsequence production
-   85 |             bad: { $stop; };
+%Error-UNSUPPORTED: t/t_randsequence.v:85:20: Unsupported: randsequence production
+   85 |             count_4: { ++counts[4]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:86:16: Unsupported: randsequence production
+   86 |             bad: { $stop; };
       |                ^
-%Error-UNSUPPORTED: t/t_randsequence.v:87:24: Unsupported: randsequence production id
-   87 |                     0: bad;
+%Error-UNSUPPORTED: t/t_randsequence.v:88:24: Unsupported: randsequence production id
+   88 |                     0: bad;
       |                        ^~~
-%Error-UNSUPPORTED: t/t_randsequence.v:87:22: Unsupported: randsequence case item
-   87 |                     0: bad;
+%Error-UNSUPPORTED: t/t_randsequence.v:88:22: Unsupported: randsequence case item
+   88 |                     0: bad;
       |                      ^
-%Error-UNSUPPORTED: t/t_randsequence.v:88:27: Unsupported: randsequence production id
-   88 |                     1, 2: count_2;
+%Error-UNSUPPORTED: t/t_randsequence.v:89:27: Unsupported: randsequence production id
+   89 |                     1, 2: count_2;
       |                           ^~~~~~~
-%Error-UNSUPPORTED: t/t_randsequence.v:88:25: Unsupported: randsequence case item
-   88 |                     1, 2: count_2;
+%Error-UNSUPPORTED: t/t_randsequence.v:89:25: Unsupported: randsequence case item
+   89 |                     1, 2: count_2;
       |                         ^
-%Error-UNSUPPORTED: t/t_randsequence.v:89:30: Unsupported: randsequence production id
-   89 |                     3, 4, 5: count_3;
-      |                              ^~~~~~~
-%Error-UNSUPPORTED: t/t_randsequence.v:89:28: Unsupported: randsequence case item
-   89 |                     3, 4, 5: count_3;
-      |                            ^
 %Error-UNSUPPORTED: t/t_randsequence.v:90:30: Unsupported: randsequence production id
-   90 |                     default: count_4;
+   90 |                     3, 4, 5: count_3;
       |                              ^~~~~~~
-%Error-UNSUPPORTED: t/t_randsequence.v:90:21: Unsupported: randsequence case item
-   90 |                     default: count_4;
+%Error-UNSUPPORTED: t/t_randsequence.v:90:28: Unsupported: randsequence case item
+   90 |                     3, 4, 5: count_3;
+      |                            ^
+%Error-UNSUPPORTED: t/t_randsequence.v:91:30: Unsupported: randsequence production id
+   91 |                     default: count_4;
+      |                              ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:91:21: Unsupported: randsequence case item
+   91 |                     default: count_4;
       |                     ^~~~~~~
-%Error-UNSUPPORTED: t/t_randsequence.v:86:19: Unsupported: randsequence case
-   86 |             most: case (i % 10)
+%Error-UNSUPPORTED: t/t_randsequence.v:87:19: Unsupported: randsequence case
+   87 |             most: case (i % 10)
       |                   ^~~~
-%Error-UNSUPPORTED: t/t_randsequence.v:86:17: Unsupported: randsequence production
-   86 |             most: case (i % 10)
+%Error-UNSUPPORTED: t/t_randsequence.v:87:17: Unsupported: randsequence production
+   87 |             most: case (i % 10)
       |                 ^
-%Error-UNSUPPORTED: t/t_randsequence.v:78:10: Unsupported: randsequence
-   78 |          randsequence(main)
+%Error-UNSUPPORTED: t/t_randsequence.v:79:10: Unsupported: randsequence
+   79 |          randsequence(main)
       |          ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_randsequence.v:103:19: Unsupported: randsequence production id
-  103 |             main: one_if;
+%Error-UNSUPPORTED: t/t_randsequence.v:104:19: Unsupported: randsequence production id
+  104 |             main: one_if;
       |                   ^~~~~~
-%Error-UNSUPPORTED: t/t_randsequence.v:103:17: Unsupported: randsequence production
-  103 |             main: one_if;
+%Error-UNSUPPORTED: t/t_randsequence.v:104:17: Unsupported: randsequence production
+  104 |             main: one_if;
       |                 ^
-%Error-UNSUPPORTED: t/t_randsequence.v:104:38: Unsupported: randsequence production id
-  104 |             one_if: if (i % 10 == 0) count_1 else most;
+%Error-UNSUPPORTED: t/t_randsequence.v:105:38: Unsupported: randsequence production id
+  105 |             one_if: if (i % 10 == 0) count_1 else most;
       |                                      ^~~~~~~
 %Error: Exiting due to

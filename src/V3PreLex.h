@@ -217,6 +217,7 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
     void pushStateDefArg(int level);
     void pushStateDefForm();
     void pushStateDefValue();
+    void pushStateExpr();
     void pushStateIncFilename();
     void scanNewFile(FileLine* filelinep);
     void scanBytes(const string& str);

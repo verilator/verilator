@@ -11,15 +11,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 top_filename("t/t_func_dotted.v");
-my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
+my $out_filename = "$Self->{obj_dir}/V$Self->{name}.tree.json";
 
 compile(
-    v_flags2 => ["t/t_func_dotted_inl2.vlt",],
+    v_flags2 => ["--no-json-edit-nums", "t/t_func_dotted_inl2.vlt",],
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<instance loc="f,87,.*?" name="t.ma0.mb0" defName="mb" origName="mb0"\/\>/i);
-    file_grep("$out_filename", qr/\<module loc="f,99,.*?" name="mb" origName="mb"\>/i);
+    my $modp = (file_grep("$out_filename", qr/{"type":"MODULE","name":"mb","addr":"([^"]*)","loc":"f,99:[^"]*",.*"origName":"mb"/))[0];
+    file_grep("$out_filename", qr/{"type":"CELL","name":"t.ma0.mb0","addr":"[^"]*","loc":"f,87:[^"]*",.*"origName":"mb0",.*"modp":"([^"]*)"/, $modp);
 }
 
 execute(

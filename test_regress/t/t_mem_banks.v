@@ -11,8 +11,8 @@ module t (/*AUTOARG*/);
    parameter BANKS = 6;
    parameter ROWS = 8;
 
-   wire [2:0]   bank;
-   wire [2:0]   row;
+   reg [2:0]   bank;
+   reg [2:0]   row;
 
    integer      a;
    integer      used[BANKS][ROWS];

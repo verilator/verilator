@@ -1,4 +1,4 @@
-%Error: t/t_clocking_bad1.v:16:12: Only one default clocking block allowed per module (IEEE 1800-2017 14.12)
+%Error: t/t_clocking_bad1.v:16:12: Only one default clocking block allowed per module (IEEE 1800-2023 14.12)
                                  : ... note: In instance 't'
    16 |    default clocking @(posedge clk);
       |            ^~~~~~~~

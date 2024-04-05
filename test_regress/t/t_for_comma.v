@@ -54,6 +54,8 @@ module t (/*AUTOARG*/);
       `checkc(7);
       for (int a = 1, int b = 1; a < 3; a = a + 1, b = b + 1) begin c = c + 1 + a + b; end
       `checkc(8);
+      for (int a = 1, x = 1; a < 3; a = a + 1, x = x + 1) begin c = c + 1 + a + x; end
+      `checkc(8);
       $write("*-* All Finished *-*\n");
       $finish;
    end

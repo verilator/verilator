@@ -1,4 +1,4 @@
-%Error: t/t_class_extends_bad.v:13:26: Multiple inheritance illegal on non-interface classes (IEEE 1800-2017 8.13)
+%Error: t/t_class_extends_bad.v:13:26: Multiple inheritance illegal on non-interface classes (IEEE 1800-2023 8.13)
    13 | class Cls extends Base1, Base2;
       |                          ^~~~~
 %Error: Exiting due to

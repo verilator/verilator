@@ -71,6 +71,7 @@ Deadman
 Debacker
 Deepa
 Defparams
+Delm
 Denio
 Deprecations
 Deroo
@@ -146,6 +147,7 @@ Grulfen
 Gu
 Gunter
 Guo
+Hameed
 Hao
 Haojin
 Harboe
@@ -180,9 +182,11 @@ Jannis
 Jasen
 Jens
 Jeras
+Jiaxun
 Jiuyang
 Joannou
 Joly
+Josse
 Jullien
 Junji
 Junyi
@@ -437,6 +441,7 @@ Verilog
 Vighnesh
 Viktor
 Vilp
+Vlip
 Vm
 Vukobratovic
 Wai
@@ -460,6 +465,7 @@ Xiaoliang
 Xiaoyi
 Xuan
 Xuanqi
+Yao
 Yazdanbakhsh
 Yernagula
 Yi
@@ -519,6 +525,7 @@ buildenv
 bv
 bvs
 callValueCbs
+callgrind
 casex
 casez
 casted
@@ -583,6 +590,7 @@ der
 dereference
 desassign
 destructor
+desynchronization
 detections
 dev
 devcontainer
@@ -613,6 +621,7 @@ dut
 dx
 dynarray
 elab
+eliasphanna
 elike
 elsif
 endcase
@@ -635,6 +644,7 @@ envvar
 eof
 errae
 erroring
+esynr
 et
 eval
 evals
@@ -666,6 +676,7 @@ foreach
 fprintf
 fprofile
 fread
+freloop
 frewind
 fs
 fscanf
@@ -733,6 +744,7 @@ ish
 isunbounded
 isunknown
 jobserver
+json
 jwoutersymatra
 killua
 lang
@@ -960,8 +972,11 @@ sv
 svBitVal
 svBitVecVal
 svGet
+svGetTime
+svGetTimePrecision
 svLogicVal
 svdpi
+svgGetTimeUnit
 swrite
 sys
 systemc
@@ -1020,6 +1035,7 @@ uselib
 utimes
 uwire
 uwires
+valgrind
 vc
 vcd
 vcddiff

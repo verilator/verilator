@@ -21,7 +21,7 @@ compile(
 foreach my $dotname ("linkcells", "task_call", "gate_graph", "gate_final",
         "acyc_simp", "orderg_pre", "orderg_acyc", "orderg_order", "orderg_domain",
         "ordermv_initial", "ordermv_hazards", "ordermv_contraction",
-        "ordermv_transitive1", "orderg_done", "ordermv_transitive2", "schedule") {
+        "ordermv_transitive1", "orderg_done", "schedule") {
     # Some files with identical prefix are generated multiple times during
     # Verilation. Ensure that at least one of each $dotname-prefixed file is generated.
     @dotFiles = glob("$Self->{obj_dir}/*$dotname.dot");

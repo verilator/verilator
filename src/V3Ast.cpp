@@ -17,11 +17,11 @@
 #include "V3PchAstMT.h"
 
 #include "V3Broken.h"
-#include "V3EmitV.h"
 #include "V3File.h"
 
 #include <iomanip>
 #include <memory>
+#include <sstream>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -1170,8 +1170,50 @@ void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
         default: this->v3fatalSrc("Bad case"); break;
         }
     }
+    if (v3Global.opt.debugWidth() && v3Global.widthMinUsage() == VWidthMinUsage::VERILOG_WIDTH) {
+        if (const AstNodeExpr* const exprp = VN_CAST(this, NodeExpr)) {
+            const char* const whyp = exprp->widthMismatch();
+            if (whyp) {
+                auto dtypeStr = [](const AstNodeExpr* exprp) VL_MT_STABLE {
+                    std::ostringstream ss;
+                    exprp->dtypep()->dumpSmall(ss);
+                    return ss.str();
+                };
+                if (const AstNodeUniop* const uniopp = VN_CAST(exprp, NodeUniop)) {
+                    UASSERT_OBJ(!whyp, uniopp,
+                                "widthMismatch detected " << whyp << "OUT:" << dtypeStr(uniopp)
+                                                          << " LHS:" << dtypeStr(uniopp->lhsp()));
+                } else if (const AstNodeBiop* const biopp = VN_CAST(exprp, NodeBiop)) {
+                    UASSERT_OBJ(!whyp, biopp,
+                                "widthMismatch detected " << whyp << "OUT:" << dtypeStr(biopp)
+                                                          << " LHS:" << dtypeStr(biopp->lhsp())
+                                                          << " RHS:" << dtypeStr(biopp->rhsp()));
+                } else {
+                    UASSERT_OBJ(false, exprp,
+                                "widthMismatch detected " << whyp << " in an unexpected type");
+                }
+            }
+        }
+    }
 }
 
+// cppcheck-suppress unusedFunction  // Debug only
+char* AstNode::dumpTreeJsonGdb(const AstNode* nodep) {
+    if (!nodep) return strdup("{\"addr\":\"NULL\"}\n");
+    std::stringstream nodepStream;
+    nodep->dumpTreeJson(nodepStream);
+    const std::string str = nodepStream.rdbuf()->str();
+    return strdup(str.c_str());
+}
+// cppcheck-suppress unusedFunction  // Debug only
+// identity func to allow for passing already done dumps to jtree
+char* AstNode::dumpTreeJsonGdb(const char* str) { return strdup(str); }
+// cppcheck-suppress unusedFunction  // Debug only
+// allow for passing pointer literals like 0x42.. without manual cast
+char* AstNode::dumpTreeJsonGdb(intptr_t nodep) {
+    if (!nodep) return strdup("{\"addr\":\"NULL\"}\n");
+    return dumpTreeJsonGdb((const AstNode*)nodep);
+}
 // cppcheck-suppress unusedFunction  // Debug only
 void AstNode::dumpGdb(const AstNode* nodep) {  // For GDB only  // LCOV_EXCL_LINE
     if (!nodep) {
@@ -1275,7 +1317,7 @@ void AstNode::dumpTreeAndNext(std::ostream& os, const string& indent, int maxDep
     }
 }
 
-void AstNode::dumpTreeFile(const string& filename, bool doDump, bool doCheck) {
+void AstNode::dumpTreeFile(const string& filename, bool doDump) {
     // Not const function as calls checkTree
     if (doDump) {
         {  // Write log & close
@@ -1292,14 +1334,6 @@ void AstNode::dumpTreeFile(const string& filename, bool doDump, bool doCheck) {
                 editCountSetLast();  // Next dump can indicate start from here
             }
         }
-    }
-    if (doDump && v3Global.opt.debugEmitV()) V3EmitV::debugEmitV(filename + ".v");
-    if (doCheck && (v3Global.opt.debugCheck() || ::dumpTreeLevel())) {
-        // Error check
-        checkTree();
-        // Broken isn't part of check tree because it can munge iterp's
-        // set by other steps if it is called in the middle of other operations
-        if (AstNetlist* const netp = VN_CAST(this, Netlist)) V3Broken::brokenAll(netp);
     }
 }
 
@@ -1328,6 +1362,29 @@ void AstNode::dumpTreeDot(std::ostream& os) const {
     drawChildren(os, this, m_op2p, "op2");
     drawChildren(os, this, m_op3p, "op3");
     drawChildren(os, this, m_op4p, "op4");
+}
+
+void AstNode::dumpTreeJsonFile(const string& filename, bool doDump) {
+    if (!doDump) return;
+    UINFO(2, "Dumping " << filename << endl);
+    const std::unique_ptr<std::ofstream> treejsonp{V3File::new_ofstream(filename)};
+    if (treejsonp->fail()) v3fatal("Can't write " << filename);
+    dumpTreeJson(*treejsonp);
+    *treejsonp << '\n';
+}
+
+void AstNode::dumpJsonMetaFileGdb(const char* filename) { dumpJsonMetaFile(filename); }
+void AstNode::dumpJsonMetaFile(const string& filename) {
+    UINFO(2, "Dumping " << filename << endl);
+    const std::unique_ptr<std::ofstream> treejsonp{V3File::new_ofstream(filename)};
+    if (treejsonp->fail()) v3fatalStatic("Can't write " << filename);
+    *treejsonp << '{';
+    FileLine::fileNameNumMapDumpJson(*treejsonp);
+    *treejsonp << ',';
+    v3Global.idPtrMapDumpJson(*treejsonp);
+    *treejsonp << ',';
+    v3Global.ptrNamesDumpJson(*treejsonp);
+    *treejsonp << "}\n";
 }
 
 void AstNode::dumpTreeDotFile(const string& filename, bool doDump) {
@@ -1507,8 +1564,7 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
             return VCastable::ENUM_IMPLICIT;
         if (fromNumericable) return VCastable::ENUM_EXPLICIT;
     } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromConstp, Const)) {
-        if (VN_IS(fromConstp, Const) && VN_AS(fromConstp, Const)->num().isNull())
-            return VCastable::COMPATIBLE;
+        if (fromConstp->isNull()) return VCastable::COMPATIBLE;
     } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromDtp, ClassRefDType)) {
         const auto toClassp = VN_AS(toDtp, ClassRefDType)->classp();
         const auto fromClassp = VN_AS(fromDtp, ClassRefDType)->classp();
@@ -1534,26 +1590,26 @@ VCastable AstNode::computeCastable(const AstNodeDType* toDtp, const AstNodeDType
     return castable;
 }
 
-AstNodeDType* AstNode::getCommonClassTypep(AstNode* nodep1, AstNode* nodep2) {
-    // Return the class type that both nodep1 and nodep2 are castable to.
+AstNodeDType* AstNode::getCommonClassTypep(AstNode* node1p, AstNode* node2p) {
+    // Return the class type that both node1p and node2p are castable to.
     // If both are null, return the type of null constant.
     // If one is a class and one is null, return AstClassRefDType that points to that class.
     // If no common class type exists, return nullptr.
 
     // First handle cases with null values and when one class is a super class of the other.
-    if (VN_IS(nodep1, Const)) std::swap(nodep1, nodep2);
+    if (VN_IS(node1p, Const)) std::swap(node1p, node2p);
     {
-        const VCastable castable = computeCastable(nodep1->dtypep(), nodep2->dtypep(), nodep2);
+        const VCastable castable = computeCastable(node1p->dtypep(), node2p->dtypep(), node2p);
         if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE) {
-            return nodep1->dtypep();
+            return node1p->dtypep();
         } else if (castable == VCastable::DYNAMIC_CLASS) {
-            return nodep2->dtypep();
+            return node2p->dtypep();
         }
     }
 
-    AstClassRefDType* classDtypep1 = VN_CAST(nodep1->dtypep(), ClassRefDType);
+    AstClassRefDType* classDtypep1 = VN_CAST(node1p->dtypep(), ClassRefDType);
     while (classDtypep1) {
-        const VCastable castable = computeCastable(classDtypep1, nodep2->dtypep(), nodep2);
+        const VCastable castable = computeCastable(classDtypep1, node2p->dtypep(), node2p);
         if (castable == VCastable::COMPATIBLE) return classDtypep1;
         AstClassExtends* const extendsp = classDtypep1->classp()->extendsp();
         classDtypep1 = extendsp ? VN_AS(extendsp->dtypep(), ClassRefDType) : nullptr;

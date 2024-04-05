@@ -150,10 +150,21 @@ extern "C" {
 #define vpiIntegerNet               681
 #define vpiLogicNet                 vpiNet
 #define vpiTimeNet                  682
+#define vpiUnionNet                 525
+#define vpiShortRealNet             526
+#define vpiRealNet                  527
+#define vpiByteNet                  528
+#define vpiShortIntNet              529
+#define vpiIntNet                   530
+#define vpiLongIntNet               531
+#define vpiBitNet                   532
+#define vpiInterconnectNet          533
+#define vpiInterconnectArray        534
 #define vpiStructNet                683
 #define vpiBreak                    684
 #define vpiContinue                 685
 #define vpiPackedArrayNet           693
+#define vpiNettypeDecl              523
 #define vpiConstraintExpr           747
 #define vpiElseConst                748
 #define vpiImplication              749
@@ -173,6 +184,8 @@ extern "C" {
 #define vpiIndexTypespec            702
 #define vpiBaseTypespec             703
 #define vpiElemTypespec             704
+
+#define vpiNetTypedefAlias          705
 
 #define vpiInputSkew                706
 #define vpiOutputSkew               707
@@ -206,7 +219,8 @@ extern "C" {
 #define vpiMessages                 735
 #define vpiLoopVars                 737
 
-#define vpiConcurrentAssertions     740
+#define vpiConcurrentAssertion      740
+#define vpiConcurrentAssertions     vpiConcurrentAssertion
 #define vpiMatchItem                741
 #define vpiMember                   742
 #define vpiElement                  743
@@ -221,6 +235,7 @@ extern "C" {
 /**************************************************************************/
 /************************ generic object properties ***********************/
 /**************************************************************************/
+
 #define vpiTop                      600
 
 #define vpiUnit                     602
@@ -254,7 +269,6 @@ extern "C" {
 #define vpiInterfacePort        1
 #define vpiModportPort          2
 /* vpiPort is also a port type. It is defined in vpi_user.h */
-
 
 #define vpiConstantVariable         612
 #define vpiStructUnionMember        615
@@ -407,6 +421,7 @@ extern "C" {
 /***************************** structure *****************************/
 
 /**************************** CALLBACK REASONS ****************************/
+#define vpiMethodFuncCall           648
 #define cbStartOfThread             600 /* callback on thread creation */
 #define cbEndOfThread               601 /* callback on thread termination */
 #define cbEnterThread               602 /* callback on reentering thread */

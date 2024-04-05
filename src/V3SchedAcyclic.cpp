@@ -176,8 +176,8 @@ void removeNonCyclic(Graph* graphp) {
     };
 
     // Start with vertices with no inputs or outputs
-    for (V3GraphVertex* vtxp = graphp->verticesBeginp(); vtxp; vtxp = vtxp->verticesNextp()) {
-        if (vtxp->inEmpty() || vtxp->outEmpty()) enqueue(vtxp);
+    for (V3GraphVertex& vtx : graphp->vertices()) {
+        if (vtx.inEmpty() || vtx.outEmpty()) enqueue(&vtx);
     }
 
     // Iterate while we still have candidates
@@ -189,16 +189,14 @@ void removeNonCyclic(Graph* graphp) {
 
         if (vtxp->inEmpty()) {
             // Enqueue children for consideration, remove out edges, and delete this vertex
-            for (V3GraphEdge *edgep = vtxp->outBeginp(), *nextp; edgep; edgep = nextp) {
-                nextp = edgep->outNextp();
+            for (V3GraphEdge* const edgep : vtxp->outEdges().unlinkable()) {
                 enqueue(edgep->top());
                 VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
             }
             VL_DO_DANGLING(vtxp->unlinkDelete(graphp), vtxp);
         } else if (vtxp->outEmpty()) {
             // Enqueue parents for consideration, remove in edges, and delete this vertex
-            for (V3GraphEdge *edgep = vtxp->inBeginp(), *nextp; edgep; edgep = nextp) {
-                nextp = edgep->inNextp();
+            for (V3GraphEdge* const edgep : vtxp->inEdges().unlinkable()) {
                 enqueue(edgep->fromp());
                 VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
             }
@@ -209,11 +207,11 @@ void removeNonCyclic(Graph* graphp) {
 
 // Has this VarVertex been cut? (any edges in or out has been cut)
 bool isCut(const SchedAcyclicVarVertex* vtxp) {
-    for (V3GraphEdge* edgep = vtxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-        if (edgep->weight() == 0) return true;
+    for (const V3GraphEdge& edge : vtxp->inEdges()) {
+        if (edge.weight() == 0) return true;
     }
-    for (V3GraphEdge* edgep = vtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-        if (edgep->weight() == 0) return true;
+    for (const V3GraphEdge& edge : vtxp->outEdges()) {
+        if (edge.weight() == 0) return true;
     }
     return false;
 }
@@ -221,8 +219,8 @@ bool isCut(const SchedAcyclicVarVertex* vtxp) {
 std::vector<SchedAcyclicVarVertex*> findCutVertices(Graph* graphp) {
     std::vector<SchedAcyclicVarVertex*> result;
     const VNUser1InUse user1InUse;  // bool: already added to result
-    for (V3GraphVertex* vtxp = graphp->verticesBeginp(); vtxp; vtxp = vtxp->verticesNextp()) {
-        if (SchedAcyclicVarVertex* const vvtxp = vtxp->cast<SchedAcyclicVarVertex>()) {
+    for (V3GraphVertex& vtx : graphp->vertices()) {
+        if (SchedAcyclicVarVertex* const vvtxp = vtx.cast<SchedAcyclicVarVertex>()) {
             if (!vvtxp->vscp()->user1SetOnce() && isCut(vvtxp)) result.push_back(vvtxp);
         }
     }
@@ -231,8 +229,8 @@ std::vector<SchedAcyclicVarVertex*> findCutVertices(Graph* graphp) {
 
 void resetEdgeWeights(const std::vector<SchedAcyclicVarVertex*>& cutVertices) {
     for (SchedAcyclicVarVertex* const vvtxp : cutVertices) {
-        for (V3GraphEdge* ep = vvtxp->inBeginp(); ep; ep = ep->inNextp()) ep->weight(1);
-        for (V3GraphEdge* ep = vvtxp->outBeginp(); ep; ep = ep->outNextp()) ep->weight(1);
+        for (V3GraphEdge& e : vvtxp->inEdges()) e.weight(1);
+        for (V3GraphEdge& e : vvtxp->outEdges()) e.weight(1);
     }
 }
 
@@ -252,19 +250,18 @@ void gatherSCCCandidates(V3GraphVertex* vtxp, std::vector<Candidate>& candidates
             && name.find("__Vdly") == string::npos  // Ignore internal signals
             && name.find("__Vcell") == string::npos) {
             // Also compute the fanout of this vertex
-            unsigned fanout = 0;
-            for (V3GraphEdge* ep = vtxp->outBeginp(); ep; ep = ep->outNextp()) ++fanout;
+            const unsigned fanout = vtxp->outEdges().size();
             candidates.emplace_back(vvtxp, fanout);
         }
     }
 
     // Iterate through all the vertices within the same strongly connected component (same color)
-    for (V3GraphEdge* edgep = vtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-        V3GraphVertex* const top = edgep->top();
+    for (V3GraphEdge& edge : vtxp->outEdges()) {
+        V3GraphVertex* const top = edge.top();
         if (top->color() == vtxp->color()) gatherSCCCandidates(top, candidates);
     }
-    for (V3GraphEdge* edgep = vtxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-        V3GraphVertex* const fromp = edgep->fromp();
+    for (V3GraphEdge& edge : vtxp->inEdges()) {
+        V3GraphVertex* const fromp = edge.fromp();
         if (fromp->color() == vtxp->color()) gatherSCCCandidates(fromp, candidates);
     }
 }
@@ -359,9 +356,9 @@ LogicByScope fixCuts(AstNetlist* netlistp,
     {
         const VNUser1InUse user1InUse;  // bool: already added to 'lvtxps'
         for (SchedAcyclicVarVertex* const vvtxp : cutVertices) {
-            for (V3GraphEdge* edgep = vvtxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
+            for (V3GraphEdge& edge : vvtxp->outEdges()) {
                 SchedAcyclicLogicVertex* const lvtxp
-                    = static_cast<SchedAcyclicLogicVertex*>(edgep->top());
+                    = static_cast<SchedAcyclicLogicVertex*>(edge.top());
                 if (!lvtxp->logicp()->user1SetOnce()) lvtxps.push_back(lvtxp);
                 lvtx2Cuts[lvtxp].push_back(vvtxp->vscp());
             }

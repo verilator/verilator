@@ -4,8 +4,6 @@
 // any use, without warranty, 2006 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-`include "verilated.v"
-
 `define STRINGIFY(x) `"x`"
 
 module t (/*AUTOARG*/

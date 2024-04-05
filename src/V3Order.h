@@ -40,17 +40,22 @@ struct LogicByScope;
 
 namespace V3Order {
 
+// Callable to add extra external Triggers to a variable
 using ExternalDomainsProvider = std::function<void(const AstVarScope*, std::vector<AstSenTree*>&)>;
+// Map from Trigger expression to original Sensitivity tree
+using TrigToSenMap = std::unordered_map<const AstSenItem*, const AstSenTree*>;
 
 AstCFunc* order(
     AstNetlist* netlistp,  //
     const std::vector<V3Sched::LogicByScope*>& logic,  //
-    const std::unordered_map<const AstSenItem*, const AstSenTree*>& trigToSen,
+    const TrigToSenMap& trigToSen,  //
     const string& tag,  //
     bool parallel,  //
     bool slow,  //
     const ExternalDomainsProvider& externalDomains
     = [](const AstVarScope*, std::vector<AstSenTree*>&) {}) VL_MT_DISABLED;
+
+void selfTestParallel();
 
 };  // namespace V3Order
 

@@ -464,6 +464,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstTimeUnit* nodep) override {
         nodep->replaceWith(
             new AstConst{nodep->fileline(), AstConst::Signed32{}, nodep->timeunit().powerOfTen()});
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstScopeName* nodep) override {
         nodep->dtypeSetUInt64();  // A pointer, but not that it matters
@@ -490,7 +491,9 @@ class WidthVisitor final : public VNVisitor {
             //  the expression includes the size of the output too.
             const AstNodeDType* const thenDTypep = nodep->thenp()->dtypep();
             const AstNodeDType* const elseDTypep = nodep->elsep()->dtypep();
-            if (thenDTypep->skipRefp() == elseDTypep->skipRefp()) {
+            if (nodep->thenp()->isNull() && nodep->elsep()->isNull()) {
+                nodep->dtypep(m_vup->dtypeNullp());
+            } else if (thenDTypep->skipRefp() == elseDTypep->skipRefp()) {
                 // TODO might need a broader equation, use the Castable function?
                 nodep->dtypeFrom(thenDTypep);
             } else if (nodep->thenp()->isClassHandleValue()
@@ -635,13 +638,13 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstDelay* nodep) override {
         if (VN_IS(m_procedurep, Final)) {
-            nodep->v3error("Delays are not legal in final blocks (IEEE 1800-2017 9.2.3)");
+            nodep->v3error("Delays are not legal in final blocks (IEEE 1800-2023 9.2.3)");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
         if (VN_IS(m_ftaskp, Func)) {
             nodep->v3error("Delays are not legal in functions. Suggest use a task "
-                           "(IEEE 1800-2017 13.4.4)");
+                           "(IEEE 1800-2023 13.4.4)");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
@@ -664,7 +667,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstFork* nodep) override {
         if (VN_IS(m_ftaskp, Func) && !nodep->joinType().joinNone()) {
             nodep->v3error("Only fork .. join_none is legal in functions. "
-                           "(IEEE 1800-2017 13.4.4)");
+                           "(IEEE 1800-2023 13.4.4)");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
@@ -783,7 +786,7 @@ class WidthVisitor final : public VNVisitor {
                     && !VN_IS(nodep->backp(), Concat)) {  // Concat Visitor will clean it up.
                     nodep->v3warn(ZEROREPL,
                                   "Replication value of 0 is only legal under a concatenation"
-                                  " (IEEE 1800-2017 11.4.12.1)");
+                                  " (IEEE 1800-2023 11.4.12.1)");
                     times = 1;  // Set to 1, so we can continue looking for errors
                 }
                 nodep->dtypeSetLogicUnsized((nodep->srcp()->width() * times),
@@ -841,9 +844,10 @@ class WidthVisitor final : public VNVisitor {
                 nodep->v3error("Slice size isn't a constant or basic data type.");
             }
             const AstNodeDType* const lhsDtypep = nodep->lhsp()->dtypep()->skipRefToEnump();
-            if (VN_IS(lhsDtypep, DynArrayDType) || VN_IS(lhsDtypep, QueueDType)) {
+            if (VN_IS(lhsDtypep, DynArrayDType) || VN_IS(lhsDtypep, QueueDType)
+                || VN_IS(lhsDtypep, UnpackArrayDType)) {
                 nodep->dtypeSetStream();
-            } else if (VN_IS(lhsDtypep, UnpackArrayDType) || lhsDtypep->isCompound()) {
+            } else if (lhsDtypep->isCompound()) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: Stream operation on a variable of a type "
                                   << lhsDtypep->prettyDTypeNameQ());
@@ -915,7 +919,9 @@ class WidthVisitor final : public VNVisitor {
                                                  << nodep->msbConst() << "<" << nodep->lsbConst());
                 width = (nodep->lsbConst() - nodep->msbConst() + 1);
                 nodep->dtypeSetLogicSized(width, VSigning::UNSIGNED);
+                pushDeletep(nodep->widthp());
                 nodep->widthp()->replaceWith(new AstConst(nodep->widthp()->fileline(), width));
+                pushDeletep(nodep->lsbp());
                 nodep->lsbp()->replaceWith(new AstConst{nodep->lsbp()->fileline(), 0});
             }
             // We're extracting, so just make sure the expression is at least wide enough.
@@ -1087,7 +1093,7 @@ class WidthVisitor final : public VNVisitor {
             if (!basicp
                 || (basicp->keyword() != VBasicDTypeKwd::STRING
                     && !basicp->keyword().isIntNumeric())) {
-                nodep->v3error("Wildcard index must be integral (IEEE 1800-2017 7.8.1)");
+                nodep->v3error("Wildcard index must be integral (IEEE 1800-2023 7.8.1)");
             }
             iterateCheckTyped(nodep, "Wildcard associative select", nodep->bitp(),
                               adtypep->findStringDType(), BOTH);
@@ -1243,10 +1249,10 @@ class WidthVisitor final : public VNVisitor {
                 V3Const::constifyParamsEdit(nodep->ticksp());  // ticksp may change
                 const AstConst* const constp = VN_CAST(nodep->ticksp(), Const);
                 if (!constp) {
-                    nodep->v3error("$past tick value must be constant (IEEE 1800-2017 16.9.3)");
+                    nodep->v3error("$past tick value must be constant (IEEE 1800-2023 16.9.3)");
                     nodep->ticksp()->unlinkFrBack()->deleteTree();
                 } else if (constp->toSInt() < 1) {
-                    constp->v3error("$past tick value must be >= 1 (IEEE 1800-2017 16.9.3)");
+                    constp->v3error("$past tick value must be >= 1 (IEEE 1800-2023 16.9.3)");
                     nodep->ticksp()->unlinkFrBack()->deleteTree();
                 } else {
                     if (constp->toSInt() > 10) {
@@ -1349,7 +1355,7 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstCLog2* nodep) override {
-        if (m_vup->prelim()) { iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH); }
+        if (m_vup->prelim()) iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
     }
     void visit(AstPow* nodep) override {
         // Pow is special, output sign only depends on LHS sign, but
@@ -1391,7 +1397,8 @@ class WidthVisitor final : public VNVisitor {
                 newp->dtypeFrom(nodep);
                 UINFO(9, "powOld " << nodep << endl);
                 UINFO(9, "powNew " << newp << endl);
-                VL_DO_DANGLING(nodep->replaceWith(newp), nodep);
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
         }
     }
@@ -1455,7 +1462,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstEventControl* nodep) override {
         if (VN_IS(m_ftaskp, Func)) {
             nodep->v3error("Event controls are not legal in functions. Suggest use a task "
-                           "(IEEE 1800-2017 13.4.4)");
+                           "(IEEE 1800-2023 13.4.4)");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
@@ -1929,6 +1936,7 @@ class WidthVisitor final : public VNVisitor {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Cast to " << nodep->dtp()->prettyTypeName());
             nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     void visit(AstCast* nodep) override {
@@ -2293,11 +2301,11 @@ class WidthVisitor final : public VNVisitor {
             }
             if (!itemp->valuep()) {
                 if (num.isEqZero() && itemp != nodep->itemsp()) {
-                    itemp->v3error("Enum value illegally wrapped around (IEEE 1800-2017 6.19)");
+                    itemp->v3error("Enum value illegally wrapped around (IEEE 1800-2023 6.19)");
                 }
                 if (num.isFourState()) {
                     itemp->v3error("Enum value that is unassigned cannot follow value with X/Zs "
-                                   "(IEEE 1800-2017 6.19)");
+                                   "(IEEE 1800-2023 6.19)");
                 }
                 if (!nodep->dtypep()->basicp()
                     && !nodep->dtypep()->basicp()->keyword().isIntNumeric()) {
@@ -2311,7 +2319,7 @@ class WidthVisitor final : public VNVisitor {
             if (constp->num().isFourState() && nodep->dtypep()->basicp()
                 && !nodep->dtypep()->basicp()->isFourstate()) {
                 itemp->v3error("Enum value with X/Zs cannot be assigned to non-fourstate type "
-                               "(IEEE 1800-2017 6.19)");
+                               "(IEEE 1800-2023 6.19)");
             }
             num.opAssign(constp->num());
             // Look for duplicates
@@ -2340,7 +2348,7 @@ class WidthVisitor final : public VNVisitor {
             bool warnOn = true;
             if (const AstConst* const constp = VN_CAST(nodep->valuep(), Const)) {
                 if (static_cast<int>(constp->num().mostSetBitP1()) > nodep->width()) {
-                    constp->v3error("Enum value exceeds width of enum type (IEEE 1800-2017 6.19)");
+                    constp->v3error("Enum value exceeds width of enum type (IEEE 1800-2023 6.19)");
                     warnOn = false;  // Prevent normal WIDTHTRUNC
                 }
             }
@@ -2542,7 +2550,10 @@ class WidthVisitor final : public VNVisitor {
                      EXTEND_EXP);
         for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = itemp->nextp();  // iterate may cause the node to get replaced
-            iterateCheck(nodep, "Inside Item", itemp, CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
+            // InsideRange will get replaced with Lte&Gte and finalized later
+            if (!VN_IS(itemp, InsideRange))
+                iterateCheck(nodep, "Inside Item", itemp, CONTEXT_DET, FINAL, subDTypep,
+                             EXTEND_EXP);
         }
 
         if (debug() >= 9) nodep->dumpTree("-  inside-in: ");
@@ -2564,15 +2575,15 @@ class WidthVisitor final : public VNVisitor {
                 inewp->dtypeSetBit();
                 inewp->didWidth(true);
             } else if (VN_IS(itemDtp, AssocArrayDType)) {
-                nodep->v3error("Inside operator not specified on associative arrays (IEEE "
-                               "1800-2017 11.4.13)");
+                nodep->v3error("Inside operator not specified on associative arrays "
+                               "(IEEE 1800-2023 11.4.13)");
                 continue;
             } else {
                 inewp = AstEqWild::newTyped(itemp->fileline(), nodep->exprp()->cloneTreePure(true),
                                             itemp->unlinkFrBack());
             }
             if (newp) {
-                newp = new AstOr{nodep->fileline(), newp, inewp};
+                newp = new AstLogOr{nodep->fileline(), newp, inewp};
             } else {
                 newp = inewp;
             }
@@ -2615,10 +2626,10 @@ class WidthVisitor final : public VNVisitor {
                 && !v3Global.opt.structsPacked())
                 itemp->v3error("Unpacked data type "
                                << dtp->prettyDTypeNameQ()
-                               << " in packed struct/union (IEEE 1800-2017 7.2.1)");
+                               << " in packed struct/union (IEEE 1800-2023 7.2.1)");
             if ((VN_IS(nodep, UnionDType) || nodep->packed()) && itemp->valuep()) {
                 itemp->v3error("Initial values not allowed in packed struct/union"
-                               " (IEEE 1800-2017 7.2.1)");
+                               " (IEEE 1800-2023 7.2.1)");
                 pushDeletep(itemp->valuep()->unlinkFrBack());
             } else if (itemp->valuep()) {
                 itemp->valuep()->v3warn(E_UNSUPPORTED,
@@ -2787,9 +2798,9 @@ class WidthVisitor final : public VNVisitor {
             if (AstNode* const foundp = m_memberMap.findMember(classp, nodep->name())) {
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
                     if (!varp->didWidth()) userIterate(varp, nullptr);
-                    if (varp->lifetime().isStatic()) {
-                        // Static fiels are moved outside the class, so they shouldn't be accessed
-                        // by member select on a class object
+                    if (varp->lifetime().isStatic() || varp->isParam()) {
+                        // Static members are moved outside the class, so they shouldn't be
+                        // accessed by member select on a class object
                         AstVarRef* const varRefp
                             = new AstVarRef{nodep->fileline(), varp, nodep->access()};
                         varRefp->classOrPackagep(classp);
@@ -3188,6 +3199,10 @@ class WidthVisitor final : public VNVisitor {
                                       nodep->name(), withp};
             newp->dtypeFrom(adtypep);
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
+        } else if (nodep->name() == "map") {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Wildcard array 'map' method (IEEE 1800-2023 7.12.5)");
+            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
         } else {
             nodep->v3error("Unknown wildcard associative array method " << nodep->prettyNameQ());
             nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
@@ -3287,6 +3302,10 @@ class WidthVisitor final : public VNVisitor {
                                       nodep->name(), withp};
             newp->dtypep(queueDTypeIndexedBy(adtypep->keyDTypep()));
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
+        } else if (nodep->name() == "map") {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Associative array 'map' method (IEEE 1800-2023 7.12.5)");
+            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
         } else {
             nodep->v3error("Unknown built-in associative array method " << nodep->prettyNameQ());
             nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
@@ -3379,6 +3398,10 @@ class WidthVisitor final : public VNVisitor {
                                       nodep->name(), withp};
             newp->dtypep(newp->findQueueIndexDType());
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
+        } else if (nodep->name() == "map") {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Array 'map' method (IEEE 1800-2023 7.12.5)");
+            nodep->dtypeFrom(adtypep->subDTypep());  // Best guess
         }
         return newp;
     }
@@ -3877,7 +3900,7 @@ class WidthVisitor final : public VNVisitor {
             if (classp->isVirtual() || classp->isInterfaceClass()) {
                 nodep->v3error("Illegal to call 'new' using an abstract virtual class "
                                + AstNode::prettyNameQ(classp->origName())
-                               + " (IEEE 1800-2017 8.21)");
+                               + " (IEEE 1800-2023 8.21)");
             }
         } else {  // super.new case
             // in this case class and taskp() should be properly linked in V3LinkDot.cpp during
@@ -4264,9 +4287,14 @@ class WidthVisitor final : public VNVisitor {
              patp = VN_AS(patp->nextp(), PatMember)) {
             patp->dtypep(arrayDtp->subDTypep());
             AstNodeExpr* const valuep = patternMemberValueIterate(patp);
-            AstNode* const keyp = patp->keyp();
-            auto* const newap
-                = new AstSetAssoc{nodep->fileline(), newp, keyp->unlinkFrBack(), valuep};
+            AstNode* keyp = patp->keyp();
+            if (!keyp) {
+                patp->v3error("Missing pattern key (need an expression then a ':')");
+                keyp = new AstConst{nodep->fileline(), AstConst::Signed32{}, 0};
+            } else {
+                keyp->unlinkFrBack();
+            }
+            AstSetAssoc* const newap = new AstSetAssoc{nodep->fileline(), newp, keyp, valuep};
             newap->dtypeFrom(arrayDtp);
             newp = newap;
         }
@@ -4285,7 +4313,7 @@ class WidthVisitor final : public VNVisitor {
             patp->dtypep(arrayDtp->subDTypep());
             AstNodeExpr* const valuep = patternMemberValueIterate(patp);
             AstNode* const keyp = patp->keyp();
-            auto* const newap
+            AstSetWildcard* const newap
                 = new AstSetWildcard{nodep->fileline(), newp, keyp->unlinkFrBack(), valuep};
             newap->dtypeFrom(arrayDtp);
             newp = newap;
@@ -4301,7 +4329,7 @@ class WidthVisitor final : public VNVisitor {
              patp = VN_AS(patp->nextp(), PatMember)) {
             patp->dtypep(arrayp->subDTypep());
             AstNodeExpr* const valuep = patternMemberValueIterate(patp);
-            auto* const newap = new AstConsDynArray{nodep->fileline(), valuep, newp};
+            AstConsDynArray* const newap = new AstConsDynArray{nodep->fileline(), valuep, newp};
             newap->dtypeFrom(arrayp);
             newp = newap;
         }
@@ -4316,7 +4344,7 @@ class WidthVisitor final : public VNVisitor {
              patp = VN_AS(patp->nextp(), PatMember)) {
             patp->dtypep(arrayp->subDTypep());
             AstNodeExpr* const valuep = patternMemberValueIterate(patp);
-            auto* const newap = new AstConsQueue{nodep->fileline(), valuep, newp};
+            AstConsQueue* const newap = new AstConsQueue{nodep->fileline(), valuep, newp};
             newap->dtypeFrom(arrayp);
             newp = newap;
         }
@@ -4840,7 +4868,7 @@ class WidthVisitor final : public VNVisitor {
         if (auto* const controlp = nodep->timingControlp()) {
             if (VN_IS(m_ftaskp, Func)) {
                 controlp->v3error("Timing controls are not legal in functions. Suggest use a task "
-                                  "(IEEE 1800-2017 13.4.4)");
+                                  "(IEEE 1800-2023 13.4.4)");
                 VL_DO_DANGLING(controlp->unlinkFrBackWithNext()->deleteTree(), controlp);
             } else if (nodep->fileline()->timingOn() && v3Global.opt.timing().isSetTrue()) {
                 iterateNull(controlp);
@@ -4892,6 +4920,32 @@ class WidthVisitor final : public VNVisitor {
             nodep->replaceWith(newp->makeStmt());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
+        }
+
+        // Width check for unpacked array stream assignment
+        if (const AstNodeStream* streamp = VN_CAST(nodep->rhsp(), NodeStream)) {
+            if (AstUnpackArrayDType* arr = VN_CAST(streamp->lhsp()->dtypep(), UnpackArrayDType)) {
+                int lwidth = nodep->lhsp()->width();
+                int rwidth = arr->subDTypep()->width() * arr->arrayUnpackedElements();
+                if (lwidth != 0 && lwidth < rwidth) {
+                    nodep->v3widthWarn(lwidth, rwidth,
+                                       "Target fixed size variable ("
+                                           << lwidth << " bits) is narrower than the stream ("
+                                           << rwidth << " bits) (IEEE 1800-2023 11.4.14)");
+                }
+            }
+        } else if (const AstNodeStream* streamp = VN_CAST(nodep->lhsp(), NodeStream)) {
+            if (AstUnpackArrayDType* arr = VN_CAST(streamp->lhsp()->dtypep(), UnpackArrayDType)) {
+                int rwidth = nodep->rhsp()->width();
+                int lwidth = arr->subDTypep()->width() * arr->arrayUnpackedElements();
+                if (rwidth != 0 && rwidth < lwidth) {
+                    nodep->v3widthWarn(lwidth, rwidth,
+                                       "Stream target requires "
+                                           << lwidth
+                                           << " bits, but source expression only provides "
+                                           << rwidth << " bits (IEEE 1800-2023 11.4.14.3)");
+                }
+            }
         }
 
         if (nodep->hasDType() && nodep->dtypep()->isEvent()) {
@@ -5070,7 +5124,7 @@ class WidthVisitor final : public VNVisitor {
         if (!m_paramsOnly) {
             V3Const::constifyParamsEdit(nodep->fmtp());  // fmtp may change
             string text = nodep->fmtp()->text();
-            if (text.empty()) text = "Elaboration system task message (IEEE 1800-2017 20.11)";
+            if (text.empty()) text = "Elaboration system task message (IEEE 1800-2023 20.11)";
             switch (nodep->displayType()) {
             case VDisplayType::DT_INFO: nodep->v3warn(USERINFO, text); break;
             case VDisplayType::DT_ERROR: nodep->v3warn(USERERROR, text); break;
@@ -5208,7 +5262,7 @@ class WidthVisitor final : public VNVisitor {
             if (!adtypep->keyDTypep()->skipRefp()->basicp()
                 || !adtypep->keyDTypep()->skipRefp()->basicp()->keyword().isIntNumeric()) {
                 nodep->memp()->v3error(nodep->verilogKwd()
-                                       << " address/key must be integral (IEEE 1800-2017 21.4.1)");
+                                       << " address/key must be integral (IEEE 1800-2023 21.4.1)");
             }
         } else if (const AstUnpackArrayDType* const adtypep
                    = VN_CAST(nodep->memp()->dtypep()->skipRefp(), UnpackArrayDType)) {
@@ -5333,7 +5387,7 @@ class WidthVisitor final : public VNVisitor {
                                    << " requires " << modwidth << " or " << modwidth * numInsts
                                    << " bits, but connection's "
                                    << nodep->exprp()->prettyTypeName() << " generates " << conwidth
-                                   << " bits. (IEEE 1800-2017 23.3.3)");
+                                   << " bits. (IEEE 1800-2023 23.3.3)");
                     subDTypep = conDTypep;  // = same expr dtype
                 }
                 userIterateAndNext(nodep->exprp(), WidthVP{subDTypep, FINAL}.p());
@@ -5398,7 +5452,7 @@ class WidthVisitor final : public VNVisitor {
                                               << (modArrayp ? "" : " not") << " an array,"
                                               << " and expression which is"
                                               << (exprArrayp ? "" : " not")
-                                              << " an array. (IEEE 1800-2017 7.6)");
+                                              << " an array. (IEEE 1800-2023 7.6)");
                     UINFO(1, "    Related lo: " << modDTypep << endl);
                     UINFO(1, "    Related hi: " << conDTypep << endl);
                 }
@@ -5460,10 +5514,10 @@ class WidthVisitor final : public VNVisitor {
         }
         if (nodep->classMethod() && nodep->name() == "rand_mode") {
             nodep->v3error("The 'rand_mode' method is built-in and cannot be overridden"
-                           " (IEEE 1800-2017 18.8)");
+                           " (IEEE 1800-2023 18.8)");
         } else if (nodep->classMethod() && nodep->name() == "constraint_mode") {
             nodep->v3error("The 'constraint_mode' method is built-in and cannot be overridden"
-                           " (IEEE 1800-2017 18.9)");
+                           " (IEEE 1800-2023 18.9)");
         }
         // Function hasn't been widthed, so make it so.
         // Would use user1 etc, but V3Width called from too many places to spend a user
@@ -5781,6 +5835,12 @@ class WidthVisitor final : public VNVisitor {
         }
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked");
         if (nodep->didWidth()) return;
+        if ((nodep->taskp()->classMethod() && !nodep->taskp()->isStatic())
+            && !VN_IS(m_procedurep, InitialAutomatic)
+            && (!m_ftaskp || !m_ftaskp->classMethod() || m_ftaskp->isStatic())) {
+            nodep->v3error("Cannot call non-static member function "
+                           << nodep->prettyNameQ() << " without object (IEEE 1800-2023 8.10)");
+        }
         userIterate(nodep->taskp(), nullptr);
         // And do the arguments to the task/function too
         processFTaskRefArgs(nodep);
@@ -5812,10 +5872,10 @@ class WidthVisitor final : public VNVisitor {
                 AstNodeDType* const sensDtp = nodep->sensp()->dtypep()->skipRefp();
                 if (sensDtp->isDouble()) {
                     nodep->sensp()->v3error(
-                        "Edge event control not legal on real type (IEEE 1800-2017 6.12.1)");
+                        "Edge event control not legal on real type (IEEE 1800-2023 6.12.1)");
                 } else if (sensDtp->basicp() && !sensDtp->basicp()->keyword().isIntNumeric()) {
                     nodep->sensp()->v3error("Edge event control not legal on non-integral type "
-                                            "(IEEE 1800-2017 9.4.2)");
+                                            "(IEEE 1800-2023 9.4.2)");
                 }
             }
         }
@@ -5829,7 +5889,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstWait* nodep) override {
         if (VN_IS(m_ftaskp, Func)) {
             nodep->v3error("Wait statements are not legal in functions. Suggest use a task "
-                           "(IEEE 1800-2017 13.4.4)");
+                           "(IEEE 1800-2023 13.4.4)");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
@@ -6208,7 +6268,7 @@ class WidthVisitor final : public VNVisitor {
         nodep->dtypeChgSigned(nodep->lhsp()->isSigned());
         const AstNodeBiop* const newp = iterate_shift_final(nodep);
         VL_DANGLING(nodep);
-        if (newp) {}  // Ununused
+        (void)newp;  // Ununused
     }
     void iterate_shift_prelim(AstNodeBiop* nodep) {
         // Shifts
@@ -6542,8 +6602,8 @@ class WidthVisitor final : public VNVisitor {
             AstNodeDType* const rhsDtypep = rhsp->dtypep()->skipRefp();
             if (AstClassRefDType* const rhsClassRefp = VN_CAST(rhsDtypep, ClassRefDType)) {
                 if (isBaseClassRecurse(lhsClassRefp->classp(), rhsClassRefp->classp())) return;
-            } else if (auto* const constp = VN_CAST(rhsp, Const)) {
-                if (constp->num().isNull()) return;
+            } else if (rhsp->isNull()) {
+                return;
             }
             nodep->v3error(side << " expects a " << lhsClassRefp->prettyTypeName() << ", got "
                                 << rhsDtypep->prettyTypeName());
@@ -6560,7 +6620,7 @@ class WidthVisitor final : public VNVisitor {
         AstNodeDType* const expDTypep = underp->findUInt32DType();
         underp
             = iterateCheck(nodep, "file_descriptor", underp, SELF, FINAL, expDTypep, EXTEND_EXP);
-        if (underp) {}  // cppcheck
+        (void)underp;  // cppcheck
     }
     void iterateCheckSigned32(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
         // Coerce child to signed32 if not already. Child is self-determined
@@ -6572,7 +6632,7 @@ class WidthVisitor final : public VNVisitor {
             AstNodeDType* const expDTypep = nodep->findSigned32DType();
             underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         }
-        if (underp) {}  // cppcheck
+        (void)underp;  // cppcheck
     }
     void iterateCheckReal(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
         // Coerce child to real if not already. Child is self-determined
@@ -6588,7 +6648,7 @@ class WidthVisitor final : public VNVisitor {
             AstNodeDType* const expDTypep = nodep->findDoubleDType();
             underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         }
-        if (underp) {}  // cppcheck
+        (void)underp;  // cppcheck
     }
     void iterateCheckString(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
         if (stage & PRELIM) {
@@ -6598,7 +6658,7 @@ class WidthVisitor final : public VNVisitor {
             AstNodeDType* const expDTypep = nodep->findStringDType();
             underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         }
-        if (underp) {}  // cppcheck
+        (void)underp;  // cppcheck
     }
     void iterateCheckTyped(AstNode* nodep, const char* side, AstNode* underp,
                            AstNodeDType* expDTypep, Stage stage) {
@@ -6608,7 +6668,7 @@ class WidthVisitor final : public VNVisitor {
         if (stage & FINAL) {
             underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         }
-        if (underp) {}  // cppcheck
+        (void)underp;  // cppcheck
     }
     void iterateCheckSizedSelf(AstNode* nodep, const char* side, AstNode* underp, Determ determ,
                                Stage stage) {
@@ -6624,14 +6684,14 @@ class WidthVisitor final : public VNVisitor {
         underp = VN_IS(underp, NodeExpr) ? checkCvtUS(VN_AS(underp, NodeExpr)) : underp;
         AstNodeDType* const expDTypep = underp->dtypep();
         underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
-        if (underp) {}  // cppcheck
+        (void)underp;  // cppcheck
     }
     void iterateCheckAssign(AstNode* nodep, const char* side, AstNode* rhsp, Stage stage,
                             AstNodeDType* lhsDTypep) {
         // Check using assignment-like context rules
         // if (debug()) nodep->dumpTree("-  checkass: ");
         UASSERT_OBJ(stage == FINAL, nodep, "Bad width call");
-        // Create unpacked byte from string perl IEEE 1800-2017 5.9
+        // Create unpacked byte from string perl IEEE 1800-2023 5.9
         if (AstConst* constp = VN_CAST(rhsp, Const)) {
             if (const AstUnpackArrayDType* const arrayp
                 = VN_CAST(lhsDTypep->skipRefp(), UnpackArrayDType)) {
@@ -6670,7 +6730,7 @@ class WidthVisitor final : public VNVisitor {
         rhsp = iterateCheck(nodep, side, rhsp, ASSIGN, FINAL, lhsDTypep,
                             lhsStream ? EXTEND_OFF : EXTEND_LHS);
         // if (debug()) nodep->dumpTree("-  checkout: ");
-        if (rhsp) {}  // cppcheck
+        (void)rhsp;  // cppcheck
     }
 
     void iterateCheckBool(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
@@ -6776,7 +6836,7 @@ class WidthVisitor final : public VNVisitor {
                                        "Implicit conversion to enum "
                                            << expDTypep->prettyDTypeNameQ() << " from "
                                            << underp->dtypep()->prettyDTypeNameQ()
-                                           << " (IEEE 1800-2017 6.19.3)\n"
+                                           << " (IEEE 1800-2023 6.19.3)\n"
                                            << nodep->warnMore()
                                            << "... Suggest use enum's mnemonic, or static cast");
                         if (debug()) nodep->backp()->dumpTree("-  back: ");

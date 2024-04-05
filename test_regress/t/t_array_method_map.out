@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_array_method_map.v:17:15: Unsupported: Array 'map' method (IEEE 1800-2023 7.12.5)
+                                                : ... note: In instance 't'
+   17 |       res = a.map(el) with (el == 200);
+      |               ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_array_method_map.v:17:15: Unknown built-in array method 'map'
+                                    : ... note: In instance 't'
+   17 |       res = a.map(el) with (el == 200);
+      |               ^~~
+%Error: Exiting due to

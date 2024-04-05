@@ -1,7 +1,7 @@
-%Error: t/t_implements_contents_bad.v:8:8: Interface class cannot contain non-parameter members (IEEE 1800-2017 8.26): 'badi'
+%Error: t/t_implements_contents_bad.v:8:8: Interface class cannot contain non-parameter members (IEEE 1800-2023 8.26): 'badi'
     8 |    int badi;
       |        ^~~~
-%Error: t/t_implements_contents_bad.v:9:9: Interface class functions must be pure virtual (IEEE 1800-2017 8.26): 'badtask'
+%Error: t/t_implements_contents_bad.v:9:9: Interface class functions must be pure virtual (IEEE 1800-2023 8.26): 'badtask'
     9 |    task badtask;
       |         ^~~~~~~
 %Error: Exiting due to

@@ -11,7 +11,7 @@ module t(/*AUTOARG*/);
    typedef struct packed { bit a; } struct_packed_t;
    typedef union packed { bit a; } union_packed_t;
 
-   //IEEE 1800-2017 7.2.1
+   //IEEE 1800-2023 7.2.1
    // These are all legal
    typedef struct packed {
       enum_t e;

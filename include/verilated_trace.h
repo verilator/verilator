@@ -180,6 +180,21 @@ public:
 };
 
 //=============================================================================
+// VerilatedTraceBaseC - base class of all Verilated*C trace classes
+// Internal use only
+
+class VerilatedTraceBaseC VL_NOT_FINAL {
+    bool m_modelConnected = false;  // Model connected by calling Verilated::trace()
+public:
+    /// True if file currently open
+    virtual bool isOpen() const VL_MT_SAFE = 0;
+
+    // internal use only
+    bool modelConnected() const VL_MT_SAFE { return m_modelConnected; }
+    void modelConnected(bool flag) VL_MT_SAFE { m_modelConnected = flag; }
+};
+
+//=============================================================================
 // VerilatedTrace
 
 // T_Trace is the format specific subclass of VerilatedTrace.
@@ -205,10 +220,6 @@ private:
     friend OffloadBuffer;
 
     struct CallbackRecord final {
-        // Note: would make these fields const, but some old STL implementations
-        // (the one in Ubuntu 14.04 with GCC 4.8.4 in particular) use the
-        // assignment operator on inserting into collections, so they don't work
-        // with const fields...
         union {  // The callback
             const initCb_t m_initCb;
             const dumpCb_t m_dumpCb;
@@ -582,7 +593,7 @@ public:
         m_offloadBufferWritep[0] = (bits << 4) | VerilatedTraceOffloadCommand::CHG_WDATA;
         m_offloadBufferWritep[1] = code;
         m_offloadBufferWritep += 2;
-        for (int i = 0; i < (bits + 31) / 32; ++i) { *m_offloadBufferWritep++ = newvalp[i]; }
+        for (int i = 0; i < (bits + 31) / 32; ++i) *m_offloadBufferWritep++ = newvalp[i];
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
     void chgDouble(uint32_t code, double newval) {

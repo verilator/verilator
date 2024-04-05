@@ -1,0 +1,44 @@
+%Error: t/t_preproc_ifexpr_bad.v:12:14: `elsif with no matching `if
+   12 | `elsif ( ONE )  // BAD: elsif without if
+      |              ^
+%Error: t/t_preproc_ifexpr_bad.v:13:1: `endif with no matching `if
+   13 | `endif
+      | ^~~~~~
+%Error: t/t_preproc_ifexpr_bad.v:15:10: Syntax error in `ifdef () expression
+   15 | `ifdef ( ) // BAD: Missing value
+      |          ^
+%Error: t/t_preproc_ifexpr_bad.v:18:17: Syntax error in `ifdef () expression
+   18 | `ifdef ( && ZERO)  // BAD: Expr
+      |                 ^
+%Error: t/t_preproc_ifexpr_bad.v:21:18: Syntax error in `ifdef () expression
+   21 | `ifdef ( ZERO && )  // BAD: Expr
+      |                  ^
+%Error: t/t_preproc_ifexpr_bad.v:24:10: Syntax error in `ifdef () expression; unexpected: 'TEXT'
+   24 | `ifdef ( 1 )  // BAD: Constant
+      |          ^
+%Error: t/t_preproc_ifexpr_bad.v:24:12: Syntax error in `ifdef () expression
+   24 | `ifdef ( 1 )  // BAD: Constant
+      |            ^
+%Error: t/t_preproc_ifexpr_bad.v:27:14: Syntax error in `ifdef () expression; unexpected: 'TEXT'
+   27 | `ifdef ( ONE & ZERO)  // BAD: Operator
+      |              ^
+%Error: t/t_preproc_ifexpr_bad.v:30:10: Syntax error in `ifdef () expression; unexpected: 'TEXT'
+   30 | `ifdef ( % )  // BAD: % is syntax error
+      |          ^
+%Error: t/t_preproc_ifexpr_bad.v:30:12: Syntax error in `ifdef () expression
+   30 | `ifdef ( % )  // BAD: % is syntax error
+      |            ^
+%Error: t/t_preproc_ifexpr_bad.v:34:1: Expecting define name. Found: ENDIF
+   34 | `endif
+      | ^~~~~~
+%Error: t/t_preproc_ifexpr_bad.v:36:1: Expecting define name. Found: IFDEF
+   36 | `ifdef ( ONE // BAD: Missing paren
+      | ^~~~~~
+%Error: t/t_preproc_ifexpr_bad.v:37:1: Syntax error in `ifdef () expression; unexpected: 'TEXT'
+   37 | `endif
+      | ^
+%Error: t/t_preproc_ifexpr_bad.v:40:1: EOF in unterminated preprocessor expression
+%Error: t/t_preproc_ifexpr_bad.v:33:2: syntax error, unexpected ')'
+   33 |  )  
+      |  ^
+%Error: Exiting due to

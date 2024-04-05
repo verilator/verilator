@@ -439,11 +439,14 @@ class AstToDfgVisitor final : public VNVisitor {
         if (nodep->isSc()) return;
         // No need to (and in fact cannot) handle variables with unsupported dtypes
         if (!DfgVertex::isSupportedDType(nodep->dtypep())) return;
-        // Mark ports as having external references
-        if (nodep->isIO()) getNet(nodep)->setHasExtRefs();
-        // Mark variables that are the target of a hierarchical reference
-        // (these flags were set up in DataflowPrepVisitor)
-        if (nodep->user2()) getNet(nodep)->setHasExtRefs();
+
+        // Mark variables with external references
+        if (nodep->isIO()  // Ports
+            || nodep->user2()  // Target of a hierarchical reference
+            || nodep->isForceable()  // Forceable
+        ) {
+            getNet(nodep)->setHasExtRefs();
+        }
     }
 
     void visit(AstAssignW* nodep) override {

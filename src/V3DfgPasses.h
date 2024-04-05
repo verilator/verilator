@@ -19,6 +19,7 @@
 
 #include "config_build.h"
 
+#include "V3DfgPatternStats.h"
 #include "V3DfgPeephole.h"
 #include "V3ThreadSafety.h"
 
@@ -39,14 +40,32 @@ public:
     ~V3DfgCseContext() VL_MT_DISABLED;
 };
 
-class DfgRemoveVarsContext final {
+class V3DfgRegularizeContext final {
+    const std::string m_label;  // Label to apply to stats
+
+    // Used to generate unique names for different DFGs within the same hashed name
+    std::unordered_map<std::string, uint32_t> m_multiplicity;
+
+public:
+    VDouble0 m_temporariesIntroduced;  // Number of temporaries introduced
+
+    std::string tmpNamePrefix(DfgGraph&);  // Return prefix to use for given graph
+
+    explicit V3DfgRegularizeContext(const std::string& label)
+        : m_label{label} {}
+    ~V3DfgRegularizeContext() VL_MT_DISABLED;
+};
+
+class V3DfgEliminateVarsContext final {
     const std::string m_label;  // Label to apply to stats
 
 public:
-    VDouble0 m_removed;  // Number of redundant variables removed
-    explicit DfgRemoveVarsContext(const std::string& label)
+    VDouble0 m_varsReplaced;  // Number of variables replaced
+    VDouble0 m_varsRemoved;  // Number of variables removed
+
+    explicit V3DfgEliminateVarsContext(const std::string& label)
         : m_label{label} {}
-    ~DfgRemoveVarsContext() VL_MT_DISABLED;
+    ~V3DfgEliminateVarsContext() VL_MT_DISABLED;
 };
 
 class V3DfgOptimizationContext final {
@@ -66,14 +85,16 @@ public:
     VDouble0 m_nonRepUnknown;  // Equations non-representable due to unknown node
     VDouble0 m_nonRepVarRef;  // Equations non-representable due to variable reference
     VDouble0 m_nonRepWidth;  // Equations non-representable due to width mismatch
-    VDouble0 m_intermediateVars;  // Number of intermediate variables introduced
-    VDouble0 m_replacedVars;  // Number of variables replaced
     VDouble0 m_resultEquations;  // Number of result combinational equations
 
     V3DfgCseContext m_cseContext0{m_label + " 1st"};
     V3DfgCseContext m_cseContext1{m_label + " 2nd"};
     V3DfgPeepholeContext m_peepholeContext{m_label};
-    DfgRemoveVarsContext m_removeVarsContext{m_label};
+    V3DfgRegularizeContext m_regularizeContext{m_label};
+    V3DfgEliminateVarsContext m_eliminateVarsContext{m_label};
+
+    V3DfgPatternStats m_patternStats;
+
     explicit V3DfgOptimizationContext(const std::string& label) VL_MT_DISABLED;
     ~V3DfgOptimizationContext() VL_MT_DISABLED;
 
@@ -104,13 +125,16 @@ AstModule* dfgToAst(DfgGraph&, V3DfgOptimizationContext&) VL_MT_DISABLED;
 // Common subexpression elimination
 void cse(DfgGraph&, V3DfgCseContext&) VL_MT_DISABLED;
 // Inline fully driven variables
-void inlineVars(const DfgGraph&) VL_MT_DISABLED;
+void inlineVars(DfgGraph&) VL_MT_DISABLED;
 // Peephole optimizations
 void peephole(DfgGraph&, V3DfgPeepholeContext&) VL_MT_DISABLED;
-// Remove redundant variables
-void removeVars(DfgGraph&, DfgRemoveVarsContext&) VL_MT_DISABLED;
+// Regularize graph. This must be run before converting back to Ast.
+void regularize(DfgGraph&, V3DfgRegularizeContext&) VL_MT_DISABLED;
 // Remove unused nodes
 void removeUnused(DfgGraph&) VL_MT_DISABLED;
+// Eliminate (remove or replace) redundant variables. Also removes resulting unused logic.
+void eliminateVars(DfgGraph&, V3DfgEliminateVarsContext&) VL_MT_DISABLED;
+
 }  // namespace V3DfgPasses
 
 #endif

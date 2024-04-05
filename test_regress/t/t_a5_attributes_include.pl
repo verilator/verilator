@@ -10,8 +10,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(dist => 1);
 rerunnable(0);
+
+my $root = "..";
+
 if ($ENV{VERILATOR_TEST_NO_ATTRIBUTES}) {
     skip("Skipping due to VERILATOR_TEST_NO_ATTRIBUTES");
+} elsif (!-r "$root/.git") {
+    skip("Not in a git repository");
 } else {
     check();
 }

@@ -110,7 +110,7 @@ public:
     }
 
     AstVarScope* varScopep() {
-        if (!m_varScopep) { m_varScopep = v3Global.rootp()->constPoolp()->findTable(m_initp); }
+        if (!m_varScopep) m_varScopep = v3Global.rootp()->constPoolp()->findTable(m_initp);
         return m_varScopep;
     }
 };
@@ -261,7 +261,7 @@ private:
             VL_MASK_I(m_inWidthBits));
 
         // Set sizes of output tables
-        for (TableOutputVar& tov : m_outVarps) { tov.setTableSize(VL_MASK_I(m_inWidthBits)); }
+        for (TableOutputVar& tov : m_outVarps) tov.setTableSize(VL_MASK_I(m_inWidthBits));
 
         // Populate the tables
         createTables(nodep, outputAssignedTableBuilder);

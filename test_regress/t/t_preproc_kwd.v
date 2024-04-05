@@ -18,6 +18,7 @@ module t (/*AUTOARG*/
    s09 s09 ();
    s12 s12 ();
    s17 s17 ();
+   s23 s23 ();
 
    a23 a23 ();
 
@@ -77,6 +78,14 @@ endmodule
 
 `begin_keywords "1800-2017"
 module s17;
+ final begin
+    $write("*-* All Finished *-*\n");
+ end
+endmodule
+`end_keywords
+
+`begin_keywords "1800-2023"
+module s23;
  final begin
     $write("*-* All Finished *-*\n");
  end

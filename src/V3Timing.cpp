@@ -227,8 +227,8 @@ class TimingSuspendableVisitor final : public VNVisitor {
     // Propagate flag to all nodes that depend on the given one
     void propagateFlags(DepVtx* const vxp, NodeFlag flag) {
         auto* const parentp = vxp->nodep();
-        for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            auto* const depVxp = static_cast<DepVtx*>(edgep->top());
+        for (V3GraphEdge& edge : vxp->outEdges()) {
+            auto* const depVxp = static_cast<DepVtx*>(edge.top());
             AstNode* const depp = depVxp->nodep();
             if (passFlag(parentp, depp, flag)) propagateFlags(depVxp, flag);
         }
@@ -236,19 +236,19 @@ class TimingSuspendableVisitor final : public VNVisitor {
     template <typename Predicate>
     void propagateFlagsIf(DepVtx* const vxp, NodeFlag flag, Predicate p) {
         auto* const parentp = vxp->nodep();
-        for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-            auto* const depVxp = static_cast<DepVtx*>(edgep->top());
+        for (V3GraphEdge& edge : vxp->outEdges()) {
+            auto* const depVxp = static_cast<DepVtx*>(edge.top());
             AstNode* const depp = depVxp->nodep();
-            if (p(edgep) && passFlag(parentp, depp, flag)) propagateFlagsIf(depVxp, flag, p);
+            if (p(&edge) && passFlag(parentp, depp, flag)) propagateFlagsIf(depVxp, flag, p);
         }
     }
     template <typename Predicate>
     void propagateFlagsReversedIf(DepVtx* const vxp, NodeFlag flag, Predicate p) {
         auto* const parentp = vxp->nodep();
-        for (V3GraphEdge* edgep = vxp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-            auto* const depVxp = static_cast<DepVtx*>(edgep->fromp());
+        for (V3GraphEdge& edge : vxp->inEdges()) {
+            auto* const depVxp = static_cast<DepVtx*>(edge.fromp());
             AstNode* const depp = depVxp->nodep();
-            if (p(edgep) && passFlag(parentp, depp, flag))
+            if (p(&edge) && passFlag(parentp, depp, flag))
                 propagateFlagsReversedIf(depVxp, flag, p);
         }
     }
@@ -408,34 +408,34 @@ public:
         m_suspGraph.removeTransitiveEdges();
         m_procGraph.removeTransitiveEdges();
         // Propagate suspendability
-        for (V3GraphVertex* vxp = m_suspGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
-            if (hasFlags(depVxp->nodep(), T_SUSPENDEE)) propagateFlags(depVxp, T_SUSPENDEE);
+        for (V3GraphVertex& vtx : m_suspGraph.vertices()) {
+            DepVtx& depVtx = static_cast<DepVtx&>(vtx);
+            if (hasFlags(depVtx.nodep(), T_SUSPENDEE)) propagateFlags(&depVtx, T_SUSPENDEE);
         }
         if (dumpGraphLevel() >= 6) m_suspGraph.dumpDotFilePrefixed("timing_deps");
 
         // Propagate T_HAS_PROCESS
-        for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
+        for (V3GraphVertex& vtx : m_procGraph.vertices()) {
+            DepVtx& depVtx = static_cast<DepVtx&>(vtx);
             // Find processes that'll allocate VlProcess
-            if (hasFlags(depVxp->nodep(), T_FORCES_PROC)) {
-                propagateFlagsIf(depVxp, T_FORCES_PROC, [&](const V3GraphEdge* e) -> bool {
+            if (hasFlags(depVtx.nodep(), T_FORCES_PROC)) {
+                propagateFlagsIf(&depVtx, T_FORCES_PROC, [&](const V3GraphEdge* e) -> bool {
                     return !hasFlags(static_cast<DepVtx*>(e->fromp())->nodep(), T_ALLOCS_PROC);
                 });
             }
             // Mark nodes on paths between processes and statements that use VlProcess
-            if (hasFlags(depVxp->nodep(), T_NEEDS_PROC)) {
-                propagateFlagsIf(depVxp, T_NEEDS_PROC, [&](const V3GraphEdge* e) -> bool {
+            if (hasFlags(depVtx.nodep(), T_NEEDS_PROC)) {
+                propagateFlagsIf(&depVtx, T_NEEDS_PROC, [&](const V3GraphEdge* e) -> bool {
                     return !hasFlags(static_cast<DepVtx*>(e->top())->nodep(), T_ALLOCS_PROC);
                 });
             }
         }
-        for (V3GraphVertex* vxp = m_procGraph.verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
-            DepVtx* const depVxp = static_cast<DepVtx*>(vxp);
+        for (V3GraphVertex& vtx : m_procGraph.vertices()) {
+            DepVtx& depVtx = static_cast<DepVtx&>(vtx);
             // Mark nodes that will be emitted with a VlProcess argument
-            if (hasFlags(depVxp->nodep(), T_ALLOCS_PROC | T_FORCES_PROC)) {
-                addFlags(depVxp->nodep(), T_HAS_PROC);
-                propagateFlagsReversedIf(depVxp, T_HAS_PROC, [&](const V3GraphEdge* e) -> bool {
+            if (hasFlags(depVtx.nodep(), T_ALLOCS_PROC | T_FORCES_PROC)) {
+                addFlags(depVtx.nodep(), T_HAS_PROC);
+                propagateFlagsReversedIf(&depVtx, T_HAS_PROC, [&](const V3GraphEdge* e) -> bool {
                     return hasFlags(static_cast<DepVtx*>(e->fromp())->nodep(), T_NEEDS_PROC);
                 });
             }

@@ -1,4 +1,4 @@
-%Error: t/t_class_uses_this_bad.v:15:12: 'this' used outside class (IEEE 1800-2017 8.11)
+%Error: t/t_class_uses_this_bad.v:15:12: 'this' used outside class (IEEE 1800-2023 8.11)
    15 |        this.addr = 2;
       |            ^
 %Error: Exiting due to

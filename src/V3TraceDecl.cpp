@@ -81,8 +81,7 @@ public:
 
     // Emit Prefix adjustments to unwind the path back to its original state
     void unwind() {
-        unsigned toPop = m_stack.size() - 1;
-        while (toPop--) m_emit(new AstTracePopPrefix{m_flp});
+        for (unsigned toPop = m_stack.size(); --toPop;) m_emit(new AstTracePopPrefix{m_flp});
     }
 };
 
@@ -98,6 +97,7 @@ class TraceDeclVisitor final : public VNVisitor {
 
     std::vector<AstCFunc*> m_topFuncps;  // Top level trace initialization functions
     std::vector<AstCFunc*> m_subFuncps;  // Trace sub functions for this scope
+    std::set<const AstTraceDecl*> m_declUncalledps;  // Declarations not called
     int m_topFuncSize = 0;  // Size of the top function currently being built
     int m_subFuncSize = 0;  // Size of the sub function currently being built
     const int m_funcSizeLimit  // Maximum size of a function
@@ -232,9 +232,10 @@ class TraceDeclVisitor final : public VNVisitor {
         } else if (const AstBasicDType* const bdtypep = m_traValuep->dtypep()->basicp()) {
             bitRange = bdtypep->nrange();
         }
-        auto* const newp
+        AstTraceDecl* const newp
             = new AstTraceDecl{m_traVscp->fileline(),         m_traName, m_traVscp->varp(),
                                m_traValuep->cloneTree(false), bitRange,  arrayRange};
+        m_declUncalledps.emplace(newp);
         addToSubFunc(newp);
     }
 
@@ -289,6 +290,7 @@ class TraceDeclVisitor final : public VNVisitor {
 
     void fixupPlaceholders() {
         // Fix up cell initialization placehodlers
+        UINFO(9, "fixupPlaceholders()\n");
         for (const auto& item : m_cellInitPlaceholders) {
             const AstScope* const parentp = std::get<0>(item);
             const AstCell* const cellp = std::get<1>(item);
@@ -325,8 +327,27 @@ class TraceDeclVisitor final : public VNVisitor {
         }
     }
 
+    void checkCalls(const AstCFunc* funcp) {
+        if (!v3Global.opt.debugCheck()) return;
+        checkCallsRecurse(funcp);
+        if (!m_declUncalledps.empty()) {
+            for (auto tracep : m_declUncalledps) UINFO(0, "-nodep " << tracep << "\n");
+            (*(m_declUncalledps.begin()))->v3fatalSrc("Created TraceDecl which is never called");
+        }
+    }
+    void checkCallsRecurse(const AstCFunc* funcp) {
+        funcp->foreach([this](const AstNode* nodep) {
+            if (const AstTraceDecl* const declp = VN_CAST(nodep, TraceDecl)) {
+                m_declUncalledps.erase(declp);
+            } else if (const AstCCall* const ccallp = VN_CAST(nodep, CCall)) {
+                checkCallsRecurse(ccallp->funcp());
+            }
+        });
+    }
+
     // VISITORS
     void visit(AstScope* nodep) override {
+        UINFO(9, "visit " << nodep << "\n");
         UASSERT_OBJ(!m_currScopep, nodep, "Should not nest");
         UASSERT_OBJ(m_subFuncps.empty(), nodep, "Should not nest");
         UASSERT_OBJ(m_entries.empty(), nodep, "Should not nest");
@@ -342,7 +363,7 @@ class TraceDeclVisitor final : public VNVisitor {
 
         // Gather cells under this scope
         for (AstNode* stmtp = nodep->modp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstCell* const cellp = VN_CAST(stmtp, Cell)) { m_entries.emplace_back(cellp); }
+            if (AstCell* const cellp = VN_CAST(stmtp, Cell)) m_entries.emplace_back(cellp);
         }
 
         if (!m_entries.empty()) {
@@ -678,6 +699,8 @@ public:
         // Set name of top level function
         AstCFunc* const topFuncp = m_topFuncps.front();
         topFuncp->name("trace_init_top");
+
+        checkCalls(topFuncp);
     }
     ~TraceDeclVisitor() override {
         V3Stats::addStat("Tracing, Traced signals", m_statSigs);

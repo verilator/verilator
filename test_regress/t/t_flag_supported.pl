@@ -12,7 +12,7 @@ scenarios(vlt => 1);
 
 if ($Self->have_coroutines) {
     run(
-        cmd => ["../bin/verilator --get-supported COROUTINES"],
+        cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator --get-supported COROUTINES"],
         expect => '1
 ',
         logfile => "$Self->{obj_dir}/vlt_coroutines.log",
@@ -22,7 +22,7 @@ if ($Self->have_coroutines) {
 
 if ($Self->have_sc) {
     run(
-        cmd => ["../bin/verilator --get-supported SYSTEMC"],
+        cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator --get-supported SYSTEMC"],
         expect => '1
 ',
         logfile => "$Self->{obj_dir}/vlt_systemc.log",
@@ -31,7 +31,7 @@ if ($Self->have_sc) {
 }
 
 run(
-    cmd => ["../bin/verilator --get-supported DOES_NOT_EXIST"],
+    cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator --get-supported DOES_NOT_EXIST"],
     expect => '',
     logfile => "$Self->{obj_dir}/vlt_does_not_exist.log",
     verilator_run => 1,

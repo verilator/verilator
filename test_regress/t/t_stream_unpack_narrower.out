@@ -1,0 +1,11 @@
+%Warning-WIDTHEXPAND: t/t_stream_unpack_narrower.v:14:18: Stream target requires 32 bits, but source expression only provides 31 bits (IEEE 1800-2023 11.4.14.3)
+                                                        : ... note: In instance 't'
+   14 |     {>>{stream}} = packed_data;
+      |                  ^
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
+                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
+%Warning-WIDTHTRUNC: t/t_stream_unpack_narrower.v:15:17: Target fixed size variable (31 bits) is narrower than the stream (32 bits) (IEEE 1800-2023 11.4.14)
+                                                       : ... note: In instance 't'
+   15 |     packed_data = {>>{stream}};
+      |                 ^
+%Error: Exiting due to

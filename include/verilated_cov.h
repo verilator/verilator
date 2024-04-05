@@ -63,14 +63,16 @@ class VerilatedCovImp;
 ///         for (int i = 0; i < 10; ++i) m_cases[i] = 0;
 ///         // Insert
 ///         for (int i = 0; i < 10; ++i)
-///             VL_COVER_INSERT(&m_cases[i], "comment", "Coverage Case", "i", cvtToNumStr(i));
+///             VL_COVER_INSERT(covp, name(), &m_cases[i], "comment", "Coverage Case",
+///                             "i", cvtToNumStr(i));
 ///     }
 
-#define VL_COVER_INSERT(covcontextp, countp, ...) \
+#define VL_COVER_INSERT(covcontextp, name, countp, ...) \
     do { \
-        covcontextp->_inserti(countp); \
-        covcontextp->_insertf(__FILE__, __LINE__); \
-        covcontextp->_insertp("hier", name(), __VA_ARGS__); \
+        auto const ccontextp = covcontextp; \
+        ccontextp->_inserti(countp); \
+        ccontextp->_insertf(__FILE__, __LINE__); \
+        ccontextp->_insertp("hier", name, __VA_ARGS__); \
     } while (false)
 
 //=============================================================================
@@ -163,7 +165,7 @@ public:
     /// Return default filename for the current thread
     static std::string defaultFilename() VL_MT_SAFE { return threadCovp()->defaultFilename(); }
     /// Write all coverage data to a file for the current thread
-    static void write(const std::string filename) VL_MT_SAFE { threadCovp()->write(filename); }
+    static void write(const std::string& filename) VL_MT_SAFE { threadCovp()->write(filename); }
     static void write() VL_MT_SAFE { write(defaultFilename()); }
     /// Clear coverage points (and call delete on all items) for the current thread
     static void clear() VL_MT_SAFE { threadCovp()->clear(); }

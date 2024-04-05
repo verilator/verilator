@@ -221,6 +221,7 @@ private:
     bool m_makePhony = false;       // main switch: -MP
     bool m_preprocNoLine = false;   // main switch: -P
     bool m_assert = false;          // main switch: --assert
+    bool m_assertCase = false;      // main switch: --assert-case
     bool m_autoflush = false;       // main switch: --autoflush
     bool m_bboxSys = false;         // main switch: --bbox-sys
     bool m_bboxUnsup = false;       // main switch: --bbox-unsup
@@ -244,6 +245,7 @@ private:
     bool m_debugProtect = false;    // main switch: --debug-protect
     bool m_debugSelfTest = false;   // main switch: --debug-self-test
     bool m_debugStackCheck = false;  // main switch: --debug-stack-check
+    bool m_debugWidth = false;      // main switch: --debug-width
     bool m_decoration = true;       // main switch: --decoration
     bool m_decorationNodes = false;  // main switch: --decoration=nodes
     bool m_dpiHdrOnly = false;      // main switch: --dpi-hdr-only
@@ -270,8 +272,9 @@ private:
     bool m_publicFlatRW = false;    // main switch: --public-flat-rw
     bool m_public_params = false;   // main switch: --public-params
     bool m_quietExit = false;       // main switch: --quiet-exit
-    bool m_relativeIncludes = false; // main switch: --relative-includes
-    bool m_reportUnoptflat = false; // main switch: --report-unoptflat
+    bool m_quietStats = false;      // main switch: --quiet-stats
+    bool m_relativeIncludes = false;  // main switch: --relative-includes
+    bool m_reportUnoptflat = false;  // main switch: --report-unoptflat
     bool m_savable = false;         // main switch: --savable
     bool m_std = true;              // main switch: --std
     bool m_structsPacked = false;   // main switch: --structs-packed
@@ -293,6 +296,7 @@ private:
     bool m_vpi = false;             // main switch: --vpi
     bool m_xInitialEdge = false;    // main switch: --x-initial-edge
     bool m_xmlOnly = false;         // main switch: --xml-only
+    bool m_jsonOnly = false;        // main switch: --json-only
 
     int         m_buildJobs = -1;    // main switch: --build-jobs, -j
     int         m_convergeLimit = 100;  // main switch: --converge-limit
@@ -303,6 +307,8 @@ private:
     int         m_ifDepth = 0;      // main switch: --if-depth
     int         m_inlineMult = 2000;   // main switch: --inline-mult
     int         m_instrCountDpi = 200;   // main switch: --instr-count-dpi
+    bool        m_jsonEditNums = true; // main switch: --no-json-edit-nums
+    bool        m_jsonIds = true; // main switch: --no-json-ids
     VOptionBool m_makeDepend;  // main switch: -MMD
     int         m_maxNumWidth = 65536;  // main switch: --max-num-width
     int         m_moduleRecursion = 100;  // main switch: --module-recursion-depth
@@ -313,6 +319,7 @@ private:
     int         m_publicDepth = 0;   // main switch: --public-depth
     int         m_reloopLimit = 40; // main switch: --reloop-limit
     VOptionBool m_skipIdentical;  // main switch: --skip-identical
+    bool        m_stopFail = true;  // main switch: --stop-fail
     int         m_threads = 1;      // main switch: --threads
     int         m_threadsMaxMTasks = 0;  // main switch: --threads-max-mtasks
     VTimescale  m_timeDefaultPrec;  // main switch: --timescale
@@ -349,6 +356,8 @@ private:
     string      m_xAssign;      // main switch: --x-assign
     string      m_xInitial;     // main switch: --x-initial
     string      m_xmlOutput;    // main switch: --xml-output
+    string      m_jsonOnlyOutput;    // main switch: --json-only-output
+    string      m_jsonOnlyMetaOutput;    // main switch: --json-only-meta-output
 
     // Language is now held in FileLine, on a per-node basis. However we still
     // have a concept of the default language at a global level.
@@ -448,6 +457,7 @@ public:
     bool std() const { return m_std; }
     bool structsPacked() const { return m_structsPacked; }
     bool assertOn() const { return m_assert; }  // assertOn as __FILE__ may be defined
+    bool assertCaseOn() const { return m_assertCase || m_assert; }
     bool autoflush() const { return m_autoflush; }
     bool bboxSys() const { return m_bboxSys; }
     bool bboxUnsup() const { return m_bboxUnsup; }
@@ -476,6 +486,7 @@ public:
     bool debugProtect() const VL_MT_SAFE { return m_debugProtect; }
     bool debugSelfTest() const { return m_debugSelfTest; }
     bool debugStackCheck() const { return m_debugStackCheck; }
+    bool debugWidth() const VL_PURE { return m_debugWidth; }
     bool decoration() const VL_MT_SAFE { return m_decoration; }
     bool decorationNodes() const VL_MT_SAFE { return m_decorationNodes; }
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
@@ -516,12 +527,14 @@ public:
     bool lintOnly() const VL_MT_SAFE { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
     bool quietExit() const VL_MT_SAFE { return m_quietExit; }
+    bool quietStats() const VL_MT_SAFE { return m_quietStats; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
     bool verilate() const { return m_verilate; }
     bool vpi() const { return m_vpi; }
     bool xInitialEdge() const { return m_xInitialEdge; }
     bool xmlOnly() const { return m_xmlOnly; }
-    bool serializeOnly() const { return m_xmlOnly; }
+    bool jsonOnly() const { return m_jsonOnly; }
+    bool serializeOnly() const { return m_xmlOnly || m_jsonOnly; }
     bool topIfacesSupported() const { return lintOnly() && !hierarchical(); }
 
     int buildJobs() const VL_MT_SAFE { return m_buildJobs; }
@@ -533,6 +546,8 @@ public:
     int ifDepth() const { return m_ifDepth; }
     int inlineMult() const { return m_inlineMult; }
     int instrCountDpi() const { return m_instrCountDpi; }
+    bool jsonEditNums() const { return m_jsonEditNums; }
+    bool jsonIds() const { return m_jsonIds; }
     VOptionBool makeDepend() const { return m_makeDepend; }
     int maxNumWidth() const { return m_maxNumWidth; }
     int moduleRecursionDepth() const { return m_moduleRecursion; }
@@ -543,6 +558,7 @@ public:
     int publicDepth() const { return m_publicDepth; }
     int reloopLimit() const { return m_reloopLimit; }
     VOptionBool skipIdentical() const { return m_skipIdentical; }
+    bool stopFail() const { return m_stopFail; }
     int threads() const VL_MT_SAFE { return m_threads; }
     int threadsMaxMTasks() const { return m_threadsMaxMTasks; }
     bool mtasks() const { return (m_threads > 1); }
@@ -602,6 +618,8 @@ public:
     string xAssign() const { return m_xAssign; }
     string xInitial() const { return m_xInitial; }
     string xmlOutput() const { return m_xmlOutput; }
+    string jsonOnlyOutput() const { return m_jsonOnlyOutput; }
+    string jsonOnlyMetaOutput() const { return m_jsonOnlyMetaOutput; }
 
     const V3StringSet& cppFiles() const { return m_cppFiles; }
     const V3StringList& cFlags() const { return m_cFlags; }

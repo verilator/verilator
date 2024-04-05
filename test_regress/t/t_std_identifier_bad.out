@@ -1,4 +1,4 @@
-%Error-PKGNODECL: t/t_std_identifier_bad.v:16:20: Package/class 'std' not found, and needs to be predeclared (IEEE 1800-2017 26.3)
+%Error-PKGNODECL: t/t_std_identifier_bad.v:16:20: Package/class 'std' not found, and needs to be predeclared (IEEE 1800-2023 26.3)
    16 |     int baz = foo::std::bar;
       |                    ^~~
                   ... For error description see https://verilator.org/warn/PKGNODECL?v=latest
