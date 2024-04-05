@@ -140,11 +140,15 @@ class V3ThreadPool final {
         }
 
         bool m_mutex_locked = m_mutex.try_lock();
-        // try_lock can sometimes spontaneously fail even when mutex is not locked,
-        // make sure this isn't the case
-        for (int i = 0; i < VL_LOCK_SPINS; ++i) {
+        using namespace std::chrono_literals;
+        // try to obtain lock with timeout
+        // we need to wait for workers to start waiting
+        // on condition variable to perform destruction
+        constexpr int spins = 10s / 1ms;
+        for (int i = 0; i < spins; ++i) {
             if (VL_LIKELY(m_mutex_locked)) break;
-            VL_CPU_RELAX();
+            std::this_thread::sleep_for(1ms);
+
             m_mutex_locked = m_mutex.try_lock();
         }
         if (VL_UNCOVERABLE(!m_mutex_locked)) {
