@@ -132,10 +132,10 @@ module
           begin
              $display("Info:(v): drv_en = %b", drv_en);
              $display("Info:(v): bidir_single_bit_io = %b", bidir_single_bit_io);
-             $display("Info:(v): bidir_bus_64_io = %b,%b,%b,%b", 
+             $display("Info:(v): bidir_bus_64_io = %b,%b,%b,%b",
 		      bidir_bus_64_io[63:48], bidir_bus_64_io[47:32],
 		      bidir_bus_64_io[31:16],bidir_bus_64_io[15:0]);
-             $display("Info:(v): bidir_bus_128_io = %b,%b,%b,%b", 
+             $display("Info:(v): bidir_bus_128_io = %b,%b,%b,%b",
 		      bidir_bus_128_io[127:96], bidir_bus_128_io[95:64],
 	              bidir_bus_128_io[63:32], bidir_bus_128_io[31:0]);
 
@@ -145,12 +145,14 @@ module
                    begin
                      if (bidir_single_bit_io !== rand_bit)
                        begin
-                         $display("%%Error:(v): bidir_single_bit_io is wrong");
+                         $display("%%Error:(v): bidir_single_bit_io is wrong (expect %b got %b)",
+                                  rand_bit, bidir_single_bit_io);
 			 error_cnt++;
                        end
 		     if (sub_io !== rand_bit)
                        begin
-                         $display("%%Error:(v): sub_io is wrong");
+                         $display("%%Error:(v): sub_io is wrong (expect %b, got %b)",
+                                  rand_bit, sub_io);
                        end
 		 end
 
@@ -186,7 +188,7 @@ module
                      if (my_64_segment !== {16{rand_bit}})
                        begin
                          $display("%%Error:(v): bidir_bus_64_io is wrong");
-                         $display("Should be bidir_bus_64_io[%0d:%0d] = %b, was = %b", 
+                         $display("Error:(v): Should be bidir_bus_64_io[%0d:%0d] = %b, was = %b",
 			          msb, lsb, {16{rand_bit}}, my_64_segment);
 			 error_cnt++;
                        end
@@ -197,11 +199,11 @@ module
                        end
 
                      msb = ((i+1)*32-1);
-		     lsb = i*32; 
+		     lsb = i*32;
 	             if (my_128_segment !== {32{rand_bit}})
                        begin
                          $display("%%Error:(v): bidir_bus_128_io is wrong");
-                         $display("Should be bidir_bus_128_io[%0d:%0d] = %b, was = %b", 
+                         $display("Error:(v):Should be bidir_bus_128_io[%0d:%0d] = %b, was = %b",
 			          msb, lsb, {32{rand_bit}}, my_128_segment);
 			 error_cnt++;
                        end
