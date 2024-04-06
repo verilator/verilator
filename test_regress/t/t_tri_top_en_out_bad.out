@@ -1,0 +1,5 @@
+   52 |     errors += topp->internal_sub_io__en;
+      |                     ^~~~~~~~~~~~~~~~~~~
+t/t_tri_top_en_out_bad.cpp:53:21: error: ‘class Vt_tri_top_en_out_bad’ has no member named ‘internal_sub_io__out’
+   53 |     errors += topp->internal_sub_io__out;
+      |                     ^~~~~~~~~~~~~~~~~~~~
