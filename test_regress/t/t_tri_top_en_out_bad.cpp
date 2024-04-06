@@ -9,6 +9,7 @@
 // should not be there, internal_sub_io__en and internal_sub_io__out
 
 #include "verilated.h"
+
 #include "Vt_tri_top_en_out_bad.h"
 
 int main(int argc, char** argv, char**) {
@@ -18,8 +19,7 @@ int main(int argc, char** argv, char**) {
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
     contextp->commandArgs(argc, argv);
     // Construct the Verilated model, from Vtop.h generated from Verilating
-    const std::unique_ptr<Vt_tri_top_en_out_bad> topp{
-        new Vt_tri_top_en_out_bad{contextp.get()}};
+    const std::unique_ptr<Vt_tri_top_en_out_bad> topp{new Vt_tri_top_en_out_bad{contextp.get()}};
     // Initial input
     topp->drv_en = 0;
     topp->single_bit_io = rand() & 1;
