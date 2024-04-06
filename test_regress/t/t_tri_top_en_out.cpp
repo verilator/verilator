@@ -43,8 +43,6 @@ int main(int argc, char** argv, char**) {
     topp->sub_io = rand() & 1;
     topp->test_en = 1;
 
-    srand((unsigned)time(0));
-
     error_cnt = 0;
 
 #ifdef T_TRI_TOP_EN_OUT_INVALID
