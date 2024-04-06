@@ -988,8 +988,9 @@ Summary:
 .. option:: --pins-inout-enables
 
    Specifies that the __en and __out outputs will always be created for
-   inouts in the top-level module. These variables indicate that an
-   inout is being driven from within the verilated model.
+   inouts in the top-level module. The __en variable has a one in a bit
+   position to indicate the corresponding bit of the __out variable has
+   a value being driven from within the Verilated model.
 
 .. option:: --pins-sc-uint
 
