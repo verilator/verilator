@@ -14,8 +14,7 @@ compile(
   make_top_shell => 0,
   make_main => 0,
   verilator_make_gmake => 1,
-  verilator_flags2 => ["--exe --pins-inout-enables --no-timing -Wno-STMTDLY",
-                       "$Self->{t_dir}/$Self->{name}.cpp"]
+  verilator_flags2 => ["--exe --pins-inout-enables --no-timing -Wno-STMTDLY"]
 );
 if ($Self->{errors}) {
    print "The compile failed, this is expected, checking the compile log...\n";
