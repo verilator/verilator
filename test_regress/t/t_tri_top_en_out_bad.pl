@@ -16,15 +16,7 @@ compile(
   verilator_make_gmake => 1,
   verilator_flags2 => ["--exe --pins-inout-enables --no-timing -Wno-STMTDLY"]
 );
-if ($Self->{errors}) {
-   print "The compile failed, this is expected, checking the compile log...\n";
-}
+file_grep_not("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/internal_sub_io__out/);
 
-if (files_identical("$Self->{obj_dir}/vlt_gcc.log", "$Self->{golden_filename}", 'logfile')) {
-  print "The logfile was as expected\n";
-  $Self->{errors} = 0;
-  ok(1);
-} else {
-  ok(0);
-}
+ok(1);
 1;
