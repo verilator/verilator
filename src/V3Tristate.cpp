@@ -486,10 +486,9 @@ class TristateVisitor final : public TristateBaseVisitor {
     AstVar* getCreateEnVarp(AstVar* invarp, bool isTop) {
         // Return the master __en for the specified input variable
         if (!invarp->user1p()) {
-            AstVar* const newp = new AstVar{invarp->fileline(),
-                                            isTop ? VVarType::PORT
-                                                  : VVarType::MODULETEMP,
-                                            invarp->name() + "__en", invarp};
+            AstVar* const newp
+                = new AstVar{invarp->fileline(), isTop ? VVarType::PORT : VVarType::MODULETEMP,
+                             invarp->name() + "__en", invarp};
             UINFO(9, "       newenv " << newp << endl);
             modAddStmtp(invarp, newp);
             invarp->user1p(newp);  // find envar given invarp
@@ -540,10 +539,9 @@ class TristateVisitor final : public TristateBaseVisitor {
     AstVar* getCreateOutVarp(AstVar* invarp, bool isTop) {
         // Return the master __out for the specified input variable
         if (!m_varAux(invarp).outVarp) {
-            AstVar* const newp = new AstVar{invarp->fileline(),
-                                            isTop ? VVarType::PORT
-                                                  : VVarType::MODULETEMP,
-                                            invarp->name() + "__out", invarp};
+            AstVar* const newp
+                = new AstVar{invarp->fileline(), isTop ? VVarType::PORT : VVarType::MODULETEMP,
+                             invarp->name() + "__out", invarp};
             UINFO(9, "       newout " << newp << endl);
             modAddStmtp(invarp, newp);
             m_varAux(invarp).outVarp = newp;  // find outvar given invarp
@@ -737,7 +735,8 @@ class TristateVisitor final : public TristateBaseVisitor {
             UINFO(9, "     TRISTATE propagates up with " << lhsp << endl);
             // Create an output enable port (__en)
             // May already be created if have foo === 1'bz somewhere
-            envarp = getCreateEnVarp(invarp, isTopInout);  // direction will be sen in visit(AstPin*)
+            envarp
+                = getCreateEnVarp(invarp, isTopInout);  // direction will be sen in visit(AstPin*)
             //
             outvarp->user1p(envarp);
             m_varAux(outvarp).pullp = m_varAux(invarp).pullp;  // AstPull* propagation
