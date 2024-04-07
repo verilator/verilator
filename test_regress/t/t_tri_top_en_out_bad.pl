@@ -12,11 +12,12 @@ scenarios(vlt => 1);
 
 compile(
   make_top_shell => 0,
-  make_main => 0,
+  make_main => 1,
   verilator_make_gmake => 1,
   verilator_flags2 => ["--exe --pins-inout-enables --no-timing -Wno-STMTDLY"]
 );
 file_grep_not("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/internal_sub_io__out/);
+file_grep_not("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/internal_sub_io__en/);
 
 ok(1);
 1;
