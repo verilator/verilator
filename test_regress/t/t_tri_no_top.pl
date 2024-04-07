@@ -13,7 +13,7 @@ scenarios(simulator => 1);
 compile(
     make_top_shell => 0,
     make_main => 0,
-    verilator_flags2 => ["--exe --timing --main", "$Self->{t_dir}/t_tri_top_en_out.v"],
+    verilator_flags2 => ["--exe --pins-inout-enables --timing --main", "$Self->{t_dir}/t_tri_top_en_out.v"],
     );
 
 execute(
