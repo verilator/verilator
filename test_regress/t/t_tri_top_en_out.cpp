@@ -5,9 +5,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 #include "verilated.h"
-#include "Vt_tri_top_en_out.h"
-#include <ctime>
+
 #include "TestCheck.h"
+#include "Vt_tri_top_en_out.h"
+
+#include <ctime>
 
 int main(int argc, char** argv, char**) {
     int errors;
@@ -87,7 +89,7 @@ int main(int argc, char** argv, char**) {
             // Check the expected __en output
 
             if (topp->drv_en & 0x1) {
-		TEST_CHECK_EQ(uint64_t(topp->sub_io__en), 1);
+                TEST_CHECK_EQ(uint64_t(topp->sub_io__en), 1);
                 TEST_CHECK_EQ(uint64_t(topp->bidir_single_bit_io__en), 1);
             } else {
                 TEST_CHECK_EQ(uint64_t(topp->sub_io__en), 0);
@@ -97,12 +99,14 @@ int main(int argc, char** argv, char**) {
             for (int i = 0; i < 4; i++) {
                 // __en enabled?
                 if ((topp->drv_en & (1 << i)) != 0) {
-                    TEST_CHECK_EQ(uint64_t(topp->bidir_bus_64_io__en >> (i * 16) & 0xffff), 0xffff);
+                    TEST_CHECK_EQ(uint64_t(topp->bidir_bus_64_io__en >> (i * 16) & 0xffff),
+                                  0xffff);
                     TEST_CHECK_EQ(uint64_t(topp->bidir_bus_128_io__en[i]), 0xffffffff);
                 }
                 // __en not enabled
                 else {
-                    TEST_CHECK_EQ(uint64_t(topp->bidir_bus_64_io__en >> (i * 16) & 0xffff), 0x0000);
+                    TEST_CHECK_EQ(uint64_t(topp->bidir_bus_64_io__en >> (i * 16) & 0xffff),
+                                  0x0000);
                     TEST_CHECK_EQ(uint64_t(topp->bidir_bus_128_io__en[i]), 0x00000000);
                 }
             }  // for
