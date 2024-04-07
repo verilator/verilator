@@ -490,11 +490,6 @@ class TristateVisitor final : public TristateBaseVisitor {
                                             v3Global.opt.pinsInoutEnables() ? VVarType::PORT
                                                                             : VVarType::MODULETEMP,
                                             invarp->name() + "__en", invarp};
-            if (v3Global.opt.pinsInoutEnables()) {
-                newp->primaryIO(true);
-                newp->direction(VDirection::OUTPUT);
-                UINFO(9, "       primaryIO(true) " << newp << endl);
-            }
             UINFO(9, "       newenv " << newp << endl);
             modAddStmtp(invarp, newp);
             invarp->user1p(newp);  // find envar given invarp
@@ -549,10 +544,6 @@ class TristateVisitor final : public TristateBaseVisitor {
                                             v3Global.opt.pinsInoutEnables() ? VVarType::PORT
                                                                             : VVarType::MODULETEMP,
                                             invarp->name() + "__out", invarp};
-            if (v3Global.opt.pinsInoutEnables()) {
-                newp->primaryIO(true);
-                UINFO(9, "       primaryIO(true) " << newp << endl);
-            }
             UINFO(9, "       newout " << newp << endl);
             modAddStmtp(invarp, newp);
             m_varAux(invarp).outVarp = newp;  // find outvar given invarp
@@ -727,10 +718,14 @@ class TristateVisitor final : public TristateBaseVisitor {
         // original port gets converted to an input. Don't tristate expand
         // if this is the top level so that we can force the final
         // tristate resolution at the top.
+	// Or if this is a top-level inout, do tristate expand if requested
+	// by pinsInoutEnables(). The resolution will be done outside of
+	// verilator.
         AstVar* envarp = nullptr;
         AstVar* outvarp = nullptr;  // __out
         AstVar* lhsp = invarp;  // Variable to assign drive-value to (<in> or __out)
-        if (((!nodep->isTop()) || v3Global.opt.pinsInoutEnables()) && invarp->isIO()) {
+	bool isTopInout = (invarp->direction() == VDirection::INOUT) && invarp->isIO() && nodep->isTop();
+        if ((v3Global.opt.pinsInoutEnables() && isTopInout) || ((!nodep->isTop()) && invarp->isIO())) {
             // This var becomes an input
             invarp->varType2In();  // convert existing port to type input
             // Create an output port (__out)
@@ -834,6 +829,18 @@ class TristateVisitor final : public TristateBaseVisitor {
         assp->user2(U2_BOTH);  // Don't process further; already resolved
         if (debug() >= 9) assp->dumpTree("-  lhsp-eqn: ");
         nodep->addStmtsp(assp);
+
+	// If this is a top-level inout, make sure that the INOUT pins get __en and __out
+        if (v3Global.opt.pinsInoutEnables() && isTopInout) {
+           if (envarp) {
+	      envarp->primaryIO(true);
+	      envarp->direction(VDirection::OUTPUT);
+	   }
+           if (outvarp) {
+              outvarp->primaryIO(true);
+	      outvarp->direction(VDirection::OUTPUT);
+	   }
+        }
     }
 
     bool isOnlyAssignmentIsToLhsVar(AstAssignW* const nodep) {
@@ -1595,11 +1602,6 @@ class TristateVisitor final : public TristateBaseVisitor {
                                      outModVarp->name(),  // should be {var}"__out"
                                      outexprp};
                 outpinp->modVarp(outModVarp);
-                // Optionally preserve the added pin as a primaryIO
-                if (v3Global.opt.pinsInoutEnables()) {
-                    outModVarp->primaryIO(true);
-                    UINFO(9, "       primaryIO(true) " << outpinp << endl);
-                }
                 UINFO(9, "       newpin " << outpinp << endl);
                 outpinp->user2(U2_BOTH);  // don't iterate the pin later
                 nodep->addNextHere(outpinp);
