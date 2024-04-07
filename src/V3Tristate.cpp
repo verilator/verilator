@@ -718,14 +718,16 @@ class TristateVisitor final : public TristateBaseVisitor {
         // original port gets converted to an input. Don't tristate expand
         // if this is the top level so that we can force the final
         // tristate resolution at the top.
-	// Or if this is a top-level inout, do tristate expand if requested
-	// by pinsInoutEnables(). The resolution will be done outside of
-	// verilator.
+        // Or if this is a top-level inout, do tristate expand if requested
+        // by pinsInoutEnables(). The resolution will be done outside of
+        // verilator.
         AstVar* envarp = nullptr;
         AstVar* outvarp = nullptr;  // __out
         AstVar* lhsp = invarp;  // Variable to assign drive-value to (<in> or __out)
-	bool isTopInout = (invarp->direction() == VDirection::INOUT) && invarp->isIO() && nodep->isTop();
-        if ((v3Global.opt.pinsInoutEnables() && isTopInout) || ((!nodep->isTop()) && invarp->isIO())) {
+        bool isTopInout
+            = (invarp->direction() == VDirection::INOUT) && invarp->isIO() && nodep->isTop();
+        if ((v3Global.opt.pinsInoutEnables() && isTopInout)
+            || ((!nodep->isTop()) && invarp->isIO())) {
             // This var becomes an input
             invarp->varType2In();  // convert existing port to type input
             // Create an output port (__out)
@@ -830,16 +832,16 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (debug() >= 9) assp->dumpTree("-  lhsp-eqn: ");
         nodep->addStmtsp(assp);
 
-	// If this is a top-level inout, make sure that the INOUT pins get __en and __out
+        // If this is a top-level inout, make sure that the INOUT pins get __en and __out
         if (v3Global.opt.pinsInoutEnables() && isTopInout) {
-           if (envarp) {
-	      envarp->primaryIO(true);
-	      envarp->direction(VDirection::OUTPUT);
-	   }
-           if (outvarp) {
-              outvarp->primaryIO(true);
-	      outvarp->direction(VDirection::OUTPUT);
-	   }
+            if (envarp) {
+                envarp->primaryIO(true);
+                envarp->direction(VDirection::OUTPUT);
+            }
+            if (outvarp) {
+                outvarp->primaryIO(true);
+                outvarp->direction(VDirection::OUTPUT);
+            }
         }
     }
 
