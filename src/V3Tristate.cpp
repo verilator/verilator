@@ -483,12 +483,12 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Otherwise return the previous output enable
         return VN_AS(nodep->user1p(), NodeExpr);
     }
-    AstVar* getCreateEnVarp(AstVar* invarp) {
+    AstVar* getCreateEnVarp(AstVar* invarp, bool isTop) {
         // Return the master __en for the specified input variable
         if (!invarp->user1p()) {
             AstVar* const newp = new AstVar{invarp->fileline(),
-                                            v3Global.opt.pinsInoutEnables() ? VVarType::PORT
-                                                                            : VVarType::MODULETEMP,
+                                            isTop ? VVarType::PORT
+                                                  : VVarType::MODULETEMP,
                                             invarp->name() + "__en", invarp};
             UINFO(9, "       newenv " << newp << endl);
             modAddStmtp(invarp, newp);
@@ -506,7 +506,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
     AstNodeExpr* getEnExprBasedOnOriginalp(AstNodeExpr* const nodep) {
         if (AstVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
-            return new AstVarRef{varrefp->fileline(), getCreateEnVarp(varrefp->varp()),
+            return new AstVarRef{varrefp->fileline(), getCreateEnVarp(varrefp->varp(), 0),
                                  VAccess::READ};
         } else if (AstConst* const constp = VN_CAST(nodep, Const)) {
             return getNonZConstp(constp);
@@ -537,12 +537,12 @@ class TristateVisitor final : public TristateBaseVisitor {
             return nullptr;
         }
     }
-    AstVar* getCreateOutVarp(AstVar* invarp) {
+    AstVar* getCreateOutVarp(AstVar* invarp, bool isTop) {
         // Return the master __out for the specified input variable
         if (!m_varAux(invarp).outVarp) {
             AstVar* const newp = new AstVar{invarp->fileline(),
-                                            v3Global.opt.pinsInoutEnables() ? VVarType::PORT
-                                                                            : VVarType::MODULETEMP,
+                                            isTop ? VVarType::PORT
+                                                  : VVarType::MODULETEMP,
                                             invarp->name() + "__out", invarp};
             UINFO(9, "       newout " << newp << endl);
             modAddStmtp(invarp, newp);
@@ -731,13 +731,13 @@ class TristateVisitor final : public TristateBaseVisitor {
             // This var becomes an input
             invarp->varType2In();  // convert existing port to type input
             // Create an output port (__out)
-            outvarp = getCreateOutVarp(invarp);
+            outvarp = getCreateOutVarp(invarp, isTopInout);
             outvarp->varType2Out();
             lhsp = outvarp;  // Must assign to __out, not to normal input signal
             UINFO(9, "     TRISTATE propagates up with " << lhsp << endl);
             // Create an output enable port (__en)
             // May already be created if have foo === 1'bz somewhere
-            envarp = getCreateEnVarp(invarp);  // direction will be sen in visit(AstPin*)
+            envarp = getCreateEnVarp(invarp, isTopInout);  // direction will be sen in visit(AstPin*)
             //
             outvarp->user1p(envarp);
             m_varAux(outvarp).pullp = m_varAux(invarp).pullp;  // AstPull* propagation
@@ -1412,7 +1412,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                                                      << nodep->prettyTypeName());
                     return;
                 }
-                AstVar* const envarp = getCreateEnVarp(varrefp->varp());
+                AstVar* const envarp = getCreateEnVarp(varrefp->varp(), 0);
                 // If any drops, we need to add in the count of Zs (from __en)
                 UINFO(4, " COUNTBITS('z)-> " << nodep << endl);
                 VNRelinker relinkHandle;
@@ -1710,7 +1710,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                        && m_tgraph.feedsTri(nodep)) {
                 // Then propagate the enable from the original variable
                 UINFO(9, "     Ref-to-tri " << nodep << endl);
-                AstVar* const enVarp = getCreateEnVarp(nodep->varp());
+                AstVar* const enVarp = getCreateEnVarp(nodep->varp(), 0);
                 nodep->user1p(new AstVarRef{nodep->fileline(), enVarp, VAccess::READ});
             }
             (void)m_alhs;  // NOP; user1() already passed down from assignment
