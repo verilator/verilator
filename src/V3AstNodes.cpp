@@ -1458,7 +1458,14 @@ void AstAlways::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "keyword", keyword().ascii());
     dumpJsonGen(str);
 }
-
+void AstAssertCtl::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " [" << ctlType().ascii() << "]";
+}
+void AstAssertCtl::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "ctlType", ctlType().ascii());
+    dumpJsonGen(str);
+}
 void AstAttrOf::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " [" << attrType().ascii() << "]";

@@ -618,6 +618,11 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /* System Verilog 2012 */
 <S12,S17,S23,SAX>{
+  /*     System Tasks */
+  "$assertcontrol"      { FL; return yD_ASSERTCTL; }
+  "$assertkill"         { FL; return yD_ASSERTKILL; }
+  "$assertoff"          { FL; return yD_ASSERTOFF; }
+  "$asserton"           { FL; return yD_ASSERTON; }
   /*     Keywords */
   "implements"          { FL; return yIMPLEMENTS; }
   "interconnect"        { FL; return yINTERCONNECT; }

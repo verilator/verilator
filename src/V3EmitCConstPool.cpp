@@ -78,6 +78,7 @@ class EmitCConstPool final : public EmitCConstInit {
         m_ofp = newOutCFile();
 
         for (const AstVar* varp : varps) {
+            if (!varp->valuep()) continue;
             maybeSplitCFile();
             const string nameProtect = topClassName() + "__ConstPool__" + varp->nameProtect();
             puts("\n");
