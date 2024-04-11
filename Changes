@@ -13,6 +13,7 @@ Verilator 5.025 devel
 
 **Minor:**
 
+* Fix `$system` with string argument (#5042).
 
 
 Verilator 5.024 2024-04-05

@@ -1749,7 +1749,10 @@ IData VL_SYSTEM_IQ(QData lhs) VL_MT_SAFE {
 IData VL_SYSTEM_IW(int lhswords, const WDataInP lhsp) VL_MT_SAFE {
     char filenamez[VL_VALUE_STRING_MAX_CHARS + 1];
     _vl_vint_to_string(lhswords * VL_EDATASIZE, filenamez, lhsp);
-    const int code = std::system(filenamez);  // Yes, std::system() is threadsafe
+    return VL_SYSTEM_IN(filenamez);
+}
+IData VL_SYSTEM_IN(const std::string& lhs) VL_MT_SAFE {
+    const int code = std::system(lhs.c_str());  // Yes, std::system() is threadsafe
     return code >> 8;  // Want exit status
 }
 
