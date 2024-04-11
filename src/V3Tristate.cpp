@@ -483,11 +483,12 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Otherwise return the previous output enable
         return VN_AS(nodep->user1p(), NodeExpr);
     }
-    AstVar* getCreateEnVarp(AstVar* invarp) {
+    AstVar* getCreateEnVarp(AstVar* invarp, bool isTop) {
         // Return the master __en for the specified input variable
         if (!invarp->user1p()) {
-            AstVar* const newp = new AstVar{invarp->fileline(), VVarType::MODULETEMP,
-                                            invarp->name() + "__en", invarp};
+            AstVar* const newp
+                = new AstVar{invarp->fileline(), isTop ? VVarType::PORT : VVarType::MODULETEMP,
+                             invarp->name() + "__en", invarp};
             UINFO(9, "       newenv " << newp << endl);
             modAddStmtp(invarp, newp);
             invarp->user1p(newp);  // find envar given invarp
@@ -504,7 +505,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
     AstNodeExpr* getEnExprBasedOnOriginalp(AstNodeExpr* const nodep) {
         if (AstVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
-            return new AstVarRef{varrefp->fileline(), getCreateEnVarp(varrefp->varp()),
+            return new AstVarRef{varrefp->fileline(), getCreateEnVarp(varrefp->varp(), false),
                                  VAccess::READ};
         } else if (AstConst* const constp = VN_CAST(nodep, Const)) {
             return getNonZConstp(constp);
@@ -535,11 +536,12 @@ class TristateVisitor final : public TristateBaseVisitor {
             return nullptr;
         }
     }
-    AstVar* getCreateOutVarp(AstVar* invarp) {
+    AstVar* getCreateOutVarp(AstVar* invarp, bool isTop) {
         // Return the master __out for the specified input variable
         if (!m_varAux(invarp).outVarp) {
-            AstVar* const newp = new AstVar{invarp->fileline(), VVarType::MODULETEMP,
-                                            invarp->name() + "__out", invarp};
+            AstVar* const newp
+                = new AstVar{invarp->fileline(), isTop ? VVarType::PORT : VVarType::MODULETEMP,
+                             invarp->name() + "__out", invarp};
             UINFO(9, "       newout " << newp << endl);
             modAddStmtp(invarp, newp);
             m_varAux(invarp).outVarp = newp;  // find outvar given invarp
@@ -714,20 +716,27 @@ class TristateVisitor final : public TristateBaseVisitor {
         // original port gets converted to an input. Don't tristate expand
         // if this is the top level so that we can force the final
         // tristate resolution at the top.
+        // Or if this is a top-level inout, do tristate expand if requested
+        // by pinsInoutEnables(). The resolution will be done outside of
+        // verilator.
         AstVar* envarp = nullptr;
         AstVar* outvarp = nullptr;  // __out
         AstVar* lhsp = invarp;  // Variable to assign drive-value to (<in> or __out)
-        if (!nodep->isTop() && invarp->isIO()) {
+        bool isTopInout
+            = (invarp->direction() == VDirection::INOUT) && invarp->isIO() && nodep->isTop();
+        if ((v3Global.opt.pinsInoutEnables() && isTopInout)
+            || ((!nodep->isTop()) && invarp->isIO())) {
             // This var becomes an input
             invarp->varType2In();  // convert existing port to type input
             // Create an output port (__out)
-            outvarp = getCreateOutVarp(invarp);
+            outvarp = getCreateOutVarp(invarp, isTopInout);
             outvarp->varType2Out();
             lhsp = outvarp;  // Must assign to __out, not to normal input signal
             UINFO(9, "     TRISTATE propagates up with " << lhsp << endl);
             // Create an output enable port (__en)
             // May already be created if have foo === 1'bz somewhere
-            envarp = getCreateEnVarp(invarp);  // direction will be sen in visit(AstPin*)
+            envarp
+                = getCreateEnVarp(invarp, isTopInout);  // direction will be sen in visit(AstPin*)
             //
             outvarp->user1p(envarp);
             m_varAux(outvarp).pullp = m_varAux(invarp).pullp;  // AstPull* propagation
@@ -821,6 +830,18 @@ class TristateVisitor final : public TristateBaseVisitor {
         assp->user2(U2_BOTH);  // Don't process further; already resolved
         if (debug() >= 9) assp->dumpTree("-  lhsp-eqn: ");
         nodep->addStmtsp(assp);
+
+        // If this is a top-level inout, make sure that the INOUT pins get __en and __out
+        if (v3Global.opt.pinsInoutEnables() && isTopInout) {
+            if (envarp) {
+                envarp->primaryIO(true);
+                envarp->direction(VDirection::OUTPUT);
+            }
+            if (outvarp) {
+                outvarp->primaryIO(true);
+                outvarp->direction(VDirection::OUTPUT);
+            }
+        }
     }
 
     bool isOnlyAssignmentIsToLhsVar(AstAssignW* const nodep) {
@@ -1390,7 +1411,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                                                      << nodep->prettyTypeName());
                     return;
                 }
-                AstVar* const envarp = getCreateEnVarp(varrefp->varp());
+                AstVar* const envarp = getCreateEnVarp(varrefp->varp(), false);
                 // If any drops, we need to add in the count of Zs (from __en)
                 UINFO(4, " COUNTBITS('z)-> " << nodep << endl);
                 VNRelinker relinkHandle;
@@ -1688,7 +1709,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                        && m_tgraph.feedsTri(nodep)) {
                 // Then propagate the enable from the original variable
                 UINFO(9, "     Ref-to-tri " << nodep << endl);
-                AstVar* const enVarp = getCreateEnVarp(nodep->varp());
+                AstVar* const enVarp = getCreateEnVarp(nodep->varp(), false);
                 nodep->user1p(new AstVarRef{nodep->fileline(), enVarp, VAccess::READ});
             }
             (void)m_alhs;  // NOP; user1() already passed down from assignment
