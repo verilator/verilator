@@ -70,9 +70,9 @@ module
    end
 
    initial begin : test_and_loop
-	loop_cnt = 0;
+        loop_cnt = 0;
         #(1ps);
-	while (test_en == 1) begin
+        while (test_en == 1) begin
            loop_done = 0;
            rand_bit = (($urandom_range(1,0) & 'd1) == 'd1);
            chk_sigs;
@@ -83,15 +83,15 @@ module
            rand_bit = ~rand_bit;
            chk_sigs;
            #(1ns);
-	   loop_done = 1;
-	   loop_cnt++;
-	   #(1ps);
-	end
-	if (error_cnt == 'd0) begin
+           loop_done = 1;
+           loop_cnt++;
+           #(1ps);
+        end
+        if (error_cnt == 'd0) begin
             $display("Info:(v): Error count was = %0d", error_cnt);
- 	    $write("*-* All Finished *-*\n");
-	  end
-	else begin
+             $write("*-* All Finished *-*\n");
+          end
+        else begin
            $display("Info:(v): Error count was non-zero %0d", error_cnt);
           end
         $finish(1);
@@ -101,14 +101,14 @@ module
      begin
        if (loop_cnt > 32) begin
            $display("%%Error:(v): Excessive loop count");
-	   $display("drv_en = %b, test_en = %b", drv_en, test_en);
+           $display("drv_en = %b, test_en = %b", drv_en, test_en);
            $finish(1);
-	 end
+         end
      end
 
    final begin
         $display("Info:(v): All done at %t", $time);
-	$display("Info:(v): Error count = %0d", error_cnt);
+        $display("Info:(v): Error count = %0d", error_cnt);
         chk_err: assert(error_cnt == 0);
      end
 
@@ -125,45 +125,45 @@ module
              $display("Info:(v): drv_en = %b", drv_en);
              $display("Info:(v): bidir_single_bit_io = %b", bidir_single_bit_io);
              $display("Info:(v): bidir_bus_64_io = %b,%b,%b,%b",
-		      bidir_bus_64_io[63:48], bidir_bus_64_io[47:32],
-		      bidir_bus_64_io[31:16],bidir_bus_64_io[15:0]);
+                      bidir_bus_64_io[63:48], bidir_bus_64_io[47:32],
+                      bidir_bus_64_io[31:16],bidir_bus_64_io[15:0]);
              $display("Info:(v): bidir_bus_128_io = %b,%b,%b,%b",
-		      bidir_bus_128_io[127:96], bidir_bus_128_io[95:64],
-	              bidir_bus_128_io[63:32], bidir_bus_128_io[31:0]);
+                      bidir_bus_128_io[127:96], bidir_bus_128_io[95:64],
+                      bidir_bus_128_io[63:32], bidir_bus_128_io[31:0]);
 
-	     for (int i=0;i<4;i++) begin
-		 if (drv_en[0]) begin
+             for (int i=0;i<4;i++) begin
+                 if (drv_en[0]) begin
                      if (bidir_single_bit_io !== rand_bit) begin
                          $display("%%Error:(v): bidir_single_bit_io is wrong (expect %b got %b)",
                                   rand_bit, bidir_single_bit_io);
-			 error_cnt++;
+                         error_cnt++;
                        end
-		     if (sub_io !== rand_bit) begin
+                     if (sub_io !== rand_bit) begin
                          $display("%%Error:(v): sub_io is wrong (expect %b, got %b)",
                                   rand_bit, sub_io);
                        end
-		 end
+                 end
 
-		 if (drv_en[1]) begin
+                 if (drv_en[1]) begin
                      if (internal_sub_io !== ~rand_bit) begin
                          $display("%%Error:(v): sub_io is wrong");
-			 error_cnt++;
+                         error_cnt++;
                        end
                  end
 
                  if (drv_en[i]) begin
                      int msb, lsb;
-		     msb = ((i+1)*16-1);
-		     lsb = i*16;
+                     msb = ((i+1)*16-1);
+                     lsb = i*16;
 
                      case(i)
-		      'd0: my_64_segment = bidir_bus_64_io[15:0];
-		      'd1: my_64_segment = bidir_bus_64_io[31:16];
-		      'd2: my_64_segment = bidir_bus_64_io[47:32];
-		      default: my_64_segment = bidir_bus_64_io[63:48];
-		     endcase
+                      'd0: my_64_segment = bidir_bus_64_io[15:0];
+                      'd1: my_64_segment = bidir_bus_64_io[31:16];
+                      'd2: my_64_segment = bidir_bus_64_io[47:32];
+                      default: my_64_segment = bidir_bus_64_io[63:48];
+                     endcase
 
-		     case(i)
+                     case(i)
                       'd0: my_128_segment     = bidir_bus_128_io[31:0];
                       'd1: my_128_segment     = bidir_bus_128_io[63:32];
                       'd2: my_128_segment     = bidir_bus_128_io[95:64];
@@ -173,30 +173,30 @@ module
                      if (my_64_segment !== {16{rand_bit}}) begin
                          $display("%%Error:(v): bidir_bus_64_io is wrong");
                          $display("Error:(v): Should be bidir_bus_64_io[%0d:%0d] = %b, was = %b",
-			          msb, lsb, {16{rand_bit}}, my_64_segment);
-			 error_cnt++;
+                                  msb, lsb, {16{rand_bit}}, my_64_segment);
+                         error_cnt++;
                        end
-		     else begin
+                     else begin
                          $display("Info:(v): Pass: bidir_bus_64_io[%0d:%0d] = %b",
-				  msb, lsb, {16{rand_bit}});
+                                  msb, lsb, {16{rand_bit}});
                        end
 
                      msb = ((i+1)*32-1);
-		     lsb = i*32;
-	             if (my_128_segment !== {32{rand_bit}}) begin
+                     lsb = i*32;
+                     if (my_128_segment !== {32{rand_bit}}) begin
                          $display("%%Error:(v): bidir_bus_128_io is wrong");
                          $display("Error:(v):Should be bidir_bus_128_io[%0d:%0d] = %b, was = %b",
-			          msb, lsb, {32{rand_bit}}, my_128_segment);
-			 error_cnt++;
+                                  msb, lsb, {32{rand_bit}}, my_128_segment);
+                         error_cnt++;
                        end
-		     else
+                     else
                        begin
                          $display("Info:(v): Pass: bidir_bus_128_io[%0d:%0d] = %b",
                                   msb, lsb, {32{rand_bit}});
                        end
                    end
-	      end
-	 end
+              end
+         end
      end
   endtask
 
