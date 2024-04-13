@@ -11,6 +11,9 @@
 ** For 32ns $time should return 3
 **/
 
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+
 module t ();
    timeunit 10ns;
    timeprecision 1ns;
@@ -18,52 +21,38 @@ module t ();
    longint should_be_2, should_be_3;
    real should_be_1p6, should_be_3p2;
 
-   initial
-    begin : initial_blk1
-     should_be_2 = 0;
-     should_be_3 = 0;
-     #(16ns);
-     $display("$time=%d, $realtime=%g", $time(), $realtime());
-     should_be_2 = $time();
-     should_be_1p6 = $realtime();
-     #(16ns);
-     $display("$time=%d, $realtime=%g", $time(), $realtime());
-     should_be_3 = $time();
-     should_be_3p2 = $realtime();
-     #(16ns);
-     $finish(1);
+   initial begin : initial_blk1
+      should_be_2 = 0;
+      should_be_3 = 0;
+      #(16ns);
+      $display("$time=%0t=%0d, $realtime=%g", $time(), $time(), $realtime());
+      should_be_2 = $time();
+      should_be_1p6 = $realtime();
+      #(16ns);
+      $display("$time=%0t=%0d, $realtime=%g", $time(), $time(), $realtime());
+      should_be_3 = $time();
+      should_be_3p2 = $realtime();
+      #(16ns);
+      $finish(1);
     end
-   initial
-     begin : initial_blk2
+
+   initial begin : initial_blk2
       #(100ns);
       $display("%%Error: We should not get here");
-      $finish(1);
-     end
+      $stop;
+   end
 
    function bit real_chk(input real tvar, input real evar);
-     begin
       real diff;
       diff = tvar - evar;
       return (diff < 1e-9) && (diff > -1e-9);
-     end
    endfunction
 
-   final
-     begin : last_blk
-      if (should_be_2 != 2)
-       begin
-        $display("%%Error: should_be_2 = %0d",
-                 should_be_2);
-        $stop;
-      end
-      if (should_be_3 != 3)
-       begin
-        $display("%%Error: should_be_3 = %0d",
-                 should_be_3);
-        $stop;
-      end
+   final begin : last_blk
       $display("Info: should_be_2 = %0d", should_be_2);
       $display("Info: should_be_3 = %0d", should_be_3);
+      `checkd(should_be_2, 2);
+      `checkd(should_be_3, 3);
 
       chk_2 :   assert(should_be_2 == 2);
       chk_3 :   assert(should_be_3 == 3);

@@ -898,7 +898,7 @@ class TimingControlVisitor final : public VNVisitor {
         if (!constp || !constp->isZero()) {
             // Scale the delay
             const double timescaleFactor = calculateTimescaleFactor(nodep, nodep->timeunit());
-            if (valuep->dtypep()->isDouble()) {
+            if (valuep->dtypep()->skipRefp()->isDouble()) {
                 valuep = new AstRToIRoundS{
                     flp, new AstMulD{flp, valuep,
                                      new AstConst{flp, AstConst::RealDouble{}, timescaleFactor}}};
@@ -911,7 +911,7 @@ class TimingControlVisitor final : public VNVisitor {
             }
         }
         // Replace self with a 'co_await dlySched.delay(<valuep>)'
-        auto* const delayMethodp = new AstCMethodHard{
+        AstCMethodHard* const delayMethodp = new AstCMethodHard{
             flp, new AstVarRef{flp, getCreateDelayScheduler(), VAccess::WRITE}, "delay", valuep};
         delayMethodp->dtypeSetVoid();
         addProcessInfo(delayMethodp);

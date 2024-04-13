@@ -152,6 +152,7 @@ extern std::string VL_STACKTRACE_N() VL_MT_SAFE;
 extern IData VL_SYSTEM_IW(int lhswords, WDataInP const lhsp) VL_MT_SAFE;
 extern IData VL_SYSTEM_IQ(QData lhs) VL_MT_SAFE;
 inline IData VL_SYSTEM_II(IData lhs) VL_MT_SAFE { return VL_SYSTEM_IQ(lhs); }
+extern IData VL_SYSTEM_IN(const std::string& lhs) VL_MT_SAFE;
 
 extern IData VL_TESTPLUSARGS_I(const std::string& format) VL_MT_SAFE;
 extern const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE;  // PLIish
@@ -238,7 +239,7 @@ static inline double VL_ISTOR_D_Q(int lbits, QData lhs) VL_MT_SAFE {
     VL_SET_WQ(lwp, lhs);
     return VL_ISTOR_D_W(lbits, lwp);
 }
-// Return QData from double (numeric)
+// Return IData truncated from double (numeric)
 static inline IData VL_RTOI_I_D(double lhs) VL_PURE { return static_cast<int32_t>(VL_TRUNC(lhs)); }
 
 // Sign extend such that if MSB set, we get ffff_ffff, else 0s

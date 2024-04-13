@@ -985,6 +985,13 @@ Summary:
    :option:`/*verilator&32;sc_bv*/` metacomment to select specific ports to
    be sc_bv.
 
+.. option:: --pins-inout-enables
+
+   Specifies that the __en and __out outputs will always be created for
+   inouts in the top-level module. The __en variable has a one in a bit
+   position to indicate the corresponding bit of the __out variable has
+   a value being driven from within the Verilated model.
+
 .. option:: --pins-sc-uint
 
    Specifies SystemC inputs/outputs greater than 2 bits wide should use

@@ -200,9 +200,9 @@ public:
             VlProcessRef process;  // Data of the suspended process, null if not needed
             VlDelayedCoroutineQueue& queue;
             std::vector<VlCoroutineHandle>& queueZeroDelay;
-            uint64_t delay;
-            VlDelayPhase phase;
-            VlFileLineDebug fileline;
+            const uint64_t delay;
+            const VlDelayPhase phase;
+            const VlFileLineDebug fileline;
 
             bool await_ready() const { return false; }  // Always suspend
             void await_suspend(std::coroutine_handle<> coro) {
@@ -215,7 +215,7 @@ public:
             void await_resume() const {}
         };
 
-        VlDelayPhase phase = (delay == 0) ? VlDelayPhase::INACTIVE : VlDelayPhase::ACTIVE;
+        const VlDelayPhase phase = (delay == 0) ? VlDelayPhase::INACTIVE : VlDelayPhase::ACTIVE;
 #ifdef VL_DEBUG
         if (phase == VlDelayPhase::INACTIVE) {
             VL_WARN_MT(filename, lineno, VL_UNKNOWN,

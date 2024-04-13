@@ -650,7 +650,7 @@ class WidthVisitor final : public VNVisitor {
         }
         if (nodep->fileline()->timingOn()) {
             if (v3Global.opt.timing().isSetTrue()) {
-                userIterate(nodep->lhsp(), WidthVP{nullptr, BOTH}.p());
+                iterateCheckDelay(nodep, "delay", nodep->lhsp(), BOTH);
                 iterateAndNextNull(nodep->stmtsp());
                 return;
             } else if (v3Global.opt.timing().isSetFalse()) {
@@ -6631,6 +6631,26 @@ class WidthVisitor final : public VNVisitor {
         if (stage & FINAL) {
             AstNodeDType* const expDTypep = nodep->findSigned32DType();
             underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
+        }
+        (void)underp;  // cppcheck
+    }
+    void iterateCheckDelay(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
+        // Coerce child to 64-bit delay if not already. Child is self-determined
+        // underp may change as a result of replacement
+        if (stage & PRELIM) {
+            underp = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, PRELIM}.p());
+        }
+        if (stage & FINAL) {
+            AstNodeDType* expDTypep;
+            if (underp->dtypep()->skipRefp()->isDouble()) {  // V3Timing will later convert double
+                expDTypep = nodep->findDoubleDType();
+            } else {
+                FileLine* const newFl = new FileLine{underp->fileline()};
+                newFl->warnOff(V3ErrorCode::WIDTHEXPAND, true);
+                underp->fileline(newFl);
+                expDTypep = nodep->findLogicDType(64, 64, VSigning::UNSIGNED);
+            }
+            underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP, false);
         }
         (void)underp;  // cppcheck
     }

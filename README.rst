@@ -1,21 +1,23 @@
 .. Github doesn't render images unless absolute URL
 .. Do not know of a conditional tag, "only: github" nor "github display" works
 
-.. image:: https://img.shields.io/badge/Website-Verilator.org-181717.svg
+|badge1| |badge2| |badge3| |badge4| |badge5| |badge6| |badge7| |badge8|
+
+.. |badge1| image:: https://img.shields.io/badge/Website-Verilator.org-181717.svg
     :target: https://verilator.org
-.. image:: https://img.shields.io/badge/License-LGPL%20v3-blue.svg
+.. |badge2| image:: https://img.shields.io/badge/License-LGPL%20v3-blue.svg
     :target: https://www.gnu.org/licenses/lgpl-3.0
-.. image:: https://img.shields.io/badge/License-Artistic%202.0-0298c3.svg
+.. |badge3| image:: https://img.shields.io/badge/License-Artistic%202.0-0298c3.svg
     :target: https://opensource.org/licenses/Artistic-2.0
-.. image:: https://repology.org/badge/tiny-repos/verilator.svg?header=distro%20packages
+.. |badge4| image:: https://repology.org/badge/tiny-repos/verilator.svg?header=distro%20packages
     :target: https://repology.org/project/verilator/versions
-.. image:: https://img.shields.io/docker/pulls/verilator/verilator
+.. |badge5| image:: https://img.shields.io/docker/pulls/verilator/verilator
     :target: https://hub.docker.com/r/verilator/verilator
-.. image:: https://api.codacy.com/project/badge/Grade/fa78caa433c84a4ab9049c43e9debc6f
+.. |badge6| image:: https://api.codacy.com/project/badge/Grade/fa78caa433c84a4ab9049c43e9debc6f
     :target: https://www.codacy.com/gh/verilator/verilator
-.. image:: https://codecov.io/gh/verilator/verilator/branch/master/graph/badge.svg
+.. |badge7| image:: https://codecov.io/gh/verilator/verilator/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/verilator/verilator
-.. image:: https://github.com/verilator/verilator/workflows/build/badge.svg
+.. |badge8| image:: https://github.com/verilator/verilator/workflows/build/badge.svg
     :target: https://github.com/verilator/verilator/actions?query=workflow%3Abuild
 
 
