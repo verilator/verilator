@@ -898,7 +898,7 @@ class TimingControlVisitor final : public VNVisitor {
         if (!constp || !constp->isZero()) {
             // Scale the delay
             const double timescaleFactor = calculateTimescaleFactor(nodep, nodep->timeunit());
-            if (valuep->dtypep()->isDouble()) {
+            if (valuep->dtypep()->skipRefp()->isDouble()) {
                 valuep = new AstRToIRoundS{
                     flp, new AstMulD{flp, valuep,
                                      new AstConst{flp, AstConst::RealDouble{}, timescaleFactor}}};
