@@ -13,6 +13,8 @@ Verilator 5.025 devel
 
 **Minor:**
 
+* Support __en/__out signals on top level inout ports (#4812) (#4856). [Paul Wright]
+* Fix consecutive zero-delays (#5038). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix `$system` with string argument (#5042).
 
 
