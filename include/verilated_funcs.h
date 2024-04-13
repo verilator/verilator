@@ -239,7 +239,7 @@ static inline double VL_ISTOR_D_Q(int lbits, QData lhs) VL_MT_SAFE {
     VL_SET_WQ(lwp, lhs);
     return VL_ISTOR_D_W(lbits, lwp);
 }
-// Return QData from double (numeric)
+// Return IData truncated from double (numeric)
 static inline IData VL_RTOI_I_D(double lhs) VL_PURE { return static_cast<int32_t>(VL_TRUNC(lhs)); }
 
 // Sign extend such that if MSB set, we get ffff_ffff, else 0s

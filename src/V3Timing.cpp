@@ -911,7 +911,7 @@ class TimingControlVisitor final : public VNVisitor {
             }
         }
         // Replace self with a 'co_await dlySched.delay(<valuep>)'
-        auto* const delayMethodp = new AstCMethodHard{
+        AstCMethodHard* const delayMethodp = new AstCMethodHard{
             flp, new AstVarRef{flp, getCreateDelayScheduler(), VAccess::WRITE}, "delay", valuep};
         delayMethodp->dtypeSetVoid();
         addProcessInfo(delayMethodp);
