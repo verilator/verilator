@@ -136,7 +136,6 @@ static void emitXmlOrJson() VL_MT_DISABLED {
 
 static void process() {
     {
-        const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
         VlOs::DeltaWallTime elabWallTime{true};
 
         // Sort modules by level so later algorithms don't need to care
@@ -600,48 +599,43 @@ static void process() {
         && !v3Global.opt.dpiHdrOnly()) {  // Unfortunately we have some lint checks in emitcImp.
         V3EmitC::emitcImp();
     }
-    {
-        const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
-        if (v3Global.opt.serializeOnly()) {
-            emitXmlOrJson();
-        } else if (v3Global.opt.debugCheck() && !v3Global.opt.lintOnly()
-                   && !v3Global.opt.dpiHdrOnly()) {
-            // Check XML/JSON when debugging to make sure no missing node types
-            V3EmitXml::emitxml();
-            emitJson();
-        }
-
-        // Output DPI protected library files
-        if (!v3Global.opt.libCreate().empty()) {
-            if (v3Global.rootp()->delaySchedulerp()) {
-                v3warn(E_UNSUPPORTED, "Unsupported: --lib-create with --timing and delays");
-            }
-            V3ProtectLib::protect();
-            V3EmitV::emitvFiles();
-            V3EmitC::emitcFiles();
-        }
-
-        if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()
-            && !v3Global.opt.dpiHdrOnly()) {
-            if (v3Global.opt.main()) V3EmitCMain::emit();
-
-            // V3EmitMk/V3EmitCMake must be after all other emitters,
-            // as they and below code visits AstCFiles added earlier
-            size_t src_f_cnt = 0;
-            for (AstNode* nodep = v3Global.rootp()->filesp(); nodep; nodep = nodep->nextp()) {
-                if (const AstCFile* cfilep = VN_CAST(nodep, CFile))
-                    src_f_cnt += cfilep->source() ? 1 : 0;
-            }
-            if (src_f_cnt >= V3EmitMk::PARALLEL_FILE_CNT_THRESHOLD)
-                v3Global.useParallelBuild(true);
-            if (v3Global.opt.cmake()) V3EmitCMake::emit();
-            if (v3Global.opt.gmake()) V3EmitMk::emitmk();
-        }
-
-        // Final statistics
-        if (v3Global.opt.stats()) V3Stats::statsStage("emit");
-        reportStatsIfEnabled();
+    if (v3Global.opt.serializeOnly()) {
+        emitXmlOrJson();
+    } else if (v3Global.opt.debugCheck() && !v3Global.opt.lintOnly()
+               && !v3Global.opt.dpiHdrOnly()) {
+        // Check XML/JSON when debugging to make sure no missing node types
+        V3EmitXml::emitxml();
+        emitJson();
     }
+
+    // Output DPI protected library files
+    if (!v3Global.opt.libCreate().empty()) {
+        if (v3Global.rootp()->delaySchedulerp()) {
+            v3warn(E_UNSUPPORTED, "Unsupported: --lib-create with --timing and delays");
+        }
+        V3ProtectLib::protect();
+        V3EmitV::emitvFiles();
+        V3EmitC::emitcFiles();
+    }
+
+    if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly() && !v3Global.opt.dpiHdrOnly()) {
+        if (v3Global.opt.main()) V3EmitCMain::emit();
+
+        // V3EmitMk/V3EmitCMake must be after all other emitters,
+        // as they and below code visits AstCFiles added earlier
+        size_t src_f_cnt = 0;
+        for (AstNode* nodep = v3Global.rootp()->filesp(); nodep; nodep = nodep->nextp()) {
+            if (const AstCFile* cfilep = VN_CAST(nodep, CFile))
+                src_f_cnt += cfilep->source() ? 1 : 0;
+        }
+        if (src_f_cnt >= V3EmitMk::PARALLEL_FILE_CNT_THRESHOLD) v3Global.useParallelBuild(true);
+        if (v3Global.opt.cmake()) V3EmitCMake::emit();
+        if (v3Global.opt.gmake()) V3EmitMk::emitmk();
+    }
+
+    // Final statistics
+    if (v3Global.opt.stats()) V3Stats::statsStage("emit");
+    reportStatsIfEnabled();
 }
 
 static void verilate(const string& argString) {
@@ -664,8 +658,9 @@ static void verilate(const string& argString) {
 
     // Disable mutexes in single-thread verilation
     V3MutexConfig::s().configure(v3Global.opt.verilateJobs() > 1 /*enable*/);
-    // Adjust thread pool size
-    V3ThreadPool::s().resize(v3Global.opt.verilateJobs());
+
+    // Initialize thread pool
+    v3Global.threadPoolp(new V3ThreadPool(v3Global.opt.verilateJobs()));
 
     // --FRONTEND------------------
 
@@ -680,31 +675,23 @@ static void verilate(const string& argString) {
     // and after removing files as may make debug output)
     VBasicDTypeKwd::selfTest();
     if (v3Global.opt.debugSelfTest()) {
-        {
-            const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
-
-            V3Os::selfTest();
-            VHashSha256::selfTest();
-            VSpellCheck::selfTest();
-            V3Graph::selfTest();
-            V3TSP::selfTest();
-            V3ScoreboardBase::selfTest();
-            V3Order::selfTestParallel();
-            V3ExecGraph::selfTest();
-            V3PreShell::selfTest();
-            V3Broken::selfTest();
-        }
+        V3Os::selfTest();
+        VHashSha256::selfTest();
+        VSpellCheck::selfTest();
+        V3Graph::selfTest();
+        V3TSP::selfTest();
+        V3ScoreboardBase::selfTest();
+        V3Order::selfTestParallel();
+        V3ExecGraph::selfTest();
+        V3PreShell::selfTest();
+        V3Broken::selfTest();
         V3ThreadPool::selfTest();
         UINFO(2, "selfTest done\n");
     }
 
-    {
-        const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
-
-        // Read first filename
-        v3Global.readFiles();
-        v3Global.removeStd();
-    }
+    // Read first filename
+    v3Global.readFiles();
+    v3Global.removeStd();
 
     // Link, etc, if needed
     if (!v3Global.opt.preprocOnly()) {  //
@@ -731,8 +718,6 @@ static void verilate(const string& argString) {
     V3Error::abortIfWarnings();
 
     if (v3Global.hierPlanp()) {  // This run is for just write a makefile
-        const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
-
         UASSERT(v3Global.opt.hierarchical(), "hierarchical must be set");
         UASSERT(!v3Global.opt.hierChild(), "This must not be a hierarchical-child run");
         UASSERT(v3Global.opt.hierBlocks().empty(), "hierarchical-block must not be set");
@@ -832,24 +817,21 @@ int main(int argc, char** argv) {
     srand(static_cast<int>(randseed));
 
     const string argString = V3Options::argString(argc - 1, argv + 1);
-    {
-        const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
 
-        // Post-constructor initialization of netlists
-        v3Global.boot();
+    // Post-constructor initialization of netlists
+    v3Global.boot();
 
-        // Preprocessor
-        // Before command parsing so we can handle -Ds on command line.
-        V3PreShell::boot();
+    // Preprocessor
+    // Before command parsing so we can handle -Ds on command line.
+    V3PreShell::boot();
 
-        // Command option parsing
-        v3Global.opt.buildDepBin(V3Os::filenameCleanup(argv[0]));
-        v3Global.opt.parseOpts(new FileLine{FileLine::commandLineFilename()}, argc - 1, argv + 1);
+    // Command option parsing
+    v3Global.opt.buildDepBin(V3Os::filenameCleanup(argv[0]));
+    v3Global.opt.parseOpts(new FileLine{FileLine::commandLineFilename()}, argc - 1, argv + 1);
 
-        // Validate settings (aka Boost.Program_options)
-        v3Global.opt.notify();
-        v3Global.rootp()->timeInit();
-    }
+    // Validate settings (aka Boost.Program_options)
+    v3Global.opt.notify();
+    v3Global.rootp()->timeInit();
 
     V3Error::abortIfErrors();
 
@@ -865,14 +847,10 @@ int main(int argc, char** argv) {
         execBuildJob();
     }
 
-    {
-        const V3MtDisabledLockGuard mtDisabler{v3MtDisabledLock()};
-
-        // Explicitly release resources
-        V3PreShell::shutdown();
-        v3Global.shutdown();
-        FileLine::deleteAllRemaining();
-    }
+    // Explicitly release resources
+    V3PreShell::shutdown();
+    v3Global.shutdown();
+    FileLine::deleteAllRemaining();
 
     if (!v3Global.opt.quietStats() && !v3Global.opt.preprocOnly()) {
         V3Stats::addStatPerf(V3Stats::STAT_CPUTIME, cpuTimeTotal.deltaTime());

@@ -111,8 +111,7 @@ std::ostream& operator<<(std::ostream& str, const Determ& rhs) {
     v3errorEnd( \
         v3errorBuildMessage(V3Error::v3errorPrep((lhs) < (rhs)   ? V3ErrorCode::WIDTHTRUNC \
                                                  : (lhs) > (rhs) ? V3ErrorCode::WIDTHEXPAND \
-                                                                 : V3ErrorCode::WIDTH, \
-                                                 VL_MT_DISABLED_CODE_UNIT), \
+                                                                 : V3ErrorCode::WIDTH), \
                             msg))
 
 //######################################################################

@@ -200,6 +200,9 @@
 
 // Comment tag that Function is pure (and thus also VL_MT_SAFE)
 #define VL_PURE VL_CLANG_ATTR(annotate("PURE"))
+// Annotated function can be called only in MT_DISABLED context, i.e. either in a code unit
+// compiled with VL_MT_DISABLED_CODE_UNIT preprocessor definition, or in the main thread.
+#define VL_MT_DISABLED VL_CLANG_ATTR(annotate("MT_DISABLED")) VL_EXCLUDES(VlOs::MtScopeMutex::s_haveThreadScope)
 // Comment tag that function is threadsafe
 #define VL_MT_SAFE VL_CLANG_ATTR(annotate("MT_SAFE"))
 // Comment tag that function is threadsafe, only if
@@ -216,7 +219,7 @@
 // protected to make sure single-caller
 #define VL_MT_UNSAFE_ONE VL_CLANG_ATTR(annotate("MT_UNSAFE_ONE"))
 // Comment tag that function is entry point of parallelization
-#define VL_MT_START VL_CLANG_ATTR(annotate("MT_START"))
+#define VL_MT_START VL_CLANG_ATTR(annotate("MT_START")) VL_REQUIRES(VlOs::MtScopeMutex::s_haveThreadScope)
 
 #ifndef VL_NO_LEGACY
 # define VL_ULL(c) (c##ULL)  // Add appropriate suffix to 64-bit constant (deprecated)
@@ -653,6 +656,14 @@ public:
         return (m_start == 0.0) ? 0.0 : gettime() - m_start;
     }
 };
+
+// Used by clang's -fthread-safety, ensures that only one instance of V3ThreadScope
+// is created at the time.
+class VL_CAPABILITY("mutex") MtScopeMutex final {
+public:
+    static MtScopeMutex s_haveThreadScope;
+};
+
 }  //namespace VlOs
 
 //=========================================================================

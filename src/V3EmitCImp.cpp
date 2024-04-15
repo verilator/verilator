@@ -143,7 +143,7 @@ class EmitCGatherDependencies final : VNVisitorConst {
     }
 
 public:
-    static const std::set<std::string> gather(AstCFunc* cfuncp) {
+    static const std::set<std::string> gather(AstCFunc* cfuncp) VL_MT_STABLE {
         const EmitCGatherDependencies visitor{cfuncp};
         return std::move(visitor.m_dependencies);
     }
@@ -562,7 +562,8 @@ class EmitCImp final : EmitCFunc {
     ~EmitCImp() override = default;
 
 public:
-    static void main(const AstNodeModule* modp, bool slow, std::deque<AstCFile*>& cfilesr) {
+    static void main(const AstNodeModule* modp, bool slow,
+                     std::deque<AstCFile*>& cfilesr) VL_MT_STABLE {
         EmitCImp{modp, slow, cfilesr};
     }
 };
@@ -977,7 +978,7 @@ void V3EmitC::emitcImp() {
     // Make parent module pointers available.
     const EmitCParentModule emitCParentModule;
     std::list<std::deque<AstCFile*>> cfiles;
-    std::list<std::future<void>> futures;
+    V3ThreadScope threadScope;
 
     // Process each module in turn
     for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
@@ -985,29 +986,29 @@ void V3EmitC::emitcImp() {
         const AstNodeModule* const modp = VN_AS(nodep, NodeModule);
         cfiles.emplace_back();
         auto& slowCfilesr = cfiles.back();
-        futures.push_back(V3ThreadPool::s().enqueue(
-            [modp, &slowCfilesr]() { EmitCImp::main(modp, /* slow: */ true, slowCfilesr); }));
+        threadScope.enqueue(
+            [modp, &slowCfilesr] { EmitCImp::main(modp, /* slow: */ true, slowCfilesr); });
         cfiles.emplace_back();
         auto& fastCfilesr = cfiles.back();
-        futures.push_back(V3ThreadPool::s().enqueue(
-            [modp, &fastCfilesr]() { EmitCImp::main(modp, /* slow: */ false, fastCfilesr); }));
+        threadScope.enqueue(
+            [modp, &fastCfilesr] { EmitCImp::main(modp, /* slow: */ false, fastCfilesr); });
     }
 
     // Emit trace routines (currently they can only exist in the top module)
     if (v3Global.opt.trace() && !v3Global.opt.lintOnly()) {
         cfiles.emplace_back();
         auto& slowCfilesr = cfiles.back();
-        futures.push_back(V3ThreadPool::s().enqueue([&slowCfilesr]() {
+        threadScope.enqueue([&slowCfilesr] {
             EmitCTrace::main(v3Global.rootp()->topModulep(), /* slow: */ true, slowCfilesr);
-        }));
+        });
         cfiles.emplace_back();
         auto& fastCfilesr = cfiles.back();
-        futures.push_back(V3ThreadPool::s().enqueue([&fastCfilesr]() {
+        threadScope.enqueue([&fastCfilesr] {
             EmitCTrace::main(v3Global.rootp()->topModulep(), /* slow: */ false, fastCfilesr);
-        }));
+        });
     }
     // Wait for futures
-    V3ThreadPool::waitForFutures(futures);
+    threadScope.wait();
     for (const auto& collr : cfiles) {
         for (const auto cfilep : collr) v3Global.rootp()->addFilesp(cfilep);
     }

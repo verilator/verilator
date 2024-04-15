@@ -209,7 +209,6 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
 #ifndef V3ERROR_NO_GLOBAL_
                 if (dumpTreeLevel() || dumpTreeJsonLevel() || debug()) {
                     V3Broken::allowMidvisitorCheck(true);
-                    const V3ThreadPool::ScopedExclusiveAccess exclusiveAccess;
                     if (dumpTreeLevel()) {
                         v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("final.tree", 990));
                     }
@@ -222,8 +221,6 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
                         V3Stats::statsFinalAll(v3Global.rootp());
                         V3Stats::statsReport();
                     }
-                    // Abort in exclusive access to make sure other threads
-                    // don't change error code
                     vlAbortOrExit();
                 }
 #endif
@@ -276,27 +273,14 @@ void V3Error::vlAbort() {
     VL_GCOV_DUMP();
     std::abort();
 }
-void V3Error::v3errorAcquireLock(bool mtDisabledCodeUnit) VL_ACQUIRE(s().m_mutex) {
-#if !defined(V3ERROR_NO_GLOBAL_)
-    if (!mtDisabledCodeUnit) {
-        V3Error::s().m_mutex.lockCheckStopRequest(
-            []() -> void { V3ThreadPool::s().waitIfStopRequested(); });
-    } else {
-        V3Error::s().m_mutex.lock();
-    }
-#else
+std::ostringstream& V3Error::v3errorPrep(V3ErrorCode code) VL_ACQUIRE(s().m_mutex) {
     V3Error::s().m_mutex.lock();
-#endif
-}
-std::ostringstream& V3Error::v3errorPrep(V3ErrorCode code, bool mtDisabledCodeUnit)
-    VL_ACQUIRE(s().m_mutex) {
-    v3errorAcquireLock(mtDisabledCodeUnit);
     s().v3errorPrep(code);
     return v3errorStr();
 }
 std::ostringstream& V3Error::v3errorPrepFileLine(V3ErrorCode code, const char* file, int line,
                                                  bool mtDisabledCodeUnit) VL_ACQUIRE(s().m_mutex) {
-    v3errorPrep(code, mtDisabledCodeUnit) << file << ":" << std::dec << line << ": ";
+    v3errorPrep(code) << file << ":" << std::dec << line << ": ";
     return v3errorStr();
 }
 std::ostringstream& V3Error::v3errorStr() VL_REQUIRES(s().m_mutex) { return s().v3errorStr(); }
