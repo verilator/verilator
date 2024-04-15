@@ -26,6 +26,7 @@
 #include "V3Parse.h"
 #include "V3ParseSym.h"
 #include "V3Stats.h"
+#include "V3ThreadPool.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -39,6 +40,7 @@ void V3Global::boot() {
 
 void V3Global::shutdown() {
     VL_DO_CLEAR(delete m_hierPlanp, m_hierPlanp = nullptr);  // delete nullptr is safe
+    VL_DO_CLEAR(delete m_threadPoolp, m_threadPoolp = nullptr);  // delete nullptr is safe
 #ifdef VL_LEAK_CHECKS
     if (m_rootp) VL_DO_CLEAR(m_rootp->deleteTree(), m_rootp = nullptr);
 #endif
