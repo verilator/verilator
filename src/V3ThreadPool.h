@@ -115,6 +115,7 @@ class V3ThreadPool final {
     // CONSTRUCTORS
     V3ThreadPool() = default;
     ~V3ThreadPool() {
+        m_shutdown = true;
         if (m_multithreadingSuspended) {
             // Ideally we shouldn't deal with this and just call the std::abort. However,
             // std::exit(0) (which invokes this destructor) is called in multiple places with
