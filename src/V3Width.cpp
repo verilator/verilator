@@ -3599,10 +3599,17 @@ class WidthVisitor final : public VNVisitor {
     void methodCallClass(AstMethodCall* nodep, AstClassRefDType* adtypep) {
         // No need to width-resolve the class, as it was done when we did the child
         AstClass* const first_classp = adtypep->classp();
+        AstWith* withp = nullptr;
         if (nodep->name() == "randomize") {
+            withp = methodWithArgument(nodep, false, false, adtypep->findVoidDType(),
+                                       adtypep->findBitDType(), adtypep);
+            methodOkArguments(nodep, 0, 0);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             V3Randomize::newRandomizeFunc(first_classp);
             m_memberMap.clear();
         } else if (nodep->name() == "srandom") {
+            methodOkArguments(nodep, 1, 1);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             V3Randomize::newSRandomFunc(first_classp);
             m_memberMap.clear();
         }
@@ -3648,6 +3655,10 @@ class WidthVisitor final : public VNVisitor {
                     nodep->classOrPackagep(classp);
                     if (VN_IS(ftaskp, Task)) nodep->dtypeSetVoid();
                     processFTaskRefArgs(nodep);
+                    if (withp) {
+                        withp->v3warn(CONSTRAINTIGN, "with constraint ignored (unsupported)");
+                        VL_DO_DANGLING(withp->deleteTree(), withp);
+                    }
                 }
                 return;
             } else if (nodep->name() == "get_randstate" || nodep->name() == "set_randstate") {
@@ -5946,14 +5957,23 @@ class WidthVisitor final : public VNVisitor {
             m_withp = nodep;
             userIterateChildren(nodep->indexArgRefp(), nullptr);
             userIterateChildren(nodep->valueArgRefp(), nullptr);
-            if (vdtypep) {
-                userIterateAndNext(nodep->exprp(), WidthVP{nodep->dtypep(), PRELIM}.p());
-            } else {  // 'sort with' allows arbitrary type
-                userIterateAndNext(nodep->exprp(), WidthVP{SELF, PRELIM}.p());
+            if (!nodep->exprp()->hasDType()) {
+                userIterateAndNext(nodep->exprp(), nullptr);
+            } else {
+                if (vdtypep) {
+                    userIterateAndNext(nodep->exprp(), WidthVP{nodep->dtypep(), PRELIM}.p());
+                } else {  // 'sort with' allows arbitrary type
+                    userIterateAndNext(nodep->exprp(), WidthVP{SELF, PRELIM}.p());
+                }
             }
-            nodep->dtypeFrom(nodep->exprp());
-            iterateCheckAssign(nodep, "'with' return value", nodep->exprp(), FINAL,
-                               nodep->dtypep());
+
+            if (!nodep->exprp()->hasDType()) {
+                nodep->dtypeSetVoid();
+            } else {
+                nodep->dtypeFrom(nodep->exprp());
+                iterateCheckAssign(nodep, "'with' return value", nodep->exprp(), FINAL,
+                                   nodep->dtypep());
+            }
         }
     }
     void visit(AstLambdaArgRef* nodep) override {

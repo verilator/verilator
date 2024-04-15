@@ -1,9 +1,12 @@
+%Warning-CONSTRAINTIGN: t/t_randomize.v:66:25: with constraint ignored (unsupported)
+   66 |       v = p.randomize() with { if_4 == local::if_4; header == 2; };
+      |                         ^~~~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
 %Warning-CONSTRAINTIGN: t/t_randomize.v:38:16: State-dependent constraint ignored (unsupported)
                                              : ... note: In instance 't'
    38 |          array[i] inside {2, 4, 6};
       |                ^
-                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
-                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
 %Warning-CONSTRAINTIGN: t/t_randomize.v:26:7: Constraint expression ignored (unsupported)
                                             : ... note: In instance 't'
    26 |       if (header > 4) {

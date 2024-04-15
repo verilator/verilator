@@ -1504,11 +1504,11 @@ class LinkDotFindVisitor final : public VNVisitor {
             VL_DO_DANGLING(argp->unlinkFrBackWithNext()->deleteTree(), argp);
         }
         // Type depends on the method used, let V3Width figure it out later
-        if (nodep->exprp()) {  // Else empty expression and pretend no "with"
+        if (nodep->exprsp()) {  // Else empty expression and pretend no "with"
             const auto indexArgRefp = new AstLambdaArgRef{argFl, name + "__DOT__index", true};
             const auto valueArgRefp = new AstLambdaArgRef{argFl, name, false};
             const auto newp = new AstWith{nodep->fileline(), indexArgRefp, valueArgRefp,
-                                          nodep->exprp()->unlinkFrBackWithNext()};
+                                          nodep->exprsp()->unlinkFrBackWithNext()};
             funcrefp->addPinsp(newp);
         }
         nodep->replaceWith(funcrefp->unlinkFrBack());
@@ -1528,6 +1528,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             // Insert argref's name into symbol table
             m_statep->insertSym(m_curSymp, nodep->valueArgRefp()->name(), nodep->valueArgRefp(),
                                 nullptr);
+            iterateChildren(nodep);
         }
     }
 
@@ -2195,16 +2196,21 @@ class LinkDotResolveVisitor final : public VNVisitor {
         return reinterpret_cast<VSymEnt*>(clockingp->eventp()->user1p());
     }
 
+    bool isParamedClassRefDType(const AstNode* classp) {
+        while (const AstRefDType* const refp = VN_CAST(classp, RefDType))
+            classp = refp->subDTypep();
+        return (VN_IS(classp, ClassRefDType) && VN_AS(classp, ClassRefDType)->paramsp())
+               || VN_IS(classp, ParamTypeDType);
+    }
     bool isParamedClassRef(const AstNode* nodep) {
         // Is this a parameterized reference to a class, or a reference to class parameter
         if (const auto* classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
             if (classRefp->paramsp()) return true;
             const auto* classp = classRefp->classOrPackageNodep();
             while (const auto* typedefp = VN_CAST(classp, Typedef)) classp = typedefp->subDTypep();
-            return (VN_IS(classp, ClassRefDType) && VN_AS(classp, ClassRefDType)->paramsp())
-                   || VN_IS(classp, ParamTypeDType);
+            return isParamedClassRefDType(classp);
         }
-        return false;
+        return isParamedClassRefDType(nodep);
     }
     VSymEnt* getThisClassSymp() {
         VSymEnt* classSymp = m_ds.m_dotSymp;
@@ -2619,7 +2625,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     = VN_AS(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
                 classOrPackagep = cpackagerefp->classOrPackagep();
                 UASSERT_OBJ(classOrPackagep, m_ds.m_dotp->lhsp(), "Bad package link");
-                m_ds.m_dotSymp = m_statep->getNodeSym(classOrPackagep);
+                m_ds.m_dotSymp = cpackagerefp->name() == "local::"
+                                     ? m_curSymp->fallbackp()
+                                     : m_statep->getNodeSym(classOrPackagep);
                 m_ds.m_dotPos = DP_SCOPE;
             } else if (m_ds.m_dotPos == DP_SCOPE) {
                 // {a}.{b}, where {a} maybe a module name
@@ -3078,8 +3086,42 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void visit(AstMethodCall* nodep) override {
         // Created here so should already be resolved.
         VL_RESTORER(m_ds);
+        VL_RESTORER(m_pinSymp);
         {
             m_ds.init(m_curSymp);
+            if (nodep->name() == "randomize" && VN_IS(nodep->pinsp(), With)) {
+                const AstNodeDType* fromDtp = nodep->fromp()->dtypep();
+                if (!fromDtp) {
+                    if (const AstNodeVarRef* const varRefp = VN_CAST(nodep->fromp(), NodeVarRef))
+                        fromDtp = varRefp->varp()->subDTypep();
+                    else if (const AstNodeSel* const selp = VN_CAST(nodep->fromp(), NodeSel)) {
+                        if (const AstNodeVarRef* const varRefp
+                            = VN_CAST(selp->fromp(), NodeVarRef)) {
+                            fromDtp = varRefp->varp()->dtypeSkipRefp()->subDTypep();
+                        }
+                    } else if (const AstNodePreSel* const selp
+                               = VN_CAST(nodep->fromp(), NodePreSel)) {
+                        if (const AstNodeVarRef* const varRefp
+                            = VN_CAST(selp->fromp(), NodeVarRef)) {
+                            fromDtp = varRefp->varp()->dtypeSkipRefp()->subDTypep();
+                        }
+                    }
+                    if (!fromDtp)
+                        nodep->v3warn(E_UNSUPPORTED,
+                                      "Unsupported: randomize() with on complex expressions");
+                }
+                if (m_statep->forPrimary() && isParamedClassRefDType(fromDtp))
+                    m_ds.m_unresolvedClass = true;
+                else if (fromDtp) {
+                    const AstClassRefDType* const classDtp
+                        = VN_CAST(fromDtp->skipRefp(), ClassRefDType);
+                    if (!classDtp)
+                        nodep->v3error("randomize() with on a non-class-instance "
+                                       << fromDtp->prettyNameQ());
+                    else
+                        m_pinSymp = m_statep->getNodeSym(classDtp->classp());
+                }
+            }
             iterateChildren(nodep);
         }
     }
@@ -3095,7 +3137,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (nodep->user3SetOnce()) return;
         UINFO(8, "     " << nodep << endl);
         UINFO(8, "     " << m_ds.ascii() << endl);
-        {
+        if (m_ds.m_dotPos != DP_MEMBER || nodep->name() != "randomize") {
             // Visit arguments at the beginning.
             // They may be visitted even if the current node can't be linked now.
             VL_RESTORER(m_ds);
@@ -3439,6 +3481,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         VL_RESTORER(m_curSymp);
         {
             m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
+            if (m_pinSymp) m_curSymp->importFromClass(m_statep->symsp(), m_pinSymp);
             iterateChildren(nodep);
         }
         m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);

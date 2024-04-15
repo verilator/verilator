@@ -2260,7 +2260,7 @@ class AstWith final : public AstNodeExpr {
     // @astgen op3 := exprp : List[AstNode]
 public:
     AstWith(FileLine* fl, AstLambdaArgRef* indexArgRefp, AstLambdaArgRef* valueArgRefp,
-            AstNodeExpr* exprp)
+            AstNode* exprp)
         : ASTGEN_SUPER_With(fl) {
         this->indexArgRefp(indexArgRefp);
         this->valueArgRefp(valueArgRefp);
@@ -2283,13 +2283,13 @@ class AstWithParse final : public AstNodeExpr {
     // Replaced with AstWith
     // Parents: expr|stmt
     // Children: funcref, expr
-    // @astgen op1 := funcrefp : AstNode
-    // @astgen op2 := exprp : Optional[AstNodeExpr]
+    // @astgen op1 := funcrefp : AstNodeExpr
+    // @astgen op2 := exprsp : List[AstNode]
 public:
-    AstWithParse(FileLine* fl, AstNode* funcrefp, AstNodeExpr* exprp)
+    AstWithParse(FileLine* fl, AstNodeExpr* funcrefp, AstNode* exprsp)
         : ASTGEN_SUPER_WithParse(fl) {
         this->funcrefp(funcrefp);
-        this->exprp(exprp);
+        this->addExprsp(exprsp);
     }
     ASTGEN_MEMBERS_AstWithParse;
     bool same(const AstNode* /*samep*/) const override { return true; }
