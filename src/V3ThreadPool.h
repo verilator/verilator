@@ -144,7 +144,7 @@ class V3ThreadPool final {
         // try to obtain lock with timeout
         // we need to wait for workers to start waiting
         // on condition variable to perform destruction
-        constexpr int spins = 10s / 1ms;
+        constexpr int spins = 1s / 1ms;
         for (int i = 0; i < spins; ++i) {
             if (VL_LIKELY(m_mutex_locked)) break;
             std::this_thread::sleep_for(1ms);
