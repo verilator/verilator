@@ -529,6 +529,22 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (editFormat(nodep)) return;
         editSMT(nodep, nodep->srcp());
     }
+    void visit(AstSel* nodep) override {
+        if (editFormat(nodep)) return;
+        VNRelinker handle;
+        AstNodeExpr* const widthp = nodep->widthp()->unlinkFrBack(&handle);
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* const msbp
+            = new AstSFormatF{fl, "%1d", false,
+                              new AstAdd{fl, nodep->lsbp()->cloneTreePure(false),
+                                         new AstSub{fl, widthp, new AstConst{fl, 1}}}};
+        handle.relink(msbp);
+        AstNodeExpr* const lsbp
+            = new AstSFormatF{fl, "%1d", false, nodep->lsbp()->unlinkFrBack(&handle)};
+        handle.relink(lsbp);
+
+        editSMT(nodep, nodep->fromp(), lsbp, msbp);
+    }
     void visit(AstSFormatF* nodep) override {}
     void visit(AstStmtExpr* nodep) override {}
     void visit(AstConstraintIf* nodep) override {
