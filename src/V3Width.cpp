@@ -2817,18 +2817,18 @@ class WidthVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return true;
                 }
-                if (VN_IS(foundp, NodeFTask)) {
-                    nodep->replaceWith(new AstMethodCall{nodep->fileline(),
-                                                         nodep->fromp()->unlinkFrBack(),
-                                                         nodep->name(), nullptr});
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                    return true;
-                }
                 if (VN_IS(foundp, Constraint)) {
                     // We don't support constraints yet, so just keep as unlinked for now
                     // Presumably we'll next see a constraint_mode AstMethodCall
                     nodep->dtypep(nodep->findConstraintRefDType());
                     UINFO(9, "Unsupported constraint select " << nodep << endl);
+                    return true;
+                }
+                if (VN_IS(foundp, NodeFTask)) {
+                    nodep->replaceWith(new AstMethodCall{nodep->fileline(),
+                                                         nodep->fromp()->unlinkFrBack(),
+                                                         nodep->name(), nullptr});
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return true;
                 }
                 UINFO(1, "found object " << foundp << endl);

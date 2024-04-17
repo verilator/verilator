@@ -7275,7 +7275,7 @@ class_constraint<constraintp>:  // ==IEEE: class_constraint
         //                      // UNSUP: We have the unsupported warning on the randomize() call, so don't bother on
         //                      // constraint blocks. When we support randomize we need to make AST nodes for below rules
                 constraintStaticE yCONSTRAINT dynamic_override_specifiersE constraintIdNew constraint_block
-                        { $$ = $4; $$->isStatic($1); $$->addItemsp($5); SYMP->popScope($$); }
+                        { $$ = $4; $$->isStatic($1); $$->addStmtsp($5); SYMP->popScope($$); }
         |       constraintStaticE yCONSTRAINT dynamic_override_specifiersE constraintIdNew '{' '}'
                         { $$ = $4; $$->isStatic($1); SYMP->popScope($$); }
         //                      // IEEE: constraint_prototype + constraint_prototype_qualifier

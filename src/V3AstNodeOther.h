@@ -1003,25 +1003,6 @@ public:
     // false, the returned VarScope will have _->dtypep()->sameTree(initp->dtypep()) return true.
     AstVarScope* findConst(AstConst* initp, bool mergeDType);
 };
-class AstConstraint final : public AstNode {
-    // Constraint
-    // @astgen op1 := itemsp : List[AstNode]
-    string m_name;  // Name of constraint
-    bool m_isStatic = false;  // static constraint
-public:
-    AstConstraint(FileLine* fl, const string& name, AstNode* itemsp)
-        : ASTGEN_SUPER_Constraint(fl)
-        , m_name(name) {
-        this->addItemsp(itemsp);
-    }
-    ASTGEN_MEMBERS_AstConstraint;
-    string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
-    bool isGateOptimizable() const override { return false; }
-    bool isPredictOptimizable() const override { return false; }
-    bool same(const AstNode* /*samep*/) const override { return true; }
-    void isStatic(bool flag) { m_isStatic = flag; }
-    bool isStatic() const { return m_isStatic; }
-};
 class AstConstraintBefore final : public AstNode {
     // Constraint solve before item
     // @astgen op1 := lhssp : List[AstNodeExpr]
@@ -2208,6 +2189,16 @@ public:
 };
 
 // === AstNodeFTask ===
+class AstConstraint final : public AstNodeFTask {
+    // Constraint
+public:
+    AstConstraint(FileLine* fl, const string& name, AstNode* stmtsp)
+        : ASTGEN_SUPER_Constraint(fl, name, stmtsp) {}
+    ASTGEN_MEMBERS_AstConstraint;
+    AstNodeFTask* cloneType(const string& name) override {
+        return new AstConstraint{fileline(), name, nullptr};
+    }
+};
 class AstFunc final : public AstNodeFTask {
     // A function inside a module
 public:
