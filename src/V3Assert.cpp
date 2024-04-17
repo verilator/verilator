@@ -37,8 +37,8 @@ class AssertVisitor final : public VNVisitor {
     // NODE STATE/TYPES
     // Cleared on netlist
     //  AstNode::user1()         -> bool.    True if processed
-    //  AstModule::user2p()      -> AstVar*. Port to handle asserts
-    //  AstModule::user3()       -> bool.    True if module is affected by AssertCtl
+    //  AstNodeModule::user2p()      -> AstVar*. Port to handle asserts
+    //  AstNodeModule::user3()       -> bool.    True if module is affected by AssertCtl
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
     const VNUser3InUse m_inuser3;
@@ -62,7 +62,7 @@ class AssertVisitor final : public VNVisitor {
     // METHODS
     static bool isAffectedByCtl(const AstNodeModule* const nodep) {
         // All modules affected by assertcontrol had been marked during V3AssertCtl stage.
-        return VN_IS(nodep, Module) && nodep->user3();
+        return nodep->user3();
     }
     static bool assertTypeOn(assertType_e assertType) {
         if (assertType == ASSERT_TYPE_INTRINSIC) return true;
@@ -134,7 +134,7 @@ class AssertVisitor final : public VNVisitor {
                   ? static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitTrue{}})
               : assertTypeOn(assertType)
                   ? static_cast<AstNodeExpr*>(
-                      new AstCExpr{fl, "vlSymsp->_vm_contextp__->assertOn()", 1})
+                        new AstCExpr{fl, "vlSymsp->_vm_contextp__->assertOn()", 1})
                   : static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitFalse{}});
         AstNodeIf* const newp = new AstIf{fl, condp, nodep};
         newp->isBoundsCheck(true);  // To avoid LATCH warning
@@ -254,7 +254,7 @@ class AssertVisitor final : public VNVisitor {
         // Bye
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    static AstVar* getCreateAssertPortp(AstModule* nodep) {
+    static AstVar* getCreateAssertPortp(AstNodeModule* nodep) {
         if (!nodep->user2p()) {
             AstVar* const assertPortp
                 = new AstVar{nodep->fileline(), VVarType::VAR, "__Vassert_port",
@@ -622,7 +622,7 @@ class AssertVisitor final : public VNVisitor {
     void visit(AstCell* nodep) override {
         if (isAffectedByCtl(nodep->modp()) && m_assertDisabledVarp) {
             UINFO(9, "Cell of the module affected by assertctl: " << nodep << endl);
-            AstVar* const assertPortp = getCreateAssertPortp(VN_AS(nodep->modp(), Module));
+            AstVar* const assertPortp = getCreateAssertPortp(nodep->modp());
             AstPin* const pinp = new AstPin{
                 nodep->fileline(), 0, assertPortp->name(),
                 new AstVarRef{nodep->fileline(), m_assertDisabledVarp, VAccess::READ}};

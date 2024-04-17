@@ -1,0 +1,95 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2024 by Antmicro.
+// SPDX-License-Identifier: CC0-1.0
+
+module t;
+   unsupported_ctl_type unsupported_ctl_type();
+   bad_assertcontrol_ctl_type bad_assertcontrol_ctl_type();
+   assert_class assert_class();
+endmodule
+
+module unsupported_ctl_type;
+   initial begin
+      $assertcontrol(1);
+      $assertcontrol(2);
+      $assertcontrol(6);
+      $assertcontrol(7);
+      $assertcontrol(8);
+      $assertcontrol(9);
+      $assertcontrol(10);
+      $assertcontrol(11);
+   end
+endmodule
+
+module bad_assertcontrol_ctl_type;
+   initial begin
+      $assertcontrol(0);
+      $assertcontrol(100);
+   end
+endmodule
+
+module assert_class;
+   virtual class AssertCtl;
+      pure virtual function void virtual_assert_ctl();
+   endclass
+
+   class AssertCls;
+      static function void static_function();
+         assert(0);
+      endfunction
+      static task static_task();
+         assert(0);
+      endtask
+      function void assert_function();
+         assert(0);
+      endfunction
+      task assert_task();
+         assert(0);
+      endtask
+      virtual function void virtual_assert();
+         assert(0);
+      endfunction
+   endclass
+
+   class AssertOn extends AssertCtl;
+      virtual function void virtual_assert_ctl();
+         $asserton;
+      endfunction
+   endclass
+
+   class AssertOff extends AssertCtl;
+      virtual function void virtual_assert_ctl();
+         $assertoff;
+      endfunction
+   endclass
+
+   AssertCls assertCls;
+   AssertOn assertOn;
+   AssertOff assertOff;
+   initial begin
+      $assertoff;
+      AssertCls::static_function();
+      AssertCls::static_task();
+      $asserton;
+      AssertCls::static_function();
+      AssertCls::static_task();
+
+      assertCls = new;
+      assertOn = new;
+      assertOff = new;
+
+      assertOff.virtual_assert_ctl();
+      assertCls.assert_function();
+      assertCls.assert_task();
+      assertCls.virtual_assert();
+
+      assertOn.virtual_assert_ctl();
+      assertCls.assert_function();
+      assertCls.assert_task();
+      assertCls.virtual_assert();
+      assertOff.virtual_assert_ctl();
+      assertCls.assert_function();
+   end
+endmodule

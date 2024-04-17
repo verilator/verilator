@@ -84,10 +84,10 @@ class AssertCtlVisitor final : public VNVisitor {
 
     // NODE STATE
     // The rest of the users are defined in the AssertVisitor.
-    //  AstModule::user1()  -> DependencyVertex*.  Vertex in m_assertGraph
-    //  AstModule::user2()  -> int.                ModuleFlag
-    //  AstModule::user3()  -> bool.               True if module is affected by AssertCtl
-    //  AstModule::user4()  -> bool.               True if processed
+    //  AstNodeModule::user1()  -> DependencyVertex*.  Vertex in m_assertGraph
+    //  AstNodeModule::user2()  -> int.                ModuleFlag
+    //  AstNodeModule::user3()  -> bool.               True if module is affected by AssertCtl
+    //  AstNodeModule::user4()  -> bool.               True if processed
     const VNUser4InUse m_user4InUse;
 
     // STATE
@@ -95,6 +95,8 @@ class AssertCtlVisitor final : public VNVisitor {
     AstNode* m_parentp = nullptr;
     string m_hierarchicalName{};
     bool m_moduleInCell = false;
+    bool m_inClass = false;
+    bool m_inIface = false;
 
     static void addFlags(AstNode* const nodep, ModuleFlagType flags) {
         nodep->user2(nodep->user2() | flags);
@@ -171,14 +173,22 @@ class AssertCtlVisitor final : public VNVisitor {
     }
 
     // VISITORS
-    void visit(AstModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         // Ignore non-top modules not traversed through cell references.
         if (!m_moduleInCell && nodep->level() > 2) return;
         if (nodep->level() <= 2) m_hierarchicalName = nodep->name();
         new V3GraphEdge{&m_assertGraph, getDepVtx(m_parentp), getDepVtx(nodep), 1};
 
+        VL_RESTORER(m_inClass);
+        VL_RESTORER(m_inIface);
         VL_RESTORER(m_parentp);
         {
+            if (VN_IS(nodep, Class)) {
+                m_inClass = true;
+            } else if (VN_IS(nodep, Iface)) {
+                m_inIface = true;
+            }
+
             m_parentp = nodep;
             iterateChildren(nodep);
         }
@@ -188,10 +198,8 @@ class AssertCtlVisitor final : public VNVisitor {
         VL_RESTORER(m_hierarchicalName);
 
         m_moduleInCell = true;
-        if (AstModule* const modp = VN_CAST(nodep->modp(), Module)) {
-            m_hierarchicalName += "." + nodep->name();
-            iterate(modp);
-        }
+        m_hierarchicalName += "." + nodep->name();
+        iterate(nodep->modp());
     }
     void visit(AstBegin* nodep) override {
         VL_RESTORER(m_hierarchicalName);
@@ -221,7 +229,13 @@ class AssertCtlVisitor final : public VNVisitor {
     }
     void visit(AstAssertCtl* nodep) override {
         if (nodep->user4SetOnce()) return;
-        addFlags(m_parentp, M_HAS_ASSERTCTL);
+        if (m_inClass) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: assertcontrols in classes");
+        } else if (m_inIface) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: assertcontrols in ifaces");
+        } else {
+            addFlags(m_parentp, M_HAS_ASSERTCTL);
+        }
 
         nodep->name(m_hierarchicalName);
 
