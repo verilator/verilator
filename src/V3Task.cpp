@@ -1839,10 +1839,13 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
             newPortp->funcLocal(true);
             newTaskp->addStmtsp(newPortp);
             // Runtime-assign it to the default
-            AstAssign* const newAssignp = new AstAssign{
-                valuep->fileline(), new AstVarRef{valuep->fileline(), newPortp, VAccess::WRITE},
-                valuep->cloneTree(true)};
-            newTaskp->addStmtsp(newAssignp);
+            if (!VN_IS(valuep, EmptyQueue)) {
+                AstAssign* const newAssignp
+                    = new AstAssign{valuep->fileline(),
+                                    new AstVarRef{valuep->fileline(), newPortp, VAccess::WRITE},
+                                    valuep->cloneTree(true)};
+                newTaskp->addStmtsp(newAssignp);
+            }
         }
         oldNewVars.emplace(portp, newPortp);
         const VAccess pinAccess = portp->isWritable() ? VAccess::WRITE : VAccess::READ;
