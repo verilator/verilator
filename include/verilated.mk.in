@@ -225,7 +225,6 @@ endif
 #   1. Extract object files from .a
 #   2. Create a new archive from extracted .o and given .o
 %.a: | %.verilator_deplist.tmp
-	$(info Archive $(AR) -rcs $@ $^)
 	$(foreach L, $(filter-out %.a,$^), $(shell echo $L >>$@.verilator_deplist.tmp))
 	@if test $(words $(filter %.a,$^)) -eq 0; then \
 		$(RM) -f $@; \
