@@ -8,6 +8,7 @@ module t;
    unsupported_ctl_type unsupported_ctl_type();
    bad_assertcontrol_ctl_type bad_assertcontrol_ctl_type();
    assert_class assert_class();
+   assert_iface assert_iface();
 endmodule
 
 module unsupported_ctl_type;
@@ -91,5 +92,38 @@ module assert_class;
       assertCls.virtual_assert();
       assertOff.virtual_assert_ctl();
       assertCls.assert_function();
+   end
+endmodule
+
+interface Iface;
+   function void assert_func();
+      assert(0);
+   endfunction
+
+   function void assertoff_func();
+      $assertoff;
+   endfunction
+
+   initial begin
+      assertoff_func();
+      assert(0);
+      assert_func();
+      $asserton;
+      assert(0);
+      assert_func();
+   end
+endinterface
+
+module assert_iface;
+   Iface iface();
+   virtual Iface vIface = iface;
+   initial begin
+      vIface.assert_func();
+      vIface.assertoff_func();
+      vIface.assert_func();
+
+      iface.assert_func();
+      iface.assertoff_func();
+      iface.assert_func();
    end
 endmodule
