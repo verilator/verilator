@@ -9,6 +9,7 @@ module t;
    bad_assertcontrol_ctl_type bad_assertcontrol_ctl_type();
    assert_class assert_class();
    assert_iface assert_iface();
+   assert_iface_class assert_iface_class();
 endmodule
 
 module unsupported_ctl_type;
@@ -125,5 +126,27 @@ module assert_iface;
       iface.assert_func();
       iface.assertoff_func();
       iface.assert_func();
+   end
+endmodule
+
+interface class IfaceClass;
+   pure virtual function void assertoff_func();
+   pure virtual function void assert_func();
+endclass
+
+class IfaceClassImpl implements IfaceClass;
+   virtual function void assertoff_func();
+      $assertoff;
+   endfunction
+   virtual function void assert_func();
+      assert(0);
+   endfunction
+endclass
+
+module assert_iface_class;
+   IfaceClassImpl ifaceClassImpl = new;
+   initial begin
+         ifaceClassImpl.assertoff_func();
+         ifaceClassImpl.assert_func();
    end
 endmodule

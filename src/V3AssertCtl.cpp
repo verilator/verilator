@@ -53,7 +53,7 @@ class AssertCtlVisitor final : public VNVisitor {
         }
         FileLine* fileline() const override { return nodep()->fileline(); }
         string dotColor() const override {
-            if (VN_IS(nodep(), Module)) {
+            if (VN_IS(nodep(), NodeModule)) {
                 if (hasFlags(nodep(), M_HAS_ASSERT)) {
                     if (hasFlags(nodep(), M_HAS_ASSERTCTL)) return "green";
                     return "red";
@@ -152,7 +152,7 @@ class AssertCtlVisitor final : public VNVisitor {
         for (V3GraphEdge& edge : vxp->outEdges()) {
             DepVtx* const depVxp = static_cast<DepVtx*>(edge.top());
             AstNode* const depp = depVxp->nodep();
-            if (VN_IS(depp, Module)) {
+            if (VN_IS(depp, NodeModule)) {
                 if (hasFlags(depp, M_HAS_ASSERT | M_HAS_ASSERTCTL)) {
                     UINFO(9, "found vertex with both assert and assertctl: '"
                                  << depp->name() << "', marking as affected" << endl);
@@ -214,6 +214,12 @@ class AssertCtlVisitor final : public VNVisitor {
         // Handle asserts under functions.
         if (!nodep->name().empty()) m_hierarchicalName += "." + nodep->name();
         iterateChildren(nodep);
+    }
+    void visit(AstVar* nodep) override {
+        if (nodep->subDTypep()) iterate(nodep->subDTypep());
+    }
+    void visit(AstClassRefDType* nodep) override {
+        if (nodep->classp()) iterate(nodep->classp());
     }
     void visit(AstAssert* nodep) override {
         addFlags(m_parentp, M_HAS_ASSERT);

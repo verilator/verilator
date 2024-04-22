@@ -134,7 +134,7 @@ class AssertVisitor final : public VNVisitor {
                   ? static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitTrue{}})
               : assertTypeOn(assertType)
                   ? static_cast<AstNodeExpr*>(
-                        new AstCExpr{fl, "vlSymsp->_vm_contextp__->assertOn()", 1})
+                      new AstCExpr{fl, "vlSymsp->_vm_contextp__->assertOn()", 1})
                   : static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitFalse{}});
         AstNodeIf* const newp = new AstIf{fl, condp, nodep};
         newp->isBoundsCheck(true);  // To avoid LATCH warning
