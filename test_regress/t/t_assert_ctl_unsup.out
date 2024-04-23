@@ -7,11 +7,11 @@
                                                 : ... note: In instance 't.assert_class'
    66 |          $assertoff;
       |          ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:105:7: Unsupported: assertcontrols in ifaces
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:105:7: Unsupported: assertcontrols in interfaces
                                                 : ... note: In instance 't.assert_iface_class'
   105 |       $assertoff;
       |       ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:112:7: Unsupported: assertcontrols in ifaces
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:112:7: Unsupported: assertcontrols in interfaces
                                                 : ... note: In instance 't.assert_iface_class'
   112 |       $asserton;
       |       ^~~~~~~~~
