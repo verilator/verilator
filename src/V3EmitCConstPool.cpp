@@ -78,13 +78,13 @@ class EmitCConstPool final : public EmitCConstInit {
         m_ofp = newOutCFile();
 
         for (const AstVar* varp : varps) {
-            if (!varp->valuep()) continue;
             maybeSplitCFile();
             const string nameProtect = topClassName() + "__ConstPool__" + varp->nameProtect();
             puts("\n");
             putns(varp, "extern const ");
             putns(varp, varp->dtypep()->cType(nameProtect, false, false));
             putns(varp, " = ");
+            UASSERT_OBJ(varp->valuep(), varp, "Var without value");
             iterateConst(varp->valuep());
             putns(varp, ";\n");
             // Keep track of stats
