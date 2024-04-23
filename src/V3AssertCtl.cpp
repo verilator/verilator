@@ -238,7 +238,7 @@ class AssertCtlVisitor final : public VNVisitor {
         if (m_inClass) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: assertcontrols in classes");
         } else if (m_inIface) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: assertcontrols in ifaces");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: assertcontrols in interfaces");
         } else {
             addFlags(m_parentp, M_HAS_ASSERTCTL);
         }
