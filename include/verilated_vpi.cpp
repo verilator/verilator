@@ -655,6 +655,7 @@ class VerilatedVpiImp final {
     VerilatedVpiError* m_errorInfop = nullptr;  // Container for vpi error info
     VerilatedAssertOneThread m_assertOne;  // Assert only called from single thread
     uint64_t m_nextCallbackId = 1;  // Id to identify callback
+    bool m_dirty = false;  // Model has had signals updated via vpi_put_value()
 
     static VerilatedVpiImp& s() {  // Singleton
         static VerilatedVpiImp s_s;
@@ -813,6 +814,8 @@ public:
     }
     static void dumpCbs() VL_MT_UNSAFE_ONE;
     static VerilatedVpiError* error_info() VL_MT_UNSAFE_ONE;  // getter for vpi error info
+    static void setDirty(bool dirty) { s().m_dirty = dirty; }
+    static bool isDirty() { return s().m_dirty; }
 };
 
 //======================================================================
@@ -914,6 +917,9 @@ PLI_INT32 VerilatedVpioReasonCb::dovpi_remove_cb() {
     delete this;  // IEEE 37.2.2 a vpi_remove_cb does a vpi_release_handle
     return 1;
 }
+
+void VerilatedVpi::clearDirty() VL_MT_UNSAFE_ONE { VerilatedVpiImp::setDirty(false); }
+bool VerilatedVpi::isDirty() VL_MT_UNSAFE_ONE { return VerilatedVpiImp::isDirty(); }
 
 //======================================================================
 // VerilatedVpiImp implementation
@@ -2441,6 +2447,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         return nullptr;
     }
     if (const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object)) {
+        VerilatedVpiImp::setDirty(true);
         VL_DEBUG_IF_PLI(
             VL_DBG_MSGF("- vpi:   vpi_put_value name=%s fmt=%d vali=%d\n", vop->fullname(),
                         valuep->format, valuep->value.integer);

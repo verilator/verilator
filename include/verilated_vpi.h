@@ -57,6 +57,12 @@ public:
 
     // Self test, for internal use only
     static void selfTest() VL_MT_UNSAFE_ONE;
+
+    // Clears VPI dirty state
+    static void clearDirty() VL_MT_UNSAFE_ONE;
+    // Checks VPI dirty state (i.e. whether vpi_put_value() has
+    // been called since the last clear)
+    static bool isDirty() VL_MT_UNSAFE_ONE;
 };
 
 #endif  // Guard
