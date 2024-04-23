@@ -2582,7 +2582,7 @@ class AstAssertCtl final : public AstNodeStmt {
     // @astgen op1 := controlTypep : Optional[AstNodeExpr]
     // Type of assertcontrol task; either known from parser or from evaluated
     // controlTypep expression.
-    VAssertCtlType m_ctlType;
+    VAssertCtlType m_ctlType;  // $assert keyword type
     string m_name;  // Scope, kept under name show it on the graph.
 
 public:
