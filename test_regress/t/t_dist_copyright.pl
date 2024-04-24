@@ -20,6 +20,7 @@ our $Exempt_Author_Re = qr!(^ci/|^nodist/fastcov.py|^nodist/fuzzer|^test_regress
 our $Exempt_Files_Re = qr!(^\.|/\.|\.gitignore$|\.dat|\.gprof|\.mem|\.out$|\.png$|\.tree|\.vc$|\.vcd$|^\.)!;
 our @Exempt_Files_List = qw(
     Artistic
+    CITATION.cff
     CPPLINT.cfg
     LICENSE
     README.rst

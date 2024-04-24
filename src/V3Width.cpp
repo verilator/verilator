@@ -1228,7 +1228,7 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstEmptyQueue* nodep) override {
         nodep->dtypeSetEmptyQueue();
-        if (!VN_IS(nodep->backp(), Assign)) {
+        if (!VN_IS(nodep->backp(), Assign) && !VN_IS(nodep->backp(), Var)) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported/Illegal: empty queue ('{}') in this context");
         }
@@ -4888,7 +4888,8 @@ class WidthVisitor final : public VNVisitor {
         }
         if (VN_IS(nodep->rhsp(), EmptyQueue)) {
             UINFO(9, "= {} -> .delete(): " << nodep);
-            if (!VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
+            const AstNodeDType* const lhsDtp = nodep->lhsp()->dtypep()->skipRefp();
+            if (!VN_IS(lhsDtp, QueueDType) && !VN_IS(lhsDtp, DynArrayDType)) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported/Illegal: empty queue ('{}') in this assign context");
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
