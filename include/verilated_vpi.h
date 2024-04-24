@@ -55,10 +55,10 @@ public:
     /// Debug dump of callbacks
     static void dumpCbs() VL_MT_UNSAFE_ONE;
     /// Checks VPI dirty state (i.e. whether vpi_put_value() has
-    /// been called since the last clearDirty())
-    static bool isDirty() VL_MT_UNSAFE_ONE;
-    /// Clears VPI dirty state (see isDirty())
-    static void clearDirty() VL_MT_UNSAFE_ONE;
+    /// been called since the last clearEvalNeeded())
+    static bool evalNeeded() VL_MT_UNSAFE_ONE;
+    /// Clears VPI dirty state (see evalNeeded())
+    static void clearEvalNeeded() VL_MT_UNSAFE_ONE;
 
     // Self test, for internal use only
     static void selfTest() VL_MT_UNSAFE_ONE;

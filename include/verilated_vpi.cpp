@@ -655,7 +655,7 @@ class VerilatedVpiImp final {
     VerilatedVpiError* m_errorInfop = nullptr;  // Container for vpi error info
     VerilatedAssertOneThread m_assertOne;  // Assert only called from single thread
     uint64_t m_nextCallbackId = 1;  // Id to identify callback
-    bool m_dirty = false;  // Model has had signals updated via vpi_put_value()
+    bool m_evalNeeded = false;  // Model has had signals updated via vpi_put_value()
 
     static VerilatedVpiImp& s() {  // Singleton
         static VerilatedVpiImp s_s;
@@ -814,8 +814,8 @@ public:
     }
     static void dumpCbs() VL_MT_UNSAFE_ONE;
     static VerilatedVpiError* error_info() VL_MT_UNSAFE_ONE;  // getter for vpi error info
-    static void setDirty(bool dirty) { s().m_dirty = dirty; }
-    static bool isDirty() { return s().m_dirty; }
+    static void setEvalNeeded(bool evalNeeded) { s().m_evalNeeded = evalNeeded; }
+    static bool evalNeeded() { return s().m_evalNeeded; }
 };
 
 //======================================================================
@@ -918,8 +918,8 @@ PLI_INT32 VerilatedVpioReasonCb::dovpi_remove_cb() {
     return 1;
 }
 
-void VerilatedVpi::clearDirty() VL_MT_UNSAFE_ONE { VerilatedVpiImp::setDirty(false); }
-bool VerilatedVpi::isDirty() VL_MT_UNSAFE_ONE { return VerilatedVpiImp::isDirty(); }
+void VerilatedVpi::clearEvalNeeded() VL_MT_UNSAFE_ONE { VerilatedVpiImp::setEvalNeeded(false); }
+bool VerilatedVpi::evalNeeded() VL_MT_UNSAFE_ONE { return VerilatedVpiImp::evalNeeded(); }
 
 //======================================================================
 // VerilatedVpiImp implementation
@@ -2451,7 +2451,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             VL_DBG_MSGF("- vpi:   vpi_put_value name=%s fmt=%d vali=%d\n", vop->fullname(),
                         valuep->format, valuep->value.integer);
             VL_DBG_MSGF("- vpi:   varp=%p  putatp=%p\n", vop->varp()->datap(), vop->varDatap()););
-        VerilatedVpiImp::setDirty(true);
+        VerilatedVpiImp::setEvalNeeded(true);
 
         if (VL_UNLIKELY(!vop->varp()->isPublicRW())) {
             VL_VPI_WARNING_(__FILE__, __LINE__,

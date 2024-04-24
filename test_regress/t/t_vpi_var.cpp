@@ -972,12 +972,12 @@ int main(int argc, char** argv) {
     CHECK_RESULT(callback_count_half, 250);
     CHECK_RESULT(callback_count_quad, 2);
     CHECK_RESULT(callback_count_strs, callback_count_strs_max);
-    VerilatedVpi::clearDirty();
-    if (VerilatedVpi::isDirty()) {
+    VerilatedVpi::clearEvalNeeded();
+    if (VerilatedVpi::evalNeeded()) {
         vl_fatal(FILENM, __LINE__, "main", "%Error: Unexpected VPI dirty state");
     }
     touch_signal();
-    if (!VerilatedVpi::isDirty()) {
+    if (!VerilatedVpi::evalNeeded()) {
         vl_fatal(FILENM, __LINE__, "main", "%Error: Unexpected VPI clean state");
     }
     if (!contextp->gotFinish()) {
