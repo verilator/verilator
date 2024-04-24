@@ -2447,11 +2447,11 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         return nullptr;
     }
     if (const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object)) {
-        VerilatedVpiImp::setDirty(true);
         VL_DEBUG_IF_PLI(
             VL_DBG_MSGF("- vpi:   vpi_put_value name=%s fmt=%d vali=%d\n", vop->fullname(),
                         valuep->format, valuep->value.integer);
             VL_DBG_MSGF("- vpi:   varp=%p  putatp=%p\n", vop->varp()->datap(), vop->varDatap()););
+        VerilatedVpiImp::setDirty(true);
 
         if (VL_UNLIKELY(!vop->varp()->isPublicRW())) {
             VL_VPI_WARNING_(__FILE__, __LINE__,

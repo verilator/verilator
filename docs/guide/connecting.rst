@@ -407,6 +407,12 @@ only a couple of instructions.
 For signal callbacks to work the main loop of the program must call
 :code:`VerilatedVpi::callValueCbs()`.
 
+Verilator also tracks when the model state has been modified via the VPI with
+a "dirty" flag.  This flag can be checked with :code:`VerilatedVpi::isDirty()`
+and it can be cleared with :code:`VerilatedVpi::clearDirty()`.  Used together
+it is possible to skip :code:`eval()` calls if no model state has been changed
+since the last :code:`eval()`.
+
 
 .. _VPI Example:
 
