@@ -443,6 +443,19 @@ int _mon_check_varlist() {
     return 0;
 }
 
+void touch_signal() {
+    TestVpiHandle vh1 = VPI_HANDLE("count");
+    TEST_CHECK_NZ(vh1);
+    s_vpi_value v;
+    v.format = vpiIntVal;
+    s_vpi_time t;
+    t.type = vpiSimTime;
+    t.high = 0;
+    t.low = 0;
+    v.value.integer = 0;
+    vpi_put_value(vh1, &v, &t, vpiNoDelay);
+}
+
 int _mon_check_ports() {
 #ifdef TEST_VERBOSE
     printf("-mon_check_ports()\n");
@@ -959,6 +972,14 @@ int main(int argc, char** argv) {
     CHECK_RESULT(callback_count_half, 250);
     CHECK_RESULT(callback_count_quad, 2);
     CHECK_RESULT(callback_count_strs, callback_count_strs_max);
+    VerilatedVpi::clearEvalNeeded();
+    if (VerilatedVpi::evalNeeded()) {
+        vl_fatal(FILENM, __LINE__, "main", "%Error: Unexpected VPI dirty state");
+    }
+    touch_signal();
+    if (!VerilatedVpi::evalNeeded()) {
+        vl_fatal(FILENM, __LINE__, "main", "%Error: Unexpected VPI clean state");
+    }
     if (!contextp->gotFinish()) {
         vl_fatal(FILENM, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
