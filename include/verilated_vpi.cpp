@@ -814,7 +814,7 @@ public:
     }
     static void dumpCbs() VL_MT_UNSAFE_ONE;
     static VerilatedVpiError* error_info() VL_MT_UNSAFE_ONE;  // getter for vpi error info
-    static void setEvalNeeded(bool evalNeeded) { s().m_evalNeeded = evalNeeded; }
+    static void evalNeeded(bool evalNeeded) { s().m_evalNeeded = evalNeeded; }
     static bool evalNeeded() { return s().m_evalNeeded; }
 };
 
@@ -918,7 +918,7 @@ PLI_INT32 VerilatedVpioReasonCb::dovpi_remove_cb() {
     return 1;
 }
 
-void VerilatedVpi::clearEvalNeeded() VL_MT_UNSAFE_ONE { VerilatedVpiImp::setEvalNeeded(false); }
+void VerilatedVpi::clearEvalNeeded() VL_MT_UNSAFE_ONE { VerilatedVpiImp::evalNeeded(false); }
 bool VerilatedVpi::evalNeeded() VL_MT_UNSAFE_ONE { return VerilatedVpiImp::evalNeeded(); }
 
 //======================================================================
@@ -2451,7 +2451,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             VL_DBG_MSGF("- vpi:   vpi_put_value name=%s fmt=%d vali=%d\n", vop->fullname(),
                         valuep->format, valuep->value.integer);
             VL_DBG_MSGF("- vpi:   varp=%p  putatp=%p\n", vop->varp()->datap(), vop->varDatap()););
-        VerilatedVpiImp::setEvalNeeded(true);
+        VerilatedVpiImp::evalNeeded(true);
 
         if (VL_UNLIKELY(!vop->varp()->isPublicRW())) {
             VL_VPI_WARNING_(__FILE__, __LINE__,
