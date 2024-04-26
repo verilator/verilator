@@ -22,6 +22,8 @@
 
 #include "V3LinkLValue.h"
 
+#include "V3Task.h"
+
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
@@ -279,23 +281,23 @@ class LinkLValueVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeFTaskRef* nodep) override {
-        AstNode* pinp = nodep->pinsp();
         const AstNodeFTask* const taskp = nodep->taskp();
         // We'll deal with mismatching pins later
         if (!taskp) return;
-        for (AstNode* stmtp = taskp->stmtsp(); stmtp && pinp; stmtp = stmtp->nextp()) {
-            if (const AstVar* const portp = VN_CAST(stmtp, Var)) {
-                if (portp->isIO()) {
-                    if (portp->isWritable()) {
-                        m_setRefLvalue = VAccess::WRITE;
-                        iterate(pinp);
-                        m_setRefLvalue = VAccess::NOCHANGE;
-                    } else {
-                        iterate(pinp);
-                    }
-                    // Advance pin
-                    pinp = pinp->nextp();
-                }
+        const V3TaskConnects tconnects
+            = V3Task::taskConnects(nodep, taskp->stmtsp(), nullptr, false);
+        for (const auto& tconnect : tconnects) {
+            const AstVar* const portp = tconnect.first;
+            const AstArg* const argp = tconnect.second;
+            if (!argp) continue;
+            AstNodeExpr* const pinp = argp->exprp();
+            if (!pinp) continue;
+            if (portp->isWritable()) {
+                m_setRefLvalue = VAccess::WRITE;
+                iterate(pinp);
+                m_setRefLvalue = VAccess::NOCHANGE;
+            } else {
+                iterate(pinp);
             }
         }
     }

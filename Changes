@@ -18,6 +18,7 @@ Verilator 5.025 devel
 * Fix consecutive zero-delays (#5038). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix `$system` with string argument (#5042).
 * Fix width extension on delays (#5043).
+* Fix false ASSIGNIN on functions with explicit port map (#5069).
 
 
 Verilator 5.024 2024-04-05
