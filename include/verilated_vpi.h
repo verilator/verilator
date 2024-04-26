@@ -59,6 +59,8 @@ public:
     static bool evalNeeded() VL_MT_UNSAFE_ONE;
     /// Clears VPI dirty state (see evalNeeded())
     static void clearEvalNeeded() VL_MT_UNSAFE_ONE;
+    /// Perform inertially delayed puts
+    static void doInertialPuts() VL_MT_UNSAFE_ONE;
 
     // Self test, for internal use only
     static void selfTest() VL_MT_UNSAFE_ONE;
