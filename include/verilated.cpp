@@ -2057,11 +2057,16 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
     while (true) {
         int c = std::fgetc(m_fp);
         if (VL_UNLIKELY(c == EOF)) break;
+        const bool c_is_4state_bin
+            = c == '0' || c == '1' || c == 'x' || c == 'X' || c == 'z' || c == 'Z';
+        const bool c_is_2state_hex = std::isxdigit(c);
+        const bool c_is_4state_hex
+            = std::isxdigit(c) || c == 'x' || c == 'X' || c == 'z' || c == 'Z';
         // printf("%d: Got '%c' Addr%lx IN%d IgE%d IgC%d\n",
         //        m_linenum, c, m_addr, indata, ignore_to_eol, ignore_to_cmt);
         // See if previous data value has completed, and if so return
         if (c == '_') continue;  // Ignore _ e.g. inside a number
-        if (indata && !std::isxdigit(c) && c != 'x' && c != 'X') {
+        if (indata && !c_is_4state_hex) {
             // printf("Got data @%lx = %s\n", m_addr, valuer.c_str());
             ungetc(c, m_fp);
             addrr = m_addr;
@@ -2092,23 +2097,16 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
                 reading_addr = true;
                 m_anyAddr = true;
                 m_addr = 0;
-            }
-            // Check for hex or binary digits as file format requests
-            else if (std::isxdigit(c) || (!reading_addr && (c == 'x' || c == 'X'))) {
+            } else if (reading_addr && c_is_2state_hex) {
                 c = std::tolower(c);
-                const int value
-                    = (c >= 'a' ? (c == 'x' ? VL_RAND_RESET_I(4) : (c - 'a' + 10)) : (c - '0'));
-                if (reading_addr) {
-                    // Decode @ addresses
-                    m_addr = (m_addr << 4) + value;
-                } else {
-                    indata = true;
-                    valuer += static_cast<char>(c);
-                    // printf(" Value width=%d  @%x = %c\n", width, m_addr, c);
-                    if (VL_UNLIKELY(value > 1 && !m_hex)) {
-                        VL_FATAL_MT(m_filename.c_str(), m_linenum, "",
-                                    "$readmemb (binary) file contains hex characters");
-                    }
+                const int addr_value = (c >= 'a') ? (c - 'a' + 10) : (c - '0');
+                m_addr = (m_addr << 4) + addr_value;
+            } else if (c_is_4state_hex) {
+                indata = true;
+                valuer += static_cast<char>(c);
+                if (VL_UNLIKELY(!m_hex && !c_is_4state_bin)) {
+                    VL_FATAL_MT(m_filename.c_str(), m_linenum, "",
+                                "$readmemb (binary) file contains hex characters");
                 }
             } else {
                 VL_FATAL_MT(m_filename.c_str(), m_linenum, "", "$readmem file syntax error");
@@ -2131,8 +2129,9 @@ void VlReadMem::setData(void* valuep, const std::string& rhs) {
     // Shift value in
     for (const auto& i : rhs) {
         const char c = std::tolower(i);
-        const int value
-            = (c >= 'a' ? (c == 'x' ? VL_RAND_RESET_I(4) : (c - 'a' + 10)) : (c - '0'));
+        const int value = (c == 'x' || c == 'z') ? VL_RAND_RESET_I(m_hex ? 4 : 1)
+                          : (c >= 'a')           ? (c - 'a' + 10)
+                                                 : (c - '0');
         if (m_bits <= 8) {
             CData* const datap = reinterpret_cast<CData*>(valuep);
             if (!innum) *datap = 0;
