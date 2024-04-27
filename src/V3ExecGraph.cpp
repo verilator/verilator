@@ -97,25 +97,25 @@ private:
     // Debugging
     void dumpDotFile(const V3Graph& graph, const string& filename) const {
         // This generates a file used by graphviz, https://www.graphviz.org
-        const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
-        if (logp->fail()) v3fatal("Can't write " << filename);
+        std::ofstream logp = V3File::new_ofstream(filename);
+        if (logp.fail()) v3fatal("Can't write " << filename);
 
         // Header
-        *logp << "digraph v3graph {\n";
-        *logp << "  graph[layout=\"neato\" labelloc=t labeljust=l label=\"" << filename << "\"]\n";
-        *logp << "  node[shape=\"rect\" ratio=\"fill\" fixedsize=true]\n";
+        logp << "digraph v3graph {\n";
+        logp << "  graph[layout=\"neato\" labelloc=t labeljust=l label=\"" << filename << "\"]\n";
+        logp << "  node[shape=\"rect\" ratio=\"fill\" fixedsize=true]\n";
 
         // Thread labels
-        *logp << "\n  // Threads\n";
+        logp << "\n  // Threads\n";
         const int threadBoxWidth = 2;
         for (int i = 0; i < v3Global.opt.threads(); i++) {
-            *logp << "  t" << i << " [label=\"Thread " << i << "\" width=" << threadBoxWidth
+            logp << "  t" << i << " [label=\"Thread " << i << "\" width=" << threadBoxWidth
                   << " pos=\"" << (-threadBoxWidth / 2) << "," << -i
                   << "!\" style=\"filled\" fillcolor=\"grey\"] \n";
         }
 
         // MTask nodes
-        *logp << "\n  // MTasks\n";
+        logp << "\n  // MTasks\n";
 
         // Find minimum cost MTask for scaling MTask node widths
         uint32_t minCost = UINT32_MAX;
@@ -137,8 +137,8 @@ private:
             const int y = -thread;
             const string label = "label=\"" + mtaskp->name() + " (" + cvtToStr(startTime(mtaskp))
                                  + ":" + std::to_string(endTime(mtaskp)) + ")" + "\"";
-            *logp << "  " << mtaskp->name() << " [" << label << " width=" << nodeWidth << " pos=\""
-                  << x << "," << y << "!\"]\n";
+            logp << "  " << mtaskp->name() << " [" << label << " width=" << nodeWidth << " pos=\""
+                 << x << "," << y << "!\"]\n";
         };
 
         // Emit MTasks
@@ -147,19 +147,19 @@ private:
         }
 
         // Emit MTask dependency edges
-        *logp << "\n  // MTask dependencies\n";
+        logp << "\n  // MTask dependencies\n";
         for (const V3GraphVertex& vtx : graph.vertices()) {
             if (const ExecMTask* const mtaskp = vtx.cast<const ExecMTask>()) {
                 for (const V3GraphEdge& edge : mtaskp->outEdges()) {
                     const V3GraphVertex* const top = edge.top();
-                    *logp << "  " << vtx.name() << " -> " << top->name() << "\n";
+                    logp << "  " << vtx.name() << " -> " << top->name() << "\n";
                 }
             }
         }
 
         // Trailer
-        *logp << "}\n";
-        logp->close();
+        logp << "}\n";
+        logp.close();
     }
 
     // Variant of dumpDotFilePrefixed without --dump option check

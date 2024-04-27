@@ -161,9 +161,8 @@ public:
     void dumpSelf(const string& nameComment = "linkdot", bool force = false) {
         if (dumpLevel() >= 6 || force) {
             const string filename = v3Global.debugFilename(nameComment) + ".txt";
-            const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
-            if (logp->fail()) v3fatal("Can't write " << filename);
-            std::ostream& os = *logp;
+            std::ofstream os = V3File::new_ofstream(filename);
+            if (os.fail()) v3fatal("Can't write " << filename);
             m_syms.dumpSelf(os);
             bool first = true;
             for (int samn = 0; samn < SAMN__MAX; ++samn) {

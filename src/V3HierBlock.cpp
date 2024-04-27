@@ -213,21 +213,21 @@ string V3HierBlock::vFileIfNecessary() const {
 }
 
 void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
-    const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(commandArgsFileName(forCMake))};
-    *of << "--cc\n";
+    std::ofstream of = V3File::new_ofstream(commandArgsFileName(forCMake));
+    of << "--cc\n";
 
     if (!forCMake) {
         for (const auto& hierblockp : m_children) {
-            *of << v3Global.opt.makeDir() << "/" << hierblockp->hierWrapper(true) << "\n";
+            of << v3Global.opt.makeDir() << "/" << hierblockp->hierWrapper(true) << "\n";
         }
-        *of << "-Mdir " << v3Global.opt.makeDir() << "/" << hierPrefix() << " \n";
+        of << "-Mdir " << v3Global.opt.makeDir() << "/" << hierPrefix() << " \n";
     }
-    V3HierWriteCommonInputs(this, of.get(), forCMake);
+    V3HierWriteCommonInputs(this, &of, forCMake);
     const V3StringList& commandOpts = commandArgs(false);
-    for (const string& opt : commandOpts) *of << opt << "\n";
-    *of << hierBlockArgs().front() << "\n";
-    for (const auto& hierblockp : m_children) *of << hierblockp->hierBlockArgs().front() << "\n";
-    *of << v3Global.opt.allArgsStringForHierBlock(false) << "\n";
+    for (const string& opt : commandOpts) of << opt << "\n";
+    of << hierBlockArgs().front() << "\n";
+    for (const auto& hierblockp : m_children) of << hierblockp->hierBlockArgs().front() << "\n";
+    of << v3Global.opt.allArgsStringForHierBlock(false) << "\n";
 }
 
 string V3HierBlock::commandArgsFileName(bool forCMake) const {
@@ -395,36 +395,35 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
         it->second->writeCommandArgsFile(forCMake);
     }
     // For the top module
-    const std::unique_ptr<std::ofstream> of{
-        V3File::new_ofstream(topCommandArgsFileName(forCMake))};
+    std::ofstream of = V3File::new_ofstream(topCommandArgsFileName(forCMake));
     if (!forCMake) {
         // Load wrappers first not to be overwritten by the original HDL
         for (const_iterator it = begin(); it != end(); ++it) {
-            *of << it->second->hierWrapper(true) << "\n";
+            of << it->second->hierWrapper(true) << "\n";
         }
     }
-    V3HierWriteCommonInputs(nullptr, of.get(), forCMake);
+    V3HierWriteCommonInputs(nullptr, &of, forCMake);
     if (!forCMake) {
         const V3StringSet& cppFiles = v3Global.opt.cppFiles();
-        for (const string& i : cppFiles) *of << i << "\n";
-        *of << "--top-module " << v3Global.rootp()->topModulep()->name() << "\n";
-        *of << "--prefix " << v3Global.opt.prefix() << "\n";
-        *of << "-Mdir " << v3Global.opt.makeDir() << "\n";
-        *of << "--mod-prefix " << v3Global.opt.modPrefix() << "\n";
+        for (const string& i : cppFiles) of << i << "\n";
+        of << "--top-module " << v3Global.rootp()->topModulep()->name() << "\n";
+        of << "--prefix " << v3Global.opt.prefix() << "\n";
+        of << "-Mdir " << v3Global.opt.makeDir() << "\n";
+        of << "--mod-prefix " << v3Global.opt.modPrefix() << "\n";
     }
     for (const_iterator it = begin(); it != end(); ++it) {
-        *of << it->second->hierBlockArgs().front() << "\n";
+        of << it->second->hierBlockArgs().front() << "\n";
     }
 
     if (!v3Global.opt.libCreate().empty()) {
-        *of << "--lib-create " << v3Global.opt.libCreate() << "\n";
+        of << "--lib-create " << v3Global.opt.libCreate() << "\n";
     }
     if (v3Global.opt.protectKeyProvided()) {
-        *of << "--protect-key " << v3Global.opt.protectKeyDefaulted() << "\n";
+        of << "--protect-key " << v3Global.opt.protectKeyDefaulted() << "\n";
     }
-    *of << "--threads " << cvtToStr(v3Global.opt.threads()) << "\n";
-    *of << (v3Global.opt.systemC() ? "--sc" : "--cc") << "\n";
-    *of << v3Global.opt.allArgsStringForHierBlock(true) << "\n";
+    of << "--threads " << cvtToStr(v3Global.opt.threads()) << "\n";
+    of << (v3Global.opt.systemC() ? "--sc" : "--cc") << "\n";
+    of << v3Global.opt.allArgsStringForHierBlock(true) << "\n";
 }
 
 string V3HierBlockPlan::topCommandArgsFileName(bool forCMake) {

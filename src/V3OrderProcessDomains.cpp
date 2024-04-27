@@ -152,8 +152,8 @@ class V3OrderProcessDomains final {
     void processEdgeReport() {
         // Make report of all signal names and what clock edges they have
         const string filename = v3Global.debugFilename(m_tag + "_order_edges.txt");
-        const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
-        if (logp->fail()) v3fatal("Can't write " << filename);
+        std::ofstream logp = V3File::new_ofstream(filename);
+        if (logp.fail()) v3fatal("Can't write " << filename);
 
         std::deque<string> report;
 
@@ -194,9 +194,9 @@ class V3OrderProcessDomains final {
             }
         }
 
-        *logp << "Signals and their clock domains:\n";
+        logp << "Signals and their clock domains:\n";
         stable_sort(report.begin(), report.end());
-        for (const string& i : report) *logp << i << '\n';
+        for (const string& i : report) logp << i << '\n';
     }
 
     // CONSTRUCTOR

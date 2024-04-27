@@ -84,9 +84,9 @@ V3DfgOptimizationContext::~V3DfgOptimizationContext() {
         const std::string filename = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix()
                                      + "__stats_dfg_patterns__" + ident + ".txt";
         // Open, write, close
-        const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
-        if (ofp->fail()) v3fatal("Can't write " << filename);
-        m_patternStats.dump(m_label, *ofp);
+        std::ofstream ofp = V3File::new_ofstream(filename);
+        if (ofp.fail()) v3fatal("Can't write " << filename);
+        m_patternStats.dump(m_label, ofp);
     }
 
     // Check the stats are consistent

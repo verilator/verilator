@@ -192,10 +192,10 @@ void DfgGraph::dumpDot(std::ostream& os, const string& label) const {
 void DfgGraph::dumpDotFile(const string& fileName, const string& label) const {
     // This generates a file used by graphviz, https://www.graphviz.org
     // "hardcoded" parameters:
-    const std::unique_ptr<std::ofstream> os{V3File::new_ofstream(fileName)};
-    if (os->fail()) v3fatal("Cannot write to file: " << fileName);
-    dumpDot(*os.get(), label);
-    os->close();
+    std::ofstream os = V3File::new_ofstream(fileName);
+    if (os.fail()) v3fatal("Cannot write to file: " << fileName);
+    dumpDot(os, label);
+    os.close();
 }
 
 void DfgGraph::dumpDotFilePrefixed(const string& label) const {
@@ -243,22 +243,22 @@ static void dumpDotUpstreamConeFromVertex(std::ostream& os, const DfgVertex& vtx
 void DfgGraph::dumpDotUpstreamCone(const string& fileName, const DfgVertex& vtx,
                                    const string& name) const {
     // Open output file
-    const std::unique_ptr<std::ofstream> os{V3File::new_ofstream(fileName)};
-    if (os->fail()) v3fatal("Cannot write to file: " << fileName);
+    std::ofstream os = V3File::new_ofstream(fileName);
+    if (os.fail()) v3fatal("Cannot write to file: " << fileName);
 
     // Header
-    *os << "digraph dfg {\n";
-    if (!name.empty()) *os << "graph [label=\"" << name << "\", labelloc=t, labeljust=l]\n";
-    *os << "graph [rankdir=LR]\n";
+    os << "digraph dfg {\n";
+    if (!name.empty()) os << "graph [label=\"" << name << "\", labelloc=t, labeljust=l]\n";
+    os << "graph [rankdir=LR]\n";
 
     // Dump the cone
-    dumpDotUpstreamConeFromVertex(*os, vtx);
+    dumpDotUpstreamConeFromVertex(os, vtx);
 
     // Footer
-    *os << "}\n";
+    os << "}\n";
 
     // Done
-    os->close();
+    os.close();
 }
 // LCOV_EXCL_STOP
 
@@ -277,22 +277,22 @@ void DfgGraph::dumpDotAllVarConesPrefixed(const string& label) const {
         // Open output file
         const string coneName{prefix + sinkp->varp()->name()};
         const string fileName{v3Global.debugFilename(coneName) + ".dot"};
-        const std::unique_ptr<std::ofstream> os{V3File::new_ofstream(fileName)};
-        if (os->fail()) v3fatal("Cannot write to file: " << fileName);
+        std::ofstream os = V3File::new_ofstream(fileName);
+        if (os.fail()) v3fatal("Cannot write to file: " << fileName);
 
         // Header
-        *os << "digraph dfg {\n";
-        *os << "graph [label=\"" << coneName << "\", labelloc=t, labeljust=l]\n";
-        *os << "graph [rankdir=LR]\n";
+        os << "digraph dfg {\n";
+        os << "graph [label=\"" << coneName << "\", labelloc=t, labeljust=l]\n";
+        os << "graph [rankdir=LR]\n";
 
         // Dump this cone
-        dumpDotUpstreamConeFromVertex(*os, vtx);
+        dumpDotUpstreamConeFromVertex(os, vtx);
 
         // Footer
-        *os << "}\n";
+        os << "}\n";
 
         // Done with this logic cone
-        os->close();
+        os.close();
     });
 }
 

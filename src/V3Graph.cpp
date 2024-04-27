@@ -283,15 +283,15 @@ void V3Graph::dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsS
 void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     // This generates a file used by graphviz, https://www.graphviz.org
     // "hardcoded" parameters:
-    const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
-    if (logp->fail()) v3fatal("Can't write " << filename);
+    std::ofstream logp = V3File::new_ofstream(filename);
+    if (logp.fail()) v3fatal("Can't write " << filename);
 
     // Header
-    *logp << "digraph v3graph {\n";
-    *logp << "\tgraph\t[label=\"" << filename << "\",\n";
-    *logp << "\t\t labelloc=t, labeljust=l,\n";
-    *logp << "\t\t //size=\"7.5,10\",\n";
-    *logp << "\t\t rankdir=" << dotRankDir() << "];\n";
+    logp << "digraph v3graph {\n";
+    logp << "\tgraph\t[label=\"" << filename << "\",\n";
+    logp << "\t\t labelloc=t, labeljust=l,\n";
+    logp << "\t\t //size=\"7.5,10\",\n";
+    logp << "\t\t rankdir=" << dotRankDir() << "];\n";
 
     // List of all possible subgraphs
     // Collections of explicit ranks
@@ -321,26 +321,26 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
         const V3GraphVertex* vertexp = it->second;
         numMap[vertexp] = n;
         if (subgr != vertexSubgraph) {
-            if (subgr != "") *logp << "\t};\n";
+            if (subgr != "") logp << "\t};\n";
             subgr = vertexSubgraph;
             if (subgr != "") {
-                *logp << "\tsubgraph cluster_" << subgr << " {\n";
-                *logp << "\tlabel=\"" << subgr << "\"\n";
+                logp << "\tsubgraph cluster_" << subgr << " {\n";
+                logp << "\tlabel=\"" << subgr << "\"\n";
             }
         }
-        if (subgr != "") *logp << "\t";
-        *logp << "\tn" << vertexp->dotName() << (n++) << "\t[fontsize=8 "
+        if (subgr != "") logp << "\t";
+        logp << "\tn" << vertexp->dotName() << (n++) << "\t[fontsize=8 "
               << "label=\"" << (vertexp->name() != "" ? vertexp->name() : "\\N");
-        if (vertexp->rank()) *logp << " r" << vertexp->rank();
-        if (vertexp->fanout() != 0.0) *logp << " f" << vertexp->fanout();
-        if (vertexp->color()) *logp << "\\n c" << vertexp->color();
-        *logp << "\"";
-        *logp << ", color=" << vertexp->dotColor();
-        if (vertexp->dotStyle() != "") *logp << ", style=" << vertexp->dotStyle();
-        if (vertexp->dotShape() != "") *logp << ", shape=" << vertexp->dotShape();
-        *logp << "];\n";
+        if (vertexp->rank()) logp << " r" << vertexp->rank();
+        if (vertexp->fanout() != 0.0) logp << " f" << vertexp->fanout();
+        if (vertexp->color()) logp << "\\n c" << vertexp->color();
+        logp << "\"";
+        logp << ", color=" << vertexp->dotColor();
+        if (vertexp->dotStyle() != "") logp << ", style=" << vertexp->dotStyle();
+        if (vertexp->dotShape() != "") logp << ", shape=" << vertexp->dotShape();
+        logp << "];\n";
     }
-    if (subgr != "") *logp << "\t};\n";
+    if (subgr != "") logp << "\t};\n";
 
     // Print edges
     for (const V3GraphVertex& vertex : vertices()) {
@@ -348,43 +348,43 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
             if (edge.weight()) {
                 const int fromVnum = numMap[edge.fromp()];
                 const int toVnum = numMap[edge.top()];
-                *logp << "\tn" << edge.fromp()->dotName() << fromVnum << " -> n"
+                logp << "\tn" << edge.fromp()->dotName() << fromVnum << " -> n"
                       << edge.top()->dotName() << toVnum
                       << " ["
                       // <<"fontsize=8 label=\""<<(edge.name()!="" ? edge.name() : "\\E")<<"\""
                       << "fontsize=8 label=\"" << (edge.dotLabel() != "" ? edge.dotLabel() : "")
                       << "\""
                       << " weight=" << edge.weight() << " color=" << edge.dotColor();
-                if (edge.dotStyle() != "") *logp << " style=" << edge.dotStyle();
-                // if (edge.cutable()) *logp << ",constraint=false";  // to rank without
+                if (edge.dotStyle() != "") logp << " style=" << edge.dotStyle();
+                // if (edge.cutable()) logp << ",constraint=false";  // to rank without
                 // following edges
-                *logp << "];\n";
+                logp << "];\n";
             }
         }
     }
 
     // Print ranks
     for (const auto& dotRank : ranks) {
-        *logp << "\t{ rank=";
+        logp << "\t{ rank=";
         if (dotRank != "sink" && dotRank != "source" && dotRank != "min" && dotRank != "max") {
-            *logp << "same";
+            logp << "same";
         } else {
-            *logp << dotRank;
+            logp << dotRank;
         }
-        *logp << "; ";
+        logp << "; ";
         auto bounds = rankSets.equal_range(dotRank);
         for (auto it{bounds.first}; it != bounds.second; ++it) {
-            if (it != bounds.first) *logp << ", ";
-            *logp << 'n' << numMap[it->second] << "";
+            if (it != bounds.first) logp << ", ";
+            logp << 'n' << numMap[it->second] << "";
         }
-        *logp << " }\n";
+        logp << " }\n";
     }
 
     // Vertex::m_user end, now unused
 
     // Trailer
-    *logp << "}\n";
-    logp->close();
+    logp << "}\n";
+    logp.close();
 
     cout << "dot -Tpdf -o ~/a.pdf " << filename << "\n";
 }

@@ -174,8 +174,8 @@ public:
     static void calculate() { sumit(); }
 
     // CONSTRUCTORS
-    explicit StatsReport(std::ofstream* aofp)
-        : os(*aofp) {  // Need () or GCC 4.8 false warning
+    explicit StatsReport(std::ofstream& aofp)
+        : os(aofp) {  // Need () or GCC 4.8 false warning
         os << "Verilator Statistics Report\n\n";
         V3Stats::infoHeader(os, "");
         sumit();
@@ -233,14 +233,13 @@ void V3Stats::statsReport() {
     // Open stats file
     const string filename
         = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix() + "__stats.txt";
-    std::ofstream* ofp{V3File::new_ofstream(filename)};
-    if (ofp->fail()) v3fatal("Can't write " << filename);
+    std::ofstream ofp = V3File::new_ofstream(filename);
+    if (ofp.fail()) v3fatal("Can't write " << filename);
 
     { StatsReport{ofp}; }  // Destruct before cleanup
 
     // Cleanup
-    ofp->close();
-    VL_DO_DANGLING(delete ofp, ofp);
+    ofp.close();
 }
 
 void V3Stats::summaryReport() {

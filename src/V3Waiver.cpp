@@ -38,24 +38,24 @@ void V3Waiver::addEntry(V3ErrorCode errorCode, const std::string& filename, cons
 }
 
 void V3Waiver::write(const std::string& filename) VL_MT_SAFE_EXCLUDES(s_mutex) {
-    const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
-    if (ofp->fail()) v3fatal("Can't write " << filename);
+    std::ofstream ofp = V3File::new_ofstream(filename);
+    if (ofp.fail()) v3fatal("Can't write " << filename);
 
-    *ofp << "// DESCR"
-            "IPTION: Verilator output: Waivers generated with --waiver-output\n\n";
+    ofp << "// DESCR"
+           "IPTION: Verilator output: Waivers generated with --waiver-output\n\n";
 
-    *ofp << "`verilator_config\n\n";
+    ofp << "`verilator_config\n\n";
 
-    *ofp << "// Below you find suggested waivers. You have three options:\n";
-    *ofp << "//   1. Fix the reason for the linter warning\n";
-    *ofp << "//   2. Keep the waiver permanently if you are sure this is okay\n";
-    *ofp << "//   3. Keep the waiver temporarily to suppress the output\n\n";
+    ofp << "// Below you find suggested waivers. You have three options:\n";
+    ofp << "//   1. Fix the reason for the linter warning\n";
+    ofp << "//   2. Keep the waiver permanently if you are sure this is okay\n";
+    ofp << "//   3. Keep the waiver temporarily to suppress the output\n\n";
 
     const V3LockGuard lock{s_mutex};
 
-    if (s_waiverList.empty()) *ofp << "// No waivers needed - great!\n";
+    if (s_waiverList.empty()) ofp << "// No waivers needed - great!\n";
 
-    for (const auto& i : s_waiverList) *ofp << "// " << i << "\n\n";
+    for (const auto& i : s_waiverList) ofp << "// " << i << "\n\n";
 }
 
 V3Mutex V3Waiver::s_mutex;
