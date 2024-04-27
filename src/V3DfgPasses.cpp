@@ -169,13 +169,7 @@ void V3DfgPasses::inlineVars(DfgGraph& dfg) {
                     if (astVarp->isForceable()) continue;
                 }
 
-                varp->forEachSinkEdge([=](DfgEdge& edge) {
-                    // If sink is a SystemC variable, don't inline that sink
-                    if (DfgVertexVar* const sinkVarp = edge.sinkp()->cast<DfgVarPacked>()) {
-                        if (sinkVarp->varp()->isSc()) return;
-                    }
-                    edge.relinkSource(driverp);
-                });
+                varp->forEachSinkEdge([=](DfgEdge& edge) { edge.relinkSource(driverp); });
             }
         }
     }
