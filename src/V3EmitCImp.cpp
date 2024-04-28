@@ -389,6 +389,7 @@ class EmitCImp final : EmitCFunc {
                         } else if (varp->isParam()) {
                         } else if (varp->isStatic() && varp->isConst()) {
                         } else if (varp->basicp() && varp->basicp()->isTriggerVec()) {
+                        } else if (VN_IS(varp->dtypep(), NBACommitQueueDType)) {
                         } else {
                             int vects = 0;
                             AstNodeDType* elementp = varp->dtypeSkipRefp();

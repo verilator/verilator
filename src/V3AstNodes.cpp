@@ -788,6 +788,22 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
         info.m_type = "VlUnpacked<" + sub.m_type;
         info.m_type += ", " + cvtToStr(adtypep->declRange().elements());
         info.m_type += ">";
+    } else if (const auto* const adtypep = VN_CAST(dtypep, NBACommitQueueDType)) {
+        UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
+        compound = true;
+        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(compound, false);
+        AstNodeDType* eDTypep = adtypep->subDTypep();
+        unsigned rank = 0;
+        while (AstUnpackArrayDType* const uaDTypep = VN_CAST(eDTypep, UnpackArrayDType)) {
+            eDTypep = uaDTypep->subDTypep()->skipRefp();
+            ++rank;
+        }
+        info.m_type = "VlNBACommitQueue<";
+        info.m_type += sub.m_type;
+        info.m_type += adtypep->partial() ? ", true" : ", false";
+        info.m_type += ", " + eDTypep->cTypeRecurse(compound, false).m_type;
+        info.m_type += ", " + std::to_string(rank);
+        info.m_type += ">";
     } else if (packed && (VN_IS(dtypep, PackArrayDType))) {
         const AstPackArrayDType* const adtypep = VN_CAST(dtypep, PackArrayDType);
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(false, true);
@@ -2683,6 +2699,7 @@ void AstCMethodHard::setPurity() {
                                                           {"commit", false},
                                                           {"delay", false},
                                                           {"done", false},
+                                                          {"enqueue", false},
                                                           {"erase", false},
                                                           {"evaluate", false},
                                                           {"evaluation", false},
