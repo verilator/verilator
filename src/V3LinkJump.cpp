@@ -341,7 +341,8 @@ class LinkJumpVisitor final : public VNVisitor {
         }
         // if (debug() >= 9) { UINFO(0, "\n"); blockp->dumpTree("-  labeli: "); }
         if (!blockp) {
-            nodep->v3error("disable isn't underneath a begin with name: " << nodep->prettyNameQ());
+            nodep->v3warn(E_UNSUPPORTED,
+                          "disable isn't underneath a begin with name: " << nodep->prettyNameQ());
         } else if (AstBegin* const beginp = VN_CAST(blockp, Begin)) {
             // Jump to the end of the named block
             AstJumpLabel* const labelp = findAddLabel(beginp, false);
