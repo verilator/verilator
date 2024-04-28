@@ -67,8 +67,6 @@ foreach my $s (
     'String of ',
     'Symbol matching ',
     'Unexpected connection to arrayed port',
-    'Unknown `pragma',
-    'Unknown built-in event method ',
     'Unsized numbers/parameters not allowed in streams.',
     'Unsupported RHS tristate construct: ',
     'Unsupported or syntax error: Unsized range in instance or other declaration',
@@ -166,6 +164,7 @@ sub read_messages {
         while (my $origline = ($fh && $fh->getline)) {
             my $line = $origline;
             next if $line =~ m!^\s*//!;
+            next if $line =~ m!^\s*/\*!;
             ++$lineno;
             if ($line =~ /\b(v3error|v3warn)\b\($/g) {
                 $read_next = 1 if $line !~ /LCOV_EXCL_LINE/;

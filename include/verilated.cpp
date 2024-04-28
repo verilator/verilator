@@ -2936,7 +2936,6 @@ void VerilatedContext::trace(VerilatedTraceBaseC* tfp, int levels, int options) 
         VL_FATAL_MT("", 0, "",
                     "Testbench C call to 'VerilatedContext::trace()' must not be called"
                     " after 'VerilatedTrace*::open()'\n");
-        return;
     }
     {
         // Legacy usage may call {modela}->trace(...) then {modelb}->trace(...)
