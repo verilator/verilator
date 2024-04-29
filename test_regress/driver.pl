@@ -1606,6 +1606,19 @@ sub cmake_version {
     return version->declare($cmake_version);
 }
 
+our $_aslr_off = undef;
+sub aslr_off {
+    if (!defined($_aslr_off)) {
+        my $ok = `setarch --addr-no-randomize echo ok 2>/dev/null` || "";
+        if ($ok =~ /ok/) {
+            $_aslr_off = "setarch --addr-no-randomize ";
+        } else {
+            $_aslr_off = "";
+        }
+    }
+    return $_aslr_off;
+}
+
 sub trace_filename {
     my $self = shift;
     return "$self->{obj_dir}/simx.fst" if $self->{trace_format} =~ /^fst/;
@@ -1670,6 +1683,7 @@ sub _run {
     my $self = (ref $_[0] ? shift : $Self);
     my %param = (tee => 1,
                  # cmd => [...]
+                 # aslr_off => # Disable address space layour randomization
                  # check_finished => 0  # Check for All Finished
                  # entering =>  # Print entering directory information
                  # expect =>  # Regexp to expect in output
@@ -1680,6 +1694,13 @@ sub _run {
                  @_);  # All legal arguments shown immediately above
 
     my $command = join(' ', @{$param{cmd}});
+
+    if ($param{aslr_off}) {
+        if (my $prefix = aslr_off()) {
+            $command = "$prefix $command";
+        }
+    }
+
     $command = "time $command" if $opt_benchmark && $command !~ /^cd /;
 
     if ($param{verilator_run}) {
