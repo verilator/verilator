@@ -73,6 +73,16 @@ class DelayedVisitor final : public VNVisitor {
         AstConst* selWidthp = nullptr;  // The width of the bit select
     };
 
+    // Data required to lower AstAssignDelay later
+    struct Deferred final {
+        LhsComponents lhsComponents;  // The components of the LHS
+        AstNodeExpr* rhsp = nullptr;  // The captured value being assigned by the AstAssignDly
+        AstActive* activep = nullptr;  // The active block the AstAssignDly is under
+        AstNode* insertionPointp = nullptr;  // The insertion point after the AstAssignDly
+        std::string suffix;  // Suffix to add to additional variables created
+        bool consecutive = false;  // Record corresponds to an AstAssignDly immediately adjacent
+    };
+
     // NODE STATE
     //  AstVarScope::user1p()   -> aux
     //  AstVar::user1()         -> bool.  Set true if already made warning
@@ -111,12 +121,16 @@ class DelayedVisitor final : public VNVisitor {
     // STATE - for current visit position (use VL_RESTORER)
     AstActive* m_activep = nullptr;  // Current activate
     const AstCFunc* m_cfuncp = nullptr;  // Current public C Function
-    AstAssignDly* m_nextDlyp = nullptr;  // Next delayed assignment in a list of assignments
+    AstAssignDly* m_nextDlyp = nullptr;  // The nextp of the previous AstAssignDly
     AstNodeProcedure* m_procp = nullptr;  // Current process
     bool m_inDlyLhs = false;  // True in lhs of AstAssignDelay
     bool m_inLoop = false;  // True in for loops
     bool m_inSuspendableOrFork = false;  // True in suspendable processes and forks
     bool m_ignoreBlkAndNBlk = false;  // Suppress delayed assignment BLKANDNBLK
+
+    // STATE - for deferred conversion
+    std::deque<Deferred> m_deferred;  // Deferred AstAssignDly instances to lower at the end
+    AstVarScope* m_setVscp = nullptr;  // The last used set flag, for reuse
 
     // METHODS
 
@@ -268,10 +282,12 @@ class DelayedVisitor final : public VNVisitor {
         return nodep;
     }
 
-    void createDlyOnSet(AstAssignDly* nodep) {
-        // Create delayed assignment
-        // See top of this file for transformation
-        // Return the new LHS for the assignment, Null = unlink
+    // Process the given AstAssignDly. Returns 'true' if the conversion is complete and 'nodep' can
+    // be deleted. Returns 'false' if the 'nodep' must be retained for later processing.
+    bool processAssignDly(AstAssignDly* nodep) {
+        // Optimize consecutiev assignments
+        const bool consecutive = m_nextDlyp == nodep;
+        m_nextDlyp = VN_CAST(nodep->nextp(), AssignDly);
 
         // Insertion point/helper for adding new statements in code order
         AstNode* insertionPointp = nodep;
@@ -320,44 +336,13 @@ class DelayedVisitor final : public VNVisitor {
             arrIdxpr = capture(arrIdxpr, "VdlyDim" + std::to_string(i));
         }
 
-        FileLine* const flp = nodep->fileline();
-
-        // Create the flag denoting an update is pending
-        AstVarScope* setVscp;
-        AstAssignPre* setInitp = nullptr;
-        if (nodep->user2p()) {
-            // Simplistic optimization.  If the previous statement in same list was also an
-            // AstAssignDly, then we told this node (by setting m_nextDlyp->user2p below), that
-            // it can use the same 'VdlySet' variable rather than making a new one. This is
-            // good for code like:
-            //   arrayA[0] <= something;
-            //   arrayB[1] <= something;
-            setVscp = VN_AS(nodep->user2p(), VarScope);
-            ++m_statSharedSet;
-        } else {
-            // Create new one
-            const std::string name = "__VdlySet" + baseName;
-            setVscp = createNewVarScope(vscp, name, 1);
-            insert(new AstAssign{flp, new AstVarRef{flp, setVscp, VAccess::WRITE},
-                                 new AstConst{flp, AstConst::BitTrue{}}});
-
-            if (!m_inSuspendableOrFork) {
-                // Suspendables reset __VdlySet in the AstAlwaysPost
-                setInitp = new AstAssignPre{flp, new AstVarRef{flp, setVscp, VAccess::WRITE},
-                                            new AstConst{flp, 0}};
-            }
-        }
-        // Tell next AstAssignDly it can share the 'VdlySet' variable
-        if (!m_inSuspendableOrFork && m_nextDlyp) m_nextDlyp->user2p(setVscp);
-
-        // Create 'Post' ordered commit statements for delayed variable. We add all logic to the
-        // same block if it's for the same variable This ensures that multiple assignments to the
-        // same memory will result in correctly ordered code - the last assignment must be last.
-        // It also has the nice side effect of assisting cache locality.
-
-        AstAlwaysPost* postp = nullptr;
         if (m_inSuspendableOrFork) {
-            postp = m_vscpAux(vscp).suspPostp;
+            // Currently we convert all NBAs in suspendable blocks immediately
+            // TODO: error check that deferrence was not required
+            FileLine* const flp = nodep->fileline();
+
+            // Get/Create 'Post' ordered block to commit the delayed value
+            AstAlwaysPost* postp = m_vscpAux(vscp).suspPostp;
             if (!postp) {
                 postp = new AstAlwaysPost{flp};
                 if (!m_procp->user2p()) {
@@ -368,52 +353,118 @@ class DelayedVisitor final : public VNVisitor {
                 }
                 VN_AS(m_procp->user2p(), Active)->addStmtsp(postp);
             }
-        } else {
-            postp = m_vscpAux(vscp).postp;
-            // Create the post block if not yet exists
-            if (!postp) {
-                // Make the new AstActive with identical sensitivity tree
-                AstActive* const activep
-                    = createActiveLike(lhsComponents.refp->fileline(), m_activep);
-                m_vscpAux(vscp).activep = activep;
-                // Add the 'Post' scheduled block
-                postp = new AstAlwaysPost{flp};
-                activep->addStmtsp(postp);
-                m_vscpAux(vscp).postp = postp;
-            }
-            AstActive* const activep = m_vscpAux(vscp).activep;
-            // Ensure the active block contains the current sensitivities
-            checkActiveSense(lhsComponents.refp, activep, m_activep);
-            // Add the initializer of the __VdlySet flag
-            if (setInitp) activep->addStmtsp(setInitp);
-        }
 
-        // Build/Get 'if (__VdlySet) { ... commit .. }'
-        AstIf* ifp = nullptr;
-        if (postp->user2p() == setVscp) {
-            // Optimize as above. If sharing VdlySet *ON SAME VARIABLE*, we can share the AstIf
-            ifp = VN_AS(postp->user1p(), If);
-        } else {
-            ifp = new AstIf{flp, new AstVarRef{flp, setVscp, VAccess::READ}};
+            // Create the flag denoting an update is pending - no reuse here
+            AstVarScope* const setVscp = createNewVarScope(vscp, "__VdlySet" + baseName, 1);
+            // Set the flag here
+            insert(new AstAssign{flp, new AstVarRef{flp, setVscp, VAccess::WRITE},
+                                 new AstConst{flp, AstConst::BitTrue{}}});
+            // Create 'if (__VdlySet) { ... commit .. }'
+            AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, setVscp, VAccess::READ}};
             postp->addStmtsp(ifp);
-            postp->user1p(ifp);  // Remember the associated 'AstIf'
-            postp->user2p(setVscp);  // Remember the VdlySet variable used as the condition.
-        }
-
-        // Suspendables clear __VdlySet in the post block
-        if (m_inSuspendableOrFork) {
+            // Clear __VdlySet in the post block
             ifp->addThensp(new AstAssign{flp, new AstVarRef{flp, setVscp, VAccess::WRITE},
                                          new AstConst{flp, 0}});
+            // Finally assign the delayed value to the reconstructed LHS
+            AstNodeExpr* const newLhsp = reconstructLhs(lhsComponents, flp);
+            ifp->addThensp(new AstAssign{flp, newLhsp, rhsp});
+            // The original AstAssignDly ('nodep') can be deleted
+            return true;
+        } else {
+            // Record this AstAssignDly for deferred processing
+            m_deferred.emplace_back();
+            Deferred& record = m_deferred.back();
+            // Populate it
+            record.lhsComponents = std::move(lhsComponents);
+            record.rhsp = rhsp;
+            record.activep = m_activep;
+            record.insertionPointp = insertionPointp;
+            record.suffix = std::move(baseName);
+            record.consecutive = consecutive;
+            // Note consecutive assignment for optimization
+            // If we inserted new statements, the original AstAssignDly ('nodep')
+            // can be deleted. Otherwise, it must be kept as a placeholder.
+            return insertionPointp != nodep;
+        }
+    }
+
+    // Convert the given deferred assignment for the given AstVarScope
+    void convertDeferred(Deferred& record) {
+        // Unpack all the parts
+        LhsComponents lhsComponents = std::move(record.lhsComponents);
+        AstActive*& oActivep = record.activep;  // Original AstActive the AstAssignDly was under
+        AstNode* insertionPointp = record.insertionPointp;
+        const auto insert = [&insertionPointp](AstNode* stmtp) {
+            insertionPointp->addNextHere(stmtp);
+            insertionPointp = stmtp;
+        };
+        // If the original AstAssignDly was kept as a placeholder, we will need to delete it
+        AstAssignDly* const dlyp = VN_CAST(insertionPointp, AssignDly);
+
+        FileLine* const flp = insertionPointp->fileline();
+        AstVarScope* const vscp = lhsComponents.refp->varScopep();
+
+        // Get/Create 'Post' ordered block to commit the delayed value
+        AstAlwaysPost* const postp = [&]() {
+            if (AstAlwaysPost* const p = m_vscpAux(vscp).postp) return p;
+            // Make the new AstActive with identical sensitivity tree
+            AstActive* const activep = createActiveLike(lhsComponents.refp->fileline(), oActivep);
+            m_vscpAux(vscp).activep = activep;
+            // Add the 'Post' scheduled block
+            AstAlwaysPost* const p = new AstAlwaysPost{flp};
+            activep->addStmtsp(p);
+            m_vscpAux(vscp).postp = p;
+            return p;
+        }();
+        // Pick up the active block containing 'postp'
+        AstActive* const activep = m_vscpAux(vscp).activep;
+        // Ensure it contains the current sensitivities
+        checkActiveSense(lhsComponents.refp, activep, oActivep);
+
+        // Create the flag denoting an update is pending
+        if (record.consecutive) {
+            // Simplistic optimization.  If the previous assignment was immediately before this
+            // assignment, we can reuse the existing flag. This is good for code like:
+            //   arrayA[0] <= something;
+            //   arrayB[1] <= something;
+            ++m_statSharedSet;
+        } else {
+            // Create new flag
+            m_setVscp = createNewVarScope(vscp, "__VdlySet" + record.suffix, 1);
+            // Set it here
+            insert(new AstAssign{flp, new AstVarRef{flp, m_setVscp, VAccess::WRITE},
+                                 new AstConst{flp, AstConst::BitTrue{}}});
+            // Add the 'Pre' ordered reset for the flag
+            activep->addStmtsp(new AstAssignPre{flp, new AstVarRef{flp, m_setVscp, VAccess::WRITE},
+                                                new AstConst{flp, 0}});
+        };
+
+        // Create/Get 'if (__VdlySet) { ... commit .. }'
+        AstIf* ifp = nullptr;
+        if (postp->user2p() == m_setVscp) {
+            // Optimize as above. If sharing VdlySet *ON SAME VARIABLE*, we can share the 'if'
+            ifp = VN_AS(postp->user1p(), If);
+        } else {
+            ifp = new AstIf{flp, new AstVarRef{flp, m_setVscp, VAccess::READ}};
+            postp->addStmtsp(ifp);
+            postp->user1p(ifp);  // Remember the associated 'AstIf'
+            postp->user2p(m_setVscp);  // Remember the VdlySet variable used as the condition.
         }
 
-        // Reconstruct the delayed LHS expression
+        // Finally assign the delayed value to the reconstructed LHS
         AstNodeExpr* const newLhsp = reconstructLhs(lhsComponents, flp);
-        // Finally assign the delayed value
-        ifp->addThensp(new AstAssign{flp, newLhsp, rhsp});
+        ifp->addThensp(new AstAssign{flp, newLhsp, record.rhsp});
+
+        // If the original AstAssignDelay was kept as a placeholder, we can nuke it now.
+        if (dlyp) pushDeletep(dlyp->unlinkFrBack());
     }
 
     // VISITORS
-    void visit(AstNetlist* nodep) override { iterateChildren(nodep); }
+    void visit(AstNetlist* nodep) override {
+        iterateChildren(nodep);
+        // Convert all AstAssignDelay instances that were not converted during the traversal
+        for (Deferred& record : m_deferred) convertDeferred(record);
+    }
     void visit(AstScope* nodep) override {
         AstNode::user2ClearTree();
         iterateChildren(nodep);
@@ -518,9 +569,6 @@ class DelayedVisitor final : public VNVisitor {
     void visit(AstAlwaysPost*) override {}
 
     void visit(AstAssignDly* nodep) override {
-        VL_RESTORER(m_nextDlyp);
-        // Next assignment in same block, maybe nullptr.
-        m_nextDlyp = VN_CAST(nodep->nextp(), AssignDly);
         if (m_cfuncp) {
             if (!v3Global.rootp()->nbaEventp()) {
                 nodep->v3warn(
@@ -542,11 +590,11 @@ class DelayedVisitor final : public VNVisitor {
                 // TODO: this message is not covered by tests
                 if (basicp->isEvent()) nodep->v3warn(E_UNSUPPORTED, "Unsupported: event arrays");
             }
-
-            createDlyOnSet(nodep);
-            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            if (processAssignDly(nodep)) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
         } else if (m_inSuspendableOrFork) {
-            createDlyOnSet(nodep);
+            const bool converted = processAssignDly(nodep);
+            // Current implementation always converts these
+            UASSERT_OBJ(converted, nodep, "NBA in suspendable processes should have be converted");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
         } else {
             {
