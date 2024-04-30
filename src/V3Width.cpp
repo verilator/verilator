@@ -920,8 +920,10 @@ class WidthVisitor final : public VNVisitor {
             }
             UASSERT_OBJ(nodep->dtypep(), nodep, "dtype wasn't set");  // by V3WidthSel
             if (VN_IS(nodep->lsbp(), Const) && nodep->msbConst() < nodep->lsbConst()) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: left < right of bit extract: "
-                                                 << nodep->msbConst() << "<" << nodep->lsbConst());
+                // Likely impossible given above width check
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: left < right of bit extract: "  // LCOV_EXCL_LINE
+                                  << nodep->msbConst() << "<" << nodep->lsbConst());
                 width = (nodep->lsbConst() - nodep->msbConst() + 1);
                 nodep->dtypeSetLogicSized(width, VSigning::UNSIGNED);
                 pushDeletep(nodep->widthp());
