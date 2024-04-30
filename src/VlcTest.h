@@ -66,7 +66,7 @@ public:
         // std::cout<<"  Testrun, Computrons,";  // Currently not loaded
         std::cout << "  Covered,     Rank,  RankPts,  Filename\n";
     }
-    void dump(bool bucketsToo) {
+    void dump(bool bucketsToo) const {
         if (testrun() || computrons() != 0.0) {  // currently unused // LCOV_EXCL_LINE
             std::cout << "  " << std::setw(8) << std::setfill('0') << testrun()  // LCOV_EXCL_LINE
                       << ",  " << std::setw(7) << std::setfill(' ')
