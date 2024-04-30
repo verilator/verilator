@@ -81,4 +81,5 @@ public:
     }
 };
 
-#define VPI_HANDLE(signal) vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(signal), NULL);
+#define VPI_HANDLE(signal) \
+    vpi_handle_by_name(const_cast<char*>(TestSimulator::rooted(signal)), NULL);
