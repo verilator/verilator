@@ -891,8 +891,8 @@ public:
     }
 };
 
-template <class T_Value>
-std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
+template <class T_Value, size_t T_MaxSize>
+std::string VL_TO_STRING(const VlQueue<T_Value, T_MaxSize>& obj) {
     return obj.to_string();
 }
 
