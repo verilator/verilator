@@ -17,6 +17,7 @@ Verilator 5.025 devel
 * Support empty queue as dynarray default value (#5055). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Add CITATION.cff (#5057) (#5058). [Gijs Burghoorn]
 * Add VPI eval needed tracking (#5065). [Todd Strader]
+* Add error on zero width select (#5028).
 * Fix missing flex include path variable (#4970) (#4971). [Christopher Taylor]
 * Fix missing parameters with comma to be errors (#4979) (#5012). [Paul Swirhun]
 * Fix bound queue printing (#5032). [Aleksander Kiryk, Antmicro Ltd.]

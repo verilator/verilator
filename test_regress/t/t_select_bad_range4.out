@@ -6,15 +6,15 @@
                                      : ... note: In instance 't'
    20 |       sel2 = mi[44 +: -1];
       |                ^
-%Error-UNSUPPORTED: t/t_select_bad_range4.v:20:16: Unsupported: left < right of bit extract: 2<4
-                                                 : ... note: In instance 't'
+%Error: t/t_select_bad_range4.v:20:16: Width of bit extract must be positive (IEEE 1800-2023 11.5.1)
+                                     : ... note: In instance 't'
    20 |       sel2 = mi[44 +: -1];
       |                ^
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Warning-WIDTHEXPAND: t/t_select_bad_range4.v:20:12: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's SEL generates 3 bits.
+%Warning-WIDTHEXPAND: t/t_select_bad_range4.v:20:12: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's SEL generates 1 bits.
                                                    : ... note: In instance 't'
    20 |       sel2 = mi[44 +: -1];
       |            ^
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
 %Error: t/t_select_bad_range4.v:21:16: Width of :+ or :- is huge; vector of over 1 billion bits: 32'h20000000
                                      : ... note: In instance 't'

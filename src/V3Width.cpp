@@ -913,6 +913,11 @@ class WidthVisitor final : public VNVisitor {
                 return;
             }
             int width = nodep->widthConst();
+            if (width <= 0) {
+                nodep->v3error("Width of bit extract must be positive (IEEE 1800-2023 11.5.1)");
+                nodep->dtypeSetBit();
+                return;
+            }
             UASSERT_OBJ(nodep->dtypep(), nodep, "dtype wasn't set");  // by V3WidthSel
             if (VN_IS(nodep->lsbp(), Const) && nodep->msbConst() < nodep->lsbConst()) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: left < right of bit extract: "
