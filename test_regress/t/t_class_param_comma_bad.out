@@ -1,0 +1,16 @@
+%Error: t/t_class_param_comma_bad.v:16:22: syntax error, unexpected ')', expecting TYPE-IDENTIFIER
+   16 |    Cls #(.PARAMB(14),) ce;   
+      |                      ^
+%Error: t/t_class_param_comma_bad.v:17:13: syntax error, unexpected ')', expecting TYPE-IDENTIFIER
+   17 |    Cls #(14,) cf;   
+      |             ^
+%Error: t/t_class_param_comma_bad.v:18:14: syntax error, unexpected ')', expecting TYPE-IDENTIFIER
+   18 |    Cls2 #(15,) cg;   
+      |              ^
+%Error: t/t_class_param_comma_bad.v:19:23: syntax error, unexpected ')', expecting TYPE-IDENTIFIER
+   19 |    Cls2 #(.PARAMB(16),) ch;   
+      |                       ^
+%Error: t/t_class_param_comma_bad.v:20:23: syntax error, unexpected ')', expecting TYPE-IDENTIFIER
+   20 |    Cls2 #(.PARAMC(17),) ci;   
+      |                       ^
+%Error: Exiting due to
