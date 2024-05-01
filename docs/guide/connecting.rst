@@ -413,6 +413,10 @@ and it can be cleared with :code:`VerilatedVpi::clearEvalNeeded()`.  Used togeth
 it is possible to skip :code:`eval()` calls if no model state has been changed
 since the last :code:`eval()`.
 
+Any data written via :code:`vpi_put_value` with :code:`vpiInertialDelay` will
+be deferred for later.  These delayed values can be flushed to the model with
+:code:`VerilatedVpi::doInertialPuts()`.
+
 
 .. _VPI Example:
 
