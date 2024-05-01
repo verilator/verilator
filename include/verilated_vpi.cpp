@@ -702,14 +702,14 @@ public:
         case vpiDecStrVal:
         case vpiHexStrVal:
         case vpiStringVal: {
-            if (VL_UNLIKELY(!valuep->value.str)) { return false; }
+            if (VL_UNLIKELY(!valuep->value.str)) return false;
             break;
         }
         case vpiScalarVal:
         case vpiIntVal:
         case vpiRealVal: break;
         case vpiVectorVal: {
-            if (VL_UNLIKELY(!valuep->value.vector)) { return false; }
+            if (VL_UNLIKELY(!valuep->value.vector)) return false;
             break;
         }
         default: {
@@ -2549,12 +2549,13 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         VL_VPI_WARNING_(__FILE__, __LINE__, "Ignoring vpi_put_value with nullptr value pointer");
         return nullptr;
     }
+    PLI_INT32 delay_mode = flags & 0xfff;
     if (const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object)) {
-        if (flags & vpiInertialDelay) {
+        if (delay_mode == vpiInertialDelay) {
             if (!VerilatedVpiPutHolder::canInertialDelay(valuep)) {
-                VL_VPI_ERROR_(
+                VL_VPI_WARNING_(
                     __FILE__, __LINE__,
-                    "%s: Unsupported p_vpi_value as requested for %s with vpiInertialDelay",
+                    "%s: Unsupported p_vpi_value as requested for '%s' with vpiInertialDelay",
                     __func__, vop->fullname());
                 return nullptr;
             }

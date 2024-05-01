@@ -687,12 +687,34 @@ int _mon_check_delayed() {
     TestVpiHandle vh = VPI_HANDLE("delayed");
     CHECK_RESULT_NZ(vh);
 
+    s_vpi_time t;
+    t.type = vpiSimTime;
+    t.high = 0;
+    t.low = 0;
+
     s_vpi_value v;
     v.format = vpiIntVal;
     v.value.integer = 123;
-    vpi_put_value(vh, &v, nullptr, vpiInertialDelay);
+    vpi_put_value(vh, &v, &t, vpiInertialDelay);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
     vpi_get_value(vh, &v);
     CHECK_RESULT(v.value.integer, 0);
+
+    // test unsupported vpiInertialDelay cases
+    v.format = vpiStringVal;
+    v.value.str = nullptr;
+    vpi_put_value(vh, &v, &t, vpiInertialDelay);
+    CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+
+    v.format = vpiVectorVal;
+    v.value.vector = nullptr;
+    vpi_put_value(vh, &v, &t, vpiInertialDelay);
+    CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+
+    v.format = vpiObjTypeVal;
+    vpi_put_value(vh, &v, &t, vpiInertialDelay);
+    CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+
     return 0;
 }
 
