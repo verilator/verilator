@@ -277,7 +277,7 @@ class DelayedVisitor final : public VNVisitor {
         AstNodeExpr* bitreadp = nullptr;  // Code to read Vdlyvlsb
         if (bitselp) {
             AstNodeExpr* const lsbvaluep = bitselp->lsbp()->unlinkFrBack();
-            if (VN_IS(bitselp->fromp(), Const)) {
+            if (VN_IS(lsbvaluep, Const)) {
                 // vlsb = constant, can just push constant into where we use it
                 bitreadp = lsbvaluep;
             } else {
