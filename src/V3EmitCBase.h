@@ -117,6 +117,8 @@ public:
     string cFuncArgs(const AstCFunc* nodep);
     void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope);
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);
+    void emitVarDeclAccessor(const AstVar* nodep, bool asRef);
+    void emitVarDeclReflectLUTEntries(const AstVar* nodep, bool asRef);
     void emitVarDecl(const AstVar* nodep, bool asRef = false);
     template <typename F>
     static void forModCUse(const AstNodeModule* modp, VUseType useType, F action) {
