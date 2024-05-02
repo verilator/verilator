@@ -688,43 +688,43 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
     {  // Parse substitution define using arguments
         string argName;
         bool quote = false;
+        bool triquote = false;
         bool backslashesc = false;  // In \.....{space} block
         // Note we go through the loop once more at the nullptr end-of-string
         for (const char* cp = value.c_str(); (*cp) || argName != ""; cp = (*cp ? cp + 1 : cp)) {
             // UINFO(4, "CH "<<*cp<<"  an "<<argName<<endl);
-            if (!quote && *cp == '\\') {
+            if (!quote && !triquote && *cp == '\\') {
                 backslashesc = true;
             } else if (std::isspace(*cp)) {
                 backslashesc = false;
             }
-            // We don't check for quotes; some simulators expand even inside quotes
-            if (std::isalpha(*cp) || *cp == '_'
-                || *cp == '$'  // Won't replace system functions, since no $ in argValueByName
-                || (argName != "" && (std::isdigit(*cp) || *cp == '$'))) {
-                argName += *cp;
-                continue;
-            }
-            if (argName != "") {
-                // Found a possible variable substitution
-                const auto iter = argValueByName.find(argName);
-                if (iter != argValueByName.end()) {
-                    // Substitute
-                    const string subst = iter->second;
-                    if (subst == "") {
-                        // Normally `` is removed later, but with no token after, we're otherwise
-                        // stuck, so remove proceeding ``
-                        if (out.size() >= 2 && out.substr(out.size() - 2) == "``") {
-                            out = out.substr(0, out.size() - 2);
+            if (!quote && !triquote) {
+                if (std::isalpha(*cp) || *cp == '_'
+                    || *cp == '$'  // Won't replace system functions, since no $ in argValueByName
+                    || (argName != "" && (std::isdigit(*cp) || *cp == '$'))) {
+                    argName += *cp;
+                    continue;
+                }
+                if (argName != "") {
+                    // Found a possible variable substitution
+                    const auto iter = argValueByName.find(argName);
+                    if (iter != argValueByName.end()) {
+                        // Substitute
+                        const string subst = iter->second;
+                        if (subst == "") {
+                            // Normally `` is removed later, but with no token after, we're otherwise
+                            // stuck, so remove proceeding ``
+                            if (out.size() >= 2 && out.substr(out.size() - 2) == "``") {
+                                out = out.substr(0, out.size() - 2);
+                            }
+                        } else {
+                            out += subst;
                         }
                     } else {
-                        out += subst;
+                        out += argName;
                     }
-                } else {
-                    out += argName;
+                    argName = "";
                 }
-                argName = "";
-            }
-            if (!quote) {
                 // Check for `` only after we've detected end-of-argname
                 if (cp[0] == '`' && cp[1] == '`') {
                     if (backslashesc) {
@@ -770,6 +770,12 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
                 // Normally \{any} would put out literal next character
                 // Instead we allow "`define A(nm) \nm" to expand, per proposed mantis1537
                 out += cp[0];
+                continue;
+            }
+            if (cp[0] == '"' && cp[1] == '"' && cp[2] == '"') {
+                triquote = !triquote;
+                out += "\"\"\"";
+                cp += 2;
                 continue;
             }
             if (*cp == '"') quote = !quote;

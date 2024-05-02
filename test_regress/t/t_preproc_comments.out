@@ -148,7 +148,7 @@ firstline comma","line LLZZ firstline comma","line
 
 `line 74 "t/t_preproc.v" 0
  
-x y LLZZ "x" y  // Simulators disagree here; some substitute "a" others do not 
+x y LLZZ "a" y  // IEEE 1800-2023 clarified that "a" not to substitute 
 
 `line 77 "t/t_preproc.v" 0
  
@@ -471,7 +471,7 @@ x,y)--bee  submacro has comma paren
 //====================================================================== 
 // bug191 
  
-$display("10 %d %d", $bits(foo), 10);
+$display("bits %d %d", $bits(foo), 10);
 
 `line 316 "t/t_preproc.v" 0
 //====================================================================== 
@@ -857,15 +857,15 @@ module t;
  
    //----- 
    // bug441 derivative 
-   // SHOULD(simulator-dependant): Quotes doesn't prevent arguments from expanding (like backslashes above) 
+   // Clarified in IEEE 1800-2023: Quotes prevent arguments from expanding 
  
-   initial $write("GOT='%s' EXP='%s'\n", "foo bar baz", "foo bar baz");
+   initial $write("GOT='%s' EXP='%s'\n", "foo name baz", "foo bar baz");
  
    //----- 
    // RULE: Because there are quotes after substituting STR, the `A does NOT expand 
  
  
-   initial $write("GOT='%s' EXP='%s'\n", "foo `A(bar) baz", "foo `A(bar) baz");
+   initial $write("GOT='%s' EXP='%s'\n", "foo name baz", "foo `A(bar) baz");
     
    //---- 
    // bug845 
@@ -1034,6 +1034,16 @@ Second line"""
 
 `line 711 "t/t_preproc.v" 0
 //====================================================================== 
+// See issue #5094 - IEEE 1800-2023 clarified proper behavior 
+
+`line 714 "t/t_preproc.v" 0
+ 
+bar "foo foo foo" bar
+ 
+bar """foo foo foo""" bar
+
+`line 719 "t/t_preproc.v" 0
+//====================================================================== 
 // IEEE mandated predefines 
   // undefineall should have no effect on these 
 predef 0 0
@@ -1055,4 +1065,4 @@ predef 2 2
 // After `undefineall above, for testing --dump-defines 
  
 
-`line 733 "t/t_preproc.v" 0
+`line 741 "t/t_preproc.v" 0

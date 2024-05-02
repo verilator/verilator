@@ -72,7 +72,7 @@ Line_Preproc_Check `__LINE__
 	comma","line)
 
 `define withquote(a, bar) a bar LLZZ "a" bar
-`withquote( x , y)  // Simulators disagree here; some substitute "a" others do not
+`withquote( x , y)  // IEEE 1800-2023 clarified that "a" not to substitute
 
 `define noparam (a,b)
 `noparam(a,b)
@@ -566,7 +566,7 @@ module t;
 `undef DEF_NO_EXPAND
    //-----
    // bug441 derivative
-   // SHOULD(simulator-dependant): Quotes doesn't prevent arguments from expanding (like backslashes above)
+   // Clarified in IEEE 1800-2023: Quotes prevent arguments from expanding
 `define STR(name) "foo name baz"
    initial $write("GOT='%s' EXP='%s'\n", `STR(bar), "foo bar baz");
 `undef STR
@@ -707,6 +707,14 @@ Second line"""
 // string concat bug
 `define IDENTITY(arg) ``arg
 `IDENTITY("string argument")
+
+//======================================================================
+// See issue #5094 - IEEE 1800-2023 clarified proper behavior
+
+`define MAC_WITH_STR(foo) foo "foo foo foo" foo
+`MAC_WITH_STR(bar)
+`define MAC_WITH_3STR(foo) foo """foo foo foo""" foo
+`MAC_WITH_3STR(bar)
 
 //======================================================================
 // IEEE mandated predefines

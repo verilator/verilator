@@ -148,7 +148,7 @@ firstline comma","line LLZZ firstline comma","line
 
 `line 74 "t/t_preproc.v" 0
  
-x y LLZZ "x" y   
+x y LLZZ "a" y   
 
 `line 77 "t/t_preproc.v" 0
  
@@ -471,7 +471,7 @@ x,y)--bee  submacro has comma paren
  
  
  
-$display("10 %d %d", $bits(foo), 10);
+$display("bits %d %d", $bits(foo), 10);
 
 `line 316 "t/t_preproc.v" 0
  
@@ -854,13 +854,13 @@ module t;
     
     
  
-   initial $write("GOT='%s' EXP='%s'\n", "foo bar baz", "foo bar baz");
+   initial $write("GOT='%s' EXP='%s'\n", "foo name baz", "foo bar baz");
  
     
     
  
  
-   initial $write("GOT='%s' EXP='%s'\n", "foo `A(bar) baz", "foo `A(bar) baz");
+   initial $write("GOT='%s' EXP='%s'\n", "foo name baz", "foo `A(bar) baz");
     
     
     
@@ -1030,6 +1030,16 @@ Second line"""
 `line 711 "t/t_preproc.v" 0
  
  
+
+`line 714 "t/t_preproc.v" 0
+ 
+bar "foo foo foo" bar
+ 
+bar """foo foo foo""" bar
+
+`line 719 "t/t_preproc.v" 0
+ 
+ 
    
 predef 0 0
 predef 1 1
@@ -1050,4 +1060,4 @@ predef 2 2
  
  
 
-`line 733 "t/t_preproc.v" 0
+`line 741 "t/t_preproc.v" 0
