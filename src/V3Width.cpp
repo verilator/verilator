@@ -3193,7 +3193,7 @@ class WidthVisitor final : public VNVisitor {
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name()};
-            newp->dtypeFrom(adtypep);
+            newp->dtypep(queueDTypeIndexedBy(adtypep->subDTypep()));
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find" || nodep->name() == "find_first"
                    || nodep->name() == "find_last") {
@@ -3204,7 +3204,7 @@ class WidthVisitor final : public VNVisitor {
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), withp};
-            newp->dtypeFrom(adtypep);
+            newp->dtypep(queueDTypeIndexedBy(adtypep->subDTypep()));
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "map") {
             nodep->v3warn(E_UNSUPPORTED,
@@ -3286,7 +3286,7 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->name() == "unique_index") {
                 newp->dtypep(queueDTypeIndexedBy(adtypep->keyDTypep()));
             } else {
-                newp->dtypeFrom(adtypep);
+                newp->dtypep(queueDTypeIndexedBy(adtypep->subDTypep()));
             }
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find" || nodep->name() == "find_first"
@@ -3297,7 +3297,7 @@ class WidthVisitor final : public VNVisitor {
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), withp};
-            newp->dtypeFrom(adtypep);
+            newp->dtypep(queueDTypeIndexedBy(adtypep->subDTypep()));
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find_index" || nodep->name() == "find_first_index"
                    || nodep->name() == "find_last_index") {
@@ -3380,7 +3380,7 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->name() == "unique_index") {
                 newp->dtypep(newp->findQueueIndexDType());
             } else {
-                newp->dtypeFrom(adtypep);
+                newp->dtypep(queueDTypeIndexedBy(adtypep->subDTypep()));
             }
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find" || nodep->name() == "find_first"
@@ -3392,7 +3392,7 @@ class WidthVisitor final : public VNVisitor {
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), withp};
-            newp->dtypeFrom(adtypep);
+            newp->dtypep(queueDTypeIndexedBy(adtypep->subDTypep()));
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find_index" || nodep->name() == "find_first_index"
                    || nodep->name() == "find_last_index") {

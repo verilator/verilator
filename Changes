@@ -27,6 +27,7 @@ Verilator 5.025 devel
 * Fix attempted to destroy locked thread pool error (#5040). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix `$system` with string argument (#5042).
 * Fix width extension on delays (#5043).
+* Fix `$typename` on array.min and others (#5049). [Gökçe Aydos]
 * Fix CMake builds to export VERILATOR_ROOT (#5063). [Michael Bikovitsky]
 * Fix false ASSIGNIN on functions with explicit port map (#5069).
 * Fix DFG assertion with SystemC (#5076). [Geza Lore]
