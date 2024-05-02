@@ -712,8 +712,8 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
                         // Substitute
                         const string subst = iter->second;
                         if (subst == "") {
-                            // Normally `` is removed later, but with no token after, we're otherwise
-                            // stuck, so remove proceeding ``
+                            // Normally `` is removed later, but with no token after, we're
+                            // otherwise stuck, so remove proceeding ``
                             if (out.size() >= 2 && out.substr(out.size() - 2) == "``") {
                                 out = out.substr(0, out.size() - 2);
                             }
