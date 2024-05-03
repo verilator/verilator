@@ -959,6 +959,30 @@ public:
         return false;
     }
 };
+class AstNBACommitQueueDType final : public AstNodeDType {
+    // @astgen ptr := m_subDTypep : AstNodeDType  // Type of the corresponding variable
+    const bool m_partial;  // Partial element update required
+
+public:
+    AstNBACommitQueueDType(FileLine* fl, AstNodeDType* subDTypep, bool partial)
+        : ASTGEN_SUPER_NBACommitQueueDType(fl)
+        , m_partial{partial}
+        , m_subDTypep{subDTypep} {
+        dtypep(this);
+    }
+    ASTGEN_MEMBERS_AstNBACommitQueueDType;
+
+    AstNodeDType* subDTypep() const override { return m_subDTypep; }
+    bool partial() const { return m_partial; }
+    bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
+    AstBasicDType* basicp() const override { return nullptr; }
+    AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
+    AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
+    int widthAlignBytes() const override { return 1; }
+    int widthTotalBytes() const override { return 24; }
+    bool isCompound() const override { return true; }
+};
 class AstParamTypeDType final : public AstNodeDType {
     // Parents: MODULE
     // A parameter type statement; much like a var or typedef
