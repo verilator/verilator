@@ -1208,10 +1208,16 @@ class WidthVisitor final : public VNVisitor {
     }
 
     void visit(AstExtend* nodep) override {
-        // Only created by this process, so we know width from here down is correct.
+        // Typically created by this process, so we know width from here down is correct.
+        // Exception is extend added by V3WidthSel - those need iteration
+        if (nodep->didWidthAndSet()) return;
+        userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
     }
     void visit(AstExtendS* nodep) override {
-        // Only created by this process, so we know width from here down is correct.
+        // Typically created by this process, so we know width from here down is correct.
+        // Exception is extend added by V3WidthSel - those need iteration
+        if (nodep->didWidthAndSet()) return;
+        userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
     }
     void visit(AstConst* nodep) override {
         // The node got setup with the signed/real state of the node.
@@ -6512,6 +6518,7 @@ class WidthVisitor final : public VNVisitor {
             AstNodeExpr* const newp
                 = (doSigned ? static_cast<AstNodeExpr*>(new AstExtendS{nodep->fileline(), nodep})
                             : static_cast<AstNodeExpr*>(new AstExtend{nodep->fileline(), nodep}));
+            newp->didWidth(true);
             linker.relink(newp);
             nodep = newp;
         }
