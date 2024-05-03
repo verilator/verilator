@@ -309,6 +309,7 @@ private:
     int         m_instrCountDpi = 200;   // main switch: --instr-count-dpi
     bool        m_jsonEditNums = true; // main switch: --no-json-edit-nums
     bool        m_jsonIds = true; // main switch: --no-json-ids
+    int         m_localizeMaxSize = 1024;  // main switch: --localize-max-size
     VOptionBool m_makeDepend;  // main switch: -MMD
     int         m_maxNumWidth = 65536;  // main switch: --max-num-width
     int         m_moduleRecursion = 100;  // main switch: --module-recursion-depth
@@ -546,6 +547,7 @@ public:
     int ifDepth() const { return m_ifDepth; }
     int inlineMult() const { return m_inlineMult; }
     int instrCountDpi() const { return m_instrCountDpi; }
+    int localizeMaxSize() const { return m_localizeMaxSize; }
     bool jsonEditNums() const { return m_jsonEditNums; }
     bool jsonIds() const { return m_jsonIds; }
     VOptionBool makeDepend() const { return m_makeDepend; }

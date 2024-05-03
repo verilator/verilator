@@ -3264,8 +3264,14 @@ cellpinListE<pinp>:
         ;
 
 cellparamItListE<pinp>:         // IEEE: list_of_parameter_value_assignments/list_of_parameter_assignments
-                cellparamItemE                          { $$ = $1; }
-        |       cellparamItListE ',' cellparamItemE     { $$ = addNextNull($1, $3); }
+        //                      // Empty gets a node, to track class reference of #()
+                /*empty*/                               { $$ = new AstPin{CRELINE(), PINNUMINC(), "", nullptr}; }
+        |       cellparamItList                         { $$ = $1; }
+        ;
+
+cellparamItList<pinp>:          // IEEE: list_of_parameter_value_assignments/list_of_parameter_assignments
+                cellparamItem                           { $$ = $1; }
+        |       cellparamItList ',' cellparamItem       { $$ = addNextNull($1, $3); }
         ;
 
 cellpinItListE<pinp>:           // IEEE: list_of_port_connections
@@ -3273,10 +3279,9 @@ cellpinItListE<pinp>:           // IEEE: list_of_port_connections
         |       cellpinItListE ',' cellpinItemE         { $$ = addNextNull($1, $3); }
         ;
 
-cellparamItemE<pinp>:           // IEEE: named_parameter_assignment + empty
-        //                      // Note empty can match either () or (,); V3LinkCells cleans up ()
-                /* empty: ',,' is legal */              { $$ = new AstPin{CRELINE(), PINNUMINC(), "", nullptr}; }
-        |       yP_DOTSTAR                              { $$ = new AstPin{$1, PINNUMINC(), ".*", nullptr}; }
+cellparamItem<pinp>:            // IEEE: named_parameter_assignment + empty
+        //                      // Note empty is not allowed in parameter lists
+                yP_DOTSTAR                              { $$ = new AstPin{$1, PINNUMINC(), ".*", nullptr}; }
         |       '.' idAny '(' ')'
                         { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2, nullptr};
                           $$->svDotName(true); }

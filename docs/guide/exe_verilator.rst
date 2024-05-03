@@ -817,6 +817,11 @@ Summary:
    If the design is not to be completely Verilated, see also the
    :vlopt:`--bbox-sys` and :vlopt:`--bbox-unsup` options.
 
+.. option:: --localize-max-size <value>
+
+   Rarely needed.  Set the maximum variable size in bytes for it to be
+   subject to localizing-to-stack optimization.  Defaults to 1024.
+
 .. option:: --make <build-tool>
 
    Generates a script for the specified build tool.

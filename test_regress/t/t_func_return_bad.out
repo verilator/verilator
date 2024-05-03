@@ -13,7 +13,8 @@
 %Error: t/t_func_return_bad.v:19:7: break isn't underneath a loop
    19 |       break;   
       |       ^~~~~
-%Error: t/t_func_return_bad.v:22:7: disable isn't underneath a begin with name: 'foo'
+%Error-UNSUPPORTED: t/t_func_return_bad.v:22:7: disable isn't underneath a begin with name: 'foo'
    22 |       disable foo;   
       |       ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

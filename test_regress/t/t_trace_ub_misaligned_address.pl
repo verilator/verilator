@@ -20,6 +20,7 @@ compile(
 
 execute(
     check_finished => 1,
+    aslr_off => 1,  # Some GCC versions hit an address-sanitizer bug otherwise
     );
 
 # Make sure that there are no additional messages (such as runtime messages

@@ -12,8 +12,7 @@ module t
    );
 
    sub
-     #(,  // Not found
-       .NEXIST(1),  // Not found
+     #(.NEXIST(1),  // Not found
        .P(2),
        .P(3))  // Dup
    sub (.o(o),

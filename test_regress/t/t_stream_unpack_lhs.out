@@ -1,0 +1,22 @@
+%Warning-WIDTHEXPAND: t/t_stream_unpack_lhs.v:66:29: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'unpacked_siz_din' generates 8 bits.
+                                                   : ... note: In instance 't'
+   66 |       {>>{packed_siz_dout}} = unpacked_siz_din;
+      |                             ^
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
+                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
+%Warning-WIDTHEXPAND: t/t_stream_unpack_lhs.v:67:29: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'unpacked_asc_din' generates 8 bits.
+                                                   : ... note: In instance 't'
+   67 |       {>>{packed_asc_dout}} = unpacked_asc_din;
+      |                             ^
+%Warning-WIDTHEXPAND: t/t_stream_unpack_lhs.v:68:29: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's VARREF 'unpacked_des_din' generates 8 bits.
+                                                   : ... note: In instance 't'
+   68 |       {>>{packed_des_dout}} = unpacked_des_din;
+      |                             ^
+%Error-UNSUPPORTED: t/t_stream_unpack_lhs.v:113:38: Unsupported/Illegal: Assignment pattern member not underneath a supported construct: NEQ
+                                                  : ... note: In instance 't'
+  113 |             if (unpacked_siz_dout != '{8'h01, 8'h23, 8'h45, 8'h67}) $stop;
+      |                                      ^~
+%Error: Internal Error: t/t_stream_unpack_lhs.v:113:35: ../V3Width.cpp:#: Node has no type
+                                                      : ... note: In instance 't'
+  113 |             if (unpacked_siz_dout != '{8'h01, 8'h23, 8'h45, 8'h67}) $stop;
+      |                                   ^~

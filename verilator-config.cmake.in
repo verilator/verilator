@@ -214,7 +214,8 @@ function(verilate TARGET)
 
   file(MAKE_DIRECTORY ${VDIR})
 
-  set(VERILATOR_COMMAND "${VERILATOR_BIN}" --compiler ${COMPILER}
+  set(VERILATOR_COMMAND "${CMAKE_COMMAND}" -E env "VERILATOR_ROOT=${VERILATOR_ROOT}"
+                        "${VERILATOR_BIN}" --compiler ${COMPILER}
                         --prefix ${VERILATE_PREFIX} --Mdir ${VDIR} --make cmake
                         ${VERILATOR_ARGS} ${VERILATE_VERILATOR_ARGS}
                         ${VERILATE_SOURCES})

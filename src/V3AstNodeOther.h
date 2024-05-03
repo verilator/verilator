@@ -2434,13 +2434,11 @@ public:
     ASTGEN_MEMBERS_AstAlwaysObserved;
 };
 class AstAlwaysPost final : public AstNodeProcedure {
-    // Like always but post assignments for memory assignment IFs
-    // @astgen op1 := sensesp : Optional[AstSenTree] // Sensitivity list iff clocked
+    // Like always but 'post' scheduled, e.g. for array NBA commits
+
 public:
-    AstAlwaysPost(FileLine* fl, AstSenTree* sensesp, AstNode* stmtsp)
-        : ASTGEN_SUPER_AlwaysPost(fl, stmtsp) {
-        this->sensesp(sensesp);
-    }
+    AstAlwaysPost(FileLine* fl)
+        : ASTGEN_SUPER_AlwaysPost(fl, nullptr) {}
     ASTGEN_MEMBERS_AstAlwaysPost;
 };
 class AstAlwaysPostponed final : public AstNodeProcedure {

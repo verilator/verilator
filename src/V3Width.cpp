@@ -913,10 +913,17 @@ class WidthVisitor final : public VNVisitor {
                 return;
             }
             int width = nodep->widthConst();
+            if (width <= 0) {
+                nodep->v3error("Width of bit extract must be positive (IEEE 1800-2023 11.5.1)");
+                nodep->dtypeSetBit();
+                return;
+            }
             UASSERT_OBJ(nodep->dtypep(), nodep, "dtype wasn't set");  // by V3WidthSel
             if (VN_IS(nodep->lsbp(), Const) && nodep->msbConst() < nodep->lsbConst()) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: left < right of bit extract: "
-                                                 << nodep->msbConst() << "<" << nodep->lsbConst());
+                // Likely impossible given above width check
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: left < right of bit extract: "  // LCOV_EXCL_LINE
+                                  << nodep->msbConst() << "<" << nodep->lsbConst());
                 width = (nodep->lsbConst() - nodep->msbConst() + 1);
                 nodep->dtypeSetLogicSized(width, VSigning::UNSIGNED);
                 pushDeletep(nodep->widthp());
@@ -1201,10 +1208,16 @@ class WidthVisitor final : public VNVisitor {
     }
 
     void visit(AstExtend* nodep) override {
-        // Only created by this process, so we know width from here down is correct.
+        // Typically created by this process, so we know width from here down is correct.
+        // Exception is extend added by V3WidthSel - those need iteration
+        if (nodep->didWidthAndSet()) return;
+        userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
     }
     void visit(AstExtendS* nodep) override {
-        // Only created by this process, so we know width from here down is correct.
+        // Typically created by this process, so we know width from here down is correct.
+        // Exception is extend added by V3WidthSel - those need iteration
+        if (nodep->didWidthAndSet()) return;
+        userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
     }
     void visit(AstConst* nodep) override {
         // The node got setup with the signed/real state of the node.
@@ -3186,7 +3199,7 @@ class WidthVisitor final : public VNVisitor {
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name()};
-            newp->dtypeFrom(adtypep);
+            newp->dtypep(queueDTypeIndexedBy(adtypep->subDTypep()));
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find" || nodep->name() == "find_first"
                    || nodep->name() == "find_last") {
@@ -3197,7 +3210,7 @@ class WidthVisitor final : public VNVisitor {
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), withp};
-            newp->dtypeFrom(adtypep);
+            newp->dtypep(queueDTypeIndexedBy(adtypep->subDTypep()));
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "map") {
             nodep->v3warn(E_UNSUPPORTED,
@@ -3279,7 +3292,7 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->name() == "unique_index") {
                 newp->dtypep(queueDTypeIndexedBy(adtypep->keyDTypep()));
             } else {
-                newp->dtypeFrom(adtypep);
+                newp->dtypep(queueDTypeIndexedBy(adtypep->subDTypep()));
             }
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find" || nodep->name() == "find_first"
@@ -3290,7 +3303,7 @@ class WidthVisitor final : public VNVisitor {
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), withp};
-            newp->dtypeFrom(adtypep);
+            newp->dtypep(queueDTypeIndexedBy(adtypep->subDTypep()));
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find_index" || nodep->name() == "find_first_index"
                    || nodep->name() == "find_last_index") {
@@ -3373,7 +3386,7 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->name() == "unique_index") {
                 newp->dtypep(newp->findQueueIndexDType());
             } else {
-                newp->dtypeFrom(adtypep);
+                newp->dtypep(queueDTypeIndexedBy(adtypep->subDTypep()));
             }
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find" || nodep->name() == "find_first"
@@ -3385,7 +3398,7 @@ class WidthVisitor final : public VNVisitor {
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(), withp};
-            newp->dtypeFrom(adtypep);
+            newp->dtypep(queueDTypeIndexedBy(adtypep->subDTypep()));
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if (nodep->name() == "find_index" || nodep->name() == "find_first_index"
                    || nodep->name() == "find_last_index") {
@@ -6505,6 +6518,7 @@ class WidthVisitor final : public VNVisitor {
             AstNodeExpr* const newp
                 = (doSigned ? static_cast<AstNodeExpr*>(new AstExtendS{nodep->fileline(), nodep})
                             : static_cast<AstNodeExpr*>(new AstExtend{nodep->fileline(), nodep}));
+            newp->didWidth(true);
             linker.relink(newp);
             nodep = newp;
         }

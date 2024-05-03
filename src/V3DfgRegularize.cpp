@@ -45,11 +45,15 @@ class DfgRegularize final {
 
     // Return canonical variable that can be used to hold the value of this vertex
     DfgVarPacked* getCanonicalVariable(DfgVertex& vtx) {
-        // First gather all existing variables fully written by this vertex
+        // First gather all existing variables fully written by this vertex. Ignore SystemC
+        // variables, those cannot act as canonical variables, as they cannot participate in
+        // expressions or be assigned rvalues.
         std::vector<DfgVarPacked*> varVtxps;
         vtx.forEachSink([&](DfgVertex& sink) {
             if (DfgVarPacked* const varVtxp = sink.cast<DfgVarPacked>()) {
-                if (varVtxp->isDrivenFullyByDfg()) varVtxps.push_back(varVtxp);
+                if (varVtxp->isDrivenFullyByDfg() && !varVtxp->varp()->isSc()) {
+                    varVtxps.push_back(varVtxp);
+                }
             }
         });
 
@@ -95,10 +99,22 @@ class DfgRegularize final {
 
         // Ensure intermediate values used multiple times are written to variables
         for (DfgVertex& vtx : m_dfg.opVertices()) {
-            // Operations without multiple sinks need no variables
-            if (!vtx.hasMultipleSinks()) continue;
-            // Array selects need no variables, they are just memory references
-            if (vtx.is<DfgArraySel>()) continue;
+            const bool needsIntermediateVariable = [&]() {
+                // Anything that drives an SC variable needs an intermediate,
+                // as we can only assign simple variables to SC variables at runtime.
+                const bool hasScSink = vtx.findSink<DfgVertexVar>([](const DfgVertexVar& var) {  //
+                    return var.varp()->isSc();
+                });
+                if (hasScSink) return true;
+                // Operations without multiple sinks need no variables
+                if (!vtx.hasMultipleSinks()) return false;
+                // Array selects need no variables, they are just memory references
+                if (vtx.is<DfgArraySel>()) return false;
+                // Otherwise needs an intermediate variable
+                return true;
+            }();
+
+            if (!needsIntermediateVariable) continue;
 
             // This is an op which has multiple sinks. Ensure it is assigned to a variable.
             DfgVarPacked* const varp = getCanonicalVariable(vtx);

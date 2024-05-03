@@ -14,10 +14,25 @@ Verilator 5.025 devel
 **Minor:**
 
 * Support __en/__out signals on top level inout ports (#4812) (#4856). [Paul Wright]
+* Support empty queue as dynarray default value (#5055). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Add error on zero width select (#5028).
 * Add CITATION.cff (#5057) (#5058). [Gijs Burghoorn]
+* Add VPI eval needed tracking (#5065). [Todd Strader]
+* Add `--localize-max-size` option and optimization (#5072).
+* Fix missing flex include path variable (#4970) (#4971). [Christopher Taylor]
+* Fix missing parameters with comma to be errors (#4979) (#5012). [Paul Swirhun]
+* Fix bound queue printing (#5032). [Aleksander Kiryk, Antmicro Ltd.]
 * Fix consecutive zero-delays (#5038). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix make $(info) which cannot be silenced (#5059). [Gökçe Aydos]
+* Fix attempted to destroy locked thread pool error (#5040). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix `$system` with string argument (#5042).
 * Fix width extension on delays (#5043).
+* Fix `$typename` on array.min and others (#5049). [Gökçe Aydos]
+* Fix CMake builds to export VERILATOR_ROOT (#5063). [Michael Bikovitsky]
+* Fix false ASSIGNIN on functions with explicit port map (#5069).
+* Fix DFG assertion with SystemC (#5076). [Geza Lore]
+* Fix macro expansion in strings per 1800-2023 (#5094). [Geza Lore]
+* Fix width extension of unpacked array select (#5095). [Varun Koyyalagunta]
 
 
 Verilator 5.024 2024-04-05

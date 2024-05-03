@@ -407,6 +407,16 @@ only a couple of instructions.
 For signal callbacks to work the main loop of the program must call
 :code:`VerilatedVpi::callValueCbs()`.
 
+Verilator also tracks when the model state has been modified via the VPI with
+an :code:`evalNeeded` flag.  This flag can be checked with :code:`VerilatedVpi::evalNeeded()`
+and it can be cleared with :code:`VerilatedVpi::clearEvalNeeded()`.  Used together
+it is possible to skip :code:`eval()` calls if no model state has been changed
+since the last :code:`eval()`.
+
+Any data written via :code:`vpi_put_value` with :code:`vpiInertialDelay` will
+be deferred for later.  These delayed values can be flushed to the model with
+:code:`VerilatedVpi::doInertialPuts()`.
+
 
 .. _VPI Example:
 

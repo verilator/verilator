@@ -1307,6 +1307,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
 
     DECL_OPTION("-LDFLAGS", CbVal, callStrSetter(&V3Options::addLdLibs));
+    DECL_OPTION("-l2-name", Set, &m_l2Name);
+    DECL_OPTION("-no-l2name", CbCall, [this]() { m_l2Name = ""; }).undocumented();  // Historical
+    DECL_OPTION("-l2name", CbCall, [this]() { m_l2Name = "v"; }).undocumented();  // Historical
     const auto setLang = [this, fl](const char* valp) {
         const V3LangCode optval{valp};
         if (optval.legal()) {
@@ -1323,9 +1326,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-language", CbVal, setLang);
     DECL_OPTION("-lib-create", Set, &m_libCreate);
     DECL_OPTION("-lint-only", OnOff, &m_lintOnly);
-    DECL_OPTION("-l2-name", Set, &m_l2Name);
-    DECL_OPTION("-no-l2name", CbCall, [this]() { m_l2Name = ""; }).undocumented();  // Historical
-    DECL_OPTION("-l2name", CbCall, [this]() { m_l2Name = "v"; }).undocumented();  // Historical
+    DECL_OPTION("-localize-max-size", Set, &m_localizeMaxSize);
     DECL_OPTION("-main-top-name", Set, &m_mainTopName);
 
     DECL_OPTION("-MAKEFLAGS", CbVal, callStrSetter(&V3Options::addMakeFlags));

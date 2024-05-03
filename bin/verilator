@@ -387,6 +387,7 @@ detailed descriptions of these arguments.
     --lib-create <name>         Create a DPI library
      +libext+<ext>+[ext]...     Extensions for finding modules
     --lint-only                 Lint, but do not make output
+    --localize-max-size <value>  Tune localize optimization variable size
     --make <build-tool>         Generate scripts for specified build tool
      -MAKEFLAGS <flags>         Arguments to pass to make during --build
     --main                      Generate C++ main() file

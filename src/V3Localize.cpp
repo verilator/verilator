@@ -63,9 +63,12 @@ class LocalizeVisitor final : public VNVisitor {
 
     // METHODS
     bool isOptimizable(AstVarScope* nodep) {
-        return !nodep->user1() ||  // Not marked as not optimizable, or ...
-               (nodep->varp()->varType() == VVarType::BLOCKTEMP
-                && m_accessors(nodep).size() == 1);  // .. a block temp used in a single CFunc
+        return ((!nodep->user1()  // Not marked as not optimizable, or ...
+                                  // .. a block temp used in a single CFunc
+                 || (nodep->varp()->varType() == VVarType::BLOCKTEMP
+                     && m_accessors(nodep).size() == 1))
+                // and under size limit
+                && nodep->varp()->dtypep()->widthTotalBytes() <= v3Global.opt.localizeMaxSize());
     }
 
     static bool existsNonLeaf(const std::unordered_set<AstCFunc*>& funcps) {
