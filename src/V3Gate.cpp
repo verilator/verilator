@@ -843,6 +843,7 @@ class GateInline final {
                 // Remove Variable vertex
                 VL_DO_DANGLING(vVtxp->unlinkDelete(&m_graph), vVtxp);
                 // Remove driving logic and vertex
+                m_hasPending.erase(logicp);
                 VL_DO_DANGLING(logicp->unlinkFrBack()->deleteTree(), logicp);
                 VL_DO_DANGLING(lVtxp->unlinkDelete(&m_graph), lVtxp);
             }
