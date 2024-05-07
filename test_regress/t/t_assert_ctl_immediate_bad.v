@@ -80,4 +80,3 @@ module module_with_assertctl(input clk);
       f_assert();
    end
 endmodule
-

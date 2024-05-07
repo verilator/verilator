@@ -150,4 +150,3 @@ module assert_iface_class;
          ifaceClassImpl.assert_func();
    end
 endmodule
-
