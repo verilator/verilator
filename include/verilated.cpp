@@ -3128,12 +3128,17 @@ void Verilated::stackCheck(QData needSize) VL_MT_UNSAFE {
         if (haveSize == RLIM_INFINITY) haveSize = 0;
     }
     // VL_PRINTF_MT("-Info: stackCheck(%" PRIu64 ") have %" PRIu64 "\n", needSize, haveSize);
-    // Check for 1.5x need, but suggest 2x so small model increase won't cause warning
-    // if the user follows the suggestions
-    if (VL_UNLIKELY(haveSize && needSize && haveSize < (needSize + needSize / 2))) {
-        VL_PRINTF_MT("%%Warning: System has stack size %" PRIu64 " kb"
-                     " which may be too small; suggest 'ulimit -s %" PRIu64 "' or larger\n",
-                     haveSize / 1024, (needSize * 2) / 1024);
+    // Check and request for 1.5x need. This is automated so the user doesn't need to do anything.
+    QData requestSize = needSize + needSize / 2;
+    if (VL_UNLIKELY(haveSize && needSize && haveSize < requestSize)) {
+        // Try to increase the stack limit to the requested size
+        rlim.rlim_cur = requestSize;
+        if (setrlimit(RLIMIT_STACK, &rlim)) {
+            VL_PRINTF_MT("%%Warning: System has stack size %" PRIu64 " kb"
+                         " which may be too small; however, we fail to request more"
+                         " using 'ulimit -s %" PRIu64 "'\n",
+                         haveSize / 1024, requestSize);
+        }
     }
 #else
     (void)needSize;  // Unused argument
