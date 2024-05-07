@@ -5,14 +5,14 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   unsupported_ctl_type unsupported_ctl_type();
+   unsupported_ctl_type_expr unsupported_ctl_type_expr();
    bad_assertcontrol_ctl_type bad_assertcontrol_ctl_type();
    assert_class assert_class();
    assert_iface assert_iface();
    assert_iface_class assert_iface_class();
 endmodule
 
-module unsupported_ctl_type;
+module unsupported_ctl_type_expr;
    initial begin
       $assertcontrol(1);
       $assertcontrol(2);
@@ -150,3 +150,4 @@ module assert_iface_class;
          ifaceClassImpl.assert_func();
    end
 endmodule
+

@@ -2579,23 +2579,20 @@ public:
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
 };
 class AstAssertCtl final : public AstNodeStmt {
-    // @astgen op1 := controlTypep : Optional[AstNodeExpr]
+    // @astgen op1 := controlTypep : AstNodeExpr
+    // @astgen op2 := levelp : AstNodeExpr
+    // @astgen op3 := itemsp : List[AstNodeExpr]
     // Type of assertcontrol task; either known from parser or from evaluated
     // controlTypep expression.
     VAssertCtlType m_ctlType;  // $assert keyword type
     string m_name;  // Scope, kept under name show it on the graph.
 
 public:
-    explicit AstAssertCtl(FileLine* fl, VAssertCtlType ctlType)
-        : ASTGEN_SUPER_AssertCtl(fl)
-        , m_ctlType{ctlType} {
-        controlTypep(nullptr);
-    }
-    explicit AstAssertCtl(FileLine* fl, AstNodeExpr* controlType)
-        : ASTGEN_SUPER_AssertCtl(fl)
-        , m_ctlType{VAssertCtlType::_TO_BE_EVALUATED} {
-        controlTypep(controlType);
-    }
+    AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr* levelp = nullptr,
+                 AstNodeExpr* itemsp = nullptr);
+    AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr* assertionTypep = nullptr,
+                 AstNodeExpr* directiveTypep = nullptr, AstNodeExpr* levelp = nullptr,
+                 AstNodeExpr* itemsp = nullptr);
     ASTGEN_MEMBERS_AstAssertCtl;
     string verilogKwd() const override { return m_ctlType.ascii(); }
     bool isGateOptimizable() const override { return false; }

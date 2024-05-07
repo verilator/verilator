@@ -1,17 +1,10 @@
-[0] %Error: t_assert_ctl_immediate_bad.v:108: Assertion failed in top.t.module_with_assert: 'assert' failed.
--Info: t/t_assert_ctl_immediate_bad.v:108: Verilog $stop, ignored due to +verilator+error+limit
-[0] %Error: t_assert_ctl_immediate_bad.v:108: Assertion failed in top.t.empty_module_with_child_assert.module_with_assert: 'assert' failed.
-[0] %Error: t_assert_ctl_immediate_bad.v:75: Assertion failed in top.t.multiple_asserts: 'assert' failed.
-[0] %Error: t_assert_ctl_immediate_bad.v:76: Assertion failed in top.t.multiple_asserts: 'assert' failed.
-[0] %Error: t_assert_ctl_immediate_bad.v:77: Assertion failed in top.t.multiple_asserts: 'assert' failed.
-[0] %Error: t_assert_ctl_immediate_bad.v:143: Assertion failed in top.t.nested_multiple_assertctl_instances: 'assert' failed.
-[0] %Error: t_assert_ctl_immediate_bad.v:183: Assertion failed in top.t.assert_function: 'assert' failed.
-[0] %Error: t_assert_ctl_immediate_bad.v:189: Assertion failed in top.t.assert_function: 'assert' failed.
-[0] %Error: t_assert_ctl_immediate_bad.v:176: Assertion failed in top.t.assert_function.f_assert: 'assert' failed.
-[0] %Error: t_assert_ctl_immediate_bad.v:176: Assertion failed in top.t.assert_function.f_assert: 'assert' failed.
-[0] %Error: t_assert_ctl_immediate_bad.v:201: Assertion failed in top.t.assertcontrol: 'assert' failed.
-[0] %Error: t_assert_ctl_immediate_bad.v:205: Assertion failed in top.t.assertcontrol: 'assert' failed.
-[10] %Error: t_assert_ctl_immediate_bad.v:59: Assertion failed in top.t.clk_module_with_assert: 'assert' failed.
-[10] %Error: t_assert_ctl_immediate_bad.v:59: Assertion failed in top.t.nested_clk_module_with_assert_and_assertctl.clk_module_with_assert: 'assert' failed.
-[15] %Error: t_assert_ctl_immediate_bad.v:36: Assertion failed in top.t: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate_bad.v:50: Assertion failed in top.t.module_with_assertctl: 'assert' failed.
+-Info: t/t_assert_ctl_immediate_bad.v:50: Verilog $stop, ignored due to +verilator+error+limit
+[0] %Error: t_assert_ctl_immediate_bad.v:54: Assertion failed in top.t.module_with_assertctl: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate_bad.v:59: Assertion failed in top.t.module_with_assertctl: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate_bad.v:63: Assertion failed in top.t.module_with_assertctl: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate_bad.v:68: Assertion failed in top.t.module_with_assertctl: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate_bad.v:74: Assertion failed in top.t.module_with_assertctl: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate_bad.v:45: Assertion failed in top.t.module_with_assertctl.f_assert: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate_bad.v:45: Assertion failed in top.t.module_with_assertctl.f_assert: 'assert' failed.
 *-* All Finished *-*

@@ -18,7 +18,6 @@
 
 #include "V3Assert.h"
 
-#include "V3AssertCtl.h"
 #include "V3Stats.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -36,12 +35,8 @@ class AssertVisitor final : public VNVisitor {
     };
     // NODE STATE/TYPES
     // Cleared on netlist
-    //  AstNode::user1()         -> bool.    True if processed
-    //  AstNodeModule::user2p()      -> AstVar*. Port to handle asserts
-    //  AstNodeModule::user3()       -> bool.    True if module is affected by AssertCtl
+    //  AstNode::user()         -> bool.  True if processed
     const VNUser1InUse m_inuser1;
-    const VNUser2InUse m_inuser2;
-    const VNUser3InUse m_inuser3;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Last module
@@ -49,7 +44,6 @@ class AssertVisitor final : public VNVisitor {
     unsigned m_monitorNum = 0;  // Global $monitor numbering (not per module)
     AstVar* m_monitorNumVarp = nullptr;  // $monitor number variable
     AstVar* m_monitorOffVarp = nullptr;  // $monitoroff variable
-    AstVar* m_assertDisabledVarp = nullptr;  // Varp to disable asserts
     unsigned m_modPastNum = 0;  // Module past numbering
     unsigned m_modStrobeNum = 0;  // Module $strobe numbering
     const AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
@@ -58,12 +52,10 @@ class AssertVisitor final : public VNVisitor {
     VDouble0 m_statAsImm;  // Statistic tracking
     VDouble0 m_statAsFull;  // Statistic tracking
     bool m_inSampled = false;  // True inside a sampled expression
+    bool m_inClass = false;  // Is node inside class ?
+    bool m_inIface = false;  // Is node inside interface ?
 
     // METHODS
-    static bool isAffectedByCtl(const AstNodeModule* const nodep) {
-        // All modules affected by assertcontrol had been marked during V3AssertCtl stage.
-        return nodep->user3();
-    }
     static bool assertTypeOn(assertType_e assertType) {
         if (assertType == ASSERT_TYPE_INTRINSIC) return true;
         if (v3Global.opt.assertOn()) return true;
@@ -162,21 +154,10 @@ class AssertVisitor final : public VNVisitor {
         return bodysp;
     }
 
-    AstNodeExpr* newPslAssertionPropp(AstNodeCoverOrAssert* nodep) {
-        AstNodeExpr* const originalPropp = VN_AS(nodep->propp()->unlinkFrBackWithNext(), NodeExpr);
-        if (isAffectedByCtl(m_modp)) {
-            UINFO(9, "Creating assertctl check for an active module: " << m_modp->name() << endl);
-            AstVarRef* const disabledAssertp
-                = new AstVarRef{originalPropp->fileline(), m_assertDisabledVarp, VAccess::READ};
-            return new AstLogOr{originalPropp->fileline(), disabledAssertp, originalPropp};
-        }
-        return originalPropp;
-    }
-
     void newPslAssertion(AstNodeCoverOrAssert* nodep, AstNode* failsp) {
         if (m_beginp && nodep->name() == "") nodep->name(m_beginp->name());
 
-        AstNodeExpr* const propp = newPslAssertionPropp(nodep);
+        AstNodeExpr* const propp = VN_AS(nodep->propp()->unlinkFrBackWithNext(), NodeExpr);
         AstSenTree* const sentreep = nodep->sentreep();
         const string& message = nodep->name();
         AstNode* passsp = nodep->passsp();
@@ -253,18 +234,6 @@ class AssertVisitor final : public VNVisitor {
         }
         // Bye
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
-    }
-    static AstVar* getCreateAssertPortp(AstNodeModule* nodep) {
-        if (!nodep->user2p()) {
-            AstVar* const assertPortp
-                = new AstVar{nodep->fileline(), VVarType::VAR, "__Vassert_port",
-                             nodep->findBasicDType(VBasicDTypeKwd::BIT)};
-            assertPortp->direction(VDirection::INPUT);
-            nodep->addStmtsp(assertPortp);
-            nodep->user2p(assertPortp);
-            return assertPortp;
-        }
-        return VN_AS(nodep->user2p(), Var);
     }
 
     // VISITORS
@@ -551,11 +520,13 @@ class AssertVisitor final : public VNVisitor {
         iterateChildren(nodep);
         newPslAssertion(nodep, nodep->failsp());
     }
-    void visit(AstAssertIntrinsic* nodep) override {
-        iterateChildren(nodep);
-        newPslAssertion(nodep, nodep->failsp());
-    }
     void visit(AstAssertCtl* nodep) override {
+        if (m_inClass) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: assertcontrols in classes");
+        } else if (m_inIface) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: assertcontrols in interfaces");
+        }
+
         iterateChildren(nodep);
 
         if (const AstConst* const constp = VN_CAST(nodep->controlTypep(), Const))
@@ -565,23 +536,37 @@ class AssertVisitor final : public VNVisitor {
         case VAssertCtlType::ON:
         case VAssertCtlType::OFF:
         case VAssertCtlType::KILL: {
-            if (isAffectedByCtl(m_modp)) {
-                UINFO(9, "Generating assertctl for a module: " << m_modp << endl);
-                FileLine* const fl = nodep->fileline();
-                AstAssign* const assignp = new AstAssign{
-                    fl, new AstVarRef{fl, m_assertDisabledVarp, VAccess::WRITE},
-                    new AstConst{fl, AstConst::BitTrue{}, nodep->ctlType() != VAssertCtlType::ON}};
-                nodep->replaceWith(assignp);
-            } else {
-                nodep->unlinkFrBack();
-            }
+            UINFO(9, "Generating assertctl for a module: " << m_modp << endl);
+            FileLine* const fl = nodep->fileline();
+            const string assertOnStmt
+                = string{"vlSymsp->_vm_contextp__->assertOn("}
+                  + (nodep->ctlType() == VAssertCtlType::ON ? "true" : "false") + ");\n";
+            nodep->replaceWith(new AstCExpr{fl, assertOnStmt, 1});
             break;
         }
-        default:
+        case VAssertCtlType::LOCK:
+        case VAssertCtlType::UNLOCK:
+        case VAssertCtlType::PASS_ON:
+        case VAssertCtlType::PASS_OFF:
+        case VAssertCtlType::FAIL_ON:
+        case VAssertCtlType::FAIL_OFF:
+        case VAssertCtlType::NONVACUOUS_ON:
+        case VAssertCtlType::VACUOUS_OFF: {
             nodep->unlinkFrBack();
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported control_type (IEEE 1800-2023 Table 20-5)");
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported assertcontrol control_type (IEEE 1800-2023 Table 20-5)");
+            break;
+        }
+        default: {
+            nodep->unlinkFrBack();
+            nodep->v3warn(EC_ERROR, "Bad assertcontrol control_type (IEEE 1800-2023 Table 20-5)");
+        }
         }
         pushDeletep(nodep);
+    }
+    void visit(AstAssertIntrinsic* nodep) override {
+        iterateChildren(nodep);
+        newPslAssertion(nodep, nodep->failsp());
     }
     void visit(AstCover* nodep) override {
         iterateChildren(nodep);
@@ -597,39 +582,16 @@ class AssertVisitor final : public VNVisitor {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modPastNum);
         VL_RESTORER(m_modStrobeNum);
-        VL_RESTORER(m_assertDisabledVarp);
+        VL_RESTORER(m_inClass);
+        VL_RESTORER(m_inIface);
         {
             m_modp = nodep;
             m_modPastNum = 0;
             m_modStrobeNum = 0;
-            if (isAffectedByCtl(nodep)) {
-                FileLine* const fl = nodep->fileline();
-                m_assertDisabledVarp = new AstVar{fl, VVarType::VAR, "__Vassert_disabled",
-                                                  nodep->findBasicDType(VBasicDTypeKwd::BIT)};
-                nodep->addStmtsp(m_assertDisabledVarp);
-                // Referenced module with assert port will get
-                // assert_disabled value from the module above.
-                if (nodep->user2p()) {
-                    nodep->addStmtsp(new AstInitialStatic{
-                        fl, new AstAssign{
-                                fl, new AstVarRef{fl, m_assertDisabledVarp, VAccess::WRITE},
-                                new AstVarRef{fl, VN_AS(nodep->user2p(), Var), VAccess::READ}}});
-                }
-            }
+            m_inClass = VN_IS(nodep, Class);
+            m_inIface = VN_IS(nodep, Iface);
             iterateChildren(nodep);
         }
-    }
-    void visit(AstCell* nodep) override {
-        if (isAffectedByCtl(nodep->modp()) && m_assertDisabledVarp) {
-            UINFO(9, "Cell of the module affected by assertctl: " << nodep << endl);
-            AstVar* const assertPortp = getCreateAssertPortp(nodep->modp());
-            AstPin* const pinp = new AstPin{
-                nodep->fileline(), 0, assertPortp->name(),
-                new AstVarRef{nodep->fileline(), m_assertDisabledVarp, VAccess::READ}};
-            pinp->modVarp(assertPortp);
-            nodep->addPinsp(pinp);
-        }
-        iterateChildren(nodep);
     }
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procedurep);
@@ -650,10 +612,7 @@ class AssertVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit AssertVisitor(AstNetlist* nodep) {
-        V3AssertCtl::markModulesAffectedByCtl(nodep);
-        iterate(nodep);
-    }
+    explicit AssertVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~AssertVisitor() override {
         V3Stats::addStat("Assertions, assert non-immediate statements", m_statAsNotImm);
         V3Stats::addStat("Assertions, assert immediate statements", m_statAsImm);

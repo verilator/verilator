@@ -84,7 +84,7 @@ class EmitCConstPool final : public EmitCConstInit {
             putns(varp, "extern const ");
             putns(varp, varp->dtypep()->cType(nameProtect, false, false));
             putns(varp, " = ");
-            UASSERT_OBJ(varp->valuep(), varp, "Var without value");
+            UASSERT_OBJ(varp, varp->valuep(), "Var without value");
             iterateConst(varp->valuep());
             putns(varp, ";\n");
             // Keep track of stats
