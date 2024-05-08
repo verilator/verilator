@@ -564,7 +564,7 @@ class AssertVisitor final : public VNVisitor {
             nodep->v3warn(EC_ERROR, "Bad assertcontrol control_type (IEEE 1800-2023 Table 20-5)");
         }
         }
-        pushDeletep(nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstAssertIntrinsic* nodep) override {
         iterateChildren(nodep);
