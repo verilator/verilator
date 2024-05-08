@@ -844,6 +844,7 @@ parallelized
 param
 parameterization
 parameterized
+parameterless
 params
 parens
 pawel
@@ -970,6 +971,7 @@ submakes
 submodule
 submodules
 substring
+suspendable
 sv
 svBitVal
 svBitVecVal
@@ -980,6 +982,7 @@ svLogicVal
 svdpi
 svgGetTimeUnit
 swrite
+synthesizeable
 sys
 systemc
 tenghtt
@@ -998,6 +1001,7 @@ toolchain
 topcell
 toplevel
 toupper
+traceCapable
 traceEverOn
 tran
 treei
@@ -1062,6 +1066,7 @@ vluint
 vpi
 vpiConstType
 vpiDefName
+vpiInertialDelay
 vpiInstance
 vpiLeftRange
 vpiModule
