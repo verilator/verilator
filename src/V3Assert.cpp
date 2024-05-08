@@ -551,8 +551,7 @@ class AssertVisitor final : public VNVisitor {
         case VAssertCtlType::NONVACUOUS_ON:
         case VAssertCtlType::VACUOUS_OFF: {
             nodep->unlinkFrBack();
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported assertcontrol control_type (IEEE 1800-2023 Table 20-5)");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported assertcontrol control_type");
             break;
         }
         default: {

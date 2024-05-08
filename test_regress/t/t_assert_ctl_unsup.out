@@ -1,26 +1,26 @@
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:17:7: Unsupported assertcontrol control_type (IEEE 1800-2023 Table 20-5)
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:17:7: Unsupported assertcontrol control_type
    17 |       $assertcontrol(1);
       |       ^~~~~~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:18:7: Unsupported assertcontrol control_type (IEEE 1800-2023 Table 20-5)
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:18:7: Unsupported assertcontrol control_type
    18 |       $assertcontrol(2);
       |       ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:19:7: Unsupported assertcontrol control_type (IEEE 1800-2023 Table 20-5)
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:19:7: Unsupported assertcontrol control_type
    19 |       $assertcontrol(6);
       |       ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:20:7: Unsupported assertcontrol control_type (IEEE 1800-2023 Table 20-5)
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:20:7: Unsupported assertcontrol control_type
    20 |       $assertcontrol(7);
       |       ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:21:7: Unsupported assertcontrol control_type (IEEE 1800-2023 Table 20-5)
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:21:7: Unsupported assertcontrol control_type
    21 |       $assertcontrol(8);
       |       ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:22:7: Unsupported assertcontrol control_type (IEEE 1800-2023 Table 20-5)
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:22:7: Unsupported assertcontrol control_type
    22 |       $assertcontrol(9);
       |       ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:23:7: Unsupported assertcontrol control_type (IEEE 1800-2023 Table 20-5)
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:23:7: Unsupported assertcontrol control_type
    23 |       $assertcontrol(10);
       |       ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:24:7: Unsupported assertcontrol control_type (IEEE 1800-2023 Table 20-5)
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:24:7: Unsupported assertcontrol control_type
    24 |       $assertcontrol(11);
       |       ^~~~~~~~~~~~~~
 %Error: t/t_assert_ctl_unsup.v:30:7: Bad assertcontrol control_type (IEEE 1800-2023 Table 20-5)
