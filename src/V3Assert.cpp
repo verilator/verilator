@@ -531,7 +531,7 @@ class AssertVisitor final : public VNVisitor {
             nodep->ctlType(constp->toSInt());
         } else if (nodep->ctlType() == VAssertCtlType::_TO_BE_EVALUATED) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: non-const assert control type expression");
-            pushDeletep(nodep->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
 
