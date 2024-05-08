@@ -521,7 +521,7 @@ class AssertVisitor final : public VNVisitor {
     void visit(AstAssertCtl* nodep) override {
         if (VN_IS(m_modp, Class) || VN_IS(m_modp, Iface)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: assertcontrols in classes or interfaces");
-            pushDeletep(nodep->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
 
