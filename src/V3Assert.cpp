@@ -527,8 +527,13 @@ class AssertVisitor final : public VNVisitor {
 
         iterateChildren(nodep);
 
-        if (const AstConst* const constp = VN_CAST(nodep->controlTypep(), Const))
+        if (const AstConst* const constp = VN_CAST(nodep->controlTypep(), Const)) {
             nodep->ctlType(constp->toSInt());
+        } else if (nodep->ctlType() == VAssertCtlType::_TO_BE_EVALUATED){
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: non-const assert control type expression");
+            pushDeletep(nodep->unlinkFrBack());
+            return;
+        }
 
         switch (nodep->ctlType()) {
         case VAssertCtlType::ON:
