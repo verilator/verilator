@@ -874,7 +874,7 @@ class LinkParseVisitor final : public VNVisitor {
                     itemp->v3fatalSrc("Incorrect direction");
                 }
             }
-            pushDeletep(itemp->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(itemp->unlinkFrBack()), itemp);
         }
         iterateChildren(nodep);
     }

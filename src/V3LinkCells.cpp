@@ -273,7 +273,7 @@ class LinkCellsVisitor final : public VNVisitor {
                 iterateAndNextNull(cellsp);
             }
         }
-        pushDeletep(nodep->unlinkFrBack());
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
     void visit(AstCell* nodep) override {

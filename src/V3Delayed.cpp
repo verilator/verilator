@@ -762,7 +762,7 @@ class DelayedVisitor final : public VNVisitor {
             callp->dtypeSetVoid();
             nodep->replaceWith(callp->makeStmt());
         }
-        nodep->deleteTree();
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
     // Pre/Post logic are created here and their content need no further changes, so ignore.

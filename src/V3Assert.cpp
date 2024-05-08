@@ -287,7 +287,7 @@ class AssertVisitor final : public VNVisitor {
             checkifp->isBoundsCheck(true);  // To avoid LATCH warning
             checkifp->branchPred(VBranchPred::BP_UNLIKELY);
             nodep->replaceWith(checkifp);
-            pushDeletep(nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else {
             iterateChildren(nodep);
         }
