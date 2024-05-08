@@ -52,8 +52,6 @@ class AssertVisitor final : public VNVisitor {
     VDouble0 m_statAsImm;  // Statistic tracking
     VDouble0 m_statAsFull;  // Statistic tracking
     bool m_inSampled = false;  // True inside a sampled expression
-    bool m_inClass = false;  // Is node inside class ?
-    bool m_inIface = false;  // Is node inside interface ?
 
     // METHODS
     static bool assertTypeOn(assertType_e assertType) {
@@ -521,10 +519,10 @@ class AssertVisitor final : public VNVisitor {
         newPslAssertion(nodep, nodep->failsp());
     }
     void visit(AstAssertCtl* nodep) override {
-        if (m_inClass) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: assertcontrols in classes");
-        } else if (m_inIface) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: assertcontrols in interfaces");
+        if (VN_IS(m_modp, Class) || VN_IS(m_modp, Iface)) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: assertcontrols in classes or interfaces");
+            pushDeletep(nodep->unlinkFrBack());
+            return;
         }
 
         iterateChildren(nodep);
@@ -582,14 +580,10 @@ class AssertVisitor final : public VNVisitor {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modPastNum);
         VL_RESTORER(m_modStrobeNum);
-        VL_RESTORER(m_inClass);
-        VL_RESTORER(m_inIface);
         {
             m_modp = nodep;
             m_modPastNum = 0;
             m_modStrobeNum = 0;
-            m_inClass = VN_IS(nodep, Class);
-            m_inIface = VN_IS(nodep, Iface);
             iterateChildren(nodep);
         }
     }
