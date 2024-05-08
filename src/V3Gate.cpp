@@ -425,8 +425,8 @@ class GateClkDecomp final {
     void visit(GateVarVertex* vVtxp, int offset) {
         AstVarScope* const vscp = vVtxp->varScp();
 
-        // Can't propagate if this variable is forceable
-        if (vscp->varp()->isForceable()) return;
+        // Can't propagate if this variable might be forced
+        if (vscp->varp()->isForced()) return;
 
         // Check that we haven't been here before
         if (vscp->user2SetOnce()) return;
