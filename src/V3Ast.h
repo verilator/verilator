@@ -1102,6 +1102,61 @@ constexpr bool operator==(VAlwaysKwd::en lhs, const VAlwaysKwd& rhs) { return lh
 
 // ######################################################################
 
+class VAssertCtlType final {
+public:
+    // IEEE 1800-2023 Table 20-5
+    enum en : uint8_t {
+        _TO_BE_EVALUATED = 0,
+        LOCK = 1,
+        UNLOCK = 2,
+        ON = 3,
+        OFF = 4,
+        KILL = 5,
+        PASS_ON = 6,
+        PASS_OFF = 7,
+        FAIL_ON = 8,
+        FAIL_OFF = 9,
+        NONVACUOUS_ON = 10,
+        VACUOUS_OFF = 11
+    };
+    enum en m_e;
+    VAssertCtlType()
+        : m_e{_TO_BE_EVALUATED} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VAssertCtlType(en _e)
+        : m_e{_e} {}
+    explicit VAssertCtlType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+    const char* ascii() const {
+        // IEEE 1800-2023 20.11
+        static const char* const names[] = {"",
+                                            "",
+                                            "",
+                                            "$asserton",
+                                            "$assertoff",
+                                            "$assertkill",
+                                            "$assertpasson",
+                                            "$assertpassoff",
+                                            "$assertfailon",
+                                            "$assertfailoff",
+                                            "$assertnonvacuouson",
+                                            "$assertvacuousoff"};
+        return names[m_e];
+    }
+};
+constexpr bool operator==(const VAssertCtlType& lhs, const VAssertCtlType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VAssertCtlType& lhs, VAssertCtlType::en rhs) {
+    return lhs.m_e == rhs;
+}
+constexpr bool operator==(VAssertCtlType::en lhs, const VAssertCtlType& rhs) {
+    return lhs == rhs.m_e;
+}
+
+// ######################################################################
+
 class VCaseType final {
 public:
     enum en : uint8_t { CT_CASE, CT_CASEX, CT_CASEZ, CT_CASEINSIDE };

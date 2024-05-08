@@ -518,6 +518,54 @@ class AssertVisitor final : public VNVisitor {
         iterateChildren(nodep);
         newPslAssertion(nodep, nodep->failsp());
     }
+    void visit(AstAssertCtl* nodep) override {
+        if (VN_IS(m_modp, Class) || VN_IS(m_modp, Iface)) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: assertcontrols in classes or interfaces");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+
+        iterateChildren(nodep);
+
+        if (const AstConst* const constp = VN_CAST(nodep->controlTypep(), Const)) {
+            nodep->ctlType(constp->toSInt());
+        } else if (nodep->ctlType() == VAssertCtlType::_TO_BE_EVALUATED) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: non-const assert control type expression");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+
+        switch (nodep->ctlType()) {
+        case VAssertCtlType::ON:
+        case VAssertCtlType::OFF:
+        case VAssertCtlType::KILL: {
+            UINFO(9, "Generating assertctl for a module: " << m_modp << endl);
+            FileLine* const fl = nodep->fileline();
+            const string assertOnStmt
+                = string{"vlSymsp->_vm_contextp__->assertOn("}
+                  + (nodep->ctlType() == VAssertCtlType::ON ? "true" : "false") + ");\n";
+            nodep->replaceWith(new AstCExpr{fl, assertOnStmt, 1});
+            break;
+        }
+        case VAssertCtlType::LOCK:
+        case VAssertCtlType::UNLOCK:
+        case VAssertCtlType::PASS_ON:
+        case VAssertCtlType::PASS_OFF:
+        case VAssertCtlType::FAIL_ON:
+        case VAssertCtlType::FAIL_OFF:
+        case VAssertCtlType::NONVACUOUS_ON:
+        case VAssertCtlType::VACUOUS_OFF: {
+            nodep->unlinkFrBack();
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported assertcontrol control_type");
+            break;
+        }
+        default: {
+            nodep->unlinkFrBack();
+            nodep->v3warn(EC_ERROR, "Bad assertcontrol control_type (IEEE 1800-2023 Table 20-5)");
+        }
+        }
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void visit(AstAssertIntrinsic* nodep) override {
         iterateChildren(nodep);
         newPslAssertion(nodep, nodep->failsp());

@@ -1458,7 +1458,32 @@ void AstAlways::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "keyword", keyword().ascii());
     dumpJsonGen(str);
 }
-
+AstAssertCtl::AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr* levelp,
+                           AstNodeExpr* itemsp)
+    : ASTGEN_SUPER_AssertCtl(fl)
+    , m_ctlType{ctlType} {
+    controlTypep(new AstConst{fl, ctlType});
+    if (!levelp) levelp = new AstConst{fl, 0};
+    this->levelp(levelp);
+    addItemsp(itemsp);
+}
+AstAssertCtl::AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr*, AstNodeExpr*,
+                           AstNodeExpr* levelp, AstNodeExpr* itemsp)
+    : ASTGEN_SUPER_AssertCtl(fl)
+    , m_ctlType{VAssertCtlType::_TO_BE_EVALUATED} {
+    this->controlTypep(controlTypep);
+    if (!levelp) levelp = new AstConst{fl, 0};
+    this->levelp(levelp);
+    addItemsp(itemsp);
+}
+void AstAssertCtl::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " [" << ctlType().ascii() << "]";
+}
+void AstAssertCtl::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "ctlType", ctlType().ascii());
+    dumpJsonGen(str);
+}
 void AstAttrOf::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " [" << attrType().ascii() << "]";
