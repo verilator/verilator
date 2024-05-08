@@ -2585,7 +2585,6 @@ class AstAssertCtl final : public AstNodeStmt {
     // Type of assertcontrol task; either known from parser or from evaluated
     // controlTypep expression.
     VAssertCtlType m_ctlType;  // $assert keyword type
-    string m_name;  // Scope, kept under name show it on the graph.
 
 public:
     AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr* levelp = nullptr,
@@ -2603,8 +2602,6 @@ public:
     void ctlType(int32_t type) { m_ctlType = VAssertCtlType{type}; }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
-    void name(const string& name) override { m_name = name; }
-    string name() const override { return m_name; }
 };
 class AstBreak final : public AstNodeStmt {
 public:
