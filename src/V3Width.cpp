@@ -214,6 +214,7 @@ class WidthVisitor final : public VNVisitor {
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
     const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    const AstConstraint* m_constraintp = nullptr;  // Current constraint
     const AstNodeProcedure* m_procedurep = nullptr;  // Current final/always
     const AstWith* m_withp = nullptr;  // Current 'with' statement
     const AstFunc* m_funcp = nullptr;  // Current function
@@ -5562,6 +5563,13 @@ class WidthVisitor final : public VNVisitor {
                                         // func
         }
     }
+    void visit(AstConstraint* nodep) override {
+        if (nodep->didWidth()) return;
+        m_constraintp = nodep;
+        userIterateChildren(nodep, nullptr);
+        m_constraintp = nullptr;
+        nodep->didWidth(true);
+    }
     void visit(AstProperty* nodep) override {
         if (nodep->didWidth()) return;
         if (nodep->doingWidth()) {
@@ -5851,7 +5859,7 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->didWidth()) return;
         if ((nodep->taskp()->classMethod() && !nodep->taskp()->isStatic())
             && !VN_IS(m_procedurep, InitialAutomatic)
-            && (!m_ftaskp || !m_ftaskp->classMethod() || m_ftaskp->isStatic())) {
+            && (!m_ftaskp || !m_ftaskp->classMethod() || m_ftaskp->isStatic()) && !m_constraintp) {
             nodep->v3error("Cannot call non-static member function "
                            << nodep->prettyNameQ() << " without object (IEEE 1800-2023 8.10)");
         }
