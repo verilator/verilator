@@ -39,6 +39,7 @@ Verilator 5.025 devel
 * Fix macro expansion in strings per 1800-2023 (#5094). [Geza Lore]
 * Fix width extension of unpacked array select (#5095). [Varun Koyyalagunta]
 * Fix MacOS missing <type_traits> header (#5096) (#5097). [Vito Gamberini]
+* Fix tracing interface functions (#5108). [Alex Solomatnikov]
 
 
 Verilator 5.024 2024-04-05

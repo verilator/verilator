@@ -313,7 +313,7 @@ class TraceDeclVisitor final : public VNVisitor {
             for (AstCFunc* const funcp : pair.second) {
                 AstNode* prevp = nullptr;
                 AstNode* currp = funcp->stmtsp();
-                while (true) {
+                while (currp) {
                     AstNode* const nextp = currp->nextp();
                     if (VN_IS(prevp, TracePushPrefix) && VN_IS(currp, TracePopPrefix)) {
                         VL_DO_DANGLING(prevp->unlinkFrBack()->deleteTree(), prevp);
