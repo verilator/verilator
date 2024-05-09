@@ -3119,10 +3119,6 @@ void Verilated::scTraceBeforeElaborationError() VL_MT_SAFE {
 
 void Verilated::stackCheck(QData needSize) VL_MT_UNSAFE {
     // Slowpath - Called only when constructing
-#ifndef _VL_TEST_RLIMIT_FAIL
-#define _VL_TEST_RLIMIT_FAIL 0
-#endif
-
 #ifdef _VL_HAVE_GETRLIMIT
     QData haveSize = 0;
     rlimit rlim;
@@ -3137,7 +3133,11 @@ void Verilated::stackCheck(QData needSize) VL_MT_UNSAFE {
     if (VL_UNLIKELY(haveSize && needSize && haveSize < requestSize)) {
         // Try to increase the stack limit to the requested size
         rlim.rlim_cur = requestSize;
-        if (_VL_TEST_RLIMIT_FAIL || setrlimit(RLIMIT_STACK, &rlim)) {
+        if (
+#ifdef _VL_TEST_RLIMIT_FAIL
+            true ||
+#endif
+            setrlimit(RLIMIT_STACK, &rlim)) {
             VL_PRINTF_MT("%%Warning: System has stack size %" PRIu64 " kb"
                          " which may be too small; however, failed to request more"
                          " using 'ulimit -s %" PRIu64 "'\n",

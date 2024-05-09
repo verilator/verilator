@@ -13,7 +13,7 @@ top_filename("t/t_stack_check.v");
 scenarios(vlt => 1);
 
 compile(
-    verilator_flags2 => ['--binary --debug-stack-check', '--CFLAGS', '"-D_VL_TEST_RLIMIT_FAIL=1"'],
+    verilator_flags2 => ['--binary --debug-stack-check', '--CFLAGS', '"-D_VL_TEST_RLIMIT_FAIL"'],
     );
 
 execute();
