@@ -8,13 +8,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+top_filename("t/t_stack_check.v");
+
 scenarios(vlt => 1);
 
 compile(
-    verilator_flags2 => ['--binary --debug-stack-check'],
+    verilator_flags2 => ['--binary --debug-stack-check', '--CFLAGS', '"-D_VL_TEST_RLIMIT_FAIL"'],
     );
 
 execute();
 
+file_grep($Self->{run_log_filename}, qr/.*%Warning: System has stack size/);
 ok(1);
 1;
