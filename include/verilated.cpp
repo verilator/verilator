@@ -3139,7 +3139,7 @@ void Verilated::stackCheck(QData needSize) VL_MT_UNSAFE {
 #endif
             setrlimit(RLIMIT_STACK, &rlim)) {
             VL_PRINTF_MT("%%Warning: System has stack size %" PRIu64 " kb"
-                         " which may be too small; however, failed to request more"
+                         " which may be too small; failed to request more"
                          " using 'ulimit -s %" PRIu64 "'\n",
                          haveSize / 1024, requestSize);
         }
