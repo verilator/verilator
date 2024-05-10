@@ -5565,9 +5565,9 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstConstraint* nodep) override {
         if (nodep->didWidth()) return;
+        VL_RESTORER(m_constraintp);
         m_constraintp = nodep;
         userIterateChildren(nodep, nullptr);
-        m_constraintp = nullptr;
         nodep->didWidth(true);
     }
     void visit(AstProperty* nodep) override {
