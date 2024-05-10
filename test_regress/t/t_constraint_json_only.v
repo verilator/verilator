@@ -10,8 +10,11 @@ class Packet;
    rand int sublength; // 0..15
    rand bit if_4;
    rand bit iff_5_6;
+   rand bit if_state_ok;
 
    rand int array[2];  // 2,4,6
+
+   string state;
 
    constraint empty {}
 
@@ -47,6 +50,15 @@ class Packet;
       disable soft sublength;
       sublength <= length;
    }
+
+   constraint meth {
+      if (strings_equal(state, "ok"))
+         if_state_ok == '1;
+   }
+
+   function bit strings_equal(string a, string b);
+      return a == b;
+   endfunction
 
 endclass
 
