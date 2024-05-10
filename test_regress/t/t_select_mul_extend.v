@@ -29,6 +29,10 @@ module t(/*AUTOARG*/
 	     .clk			(clk),
 	     .in			(in[31:0]));
 
+   Test2 test2(/*AUTOINST*/
+	       // Inputs
+	       .clk			(clk));
+
    // Aggregate outputs into a single result vector
    wire [63:0] result = {32'h0, out};
 
@@ -95,4 +99,14 @@ module Test(/*AUTOARG*/
       out <= {in[31], q[cond ? (3'd2 - cnt[2:0]) : 3'd0]};
    end
 
+endmodule
+
+module Test2(input wire clk);
+   reg [127:1][7:0] arrayu;
+   reg [6:0] index = 0;
+   wire logic [7:0] selectedu = arrayu[index];
+   always @(posedge clk) begin
+      index <= index + 1;
+      if (index == 2) $display(selectedu);
+   end
 endmodule
