@@ -631,16 +631,14 @@ public:
 };
 
 class VerilatedVpiPutHolder final {
-    const VerilatedVar* m_varp;
-    const VerilatedScope* m_scopep;
+    VerilatedVpioVar m_vo;
     s_vpi_value m_value;
     std::string m_str;
     std::vector<s_vpi_vecval> m_vector;
 
 public:
     VerilatedVpiPutHolder(const VerilatedVpioVar* vop, p_vpi_value valuep)
-        : m_varp(vop->varp())
-        , m_scopep(vop->scopep()) {
+        : m_vo(vop) {
         m_value.format = valuep->format;
         switch (valuep->format) {
         case vpiBinStrVal:
@@ -691,8 +689,7 @@ public:
         }
     }
 
-    const VerilatedVar* varp() { return m_varp; }
-    const VerilatedScope* scopep() { return m_scopep; }
+    VerilatedVpioVar* vop() { return &m_vo; }
     p_vpi_value valuep() { return &m_value; }
 
     static bool canInertialDelay(p_vpi_value valuep) {
@@ -912,8 +909,7 @@ public:
     }
     static void doInertialPuts() {
         for (auto it : s().m_inertialPuts) {
-            VerilatedVpioVar vo(it.varp(), it.scopep());
-            vpi_put_value(vo.castVpiHandle(), it.valuep(), nullptr, vpiNoDelay);
+            vpi_put_value(it.vop()->castVpiHandle(), it.valuep(), nullptr, vpiNoDelay);
         }
         s().m_inertialPuts.clear();
     }

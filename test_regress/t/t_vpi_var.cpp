@@ -700,6 +700,14 @@ int _mon_check_delayed() {
     vpi_get_value(vh, &v);
     CHECK_RESULT(v.value.integer, 0);
 
+    TestVpiHandle vhMem = VPI_HANDLE("delayed_mem");
+    CHECK_RESULT_NZ(vhMem);
+    TestVpiHandle vhMemWord = vpi_handle_by_index(vhMem, 7);
+    CHECK_RESULT_NZ(vhMemWord);
+    v.value.integer = 456;
+    vpi_put_value(vhMemWord, &v, &t, vpiInertialDelay);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+
     // test unsupported vpiInertialDelay cases
     v.format = vpiStringVal;
     v.value.str = nullptr;

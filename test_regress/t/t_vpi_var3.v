@@ -42,6 +42,7 @@ extern "C" int mon_check();
    reg [31:0]      count;
    reg [31:0]      half_count;
    reg [31:0]      delayed;
+   reg [31:0]      delayed_mem [16];
 
    reg [7:0]       text_byte;
    reg [15:0]      text_half;
@@ -104,6 +105,7 @@ extern "C" int mon_check();
 
       if (count == 1000) begin
          if (delayed != 123) $stop;
+         if (delayed_mem[7] != 456) $stop;
          $write("*-* All Finished *-*\n");
          $finish;
       end
