@@ -443,7 +443,7 @@ class AstToDfgVisitor final : public VNVisitor {
         // Mark variables with external references
         if (nodep->isIO()  // Ports
             || nodep->user2()  // Target of a hierarchical reference
-            || nodep->isForceable()  // Forceable
+            || nodep->isForced()  // Forced
         ) {
             getNet(nodep)->setHasExtRefs();
         }

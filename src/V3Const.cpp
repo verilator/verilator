@@ -3071,8 +3071,9 @@ class ConstVisitor final : public VNVisitor {
             && varrefp  // Don't do messes with BITREFs/ARRAYREFs
             && !varrefp->varp()->hasStrengthAssignment()  // Strengths are resolved in V3Tristate
             && !varrefp->varp()->valuep()  // Not already constified
-            && !varrefp->varScopep()) {  // Not scoped (or each scope may have different initial
-                                         // value)
+            && !varrefp->varScopep()  // Not scoped (or each scope may have different initial val.)
+            && !varrefp->varp()->isForced()  // Not forced (not really a constant)
+        ) {
             // ASSIGNW (VARREF, const) -> INITIAL ( ASSIGN (VARREF, const) )
             UINFO(4, "constAssignW " << nodep << endl);
             // Make a initial assignment

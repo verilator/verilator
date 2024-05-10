@@ -64,15 +64,6 @@ class ForceConvertVisitor final : public VNVisitor {
             m_rdVarp->addNext(m_enVarp);
             m_rdVarp->addNext(m_valVarp);
             varp->addNextHere(m_rdVarp);
-
-            if (varp->isPrimaryIO()) {
-                varp->v3warn(
-                    E_UNSUPPORTED,
-                    "Unsupported: Force/Release on primary input/output net "
-                        << varp->prettyNameQ() << "\n"
-                        << varp->warnMore()
-                        << "... Suggest assign it to/from a temporary net and force/release that");
-            }
         }
     };
 
