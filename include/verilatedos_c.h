@@ -100,4 +100,30 @@ uint64_t memUsageBytes() VL_MT_SAFE {
 }
 
 //=========================================================================
+// VlOs::getenvStr implementation
+
+std::string getenvStr(const std::string& envvar, const std::string& defaultValue) VL_MT_SAFE {
+    std::string ret;
+#if defined(_MSC_VER)
+    // Note: MinGW does not offer _dupenv_s
+    const char* envvalue = nullptr;
+    _dupenv_s((char**)&envvalue, nullptr, envvar.c_str());
+    if (envvalue != nullptr) {
+        const std::string result{envvalue};
+        free((void*)envvalue);
+        ret = result;
+    } else {
+        ret = defaultValue;
+    }
+#else
+    if (const char* const envvalue = getenv(envvar.c_str())) {
+        ret = envvalue;
+    } else {
+        ret = defaultValue;
+    }
+#endif
+    return ret;
+}
+
+//=========================================================================
 }  //namespace VlOs
