@@ -103,7 +103,7 @@ void V3Os::setenvStr(const string& envvar, const string& value, const string& wh
     // setenv() replaced by putenv() in Solaris environment. Prototype is different
     // putenv() requires NAME=VALUE format
     const string vareq = envvar + "=" + value;
-    putenv(const_cast<char*>(vareq.c_str()));
+    putenv(strdup(vareq.c_str()));  // will leak if setting the same variable again
 #endif
 }
 
