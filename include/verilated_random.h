@@ -99,7 +99,7 @@ class VlRandomizer final {
 
     // PRIVATE METHODS
     std::shared_ptr<const VlRandomExpr> randomConstraint(VlRNG& rngr, int bits);
-    int parseSolution(std::iostream& file);
+    bool parseSolution(std::iostream& file);
 
 public:
     // METHODS

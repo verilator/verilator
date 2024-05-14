@@ -344,14 +344,8 @@ bool VlRandomizer::next(VlRNG& rngr) {
     for (const std::string& constraint : m_constraints) { f << "(assert " << constraint << ")\n"; }
     f << "(check-sat)\n";
 
-    int rc = parseSolution(f);
-    if (rc == 1) {
-        // unsat
-        f << "(reset)\n";
-        return false;
-    }
-    if (rc == 2) {
-        // error
+    bool sat = parseSolution(f);
+    if (!sat) {
         f << "(reset)\n";
         return false;
     }
@@ -361,24 +355,24 @@ bool VlRandomizer::next(VlRNG& rngr) {
         randomConstraint(rngr, _VL_SOLVER_HASH_LEN)->emit(f);
         f << ")\n";
         f << "\n(check-sat)\n";
-        rc = parseSolution(f);
+        sat = parseSolution(f);
     }
 
     f << "(reset)\n";
     return true;
 }
 
-int VlRandomizer::parseSolution(std::iostream& f) {
+bool VlRandomizer::parseSolution(std::iostream& f) {
     std::string sat;
     do { std::getline(f, sat); } while (sat == "");
 
-    if (sat == "unsat") return 1;
+    if (sat == "unsat") return false;
     if (sat != "sat") {
         std::stringstream msg;
         msg << "Solver error: " << sat;
         const std::string str = msg.str();
         VL_WARN_MT("", 0, "randomize", str.c_str());
-        return 2;
+        return false;
     }
 
     f << "(get-value (";
@@ -388,12 +382,20 @@ int VlRandomizer::parseSolution(std::iostream& f) {
     // Quasi-parse S-expression of the form ((x #xVALUE) (y #bVALUE) (z #xVALUE))
     char c;
     f >> c;
-    if (c != '(') return 2;
+    if (c != '(') {
+        VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                   "Internal: Unable to parse solver's response: invalid S-expression");
+        return false;
+    }
 
     while (true) {
         f >> c;
         if (c == ')') break;
-        if (c != '(') return 2;
+        if (c != '(') {
+            VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                       "Internal: Unable to parse solver's response: invalid S-expression");
+            return false;
+        }
 
         std::string name, value;
         f >> name;
@@ -405,7 +407,7 @@ int VlRandomizer::parseSolution(std::iostream& f) {
         it->second->set(std::move(value));
     }
 
-    return 0;
+    return true;
 }
 
 void VlRandomizer::hard(std::string&& constraint) {
