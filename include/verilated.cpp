@@ -82,8 +82,10 @@
 
 #include "verilated_trace.h"
 
-#ifndef VL_DEFAULT_SOLVER
-#define VL_DEFAULT_SOLVER "z3 --in"
+#ifdef VM_SOLVER_DEFAULT
+#define VL_SOLVER_DEFAULT VM_SOLVER_DEFAULT
+#else
+#define VL_SOLVER_DEFAULT "z3 --in"
 #endif
 
 // Max characters in static char string for VL_VALUE_STRING
@@ -2464,7 +2466,7 @@ VerilatedContext::VerilatedContext()
     m_ns.m_coverageFilename = "coverage.dat";
     m_ns.m_profExecFilename = "profile_exec.dat";
     m_ns.m_profVltFilename = "profile.vlt";
-    m_ns.m_solverProgram = VlOs::getenvStr("VERILATOR_SOLVER", VL_DEFAULT_SOLVER);
+    m_ns.m_solverProgram = VlOs::getenvStr("VERILATOR_SOLVER", VL_SOLVER_DEFAULT);
     m_fdps.resize(31);
     std::fill(m_fdps.begin(), m_fdps.end(), static_cast<FILE*>(nullptr));
     m_fdFreeMct.resize(30);

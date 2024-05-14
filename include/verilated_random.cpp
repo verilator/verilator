@@ -26,15 +26,15 @@
 #include <sstream>
 #include <streambuf>
 
-#define HASH_LEN 1
-#define HASH_LEN_TOTAL 4
+#define _VL_SOLVER_HASH_LEN 1
+#define _VL_SOLVER_HASH_LEN_TOTAL 4
 
 // clang-format off
 #if defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
-# define SMT_PIPE  // Allow pipe SMT solving.  Needs fork()
+# define _VL_SOLVER_PIPE  // Allow pipe SMT solving.  Needs fork()
 #endif
 
-#ifdef SMT_PIPE
+#ifdef _VL_SOLVER_PIPE
 # include <sys/wait.h>
 # include <fcntl.h>
 #endif
@@ -47,7 +47,7 @@
 class Process final : private std::streambuf, public std::iostream {
     static constexpr int BUFFER_SIZE = 4096;
     const char* const* m_cmd = nullptr;  // fork() process argv
-#ifdef SMT_PIPE
+#ifdef _VL_SOLVER_PIPE
     pid_t m_pid = 0;  // fork() process id
 #else
     int m_pid = 0;  // fork() process id - always zero as disabled
@@ -106,7 +106,7 @@ public:
 
     void wait_report() {
         if (m_pidExited) return;
-#ifdef SMT_PIPE
+#ifdef _VL_SOLVER_PIPE
         if (waitpid(m_pid, &m_pidStatus, 0) != m_pid) return;
         if (m_pidStatus) {
             std::stringstream msg;
@@ -141,7 +141,7 @@ public:
     bool open(const char* const* const cmd) {
         setp(std::begin(m_writeBuf), std::end(m_writeBuf));
         setg(m_readBuf, m_readBuf, m_readBuf);
-#ifdef SMT_PIPE
+#ifdef _VL_SOLVER_PIPE
         if (!cmd || !cmd[0]) return false;
         m_cmd = cmd;
         int fd_stdin[2];  // Can't use std::array
@@ -211,7 +211,7 @@ public:
     }
 };
 
-static Process& get_solver() {
+static Process& getSolver() {
     static Process s_solver;
     static bool s_done = false;
     if (s_done) return s_solver;
@@ -256,7 +256,7 @@ static Process& get_solver() {
 void VlRandomVar::emit(std::ostream& s) const { s << m_name; }
 void VlRandomConst::emit(std::ostream& s) const {
     s << "#b";
-    for (int i = 0; i < m_width; i++) { s << ((m_val & (1ULL << (m_width - i - 1))) ? '1' : '0'); }
+    for (int i = 0; i < m_width; i++) s << (VL_BITISSET_Q(m_val, m_width - i - 1) ? '1' : '0');
 }
 void VlRandomBinOp::emit(std::ostream& s) const {
     s << '(' << m_op << ' ';
@@ -307,7 +307,7 @@ bool VlRandomVar::set(std::string&& val) const {
     return true;
 }
 
-std::shared_ptr<const VlRandomExpr> VlRandomizer::random_constraint(VlRNG& rngr, int bits) {
+std::shared_ptr<const VlRandomExpr> VlRandomizer::randomConstraint(VlRNG& rngr, int bits) {
     unsigned long long hash = VL_RANDOM_RNG_I(rngr) & ((1 << bits) - 1);
     std::shared_ptr<const VlRandomExpr> concat = nullptr;
     std::vector<std::shared_ptr<const VlRandomExpr>> varbits;
@@ -332,7 +332,7 @@ std::shared_ptr<const VlRandomExpr> VlRandomizer::random_constraint(VlRNG& rngr,
 
 bool VlRandomizer::next(VlRNG& rngr) {
     if (m_vars.empty()) return true;
-    std::iostream& f = get_solver();
+    std::iostream& f = getSolver();
     if (!f) return false;
 
     f << "(set-option :produce-models true)\n";
@@ -344,7 +344,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
     for (const std::string& constraint : m_constraints) { f << "(assert " << constraint << ")\n"; }
     f << "(check-sat)\n";
 
-    int rc = parse_solution(f);
+    int rc = parseSolution(f);
     if (rc == 1) {
         // unsat
         f << "(reset)\n";
@@ -356,19 +356,19 @@ bool VlRandomizer::next(VlRNG& rngr) {
         return false;
     }
 
-    for (int i = 0; i < HASH_LEN_TOTAL && rc == 0; i++) {
+    for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; i++) {
         f << "(assert ";
-        random_constraint(rngr, HASH_LEN)->emit(f);
+        randomConstraint(rngr, _VL_SOLVER_HASH_LEN)->emit(f);
         f << ")\n";
         f << "\n(check-sat)\n";
-        rc = parse_solution(f);
+        rc = parseSolution(f);
     }
 
     f << "(reset)\n";
     return true;
 }
 
-int VlRandomizer::parse_solution(std::iostream& f) {
+int VlRandomizer::parseSolution(std::iostream& f) {
     std::string sat;
     do { std::getline(f, sat); } while (sat == "");
 
@@ -382,7 +382,7 @@ int VlRandomizer::parse_solution(std::iostream& f) {
     }
 
     f << "(get-value (";
-    for (const auto& var : m_vars) { f << var.second->name() << ' '; }
+    for (const auto& var : m_vars) f << var.second->name() << ' ';
     f << "))\n";
 
     // Quasi-parse S-expression of the form ((x #xVALUE) (y #bVALUE) (z #xVALUE))
@@ -390,7 +390,7 @@ int VlRandomizer::parse_solution(std::iostream& f) {
     f >> c;
     if (c != '(') return 2;
 
-    for (;;) {
+    while (true) {
         f >> c;
         if (c == ')') break;
         if (c != '(') return 2;
@@ -414,7 +414,7 @@ void VlRandomizer::hard(std::string&& constraint) {
 
 #ifdef VL_DEBUG
 void VlRandomizer::dump() const {
-    for (const std::string& c : m_constraints) { VL_PRINTF("Constraint: %s", c.c_str()); }
+    for (const std::string& c : m_constraints) VL_PRINTF("Constraint: %s", c.c_str());
     for (const auto& var : m_vars) {
         VL_PRINTF("Variable (%d): %s", var.second->width(), var.second->name());
     }

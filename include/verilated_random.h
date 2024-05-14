@@ -98,8 +98,8 @@ class VlRandomizer final {
         m_vars;  // Solver-dependent variables
 
     // PRIVATE METHODS
-    std::shared_ptr<const VlRandomExpr> random_constraint(VlRNG& rngr, int bits);
-    int parse_solution(std::iostream& file);
+    std::shared_ptr<const VlRandomExpr> randomConstraint(VlRNG& rngr, int bits);
+    int parseSolution(std::iostream& file);
 
 public:
     // METHODS
