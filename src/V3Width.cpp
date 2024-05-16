@@ -2150,14 +2150,40 @@ class WidthVisitor final : public VNVisitor {
         // Make sure dtype is sized
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype determined for var");
-        if (const AstUnsizedArrayDType* const unsizedp
-            = VN_CAST(nodep->dtypeSkipRefp(), UnsizedArrayDType)) {
-            if (!(m_ftaskp && m_ftaskp->dpiImport())) {
-                UINFO(9, "Unsized becomes dynamic array " << nodep << endl);
-                AstDynArrayDType* const newp
-                    = new AstDynArrayDType{unsizedp->fileline(), unsizedp->subDTypep()};
-                nodep->dtypep(newp);
-                v3Global.rootp()->typeTablep()->addTypesp(newp);
+        if (!(m_ftaskp && m_ftaskp->dpiImport())) {
+            AstNodeDType *dtp = nodep->dtypep();
+            AstNodeDType *np = nullptr;
+            while (VN_IS(dtp->skipRefp(), UnsizedArrayDType)
+                    || VN_IS(dtp->skipRefp(), UnpackArrayDType)
+                    || VN_IS(dtp->skipRefp(), AssocArrayDType)
+                    || VN_IS(dtp->skipRefp(), WildcardArrayDType)
+                    || VN_IS(dtp->skipRefp(), QueueDType)) {
+                if (const AstUnsizedArrayDType* const unsizedp
+                    = VN_CAST(dtp->skipRefp(), UnsizedArrayDType)) {
+                    UINFO(9, "Unsized becomes dynamic array ");
+                    if (!np) {
+                        // for Var itself
+                        UINFONL(9, nodep << endl);
+                    } else {
+                        // for subDType
+                        UINFONL(9, dtp << endl);
+                    }
+                    AstDynArrayDType* const newp
+                        = new AstDynArrayDType{unsizedp->fileline(), unsizedp->subDTypep()};
+                    newp->dtypep(newp);
+                    if (!np) {
+                        // for Var itself
+                        nodep->dtypep(newp);
+                    } else {
+                        // for subDType
+                        np->virtRefDTypep(newp);
+                    }
+                    v3Global.rootp()->typeTablep()->addTypesp(newp);
+                    np = newp;
+                } else {
+                    np = dtp->skipRefp();
+                }
+                dtp = np->virtRefDTypep();
             }
         }
         if (AstWildcardArrayDType* const wildp
@@ -2457,7 +2483,7 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{vdtypep, PRELIM}.p());
-            nodep->dtypeFrom(vdtypep);
+            if (!nodep->dtypep()) nodep->dtypeFrom(vdtypep);
         }
         if (m_vup->final()) {
             // Arguments can be either elements of the queue or a queue itself
@@ -2479,7 +2505,7 @@ class WidthVisitor final : public VNVisitor {
                     iterateCheckTyped(nodep, "RHS", nodep->rhsp(), vdtypep->subDTypep(), FINAL);
                 }
             }
-            nodep->dtypeFrom(vdtypep);
+            if (!nodep->dtypep()) nodep->dtypeFrom(vdtypep);
         }
     }
     void visit(AstConsQueue* nodep) override {
@@ -3347,6 +3373,12 @@ class WidthVisitor final : public VNVisitor {
         return VN_AS(nodep->pinsp(), Arg)->exprp();
     }
     void methodCallLValueRecurse(AstMethodCall* nodep, AstNode* childp, const VAccess& access) {
+        if (const AstCMethodHard* const ichildp = VN_CAST(childp, CMethodHard)) {
+            if (ichildp->name() == "at") {
+                methodCallLValueRecurse(nodep, ichildp->fromp(), access);
+                return;
+            }
+        }
         if (AstNodeVarRef* const varrefp = VN_CAST(childp, NodeVarRef)) {
             varrefp->access(access);
         } else if (const AstMemberSel* const ichildp = VN_CAST(childp, MemberSel)) {
