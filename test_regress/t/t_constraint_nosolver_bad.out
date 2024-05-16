@@ -1,0 +1,8 @@
+Process::open: execvp(someimaginarysolver): No such file or directory
+%Warning: Subprocess command `someimaginarysolver' failed: exit status 127
+%Warning: Unable to communicate with SAT solver, please check its installation or specify a different one in VERILATOR_SOLVER environment variable.
+ ... Tried: $ someimaginarysolver
+
+%Error: t/t_constraint.v:23: Verilog $stop
+Aborting...
+Aborted (core dumped)

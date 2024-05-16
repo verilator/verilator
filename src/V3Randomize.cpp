@@ -183,19 +183,13 @@ class ConstraintExprVisitor final : public VNVisitor {
                 case 'l':
                     pos[0] = '@';
                     UASSERT_OBJ(lhsp, nodep, "emitSMT() references undef node");
-                    if (argsp)
-                        argsp->addNext(lhsp);
-                    else
-                        argsp = lhsp;
+                    argsp = AstNode::addNext(argsp, lhsp);
                     lhsp = nullptr;
                     break;
                 case 'r':
                     pos[0] = '@';
                     UASSERT_OBJ(rhsp, nodep, "emitSMT() references undef node");
-                    if (argsp)
-                        argsp->addNext(rhsp);
-                    else
-                        argsp = rhsp;
+                    argsp = AstNode::addNext(argsp, rhsp);
                     rhsp = nullptr;
                     break;
                 default: nodep->v3fatalSrc("Unknown emitSMT format code: %" << pos[0]); break;
@@ -243,6 +237,11 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstNodeUniop* nodep) override {
         if (editFormat(nodep)) return;
         editSMT(nodep, nodep->lhsp());
+    }
+    void visit(AstReplicate* nodep) override {
+        // Biop, but RHS is harmful
+        if (editFormat(nodep)) return;
+        editSMT(nodep, nodep->srcp());
     }
     void visit(AstSFormatF* nodep) override {}
     void visit(AstConstraintExpr* nodep) override { iterateChildren(nodep); }

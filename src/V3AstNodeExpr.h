@@ -3098,7 +3098,7 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f%% %r)"; }
     string emitC() override { return "VL_MODDIV_%nq%lq%rq(%lw, %P, %li, %ri)"; }
-    string emitSMT() const override { return "(bvmod %l %r)"; }
+    string emitSMT() const override { return "(bvurem %l %r)"; }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return true; }
@@ -3295,6 +3295,9 @@ public:
     }
     string emitVerilog() override { return "%f{%r{%k%l}}"; }
     string emitC() override { return "VL_REPLICATE_%nq%lq%rq(%lw, %P, %li, %ri)"; }
+    string emitSMT() const override {
+        return "((_ repeat " + cvtToStr(width() / lhsp()->width()) + ") %l)";
+    }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return true; }
@@ -3691,7 +3694,7 @@ public:
     }
     string emitVerilog() override { return "%k(%l %f<-> %r)"; }
     string emitC() override { return "VL_LOGEQ_%nq%lq%rq(%nw,%lw,%rw, %P, %li, %ri)"; }
-    string emitSMT() const override { return "(= %l %r)"; }
+    string emitSMT() const override { return "(bvxnor %l %r)"; }
     string emitSimpleOperator() override { return "<->"; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
@@ -3716,6 +3719,7 @@ public:
     string emitVerilog() override { return "%k(%l %f!= %r)"; }
     string emitC() override { return "VL_NEQ_%lq(%lW, %P, %li, %ri)"; }
     string emitSimpleOperator() override { return "!="; }
+    string emitSMT() const override { return "(not (= %l %r))"; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return true; }
@@ -4950,6 +4954,9 @@ public:
     }
     string emitVerilog() override { return "%l"; }
     string emitC() override { return "VL_EXTENDS_%nq%lq(%nw,%lw, %P, %li)"; }
+    string emitSMT() const override {
+        return "((_ sign_extend " + cvtToStr(width() - lhsp()->width()) + ") %l)";
+    }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override {

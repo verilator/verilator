@@ -369,9 +369,9 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
     if (sat == "unsat") return false;
     if (sat != "sat") {
         std::stringstream msg;
-        msg << "Solver error: " << sat;
+        msg << "Internal: Solver error: " << sat;
         const std::string str = msg.str();
-        VL_WARN_MT("", 0, "randomize", str.c_str());
+        VL_WARN_MT(__FILE__, __LINE__, "randomize", str.c_str());
         return false;
     }
 
@@ -416,9 +416,9 @@ void VlRandomizer::hard(std::string&& constraint) {
 
 #ifdef VL_DEBUG
 void VlRandomizer::dump() const {
-    for (const std::string& c : m_constraints) VL_PRINTF("Constraint: %s", c.c_str());
     for (const auto& var : m_vars) {
-        VL_PRINTF("Variable (%d): %s", var.second->width(), var.second->name());
+        VL_PRINTF("Variable (%d): %s\n", var.second->width(), var.second->name());
     }
+    for (const std::string& c : m_constraints) VL_PRINTF("Constraint: %s\n", c.c_str());
 }
 #endif
