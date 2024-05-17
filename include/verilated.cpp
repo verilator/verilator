@@ -82,6 +82,12 @@
 
 #include "verilated_trace.h"
 
+#ifdef VM_SOLVER_DEFAULT
+#define VL_SOLVER_DEFAULT VM_SOLVER_DEFAULT
+#else
+#define VL_SOLVER_DEFAULT "z3 --in"
+#endif
+
 // Max characters in static char string for VL_VALUE_STRING
 constexpr unsigned VL_VALUE_STRING_MAX_WIDTH = 8192;
 
@@ -1171,8 +1177,8 @@ static char* _vl_vsss_read_bin(FILE* fp, int& floc, const WDataInP fromp, const 
 static void _vl_vsss_setbit(WDataOutP iowp, int obits, int lsb, int nbits, IData ld) VL_MT_SAFE {
     for (; nbits && lsb < obits; nbits--, lsb++, ld >>= 1) VL_ASSIGNBIT_WI(lsb, iowp, ld & 1);
 }
-static void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp,
-                           size_t posstart, size_t posend) VL_MT_SAFE {
+void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp, size_t posstart,
+                    size_t posend) VL_MT_SAFE {
     // Read in base "2^^baseLog2" digits from strp[posstart..posend-1] into owp of size obits.
     VL_ZERO_W(obits, owp);
     int lsb = 0;
@@ -2460,6 +2466,7 @@ VerilatedContext::VerilatedContext()
     m_ns.m_coverageFilename = "coverage.dat";
     m_ns.m_profExecFilename = "profile_exec.dat";
     m_ns.m_profVltFilename = "profile.vlt";
+    m_ns.m_solverProgram = VlOs::getenvStr("VERILATOR_SOLVER", VL_SOLVER_DEFAULT);
     m_fdps.resize(31);
     std::fill(m_fdps.begin(), m_fdps.end(), static_cast<FILE*>(nullptr));
     m_fdFreeMct.resize(30);
@@ -2569,6 +2576,14 @@ void VerilatedContext::profVltFilename(const std::string& flag) VL_MT_SAFE {
 std::string VerilatedContext::profVltFilename() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     return m_ns.m_profVltFilename;
+}
+void VerilatedContext::solverProgram(const std::string& flag) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    m_ns.m_solverProgram = flag;
+}
+std::string VerilatedContext::solverProgram() const VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_ns.m_solverProgram;
 }
 void VerilatedContext::quiet(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};

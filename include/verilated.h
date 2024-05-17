@@ -396,6 +396,7 @@ protected:
         std::string m_coverageFilename;  // +coverage+file filename
         std::string m_profExecFilename;  // +prof+exec+file filename
         std::string m_profVltFilename;  // +prof+vlt filename
+        std::string m_solverProgram;  // SMT solver program
         VlOs::DeltaCpuTime m_cpuTimeStart{false};  // CPU time, starts when create first model
         VlOs::DeltaWallTime m_wallTimeStart{false};  // Wall time, starts when create first model
         std::vector<traceBaseModelCb_t> m_traceBaseModelCbs;  // Callbacks to traceRegisterModel
@@ -623,6 +624,10 @@ public:
     std::string profExecFilename() const VL_MT_SAFE;
     void profVltFilename(const std::string& flag) VL_MT_SAFE;
     std::string profVltFilename() const VL_MT_SAFE;
+
+    // Internal: SMT solver program
+    void solverProgram(const std::string& flag) VL_MT_SAFE;
+    std::string solverProgram() const VL_MT_SAFE;
 
     // Internal: Find scope
     const VerilatedScope* scopeFind(const char* namep) const VL_MT_SAFE;

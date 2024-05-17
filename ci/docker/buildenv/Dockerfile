@@ -43,6 +43,7 @@ RUN apt-get update \
                         perl \
                         python3 \
                         wget \
+                        z3 \
                         zlib1g \
                         zlib1g-dev \
     && apt-get clean \

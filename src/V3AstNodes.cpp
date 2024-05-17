@@ -843,6 +843,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "VlForkSync";
         } else if (bdtypep->isProcessRef()) {
             info.m_type = "VlProcessRef";
+        } else if (bdtypep->isRandomGenerator()) {
+            info.m_type = "VlRandomizer";
         } else if (bdtypep->isEvent()) {
             info.m_type = v3Global.assignsEvents() ? "VlAssignableEvent" : "VlEvent";
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
@@ -2737,6 +2739,7 @@ void AstCMethodHard::setPurity() {
                                                           {"find_last_index", true},
                                                           {"fire", false},
                                                           {"first", false},
+                                                          {"hard", false},
                                                           {"init", false},
                                                           {"insert", false},
                                                           {"inside", true},
@@ -2776,7 +2779,8 @@ void AstCMethodHard::setPurity() {
                                                           {"trigger", false},
                                                           {"unique", true},
                                                           {"unique_index", true},
-                                                          {"word", true}};
+                                                          {"word", true},
+                                                          {"write_var", false}};
 
     auto isPureIt = isPureMethod.find(name());
     UASSERT_OBJ(isPureIt != isPureMethod.end(), this, "Unknown purity of method " + name());

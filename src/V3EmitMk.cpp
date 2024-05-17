@@ -106,6 +106,8 @@ public:
                     }
                     if (v3Global.usesProbDist()) putMakeClassEntry(of, "verilated_probdist.cpp");
                     if (v3Global.usesTiming()) putMakeClassEntry(of, "verilated_timing.cpp");
+                    if (v3Global.useRandomizeMethods())
+                        putMakeClassEntry(of, "verilated_random.cpp");
                     putMakeClassEntry(of, "verilated_threads.cpp");
                     if (v3Global.opt.usesProfiler()) {
                         putMakeClassEntry(of, "verilated_profiler.cpp");
@@ -187,6 +189,10 @@ public:
 
         of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
         of.puts("VM_USER_CFLAGS = \\\n");
+        const std::string solver = V3Options::getenvVERILATOR_SOLVER();
+        if (v3Global.useRandomizeMethods() && solver != "")
+            of.puts("\t-DVM_SOLVER_DEFAULT='\"" + V3OutFormatter::quoteNameControls(solver)
+                    + "\"' \\\n");
         if (!v3Global.opt.libCreate().empty()) of.puts("\t-fPIC \\\n");
         const V3StringList& cFlags = v3Global.opt.cFlags();
         for (const string& i : cFlags) of.puts("\t" + i + " \\\n");

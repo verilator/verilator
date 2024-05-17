@@ -92,8 +92,8 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     sudo apt-get update ||
     sudo apt-get update
     # libfl-dev needed for internal coverage's test runs
-    sudo apt-get install gdb gtkwave lcov libfl-dev ccache jq ||
-    sudo apt-get install gdb gtkwave lcov libfl-dev ccache jq
+    sudo apt-get install gdb gtkwave lcov libfl-dev ccache jq z3 ||
+    sudo apt-get install gdb gtkwave lcov libfl-dev ccache jq z3
     # Required for test_regress/t/t_dist_attributes.pl
     if [ "$CI_RUNS_ON" = "ubuntu-22.04" ]; then
       sudo apt-get install python3-clang mold ||
@@ -106,10 +106,10 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   elif [ "$CI_OS_NAME" = "osx" ]; then
     brew update
     # brew cask install gtkwave # fst2vcd hangs at launch, so don't bother
-    brew install ccache perl jq
+    brew install ccache perl jq z3
   elif [ "$CI_OS_NAME" = "freebsd" ]; then
     # fst2vcd fails with "Could not open '<input file>', exiting."
-    sudo pkg install -y ccache gmake perl5 python3 jq
+    sudo pkg install -y ccache gmake perl5 python3 jq z3
   else
     fatal "Unknown os: '$CI_OS_NAME'"
   fi

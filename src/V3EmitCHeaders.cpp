@@ -515,6 +515,7 @@ class EmitCHeader final : public EmitCConstInit {
         if (v3Global.opt.savable()) puts("#include \"verilated_save.h\"\n");
         if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");
         if (v3Global.usesTiming()) puts("#include \"verilated_timing.h\"\n");
+        if (v3Global.useRandomizeMethods()) puts("#include \"verilated_random.h\"\n");
 
         std::set<string> cuse_set;
         auto add_to_cuse_set = [&](string s) { cuse_set.insert(s); };

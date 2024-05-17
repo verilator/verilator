@@ -1,0 +1,11 @@
+%Error-UNSUPPORTED: t/t_randomize_method_with_unsup.v:47:40: Unsupported: randomize() 'with' constraint
+   47 |          rand_result = obj.randomize() with { lb <= y && y <= ub; };
+      |                                        ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_randomize_method_with_unsup.v:63:37: Unsupported: randomize() 'with' constraint
+   63 |       rand_result = obj.randomize() with { 256 < y && y < 256; };
+      |                                     ^~~~
+%Error-UNSUPPORTED: t/t_randomize_method_with_unsup.v:67:37: Unsupported: randomize() 'with' constraint
+   67 |       rand_result = obj.randomize() with { 16 <= z && z <= 32; };
+      |                                     ^~~~
+%Error: Exiting due to
