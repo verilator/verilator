@@ -616,6 +616,7 @@ class ForkVisitor final : public VNVisitor {
         if (m_forkDepth && !nodep->varp()->isFuncLocal() && nodep->varp()->isClassMember()) return;
 
         if (m_forkDepth && (m_forkLocalsp.count(nodep->varp()) == 0)
+            && nodep->varp()->varType() != VVarType::PORT  // Basically static, so it's safe
             && !nodep->varp()->lifetime().isStatic()) {
             if (nodep->access().isWriteOrRW()
                 && (!nodep->isClassHandleValue() || nodep->user2())) {
