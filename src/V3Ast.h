@@ -900,7 +900,7 @@ public:
         TRIWIRE,
         TRI0,
         TRI1,
-        PORT,  // Temp type used in parser only
+        PORT,  // Used in parser and V3Fork to recognize ports
         BLOCKTEMP,
         MODULETEMP,
         STMTTEMP,
