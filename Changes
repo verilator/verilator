@@ -11,6 +11,10 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 5.025 devel
 ==========================
 
+**Major:**
+
+* Support constrained randomization with external solvers (#4947). [Arkadiusz Kozdra, Antmicro Ltd.]
+
 **Minor:**
 
 * Support __en/__out signals on top level inout ports (#4812) (#4856). [Paul Wright]
@@ -23,11 +27,12 @@ Verilator 5.025 devel
 * Add `--localize-max-size` option and optimization (#5072).
 * Add parameterless assert control system tasks (#5010). [Bartłomiej Chmiel]
 * Add traceCapable indication to model header (#5053). [Vito Gamberini]
+* Add increasing of stack size when possible (#5071) (#5104). [Yinan Xu]
 * Fix missing flex include path variable (#4970) (#4971). [Christopher Taylor]
 * Fix missing parameters with comma to be errors (#4979) (#5012). [Paul Swirhun]
 * Fix bound queue printing (#5032). [Aleksander Kiryk, Antmicro Ltd.]
 * Fix consecutive zero-delays (#5038). [Krzysztof Bieganski, Antmicro Ltd.]
-* Fix make $(info) which cannot be silenced (#5059). [Gökçe Aydos]
+* Fix `make $(info)` which cannot be silenced (#5059). [Gökçe Aydos]
 * Fix attempted to destroy locked thread pool error (#5040). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix `$system` with string argument (#5042).
 * Fix width extension on delays (#5043).
@@ -39,7 +44,11 @@ Verilator 5.025 devel
 * Fix macro expansion in strings per 1800-2023 (#5094). [Geza Lore]
 * Fix width extension of unpacked array select (#5095). [Varun Koyyalagunta]
 * Fix MacOS missing <type_traits> header (#5096) (#5097). [Vito Gamberini]
+* Fix aliases for forced port signals (#5105). [Geza Lore]
 * Fix tracing interface functions (#5108). [Alex Solomatnikov]
+* Fix method calls parsing in constraints (#5110). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Fix vpiInertialDelay for memories (#5113). [Todd Strader]
+* Fix references to ports in forks (#5123). [Krzysztof Bieganski, Antmicro Ltd.]
 
 
 Verilator 5.024 2024-04-05
