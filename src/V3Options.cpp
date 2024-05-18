@@ -67,6 +67,7 @@ public:
     using DirMap = std::map<const string, std::set<std::string>>;  // Directory listing
 
     // STATE
+    std::list<string> m_lineArgs;  // List of command line argument encountered
     std::list<string> m_allArgs;  // List of every argument encountered
     std::list<string> m_incDirUsers;  // Include directories (ordered)
     std::set<string> m_incDirUserSet;  // Include directories (for removing duplicates)
@@ -393,6 +394,8 @@ void V3Options::addVFile(const string& filename) {
 }
 void V3Options::addForceInc(const string& filename) { m_forceIncs.push_back(filename); }
 
+void V3Options::addLineArg(const string& arg) { m_impp->m_lineArgs.push_back(arg); }
+
 void V3Options::addArg(const string& arg) { m_impp->m_allArgs.push_back(arg); }
 
 string V3Options::allArgsString() const VL_MT_SAFE {
@@ -409,8 +412,8 @@ string V3Options::allArgsStringForHierBlock(bool forTop) const {
     std::set<string> vFiles;
     for (const auto& vFile : m_vFiles) vFiles.insert(vFile);
     string out;
-    for (std::list<string>::const_iterator it = m_impp->m_allArgs.begin();
-         it != m_impp->m_allArgs.end(); ++it) {
+    for (std::list<string>::const_iterator it = m_impp->m_lineArgs.begin();
+         it != m_impp->m_lineArgs.end(); ++it) {
         int skip = 0;
         if (it->length() >= 2 && (*it)[0] == '-' && (*it)[1] == '-') {
             skip = 2;
@@ -1003,6 +1006,11 @@ string V3Options::argString(int argc, char** argv) {
 // V3 Options Parsing
 
 void V3Options::parseOpts(FileLine* fl, int argc, char** argv) VL_MT_DISABLED {
+    // Save command line options
+    for (int i = 0; i < argc; ++i) {
+        addLineArg(argv[i]);
+    }
+
     // Parse all options
     // Initial entry point from Verilator.cpp
     parseOptsList(fl, ".", argc, argv);

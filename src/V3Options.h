@@ -400,6 +400,7 @@ private:
 
 private:
     // METHODS
+    void addLineArg(const string& arg);
     void addArg(const string& arg);
     void addDefine(const string& defline, bool allowPlus) VL_MT_DISABLED;
     void addFuture(const string& flag);
