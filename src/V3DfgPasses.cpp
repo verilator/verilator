@@ -165,8 +165,8 @@ void V3DfgPasses::inlineVars(DfgGraph& dfg) {
                     const AstVar* const astVarp = driverVarp->varp();
                     // If driven from a SystemC variable
                     if (astVarp->isSc()) continue;
-                    // If the variable is forceable
-                    if (astVarp->isForceable()) continue;
+                    // If the variable is forced
+                    if (astVarp->isForced()) continue;
                 }
 
                 varp->forEachSinkEdge([=](DfgEdge& edge) { edge.relinkSource(driverp); });

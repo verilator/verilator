@@ -13,6 +13,10 @@
 
 #include VM_PREFIX_INCLUDE
 
+#include "TestCheck.h"
+
+int errors = 0;
+
 unsigned long long main_time = 0;
 double sc_time_stamp() { return (double)main_time; }
 
@@ -31,6 +35,9 @@ int main(int argc, char** argv) {
 
     std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};
     top->trace(tfp.get(), 99);
+
+    // Test for traceCapable - randomly-ish selected this test
+    TEST_CHECK_EQ(top->traceCapable, true);
 
     tfp->open(trace_name());
 
@@ -63,5 +70,5 @@ int main(int argc, char** argv) {
     tfp.reset();
     top.reset();
     printf("*-* All Finished *-*\n");
-    return 0;
+    return errors;
 }

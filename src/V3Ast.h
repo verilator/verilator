@@ -559,6 +559,7 @@ public:
         DYNAMIC_TRIGGER_SCHEDULER,
         FORK_SYNC,
         PROCESS_REFERENCE,
+        RANDOM_GENERATOR,
         // Unsigned and two state; fundamental types
         UINT32,
         UINT64,
@@ -592,6 +593,7 @@ public:
                                             "VlDynamicTriggerScheduler",
                                             "VlFork",
                                             "VlProcessRef",
+                                            "VlRandomizer",
                                             "IData",
                                             "QData",
                                             "LOGIC_IMPLICIT",
@@ -599,20 +601,13 @@ public:
         return names[m_e];
     }
     const char* dpiType() const {
-        static const char* const names[] = {"%E-unk",        "svBit",
-                                            "char",          "void*",
-                                            "char",          "int",
-                                            "%E-integer",    "svLogic",
-                                            "long long",     "double",
-                                            "short",         "%E-time",
-                                            "const char*",   "%E-untyped",
-                                            "dpiScope",      "const char*",
-                                            "%E-mtaskstate", "%E-triggervec",
-                                            "%E-dly-sched",  "%E-trig-sched",
-                                            "%E-dyn-sched",  "%E-fork",
-                                            "%E-proc-ref",   "IData",
-                                            "QData",         "%E-logic-implct",
-                                            " MAX"};
+        static const char* const names[]
+            = {"%E-unk",       "svBit",           "char",          "void*",        "char",
+               "int",          "%E-integer",      "svLogic",       "long long",    "double",
+               "short",        "%E-time",         "const char*",   "%E-untyped",   "dpiScope",
+               "const char*",  "%E-mtaskstate",   "%E-triggervec", "%E-dly-sched", "%E-trig-sched",
+               "%E-dyn-sched", "%E-fork",         "%E-proc-ref",   "%E-rand-gen",  "IData",
+               "QData",        "%E-logic-implct", " MAX"};
         return names[m_e];
     }
     static void selfTest() {
@@ -652,6 +647,7 @@ public:
         case DYNAMIC_TRIGGER_SCHEDULER: return 0;  // opaque
         case FORK_SYNC: return 0;  // opaque
         case PROCESS_REFERENCE: return 0;  // opaque
+        case RANDOM_GENERATOR: return 0;  // opaque
         case UINT32: return 32;
         case UINT64: return 64;
         default: return 0;
@@ -691,7 +687,8 @@ public:
         return (m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
                 || m_e == MTASKSTATE || m_e == TRIGGERVEC || m_e == DELAY_SCHEDULER
                 || m_e == TRIGGER_SCHEDULER || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == FORK_SYNC
-                || m_e == PROCESS_REFERENCE || m_e == DOUBLE || m_e == UNTYPED);
+                || m_e == PROCESS_REFERENCE || m_e == RANDOM_GENERATOR || m_e == DOUBLE
+                || m_e == UNTYPED);
     }
     bool isDouble() const VL_MT_SAFE { return m_e == DOUBLE; }
     bool isEvent() const { return m_e == EVENT; }
@@ -903,7 +900,7 @@ public:
         TRIWIRE,
         TRI0,
         TRI1,
-        PORT,  // Temp type used in parser only
+        PORT,  // Used in parser and V3Fork to recognize ports
         BLOCKTEMP,
         MODULETEMP,
         STMTTEMP,
@@ -1099,6 +1096,61 @@ constexpr bool operator==(const VAlwaysKwd& lhs, const VAlwaysKwd& rhs) {
 }
 constexpr bool operator==(const VAlwaysKwd& lhs, VAlwaysKwd::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VAlwaysKwd::en lhs, const VAlwaysKwd& rhs) { return lhs == rhs.m_e; }
+
+// ######################################################################
+
+class VAssertCtlType final {
+public:
+    // IEEE 1800-2023 Table 20-5
+    enum en : uint8_t {
+        _TO_BE_EVALUATED = 0,
+        LOCK = 1,
+        UNLOCK = 2,
+        ON = 3,
+        OFF = 4,
+        KILL = 5,
+        PASS_ON = 6,
+        PASS_OFF = 7,
+        FAIL_ON = 8,
+        FAIL_OFF = 9,
+        NONVACUOUS_ON = 10,
+        VACUOUS_OFF = 11
+    };
+    enum en m_e;
+    VAssertCtlType()
+        : m_e{_TO_BE_EVALUATED} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VAssertCtlType(en _e)
+        : m_e{_e} {}
+    explicit VAssertCtlType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+    const char* ascii() const {
+        // IEEE 1800-2023 20.11
+        static const char* const names[] = {"",
+                                            "",
+                                            "",
+                                            "$asserton",
+                                            "$assertoff",
+                                            "$assertkill",
+                                            "$assertpasson",
+                                            "$assertpassoff",
+                                            "$assertfailon",
+                                            "$assertfailoff",
+                                            "$assertnonvacuouson",
+                                            "$assertvacuousoff"};
+        return names[m_e];
+    }
+};
+constexpr bool operator==(const VAssertCtlType& lhs, const VAssertCtlType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VAssertCtlType& lhs, VAssertCtlType::en rhs) {
+    return lhs.m_e == rhs;
+}
+constexpr bool operator==(VAssertCtlType::en lhs, const VAssertCtlType& rhs) {
+    return lhs == rhs.m_e;
+}
 
 // ######################################################################
 

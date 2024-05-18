@@ -86,7 +86,7 @@ class PremitVisitor final : public VNVisitor {
             // Extract into constant pool.
             const bool merge = v3Global.opt.fMergeConstPool();
             varp = v3Global.rootp()->constPoolp()->findConst(constp, merge)->varp();
-            nodep->deleteTree();
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
             ++m_extractedToConstPool;
         } else {
             // Keep as local temporary.

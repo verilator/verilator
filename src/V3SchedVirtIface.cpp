@@ -132,7 +132,7 @@ private:
             nodep->replaceWith(postp);
             postp->addStmtsp(
                 new AstAssign{flp, nodep->lhsp()->unlinkFrBack(), nodep->rhsp()->unlinkFrBack()});
-            nodep->deleteTree();
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
     void visit(AstNodeIf* nodep) override {

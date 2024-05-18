@@ -788,6 +788,22 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
         info.m_type = "VlUnpacked<" + sub.m_type;
         info.m_type += ", " + cvtToStr(adtypep->declRange().elements());
         info.m_type += ">";
+    } else if (const auto* const adtypep = VN_CAST(dtypep, NBACommitQueueDType)) {
+        UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
+        compound = true;
+        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(compound, false);
+        AstNodeDType* eDTypep = adtypep->subDTypep();
+        unsigned rank = 0;
+        while (AstUnpackArrayDType* const uaDTypep = VN_CAST(eDTypep, UnpackArrayDType)) {
+            eDTypep = uaDTypep->subDTypep()->skipRefp();
+            ++rank;
+        }
+        info.m_type = "VlNBACommitQueue<";
+        info.m_type += sub.m_type;
+        info.m_type += adtypep->partial() ? ", true" : ", false";
+        info.m_type += ", " + eDTypep->cTypeRecurse(compound, false).m_type;
+        info.m_type += ", " + std::to_string(rank);
+        info.m_type += ">";
     } else if (packed && (VN_IS(dtypep, PackArrayDType))) {
         const AstPackArrayDType* const adtypep = VN_CAST(dtypep, PackArrayDType);
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(false, true);
@@ -827,6 +843,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "VlForkSync";
         } else if (bdtypep->isProcessRef()) {
             info.m_type = "VlProcessRef";
+        } else if (bdtypep->isRandomGenerator()) {
+            info.m_type = "VlRandomizer";
         } else if (bdtypep->isEvent()) {
             info.m_type = v3Global.assignsEvents() ? "VlAssignableEvent" : "VlEvent";
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
@@ -1442,7 +1460,32 @@ void AstAlways::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "keyword", keyword().ascii());
     dumpJsonGen(str);
 }
-
+AstAssertCtl::AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr* levelp,
+                           AstNodeExpr* itemsp)
+    : ASTGEN_SUPER_AssertCtl(fl)
+    , m_ctlType{ctlType} {
+    controlTypep(new AstConst{fl, ctlType});
+    if (!levelp) levelp = new AstConst{fl, 0};
+    this->levelp(levelp);
+    addItemsp(itemsp);
+}
+AstAssertCtl::AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr*, AstNodeExpr*,
+                           AstNodeExpr* levelp, AstNodeExpr* itemsp)
+    : ASTGEN_SUPER_AssertCtl(fl)
+    , m_ctlType{VAssertCtlType::_TO_BE_EVALUATED} {
+    this->controlTypep(controlTypep);
+    if (!levelp) levelp = new AstConst{fl, 0};
+    this->levelp(levelp);
+    addItemsp(itemsp);
+}
+void AstAssertCtl::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " [" << ctlType().ascii() << "]";
+}
+void AstAssertCtl::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "ctlType", ctlType().ascii());
+    dumpJsonGen(str);
+}
 void AstAttrOf::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " [" << attrType().ascii() << "]";
@@ -2683,6 +2726,7 @@ void AstCMethodHard::setPurity() {
                                                           {"commit", false},
                                                           {"delay", false},
                                                           {"done", false},
+                                                          {"enqueue", false},
                                                           {"erase", false},
                                                           {"evaluate", false},
                                                           {"evaluation", false},
@@ -2695,6 +2739,7 @@ void AstCMethodHard::setPurity() {
                                                           {"find_last_index", true},
                                                           {"fire", false},
                                                           {"first", false},
+                                                          {"hard", false},
                                                           {"init", false},
                                                           {"insert", false},
                                                           {"inside", true},
@@ -2734,7 +2779,8 @@ void AstCMethodHard::setPurity() {
                                                           {"trigger", false},
                                                           {"unique", true},
                                                           {"unique_index", true},
-                                                          {"word", true}};
+                                                          {"word", true},
+                                                          {"write_var", false}};
 
     auto isPureIt = isPureMethod.find(name());
     UASSERT_OBJ(isPureIt != isPureMethod.end(), this, "Unknown purity of method " + name());

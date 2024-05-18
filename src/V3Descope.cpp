@@ -223,8 +223,7 @@ class DescopeVisitor final : public VNVisitor {
     }
     void visit(AstVarScope* nodep) override {
         // Delete the varscope when we're finished
-        nodep->unlinkFrBack();
-        pushDeletep(nodep);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstNodeVarRef* nodep) override {
         iterateChildren(nodep);

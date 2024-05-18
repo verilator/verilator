@@ -250,7 +250,7 @@ private:
         } else {
             nodep->v3fatal("Invalid direction");
         }
-        pushDeletep(nodep->unlinkFrBack());
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstDelay* nodep) override {
         // Only cycle delays are relevant in this stage; also only process once

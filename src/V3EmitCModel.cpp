@@ -101,6 +101,12 @@ class EmitCModel final : public EmitCFunc {
 
         puts("\n");
         ofp()->putsPrivate(false);  // public:
+
+        puts("\n// CONSTEXPR CAPABILITIES\n");
+        puts("// Verilated with --trace?\n");
+        puts("static constexpr bool traceCapable = "s
+             + (v3Global.opt.trace() ? "true;\n"s : "false;\n"s));
+
         // User accessible IO
         puts("\n// PORTS\n"
              "// The application code writes and reads these signals to\n"

@@ -68,7 +68,7 @@ class ActiveTopVisitor final : public VNVisitor {
         UINFO(4, "   ACTIVE " << nodep << endl);
         // Remove duplicate clocks and such; sensesp() may change!
         V3Const::constifyExpensiveEdit(nodep);
-        AstSenTree* const sensesp = nodep->sensesp();
+        AstSenTree* sensesp = nodep->sensesp();
         UASSERT_OBJ(sensesp, nodep, "nullptr");
         if (sensesp->sensesp() && sensesp->sensesp()->isNever()) {
             // Never executing.  Kill it.
@@ -106,7 +106,7 @@ class ActiveTopVisitor final : public VNVisitor {
                 // There may be other references to same sense tree,
                 // we'll be removing all references when we get to them,
                 // but don't dangle our pointer yet!
-                pushDeletep(sensesp);
+                VL_DO_DANGLING(pushDeletep(sensesp), sensesp);
             }
             nodep->sensesp(wantp);
         }

@@ -717,6 +717,7 @@ public:
     static string getenvSYSTEMC_INCLUDE();
     static string getenvSYSTEMC_LIBDIR();
     static string getenvVERILATOR_ROOT();
+    static string getenvVERILATOR_SOLVER();
     static string getStdPackagePath();
     static string getSupported(const string& var);
     static bool systemCSystemWide();

@@ -79,7 +79,7 @@ public:
         : m_fl{fl} {}
 
     ~TableBuilder() {
-        if (m_initp) m_initp->deleteTree();
+        if (m_initp) VL_DO_DANGLING(m_initp->deleteTree(), m_initp);
     }
 
     void setTableSize(AstNodeDType* elemDType, unsigned size) {

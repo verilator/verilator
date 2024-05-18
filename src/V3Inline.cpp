@@ -320,8 +320,16 @@ class InlineRelinkVisitor final : public VNVisitor {
                 // module, so a AstVarRef not AstVarXRef below
                 exprvarrefp = exprvarrefp->cloneTree(false);
                 exprvarrefp->access(VAccess::READ);
-                m_modp->addStmtsp(new AstAssignAlias{
-                    flp, new AstVarRef{flp, nodep, VAccess::WRITE}, exprvarrefp});
+                AstVarRef* const nodeVarRefp = new AstVarRef{flp, nodep, VAccess::WRITE};
+                if (nodep->isForced() && nodep->direction() == VDirection::INPUT) {
+                    m_modp->addStmtsp(new AstAssignW{flp, nodeVarRefp, exprvarrefp});
+                } else if (nodep->isForced() && nodep->direction() == VDirection::OUTPUT) {
+                    exprvarrefp->access(VAccess::WRITE);
+                    nodeVarRefp->access(VAccess::READ);
+                    m_modp->addStmtsp(new AstAssignW{flp, exprvarrefp, nodeVarRefp});
+                } else {
+                    m_modp->addStmtsp(new AstAssignAlias{flp, nodeVarRefp, exprvarrefp});
+                }
                 FileLine* const flbp = exprvarrefp->varp()->fileline();
                 flp->modifyStateInherit(flbp);
                 flbp->modifyStateInherit(flp);
@@ -370,7 +378,9 @@ class InlineRelinkVisitor final : public VNVisitor {
         if (nodep->varp()->user2p()  // It's being converted to an alias.
             && !nodep->varp()->user3()
             // Don't constant propagate aliases (we just made)
-            && !VN_IS(nodep->backp(), AssignAlias)) {
+            && !VN_IS(nodep->backp(), AssignAlias)
+            // Forced signals do not use aliases
+            && !nodep->varp()->isForced()) {
             AstVar* const varp = nodep->varp();
             if (AstConst* const constp = VN_CAST(varp->user2p(), Const)) {
                 nodep->replaceWith(constp->cloneTree(false));

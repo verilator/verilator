@@ -819,7 +819,7 @@ class RemovePlaceholdersVisitor final : public VNVisitor {
                 }
             }
             if (emptyOrCommentOnly) {
-                pushDeletep(nodep->unlinkFrBack());
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 ++m_emptyAlways;
             }
         }

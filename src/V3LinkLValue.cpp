@@ -35,6 +35,7 @@ class LinkLValueVisitor final : public VNVisitor {
     // STATE
     bool m_setContinuously = false;  // Set that var has some continuous assignment
     bool m_setStrengthSpecified = false;  // Set that var has assignment with strength specified.
+    bool m_setForcedByCode = false;  // Set that var is the target of an AstAssignForce/AstRelease
     VAccess m_setRefLvalue;  // Set VarRefs to lvalues for pin assignments
 
     // VISITs
@@ -42,15 +43,16 @@ class LinkLValueVisitor final : public VNVisitor {
     void visit(AstNodeVarRef* nodep) override {
         // VarRef: LValue its reference
         if (m_setRefLvalue != VAccess::NOCHANGE) nodep->access(m_setRefLvalue);
-        if (nodep->varp()) {
-            if (nodep->access().isWriteOrRW() && m_setContinuously) {
+        if (nodep->varp() && nodep->access().isWriteOrRW()) {
+            if (m_setContinuously) {
                 nodep->varp()->isContinuously(true);
                 // Strength may only be specified in continuous assignment,
                 // so it is needed to check only if m_setContinuously is true
                 if (m_setStrengthSpecified) nodep->varp()->hasStrengthAssignment(true);
             }
-            if (nodep->access().isWriteOrRW() && !nodep->varp()->isFuncLocal()
-                && nodep->varp()->isReadOnly()) {
+            if (m_setForcedByCode) {
+                nodep->varp()->setForcedByCode();
+            } else if (!nodep->varp()->isFuncLocal() && nodep->varp()->isReadOnly()) {
                 nodep->v3warn(ASSIGNIN,
                               "Assigning to input/const variable: " << nodep->prettyNameQ());
             }
@@ -79,7 +81,11 @@ class LinkLValueVisitor final : public VNVisitor {
             if (AstAssignW* assignwp = VN_CAST(nodep, AssignW)) {
                 if (assignwp->strengthSpecp()) m_setStrengthSpecified = true;
             }
-            iterateAndNextNull(nodep->lhsp());
+            {
+                VL_RESTORER(m_setForcedByCode);
+                m_setForcedByCode = VN_IS(nodep, AssignForce);
+                iterateAndNextNull(nodep->lhsp());
+            }
             m_setRefLvalue = VAccess::NOCHANGE;
             m_setContinuously = false;
             m_setStrengthSpecified = false;
@@ -89,9 +95,11 @@ class LinkLValueVisitor final : public VNVisitor {
     void visit(AstRelease* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         VL_RESTORER(m_setContinuously);
+        VL_RESTORER(m_setForcedByCode);
         {
             m_setRefLvalue = VAccess::WRITE;
             m_setContinuously = false;
+            m_setForcedByCode = true;
             iterateAndNextNull(nodep->lhsp());
         }
     }

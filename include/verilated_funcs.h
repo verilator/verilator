@@ -115,6 +115,9 @@ extern void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp,
 extern WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP const lwp, WDataInP const rwp,
                               bool is_modulus) VL_MT_SAFE;
 
+extern void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp,
+                           size_t posstart, size_t posend) VL_MT_SAFE;
+
 extern IData VL_FGETS_IXI(int obits, void* destp, IData fpi) VL_MT_SAFE;
 
 extern void VL_FFLUSH_I(IData fdi) VL_MT_SAFE;

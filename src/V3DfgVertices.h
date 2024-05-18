@@ -239,7 +239,7 @@ public:
     ASTGEN_MEMBERS_DfgVarPacked;
 
     bool isDrivenFullyByDfg() const {
-        return arity() == 1 && source(0)->dtypep() == dtypep() && !varp()->isForceable();
+        return arity() == 1 && source(0)->dtypep() == dtypep() && !varp()->isForced();
     }
 
     void addDriver(FileLine* flp, uint32_t lsb, DfgVertex* vtxp) {
