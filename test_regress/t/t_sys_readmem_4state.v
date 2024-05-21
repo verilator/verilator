@@ -7,8 +7,8 @@
 `define STRINGIFY(x) `"x`"
 
 module t;
-   reg [3:0] MEMB [1];
-   reg [3:0] MEMH [1];
+   reg [3:0] MEMB [6];
+   reg [3:0] MEMH [6];
 
    initial begin
       $readmemb("t/t_sys_readmem_4state.mem", MEMB);
