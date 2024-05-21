@@ -2046,27 +2046,26 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
     if (VL_UNLIKELY(!m_fp)) return false;
     valuer = "";
     // Prep for reading
-    bool indata = false;
-    bool ignore_to_eol = false;
-    bool ignore_to_cmt = false;
-    bool reading_addr = false;
-    int lastc = ' ';
+    bool inData = false;
+    bool ignoreToEol = false;
+    bool ignoreToComment = false;
+    bool readingAddress = false;
+    int lastCh = ' ';
     // Read the data
     // We process a character at a time, as then we don't need to deal
     // with changing buffer sizes dynamically, etc.
     while (true) {
         int c = std::fgetc(m_fp);
         if (VL_UNLIKELY(c == EOF)) break;
-        const bool c_is_4state_bin
+        const bool chIs4StateBin
             = c == '0' || c == '1' || c == 'x' || c == 'X' || c == 'z' || c == 'Z';
-        const bool c_is_2state_hex = std::isxdigit(c);
-        const bool c_is_4state_hex
-            = std::isxdigit(c) || c == 'x' || c == 'X' || c == 'z' || c == 'Z';
+        const bool chIs2StateHex = std::isxdigit(c);
+        const bool chIs4StateHex = std::isxdigit(c) || chIs4StateBin;
         // printf("%d: Got '%c' Addr%lx IN%d IgE%d IgC%d\n",
-        //        m_linenum, c, m_addr, indata, ignore_to_eol, ignore_to_cmt);
+        //        m_linenum, c, m_addr, inData, ignoreToEol, ignoreToComment);
         // See if previous data value has completed, and if so return
         if (c == '_') continue;  // Ignore _ e.g. inside a number
-        if (indata && !c_is_4state_hex) {
+        if (inData && !chIs4StateHex) {
             // printf("Got data @%lx = %s\n", m_addr, valuer.c_str());
             ungetc(c, m_fp);
             addrr = m_addr;
@@ -2076,35 +2075,35 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
         // Parse line
         if (c == '\n') {
             ++m_linenum;
-            ignore_to_eol = false;
-            reading_addr = false;
+            ignoreToEol = false;
+            readingAddress = false;
         } else if (c == '\t' || c == ' ' || c == '\r' || c == '\f') {
-            reading_addr = false;
+            readingAddress = false;
         }
         // Skip // comments and detect /* comments
-        else if (ignore_to_cmt && lastc == '*' && c == '/') {
-            ignore_to_cmt = false;
-            reading_addr = false;
-        } else if (!ignore_to_eol && !ignore_to_cmt) {
-            if (lastc == '/' && c == '*') {
-                ignore_to_cmt = true;
-            } else if (lastc == '/' && c == '/') {
-                ignore_to_eol = true;
+        else if (ignoreToComment && lastCh == '*' && c == '/') {
+            ignoreToComment = false;
+            readingAddress = false;
+        } else if (!ignoreToEol && !ignoreToComment) {
+            if (lastCh == '/' && c == '*') {
+                ignoreToComment = true;
+            } else if (lastCh == '/' && c == '/') {
+                ignoreToEol = true;
             } else if (c == '/') {  // Part of /* or //
             } else if (c == '#') {
-                ignore_to_eol = true;
+                ignoreToEol = true;
             } else if (c == '@') {
-                reading_addr = true;
+                readingAddress = true;
                 m_anyAddr = true;
                 m_addr = 0;
-            } else if (reading_addr && c_is_2state_hex) {
+            } else if (readingAddress && chIs2StateHex) {
                 c = std::tolower(c);
-                const int addr_value = (c >= 'a') ? (c - 'a' + 10) : (c - '0');
-                m_addr = (m_addr << 4) + addr_value;
-            } else if (c_is_4state_hex) {
-                indata = true;
+                const int addressValue = (c >= 'a') ? (c - 'a' + 10) : (c - '0');
+                m_addr = (m_addr << 4) + addressValue;
+            } else if (chIs4StateHex) {
+                inData = true;
                 valuer += static_cast<char>(c);
-                if (VL_UNLIKELY(!m_hex && !c_is_4state_bin)) {
+                if (VL_UNLIKELY(!m_hex && !chIs4StateBin)) {
                     VL_FATAL_MT(m_filename.c_str(), m_linenum, "",
                                 "$readmemb (binary) file contains hex characters");
                 }
@@ -2112,7 +2111,7 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
                 VL_FATAL_MT(m_filename.c_str(), m_linenum, "", "$readmem file syntax error");
             }
         }
-        lastc = c;
+        lastCh = c;
     }
 
     if (VL_UNLIKELY(m_end != ~0ULL && m_addr <= m_end && !m_anyAddr)) {
