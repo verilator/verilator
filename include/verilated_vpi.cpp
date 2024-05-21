@@ -2485,8 +2485,7 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             }
             for (i = 0; i < bytes; ++i) {
                 const char val = datap[bytes - i - 1];
-                // other simulators replace [leading?] zero chars with spaces, replicate here.
-                t_outStr[i] = val ? val : ' ';
+                t_outStr[i] = val;
             }
             t_outStr[i] = '\0';
             return;
@@ -2740,11 +2739,10 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 return object;
             } else {
                 const int bytes = VL_BYTES_I(vop->varp()->packed().elements());
-                const int len = std::strlen(valuep->value.str);
                 CData* const datap = (reinterpret_cast<CData*>(vop->varDatap()));
                 for (int i = 0; i < bytes; ++i) {
-                    // prepend with 0 values before placing string the least significant bytes
-                    datap[i] = (i < len) ? valuep->value.str[len - i - 1] : 0;
+                    datap[i] = valuep->value.str[bytes - i - 1];
+                    // if (i == (words - 1)) datap[i] &= vop->mask();
                 }
             }
             return object;
