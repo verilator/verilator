@@ -2100,6 +2100,9 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
                 c = std::tolower(c);
                 const int addressValue = (c >= 'a') ? (c - 'a' + 10) : (c - '0');
                 m_addr = (m_addr << 4) + addressValue;
+            } else if (readingAddress && chIs4StateHex) {
+                VL_FATAL_MT(m_filename.c_str(), m_linenum, "",
+                            "$readmem address contains 4-state characters");
             } else if (chIs4StateHex) {
                 inData = true;
                 valuer += static_cast<char>(c);
