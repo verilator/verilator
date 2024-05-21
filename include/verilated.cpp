@@ -2123,7 +2123,7 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
     }
 
     addrr = m_addr;
-    return indata;  // EOF
+    return inData;  // EOF
 }
 void VlReadMem::setData(void* valuep, const std::string& rhs) {
     const QData shift = m_hex ? 4ULL : 1ULL;
