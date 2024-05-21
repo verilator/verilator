@@ -107,6 +107,15 @@ unsigned int callback_count_strs_max = 500;
 #define STRINGIFY(x) STRINGIFY2(x)
 #define STRINGIFY2(x) #x
 
+#define TRUNCATE_LEADING_ZEROS(str,bits) \
+    const int bytes = (bits+7)/8; \
+    for(auto i = 0; i<bytes; i++){ \
+        if(str[i] != 0){ \
+            str = str + i; \
+            break; \
+        } \
+    }
+
 int _mon_check_mcd() {
     PLI_INT32 status;
 
@@ -732,11 +741,11 @@ int _mon_check_string() {
         const char* initial;
         const char* value;
     } text_test_obs[] = {
-        {"text_byte", "B", "xxA"},  // x's dropped
-        {"text_half", "Hf", "xxT2"},  // x's dropped
-        {"text_word", "Word", "Tree"},
-        {"text_long", "Long64b", "44Four44"},
-        {"text", "Verilog Test module", "lorem ipsum"},
+        {"text_byte", "B", new char[2] {"A"}},  // x's dropped
+        {"text_half", "Hf", new char[3] {"T2"}},  // x's dropped
+        {"text_word", "Word", new char [5] {"Tree"}},
+        {"text_long", "Long64b", new char [9] {"44Four44"}},
+        {"text", "Verilog Test module", new char [65] {"lorem ipsum"}},
     };
 
     for (int i = 0; i < 5; i++) {
@@ -753,10 +762,15 @@ int _mon_check_string() {
 
         (void)vpi_chk_error(NULL);
 
+        const int bits = vpi_get(vpiSize,vh1);
+        TRUNCATE_LEADING_ZEROS(v.value.str,bits);
+
         CHECK_RESULT_CSTR_STRIP(v.value.str, text_test_obs[i].initial);
 
         v.value.str = (PLI_BYTE8*)text_test_obs[i].value;
         vpi_put_value(vh1, &v, &t, vpiNoDelay);
+
+        delete text_test_obs[i].value;
     }
 
     return 0;

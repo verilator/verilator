@@ -2742,7 +2742,6 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 CData* const datap = (reinterpret_cast<CData*>(vop->varDatap()));
                 for (int i = 0; i < bytes; ++i) {
                     datap[i] = valuep->value.str[bytes - i - 1];
-                    // if (i == (words - 1)) datap[i] &= vop->mask();
                 }
             }
             return object;

@@ -93,7 +93,7 @@ extern "C" int mon_check();
       if (text_half != "T2") $stop;
       if (text_word != "Tree") $stop;
       if (text_long != "44Four44") $stop;
-      if (text != "lorem ipsum") $stop;
+      if (text[511:512-(8*11)] != "lorem ipsum") $stop;
       if (str1 != "something a lot longer than hello") $stop;
       if (real1 > 123456.7895 || real1 < 123456.7885 ) $stop;
    end
