@@ -1321,7 +1321,11 @@ public:
     // Similar to 'neq' above, *this = that used for change detection
     void assign(const VlUnpacked<T_Value, T_Depth>& that) { *this = that; }
     bool operator==(const VlUnpacked<T_Value, T_Depth>& that) const { return !neq(that); }
-    bool operator!=(const VlUnpacked<T_Value, T_Depth>& that) { return neq(that); }
+    bool operator!=(const VlUnpacked<T_Value, T_Depth>& that) const { return neq(that); }
+    // interface to C style arrays (used in ports), see issue #5125
+    bool neq(const T_Value that[T_Depth]) const { return neq(*this, that); }
+    void assign(const T_Value that[T_Depth]) { std::copy_n(that, T_Depth, m_storage); }
+    void operator=(const T_Value that[T_Depth]) { assign(that); }
 
     // inside (set membership operator)
     bool inside(const T_Value& value) const {
@@ -1507,6 +1511,15 @@ private:
         for (size_t i = 0; i < T_Dep; ++i) {
             // Recursive 'neq', in case T_Val is also a VlUnpacked<_, _>
             if (neq(a.m_storage[i], b.m_storage[i])) return true;
+        }
+        return false;
+    }
+
+    template <typename T_Val, std::size_t T_Dep>
+    static bool neq(const VlUnpacked<T_Val, T_Dep>& a, const T_Val b[T_Dep]) {
+        for (size_t i = 0; i < T_Dep; ++i) {
+            // Recursive 'neq', in case T_Val is also a VlUnpacked<_, _>
+            if (neq(a.m_storage[i], b[i])) return true;
         }
         return false;
     }
