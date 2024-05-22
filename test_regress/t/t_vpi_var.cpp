@@ -770,7 +770,7 @@ int _mon_check_string() {
         v.value.str = (PLI_BYTE8*)text_test_obs[i].value;
         vpi_put_value(vh1, &v, &t, vpiNoDelay);
 
-        delete text_test_obs[i].value;
+        delete[] text_test_obs[i].value;
     }
 
     return 0;
