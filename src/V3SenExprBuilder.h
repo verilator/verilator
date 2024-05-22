@@ -167,7 +167,8 @@ class SenExprBuilder final {
         case VEdgeType::ET_CHANGED:
         case VEdgeType::ET_HYBRID:  //
             if (VN_IS(senp->dtypep()->skipRefp(), UnpackArrayDType)) {
-                // operand order reversed to avoid calling neq() method on non-VlUnpacked type, see issue #5125
+                // operand order reversed to avoid calling neq() method on non-VlUnpacked type, see
+                // issue #5125
                 AstCMethodHard* const resultp = new AstCMethodHard{flp, prevp(), "neq", currp()};
                 resultp->dtypeSetBit();
                 return {resultp, true};
