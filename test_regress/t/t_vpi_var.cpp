@@ -736,16 +736,21 @@ int _mon_check_delayed() {
 }
 
 int _mon_check_string() {
+    const char text_byte[2] = "A";
+    const char text_half[3] = "T2";
+    const char text_word[5] = "Tree";
+    const char text_long[9] = "44Four44";
+    const char text[64] = "lorem ipsum";
     static struct {
         const char* name;
         const char* initial;
         const char* value;
     } text_test_obs[] = {
-        {"text_byte", "B", new char[2] {"A"}},  // x's dropped
-        {"text_half", "Hf", new char[3] {"T2"}},  // x's dropped
-        {"text_word", "Word", new char [5] {"Tree"}},
-        {"text_long", "Long64b", new char [9] {"44Four44"}},
-        {"text", "Verilog Test module", new char [65] {"lorem ipsum"}},
+        {"text_byte", "B", text_byte},
+        {"text_half", "Hf", text_half},
+        {"text_word", "Word", text_word},
+        {"text_long", "Long64b", text_long},
+        {"text", "Verilog Test module", text},
     };
 
     for (int i = 0; i < 5; i++) {
@@ -769,8 +774,6 @@ int _mon_check_string() {
 
         v.value.str = (PLI_BYTE8*)text_test_obs[i].value;
         vpi_put_value(vh1, &v, &t, vpiNoDelay);
-
-        delete[] text_test_obs[i].value;
     }
 
     return 0;
