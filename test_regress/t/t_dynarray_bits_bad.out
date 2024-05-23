@@ -1,0 +1,7 @@
+%Error-UNSUPPORTED: t/t_dynarray_bits_bad.v:12:16: Unsupported: $bits for dynamic array
+                                                 : ... note: In instance 't'
+   12 |       $display($bits(a));  
+      |                ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Verilator internal fault, sorry. Suggest trying --debug --gdbbt
+%Error: Command Failed
