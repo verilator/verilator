@@ -101,14 +101,22 @@ unsigned int callback_count_strs_max = 500;
         return __LINE__; \
     }
 
+#define CHECK_RESULT_MEM(got, exp, bytes) \
+    if (std::memcmp((got), (exp), (bytes))) { \
+        printf("%%Bytes=%d",(bytes)); \
+        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
+               ((got) != NULL) ? (got) : "<null>", ((exp) != NULL) ? (exp) : "<null>"); \
+        return __LINE__; \
+    }
+
 #define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
+#define CHECK_RESULT_MEM_STRIP(got, exp, bytes) CHECK_RESULT_MEM(got + strspn(got, " "), exp, bytes)
 
 // We cannot replace those with VL_STRINGIFY, not available when PLI is build
 #define STRINGIFY(x) STRINGIFY2(x)
 #define STRINGIFY2(x) #x
 
-#define TRUNCATE_LEADING_ZEROS(str,bits) \
-    const int bytes = (bits+7)/8; \
+#define TRUNCATE_LEADING_ZEROS(str,bytes) \
     for(auto i = 0; i<bytes; i++){ \
         if(str[i] != 0){ \
             str = str + i; \
@@ -736,24 +744,34 @@ int _mon_check_delayed() {
 }
 
 int _mon_check_string() {
-    const char text_byte[2] = "A";
-    const char text_half[3] = "T2";
-    const char text_word[5] = "Tree";
-    const char text_long[9] = "44Four44";
-    const char text[64] = "lorem ipsum";
+    // const char value_text_byte[2] = "A";
+    // const char value_text_half[3] = "T2";
+    // const char value_text_word[5] = "Tree";
+    // const char value_text_long[9] = "44Four44";
+    // const char value_text[64] = "lorem ipsum";
+
+    // const char initial_text_byte[2] = "A";
+    // const char initial_text_half[3] = "T2";
+    // const char initial_text_word[5] = "Tree";
+    // const char initial_text_long[9] = "44Four44";
+    // const char initial_text[64] = "Verilog Test module";
+
     static struct {
         const char* name;
         const char* initial;
         const char* value;
+        const bool is_cstr;
     } text_test_obs[] = {
-        {"text_byte", "B", text_byte},
-        {"text_half", "Hf", text_half},
-        {"text_word", "Word", text_word},
-        {"text_long", "Long64b", text_long},
-        {"text", "Verilog Test module", text},
+        {"text_byte", new const char[2]{"B"}, new const char[2]{"A"}, true},
+        {"text_half", new const char[3]{"Hf"}, new const char[3]{"T2"}, true},
+        {"text_word", new const char[5]{"Word"}, new const char[5]{"Tree"}, true},
+        {"text_long", new const char[9]{"Long64b"}, new const char[9]{"44Four44"}, true},
+        {"text", new const char[65]{"Verilog Test module"}, new const char[65]{"lorem ipsum"}, true},
+        {"integer1", new const char[2]{(char)0x00,(char)0xab}, new const char[2]{(char)0xab,(char)0x00}, false},
+        {"integer2", new const char[2]{(char)0xab,(char)0x00}, new const char[2]{(char)0x00,(char)0xab}, false}
     };
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 7; i++) {
         TestVpiHandle vh1 = VPI_HANDLE(text_test_obs[i].name);
         CHECK_RESULT_NZ(vh1);
 
@@ -768,12 +786,35 @@ int _mon_check_string() {
         (void)vpi_chk_error(NULL);
 
         const int bits = vpi_get(vpiSize,vh1);
-        TRUNCATE_LEADING_ZEROS(v.value.str,bits);
+        const int bytes = (bits+7)/8;
 
-        CHECK_RESULT_CSTR_STRIP(v.value.str, text_test_obs[i].initial);
+        if(text_test_obs[i].is_cstr){
+            TRUNCATE_LEADING_ZEROS(v.value.str,bytes);
+            CHECK_RESULT_CSTR_STRIP(v.value.str, text_test_obs[i].initial);
+        }else{
+            CHECK_RESULT_MEM_STRIP(v.value.str, text_test_obs[i].initial,bytes);
+        }
 
         v.value.str = (PLI_BYTE8*)text_test_obs[i].value;
         vpi_put_value(vh1, &v, &t, vpiNoDelay);
+
+        // printf("name=%s\n",text_test_obs[i].name);
+        // printf("v.value.str=");
+        // for(auto n = 0;n<bytes;n++){
+        //     printf("%u ",v.value.str[n]);
+        // }
+        // printf("\ninitial    =");
+        // for(auto n = 0;n<bytes;n++){
+        //     printf("%u ",text_test_obs[i].initial[n]);
+        // }
+        // printf("\n");
+        // CHECK_RESULT_MEM_STRIP(v.value.str, text_test_obs[i].initial,bytes);
+
+        // v.value.str = (PLI_BYTE8*)text_test_obs[i].value;
+        // vpi_put_value(vh1, &v, &t, vpiNoDelay);
+
+        delete[] text_test_obs[i].initial;
+        delete[] text_test_obs[i].value;
     }
 
     return 0;

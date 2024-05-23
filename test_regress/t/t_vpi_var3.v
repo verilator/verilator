@@ -49,6 +49,8 @@ extern "C" int mon_check();
    reg [31:0]      text_word;
    reg [63:0]      text_long;
    reg [511:0]     text;
+   reg [15:0]      integer1;
+   reg [15:0]      integer2;
 
    integer        status;
 
@@ -68,6 +70,8 @@ extern "C" int mon_check();
       text_word = "Word";
       text_long = "Long64b";
       text = "Verilog Test module";
+      integer1 = 16'h00ab;
+      integer2 = 16'hab00;
 
       real1 = 1.0;
       str1 = "hello";
@@ -94,6 +98,14 @@ extern "C" int mon_check();
       if (text_word != "Tree") $stop;
       if (text_long != "44Four44") $stop;
       if (text[511:512-(8*11)] != "lorem ipsum") $stop;
+      if (integer1 != 16'hab00) begin
+         $display("integer1=%x\n",integer1);
+         $stop;
+      end
+      if (integer2 != 16'h00ab) begin
+         $display("integer2=%x\n",integer2);
+         $stop;
+      end
       if (str1 != "something a lot longer than hello") $stop;
       if (real1 > 123456.7895 || real1 < 123456.7885 ) $stop;
    end
