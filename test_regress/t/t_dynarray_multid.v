@@ -22,15 +22,23 @@ module t (/*AUTOARG*/);
 
    integer a[] = '{1,2,3};
 
+   logic [7:0][3:0] a6 [][];
+
    initial begin
       `checkh(a1.size, 0);
       a1 = new [3];
       `checkh(a1.size, 3);
+      `checkh($size(a1), 3);
+      `checkh($high(a1), 2);
+      `checkh($right(a1), 2);
 
       foreach (a1[i]) a1[i] = new [i + 1];
 
       foreach (a1[i]) begin
          `checkh(a1[i].size, i + 1);
+         `checkh($size(a1[i]), i + 1);
+         `checkh($high(a1[i]), i);
+         `checkh($right(a1[i]), i);
       end
 
       foreach (a1[i, j]) a1[i][j] = i * 10 + j;
@@ -184,6 +192,20 @@ module t (/*AUTOARG*/);
       `checkh(qa1[0].size, 4);
       qa1[0].delete;
 
+      `checkh($dimensions(a1), 3);
+      `checkh($dimensions(a2), 3);
+      `checkh($dimensions(aa1), 3);
+      `checkh($dimensions(wa1), 3);
+      `checkh($dimensions(qa1), 3);
+      `checkh($dimensions(a), 2);
+      `checkh($dimensions(a6), 4);
+      `checkh($unpacked_dimensions(a1), 2);
+      `checkh($unpacked_dimensions(a2), 2);
+      `checkh($unpacked_dimensions(aa1), 2);
+      `checkh($unpacked_dimensions(wa1), 2);
+      `checkh($unpacked_dimensions(qa1), 2);
+      `checkh($unpacked_dimensions(a), 1);
+      `checkh($unpacked_dimensions(a6), 2);
 
       $write("*-* All Finished *-*\n");
       $finish;
