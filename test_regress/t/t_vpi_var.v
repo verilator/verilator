@@ -98,14 +98,8 @@ extern "C" int mon_check();
       if (text_word != "Tree") $stop;
       if (text_long != "44Four44") $stop;
       if (text[511:512-(8*11)] != "lorem ipsum") $stop;
-      if (integer1 != 16'hab00) begin
-         $display("integer1=%x\n",integer1);
-         $stop;
-      end
-      if (integer2 != 16'h00ab) begin
-         $display("integer2=%x\n",integer2);
-         $stop;
-      end
+      if (integer1 != 16'hab00) $stop;
+      if (integer2 != 16'h00ab) $stop;
       if (str1 != "something a lot longer than hello") $stop;
       if (real1 > 123456.7895 || real1 < 123456.7885 ) $stop;
    end

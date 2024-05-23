@@ -103,14 +103,10 @@ unsigned int callback_count_strs_max = 500;
 
 #define CHECK_RESULT_MEM(got, exp, bytes) \
     if (std::memcmp((got), (exp), (bytes))) { \
-        printf("%%Bytes=%d",(bytes)); \
         printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
                ((got) != NULL) ? (got) : "<null>", ((exp) != NULL) ? (exp) : "<null>"); \
         return __LINE__; \
     }
-
-#define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
-#define CHECK_RESULT_MEM_STRIP(got, exp, bytes) CHECK_RESULT_MEM(got + strspn(got, " "), exp, bytes)
 
 // We cannot replace those with VL_STRINGIFY, not available when PLI is build
 #define STRINGIFY(x) STRINGIFY2(x)
@@ -744,16 +740,8 @@ int _mon_check_delayed() {
 }
 
 int _mon_check_string() {
-    const char value_text_byte[2] = "A";
-    const char value_text_half[3] = "T2";
-    const char value_text_word[5] = "Tree";
-    const char value_text_long[9] = "44Four44";
+    //allocate 64 bytes for overrun protection
     const char value_text[64] = "lorem ipsum";
-
-    const char initial_text_byte[2] = "B";
-    const char initial_text_half[3] = "Hf";
-    const char initial_text_word[5] = "Word";
-    const char initial_text_long[9] = "Long64b";
     const char initial_text[64] = "Verilog Test module";
 
     static struct {
@@ -762,13 +750,13 @@ int _mon_check_string() {
         const char* value;
         const bool is_cstr;
     } text_test_obs[] = {
-        {"text_byte", initial_text_byte, value_text_byte, true},
-        {"text_half", initial_text_half, value_text_half, true},
-        {"text_word", initial_text_word, value_text_word, true},
-        {"text_long", initial_text_long, value_text_long, true},
+        {"text_byte", "B", "A", true},
+        {"text_half", "Hf", "T2", true},
+        {"text_word", "Word", "Tree", true},
+        {"text_long", "Long64b", "44Four44", true},
         {"text",      initial_text,      value_text, true},
-        {"integer1",  new const char[2]{(char)0x00,(char)0xab}, new const char[2]{(char)0xab,(char)0x00}, false},
-        {"integer2",  new const char[2]{(char)0xab,(char)0x00}, new const char[2]{(char)0x00,(char)0xab}, false}
+        {"integer1",  "\x00\xab", "\xab\x00", false},
+        {"integer2",  "\xab\x00", "\x00\xab", false}
     };
 
     for (int i = 0; i < 7; i++) {
@@ -790,28 +778,13 @@ int _mon_check_string() {
 
         if(text_test_obs[i].is_cstr){
             TRUNCATE_LEADING_ZEROS(v.value.str,bytes);
-            CHECK_RESULT_CSTR_STRIP(v.value.str, text_test_obs[i].initial);
+            CHECK_RESULT_CSTR(v.value.str, text_test_obs[i].initial);
         }else{
-            CHECK_RESULT_MEM_STRIP(v.value.str, text_test_obs[i].initial,bytes);
+            CHECK_RESULT_MEM( v.value.str, text_test_obs[i].initial, bytes);
         }
 
         v.value.str = (PLI_BYTE8*)text_test_obs[i].value;
         vpi_put_value(vh1, &v, &t, vpiNoDelay);
-
-        // printf("name=%s\n",text_test_obs[i].name);
-        // printf("v.value.str=");
-        // for(auto n = 0;n<bytes;n++){
-        //     printf("%u ",v.value.str[n]);
-        // }
-        // printf("\ninitial    =");
-        // for(auto n = 0;n<bytes;n++){
-        //     printf("%u ",text_test_obs[i].initial[n]);
-        // }
-        // printf("\n");
-        // CHECK_RESULT_MEM_STRIP(v.value.str, text_test_obs[i].initial,bytes);
-
-        // v.value.str = (PLI_BYTE8*)text_test_obs[i].value;
-        // vpi_put_value(vh1, &v, &t, vpiNoDelay);
     }
 
     return 0;
