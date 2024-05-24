@@ -1606,6 +1606,20 @@ sub cmake_version {
     return version->declare($cmake_version);
 }
 
+our $_have_solver = undef;
+sub have_solver {
+    if (!defined($_have_solver)) {
+        my $ok = `(z3 --help || cvc5 --help || cvc4 --help) 2>/dev/null`;
+        $ok ||= "";
+        if ($ok =~ /usage/i) {
+            $_have_solver = 1;
+        } else {
+            $_have_solver = 0;
+        }
+    }
+    return $_have_solver;
+}
+
 our $_aslr_off = undef;
 sub aslr_off {
     if (!defined($_aslr_off)) {
