@@ -9,7 +9,9 @@ module t (/*AUTOARG*/);
    integer a[];
 
    initial begin
-      $display($bits(a)); // Bad
+      if ($bits(a) != 0) $stop;
+      a = new [10];
+      if ($bits(a) != 10*32) $stop;
    end
 
 endmodule

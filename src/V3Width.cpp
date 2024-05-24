@@ -2165,22 +2165,17 @@ class WidthVisitor final : public VNVisitor {
                     || VN_IS(dtp->skipRefp(), QueueDType)) {
                 if (const AstUnsizedArrayDType* const unsizedp
                     = VN_CAST(dtp->skipRefp(), UnsizedArrayDType)) {
-                    UINFO(9, "Unsized becomes dynamic array ");
                     if (!np) {
-                        // for Var itself
-                        UINFONL(9, nodep << endl);
+                        UINFO(9, "Unsized becomes dynamic array (var itself) " << nodep << endl);
                     } else {
-                        // for subDType
-                        UINFONL(9, dtp << endl);
+                        UINFO(9, "Unsized becomes dynamic array (subDType) " << dtp << endl);
                     }
                     AstDynArrayDType* const newp
                         = new AstDynArrayDType{unsizedp->fileline(), unsizedp->subDTypep()};
                     newp->dtypep(newp);
-                    if (!np) {
-                        // for Var itself
+                    if (!np) { // for Var itself
                         nodep->dtypep(newp);
-                    } else {
-                        // for subDType
+                    } else { // for subDType
                         np->virtRefDTypep(newp);
                     }
                     v3Global.rootp()->typeTablep()->addTypesp(newp);
@@ -2488,7 +2483,8 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{vdtypep, PRELIM}.p());
-            if (!nodep->dtypep()) nodep->dtypeFrom(vdtypep);
+            if (nodep->didWidthAndSet()) return;
+            nodep->dtypeFrom(vdtypep);
         }
         if (m_vup->final()) {
             // Arguments can be either elements of the queue or a queue itself
@@ -2510,7 +2506,8 @@ class WidthVisitor final : public VNVisitor {
                     iterateCheckTyped(nodep, "RHS", nodep->rhsp(), vdtypep->subDTypep(), FINAL);
                 }
             }
-            if (!nodep->dtypep()) nodep->dtypeFrom(vdtypep);
+            if (nodep->didWidthAndSet()) return;
+            nodep->dtypeFrom(vdtypep);
         }
     }
     void visit(AstConsQueue* nodep) override {
