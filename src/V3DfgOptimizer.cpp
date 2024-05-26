@@ -295,7 +295,8 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
         // For each cyclic component
         for (auto& component : cyclicComponents) {
             if (dumpDfgLevel() >= 7) component->dumpDotFilePrefixed(ctx.prefix() + "source");
-            // TODO: Apply optimizations safe for cyclic graphs
+            // Converting back to Ast assumes the 'regularize' pass was run, so we must run it
+            V3DfgPasses::regularize(*component, ctx.m_regularizeContext);
             // Add back under the main DFG (we will convert everything back in one go)
             dfg->addGraph(*component);
         }
