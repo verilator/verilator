@@ -635,14 +635,16 @@ public:
 class VerilatedVpiPutHolder final {
     VerilatedVpioVar m_var;
     s_vpi_value m_value;
-    union {
+    union Storage {
+        char init = 0;  // to ensure trivial constructor
         std::string str;
-        std::vector<s_vpi_vecval> vector;
-    } m_storage;
+        std::vector<s_vpi_vecval> vec;
+        ~Storage() noexcept {/* handled by VerilatedVpiPutHolder */};
+    } m_storage{};
 
 public:
     VerilatedVpiPutHolder(const VerilatedVpioVar* vop, p_vpi_value valuep)
-        : m_var(vop) {
+        : m_var{vop} {
         m_value.format = valuep->format;
         switch (valuep->format) {
         case vpiBinStrVal:
@@ -650,7 +652,7 @@ public:
         case vpiDecStrVal:
         case vpiHexStrVal:
         case vpiStringVal: {
-            m_storage.str = valuep->value.str;
+            new (&m_storage.str) std::string{valuep->value.str};
             m_value.value.str = const_cast<char*>(m_storage.str.c_str());
             break;
         }
@@ -685,10 +687,77 @@ public:
             }
             default: break;
             }
-            m_storage.vector.assign(valuep->value.vector, &valuep->value.vector[words]);
-            m_value.value.vector = m_storage.vector.data();
+            new (&m_storage.vec)
+                std::vector<s_vpi_vecval>{valuep->value.vector, &valuep->value.vector[words]};
+            m_value.value.vector = m_storage.vec.data();
             break;
         }
+        }
+    }
+
+    VerilatedVpiPutHolder(VerilatedVpiPutHolder const& o)
+        : m_var{o.m_var}
+        , m_value{o.m_value} {
+        switch (m_value.format) {
+        case vpiBinStrVal:
+        case vpiOctStrVal:
+        case vpiDecStrVal:
+        case vpiHexStrVal:
+        case vpiStringVal: m_storage.str = o.m_storage.str; break;
+        case vpiVectorVal: m_storage.vec = o.m_storage.vec; break;
+        }
+    }
+
+    VerilatedVpiPutHolder(VerilatedVpiPutHolder&& o) noexcept
+        : m_var{std::move(o.m_var)}
+        , m_value{std::move(o.m_value)} {
+        switch (m_value.format) {
+        case vpiBinStrVal:
+        case vpiOctStrVal:
+        case vpiDecStrVal:
+        case vpiHexStrVal:
+        case vpiStringVal: m_storage.str = std::move(o.m_storage.str); break;
+        case vpiVectorVal: m_storage.vec = std::move(o.m_storage.vec); break;
+        }
+    }
+
+    VerilatedVpiPutHolder& operator=(VerilatedVpiPutHolder const& o) {
+        if (this == &o) { return *this; }
+        m_var = o.m_var;
+        m_value = o.m_value;
+        switch (m_value.format) {
+        case vpiBinStrVal:
+        case vpiOctStrVal:
+        case vpiDecStrVal:
+        case vpiHexStrVal:
+        case vpiStringVal: m_storage.str = o.m_storage.str; break;
+        case vpiVectorVal: m_storage.vec = o.m_storage.vec; break;
+        }
+        return *this;
+    };
+
+    VerilatedVpiPutHolder& operator=(VerilatedVpiPutHolder&& o) noexcept {
+        m_var = std::move(o.m_var);
+        m_value = std::move(o.m_value);
+        switch (m_value.format) {
+        case vpiBinStrVal:
+        case vpiOctStrVal:
+        case vpiDecStrVal:
+        case vpiHexStrVal:
+        case vpiStringVal: m_storage.str = std::move(o.m_storage.str); break;
+        case vpiVectorVal: m_storage.vec = std::move(o.m_storage.vec); break;
+        }
+        return *this;
+    };
+
+    ~VerilatedVpiPutHolder() noexcept {
+        switch (m_value.format) {
+        case vpiBinStrVal:
+        case vpiOctStrVal:
+        case vpiDecStrVal:
+        case vpiHexStrVal:
+        case vpiStringVal: m_storage.str.~basic_string(); break;
+        case vpiVectorVal: m_storage.vec.~vector(); break;
         }
     }
 
