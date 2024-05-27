@@ -2625,9 +2625,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     = VN_AS(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
                 classOrPackagep = cpackagerefp->classOrPackagep();
                 UASSERT_OBJ(classOrPackagep, m_ds.m_dotp->lhsp(), "Bad package link");
-                m_ds.m_dotSymp = cpackagerefp->name() == "local::"
-                                     ? m_curSymp->fallbackp()
-                                     : m_statep->getNodeSym(classOrPackagep);
+                if (cpackagerefp->name() == "local::") {
+                    if (m_pinSymp) {
+                        m_ds.m_dotSymp = m_curSymp->fallbackp();
+                    } else {
+                        nodep->v3error("Illegal 'local::' outside randomize() with");
+                        m_ds.m_dotErr = true;
+                    }
+                } else {
+                    m_ds.m_dotSymp = m_statep->getNodeSym(classOrPackagep);
+                }
                 m_ds.m_dotPos = DP_SCOPE;
             } else if (m_ds.m_dotPos == DP_SCOPE) {
                 // {a}.{b}, where {a} maybe a module name
