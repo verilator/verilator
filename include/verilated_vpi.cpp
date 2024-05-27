@@ -31,6 +31,8 @@
 #include "verilated.h"
 #include "verilated_imp.h"
 
+#include "vltstd/vpi_user.h"
+
 #include <list>
 #include <map>
 #include <set>
@@ -633,8 +635,10 @@ public:
 class VerilatedVpiPutHolder final {
     VerilatedVpioVar m_var;
     s_vpi_value m_value;
-    std::string m_str;
-    std::vector<s_vpi_vecval> m_vector;
+    union {
+        std::string str;
+        std::vector<s_vpi_vecval> vector;
+    } m_storage;
 
 public:
     VerilatedVpiPutHolder(const VerilatedVpioVar* vop, p_vpi_value valuep)
@@ -646,8 +650,8 @@ public:
         case vpiDecStrVal:
         case vpiHexStrVal:
         case vpiStringVal: {
-            m_str = valuep->value.str;
-            m_value.value.str = &m_str[0];
+            m_storage.str = valuep->value.str;
+            m_value.value.str = const_cast<char*>(m_storage.str.c_str());
             break;
         }
         case vpiScalarVal: {
@@ -681,9 +685,8 @@ public:
             }
             default: break;
             }
-            m_vector.resize(words);
-            std::memcpy(m_vector.data(), valuep->value.vector, words * sizeof(s_vpi_vecval));
-            m_value.value.vector = m_vector.data();
+            m_storage.vector.assign(valuep->value.vector, &valuep->value.vector[words]);
+            m_value.value.vector = m_storage.vector.data();
             break;
         }
         }
@@ -739,7 +742,7 @@ class VerilatedVpiImp final {
     std::array<VpioCbList, CB_ENUM_MAX_VALUE> m_cbCurrentLists;
     VpioFutureCbs m_futureCbs;  // Time based callbacks for future timestamps
     VpioFutureCbs m_nextCbs;  // cbNextSimTime callbacks
-    std::list<VerilatedVpiPutHolder> m_inertialPuts;  // Pending vpi puts due to vpiInertialDelay
+    std::vector<VerilatedVpiPutHolder> m_inertialPuts;  // Pending vpi puts due to vpiInertialDelay
     VerilatedVpiError* m_errorInfop = nullptr;  // Container for vpi error info
     VerilatedAssertOneThread m_assertOne;  // Assert only called from single thread
     uint64_t m_nextCallbackId = 1;  // Id to identify callback
