@@ -980,7 +980,7 @@ public:
         s().m_inertialPuts.emplace_back(vop, valuep);
     }
     static void doInertialPuts() {
-        for (auto it : s().m_inertialPuts) {
+        for (auto& it : s().m_inertialPuts) {
             vpi_put_value(it.varp()->castVpiHandle(), it.valuep(), nullptr, vpiNoDelay);
         }
         s().m_inertialPuts.clear();
