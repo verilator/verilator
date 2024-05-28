@@ -19,6 +19,10 @@ module t (/*AUTOARG*/);
    integer aa1 [string][];
    integer wa1 [*][];
    integer qa1 [$][];
+   struct {
+      integer i;
+      integer a[];
+   } s1;
 
    integer a[] = '{1,2,3};
 
@@ -191,6 +195,10 @@ module t (/*AUTOARG*/);
       qa1[0] = new [4];
       `checkh(qa1[0].size, 4);
       qa1[0].delete;
+
+      s1.a = new [4];
+      `checkh(s1.a.size, 4);
+      s1.a.delete;
 
       `checkh($dimensions(a1), 3);
       `checkh($dimensions(a2), 3);
