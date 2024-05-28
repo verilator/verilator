@@ -2155,23 +2155,20 @@ class WidthVisitor final : public VNVisitor {
         // Make sure dtype is sized
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype determined for var");
-        if (!(m_ftaskp && m_ftaskp->dpiImport())) {
+        if (m_ftaskp && m_ftaskp->dpiImport()) {
             AstNodeDType *dtp = nodep->dtypep();
             AstNodeDType *np = nullptr;
-            while (VN_IS(dtp->skipRefp(), UnsizedArrayDType)
-                    || VN_IS(dtp->skipRefp(), UnpackArrayDType)
-                    || VN_IS(dtp->skipRefp(), AssocArrayDType)
-                    || VN_IS(dtp->skipRefp(), WildcardArrayDType)
-                    || VN_IS(dtp->skipRefp(), QueueDType)) {
-                if (const AstUnsizedArrayDType* const unsizedp
-                    = VN_CAST(dtp->skipRefp(), UnsizedArrayDType)) {
+            while (VN_IS(dtp->skipRefp(), DynArrayDType)
+                    || VN_IS(dtp->skipRefp(), UnpackArrayDType)) {
+                if (const AstDynArrayDType* const unsizedp
+                    = VN_CAST(dtp->skipRefp(), DynArrayDType)) {
                     if (!np) {
-                        UINFO(9, "Unsized becomes dynamic array (var itself) " << nodep << endl);
+                        UINFO(9, "Dynamic becomes unsized array (var itself) " << nodep << endl);
                     } else {
-                        UINFO(9, "Unsized becomes dynamic array (subDType) " << dtp << endl);
+                        UINFO(9, "Dynamic becomes unsized array (subDType) " << dtp << endl);
                     }
-                    AstDynArrayDType* const newp
-                        = new AstDynArrayDType{unsizedp->fileline(), unsizedp->subDTypep()};
+                    AstUnsizedArrayDType* const newp
+                        = new AstUnsizedArrayDType{unsizedp->fileline(), unsizedp->subDTypep()};
                     newp->dtypep(newp);
                     if (!np) { // for Var itself
                         nodep->dtypep(newp);

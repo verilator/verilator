@@ -1289,6 +1289,11 @@ public:
         refDTypep(nullptr);
         dtypep(nullptr);  // V3Width will resolve
     }
+    AstUnsizedArrayDType(FileLine* fl, AstNodeDType* dtp)
+        : ASTGEN_SUPER_UnsizedArrayDType(fl) {
+        refDTypep(dtp);
+        dtypep(nullptr);  // V3Width will resolve
+    }
     ASTGEN_MEMBERS_AstUnsizedArrayDType;
     const char* broken() const override {
         BROKEN_RTN(!((m_refDTypep && !childDTypep()) || (!m_refDTypep && childDTypep())));

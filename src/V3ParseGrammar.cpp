@@ -140,7 +140,7 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
                 arrayp = new AstUnpackArrayDType{rangep->fileline(), VFlagChildDType{}, arrayp,
                                                  rangep};
             } else if (VN_IS(nrangep, UnsizedRange)) {
-                arrayp = new AstUnsizedArrayDType{nrangep->fileline(), VFlagChildDType{}, arrayp};
+                arrayp = new AstDynArrayDType{nrangep->fileline(), VFlagChildDType{}, arrayp};
                 VL_DO_DANGLING(nrangep->deleteTree(), nrangep);
             } else if (VN_IS(nrangep, BracketRange)) {
                 const AstBracketRange* const arangep = VN_AS(nrangep, BracketRange);
