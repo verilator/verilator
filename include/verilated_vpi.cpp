@@ -647,10 +647,10 @@ public:
         : m_var{vop} {
         m_value.format = valuep->format;
         switch (valuep->format) {
-        case vpiBinStrVal:
-        case vpiOctStrVal:
-        case vpiDecStrVal:
-        case vpiHexStrVal:
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
         case vpiStringVal: {
             new (&m_storage.str) std::string{valuep->value.str};
             m_value.value.str = const_cast<char*>(m_storage.str.c_str());
@@ -699,10 +699,10 @@ public:
         : m_var{o.m_var}
         , m_value{o.m_value} {
         switch (m_value.format) {
-        case vpiBinStrVal:
-        case vpiOctStrVal:
-        case vpiDecStrVal:
-        case vpiHexStrVal:
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
         case vpiStringVal: m_storage.str = o.m_storage.str; break;
         case vpiVectorVal: m_storage.vec = o.m_storage.vec; break;
         }
@@ -712,10 +712,10 @@ public:
         : m_var{std::move(o.m_var)}
         , m_value{std::move(o.m_value)} {
         switch (m_value.format) {
-        case vpiBinStrVal:
-        case vpiOctStrVal:
-        case vpiDecStrVal:
-        case vpiHexStrVal:
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
         case vpiStringVal: m_storage.str = std::move(o.m_storage.str); break;
         case vpiVectorVal: m_storage.vec = std::move(o.m_storage.vec); break;
         }
@@ -726,10 +726,10 @@ public:
         m_var = o.m_var;
         m_value = o.m_value;
         switch (m_value.format) {
-        case vpiBinStrVal:
-        case vpiOctStrVal:
-        case vpiDecStrVal:
-        case vpiHexStrVal:
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
         case vpiStringVal: m_storage.str = o.m_storage.str; break;
         case vpiVectorVal: m_storage.vec = o.m_storage.vec; break;
         }
@@ -740,10 +740,10 @@ public:
         m_var = std::move(o.m_var);
         m_value = std::move(o.m_value);
         switch (m_value.format) {
-        case vpiBinStrVal:
-        case vpiOctStrVal:
-        case vpiDecStrVal:
-        case vpiHexStrVal:
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
         case vpiStringVal: m_storage.str = std::move(o.m_storage.str); break;
         case vpiVectorVal: m_storage.vec = std::move(o.m_storage.vec); break;
         }
@@ -752,10 +752,10 @@ public:
 
     ~VerilatedVpiPutHolder() noexcept {
         switch (m_value.format) {
-        case vpiBinStrVal:
-        case vpiOctStrVal:
-        case vpiDecStrVal:
-        case vpiHexStrVal:
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
         case vpiStringVal: m_storage.str.~basic_string(); break;
         case vpiVectorVal: m_storage.vec.~vector(); break;
         }
@@ -766,16 +766,16 @@ public:
 
     static bool canInertialDelay(p_vpi_value valuep) {
         switch (valuep->format) {
-        case vpiBinStrVal:
-        case vpiOctStrVal:
-        case vpiDecStrVal:
-        case vpiHexStrVal:
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
         case vpiStringVal: {
             if (VL_UNLIKELY(!valuep->value.str)) return false;
             break;
         }
-        case vpiScalarVal:
-        case vpiIntVal:
+        case vpiScalarVal:  // FALLTHRU
+        case vpiIntVal:  // FALLTHRU
         case vpiRealVal: break;
         case vpiVectorVal: {
             if (VL_UNLIKELY(!valuep->value.vector)) return false;
