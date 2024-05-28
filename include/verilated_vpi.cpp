@@ -2373,22 +2373,20 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_value valuep, const c
     return status;
 }
 
-void strprintf(std::string& buffer, char const* fmt, ...) {
+static void vl_strprintf(std::string& buffer, char const* fmt, ...) {
     va_list args, args_copy;
     va_start(args, fmt);
     buffer.clear();
     // make copy of args since we may need to call vsnprintf more than once
     va_copy(args_copy, args);
     // try vspnrintf in existing buffer
-    int result = vsnprintf(const_cast<char*>(buffer.data()), buffer.capacity(), fmt, args_copy);
+    int result = VL_VSNPRINTF(const_cast<char*>(buffer.data()), buffer.capacity(), fmt, args_copy);
     va_end(args_copy);
-    // ensure(result >= 0)
-    int const required = result + 1;  // returned size doesn't include NUL terminator
+    const int required = result + 1;  // returned size doesn't include NUL terminator
     // if there wasn't enough space, reallocate and try again
     if (buffer.capacity() < required) {
-        buffer.reserve(required);
-        result = vsnprintf(const_cast<char*>(buffer.data()), buffer.capacity(), fmt, args);
-        // ensure((result + 1) == required);
+        buffer.reserve(required * 2);
+        result = VL_VSNPRINTF(const_cast<char*>(buffer.data()), buffer.capacity(), fmt, args);
     }
     va_end(args);
 }
@@ -2478,17 +2476,17 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
         return;
     } else if (valuep->format == vpiDecStrVal) {
         if (varp->vltype() == VLVT_UINT8) {
-            strprintf(t_outDynamicStr, "%hhu",
-                      static_cast<unsigned char>(*(reinterpret_cast<CData*>(varDatap))));
+            vl_strprintf(t_outDynamicStr, "%hhu",
+                         static_cast<unsigned char>(*(reinterpret_cast<CData*>(varDatap))));
         } else if (varp->vltype() == VLVT_UINT16) {
-            strprintf(t_outDynamicStr, "%hu",
-                      static_cast<unsigned short>(*(reinterpret_cast<SData*>(varDatap))));
+            vl_strprintf(t_outDynamicStr, "%hu",
+                         static_cast<unsigned short>(*(reinterpret_cast<SData*>(varDatap))));
         } else if (varp->vltype() == VLVT_UINT32) {
-            strprintf(t_outDynamicStr, "%u",
-                      static_cast<unsigned int>(*(reinterpret_cast<IData*>(varDatap))));
+            vl_strprintf(t_outDynamicStr, "%u",
+                         static_cast<unsigned int>(*(reinterpret_cast<IData*>(varDatap))));
         } else if (varp->vltype() == VLVT_UINT64) {
-            strprintf(t_outDynamicStr, "%llu",
-                      static_cast<unsigned long long>(*(reinterpret_cast<QData*>(varDatap))));
+            vl_strprintf(t_outDynamicStr, "%llu",
+                         static_cast<unsigned long long>(*(reinterpret_cast<QData*>(varDatap))));
         }
         valuep->value.str = const_cast<PLI_BYTE8*>(t_outDynamicStr.c_str());
         return;
@@ -2523,6 +2521,7 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             }
         } else {
             int bytes = VL_BYTES_I(varp->packed().elements());
+            t_outDynamicStr.resize(bytes);
             const CData* datap = (reinterpret_cast<CData*>(varDatap));
             for (size_t i = 0; i < bytes; ++i) {
                 const char val = datap[bytes - i - 1];
