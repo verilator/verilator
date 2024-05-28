@@ -1,4 +1,4 @@
-%Warning-CONSTRAINTIGN: t/t_randomize.v:66:25: with constraint ignored (unsupported)
+%Warning-CONSTRAINTIGN: t/t_randomize.v:66:25: 'with' constraint ignored (unsupported)
    66 |       v = p.randomize() with { if_4 == local::if_4; header == 2; };
       |                         ^~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest

@@ -2629,7 +2629,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (m_pinSymp) {
                         m_ds.m_dotSymp = m_curSymp->fallbackp();
                     } else {
-                        nodep->v3error("Illegal 'local::' outside randomize() with");
+                        nodep->v3error("Illegal 'local::' outside 'randomize() with'");
                         m_ds.m_dotErr = true;
                     }
                 } else {
@@ -3099,9 +3099,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (nodep->name() == "randomize" && VN_IS(nodep->pinsp(), With)) {
                 const AstNodeDType* fromDtp = nodep->fromp()->dtypep();
                 if (!fromDtp) {
-                    if (const AstNodeVarRef* const varRefp = VN_CAST(nodep->fromp(), NodeVarRef))
+                    if (const AstNodeVarRef* const varRefp = VN_CAST(nodep->fromp(), NodeVarRef)) {
                         fromDtp = varRefp->varp()->subDTypep();
-                    else if (const AstNodeSel* const selp = VN_CAST(nodep->fromp(), NodeSel)) {
+                    } else if (const AstNodeSel* const selp = VN_CAST(nodep->fromp(), NodeSel)) {
                         if (const AstNodeVarRef* const varRefp
                             = VN_CAST(selp->fromp(), NodeVarRef)) {
                             fromDtp = varRefp->varp()->dtypeSkipRefp()->subDTypep();
@@ -3115,15 +3115,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     }
                     if (!fromDtp)
                         nodep->v3warn(E_UNSUPPORTED,
-                                      "Unsupported: randomize() with on complex expressions");
+                                      "Unsupported: 'randomize() with' on complex expressions");
                 }
-                if (m_statep->forPrimary() && isParamedClassRefDType(fromDtp))
+                if (m_statep->forPrimary() && isParamedClassRefDType(fromDtp)) {
                     m_ds.m_unresolvedClass = true;
-                else if (fromDtp) {
+                } else if (fromDtp) {
                     const AstClassRefDType* const classDtp
                         = VN_CAST(fromDtp->skipRefp(), ClassRefDType);
                     if (!classDtp)
-                        nodep->v3error("randomize() with on a non-class-instance "
+                        nodep->v3error("'randomize() with' on a non-class-instance "
                                        << fromDtp->prettyNameQ());
                     else
                         m_pinSymp = m_statep->getNodeSym(classDtp->classp());

@@ -3656,7 +3656,7 @@ class WidthVisitor final : public VNVisitor {
                     if (VN_IS(ftaskp, Task)) nodep->dtypeSetVoid();
                     processFTaskRefArgs(nodep);
                     if (withp) {
-                        withp->v3warn(CONSTRAINTIGN, "with constraint ignored (unsupported)");
+                        withp->v3warn(CONSTRAINTIGN, "'with' constraint ignored (unsupported)");
                         VL_DO_DANGLING(withp->deleteTree(), withp);
                     }
                 }
