@@ -101,11 +101,24 @@ unsigned int callback_count_strs_max = 500;
         return __LINE__; \
     }
 
-#define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
+#define CHECK_RESULT_MEM(got, exp, bytes) \
+    if (std::memcmp((got), (exp), (bytes))) { \
+        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
+               ((got) != NULL) ? (got) : "<null>", ((exp) != NULL) ? (exp) : "<null>"); \
+        return __LINE__; \
+    }
 
 // We cannot replace those with VL_STRINGIFY, not available when PLI is build
 #define STRINGIFY(x) STRINGIFY2(x)
 #define STRINGIFY2(x) #x
+
+#define TRUNCATE_LEADING_ZEROS(str,bytes) \
+    for(auto i = 0; i<bytes; i++){ \
+        if(str[i] != 0){ \
+            str = str + i; \
+            break; \
+        } \
+    }
 
 int _mon_check_mcd() {
     PLI_INT32 status;
@@ -727,19 +740,26 @@ int _mon_check_delayed() {
 }
 
 int _mon_check_string() {
+    //allocate 64 bytes for overrun protection
+    const char value_text[64] = "lorem ipsum";
+    const char initial_text[64] = "Verilog Test module";
+
     static struct {
         const char* name;
         const char* initial;
         const char* value;
+        const bool is_cstr;
     } text_test_obs[] = {
-        {"text_byte", "B", "xxA"},  // x's dropped
-        {"text_half", "Hf", "xxT2"},  // x's dropped
-        {"text_word", "Word", "Tree"},
-        {"text_long", "Long64b", "44Four44"},
-        {"text", "Verilog Test module", "lorem ipsum"},
+        {"text_byte", "B", "A", true},
+        {"text_half", "Hf", "T2", true},
+        {"text_word", "Word", "Tree", true},
+        {"text_long", "Long64b", "44Four44", true},
+        {"text",      initial_text,      value_text, true},
+        {"integer1",  "\x00\xab", "\xab\x00", false},
+        {"integer2",  "\xab\x00", "\x00\xab", false}
     };
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 7; i++) {
         TestVpiHandle vh1 = VPI_HANDLE(text_test_obs[i].name);
         CHECK_RESULT_NZ(vh1);
 
@@ -753,7 +773,15 @@ int _mon_check_string() {
 
         (void)vpi_chk_error(NULL);
 
-        CHECK_RESULT_CSTR_STRIP(v.value.str, text_test_obs[i].initial);
+        const int bits = vpi_get(vpiSize,vh1);
+        const int bytes = (bits+7)/8;
+
+        if(text_test_obs[i].is_cstr){
+            TRUNCATE_LEADING_ZEROS(v.value.str,bytes);
+            CHECK_RESULT_CSTR(v.value.str, text_test_obs[i].initial);
+        }else{
+            CHECK_RESULT_MEM( v.value.str, text_test_obs[i].initial, bytes);
+        }
 
         v.value.str = (PLI_BYTE8*)text_test_obs[i].value;
         vpi_put_value(vh1, &v, &t, vpiNoDelay);
