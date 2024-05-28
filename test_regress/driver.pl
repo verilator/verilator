@@ -1292,7 +1292,6 @@ sub compile {
         }
         $self->oprint("Compile vpi\n") if $self->{verbose};
         my @cmd = ($ENV{CXX}, @{$param{pli_flags}},
-                   "-std=c++14",
                    "-D" . $param{tool_define},
                    "-DIS_VPI", ($ENV{CFLAGS} || ''),
                    "$self->{t_dir}/$self->{pli_filename}");

@@ -2386,7 +2386,7 @@ static void vl_strprintf(std::string& buffer, char const* fmt, ...) {
     // if there wasn't enough space, reallocate and try again
     if (buffer.capacity() < required) {
         buffer.reserve(required * 2);
-        result = VL_VSNPRINTF(const_cast<char*>(buffer.data()), buffer.capacity(), fmt, args);
+        VL_VSNPRINTF(const_cast<char*>(buffer.data()), buffer.capacity(), fmt, args);
     }
     va_end(args);
 }
