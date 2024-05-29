@@ -2377,13 +2377,13 @@ static void vl_strprintf(std::string& buffer, char const* fmt, ...) {
     va_list args, args_copy;
     va_start(args, fmt);
     buffer.clear();
-    // make copy of args since we may need to call VL_VSNPRINTF more than once
+    // Make copy of args since we may need to call VL_VSNPRINTF more than once
     va_copy(args_copy, args);
-    // try VL_VSNPRINTF in existing buffer
-    int result = VL_VSNPRINTF(const_cast<char*>(buffer.data()), buffer.capacity(), fmt, args_copy);
+    // Try VL_VSNPRINTF in existing buffer
+    const int result = VL_VSNPRINTF(const_cast<char*>(buffer.data()), buffer.capacity(), fmt, args_copy);
     va_end(args_copy);
-    const int required = result + 1;  // returned size doesn't include NUL terminator
-    // if there wasn't enough space, reallocate and try again
+    const int required = result + 1;  // Returned size doesn't include NUL terminator
+    // If there wasn't enough space, reallocate and try again
     if (buffer.capacity() < required) {
         buffer.reserve(required * 2);
         VL_VSNPRINTF(const_cast<char*>(buffer.data()), buffer.capacity(), fmt, args);
