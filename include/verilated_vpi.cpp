@@ -31,6 +31,8 @@
 #include "verilated.h"
 #include "verilated_imp.h"
 
+#include "vltstd/vpi_user.h"
+
 #include <list>
 #include <map>
 #include <set>
@@ -633,21 +635,25 @@ public:
 class VerilatedVpiPutHolder final {
     VerilatedVpioVar m_var;
     s_vpi_value m_value;
-    std::string m_str;
-    std::vector<s_vpi_vecval> m_vector;
+    union Storage {
+        char init = 0;  // to ensure trivial constructor
+        std::string str;
+        std::vector<s_vpi_vecval> vec;
+        ~Storage() noexcept {/* handled by VerilatedVpiPutHolder */};
+    } m_storage{};
 
 public:
     VerilatedVpiPutHolder(const VerilatedVpioVar* vop, p_vpi_value valuep)
-        : m_var(vop) {
+        : m_var{vop} {
         m_value.format = valuep->format;
         switch (valuep->format) {
-        case vpiBinStrVal:
-        case vpiOctStrVal:
-        case vpiDecStrVal:
-        case vpiHexStrVal:
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
         case vpiStringVal: {
-            m_str = valuep->value.str;
-            m_value.value.str = &m_str[0];
+            new (&m_storage.str) std::string{valuep->value.str};
+            m_value.value.str = const_cast<char*>(m_storage.str.c_str());
             break;
         }
         case vpiScalarVal: {
@@ -681,11 +687,77 @@ public:
             }
             default: break;
             }
-            m_vector.resize(words);
-            std::memcpy(m_vector.data(), valuep->value.vector, words * sizeof(s_vpi_vecval));
-            m_value.value.vector = m_vector.data();
+            new (&m_storage.vec)
+                std::vector<s_vpi_vecval>{valuep->value.vector, &valuep->value.vector[words]};
+            m_value.value.vector = m_storage.vec.data();
             break;
         }
+        }
+    }
+
+    VerilatedVpiPutHolder(VerilatedVpiPutHolder const& o)
+        : m_var{o.m_var}
+        , m_value{o.m_value} {
+        switch (m_value.format) {
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
+        case vpiStringVal: m_storage.str = o.m_storage.str; break;
+        case vpiVectorVal: m_storage.vec = o.m_storage.vec; break;
+        }
+    }
+
+    VerilatedVpiPutHolder(VerilatedVpiPutHolder&& o) noexcept
+        : m_var{std::move(o.m_var)}
+        , m_value{std::move(o.m_value)} {
+        switch (m_value.format) {
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
+        case vpiStringVal: m_storage.str = std::move(o.m_storage.str); break;
+        case vpiVectorVal: m_storage.vec = std::move(o.m_storage.vec); break;
+        }
+    }
+
+    VerilatedVpiPutHolder& operator=(VerilatedVpiPutHolder const& o) {
+        if (this == &o) { return *this; }
+        m_var = o.m_var;
+        m_value = o.m_value;
+        switch (m_value.format) {
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
+        case vpiStringVal: m_storage.str = o.m_storage.str; break;
+        case vpiVectorVal: m_storage.vec = o.m_storage.vec; break;
+        }
+        return *this;
+    };
+
+    VerilatedVpiPutHolder& operator=(VerilatedVpiPutHolder&& o) noexcept {
+        m_var = std::move(o.m_var);
+        m_value = std::move(o.m_value);
+        switch (m_value.format) {
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
+        case vpiStringVal: m_storage.str = std::move(o.m_storage.str); break;
+        case vpiVectorVal: m_storage.vec = std::move(o.m_storage.vec); break;
+        }
+        return *this;
+    };
+
+    ~VerilatedVpiPutHolder() noexcept {
+        switch (m_value.format) {
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
+        case vpiStringVal: m_storage.str.~basic_string(); break;
+        case vpiVectorVal: m_storage.vec.~vector(); break;
         }
     }
 
@@ -694,16 +766,16 @@ public:
 
     static bool canInertialDelay(p_vpi_value valuep) {
         switch (valuep->format) {
-        case vpiBinStrVal:
-        case vpiOctStrVal:
-        case vpiDecStrVal:
-        case vpiHexStrVal:
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
         case vpiStringVal: {
             if (VL_UNLIKELY(!valuep->value.str)) return false;
             break;
         }
-        case vpiScalarVal:
-        case vpiIntVal:
+        case vpiScalarVal:  // FALLTHRU
+        case vpiIntVal:  // FALLTHRU
         case vpiRealVal: break;
         case vpiVectorVal: {
             if (VL_UNLIKELY(!valuep->value.vector)) return false;
@@ -739,7 +811,7 @@ class VerilatedVpiImp final {
     std::array<VpioCbList, CB_ENUM_MAX_VALUE> m_cbCurrentLists;
     VpioFutureCbs m_futureCbs;  // Time based callbacks for future timestamps
     VpioFutureCbs m_nextCbs;  // cbNextSimTime callbacks
-    std::list<VerilatedVpiPutHolder> m_inertialPuts;  // Pending vpi puts due to vpiInertialDelay
+    std::vector<VerilatedVpiPutHolder> m_inertialPuts;  // Pending vpi puts due to vpiInertialDelay
     VerilatedVpiError* m_errorInfop = nullptr;  // Container for vpi error info
     VerilatedAssertOneThread m_assertOne;  // Assert only called from single thread
     uint64_t m_nextCallbackId = 1;  // Id to identify callback
@@ -908,7 +980,7 @@ public:
         s().m_inertialPuts.emplace_back(vop, valuep);
     }
     static void doInertialPuts() {
-        for (auto it : s().m_inertialPuts) {
+        for (auto& it : s().m_inertialPuts) {
             vpi_put_value(it.varp()->castVpiHandle(), it.valuep(), nullptr, vpiNoDelay);
         }
         s().m_inertialPuts.clear();
