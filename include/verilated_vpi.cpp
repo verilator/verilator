@@ -2380,7 +2380,8 @@ static void vl_strprintf(std::string& buffer, char const* fmt, ...) {
     // Make copy of args since we may need to call VL_VSNPRINTF more than once
     va_copy(args_copy, args);
     // Try VL_VSNPRINTF in existing buffer
-    const int result = VL_VSNPRINTF(const_cast<char*>(buffer.data()), buffer.capacity(), fmt, args_copy);
+    const int result
+        = VL_VSNPRINTF(const_cast<char*>(buffer.data()), buffer.capacity(), fmt, args_copy);
     va_end(args_copy);
     const int required = result + 1;  // Returned size doesn't include NUL terminator
     // If there wasn't enough space, reallocate and try again
