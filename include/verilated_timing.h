@@ -32,14 +32,19 @@
 // clang-format off
 // Some preprocessor magic to support both Clang and GCC coroutines with both libc++ and libstdc++
 #if defined _LIBCPP_VERSION  // libc++
-# if __clang_major__ > 13  // Clang > 13 warns that coroutine types in std::experimental are deprecated
-#  pragma clang diagnostic push
-#  pragma clang diagnostic ignored "-Wdeprecated-experimental-coroutine"
+# if defined(__has_include) && __has_include(<coroutine>)
+#  include <coroutine>
+# else
+#  if __clang_major__ > 13  // Clang > 13 warns that coroutine types in std::experimental are deprecated
+#   pragma clang diagnostic push
+#   pragma clang diagnostic ignored "-Wdeprecated-experimental-coroutine"
+#  endif
+#  include <experimental/coroutine>
+   namespace std {
+       using namespace experimental;  // Bring std::experimental into the std namespace
+   }
+#  endif
 # endif
-# include <experimental/coroutine>
-  namespace std {
-      using namespace experimental;  // Bring std::experimental into the std namespace
-  }
 #else
 # if defined __clang__ && defined __GLIBCXX__ && !defined __cpp_impl_coroutine
 #  define __cpp_impl_coroutine 1  // Clang doesn't define this, but it's needed for libstdc++
