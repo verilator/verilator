@@ -32,7 +32,7 @@
 // clang-format off
 // Some preprocessor magic to support both Clang and GCC coroutines with both libc++ and libstdc++
 #if defined _LIBCPP_VERSION  // libc++
-# if defined(__has_include) && !__has_include(<coroutine>) && _has_include(<experimental/coroutine>)
+# if defined(__has_include) && !__has_include(<coroutine>) && __has_include(<experimental/coroutine>)
 #  if __clang_major__ > 13  // Clang > 13 warns that coroutine types in std::experimental are deprecated
 #   pragma clang diagnostic push
 #   pragma clang diagnostic ignored "-Wdeprecated-experimental-coroutine"
