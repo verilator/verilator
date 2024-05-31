@@ -39,7 +39,6 @@ class RandomizeMarkVisitor final : public VNVisitorConst {
     // NODE STATE
     // Cleared on Netlist
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing
-    //  AstConstraintExpr::user1() -> bool.  Set true to indicate state-dependent
     //  AstNodeExpr::user1()    -> bool.  Set true to indicate constraint expression depending on a
     //                                    randomized variable
     const VNUser1InUse m_inuser1;
@@ -122,11 +121,7 @@ class RandomizeMarkVisitor final : public VNVisitorConst {
     }
     void visit(AstNodeVarRef* nodep) override {
         if (!m_constraintExprp) return;
-        if (!nodep->varp()->isRand()) {
-            m_constraintExprp->user1(true);
-            nodep->v3warn(CONSTRAINTIGN, "State-dependent constraint ignored (unsupported)");
-            return;
-        }
+        if (!nodep->varp()->isRand()) return;
         for (AstNode* backp = nodep; backp != m_constraintExprp && !backp->user1();
              backp = backp->backp())
             backp->user1(true);
@@ -152,7 +147,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     //  AstNodeExpr::user1()    -> bool. Depending on a randomized variable
     // VNUser4InUse    m_inuser4;      (Allocated for use in RandomizeVisitor)
 
-    AstTask* const m_taskp;  // X_setup_constraint() method of the constraint
+    AstNodeFTask* const m_taskp;  // method to add write_var calls to
     AstVar* const m_genp;  // VlRandomizer variable of the class
 
     bool editFormat(AstNodeExpr* nodep) {
@@ -227,7 +222,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 = new AstCExpr{varp->fileline(), "\"" + smtName + "\"", varp->width()};
             varnamep->dtypep(varp->dtypep());
             methodp->addPinsp(varnamep);
-            m_taskp->addStmtsp(new AstStmtExpr{varp->fileline(), methodp});
+            m_taskp->addStmtsp(methodp->makeStmt());
         }
     }
     void visit(AstNodeBiop* nodep) override {
@@ -273,7 +268,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit ConstraintExprVisitor(AstConstraintExpr* nodep, AstTask* taskp, AstVar* genp)
+    explicit ConstraintExprVisitor(AstConstraintExpr* nodep, AstNodeFTask* taskp, AstVar* genp)
         : m_taskp(taskp)
         , m_genp(genp) {
         iterate(nodep);
@@ -287,7 +282,6 @@ class RandomizeVisitor final : public VNVisitor {
     // NODE STATE
     // Cleared on Netlist
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing
-    //  AstConstraintExpr::user1() -> bool.  Set true to indicate state-dependent
     //  AstEnumDType::user2()   -> AstVar*.  Pointer to table with enum values
     //  AstClass::user3()       -> AstFunc*. Pointer to randomize() method of a class
     //  AstVar::user4()         -> bool. Handled in constraints
@@ -489,7 +483,7 @@ class RandomizeVisitor final : public VNVisitor {
             argsp->addNext(new AstText{fl, ".next(__Vm_rng)"});
             AstNodeExpr* const solverCallp = new AstCExpr{fl, argsp};
             solverCallp->dtypeSetBit();
-            beginValp = beginValp ? new AstAnd{fl, beginValp, solverCallp} : solverCallp;
+            beginValp = beginValp ? new AstLogAnd{fl, beginValp, solverCallp} : solverCallp;
         }
         if (!beginValp) beginValp = new AstConst{fl, AstConst::WidthedValue{}, 32, 1};
 
@@ -536,29 +530,40 @@ class RandomizeVisitor final : public VNVisitor {
     void visit(AstConstraint* nodep) override {
         AstNodeFTask* const newp = VN_AS(m_memberMap.findMember(m_modp, "new"), NodeFTask);
         UASSERT_OBJ(newp, m_modp, "No new() in class");
+        AstFunc* const randomizep = V3Randomize::newRandomizeFunc(VN_AS(m_modp, Class));
         AstTask* const taskp = newSetupConstraintTask(VN_AS(m_modp, Class), nodep->name());
         AstTaskRef* const setupTaskRefp
             = new AstTaskRef{nodep->fileline(), taskp->name(), nullptr};
         setupTaskRefp->taskp(taskp);
-        newp->addStmtsp(new AstStmtExpr{nodep->fileline(), setupTaskRefp});
 
         AstVar* genp = VN_AS(m_modp->user4p(), Var);
         if (!genp) {
-            genp = new AstVar(nodep->fileline(), VVarType::MEMBER, "constraint",
-                              m_modp->findBasicDType(VBasicDTypeKwd::RANDOM_GENERATOR));
+            genp = VN_AS(m_memberMap.findMember(m_modp, "constraint"), Var);
+            if (!genp)
+                genp = new AstVar{nodep->fileline(), VVarType::MEMBER, "constraint",
+                                  m_modp->findBasicDType(VBasicDTypeKwd::RANDOM_GENERATOR)};
             VN_AS(m_modp, Class)->addMembersp(genp);
             m_modp->user4p(genp);
         }
 
+        if (!randomizep->stmtsp()) {
+            AstCMethodHard* const clearp = new AstCMethodHard{
+                randomizep->fileline(),
+                new AstVarRef{randomizep->fileline(), genp, VAccess::READWRITE}, "clear"};
+            clearp->dtypeSetVoid();
+            randomizep->addStmtsp(clearp->makeStmt());
+        }
+        randomizep->addStmtsp(setupTaskRefp->makeStmt());
+
         while (nodep->itemsp()) {
             AstConstraintExpr* const condsp = VN_CAST(nodep->itemsp(), ConstraintExpr);
-            if (!condsp || condsp->user1()) {
+            if (!condsp) {
                 nodep->itemsp()->v3warn(CONSTRAINTIGN,
                                         "Constraint expression ignored (unsupported)");
                 pushDeletep(nodep->itemsp()->unlinkFrBack());
                 continue;
             }
-            { ConstraintExprVisitor{condsp->unlinkFrBack(), taskp, genp}; }
+            { ConstraintExprVisitor{condsp->unlinkFrBack(), newp, genp}; }
             // Only hard constraints are now supported
             AstCMethodHard* const methodp = new AstCMethodHard{
                 condsp->fileline(), new AstVarRef{condsp->fileline(), genp, VAccess::READWRITE},
