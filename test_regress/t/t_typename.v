@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 
-`define printtype(mytype) $write({$typename(mytype), "\n"});
+`define printtype(mytype, expec) $write({"\"", $typename(mytype), "\" ==? \"", expec, "\"\n"});
 
 // Copied from 20.6.1 Type name function in IEEE 1800-2017
 // source code // $typename would return
@@ -35,33 +35,36 @@ module t(/*AUTOARG*/);
    mybit_t bitu32 [3:2];
    mybit_t bitu31 [3:1][4:5];
 
-
-   // from LRM
+   // From LRM
    typedef struct {node A,B;} AB_t;
    AB_t AB[10]; // "struct{bit A;bit B;}top.AB_t$[0:9]"
 
    initial begin
       // $write({$typename(real), "\n"});
-      `printtype(real);
-      `printtype(int);
-      `printtype(int);
-      `printtype(logic);
-      `printtype(string);
-      `printtype(r);
-      `printtype(l);
-      `printtype(mybit_t);
-      `printtype(bitp20);
-      `printtype(bitu32);
-      `printtype(bitu31);
+      `printtype(real, "real");
+      `printtype(bit, "bit");
+      `printtype(int, "int");
+      `printtype(logic, "logic");
+      `printtype(string, "string");
+      `printtype(r, "real");
+      `printtype(l, "logic");
+      `printtype(mybit_t, "bit");
+      `printtype(bitp20, "bit[2:0]");
+      `printtype(bitu32, "bit$[3:2]");
+      `printtype(bitu31, "bit$[3:1][4:5]");
 
       $write("\n");
       // from LRM
-      `printtype(node); // bit
-      `printtype(X); // bit [2:0]
-      `printtype(Y); // int
-      `printtype(A::X); // enum{A=32'sd0,B=32'sd1,C=32'sd99}A::e$1
-      `printtype(A::word); // A::bit[9:1]
-      `printtype(AB); // struct{bit A;bit B;}top.AB_t$[0:9]
+      `printtype(node, "bit");
+      `printtype(X, "bit[2:0]");
+      `printtype(Y, "int");
+
+      `printtype(A::word, "bit[9:1]");
+
+      `printtype(A::X, "enum{A=32'sd0,B=32'sd1,C=32'sd99}A::<unspecified>");
+
+      `printtype(AB_t, "struct{bit A;bit B;}");
+      `printtype(AB, "struct{bit A;bit B;}top.AB_t$[0:9]");
 
       $write("*-* All Finished *-*\n");
       $finish;

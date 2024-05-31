@@ -1,19 +1,20 @@
-real
-int
-int
-logic
-string
-real
-logic
-bit
-bit[2:0]
-bit$[3:2]
-bit$[3:1][4:5]
+"real" ==? "real"
+"bit" ==? "bit"
+"int" ==? "int"
+"logic" ==? "logic"
+"string" ==? "string"
+"real" ==? "real"
+"logic" ==? "logic"
+"bit" ==? "bit"
+"bit[2:0]" ==? "bit[2:0]"
+"bit$[3:2]" ==? "bit$[3:2]"
+"bit$[3:1][4:5]" ==? "bit$[3:1][4:5]"
 
-bit
-bit[2:0]
-int
-A::__typeimpenum1
-bit[9:1]
-STRUCTDTYPE 't.AB_t'$[0:9]
+"bit" ==? "bit"
+"bit[2:0]" ==? "bit[2:0]"
+"int" ==? "int"
+"bit[9:1]" ==? "bit[9:1]"
+"A::__typeimpenum1" ==? "enum{A=32'sd0,B=32'sd1,C=32'sd99}A::<unspecified>"
+"STRUCTDTYPE 't.AB_t'" ==? "struct{bit A;bit B;}"
+"STRUCTDTYPE 't.AB_t'$[0:9]" ==? "struct{bit A;bit B;}top.AB_t$[0:9]"
 *-* All Finished *-*
