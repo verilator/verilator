@@ -822,6 +822,7 @@ class GateInline final {
 
                 if (debug() >= 9) dstVtxp->nodep()->dumpTree("      inside: ");
 
+                UASSERT_OBJ(logicp != dstVtxp->nodep(), logicp, "unexpected match");
                 recordSubstitution(vscp, substp, dstVtxp->nodep());
 
                 // If the new replacement referred to a signal,
