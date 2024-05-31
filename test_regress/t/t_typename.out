@@ -1,0 +1,19 @@
+real
+int
+int
+logic
+string
+real
+logic
+bit
+bit[2:0]
+bit$[3:2]
+bit$[3:1][4:5]
+
+bit
+bit[2:0]
+int
+A::__typeimpenum1
+bit[9:1]
+STRUCTDTYPE 't.AB_t'$[0:9]
+*-* All Finished *-*
