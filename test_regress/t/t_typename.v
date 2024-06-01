@@ -34,6 +34,16 @@ module t(/*AUTOARG*/);
    mybit_t [2:0] bitp20;
    mybit_t bitu32 [3:2];
    mybit_t bitu31 [3:1][4:5];
+   string assoc[longint];
+   int q[$];
+   int q3[$:3];
+   bit dyn[] = '{0, 0};
+
+   class Cls;
+      int m_c;
+   endclass
+
+   typedef union {node A,B;} UAB_t;
 
    // From LRM
    typedef struct {node A,B;} AB_t;
@@ -60,12 +70,23 @@ module t(/*AUTOARG*/);
       `printtype(Y, "int");
 
       `printtype(A::word, "bit[9:1]");
+      `printtype(assoc, "string$[longint]");
+      `printtype(q, "int$[$]");
+      `printtype(q3, "int$[$:3]");  // Some omit :3 - need it so != unbounded
+      `printtype(dyn, "bit$[]");
 
-      `printtype(A::X, "enum{A=32'sd0,B=32'sd1,C=32'sd99}A::<unspecified>");
+      $display;
 
-      `printtype(AB_t, "struct{bit A;bit B;}");
+      `printtype(A::X, "enum{A=32'sd0,B=32'sd1,C=32'sd99}A::<unspecified>");  // Some have just "enum <typename>"
+
+      `printtype(AB_t, "struct{bit A;bit B;}<some_have_typename>");
+
       `printtype(AB, "struct{bit A;bit B;}top.AB_t$[0:9]");
+      `printtype(UAB_t, "union{bit A;bit B;}");
 
+      `printtype(Cls, "class{}t.Cls <or class t.Cls>");
+
+      $display;
       $write("*-* All Finished *-*\n");
       $finish;
    end

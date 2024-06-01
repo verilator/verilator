@@ -40,6 +40,7 @@ Verilator 5.025 devel
 * Fix CMake builds to export VERILATOR_ROOT (#5063). [Michael Bikovitsky]
 * Fix false ASSIGNIN on functions with explicit port map (#5069).
 * Fix DFG assertion with SystemC (#5076). [Geza Lore]
+* Fix `$typename` string to be more standard (#5082) (#5083). [Andrew Nolte]
 * Fix missed optimization in V3Delayed (#5089). [Geza Lore]
 * Fix macro expansion in strings per 1800-2023 (#5094). [Geza Lore]
 * Fix width extension of unpacked array select (#5095). [Varun Koyyalagunta]

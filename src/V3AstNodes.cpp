@@ -1506,7 +1506,7 @@ void AstBasicDType::dumpJson(std::ostream& str) const {
     }
     dumpJsonGen(str);
 }
-string AstBasicDType::prettyDTypeName() const {
+string AstBasicDType::prettyDTypeName(bool) const {
     std::ostringstream os;
     os << keyword().ascii();
     if (isRanged() && !rangep() && keyword().width() <= 1) {
@@ -1631,6 +1631,10 @@ void AstClassRefDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "class:" << name();
 }
+string AstClassRefDType::prettyDTypeName(bool) const {
+    return "class{}"s + prettyName();
+    return prettyTypeName();
+}
 string AstClassRefDType::name() const { return classp() ? classp()->name() : "<unlinked>"; }
 void AstNodeCoverOrAssert::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
@@ -1666,6 +1670,22 @@ void AstEnumDType::dumpJson(std::ostream& str) const {
 void AstEnumDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "enum";
+}
+string AstEnumDType::prettyDTypeName(bool full) const {
+    string result = "enum{";
+    if (full) {  // else shorten for error messages
+        for (AstEnumItem* itemp = itemsp(); itemp; itemp = VN_AS(itemp->nextp(), EnumItem)) {
+            result += itemp->prettyName() + "=";
+            if (AstConst* constp = VN_CAST(itemp->valuep(), Const)) {
+                result += constp->num().ascii(true, true);
+            } else {
+                result += "?";
+            }
+            result += ";";
+        }
+    }
+    result += "}" + prettyName();
+    return result;
 }
 void AstEnumItemRef::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
@@ -1981,6 +2001,18 @@ void AstNodeUOrStructDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isFourstate);
     dumpJsonGen(str);
 }
+string AstNodeUOrStructDType::prettyDTypeName(bool full) const {
+    string result = verilogKwd() + "{";
+    if (full) {  // else shorten for errors
+        for (AstMemberDType* itemp = membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            result += itemp->subDTypep()->prettyDTypeName(full);
+            result += " " + itemp->prettyName() + ";";
+        }
+    }
+    result += "}" + prettyName();
+    return result;
+}
 void AstNodeDType::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (generic()) str << " [GENERIC]";
@@ -2020,13 +2052,13 @@ void AstNodeArrayDType::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "declRange", cvtToStr(declRange()));
     dumpJsonGen(str);
 }
-string AstPackArrayDType::prettyDTypeName() const {
+string AstPackArrayDType::prettyDTypeName(bool full) const {
     std::ostringstream os;
-    if (const auto subp = subDTypep()) os << subp->prettyDTypeName();
+    if (const auto subp = subDTypep()) os << subp->prettyDTypeName(full);
     os << declRange();
     return os.str();
 }
-string AstUnpackArrayDType::prettyDTypeName() const {
+string AstUnpackArrayDType::prettyDTypeName(bool full) const {
     std::ostringstream os;
     string ranges = cvtToStr(declRange());
     // Unfortunately we need a single $ for the first unpacked, and all
@@ -2036,7 +2068,7 @@ string AstUnpackArrayDType::prettyDTypeName() const {
         ranges += cvtToStr(adtypep->declRange());
         subp = adtypep->subDTypep()->skipRefp();
     }
-    os << subp->prettyDTypeName() << "$" << ranges;
+    os << subp->prettyDTypeName(full) << "$" << ranges;
     return os.str();
 }
 std::vector<AstUnpackArrayDType*> AstUnpackArrayDType::unpackDimensions() {
@@ -2180,20 +2212,22 @@ void AstAssocArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "[assoc-" << nodeAddr(keyDTypep()) << "]";
 }
-string AstAssocArrayDType::prettyDTypeName() const {
-    return subDTypep()->prettyDTypeName() + "[" + keyDTypep()->prettyDTypeName() + "]";
+string AstAssocArrayDType::prettyDTypeName(bool full) const {
+    return subDTypep()->prettyDTypeName(full) + "$[" + keyDTypep()->prettyDTypeName(full) + "]";
 }
 void AstDynArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
-    str << "[]";
+    str << "$[]";
 }
-string AstDynArrayDType::prettyDTypeName() const { return subDTypep()->prettyDTypeName() + "[]"; }
+string AstDynArrayDType::prettyDTypeName(bool full) const {
+    return subDTypep()->prettyDTypeName(full) + "$[]";
+}
 void AstQueueDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "[queue]";
 }
-string AstQueueDType::prettyDTypeName() const {
-    string str = subDTypep()->prettyDTypeName() + "[$";
+string AstQueueDType::prettyDTypeName(bool full) const {
+    string str = subDTypep()->prettyDTypeName(full) + "$[$";
     if (boundConst()) str += ":" + cvtToStr(boundConst());
     return str + "]";
 }

@@ -14,7 +14,7 @@
                                  : ... note: In instance 't'
    46 |       d_real[0] = 1'b1;          
       |             ^
-%Error: t/t_var_types_bad.v:46:7: Expected integral (non-real) input to SEL
+%Error: t/t_var_types_bad.v:46:7: Expected integral (non-'real') input to SEL
                                 : ... note: In instance 't'
    46 |       d_real[0] = 1'b1;          
       |       ^~~~~~
@@ -27,7 +27,7 @@
                                  : ... note: In instance 't'
    47 |       d_realtime[0] = 1'b1;      
       |                 ^
-%Error: t/t_var_types_bad.v:47:7: Expected integral (non-real) input to SEL
+%Error: t/t_var_types_bad.v:47:7: Expected integral (non-'real') input to SEL
                                 : ... note: In instance 't'
    47 |       d_realtime[0] = 1'b1;      
       |       ^~~~~~~~~~

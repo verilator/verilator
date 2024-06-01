@@ -1615,7 +1615,8 @@ class WidthVisitor final : public VNVisitor {
         }
         case VAttrType::TYPENAME: {
             UASSERT_OBJ(nodep->fromp(), nodep, "Unprovided expression");
-            const string result = nodep->fromp()->dtypep()->prettyDTypeName();
+            const string result = nodep->fromp()->dtypep()->prettyDTypeName(true);
+            UINFO(9, "typename '" << result << "' from " << nodep->fromp()->dtypep() << "\n");
             AstNode* const newp = new AstConst{nodep->fileline(), AstConst::String{}, result};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -4091,7 +4092,7 @@ class WidthVisitor final : public VNVisitor {
                         } else if (const AstNodeDType* nodedtypep
                                    = VN_CAST(patp->keyp(), NodeDType)) {
                             // data_type: default_value
-                            const string dtype = nodedtypep->dtypep()->prettyDTypeName();
+                            const string dtype = nodedtypep->dtypep()->prettyDTypeName(true);
                             const auto pair = dtypemap.emplace(dtype, patp);
                             if (!pair.second) {
                                 // Override stored default_value
@@ -4195,7 +4196,7 @@ class WidthVisitor final : public VNVisitor {
                                                AstPatMember* patp,
                                                AstNodeUOrStructDType* memp_vdtypep,
                                                AstPatMember* defaultp, const DTypeMap& dtypemap) {
-        const string memp_DType = memp->virtRefDTypep()->prettyDTypeName();
+        const string memp_DType = memp->virtRefDTypep()->prettyDTypeName(true);
         const auto it = dtypemap.find(memp_DType);
         if (it != dtypemap.end()) {
             // default_value for data_type
@@ -5787,8 +5788,8 @@ class WidthVisitor final : public VNVisitor {
                     && !similarDTypeRecurse(portDTypep, pinDTypep)) {
                     pinp->v3error("Ref argument requires matching types;"
                                   << " port " << portp->prettyNameQ() << " requires "
-                                  << portDTypep->prettyDTypeName() << " but connection is "
-                                  << pinDTypep->prettyDTypeName() << ".");
+                                  << portDTypep->prettyDTypeNameQ() << " but connection is "
+                                  << pinDTypep->prettyDTypeNameQ() << ".");
                 } else if (portp->isWritable() && pinp->width() != portp->width()) {
                     pinp->v3widthWarn(portp->width(), pinp->width(),
                                       "Function output argument "
@@ -7035,7 +7036,7 @@ class WidthVisitor final : public VNVisitor {
 
     AstNodeExpr* checkCvtUS(AstNodeExpr* nodep) {
         if (nodep && nodep->isDouble()) {
-            nodep->v3error("Expected integral (non-" << nodep->dtypep()->prettyDTypeName()
+            nodep->v3error("Expected integral (non-" << nodep->dtypep()->prettyDTypeNameQ()
                                                      << ") input to "
                                                      << nodep->backp()->prettyTypeName());
             nodep = spliceCvtS(nodep, true, 32);

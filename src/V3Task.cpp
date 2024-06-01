@@ -694,7 +694,7 @@ class TaskVisitor final : public VNVisitor {
                     // differ we may get C compilation problems later
                     const std::string dpiType = portp->dpiArgType(false, false);
                     dpiproto += dpiType;
-                    const std::string vType = portp->dtypep()->prettyDTypeName();
+                    const std::string vType = portp->dtypep()->prettyDTypeName(false);
                     if (!portp->isDpiOpenArray() && dpiType != vType) {
                         dpiproto += " /* " + vType + " */ ";
                     }

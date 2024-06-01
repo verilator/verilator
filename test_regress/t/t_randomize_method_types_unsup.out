@@ -4,14 +4,14 @@
       |                              ^~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
-%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:19:25: Unsupported: random member variable with type 'int[]'
+%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:19:25: Unsupported: random member variable with type 'int$[]'
    19 |    constraint dynsize { dynarr.size < 20; }
       |                         ^~~~~~
 %Warning-CONSTRAINTIGN: t/t_randomize_method_types_unsup.v:20:28: Constraint expression ignored (unsupported)
                                                                 : ... note: In instance 't'
    20 |    constraint statedep { i < st + 2; }
       |                            ^
-%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:12:13: Unsupported: random member variable with type 'int[string]'
+%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:12:13: Unsupported: random member variable with type 'int$[string]'
                                                             : ... note: In instance 't'
    12 |    rand int assocarr[string];
       |             ^~~~~~~~
@@ -19,7 +19,7 @@
                                                             : ... note: In instance 't'
    14 |    rand int unpackarr[5];
       |             ^~~~~~~~~
-%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:15:15: Unsupported: random member variable with type '$unit::Union'
+%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:15:15: Unsupported: random member variable with type 'union{}$unit::Union'
                                                             : ... note: In instance 't'
    15 |    rand Union uni;
       |               ^~~

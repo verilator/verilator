@@ -89,8 +89,8 @@ public:
     virtual AstNodeDType* subDTypep() const VL_MT_SAFE { return nullptr; }
     virtual bool isFourstate() const;
     // Ideally an IEEE $typename
-    virtual string prettyDTypeName() const { return prettyTypeName(); }
-    string prettyDTypeNameQ() const { return "'" + prettyDTypeName() + "'"; }
+    virtual string prettyDTypeName(bool) const { return prettyTypeName(); }
+    string prettyDTypeNameQ() const { return "'" + prettyDTypeName(false) + "'"; }
     //
     // Changing the width may confuse the data type resolution, so must clear
     // TypeTable cache after use.
@@ -215,6 +215,7 @@ public:
     int uniqueNum() const { return m_uniqueNum; }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
+    string prettyDTypeName(bool) const override;
     bool isCompound() const override { return !packed(); }
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     AstBasicDType* basicp() const override {
@@ -313,7 +314,7 @@ public:
         return asamep->subDTypep()
                && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
     }
-    string prettyDTypeName() const override;
+    string prettyDTypeName(bool full) const override;
     void dumpSmall(std::ostream& str) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* getChild2DTypep() const override { return keyChildDTypep(); }
@@ -387,7 +388,7 @@ public:
         return type() == samep->type() && same(samep);
     }
     string name() const override VL_MT_STABLE { return m.m_keyword.ascii(); }
-    string prettyDTypeName() const override;
+    string prettyDTypeName(bool full) const override;
     const char* broken() const override {
         BROKEN_RTN(dtypep() != this);
         return nullptr;
@@ -504,7 +505,7 @@ public:
     }
     bool similarDType(const AstNodeDType* samep) const override { return same(samep); }
     string name() const override VL_MT_STABLE { return m_name; }
-    string prettyDTypeName() const override { return m_name; }
+    string prettyDTypeName(bool) const override { return m_name; }
     // METHODS
     AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
     AstNodeDType* skipRefp() const override VL_MT_STABLE { return (AstNodeDType*)this; }
@@ -551,6 +552,7 @@ public:
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
+    string prettyDTypeName(bool full) const override;
     string name() const override VL_MT_STABLE;
     AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
     AstNodeDType* skipRefp() const override VL_MT_STABLE { return (AstNodeDType*)this; }
@@ -719,7 +721,7 @@ public:
         return asamep->subDTypep()
                && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
     }
-    string prettyDTypeName() const override;
+    string prettyDTypeName(bool full) const override;
     void dumpSmall(std::ostream& str) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
@@ -809,6 +811,7 @@ public:
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
+    string prettyDTypeName(bool full) const override;
     // METHODS
     AstBasicDType* basicp() const override VL_MT_STABLE { return subDTypep()->basicp(); }
     AstNodeDType* skipRefp() const override VL_MT_STABLE { return subDTypep()->skipRefp(); }
@@ -1093,7 +1096,7 @@ public:
                && subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp());
     }
     void dumpSmall(std::ostream& str) const override;
-    string prettyDTypeName() const override;
+    string prettyDTypeName(bool full) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
         return m_refDTypep ? m_refDTypep : childDTypep();
@@ -1156,8 +1159,8 @@ public:
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
-    string prettyDTypeName() const override {
-        return subDTypep() ? prettyName(subDTypep()->name()) : prettyName();
+    string prettyDTypeName(bool full) const override {
+        return subDTypep() ? prettyName(subDTypep()->prettyDTypeName(full)) : prettyName();
     }
     AstBasicDType* basicp() const override VL_MT_STABLE {
         return subDTypep() ? subDTypep()->basicp() : nullptr;
@@ -1384,7 +1387,7 @@ public:
     inline AstPackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstRange* rangep);
     inline AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* rangep);
     ASTGEN_MEMBERS_AstPackArrayDType;
-    string prettyDTypeName() const override;
+    string prettyDTypeName(bool full) const override;
     bool isCompound() const override { return false; }
 };
 class AstUnpackArrayDType final : public AstNodeArrayDType {
@@ -1411,7 +1414,7 @@ public:
         widthFromSub(subDTypep());
     }
     ASTGEN_MEMBERS_AstUnpackArrayDType;
-    string prettyDTypeName() const override;
+    string prettyDTypeName(bool full) const override;
     bool same(const AstNode* samep) const override {
         const AstUnpackArrayDType* const sp = VN_DBG_AS(samep, UnpackArrayDType);
         return m_isCompound == sp->m_isCompound;
