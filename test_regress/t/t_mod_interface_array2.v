@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 parameter N = 4;
-// verilator lint_off LITENDIAN
+// verilator lint_off ASCRANGE
 
 interface a_if #(parameter PARAM = 0) ();
    logic long_name;
@@ -20,7 +20,7 @@ module intf_source
    );
    generate
       for (genvar i=0; i < N;i++) begin
-	 assign i_intf_source[i].long_name = intf_input[i];
+         assign i_intf_source[i].long_name = intf_input[i];
       end
    endgenerate
 endmodule
@@ -32,7 +32,7 @@ module intf_sink
    );
    generate
       for (genvar i=0; i < N;i++) begin
-	 assign a_out[i] = i_intf_sink[i].long_name;
+         assign a_out[i] = i_intf_sink[i].long_name;
       end
    endgenerate
 endmodule

@@ -10,16 +10,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
+my $out_filename = "$Self->{obj_dir}/V$Self->{name}.tree.json";
 
 compile(
-    verilator_flags2 => ["+define+ATTRIBUTES"],
+    verilator_flags2 => ["+define+ATTRIBUTES --no-json-edit-nums"],
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<var fl="d74" loc=".*?" name="clk0" dtype_id="1" dir="input" vartype="logic" origName="clk0" clocker="true" public="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var fl="d75" loc=".*?" name="clk1" dtype_id="1" dir="input" vartype="logic" origName="clk1" clocker="true" public="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var fl="d76" loc=".*?" name="clk2" dtype_id="1" dir="input" vartype="logic" origName="clk2" clocker="true" public="true"\/\>/i);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"clk0",.*"loc":"e,74:[^"]*",.*"origName":"clk0",.*"direction":"INPUT",.*"isSigPublic":true,.*"attrClocker":"clker",.*"varType":"PORT",.*"dtypeName":"logic"/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"clk1",.*"loc":"e,75:[^"]*",.*"origName":"clk1",.*"direction":"INPUT",.*"isSigPublic":true,.*"attrClocker":"clker",.*"varType":"PORT",.*"dtypeName":"logic"/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"clk2",.*"loc":"e,76:[^"]*",.*"origName":"clk2",.*"direction":"INPUT",.*"isSigPublic":true,.*"attrClocker":"clker",.*"varType":"PORT",.*"dtypeName":"logic"/);
 }
 
 execute(

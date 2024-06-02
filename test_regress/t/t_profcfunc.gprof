@@ -1,0 +1,43 @@
+Flat profile:
+
+ Note all numbers below were faked for this test, so might not be consistent.
+
+  %   cumulative   self              self     total
+ time   seconds   seconds    calls  Ts/call  Ts/call  name
+  1.99      1.99     0.99   200578     0.00     0.00  VL_EXTENDS_QQ(int, int, unsigned long)
+  1.98      0.00     0.98   100000     0.00     0.00  VL_POWSS_QQQ(int, int, int, unsigned long, unsigned long, bool, bool)
+  1.89      0.00     0.89     1407     0.00     0.00  Verilated::debug()
+  1.88      0.00     0.88      202     0.00     0.00  VerilatedContext::gotFinish() const
+  1.87      0.00     0.87        6     0.00     0.00  VerilatedContext::randReset()
+  1.86      0.00     0.86        9     0.00     0.00  VlWide<2ul>::operator unsigned int*()
+  1.79      0.00     0.79      600     0.00     0.00  Vt_prof* const& std::__get_helper<0ul, Vt_prof*, std::default_delete<Vt_prof> >(std::_Tuple_impl<0ul, Vt_prof*, std::default_delete<Vt_prof> > const&)
+  1.78      0.00     0.78        3     0.00     0.00  Vt_prof*& std::__get_helper<0ul, Vt_prof*, std::default_delete<Vt_prof> >(std::_Tuple_impl<0ul, Vt_prof*, std::default_delete<Vt_prof> >&)
+  1.77      0.00     0.77        1     0.00     0.00  Vt_prof::Vt_prof(VerilatedContext*, char const*)
+  1.76      0.00     0.76        1     0.00     0.00  Vt_prof::Vt_prof(char const*)
+  1.75      0.00     0.75      200     0.00     0.00  Vt_prof::eval()
+  1.74      0.00     0.74      200     0.00     0.00  Vt_prof::eval_step()
+  1.73      0.00     0.73        1     0.00     0.00  Vt_prof::final()
+  1.72      0.00     0.72        1     0.00     0.00  Vt_prof::~Vt_prof()
+  1.71      0.00     0.71        1     0.00     0.00  Vt_prof__Syms::Vt_prof__Syms(VerilatedContext*, char const*, Vt_prof*)
+  1.70      0.00     0.70        1     0.00     0.00  Vt_prof__Syms::~Vt_prof__Syms()
+  1.69      0.00     0.69        1     0.00     0.00  Vt_prof___024root::__Vconfigure(Vt_prof__Syms*, bool)
+  1.68      0.00     0.68        1     0.00     0.00  Vt_prof___024root::Vt_prof___024root(char const*)
+  1.67      0.00     0.67        1     0.00     0.00  Vt_prof___024root::~Vt_prof___024root()
+  1.66      0.00     0.66      201     0.00     0.00  Vt_prof___024root___eval(Vt_prof___024root*)
+  1.65      0.00     0.65      200     0.00     0.00  Vt_prof___024root___eval_debug_assertions(Vt_prof___024root*)
+  1.64      0.00     0.64      100     0.00     0.00  Vt_prof___024root___sequent__TOP__5__PROF__t_prof__l31(Vt_prof___024root*)
+  1.63      0.00     0.63      100     0.00     0.00  Vt_prof___024root___sequent__TOP__50__PROF__t_prof__l31(Vt_prof___024root*)
+  1.62      0.00     0.62      100     0.00     0.00  Vt_prof___024root___sequent__TOP__6__PROF__t_prof__l30(Vt_prof___024root*)
+  1.61      0.00     0.61        1     0.00     0.00  Vt_prof___024root___final(Vt_prof___024root*)
+  1.60      0.00     0.60        1     0.00     0.00  Vt_prof___024root___eval_settle(Vt_prof___024root*)
+  1.59      0.00     0.59        1     0.00     0.00  Vt_prof___024root___eval_initial(Vt_prof___024root*)
+  1.58      0.00     0.58        1     0.00     0.00  Vt_prof___024root___ctor_var_reset(Vt_prof___024root*)
+  1.57      0.00     0.57        1     0.00     0.00  Vt_prof___024root___initial__TOP__13__PROF__t_prof__l13(Vt_prof___024root*)
+  1.30      0.00     0.30        1     0.00     0.00  _eval_initial_loop(Vt_prof__Syms*)
+  1.29      0.00     0.29        1     0.00     0.00  _vl_cmp_w(int, unsigned int const*, unsigned int const*)
+  1.28      0.00     0.28        2     0.00     0.00  _vl_moddiv_w(int, unsigned int*, unsigned int const*, unsigned int const*, bool)
+  1.27      0.00     0.27        2     0.00     0.00  _vl_vsformat(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, char const*, __va_list_tag*)
+  1.26      0.00     0.26     1399     0.00     0.00  std::unique_ptr<VerilatedContext, std::default_delete<VerilatedContext> >::get() const
+  1.25      0.00     0.25        3     0.00     0.00  unsigned long const& std::max<unsigned long>(unsigned long const&, unsigned long const&)
+  1.19      0.00     0.19        1     0.00     0.00  vl_finish(char const*, int, char const*)
+  1.18      0.00     0.18        2     0.00     0.00  vl_time_pow10(int)

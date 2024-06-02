@@ -2,31 +2,47 @@
 ######################################################################
 # DESCRIPTION: Makefile commands for all verilated target files
 #
-# Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 ######################################################################
 
-PERL = @PERL@
+# Tool names.
+# These are computed at configuration time, and most are not ?=
+# to avoid picking up potentially incorrect Make implicit variables
+AR = @AR@
 CXX = @CXX@
 LINK = @CXX@
-AR = ar
-RANLIB = ranlib
 OBJCACHE ?= @OBJCACHE@
+PERL = @PERL@
+PYTHON3 = @PYTHON3@
 
+# Configuration time options
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
 
-# Select newest language
+# Compiler flags to enable profiling
+CFG_CXXFLAGS_PROFILE = @CFG_CXXFLAGS_PROFILE@
+# Select language required to compile (often empty)
+CFG_CXXFLAGS_STD = @CFG_CXXFLAGS_STD@
+# Select newest language (unused by this Makefile, for some test's Makefiles)
 CFG_CXXFLAGS_STD_NEWEST = @CFG_CXXFLAGS_STD_NEWEST@
-# Select oldest language (for Verilator internal testing only)
-CFG_CXXFLAGS_STD_OLDEST = @CFG_CXXFLAGS_STD_OLDEST@
 # Compiler flags to use to turn off unused and generated code warnings, such as -Wno-div-by-zero
 CFG_CXXFLAGS_NO_UNUSED = @CFG_CXXFLAGS_NO_UNUSED@
 # Compiler flags that turn on extra warnings
 CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
+# Compiler flags that enable coroutine support
+CFG_CXXFLAGS_COROUTINES = @CFG_CXXFLAGS_COROUTINES@
+# Compiler flags when creating a precompiled header
+CFG_CXXFLAGS_PCH = -x c++-header
+# Compiler option to put in front of filename to read precompiled header
+CFG_CXXFLAGS_PCH_I = @CFG_CXXFLAGS_PCH_I@
+# Compiler's filename prefix for precompiled headers, .gch if clang, empty if GCC
+CFG_GCH_IF_CLANG = @CFG_GCH_IF_CLANG@
+# Linker flags
+CFG_LDFLAGS_VERILATED = @CFG_LDFLAGS_VERILATED@
 # Linker libraries for multithreading
 CFG_LDLIBS_THREADS = @CFG_LDLIBS_THREADS@
 
@@ -34,7 +50,14 @@ CFG_LDLIBS_THREADS = @CFG_LDLIBS_THREADS@
 # Programs
 
 VERILATOR_COVERAGE = $(PERL) $(VERILATOR_ROOT)/bin/verilator_coverage
-VERILATOR_INCLUDER = $(PERL) $(VERILATOR_ROOT)/bin/verilator_includer
+VERILATOR_INCLUDER = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_includer
+VERILATOR_CCACHE_REPORT = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_ccache_report
+
+######################################################################
+# CCACHE flags (via environment as no command line option available)
+
+CCACHE_SLOPPINESS ?= pch_defines,time_macros
+export CCACHE_SLOPPINESS
 
 ######################################################################
 # Make checks
@@ -42,6 +65,10 @@ VERILATOR_INCLUDER = $(PERL) $(VERILATOR_ROOT)/bin/verilator_includer
 ifneq ($(words $(CURDIR)),1)
  $(error Unsupported: GNU Make cannot build in directories containing spaces, build elsewhere: '$(CURDIR)')
 endif
+
+######################################################################
+# OS detection
+UNAME_S := $(shell uname -s)
 
 ######################################################################
 # C Preprocessor flags
@@ -55,9 +82,10 @@ VK_CPPFLAGS_ALWAYS += \
 		-DVM_SC=$(VM_SC) \
 		-DVM_TRACE=$(VM_TRACE) \
 		-DVM_TRACE_FST=$(VM_TRACE_FST) \
+		-DVM_TRACE_VCD=$(VM_TRACE_VCD) \
 		$(CFG_CXXFLAGS_NO_UNUSED) \
 
-ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
+ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users
 VK_CPPFLAGS_WALL += -Wall $(CFG_CXXFLAGS_WEXTRA) -Werror
 endif
 
@@ -67,12 +95,17 @@ VPATH += ..
 VPATH += $(VERILATOR_ROOT)/include
 VPATH += $(VERILATOR_ROOT)/include/vltstd
 
+LDFLAGS  += $(CFG_LDFLAGS_VERILATED)
+
 #OPT = -ggdb -DPRINTINITSTR -DDETECTCHANGE
 #OPT = -ggdb -DPRINTINITSTR
 CPPFLAGS += $(OPT)
 
-CPPFLAGS += $(M32)
-LDFLAGS  += $(M32)
+# On macOS, specify all weak symbols as dynamic_lookup.
+# Otherwise, you get undefined symbol errors.
+ifeq ($(UNAME_S),Darwin)
+	LDFLAGS += -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv
+endif
 
 # Allow upper level user makefiles to specify flags they want.
 # These aren't ever set by Verilator, so users are free to override them.
@@ -103,6 +136,14 @@ OPT_FAST = -Os
 OPT_GLOBAL = -Os
 
 #######################################################################
+##### Profile builds
+
+ifeq ($(VM_PROFC),1)
+  CPPFLAGS += $(CFG_CXXFLAGS_PROFILE)
+  LDFLAGS  += $(CFG_CXXFLAGS_PROFILE)
+endif
+
+#######################################################################
 ##### SystemC builds
 
 ifeq ($(VM_SC),1)
@@ -110,7 +151,7 @@ ifeq ($(VM_SC),1)
   LDFLAGS  += $(SYSTEMC_CXX_FLAGS) $(addprefix -L, $(SYSTEMC_LIBDIR))
   SC_LIBS   = -lsystemc
  ifneq ($(wildcard $(SYSTEMC_LIBDIR)/*numeric_bit*),)
-  # Systemc 1.2.1beta
+  # SystemC 1.2.1beta
   SC_LIBS   += -lnumeric_bit -lqt
  endif
 endif
@@ -118,52 +159,15 @@ endif
 #######################################################################
 ##### Threaded builds
 
-ifneq ($(VM_C11),0)
- ifneq ($(VM_C11),)
-  VK_C11=1
+CPPFLAGS += $(CFG_CXXFLAGS_STD)
+LDLIBS += $(CFG_LDLIBS_THREADS)
+
+ifneq ($(VM_TIMING),0)
+ ifneq ($(VM_TIMING),)
+  CPPFLAGS += $(CFG_CXXFLAGS_COROUTINES)
  endif
 endif
 
-ifneq ($(VM_THREADS),0)
- ifneq ($(VM_THREADS),)
-  CPPFLAGS += -DVL_THREADED
-  VK_C11=1
-  VK_LIBS_THREADED=1
- endif
-endif
-
-ifneq ($(VM_TRACE_THREADS),0)
- ifneq ($(VM_TRACE_THREADS),)
-  ifeq ($(findstring -DVL_THREADED,$(CPPFLAGS)),)
-   $(error VM_TRACE_THREADS requires VM_THREADS)
-  endif
-  CPPFLAGS += -DVL_TRACE_THREADED
-  VK_C11=1
-  VK_LIBS_THREADED=1
- endif
-endif
-
-
-ifneq ($(VM_TRACE_FST_WRITER_THREAD),0)
- ifneq ($(VM_TRACE_FST_WRITER_THREAD),)
-  CPPFLAGS += -DVL_TRACE_FST_WRITER_THREAD
-  VK_C11=1
-  VK_LIBS_THREADED=1
- endif
-endif
-
-ifneq ($(VK_C11),0)
- ifneq ($(VK_C11),)
-  # Need C++11 at least, so always default to newest
-  CPPFLAGS += $(CFG_CXXFLAGS_STD_NEWEST)
- endif
-endif
-
-ifneq ($(VK_LIBS_THREADED),0)
- ifneq ($(VK_LIBS_THREADED),)
-  LDLIBS += $(CFG_LDLIBS_THREADS)
- endif
-endif
 
 #######################################################################
 ### Aggregates
@@ -171,18 +175,28 @@ endif
 VM_FAST += $(VM_CLASSES_FAST) $(VM_SUPPORT_FAST)
 VM_SLOW += $(VM_CLASSES_SLOW) $(VM_SUPPORT_SLOW)
 
+# Precompiled header filename
+VK_PCH_H = $(VM_PREFIX)__pch.h
+# Compiler read-a-precompiled-header option for precompiled header filename
+VK_PCH_I_FAST = $(CFG_CXXFLAGS_PCH_I) $(VM_PREFIX)__pch.h.fast$(CFG_GCH_IF_CLANG)
+VK_PCH_I_SLOW = $(CFG_CXXFLAGS_PCH_I) $(VM_PREFIX)__pch.h.slow$(CFG_GCH_IF_CLANG)
+
 #######################################################################
 ### Overall Objects Linking
 
-VK_FAST_OBJS = $(addsuffix .o, $(VM_FAST))
-VK_SLOW_OBJS = $(addsuffix .o, $(VM_SLOW))
+VK_OBJS_FAST = $(addsuffix .o, $(VM_FAST))
+VK_OBJS_SLOW = $(addsuffix .o, $(VM_SLOW))
 
-VK_USER_OBJS   = $(addsuffix .o, $(VM_USER_CLASSES))
+VK_USER_OBJS = $(addsuffix .o, $(VM_USER_CLASSES))
 
 # Note VM_GLOBAL_FAST and VM_GLOBAL_SLOW holds the files required from the
 # run-time library. In practice everything is actually in VM_GLOBAL_FAST,
 # but keeping the distinction for compatibility for now.
 VK_GLOBAL_OBJS = $(addsuffix .o, $(VM_GLOBAL_FAST) $(VM_GLOBAL_SLOW))
+
+# Need to re-build if the generated makefile changes, as compiler options might
+# have changed.
+$(VK_GLOBAL_OBJS): $(VM_PREFIX).mk
 
 ifneq ($(VM_PARALLEL_BUILDS),1)
   # Fast build for small designs: All .cpp files in one fell swoop. This
@@ -198,20 +212,24 @@ else
   # Parallel build: Each .cpp file by itself. This can be somewhat slower for
   # very small designs and examples, but is a lot faster for large designs.
 
-  VK_OBJS += $(VK_FAST_OBJS) $(VK_SLOW_OBJS)
+  VK_OBJS += $(VK_OBJS_FAST) $(VK_OBJS_SLOW)
 endif
 
 # When archiving just objects (.o), use single $(AR) run
-#   1. Make .tmp file with list of objects so don't exceed commend line
+#   1. Make .verilator_deplist.tmp file with list of objects so don't exceed
+#      the command line limits when calling $(AR).
+#      The approach to write the dependency file is compatible with GNU Make 3,
+#      and can be simplified using the file function once GNU Make 4.x becomes
+#      the minimum supported version.
 # When merging objects (.o) and archives (.a) additionally:
 #   1. Extract object files from .a
 #   2. Create a new archive from extracted .o and given .o
-%.a:
-	$(info Archive $(AR) -rcs $@ $^)
-	$(file >$@.tmp)
-	$(foreach L, $(filter-out %.a,$^), $(file >>$@.tmp, $L))
+%.a: | %.verilator_deplist.tmp
+	$(foreach L, $(filter-out %.a,$^), $(shell echo $L >>$@.verilator_deplist.tmp))
 	@if test $(words $(filter %.a,$^)) -eq 0; then \
-		$(AR) -rcs $@ @$@.tmp; \
+		$(RM) -f $@; \
+		cat $@.verilator_deplist.tmp | xargs $(AR) -rc $@; \
+		$(AR) -s $@; \
 	else \
 		$(RM) -rf $@.tmpdir; \
 		for archive in $(filter %.a,$^); do \
@@ -220,9 +238,15 @@ endif
 			$(AR) -x ../../$${archive}; \
 			cd ../..; \
 		done; \
-		$(AR) -rcs $@ @$@.tmp $@.tmpdir/*/*.o; \
+		$(RM) -f $@; \
+		cat $@.verilator_deplist.tmp | xargs $(AR) -rc $@; \
+		$(AR) -rcs $@ $@.tmpdir/*/*.o; \
 	fi \
-	; $(RM) -rf $@.tmp $@.tmpdir
+	; $(RM) -rf $@.verilator_deplist.tmp $@.tmpdir
+
+# Truncate the dependency list file used in the %.a target above.
+%.verilator_deplist.tmp:
+	echo "" > $@
 
 $(VM_PREFIX)__ALL.a: $(VK_OBJS) $(VM_HIER_LIBS)
 
@@ -231,16 +255,32 @@ $(VM_PREFIX)__ALL.a: $(VK_OBJS) $(VM_HIER_LIBS)
 ### Compile rules
 
 ifneq ($(VM_DEFAULT_RULES),0)
-# Anything not in $(VK_SLOW_OBJS) or $(VK_GLOBAL_OBJS), including verilated.o
-# and user files passed on the Verilator command line use this rule.
+# Compilation rule for anything not in $(VK_OBJS_FAST), $(VK_OBJS_SLOW), or
+# $(VK_GLOBAL_OBJS) including verilated.o.  This typically means user files
+# passed on the Verilator command line.
+#
+# These rules put OPT_FAST/OPT_SLOW/OPT_GLOBAL before the other flags to
+# allow USER_CPPFLAGS to override them
 %.o: %.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
 
-$(VK_SLOW_OBJS): %.o: %.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_SLOW) -c -o $@ $<
+$(VK_OBJS_FAST): %.o: %.cpp $(VK_PCH_H).fast.gch
+	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(VK_PCH_I_FAST) -c -o $@ $<
+
+$(VK_OBJS_SLOW): %.o: %.cpp $(VK_PCH_H).slow.gch
+	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(VK_PCH_I_SLOW) -c -o $@ $<
 
 $(VK_GLOBAL_OBJS): %.o: %.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_GLOBAL) -c -o $@ $<
+	$(OBJCACHE) $(CXX) $(OPT_GLOBAL) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+
+# Precompile a header file
+# PCH's compiler flags must match exactly the rules' above FAST/SLOW
+# arguments used for the .cpp files, or the PCH file won't be used.
+%.fast.gch: %
+	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
+%.slow.gch: %
+	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
+
 endif
 
 #Default rule embedded in make:
@@ -248,23 +288,61 @@ endif
 #	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 ######################################################################
+### ccache report
+
+ifneq ($(findstring ccache-report,$(MAKECMDGOALS)),)
+  ifneq ($(OBJCACHE),ccache)
+    $(error ccache-report requires OBJCACHE to equal 'ccache')
+  endif
+  VK_OTHER_GOALS := $(strip $(subst ccache-report,,$(MAKECMDGOALS)))
+  ifeq ($(VK_OTHER_GOALS),)
+    $(error ccache-report must be used with at least one other explicit target)
+  endif
+
+  # Report ccache behaviour for this invocation of make
+  VK_CCACHE_LOGDIR := ccache-logs
+  VK_CCACHE_REPORT := $(VM_PREFIX)__ccache_report.txt
+  # Remove previous logfiles and report
+  $(shell rm -rf $(VK_CCACHE_LOGDIR) $(VK_CCACHE_REPORT))
+
+$(VK_CCACHE_LOGDIR):
+	mkdir -p $@
+
+$(VK_OBJS): | $(VK_CCACHE_LOGDIR)
+
+$(VK_OBJS): export CCACHE_LOGFILE=$(VK_CCACHE_LOGDIR)/$@.log
+
+$(VK_CCACHE_REPORT): $(VK_OBJS)
+	$(VERILATOR_CCACHE_REPORT) -o $@ $(VK_CCACHE_LOGDIR)
+
+.PHONY: ccache-report
+ccache-report: $(VK_CCACHE_REPORT)
+	@cat $<
+
+# ccache-report runs last
+ccache-report: $(VK_OTHER_GOALS)
+endif
+
+######################################################################
 ### Debugging
 
 debug-make::
 	@echo
-	@echo CXXFLAGS: $(CXXFLAGS)
 	@echo CPPFLAGS: $(CPPFLAGS)
+	@echo CXXFLAGS: $(CXXFLAGS)
 	@echo OPT_FAST: $(OPT_FAST)
 	@echo OPT_SLOW: $(OPT_SLOW)
-	@echo VM_PREFIX:  $(VM_PREFIX)
-	@echo VM_PARALLEL_BUILDS:  $(VM_PARALLEL_BUILDS)
+	@echo VK_OBJS: $(VK_OBJS)
+	@echo VK_OBJS_FAST: $(VK_OBJS_FAST)
+	@echo VK_OBJS_SLOW: $(VK_OBJS_SLOW)
 	@echo VM_CLASSES_FAST: $(VM_CLASSES_FAST)
 	@echo VM_CLASSES_SLOW: $(VM_CLASSES_SLOW)
-	@echo VM_SUPPORT_FAST: $(VM_SUPPORT_FAST)
-	@echo VM_SUPPORT_SLOW: $(VM_SUPPORT_SLOW)
 	@echo VM_GLOBAL_FAST: $(VM_GLOBAL_FAST)
 	@echo VM_GLOBAL_SLOW: $(VM_GLOBAL_SLOW)
-	@echo VK_OBJS: $(VK_OBJS)
+	@echo VM_PARALLEL_BUILDS:  $(VM_PARALLEL_BUILDS)
+	@echo VM_PREFIX:  $(VM_PREFIX)
+	@echo VM_SUPPORT_FAST: $(VM_SUPPORT_FAST)
+	@echo VM_SUPPORT_SLOW: $(VM_SUPPORT_SLOW)
 	@echo
 
 ######################################################################

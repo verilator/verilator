@@ -11,19 +11,25 @@ typedef struct packed {
    integer     val200;
 } struct_t;
 
+// This interface is not connected to any cells
+interface ifc_inner(input integer cyc);
+   integer     value;
+endinterface
+
 interface ifc (input logic clk,
                input integer cyc);
-   integer 		     value;
+   integer                   value;
    struct_t the_struct;
+   ifc_inner inner (.*);
 endinterface
 
 module t (/*AUTOARG*/
-	  // Inputs
-	  clk
-	  );
+          // Inputs
+          clk
+          );
 
    input clk;
-   integer cyc=0;
+   integer cyc = 0;
 
    ifc intf_1(.*);
    ifc intf_2(.*);
@@ -46,10 +52,10 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==20) begin
-	 if (intf_1.value != 21) $stop;
-	 if (intf_2.value != 22) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if (intf_1.value != 21) $stop;
+         if (intf_2.value != 22) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule
@@ -93,9 +99,9 @@ module sub_all
 `endif
 
    ifc intf_in_sub_all (
-			.clk(intf_one.clk),
-			.cyc(intf_one.cyc)
-			);
+                        .clk(intf_one.clk),
+                        .cyc(intf_one.cyc)
+                        );
    assign intf_in_sub_all.value = intf_one.value + 1000;
 
    sub_check ac1 (.intf_for_check(intf_one));

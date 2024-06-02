@@ -37,38 +37,38 @@ module t (/*AUTOARG*/
    integer cyc; initial cyc=1;
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
+         cyc <= cyc + 1;
 `ifdef TEST_VERBOSE
-	 $write("%d %x %x %x %x\n", cyc, left, right, outu, outs);
+         $write("%d %x %x %x %x\n", cyc, left, right, outu, outs);
 `endif
-	 if (cyc==1) begin
-	    left <= 68'h1;
-	    right <= '0;
-	 end
-	 if (cyc==2) begin
-	    if (outu  != 68'h1) $stop;
-	    if (outs  != 68'h1) $stop;
-	 end
-	 if (cyc==3) begin
-	    left <= 68'he_12345678_9abcdef0;
-	    right <= 68'h3;
-	 end
-	 if (cyc==4) begin
-	    if (outu != 68'hcee3cb96ce96cf000) $stop;
-	    if (outs != 68'hcee3cb96ce96cf000) $stop;
-	 end
-	 if (cyc==5) begin
-	    left <= 68'he_12345678_9abcdef0;
-	    right <= 68'h5_6789abcd_ef012345;
-	 end
-	 if (cyc==6) begin
-	    if (outu != 68'h0) $stop;
-	    if (outs != 68'h0) $stop;
-	 end
-	 if (cyc==9) begin
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         if (cyc==1) begin
+            left <= 68'h1;
+            right <= '0;
+         end
+         if (cyc==2) begin
+            if (outu  != 68'h1) $stop;
+            if (outs  != 68'h1) $stop;
+         end
+         if (cyc==3) begin
+            left <= 68'he_12345678_9abcdef0;
+            right <= 68'h3;
+         end
+         if (cyc==4) begin
+            if (outu != 68'hcee3cb96ce96cf000) $stop;
+            if (outs != 68'hcee3cb96ce96cf000) $stop;
+         end
+         if (cyc==5) begin
+            left <= 68'he_12345678_9abcdef0;
+            right <= 68'h5_6789abcd_ef012345;
+         end
+         if (cyc==6) begin
+            if (outu != 68'h0) $stop;
+            if (outs != 68'h0) $stop;
+         end
+         if (cyc==9) begin
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 endmodule

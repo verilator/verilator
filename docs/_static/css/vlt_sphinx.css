@@ -1,16 +1,25 @@
-/*Verilator blue #008fd7; set in html*/
+/* Verilator blue #008fd7; set in html */
+
 .wy-side-nav-search > div.version {
-    color: #111;
+  color: #111;
 }
-.fa-github::before, .icon-github::before {
-    content: "";
+
+.fa-github::before,
+.icon-github::before {
+  content: "";
 }
-.fa-home::before, .icon-home::before {
-    content: "";
+
+.fa-home::before,
+.icon-home::before {
+  content: "";
 }
-.fa-arrow-circle-right::before, .icon-circle-arrow-right::before {
-    content: "";
+
+.fa-arrow-circle-right::before,
+.icon-circle-arrow-right::before {
+  content: "";
 }
-.fa-arrow-circle-left::before, .icon-circle-arrow-left::before {
-    content: "";
+
+.fa-arrow-circle-left::before,
+.icon-circle-arrow-left::before {
+  content: "";
 }

@@ -22,12 +22,23 @@ module t;
       //if ($test$plusargs("")!==1) $stop;  // Simulators differ in this answer
       if ($test$plusargs("NOTTHERE")!==0) $stop;
 
+      sv_in = "PLUS";
+`ifdef VERILATOR
+      if ($c1(0)) sv_in = "NEVER"; // Prevent constant propagation
+`endif
+      if ($test$plusargs(sv_in)!==1) $stop;
+
       p_i = 10;
-      if ($value$plusargs("NOTTHERE%d", p_i)!==0) $stop;
+      if ($value$plusargs("NOTTHERE%d", p_i) !== 0) $stop;
+      if ($value$plusargs("NOTTHERE%0d", p_i) !== 0) $stop;
       if (p_i !== 10) $stop;
 
       p_i = 0;
-      if ($value$plusargs("INT=%d", p_i)!==1) $stop;
+      if ($value$plusargs("INT=%d", p_i) !== 1) $stop;
+      if (p_i !== 32'd1234) $stop;
+
+      p_i = 0;
+      if ($value$plusargs("INT=%0d", p_i) !== 1) $stop;
       if (p_i !== 32'd1234) $stop;
 
       p_i = 0;
@@ -39,17 +50,17 @@ module t;
       if (!$value$plusargs("INT=%o", p_i)) $stop;
       if (p_i !== 32'o1234) $stop;
 
-      // Check handling of 'SData' type signals (Issue #1592)
+      // Check handling of 'SData' type signals (issue #1592)
       p_s = 0;
       if (!$value$plusargs("INT=%d", p_s)) $stop;
       if (p_s !== 16'd1234) $stop;
 
-      // Check handling of 'CData' type signals (Issue #1592)
+      // Check handling of 'CData' type signals (issue #1592)
       p_c = 0;
       if (!$value$plusargs("INT=%d", p_c)) $stop;
       if (p_c !== 8'd210) $stop;
 
-      // Check handling of 'double' type signals (Issue #1619)
+      // Check handling of 'double' type signals (issue #1619)
       p_r = 0;
       if (!$value$plusargs("REAL=%e", p_r)) $stop;
       $display("r='%e'", p_r);
@@ -101,6 +112,11 @@ module t;
       p_i = 0;
       if ($value$plusargs(sv_in, p_i)!==1) $stop;
       $display("i='%d'",p_i);
+      if (p_i !== 32'd1234) $stop;
+
+      // bug3131 - really "if" side effect test
+      p_i = 0;
+      if ($value$plusargs("INT=%d", p_i)) ;
       if (p_i !== 32'd1234) $stop;
 
       $write("*-* All Finished *-*\n");

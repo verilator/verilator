@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2000-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2000-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -92,6 +92,7 @@ class V3PreProcImp;
 # define yytext V3PreLextext
 # define yyerror V3PreLexerror
 # define yyerrorf V3PreLexerrorf
+# define yylex_destroy V3PreLexlex_destroy
 #endif
 
 #ifndef yyourleng
@@ -117,6 +118,7 @@ extern void yyourtext(const char* textp, size_t size);  // Must call with static
 YY_BUFFER_STATE yy_create_buffer(FILE* file, int size);
 void yy_switch_to_buffer(YY_BUFFER_STATE new_buffer);
 void yy_delete_buffer(YY_BUFFER_STATE b);
+int yylex_destroy();
 
 //======================================================================
 
@@ -129,12 +131,12 @@ void yy_delete_buffer(YY_BUFFER_STATE b);
 class VPreStream final {
 public:
     FileLine* m_curFilelinep;  // Current processing point (see also m_tokFilelinep)
-    V3PreLex* m_lexp;  // Lexer, for resource tracking
+    V3PreLex* const m_lexp;  // Lexer, for resource tracking
     std::deque<string> m_buffers;  // Buffer of characters to process
     int m_ignNewlines = 0;  // Ignore multiline newlines
+    int m_termState = 0;  // Termination fsm
     bool m_eof = false;  // "EOF" buffer
     bool m_file = false;  // Buffer is start of new file
-    int m_termState = 0;  // Termination fsm
     VPreStream(FileLine* fl, V3PreLex* lexp)
         : m_curFilelinep{fl}
         , m_lexp{lexp} {
@@ -143,7 +145,7 @@ public:
     ~VPreStream() { lexStreamDepthAdd(-1); }
 
 private:
-    void lexStreamDepthAdd(int delta);
+    inline void lexStreamDepthAdd(int delta);
 };
 
 //======================================================================
@@ -155,11 +157,12 @@ enum class Enctype : uint8_t { UUENCODE, BASE64, QUOTE_PRINTABLE, RAW, ERR };
 
 class V3PreLex final {
 public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
-    V3PreProcImp* m_preimpp;  // Preprocessor lexor belongs to
+    V3PreProcImp* const m_preimpp;  // Preprocessor lexor belongs to
     std::stack<VPreStream*> m_streampStack;  // Stack of processing files
     int m_streamDepth = 0;  // Depth of stream processing
     YY_BUFFER_STATE m_bufferState;  // Flex state
     FileLine* m_tokFilelinep;  // Starting position of current token
+    std::deque<FileLine> m_lexLintState;  // Current lint state for save/restore
 
     // State to lexer
     static V3PreLex* s_currentLexp;  ///< Current lexing point
@@ -176,7 +179,7 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
     int m_enterExit = 0;  // For VL_LINE, the enter/exit level
     int m_protLength = 0;  // unencoded length for BASE64
     int m_protBytes = 0;  // decoded length for BASE64
-    Enctype m_encType;  // encoding type for `pragma protect
+    Enctype m_encType{};  // encoding type for `pragma protect
 
     // CONSTRUCTORS
     V3PreLex(V3PreProcImp* preimpp, FileLine* filelinep)
@@ -190,6 +193,7 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
             m_streampStack.pop();
         }
         VL_DO_CLEAR(yy_delete_buffer(m_bufferState), m_bufferState = nullptr);
+        yylex_destroy();
     }
 
     // Called by V3PreLex.l from lexer
@@ -206,10 +210,14 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
         }
     }
     void warnBackslashSpace();
+    void verilatorCmtLint(const char* textp, bool warnOff);
+    void verilatorCmtLintRestore();
+    void verilatorCmtLintSave();
     // Called by V3PreProc.cpp to inform lexer
     void pushStateDefArg(int level);
     void pushStateDefForm();
     void pushStateDefValue();
+    void pushStateExpr();
     void pushStateIncFilename();
     void scanNewFile(FileLine* filelinep);
     void scanBytes(const string& str);
@@ -225,9 +233,8 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
     // Called by VPreStream
     void streamDepthAdd(int delta) { m_streamDepth += delta; }
     int streamDepth() const { return m_streamDepth; }
-    /// Utility
-    static int debug();
-    static void debug(int level);
+    // Utility
+    static void setYYDebug(bool on);
     static string cleanDbgStrg(const string& in);
 
 private:
@@ -237,6 +244,6 @@ private:
     void scanSwitchStream(VPreStream* streamp);
 };
 
-inline void VPreStream::lexStreamDepthAdd(int delta) { m_lexp->streamDepthAdd(delta); }
+void VPreStream::lexStreamDepthAdd(int delta) { m_lexp->streamDepthAdd(delta); }
 
 #endif  // Guard

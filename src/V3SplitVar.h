@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -19,17 +19,19 @@
 
 //============================================================================
 
+#include "V3ThreadSafety.h"
+
 class AstNetlist;
 class AstVar;
 
 class V3SplitVar final {
 public:
     // Split variables marked with split_var metacomment.
-    static void splitVariable(AstNetlist* nodep);
+    static void splitVariable(AstNetlist* nodep) VL_MT_DISABLED;
 
     // Return true if the variable can be split.
     // This check is not perfect.
-    static bool canSplitVar(const AstVar* varp);
+    static bool canSplitVar(const AstVar* varp) VL_MT_DISABLED;
 };
 
 #endif  // Guard

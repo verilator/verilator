@@ -10,22 +10,22 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer 	cyc=0;
-   reg [63:0] 	crc;
-   reg [63:0] 	sum;
+   integer      cyc = 0;
+   reg [63:0]   crc;
+   reg [63:0]   sum;
 
    wire [1:0]  clkvec = crc[1:0];
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [1:0]		count;			// From test of Test.v
+   wire [1:0]           count;                  // From test of Test.v
    // End of automatics
 
    Test test (/*AUTOINST*/
-	      // Outputs
-	      .count			(count[1:0]),
-	      // Inputs
-	      .clkvec			(clkvec[1:0]));
+              // Outputs
+              .count                    (count[1:0]),
+              // Inputs
+              .clkvec                   (clkvec[1:0]));
 
    // Aggregate outputs into a single result vector
    wire [63:0] result = {62'h0, count};
@@ -33,27 +33,27 @@ module t (/*AUTOARG*/
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d crc=%x result=%x\n",$time, cyc, crc, result);
+      $write("[%0t] cyc==%0d crc=%x result=%x\n", $time, cyc, crc, result);
 `endif
       cyc <= cyc + 1;
-      crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
-      sum <= result ^ {sum[62:0],sum[63]^sum[2]^sum[0]};
+      crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
+      sum <= result ^ {sum[62:0], sum[63] ^ sum[2] ^ sum[0]};
       if (cyc==0) begin
-	 // Setup
-	 crc <= 64'h5aef0c8d_d70a4497;
+         // Setup
+         crc <= 64'h5aef0c8d_d70a4497;
       end
       else if (cyc<10) begin
-	 sum <= 64'h0;
+         sum <= 64'h0;
       end
       else if (cyc<90) begin
       end
       else if (cyc==99) begin
-	 $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
-	 if (crc !== 64'hc77bb9b3784ea091) $stop;
+         $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
+         if (crc !== 64'hc77bb9b3784ea091) $stop;
 `define EXPECTED_SUM 64'hfe8bac0bb1a0e53b
-	 if (sum !== `EXPECTED_SUM) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if (sum !== `EXPECTED_SUM) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 
@@ -67,12 +67,12 @@ module Test
    output reg  [1:0] count
    // verilator lint_on  MULTIDRIVEN
    );
-   genvar 	     igen;
+   genvar            igen;
    generate
       for (igen=0; igen<2; igen=igen+1) begin : code_gen
-	 initial count[igen] = 1'b0;
-	 always @ (posedge clkvec[igen])
-	   count[igen] <= count[igen] + 1;
+         initial count[igen] = 1'b0;
+         always @ (posedge clkvec[igen])
+           count[igen] <= count[igen] + 1;
       end
    endgenerate
    always @ (count) begin
@@ -89,15 +89,15 @@ module Test
    output reg  [1:0] count
    // verilator lint_on  MULTIDRIVEN
    );
-   genvar 	     igen;
+   genvar            igen;
    generate
       for (igen=0; igen<2; igen=igen+1) begin : code_gen
-	 wire clk_tmp = clkvec[igen];
-	 // Unsupported: Count is multidriven, though if we did better analysis it wouldn't
-	 // need to be.
-	 initial count[igen] = 1'b0;
-	 always @ (posedge clk_tmp)
-	   count[igen] <= count[igen] + 1;
+         wire clk_tmp = clkvec[igen];
+         // Unsupported: Count is multidriven, though if we did better analysis it wouldn't
+         // need to be.
+         initial count[igen] = 1'b0;
+         always @ (posedge clk_tmp)
+           count[igen] <= count[igen] + 1;
       end
    endgenerate
 endmodule
@@ -112,12 +112,12 @@ module Test
    genvar igen;
    generate
       for (igen=0; igen<2; igen=igen+1) begin : code_gen
-	 wire clk_tmp = clkvec[igen];
-	 reg  tmp_count = 1'b0;
-	 always @ (posedge clk_tmp) begin
-	    tmp_count <= tmp_count + 1;
-	 end
-	 assign count[igen] = tmp_count;
+         wire clk_tmp = clkvec[igen];
+         reg  tmp_count = 1'b0;
+         always @ (posedge clk_tmp) begin
+            tmp_count <= tmp_count + 1;
+         end
+         assign count[igen] = tmp_count;
       end
    endgenerate
 endmodule

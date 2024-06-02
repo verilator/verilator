@@ -6,15 +6,25 @@
 // SPDX-License-Identifier: CC0-1.0
 //
 
-#include <iostream>
-#include <thread>
-
 #include <verilated.h>
 #include <verilated_cov.h>
 
+#include <iostream>
+#include <thread>
+
+// These require the above. Comment prevents clang-format moving them
+#include "TestCheck.h"
+
 #include VM_PREFIX_INCLUDE
 
+// Check we properly define the version integer
+#if VERILATOR_VERSION_INTEGER < 4219000  // Added in 4.219
+#error "VERILATOR_VERSION_INTEGER not set"
+#endif
+
 double sc_time_stamp() { return 0; }
+
+int errors = 0;
 
 VerilatedMutex outputMutex;
 
@@ -74,20 +84,30 @@ void sim(VM_PREFIX* topp) {
     }
 
     std::string filename
-        = std::string(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage_") + topp->name() + ".dat";
+        = std::string{VL_STRINGIFY(TEST_OBJ_DIR) "/coverage_"} + topp->name() + ".dat";
     contextp->coveragep()->write(filename.c_str());
 }
 
-int main(int argc, char** argv, char** env) {
+int main(int argc, char** argv) {
     // Create contexts
     std::unique_ptr<VerilatedContext> context0p{new VerilatedContext};
     std::unique_ptr<VerilatedContext> context1p{new VerilatedContext};
 
     // configuration
+    context0p->threads(1);
+    context1p->threads(1);
     context0p->fatalOnError(false);
     context1p->fatalOnError(false);
     context0p->traceEverOn(true);
     context1p->traceEverOn(true);
+
+    // error number checks
+    TEST_CHECK_EQ(context0p->errorCount(), 0);
+    TEST_CHECK_EQ(context1p->errorCount(), 0);
+    context0p->errorCount(1);
+    TEST_CHECK_EQ(context0p->errorCount(), 1);
+    context0p->errorCount(0);
+    TEST_CHECK_EQ(context0p->errorCount(), 0);
 
     // instantiate verilated design
     std::unique_ptr<VM_PREFIX> top0p{new VM_PREFIX{context0p.get(), "top0"}};
@@ -108,7 +128,10 @@ int main(int argc, char** argv, char** env) {
 
     // check if both finished
     bool pass = true;
-    if (top0p->done_o && top1p->done_o) {
+    if (errors) {
+        std::cout << "Error: comparison errors" << std::endl;
+        pass = false;
+    } else if (top0p->done_o && top1p->done_o) {
         std::cout << "*-* All Finished *-*" << std::endl;
     } else {
         std::cout << "Error: Early termination!" << std::endl;

@@ -1,0 +1,14 @@
+%Error-UNSUPPORTED: t/t_interconnect.v:12:4: Unsupported: interconnect
+   12 |    interconnect a;
+      |    ^~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_interconnect.v:13:4: Unsupported: interconnect
+   13 |    interconnect b;
+      |    ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_interconnect.v:22:11: Unsupported: interconnect
+   22 |    output interconnect a,
+      |           ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_interconnect.v:23:11: Unsupported: interconnect
+   23 |    output interconnect b);
+      |           ^~~~~~~~~~~~
+%Error: Exiting due to

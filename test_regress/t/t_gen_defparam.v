@@ -29,11 +29,11 @@ module m1 (output wire [31:0] o);
    generate
       if (W == 0) begin
          m2 m2 (.o(o));
-	 defparam m2.PAR2 = 8;
+         defparam m2.PAR2 = 8;
       end
       else begin
          m2 m2 (.o(o));
-	 defparam m2.PAR2 = 4;
+         defparam m2.PAR2 = 4;
       end
    endgenerate
 endmodule

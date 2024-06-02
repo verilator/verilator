@@ -14,8 +14,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
-    make_top_shell   => 0,
-    make_main        => 0,
+    make_top_shell => 0,
+    make_main => 0,
     verilator_flags2 => ["-Wno-BLKANDNBLK -language 1800-2005 --exe $Self->{t_dir}/$Self->{name}.cpp"], );
 
 execute(

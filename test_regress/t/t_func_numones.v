@@ -34,16 +34,16 @@ module t (clk);
    integer cyc; initial cyc=1;
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
-	 if (cyc==1) begin
-	    r32 <= 32'h12345678;
-	 end
-	 if (cyc==2) begin
-	    if (w4 !== 1) $stop;
-	    if (w5 !== 2) $stop;
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         cyc <= cyc + 1;
+         if (cyc==1) begin
+            r32 <= 32'h12345678;
+         end
+         if (cyc==2) begin
+            if (w4 !== 1) $stop;
+            if (w5 !== 2) $stop;
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 

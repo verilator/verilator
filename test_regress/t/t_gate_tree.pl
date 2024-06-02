@@ -14,7 +14,7 @@ use vars qw($Self);
 
 scenarios(simulator => 1);
 
-my $width = 64*($ENV{VERILATOR_TEST_WIDTH}||4);
+my $width = 64 * ($ENV{VERILATOR_TEST_WIDTH} || 4);
 my $vars = 64;
 
 $Self->{cycles} = ($Self->{benchmark} ? 1_000_000 : 100);
@@ -34,15 +34,15 @@ sub gen {
 
     my %tree;
     my $fanin = 8;
-    my $stages = int(log($vars)/log($fanin)+0.99999)+1;
+    my $stages = int(log($vars) / log($fanin) + 0.99999) + 1;
     my $result = 0;
-    for (my $n=0; $n<$vars; $n++) {
-        $result += ($n||1);
+    for (my $n = 0; $n < $vars; $n++) {
+        $result += ($n || 1);
         $tree{0}{$n}{$n} = 1;
         my $nl = $n;
-        for (my $stage=1; $stage<$stages; $stage++) {
+        for (my $stage=1; $stage < $stages; $stage++) {
             my $lastn = $nl;
-            $nl = int($nl/$fanin);
+            $nl = int($nl / $fanin);
             $tree{$stage}{$nl}{$lastn} = 1;
         }
     }
@@ -50,9 +50,9 @@ sub gen {
 
     $fh->print("\n");
     my $workingset = 0;
-    foreach my $stage (sort {$a<=>$b} keys %tree) {
-        foreach my $n (sort {$a<=>$b} keys %{$tree{$stage}}) {
-            $fh->print(    "   reg [".($width-1).":0] v${stage}_${n};\n");
+    foreach my $stage (sort { $a <=> $b} keys %tree) {
+        foreach my $n (sort { $a <=> $b} keys %{$tree{$stage}}) {
+            $fh->print(    "   reg [" . ($width - 1) . ":0] v${stage}_${n};\n");
             $workingset += int($width/8 + 7);
         }
     }
@@ -62,7 +62,7 @@ sub gen {
     $fh->print("      cyc <= cyc + 1;\n");
     $fh->print("`ifdef TEST_VERBOSE\n");
     $fh->print("         \$write(\"[%0t] rst=%0x  v0_0=%0x  v1_0=%0x  result=%0x\\n\""
-               .", \$time, reset, v0_0, v1_0, v".($stages-1)."_0);\n");
+               .", \$time, reset, v0_0, v1_0, v" . ($stages - 1) . "_0);\n");
     $fh->print("`endif\n");
     $fh->print("      if (cyc==0) begin\n");
     $fh->print("         reset <= 1;\n");
@@ -74,19 +74,19 @@ sub gen {
     $fh->print(" `define SIM_CYCLES 99\n");
     $fh->print("`endif\n");
     $fh->print("      else if (cyc==`SIM_CYCLES) begin\n");
-    $fh->print("         if (v".($stages-1)."_0 != ${width}'d${result}) \$stop;\n");
+    $fh->print("         if (v" . ($stages - 1) . "_0 != ${width}'d${result}) \$stop;\n");
     $fh->print("         \$write(\"VARS=${vars} WIDTH=${width}"
-               ." WORKINGSET=".(int($workingset/1024))."KB\\n\");\n");
-    $fh->print('         $write("*-* All Finished *-*\n");',"\n");
-    $fh->print('         $finish;',"\n");
+               ." WORKINGSET=" . (int($workingset / 1024)) . "KB\\n\");\n");
+    $fh->print('         $write("*-* All Finished *-*\n");', "\n");
+    $fh->print('         $finish;', "\n");
     $fh->print("      end\n");
     $fh->print("   end\n");
 
     $fh->print("\n");
     for (my $n=0; $n<$vars; $n++) {
         $fh->print("   always @ (posedge clk)"
-                   ." v0_${n} <= reset ? ${width}'d".(${n}||1)." : v0_"
-                   .((int($n/$fanin)*$fanin) + (($n+1) % $fanin)).";\n");
+                   . " v0_${n} <= reset ? ${width}'d" . (${n} || 1) . " : v0_"
+                   . ((int($n / $fanin) * $fanin) + (($n + 1) % $fanin)) . ";\n");
     }
 
     foreach my $stage (sort {$a<=>$b} keys %tree) {
@@ -94,10 +94,10 @@ sub gen {
         $fh->print("\n");
         foreach my $n (sort {$a<=>$b} keys %{$tree{$stage}}) {
             $fh->print("   always @ (posedge clk)"
-                       ." v${stage}_${n} <=");
+                       . " v${stage}_${n} <=");
             my $op = "";
             foreach my $ni (sort {$a<=>$b} keys %{$tree{$stage}{$n}}) {
-                $fh->print($op." v".(${stage}-1)."_${ni}");
+                $fh->print($op . " v" . (${stage} - 1) . "_${ni}");
                 $op = " +";
             }
             $fh->print(";\n");
@@ -118,9 +118,10 @@ compile(
     );
 
 execute(
-    all_run_flags => ["+verilator+prof+threads+start+100",
-                      " +verilator+prof+threads+window+2",
-                      " +verilator+prof+threads+file+$Self->{obj_dir}/profile_threads.dat",
+    all_run_flags => ["+verilator+prof+exec+start+100",
+                      " +verilator+prof+exec+window+2",
+                      " +verilator+prof+exec+file+$Self->{obj_dir}/profile_exec.dat",
+                      " +verilator+prof+vlt+file+$Self->{obj_dir}/profile.vlt",
                       ],
     check_finished => 1,
     );

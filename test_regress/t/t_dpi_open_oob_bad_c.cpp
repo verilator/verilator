@@ -9,11 +9,13 @@
 //
 //*************************************************************************
 
+#include "svdpi.h"
+
 #include <cstdio>
 #include <cstring>
 #include <iostream>
-#include "svdpi.h"
 
+// These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 
 //======================================================================

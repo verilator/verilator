@@ -5,150 +5,155 @@
 // Manually include this file where DPI .c import functions are declared to ensure
 // the C functions match the expectations of the DPI imports.
 
+#ifndef VERILATED_VT_DPI_ARG_INPUT_TYPE__DPI_H_
+#define VERILATED_VT_DPI_ARG_INPUT_TYPE__DPI_H_  // guard
+
 #include "svdpi.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
- 
- 
- // DPI EXPORTS
- extern void e_array_2_state_1(const svBitVecVal* i);
- extern void e_array_2_state_128(const svBitVecVal* i);
- extern void e_array_2_state_32(const svBitVecVal* i);
- extern void e_array_2_state_33(const svBitVecVal* i);
- extern void e_array_2_state_64(const svBitVecVal* i);
- extern void e_array_2_state_65(const svBitVecVal* i);
- extern void e_array_4_state_1(const svLogicVecVal* i);
- extern void e_array_4_state_128(const svLogicVecVal* i);
- extern void e_array_4_state_32(const svLogicVecVal* i);
- extern void e_array_4_state_33(const svLogicVecVal* i);
- extern void e_array_4_state_64(const svLogicVecVal* i);
- extern void e_array_4_state_65(const svLogicVecVal* i);
- extern void e_bit(svBit i);
- extern void e_bit_t(svBit i);
- extern void e_byte(char i);
- extern void e_byte_t(char i);
- extern void e_byte_unsigned(unsigned char i);
- extern void e_byte_unsigned_t(unsigned char i);
- extern void e_chandle(void* i);
- extern void e_chandle_t(void* i);
- extern void e_int(int i);
- extern void e_int_t(int i);
- extern void e_int_unsigned(unsigned int i);
- extern void e_int_unsigned_t(unsigned int i);
- extern void e_integer(const svLogicVecVal* i);
- extern void e_integer_t(const svLogicVecVal* i);
- extern void e_logic(svLogic i);
- extern void e_logic_t(svLogic i);
- extern void e_longint(long long i);
- extern void e_longint_t(long long i);
- extern void e_longint_unsigned(unsigned long long i);
- extern void e_longint_unsigned_t(unsigned long long i);
- extern void e_real(double i);
- extern void e_real_t(double i);
- extern void e_shortint(short i);
- extern void e_shortint_t(short i);
- extern void e_shortint_unsigned(unsigned short i);
- extern void e_shortint_unsigned_t(unsigned short i);
- extern void e_string(const char* i);
- extern void e_string_t(const char* i);
- extern void e_struct_2_state_1(const svBitVecVal* i);
- extern void e_struct_2_state_128(const svBitVecVal* i);
- extern void e_struct_2_state_32(const svBitVecVal* i);
- extern void e_struct_2_state_33(const svBitVecVal* i);
- extern void e_struct_2_state_64(const svBitVecVal* i);
- extern void e_struct_2_state_65(const svBitVecVal* i);
- extern void e_struct_4_state_1(const svLogicVecVal* i);
- extern void e_struct_4_state_128(const svLogicVecVal* i);
- extern void e_struct_4_state_32(const svLogicVecVal* i);
- extern void e_struct_4_state_33(const svLogicVecVal* i);
- extern void e_struct_4_state_64(const svLogicVecVal* i);
- extern void e_struct_4_state_65(const svLogicVecVal* i);
- extern void e_time(const svLogicVecVal* i);
- extern void e_time_t(const svLogicVecVal* i);
- extern void e_union_2_state_1(const svBitVecVal* i);
- extern void e_union_2_state_128(const svBitVecVal* i);
- extern void e_union_2_state_32(const svBitVecVal* i);
- extern void e_union_2_state_33(const svBitVecVal* i);
- extern void e_union_2_state_64(const svBitVecVal* i);
- extern void e_union_2_state_65(const svBitVecVal* i);
- extern void e_union_4_state_1(const svLogicVecVal* i);
- extern void e_union_4_state_128(const svLogicVecVal* i);
- extern void e_union_4_state_32(const svLogicVecVal* i);
- extern void e_union_4_state_33(const svLogicVecVal* i);
- extern void e_union_4_state_64(const svLogicVecVal* i);
- extern void e_union_4_state_65(const svLogicVecVal* i);
- 
- // DPI IMPORTS
- extern void check_exports();
- extern void i_array_2_state_1(const svBitVecVal* i);
- extern void i_array_2_state_128(const svBitVecVal* i);
- extern void i_array_2_state_32(const svBitVecVal* i);
- extern void i_array_2_state_33(const svBitVecVal* i);
- extern void i_array_2_state_64(const svBitVecVal* i);
- extern void i_array_2_state_65(const svBitVecVal* i);
- extern void i_array_4_state_1(const svLogicVecVal* i);
- extern void i_array_4_state_128(const svLogicVecVal* i);
- extern void i_array_4_state_32(const svLogicVecVal* i);
- extern void i_array_4_state_33(const svLogicVecVal* i);
- extern void i_array_4_state_64(const svLogicVecVal* i);
- extern void i_array_4_state_65(const svLogicVecVal* i);
- extern void i_bit(svBit i);
- extern void i_bit_t(svBit i);
- extern void i_byte(char i);
- extern void i_byte_t(char i);
- extern void i_byte_unsigned(unsigned char i);
- extern void i_byte_unsigned_t(unsigned char i);
- extern void i_chandle(void* i);
- extern void i_chandle_t(void* i);
- extern void i_int(int i);
- extern void i_int_t(int i);
- extern void i_int_unsigned(unsigned int i);
- extern void i_int_unsigned_t(unsigned int i);
- extern void i_integer(const svLogicVecVal* i);
- extern void i_integer_t(const svLogicVecVal* i);
- extern void i_logic(svLogic i);
- extern void i_logic_t(svLogic i);
- extern void i_longint(long long i);
- extern void i_longint_t(long long i);
- extern void i_longint_unsigned(unsigned long long i);
- extern void i_longint_unsigned_t(unsigned long long i);
- extern void i_real(double i);
- extern void i_real_t(double i);
- extern void i_shortint(short i);
- extern void i_shortint_t(short i);
- extern void i_shortint_unsigned(unsigned short i);
- extern void i_shortint_unsigned_t(unsigned short i);
- extern void i_string(const char* i);
- extern void i_string_t(const char* i);
- extern void i_struct_2_state_1(const svBitVecVal* i);
- extern void i_struct_2_state_128(const svBitVecVal* i);
- extern void i_struct_2_state_32(const svBitVecVal* i);
- extern void i_struct_2_state_33(const svBitVecVal* i);
- extern void i_struct_2_state_64(const svBitVecVal* i);
- extern void i_struct_2_state_65(const svBitVecVal* i);
- extern void i_struct_4_state_1(const svLogicVecVal* i);
- extern void i_struct_4_state_128(const svLogicVecVal* i);
- extern void i_struct_4_state_32(const svLogicVecVal* i);
- extern void i_struct_4_state_33(const svLogicVecVal* i);
- extern void i_struct_4_state_64(const svLogicVecVal* i);
- extern void i_struct_4_state_65(const svLogicVecVal* i);
- extern void i_time(const svLogicVecVal* i);
- extern void i_time_t(const svLogicVecVal* i);
- extern void i_union_2_state_1(const svBitVecVal* i);
- extern void i_union_2_state_128(const svBitVecVal* i);
- extern void i_union_2_state_32(const svBitVecVal* i);
- extern void i_union_2_state_33(const svBitVecVal* i);
- extern void i_union_2_state_64(const svBitVecVal* i);
- extern void i_union_2_state_65(const svBitVecVal* i);
- extern void i_union_4_state_1(const svLogicVecVal* i);
- extern void i_union_4_state_128(const svLogicVecVal* i);
- extern void i_union_4_state_32(const svLogicVecVal* i);
- extern void i_union_4_state_33(const svLogicVecVal* i);
- extern void i_union_4_state_64(const svLogicVecVal* i);
- extern void i_union_4_state_65(const svLogicVecVal* i);
- 
+
+
+// DPI EXPORTS
+extern void e_array_2_state_1(const svBitVecVal* i);
+extern void e_array_2_state_128(const svBitVecVal* i);
+extern void e_array_2_state_32(const svBitVecVal* i);
+extern void e_array_2_state_33(const svBitVecVal* i);
+extern void e_array_2_state_64(const svBitVecVal* i);
+extern void e_array_2_state_65(const svBitVecVal* i);
+extern void e_array_4_state_1(const svLogicVecVal* i);
+extern void e_array_4_state_128(const svLogicVecVal* i);
+extern void e_array_4_state_32(const svLogicVecVal* i);
+extern void e_array_4_state_33(const svLogicVecVal* i);
+extern void e_array_4_state_64(const svLogicVecVal* i);
+extern void e_array_4_state_65(const svLogicVecVal* i);
+extern void e_bit(svBit i);
+extern void e_bit_t(svBit i);
+extern void e_byte(char i);
+extern void e_byte_t(char i);
+extern void e_byte_unsigned(unsigned char i);
+extern void e_byte_unsigned_t(unsigned char i);
+extern void e_chandle(void* i);
+extern void e_chandle_t(void* i);
+extern void e_int(int i);
+extern void e_int_t(int i);
+extern void e_int_unsigned(unsigned int i);
+extern void e_int_unsigned_t(unsigned int i);
+extern void e_integer(const svLogicVecVal* i);
+extern void e_integer_t(const svLogicVecVal* i);
+extern void e_logic(svLogic i);
+extern void e_logic_t(svLogic i);
+extern void e_longint(long long i);
+extern void e_longint_t(long long i);
+extern void e_longint_unsigned(unsigned long long i);
+extern void e_longint_unsigned_t(unsigned long long i);
+extern void e_real(double i);
+extern void e_real_t(double i);
+extern void e_shortint(short i);
+extern void e_shortint_t(short i);
+extern void e_shortint_unsigned(unsigned short i);
+extern void e_shortint_unsigned_t(unsigned short i);
+extern void e_string(const char* i);
+extern void e_string_t(const char* i);
+extern void e_struct_2_state_1(const svBitVecVal* i);
+extern void e_struct_2_state_128(const svBitVecVal* i);
+extern void e_struct_2_state_32(const svBitVecVal* i);
+extern void e_struct_2_state_33(const svBitVecVal* i);
+extern void e_struct_2_state_64(const svBitVecVal* i);
+extern void e_struct_2_state_65(const svBitVecVal* i);
+extern void e_struct_4_state_1(const svLogicVecVal* i);
+extern void e_struct_4_state_128(const svLogicVecVal* i);
+extern void e_struct_4_state_32(const svLogicVecVal* i);
+extern void e_struct_4_state_33(const svLogicVecVal* i);
+extern void e_struct_4_state_64(const svLogicVecVal* i);
+extern void e_struct_4_state_65(const svLogicVecVal* i);
+extern void e_time(const svLogicVecVal* i);
+extern void e_time_t(const svLogicVecVal* i);
+extern void e_union_2_state_1(const svBitVecVal* i);
+extern void e_union_2_state_128(const svBitVecVal* i);
+extern void e_union_2_state_32(const svBitVecVal* i);
+extern void e_union_2_state_33(const svBitVecVal* i);
+extern void e_union_2_state_64(const svBitVecVal* i);
+extern void e_union_2_state_65(const svBitVecVal* i);
+extern void e_union_4_state_1(const svLogicVecVal* i);
+extern void e_union_4_state_128(const svLogicVecVal* i);
+extern void e_union_4_state_32(const svLogicVecVal* i);
+extern void e_union_4_state_33(const svLogicVecVal* i);
+extern void e_union_4_state_64(const svLogicVecVal* i);
+extern void e_union_4_state_65(const svLogicVecVal* i);
+
+// DPI IMPORTS
+extern void check_exports();
+extern void i_array_2_state_1(const svBitVecVal* i);
+extern void i_array_2_state_128(const svBitVecVal* i);
+extern void i_array_2_state_32(const svBitVecVal* i);
+extern void i_array_2_state_33(const svBitVecVal* i);
+extern void i_array_2_state_64(const svBitVecVal* i);
+extern void i_array_2_state_65(const svBitVecVal* i);
+extern void i_array_4_state_1(const svLogicVecVal* i);
+extern void i_array_4_state_128(const svLogicVecVal* i);
+extern void i_array_4_state_32(const svLogicVecVal* i);
+extern void i_array_4_state_33(const svLogicVecVal* i);
+extern void i_array_4_state_64(const svLogicVecVal* i);
+extern void i_array_4_state_65(const svLogicVecVal* i);
+extern void i_bit(svBit i);
+extern void i_bit_t(svBit i);
+extern void i_byte(char i);
+extern void i_byte_t(char i);
+extern void i_byte_unsigned(unsigned char i);
+extern void i_byte_unsigned_t(unsigned char i);
+extern void i_chandle(void* i);
+extern void i_chandle_t(void* i);
+extern void i_int(int i);
+extern void i_int_t(int i);
+extern void i_int_unsigned(unsigned int i);
+extern void i_int_unsigned_t(unsigned int i);
+extern void i_integer(const svLogicVecVal* i);
+extern void i_integer_t(const svLogicVecVal* i);
+extern void i_logic(svLogic i);
+extern void i_logic_t(svLogic i);
+extern void i_longint(long long i);
+extern void i_longint_t(long long i);
+extern void i_longint_unsigned(unsigned long long i);
+extern void i_longint_unsigned_t(unsigned long long i);
+extern void i_real(double i);
+extern void i_real_t(double i);
+extern void i_shortint(short i);
+extern void i_shortint_t(short i);
+extern void i_shortint_unsigned(unsigned short i);
+extern void i_shortint_unsigned_t(unsigned short i);
+extern void i_string(const char* i);
+extern void i_string_t(const char* i);
+extern void i_struct_2_state_1(const svBitVecVal* i);
+extern void i_struct_2_state_128(const svBitVecVal* i);
+extern void i_struct_2_state_32(const svBitVecVal* i);
+extern void i_struct_2_state_33(const svBitVecVal* i);
+extern void i_struct_2_state_64(const svBitVecVal* i);
+extern void i_struct_2_state_65(const svBitVecVal* i);
+extern void i_struct_4_state_1(const svLogicVecVal* i);
+extern void i_struct_4_state_128(const svLogicVecVal* i);
+extern void i_struct_4_state_32(const svLogicVecVal* i);
+extern void i_struct_4_state_33(const svLogicVecVal* i);
+extern void i_struct_4_state_64(const svLogicVecVal* i);
+extern void i_struct_4_state_65(const svLogicVecVal* i);
+extern void i_time(const svLogicVecVal* i);
+extern void i_time_t(const svLogicVecVal* i);
+extern void i_union_2_state_1(const svBitVecVal* i);
+extern void i_union_2_state_128(const svBitVecVal* i);
+extern void i_union_2_state_32(const svBitVecVal* i);
+extern void i_union_2_state_33(const svBitVecVal* i);
+extern void i_union_2_state_64(const svBitVecVal* i);
+extern void i_union_2_state_65(const svBitVecVal* i);
+extern void i_union_4_state_1(const svLogicVecVal* i);
+extern void i_union_4_state_128(const svLogicVecVal* i);
+extern void i_union_4_state_32(const svLogicVecVal* i);
+extern void i_union_4_state_33(const svLogicVecVal* i);
+extern void i_union_4_state_64(const svLogicVecVal* i);
+extern void i_union_4_state_65(const svLogicVecVal* i);
+
 #ifdef __cplusplus
 }
 #endif
+
+#endif  // guard

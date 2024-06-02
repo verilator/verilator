@@ -40,8 +40,11 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
 
   if [ "$COVERAGE" != 1 ]; then
     autoconf
-    ./configure --enable-longtests --enable-ccwarn
+    ./configure --enable-longtests --enable-ccwarn --prefix="$INSTALL_DIR"
+    ccache -z
     "$MAKE" -j "$NPROC" -k
+    # 22.04: ccache -s -v
+    ccache -s
     if [ "$CI_OS_NAME" = "osx" ]; then
       file bin/verilator_bin
       file bin/verilator_bin_dbg
@@ -61,6 +64,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
 
   if [ "$CI_OS_NAME" = "osx" ]; then
     export VERILATOR_TEST_NO_GDB=1  # Pain to get GDB to work on OS X
+    # TODO below may no longer be required as configure checks for -pg
     export VERILATOR_TEST_NO_GPROF=1  # Apple Clang has no -pg
     # export PATH="/Applications/gtkwave.app/Contents/Resources/bin:$PATH" # fst2vcd
     file bin/verilator_bin
@@ -76,25 +80,47 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     "$MAKE" -j "$NPROC" -k
   elif [ "$CI_OS_NAME" = "freebsd" ]; then
     export VERILATOR_TEST_NO_GDB=1 # Disable for now, ideally should run
+    # TODO below may no longer be required as configure checks for -pg
     export VERILATOR_TEST_NO_GPROF=1 # gprof is a bit different on FreeBSD, disable
   fi
 
-  # Run sanitize on Ubuntu 20.04 only
-  [ "$CI_RUNS_ON" = 'ubuntu-20.04' ] && sanitize='--sanitize' || sanitize=''
+  # Run sanitize on Ubuntu 22.04 only
+  [ "$CI_RUNS_ON" = 'ubuntu-22.04' ] && sanitize='--sanitize' || sanitize=''
+
+  TEST_REGRESS=test_regress
+  if [ "$CI_RELOC" == 1 ]; then
+     # Testing that the installation is relocatable.
+     "$MAKE" install
+     mkdir -p "$RELOC_DIR"
+     mv "$INSTALL_DIR" "$RELOC_DIR/relocated-install"
+     export VERILATOR_ROOT="$RELOC_DIR/relocated-install/share/verilator"
+     TEST_REGRESS="$RELOC_DIR/test_regress"
+     mv test_regress "$TEST_REGRESS"
+     # Feeling brave?
+     find . -delete
+     ls -la .
+  fi
 
   # Run the specified test
+  ccache -z
   case $TESTS in
     dist-vlt-0)
-      "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=0/2
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=0/4
       ;;
     dist-vlt-1)
-      "$MAKE" -C test_regress SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=1/2
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=1/4
+      ;;
+    dist-vlt-2)
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=2/4
+      ;;
+    dist-vlt-3)
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=3/4
       ;;
     vltmt-0)
-      "$MAKE" -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
       ;;
     vltmt-1)
-      "$MAKE" -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
       ;;
     coverage-all)
       nodist/code_coverage --stages 1-
@@ -166,6 +192,9 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
       fatal "Unknown test: $TESTS"
       ;;
   esac
+  # 22.04: ccache -s -v
+  ccache -s
+
   # Upload coverage data
   if [[ $TESTS == coverage-* ]]; then
     bash <(cat ci/coverage-upload.sh) -f nodist/obj_dir/coverage/app_total.info

@@ -1,0 +1,4 @@
+%Error: t/t_preproc_eof5_bad.v:7:1: EOF in (*
+    7 | (* attr
+      | ^
+%Error: Exiting due to

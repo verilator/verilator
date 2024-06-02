@@ -20,14 +20,14 @@ module t ();
    localparam P = 1;
    generate
       if (P == 1) begin
-	 initial begin
-	    if (abs(-2.1) != 2.1) $stop;
-	    if (abs(2.2) != 2.2) $stop;
-	    if (neg(-2.1) != -2.1) $stop;
-	    if (neg(2.2) != -2.2) $stop;
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         initial begin
+            if (abs(-2.1) != 2.1) $stop;
+            if (abs(2.2) != 2.2) $stop;
+            if (neg(-2.1) != -2.1) $stop;
+            if (neg(2.2) != -2.2) $stop;
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    endgenerate
 endmodule

@@ -32,7 +32,7 @@ module t (/*AUTOARG*/
    //         Scalar bit and logic
    //
    // Allowed argument types:
-   //	      Same as above plus packed arrays
+   //         Same as above plus packed arrays
 
    import "DPI-C" pure function bit          dpii_f_bit      (input bit          i);
    import "DPI-C" pure function bit [8-1:0]  dpii_f_bit8     (input bit [8-1:0]  i);
@@ -42,7 +42,7 @@ module t (/*AUTOARG*/
    import "DPI-C" pure function bit [32-1:0] dpii_f_bit32    (input bit [32-1:0] i);
    // Illegal to return > 32 bits, so we use longint
    import "DPI-C" pure function longint      dpii_f_bit33    (input bit [33-1:0] i);
-   import "DPI-C" pure function longint	     dpii_f_bit64    (input bit [64-1:0] i);
+   import "DPI-C" pure function longint      dpii_f_bit64    (input bit [64-1:0] i);
    import "DPI-C" pure function int          dpii_f_int      (input int          i);
    import "DPI-C" pure function byte         dpii_f_byte     (input byte         i);
    import "DPI-C" pure function shortint     dpii_f_shortint (input shortint     i);
@@ -97,34 +97,34 @@ module t (/*AUTOARG*/
    import "DPI-C" dpii_fa_bit =  function int oth_f_int1(input int i);
    import "DPI-C" dpii_fa_bit =  function int oth_f_int2(input int i);
 
-   bit       	i_b,	o_b;
+   bit          i_b,    o_b;
    bit [7:0]    i_b8;
-   bit [8:0]	i_b9;
-   bit [15:0]	i_b16;
+   bit [8:0]    i_b9;
+   bit [15:0]   i_b16;
    bit [16:0]   i_b17;
-   bit [31:0]	i_b32;
-   bit [32:0]	i_b33,	o_b33;
-   bit [63:0]	i_b64,	o_b64;
-   bit [94:0]	i_b95,	o_b95;
-   bit [95:0]	i_b96,	o_b96;
+   bit [31:0]   i_b32;
+   bit [32:0]   i_b33,  o_b33;
+   bit [63:0]   i_b64,  o_b64;
+   bit [94:0]   i_b95,  o_b95;
+   bit [95:0]   i_b96,  o_b96;
 
-   int		i_i,	o_i;
-   byte		i_y,	o_y;
-   shortint	i_s,	o_s;
-   longint	i_l,	o_l;
+   int          i_i,    o_i;
+   byte         i_y,    o_y;
+   shortint     i_s,    o_s;
+   longint      i_l,    o_l;
    str_t        i_t,    o_t;
    substr_t     i_ss;
-   int 		o_ss;
-   int unsigned		i_iu,	o_iu;
-   shortint unsigned	i_su,	o_su;
-   longint unsigned	i_lu,	o_lu;
+   int          o_ss;
+   int unsigned         i_iu,   o_iu;
+   shortint unsigned    i_su,   o_su;
+   longint unsigned     i_lu,   o_lu;
    // verilator lint_off UNDRIVEN
-   chandle	i_c,	o_c;
-   string 	i_n,	o_n;
+   chandle      i_c,    o_c;
+   string       i_n,    o_n;
    // verilator lint_on UNDRIVEN
-   real 	i_d,	o_d;
+   real         i_d,    o_d;
 `ifndef NO_SHORTREAL
-   shortreal 	i_f,	o_f;
+   shortreal    i_f,    o_f;
 `endif
 
    reg          i_r, o_r;

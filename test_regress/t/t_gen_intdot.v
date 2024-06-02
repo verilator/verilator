@@ -11,42 +11,34 @@ module t (/*AUTOARG*/
    clk
    );
    input clk;
-   integer 	cyc=0;
+   integer      cyc = 0;
 
-   wire 	out;
-   reg 		in;
+   wire         out;
+   reg          in;
 
    Genit g (.clk(clk), .value(in), .result(out));
 
    always @ (posedge clk) begin
-      //$write("[%0t] cyc==%0d %x %x\n",$time, cyc, in, out);
+      //$write("[%0t] cyc==%0d %x %x\n", $time, cyc, in, out);
       cyc <= cyc + 1;
       if (cyc==0) begin
-	 // Setup
-	 in <= 1'b1;
+         // Setup
+         in <= 1'b1;
       end
       else if (cyc==1) begin
-	 in <= 1'b0;
+         in <= 1'b0;
       end
       else if (cyc==2) begin
-	 if (out != 1'b1) $stop;
+         if (out != 1'b1) $stop;
       end
       else if (cyc==3) begin
-	 if (out != 1'b0) $stop;
+         if (out != 1'b0) $stop;
       end
       else if (cyc==9) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
-
-//`define WAVES
-`ifdef WAVES
-   initial begin
-      $dumpfile({`STRINGIFY(`TEST_OBJ_DIR),"/simx.vcd"});
-      $dumpvars(12, t);
-   end
-`endif
 
 endmodule
 
@@ -57,10 +49,10 @@ module Generate (clk, value, result);
 
    reg Internal;
 
-   assign result = Internal ^ clk;
+   assign result = Internal;
 
    always @(posedge clk)
-     Internal <= #1 value;
+     Internal <= value;
 endmodule
 
 module Checker (clk, value);
@@ -89,7 +81,9 @@ module Genit (clk, value, result);
 
 `ifndef ATSIM  // else unsupported
  `ifndef NC  // else unsupported
-  `define WITH_FOR_GENVAR
+  `ifndef IVERILOG  // else unsupported
+   `define WITH_FOR_GENVAR
+  `endif
  `endif
 `endif
 
@@ -101,12 +95,12 @@ module Genit (clk, value, result);
    generate
       for (
  `ifdef WITH_FOR_GENVAR
-	   genvar
+           genvar
  `endif
-	   i = 0; i < 1; i = i + 1)
-	begin : foo
-	   Test tt (clk, value, result);
-	end
+           i = 0; i < 1; i = i + 1)
+        begin : foo
+           Test tt (clk, value, result);
+        end
    endgenerate
 `else
    Test tt (clk, value, result);

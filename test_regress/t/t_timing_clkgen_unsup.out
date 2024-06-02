@@ -1,0 +1,6 @@
+%Warning-MINTYPMAXDLY: t/t_timing_clkgen1.v:9:13: Unsupported: minimum/typical/maximum delay expressions. Using the typical delay
+    9 |       #(8.0:5:3) clk = 1;   
+      |             ^
+                       ... For warning description see https://verilator.org/warn/MINTYPMAXDLY?v=latest
+                       ... Use "/* verilator lint_off MINTYPMAXDLY */" and lint_on around source to disable this message.
+%Error: Exiting due to

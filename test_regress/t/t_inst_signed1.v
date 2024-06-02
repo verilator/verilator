@@ -14,7 +14,7 @@ module t (/*AUTOARG*/
    wire signed o1;
    wire signed o2;
 
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
 
    sub1 sub1 (.i(i), .o(o1));
    sub2 sub2 (.i(o1), .o(o2));

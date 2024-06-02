@@ -4,11 +4,12 @@
 // any use, without warranty, 2016 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
 module t (/*AUTOARG*/);
 
-   // verilator lint_off LITENDIAN
+   // verilator lint_off ASCRANGE
    // verilator lint_off WIDTH
 
    reg [63:0] sum;  // Checked not in objects
@@ -16,6 +17,10 @@ module t (/*AUTOARG*/);
    reg [2:1] [4:3] array [5:6] [7:8];
    reg [1:2] [3:4] larray [6:5] [8:7];
    bit [31:0]      depth1_array [0:0];
+   int             oned [3:1];
+   int             twod [3:1][9:8];
+   string          str1;
+   string          str2;
 
    typedef struct packed {
       reg [1:0] [63:0] subarray;
@@ -69,8 +74,15 @@ module t (/*AUTOARG*/);
       end
       `checkh(sum, 64'h0030128ab2a8e557);
 
-      //
+      // comma syntax
+      sum = 0;
+      foreach (array[,index_b]) begin
+         $display(index_b);
+         sum = crc(sum, 0, index_b, 0, 0);
+      end
+      `checkh(sum, 64'h0000000006000000);
 
+      //
       sum = 0;
       foreach (larray[index_a]) begin
          sum = crc(sum, index_a, 0, 0, 0);
@@ -103,12 +115,57 @@ module t (/*AUTOARG*/);
       strarray[1].mid.subarray[1] = 5;
       strarray[2].mid.subarray[0] = 6;
       strarray[2].mid.subarray[1] = 7;
-`ifndef VERILATOR  // Unsupported
       foreach (strarray[s])
         foreach (strarray[s].mid.subarray[ss])
           add += strarray[s].mid.subarray[ss];
       `checkh(add, 'h19);
-`endif
+
+      add = 0;
+      foreach (oned[i]) begin
+         ++add;
+         break;
+      end
+      `checkh(add, 1);  // 9
+
+      add = 0;
+      foreach (oned[i]) begin
+         ++add;
+         continue;
+         add += 100;
+      end
+      `checkh(add, 3);  // 9, 8, 7
+
+      add = 0;
+      foreach (twod[i, j]) begin
+         ++add;
+         break;
+      end
+      // See https://www.accellera.org/images/eda/sv-bc/10303.html
+      `checkh(add, 1);  // 3,9
+
+      add = 0;
+      foreach (twod[i, j]) begin
+         ++add;
+         continue;
+         add += 100;
+      end
+      `checkh(add, 6);
+
+      foreach (twod[i, j]);  // Null body check
+
+      str1 = "abcd";
+      str2 = "1234";
+      foreach (str1[i]) begin
+         str2[i] = str1[i];
+      end
+      if (str1 != str2) $stop;
+
+      str1 = "";
+      add = 0;
+      foreach(str1[i]) begin
+         add++;
+      end
+      `checkh(add, 0);
 
       $write("*-* All Finished *-*\n");
       $finish;

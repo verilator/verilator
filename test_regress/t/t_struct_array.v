@@ -5,8 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 package TEST_TYPES;
+   typedef struct a_struct_t;  // Forward
    typedef struct packed {
-      logic 	  stuff;
+      logic       stuff;
    } a_struct_t;
 endpackage // TEST_TYPES
 
@@ -29,7 +30,7 @@ module sub(a_out);
    output TEST_TYPES::a_struct_t [n-1:0] a_out;
    always_comb begin
       for (int i=0;i<n;i++)
-	a_out[i].stuff = i[0];
+        a_out[i].stuff = i[0];
    end
 endmodule
 

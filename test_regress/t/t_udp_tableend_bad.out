@@ -1,0 +1,4 @@
+%Error: t/t_udp_tableend_bad.v:11:4: Syntax error: 'endtable' outside of 'table'
+   11 |    endtable   
+      |    ^~~~~~~~
+%Error: Exiting due to

@@ -1,0 +1,113 @@
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:25:13: Unsupported: strong (in property expression)
+   25 |       strong(a);
+      |             ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:29:11: Unsupported: weak (in property expression)
+   29 |       weak(a);
+      |           ^
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:33:9: Unsupported: until (in property expression)
+   33 |       a until b;
+      |         ^~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:37:9: Unsupported: s_until (in property expression)
+   37 |       a s_until b;
+      |         ^~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:41:9: Unsupported: until_with (in property expression)
+   41 |       a until_with b;
+      |         ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:45:9: Unsupported: s_until_with (in property expression)
+   45 |       a s_until_with b;
+      |         ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:49:9: Unsupported: implies (in property expression)
+   49 |       a implies b;
+      |         ^~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:53:9: Unsupported: #-# (in property expression)
+   53 |       a #-# b;
+      |         ^~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:57:9: Unsupported: #=# (in property expression)
+   57 |       a #=# b;
+      |         ^~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:61:7: Unsupported: nexttime (in property expression)
+   61 |       nexttime a;
+      |       ^~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:65:7: Unsupported: nexttime[] (in property expression)
+   65 |       nexttime [2] a;
+      |       ^~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:69:7: Unsupported: s_nexttime (in property expression)
+   69 |       s_nexttime a;
+      |       ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:73:7: Unsupported: s_nexttime[] (in property expression)
+   73 |       s_nexttime [2] a;
+      |       ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:77:16: Unsupported: always (in property expression)
+   77 |       nexttime always a;
+      |                ^~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:77:7: Unsupported: nexttime (in property expression)
+   77 |       nexttime always a;
+      |       ^~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:81:20: Unsupported: always (in property expression)
+   81 |       nexttime [2] always a;
+      |                    ^~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:81:7: Unsupported: nexttime[] (in property expression)
+   81 |       nexttime [2] always a;
+      |       ^~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:85:16: Unsupported: eventually (in property expression)
+   85 |       nexttime eventually a;
+      |                ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:85:7: Unsupported: nexttime (in property expression)
+   85 |       nexttime eventually a;
+      |       ^~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:89:20: Unsupported: always (in property expression)
+   89 |       nexttime [2] always a;
+      |                    ^~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:89:7: Unsupported: nexttime[] (in property expression)
+   89 |       nexttime [2] always a;
+      |       ^~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:93:16: Unsupported: s_eventually (in property expression)
+   93 |       nexttime s_eventually a;
+      |                ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:93:7: Unsupported: nexttime (in property expression)
+   93 |       nexttime s_eventually a;
+      |       ^~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:97:35: Unsupported: always (in property expression)
+   97 |       nexttime s_eventually [2:$] always a;
+      |                                   ^~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:97:16: Unsupported: s_eventually[] (in property expression)
+   97 |       nexttime s_eventually [2:$] always a;
+      |                ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:97:7: Unsupported: nexttime (in property expression)
+   97 |       nexttime s_eventually [2:$] always a;
+      |       ^~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:101:17: Unsupported: accept_on (in property expression)
+  101 |       accept_on (a) b;
+      |                 ^
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:105:22: Unsupported: sync_accept_on (in property expression)
+  105 |       sync_accept_on (a) b;
+      |                      ^
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:109:17: Unsupported: reject_on (in property expression)
+  109 |       reject_on (a) b;
+      |                 ^
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:113:22: Unsupported: sync_reject_on (in property expression)
+  113 |       sync_reject_on (a) b;
+      |                      ^
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:117:9: Unsupported: iff (in property expression)
+  117 |       a iff b;
+      |         ^~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:120:27: Unsupported: property argument data type
+  120 |    property p_arg_propery(property inprop);
+      |                           ^~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:123:27: Unsupported: sequence argument data type
+  123 |    property p_arg_seqence(sequence inseq);
+      |                           ^~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:128:7: Unsupported: property case expression
+  128 |       case (a) endcase
+      |       ^~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:131:7: Unsupported: property case expression
+  131 |       case (a) default: b; endcase
+      |       ^~~~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:134:7: Unsupported: property case expression
+  134 |       if (a) b
+      |       ^~
+%Error-UNSUPPORTED: t/t_assert_property_pexpr_unsup.v:137:7: Unsupported: property case expression
+  137 |       if (a) b else c
+      |       ^~
+%Error: Exiting due to

@@ -5,84 +5,89 @@
 // Manually include this file where DPI .c import functions are declared to ensure
 // the C functions match the expectations of the DPI imports.
 
+#ifndef VERILATED_VT_DPI_RESULT_TYPE__DPI_H_
+#define VERILATED_VT_DPI_RESULT_TYPE__DPI_H_  // guard
+
 #include "svdpi.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
- 
- 
- // DPI EXPORTS
- extern svBitVecVal e_array_2_state_1();
- extern svBitVecVal e_array_2_state_32();
- extern svBit e_bit();
- extern svBit e_bit_t();
- extern char e_byte();
- extern char e_byte_t();
- extern unsigned char e_byte_unsigned();
- extern unsigned char e_byte_unsigned_t();
- extern void* e_chandle();
- extern void* e_chandle_t();
- extern int e_int();
- extern int e_int_t();
- extern unsigned int e_int_unsigned();
- extern unsigned int e_int_unsigned_t();
- extern svLogic e_logic();
- extern svLogic e_logic_t();
- extern long long e_longint();
- extern long long e_longint_t();
- extern unsigned long long e_longint_unsigned();
- extern unsigned long long e_longint_unsigned_t();
- extern double e_real();
- extern double e_real_t();
- extern short e_shortint();
- extern short e_shortint_t();
- extern unsigned short e_shortint_unsigned();
- extern unsigned short e_shortint_unsigned_t();
- extern const char* e_string();
- extern const char* e_string_t();
- extern svBitVecVal e_struct_2_state_1();
- extern svBitVecVal e_struct_2_state_32();
- extern svBitVecVal e_union_2_state_1();
- extern svBitVecVal e_union_2_state_32();
- extern void e_void();
- 
- // DPI IMPORTS
- extern void check_exports();
- extern svBitVecVal i_array_2_state_1();
- extern svBitVecVal i_array_2_state_32();
- extern svBit i_bit();
- extern svBit i_bit_t();
- extern char i_byte();
- extern char i_byte_t();
- extern unsigned char i_byte_unsigned();
- extern unsigned char i_byte_unsigned_t();
- extern void* i_chandle();
- extern void* i_chandle_t();
- extern int i_int();
- extern int i_int_t();
- extern unsigned int i_int_unsigned();
- extern unsigned int i_int_unsigned_t();
- extern svLogic i_logic();
- extern svLogic i_logic_t();
- extern long long i_longint();
- extern long long i_longint_t();
- extern unsigned long long i_longint_unsigned();
- extern unsigned long long i_longint_unsigned_t();
- extern double i_real();
- extern double i_real_t();
- extern short i_shortint();
- extern short i_shortint_t();
- extern unsigned short i_shortint_unsigned();
- extern unsigned short i_shortint_unsigned_t();
- extern const char* i_string();
- extern const char* i_string_t();
- extern svBitVecVal i_struct_2_state_1();
- extern svBitVecVal i_struct_2_state_32();
- extern svBitVecVal i_union_2_state_1();
- extern svBitVecVal i_union_2_state_32();
- extern void i_void();
- 
+
+
+// DPI EXPORTS
+extern svBitVecVal e_array_2_state_1();
+extern svBitVecVal e_array_2_state_32();
+extern svBit e_bit();
+extern svBit e_bit_t();
+extern char e_byte();
+extern char e_byte_t();
+extern unsigned char e_byte_unsigned();
+extern unsigned char e_byte_unsigned_t();
+extern void* e_chandle();
+extern void* e_chandle_t();
+extern int e_int();
+extern int e_int_t();
+extern unsigned int e_int_unsigned();
+extern unsigned int e_int_unsigned_t();
+extern svLogic e_logic();
+extern svLogic e_logic_t();
+extern long long e_longint();
+extern long long e_longint_t();
+extern unsigned long long e_longint_unsigned();
+extern unsigned long long e_longint_unsigned_t();
+extern double e_real();
+extern double e_real_t();
+extern short e_shortint();
+extern short e_shortint_t();
+extern unsigned short e_shortint_unsigned();
+extern unsigned short e_shortint_unsigned_t();
+extern const char* e_string();
+extern const char* e_string_t();
+extern svBitVecVal e_struct_2_state_1();
+extern svBitVecVal e_struct_2_state_32();
+extern svBitVecVal e_union_2_state_1();
+extern svBitVecVal e_union_2_state_32();
+extern void e_void();
+
+// DPI IMPORTS
+extern void check_exports();
+extern svBitVecVal i_array_2_state_1();
+extern svBitVecVal i_array_2_state_32();
+extern svBit i_bit();
+extern svBit i_bit_t();
+extern char i_byte();
+extern char i_byte_t();
+extern unsigned char i_byte_unsigned();
+extern unsigned char i_byte_unsigned_t();
+extern void* i_chandle();
+extern void* i_chandle_t();
+extern int i_int();
+extern int i_int_t();
+extern unsigned int i_int_unsigned();
+extern unsigned int i_int_unsigned_t();
+extern svLogic i_logic();
+extern svLogic i_logic_t();
+extern long long i_longint();
+extern long long i_longint_t();
+extern unsigned long long i_longint_unsigned();
+extern unsigned long long i_longint_unsigned_t();
+extern double i_real();
+extern double i_real_t();
+extern short i_shortint();
+extern short i_shortint_t();
+extern unsigned short i_shortint_unsigned();
+extern unsigned short i_shortint_unsigned_t();
+extern const char* i_string();
+extern const char* i_string_t();
+extern svBitVecVal i_struct_2_state_1();
+extern svBitVecVal i_struct_2_state_32();
+extern svBitVecVal i_union_2_state_1();
+extern svBitVecVal i_union_2_state_32();
+extern void i_void();
+
 #ifdef __cplusplus
 }
 #endif
+
+#endif  // guard

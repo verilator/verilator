@@ -6,8 +6,8 @@
 
 module t
   (
-   input 	i_clk,
-   input [6:0] 	i_input,
+   input        i_clk,
+   input [6:0]  i_input,
    output logic o_output
    );
 

@@ -21,11 +21,11 @@ execute(
 if ($Self->{vlt}) {
     # Note, with vltmt this might be split differently, so only checking vlt
     file_grep($Self->{stats}, qr/Optimizations, MergeCond merges\s+(\d+)/i,
-              10);
+              9);
     file_grep($Self->{stats}, qr/Optimizations, MergeCond merged items\s+(\d+)/i,
               580);
     file_grep($Self->{stats}, qr/Optimizations, MergeCond longest merge\s+(\d+)/i,
-              64);
+              128);
 }
 
 ok(1);

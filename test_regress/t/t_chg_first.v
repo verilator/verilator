@@ -10,7 +10,7 @@ module t (/*AUTOARG*/
    );
 
    input clk;
-   input fastclk;	// surefire lint_off_line UDDIXN
+   input fastclk;       // surefire lint_off_line UDDIXN
 
    integer _mode;  initial _mode=0;
 
@@ -24,11 +24,11 @@ module t (/*AUTOARG*/
 
    // verilator lint_off UNOPT
    t_chg_a a (
-	      .a(ord1), .a_p1(ord2),
-	      .b(ord4), .b_p1(ord5),
-	      .c(ord3), .c_p1(ord4),
-	      .d(ord6), .d_p1(ord7)
-	      );
+              .a(ord1), .a_p1(ord2),
+              .b(ord4), .b_p1(ord5),
+              .c(ord3), .c_p1(ord4),
+              .d(ord6), .d_p1(ord7)
+              );
 
    // surefire lint_off ASWEMB
    assign      ord6 = ord5 + 1;
@@ -38,22 +38,22 @@ module t (/*AUTOARG*/
 
    always @ (fastclk) begin // surefire lint_off_line ALWLTR ALWMTR
       if (_mode==1) begin
-	 //$write("[%0t] t_chg: %d: Values: %x %x %x %x %x %x %x\n",$time,fastclk,ord1,ord2,ord3,ord4,ord5,ord6,ord7);
-	 //if (ord2 == 2 && ord7 != 7) $stop;
+         //$write("[%0t] t_chg: %d: Values: %x %x %x %x %x %x %x\n", $time,fastclk,ord1,ord2,ord3,ord4,ord5,ord6,ord7);
+         //if (ord2 == 2 && ord7 != 7) $stop;
       end
    end
 
    always @ (posedge clk) begin
       if (_mode==0) begin
-	 $write("[%0t] t_chg: Running\n", $time);
-	 _mode<=1;
-	 ord1 <= 1;
+         $write("[%0t] t_chg: Running\n", $time);
+         _mode<=1;
+         ord1 <= 1;
       end
       else if (_mode==1) begin
-	 _mode<=2;
-	 if (ord7 !== 7) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         _mode<=2;
+         if (ord7 !== 7) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

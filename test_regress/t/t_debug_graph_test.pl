@@ -13,7 +13,7 @@ $ENV{VERILATOR_TEST_NO_GDB} and skip("Skipping due to VERILATOR_TEST_NO_GDB");
 
 lint(
     # Check we can call dump() on graph, and other things
-    v_flags => ["--lint-only --debug --debugi-V3GraphTest 9 --debugi-V3GraphDfa 9 --debug-self-test"],
+    v_flags => ["--lint-only --debug --debugi-V3GraphTest 9 --debug-self-test"],
     );
 
 ok(1);

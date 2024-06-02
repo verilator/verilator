@@ -22,17 +22,17 @@ sub gen {
     $fh->print("  input clk;\n");
     $fh->print("  input i;\n");
     $fh->print("  output logic o;\n");
-    for (my $i=0; $i<($n+1); ++$i) {
+    for (my $i = 0; $i < ($n + 1); ++$i) {
         $fh->print("  logic r$i;\n");
     }
     $fh->print("  always @ (posedge clk) begin\n");
     $fh->print("    r0 <= i;\n");
-    for (my $i=1; $i<$n; ++$i) {
-        $fh->print("    r".($i+1)." <= r$i;\n");
+    for (my $i = 1; $i < $n; ++$i) {
+        $fh->print("    r" . ($i+1) . " <= r$i;\n");
     }
     $fh->print("    o <= r$n;\n");
-    $fh->print('    $write("*-* All Finished *-*\n");',"\n");
-    $fh->print('    $finish;',"\n");
+    $fh->print('    $write("*-* All Finished *-*\n");', "\n");
+    $fh->print('    $finish;', "\n");
     $fh->print("  end\n");
     $fh->print("endmodule\n");
 }
@@ -55,7 +55,7 @@ execute(
     check_finished => 1,
     );
 
-file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/struct \{/);
+file_grep("$Self->{obj_dir}/$Self->{vm_prefix}___024root.h", qr/struct \{/);
 
 ok(1);
 1;

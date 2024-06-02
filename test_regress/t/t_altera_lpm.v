@@ -46,6 +46,7 @@
 //END_MODULE_NAME--------------------------------------------------------------
 
 //See also: https://github.com/twosigma/verilator_support
+// verilator lint_off BLKANDNBLK
 // verilator lint_off COMBDLY
 // verilator lint_off INITIALDLY
 // verilator lint_off MULTIDRIVEN
@@ -2556,12 +2557,14 @@ module lpm_clshift (
 // ALWAYS CONSTRUCT BLOCK
     always @(data or i_direction or distance)
     begin
+        // verilator lint_off SIDEEFFECT
         if ((lpm_shifttype == "LOGICAL") || (lpm_shifttype == "UNUSED"))
             {tmp_overflow, tmp_underflow, tmp_result} = LogicShift(data, distance, i_direction);
         else if (lpm_shifttype == "ARITHMETIC")
             {tmp_overflow, tmp_underflow, tmp_result} = ArithShift(data, distance, i_direction);
         else if (lpm_shifttype == "ROTATE")
             {tmp_overflow, tmp_underflow, tmp_result} = RotateShift(data, distance, i_direction);
+        // verilator lint_on SIDEEFFECT
     end
 
     always @(posedge i_clock or posedge i_aclr)

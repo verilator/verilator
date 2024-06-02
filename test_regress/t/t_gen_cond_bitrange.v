@@ -33,11 +33,11 @@ module t (/*AUTOARG*/
 
    always @(posedge clk) begin
       if (count == 1) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
       else begin
-	 count = count + 1;
+         count = count + 1;
       end
    end
 
@@ -63,60 +63,60 @@ module test_gen
 
       for (g = 0; g < `MAX_SIZE; g = g + 1) begin
          if ((g < SIZE) && MASK[g]) begin
-	    always @(posedge clk) begin
+            always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-	       $write ("Logical AND generate if MASK [%1d] = %d\n", g, MASK[g]);
+               $write ("Logical AND generate if MASK [%1d] = %d\n", g, MASK[g]);
 `endif
-	       if (g >= SIZE) begin
-		  $stop;
-	       end
-	    end
-	 end
+               if (g >= SIZE) begin
+                  $stop;
+               end
+            end
+         end
       end
    endgenerate
 
    generate
       for (g = 0; g < `MAX_SIZE; g = g + 1) begin
          if (!((g >= SIZE) || ~MASK[g])) begin
-	    always @(posedge clk) begin
+            always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-	       $write ("Logical OR generate if MASK [%1d] = %d\n", g, MASK[g]);
+               $write ("Logical OR generate if MASK [%1d] = %d\n", g, MASK[g]);
 `endif
-	       if (g >= SIZE) begin
-		  $stop;
-	       end
-	    end
-	 end
+               if (g >= SIZE) begin
+                  $stop;
+               end
+            end
+         end
       end
    endgenerate
 
    generate
       for (g = 0; g < `MAX_SIZE; g = g + 1) begin
          if (!((g < SIZE) -> ~MASK[g])) begin
-	    always @(posedge clk) begin
+            always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-	       $write ("Logical infer generate if MASK [%1d] = %d\n", g, MASK[g]);
+               $write ("Logical infer generate if MASK [%1d] = %d\n", g, MASK[g]);
 `endif
-	       if (g >= SIZE) begin
-		  $stop;
-	       end
-	    end
-	 end
+               if (g >= SIZE) begin
+                  $stop;
+               end
+            end
+         end
       end
    endgenerate
 
    generate
       for (g = 0; g < `MAX_SIZE; g = g + 1) begin
          if ( g < SIZE ? MASK[g] : 1'b0) begin
-	    always @(posedge clk) begin
+            always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-	       $write ("Conditional generate if MASK [%1d] = %d\n", g, MASK[g]);
+               $write ("Conditional generate if MASK [%1d] = %d\n", g, MASK[g]);
 `endif
-	       if (g >= SIZE) begin
-		  $stop;
-	       end
-	    end
-	 end
+               if (g >= SIZE) begin
+                  $stop;
+               end
+            end
+         end
       end
    endgenerate
 
@@ -124,15 +124,15 @@ module test_gen
    generate
       for (g = 0; g < `MAX_SIZE; g = g + 1) begin
          if ( g >= SIZE ? 1'b0 : MASK[g]) begin
-	    always @(posedge clk) begin
+            always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-	       $write ("Conditional generate if MASK [%1d] = %d\n", g, MASK[g]);
+               $write ("Conditional generate if MASK [%1d] = %d\n", g, MASK[g]);
 `endif
-	       if (g >= SIZE) begin
-		  $stop;
-	       end
-	    end
-	 end
+               if (g >= SIZE) begin
+                  $stop;
+               end
+            end
+         end
       end
    endgenerate
 

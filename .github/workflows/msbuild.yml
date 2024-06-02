@@ -1,0 +1,55 @@
+# DESCRIPTION: Github actions config
+# This name is key to badges in README.rst, so we use the name build
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+name: msbuild
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 0 * * 0' # weekly
+
+env:
+  CI_OS_NAME: win
+  CI_COMMIT: ${{ github.sha }}
+  CCACHE_COMPRESS: 1
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_LIMIT_MULTIPLE: 0.95
+
+defaults:
+  run:
+    working-directory: repo
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+
+   windows:
+    name: run on windows
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        path: repo
+    - name: Cache $CCACHE_DIR
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.CCACHE_DIR }}
+        key: msbuild-msvc-cmake
+    - name: compile
+      env:
+        WIN_FLEX_BISON: ${{ github.workspace }}/.ccache
+      run: ./ci/ci-win-compile.ps1
+    - name: test build
+      run: ./ci/ci-win-test.ps1
+    - name: Zip up repository
+      run: Compress-Archive -LiteralPath install -DestinationPath verilator.zip
+    - name: Upload zip archive
+      uses: actions/upload-artifact@v4
+      with:
+        path: ${{ github.workspace }}/repo/verilator.zip
+        name: verilator-win.zip

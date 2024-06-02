@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -15,20 +15,30 @@
 //*************************************************************************
 
 // clang-format off
+#define VL_MT_DISABLED_CODE_UNIT 1
+
 #include "config_build.h"
-#ifndef HAVE_CONFIG_BUILD
-# error "Something failed during ./configure as config_build.h is incomplete. Perhaps you used autoreconf, don't."
+#ifndef HAVE_CONFIG_PACKAGE
+# error "Something failed during ./configure as config_package.h is incomplete. Perhaps you used autoreconf, don't."
 #endif
 // clang-format on
 
 #include "verilatedos.h"
 
-// Cheat for speed and compile .cpp files into one object
+// Cheat for speed and compile .cpp files into one object TODO: Reconsider
+#ifndef V3ERROR_NO_GLOBAL_
 #define V3ERROR_NO_GLOBAL_
+#endif
+#include "V3Error.h"
+static int debug() { return V3Error::debugDefault(); }
 #include "V3Error.cpp"
 #include "V3String.cpp"
+#define V3OPTION_PARSER_NO_VOPTION_BOOL
+// clang-format off
+#include "V3OptionParser.cpp"
 #include "V3Os.cpp"
 #include "VlcTop.cpp"
+// clang-format on
 
 #include "VlcOptions.h"
 #include "VlcTop.h"
@@ -42,79 +52,49 @@
 void VlcOptions::addReadFile(const string& filename) { m_readFiles.insert(filename); }
 
 string VlcOptions::version() {
-    string ver = DTVERSION;
+    string ver = PACKAGE_STRING;
     ver += " rev " + cvtToStr(DTVERSION_rev);
     return ver;
 }
 
-bool VlcOptions::onoff(const char* sw, const char* arg, bool& flag) {
-    // if sw==arg, then return true (found it), and flag=true
-    // if sw=="-no-arg", then return true (found it), and flag=false
-    // if sw=="-noarg", then return true (found it), and flag=false
-    // else return false
-    if (arg[0] != '-') v3fatalSrc("OnOff switches must have leading dash.");
-    if (0 == strcmp(sw, arg)) {
-        flag = true;
-        return true;
-    } else if (0 == strncmp(sw, "-no", 3) && (0 == strcmp(sw + 3, arg + 1))) {
-        flag = false;
-        return true;
-    } else if (0 == strncmp(sw, "-no-", 4) && (0 == strcmp(sw + 4, arg + 1))) {
-        flag = false;
-        return true;
-    }
-    return false;
-}
-
 void VlcOptions::parseOptsList(int argc, char** argv) {
+    V3OptionParser parser;
+    V3OptionParser::AppendHelper DECL_OPTION{parser};
+    V3OPTION_PARSER_DECL_TAGS;
+
+    DECL_OPTION("-annotate", Set, &m_annotateOut);
+    DECL_OPTION("-annotate-all", OnOff, &m_annotateAll);
+    DECL_OPTION("-annotate-min", Set, &m_annotateMin);
+    DECL_OPTION("-annotate-points", OnOff, &m_annotatePoints);
+    DECL_OPTION("-debug", CbCall, []() { V3Error::debugDefault(3); });
+    DECL_OPTION("-debugi", CbVal, [](int v) { V3Error::debugDefault(v); });
+    DECL_OPTION("-rank", OnOff, &m_rank);
+    DECL_OPTION("-unlink", OnOff, &m_unlink);
+    DECL_OPTION("-V", CbCall, []() {
+        showVersion(true);
+        std::exit(0);
+    });
+    DECL_OPTION("-version", CbCall, []() {
+        showVersion(false);
+        std::exit(0);
+    });
+    DECL_OPTION("-write", Set, &m_writeFile);
+    DECL_OPTION("-write-info", Set, &m_writeInfoFile);
+    parser.finalize();
+
     // Parse parameters
     // Note argc and argv DO NOT INCLUDE the filename in [0]!!!
     // May be called recursively when there are -f files.
     for (int i = 0; i < argc;) {
         UINFO(9, " Option: " << argv[i] << endl);
         if (argv[i][0] == '-') {
-            const char* sw = argv[i];
-            bool flag = true;
-            // Allow gnu -- switches
-            if (sw[0] == '-' && sw[1] == '-') ++sw;
-            // Single switches
-            if (onoff(sw, "-annotate-all", flag /*ref*/)) {
-                m_annotateAll = flag;
-            } else if (onoff(sw, "-rank", flag /*ref*/)) {
-                m_rank = flag;
-            } else if (onoff(sw, "-unlink", flag /*ref*/)) {
-                m_unlink = flag;
-            }
-            // Parameterized switches
-            else if (!strcmp(sw, "-annotate-min") && (i + 1) < argc) {
-                ++i;
-                m_annotateMin = atoi(argv[i]);
-            } else if (!strcmp(sw, "-annotate") && (i + 1) < argc) {
-                ++i;
-                m_annotateOut = argv[i];
-            } else if (!strcmp(sw, "-debug")) {
-                V3Error::debugDefault(3);
-            } else if (!strcmp(sw, "-debugi") && (i + 1) < argc) {
-                ++i;
-                V3Error::debugDefault(atoi(argv[i]));
-            } else if (!strcmp(sw, "-V")) {
-                showVersion(true);
-                std::exit(0);
-            } else if (!strcmp(sw, "-version")) {
-                showVersion(false);
-                std::exit(0);
-            } else if (!strcmp(sw, "-write") && (i + 1) < argc) {
-                ++i;
-                m_writeFile = argv[i];
-            } else if (!strcmp(sw, "-write-info") && (i + 1) < argc) {
-                ++i;
-                m_writeInfoFile = argv[i];
+            if (const int consumed = parser.parse(i, argc, argv)) {
+                i += consumed;
             } else {
-                v3fatal("Invalid option: " << argv[i]);
+                v3fatal("Invalid option: " << argv[i] << parser.getSuggestion(argv[i]));
+                ++i;  // LCOV_EXCL_LINE
             }
-            ++i;
-        }  // - options
-        else {
+        } else {
             addReadFile(argv[i]);
             ++i;
         }
@@ -122,23 +102,23 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
 }
 
 void VlcOptions::showVersion(bool verbose) {
-    cout << version();
-    cout << endl;
+    std::cout << version();
+    std::cout << "\n";
     if (!verbose) return;
 
-    cout << endl;
-    cout << "Copyright 2003-2021 by Wilson Snyder.  Verilator is free software; you can\n";
-    cout << "redistribute it and/or modify the Verilator internals under the terms of\n";
-    cout << "either the GNU Lesser General Public License Version 3 or the Perl Artistic\n";
-    cout << "License Version 2.0.\n";
+    std::cout << "\n";
+    std::cout << "Copyright 2003-2024 by Wilson Snyder.  Verilator is free software; you can\n";
+    std::cout << "redistribute it and/or modify the Verilator internals under the terms of\n";
+    std::cout << "either the GNU Lesser General Public License Version 3 or the Perl Artistic\n";
+    std::cout << "License Version 2.0.\n";
 
-    cout << endl;
-    cout << "See https://verilator.org for documentation\n";
+    std::cout << "\n";
+    std::cout << "See https://verilator.org for documentation\n";
 }
 
 //######################################################################
 
-int main(int argc, char** argv, char** /*env*/) {
+int main(int argc, char** argv) {
     // General initialization
     std::ios::sync_with_stdio();
 
@@ -173,7 +153,7 @@ int main(int argc, char** argv, char** /*env*/) {
         V3Error::abortIfWarnings();
         if (top.opt.unlink()) {
             const VlStringSet& readFiles = top.opt.readFiles();
-            for (const auto& filename : readFiles) { unlink(filename.c_str()); }
+            for (const auto& filename : readFiles) unlink(filename.c_str());
         }
     }
 

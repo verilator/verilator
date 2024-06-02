@@ -8,7 +8,6 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-
 scenarios(simulator => 1);
 
 compile(
@@ -19,7 +18,7 @@ compile(
 if (!$Self->have_cmake) {
     skip("cmake is not installed");
 } else {
-    my $cmakecache = $Self->{obj_dir}."/CMakeCache.txt";
+    my $cmakecache = $Self->{obj_dir} . "/CMakeCache.txt";
     if (! -e $cmakecache) {
         error("$cmakecache does not exist.")
     }

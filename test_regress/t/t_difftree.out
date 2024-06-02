@@ -1,0 +1,8 @@
+@@ -2,7 +2,7 @@
+      NETLIST 0x <e> {a0aa}  $root [1ps/1ps]
+     1: MODULE 0x <e> {d19ai}  t  L2 [1ps]
+     1:2: PORT 0x <e> {d21ae}  clk
++    1:2: VAR 0x <e> {d23ak} @dt=0@  clkmod INPUT PORT
+     1:2:1: BASICDTYPE 0x <e> {d23ak} @dt=this@(nw0)  LOGIC_IMPLICIT kwd=LOGIC_IMPLICIT
+     3: TYPETABLE 0x <e> {a0aa}
+                    logic  -> BASICDTYPE 0x <e> {d55ap} @dt=this@(G/nw1)  logic [GENERIC] kwd=logic

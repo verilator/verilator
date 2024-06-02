@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -23,15 +23,13 @@
 
 // clang-format off
 
-#define __STDC_LIMIT_MACROS  // UINT64_MAX
 #include "verilated.h"
 #include "verilated_fst_c.h"
 
 // GTKWave configuration
-#ifdef VL_TRACE_FST_WRITER_THREAD
-# define HAVE_LIBPTHREAD
-# define FST_WRITER_PARALLEL
-#endif
+#define HAVE_LIBPTHREAD
+#define FST_WRITER_PARALLEL
+#define LZ4_DISABLE_DEPRECATE_WARNINGS
 
 // Include the GTKWave implementation directly
 #define FST_CONFIG_INCLUDE "fst_config.h"
@@ -42,6 +40,7 @@
 #include <algorithm>
 #include <iterator>
 #include <sstream>
+#include <type_traits>
 
 #if defined(_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
 # include <io.h>
@@ -52,235 +51,296 @@
 // clang-format on
 
 //=============================================================================
-// Check that vltscope_t matches fstScopeType
-static_assert((int)FST_ST_VCD_MODULE == (int)VLT_TRACE_SCOPE_MODULE,
-              "VLT_TRACE_SCOPE_MODULE mismatches");
-static_assert((int)FST_ST_VCD_TASK == (int)VLT_TRACE_SCOPE_TASK,
-              "VLT_TRACE_SCOPE_TASK mismatches");
-static_assert((int)FST_ST_VCD_FUNCTION == (int)VLT_TRACE_SCOPE_FUNCTION,
-              "VLT_TRACE_SCOPE_FUNCTION mismatches");
-static_assert((int)FST_ST_VCD_BEGIN == (int)VLT_TRACE_SCOPE_BEGIN,
-              "VLT_TRACE_SCOPE_BEGIN mismatches");
-static_assert((int)FST_ST_VCD_FORK == (int)VLT_TRACE_SCOPE_FORK,
-              "VLT_TRACE_SCOPE_FORK mismatches");
-static_assert((int)FST_ST_VCD_GENERATE == (int)VLT_TRACE_SCOPE_GENERATE,
-              "VLT_TRACE_SCOPE_GENERATE mismatches");
-static_assert((int)FST_ST_VCD_STRUCT == (int)VLT_TRACE_SCOPE_STRUCT,
-              "VLT_TRACE_SCOPE_STRUCT mismatches");
-static_assert((int)FST_ST_VCD_UNION == (int)VLT_TRACE_SCOPE_UNION,
-              "VLT_TRACE_SCOPE_UNION mismatches");
-static_assert((int)FST_ST_VCD_CLASS == (int)VLT_TRACE_SCOPE_CLASS,
-              "VLT_TRACE_SCOPE_CLASS mismatches");
-static_assert((int)FST_ST_VCD_INTERFACE == (int)VLT_TRACE_SCOPE_INTERFACE,
-              "VLT_TRACE_SCOPE_INTERFACE mismatches");
-static_assert((int)FST_ST_VCD_PACKAGE == (int)VLT_TRACE_SCOPE_PACKAGE,
-              "VLT_TRACE_SCOPE_PACKAGE mismatches");
-static_assert((int)FST_ST_VCD_PROGRAM == (int)VLT_TRACE_SCOPE_PROGRAM,
-              "VLT_TRACE_SCOPE_PROGRAM mismatches");
+// Check that forward declared types matches the FST API types
+
+static_assert(std::is_same<vlFstHandle, fstHandle>::value, "vlFstHandle mismatch");
+static_assert(std::is_same<vlFstEnumHandle, fstEnumHandle>::value, "vlFstHandle mismatch");
 
 //=============================================================================
 // Specialization of the generics for this trace format
 
-#define VL_DERIVED_T VerilatedFst
-#include "verilated_trace_imp.cpp"
-#undef VL_DERIVED_T
+#define VL_SUB_T VerilatedFst
+#define VL_BUF_T VerilatedFstBuffer
+#include "verilated_trace_imp.h"
+#undef VL_SUB_T
+#undef VL_BUF_T
 
 //=============================================================================
 // VerilatedFst
 
-VerilatedFst::VerilatedFst(void* fst)
-    : m_fst{fst} {}
+VerilatedFst::VerilatedFst(void* /*fst*/) {}
 
 VerilatedFst::~VerilatedFst() {
     if (m_fst) fstWriterClose(m_fst);
     if (m_symbolp) VL_DO_CLEAR(delete[] m_symbolp, m_symbolp = nullptr);
-    if (m_strbuf) VL_DO_CLEAR(delete[] m_strbuf, m_strbuf = nullptr);
+    if (m_strbufp) VL_DO_CLEAR(delete[] m_strbufp, m_strbufp = nullptr);
 }
 
 void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
-    const VerilatedLockGuard lock(m_mutex);
+    const VerilatedLockGuard lock{m_mutex};
     m_fst = fstWriterCreate(filename, 1);
     fstWriterSetPackType(m_fst, FST_WR_PT_LZ4);
     fstWriterSetTimescaleFromString(m_fst, timeResStr().c_str());  // lintok-begin-on-ref
-#ifdef VL_TRACE_FST_WRITER_THREAD
-    fstWriterSetParallelMode(m_fst, 1);
-#endif
+    if (m_useFstWriterThread) fstWriterSetParallelMode(m_fst, 1);
+    constDump(true);  // First dump must contain the const signals
     fullDump(true);  // First dump must be full for fst
 
-    m_curScope.clear();
-
-    VerilatedTrace<VerilatedFst>::traceInit();
-
-    // Clear the scope stack
-    auto it = m_curScope.begin();
-    while (it != m_curScope.end()) {
-        fstWriterSetUpscope(m_fst);
-        it = m_curScope.erase(it);
-    }
+    Super::traceInit();
 
     // convert m_code2symbol into an array for fast lookup
     if (!m_symbolp) {
-        m_symbolp = new fstHandle[nextCode()];
+        m_symbolp = new fstHandle[nextCode()]{0};
         for (const auto& i : m_code2symbol) m_symbolp[i.first] = i.second;
     }
     m_code2symbol.clear();
 
     // Allocate string buffer for arrays
-    if (!m_strbuf) m_strbuf = new char[maxBits() + 32];
+    if (!m_strbufp) m_strbufp = new char[maxBits() + 32];
 }
 
 void VerilatedFst::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
-    const VerilatedLockGuard lock(m_mutex);
-    VerilatedTrace<VerilatedFst>::closeBase();
+    const VerilatedLockGuard lock{m_mutex};
+    Super::closeBase();
     fstWriterClose(m_fst);
     m_fst = nullptr;
 }
 
 void VerilatedFst::flush() VL_MT_SAFE_EXCLUDES(m_mutex) {
-    const VerilatedLockGuard lock(m_mutex);
-    VerilatedTrace<VerilatedFst>::flushBase();
+    const VerilatedLockGuard lock{m_mutex};
+    Super::flushBase();
     fstWriterFlushContext(m_fst);
 }
 
-void VerilatedFst::emitTimeChange(vluint64_t timeui) { fstWriterEmitTimeChange(m_fst, timeui); }
+void VerilatedFst::emitTimeChange(uint64_t timeui) { fstWriterEmitTimeChange(m_fst, timeui); }
 
 //=============================================================================
 // Decl
 
-void VerilatedFst::declDTypeEnum(int dtypenum, const char* name, vluint32_t elements,
+void VerilatedFst::declDTypeEnum(int dtypenum, const char* name, uint32_t elements,
                                  unsigned int minValbits, const char** itemNamesp,
                                  const char** itemValuesp) {
-    fstEnumHandle enumNum
+    const fstEnumHandle enumNum
         = fstWriterCreateEnumTable(m_fst, name, elements, minValbits, itemNamesp, itemValuesp);
     m_local2fstdtype[dtypenum] = enumNum;
 }
 
-void VerilatedFst::declare(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                           fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
+// TODO: should return std::optional<fstScopeType>, but I can't have C++17
+static std::pair<bool, fstScopeType> toFstScopeType(VerilatedTracePrefixType type) {
+    switch (type) {
+    case VerilatedTracePrefixType::SCOPE_MODULE: return {true, FST_ST_VCD_MODULE};
+    case VerilatedTracePrefixType::SCOPE_INTERFACE: return {true, FST_ST_VCD_INTERFACE};
+    case VerilatedTracePrefixType::STRUCT_PACKED:
+    case VerilatedTracePrefixType::STRUCT_UNPACKED: return {true, FST_ST_VCD_STRUCT};
+    case VerilatedTracePrefixType::UNION_PACKED: return {true, FST_ST_VCD_UNION};
+    default: return {false, /* unused so whatever, just need a value */ FST_ST_VCD_SCOPE};
+    }
+}
+
+void VerilatedFst::pushPrefix(const std::string& name, VerilatedTracePrefixType type) {
+    const std::string newPrefix = m_prefixStack.back().first + name;
+    const auto pair = toFstScopeType(type);
+    const bool properScope = pair.first;
+    const fstScopeType scopeType = pair.second;
+    m_prefixStack.emplace_back(newPrefix + (properScope ? " " : ""), type);
+    if (properScope) {
+        const std::string scopeName = lastWord(newPrefix);
+        fstWriterSetScope(m_fst, scopeType, scopeName.c_str(), nullptr);
+    }
+}
+
+void VerilatedFst::popPrefix() {
+    const bool properScope = toFstScopeType(m_prefixStack.back().second).first;
+    if (properScope) fstWriterSetUpscope(m_fst);
+    m_prefixStack.pop_back();
+    assert(!m_prefixStack.empty());
+}
+
+void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum,
+                           VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                           VerilatedTraceSigType type, bool array, int arraynum, bool bussed,
+                           int msb, int lsb) {
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
-    VerilatedTrace<VerilatedFst>::declCode(code, bits, false);
+    const std::string hierarchicalName = m_prefixStack.back().first + name;
 
-    std::istringstream nameiss(name);
-    std::istream_iterator<std::string> beg(nameiss);
-    std::istream_iterator<std::string> end;
-    std::list<std::string> tokens(beg, end);  // Split name
-    std::string symbol_name(tokens.back());
-    tokens.pop_back();  // Remove symbol name from hierarchy
-    tokens.insert(tokens.begin(), moduleName());  // Add current module to the hierarchy
-    std::string tmpModName;
+    const bool enabled = Super::declCode(code, hierarchicalName, bits);
+    if (!enabled) return;
 
-    // Find point where current and new scope diverge
-    auto cur_it = m_curScope.begin();
-    auto new_it = tokens.begin();
-    while (cur_it != m_curScope.end() && new_it != tokens.end()) {
-        if (*cur_it != *new_it) break;
-        ++cur_it;
-        ++new_it;
-    }
-
-    // Go back to the common point
-    while (cur_it != m_curScope.end()) {
-        fstWriterSetUpscope(m_fst);
-        cur_it = m_curScope.erase(cur_it);
-    }
-
-    // Follow the hierarchy of the new variable from the common scope point
-    while (new_it != tokens.end()) {
-        if ((new_it->back() & 0x80)) {
-            tmpModName = *new_it;
-            tmpModName.pop_back();
-            // If the scope ends with a non-ascii character, it will be 0x80 + fstScopeType
-            fstWriterSetScope(m_fst, (fstScopeType)(new_it->back() & 0x7f), tmpModName.c_str(),
-                              nullptr);
-        } else
-            fstWriterSetScope(m_fst, FST_ST_VCD_SCOPE, new_it->c_str(), nullptr);
-
-        m_curScope.push_back(*new_it);
-        new_it = tokens.erase(new_it);
-    }
-
+    assert(hierarchicalName.rfind(' ') != std::string::npos);
     std::stringstream name_ss;
-    name_ss << symbol_name;
-    if (array) name_ss << "(" << arraynum << ")";
-    std::string name_str = name_ss.str();
+    name_ss << lastWord(hierarchicalName);
+    if (array) name_ss << "[" << arraynum << "]";
+    if (bussed) name_ss << " [" << msb << ":" << lsb << "]";
+    const std::string name_str = name_ss.str();
 
-    if (dtypenum > 0) {
-        fstEnumHandle enumNum = m_local2fstdtype[dtypenum];
-        fstWriterEmitEnumTableRef(m_fst, enumNum);
+    if (dtypenum > 0) fstWriterEmitEnumTableRef(m_fst, m_local2fstdtype[dtypenum]);
+
+    fstVarDir varDir = FST_VD_IMPLICIT;
+    switch (direction) {
+    case VerilatedTraceSigDirection::INOUT: varDir = FST_VD_INOUT; break;
+    case VerilatedTraceSigDirection::OUTPUT: varDir = FST_VD_OUTPUT; break;
+    case VerilatedTraceSigDirection::INPUT: varDir = FST_VD_INPUT; break;
+    case VerilatedTraceSigDirection::NONE: varDir = FST_VD_IMPLICIT; break;
     }
+
+    fstVarType varType;
+    // Doubles have special decoding properties, so must indicate if a double
+    if (type == VerilatedTraceSigType::DOUBLE) {
+        if (kind == VerilatedTraceSigKind::PARAMETER) {
+            varType = FST_VT_VCD_REAL_PARAMETER;
+        } else {
+            varType = FST_VT_VCD_REAL;
+        }
+    }
+    // clang-format off
+    else if (kind == VerilatedTraceSigKind::PARAMETER) varType = FST_VT_VCD_PARAMETER;
+    else if (kind == VerilatedTraceSigKind::SUPPLY0) varType = FST_VT_VCD_SUPPLY0;
+    else if (kind == VerilatedTraceSigKind::SUPPLY1) varType = FST_VT_VCD_SUPPLY1;
+    else if (kind == VerilatedTraceSigKind::TRI) varType = FST_VT_VCD_TRI;
+    else if (kind == VerilatedTraceSigKind::TRI0) varType = FST_VT_VCD_TRI0;
+    else if (kind == VerilatedTraceSigKind::TRI1) varType = FST_VT_VCD_TRI1;
+    else if (kind == VerilatedTraceSigKind::WIRE) varType = FST_VT_VCD_WIRE;
+    //
+    else if (type == VerilatedTraceSigType::INTEGER) varType = FST_VT_VCD_INTEGER;
+    else if (type == VerilatedTraceSigType::BIT) varType = FST_VT_SV_BIT;
+    else if (type == VerilatedTraceSigType::LOGIC) varType = FST_VT_SV_LOGIC;
+    else if (type == VerilatedTraceSigType::INT) varType = FST_VT_SV_INT;
+    else if (type == VerilatedTraceSigType::SHORTINT) varType = FST_VT_SV_SHORTINT;
+    else if (type == VerilatedTraceSigType::LONGINT) varType = FST_VT_SV_LONGINT;
+    else if (type == VerilatedTraceSigType::BYTE) varType = FST_VT_SV_BYTE;
+    else if (type == VerilatedTraceSigType::EVENT) varType = FST_VT_VCD_EVENT;
+    else if (type == VerilatedTraceSigType::TIME) varType = FST_VT_VCD_TIME;
+    else { assert(0); /* Unreachable */ }
+    // clang-format on
 
     const auto it = vlstd::as_const(m_code2symbol).find(code);
     if (it == m_code2symbol.end()) {  // New
         m_code2symbol[code]
-            = fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), 0);
+            = fstWriterCreateVar(m_fst, varType, varDir, bits, name_str.c_str(), 0);
     } else {  // Alias
-        fstWriterCreateVar(m_fst, vartype, vardir, bits, name_str.c_str(), it->second);
+        fstWriterCreateVar(m_fst, varType, varDir, bits, name_str.c_str(), it->second);
     }
 }
 
-void VerilatedFst::declBit(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                           fstVarType vartype, bool array, int arraynum) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, 0, 0);
+void VerilatedFst::declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                             VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                             VerilatedTraceSigType type, bool array, int arraynum) {
+    declare(code, name, dtypenum, direction, kind, type, array, arraynum, false, 0, 0);
 }
-void VerilatedFst::declBus(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                           fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, msb, lsb);
+void VerilatedFst::declBit(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                           VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                           VerilatedTraceSigType type, bool array, int arraynum) {
+    declare(code, name, dtypenum, direction, kind, type, array, arraynum, false, 0, 0);
 }
-void VerilatedFst::declQuad(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                            fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, msb, lsb);
+void VerilatedFst::declBus(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                           VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                           VerilatedTraceSigType type, bool array, int arraynum, int msb,
+                           int lsb) {
+    declare(code, name, dtypenum, direction, kind, type, array, arraynum, true, msb, lsb);
 }
-void VerilatedFst::declArray(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                             fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, msb, lsb);
+void VerilatedFst::declQuad(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                            VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                            VerilatedTraceSigType type, bool array, int arraynum, int msb,
+                            int lsb) {
+    declare(code, name, dtypenum, direction, kind, type, array, arraynum, true, msb, lsb);
 }
-void VerilatedFst::declDouble(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
-                              fstVarType vartype, bool array, int arraynum) {
-    declare(code, name, dtypenum, vardir, vartype, array, arraynum, 63, 0);
+void VerilatedFst::declArray(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                             VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                             VerilatedTraceSigType type, bool array, int arraynum, int msb,
+                             int lsb) {
+    declare(code, name, dtypenum, direction, kind, type, array, arraynum, true, msb, lsb);
+}
+void VerilatedFst::declDouble(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                              VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
+                              VerilatedTraceSigType type, bool array, int arraynum) {
+    declare(code, name, dtypenum, direction, kind, type, array, arraynum, false, 63, 0);
 }
 
+//=============================================================================
+// Get/commit trace buffer
+
+VerilatedFst::Buffer* VerilatedFst::getTraceBuffer(uint32_t fidx) {
+    if (offload()) return new OffloadBuffer{*this};
+    return new Buffer{*this};
+}
+
+void VerilatedFst::commitTraceBuffer(VerilatedFst::Buffer* bufp) {
+    if (offload()) {
+        OffloadBuffer* const offloadBufferp = static_cast<OffloadBuffer*>(bufp);
+        if (offloadBufferp->m_offloadBufferWritep) {
+            m_offloadBufferWritep = offloadBufferp->m_offloadBufferWritep;
+            return;  // Buffer will be deleted by the offload thread
+        }
+    }
+    delete bufp;
+}
+
+//=============================================================================
+// Configure
+
+void VerilatedFst::configure(const VerilatedTraceConfig& config) {
+    // If at least one model requests the FST writer thread, then use it
+    m_useFstWriterThread |= config.m_useFstWriterThread;
+}
+
+//=============================================================================
+// VerilatedFstBuffer implementation
+
+//=============================================================================
+// Trace rendering primitives
+
 // Note: emit* are only ever called from one place (full* in
-// verilated_trace_imp.cpp, which is included in this file at the top),
+// verilated_trace_imp.h, which is included in this file at the top),
 // so always inline them.
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitBit(vluint32_t code, CData newval) {
+void VerilatedFstBuffer::emitEvent(uint32_t code, const VlEventBase* newval) {
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], "1");
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedFstBuffer::emitBit(uint32_t code, CData newval) {
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     fstWriterEmitValueChange(m_fst, m_symbolp[code], newval ? "1" : "0");
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitCData(vluint32_t code, CData newval, int bits) {
+void VerilatedFstBuffer::emitCData(uint32_t code, CData newval, int bits) {
     char buf[VL_BYTESIZE];
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtCDataToStr(buf, newval << (VL_BYTESIZE - bits));
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitSData(vluint32_t code, SData newval, int bits) {
+void VerilatedFstBuffer::emitSData(uint32_t code, SData newval, int bits) {
     char buf[VL_SHORTSIZE];
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtSDataToStr(buf, newval << (VL_SHORTSIZE - bits));
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitIData(vluint32_t code, IData newval, int bits) {
+void VerilatedFstBuffer::emitIData(uint32_t code, IData newval, int bits) {
     char buf[VL_IDATASIZE];
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtIDataToStr(buf, newval << (VL_IDATASIZE - bits));
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitQData(vluint32_t code, QData newval, int bits) {
+void VerilatedFstBuffer::emitQData(uint32_t code, QData newval, int bits) {
     char buf[VL_QUADSIZE];
+    VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtQDataToStr(buf, newval << (VL_QUADSIZE - bits));
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitWData(vluint32_t code, const WData* newvalp, int bits) {
+void VerilatedFstBuffer::emitWData(uint32_t code, const WData* newvalp, int bits) {
     int words = VL_WORDS_I(bits);
-    char* wp = m_strbuf;
+    char* wp = m_strbufp;
     // Convert the most significant word
     const int bitsInMSW = VL_BITBIT_E(bits) ? VL_BITBIT_E(bits) : VL_EDATASIZE;
     cvtEDataToStr(wp, newvalp[--words] << (VL_EDATASIZE - bitsInMSW));
@@ -290,10 +350,10 @@ void VerilatedFst::emitWData(vluint32_t code, const WData* newvalp, int bits) {
         cvtEDataToStr(wp, newvalp[--words]);
         wp += VL_EDATASIZE;
     }
-    fstWriterEmitValueChange(m_fst, m_symbolp[code], m_strbuf);
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], m_strbufp);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitDouble(vluint32_t code, double newval) {
+void VerilatedFstBuffer::emitDouble(uint32_t code, double newval) {
     fstWriterEmitValueChange(m_fst, m_symbolp[code], &newval);
 }

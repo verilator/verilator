@@ -15,7 +15,7 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer cyc=0;
+   integer cyc = 0;
 
    integer i;
 
@@ -104,6 +104,7 @@ module t (/*AUTOARG*/
       begin
          // Strings
          string q[$];
+         string p[$:3];
          string v;
          int j = 0;
 
@@ -134,6 +135,7 @@ module t (/*AUTOARG*/
          //Unsup: `checkh(q[$], "b2");
 
          v = $sformatf("%p", q); `checks(v, "'{\"f2\", \"f1\", \"b1\", \"b2\"} ");
+         v = $sformatf("%p", p); `checks(v, "'{}");
 
          //Unsup: q.delete(1);
          //Unsup: v = q[1]; `checks(v, "b1");

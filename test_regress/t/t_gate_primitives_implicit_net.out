@@ -1,0 +1,166 @@
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:15:21: Signal definition not found, creating implicitly: 'i_and1'
+   15 |    and g_and(o_and, i_and1, i_and2, i_and3);
+      |                     ^~~~~~
+                   ... For warning description see https://verilator.org/warn/IMPLICIT?v=latest
+                   ... Use "/* verilator lint_off IMPLICIT */" and lint_on around source to disable this message.
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:15:29: Signal definition not found, creating implicitly: 'i_and2'
+                                                           : ... Suggested alternative: 'i_and1'
+   15 |    and g_and(o_and, i_and1, i_and2, i_and3);
+      |                             ^~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:15:37: Signal definition not found, creating implicitly: 'i_and3'
+                                                           : ... Suggested alternative: 'i_and1'
+   15 |    and g_and(o_and, i_and1, i_and2, i_and3);
+      |                                     ^~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:15:14: Signal definition not found, creating implicitly: 'o_and'
+                                                           : ... Suggested alternative: 'i_and1'
+   15 |    and g_and(o_and, i_and1, i_and2, i_and3);
+      |              ^~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:16:30: Signal definition not found, creating implicitly: 'i_not1'
+   16 |    not g_not(o_not1, o_not2, i_not1);
+      |                              ^~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:16:14: Signal definition not found, creating implicitly: 'o_not1'
+                                                           : ... Suggested alternative: 'i_not1'
+   16 |    not g_not(o_not1, o_not2, i_not1);
+      |              ^~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:16:22: Signal definition not found, creating implicitly: 'o_not2'
+                                                           : ... Suggested alternative: 'o_not1'
+   16 |    not g_not(o_not1, o_not2, i_not1);
+      |                      ^~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:17:21: Signal definition not found, creating implicitly: 'i_nor1'
+                                                           : ... Suggested alternative: 'i_not1'
+   17 |    nor g_nor(o_nor, i_nor1, i_nor2, i_nor3);
+      |                     ^~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:17:29: Signal definition not found, creating implicitly: 'i_nor2'
+                                                           : ... Suggested alternative: 'i_nor1'
+   17 |    nor g_nor(o_nor, i_nor1, i_nor2, i_nor3);
+      |                             ^~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:17:37: Signal definition not found, creating implicitly: 'i_nor3'
+                                                           : ... Suggested alternative: 'i_nor1'
+   17 |    nor g_nor(o_nor, i_nor1, i_nor2, i_nor3);
+      |                                     ^~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:17:14: Signal definition not found, creating implicitly: 'o_nor'
+                                                           : ... Suggested alternative: 'i_nor1'
+   17 |    nor g_nor(o_nor, i_nor1, i_nor2, i_nor3);
+      |              ^~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:18:18: Signal definition not found, creating implicitly: 'i_or1'
+                                                           : ... Suggested alternative: 'i_nor1'
+   18 |    or g_or(o_or, i_or1, i_or2, i_or3);
+      |                  ^~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:18:25: Signal definition not found, creating implicitly: 'i_or2'
+                                                           : ... Suggested alternative: 'i_nor2'
+   18 |    or g_or(o_or, i_or1, i_or2, i_or3);
+      |                         ^~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:18:32: Signal definition not found, creating implicitly: 'i_or3'
+                                                           : ... Suggested alternative: 'i_nor3'
+   18 |    or g_or(o_or, i_or1, i_or2, i_or3);
+      |                                ^~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:18:12: Signal definition not found, creating implicitly: 'o_or'
+                                                           : ... Suggested alternative: 'o_nor'
+   18 |    or g_or(o_or, i_or1, i_or2, i_or3);
+      |            ^~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:19:24: Signal definition not found, creating implicitly: 'i_nand1'
+                                                           : ... Suggested alternative: 'i_and1'
+   19 |    nand g_nand(o_nand, i_nand1, i_nand2, i_nand3);
+      |                        ^~~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:19:33: Signal definition not found, creating implicitly: 'i_nand2'
+                                                           : ... Suggested alternative: 'i_and2'
+   19 |    nand g_nand(o_nand, i_nand1, i_nand2, i_nand3);
+      |                                 ^~~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:19:42: Signal definition not found, creating implicitly: 'i_nand3'
+                                                           : ... Suggested alternative: 'i_and3'
+   19 |    nand g_nand(o_nand, i_nand1, i_nand2, i_nand3);
+      |                                          ^~~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:19:16: Signal definition not found, creating implicitly: 'o_nand'
+                                                           : ... Suggested alternative: 'o_and'
+   19 |    nand g_nand(o_nand, i_nand1, i_nand2, i_nand3);
+      |                ^~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:20:21: Signal definition not found, creating implicitly: 'i_xor1'
+                                                           : ... Suggested alternative: 'i_nor1'
+   20 |    xor g_xor(o_xor, i_xor1, i_xor2, i_xor3);
+      |                     ^~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:20:29: Signal definition not found, creating implicitly: 'i_xor2'
+                                                           : ... Suggested alternative: 'i_nor2'
+   20 |    xor g_xor(o_xor, i_xor1, i_xor2, i_xor3);
+      |                             ^~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:20:37: Signal definition not found, creating implicitly: 'i_xor3'
+                                                           : ... Suggested alternative: 'i_nor3'
+   20 |    xor g_xor(o_xor, i_xor1, i_xor2, i_xor3);
+      |                                     ^~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:20:14: Signal definition not found, creating implicitly: 'o_xor'
+                                                           : ... Suggested alternative: 'o_nor'
+   20 |    xor g_xor(o_xor, i_xor1, i_xor2, i_xor3);
+      |              ^~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:21:23: Signal definition not found, creating implicitly: 'i_xnor1'
+                                                           : ... Suggested alternative: 'i_nor1'
+   21 |    xnor g_xor(o_xnor, i_xnor1, i_xnor2, i_xnor3);
+      |                       ^~~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:21:32: Signal definition not found, creating implicitly: 'i_xnor2'
+                                                           : ... Suggested alternative: 'i_nor2'
+   21 |    xnor g_xor(o_xnor, i_xnor1, i_xnor2, i_xnor3);
+      |                                ^~~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:21:41: Signal definition not found, creating implicitly: 'i_xnor3'
+                                                           : ... Suggested alternative: 'i_nor3'
+   21 |    xnor g_xor(o_xnor, i_xnor1, i_xnor2, i_xnor3);
+      |                                         ^~~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:21:15: Signal definition not found, creating implicitly: 'o_xnor'
+                                                           : ... Suggested alternative: 'o_nor'
+   21 |    xnor g_xor(o_xnor, i_xnor1, i_xnor2, i_xnor3);
+      |               ^~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:22:30: Signal definition not found, creating implicitly: 'i_buf1'
+   22 |    buf g_buf(o_buf1, o_buf2, i_buf1);
+      |                              ^~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:22:14: Signal definition not found, creating implicitly: 'o_buf1'
+                                                           : ... Suggested alternative: 'i_buf1'
+   22 |    buf g_buf(o_buf1, o_buf2, i_buf1);
+      |              ^~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:22:22: Signal definition not found, creating implicitly: 'o_buf2'
+                                                           : ... Suggested alternative: 'o_buf1'
+   22 |    buf g_buf(o_buf1, o_buf2, i_buf1);
+      |                      ^~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:23:41: Signal definition not found, creating implicitly: 'i_bufif02'
+   23 |    bufif0 g_bufif0(o_bufif0, i_bufif01, i_bufif02);
+      |                                         ^~~~~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:23:30: Signal definition not found, creating implicitly: 'i_bufif01'
+                                                           : ... Suggested alternative: 'i_bufif02'
+   23 |    bufif0 g_bufif0(o_bufif0, i_bufif01, i_bufif02);
+      |                              ^~~~~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:23:20: Signal definition not found, creating implicitly: 'o_bufif0'
+                                                           : ... Suggested alternative: 'i_bufif01'
+   23 |    bufif0 g_bufif0(o_bufif0, i_bufif01, i_bufif02);
+      |                    ^~~~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:24:41: Signal definition not found, creating implicitly: 'i_bufif12'
+                                                           : ... Suggested alternative: 'i_bufif02'
+   24 |    bufif1 g_bufif1(o_bufif1, i_bufif11, i_bufif12);
+      |                                         ^~~~~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:24:30: Signal definition not found, creating implicitly: 'i_bufif11'
+                                                           : ... Suggested alternative: 'i_bufif01'
+   24 |    bufif1 g_bufif1(o_bufif1, i_bufif11, i_bufif12);
+      |                              ^~~~~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:24:20: Signal definition not found, creating implicitly: 'o_bufif1'
+                                                           : ... Suggested alternative: 'o_bufif0'
+   24 |    bufif1 g_bufif1(o_bufif1, i_bufif11, i_bufif12);
+      |                    ^~~~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:25:41: Signal definition not found, creating implicitly: 'i_notif02'
+                                                           : ... Suggested alternative: 'i_bufif02'
+   25 |    notif0 g_notif0(o_notif0, i_notif01, i_notif02);
+      |                                         ^~~~~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:25:30: Signal definition not found, creating implicitly: 'i_notif01'
+                                                           : ... Suggested alternative: 'i_notif02'
+   25 |    notif0 g_notif0(o_notif0, i_notif01, i_notif02);
+      |                              ^~~~~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:25:20: Signal definition not found, creating implicitly: 'o_notif0'
+                                                           : ... Suggested alternative: 'i_notif01'
+   25 |    notif0 g_notif0(o_notif0, i_notif01, i_notif02);
+      |                    ^~~~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:26:41: Signal definition not found, creating implicitly: 'i_notif12'
+                                                           : ... Suggested alternative: 'i_notif02'
+   26 |    notif1 g_notif1(o_notif1, i_notif11, i_notif12);
+      |                                         ^~~~~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:26:30: Signal definition not found, creating implicitly: 'i_notif11'
+                                                           : ... Suggested alternative: 'i_notif01'
+   26 |    notif1 g_notif1(o_notif1, i_notif11, i_notif12);
+      |                              ^~~~~~~~~
+%Warning-IMPLICIT: t/t_gate_primitives_implicit_net.v:26:20: Signal definition not found, creating implicitly: 'o_notif1'
+                                                           : ... Suggested alternative: 'o_notif0'
+   26 |    notif1 g_notif1(o_notif1, i_notif11, i_notif12);
+      |                    ^~~~~~~~

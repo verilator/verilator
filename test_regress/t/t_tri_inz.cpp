@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 #include "Vt_tri_inz.h"
+#include "Vt_tri_inz___024root.h"
 
 VM_PREFIX* tb = nullptr;
 bool pass = true;
@@ -19,7 +20,7 @@ void checkone(const char* name, int got, int exp) {
 
 void check(int d, int en, int exp0, int exp1, int expx, int expz) {
     tb->d = d;
-    tb->d__en0 = en;
+    tb->rootp->d__en0 = en;
     tb->eval();
 #ifdef TEST_VERBOSE
     printf("Drive d=%d en=%d got0=%d/1=%d/x=%d/z=%d  exp0=%d/1=%d/x=%d/z=%d\n", d, en, tb->ext0,
@@ -33,7 +34,7 @@ void check(int d, int en, int exp0, int exp1, int expx, int expz) {
 
 int main() {
     Verilated::debug(0);
-    tb = new Vt_tri_inz("tb");
+    tb = new VM_PREFIX{"tb"};
     check(0, 1, 1, 0, 0, 0);
     check(1, 1, 0, 1, 0, 0);
     check(0, 0, 0, 0, 0, 1);

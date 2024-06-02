@@ -29,12 +29,13 @@ void clockit(int clk1, int clk0) {
 }
 
 int main(int argc, char* argv[]) {
+    Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
+
     topp = new VM_PREFIX;
     topp->check = 0;
     clockit(0, 0);
     main_time += 10;
-
-    Verilated::debug(0);
 
     for (int i = 0; i < 2; i++) {
         clockit(0, 0);

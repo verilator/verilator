@@ -12,7 +12,8 @@ scenarios(dist => 1);
 
 my $root = "..";
 
-my $Tabs_Exempt_Re = qr!(\.out$)|(/gtkwave)|(Makefile)|(\.mk$)|(nodist/fastcov.py)!;
+my $Make_Style_Re = qr!(Makefile)|(\.mk$)|(\.mk\.in$)!;
+my $Tabs_Exempt_Re = qr!(\.out$)|(/gtkwave)|(Makefile)|(\.mk$)|(\.mk\.in$)!;
 #my $Wide_Exempt_Re = qr!(\.l$)|(\.y$)!;
 my $Wide_Exempt_Re = qr!.*!;  # clang-tidy generally cleans up
 
@@ -31,10 +32,17 @@ if (!-r "$root/.git") {
         my $btab;
         my $lineno = 0;
         foreach my $line ((split /\n/, $diff), "+++ b/_the_end") {
+            $fline = $line;
+            $fline =~ s!^(\+)#\t!$1!;  # special case, lines starting with #\t are OK in Makefiles
             if ($line =~ m!^\+\+\+ b/(.*)!) {
+                if ($file && !$astab && $bstab
+                    && $file =~ $Make_Style_Re) {
+                    $summary = "File modifications add new stray tabs (please untabify the patch):";
+                    $warns{$file} = "File modification adds new stray tabs (please untabify the patch): $file";
+                }
                 if ($file && !$atab && $btab
                     && $file !~ $Tabs_Exempt_Re) {
-                    $summary = "File modifications adds new tabs (please untabify the patch):";
+                    $summary = "File modifications add new tabs (please untabify the patch):";
                     $warns{$file} = "File modification adds new tabs (please untabify the patch): $file";
                 }
                 # Next
@@ -43,15 +51,23 @@ if (!-r "$root/.git") {
                 $btab = 0;
                 print " File $file\n" if $Self->{verbose};
             }
-            elsif ($line  =~ m!^@@ -?[0-9]+,?[0-9]* \+?([0-9]+)!) {
+            elsif ($line =~ m!^@@ -?[0-9]+,?[0-9]* \+?([0-9]+)!) {
                 $lineno = $1 - 1;
             }
-            elsif ($line  =~ m!^ !) {
+            elsif ($line =~ m!^ !) {
                 ++$lineno;
                 if ($line =~ m!^[- ].*\t!) {
                     print "  Had tabs\n" if $Self->{verbose} && !$atab;
                     $atab = 1;
                 }
+            }
+            elsif ($fline =~ m!^-.+[^\t]\t!) {
+                print "  Had stray tabs\n" if $Self->{verbose} && !$astab;
+                $astab = 1;
+            }
+            elsif ($fline =~ m!^+.+[^\t]\t!) {
+                print "  Inserts stray tabs\n" if $Self->{verbose} && !$bstab;
+                $bstab = 1;
             }
             elsif ($line =~ m!^-.*\t!) {
                 print "  Had tabs\n" if $Self->{verbose} && !$atab;
@@ -72,7 +88,7 @@ if (!-r "$root/.git") {
                 if ($len >= 100
                     && $file !~ $Tabs_Exempt_Re
                     && $file !~ $Wide_Exempt_Re) {
-                    print"  Wide $line\n" if $Self->{verbose};
+                    print "  Wide $line\n" if $Self->{verbose};
                     $summary = "File modification adds a new >100 column line:" if !$summary;
                     $warns{$file} = "File modification adds a new >100 column line: $file:$lineno";
                 }
@@ -81,7 +97,7 @@ if (!-r "$root/.git") {
     }
     if (keys %warns) {
         # First warning lists everything as that's shown in the driver summary
-        error($summary." ",join(' ',sort keys %warns));
+        error($summary . " ", join(' ', sort keys %warns));
         foreach my $file (sort keys %warns) {
             error($warns{$file});
         }
@@ -94,7 +110,7 @@ sub _has_tabs {
     if ($filename =~ /\.out$/) {
         # Ignore golden files
     } elsif ($contents =~ /[\001\002\003\004\005\006]/) {
-        # Ignore binrary files
+        # Ignore binary files
     } elsif ($contents =~ /\t/) {
         return 1;
     }

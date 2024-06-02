@@ -9,9 +9,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //*************************************************************************
 
+#include "svdpi.h"
+
 #include <cstdio>
 #include <cstring>
-#include "svdpi.h"
 
 //======================================================================
 

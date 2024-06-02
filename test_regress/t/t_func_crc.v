@@ -19,33 +19,33 @@ module t (/*AUTOARG*/
    integer cyc; initial cyc=1;
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
-	 q_r <= q;
-	 c <= q;
+         cyc <= cyc + 1;
+         q_r <= q;
+         c <= q;
          d <= {d[62:0], ^d[63:48]};
-	 //$write("%d crc(%x,%x)=%x\n", cyc, d, c, q);
-	 if (cyc==1) begin
-	    // Assign inputs randomly
-	    q_r <= 32'h12345678;
-	    c   <= 32'h12345678;
-	    d <= 64'hffffffff_ffffffff;
-	 end
-	 if (cyc==2) begin
-	    d <= 64'hffffffff_ffffffff;
-	 end
-	 if (cyc==3) begin
-	    d <= 64'hffffffff_ffffffff;
-	 end
-	 if (cyc==4) begin
-	    d <= 64'h50183721_81a04b1a;
-	 end
-	 if (cyc==5) begin
-	 end
-	 if (cyc==9) begin
-	    if (q !== 32'h38295e96) $stop;
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         //$write("%d crc(%x,%x)=%x\n", cyc, d, c, q);
+         if (cyc==1) begin
+            // Assign inputs randomly
+            q_r <= 32'h12345678;
+            c   <= 32'h12345678;
+            d <= 64'hffffffff_ffffffff;
+         end
+         if (cyc==2) begin
+            d <= 64'hffffffff_ffffffff;
+         end
+         if (cyc==3) begin
+            d <= 64'hffffffff_ffffffff;
+         end
+         if (cyc==4) begin
+            d <= 64'h50183721_81a04b1a;
+         end
+         if (cyc==5) begin
+         end
+         if (cyc==9) begin
+            if (q !== 32'h38295e96) $stop;
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 
@@ -54,14 +54,14 @@ module t (/*AUTOARG*/
       input [31:0] ci;
       reg [63:0]   drev;
       begin
-	 drev = reverse(di);
-	 crc = newcrc(drev, ci);
+         drev = reverse(di);
+         crc = newcrc(drev, ci);
       end
    endfunction
 
    function [63:0] reverse;
       input [63:0] di;
-      integer 	   i;
+      integer      i;
       begin
          reverse = 64'b0;
          for (i=0; i<64; i=i+1) reverse[i] = di[63-i];
@@ -74,8 +74,8 @@ module t (/*AUTOARG*/
       reg [31:0]   N;
       reg [31:0]   DT;
       begin
-	 N = 32'b0;
-	 // Note this isn't a real CRC code; it's been munged for privacy
+         N = 32'b0;
+         // Note this isn't a real CRC code; it's been munged for privacy
          N[0] = D[59]^D[53]^D[52]^D[49]^D[44]^D[41]^D[40]^D[39]^D[37]^D[32]^D[29]^D[26]^D[22]^D[21]^D[20]^D[16]^D[15]^D[14]^D[9]^D[7]^D[0]
            ^C[29]^C[27]^C[24]^C[23]^C[22]^C[21]^C[19]^C[15]^C[13]^C[10]^C[8]^C[3]^C[1];
          N[1] = D[61]^D[57]^D[51]^D[47]^D[43]^D[37]^D[35]^D[32]^D[28]^D[24]^D[22]^D[21]^D[20]^D[16]^D[12]^D[11]^D[10]^D[8]^D[7]^D[6]^D[1]^D[0]
@@ -140,7 +140,7 @@ module t (/*AUTOARG*/
            ^C[28]^C[25]^C[24]^C[22]^C[20]^C[15]^C[14]^C[12]^C[10]^C[9]^C[4]^C[0];
          N[31] = D[61]^D[58]^D[56]^D[55]^D[54]^D[52]^D[51]^D[50]^D[49]^D[42]^D[38]^D[37]^D[36]^D[34]^D[31]^D[30]^D[27]^D[26]^D[23]^D[22]^D[21]^D[19]^D[18]^D[12]^D[0]
            ^C[28]^C[26]^C[24]^C[21]^C[17]^C[16]^C[14]^C[13]^C[10]^C[8]^C[2];
-	 newcrc = N;
+         newcrc = N;
       end
    endfunction
 endmodule

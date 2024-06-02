@@ -9,10 +9,10 @@
 %Error-PINNOTFOUND: t/t_udp_bad.v:10:13: Pin not found: '__pinNumber1'
    10 |    udp_x x (a, b);
       |             ^
-%Error: t/t_udp_bad.v:15:9: Only inputs and outputs are allowed in udp modules
-   15 |    tri  a_bad;
-      |         ^~~~~
 %Error: t/t_udp_bad.v:17:11: Multiple outputs not allowed in udp modules
    17 |    output c_bad;
       |           ^~~~~
+%Error: t/t_udp_bad.v:15:9: Only inputs and outputs are allowed in udp modules
+   15 |    tri  a_bad;
+      |         ^~~~~
 %Error: Exiting due to

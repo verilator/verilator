@@ -23,16 +23,16 @@ module t (/*AUTOARG*/
 
    always @ (posedge clk) begin
       if (_mode==0) begin
-	 _mode <= 1;
-	 g3 <= 3'b101;
-	 g6 <= 6'b110101;
+         _mode <= 1;
+         g3 <= 3'b101;
+         g6 <= 6'b110101;
       end
       else if (_mode==1) begin
-	 if (b3 !== 3'b110) $stop;
-	 if (b6 !== 6'b100110) $stop;
-	 _mode <= 2;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if (b3 !== 3'b110) $stop;
+         if (b6 !== 6'b100110) $stop;
+         _mode <= 2;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 
@@ -44,7 +44,7 @@ endmodule
 // b[3] = ^g[3] = g[3]
 // b[2] = ^g[3:2]
 // b[1] = ^g[3:1]
-// b[0] = ^g[3:[SZ-1:0] 	cur0]
+// b[0] = ^g[3:[SZ-1:0]         cur0]
 
 module t_func_grey2bin (/*AUTOARG*/
    // Outputs
@@ -61,10 +61,10 @@ module t_func_grey2bin (/*AUTOARG*/
 
    /*AUTOREG*/
    // Beginning of automatic regs (for this module's undeclared outputs)
-   reg [SZ-1:0]		b;
+   reg [SZ-1:0]         b;
    // End of automatics
 
-   integer 	   i;
+   integer         i;
    always @(/*AUTOSENSE*/g)
      for (i=0; i<SZ; i=i+1)
        b[i] = ^(g >> i);  // surefire lint_off_line LATASS

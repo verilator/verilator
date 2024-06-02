@@ -7,7 +7,7 @@
 // used in the test module to set the value of MSB. A number of warnings and
 // errors follow, starting with:
 //
-// %Warning-LITENDIAN: t/t_param_module.v:42: Little bit endian vector: MSB
+// %Warning-ASCRANGE: t/t_param_module.v:42: Ascending bit range vector: MSB
 // < LSB of bit range: -17:0
 //
 // This file ONLY is placed into the Public Domain, for any use, without
@@ -23,11 +23,11 @@ module t (/*AUTOARG*/
    input clk;
 
   localparam logic[4:0] WID = 16;
-  //localparam WID = 16;	// No problem if defined like this
+  //localparam WID = 16;        // No problem if defined like this
   wire [15:0] b33;
 
   test #(WID) i_test_33(.clk (clk),
-			.b   (b33));
+                        .b   (b33));
 
 endmodule
 

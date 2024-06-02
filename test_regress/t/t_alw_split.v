@@ -50,38 +50,44 @@ module t (/*AUTOARG*/
       end
    end
 
+   reg [15:0] l_split_1, l_split_2;
+   always @ (posedge clk) begin
+      l_split_2 <= l_split_1;
+      l_split_1 <= l_split_2 | m_din;
+   end
+
    // (The checker block is an exception, it won't split.)
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc<=cyc+1;
-	 if (cyc==1) begin
-	    m_din <= 16'hfeed;
-	 end
-	 if (cyc==3) begin
-	 end
-	 if (cyc==4) begin
-	    m_din <= 16'he11e;
-	    //$write(" A %x %x\n", a_split_1, a_split_2);
-	    if (!(a_split_1==16'hfeed && a_split_2==16'hfeed)) $stop;
-	    if (!(d_split_1==16'h0112 && d_split_2==16'h0112)) $stop;
+         cyc<=cyc+1;
+         if (cyc==1) begin
+            m_din <= 16'hfeed;
+         end
+         if (cyc==3) begin
+         end
+         if (cyc==4) begin
+            m_din <= 16'he11e;
+            //$write(" A %x %x\n", a_split_1, a_split_2);
+            if (!(a_split_1==16'hfeed && a_split_2==16'hfeed)) $stop;
+            if (!(d_split_1==16'h0112 && d_split_2==16'h0112)) $stop;
             if (!(h_split_1==16'hfeed && h_split_2==16'h0112)) $stop;
-	 end
-	 if (cyc==5) begin
-	    m_din <= 16'he22e;
-	    if (!(a_split_1==16'he11e && a_split_2==16'he11e)) $stop;
-	    if (!(d_split_1==16'h0112 && d_split_2==16'h0112)) $stop;
+         end
+         if (cyc==5) begin
+            m_din <= 16'he22e;
+            if (!(a_split_1==16'he11e && a_split_2==16'he11e)) $stop;
+            if (!(d_split_1==16'h0112 && d_split_2==16'h0112)) $stop;
             if (!(h_split_1==16'hfeed && h_split_2==16'h0112)) $stop;
-	 end
-	 if (cyc==6) begin
-	    m_din <= 16'he33e;
-	    if (!(a_split_1==16'he22e && a_split_2==16'he22e)) $stop;
-	    if (!(d_split_1==16'h1ee1 && d_split_2==16'h0112)) $stop;
+         end
+         if (cyc==6) begin
+            m_din <= 16'he33e;
+            if (!(a_split_1==16'he22e && a_split_2==16'he22e)) $stop;
+            if (!(d_split_1==16'h1ee1 && d_split_2==16'h0112)) $stop;
             if (!(h_split_1==16'he11e && h_split_2==16'h1ee1)) $stop;
-	 end
-	 if (cyc==7) begin
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         end
+         if (cyc==7) begin
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end  // always @ (posedge clk)
 

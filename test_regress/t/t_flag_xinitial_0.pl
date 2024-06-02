@@ -18,7 +18,7 @@ execute(
     check_finished => 1,
     );
 
-file_grep_not("$Self->{obj_dir}/$Self->{VM_PREFIX}__Slow.cpp", qr/VL_RAND_RESET/);
+file_grep_not("$Self->{obj_dir}/$Self->{vm_prefix}___024root__Slow.cpp", qr/VL_RAND_RESET/);
 
 ok(1);
 1;

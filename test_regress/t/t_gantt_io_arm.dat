@@ -1,0 +1,60 @@
+VLPROFVERSION 2.0
+VLPROF arg +verilator+prof+exec+start+1
+VLPROF arg +verilator+prof+exec+window+2
+VLPROF stat threads 2
+VLPROF stat yields 51
+VLPROFPROC processor    : 0
+VLPROFPROC model name   : Phytium,FT-2500/128
+VLPROFPROC BogoMIPS     : 100.00
+VLPROFPROC Features     : fp asimd evtstrm aes pmull sha1 sha2 crc32 cpuid
+VLPROFPROC CPU implementer      : 0x70
+VLPROFPROC CPU architecture: 8
+VLPROFPROC CPU variant  : 0x1
+VLPROFPROC CPU part     : 0x663
+VLPROFPROC CPU revision : 3
+VLPROFPROC 
+VLPROFPROC processor    : 1
+VLPROFPROC model name   : Phytium,FT-2500/128
+VLPROFPROC BogoMIPS     : 100.00
+VLPROFPROC Features     : fp asimd evtstrm aes pmull sha1 sha2 crc32 cpuid
+VLPROFPROC CPU implementer      : 0x70
+VLPROFPROC CPU architecture: 8
+VLPROFPROC CPU variant  : 0x1
+VLPROFPROC CPU part     : 0x663
+VLPROFPROC CPU revision : 3
+VLPROFPROC 
+VLPROFPROC processor    : 2
+VLPROFPROC model name   : Phytium,FT-2500/128
+VLPROFPROC BogoMIPS     : 100.00
+VLPROFPROC Features     : fp asimd evtstrm aes pmull sha1 sha2 crc32 cpuid
+VLPROFPROC CPU implementer      : 0x70
+VLPROFPROC CPU architecture: 8
+VLPROFPROC CPU variant  : 0x1
+VLPROFPROC CPU part     : 0x663
+VLPROFPROC CPU revision : 3
+VLPROFPROC 
+VLPROFPROC processor    : 3
+VLPROFPROC model name   : Phytium,FT-2500/128
+VLPROFPROC BogoMIPS     : 100.00
+VLPROFPROC Features     : fp asimd evtstrm aes pmull sha1 sha2 crc32 cpuid
+VLPROFPROC CPU implementer      : 0x70
+VLPROFPROC CPU architecture: 8
+VLPROFPROC CPU variant  : 0x1
+VLPROFPROC CPU part     : 0x663
+VLPROFPROC CPU revision : 3
+VLPROFPROC 
+VLPROFTHREAD 0
+VLPROFEXEC EXEC_GRAPH_BEGIN 58532
+VLPROFEXEC MTASK_BEGIN 90465 id 85 predictStart 14315 cpu 2
+VLPROFEXEC MTASK_END 155034 id 85 predictCost 30533
+VLPROFEXEC MTASK_BEGIN 156555 id 79 predictStart 44848 cpu 2
+VLPROFEXEC MTASK_END 294309 id 79 predictCost 48001
+VLPROFEXEC EXEC_GRAPH_END 300000
+VLPROFTHREAD 1
+VLPROFEXEC MTASK_BEGIN 77352 id 90 predictStart 14315 cpu 3
+VLPROFEXEC MTASK_END 78511 id 90 predictCost 21592
+VLPROFEXEC MTASK_BEGIN 79799 id 81 predictStart 35907 cpu 3
+VLPROFEXEC MTASK_END 80667 id 81 predictCost 29215
+VLPROFEXEC MTASK_BEGIN 81746 id 87 predictStart 65147 cpu 3
+VLPROFEXEC MTASK_END 82633 id 87 predictCost 33809
+VLPROF stat ticks 300000

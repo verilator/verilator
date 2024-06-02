@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -14,28 +14,26 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstMT.h"
 
-#include "V3Global.h"
 #include "V3EmitV.h"
+
 #include "V3EmitCBase.h"
 
-#include <algorithm>
-#include <map>
 #include <vector>
 
-//######################################################################
-// Emit statements and math operators
+VL_DEFINE_DEBUG_FUNCTIONS;
 
-class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
+// ######################################################################
+//  Emit statements and expressions
+
+class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     // MEMBERS
     bool m_suppressSemi = false;
-    bool m_suppressUnknown = false;
+    const bool m_suppressUnknown = false;
     AstSenTree* m_sensesp;  // Domain for printing one a ALWAYS under a ACTIVE
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     virtual void puts(const string& str) = 0;
     virtual void putbs(const string& str) = 0;
@@ -52,371 +50,405 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) override { iterateAndNextNull(nodep->modulesp()); }
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNetlist* nodep) override { iterateAndNextConstNull(nodep->modulesp()); }
+    void visit(AstNodeModule* nodep) override {
         putfs(nodep, nodep->verilogKwd() + " " + prefixNameProtect(nodep) + ";\n");
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         putqs(nodep, "end" + nodep->verilogKwd() + "\n");
     }
-    virtual void visit(AstPort* nodep) override {}
-    virtual void visit(AstNodeFTask* nodep) override {
+    void visit(AstPort* nodep) override {}
+    void visit(AstNodeFTask* nodep) override {
         putfs(nodep, nodep->isFunction() ? "function" : "task");
         puts(" ");
         puts(nodep->prettyName());
         puts(";\n");
         // Only putfs the first time for each visitor; later for same node is putqs
-        putqs(nodep, "begin\n");
-        iterateAndNextNull(nodep->stmtsp());
-        putqs(nodep, "end\n");
+        iterateAndNextConstNull(nodep->stmtsp());
+        putfs(nodep, nodep->isFunction() ? "endfunction\n" : "endtask\n");
     }
 
-    virtual void visit(AstBegin* nodep) override {
+    void visit(AstBegin* nodep) override {
         if (nodep->name() == "") {
             putbs("begin\n");
         } else {
             putbs("begin : " + nodep->name() + "\n");
         }
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         puts("end\n");
     }
-    virtual void visit(AstFork* nodep) override {
+    void visit(AstFork* nodep) override {
         if (nodep->name() == "") {
             putbs("fork\n");
         } else {
             putbs("fork : " + nodep->name() + "\n");
         }
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         puts(nodep->joinType().verilogKwd());
         puts("\n");
     }
-    virtual void visit(AstFinal* nodep) override {
+    void visit(AstFinal* nodep) override {
         putfs(nodep, "final begin\n");
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         putqs(nodep, "end\n");
     }
-    virtual void visit(AstInitial* nodep) override {
+    void visit(AstInitial* nodep) override {
         putfs(nodep, "initial begin\n");
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         putqs(nodep, "end\n");
     }
-    virtual void visit(AstAlways* nodep) override {
+    void visit(AstInitialAutomatic* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstInitialStatic* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstAlways* nodep) override {
         putfs(nodep, "always ");
         if (m_sensesp) {
-            iterateAndNextNull(m_sensesp);
+            iterateAndNextConstNull(m_sensesp);
         }  // In active
         else {
-            iterateAndNextNull(nodep->sensesp());
+            iterateAndNextConstNull(nodep->sensesp());
         }
         putbs(" begin\n");
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextConstNull(nodep->stmtsp());
         putqs(nodep, "end\n");
     }
-    virtual void visit(AstAlwaysPublic* nodep) override {
+    void visit(AstAlwaysPublic* nodep) override {
         putfs(nodep, "/*verilator public_flat_rw ");
         if (m_sensesp) {
-            iterateAndNextNull(m_sensesp);
+            iterateAndNextConstNull(m_sensesp);
         }  // In active
         else {
-            iterateAndNextNull(nodep->sensesp());
+            iterateAndNextConstNull(nodep->sensesp());
         }
         putqs(nodep, " ");
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextConstNull(nodep->stmtsp());
         putqs(nodep, "*/\n");
     }
-    virtual void visit(AstNodeAssign* nodep) override {
-        iterateAndNextNull(nodep->lhsp());
+    void visit(AstNodeAssign* nodep) override {
+        if (VN_IS(nodep, AssignForce)) puts("force ");
+        iterateAndNextConstNull(nodep->lhsp());
         putfs(nodep, " " + nodep->verilogKwd() + " ");
-        iterateAndNextNull(nodep->rhsp());
+        iterateAndNextConstNull(nodep->rhsp());
         if (!m_suppressSemi) puts(";\n");
     }
-    virtual void visit(AstAssignDly* nodep) override {
-        iterateAndNextNull(nodep->lhsp());
+    void visit(AstAssignDly* nodep) override {
+        iterateAndNextConstNull(nodep->lhsp());
         putfs(nodep, " <= ");
-        iterateAndNextNull(nodep->rhsp());
+        iterateAndNextConstNull(nodep->rhsp());
         puts(";\n");
     }
-    virtual void visit(AstAssignAlias* nodep) override {
+    void visit(AstAssignAlias* nodep) override {
         putbs("alias ");
-        iterateAndNextNull(nodep->lhsp());
+        iterateAndNextConstNull(nodep->lhsp());
         putfs(nodep, " = ");
-        iterateAndNextNull(nodep->rhsp());
+        iterateAndNextConstNull(nodep->rhsp());
         if (!m_suppressSemi) puts(";\n");
     }
-    virtual void visit(AstAssignW* nodep) override {
+    void visit(AstAssignW* nodep) override {
         putfs(nodep, "assign ");
-        iterateAndNextNull(nodep->lhsp());
+        iterateAndNextConstNull(nodep->lhsp());
         putbs(" = ");
-        iterateAndNextNull(nodep->rhsp());
+        iterateAndNextConstNull(nodep->rhsp());
         if (!m_suppressSemi) puts(";\n");
     }
-    virtual void visit(AstBreak*) override {
+    void visit(AstRelease* nodep) override {
+        puts("release ");
+        iterateAndNextConstNull(nodep->lhsp());
+        if (!m_suppressSemi) puts(";\n");
+    }
+    void visit(AstBreak*) override {
         putbs("break");
         if (!m_suppressSemi) puts(";\n");
     }
-    virtual void visit(AstSenTree* nodep) override {
+    void visit(AstSenTree* nodep) override {
         // AstSenItem is called for dumping in isolation by V3Order
         putfs(nodep, "@(");
         for (AstNode* expp = nodep->sensesp(); expp; expp = expp->nextp()) {
-            iterate(expp);
+            iterateConst(expp);
             if (expp->nextp()) putqs(expp->nextp(), " or ");
         }
         puts(")");
     }
-    virtual void visit(AstSenItem* nodep) override {
+    void visit(AstSenItem* nodep) override {
         putfs(nodep, "");
         puts(nodep->edgeType().verilogKwd());
         if (nodep->sensp()) puts(" ");
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
-    virtual void visit(AstNodeCase* nodep) override {
+    void visit(AstNodeCase* nodep) override {
         putfs(nodep, "");
-        if (const AstCase* casep = VN_CAST(nodep, Case)) {
+        if (const AstCase* const casep = VN_CAST(nodep, Case)) {
             if (casep->priorityPragma()) puts("priority ");
             if (casep->uniquePragma()) puts("unique ");
             if (casep->unique0Pragma()) puts("unique0 ");
         }
         puts(nodep->verilogKwd());
         puts(" (");
-        iterateAndNextNull(nodep->exprp());
+        iterateAndNextConstNull(nodep->exprp());
         puts(")\n");
-        if (const AstCase* casep = VN_CAST(nodep, Case)) {
+        if (const AstCase* const casep = VN_CAST(nodep, Case)) {
             if (casep->fullPragma() || casep->parallelPragma()) {
                 puts(" // synopsys");
                 if (casep->fullPragma()) puts(" full_case");
                 if (casep->parallelPragma()) puts(" parallel_case");
             }
         }
-        iterateAndNextNull(nodep->itemsp());
+        iterateAndNextConstNull(nodep->itemsp());
         putqs(nodep, "endcase\n");
     }
-    virtual void visit(AstCaseItem* nodep) override {
+    void visit(AstCaseItem* nodep) override {
         if (nodep->condsp()) {
-            iterateAndNextNull(nodep->condsp());
+            iterateAndNextConstNull(nodep->condsp());
         } else {
             putbs("default");
         }
         putfs(nodep, ": begin ");
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextConstNull(nodep->stmtsp());
         putqs(nodep, "end\n");
     }
-    virtual void visit(AstComment* nodep) override {
-        puts(string("// ") + nodep->name() + "\n");
-        iterateChildren(nodep);
+    void visit(AstComment* nodep) override {
+        puts("// "s + nodep->name() + "\n");
+        iterateChildrenConst(nodep);
     }
-    virtual void visit(AstContinue*) override {
+    void visit(AstContinue*) override {
         putbs("continue");
         if (!m_suppressSemi) puts(";\n");
     }
-    virtual void visit(AstCoverDecl*) override {}  // N/A
-    virtual void visit(AstCoverInc*) override {}  // N/A
-    virtual void visit(AstCoverToggle*) override {}  // N/A
+    void visit(AstCoverDecl*) override {}  // N/A
+    void visit(AstCoverInc*) override {}  // N/A
+    void visit(AstCoverToggle*) override {}  // N/A
 
     void visitNodeDisplay(AstNode* nodep, AstNode* fileOrStrgp, const string& text,
                           AstNode* exprsp) {
         putfs(nodep, nodep->verilogKwd());
         putbs("(");
         if (fileOrStrgp) {
-            iterateAndNextNull(fileOrStrgp);
+            iterateAndNextConstNull(fileOrStrgp);
             putbs(", ");
         }
         putsQuoted(text);
         for (AstNode* expp = exprsp; expp; expp = expp->nextp()) {
             puts(", ");
-            iterateAndNextNull(expp);
+            iterateAndNextConstNull(expp);
         }
         puts(");\n");
     }
-    virtual void visit(AstDisable* nodep) override { putbs("disable " + nodep->name() + ";\n"); }
-    virtual void visit(AstDisplay* nodep) override {
+    void visit(AstDisable* nodep) override { putbs("disable " + nodep->name() + ";\n"); }
+    void visit(AstDisplay* nodep) override {
         visitNodeDisplay(nodep, nodep->filep(), nodep->fmtp()->text(), nodep->fmtp()->exprsp());
     }
-    virtual void visit(AstElabDisplay* nodep) override {
+    void visit(AstElabDisplay* nodep) override {
         visitNodeDisplay(nodep, nullptr, nodep->fmtp()->text(), nodep->fmtp()->exprsp());
     }
-    virtual void visit(AstFScanF* nodep) override {
+    void visit(AstFScanF* nodep) override {
         visitNodeDisplay(nodep, nodep->filep(), nodep->text(), nodep->exprsp());
     }
-    virtual void visit(AstSScanF* nodep) override {
+    void visit(AstSScanF* nodep) override {
         visitNodeDisplay(nodep, nodep->fromp(), nodep->text(), nodep->exprsp());
     }
-    virtual void visit(AstSFormat* nodep) override {
+    void visit(AstSFormat* nodep) override {
         visitNodeDisplay(nodep, nodep->lhsp(), nodep->fmtp()->text(), nodep->fmtp()->exprsp());
     }
-    virtual void visit(AstSFormatF* nodep) override {
+    void visit(AstSFormatF* nodep) override {
         visitNodeDisplay(nodep, nullptr, nodep->text(), nodep->exprsp());
     }
-    virtual void visit(AstFOpen* nodep) override {
+    void visit(AstFOpen* nodep) override {
         putfs(nodep, nodep->verilogKwd());
         putbs("(");
-        iterateAndNextNull(nodep->filenamep());
+        iterateAndNextConstNull(nodep->filenamep());
         putbs(", ");
-        iterateAndNextNull(nodep->modep());
+        iterateAndNextConstNull(nodep->modep());
         puts(");\n");
     }
-    virtual void visit(AstFOpenMcd* nodep) override {
+    void visit(AstFOpenMcd* nodep) override {
         putfs(nodep, nodep->verilogKwd());
         putbs("(");
-        iterateAndNextNull(nodep->filenamep());
+        iterateAndNextConstNull(nodep->filenamep());
         puts(");\n");
     }
-    virtual void visit(AstFClose* nodep) override {
+    void visit(AstFClose* nodep) override {
         putfs(nodep, nodep->verilogKwd());
         putbs("(");
-        if (nodep->filep()) iterateAndNextNull(nodep->filep());
+        if (nodep->filep()) iterateAndNextConstNull(nodep->filep());
         puts(");\n");
     }
-    virtual void visit(AstFFlush* nodep) override {
+    void visit(AstFFlush* nodep) override {
         putfs(nodep, nodep->verilogKwd());
         putbs("(");
-        if (nodep->filep()) iterateAndNextNull(nodep->filep());
+        if (nodep->filep()) iterateAndNextConstNull(nodep->filep());
         puts(");\n");
     }
-    virtual void visit(AstJumpBlock* nodep) override {
+    void visit(AstJumpBlock* nodep) override {
         putbs("begin : label" + cvtToStr(nodep->labelNum()) + "\n");
-        if (nodep->stmtsp()) iterateAndNextNull(nodep->stmtsp());
+        if (nodep->stmtsp()) iterateAndNextConstNull(nodep->stmtsp());
         puts("end\n");
     }
-    virtual void visit(AstJumpGo* nodep) override {
+    void visit(AstJumpGo* nodep) override {
         putbs("disable label" + cvtToStr(nodep->labelp()->blockp()->labelNum()) + ";\n");
     }
-    virtual void visit(AstJumpLabel* nodep) override {
-        putbs("// " + cvtToStr(nodep->blockp()) + ":\n");
-    }
-    virtual void visit(AstNodeReadWriteMem* nodep) override {
+    void visit(AstJumpLabel* nodep) override { putbs("// " + cvtToStr(nodep->blockp()) + ":\n"); }
+    void visit(AstNodeReadWriteMem* nodep) override {
         putfs(nodep, nodep->verilogKwd());
         putbs("(");
-        if (nodep->filenamep()) iterateAndNextNull(nodep->filenamep());
+        if (nodep->filenamep()) iterateAndNextConstNull(nodep->filenamep());
         putbs(", ");
-        if (nodep->memp()) iterateAndNextNull(nodep->memp());
+        if (nodep->memp()) iterateAndNextConstNull(nodep->memp());
         if (nodep->lsbp()) {
             putbs(", ");
-            iterateAndNextNull(nodep->lsbp());
+            iterateAndNextConstNull(nodep->lsbp());
         }
         if (nodep->msbp()) {
             putbs(", ");
-            iterateAndNextNull(nodep->msbp());
+            iterateAndNextConstNull(nodep->msbp());
         }
         puts(");\n");
     }
-    virtual void visit(AstSysFuncAsTask* nodep) override {
-        iterateAndNextNull(nodep->lhsp());
+    void visit(AstSysFuncAsTask* nodep) override {
+        iterateAndNextConstNull(nodep->lhsp());
         puts(";\n");
     }
-    virtual void visit(AstSysIgnore* nodep) override {
+    void visit(AstSysIgnore* nodep) override {
         putfs(nodep, nodep->verilogKwd());
         putbs("(");
-        iterateAndNextNull(nodep->exprsp());
+        iterateAndNextConstNull(nodep->exprsp());
         puts(");\n");
     }
-    virtual void visit(AstNodeFor* nodep) override {
+    void visit(AstNodeFor* nodep) override {
         putfs(nodep, "for (");
         {
             VL_RESTORER(m_suppressSemi);
             m_suppressSemi = true;
-            iterateAndNextNull(nodep->initsp());
+            iterateAndNextConstNull(nodep->initsp());
             puts(";");
-            iterateAndNextNull(nodep->condp());
+            iterateAndNextConstNull(nodep->condp());
             puts(";");
-            iterateAndNextNull(nodep->incsp());
+            iterateAndNextConstNull(nodep->incsp());
         }
         puts(") begin\n");
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextConstNull(nodep->stmtsp());
         putqs(nodep, "end\n");
     }
-    virtual void visit(AstRepeat* nodep) override {
+    void visit(AstRepeat* nodep) override {
         putfs(nodep, "repeat (");
-        iterateAndNextNull(nodep->countp());
+        iterateAndNextConstNull(nodep->countp());
         puts(") begin\n");
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextConstNull(nodep->stmtsp());
         putfs(nodep, "end\n");
     }
-    virtual void visit(AstWhile* nodep) override {
-        iterateAndNextNull(nodep->precondsp());
+    void visit(AstWhile* nodep) override {
+        iterateAndNextConstNull(nodep->precondsp());
         putfs(nodep, "while (");
-        iterateAndNextNull(nodep->condp());
+        iterateAndNextConstNull(nodep->condp());
         puts(") begin\n");
-        iterateAndNextNull(nodep->bodysp());
-        iterateAndNextNull(nodep->incsp());
-        iterateAndNextNull(nodep->precondsp());  // Need to recompute before next loop
+        iterateAndNextConstNull(nodep->stmtsp());
+        iterateAndNextConstNull(nodep->incsp());
+        iterateAndNextConstNull(nodep->precondsp());  // Need to recompute before next loop
         putfs(nodep, "end\n");
     }
-    virtual void visit(AstNodeIf* nodep) override {
+    void visit(AstNodeIf* nodep) override {
         putfs(nodep, "");
-        if (const AstIf* ifp = VN_CAST(nodep, If)) {
+        if (const AstIf* const ifp = VN_CAST(nodep, If)) {
             if (ifp->priorityPragma()) puts("priority ");
             if (ifp->uniquePragma()) puts("unique ");
             if (ifp->unique0Pragma()) puts("unique0 ");
         }
         puts("if (");
-        iterateAndNextNull(nodep->condp());
+        iterateAndNextConstNull(nodep->condp());
         puts(") begin\n");
-        iterateAndNextNull(nodep->ifsp());
+        iterateAndNextConstNull(nodep->thensp());
         if (nodep->elsesp()) {
             putqs(nodep, "end\n");
             putqs(nodep, "else begin\n");
-            iterateAndNextNull(nodep->elsesp());
+            iterateAndNextConstNull(nodep->elsesp());
         }
         putqs(nodep, "end\n");
     }
-    virtual void visit(AstPast* nodep) override {
+    void visit(AstPast* nodep) override {
         putfs(nodep, "$past(");
-        iterateAndNextNull(nodep->exprp());
+        iterateAndNextConstNull(nodep->exprp());
         if (nodep->ticksp()) {
             puts(", ");
-            iterateAndNextNull(nodep->ticksp());
+            iterateAndNextConstNull(nodep->ticksp());
         }
         puts(")");
     }
-    virtual void visit(AstReturn* nodep) override {
+    void visit(AstReturn* nodep) override {
         putfs(nodep, "return ");
-        iterateAndNextNull(nodep->lhsp());
+        iterateAndNextConstNull(nodep->lhsp());
         puts(";\n");
     }
-    virtual void visit(AstStop* nodep) override { putfs(nodep, "$stop;\n"); }
-    virtual void visit(AstFinish* nodep) override { putfs(nodep, "$finish;\n"); }
-    virtual void visit(AstNodeSimpleText* nodep) override {
+    void visit(AstStop* nodep) override { putfs(nodep, "$stop;\n"); }
+    void visit(AstFinish* nodep) override { putfs(nodep, "$finish;\n"); }
+    void visit(AstStmtExpr* nodep) override {
+        iterateConst(nodep->exprp());
+        puts(";\n");
+    }
+    void visit(AstNodeSimpleText* nodep) override {
         if (nodep->tracking() || m_trackText) {
             puts(nodep->text());
         } else {
             putsNoTracking(nodep->text());
         }
     }
-    virtual void visit(AstTextBlock* nodep) override {
-        visit(VN_CAST(nodep, NodeSimpleText));
+    void visit(AstTextBlock* nodep) override {
+        visit(static_cast<AstNodeSimpleText*>(nodep));
         {
             VL_RESTORER(m_suppressSemi);
             m_suppressVarSemi = nodep->commas();
             for (AstNode* childp = nodep->nodesp(); childp; childp = childp->nextp()) {
-                iterate(childp);
+                iterateConst(childp);
                 if (nodep->commas() && childp->nextp()) puts(", ");
             }
         }
     }
-    virtual void visit(AstScopeName* nodep) override {}
-    virtual void visit(AstCStmt* nodep) override {
+    void visit(AstScopeName* nodep) override {}
+    void visit(AstCStmt* nodep) override {
         putfs(nodep, "$_CSTMT(");
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextConstNull(nodep->exprsp());
         puts(");\n");
     }
-    virtual void visit(AstCMath* nodep) override {
-        putfs(nodep, "$_CMATH(");
-        iterateAndNextNull(nodep->bodysp());
-        puts(");\n");
+    void visit(AstCExpr* nodep) override {
+        putfs(nodep, "$_CEXPR(");
+        iterateAndNextConstNull(nodep->exprsp());
+        puts(")");
     }
-    virtual void visit(AstUCStmt* nodep) override {
+    void visit(AstUCStmt* nodep) override {
         putfs(nodep, "$c(");
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextConstNull(nodep->exprsp());
         puts(");\n");
     }
-    virtual void visit(AstUCFunc* nodep) override {
+    void visit(AstUCFunc* nodep) override {
         putfs(nodep, "$c(");
-        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextConstNull(nodep->exprsp());
+        puts(")");
+    }
+    void visit(AstExprStmt* nodep) override {
+        putfs(nodep, "$_EXPRSTMT(\n");
+        iterateAndNextConstNull(nodep->stmtsp());
+        putbs(", ");
+        puts(");\n");
+    }
+
+    void visit(AstCMethodHard* nodep) override {
+        iterateConst(nodep->fromp());
+        puts("." + nodep->name() + "(");
+        for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
+            if (pinp != nodep->pinsp()) puts(", ");
+            iterateConst(pinp);
+        }
+        puts(")");
+    }
+    void visit(AstCMethodCall* nodep) override {
+        iterateConst(nodep->fromp());
+        puts("." + nodep->name() + "(");
+        for (AstNode* pinp = nodep->argsp(); pinp; pinp = pinp->nextp()) {
+            if (pinp != nodep->argsp()) puts(", ");
+            iterateConst(pinp);
+        }
         puts(")");
     }
 
     // Operators
     virtual void emitVerilogFormat(AstNode* nodep, const string& format, AstNode* lhsp = nullptr,
-                                   AstNode* rhsp = nullptr, AstNode* thsp = nullptr,
+                                   AstNode* const rhsp = nullptr, AstNode* thsp = nullptr,
                                    AstNode* fhsp = nullptr) {
         // Look at emitVerilog() format for term/uni/dual/triops,
         // and write out appropriate text.
@@ -444,27 +476,27 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
                 case 'k': putbs(""); break;
                 case 'l': {
                     UASSERT_OBJ(lhsp, nodep, "emitVerilog() references undef node");
-                    iterateAndNextNull(lhsp);
+                    iterateAndNextConstNull(lhsp);
                     break;
                 }
                 case 'r': {
                     UASSERT_OBJ(rhsp, nodep, "emitVerilog() references undef node");
-                    iterateAndNextNull(rhsp);
+                    iterateAndNextConstNull(rhsp);
                     break;
                 }
                 case 't': {
                     UASSERT_OBJ(thsp, nodep, "emitVerilog() references undef node");
-                    iterateAndNextNull(thsp);
+                    iterateAndNextConstNull(thsp);
                     break;
                 }
                 case 'o': {
                     UASSERT_OBJ(thsp, nodep, "emitVerilog() references undef node");
-                    iterateAndNextNull(fhsp);
+                    iterateAndNextConstNull(fhsp);
                     break;
                 }
                 case 'd': {
                     UASSERT_OBJ(nodep->dtypep(), nodep, "emitVerilog() references undef node");
-                    iterateAndNextNull(nodep->dtypep());
+                    iterateAndNextConstNull(nodep->dtypep());
                     break;
                 }
                 default: nodep->v3fatalSrc("Unknown emitVerilog format code: %" << c); break;
@@ -473,51 +505,59 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         }
     }
 
-    virtual void visit(AstNodeTermop* nodep) override {
-        emitVerilogFormat(nodep, nodep->emitVerilog());
-    }
-    virtual void visit(AstNodeUniop* nodep) override {
+    void visit(AstNodeTermop* nodep) override { emitVerilogFormat(nodep, nodep->emitVerilog()); }
+    void visit(AstNodeUniop* nodep) override {
         emitVerilogFormat(nodep, nodep->emitVerilog(), nodep->lhsp());
     }
-    virtual void visit(AstNodeBiop* nodep) override {
+    void visit(AstNodeBiop* nodep) override {
         emitVerilogFormat(nodep, nodep->emitVerilog(), nodep->lhsp(), nodep->rhsp());
     }
-    virtual void visit(AstNodeTriop* nodep) override {
+    void visit(AstNodeTriop* nodep) override {
         emitVerilogFormat(nodep, nodep->emitVerilog(), nodep->lhsp(), nodep->rhsp(),
                           nodep->thsp());
     }
-    virtual void visit(AstAttrOf* nodep) override {
+    void visit(AstMemberSel* nodep) override {
+        iterateConst(nodep->fromp());
+        puts(".");
+        puts(nodep->prettyName());
+    }
+    void visit(AstStructSel* nodep) override {
+        iterateConst(nodep->fromp());
+        puts(".");
+        puts(nodep->prettyName());
+    }
+    void visit(AstAttrOf* nodep) override {
         putfs(nodep, "$_ATTROF(");
-        iterateAndNextNull(nodep->fromp());
+        iterateAndNextConstNull(nodep->fromp());
         if (nodep->dimp()) {
             putbs(", ");
-            iterateAndNextNull(nodep->dimp());
+            iterateAndNextConstNull(nodep->dimp());
         }
         puts(")");
     }
-    virtual void visit(AstInitArray* nodep) override {
+    void visit(AstInitArray* nodep) override {
         putfs(nodep, "'{");
         int comma = 0;
-        const AstInitArray::KeyItemMap& mapr = nodep->map();
+        const auto& mapr = nodep->map();
         for (const auto& itr : mapr) {
             if (comma++) putbs(", ");
             puts(cvtToStr(itr.first));
             puts(":");
-            AstNode* valuep = itr.second->valuep();
-            iterate(valuep);
+            AstNode* const valuep = itr.second->valuep();
+            iterateConst(valuep);
         }
         puts("}");
     }
-    virtual void visit(AstNodeCond* nodep) override {
+    void visit(AstNodeCond* nodep) override {
         putbs("(");
-        iterateAndNextNull(nodep->condp());
+        iterateAndNextConstNull(nodep->condp());
         putfs(nodep, " ? ");
-        iterateAndNextNull(nodep->expr1p());
+        iterateAndNextConstNull(nodep->thenp());
         putbs(" : ");
-        iterateAndNextNull(nodep->expr2p());
+        iterateAndNextConstNull(nodep->elsep());
         puts(")");
     }
-    virtual void visit(AstRange* nodep) override {
+    void visit(AstRange* nodep) override {
         puts("[");
         if (VN_IS(nodep->leftp(), Const) && VN_IS(nodep->rightp(), Const)) {
             // Looks nicer if we print [1:0] rather than [32'sh1:32sh0]
@@ -526,82 +566,89 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
             puts(cvtToStr(nodep->rightConst()));
             puts("]");
         } else {
-            iterateAndNextNull(nodep->leftp());
+            iterateAndNextConstNull(nodep->leftp());
             puts(":");
-            iterateAndNextNull(nodep->rightp());
+            iterateAndNextConstNull(nodep->rightp());
             puts("]");
         }
     }
-    virtual void visit(AstSel* nodep) override {
-        iterateAndNextNull(nodep->fromp());
+    void visit(AstSel* nodep) override {
+        iterateAndNextConstNull(nodep->fromp());
         puts("[");
         if (VN_IS(nodep->lsbp(), Const)) {
             if (nodep->widthp()->isOne()) {
                 if (VN_IS(nodep->lsbp(), Const)) {
-                    puts(cvtToStr(VN_CAST(nodep->lsbp(), Const)->toSInt()));
+                    puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt()));
                 } else {
-                    iterateAndNextNull(nodep->lsbp());
+                    iterateAndNextConstNull(nodep->lsbp());
                 }
             } else {
-                puts(cvtToStr(VN_CAST(nodep->lsbp(), Const)->toSInt()
-                              + VN_CAST(nodep->widthp(), Const)->toSInt() - 1));
+                puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt()
+                              + VN_AS(nodep->widthp(), Const)->toSInt() - 1));
                 puts(":");
-                puts(cvtToStr(VN_CAST(nodep->lsbp(), Const)->toSInt()));
+                puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt()));
             }
         } else {
-            iterateAndNextNull(nodep->lsbp());
+            iterateAndNextConstNull(nodep->lsbp());
             putfs(nodep, "+:");
-            iterateAndNextNull(nodep->widthp());
+            iterateAndNextConstNull(nodep->widthp());
             puts("]");
         }
         puts("]");
     }
-    virtual void visit(AstSliceSel* nodep) override {
-        iterateAndNextNull(nodep->fromp());
+    void visit(AstSliceSel* nodep) override {
+        iterateAndNextConstNull(nodep->fromp());
         puts(cvtToStr(nodep->declRange()));
     }
-    virtual void visit(AstTypedef* nodep) override {
+    void visit(AstTypedef* nodep) override {
         putfs(nodep, "typedef ");
-        iterateAndNextNull(nodep->dtypep());
+        iterateAndNextConstNull(nodep->dtypep());
         puts(" ");
         puts(nodep->prettyName());
         puts(";\n");
     }
-    virtual void visit(AstBasicDType* nodep) override {
+    void visit(AstBasicDType* nodep) override {
         if (nodep->isSigned()) putfs(nodep, "signed ");
         putfs(nodep, nodep->prettyName());
         if (nodep->rangep()) {
             puts(" ");
-            iterateAndNextNull(nodep->rangep());
+            iterateAndNextConstNull(nodep->rangep());
             puts(" ");
         } else if (nodep->isRanged()) {
             puts(" [");
             puts(cvtToStr(nodep->hi()));
-            puts(":0] ");
+            puts(":");
+            puts(cvtToStr(nodep->lo()));
+            puts("] ");
         }
     }
-    virtual void visit(AstConstDType* nodep) override {
+    void visit(AstConstDType* nodep) override {
         putfs(nodep, "const ");
-        iterate(nodep->subDTypep());
+        iterateConst(nodep->subDTypep());
     }
-    virtual void visit(AstNodeArrayDType* nodep) override {
-        iterate(nodep->subDTypep());
-        iterateAndNextNull(nodep->rangep());
+    void visit(AstNodeArrayDType* nodep) override {
+        iterateConst(nodep->subDTypep());
+        iterateAndNextConstNull(nodep->rangep());
     }
-    virtual void visit(AstNodeUOrStructDType* nodep) override {
+    void visit(AstRefDType* nodep) override { iterateConst(nodep->skipRefp()); }
+    void visit(AstNodeUOrStructDType* nodep) override {
         puts(nodep->verilogKwd() + " ");
         if (nodep->packed()) puts("packed ");
         puts("\n");
-        iterateAndNextNull(nodep->membersp());
+        puts("{");
+        for (AstMemberDType* itemp = nodep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            iterateConst(itemp);
+            puts(";");
+        }
         puts("}");
     }
-    virtual void visit(AstMemberDType* nodep) override {
-        iterate(nodep->subDTypep());
+    void visit(AstMemberDType* nodep) override {
+        iterateConst(nodep->subDTypep());
         puts(" ");
         puts(nodep->name());
-        puts("}");
     }
-    virtual void visit(AstNodeFTaskRef* nodep) override {
+    void visit(AstNodeFTaskRef* nodep) override {
         if (nodep->dotted() != "") {
             putfs(nodep, nodep->dotted());
             puts(".");
@@ -610,36 +657,54 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
             putfs(nodep, nodep->prettyName());
         }
         puts("(");
-        iterateAndNextNull(nodep->pinsp());
+        iterateAndNextConstNull(nodep->pinsp());
         puts(")");
     }
-    virtual void visit(AstArg* nodep) override { iterateAndNextNull(nodep->exprp()); }
-    virtual void visit(AstPrintTimeScale* nodep) override {
+    void visit(AstCCall* nodep) override {
+        puts(nodep->funcp()->name());
+        puts("(");
+        iterateAndNextConstNull(nodep->argsp());
+        puts(")");
+    }
+    void visit(AstArg* nodep) override { iterateAndNextConstNull(nodep->exprp()); }
+    void visit(AstPrintTimeScale* nodep) override {
         puts(nodep->verilogKwd());
         puts(";\n");
     }
 
     // Terminals
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         if (nodep->varScopep()) {
             putfs(nodep, nodep->varScopep()->prettyName());
         } else {
-            putfs(nodep, nodep->hiernameToUnprot());
-            puts(nodep->hiernameToProt());
-            puts(nodep->varp()->prettyName());
+            if (nodep->varp()) {
+                if (nodep->selfPointer().isEmpty()) {
+                    putfs(nodep, nodep->varp()->prettyName());
+                } else {
+                    putfs(nodep, nodep->selfPointer().asString());
+                    putfs(nodep, "->");
+                    puts(nodep->varp()->prettyName());
+                }
+            } else {
+                putfs(nodep, nodep->name());
+            }
         }
     }
-    virtual void visit(AstVarXRef* nodep) override {
+    void visit(AstVarXRef* nodep) override {
         putfs(nodep, nodep->dotted());
         puts(".");
-        puts(nodep->varp()->prettyName());
+        if (nodep->varp()) {
+            puts(nodep->varp()->prettyName());
+        } else {
+            puts(nodep->prettyName());
+        }
     }
-    virtual void visit(AstConst* nodep) override { putfs(nodep, nodep->num().ascii(true, true)); }
+    void visit(AstConst* nodep) override { putfs(nodep, nodep->num().ascii(true, true)); }
 
     // Just iterate
-    virtual void visit(AstTopScope* nodep) override { iterateChildren(nodep); }
-    virtual void visit(AstScope* nodep) override { iterateChildren(nodep); }
-    virtual void visit(AstVar* nodep) override {
+    void visit(AstTopScope* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstScope* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstVar* nodep) override {
         if (nodep->isIO()) {
             putfs(nodep, nodep->verilogKwd());
             puts(" ");
@@ -647,11 +712,11 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         std::vector<const AstUnpackArrayDType*> unpackps;
         for (AstNodeDType* dtypep = nodep->dtypep(); dtypep;) {
             dtypep = dtypep->skipRefp();
-            if (AstUnpackArrayDType* unpackp = VN_CAST(dtypep, UnpackArrayDType)) {
+            if (const AstUnpackArrayDType* const unpackp = VN_CAST(dtypep, UnpackArrayDType)) {
                 unpackps.push_back(unpackp);
                 dtypep = unpackp->subDTypep();
             } else {
-                iterate(dtypep);
+                iterateConst(dtypep);
                 puts(" ");
                 puts(nodep->prettyName());
                 dtypep = nullptr;
@@ -667,22 +732,23 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
         }
         puts(m_suppressVarSemi ? "\n" : ";\n");
     }
-    virtual void visit(AstActive* nodep) override {
+    void visit(AstActive* nodep) override {
         m_sensesp = nodep->sensesp();
-        iterateAndNextNull(nodep->stmtsp());
+        iterateAndNextConstNull(nodep->stmtsp());
         m_sensesp = nullptr;
     }
-    virtual void visit(AstVarScope*) override {}
-    virtual void visit(AstNodeText*) override {}
-    virtual void visit(AstTraceDecl*) override {}
-    virtual void visit(AstTraceInc*) override {}
+    void visit(AstParseRef* nodep) override { puts(nodep->prettyName()); }
+    void visit(AstVarScope*) override {}
+    void visit(AstNodeText*) override {}
+    void visit(AstTraceDecl*) override {}
+    void visit(AstTraceInc*) override {}
     // NOPs
-    virtual void visit(AstPragma*) override {}
-    virtual void visit(AstCell*) override {}  // Handled outside the Visit class
+    void visit(AstPragma*) override {}
+    void visit(AstCell*) override {}  // Handled outside the Visit class
     // Default
-    virtual void visit(AstNode* nodep) override {
-        puts(string("\n???? // ") + nodep->prettyTypeName() + "\n");
-        iterateChildren(nodep);
+    void visit(AstNode* nodep) override {
+        puts("\n???? // "s + nodep->prettyTypeName() + "\n");
+        iterateChildrenConst(nodep);
         // Not v3fatalSrc so we keep processing
         if (!m_suppressUnknown) {
             nodep->v3error(
@@ -692,162 +758,78 @@ class EmitVBaseVisitor VL_NOT_FINAL : public EmitCBaseVisitor {
 
 public:
     bool m_suppressVarSemi = false;  // Suppress emitting semicolon for AstVars
-    explicit EmitVBaseVisitor(bool suppressUnknown, AstSenTree* domainp)
+    explicit EmitVBaseVisitorConst(bool suppressUnknown, AstSenTree* domainp)
         : m_suppressUnknown{suppressUnknown}
         , m_sensesp{domainp} {}
-    virtual ~EmitVBaseVisitor() override = default;
+    ~EmitVBaseVisitorConst() override = default;
 };
 
 //######################################################################
 // Emit to an output file
 
-class EmitVFileVisitor final : public EmitVBaseVisitor {
-    // MEMBERS
-    V3OutFile* m_ofp;
+class EmitVFileVisitor final : public EmitVBaseVisitorConst {
     // METHODS
-    V3OutFile* ofp() const { return m_ofp; }
-    virtual void puts(const string& str) override { ofp()->puts(str); }
-    virtual void putbs(const string& str) override { ofp()->putbs(str); }
-    virtual void putfs(AstNode*, const string& str) override { putbs(str); }
-    virtual void putqs(AstNode*, const string& str) override { putbs(str); }
-    virtual void putsNoTracking(const string& str) override { ofp()->putsNoTracking(str); }
+    void puts(const string& str) override { ofp()->puts(str); }
+    void putbs(const string& str) override { ofp()->putbs(str); }
+    void putfs(AstNode*, const string& str) override { putbs(str); }
+    void putqs(AstNode*, const string& str) override { putbs(str); }
+    void putsNoTracking(const string& str) override { ofp()->putsNoTracking(str); }
 
 public:
-    EmitVFileVisitor(AstNode* nodep, V3OutFile* ofp, bool trackText, bool suppressUnknown)
-        : EmitVBaseVisitor{suppressUnknown, nullptr} {
+    EmitVFileVisitor(AstNode* nodep, V3OutVFile* ofp, bool trackText, bool suppressUnknown)
+        : EmitVBaseVisitorConst{suppressUnknown, nullptr} {
         m_ofp = ofp;
         m_trackText = trackText;
-        iterate(nodep);
+        iterateConst(nodep);
     }
-    virtual ~EmitVFileVisitor() override = default;
+    ~EmitVFileVisitor() override = default;
 };
 
 //######################################################################
 // Emit to a stream (perhaps stringstream)
 
-class EmitVStreamVisitor final : public EmitVBaseVisitor {
+class EmitVStreamVisitor final : public EmitVBaseVisitorConst {
     // MEMBERS
     std::ostream& m_os;
     // METHODS
-    virtual void putsNoTracking(const string& str) override { m_os << str; }
-    virtual void puts(const string& str) override { putsNoTracking(str); }
-    virtual void putbs(const string& str) override { puts(str); }
-    virtual void putfs(AstNode*, const string& str) override { putbs(str); }
-    virtual void putqs(AstNode*, const string& str) override { putbs(str); }
+    void putsNoTracking(const string& str) override { m_os << str; }
+    void puts(const string& str) override { putsNoTracking(str); }
+    void putbs(const string& str) override { puts(str); }
+    void putfs(AstNode*, const string& str) override { putbs(str); }
+    void putqs(AstNode*, const string& str) override { putbs(str); }
 
 public:
-    EmitVStreamVisitor(AstNode* nodep, std::ostream& os)
-        : EmitVBaseVisitor{false, nullptr}
+    EmitVStreamVisitor(const AstNode* nodep, std::ostream& os)
+        : EmitVBaseVisitorConst{false, nullptr}
         , m_os(os) {  // Need () or GCC 4.8 false warning
-        iterate(nodep);
+        iterateConst(const_cast<AstNode*>(nodep));
     }
-    virtual ~EmitVStreamVisitor() override = default;
-};
-
-//######################################################################
-// Emit to a stream (perhaps stringstream)
-
-class EmitVPrefixedFormatter final : public V3OutFormatter {
-    std::ostream& m_os;
-    string m_prefix;  // What to print at beginning of each line
-    int m_flWidth;  // Padding of fileline
-    int m_column;  // Rough location; need just zero or non-zero
-    FileLine* m_prefixFl;
-    // METHODS
-    virtual void putcOutput(char chr) override {
-        if (chr == '\n') {
-            m_column = 0;
-            m_os << chr;
-        } else {
-            if (m_column == 0) {
-                m_column = 10;
-                m_os << m_prefixFl->ascii() + ":";
-                m_os << V3OutFile::indentSpaces(m_flWidth - (m_prefixFl->ascii().length() + 1));
-                m_os << " ";
-                m_os << m_prefix;
-            }
-            m_column++;
-            m_os << chr;
-        }
-    }
-
-public:
-    void prefixFl(FileLine* fl) { m_prefixFl = fl; }
-    FileLine* prefixFl() const { return m_prefixFl; }
-    int column() const { return m_column; }
-    EmitVPrefixedFormatter(std::ostream& os, const string& prefix, int flWidth)
-        : V3OutFormatter{"__STREAM", V3OutFormatter::LA_VERILOG}
-        , m_os(os)  // Need () or GCC 4.8 false warning
-        , m_prefix{prefix}
-        , m_flWidth{flWidth} {
-        m_column = 0;
-        m_prefixFl = v3Global.rootp()->fileline();  // NETLIST's fileline instead of nullptr to
-                                                    // avoid nullptr checks
-    }
-    virtual ~EmitVPrefixedFormatter() override {
-        if (m_column) puts("\n");
-    }
-};
-
-class EmitVPrefixedVisitor final : public EmitVBaseVisitor {
-    // MEMBERS
-    EmitVPrefixedFormatter m_formatter;  // Special verilog formatter (Way down the
-                                         // inheritance is another unused V3OutFormatter)
-    // METHODS
-    virtual void putsNoTracking(const string& str) override { m_formatter.putsNoTracking(str); }
-    virtual void puts(const string& str) override { m_formatter.puts(str); }
-    // We don't use m_formatter's putbs because the tokens will change filelines
-    // and insert returns at the proper locations
-    virtual void putbs(const string& str) override { m_formatter.puts(str); }
-    virtual void putfs(AstNode* nodep, const string& str) override { putfsqs(nodep, str, false); }
-    virtual void putqs(AstNode* nodep, const string& str) override { putfsqs(nodep, str, true); }
-    void putfsqs(AstNode* nodep, const string& str, bool quiet) {
-        if (m_formatter.prefixFl() != nodep->fileline()) {
-            m_formatter.prefixFl(nodep->fileline());
-            if (m_formatter.column()) puts("\n");  // This in turn will print the m_prefixFl
-        }
-        if (!quiet && nodep->user3()) puts("%%");
-        putbs(str);
-    }
-
-public:
-    EmitVPrefixedVisitor(AstNode* nodep, std::ostream& os, const string& prefix, int flWidth,
-                         AstSenTree* domainp, bool user3mark)
-        : EmitVBaseVisitor{false, domainp}
-        , m_formatter{os, prefix, flWidth} {
-        if (user3mark) AstUser3InUse::check();
-        iterate(nodep);
-    }
-    virtual ~EmitVPrefixedVisitor() override = default;
+    ~EmitVStreamVisitor() override = default;
 };
 
 //######################################################################
 // EmitV class functions
 
-void V3EmitV::verilogForTree(AstNode* nodep, std::ostream& os) { EmitVStreamVisitor(nodep, os); }
-
-void V3EmitV::verilogPrefixedTree(AstNode* nodep, std::ostream& os, const string& prefix,
-                                  int flWidth, AstSenTree* domainp, bool user3mark) {
-    EmitVPrefixedVisitor(nodep, os, prefix, flWidth, domainp, user3mark);
+void V3EmitV::verilogForTree(const AstNode* nodep, std::ostream& os) {
+    { EmitVStreamVisitor{nodep, os}; }
 }
 
 void V3EmitV::emitvFiles() {
     UINFO(2, __FUNCTION__ << ": " << endl);
     for (AstNodeFile* filep = v3Global.rootp()->filesp(); filep;
-         filep = VN_CAST(filep->nextp(), NodeFile)) {
-        AstVFile* vfilep = VN_CAST(filep, VFile);
+         filep = VN_AS(filep->nextp(), NodeFile)) {
+        AstVFile* const vfilep = VN_CAST(filep, VFile);
         if (vfilep && vfilep->tblockp()) {
-            V3OutVFile of(vfilep->name());
+            V3OutVFile of{vfilep->name()};
             of.puts("// DESCR"
                     "IPTION: Verilator generated Verilog\n");
-            EmitVFileVisitor visitor(vfilep->tblockp(), &of, true, false);
+            { EmitVFileVisitor{vfilep->tblockp(), &of, true, false}; }
         }
     }
 }
 
-void V3EmitV::debugEmitV(const string& stage) {
+void V3EmitV::debugEmitV(const string& filename) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    string filename = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__" + stage + ".v";
-    V3OutVFile of(filename);
-    EmitVFileVisitor visitor(v3Global.rootp(), &of, true, true);
+    V3OutVFile of{filename};
+    { EmitVFileVisitor{v3Global.rootp(), &of, true, true}; }
 }

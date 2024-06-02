@@ -47,7 +47,6 @@
    64 |    output bad_reout_port
       |           ^~~~~~~~~~~~~~
 %Error: t/t_var_dup_bad.v:73:9: Duplicate declaration of signal: 'bad_rewire'
-                              : ... note: ANSI ports must have type declared with the I/O (IEEE 1800-2017 23.2.2.2)
    73 |    wire bad_rewire;
       |         ^~~~~~~~~~
         t/t_var_dup_bad.v:70:16: ... Location of original declaration

@@ -1,6 +1,0 @@
-%Error-UNSUPPORTED: t/t_var_static_param.v:32:18: Unsupported: 'static' function/task variables
-                                                : ... In instance t.subb
-   32 |       static int st = 2; st += P; return st;
-      |                  ^~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to

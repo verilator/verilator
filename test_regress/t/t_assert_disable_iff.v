@@ -13,8 +13,8 @@ module t (/*AUTOARG*/
    integer cyc; initial cyc=1;
 
    Test test (/*AUTOINST*/
-	      // Inputs
-	      .clk			(clk));
+              // Inputs
+              .clk                      (clk));
 
    always @ (posedge clk) begin
       if (cyc!=0) begin

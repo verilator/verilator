@@ -21,15 +21,15 @@ module t (/*AUTOARG*/
    ifc itop();
 
    sub  c1 (.isub(itop),
-	    .i_value(4'h4));
+            .i_value(4'h4));
 
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==20) begin
-	 if (c1.i_value != 4) $stop;  // 'Normal' crossref just for comparison
-	 if (itop.value != 4) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if (c1.i_value != 4) $stop;  // 'Normal' crossref just for comparison
+         if (itop.value != 4) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule

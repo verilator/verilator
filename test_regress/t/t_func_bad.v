@@ -34,7 +34,7 @@ module t;
       hasout = 0;
    endfunction
 
-   function int f( int j = 1, int dup = 0 );
+   function automatic int f( int j = 1, int dup = 0 );
       return (j<<16) | dup;
    endfunction
 

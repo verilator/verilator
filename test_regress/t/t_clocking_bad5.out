@@ -1,0 +1,22 @@
+%Error: t/t_clocking_bad5.v:29:20: Duplicate declaration of CLOCKING 'ck': '$global_clock'
+   29 |    global clocking ogck @(posedge clk); endclocking
+      |                    ^~~~
+        t/t_clocking_bad5.v:26:20: ... Location of original declaration
+   26 |    global clocking ck @(posedge clk); endclocking
+      |                    ^~
+%Error: t/t_clocking_bad5.v:32:20: Duplicate declaration of CLOCKING 'ogck': '$global_clock'
+   32 |    global clocking ck @(posedge clk); endclocking
+      |                    ^~
+        t/t_clocking_bad5.v:29:20: ... Location of original declaration
+   29 |    global clocking ogck @(posedge clk); endclocking
+      |                    ^~~~
+%Error: t/t_clocking_bad5.v:32:20: Duplicate declaration of CLOCKING 'ck': 'ck'
+   32 |    global clocking ck @(posedge clk); endclocking
+      |                    ^~
+        t/t_clocking_bad5.v:26:20: ... Location of original declaration
+   26 |    global clocking ck @(posedge clk); endclocking
+      |                    ^~
+%Error: t/t_clocking_bad5.v:16:14: Can't find definition of variable: '$global_clock'
+   16 |    always @ ($global_clock) $display;
+      |              ^~~~~~~~~~~~~
+%Error: Exiting due to

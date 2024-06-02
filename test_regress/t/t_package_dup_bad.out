@@ -1,0 +1,21 @@
+%Warning-MODDUP: t/t_package_dup_bad.v:11:9: Duplicate declaration of module: 'pkg'
+   11 | package pkg;
+      |         ^~~
+                 t/t_package_dup_bad.v:7:9: ... Location of original declaration
+    7 | package pkg;
+      |         ^~~
+                 ... For warning description see https://verilator.org/warn/MODDUP?v=latest
+                 ... Use "/* verilator lint_off MODDUP */" and lint_on around source to disable this message.
+%Warning-MODDUP: t/t_package_dup_bad.v:19:9: Duplicate declaration of module: 'pkg'
+   19 | package pkg;
+      |         ^~~
+                 t/t_package_dup_bad.v:7:9: ... Location of original declaration
+    7 | package pkg;
+      |         ^~~
+%Warning-MODDUP: t/t_package_dup_bad.v:22:9: Duplicate declaration of module: 'pkg'
+   22 | package pkg;
+      |         ^~~
+                 t/t_package_dup_bad.v:7:9: ... Location of original declaration
+    7 | package pkg;
+      |         ^~~
+%Error: Exiting due to

@@ -11,10 +11,8 @@ module t (/*AUTOARG*/
 
    input clk;
 
-   // verilator lint_off GENCLK
-
-   reg [7:0] cyc; initial cyc=0;
-   reg 	     genclk;
+   reg [7:0] cyc; initial cyc = 0;
+   reg       genclk;
    // verilator lint_off MULTIDRIVEN
    reg [7:0] set_both;
    // verilator lint_on MULTIDRIVEN
@@ -27,14 +25,14 @@ module t (/*AUTOARG*/
       set_both <= cyc;
       $write ("SB set_both %x <= cyc %x\n", set_both, cyc);
       if (genthiscyc) begin
-	 if (cyc>1 && set_both != (cyc - 8'h1)) $stop;
+         if (cyc>1 && set_both != (cyc - 8'h1)) $stop;
       end
       else begin
-	 if (cyc>1 && set_both != ~(cyc - 8'h1)) $stop;
+         if (cyc>1 && set_both != ~(cyc - 8'h1)) $stop;
       end
       if (cyc==10) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

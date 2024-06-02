@@ -1,0 +1,6 @@
+%Warning-STATICVAR: t/t_static_in_loop_unsup.v:14:24: Static variable with assignment declaration declared in a loop converted to automatic
+   14 |             static int a = 0;
+      |                        ^
+                    ... For warning description see https://verilator.org/warn/STATICVAR?v=latest
+                    ... Use "/* verilator lint_off STATICVAR */" and lint_on around source to disable this message.
+%Error: Exiting due to

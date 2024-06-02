@@ -4,13 +4,13 @@
 // without warranty.
 // SPDX-License-Identifier: CC0-1.0
 
-/* verilator lint_off LITENDIAN */
+/* verilator lint_off ASCRANGE */
 module some_module (
-		    input wrclk
-		    );
+                    input wrclk
+                    );
 
-   logic [ 1 : 0 ] 	  some_state;
-   logic [1:0] 		  some_other_state;
+   logic [ 1 : 0 ]        some_state;
+   logic [1:0]            some_other_state;
 
    always @(posedge wrclk) begin
       case (some_state)
@@ -30,31 +30,31 @@ endmodule
 `define BROKEN
 
 module t1(
-	  input [-12:-9] i_clks,
-	  input 	 i_clk0,
-	  input 	 i_clk1
-	  );
+          input [-12:-9] i_clks,
+          input          i_clk0,
+          input          i_clk1
+          );
 
    some_module
      some_module
        (
 `ifdef BROKEN
-	.wrclk (i_clks[-12])
+        .wrclk (i_clks[-12])
 `else
-	.wrclk (i_clk1)
+        .wrclk (i_clk1)
 `endif
-	);
+        );
 endmodule
 
 module t2(
-	  input [2:0] i_clks,
-	  input       i_clk0,
-	  input       i_clk1,
-	  input       i_clk2,
-	  input       i_data
-	  );
+          input [2:0] i_clks,
+          input       i_clk0,
+          input       i_clk1,
+          input       i_clk2,
+          input       i_data
+          );
    logic [-12:-9]     the_clks;
-   logic 	      data_q;
+   logic              data_q;
 
    assign the_clks[-12] = i_clk1;
    assign the_clks[-11] = i_clk2;
@@ -74,11 +74,11 @@ module t2(
 endmodule
 
 module t(
-	 input clk0 /*verilator clocker*/,
-	 input clk1 /*verilator clocker*/,
-	 input clk2 /*verilator clocker*/,
-	 input data_in
-	 );
+         input clk0 /*verilator clocker*/,
+         input clk1 /*verilator clocker*/,
+         input clk2 /*verilator clocker*/,
+         input data_in
+         );
 
    logic [2:0] clks;
 
@@ -87,12 +87,12 @@ module t(
    t2
      t2
        (
-	.i_clks (clks),
-	.i_clk0 (clk0),
-	.i_clk1 (clk1),
-	.i_clk2 (clk2),
-	.i_data (data_in)
-	);
+        .i_clks (clks),
+        .i_clk0 (clk0),
+        .i_clk1 (clk1),
+        .i_clk2 (clk2),
+        .i_data (data_in)
+        );
 
    initial begin
       $write("*-* All Finished *-*\n");

@@ -8,24 +8,37 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+use File::Basename;
+
 scenarios(dist => 1);
 
-foreach my $prog (
-    # See also t_flag_version.pl
-    "../bin/verilator",
-    "../bin/verilator_coverage",
-    "../bin/verilator_difftree",
-    "../bin/verilator_gantt",
-    "../bin/verilator_profcfunc",
-    ) {
+# See also t_flag_version.pl
+
+sub check {
+    my $interpreter = shift;
+    my $prog = shift;
+
+    my $logfile = "$Self->{obj_dir}/t_help__" . basename($prog) . ".log";
+
     run(fails => 0,
-        cmd => ["perl", $prog,
-                "--help"],
-        logfile => "$Self->{obj_dir}/t_help.log",
+        cmd => [$interpreter, $prog, "--help"],
+        logfile => $logfile,
         tee => 0,
         verilator_run => 1,
         );
-    file_grep("$Self->{obj_dir}/t_help.log", qr/DISTRIBUTION/i);
+
+    file_grep($logfile, qr/(DISTRIBUTION|usage:)/i);
+}
+
+check("perl", "$ENV{VERILATOR_ROOT}/bin/verilator");
+check("perl", "$ENV{VERILATOR_ROOT}/bin/verilator_coverage");
+
+check("python3", "$ENV{VERILATOR_ROOT}/bin/verilator_ccache_report");
+check("python3", "$ENV{VERILATOR_ROOT}/bin/verilator_gantt");
+check("python3", "$ENV{VERILATOR_ROOT}/bin/verilator_profcfunc");
+
+if (-x "$ENV{VERILATOR_ROOT}/bin/verilator_difftree") {
+    check("python3", "$ENV{VERILATOR_ROOT}/bin/verilator_difftree");
 }
 
 ok(1);

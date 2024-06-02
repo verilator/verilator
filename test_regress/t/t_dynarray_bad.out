@@ -1,9 +1,9 @@
-%Warning-WIDTH: t/t_dynarray_bad.v:15:11: Operator NEWDYNAMIC expects 32 bits on the new() size, but new() size's VARREF 's' generates 64 bits.
-                                        : ... In instance t
+%Warning-WIDTHTRUNC: t/t_dynarray_bad.v:15:11: Operator NEWDYNAMIC expects 32 bits on the new() size, but new() size's VARREF 's' generates 64 bits.
+                                             : ... note: In instance 't'
    15 |       a = new [s];   
       |           ^~~
-                ... For warning description see https://verilator.org/warn/WIDTH?v=latest
-                ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
 %Error: Internal Error: t/t_dynarray_bad.v:15:16: ../V3Number.cpp:#: Number operation called with non-logic (double or string) argument: '"str""
    15 |       a = new [s];   
       |                ^

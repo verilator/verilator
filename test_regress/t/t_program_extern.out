@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_program_extern.v:7:1: Unsupported: extern program
+    7 | extern program pgm;
+      | ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

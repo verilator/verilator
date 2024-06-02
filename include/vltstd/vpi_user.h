@@ -1,7 +1,7 @@
 /*******************************************************************************
  * vpi_user.h
  *
- * IEEE Std 1800-2017 Programming Language Interface (PLI)
+ * IEEE Std 1800-2023 Programming Language Interface (PLI)
  *
  * This file contains the constant definitions, structure definitions, and
  * routine declarations used by the SystemVerilog Verification Procedural
@@ -344,6 +344,9 @@ typedef PLI_UINT32 *vpiHandle;
 #define vpiSupply0                11   /* supply-0 net */
 #define vpiNone                   12   /* no default net type (1364-2001) */
 #define vpiUwire                  13   /* unresolved wire net (1364-2005) */
+#define vpiNettypeNet             14   /* user-defined nettype net */
+#define vpiNettypeNetSelect       15   /* user-defined nettype net subelement */
+#define vpiInterconnect           16   /* interconnect net */
 
 #define vpiExplicitScalared      23   /* explicitly scalared (Boolean) */
 #define vpiExplicitVectored      24   /* explicitly vectored (Boolean) */
@@ -573,6 +576,9 @@ typedef PLI_UINT32 *vpiHandle;
 
 /******************************* time structure *******************************/
 
+#ifndef VPI_TIME /* added in 1800-2023 */
+#define VPI_TIME
+
 typedef struct t_vpi_time
 {
   PLI_INT32  type;               /* [vpiScaledRealTime, vpiSimTime,
@@ -586,6 +592,8 @@ typedef struct t_vpi_time
 #define vpiScaledRealTime 1
 #define vpiSimTime        2
 #define vpiSuppressTime   3
+
+#endif
 
 /****************************** delay structures ******************************/
 
@@ -741,9 +749,8 @@ typedef struct t_vpi_arrayvalue
 typedef struct t_vpi_systf_data
 {
   PLI_INT32 type;                       /* vpiSysTask, vpiSysFunc */
-  PLI_INT32 sysfunctype;                /* vpiSysTask, vpi[Int,Real,Time,Sized,
-                                                           SizedSigned]Func */
-  PLI_BYTE8 *tfname;                    /* first character must be '$' */
+  PLI_INT32 sysfunctype;                /* vpi[Int,Real,Time,Sized,SizedSigned]Func */
+  PLI_BYTE8 *tfname;                    /* first character has to be '$' */
   PLI_INT32 (*calltf)(PLI_BYTE8 *);
   PLI_INT32 (*compiletf)(PLI_BYTE8 *);
   PLI_INT32 (*sizetf)(PLI_BYTE8 *);     /* for sized function callbacks only */

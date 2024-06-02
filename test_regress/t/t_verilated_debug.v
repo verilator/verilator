@@ -16,7 +16,7 @@ module t (/*AUTOARG*/
    initial begin
       // internal code coverage for _vl_debug_print_w
       wide = {32'haa, 32'hbb, 32'hcc};
-      $c("_vl_debug_print_w(",$bits(wide),",",wide,");");
+      $c("_vl_debug_print_w(", $bits(wide), ", ", wide, ");");
    end
 
    // Test loop

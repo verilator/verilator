@@ -1,0 +1,5 @@
+%Warning-DEPRECATED: Option --threads 0 is deprecated, use '--threads 1' instead
+                     ... For warning description see https://verilator.org/warn/DEPRECATED?v=latest
+                     ... Use "/* verilator lint_off DEPRECATED */" and lint_on around source to disable this message.
+%Error-DEPRECATED: Option --no-threads is deprecated, use '--threads 1' instead
+%Error: Exiting due to

@@ -12,9 +12,16 @@ scenarios(vlt => 1);
 
 top_filename("t_process.v");
 
-lint(
-    verilator_flags2 => ["--debug-exit-uvm"],
+my $out_filename = "$Self->{obj_dir}/V$Self->{name}.tree.json";
+
+compile(
+    verilator_flags2 => ["--debug-exit-uvm", "--json-only"],
+    make_main => 0,
+    make_top_shell => 0,
+    verilator_make_gmake => 0,
     );
+
+file_grep($out_filename, qr/./);  # Exists
 
 ok(1);
 1;

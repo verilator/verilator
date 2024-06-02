@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -14,22 +14,22 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
-#include "V3Global.h"
+#include "V3EmitMk.h"
+
+#include "V3EmitCBase.h"
 #include "V3HierBlock.h"
 #include "V3Os.h"
-#include "V3EmitMk.h"
-#include "V3EmitCBase.h"
 
-//######################################################################
-// Emit statements and math operators
+VL_DEFINE_DEBUG_FUNCTIONS;
+
+// ######################################################################
+//  Emit statements and expressions
 
 class EmitMk final {
 public:
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
 
     void putMakeClassEntry(V3OutMkFile& of, const string& name) {
         of.puts("\t" + V3Os::filenameNonDirExt(name) + " \\\n");
@@ -37,7 +37,7 @@ public:
 
     void emitClassMake() {
         // Generate the makefile
-        V3OutMkFile of(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_classes.mk");
+        V3OutMkFile of{v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_classes.mk"};
         of.putsHeader();
         of.puts("# DESCR"
                 "IPTION: Verilator output: Make include file with class lists\n");
@@ -49,6 +49,10 @@ public:
         of.puts("\n### Switches...\n");
         of.puts("# C11 constructs required?  0/1 (always on now)\n");
         of.puts("VM_C11 = 1\n");
+        of.puts("# Timing enabled?  0/1\n");
+        of.puts("VM_TIMING = ");
+        of.puts(v3Global.usesTiming() ? "1" : "0");
+        of.puts("\n");
         of.puts("# Coverage output mode?  0/1 (from --coverage)\n");
         of.puts("VM_COVERAGE = ");
         of.puts(v3Global.opt.coverage() ? "1" : "0");
@@ -57,30 +61,22 @@ public:
         of.puts("VM_PARALLEL_BUILDS = ");
         of.puts(v3Global.useParallelBuild() ? "1" : "0");
         of.puts("\n");
-        of.puts("# Threaded output mode?  0/1/N threads (from --threads)\n");
-        of.puts("VM_THREADS = ");
-        of.puts(cvtToStr(v3Global.opt.threads()));
-        of.puts("\n");
         of.puts("# Tracing output mode?  0/1 (from --trace/--trace-fst)\n");
         of.puts("VM_TRACE = ");
         of.puts(v3Global.opt.trace() ? "1" : "0");
+        of.puts("\n");
+        of.puts("# Tracing output mode in VCD format?  0/1 (from --trace)\n");
+        of.puts("VM_TRACE_VCD = ");
+        of.puts(v3Global.opt.trace() && v3Global.opt.traceFormat().vcd() ? "1" : "0");
         of.puts("\n");
         of.puts("# Tracing output mode in FST format?  0/1 (from --trace-fst)\n");
         of.puts("VM_TRACE_FST = ");
         of.puts(v3Global.opt.trace() && v3Global.opt.traceFormat().fst() ? "1" : "0");
         of.puts("\n");
-        of.puts("# Tracing threaded output mode?  0/1/N threads (from --trace-thread)\n");
-        of.puts("VM_TRACE_THREADS = ");
-        of.puts(cvtToStr(v3Global.opt.trueTraceThreads()));
-        of.puts("\n");
-        of.puts("# Separate FST writer thread? 0/1 (from --trace-fst with --trace-thread > 0)\n");
-        of.puts("VM_TRACE_FST_WRITER_THREAD = ");
-        of.puts(v3Global.opt.traceThreads() && v3Global.opt.traceFormat().fst() ? "1" : "0");
-        of.puts("\n");
 
         of.puts("\n### Object file lists...\n");
         for (int support = 0; support < 3; ++support) {
-            for (int slow = 0; slow < 2; ++slow) {
+            for (const bool& slow : {false, true}) {
                 if (support == 2) {
                     of.puts("# Global classes, need linked once per executable");
                 } else if (support) {
@@ -107,16 +103,20 @@ public:
                     if (v3Global.opt.coverage()) putMakeClassEntry(of, "verilated_cov.cpp");
                     if (v3Global.opt.trace()) {
                         putMakeClassEntry(of, v3Global.opt.traceSourceBase() + "_c.cpp");
-                        if (v3Global.opt.systemC()) {
-                            putMakeClassEntry(of, v3Global.opt.traceSourceLang() + ".cpp");
-                        }
                     }
-                    if (v3Global.opt.mtasks()) putMakeClassEntry(of, "verilated_threads.cpp");
+                    if (v3Global.usesProbDist()) putMakeClassEntry(of, "verilated_probdist.cpp");
+                    if (v3Global.usesTiming()) putMakeClassEntry(of, "verilated_timing.cpp");
+                    if (v3Global.useRandomizeMethods())
+                        putMakeClassEntry(of, "verilated_random.cpp");
+                    putMakeClassEntry(of, "verilated_threads.cpp");
+                    if (v3Global.opt.usesProfiler()) {
+                        putMakeClassEntry(of, "verilated_profiler.cpp");
+                    }
                 } else if (support == 2 && slow) {
                 } else {
                     for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;
-                         nodep = VN_CAST(nodep->nextp(), NodeFile)) {
-                        AstCFile* cfilep = VN_CAST(nodep, CFile);
+                         nodep = VN_AS(nodep->nextp(), NodeFile)) {
+                        const AstCFile* const cfilep = VN_CAST(nodep, CFile);
                         if (cfilep && cfilep->source() && cfilep->slow() == (slow != 0)
                             && cfilep->support() == (support != 0)) {
                             putMakeClassEntry(of, cfilep->name());
@@ -133,7 +133,7 @@ public:
 
     void emitOverallMake() {
         // Generate the makefile
-        V3OutMkFile of(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".mk");
+        V3OutMkFile of{v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".mk"};
         of.putsHeader();
         of.puts("# DESCR"
                 "IPTION: Verilator output: "
@@ -145,20 +145,21 @@ public:
 
         if (v3Global.opt.exe()) {
             of.puts("default: " + v3Global.opt.exeName() + "\n");
-        } else if (!v3Global.opt.protectLib().empty()) {
-            of.puts("default: lib" + v3Global.opt.protectLib() + "\n");
+        } else if (!v3Global.opt.libCreate().empty()) {
+            of.puts("default: lib" + v3Global.opt.libCreate() + "\n");
         } else {
-            of.puts("default: " + v3Global.opt.prefix() + "__ALL.a\n");
+            of.puts("default: lib" + v3Global.opt.prefix() + "\n");
         }
         of.puts("\n### Constants...\n");
         of.puts("# Perl executable (from $PERL)\n");
-        of.puts("PERL = " + V3Options::getenvPERL() + "\n");
+        of.puts("PERL = " + V3OutFormatter::quoteNameControls(V3Options::getenvPERL()) + "\n");
         of.puts("# Path to Verilator kit (from $VERILATOR_ROOT)\n");
-        of.puts("VERILATOR_ROOT = " + V3Options::getenvVERILATOR_ROOT() + "\n");
+        of.puts("VERILATOR_ROOT = "
+                + V3OutFormatter::quoteNameControls(V3Options::getenvVERILATOR_ROOT()) + "\n");
         of.puts("# SystemC include directory with systemc.h (from $SYSTEMC_INCLUDE)\n");
-        of.puts(string("SYSTEMC_INCLUDE ?= ") + V3Options::getenvSYSTEMC_INCLUDE() + "\n");
+        of.puts(string{"SYSTEMC_INCLUDE ?= "} + V3Options::getenvSYSTEMC_INCLUDE() + "\n");
         of.puts("# SystemC library directory with libsystemc.a (from $SYSTEMC_LIBDIR)\n");
-        of.puts(string("SYSTEMC_LIBDIR ?= ") + V3Options::getenvSYSTEMC_LIBDIR() + "\n");
+        of.puts(string{"SYSTEMC_LIBDIR ?= "} + V3Options::getenvSYSTEMC_LIBDIR() + "\n");
 
         // Only check it if we really need the value
         if (v3Global.opt.systemC() && !V3Options::systemCFound()) {
@@ -168,25 +169,31 @@ public:
         }
 
         of.puts("\n### Switches...\n");
+        of.puts("# C++ code coverage  0/1 (from --prof-c)\n");
+        of.puts(string{"VM_PROFC = "} + ((v3Global.opt.profC()) ? "1" : "0") + "\n");
         of.puts("# SystemC output mode?  0/1 (from --sc)\n");
-        of.puts(string("VM_SC = ") + ((v3Global.opt.systemC()) ? "1" : "0") + "\n");
+        of.puts(string{"VM_SC = "} + ((v3Global.opt.systemC()) ? "1" : "0") + "\n");
         of.puts("# Legacy or SystemC output mode?  0/1 (from --sc)\n");
-        of.puts(string("VM_SP_OR_SC = $(VM_SC)\n"));
+        of.puts(string{"VM_SP_OR_SC = $(VM_SC)\n"});
         of.puts("# Deprecated\n");
-        of.puts(string("VM_PCLI = ") + (v3Global.opt.systemC() ? "0" : "1") + "\n");
+        of.puts(string{"VM_PCLI = "} + (v3Global.opt.systemC() ? "0" : "1") + "\n");
         of.puts(
             "# Deprecated: SystemC architecture to find link library path (from $SYSTEMC_ARCH)\n");
-        of.puts(string("VM_SC_TARGET_ARCH = ") + V3Options::getenvSYSTEMC_ARCH() + "\n");
+        of.puts(string{"VM_SC_TARGET_ARCH = "} + V3Options::getenvSYSTEMC_ARCH() + "\n");
 
         of.puts("\n### Vars...\n");
         of.puts("# Design prefix (from --prefix)\n");
-        of.puts(string("VM_PREFIX = ") + v3Global.opt.prefix() + "\n");
+        of.puts(string{"VM_PREFIX = "} + v3Global.opt.prefix() + "\n");
         of.puts("# Module prefix (from --prefix)\n");
-        of.puts(string("VM_MODPREFIX = ") + v3Global.opt.modPrefix() + "\n");
+        of.puts(string{"VM_MODPREFIX = "} + v3Global.opt.modPrefix() + "\n");
 
         of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
         of.puts("VM_USER_CFLAGS = \\\n");
-        if (!v3Global.opt.protectLib().empty()) of.puts("\t-fPIC \\\n");
+        const std::string solver = V3Options::getenvVERILATOR_SOLVER();
+        if (v3Global.useRandomizeMethods() && solver != "")
+            of.puts("\t-DVM_SOLVER_DEFAULT='\"" + V3OutFormatter::quoteNameControls(solver)
+                    + "\"' \\\n");
+        if (!v3Global.opt.libCreate().empty()) of.puts("\t-fPIC \\\n");
         const V3StringList& cFlags = v3Global.opt.cFlags();
         for (const string& i : cFlags) of.puts("\t" + i + " \\\n");
         of.puts("\n");
@@ -203,7 +210,7 @@ public:
         const V3StringSet& cppFiles = v3Global.opt.cppFiles();
         for (const auto& cppfile : cppFiles) {
             of.puts("\t" + V3Os::filenameNonExt(cppfile) + " \\\n");
-            string dir = V3Os::filenameDir(cppfile);
+            const string dir = V3Os::filenameDir(cppfile);
             dirs.insert(dir);
         }
         of.puts("\n");
@@ -227,33 +234,35 @@ public:
             of.puts("\n### Executable rules... (from --exe)\n");
             of.puts("VPATH += $(VM_USER_DIR)\n");
             of.puts("\n");
-            for (const string& cppfile : cppFiles) {
-                string basename = V3Os::filenameNonExt(cppfile);
-                // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-                of.puts(basename + ".o: " + cppfile + "\n");
-                of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<\n");
-            }
+        }
 
+        for (const string& cppfile : cppFiles) {
+            const string basename = V3Os::filenameNonExt(cppfile);
+            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
+            of.puts(basename + ".o: " + cppfile + "\n");
+            of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<\n");
+        }
+
+        if (v3Global.opt.exe()) {
             of.puts("\n### Link rules... (from --exe)\n");
+            // let default rule depend on '{prefix}__ALL.a', for compatibility
             of.puts(v3Global.opt.exeName()
                     + ": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a $(VM_HIER_LIBS)\n");
             of.puts("\t$(LINK) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) $(LIBS) $(SC_LIBS) -o $@\n");
             of.puts("\n");
-        }
-
-        if (!v3Global.opt.protectLib().empty()) {
-            const string protectLibDeps = "$(VK_OBJS) $(VK_GLOBAL_OBJS) "
-                                          + v3Global.opt.protectLib() + ".o $(VM_HIER_LIBS)";
-            of.puts("\n### Library rules from --protect-lib\n");
+        } else if (!v3Global.opt.libCreate().empty()) {
+            const string libCreateDeps = "$(VK_OBJS) $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) "
+                                         + v3Global.opt.libCreate() + ".o $(VM_HIER_LIBS)";
+            of.puts("\n### Library rules from --lib-create\n");
             // The rule to create .a is defined in verilated.mk, so just define dependency here.
-            of.puts(v3Global.opt.protectLibName(false) + ": " + protectLibDeps + "\n");
+            of.puts(v3Global.opt.libCreateName(false) + ": " + libCreateDeps + "\n");
             of.puts("\n");
             if (v3Global.opt.hierChild()) {
                 // Hierarchical child does not need .so because hierTop() will create .so from .a
-                of.puts("lib" + v3Global.opt.protectLib() + ": "
-                        + v3Global.opt.protectLibName(false) + "\n");
+                of.puts("lib" + v3Global.opt.libCreate() + ": " + v3Global.opt.libCreateName(false)
+                        + "\n");
             } else {
-                of.puts(v3Global.opt.protectLibName(true) + ": " + protectLibDeps + "\n");
+                of.puts(v3Global.opt.libCreateName(true) + ": " + libCreateDeps + "\n");
                 // Linker on mac emits an error if all symbols are not found here,
                 // but some symbols that are referred as "DPI-C" can not be found at this moment.
                 // So add dynamic_lookup
@@ -265,10 +274,18 @@ public:
                     "\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -shared -o $@ $^\n");
                 of.puts("endif\n");
                 of.puts("\n");
-                of.puts("lib" + v3Global.opt.protectLib() + ": "
-                        + v3Global.opt.protectLibName(false) + " "
-                        + v3Global.opt.protectLibName(true) + "\n");
+                of.puts("lib" + v3Global.opt.libCreate() + ": " + v3Global.opt.libCreateName(false)
+                        + " " + v3Global.opt.libCreateName(true) + "\n");
             }
+        } else {
+            const string libname = "lib" + v3Global.opt.prefix() + ".a";
+            of.puts("\n### Library rules (default lib mode)\n");
+            // The rule to create .a is defined in verilated.mk, so just define dependency here.
+            of.puts(libname + ": $(VK_OBJS) $(VK_USER_OBJS) $(VM_HIER_LIBS)\n");
+            of.puts("libverilated.a: $(VK_GLOBAL_OBJS)\n");
+            // let default rule depend on '{prefix}__ALL.a', for compatibility
+            of.puts("lib" + v3Global.opt.prefix() + ": " + libname
+                    + " libverilated.a $(VM_PREFIX)__ALL.a\n");
         }
 
         of.puts("\n");
@@ -291,7 +308,7 @@ class EmitMkHierVerilation final {
         of.puts("# Verilation of hierarchical blocks are executed in this directory\n");
         of.puts("VM_HIER_RUN_DIR := " + cwd + "\n");
         of.puts("# Common options for hierarchical blocks\n");
-        const string fullpath_bin = V3Os::filenameRealPath(v3Global.opt.bin());
+        const string fullpath_bin = V3Os::filenameRealPath(v3Global.opt.buildDepBin());
         const string verilator_wrapper = V3Os::filenameDir(fullpath_bin) + "/verilator";
         of.puts("VM_HIER_VERILATOR := " + verilator_wrapper + "\n");
         of.puts("VM_HIER_INPUT_FILES := \\\n");
@@ -313,7 +330,7 @@ class EmitMkHierVerilation final {
     void emit(V3OutMkFile& of) const {
         of.puts("# Hierarchical Verilation -*- Makefile -*-\n");
         of.puts("# DESCR"
-                "IPTION: Verilator output: Makefile for hierarchical verilatrion\n");
+                "IPTION: Verilator output: Makefile for hierarchical Verilation\n");
         of.puts("#\n");
         of.puts("# The main makefile " + v3Global.opt.prefix() + ".mk calls this makefile\n");
         of.puts("\n");
@@ -328,8 +345,8 @@ class EmitMkHierVerilation final {
         const V3HierBlockPlan::HierVector blocks
             = m_planp->hierBlocksSorted();  // leaf comes first
         // List in order of leaf-last order so that linker can resolve dependency
-        for (auto it = blocks.rbegin(); it != blocks.rend(); ++it) {
-            of.puts("\t" + (*it)->hierLib(true) + " \\\n");
+        for (const auto& block : vlstd::reverse_view(blocks)) {
+            of.puts("\t" + block->hierLib(true) + " \\\n");
         }
         of.puts("\n");
 
@@ -360,13 +377,13 @@ class EmitMkHierVerilation final {
 
         // Rules to process hierarchical blocks
         of.puts("\n# Verilate hierarchical blocks\n");
-        for (V3HierBlockPlan::const_iterator it = m_planp->begin(); it != m_planp->end(); ++it) {
-            const string prefix = it->second->hierPrefix();
-            const string argsFile = it->second->commandArgsFileName(false);
-            of.puts(it->second->hierGenerated(true));
+        for (const V3HierBlock* const blockp : m_planp->hierBlocksSorted()) {
+            const string prefix = blockp->hierPrefix();
+            const string argsFile = blockp->commandArgsFileName(false);
+            of.puts(blockp->hierGenerated(true));
             of.puts(": $(VM_HIER_INPUT_FILES) $(VM_HIER_VERILOG_LIBS) ");
             of.puts(V3Os::filenameNonDir(argsFile) + " ");
-            const V3HierBlock::HierBlockSet& children = it->second->children();
+            const V3HierBlock::HierBlockSet& children = blockp->children();
             for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
                  child != children.end(); ++child) {
                 of.puts((*child)->hierWrapper(true) + " ");
@@ -375,16 +392,16 @@ class EmitMkHierVerilation final {
             emitLaunchVerilator(of, argsFile);
 
             // Rule to build lib*.a
-            of.puts(it->second->hierLib(true));
+            of.puts(blockp->hierLib(true));
             of.puts(": ");
-            of.puts(it->second->hierMk(true));
+            of.puts(blockp->hierMk(true));
             of.puts(" ");
             for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
                  child != children.end(); ++child) {
                 of.puts((*child)->hierLib(true));
                 of.puts(" ");
             }
-            of.puts("\n\t$(MAKE) -f " + it->second->hierMk(false) + " -C " + prefix);
+            of.puts("\n\t$(MAKE) -f " + blockp->hierMk(false) + " -C " + prefix);
             of.puts(" VM_PREFIX=" + prefix);
             of.puts("\n\n");
         }
@@ -395,10 +412,9 @@ public:
     explicit EmitMkHierVerilation(const V3HierBlockPlan* planp)
         : m_planp{planp}
         , m_makefile{v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_hier.mk"} {
-        V3OutMkFile of(m_makefile);
+        V3OutMkFile of{m_makefile};
         emit(of);
     }
-    VL_DEBUG_FUNC;  // Declare debug()
 };
 
 //######################################################################
@@ -406,7 +422,7 @@ public:
 
 void V3EmitMk::emitmk() {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    EmitMk emitter;
+    const EmitMk emitter;
 }
 
 void V3EmitMk::emitHierVerilation(const V3HierBlockPlan* planp) {

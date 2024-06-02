@@ -9,40 +9,38 @@
 //
 //*************************************************************************
 
-#include "Vt_vpi_time_cb.h"
 #include "verilated.h"
-#include "svdpi.h"
-
-#include "Vt_vpi_time_cb__Dpi.h"
-
-#include "verilated_vpi.h"
 #include "verilated_vcd_c.h"
+#include "verilated_vpi.h"
 
-#include "TestCheck.h"
+#include "Vt_vpi_time_cb.h"
+#include "Vt_vpi_time_cb__Dpi.h"
+#include "svdpi.h"
 
 #include <iostream>
 
-unsigned int main_time = 0;
+// These require the above. Comment prevents clang-format moving them
+#include "TestCheck.h"
 
 //======================================================================
 
-double sc_time_stamp() { return main_time; }
+int main(int argc, char** argv) {
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
 
-int main(int argc, char** argv, char** env) {
-    vluint64_t sim_time = 1100;
-    Verilated::commandArgs(argc, argv);
-    Verilated::debug(0);
+    uint64_t sim_time = 1100;
+    contextp->debug(0);
+    contextp->commandArgs(argc, argv);
 
-    VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
+    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
+                                                        // Note null name - we're flattening it out
+                                                        ""}};
 
-// clang-format off
 #ifdef TEST_VERBOSE
-    Verilated::scopesDump();
+    contextp->scopesDump();
 #endif
-    // clang-format on
 
 #if VM_TRACE
-    Verilated::traceEverOn(true);
+    contextp->traceEverOn(true);
     VL_PRINTF("Enabling waves...\n");
     VerilatedVcdC* tfp = new VerilatedVcdC;
     topp->trace(tfp, 99);
@@ -54,24 +52,24 @@ int main(int argc, char** argv, char** env) {
     topp->eval();
     topp->clk = 0;
 
-    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
-        main_time += 1;
+    while (vl_time_stamp64() < sim_time && !contextp->gotFinish()) {
+        contextp->timeInc(1);
         topp->eval();
         VerilatedVpi::callValueCbs();
         VerilatedVpi::callTimedCbs();
-        if (main_time > 20) {  // Else haven't registered callbacks
-            TEST_CHECK_EQ(VerilatedVpi::cbNextDeadline(), main_time + 1);
+        if (contextp->time() > 20) {  // Else haven't registered callbacks
+            TEST_CHECK_EQ(VerilatedVpi::cbNextDeadline(), contextp->time() + 1);
         }
-        if ((main_time % 5) == 0) topp->clk = !topp->clk;
+        if ((contextp->time() % 5) == 0) topp->clk = !topp->clk;
             // mon_do();
 #if VM_TRACE
-        if (tfp) tfp->dump(main_time);
+        if (tfp) tfp->dump(contextp->time());
 #endif
     }
 
     VerilatedVpi::callCbs(cbEndOfSimulation);
 
-    if (!Verilated::gotFinish()) {
+    if (!contextp->gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     topp->final();
@@ -80,6 +78,5 @@ int main(int argc, char** argv, char** env) {
     if (tfp) tfp->close();
 #endif
 
-    VL_DO_DANGLING(delete topp, topp);
     return errors ? 10 : 0;
 }

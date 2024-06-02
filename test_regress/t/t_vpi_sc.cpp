@@ -3,12 +3,12 @@
 // any use, without warranty, 2020 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-#include "Vt_vpi_sc.h"
+#include VM_PREFIX_INCLUDE
 
 VM_PREFIX* tb = nullptr;
 
 int sc_main(int argc, char* argv[]) {
-    tb = new VM_PREFIX("tb");
+    tb = new VM_PREFIX{"tb"};
 
     VL_PRINTF("*-* All Finished *-*\n");
     tb->final();

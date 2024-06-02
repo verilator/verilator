@@ -19,7 +19,7 @@ module t (/*AUTOARG*/);
       range_chk = 0;
       if ( last >= 0 ) begin
          if ( ABS(last - period) > cmp ) begin
-	    range_chk = 1;
+            range_chk = 1;
          end
       end
    endfunction
@@ -28,11 +28,11 @@ module t (/*AUTOARG*/);
       input num;
       real  num;
       if (num > $rtoi(num))
-	ceil = $rtoi(num) + 1;
+        ceil = $rtoi(num) + 1;
       else
-	// verilator lint_off REALCVT
-	ceil = num;
-	// verilator lint_on REALCVT
+        // verilator lint_off REALCVT
+        ceil = num;
+        // verilator lint_on REALCVT
    endfunction
 
    initial begin

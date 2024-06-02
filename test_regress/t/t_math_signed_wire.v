@@ -20,7 +20,7 @@ module t (/*AUTOARG*/
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] result=%x %x\n",$time, au, as);
+      $write("[%0t] result=%x %x\n", $time, au, as);
 `endif
       if (au != 'h12) $stop;
       if (as != 'h02) $stop;
@@ -31,8 +31,8 @@ module t (/*AUTOARG*/
 endmodule
 
 module Test1 (output [7:0] au);
-   wire [7:0] 		b;
-   wire signed [3:0] 	c;
+   wire [7:0]           b;
+   wire signed [3:0]    c;
 
    // verilator lint_off WIDTH
    assign c=-1;  // 'hf
@@ -43,8 +43,8 @@ endmodule
 
 
 module Test2 (output [7:0] as);
-   wire signed [7:0] 	b;
-   wire signed [3:0] 	c;
+   wire signed [7:0]    b;
+   wire signed [3:0]    c;
 
    // verilator lint_off WIDTH
    assign c=-1;  // 'hf

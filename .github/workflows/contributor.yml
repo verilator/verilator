@@ -11,7 +11,7 @@ on:
 jobs:
   Test:
     name: "'docs/CONTRIBUTORS' was signed"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - run: test_regress/t/t_dist_contributors.pl

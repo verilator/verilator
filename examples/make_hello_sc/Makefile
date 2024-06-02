@@ -33,7 +33,7 @@ VERILATOR = $(VERILATOR_ROOT)/bin/verilator
 endif
 
 # Check if SC exists via a verilator call (empty if not)
-SYSTEMC_EXISTS := $(shell $(VERILATOR) --getenv SYSTEMC_INCLUDE)
+SYSTEMC_EXISTS := $(shell $(VERILATOR) --get-supported SYSTEMC)
 
 ifneq ($(SYSTEMC_EXISTS),)
 default: run
@@ -49,7 +49,7 @@ run:
 	obj_dir/Vtop
 	@echo "-- DONE --------------------"
 	@echo "Note: Once this example is understood, see examples/make_tracing_sc."
-	@echo "Note: Also see the EXAMPLE section in the verilator manpage/document."
+	@echo "Note: See also https://verilator.org/guide/latest/examples.html"
 
 ######################################################################
 

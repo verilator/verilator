@@ -1,7 +1,28 @@
 %Error: t/t_vlt_syntax_bad.vlt:9:20: sensitivity not expected for attribute
     9 | public -module "t" @(posedge clk)
       |                    ^
-%Error: t/t_vlt_syntax_bad.vlt:10:1: isolate_assignments only applies to signals or functions/tasks
-   10 | isolate_assignments -module "t"
+%Error: t/t_vlt_syntax_bad.vlt:11:1: isolate_assignments only applies to signals or functions/tasks
+   11 | isolate_assignments -module "t"
       | ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_vlt_syntax_bad.vlt:13:1: Argument -match only supported for lint_off
+   13 | tracing_off --file "*" -match "nothing"
+      | ^~~~~~~~~~~
+%Error: t/t_vlt_syntax_bad.vlt:15:1: Argument -scope only supported for tracing_on/off
+   15 | lint_off --rule UNOPTFLAT -scope "top*"
+      | ^~~~~~~~
+%Error: t/t_vlt_syntax_bad.vlt:16:1: Argument -scope only supported for tracing_on/off_off
+   16 | lint_off --rule UNOPTFLAT -scope "top*" -levels 0
+      | ^~~~~~~~
+%Error: t/t_vlt_syntax_bad.vlt:17:1: Argument -scope only supported for tracing_on/off
+   17 | lint_on --rule UNOPTFLAT -scope "top*"
+      | ^~~~~~~
+%Error: t/t_vlt_syntax_bad.vlt:18:1: Argument -scope only supported for tracing_on/off_off
+   18 | lint_on --rule UNOPTFLAT -scope "top*" -levels 0
+      | ^~~~~~~
+%Error: t/t_vlt_syntax_bad.vlt:20:1: forceable missing -module
+   20 | forceable -module "" -var "net_*"
+      | ^~~~~~~~~
+%Error: t/t_vlt_syntax_bad.vlt:22:1: missing -var
+   22 | forceable -module "top" -var ""
+      | ^~~~~~~~~
 %Error: Exiting due to

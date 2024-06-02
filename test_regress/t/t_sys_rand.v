@@ -19,16 +19,16 @@ module t;
       // so we'll allow one failure
       lastrand = $random;
       for (i=0; i<`TRIES; i=i+1) begin
-	 thisrand = $random;
+         thisrand = $random;
 `ifdef TEST_VERBOSE
-	 $write("Random = %x\n", thisrand);
+         $write("Random = %x\n", thisrand);
 `endif
-	 if (thisrand == lastrand) same=same+1;
-	 lastrand = thisrand;
+         if (thisrand == lastrand) same=same+1;
+         lastrand = thisrand;
       end
       if (same > 1) begin
-	 $write("%%Error: Too many similar numbers: %d\n", same);
-	 $stop;
+         $write("%%Error: Too many similar numbers: %d\n", same);
+         $stop;
       end
       $write("*-* All Finished *-*\n");
       $finish;

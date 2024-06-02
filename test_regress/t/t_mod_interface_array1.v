@@ -19,7 +19,7 @@ module intf_source
    );
    generate
       for (genvar i=0; i < N;i++) begin
-	 assign i_intf_source[i].long_name = intf_input[i];
+         assign i_intf_source[i].long_name = intf_input[i];
       end
    endgenerate
 endmodule
@@ -31,7 +31,7 @@ module intf_sink
    );
    generate
       for (genvar i=0; i < N;i++) begin
-	 assign a_out[i] = i_intf_sink[i].long_name;
+         assign a_out[i] = i_intf_sink[i].long_name;
       end
    endgenerate
 endmodule
@@ -44,9 +44,9 @@ module t
    logic [N-1:0] a_in;
    logic [N-1:0] a_out;
    logic [N-1:0] ack_out;
-   // verilator lint_off LITENDIAN
+   // verilator lint_off ASCRANGE
    a_if #(.PARAM(1)) tl_intf [N] ();
-   // verilator lint_on LITENDIAN
+   // verilator lint_on ASCRANGE
    intf_source source(a_in, tl_intf);
    intf_sink   sink(a_out, tl_intf);
 

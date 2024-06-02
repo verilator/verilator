@@ -17,11 +17,11 @@ module t_embed1_wrap (/*AUTOARG*/
    output bit [30:0]    vec_out;
    output bit [123:0]   wide_out;
    output bit           did_init_out;
-   input		clk;
-   input		bit_in;
-   input [30:0] 	vec_in;
-   input [123:0]	wide_in;
-   input		is_ref;
+   input                clk;
+   input                bit_in;
+   input [30:0]         vec_in;
+   input [123:0]        wide_in;
+   input                is_ref;
    // End of automatics
 
 `ifdef verilator
@@ -61,16 +61,16 @@ module t_embed1_wrap (/*AUTOARG*/
    bit [123:0] _temp_wide_out;
    always @* begin
       t_embed_child_io_eval(
-			    clk,
-			    bit_in,
-			    vec_in,
-			    wide_in,
-			    is_ref,
-			    _temp_bit_out,
-			    _temp_vec_out,
-			    _temp_wide_out,
-			    _temp_did_init_out
-			    );
+                            clk,
+                            bit_in,
+                            vec_in,
+                            wide_in,
+                            is_ref,
+                            _temp_bit_out,
+                            _temp_vec_out,
+                            _temp_wide_out,
+                            _temp_did_init_out
+                            );
       // TODO might eliminate these temporaries
       bit_out = _temp_bit_out;
       did_init_out = _temp_did_init_out;

@@ -4,7 +4,7 @@
 // any use, without warranty, 2014 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-//bug 762
+// See issue #762
 module t(a0, y);
    input [3:0] a0;
    output [44:0] y;

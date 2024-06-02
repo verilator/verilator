@@ -4,8 +4,6 @@
 // any use, without warranty, 2008 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-`include "verilated.v"
-
 module t;
 
    // Note $sscanf already tested elsewhere
@@ -82,6 +80,12 @@ module t;
       if (str2 != "c") $stop;
       $swriteo(str2, 4'd12);
       if (str2 != "14") $stop;
+
+      str3 = "foo";
+      $sformat(str3, "%s", str3);  // $sformat twice so verilator does not
+      $sformat(str3, "%s", str3);  // optimize the call to $sformat(str3, "%s", "foo")
+`ifdef TEST_VERBOSE  $display("str3=%0s", str3);  `endif
+      if (str3 != "foo") $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

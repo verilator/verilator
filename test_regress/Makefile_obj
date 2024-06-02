@@ -5,7 +5,7 @@
 #
 # This is executed in the object directory, and called by ../Makefile
 #
-# Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -34,15 +34,17 @@ CPPFLAGS += -DVL_DEBUG=1
 CPPFLAGS += -DTEST_OBJ_DIR=$(TEST_OBJ_DIR)
 CPPFLAGS += -DVM_PREFIX=$(VM_PREFIX)
 CPPFLAGS += -DVM_PREFIX_INCLUDE="<$(VM_PREFIX).h>"
+CPPFLAGS += -DVM_PREFIX_ROOT_INCLUDE="<$(VM_PREFIX)___024root.h>"
 CPPFLAGS += $(CPPFLAGS_DRIVER)
 CPPFLAGS += $(CPPFLAGS_DRIVER2)
 CPPFLAGS += $(CPPFLAGS_ADD)
 
+# Reduce spin count for faster testing
+CPPFLAGS += -DVL_LOCK_SPINS=10000
+
 ifeq ($(CFG_WITH_LONGTESTS),yes)
   ifeq ($(DRIVER_STD),newest)
-    CPPFLAGS += $(CFG_CXXFLAGS_STD_NEWEST)
-  else ifeq ($(DRIVER_STD),oldest)
-    CPPFLAGS += $(CFG_CXXFLAGS_STD_OLDEST)
+    CPPFLAGS += $(CFG_CXXFLAGS_STD)
   endif
 endif
 

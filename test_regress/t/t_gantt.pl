@@ -8,12 +8,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-use IO::File;
-
 # Test for bin/verilator_gantt,
-#
-# Only needed in multithreaded regression.
-scenarios(vltmt => 1);
+
+scenarios(vlt_all => 1);
 
 # It doesn't really matter what test
 # we use, so long as it runs several cycles,
@@ -21,14 +18,16 @@ scenarios(vltmt => 1);
 top_filename("t/t_gen_alw.v");
 
 compile(
+    v_flags2 => ["--prof-exec"],
     # Checks below care about thread count, so use 2 (minimum reasonable)
-    v_flags2 => ["--prof-threads --threads 2"]
+    threads => $Self->{vltmt} ? 2 : 1
     );
 
 execute(
-    all_run_flags => ["+verilator+prof+threads+start+2",
-                      " +verilator+prof+threads+window+2",
-                      " +verilator+prof+threads+file+$Self->{obj_dir}/profile_threads.dat",
+    all_run_flags => ["+verilator+prof+exec+start+2",
+                      " +verilator+prof+exec+window+2",
+                      " +verilator+prof+exec+file+$Self->{obj_dir}/profile_exec.dat",
+                      " +verilator+prof+vlt+file+$Self->{obj_dir}/profile.vlt",
                       ],
     check_finished => 1,
     );
@@ -38,41 +37,24 @@ execute(
 # The profiling data still goes direct to the runtime's STDOUT
 #  (maybe that should go to a separate file - gantt.dat?)
 run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_gantt",
-            "$Self->{obj_dir}/profile_threads.dat",
-            "--vcd $Self->{obj_dir}/profile_threads.vcd",
+            "$Self->{obj_dir}/profile_exec.dat",
+            "--vcd $Self->{obj_dir}/profile_exec.vcd",
             "| tee $Self->{obj_dir}/gantt.log"],
-    verilator_run => 1,
     );
 
-# We should have three lines of gantt chart, each with
-# an even number of mtask-bars (eg "[123--]")
-my $gantt_line_ct = 0;
-my $global_mtask_ct = 0;
-{
-    my $fh = IO::File->new("<$Self->{obj_dir}/gantt.log")
-        or error("$! $Self->{obj_dir}/gantt.log");
-    while (my $line = ($fh && $fh->getline)) {
-        if ($line !~ m/^  t:/) { next; }
-        $gantt_line_ct++;
-        my $this_thread_mtask_ct = 0;
-        my @mtasks = split(/\[/, $line);
-        shift @mtasks;  # throw the '>>  ' away
-        foreach my $mtask (@mtasks) {
-            # Format of each mtask is "[123--]" where the hyphens
-            # number or ] may or may not appear; it depends on exact timing.
-            $this_thread_mtask_ct++;
-            $global_mtask_ct++;
-        }
-        if ($this_thread_mtask_ct % 2 != 0) { error("odd number of mtasks found"); }
-    }
+if ($Self->{vltmt}) {
+    file_grep("$Self->{obj_dir}/gantt.log", qr/Total threads += 2/i);
+    file_grep("$Self->{obj_dir}/gantt.log", qr/Total mtasks += 7/i);
+    # Predicted thread utilization should be less than 100%
+    file_grep_not("$Self->{obj_dir}/gantt.log", qr/Thread utilization =\s*\d\d\d+\.\d+%/i);
+} else {
+    file_grep("$Self->{obj_dir}/gantt.log", qr/Total threads += 1/i);
+    file_grep("$Self->{obj_dir}/gantt.log", qr/Total mtasks += 0/i);
 }
-if ($gantt_line_ct != 2) { error("wrong number of gantt lines"); }
-if ($global_mtask_ct == 0) { error("wrong number of mtasks, should be > 0"); }
-print "Found $gantt_line_ct lines of gantt data with $global_mtask_ct mtasks\n"
-    if $Self->{verbose};
+file_grep("$Self->{obj_dir}/gantt.log", qr/\|\s+2\s+\|\s+2\.0+\s+\|\s+eval/i);
 
 # Diff to itself, just to check parsing
-vcd_identical("$Self->{obj_dir}/profile_threads.vcd", "$Self->{obj_dir}/profile_threads.vcd");
+vcd_identical("$Self->{obj_dir}/profile_exec.vcd", "$Self->{obj_dir}/profile_exec.vcd");
 
 ok(1);
 1;

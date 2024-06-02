@@ -17,14 +17,14 @@ module t (/*AUTOARG*/
 
    ExampInst i
      (// Outputs
-      .o	(o[31:0]),
+      .o        (o[31:0]),
       // Inputs
-      .i	(1'b0)
+      .i        (1'b0)
       /*AUTOINST*/);
 
    Prog p (/*AUTOINST*/
-	   // Inputs
-	   .si				(si));
+           // Inputs
+           .si                          (si));
 
    always @ (posedge clk) begin
       if (!a_finished) $stop;
@@ -37,7 +37,7 @@ endmodule
 
 module InstModule (
    output logic [31:0] so,
-   input 	 si
+   input         si
    );
    assign so = {32{si}};
 endmodule
@@ -52,9 +52,9 @@ module ExampInst (o,i);
 
    InstModule instName
      (// Outputs
-      .so	(o[31:0]),
+      .so       (o[31:0]),
       // Inputs
-      .si	(i)
+      .si       (i)
       /*AUTOINST*/);
 
    //bind InstModule Prog instProg

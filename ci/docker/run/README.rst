@@ -1,3 +1,6 @@
+.. Copyright 2003-2024 by Wilson Snyder.
+.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
 Verilator Executable Docker Container
 =====================================
 
@@ -62,12 +65,11 @@ Internals
 ---------
 
 The Dockerfile builds Verilator and removes the tree when completed to
-reduce the image size. The entrypoint is set as a wrapper script
+reduce the image size. The entrypoint is a wrapper script
 (``verilator-wrap.sh``). That script 1. calls Verilator, and 2. copies the
 Verilated runtime files to the ``obj_dir`` or the ``-Mdir``
 respectively. This allows the user to have the files to they may later
 build the C++ output with the matching runtime files. The wrapper also
 patches the Verilated Makefile accordingly.
 
-There is also a hook defined that is run by docker hub via automated
-builds.
+A hook is also defined and run by Docker Hub via automated builds.

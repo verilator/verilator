@@ -1,5 +1,5 @@
 %Error: t/t_var_dup2_bad.v:13:9: Duplicate declaration of signal: 'bad_o_w'
-                               : ... note: ANSI ports must have type declared with the I/O (IEEE 1800-2017 23.2.2.2)
+                               : ... note: ANSI ports must have type declared with the I/O (IEEE 1800-2023 23.2.2.2)
    13 |    wire bad_o_w;
       |         ^~~~~~~
         t/t_var_dup2_bad.v:10:11: ... Location of original declaration
@@ -11,4 +11,16 @@
         t/t_var_dup2_bad.v:11:11: ... Location of original declaration
    11 |    output bad_o_r);
       |           ^~~~~~~
+%Error: t/t_var_dup2_bad.v:17:9: Duplicate declaration of signal: 'bad_w_r'
+   17 |    reg  bad_w_r;
+      |         ^~~~~~~
+        t/t_var_dup2_bad.v:16:9: ... Location of original declaration
+   16 |    wire bad_w_r;
+      |         ^~~~~~~
+%Error: t/t_var_dup2_bad.v:20:9: Duplicate declaration of signal: 'bad_r_w'
+   20 |    reg  bad_r_w;
+      |         ^~~~~~~
+        t/t_var_dup2_bad.v:19:9: ... Location of original declaration
+   19 |    wire bad_r_w;
+      |         ^~~~~~~
 %Error: Exiting due to

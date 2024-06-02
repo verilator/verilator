@@ -13,9 +13,9 @@ module t (/*AUTOARG*/
    clk
    );
 
-   input 	   clk;
+   input           clk;
    output integer  val;
-   integer 	   dbg_addr = 0;
+   integer         dbg_addr = 0;
 
    function func1;
       input en;
@@ -24,7 +24,7 @@ module t (/*AUTOARG*/
    endfunction
 
    function func2;
-      input 	   en;
+      input        en;
       input [31:0] a;
       func2 = en && (a == 2);
    endfunction

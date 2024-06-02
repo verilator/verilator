@@ -26,3 +26,5 @@
 -pvalue+int52=32\'hdead_beef
 -Gint61="32'hdead_beef"
 -pvalue+int62="32'hdead_beef"
+-Gint71=-1000
+-pvalue+int72=-1000

@@ -16,20 +16,20 @@ module t (/*autoarg*/
    input [15:0] in;
    wreal aout;
 
-   integer 	cyc=0;
+   integer      cyc = 0;
 
-   real 	vin;
-   wreal 	vpass;
+   real         vin;
+   wreal        vpass;
    through through (.vin, .vpass);
 
-   real 	gnd;
-   wire 	out;
+   real         gnd;
+   wire         out;
    within_range within_range (/*AUTOINST*/
-			      // Interfaces
-			      .vpass		(vpass),
-			      .gnd		(gnd),
-			      // Outputs
-			      .out		(out));
+                              // Interfaces
+                              .vpass            (vpass),
+                              .gnd              (gnd),
+                              // Outputs
+                              .out              (out));
 
     // wreal bus declaration
     wreal vin_upper_bus[1:0];
@@ -59,33 +59,33 @@ module t (/*autoarg*/
    always @ (posedge clk) begin
       cyc <= cyc + 1;
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d aout=%d (%f-%f=%f)\n",$time, cyc, out, vin, gnd, within_range.in_int);
+      $write("[%0t] cyc==%0d aout=%d (%f-%f=%f)\n", $time, cyc, out, vin, gnd, within_range.in_int);
 `endif
       if (cyc==0) begin
-	 // Setup
-	 gnd = 0.0;
-	 vin = 0.2;
+         // Setup
+         gnd = 0.0;
+         vin = 0.2;
       end
       else if (cyc==2) begin
-	 if (out != 0) $stop;
+         if (out != 0) $stop;
       end
       else if (cyc==3) begin
-	 gnd = 0.0;
-	 vin = 0.6;
+         gnd = 0.0;
+         vin = 0.6;
       end
       else if (cyc==4) begin
-	 if (out != 1) $stop;
+         if (out != 1) $stop;
       end
       else if (cyc==5) begin
-	 gnd = 0.6;
-	 vin = 0.8;
+         gnd = 0.6;
+         vin = 0.8;
       end
       else if (cyc==6) begin
-	 if (out != 0) $stop;
+         if (out != 0) $stop;
       end
       else if (cyc==99) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

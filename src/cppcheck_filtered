@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=C0103,C0114,C0115,C0116,R0911,R0912,R0915,W0621
+# pylint: disable=C0103,C0114,C0115,C0116,C0209,R0911,R0912,R0915,W0621
 ######################################################################
 
 import argparse
@@ -20,7 +20,6 @@ def process(cppcheck_args):
     if Args.debug:
         print("\t" + cmd)
     fh = os.popen(cmd)
-    uniq = {}
     errs = False
     last_error = ""
     for line in fh:
@@ -30,18 +29,11 @@ def process(cppcheck_args):
         line = re.sub(r'^\s+', '', line)
         # Sometimes tacked at end-of-line
         line = re.sub(r'Checking usage of global functions\.+', '', line)
-        # General gunk
-        if line in uniq:
-            continue
-        uniq[line] = 1
+        line = re.sub(r' file0="[^"]+"', r'', line)
 
         if re.search(r'^<\?xml version', line):
             continue
         if re.search(r'^<cppcheck', line):
-            continue
-        if re.search(r'^<results', line):
-            continue
-        if re.search(r'^</results>', line):
             continue
         if re.search(r'^<errors', line):
             continue
@@ -49,8 +41,11 @@ def process(cppcheck_args):
             continue
         if re.search(r'^</errors>', line):
             continue
-        # --suppress=unmatchedSuppression doesn't work
-        if re.search(r'^<error.*id="unmatchedSuppression"', line):
+        if re.search(r'^<results', line):
+            continue
+        if re.search(r'^</results>', line):
+            continue
+        if re.search(r'^<symbol>', line):
             continue
         # An earlier id line is more specific
         if re.search(r'Cppcheck cannot find all the include files', line):
@@ -62,11 +57,6 @@ def process(cppcheck_args):
         if re.search(r'^make.*Leaving directory ', line):
             continue
         if re.search(r'^\s+$', line):
-            continue
-
-        # Specific suppressions (see _suppress also)
-        # Doesn't know UINFO will use it
-        if re.search(r'id="unusedPrivateFunction" .*::debug', line):
             continue
 
         # Output
@@ -87,7 +77,7 @@ def process(cppcheck_args):
         match = re.search(r'<location.* file="([^"]+)"\s+line="(\d+)"', line)
         if match:
             file = match.group(1)
-            linenum = match.group(2)
+            linenum = int(match.group(2))
             match = re.search(r' id="([^"]+)"', last_error)
             eid = match.group(1) if match else '?'
             if _suppress(file, linenum, eid):
@@ -95,7 +85,7 @@ def process(cppcheck_args):
             if file == "*":
                 suppress = True
             if not suppress:
-                print(file + ":" + linenum + ": " + last_error)
+                print("%s:%s: %s" % (file, linenum, last_error))
                 suppress = True
 
         if not suppress:
@@ -117,19 +107,45 @@ def _suppress(filename, linenum, eid):
     if filename == "*":
         return False
 
-    # Cleanup for e.g. ../V3AstNodes.h
+    # Cleanup for e.g. ../V3AstNode*.h
     filename = re.sub(r'^\.\./(.*)', r'src/\1', filename)
 
     # Specific suppressions
+    if eid == 'asctimeCalled' and re.search(r'gtkwave/', filename):
+        return True
+    if eid == 'constParameter' and re.search(r'gtkwave/', filename):
+        return True
+    if eid == 'ctuOneDefinitionRuleViolation' and re.search(
+            r'vltstd/', filename):
+        return True
+    if eid == 'duplicateConditionalAssign' and re.search(
+            r'gtkwave/', filename):
+        return True
+    if eid == 'knownConditionTrueFalse' and re.search(r'gtkwave/', filename):
+        return True
     if eid == 'missingInclude' and re.search(r'systemc.h', filename):
         return True
     if eid == 'missingInclude' and re.search(r'svdpi.h', filename):
+        return True
+    if eid == 'shiftNegativeLHS' and re.search(r'gtkwave/', filename):
+        return True
+    if eid == 'shiftTooManyBits' and re.search(r'gtkwave/', filename):
+        return True
+    if eid == 'shiftTooManyBitsSigned' and re.search(r'gtkwave/', filename):
+        return True
+    if eid == 'nullPointerArithmetic' and re.search(r'gtkwave/', filename):
+        return True
+    if eid == 'unmatchedSuppression':
         return True
     if eid == 'unusedFunction' and re.search(r'verilated_dpi.cpp', filename):
         return True
     if eid == 'unusedFunction' and re.search(r'verilated_vpi.cpp', filename):
         return True
     if eid == 'unreachableCode' and re.search(r'V3ParseBison.c', filename):
+        return True
+    if eid == 'unreadVariable' and re.search(r'gtkwave/', filename):
+        return True
+    if eid == 'uselessAssignmentPtrArg' and re.search(r'gtkwave/', filename):
         return True
     if eid == 'variableScope' and re.search(r'fstapi.c', filename):
         return True
@@ -139,14 +155,16 @@ def _suppress(filename, linenum, eid):
               file=sys.stderr)
         return False
 
-    with open(filename) as fh:
+    with open(filename, "r", encoding="utf8") as fh:
         lineno = 0
         for line in fh:
             lineno += 1
-            if lineno + 1 == linenum:
-                match = re.search(r'cppcheck-suppress((\s+\S+)+)', line)
+            if (lineno + 1) == linenum:
+                match = re.search(
+                    r'(cppcheck|cppcheck-has-bug|cppverilator)-suppress((\s+\S+)+)',
+                    line)
                 if match:
-                    for supid in match.group(1).split():
+                    for supid in match.group(2).split():
                         if (supid == eid or (eid in SuppressMap
                                              and supid == SuppressMap[eid])):
                             return True
@@ -165,7 +183,7 @@ filters out unnecessary warnings related to Verilator. Run as:
     cd $VERILATOR_ROOT
     make -k cppcheck""",
     epilog=
-    """Copyright 2014-2021 by Wilson Snyder. This program is free software; you
+    """Copyright 2014-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

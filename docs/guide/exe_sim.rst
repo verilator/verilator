@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2024 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _Simulation Runtime Arguments:
@@ -8,7 +8,7 @@ Simulation Runtime Arguments
 
 The following are the arguments that may be passed to a Verilated
 executable, provided that executable calls
-:code:`Verilated::commandArgs()`.
+:code:`VerilatedContext*->commandArgs(argc, argv)`.
 
 All simulation runtime arguments begin with "+verilator", so that the
 user's executable may skip over all "+verilator" arguments when parsing its
@@ -19,10 +19,19 @@ Summary:
    .. include:: ../_build/gen/args_verilated.rst
 
 
+.. option:: +verilator+coverage+file+<filename>
+
+   When a model was Verilated using :vlopt:`--coverage`, sets the filename
+   to write coverage data into.  Defaults to :file:`coverage.dat`.
+
 .. option:: +verilator+debug
 
    Enable simulation runtime debugging.  Equivalent to
    :vlopt:`+verilator+debugi+4 <+verilator+debugi+\<value\>>`.
+
+   To be useful, the model typically must first be compiled with debug
+   capabilities by Verilating with :vlopt:`--runtime-debug` or `-CFLAGS
+   -DVL_DEBUG=1`.
 
 .. option:: +verilator+debugi+<value>
 
@@ -38,36 +47,62 @@ Summary:
 
    Display help and exit.
 
-.. option:: +verilator+prof+threads+file+<filename>
+.. option:: +verilator+prof+exec+file+<filename>
 
-   When a model was Verilated using :vlopt:`--prof-threads`, sets the
+   When a model was Verilated using :vlopt:`--prof-exec`, sets the
    simulation runtime filename to dump to.  Defaults to
-   :file:`profile_threads.dat`.
+   :file:`profile_exec.dat`.
 
-.. option:: +verilator+prof+threads+start+<value>
+.. option:: +verilator+prof+exec+start+<value>
 
-   When a model was Verilated using :vlopt:`--prof-threads`, the simulation
+   When a model was Verilated using :vlopt:`--prof-exec`, the simulation
    runtime will wait until $time is at this value (expressed in units of
    the time precision), then start the profiling warmup, then
    capturing. Generally this should be set to some time that is well within
    the normal operation of the simulation, i.e. outside of reset. If 0, the
    dump is disabled. Defaults to 1.
 
-.. option:: +verilator+prof+threads+window+<value>
+.. option:: +verilator+prof+exec+window+<value>
 
-   When a model was Verilated using :vlopt:`--prof-threads`, after $time
-   reaches :vlopt:`+verilator+prof+threads+start+\<value\>`, Verilator will
+   When a model was Verilated using :vlopt:`--prof-exec`, after $time
+   reaches :vlopt:`+verilator+prof+exec+start+\<value\>`, Verilator will
    warm up the profiling for this number of eval() calls, then will capture
    the profiling of this number of eval() calls.  Defaults to 2, which
    makes sense for a single-clock-domain module where it's typical to want
    to capture one posedge eval() and one negedge eval().
 
+.. option:: +verilator+prof+threads+file+<filename>
+
+   Removed in 5.020. Was an alias for
+   :vlopt:`+verilator+prof+exec+file+\<filename\>`
+
+.. option:: +verilator+prof+threads+start+<value>
+
+   Removed in 5.020. Was an alias for
+   :vlopt:`+verilator+prof+exec+start+\<value\>`
+
+.. option:: +verilator+prof+threads+window+<value>
+
+   Removed in 5.020. Was an alias for
+   :vlopt:`+verilator+prof+exec+window+\<value\>`
+
+.. option:: +verilator+prof+vlt+file+<filename>
+
+   When a model was Verilated using :vlopt:`--prof-pgo`, sets the
+   profile-guided optimization data runtime filename to dump to.  Defaults
+   to :file:`profile.vlt`.
+
+.. option:: +verilator+quiet
+
+   Disable printing the simulation summary report, see :ref:`Simulation
+   Summary Report`.
+
 .. option:: +verilator+rand+reset+<value>
 
-   When a model was Verilated using :vlopt:`--x-initial unique
-   <--x-initial>`, sets the simulation runtime initialization technique.  0
-   = Reset to zeros. 1 = Reset to all-ones.  2 = Randomize.  See
-   :ref:`Unknown States`.
+   When a model was Verilated using
+   :vlopt:`--x-initial unique <--x-initial>`, sets the simulation runtime
+   initialization technique.  0 = Reset to zeros. 1 = Reset to all-ones.  2
+   = Randomize.  See :ref:`Unknown States`.
 
 .. option:: +verilator+seed+<value>
 
@@ -78,7 +113,7 @@ Summary:
 .. option:: +verilator+noassert
 
    Disable assert checking per runtime argument. This is the same as
-   calling :code:`Verilated::assertOn(false)` in the model.
+   calling :code:`VerilatedContext*->assertOn(false)` in the model.
 
 .. option:: +verilator+V
 

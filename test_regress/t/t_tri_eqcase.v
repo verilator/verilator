@@ -10,9 +10,9 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer 	cyc=0;
-   reg [63:0] 	crc;
-   reg [63:0] 	sum;
+   integer      cyc = 0;
+   reg [63:0]   crc;
+   reg [63:0]   sum;
 
    wire [3:0]  drv_a = crc[3:0];
    wire [3:0]  drv_b = crc[7:4];
@@ -20,52 +20,52 @@ module t (/*AUTOARG*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [8:0]		match1;			// From test1 of Test1.v
-   wire [8:0]		match2;			// From test2 of Test2.v
+   wire [8:0]           match1;                 // From test1 of Test1.v
+   wire [8:0]           match2;                 // From test2 of Test2.v
    // End of automatics
 
    Test1 test1 (/*AUTOINST*/
-		// Outputs
-		.match1			(match1[8:0]),
-		// Inputs
-		.drv_a			(drv_a[3:0]),
-		.drv_e			(drv_e[3:0]));
+                // Outputs
+                .match1                 (match1[8:0]),
+                // Inputs
+                .drv_a                  (drv_a[3:0]),
+                .drv_e                  (drv_e[3:0]));
    Test2 test2 (/*AUTOINST*/
-		// Outputs
-		.match2			(match2[8:0]),
-		// Inputs
-		.drv_a			(drv_a[3:0]),
-		.drv_e			(drv_e[3:0]));
+                // Outputs
+                .match2                 (match2[8:0]),
+                // Inputs
+                .drv_a                  (drv_a[3:0]),
+                .drv_e                  (drv_e[3:0]));
 
    // Aggregate outputs into a single result vector
-   wire [63:0] 		result = {39'h0, match2, 7'h0, match1};
+   wire [63:0]          result = {39'h0, match2, 7'h0, match1};
 
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d crc=%x m1=%x m2=%x  (%b??%b:%b)\n",$time, cyc, crc, match1, match2, drv_e,drv_a,drv_b);
+      $write("[%0t] cyc==%0d crc=%x m1=%x m2=%x  (%b??%b:%b)\n", $time, cyc, crc, match1, match2, drv_e,drv_a,drv_b);
 `endif
       cyc <= cyc + 1;
-      crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
-      sum <= result ^ {sum[62:0],sum[63]^sum[2]^sum[0]};
+      crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
+      sum <= result ^ {sum[62:0], sum[63] ^ sum[2] ^ sum[0]};
       if (cyc==0) begin
-	 // Setup
-	 crc <= 64'h5aef0c8d_d70a4497;
-	 sum <= 64'h0;
+         // Setup
+         crc <= 64'h5aef0c8d_d70a4497;
+         sum <= 64'h0;
       end
       else if (cyc<10) begin
-	 sum <= 64'h0;
+         sum <= 64'h0;
       end
       else if (cyc<90) begin
       end
       else if (cyc==99) begin
-	 $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
-	 if (crc !== 64'hc77bb9b3784ea091) $stop;
-	 // What checksum will we end up with (above print should match)
+         $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
+         if (crc !== 64'hc77bb9b3784ea091) $stop;
+         // What checksum will we end up with (above print should match)
 `define EXPECTED_SUM 64'hc0c4a2b9aea7c4b4
-	 if (sum !== `EXPECTED_SUM) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if (sum !== `EXPECTED_SUM) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

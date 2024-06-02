@@ -197,6 +197,10 @@ module t (/*AUTOARG*/
       $display("%g", $asinh(r));
       $display("%g", $acosh(r));
       $display("%g", $atanh(r));
+
+      force sum = 10;
+      repeat (2) if (sum != 10) $stop;
+      release sum;
    end
 endmodule
 

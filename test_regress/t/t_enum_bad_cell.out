@@ -1,0 +1,9 @@
+%Warning-VARHIDDEN: t/t_enum_bad_cell.v:12:14: Declaration of enum value hides declaration in upper scope: s1
+   12 |    enum {s0, s1} state;
+      |              ^~
+                    t/t_enum_bad_cell.v:8:8: ... Location of original declaration
+    8 |    sub s1();
+      |        ^~
+                    ... For warning description see https://verilator.org/warn/VARHIDDEN?v=latest
+                    ... Use "/* verilator lint_off VARHIDDEN */" and lint_on around source to disable this message.
+%Error: Exiting due to

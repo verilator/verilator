@@ -1,0 +1,4 @@
+%Error: t/t_preproc_inc_fn_bad.v:7:10: Expecting include filename. Found: ELSE
+    7 | `include `else
+      |          ^~~~~
+%Error: Exiting due to

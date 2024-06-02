@@ -4,7 +4,8 @@
 // any use, without warranty, 2020 Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
 module t(/*AUTOARG*/
    // Inputs
@@ -12,7 +13,7 @@ module t(/*AUTOARG*/
    );
    input clk;
 
-   integer cyc=0;
+   integer cyc = 0;
    reg [63:0] crc;
    reg [63:0] sum;
 
@@ -47,10 +48,10 @@ module t(/*AUTOARG*/
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d in=%x\n",$time, cyc, in);
+      $write("[%0t] cyc==%0d in=%x\n", $time, cyc, in);
 `endif
       cyc <= cyc + 1;
-      crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
+      crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
       if (cyc == 0) begin
          // Setup
          crc <= 64'h5aef0c8d_d70a4497;

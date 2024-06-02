@@ -4,6 +4,9 @@
 // any use, without warranty, 2003 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+
 `ifdef WRITEMEM_BIN
  `define READMEMX  $readmemb
  `define WRITEMEMX $writememb
@@ -14,12 +17,16 @@
 
 module t;
 
-   // verilator lint_off LITENDIAN
+   // verilator lint_off ASCRANGE
    reg [5:0] binary_string [2:15];
    reg [5:0] binary_nostart [2:15];
    reg [5:0] binary_start [0:15];
    reg [175:0] hex [0:15];
    reg [(32*6)-1:0] hex_align [0:15];
+   reg [55:0] qdata [0:15];
+   reg [25:0] idata [0:15];
+   reg [10:0] sdata [0:15];
+   reg [6:0] cdata [0:15];
    string fns;
 
 `ifdef WRITEMEM_READ_BACK
@@ -28,9 +35,13 @@ module t;
    reg [5:0] binary_start_tmp [0:15];
    reg [175:0] hex_tmp [0:15];
    reg [(32*6)-1:0] hex_align_tmp [0:15];
+   reg [55:0] qdata_tmp [0:15];
+   reg [25:0] idata_tmp [0:15];
+   reg [10:0] sdata_tmp [0:15];
+   reg [6:0] cdata_tmp [0:15];
    string fns_tmp;
 `endif
-   // verilator lint_on LITENDIAN
+   // verilator lint_on ASCRANGE
 
    integer   i;
 
@@ -39,13 +50,21 @@ module t;
          // Initialize memories to zero,
          // avoid differences between 2-state and 4-state.
          for (i=0; i<16; i=i+1) begin
-            binary_start[i] = 6'h0;
-            hex[i] = 176'h0;
-            hex_align[i] = {32*6{1'b0}};
+            binary_start[i] = '0;
+            hex[i] = '0;
+            hex_align[i] = '0;
+            qdata[i] = '0;
+            idata[i] = '0;
+            sdata[i] = '0;
+            cdata[i] = '0;
 `ifdef WRITEMEM_READ_BACK
-            binary_start_tmp[i] = 6'h0;
-            hex_tmp[i] = 176'h0;
-            hex_align_tmp[i] = {32*6{1'b0}};
+            binary_start_tmp[i] = '0;
+            hex_tmp[i] = '0;
+            hex_align_tmp[i] = '0;
+            qdata_tmp[i] = '0;
+            idata_tmp[i] = '0;
+            sdata_tmp[i] = '0;
+            cdata_tmp[i] = '0;
 `endif
          end
          for (i=2; i<16; i=i+1) begin
@@ -161,12 +180,92 @@ module t;
       end
 
       begin
-         fns = "t/t_sys_readmem_b.mem";
 `ifdef WRITEMEM_READ_BACK
-         fns_tmp = `OUT_TMP5;
-         $readmemb(fns, binary_string_tmp);
+         $readmemh("t/t_sys_readmem_q.mem", qdata_tmp, 0);
  `ifdef TEST_VERBOSE
          $display("-Writing %s", `OUT_TMP5);
+ `endif
+         `WRITEMEMX(`OUT_TMP5, qdata_tmp, 0);
+         `READMEMX(`OUT_TMP5, qdata, 0);
+`else
+         $readmemh("t/t_sys_readmem_q.mem", qdata, 0);
+`endif
+`ifdef TEST_VERBOSE
+         for (i=0; i<16; i=i+1) $write("    @%x = %x\n", i, qdata[i]);
+`endif
+         `checkh(qdata['h04], 56'hdcba9876540004);
+         `checkh(qdata['h0a], 56'hdcba987654000a);
+         `checkh(qdata['h0b], 56'hdcba987654000b);
+         `checkh(qdata['h0c], 56'hdcba987654000c);
+      end
+
+      begin
+`ifdef WRITEMEM_READ_BACK
+         $readmemh("t/t_sys_readmem_i.mem", idata_tmp, 0);
+ `ifdef TEST_VERBOSE
+         $display("-Writing %s", `OUT_TMP6);
+ `endif
+         `WRITEMEMX(`OUT_TMP6, idata_tmp, 0);
+         `READMEMX(`OUT_TMP6, idata, 0);
+`else
+         $readmemh("t/t_sys_readmem_i.mem", idata, 0);
+`endif
+`ifdef TEST_VERBOSE
+         for (i=0; i<16; i=i+1) $write("    @%x = %x\n", i, idata[i]);
+`endif
+         `checkh(idata['h04], 26'h6540004);
+         `checkh(idata['h0a], 26'h654000a);
+         `checkh(idata['h0b], 26'h654000b);
+         `checkh(idata['h0c], 26'h654000c);
+      end
+
+      begin
+`ifdef WRITEMEM_READ_BACK
+         $readmemh("t/t_sys_readmem_s.mem", sdata_tmp, 0);
+ `ifdef TEST_VERBOSE
+         $display("-Writing %s", `OUT_TMP7);
+ `endif
+         `WRITEMEMX(`OUT_TMP7, sdata_tmp, 0);
+         `READMEMX(`OUT_TMP7, sdata, 0);
+`else
+         $readmemh("t/t_sys_readmem_s.mem", sdata, 0);
+`endif
+`ifdef TEST_VERBOSE
+         for (i=0; i<16; i=i+1) $write("    @%x = %x\n", i, sdata[i]);
+`endif
+         `checkh(sdata['h04], 11'h654);
+         `checkh(sdata['h0a], 11'h65a);
+         `checkh(sdata['h0b], 11'h65b);
+         `checkh(sdata['h0c], 11'h65c);
+      end
+
+      begin
+`ifdef WRITEMEM_READ_BACK
+         $readmemh("t/t_sys_readmem_c.mem", cdata_tmp, 0);
+ `ifdef TEST_VERBOSE
+         $display("-Writing %s", `OUT_TMP8);
+ `endif
+         `WRITEMEMX(`OUT_TMP8, cdata_tmp, 0);
+         `READMEMX(`OUT_TMP8, cdata, 0);
+`else
+         $readmemh("t/t_sys_readmem_c.mem", cdata, 0);
+`endif
+`ifdef TEST_VERBOSE
+         for (i=0; i<16; i=i+1) $write("    @%x = %x\n", i, cdata[i]);
+`endif
+         `checkh(cdata['h04], 7'h14);
+         `checkh(cdata['h0a], 7'h1a);
+         `checkh(cdata['h0b], 7'h1b);
+         `checkh(cdata['h0c], 7'h1c);
+      end
+
+      begin
+         fns = "t/t_sys_readmem_b.mem";
+`ifdef WRITEMEM_READ_BACK
+         fns_tmp = `OUT_TMP8;
+         $readmemb(fns, binary_string_tmp);
+ `ifdef TEST_VERBOSE
+         $display("-Writing %s", `OUT_TMP8);
  `endif
          `WRITEMEMX(fns_tmp, binary_string_tmp);
          `READMEMX(fns_tmp, binary_string);

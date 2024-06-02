@@ -9,11 +9,11 @@
 //
 //*************************************************************************
 
+#include "svdpi.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
-#include "svdpi.h"
 
 // clang-format off
 #if defined(VERILATOR)  // Verilator
@@ -48,7 +48,7 @@ typedef uint64_t sv_longint_unsigned_t;
 // Implementations of imported functions
 //======================================================================
 
-// Basic types as per IEEE 1800-2017 35.5.5
+// Basic types as per IEEE 1800-2023 35.5.5
 void i_void() {
     static int n = 0;
     printf("i_void %d\n", n);
@@ -286,7 +286,7 @@ void check_exports() {
 
     e_void();
 
-    // Basic types as per IEEE 1800-2017 35.5.5
+    // Basic types as per IEEE 1800-2023 35.5.5
     if (e_byte() != 10 + n) stop();
     if (e_byte_unsigned() != 20 + n) stop();
     if (e_shortint() != 30 + n) stop();
@@ -303,9 +303,9 @@ void check_exports() {
 #endif
     if (e_chandle()) stop();
     if ((n % 2) == 0) {
-        if (strcmp(e_string(), "Hello") != 0) stop();
+        if (std::strcmp(e_string(), "Hello") != 0) stop();
     } else {
-        if (strcmp(e_string(), "World") != 0) stop();
+        if (std::strcmp(e_string(), "World") != 0) stop();
     }
     if (e_bit() != (n % 2)) stop();
     if (e_logic() != !(n % 2)) stop();
@@ -327,9 +327,9 @@ void check_exports() {
 #endif
     if (e_chandle_t()) stop();
     if ((n % 2) == 0) {
-        if (strcmp(e_string_t(), "Hello") != 0) stop();
+        if (std::strcmp(e_string_t(), "Hello") != 0) stop();
     } else {
-        if (strcmp(e_string_t(), "World") != 0) stop();
+        if (std::strcmp(e_string_t(), "World") != 0) stop();
     }
     if (e_bit_t() != (n % 2)) stop();
     if (e_logic_t() != !(n % 2)) stop();

@@ -7,17 +7,18 @@
 // SPDX-License-Identifier: CC0-1.0
 
 #include <verilated.h>
-#include "Vt_enum_public.h"
 
+#include "Vt_enum_public.h"
 #include "Vt_enum_public_p3.h"
 #include "Vt_enum_public_p62.h"
 
 double sc_time_stamp() { return 0; }
 
 int main(int argc, char* argv[]) {
-    Vt_enum_public* topp = new Vt_enum_public;
-
     Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
+
+    VM_PREFIX* topp = new VM_PREFIX;
 
     // Make sure public tag worked
     if (Vt_enum_public_p3::ZERO == Vt_enum_public_p3::ONE) {}

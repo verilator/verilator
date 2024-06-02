@@ -1,0 +1,28 @@
+"real" ==? "real"
+"bit" ==? "bit"
+"int" ==? "int"
+"logic" ==? "logic"
+"string" ==? "string"
+"real" ==? "real"
+"logic" ==? "logic"
+"bit" ==? "bit"
+"bit[2:0]" ==? "bit[2:0]"
+"bit$[3:2]" ==? "bit$[3:2]"
+"bit$[3:1][4:5]" ==? "bit$[3:1][4:5]"
+
+"bit" ==? "bit"
+"bit[2:0]" ==? "bit[2:0]"
+"int" ==? "int"
+"bit[9:1]" ==? "bit[9:1]"
+"string$[longint]" ==? "string$[longint]"
+"int$[$]" ==? "int$[$]"
+"int$[$:3]" ==? "int$[$:3]"
+"bit$[]" ==? "bit$[]"
+
+"enum{A=32'h0;B=32'h1;C=32'h63;}A::__typeimpenum1" ==? "enum{A=32'sd0,B=32'sd1,C=32'sd99}A::<unspecified>"
+"struct{bit A;bit B;}t.AB_t" ==? "struct{bit A;bit B;}<some_have_typename>"
+"struct{bit A;bit B;}t.AB_t$[0:9]" ==? "struct{bit A;bit B;}top.AB_t$[0:9]"
+"union{bit A;bit B;}t.UAB_t" ==? "union{bit A;bit B;}"
+"class{}Cls" ==? "class{}t.Cls <or class t.Cls>"
+
+*-* All Finished *-*

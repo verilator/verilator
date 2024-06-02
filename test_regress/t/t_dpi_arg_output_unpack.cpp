@@ -89,18 +89,24 @@ void set_uint(svBitVecVal* v0, sv_longint_unsigned_t val, int bitwidth) {
     }
 }
 
-template <typename T> void set_0d(T* v) { *v = 42; }
-template <typename T> void set_1d(T* v) {
+template <typename T>
+void set_0d(T* v) {
+    *v = 42;
+}
+template <typename T>
+void set_1d(T* v) {
     v[0] = 43;
     v[1] = 44;
 }
 
-template <typename T> void set_2d(T* v) {
+template <typename T>
+void set_2d(T* v) {
     v[0 * 2 + 1] = 45;
     v[1 * 2 + 1] = 46;
     v[2 * 2 + 1] = 47;
 }
-template <typename T> void set_3d(T* v) {
+template <typename T>
+void set_3d(T* v) {
     v[(0 * 3 + 0) * 2 + 0] = 48;
     v[(1 * 3 + 0) * 2 + 0] = 49;
     v[(2 * 3 + 0) * 2 + 0] = 50;
@@ -173,7 +179,8 @@ void set_3d(svBitVecVal* v, int bitwidth) {
     set_uint(v + ((3 * 3 + 0) * 2 + 0) * unit, 51, bitwidth);
 }
 
-template <typename T> bool compare(const T& act, const T& exp) {
+template <typename T>
+bool compare(const T& act, const T& exp) {
     if (exp == act) {
         if (VERBOSE_MESSAGE) std::cout << "OK Exp:" << exp << " actual:" << act << std::endl;
         return true;
@@ -183,14 +190,20 @@ template <typename T> bool compare(const T& act, const T& exp) {
     }
 }
 
-template <typename T> bool check_0d(T v) { return compare<T>(v, 42); }
-template <typename T> bool check_1d(const T (&v)[2]) {
+template <typename T>
+bool check_0d(T v) {
+    return compare<T>(v, 42);
+}
+template <typename T>
+bool check_1d(const T (&v)[2]) {
     return compare<T>(v[0], 43) && compare<T>(v[1], 44);
 }
-template <typename T> bool check_2d(const T (&v)[3][2]) {
+template <typename T>
+bool check_2d(const T (&v)[3][2]) {
     return compare<T>(v[0][1], 45) && compare<T>(v[1][1], 46) && compare<T>(v[2][1], 47);
 }
-template <typename T> bool check_3d(const T (&v)[4][3][2]) {
+template <typename T>
+bool check_3d(const T (&v)[4][3][2]) {
     return compare<T>(v[0][0][0], 48) && compare<T>(v[1][0][0], 49) && compare<T>(v[2][0][0], 50)
            && compare<T>(v[3][0][0], 51);
 }
@@ -225,17 +238,21 @@ bool compare(const svBitVecVal* v0, sv_longint_unsigned_t val, int bitwidth) {
     return true;
 }
 
-template <typename T, size_t N> bool check_0d(const T (&v)[N], int bitwidth) {
+template <typename T, size_t N>
+bool check_0d(const T (&v)[N], int bitwidth) {
     return compare(v, 42, bitwidth);
 }
-template <typename T, size_t N> bool check_1d(const T (&v)[2][N], int bitwidth) {
+template <typename T, size_t N>
+bool check_1d(const T (&v)[2][N], int bitwidth) {
     return compare(v[0], 43, bitwidth) && compare(v[1], 44, bitwidth);
 }
-template <typename T, size_t N> bool check_2d(const T (&v)[3][2][N], int bitwidth) {
+template <typename T, size_t N>
+bool check_2d(const T (&v)[3][2][N], int bitwidth) {
     return compare(v[0][1], 45, bitwidth) && compare(v[1][1], 46, bitwidth)
            && compare(v[2][1], 47, bitwidth);
 }
-template <typename T, size_t N> bool check_3d(const T (&v)[4][3][2][N], int bitwidth) {
+template <typename T, size_t N>
+bool check_3d(const T (&v)[4][3][2][N], int bitwidth) {
     return compare(v[0][0][0], 48, bitwidth) && compare(v[1][0][0], 49, bitwidth)
            && compare(v[2][0][0], 50, bitwidth) && compare(v[3][0][0], 51, bitwidth);
 }

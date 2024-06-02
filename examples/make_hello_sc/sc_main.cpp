@@ -7,13 +7,15 @@
 //======================================================================
 
 // SystemC global header
-#include <systemc.h>
+#include <systemc>
 
 // Include common routines
 #include <verilated.h>
 
 // Include model header, generated from Verilating "top.v"
 #include "Vtop.h"
+
+using namespace sc_core;
 
 int sc_main(int argc, char* argv[]) {
     // See a similar example walkthrough in the verilator manpage.
@@ -22,11 +24,12 @@ int sc_main(int argc, char* argv[]) {
     // real project, it is better to start with a more complete example,
     // e.g. examples/c_tracing.
 
-    // Prevent unused variable warnings
-    if (false && argc && argv) {}
-
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
-    Vtop* top = new Vtop{"top"};
+    Vtop* const top = new Vtop{"top"};
+
+    // Pass arguments so Verilated code can see them, e.g. $value$plusargs
+    // This needs to be called before you create any model
+    Verilated::commandArgs(argc, argv);
 
     // Initialize SC model
     sc_start(1, SC_NS);

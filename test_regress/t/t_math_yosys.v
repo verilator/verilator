@@ -10,7 +10,7 @@ module t(/*AUTOARG*/
    );
    input clk;
 
-   integer cyc=0;
+   integer cyc = 0;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)

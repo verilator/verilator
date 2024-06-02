@@ -9,11 +9,12 @@
 //
 //*************************************************************************
 
+#include "svdpi.h"
+
 #include <atomic>
 #include <cstdio>
 #include <iostream>
 #include <unistd.h>
-#include "svdpi.h"
 
 //======================================================================
 

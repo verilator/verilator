@@ -19,13 +19,17 @@ module t;
    string     svs = "sv-str";
    reg [31:0] regstr = "meep";
 
+   reg [5:0]  assoc_c[int];
+
    sub sub ();
    sub2 sub2 ();
+   sub3 sub3 ();
 
    initial begin
       $write("[%0t] In %m: Hi\n", $time);
       sub.write_m;
       sub2.write_m;
+      sub3.write_m;
 
       // Escapes
       $display("[%0t] Back \\ Quote \"", $time);  // Old bug when \" last on the line.
@@ -120,8 +124,14 @@ module t;
                {"a","b","c","d"}, {"a","b","c","d"});  // Avoid binary output
       // %z is tested in t_sys_sformat.v
 
-      $display("[%0t] %%D=%D %%d=%d %%01d=%01d %%06d=%06d %%6d=%6d", $time,
-               nine, nine, nine, nine, nine);
+      $display("[%0t] %%D=%D %%d=%d %%01d=%01d %%06d=%06d %%6d=%6d %%-06d=%-06d %%-6d=%-6d", $time,
+               nine, nine, nine, nine, nine, nine, nine);
+      $display("[%0t] %%X=%X %%x=%x %%01x=%01x %%06x=%06x %%6x=%6x %%-06x=%-06x %%-6x=%-6x", $time,
+               nine, nine, nine, nine, nine, nine, nine);
+      $display("[%0t] %%O=%O %%o=%o %%01o=%01o %%06o=%06o %%6o=%6o %%-06o=%-06o %%-6o=%-6o", $time,
+               nine, nine, nine, nine, nine, nine, nine);
+      $display("[%0t] %%B=%B %%b=%b %%01b=%01b %%06b=%06b %%6b=%6b %%-06b=%-06b %%-6b=%-6b", $time,
+               nine, nine, nine, nine, nine, nine, nine);
       $display("[%0t] %%t=%t %%03t=%03t %%0t=%0t", $time,
                $time, $time, $time);
       $display;
@@ -142,6 +152,13 @@ module t;
       $writeb; $displayb;
       $writeb("b: "); $writeb(nine); $writeb(" "); $displayb(nine);
       $writeo; $displayo;
+      $display("%d", $signed(32'haaaaaaaa));  // -1431655766
+      $display($signed(32'haaaaaaaa));  // -1431655766
+      $display("%d", $unsigned(-2));  // 4294967294
+      $display($unsigned(-2));  // 4294967294
+      $display("%d", 32'haaaaaaaa);  // 2863311530
+      $display(32'haaaaaaaa);  // 2863311530
+      $display("assoc_c=", assoc_c);  // Default to %p
 
       $display("[%0t] %s%s%s", $time,
                "hel", "lo, fr", "om a very long string. Percent %s are literally substituted in.");
@@ -149,6 +166,7 @@ module t;
       $write("hel", "lo, fr", "om a concatenated format string [%0t].\n", $time);
       $display("extra argument: ", $time);
       $display($time,, ": pre argument",, "after");
+      $display("empty: >%s<", "");
       $write("[%0t] Embedded tab '\t' and \r return\n", $time);
       $display("[%0t] Embedded\
 multiline", $time);
@@ -179,6 +197,18 @@ multiline", $time);
       $display("log10(2) = %d", $log10(100));
       // verilator lint_on REALCVT
 
+      // unknown and high-impedance values
+      $display("%d", 1'bx);
+      $display("%h", 14'bx01010);
+      $display("%h %o", 12'b001xxx101x01, 12'b001xxx101x01);
+      $display("%d", 32'bx);
+      $display("%d", 32'bz);
+      $display("%d", 32'b11x11z111);
+      $display("%d", 32'b11111z111);
+      $display("%h", 12'b1zz1_zzzz_1x1z);
+
+      $display(,, 10);  // Strange but legal
+
       $write("*-* All Finished *-*\n");
       $finish;
    end
@@ -204,5 +234,20 @@ module sub2;
             $write("[%0t] In %m (%L)\n", $time);
          end
       end
+   endtask
+endmodule
+
+module sub3;
+   function real copyr(input real r);
+      copyr = r;
+   endfunction
+
+   real a, d;
+
+   task write_m;
+      a = 0.4;
+      // verilator lint_off REALCVT
+      $display("a: -0.4=> %.1f  %0d  %0x  %0b", copyr(a), copyr(a), copyr(a), copyr(a));
+      // verilator lint_on REALCVT
    endtask
 endmodule

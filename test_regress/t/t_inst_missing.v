@@ -6,9 +6,13 @@
 
 module t (/*AUTOARG*/);
    wire ok = 1'b0;
+   // verilator lint_off UNDRIVEN
+   wire nc;
+   // verilator lint_on UNDRIVEN
+
    // verilator lint_off PINNOCONNECT
    // verilator lint_off PINCONNECTEMPTY
-   sub sub (.ok(ok), , .nc());
+   sub sub (ok, , nc);
    // verilator lint_on PINCONNECTEMPTY
    // verilator lint_on PINNOCONNECT
 endmodule

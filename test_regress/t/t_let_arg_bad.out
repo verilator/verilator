@@ -1,0 +1,19 @@
+%Error: t/t_let_arg_bad.v:13:18: Too many arguments in function call to LET 'NO_ARG'
+   13 |       if (NO_ARG(10) != 10) $stop;   
+      |                  ^~
+%Error: t/t_let_arg_bad.v:14:11: Missing argument on non-defaulted argument 'a' in function call to LET 'ONE_ARG'
+   14 |       if (ONE_ARG != 10) $stop;   
+      |           ^~~~~~~
+%Error: t/t_let_arg_bad.v:15:11: Missing argument on non-defaulted argument 'a' in function call to LET 'ONE_ARG'
+   15 |       if (ONE_ARG() != 10) $stop;   
+      |           ^~~~~~~
+%Error: t/t_let_arg_bad.v:16:23: Too many arguments in function call to LET 'ONE_ARG'
+   16 |       if (ONE_ARG(10, 20) != 10) $stop;   
+      |                       ^~
+%Error: t/t_let_arg_bad.v:17:20: No such argument 'b' in function call to LET 'ONE_ARG'
+   17 |       if (ONE_ARG(.b(1)) != 10) $stop;   
+      |                    ^
+%Error: t/t_let_arg_bad.v:17:11: Missing argument on non-defaulted argument 'a' in function call to LET 'ONE_ARG'
+   17 |       if (ONE_ARG(.b(1)) != 10) $stop;   
+      |           ^~~~~~~
+%Error: Exiting due to

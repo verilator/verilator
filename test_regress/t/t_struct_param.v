@@ -4,17 +4,18 @@
 // without warranty, 2017 by Matt Myers.
 // SPDX-License-Identifier: CC0-1.0
 
-`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
 package config_pkg;
    typedef struct packed {
-      int 	  UPPER0;
-      struct 	  packed {
-         int 	  USE_QUAD0;
-         int 	  USE_QUAD1;
-         int 	  USE_QUAD2;
+      int         UPPER0;
+      struct      packed {
+         int      USE_QUAD0;
+         int      USE_QUAD1;
+         int      USE_QUAD2;
       } mac;
-      int 	  UPPER2;
+      int         UPPER2;
    } config_struct;
 
    function automatic config_struct static_config(int selector);

@@ -9,8 +9,9 @@
 //
 //*************************************************************************
 
-#include "Vt_var_overwidth_bad.h"
 #include "verilated.h"
+
+#include VM_PREFIX_INCLUDE
 
 //======================================================================
 
@@ -18,10 +19,11 @@ double main_time;
 
 double sc_time_stamp() { return main_time; }
 
-int main(int argc, char** argv, char** env) {
+int main(int argc, char** argv) {
     Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
 
-    VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
+    VM_PREFIX* topp = new VM_PREFIX{""};  // Note null name - we're flattening it out
 
     main_time = 0;
 

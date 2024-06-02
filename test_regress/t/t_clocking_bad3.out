@@ -1,0 +1,13 @@
+%Error: t/t_clocking_bad3.v:14:14: Corresponding variable 'in' does not exist
+   14 |        input in;
+      |              ^~
+%Error: t/t_clocking_bad3.v:15:15: Corresponding variable 'out' does not exist
+   15 |        output out;
+      |               ^~~
+%Error: t/t_clocking_bad3.v:18:13: Duplicate declaration of CLOCKING 'cb': 'cb'
+   18 |    clocking cb @(posedge clk);
+      |             ^~
+        t/t_clocking_bad3.v:13:13: ... Location of original declaration
+   13 |    clocking cb @(posedge clk);
+      |             ^~
+%Error: Exiting due to

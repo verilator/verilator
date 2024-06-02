@@ -1,0 +1,550 @@
+{"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","typeTablep":"(C)","constPoolp":"(D)","dollarUnitPkgp":"UNLINKED","stdPackagep":"UNLINKED","evalp":"UNLINKED","evalNbap":"UNLINKED","dpiExportTriggerp":"UNLINKED","delaySchedulerp":"UNLINKED","nbaEventp":"UNLINKED","nbaEventTriggerp":"UNLINKED","topScopep":"UNLINKED",
+ "modulesp": [
+  {"type":"MODULE","name":"t","addr":"(E)","loc":"d,7:8,7:9","origName":"t","level":2,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
+   "stmtsp": [
+    {"type":"PORT","name":"clk","addr":"(F)","loc":"d,9:4,9:7","exprp": []},
+    {"type":"VAR","name":"clk","addr":"(G)","loc":"d,11:10,11:13","dtypep":"UNLINKED","origName":"clk","isSc":false,"isPrimaryIO":false,"direction":"INPUT","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"NONE","varType":"PORT","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"sensIfacep":"UNLINKED",
+     "childDTypep": [
+      {"type":"BASICDTYPE","name":"LOGIC_IMPLICIT","addr":"(H)","loc":"d,11:10,11:13","dtypep":"(H)","keyword":"LOGIC_IMPLICIT","generic":false,"rangep": []}
+    ],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"cyc","addr":"(I)","loc":"d,13:12,13:15","dtypep":"UNLINKED","origName":"cyc","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"NONE","varType":"VAR","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"sensIfacep":"UNLINKED",
+     "childDTypep": [
+      {"type":"BASICDTYPE","name":"integer","addr":"(J)","loc":"d,13:4,13:11","dtypep":"(J)","keyword":"integer","range":"31:0","generic":false,"rangep": []}
+    ],"delayp": [],
+     "valuep": [
+      {"type":"CONST","name":"?32?sh0","addr":"(K)","loc":"d,13:18,13:19","dtypep":"(L)"}
+    ],"attrsp": []},
+    {"type":"VAR","name":"crc","addr":"(M)","loc":"d,14:15,14:18","dtypep":"UNLINKED","origName":"crc","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"NONE","varType":"VAR","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"sensIfacep":"UNLINKED",
+     "childDTypep": [
+      {"type":"BASICDTYPE","name":"logic","addr":"(N)","loc":"d,14:4,14:7","dtypep":"(N)","keyword":"logic","generic":false,
+       "rangep": [
+        {"type":"RANGE","name":"","addr":"(O)","loc":"d,14:8,14:9","ascending":false,
+         "leftp": [
+          {"type":"CONST","name":"?32?sh3f","addr":"(P)","loc":"d,14:9,14:11","dtypep":"(Q)"}
+        ],
+         "rightp": [
+          {"type":"CONST","name":"?32?sh0","addr":"(R)","loc":"d,14:12,14:13","dtypep":"(L)"}
+        ]}
+      ]}
+    ],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"sum","addr":"(S)","loc":"d,15:15,15:18","dtypep":"UNLINKED","origName":"sum","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"NONE","varType":"VAR","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"sensIfacep":"UNLINKED",
+     "childDTypep": [
+      {"type":"BASICDTYPE","name":"logic","addr":"(T)","loc":"d,15:4,15:7","dtypep":"(T)","keyword":"logic","generic":false,
+       "rangep": [
+        {"type":"RANGE","name":"","addr":"(U)","loc":"d,15:8,15:9","ascending":false,
+         "leftp": [
+          {"type":"CONST","name":"?32?sh3f","addr":"(V)","loc":"d,15:9,15:11","dtypep":"(Q)"}
+        ],
+         "rightp": [
+          {"type":"CONST","name":"?32?sh0","addr":"(W)","loc":"d,15:12,15:13","dtypep":"(L)"}
+        ]}
+      ]}
+    ],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"in","addr":"(X)","loc":"d,18:16,18:18","dtypep":"UNLINKED","origName":"in","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"NONE","varType":"WIRE","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"sensIfacep":"UNLINKED",
+     "childDTypep": [
+      {"type":"BASICDTYPE","name":"logic","addr":"(Y)","loc":"d,18:9,18:10","dtypep":"(Y)","keyword":"logic","generic":false,
+       "rangep": [
+        {"type":"RANGE","name":"","addr":"(Z)","loc":"d,18:9,18:10","ascending":false,
+         "leftp": [
+          {"type":"CONST","name":"?32?sh1f","addr":"(AB)","loc":"d,18:10,18:12","dtypep":"(BB)"}
+        ],
+         "rightp": [
+          {"type":"CONST","name":"?32?sh0","addr":"(CB)","loc":"d,18:13,18:14","dtypep":"(L)"}
+        ]}
+      ]}
+    ],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"ASSIGNW","name":"","addr":"(DB)","loc":"d,18:19,18:20","dtypep":"UNLINKED",
+     "rhsp": [
+      {"type":"SELEXTRACT","name":"","addr":"(EB)","loc":"d,18:24,18:25","dtypep":"UNLINKED",
+       "fromp": [
+        {"type":"PARSEREF","name":"crc","addr":"(FB)","loc":"d,18:21,18:24","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+      ],
+       "leftp": [
+        {"type":"CONST","name":"?32?sh1f","addr":"(GB)","loc":"d,18:25,18:27","dtypep":"(BB)"}
+      ],
+       "rightp": [
+        {"type":"CONST","name":"?32?sh0","addr":"(HB)","loc":"d,18:28,18:29","dtypep":"(L)"}
+      ],"attrp": []}
+    ],
+     "lhsp": [
+      {"type":"PARSEREF","name":"in","addr":"(IB)","loc":"d,18:16,18:18","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+    ],"timingControlp": [],"strengthSpecp": []},
+    {"type":"VAR","name":"out","addr":"(JB)","loc":"d,22:25,22:28","dtypep":"UNLINKED","origName":"out","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"NONE","varType":"WIRE","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"sensIfacep":"UNLINKED",
+     "childDTypep": [
+      {"type":"BASICDTYPE","name":"logic","addr":"(KB)","loc":"d,22:9,22:10","dtypep":"(KB)","keyword":"logic","generic":false,
+       "rangep": [
+        {"type":"RANGE","name":"","addr":"(LB)","loc":"d,22:9,22:10","ascending":false,
+         "leftp": [
+          {"type":"CONST","name":"?32?sh1f","addr":"(MB)","loc":"d,22:10,22:12","dtypep":"(BB)"}
+        ],
+         "rightp": [
+          {"type":"CONST","name":"?32?sh0","addr":"(NB)","loc":"d,22:13,22:14","dtypep":"(L)"}
+        ]}
+      ]}
+    ],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"CELL","name":"test","addr":"(OB)","loc":"d,25:9,25:13","origName":"test","recursive":false,"modp":"(PB)",
+     "pinsp": [
+      {"type":"PIN","name":"out","addr":"(QB)","loc":"d,27:15,27:18","svDotName":true,"svImplicit":false,"modVarp":"UNLINKED","modPTypep":"UNLINKED",
+       "exprp": [
+        {"type":"SELEXTRACT","name":"","addr":"(RB)","loc":"d,27:45,27:46","dtypep":"UNLINKED",
+         "fromp": [
+          {"type":"PARSEREF","name":"out","addr":"(SB)","loc":"d,27:42,27:45","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+        ],
+         "leftp": [
+          {"type":"CONST","name":"?32?sh1f","addr":"(TB)","loc":"d,27:46,27:48","dtypep":"(BB)"}
+        ],
+         "rightp": [
+          {"type":"CONST","name":"?32?sh0","addr":"(UB)","loc":"d,27:49,27:50","dtypep":"(L)"}
+        ],"attrp": []}
+      ]},
+      {"type":"PIN","name":"clk","addr":"(VB)","loc":"d,29:15,29:18","svDotName":true,"svImplicit":false,"modVarp":"UNLINKED","modPTypep":"UNLINKED",
+       "exprp": [
+        {"type":"PARSEREF","name":"clk","addr":"(WB)","loc":"d,29:42,29:45","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+      ]},
+      {"type":"PIN","name":"in","addr":"(XB)","loc":"d,30:15,30:17","svDotName":true,"svImplicit":false,"modVarp":"UNLINKED","modPTypep":"UNLINKED",
+       "exprp": [
+        {"type":"SELEXTRACT","name":"","addr":"(YB)","loc":"d,30:44,30:45","dtypep":"UNLINKED",
+         "fromp": [
+          {"type":"PARSEREF","name":"in","addr":"(ZB)","loc":"d,30:42,30:44","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+        ],
+         "leftp": [
+          {"type":"CONST","name":"?32?sh1f","addr":"(AC)","loc":"d,30:45,30:47","dtypep":"(BB)"}
+        ],
+         "rightp": [
+          {"type":"CONST","name":"?32?sh0","addr":"(BC)","loc":"d,30:48,30:49","dtypep":"(L)"}
+        ],"attrp": []}
+      ]}
+    ],"paramsp": [],"rangep": [],"intfRefsp": []},
+    {"type":"VAR","name":"result","addr":"(CC)","loc":"d,33:16,33:22","dtypep":"UNLINKED","origName":"result","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"NONE","varType":"WIRE","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"sensIfacep":"UNLINKED",
+     "childDTypep": [
+      {"type":"BASICDTYPE","name":"logic","addr":"(DC)","loc":"d,33:9,33:10","dtypep":"(DC)","keyword":"logic","generic":false,
+       "rangep": [
+        {"type":"RANGE","name":"","addr":"(EC)","loc":"d,33:9,33:10","ascending":false,
+         "leftp": [
+          {"type":"CONST","name":"?32?sh3f","addr":"(FC)","loc":"d,33:10,33:12","dtypep":"(Q)"}
+        ],
+         "rightp": [
+          {"type":"CONST","name":"?32?sh0","addr":"(GC)","loc":"d,33:13,33:14","dtypep":"(L)"}
+        ]}
+      ]}
+    ],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"ASSIGNW","name":"","addr":"(HC)","loc":"d,33:23,33:24","dtypep":"UNLINKED",
+     "rhsp": [
+      {"type":"REPLICATE","name":"","addr":"(IC)","loc":"d,33:25,33:26","dtypep":"(JC)",
+       "srcp": [
+        {"type":"CONCAT","name":"","addr":"(KC)","loc":"d,33:31,33:32","dtypep":"UNLINKED",
+         "lhsp": [
+          {"type":"CONST","name":"32'h0","addr":"(LC)","loc":"d,33:26,33:31","dtypep":"(MC)"}
+        ],
+         "rhsp": [
+          {"type":"PARSEREF","name":"out","addr":"(NC)","loc":"d,33:33,33:36","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+        ]}
+      ],
+       "countp": [
+        {"type":"CONST","name":"32'h1","addr":"(OC)","loc":"d,33:25,33:26","dtypep":"(MC)"}
+      ]}
+    ],
+     "lhsp": [
+      {"type":"PARSEREF","name":"result","addr":"(PC)","loc":"d,33:16,33:22","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+    ],"timingControlp": [],"strengthSpecp": []},
+    {"type":"ALWAYS","name":"","addr":"(QC)","loc":"d,36:4,36:10","keyword":"always","isSuspendable":false,"needProcess":false,"sensesp": [],
+     "stmtsp": [
+      {"type":"EVENTCONTROL","name":"","addr":"(RC)","loc":"d,36:11,36:12",
+       "sensesp": [
+        {"type":"SENTREE","name":"","addr":"(SC)","loc":"d,36:11,36:12","isMulti":false,
+         "sensesp": [
+          {"type":"SENITEM","name":"","addr":"(TC)","loc":"d,36:14,36:21","edgeType":"POS",
+           "sensp": [
+            {"type":"PARSEREF","name":"clk","addr":"(UC)","loc":"d,36:22,36:25","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+          ],"condp": []}
+        ]}
+      ],
+       "stmtsp": [
+        {"type":"BEGIN","name":"","addr":"(VC)","loc":"d,36:27,36:32","generate":false,"genfor":false,"implied":false,"needProcess":false,"unnamed":true,"genforp": [],
+         "stmtsp": [
+          {"type":"ASSIGNDLY","name":"","addr":"(WC)","loc":"d,40:11,40:13","dtypep":"UNLINKED",
+           "rhsp": [
+            {"type":"ADD","name":"","addr":"(XC)","loc":"d,40:18,40:19","dtypep":"UNLINKED",
+             "lhsp": [
+              {"type":"PARSEREF","name":"cyc","addr":"(YC)","loc":"d,40:14,40:17","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+            ],
+             "rhsp": [
+              {"type":"CONST","name":"?32?sh1","addr":"(ZC)","loc":"d,40:20,40:21","dtypep":"(L)"}
+            ]}
+          ],
+           "lhsp": [
+            {"type":"PARSEREF","name":"cyc","addr":"(AD)","loc":"d,40:7,40:10","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+          ],"timingControlp": []},
+          {"type":"ASSIGNDLY","name":"","addr":"(BD)","loc":"d,41:11,41:13","dtypep":"UNLINKED",
+           "rhsp": [
+            {"type":"REPLICATE","name":"","addr":"(CD)","loc":"d,41:14,41:15","dtypep":"(JC)",
+             "srcp": [
+              {"type":"CONCAT","name":"","addr":"(DD)","loc":"d,41:24,41:25","dtypep":"UNLINKED",
+               "lhsp": [
+                {"type":"SELEXTRACT","name":"","addr":"(ED)","loc":"d,41:18,41:19","dtypep":"UNLINKED",
+                 "fromp": [
+                  {"type":"PARSEREF","name":"crc","addr":"(FD)","loc":"d,41:15,41:18","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+                ],
+                 "leftp": [
+                  {"type":"CONST","name":"?32?sh3e","addr":"(GD)","loc":"d,41:19,41:21","dtypep":"(Q)"}
+                ],
+                 "rightp": [
+                  {"type":"CONST","name":"?32?sh0","addr":"(HD)","loc":"d,41:22,41:23","dtypep":"(L)"}
+                ],"attrp": []}
+              ],
+               "rhsp": [
+                {"type":"XOR","name":"","addr":"(ID)","loc":"d,41:43,41:44","dtypep":"UNLINKED",
+                 "lhsp": [
+                  {"type":"XOR","name":"","addr":"(JD)","loc":"d,41:34,41:35","dtypep":"UNLINKED",
+                   "lhsp": [
+                    {"type":"SELBIT","name":"","addr":"(KD)","loc":"d,41:29,41:30","dtypep":"UNLINKED",
+                     "fromp": [
+                      {"type":"PARSEREF","name":"crc","addr":"(LD)","loc":"d,41:26,41:29","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+                    ],
+                     "bitp": [
+                      {"type":"CONST","name":"?32?sh3f","addr":"(MD)","loc":"d,41:30,41:32","dtypep":"(Q)"}
+                    ],"thsp": [],"attrp": []}
+                  ],
+                   "rhsp": [
+                    {"type":"SELBIT","name":"","addr":"(ND)","loc":"d,41:39,41:40","dtypep":"UNLINKED",
+                     "fromp": [
+                      {"type":"PARSEREF","name":"crc","addr":"(OD)","loc":"d,41:36,41:39","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+                    ],
+                     "bitp": [
+                      {"type":"CONST","name":"?32?sh2","addr":"(PD)","loc":"d,41:40,41:41","dtypep":"(QD)"}
+                    ],"thsp": [],"attrp": []}
+                  ]}
+                ],
+                 "rhsp": [
+                  {"type":"SELBIT","name":"","addr":"(RD)","loc":"d,41:48,41:49","dtypep":"UNLINKED",
+                   "fromp": [
+                    {"type":"PARSEREF","name":"crc","addr":"(SD)","loc":"d,41:45,41:48","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+                  ],
+                   "bitp": [
+                    {"type":"CONST","name":"?32?sh0","addr":"(TD)","loc":"d,41:49,41:50","dtypep":"(L)"}
+                  ],"thsp": [],"attrp": []}
+                ]}
+              ]}
+            ],
+             "countp": [
+              {"type":"CONST","name":"32'h1","addr":"(UD)","loc":"d,41:14,41:15","dtypep":"(MC)"}
+            ]}
+          ],
+           "lhsp": [
+            {"type":"PARSEREF","name":"crc","addr":"(VD)","loc":"d,41:7,41:10","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+          ],"timingControlp": []},
+          {"type":"ASSIGNDLY","name":"","addr":"(WD)","loc":"d,42:11,42:13","dtypep":"UNLINKED",
+           "rhsp": [
+            {"type":"XOR","name":"","addr":"(XD)","loc":"d,42:21,42:22","dtypep":"UNLINKED",
+             "lhsp": [
+              {"type":"PARSEREF","name":"result","addr":"(YD)","loc":"d,42:14,42:20","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+            ],
+             "rhsp": [
+              {"type":"REPLICATE","name":"","addr":"(ZD)","loc":"d,42:23,42:24","dtypep":"(JC)",
+               "srcp": [
+                {"type":"CONCAT","name":"","addr":"(AE)","loc":"d,42:33,42:34","dtypep":"UNLINKED",
+                 "lhsp": [
+                  {"type":"SELEXTRACT","name":"","addr":"(BE)","loc":"d,42:27,42:28","dtypep":"UNLINKED",
+                   "fromp": [
+                    {"type":"PARSEREF","name":"sum","addr":"(CE)","loc":"d,42:24,42:27","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+                  ],
+                   "leftp": [
+                    {"type":"CONST","name":"?32?sh3e","addr":"(DE)","loc":"d,42:28,42:30","dtypep":"(Q)"}
+                  ],
+                   "rightp": [
+                    {"type":"CONST","name":"?32?sh0","addr":"(EE)","loc":"d,42:31,42:32","dtypep":"(L)"}
+                  ],"attrp": []}
+                ],
+                 "rhsp": [
+                  {"type":"XOR","name":"","addr":"(FE)","loc":"d,42:52,42:53","dtypep":"UNLINKED",
+                   "lhsp": [
+                    {"type":"XOR","name":"","addr":"(GE)","loc":"d,42:43,42:44","dtypep":"UNLINKED",
+                     "lhsp": [
+                      {"type":"SELBIT","name":"","addr":"(HE)","loc":"d,42:38,42:39","dtypep":"UNLINKED",
+                       "fromp": [
+                        {"type":"PARSEREF","name":"sum","addr":"(IE)","loc":"d,42:35,42:38","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+                      ],
+                       "bitp": [
+                        {"type":"CONST","name":"?32?sh3f","addr":"(JE)","loc":"d,42:39,42:41","dtypep":"(Q)"}
+                      ],"thsp": [],"attrp": []}
+                    ],
+                     "rhsp": [
+                      {"type":"SELBIT","name":"","addr":"(KE)","loc":"d,42:48,42:49","dtypep":"UNLINKED",
+                       "fromp": [
+                        {"type":"PARSEREF","name":"sum","addr":"(LE)","loc":"d,42:45,42:48","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+                      ],
+                       "bitp": [
+                        {"type":"CONST","name":"?32?sh2","addr":"(ME)","loc":"d,42:49,42:50","dtypep":"(QD)"}
+                      ],"thsp": [],"attrp": []}
+                    ]}
+                  ],
+                   "rhsp": [
+                    {"type":"SELBIT","name":"","addr":"(NE)","loc":"d,42:57,42:58","dtypep":"UNLINKED",
+                     "fromp": [
+                      {"type":"PARSEREF","name":"sum","addr":"(OE)","loc":"d,42:54,42:57","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+                    ],
+                     "bitp": [
+                      {"type":"CONST","name":"?32?sh0","addr":"(PE)","loc":"d,42:58,42:59","dtypep":"(L)"}
+                    ],"thsp": [],"attrp": []}
+                  ]}
+                ]}
+              ],
+               "countp": [
+                {"type":"CONST","name":"32'h1","addr":"(QE)","loc":"d,42:23,42:24","dtypep":"(MC)"}
+              ]}
+            ]}
+          ],
+           "lhsp": [
+            {"type":"PARSEREF","name":"sum","addr":"(RE)","loc":"d,42:7,42:10","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+          ],"timingControlp": []},
+          {"type":"IF","name":"","addr":"(SE)","loc":"d,43:7,43:9",
+           "condp": [
+            {"type":"EQ","name":"","addr":"(TE)","loc":"d,43:15,43:17","dtypep":"(UE)",
+             "lhsp": [
+              {"type":"PARSEREF","name":"cyc","addr":"(VE)","loc":"d,43:11,43:14","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+            ],
+             "rhsp": [
+              {"type":"CONST","name":"?32?sh0","addr":"(WE)","loc":"d,43:18,43:19","dtypep":"(L)"}
+            ]}
+          ],
+           "thensp": [
+            {"type":"BEGIN","name":"","addr":"(XE)","loc":"d,43:21,43:26","generate":false,"genfor":false,"implied":false,"needProcess":false,"unnamed":true,"genforp": [],
+             "stmtsp": [
+              {"type":"ASSIGNDLY","name":"","addr":"(YE)","loc":"d,45:14,45:16","dtypep":"UNLINKED",
+               "rhsp": [
+                {"type":"CONST","name":"64'h5aef0c8dd70a4497","addr":"(ZE)","loc":"d,45:17,45:38","dtypep":"(AF)"}
+              ],
+               "lhsp": [
+                {"type":"PARSEREF","name":"crc","addr":"(BF)","loc":"d,45:10,45:13","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+              ],"timingControlp": []},
+              {"type":"ASSIGNDLY","name":"","addr":"(CF)","loc":"d,46:14,46:16","dtypep":"UNLINKED",
+               "rhsp": [
+                {"type":"CONST","name":"'0","addr":"(DF)","loc":"d,46:17,46:19","dtypep":"(UE)"}
+              ],
+               "lhsp": [
+                {"type":"PARSEREF","name":"sum","addr":"(EF)","loc":"d,46:10,46:13","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+              ],"timingControlp": []}
+            ]}
+          ],
+           "elsesp": [
+            {"type":"IF","name":"","addr":"(FF)","loc":"d,48:12,48:14",
+             "condp": [
+              {"type":"LT","name":"","addr":"(GF)","loc":"d,48:20,48:21","dtypep":"(UE)",
+               "lhsp": [
+                {"type":"PARSEREF","name":"cyc","addr":"(HF)","loc":"d,48:16,48:19","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+              ],
+               "rhsp": [
+                {"type":"CONST","name":"?32?sha","addr":"(IF)","loc":"d,48:22,48:24","dtypep":"(JF)"}
+              ]}
+            ],
+             "thensp": [
+              {"type":"BEGIN","name":"","addr":"(KF)","loc":"d,48:26,48:31","generate":false,"genfor":false,"implied":false,"needProcess":false,"unnamed":true,"genforp": [],
+               "stmtsp": [
+                {"type":"ASSIGNDLY","name":"","addr":"(LF)","loc":"d,49:14,49:16","dtypep":"UNLINKED",
+                 "rhsp": [
+                  {"type":"CONST","name":"'0","addr":"(MF)","loc":"d,49:17,49:19","dtypep":"(UE)"}
+                ],
+                 "lhsp": [
+                  {"type":"PARSEREF","name":"sum","addr":"(NF)","loc":"d,49:10,49:13","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+                ],"timingControlp": []}
+              ]}
+            ],
+             "elsesp": [
+              {"type":"IF","name":"","addr":"(OF)","loc":"d,51:12,51:14",
+               "condp": [
+                {"type":"LT","name":"","addr":"(PF)","loc":"d,51:20,51:21","dtypep":"(UE)",
+                 "lhsp": [
+                  {"type":"PARSEREF","name":"cyc","addr":"(QF)","loc":"d,51:16,51:19","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+                ],
+                 "rhsp": [
+                  {"type":"CONST","name":"?32?sh5a","addr":"(RF)","loc":"d,51:22,51:24","dtypep":"(SF)"}
+                ]}
+              ],
+               "thensp": [
+                {"type":"BEGIN","name":"","addr":"(TF)","loc":"d,51:26,51:31","generate":false,"genfor":false,"implied":false,"needProcess":false,"unnamed":true,"genforp": [],"stmtsp": []}
+              ],
+               "elsesp": [
+                {"type":"IF","name":"","addr":"(UF)","loc":"d,53:12,53:14",
+                 "condp": [
+                  {"type":"EQ","name":"","addr":"(VF)","loc":"d,53:20,53:22","dtypep":"(UE)",
+                   "lhsp": [
+                    {"type":"PARSEREF","name":"cyc","addr":"(WF)","loc":"d,53:16,53:19","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+                  ],
+                   "rhsp": [
+                    {"type":"CONST","name":"?32?sh63","addr":"(XF)","loc":"d,53:23,53:25","dtypep":"(SF)"}
+                  ]}
+                ],
+                 "thensp": [
+                  {"type":"BEGIN","name":"","addr":"(YF)","loc":"d,53:27,53:32","generate":false,"genfor":false,"implied":false,"needProcess":false,"unnamed":true,"genforp": [],
+                   "stmtsp": [
+                    {"type":"DISPLAY","name":"","addr":"(ZF)","loc":"d,54:10,54:16",
+                     "fmtp": [
+                      {"type":"SFORMATF","name":"","addr":"(AG)","loc":"d,54:10,54:16","dtypep":"(BG)",
+                       "exprsp": [
+                        {"type":"CONST","name":"232'h5b2530745d206379633d3d253064206372633d25782073756d3d25780a","addr":"(CG)","loc":"d,54:17,54:49","dtypep":"(DG)"},
+                        {"type":"TIME","name":"","addr":"(EG)","loc":"d,54:51,54:56","dtypep":"(FG)","timeunit":"NONE"},
+                        {"type":"PARSEREF","name":"cyc","addr":"(GG)","loc":"d,54:58,54:61","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []},
+                        {"type":"PARSEREF","name":"crc","addr":"(HG)","loc":"d,54:63,54:66","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []},
+                        {"type":"PARSEREF","name":"sum","addr":"(IG)","loc":"d,54:68,54:71","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+                      ],"scopeNamep": []}
+                    ],"filep": []},
+                    {"type":"IF","name":"","addr":"(JG)","loc":"d,55:10,55:12",
+                     "condp": [
+                      {"type":"NEQCASE","name":"","addr":"(KG)","loc":"d,55:18,55:21","dtypep":"(UE)",
+                       "lhsp": [
+                        {"type":"PARSEREF","name":"crc","addr":"(LG)","loc":"d,55:14,55:17","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+                      ],
+                       "rhsp": [
+                        {"type":"CONST","name":"64'hc77bb9b3784ea091","addr":"(MG)","loc":"d,55:22,55:42","dtypep":"(AF)"}
+                      ]}
+                    ],
+                     "thensp": [
+                      {"type":"STOP","name":"","addr":"(NG)","loc":"d,55:44,55:49"}
+                    ],"elsesp": []},
+                    {"type":"IF","name":"","addr":"(OG)","loc":"d,58:10,58:12",
+                     "condp": [
+                      {"type":"NEQCASE","name":"","addr":"(PG)","loc":"d,58:18,58:21","dtypep":"(UE)",
+                       "lhsp": [
+                        {"type":"PARSEREF","name":"sum","addr":"(QG)","loc":"d,58:14,58:17","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+                      ],
+                       "rhsp": [
+                        {"type":"CONST","name":"64'h4afe43fb79d7b71e","addr":"(RG)","loc":"d,58:22,58:42","dtypep":"(AF)"}
+                      ]}
+                    ],
+                     "thensp": [
+                      {"type":"STOP","name":"","addr":"(SG)","loc":"d,58:44,58:49"}
+                    ],"elsesp": []},
+                    {"type":"DISPLAY","name":"","addr":"(TG)","loc":"d,59:10,59:16",
+                     "fmtp": [
+                      {"type":"SFORMATF","name":"","addr":"(UG)","loc":"d,59:10,59:16","dtypep":"(BG)",
+                       "exprsp": [
+                        {"type":"CONST","name":"168'h2a2d2a20416c6c2046696e6973686564202a2d2a0a","addr":"(VG)","loc":"d,59:17,59:41","dtypep":"(WG)"}
+                      ],"scopeNamep": []}
+                    ],"filep": []},
+                    {"type":"FINISH","name":"","addr":"(XG)","loc":"d,60:10,60:17"}
+                  ]}
+                ],"elsesp": []}
+              ]}
+            ]}
+          ]}
+        ]}
+      ]}
+    ]}
+  ],"activesp": []},
+  {"type":"MODULE","name":"Test","addr":"(PB)","loc":"d,66:8,66:12","origName":"Test","level":3,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
+   "stmtsp": [
+    {"type":"PORT","name":"out","addr":"(YG)","loc":"d,68:4,68:7","exprp": []},
+    {"type":"PORT","name":"clk","addr":"(ZG)","loc":"d,70:4,70:7","exprp": []},
+    {"type":"PORT","name":"in","addr":"(AH)","loc":"d,70:9,70:11","exprp": []},
+    {"type":"VAR","name":"clk","addr":"(BH)","loc":"d,78:10,78:13","dtypep":"UNLINKED","origName":"clk","isSc":false,"isPrimaryIO":false,"direction":"INPUT","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"NONE","varType":"PORT","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"sensIfacep":"UNLINKED",
+     "childDTypep": [
+      {"type":"BASICDTYPE","name":"LOGIC_IMPLICIT","addr":"(CH)","loc":"d,78:10,78:13","dtypep":"(CH)","keyword":"LOGIC_IMPLICIT","generic":false,"rangep": []}
+    ],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"in","addr":"(DH)","loc":"d,79:17,79:19","dtypep":"UNLINKED","origName":"in","isSc":false,"isPrimaryIO":false,"direction":"INPUT","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"NONE","varType":"PORT","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"sensIfacep":"UNLINKED",
+     "childDTypep": [
+      {"type":"BASICDTYPE","name":"logic","addr":"(EH)","loc":"d,79:10,79:11","dtypep":"(EH)","keyword":"logic","generic":false,
+       "rangep": [
+        {"type":"RANGE","name":"","addr":"(FH)","loc":"d,79:10,79:11","ascending":false,
+         "leftp": [
+          {"type":"CONST","name":"?32?sh1f","addr":"(GH)","loc":"d,79:11,79:13","dtypep":"(BB)"}
+        ],
+         "rightp": [
+          {"type":"CONST","name":"?32?sh0","addr":"(HH)","loc":"d,79:14,79:15","dtypep":"(L)"}
+        ]}
+      ]}
+    ],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"VAR","name":"out","addr":"(IH)","loc":"d,80:22,80:25","dtypep":"UNLINKED","origName":"out","isSc":false,"isPrimaryIO":false,"direction":"OUTPUT","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"NONE","varType":"PORT","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"sensIfacep":"UNLINKED",
+     "childDTypep": [
+      {"type":"BASICDTYPE","name":"logic","addr":"(JH)","loc":"d,80:11,80:14","dtypep":"(JH)","keyword":"logic","generic":false,
+       "rangep": [
+        {"type":"RANGE","name":"","addr":"(KH)","loc":"d,80:15,80:16","ascending":false,
+         "leftp": [
+          {"type":"CONST","name":"?32?sh1f","addr":"(LH)","loc":"d,80:16,80:18","dtypep":"(BB)"}
+        ],
+         "rightp": [
+          {"type":"CONST","name":"?32?sh0","addr":"(MH)","loc":"d,80:19,80:20","dtypep":"(L)"}
+        ]}
+      ]}
+    ],"delayp": [],"valuep": [],"attrsp": []},
+    {"type":"ALWAYS","name":"","addr":"(NH)","loc":"d,82:4,82:10","keyword":"always","isSuspendable":false,"needProcess":false,"sensesp": [],
+     "stmtsp": [
+      {"type":"EVENTCONTROL","name":"","addr":"(OH)","loc":"d,82:11,82:12",
+       "sensesp": [
+        {"type":"SENTREE","name":"","addr":"(PH)","loc":"d,82:11,82:12","isMulti":false,
+         "sensesp": [
+          {"type":"SENITEM","name":"","addr":"(QH)","loc":"d,82:13,82:20","edgeType":"POS",
+           "sensp": [
+            {"type":"PARSEREF","name":"clk","addr":"(RH)","loc":"d,82:21,82:24","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+          ],"condp": []}
+        ]}
+      ],
+       "stmtsp": [
+        {"type":"BEGIN","name":"","addr":"(SH)","loc":"d,82:26,82:31","generate":false,"genfor":false,"implied":false,"needProcess":false,"unnamed":true,"genforp": [],
+         "stmtsp": [
+          {"type":"ASSIGNDLY","name":"","addr":"(TH)","loc":"d,83:11,83:13","dtypep":"UNLINKED",
+           "rhsp": [
+            {"type":"PARSEREF","name":"in","addr":"(UH)","loc":"d,83:14,83:16","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+          ],
+           "lhsp": [
+            {"type":"PARSEREF","name":"out","addr":"(VH)","loc":"d,83:7,83:10","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
+          ],"timingControlp": []},
+          {"type":"ASSERTCTL","name":"","addr":"(WH)","loc":"d,86:7,86:17","ctlType":"$assertoff",
+           "controlTypep": [
+            {"type":"CONST","name":"32'h4","addr":"(XH)","loc":"d,86:7,86:17","dtypep":"(MC)"}
+          ],
+           "levelp": [
+            {"type":"CONST","name":"32'h0","addr":"(YH)","loc":"d,86:7,86:17","dtypep":"(MC)"}
+          ],"itemsp": []},
+          {"type":"ASSERTCTL","name":"","addr":"(ZH)","loc":"d,87:7,87:18","ctlType":"$assertkill",
+           "controlTypep": [
+            {"type":"CONST","name":"32'h5","addr":"(AI)","loc":"d,87:7,87:18","dtypep":"(MC)"}
+          ],
+           "levelp": [
+            {"type":"CONST","name":"32'h0","addr":"(BI)","loc":"d,87:7,87:18","dtypep":"(MC)"}
+          ],"itemsp": []},
+          {"type":"ASSERT","name":"","addr":"(CI)","loc":"d,88:7,88:13","immediate":true,
+           "propp": [
+            {"type":"CONST","name":"?32?sh0","addr":"(DI)","loc":"d,88:14,88:15","dtypep":"(L)"}
+          ],"sentreep": [],"failsp": [],"passsp": []},
+          {"type":"ASSERTCTL","name":"","addr":"(EI)","loc":"d,89:7,89:16","ctlType":"$asserton",
+           "controlTypep": [
+            {"type":"CONST","name":"32'h3","addr":"(FI)","loc":"d,89:7,89:16","dtypep":"(MC)"}
+          ],
+           "levelp": [
+            {"type":"CONST","name":"32'h0","addr":"(GI)","loc":"d,89:7,89:16","dtypep":"(MC)"}
+          ],"itemsp": []}
+        ]}
+      ]}
+    ]}
+  ],"activesp": []}
+],"filesp": [],
+ "miscsp": [
+  {"type":"TYPETABLE","name":"","addr":"(C)","loc":"a,0:0,0:0","constraintRefp":"UNLINKED","emptyQueuep":"UNLINKED","queueIndexp":"UNLINKED","streamp":"UNLINKED","voidp":"(HI)",
+   "typesp": [
+    {"type":"BASICDTYPE","name":"integer","addr":"(II)","loc":"c,31:27,31:28","dtypep":"(II)","keyword":"integer","range":"31:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(L)","loc":"c,33:32,33:33","dtypep":"(L)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(UE)","loc":"c,50:22,50:24","dtypep":"(UE)","keyword":"logic","generic":true,"rangep": []},
+    {"type":"VOIDDTYPE","name":"","addr":"(HI)","loc":"c,51:21,51:30","dtypep":"(HI)","generic":false},
+    {"type":"BASICDTYPE","name":"logic","addr":"(QD)","loc":"c,119:22,119:23","dtypep":"(QD)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(JI)","loc":"c,121:22,121:23","dtypep":"(JI)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(KI)","loc":"c,156:17,156:56","dtypep":"(KI)","keyword":"logic","range":"295:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"string","addr":"(BG)","loc":"c,156:10,156:16","dtypep":"(BG)","keyword":"string","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(Q)","loc":"d,14:9,14:11","dtypep":"(Q)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(BB)","loc":"d,18:10,18:12","dtypep":"(BB)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(MC)","loc":"d,33:26,33:31","dtypep":"(MC)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(JC)","loc":"d,33:25,33:26","dtypep":"(JC)","keyword":"logic","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(AF)","loc":"d,45:17,45:38","dtypep":"(AF)","keyword":"logic","range":"63:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(JF)","loc":"d,48:22,48:24","dtypep":"(JF)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(SF)","loc":"d,51:22,51:24","dtypep":"(SF)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(DG)","loc":"d,54:17,54:49","dtypep":"(DG)","keyword":"logic","range":"231:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"QData","addr":"(FG)","loc":"d,54:51,54:56","dtypep":"(FG)","keyword":"QData","range":"63:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(WG)","loc":"d,59:17,59:41","dtypep":"(WG)","keyword":"logic","range":"167:0","generic":true,"rangep": []}
+  ]},
+  {"type":"CONSTPOOL","name":"","addr":"(D)","loc":"a,0:0,0:0",
+   "modulep": [
+    {"type":"MODULE","name":"@CONST-POOL@","addr":"(LI)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","level":0,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
+     "stmtsp": [
+      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(MI)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(LI)","varsp": [],"blocksp": [],"inlinesp": []}
+    ],"activesp": []}
+  ]}
+]}

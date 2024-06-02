@@ -37,11 +37,11 @@ module t (/*AUTOARG*/
 
    // Deferred link dotting with genvars
    generate
-      genvar 	 i;
+      genvar     i;
       for (i = 0; i < N-4; i++) begin : someLoop
-	 assign ack_out[i] = a_in[i];
-	 assign foos[i].a = a_in[i];
-	 assign a_out[i] = foos[i].a;
+         assign ack_out[i] = a_in[i];
+         assign foos[i].a = a_in[i];
+         assign a_out[i] = foos[i].a;
       end
    endgenerate
 
@@ -66,14 +66,14 @@ module t (/*AUTOARG*/
       a_in <= a_in + { {N-1 {1'b0}}, 1'b1 };
 
       if (ack_out != a_out) begin
-	 $display("%%Error: Interface and non-interface paths do not match: 0b%b 0b%b",
-		  ack_out, a_out);
-	 $stop;
+         $display("%%Error: Interface and non-interface paths do not match: 0b%b 0b%b",
+                  ack_out, a_out);
+         $stop;
       end
 
       if (& a_in) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

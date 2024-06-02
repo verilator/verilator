@@ -19,9 +19,11 @@ mkdir $child_dir;
 # Compile the child
 {
     my @cmdargs = $Self->compile_vlt_cmd
-        (VM_PREFIX => "$Self->{VM_PREFIX}_child",
+        (vm_prefix => "$Self->{vm_prefix}_child",
          top_filename => "$Self->{name}_child.v",
          verilator_flags => ["-cc", "-Mdir", "${child_dir}", "--debug-check"],
+         # Can't use multi threading (like hier blocks), but needs to be thread safe
+         threads => 1,
         );
 
     run(logfile => "${child_dir}/vlt_compile.log",
@@ -29,10 +31,10 @@ mkdir $child_dir;
 
     run(logfile => "${child_dir}/vlt_gcc.log",
         cmd => ["cd ${child_dir} && ",
-                $ENV{MAKE}, "-f".getcwd()."/Makefile_obj",
-                "CPPFLAGS_DRIVER=-D".uc($self->{name}),
-                ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
-                "VM_PREFIX=$self->{VM_PREFIX}_child",
+                $ENV{MAKE}, "-f" . getcwd() . "/Makefile_obj",
+                "CPPFLAGS_DRIVER=-D" . uc($self->{name}),
+                ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1" : ""),
+                "VM_PREFIX=$self->{vm_prefix}_child",
                 "V$self->{name}_child__ALL.a",  # bypass default rule, make archive
                 ($param{make_flags}||""),
         ]);

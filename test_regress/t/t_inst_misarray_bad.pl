@@ -15,6 +15,5 @@ lint(
     expect_filename => $Self->{golden_filename},
     );
 
-
 ok(1);
 1;

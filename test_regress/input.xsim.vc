@@ -3,5 +3,4 @@
  --sourcelibdir t
  --sourcelibdir obj_dir/
  --include t
- --include ../include
  --include obj_dir/

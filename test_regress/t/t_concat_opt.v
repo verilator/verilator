@@ -40,7 +40,7 @@ module t (/*AUTOARG*/
 
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
+         cyc <= cyc + 1;
          in_a <= cyc;
          in_b <= cyc + 1;
          in_c <= cyc + 3;
@@ -61,10 +61,10 @@ module t (/*AUTOARG*/
          if (out_q != (in_a ^ in_g))
              $stop;
 
-	 if (cyc==100) begin
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         if (cyc==100) begin
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 

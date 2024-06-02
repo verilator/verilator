@@ -5,9 +5,6 @@
              t/foo_not_needed
              t/foo_not_needed.v
              t/foo_not_needed.sv
-             ../include/foo_not_needed
-             ../include/foo_not_needed.v
-             ../include/foo_not_needed.sv
              foo_not_needed
              foo_not_needed.v
              foo_not_needed.sv

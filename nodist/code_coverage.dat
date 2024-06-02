@@ -1,7 +1,7 @@
 # -*- Python -*-
 # DESCRIPTION: Verilator: Internal C++ code lcov control file
 #
-# Copyright 2019-2021 by Wilson Snyder. This program is free software; you
+# Copyright 2019-2024 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -23,10 +23,6 @@ source_globs("include/*/*.c")
 # Note *'s are removed when using fastcov
 remove_source("/usr/*")
 remove_source("*/include/sysc/*")
-remove_source("*/V3ClkGater.cpp")
-remove_source("*/V3ClkGater.h")
-remove_source("*/V3GraphDfa.cpp")
-remove_source("*/V3GraphDfa.h")
 remove_source("*/V3Lexer_pregen.yy.cpp")
 remove_source("*/V3PreLex_pregen.yy.cpp")
 remove_source("*/verilog.c")
@@ -52,6 +48,7 @@ exclude_line_regexp(r'\bNUM_ASSERT')
 exclude_line_regexp(r'\bERROR_RSVD_WORD')
 exclude_line_regexp(r'\bV3ERROR_NA')
 exclude_line_regexp(r'\bUINFO\b')
+exclude_line_regexp(r'\bVL_DEFINE_DEBUG_FUNCTIONS\b')
 
 # Exclude for branch coverage only
 exclude_branch_regexp(r'\bdebug\(\)')

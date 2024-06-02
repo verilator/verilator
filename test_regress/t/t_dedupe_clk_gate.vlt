@@ -1,3 +1,0 @@
-`verilator_config
-
-clock_enable -module "clock_gate_latch" -var "clken_latched"

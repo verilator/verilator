@@ -11,7 +11,7 @@ module t (/*AUTOARG*/
 
    input clk;
    integer cyc; initial cyc=1;
-   reg 	   check; initial check = 1'b0;
+   reg     check; initial check = 1'b0;
 
    // verilator lint_off WIDTH
 
@@ -21,13 +21,13 @@ module t (/*AUTOARG*/
    reg [ 58:0] W0101; //=0000000FFFFFFFF
    always @(posedge clk) begin
       if (cyc==1) begin
-	 W0095 = ((2'h3));
-	 W0101 = ({27'h0,({16{(W0095)}})});
+         W0095 = ((2'h3));
+         W0101 = ({27'h0,({16{(W0095)}})});
       end
    end
    always @(posedge clk) begin
       if (cyc==2) begin
-	 if ((W0101) != (59'h0FFFFFFFF)) if (check) $stop;
+         if ((W0101) != (59'h0FFFFFFFF)) if (check) $stop;
       end
    end
 
@@ -41,9 +41,9 @@ module t (/*AUTOARG*/
    end
    always @(posedge clk) begin
       if (cyc==2) begin
-	 // Width violation, but still...
-	 if (((-W1243) < 32'h01) != (1'h0)) if (check) $stop;
-	 if (({32{W1243}} < 32'h01) != (1'h0)) if (check) $stop;
+         // Width violation, but still...
+         if (((-W1243) < 32'h01) != (1'h0)) if (check) $stop;
+         if (({32{W1243}} < 32'h01) != (1'h0)) if (check) $stop;
       end
    end
 
@@ -52,31 +52,31 @@ module t (/*AUTOARG*/
    reg        [  0:0] W0344; //=0
    always @(posedge clk) begin
       if (cyc==1) begin
-	 W0344 = 1'b0;
+         W0344 = 1'b0;
       end
    end
    always @(posedge clk) begin
       if (cyc==2) begin
-	 if ((W0344) != (1'h0)) if (check) $stop;
-	 if (({116{(((- 95'h7FFFFFFFFFFFFFFFFFFFFFFF) ^  95'h7FFFFFFFFFFFFFFFFFFFFFFF ) == ({94'h0,W0344}))}})) if (check) $stop;
+         if ((W0344) != (1'h0)) if (check) $stop;
+         if (({116{(((- 95'h7FFFFFFFFFFFFFFFFFFFFFFF) ^  95'h7FFFFFFFFFFFFFFFFFFFFFFF ) == ({94'h0,W0344}))}})) if (check) $stop;
       end
    end
 
    //============================================================
 
    reg        [ 63:0] W0372; //=FFFFFFFFFFFFFFFF
-   reg [118:0] 	      W0420; //=7FFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-   reg [115:0] 	      W0421; //=00000000000000000000000000000
+   reg [118:0]        W0420; //=7FFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+   reg [115:0]        W0421; //=00000000000000000000000000000
    always @(posedge clk) begin
       if (cyc==1) begin
-	 W0372 = ({64{((1'h1))}});
-	 W0421 = 116'h0;
-	 W0420 = ({119{((W0372) <= (W0372))}});
+         W0372 = ({64{((1'h1))}});
+         W0421 = 116'h0;
+         W0420 = ({119{((W0372) <= (W0372))}});
       end
    end
    always @(posedge clk) begin
       if (cyc==2) begin
-	 if ((W0420[(- (W0421[115:110]))]) != (1'h1)) if (check) $stop;
+         if ((W0420[(- (W0421[115:110]))]) != (1'h1)) if (check) $stop;
       end
    end
 
@@ -84,46 +84,46 @@ module t (/*AUTOARG*/
 
    // gcc_2_96_bug
    reg        [ 31:0] W0161; //=FFFFFFFF
-   reg [ 62:0] 	      W0217; //=0000000000000000
-   reg [ 53:0] 	      W0219; //=00000000000000
+   reg [ 62:0]        W0217; //=0000000000000000
+   reg [ 53:0]        W0219; //=00000000000000
    always @(posedge clk) begin
       if (cyc==1) begin
-	 W0161 = 32'hFFFFFFFF;
-	 W0217 = 63'h0;
-	 W0219 = 54'h0;
+         W0161 = 32'hFFFFFFFF;
+         W0217 = 63'h0;
+         W0219 = 54'h0;
       end
    end
    always @(posedge clk) begin
       if (cyc==2) begin
-	 if ((W0161) != (32'hFFFFFFFF)) if (check) $stop;
-	 if (((- (W0161)) & ((W0217[62:31]) & ({25'h0,(W0219[53:47])}))) != (32'h00000000)) if (check) $stop;
+         if ((W0161) != (32'hFFFFFFFF)) if (check) $stop;
+         if (((- (W0161)) & ((W0217[62:31]) & ({25'h0,(W0219[53:47])}))) != (32'h00000000)) if (check) $stop;
       end
    end
 
    //============================================================
 
    reg        [119:0] W0592; //=000000000000000000000000000000
-   reg [  7:0] 	      W0593; //=70
+   reg [  7:0]        W0593; //=70
    always @(posedge clk) begin
       if (cyc==1) begin
-	 W0593 = (((8'h90)) * ((8'hFF)));
+         W0593 = (((8'h90)) * ((8'hFF)));
          W0592 = 120'h000000000000000000000000000000;
       end
    end
    always @(posedge clk) begin
       if (cyc==2) begin
-	if (((W0592[119:9]) >> ((W0593))) != (111'h0000000000000000000000000000)) if (check) $stop;
+        if (((W0592[119:9]) >> ((W0593))) != (111'h0000000000000000000000000000)) if (check) $stop;
       end
    end
 
    //============================================================
 
    reg        [127:0] WA1063                     ; //=00000000000000000000000000000001
-   reg [ 34:0] 	      WA1064 /*verilator public*/; //=7FFFFFFFF
-   reg [ 62:0] 	      WA1065                     ; //=0000000000000000
-   reg [ 89:0] 	      WA1066 /*verilator public*/; //=00000000000000000000001
-   reg [ 34:0] 	      WA1067                     ; //=7FFFFFFFF
-   reg [111:0]	      WA1068;
+   reg [ 34:0]        WA1064 /*verilator public*/; //=7FFFFFFFF
+   reg [ 62:0]        WA1065                     ; //=0000000000000000
+   reg [ 89:0]        WA1066 /*verilator public*/; //=00000000000000000000001
+   reg [ 34:0]        WA1067                     ; //=7FFFFFFFF
+   reg [111:0]        WA1068;
 
    always @(check) begin
       WA1067 = (~ (35'h0));
@@ -134,23 +134,23 @@ module t (/*AUTOARG*/
    end
    always @(posedge clk) begin
       if (cyc==2) begin
-	 if ((WA1063[(WA1064[(WA1065[((5'h04) | (5'h0))+:4])+:3])+:112]) != 112'h0) if (check) $stop;
+         if ((WA1063[(WA1064[(WA1065[((5'h04) | (5'h0))+:4])+:3])+:112]) != 112'h0) if (check) $stop;
       end
    end
 
    //============================================================
 
    reg        [127:0] WB1063                     ; //=00000000000000000000000000000001
-   reg [ 34:0] 	      WB1064 /*verilator public*/; //=7FFFFFFFF
-   reg [ 62:0] 	      WB1065                     ; //=0000000000000000
-   reg [ 89:0] 	      WB1066 /*verilator public*/; //=00000000000000000000001
-   reg [ 34:0] 	      WB1067                     ; //=7FFFFFFFF
-   reg [111:0]	      WB1068;
+   reg [ 34:0]        WB1064 /*verilator public*/; //=7FFFFFFFF
+   reg [ 62:0]        WB1065                     ; //=0000000000000000
+   reg [ 89:0]        WB1066 /*verilator public*/; //=00000000000000000000001
+   reg [ 34:0]        WB1067                     ; //=7FFFFFFFF
+   reg [111:0]        WB1068;
 
    always @(posedge clk) begin
       if (cyc==1) begin
-	 WB1067 = (~ (35'h0));
-	 WB1066 = (90'h00000000000000000000001);
+         WB1067 = (~ (35'h0));
+         WB1066 = (90'h00000000000000000000001);
       end
       if (cyc==2) WB1065 <= (WB1066[89:27]);
       if (cyc==3) WB1064 <= (WB1067);
@@ -159,8 +159,8 @@ module t (/*AUTOARG*/
    end
    always @(posedge clk) begin
       if (cyc==9) begin
-	 if (WB1068 != 112'h0) if (check) $stop;
-	 if ((WB1063[(WB1064[(WB1065[((5'h04) | (5'h0))+:4])+:3])+:112]) != 112'h0) if (check) $stop;
+         if (WB1068 != 112'h0) if (check) $stop;
+         if ((WB1063[(WB1064[(WB1065[((5'h04) | (5'h0))+:4])+:3])+:112]) != 112'h0) if (check) $stop;
       end
    end
 
@@ -295,14 +295,14 @@ module t (/*AUTOARG*/
 
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
-	 if (cyc==18) begin
-	    check <= 1'b1;
-	 end
-	 if (cyc==20) begin
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         cyc <= cyc + 1;
+         if (cyc==18) begin
+            check <= 1'b1;
+         end
+         if (cyc==20) begin
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 endmodule

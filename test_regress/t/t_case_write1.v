@@ -4,8 +4,6 @@
 // any use, without warranty, 2006 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-`include "verilated.v"
-
 `define STRINGIFY(x) `"x`"
 
 module t (/*AUTOARG*/
@@ -21,7 +19,7 @@ module t (/*AUTOARG*/
 
    t_case_write1_tasks tasks ();
 
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
 
    always @ (posedge clk) begin
       $fwrite(fd, "[%0d] crc=%x ", cyc, crc);
@@ -30,9 +28,9 @@ module t (/*AUTOARG*/
    end
 
    always @ (posedge clk) begin
-      //$write("[%0t] cyc==%0d crc=%x\n",$time, cyc, crc);
+      //$write("[%0t] cyc==%0d crc=%x\n", $time, cyc, crc);
       cyc <= cyc + 1;
-      crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
+      crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
       if (cyc==1) begin
          crc <= 64'h00000000_00000097;
          $write("%s", {"Open ", `STRINGIFY(`TEST_OBJ_DIR), "/t_case_write1_logger.log\n"});

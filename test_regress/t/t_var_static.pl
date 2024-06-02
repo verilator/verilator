@@ -11,13 +11,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
-    fails => $Self->{vlt_all},  # Verilator unsupported, bug546
-    expect_filename => $Self->{golden_filename},
+    verilator_flags2 => ['-Wno-IMPLICITSTATIC'],
     );
 
 execute(
     check_finished => 1,
-    ) if !$Self->{vlt_all};
+    all_run_flags => ['+plusarg=value'],
+    );
 
 ok(1);
 1;

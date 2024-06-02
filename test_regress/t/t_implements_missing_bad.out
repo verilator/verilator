@@ -1,0 +1,7 @@
+%Error: t/t_implements_missing_bad.v:12:1: Class 'Cls' implements 'Icls1' but is missing implementation for 'icf2' (IEEE 1800-2023 8.26)
+   12 | class Cls implements Icls1;
+      | ^~~~~
+        t/t_implements_missing_bad.v:9:30: ... Location of interface class's function
+    9 |    pure virtual function int icf2;
+      |                              ^~~~
+%Error: Exiting due to

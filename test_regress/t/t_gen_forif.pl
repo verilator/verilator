@@ -12,6 +12,7 @@ scenarios(simulator => 1);
 
 compile(
     nc_flags2 => ['+access+r'],
+    verilator_flags2 => ["--no-timing"],
     );
 
 execute(

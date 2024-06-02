@@ -1,0 +1,4 @@
+%Error: t/t_func_no_parentheses_bad.v:21:11: Found definition of 'func' as a FUNC but expected a variable
+   21 |       a = func;
+      |           ^~~~
+%Error: Exiting due to

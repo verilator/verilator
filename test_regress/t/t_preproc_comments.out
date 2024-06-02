@@ -5,10 +5,13 @@
 // SPDX-License-Identifier: CC0-1.0 
 
 `line 6 "t/t_preproc.v" 0
+// This file intentionally includes some tabs 
+
+`line 8 "t/t_preproc.v" 0
 //=========================================================================== 
 // Includes 
  
-`line 8 "t/t_preproc.v" 0
+`line 10 "t/t_preproc.v" 0
 `line 1 "t/t_preproc_inc2.vh" 1
 // DESCRIPTION: Verilog::Preproc: Example source code 
 `line 2 "t/t_preproc_inc2.vh" 0
@@ -20,51 +23,56 @@ At file "t/t_preproc_inc2.vh"  line 5
  
 `line 7 "t/t_preproc_inc2.vh" 0
 `line 1 "t/t_preproc_inc3.vh" 1
-`line 2 "inc3_a_filename_from_line_directive" 0
 // DESCRIPTION: Verilog::Preproc: Example source code 
+`line 2 "t/t_preproc_inc3.vh" 0
 // This file ONLY is placed under the Creative Commons Public Domain, for 
 // any use, without warranty, 2000-2007 by Wilson Snyder. 
 // SPDX-License-Identifier: CC0-1.0 
 
-`line 7 "inc3_a_filename_from_line_directive" 0
+`line 6 "t/t_preproc_inc3.vh" 0
  
   
   
   // FOO 
-  At file "inc3_a_filename_from_line_directive"  line 11
+  At file "t/t_preproc_inc3.vh"  line 10
+`line 12 "inc3_a_filename_from_line_directive_with_LINE" 0
+  At file "inc3_a_filename_from_line_directive_with_LINE"  line 12
+`line 100 "inc3_a_filename_from_line_directive" 0
+  At file "inc3_a_filename_from_line_directive"  line 100
 
-`line 13 "inc3_a_filename_from_line_directive" 0
+
+`line 103 "inc3_a_filename_from_line_directive" 0
    
  // guard 
 
-`line 16 "inc3_a_filename_from_line_directive" 0
+`line 106 "inc3_a_filename_from_line_directive" 0
  
   
 
 
-`line 20 "inc3_a_filename_from_line_directive" 2
-`line 7 "t/t_preproc_inc2.vh" 0
+`line 110 "inc3_a_filename_from_line_directive" 0
+`line 7 "t/t_preproc_inc2.vh" 2
 
 
-`line 9 "t/t_preproc_inc2.vh" 2
-`line 8 "t/t_preproc.v" 0
+`line 9 "t/t_preproc_inc2.vh" 0
+`line 10 "t/t_preproc.v" 2
 
 
-`line 10 "t/t_preproc.v" 0
+`line 12 "t/t_preproc.v" 0
 //=========================================================================== 
 // Comments 
 
-`line 13 "t/t_preproc.v" 0
+`line 15 "t/t_preproc.v" 0
 /* verilator pass_thru comment */ 
 
-`line 15 "t/t_preproc.v" 0
+`line 17 "t/t_preproc.v" 0
 // verilator pass_thru_comment2 
 
-`line 17 "t/t_preproc.v" 0
+`line 19 "t/t_preproc.v" 0
 //=========================================================================== 
 // Defines 
 
-`line 20 "t/t_preproc.v" 0
+`line 22 "t/t_preproc.v" 0
  
  
 // DEF_A0 set by command line 
@@ -75,104 +83,104 @@ At file "t/t_preproc_inc2.vh"  line 5
 		     1'b1   
 		   };
 
-`line 30 "t/t_preproc.v" 0
+`line 32 "t/t_preproc.v" 0
 text.
 
-`line 32 "t/t_preproc.v" 0
+`line 34 "t/t_preproc.v" 0
  
  
 foo /*this */  bar   /* this too */ 
 foobar2 // but not 
 
-`line 37 "t/t_preproc.v" 0
+`line 39 "t/t_preproc.v" 0
  
 
 
 
-`line 41 "t/t_preproc.v" 0
+`line 43 "t/t_preproc.v" 0
  
 
 
 
 
-`line 46 "t/t_preproc.v" 0
+`line 48 "t/t_preproc.v" 0
 /*******COMMENT*****/ 
 first part 
-`line 47 "t/t_preproc.v" 0
+`line 49 "t/t_preproc.v" 0
   		second part 
-`line 47 "t/t_preproc.v" 0
+`line 49 "t/t_preproc.v" 0
   		third part
 {
-`line 48 "t/t_preproc.v" 0
+`line 50 "t/t_preproc.v" 0
 		       a,
-`line 48 "t/t_preproc.v" 0
+`line 50 "t/t_preproc.v" 0
 		       b,
-`line 48 "t/t_preproc.v" 0
+`line 50 "t/t_preproc.v" 0
 		       c}
-Line_Preproc_Check 49
-
-`line 51 "t/t_preproc.v" 0
-//=========================================================================== 
+Line_Preproc_Check 51
 
 `line 53 "t/t_preproc.v" 0
- 
+//=========================================================================== 
 
 `line 55 "t/t_preproc.v" 0
+ 
+
+`line 57 "t/t_preproc.v" 0
  
  
 deep deep
 
-`line 59 "t/t_preproc.v" 0
+`line 61 "t/t_preproc.v" 0
  
  
 "Inside: `nosubst"
 "`nosubst"
 
-`line 64 "t/t_preproc.v" 0
+`line 66 "t/t_preproc.v" 0
  
 x y LLZZ x y
 p q LLZZ p q r s LLZZ r s LLZZ p q LLZZ p q r s LLZZ r s
 
 
 
-`line 70 "t/t_preproc.v" 0
+`line 72 "t/t_preproc.v" 0
 firstline comma","line LLZZ firstline comma","line
 
-`line 72 "t/t_preproc.v" 0
+`line 74 "t/t_preproc.v" 0
  
-x y LLZZ "x" y  // Simulators disagree here; some substitute "a" others do not 
+x y LLZZ "a" y  // IEEE 1800-2023 clarified that "a" not to substitute 
 
-`line 75 "t/t_preproc.v" 0
+`line 77 "t/t_preproc.v" 0
  
 (a,b)(a,b)
 
-`line 78 "t/t_preproc.v" 0
+`line 80 "t/t_preproc.v" 0
  
 $display("left side: \"right side\"")
 
-`line 81 "t/t_preproc.v" 0
+`line 83 "t/t_preproc.v" 0
  
 bar_suffix  more
 
-`line 84 "t/t_preproc.v" 0
+`line 86 "t/t_preproc.v" 0
  
 
 
-`line 86 "t/t_preproc.v" 0
+`line 88 "t/t_preproc.v" 0
 	$c("Zap(\"",bug1,"\");");;
 
-`line 87 "t/t_preproc.v" 0
+`line 89 "t/t_preproc.v" 0
 	$c("Zap(\"","bug2","\");");;
 
-`line 89 "t/t_preproc.v" 0
+`line 91 "t/t_preproc.v" 0
 /* Define inside comment: `DEEPER and `WITHTICK */ 
 // More commentary: `zap(bug1); `zap("bug2"); 
 
-`line 92 "t/t_preproc.v" 0
+`line 94 "t/t_preproc.v" 0
 //====================================================================== 
 // display passthru 
 
-`line 95 "t/t_preproc.v" 0
+`line 97 "t/t_preproc.v" 0
  
  
  
@@ -194,7 +202,7 @@ bar_suffix  more
       $display("left side: \"right side\"");
       $display("standalone");
 
-`line 116 "t/t_preproc.v" 0
+`line 118 "t/t_preproc.v" 0
       // Unspecified when the stringification has multiple lines 
  
 
@@ -205,78 +213,78 @@ bar_suffix  more
    end
 endmodule
 
-`line 126 "t/t_preproc.v" 0
+`line 128 "t/t_preproc.v" 0
 //====================================================================== 
 // rt.cpan.org bug34429 
 
-`line 129 "t/t_preproc.v" 0
+`line 131 "t/t_preproc.v" 0
  
 
 
 
 
-`line 134 "t/t_preproc.v" 0
+`line 136 "t/t_preproc.v" 0
 module add1 ( input wire d1, output wire o1);
  
-`line 135 "t/t_preproc.v" 0
+`line 137 "t/t_preproc.v" 0
 wire  tmp_d1 = d1; 
-`line 135 "t/t_preproc.v" 0
+`line 137 "t/t_preproc.v" 0
 wire  tmp_o1 = tmp_d1 + 1; 
-`line 135 "t/t_preproc.v" 0
+`line 137 "t/t_preproc.v" 0
 assign o1 = tmp_o1 ;   // expansion is OK 
 endmodule
 module add2 ( input wire d2, output wire o2);
  
-`line 138 "t/t_preproc.v" 0
+`line 140 "t/t_preproc.v" 0
 wire  tmp_d2 = d2; 
-`line 138 "t/t_preproc.v" 0
+`line 140 "t/t_preproc.v" 0
 wire  tmp_o2 = tmp_d2 + 1; 
-`line 138 "t/t_preproc.v" 0
+`line 140 "t/t_preproc.v" 0
 assign o2 = tmp_o2 ;  // expansion is bad 
 endmodule
 
-`line 141 "t/t_preproc.v" 0
+`line 143 "t/t_preproc.v" 0
   
 
 
 
 
 
-`line 147 "t/t_preproc.v" 0
+`line 149 "t/t_preproc.v" 0
 // parameterized macro with arguments that are macros 
   
   
   
 
-`line 152 "t/t_preproc.v" 0
+`line 154 "t/t_preproc.v" 0
    
-`line 152 "t/t_preproc.v" 0
+`line 154 "t/t_preproc.v" 0
    generate for (i=0; i<(3); i=i+1) begin 
-`line 152 "t/t_preproc.v" 0
+`line 154 "t/t_preproc.v" 0
       psl cover {  m5k.f .ctl._ctl_mvldx_m1.d[i] & ~m5k.f .ctl._ctl_mvldx_m1.q[i] & !m5k.f .ctl._ctl_mvldx_m1.cond & ((m5k.f .ctl.alive & m5k.f .ctl.alive_m1))} report "fondNoRise: m5kc_fcl._ctl_mvldx_m1"; 
-`line 152 "t/t_preproc.v" 0
+`line 154 "t/t_preproc.v" 0
       psl cover { ~m5k.f .ctl._ctl_mvldx_m1.d[i] &  m5k.f .ctl._ctl_mvldx_m1.q[i] & !m5k.f .ctl._ctl_mvldx_m1.cond & ((m5k.f .ctl.alive & m5k.f .ctl.alive_m1))} report "fondNoFall: m5kc_fcl._ctl_mvldx_m1"; 
-`line 152 "t/t_preproc.v" 0
+`line 154 "t/t_preproc.v" 0
    end endgenerate	// ignorecmt 
 
-`line 154 "t/t_preproc.v" 0
+`line 156 "t/t_preproc.v" 0
 //====================================================================== 
 // Quotes are legal in protected blocks.  Grr. 
 module prot();
 `protected
     I!#r#e6<_Q{{E2+]I3<[3s)1@D|'E''i!O?]jD>Jo_![Cl)
     #nj1]p,3^1~,="E@QZB\T)eU\pC#C|7=\$J$##A[@-@{Qk]
-`line 160 "t/t_preproc.v" 0
+`line 162 "t/t_preproc.v" 0
 `endprotected
 endmodule
 //" 
 
-`line 164 "t/t_preproc.v" 0
+`line 166 "t/t_preproc.v" 0
 //====================================================================== 
-// Check IEEE1800-2017 `pragma protect encrypted modules 
+// Check IEEE 1800-2017 `pragma protect encrypted modules 
 module t_lint_pragma_protected;
 
-`line 168 "t/t_preproc.v" 0
+`line 170 "t/t_preproc.v" 0
 `pragma protect begin_protected
 `pragma protect version=1
 `pragma protect encrypt_agent="XXXXX"
@@ -290,7 +298,7 @@ module t_lint_pragma_protected;
 ICAgICAgICAgICAgICAgICAgIEdOVSBMRVNTRVIgR0VORVJBTCBQVUJMSUMgTElDRU5TRQogICAg
 KSAyMDA3IE==
 
-`line 181 "t/t_preproc.v" 0
+`line 183 "t/t_preproc.v" 0
 `pragma protect key_keyowner="BIG3#2"
 `pragma protect key_keyname="BBBBBB"
 `pragma protect key_method="RSA"
@@ -300,7 +308,7 @@ IEV2ZXJ5b25lIGlzIHBlcm1pdHRlZCB0byBjb3B5IGFuZCBkaXN0cmlidXRlIHZlcmJhdGltIGNv
 cGllcwogb2YgdGhpcyBsaWNlbnNlIGRvY3VtZW50LCBidXQgY2hhbmdpbmcgaXQgaXMgbm90IGFs
 bG93ZWQuCgoKICBUaGl=
 
-`line 190 "t/t_preproc.v" 0
+`line 192 "t/t_preproc.v" 0
 `pragma protect key_keyowner="BIG3#3"
 `pragma protect key_keyname="CCCCCCCC"
 `pragma protect key_method="RSA"
@@ -310,7 +318,7 @@ TGljZW5zZSBpbmNvcnBvcmF0ZXMKdGhlIHRlcm1zIGFuZCBjb25kaXRpb25zIG9mIHZlcnNpb24g
 MyBvZiB0aGUgR05VIEdlbmVyYWwgUHVibGljCkxpY2Vuc2UsIHN1cHBsZW1lbnRlZCBieSB0aGUg
 YWRkaXRpb25hbCBwZXJ=
 
-`line 199 "t/t_preproc.v" 0
+`line 201 "t/t_preproc.v" 0
 `pragma protect encoding = (enctype = "BASE64", line_length = 76, bytes = 295)
 `pragma protect data_block
 aW5pdGlvbnMuCgogIEFzIHVzZWQgaGVyZWluLCAidGhpcyBMaWNlbnNlIiByZWZlcnMgdG8gdmVy
@@ -321,13 +329,18 @@ ZCBieSB0aGlzIExpY2Vuc2UsCm90aGVyIHRoYW4gYW4gQXBwbGljYXRpb24gb3IgYSBDb21iaW5l
 ZCBXb3JrIGFzIG==
 
 
-`line 209 "t/t_preproc.v" 0
+`line 211 "t/t_preproc.v" 0
 `pragma protect end_protected
 
-`line 211 "t/t_preproc.v" 0
+`line 213 "t/t_preproc.v" 0
+// encoding envelope 
+`pragma protect
+`pragma protect end
+
+`line 217 "t/t_preproc.v" 0
 endmodule
 
-`line 213 "t/t_preproc.v" 0
+`line 219 "t/t_preproc.v" 0
 //====================================================================== 
 // macro call with define that has comma 
  
@@ -338,17 +351,17 @@ endmodule
  
  
 
-`line 223 "t/t_preproc.v" 0
+`line 229 "t/t_preproc.v" 0
 begin addr <= (({regs[6], regs[7]} + 1)); rd <= 1; end and begin addr <= (({regs[6], regs[7]})); wdata <= (rdata); wr <= 1; end
 begin addr <= ({regs[6], regs[7]} + 1); rd <= 1; end
 begin addr <= ({regs[6], regs[7]}); wdata <= (rdata); wr <= 1; end  more
 
-`line 227 "t/t_preproc.v" 0
+`line 233 "t/t_preproc.v" 0
 //====================================================================== 
 // include of parameterized file 
  
  
-`line 230 "t/t_preproc.v" 0
+`line 236 "t/t_preproc.v" 0
 `line 1 "t/t_preproc_inc4.vh" 1
 // DESCRIPTION: Verilog::Preproc: Example source code 
 `line 2 "t/t_preproc_inc4.vh" 0
@@ -359,58 +372,58 @@ begin addr <= ({regs[6], regs[7]}); wdata <= (rdata); wr <= 1; end  more
 `line 6 "t/t_preproc_inc4.vh" 0
  
 
-`line 8 "t/t_preproc_inc4.vh" 2
-`line 230 "t/t_preproc.v" 0
+`line 8 "t/t_preproc_inc4.vh" 0
+`line 236 "t/t_preproc.v" 2
 
-`line 231 "t/t_preproc.v" 0
+`line 237 "t/t_preproc.v" 0
  
   
-
-`line 234 "t/t_preproc.v" 0
- 
-
-`line 236 "t/t_preproc.v" 0
- 
-  
-
 
 `line 240 "t/t_preproc.v" 0
+ 
+
+`line 242 "t/t_preproc.v" 0
+ 
+  
+
+
+`line 246 "t/t_preproc.v" 0
 //====================================================================== 
 // macro call with , in {} 
 
-`line 243 "t/t_preproc.v" 0
+`line 249 "t/t_preproc.v" 0
  
 $blah("ab,cd","e,f");
 $blah(this.logfile,vec);
 $blah(this.logfile,vec[1,2,3]);
 $blah(this.logfile,{blah.name(), " is not foo"});
 
-`line 249 "t/t_preproc.v" 0
+`line 255 "t/t_preproc.v" 0
 //====================================================================== 
 // pragma/default net type 
 
-`line 252 "t/t_preproc.v" 0
+`line 258 "t/t_preproc.v" 0
 `pragma foo = 1
 `default_nettype none
 `default_nettype uwire
 
-`line 256 "t/t_preproc.v" 0
+`line 262 "t/t_preproc.v" 0
 //====================================================================== 
 // Ifdef 
 
-`line 259 "t/t_preproc.v" 0
+`line 265 "t/t_preproc.v" 0
  
  
    
 
-`line 263 "t/t_preproc.v" 0
-Line_Preproc_Check 263
+`line 269 "t/t_preproc.v" 0
+Line_Preproc_Check 269
 
-`line 265 "t/t_preproc.v" 0
+`line 271 "t/t_preproc.v" 0
 //====================================================================== 
 // bug84 
 
-`line 268 "t/t_preproc.v" 0
+`line 274 "t/t_preproc.v" 0
  // Hello, comments MIGHT not be legal /*more,,)cmts*/ // But newlines ARE legal... who speced THAT? 
 
 
@@ -418,15 +431,15 @@ Line_Preproc_Check 263
 
 
 
-`line 275 "t/t_preproc.v" 0
+`line 281 "t/t_preproc.v" 0
 (//Here 	      x,y   //Too) 
-Line_Preproc_Check 276
+Line_Preproc_Check 282
 
-`line 278 "t/t_preproc.v" 0
+`line 284 "t/t_preproc.v" 0
 //====================================================================== 
 // defines split arguments 
 
-`line 281 "t/t_preproc.v" 0
+`line 287 "t/t_preproc.v" 0
  
  
  
@@ -435,17 +448,17 @@ beginend   // 2001 spec doesn't require two tokens, so "beginend" ok
 beginend    // 2001 spec doesn't require two tokens, so "beginend" ok 
 "beginend"  // No space "beginend" 
 
-`line 289 "t/t_preproc.v" 0
+`line 295 "t/t_preproc.v" 0
 //====================================================================== 
 // bug106 
  
  
   `\esc`def
 
-`line 295 "t/t_preproc.v" 0
+`line 301 "t/t_preproc.v" 0
 Not a \`define
 
-`line 297 "t/t_preproc.v" 0
+`line 303 "t/t_preproc.v" 0
 //====================================================================== 
 // misparsed comma in submacro 
  
@@ -454,23 +467,23 @@ Not a \`define
  
 x,y)--bee  submacro has comma paren
 
-`line 305 "t/t_preproc.v" 0
+`line 311 "t/t_preproc.v" 0
 //====================================================================== 
 // bug191 
  
-$display("10 %d %d", $bits(foo), 10);
+$display("bits %d %d", $bits(foo), 10);
 
-`line 310 "t/t_preproc.v" 0
+`line 316 "t/t_preproc.v" 0
 //====================================================================== 
 // 1800-2009 
  
     
 
-`line 315 "t/t_preproc.v" 0
+`line 321 "t/t_preproc.v" 0
     
     
 
-`line 318 "t/t_preproc.v" 0
+`line 324 "t/t_preproc.v" 0
 //====================================================================== 
 // bug202 
  
@@ -485,34 +498,34 @@ $display("10 %d %d", $bits(foo), 10);
 
 
 
-`line 332 "t/t_preproc.v" 0
+`line 338 "t/t_preproc.v" 0
 
-`line 332 "t/t_preproc.v" 0
+`line 338 "t/t_preproc.v" 0
    							
-`line 332 "t/t_preproc.v" 0
+`line 338 "t/t_preproc.v" 0
          	
-`line 332 "t/t_preproc.v" 0
+`line 338 "t/t_preproc.v" 0
       
-`line 332 "t/t_preproc.v" 0
+`line 338 "t/t_preproc.v" 0
 					
-`line 332 "t/t_preproc.v" 0
+`line 338 "t/t_preproc.v" 0
   								
-`line 332 "t/t_preproc.v" 0
+`line 338 "t/t_preproc.v" 0
      					
-`line 332 "t/t_preproc.v" 0
+`line 338 "t/t_preproc.v" 0
           		
-`line 332 "t/t_preproc.v" 0
+`line 338 "t/t_preproc.v" 0
     							
-`line 332 "t/t_preproc.v" 0
+`line 338 "t/t_preproc.v" 0
      assign a3 = ~b3 ;						
-`line 332 "t/t_preproc.v" 0
+`line 338 "t/t_preproc.v" 0
   
 
-`line 334 "t/t_preproc.v" 0
+`line 340 "t/t_preproc.v" 0
  
 /* multi	\
 	 line1*/ 	\
-`line 336 "t/t_preproc.v" 0
+`line 342 "t/t_preproc.v" 0
  
 /*multi	\
 	   line2*/ 
@@ -521,59 +534,59 @@ $display("10 %d %d", $bits(foo), 10);
 
 
 
-`line 343 "t/t_preproc.v" 0
+`line 349 "t/t_preproc.v" 0
 
-`line 343 "t/t_preproc.v" 0
+`line 349 "t/t_preproc.v" 0
    
-`line 343 "t/t_preproc.v" 0
+`line 349 "t/t_preproc.v" 0
 /* multi		
       line 3*/ 		
-`line 343 "t/t_preproc.v" 0
+`line 349 "t/t_preproc.v" 0
    def i		
 
 
-`line 345 "t/t_preproc.v" 0
+`line 351 "t/t_preproc.v" 0
 //====================================================================== 
 
-`line 347 "t/t_preproc.v" 0
+`line 353 "t/t_preproc.v" 0
  
  
  
-
-
-`line 351 "t/t_preproc.v" 0
- 
-
- 
-
 
 
 `line 357 "t/t_preproc.v" 0
+ 
+
+ 
+
+
+
+`line 363 "t/t_preproc.v" 0
 1 // verilator NOT IN DEFINE (nodef) 
 2 /* verilator PART OF DEFINE */  (hasdef)
 3 
-`line 359 "t/t_preproc.v" 0
+`line 365 "t/t_preproc.v" 0
 /* verilator NOT PART
 	        OF DEFINE */  (nodef)
-`line 360 "t/t_preproc.v" 0
+`line 366 "t/t_preproc.v" 0
 4 
-`line 360 "t/t_preproc.v" 0
+`line 366 "t/t_preproc.v" 0
 /* verilator PART 
 	        OF DEFINE */  (nodef)
-`line 361 "t/t_preproc.v" 0
+`line 367 "t/t_preproc.v" 0
 5 also in  
-`line 361 "t/t_preproc.v" 0
+`line 367 "t/t_preproc.v" 0
   also3  // CMT NOT (nodef) 
  
 
 HAS a NEW 
-`line 364 "t/t_preproc.v" 0
+`line 370 "t/t_preproc.v" 0
 LINE
 
-`line 366 "t/t_preproc.v" 0
+`line 372 "t/t_preproc.v" 0
 //====================================================================== 
 
-`line 368 "t/t_preproc.v" 0
+`line 374 "t/t_preproc.v" 0
  
 
 
@@ -587,11 +600,11 @@ LINE
 
 
 
-`line 381 "t/t_preproc.v" 0
+`line 387 "t/t_preproc.v" 0
  
  
 
-`line 384 "t/t_preproc.v" 0
+`line 390 "t/t_preproc.v" 0
 EXP: clxx_scen
 clxx_scen
 EXP: clxx_scen
@@ -599,44 +612,44 @@ EXP: clxx_scen
  
 EXP: do if (start("verilog/inc1.v", 25)) begin  message({"Blah-", "clx_scen", " end"}); end  while(0);
 
-`line 390 "t/t_preproc.v" 0
+`line 396 "t/t_preproc.v" 0
    do 
-`line 390 "t/t_preproc.v" 0
+`line 396 "t/t_preproc.v" 0
       /* synopsys translate_off */  
-`line 390 "t/t_preproc.v" 0
+`line 396 "t/t_preproc.v" 0
   
-`line 390 "t/t_preproc.v" 0
+`line 396 "t/t_preproc.v" 0
     
-`line 390 "t/t_preproc.v" 0
+`line 396 "t/t_preproc.v" 0
  
-`line 390 "t/t_preproc.v" 0
-      if (start("t/t_preproc.v", 390)) begin 
-`line 390 "t/t_preproc.v" 0
+`line 396 "t/t_preproc.v" 0
+      if (start("t/t_preproc.v", 396)) begin 
+`line 396 "t/t_preproc.v" 0
  
-`line 390 "t/t_preproc.v" 0
+`line 396 "t/t_preproc.v" 0
 	 message({"Blah-", "clx_scen", " end"}); 
-`line 390 "t/t_preproc.v" 0
+`line 396 "t/t_preproc.v" 0
       end 
-`line 390 "t/t_preproc.v" 0
+`line 396 "t/t_preproc.v" 0
       /* synopsys translate_on */  
-`line 390 "t/t_preproc.v" 0
+`line 396 "t/t_preproc.v" 0
    while(0);
 
-`line 392 "t/t_preproc.v" 0
+`line 398 "t/t_preproc.v" 0
 //====================================================================== 
 
-`line 394 "t/t_preproc.v" 0
+`line 400 "t/t_preproc.v" 0
  
 
 
 
 
-`line 398 "t/t_preproc.v" 0
+`line 404 "t/t_preproc.v" 0
     
-`line 398 "t/t_preproc.v" 0
+`line 404 "t/t_preproc.v" 0
     
 
-`line 399 "t/t_preproc.v" 0
+`line 405 "t/t_preproc.v" 0
      
 //`ifndef def_fooed_2  `error "No def_fooed_2" `endif 
 EXP: This is fooed
@@ -644,7 +657,7 @@ This is fooed
 EXP: This is fooed_2
 This is fooed_2
 
-`line 406 "t/t_preproc.v" 0
+`line 412 "t/t_preproc.v" 0
 //====================================================================== 
  
 np
@@ -656,11 +669,11 @@ np
  
     
 
-`line 417 "t/t_preproc.v" 0
+`line 423 "t/t_preproc.v" 0
  
     
 
-`line 420 "t/t_preproc.v" 0
+`line 426 "t/t_preproc.v" 0
 //====================================================================== 
 // Metaprogramming 
  
@@ -669,12 +682,12 @@ np
  
  
 
-`line 428 "t/t_preproc.v" 0
+`line 434 "t/t_preproc.v" 0
  
  
  
 
-`line 432 "t/t_preproc.v" 0
+`line 438 "t/t_preproc.v" 0
 hello3hello3hello3
 hello4hello4hello4hello4
 //====================================================================== 
@@ -682,7 +695,7 @@ hello4hello4hello4hello4
  
  
  
-`line 438 "t/t_preproc.v" 0
+`line 444 "t/t_preproc.v" 0
 `line 1 "t/t_preproc_inc4.vh" 1
 // DESCRIPTION: Verilog::Preproc: Example source code 
 `line 2 "t/t_preproc_inc4.vh" 0
@@ -693,10 +706,10 @@ hello4hello4hello4hello4
 `line 6 "t/t_preproc_inc4.vh" 0
  
 
-`line 8 "t/t_preproc_inc4.vh" 2
-`line 438 "t/t_preproc.v" 0
+`line 8 "t/t_preproc_inc4.vh" 0
+`line 444 "t/t_preproc.v" 2
 
-`line 439 "t/t_preproc.v" 0
+`line 445 "t/t_preproc.v" 0
    
 //====================================================================== 
 // Defines doing defines 
@@ -706,28 +719,28 @@ hello4hello4hello4hello4
  
  
      
-`line 447 "t/t_preproc.v" 0
+`line 453 "t/t_preproc.v" 0
  
      
      
      
-Line_Preproc_Check 451
+Line_Preproc_Check 457
 //====================================================================== 
 // Quoted multiline - track line numbers, and ensure \\n gets propagated 
  
 
  
-Line_Preproc_Check 457
+Line_Preproc_Check 463
 "FOO \
   BAR " "arg_line1 \
   arg_line2" "FOO \
   BAR "
-`line 460 "t/t_preproc.v" 0
-Line_Preproc_Check 460
+`line 466 "t/t_preproc.v" 0
+Line_Preproc_Check 466
 //====================================================================== 
 // bug283 
 
-`line 464 "t/t_preproc.v" 0
+`line 470 "t/t_preproc.v" 0
  
  
  
@@ -738,14 +751,14 @@ abc
  
  
 
-`line 474 "t/t_preproc.v" 0
+`line 480 "t/t_preproc.v" 0
  
  
  
 EXP: sonet_frame
 sonet_frame
 
-`line 480 "t/t_preproc.v" 0
+`line 486 "t/t_preproc.v" 0
  
  
 EXP: sonet_frame
@@ -756,7 +769,7 @@ sonet_frame
 EXP: sonet_frame
 sonet_frame
 
-`line 490 "t/t_preproc.v" 0
+`line 496 "t/t_preproc.v" 0
 // The existance of non-existance of a base define can make a difference 
  
  
@@ -764,13 +777,13 @@ EXP: module zzz ; endmodule
 module zzz ; endmodule
 module zzz ; endmodule
 
-`line 497 "t/t_preproc.v" 0
+`line 503 "t/t_preproc.v" 0
  
 EXP: module a_b ; endmodule
 module a_b ; endmodule
 module a_b ; endmodule
 
-`line 502 "t/t_preproc.v" 0
+`line 508 "t/t_preproc.v" 0
 //====================================================================== 
 // bug311 
 integer/*NEED_SPACE*/ foo;
@@ -784,7 +797,7 @@ module t;
  
 
    initial begin : \`LEX_CAT(a[0],_assignment)  
-`line 514 "t/t_preproc.v" 0
+`line 520 "t/t_preproc.v" 0
    $write("GOT%%m='%m' EXP='%s'\n", "t.\\`LEX_CAT(a[0],_assignment) ");   end
    //----- 
    // SHOULD(simulator-dependant): Backslash doesn't prevent arguments from 
@@ -793,7 +806,7 @@ module t;
  
 
    initial begin : \a[0]_assignment_a[1] 
-`line 521 "t/t_preproc.v" 0
+`line 527 "t/t_preproc.v" 0
    $write("GOT%%m='%m' EXP='%s'\n", "t.\\a[0]_assignment_a[1] ");   end
  
    //----- 
@@ -809,7 +822,7 @@ module t;
 
    // Similar to above; \ does not allow expansion after substitution 
    initial begin : \`CAT(ff,bb) 
-`line 535 "t/t_preproc.v" 0
+`line 541 "t/t_preproc.v" 0
    $write("GOT%%m='%m' EXP='%s'\n", "t.\\`CAT(ff,bb) ");   end
    
    //----- 
@@ -817,7 +830,7 @@ module t;
 
    // MUST: Unknown macro with backslash escape stays as escaped symbol name 
    initial begin : \`zzz 
-`line 541 "t/t_preproc.v" 0
+`line 547 "t/t_preproc.v" 0
    $write("GOT%%m='%m' EXP='%s'\n", "t.\\`zzz ");   end
  
    //----- 
@@ -826,11 +839,11 @@ module t;
 
    // SHOULD(simulator-dependant): Known macro with backslash escape expands 
    initial begin : \`FOO 
-`line 548 "t/t_preproc.v" 0
+`line 554 "t/t_preproc.v" 0
     $write("GOT%%m='%m' OTHER_EXP='%s'\n OUR_EXP='%s'", "t.bar ","t.\\`FOO ");  end
    // SHOULD(simulator-dependant): Prefix breaks the above 
    initial begin : \xx`FOO 
-`line 550 "t/t_preproc.v" 0
+`line 556 "t/t_preproc.v" 0
    $write("GOT%%m='%m' EXP='%s'\n", "t.\\xx`FOO ");  end
    
    //----- 
@@ -844,15 +857,15 @@ module t;
  
    //----- 
    // bug441 derivative 
-   // SHOULD(simulator-dependant): Quotes doesn't prevent arguments from expanding (like backslashes above) 
+   // Clarified in IEEE 1800-2023: Quotes prevent arguments from expanding 
  
-   initial $write("GOT='%s' EXP='%s'\n", "foo bar baz", "foo bar baz");
+   initial $write("GOT='%s' EXP='%s'\n", "foo name baz", "foo bar baz");
  
    //----- 
    // RULE: Because there are quotes after substituting STR, the `A does NOT expand 
  
  
-   initial $write("GOT='%s' EXP='%s'\n", "foo `A(bar) baz", "foo `A(bar) baz");
+   initial $write("GOT='%s' EXP='%s'\n", "foo name baz", "foo `A(bar) baz");
     
    //---- 
    // bug845 
@@ -863,27 +876,27 @@ module t;
  
 
    initial 
-`line 581 "t/t_preproc.v" 0
+`line 587 "t/t_preproc.v" 0
        $display("%s%s","a1","b2c3\n");
 endmodule
 
-`line 584 "t/t_preproc.v" 0
+`line 590 "t/t_preproc.v" 0
 //====================================================================== 
 //bug1225 
 
-`line 587 "t/t_preproc.v" 0
+`line 593 "t/t_preproc.v" 0
  
  
 $display("RAM0");
 $display("CPU");
 
-`line 592 "t/t_preproc.v" 0
+`line 598 "t/t_preproc.v" 0
  
  
  
  
 
-`line 597 "t/t_preproc.v" 0
+`line 603 "t/t_preproc.v" 0
  
 XXE_FAMILY = XXE_
  
@@ -891,7 +904,7 @@ XXE_FAMILY = XXE_
      $display("XXE_ is defined");
 
 
-`line 604 "t/t_preproc.v" 0
+`line 610 "t/t_preproc.v" 0
  
 XYE_FAMILY = XYE_
  
@@ -899,7 +912,7 @@ XYE_FAMILY = XYE_
      $display("XYE_ is defined");
 
 
-`line 611 "t/t_preproc.v" 0
+`line 617 "t/t_preproc.v" 0
  
 XXS_FAMILY = XXS_some
  
@@ -907,7 +920,7 @@ XXS_FAMILY = XXS_some
      $display("XXS_some is defined");
 
 
-`line 618 "t/t_preproc.v" 0
+`line 624 "t/t_preproc.v" 0
  
 XYS_FAMILY = XYS_foo
  
@@ -915,10 +928,10 @@ XYS_FAMILY = XYS_foo
      $display("XYS_foo is defined");
 
 
-`line 625 "t/t_preproc.v" 0
+`line 631 "t/t_preproc.v" 0
 //==== 
 
-`line 627 "t/t_preproc.v" 0
+`line 633 "t/t_preproc.v" 0
  
   
   
@@ -927,7 +940,7 @@ XYS_FAMILY = XYS_foo
      
  
 
-`line 635 "t/t_preproc.v" 0
+`line 641 "t/t_preproc.v" 0
   
   
   
@@ -935,7 +948,7 @@ XYS_FAMILY = XYS_foo
      
  
 
-`line 642 "t/t_preproc.v" 0
+`line 648 "t/t_preproc.v" 0
   
   
   
@@ -943,7 +956,7 @@ XYS_FAMILY = XYS_foo
      
  
 
-`line 649 "t/t_preproc.v" 0
+`line 655 "t/t_preproc.v" 0
   
   
   
@@ -951,26 +964,26 @@ XYS_FAMILY = XYS_foo
      
  
 
-`line 656 "t/t_preproc.v" 0
+`line 662 "t/t_preproc.v" 0
   
 
-`line 658 "t/t_preproc.v" 0
+`line 664 "t/t_preproc.v" 0
  // NEVER 
 
-`line 660 "t/t_preproc.v" 0
+`line 666 "t/t_preproc.v" 0
 //bug1227 
  
 (.mySig (myInterface.pa5),
 
-`line 664 "t/t_preproc.v" 0
+`line 670 "t/t_preproc.v" 0
 //====================================================================== 
 // Stringify bug 
 
-`line 667 "t/t_preproc.v" 0
+`line 673 "t/t_preproc.v" 0
  
 `dbg_hdl(UVM_LOW, ("Functional coverage enabled: paramgrp"));
 
-`line 670 "t/t_preproc.v" 0
+`line 676 "t/t_preproc.v" 0
  
  
 
@@ -979,28 +992,57 @@ XYS_FAMILY = XYS_foo
 
 
 
-`line 678 "t/t_preproc.v" 0
+`line 684 "t/t_preproc.v" 0
 module pcc2_cfg;
   generate
    
-`line 680 "t/t_preproc.v" 0
+`line 686 "t/t_preproc.v" 0
   covergroup a @(posedge b); 
-`line 680 "t/t_preproc.v" 0
+`line 686 "t/t_preproc.v" 0
     c: coverpoint d iff ((c) === 1'b1); endgroup 
-`line 680 "t/t_preproc.v" 0
+`line 686 "t/t_preproc.v" 0
       a u_a; 
-`line 680 "t/t_preproc.v" 0
+`line 686 "t/t_preproc.v" 0
    initial do begin $display ("DEBUG : %s [%m]", $sformatf ("Functional coverage enabled: u_a")); end while(0);
   endgenerate
 endmodule
 
-`line 684 "t/t_preproc.v" 0
+`line 690 "t/t_preproc.v" 0
 //====================================================================== 
 // Verilog-Perl bug1668 
  
 "`NOT_DEFINED_STR"
 
-`line 689 "t/t_preproc.v" 0
+`line 695 "t/t_preproc.v" 0
+//====================================================================== 
+
+"""First line with "quoted"\nSecond line\
+Third line"""
+"""First line
+Second line"""
+
+`line 702 "t/t_preproc.v" 0
+ 
+ 
+"""QQQ defform"""
+"""QQQ defval"""
+
+`line 707 "t/t_preproc.v" 0
+// string concat bug 
+ 
+"string argument"
+
+`line 711 "t/t_preproc.v" 0
+//====================================================================== 
+// See issue #5094 - IEEE 1800-2023 clarified proper behavior 
+
+`line 714 "t/t_preproc.v" 0
+ 
+bar "foo foo foo" bar
+ 
+bar """foo foo foo""" bar
+
+`line 719 "t/t_preproc.v" 0
 //====================================================================== 
 // IEEE mandated predefines 
   // undefineall should have no effect on these 
@@ -1023,4 +1065,4 @@ predef 2 2
 // After `undefineall above, for testing --dump-defines 
  
 
-`line 711 "t/t_preproc.v" 2
+`line 741 "t/t_preproc.v" 0

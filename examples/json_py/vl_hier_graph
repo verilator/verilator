@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+# -*- Python -*- See copyright, etc below
+# pylint: disable=C0103,C0114,C0115,C0115,C0116,C0209,R0914
+######################################################################
+
+import argparse
+import json
+import os
+import subprocess
+from tempfile import NamedTemporaryFile
+# from pprint import pprint, pformat
+
+#######################################################################
+
+
+class VlHierGraph:
+
+    def __init__(
+            self,
+            verilator_args,  # presently all verilator options are passed-thru
+            debug=0,
+            output_filename='graph.dot'):  # output filename
+        self.debug = debug
+        self.next_vertex_number = 0
+        self.addr_to_number = {}
+
+        with NamedTemporaryFile() as tree_temp, NamedTemporaryFile(
+        ) as meta_temp:
+            vargs = [
+                '--json-only-output',
+                tree_temp.name,
+                '--json-only-meta-output',
+                meta_temp.name,
+                '--bbox-sys',  # Parse some stuff can't translate
+                '--bbox-unsup',
+                '--prefix vljson'
+            ]
+            vargs += verilator_args
+            self.run_verilator(vargs)
+            self.tree = json.load(tree_temp)
+            self.meta = json.load(meta_temp)
+
+        with open(output_filename, "w", encoding="utf8") as fh:
+            # For more serious purposes, use the python graphviz package instead
+            fh.write("digraph {\n")
+            fh.write("  dpi=300;\n")
+            fh.write("  order=LR;\n")
+            fh.write(
+                "  node [fontsize=8 shape=\"box\" margin=0.01 width=0 height=0]"
+            )
+            fh.write("  edge [fontsize=6]")
+            # Find cells
+            modules = self.flatten(self.tree, lambda n: n['type'] == "MODULE")
+            top_module = True
+            for mod in modules:
+                # origNames are before parameterization, name if after
+                mod_number = self.addr_to_vertex_number(mod['addr'])
+                fh.write("  n%d [label=\"%s\"" % (mod_number, mod['name']))
+                if top_module:
+                    fh.write(" color=\"red\" rank=1")
+                    top_module = False
+                fh.write("];\n")
+
+                cells = self.flatten(mod, lambda n: n['type'] == "CELL")
+                for cell in cells:
+                    def_number = self.addr_to_vertex_number(cell['modp'])
+                    fh.write("  n%d->n%d [label=\"%s\"];\n" %
+                             (mod_number, def_number, cell['name']))
+
+            fh.write("}\n")
+
+    def flatten(self, node, accept_cb=lambda n: True):
+        """Flatten tree to list using DFS.
+        accept_cb(node) should return True for nodes you want to save"""
+        arr = []
+        self.dfs(node, lambda n: accept_cb(n) and arr.append(n))
+        return arr
+
+    def dfs(self, node, node_cb):
+        """Traverse given tree using DFS and apply node_cb(node) on each one"""
+        node_cb(node)
+        for _, v in node.items():
+            if isinstance(v, list):  # childlist
+                for child in v:
+                    self.dfs(child, node_cb)
+
+    def addr_to_vertex_number(self, name):
+        if name not in self.addr_to_number:
+            self.next_vertex_number += 1
+            self.addr_to_number[name] = self.next_vertex_number
+        return self.addr_to_number[name]
+
+    def run_verilator(self, vargs):
+        """Run Verilator command, check errors"""
+        if os.getenv("VERILATOR_ROOT"):
+            command = os.getenv("VERILATOR_ROOT") + "/bin/verilator"
+        else:
+            command = "verilator"
+        command += ' ' + ' '.join(vargs)
+        if self.debug:
+            print("\t%s " % command)
+        status = subprocess.call(command, shell=True)
+        if status != 0:
+            raise RuntimeError("Command failed running Verilator with '" +
+                               command + "', stopped")
+
+
+#######################################################################
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        allow_abbrev=False,
+        formatter_class=argparse.RawTextHelpFormatter,
+        description=
+        """Example of using Verilator JSON output to create a .dot file showing the
+design module hierarchy.
+
+Example usage:
+     vl_hier_graph -f input.vc top.v -o graph.dot
+     dot -Tpdf -o graph.pdf graph.dot
+""",
+        epilog="""All other arguments are pass-thru to Verilator: e.g.:
+
+  +define+<var>=<value>      Set preprocessor define
+  -F <file>                  Parse options from a file, relatively
+  -f <file>                  Parse options from a file
+  -G<name>=<value>           Overwrite toplevel parameter
+  +incdir+<dir>              Directory to search for includes
+  +libext+<ext>+[ext]...     Extensions for finding modules
+  -v <filename>              Verilog library
+  -y <dir>                   Directory to search for modules
+
+This file ONLY is placed under the Creative Commons Public Domain, for
+any use, without warranty, 2019 by Wilson Snyder.
+SPDX-License-Identifier: CC0-1.0
+""")
+    parser.add_argument('-debug',
+                        '--debug',
+                        action='store_const',
+                        const=9,
+                        help='enable debug')
+    parser.add_argument('-o',
+                        '--o',
+                        action='store',
+                        metavar='filename',
+                        required=True,
+                        help='output filename')
+    (args, rem) = parser.parse_known_args()
+
+    print(
+        "NOTE: vl_hier_graph is only an example starting point for writing your own tool."
+    )
+    # That is:
+    # 1. We will accept basic patches
+    # 2. We are not expecting to make this globally useful. (e.g. we don't cleanup obj_dir)
+    # 3. "make install" will not install this.
+    # 4. This has not had production-worthy validation.
+
+    fc = VlHierGraph(output_filename=args.o,
+                     debug=args.debug,
+                     verilator_args=rem)
+
+######################################################################
+# Local Variables:
+# compile-command: "./vl_hier_graph -h ; VERILATOR_ROOT=$V4 ./vl_hier_graph +define+thru top.v"
+# End:

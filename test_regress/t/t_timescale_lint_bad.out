@@ -1,4 +1,4 @@
-%Warning-TIMESCALEMOD: t/t_timescale_lint.v:7:8: Timescale missing on this module as other modules have it (IEEE 1800-2017 3.14.2.3)
+%Warning-TIMESCALEMOD: t/t_timescale_lint.v:7:8: Timescale missing on this module as other modules have it (IEEE 1800-2023 3.14.2.3)
     7 | module pre_no_ts;
       |        ^~~~~~~~~
                        t/t_timescale_lint.v:12:8: ... Location of module with timescale

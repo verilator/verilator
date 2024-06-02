@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -53,14 +53,14 @@ public:
         : m_left{left}
         , m_right{right} {}
     ~VerilatedRange() = default;
-    int left() const { return m_left; }
-    int right() const { return m_right; }
-    int low() const { return (m_left < m_right) ? m_left : m_right; }
-    int high() const { return (m_left > m_right) ? m_left : m_right; }
-    int elements() const {
+    int left() const VL_PURE { return m_left; }
+    int right() const VL_PURE { return m_right; }
+    int low() const VL_PURE { return (m_left < m_right) ? m_left : m_right; }
+    int high() const VL_PURE { return (m_left > m_right) ? m_left : m_right; }
+    int elements() const VL_PURE {
         return (VL_LIKELY(m_left >= m_right) ? (m_left - m_right + 1) : (m_right - m_left + 1));
     }
-    int increment() const { return (m_left >= m_right) ? 1 : -1; }
+    int increment() const VL_PURE { return (m_left >= m_right) ? 1 : -1; }
 };
 
 //===========================================================================
@@ -69,9 +69,9 @@ public:
 
 class VerilatedVarProps VL_NOT_FINAL {
     // TYPES
-    static constexpr vluint32_t MAGIC = 0xddc4f829UL;
+    static constexpr uint32_t MAGIC = 0xddc4f829UL;
     // MEMBERS
-    const vluint32_t m_magic;  // Magic number
+    const uint32_t m_magic;  // Magic number
     const VerilatedVarType m_vltype;  // Data type
     const VerilatedVarFlags m_vlflags;  // Direction
     const int m_pdims;  // Packed dimensions, 0 = none
@@ -134,53 +134,56 @@ public:
         initUnpacked(ulims);
     }
 
-public:
     ~VerilatedVarProps() = default;
     // METHODS
     bool magicOk() const { return m_magic == MAGIC; }
-    VerilatedVarType vltype() const { return m_vltype; }
+    VerilatedVarType vltype() const VL_MT_SAFE { return m_vltype; }
     VerilatedVarFlags vldir() const {
         return static_cast<VerilatedVarFlags>(static_cast<int>(m_vlflags) & VLVF_MASK_DIR);
     }
-    vluint32_t entSize() const;
+    uint32_t entSize() const VL_MT_SAFE;
     bool isPublicRW() const { return ((m_vlflags & VLVF_PUB_RW) != 0); }
     // DPI compatible C standard layout
     bool isDpiCLayout() const { return ((m_vlflags & VLVF_DPI_CLAY) != 0); }
-    int udims() const { return m_udims; }
+    int udims() const VL_MT_SAFE { return m_udims; }
     int dims() const { return m_pdims + m_udims; }
-    const VerilatedRange& packed() const { return m_packed; }
+    const VerilatedRange& packed() const VL_MT_SAFE { return m_packed; }
     const VerilatedRange& unpacked() const { return m_unpacked[0]; }
     // DPI accessors
-    int left(int dim) const {
-        return dim == 0 ? m_packed.left()
-                        : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].left() : 0;
+    int left(int dim) const VL_MT_SAFE {
+        return dim == 0                                ? m_packed.left()
+               : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].left()
+                                                       : 0;
     }
-    int right(int dim) const {
-        return dim == 0 ? m_packed.right()
-                        : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].right() : 0;
+    int right(int dim) const VL_MT_SAFE {
+        return dim == 0                                ? m_packed.right()
+               : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].right()
+                                                       : 0;
     }
-    int low(int dim) const {
-        return dim == 0 ? m_packed.low()
-                        : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].low() : 0;
+    int low(int dim) const VL_MT_SAFE {
+        return dim == 0                                ? m_packed.low()
+               : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].low()
+                                                       : 0;
     }
-    int high(int dim) const {
-        return dim == 0 ? m_packed.high()
-                        : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].high() : 0;
+    int high(int dim) const VL_MT_SAFE {
+        return dim == 0                                ? m_packed.high()
+               : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].high()
+                                                       : 0;
     }
     int increment(int dim) const {
-        return dim == 0
-                   ? m_packed.increment()
-                   : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].increment() : 0;
+        return dim == 0                                ? m_packed.increment()
+               : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].increment()
+                                                       : 0;
     }
-    int elements(int dim) const {
-        return dim == 0
-                   ? m_packed.elements()
-                   : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].elements() : 0;
+    int elements(int dim) const VL_MT_SAFE {
+        return dim == 0                                ? m_packed.elements()
+               : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].elements()
+                                                       : 0;
     }
     // Total size in bytes (note DPI limited to 4GB)
     size_t totalSize() const;
-    // Adjust a data pointer to access a given array element, NuLL if something goes bad
-    void* datapAdjustIndex(void* datap, int dim, int indx) const;
+    // Adjust a data pointer to access a given array element, NULL if something goes bad
+    void* datapAdjustIndex(void* datap, int dim, int indx) const VL_MT_SAFE;
 };
 
 //===========================================================================
@@ -188,8 +191,8 @@ public:
 
 class VerilatedDpiOpenVar final {
     // MEMBERS
-    const VerilatedVarProps* m_propsp;  // Variable properties
-    void* m_datap;  // Location of data (local to thread always, so safe)
+    const VerilatedVarProps* const m_propsp;  // Variable properties
+    void* const m_datap;  // Location of data (local to thread always, so safe)
 public:
     // CONSTRUCTORS
     VerilatedDpiOpenVar(const VerilatedVarProps* propsp, void* datap)
@@ -200,22 +203,22 @@ public:
         , m_datap{const_cast<void*>(datap)} {}
     ~VerilatedDpiOpenVar() = default;
     // METHODS
-    void* datap() const { return m_datap; }
+    void* datap() const VL_MT_SAFE { return m_datap; }
     // METHODS - from VerilatedVarProps
     bool magicOk() const { return m_propsp->magicOk(); }
     VerilatedVarType vltype() const { return m_propsp->vltype(); }
     bool isDpiStdLayout() const { return m_propsp->isDpiCLayout(); }
     const VerilatedRange& packed() const { return m_propsp->packed(); }
     const VerilatedRange& unpacked() const { return m_propsp->unpacked(); }
-    int udims() const { return m_propsp->udims(); }
-    int left(int dim) const { return m_propsp->left(dim); }
-    int right(int dim) const { return m_propsp->right(dim); }
+    int udims() const VL_MT_SAFE { return m_propsp->udims(); }
+    int left(int dim) const VL_MT_SAFE { return m_propsp->left(dim); }
+    int right(int dim) const VL_MT_SAFE { return m_propsp->right(dim); }
     int low(int dim) const { return m_propsp->low(dim); }
     int high(int dim) const { return m_propsp->high(dim); }
     int increment(int dim) const { return m_propsp->increment(dim); }
     int elements(int dim) const { return m_propsp->elements(dim); }
     size_t totalSize() const { return m_propsp->totalSize(); }
-    void* datapAdjustIndex(void* datap, int dim, int indx) const {
+    void* datapAdjustIndex(void* datap, int dim, int indx) const VL_MT_SAFE {
         return m_propsp->datapAdjustIndex(datap, dim, indx);
     }
 };
@@ -226,10 +229,10 @@ public:
 
 class VerilatedVar final : public VerilatedVarProps {
     // MEMBERS
-    void* m_datap;  // Location of data
-    const char* m_namep;  // Name - slowpath
+    void* const m_datap;  // Location of data
+    const char* const m_namep;  // Name - slowpath
 protected:
-    bool m_isParam;
+    const bool m_isParam;
     friend class VerilatedScope;
     // CONSTRUCTORS
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,

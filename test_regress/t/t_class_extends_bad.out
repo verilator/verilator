@@ -1,5 +1,4 @@
-%Error-UNSUPPORTED: t/t_class_extends_bad.v:13:26: Multiple inheritance illegal on non-interface classes (IEEE 1800-2017 8.13), and unsupported for interface classes.
+%Error: t/t_class_extends_bad.v:13:26: Multiple inheritance illegal on non-interface classes (IEEE 1800-2023 8.13)
    13 | class Cls extends Base1, Base2;
       |                          ^~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

@@ -1,23 +1,23 @@
-%Error-UNSUPPORTED: t/t_increment_bad.v:15:31: Unsupported: Incrementation in this context.
-   15 |       if (0 && test_string[pos++] != "e");
+%Error-UNSUPPORTED: t/t_increment_bad.v:21:31: Unsupported: Incrementation in this context.
+   21 |       if (0 && test_string[pos++] != "e");
       |                               ^~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_increment_bad.v:16:19: Unsupported: Incrementation in this context.
-   16 |       if (1 || pos-- != 1);
+%Error-UNSUPPORTED: t/t_increment_bad.v:22:19: Unsupported: Incrementation in this context.
+   22 |       if (1 || pos-- != 1);
       |                   ^~
-%Error-UNSUPPORTED: t/t_increment_bad.v:18:17: Unsupported: Incrementation in this context.
-   18 |       if (a <-> --b);
+%Error-UNSUPPORTED: t/t_increment_bad.v:24:17: Unsupported: Incrementation in this context.
+   24 |       if (a <-> --b);
       |                 ^~
-%Error-UNSUPPORTED: t/t_increment_bad.v:19:16: Unsupported: Incrementation in this context.
-   19 |       if (0 -> ++b);
+%Error-UNSUPPORTED: t/t_increment_bad.v:25:16: Unsupported: Incrementation in this context.
+   25 |       if (0 -> ++b);
       |                ^~
-%Error-UNSUPPORTED: t/t_increment_bad.v:21:24: Unsupported: Incrementation in this context.
-   21 |       pos = (a > 0) ? a++ : --b;
+%Error-UNSUPPORTED: t/t_increment_bad.v:27:24: Unsupported: Incrementation in this context.
+   27 |       pos = (a > 0) ? a++ : --b;
       |                        ^~
-%Error-UNSUPPORTED: t/t_increment_bad.v:21:29: Unsupported: Incrementation in this context.
-   21 |       pos = (a > 0) ? a++ : --b;
+%Error-UNSUPPORTED: t/t_increment_bad.v:27:29: Unsupported: Incrementation in this context.
+   27 |       pos = (a > 0) ? a++ : --b;
       |                             ^~
-%Error-UNSUPPORTED: t/t_increment_bad.v:23:24: Unsupported: Incrementation in this context.
-   23 |       pos = array[0][0]++;
-      |                        ^~
+%Error-UNSUPPORTED: t/t_increment_bad.v:32:37: Unsupported: Incrementation in this context.
+   32 |    assert property (@(posedge clk) a++ >= 0);
+      |                                     ^~
 %Error: Exiting due to

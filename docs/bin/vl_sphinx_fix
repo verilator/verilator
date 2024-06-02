@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=C0112,C0114,C0116,C0301,R0903
+# pylint: disable=C0112,C0114,C0115,C0116,C0209,C0301,R0903
 # -*- Python -*- See copyright, etc below
 ######################################################################
 
@@ -27,7 +27,7 @@ class VlSphinxFix:
 
     def _edit(self, filename):
         is_html = re.search(r'\.(html)$', filename)
-        with open(filename) as fhr:
+        with open(filename, "r", encoding="utf8") as fhr:
             origfile = fhr.read()
             wholefile = origfile
             # Option doesn't like spaces, so we use
@@ -43,7 +43,7 @@ class VlSphinxFix:
                 if self.debug:
                     print("Edit %s" % filename)
                 tempname = filename + ".tmp"
-                with open(tempname, "w") as fhw:
+                with open(tempname, "w", encoding="utf8") as fhw:
                     fhw.write(wholefile)
                 os.rename(tempname, filename)
 
@@ -55,7 +55,7 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
     description="""Post-process Sphinx HTML.""",
     epilog=
-    """ Copyright 2021-2021 by Wilson Snyder.  This package is free software;
+    """ Copyright 2021-2024 by Wilson Snyder.  This package is free software;
 you can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

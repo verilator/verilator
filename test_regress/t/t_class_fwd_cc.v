@@ -15,7 +15,7 @@ package Pkg;
       endfunction
    endclass
    class Fwd;
-      function Fwd m_uvm_get_root();
+      static function Fwd m_uvm_get_root();
          return null;
       endfunction
    endclass

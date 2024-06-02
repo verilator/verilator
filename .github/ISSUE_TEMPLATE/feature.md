@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Request something should be supported, or a new feature added. (Note our contributor agreement at https://github.com/verilator/verilator/blob/master/docs/CONTRIBUTING.rst)
+about: Use this to request something should be supported, or a new feature added. (Note our contributor agreement at https://github.com/verilator/verilator/blob/master/docs/CONTRIBUTING.rst)
 title: ''
 labels: new
 assignees: ''
@@ -13,4 +13,4 @@ What would you like added/supported?
 
 Can you attach an example that runs on other simulators?  (Must be openly licensed, ideally in test_regress format.)
 
-May we assist you in trying to fix this yourself?
+May we assist you in trying to fix this in Verilator yourself?

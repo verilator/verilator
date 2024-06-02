@@ -20,8 +20,8 @@ module t (/*AUTOARG*/
    reg   c;
 
    array_test array_test_i (/*AUTOINST*/
-			    // Inputs
-			    .clk		(clk));
+                            // Inputs
+                            .clk                (clk));
 
 endmodule
 
@@ -40,9 +40,9 @@ module array_test
 
    input clk;
 
-   // verilator lint_off LITENDIAN
+   // verilator lint_off ASCRANGE
    reg [7:0] a [LEFT:RIGHT];
-   // verilator lint_on LITENDIAN
+   // verilator lint_on ASCRANGE
 
    typedef reg [7:0] r_t;
 

@@ -2,7 +2,7 @@
 #
 # DESCRIPTION: CMake script for t_hier_block_cmake
 #
-# Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -10,7 +10,8 @@
 #
 ######################################################################
 
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required(VERSION 3.12)
+cmake_policy(SET CMP0074 NEW)
 project (t_hier_block_cmake)
 
 find_package(verilator REQUIRED)
@@ -24,4 +25,3 @@ set(VERILATOR_OPTIONS "${VERILATOR_OPTIONS}" --hierarchical --stats --CFLAGS "-p
 
 verilate(t_hier_block_cmake VERILATOR_ARGS ${VERILATOR_OPTIONS} SOURCES
     ../t_hier_block.v )
-

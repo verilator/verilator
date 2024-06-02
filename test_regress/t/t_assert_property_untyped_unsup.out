@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_assert_property_untyped_unsup.v:20:52: Untyped property port following a typed port
+   20 |    property check(cyc_mod_2, logic [4:0] expected, arg3, untyped arg4, arg5);
+      |                                                    ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

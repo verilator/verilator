@@ -27,16 +27,16 @@ if (!-r "$root/.git") {
             next if $file =~ /nodist/;
             if (_has_tabs("$root/$file")) {
                 $warns{$file} = "File not in git or .gitignore (with tabs): $file";
-                $summary = "Files untracked in git or .gitignore (with tabs):"
+                $summary = "Files untracked in git or .gitignore (with tabs):";
             } else {
                 $warns{$file} = "File not in git or .gitignore: $file";
-                $summary ||= "Files untracked in git or .gitignore:"
+                $summary ||= "Files untracked in git or .gitignore:";
             }
         }
     }
     if (keys %warns) {
         # First warning lists everything as that's shown in the driver summary
-        error($summary." ",join(' ',sort keys %warns));
+        error($summary . " ", join(' ', sort keys %warns));
         foreach my $file (sort keys %warns) {
             error($warns{$file});
         }
@@ -49,7 +49,7 @@ sub _has_tabs {
     if ($filename =~ /\.out$/) {
         # Ignore golden files
     } elsif ($contents =~ /[\001\002\003\004\005\006]/) {
-        # Ignore binrary files
+        # Ignore binary files
     } elsif ($contents =~ /\t/) {
         return 1;
     }

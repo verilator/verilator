@@ -10,7 +10,7 @@
 #include <memory>
 
 // SystemC global header
-#include <systemc.h>
+#include <systemc>
 
 // Include common routines
 #include <verilated.h>
@@ -23,11 +23,11 @@
 // Include model header, generated from Verilating "top.v"
 #include "Vtop.h"
 
+using namespace sc_core;
+using namespace sc_dt;
+
 int sc_main(int argc, char* argv[]) {
     // This is a more complicated example, please also see the simpler examples/make_hello_c.
-
-    // Prevent unused variable warnings
-    if (false && argc && argv) {}
 
     // Create logs/ directory in case we have traces to put under it
     Verilated::mkdir("logs");
@@ -50,7 +50,7 @@ int sc_main(int argc, char* argv[]) {
     Verilated::commandArgs(argc, argv);
 
     // General logfile
-    ios::sync_with_stdio();
+    std::ios::sync_with_stdio();
 
     // Define clocks
     sc_clock clk{"clk", 10, SC_NS, 0.5, 3, SC_NS, true};
@@ -58,11 +58,11 @@ int sc_main(int argc, char* argv[]) {
 
     // Define interconnect
     sc_signal<bool> reset_l;
-    sc_signal<vluint32_t> in_small;
-    sc_signal<vluint64_t> in_quad;
+    sc_signal<uint32_t> in_small;
+    sc_signal<uint64_t> in_quad;
     sc_signal<sc_bv<70>> in_wide;
-    sc_signal<vluint32_t> out_small;
-    sc_signal<vluint64_t> out_quad;
+    sc_signal<uint32_t> out_small;
+    sc_signal<uint64_t> out_quad;
     sc_signal<sc_bv<70>> out_wide;
 
     // Construct the Verilated model, from inside Vtop.h
@@ -82,15 +82,15 @@ int sc_main(int argc, char* argv[]) {
 
     // You must do one evaluation before enabling waves, in order to allow
     // SystemC to interconnect everything for testing.
-    sc_start(1, SC_NS);
+    sc_start(SC_ZERO_TIME);
 
 #if VM_TRACE
     // If verilator was invoked with --trace argument,
     // and if at run time passed the +trace argument, turn on tracing
     VerilatedVcdSc* tfp = nullptr;
     const char* flag = Verilated::commandArgsPlusMatch("trace");
-    if (flag && 0 == strcmp(flag, "+trace")) {
-        cout << "Enabling waves into logs/vlt_dump.vcd...\n";
+    if (flag && 0 == std::strcmp(flag, "+trace")) {
+        std::cout << "Enabling waves into logs/vlt_dump.vcd...\n";
         tfp = new VerilatedVcdSc;
         top->trace(tfp, 99);  // Trace 99 levels of hierarchy
         Verilated::mkdir("logs");

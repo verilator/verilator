@@ -6,7 +6,7 @@
 
 module t (/*AUTOARG*/);
 
-   logic [3:0] array_simp [1:0] [3:0];  // big endian array
+   logic [3:0] array_simp [1:0] [3:0];  // descending range array
 
    int         irep[1:2][1:6];
 

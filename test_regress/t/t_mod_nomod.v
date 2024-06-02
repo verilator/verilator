@@ -4,7 +4,7 @@
 // any use, without warranty, 2019 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-//bug 1381
+// See issue #1381
 
 logic root_var;
 

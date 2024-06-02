@@ -12,7 +12,7 @@ module t(/*AUTOARG*/);
    typedef int    calc_sums_t [3:0];
 
    localparam int SUMS_ARRAY [3:0] = calc_sums_array(SIZES, 4);
-   function calc_sums_t calc_sums_array(int s[3:0], int n);
+   function automatic calc_sums_t calc_sums_array(int s[3:0], int n);
       int sum = 0;
       for (int ii = 0; ii < n; ++ii) begin
          sum = sum + s[ii];
@@ -23,7 +23,7 @@ module t(/*AUTOARG*/);
 `ifndef VERILATOR
    localparam int SUMS_DYN [3:0] = calc_sums_dyn(SIZES, 4);
 `endif
-   function calc_sums_t calc_sums_dyn(int s[], int n);
+   function automatic calc_sums_t calc_sums_dyn(int s[], int n);
       int sum = 0;
       for (int ii = 0; ii < n; ++ii) begin
          sum = sum + s[ii];

@@ -9,14 +9,16 @@
 //
 //*************************************************************************
 
+#include "verilated_cov.h"
+
+#include "svdpi.h"
+
 #include <cstdio>
 #include <cstring>
 #include <iostream>
-#include "svdpi.h"
 
+// These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
-
-#include "verilated_cov.h"
 
 #include VM_PREFIX_INCLUDE
 
@@ -30,22 +32,22 @@ int errors = 0;
 
 const char* name() { return "main"; }
 
-void hier_insert(VerilatedCovContext* covContextp, vluint64_t* countp, const char* hierp,
+void hier_insert(VerilatedCovContext* covContextp, uint64_t* countp, const char* hierp,
                  const char* peri) {
     // This needs to be a function at one line number so all of the
     // line numbers for coverage are constant, otherwise instances won't combine.
-    VL_COVER_INSERT(covContextp, countp, "hier", hierp, "per_instance", peri);
+    VL_COVER_INSERT(covContextp, name(), countp, "hier", hierp, "per_instance", peri);
 }
 
 int main() {
-    vluint32_t covers[1];
-    vluint64_t coverw[6];
+    uint32_t covers[1];
+    uint64_t coverw[6];
 
     VerilatedCovContext* covContextp = Verilated::defaultContextp()->coveragep();
 
-    VL_COVER_INSERT(covContextp, &covers[0], "comment", "kept_one");
-    VL_COVER_INSERT(covContextp, &coverw[0], "comment", "kept_two");
-    VL_COVER_INSERT(covContextp, &coverw[1], "comment", "lost_three");
+    VL_COVER_INSERT(covContextp, name(), &covers[0], "comment", "kept_one");
+    VL_COVER_INSERT(covContextp, name(), &coverw[0], "comment", "kept_two");
+    VL_COVER_INSERT(covContextp, name(), &coverw[1], "comment", "lost_three");
 
     hier_insert(covContextp, &coverw[2], "top.a0.pi", "0");
     hier_insert(covContextp, &coverw[3], "top.a1.pi", "0");
@@ -62,7 +64,7 @@ int main() {
     coverw[5] = 300;
 
 #ifdef T_COVER_LIB
-    TEST_CHECK_CSTR(covContextp->defaultFilename(), "coverage.dat");
+    TEST_CHECK_EQ(covContextp->defaultFilename(), "coverage.dat");
     covContextp->write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage1.dat");
     covContextp->forcePerInstance(true);
     covContextp->write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage1_per_instance.dat");
@@ -72,16 +74,20 @@ int main() {
     covContextp->zero();
     covContextp->write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage3.dat");
     covContextp->clear();
-    covContextp->write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage4.dat");
+    Verilated::defaultContextp()->coverageFilename(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage4.dat");
+    TEST_CHECK_EQ(covContextp->defaultFilename(), VL_STRINGIFY(TEST_OBJ_DIR) "/coverage4.dat");
+    covContextp->write();  // Uses defaultFilename()
 #elif defined(T_COVER_LIB_LEGACY)
-    TEST_CHECK_CSTR(VerilatedCov::defaultFilename(), "coverage.dat");
+    TEST_CHECK_EQ(VerilatedCov::defaultFilename(), "coverage.dat");
     VerilatedCov::write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage1.dat");
     VerilatedCov::clearNonMatch("kept_");
     VerilatedCov::write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage2.dat");
     VerilatedCov::zero();
     VerilatedCov::write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage3.dat");
     VerilatedCov::clear();
-    VerilatedCov::write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage4.dat");
+    Verilated::defaultContextp()->coverageFilename(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage4.dat");
+    TEST_CHECK_EQ(VerilatedCov::defaultFilename(), VL_STRINGIFY(TEST_OBJ_DIR) "/coverage4.dat");
+    VerilatedCov::write();  // Uses defaultFilename()
 #else
 #error
 #endif

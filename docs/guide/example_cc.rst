@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2024 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _Example C++ Execution:
@@ -12,7 +12,7 @@ of what this C++ code is doing, see
 
 .. include:: example_common_install.rst
 
-Now, let's create an example Verilog, and C++ wrapper file:
+Now, let's create an example Verilog and C++ wrapper file:
 
 .. code-block:: bash
 
@@ -28,7 +28,7 @@ Now, let's create an example Verilog, and C++ wrapper file:
      cat >sim_main.cpp <<'EOF'
        #include "Vour.h"
        #include "verilated.h"
-       int main(int argc, char** argv, char** env) {
+       int main(int argc, char** argv) {
            VerilatedContext* contextp = new VerilatedContext;
            contextp->commandArgs(argc, argv);
            Vour* top = new Vour{contextp};
@@ -39,19 +39,15 @@ Now, let's create an example Verilog, and C++ wrapper file:
        }
      EOF
 
-Now we run Verilator on our little example.
+Now we run Verilator on our little example;
 
 .. code-block:: bash
 
-     verilator -Wall --cc --exe --build sim_main.cpp our.v
+     verilator --cc --exe --build -j 0 -Wall sim_main.cpp our.v
 
 Breaking this command down:
 
-#. :vlopt:`-Wall` so Verilator has stronger lint warnings
-   enabled.
-
-#. :vlopt:`--cc` to get C++ output (versus e.g. SystemC
-   or only linting).
+#. :vlopt:`--cc` to get C++ output (versus e.g., SystemC, or only linting).
 
 #. :vlopt:`--exe`, along with our :command:`sim_main.cpp` wrapper file, so
    the build will create an executable instead of only a library.
@@ -61,7 +57,13 @@ Breaking this command down:
    own compile rules, and run make yourself as we show in :ref:`Example
    SystemC Execution`.)
 
-#. An finally, :command:`our.v` which is our SystemVerilog design file.
+#. :vlopt:`-j 0 <-j>` to Verilate using use as many CPU threads as the
+   machine has.
+
+#. :vlopt:`-Wall` so Verilator has stronger lint warnings
+   enabled.
+
+#. And finally, :command:`our.v` which is our SystemVerilog design file.
 
 Once Verilator completes we can see the generated C++ code under the
 :file:`obj_dir` directory.
@@ -86,7 +88,7 @@ And we get as output:
      Hello World
      - our.v:2: Verilog $finish
 
-Really, you're better off using a Makefile to run the steps for you so when
-your source changes it will automatically run all of the appropriate steps.
-To aid this Verilator can create a makefile dependency file.  For examples
-that do this see the :file:`examples` directory in the distribution.
+You're better off using a Makefile to run the steps for you, so when your
+source changes, it will automatically run all of the appropriate steps.  To
+aid this, Verilator can create a makefile dependency file.  For examples
+that do this, see the :file:`examples` directory in the distribution.

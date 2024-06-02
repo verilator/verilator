@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_interconnect_bad.v:9:4: Unsupported: interconnect
+    9 |    interconnect a;
+      |    ^~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

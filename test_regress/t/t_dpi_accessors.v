@@ -56,13 +56,13 @@ module test_sub (/*AUTOARG*/
 
    input                    clk;
 
-   integer                  i;		// General counter
+   integer                  i;          // General counter
 
    // Elements we would like to access from outside
-   reg 	                    a;
+   reg                      a;
    reg [`REG_WIDTH - 1:0]   b;
    reg [`REG_WIDTH - 1:0]   mem [`MEM_SIZE - 1:0];
-   wire 		    c;
+   wire                     c;
    wire [`REG_WIDTH - 1:0]  d;
    reg [`REG_WIDTH - 1:0]   e;
    reg [`REG_WIDTH - 1:0]   f;
@@ -77,7 +77,7 @@ module test_sub (/*AUTOARG*/
       b = `REG_WIDTH'h0;
 
       for (i = 0; i < `MEM_SIZE; i++) begin
-	 mem[i] = i [`REG_WIDTH - 1:0];
+         mem[i] = i [`REG_WIDTH - 1:0];
       end
 
       e = 0;

@@ -1,0 +1,16 @@
+%Error: t/t_clocking_bad2.v:15:32: 1step not allowed as output skew
+   15 |        default input #1 output #1step;
+      |                                ^
+%Error: t/t_clocking_bad2.v:16:23: Multiple default input skews not allowed
+   16 |        default input #2 output #2;
+      |                       ^
+%Error: t/t_clocking_bad2.v:16:33: Multiple default output skews not allowed
+   16 |        default input #2 output #2;
+      |                                 ^
+%Error: t/t_clocking_bad2.v:17:15: 1step not allowed as output skew
+   17 |        output #1step out;
+      |               ^
+%Error: t/t_clocking_bad2.v:18:8: Multiple clockvars with the same name not allowed
+   18 |        output out;
+      |        ^~~~~~
+%Error: Exiting due to

@@ -30,7 +30,7 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    files_identical("$Self->{obj_dir}/$Self->{VM_PREFIX}__Dpi.h",
+    files_identical("$Self->{obj_dir}/$Self->{vm_prefix}__Dpi.h",
                     "t/$Self->{name}__Dpi.out");
 }
 

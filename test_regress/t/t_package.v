@@ -23,6 +23,12 @@ package p2;
    function [3:0] plustwo(input [3:0] i);
       plustwo = i+2;
    endfunction
+
+   function automatic bit realCompare(real r);
+      logic [63:0] b = $realtobits(r);
+      return b > 0;
+   endfunction
+
 endpackage
 
 module t (/*AUTOARG*/
@@ -55,10 +61,12 @@ endmodule
 module t2;
    import p::*;
    import p2::plustwo;
+   import p2::realCompare;
    import p2::package2_type_t;
    package_type_t vp;
    package2_type_t vp2;
    initial begin
+      bit x = realCompare(1.0);
       if (plusone(1) !== 2) $stop;
       if (plustwo(1) !== 3) $stop;
       if (p::pi !== 123 && p::pi !== 124) $stop;  // may race with other initial, so either value

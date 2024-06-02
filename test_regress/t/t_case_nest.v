@@ -11,27 +11,27 @@ module t (/*AUTOARG*/
 
    input clk;
 
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
    reg [63:0] crc;
    reg [63:0] sum;
 
-   reg 	      out1;
+   reg        out1;
    sub sub (.in(crc[23:0]), .out1(out1));
 
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d crc=%x sum=%x out=%x\n",$time, cyc, crc, sum, out1);
+      $write("[%0t] cyc==%0d crc=%x sum=%x out=%x\n", $time, cyc, crc, sum, out1);
 `endif
       cyc <= cyc + 1;
-      crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
+      crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
       sum <= {sum[62:0], sum[63]^sum[2]^sum[0]} ^ {63'h0,out1};
       if (cyc==1) begin
-	 // Setup
-	 crc <= 64'h00000000_00000097;
-	 sum <= 64'h0;
+         // Setup
+         crc <= 64'h00000000_00000097;
+         sum <= 64'h0;
       end
       else if (cyc==90) begin
-	 if (sum !== 64'h2e5cb972eb02b8a0) $stop;
+         if (sum !== 64'h2e5cb972eb02b8a0) $stop;
       end
       else if (cyc==91) begin
       end
@@ -42,8 +42,8 @@ module t (/*AUTOARG*/
       else if (cyc==94) begin
       end
       else if (cyc==99) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 
@@ -63,48 +63,48 @@ module sub (/*AUTOARG*/
 
    always @* begin
       casez (in[17:16])
-	2'b00: casez (in[2:0])
-		 3'h0:	out1[0] = in[0]^RANDOM[0];
-		 3'h1:	out1[0] = in[0]^RANDOM[1];
-		 3'h2:	out1[0] = in[0]^RANDOM[2];
-		 3'h3:	out1[0] = in[0]^RANDOM[3];
-		 3'h4:	out1[0] = in[0]^RANDOM[4];
-		 3'h5:	out1[0] = in[0]^RANDOM[5];
-		 3'h6:	out1[0] = in[0]^RANDOM[6];
-		 3'h7:	out1[0] = in[0]^RANDOM[7];
-	       endcase
-	2'b01: casez (in[2:0])
-		 3'h0:	out1[0] = RANDOM[10];
-		 3'h1:	out1[0] = RANDOM[11];
-		 3'h2:	out1[0] = RANDOM[12];
-		 3'h3:	out1[0] = RANDOM[13];
-		 3'h4:	out1[0] = RANDOM[14];
-		 3'h5:	out1[0] = RANDOM[15];
-		 3'h6:	out1[0] = RANDOM[16];
-		 3'h7:	out1[0] = RANDOM[17];
-	       endcase
-	2'b1?: casez (in[4])
-		 1'b1: casez (in[2:0])
-			 3'h0:	out1[0] = RANDOM[20];
-			 3'h1:	out1[0] = RANDOM[21];
-			 3'h2:	out1[0] = RANDOM[22];
-			 3'h3:	out1[0] = RANDOM[23];
-			 3'h4:	out1[0] = RANDOM[24];
-			 3'h5:	out1[0] = RANDOM[25];
-			 3'h6:	out1[0] = RANDOM[26];
-			 3'h7:	out1[0] = RANDOM[27];
-		       endcase
-		 1'b0: casez (in[2:0])
-			 3'h0:	out1[0] = RANDOM[30];
-			 3'h1:	out1[0] = RANDOM[31];
-			 3'h2:	out1[0] = RANDOM[32];
-			 3'h3:	out1[0] = RANDOM[33];
-			 3'h4:	out1[0] = RANDOM[34];
-			 3'h5:	out1[0] = RANDOM[35];
-			 3'h6:	out1[0] = RANDOM[36];
-			 3'h7:	out1[0] = RANDOM[37];
-		       endcase
-	       endcase
+        2'b00: casez (in[2:0])
+                 3'h0:  out1[0] = in[0]^RANDOM[0];
+                 3'h1:  out1[0] = in[0]^RANDOM[1];
+                 3'h2:  out1[0] = in[0]^RANDOM[2];
+                 3'h3:  out1[0] = in[0]^RANDOM[3];
+                 3'h4:  out1[0] = in[0]^RANDOM[4];
+                 3'h5:  out1[0] = in[0]^RANDOM[5];
+                 3'h6:  out1[0] = in[0]^RANDOM[6];
+                 3'h7:  out1[0] = in[0]^RANDOM[7];
+               endcase
+        2'b01: casez (in[2:0])
+                 3'h0:  out1[0] = RANDOM[10];
+                 3'h1:  out1[0] = RANDOM[11];
+                 3'h2:  out1[0] = RANDOM[12];
+                 3'h3:  out1[0] = RANDOM[13];
+                 3'h4:  out1[0] = RANDOM[14];
+                 3'h5:  out1[0] = RANDOM[15];
+                 3'h6:  out1[0] = RANDOM[16];
+                 3'h7:  out1[0] = RANDOM[17];
+               endcase
+        2'b1?: casez (in[4])
+                 1'b1: casez (in[2:0])
+                         3'h0:  out1[0] = RANDOM[20];
+                         3'h1:  out1[0] = RANDOM[21];
+                         3'h2:  out1[0] = RANDOM[22];
+                         3'h3:  out1[0] = RANDOM[23];
+                         3'h4:  out1[0] = RANDOM[24];
+                         3'h5:  out1[0] = RANDOM[25];
+                         3'h6:  out1[0] = RANDOM[26];
+                         3'h7:  out1[0] = RANDOM[27];
+                       endcase
+                 1'b0: casez (in[2:0])
+                         3'h0:  out1[0] = RANDOM[30];
+                         3'h1:  out1[0] = RANDOM[31];
+                         3'h2:  out1[0] = RANDOM[32];
+                         3'h3:  out1[0] = RANDOM[33];
+                         3'h4:  out1[0] = RANDOM[34];
+                         3'h5:  out1[0] = RANDOM[35];
+                         3'h6:  out1[0] = RANDOM[36];
+                         3'h7:  out1[0] = RANDOM[37];
+                       endcase
+               endcase
       endcase
       end
 

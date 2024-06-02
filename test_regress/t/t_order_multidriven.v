@@ -125,8 +125,8 @@ module FooRd(
 `ifdef TEST_VERBOSE
            $display( "MEM[%x] == %x", addr_r, i_rdata );
 `endif
-	   if (addr_r != i_rdata) $stop;
-	end
+           if (addr_r != i_rdata) $stop;
+        end
 
 endmodule
 

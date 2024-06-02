@@ -6,9 +6,10 @@
 // any use, without warranty, 2008 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-#include <memory>
 #include <verilated.h>
 #include <verilated_fst_c.h>
+
+#include <memory>
 
 #include VM_PREFIX_INCLUDE
 
@@ -21,11 +22,12 @@ const char* trace_name() {
     return name;
 }
 
-int main(int argc, char** argv, char** env) {
-    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX("top")};
-
+int main(int argc, char** argv) {
     Verilated::debug(0);
     Verilated::traceEverOn(true);
+    Verilated::commandArgs(argc, argv);
+
+    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{"top"}};
 
     std::unique_ptr<VerilatedFstC> tfp{new VerilatedFstC};
     top->trace(tfp.get(), 99);

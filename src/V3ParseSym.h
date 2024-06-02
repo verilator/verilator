@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2009-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2009-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -26,6 +26,7 @@
 #include "V3SymTable.h"
 
 #include <deque>
+#include <vector>
 
 //######################################################################
 // Symbol table for parsing
@@ -39,7 +40,7 @@ private:
     static int s_anonNum;  // Number of next anonymous object (parser use only)
     VSymGraph m_syms;  // Graph of symbol tree
     VSymEnt* m_symTableNextId = nullptr;  // Symbol table for next lexer lookup (parser use only)
-    VSymEnt* m_symCurrentp;  // Active symbol table for additions/lookups
+    VSymEnt* m_symCurrentp = nullptr;  // Active symbol table for additions/lookups
     std::vector<VSymEnt*> m_sympStack;  // Stack of upper nodes with pending symbol tables
 
 public:
@@ -54,6 +55,9 @@ public:
 
 private:
     // METHODS
+
+    VL_DEFINE_DEBUG_FUNCTIONS;
+
     static VSymEnt* getTable(AstNode* nodep) {
         UASSERT_OBJ(nodep->user4p(), nodep, "Current symtable not found");
         return nodep->user4u().toSymEnt();
@@ -66,7 +70,7 @@ public:
 
     VSymEnt* findNewTable(AstNode* nodep) {
         if (!nodep->user4p()) {
-            VSymEnt* symsp = new VSymEnt(&m_syms, nodep);
+            VSymEnt* const symsp = new VSymEnt{&m_syms, nodep};
             nodep->user4p(symsp);
         }
         return getTable(nodep);
@@ -83,17 +87,18 @@ public:
     void reinsert(AstNode* nodep, VSymEnt* parentp = nullptr) {
         reinsert(nodep, parentp, nodep->name());
     }
+    // cppcheck-suppress passedByValue
     void reinsert(AstNode* nodep, VSymEnt* parentp, string name) {
         if (!parentp) parentp = symCurrentp();
         if (name == "") {  // New name with space in name so can't collide with users
-            name = string(" anon") + nodep->type().ascii() + cvtToStr(++s_anonNum);
+            name = " anon"s + nodep->type().ascii() + cvtToStr(++s_anonNum);
         }
         parentp->reinsert(name, findNewTable(nodep));
     }
     void pushNew(AstNode* nodep) { pushNewUnder(nodep, nullptr); }
     void pushNewUnder(AstNode* nodep, VSymEnt* parentp) {
         if (!parentp) parentp = symCurrentp();
-        VSymEnt* symp
+        VSymEnt* const symp
             = findNewTable(nodep);  // Will set user4p, which is how we connect table to node
         symp->fallbackp(parentp);
         reinsert(nodep, parentp);
@@ -114,7 +119,7 @@ public:
         if (VL_UNCOVERABLE(symCurrentp()->nodep() != nodep)) {  // LCOV_EXCL_START
             if (debug()) {
                 showUpward();
-                dump(cout, "-mism: ");
+                dumpSelf(std::cout, "-mism: ");
             }
             nodep->v3fatalSrc("Symbols suggest ending " << symCurrentp()->nodep()->prettyTypeName()
                                                         << " but parser thinks ending "
@@ -125,18 +130,24 @@ public:
         UASSERT_OBJ(!m_sympStack.empty(), nodep, "symbol stack underflow");
         m_symCurrentp = m_sympStack.back();
     }
+    AstNodeModule* findTopNodeModule(FileLine* fl, bool requireNoneNull = true) {
+        for (VSymEnt* const symp : vlstd::reverse_view(m_sympStack)) {
+            if (AstNodeModule* const modp = VN_CAST(symp->nodep(), NodeModule)) return modp;
+        }
+        if (requireNoneNull) fl->v3fatalSrc("fail to find current module");
+        return nullptr;
+    }
     void showUpward() {  // LCOV_EXCL_START
         UINFO(1, "ParseSym Stack:\n");
-        for (auto it = m_sympStack.rbegin(); it != m_sympStack.rend(); ++it) {
-            VSymEnt* symp = *it;
+        for (VSymEnt* const symp : vlstd::reverse_view(m_sympStack)) {
             UINFO(1, "    " << symp->nodep() << endl);
         }
         UINFO(1, "ParseSym Current: " << symCurrentp()->nodep() << endl);
     }  // LCOV_EXCL_STOP
-    void dump(std::ostream& os, const string& indent = "") { m_syms.dump(os, indent); }
+    void dumpSelf(std::ostream& os, const string& indent = "") { m_syms.dumpSelf(os, indent); }
     AstNode* findEntUpward(const string& name) const {
         // Lookup the given string as an identifier, return type of the id, scanning upward
-        VSymEnt* foundp = symCurrentp()->findIdFallback(name);
+        VSymEnt* const foundp = symCurrentp()->findIdFallback(name);
         if (foundp) {
             return foundp->nodep();
         } else {
@@ -145,7 +156,7 @@ public:
     }
     void importExtends(AstNode* classp) {
         // Import from package::id_or_star to this
-        VSymEnt* symp = getTable(classp);
+        VSymEnt* const symp = getTable(classp);
         UASSERT_OBJ(symp, classp,  // Internal problem, because we earlier found it
                     "Extends class package not found");
         // Walk old sym table and reinsert into current table
@@ -154,7 +165,7 @@ public:
     }
     void importItem(AstNode* packagep, const string& id_or_star) {
         // Import from package::id_or_star to this
-        VSymEnt* symp = getTable(packagep);
+        VSymEnt* const symp = getTable(packagep);
         UASSERT_OBJ(symp, packagep,  // Internal problem, because we earlier found it
                     "Import package not found");
         // Walk old sym table and reinsert into current table
@@ -163,12 +174,12 @@ public:
     }
     void exportItem(AstNode* packagep, const string& id_or_star) {
         // Export from this the remote package::id_or_star
-        VSymEnt* symp = getTable(packagep);
+        VSymEnt* const symp = getTable(packagep);
         UASSERT_OBJ(symp, packagep,  // Internal problem, because we earlier found it
                     "Export package not found");
         symCurrentp()->exportFromPackage(&m_syms, symp, id_or_star);
     }
-    void exportStarStar(AstNode* packagep) {
+    void exportStarStar() {
         // Export *::* from remote packages
         symCurrentp()->exportStarStar(&m_syms);
     }

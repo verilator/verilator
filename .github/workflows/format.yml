@@ -1,0 +1,43 @@
+# DESCRIPTION: Github actions config
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+name: format
+
+on:
+  push:
+  pull_request_target:
+  workflow_dispatch:
+
+jobs:
+  format:
+    runs-on: ubuntu-22.04
+    name: Ubuntu 22.04 | format
+    env:
+      CI_OS_NAME: linux
+      CI_RUNS_ON: ubuntu-22.04
+      CI_COMMIT: ${{ github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install packages for build
+        env:
+          CI_BUILD_STAGE_NAME: build
+        run: |
+          bash ci/ci-install.bash &&
+          sudo apt-get install clang-format-14 yapf3 &&
+          git config --global user.email "action@example.com" &&
+          git config --global user.name "github action"
+      - name: Format code
+        run: |
+          autoconf &&
+          ./configure &&
+          make -j 2 format CLANGFORMAT=clang-format-14 &&
+          git status
+      - name: Push
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git commit . -m "Apply 'make format'" &&
+            git push origin
+          fi

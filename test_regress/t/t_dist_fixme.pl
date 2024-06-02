@@ -9,6 +9,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 use IO::File;
+use File::Spec::Functions 'catfile';
 
 scenarios(dist => 1);
 
@@ -21,16 +22,22 @@ if (!-r "$root/.git") {
     ### Must trim output before and after our file list
     my $files = `cd $root && git ls-files --exclude-standard`;
     print "ST $files\n" if $Debug;
+    my %names;
+
     $files =~ s/\s+/ /g;
-    my $cmd = "cd $root && grep -n -P '(FIX"."ME|BO"."ZO)' $files | sort";
-    my $grep = `$cmd`;
-    print "$grep\n";
-    if ($grep ne "") {
-        my %names;
-        foreach my $line (split /\n/, $grep) {
-            $names{$1} = 1 if $line =~ /^([^:]+)/;
+    my @batch;
+    my $n = 0;
+    my $re = qr/(FIX[M]E|BO[Z]O)/;
+    foreach my $file (split /\s+/, $files) {
+        my $filename = catfile($root, $file);
+        next if !-r $filename;
+        my $wholefile = file_contents($filename);
+        if ($wholefile =~ /$re/) {
+            $names{$file} = 1;
         }
-        error("Files with FIX"."MEs: ",join(' ',sort keys %names));
+    }
+    if (scalar(%names) >= 1) {
+        error("Files with FIX" . "MEs: ", join(' ', sort keys %names));
     }
 }
 

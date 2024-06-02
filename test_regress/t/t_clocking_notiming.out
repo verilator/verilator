@@ -1,0 +1,6 @@
+%Error-NOTIMING: t/t_clocking_notiming.v:11:8: Clocking output skew greater than #0 requires --timing
+                                             : ... note: In instance 't'
+   11 |        output #1 out;
+      |        ^~~~~~
+                 ... For error description see https://verilator.org/warn/NOTIMING?v=latest
+%Error: Exiting due to

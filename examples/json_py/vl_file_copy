@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+# -*- Python -*- See copyright, etc below
+# pylint: disable=C0103,C0114,C0115,C0209,R0903
+######################################################################
+
+import argparse
+import json
+import os
+import re
+import subprocess
+from shutil import copy2
+from tempfile import NamedTemporaryFile
+# from pprint import pprint, pformat
+
+#######################################################################
+
+
+class VlFileCopy:
+
+    def __init__(
+            self,
+            verilator_args,  # presently all verilator options are passed-thru
+            debug=0,
+            output_dir='copied'):  # directory name we output file uses
+
+        self.debug = debug
+
+        with NamedTemporaryFile() as tree_temp, NamedTemporaryFile(
+        ) as meta_temp:
+            vargs = [
+                '--json-only-output',
+                tree_temp.name,
+                '--json-only-meta-output',
+                meta_temp.name,
+                '--bbox-sys',  # Parse some stuff can't translate
+                '--bbox-unsup',
+                '--prefix vljson'
+            ]
+            vargs += verilator_args
+            self.run_verilator(vargs)
+            self.tree = json.load(tree_temp)
+            self.meta = json.load(meta_temp)
+
+        os.makedirs(output_dir, 0o777, True)
+
+        for file_id in self.meta['files']:
+            path = self.meta['files'][file_id]['realpath']
+            if not re.match('^<', path):  # e.g. <built-in>
+                if self.debug:
+                    print("\tcp %s %s" % (path, output_dir))
+                copy2(path, output_dir)
+
+    def run_verilator(self, vargs):
+        """Run Verilator command, check errors"""
+        if os.getenv("VERILATOR_ROOT"):
+            command = os.getenv("VERILATOR_ROOT") + "/bin/verilator"
+        else:
+            command = "verilator"
+        command += ' ' + ' '.join(vargs)
+        if self.debug:
+            print("\t%s " % command)
+        status = subprocess.call(command, shell=True)
+        if status != 0:
+            raise RuntimeError("Command failed running Verilator with '" +
+                               command + "', stopped")
+
+
+#######################################################################
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        allow_abbrev=False,
+        formatter_class=argparse.RawTextHelpFormatter,
+        description=
+        """Example of using Verilator JSON output to copy a list of files to an
+output directory (-odir, defaults to 'copied'), e.g. to easily create a
+tarball of the design to pass to others.
+
+Example usage:
+     vl_file_copy -f input.vc top.v -odir mycopy
+     # This will make at least mycopy/top.v
+""",
+        epilog="""All other arguments are pass-thru to Verilator: e.g.:
+
+  +define+<var>=<value>      Set preprocessor define
+  -F <file>                  Parse options from a file, relatively
+  -f <file>                  Parse options from a file
+  -G<name>=<value>           Overwrite toplevel parameter
+  +incdir+<dir>              Directory to search for includes
+  +libext+<ext>+[ext]...     Extensions for finding modules
+  -v <filename>              Verilog library
+  -y <dir>                   Directory to search for modules
+
+This file ONLY is placed under the Creative Commons Public Domain, for
+any use, without warranty, 2019 by Wilson Snyder.
+SPDX-License-Identifier: CC0-1.0
+""")
+    parser.add_argument('-debug',
+                        '--debug',
+                        action='store_const',
+                        const=9,
+                        help='enable debug')
+    parser.add_argument('-odir',
+                        '--odir',
+                        action='store',
+                        metavar='directory',
+                        required=True,
+                        help='target output directory')
+    (args, rem) = parser.parse_known_args()
+
+    print(
+        "NOTE: vl_file_copy is only an example starting point for writing your own tool."
+    )
+    # That is:
+    # 1. We will accept basic patches
+    # 2. We are not expecting to make this globally useful. (e.g. we don't cleanup obj_dir)
+    # 3. "make install" will not install this.
+    # 4. This has not had production-worthy validation.
+
+    fc = VlFileCopy(output_dir=args.odir, debug=args.debug, verilator_args=rem)
+
+######################################################################
+# Local Variables:
+# compile-command: "./vl_file_copy -h ; VERILATOR_ROOT=$V4 ./vl_file_copy +define+thru top.v"
+# End:

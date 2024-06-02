@@ -10,12 +10,12 @@ module t ( clk, out );
    input clk;
    output out;
 
-   reg 	    a;
-   reg 	    b;
+   reg      a;
+   reg      b;
 
    typedef struct packed {
-      logic 	  config_a;
-      logic 	  config_b;
+      logic       config_a;
+      logic       config_b;
    } param_t;
    // verilator lint_off UNOPTFLAT
    param_t conf [1:2] ;

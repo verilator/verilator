@@ -1,0 +1,13 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty, 2022 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+tracing_off -scope "t*" -levels 0
+tracing_on -scope "t.clk"
+tracing_on -scope "t.sub1a" -levels 1
+tracing_on -scope "t.sub1b" -levels 2
+tracing_off -scope "*.sub2a.ADD"

@@ -10,13 +10,17 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-lint(
-    verilator_flags2 => ["--debug-fatalsrc"],
-    fails => $Self->{vlt_all},
-    expect =>
+if (system("gdb --version")) {
+    skip("No gdb installed");
+} else {
+    lint(
+        verilator_flags2 => ["--debug-fatalsrc"],
+        fails => $Self->{vlt_all},
+        expect =>
 '%Error: Internal Error: .*: --debug-fatal-src
 .* See the manual .*',
-    );
+        );
 
-ok(1);
+    ok(1);
+}
 1;

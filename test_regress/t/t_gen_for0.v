@@ -10,11 +10,11 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer 	cyc=0;
+   integer      cyc = 0;
 
    Testit testit (/*AUTOINST*/
-		  // Inputs
-		  .clk			(clk));
+                  // Inputs
+                  .clk                  (clk));
 
    always @ (posedge clk) begin
       cyc <= cyc + 1;
@@ -25,8 +25,8 @@ module t (/*AUTOARG*/
       else if (cyc<90) begin
       end
       else if (cyc==99) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 
@@ -38,10 +38,10 @@ module Testit (clk);
    genvar igen;
    generate
       for (igen=0; igen<0; igen=igen+1) begin : test_gen
-	 always @ (posedge clk) begin
-	    $display("igen1 = %d", igen);
-	    $stop;
-	 end
+         always @ (posedge clk) begin
+            $display("igen1 = %d", igen);
+            $stop;
+         end
       end
    endgenerate
 

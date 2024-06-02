@@ -12,18 +12,18 @@
 #ifdef IS_VPI
 
 #include "vpi_user.h"
+
 #include <cstdlib>
 
 #else
 
-#include "Vt_vpi_module.h"
 #include "verilated.h"
-#include "svdpi.h"
-
-#include "Vt_vpi_module__Dpi.h"
-
-#include "verilated_vpi.h"
 #include "verilated_vcd_c.h"
+#include "verilated_vpi.h"
+
+#include "Vt_vpi_module.h"
+#include "Vt_vpi_module__Dpi.h"
+#include "svdpi.h"
 
 #endif
 
@@ -31,6 +31,7 @@
 #include <cstring>
 #include <iostream>
 
+// These require the above. Comment prevents clang-format moving them
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
@@ -39,8 +40,6 @@
 
 #define DEBUG \
     if (0) printf
-
-unsigned int main_time = 0;
 
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
@@ -62,7 +61,7 @@ unsigned int main_time = 0;
     }
 
 #define CHECK_RESULT_CSTR(got, exp) \
-    if (strcmp((got), (exp))) { \
+    if (std::strcmp((got), (exp))) { \
         printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
                (got) ? (got) : "<null>", (exp) ? (exp) : "<null>"); \
         return __LINE__; \
@@ -101,7 +100,7 @@ int mon_check() {
     CHECK_RESULT_NZ(t_name);
 
     // Icarus reports the top most module as "top"
-    if (strcmp(t_name, "top") == 0) {
+    if (std::strcmp(t_name, "top") == 0) {
         it = vpi_iterate(vpiModule, topmod);
         CHECK_RESULT_NZ(it);
         CHECK_RESULT(vpi_get(vpiType, it), vpiModule);
@@ -121,7 +120,7 @@ int mon_check() {
     CHECK_RESULT_NZ(mod2);
 
     const char* mod_a_name = vpi_get_str(vpiName, mod2);
-    CHECK_RESULT_CSTR(mod_a_name, "mod_a");
+    CHECK_RESULT_CSTR(mod_a_name, "\\mod.a ");
 
     TestVpiHandle it3 = vpi_iterate(vpiModule, mod2);
     CHECK_RESULT_NZ(it3);
@@ -130,13 +129,13 @@ int mon_check() {
     CHECK_RESULT_NZ(mod3);
 
     const char* mod_c_name = vpi_get_str(vpiName, mod3);
-    if (strcmp(mod_c_name, "mod_b") == 0) {
+    if (std::strcmp(mod_c_name, "\\mod_b$ ") == 0) {
         // Full visibility in other simulators, skip mod_b
         TestVpiHandle mod4 = vpi_scan(it3);
         CHECK_RESULT_NZ(mod4);
         mod_c_name = vpi_get_str(vpiName, mod4);
     }
-    CHECK_RESULT_CSTR(mod_c_name, "mod_c.");
+    CHECK_RESULT_CSTR(mod_c_name, "\\mod\\c$ ");
 
     return 0;  // Ok
 }
@@ -172,27 +171,36 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 
 #else
 
-double sc_time_stamp() { return main_time; }
-int main(int argc, char** argv, char** env) {
-    vluint64_t sim_time = 1100;
-    Verilated::commandArgs(argc, argv);
-    Verilated::debug(0);
-    // we're going to be checking for these errors do don't crash out
-    Verilated::fatalOnVpiError(0);
+int main(int argc, char** argv) {
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
 
-    VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
+    uint64_t sim_time = 1100;
+    contextp->debug(0);
+    contextp->commandArgs(argc, argv);
+    // We're going to be checking for these errors so don't crash out
+    contextp->fatalOnVpiError(0);
+
+    {
+        // Construct and destroy
+        const std::unique_ptr<VM_PREFIX> topp{
+            new VM_PREFIX{contextp.get(),
+                          // Note null name - we're flattening it out
+                          ""}};
+    }
+
     // Test second construction
-    delete topp;
-    topp = new VM_PREFIX("");
+    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
+                                                        // Note null name - we're flattening it out
+                                                        ""}};
 
 #ifdef VERILATOR
 #ifdef TEST_VERBOSE
-    Verilated::scopesDump();
+    contextp->scopesDump();
 #endif
 #endif
 
 #if VM_TRACE
-    Verilated::traceEverOn(true);
+    contextp->traceEverOn(true);
     VL_PRINTF("Enabling waves...\n");
     VerilatedVcdC* tfp = new VerilatedVcdC;
     topp->trace(tfp, 99);
@@ -201,19 +209,19 @@ int main(int argc, char** argv, char** env) {
 
     topp->eval();
     topp->clk = 0;
-    main_time += 10;
+    contextp->timeInc(10);
 
-    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
-        main_time += 1;
+    while (contextp->time() < sim_time && !contextp->gotFinish()) {
+        contextp->timeInc(1);
         topp->eval();
         VerilatedVpi::callValueCbs();
         topp->clk = !topp->clk;
         // mon_do();
 #if VM_TRACE
-        if (tfp) tfp->dump(main_time);
+        if (tfp) tfp->dump(contextp->time());
 #endif
     }
-    if (!Verilated::gotFinish()) {
+    if (!contextp->gotFinish()) {
         vl_fatal(FILENM, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     topp->final();
@@ -222,7 +230,6 @@ int main(int argc, char** argv, char** env) {
     if (tfp) tfp->close();
 #endif
 
-    VL_DO_DANGLING(delete topp, topp);
     return 0;
 }
 

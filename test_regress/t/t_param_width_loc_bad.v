@@ -11,6 +11,7 @@ module t (/*AUTOARG*/
 
    input clk;
 
+   // bug1624
    test #(.param(32'd0)) test_i;
 
    initial begin

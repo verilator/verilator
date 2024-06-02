@@ -1,0 +1,21 @@
+%Warning-NEWERSTD: t/t_number_v_bad.v:11:25: Unbased unsized literals require IEEE 1800-2005 or later.
+   11 |     wire [127:0] FOO1 = '0;
+      |                         ^~
+                   ... For warning description see https://verilator.org/warn/NEWERSTD?v=latest
+                   ... Use "/* verilator lint_off NEWERSTD */" and lint_on around source to disable this message.
+%Warning-NEWERSTD: t/t_number_v_bad.v:12:25: Unbased unsized literals require IEEE 1800-2005 or later.
+   12 |     wire [127:0] FOO2 = '1;
+      |                         ^~
+%Warning-NEWERSTD: t/t_number_v_bad.v:13:25: Unbased unsized literals require IEEE 1800-2005 or later.
+   13 |     wire [127:0] FOO3 = 'x;
+      |                         ^~
+%Warning-NEWERSTD: t/t_number_v_bad.v:14:25: Unbased unsized literals require IEEE 1800-2005 or later.
+   14 |     wire [127:0] FOO4 = 'X;
+      |                         ^~
+%Warning-NEWERSTD: t/t_number_v_bad.v:15:25: Unbased unsized literals require IEEE 1800-2005 or later.
+   15 |     wire [127:0] FOO5 = 'z;
+      |                         ^~
+%Warning-NEWERSTD: t/t_number_v_bad.v:16:25: Unbased unsized literals require IEEE 1800-2005 or later.
+   16 |     wire [127:0] FOO6 = 'Z;
+      |                         ^~
+%Error: Exiting due to

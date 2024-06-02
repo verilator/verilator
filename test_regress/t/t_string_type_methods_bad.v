@@ -15,6 +15,7 @@ module t (/*AUTOARG*/);
       i = s.len(0); // BAD
       s.itoa;  // BAD
       s.itoa(1,2,3);  // BAD
+      s.bad_no_such_method();  // BAD
    end
 
 endmodule

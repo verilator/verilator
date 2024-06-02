@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=C0103,C0114,C0115,C0116,R0912,R0914,R0915,W0125,W0621,exec-used
+# pylint: disable=C0103,C0114,C0115,C0116,C0209,R0912,R0914,R0915,W0125,W0621,exec-used
 ######################################################################
 
 import argparse
@@ -26,7 +26,7 @@ if 'VERILATOR_ROOT' not in os.environ:
 def test():
     if not os.path.exists("nodist/code_coverage.dat"):
         sys.exit("%Error: Run code_coverage from the top of the verilator kit")
-    exec(open("./nodist/code_coverage.dat").read())
+    exec(open("./nodist/code_coverage.dat", "r", encoding="utf8").read())  # pylint: disable=consider-using-with
 
     if Args.stage_enabled[0]:
         ci_fold_start("distclean")
@@ -38,23 +38,7 @@ def test():
         ci_fold_start("configure")
         print("Stage 1: configure (coverage on)")
         run("autoconf")
-        cxx_flags = (
-            "--coverage"
-            # Otherwise inline may not show as uncovered
-            #  If we use this then e.g. verilated.h functions properly show up
-            #  if unused.
-            #  However, VerilatedSerialize::write then changes from covered
-            #  to uncovered (in G++ 9.3.0) even with all inlining turned off.
-            #  Having false negative coverage is more effort then missing negatives.
-            #  Also this seems to explode the runtime (since a lot more data).
-            #  + " -fkeep-inline-functions"
-            # Otherwise static may not show as uncovered
-            + " -fkeep-static-functions"
-            # Exceptions can pollute the branch coverage data
-            + " -fno-exceptions"
-            # Define-out some impossible stuff
-            + " -DVL_GCOV")
-        run("./configure --enable-longtests CXX='g++ " + cxx_flags + "'")
+        run("./configure --enable-longtests --enable-coverage CXX=g++")
         ci_fold_end()
 
     if Args.stage_enabled[2]:
@@ -94,10 +78,11 @@ def test():
         os.makedirs(cc_dir, exist_ok=True)
         os.makedirs(cc_dir + "/info", exist_ok=True)
 
-        sp = subprocess.Popen("find . -print | grep .gcda",
+        with subprocess.Popen("find . -print | grep .gcda",
                               shell=True,
-                              stdout=subprocess.PIPE)
-        datout = sp.stdout.read()
+                              stdout=subprocess.PIPE) as sp:
+            datout = sp.stdout.read()
+
         dats = {}
         for dat in datout.splitlines():
             dat = dat.decode('utf-8')
@@ -113,10 +98,11 @@ def test():
                     del dats[dat]
                     break
 
-        sp = subprocess.Popen("find . -print | grep .gcno",
+        with subprocess.Popen("find . -print | grep .gcno",
                               shell=True,
-                              stdout=subprocess.PIPE)
-        datout = sp.stdout.read()
+                              stdout=subprocess.PIPE) as sp:
+            datout = sp.stdout.read()
+
         gcnos = {}
         for gcno in datout.splitlines():
             gcno = gcno.decode('utf-8')
@@ -220,8 +206,8 @@ def clone_sources(cc_dir):
             outfile = cc_dir + "/" + infile
             outpath = re.sub(r'/[^/]*$', '', outfile, count=1)
             os.makedirs(outpath, exist_ok=True)
-            with open(infile) as fh:
-                with open(outfile, "w") as ofh:
+            with open(infile, "r", encoding="utf8") as fh:
+                with open(outfile, "w", encoding="utf8") as ofh:
                     lineno = 0
                     for line in fh:
                         lineno += 1
@@ -265,7 +251,7 @@ def clone_sources(cc_dir):
 
 def cleanup_abs_paths_info(cc_dir, infile, outfile):
     lines = []
-    with open(infile) as fh:
+    with open(infile, "r", encoding="utf8") as fh:
         for line in fh:
             if re.search(r'^SF:', line):
                 line = re.sub(os.environ['VERILATOR_ROOT'] + '/',
@@ -277,7 +263,7 @@ def cleanup_abs_paths_info(cc_dir, infile, outfile):
                 # print("Remaining SF: "+line)
             lines.append(line)
 
-    with open(outfile, "w") as ofh:
+    with open(outfile, "w", encoding="utf8") as ofh:
         for line in lines:
             ofh.write(line)
 
@@ -286,14 +272,14 @@ def cleanup_abs_paths_json(cc_dir, infile, outfile):
     # Handcrafted cleanup, alternative would be to deserialize/serialize JSON,
     # but this is much faster
     lines = []
-    with open(infile) as fh:
+    with open(infile, "r", encoding="utf8") as fh:
         for line in fh:
             line = re.sub('"' + os.environ['VERILATOR_ROOT'] + '/', '"', line)
             line = re.sub('"' + cc_dir + '/', '"', line)
             line = re.sub(r'obj_dbg/verilog.y$', 'verilog.y', line)
             lines.append(line)
 
-    with open(outfile, "w") as ofh:
+    with open(outfile, "w", encoding="utf8") as ofh:
         for line in lines:
             ofh.write(line)
 
@@ -330,7 +316,7 @@ def run(command):
     print("\t%s" % command)
     status = subprocess.call(command, shell=True)
     if status < 0:
-        raise Exception("%Error: Command failed " + command + ", stopped")
+        raise RuntimeError("%Error: Command failed " + command + ", stopped")
 
 
 def unlink_ok(filename):
@@ -362,7 +348,7 @@ files. Run as:
   cd $VERILATOR_ROOT
   nodist/code_coverage""",
     epilog=
-    """Copyright 2019-2021 by Wilson Snyder. This program is free software; you
+    """Copyright 2019-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

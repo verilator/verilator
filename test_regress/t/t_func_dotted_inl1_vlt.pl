@@ -11,16 +11,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 top_filename("t/t_func_dotted.v");
-my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
+my $out_filename = "$Self->{obj_dir}/V$Self->{name}.tree.json";
 
 compile(
-    v_flags2 => ["t/t_func_dotted_inl1.vlt",],
+    v_flags2 => ["--no-json-edit-nums", "t/t_func_dotted_inl1.vlt",],
     );
 
 if ($Self->{vlt_all}) {
-    file_grep_not("$out_filename", qr/ma0/i);
-    file_grep_not("$out_filename", qr/mb0/i);
-    file_grep_not("$out_filename", qr/mc0/i);
+    file_grep_not("$out_filename", qr/"ma0"/i);
+    file_grep_not("$out_filename", qr/"mb0"/i);
+    file_grep_not("$out_filename", qr/"mc0"/i);
 }
 
 execute(

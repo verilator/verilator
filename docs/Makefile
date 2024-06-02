@@ -5,7 +5,7 @@
 #
 # Code available from: https://verilator.org
 #
-# Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -18,11 +18,15 @@
 RST2HTML = rst2html
 PYTHON3 = python3
 DOXYGEN = doxygen
-SPHINXOPTS ?= -c guide
 SPHINXBUILD ?= sphinx-build
 
 SOURCEDIR = guide
 BUILDDIR = _build
+
+SPHINXOPTS ?= -c guide
+ifneq ($(VERILATOR_ANALYTICS_ID),)
+SPHINXOPTS += -D html_theme_options.analytics_id=$(VERILATOR_ANALYTICS_ID)
+endif
 
 ######################################################################
 
@@ -35,6 +39,7 @@ default:
 # Intermediate rules
 
 vl-extract: ../bin/verilator ../Changes
+	ln -sf ../spelling.txt guide/spelling.txt
 	mkdir -p _build/gen
 	$(PYTHON3) bin/vl_sphinx_extract ../bin/verilator
 	sed 's/`/\&96;/g' < ../Changes > _build/gen/Changes
@@ -77,6 +82,7 @@ clean mostlyclean distclean maintainer-clean::
 	rm -f *.pg *.pgs *.toc *.tp *.tps *.vr *.vrs *.idx
 	rm -f *.ev *.evs *.ov *.ovs *.cv *.cvs *.ma *.mas
 	rm -f *.tex
+	rm -f guide/spelling.txt
 
 distclean maintainer-clean::
 	rm -f *.info* *.1 *.html *.pdf $(INFOS)

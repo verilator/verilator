@@ -1,0 +1,5 @@
+%Error: t/t_constraint_method_bad.v:13:12: No such constraint method 'bad_method'
+                                         : ... note: In instance 't'
+   13 |       cons.bad_method(1);   
+      |            ^~~~~~~~~~
+%Error: Exiting due to

@@ -6,7 +6,7 @@
 
 module t (clk);
    input clk;
-   integer 	cyc=0;
+   integer      cyc = 0;
 
    // Trace would overflow at 256KB which is 256 kb dump, 16 kb in a chunk
 
@@ -20,8 +20,8 @@ module t (clk);
       cyc <= cyc + 1;
       biggie [ cyc +: 32 ] <= 32'hfeedface;
       if (cyc == 5) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule

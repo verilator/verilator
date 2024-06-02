@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -20,8 +20,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "VlcPoint.h"
 #include "VlcBucket.h"
+#include "VlcPoint.h"
 
 #include <map>
 #include <vector>
@@ -30,19 +30,18 @@
 // VlcTest - a single testrun i.e. a file containing coverage data
 
 class VlcTest final {
-private:
     // MEMBERS
     string m_name;  //< Name of the test
     double m_computrons;  //< Runtime for the test
-    vluint64_t m_testrun;  //< Test run number, for database use
-    vluint64_t m_rank = 0;  //< Execution rank suggestion
-    vluint64_t m_rankPoints = 0;  //< Ranked additional points
-    vluint64_t m_user = 0;  //< User data for algorithms (not persisted in .dat file)
+    uint64_t m_testrun;  //< Test run number, for database use
+    uint64_t m_rank = 0;  //< Execution rank suggestion
+    uint64_t m_rankPoints = 0;  //< Ranked additional points
+    uint64_t m_user = 0;  //< User data for algorithms (not persisted in .dat file)
     VlcBuckets m_buckets;  //< Coverage data for each coverage point
 
 public:
     // CONSTRUCTORS
-    VlcTest(const string& name, vluint64_t testrun, double comp)
+    VlcTest(const string& name, uint64_t testrun, double comp)
         : m_name{name}
         , m_computrons{comp}
         , m_testrun{testrun} {}
@@ -51,32 +50,33 @@ public:
     // ACCESSORS
     const string& name() const { return m_name; }
     double computrons() const { return m_computrons; }
-    vluint64_t testrun() const { return m_testrun; }
+    uint64_t testrun() const { return m_testrun; }
     VlcBuckets& buckets() { return m_buckets; }
-    vluint64_t bucketsCovered() const { return m_buckets.bucketsCovered(); }
-    vluint64_t rank() const { return m_rank; }
-    void rank(vluint64_t flag) { m_rank = flag; }
-    vluint64_t rankPoints() const { return m_rankPoints; }
-    void rankPoints(vluint64_t flag) { m_rankPoints = flag; }
-    vluint64_t user() const { return m_user; }
-    void user(vluint64_t flag) { m_user = flag; }
+    uint64_t bucketsCovered() const { return m_buckets.bucketsCovered(); }
+    uint64_t rank() const { return m_rank; }
+    void rank(uint64_t flag) { m_rank = flag; }
+    uint64_t rankPoints() const { return m_rankPoints; }
+    void rankPoints(uint64_t flag) { m_rankPoints = flag; }
+    uint64_t user() const { return m_user; }
+    void user(uint64_t flag) { m_user = flag; }
 
     // METHODS
     static void dumpHeader() {
-        cout << "Tests:\n";
-        // cout<<"  Testrun, Computrons,";  // Currently not loaded
-        cout << "  Covered,     Rank,  RankPts,  Filename\n";
+        std::cout << "Tests:\n";
+        // std::cout<<"  Testrun, Computrons,";  // Currently not loaded
+        std::cout << "  Covered,     Rank,  RankPts,  Filename\n";
     }
-    void dump(bool bucketsToo) {
+    void dump(bool bucketsToo) const {
         if (testrun() || computrons() != 0.0) {  // currently unused // LCOV_EXCL_LINE
-            cout << "  " << std::setw(8) << std::setfill('0') << testrun()  // LCOV_EXCL_LINE
-                 << ",  " << std::setw(7) << std::setfill(' ') << computrons()  // LCOV_EXCL_LINE
-                 << ",";  // LCOV_EXCL_LINE
+            std::cout << "  " << std::setw(8) << std::setfill('0') << testrun()  // LCOV_EXCL_LINE
+                      << ",  " << std::setw(7) << std::setfill(' ')
+                      << computrons()  // LCOV_EXCL_LINE
+                      << ",";  // LCOV_EXCL_LINE
         }
-        cout << "  " << std::setw(7) << std::setfill(' ') << bucketsCovered();
-        cout << ",  " << std::setw(7) << std::setfill(' ') << rank();
-        cout << ",  " << std::setw(7) << std::setfill(' ') << rankPoints();
-        cout << ",  \"" << name() << "\"\n";
+        std::cout << "  " << std::setw(7) << std::setfill(' ') << bucketsCovered();
+        std::cout << ",  " << std::setw(7) << std::setfill(' ') << rank();
+        std::cout << ",  " << std::setw(7) << std::setfill(' ') << rankPoints();
+        std::cout << ",  \"" << name() << "\"\n";
         if (bucketsToo) m_buckets.dump();
     }
 };
@@ -93,6 +93,8 @@ private:
     // MEMBERS
     ByName m_tests;  //< List of all tests
 
+    static int debug() { return V3Error::debugDefault(); }
+
 public:
     // ITERATORS
     using iterator = ByName::iterator;
@@ -102,7 +104,7 @@ public:
     // CONSTRUCTORS
     VlcTests() = default;
     ~VlcTests() {
-        for (auto it = begin(); it != end(); ++it) { VL_DO_CLEAR(delete *it, *it = nullptr); }
+        for (auto it = begin(); it != end(); ++it) VL_DO_CLEAR(delete *it, *it = nullptr);
     }
 
     // METHODS
@@ -111,8 +113,8 @@ public:
         VlcTest::dumpHeader();
         for (const auto& testp : m_tests) testp->dump(bucketsToo);
     }
-    VlcTest* newTest(const string& name, vluint64_t testrun, double comp) {
-        VlcTest* testp = new VlcTest(name, testrun, comp);
+    VlcTest* newTest(const string& name, uint64_t testrun, double comp) {
+        VlcTest* const testp = new VlcTest{name, testrun, comp};
         m_tests.push_back(testp);
         return testp;
     }

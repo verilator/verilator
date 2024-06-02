@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2024 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 *********************************
@@ -15,5 +15,5 @@ options to each executable.
    exe_verilator.rst
    exe_verilator_coverage.rst
    exe_verilator_gantt.rst
-   exe_verilator_profcfuncs.rst
+   exe_verilator_profcfunc.rst
    exe_sim.rst

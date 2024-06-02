@@ -21,29 +21,25 @@
 // clang-format on
 
 // Compile in place
-#include "Vt_trace_two_b.cpp"
-#include "Vt_trace_two_b__Slow.cpp"
-#include "Vt_trace_two_b__Syms.cpp"
-#include "Vt_trace_two_b__Trace.cpp"
-#include "Vt_trace_two_b__Trace__Slow.cpp"
+#include "Vt_trace_two_b__ALL.cpp"
 
 VM_PREFIX* ap;
 Vt_trace_two_b* bp;
-vluint64_t main_time = 0;
-double sc_time_stamp() { return main_time; }
 
-int main(int argc, char** argv, char** env) {
-    vluint64_t sim_time = 1100;
-    Verilated::commandArgs(argc, argv);
-    Verilated::debug(0);
-    Verilated::traceEverOn(true);
+int main(int argc, char** argv) {
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+
+    uint64_t sim_time = 1100;
+    contextp->debug(0);
+    contextp->commandArgs(argc, argv);
+    contextp->traceEverOn(true);
     srand48(5);
-    ap = new VM_PREFIX("topa");
-    bp = new Vt_trace_two_b("topb");
+    ap = new VM_PREFIX{contextp.get(), "topa"};
+    bp = new Vt_trace_two_b{contextp.get(), "topb"};
 
-// clang-format off
+    // clang-format off
 #ifdef TEST_HDR_TRACE
-    Verilated::traceEverOn(true);
+    contextp->traceEverOn(true);
 # ifdef TEST_FST
     VerilatedFstC* tfp = new VerilatedFstC;
     ap->trace(tfp, 99);
@@ -63,14 +59,14 @@ int main(int argc, char** argv, char** env) {
     bp->eval_step();
     ap->eval_end_step();
     bp->eval_end_step();
-    if (tfp) tfp->dump(main_time);
+    if (tfp) tfp->dump(contextp->time());
 #endif
 
     {
         ap->clk = false;
-        main_time += 10;
+        contextp->timeInc(10);
     }
-    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
+    while (contextp->time() < sim_time && !contextp->gotFinish()) {
         ap->clk = !ap->clk;
         bp->clk = ap->clk;
         ap->eval_step();
@@ -78,11 +74,11 @@ int main(int argc, char** argv, char** env) {
         ap->eval_end_step();
         bp->eval_end_step();
 #ifdef TEST_HDR_TRACE
-        if (tfp) tfp->dump(main_time);
+        if (tfp) tfp->dump(contextp->time());
 #endif
-        main_time += 5;
+        contextp->timeInc(5);
     }
-    if (!Verilated::gotFinish()) {
+    if (!contextp->gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     ap->final();

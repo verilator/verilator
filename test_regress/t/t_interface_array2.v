@@ -41,12 +41,12 @@ module t
         .intf_inst(ifs[return_3()]));
 
     modify_interface m4 (
-    	.value(data[4]),
-    	.intf_inst(ifs[4]));
+        .value(data[4]),
+        .intf_inst(ifs[4]));
 
     modify_interface m5 (
-    	.value(~ifs[4].logic_in_intf),
-    	.intf_inst(ifs[5]));
+        .value(~ifs[4].logic_in_intf),
+        .intf_inst(ifs[5]));
 
     generate
         genvar j;

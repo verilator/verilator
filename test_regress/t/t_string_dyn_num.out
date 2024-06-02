@@ -1,0 +1,4 @@
+istr='    ' istr%0=' ' sstr=''
+istr='  A ' istr%0='A ' sstr='A'
+istr='B A ' istr%0='B A ' sstr='BA'
+*-* All Finished *-*

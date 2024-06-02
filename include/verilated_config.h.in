@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -20,6 +20,11 @@
 // Autoconf substitutes this with the strings from AC_INIT.
 #define VERILATOR_PRODUCT "@PACKAGE_NAME@"
 
-/// Verilator version name, e.g. "1.000 2000-01-01"
+/// Verilator version name, e.g. "1.002 2000-01-01"
 // Autoconf substitutes this with the strings from AC_INIT.
 #define VERILATOR_VERSION "@PACKAGE_VERSION@"
+
+/// Verilator version number as integer
+/// As major * 100000 + minor * 1000, e.g. 1002000 == 1.002
+// Autoconf substitutes this with the strings from AC_INIT.
+#define VERILATOR_VERSION_INTEGER @VERILATOR_VERSION_INTEGER@

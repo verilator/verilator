@@ -104,7 +104,7 @@ module t (/*AUTOARG*/
          end
          else if (cyc==5) begin
 `ifdef VERILATOR
-            $c("call_task();");
+            $c("this->call_task();");
 `else
             call_task();
 `endif
@@ -175,6 +175,26 @@ module beta (/*AUTOARG*/
    end
 endmodule
 
+class Cls;
+   bit m_toggle;
+   function new(bit toggle);
+      m_toggle = toggle;
+      if (m_toggle) begin  // CHECK_COVER(0,"top.$unit::Cls",1)
+         $write("");
+      end
+   endfunction
+   static function void fstatic(bit toggle);
+      if (1) begin  // CHECK_COVER(0,"top.$unit::Cls",1)
+         $write("");
+      end
+   endfunction
+   function void fauto();
+      if (m_toggle) begin  // CHECK_COVER(0,"top.$unit::Cls",1)
+         $write("");
+      end
+   endfunction
+endclass
+
 module tsk (/*AUTOARG*/
    // Inputs
    clk, toggle
@@ -197,6 +217,11 @@ module tsk (/*AUTOARG*/
          if (external) begin  // CHECK_COVER(0,"top.t.t1",1)
             $write("[%0t] Got external pulse\n", $time);
          end
+      end
+      begin
+         Cls c = new(1'b1);
+         c.fauto();
+         Cls::fstatic(1'b1);
       end
    endtask
 

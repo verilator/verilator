@@ -8,6 +8,1056 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
+Verilator 5.025 devel
+==========================
+
+**Major:**
+
+* Support constrained randomization with external solvers (#4947). [Arkadiusz Kozdra, Antmicro Ltd.]
+
+**Minor:**
+
+* Support __en/__out signals on top level inout ports (#4812) (#4856). [Paul Wright]
+* Support empty queue as dynarray default value (#5055). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support vpiInertialDelay (#5087). [Todd Strader]
+* Support NBAs to arrays inside loops (#5092). [Geza Lore]
+* Add error on zero width select (#5028).
+* Add CITATION.cff (#5057) (#5058). [Gijs Burghoorn]
+* Add VPI eval needed tracking (#5065). [Todd Strader]
+* Add `--localize-max-size` option and optimization (#5072).
+* Add parameterless assert control system tasks (#5010). [Bartłomiej Chmiel]
+* Add traceCapable indication to model header (#5053). [Vito Gamberini]
+* Add increasing of stack size when possible (#5071) (#5104). [Yinan Xu]
+* Fix missing flex include path variable (#4970) (#4971). [Christopher Taylor]
+* Fix missing parameters with comma to be errors (#4979) (#5012). [Paul Swirhun]
+* Fix bound queue printing (#5032). [Aleksander Kiryk, Antmicro Ltd.]
+* Fix consecutive zero-delays (#5038). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix `make $(info)` which cannot be silenced (#5059). [Gökçe Aydos]
+* Fix attempted to destroy locked thread pool error (#5040). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix `$system` with string argument (#5042).
+* Fix width extension on delays (#5043).
+* Fix `$typename` on array.min and others (#5049). [Gökçe Aydos]
+* Fix CMake builds to export VERILATOR_ROOT (#5063). [Michael Bikovitsky]
+* Fix false ASSIGNIN on functions with explicit port map (#5069).
+* Fix DFG assertion with SystemC (#5076). [Geza Lore]
+* Fix `$typename` string to be more standard (#5082) (#5083). [Andrew Nolte]
+* Fix missed optimization in V3Delayed (#5089). [Geza Lore]
+* Fix macro expansion in strings per 1800-2023 (#5094). [Geza Lore]
+* Fix width extension of unpacked array select (#5095). [Varun Koyyalagunta]
+* Fix MacOS missing <type_traits> header (#5096) (#5097). [Vito Gamberini]
+* Fix aliases for forced port signals (#5105). [Geza Lore]
+* Fix tracing interface functions (#5108). [Alex Solomatnikov]
+* Fix method calls parsing in constraints (#5110). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Fix vpiInertialDelay for memories (#5113). [Todd Strader]
+* Fix references to ports in forks (#5123). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix x-valued parameters with `--x-assign unique` (#5129). [Ethan Sifferman]
+
+
+Verilator 5.024 2024-04-05
+==========================
+
+**Major:**
+
+* Add printing summary reports, use `--quiet` or `+verilator+quiet` to suppress (#4909).
+* Support 1800-2023 keywords, and parsing with UNDEFINED warnings.
+* Support 1800-2023 preprocessor ifdef expressions.
+
+**Minor:**
+
+* Change 1800-2023 to be default language version.
+* Add DFG 'regularize' pass, and improve variable removal (#4937). [Geza Lore]
+* Add error when pass net to function argument (#4132) (#4966). [Fuad Ismail]
+* Add `UNUSEDLOOP` when unused loop is removed (#4926). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Add custom version for verilator --version packaging (#4954). [Nolan Poe]
+* Add error on missing pure virtual functions (#4961).
+* Add error on calling static function without object (#4962).
+* Add JSON AST dumps (#5020). [Szymon Gizler]
+* Support 1800-2023 DPI headers, svGetTime/svgGetTimeUnit/svGetTimePrecision methods.
+* Support 1800-2023 class and function :initial, :extends, :final virtual overrides (#5025).
+* Support public packed struct / union (#860) (#4878). [Kefa Chen]
+* Support stream operation on unpacked array (#4714) (#5006). [Fuad Ismail]
+* Support implicitly-typed variable definitions in for-loop initializers (#4945) (#4986). [Kevin Nygaard]
+* Support inside range with implicit type conversion (#5026). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Improve installation to be relocatable (#4927). [Geza Lore]
+* Improve internal ordering code (#4957) (#4990) (#4994) et al. [Geza Lore]
+* Fix generate blocks in vpi_iterate (#3609) (#4913). [Andrew Nolte]
+* Fix __Vlip undefined error in --freloop (#4824). [Justin Yao Du]
+* Fix missing VPI scopes (#4918). [Andrew Nolte]
+* Fix invalid cast on string structure creation (#4921).
+* Fix try-lock spuriously fails (#4931) (#4938). [Kamil Rakoczy]
+* Fix V3Unknown unpacked struct x-assign (#4934). [Yan Xu]
+* Fix DFG removing forceable signals (#4942). [Geza Lore]
+* Fix null characters in shortened identifiers (#4946). [Abdul Hameed]
+* Fix assignment of null into struct member (#4952).
+* Fix VPI missing scopes 2 (#4965). [Andrew Nolte]
+* Fix object assignment from conditionals (#4968).
+* Fix GCC14 warnings on template specialization syntax (#4974) (#4975). [Nolan Poe]
+* Fix unpacked structure upper bit cleaning (#4978).
+* Fix tests on MacOS (#4984) (#4985). [Kevin Nygaard]
+* Fix `--prof-exec` predicted time values (#4988). [Geza Lore]
+* Fix class type as an associative array parameter (#4997).
+* Fix inout ports of unpacked struct type (#5000). [Ryszard Rozak, Antmicro Ltd.]
+* Fix `unique {}` constraints missing semicolon (#5001).
+* Fix preprocessor to respect strings in joins (#5007).
+* Fix tracing class parameters (#5014).
+* Fix memory leaks (#5016). [Geza Lore]
+* Fix $readmem with missing newline (#5019). [Josse Van Delm]
+* Fix internal error on missing pattern key (#5023).
+* Fix tracing replicated hierarchical models (#5027).
+
+
+Verilator 5.022 2024-02-24
+==========================
+
+**Minor:**
+
+* Add predicted stack overflow warning (#4799).
+* Add `+verilator+coverage+file` runtime option.
+* Add `--assert-case` option (#4919). [Yutetsu TAKATSUKASA]
+* Add `--decorations node` for inserting debug comments into emitted code.
+* Add `--json-only` and related JSON dumping (#4715) (#4831). [Szymon Gizler, Antmicro Ltd.]
+* Add `--[no]-stop-fail` option for continuing after assertions (#4904). [Yutetsu TAKATSUKASA]
+* Add `--runtime-debug` for Verilated executable runtime debugging.
+* Add `--valgrind` switch (#4828). [Szymon Gizler]
+* Add `unroll_disable` and `unroll_full` loop control metacomments (#3260). [Jiaxun Yang]
+* Remove deprecated 32-bit pointer mode (`gcc -m32`).
+* Deprecate --xml-only and XML dumping (#4715) (#4831).
+* Change zero replication width error to ZEROREPL warning (#4753) (#4762). [Pengcheng Xu]
+* Improve message for priority case assertion failure (#4905). [Yutetsu TAKATSUKASA]
+* Support dumping coverage with `--main`.
+* Support dumping DFG patterns with `--stats` (#4889). [Geza Lore]
+* Support `vpiConstType` in `vpi_get_str()` (#4797). [Marlon James]
+* Support SystemC 3.0.0 public review version (#4805) (#4807). [Anthony Donlon]
+* Support parsing anonymous primitive instantiations (#4809). [Anthony Donlon]
+* Fix to not emit already waived warnings in waiver output (#4574) (#4818). [Jonathan Schröter]
+* Fix `this` in member initialization (#4710). [eliasphanna]
+* Fix localparam elaboration (#3858) (#4794). [Andrew Nolte]
+* Fix lint_off disables on preprocessor warnings (#4703). [Srinivasan Venkataramanan]
+* Fix $time not rounding up (#4790) (#4792). [Paul Wright]
+* Fix `vpi_get()` and `vpi_get64()` to return vpiUndefined on errors (#4795). [Marlon James]
+* Fix VPI parameter iteration (#4798). [Marlon James]
+* Fix delays using wrong timeunit when modules inlined (#4806). [Paul Wright]
+* Fix warnings in verilated_sc_trace.h for Clang. (#4807) (#4827). [Anthony Donlon]
+* Fix null pointer dereference (#4810) (#4825). [Adrian Sampson]
+* Fix compilation error on multi-inherited interface class usage (#4819).
+* Fix maybe-uninitialized compiler warning (#4820) (#4822). [Larry Doolittle]
+* Fix mis-splitting of dump control functions (#4821). [Fan Shupei]
+* Fix wrong utimes() parameter (#4829). [Szymon Gizler]
+* Fix incorrect bit-op-tree NOT optimization (#4832) (#4847). [Yutetsu TAKATSUKASA]
+* Fix width calculation in replaceShiftOp (#4837) (#4841) (#4849). [Yutetsu TAKATSUKASA]
+* Fix unsafe write in wide array insertion (#4850) (#4855). [Paul Swirhun]
+* Fix NOT when checking EQ/NEQ under AND/OR tree (#4857) (#4863). [Yutetsu TAKATSUKASA]
+* Fix tracing chandles (#4860). [Nathan Graybeal]
+* Fix $fwrite of null (#4862). [Jose Tejada]
+* Fix -fno-const-bit-op-tree wrong runtime result (#4864) (#4867). [Yutetsu TAKATSUKASA]
+* Fix SystemC biguint sign desynchronization (#4870). [Bartłomiej Chmiel]
+* Fix incorrect temporary insertion in loop conditions with statements (#4873). [Geza Lore]
+* Fix timing with expr on assign LHS (#4880). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix assertion for unique case (#4892). [Yutetsu TAKATSUKASA]
+* Fix GCC tautological-compare warnings.
+* Fix compile error on structs with queues (and ignore toggle coverage on queues).
+* Fix toggle coverage error on multi-edge driven signals.
+* Fix whitespace in `pragma protect version` (#4902) (#4914). [Paul Swirhun]
+* Fix incorrect code generation for change expression on typedefed unpacked array (#4915). [Geza Lore]
+* Fix inconsistent driver resolution with typedefs (#4917). [Geza Lore]
+
+
+Verilator 5.020 2024-01-01
+==========================
+
+**Major:**
+
+* Support compilation with precompiled headers with Make, and GCC or CLang.
+* Change include to systemc instead of systemc.h (#4622) (#4623). [Chih-Mao Chen]
+  This may require that SystemC programs add 'using namespace sc_core', 'using namespace sc_dt'.
+
+**Minor:**
+
+* Add devcontainer support (#4748). [Stefan Wallentowitz]
+* Support `iff` in sensitivity list (#1482) (#4626). [Krzysztof Bieganski, Antmicro Ltd.]
+* Support parameterized virtual interfaces (#4047) (#4743). [Ryszard Rozak, Antmicro Ltd.]
+* Support --timing triggers for virtual interfaces (#4673). [Krzysztof Bieganski, Antmicro Ltd.]
+* Support ccache when compiling Verilator with CMake (#4678). [Anthony Donlon]
+* Support passing constraints to --xml-only output (still otherwise unsupported) (#4683). [Shahid Ikram]
+* Support node memory usage information in --stats (#4684). [Geza Lore]
+* Support vpiConstType in vpi_get() (#4761). [Todd Strader]
+* Support vpi_iterate on packages with vpiInstance (#4726). [Todd Strader]
+* Support multiple parameters in virtual interfaces (#4745). [Ryszard Rozak, Antmicro Ltd.]
+* Support user C/C++ code in final archive, and make a lib{model}.a (#4749) (#4754). [Fan Shupei]
+* Support inside operator on unpacked arrays and queues (#4751). [Ryszard Rozak, Antmicro Ltd.]
+* Support VPI parameter iteration (#4765). [Todd Strader]
+* Support packages in vpi_handle_by_name() (#4768). [Todd Strader]
+* Support invoking interface methods on virtual interface variables (#4774) (#4775). [Jordan McConnon]
+* Remove deprecated options (#4663). [Geza Lore]
+* Remove older compiler support; require C++14 or newer (#4784) (#4786).
+* Optimize timing-delayed queue (#4584). [qrqiuren]
+* Optimize substitute optimization memory usage (#4687). [Geza Lore]
+* Optimize wide primitive operations with -Oz (#4733). [Geza Lore]
+* Optimize V3Premit performance etc. (#4736). [Geza Lore]
+* Fix VPI TOP level variable iteration (#3919) (#4618). [Marlon James]
+* Fix display with no % printing assoc array (#4376). [Alex Solomatnikov]
+* Fix scheduling of external force signals (#4577) (#4668). [Geza Lore]
+* Fix a memory leak in V3Fork (#4628). [Krzysztof Boroński]
+* Fix linking parameterized hierarchical blocks and recursive hierarchical blocks (#4654). [Anthony Donlon]
+* Fix identifiers that end with '_' on Windows (#4655). [Anthony Donlon]
+* Fix 'for' loop with outside variable reference (#4660). [David Harris]
+* Fix tracing FST enums (#4661) (#4756). [Todd Strader]
+* Fix interface parameters used in loop generate constructs (#4664) (#4665). [Anthony Donlon]
+* Fix C++20 compilation errors (#4670).
+* Fix deadlocks in error handler (#4672). [Mariusz Glebocki, Antmicro Ltd.]
+* Fix MingW compilation (#4675). [David Ledger]
+* Fix trace when using SystemC with certain configurations (#4676). [Anthony Donlon]
+* Fix range access to classes depending on parameter resolution (#4681). [Krzysztof Boroński]
+* Fix select into constant And/Or/Xor pattern (#4689). [Geza Lore]
+* Fix access type of function arguments (#4692) (#4694). [Ryszard Rozak, Antmicro Ltd.]
+* Fix dynamic NBAs with automatic vars (#4696). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix # 0 delays for process resumption, etc. (#4697). [Krzysztof Boroński]
+* Fix conflicted namespace for coroutines (#4701) (#4707). [Jinyan Xu]
+* Fix compilers seeing empty input due to file system races (#4708). [Flavien Solt]
+* Fix shift of > 32-bit number (#4719). [Flavien Solt]
+* Fix Windows include gates in filesystem Flush implementation. (#4720). [William D. Jones]
+* Fix power operator with wide numbers and constants (#4721) (#4763). [Flavien Solt]
+* Fix parameter passing to ports (#4723). [Ryszard Rozak, Antmicro Ltd.]
+* Fix block names of nested do..while loops (#4728). [Ryszard Rozak, Antmicro Ltd.]
+* Fix class name in error on 'new' on virtual class (#4739). [Ryszard Rozak, Antmicro Ltd.]
+* Fix typedefs pointing to parameterized classes (#4747). [Ryszard Rozak, Antmicro Ltd.]
+* Fix $finish twice to no longer exit (#4757). [Tim Hutt]
+* Fix dynamic NBA conditions (#4773). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix `V3Fork` stage to run only if `--timing` is set (#4778). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix max multiply width and add runtime assertions if too small. (#4781)
+
+
+Verilator 5.018 2023-10-30
+==========================
+
+**Major:**
+
+* Support compilation with precompiled headers with Make and GCC or CLang.
+* Change include of systemc instead of systemc.h (#4622) (#4623). [Chih-Mao Chen]
+  This may require that SystemC programs add 'using namespace sc_core', 'using namespace sc_dt'.
+
+**Minor:**
+
+* Add SIDEEFFECT warning on mishandled side effect cases.
+* Add trace() API even when Verilated without --trace (#4462). [phelter]
+* Add warning on interface instantiation without parens (#4094). [Gökçe Aydos]
+* Add sv_vpi_user.h from IEEE 1800-2017 Annex M (#4606). [Marlon James]
+* Support 'disable fork' (#4125) (#4569). [Aleksander Kiryk, Antmicro Ltd.]
+* Support 'wait fork' (#4586). [Aleksander Kiryk, Antmicro Ltd.]
+* Support 'randc' (#4349).
+* Support assigning events (#4403). [Krzysztof Boroński]
+* Support resizing function call inout arguments (#4467).
+* Support NBAs in non-inlined functions/tasks (#4496) (#4572). [Krzysztof Bieganski, Antmicro Ltd.]
+* Support converting parameters inside modules to localparams (#4511). [Anthony Donlon]
+* Support concatenation of unpacked arrays (#4558). [Yutetsu TAKATSUKASA]
+* Support Clang 16 (#4592). [Mariusz Glebocki]
+* Support VPI variables of real and string data types (#4594). [Marlon James]
+* Support making VL_LOCK_SPINS configurable (#4599). [Geza Lore]
+* Change code --stats output (#4597). [Geza Lore]
+* Change --prof-exec infrastructure and report (#4602). [Geza Lore]
+* Change lint_off to not propagate upwards to files including where the lint_off is.
+* Optimize empty expression statements (#4544).
+* Optimize trace internals (#4610) (#4612). [Geza Lore]
+* Optimize internal performance issues (#4638). [Geza Lore]
+* Fix conversion of impure logical expressions to bit expressions (#487 partial) (#4437). [Ryszard Rozak, Antmicro Ltd.]
+* Fix enum functions in localparams (#3999). [Andrew Nolte]
+* Fix passing arguments by reference (#3385 partial) (#4489). [Ryszard Rozak, Antmicro Ltd.]
+* Fix multithreading handling to separate by code units that use/never use it (#4228). [Mariusz Glebocki, Antmicro Ltd.]
+* Fix usage of annotation options (#4486) (#4504). [Michal Czyz]
+* Fix detecting local vars in nested forks (#4493) (#4506). [Kamil Rakoczy]
+* Fix handling input file path separator (#4515) (#4516). [Anthony Donlon]
+* Fix mis-support for parameterized UDPs (#4518). [Anthony Donlon]
+* Fix constant conversion of $realtobits, $bitstoreal (#4522).  [Andrew Nolte]
+* Fix conversion of integers in $display '%e' (#4528). [muzafferkal]
+* Fix non-inlined interface tracing (#3984) (#4530). [Todd Strader]
+* Fix stream operations with operands of struct type (#4531) (#4532). [Ryszard Rozak, Antmicro Ltd.]
+* Fix 'this' in a constructor (#4533). [Ryszard Rozak, Antmicro Ltd.]
+* Fix stream shift operator of 32 bits (#4536). [Julien Faucher]
+* Fix object destruction after a copy constructor (#4540) (#4541). [Ryszard Rozak, Antmicro Ltd.]
+* Fix inlining of real functions miscasting (#4543). [Andrew Nolte]
+* Fix broken link error for enum references (#4551). [Anthony Donlon]
+* Fix logical expressions with class objects - caching in v3Const (#4552). [Ryszard Rozak, Antmicro Ltd.]
+* Fix using functions/tasks following class definition inside module (#4553). [Anthony Donlon]
+* Fix large constant buffer overflow (#4556). [Varun Koyyalagunta]
+* Fix instance arrays connecting to array of structs (#4557). [raphmaster]
+* Fix error message for invalid parameter overrides (#4559). [Anthony Donlon]
+* Fix shift to remove operation side effects (#4563).
+* Fix compile warning on unused member function variable (#4567).
+* Fix method narrowing conversion compiler error (#4568).
+* Fix interface comparison (#4570). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix dynamic triggers for named events (#4571). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix dictionaries with keys of class types (#4576). [Ryszard Rozak, Antmicro Ltd.]
+* Fix to not remap local assign intervals in forks (#4583). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix display optimization ignoring side effects (#4585).
+* Fix PLI/DPI user defined system task/function grammar (#4587) (#4588). [Quentin Corradi]
+* Fix fault on empty clocking block (#4593). [Alex Mykyta]
+* Fix creating implicit nets for inputs of gate primitives (#4603). [Geza Lore]
+* Fix try_put method of unbounded mailbox (#4608). [Ryszard Rozak, Antmicro Ltd.]
+* Fix stable name generation in V3Fork (#4615) (#4624). [Krzysztof Boroński]
+* Fix virtual methods (#4616). [Ryszard Rozak, Antmicro Ltd.]
+* Fix insertion at queue end (#4619). [Krzysztof Boroński]
+* Fix rand fields of reference types (#4627). [Ryszard Rozak, Antmicro Ltd.]
+* Fix dynamic casts of null values (#4631). [Ryszard Rozak, Antmicro Ltd.]
+* Fix signals read via virtual interfaces being misoptimized (#4645). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix handling of static keyword in methods (#4649). [Ryszard Rozak, Antmicro Ltd.]
+* Fix preprocessor to show `line 2 on resumed file.
+
+
+Verilator 5.016 2023-09-16
+==========================
+
+**Minor:**
+
+* Add prepareClone and atClone APIs for Verilated models (#3503) (#4444). [Yinan Xu]
+* Add check for conflicting options e.g. binary and lint-only (#4409). [Ethan Sifferman]
+* Add --no-trace-top to not trace top signals (#4412) (#4422). [Frans Skarman]
+* Support recursive function calls (#3267).
+* Support assignments of packed values to stream expressions on queues (#4401). [Ryszard Rozak, Antmicro Ltd]
+* Support no-parentheses calls to static methods (#4432). [Krzysztof Boroński]
+* Support block_item_declaration in forks (#4455). [Krzysztof Boroński]
+* Support assignments of stream expressions on queues to packed values (#4458). [Ryszard Rozak, Antmicro Ltd]
+* Support function non-constant default arguments (#4470).
+* Support 'let'.
+* Optimize Verilator executable size by refactoring error reporting routines (#4446). [Anthony Donlon]
+* Optimize Verilation runtime pointers and graphs (#4396) (#4397) (#4398). [Krzysztof Bieganski, Antmicro Ltd]
+* Optimize preparations towards multithreaded Verilation (#4291) (#4463) (#4476) (#4477) (#4479).  [Kamil Rakoczy, Antmicro Ltd]
+* Fix Windows filename format, etc (#3873) (#4421). [Anthony Donlon].
+* Fix t_dist_cppstyle Perl performance issue (#4085). [Srinivasan Venkataramanan]
+* Fix using type in parameterized classes without #() (#4281) (#4440). [Anthony Donlon]
+* Fix false INFINITELOOP on forever..mailbox.get() (#4323). [Srinivasan Venkataramanan]
+* Fix data type of condition operation on class objects (#4345) (#4352). [Ryszard Rozak, Antmicro Ltd]
+* Fix variables mutated under fork..join_none/join_any blocks into anonymous objects (#4356). [Krzysztof Boroński]
+* Fix V3CUse, do not consider implementations (.cpp) at all (#4386). [Krzysztof Boroński]
+* Fix ++/-- under statements (#4399). [Aleksander Kiryk, Antmicro Ltd]
+* Fix detection of mixed blocking and nonblocking assignment in nested assignments (#4404). [Ryszard Rozak, Antmicro Ltd]
+* Fix jumping over object initialization (#4411). [Krzysztof Boroński]
+* Fix multiple issues towards short circuit support (#4413) (#4460). [Ryszard Rozak, Antmicro Ltd]
+* Fix variable lifetimes in extern methods (#4414). [Krzysztof Boroński]
+* Fix multiple function definitions in V3Sched (#4416). [Hennadii Chernyshchyk]
+* Fix false UNUSEDPARAM on generate localparam (#4427). [Bill Pringlemeir]
+* Fix checking for parameter and port connections in the wrong place (#4428). [Anthony Donlon]
+* Fix coroutine handle movement during queue manipulation (#4431). [Aleksander Kiryk, Antmicro Ltd]
+* Fix nested assignments on the LHS (#4435). [Ryszard Rozak, Antmicro Ltd]
+* Fix false MULTITOP on bound interfaces (#4438). [Alex Solomatnikov]
+* Fix internal error on real conversion (#4447). [vdhotre-ventana]
+* Fix lifetime unknown error on enum.name (#4448). [jwoutersymatra]
+* Fix unstable output of VHashSha256 (#4453). [Anthony Donlon]
+* Fix static cast from a stream type (#4469) (#4485). [Ryszard Rozak, Antmicro Ltd]
+* Fix error on enum with VARHIDDEN of cell (#4482). [Michail Rontionov]
+* Fix lint of case statements with enum and wildcard bits (#4464) (#4487). [Anthony Donlon]
+* Fix reference to extended class in parameterized class (#4466).
+* Fix recursive display causing segfault (#4480). [Kuoping Hsu]
+* Fix the error message when the type of ref argument is wrong (#4490). [Ryszard Rozak, Antmicro Ltd]
+* Fix display %x formatting of real.
+* Fix mis-warning on #() in classes' own functions.
+* Fix IGNOREDRETURN to not warn on void-cast static function calls.
+* Fix ZERODLY to not warn on 'wait(0)'.
+
+
+Verilator 5.014 2023-08-06
+==========================
+
+**Minor:**
+
+* Deprecation planned for 32-bit pointer -m32 mode (#4268).
+* Deprecate CMake config below version 3.13 (#4389) (#4390). [Vito Gamberini]
+* Support some stream operations on queues (#4292). [Ryszard Rozak, Antmicro Ltd]
+* Support property declaration with empty parentheses (#4313) (#4317). [Anthony Donlon]
+* Support locator methods with "with" on assoc arrays (#4335). [Ryszard Rozak, Antmicro Ltd]
+* Support string replication with variable (#4341). [Aleksander Kiryk, Antmicro Ltd]
+* Support more types in wait (#4374). [Aleksander Kiryk, Antmicro Ltd]
+* Support static method calls as default values of function arguments (#4378). [Ryszard Rozak, Antmicro Ltd]
+* Add GENUNNAMED lint warning. [Srinivasan Venkataramanan, Deepa Palaniappan]
+* Add MISINDENT lint warning for misleading indentation.
+* Fix 'VlForkSync' redeclaration (#4277). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix processes that can outlive their parents (#4253). [Krzysztof Boronski, Antmicro Ltd]
+* Fix duplicate fork names (#4295). [Ryszard Rozak, Antmicro Ltd]
+* Fix splitting coroutines (#4297) (#4307). [Jiamin Zhu]
+* Fix error when multiple duplicate DPI exports (#4301).
+* Fix class reference assignment checking (#4296). [Ryszard Rozak, Antmicro Ltd]
+* Fix handling of ref types in initial values of type parameters (#4304). [Ryszard Rozak, Antmicro Ltd]
+* Fix comparison of string parameters (#4308). [Ryszard Rozak, Antmicro Ltd]
+* Fix state update for always processes (#4311). [Aleksander Kiryk, Antmicro Ltd]
+* Fix multiple edge timing controls in class methods (#4318) (#4320) (#4344). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix implicit calls of base class constructors with optional arguments (#4319). [Ryszard Rozak, Antmicro Ltd]
+* Fix propagation of process requirement (#4321). [Krzysztof Boroński]
+* Fix unhandled overloads in V3InstrCount (#4324). [Krzysztof Boroński]
+* Fix selects of static members (#4326). [Ryszard Rozak, Antmicro Ltd]
+* Fix references to members of results of static methods (#4327). [Ryszard Rozak, Antmicro Ltd]
+* Fix unique..with method on queues of class objects (#4328). [Ryszard Rozak, Antmicro Ltd]
+* Fix queue slicing (#4329). [Aleksander Kiryk, Antmicro Ltd]
+* Fix wildcard referring types (#4336) (#4342). [Aleksander Kiryk, Antmicro Ltd]
+* Fix comparison of class objects (#4346). [Ryszard Rozak, Antmicro Ltd]
+* Fix unexpected RefDType on assoc arrays (#4337). [Aleksander Kiryk, Antmicro Ltd]
+* Fix cmake astgen for Rocky Linux 8.7 (#4343). [Julian Daube]
+* Fix class timescale in class packages (#4348). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix string concatenations (#4354). [Ryszard Rozak, Antmicro Ltd]
+* Fix unlinked task error from broken context (#4355) (#4402). [Aleksander Kiryk, Antmicro Ltd]
+* Fix selects on unpacked structs (#4359). [Ryszard Rozak, Antmicro Ltd]
+* Fix select operation on assoc array with wide keys (#4360). [Ryszard Rozak, Antmicro Ltd]
+* Fix non-public methods with wide output (#4364). [Ryszard Rozak, Antmicro Ltd]
+* Fix handling of super.new calls (#4366). [Ryszard Rozak, Antmicro Ltd]
+* Fix assign to input var in methods (#4367). [Aleksander Kiryk, Antmicro Ltd]
+* Fix VlProcess not found (#4368). [Aleksander Kiryk, Antmicro Ltd]
+* Fix order of evaluation of function calls in statements (#4375). [Ryszard Rozak, Antmicro Ltd]
+* Fix config_build.h issues (#4380) (#4381). [Andrew Miloradovsky]
+
+
+Verilator 5.012 2023-06-13
+==========================
+
+**Major:**
+
+* With -j or --build-jobs, multithread Verilator's emit phase of Verilation. [Kamil Rakoczy, Antmicro Ltd]
+  Additional Verilator-internal stages will become multithreaded over time.
+
+**Minor:**
+
+* Add --main-top-name option for C main TOP name (#4235) (#4249). [Don Williamson]
+* Add creating __inputs.vpp file with --debug (#4177). [Tudor Timi]
+* Add NEWERSTD warning when using feature in newer language standard (#4168) (#4172). [Ethan Sifferman]
+* Add warning that timing controls in DPI exports are unsupported (#4238). [Krzysztof Bieganski, Antmicro Ltd]
+* Support std::process class (#4212). [Aleksander Kiryk, Antmicro Ltd]
+* Support inside expressions with strings and doubles (#4138) (#4139). [Krzysztof Boroński]
+* Support get_randstate/set_randstate class method functions.
+* Support for condition operator on class objects (#4214). [Ryszard Rozak, Antmicro Ltd]
+* Support array max (#4275). [Aleksander Kiryk, Antmicro Ltd]
+* Optimize VPI callValueCbs (#4155). [Hennadii Chernyshchyk]
+* Configure for faster C++ linking using 'mold', if it is installed.
+* Fix crash on duplicate imported modules (#3231). [Robert Balas]
+* Fix false WIDTHEXPAND on array declarations (#3959). [Jose Tejada]
+* Fix marking overridden methods as coroutines (#4120) (#4169). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix SystemC signal copy macro use (#4135). [Josep Sans]
+* Fix duplicate static names in blocks in functions (#4144) (#4160). [Stefan Wallentowitz]
+* Fix initialization order of initial static after function/task (#4159). [Kamil Rakoczy, Antmicro Ltd]
+* Fix linking AstRefDType if it has parameterized class ref (#4164) (#4170). [Ryszard Rozak, Antmicro Ltd]
+* Fix crash caused by $display() optimization (#4165) (#4166). [Tudor Timi]
+* Fix arrays of unpacked structs (#4173). [Risto Pejašinović]
+* Fix $fscanf of decimals overflowing variables (#4174). [Ahmed El-Mahmoudy]
+* Fix super.new missing data type (#4147). [Tudor Timi]
+* Fix missing class forward declarations (#4151). [Krzysztof Boroński]
+* Fix hashes of instances of parameterized classes (#4182). [Ryszard Rozak, Antmicro Ltd]
+* Fix forced assignments that override non-continuous assignments (#4183) (#4192). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix wide structure VL_TOSTRING_W generation (#4188) (#4189). [Aylon Chaim Porat]
+* Fix references to members of parameterized base classes (#4196). [Ryszard Rozak, Antmicro Ltd]
+* Fix tracing undefined alignment (#4201) (#4288) [John Wehle]
+* Fix class specific same methods for AstVarScope, AstVar, and AstScope (#4203) (#4250). [John Wehle]
+* Fix dotted references in parameterized classes (#4206). [Ryszard Rozak, Antmicro Ltd]
+* Fix bit selections under parameterized classes (#4210). [Ryszard Rozak, Antmicro Ltd]
+* Fix duplicate std:: declaration with -I (#4215). [Harald Pretl]
+* Fix deep traversal of class inheritance timing (#4216). [Krzysztof Boroński]
+* Fix class parameters of enum types (#4219). [Ryszard Rozak, Antmicro Ltd]
+* Fix static methods with prototypes (#4220). [Ryszard Rozak, Antmicro Ltd]
+* Fix LATCH warning on function local variables (#4221) (#4284) [Julien Margetts]
+* Fix VCD scope types (#4227) (#4282). [Àlex Torregrosa]
+* Fix incorrect multi-driven lint warning (#4231) (#4248). [Adrien Le Masle]
+* Fix missing assignment for wide unpacked structs (#4233). [Jiamin Zhu]
+* Fix unpacked struct == and != operators (#4234) (#4240). [Risto Pejašinović]
+* Fix AstStructSel clean when data type is structure (#4241) (#4244). [Risto Pejašinović]
+* Fix function calls in with statements (#4245). [Ryszard Rozak, Antmicro Ltd]
+* Fix operator == for unpacked struct, if elements are VlUnpacked arrays (#4247). [Risto Pejašinović]
+* Fix STATIC lifetime for variables created from clocking items (#4262). [Krzysztof Boroński]
+* Fix names of foreach blocks (#4264). [Ryszard Rozak, Antmicro Ltd]
+* Fix iterated variables in foreach loops to have VAUTOM lifetimes (#4265). [Krzysztof Boroński]
+* Fix missing assignment for wide class members (#4267). [Jiamin Zhu]
+* Fix the global uses timing flag when forks exist (#4274). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix struct redefinition (#4276). [Aleksander Kiryk, Antmicro Ltd]
+* Fix detection of wire/reg duplicates.
+* Fix false IMPLICITSTATIC on package functions.
+* Fix method calls on function return values.
+
+
+Verilator 5.010 2023-04-30
+==========================
+
+**Minor:**
+
+* Add --public-depth to force public to a certain instance depth (#3952). [Andrew Nolte]
+* Add --public-params flag (#3990). [Andrew Nolte]
+* Add CONSTRAINTIGN warning when constraint ignored.
+* Add STATICVAR warning and convert to automatic (#4018) (#4027) (#4030). [Ryszard Rozak, Antmicro Ltd]
+* Add error if class types don't match (#4064). [Ryszard Rozak, Antmicro Ltd]
+* Support class extends of package::class.
+* Support class srandom and class random stability.
+* Support class method calls without parenthesis (#3902) (#4082). [Srinivasan Venkataramanan]
+* Support method calls without parenthesis (#4034). [Ryszard Rozak, Antmicro Ltd]
+* Support parameterized return types of methods (#4122). [Ryszard Rozak, Antmicro Ltd]
+* Support parameterized class references in extends statement (#4146). [Ryszard Rozak, Antmicro Ltd]
+* Support complicated IEEE 'for' assignments.
+* Support $fopen as an expression.
+* Support ++/-- on dotted member variables.
+* Optimize static trigger evaluation (#4142). [Geza Lore, X-EPIC]
+* Optimize more xor trees (#4071). [Yutetsu TAKATSUKASA]
+* Change range order warning from LITENDIAN to ASCRANGE (#4010). [Iztok Jeras]
+* Change ZERODLY to a warning.
+* Fix random internal crashes (#666). [Dag Lem]
+* Fix install, standardization in cmake CMakeLists.txt (#3974). [Yu-Sheng Lin]
+* Fix UNDRIVEN warning seg fault (#3989). [Felix Neumärker]
+* Fix symbol entries when inheriting classes (#3995) (#3996). [Krzysztof Boroński]
+* Fix event controls reusing same variable (#4014). Kamil Rakoczy <krakoczy@antmicro.com>
+* Fix push to dynamic queue in struct (#4015). [ezchi]
+* Fix names for blocks in do..while loop (#4019). [Ryszard Rozak, Antmicro Ltd]
+* Fix randomize on null field (#4023). [Ryszard Rozak, Antmicro Ltd]
+* Fix rand fields in base classes (#4025). [Ryszard Rozak, Antmicro Ltd]
+* Fix large return blocks with --comp-limit-blocks (#4028). [tenghtt]
+* Fix clocking block scope internal error (#4032). [Srinivasan Venkataramanan]
+* Fix false LATCH warning on --assert 'unique else if' (#4033) ($4054). [Jesse Taube]
+* Fix characters from DEFENV literals for Conda (#4035) (#4044). [Tim Snyder]
+* Fix info message prints under --assert (#4036) (#4053). [Srinivasan Venkataramanan]
+* Fix C++ compile errors when passing class refs as task argument (#4063). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix NBAs inside fork-joins (#4050). [Aleksander Kiryk, Antmicro Ltd]
+* Fix task calls as fork statements (#4055). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix _Vilp used before declaration (#4057) (#4062). [Josep Sans]
+* Fix incorrect optimization of bit op tree (#4059) (#4070). [Yutetsu TAKATSUKASA]
+* Fix parameters in a class body to be localparam (#4061). [Ryszard Rozak, Antmicro Ltd]
+* Fix interface generate begin (#4065). [Srinivasan Venkataramanan]
+* Fix tracing with awaits at end of block (#4075) (#4076). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix sense expression variable naming (#4081). [Kamil Rakoczy]
+* Fix importing symbols from base class (#4084). [Ryszard Rozak, Antmicro Ltd]
+* Fix false error on new const assignment (#4098). [Tudor Timi]
+* Fix unpacked structs under classes (#4102). [Tudor Timi]
+* Fix variables in class methods to be automatic (#4111) (#4137). [Peter Monsson]
+* Fix to use parallel build for projects with a lot of files (#4116). [Krzysztof Boroński]
+* Fix including __Syms header in generated C++ files (#4123). [Krzysztof Boroński]
+* Fix systemc namespace issues (#4126) (#4127). [Eyck Jentzsch]
+* Fix class param extends A=B (#4128). [Ryszard Rozak, Antmicro Ltd]
+* Fix missing begin block hierarchy in --xml-only cells section (#4129) (#4133). [Risto Pejašinović]
+* Fix resolution of class lvalues after parameterization (#4131). [Krzysztof Boroński]
+* Fix DFG error on $countbits (#4101) (#4143). [Paul Donahue]
+* Fix duplicating parameter class types (#4115). [Ryszard Rozak, Antmicro Ltd]
+* Fix class extend param references (#4136).  [Ryszard Rozak, Antmicro Ltd]
+* Fix -CFLAGS to allow overriding optimization levels (#4140). [Peter Monsson]
+* Fix DPI function type alias (#4148) (#4149). [Toru Niina]
+* Fix deleting unused parameterized classes (#4150). [Ryszard Rozak, Antmicro Ltd]
+* Fix false ENUMVALUE on expressions and arrays.
+* Fix unnecessary verilated_std.sv waivers in --waiver-output.
+
+
+Verilator 5.008 2023-03-04
+==========================
+
+**Minor:**
+
+* Add --annotate-points option, change multipoint on line reporting (#3876). [Nassim Corteggiani]
+* Add --verilate-jobs option (#3889). [Kamil Rakoczy, Antmicro Ltd]
+* Add WIDTHEXPAND and WIDTHTRUNC warnings to replace WIDTH (#3900). [Andrew Nolte]
+* Add SOURCE_DATE_EPOCH for docs/guide/conf.py (#3918). [Larry Doolittle]
+* Add /*verilator public[flat|flat_rd|flat_rw| ]*/ metacomments (#3894). [Joseph Nwabueze]
+* Add lint warning on always_comb multidriven (#3888) (#3939). [Adam Bagley]
+* Add warning on ++/-- over expressions with potential side effects (#3976). [Krzysztof Boroński]
+* Add error on mixing .name and by-port instantiations.
+* Removed deprecated --cdc option.
+* Support unpacked unions.
+* Support interface classes and class implements.
+* Support global clocking and $global_clock.
+* Support class parameters without initial values.
+* Support cast to numbers from strings.
+* Support struct I/O in --lib-create (#3378) (#3892). [Varun Koyyalagunta]
+* Support function calls without parenthesis (#3903) (#3902). [Ryszard Rozak, Antmicro Ltd]
+* Support class extending its parameter (#3904). [Ryszard Rozak, Antmicro Ltd]
+* Support static function variables (#3830). [Ryszard Rozak, Antmicro Ltd]
+* Support recursive methods (#3987). [Ryszard Rozak, Antmicro Ltd]
+* Fix real parameters of infinity and NaN.
+* Fix pattern assignment to unpacked structs (#3510). [Mostafa Garnal]
+* Fix single-element replication to dynarray/unpacked/queue (#3548). [Gustav Svensk]
+* Fix constant enum methods (#3621). [Todd Strader]
+* Fix inconsistent naming of generate scope arrays (#3840). [Andrew Nolte]
+* Fix namespace fallback resolution (#3863) (#3942). [Aleksander Kiryk, Antmicro Ltd]
+* Fix std:: to be parsed first (#3864) (#3928). [Aleksander Kiryk, Antmicro Ltd]
+* Fix cmake warning if multiple SOURCES w/o PREFIX (#3916) (#3927). [Yoda Lee]
+* Fix parameterized class function linkage (#3917). [Ryszard Rozak]
+* Fix static members of type aliases of a parameterized class (#3922). [Ryszard Rozak, Antmicro Ltd]
+* Fix class extend parameter dot case (#3926). [Ryszard Rozak, Antmicro Ltd]
+* Fix MsWin missing directory exception, and ::std (#3928) (#3933) (#3935). [Kritik Bhimani]
+* Fix very long VPI signal names (#3929). [Marlon James]
+* Fix VPI upper interface scopes not found (#3937). [David Stanford]
+* Fix virus detection false positive (#3944). [Stuart Morris]
+* Fix constant string function assignment (#3945). [Todd Strader]
+* Fix constant format field widths (#3946). [Todd Strader]
+* Fix class field linking when a super classes is a param (#3949). [Ryszard Rozak, Antmicro Ltd]
+* Fix CMake bad C identifiers (#3948) (#3951). [Zixi Li]
+* Fix build on HP PA architecture (#3954). [John David Anglin]
+* Fix date on the front page of verilator.pdf (#3956) (#3957). [Larry Doolittle]
+* Fix associative arrays declared with ref type (#3960). [Ryszard Rozak, Antmicro Ltd]
+* Fix missing error on negative replicate (#3963). [Benjamin Menküc]
+* Fix self references to parameterized classes (#3962). [Ryszard Rozak, Antmicro Ltd]
+* Fix LITENDIAN warning is backwards (#3966) (#3967). [Cameron Kirk]
+* Fix subsequent parameter declarations (#3969). [Ryszard Rozak, Antmicro Ltd]
+* Fix timing delays to not truncate below 64 bits (#3973) (#3982). [Felix Neumärker]
+* Fix cmake on MacOS to mark weak symbols with -U linker flag (#3978) (#3979). [Peter Debacker]
+* Fix UNDRIVEN warning seg fault (#3989). [Felix Neumärker]
+* Fix coverage of class methods (#3998). [Tim Paine]
+* Fix packed array structure replication.
+* Fix enum.next(0) and enum.prev(0).
+
+
+Verilator 5.006 2023-01-22
+==========================
+
+**Minor:**
+
+* Support clocking blocks (#3674). [Krzysztof Bieganski, Antmicro Ltd]
+* Support packed structs (#3802). [Aleksander Kiryk, Antmicro Ltd]
+* Support Windows-native builds using cmake (#3814). [Kritik Bhimani]
+* Support p format for UnpackArray (#3877). [Aleksander Kiryk, Antmicro Ltd]
+* Support property calls without parenthesis (#3879) (#3893). [Ryszard Rozak, Antmicro Ltd]
+* Support import/export lists in modport (#3886). [Gökçe Aydos]
+* Support class queue equality (#3895). [Ilya Barkov]
+* Support type case and type equality comparisons.
+* Add IMPLICITSTATIC warning when a task/function is implicitly static (#3839). [Ryszard Rozak, Antmicro Ltd]
+* Add VL_VALUE_STRING_MAX_WORDS override (#3869). [Andrew Nolte]
+* Optimize expansion of extend operators.
+* Internal multithreading tests. [Mariusz Glebocki, et al, Antmicro Ltd]
+* Fix VPI one-time timed callbacks (#2778). [Marlon James, et al]
+* Fix initiation of function variables (#3815). [Dan Gisselquist]
+* Fix to zero possibly uninitialized bits in replications (#3815).
+* Fix crash in DFT due to width use after free (#3817) (#3820). [Jevin Sweval]
+* Fix signed/unsigned comparison compile warning (#3822). [Kamil Rakoczy]
+* Fix OS-X weak symbols with -U linker flag (#3823). [Jevin Sweval]
+* Fix wrong bit op tree optimization (#3824) (#3825). [Yutetsu TAKATSUKASA]
+* Fix self references when param class instantiated (#3833). [Ryszard Rozak, Antmicro Ltd]
+* Fix memory leak in V3Sched, etc. (#3834). [Geza Lore]
+* Fix compatibility with musl libc / Alpine Linux (#3845). [Sören Tempel]
+* Fix empty case items crash (#3851). [Rich Porter]
+* Fix VL_CPU_RELAX on MIPS/Armel/s390/sparc (#3843) (#3891). [Kamil Rakoczy]
+* Fix module parameter name collision (#3854) (#3855). [James Shi]
+* Fix unpacked array expansion (#3861). [Joey Liu]
+* Fix signed/unsigned parameter types (#3866). [James Shi]
+* Fix chain call of abstract class constructor (#3868) (#3883). [Ilya Barkov]
+* Fix to use same std in Verilator and Verilated compile (#3881). [Kamil Rakoczy, Antmicro Ltd]
+* Fix foreach unnamedblk duplicate error (#3885). [Ilya Barkov]
+* Fix elaboration of member selected classes (#3890). [Ilya Barkov]
+* Fix mismatched widths in DFG (#3872). [Geza Lore, Yike Zhou]
+* Fix lint for non-integral types in packed structs.
+* Fix generate case with empty body statements.
+
+
+Verilator 5.004 2022-12-14
+==========================
+
+**Major:**
+
+* Support named properties (#3667). [Ryszard Rozak, Antmicro Ltd]
+* Add ENUMVALUE warning when value misused for enum (#726) (#3777) (#3783).
+* Deprecate --no-threads; use --threads 1 for single threaded (#3703). [Kamil Rakoczy, Antmicro Ltd]
+
+**Minor:**
+
+* Support std::semaphore and typed std::mailbox (#3708). [Krzysztof Bieganski, Antmicro Ltd]
+* Support 'with' in unique, unique_index, min, max in queues (#3772). [Ryszard Rozak, Antmicro Ltd]
+* Support events in VCD/FST traces (#3759). [Yves Mathieu]
+* Support foreach loops on strings (#3760). [Ryszard Rozak, Antmicro Ltd]
+* Support member selects in with clauses (#3775). [Ryszard Rozak, Antmicro Ltd]
+* Support super.new calls (#3789). [Ryszard Rozak, Antmicro Ltd]
+* Support randcase.
+* Support pre_randomize and post_randomize.
+* Support $timeunit and $timeprecision.
+* Support assignment expressions.
+* Change ENDLABEL from warning into an error.
+* Internal AST improvements, also affect XML format (#3721). [Geza Lore]
+* Deprecate verilated_fst_sc.cpp and verilated_vcd_sc.cpp.
+* Disable stack size limit (#3706) (#3751). [Mariusz Glebocki]
+* Add error when use --exe with --lib-create (#3785). [Yinan Xu]
+* Fix jump handling in do while loops (#3731). [Ryszard Rozak, Antmicro Ltd]
+* Fix 'with' clause handling in functions (#3739). [Ryszard Rozak, Antmicro Ltd]
+* Fix CONTEXT compile error on MingW (#3741). [William D. Jones]
+* Fix MSVC compiler errors (#3742) (#3746). [Kritik Bhimani]
+* Fix CASEINCOMPLETE when covers all enum values (#3745) (#3782). [Guy-Armand Kamendje]
+* Fix return type of $countbits functions to int (#3725). [Ryszard Rozak, Antmicro Ltd]
+* Fix timing control in while-break loops (#3733) (#3769). [Ryszard Rozak, Antmicro Ltd]
+* Fix return in constructors (#3734). [Ryszard Rozak, Antmicro Ltd]
+* Fix missing UNUSED warnings with --coverage (#3736). [alejandro-castro-ortegon]
+* Fix tracing parameters overridden with -G (#3723). [Iztok Jeras]
+* Fix folding of LogAnd with non-bool operands (#3726). [Geza Lore]
+* Fix DFG optimization issues (#3740) (#3771). [Geza Lore]
+* Fix pre/postincrement operations (#3744) (#3756). [Ryszard Rozak, Antmicro Ltd]
+* Fix cross-compile for MingW, Arm and RISC-V (#3752). [Miodrag Milanović]
+* Fix $unit as base package for other packages (#3755). [Ryszard Rozak, Antmicro Ltd]
+* Fix make jobserver with submakes (#3758). [Gus Smith]
+* Fix to escape VERILATOR_ROOT file paths (#3764) (#3765). [Jiacheng Qian]
+* Fix empty string literals converting to string types (#3774). [miree]
+* Fix to remove $date from .vcd files (#3779). [Larry Doolittle]
+* Fix missing user objects in --lib-create mode (#3780) (#3784). [Yinan Xu]
+* Fix non-blocking assignments in forks (#3781) (#3800). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix forks without any delayed statements (#3792) (#3801). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix internal error in bit op tree optimization (#3793). [Yutetsu TAKATSUKASA]
+* Fix lint_off EOFNEWLINE in .vlt files (#3796). [Andrew Nolte]
+* Fix wait 0.
+* Fix comparing ranged slices of unpacked arrays.
+
+
+Verilator 5.002 2022-10-29
+==========================
+
+**Major:**
+
+* This is a major new release.
+* Require C++20 for the new --timing features. Upgrading to a C++20 or
+  newer compiler is strongly recommended.
+* Support the Active and NBA scheduling regions as defined by the
+  SystemVerilog standard (IEEE 1800-2017 chapter 4). This means all generated
+  clocks are now simulated correctly (#3278, #3384). [Geza Lore, Shunyao CAD]
+* Support timing controls (delays, event controls in any location, wait
+  statements) and forks. [Krzysztof Bieganski, Antmicro Ltd]
+  This may require adding --timing or --no-timing. See docs for details.
+* Introduce a new combinational logic optimizer (DFG), that can yield
+  significant performance improvements on some designs. [Geza Lore, Shunyao CAD]
+* Add --binary option as alias of --main --exe --build --timing (#3625).
+  For designs where C++ was only used to make a simple no-I/O testbench, we
+  recommend abandoning that C++, and instead letting Verilator build it
+  with --binary (or --main).
+
+**Minor:**
+
+* Split UNUSED warning into genvar, param, and signal warnings (#3607). [Topa Topino]
+* Support standalone 'this' in classes (#2594) (#3248) (#3675). [Arkadiusz Kozdra, Antmicro Ltd]
+* Support tristate select/extend (#3604). [Ryszard Rozak, Antmicro Ltd>
+* Support linting for top module interfaces (#3635). [Kanad Kanhere]
+* Support virtual interfaces (#3654). [Arkadiusz Kozdra, Antmicro Ltd]
+* Support class type params without defaults (#3693). [Krzysztof Bieganski, Antmicro Ltd]
+* Support empty generate_regions (#3695). [mpb27]
+* Support access to constructs inside type parameters (#3702). [Arkadiusz Kozdra, Antmicro Ltd]
+* Add --dump-tree-dot to enable dumping Ast Tree .dot files (#3636). [Marcel Chang]
+* Add --get-supported to determine what features are in Verilator.
+* Add error on real edge event control.
+* Fix false LATCH warning on 'unique if' (#3088). [Rachit Nigam]
+* Fix cell assigning integer array parameters (#3299). [Michael Platzer]
+* Fix LSB error on --hierarchical submodules (#3539). [danbone]
+* Fix $display of fixed-width numbers (#3565). [Iztok Jeras]
+* Fix foreach and pre/post increment in functions (#3613). [Nandu Raj]
+* Fix linker errors in user-facing timing functions (#3657). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix null access on optimized-out fork statements (#3658). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix VPI inline module naming mismatch (#3690) (#3694). [Jiuyang Liu]
+* Fix deadlock in timeprecision when using SystemC (#3707). [Kamil Rakoczy, Antmicro Ltd]
+* Fix width mismatch on inside operator (#3714). [Àlex Torregrosa]
+
+
+Verilator 4.228 2022-10-01
+==========================
+
+**Announcement:**
+
+* The next release is anticipated to premiere Verilator Version 5.  Please
+  consider beta-testing the github 'develop-v5' branch, which will soon
+  merge into the github 'master' branch (#3383).
+
+**Minor:**
+
+* Support some IEEE signal strengths (#3601) (#3629). [Ryszard Rozak, Antmicro Ltd]
+* Add --main to generate main() C++ (previously was experimental only).
+* Add --build-jobs, and rework arguments for -j (#3623). [Kamil Rakoczy]
+* Rename --bin to --build-dep-bin.
+* Rename debug flags --dumpi-tree, --dumpi-graph, etc. [Geza Lore]
+* Fix thread safety in SystemC VL_ASSIGN_SBW/WSB (#3494) (#3513). [Mladen Slijepcevic]
+* Fix crash in gate optimization of circular logic (#3543). [Bill Flynn]
+* Fix arguments in non-static method call (#3547) (#3582). [Gustav Svensk]
+* Fix default --mod-prefix when --prefix is repeated (#3603). [Geza Lore]
+* Fix calling trace() after open() segfault (#3610) (#3627). [Yu-Sheng Lin]
+* Fix typedef'ed class conversion to Boolean (#3616). [Aleksander Kiryk]
+* Fix Verilation speed when disabled warnings (#3632). [Kamil Rakoczy, Antmicro Ltd]
+
+
+Verilator 4.226 2022-08-31
+==========================
+
+**Minor:**
+
+* Add --future0 and --future1 options.
+* Support class parameters (#2231) (#3541). [Arkadiusz Kozdra, Antmicro Ltd]
+* Support wildcard index associative arrays (#3501). [Arkadiusz Kozdra, Antmicro Ltd]
+* Support negated properties (#3572). [Aleksander Kiryk]
+* Support $test$plusargs(expr) (#3489).
+* Rename trace rolloverSize() (#3570).
+* Improve Verilation speed with --threads on large designs. [Geza Lore]
+* Improve Verilation memory by reducing V3Number (#3521). [Mariusz Glebocki, Antmicro Ltd]
+* Fix struct pattern assignment (#2328) (#3517). [Mostafa Gamal]
+* Fix public combo propagation issues (#2905). [Todd Strader]
+* Fix incorrect tristate logic (#3399) [shareefj, Vighnesh Iyer]
+* Fix incorrect bit op tree optimization (#3470). [algrobman]
+* Fix bisonpre for MSYS2 (#3471).
+* Fix max memory usage (#3483). [Kamil Rakoczy, Antmicro Ltd]
+* Fix empty string arguments to display (#3484). [Grulfen]
+* Fix table optimizing away display (#3488). [Stefan Post]
+* Fix unique_ptr memory header for MinGW64 (#3493).
+* Fix $dump system task with --output-split-cfuncs (#3495) (#3497). [Varun Koyyalagunta]
+* Fix wrong bit op tree optimization (#3509). [Nathan Graybeal]
+* Fix nested default assignment for struct pattern (#3511) (#3524). [Mostafa Gamal]
+* Fix sformat string incorrectly cleared (#3515) (#3519). [Gustav Svensk]
+* Fix segfault exporting non-existent package (#3535).
+* Fix void-cast queue pop_front or pop_back (#3542) (#3364). [Drew Ranck]
+* Fix case statement comparing string literal (#3544). [Gustav Svensk]
+* Fix === with some tristate constants (#3551). [Ryszard Rozak, Antmicro Ltd]
+* Fix converting classes to string (#3552). [Arkadiusz Kozdra, Antmicro Ltd]
+* Fix --hierarchical with order-based pin connections (#3583) (#3585). [Kelin9298]
+
+
+Verilator 4.224 2022-06-19
+==========================
+
+**Major:**
+
+* VCD tracing is now parallelized with --threads (#3449). [Geza Lore, Shunyao CAD]
+
+**Minor:**
+
+* Add -f<optimization> options to replace -O<letter> options (#3436).
+* Changed --no-merge-const-pool to -fno-merge-const-pool (#3436).
+* Changed --no-decoration to remove output whitespace (#3460). [Kamil Rakoczy]
+* Support compile time trace signal selection with tracing_on/off (#3323). [Shunyao CAD]
+* Support non-ANSI interface port declarations (#3439). [Geza Lore, Shunyao CAD]
+* Support concat assignment to packed array (#3446).
+* Improve conditional merging optimization (#3125). [Geza Lore, Shunyao CAD]
+* Define VM_TRACE_VCD when tracing in VCD format. [Geza Lore, Shunyao CAD]
+* Add assert when VerilatedContext is mis-deleted (#3121). [Rupert Swarbrick]
+* Internal prep work towards timing control. [Krzysztof Bieganski, Antmicro Ltd]
+* Fix hang with large case statement optimization (#3405). [Mike Urbach]
+* Fix UNOPTFLAT warning from initial static var (#3406). [Kamil Rakoczy]
+* Fix compile error when enable VL_LEAK_CHECKS (#3411). [HungMingWu]
+* Fix cmake rules to support higher-level targets (#3377) (#3386). [Martin Stadler]
+* Fix BLKANDNBLK on $readmem/$writemem (#3379). [Alex Solomatnikov]
+* Fix 'with' operator with type casting (#3387). [xiak95]
+* Fix incorrect conditional merging (#3409). [Raynard Qiao]
+* Fix passing VL_TRACE_FST_WRITER_THREAD in CMake build. [Geza Lore, Shunyao CAD]
+* Fix compile error under strict C++11 mode (#3463). [Kevin Kiningham]
+* Fix public unpacked input ports (#3465). [Todd Strader]
+
+
+Verilator 4.222 2022-05-02
+==========================
+
+**Minor:**
+
+* Split --prof-threads into --prof-exec and --prof-pgo (#3365). [Geza Lore, Shunyao CAD]
+* Deprecate 'vluint64_t' and similar types (#3255).
+* Raise error on assignment to const in initial blocks. [Geza Lore, Shunyao CAD]
+* Issue INITIALDLY/COMBDLY/BLKSEQ warnings consistent with Verilator execution. [Geza Lore, Shunyao CAD]
+* Support LoongArch ISA multithreading (#3353) (#3354). [Xi Zhang]
+* Fix MSVC localtime_s (#3124).
+* Fix Bison 3.8.2 error (#3366). [elike-ypq]
+* Fix rare bug in -Oz (V3Localize) (#3286). [Geza Lore, Shunyao CAD]
+* Fix tracing interfaces inside interfaces (#3309). [Kevin Millis]
+* Fix filenames with dots overwriting debug .vpp files (#3373).
+* Fix including VK_USER_OBJS in make library (#3370) (#3382). [Julien Margetts]
+* Fix hang in generate symbol references (#3391) (#3398). [Yoda Lee]
+* Fix missing #include <memory> (#3392). [Aliaksei Chapyzhenka]
+* Fix crash in recursive module inlining (#3393). [david-sawatzke]
+* Fix --protect-ids mangling names of library methods. [Geza Lore, Shunyao CAD]
+* Fix foreach segmentation fault (#3400). [Kamil Rakoczy]
+
+
+Verilator 4.220 2022-03-12
+==========================
+
+**Minor:**
+
+* Removed the deprecated lint_off flag -msg; use -rule instead.
+* Removed the deprecated "fl" attribute in XML output; use "loc" attribute instead.
+* Suppress WIDTH warning on negate using carry bit (#3295). [Peter Monsson]
+* Add trace dumpvars() call for selective runtime tracing (#3322). [Shunyao CAD]
+* Add VERILATOR_VERSION_INTEGER for determining API (#3343). [Larry Doolittle]
+* Improve various V3Combine algorithm details (#3328). [Yutetsu TAKATSUKASA]
+* Improve various V3Order algorithm details. [Geza Lore]
+* Fix MacOS arm64 build (#3285) (#3291). [Guokai Chen]
+* Fix signed number operation (#3294) (#3308). [Raynard Qiao]
+* Fix FST traces to include vector range (#3296) (#3297). [Jamie Iles]
+* Fix skipping public enum values with four-state values (#3303).
+* Fix $readmem file not found to be warning not error (#3310). [Alexander Grobman]
+* Fix class stringification on wide arrays (#3312). [Iru Cai]
+* Fix $fscanf etc to return -1 on EOF (#3313). [Jose Tejada]
+* Fix public function arguments that are arrayed (#3316). [pawel256]
+* Fix unnamedblk error on foreach (#3321). [Aliaksei Chapyzhenka]
+* Fix crash in recursive module inlining (#3324). [Larry Doolittle]
+* Fix VL_RESTORER behavior on passing a lvalue reference (#3326). [HungMingWu]
+* Fix compile error with --trace-fst --sc (#3332). [leavinel]
+* Fix cast to array types (#3333). [Todd Strader]
+* Fix Vdeeptemp error with --threads and --compiler clang (#3338). [Per Karlsson]
+
+
+Verilator 4.218 2022-01-17
+==========================
+
+**Major:**
+
+* Primary inputs and outputs (VL_INW/VL_OUTW) now use VlWide type.
+  In general this should be backward compatible, but may lead to some
+  wrapper code needing changes.
+* Option --cdc is deprecated and is planned for removal,
+  file a bug if this is still being used.
+
+**Minor:**
+
+* Support class static members (#2233).
+* Support force/release (#2431) (#2593). [Shunyao CAD]
+* Add 'forceable' attribute to allow forcing from C++. (#3272). [Geza Lore, Shunyao CAD]
+* Support lower dimension looping in foreach loops (#3172). [Ehab Ibrahim]
+* Support up to 64 bit enums for .next/.prev/.name (#3244). [Alexander Grobman]
+* Reduce .rodata footprint of trace initialization (#3250). [Geza Lore, Shunyao CAD]
+* Support FST tracing in hierarchical Verilation (#3251). [Yutetsu TAKATSUKASA]
+* Use C++11 standard types for MacOS portability (#3254) (#3257). [Adrien Le Masle]
+* Fix make support for BSD ar (#2999) (#3256). [Julie Schwartz]
+* Fix bad ending address on $readmem (#3205). [Julie Schwartz]
+* Fix MSWIN compile error (#2681). [Unai Martinez-Corral]
+* Fix break under foreach loop (#3230).
+* Fix VL_STREAML_FAST_QQI with 64 bit left-hand-side (#3232) (#3235). [Adrien Le Masle]
+* Fix $sformat of inputs/outputs (#3236). [Adrien Le Masle]
+* Fix associative array first method as statement (#3228). [Adrien Le Masle]
+* Fix associative array foreach loop (#3229).
+* Fix $fclose not accepting expressions (#3237). [Julie Schwartz]
+* Fix $random not updating seed (#3238). [Julie Schwartz]
+* Fix top level param overwrite when package has same param (#3241) (#3247). [Adrien Le Masle]
+* Fix spurious UNUSED by ignoring inout pin connections (#3242). [Julie Schwartz]
+* Fix splitting of _eval and other top level functions. [Geza Lore, Shunyao CAD]
+* Fix internal error by inout port (#3258). [Yutetsu TAKATSUKASA]
+* Fix GCC 11 compile error (#3273). [HungMingWu]
+
+
+Verilator 4.216 2021-12-05
+==========================
+
+**Major:**
+
+* Add --lib-create, similar to --protect-lib but without protections.
+* Support tracing through --hierarchical/--lib-create libraries (#3200).
+
+**Minor:**
+
+* Internal code cleanups and improvements. [Geza Lore]
+* Improve --thread Verilation-time performance.
+* Support task name in $display %m (#3211). [Julie Schwartz]
+* Make 'bit', 'logic' and 'time' types unsigned by default. [Geza Lore]
+* Optimize $random concatenates/selects (#3114).
+* Fix array method names with parenthesis (#3181) (#3183). [Teng Huang]
+* Fix split_var assign merging (#3177) (#3179). [Yutetsu TAKATSUKASA]
+* Fix wrong bit op tree optimization (#3185). [Yutetsu TAKATSUKASA]
+* Fix some SliceSels not being constants (#3186) (#3218). [Michaël Lefebvre]
+* Fix nested generate if genblk naming (#3189). [yanx21]
+* Fix hang on recursive definition error (#3199). [Jonathan Kimmitt]
+* Fix display of signed without format (#3204). [Julie Schwartz]
+* Fix display of empty string constant (#3207) (#3215). [Julie Schwartz]
+* Fix incorrect width after and-or optimization (#3208). [Julie Schwartz]
+* Fix $fopen etc on integer arrays (#3214). [adrienlemasle]
+* Fix $size on dynamic strings (#3216).
+* Fix %0 format on $value$plusargs (#3217).
+* Fix timescale portability on Arm64 (#3222).
+
+
+Verilator 4.214 2021-10-17
+==========================
+
+**Major:**
+
+* Add profile-guided optimization of mtasks (#3150).
+
+**Minor:**
+
+* Verilator_gantt has removed the ASCII graphics, use the VCD output instead.
+* Verilator_gantt now shows the predicted mtask times, eval times, and additional statistics.
+* Verilator_gantt data files now include processor information, to allow later processing.
+* Support displaying x and z in $display task (#3107) (#3109). [Iru Cai]
+* Fix verilator_profcfunc profile accounting (#3115).
+* Fix display has no time units on class function (#3116). [Damien Pretet]
+* Fix removing if statement with side effect in condition (#3131). [Alexander Grobman]
+* Fix --waiver-output for multiline warnings (#2429) (#3141). [Keith Colbert]
+* Fix internal error on bad widths (#3140) (#3145). [Zhanglei Wang]
+* Fix crash on clang 12/13 (#3148). [Kuoping Hsu]
+* Fix cygwin compile error due to missing -std=gnu++14 (#3149). [Sun Kim]
+* Fix $urandom_range when the range is 0 ... UINT_MAX (#3161). [Iru Cai]
+* Fix constructor-parameter argument comma-separation in C++ (#3162). [Matthew Ballance]
+* Fix missing install of vl_file_copy/vl_hier_graph (#3165). [Popolon]
+* Fix calling new with arguments in same class (#3166). [Matthew Ballance]
+* Fix false EOFNEWLINE warning when DOS carriage returns present (#3171).
+
+
+Verilator 4.212 2021-09-01
+==========================
+
+**Minor:**
+
+* Fix re-evaluation of logic dependent on state set in DPI exports (#3091). [Geza Lore]
+* Support unpacked array localparams in tasks/functions (#3078). [Geza Lore]
+* Support timeunit/timeprecision in $unit.
+* Support assignment patterns as children of pins (#3041). [Krzysztof Bieganski, Antmicro Ltd]
+* Add --instr-count-dpi to tune assumed DPI import cost for multithreaded
+  model scheduling. Default value changed to 200 (#3068). [Yinan Xu]
+* Output files are split based on the set of headers required
+  in order to aid incremental compilation via ccache (#3071). [Geza Lore]
+* Parameter values are now emitted as 'static constexpr' instead of enum.
+  C++ direct references to parameters might require updating (#3077). [Geza Lore]
+* Refactored Verilated include files; include verilated.h not verilated_heavy.h.
+* Add header guards on Dpi.h generated files (#2979). [Tood Strader]
+* Add XML ccall, constpool, initarray, and if/while begins (#3080). [Steven Hugg]
+* Add error when constant function under a generate (#3103). [Don Owen]
+* Fix -G to treat simple integer literals as signed (#3060). [Anikin1610]
+* Fix emitted string array initializers (#2895). [Iztok Jeras]
+* Fix bitop tree optimization dropping necessary & operator (#3096). [Flavien Solt]
+* Fix internal error on wide -x-initial unique (#3106). [Alexandre Joannou]
+* Fix traces to show array instances with brackets (#3092) (#3095). [Pieter Kapsenberg]
+
+
+Verilator 4.210 2021-07-07
+==========================
+
+**Major:**
+
+* Generated code is now emitted as global functions rather than methods. '$c'
+  contents might need to be updated, see the docs (#3006). [Geza Lore]
+* The generated model class instantiated by the user is now an interface
+  object and no longer the TOP module instance.  User code with direct
+  C++ member access to model internals, including verilator public_flat
+  items will likely need to be updated. See the manual for instructions:
+  https://verilator.org/guide/latest/connecting.html#porting-from-pre-4-210
+  (#3036). [Geza Lore]
+
+**Minor:**
+
+* Add --prof-c to pass profiling to compiler (#3059). [Alexander Grobman]
+* Optimize a lot more model variables into function locals (#3027). [Geza Lore]
+* Support middle-of-design nested top modules (#3026). [Dan Petrisko]
+* Remove deprecated --no-relative-cfuncs option (#3024). [Geza Lore]
+* Remove deprecated --inhibit-sim option (#3035). [Geza Lore]
+* Merge const static data globally into a new constant pool (#3013). [Geza Lore]
+* Allow configure override of AR program (#2999). [ahouska]
+* In XML, show pinIndex information (#2877). [errae233]
+* Fix error on unsupported recursive functions (#2957). [Trefor Southwell]
+* Fix type parameter specialization when struct names are same (#3055). [7FM]
+* Improve speed of table optimization (-OA) pass. [Geza Lore]
+
+
+Verilator 4.204 2021-06-12
+==========================
+
+**Minor:**
+
+* Add 'make ccache-report' (#3011). [Geza Lore]
+* Add --reloop-limit argument (#2943) (#2960). [Geza Lore]
+* Add --expand-limit argument (#3005). [Julien Margetts]
+* Add TRACE_THREADS to CMake (#2934). [Jonathan Drolet]
+* Optimize large lookup tables to static data (#2925). [Geza Lore]
+* Optimize reloop to accept constant index offsets (#2939). [Geza Lore]
+* Split always blocks to better respect --output-split-cfuncs. [Geza Lore]
+* Support ignoring "`pragma protect ..." (#2886). [Udi Finkelstein]
+* Support --trace-fst for SystemC with CMake (#2927). [Jonathan Drolet]
+* Update cmake latest C++ Standard Compilation flag (#2951). [Ameya Vikram Singh]
+* Prep work towards better ccache hashing/performance. [Geza Lore]
+* Fix assertion failure in bitOpTree optimization (#2891) (#2899). [Raynard Qiao]
+* Fix DPI functions not seen as vpiModule (#2893). [Todd Strader]
+* Fix bounds check in VL_SEL_IWII (#2910). [Krzysztof Bieganski, Antmicro Ltd]
+* Fix slowdown in elaboration (#2911). [Nathan Graybeal]
+* Fix initialization of assoc in assoc array (#2914). [myftptoyman]
+* Fix make support for gmake 3.x (#2920) (#2921). [Philipp Wagner]
+* Fix VPI memory access for packed arrays (#2922). [Todd Strader]
+* Fix MCD close also closing stdout (#2931). [Alexander Grobman]
+* Fix split procedures to better respect --output-split-cfuncs (#2942). [Geza Lore]
+* Fix to emit 'else if' without nesting (#2944). [Geza Lore]
+* Fix part select issues in LATCH warning (#2948) (#2938). [Julien Margetts]
+* Fix to not emit empty files with low split limits (#2961). [Geza Lore]
+* Fix merging of assignments in C++ code (#2970). [Rupert Swarbrick]
+* Fix unused variable warnings (#2991). [Pieter Kapsenberg]
+* Fix --protect-ids when using SV classes (#2994). [Geza Lore]
+* Fix constant function calls with uninitialized value (#2995). [yanx21]
+* Fix Makefiles to support Windows EXEEXT usage (#3008). [Miodrag Milanovic]
+
+
 Verilator 4.202 2021-04-24
 ==========================
 
@@ -24,12 +1074,12 @@ Verilator 4.202 2021-04-24
 * Mark --no-relative-cfuncs as scheduled for deprecation.
 * Add --coverage-max-width (#2853). [xuejiazidi]
 * Add VerilatedCovContext::forcePerInstance (#2793). [Kevin Laeufer]
-* Add FST SystemC tracing (#2806). [Alex Torregrosa]
+* Add FST SystemC tracing (#2806). [Àlex Torregrosa]
 * Add PINNOTFOUND warning in place of error (#2868). [Udi Finkelstein]
 * Support overlaps in priority case statements (#2864). [Rupert Swarbrick]
 * Support for null ports (#2875). [Udi Finkelstein]
 * Fix class unpacked-array compile error (#2774). [Iru Cai]
-* Fix scope types in FST and VCD traces (#2805). [Alex Torregrosa]
+* Fix scope types in FST and VCD traces (#2805). [Àlex Torregrosa]
 * Fix exceeding command-line ar limit (#2834). [Yinan Xu]
 * Fix false $dumpfile warning on model save (#2834). [Yinan Xu]
 * Fix --timescale-override not suppressing TIMESCALEMOD (#2838). [Kaleb Barrett]
@@ -42,7 +1092,7 @@ Verilator 4.202 2021-04-24
 * Fix Cygwin example compile issues (#2856). [Mark Shaw]
 * Fix select of with index variable (#2880). [Alexander Grobman]
 * Fix cmake version number to be numeric (#2881). [Yuri Victorovich]
-* Fix MinGW not supportting 'localtime_r' (#2882). [HyungKi Jeong]
+* Fix MinGW not supporting 'localtime_r' (#2882). [HyungKi Jeong]
 * Fix cast from packed, typedef'ed interface signal (#2884). [Todd Strader]
 * Fix VPI package reported as vpiModule (#2885). [Todd Strader]
 * Fix dumping waveforms to multiple FST files (#2889). [David Metz]
@@ -86,7 +1136,7 @@ Verilator 4.110 2021-02-25
 **Minor:**
 
 * Support concat selection (#2721).
-* Support struct scopes when dumping structs to VCD (#2776) [Alex Torregrosa]
+* Support struct scopes when dumping structs to VCD (#2776) [Àlex Torregrosa]
 * Generate SELRANGE for potentially unreachable code (#2625) (#2754) [Pierre-Henri Horrein]
 * For --flatten, override inlining of public and no_inline modules (#2761) [James Hanlon]
 * Fix little endian interface pin swizzling (#2475). [Don Owen]
@@ -97,7 +1147,7 @@ Verilator 4.110 2021-02-25
 * Fix class extends with VM_PARALLEL_BUILDS (#2775). [Iru Cai]
 * Fix shifts by > 32 bit values (#2785). [qrq992]
 * Fix examples not flushing vcd (#2787). [Richard E George]
-* Fix little endian packed array pattern assignment (#2795). [Alex Torregrosa]
+* Fix little endian packed array pattern assignment (#2795). [Àlex Torregrosa]
 
 
 Verilator 4.108 2021-01-10
@@ -106,7 +1156,7 @@ Verilator 4.108 2021-01-10
 **Major:**
 
 * Many VPI changes for IEEE compatibility, which may alter behavior from previous releases.
-* Support randomize() class method and rand (#2607). [Krzysztof Bieganski]
+* Support randomize() class method and rand (#2607). [Krzysztof Bieganski, Antmicro Ltd]
 
 **Minor:**
 
@@ -166,7 +1216,7 @@ Verilator 4.104 2020-11-14
 * Support queue and associative array 'with' statements (#2616).
 * Support queue slicing (#2326).
 * Support associative array pattern assignments and defaults.
-* Support static methods and typedefs in classes (#2615). [Krzysztof Bieganski]
+* Support static methods and typedefs in classes (#2615). [Krzysztof Bieganski, Antmicro Ltd]
 * Add error on typedef referencing self (#2539). [Cody Piersall]
 * With --debug, turn off address space layout randomization.
 * Fix iteration over mutating list bug in VPI (#2588). [Kaleb Barrett]
@@ -189,7 +1239,7 @@ Verilator 4.102 2020-10-15
 * Support # as a comment in -f files (#2497). [phantom-killua]
 * Support 'this' (#2585). [Rafal Kapuscik]
 * Support defines for FST tracing (#2592). [Markus Krause]
-* Support non-overapping implication inside properties (#1292). [Peter Monsson]
+* Support non-overlapping implication inside properties (#1292). [Peter Monsson]
 * Fix timescale with --hierarchical (#2554). [Yutetsu TAKATSUKASA]
 * Fix cmake build with --hierarchical (#2560). [Yutetsu TAKATSUKASA]
 * Fix -G dropping public indication (#2561). [Andrew Goessling]
@@ -215,7 +1265,7 @@ Verilator 4.100 2020-09-07
 * Support (with limitations) class extern, class extends, virtual class.
 * Support $urandom, $urandom_range without stability.
 * Support assume property. [Peter Monsson]
-* Support non-overapping implication inside properties (#1292). [Peter Monsson]
+* Support non-overlapping implication inside properties (#1292). [Peter Monsson]
 * Fix false DECLFILENAME on black-boxed modules (#2430). [Philipp Wagner]
 * Fix naming of "id : begin" blocks.
 * Fix class constructor error on assignments to const.
@@ -331,7 +1381,7 @@ Verilator 4.034 2020-05-03
 * Support event data type (with some restrictions).
 * Support $root. (#2150) [Keyi Zhang]
 * Add error if use SystemC 2.2 and earlier (pre-2011) as is deprecated.
-* Fix build of fast path tracing code to use OPT_FAST. (#2245) [Geza Lore]
+* Add support of --trace-structs for CMake (#2986). [Martin Schmidt]
 * Fix arrayed instances connecting to slices. (#2263) [Don/engr248]
 * Fix error on unpacked connecting to packed. (#2288) [Joseph Shaker]
 * Fix logical not optimization with empty begin. (#2291) [Baltazar Ortiz]
@@ -573,7 +1623,7 @@ Verilator 4.014 2019-05-08
 **Minor:**
 
 * Add --trace-fst-thread.
-* Support '#' comments in $readmem. (#1411) [Frederick Requin]
+* Support '#' comments in $readmem. (#1411) [Frédéric Requin]
 * Support "'dx" constants. (#1423) [Udi Finkelstein]
 * For FST tracing use LZ4 compression. [Tony Bybell]
 * Add error when use parameters without value. (#1424) [Peter Gerst]
@@ -843,19 +1893,19 @@ Verilator 3.912 2017-09-23
 
 **Minor:**
 
-* Support or/and/xor array intrinsic methods. (#1210) [Mike Popoloski]
+* Support or/and/xor array intrinsic methods. (#1210) [Michael Popoloski]
 * Support package export. (#1217) [Usuario Eda]
-* Support module port parameters without defaults. (#1213) [Mike Popoloski]
+* Support module port parameters without defaults. (#1213) [Michael Popoloski]
 * Add performance information to --stats file.
 * Simplify VL_CONST_W macro generation for faster compiles.
 * Optimize improvements for Shift-And, and replication constructs.
-* Fix ordering of arrayed cell wide connections. (#1202 partial) [Mike Popoloski]
-* Fix LITENDIAN warning on arrayed cells. (#1202) [Mike Popoloski]
-* Fix enum ranges without colons. (#1204) [Mike Popoloski]
-* Fix GCC noreturn compile error. (#1209) [Mike Popoloski]
-* Fix constant function default parameters. (#1211) [Mike Popoloski]
-* Fix non-colon array of interface modports. (#1212) [Mike Popoloski]
-* Fix .name connections on interfaces. (#1214) [Mike Popoloski]
+* Fix ordering of arrayed cell wide connections. (#1202 partial) [Michael Popoloski]
+* Fix LITENDIAN warning on arrayed cells. (#1202) [Michael Popoloski]
+* Fix enum ranges without colons. (#1204) [Michael Popoloski]
+* Fix GCC noreturn compile error. (#1209) [Michael Popoloski]
+* Fix constant function default parameters. (#1211) [Michael Popoloski]
+* Fix non-colon array of interface modports. (#1212) [Michael Popoloski]
+* Fix .name connections on interfaces. (#1214) [Michael Popoloski]
 * Fix wide array indices causing compile error.
 
 
@@ -977,8 +2027,8 @@ Verilator 3.888 2016-10-14
 
 **Minor:**
 
-* Add --no-decoration to remove output comments, msg2015. [Frederic Requin]
-* If VM_PARALLEL_BUILDS=1, use OPT_FAST and OPT_SLOW. [Frederic Requin]
+* Add --no-decoration to remove output comments, msg2015. [Frédéric Requin]
+* If VM_PARALLEL_BUILDS=1, use OPT_FAST and OPT_SLOW. [Frédéric Requin]
   Set VM_DEFAULT_RULES=0 for old behavior.
 * Add error on DPI functions > 32 bits. (#1898) [Elliot Mednick]
 * Improve Verilation performance on internal strings. (#1896) [Johan Bjork]
@@ -1014,7 +2064,7 @@ Verilator 3.884 2016-05-18
 * Fix --output-split of constructors. (#1035) [Johan Bjork]
 * Fix removal of empty packages, modules and cells. (#1034) [Johan Bjork]
 * Fix core dump on Arch Linux/GCC 6.1.1. (#1058) [Jannis Harder]
-* Fix $value$plusargs to string. (#1880) [Frederic Requin]
+* Fix $value$plusargs to string. (#1880) [Frédéric Requin]
 
 
 Verilator 3.882 2016-03-01
@@ -1093,13 +2143,13 @@ Verilator 3.876 2015-08-12
 
 **Minor:**
 
-* Add tracing_on, etc to vlt files. (#932) [Frederic Requin]
+* Add tracing_on, etc to vlt files. (#932) [Frédéric Requin]
 * Support extraction of enum bits. (#951) [Jonathon Donaldson]
 * Fix MinGW compiler error. (#927) (#929) [Hans Tichelaar]
 * Fix .c files to be treated as .cpp. (#930) [Jonathon Donaldson]
 * Fix string-to-int space conversion. (#931) [Fabrizio Ferrandi]
 * Fix dpi imports inside generates. [Michael Tresidder]
-* Fix rounding in trace $timescale. (#946) [Frederic Requin]
+* Fix rounding in trace $timescale. (#946) [Frédéric Requin]
 * Fix $fopen with SV string. (#947) [Sven Stucki]
 * Fix hashed error with typedef inside block. (#948) [Sven Stucki]
 * Fix makefile with --coverage. (#953) [Eivind Liland]
@@ -1339,7 +2389,7 @@ Verilator 3.852 2013-09-29
 
 * Support named function and task arguments. [Chris Randall]
 * Report SELRANGE warning for non-generate if. (#675) [Roland Kruse]
-* Fix ordering of $fgetc. (#1808) [Frederic Requin]
+* Fix ordering of $fgetc. (#1808) [Frédéric Requin]
 * Fix --output-split-cfunc to count internal functions. [Chris Randall]
 * Fix crash on 32-bit Ubuntu. (#670) [Mark Jackson Pulver]
 
@@ -1407,7 +2457,7 @@ Verilator 3.846 2013-03-09
 * Fix DETECTARRAY on packed structures. (#610) [Jeremy Bennett]
 * Fix LITENDIAN on unpacked structures. (#614) [Wai Sum Mong]
 * Fix 32-bit OS VPI scan issue. (#615)  [Jeremy Bennett, Rich Porter]
-* Fix opening a VerilatedVcdC file multiple times. (#1774) [Frederic Requin]
+* Fix opening a VerilatedVcdC file multiple times. (#1774) [Frédéric Requin]
 * Fix UNOPTFLAT circular array bounds crossing. (#630) [Jie Xu]
 
 
@@ -2590,7 +3640,7 @@ Verilator 3.502 2005-11-30 Stable
 
 * Fix local non-IO variables in public functions and tasks.
 * Fix bad lifetime optimization when same signal is assigned multiple
-  times in both branch of a if. [Danny Ding]
+  times in both branch of an if. [Danny Ding]
 
 
 Verilator 3.501 2005-11-16 Stable
@@ -2719,7 +3769,7 @@ Verilator 3.460 2005-07-27 Beta
 * Fix false warning when a clock is constant.
 * Fix X/Z in decimal numbers. [Wim Michiels]
 * Fix genvar statements in non-named generate blocks.
-* Fix core dump when missing newline in `define. [David van der bokke]
+* Fix core dump when missing newline in `define. [David van der Bokke]
 
 
 Verilator 3.450 2005-07-12
@@ -2730,8 +3780,8 @@ Verilator 3.450 2005-07-12
 * $finish will no longer exit, but set Verilated::gotFinish().
   This enables support for final statements, and for other cleanup code.
   If this is undesired, redefine the vl_user_finish routine. Top level
-  loops should use Verilated::gotFinish() as a exit condition for their
-  loop, and then call top->final(). To prevent a infinite loop, a double
+  loops should use Verilated::gotFinish() as an exit condition for their
+  loop, and then call top->final(). To prevent an infinite loop, a double
   $finish will still exit; this may be removed in future releases.
 * Support SystemVerilog keywords $bits, $countones, $isunknown,
   $onehot, $onehot0, always_comb, always_ff, always_latch, finish.
@@ -3132,7 +4182,7 @@ Verilator 3.201-beta 2003-12-10
 **Major:**
 
 * BETA VERSION, USE 3.124 for stable release!
-* Version 3.2XX includes a all new back-end.
+* Version 3.2XX includes an all new back-end.
   This includes automatic inlining, flattening of signals between
   hierarchy, and complete ordering of statements. This results in
   60-300% execution speedups, though less pretty C++ output. Even
@@ -3161,7 +4211,7 @@ Verilator 3.124 2003-12-05
 
 **Major:**
 
-* A optimized executable will be made by default, in addition to a debug
+* An optimized executable will be made by default, in addition to a debug
   executable. Invoking Verilator with --debug will pick the debug version.
 
 **Minor:**
@@ -3615,7 +4665,7 @@ Verilator 0.0 1994-07-08
 Copyright
 =========
 
-Copyright 2001-2021 by Wilson Snyder. This program is free software; you
+Copyright 2001-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

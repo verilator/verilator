@@ -15,6 +15,7 @@ endclass : Cls
 
 module t (/*AUTOARG*/);
    initial begin
+     int tmp_i;
       Cls c;
       if (c != null) $stop;
       c = new;
@@ -24,6 +25,9 @@ module t (/*AUTOARG*/);
       if (c.get_methoda() != 20) $stop;
       c.setv_methoda(30);
       if (c.get_methoda() != 30) $stop;
+      c.setv_methoda(300);
+      tmp_i = c.get_methoda;
+      if (tmp_i != 300) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end

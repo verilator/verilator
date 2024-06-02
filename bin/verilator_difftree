@@ -1,233 +1,136 @@
-#!/usr/bin/env perl
-# See copyright, etc in below POD section.
+#!/usr/bin/env python3
+# pylint: disable=C0103,C0114,C0116,C0209
 ######################################################################
 
-use warnings;
-use Getopt::Long;
-use IO::File;
-use Pod::Usage;
-use strict;
-use vars qw($Debug);
+import argparse
+import collections
+import glob
+import os.path
+import re
+import sys
 
-#======================================================================
-# main
 
-$Debug = 0;
-my $Opt_A;
-my $Opt_B;
-my $Opt_Lineno = 1;
-autoflush STDOUT 1;
-autoflush STDERR 1;
-Getopt::Long::config("no_auto_abbrev");
-if (! GetOptions(
-          "help"        => \&usage,
-          "debug"       => \&debug,
-          "<>"          => \&parameter,
-          "lineno!"     => \$Opt_Lineno,
-    )) {
-    die "%Error: Bad usage, try 'verilator_difftree --help'\n";
-}
+def diff(a, b):
 
-defined $Opt_A or die "%Error: No old diff filename\n";
-defined $Opt_B or die "%Error: No new diff filename\n";
+    if not os.path.exists(a):
+        sys.exit("%Error: No old diff filename found: " + a)
+    if not os.path.exists(b):
+        sys.exit("%Error: No new diff filename found: " + b)
 
--e $Opt_A or die "%Error: No old diff filename found: $Opt_A\n";
--e $Opt_B or die "%Error: No new diff filename found: $Opt_B\n";
+    if os.path.isdir(a) and os.path.isdir(b):
+        diff_dir(a, b)
+    elif os.path.isfile(a) and os.path.isfile(b):
+        diff_file(a, b)
+    else:
+        sys.exit("%Error: Mix of files and dirs")
 
-if (-d $Opt_A && -d $Opt_B) {
-    diff_dir($Opt_A, $Opt_B);
-} elsif (-f $Opt_A && -f $Opt_B) {
-    diff_file($Opt_A, $Opt_B);
-} else {
-    die "%Error: Mix of files and dirs\n";
-}
 
-sub diff_dir {
-    my $a = shift;
-    my $b = shift;
+def diff_dir(a, b):
     # Diff all files under two directories
-    my %files;
+    files = collections.defaultdict(lambda: {})
 
-    foreach my $fn (glob("$a/*.tree")) {
-        (my $base = $fn) =~ s!.*/!!;
-        $files{$base}{a} = $fn;
-    }
-    foreach my $fn (glob("$b/*.tree")) {
-        (my $base = $fn) =~ s!.*/!!;
-        $files{$base}{b} = $fn;
-    }
-    my $any;
-    foreach my $base (sort (keys %files)) {
-        my $a = $files{$base}{a};
-        my $b = $files{$base}{b};
-        next if !$a || !$b;
-        print "="x70,"\n";
-        print "= $a <-> $b\n";
-        diff_file($a,$b);
-        $any = 1;
-    }
-    $any or warn("%Warning: No .tree files found that have similar base names:\n    "
-                 .join("\n    ", sort keys %files),"\n");
-}
+    for fn in glob.glob(a + "/*.tree"):
+        base = re.sub(r'.*/', '', fn)
+        files[base]['a'] = fn
+    for fn in glob.glob(b + "/*.tree"):
+        base = re.sub(r'.*/', '', fn)
+        files[base]['b'] = fn
 
-sub diff_file {
-    my $a = shift;
-    my $b = shift;
+    anyfile = False
+    for base in sorted(files.keys()):
+        if ('a' not in files[base]) or ('b' not in files[base]):
+            continue
+        a = files[base]['a']
+        b = files[base]['b']
+        print("=" * 70, flush=True)
+        print("= %s <-> %s" % (a, b), flush=True)
+        diff_file(a, b)
+        anyfile = True
+    if not anyfile:
+        sys.stderr.write(
+            "%Warning: No .tree files found that have similar base names\n")
+
+
+def diff_file(a, b):
     # Compare the two tree files
-    (my $short_a = $a) =~ s/[^a-zA-Z0-9.]+/_/g;
-    (my $short_b = $b) =~ s/[^a-zA-Z0-9.]+/_/g;
-    my $tmp_a = "/tmp/${$}_${short_a}.a";
-    my $tmp_b = "/tmp/${$}_${short_b}.b";
+    short_a = re.sub(r'[^a-zA-Z0-9.]+', '_', a)
+    short_b = re.sub(r'[^a-zA-Z0-9.]+', '_', b)
+    tmp_a = "/tmp/%s_%s.a" % (os.getpid(), short_a)
+    tmp_b = "/tmp/%s_%s.b" % (os.getpid(), short_b)
 
-    my $vera = version_from($a);
-    my $verb = version_from($b);
-    my $verCvt = (($vera < 0x3900 && $verb >= 0x3900)
-                  || ($vera >= 0x3900 && $verb < 0x3900));
+    # Version conversion deprecated, but for future...
+    # vera = version_from(a)
+    # verb = version_from(b)
+    # verCvt = ((vera < 0x3900 and verb >= 0x3900)
+    #            or (vera >= 0x3900 and verb < 0x3900))
 
-    filter($a, $tmp_a, $verCvt);
-    filter($b, $tmp_b, $verCvt);
-    system("diff -u $tmp_a $tmp_b");
-    unlink $tmp_a;
-    unlink $tmp_b;
-}
+    filterf(a, tmp_a)
+    filterf(b, tmp_b)
+    os.system("diff -u " + tmp_a + " " + tmp_b)
+    os.unlink(tmp_a)
+    os.unlink(tmp_b)
 
-sub version_from {
-    my $fn = shift;
+
+def version_from(filename):
     # Return dump format
-    my $f1 = IO::File->new ($fn) or die "%Error: $! $fn,";
-    while (defined (my $line=$f1->getline())) {
-        last if $. > 10;
-        return hex $1 if $line =~ /\(format (0x[0-9.]+)\)/;
-    }
-    return 1.0;
-}
+    with open(filename, "r", encoding="utf8") as fh:
+        lineno = 0
+        for line in fh:
+            if lineno > 10:
+                break
+            match = re.search(r'format (0x[0-9.]+)', line)
+            if match:
+                return hex(match.group(1))
+    return 1.0
 
-sub filter {
-    my $fn1 = shift;
-    my $fn2 = shift;
-    my $verCvt = shift;
+
+def filterf(fn1, fn2):
     # Remove hex numbers before diffing
-    my $f1 = IO::File->new ($fn1) or die "%Error: $! $fn1,";
-    my $f2 = IO::File->new ($fn2,"w") or die "%Error: $! $fn2,";
-    while (defined (my $line=$f1->getline())) {
-      same_line:
-        next if $line =~ / This=/;
-        $line =~ s/0x[a-f0-9]+/0x/g;
-        $line =~ s/<e[0-9]+\#?>/<e>/g;
-        $line =~ s/{[a-z]*\d+}/{}/g if !$Opt_Lineno;
-        if ($verCvt) {
-            next if $line =~ /^     NETLIST/;
-            if ($line =~ /: ([A-Z]+) /) {
-                my $type = $1;
-                next if $type =~ 'DTYPE';
-                if ($type eq 'TYPETABLE' || $type eq 'RANGE') {
-                    $line =~ /^(\s+\S+:) /; my $prefix = $1;
-                    while (defined ($line=$f1->getline())) {
-                        next if $line =~ /^\s+[a-z]/;  # Table body
-                        next if $line =~ /^${prefix}[0-9]:/;
-                        goto same_line;
-                    }
-                    next;
-                }
-            }
-        }
-        print $f2 $line;
-    }
-    $f1->close;
-    $f2->close;
-}
+    with open(fn1, "r", encoding="utf8") as fh1:
+        with open(fn2, "w", encoding="utf8") as fh2:
+            for line in fh1:
+                if re.search(r' This=', line):
+                    continue
+                line = re.sub(r'0x[a-f0-9]+', '0x', line)
+                line = re.sub(r'<e[0-9]+\#?>', '<e>', line)
+                if not Args.no_lineno:
+                    line = re.sub(r'{[a-z]*\d+}', '{}', line)
+                fh2.write(line)
 
-#----------------------------------------------------------------------
 
-sub usage {
-    pod2usage(-verbose=>2, -exitval=>0, -output=>\*STDOUT);
-    exit(1);  # Unreachable
-}
+######################################################################
+######################################################################
 
-sub debug {
-    $Debug = 1;
-}
+parser = argparse.ArgumentParser(
+    allow_abbrev=False,
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description="""Compare two Verilator debugging trees.
 
-sub parameter {
-    my $param = shift;
-    if (!defined $Opt_A) {
-        $Opt_A = $param;
-    } elsif (!defined $Opt_B) {
-        $Opt_B = $param;
-    } else {
-        die "%Error: Unknown parameter: $param\n";
-    }
-}
-
-#######################################################################
-
-sub run {
-    # Run a system command, check errors
-    my $command = shift;
-    print "\t$command\n";
-    system "$command";
-    my $status = $?;
-    ($status == 0) or die "%Error: Command Failed $command, $status, stopped";
-}
-
-#######################################################################
-__END__
-
-=pod
-
-=head1 NAME
-
-verilator_difftree - Compare two Verilator debugging trees
-
-=head1 SYNOPSIS
-
-  verilator_difftree .../a/a.tree  .../b/a.tree
-  verilator_difftree .../a         .../b
-
-=head1 DESCRIPTION
-
-Verilator_difftree is used for debugging Verilator tree output files.  It
-performs a diff between two files, or all files common between two
-directories, ignoring irrelevant pointer differences.
-
-=head1 ARGUMENTS
-
-=over 4
-
-=item --help
-
-Displays this message and program version and exits.
-
-=item --nolineno
-
-Do not show differences in line numbering.
-
-=back
-
-=head1 DISTRIBUTION
-
-The latest version is available from L<https://verilator.org>.
-
-Copyright 2005-2021 by Wilson Snyder. This program is free software; you
+Verilator_difftree is used for debugging Verilator tree output files.
+It performs a diff between two files, or all files common between two
+directories, ignoring irrelevant pointer differences.""",
+    epilog=
+    """Copyright 2005-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
 
-SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
 
-=head1 AUTHORS
+parser.add_argument('--debug',
+                    action='store_const',
+                    const=9,
+                    help='enable debug')
+parser.add_argument('--no-lineno',
+                    action='store_false',
+                    help='do not show differences in line numbering')
+parser.add_argument('filea', help='input file a to diff')
+parser.add_argument('fileb', help='input file b to diff')
 
-Wilson Snyder <wsnyder@wsnyder.org>
-
-=head1 SEE ALSO
-
-C<verilator>
-
-and L<https://verilator.org/verilator_doc.html> for detailed documentation.
-
-=cut
+Args = parser.parse_args()
+diff(Args.filea, Args.fileb)
 
 ######################################################################
-### Local Variables:
-### compile-command: "$V4/bin/verilator_difftree  {$V4D,$V4}/test_regress/obj_dir/t_EXAMPLE/V*_03_*.tree"
-### End:
+# Local Variables:
+# compile-command: "./verilator_difftree ../test_regress/t/t_difftree.{a,b}.tree"
+# End:

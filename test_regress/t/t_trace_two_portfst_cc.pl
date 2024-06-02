@@ -17,8 +17,13 @@ compile(
     make_main => 0,
     verilator_make_gmake => 0,
     top_filename => 't_trace_two_b.v',
-    VM_PREFIX => 'Vt_trace_two_b',
+    vm_prefix => 'Vt_trace_two_b',
     verilator_flags2 => ['--trace-fst --trace-threads 1'],
+    );
+
+run(
+    logfile => "$Self->{obj_dir}/make_first_ALL.log",
+    cmd => ["make", "-C", "$Self->{obj_dir}", "-f", "Vt_trace_two_b.mk", "Vt_trace_two_b__ALL.cpp"]
     );
 
 compile(

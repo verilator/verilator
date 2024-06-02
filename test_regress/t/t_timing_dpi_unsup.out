@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_timing_dpi_unsup.v:28:19: Unsupported: Timing controls inside DPI-exported tasks
+   28 |         repeat(n) @(negedge clk);
+      |                   ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

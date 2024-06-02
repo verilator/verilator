@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 ######################################################################
 #
-# Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -30,7 +30,7 @@ $Debug = 0;
 
 # No arguments can't do anything useful.  Give help
 if ($#ARGV < 0) {
-    pod2usage(-exitstatus=>2, -verbose=>0);
+    pod2usage(-exitstatus => 2, -verbose => 0);
 }
 
 # We sneak a look at the flags so we can do some pre-environment checks
@@ -40,7 +40,7 @@ foreach my $sw (@ARGV) {
     push @Opt_Verilator_Sw, $sw;
 }
 
-Getopt::Long::config("no_auto_abbrev","pass_through");
+Getopt::Long::config("no_auto_abbrev", "pass_through");
 if (! GetOptions (
           # Major operating modes
           "help"        => \&usage,
@@ -49,23 +49,23 @@ if (! GetOptions (
           # Additional parameters
           "<>"          => sub {},      # Ignored
     )) {
-    pod2usage(-exitstatus=>2, -verbose=>0);
+    pod2usage(-exitstatus => 2, -verbose => 0);
 }
 
 # Normal, non gdb
 run(verilator_coverage_bin()
-    ." ".join(' ',@Opt_Verilator_Sw));
+    . " " . join(' ', @Opt_Verilator_Sw));
 
 #----------------------------------------------------------------------
 
 sub usage {
-    pod2usage(-verbose=>2, -exitval=>0, -output=>\*STDOUT);
+    pod2usage(-verbose => 2, -exitval => 0, -output => \*STDOUT);
 }
 
 sub debug {
     shift;
     my $level = shift;
-    $Debug = $level||3;
+    $Debug = $level || 3;
 }
 
 #######################################################################
@@ -107,7 +107,7 @@ sub run {
     # Run command, check errors
     my $command = shift;
     $! = undef;  # Cleanup -x
-    print "\t$command\n" if $Debug>=3;
+    print "\t$command\n" if $Debug >= 3;
     system($command);
     my $status = $?;
     if ($status) {
@@ -115,11 +115,11 @@ sub run {
             warn "%Error: verilator_coverage: Misinstalled, or VERILATOR_ROOT might need to be in environment\n";
         }
         if ($Debug) {  # For easy rerunning
-            warn "%Error: export VERILATOR_ROOT=".($ENV{VERILATOR_ROOT}||"")."\n";
+            warn "%Error: export VERILATOR_ROOT=" . ($ENV{VERILATOR_ROOT} || "") . "\n";
             warn "%Error: $command\n";
         }
         if ($status & 127) {
-            if (($status & 127) == 8 || ($status & 127) == 11) { # SIGFPA or SIGSEGV
+            if (($status & 127) == 8 || ($status & 127) == 11) {  # SIGFPA or SIGSEGV
                 warn "%Error: Verilator_coverage internal fault, sorry.\n" if !$Debug;
             } elsif (($status & 127) == 6) {  # SIGABRT
                 warn "%Error: Verilator_coverage aborted.\n" if !$Debug;
@@ -154,9 +154,9 @@ verilator_coverage - Verilator coverage analyzer
 
     verilator_coverage --annotate <obj>
 
-    verilator_coverage  -write merged.dat -read <datafiles>...
+    verilator_coverage  -write merged.dat <datafiles>...
 
-    verilator_coverage  -write-info merged.info -read <datafiles>...
+    verilator_coverage  -write-info merged.info <datafiles>...
 
 Verilator_coverage processes Verilated model-generated coverage reports.
 
@@ -169,6 +169,7 @@ L<https://verilator.org/guide/latest/exe_verilator_coverage.html>.
     --annotate <output_dir>       Directory name for source annotation.
     --annotate-all                All files should be shown.
     --annotate-min <count>        Minimum occurrence count for uncovered.
+    --annotate-points             Annotates info from each coverage point.
     --help                        Displays this message and version and exits.
     --rank                        Compute relative importance of tests.
     --unlink                      With --write, unlink all inputs
@@ -176,18 +177,18 @@ L<https://verilator.org/guide/latest/exe_verilator_coverage.html>.
     --write <filename>            Write aggregate coverage results.
     --write-info <filename.info>  Write lcov .info.
 
-    +libext+I<ext>+I<ext>...      Extensions for Verilog files.
-    +define+I<var>+I<value>       Defines the given variable.
-    -DI<var>=I<value>             Defines the given variable.
-    +incdir+I<dir>                Add directory for finding include files.
-    -II<dir>                      Add directory for finding include files.
-    -y I<dir>                     Specifies module search directory.
+    +libext+<ext>+<ext>...        Extensions for Verilog files.
+    +define+<var>+<value>         Defines the given variable.
+    -D<var>=<value>               Defines the given variable.
+    +incdir+<dir>                 Add directory for finding include files.
+    -I<dir>                       Add directory for finding include files.
+    -y <dir>                      Specifies module search directory.
 
 =head1 DISTRIBUTION
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify the Verilator internals under the terms
 of either the GNU Lesser General Public License Version 3 or the Perl
 Artistic License Version 2.0.

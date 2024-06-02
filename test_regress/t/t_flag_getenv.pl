@@ -13,7 +13,7 @@ scenarios(vlt => 1);
 setenv('FOOBARTEST', "gotit");
 
 run(
-    cmd => ["../bin/verilator --getenv FOOBARTEST"],
+    cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator --getenv FOOBARTEST"],
     expect => 'gotit
 ',
     logfile => "$Self->{obj_dir}/simx.log",
@@ -22,7 +22,7 @@ run(
 
 foreach my $var (qw(MAKE PERL SYSTEMC SYSTEMC_ARCH SYSTEMC_LIBDIR VERILATOR_ROOT)) {
     run(
-        cmd => ["../bin/verilator --getenv ${var}"],
+        cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator --getenv ${var}"],
         logfile => "$Self->{obj_dir}/simx.log",
         verilator_run => 1,
         );

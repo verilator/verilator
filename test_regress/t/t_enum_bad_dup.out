@@ -1,0 +1,7 @@
+%Error: t/t_enum_bad_dup.v:10:19: Duplicate declaration of enum value: DUP_VALUE
+   10 |                   DUP_VALUE = 3
+      |                   ^~~~~~~~~
+        t/t_enum_bad_dup.v:9:19: ... Location of original declaration
+    9 |    typedef enum { DUP_VALUE = 2,
+      |                   ^~~~~~~~~
+%Error: Exiting due to

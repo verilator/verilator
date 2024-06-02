@@ -40,7 +40,7 @@ default:
 	obj_dir/Vtop
 	@echo "-- DONE --------------------"
 	@echo "Note: Once this example is understood, see examples/make_tracing_c."
-	@echo "Note: Also see the EXAMPLE section in the verilator manpage/document."
+	@echo "Note: See also https://verilator.org/guide/latest/examples.html"
 
 ######################################################################
 

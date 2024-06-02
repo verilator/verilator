@@ -38,19 +38,19 @@ module t (/*AUTOARG*/
    counter_if c4_data();
 
    counter_ansi    c1 (.clkm(clk),
-		       .c_data(c1_data.counter_mp),
-		       .i_value(4'h1));
+                       .c_data(c1_data.counter_mp),
+                       .i_value(4'h1));
 `ifdef VERILATOR counter_ansi `else counter_nansi `endif
    /**/            c2 (.clkm(clk),
-		       .c_data(c2_data.counter_mp),
-		       .i_value(4'h2));
+                       .c_data(c2_data.counter_mp),
+                       .i_value(4'h2));
    counter_ansi_m  c3 (.clkm(clk),
-		       .c_data(c3_data),
-		       .i_value(4'h3));
+                       .c_data(c3_data),
+                       .i_value(4'h3));
 `ifdef VERILATOR counter_ansi_m `else counter_nansi_m `endif
    /**/            c4 (.clkm(clk),
-		       .c_data(c4_data),
-		       .i_value(4'h4));
+                       .c_data(c4_data),
+                       .i_value(4'h4));
 
    initial begin
       c1_data.value = 4'h4;
@@ -62,29 +62,29 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc<2) begin
-	 c1_data.reset <= 1;
-	 c2_data.reset <= 1;
-	 c3_data.reset <= 1;
-	 c4_data.reset <= 1;
+         c1_data.reset <= 1;
+         c2_data.reset <= 1;
+         c3_data.reset <= 1;
+         c4_data.reset <= 1;
       end
       if (cyc==2) begin
-	 c1_data.reset <= 0;
-	 c2_data.reset <= 0;
-	 c3_data.reset <= 0;
-	 c4_data.reset <= 0;
+         c1_data.reset <= 0;
+         c2_data.reset <= 0;
+         c3_data.reset <= 0;
+         c4_data.reset <= 0;
       end
       if (cyc==20) begin
-	 $write("[%0t] cyc%0d: c1 %0x %0x  c2 %0x %0x  c3 %0x %0x  c4 %0x %0x\n", $time, cyc,
-		c1_data.value, c1_data.reset,
-		c2_data.value, c2_data.reset,
-		c3_data.value, c3_data.reset,
-		c4_data.value, c4_data.reset);
-	 if (c1_data.value != 2) $stop;
-	 if (c2_data.value != 3) $stop;
-	 if (c3_data.value != 4) $stop;
-	 if (c4_data.value != 5) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("[%0t] cyc%0d: c1 %0x %0x  c2 %0x %0x  c3 %0x %0x  c4 %0x %0x\n", $time, cyc,
+                c1_data.value, c1_data.reset,
+                c2_data.value, c2_data.reset,
+                c3_data.value, c3_data.reset,
+                c4_data.value, c4_data.reset);
+         if (c1_data.value != 2) $stop;
+         if (c2_data.value != 3) $stop;
+         if (c3_data.value != 4) $stop;
+         if (c4_data.value != 5) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule

@@ -8,17 +8,17 @@
 module t;
    /*AUTOREGINPUT*/
    // Beginning of automatic reg inputs (for undeclared instantiated-module inputs)
-   reg			c0;			// To t2 of t2.v
-   reg			c1;			// To t2 of t2.v
-   reg			check;			// To t2 of t2.v
-   reg [1:0]		clks;			// To t2 of t2.v
+   reg                  c0;                     // To t2 of t2.v
+   reg                  c1;                     // To t2 of t2.v
+   reg                  check;                  // To t2 of t2.v
+   reg [1:0]            clks;                   // To t2 of t2.v
    // End of automatics
    t2 t2 (/*AUTOINST*/
-	  // Inputs
-	  .clks				(clks[1:0]),
-	  .c0				(c0),
-	  .c1				(c1),
-	  .check			(check));
+          // Inputs
+          .clks                         (clks[1:0]),
+          .c0                           (c0),
+          .c1                           (c1),
+          .check                        (check));
    task clockit (input v1, v0);
       c1 = v1;
       c0 = v0;
@@ -36,17 +36,17 @@ module t;
       t2.clear();
       #10;
       for (int i=0; i<2; i++) begin
-	 clockit(0, 0);
-	 clockit(0, 0);
-	 clockit(0, 1);
-	 clockit(1, 1);
-	 clockit(0, 0);
-	 clockit(1, 1);
-	 clockit(1, 0);
-	 clockit(0, 0);
-	 clockit(1, 0);
-	 clockit(0, 1);
-	 clockit(0, 0);
+         clockit(0, 0);
+         clockit(0, 0);
+         clockit(0, 1);
+         clockit(1, 1);
+         clockit(0, 0);
+         clockit(1, 1);
+         clockit(1, 0);
+         clockit(0, 0);
+         clockit(1, 0);
+         clockit(0, 1);
+         clockit(0, 0);
       end
       check = 1;
       clockit(0, 0);
@@ -61,10 +61,10 @@ endmodule
 `endif
 
 module `t2 (
-	  input [1:0] clks,
-	  input       c0,
-	  input       c1,
-	  input check
+          input [1:0] clks,
+          input       c0,
+          input       c1,
+          input check
    );
 
 `ifdef T_CLK_2IN_VEC
@@ -85,7 +85,7 @@ module `t2 (
    integer vn = 0;
    integer vpn = 0;
    task clear;
-`ifdef TEST_VERBOSE $display("[%0t] clear\n",$time); `endif
+`ifdef TEST_VERBOSE $display("[%0t] clear\n", $time); `endif
       p0 = 0;
       p1 = 0;
       p01 = 0;
@@ -98,7 +98,7 @@ module `t2 (
    endtask
 
 `define display_counts(text) begin \
-   $write("[%0t] ",$time); \
+   $write("[%0t] ", $time); \
    `ifdef T_CLK_2IN_VEC $write(" 2v "); `endif \
    $write(text); \
    $write(": %0d %0d %0d  %0d %0d %0d  %0d %0d %0d\n",  p0, p1, p01,  n0, n1, n01,  vp, vn, vpn); \

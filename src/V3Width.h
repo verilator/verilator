@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -20,24 +20,24 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Error.h"
-#include "V3Ast.h"
+#include "V3ThreadSafety.h"
+
+class AstNetlist;
+class AstNode;
+class AstNodeDType;
 
 //============================================================================
 
 class V3Width final {
 public:
-    static int debug();
-    static void width(AstNetlist* nodep);
-    static AstNode* widthParamsEdit(AstNode* nodep);
-    static AstNode* widthGenerateParamsEdit(AstNode* nodep);
-    // Final step... Mark all widths as equal
-    static void widthCommit(AstNetlist* nodep);
+    static void width(AstNetlist* nodep) VL_MT_DISABLED;
+    static AstNode* widthParamsEdit(AstNode* nodep) VL_MT_DISABLED;
+    static AstNode* widthGenerateParamsEdit(AstNode* nodep) VL_MT_DISABLED;
 
     // For use only in WidthVisitor
     // Replace AstSelBit, etc with AstSel/AstArraySel
     // Returns replacement node if nodep was deleted, or null if none.
-    static AstNode* widthSelNoIterEdit(AstNode* nodep);
+    static AstNode* widthSelNoIterEdit(AstNode* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

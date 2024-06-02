@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2020 by Yutetsu TAKATSUKASA
+// SPDX-License-Identifier: Unlicense
 
 module t (
    clk

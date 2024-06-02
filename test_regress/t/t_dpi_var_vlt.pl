@@ -11,19 +11,19 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 top_filename("t/t_dpi_var.v");
-my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
+my $out_filename = "$Self->{obj_dir}/V$Self->{name}.tree.json";
 
 compile(
     make_top_shell => 0,
     make_main => 0,
-    verilator_flags2 => ["--exe --no-l2name $Self->{t_dir}/t_dpi_var.vlt $Self->{t_dir}/t_dpi_var.cpp"],
+    verilator_flags2 => ["--no-json-edit-nums", "--exe --no-l2name $Self->{t_dir}/t_dpi_var.vlt $Self->{t_dir}/t_dpi_var.cpp"],
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<var fl="e58" loc=".*?" name="formatted" dtype_id="4" dir="input" vartype="string" origName="formatted" sformat="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var fl="e81" loc=".*?" name="t.sub.in" dtype_id="3" vartype="int" origName="in" public="true" public_flat_rd="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var fl="e82" loc=".*?" name="t.sub.fr_a" dtype_id="3" vartype="int" origName="fr_a" public="true" public_flat_rd="true" public_flat_rw="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var fl="e83" loc=".*?" name="t.sub.fr_b" dtype_id="3" vartype="int" origName="fr_b" public="true" public_flat_rd="true" public_flat_rw="true"\/\>/i);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"formatted","addr":"[^"]*","loc":"f,58:[^"]*",.*"origName":"formatted",.*"direction":"INPUT",.*"dtypeName":"string",.*"attrSFormat":true/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"t.sub.in","addr":"[^"]*","loc":"f,81:[^"]*",.*"origName":"in",.*"dtypeName":"int",.*"isSigUserRdPublic":true/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"t.sub.fr_a","addr":"[^"]*","loc":"f,82:[^"]*",.*"origName":"fr_a",.*"dtypeName":"int",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true/);
+    file_grep("$out_filename", qr/{"type":"VAR","name":"t.sub.fr_b","addr":"[^"]*","loc":"f,83:[^"]*",.*"origName":"fr_b",.*"dtypeName":"int",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true/);
 }
 
 execute(

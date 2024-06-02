@@ -55,15 +55,15 @@ module t(/*AUTOARG*/
 
    generate
       if (WHICH == 1)
-	begin : which_true
+        begin : which_true
            sub sub_true();
            defparam sub_true.RAND_NUM_MAX   = MAX_EXPONENT;
-	end
+        end
       else
-	begin : which_false
+        begin : which_false
            sub sub_false();
            defparam sub_false.RAND_NUM_MAX   = MAX_COUNT;
-	end
+        end
    endgenerate
 
 endmodule

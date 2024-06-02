@@ -4,18 +4,19 @@
 // SPDX-License-Identifier: CC0-1.0
 
 #include VM_PREFIX_INCLUDE
-#include "Vt_sc_names.h"
+
+using namespace sc_core;
 
 VM_PREFIX* tb = nullptr;
 
 int sc_main(int argc, char* argv[]) {
-    tb = new VM_PREFIX("tb");
+    tb = new VM_PREFIX{"tb"};
     std::vector<sc_object*> ch = tb->get_child_objects();
     bool found = false;
 
     /* We expect to find clk in here. */
     for (int i = 0; i < ch.size(); ++i) {
-        if (!strcmp(ch[i]->basename(), "clk")) found = true;
+        if (!std::strcmp(ch[i]->basename(), "clk")) found = true;
     }
 
     if (found) {

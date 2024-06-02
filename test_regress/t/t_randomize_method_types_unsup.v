@@ -13,6 +13,11 @@ class Cls;
    rand int dynarr[];
    rand int unpackarr[5];
    rand Union uni;
+   rand Cls cls;
+   rand int i;
+   int st;
+   constraint dynsize { dynarr.size < 20; }
+   constraint statedep { i < st + 2; }
 endclass
 
 module t (/*AUTOARG*/);

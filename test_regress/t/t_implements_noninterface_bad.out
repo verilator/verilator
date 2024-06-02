@@ -1,0 +1,9 @@
+%Error: t/t_implements_noninterface_bad.v:10:26: Attempting to implement from non-interface class 'NotIcls'
+... Suggest use 'extends'
+   10 | class ClsBad1 implements NotIcls;
+      |                          ^~~~~~~
+%Error: t/t_implements_noninterface_bad.v:16:23: Attempting to extend from interface class 'Icls'
+... Suggest use 'implements'
+   16 | class ClsBad2 extends Icls;
+      |                       ^~~~
+%Error: Exiting due to

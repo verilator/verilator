@@ -7,3 +7,7 @@
 int a = -12'd1;
 int b = 65536'd1;
 int c = 1231232312312312'd1;
+int e = 12'1;
+int f = 12'0;
+int g = 12'z;
+int h = 12'x;

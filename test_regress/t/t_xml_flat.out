@@ -2,113 +2,113 @@
 <!-- DESCRIPTION: Verilator output: XML representation of netlist -->
 <verilator_xml>
   <files>
-    <file id="a" filename="&lt;built-in&gt;" language="1800-2017"/>
-    <file id="b" filename="&lt;command-line&gt;" language="1800-2017"/>
-    <file id="c" filename="input.vc" language="1800-2017"/>
-    <file id="d" filename="t/t_xml_first.v" language="1800-2017"/>
+    <file id="a" filename="&lt;built-in&gt;" language="1800-2023"/>
+    <file id="b" filename="&lt;command-line&gt;" language="1800-2023"/>
+    <file id="c" filename="input.vc" language="1800-2023"/>
+    <file id="d" filename="t/t_xml_first.v" language="1800-2023"/>
   </files>
   <module_files>
-    <file id="d" filename="t/t_xml_first.v" language="1800-2017"/>
+    <file id="d" filename="t/t_xml_first.v" language="1800-2023"/>
   </module_files>
   <cells>
-    <cell fl="d7" loc="d,7,8,7,9" name="TOP" submodname="TOP" hier="TOP"/>
+    <cell loc="d,7,8,7,9" name="$root" submodname="$root" hier="$root"/>
   </cells>
   <netlist>
-    <module fl="d7" loc="d,7,8,7,9" name="TOP" origName="TOP" topModule="1" public="true">
-      <var fl="d13" loc="d,13,10,13,13" name="clk" dtype_id="1" dir="input" vartype="logic" origName="clk" clocker="true" public="true"/>
-      <var fl="d14" loc="d,14,16,14,17" name="d" dtype_id="2" dir="input" vartype="logic" origName="d" public="true"/>
-      <var fl="d15" loc="d,15,22,15,23" name="q" dtype_id="2" dir="output" vartype="logic" origName="q" public="true"/>
-      <var fl="d13" loc="d,13,10,13,13" name="t.clk" dtype_id="1" vartype="logic" origName="clk"/>
-      <var fl="d14" loc="d,14,16,14,17" name="t.d" dtype_id="2" vartype="logic" origName="d"/>
-      <var fl="d15" loc="d,15,22,15,23" name="t.q" dtype_id="2" vartype="logic" origName="q"/>
-      <var fl="d17" loc="d,17,22,17,29" name="t.between" dtype_id="2" vartype="logic" origName="between"/>
-      <var fl="d32" loc="d,32,15,32,20" name="t.cell1.WIDTH" dtype_id="3" vartype="logic" origName="WIDTH" param="true">
-        <const fl="d19" loc="d,19,18,19,19" name="32&apos;sh4" dtype_id="3"/>
+    <module loc="d,7,8,7,9" name="$root" origName="$root" topModule="1" public="true">
+      <var loc="d,15,22,15,23" name="q" dtype_id="1" dir="output" pinIndex="1" vartype="logic" origName="q" public="true"/>
+      <var loc="d,13,10,13,13" name="clk" dtype_id="2" dir="input" pinIndex="2" vartype="logic" origName="clk" clocker="true" public="true"/>
+      <var loc="d,14,16,14,17" name="d" dtype_id="1" dir="input" pinIndex="3" vartype="logic" origName="d" public="true"/>
+      <var loc="d,15,22,15,23" name="t.q" dtype_id="1" vartype="logic" origName="q"/>
+      <var loc="d,13,10,13,13" name="t.clk" dtype_id="2" vartype="logic" origName="clk"/>
+      <var loc="d,14,16,14,17" name="t.d" dtype_id="1" vartype="logic" origName="d"/>
+      <var loc="d,17,22,17,29" name="t.between" dtype_id="1" vartype="logic" origName="between"/>
+      <var loc="d,32,15,32,20" name="t.cell1.WIDTH" dtype_id="3" vartype="logic" origName="WIDTH" param="true">
+        <const loc="d,19,18,19,19" name="32&apos;sh4" dtype_id="3"/>
       </var>
-      <var fl="d34" loc="d,34,24,34,27" name="t.cell1.clk" dtype_id="1" vartype="logic" origName="clk"/>
-      <var fl="d35" loc="d,35,30,35,31" name="t.cell1.d" dtype_id="2" vartype="logic" origName="d"/>
-      <var fl="d36" loc="d,36,30,36,31" name="t.cell1.q" dtype_id="2" vartype="logic" origName="q"/>
-      <var fl="d39" loc="d,39,15,39,22" name="t.cell1.IGNORED" dtype_id="3" vartype="logic" origName="IGNORED" localparam="true">
-        <const fl="d39" loc="d,39,25,39,26" name="32&apos;sh1" dtype_id="3"/>
+      <var loc="d,34,24,34,27" name="t.cell1.clk" dtype_id="2" vartype="logic" origName="clk"/>
+      <var loc="d,35,30,35,31" name="t.cell1.d" dtype_id="1" vartype="logic" origName="d"/>
+      <var loc="d,36,30,36,31" name="t.cell1.q" dtype_id="1" vartype="logic" origName="q"/>
+      <var loc="d,39,15,39,22" name="t.cell1.IGNORED" dtype_id="3" vartype="logic" origName="IGNORED" localparam="true">
+        <const loc="d,39,25,39,26" name="32&apos;sh1" dtype_id="3"/>
       </var>
-      <var fl="d48" loc="d,48,10,48,13" name="t.cell2.clk" dtype_id="1" vartype="logic" origName="clk"/>
-      <var fl="d49" loc="d,49,16,49,17" name="t.cell2.d" dtype_id="2" vartype="logic" origName="d"/>
-      <var fl="d50" loc="d,50,22,50,23" name="t.cell2.q" dtype_id="2" vartype="logic" origName="q"/>
-      <topscope fl="d7" loc="d,7,8,7,9">
-        <scope fl="d7" loc="d,7,8,7,9" name="TOP">
-          <varscope fl="d13" loc="d,13,10,13,13" name="clk" dtype_id="1"/>
-          <varscope fl="d14" loc="d,14,16,14,17" name="d" dtype_id="2"/>
-          <varscope fl="d15" loc="d,15,22,15,23" name="q" dtype_id="2"/>
-          <varscope fl="d13" loc="d,13,10,13,13" name="t.clk" dtype_id="1"/>
-          <varscope fl="d14" loc="d,14,16,14,17" name="t.d" dtype_id="2"/>
-          <varscope fl="d15" loc="d,15,22,15,23" name="t.q" dtype_id="2"/>
-          <varscope fl="d17" loc="d,17,22,17,29" name="t.between" dtype_id="2"/>
-          <varscope fl="d32" loc="d,32,15,32,20" name="t.cell1.WIDTH" dtype_id="3"/>
-          <varscope fl="d34" loc="d,34,24,34,27" name="t.cell1.clk" dtype_id="1"/>
-          <varscope fl="d35" loc="d,35,30,35,31" name="t.cell1.d" dtype_id="2"/>
-          <varscope fl="d36" loc="d,36,30,36,31" name="t.cell1.q" dtype_id="2"/>
-          <varscope fl="d39" loc="d,39,15,39,22" name="t.cell1.IGNORED" dtype_id="3"/>
-          <varscope fl="d48" loc="d,48,10,48,13" name="t.cell2.clk" dtype_id="1"/>
-          <varscope fl="d49" loc="d,49,16,49,17" name="t.cell2.d" dtype_id="2"/>
-          <varscope fl="d50" loc="d,50,22,50,23" name="t.cell2.q" dtype_id="2"/>
-          <assignalias fl="d13" loc="d,13,10,13,13" dtype_id="1">
-            <varref fl="d13" loc="d,13,10,13,13" name="clk" dtype_id="1"/>
-            <varref fl="d13" loc="d,13,10,13,13" name="clk" dtype_id="1"/>
+      <var loc="d,48,10,48,13" name="t.cell2.clk" dtype_id="2" vartype="logic" origName="clk"/>
+      <var loc="d,49,16,49,17" name="t.cell2.d" dtype_id="1" vartype="logic" origName="d"/>
+      <var loc="d,50,22,50,23" name="t.cell2.q" dtype_id="1" vartype="logic" origName="q"/>
+      <topscope loc="d,7,8,7,9">
+        <scope loc="d,7,8,7,9" name="TOP">
+          <varscope loc="d,15,22,15,23" name="q" dtype_id="1"/>
+          <varscope loc="d,13,10,13,13" name="clk" dtype_id="2"/>
+          <varscope loc="d,14,16,14,17" name="d" dtype_id="1"/>
+          <varscope loc="d,15,22,15,23" name="t.q" dtype_id="1"/>
+          <varscope loc="d,13,10,13,13" name="t.clk" dtype_id="2"/>
+          <varscope loc="d,14,16,14,17" name="t.d" dtype_id="1"/>
+          <varscope loc="d,17,22,17,29" name="t.between" dtype_id="1"/>
+          <varscope loc="d,32,15,32,20" name="t.cell1.WIDTH" dtype_id="3"/>
+          <varscope loc="d,34,24,34,27" name="t.cell1.clk" dtype_id="2"/>
+          <varscope loc="d,35,30,35,31" name="t.cell1.d" dtype_id="1"/>
+          <varscope loc="d,36,30,36,31" name="t.cell1.q" dtype_id="1"/>
+          <varscope loc="d,39,15,39,22" name="t.cell1.IGNORED" dtype_id="3"/>
+          <varscope loc="d,48,10,48,13" name="t.cell2.clk" dtype_id="2"/>
+          <varscope loc="d,49,16,49,17" name="t.cell2.d" dtype_id="1"/>
+          <varscope loc="d,50,22,50,23" name="t.cell2.q" dtype_id="1"/>
+          <assignalias loc="d,15,22,15,23" dtype_id="1">
+            <varref loc="d,15,22,15,23" name="q" dtype_id="1"/>
+            <varref loc="d,15,22,15,23" name="t.q" dtype_id="1"/>
           </assignalias>
-          <assignalias fl="d14" loc="d,14,16,14,17" dtype_id="2">
-            <varref fl="d14" loc="d,14,16,14,17" name="d" dtype_id="2"/>
-            <varref fl="d14" loc="d,14,16,14,17" name="d" dtype_id="2"/>
+          <assignalias loc="d,13,10,13,13" dtype_id="2">
+            <varref loc="d,13,10,13,13" name="clk" dtype_id="2"/>
+            <varref loc="d,13,10,13,13" name="t.clk" dtype_id="2"/>
           </assignalias>
-          <assignalias fl="d15" loc="d,15,22,15,23" dtype_id="2">
-            <varref fl="d15" loc="d,15,22,15,23" name="q" dtype_id="2"/>
-            <varref fl="d15" loc="d,15,22,15,23" name="q" dtype_id="2"/>
+          <assignalias loc="d,14,16,14,17" dtype_id="1">
+            <varref loc="d,14,16,14,17" name="d" dtype_id="1"/>
+            <varref loc="d,14,16,14,17" name="t.d" dtype_id="1"/>
           </assignalias>
-          <assignalias fl="d34" loc="d,34,24,34,27" dtype_id="1">
-            <varref fl="d34" loc="d,34,24,34,27" name="t.clk" dtype_id="1"/>
-            <varref fl="d34" loc="d,34,24,34,27" name="cell1.clk" dtype_id="1"/>
+          <assignalias loc="d,34,24,34,27" dtype_id="2">
+            <varref loc="d,21,42,21,45" name="t.clk" dtype_id="2"/>
+            <varref loc="d,34,24,34,27" name="t.cell1.clk" dtype_id="2"/>
           </assignalias>
-          <assignalias fl="d35" loc="d,35,30,35,31" dtype_id="2">
-            <varref fl="d35" loc="d,35,30,35,31" name="t.d" dtype_id="2"/>
-            <varref fl="d35" loc="d,35,30,35,31" name="cell1.d" dtype_id="2"/>
+          <assignalias loc="d,35,30,35,31" dtype_id="1">
+            <varref loc="d,22,42,22,43" name="t.d" dtype_id="1"/>
+            <varref loc="d,35,30,35,31" name="t.cell1.d" dtype_id="1"/>
           </assignalias>
-          <assignalias fl="d36" loc="d,36,30,36,31" dtype_id="2">
-            <varref fl="d36" loc="d,36,30,36,31" name="t.between" dtype_id="2"/>
-            <varref fl="d36" loc="d,36,30,36,31" name="cell1.q" dtype_id="2"/>
+          <assignalias loc="d,36,30,36,31" dtype_id="1">
+            <varref loc="d,20,14,20,21" name="t.between" dtype_id="1"/>
+            <varref loc="d,36,30,36,31" name="t.cell1.q" dtype_id="1"/>
           </assignalias>
-          <always fl="d41" loc="d,41,4,41,10">
-            <sentree fl="d41" loc="d,41,11,41,12">
-              <senitem fl="d41" loc="d,41,13,41,20" edgeType="POS">
-                <varref fl="d41" loc="d,41,21,41,24" name="clk" dtype_id="1"/>
+          <always loc="d,41,4,41,10">
+            <sentree loc="d,41,11,41,12">
+              <senitem loc="d,41,13,41,20" edgeType="POS">
+                <varref loc="d,41,21,41,24" name="clk" dtype_id="2"/>
               </senitem>
             </sentree>
-            <assigndly fl="d42" loc="d,42,8,42,10" dtype_id="2">
-              <varref fl="d42" loc="d,42,11,42,12" name="d" dtype_id="2"/>
-              <varref fl="d42" loc="d,42,6,42,7" name="t.between" dtype_id="2"/>
+            <assigndly loc="d,42,8,42,10" dtype_id="1">
+              <varref loc="d,42,11,42,12" name="d" dtype_id="1"/>
+              <varref loc="d,42,6,42,7" name="t.between" dtype_id="1"/>
             </assigndly>
           </always>
-          <assignalias fl="d48" loc="d,48,10,48,13" dtype_id="1">
-            <varref fl="d48" loc="d,48,10,48,13" name="t.clk" dtype_id="1"/>
-            <varref fl="d48" loc="d,48,10,48,13" name="cell2.clk" dtype_id="1"/>
+          <assignalias loc="d,48,10,48,13" dtype_id="2">
+            <varref loc="d,27,42,27,45" name="t.clk" dtype_id="2"/>
+            <varref loc="d,48,10,48,13" name="t.cell2.clk" dtype_id="2"/>
           </assignalias>
-          <assignalias fl="d49" loc="d,49,16,49,17" dtype_id="2">
-            <varref fl="d49" loc="d,49,16,49,17" name="t.between" dtype_id="2"/>
-            <varref fl="d49" loc="d,49,16,49,17" name="cell2.d" dtype_id="2"/>
+          <assignalias loc="d,49,16,49,17" dtype_id="1">
+            <varref loc="d,25,16,25,23" name="t.between" dtype_id="1"/>
+            <varref loc="d,49,16,49,17" name="t.cell2.d" dtype_id="1"/>
           </assignalias>
-          <assignalias fl="d50" loc="d,50,22,50,23" dtype_id="2">
-            <varref fl="d50" loc="d,50,22,50,23" name="t.q" dtype_id="2"/>
-            <varref fl="d50" loc="d,50,22,50,23" name="cell2.q" dtype_id="2"/>
+          <assignalias loc="d,50,22,50,23" dtype_id="1">
+            <varref loc="d,26,42,26,43" name="t.q" dtype_id="1"/>
+            <varref loc="d,50,22,50,23" name="t.cell2.q" dtype_id="1"/>
           </assignalias>
-          <contassign fl="d53" loc="d,53,13,53,14" dtype_id="2">
-            <varref fl="d53" loc="d,53,15,53,16" name="t.between" dtype_id="2"/>
-            <varref fl="d53" loc="d,53,11,53,12" name="q" dtype_id="2"/>
+          <contassign loc="d,53,13,53,14" dtype_id="1">
+            <varref loc="d,17,22,17,29" name="t.between" dtype_id="1"/>
+            <varref loc="d,53,13,53,14" name="q" dtype_id="1"/>
           </contassign>
         </scope>
       </topscope>
     </module>
-    <typetable fl="a0" loc="a,0,0,0,0">
-      <basicdtype fl="d48" loc="d,48,10,48,13" id="1" name="logic"/>
-      <basicdtype fl="d14" loc="d,14,10,14,11" id="2" name="logic" left="3" right="0"/>
-      <basicdtype fl="d19" loc="d,19,18,19,19" id="3" name="logic" left="31" right="0"/>
+    <typetable loc="a,0,0,0,0">
+      <basicdtype loc="d,34,24,34,27" id="2" name="logic"/>
+      <basicdtype loc="d,15,16,15,17" id="1" name="logic" left="3" right="0"/>
+      <basicdtype loc="d,19,18,19,19" id="3" name="logic" left="31" right="0" signed="true"/>
     </typetable>
   </netlist>
 </verilator_xml>

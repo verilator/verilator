@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2024 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _Examples in the Distribution:
@@ -7,9 +7,11 @@ Examples in the Distribution
 ============================
 
 See the ``examples/`` directory that is part of the distribution, and
-is installed (in a OS-specific place, often in e.g.
+is installed (in an OS-specific place, often in e.g.
 ``/usr/local/share/verilator/examples``).  These examples include:
 
+examples/make_hello_binary
+   Example GNU-make simple Verilog->binary conversion
 examples/make_hello_c
    Example GNU-make simple Verilog->C++ conversion
 examples/make_hello_sc

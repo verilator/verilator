@@ -6,7 +6,8 @@
 
 // verilator lint_off WIDTH
 
-`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
 module t (/*AUTOARG*/
    // Inputs
@@ -14,8 +15,8 @@ module t (/*AUTOARG*/
    );
    input clk;
    reg    [7:0]  p1;
-   reg [7:0] 	 p2;
-   reg [7:0] 	 p3;
+   reg [7:0]     p2;
+   reg [7:0]     p3;
 
    initial begin
       p1 = 8'h01;
@@ -28,16 +29,16 @@ module t (/*AUTOARG*/
    parameter int param3 = 8'h13;
 
    targetmod i_targetmod (/*AUTOINST*/
-			  // Inputs
-			  .clk			(clk));
+                          // Inputs
+                          .clk                  (clk));
 
    //Binding i_targetmod to mycheck --instantiates i_mycheck inside i_targetmod
-   //param1 not over-riden (as mycheck)			(=> 0x31)
-   //param2 explicitly bound to targetmod value	(=> 0x22)
-   //param3 explicitly bound to top value			(=> 0x13)
-   //p1 implictly bound (.*), takes value from targetmod	(=> 0x04)
-   //p2 explictly bound to targetmod						(=> 0x05)
-   //p3 explictly bound to top								(=> 0x03)
+   //param1 not over-riden (as mycheck)                 (=> 0x31)
+   //param2 explicitly bound to targetmod value (=> 0x22)
+   //param3 explicitly bound to top value                       (=> 0x13)
+   //p1 implictly bound (.*), takes value from targetmod        (=> 0x04)
+   //p2 explictly bound to targetmod                                            (=> 0x05)
+   //p3 explictly bound to top                                                          (=> 0x03)
 
    // Alternative unsupported form is i_targetmod
    bind targetmod mycheck
@@ -50,7 +51,7 @@ module t (/*AUTOARG*/
 endmodule
 
 module targetmod (input clk);
-   reg	[7:0] p1;
+   reg  [7:0] p1;
    reg [7:0]  p2;
    reg [7:0]  p3;
 

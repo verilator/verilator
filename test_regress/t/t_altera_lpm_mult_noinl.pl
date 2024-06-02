@@ -15,7 +15,7 @@ top_filename("t/t_altera_lpm.v");
 $module =~ s/_noinl//;
 
 compile(
-    verilator_flags2 => ["--top-module ${module}", "-Oi"]
+    verilator_flags2 => ["--top-module ${module}", "-fno-inline"]
     );
 
 ok(1);

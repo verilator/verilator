@@ -26,6 +26,9 @@ module t (/*AUTOARG*/);
       q = '{"q"};
       v = $sformatf("%p", q); `checks(v, "'{\"q\"} ");
 
+      q = {};
+      i = q.size(); `checkh(i, 0);
+
       q = '{"q", "b", "c", "d", "e", "f"};
       if (q[0] !== "q") $stop;
       v = $sformatf("%p", q); `checks(v, "'{\"q\", \"b\", \"c\", \"d\", \"e\", \"f\"} ");

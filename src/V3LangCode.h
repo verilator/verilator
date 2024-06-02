@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -20,9 +20,9 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include <vector>
 #include <map>
 #include <set>
+#include <vector>
 
 //######################################################################
 //! Class for the different languages supported.
@@ -39,31 +39,34 @@ public:
         L1800_2009,
         L1800_2012,
         L1800_2017,
+        L1800_2023,
         // ***Add new elements below also***
         _ENUM_END
     };
     const char* ascii() const {
-        const char* const names[] = {// These must match the `begin_keywords values.
-                                     " ERROR",    "1364-1995", "1364-2001", "1364-2005",
-                                     "1800-2005", "1800-2009", "1800-2012", "1800-2017"};
+        const char* const names[]
+            = {// These must match the `begin_keywords values
+               " ERROR",    "1364-1995", "1364-2001", "1364-2005", "1800-2005",
+               "1800-2009", "1800-2012", "1800-2017", "1800-2023"};
         return names[m_e];
     }
-    static V3LangCode mostRecent() { return V3LangCode(L1800_2017); }
+    static V3LangCode mostRecent() VL_MT_SAFE { return V3LangCode{L1800_2023}; }
     bool systemVerilog() const {
-        return m_e == L1800_2005 || m_e == L1800_2009 || m_e == L1800_2012 || m_e == L1800_2017;
+        return m_e == L1800_2005 || m_e == L1800_2009 || m_e == L1800_2012 || m_e == L1800_2017
+               || m_e == L1800_2023;
     }
     bool legal() const { return m_e != L_ERROR; }
     //
     enum en m_e;
-    inline V3LangCode()
+    V3LangCode()
         : m_e{L_ERROR} {}
     // cppcheck-suppress noExplicitConstructor
-    inline V3LangCode(en _e)
+    constexpr V3LangCode(en _e)
         : m_e{_e} {}
     explicit V3LangCode(const char* textp);
-    explicit inline V3LangCode(int _e)
+    explicit V3LangCode(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    operator en() const { return m_e; }
+    constexpr operator en() const { return m_e; }
 };
 
 //######################################################################

@@ -1,0 +1,6 @@
+%Warning-INFINITELOOP: t/t_continue_do_while_bad.v:14:7: Infinite loop (condition always true)
+   14 |       do begin
+      |       ^~
+                       ... For warning description see https://verilator.org/warn/INFINITELOOP?v=latest
+                       ... Use "/* verilator lint_off INFINITELOOP */" and lint_on around source to disable this message.
+%Error: Exiting due to

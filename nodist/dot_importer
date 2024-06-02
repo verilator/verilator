@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=C0103,C0114,C0115,C0116,C0301
+# pylint: disable=C0103,C0114,C0115,C0116,C0209,C0301
 ######################################################################
 
 import argparse
@@ -15,7 +15,7 @@ Edges = []
 
 
 def dotread(filename):
-    with open(filename) as fh:
+    with open(filename, "r", encoding="utf8") as fh:
         header = True
         vnum = 0
 
@@ -61,16 +61,16 @@ def dotread(filename):
 
 
 def cwrite(filename):
-    with open(filename, "w") as fh:
+    with open(filename, "w", encoding="utf8") as fh:
         fh.write("void V3GraphTestImport::dotImport() {\n")
         fh.write("    auto* gp = &m_graph;\n")
         for ver in sorted(Vertexes, key=lambda ver: ver['num']):
             fh.write(
-                "    auto* %s = new V3GraphTestVertex(gp, \"%s\");  if (%s) {}\n"
+                "    auto* %s = new V3GraphTestVertex{gp, \"%s\"};  if (%s) {}\n"
                 % (ver['name'], ver['name'], ver['name']))
         fh.write("\n")
         for edge in Edges:
-            fh.write("    new V3GraphEdge(gp, %s, %s, %s, %s);\n" %
+            fh.write("    new V3GraphEdge{gp, %s, %s, %s, %s};\n" %
                      (edge['from'], edge['to'], edge['weight'],
                       "true" if edge['cutable'] else "false"))
         fh.write("}\n")
@@ -87,7 +87,7 @@ parser = argparse.ArgumentParser(
 This x.cpp file is then manually included in V3GraphTest.cpp to verify
 various xsub-algorithms.""",
     epilog=
-    """Copyright 2005-2021 by Wilson Snyder. This program is free software; you
+    """Copyright 2005-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

@@ -33,16 +33,16 @@ module t (/*AUTOARG*/
 
    wire  res;
    wire  res_n;
-   reg 	 rst;
-   reg 	 rst_n;
+   reg   rst;
+   reg   rst_n;
 
    integer count = 0;
 
    initial_edge i_edge (.res (res),
-			.rst (rst));
+                        .rst (rst));
 
    initial_edge_n i_edge_n (.res_n (res_n),
-			    .rst_n (rst_n));
+                            .rst_n (rst_n));
 
    // run for 3 cycles, with one cycle of reset.
    always @(posedge clk) begin
@@ -51,16 +51,16 @@ module t (/*AUTOARG*/
       rst_n <= (count == 0) ? 0 : 1;
 
       if (count == 3) begin
-	 if ((res == 1) && (res_n == 1)) begin
-	    $write ("*-* All Finished *-*\n");
-	    $finish;
-	 end
-	 else begin
+         if ((res == 1) && (res_n == 1)) begin
+            $write ("*-* All Finished *-*\n");
+            $finish;
+         end
+         else begin
 `ifdef TEST_VERBOSE
-	    $write ("FAILED: res = %b, res_n = %b\n", res, res_n);
+            $write ("FAILED: res = %b, res_n = %b\n", res, res_n);
 `endif
-	    $stop;
-	 end
+            $stop;
+         end
       end
 
       count = count + 1;
@@ -71,11 +71,11 @@ endmodule
 
 
 module initial_edge_n (res_n,
-		       rst_n);
+                       rst_n);
    output  res_n;
    input   rst_n;
 
-   reg 	   res_n = 1'b0;
+   reg     res_n = 1'b0;
 
    always @(negedge rst_n) begin
       if (rst_n == 1'b0) begin
@@ -87,11 +87,11 @@ endmodule // initial_edge_n
 
 
 module initial_edge (res,
-		     rst);
+                     rst);
    output  res;
    input   rst;
 
-   reg 	   res = 1'b0;
+   reg     res = 1'b0;
 
    always @(posedge rst) begin
       if (rst == 1'b1) begin

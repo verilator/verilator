@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_cover_assert.v:42:16: Unsupported: Assert not allowed under another assert
+   42 |            A2: assert (b);
+      |                ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

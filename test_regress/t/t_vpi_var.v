@@ -13,8 +13,10 @@ import "DPI-C" context function int mon_check();
 `endif
 
 module t (/*AUTOARG*/
+   // Outputs
+   x,
    // Inputs
-   clk
+   clk, a
    );
 
 `ifdef VERILATOR
@@ -25,30 +27,40 @@ extern "C" int mon_check();
 
    input clk;
 
-   reg		onebit		/*verilator public_flat_rw @(posedge clk) */;
-   reg [2:1]	twoone		/*verilator public_flat_rw @(posedge clk) */;
-   reg [2:1] 	fourthreetwoone[4:3] /*verilator public_flat_rw @(posedge clk) */;
+   input [7:0] a;
+   output reg [7:0] x;
 
-   // verilator lint_off LITENDIAN
-   reg [0:61] 	quads[2:3]	/*verilator public_flat_rw @(posedge clk) */;
-   // verilator lint_on LITENDIAN
+   reg          onebit          /*verilator public_flat_rw @(posedge clk) */;
+   reg [2:1]    twoone          /*verilator public_flat_rw @(posedge clk) */;
+   reg [2:1]    fourthreetwoone[4:3] /*verilator public_flat_rw @(posedge clk) */;
+   reg LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND /*verilator public_flat_rw*/;
 
-   reg [31:0] 	   count	/*verilator public_flat_rd */;
-   reg [31:0] 	   half_count	/*verilator public_flat_rd */;
+   // verilator lint_off ASCRANGE
+   reg [0:61]   quads[2:3]      /*verilator public_flat_rw @(posedge clk) */;
+   // verilator lint_on ASCRANGE
 
-   reg [7:0] 	   text_byte    /*verilator public_flat_rw @(posedge clk) */;
-   reg [15:0] 	   text_half    /*verilator public_flat_rw @(posedge clk) */;
-   reg [31:0] 	   text_word    /*verilator public_flat_rw @(posedge clk) */;
-   reg [63:0] 	   text_long    /*verilator public_flat_rw @(posedge clk) */;
-   reg [511:0] 	   text         /*verilator public_flat_rw @(posedge clk) */;
+   reg [31:0]      count        /*verilator public_flat_rd */;
+   reg [31:0]      half_count   /*verilator public_flat_rd */;
+   reg [31:0]      delayed      /*verilator public_flat_rw */;
+   reg [31:0]      delayed_mem [16] /*verilator public_flat_rw */;
 
-   integer 	  status;
+   reg [7:0]       text_byte    /*verilator public_flat_rw @(posedge clk) */;
+   reg [15:0]      text_half    /*verilator public_flat_rw @(posedge clk) */;
+   reg [31:0]      text_word    /*verilator public_flat_rw @(posedge clk) */;
+   reg [63:0]      text_long    /*verilator public_flat_rw @(posedge clk) */;
+   reg [511:0]     text         /*verilator public_flat_rw @(posedge clk) */;
+
+   integer        status;
+
+   real           real1          /*verilator public_flat_rw */;
+   string         str1           /*verilator public_flat_rw */;
 
    sub sub();
 
    // Test loop
    initial begin
       count = 0;
+      delayed = 0;
       onebit = 1'b0;
       fourthreetwoone[3] = 0; // stop icarus optimizing away
       text_byte = "B";
@@ -56,6 +68,10 @@ extern "C" int mon_check();
       text_word = "Word";
       text_long = "Long64b";
       text = "Verilog Test module";
+
+      real1 = 1.0;
+      str1 = "hello";
+
 `ifdef VERILATOR
       status = $c32("mon_check()");
 `endif
@@ -66,8 +82,8 @@ extern "C" int mon_check();
       status = mon_check();
 `endif
       if (status!=0) begin
-	 $write("%%Error: t_vpi_var.cpp:%0d: C Test failed\n", status);
-	 $stop;
+         $write("%%Error: t_vpi_var.cpp:%0d: C Test failed\n", status);
+         $stop;
       end
       $write("%%Info: Checking results\n");
       if (onebit != 1'b1) $stop;
@@ -78,16 +94,20 @@ extern "C" int mon_check();
       if (text_word != "Tree") $stop;
       if (text_long != "44Four44") $stop;
       if (text != "lorem ipsum") $stop;
+      if (str1 != "something a lot longer than hello") $stop;
+      if (real1 > 123456.7895 || real1 < 123456.7885 ) $stop;
    end
 
    always @(posedge clk) begin
       count <= count + 2;
       if (count[1])
-	half_count <= half_count + 2;
+        half_count <= half_count + 2;
 
       if (count == 1000) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if (delayed != 123) $stop;
+         if (delayed_mem[7] != 456) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 
@@ -95,12 +115,20 @@ extern "C" int mon_check();
    generate
    for (i=1; i<=6; i=i+1) begin : arr
      arr #(.LENGTH(i)) arr();
-   end endgenerate
+   end
+   endgenerate
+
+   genvar k;
+   generate
+   for (k=1; k<=6; k=k+1) begin : subs
+      sub subsub();
+   end
+   endgenerate
 
 endmodule : t
 
 module sub;
-   reg subsig1 /*verilator public_flat_rd*/;
+   reg subsig1 /*verilator public_flat_rw*/;
    reg subsig2 /*verilator public_flat_rd*/;
 `ifdef IVERILOG
    // stop icarus optimizing signals away
@@ -115,7 +143,7 @@ module arr;
    reg [LENGTH-1:0] sig /*verilator public_flat_rw*/;
    reg [LENGTH-1:0] rfr /*verilator public_flat_rw*/;
 
-   reg 		  check /*verilator public_flat_rw*/;
+   reg            check /*verilator public_flat_rw*/;
    reg          verbose /*verilator public_flat_rw*/;
 
    initial begin

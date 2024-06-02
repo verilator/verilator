@@ -23,47 +23,47 @@ module t (/*AUTOARG*/
 
       // Single if, which is untrue sometimes
       unique0 if (cyc > 5)
-	a <= 17;
+        a <= 17;
 
       // single if with else
       unique0 if (cyc < 3)
-	b <= 17;
+        b <= 17;
       else
-	b <= 19;
+        b <= 19;
 
       // multi if, some cases may not be true
       unique0 if (cyc < 3)
-	c <= 17;
+        c <= 17;
       else if (cyc > 3)
-	c <= 19;
+        c <= 19;
 
       // multi if with else, else clause hit in some cases
       unique0 if (cyc < 3)
-	d <= 17;
+        d <= 17;
       else if (cyc > 3)
-	d <= 19;
+        d <= 19;
       else
-	d <= 21;
+        d <= 21;
 
       // single if with else
       unique if (cyc < 3)
-	f <= 17;
+        f <= 17;
       else
-	f <= 19;
+        f <= 19;
 
       // multi if
       unique if (cyc < 3)
-	g <= 17;
+        g <= 17;
       else if (cyc >= 3)
-	g <= 19;
+        g <= 19;
 
       // multi if with else, else clause hit in some cases
       unique if (cyc < 3)
-	h <= 17;
+        h <= 17;
       else if (cyc > 3)
-	h <= 19;
+        h <= 19;
       else
-	h <= 21;
+        h <= 21;
 
       //====================
       // Negative test cases
@@ -72,25 +72,25 @@ module t (/*AUTOARG*/
       $display("testing fail 1: %d", cyc);
       // multi if, multiple cases true
       unique0 if (cyc < 3)
-	i <= 17;
+        i <= 17;
       else if (cyc < 5)
-	i <= 19;
+        i <= 19;
 `endif
 
 `ifdef FAILING_ASSERTION2
       // multi if, multiple cases true
       unique if (cyc < 3)
-	j <= 17;
+        j <= 17;
       else if (cyc < 5)
-	j <= 19;
+        j <= 19;
 `endif
 
 `ifdef FAILING_ASSERTION3
       // multi if, no cases true
       unique if (cyc > 1000)
-	k <= 17;
+        k <= 17;
       else if (cyc > 2000)
-	k <= 19;
+        k <= 19;
 `endif
 
 `ifdef FAILING_ASSERTION4
@@ -100,13 +100,13 @@ module t (/*AUTOARG*/
       // corresponding else."  In this case, the final if is the only if, but I think the clause
       // still applies.
       unique if (cyc > 5)
-	l <= 17;
+        l <= 17;
 `endif
 
 
       if (cyc==10) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule

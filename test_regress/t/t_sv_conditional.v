@@ -22,14 +22,14 @@ module t (/*AUTOARG*/
    // Regs and Wires
    // **************************************************************************
 
-   reg 	   rst;
+   reg     rst;
    integer rst_count;
 
 
    st3_testbench st3_testbench_i (/*AUTOINST*/
-				  // Inputs
-				  .clk			(clk),
-				  .rst			(rst));
+                                  // Inputs
+                                  .clk                  (clk),
+                                  .rst                  (rst));
 
    // **************************************************************************
    // Reset Generation
@@ -42,10 +42,10 @@ module t (/*AUTOARG*/
 
    always @( posedge clk ) begin
       if (rst_count < 2) begin
-	 rst_count++;
+         rst_count++;
       end
       else begin
-	 rst = 1'b0;
+         rst = 1'b0;
       end
    end
 
@@ -71,14 +71,14 @@ module st3_testbench (/*AUTOARG*/
    logic  clk;
    logic  rst;
    logic [8*16-1:0] wide_input_bus;
-   logic 	    decrementA;          // 0=Up-counting, 1=down-counting
-   logic 	    dual_countA;         // Advance counter by 2 steps at a time
-   logic 	    cntA_en;             // Enable Counter A
-   logic 	    decrementB;          // 0=Up-counting, 1=down-counting
-   logic 	    dual_countB;         // Advance counter by 2 steps at a time
-   logic 	    cntB_en;             // Enable counter B
+   logic            decrementA;          // 0=Up-counting, 1=down-counting
+   logic            dual_countA;         // Advance counter by 2 steps at a time
+   logic            cntA_en;             // Enable Counter A
+   logic            decrementB;          // 0=Up-counting, 1=down-counting
+   logic            dual_countB;         // Advance counter by 2 steps at a time
+   logic            cntB_en;             // Enable counter B
    logic [47:0]     selected_out;
-   integer 	    i;
+   integer          i;
 
 
    initial begin
@@ -111,30 +111,30 @@ module st3_testbench (/*AUTOARG*/
    simple_test_3
      simple_test_3_i
        (// Outputs
-	.selected_out                    (selected_out[47:0]),
-	// Inputs
-	.wide_input_bus                  (wide_input_bus[8*16-1:0]),
-	.rst                             (rst),
-	.clk                             (clk),
-	.decrementA                      (decrementA),
-	.dual_countA                     (dual_countA),
-	.cntA_en                         (cntA_en),
-	.decrementB                      (decrementB),
-	.dual_countB                     (dual_countB),
-	.cntB_en                         (cntB_en));
+        .selected_out                    (selected_out[47:0]),
+        // Inputs
+        .wide_input_bus                  (wide_input_bus[8*16-1:0]),
+        .rst                             (rst),
+        .clk                             (clk),
+        .decrementA                      (decrementA),
+        .dual_countA                     (dual_countA),
+        .cntA_en                         (cntA_en),
+        .decrementB                      (decrementB),
+        .dual_countB                     (dual_countB),
+        .cntB_en                         (cntB_en));
 
 
    // Logic to print outputs and then finish.
    always @(posedge clk) begin
       if (i < 50) begin
 `ifdef TEST_VERBOSE
-	 $display("%x", simple_test_3_i.cntA_reg ,"%x",
-		  simple_test_3_i.cntB_reg ," ", "%x", selected_out);
+         $display("%x", simple_test_3_i.cntA_reg ,"%x",
+                  simple_test_3_i.cntB_reg ," ", "%x", selected_out);
 `endif
-	 i <= i + 1;
+         i <= i + 1;
       end
       else begin
-	 $finish();
+         $finish();
       end
    end // always @ (posedge clk)
 
@@ -149,84 +149,84 @@ endmodule
 
 module simple_test_3
   (input logic [8*16-1:0] wide_input_bus,
-   input logic 	       rst,
-   input logic 	       clk,
+   input logic         rst,
+   input logic         clk,
    // Counter A
-   input logic 	       decrementA,  // 0=Up-counting, 1=down-counting
-   input logic 	       dual_countA, // Advance counter by 2 steps at a time
-   input logic 	       cntA_en,     // Enable Counter A
+   input logic         decrementA,  // 0=Up-counting, 1=down-counting
+   input logic         dual_countA, // Advance counter by 2 steps at a time
+   input logic         cntA_en,     // Enable Counter A
    // Counter B
-   input logic 	       decrementB,  // 0=Up-counting, 1=down-counting
-   input logic 	       dual_countB, // Advance counter by 2 steps at a time
-   input logic 	       cntB_en,     // Enable counter B
+   input logic         decrementB,  // 0=Up-counting, 1=down-counting
+   input logic         dual_countB, // Advance counter by 2 steps at a time
+   input logic         cntB_en,     // Enable counter B
 
    // Outputs
    output logic [47:0] selected_out);
 
    // Declarations
-   logic [3:0] 	       cntA_reg;       // Registered version of cntA
-   logic [3:0] 	       cntB_reg;       // Registered version of cntA
+   logic [3:0]         cntA_reg;       // Registered version of cntA
+   logic [3:0]         cntB_reg;       // Registered version of cntA
 
 
    counterA
      counterA_inst
        (/*AUTOINST*/
-	// Outputs
-	.cntA_reg			(cntA_reg[3:0]),
-	// Inputs
-	.decrementA			(decrementA),
-	.dual_countA			(dual_countA),
-	.cntA_en			(cntA_en),
-	.clk				(clk),
-	.rst				(rst));
+        // Outputs
+        .cntA_reg                       (cntA_reg[3:0]),
+        // Inputs
+        .decrementA                     (decrementA),
+        .dual_countA                    (dual_countA),
+        .cntA_en                        (cntA_en),
+        .clk                            (clk),
+        .rst                            (rst));
 
    counterB
      counterB_inst
        (/*AUTOINST*/
-	// Outputs
-	.cntB_reg			(cntB_reg[3:0]),
-	// Inputs
-	.decrementB			(decrementB),
-	.dual_countB			(dual_countB),
-	.cntB_en			(cntB_en),
-	.clk				(clk),
-	.rst				(rst));
+        // Outputs
+        .cntB_reg                       (cntB_reg[3:0]),
+        // Inputs
+        .decrementB                     (decrementB),
+        .dual_countB                    (dual_countB),
+        .cntB_en                        (cntB_en),
+        .clk                            (clk),
+        .rst                            (rst));
 
    simple_test_3a
      sta
        (.wide_input_bus        (wide_input_bus),
-	.selector              (cntA_reg),
-	.selected_out          (selected_out[7:0]));
+        .selector              (cntA_reg),
+        .selected_out          (selected_out[7:0]));
 
    simple_test_3b
      stb
        (.wide_input_bus        (wide_input_bus),
-	.selector              (cntA_reg),
-	.selected_out          (selected_out[15:8]));
+        .selector              (cntA_reg),
+        .selected_out          (selected_out[15:8]));
 
    simple_test_3c
      stc
        (.wide_input_bus        (wide_input_bus),
-	.selector              (cntB_reg),
-	.selected_out          (selected_out[23:16]));
+        .selector              (cntB_reg),
+        .selected_out          (selected_out[23:16]));
 
    simple_test_3d
      std
        (.wide_input_bus        (wide_input_bus),
-	.selector              (cntB_reg),
-	.selected_out          (selected_out[31:24]));
+        .selector              (cntB_reg),
+        .selected_out          (selected_out[31:24]));
 
    simple_test_3e
      ste
        (.wide_input_bus        (wide_input_bus),
-	.selector              (cntB_reg),
-	.selected_out          (selected_out[39:32]));
+        .selector              (cntB_reg),
+        .selected_out          (selected_out[39:32]));
 
    simple_test_3f
      stf
        (.wide_input_bus        (wide_input_bus),
-	.selector              (cntB_reg),
-	.selected_out          (selected_out[47:40]));
+        .selector              (cntB_reg),
+        .selected_out          (selected_out[47:40]));
 
 
 endmodule // simple_test_3
@@ -248,7 +248,7 @@ module counterA
    // Sequential part of counter CntA
    always_ff @(posedge clk)
      begin
-	cntA_reg <= cntA;
+        cntA_reg <= cntA;
      end
 
    // Combinational part of counter
@@ -460,7 +460,7 @@ module simple_test_3f
    always_comb begin
 /* -----\/----- EXCLUDED -----\/-----
       if ( selector[3:0] inside { 4'b?00?, 4'b1100})      // Matching 0000, 0001, 1000, 1100, 1001
-	// if ( selector[3:2] inside { 2'b?0, selector[1:0]})
+        // if ( selector[3:2] inside { 2'b?0, selector[1:0]})
         selected_out = wide_input_bus[  7:  0];
       else
  -----/\----- EXCLUDED -----/\----- */
@@ -470,7 +470,7 @@ module simple_test_3f
           4'b0??0: selected_out = wide_input_bus[ 23: 16]; // Overlap: only 0100 remains (0000 in "if" above)
           4'b0100: selected_out = wide_input_bus[ 31: 24]; // Overlap: Will never occur
           default: selected_out = wide_input_bus[127:120];   // Remaining 0011,0100,0101,0111,1010,1011,1101,1110,1111
-	endcase // case (selector)
+        endcase // case (selector)
       /* verilator lint_on CASEOVERLAP */
    end
 

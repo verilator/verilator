@@ -1,0 +1,7 @@
+%Error: t/t_randomize_method_nclass_bad.v:9:7: Calling implicit class method 'randomize' without being under class
+    9 |       randomize(1);
+      |       ^~~~~~~~~
+%Error: t/t_randomize_method_nclass_bad.v:10:7: Calling implicit class method 'srandom' without being under class
+   10 |       srandom(1);
+      |       ^~~~~~~
+%Error: Exiting due to

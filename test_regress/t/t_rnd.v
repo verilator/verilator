@@ -10,19 +10,19 @@ module t (/*AUTOARG*/
    );
 
    input clk;
-   reg 	 _ranit;
+   reg   _ranit;
 
    reg [2:0] a;
    reg [33:0] wide;
-   reg 	      unused_r;
+   reg        unused_r;
 
    initial _ranit = 0;
 
    always @ (posedge clk) begin : blockName
-      begin	// Verify begin/begin is legal
-	 unused_r <= 1'b1;
+      begin     // Verify begin/begin is legal
+         unused_r <= 1'b1;
       end
-      begin end	// Verify empty is legal
+      begin end // Verify empty is legal
    end
 
    wire one = 1'b1;
@@ -30,15 +30,15 @@ module t (/*AUTOARG*/
 
    always @ (posedge clk) begin
       if (!_ranit) begin
-	 _ranit <= 1;
-	 //
-	 a = 3'b1xx;
-	 wide <= 34'bx1_00000000_xxxxxxxx_00000000_xxxx0000;
-	 if (one !== 1'b1) $stop;
-	 if ((rand_bits & 8'b1100_0011) !== 8'b0100_0010) $stop;
-	 //
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         _ranit <= 1;
+         //
+         a = 3'b1xx;
+         wide <= 34'bx1_00000000_xxxxxxxx_00000000_xxxx0000;
+         if (one !== 1'b1) $stop;
+         if ((rand_bits & 8'b1100_0011) !== 8'b0100_0010) $stop;
+         //
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

@@ -4,7 +4,7 @@
 // without warranty, 2012 by Jeremy Bennett
 // SPDX-License-Identifier: CC0-1.0
 
-// see bug 591
+// See issue #591
 
 package pkg2;
    parameter PARAM2 = 16;

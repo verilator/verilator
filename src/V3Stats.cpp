@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -14,262 +14,154 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstMT.h"
 
-#include "V3Global.h"
 #include "V3Stats.h"
-#include "V3Ast.h"
-
-// This visitor does not edit nodes, and is called at error-exit, so should use constant iterators
-#include "V3AstConstOnly.h"
 
 #include <iomanip>
 #include <map>
 
+VL_DEFINE_DEBUG_FUNCTIONS;
+
+//######################################################################
+// Statics
+
+V3Mutex V3Stats::s_mutex;
+
 //######################################################################
 // Stats class functions
 
-class StatsVisitor final : public AstNVisitor {
-private:
-    // NODE STATE/TYPES
-
-    using NameMap = std::map<const std::string, int>;  // Number of times a name appears
+class StatsVisitor final : public VNVisitorConst {
+    struct Counters final {
+        // Nodes of given type
+        uint64_t m_statTypeCount[VNType::_ENUM_END];
+        // Nodes of given type with given type immediate child
+        uint64_t m_statAbove[VNType::_ENUM_END][VNType::_ENUM_END];
+        // Prediction of given type
+        uint64_t m_statPred[VBranchPred::_ENUM_END];
+    };
 
     // STATE
-    string m_stage;  // Name of the stage we are scanning
-    /// m_fast = true:  Counting only critical branch of fastpath
-    /// m_fast = false:  Counting every node, ignoring structure of program
-    bool m_fast;
-
-    AstCFunc* m_cfuncp;  // Current CFUNC
-    bool m_counting;  // Currently counting
-    double m_instrs;  // Current instr count (for determining branch direction)
-    bool m_tracingCall;  // Iterating into a CCall to a CFunc
-
-    std::vector<VDouble0> m_statTypeCount;  // Nodes of given type
-    VDouble0 m_statAbove[AstType::_ENUM_END][AstType::_ENUM_END];  // Nodes of given type
-    std::array<VDouble0, VBranchPred::_ENUM_END> m_statPred;  // Nodes of given type
-    VDouble0 m_statInstr;  // Instruction count
-    VDouble0 m_statInstrFast;  // Instruction count, non-slow() eval functions only
-    std::vector<VDouble0> m_statVarWidths;  // Variables of given width
-    std::vector<NameMap> m_statVarWidthNames;  // Var names of given width
-    VDouble0 m_statVarArray;  // Statistic tracking
-    VDouble0 m_statVarBytes;  // Statistic tracking
-    VDouble0 m_statVarClock;  // Statistic tracking
-    VDouble0 m_statVarScpBytes;  // Statistic tracking
+    const bool m_fastOnly;  // When true, consider only fast functions
+    const AstNodeExpr* m_parentExprp = nullptr;  // Parent expression
+    Counters m_counters;  // The actual counts we will display
+    Counters m_dumpster;  // Alternate buffer to make discarding parts of the tree easier
+    Counters* m_accump;  // The currently active accumulator
+    std::vector<uint64_t> m_statVarWidths;  // Variables of given width
+    std::vector<std::map<const std::string, uint32_t>>
+        m_statVarWidthNames;  // Var names of given width
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
-    void allNodes(AstNode* nodep) {
-        m_instrs += nodep->instrCount();
-        if (m_counting) {
-            ++m_statTypeCount[nodep->type()];
-            if (nodep->firstAbovep()) {  // Grab only those above, not those "back"
-                ++m_statAbove[nodep->firstAbovep()->type()][nodep->type()];
-            }
-            m_statInstr += nodep->instrCount();
-            if (m_cfuncp && !m_cfuncp->slow()) m_statInstrFast += nodep->instrCount();
-        }
+    void countThenIterateChildren(AstNode* nodep) {
+        ++m_accump->m_statTypeCount[nodep->type()];
+        iterateChildrenConst(nodep);
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) override {
-        allNodes(nodep);
-        if (!m_fast) {
-            // Count all CFuncs below this module
-            iterateChildrenConst(nodep);
-        }
-        // Else we recursively trace fast CFuncs from the top _eval
-        // func, see visit(AstNetlist*)
-    }
-    virtual void visit(AstVar* nodep) override {
-        allNodes(nodep);
-        iterateChildrenConst(nodep);
-        if (m_counting && nodep->dtypep()) {
-            if (nodep->isUsedClock()) ++m_statVarClock;
-            if (VN_IS(nodep->dtypeSkipRefp(), UnpackArrayDType)) {
-                ++m_statVarArray;
-            } else {
-                m_statVarBytes += nodep->dtypeSkipRefp()->widthTotalBytes();
-            }
-            if (int(m_statVarWidths.size()) <= nodep->width()) {
+    void visit(AstVar* nodep) override {
+        if (nodep->dtypep()) {
+            if (m_statVarWidths.size() <= static_cast<size_t>(nodep->width())) {
                 m_statVarWidths.resize(nodep->width() + 5);
-                if (v3Global.opt.statsVars()) m_statVarWidthNames.resize(nodep->width() + 5);
+                if (v3Global.opt.statsVars()) {  //
+                    m_statVarWidthNames.resize(nodep->width() + 5);
+                }
             }
             ++m_statVarWidths.at(nodep->width());
-            string pn = nodep->prettyName();
             if (v3Global.opt.statsVars()) {
-                NameMap& nameMapr = m_statVarWidthNames.at(nodep->width());
-                if (nameMapr.find(pn) != nameMapr.end()) {
-                    nameMapr[pn]++;
-                } else {
-                    nameMapr[pn] = 1;
-                }
+                ++m_statVarWidthNames.at(nodep->width())[nodep->prettyName()];
             }
         }
-    }
-    virtual void visit(AstVarScope* nodep) override {
-        allNodes(nodep);
-        iterateChildrenConst(nodep);
-        if (m_counting) {
-            if (VN_IS(nodep->varp()->dtypeSkipRefp(), BasicDType)) {
-                m_statVarScpBytes += nodep->varp()->dtypeSkipRefp()->widthTotalBytes();
-            }
-        }
-    }
-    virtual void visit(AstNodeIf* nodep) override {
-        UINFO(4, "   IF i=" << m_instrs << " " << nodep << endl);
-        allNodes(nodep);
-        // Condition is part of cost allocated to PREVIOUS block
-        iterateAndNextConstNull(nodep->condp());
-        // Track prediction
-        if (m_counting) ++m_statPred[nodep->branchPred()];
-        if (!m_fast) {
-            // Count everything
-            iterateChildrenConst(nodep);
-        } else {
-            // See which path we want to take
-            // Need to do even if !m_counting because maybe determining upstream if/else
-            double ifInstrs = 0.0;
-            double elseInstrs = 0.0;
-            if (!nodep->branchPred().unlikely()) {  // Check if
-                VL_RESTORER(m_instrs);
-                VL_RESTORER(m_counting);
-                {
-                    m_counting = false;
-                    m_instrs = 0.0;
-                    iterateAndNextConstNull(nodep->ifsp());
-                    ifInstrs = m_instrs;
-                }
-            }
-            if (!nodep->branchPred().likely()) {  // Check else
-                VL_RESTORER(m_instrs);
-                VL_RESTORER(m_counting);
-                {
-                    m_counting = false;
-                    m_instrs = 0.0;
-                    iterateAndNextConstNull(nodep->elsesp());
-                    elseInstrs = m_instrs;
-                }
-            }
-            // Now collect the stats
-            if (m_counting) {
-                if (ifInstrs >= elseInstrs) {
-                    iterateAndNextConstNull(nodep->ifsp());
-                } else {
-                    iterateAndNextConstNull(nodep->elsesp());
-                }
-            }
-        }
-    }
-    // While's we assume evaluate once.
-    // virtual void visit(AstWhile* nodep) override {
 
-    virtual void visit(AstNodeCCall* nodep) override {
-        allNodes(nodep);
-        iterateChildrenConst(nodep);
-        if (m_fast && !nodep->funcp()->entryPoint()) {
-            // Enter the function and trace it
-            m_tracingCall = true;
-            iterate(nodep->funcp());
-        }
+        countThenIterateChildren(nodep);
     }
-    virtual void visit(AstCFunc* nodep) override {
-        if (m_fast) {
-            if (!m_tracingCall && !nodep->entryPoint()) return;
-            m_tracingCall = false;
-        }
-        VL_RESTORER(m_cfuncp);
-        {
-            m_cfuncp = nodep;
-            allNodes(nodep);
-            iterateChildrenConst(nodep);
-        }
+
+    void visit(AstNodeExpr* nodep) override {
+        // Count expression combinations
+        if (m_parentExprp) ++m_accump->m_statAbove[m_parentExprp->type()][nodep->type()];
+        VL_RESTORER(m_parentExprp);
+        m_parentExprp = nodep;
+        countThenIterateChildren(nodep);
     }
-    virtual void visit(AstNode* nodep) override {
-        allNodes(nodep);
-        iterateChildrenConst(nodep);
+
+    void visit(AstNodeIf* nodep) override {
+        // Track prediction
+        ++m_accump->m_statPred[nodep->branchPred()];
+        countThenIterateChildren(nodep);
     }
-    virtual void visit(AstNetlist* nodep) override {
-        if (m_fast && nodep->evalp()) {
-            m_instrs = 0;
-            m_counting = true;
-            iterateChildrenConst(nodep->evalp());
-            m_counting = false;
-        }
-        allNodes(nodep);
-        iterateChildrenConst(nodep);
+
+    void visit(AstCFunc* nodep) override {
+        VL_RESTORER(m_accump);
+        if (m_fastOnly && !nodep->slow()) m_accump = &m_counters;
+        countThenIterateChildren(nodep);
     }
+
+    void visit(AstNode* nodep) override { countThenIterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    StatsVisitor(AstNetlist* nodep, const string& stage, bool fast)
-        : m_stage{stage}
-        , m_fast{fast} {
-        UINFO(9, "Starting stats, fast=" << fast << endl);
-        m_cfuncp = nullptr;
-        m_counting = !m_fast;
-        m_instrs = 0;
-        m_tracingCall = false;
-        // Initialize arrays
-        m_statTypeCount.resize(AstType::_ENUM_END);
-        // Process
-        iterate(nodep);
-    }
-    virtual ~StatsVisitor() override {
-        // Done. Publish statistics
-        V3Stats::addStat(m_stage, "Instruction count, TOTAL", m_statInstr);
-        V3Stats::addStat(m_stage, "Instruction count, fast critical", m_statInstrFast);
-        // Vars
-        V3Stats::addStat(m_stage, "Vars, unpacked arrayed", m_statVarArray);
-        V3Stats::addStat(m_stage, "Vars, clock attribute", m_statVarClock);
-        V3Stats::addStat(m_stage, "Var space, non-arrays, bytes", m_statVarBytes);
-        if (m_statVarScpBytes != 0.0) {
-            V3Stats::addStat(m_stage, "Var space, scoped, bytes", m_statVarScpBytes);
-        }
+    StatsVisitor(AstNetlist* nodep, const std::string& stage, bool fastOnly)
+        : m_fastOnly{fastOnly}
+        , m_accump{fastOnly ? &m_dumpster : &m_counters} {
+        UINFO(9, "Starting stats, fastOnly=" << fastOnly << endl);
+        memset(&m_counters, 0, sizeof(m_counters));
+        memset(&m_dumpster, 0, sizeof(m_dumpster));
+
+        iterateConst(nodep);
+
+        // Shorthand
+        const auto addStat = [&](const std::string& name, double count, unsigned precision = 0) {
+            V3Stats::addStat(stage, name, count, precision);
+        };
+
+        // Variable widths
         for (unsigned i = 0; i < m_statVarWidths.size(); i++) {
-            double count = double(m_statVarWidths.at(i));
-            if (count != 0.0) {
+            if (const uint64_t count = m_statVarWidths.at(i)) {
+                std::stringstream ss;
+                ss << "Vars, width " << std::setw(5) << std::dec << i;
+                const std::string prefix = ss.str();
                 if (v3Global.opt.statsVars()) {
-                    NameMap& nameMapr = m_statVarWidthNames.at(i);
-                    for (const auto& itr : nameMapr) {
-                        std::ostringstream os;
-                        os << "Vars, width " << std::setw(5) << std::dec << i << " " << itr.first;
-                        V3Stats::addStat(m_stage, os.str(), itr.second);
+                    for (const auto& it : m_statVarWidthNames.at(i)) {
+                        addStat(prefix + " " + it.first, it.second);
                     }
                 } else {
-                    std::ostringstream os;
-                    os << "Vars, width " << std::setw(5) << std::dec << i;
-                    V3Stats::addStat(m_stage, os.str(), count);
+                    addStat(prefix, count);
                 }
             }
         }
-        // Node types
-        for (int type = 0; type < AstType::_ENUM_END; type++) {
-            double count = double(m_statTypeCount.at(type));
-            if (count != 0.0) {
-                V3Stats::addStat(m_stage, string("Node count, ") + AstType(type).ascii(), count);
+
+        // Node types (also total memory usage)
+        const auto typeName = [](int type) { return std::string{VNType{type}.ascii()}; };
+        const auto typeSize = [](int type) { return VNType{type}.typeInfo()->m_sizeof; };
+        size_t totalNodeMemoryUsage = 0;
+        for (int t = 0; t < VNType::_ENUM_END; ++t) {
+            if (const uint64_t count = m_counters.m_statTypeCount[t]) {
+                totalNodeMemoryUsage += count * typeSize(t);
+                addStat("Node count, " + typeName(t), count);
             }
         }
-        for (int type = 0; type < AstType::_ENUM_END; type++) {
-            for (int type2 = 0; type2 < AstType::_ENUM_END; type2++) {
-                double count = double(m_statAbove[type][type2]);
-                if (count != 0.0) {
-                    V3Stats::addStat(m_stage,
-                                     (string("Node pairs, ") + AstType(type).ascii() + "_"
-                                      + AstType(type2).ascii()),
-                                     count);
+        addStat("Node memory TOTAL (MiB)", totalNodeMemoryUsage >> 20);
+
+        // Node Memory usage
+        for (int t = 0; t < VNType::_ENUM_END; ++t) {
+            if (const uint64_t count = m_counters.m_statTypeCount[t]) {
+                const double share = 100.0 * count * typeSize(t) / totalNodeMemoryUsage;
+                addStat("Node memory share (%), " + typeName(t), share, 2);
+            }
+        }
+
+        // Expression combinations
+        for (int t1 = 0; t1 < VNType::_ENUM_END; ++t1) {
+            for (int t2 = 0; t2 < VNType::_ENUM_END; ++t2) {
+                if (const uint64_t c = m_counters.m_statAbove[t1][t2]) {
+                    addStat("Expr combination, " + typeName(t1) + " over " + typeName(t2), c);
                 }
             }
         }
-        // Branch pred
-        for (int type = 0; type < VBranchPred::_ENUM_END; type++) {
-            double count = double(m_statPred[type]);
-            if (count != 0.0) {
-                V3Stats::addStat(
-                    m_stage, (string("Branch prediction, ") + VBranchPred(type).ascii()), count);
+
+        // Branch predictions
+        for (int t = 0; t < VBranchPred::_ENUM_END; ++t) {
+            if (const uint64_t c = m_counters.m_statPred[t]) {
+                addStat("Branch prediction, "s + VBranchPred{t}.ascii(), c);
             }
         }
     }
@@ -278,11 +170,16 @@ public:
 //######################################################################
 // Top Stats class
 
-void V3Stats::statsStageAll(AstNetlist* nodep, const string& stage, bool fast) {
-    StatsVisitor visitor(nodep, stage, fast);
+void V3Stats::addStatSum(const string& name, double count) VL_MT_SAFE_EXCLUDES(s_mutex) {
+    V3LockGuard lock{s_mutex};
+    addStat(V3Statistic{"*", name, count, 0, true});
+}
+
+void V3Stats::statsStageAll(AstNetlist* nodep, const std::string& stage, bool fastOnly) {
+    StatsVisitor{nodep, stage, fastOnly};
 }
 
 void V3Stats::statsFinalAll(AstNetlist* nodep) {
-    statsStageAll(nodep, "Final");
-    statsStageAll(nodep, "Final_Fast", true);
+    statsStageAll(nodep, "Final all");
+    statsStageAll(nodep, "Final fast", true);
 }

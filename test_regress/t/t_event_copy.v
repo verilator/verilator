@@ -99,7 +99,7 @@ module t(/*AUTOARG*/
          // are ever pointed to by an EVENTREF.
          e4 = e3;  // Old handle to e4
          e3 = e2;  // Same event, also triggers e2
-         // IEEE 2017 15.5.5.1 says that this causes a merge, and the below
+         // IEEE 1800-2023 15.5.5.1 says that this causes a merge, and the below
          // should also activate the "old e3".  However we could not find any
          // simulator that actually does this.  Instead the "old e3" becomes
          // unreachable (via old handle), but is reachable by "e4" as assigned

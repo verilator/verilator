@@ -31,34 +31,34 @@ module t (/*AUTOARG*/
 
    always @ (posedge clk) begin
       posedge_wr_clocks = (clk &~ prev_wr_clocks); //surefire lint_off_line SEQASS
-      prev_wr_clocks = prev_wr_clocks | posedge_wr_clocks;	//surefire lint_off_line SEQASS
+      prev_wr_clocks = prev_wr_clocks | posedge_wr_clocks;      //surefire lint_off_line SEQASS
       if (posedge_wr_clocks) begin
-	 //$write("[%0t] Wrclk\n", $time);
-	 m_dout <= m_din;
+         //$write("[%0t] Wrclk\n", $time);
+         m_dout <= m_din;
       end
    end
 
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc<=cyc+1;
-	 if (cyc==1) begin
-	    $write("  %x\n",comb_pos_1);
-	    m_din <= 32'hfeed;
-	 end
-	 if (cyc==2) begin
-	    $write("  %x\n",comb_pos_1);
-	    m_din <= 32'he11e;
-	 end
-	 if (cyc==3) begin
-	    m_din <= 32'he22e;
-	    $write("  %x\n",comb_pos_1);
-	    if (m_dout!=32'hfeed) $stop;
-	 end
-	 if (cyc==4) begin
-	    if (m_dout!=32'he11e) $stop;
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         cyc<=cyc+1;
+         if (cyc==1) begin
+            $write("  %x\n",comb_pos_1);
+            m_din <= 32'hfeed;
+         end
+         if (cyc==2) begin
+            $write("  %x\n",comb_pos_1);
+            m_din <= 32'he11e;
+         end
+         if (cyc==3) begin
+            m_din <= 32'he22e;
+            $write("  %x\n",comb_pos_1);
+            if (m_dout!=32'hfeed) $stop;
+         end
+         if (cyc==4) begin
+            if (m_dout!=32'he11e) $stop;
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 endmodule

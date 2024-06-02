@@ -72,45 +72,45 @@ module t;
       integer i;
       integer times;
       begin
-	 times = 1;
-	 for (i=0; i<a; i=i+1) times = times*2;
-	 f_for = times;
+         times = 1;
+         for (i=0; i<a; i=i+1) times = times*2;
+         f_for = times;
       end
    endfunction
 
    function integer f_while(input [31:0] a);
       integer i;
       begin
-	 i=0;
-	 begin : named
-	    f_while = 1;
-	 end : named
-	 while (i<=a) begin
-	    if (i[0]) f_while = f_while + 1;
-	    i = i + 1;
-	 end
+         i=0;
+         begin : named
+            f_while = 1;
+         end : named
+         while (i<=a) begin
+            if (i[0]) f_while = f_while + 1;
+            i = i + 1;
+         end
       end
    endfunction
 
    // Speced ok: local variables
    function integer f_case(input [31:0] a);
       case(a)
-	32'd1: f_case = 1;
-	32'd0, 32'd4: f_case = 18;
-	32'd1234: begin $display("never get here"); $stop; end
-	default: f_case = 99;
+        32'd1: f_case = 1;
+        32'd0, 32'd4: f_case = 18;
+        32'd1234: begin $display("never get here"); $stop; end
+        default: f_case = 99;
       endcase
    endfunction
 
-   function integer f_return(input [31:0] a);
+   function automatic integer f_return(input [31:0] a);
       integer out = 2;
       while (1) begin
-	 out = out+1;
-	 if (a>1) break;
+         out = out+1;
+         if (a>1) break;
       end
       while (1) begin
-	 out = out+1;
-	 if (a>1) return 2+out;
+         out = out+1;
+         if (a>1) return 2+out;
       end
       f_return = 0;
    endfunction

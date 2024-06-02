@@ -21,7 +21,7 @@ execute(
     );
 
 system("cat $Self->{obj_dir}/simpart_0000.vcd "
-       ." $Self->{obj_dir}/simpart_0000_cat*.vcd > $Self->{obj_dir}/simall.vcd");
+       . " $Self->{obj_dir}/simpart_0000_cat*.vcd > $Self->{obj_dir}/simall.vcd");
 
 vcd_identical("$Self->{obj_dir}/simall.vcd",
               $Self->{golden_filename});

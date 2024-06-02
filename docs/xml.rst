@@ -46,9 +46,6 @@ The XML document consists of 4 sections within the top level
    hierarchy. Each instance is represented with the ``<cell>`` element
    with the following attributes:
 
-   -  ``fl`` (deprecated): The file id and line number where the module
-      was instanced. Use ``loc`` instead.
-
    -  ``loc``: The file id, first line number, last line number, first
       column number and last column number of the identifier where the
       module was instanced, separated by commas.
@@ -73,8 +70,10 @@ The XML document consists of 4 sections within the top level
 Distribution
 ============
 
-Copyright 2020-2021 by Wilson Snyder. Verilator is free software; you can
+Copyright 2020-2024 by Wilson Snyder. Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
 General Public License Version 3 or the Perl Artistic License Version 2.0.
+
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. |Logo| image:: https://www.veripool.org/img/verilator_256_200_min.png

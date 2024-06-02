@@ -22,6 +22,14 @@ module t (/*AUTOARG*/
    final if (cnt0 == 0) $stop;
    final if (cnt1 != 0) $stop;
 
+   // Some dummy statements to make the code larger
+   generate
+      genvar  i;
+      for (i = 0 ; i < 100; i = i + 1) begin
+         always @(posedge clk) $c("/*", i, "*/");
+      end
+   endgenerate
+
    always_comb begin
       if (cnt0==99) begin
          $write("*-* All Finished *-*\n");

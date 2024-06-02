@@ -1,0 +1,11 @@
+%Warning-SIDEEFFECT: t/t_stmt_incr_unsup.v:17:12: Expression side effect may be mishandled
+                                                : ... Suggest use a temporary variable in place of this expression
+   17 |         arr[postincrement_i()]++;
+      |            ^
+                     ... For warning description see https://verilator.org/warn/SIDEEFFECT?v=latest
+                     ... Use "/* verilator lint_off SIDEEFFECT */" and lint_on around source to disable this message.
+%Warning-SIDEEFFECT: t/t_stmt_incr_unsup.v:17:13: Expression side effect may be mishandled
+                                                : ... Suggest use a temporary variable in place of this expression
+   17 |         arr[postincrement_i()]++;
+      |             ^~~~~~~~~~~~~~~
+%Error: Exiting due to

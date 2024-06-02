@@ -10,24 +10,27 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   reg  a;
-   wire  o;
-   udp (o, a);
+   reg  a1;
+   wire a2 = ~a1;
+   wire o1, o2;
+   udp (o1, a1);
+   udp (o2, a2);
 
-   integer cyc;  initial cyc=0;
+   integer cyc;  initial cyc = 0;
 
    // Test loop
    always @ (posedge clk) begin
       cyc <= cyc + 1;
-      a <= cyc[0];
+      a1  <= cyc[0];
       if (cyc==0) begin
       end
       else if (cyc<90) begin
-	 if (a != !cyc[0]) $stop;
+         if (o1 !=  cyc[0]) $stop;
+         if (o2 != !cyc[0]) $stop;
       end
       else if (cyc==99) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

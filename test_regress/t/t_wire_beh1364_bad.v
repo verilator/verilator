@@ -22,16 +22,18 @@ module t (/*AUTOARG*/
    //output var [1:0] voa;
 
    initial begin
-      w = '0;  // Error
-      o = '0;  // Error
-      oa = '0;  // Error
-      wo = '0;  // Error
-      woa = '0;  // Error
-      r = '0;  // Not an error
-      ro = '0;  // Not an error
-      roa = '0;  // Not an error
-      //vo = '0;  // Not an error
-      //voa = '0;  // Not an error
+      // Error
+      w = 0;
+      o = 0;
+      oa = 0;
+      wo = 0;
+      woa = 0;
+      // Not an error
+      r = 0;
+      ro = 0;
+      roa = 0;
+      //vo = 0;
+      //voa = 0;
    end
 
 endmodule

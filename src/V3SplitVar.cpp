@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -14,9 +14,9 @@
 //
 //*************************************************************************
 // V3SplitVar divides a variable into multiple variables to avoid UNOPTFLAT warning
-// and get better perfomance.
+// and get better performance.
 // Variables to be split must be marked by /*verilator split_var*/ metacomment.
-// There are sveral kinds of data types that may cause the warning.
+// There are several kinds of data types that may cause the warning.
 // 1) Unpacked arrays
 // 2) Packed arrays
 // 3) Unpacked structs
@@ -27,7 +27,7 @@
 // What this pass does looks as below.
 //
 //     // Original
-//     logic [1:0] unpcked_array_var[0:1] /*verilator split_var*/;
+//     logic [1:0] unpacked_array_var[0:1] /*verilator split_var*/;
 //     always_comb begin
 //        unpacked_array_var[1][0] =  unpacked_array_var[0][0]; // UNOPTFLAT warning
 //        unpacked_array_var[1][1] = ~unpacked_array_var[0][1]; // UNOPTFLAT warning
@@ -45,8 +45,8 @@
 // is initially converted to
 //
 //     // Intermediate
-//     logic [1:0] unpcked_array_var0 /*verilator split_var*/;
-//     logic [1:0] unpcked_array_var1 /*verilator split_var*/;
+//     logic [1:0] unpacked_array_var0 /*verilator split_var*/;
+//     logic [1:0] unpacked_array_var1 /*verilator split_var*/;
 //     always_comb begin
 //        unpacked_array_var1[0] =  unpacked_array_var0[0];
 //        unpacked_array_var1[1] = ~unpacked_array_var0[1];
@@ -110,35 +110,36 @@
 //
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
-#include "V3Ast.h"
-#include "V3Global.h"
 #include "V3SplitVar.h"
-#include "V3Stats.h"
 
-#include <algorithm>  // sort
-#include <map>
+#include "V3Stats.h"
+#include "V3UniqueNames.h"
+
 #include <set>
 #include <vector>
 
-struct SplitVarImpl {
-    static AstNodeAssign* newAssign(FileLine* fileline, AstNode* lhsp, AstNode* rhsp,
+VL_DEFINE_DEBUG_FUNCTIONS;
+
+struct SplitVarImpl VL_NOT_FINAL {
+    // NODE STATE
+    //  AstNodeModule::user1()  -> Block number counter for generating unique names
+    const VNUser1InUse m_user1InUse;  // Only used in SplitUnpackedVarVisitor
+
+    static AstNodeAssign* newAssign(FileLine* fileline, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
                                     const AstVar* varp) {
         if (varp->isFuncLocal() || varp->isFuncReturn()) {
-            return new AstAssign(fileline, lhsp, rhsp);
+            return new AstAssign{fileline, lhsp, rhsp};
         } else {
-            return new AstAssignW(fileline, lhsp, rhsp);
+            return new AstAssignW{fileline, lhsp, rhsp};
         }
     }
-
-    static const char* const notSplitMsg;
 
     // These check functions return valid pointer to the reason text if a variable cannot be split.
 
     // Check if a var type can be split
-    static const char* cannotSplitVarTypeReason(AstVarType type) {
+    static const char* cannotSplitVarTypeReason(VVarType type) {
         // Only SplitUnpackedVarVisitor can split WREAL. SplitPackedVarVisitor cannot.
         const bool ok
             = type == type.VAR || type == type.WIRE || type == type.PORT || type == type.WREAL;
@@ -152,10 +153,12 @@ struct SplitVarImpl {
         return nullptr;
     }
 
-    static const char* cannotSplitConnectedPortReason(AstPin* pinp) {
-        AstVar* varp = pinp->modVarp();
+    static const char* cannotSplitConnectedPortReason(const AstPin* pinp) {
+        const AstVar* const varp = pinp->modVarp();
         if (!varp) return "it is not connected";
-        if (const char* reason = cannotSplitVarDirectionReason(varp->direction())) return reason;
+        if (const char* const reason = cannotSplitVarDirectionReason(varp->direction())) {
+            return reason;
+        }
         return nullptr;
     }
 
@@ -167,11 +170,15 @@ struct SplitVarImpl {
     }
 
     static const char* cannotSplitVarCommonReason(const AstVar* varp) {
-        if (AstNodeFTask* taskp = VN_CAST(varp->backp(), NodeFTask)) {
-            if (const char* reason = cannotSplitTaskReason(taskp)) return reason;
+        if (const AstNodeFTask* const taskp = VN_CAST(varp->backp(), NodeFTask)) {
+            if (const char* const reason = cannotSplitTaskReason(taskp)) return reason;
         }
-        if (const char* reason = cannotSplitVarTypeReason(varp->varType())) return reason;
-        if (const char* reason = cannotSplitVarDirectionReason(varp->direction())) return reason;
+        if (const char* const reason = cannotSplitVarTypeReason(varp->varType())) {
+            return reason;
+        }
+        if (const char* const reason = cannotSplitVarDirectionReason(varp->direction())) {
+            return reason;
+        }
         if (varp->isSigPublic()) return "it is public";
         if (varp->isUsedLoopIdx()) return "it is used as a loop variable";
         return nullptr;
@@ -180,41 +187,49 @@ struct SplitVarImpl {
     static const char* cannotSplitPackedVarReason(const AstVar* varp);
 
     template <class T_ALWAYSLIKE>
-    static void insertBeginCore(T_ALWAYSLIKE* ap, AstNodeStmt* stmtp, AstNodeModule* modp) {
-        if (ap->isJustOneBodyStmt() && ap->bodysp() == stmtp) {
+    void insertBeginCore(T_ALWAYSLIKE* ap, AstNodeStmt* stmtp, AstNodeModule* modp) {
+        if (ap->isJustOneBodyStmt() && ap->stmtsp() == stmtp) {
             stmtp->unlinkFrBack();
             // Insert begin-end because temp value may be inserted to this block later.
-            const std::string name = "__VsplitVarBlk" + cvtToStr(modp->varNumGetInc());
-            ap->addStmtp(new AstBegin(ap->fileline(), name, stmtp));
+            const std::string name = "__VsplitVarBlk" + cvtToStr(modp->user1Inc(1));
+            ap->addStmtsp(new AstBegin{ap->fileline(), name, stmtp});
         }
     }
 
-    static void insertBeginCore(AstInitial* initp, AstNodeStmt* stmtp, AstNodeModule* modp) {
-        if (initp->isJustOneBodyStmt() && initp->bodysp() == stmtp) {
+    void insertBeginCore(AstInitial* initp, AstNodeStmt* stmtp, AstNodeModule* modp) {
+        if (initp->isJustOneBodyStmt() && initp->stmtsp() == stmtp) {
             stmtp->unlinkFrBack();
             // Insert begin-end because temp value may be inserted to this block later.
-            const std::string name = "__VsplitVarBlk" + cvtToStr(modp->varNumGetInc());
-            initp->replaceWith(
-                new AstInitial(initp->fileline(), new AstBegin(initp->fileline(), name, stmtp)));
+            FileLine* const fl = initp->fileline();
+            const std::string name = "__VsplitVarBlk" + cvtToStr(modp->user1Inc(1));
+            initp->replaceWith(new AstInitial{fl, new AstBegin{fl, name, stmtp}});
             VL_DO_DANGLING(initp->deleteTree(), initp);
         }
     }
 
-    static void insertBeginIfNecessary(AstNodeStmt* stmtp, AstNodeModule* modp) {
-        AstNode* backp = stmtp->backp();
-        if (AstAlways* ap = VN_CAST(backp, Always)) {
+    void insertBeginIfNecessary(AstNodeStmt* stmtp, AstNodeModule* modp) {
+        AstNode* const backp = stmtp->backp();
+        if (AstAlways* const ap = VN_CAST(backp, Always)) {
             insertBeginCore(ap, stmtp, modp);
-        } else if (AstAlwaysPublic* ap = VN_CAST(backp, AlwaysPublic)) {
+        } else if (AstAlwaysPublic* const ap = VN_CAST(backp, AlwaysPublic)) {
             insertBeginCore(ap, stmtp, modp);
-        } else if (AstInitial* ap = VN_CAST(backp, Initial)) {
+        } else if (AstInitial* const ap = VN_CAST(backp, Initial)) {
+            insertBeginCore(ap, stmtp, modp);
+        } else if (auto* const ap = VN_CAST(backp, Initial)) {
             insertBeginCore(ap, stmtp, modp);
         }
     }
 
 };  // SplitVarImpl
 
-const char* const SplitVarImpl::notSplitMsg
-    = " has split_var metacomment but will not be split because ";
+//######################################################################
+// Utilities required in various placs
+
+static void warnNoSplit(const AstVar* varp, const AstNode* wherep, const char* reasonp) {
+    wherep->v3warn(SPLITVAR, varp->prettyNameQ()
+                                 << " has split_var metacomment but will not be split because "
+                                 << reasonp << ".\n");
+}
 
 //######################################################################
 // Split Unpacked Variables
@@ -224,7 +239,7 @@ const char* const SplitVarImpl::notSplitMsg
 // AstSliceSel  -> Create a temporary variable and refer the variable
 
 // Compare AstNode* to get deterministic ordering when showing messages.
-struct AstNodeComparator {
+struct AstNodeComparator final {
     bool operator()(const AstNode* ap, const AstNode* bp) const {
         const int lineComp = ap->fileline()->operatorCompare(*bp->fileline());
         if (lineComp != 0) return lineComp < 0;
@@ -234,13 +249,13 @@ struct AstNodeComparator {
 
 class UnpackRef final {
     // m_nodep is called in this context (AstNodeStmt, AstCell, AstNodeFTask, or AstAlways)
-    AstNode* m_contextp;
-    AstNode* m_nodep;  // ArraySel, SliceSel, ArrayVarRef (entire value)
-    int m_index;  // for ArraySel
-    int m_msb;  // for SliceSel
-    int m_lsb;  // for SliceSel
-    VAccess m_access;
-    bool m_ftask;  // true if the reference is in function/task. false if in module.
+    AstNode* const m_contextp;
+    AstNode* const m_nodep;  // ArraySel, SliceSel, ArrayVarRef (entire value)
+    const int m_index;  // for ArraySel
+    const int m_msb;  // for SliceSel
+    const int m_lsb;  // for SliceSel
+    const VAccess m_access;
+    const bool m_ftask;  // true if the reference is in function/task. false if in module.
 public:
     UnpackRef(AstNode* stmtp, AstVarRef* nodep, bool ftask)
         : m_contextp{stmtp}
@@ -287,36 +302,34 @@ class UnpackRefMap final {
 public:
     using MapType = std::map<AstVar*, std::set<UnpackRef>, AstNodeComparator>;
     using MapIt = MapType::iterator;
-    using SetIt = MapType::value_type::second_type::iterator;
 
 private:
     MapType m_map;
     bool addCore(AstVarRef* refp, const UnpackRef& ref) {
-        AstVar* varp = refp->varp();
+        AstVar* const varp = refp->varp();
         UASSERT_OBJ(varp->attrSplitVar(), varp, " no split_var metacomment");
-        MapIt it = m_map.find(varp);
+        const MapIt it = m_map.find(varp);
         if (it == m_map.end()) return false;  // Not registered
-        const bool ok = m_map[varp].insert(ref).second;
+        const bool ok = it->second.insert(ref).second;
         return ok;
     }
 
 public:
     // Register a variable to split
     void registerVar(AstVar* varp) {
-        const bool inserted
-            = m_map.insert(std::make_pair(varp, MapType::value_type::second_type())).second;
+        const bool inserted = m_map.emplace(varp, MapType::value_type::second_type()).second;
         UASSERT_OBJ(inserted, varp, "already registered");
     }
     // Register the location where a variable is used.
     bool tryAdd(AstNode* context, AstVarRef* refp, AstArraySel* selp, int idx, bool ftask) {
-        return addCore(refp, UnpackRef(context, selp, idx, refp->access(), ftask));
+        return addCore(refp, UnpackRef{context, selp, idx, refp->access(), ftask});
     }
     bool tryAdd(AstNode* context, AstVarRef* refp, AstSliceSel* selp, int msb, int lsb,
                 bool ftask) {
-        return addCore(refp, UnpackRef(context, selp, msb, lsb, refp->access(), ftask));
+        return addCore(refp, UnpackRef{context, selp, msb, lsb, refp->access(), ftask});
     }
     bool tryAdd(AstNode* context, AstVarRef* refp, bool ftask) {
-        return addCore(refp, UnpackRef(context, refp, ftask));
+        return addCore(refp, UnpackRef{context, refp, ftask});
     }
 
     // Remove a variable from the list to split
@@ -333,7 +346,7 @@ public:
 };
 
 // Found nodes for SplitPackedVarVisitor
-struct RefsInModule {
+struct RefsInModule final {
     std::set<AstVar*, AstNodeComparator> m_vars;
     std::set<AstVarRef*, AstNodeComparator> m_refs;
     std::set<AstSel*, AstNodeComparator> m_sels;
@@ -343,12 +356,12 @@ public:
     void add(AstVarRef* nodep) { m_refs.insert(nodep); }
     void add(AstSel* nodep) { m_sels.insert(nodep); }
     void remove(AstNode* nodep) {
-        struct Visitor : public AstNVisitor {
+        struct Visitor final : public VNVisitor {
             RefsInModule& m_parent;
-            virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
-            virtual void visit(AstVar* nodep) override { m_parent.m_vars.erase(nodep); }
-            virtual void visit(AstVarRef* nodep) override { m_parent.m_refs.erase(nodep); }
-            virtual void visit(AstSel* nodep) override {
+            void visit(AstNode* nodep) override { iterateChildren(nodep); }
+            void visit(AstVar* nodep) override { m_parent.m_vars.erase(nodep); }
+            void visit(AstVarRef* nodep) override { m_parent.m_refs.erase(nodep); }
+            void visit(AstSel* nodep) override {
                 m_parent.m_sels.erase(nodep);
                 iterateChildren(nodep);
             }
@@ -357,50 +370,52 @@ public:
         } v(*this);
         v.iterate(nodep);
     }
-    void visit(AstNVisitor* visitor) {
-        for (const auto& varp : m_vars) visitor->iterate(varp);
-        for (auto it = m_sels.begin(), it_end = m_sels.end(); it != it_end; ++it) {
+    void visit(VNVisitor* visitor) {
+        for (AstVar* const varp : m_vars) visitor->iterate(varp);
+        for (AstSel* const selp : m_sels) {
             // If m_refs includes VarRef from ArraySel, remove it
             // because the VarRef would not be visited in SplitPackedVarVisitor::visit(AstSel*).
-            if (AstVarRef* refp = VN_CAST((*it)->fromp(), VarRef)) {
+            if (AstVarRef* const refp = VN_CAST(selp->fromp(), VarRef)) {
                 m_refs.erase(refp);
-            } else if (AstVarRef* refp = VN_CAST((*it)->lsbp(), VarRef)) {
+            } else if (AstVarRef* const refp = VN_CAST(selp->lsbp(), VarRef)) {
                 m_refs.erase(refp);
-            } else if (AstVarRef* refp = VN_CAST((*it)->widthp(), VarRef)) {
+            } else if (AstVarRef* const refp = VN_CAST(selp->widthp(), VarRef)) {
                 m_refs.erase(refp);
             }
-            UASSERT_OBJ(reinterpret_cast<uintptr_t>((*it)->op1p()) != 1, *it, "stale");
-            visitor->iterate(*it);
+            UASSERT_OBJ(reinterpret_cast<uintptr_t>(selp->op1p()) != 1, selp, "stale");
+            visitor->iterate(selp);
         }
-        for (auto it = m_refs.begin(), it_end = m_refs.end(); it != it_end; ++it) {
-            UASSERT_OBJ(reinterpret_cast<uintptr_t>((*it)->op1p()) != 1, *it, "stale");
-            visitor->iterate(*it);
+        for (AstVarRef* const vrefp : m_refs) {
+            UASSERT_OBJ(reinterpret_cast<uintptr_t>(vrefp->op1p()) != 1, vrefp, "stale");
+            visitor->iterate(vrefp);
         }
     }
 };
 
 using SplitVarRefsMap = std::map<AstNodeModule*, RefsInModule, AstNodeComparator>;
 
-class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
+class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
     using VarSet = std::set<AstVar*, AstNodeComparator>;
     VarSet m_foundTargetVar;
     UnpackRefMap m_refs;
     AstNodeModule* m_modp = nullptr;
-    // AstNodeStmt, AstCell, AstNodeFTaskRef, or AstAlways(Public) for sensitivity
+    // AstNodeStmt, AstCell, or AstAlways(Public) for sensitivity
     AstNode* m_contextp = nullptr;
-    AstNodeFTask* m_inFTask = nullptr;
+    const AstNodeFTask* m_inFTask = nullptr;
     size_t m_numSplit = 0;
     // List for SplitPackedVarVisitor
     SplitVarRefsMap m_refsForPackedSplit;
+    V3UniqueNames m_tempNames;  // For generating unique temporary variable names
 
     static AstVarRef* isTargetVref(AstNode* nodep) {
-        if (AstVarRef* refp = VN_CAST(nodep, VarRef)) {
+        if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
             if (refp->varp()->attrSplitVar()) return refp;
         }
         return nullptr;
     }
-    static int outerMostSizeOfUnpackedArray(AstVar* nodep) {
-        AstUnpackArrayDType* dtypep = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType);
+    static int outerMostSizeOfUnpackedArray(const AstVar* nodep) {
+        const AstUnpackArrayDType* const dtypep
+            = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
         UASSERT_OBJ(dtypep, nodep, "Must be unapcked array");
         return dtypep->elementsConst();
     }
@@ -419,26 +434,26 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
             iterate(nodep);
         }
     }
-    void pushDeletep(AstNode* nodep) {  // overriding AstNVisitor::pusDeletep()
+    void pushDeletep(AstNode* nodep) {  // overriding VNVisitor::pusDeletep()
         UASSERT_OBJ(m_modp, nodep, "Must not nullptr");
         m_refsForPackedSplit[m_modp].remove(nodep);
-        AstNVisitor::pushDeletep(nodep);
+        VNVisitor::pushDeletep(nodep);
     }
-    AstVar* newVar(FileLine* fl, AstVarType type, const std::string& name, AstNodeDType* dtp) {
-        AstVar* varp = new AstVar(fl, type, name, dtp);
+    AstVar* newVar(FileLine* fl, VVarType type, const std::string& name, AstNodeDType* dtp) {
+        AstVar* const varp = new AstVar{fl, type, name, dtp};
         UASSERT_OBJ(m_modp, varp, "Must not nullptr");
         m_refsForPackedSplit[m_modp].add(varp);
         return varp;
     }
     AstVarRef* newVarRef(FileLine* fl, AstVar* varp, const VAccess& access) {
-        AstVarRef* refp = new AstVarRef(fl, varp, access);
+        AstVarRef* const refp = new AstVarRef{fl, varp, access};
         UASSERT_OBJ(m_modp, refp, "Must not nullptr");
         m_refsForPackedSplit[m_modp].add(refp);
         return refp;
     }
 
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNodeModule* nodep) override {
         UINFO(4, "Start checking " << nodep->prettyNameQ() << "\n");
         if (!VN_IS(nodep, Module)) {
             UINFO(4, "Skip " << nodep->prettyNameQ() << "\n");
@@ -447,82 +462,75 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
         UASSERT_OBJ(!m_modp, m_modp, "Nested module declaration");
         UASSERT_OBJ(m_refs.empty(), nodep, "The last module didn't finish split()");
         m_modp = nodep;
+        m_tempNames.reset();
         iterateChildren(nodep);
         split();
         m_modp = nullptr;
     }
-    virtual void visit(AstNodeStmt* nodep) override { setContextAndIterateChildren(nodep); }
-    virtual void visit(AstCell* nodep) override { setContextAndIterateChildren(nodep); }
-    virtual void visit(AstAlways* nodep) override {
+    void visit(AstNodeStmt* nodep) override { setContextAndIterateChildren(nodep); }
+    void visit(AstCell* nodep) override { setContextAndIterateChildren(nodep); }
+    void visit(AstAlways* nodep) override {
         if (nodep->sensesp()) {  // When visiting sensitivity list, always is the context
             setContextAndIterate(nodep, nodep->sensesp());
         }
-        for (AstNode* bodysp = nodep->bodysp(); bodysp; bodysp = bodysp->nextp()) {
+        for (AstNode* bodysp = nodep->stmtsp(); bodysp; bodysp = bodysp->nextp()) {
             iterate(bodysp);
         }
     };
-    virtual void visit(AstAlwaysPublic* nodep) override {
+    void visit(AstAlwaysPublic* nodep) override {
         if (nodep->sensesp()) {  // When visiting sensitivity list, always is the context
             setContextAndIterate(nodep, nodep->sensesp());
         }
-        for (AstNode* bodysp = nodep->bodysp(); bodysp; bodysp = bodysp->nextp()) {
+        for (AstNode* bodysp = nodep->stmtsp(); bodysp; bodysp = bodysp->nextp()) {
             iterate(bodysp);
         }
     }
-    virtual void visit(AstNodeFTaskRef* nodep) override {
-        VL_RESTORER(m_contextp);
-        {
-            m_contextp = nodep;
-            AstNodeFTask* ftaskp = nodep->taskp();
-            UASSERT_OBJ(ftaskp, nodep, "Unlinked");
-            // Iterate arguments of a function/task.
-            for (AstNode *argp = nodep->pinsp(), *paramp = ftaskp->stmtsp(); argp;
-                 argp = argp->nextp(), paramp = paramp ? paramp->nextp() : nullptr) {
-                const char* reason = nullptr;
-                AstVar* vparamp = nullptr;
-                while (paramp) {
-                    vparamp = VN_CAST(paramp, Var);
-                    if (vparamp && vparamp->isIO()) {
-                        reason = cannotSplitVarDirectionReason(vparamp->direction());
-                        break;
-                    }
-                    paramp = paramp->nextp();
-                    vparamp = nullptr;
+    void visit(AstNodeFTaskRef* nodep) override {
+        const AstNodeFTask* const ftaskp = nodep->taskp();
+        UASSERT_OBJ(ftaskp, nodep, "Unlinked");
+        // Iterate arguments of a function/task.
+        for (AstNode *argp = nodep->pinsp(), *paramp = ftaskp->stmtsp(); argp;
+             argp = argp->nextp(), paramp = paramp ? paramp->nextp() : nullptr) {
+            const char* reason = nullptr;
+            const AstVar* vparamp = nullptr;
+            while (paramp) {
+                vparamp = VN_CAST(paramp, Var);
+                if (vparamp && vparamp->isIO()) {
+                    reason = cannotSplitVarDirectionReason(vparamp->direction());
+                    break;
                 }
-                if (!reason && !vparamp) {
-                    reason = "the number of argument to the task/function mismatches";
-                }
-                m_foundTargetVar.clear();
-                iterate(argp);
-                if (reason) {
-                    for (VarSet::iterator it = m_foundTargetVar.begin(),
-                                          it_end = m_foundTargetVar.end();
-                         it != it_end; ++it) {
-                        argp->v3warn(SPLITVAR, (*it)->prettyNameQ()
-                                                   << notSplitMsg << reason << ".\n");
-                        m_refs.remove(*it);
-                    }
-                }
-                m_foundTargetVar.clear();
+                paramp = paramp->nextp();
+                vparamp = nullptr;
             }
-        }
-    }
-    virtual void visit(AstPin* nodep) override {
-        UINFO(5, nodep->modVarp()->prettyNameQ() << " pin \n");
-        AstNode* exprp = nodep->exprp();
-        if (!exprp) return;  // Not connected pin
-        m_foundTargetVar.clear();
-        iterate(exprp);
-        if (const char* reason = cannotSplitConnectedPortReason(nodep)) {
-            for (VarSet::iterator it = m_foundTargetVar.begin(), it_end = m_foundTargetVar.end();
-                 it != it_end; ++it) {
-                nodep->v3warn(SPLITVAR, (*it)->prettyNameQ() << notSplitMsg << reason << ".\n");
-                m_refs.remove(*it);
+            if (!reason && !vparamp) {
+                reason = "the number of argument to the task/function mismatches";
+            }
+            m_foundTargetVar.clear();
+            iterate(argp);
+            if (reason) {
+                for (AstVar* const varp : m_foundTargetVar) {
+                    warnNoSplit(varp, argp, reason);
+                    m_refs.remove(varp);
+                }
             }
             m_foundTargetVar.clear();
         }
     }
-    virtual void visit(AstNodeFTask* nodep) override {
+    void visit(AstPin* nodep) override {
+        UINFO(5, nodep->modVarp()->prettyNameQ() << " pin \n");
+        AstNode* const exprp = nodep->exprp();
+        if (!exprp) return;  // Not connected pin
+        m_foundTargetVar.clear();
+        iterate(exprp);
+        if (const char* const reason = cannotSplitConnectedPortReason(nodep)) {
+            for (AstVar* const varp : m_foundTargetVar) {
+                warnNoSplit(varp, nodep, reason);
+                m_refs.remove(varp);
+            }
+            m_foundTargetVar.clear();
+        }
+    }
+    void visit(AstNodeFTask* nodep) override {
         UASSERT_OBJ(!m_inFTask, nodep, "Nested func/task");
         if (!cannotSplitTaskReason(nodep)) {
             m_inFTask = nodep;
@@ -530,7 +538,7 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
             m_inFTask = nullptr;
         }
     }
-    virtual void visit(AstVar* nodep) override {
+    void visit(AstVar* nodep) override {
         if (!nodep->attrSplitVar()) return;  // Nothing to do
         if (!cannotSplitReason(nodep)) {
             m_refs.registerVar(nodep);
@@ -538,34 +546,30 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
         }
         m_refsForPackedSplit[m_modp].add(nodep);
     }
-    virtual void visit(AstVarRef* nodep) override {
+    void visit(AstVarRef* nodep) override {
         if (!nodep->varp()->attrSplitVar()) return;  // Nothing to do
         if (m_refs.tryAdd(m_contextp, nodep, m_inFTask)) {
             m_foundTargetVar.insert(nodep->varp());
         }
         m_refsForPackedSplit[m_modp].add(nodep);
     }
-    virtual void visit(AstSel* nodep) override {
+    void visit(AstSel* nodep) override {
         if (VN_IS(nodep->fromp(), VarRef)) m_refsForPackedSplit[m_modp].add(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstArraySel* nodep) override {
-        if (AstVarRef* refp = isTargetVref(nodep->fromp())) {
-            AstConst* indexp = VN_CAST(nodep->bitp(), Const);
+    void visit(AstArraySel* nodep) override {
+        if (AstVarRef* const refp = isTargetVref(nodep->fromp())) {
+            const AstConst* const indexp = VN_CAST(nodep->bitp(), Const);
             if (indexp) {  // OK
                 UINFO(4, "add " << nodep << " for " << refp->varp()->prettyName() << "\n");
                 if (indexp->toSInt() < outerMostSizeOfUnpackedArray(refp->varp())) {
                     m_refs.tryAdd(m_contextp, refp, nodep, indexp->toSInt(), m_inFTask);
                 } else {
-                    nodep->bitp()->v3warn(SPLITVAR, refp->prettyNameQ()
-                                                        << notSplitMsg
-                                                        << "index is out of range.\n");
+                    warnNoSplit(refp->varp(), nodep->bitp(), "index is out of range");
                     m_refs.remove(refp->varp());
                 }
             } else {
-                nodep->bitp()->v3warn(SPLITVAR, refp->prettyNameQ()
-                                                    << notSplitMsg
-                                                    << "index cannot be determined statically.\n");
+                warnNoSplit(refp->varp(), nodep->bitp(), "index cannot be determined statically");
                 m_refs.remove(refp->varp());
                 iterate(nodep->bitp());
             }
@@ -573,15 +577,15 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstSliceSel* nodep) override {
-        if (AstVarRef* refp = isTargetVref(nodep->fromp())) {
-            AstUnpackArrayDType* dtypep
-                = VN_CAST(refp->varp()->dtypep()->skipRefp(), UnpackArrayDType);
+    void visit(AstSliceSel* nodep) override {
+        if (AstVarRef* const refp = isTargetVref(nodep->fromp())) {
+            const AstUnpackArrayDType* const dtypep
+                = VN_AS(refp->varp()->dtypep()->skipRefp(), UnpackArrayDType);
             // declRange() of AstSliceSel is shifted by dtypep->declRange().lo() in V3WidthSel.cpp
             // restore the original decl range here.
             const VNumRange selRange{nodep->declRange().hi() + dtypep->declRange().lo(),
                                      nodep->declRange().lo() + dtypep->declRange().lo(),
-                                     nodep->declRange().littleEndian()};
+                                     nodep->declRange().ascending()};
             UASSERT_OBJ(dtypep->lo() <= selRange.lo() && selRange.hi() <= dtypep->hi(), nodep,
                         "Range check for AstSliceSel must have been finished in V3Width.cpp");
             UINFO(4, "add " << nodep << " for " << refp->varp()->prettyName() << "\n");
@@ -591,24 +595,18 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
             iterateChildren(nodep);
         }
     }
-    static AstNode* toInsertPoint(AstNode* insertp) {
-        if (AstNodeStmt* stmtp = VN_CAST(insertp, NodeStmt)) {
-            if (!stmtp->isStatement()) insertp = stmtp->backp();
-        }
-        return insertp;
-    }
     AstVarRef* createTempVar(AstNode* context, AstNode* nodep, AstUnpackArrayDType* dtypep,
                              const std::string& name_prefix, std::vector<AstVar*>& vars,
-                             int start_idx, bool lvalue, bool ftask) {
-        const std::string name
-            = "__VsplitVar" + cvtToStr(m_modp->varNumGetInc()) + "__" + name_prefix;
-        AstNodeAssign* assignp = VN_CAST(context, NodeAssign);
+                             int start_idx, bool lvalue, bool /*ftask*/) {
+        FileLine* const fl = nodep->fileline();
+        const std::string name = m_tempNames.get(nodep) + "__" + name_prefix;
+        AstNodeAssign* const assignp = VN_CAST(context, NodeAssign);
         if (assignp) {
             // "always_comb a = b;" to "always_comb begin a = b; end" so that local
             // variable can be added.
             insertBeginIfNecessary(assignp, m_modp);
         }
-        AstVar* varp = newVar(nodep->fileline(), AstVarType::VAR, name, dtypep);
+        AstVar* const varp = newVar(fl, VVarType::VAR, name, dtypep);
         // Variable will be registered in the caller side.
         UINFO(3, varp->prettyNameQ()
                      << " is created lsb:" << dtypep->lo() << " msb:" << dtypep->hi() << "\n");
@@ -617,18 +615,17 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
             = (context && VN_IS(context, NodeFTaskRef)) || (assignp && VN_IS(assignp, Assign));
 
         for (int i = 0; i < dtypep->elementsConst(); ++i) {
-            AstNode* lhsp = newVarRef(nodep->fileline(), vars.at(start_idx + i),
-                                      lvalue ? VAccess::WRITE : VAccess::READ);
-            AstNode* rhsp = new AstArraySel(
-                nodep->fileline(),
-                newVarRef(nodep->fileline(), varp, !lvalue ? VAccess::WRITE : VAccess::READ), i);
-            AstNode* refp = lhsp;
+            AstNodeExpr* lhsp
+                = newVarRef(fl, vars.at(start_idx + i), lvalue ? VAccess::WRITE : VAccess::READ);
+            AstNodeExpr* rhsp = new AstArraySel{
+                fl, newVarRef(fl, varp, !lvalue ? VAccess::WRITE : VAccess::READ), i};
+            AstNode* const refp = lhsp;
             UINFO(9, "Creating assign idx:" << i << " + " << start_idx << "\n");
             if (!lvalue) std::swap(lhsp, rhsp);
             AstNode* newassignp;
             if (use_simple_assign) {
-                AstNode* insertp = toInsertPoint(context);
-                newassignp = new AstAssign(nodep->fileline(), lhsp, rhsp);
+                AstNode* const insertp = context;
+                newassignp = new AstAssign{fl, lhsp, rhsp};
                 if (lvalue) {
                     // If varp is LHS, this assignment must appear after the original
                     // assignment(context).
@@ -638,28 +635,27 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
                     insertp->addHereThisAsNext(newassignp);
                 }
             } else {
-                newassignp = new AstAssignW(nodep->fileline(), lhsp, rhsp);
+                newassignp = new AstAssignW{fl, lhsp, rhsp};
                 // Continuous assignment must be in module context.
                 varp->addNextHere(newassignp);
             }
             UASSERT_OBJ(!m_contextp, m_contextp, "must be null");
             setContextAndIterate(newassignp, refp);
         }
-        return newVarRef(nodep->fileline(), varp, lvalue ? VAccess::WRITE : VAccess::READ);
+        return newVarRef(fl, varp, lvalue ? VAccess::WRITE : VAccess::READ);
     }
     void connectPort(AstVar* varp, std::vector<AstVar*>& vars, AstNode* insertp) {
         UASSERT_OBJ(varp->isIO(), varp, "must be port");
-        insertp = insertp ? toInsertPoint(insertp) : nullptr;
         const bool lvalue = varp->direction().isWritable();
+        FileLine* const fl = varp->fileline();
         for (size_t i = 0; i < vars.size(); ++i) {
-            AstNode* nodes[] = {
-                new AstArraySel(
-                    varp->fileline(),
-                    newVarRef(varp->fileline(), varp, lvalue ? VAccess::WRITE : VAccess::READ), i),
-                newVarRef(varp->fileline(), vars.at(i), !lvalue ? VAccess::WRITE : VAccess::READ)};
-            AstNode* lhsp = nodes[lvalue ? 0 : 1];
-            AstNode* rhsp = nodes[lvalue ? 1 : 0];
-            AstNodeAssign* assignp = newAssign(varp->fileline(), lhsp, rhsp, varp);
+            AstNodeExpr* const nodes[] = {
+                new AstArraySel{fl, newVarRef(fl, varp, lvalue ? VAccess::WRITE : VAccess::READ),
+                                static_cast<int>(i)},
+                newVarRef(fl, vars.at(i), !lvalue ? VAccess::WRITE : VAccess::READ)};
+            AstNodeExpr* const lhsp = nodes[lvalue ? 0 : 1];
+            AstNodeExpr* const rhsp = nodes[lvalue ? 1 : 0];
+            AstNodeAssign* const assignp = newAssign(fl, lhsp, rhsp, varp);
             if (insertp) {
                 if (lvalue) {  // Just after writing to the temporary variable
                     insertp->addNextHere(assignp);
@@ -673,24 +669,26 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
             setContextAndIterate(assignp, nodes[1]);
         }
     }
+    // cppcheck-has-bug-suppress constParameter
     size_t collapse(UnpackRefMap& refs) {
         size_t numSplit = 0;
-        for (UnpackRefMap::MapIt it = refs.begin(), it_end = refs.end(); it != it_end; ++it) {
-            UINFO(3, "In module " << m_modp->name() << " var " << it->first->prettyNameQ()
-                                  << " which has " << it->second.size()
+        for (const auto& pair : refs) {
+            UINFO(3, "In module " << m_modp->name() << " var " << pair.first->prettyNameQ()
+                                  << " which has " << pair.second.size()
                                   << " refs will be split.\n");
-            AstVar* varp = it->first;
+            AstVar* const varp = pair.first;
             AstNode* insertp = varp;
-            AstUnpackArrayDType* dtypep = VN_CAST(varp->dtypep()->skipRefp(), UnpackArrayDType);
-            AstNodeDType* subTypep = dtypep->subDTypep();
+            const AstUnpackArrayDType* const dtypep
+                = VN_AS(varp->dtypep()->skipRefp(), UnpackArrayDType);
+            AstNodeDType* const subTypep = dtypep->subDTypep();
             const bool needNext = VN_IS(subTypep, UnpackArrayDType);  // Still unpacked array.
             std::vector<AstVar*> vars;
             // Add the split variables
-            for (vlsint32_t i = 0; i < dtypep->elementsConst(); ++i) {
+            for (int32_t i = 0; i < dtypep->elementsConst(); ++i) {
                 // Unpacked array is traced as var(idx), not var[idx].
                 const std::string name
                     = varp->name() + AstNode::encodeName('(' + cvtToStr(i + dtypep->lo()) + ')');
-                AstVar* newp = newVar(varp->fileline(), AstVarType::VAR, name, subTypep);
+                AstVar* const newp = newVar(varp->fileline(), VVarType::VAR, name, subTypep);
                 newp->propagateAttrFrom(varp);
                 // If varp is an IO, varp will remain and will be traced.
                 newp->trace(!varp->isIO() && varp->isTrace());
@@ -701,39 +699,37 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
                 vars.push_back(newp);
                 setContextAndIterate(nullptr, newp);
             }
-            for (UnpackRefMap::SetIt sit = it->second.begin(), sit_end = it->second.end();
-                 sit != sit_end; ++sit) {
+            for (const UnpackRef& ref : pair.second) {
                 AstNode* newp = nullptr;
-                if (sit->isSingleRef()) {
-                    newp = newVarRef(sit->nodep()->fileline(), vars.at(sit->index()),
-                                     sit->access());
+                if (ref.isSingleRef()) {
+                    newp = newVarRef(ref.nodep()->fileline(), vars.at(ref.index()), ref.access());
                 } else {
-                    AstVarRef* refp = VN_CAST(sit->nodep(), VarRef);
+                    AstVarRef* refp = VN_CAST(ref.nodep(), VarRef);
                     AstUnpackArrayDType* adtypep;
                     int lsb = 0;
                     if (refp) {
-                        adtypep = VN_CAST(refp->dtypep()->skipRefp(), UnpackArrayDType);
+                        adtypep = VN_AS(refp->dtypep()->skipRefp(), UnpackArrayDType);
                     } else {
-                        AstSliceSel* selp = VN_CAST(sit->nodep(), SliceSel);
-                        UASSERT_OBJ(selp, sit->nodep(), "Unexpected op is registered");
-                        refp = VN_CAST(selp->fromp(), VarRef);
+                        AstSliceSel* const selp = VN_AS(ref.nodep(), SliceSel);
+                        refp = VN_AS(selp->fromp(), VarRef);
                         UASSERT_OBJ(refp, selp, "Unexpected op is registered");
-                        adtypep = VN_CAST(selp->dtypep()->skipRefp(), UnpackArrayDType);
+                        adtypep = VN_AS(selp->dtypep()->skipRefp(), UnpackArrayDType);
                         lsb = adtypep->lo();
                     }
-                    AstVarRef* newrefp = createTempVar(sit->context(), refp, adtypep, varp->name(),
-                                                       vars, lsb, refp->access(), sit->ftask());
+                    AstVarRef* const newrefp
+                        = createTempVar(ref.context(), refp, adtypep, varp->name(), vars, lsb,
+                                        refp->access(), ref.ftask());
                     newp = newrefp;
                     refp->varp()->addNextHere(newrefp->varp());
                     UINFO(3,
                           "Create " << newrefp->varp()->prettyNameQ() << " for " << refp << "\n");
                 }
-                sit->nodep()->replaceWith(newp);
-                pushDeletep(sit->nodep());
-                setContextAndIterate(sit->context(), newp->backp());
+                ref.nodep()->replaceWith(newp);
+                pushDeletep(ref.nodep());
+                setContextAndIterate(ref.context(), newp->backp());
                 // AstAssign is used. So assignment is necessary for each reference.
                 if (varp->isIO() && (varp->isFuncLocal() || varp->isFuncReturn()))
-                    connectPort(varp, vars, sit->context());
+                    connectPort(varp, vars, ref.context());
             }
             if (varp->isIO()) {
                 // AssignW will be created, so just once
@@ -763,7 +759,7 @@ class SplitUnpackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
 
 public:
     explicit SplitUnpackedVarVisitor(AstNetlist* nodep)
-        : m_refs{} {
+        : m_tempNames{"__VsplitVar"} {
         iterate(nodep);
     }
     ~SplitUnpackedVarVisitor() override {
@@ -771,7 +767,6 @@ public:
         V3Stats::addStat("SplitVar, Split unpacked arrays", m_numSplit);
     }
     const SplitVarRefsMap& getPackedVarRefs() const { return m_refsForPackedSplit; }
-    VL_DEBUG_FUNC;  // Declare debug()
 
     // Check if the passed variable can be split.
     // Even if this function returns true, the variable may not be split
@@ -800,8 +795,8 @@ public:
 
 // Split variable
 class SplitNewVar final {
-    int m_lsb;  // LSB in the original bitvector
-    int m_bitwidth;
+    const int m_lsb;  // LSB in the original bitvector
+    const int m_bitwidth;
     AstVar* m_varp;  // The LSB of this variable is always 0, not m_lsb
 public:
     SplitNewVar(int lsb, int bitwidth, AstVar* varp = nullptr)
@@ -817,7 +812,7 @@ public:
     }
     AstVar* varp() const { return m_varp; }
 
-    struct Match {
+    struct Match final {
         bool operator()(int bit, const SplitNewVar& a) const {
             return bit < a.m_lsb + a.m_bitwidth;
         }
@@ -826,9 +821,9 @@ public:
 
 // One Entry instance for an AstVarRef instance
 class PackedVarRefEntry final {
-    AstNode* m_nodep;  // Either AstSel or AstVarRef is expected.
-    int m_lsb;
-    int m_bitwidth;
+    AstNode* const m_nodep;  // Either AstSel or AstVarRef is expected.
+    const int m_lsb;
+    const int m_bitwidth;
 
 public:
     PackedVarRefEntry(AstSel* selp, int lsb, int bitwidth)
@@ -850,31 +845,31 @@ public:
     // If this is AstVarRef and referred in the sensitivity list of always@,
     // return the sensitivity item
     AstSenItem* backSenItemp() const {
-        if (AstVarRef* refp = VN_CAST(m_nodep, VarRef)) return VN_CAST(refp->backp(), SenItem);
+        if (const AstVarRef* const refp = VN_CAST(m_nodep, VarRef)) {
+            return VN_CAST(refp->backp(), SenItem);
+        }
         return nullptr;
     }
 };
 
 // How a variable is used
 class PackedVarRef final {
-    struct SortByFirst {
+    struct SortByFirst final {
         bool operator()(const std::pair<int, bool>& a, const std::pair<int, bool>& b) const {
             if (a.first == b.first) return a.second < b.second;
             return a.first < b.first;
         }
     };
     std::vector<PackedVarRefEntry> m_lhs, m_rhs;
-    AstBasicDType* m_basicp;  // Cache the ptr since varp->dtypep()->basicp() is expensive
+    AstBasicDType* const m_basicp;  // Cache the ptr since varp->dtypep()->basicp() is expensive
     bool m_dedupDone = false;
     static void dedupRefs(std::vector<PackedVarRefEntry>& refs) {
         // Use raw pointer to dedup
         std::map<AstNode*, size_t, AstNodeComparator> nodes;
-        for (size_t i = 0; i < refs.size(); ++i) { nodes.emplace(refs[i].nodep(), i); }
+        for (size_t i = 0; i < refs.size(); ++i) nodes.emplace(refs[i].nodep(), i);
         std::vector<PackedVarRefEntry> vect;
         vect.reserve(nodes.size());
-        for (auto it = nodes.cbegin(), it_end = nodes.cend(); it != it_end; ++it) {
-            vect.push_back(refs[it->second]);
-        }
+        for (const auto& pair : nodes) vect.push_back(refs[pair.second]);
         refs.swap(vect);
     }
 
@@ -910,24 +905,24 @@ public:
         std::vector<SplitNewVar> plan;
         std::vector<std::pair<int, bool>> points;  // <bit location, is end>
         points.reserve(m_lhs.size() * 2 + 2);  // 2 points will be added per one PackedVarRefEntry
-        for (const_iterator it = m_lhs.begin(), itend = m_lhs.end(); it != itend; ++it) {
-            points.emplace_back(std::make_pair(it->lsb(), false));  // Start of a region
-            points.emplace_back(std::make_pair(it->msb() + 1, true));  // End of a region
+        for (const PackedVarRefEntry& ref : m_lhs) {
+            points.emplace_back(ref.lsb(), false);  // Start of a region
+            points.emplace_back(ref.msb() + 1, true);  // End of a region
         }
         if (skipUnused && !m_rhs.empty()) {  // Range to be read must be kept, so add points here
             int lsb = m_basicp->hi() + 1;
             int msb = m_basicp->lo() - 1;
-            for (size_t i = 0; i < m_rhs.size(); ++i) {
-                lsb = std::min(lsb, m_rhs[i].lsb());
-                msb = std::max(msb, m_rhs[i].msb());
+            for (const PackedVarRefEntry& ref : m_rhs) {
+                lsb = std::min(lsb, ref.lsb());
+                msb = std::max(msb, ref.msb());
             }
             UASSERT_OBJ(lsb <= msb, m_basicp, "lsb:" << lsb << " msb:" << msb << " are wrong");
-            points.emplace_back(std::make_pair(lsb, false));
-            points.emplace_back(std::make_pair(msb + 1, true));
+            points.emplace_back(lsb, false);
+            points.emplace_back(msb + 1, true);
         }
         if (!skipUnused) {  // All bits are necessary
-            points.emplace_back(std::make_pair(m_basicp->lo(), false));
-            points.emplace_back(std::make_pair(m_basicp->hi() + 1, true));
+            points.emplace_back(m_basicp->lo(), false);
+            points.emplace_back(m_basicp->hi() + 1, true);
         }
         std::sort(points.begin(), points.end(), SortByFirst());
 
@@ -942,54 +937,54 @@ public:
             }
             UASSERT(refcount >= 0, "refcounut must not be negative");
             if (bitwidth == 0 || refcount == 0) continue;  // Vacant region
-            plan.emplace_back(SplitNewVar(points[i].first, bitwidth));
+            plan.emplace_back(SplitNewVar{points[i].first, bitwidth});
         }
 
         return plan;
     }
 };
 
-class SplitPackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
-    AstNetlist* m_netp;
-    AstNodeModule* m_modp = nullptr;  // Current module (just for log)
+class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
+    AstNetlist* const m_netp;
+    const AstNodeModule* m_modp = nullptr;  // Current module (just for log)
     int m_numSplit = 0;  // Total number of split variables
     // key:variable to be split. value:location where the variable is referenced.
     std::map<AstVar*, PackedVarRef, AstNodeComparator> m_refs;
-    virtual void visit(AstNodeFTask* nodep) override {
+    void visit(AstNodeFTask* nodep) override {
         if (!cannotSplitTaskReason(nodep)) iterateChildren(nodep);
     }
-    virtual void visit(AstVar* nodep) override {
+    void visit(AstVar* nodep) override {
         if (!nodep->attrSplitVar()) return;  // Nothing to do
-        if (const char* reason = cannotSplitReason(nodep, true)) {
-            nodep->v3warn(SPLITVAR, nodep->prettyNameQ() << notSplitMsg << reason);
+        if (const char* const reason = cannotSplitReason(nodep, true)) {
+            warnNoSplit(nodep, nodep, reason);
             nodep->attrSplitVar(false);
         } else {  // Finally find a good candidate
-            const bool inserted = m_refs.insert(std::make_pair(nodep, PackedVarRef(nodep))).second;
+            const bool inserted = m_refs.emplace(nodep, PackedVarRef{nodep}).second;
             if (inserted) UINFO(3, nodep->prettyNameQ() << " is added to candidate list.\n");
         }
     }
-    virtual void visit(AstVarRef* nodep) override {
-        AstVar* varp = nodep->varp();
+    void visit(AstVarRef* nodep) override {
+        AstVar* const varp = nodep->varp();
         visit(varp);
         const auto refit = m_refs.find(varp);
         if (refit == m_refs.end()) return;  // variable without split_var metacomment
         UASSERT_OBJ(varp->attrSplitVar(), varp, "split_var attribute must be attached");
         UASSERT_OBJ(!nodep->classOrPackagep(), nodep,
                     "variable in package must have been dropped beforehand.");
-        const AstBasicDType* basicp = refit->second.basicp();
-        refit->second.append(PackedVarRefEntry(nodep, basicp->lo(), varp->width()),
+        const AstBasicDType* const basicp = refit->second.basicp();
+        refit->second.append(PackedVarRefEntry{nodep, basicp->lo(), varp->width()},
                              nodep->access());
         UINFO(5, varp->prettyName()
                      << " Entire bit of [" << basicp->lo() << "+:" << varp->width() << "] \n");
     }
-    virtual void visit(AstSel* nodep) override {
-        AstVarRef* vrefp = VN_CAST(nodep->fromp(), VarRef);
+    void visit(AstSel* nodep) override {
+        const AstVarRef* const vrefp = VN_CAST(nodep->fromp(), VarRef);
         if (!vrefp) {
             iterateChildren(nodep);
             return;
         }
 
-        AstVar* varp = vrefp->varp();
+        AstVar* const varp = vrefp->varp();
         const auto refit = m_refs.find(varp);
         if (refit == m_refs.end()) {
             iterateChildren(nodep);
@@ -997,7 +992,7 @@ class SplitPackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
         }
         UASSERT_OBJ(varp->attrSplitVar(), varp, "split_var attribute must be attached");
 
-        std::array<AstConst*, 2> consts
+        const std::array<AstConst*, 2> consts
             = {{VN_CAST(nodep->lsbp(), Const),
                 VN_CAST(nodep->widthp(), Const)}};  // GCC 3.8.0 wants {{}}
         if (consts[0] && consts[1]) {  // OK
@@ -1009,9 +1004,7 @@ class SplitPackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
                          << " [" << consts[0]->toSInt() << ":+" << consts[1]->toSInt()
                          << "] lsb:" << refit->second.basicp()->lo() << "\n");
         } else {
-            nodep->v3warn(SPLITVAR, vrefp->prettyNameQ()
-                                        << notSplitMsg
-                                        << "its bit range cannot be determined statically.");
+            warnNoSplit(vrefp->varp(), nodep, "its bit range cannot be determined statically");
             if (!consts[0]) {
                 UINFO(4, "LSB " << nodep->lsbp() << " is expected to be constant, but not\n");
             }
@@ -1023,12 +1016,13 @@ class SplitPackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // Extract necessary bit range from a newly created variable to meet ref
-    static AstNode* extractBits(const PackedVarRefEntry& ref, const SplitNewVar& var,
-                                const VAccess access) {
-        AstVarRef* refp = new AstVarRef(ref.nodep()->fileline(), var.varp(), access);
+    static AstNodeExpr* extractBits(const PackedVarRefEntry& ref, const SplitNewVar& var,
+                                    const VAccess access) {
+        FileLine* const fl = ref.nodep()->fileline();
+        AstVarRef* const refp = new AstVarRef{fl, var.varp(), access};
         if (ref.lsb() <= var.lsb() && var.msb() <= ref.msb()) {  // Use the entire bits
             return refp;
         } else {  // Use slice
@@ -1038,27 +1032,23 @@ class SplitPackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
             UINFO(4, var.varp()->prettyNameQ() << "[" << msb << ":" << lsb << "] used for "
                                                << ref.nodep()->prettyNameQ() << '\n');
             // LSB of varp is always 0. "lsb - var.lsb()" means this. see also SplitNewVar
-            AstSel* selp = new AstSel(ref.nodep()->fileline(), refp, lsb - var.lsb(), bitwidth);
-            return selp;
+            return new AstSel{fl, refp, lsb - var.lsb(), bitwidth};
         }
     }
     static void connectPortAndVar(const std::vector<SplitNewVar>& vars, AstVar* portp,
                                   AstNode* insertp) {
         for (; insertp; insertp = insertp->backp()) {
-            if (AstNodeStmt* stmtp = VN_CAST(insertp, NodeStmt)) {
-                if (stmtp->isStatement()) break;
-            }
+            if (VN_IS(insertp, NodeStmt)) break;
         }
         const bool in = portp->isReadOnly();
-        for (size_t i = 0; i < vars.size(); ++i) {
-            AstNode* rhsp = new AstSel(
-                portp->fileline(),
-                new AstVarRef(portp->fileline(), portp, !in ? VAccess::WRITE : VAccess::READ),
-                vars[i].lsb(), vars[i].bitwidth());
-            AstNode* lhsp = new AstVarRef(portp->fileline(), vars[i].varp(),
-                                          in ? VAccess::WRITE : VAccess::READ);
+        FileLine* const fl = portp->fileline();
+        for (const SplitNewVar& var : vars) {
+            AstNodeExpr* rhsp
+                = new AstSel{fl, new AstVarRef{fl, portp, !in ? VAccess::WRITE : VAccess::READ},
+                             var.lsb(), var.bitwidth()};
+            AstNodeExpr* lhsp = new AstVarRef{fl, var.varp(), in ? VAccess::WRITE : VAccess::READ};
             if (!in) std::swap(lhsp, rhsp);
-            AstNodeAssign* assignp = newAssign(portp->fileline(), lhsp, rhsp, portp);
+            AstNodeAssign* const assignp = newAssign(fl, lhsp, rhsp, portp);
             if (insertp) {
                 if (in) {
                     insertp->addHereThisAsNext(assignp);
@@ -1066,16 +1056,15 @@ class SplitPackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
                     insertp->addNextHere(assignp);
                 }
             } else {
-                vars[i].varp()->addNextHere(assignp);
+                var.varp()->addNextHere(assignp);
             }
         }
     }
     void createVars(AstVar* varp, const AstBasicDType* basicp, std::vector<SplitNewVar>& vars) {
-        for (size_t i = 0; i < vars.size(); ++i) {
-            SplitNewVar* newvarp = &vars[i];
-            int left = newvarp->msb();
-            int right = newvarp->lsb();
-            if (basicp->littleEndian()) std::swap(left, right);
+        for (SplitNewVar& newvar : vars) {
+            int left = newvar.msb();
+            int right = newvar.lsb();
+            if (basicp->ascending()) std::swap(left, right);
             const std::string name
                 = (left == right)
                       ? varp->name() + "__BRA__" + AstNode::encodeNumber(left) + "__KET__"
@@ -1084,94 +1073,95 @@ class SplitPackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
 
             AstBasicDType* dtypep;
             switch (basicp->keyword()) {
-            case AstBasicDTypeKwd::BIT:
-                dtypep = new AstBasicDType(varp->subDTypep()->fileline(), VFlagBitPacked(),
-                                           newvarp->bitwidth());
+            case VBasicDTypeKwd::BIT:
+                dtypep = new AstBasicDType{varp->subDTypep()->fileline(), VFlagBitPacked{},
+                                           newvar.bitwidth()};
                 break;
-            case AstBasicDTypeKwd::LOGIC:
-                dtypep = new AstBasicDType(varp->subDTypep()->fileline(), VFlagLogicPacked(),
-                                           newvarp->bitwidth());
+            case VBasicDTypeKwd::LOGIC:
+                dtypep = new AstBasicDType{varp->subDTypep()->fileline(), VFlagLogicPacked{},
+                                           newvar.bitwidth()};
                 break;
             default: UASSERT_OBJ(false, basicp, "Only bit and logic are allowed");
             }
-            dtypep->rangep(new AstRange{varp->fileline(), VNumRange{newvarp->msb(), newvarp->lsb(),
-                                                                    basicp->littleEndian()}});
-            newvarp->varp(new AstVar(varp->fileline(), AstVarType::VAR, name, dtypep));
-            newvarp->varp()->propagateAttrFrom(varp);
-            newvarp->varp()->funcLocal(varp->isFuncLocal() || varp->isFuncReturn());
+            dtypep->rangep(new AstRange{
+                varp->fileline(), VNumRange{newvar.msb(), newvar.lsb(), basicp->ascending()}});
+            newvar.varp(new AstVar{varp->fileline(), VVarType::VAR, name, dtypep});
+            newvar.varp()->propagateAttrFrom(varp);
+            newvar.varp()->funcLocal(varp->isFuncLocal() || varp->isFuncReturn());
             // Enable this line to trace split variable directly:
-            // newvarp->varp()->trace(varp->isTrace());
+            // newvar.varp()->trace(varp->isTrace());
             m_netp->typeTablep()->addTypesp(dtypep);
-            varp->addNextHere(newvarp->varp());
-            UINFO(4, newvarp->varp()->prettyNameQ()
+            varp->addNextHere(newvar.varp());
+            UINFO(4, newvar.varp()->prettyNameQ()
                          << " is added for " << varp->prettyNameQ() << '\n');
         }
     }
-    static void updateReferences(AstVar* varp, PackedVarRef& ref,
+    static void updateReferences(AstVar* varp, PackedVarRef& pref,
                                  const std::vector<SplitNewVar>& vars) {
-        for (int lvalue = 0; lvalue <= 1; ++lvalue) {  // Refer the new split variables
-            std::vector<PackedVarRefEntry>& refs = lvalue ? ref.lhs() : ref.rhs();
-            for (PackedVarRef::iterator refit = refs.begin(), refitend = refs.end();
-                 refit != refitend; ++refit) {
-                auto varit = std::upper_bound(vars.begin(), vars.end(), refit->lsb(),
-                                              SplitNewVar::Match());
-                UASSERT_OBJ(varit != vars.end(), refit->nodep(), "Not found");
-                UASSERT(!(varit->msb() < refit->lsb() || refit->msb() < varit->lsb()),
+        for (const bool lvalue : {false, true}) {  // Refer the new split variables
+            std::vector<PackedVarRefEntry>& refs = lvalue ? pref.lhs() : pref.rhs();
+            for (PackedVarRefEntry& ref : refs) {
+                auto varit
+                    = std::upper_bound(vars.begin(), vars.end(), ref.lsb(), SplitNewVar::Match());
+                UASSERT_OBJ(varit != vars.end(), ref.nodep(), "Not found");
+                UASSERT(!(varit->msb() < ref.lsb() || ref.msb() < varit->lsb()),
                         "wrong search result");
                 AstNode* prevp;
                 bool inSentitivityList = false;
-                if (AstSenItem* senitemp = refit->backSenItemp()) {
-                    AstNode* oldsenrefp = senitemp->sensp();
+                if (AstSenItem* const senitemp = ref.backSenItemp()) {
+                    AstNode* const oldsenrefp = senitemp->sensp();
                     oldsenrefp->replaceWith(
-                        new AstVarRef(senitemp->fileline(), varit->varp(), VAccess::READ));
+                        new AstVarRef{senitemp->fileline(), varit->varp(), VAccess::READ});
                     VL_DO_DANGLING(oldsenrefp->deleteTree(), oldsenrefp);
                     prevp = senitemp;
                     inSentitivityList = true;
                 } else {
-                    prevp = extractBits(*refit, *varit, lvalue ? VAccess::WRITE : VAccess::READ);
+                    prevp = extractBits(ref, *varit, lvalue ? VAccess::WRITE : VAccess::READ);
                 }
-                for (int residue = refit->msb() - varit->msb(); residue > 0;
+                for (int residue = ref.msb() - varit->msb(); residue > 0;
                      residue -= varit->bitwidth()) {
                     ++varit;
-                    UASSERT_OBJ(varit != vars.end(), refit->nodep(), "not enough split variables");
-                    if (AstSenItem* senitemp = VN_CAST(prevp, SenItem)) {
-                        prevp = new AstSenItem(
+                    UASSERT_OBJ(varit != vars.end(), ref.nodep(), "not enough split variables");
+                    if (AstSenItem* const senitemp = VN_CAST(prevp, SenItem)) {
+                        prevp = new AstSenItem{
                             senitemp->fileline(), senitemp->edgeType(),
-                            new AstVarRef(senitemp->fileline(), varit->varp(), VAccess::READ));
+                            new AstVarRef{senitemp->fileline(), varit->varp(), VAccess::READ}};
                         senitemp->addNextHere(prevp);
                     } else {
-                        AstNode* bitsp
-                            = extractBits(*refit, *varit, lvalue ? VAccess::WRITE : VAccess::READ);
-                        prevp = new AstConcat(refit->nodep()->fileline(), bitsp, prevp);
+                        AstNodeExpr* const bitsp
+                            = extractBits(ref, *varit, lvalue ? VAccess::WRITE : VAccess::READ);
+                        prevp = new AstConcat{ref.nodep()->fileline(), bitsp,
+                                              VN_AS(prevp, NodeExpr)};
                     }
                 }
                 // If varp is an argument of task/func, need to update temporary var
-                // everytime the var is updated. See also another call of connectPortAndVar() in
+                // every time the var is updated. See also another call of connectPortAndVar() in
                 // split()
                 if (varp->isIO() && (varp->isFuncLocal() || varp->isFuncReturn()))
-                    connectPortAndVar(vars, varp, refit->nodep());
-                if (!inSentitivityList) refit->replaceNodeWith(prevp);
-                UASSERT_OBJ(varit->msb() >= refit->msb(), varit->varp(), "Out of range");
+                    connectPortAndVar(vars, varp, ref.nodep());
+                if (!inSentitivityList) ref.replaceNodeWith(prevp);
+                UASSERT_OBJ(varit->msb() >= ref.msb(), varit->varp(), "Out of range");
             }
         }
     }
     // Do the actual splitting operation
     void split() {
-        for (auto it = m_refs.begin(), it_end = m_refs.end(); it != it_end; ++it) {
-            it->second.dedup();
-            AstVar* varp = it->first;
+        for (auto& pair : m_refs) {
+            AstVar* const varp = pair.first;
+            PackedVarRef& ref = pair.second;
+            ref.dedup();
             UINFO(3, "In module " << m_modp->name() << " var " << varp->prettyNameQ()
-                                  << " which has " << it->second.lhs().size() << " lhs refs and "
-                                  << it->second.rhs().size() << " rhs refs will be split.\n");
+                                  << " which has " << ref.lhs().size() << " lhs refs and "
+                                  << ref.rhs().size() << " rhs refs will be split.\n");
             std::vector<SplitNewVar> vars
-                = it->second.splitPlan(!varp->isTrace());  // If traced, all bit must be kept
+                = ref.splitPlan(!varp->isTrace());  // If traced, all bit must be kept
             if (vars.empty()) continue;
             if (vars.size() == 1 && vars.front().bitwidth() == varp->width())
                 continue;  // No split
 
-            createVars(varp, it->second.basicp(), vars);  // Add the split variables
+            createVars(varp, ref.basicp(), vars);  // Add the split variables
 
-            updateReferences(varp, it->second, vars);
+            updateReferences(varp, ref, vars);
 
             if (varp->isIO()) {  // port cannot be deleted
                 // If varp is a port of a module, single AssignW is sufficient
@@ -1179,16 +1169,15 @@ class SplitPackedVarVisitor final : public AstNVisitor, public SplitVarImpl {
                     connectPortAndVar(vars, varp, nullptr);
             } else if (varp->isTrace()) {
                 // Let's reuse the original variable for tracing
-                AstNode* rhsp = new AstVarRef(vars.front().varp()->fileline(), vars.front().varp(),
-                                              VAccess::READ);
+                AstNodeExpr* rhsp = new AstVarRef{vars.front().varp()->fileline(),
+                                                  vars.front().varp(), VAccess::READ};
+                FileLine* const fl = varp->fileline();
                 for (size_t i = 1; i < vars.size(); ++i) {
-                    rhsp = new AstConcat(
-                        varp->fileline(),
-                        new AstVarRef(varp->fileline(), vars[i].varp(), VAccess::READ), rhsp);
+                    rhsp = new AstConcat{fl, new AstVarRef{fl, vars[i].varp(), VAccess::READ},
+                                         rhsp};
                 }
-                varp->addNextHere(newAssign(varp->fileline(),
-                                            new AstVarRef(varp->fileline(), varp, VAccess::WRITE),
-                                            rhsp, varp));
+                varp->addNextHere(
+                    newAssign(fl, new AstVarRef{fl, varp, VAccess::WRITE}, rhsp, varp));
             } else {  // the original variable is not used anymore.
                 VL_DO_DANGLING(varp->unlinkFrBack()->deleteTree(), varp);
             }
@@ -1220,7 +1209,7 @@ public:
     // when the access to the variable cannot be determined statically.
     static const char* cannotSplitReason(const AstVar* nodep, bool checkUnpacked) {
         const char* reason = nullptr;
-        if (AstBasicDType* const basicp = nodep->dtypep()->basicp()) {
+        if (const AstBasicDType* const basicp = nodep->dtypep()->basicp()) {
             const std::pair<uint32_t, uint32_t> dim = nodep->dtypep()->dimensions(false);
             // Unpacked array will be split in SplitUnpackedVarVisitor() beforehand
             if (!((!checkUnpacked || dim.second == 0) && nodep->dtypep()->widthMin() > 1))
@@ -1231,12 +1220,12 @@ public:
         } else {
             reason = "its type is unknown";  // LCOV_EXCL_LINE
         }
-        if (reason)
+        if (reason) {
             UINFO(5,
                   "Check " << nodep->prettyNameQ() << " cannot split because" << reason << endl);
+        }
         return reason;
     }
-    VL_DEBUG_FUNC;  // Declare debug()
 };
 
 const char* SplitVarImpl::cannotSplitPackedVarReason(const AstVar* varp) {
@@ -1250,12 +1239,12 @@ void V3SplitVar::splitVariable(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     SplitVarRefsMap refs;
     {
-        SplitUnpackedVarVisitor visitor(nodep);
+        const SplitUnpackedVarVisitor visitor{nodep};
         refs = visitor.getPackedVarRefs();
     }
-    V3Global::dumpCheckGlobalTree("split_var", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 9);
-    { SplitPackedVarVisitor visitor(nodep, refs); }
-    V3Global::dumpCheckGlobalTree("split_var", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 9);
+    V3Global::dumpCheckGlobalTree("split_var", 0, dumpTreeEitherLevel() >= 9);
+    { SplitPackedVarVisitor{nodep, refs}; }
+    V3Global::dumpCheckGlobalTree("split_var", 0, dumpTreeEitherLevel() >= 9);
 }
 
 bool V3SplitVar::canSplitVar(const AstVar* varp) {

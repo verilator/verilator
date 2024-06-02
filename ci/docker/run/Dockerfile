@@ -6,7 +6,7 @@
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive \
@@ -19,10 +19,16 @@ RUN apt-get update \
                         ccache \
                         flex \
                         git \
+                        help2man \
+                        libfl2 \
                         libfl-dev \
                         libgoogle-perftools-dev \
+                        numactl \
                         perl \
+                        perl-doc \
                         python3 \
+                        zlib1g \
+                        zlib1g-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -39,7 +45,7 @@ RUN git clone "${REPO}" verilator && \
     git checkout "${SOURCE_COMMIT}" && \
     autoconf && \
     ./configure && \
-    make -j "$(nproc)" && \
+    make && \
     make install && \
     cd .. && \
     rm -r verilator

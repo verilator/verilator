@@ -14,19 +14,19 @@ module t (/*AUTOARG*/
 
    counter_io c1_data();
    counter_io c2_data();
-   //counter_io c3_data;	// IEEE illegal, and VCS doesn't allow non-() as it does with cells
+   //counter_io c3_data;        // IEEE illegal, and VCS doesn't allow non-() as it does with cells
    counter_io c3_data();
 
    counter_ansi  c1 (.clkm(clk),
-		     .c_data(c1_data),
-		     .i_value(4'h1));
+                     .c_data(c1_data),
+                     .i_value(4'h1));
    counter_ansi  c2 (.clkm(clk),
-		     .c_data(c2_data),
-		     .i_value(4'h2));
+                     .c_data(c2_data),
+                     .i_value(4'h2));
 `ifdef VERILATOR counter_ansi `else counter_nansi `endif
-   /**/ 	 c3 (.clkm(clk),
-		     .c_data(c3_data),
-		     .i_value(4'h3));
+   /**/          c3 (.clkm(clk),
+                     .c_data(c3_data),
+                     .i_value(4'h3));
 
    initial begin
       c1_data.value = 4'h4;
@@ -37,28 +37,28 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc<2) begin
-	 c1_data.reset <= 1;
-	 c2_data.reset <= 1;
-	 c3_data.reset <= 1;
+         c1_data.reset <= 1;
+         c2_data.reset <= 1;
+         c3_data.reset <= 1;
       end
       if (cyc==2) begin
-	 c1_data.reset <= 0;
-	 c2_data.reset <= 0;
-	 c3_data.reset <= 0;
+         c1_data.reset <= 0;
+         c2_data.reset <= 0;
+         c3_data.reset <= 0;
       end
       if (cyc==3) begin
-	 if (c1_data.get_lcl() != 12345) $stop;
+         if (c1_data.get_lcl() != 12345) $stop;
       end
       if (cyc==20) begin
-	 $write("[%0t] c1 cyc%0d: c1 %0x %0x  c2 %0x %0x  c3 %0x %0x\n", $time, cyc,
-		c1_data.value, c1_data.reset,
-		c2_data.value, c2_data.reset,
-		c3_data.value, c3_data.reset);
-	 if (c1_data.value != 2) $stop;
-	 if (c2_data.value != 3) $stop;
-	 if (c3_data.value != 4) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("[%0t] c1 cyc%0d: c1 %0x %0x  c2 %0x %0x  c3 %0x %0x\n", $time, cyc,
+                c1_data.value, c1_data.reset,
+                c2_data.value, c2_data.reset,
+                c3_data.value, c3_data.reset);
+         if (c1_data.value != 2) $stop;
+         if (c2_data.value != 3) $stop;
+         if (c3_data.value != 4) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule

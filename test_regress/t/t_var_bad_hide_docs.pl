@@ -10,22 +10,28 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(linter => 1);
 
-lint(
-    verilator_flags2 => ["--lint-only -Wwarn-VARHIDDEN"],
-    fails => $Self->{vlt_all},
-    expect_filename => $Self->{golden_filename},
-    );
+my $root = "..";
 
-extract(
-    in => $Self->{top_filename},
-    out => "../docs/gen/ex_VARHIDDEN_faulty.rst",
-    regexp => qr/(module t|integer|endmodule)/);
+if (!-r "$root/.git") {
+    skip("Not in a git repository");
+} else {
+    lint(
+        verilator_flags2 => ["--lint-only -Wwarn-VARHIDDEN"],
+        fails => $Self->{vlt_all},
+        expect_filename => $Self->{golden_filename},
+        );
 
-extract(
-    in => $Self->{golden_filename},
-    out => "../docs/gen/ex_VARHIDDEN_msg.rst",
-    lineno_adjust => -6,
-    regexp => qr/(var_bad_hide)/);
+    extract(
+        in => $Self->{top_filename},
+        out => "../docs/gen/ex_VARHIDDEN_faulty.rst",
+        regexp => qr/(module t|integer|endmodule)/);
+
+    extract(
+        in => $Self->{golden_filename},
+        out => "../docs/gen/ex_VARHIDDEN_msg.rst",
+        lineno_adjust => -6,
+        regexp => qr/(var_bad_hide)/);
+}
 
 ok(1);
 1;

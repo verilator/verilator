@@ -19,27 +19,27 @@
 module t (/*AUTOARG*/);
 
    // Note these are NOT pure.
-   import "DPI-C" function int dpii_clear ();
-   import "DPI-C" function int dpii_count (input int ctr);
-   import "DPI-C" function bit dpii_inc0  (input int ctr);
-   import "DPI-C" function bit dpii_inc1  (input int ctr);
-   import "DPI-C" function bit dpii_incx  (input int ctr, input bit value);
+   import "DPI-C" function void dpii_clear();
+   import "DPI-C" function int dpii_count(input int ctr);
+   import "DPI-C" function bit dpii_inc0(input int ctr);
+   import "DPI-C" function bit dpii_inc1(input int ctr);
+   import "DPI-C" function bit dpii_incx(input int ctr, input bit value);
 
    integer i;
    integer j;
-   bit 	   b;
+   bit     b;
    integer errors;
 
    task check1(integer line, bit got, bit ex);
       if (got != ex) begin
-	 $display("%%Error: Line %0d: Bad result, got=%0d expect=%0d",line,got,ex);
-	 errors++;
+         $display("%%Error: Line %0d: Bad result, got=%0d expect=%0d",line,got,ex);
+         errors++;
       end
    endtask
    task check(integer line, int got, int ex);
       if (got != ex) begin
-	 $display("%%Error: Line %0d: Bad result, got=%0d expect=%0d",line,got,ex);
-	 errors++;
+         $display("%%Error: Line %0d: Bad result, got=%0d expect=%0d",line,got,ex);
+         errors++;
       end
    endtask
 
@@ -54,6 +54,8 @@ module t (/*AUTOARG*/);
       check1(`__LINE__, (dpii_inc1(4) && dpii_inc0(5)), 1'b0);
       check1(`__LINE__, (dpii_inc0(6) && dpii_inc1(7)), 1'b0);
       check1(`__LINE__, (!(dpii_inc1(8) && dpii_inc1(9))), 1'b0);
+      check1(`__LINE__, (dpii_inc0(10) && 1'b0), 1'b0);
+      check1(`__LINE__, (dpii_inc0(11) && 1'b1), 1'b0);
       check (`__LINE__, dpii_count(0), 0);
       check (`__LINE__, dpii_count(1), 1);
       check (`__LINE__, dpii_count(2), 1);
@@ -64,6 +66,8 @@ module t (/*AUTOARG*/);
       check (`__LINE__, dpii_count(7), 0);
       check (`__LINE__, dpii_count(8), 1);
       check (`__LINE__, dpii_count(9), 1);
+      check (`__LINE__, dpii_count(10), 1);
+      check (`__LINE__, dpii_count(11), 1);
       //
       dpii_clear();
       check1(`__LINE__, (1'b0 & dpii_inc0(0)), 1'b0);
@@ -72,6 +76,8 @@ module t (/*AUTOARG*/);
       check1(`__LINE__, (dpii_inc1(4) & dpii_inc0(5)), 1'b0);
       check1(`__LINE__, (dpii_inc0(6) & dpii_inc1(7)), 1'b0);
       check1(`__LINE__, (!(dpii_inc1(8) & dpii_inc1(9))), 1'b0);
+      check1(`__LINE__, (dpii_inc0(10) & 1'b0), 1'b0);
+      check1(`__LINE__, (dpii_inc0(11) & 1'b1), 1'b0);
       check (`__LINE__, dpii_count(0), 1);
       check (`__LINE__, dpii_count(1), 1);
       check (`__LINE__, dpii_count(2), 1);
@@ -82,6 +88,8 @@ module t (/*AUTOARG*/);
       check (`__LINE__, dpii_count(7), 1);
       check (`__LINE__, dpii_count(8), 1);
       check (`__LINE__, dpii_count(9), 1);
+      check (`__LINE__, dpii_count(10), 1);
+      check (`__LINE__, dpii_count(11), 1);
       //
       dpii_clear();
       check1(`__LINE__, (1'b0 || dpii_inc0(0)), 1'b0);
@@ -90,6 +98,8 @@ module t (/*AUTOARG*/);
       check1(`__LINE__, (dpii_inc1(4) || dpii_inc0(5)), 1'b1);
       check1(`__LINE__, (dpii_inc0(6) || dpii_inc1(7)), 1'b1);
       check1(`__LINE__, (!(dpii_inc1(8) || dpii_inc1(9))), 1'b0);
+      check1(`__LINE__, (dpii_inc0(10) || 1'b0), 1'b0);
+      check1(`__LINE__, (dpii_inc0(11) || 1'b1), 1'b1);
       check (`__LINE__, dpii_count(0), 1);
       check (`__LINE__, dpii_count(1), 0);
       check (`__LINE__, dpii_count(2), 1);
@@ -100,6 +110,8 @@ module t (/*AUTOARG*/);
       check (`__LINE__, dpii_count(7), 1);
       check (`__LINE__, dpii_count(8), 1);
       check (`__LINE__, dpii_count(9), 0);
+      check (`__LINE__, dpii_count(10), 1);
+      check (`__LINE__, dpii_count(11), 1);
       //
       dpii_clear();
       check1(`__LINE__, (1'b0 | dpii_inc0(0)), 1'b0);
@@ -108,6 +120,8 @@ module t (/*AUTOARG*/);
       check1(`__LINE__, (dpii_inc1(4) | dpii_inc0(5)), 1'b1);
       check1(`__LINE__, (dpii_inc0(6) | dpii_inc1(7)), 1'b1);
       check1(`__LINE__, (!(dpii_inc1(8) | dpii_inc1(9))), 1'b0);
+      check1(`__LINE__, (dpii_inc0(10) | 1'b0), 1'b0);
+      check1(`__LINE__, (dpii_inc0(11) | 1'b1), 1'b1);
       check (`__LINE__, dpii_count(0), 1);
       check (`__LINE__, dpii_count(1), 1);
       check (`__LINE__, dpii_count(2), 1);
@@ -118,6 +132,8 @@ module t (/*AUTOARG*/);
       check (`__LINE__, dpii_count(7), 1);
       check (`__LINE__, dpii_count(8), 1);
       check (`__LINE__, dpii_count(9), 1);
+      check (`__LINE__, dpii_count(10), 1);
+      check (`__LINE__, dpii_count(11), 1);
       //
       dpii_clear();
       check1(`__LINE__, (1'b0 -> dpii_inc0(0)), 1'b1);
@@ -192,12 +208,12 @@ module t (/*AUTOARG*/);
       // Something a lot more complicated
       dpii_clear();
       for (i=0; i<64; i++) begin
-	 b = ( ((dpii_incx(0,i[0])
-		 && (dpii_incx(1,i[1])
-		     || dpii_incx(2,i[2])
-		     | dpii_incx(3,i[3])))  // | not ||
-		|| dpii_incx(4,i[4]))
-	       -> dpii_incx(5,i[5]));
+        b = ( ((dpii_incx(0,i[0])
+                && (dpii_incx(1,i[1])
+                    || dpii_incx(2,i[2])
+                    | dpii_incx(3,i[3])))  // | not ||
+               || dpii_incx(4,i[4]))
+              -> dpii_incx(5,i[5]));
       end
       check (`__LINE__, dpii_count(0), 64);
       check (`__LINE__, dpii_count(1), 32);

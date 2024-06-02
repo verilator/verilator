@@ -1,5 +1,6 @@
 \#*
 .#*
+.gdb_history
 .nfs*
 *~
 *.tidy
@@ -39,3 +40,9 @@ verilator-config-version.cmake
 **/__pycache__/*
 **/_build/*
 **/obj_dir/*
+/.vscode/
+/.idea/
+/cmake-build-*/
+/test_regress/snapshot/
+xmverilog.*
+xrun.history

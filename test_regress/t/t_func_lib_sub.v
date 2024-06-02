@@ -45,11 +45,11 @@ generate
    for (i=0;i<8;i=i+1)
    begin : dnlpyw
       DecCountReg4 bzpytc (zfghtn, fgzsox, zlnzlj[i],
-      			   knquim[3:0], covfok, grvsrs[i]);
+                           knquim[3:0], covfok, grvsrs[i]);
       DecCountReg4 oghukp (zfghtn, fgzsox, zlnzlj[i],
-     			   knquim[7:4], covfok, kyxrft[i]);
+                           knquim[7:4], covfok, kyxrft[i]);
       DecCountReg4 ttvjoo (zfghtn, fgzsox, nahzat[i],
-			   kqxkkr[3:0], covfok, uxhkka[i]);
+                           kqxkkr[3:0], covfok, uxhkka[i]);
    end
 endgenerate
 
@@ -93,7 +93,7 @@ always @(posedge clk)
 begin
    Xinit;
    if (X(qqibou))
-      udbvtl	<= #`zednkw mppedc;
+      udbvtl    <= #`zednkw mppedc;
 
    Xcheck(fgzsox);
 end

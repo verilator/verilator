@@ -1,0 +1,14 @@
+%Error-UNSUPPORTED: t/t_strength_highz.v:8:17: Unsupported: highz strength
+    8 |    wire (weak0, highz1) a = 1;
+      |                 ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_strength_highz.v:9:19: Unsupported: highz strength
+    9 |    wire (strong1, highz0) b = 0;
+      |                   ^~~~~~
+%Error-UNSUPPORTED: t/t_strength_highz.v:10:10: Unsupported: highz strength
+   10 |    wire (highz0, pull1) c = 0;
+      |          ^~~~~~
+%Error-UNSUPPORTED: t/t_strength_highz.v:11:10: Unsupported: highz strength
+   11 |    wire (highz1, supply0) d = 1;
+      |          ^~~~~~
+%Error: Exiting due to

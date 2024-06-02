@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_strength_bufif1.v:9:11: Unsupported: Strength specifier on this gate type
+    9 |    bufif1 (strong0, strong1) (a, 1'b1, 1'b1);
+      |           ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

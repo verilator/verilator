@@ -15,7 +15,7 @@ my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
 top_filename("t/t_xml_first.v");
 
 compile(
-    verilator_flags2 => ['--xml-only', '--flatten'],
+    verilator_flags2 => ['--no-std', '--xml-only', '--flatten'],
     verilator_make_gmake => 0,
     make_top_shell => 0,
     make_main => 0,

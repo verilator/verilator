@@ -1,7 +1,7 @@
 # SystemC::Coverage-3
-C 'f../../t/t_cover_lib_c.cppl37pagesp_user/t_cover_lib_cP0htop.a*.pi' 500
-C 'f../../t/t_cover_lib_c.cppl37pagesp_user/t_cover_lib_cP1htop.a0.npi' 200
-C 'f../../t/t_cover_lib_c.cppl37pagesp_user/t_cover_lib_cP1htop.a1.npi' 300
-C 'f../../t/t_cover_lib_c.cppl46pagesp_user/t_cover_lib_cokept_onehmain' 100
-C 'f../../t/t_cover_lib_c.cppl47pagesp_user/t_cover_lib_cokept_twohmain' 210
-C 'f../../t/t_cover_lib_c.cppl48pagesp_user/t_cover_lib_colost_threehmain' 220
+C 'f../../t/t_cover_lib_c.cppl39pagesp_user/t_cover_lib_cP0htop.a*.pi' 500
+C 'f../../t/t_cover_lib_c.cppl39pagesp_user/t_cover_lib_cP1htop.a0.npi' 200
+C 'f../../t/t_cover_lib_c.cppl39pagesp_user/t_cover_lib_cP1htop.a1.npi' 300
+C 'f../../t/t_cover_lib_c.cppl48pagesp_user/t_cover_lib_cokept_onehmain' 100
+C 'f../../t/t_cover_lib_c.cppl49pagesp_user/t_cover_lib_cokept_twohmain' 210
+C 'f../../t/t_cover_lib_c.cppl50pagesp_user/t_cover_lib_colost_threehmain' 220

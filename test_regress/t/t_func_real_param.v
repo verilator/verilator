@@ -9,7 +9,7 @@
 module t();
 
    function real get_real_one;
-      input 	      ignored;
+      input           ignored;
       get_real_one = 1.1;
    endfunction
 
@@ -18,10 +18,10 @@ module t();
 
    generate
       initial begin
-	 if (R_PARAM != 1.1) $stop;
-	 if (R_PARAM_2 != 1'b1) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if (R_PARAM != 1.1) $stop;
+         if (R_PARAM_2 != 1'b1) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    endgenerate
 

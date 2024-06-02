@@ -12,14 +12,20 @@ class Cls;
 endclass : Cls
 
 module t (/*AUTOARG*/);
+   typedef Cls Cls2;
+
    initial begin
       Cls c;
+      Cls2 c2;
       if (c != null) $stop;
       if (c) $stop;
+      if (c2) $stop;
       $display("Display: null = \"%p\"", c);  // null
       c = new;
+      c2 = new;
       if (c == null) $stop;
       if (!c) $stop;
+      if (!c2) $stop;
       $display("Display: newed = \"%p\"", c);  // '{imembera:0, imemberb:0}
       c.imembera = 10;
       c.imemberb = 20;

@@ -1,0 +1,6 @@
+%Warning-PROFOUTOFDATE: t/t_pgo_profoutofdate_bad.v:27:1: Profile data for mtasks may be out of date. 3 of 3 mtasks had no data
+   27 | profile_data -model "x" -mtask "h7baded98__0" -cost 64'd12345678901234567890
+      | ^~~~~~~~~~~~
+                        ... For warning description see https://verilator.org/warn/PROFOUTOFDATE?v=latest
+                        ... Use "/* verilator lint_off PROFOUTOFDATE */" and lint_on around source to disable this message.
+%Error: Exiting due to

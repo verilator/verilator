@@ -28,10 +28,10 @@ module t (/*AUTOARG*/);
    foo_mod
      foo_mod
        (
-	.foo (foos[2]),
+        .foo (foos[2]),
     .bars (bars)
-	//.foo (foos)
-	);
+        //.foo (foos)
+        );
 
    initial begin
       $write("*-* All Finished *-*\n");

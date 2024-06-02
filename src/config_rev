@@ -2,7 +2,7 @@
 # pylint: disable=C0103,C0114
 ######################################################################
 #
-# Copyright 2005-2021 by Wilson Snyder. This program is free software; you
+# Copyright 2005-2024 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -22,7 +22,11 @@ Args = parser.parse_args()
 
 os.chdir(Args.directory)
 
-rev = 'UNKNOWN_REV'
+if 'VERILATOR_SRC_VERSION' in os.environ:
+    rev = os.environ['VERILATOR_SRC_VERSION']
+else:
+    rev = 'UNKNOWN_REV'
+
 data = os.popen('git describe').read()
 
 match = re.search(r'^(v[0-9].*)', data)

@@ -26,10 +26,10 @@ compile(
 my @files = glob($tmp_dir . "/*");
 
 error("Did not produce DPI header") if scalar(@files) == 0;
-error("Too many files created:".join(', ', @files)) if scalar(@files) > 1;
+error("Too many files created:" . join(', ', @files)) if scalar(@files) > 1;
 
 my $tmp_header = $files[0];
-print("============".$tmp_header."\n");
+print("============" . $tmp_header . "\n");
 error("Unexpected file $tmp_header") unless $tmp_header =~ /__Dpi\.h$/;
 
 compile(

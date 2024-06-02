@@ -1,4 +1,4 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2024 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _Connecting:
@@ -7,90 +7,163 @@
 Connecting to Verilated Models
 ******************************
 
+Structure of the Verilated Model
+================================
+
+Verilator outputs a :file:`{prefix}.h` header file which defines a class
+named :code:`{prefix}` which represents the generated model the user is
+supposed to instantiate.  This model class defines the interface of the
+Verilated model.
+
+Verilator will additionally create a :file:`{prefix}.cpp` file, together
+with additional .h and .cpp files for internals.  See the :file:`examples`
+directory in the kit for examples.  See :ref:`Files Read/Written` for
+information on all the files Verilator might output.
+
+The output of Verilator will contain a :file:`{prefix}.mk` file that may be
+used with Make to build a :file:`{prefix}__ALL.a` library with all required
+objects in it.
+
+The generated model class file manages all internal state required by the
+model, and exposes the following interface that allows interaction with the
+model:
+
+* Top level IO ports are exposed as references to the appropriate internal
+  equivalents.
+
+* Public top level module instances are exposed as pointers to allow access
+  to :code:`/* verilator public */` items.
+
+* The root of the design hierarchy (as in SystemVerilog :code:`$root`) is
+  exposed via the :code:`rootp` member pointer to allow access to model
+  internals, including :code:`/* verilator public_flat */` items.
+
+
+.. _Porting from pre 4.210:
+
+Model interface changes in version 4.210
+------------------------------------------
+
+Starting from version 4.210, the model class is an interface object.
+
+Up until Verilator version 4.204 inclusive, the generated model class was
+also the instance of the top level instance in the design hierarchy (what
+you would refer to with :code:`$root` in SystemVerilog).  This meant that
+all internal variables that were implemented by Verilator in the root scope
+were accessible as members of the model class itself.  Note there were often
+many such variable due to module inlining, including
+:code:`/* verilator public_flat */` items.
+
+This means that user code that accesses internal signals in the model
+(likely including :code:`/* verilator public_flat */` signals, as they are
+often inlined into the root scope) will need to be updated as follows:
+
+* No change required for accessing top level IO signals. These are directly
+  accessible in the model class via references.
+
+* No change required for accessing :code:`/* verilator public */` items.
+  These are directly accessible via sub-module pointers in the model class.
+
+* Accessing any other internal members, including
+  :code:`/* verilator public_flat */` items requires the following changes:
+
+  * Additionally include :file:`{prefix}___024root.h`. This header defines
+    type of the :code:`rootp` pointer within the model class. Note the
+    :code:`__024` substring is the Verilator escape sequence for the
+    :code:`$` character, i.e.: :code:`rootp` points to the Verilated
+    SystemVerilog :code:`$root` scope.
+
+  * Replace :code:`modelp->internal->member->lookup` references with
+    :code:`modelp->rootp->internal->member->lookup` references, which
+    contain one additional indirection via the :code:`rootp` pointer.
+
+
 .. _Connecting to C++:
 
 Connecting to C++
 =================
 
-Verilator creates a :file:`{prefix}.h` and :file:`{prefix}.cpp` file for
-the top level module, together with additional .h and .cpp files for
-internals. See the :file:`examples` directory in the kit for examples.  See
-:ref:`Files Read/Written` for information on all the files it writes.
+In C++ output mode (:vlopt:`--cc`), the Verilator generated model class is a
+simple C++ class.  The user must write a C++ wrapper and main loop for the
+simulation, which instantiates the model class, and link with the Verilated
+model.
 
-After the model is created, there will be a :file:`{prefix}.mk` file that
-may be used with Make to produce a :file:`{prefix}__ALL.a` file with all
-required objects in it.
+Refer to ``examples/make_tracing_c`` in the distribution for a detailed
+commented example.
 
-The user must write a C++ wrapper and main loop for the simulation, to link
-with the Verilated model.  Here is a simple example:
+Top level IO signals are read and written as members of the model.  You
+call the model's :code:`eval()` method to evaluate the model.  When the
+simulation is complete call the model's :code:`final()` method to execute
+any SystemVerilog final blocks, and complete any assertions. If using
+:vlopt:`--timing`, there are two additional functions for checking if
+there are any events pending in the simulation due to delays, and for
+retrieving the simulation time of the next delayed event. See
+:ref:`Evaluation Loop`.
 
-.. code-block:: C++
-
-         #include <verilated.h>          // Defines common routines
-         #include <iostream>             // Need std::cout
-         #include "Vtop.h"               // From Verilating "top.v"
-
-         Vtop *top;                      // Instantiation of module
-
-         vluint64_t main_time = 0;       // Current simulation time
-         // This is a 64-bit integer to reduce wrap over issues and
-         // allow modulus.  This is in units of the timeprecision
-         // used in Verilog (or from --timescale-override)
-
-         double sc_time_stamp() {        // Called by $time in Verilog
-             return main_time;           // converts to double, to match
-                                         // what SystemC does
-         }
-
-         int main(int argc, char** argv) {
-             Verilated::commandArgs(argc, argv);   // Remember args
-
-             top = new Vtop;             // Create instance
-
-             top->reset_l = 0;           // Set some inputs
-
-             while (!Verilated::gotFinish()) {
-                 if (main_time > 10) {
-                     top->reset_l = 1;   // Deassert reset
-                 }
-                 if ((main_time % 10) == 1) {
-                     top->clk = 1;       // Toggle clock
-                 }
-                 if ((main_time % 10) == 6) {
-                     top->clk = 0;
-                 }
-                 top->eval();            // Evaluate model
-                 cout << top->out << endl;       // Read a output
-                 main_time++;            // Time passes...
-             }
-
-             top->final();               // Done simulating
-             //    // (Though this example doesn't get here)
-             delete top;
-         }
-
-
-Note signals are read and written as member variables of the model.  You
-call the :code:`eval()` method to evaluate the model.  When the simulation
-is complete call the :code:`final()` method to execute any SystemVerilog
-final blocks, and complete any assertions. See :ref:`Evaluation Loop`.
 
 
 Connecting to SystemC
 =====================
 
-Verilator will convert the top level module to a SC_MODULE.  This module
-will attach directly into a SystemC netlist as an instantiation.
+In SystemC output mode (:vlopt:`--sc`), the Verilator generated model class
+is a SystemC SC_MODULE.  This module will attach directly into a SystemC
+netlist as an instantiation.
 
 The SC_MODULE gets the same pinout as the Verilog module, with the
 following type conversions: Pins of a single bit become bool.  Pins 2-32
 bits wide become uint32_t's.  Pins 33-64 bits wide become sc_bv's or
-vluint64_t's depending on the :vlopt:`--no-pins64` option.  Wider pins
+uint64_t's depending on the :vlopt:`--no-pins64` option.  Wider pins
 become sc_bv's.  (Uints simulate the fastest so are used where possible.)
 
-Lower modules are not pure SystemC code.  This is a feature, as using the
-SystemC pin interconnect scheme everywhere would reduce performance by an
-order of magnitude.
+Model internals, including lower level sub-modules are not pure SystemC
+code.  This is a feature, as using the SystemC pin interconnect scheme
+everywhere would reduce performance by an order of magnitude.
+
+
+Verilated API
+=============
+
+The API to a Verilated model is the C++ headers in the include/ directory
+in the distribution.  These headers use Doxygen comments, `///` and `//<`,
+to indicate and document those functions that are part of the Verilated
+public API.
+
+Process-Level Clone APIs
+--------------------------
+
+Modern operating systems support process-level clone (a.k.a copying, forking)
+with system call interfaces in C/C++, e.g., :code:`fork()` in Linux.
+
+However, after cloning a parent process, some resources cannot be inherited
+in the child process. For example, in POSIX systems, when you fork a process,
+the child process inherits all the memory of the parent process. However,
+only the thread that called fork is replicated in the child process. Other
+threads are not.
+
+Therefore, to support the process-level clone mechanisms, Verilator supports
+:code:`prepareClone()` and :code:`atClone()` APIs to allow the user to manually
+re-construct the model in the child process. The two APIs handle all necessary
+resources required for releasing and re-initializing before and after cloning.
+
+The two APIs are supported in the verilated models. Here is an example of usage
+with Linux :code:`fork()` and :code:`pthread_atfork` APIs:
+
+.. code-block:: C++
+
+    // static function pointers to fit pthread_atfork
+    static auto prepareClone = [](){ topp->prepareClone(); };
+    static auto atClone = [](){ topp->atClone(); };
+
+    // in main function, register the handlers:
+    pthread_atfork(prepareClone, atClone, atClone);
+
+For better flexibility, you can also manually call the handlers before and
+after :code:`fork()`.
+
+With the process-level clone APIs, users can create process-level snapshots
+for the verilated models. While the Verilator save/restore option provides
+persistent and circuit-dependent snapshots, the process-level clone APIs
+enable in-memory, circuit-transparent, and highly efficient snapshots.
 
 
 Direct Programming Interface (DPI)
@@ -135,7 +208,7 @@ DPI System Task/Functions
 -------------------------
 
 Verilator extends the DPI format to allow using the same scheme to
-efficiently add system functions.  Simply use a dollar-sign prefixed system
+efficiently add system functions.  Use a dollar-sign prefixed system
 function name for the import, but note it must be escaped.
 
 .. code-block:: sv
@@ -192,7 +265,9 @@ with respect to that top level module, then the scope could be set with
 
      #include "svdpi.h"
      ...
-     svSetScope(svGetScopeFromName("TOP.dut"));
+     const svScope scope = svGetScopeFromName("TOP.dut");
+     assert(scope);  // Check for nullptr if scope not found
+     svSetScope(scope);
 
 (Remember that Verilator adds a "TOP" to the top of the module hierarchy.)
 
@@ -332,6 +407,16 @@ only a couple of instructions.
 For signal callbacks to work the main loop of the program must call
 :code:`VerilatedVpi::callValueCbs()`.
 
+Verilator also tracks when the model state has been modified via the VPI with
+an :code:`evalNeeded` flag.  This flag can be checked with :code:`VerilatedVpi::evalNeeded()`
+and it can be cleared with :code:`VerilatedVpi::clearEvalNeeded()`.  Used together
+it is possible to skip :code:`eval()` calls if no model state has been changed
+since the last :code:`eval()`.
+
+Any data written via :code:`vpi_put_value` with :code:`vpiInertialDelay` will
+be deferred for later.  These delayed values can be flushed to the model with
+:code:`VerilatedVpi::doInertialPuts()`.
+
 
 .. _VPI Example:
 
@@ -345,9 +430,11 @@ changed on the specified clock edge.
 .. code-block:: bash
 
      cat >our.v <<'EOF'
-       module our (input clk);
-          reg readme   /*verilator public_flat_rd*/;
-          reg writeme  /*verilator public_flat_rw @(posedge clk) */;
+       module our #(
+          parameter WIDTH /*verilator public_flat_rd*/ = 32
+       ) (input clk);
+          reg [WIDTH-1:0] readme   /*verilator public_flat_rd*/;
+          reg [WIDTH-1:0] writeme  /*verilator public_flat_rw @(posedge clk) */;
           initial $finish;
        endmodule
      EOF
@@ -357,36 +444,39 @@ accesses the above signal "readme" would be:
 
 .. code-block:: bash
 
-     cat >sim_main.cpp <<'<<EOF'
+     cat >sim_main.cpp <<'EOF'
        #include "Vour.h"
        #include "verilated.h"
        #include "verilated_vpi.h"  // Required to get definitions
 
-       vluint64_t main_time = 0;   // See comments in first example
+       uint64_t main_time = 0;   // See comments in first example
        double sc_time_stamp() { return main_time; }
 
        void read_and_check() {
            vpiHandle vh1 = vpi_handle_by_name((PLI_BYTE8*)"TOP.our.readme", NULL);
            if (!vh1) vl_fatal(__FILE__, __LINE__, "sim_main", "No handle found");
            const char* name = vpi_get_str(vpiName, vh1);
-           printf("Module name: %s\n", name);  // Prints "readme"
+           const char* type = vpi_get_str(vpiType, vh1);
+           const int size = vpi_get(vpiSize, vh1);
+           printf("register name: %s, type: %s, size: %d\n", name, type, size);  // Prints "register name: readme, type: vpiReg, size: 32"
 
            s_vpi_value v;
            v.format = vpiIntVal;
            vpi_get_value(vh1, &v);
-           printf("Value of v: %d\n", v.value.integer);  // Prints "readme"
+           printf("Value of %s: %d\n", name, v.value.integer);  // Prints "Value of readme: 0"
        }
 
-       int main(int argc, char** argv, char** env) {
+       int main(int argc, char** argv) {
            Verilated::commandArgs(argc, argv);
-           Vour* top = new Vour;
-           Verilated::internalsDump();  // See scopes to help debug
-           while (!Verilated::gotFinish()) {
+           const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+           const std::unique_ptr<Vour> top{new Vour{contextp.get()}};
+
+           contextp->internalsDump();  // See scopes to help debug
+           while (!contextp->gotFinish()) {
                top->eval();
                VerilatedVpi::callValueCbs();  // For signal callbacks
                read_and_check();
            }
-           delete top;
            return 0;
        }
      EOF
@@ -413,10 +503,25 @@ there is only a single design, you would call :code:`eval_step()` then
 :code:`eval_end_step()`; in fact :code:`eval()` described above is just a
 wrapper which calls these two functions.
 
+3. If using delays and :vlopt:`--timing`, there are two additional methods
+the user should call:
+
+   * :code:`designp->eventsPending()`, which returns :code:`true` if there are
+     any delayed events pending,
+   * :code:`designp->nextTimeSlot()`, which returns the simulation time of the
+     next delayed event. This method can only be called if
+     :code:`designp->eventsPending()` returned :code:`true`.
+
+Call :code:`eventsPending()` to check if you should continue with the
+simulation, and then :code:`nextTimeSlot()` to move simulation time forward.
+:vlopt:`--main` can be used with :vlopt:`--timing` to generate a basic example
+of a timing-enabled eval loop.
+
 When :code:`eval()` (or :code:`eval_step()`) is called Verilator looks for
 changes in clock signals and evaluates related sequential always blocks,
-such as computing always_ff @ (posedge...) outputs.  Then Verilator
-evaluates combinatorial logic.
+such as computing always_ff @ (posedge...) outputs. With :vlopt:`--timing`, it
+resumes any delayed processes awaiting the current simulation time. Then
+Verilator evaluates combinational logic.
 
 Note combinatorial logic is not computed before sequential always blocks
 are computed (for speed reasons). Therefore it is best to set any non-clock
@@ -434,14 +539,15 @@ distribution.
 Verilated and VerilatedContext
 ==============================
 
-Multiple Verilated models may be part of the same simulation context, that
-is share a VPI interface, sense of time, and common settings.  This common
-simulation context information is stored in a ``VerilatedContext``
+Multiple C++ Verilated models may be part of the same simulation context,
+that is share a VPI interface, sense of time, and common settings.  This
+common simulation context information is stored in a ``VerilatedContext``
 structure.  If a ``VerilatedContext`` is not created prior to creating a
-model, a default global one is created automatically.
+model, a default global one is created automatically.  SystemC requires
+using only the single, default VerilatedContext.
 
 The ``Verilated::`` methods, including the ``Verilated::commandArgs`` call
-shown above, simply call VerilatedContext methods using the default global
+shown above, call VerilatedContext methods using the default global
 VerilatedContext.  (Technically they operate on the last one used by a
 given thread.)  If you are using multiple simulation contexts you should
 not use the Verilated:: methods, and instead always use VerilatedContext

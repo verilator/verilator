@@ -11,13 +11,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 run(cmd => ["cd $Self->{obj_dir}"
-            ." && $ENV{CXX} -c ../../t/t_flag_ldflags_a.cpp"
-            ." && ar -cr t_flag_ldflags_a.a t_flag_ldflags_a.o"
-            ." && ranlib t_flag_ldflags_a.a "],
+            . " && $ENV{CXX} -c ../../t/t_flag_ldflags_a.cpp"
+            . " && ar -cr t_flag_ldflags_a.a t_flag_ldflags_a.o"
+            . " && ranlib t_flag_ldflags_a.a "],
     check_finished => 0);
 run(cmd => ["cd $Self->{obj_dir}"
-            ." && $ENV{CXX} -fPIC -c ../../t/t_flag_ldflags_so.cpp"
-            ." && $ENV{CXX} -shared -o t_flag_ldflags_so.so -lc t_flag_ldflags_so.o"],
+            . " && $ENV{CXX} -fPIC -c ../../t/t_flag_ldflags_so.cpp"
+            . " && $ENV{CXX} -shared -o t_flag_ldflags_so.so -lc t_flag_ldflags_so.o"],
     check_finished => 0);
 
 compile(
@@ -32,18 +32,18 @@ compile(
 # On OS X, LD_LIBRARY_PATH is ignored, so set rpath of the exe to find the .so
 if ($^O eq "darwin") {
   run(cmd => ["cd $Self->{obj_dir}"
-              ." && install_name_tool -add_rpath \@executable_path/."
-              ." $Self->{VM_PREFIX}"],
+              . " && install_name_tool -add_rpath \@executable_path/."
+              . " $Self->{vm_prefix}"],
       check_finished => 0);
   run(cmd => ["cd $Self->{obj_dir}"
-              ." && install_name_tool -change t_flag_ldflags_so.so"
-              ." \@rpath/t_flag_ldflags_so.so $Self->{VM_PREFIX}"],
+              . " && install_name_tool -change t_flag_ldflags_so.so"
+              . " \@rpath/t_flag_ldflags_so.so $Self->{vm_prefix}"],
       check_finished => 0);
 }
 
 execute(
     check_finished => 1,
-    run_env => "LD_LIBRARY_PATH=$Self->{obj_dir}",
+    run_env => "LD_LIBRARY_PATH=$Self->{obj_dir}:$ENV{LD_LIBRARY_PATH}",
     );
 
 ok(1);

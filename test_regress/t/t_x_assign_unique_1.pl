@@ -13,8 +13,8 @@ scenarios(vlt_all => 1);
 top_filename("t/t_x_assign.v");
 
 compile(
-    make_top_shell   => 0,
-    make_main        => 0,
+    make_top_shell => 0,
+    make_main => 0,
     verilator_flags2 => ["--x-assign unique --exe $Self->{t_dir}/t_x_assign.cpp"],
     );
 

@@ -1,27 +1,27 @@
 %Error: t/t_package_export.v:45:17: Export object not found: 'pkg1::BAD_DOES_NOT_EXIST'
    45 |    export pkg1::BAD_DOES_NOT_EXIST;
       |                 ^~~~~~~~~~~~~~~~~~
-%Error: t/t_package_export.v:60:16: Can't find definition of scope/variable: 'PARAM2'
+%Error: t/t_package_export.v:60:16: Can't find definition of scope/variable/func: 'PARAM2'
                                   : ... Suggested alternative: 'PARAM1'
    60 |    reg [pkg11::PARAM2 : 0] bus12;
       |                ^~~~~~
-%Error: t/t_package_export.v:61:16: Can't find definition of scope/variable: 'PARAM3'
+%Error: t/t_package_export.v:61:16: Can't find definition of scope/variable/func: 'PARAM3'
                                   : ... Suggested alternative: 'PARAM1'
    61 |    reg [pkg11::PARAM3 : 0] bus13;
       |                ^~~~~~
-%Error: t/t_package_export.v:64:16: Can't find definition of scope/variable: 'PARAM2'
+%Error: t/t_package_export.v:64:16: Can't find definition of scope/variable/func: 'PARAM2'
                                   : ... Suggested alternative: 'PARAM1'
    64 |    reg [pkg21::PARAM2 : 0] bus22;
       |                ^~~~~~
-%Error: t/t_package_export.v:65:16: Can't find definition of scope/variable: 'PARAM3'
+%Error: t/t_package_export.v:65:16: Can't find definition of scope/variable/func: 'PARAM3'
                                   : ... Suggested alternative: 'PARAM1'
    65 |    reg [pkg21::PARAM3 : 0] bus23;
       |                ^~~~~~
-%Error: t/t_package_export.v:68:16: Can't find definition of scope/variable: 'PARAM2'
+%Error: t/t_package_export.v:68:16: Can't find definition of scope/variable/func: 'PARAM2'
                                   : ... Suggested alternative: 'PARAM1'
    68 |    reg [pkg31::PARAM2 : 0] bus32;
       |                ^~~~~~
-%Error: t/t_package_export.v:69:16: Can't find definition of scope/variable: 'PARAM3'
+%Error: t/t_package_export.v:69:16: Can't find definition of scope/variable/func: 'PARAM3'
                                   : ... Suggested alternative: 'PARAM1'
    69 |    reg [pkg31::PARAM3 : 0] bus33;
       |                ^~~~~~

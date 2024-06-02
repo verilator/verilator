@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -19,124 +19,144 @@
 //              Prepend __PVT__ to variable names
 //*************************************************************************
 
-#include "config_build.h"
-#include "verilatedos.h"
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
-#include "V3Global.h"
 #include "V3Name.h"
-#include "V3Ast.h"
+
 #include "V3LanguageWords.h"
+#include "V3UniqueNames.h"
+
+#include <vector>
+
+VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 // Name state, as a visitor of each AstNode
 
-class NameVisitor final : public AstNVisitor {
-private:
+class NameVisitor final : public VNVisitorConst {
     // NODE STATE
     // Cleared on Netlist
     //  AstCell::user1()        -> bool.  Set true if already processed
     //  AstScope::user1()       -> bool.  Set true if already processed
     //  AstVar::user1()         -> bool.  Set true if already processed
-    AstUser1InUse m_inuser1;
+    const VNUser1InUse m_inuser1;
 
-    // STATE
-    AstNodeModule* m_modp = nullptr;
+    // STATE - for current visit position (use VL_RESTORER)
+    const AstNodeModule* m_modp = nullptr;  // Current module
+
+    // Rename struct / union field properly
+    std::vector<V3UniqueNames> m_nameStack;  // Hierarchy-based renames
+
+    void renameKeywordCheck(AstNode* nodep) {
+        const std::string rsvd = V3LanguageWords::isKeyword(nodep->name());
+        if (rsvd != "") {
+            nodep->v3warn(SYMRSVDWORD, "Symbol matches " + rsvd + ": " << nodep->prettyNameQ());
+            const string newname = "__SYM__"s + nodep->name();
+            nodep->name(newname);
+            nodep->editCountInc();
+        }
+    }
 
     // METHODS
-    VL_DEBUG_FUNC;  // Declare debug()
-
     void rename(AstNode* nodep, bool addPvt) {
         if (!nodep->user1()) {  // Not already done
             if (addPvt) {
-                string newname = string("__PVT__") + nodep->name();
+                const string newname = "__PVT__"s + nodep->name();
                 nodep->name(newname);
                 nodep->editCountInc();
-            } else if (VN_IS(nodep, CFunc) && VN_CAST(nodep, CFunc)->isConstructor()) {
+            } else if (VN_IS(nodep, CFunc) && VN_AS(nodep, CFunc)->isConstructor()) {
             } else {
-                string rsvd = V3LanguageWords::isKeyword(nodep->name());
-                if (rsvd != "") {
-                    nodep->v3warn(SYMRSVDWORD,
-                                  "Symbol matches " + rsvd + ": " << nodep->prettyNameQ());
-                    string newname = string("__SYM__") + nodep->name();
-                    nodep->name(newname);
-                    nodep->editCountInc();
-                }
+                renameKeywordCheck(nodep);
             }
             nodep->user1(1);
         }
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) override {
+    void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         {
             m_modp = nodep;
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
     // Add __PVT__ to names of local signals
-    virtual void visit(AstVar* nodep) override {
+    void visit(AstVar* nodep) override {
         // Don't iterate... Don't need temps for RANGES under the Var.
         rename(nodep,
                ((!m_modp || !m_modp->isTop()) && !nodep->isSigPublic()
                 && !nodep->isFuncLocal()  // Isn't exposed, and would mess up dpi import wrappers
                 && !nodep->isTemp()));  // Don't bother to rename internal signals
     }
-    virtual void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* nodep) override {
         if (!nodep->user1()) {
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
             rename(nodep, false);
         }
     }
-    virtual void visit(AstVarRef* nodep) override {
-        if (nodep->varp()) {
-            iterate(nodep->varp());
-            nodep->name(nodep->varp()->name());
-        }
-    }
-    virtual void visit(AstCell* nodep) override {
+    void visit(AstVarRef* nodep) override { iterateConst(nodep->varp()); }
+    void visit(AstCell* nodep) override {
         if (!nodep->user1()) {
             rename(nodep, (!nodep->modp()->modPublic() && !VN_IS(nodep->modp(), ClassPackage)));
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
-    virtual void visit(AstMemberDType* nodep) override {
+    void visit(AstNodeUOrStructDType* nodep) override {
+        if (nodep->packed()) {
+            m_nameStack.emplace_back("", false);
+            m_nameStack.back().get("get");
+            m_nameStack.back().get("set");
+        }
+        iterateChildrenConst(nodep);
+        if (nodep->packed()) m_nameStack.pop_back();
+    }
+    void visit(AstMemberDType* nodep) override {
         if (!nodep->user1()) {
-            rename(nodep, false);
-            iterateChildren(nodep);
+            if (!m_nameStack.empty()) {  // Packed member field
+                renameKeywordCheck(nodep);
+                nodep->name(m_nameStack.back().get(nodep->name()));
+                nodep->user1(1);
+            } else {
+                rename(nodep, true);
+            }
+            iterateChildrenConst(nodep);
         }
     }
-    virtual void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberSel* nodep) override {
         if (!nodep->user1()) {
-            rename(nodep, false);
-            iterateChildren(nodep);
+            rename(nodep, true);
+            iterateChildrenConst(nodep);
         }
     }
-    virtual void visit(AstScope* nodep) override {
+    void visit(AstStructSel* nodep) override {
+        if (!nodep->user1()) {
+            rename(nodep, true);
+            iterateChildrenConst(nodep);
+        }
+    }
+    void visit(AstScope* nodep) override {
         if (!nodep->user1SetOnce()) {
-            if (nodep->aboveScopep()) iterate(nodep->aboveScopep());
-            if (nodep->aboveCellp()) iterate(nodep->aboveCellp());
+            if (nodep->aboveScopep()) iterateConst(nodep->aboveScopep());
+            if (nodep->aboveCellp()) iterateConst(nodep->aboveCellp());
             // Always recompute name (as many levels above scope may have changed)
             // Same formula as V3Scope
-            nodep->name(nodep->isTop()
-                            ? "TOP"
-                            : VN_IS(m_modp, Class) ? ("TOP." + m_modp->name())
-                                                   : VN_IS(m_modp, ClassPackage)
-                                                         ? ("TOP." + m_modp->name())
-                                                         : (nodep->aboveScopep()->name() + "."
-                                                            + nodep->aboveCellp()->name()));
+            nodep->name(nodep->isTop()         ? "TOP"
+                        : VN_IS(m_modp, Class) ? ("TOP." + m_modp->name())
+                        : VN_IS(m_modp, ClassPackage)
+                            ? ("TOP." + m_modp->name())
+                            : (nodep->aboveScopep()->name() + "." + nodep->aboveCellp()->name()));
             nodep->editCountInc();
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit NameVisitor(AstNetlist* nodep) { iterate(nodep); }
-    virtual ~NameVisitor() override = default;
+    explicit NameVisitor(AstNetlist* nodep) { iterateConst(nodep); }
+    ~NameVisitor() override = default;
 };
 
 //######################################################################
@@ -144,6 +164,6 @@ public:
 
 void V3Name::nameAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { NameVisitor visitor(nodep); }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("name", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+    { NameVisitor{nodep}; }  // Destruct before checking
+    V3Global::dumpCheckGlobalTree("name", 0, dumpTreeEitherLevel() >= 6);
 }

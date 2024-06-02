@@ -13,7 +13,7 @@ module t (/*autoarg*/
 
    input clk;
 
-   integer cyc=0;
+   integer cyc = 0;
 
    real  vin[0:1] /*verilator split_var*/;
    wreal vout[0:1] /*verilator split_var*/;

@@ -16,6 +16,7 @@
 `define SV_COV_STOP 1
 `define SV_COV_TOGGLE 23
 `define SYSTEMVERILOG 1
+`define TEST_DUMPFILE obj_vlt/t_preproc_defines/simx.vcd
 `define TEST_OBJ_DIR obj_vlt/t_preproc_defines
 `define VERILATOR 1
 `define WITH_ARG(a) (a)(a)

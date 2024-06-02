@@ -1,213 +1,177 @@
-#!/usr/bin/env perl
-# See copyright, etc in below POD section.
+#!/usr/bin/env python3
+# pylint: disable=C0103,C0114,C0116,C0209,R0914,R0912,R0915,eval-used
 ######################################################################
 
-require 5.006_001;
-use warnings;
-use Getopt::Long;
-use IO::File;
-use Pod::Usage;
-eval { use Data::Dumper;  $Data::Dumper::Indent = 1; }; # Debug, ok if missing
-use strict;
-use vars qw($Debug);
+import argparse
+import collections
+import re
+# from pprint import pprint
 
-#======================================================================
+######################################################################
 
 
-#======================================================================
-# main
+def profcfunc(filename):
+    funcs = {}
 
-$Debug = 0;
-my $Opt_File;
-autoflush STDOUT 1;
-autoflush STDERR 1;
-Getopt::Long::config("no_auto_abbrev");
-if (! GetOptions(
-          "help"        => \&usage,
-          "debug"       => \&debug,
-          "<>"          => \&parameter,
-    )) {
-    die "%Error: Bad usage, try 'verilator_profcfunc --help'\n";
-}
+    with open(filename, "r", encoding="utf8") as fh:
 
-defined $Opt_File or die "%Error: No filename given\n";
+        for line in fh:
+            #                  %time      cumesec   selfsec     calls     {stuff}   name
+            match = re.match(
+                r'^\s*([0-9.]+)\s+[0-9.]+\s+([0-9.]+)\s+([0-9.]+)\s+[^a-zA-Z_]*([a-zA-Z_].*)$',
+                line)
+            if match:
+                pct = float(match.group(1))
+                sec = float(match.group(2))
+                calls = float(match.group(3))
+                func = match.group(4)
+                if func not in funcs:
+                    funcs[func] = {'pct': 0, 'sec': 0, 'calls': 0}
+                funcs[func]['pct'] += pct
+                funcs[func]['sec'] += sec
+                funcs[func]['calls'] += calls
+                continue
 
-profcfunc($Opt_File);
-
-#----------------------------------------------------------------------
-
-sub usage {
-    pod2usage(-verbose=>2, -exitval=>0, -output=>\*STDOUT);
-    exit(1);  # Unreachable
-}
-
-sub debug {
-    $Debug = 1;
-}
-
-sub parameter {
-    my $param = shift;
-    if (!defined $Opt_File) {
-        $Opt_File = $param;
-    } else {
-        die "%Error: Unknown parameter: $param\n";
-    }
-}
-
-#######################################################################
-
-sub profcfunc {
-    my $filename = shift;
-    # Remove hex numbers before diffing
-    my $fh = IO::File->new ($filename) or die "%Error: $! $filename,";
-
-    my %funcs;
-
-    while (defined (my $line=$fh->getline())) {
-        #                  %time      cumesec   selfsec     calls     {stuff}   name
-        if ($line =~ /^\s*([0-9.]+)\s+[0-9.]+\s+([0-9.]+)\s+([0-9.]+)\s+[^a-zA-Z_]*([a-zA-Z_].*)$/) {
-            my $pct=$1; my $sec=$2; my $calls=$3; my $func=$4;
-            $funcs{$func}{pct} += $pct;
-            $funcs{$func}{sec} += $sec;
-            $funcs{$func}{calls} += $calls;
-        }
-        # Older gprofs have no call column for single-call functions
-        #                  %time      cumesec   selfsec      {stuff}   name
-        elsif ($line =~ /^\s*([0-9.]+)\s+[0-9.]+\s+([0-9.]+)\s+[^a-zA-Z_]*([a-zA-Z_].*)$/) {
-            my $pct=$1; my $sec=$2; my $calls=1; my $func=$3;
-            $funcs{$func}{pct} += $pct;
-            $funcs{$func}{sec} += $sec;
-            $funcs{$func}{calls} += $calls;
-        }
-    }
-    $fh->close;
+            # Older gprofs have no call column for single-call functions
+            #                  %time      cumesec   selfsec      {stuff}   name
+            match = re.match(
+                r'^\s*([0-9.]+)\s+[0-9.]+\s+([0-9.]+)\s+[^a-zA-Z_]*([a-zA-Z_].*)$',
+                line)
+            if match:
+                pct = float(match.group(1))
+                sec = float(match.group(2))
+                calls = 1
+                func = match.group(3)
+                if func not in funcs:
+                    funcs[func] = {'pct': 0, 'sec': 0, 'calls': 0}
+                funcs[func]['pct'] += pct
+                funcs[func]['sec'] += sec
+                funcs[func]['calls'] += calls
+                continue
 
     # Find modules
-    my %pointer_mods;
-    my %verilated_mods;
-    foreach my $func (keys %funcs) {
-        if ($func =~ /(.*)::_eval\(([a-zA-Z_0-9]+__Syms).*\)$/) {
-            $verilated_mods{$1} = qr/^$1/;
-            $pointer_mods{$2} = $1;
-        }
-    }
-    #print Dumper(\%pointer_mods, \%verilated_mods);
+    verilated_mods = {}
+    for func in funcs:
+        match = re.search(r'(.*)::eval(_step)?\(', func)
+        if match:
+            prefix = match.group(1)
+            if Args.debug:
+                print("-got _eval %s   prefix=%s" % (func, prefix))
+            verilated_mods[prefix] = re.compile(r'^' + prefix)
+    # pprint(verilated_mods)
 
-    # Resort by Verilog name
-    my %vfuncs;
-    my %groups;
-    foreach my $func (keys %funcs) {
-        my $pct = $funcs{$func}{pct};
-        my $vfunc = $func;
-        my $design;
+    # Sort by Verilog name
+    vfuncs = {}
+    groups = {}
+    groups['type'] = collections.defaultdict(lambda: 0)
+    groups['design'] = collections.defaultdict(lambda: 0)
+    groups['module'] = collections.defaultdict(lambda: 0)
 
-        if ($func =~ /\(([a-zA-Z_0-9]+__Syms)/) {
-            $design = $pointer_mods{$1};
-        }
+    for func, func_item in funcs.items():
+        pct = func_item['pct']
+        vfunc = func
 
-        foreach my $vde (keys %verilated_mods) {
-            last if $design;
-            if ($func =~ /$verilated_mods{$vde}/) {
-                $design=$vde;
-                last;
-            }
-        }
+        funcarg = re.sub(r'^.*\(', '', func)
 
-        if ($vfunc =~ /__PROF__([a-zA-Z_0-9]+)__l?([0-9]+)\(/) {
-            $vfunc     = sprintf("VBlock    %s:%d", $1, $2);
-            $groups{type}{"Verilog Blocks under $design"} += $pct;
-            $groups{design}{$design} += $pct;
-            $groups{module}{$1} += $pct;
-        } else {
-            if ($design) {
-                $vfunc = sprintf("VCommon   %s", $func);
-                $groups{type}{"Common code under $design"} += $pct;
-                $groups{design}{$design} += $pct;
-                $groups{module}{$design." common code"} += $pct;
-            } elsif ($func =~ /^VL_[A-Z0-9_]+/
-                     || $func =~ /^_?vl_[a-zA-Z0-9_]+/
-                     || $func =~ /^verilated/i) {
-                $vfunc = sprintf("VLib      %s", $func);
-                $groups{type}{'VLib'} += $pct;
-                $groups{design}{'VLib'} += $pct;
-                $groups{module}{'VLib'} += $pct;
-            } elsif ($func =~ /^_mcount_private/) {
-                $vfunc = sprintf("Prof      %s", $func);
-                $groups{type}{'Prof'} += $pct;
-                $groups{design}{'Prof'} += $pct;
-                $groups{module}{'Prof'} += $pct;
-            } else {
-                $vfunc = sprintf("C++       %s", $func);
-                $groups{type}{'C++'} += $pct;
-                $groups{design}{'C++'} += $pct;
-                $groups{module}{'C++'} += $pct;
-            }
-        }
-        $vfuncs{$vfunc} = $funcs{$func};
-    }
+        design = None
+        for vde, vde_item in verilated_mods.items():
+            if vde_item.match(func) or vde_item.match(funcarg):
+                design = vde
+                break
+
+        vdesign = "-"
+
+        prof_match = re.search(r'__PROF__([a-zA-Z_0-9]+)__l?([0-9]+)\(', vfunc)
+        if design and prof_match:
+            linefunc = prof_match.group(1)
+            lineno = int(prof_match.group(2))
+            vfunc = "VBlock    %s:%d" % (linefunc, lineno)
+            vdesign = design
+            groups['type']["Verilog Blocks under " + design] += pct
+            groups['design'][design] += pct
+            groups['module'][linefunc] += pct
+        elif design:
+            vfunc = "VCommon   " + func
+            vdesign = design
+            groups['type']["Common code under " + design] += pct
+            groups['design'][design] += pct
+            groups['module'][design + " common code"] += pct
+        elif re.match(r'(VL_[A-Z0-9_]+|_?vl_[a-zA-Z0-9_]+|Verilated)', vfunc):
+            vfunc = "VLib      " + func
+            groups['type']['VLib'] += pct
+            groups['design']['VLib'] += pct
+            groups['module']['VLib'] += pct
+        elif re.match(r'^_mcount_private', vfunc):
+            vfunc = "Prof      " + func
+            groups['type']['Prof'] += pct
+            groups['design']['Prof'] += pct
+            groups['module']['Prof'] += pct
+        else:
+            vfunc = "C++       " + func
+            groups['type']['C++'] += pct
+            groups['design']['C++'] += pct
+            groups['module']['C++'] += pct
+
+        if vfunc not in vfuncs:
+            vfuncs[vfunc] = func_item
+            vfuncs[vfunc]['design'] = vdesign
+        else:
+            vfuncs[vfunc]['pct'] += func_item['pct']
+            vfuncs[vfunc]['calls'] += func_item['calls']
+            vfuncs[vfunc]['sec'] += func_item['sec']
+
+    for ftype in ['type', 'design', 'module']:
+        missing = 100
+        for item in groups[ftype].keys():
+            missing -= groups[ftype][item]
+        groups[ftype]["\377Unaccounted for/rounding error"] = missing
+
+        print("Overall summary by %s:" % ftype)
+        print("  %-6s  %s" % ("% time", ftype))
+        for what in sorted(groups[ftype].keys()):
+            # \377 used to establish sort order
+            pwhat = re.sub(r'^\377', '', what)
+            print("  %6.2f  %s" % (groups[ftype][what], pwhat))
+        print()
+
+    design_width = 1
+    for func, func_item in vfuncs.items():
+        if design_width < len(func_item['design']):
+            design_width = len(func_item['design'])
+
+    print("Verilog code profile:")
+    print("   These are split into three categories:")
+    print("      C++:     Time in non-Verilated C++ code")
+    print("      Prof:    Time in profile overhead")
+    print("      VBlock:  Time attributable to a block in a" +
+          " Verilog file and line")
+    print("      VCommon: Time in a Verilated module," +
+          " due to all parts of the design")
+    print("      VLib:    Time in Verilated common libraries," +
+          " called by the Verilated code")
+    print()
+
+    print("  %   cumulative   self              ")
+    print((" time   seconds   seconds      calls   %-" + str(design_width) +
+           "s  type      filename and line number") % "design")
+
+    cume = 0
+    for func in sorted(vfuncs.keys(),
+                       key=lambda f: vfuncs[f]['sec'],
+                       reverse=True):
+        cume += vfuncs[func]['sec']
+        print(("%6.2f %9.2f %8.2f %10d   %-" + str(design_width) + "s  %s") %
+              (vfuncs[func]['pct'], cume, vfuncs[func]['sec'],
+               vfuncs[func]['calls'], vfuncs[func]['design'], func))
 
 
-    foreach my $type (qw(type design module)) {
-        my $missing = 100;
-        foreach (sort (keys %{$groups{$type}})) {
-            $missing -= $groups{$type}{$_};
-        }
-        if ($missing) {
-            $groups{$type}{"\377Unaccounted for/rounding error"} = $missing;
-        }
+######################################################################
+######################################################################
 
-        print("Overall summary by $type:\n");
-        printf("  %-6s  %s\n","% time",$type);
-        foreach my $what (sort (keys %{$groups{$type}})) {
-            (my $pwhat = $what) =~ s/^\377//;  # Just used to establish sort order
-            printf("  %6.2f  %s\n", $groups{$type}{$what}, $pwhat);
-        }
-        print("\n");
-    }
-
-    print("Verilog code profile:\n");
-    print("   These are split into three categories:\n");
-    print("      C++:     Time in non-Verilated C++ code\n");
-    print("      Prof:    Time in profile overhead\n");
-    print("      VBlock:  Time attributable to a block in a Verilog file and line\n");
-    print("      VCommon: Time in a Verilated module, due to all parts of the design\n");
-    print("      VLib:    Time in Verilated common libraries, called by the Verilated code\n");
-    print("\n");
-
-    print("  %   cumulative   self              \n");
-    print(" time   seconds   seconds    calls   type      filename and line number\n");
-
-    my $cume = 0;
-    foreach my $func (sort {$vfuncs{$b}{sec} <=> $vfuncs{$a}{sec}
-                            || $a cmp $b}
-                      (keys %vfuncs)) {
-        $cume += $vfuncs{$func}{sec};
-        printf +("%6.2f %9.2f %8.2f %8d   %s\n",
-                 $vfuncs{$func}{pct},
-                 $cume, $vfuncs{$func}{sec},
-                 $vfuncs{$func}{calls},
-                 $func);
-    }
-}
-
-#######################################################################
-__END__
-
-=pod
-
-=head1 NAME
-
-verilator_profcfunc - Read gprof report created with --prof-cfuncs
-
-=head1 SYNOPSIS
-
-  verilator --prof-cfuncs ....
-  gcc --ggdb -pg ....
-  {run executable}
-  gprof
-  verilator_profcfuncs gprof.out
-
-=head1 DESCRIPTION
+parser = argparse.ArgumentParser(
+    allow_abbrev=False,
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description="""Read gprof report created with --prof-cfuncs.
 
 Verilator_profcfunc reads a profile report created by gprof.  The names of
 the functions are then transformed, assuming the user used Verilator's
@@ -215,34 +179,25 @@ the functions are then transformed, assuming the user used Verilator's
 in each Verilog block.
 
 For documentation see
-L<https://verilator.org/guide/latest/exe_verilator_profcfuncs.html>.
-
-=head1 ARGUMENT SUMMARY
-
-    <filename>  Input file (gprof.out)
-    --help      Display this help
-
-=head1 DISTRIBUTION
-
-The latest version is available from L<https://verilator.org>.
-
-Copyright 2007-2021 by Wilson Snyder. This program is free software; you
+https://verilator.org/guide/latest/exe_verilator_profcfunc.html""",
+    epilog=
+    """Copyright 2002-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
 
-SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
 
-=head1 SEE ALSO
+parser.add_argument('--debug',
+                    action='store_const',
+                    const=9,
+                    help='enable debug')
+parser.add_argument('filename', help='input gprof output to process')
 
-C<verilator>
-
-and L<https://verilator.org/guide/latest/exe_verilator_profcfuncs.html> for
-detailed documentation.
-
-=cut
+Args = parser.parse_args()
+profcfunc(Args.filename)
 
 ######################################################################
-### Local Variables:
-### compile-command: "$V4/bin/verilator_profcfunc  $V4/test_c/obj_dir/V*_03_*.tree $V4N/test_c/obj_dir/V*_03_*.tree"
-### End:
+# Local Variables:
+# compile-command: "./verilator_profcfunc ../test_regress/t/t_profcfunc.gprof"
+# End:

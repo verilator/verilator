@@ -1,7 +1,7 @@
-.. Copyright 2003-2021 by Wilson Snyder.
+.. Copyright 2003-2024 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-First you need Verilator installed, see :ref:`Installation`. In brief, if
+First you need Verilator installed, see :ref:`Installation`.  In brief, if
 you installed Verilator using the package manager of your operating system,
 or did a :command:`make install` to place Verilator into your default path,
 you do not need anything special in your environment, and should not have

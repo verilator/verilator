@@ -1,0 +1,4 @@
+%Error: t/t_strength_strong1_strong1_bad.v:8:19: syntax error, unexpected strong1
+    8 |    wire (strong1, strong1) a = 1;
+      |                   ^~~~~~~
+%Error: Exiting due to

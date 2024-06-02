@@ -10,284 +10,284 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer 	cyc=0;
-   reg [63:0] 	crc;
-   reg [63:0] 	sum;
+   integer      cyc = 0;
+   reg [63:0]   crc;
+   reg [63:0]   sum;
 
    // Take CRC data and apply to testblock inputs
-   wire [7:0] 	sel = crc[7:0];
+   wire [7:0]   sel = crc[7:0];
    wire [255+3:0]  in = {crc[2:0],crc,crc,crc,crc};
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [3:0]		out;			// From test of Test.v
+   wire [3:0]           out;                    // From test of Test.v
    // End of automatics
 
    /* Test AUTO_TEMPLATE (
-    .i\([0-9]+\)	(in[\1 +:4]),
+    .i\([0-9]+\)        (in[\1 +:4]),
     ); */
 
    Test test (/*AUTOINST*/
-	      // Outputs
-	      .out			(out[3:0]),
-	      // Inputs
-	      .sel			(sel[7:0]),
-	      .i0			(in[0 +:4]),		 // Templated
-	      .i1			(in[1 +:4]),		 // Templated
-	      .i2			(in[2 +:4]),		 // Templated
-	      .i3			(in[3 +:4]),		 // Templated
-	      .i4			(in[4 +:4]),		 // Templated
-	      .i5			(in[5 +:4]),		 // Templated
-	      .i6			(in[6 +:4]),		 // Templated
-	      .i7			(in[7 +:4]),		 // Templated
-	      .i8			(in[8 +:4]),		 // Templated
-	      .i9			(in[9 +:4]),		 // Templated
-	      .i10			(in[10 +:4]),		 // Templated
-	      .i11			(in[11 +:4]),		 // Templated
-	      .i12			(in[12 +:4]),		 // Templated
-	      .i13			(in[13 +:4]),		 // Templated
-	      .i14			(in[14 +:4]),		 // Templated
-	      .i15			(in[15 +:4]),		 // Templated
-	      .i16			(in[16 +:4]),		 // Templated
-	      .i17			(in[17 +:4]),		 // Templated
-	      .i18			(in[18 +:4]),		 // Templated
-	      .i19			(in[19 +:4]),		 // Templated
-	      .i20			(in[20 +:4]),		 // Templated
-	      .i21			(in[21 +:4]),		 // Templated
-	      .i22			(in[22 +:4]),		 // Templated
-	      .i23			(in[23 +:4]),		 // Templated
-	      .i24			(in[24 +:4]),		 // Templated
-	      .i25			(in[25 +:4]),		 // Templated
-	      .i26			(in[26 +:4]),		 // Templated
-	      .i27			(in[27 +:4]),		 // Templated
-	      .i28			(in[28 +:4]),		 // Templated
-	      .i29			(in[29 +:4]),		 // Templated
-	      .i30			(in[30 +:4]),		 // Templated
-	      .i31			(in[31 +:4]),		 // Templated
-	      .i32			(in[32 +:4]),		 // Templated
-	      .i33			(in[33 +:4]),		 // Templated
-	      .i34			(in[34 +:4]),		 // Templated
-	      .i35			(in[35 +:4]),		 // Templated
-	      .i36			(in[36 +:4]),		 // Templated
-	      .i37			(in[37 +:4]),		 // Templated
-	      .i38			(in[38 +:4]),		 // Templated
-	      .i39			(in[39 +:4]),		 // Templated
-	      .i40			(in[40 +:4]),		 // Templated
-	      .i41			(in[41 +:4]),		 // Templated
-	      .i42			(in[42 +:4]),		 // Templated
-	      .i43			(in[43 +:4]),		 // Templated
-	      .i44			(in[44 +:4]),		 // Templated
-	      .i45			(in[45 +:4]),		 // Templated
-	      .i46			(in[46 +:4]),		 // Templated
-	      .i47			(in[47 +:4]),		 // Templated
-	      .i48			(in[48 +:4]),		 // Templated
-	      .i49			(in[49 +:4]),		 // Templated
-	      .i50			(in[50 +:4]),		 // Templated
-	      .i51			(in[51 +:4]),		 // Templated
-	      .i52			(in[52 +:4]),		 // Templated
-	      .i53			(in[53 +:4]),		 // Templated
-	      .i54			(in[54 +:4]),		 // Templated
-	      .i55			(in[55 +:4]),		 // Templated
-	      .i56			(in[56 +:4]),		 // Templated
-	      .i57			(in[57 +:4]),		 // Templated
-	      .i58			(in[58 +:4]),		 // Templated
-	      .i59			(in[59 +:4]),		 // Templated
-	      .i60			(in[60 +:4]),		 // Templated
-	      .i61			(in[61 +:4]),		 // Templated
-	      .i62			(in[62 +:4]),		 // Templated
-	      .i63			(in[63 +:4]),		 // Templated
-	      .i64			(in[64 +:4]),		 // Templated
-	      .i65			(in[65 +:4]),		 // Templated
-	      .i66			(in[66 +:4]),		 // Templated
-	      .i67			(in[67 +:4]),		 // Templated
-	      .i68			(in[68 +:4]),		 // Templated
-	      .i69			(in[69 +:4]),		 // Templated
-	      .i70			(in[70 +:4]),		 // Templated
-	      .i71			(in[71 +:4]),		 // Templated
-	      .i72			(in[72 +:4]),		 // Templated
-	      .i73			(in[73 +:4]),		 // Templated
-	      .i74			(in[74 +:4]),		 // Templated
-	      .i75			(in[75 +:4]),		 // Templated
-	      .i76			(in[76 +:4]),		 // Templated
-	      .i77			(in[77 +:4]),		 // Templated
-	      .i78			(in[78 +:4]),		 // Templated
-	      .i79			(in[79 +:4]),		 // Templated
-	      .i80			(in[80 +:4]),		 // Templated
-	      .i81			(in[81 +:4]),		 // Templated
-	      .i82			(in[82 +:4]),		 // Templated
-	      .i83			(in[83 +:4]),		 // Templated
-	      .i84			(in[84 +:4]),		 // Templated
-	      .i85			(in[85 +:4]),		 // Templated
-	      .i86			(in[86 +:4]),		 // Templated
-	      .i87			(in[87 +:4]),		 // Templated
-	      .i88			(in[88 +:4]),		 // Templated
-	      .i89			(in[89 +:4]),		 // Templated
-	      .i90			(in[90 +:4]),		 // Templated
-	      .i91			(in[91 +:4]),		 // Templated
-	      .i92			(in[92 +:4]),		 // Templated
-	      .i93			(in[93 +:4]),		 // Templated
-	      .i94			(in[94 +:4]),		 // Templated
-	      .i95			(in[95 +:4]),		 // Templated
-	      .i96			(in[96 +:4]),		 // Templated
-	      .i97			(in[97 +:4]),		 // Templated
-	      .i98			(in[98 +:4]),		 // Templated
-	      .i99			(in[99 +:4]),		 // Templated
-	      .i100			(in[100 +:4]),		 // Templated
-	      .i101			(in[101 +:4]),		 // Templated
-	      .i102			(in[102 +:4]),		 // Templated
-	      .i103			(in[103 +:4]),		 // Templated
-	      .i104			(in[104 +:4]),		 // Templated
-	      .i105			(in[105 +:4]),		 // Templated
-	      .i106			(in[106 +:4]),		 // Templated
-	      .i107			(in[107 +:4]),		 // Templated
-	      .i108			(in[108 +:4]),		 // Templated
-	      .i109			(in[109 +:4]),		 // Templated
-	      .i110			(in[110 +:4]),		 // Templated
-	      .i111			(in[111 +:4]),		 // Templated
-	      .i112			(in[112 +:4]),		 // Templated
-	      .i113			(in[113 +:4]),		 // Templated
-	      .i114			(in[114 +:4]),		 // Templated
-	      .i115			(in[115 +:4]),		 // Templated
-	      .i116			(in[116 +:4]),		 // Templated
-	      .i117			(in[117 +:4]),		 // Templated
-	      .i118			(in[118 +:4]),		 // Templated
-	      .i119			(in[119 +:4]),		 // Templated
-	      .i120			(in[120 +:4]),		 // Templated
-	      .i121			(in[121 +:4]),		 // Templated
-	      .i122			(in[122 +:4]),		 // Templated
-	      .i123			(in[123 +:4]),		 // Templated
-	      .i124			(in[124 +:4]),		 // Templated
-	      .i125			(in[125 +:4]),		 // Templated
-	      .i126			(in[126 +:4]),		 // Templated
-	      .i127			(in[127 +:4]),		 // Templated
-	      .i128			(in[128 +:4]),		 // Templated
-	      .i129			(in[129 +:4]),		 // Templated
-	      .i130			(in[130 +:4]),		 // Templated
-	      .i131			(in[131 +:4]),		 // Templated
-	      .i132			(in[132 +:4]),		 // Templated
-	      .i133			(in[133 +:4]),		 // Templated
-	      .i134			(in[134 +:4]),		 // Templated
-	      .i135			(in[135 +:4]),		 // Templated
-	      .i136			(in[136 +:4]),		 // Templated
-	      .i137			(in[137 +:4]),		 // Templated
-	      .i138			(in[138 +:4]),		 // Templated
-	      .i139			(in[139 +:4]),		 // Templated
-	      .i140			(in[140 +:4]),		 // Templated
-	      .i141			(in[141 +:4]),		 // Templated
-	      .i142			(in[142 +:4]),		 // Templated
-	      .i143			(in[143 +:4]),		 // Templated
-	      .i144			(in[144 +:4]),		 // Templated
-	      .i145			(in[145 +:4]),		 // Templated
-	      .i146			(in[146 +:4]),		 // Templated
-	      .i147			(in[147 +:4]),		 // Templated
-	      .i148			(in[148 +:4]),		 // Templated
-	      .i149			(in[149 +:4]),		 // Templated
-	      .i150			(in[150 +:4]),		 // Templated
-	      .i151			(in[151 +:4]),		 // Templated
-	      .i152			(in[152 +:4]),		 // Templated
-	      .i153			(in[153 +:4]),		 // Templated
-	      .i154			(in[154 +:4]),		 // Templated
-	      .i155			(in[155 +:4]),		 // Templated
-	      .i156			(in[156 +:4]),		 // Templated
-	      .i157			(in[157 +:4]),		 // Templated
-	      .i158			(in[158 +:4]),		 // Templated
-	      .i159			(in[159 +:4]),		 // Templated
-	      .i160			(in[160 +:4]),		 // Templated
-	      .i161			(in[161 +:4]),		 // Templated
-	      .i162			(in[162 +:4]),		 // Templated
-	      .i163			(in[163 +:4]),		 // Templated
-	      .i164			(in[164 +:4]),		 // Templated
-	      .i165			(in[165 +:4]),		 // Templated
-	      .i166			(in[166 +:4]),		 // Templated
-	      .i167			(in[167 +:4]),		 // Templated
-	      .i168			(in[168 +:4]),		 // Templated
-	      .i169			(in[169 +:4]),		 // Templated
-	      .i170			(in[170 +:4]),		 // Templated
-	      .i171			(in[171 +:4]),		 // Templated
-	      .i172			(in[172 +:4]),		 // Templated
-	      .i173			(in[173 +:4]),		 // Templated
-	      .i174			(in[174 +:4]),		 // Templated
-	      .i175			(in[175 +:4]),		 // Templated
-	      .i176			(in[176 +:4]),		 // Templated
-	      .i177			(in[177 +:4]),		 // Templated
-	      .i178			(in[178 +:4]),		 // Templated
-	      .i179			(in[179 +:4]),		 // Templated
-	      .i180			(in[180 +:4]),		 // Templated
-	      .i181			(in[181 +:4]),		 // Templated
-	      .i182			(in[182 +:4]),		 // Templated
-	      .i183			(in[183 +:4]),		 // Templated
-	      .i184			(in[184 +:4]),		 // Templated
-	      .i185			(in[185 +:4]),		 // Templated
-	      .i186			(in[186 +:4]),		 // Templated
-	      .i187			(in[187 +:4]),		 // Templated
-	      .i188			(in[188 +:4]),		 // Templated
-	      .i189			(in[189 +:4]),		 // Templated
-	      .i190			(in[190 +:4]),		 // Templated
-	      .i191			(in[191 +:4]),		 // Templated
-	      .i192			(in[192 +:4]),		 // Templated
-	      .i193			(in[193 +:4]),		 // Templated
-	      .i194			(in[194 +:4]),		 // Templated
-	      .i195			(in[195 +:4]),		 // Templated
-	      .i196			(in[196 +:4]),		 // Templated
-	      .i197			(in[197 +:4]),		 // Templated
-	      .i198			(in[198 +:4]),		 // Templated
-	      .i199			(in[199 +:4]),		 // Templated
-	      .i200			(in[200 +:4]),		 // Templated
-	      .i201			(in[201 +:4]),		 // Templated
-	      .i202			(in[202 +:4]),		 // Templated
-	      .i203			(in[203 +:4]),		 // Templated
-	      .i204			(in[204 +:4]),		 // Templated
-	      .i205			(in[205 +:4]),		 // Templated
-	      .i206			(in[206 +:4]),		 // Templated
-	      .i207			(in[207 +:4]),		 // Templated
-	      .i208			(in[208 +:4]),		 // Templated
-	      .i209			(in[209 +:4]),		 // Templated
-	      .i210			(in[210 +:4]),		 // Templated
-	      .i211			(in[211 +:4]),		 // Templated
-	      .i212			(in[212 +:4]),		 // Templated
-	      .i213			(in[213 +:4]),		 // Templated
-	      .i214			(in[214 +:4]),		 // Templated
-	      .i215			(in[215 +:4]),		 // Templated
-	      .i216			(in[216 +:4]),		 // Templated
-	      .i217			(in[217 +:4]),		 // Templated
-	      .i218			(in[218 +:4]),		 // Templated
-	      .i219			(in[219 +:4]),		 // Templated
-	      .i220			(in[220 +:4]),		 // Templated
-	      .i221			(in[221 +:4]),		 // Templated
-	      .i222			(in[222 +:4]),		 // Templated
-	      .i223			(in[223 +:4]),		 // Templated
-	      .i224			(in[224 +:4]),		 // Templated
-	      .i225			(in[225 +:4]),		 // Templated
-	      .i226			(in[226 +:4]),		 // Templated
-	      .i227			(in[227 +:4]),		 // Templated
-	      .i228			(in[228 +:4]),		 // Templated
-	      .i229			(in[229 +:4]),		 // Templated
-	      .i230			(in[230 +:4]),		 // Templated
-	      .i231			(in[231 +:4]),		 // Templated
-	      .i232			(in[232 +:4]),		 // Templated
-	      .i233			(in[233 +:4]),		 // Templated
-	      .i234			(in[234 +:4]),		 // Templated
-	      .i235			(in[235 +:4]),		 // Templated
-	      .i236			(in[236 +:4]),		 // Templated
-	      .i237			(in[237 +:4]),		 // Templated
-	      .i238			(in[238 +:4]),		 // Templated
-	      .i239			(in[239 +:4]),		 // Templated
-	      .i240			(in[240 +:4]),		 // Templated
-	      .i241			(in[241 +:4]),		 // Templated
-	      .i242			(in[242 +:4]),		 // Templated
-	      .i243			(in[243 +:4]),		 // Templated
-	      .i244			(in[244 +:4]),		 // Templated
-	      .i245			(in[245 +:4]),		 // Templated
-	      .i246			(in[246 +:4]),		 // Templated
-	      .i247			(in[247 +:4]),		 // Templated
-	      .i248			(in[248 +:4]),		 // Templated
-	      .i249			(in[249 +:4]),		 // Templated
-	      .i250			(in[250 +:4]),		 // Templated
-	      .i251			(in[251 +:4]),		 // Templated
-	      .i252			(in[252 +:4]),		 // Templated
-	      .i253			(in[253 +:4]),		 // Templated
-	      .i254			(in[254 +:4]),		 // Templated
-	      .i255			(in[255 +:4]));		 // Templated
+              // Outputs
+              .out                      (out[3:0]),
+              // Inputs
+              .sel                      (sel[7:0]),
+              .i0                       (in[0 +:4]),             // Templated
+              .i1                       (in[1 +:4]),             // Templated
+              .i2                       (in[2 +:4]),             // Templated
+              .i3                       (in[3 +:4]),             // Templated
+              .i4                       (in[4 +:4]),             // Templated
+              .i5                       (in[5 +:4]),             // Templated
+              .i6                       (in[6 +:4]),             // Templated
+              .i7                       (in[7 +:4]),             // Templated
+              .i8                       (in[8 +:4]),             // Templated
+              .i9                       (in[9 +:4]),             // Templated
+              .i10                      (in[10 +:4]),            // Templated
+              .i11                      (in[11 +:4]),            // Templated
+              .i12                      (in[12 +:4]),            // Templated
+              .i13                      (in[13 +:4]),            // Templated
+              .i14                      (in[14 +:4]),            // Templated
+              .i15                      (in[15 +:4]),            // Templated
+              .i16                      (in[16 +:4]),            // Templated
+              .i17                      (in[17 +:4]),            // Templated
+              .i18                      (in[18 +:4]),            // Templated
+              .i19                      (in[19 +:4]),            // Templated
+              .i20                      (in[20 +:4]),            // Templated
+              .i21                      (in[21 +:4]),            // Templated
+              .i22                      (in[22 +:4]),            // Templated
+              .i23                      (in[23 +:4]),            // Templated
+              .i24                      (in[24 +:4]),            // Templated
+              .i25                      (in[25 +:4]),            // Templated
+              .i26                      (in[26 +:4]),            // Templated
+              .i27                      (in[27 +:4]),            // Templated
+              .i28                      (in[28 +:4]),            // Templated
+              .i29                      (in[29 +:4]),            // Templated
+              .i30                      (in[30 +:4]),            // Templated
+              .i31                      (in[31 +:4]),            // Templated
+              .i32                      (in[32 +:4]),            // Templated
+              .i33                      (in[33 +:4]),            // Templated
+              .i34                      (in[34 +:4]),            // Templated
+              .i35                      (in[35 +:4]),            // Templated
+              .i36                      (in[36 +:4]),            // Templated
+              .i37                      (in[37 +:4]),            // Templated
+              .i38                      (in[38 +:4]),            // Templated
+              .i39                      (in[39 +:4]),            // Templated
+              .i40                      (in[40 +:4]),            // Templated
+              .i41                      (in[41 +:4]),            // Templated
+              .i42                      (in[42 +:4]),            // Templated
+              .i43                      (in[43 +:4]),            // Templated
+              .i44                      (in[44 +:4]),            // Templated
+              .i45                      (in[45 +:4]),            // Templated
+              .i46                      (in[46 +:4]),            // Templated
+              .i47                      (in[47 +:4]),            // Templated
+              .i48                      (in[48 +:4]),            // Templated
+              .i49                      (in[49 +:4]),            // Templated
+              .i50                      (in[50 +:4]),            // Templated
+              .i51                      (in[51 +:4]),            // Templated
+              .i52                      (in[52 +:4]),            // Templated
+              .i53                      (in[53 +:4]),            // Templated
+              .i54                      (in[54 +:4]),            // Templated
+              .i55                      (in[55 +:4]),            // Templated
+              .i56                      (in[56 +:4]),            // Templated
+              .i57                      (in[57 +:4]),            // Templated
+              .i58                      (in[58 +:4]),            // Templated
+              .i59                      (in[59 +:4]),            // Templated
+              .i60                      (in[60 +:4]),            // Templated
+              .i61                      (in[61 +:4]),            // Templated
+              .i62                      (in[62 +:4]),            // Templated
+              .i63                      (in[63 +:4]),            // Templated
+              .i64                      (in[64 +:4]),            // Templated
+              .i65                      (in[65 +:4]),            // Templated
+              .i66                      (in[66 +:4]),            // Templated
+              .i67                      (in[67 +:4]),            // Templated
+              .i68                      (in[68 +:4]),            // Templated
+              .i69                      (in[69 +:4]),            // Templated
+              .i70                      (in[70 +:4]),            // Templated
+              .i71                      (in[71 +:4]),            // Templated
+              .i72                      (in[72 +:4]),            // Templated
+              .i73                      (in[73 +:4]),            // Templated
+              .i74                      (in[74 +:4]),            // Templated
+              .i75                      (in[75 +:4]),            // Templated
+              .i76                      (in[76 +:4]),            // Templated
+              .i77                      (in[77 +:4]),            // Templated
+              .i78                      (in[78 +:4]),            // Templated
+              .i79                      (in[79 +:4]),            // Templated
+              .i80                      (in[80 +:4]),            // Templated
+              .i81                      (in[81 +:4]),            // Templated
+              .i82                      (in[82 +:4]),            // Templated
+              .i83                      (in[83 +:4]),            // Templated
+              .i84                      (in[84 +:4]),            // Templated
+              .i85                      (in[85 +:4]),            // Templated
+              .i86                      (in[86 +:4]),            // Templated
+              .i87                      (in[87 +:4]),            // Templated
+              .i88                      (in[88 +:4]),            // Templated
+              .i89                      (in[89 +:4]),            // Templated
+              .i90                      (in[90 +:4]),            // Templated
+              .i91                      (in[91 +:4]),            // Templated
+              .i92                      (in[92 +:4]),            // Templated
+              .i93                      (in[93 +:4]),            // Templated
+              .i94                      (in[94 +:4]),            // Templated
+              .i95                      (in[95 +:4]),            // Templated
+              .i96                      (in[96 +:4]),            // Templated
+              .i97                      (in[97 +:4]),            // Templated
+              .i98                      (in[98 +:4]),            // Templated
+              .i99                      (in[99 +:4]),            // Templated
+              .i100                     (in[100 +:4]),           // Templated
+              .i101                     (in[101 +:4]),           // Templated
+              .i102                     (in[102 +:4]),           // Templated
+              .i103                     (in[103 +:4]),           // Templated
+              .i104                     (in[104 +:4]),           // Templated
+              .i105                     (in[105 +:4]),           // Templated
+              .i106                     (in[106 +:4]),           // Templated
+              .i107                     (in[107 +:4]),           // Templated
+              .i108                     (in[108 +:4]),           // Templated
+              .i109                     (in[109 +:4]),           // Templated
+              .i110                     (in[110 +:4]),           // Templated
+              .i111                     (in[111 +:4]),           // Templated
+              .i112                     (in[112 +:4]),           // Templated
+              .i113                     (in[113 +:4]),           // Templated
+              .i114                     (in[114 +:4]),           // Templated
+              .i115                     (in[115 +:4]),           // Templated
+              .i116                     (in[116 +:4]),           // Templated
+              .i117                     (in[117 +:4]),           // Templated
+              .i118                     (in[118 +:4]),           // Templated
+              .i119                     (in[119 +:4]),           // Templated
+              .i120                     (in[120 +:4]),           // Templated
+              .i121                     (in[121 +:4]),           // Templated
+              .i122                     (in[122 +:4]),           // Templated
+              .i123                     (in[123 +:4]),           // Templated
+              .i124                     (in[124 +:4]),           // Templated
+              .i125                     (in[125 +:4]),           // Templated
+              .i126                     (in[126 +:4]),           // Templated
+              .i127                     (in[127 +:4]),           // Templated
+              .i128                     (in[128 +:4]),           // Templated
+              .i129                     (in[129 +:4]),           // Templated
+              .i130                     (in[130 +:4]),           // Templated
+              .i131                     (in[131 +:4]),           // Templated
+              .i132                     (in[132 +:4]),           // Templated
+              .i133                     (in[133 +:4]),           // Templated
+              .i134                     (in[134 +:4]),           // Templated
+              .i135                     (in[135 +:4]),           // Templated
+              .i136                     (in[136 +:4]),           // Templated
+              .i137                     (in[137 +:4]),           // Templated
+              .i138                     (in[138 +:4]),           // Templated
+              .i139                     (in[139 +:4]),           // Templated
+              .i140                     (in[140 +:4]),           // Templated
+              .i141                     (in[141 +:4]),           // Templated
+              .i142                     (in[142 +:4]),           // Templated
+              .i143                     (in[143 +:4]),           // Templated
+              .i144                     (in[144 +:4]),           // Templated
+              .i145                     (in[145 +:4]),           // Templated
+              .i146                     (in[146 +:4]),           // Templated
+              .i147                     (in[147 +:4]),           // Templated
+              .i148                     (in[148 +:4]),           // Templated
+              .i149                     (in[149 +:4]),           // Templated
+              .i150                     (in[150 +:4]),           // Templated
+              .i151                     (in[151 +:4]),           // Templated
+              .i152                     (in[152 +:4]),           // Templated
+              .i153                     (in[153 +:4]),           // Templated
+              .i154                     (in[154 +:4]),           // Templated
+              .i155                     (in[155 +:4]),           // Templated
+              .i156                     (in[156 +:4]),           // Templated
+              .i157                     (in[157 +:4]),           // Templated
+              .i158                     (in[158 +:4]),           // Templated
+              .i159                     (in[159 +:4]),           // Templated
+              .i160                     (in[160 +:4]),           // Templated
+              .i161                     (in[161 +:4]),           // Templated
+              .i162                     (in[162 +:4]),           // Templated
+              .i163                     (in[163 +:4]),           // Templated
+              .i164                     (in[164 +:4]),           // Templated
+              .i165                     (in[165 +:4]),           // Templated
+              .i166                     (in[166 +:4]),           // Templated
+              .i167                     (in[167 +:4]),           // Templated
+              .i168                     (in[168 +:4]),           // Templated
+              .i169                     (in[169 +:4]),           // Templated
+              .i170                     (in[170 +:4]),           // Templated
+              .i171                     (in[171 +:4]),           // Templated
+              .i172                     (in[172 +:4]),           // Templated
+              .i173                     (in[173 +:4]),           // Templated
+              .i174                     (in[174 +:4]),           // Templated
+              .i175                     (in[175 +:4]),           // Templated
+              .i176                     (in[176 +:4]),           // Templated
+              .i177                     (in[177 +:4]),           // Templated
+              .i178                     (in[178 +:4]),           // Templated
+              .i179                     (in[179 +:4]),           // Templated
+              .i180                     (in[180 +:4]),           // Templated
+              .i181                     (in[181 +:4]),           // Templated
+              .i182                     (in[182 +:4]),           // Templated
+              .i183                     (in[183 +:4]),           // Templated
+              .i184                     (in[184 +:4]),           // Templated
+              .i185                     (in[185 +:4]),           // Templated
+              .i186                     (in[186 +:4]),           // Templated
+              .i187                     (in[187 +:4]),           // Templated
+              .i188                     (in[188 +:4]),           // Templated
+              .i189                     (in[189 +:4]),           // Templated
+              .i190                     (in[190 +:4]),           // Templated
+              .i191                     (in[191 +:4]),           // Templated
+              .i192                     (in[192 +:4]),           // Templated
+              .i193                     (in[193 +:4]),           // Templated
+              .i194                     (in[194 +:4]),           // Templated
+              .i195                     (in[195 +:4]),           // Templated
+              .i196                     (in[196 +:4]),           // Templated
+              .i197                     (in[197 +:4]),           // Templated
+              .i198                     (in[198 +:4]),           // Templated
+              .i199                     (in[199 +:4]),           // Templated
+              .i200                     (in[200 +:4]),           // Templated
+              .i201                     (in[201 +:4]),           // Templated
+              .i202                     (in[202 +:4]),           // Templated
+              .i203                     (in[203 +:4]),           // Templated
+              .i204                     (in[204 +:4]),           // Templated
+              .i205                     (in[205 +:4]),           // Templated
+              .i206                     (in[206 +:4]),           // Templated
+              .i207                     (in[207 +:4]),           // Templated
+              .i208                     (in[208 +:4]),           // Templated
+              .i209                     (in[209 +:4]),           // Templated
+              .i210                     (in[210 +:4]),           // Templated
+              .i211                     (in[211 +:4]),           // Templated
+              .i212                     (in[212 +:4]),           // Templated
+              .i213                     (in[213 +:4]),           // Templated
+              .i214                     (in[214 +:4]),           // Templated
+              .i215                     (in[215 +:4]),           // Templated
+              .i216                     (in[216 +:4]),           // Templated
+              .i217                     (in[217 +:4]),           // Templated
+              .i218                     (in[218 +:4]),           // Templated
+              .i219                     (in[219 +:4]),           // Templated
+              .i220                     (in[220 +:4]),           // Templated
+              .i221                     (in[221 +:4]),           // Templated
+              .i222                     (in[222 +:4]),           // Templated
+              .i223                     (in[223 +:4]),           // Templated
+              .i224                     (in[224 +:4]),           // Templated
+              .i225                     (in[225 +:4]),           // Templated
+              .i226                     (in[226 +:4]),           // Templated
+              .i227                     (in[227 +:4]),           // Templated
+              .i228                     (in[228 +:4]),           // Templated
+              .i229                     (in[229 +:4]),           // Templated
+              .i230                     (in[230 +:4]),           // Templated
+              .i231                     (in[231 +:4]),           // Templated
+              .i232                     (in[232 +:4]),           // Templated
+              .i233                     (in[233 +:4]),           // Templated
+              .i234                     (in[234 +:4]),           // Templated
+              .i235                     (in[235 +:4]),           // Templated
+              .i236                     (in[236 +:4]),           // Templated
+              .i237                     (in[237 +:4]),           // Templated
+              .i238                     (in[238 +:4]),           // Templated
+              .i239                     (in[239 +:4]),           // Templated
+              .i240                     (in[240 +:4]),           // Templated
+              .i241                     (in[241 +:4]),           // Templated
+              .i242                     (in[242 +:4]),           // Templated
+              .i243                     (in[243 +:4]),           // Templated
+              .i244                     (in[244 +:4]),           // Templated
+              .i245                     (in[245 +:4]),           // Templated
+              .i246                     (in[246 +:4]),           // Templated
+              .i247                     (in[247 +:4]),           // Templated
+              .i248                     (in[248 +:4]),           // Templated
+              .i249                     (in[249 +:4]),           // Templated
+              .i250                     (in[250 +:4]),           // Templated
+              .i251                     (in[251 +:4]),           // Templated
+              .i252                     (in[252 +:4]),           // Templated
+              .i253                     (in[253 +:4]),           // Templated
+              .i254                     (in[254 +:4]),           // Templated
+              .i255                     (in[255 +:4]));          // Templated
 
    // Aggregate outputs into a single result vector
    wire [63:0] result = {60'h0, out};
@@ -298,26 +298,26 @@ module t (/*AUTOARG*/
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d crc=%x result=%x\n",$time, cyc, crc, result);
+      $write("[%0t] cyc==%0d crc=%x result=%x\n", $time, cyc, crc, result);
 `endif
       cyc <= cyc + 1;
-      crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
-      sum <= result ^ {sum[62:0],sum[63]^sum[2]^sum[0]};
+      crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
+      sum <= result ^ {sum[62:0], sum[63] ^ sum[2] ^ sum[0]};
       if (cyc==0) begin
-	 // Setup
-	 crc <= 64'h5aef0c8d_d70a4497;
+         // Setup
+         crc <= 64'h5aef0c8d_d70a4497;
       end
       else if (cyc<10) begin
-	 sum <= 64'h0;
+         sum <= 64'h0;
       end
       else if (cyc<90) begin
       end
       else if (cyc==99) begin
-	 $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
-	 if (crc !== 64'hc77bb9b3784ea091) $stop;
-	 if (sum !== `EXPECTED_SUM) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
+         if (crc !== 64'hc77bb9b3784ea091) $stop;
+         if (sum !== `EXPECTED_SUM) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

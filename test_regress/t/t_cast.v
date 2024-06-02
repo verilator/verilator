@@ -15,6 +15,7 @@ module t;
 
    typedef logic [3:0] mc_t;
    typedef mc_t tocast_t;
+   typedef logic [2:0] [7:0] two_dee_t;
 
    typedef struct packed {
       logic [15:0] data;
@@ -42,6 +43,8 @@ module t;
    logic [15:0] allones = 16'hffff;
    parameter FOUR = 4;
 
+   localparam two_dee_t two_dee = two_dee_t'(32'habcdef);
+
    // bug925
    localparam [6:0] RESULT = 7'((6*9+92)%96);
 
@@ -56,12 +59,15 @@ module t;
    logic signed [26:0] midb = 15'((27'(coeff2 * samp2) >>> 11));
    // verilator lint_on WIDTH
    logic signed [14:0] outa = 15'((27'(coeff0 * samp0) >>> 11) + // 27' size casting in order for intermediate result to not be truncated to the width of LHS vector
-				  (27'(coeff1 * samp1) >>> 11) +
-				  (27'(coeff2 * samp2) >>> 11)); // 15' size casting to avoid synthesis/simulator warnings
+                                  (27'(coeff1 * samp1) >>> 11) +
+                                  (27'(coeff2 * samp2) >>> 11)); // 15' size casting to avoid synthesis/simulator warnings
 
    logic one = 1'b1;
    logic [32:0] b33 = {32'(0), one};
    logic [31:0] b32 = {31'(0), one};
+
+   logic [31:0] thirty_two_bits;
+   two_dee_t two_dee_sig;
 
    initial begin
       if (logic8bit != 8'h12) $stop;
@@ -106,6 +112,17 @@ module t;
 
       if (b33 != 33'b1) $stop;
       if (b32 != 32'b1) $stop;
+
+      if (two_dee[0] != 8'hef) $stop;
+      if (two_dee[1] != 8'hcd) $stop;
+      if (two_dee[2] != 8'hab) $stop;
+
+      thirty_two_bits = 32'h123456;
+      two_dee_sig = two_dee_t'(thirty_two_bits);
+
+      if (two_dee_sig[0] != 8'h56) $stop;
+      if (two_dee_sig[1] != 8'h34) $stop;
+      if (two_dee_sig[2] != 8'h12) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

@@ -1,0 +1,4 @@
+%Error: t/t_dpi_type_bad.v:11:4: Unsupported DPI type 'DPI-BAD': Use 'DPI-C'
+   11 |    import "DPI-BAD" task dpix_twice;
+      |    ^~~~~~
+%Error: Exiting due to

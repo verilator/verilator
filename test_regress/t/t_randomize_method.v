@@ -4,6 +4,20 @@
 // any use, without warranty, 2020 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+`define check_rand(cl, field) \
+begin \
+   longint prev_result; \
+   int ok = 0; \
+   for (int i = 0; i < 10; i++) begin \
+      longint result; \
+      void'(cl.randomize()); \
+      result = longint'(field); \
+      if (i > 0 && result != prev_result) ok = 1; \
+      prev_result = result; \
+   end \
+   if (ok != 1) $stop; \
+end
+
 typedef enum bit[15:0] {
    ONE   = 3,
    TWO   = 5,
@@ -78,59 +92,98 @@ class OtherCls;
 
 endclass
 
-module t (/*AUTOARG*/);
-   bit ok = 0;
-   longint checksum;
+class ContainsNull;
+   rand BaseCls b;
+endclass
 
-   task checksum_next(longint x);
-      checksum = x ^ {checksum[62:0],checksum[63]^checksum[2]^checksum[0]};
-   endtask;
+class ClsWithInt;
+   rand int a;
+   int b;
+endclass
+
+class DeriveClsWithInt extends ClsWithInt;
+endclass
+
+class DeriveAndContainClsWithInt extends ClsWithInt;
+   rand ClsWithInt cls1;
+   ClsWithInt cls2;
+   function new;
+      cls1 = new;
+      cls2 = new;
+   endfunction
+endclass
+
+class ClsUsedOnlyHere;
+   rand int a;
+endclass
+
+typedef ClsUsedOnlyHere cls_used_only_here_t;
+
+class ClsContainUsedOnlyHere;
+   rand cls_used_only_here_t c;
+   function new;
+      c = new;
+   endfunction
+endclass
+
+module t (/*AUTOARG*/);
 
    DerivedCls derived;
    OtherCls other;
    BaseCls base;
+   ContainsNull cont;
+   DeriveClsWithInt der_int;
+   DeriveAndContainClsWithInt der_contain;
+   ClsContainUsedOnlyHere cls_cont_used;
 
    initial begin
       int rand_result;
-      longint prev_checksum;
+      derived = new;
+      other = new;
+      cont = new;
+      der_int = new;
+      der_contain = new;
+      base = derived;
+      cls_cont_used = new;
       for (int i = 0; i < 10; i++) begin
-         derived = new;
-         other = new;
-         base = derived;
          rand_result = base.randomize();
          rand_result = other.randomize();
+         rand_result = cont.randomize();
+         rand_result = der_int.randomize();
+         rand_result = der_contain.randomize();
          if (!(derived.l inside {ONE, TWO, THREE, FOUR})) $stop;
          if (!(other.str.s.c inside {ONE, TWO, THREE, FOUR})) $stop;
          if (!(other.str.y inside {ONE, TWO, THREE, FOUR})) $stop;
          if (derived.i.e != 0) $stop;
          if (derived.k != 0) $stop;
          if (other.v != 0) $stop;
-         checksum = 0;
-         checksum_next(longint'(derived.i.a));
-         checksum_next(longint'(derived.i.b));
-         checksum_next(longint'(derived.i.c));
-         checksum_next(longint'(derived.j));
-         checksum_next(longint'(derived.l));
-         checksum_next(longint'(other.w));
-         checksum_next(longint'(other.x));
-         checksum_next(longint'(other.y));
-         checksum_next(longint'(other.z));
-         checksum_next(longint'(other.str.x));
-         checksum_next(longint'(other.str.y));
-         checksum_next(longint'(other.str.z));
-         checksum_next(longint'(other.str.s.a));
-         checksum_next(longint'(other.str.s.b));
-         checksum_next(longint'(other.str.s.c));
-         $write("checksum: %d\n", checksum);
-         if (i > 0 && checksum != prev_checksum) begin
-            ok = 1;
-         end
-         prev_checksum = checksum;
+         if (cont.b != null) $stop;
+         if (der_int.b != 0) $stop;
+         if (der_contain.cls2.a != 0) $stop;
+         if (der_contain.cls1.b != 0) $stop;
+         if (der_contain.b != 0) $stop;
       end
-      if (ok) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-      else $stop;
+      `check_rand(derived, derived.i.a);
+      `check_rand(derived, derived.i.b);
+      `check_rand(derived, derived.i.c);
+      `check_rand(derived, derived.j);
+      `check_rand(derived, derived.l);
+      `check_rand(other, other.w);
+      `check_rand(other, other.x);
+      `check_rand(other, other.y);
+      `check_rand(other, other.z);
+      `check_rand(other, other.str.x);
+      `check_rand(other, other.str.y);
+      `check_rand(other, other.str.z);
+      `check_rand(other, other.str.s.a);
+      `check_rand(other, other.str.s.b);
+      `check_rand(other, other.str.s.c);
+      `check_rand(der_int, der_int.a);
+      `check_rand(der_contain, der_contain.cls1.a);
+      `check_rand(der_contain, der_contain.a);
+      `check_rand(cls_cont_used, cls_cont_used.c.a);
+
+      $write("*-* All Finished *-*\n");
+      $finish;
    end
 endmodule

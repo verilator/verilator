@@ -1,7 +1,8 @@
-// DESCRIPTION: Verilator: Verilog Test module for Issue#1609
+// DESCRIPTION: Verilator: Verilog Test module for issue #1609
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2020 by Julien Margetts.
+// SPDX-License-Identifier: Unlicense
 
 module t (/*AUTOARG*/ reset, a, b, c, en, o1, o2, o3, o4, o5);
    input  reset;
@@ -15,14 +16,14 @@ module t (/*AUTOARG*/ reset, a, b, c, en, o1, o2, o3, o4, o5);
    output reg o4; //  "
    output reg o5; // Latch
 
-always @(reset or en or a or b)
+always_comb
 if (reset)
 begin
     o1 = 1'b0;
     o2 = 1'b0;
     o3 = 1'b0;
     o4 = 1'b0;
-    o5 <= 1'b0; // Do NOT expect Warning-COMBDLY
+    o5 = 1'b0;
 end
 else
 begin
@@ -31,25 +32,25 @@ begin
     begin
         o2 = 1'b0;
 
-	    if (a)
-	    begin
+            if (a)
+            begin
             o3 = a;
-            o5 <= 1'b1; // Do NOT expect Warning-COMBDLY
-	    end
-	    else
-	    begin
+            o5 = 1'b1;
+            end
+            else
+            begin
             o3 = ~a;
-            o5 <=  a; // Do NOT expect Warning-COMBDLY
-	    end
+            o5 =  a;
+            end
 
         // o3 is not assigned in either path of this if/else
         // but no latch because always assigned above
-	    if (c)
-	    begin
+            if (c)
+            begin
             o2 = a ^ b;
             o4 = 1'b1;
         end
-	    else
+            else
             o4 = ~a ^ b;
 
         o2 = 1'b1;
@@ -57,17 +58,17 @@ begin
     else
     begin
         o2 = 1'b1;
-	    if (b)
+            if (b)
         begin
             o3 = ~a | b;
-            o5 <= ~b; // Do NOT expect Warning-COMBDLY
-	    end
-	    else
-	    begin
+            o5 = ~b;
+            end
+            else
+            begin
             o3 = a & ~b;
             // No assignment to o5, expect Warning-LATCH
-	    end
-        o4 <= 1'b0; // expect Warning-COMBDLY
+            end
+        o4 = 1'b0;
     end
 end
 

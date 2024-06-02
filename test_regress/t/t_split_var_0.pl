@@ -12,17 +12,17 @@ scenarios(simulator => 1);
 
 # CI environment offers 2 VCPUs, 2 thread setting causes the following warning.
 # %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
-# So use 6 threads here though it's not optimal in performace wise, but ok.
+# So use 6 threads here though it's not optimal in performance, but ok.
 compile(
-    verilator_flags2 => ['--stats' . ($Self->{vltmt} ? ' --threads 6' : ''),
-                         "$Self->{t_dir}/t_split_var_0.vlt"],
+    verilator_flags2 => ['--stats', "$Self->{t_dir}/t_split_var_0.vlt"],
+    threads => $Self->{vltmt} ? 6 : 1
     );
 
 execute(
     check_finished => 1,
     );
 
-file_grep($Self->{stats}, qr/SplitVar,\s+Split packed variables\s+(\d+)/i, 11);
+file_grep($Self->{stats}, qr/SplitVar,\s+Split packed variables\s+(\d+)/i, 13);
 file_grep($Self->{stats}, qr/SplitVar,\s+Split unpacked arrays\s+(\d+)/i, 27);
 ok(1);
 1;

@@ -41,21 +41,21 @@ module t (/*AUTOARG*/
 
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc<=cyc+1;
-	 if (cyc==1) begin
-	    a <= 32'hfeed0000;
-	    b <= 32'h0000face;
-	 end
-	 if (cyc==2) begin
-	    if (c != 32'hfeedface) $stop;
-	 end
-	 if (cyc==3) begin
-	    if (h != 32'hfeedface) $stop;
-	 end
-	 if (cyc==7) begin
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         cyc<=cyc+1;
+         if (cyc==1) begin
+            a <= 32'hfeed0000;
+            b <= 32'h0000face;
+         end
+         if (cyc==2) begin
+            if (c != 32'hfeedface) $stop;
+         end
+         if (cyc==3) begin
+            if (h != 32'hfeedface) $stop;
+         end
+         if (cyc==7) begin
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 endmodule

@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2020 by Yutetsu TAKATSUKASA
+// SPDX-License-Identifier: Unlicense
 
 `ifdef USE_VLT
 `define HIER_BLOCK
@@ -34,13 +35,13 @@ module t (/*AUTOARG*/
 `ifdef PROTLIB_TOP
    secret i_secred(.clk(clk));
 `else
+   /* verilator lint_off UNOPTFLAT */
    wire [7:0] out0;
    wire [7:0] out1;
    wire [7:0] out2;
-   /* verilator lint_off UNOPTFLAT */
    wire [7:0] out3;
-   wire [7:0] out3_2;
    /* verilator lint_on UNOPTFLAT */
+   wire [7:0] out3_2;
    wire [7:0] out5;
    wire [7:0] out6;
    int count = 0;
@@ -115,7 +116,7 @@ endmodule
 
 module sub1(
    input wire clk,
-   input wire [7:0] in,
+   input wire [11:4] in,  // Uses higher LSB to cover bug3539
    output wire [7:0] out); `HIER_BLOCK
 
    logic [7:0] ff;
@@ -131,7 +132,7 @@ module sub2(
 
    logic [7:0] ff;
 
-  // dpi_import_func returns (dpi_eport_func(v) -1)
+   // dpi_import_func returns (dpi_eport_func(v) -1)
    import "DPI-C" context function int dpi_import_func(int v);
    export "DPI-C" function dpi_export_func;
 

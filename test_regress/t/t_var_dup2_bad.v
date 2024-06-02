@@ -12,4 +12,11 @@ module t
 
    wire bad_o_w;
    reg  bad_o_r;
+
+   wire bad_w_r;
+   reg  bad_w_r;
+
+   wire bad_r_w;
+   reg  bad_r_w;
+
 endmodule

@@ -20,12 +20,12 @@ module t (/*AUTOARG*/
    end
 
    test1 test1i ( .clk     (clk),
-		  .xvecin  (x[1:0]),
-		  .xvecout (x[2:1]));
+                  .xvecin  (x[1:0]),
+                  .xvecout (x[2:1]));
 
    test2 test2i ( .clk     (clk),
-		  .xvecin  (x[2:1]),
-		  .xvecout (x[1:0]));
+                  .xvecin  (x[2:1]),
+                  .xvecout (x[1:0]));
 
    always @(posedge clk or negedge clk) begin
 
@@ -34,8 +34,8 @@ module t (/*AUTOARG*/
 `endif
 
       if (x[1] != 0) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

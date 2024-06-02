@@ -12,18 +12,19 @@ scenarios(vlt_all => 1);
 
 top_filename("t/t_alw_reorder.v");
 compile(
-    verilator_flags2 => ["--stats -Or"],
+    verilator_flags2 => ["--stats -fno-reorder"],
     );
 
 file_grep($Self->{stats}, qr/Optimizations, Split always\s+(\d+)/i, 0);
 # Here we should see some dly vars since reorder is disabled.
 # (Whereas our twin test, t_alw_reorder, should see no dly vars
 #  since it enables the reorder step.)
-file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.cpp", qr/dly__t__DOT__v1/i);
-file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.cpp", qr/dly__t__DOT__v2/i);
+my @files = glob_all("$Self->{obj_dir}/$Self->{vm_prefix}___024root*.cpp");
+file_grep_any(\@files, qr/dly__t__DOT__v1/i);
+file_grep_any(\@files, qr/dly__t__DOT__v2/i);
 
 execute(
-    check_finished=>1,
+    check_finished => 1,
     );
 
 ok(1);

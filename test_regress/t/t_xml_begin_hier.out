@@ -1,0 +1,82 @@
+<?xml version="1.0" ?>
+<!-- DESCRIPTION: Verilator output: XML representation of netlist -->
+<verilator_xml>
+  <files>
+    <file id="a" filename="&lt;built-in&gt;" language="1800-2023"/>
+    <file id="b" filename="&lt;command-line&gt;" language="1800-2023"/>
+    <file id="c" filename="input.vc" language="1800-2023"/>
+    <file id="d" filename="t/t_xml_begin_hier.v" language="1800-2023"/>
+  </files>
+  <module_files>
+    <file id="d" filename="t/t_xml_begin_hier.v" language="1800-2023"/>
+  </module_files>
+  <cells>
+    <cell loc="d,22,8,22,12" name="test" submodname="test" hier="test">
+      <cell loc="d,27,21,27,31" name="submod_for" submodname="submod" hier="test.FOR_GENERATE__BRA__0__KET__.submod_for">
+        <cell loc="d,15,21,15,34" name="submod_nested" submodname="submod2" hier="test.FOR_GENERATE__BRA__0__KET__.submod_for.submod_gen.nested_gen.submod_nested"/>
+        <cell loc="d,17,17,17,26" name="submod_l1" submodname="submod2" hier="test.FOR_GENERATE__BRA__0__KET__.submod_for.submod_gen.submod_l1"/>
+        <cell loc="d,19,13,19,22" name="submod_l0" submodname="submod2" hier="test.FOR_GENERATE__BRA__0__KET__.submod_for.submod_l0"/>
+      </cell>
+      <cell loc="d,29,25,29,33" name="submod_2" submodname="submod" hier="test.FOR_GENERATE__BRA__0__KET__.genblk1.submod_2">
+        <cell loc="d,15,21,15,34" name="submod_nested" submodname="submod2" hier="test.FOR_GENERATE__BRA__0__KET__.genblk1.submod_2.submod_gen.nested_gen.submod_nested"/>
+        <cell loc="d,17,17,17,26" name="submod_l1" submodname="submod2" hier="test.FOR_GENERATE__BRA__0__KET__.genblk1.submod_2.submod_gen.submod_l1"/>
+        <cell loc="d,19,13,19,22" name="submod_l0" submodname="submod2" hier="test.FOR_GENERATE__BRA__0__KET__.genblk1.submod_2.submod_l0"/>
+      </cell>
+      <cell loc="d,31,21,31,29" name="submod_3" submodname="submod" hier="test.FOR_GENERATE__BRA__0__KET__.submod_3">
+        <cell loc="d,15,21,15,34" name="submod_nested" submodname="submod2" hier="test.FOR_GENERATE__BRA__0__KET__.submod_3.submod_gen.nested_gen.submod_nested"/>
+        <cell loc="d,17,17,17,26" name="submod_l1" submodname="submod2" hier="test.FOR_GENERATE__BRA__0__KET__.submod_3.submod_gen.submod_l1"/>
+        <cell loc="d,19,13,19,22" name="submod_l0" submodname="submod2" hier="test.FOR_GENERATE__BRA__0__KET__.submod_3.submod_l0"/>
+      </cell>
+      <cell loc="d,27,21,27,31" name="submod_for" submodname="submod" hier="test.FOR_GENERATE__BRA__1__KET__.submod_for">
+        <cell loc="d,15,21,15,34" name="submod_nested" submodname="submod2" hier="test.FOR_GENERATE__BRA__1__KET__.submod_for.submod_gen.nested_gen.submod_nested"/>
+        <cell loc="d,17,17,17,26" name="submod_l1" submodname="submod2" hier="test.FOR_GENERATE__BRA__1__KET__.submod_for.submod_gen.submod_l1"/>
+        <cell loc="d,19,13,19,22" name="submod_l0" submodname="submod2" hier="test.FOR_GENERATE__BRA__1__KET__.submod_for.submod_l0"/>
+      </cell>
+      <cell loc="d,29,25,29,33" name="submod_2" submodname="submod" hier="test.FOR_GENERATE__BRA__1__KET__.genblk1.submod_2">
+        <cell loc="d,15,21,15,34" name="submod_nested" submodname="submod2" hier="test.FOR_GENERATE__BRA__1__KET__.genblk1.submod_2.submod_gen.nested_gen.submod_nested"/>
+        <cell loc="d,17,17,17,26" name="submod_l1" submodname="submod2" hier="test.FOR_GENERATE__BRA__1__KET__.genblk1.submod_2.submod_gen.submod_l1"/>
+        <cell loc="d,19,13,19,22" name="submod_l0" submodname="submod2" hier="test.FOR_GENERATE__BRA__1__KET__.genblk1.submod_2.submod_l0"/>
+      </cell>
+      <cell loc="d,31,21,31,29" name="submod_3" submodname="submod" hier="test.FOR_GENERATE__BRA__1__KET__.submod_3">
+        <cell loc="d,15,21,15,34" name="submod_nested" submodname="submod2" hier="test.FOR_GENERATE__BRA__1__KET__.submod_3.submod_gen.nested_gen.submod_nested"/>
+        <cell loc="d,17,17,17,26" name="submod_l1" submodname="submod2" hier="test.FOR_GENERATE__BRA__1__KET__.submod_3.submod_gen.submod_l1"/>
+        <cell loc="d,19,13,19,22" name="submod_l0" submodname="submod2" hier="test.FOR_GENERATE__BRA__1__KET__.submod_3.submod_l0"/>
+      </cell>
+    </cell>
+  </cells>
+  <netlist>
+    <module loc="d,22,8,22,12" name="test" origName="test" topModule="1">
+      <var loc="d,24,12,24,13" name="N" dtype_id="1" vartype="integer" origName="N"/>
+      <begin loc="d,25,14,25,17" name="FOR_GENERATE"/>
+      <begin loc="d,27,21,27,31" name="FOR_GENERATE[0]">
+        <instance loc="d,27,21,27,31" name="submod_for" defName="submod" origName="submod_for"/>
+        <begin loc="d,28,19,28,24" name="genblk1">
+          <instance loc="d,29,25,29,33" name="submod_2" defName="submod" origName="submod_2"/>
+        </begin>
+        <instance loc="d,31,21,31,29" name="submod_3" defName="submod" origName="submod_3"/>
+      </begin>
+      <begin loc="d,27,21,27,31" name="FOR_GENERATE[1]">
+        <instance loc="d,27,21,27,31" name="submod_for" defName="submod" origName="submod_for"/>
+        <begin loc="d,28,19,28,24" name="genblk1">
+          <instance loc="d,29,25,29,33" name="submod_2" defName="submod" origName="submod_2"/>
+        </begin>
+        <instance loc="d,31,21,31,29" name="submod_3" defName="submod" origName="submod_3"/>
+      </begin>
+    </module>
+    <module loc="d,10,8,10,14" name="submod" origName="submod">
+      <begin loc="d,12,19,12,29" name="submod_gen">
+        <var loc="d,13,14,13,20" name="l1_sig" dtype_id="2" vartype="logic" origName="l1_sig"/>
+        <begin loc="d,14,23,14,33" name="nested_gen">
+          <instance loc="d,15,21,15,34" name="submod_nested" defName="submod2" origName="submod_nested"/>
+        </begin>
+        <instance loc="d,17,17,17,26" name="submod_l1" defName="submod2" origName="submod_l1"/>
+      </begin>
+      <instance loc="d,19,13,19,22" name="submod_l0" defName="submod2" origName="submod_l0"/>
+    </module>
+    <module loc="d,7,8,7,15" name="submod2" origName="submod2"/>
+    <typetable loc="a,0,0,0,0">
+      <basicdtype loc="d,24,12,24,13" id="1" name="integer" left="31" right="0" signed="true"/>
+      <basicdtype loc="d,13,14,13,20" id="2" name="logic"/>
+    </typetable>
+  </netlist>
+</verilator_xml>

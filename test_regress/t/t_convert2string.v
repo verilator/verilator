@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2020 by Peter Monsson.
+// SPDX-License-Identifier: Unlicense
 
 module t (/*AUTOARG*/
    // Inputs

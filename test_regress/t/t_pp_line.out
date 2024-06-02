@@ -1,0 +1,16 @@
+-Info: some file:100:1: aaaaaaaa
+                      : ... note: In instance 't'
+  100 | $info("aaaaaaaa");
+      | ^~~~~
+-Info: some file:101:1: bbbbbbbb
+                      : ... note: In instance 't'
+  101 | $info("bbbbbbbb");
+      | ^~~~~
+-Info: somefile.v:200:1: cccccccc
+                       : ... note: In instance 't'
+  200 | $info("cccccccc");
+      | ^~~~~
+-Info: /a/somefile.v:300:1: dddddddd
+                          : ... note: In instance 't'
+  300 | $info("dddddddd");
+      | ^~~~~

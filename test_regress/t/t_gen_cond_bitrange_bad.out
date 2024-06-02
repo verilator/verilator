@@ -1,19 +1,19 @@
 %Warning-SELRANGE: t/t_gen_cond_bitrange_bad.v:58:38: Selection index out of range: 2:2 outside 1:0
-                                                    : ... In instance t.i_test_gen
+                                                    : ... note: In instance 't.i_test_gen'
    58 |          if ((g < (SIZE + 1)) && MASK[g]) begin
       |                                      ^
                    ... For warning description see https://verilator.org/warn/SELRANGE?v=latest
                    ... Use "/* verilator lint_off SELRANGE */" and lint_on around source to disable this message.
 %Warning-SELRANGE: t/t_gen_cond_bitrange_bad.v:70:32: Selection index out of range: 2:2 outside 1:0
-                                                    : ... In instance t.i_test_gen
+                                                    : ... note: In instance 't.i_test_gen'
    70 |          if ((g < SIZE) && MASK[g + 1]) begin
       |                                ^
 %Warning-SELRANGE: t/t_gen_cond_bitrange_bad.v:83:33: Selection index out of range: 2:2 outside 1:0
-                                                    : ... In instance t.i_test_gen
+                                                    : ... note: In instance 't.i_test_gen'
    83 |          if ((g < (SIZE)) & MASK[g]) begin
       |                                 ^
 %Warning-SELRANGE: t/t_gen_cond_bitrange_bad.v:96:35: Selection index out of range: 2:2 outside 1:0
-                                                    : ... In instance t.i_test_gen
+                                                    : ... note: In instance 't.i_test_gen'
    96 |          if (!((g >= SIZE) | ~MASK[g])) begin
       |                                   ^
 %Error: Exiting due to

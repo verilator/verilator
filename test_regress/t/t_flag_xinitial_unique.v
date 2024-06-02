@@ -6,10 +6,13 @@
 
 module t (/*AUTOARG*/
    // Outputs
-   value
+   value, value2
    );
 
    output reg [63:0] value;
+   output wire [64:0] value2;
+
+   assign value2 = {8'bx, 57'h12};
 
    initial begin
       $write("*-* All Finished *-*\n");

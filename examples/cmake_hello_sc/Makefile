@@ -31,7 +31,7 @@ endif
 ifeq ($(shell which cmake),)
 	TARGET := nocmake
 else
-CMAKE_VERSION := $(shell cmake --version | grep -Po '(\d[\.\d]+)')
+CMAKE_VERSION := $(shell cmake --version | grep -o '[0-9][.0-9]\+')
 CMAKE_MAJOR := $(shell echo $(CMAKE_VERSION) | cut -f1 -d.)
 CMAKE_MINOR := $(shell echo $(CMAKE_VERSION) | cut -f2 -d.)
 CMAKE_GT_3_8 := $(shell [ $(CMAKE_MAJOR) -gt 3 -o \( $(CMAKE_MAJOR) -eq 3 -a $(CMAKE_MINOR) -ge 8 \) ] && echo true)
@@ -39,30 +39,12 @@ ifneq ($(CMAKE_GT_3_8),true)
 TARGET := oldcmake
 else
 
-# Test existence of SYSTEMC_INCLUDE and SYSTEMC_LIBDIR environment variabless
-ifneq (,$(SYSTEMC_INCLUDE))
-ifneq (,${SYSTEMC_LIBDIR})
-SYSTEMC_SET := true
-endif
-endif
-
-# Test existence of SYSTEMC_ROOT environment variable
-ifneq (SYSTEMC_SET, true)
-ifneq (,${SYSTEMC_ROOT})
-SYSTEMC_SET := true
-endif
-endif
-
-# Test existence of SYSTEMC environment variable
-ifneq (SYSTEMC_SET, true)
-ifneq (,${SYSTEMC})
-SYSTEMC_SET := true
-endif
-endif
+# Check if SC exists via a verilator call (empty if not)
+SYSTEMC_EXISTS := $(shell $(VERILATOR) --get-supported SYSTEMC)
 
 # Test whether SystemC is installed with CMake support
 # This will print a CMake error about processing arguments that can (currently) be ignored.
-ifneq (SYSTEMC_SET, true)
+ifneq (,$(SYSTEMC_EXISTS))
 FINDSC := $(shell mkdir -p build && cd build && cmake --find-package -DNAME=SystemCLanguage -DCMAKE_USE_PTHREADS_INIT=ON -DCOMPILER_ID=GNU -DLANGUAGE=CXX -DMODE=EXIST -DThreads_FOUND=ON)
 ifneq (,$(findstring SystemCLanguage found,$(FINDSC)))
 SYSTEMC_SET := true
@@ -99,7 +81,7 @@ run:
 
 	@echo "-- DONE --------------------"
 	@echo "Note: Once this example is understood, see examples/cmake_tracing_sc."
-	@echo "Note: Also see the EXAMPLE section in the verilator manpage/document."
+	@echo "Note: See also https://verilator.org/guide/latest/examples.html"
 
 clean mostlyclean distclean maintainer-clean:
 	@rm -rf build logs

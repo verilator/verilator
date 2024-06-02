@@ -6,13 +6,15 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
+
+#define VL_MT_DISABLED_CODE_UNIT 1
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -53,7 +55,7 @@ void V3ParseImp::lexUnputString(const char* textp, size_t length) {
 void V3ParseImp::yylexReadTok() {
     // Call yylex() remembering last non-whitespace token
     parsep()->lexFileline()->startToken();
-    int token = parsep()->m_lexerp->yylex();
+    const int token = parsep()->m_lexerp->yylex();
     m_lexPrevToken = token;  // Save so can find '#' to parse following number
     yylval.token = token;
 }
@@ -63,7 +65,7 @@ void V3ParseImp::yylexReadTok() {
 
 void V3ParseImp::lexNew() {
     if (m_lexerp) delete m_lexerp;  // Restart from clean slate.
-    m_lexerp = new V3Lexer();
+    m_lexerp = new V3Lexer;
     if (debugFlex() >= 9) m_lexerp->set_debug(~0);
 }
 

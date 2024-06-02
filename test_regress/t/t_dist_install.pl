@@ -19,7 +19,7 @@ if (!-r "$root/.git") {
     skip("Not in a git repository");
 } else {
     my $cwd = getcwd();
-    my $destdir = "$cwd/".$Self->{obj_dir};
+    my $destdir = "$cwd/" . $Self->{obj_dir};
     # Start clean
     run(cmd => ["rm -rf $destdir && mkdir -p $destdir"],
         check_finished => 0);
@@ -48,7 +48,7 @@ if (!-r "$root/.git") {
         push @files, $file;
     }
     if ($#files >= 0) {
-        error("Uninstall missed files: ",join(' ',@files));
+        error("Uninstall missed files: ", join(' ', @files));
     }
 }
 

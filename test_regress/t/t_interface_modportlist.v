@@ -8,7 +8,7 @@
 
 module t(input clk);
    my_interface iface();
-   my_module m(.clk(clk), iface);
+   my_module m(.clk(clk), .iface);
 endmodule
 
 module my_module(input clk, my_interface.my_port iface);

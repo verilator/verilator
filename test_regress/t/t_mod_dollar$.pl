@@ -12,9 +12,9 @@ scenarios(vlt => 1);
 
 # This doesn't use the general compile rule as we want to make sure we form
 # prefix properly using post-escaped identifiers
-run(cmd => ["../bin/verilator",
+run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator",
             "--cc",
-            "--Mdir obj_vlt/t_mod_dollar",
+            "--Mdir " . $Self->{obj_dir} . "/t_mod_dollar",
             "--exe --build --main",
             't/t_mod_dollar$.v',
     ],

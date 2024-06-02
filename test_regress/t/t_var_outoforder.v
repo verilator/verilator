@@ -16,40 +16,40 @@ module t (/*AUTOARG*/
    wire      q;
 
    sub sub (
-	    .q				(q),
-	    .a				(a),
-	    .clk			(clk));
+            .q                          (q),
+            .a                          (a),
+            .clk                        (clk));
 
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
-	 if (cyc==1) begin
-	    a <= 126'b1000;
-	 end
-	 if (cyc==2) begin
-	    a <= 126'h1001;
-	 end
-	 if (cyc==3) begin
-	    a <= 126'h1010;
-	 end
-	 if (cyc==4) begin
-	    a <= 126'h1111;
-	    if (q !== 1'b0) $stop;
-	 end
-	 if (cyc==5) begin
-	    if (q !== 1'b1) $stop;
-	 end
-	 if (cyc==6) begin
-	    if (q !== 1'b0) $stop;
-	 end
-	 if (cyc==7) begin
-	    if (q !== 1'b0) $stop;
-	 end
-	 if (cyc==8) begin
-	    if (q !== 1'b0) $stop;
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         cyc <= cyc + 1;
+         if (cyc==1) begin
+            a <= 126'b1000;
+         end
+         if (cyc==2) begin
+            a <= 126'h1001;
+         end
+         if (cyc==3) begin
+            a <= 126'h1010;
+         end
+         if (cyc==4) begin
+            a <= 126'h1111;
+            if (q !== 1'b0) $stop;
+         end
+         if (cyc==5) begin
+            if (q !== 1'b1) $stop;
+         end
+         if (cyc==6) begin
+            if (q !== 1'b0) $stop;
+         end
+         if (cyc==7) begin
+            if (q !== 1'b0) $stop;
+         end
+         if (cyc==8) begin
+            if (q !== 1'b0) $stop;
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 

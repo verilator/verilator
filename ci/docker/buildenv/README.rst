@@ -1,3 +1,6 @@
+.. Copyright 2003-2024 by Wilson Snyder.
+.. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
 Verilator Build Docker Container
 ================================
 
@@ -8,7 +11,7 @@ Verilator build. It uses the following parameters:
 
 -  Source revision (default: master)
 
--  Compiler (GCC 9.3.0, clang 10.0.0, default: 9.3.0)
+-  Compiler (GCC 10.3.0, clang 10.0.0, default: 10.3.0)
 
 The container is published as ``verilator/verilator-buildenv`` on `docker
 hub

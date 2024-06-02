@@ -22,9 +22,10 @@ double sc_time_stamp() { return main_time; }
 VM_PREFIX* topp = nullptr;
 
 int main(int argc, char* argv[]) {
-    topp = new VM_PREFIX;
-
     Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
+
+    topp = new VM_PREFIX;
 
     topp->eval();
     VL_DO_DANGLING(delete topp, topp);
@@ -34,11 +35,12 @@ int dpii_task() {
 
     // Check DPI warnings
     svScope scope = svGetScope();  // Will warn
-    if (scope) {}  // Unused
+    (void)scope;  // Unused
     const char* filenamep = "";
     int lineno = 0;
     svGetCallerInfo(&filenamep, &lineno);  // Will warn
-    if (filenamep && lineno) {}  // Unused
+    (void)filenamep;  // Unused
+    (void)lineno;  // Unused
 
     dpix_task();
     return 0;

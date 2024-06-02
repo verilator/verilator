@@ -10,28 +10,28 @@ module t (/*AUTOARG*/
    );
 
    input clk;
-   reg 	 toggle;
+   reg   toggle;
    integer cyc; initial cyc=1;
 
    Test test (/*AUTOINST*/
-	      // Inputs
-	      .clk			(clk),
-	      .toggle			(toggle),
-	      .cyc			(cyc[31:0]));
+              // Inputs
+              .clk                      (clk),
+              .toggle                   (toggle),
+              .cyc                      (cyc[31:0]));
 
    Sub sub1 (.*);
    Sub sub2 (.*);
 
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
-	 toggle <= !cyc[0];
-	 if (cyc==9) begin
-	 end
-	 if (cyc==10) begin
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         cyc <= cyc + 1;
+         toggle <= !cyc[0];
+         if (cyc==9) begin
+         end
+         if (cyc==10) begin
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 
@@ -89,21 +89,22 @@ module Test
    genvar i;
    generate
       for (i=0; i<32; i=i+1)
-	begin: cycval
-	   CycCover_i: `covclk( cyc[i] );
-	end
+        begin: cycval
+           CycCover_i: `covclk( cyc[i] );
+        end
    endgenerate
 
-`ifndef verilator // Unsupported
    //============================================================
    // Using a more complicated property
    property C1;
       @(posedge clk)
-	disable iff (!toggle)
-	cyc==5;
+        disable iff (!toggle)
+        cyc==5;
    endproperty
    cover property (C1) $display("*COVER: Cyc==5");
 
+`ifndef verilator // Unsupported
+   //============================================================
    // Using covergroup
    // Note a covergroup is really inheritance of a special system "covergroup" class.
    covergroup counter1 @ (posedge cyc);
@@ -111,35 +112,35 @@ module Test
 
       // Each bin value must be <= 32 bits.  Strange.
       cyc_value : coverpoint cyc {
-	}
+        }
 
       cyc_bined : coverpoint cyc {
-	 bins zero    = {0};
-	 bins low    = {1,5};
-	 // Note 5 is also in the bin above.  Only the first bin matching is counted.
-	 bins mid   = {[5:$]};
-	 // illegal_bins	// Has precidence over "first matching bin", creates assertion
-	 // ignore_bins		// Not counted, and not part of total
+         bins zero    = {0};
+         bins low    = {1,5};
+         // Note 5 is also in the bin above.  Only the first bin matching is counted.
+         bins mid   = {[5:$]};
+         // illegal_bins        // Has precidence over "first matching bin", creates assertion
+         // ignore_bins         // Not counted, and not part of total
       }
       toggle : coverpoint (toggle) {
-	 bins off  = {0};
-	 bins on   = {1};
+         bins off  = {0};
+         bins on   = {1};
       }
       cyc5 : coverpoint (cyc==5) {
-	 bins five  = {1};
+         bins five  = {1};
       }
 
-      // option.at_least = {number};	// Default 1 - Hits to be considered covered
+      // option.at_least = {number};    // Default 1 - Hits to be considered covered
       // option.auto_bin_max = {number}; // Default 64
-      // option.comment = {string}
-      // option.goal = {number};	// Default 90%
-      // option.name = {string}
-      // option.per_instance = 1;	// Default 0 - each instance separately counted (cadence default is 1)
-      // option.weight = {number};	// Default 1
+      // option.comment = {string};     // Default ""
+      // option.goal = {number};        // Default 90%
+      // option.name = {string};        // Default ""
+      // option.per_instance = 1;       // Default 0 - each instance separately counted (cadence default is 1)
+      // option.weight = {number};      // Default 1
 
       // CROSS
       value_and_toggle:  // else default is __<firstlabel>_X_<secondlabel>_<n>
-	cross cyc_value, toggle;
+        cross cyc_value, toggle;
    endgroup
    counter1 c1 = new();
 `endif

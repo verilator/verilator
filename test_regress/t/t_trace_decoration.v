@@ -6,12 +6,12 @@
 
 module t (clk);
    input clk;
-   integer 	a_very_long_name_which_we_will_hash_eventually=0;
+   integer      a_very_long_name_which_we_will_hash_eventually=0;
 
    always @ (posedge clk) begin
       a_very_long_name_which_we_will_hash_eventually <= a_very_long_name_which_we_will_hash_eventually + 1;
       if (a_very_long_name_which_we_will_hash_eventually == 5) begin
-	 fin();
+         fin();
       end
    end
 

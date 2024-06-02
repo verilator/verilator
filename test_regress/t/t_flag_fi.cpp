@@ -7,7 +7,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 #include <verilated.h>
-#include "Vt_flag_fi.h"
+
+#include VM_PREFIX_INCLUDE
 
 //======================================================================
 
@@ -21,9 +22,10 @@ bool gotit = false;
 void myfunction() { gotit = true; }
 
 int main(int argc, char* argv[]) {
-    topp = new VM_PREFIX;
-
     Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
+
+    topp = new VM_PREFIX;
 
     topp->eval();
     if (!gotit) vl_fatal(__FILE__, __LINE__, "dut", "Never got call to myfunction");

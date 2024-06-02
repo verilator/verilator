@@ -1,5 +1,6 @@
-#!/usr/bin/env perl
-use warnings;
+#!/usr/bin/env python3
+# pylint: disable=C0103,C0114
+#
 # DESCRIPTION: Verilator: Verilog Test example --pipe-filter script
 #
 # Copyright 2010 by Wilson Snyder. This program is free software; you
@@ -8,51 +9,54 @@ use warnings;
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-use IO::File;
-use strict;
+import re
+import sys
 
-our $Debug = 0;
+Debug = False
 
-autoflush STDOUT;
+if Debug:
+    sys.stderr.write("t_pipe_filter.pf: Hello from t_pipe_filter.pf\n")
 
-print STDERR "t_pipe_filter.pf: Hello in Perl\n" if $Debug;
-while (defined(my $cmd = <STDIN>)) {
-    print STDERR "t_pipe_filter.pf: gotcmd: $cmd" if $Debug;
-    if ($cmd =~ /^read "(.*)"/) {
-        my $filename = $1;
-        open(my $fh, "<$filename")
-            or die "t_pipe_filter.pf: %Error: $! $filename\n";
+for cmd in sys.stdin:
+    if Debug:
+        sys.stderr.write("t_pipe_filter.pf: gotcmd: " + cmd)
 
-        my $wholefile="";
-        # It's faster to slurp the whole file then scan (if needed),
-        # then to read it into an array with getlines
-        { local $/; undef $/; $wholefile = <$fh>; }
-        close $fh;
+    match = re.match(r'read "(.*)"', cmd)
+    if match:
+        filename = match.group(1)
 
-        if ($wholefile =~ /example_lint/) {  # else short circuit
-            my $lineno = 1; my $pos=0;
-            my @prefixes;
-            while (1) {
-                my $newpos=index($wholefile,"\n",$pos);
-                last if $newpos<$pos;
-                my $line = substr($wholefile,$pos,$newpos-$pos);
-                if ($line =~ /example_lint/) {
+        wholefile = ""
+        # It's faster to slurp the whole file then scan (if needed)
+        with open(filename, "r", encoding="utf8") as fh:
+            wholefile = fh.read()
+
+        if 'example_lint' in wholefile:  # else short circuit
+            lineno = 1
+            pos = 0
+            prefixes = []
+            while True:
+                newpos = wholefile.find('\n', pos)
+                if newpos < pos:
+                    break
+                line = wholefile[pos:newpos]
+                if 'example_lint' in line:
                     # We don't have a way to specify this yet, so just for now
-                    #print STDERR $line;
-                    push @prefixes, "int lint_off_line_${lineno} = 1;\n";
-                }
-                $lineno++;
-                $pos = $newpos+1;
-            }
-            #print STDERR "Line count: $lineno\n";
-            $wholefile = join('',@prefixes) . $wholefile;
-        }
+                    # sys.stderr.write($line)
+                    prefixes.append("int lint_off_line_" + str(lineno) +
+                                    " = 1;\n")
 
-        print STDOUT "Content-Length: ".length($wholefile)."\n".$wholefile."\n";
-    } else {
-        die "t_pipe_filter.pf: %Error: Unknown command: $cmd\n";
-    }
-}
+                lineno += 1
+                pos = newpos + 1
 
-print STDOUT "t_pipe_filter.pf: Fin\n" if $Debug;
-exit(0);
+            # sys.stderr.write("Line count: %d\n" % lineno)
+            wholefile = ''.join(prefixes) + wholefile
+
+        print("Content-Length: " + str(len(wholefile)) + "\n" + wholefile)
+        sys.stdout.flush()
+    else:
+        sys.exit("t_pipe_filter.pf: %Error: Unknown command: " + cmd)
+
+if Debug:
+    sys.stderr.write("t_pipe_filter.pf: Fin\n")
+
+sys.exit(0)

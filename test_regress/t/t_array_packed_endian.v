@@ -12,27 +12,27 @@ typedef struct packed {
 } tb_t;
 
 typedef struct packed {
-   // verilator lint_off LITENDIAN
+   // verilator lint_off ASCRANGE
    logic [0:7] a;
-   // verilator lint_on LITENDIAN
+   // verilator lint_on ASCRANGE
 } tl_t;
 
 typedef struct packed {
    logic [7:0] bb;
-   // verilator lint_off LITENDIAN
+   // verilator lint_off ASCRANGE
    tb_t [0:1] cbl;
    tb_t [1:0] cbb;
    tl_t [0:1] cll;
    tl_t [1:0] clb;
    logic [0:7] dl;
-   // verilator lint_on LITENDIAN
+   // verilator lint_on ASCRANGE
 } t2;
 
 logic [2:0][31:0] test2l;
-// verilator lint_off LITENDIAN
+// verilator lint_off ASCRANGE
 logic [0:2][31:0] test2b;
 logic [0:2][31:0] test1b;
-// verilator lint_on LITENDIAN
+// verilator lint_on ASCRANGE
 logic [2:0][31:0] test1l;
 
 module t;

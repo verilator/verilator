@@ -16,8 +16,13 @@
 //     function int try_peek( ref T message );
 //  endclass
 
+`ifndef MAILBOX_T
+ `define MAILBOX_T mailbox
+`endif
+
+// verilator lint_off DECLFILENAME
 module t(/*AUTOARG*/);
-   mailbox m;
+   `MAILBOX_T #(int) m;
    int     msg;
    int     out;
 
@@ -32,7 +37,7 @@ module t(/*AUTOARG*/);
       if (m.num() != 1) $stop;
       if (m.try_peek(out) <= 0) $stop;
       if (out != 123) $stop;
-      if (m.num() != 0) $stop;
+      if (m.num() != 1) $stop;
       out = 0;
       if (m.try_peek(out) <= 0) $stop;
       if (out != 123) $stop;
@@ -50,8 +55,8 @@ module t(/*AUTOARG*/);
       msg = 125;
       m.put(msg);
       m.put(msg);
-      m.try_put(msg);
-      m.try_put(msg);
+      if (m.try_put(msg) == 0) $stop;
+      if (m.try_put(msg) == 0) $stop;
       if (m.num() != 4) $stop;
       if (m.try_put(msg) != 0) $stop;
       if (m.num() != 4) $stop;

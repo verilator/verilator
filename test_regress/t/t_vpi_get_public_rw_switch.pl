@@ -13,16 +13,16 @@ scenarios(simulator => 1);
 skip("Known compiler limitation")
     if $Self->cxx_version =~ /\(GCC\) 4.4/;
 
-VM_PREFIX("Vt_vpi_get");
+vm_prefix("Vt_vpi_get");
 top_filename("t/t_vpi_get.v");
 pli_filename("t_vpi_get.cpp");
 
 compile(
     make_top_shell => 0,
     make_main => 0,
-    verilator_flags2 => ["-CFLAGS '-DVL_DEBUG -ggdb' --exe --vpi"
-                         ." --public-flat-rw --prefix Vt_vpi_get --no-l2name"
-                         ." $Self->{t_dir}/t_vpi_get.cpp"],
+    verilator_flags2 => ["--exe --vpi"
+                         . " --public-flat-rw --prefix Vt_vpi_get --no-l2name"
+                         . " $Self->{t_dir}/t_vpi_get.cpp"],
     make_pli => 1,
     iv_flags2 => ["-g2005-sv -D USE_VPI_NOT_DPI"],
     v_flags2 => ["+define+USE_VPI_NOT_DPI"],

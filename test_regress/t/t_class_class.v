@@ -6,12 +6,12 @@
 
 // Note UVM internals do not require classes-in-classes
 package P;
-class Cls;
-   int imembera;
-   int imemberb;
+class Cls #(type STORE_T=string);
+   STORE_T imembera;
+   STORE_T imemberb;
    class SubCls;
-      int smembera;
-      int smemberb;
+      STORE_T smembera;
+      STORE_T smemberb;
       // TODO put extern function here or in t_class_extern.v to check link
    endclass : SubCls
    SubCls sc;
@@ -19,7 +19,7 @@ endclass : Cls
 endpackage : P
 
 module t (/*AUTOARG*/);
-   P::Cls c;
+   P::Cls#(int) c;
    initial begin
       c = new;
       c.imembera = 10;

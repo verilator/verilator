@@ -26,38 +26,38 @@ module t();
    generate
       genvar the_genvar;
       begin : ia
-	 for (the_genvar = 0; the_genvar < 2; the_genvar++) begin : TestIf
-	    begin
+         for (the_genvar = 0; the_genvar < 2; the_genvar++) begin : TestIf
+            begin
                assign my_intf[the_genvar].val = '1;
                t1 t (.mod_intf(my_intf[the_genvar]));
-	    end
-	 end
+            end
+         end
       end
    endgenerate
 
    generate
       genvar the_second_genvar;
       begin : ib
-	 intf #(.PARAM(1)) my_intf [1:0] ();
-	 for (the_second_genvar = 0; the_second_genvar < 2; the_second_genvar++) begin : TestIf
-	    begin
+         intf #(.PARAM(1)) my_intf [1:0] ();
+         for (the_second_genvar = 0; the_second_genvar < 2; the_second_genvar++) begin : TestIf
+            begin
                assign my_intf[the_second_genvar].val = '1;
                t1 t (.mod_intf(my_intf[the_second_genvar]));
-	    end
-	 end
+            end
+         end
       end
    endgenerate
 
    generate
       genvar the_third_genvar;
       begin : ic
-	 for (the_third_genvar = 0; the_third_genvar < 2; the_third_genvar++) begin : TestIf
-	    begin
-	       intf #(.PARAM(1)) my_intf [1:0] ();
+         for (the_third_genvar = 0; the_third_genvar < 2; the_third_genvar++) begin : TestIf
+            begin
+               intf #(.PARAM(1)) my_intf [1:0] ();
                assign my_intf[the_third_genvar].val = '1;
                t1 t (.mod_intf(my_intf[the_third_genvar]));
-	    end
-	 end
+            end
+         end
       end
    endgenerate
 

@@ -1,5 +1,5 @@
-%Warning-NOLATCH: t/t_lint_nolatch_bad.v:11:4: No latches detected in always_latch block
-   11 |    always_latch @(a or b)
+%Warning-NOLATCH: t/t_lint_nolatch_bad.v:12:4: No latches detected in always_latch block
+   12 |    always_latch
       |    ^~~~~~~~~~~~
                   ... For warning description see https://verilator.org/warn/NOLATCH?v=latest
                   ... Use "/* verilator lint_off NOLATCH */" and lint_on around source to disable this message.

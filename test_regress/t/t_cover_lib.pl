@@ -13,7 +13,7 @@ scenarios(vlt => 1);
 compile(
     v_flags2 => ["--coverage t/t_cover_lib_c.cpp"],
     verilator_flags2 => ["--exe -Wall -Wno-DECLFILENAME"],
-    make_flags => 'CPPFLAGS_ADD=-DTEST_OBJ_DIR="'.$Self->{obj_dir}.'"',
+    make_flags => 'CPPFLAGS_ADD=-DTEST_OBJ_DIR="' . $Self->{obj_dir} . '"',
     make_top_shell => 0,
     make_main => 0,
     );

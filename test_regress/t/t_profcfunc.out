@@ -1,0 +1,69 @@
+Overall summary by type:
+  % time  type
+    4.37  C++
+   33.48  Common code under Vt_prof
+   15.82  VLib
+    6.46  Verilog Blocks under Vt_prof
+   39.87  Unaccounted for/rounding error
+
+Overall summary by design:
+  % time  design
+    4.37  C++
+   15.82  VLib
+   39.94  Vt_prof
+   39.87  Unaccounted for/rounding error
+
+Overall summary by module:
+  % time  module
+    4.37  C++
+   15.82  VLib
+   33.48  Vt_prof common code
+    6.46  t_prof
+   39.87  Unaccounted for/rounding error
+
+Verilog code profile:
+   These are split into three categories:
+      C++:     Time in non-Verilated C++ code
+      Prof:    Time in profile overhead
+      VBlock:  Time attributable to a block in a Verilog file and line
+      VCommon: Time in a Verilated module, due to all parts of the design
+      VLib:    Time in Verilated common libraries, called by the Verilated code
+
+  %   cumulative   self              
+ time   seconds   seconds      calls   design   type      filename and line number
+  3.27      1.27     1.27        200   Vt_prof  VBlock    t_prof:31
+  1.99      2.26     0.99     200578   -        VLib      VL_EXTENDS_QQ(int, int, unsigned long)
+  1.98      3.24     0.98     100000   -        VLib      VL_POWSS_QQQ(int, int, int, unsigned long, unsigned long, bool, bool)
+  1.89      4.13     0.89       1407   -        VLib      Verilated::debug()
+  1.88      5.01     0.88        202   -        VLib      VerilatedContext::gotFinish() const
+  1.87      5.88     0.87          6   -        VLib      VerilatedContext::randReset()
+  1.86      6.74     0.86          9   -        C++       VlWide<2ul>::operator unsigned int*()
+  1.79      7.53     0.79        600   Vt_prof  VCommon   Vt_prof* const& std::__get_helper<0ul, Vt_prof*, std::default_delete<Vt_prof> >(std::_Tuple_impl<0ul, Vt_prof*, std::default_delete<Vt_prof> > const&)
+  1.78      8.31     0.78          3   Vt_prof  VCommon   Vt_prof*& std::__get_helper<0ul, Vt_prof*, std::default_delete<Vt_prof> >(std::_Tuple_impl<0ul, Vt_prof*, std::default_delete<Vt_prof> >&)
+  1.77      9.08     0.77          1   Vt_prof  VCommon   Vt_prof::Vt_prof(VerilatedContext*, char const*)
+  1.76      9.84     0.76          1   Vt_prof  VCommon   Vt_prof::Vt_prof(char const*)
+  1.75     10.59     0.75        200   Vt_prof  VCommon   Vt_prof::eval()
+  1.74     11.33     0.74        200   Vt_prof  VCommon   Vt_prof::eval_step()
+  1.73     12.06     0.73          1   Vt_prof  VCommon   Vt_prof::final()
+  1.72     12.78     0.72          1   Vt_prof  VCommon   Vt_prof::~Vt_prof()
+  1.71     13.49     0.71          1   Vt_prof  VCommon   Vt_prof__Syms::Vt_prof__Syms(VerilatedContext*, char const*, Vt_prof*)
+  1.70     14.19     0.70          1   Vt_prof  VCommon   Vt_prof__Syms::~Vt_prof__Syms()
+  1.69     14.88     0.69          1   Vt_prof  VCommon   Vt_prof___024root::__Vconfigure(Vt_prof__Syms*, bool)
+  1.68     15.56     0.68          1   Vt_prof  VCommon   Vt_prof___024root::Vt_prof___024root(char const*)
+  1.67     16.23     0.67          1   Vt_prof  VCommon   Vt_prof___024root::~Vt_prof___024root()
+  1.66     16.89     0.66        201   Vt_prof  VCommon   Vt_prof___024root___eval(Vt_prof___024root*)
+  1.65     17.54     0.65        200   Vt_prof  VCommon   Vt_prof___024root___eval_debug_assertions(Vt_prof___024root*)
+  1.62     18.16     0.62        100   Vt_prof  VBlock    t_prof:30
+  1.61     18.77     0.61          1   Vt_prof  VCommon   Vt_prof___024root___final(Vt_prof___024root*)
+  1.60     19.37     0.60          1   Vt_prof  VCommon   Vt_prof___024root___eval_settle(Vt_prof___024root*)
+  1.59     19.96     0.59          1   Vt_prof  VCommon   Vt_prof___024root___eval_initial(Vt_prof___024root*)
+  1.58     20.54     0.58          1   Vt_prof  VCommon   Vt_prof___024root___ctor_var_reset(Vt_prof___024root*)
+  1.57     21.11     0.57          1   Vt_prof  VBlock    t_prof:13
+  1.30     21.41     0.30          1   Vt_prof  VCommon   _eval_initial_loop(Vt_prof__Syms*)
+  1.29     21.70     0.29          1   -        VLib      _vl_cmp_w(int, unsigned int const*, unsigned int const*)
+  1.28     21.98     0.28          2   -        VLib      _vl_moddiv_w(int, unsigned int*, unsigned int const*, unsigned int const*, bool)
+  1.27     22.25     0.27          2   -        VLib      _vl_vsformat(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, char const*, __va_list_tag*)
+  1.26     22.51     0.26       1399   -        C++       std::unique_ptr<VerilatedContext, std::default_delete<VerilatedContext> >::get() const
+  1.25     22.76     0.25          3   -        C++       unsigned long const& std::max<unsigned long>(unsigned long const&, unsigned long const&)
+  1.19     22.95     0.19          1   -        VLib      vl_finish(char const*, int, char const*)
+  1.18     23.13     0.18          2   -        VLib      vl_time_pow10(int)

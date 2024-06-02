@@ -9,9 +9,9 @@
 class t_extend_class_c {
 public:
     // CONSTRUCTORS
-    t_extend_class_c() {}
-    ~t_extend_class_c() {}
+    t_extend_class_c() = default;
+    ~t_extend_class_c() = default;
     // METHODS
-    // This function will be called from a instance created in Verilog
-    inline vluint32_t my_math(vluint32_t in) { return in + 1; }
+    // This function will be called from an instance created in Verilog
+    uint32_t my_math(uint32_t in) { return in + 1; }
 };

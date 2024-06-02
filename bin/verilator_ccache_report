@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+# pylint: disable=C0103,C0114,C0115,C0116,C0123,C0209,C0301,R0902,R0913,R0914,R0912,R0915,W0621
+######################################################################
+
+import argparse
+import collections
+import pathlib
+import re
+
+from datetime import datetime
+
+parser = argparse.ArgumentParser(
+    allow_abbrev=False,
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description="""Report ccache behavior of a Verilated model build.
+
+    For documentation see
+    https://verilator.org/guide/latest/exe_verilator_ccache_report.html""",
+    epilog=
+    """Copyright 2002-2024 by Wilson Snyder. This program is free software; you
+can redistribute it and/or modify it under the terms of either the GNU
+Lesser General Public License Version 3 or the Perl Artistic License
+Version 2.0.
+
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
+
+parser.add_argument('-o',
+                    type=argparse.FileType('w'),
+                    metavar="OUTFILE",
+                    required=True,
+                    help='output file')
+parser.add_argument('logdir', type=pathlib.Path, help='log directory')
+
+args = parser.parse_args()
+
+results = {}
+elapsed = {}
+
+
+def toDateTime(s):
+    return datetime.strptime(s, "%Y-%m-%dT%H:%M:%S.%f")
+
+
+for logfile in args.logdir.iterdir():
+    with logfile.open() as fh:
+        start = None
+        obj = None
+        for line in fh:
+            line = line.strip()
+            match = re.match(r'\[(\S+)\s.*Object file: (.*)$', line)
+            if match:
+                start = toDateTime(match.group(1))
+                obj = match.group(2)
+            match = re.match(r'\[(\S+)\s.*Result: (.*)$', line)
+            if match:
+                assert obj is not None
+                elapsed[obj] = toDateTime(match.group(1)) - start
+                results[obj] = match.group(2)
+
+args.o.write("#" * 80 + "\n")
+args.o.write("ccache report (from verilator_ccache_report) :\n")
+
+if not results:
+    args.o.write("\nAll object files up to date\n")
+else:
+    args.o.write("\nCompiled object files:\n")
+    wnames = max(len(_) for _ in results) + 1
+    wresults = max(len(_) for _ in results.values()) + 1
+    for k in sorted(results.keys()):
+        args.o.write("{:{wnames}} : {:{wresults}} : {}s\n".format(
+            k,
+            results[k],
+            elapsed[k].total_seconds(),
+            wnames=wnames,
+            wresults=wresults))
+
+    args.o.write("\nSummary:\n")
+    counts = collections.Counter(_ for _ in results.values())
+    total = sum(counts.values())
+    for k in sorted(counts.keys()):
+        c = counts[k]
+        args.o.write("{:{width}}| {} ({:.2%})\n".format(k,
+                                                        c,
+                                                        c / total,
+                                                        width=wresults))
+
+    args.o.write("\nLongest:\n")
+    longest = sorted(list(elapsed.items()),
+                     key=lambda kv: -kv[1].total_seconds())
+    for i, (k, v) in enumerate(longest):
+        args.o.write("{:{width}}| {}s\n".format(k,
+                                                v.total_seconds(),
+                                                width=wnames))
+        if i > 4:
+            break
+
+args.o.write("#" * 80 + "\n")

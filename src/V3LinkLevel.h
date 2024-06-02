@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -20,22 +20,24 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Error.h"
 #include "V3Ast.h"
+#include "V3Error.h"
+#include "V3ThreadSafety.h"
+
+#include <vector>
 
 //============================================================================
 
 class V3LinkLevel final {
-private:
     using ModVec = std::vector<AstNodeModule*>;
 
-    static void timescaling(const ModVec& mods);
-    static void wrapTopCell(AstNetlist* rootp);
-    static void wrapTopPackages(AstNetlist* rootp);
+    static void timescaling(const ModVec& mods) VL_MT_DISABLED;
+    static void wrapTopCell(AstNetlist* rootp) VL_MT_DISABLED;
+    static void wrapTopPackages(AstNetlist* rootp) VL_MT_DISABLED;
 
 public:
-    static void modSortByLevel();
-    static void wrapTop(AstNetlist* rootp);
+    static void modSortByLevel() VL_MT_DISABLED;
+    static void wrapTop(AstNetlist* rootp) VL_MT_DISABLED;
 };
 
 #endif  // Guard

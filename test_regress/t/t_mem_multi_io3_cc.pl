@@ -15,7 +15,7 @@ top_filename("t/t_mem_multi_io3.v");
 compile(
     make_top_shell => 0,
     make_main => 0,
-    verilator_flags2 => ["--exe $Self->{t_dir}/t_mem_multi_io3.cpp -Oi"],
+    verilator_flags2 => ["--exe $Self->{t_dir}/t_mem_multi_io3.cpp -fno-inline"],
     verilator_flags3 => [],
     );
 

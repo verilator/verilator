@@ -12,18 +12,18 @@
 #ifdef IS_VPI
 
 #include "vpi_user.h"
+
 #include <cstdlib>
 
 #else
 
-#include "Vt_vpi_get.h"
 #include "verilated.h"
-#include "svdpi.h"
-
-#include "Vt_vpi_get__Dpi.h"
-
-#include "verilated_vpi.h"
 #include "verilated_vcd_c.h"
+#include "verilated_vpi.h"
+
+#include "Vt_vpi_get.h"
+#include "Vt_vpi_get__Dpi.h"
+#include "svdpi.h"
 
 #endif
 
@@ -31,6 +31,7 @@
 #include <cstring>
 #include <iostream>
 
+// These require the above. Comment prevents clang-format moving them
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
@@ -39,8 +40,6 @@
 
 #define TEST_MSG \
     if (0) printf
-
-unsigned int main_time = 0;
 
 //======================================================================
 
@@ -67,12 +66,12 @@ unsigned int main_time = 0;
 #define CHECK_RESULT_HEX(got, exp) \
     if ((got) != (exp)) { \
         std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << std::hex \
-                  << ": GOT = " << (got) << "   EXP = " << (exp) << endl; \
+                  << ": GOT = " << (got) << "   EXP = " << (exp) << std::endl; \
         return __LINE__; \
     }
 
 #define CHECK_RESULT_CSTR(got, exp) \
-    if (strcmp((got), (exp))) { \
+    if (std::strcmp((got), (exp))) { \
         printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
                (got) ? (got) : "<null>", (exp) ? (exp) : "<null>"); \
         return __LINE__; \
@@ -122,7 +121,7 @@ static int _mon_check_props(TestVpiHandle& handle, int size, int direction, int 
         // check direction of object
         int vpidir = vpi_get(vpiDirection, handle);
         // Don't check port directions in verilator
-        // see #681
+        // See issue #681
         if (!TestSimulator::is_verilator()) CHECK_RESULT(vpidir, direction);
     }
 
@@ -130,7 +129,7 @@ static int _mon_check_props(TestVpiHandle& handle, int size, int direction, int 
     int vpitype = vpi_get(vpiType, handle);
     if (!(TestSimulator::is_verilator() && type == vpiPort)) {
         // Don't check for ports in verilator
-        // see #681
+        // See issue #681
         CHECK_RESULT(vpitype, type);
     }
 
@@ -173,7 +172,7 @@ int mon_check_props() {
            {"sub.the_intf.bytesig", {8, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
            {"sub.the_intf.param", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
            {"sub.the_intf.lparam", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
-           {"twobytwo", {2, vpiNoDirection, 0, vpiMemory}, {2, vpiNoDirection, 0, vpiMemoryWord}},
+           {"twobytwo", {4, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
            {NULL, {0, 0, 0, 0}, {0, 0, 0, 0}}};
     struct params* value = values;
     while (value->signal) {
@@ -202,7 +201,7 @@ int mon_check_props() {
     return 0;
 }
 
-int mon_check() {
+extern "C" int mon_check() {
     // Callback from initial block in monitor
     if (int status = mon_check_props()) return status;
     return 0;  // Ok
@@ -240,22 +239,25 @@ void vpi_compat_bootstrap(void) {
 void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 
 #else
-double sc_time_stamp() { return main_time; }
-int main(int argc, char** argv, char** env) {
-    vluint64_t sim_time = 1100;
-    Verilated::commandArgs(argc, argv);
-    Verilated::debug(0);
+int main(int argc, char** argv) {
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
 
-    Vt_vpi_get* topp = new Vt_vpi_get("");  // Note null name - we're flattening it out
+    uint64_t sim_time = 1100;
+    contextp->debug(0);
+    contextp->commandArgs(argc, argv);
+
+    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
+                                                        // Note null name - we're flattening it out
+                                                        ""}};
 
 #ifdef VERILATOR
 #ifdef TEST_VERBOSE
-    Verilated::scopesDump();
+    contextp->scopesDump();
 #endif
 #endif
 
 #if VM_TRACE
-    Verilated::traceEverOn(true);
+    contextp->traceEverOn(true);
     VL_PRINTF("Enabling waves...\n");
     VerilatedVcdC* tfp = new VerilatedVcdC;
     topp->trace(tfp, 99);
@@ -264,19 +266,19 @@ int main(int argc, char** argv, char** env) {
 
     topp->eval();
     topp->clk = 0;
-    main_time += 10;
+    contextp->timeInc(10);
 
-    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
-        main_time += 1;
+    while (contextp->time() < sim_time && !contextp->gotFinish()) {
+        contextp->timeInc(1);
         topp->eval();
         VerilatedVpi::callValueCbs();
         topp->clk = !topp->clk;
         // mon_do();
 #if VM_TRACE
-        if (tfp) tfp->dump(main_time);
+        if (tfp) tfp->dump(contextp->time());
 #endif
     }
-    if (!Verilated::gotFinish()) {
+    if (!contextp->gotFinish()) {
         vl_fatal(FILENM, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     topp->final();
@@ -285,7 +287,6 @@ int main(int argc, char** argv, char** env) {
     if (tfp) tfp->close();
 #endif
 
-    VL_DO_DANGLING(delete topp, topp);
     return 0;
 }
 

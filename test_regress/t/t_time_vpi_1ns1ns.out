@@ -2,14 +2,20 @@
 Time scale of t is 1ns / 1ns
 [60] time%0d=60  123%0t=123
   dig%0t=5432109877 dig%0d=5432109877
-  rdig%0t=5432109876 rdig%0f=5432109876.543210
+  rdig%0t=5432109877 rdig%0f=5432109876.543210
+  acc%0t=12345678901234567890 acc%0d=12345678901234567890
 [60.000000ns] time%0d=60  123%0t=123.000000ns
   dig%0t=5432109877.000000ns dig%0d=5432109877
   rdig%0t=5432109876.543210ns rdig%0f=5432109876.543210
+  acc%0t=12345678901234567890.000000ns acc%0d=12345678901234567890
 [60.000000ns] stime%0t=60.000000ns  stime%0d=60  stime%0f=60.000000
 [60.000000ns] rtime%0t=60.000000ns  rtime%0d=60  rtime%0f=60.000000
+global svGetTime = 0 0,60
+global svGetTimeUnit = 0 -9  svGetTmePrecision = 0 -9
 global vpiSimTime = 0,60  vpiScaledRealTime = 60
 global vpiTimeUnit = -9  vpiTimePrecision = -9
+top.t svGetTime = 0 0,60
+top.t svGetTimeUnit = 0 -9  svGetTmePrecision = 0 -9
 top.t vpiSimTime = 0,60  vpiScaledRealTime = 60
 top.t vpiTimeUnit = -9  vpiTimePrecision = -9
 *-* All Finished *-*

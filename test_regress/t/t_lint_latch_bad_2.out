@@ -1,7 +1,7 @@
-%Warning-LATCH: t/t_lint_latch_bad_2.v:11:4: Latch inferred for signal 'o' (not all control paths of combinational always assign a value)
+%Warning-LATCH: t/t_lint_latch_bad_2.v:12:4: Latch inferred for signal 'o' (not all control paths of combinational always assign a value)
                                            : ... Suggest use of always_latch for intentional latches
-   11 |    always @(a or b)
-      |    ^~~~~~
+   12 |    always_comb
+      |    ^~~~~~~~~~~
                 ... For warning description see https://verilator.org/warn/LATCH?v=latest
                 ... Use "/* verilator lint_off LATCH */" and lint_on around source to disable this message.
 %Error: Exiting due to

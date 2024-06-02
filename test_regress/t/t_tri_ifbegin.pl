@@ -13,7 +13,7 @@ scenarios(simulator => 1);
 compile(
     );
 
-# No exeecution
+# No execution
 
 ok(1);
 1;

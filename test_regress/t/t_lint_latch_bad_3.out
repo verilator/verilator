@@ -1,13 +1,7 @@
-%Warning-LATCH: t/t_lint_latch_bad_3.v:18:1: Latch inferred for signal 'o5' (not all control paths of combinational always assign a value)
+%Warning-LATCH: t/t_lint_latch_bad_3.v:19:1: Latch inferred for signal 'o5' (not all control paths of combinational always assign a value)
                                            : ... Suggest use of always_latch for intentional latches
-   18 | always @(reset or en or a or b)
-      | ^~~~~~
+   19 | always_comb
+      | ^~~~~~~~~~~
                 ... For warning description see https://verilator.org/warn/LATCH?v=latest
                 ... Use "/* verilator lint_off LATCH */" and lint_on around source to disable this message.
-%Warning-COMBDLY: t/t_lint_latch_bad_3.v:70:12: Delayed assignments (<=) in non-clocked (non flop or latch) block
-                                              : ... Suggest blocking assignments (=)
-   70 |         o4 <= 1'b0;  
-      |            ^~
-                  *** See https://verilator.org/warn/COMBDLY before disabling this,
-                  else you may end up with different sim results.
 %Error: Exiting due to

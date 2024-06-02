@@ -37,7 +37,7 @@ VERILATOR_FLAGS += -sc --exe
 # Generate makefile dependencies (not shown as complicates the Makefile)
 #VERILATOR_FLAGS += -MMD
 # Optimize
-VERILATOR_FLAGS += -Os -x-assign 0
+VERILATOR_FLAGS += -x-assign fast
 # Warn abount lint issues; may not want this on less solid designs
 VERILATOR_FLAGS += -Wall
 # Make waveforms
@@ -55,7 +55,7 @@ VERILATOR_FLAGS += --coverage
 VERILATOR_INPUT = -f input.vc top.v sc_main.cpp
 
 # Check if SC exists via a verilator call (empty if not)
-SYSTEMC_EXISTS := $(shell $(VERILATOR) --getenv SYSTEMC_INCLUDE)
+SYSTEMC_EXISTS := $(shell $(VERILATOR) --get-supported SYSTEMC)
 
 ######################################################################
 

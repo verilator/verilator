@@ -1,0 +1,7 @@
+%Error: t/t_lint_block_redecl_bad.v:21:34: Duplicate declaration of block: 'COMB'
+   21 |       for(i=0; i<9; i++ ) begin: COMB
+      |                                  ^~~~
+        t/t_lint_block_redecl_bad.v:18:35: ... Location of original declaration
+   18 |       for(i=0; i<10; i++ ) begin: COMB
+      |                                   ^~~~
+%Error: Exiting due to

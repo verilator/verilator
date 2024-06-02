@@ -10,7 +10,7 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer cyc=0;
+   integer cyc = 0;
 
    parameter CNT = 5;
 
@@ -36,7 +36,7 @@ module t (/*AUTOARG*/
       else if (cyc==99) begin
 `define EXPECTED_SUM 32'h1239
 `ifdef TEST_VERBOSE
-         $write("[%0t] cyc==%0d  sum=%x\n",$time, cyc, w[CNT]);
+         $write("[%0t] cyc==%0d  sum=%x\n", $time, cyc, w[CNT]);
 `endif
          if (w[CNT] !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");

@@ -35,8 +35,8 @@ inc line 7;
 inc line 8;   
 inc line 9;
 
-`line 14 "t/t_pipe_filter_inc.vh" 2
-`line 14 "t/t_pipe_filter.v" 0
+`line 14 "t/t_pipe_filter_inc.vh" 0
+`line 14 "t/t_pipe_filter.v" 2
 
 `line 15 "t/t_pipe_filter.v" 0
  
@@ -59,12 +59,12 @@ inc line 7;
 inc line 8;   
 inc line 9;
 
-`line 14 "t/t_pipe_filter_inc.vh" 2
-`line 16 "t/t_pipe_filter.v" 0
+`line 14 "t/t_pipe_filter_inc.vh" 0
+`line 16 "t/t_pipe_filter.v" 2
 
 
 `line 18 "t/t_pipe_filter.v" 0
 example line 15;
 example line 16;
 
-`line 21 "t/t_pipe_filter.v" 2
+`line 21 "t/t_pipe_filter.v" 0

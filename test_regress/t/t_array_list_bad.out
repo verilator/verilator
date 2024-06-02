@@ -1,11 +1,11 @@
-%Error: t/t_array_list_bad.v:38:25: Assignment pattern missed initializing elements: MEMBERDTYPE 't3'
-                                  : ... In instance t
+%Error: t/t_array_list_bad.v:38:25: Assignment pattern missed initializing elements: 'logic' 't3'
+                                  : ... note: In instance 't'
    38 |             test_out <= '{'0, '0};  
       |                         ^~
-%Warning-WIDTH: t/t_array_list_bad.v:38:22: Operator ASSIGNDLY expects 3 bits on the Assign RHS, but Assign RHS's CONCAT generates 2 bits.
-                                          : ... In instance t
+%Warning-WIDTHEXPAND: t/t_array_list_bad.v:38:22: Operator ASSIGNDLY expects 3 bits on the Assign RHS, but Assign RHS's CONCAT generates 2 bits.
+                                                : ... note: In instance 't'
    38 |             test_out <= '{'0, '0};  
       |                      ^~
-                ... For warning description see https://verilator.org/warn/WIDTH?v=latest
-                ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
+                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
 %Error: Exiting due to

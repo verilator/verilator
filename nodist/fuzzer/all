@@ -10,7 +10,7 @@
 ######################################################################
 
 # Run all steps needed to configure and start fuzzer
-# Note that this assumes the system is a Debian-like Linux distrubution
+# Note that this assumes the system is a Debian-like Linux distribution
 
 set -e
 

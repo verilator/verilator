@@ -34,7 +34,7 @@ sub inctree {
     my $grep = `$cmd`;
     foreach my $line (split /\n/, $grep) {
         if ($line =~ /^(\S+):(\d+):#\s*include\s*(\S+)/) {
-            my $filename = $1; my $line = $2+0; my $inc = $3;
+            my $filename = $1; my $line = $2 + 0; my $inc = $3;
             (my $base = $filename) =~ s!.*/(.*?)!$1!;
             $inc =~ s/[<>"]//g;
             $Files{$base}{filename} = $filename;

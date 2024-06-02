@@ -4,7 +4,29 @@
 // any use, without warranty, 2014 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+
+function automatic int f_au_st_global ();
+   static int st = 0; st++; return st;
+endfunction
+
+package my_pkg;
+   function int f_no_st_pkg ();
+      static int st = 0; st++; return st;
+   endfunction
+endpackage
+
+class my_cls;
+   static function int get_cnt1;
+      static int cnt = 0;
+      return ++cnt;
+   endfunction
+   static function static int get_cnt2;
+      int cnt = 0;
+      return ++cnt;
+   endfunction
+endclass
 
 module t (/*AUTOARG*/
    // Inputs
@@ -42,10 +64,17 @@ module t (/*AUTOARG*/
    function automatic int f_au_au ();
       automatic int au = 2; au++; return au;
    endfunction
+   string plusarg                 = "";
+   bit has_plusarg                = |($value$plusargs("plusarg=%s", plusarg));
 
    int v;
 
    initial begin
+      if (has_plusarg) begin
+        if (plusarg == "") begin
+          $fatal(1, "%m: +plusarg must not be empty");
+        end
+      end
       v = f_no_no(); `checkh(v, 3);
       v = f_no_no(); `checkh(v,   4);
       v = f_no_st(); `checkh(v, 3);
@@ -66,6 +95,16 @@ module t (/*AUTOARG*/
       v = f_au_st(); `checkh(v,   4);
       v = f_au_au(); `checkh(v, 3);
       v = f_au_au(); `checkh(v,   3);
+      //
+      v = f_au_st_global(); `checkh(v, 1);
+      v = f_au_st_global(); `checkh(v,   2);
+      v = my_pkg::f_no_st_pkg(); `checkh(v, 1);
+      v = my_pkg::f_no_st_pkg(); `checkh(v,   2);
+      //
+      v = my_cls::get_cnt1(); `checkh(v,   1);
+      v = my_cls::get_cnt1(); `checkh(v,   2);
+      v = my_cls::get_cnt2(); `checkh(v,   1);
+      v = my_cls::get_cnt2(); `checkh(v,   2);
       //
    end
 

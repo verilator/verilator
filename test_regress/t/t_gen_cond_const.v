@@ -33,11 +33,11 @@ module t (/*AUTOARG*/
 
    always @(posedge clk) begin
       if (count == 1) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
       else begin
-	 count = count + 1;
+         count = count + 1;
       end
    end
 
@@ -61,11 +61,11 @@ module test_gen
    // errors.
    generate
       if ((SIZE < 8'h04) && MASK[0]) begin
-	 always @(posedge clk) begin
+         always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-	    $write ("Generate IF MASK[0] = %d\n", MASK[0]);
+            $write ("Generate IF MASK[0] = %d\n", MASK[0]);
 `endif
-	 end
+         end
       end
    endgenerate
 

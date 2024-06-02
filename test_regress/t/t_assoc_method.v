@@ -9,11 +9,14 @@
 `define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
 module t (/*AUTOARG*/);
+   typedef struct { int x, y; } point;
    initial begin
       int q[int];
       int qe[int];  // Empty
       int qv[$];  // Value returns
       int qi[$];  // Index returns
+      point points_q[int];
+      point points_qv[$];
       int i;
       string v;
 
@@ -36,6 +39,16 @@ module t (/*AUTOARG*/);
       v = $sformatf("%p", qi); `checks(v, "'{'ha, 'hb, 'hd, 'he} ");
       qi = qe.unique_index;
       v = $sformatf("%p", qi); `checks(v, "'{}");
+
+      points_q[0] = point'{1, 2};
+      points_q[1] = point'{2, 4};
+      points_q[5] = point'{1, 4};
+
+      points_qv = points_q.unique(p) with (p.x);
+      `checkh(points_qv.size, 2);
+      qi = points_q.unique_index(p) with (p.x + p.y);
+      qi.sort;
+      v = $sformatf("%p", qi); `checks(v, "'{'h0, 'h1, 'h5} ");
 
       // These require an with clause or are illegal
       // TODO add a lint check that with clause is provided
@@ -74,17 +87,26 @@ module t (/*AUTOARG*/);
 
       qv = q.min;
       v = $sformatf("%p", qv); `checks(v, "'{'h1} ");
+      points_qv = points_q.min(p) with (p.x + p.y);
+      if (points_qv[0].x != 1 || points_qv[0].y != 2) $stop;
+
       qv = q.max;
       v = $sformatf("%p", qv); `checks(v, "'{'h4} ");
+      points_qv = points_q.max(p) with (p.x + p.y);
+      if (points_qv[0].x != 2 || points_qv[0].y != 4) $stop;
 
       qv = qe.min;
       v = $sformatf("%p", qv); `checks(v, "'{}");
+      qv = qe.min(x) with (x + 1);
+      v = $sformatf("%p", qv); `checks(v, "'{}");
       qv = qe.max;
+      v = $sformatf("%p", qv); `checks(v, "'{}");
+      qv = qe.max(x) with (x + 1);
       v = $sformatf("%p", qv); `checks(v, "'{}");
 
       // Reduction methods
 
-       i = q.sum;
+      i = q.sum;
       `checkh(i, 32'hc);
       i = q.sum with (item + 1);
       `checkh(i, 32'h11);
@@ -118,6 +140,31 @@ module t (/*AUTOARG*/);
       `checkh(i, 32'b0);
       i = qe.xor;
       `checkh(i, 32'b0);
+
+      i = q.and();
+      `checkh(i, 32'b1000);
+      i = q.and() with (item + 1);
+      `checkh(i, 32'b1001);
+      i = q.or();
+      `checkh(i, 32'b1110);
+      i = q.or() with (item + 1);
+      `checkh(i, 32'b1111);
+      i = q.xor();
+      `checkh(i, 32'b0110);
+      i = q.xor() with (item + 1);
+      `checkh(i, 32'b0110);
+
+      i = qe.and();
+      `checkh(i, 32'b0);
+      i = qe.or();
+      `checkh(i, 32'b0);
+      i = qe.xor();
+      `checkh(i, 32'b0);
+
+      q = '{10:1, 11:2};
+      qe = '{10:1, 11:2};
+      `checkh(q == qe, 1'b1);
+      `checkh(q != qe, 1'b0);
 
       $write("*-* All Finished *-*\n");
       $finish;

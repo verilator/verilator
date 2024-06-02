@@ -1,4 +1,0 @@
-%Error: t/t_semaphore.v:17:4: Can't find typedef: 'semaphore'
-   17 |    semaphore s;
-      |    ^~~~~~~~~
-%Error: Exiting due to

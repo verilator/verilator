@@ -18,9 +18,9 @@ module t_embed1_child (/*AUTOARG*/
    output logic [30:0] vec_out;
    input  [123:0] wide_in;
    output logic [123:0] wide_out;
-   output 	  did_init_out;
+   output         did_init_out;
 
-   input 	  is_ref;
+   input          is_ref;
 
    reg did_init; initial did_init = 0;
    initial begin

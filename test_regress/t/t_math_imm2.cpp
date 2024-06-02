@@ -4,7 +4,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 #include <verilated.h>
-#include "Vt_math_imm2.h"
+
+#include VM_PREFIX_INCLUDE
 
 double sc_time_stamp() { return 0; }
 
@@ -16,8 +17,9 @@ QData MaskVal(int lbit, int hbit) {
 
 int main(int argc, char* argv[]) {
     Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
 
-    Vt_math_imm2* sim = new Vt_math_imm2;
+    VM_PREFIX* sim = new VM_PREFIX;
     int lbit, hbit;
 
     int errs = 0;
@@ -36,8 +38,8 @@ int main(int argc, char* argv[]) {
                         | MaskVal(sim->LowMaskSel_Bot, sim->HighMaskSel_Bot));
 
             if (sim->LogicImm != expected) {
-                printf("%%Error: %d.%d,%d.%d -> %016" VL_PRI64 "x/%016" VL_PRI64
-                       "x -> %016" VL_PRI64 "x (expected %016" VL_PRI64 "x)\n",
+                printf("%%Error: %d.%d,%d.%d -> %016" PRIx64 "/%016" PRIx64 " -> %016" PRIx64
+                       " (expected %016" PRIx64 ")\n",
                        sim->LowMaskSel_Top, sim->HighMaskSel_Top, sim->LowMaskSel_Bot,
                        sim->HighMaskSel_Bot, sim->LowLogicImm, sim->HighLogicImm, sim->LogicImm,
                        expected);

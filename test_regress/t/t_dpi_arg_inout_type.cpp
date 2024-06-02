@@ -74,7 +74,7 @@ void set_bvals(svLogicVecVal* v, unsigned n) {
     for (unsigned i = 0; i < n; i++) v[i].bval = 0;
 }
 
-// Basic types as per IEEE 1800-2017 35.5.6
+// Basic types as per IEEE 1800-2023 35.5.6
 void i_byte(char* x) {
     static int n = 0;
     if (*x != 10 - n++) stop();
@@ -168,10 +168,10 @@ void i_string(const char** x) {
     static int n = 0;
     printf("i_string %d\n", n);
     if (n++ % 2 == 0) {
-        if (strcmp(*x, "Hello") != 0) stop();
+        if (std::strcmp(*x, "Hello") != 0) stop();
         *x = "Good";
     } else {
-        if (strcmp(*x, "World") != 0) stop();
+        if (std::strcmp(*x, "World") != 0) stop();
         *x = "Bye";
     }
 }
@@ -296,10 +296,10 @@ void i_string_t(const char** x) {
     static int n = 0;
     printf("i_string_t %d\n", n);
     if (n++ % 2 == 0) {
-        if (strcmp(*x, "World") != 0) stop();
+        if (std::strcmp(*x, "World") != 0) stop();
         *x = "Bye";
     } else {
-        if (strcmp(*x, "Hello") != 0) stop();
+        if (std::strcmp(*x, "Hello") != 0) stop();
         *x = "Good";
     }
 }
@@ -893,7 +893,7 @@ void check_exports() {
     set_bvals(x_union_4_state_65, 3);
     set_bvals(x_union_4_state_128, 4);
 
-    // Basic types as per IEEE 1800-2017 35.5.6
+    // Basic types as per IEEE 1800-2023 35.5.6
     x_byte = 10 + n;
     e_byte(&x_byte);
     if (x_byte != 110 + n) stop();
@@ -962,10 +962,10 @@ void check_exports() {
     e_string(&x_string);
     if ((n % 2) == 0) {
         if (x_chandle) stop();
-        if (strcmp(x_string, "Hello") != 0) stop();
+        if (std::strcmp(x_string, "Hello") != 0) stop();
     } else {
         if (x_chandle) stop();
-        if (strcmp(x_string, "World") != 0) stop();
+        if (std::strcmp(x_string, "World") != 0) stop();
     }
 
     x_bit = n % 2;
@@ -1045,10 +1045,10 @@ void check_exports() {
     e_string_t(&x_string_t);
     if ((n % 2) == 0) {
         if (x_chandle_t != NULL) stop();
-        if (strcmp(x_string_t, "World") != 0) stop();
+        if (std::strcmp(x_string_t, "World") != 0) stop();
     } else {
         if (x_chandle_t != NULL) stop();
-        if (strcmp(x_string_t, "Hello") != 0) stop();
+        if (std::strcmp(x_string_t, "Hello") != 0) stop();
     }
 
     x_bit_t = n % 2;

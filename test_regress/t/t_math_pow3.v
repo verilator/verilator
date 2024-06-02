@@ -25,27 +25,27 @@ module t (/*AUTOARG*/);
       $display("64'big ** 1 = %0x  expect %0x", 64'h8765432187654321 ** 1, 64'h8765432187654321);
       $display("\n");
 
-      `checkh( (64'b1111 ** 64'b1110),	64'h67b6cfc1b29a21);
-      `checkh( (-4'd1 ** -4'sd2),	4'h0);  //bug730
-      `checkh( (-4'd1 ** -4'd2),		4'h1);
-      `checkh( (4'd15 ** 4'd14),		4'h1);
+      `checkh( (64'b1111 ** 64'b1110),  64'h67b6cfc1b29a21);
+      `checkh( (-4'd1 ** -4'sd2),       4'h0);  //bug730
+      `checkh( (-4'd1 ** -4'd2),                4'h1);
+      `checkh( (4'd15 ** 4'd14),                4'h1);
       `checkh( (64'h8765432187654321 ** 4'h1), 64'h8765432187654321);
 
       `checkh((-8'sh3 **  8'h3) ,  8'he5 );  // a**b  (-27)
-      `checkh((-8'sh1 **  8'h2) ,  8'h1	 );  // -1^odd=-1, -1^even=1
+      `checkh((-8'sh1 **  8'h2) ,  8'h1  );  // -1^odd=-1, -1^even=1
       `checkh((-8'sh1 **  8'h3) ,  8'hff );  // -1^odd=-1, -1^even=1
-      `checkh(( 8'h0  **  8'h3) ,  8'h0	 );  // 0
-      `checkh(( 8'h1  **  8'h3) ,  8'h1	 );  // 1
+      `checkh(( 8'h0  **  8'h3) ,  8'h0  );  // 0
+      `checkh(( 8'h1  **  8'h3) ,  8'h1  );  // 1
       `checkh(( 8'h3  **  8'h3) ,  8'h1b );  // a**b (27)
       `checkh(( 8'sh3 **  8'h3) ,  8'h1b );  // a**b (27)
       `checkh(( 8'h6  **  8'h3) ,  8'hd8 );  // a**b (216)
       `checkh(( 8'sh6 **  8'h3) ,  8'hd8 );  // a**b (216)
 
       `checkh((-8'sh3 **  8'sh3),  8'he5 );  // a**b
-      `checkh((-8'sh1 **  8'sh2),  8'h1	 );  // -1^odd=-1, -1^even=1
+      `checkh((-8'sh1 **  8'sh2),  8'h1  );  // -1^odd=-1, -1^even=1
       `checkh((-8'sh1 **  8'sh3),  8'hff );  // -1^odd=-1, -1^even=1
-      `checkh(( 8'h0  **  8'sh3),  8'h0	 );  // 0
-      `checkh(( 8'h1  **  8'sh3),  8'h1	 );   // 1
+      `checkh(( 8'h0  **  8'sh3),  8'h0  );  // 0
+      `checkh(( 8'h1  **  8'sh3),  8'h1  );  // 1
       `checkh(( 8'h3  **  8'sh3),  8'h1b );  // a**b (27)
       `checkh(( 8'sh3 **  8'sh3),  8'h1b );  // a**b (27)
       `checkh(( 8'h6  **  8'sh3),  8'hd8 );  // a**b (216)

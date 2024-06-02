@@ -1,0 +1,12 @@
+match_item0
+match_item0
+match_item0
+match_item0
+match_item0
+match_item0
+match_item0
+match_item0
+match_item0
+[90] %Error: t_assert_unique_case_bad.v:38: Assertion failed in top.t: unique case, but multiple matches found for '12'h388'
+%Error: t/t_assert_unique_case_bad.v:38: Verilog $stop
+Aborting...

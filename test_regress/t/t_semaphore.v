@@ -12,13 +12,22 @@
 //     function int try_get(int keyCount = 1);
 //  endclass
 
+`ifndef SEMAPHORE_T
+ `define SEMAPHORE_T semaphore
+`endif
+
+// verilator lint_off DECLFILENAME
 module t(/*AUTOARG*/);
-   //From UVM:
-   semaphore s;
-   int       msg;
+   // From UVM:
+   `SEMAPHORE_T s;
+   `SEMAPHORE_T s2;
 
    initial begin
-      s = new(4);
+      s = new(1);
+      if (s.try_get() == 0) $stop;
+      if (s.try_get() != 0) $stop;
+
+      s = new;
       if (s.try_get() != 0) $stop;
 
       s.put();
@@ -42,6 +51,9 @@ module t(/*AUTOARG*/);
             s.get();
          end
       join
+
+      s2 = new;
+      if (s2.try_get() != 0) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

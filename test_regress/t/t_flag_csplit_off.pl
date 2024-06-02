@@ -13,7 +13,7 @@ scenarios(vlt_all => 1);
 top_filename("t/t_flag_csplit.v");
 
 while (1) {
-    # Thi rule requires GNU make > 4.1 (or so, known broken in 3.81)
+    # This rule requires GNU make > 4.1 (or so, known broken in 3.81)
     #%__Slow.o: %__Slow.cpp
     #        $(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_SLOW) -c -o $@ $<
     if (make_version() < 4.1) {
@@ -31,13 +31,13 @@ while (1) {
     run(logfile => "$Self->{obj_dir}/vlt_gcc.log",
         tee => $self->{verbose},
         cmd=>[$ENV{MAKE},
-              "-C ".$Self->{obj_dir},
-              "-f $Self->{VM_PREFIX}.mk",
+              "-C " . $Self->{obj_dir},
+              "-f $Self->{vm_prefix}.mk",
               "-j 4",
-              "VM_PREFIX=$Self->{VM_PREFIX}",
+              "VM_PREFIX=$Self->{vm_prefix}",
               "TEST_OBJ_DIR=$Self->{obj_dir}",
               "CPPFLAGS_DRIVER=-D".uc($Self->{name}),
-              ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
+              ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1" : ""),
               "OPT_FAST=-O2",
               "OPT_SLOW=-O0",
               ($param{make_flags}||""),
@@ -48,7 +48,7 @@ while (1) {
         );
 
     # Never spliting, so should set VM_PARALLEL_BUILDS to 0 by default
-    file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}_classes.mk", qr/VM_PARALLEL_BUILDS\s*=\s*0/);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}_classes.mk", qr/VM_PARALLEL_BUILDS\s*=\s*0/);
     check_no_splits();
     check_all_file();
     check_gcc_flags("$Self->{obj_dir}/vlt_gcc.log");
@@ -60,7 +60,8 @@ while (1) {
 
 sub check_no_splits {
     foreach my $file (glob("$Self->{obj_dir}/*.cpp")) {
-        if ($file =~ qr/__\d/) {
+        $file =~ s/__024root//;
+        if ($file =~ qr/__[1-9]/) {
             error("Split file found: $file");
         }
     }
@@ -78,7 +79,7 @@ sub check_all_file {
 sub check_gcc_flags {
     my $filename = shift;
     my $fh = IO::File->new("<$filename") or error("$! $filenme");
-    while (defined (my $line = $fh->getline)) {
+    while (defined(my $line = $fh->getline)) {
         chomp $line;
         print ":log: $line\n" if $Self->{verbose};
         if ($line =~ /\.cpp/ && $line =~ qr/-O0/) {

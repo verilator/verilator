@@ -11,12 +11,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
-    verilator_flags2=>["-Wno-UNOPTTHREADS", "--stats"],
+    verilator_flags2 => ["-Wno-UNOPTTHREADS", "-fno-dfg",
+                         "--stats", "$Self->{t_dir}/$Self->{name}.cpp"],
     );
 
 execute(
     check_finished => 1,
     );
 
+if ($Self->{vlt}) {
+    file_grep($Self->{stats}, qr/Optimizations, Const bit op reduction\s+(\d+)/i, 42);
+}
 ok(1);
 1;

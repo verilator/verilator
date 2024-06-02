@@ -29,8 +29,8 @@ module ac
 
   /*AUTOWIRE*/
   // Beginning of automatic wires (for undeclared instantiated-module outputs)
-  logic			acenable;		// From i_ac_dig of ac_dig.v
-  logic			acout;			// From i_ac_ana of ac_ana.v
+  logic                 acenable;               // From i_ac_dig of ac_dig.v
+  logic                 acout;                  // From i_ac_ana of ac_ana.v
   // End of automatics
 
 
@@ -44,12 +44,12 @@ module ac
          (
           .dbus                         (dbus),
           /*AUTOINST*/
-	  // Outputs
-	  .acenable			(acenable),
-	  // Inputs
-	  .acout			(acout),
-	  .clk				(clk),
-	  .rst				(rst));
+          // Outputs
+          .acenable                     (acenable),
+          // Inputs
+          .acout                        (acout),
+          .clk                          (clk),
+          .rst                          (rst));
 
 
   // ***************************************************************************
@@ -61,11 +61,11 @@ module ac
          (
           .padsif                       (padsif),
           /*AUTOINST*/
-	  // Outputs
-	  .acout			(acout),
-	  // Inputs
-	  .acenable			(acenable),
-	  .clk				(clk),
-	  .rst				(rst));
+          // Outputs
+          .acout                        (acout),
+          // Inputs
+          .acenable                     (acenable),
+          .clk                          (clk),
+          .rst                          (rst));
 
 endmodule // ac

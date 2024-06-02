@@ -9,11 +9,13 @@
 //
 //*************************************************************************
 
+#include "svdpi.h"
+
 #include <cstdio>
 #include <cstring>
 #include <iostream>
-#include "svdpi.h"
 
+// These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 
 //======================================================================
@@ -125,7 +127,7 @@ static void _dpii_logic_elem_ux(int p, int u, const svOpenArrayHandle i, const s
 #endif
     int sizeInputOfArray = svSizeOfArray(i);
     // svSizeOfArray(i) undeterministic as not in C representation
-    if (sizeInputOfArray) {}
+    (void)sizeInputOfArray;  // unused
 
     for (int a = svLow(i, 1); a <= svHigh(i, 1); ++a) {
         if (dim == 1) {

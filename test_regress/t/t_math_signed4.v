@@ -113,9 +113,9 @@ module t (/*AUTOARG*/);
 
       // If any part of case is real, all is real
       case (22)
-	22.0: ;
-	22.1: $stop;
-	default: $stop;
+        22.0: ;
+        22.1: $stop;
+        default: $stop;
       endcase
 
       // bug759

@@ -3,13 +3,19 @@ Time scale of t is 100s / 10ms
 [100000000] time%0d=10000  123%0t=1230000
   dig%0t=0 dig%0d=0
   rdig%0t=543 rdig%0f=0.054321
-[0.000000ns] time%0d=10000  123%0t=12300000000000.000000ns
+  acc%0t=123456789012345678900000 acc%0d=12345678901234567890
+[1000000000000000.000000ns] time%0d=10000  123%0t=12300000000000.000000ns
   dig%0t=0.000000ns dig%0d=0
   rdig%0t=5432109876.543210ns rdig%0f=0.054321
-[0.000000ns] stime%0t=0.000000ns  stime%0d=10000  stime%0f=10000.000000
-[0.000000ns] rtime%0t=0.000000ns  rtime%0d=10000  rtime%0f=10000.000000
+  acc%0t=1234567890123456789000000000000.000000ns acc%0d=12345678901234567890
+[1000000000000000.000000ns] stime%0t=1000000000000000.000000ns  stime%0d=10000  stime%0f=10000.000000
+[1000000000000000.000000ns] rtime%0t=1000000000000000.000000ns  rtime%0d=10000  rtime%0f=10000.000000
+global svGetTime = 0 0,100000000
+global svGetTimeUnit = 0 -2  svGetTmePrecision = 0 -2
 global vpiSimTime = 0,100000000  vpiScaledRealTime = 1e+08
 global vpiTimeUnit = -2  vpiTimePrecision = -2
+top.t svGetTime = 0 0,100000000
+top.t svGetTimeUnit = 0 2  svGetTmePrecision = 0 -2
 top.t vpiSimTime = 0,100000000  vpiScaledRealTime = 10000
 top.t vpiTimeUnit = 2  vpiTimePrecision = -2
 *-* All Finished *-*

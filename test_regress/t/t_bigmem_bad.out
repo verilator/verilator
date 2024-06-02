@@ -1,0 +1,11 @@
+%Error: t/t_bigmem_bad.v:14:19: Width of bit extract must be positive (IEEE 1800-2023 11.5.1)
+                              : ... note: In instance 't_bigmem'
+   14 |       if (wen) mem[addr] <= data;
+      |                   ^
+%Warning-WIDTHTRUNC: t/t_bigmem_bad.v:14:26: Operator ASSIGNDLY expects 1 bits on the Assign RHS, but Assign RHS's VARREF 'data' generates 256 bits.
+                                           : ... note: In instance 't_bigmem'
+   14 |       if (wen) mem[addr] <= data;
+      |                          ^~
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
+%Error: Exiting due to

@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 lint(
-    verilator_flags2 => [qw(--lint-only -Wfuture-FUTURE1 -Wfuture-FUTURE2)],
+    verilator_flags2 => [qw(--lint-only --future0 thefuture --future1 thefuturei --thefuture -thefuture +thefuture --thefuturei 1 -Wfuture-FUTURE1 -Wfuture-FUTURE2)],
     );
 
 ok(1);

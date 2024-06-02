@@ -25,10 +25,16 @@ module secret_sub
 
    // verilator no_inline_module
 
-   integer secret_cyc;
-   real    secret_cyc_r;
-   integer secret_o;
-   real    secret_r;
+   typedef struct {
+      integer secret_field;
+      integer secret_field_r;
+   } secret_st;
+
+   integer   secret_cyc;
+   real      secret_cyc_r;
+   integer   secret_o;
+   real      secret_r;
+   secret_st secret_pair;
 
    export "DPI-C" task dpix_a_task;
    task dpix_a_task(input int i, output int o);  o = i + 1; endtask
@@ -40,6 +46,8 @@ module secret_sub
 
    // Test loop
    always @ (posedge clk) begin
+      secret_pair.secret_field += 1;
+      secret_pair.secret_field_r += 2;
       secret_cyc_r = $itor(secret_cyc)/10.0 - 5.0;
       secret_cyc <= dpii_a_func(secret_cyc);
       secret_r += 1.0 + $cos(secret_cyc_r);

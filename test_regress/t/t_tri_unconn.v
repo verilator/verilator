@@ -10,7 +10,7 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer 	cyc=0;
+   integer      cyc = 0;
 
    wire  one = '1;
    wire  z0 = 'z;
@@ -69,8 +69,8 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==99) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

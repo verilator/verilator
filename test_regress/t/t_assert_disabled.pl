@@ -14,7 +14,9 @@ top_filename("t/t_assert_on.v");
 
 compile();
 
-execute();
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

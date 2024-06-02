@@ -7,7 +7,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 #include <verilated.h>
-#include "Vt_dpi_vams.h"
+
+#include VM_PREFIX_INCLUDE
 
 //======================================================================
 
@@ -39,9 +40,10 @@ double sc_time_stamp() { return main_time; }
 VM_PREFIX* topp = nullptr;
 
 int main(int argc, char* argv[]) {
-    topp = new VM_PREFIX;
-
     Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
+
+    topp = new VM_PREFIX;
 
     topp->in = 1.1;
     topp->eval();

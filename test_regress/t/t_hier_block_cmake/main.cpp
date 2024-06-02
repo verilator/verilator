@@ -13,13 +13,16 @@
 #include "Vt_hier_block.h"
 
 int main(int argc, char *argv[]) {
-    std::unique_ptr<Vt_hier_block> top{new Vt_hier_block("top")};
-    Verilated::commandArgs(argc, argv);
-    for (int i = 0; i < 100 && !Verilated::gotFinish(); ++i) {
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    // TEST_THREADS is set in t_hier_block_cmake.pl
+    contextp->threads(TEST_THREADS);
+    contextp->commandArgs(argc, argv);
+    std::unique_ptr<Vt_hier_block> top{new Vt_hier_block{contextp.get(), "top"}};
+    for (int i = 0; i < 100 && !contextp->gotFinish(); ++i) {
         top->eval();
         top->clk ^= 1;
     }
-    if (!Verilated::gotFinish()) {
+    if (!contextp->gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     top->final();

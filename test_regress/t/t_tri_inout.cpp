@@ -4,7 +4,7 @@
 // without warranty, 2008 by Lane Brooks.
 // SPDX-License-Identifier: CC0-1.0
 
-#include "Vt_tri_inout.h"
+#include VM_PREFIX_INCLUDE
 
 VM_PREFIX* tb = nullptr;
 
@@ -36,7 +36,7 @@ int main() {
     bool pass = true;
 
     Verilated::debug(0);
-    tb = new Vt_tri_inout("tb");
+    tb = new VM_PREFIX{"tb"};
 
     // loop through every possibility and check the result
     for (tb->SEL = 0; tb->SEL < 2; tb->SEL++) {
@@ -46,6 +46,16 @@ int main() {
                 if (!check()) pass = false;
             }
         }
+    }
+    tb->SEL = tb->A = tb->B = 0;
+
+    for (int i = 0; i < 256; ++i) {
+        tb->clk = 0;
+        tb->eval();
+        tb->clk = 1;
+        tb->eval();
+        if (tb->done) break;
+        if (i + 1 == 256) pass = false;
     }
 
     if (pass) {

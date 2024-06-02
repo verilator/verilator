@@ -5,7 +5,7 @@
  *
  **************************************************************************
  *
- * Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+ * Copyright 2003-2024 by Wilson Snyder. This program is free software; you
  * can redistribute it and/or modify it under the terms of either the
  * GNU Lesser General Public License Version 3 or the Perl Artistic License
  * Version 2.0.
@@ -65,23 +65,24 @@ static void appendDefValue(const char* t, size_t l) { LEXP->appendDefValue(t, l)
 /**********************************************************************/
 %}
 
-%x CMTONEM
-%x CMTBEGM
-%x CMTMODE
-%x STRMODE
-%x DEFFPAR
-%x DEFFORM
-%x DEFVAL
-%x DEFCMT
-%x STRIFY
 %x ARGMODE
+%x CMTMODE
+%x CMTONEM
+%x DEFCMT
+%x DEFFORM
+%x DEFFPAR
+%x DEFVAL
+%x ENCBASE64
+%x EXPR
 %x INCMODE
-%x PRTMODE
 %x PRAGMA
 %x PRAGMAERR
 %x PRAGMAPRT
 %x PRAGMAPRTERR
-%x ENCBASE64
+%x PRTMODE
+%x QQQMODE
+%x STRIFY
+%x STRMODE
 
 /* drop: Drop Ctrl-Z - can't pass thru or may EOF the output too soon */
 
@@ -124,9 +125,9 @@ bom             [\357\273\277]
                           int res;
                           char enctype[16]; // long enough to hold "quote-printable"
                           if (LEXP->m_protBytes > 0) {
-                              LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "multiple `pragma protected encoding sections");
+                              LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "Multiple `pragma protected encoding sections");
                           }
-                          res = sscanf(yytext + strlen("encoding"), " = (enctype = \"%15[A-Za-z0-9]\", line_length = %d, bytes = %d)", &enctype[0], &LEXP->m_protLength, &LEXP->m_protBytes);
+                          res = sscanf(yytext + std::strlen("encoding"), " = (enctype = \"%15[A-Za-z0-9]\", line_length = %d, bytes = %d)", &enctype[0], &LEXP->m_protLength, &LEXP->m_protBytes);
                           if (res == 0)
                               LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "`pragma protected encoding must have an \"enctype\" field");
                           LEXP->m_encType = !VL_STRCASECMP(enctype, "uuencode") ? Enctype::UUENCODE :
@@ -159,8 +160,8 @@ bom             [\357\273\277]
                           LEXP->curFilelinep()->v3warn(PROTECTED, "A '`pragma protected data_block' encrypted section was detected and will be skipped.");
                           BEGIN(ENCBASE64);
                           return VP_TEXT; }
-<PRAGMAPRT>("begin_protected"|"end_protected")[\n\r]  { FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
-<PRAGMAPRT>"version="[^\n\r]*[\n\r] {
+<PRAGMAPRT>("begin_protected"|"end_protected"|"end")[\n\r]  { FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
+<PRAGMAPRT>"version"{wsn}*={wsn}*[^\n\r]*[\n\r] {
                           FL_FWDC;
                           linenoInc();
                           BEGIN(INITIAL);
@@ -175,6 +176,10 @@ bom             [\357\273\277]
                           linenoInc();
                           BEGIN(INITIAL);
                           return VP_TEXT; }
+    /* end of `pragma protect */
+<PRAGMAPRT>{wsn}+        { FL_FWDC; return VP_TEXT; }
+<PRAGMAPRT>[\n\r]        { FL_FWDC; linenoInc(); BEGIN(INITIAL); return VP_TEXT; }
+
     /* catch-all for unknown '`pragma protect' rules */
 <PRAGMAPRT>.            { yyless(0);
                           BEGIN(PRAGMAPRTERR);
@@ -202,7 +207,7 @@ bom             [\357\273\277]
 
     /* Catch only empty `pragma lines */
 <INITIAL>"`pragma"{wsn}*[\n\r]  {
-                          yyless(yyleng-1); FL_FWDC;
+                          yyless(yyleng - 1); FL_FWDC;
                           if (v3Global.opt.pedantic()) {
                               LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "`pragma is missing a pragma_expression.");
                           }
@@ -210,12 +215,11 @@ bom             [\357\273\277]
 
     /* catch all other nonempty `pragma */
 <INITIAL>"`pragma"{wsn}*[^\n\r]  {
-                          yyless(yyleng-1); FL_FWDC;
+                          yyless(yyleng - 1); FL_FWDC;
                           if (!v3Global.opt.preprocOnly())
                               BEGIN(PRAGMA);
                           return VP_TEXT; }
 <PRAGMA>"protect"{wsn}* { FL_FWDC; BEGIN(PRAGMAPRT); return VP_TEXT;}
-
     /* catch-all for unknown `pragma rules */
 <PRAGMA>.               { yyless(0);
                           BEGIN(PRAGMAERR);
@@ -239,7 +243,7 @@ bom             [\357\273\277]
 <INITIAL,STRIFY>"`__LINE__"     { FL_FWDC;
                           static char buf[25];
                           VL_SNPRINTF(buf, 25, "%d", LEXP->curFilelinep()->lastLineno());
-                          yytext = buf; yyleng = strlen(yytext);
+                          yytext = buf; yyleng = std::strlen(yytext);
                           return VP_TEXT; }
 
         /* Pass-through strings */
@@ -254,6 +258,23 @@ bom             [\357\273\277]
 <STRMODE>[\\]{wsn}+{crnl}  { LEXP->warnBackslashSpace(); yyless(1); }
 <STRMODE>[\\].          { yymore(); }
 <STRMODE>{quote}        { FL_FWDC; yy_pop_state();
+                          if (LEXP->m_parenLevel || LEXP->m_defQuote) {
+                              LEXP->m_defQuote=false; appendDefValue(yytext, yyleng);
+                              yyleng=0; FL_BRK;
+                          } else return VP_STRING; }
+
+        /* Pass-through quote-quote-quote */
+<INITIAL>{quote}{quote}{quote}        { yy_push_state(QQQMODE); yymore(); }
+<QQQMODE><<EOF>>        { FL_FWDC; linenoInc(); yyerrorf("EOF in unterminated \"\"\" string");
+                          yyleng=0; return VP_EOF_ERROR; }
+<QQQMODE>{crnl}         { FL_FWDC; linenoInc(); yymore(); }
+<QQQMODE>{word}         { yymore(); }
+<QQQMODE>[^\"\\]        { yymore(); }
+<QQQMODE>[\\]{crnl}     { linenoInc(); yymore(); }
+<QQQMODE>[\\]{wsn}+{crnl}  { LEXP->warnBackslashSpace(); yyless(1); }
+<QQQMODE>[\\].          { yymore(); }
+<QQQMODE>.              { yymore(); }
+<QQQMODE>{quote}{quote}{quote}        { FL_FWDC; yy_pop_state();
                           if (LEXP->m_parenLevel || LEXP->m_defQuote) {
                               LEXP->m_defQuote=false; appendDefValue(yytext, yyleng);
                               yyleng=0; FL_BRK;
@@ -316,6 +337,7 @@ bom             [\357\273\277]
 <DEFFORM>[\\]{wsn}+{crnl}  { LEXP->warnBackslashSpace(); yyless(1); }
 <DEFFORM>[\\]{crnl}     { FL_FWDC; linenoInc(); appendDefValue((char*)"\\\n", 2); FL_BRK; }  /* Include return so can maintain output line count */
 <DEFFORM>{quote}        { LEXP->m_defQuote=true; yy_push_state(STRMODE); yymore(); }  /* Legal only in default values */
+<DEFFORM>{quote}{quote}{quote}   { LEXP->m_defQuote=true; yy_push_state(QQQMODE); yymore(); }  /* Legal only in default values */
 <DEFFORM>"`\\`\""       { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }  /* Maybe illegal, otherwise in default value */
 <DEFFORM>{tickquote}    { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }  /* Maybe illegal, otherwise in default value */
 <DEFFORM>[{\[]          { FL_FWDC; LEXP->m_formalLevel++; appendDefValue(yytext, yyleng); FL_BRK; }
@@ -334,6 +356,7 @@ bom             [\357\273\277]
 <DEFVAL>[\\]{wsn}+{crnl}  { LEXP->warnBackslashSpace(); yyless(1); }
 <DEFVAL>[\\]{crnl}      { FL_FWDC; linenoInc(); appendDefValue((char*)"\\\n", 2); FL_BRK; }  /* Return, AND \ is part of define value */
 <DEFVAL>{quote}         { LEXP->m_defQuote = true; yy_push_state(STRMODE); yymore(); }
+<DEFVAL>{quote}{quote}{quote}   { LEXP->m_defQuote = true; yy_push_state(QQQMODE); yymore(); }
 <DEFVAL>[^\/\*\n\r\\\"]+        |
 <DEFVAL>[\\][^\n\r]     |
 <DEFVAL>.               { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }
@@ -353,6 +376,23 @@ bom             [\357\273\277]
 <DEFCMT><<EOF>>         { FL_FWDC; yyerrorf("EOF in '/* ... */' block comment\n");
                           yyleng=0; return VP_EOF_ERROR; }
 
+        /* Preprocessor expression */
+<EXPR><<EOF>>           { FL_FWDC; linenoInc(); yyerrorf("EOF in unterminated preprocessor expression");
+                          yyleng = 0; return VP_EOF_ERROR; }
+<EXPR>"/*"              { yy_push_state(CMTMODE); yymore(); }
+<EXPR>"//"[^\n\r]*      { FL_FWDC; return VP_COMMENT;}
+<EXPR>"("               { FL_FWDC; return VP_TEXT; }  /* V3PreProc will push another EXPR state to stack */
+<EXPR>")"               { FL_FWDC; yy_pop_state(); return VP_TEXT; }
+<EXPR>"!"               { FL_FWDC; return VP_TEXT; }
+<EXPR>"&&"              { FL_FWDC; return VP_TEXT; }
+<EXPR>"||"              { FL_FWDC; return VP_TEXT; }
+<EXPR>"->"              { FL_FWDC; return VP_TEXT; }
+<EXPR>"<->"             { FL_FWDC; return VP_TEXT; }
+<EXPR>{symb}            { FL_FWDC; return VP_SYMBOL; }
+<EXPR>{crnl}            { FL_FWDC; linenoInc(); yytext=(char*)"\n"; yyleng=1; return VP_WHITE; }
+<EXPR>{wsn}+            { FL_FWDC; return VP_WHITE; }
+<EXPR>.                 { FL_FWDC; return VP_TEXT; }
+
         /* Define arguments (use of a define) */
 <ARGMODE>"/*"           { yy_push_state(CMTMODE); yymore(); }
 <ARGMODE>"//"[^\n\r]*   { FL_FWDC; return VP_COMMENT; }
@@ -361,6 +401,7 @@ bom             [\357\273\277]
                           yyleng = 0; return VP_EOF_ERROR; }
 <ARGMODE>{crnl}         { FL_FWDC; linenoInc(); yytext=(char*)"\n"; yyleng=1; return VP_WHITE; }
 <ARGMODE>{quote}        { yy_push_state(STRMODE); yymore(); }
+<ARGMODE>{quote}{quote}{quote}    { yy_push_state(QQQMODE); yymore(); }
 <ARGMODE>"`\\`\""       { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }  /* Literal text */
 <ARGMODE>{tickquote}    { FL_FWDC; yy_push_state(STRIFY); return VP_STRIFY; }
 <ARGMODE>[{\[]          { FL_FWDC; LEXP->m_parenLevel++; appendDefValue(yytext, yyleng); FL_BRK; }
@@ -396,6 +437,16 @@ bom             [\357\273\277]
 <ARGMODE>[^\/\*\n\r\\(,){}\[\]\"`]+     |
 <ARGMODE>.              { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }
 
+        /* Pragma comments. */
+<INITIAL>"//"{ws}*"verilator lint_off"[^\n\r]*       { FL_FWDC; LEXP->verilatorCmtLint(yytext + 2, true); return VP_COMMENT; }
+<INITIAL>"//"{ws}*"verilator lint_on"[^\n\r]*        { FL_FWDC; LEXP->verilatorCmtLint(yytext + 2, false); return VP_COMMENT; }
+<INITIAL>"//"{ws}*"verilator lint_restore"[^\n\r]*   { FL_FWDC; LEXP->verilatorCmtLintRestore(); return VP_COMMENT; }
+<INITIAL>"//"{ws}*"verilator lint_save"[^\n\r]*      { FL_FWDC; LEXP->verilatorCmtLintSave(); return VP_COMMENT; }
+<INITIAL>"/*"{ws}*"verilator lint_off"[^*]*"*/"      { FL_FWDC; LEXP->verilatorCmtLint(yytext + 2, true); return VP_COMMENT; }
+<INITIAL>"/*"{ws}*"verilator lint_on"[^*]*"*/"       { FL_FWDC; LEXP->verilatorCmtLint(yytext + 2, false); return VP_COMMENT; }
+<INITIAL>"/*"{ws}*"verilator lint_restore"[^*]*"*/"  { FL_FWDC; LEXP->verilatorCmtLintRestore(); return VP_COMMENT; }
+<INITIAL>"/*"{ws}*"verilator lint_save"[^*]*"*/"     { FL_FWDC; LEXP->verilatorCmtLintSave(); return VP_COMMENT; }
+
         /* One line comments. */
 <INITIAL>"//"{ws}*{crnl} { FL_FWDC; linenoInc(); yytext=(char*)"\n"; yyleng=1; return VP_WHITE; }
 <INITIAL>"//"           { yy_push_state(CMTONEM); yymore(); }
@@ -403,16 +454,13 @@ bom             [\357\273\277]
 
         /* C-style comments. */
         /**** See also DEFCMT */
-        /* We distinguish between the start of a comment, and later, to look for prefix comments (deprecated) */
 <INITIAL>"/*"           { yy_push_state(CMTMODE); yymore(); }
-<CMTBEGM>{ws}+          { yymore(); }
-<CMTBEGM,CMTMODE>"*/"           { FL_FWDC; yy_pop_state(); return VP_COMMENT; }
-<CMTBEGM,CMTMODE>{crnl}         { linenoInc(); yymore(); }
-<CMTBEGM,CMTMODE><<EOF>>        { FL_FWDC; yyerrorf("EOF in '/* ... */' block comment\n");
+<CMTMODE>"*/"           { FL_FWDC; yy_pop_state(); return VP_COMMENT; }
+<CMTMODE>{crnl}         { linenoInc(); yymore(); }
+<CMTMODE><<EOF>>        { FL_FWDC; yyerrorf("EOF in '/* ... */' block comment\n");
                                   yyleng=0; return VP_EOF_ERROR; }
-<CMTMODE>{word}                 { yymore(); }
-<CMTBEGM>.                      { yymore(); BEGIN CMTMODE; }    /* beginning in comment */
-<CMTMODE>.                      { yymore(); }
+<CMTMODE>{word}         { yymore(); }
+<CMTMODE>.              { yymore(); }
 
         /* Define calls */
         /* symbdef prevents normal lex rules from making `\`"foo a symbol {`"foo} instead of a BACKQUOTE */
@@ -453,17 +501,19 @@ void V3PreLex::pushStateDefValue() {
     m_defValue = "";
 }
 
+void V3PreLex::pushStateExpr() {
+    // Enter preprocessor expression state
+    yy_push_state(EXPR);
+}
+
 void V3PreLex::pushStateIncFilename() {
     // Enter include <> filename state
     yy_push_state(INCMODE);
     yymore();
 }
 
-void V3PreLex::debug(int level) {
-    yy_flex_debug = level;  // Use --debugi-V3PreShell, if level<5 this level is 0
-}
-int V3PreLex::debug() {
-    return yy_flex_debug; }
+void V3PreLex::setYYDebug(bool on) {
+    yy_flex_debug = static_cast<int>(on); }
 
 int V3PreLex::lex() {
     V3PreLex::s_currentLexp = this;  // Tell parser where to get/put data
@@ -480,11 +530,11 @@ size_t V3PreLex::inputToLex(char* buf, size_t max_size) {
     // become a stale invalid pointer.
     //
     VPreStream* streamp = curStreamp();
-    if (debug() >= 10) {
+    if (debug() >= 10) {  // LCOV_EXCL_START
         cout << "-  pp:inputToLex ITL s=" << max_size << " bs=" << streamp->m_buffers.size()
              << endl;
         dumpStack();
-    }
+    }  // LCOV_EXCL_STOP
     // For testing, use really small chunks
     // if (max_size > 13) max_size=13;
 again:
@@ -524,7 +574,7 @@ again:
         }
     }
     if (debug() >= 10) {
-        cout << "-  pp::inputToLex  got=" << got << " '" << string(buf, got) << "'" << endl;
+        cout << "-  pp::inputToLex  got=" << got << " '" << std::string{buf, got} << "'" << endl;
     }
     return got;
 }
@@ -562,12 +612,12 @@ string V3PreLex::endOfStream(bool& againr) {
     } else if (curStreamp()->m_termState == 2) {
         // Now ending `line
         curStreamp()->m_termState = 3;
-        return curFilelinep()->lineDirectiveStrg(2);  // Exit old file
+        return curFilelinep()->lineDirectiveStrg(0);  // THe "2" exit is below
     } else {
         // Final shutdown phase for a stream, we can finally change the
         // current fileline to the new stream
         curStreamp()->m_termState = 0;
-        FileLine* filelinep = curFilelinep();
+        FileLine* const filelinep = curFilelinep();
         delete curStreamp();
         m_streampStack.pop();  // Must work as size>1; EOF is entry 0
         if (curStreamp()->m_eof) {
@@ -582,7 +632,7 @@ string V3PreLex::endOfStream(bool& againr) {
         if (curStreamp()->m_eof) {
             return "";
         } else {
-            return curFilelinep()->lineDirectiveStrg(0);  // Reenter resumed file
+            return curFilelinep()->lineDirectiveStrg(2);  // Reenter resumed file
         }
     }
 }
@@ -590,7 +640,7 @@ string V3PreLex::endOfStream(bool& againr) {
 void V3PreLex::initFirstBuffer(FileLine* filelinep) {
     // Called from constructor to make first buffer
     // yy_create_buffer also sets yy_fill_buffer=1 so reads from YY_INPUT
-    VPreStream* streamp = new VPreStream(filelinep, this);
+    VPreStream* const streamp = new VPreStream{filelinep, this};
     streamp->m_eof = true;
     m_streampStack.push(streamp);
     //
@@ -606,7 +656,7 @@ void V3PreLex::scanNewFile(FileLine* filelinep) {
         yyerrorf("Recursive `define or other nested inclusion");
         curStreamp()->m_eof = true;  // Fake it to stop recursion
     } else {
-        VPreStream* streamp = new VPreStream(filelinep, this);
+        VPreStream* const streamp = new VPreStream{filelinep, this};
         m_tokFilelinep = curFilelinep();
         streamp->m_file = true;
         scanSwitchStream(streamp);
@@ -615,7 +665,7 @@ void V3PreLex::scanNewFile(FileLine* filelinep) {
 
 void V3PreLex::scanBytes(const string& str) {
     // Note buffers also appended in ::scanBytesBack
-    // Not "m_buffers.push_front(string(strp,len))" as we need a `define
+    // Not "m_buffers.push_front(std::string{strp,len})" as we need a `define
     // to take effect immediately, in the middle of the current buffer
     // Also we don't use scan_bytes that would set yy_fill_buffer
     // which would force Flex to bypass our YY_INPUT routine.
@@ -625,7 +675,7 @@ void V3PreLex::scanBytes(const string& str) {
         yyerrorf("Recursive `define or other nested inclusion");
         curStreamp()->m_eof = true;  // Fake it to stop recursion
     } else {
-        VPreStream* streamp = new VPreStream(curFilelinep(), this);
+        VPreStream* const streamp = new VPreStream{curFilelinep(), this};
         streamp->m_buffers.push_front(str);
         scanSwitchStream(streamp);
     }
@@ -649,7 +699,7 @@ string V3PreLex::currentUnreadChars() {
     ssize_t left = (yy_n_chars - (yy_c_buf_p - currentBuffer()->yy_ch_buf));
     if (left > 0) {  // left may be -1 at EOS
         *(yy_c_buf_p) = (yy_hold_char);
-        return string(yy_c_buf_p, left);
+        return std::string(yy_c_buf_p, left);  // () narrowing conversion
     } else {
         return "";
     }
@@ -675,35 +725,35 @@ void V3PreLex::warnBackslashSpace() {
         BSSPACE, "Backslash followed by whitespace, perhaps the whitespace is accidental?");
 }
 
-void V3PreLex::dumpSummary() {
+void V3PreLex::dumpSummary() {  // LCOV_EXCL_START
     cout << "-  pp::dumpSummary  curBuf=" << cvtToHex(currentBuffer());
 #ifdef FLEX_DEBUG  // Else peeking at internals may cause portability issues
     ssize_t left = (yy_n_chars - (yy_c_buf_p - currentBuffer()->yy_ch_buf));
     cout << " left=" << std::dec << left;
 #endif
     cout << endl;
-}
+}  // LCOV_EXCL_STOP
 
-void V3PreLex::dumpStack() {
+void V3PreLex::dumpStack() {  // LCOV_EXCL_START
     // For debug use
     dumpSummary();
     std::stack<VPreStream*> tmpstack = LEXP->m_streampStack;
     while (!tmpstack.empty()) {
-        VPreStream* streamp = tmpstack.top();
+        const VPreStream* const streamp = tmpstack.top();
         cout << "-    bufferStack[" << cvtToHex(streamp) << "]: "
              << " at=" << streamp->m_curFilelinep << " nBuf=" << streamp->m_buffers.size()
              << " size0=" << (streamp->m_buffers.empty() ? 0 : streamp->m_buffers.front().length())
              << (streamp->m_eof ? " [EOF]" : "") << (streamp->m_file ? " [FILE]" : "") << endl;
         tmpstack.pop();
     }
-}
+}  // LCOV_EXCL_STOP
 
 string V3PreLex::cleanDbgStrg(const string& in) {
-    string out = in;
+    string result = in;
     string::size_type pos;
-    while ((pos = out.find('\n')) != string::npos) { out.replace(pos, 1, "\\n"); }
-    while ((pos = out.find('\r')) != string::npos) { out.replace(pos, 1, "\\r"); }
-    return out;
+    while ((pos = result.find('\n')) != string::npos) result.replace(pos, 1, "\\n");
+    while ((pos = result.find('\r')) != string::npos) result.replace(pos, 1, "\\r");
+    return result;
 }
 
 void V3PreLex::unused() {
@@ -712,6 +762,33 @@ void V3PreLex::unused() {
         yy_top_state();
         yyerror((char*)"");
     }  // LCOV_EXCL_STOP
+}
+
+void V3PreLex::verilatorCmtLintSave() {
+    m_lexLintState.push_back(*curFilelinep());
+}
+void V3PreLex::verilatorCmtLintRestore() {
+    // No error here on restore without save - the verilog.y parse will report as appropriate
+    if (m_lexLintState.empty()) return;
+    curFilelinep()->warnStateFrom(m_lexLintState.back());
+    m_lexLintState.pop_back();
+}
+void V3PreLex::verilatorCmtLint(const char* textp, bool warnOff) {
+    const char* sp = textp;
+    while (*sp && std::isspace(*sp)) ++sp;
+    while (*sp && !std::isspace(*sp)) ++sp;  // "verilator"
+    while (*sp && std::isspace(*sp)) ++sp;
+    while (*sp && !std::isspace(*sp)) ++sp;  // "lint_on/lint_off"
+    while (*sp && std::isspace(*sp)) ++sp;
+    string msg = sp;
+    for (auto pos = msg.begin(); pos != msg.end(); ++pos) {
+        if (std::isspace(*pos) || *pos == '*') {
+            msg.erase(pos, msg.end());
+            break;
+        }
+    }
+    // No warnings on bad warning codes - the verilog.y parse will report as appropriate
+    curFilelinep()->warnOff(msg, warnOff);
 }
 
 /*###################################################################

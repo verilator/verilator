@@ -17,8 +17,8 @@ module t;
    initial begin
        poke_value(32'hdeadbeef);
        if (out !== 40'hdeadbeef) begin
-	  $display("[%0t] %%Error: t_dpi_qw: failed", $time);
-	  $stop;
+          $display("[%0t] %%Error: t_dpi_qw: failed", $time);
+          $stop;
        end
 
        $write("*-* All Finished *-*\n");

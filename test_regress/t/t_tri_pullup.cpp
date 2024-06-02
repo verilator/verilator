@@ -4,7 +4,7 @@
 // without warranty, 2008 by Lane Brooks.
 // SPDX-License-Identifier: CC0-1.0
 
-#include "Vt_tri_pullup.h"
+#include VM_PREFIX_INCLUDE
 
 VM_PREFIX* tb = nullptr;
 
@@ -44,12 +44,12 @@ bool check() {
 }
 
 int main() {
-    bool pass = true;
-
     Verilated::debug(0);
-    tb = new Vt_tri_pullup("tb");
+
+    tb = new VM_PREFIX{"tb"};
 
     // loop through every possibility and check the result
+    bool pass = true;
     for (tb->OE = 0; tb->OE < 2; tb->OE++) {
         for (tb->A = 0; tb->A < 2; tb->A++) {
             tb->eval();

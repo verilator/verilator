@@ -1,6 +1,0 @@
-%Warning-RANDC: t/t_randc_unsup.v:8:14: Unsupported: Converting 'randc' to 'rand'
-    8 |    randc int i;
-      |              ^
-                ... For warning description see https://verilator.org/warn/RANDC?v=latest
-                ... Use "/* verilator lint_off RANDC */" and lint_on around source to disable this message.
-%Error: Exiting due to

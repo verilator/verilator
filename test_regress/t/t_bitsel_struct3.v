@@ -9,7 +9,8 @@
 // warranty, 2013 by Jie Xu.
 // SPDX-License-Identifier: CC0-1.0
 
-`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
 module t(/*AUTOARG*/
    // Inputs
@@ -30,9 +31,9 @@ module t(/*AUTOARG*/
 
    union      packed {
       logic [31:0] [7:0] idx;
-      struct 		     packed {
-	 logic [15:0]      z, y, x;
-	 logic [25:0] [7:0] r;
+      struct                 packed {
+         logic [15:0]      z, y, x;
+         logic [25:0] [7:0] r;
       } nam;
    } gpr;
 
@@ -40,9 +41,9 @@ module t(/*AUTOARG*/
 
    initial begin
       b = {16'h8765,16'h4321};
-      a = b[19:12];			// This works
-      c = b[8+:8];			// This fails
-      d = b[11-:8];			// This fails
+      a = b[19:12];                     // This works
+      c = b[8+:8];                      // This fails
+      d = b[11-:8];                     // This fails
       `checkh(a, 8'h54);
       `checkh(c, 8'h43);
       `checkh(d, 8'h32);

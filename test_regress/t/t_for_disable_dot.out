@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_for_disable_dot.v:14:35: Unsupported: disable with '.'
+   14 |             if (i == 5) disable t.named;
+      |                                   ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

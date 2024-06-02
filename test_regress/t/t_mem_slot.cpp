@@ -3,9 +3,11 @@
 // any use, without warranty, 2020 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-#include <cstdlib>
 #include <verilated.h>
-#include "Vt_mem_slot.h"
+
+#include VM_PREFIX_INCLUDE
+
+#include <cstdlib>
 
 double sc_time_stamp() { return 0; }
 
@@ -43,10 +45,11 @@ unsigned int StepSim(Vt_mem_slot* sim, unsigned int slot, unsigned int bit, unsi
 }
 
 int main(int argc, char* argv[]) {
-    Vt_mem_slot* sim = new Vt_mem_slot;
-    int slot, bit, i;
-
     Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
+
+    VM_PREFIX* sim = new VM_PREFIX;
+    int slot, bit, i;
 
     // clear all bits in the array
     for (slot = 0; slot < 3; slot++)

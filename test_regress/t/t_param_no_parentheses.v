@@ -24,16 +24,16 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==0) begin
-	 bitsel = 0;
-	 if (PAR[bitsel]!==1'b1) $stop;
-	 bitsel = 1;
-	 if (PAR[bitsel]!==1'b1) $stop;
-	 bitsel = 2;
-	 if (PAR[bitsel]!==1'b0) $stop;
+         bitsel = 0;
+         if (PAR[bitsel]!==1'b1) $stop;
+         bitsel = 1;
+         if (PAR[bitsel]!==1'b1) $stop;
+         bitsel = 2;
+         if (PAR[bitsel]!==1'b0) $stop;
       end
       if (cyc==1) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

@@ -4,15 +4,16 @@
 // without warranty, 2013 by Ted Campbell.
 // SPDX-License-Identifier: CC0-1.0
 
-#include "Vt_order_multidriven.h"
 #include "verilated.h"
 #include "verilated_vcd_c.h"
+
+#include VM_PREFIX_INCLUDE
 
 double sc_time_stamp() { return 0; }
 
 Vt_order_multidriven* vcore;
 VerilatedVcdC* vcd;
-vluint64_t vtime;
+uint64_t vtime;
 
 #define PHASE_90
 

@@ -1,7 +1,5 @@
 // DESCRIPTION: Verilator: Simple test of unoptflat
 //
-// Trigger the DETECTARRAY error.
-//
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2013 by Jeremy Bennett.
 // SPDX-License-Identifier: CC0-1.0
@@ -16,7 +14,7 @@ module t (/*AUTOARG*/
    input clk;
 
    typedef struct packed {
-      logic [ID_MSB:0] 	id;
+      logic [ID_MSB:0]  id;
    } context_t;
 
    context_t  tsb;
@@ -34,8 +32,8 @@ module t (/*AUTOARG*/
 `endif
 
       if (tsb.id[1] != 0) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

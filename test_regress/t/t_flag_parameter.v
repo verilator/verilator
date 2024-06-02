@@ -20,7 +20,8 @@
 // | -gC6="32'h600D600D" | 32'h600D600D| 32'h600D600D| UNSUPPORTED | 32'h600D600D|
 // | -gC7='AB CD'        | AB CD       | UNSUPPORTED | UNSUPPORTED | UNSUPPORTED |
 
-`define check(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: Wrong parameter value", `__FILE__,`__LINE__); $stop; end while(0);
+`define stop $stop
+`define check(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: Wrong parameter value", `__FILE__,`__LINE__); `stop; end while(0);
 
 module t;
    parameter string1 = "Original String";
@@ -53,6 +54,8 @@ module t;
    parameter int52 = 1;
    parameter int61 = 1;
    parameter int62 = 1;
+   parameter int71 = 1;
+   parameter int72 = 1;
 
    initial begin
       `check(string1,"New String");
@@ -83,6 +86,11 @@ module t;
       `check(int52,32'hdeadbeef);
       `check(int61,32'hdeadbeef);
       `check(int62,32'hdeadbeef);
+      `check(int71,-1000);
+      `check(int72,-1000);
+
+      // Check parameter assigned simple integer literal is signed
+      if ((int11 << 27) >>> 31 != -1) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

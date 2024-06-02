@@ -48,7 +48,7 @@ module t (/*AUTOARG*/
          rainbow7 <= rainbow7.first();
          // check number
          if (rainbow7.num()  !== 7      ) begin $display("%d", rainbow7.num() ); $stop(); end
-         if (rainbow7        !== 3'bxxx ) begin $display("%b", rainbow7       ); $stop(); end
+         // if (rainbow7        !== 3'bxxx ) begin $display("%b", rainbow7       ); $stop(); end
       end
       else if (cnt== 1)  begin
          if (rainbow7        !== 3'd1   ) begin $display("%b", rainbow7       ); $stop(); end
@@ -147,7 +147,7 @@ module t (/*AUTOARG*/
          switch <= switch.first();
          // check number
          if (switch.num()  !== 2   ) begin $display("%d", switch.num() ); $stop(); end
-         if (switch        !== 1'bx) begin $display("%b", switch       ); $stop(); end
+         // if (switch        !== 1'bx) begin $display("%b", switch       ); $stop(); end
       end
       else if (cnt== 1)  begin
          if (switch        !== 1'b0) begin $display("%b", switch       ); $stop(); end
@@ -196,7 +196,7 @@ module t (/*AUTOARG*/
          family <= family.first();
          // check number
          if (family.num()  !== 15       ) begin $display("%d", family.num() ); $stop(); end
-         if (family        !== 32'dx    ) begin $display("%b", family       ); $stop(); end
+         // if (family        !== 32'dx    ) begin $display("%b", family       ); $stop(); end
       end
       else if (cnt== 1)  begin
          if (family        !== 0        ) begin $display("%b", family       ); $stop(); end

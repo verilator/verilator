@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
-    # For Verilator, all PARAMs at all levels are overwridden
+    # For Verilator, all PARAMs at all levels are overridden
     # Error if parameter not found
     #verilator_flags2 => ['-GPARAM=10 -Gtop.t.x.HIER=20'],  # HIER would error
     verilator_flags2 => ['-GPARAM=10'],

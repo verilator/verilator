@@ -1,0 +1,7 @@
+%Error: t/t_udp_param_bad.v:12:15: syntax error, unexpected '#', expecting ';'
+   12 | primitive udp #(
+      |               ^
+%Error: t/t_udp_param_bad.v:14:1: syntax error, unexpected ')', expecting ';'
+   14 | ) (o, a);
+      | ^
+%Error: Exiting due to

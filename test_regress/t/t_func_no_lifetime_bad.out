@@ -1,0 +1,27 @@
+%Warning-IMPLICITSTATIC: t/t_func_no_lifetime_bad.v:29:17: Function/task's lifetime implicitly set to static
+                                                         : ... Suggest use 'function automatic' or 'function static'
+   29 |    function int f_implicit_static();
+      |                 ^~~~~~~~~~~~~~~~~
+                         t/t_func_no_lifetime_bad.v:30:11: ... Location of implicit static variable
+   30 |       int cnt = 0;
+      |           ^~~
+... Suggest use 'function automatic' or 'function static'
+                         ... For warning description see https://verilator.org/warn/IMPLICITSTATIC?v=latest
+                         ... Use "/* verilator lint_off IMPLICITSTATIC */" and lint_on around source to disable this message.
+%Warning-IMPLICITSTATIC: t/t_func_no_lifetime_bad.v:34:9: Function/task's lifetime implicitly set to static
+                                                        : ... Suggest use 'function automatic' or 'function static'
+   34 |    task t_implicit_static();
+      |         ^~~~~~~~~~~~~~~~~
+                         t/t_func_no_lifetime_bad.v:35:11: ... Location of implicit static variable
+   35 |       int cnt = 0;
+      |           ^~~
+... Suggest use 'function automatic' or 'function static'
+%Warning-IMPLICITSTATIC: t/t_func_no_lifetime_bad.v:9:8: Variable's lifetime implicitly set to static
+                                                        : ... Suggest use 'static' before variable declaration'
+    9 |    int cnt = 0;   
+      |        ^~~
+%Warning-IMPLICITSTATIC: t/t_func_no_lifetime_bad.v:15:8: Variable's lifetime implicitly set to static
+                                                        : ... Suggest use 'static' before variable declaration'
+   15 |    int cnt = 0;   
+      |        ^~~
+%Error: Exiting due to

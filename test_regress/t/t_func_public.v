@@ -13,16 +13,16 @@ module t (clk);
    integer cyc; initial cyc=1;
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
-	 if (cyc==1) begin
+         cyc <= cyc + 1;
+         if (cyc==1) begin
 `ifdef verilator
-	    $c("publicTop();");
+            $c("this->publicTop();");
 `endif
-	 end
-	 if (cyc==20) begin
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         end
+         if (cyc==20) begin
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 
@@ -32,16 +32,23 @@ module t (clk);
       $write("Hello in publicTop\n");
    endtask
 
+   task test_task(input [19:0] in [2], output [19:0] out [2]);
+      // Issue 3316
+      // verilator public
+      out[0] = in[1];
+      out[1] = in[0];
+   endtask
+
 endmodule
 
 module tpub (
-	     input clk,
-	     input [31:0] i);
+             input clk,
+             input [31:0] i);
 
    reg [23:0] var_long;
    reg [59:0] var_quad;
    reg [71:0] var_wide;
-   reg 	      var_bool;
+   reg        var_bool;
 
    // verilator lint_off BLKANDNBLK
    reg [11:0] var_flop;
@@ -55,62 +62,62 @@ module tpub (
    integer cyc; initial cyc=1;
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
-	 // cyc==1 is in top level
-	 if (cyc==2) begin
-	    publicNoArgs;
-	    publicSetBool(1'b1);
-	    publicSetLong(24'habca);
-	    publicSetQuad(60'h4444_3333_2222);
-	    publicSetWide(72'h12_5678_9123_1245_2352);
-	    var_flop <= 12'habe;
-	 end
-	 if (cyc==3) begin
-	    if (1'b1 != publicGetSetBool(1'b0)) $stop;
-	    if (24'habca != publicGetSetLong(24'h1234)) $stop;
-	    if (60'h4444_3333_2222 != publicGetSetQuad(60'h123_4567_89ab)) $stop;
-	    if (72'h12_5678_9123_1245_2352 != publicGetSetWide(72'hac_abca_aaaa_bbbb_1234)) $stop;
-	 end
-	 if (cyc==4) begin
-	    publicGetBool(got_bool);
-	    if (1'b0 != got_bool) $stop;
-	    publicGetLong(got_long);
-	    if (24'h1234 != got_long) $stop;
-	    publicGetQuad(got_quad);
-	    if (60'h123_4567_89ab != got_quad) $stop;
-	    publicGetWide(got_wide);
-	    if (72'hac_abca_aaaa_bbbb_1234 != got_wide) $stop;
-	 end
-	 //
+         cyc <= cyc + 1;
+         // cyc==1 is in top level
+         if (cyc==2) begin
+            publicNoArgs;
+            publicSetBool(1'b1);
+            publicSetLong(24'habca);
+            publicSetQuad(60'h4444_3333_2222);
+            publicSetWide(72'h12_5678_9123_1245_2352);
+            var_flop <= 12'habe;
+         end
+         if (cyc==3) begin
+            if (1'b1 != publicGetSetBool(1'b0)) $stop;
+            if (24'habca != publicGetSetLong(24'h1234)) $stop;
+            if (60'h4444_3333_2222 != publicGetSetQuad(60'h123_4567_89ab)) $stop;
+            if (72'h12_5678_9123_1245_2352 != publicGetSetWide(72'hac_abca_aaaa_bbbb_1234)) $stop;
+         end
+         if (cyc==4) begin
+            publicGetBool(got_bool);
+            if (1'b0 != got_bool) $stop;
+            publicGetLong(got_long);
+            if (24'h1234 != got_long) $stop;
+            publicGetQuad(got_quad);
+            if (60'h123_4567_89ab != got_quad) $stop;
+            publicGetWide(got_wide);
+            if (72'hac_abca_aaaa_bbbb_1234 != got_wide) $stop;
+         end
+         //
 `ifdef VERILATOR_PUBLIC_TASKS
-	 if (cyc==11) begin
-	    $c("publicNoArgs();");
-	    $c("publicSetBool(true);");
-	    $c("publicSetLong(0x11bca);");
-	    $c("publicSetQuad(0x66655554444ULL);");
-	    $c("publicSetFlop(0x321);");
-	    //Unsupported: $c("WData w[3] = {0x12, 0x5678_9123, 0x1245_2352}; publicSetWide(w);");
-	 end
-	 if (cyc==12) begin
-	    $c("got_bool = publicGetSetBool(true);");
-	    $c("got_long = publicGetSetLong(0x11bca);");
-	    $c("got_quad = publicGetSetQuad(0xaaaabbbbccccULL);");
-	 end
-	 if (cyc==13) begin
-	    $c("{ bool gb; publicGetBool(gb); got_bool=gb; }");
-	    if (1'b1 != got_bool) $stop;
-	    $c("publicGetLong(got_long);");
-	    if (24'h11bca != got_long) $stop;
-	    $c("{ vluint64_t qq; publicGetQuad(qq); got_quad=qq; }");
-	    if (60'haaaa_bbbb_cccc != got_quad) $stop;
-	    $c("{ WData gw[3]; publicGetWide(gw); VL_ASSIGN_W(72,got_wide,gw); }");
-	    if (72'hac_abca_aaaa_bbbb_1234 != got_wide) $stop;
-	    //Below doesn't work, because we're calling it inside the loop that sets var_flop
-	    // if (12'h321 != var_flop) $stop;
-	 end
-	 if (cyc==14) begin
-	    if ($c32("publicInstNum()") != i) $stop;
-	 end
+         if (cyc==11) begin
+            $c("this->publicNoArgs();");
+            $c("this->publicSetBool(true);");
+            $c("this->publicSetLong(0x11bca);");
+            $c("this->publicSetQuad(0x66655554444ULL);");
+            $c("this->publicSetFlop(0x321);");
+            //Unsupported: $c("WData w[3] = {0x12, 0x5678_9123, 0x1245_2352}; publicSetWide(w);");
+         end
+         if (cyc==12) begin
+            $c("this->got_bool = this->publicGetSetBool(true);");
+            $c("this->got_long = this->publicGetSetLong(0x11bca);");
+            $c("this->got_quad = this->publicGetSetQuad(0xaaaabbbbccccULL);");
+         end
+         if (cyc==13) begin
+            $c("{ bool gb; this->publicGetBool(gb); this->got_bool=gb; }");
+            if (1'b1 != got_bool) $stop;
+            $c("this->publicGetLong(this->got_long);");
+            if (24'h11bca != got_long) $stop;
+            $c("{ uint64_t qq; this->publicGetQuad(qq); this->got_quad=qq; }");
+            if (60'haaaa_bbbb_cccc != got_quad) $stop;
+            $c("{ WData gw[3]; this->publicGetWide(gw); VL_ASSIGN_W(72,this->got_wide,gw); }");
+            if (72'hac_abca_aaaa_bbbb_1234 != got_wide) $stop;
+            //Below doesn't work, because we're calling it inside the loop that sets var_flop
+            // if (12'h321 != var_flop) $stop;
+         end
+         if (cyc==14) begin
+            if ($c32("this->publicInstNum()") != i) $stop;
+         end
 `endif
       end
    end
@@ -136,8 +143,8 @@ module tpub (
       input [23:0] in_long;
       reg [23:0]   not_long;
       begin
-	 not_long = ~in_long;	// Test that we can have local variables
-	 var_long = ~not_long;
+         not_long = ~in_long;   // Test that we can have local variables
+         var_long = ~not_long;
       end
    endtask
 
@@ -187,8 +194,8 @@ module tpub (
       // verilator public
       input in_bool;
       begin
-	 publicGetSetBool = var_bool;
-	 var_bool = in_bool;
+         publicGetSetBool = var_bool;
+         var_bool = in_bool;
       end
    endfunction
 
@@ -196,8 +203,8 @@ module tpub (
       // verilator public
       input [23:0] in_long;
       begin
-	 publicGetSetLong = var_long;
-	 var_long = in_long;
+         publicGetSetLong = var_long;
+         var_long = in_long;
       end
    endfunction
 
@@ -205,8 +212,8 @@ module tpub (
       // verilator public
       input [59:0] in_quad;
       begin
-	 publicGetSetQuad = var_quad;
-	 var_quad = in_quad;
+         publicGetSetQuad = var_quad;
+         var_quad = in_quad;
       end
    endfunction
 
@@ -214,8 +221,8 @@ module tpub (
       // Can't be public, as no wide return types in C++
       input [71:0] in_wide;
       begin
-	 publicGetSetWide = var_wide;
-	 var_wide = in_wide;
+         publicGetSetWide = var_wide;
+         var_wide = in_wide;
       end
    endfunction
 

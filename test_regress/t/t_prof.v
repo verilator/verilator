@@ -4,13 +4,19 @@
 // any use, without warranty, 2021 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t(/*AUTOARG*/
-   // Inputs
+module t(
+`ifdef T_PROF
    clk
+`endif
    );
+`ifdef T_PROF
    input clk;
+`else
+   bit clk;
+   initial forever begin #5; clk = !clk; end
+`endif
 
-   integer cyc=0;
+   integer cyc = 0;
    wire [63:0] result;
 
    Test test(/*AUTOINST*/
@@ -25,10 +31,10 @@ module t(/*AUTOARG*/
 
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d result=%x\n",$time, cyc, result);
+      $write("[%0t] cyc==%0d result=%x\n", $time, cyc, result);
 `endif
       cyc <= cyc + 1;
-      sum <= result ^ {sum[62:0],sum[63]^sum[2]^sum[0]};
+      sum <= result ^ {sum[62:0], sum[63] ^ sum[2] ^ sum[0]};
       if (cyc == 0) begin
          // Setup
          sum <= '0;
@@ -39,7 +45,7 @@ module t(/*AUTOARG*/
       else if (cyc < 90) begin
       end
       else if (cyc == 99) begin
-         $write("[%0t] cyc==%0d sum=%x\n",$time, cyc, sum);
+         $write("[%0t] cyc==%0d sum=%x\n", $time, cyc, sum);
          // What checksum will we end up with (above print should match)
 `define EXPECTED_SUM 64'hfefad16f06ba6b1f
          if (sum !== `EXPECTED_SUM) $stop;

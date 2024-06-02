@@ -1,0 +1,7 @@
+%Error-ENUMVALUE: t/t_enum_enumvalue_struct_bad.v:21:33: Implicit conversion to enum 'MEMBERDTYPE 'a'' from 'logic[31:0]' (IEEE 1800-2023 6.19.3)
+                                                       : ... note: In instance 't'
+                                                       : ... Suggest use enum's mnemonic, or static cast
+   21 |    localparam foo_t FOO0 = '{a: 0,      b: 1'b1, u: 1'b1};
+      |                                 ^
+                  ... For error description see https://verilator.org/warn/ENUMVALUE?v=latest
+%Error: Exiting due to

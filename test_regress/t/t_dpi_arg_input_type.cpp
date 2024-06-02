@@ -74,7 +74,7 @@ void check_bvals(CONSTARG svLogicVecVal* v, unsigned n) {
     }
 }
 
-// Basic types as per IEEE 1800-2017 35.5.6
+// Basic types as per IEEE 1800-2023 35.5.6
 void i_byte(char i) {
     static int n = 0;
     if (i != 10 - n++) stop();
@@ -155,9 +155,9 @@ void i_string(const char* i) {
     static int n = 0;
     printf("i_string %d\n", n);
     if (n++ % 2 == 0) {
-        if (strcmp(i, "World") != 0) stop();
+        if (std::strcmp(i, "World") != 0) stop();
     } else {
-        if (strcmp(i, "Hello") != 0) stop();
+        if (std::strcmp(i, "Hello") != 0) stop();
     }
 }
 
@@ -266,9 +266,9 @@ void i_string_t(const char* i) {
     static int n = 0;
     printf("i_string_t %d\n", n);
     if (n++ % 2 == 0) {
-        if (strcmp(i, "World") != 0) stop();
+        if (std::strcmp(i, "World") != 0) stop();
     } else {
-        if (strcmp(i, "Hello") != 0) stop();
+        if (std::strcmp(i, "Hello") != 0) stop();
     }
 }
 
@@ -596,7 +596,7 @@ void check_exports() {
     set_bvals(x_integer_t, 1);
 #endif
 
-    // Basic types as per IEEE 1800-2017 35.5.6
+    // Basic types as per IEEE 1800-2023 35.5.6
     e_byte(10 + n);
     e_byte_unsigned(20 + n);
     e_shortint(30 + n);

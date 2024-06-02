@@ -13,5 +13,9 @@ scenarios(simulator => 1);
 compile(
     );
 
+lint(
+    verilator_flags2 => ["--language 1364-2005"]
+    );
+
 ok(1);
 1;

@@ -1,10 +1,4 @@
-%Error-UNSUPPORTED: t/t_fuzz_genintf_bad.v:24:12: Unsupported: Member call on object 'VARREF 'j'' which is a 'BASICDTYPE 'integer''
-                                                : ... In instance t
-   24 |          j.e(0),
-      |            ^
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Internal Error: t/t_fuzz_genintf_bad.v:24:11: ../V3Width.cpp:#: Unlinked pin data type
-                                                    : ... In instance t
+%Error: t/t_fuzz_genintf_bad.v:24:11: Mixing positional and .*/named instantiation connection (IEEE 1800-2023 23.3.2)
    24 |          j.e(0),
       |           ^
-                        ... See the manual at https://verilator.org/verilator_doc.html for more assistance.
+%Error: Exiting due to

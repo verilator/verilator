@@ -1,4 +1,4 @@
-%Warning-IGNOREDRETURN: t/t_func_void_bad.v:26:7: Ignoring return value of non-void function (IEEE 1800-2017 13.4.1)
+%Warning-IGNOREDRETURN: t/t_func_void_bad.v:26:7: Ignoring return value of non-void function (IEEE 1800-2023 13.4.1)
    26 |       f1(20);
       |       ^~
                         ... For warning description see https://verilator.org/warn/IGNOREDRETURN?v=latest

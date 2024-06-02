@@ -23,11 +23,11 @@ interface the_intf
     outer_thing_t [M-1:0] things;
     logic                 valid;
     modport i (
-	       output things,
-	       output valid);
+               output things,
+               output valid);
     modport t (
-	       input things,
-	       input valid);
+               input things,
+               input valid);
 endinterface
 
 module ThingMuxOH
@@ -61,7 +61,7 @@ module Thinker
    (
     input logic clk,
     input logic reset,
-    input 	unique_id_t uids[0:N-1],
+    input       unique_id_t uids[0:N-1],
     the_intf.t thing_inp,
     the_intf.i thing_out
     );

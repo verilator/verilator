@@ -2,128 +2,128 @@
 <!-- DESCRIPTION: Verilator output: XML representation of netlist -->
 <verilator_xml>
   <files>
-    <file id="a" filename="&lt;built-in&gt;" language="1800-2017"/>
-    <file id="b" filename="&lt;command-line&gt;" language="1800-2017"/>
-    <file id="c" filename="input.vc" language="1800-2017"/>
-    <file id="d" filename="t/t_var_port_xml.v" language="1800-2017"/>
+    <file id="a" filename="&lt;built-in&gt;" language="1800-2023"/>
+    <file id="b" filename="&lt;command-line&gt;" language="1800-2023"/>
+    <file id="c" filename="input.vc" language="1800-2023"/>
+    <file id="d" filename="t/t_var_port_xml.v" language="1800-2023"/>
   </files>
   <module_files>
-    <file id="d" filename="t/t_var_port_xml.v" language="1800-2017"/>
+    <file id="d" filename="t/t_var_port_xml.v" language="1800-2023"/>
   </module_files>
   <cells>
-    <cell fl="d18" loc="d,18,8,18,11" name="mh2" submodname="mh2" hier="mh2"/>
+    <cell loc="d,18,8,18,11" name="mh2" submodname="mh2" hier="mh2"/>
   </cells>
   <cells>
-    <cell fl="d24" loc="d,24,8,24,11" name="mh5" submodname="mh5" hier="mh5"/>
+    <cell loc="d,24,8,24,11" name="mh5" submodname="mh5" hier="mh5"/>
   </cells>
   <cells>
-    <cell fl="d26" loc="d,26,8,26,11" name="mh6" submodname="mh6" hier="mh6"/>
+    <cell loc="d,26,8,26,11" name="mh6" submodname="mh6" hier="mh6"/>
   </cells>
   <cells>
-    <cell fl="d28" loc="d,28,8,28,11" name="mh7" submodname="mh7" hier="mh7"/>
+    <cell loc="d,28,8,28,11" name="mh7" submodname="mh7" hier="mh7"/>
   </cells>
   <cells>
-    <cell fl="d30" loc="d,30,8,30,11" name="mh8" submodname="mh8" hier="mh8"/>
+    <cell loc="d,30,8,30,11" name="mh8" submodname="mh8" hier="mh8"/>
   </cells>
   <cells>
-    <cell fl="d32" loc="d,32,8,32,11" name="mh9" submodname="mh9" hier="mh9"/>
+    <cell loc="d,32,8,32,11" name="mh9" submodname="mh9" hier="mh9"/>
   </cells>
   <cells>
-    <cell fl="d34" loc="d,34,8,34,12" name="mh10" submodname="mh10" hier="mh10"/>
+    <cell loc="d,34,8,34,12" name="mh10" submodname="mh10" hier="mh10"/>
   </cells>
   <cells>
-    <cell fl="d36" loc="d,36,8,36,12" name="mh11" submodname="mh11" hier="mh11"/>
+    <cell loc="d,36,8,36,12" name="mh11" submodname="mh11" hier="mh11"/>
   </cells>
   <cells>
-    <cell fl="d38" loc="d,38,8,38,12" name="mh12" submodname="mh12" hier="mh12"/>
+    <cell loc="d,38,8,38,12" name="mh12" submodname="mh12" hier="mh12"/>
   </cells>
   <cells>
-    <cell fl="d40" loc="d,40,8,40,12" name="mh13" submodname="mh13" hier="mh13"/>
+    <cell loc="d,40,8,40,12" name="mh13" submodname="mh13" hier="mh13"/>
   </cells>
   <cells>
-    <cell fl="d50" loc="d,50,8,50,12" name="mh17" submodname="mh17" hier="mh17"/>
+    <cell loc="d,50,8,50,12" name="mh17" submodname="mh17" hier="mh17"/>
   </cells>
   <cells>
-    <cell fl="d52" loc="d,52,8,52,12" name="mh18" submodname="mh18" hier="mh18"/>
+    <cell loc="d,52,8,52,12" name="mh18" submodname="mh18" hier="mh18"/>
   </cells>
   <cells>
-    <cell fl="d54" loc="d,54,8,54,12" name="mh19" submodname="mh19" hier="mh19"/>
+    <cell loc="d,54,8,54,12" name="mh19" submodname="mh19" hier="mh19"/>
   </cells>
   <cells>
-    <cell fl="d56" loc="d,56,8,56,12" name="mh20" submodname="mh20" hier="mh20"/>
+    <cell loc="d,56,8,56,12" name="mh20" submodname="mh20" hier="mh20"/>
   </cells>
   <cells>
-    <cell fl="d58" loc="d,58,8,58,12" name="mh21" submodname="mh21" hier="mh21"/>
+    <cell loc="d,58,8,58,12" name="mh21" submodname="mh21" hier="mh21"/>
   </cells>
   <netlist>
-    <module fl="d18" loc="d,18,8,18,11" name="mh2" origName="mh2">
-      <var fl="d18" loc="d,18,27,18,47" name="x_inout_wire_integer" dtype_id="1" dir="inout" vartype="integer" origName="x_inout_wire_integer"/>
+    <module loc="d,18,8,18,11" name="mh2" origName="mh2">
+      <var loc="d,18,27,18,47" name="x_inout_wire_integer" dtype_id="1" dir="inout" pinIndex="1" vartype="integer" origName="x_inout_wire_integer"/>
     </module>
-    <module fl="d24" loc="d,24,8,24,11" name="mh5" origName="mh5">
-      <var fl="d24" loc="d,24,19,24,37" name="x_input_wire_logic" dtype_id="2" dir="input" vartype="logic" origName="x_input_wire_logic"/>
+    <module loc="d,24,8,24,11" name="mh5" origName="mh5">
+      <var loc="d,24,19,24,37" name="x_input_wire_logic" dtype_id="2" dir="input" pinIndex="1" vartype="logic" origName="x_input_wire_logic"/>
     </module>
-    <module fl="d26" loc="d,26,8,26,11" name="mh6" origName="mh6">
-      <var fl="d26" loc="d,26,23,26,40" name="x_input_var_logic" dtype_id="2" dir="input" vartype="logic" origName="x_input_var_logic"/>
+    <module loc="d,26,8,26,11" name="mh6" origName="mh6">
+      <var loc="d,26,23,26,40" name="x_input_var_logic" dtype_id="2" dir="input" pinIndex="1" vartype="logic" origName="x_input_var_logic"/>
     </module>
-    <module fl="d28" loc="d,28,8,28,11" name="mh7" origName="mh7">
-      <var fl="d28" loc="d,28,31,28,50" name="x_input_var_integer" dtype_id="1" dir="input" vartype="integer" origName="x_input_var_integer"/>
+    <module loc="d,28,8,28,11" name="mh7" origName="mh7">
+      <var loc="d,28,31,28,50" name="x_input_var_integer" dtype_id="1" dir="input" pinIndex="1" vartype="integer" origName="x_input_var_integer"/>
     </module>
-    <module fl="d30" loc="d,30,8,30,11" name="mh8" origName="mh8">
-      <var fl="d30" loc="d,30,20,30,39" name="x_output_wire_logic" dtype_id="2" dir="output" vartype="logic" origName="x_output_wire_logic"/>
+    <module loc="d,30,8,30,11" name="mh8" origName="mh8">
+      <var loc="d,30,20,30,39" name="x_output_wire_logic" dtype_id="2" dir="output" pinIndex="1" vartype="logic" origName="x_output_wire_logic"/>
     </module>
-    <module fl="d32" loc="d,32,8,32,11" name="mh9" origName="mh9">
-      <var fl="d32" loc="d,32,24,32,42" name="x_output_var_logic" dtype_id="2" dir="output" vartype="logic" origName="x_output_var_logic"/>
+    <module loc="d,32,8,32,11" name="mh9" origName="mh9">
+      <var loc="d,32,24,32,42" name="x_output_var_logic" dtype_id="2" dir="output" pinIndex="1" vartype="logic" origName="x_output_var_logic"/>
     </module>
-    <module fl="d34" loc="d,34,8,34,12" name="mh10" origName="mh10">
-      <var fl="d34" loc="d,34,33,34,62" name="x_output_wire_logic_signed_p6" dtype_id="3" dir="output" vartype="logic" origName="x_output_wire_logic_signed_p6"/>
+    <module loc="d,34,8,34,12" name="mh10" origName="mh10">
+      <var loc="d,34,33,34,62" name="x_output_wire_logic_signed_p6" dtype_id="3" dir="output" pinIndex="1" vartype="logic" origName="x_output_wire_logic_signed_p6"/>
     </module>
-    <module fl="d36" loc="d,36,8,36,12" name="mh11" origName="mh11">
-      <var fl="d36" loc="d,36,28,36,48" name="x_output_var_integer" dtype_id="1" dir="output" vartype="integer" origName="x_output_var_integer"/>
+    <module loc="d,36,8,36,12" name="mh11" origName="mh11">
+      <var loc="d,36,28,36,48" name="x_output_var_integer" dtype_id="1" dir="output" pinIndex="1" vartype="integer" origName="x_output_var_integer"/>
     </module>
-    <module fl="d38" loc="d,38,8,38,12" name="mh12" origName="mh12">
-      <var fl="d38" loc="d,38,23,38,37" name="x_ref_logic_p6" dtype_id="4" dir="ref" vartype="logic" origName="x_ref_logic_p6"/>
+    <module loc="d,38,8,38,12" name="mh12" origName="mh12">
+      <var loc="d,38,23,38,37" name="x_ref_logic_p6" dtype_id="4" dir="ref" pinIndex="1" vartype="logic" origName="x_ref_logic_p6"/>
     </module>
-    <module fl="d40" loc="d,40,8,40,12" name="mh13" origName="mh13">
-      <var fl="d40" loc="d,40,17,40,35" name="x_ref_var_logic_u6" dtype_id="5" dir="ref" vartype="port" origName="x_ref_var_logic_u6"/>
+    <module loc="d,40,8,40,12" name="mh13" origName="mh13">
+      <var loc="d,40,17,40,35" name="x_ref_var_logic_u6" dtype_id="5" dir="ref" pinIndex="1" vartype="port" origName="x_ref_var_logic_u6"/>
     </module>
-    <module fl="d50" loc="d,50,8,50,12" name="mh17" origName="mh17">
-      <var fl="d50" loc="d,50,31,50,50" name="x_input_var_integer" dtype_id="1" dir="input" vartype="integer" origName="x_input_var_integer"/>
-      <var fl="d50" loc="d,50,57,50,75" name="y_input_wire_logic" dtype_id="2" dir="input" vartype="logic" origName="y_input_wire_logic"/>
+    <module loc="d,50,8,50,12" name="mh17" origName="mh17">
+      <var loc="d,50,31,50,50" name="x_input_var_integer" dtype_id="1" dir="input" pinIndex="1" vartype="integer" origName="x_input_var_integer"/>
+      <var loc="d,50,57,50,75" name="y_input_wire_logic" dtype_id="2" dir="input" pinIndex="2" vartype="logic" origName="y_input_wire_logic"/>
     </module>
-    <module fl="d52" loc="d,52,8,52,12" name="mh18" origName="mh18">
-      <var fl="d52" loc="d,52,24,52,42" name="x_output_var_logic" dtype_id="2" dir="output" vartype="logic" origName="x_output_var_logic"/>
-      <var fl="d52" loc="d,52,50,52,68" name="y_input_wire_logic" dtype_id="2" dir="input" vartype="logic" origName="y_input_wire_logic"/>
+    <module loc="d,52,8,52,12" name="mh18" origName="mh18">
+      <var loc="d,52,24,52,42" name="x_output_var_logic" dtype_id="2" dir="output" pinIndex="1" vartype="logic" origName="x_output_var_logic"/>
+      <var loc="d,52,50,52,68" name="y_input_wire_logic" dtype_id="2" dir="input" pinIndex="2" vartype="logic" origName="y_input_wire_logic"/>
     </module>
-    <module fl="d54" loc="d,54,8,54,12" name="mh19" origName="mh19">
-      <var fl="d54" loc="d,54,33,54,62" name="x_output_wire_logic_signed_p6" dtype_id="3" dir="output" vartype="logic" origName="x_output_wire_logic_signed_p6"/>
-      <var fl="d54" loc="d,54,72,54,92" name="y_output_var_integer" dtype_id="1" dir="output" vartype="integer" origName="y_output_var_integer"/>
+    <module loc="d,54,8,54,12" name="mh19" origName="mh19">
+      <var loc="d,54,33,54,62" name="x_output_wire_logic_signed_p6" dtype_id="3" dir="output" pinIndex="1" vartype="logic" origName="x_output_wire_logic_signed_p6"/>
+      <var loc="d,54,72,54,92" name="y_output_var_integer" dtype_id="1" dir="output" pinIndex="2" vartype="integer" origName="y_output_var_integer"/>
     </module>
-    <module fl="d56" loc="d,56,8,56,12" name="mh20" origName="mh20">
-      <var fl="d56" loc="d,56,23,56,41" name="x_ref_var_logic_p6" dtype_id="4" dir="ref" vartype="logic" origName="x_ref_var_logic_p6"/>
-      <var fl="d56" loc="d,56,43,56,61" name="y_ref_var_logic_p6" dtype_id="4" dir="ref" vartype="logic" origName="y_ref_var_logic_p6"/>
+    <module loc="d,56,8,56,12" name="mh20" origName="mh20">
+      <var loc="d,56,23,56,41" name="x_ref_var_logic_p6" dtype_id="4" dir="ref" pinIndex="1" vartype="logic" origName="x_ref_var_logic_p6"/>
+      <var loc="d,56,43,56,61" name="y_ref_var_logic_p6" dtype_id="4" dir="ref" pinIndex="2" vartype="logic" origName="y_ref_var_logic_p6"/>
     </module>
-    <module fl="d58" loc="d,58,8,58,12" name="mh21" origName="mh21">
-      <var fl="d58" loc="d,58,17,58,33" name="ref_var_logic_u6" dtype_id="6" dir="ref" vartype="port" origName="ref_var_logic_u6"/>
-      <var fl="d58" loc="d,58,41,58,56" name="y_ref_var_logic" dtype_id="2" dir="ref" vartype="logic" origName="y_ref_var_logic"/>
+    <module loc="d,58,8,58,12" name="mh21" origName="mh21">
+      <var loc="d,58,17,58,33" name="ref_var_logic_u6" dtype_id="6" dir="ref" pinIndex="1" vartype="port" origName="ref_var_logic_u6"/>
+      <var loc="d,58,41,58,56" name="y_ref_var_logic" dtype_id="2" dir="ref" pinIndex="2" vartype="logic" origName="y_ref_var_logic"/>
     </module>
-    <typetable fl="a0" loc="a,0,0,0,0">
-      <unpackarraydtype fl="d58" loc="d,58,34,58,35" id="6" sub_dtype_id="2">
-        <range fl="d58" loc="d,58,34,58,35">
-          <const fl="d58" loc="d,58,35,58,36" name="32&apos;sh5" dtype_id="7"/>
-          <const fl="d58" loc="d,58,37,58,38" name="32&apos;sh0" dtype_id="7"/>
+    <typetable loc="a,0,0,0,0">
+      <unpackarraydtype loc="d,58,34,58,35" id="6" sub_dtype_id="2">
+        <range loc="d,58,34,58,35">
+          <const loc="d,58,35,58,36" name="32&apos;sh5" dtype_id="7"/>
+          <const loc="d,58,37,58,38" name="32&apos;sh0" dtype_id="7"/>
         </range>
       </unpackarraydtype>
-      <basicdtype fl="d58" loc="d,58,41,58,56" id="2" name="logic"/>
-      <unpackarraydtype fl="d40" loc="d,40,36,40,37" id="5" sub_dtype_id="2">
-        <range fl="d40" loc="d,40,36,40,37">
-          <const fl="d40" loc="d,40,37,40,38" name="32&apos;sh5" dtype_id="7"/>
-          <const fl="d40" loc="d,40,39,40,40" name="32&apos;sh0" dtype_id="7"/>
+      <basicdtype loc="d,58,41,58,56" id="2" name="logic"/>
+      <unpackarraydtype loc="d,40,36,40,37" id="5" sub_dtype_id="2">
+        <range loc="d,40,36,40,37">
+          <const loc="d,40,37,40,38" name="32&apos;sh5" dtype_id="7"/>
+          <const loc="d,40,39,40,40" name="32&apos;sh0" dtype_id="7"/>
         </range>
       </unpackarraydtype>
-      <basicdtype fl="d38" loc="d,38,17,38,18" id="4" name="logic" left="5" right="0"/>
-      <basicdtype fl="d34" loc="d,34,27,34,28" id="3" name="logic" left="5" right="0"/>
-      <basicdtype fl="d18" loc="d,18,19,18,26" id="1" name="integer" left="31" right="0"/>
-      <basicdtype fl="d40" loc="d,40,37,40,38" id="7" name="logic" left="31" right="0"/>
+      <basicdtype loc="d,38,17,38,18" id="4" name="logic" left="5" right="0"/>
+      <basicdtype loc="d,34,27,34,28" id="3" name="logic" left="5" right="0" signed="true"/>
+      <basicdtype loc="d,18,19,18,26" id="1" name="integer" left="31" right="0" signed="true"/>
+      <basicdtype loc="d,40,37,40,38" id="7" name="logic" left="31" right="0" signed="true"/>
     </typetable>
   </netlist>
 </verilator_xml>

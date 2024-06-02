@@ -8,11 +8,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-scenarios(simulator => 1);
-$Self->{vlt_all} and unsupported("Verilator unsupported, bug413 short circuit");
+scenarios(vlt => 1);
 
 compile(
-    # Amazingly VCS, NC and Verilator all just accept the C file here!
     v_flags2 => ["t/t_dpi_shortcircuit_c.cpp"],
     verilator_flags2 => ["-Wno-DECLFILENAME"],
     );

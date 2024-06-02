@@ -7,7 +7,7 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -40,7 +40,6 @@ CXX = @CXX@
 LINK = @CXX@
 LEX = @LEX@
 LFLAGS = -d
-PERL = @PERL@
 PYTHON3 = @PYTHON3@
 YACC = @YACC@
 OBJCACHE ?= @OBJCACHE@
@@ -57,6 +56,7 @@ pkgdatadir = @pkgdatadir@
 # Compile options
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
+CFG_WITH_SOLVER = @CFG_WITH_SOLVER@
 CPPFLAGS += @CPPFLAGS@
 CFLAGS += @CFLAGS@
 CXXFLAGS += @CXXFLAGS@
@@ -68,22 +68,27 @@ CFG_CXXFLAGS_PARSER = @CFG_CXXFLAGS_PARSER@
 CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
 CFG_LDFLAGS_SRC = @CFG_LDFLAGS_SRC@
 CFG_LIBS = @CFG_LIBS@
+CFG_CXXFLAGS_PCH = -x c++-header
+# Compiler option to put in front of filename to read precompiled header
+CFG_CXXFLAGS_PCH_I = @CFG_CXXFLAGS_PCH_I@
+# Compiler's filename prefix for precompiled headers, .gch if clang, empty if GCC
+CFG_GCH_IF_CLANG = @CFG_GCH_IF_CLANG@
 
 #### End of system configuration section. ####
 
 VPATH += . $(bldsrc) $(srcdir)
-TGT = ../../verilator_bin
+TGT = ../../verilator_bin$(EXEEXT)
 
 #################
-ifeq ($(VL_DEBUG),)
+ifeq ($(VL_NOOPT),1)
+CPPFLAGS += -O0
+else ifeq ($(VL_DEBUG),)
 # Optimize
-COPT = -O2
+CPPFLAGS += -O3
 else
 # Debug
-COPT = -ggdb -DVL_DEBUG -D_GLIBCXX_DEBUG
-# Debug & Profile:
-#LDFLAGS += -pg -g
-#COPT = -ggdb -pg -g
+CPPFLAGS += @CFG_CXXFLAGS_DEBUG@ -DVL_DEBUG -D_GLIBCXX_DEBUG
+LDFLAGS += @CFG_LDFLAGS_DEBUG@
 endif
 #################
 
@@ -93,12 +98,12 @@ endif
 # -lfl not needed as Flex invoked with %nowrap option
 LIBS = $(CFG_LIBS) -lm
 
+CPPFLAGS += -DVERILATOR_INTERNAL_
 CPPFLAGS += -MMD
 CPPFLAGS += -I. -I$(bldsrc) -I$(srcdir) -I$(incdir) -I../../include
-#CPPFLAGS += -DVL_LEAK_CHECKS 	# If running valgrind or other hunting tool
-CPPFLAGS += $(COPT)
+#CPPFLAGS += -DVL_LEAK_CHECKS  # If running valgrind or other hunting tool
 CPPFLAGS += -MP # Only works on recent GCC versions
-ifeq ($(CFG_WITH_CCWARN),yes)	# Local... Else don't burden users
+ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users
 CPPFLAGS += -W -Wall $(CFG_CXXFLAGS_WEXTRA) $(CFG_CXXFLAGS_SRC) -Werror
 #CPPFLAGS += -pedantic-errors
 else
@@ -116,10 +121,17 @@ ifeq ($(CFG_WITH_DEFENV),yes)
  CPPFLAGS += -DDEFENV_SYSTEMC_ARCH=\"$(SYSTEMC_ARCH)\"
  CPPFLAGS += -DDEFENV_SYSTEMC_INCLUDE=\"$(SYSTEMC_INCLUDE)\"
  CPPFLAGS += -DDEFENV_SYSTEMC_LIBDIR=\"$(SYSTEMC_LIBDIR)\"
- ifeq ($(VERILATOR_ROOT),)	# Use what we're given, or intuit
+ ifeq ($(VERILATOR_ROOT),)  # Use what we're given, or intuit
   CPPFLAGS += -DDEFENV_VERILATOR_ROOT=\"$(pkgdatadir)\"
  else
   CPPFLAGS += -DDEFENV_VERILATOR_ROOT=\"$(VERILATOR_ROOT)\"
+ endif
+ ifneq ($(CFG_WITH_SOLVER),no)
+  CPPFLAGS += -DDEFENV_VERILATOR_SOLVER='"$(CFG_WITH_SOLVER)"'
+ else
+  ifneq ($(VERILATOR_SOLVER),)
+   CPPFLAGS += -DDEFENV_VERILATOR_SOLVER='"$(VERILATOR_SOLVER)"'
+  endif
  endif
 endif
 
@@ -129,6 +141,11 @@ ASTGEN = $(srcdir)/astgen
 BISONPRE = $(srcdir)/bisonpre
 FLEXFIX = $(srcdir)/flexfix
 VLCOVGEN = $(srcdir)/vlcovgen
+
+######################################################################
+# CCACHE flags (via environment as no command line option available)
+CCACHE_SLOPPINESS ?= pch_defines,time_macros
+export CCACHE_SLOPPINESS
 
 ######################################################################
 #### Top level
@@ -152,28 +169,64 @@ maintainer-copy::
 #### Top executable
 
 RAW_OBJS = \
+	V3Const__gen.o \
+	V3Error.o \
+	V3FileLine.o \
+	V3Graph.o \
+	V3GraphAcyc.o \
+	V3GraphAlg.o \
+	V3GraphPathChecker.o \
+	V3GraphTest.o \
+	V3Hash.o \
+	V3OptionParser.o \
+	V3Os.o \
+	V3ParseGrammar.o \
+	V3ParseImp.o \
+	V3ParseLex.o \
+	V3PreProc.o \
+	V3PreShell.o \
+	V3String.o \
+	V3ThreadPool.o \
+	V3Waiver.o \
 	Verilator.o \
+
+RAW_OBJS_PCH_ASTMT = \
+	V3Ast.o \
+	V3AstNodes.o \
+	V3Broken.o \
+	V3Config.o \
+	V3EmitCBase.o \
+	V3EmitCConstPool.o \
+	V3EmitCFunc.o \
+	V3EmitCHeaders.o \
+	V3EmitCImp.o \
+	V3EmitCInlines.o \
+	V3EmitCPch.o \
+	V3EmitV.o \
+	V3File.o \
+	V3Global.o \
+	V3Hasher.o \
+	V3Number.o \
+	V3Options.o \
+	V3Stats.o \
+	V3StatsReport.o \
+
+RAW_OBJS_PCH_ASTNOMT = \
 	V3Active.o \
 	V3ActiveTop.o \
 	V3Assert.o \
 	V3AssertPre.o \
-	V3Ast.o	\
-	V3AstNodes.o	\
 	V3Begin.o \
 	V3Branch.o \
-	V3Broken.o \
 	V3CCtors.o \
 	V3CUse.o \
 	V3Case.o \
 	V3Cast.o \
-	V3Cdc.o \
-	V3Changed.o \
 	V3Class.o \
 	V3Clean.o \
 	V3Clock.o \
 	V3Combine.o \
-	V3Config.o \
-	V3Const__gen.o \
+	V3Common.o \
 	V3Coverage.o \
 	V3CoverageJoin.o \
 	V3Dead.o \
@@ -181,38 +234,38 @@ RAW_OBJS = \
 	V3Depth.o \
 	V3DepthBlock.o \
 	V3Descope.o \
-	V3EmitC.o \
-	V3EmitCInlines.o \
-	V3EmitCSyms.o \
-	V3EmitCMake.o \
+	V3Dfg.o \
+	V3DfgAstToDfg.o \
+	V3DfgCache.o \
+	V3DfgDecomposition.o \
+	V3DfgDfgToAst.o \
+	V3DfgOptimizer.o \
+	V3DfgPasses.o \
+	V3DfgPeephole.o \
+	V3DfgRegularize.o \
+	V3DupFinder.o \
 	V3EmitCMain.o \
+	V3EmitCMake.o \
+	V3EmitCModel.o \
+	V3EmitCSyms.o \
 	V3EmitMk.o \
-	V3EmitV.o \
 	V3EmitXml.o \
-	V3Error.o \
+	V3ExecGraph.o \
 	V3Expand.o \
-	V3File.o \
-	V3FileLine.o \
+	V3Force.o \
+	V3Fork.o \
 	V3Gate.o \
-	V3GenClk.o \
-	V3Global.o \
-	V3Graph.o \
-	V3GraphAlg.o \
-	V3GraphAcyc.o \
-	V3GraphDfa.o \
-	V3GraphPathChecker.o \
-	V3GraphTest.o \
-	V3Hashed.o \
 	V3HierBlock.o \
 	V3Inline.o \
 	V3Inst.o \
 	V3InstrCount.o \
+	V3Interface.o \
 	V3Life.o \
 	V3LifePost.o \
 	V3LinkCells.o \
 	V3LinkDot.o \
-	V3LinkJump.o \
 	V3LinkInc.o \
+	V3LinkJump.o \
 	V3LinkLValue.o \
 	V3LinkLevel.o \
 	V3LinkParse.o \
@@ -220,63 +273,82 @@ RAW_OBJS = \
 	V3Localize.o \
 	V3MergeCond.o \
 	V3Name.o \
-	V3Number.o \
-	V3Options.o \
 	V3Order.o \
-	V3Os.o \
+	V3OrderGraphBuilder.o \
+	V3OrderMoveGraph.o \
+	V3OrderParallel.o \
+	V3OrderProcessDomains.o \
+	V3OrderSerial.o \
 	V3Param.o \
-	V3Partition.o \
-	V3PreShell.o \
 	V3Premit.o \
 	V3ProtectLib.o \
 	V3Randomize.o \
 	V3Reloop.o \
+	V3Sched.o \
+	V3SchedAcyclic.o \
+	V3SchedPartition.o \
+	V3SchedReplicate.o \
+	V3SchedTiming.o \
+	V3SchedVirtIface.o \
 	V3Scope.o \
 	V3Scoreboard.o \
 	V3Slice.o \
 	V3Split.o \
 	V3SplitAs.o \
 	V3SplitVar.o \
-	V3Stats.o \
-	V3StatsReport.o \
-	V3String.o \
+	V3StackCount.o \
 	V3Subst.o \
+	V3TSP.o \
 	V3Table.o \
 	V3Task.o \
+	V3Timing.o \
 	V3Trace.o \
 	V3TraceDecl.o \
 	V3Tristate.o \
-	V3TSP.o \
 	V3Undriven.o \
 	V3Unknown.o \
 	V3Unroll.o \
-	V3Waiver.o \
+	V3VariableOrder.o \
 	V3Width.o \
+	V3WidthCommit.o \
 	V3WidthSel.o \
-
-# Non-concatable
-NC_OBJS += \
-	V3ParseImp.o \
-	V3ParseGrammar.o \
-	V3ParseLex.o \
-	V3PreProc.o \
 
 # verilator_coverage
 VLCOV_OBJS = \
 	VlcMain.o \
 
+NON_STANDALONE_HEADERS = \
+	V3AstInlines.h \
+	V3AstNodeDType.h \
+	V3AstNodeExpr.h \
+	V3AstNodeOther.h \
+	V3DfgVertices.h \
+	V3ThreadPool.h \
+	V3WidthRemove.h \
+
+AST_DEFS := \
+	V3AstNodeDType.h \
+	V3AstNodeExpr.h \
+	V3AstNodeOther.h \
+
+DFG_DEFS := \
+	V3DfgVertices.h
+
+#### astgen common flags
+
+ASTGENFLAGS = -I $(srcdir)
+ASTGENFLAGS += $(foreach f,$(AST_DEFS),--astdef $f)
+ASTGENFLAGS += $(foreach f,$(DFG_DEFS),--dfgdef $f)
+
 #### Linking
 
 ifeq ($(VL_VLCOV),)
-PREDEP_H = V3Ast__gen_classes.h
-OBJS += $(RAW_OBJS) $(NC_OBJS)
+PREDEP_H = V3Ast__gen_forward_class_decls.h
+OBJS += $(RAW_OBJS) $(RAW_OBJS_PCH_ASTMT) $(RAW_OBJS_PCH_ASTNOMT)
 else
 PREDEP_H =
 OBJS += $(VLCOV_OBJS)
 endif
-
-V3__CONCAT.cpp: $(addsuffix .cpp, $(basename $(RAW_OBJS)))
-	$(PERL) $(srcdir)/../bin/verilator_includer $^ > $@
 
 $(TGT): $(PREDEP_H) $(OBJS)
 	@echo "      Linking $@..."
@@ -287,30 +359,50 @@ V3Number_test: V3Number_test.o
 
 #### Modules
 
-%__gen.cpp:	%.cpp $(ASTGEN) V3Ast.h V3AstNodes.h
-	$(PYTHON3) $(ASTGEN) -I $(srcdir) $*.cpp
+%__gen.cpp: %.cpp $(ASTGEN) $(AST_DEFS) $(DFG_DEFS)
+	$(PYTHON3) $(ASTGEN) $(ASTGENFLAGS) $*.cpp
 
-%.o:	%.cpp
+.SECONDARY:
+
+%.gch: %
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} ${CFG_CXXFLAGS_PCH} $< -o $@
+%.o: %.cpp
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} -c $< -o $@
-%.o:	%.c
+%.o: %.c
 	$(OBJCACHE) ${CC}  ${CFLAGS} ${CPPFLAGSWALL} -c $< -o $@
 
-V3ParseLex.o:	V3ParseLex.cpp V3Lexer.yy.cpp V3ParseBison.c
+V3ParseLex.o: V3ParseLex.cpp V3Lexer.yy.cpp V3ParseBison.c
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
-V3ParseGrammar.o:	V3ParseGrammar.cpp V3ParseBison.c
+V3ParseGrammar.o: V3ParseGrammar.cpp V3ParseBison.c
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
-V3ParseImp.o:	V3ParseImp.cpp V3ParseBison.c
+V3ParseImp.o: V3ParseImp.cpp V3ParseBison.c
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
 
-V3PreProc.o:	V3PreProc.cpp V3PreLex.yy.cpp
+V3PreProc.o: V3PreProc.cpp V3PreLex.yy.cpp
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $< -o $@
+
+define CXX_ASTMT_template
+$(1): $(basename $(1)).cpp V3PchAstMT.h.gch
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} ${CFG_CXXFLAGS_PCH_I} V3PchAstMT.h${CFG_GCH_IF_CLANG} -c $(srcdir)/$(basename $(1)).cpp -o $(1)
+
+endef
+
+$(foreach obj,$(RAW_OBJS_PCH_ASTMT),$(eval $(call CXX_ASTMT_template,$(obj))))
+
+define CXX_ASTNOMT_template
+$(1): $(basename $(1)).cpp V3PchAstNoMT.h.gch
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} ${CFG_CXXFLAGS_PCH_I} V3PchAstNoMT.h${CFG_GCH_IF_CLANG} -c $(srcdir)/$(basename $(1)).cpp -o $(1)
+
+endef
+
+$(foreach obj,$(RAW_OBJS_PCH_ASTNOMT),$(eval $(call CXX_ASTNOMT_template,$(obj))))
 
 #### Generated files
 
 # Target rule called before parallel build to make generated files
-serial:: V3Ast__gen_classes.h V3ParseBison.c
+serial:: V3Ast__gen_forward_class_decls.h V3ParseBison.c
 
 serial_vlcov:: vlcovgen.d
 
@@ -318,8 +410,8 @@ vlcovgen.d: $(VLCOVGEN) $(srcdir)/../include/verilated_cov_key.h
 	$(PYTHON3) $(VLCOVGEN) --srcdir $(srcdir)
 	touch $@
 
-V3Ast__gen_classes.h : $(ASTGEN) V3Ast.h V3AstNodes.h
-	$(PYTHON3) $(ASTGEN) -I $(srcdir)  --classes
+V3Ast__gen_forward_class_decls.h: $(ASTGEN) $(AST_DEFS) $(DFG_DEFS)
+	$(PYTHON3) $(ASTGEN) $(ASTGENFLAGS) --classes
 
 V3ParseBison.h: V3ParseBison.c
 
@@ -328,19 +420,28 @@ V3ParseBison.c: verilog.y $(BISONPRE)
 	@echo "If you get errors from verilog.y below, try upgrading bison to version 1.875 or newer."
 	$(PYTHON3) $(BISONPRE) --yacc ${YACC} -d -v -o V3ParseBison.c $<
 
-V3Lexer_pregen.yy.cpp:	verilog.l V3ParseBison.h $(HEADERS)
+V3Lexer_pregen.yy.cpp: verilog.l V3ParseBison.h $(HEADERS)
 	${LEX} --version
 	${LEX} ${LFLAGS} -o$@ $<
 
-V3Lexer.yy.cpp:	V3Lexer_pregen.yy.cpp $(FLEXFIX)
+V3Lexer.yy.cpp: V3Lexer_pregen.yy.cpp $(FLEXFIX)
 	$(PYTHON3) $(FLEXFIX) V3Lexer <$< >$@
 
-V3PreLex_pregen.yy.cpp:	V3PreLex.l $(HEADERS)
+V3PreLex_pregen.yy.cpp: V3PreLex.l $(HEADERS)
 	${LEX} --version
 	${LEX} ${LFLAGS} -o$@ $<
 
 V3PreLex.yy.cpp: V3PreLex_pregen.yy.cpp $(FLEXFIX)
 	$(PYTHON3) $(FLEXFIX) V3PreLex <$< >$@
+
+# For t_dist_header_cc
+HEADER_CC_H := $(filter-out $(NON_STANDALONE_HEADERS), $(notdir $(wildcard $(srcdir)/*.h)))
+
+.PHONY: header_cc
+header_cc: $(addsuffix __header_cc.o, $(basename $(HEADER_CC_H)))
+
+%__header_cc.cpp: %.h
+	$(PYTHON3) $(srcdir)/../bin/verilator_includer -DVL_MT_DISABLED_CODE_UNIT=1 $^ > $@
 
 .SUFFIXES:
 

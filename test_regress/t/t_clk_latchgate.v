@@ -19,7 +19,6 @@
 `define GATED_CLK_TESTCASE 1
 
 // A side effect of the problem is this warning, disabled by default
-//verilator lint_on IMPERFECTSCH
 
 // Test Bench
 module t (/*AUTOARG*/
@@ -28,8 +27,8 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer 	cyc=0;
-   reg [63:0] 	crc;
+   integer      cyc = 0;
+   reg [63:0]   crc;
 
    // Take CRC data and apply to testblock inputs
    wire [7:0]  dvld = crc[7:0];
@@ -37,18 +36,18 @@ module t (/*AUTOARG*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [7:0]		entry_vld;		// From test of Test.v
-   wire [7:0]		ff_en_vld;		// From test of Test.v
+   wire [7:0]           entry_vld;              // From test of Test.v
+   wire [7:0]           ff_en_vld;              // From test of Test.v
    // End of automatics
 
    Test test (/*AUTOINST*/
-	      // Outputs
-	      .ff_en_vld		(ff_en_vld[7:0]),
-	      .entry_vld		(entry_vld[7:0]),
-	      // Inputs
-	      .clk			(clk),
-	      .dvld			(dvld[7:0]),
-	      .ff_en_e1			(ff_en_e1[7:0]));
+              // Outputs
+              .ff_en_vld                (ff_en_vld[7:0]),
+              .entry_vld                (entry_vld[7:0]),
+              // Inputs
+              .clk                      (clk),
+              .dvld                     (dvld[7:0]),
+              .ff_en_e1                 (ff_en_e1[7:0]));
 
    reg err_code;
    reg ffq_clk_active;
@@ -69,18 +68,18 @@ module t (/*AUTOARG*/
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d crc=%x ",$time, cyc, crc);
+      $write("[%0t] cyc==%0d crc=%x ", $time, cyc, crc);
       $display(" en=%b fen=%b d=%b ev=%b",
-	       test.flop_en_vld[0],  test.ff_en_vld[0],
-	       test.dvld[0],  test.entry_vld[0]);
+               test.flop_en_vld[0],  test.ff_en_vld[0],
+               test.dvld[0],  test.entry_vld[0]);
 `endif
       cyc <= cyc + 1;
-      crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
+      crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
       if (cyc<3) begin
-	 crc <= 64'h5aef0c8d_d70a4497;
+         crc <= 64'h5aef0c8d_d70a4497;
       end
       else if (cyc==99) begin
-	 $write("[%0t] cyc==%0d crc=%x\n",$time, cyc, crc);
+         $write("[%0t] cyc==%0d crc=%x\n", $time, cyc, crc);
          if (ffq_clk_active == 0) begin
            $display ("----");
            $display ("%%Error: TESTCASE FAILED with no Clock arriving at FFQs");
@@ -94,8 +93,8 @@ module t (/*AUTOARG*/
            $stop;
          end
          else begin
-	   $write("*-* All Finished *-*\n");
-	   $finish;
+           $write("*-* All Finished *-*\n");
+           $finish;
         end
       end
    end
@@ -153,7 +152,7 @@ module Test (/*AUTOARG*/
    output wire [7:0] entry_vld;
 
    wire [7:0] gclk_vld;
-   wire [7:0] ff_en_vld /*verilator clock_enable*/;
+   wire [7:0] ff_en_vld;
    reg [7:0] flop_en_vld;
 
    always @(posedge clk) flop_en_vld <= ff_en_e1;

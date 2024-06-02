@@ -1,3 +1,9 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2020 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
+
 `verilator_config
 
-lint_off -rule UNOPTFLAT -file "*t_unopt_combo.v" -match "Signal unoptimizable: Feedback to clock or circular logic: *"
+lint_off -rule UNOPTFLAT -file "*t_unopt_combo.v" -match "Signal unoptimizable: Circular combinational logic: *"

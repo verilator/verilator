@@ -18,7 +18,7 @@ module t (/*AUTOARG*/
    integer i;
    reg [63:0] b;
    shortreal    r, r2;
-   integer      cyc=0;
+   integer      cyc = 0;
 
    realtime  uninit;
    initial if (uninit != 0.0) $stop;
@@ -86,7 +86,7 @@ module t (/*AUTOARG*/
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d crc=%x result=%x\n",$time, cyc, crc, result);
+      $write("[%0t] cyc==%0d crc=%x result=%x\n", $time, cyc, crc, result);
 `endif
       cyc <= cyc + 1;
       if (cyc==0) begin

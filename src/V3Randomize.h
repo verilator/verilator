@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -20,13 +20,18 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Ast.h"
+#include "V3ThreadSafety.h"
+
+class AstClass;
+class AstFunc;
+class AstNetlist;
 
 class V3Randomize final {
 public:
-    static void randomizeNetlist(AstNetlist* nodep);
+    static void randomizeNetlist(AstNetlist* nodep) VL_MT_DISABLED;
 
-    static AstFunc* newRandomizeFunc(AstClass* nodep);
+    static AstFunc* newRandomizeFunc(AstClass* nodep) VL_MT_DISABLED;
+    static AstFunc* newSRandomFunc(AstClass* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

@@ -11,7 +11,7 @@ module t (/*AUTOARG*/
 
    input clk;
 
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
    reg [63:0] crc;
    reg [63:0] sum;
 
@@ -21,18 +21,18 @@ module t (/*AUTOARG*/
 
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d crc=%x sum=%x out=%x %x\n",$time, cyc, crc, sum, out1, out2);
+      $write("[%0t] cyc==%0d crc=%x sum=%x out=%x %x\n", $time, cyc, crc, sum, out1, out2);
 `endif
       cyc <= cyc + 1;
-      crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
+      crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
       sum <= {sum[62:0], sum[63]^sum[2]^sum[0]} ^ {out2,out1};
       if (cyc==1) begin
-	 // Setup
-	 crc <= 64'h00000000_00000097;
-	 sum <= 64'h0;
+         // Setup
+         crc <= 64'h00000000_00000097;
+         sum <= 64'h0;
       end
       else if (cyc==90) begin
-	 if (sum !== 64'he396068aba3898a2) $stop;
+         if (sum !== 64'he396068aba3898a2) $stop;
       end
       else if (cyc==91) begin
       end
@@ -43,8 +43,8 @@ module t (/*AUTOARG*/
       else if (cyc==94) begin
       end
       else if (cyc==99) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

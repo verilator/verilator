@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 lint(
-    verilator_flags2 => ["--lint-only t/t_vlt_warn.vlt -Wall"],
+    verilator_flags2 => ["--lint-only -Wall t/t_vlt_warn.vlt"],
     );
 
 ok(1);

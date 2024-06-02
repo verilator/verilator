@@ -14,8 +14,8 @@ scenarios(vlt_all => 1);
 
 # This test makes randomly named .cpp/.h files, which tend to collect, so remove them first
 foreach my $filename (glob ("$Self->{obj_dir}/*_PS*.cpp"
-                            ." $Self->{obj_dir}/*_PS*.h"
-                            ." $Self->{obj_dir}/*.d" )) {
+                            . " $Self->{obj_dir}/*_PS*.h"
+                            . " $Self->{obj_dir}/*.d")) {
     print "rm $filename\n" if $Self->{verbose};
     unlink $filename;
 }
@@ -35,14 +35,14 @@ execute(
 
 # 'to="PS"' indicates means we probably mis-protected something already protected
 # Use --debug-protect to assist debugging these
-file_grep_not("$Self->{obj_dir}/$Self->{VM_PREFIX}__idmap.xml", qr/to="PS/);
+file_grep_not("$Self->{obj_dir}/$Self->{vm_prefix}__idmap.xml", qr/to="PS/);
 
 if ($Self->{vlt_all}) {
     # Check for secret in any outputs
     my $any;
-    foreach my $filename (glob $Self->{obj_dir}."/*.[ch]*") {
+    foreach my $filename (glob $Self->{obj_dir} . "/*.[ch]*") {
         if ($filename =~ /secret/i) {
-            $Self->error("Secret found in a filename: ".$filename);
+            $Self->error("Secret found in a filename: " . $filename);
         }
         file_grep_not($filename, qr/secret/i);
         $any = 1;

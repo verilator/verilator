@@ -39,7 +39,7 @@ endmodule : mod_inner
 
 module mod_a_mon;
    bit y;
-   function void accessor;
+   function automatic void accessor;
       begin : accessor_block
          bit read_x = mod_a.u_inner.x;
          y = read_x;

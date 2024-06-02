@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2013-2017 by Wilson Snyder. This program is free software; you can
+// Copyright 2013-2024 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -11,6 +11,8 @@
 
 #ifndef TEST_CHECK_H_
 #define TEST_CHECK_H_
+
+#include <iostream>
 
 extern int errors;
 
@@ -34,7 +36,7 @@ static const bool verbose = false;
 
 #define TEST_CHECK_EQ(got, exp) TEST_CHECK(got, exp, ((got) == (exp)));
 #define TEST_CHECK_NE(got, exp) TEST_CHECK(got, exp, ((got) != (exp)));
-#define TEST_CHECK_CSTR(got, exp) TEST_CHECK(got, exp, 0 == strcmp((got), (exp)));
+#define TEST_CHECK_CSTR(got, exp) TEST_CHECK(got, exp, 0 == std::strcmp((got), (exp)));
 
 #define TEST_CHECK_HEX_EQ(got, exp) \
     do { \
@@ -54,11 +56,30 @@ static const bool verbose = false;
         } \
     } while (0)
 
+#define TEST_CHECK_Z(got) \
+    do { \
+        if ((got)) { \
+            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
+                      << ": GOT!= NULL   EXP=NULL" << std::endl; \
+            ++errors; \
+        } \
+    } while (0)
+
 #define TEST_CHECK_NZ(got) \
     do { \
         if (!(got)) { \
             std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
                       << ": GOT= NULL   EXP!=NULL" << std::endl; \
+            ++errors; \
+        } \
+    } while (0)
+
+#define TEST_CHECK_REAL_EQ(got, exp, delta) \
+    do { \
+        if (std::fabs(got - exp) > delta) { \
+            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::showpoint \
+                      << ": GOT=" << (got) << "   EXP=" << (exp) << " +/- " << (delta) \
+                      << std::endl; \
             ++errors; \
         } \
     } while (0)

@@ -15,29 +15,29 @@
 
 #else
 
-#include "Vt_vpi_zero_time_cb.h"
 #include "verilated.h"
-#include "svdpi.h"
-#include <dlfcn.h>
-
-#include "Vt_vpi_zero_time_cb__Dpi.h"
-
-#include "verilated_vpi.h"
 #include "verilated_vcd_c.h"
+#include "verilated_vpi.h"
+
+#include "Vt_vpi_zero_time_cb.h"
+#include "Vt_vpi_zero_time_cb__Dpi.h"
+#include "svdpi.h"
+
+#include <dlfcn.h>
 
 #endif
 
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 
+// These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
 int errors = 0;
-unsigned int main_time = 0;
 unsigned int callback_count_zero_time = 0;
 unsigned int callback_count_start_of_sim = 0;
 
@@ -105,25 +105,27 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 
 #else
 
-double sc_time_stamp() { return main_time; }
+int main(int argc, char** argv) {
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
 
-int main(int argc, char** argv, char** env) {
-    vluint64_t sim_time = 1100;
-    Verilated::commandArgs(argc, argv);
-    Verilated::debug(0);
+    uint64_t sim_time = 1100;
+    contextp->debug(0);
+    contextp->commandArgs(argc, argv);
 
-    VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
+    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
+                                                        // Note null name - we're flattening it out
+                                                        ""}};
 
-// clang-format off
+    // clang-format off
 #ifdef VERILATOR
 # ifdef TEST_VERBOSE
-    Verilated::scopesDump();
+    contextp->scopesDump();
 # endif
 #endif
     // clang-format on
 
 #if VM_TRACE
-    Verilated::traceEverOn(true);
+    contextp->traceEverOn(true);
     VL_PRINTF("Enabling waves...\n");
     VerilatedVcdC* tfp = new VerilatedVcdC;
     topp->trace(tfp, 99);
@@ -136,7 +138,7 @@ int main(int argc, char** argv, char** env) {
         void* lib = dlopen(filenamep, RTLD_LAZY);
         void* bootstrap = dlsym(lib, "vpi_compat_bootstrap");
         if (!bootstrap) {
-            std::string msg = std::string("%Error: Could not dlopen ") + filenamep;
+            const std::string msg = "%Error: Could not dlopen "s + filenamep;
             vl_fatal(__FILE__, __LINE__, "main", msg.c_str());
         }
         ((void (*)(void))bootstrap)();
@@ -146,23 +148,23 @@ int main(int argc, char** argv, char** env) {
 
     topp->eval();
     topp->clk = 0;
-    main_time += 1;
+    contextp->timeInc(1);
 
-    while (vl_time_stamp64() < sim_time && !Verilated::gotFinish()) {
-        main_time += 1;
+    while (contextp->time() < sim_time && !contextp->gotFinish()) {
+        contextp->timeInc(1);
         topp->eval();
         VerilatedVpi::callValueCbs();
         VerilatedVpi::callTimedCbs();
         topp->clk = !topp->clk;
         // mon_do();
 #if VM_TRACE
-        if (tfp) tfp->dump(main_time);
+        if (tfp) tfp->dump(contextp->time());
 #endif
     }
 
     VerilatedVpi::callCbs(cbEndOfSimulation);
 
-    if (!Verilated::gotFinish()) {
+    if (!contextp->gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     topp->final();
@@ -171,7 +173,6 @@ int main(int argc, char** argv, char** env) {
     if (tfp) tfp->close();
 #endif
 
-    VL_DO_DANGLING(delete topp, topp);
     return 0;
 }
 

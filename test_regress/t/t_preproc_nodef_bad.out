@@ -1,0 +1,4 @@
+%Error: t/t_preproc_nodef_bad.v:7:1: Define or directive not defined: '`not_defined'
+    7 | `not_defined
+      | ^~~~~~~~~~~~
+%Error: Exiting due to

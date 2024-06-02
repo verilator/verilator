@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -26,6 +26,7 @@
 #define VERILATOR_VERILATED_COV_H_
 
 #include "verilatedos.h"
+
 #include "verilated.h"
 
 #include <iostream>
@@ -35,23 +36,7 @@
 class VerilatedCovImp;
 
 //=============================================================================
-/// Conditionally compile statements only when doing coverage (when
-/// VM_COVERAGE is defined)
-
-// clang-format off
-#ifdef VM_COVERAGE
-# define VL_IF_COVER(stmts) \
-    do { stmts; } while (false)
-#else
-# define VL_IF_COVER(stmts) \
-    do { \
-        if (false) { stmts; } \
-    } while (false)
-#endif
-// clang-format on
-
-//=============================================================================
-/// Insert a item for coverage analysis.
+/// Insert an item for coverage analysis.
 /// The first argument is a pointer to the count to be dumped.
 /// The remaining arguments occur in pairs: A string key, and a value.
 /// The value may be a string, or another type which will be auto-converted to a string.
@@ -72,27 +57,23 @@ class VerilatedCovImp;
 ///
 /// Example:
 ///
-///     vluint32_t m_cases[10];  // Storage for coverage data
+///     uint32_t m_cases[10];  // Storage for coverage data
 ///     constructor() {
 ///         // Initialize
 ///         for (int i = 0; i < 10; ++i) m_cases[i] = 0;
 ///         // Insert
 ///         for (int i = 0; i < 10; ++i)
-///             VL_COVER_INSERT(&m_cases[i], "comment", "Coverage Case", "i", cvtToNumStr(i));
+///             VL_COVER_INSERT(covp, name(), &m_cases[i], "comment", "Coverage Case",
+///                             "i", cvtToNumStr(i));
 ///     }
 
-#define VL_COVER_INSERT(covcontextp, countp, ...) \
-    VL_IF_COVER(covcontextp->_inserti(countp); covcontextp->_insertf(__FILE__, __LINE__); \
-                covcontextp->_insertp("hier", name(), __VA_ARGS__))
-
-//=============================================================================
-// Convert VL_COVER_INSERT value arguments to strings, is \internal
-
-template <class T> std::string vlCovCvtToStr(const T& t) VL_PURE {
-    std::ostringstream os;
-    os << t;
-    return os.str();
-}
+#define VL_COVER_INSERT(covcontextp, name, countp, ...) \
+    do { \
+        auto const ccontextp = covcontextp; \
+        ccontextp->_inserti(countp); \
+        ccontextp->_insertf(__FILE__, __LINE__); \
+        ccontextp->_insertp("hier", name, __VA_ARGS__); \
+    } while (false)
 
 //=============================================================================
 //  VerilatedCov
@@ -107,12 +88,13 @@ class VerilatedCovContext VL_NOT_FINAL : public VerilatedVirtualBase {
 
 public:
     // METHODS
-    /// Return default filename
-    static const char* defaultFilename() VL_PURE { return "coverage.dat"; }
+    /// Return default filename, may override with +verilator+coverage+file
+    std::string defaultFilename() VL_MT_SAFE;
     /// Make all data per_instance, overriding point's per_instance
     void forcePerInstance(bool flag) VL_MT_SAFE;
     /// Write all coverage data to a file
-    void write(const char* filenamep = defaultFilename()) VL_MT_SAFE;
+    void write(const std::string& filename) VL_MT_SAFE;
+    void write() VL_MT_SAFE { write(defaultFilename()); }
     /// Clear coverage points (and call delete on all items)
     void clear() VL_MT_SAFE;
     /// Clear items not matching the provided string
@@ -120,14 +102,15 @@ public:
     /// Zero coverage points
     void zero() VL_MT_SAFE;
 
-public:  // But Internal use only
+    // METHODS - public but Internal use only
+
     // Insert a coverage item
     // We accept from 1-30 key/value pairs, all as strings.
     // Call _insert1, followed by _insert2 and _insert3
     // Do not call directly; use VL_COVER_INSERT or higher level macros instead
     // _insert1: Remember item pointer with count.  (Not const, as may add zeroing function)
-    void _inserti(vluint32_t* itemp) VL_MT_SAFE;
-    void _inserti(vluint64_t* itemp) VL_MT_SAFE;
+    void _inserti(uint32_t* itemp) VL_MT_SAFE;
+    void _inserti(uint64_t* itemp) VL_MT_SAFE;
     // _insert2: Set default filename and line number
     void _insertf(const char* filename, int lineno) VL_MT_SAFE;
     // _insert3: Set parameters
@@ -138,15 +121,15 @@ public:  // But Internal use only
 #define K(n) const char* key##n
 #define A(n) const char *key##n, const char *valp##n  // Argument list
 #define D(n) const char *key##n = nullptr, const char *valp##n = nullptr  // Argument list
-    void _insertp(D(0), D(1), D(2), D(3), D(4), D(5), D(6), D(7), D(8), D(9));
+    void _insertp(D(0), D(1), D(2), D(3), D(4), D(5), D(6), D(7), D(8), D(9)) VL_MT_SAFE;
     void _insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8), A(9), A(10), D(11), D(12),
-                  D(13), D(14), D(15), D(16), D(17), D(18), D(19));
+                  D(13), D(14), D(15), D(16), D(17), D(18), D(19)) VL_MT_SAFE;
     void _insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7), A(8), A(9), A(10), A(11), A(12),
                   A(13), A(14), A(15), A(16), A(17), A(18), A(19), A(20), D(21), D(22), D(23),
-                  D(24), D(25), D(26), D(27), D(28), D(29));
+                  D(24), D(25), D(26), D(27), D(28), D(29)) VL_MT_SAFE;
     // Backward compatibility for Verilator
     void _insertp(A(0), A(1), K(2), int val2, K(3), int val3, K(4), const std::string& val4, A(5),
-                  A(6), A(7));
+                  A(6), A(7)) VL_MT_SAFE;
 
 #undef K
 #undef A
@@ -157,12 +140,12 @@ protected:
     friend class VerilatedCovImp;
     // CONSTRUCTORS
     // Internal: Only made as part of VerilatedCovImp
-    VerilatedCovContext() {}
-    virtual ~VerilatedCovContext() {}
+    VerilatedCovContext() = default;
+    ~VerilatedCovContext() override = default;
 
     // METHODS
     // Internal: access to implementation class
-    VerilatedCovImp* impp() { return reinterpret_cast<VerilatedCovImp*>(this); }
+    VerilatedCovImp* impp() VL_MT_SAFE { return reinterpret_cast<VerilatedCovImp*>(this); }
 };
 
 //=============================================================================
@@ -180,11 +163,10 @@ class VerilatedCov final {
 public:
     // METHODS
     /// Return default filename for the current thread
-    static const char* defaultFilename() VL_PURE { return VerilatedCovContext::defaultFilename(); }
+    static std::string defaultFilename() VL_MT_SAFE { return threadCovp()->defaultFilename(); }
     /// Write all coverage data to a file for the current thread
-    static void write(const char* filenamep = defaultFilename()) VL_MT_SAFE {
-        threadCovp()->write(filenamep);
-    }
+    static void write(const std::string& filename) VL_MT_SAFE { threadCovp()->write(filename); }
+    static void write() VL_MT_SAFE { write(defaultFilename()); }
     /// Clear coverage points (and call delete on all items) for the current thread
     static void clear() VL_MT_SAFE { threadCovp()->clear(); }
     /// Clear items not matching the provided string for the current thread

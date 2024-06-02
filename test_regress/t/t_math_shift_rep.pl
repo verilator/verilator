@@ -11,7 +11,6 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
-    verilator_flags2 => ["-CFLAGS '-DVL_DEBUG -ggdb -O0'"],
     );
 
 execute(

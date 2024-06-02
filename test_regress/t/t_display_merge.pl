@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
-    verilator_flags2=>["--stats"],
+    verilator_flags2 => ["--stats"],
     );
 
 execute(
@@ -19,8 +19,8 @@ execute(
     expect_filename => $Self->{golden_filename},
     );
 
-file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}__stats.txt",
-          qr/Node count, DISPLAY \s+ 41 \s+ 27 \s+ 27 \s+ 6/);
+file_grep("$Self->{obj_dir}/$Self->{vm_prefix}__stats.txt",
+          qr/Node count, DISPLAY \s+ 44 \s+ 27 \s+ 27 \s+ 6/);
 
 ok(1);
 1;

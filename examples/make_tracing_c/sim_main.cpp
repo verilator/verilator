@@ -17,11 +17,8 @@
 // Legacy function required only so linking works on Cygwin and MSVC++
 double sc_time_stamp() { return 0; }
 
-int main(int argc, char** argv, char** env) {
+int main(int argc, char** argv) {
     // This is a more complicated example, please also see the simpler examples/make_hello_c.
-
-    // Prevent unused variable warnings
-    if (false && argc && argv && env) {}
 
     // Create logs/ directory in case we have traces to put under it
     Verilated::mkdir("logs");
@@ -34,6 +31,8 @@ int main(int argc, char** argv, char** env) {
     // Using unique_ptr is similar to
     // "VerilatedContext* contextp = new VerilatedContext" then deleting at end.
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    // Do not instead make Vtop as a file-scope static variable, as the
+    // "C++ static initialization order fiasco" may cause a crash
 
     // Set debug level, 0 is off, 9 is highest presently used
     // May be overridden by commandArgs argument parsing
@@ -69,7 +68,7 @@ int main(int argc, char** argv, char** env) {
         // Historical note, before Verilator 4.200 Verilated::gotFinish()
         // was used above in place of contextp->gotFinish().
         // Most of the contextp-> calls can use Verilated:: calls instead;
-        // the Verilated:: versions simply assume there's a single context
+        // the Verilated:: versions just assume there's a single context
         // being used (per thread).  It's faster and clearer to use the
         // newer contextp-> versions.
 
@@ -103,8 +102,8 @@ int main(int argc, char** argv, char** env) {
         top->eval();
 
         // Read outputs
-        VL_PRINTF("[%" VL_PRI64 "d] clk=%x rstl=%x iquad=%" VL_PRI64 "x"
-                  " -> oquad=%" VL_PRI64 "x owide=%x_%08x_%08x\n",
+        VL_PRINTF("[%" PRId64 "] clk=%x rstl=%x iquad=%" PRIx64 " -> oquad=%" PRIx64
+                  " owide=%x_%08x_%08x\n",
                   contextp->time(), top->clk, top->reset_l, top->in_quad, top->out_quad,
                   top->out_wide[2], top->out_wide[1], top->out_wide[0]);
     }
@@ -117,6 +116,9 @@ int main(int argc, char** argv, char** env) {
     Verilated::mkdir("logs");
     contextp->coveragep()->write("logs/coverage.dat");
 #endif
+
+    // Final simulation summary
+    contextp->statsPrintSummary();
 
     // Return good completion status
     // Don't use exit() or destructor won't get called

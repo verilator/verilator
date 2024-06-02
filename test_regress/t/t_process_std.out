@@ -1,0 +1,3 @@
+[0] %Error: verilated_std.sv:154: Assertion failed in top.std.process.set_randstate: std::process::set_randstate() not supported
+%Error: verilated_std.sv:154: Verilog $stop
+Aborting...

@@ -56,8 +56,8 @@ module t (/*AUTOARG*/
    reg   c;
 
    test test_i (/*AUTOINST*/
-		// Inputs
-		.clk			(clk));
+                // Inputs
+                .clk                    (clk));
 
    // This is a compile time only test. Immediately finish
    always @(posedge clk) begin
@@ -76,7 +76,7 @@ module test (/*AUTOARG*/
 
    // Use the enumeration size to initialize a dynamic array
    t_pinid  e;
-   int 	 myarray1 [] = new [e.num];
+   int   myarray1 [] = new [e.num];
 
    always @(posedge clk) begin
 
@@ -87,18 +87,18 @@ module test (/*AUTOARG*/
       e = e.first;
 
       forever begin
-	 myarray1[e] <= e.prev;
+         myarray1[e] <= e.prev;
 
 `ifdef TEST_VERBOSE
-	 $write ("myarray1[%d] (enum %s) = %d\n", e, e.name, myarray1[e]);
+         $write ("myarray1[%d] (enum %s) = %d\n", e, e.name, myarray1[e]);
 `endif
 
-	 if (e == e.last) begin
-	    break;
-	 end
-	 else begin
-	    e = e.next;
-	 end
+         if (e == e.last) begin
+            break;
+         end
+         else begin
+            e = e.next;
+         end
       end
    end
 

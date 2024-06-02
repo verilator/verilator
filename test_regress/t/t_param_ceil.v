@@ -8,12 +8,12 @@ module t (/*AUTOARG*/);
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [31:0]		O_out;			// From test of Test.v
+   wire [31:0]          O_out;                  // From test of Test.v
    // End of automatics
 
    Test test (/*AUTOINST*/
-	      // Outputs
-	      .O_out			(O_out[31:0]));
+              // Outputs
+              .O_out                    (O_out[31:0]));
 
    initial begin
       if (O_out != 32'h4) $stop;
@@ -34,8 +34,8 @@ module Test
        .pBAR(2)
        ) U_test
        (
-	.O_out(O_out)
-	);
+        .O_out(O_out)
+        );
 endmodule
 
 module test

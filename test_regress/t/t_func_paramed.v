@@ -16,37 +16,37 @@ module t (/*AUTOARG*/
    wire [2:0] out_x;
 
    extractor #(4,3) extractor (
-			       // Outputs
-			       .out	(out_x),
-			       // Inputs
-			       .in	(in_a),
-			       .sel	(sel));
+                               // Outputs
+                               .out     (out_x),
+                               // Inputs
+                               .in      (in_a),
+                               .sel     (sel));
 
    integer cyc; initial cyc=1;
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
-	 //$write("%d %x %x %x\n", cyc, in_a, sel, out_x);
-	 if (cyc==1) begin
-	    in_a <= 12'b001_101_111_010;
-	    sel <= 32'd0;
-	 end
-	 if (cyc==2) begin
-	    sel <= 32'd1;
-	    if (out_x != 3'b010) $stop;
-	 end
-	 if (cyc==3) begin
-	    sel <= 32'd2;
-	    if (out_x != 3'b111) $stop;
-	 end
-	 if (cyc==4) begin
-	    sel <= 32'd3;
-	    if (out_x != 3'b101) $stop;
-	 end
-	 if (cyc==9) begin
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         cyc <= cyc + 1;
+         //$write("%d %x %x %x\n", cyc, in_a, sel, out_x);
+         if (cyc==1) begin
+            in_a <= 12'b001_101_111_010;
+            sel <= 32'd0;
+         end
+         if (cyc==2) begin
+            sel <= 32'd1;
+            if (out_x != 3'b010) $stop;
+         end
+         if (cyc==3) begin
+            sel <= 32'd2;
+            if (out_x != 3'b111) $stop;
+         end
+         if (cyc==4) begin
+            sel <= 32'd3;
+            if (out_x != 3'b101) $stop;
+         end
+         if (cyc==9) begin
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 endmodule
@@ -62,19 +62,19 @@ module extractor (/*AUTOARG*/
 
    input [IN_WIDTH*OUT_WIDTH-1:0] in;
    output [OUT_WIDTH-1:0]         out;
-   input [31:0] 		  sel;
+   input [31:0]                   sel;
 
    wire [OUT_WIDTH-1:0] out = selector(in,sel);
 
    function [OUT_WIDTH-1:0] selector;
       input [IN_WIDTH*OUT_WIDTH-1:0] inv;
-      input [31:0] 		  selv;
+      input [31:0]                selv;
       integer i;
       begin
-	 selector = 0;
-	 for (i=0; i<OUT_WIDTH; i=i+1) begin
-	    selector[i] = inv[selv*OUT_WIDTH+i];
-	 end
+         selector = 0;
+         for (i=0; i<OUT_WIDTH; i=i+1) begin
+            selector[i] = inv[selv*OUT_WIDTH+i];
+         end
       end
    endfunction
 endmodule

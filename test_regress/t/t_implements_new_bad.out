@@ -1,0 +1,5 @@
+%Error: t/t_implements_new_bad.v:13:11: Illegal to call 'new' using an abstract virtual class 'Icls' (IEEE 1800-2023 8.21)
+                                      : ... note: In instance 't'
+   13 |       c = new;   
+      |           ^~~
+%Error: Exiting due to

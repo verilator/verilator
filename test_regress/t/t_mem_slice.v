@@ -29,7 +29,7 @@ module t (/*AUTOARG*/
    logic [8:0][1:0] command_A4;
    logic [8:0][1:0] command_B4;
 
-   logic [8:0] pipe1	      [7:0];
+   logic [8:0] pipe1          [7:0];
    logic [8:0] pipe1_input;
 
    integer cyc;
@@ -62,19 +62,19 @@ module t (/*AUTOARG*/
       cyc = 0;
       use_AnB = 0;
       for (int i = 0; i < 7; ++i) begin
-	 command_A[i] = 2'b00;
-	 command_B[i] = 2'b11;
-	 command_A2[i] = 2'b00;
-	 command_B2[i] = 2'b11;
-	 pipe1_input = 9'b0;
+         command_A[i] = 2'b00;
+         command_B[i] = 2'b11;
+         command_A2[i] = 2'b00;
+         command_B2[i] = 2'b11;
+         pipe1_input = 9'b0;
       end
       for (int i = 0; i < 2; ++i) begin
-	 for (int j = 0; j < 3; ++j) begin
-	    for (int k = 0; k < 4; ++k) begin
-	       command_A3[i][j][k] = 2'b00;
-	       command_B3[i][j][k] = 2'b11;
-	    end
-	 end
+         for (int j = 0; j < 3; ++j) begin
+            for (int k = 0; k < 4; ++k) begin
+               command_A3[i][j][k] = 2'b00;
+               command_B3[i][j][k] = 2'b11;
+            end
+         end
       end
    end
 
@@ -82,42 +82,42 @@ module t (/*AUTOARG*/
       use_AnB <= ~use_AnB;
       cyc <= cyc + 1;
       if (use_AnB) begin
-	 if (active_command[3] != 2'b00) begin
-	    $stop;
-	 end
-	 if (active_command2[3] != 2'b00) begin
-	    $stop;
-	 end
-	 if (active_command3[0][1][2] != 2'b00) begin
-	    $stop;
-	 end
+         if (active_command[3] != 2'b00) begin
+            $stop;
+         end
+         if (active_command2[3] != 2'b00) begin
+            $stop;
+         end
+         if (active_command3[0][1][2] != 2'b00) begin
+            $stop;
+         end
       end
       if (!use_AnB) begin
-	 if (active_command[3] != 2'b11) begin
-	    $stop;
-	 end
-	 if (active_command2[3] != 2'b11) begin
-	    $stop;
-	 end
+         if (active_command[3] != 2'b11) begin
+            $stop;
+         end
+         if (active_command2[3] != 2'b11) begin
+            $stop;
+         end
       end
    end
 
    logic [8:0] last_pipe;
    always @(posedge clk) begin
       if (cyc < 3) begin
-	 last_pipe <= pipe1[0];
+         last_pipe <= pipe1[0];
       end
       else begin
-	 if (last_pipe + 1 != pipe1[0]) begin
-	    $stop;
-	 end
-	 else begin
-	    last_pipe <= pipe1[0];
-	 end
+         if (last_pipe + 1 != pipe1[0]) begin
+            $stop;
+         end
+         else begin
+            last_pipe <= pipe1[0];
+         end
       end
       if (cyc > 10) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

@@ -8,13 +8,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-
 scenarios(simulator => 1);
 top_filename("t/t_flag_make_cmake.v");
 
 compile(  # Don't call cmake nor gmake from driver.pl
-    verilator_make_cmake => 0,
-    verilator_make_gmake => 0,
     verilator_flags2 => ['--exe --cc --build -j 2',
                          '../' . $Self->{main_filename},
                          '-MAKEFLAGS -p --trace'],

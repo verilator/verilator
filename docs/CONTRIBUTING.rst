@@ -10,8 +10,11 @@ contributions flow more efficiently.
 Did you find a bug?
 -------------------
 
-- Please **Ensure the bug was not already reported** by searching
+- Please **ensure the bug was not already reported** by searching
   `Verilator Issues <https://verilator.org/issues>`__.
+
+- Please **download the latest development GitHub version**, build, and see
+  if the issue has been fixed.
 
 - If you're unable to find an open issue addressing the problem, `open a
   new Verilator issue <https://verilator.org/issues/new>`__.
@@ -20,21 +23,28 @@ Did you find a bug?
     demonstrating the bug and expected behavior that is not occurring.
 
   - The ideal example works against other simulators, and is in the
-    test_regress/t test format, as described in `docs/internals
-    <internals.rst>`__.
+    test_regress/t test format, as described in
+    `Verilator Internals Documentation
+    <https://github.com/verilator/verilator/blob/master/docs/internals.rst>`__.
 
 
 Did you write a patch that fixes a bug?
 ---------------------------------------
 
-- Please `Open a new issue <https://verilator.org/issues/new>`__.
+- Please `Open a new Verilator issue <https://verilator.org/issues/new>`__
+  if there is not one already describing the bug.
 
-- You may attach a patch to the issue, or (preferred) may request a
-  GitHub pull request.
+- Please `Open a Verilator pull request
+  <https://github.com/verilator/verilator/pulls>`__.
 
-  - Verilator uses GitHub Actions to provide continuous integration.  You
-    may want to enable Actions on your GitHub branch to ensure your changes
-    keep the tests passing. See `docs/internals <internals.rst>`__.
+- See the coding conventions, and other developer information in
+  ``docs/internals.rst`` in the distribution, or as rendered at
+  `Verilator Internals Documentation
+  <https://github.com/verilator/verilator/blob/master/docs/internals.rst>`__.
+
+- Verilator uses GitHub Actions to provide continuous integration.  You
+  may want to enable Actions on your GitHub branch to ensure your changes
+  keep the tests passing.
 
 - Your source-code contributions must be certified as open source,
   under the `Developer Certificate of
@@ -44,15 +54,10 @@ Did you write a patch that fixes a bug?
   - Have your patch include the addition of your name to `docs/CONTRIBUTORS
     <CONTRIBUTORS>`__ (preferred).
 
-  - Use "git -s" as part of your commit. This adds a "signed-of-by"
-    attribute which will certify your contribution as described in the
-    `Signed-of-By convention
-    <https://github.com/wking/signed-off-by/blob/master/Documentation/SubmittingPatches>`__.
-
   - Email, or post in an issue a statement that you certify your
     contributions.
 
-  - In any of these cases your name will be added to `docs/CONTRIBUTORS
+  - In any of these cases, your name will be added to `docs/CONTRIBUTORS
     <CONTRIBUTORS>`__ and you are agreeing all future contributions are
     also certified.
 
@@ -61,13 +66,10 @@ Did you write a patch that fixes a bug?
     contribution.
 
 - Your test contributions are generally considered released into the
-  Creative Commons Public Domain (CC0), unless you request otherwise or
+  Creative Commons Public Domain (CC0), unless you request otherwise, or
   put a GNU/Artistic license on your file.
 
-- Most important is we get your patch. If you’d like to clean up
-  indentation and related issues ahead of our feedback, that is
-  appreciated; please see the coding conventions in `docs/internals
-  <internals.rst>`__.
+- Most important is we get your patch.
 
 
 Do you have questions?

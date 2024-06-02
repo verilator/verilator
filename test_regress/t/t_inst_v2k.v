@@ -19,12 +19,12 @@ module t (/*AUTOARG*/
    reg ionewire;
 
 `ifdef never_just_for_verilog_mode
-   wire oonewire;		// From sub of t_inst_v2k__sub.v
+   wire oonewire;               // From sub of t_inst_v2k__sub.v
 `endif
 
-   wire [7:0]		osizedreg;		// From sub of t_inst_v2k__sub.v
-   wire [1:0]		tied;
-   wire [3:0]		tied_also;
+   wire [7:0]           osizedreg;              // From sub of t_inst_v2k__sub.v
+   wire [1:0]           tied;
+   wire [3:0]           tied_also;
 
    hello hsub (.tied_also);
 
@@ -32,32 +32,32 @@ module t (/*AUTOARG*/
    t_inst_v2k__sub sub
      (
       // Outputs
-      .osizedreg			(osizedreg[7:0]),
+      .osizedreg                        (osizedreg[7:0]),
       // verilator lint_off IMPLICIT
-      .oonewire				(oonewire),
+      .oonewire                         (oonewire),
       // verilator lint_on IMPLICIT
-      .tied				(tied[1:0]),
+      .tied                             (tied[1:0]),
       // Inputs
-      .isizedwire			(isizedwire[7:0]),
-      .ionewire				(ionewire));
+      .isizedwire                       (isizedwire[7:0]),
+      .ionewire                         (ionewire));
 
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
-	 if (cyc==1) begin
-	    ionewire <= 1'b1;
-	    isizedwire <= 8'd8;
-	 end
-	 if (cyc==2) begin
-	    if (low != 2'b00) $stop;
-	    if (high != 2'b11) $stop;
-	    if (oonewire !== 1'b1) $stop;
-	    if (isizedwire !== 8'd8) $stop;
-	    if (tied != 2'b10) $stop;
-	    if (tied_also != 4'b1010) $stop;
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         cyc <= cyc + 1;
+         if (cyc==1) begin
+            ionewire <= 1'b1;
+            isizedwire <= 8'd8;
+         end
+         if (cyc==2) begin
+            if (low != 2'b00) $stop;
+            if (high != 2'b11) $stop;
+            if (oonewire !== 1'b1) $stop;
+            if (isizedwire !== 8'd8) $stop;
+            if (tied != 2'b10) $stop;
+            if (tied_also != 4'b1010) $stop;
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 

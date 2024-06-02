@@ -1,0 +1,4 @@
+%Error: t/t_force_bad_rw.v:14:20: Unsupported: Signals used via read-write reference cannot be forced
+   14 |       foreach (ass[index]) begin
+      |                    ^~~~~
+%Error: Exiting due to

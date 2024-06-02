@@ -1,0 +1,19 @@
+%Error: t/t_inst_param_comma_bad.v:35:15: syntax error, unexpected ')', expecting TYPE-IDENTIFIER
+   35 |    M #(.P(13),) m1(
+      |               ^
+%Error: t/t_inst_param_comma_bad.v:40:11: syntax error, unexpected ')', expecting TYPE-IDENTIFIER
+   40 |    M #(14,) m2 (
+      |           ^
+%Error: t/t_inst_param_comma_bad.v:45:11: syntax error, unexpected ')', expecting TYPE-IDENTIFIER
+   45 |    M #(14,) m3 (
+      |           ^
+%Error: t/t_inst_param_comma_bad.v:50:15: syntax error, unexpected ')', expecting TYPE-IDENTIFIER
+   50 |    N #(.P(13),) n1(
+      |               ^
+%Error: t/t_inst_param_comma_bad.v:55:11: syntax error, unexpected ')', expecting TYPE-IDENTIFIER
+   55 |    N #(14,) n2 (
+      |           ^
+%Error: t/t_inst_param_comma_bad.v:60:11: syntax error, unexpected ')', expecting TYPE-IDENTIFIER
+   60 |    N #(14,) n3 (
+      |           ^
+%Error: Exiting due to

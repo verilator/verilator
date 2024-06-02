@@ -7,7 +7,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 #include <verilated.h>
-#include "Vt_order_quad.h"
+
+#include VM_PREFIX_INCLUDE
 
 //======================================================================
 
@@ -20,15 +21,16 @@ bool fail = false;
 
 void check(QData got, QData exp) {
     if (got != exp) {
-        VL_PRINTF("%%Error: got=0x%" VL_PRI64 "x exp=0x%" VL_PRI64 "x\n", got, exp);
+        VL_PRINTF("%%Error: got=0x%" PRIx64 " exp=0x%" PRIx64 "\n", got, exp);
         fail = true;
     }
 }
 
 int main(int argc, char* argv[]) {
-    topp = new VM_PREFIX;
-
     Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
+
+    topp = new VM_PREFIX;
 
     topp->a0 = 0;
     topp->eval();

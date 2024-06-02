@@ -8,6 +8,9 @@ package p3;
    typedef enum logic [2:0] {
           ZERO = 3'b0,
           ONE = 3'b1 } e3_t /*verilator public*/;
+   typedef enum logic [2:0] {
+          TWO = 3'd2,
+          XES = 3'b?1? } has_x_t /*verilator public*/;
 endpackage
 
 package p62;
@@ -19,10 +22,10 @@ endpackage
 module t (/*AUTOARG*/);
 
    enum integer {
-		 EI_A,
-		 EI_B,
-		 EI_C
-		 } m_state;
+                 EI_A,
+                 EI_B,
+                 EI_C
+                 } m_state;
 
    initial begin
       m_state = EI_A;

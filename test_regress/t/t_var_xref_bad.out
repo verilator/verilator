@@ -1,0 +1,4 @@
+%Error: t/t_var_xref_bad.v:11:12: Found definition of 'tsk' as a TASK but expected a scope/variable
+   11 |    initial tsk.bad_missing_ref = 0;
+      |            ^~~
+%Error: Exiting due to

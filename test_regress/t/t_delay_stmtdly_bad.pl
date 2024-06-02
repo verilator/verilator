@@ -13,7 +13,7 @@ scenarios(vlt => 1);
 top_filename("t/t_delay.v");
 
 lint(
-    verilator_flags2 => ['-Wall -Wno-DECLFILENAME'],
+    verilator_flags2 => ['--no-timing -Wall -Wno-DECLFILENAME'],
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

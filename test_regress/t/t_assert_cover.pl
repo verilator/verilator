@@ -33,7 +33,7 @@ if ($Self->{nc}) {
     }
     run(logfile => "$Self->{obj_dir}/${name}__nccover.log",
         tee => 0,
-        cmd => [($ENV{VERILATOR_ICCR}||'iccr'),
+        cmd => [($ENV{VERILATOR_ICCR} || 'iccr'),
                 "-test ${name} ${cf}"]);
 }
 
@@ -41,7 +41,7 @@ file_grep($Self->{run_log_filename}, qr/COVER: Cyc==4/);
 file_grep($Self->{run_log_filename}, qr/COVER: Cyc==5/);
 file_grep($Self->{run_log_filename}, qr/COVER: Cyc==6/);
 
-# Allow old Perl format dump, or new binary dump
+# Allow old SystemC::Coverage format dump, or new binary dump
 file_grep($Self->{coverage_filename}, qr/(cyc_eq_5.*,c=>[^0]|cyc_eq_5.* [1-9][0-9]*\n)/);
 
 ok(1);

@@ -5,7 +5,7 @@
 // without warranty, 2015 by Todd Strader.
 // SPDX-License-Identifier: CC0-1.0
 
-function logic foo
+function automatic logic foo
   (
    // Intentionally provide a non-width'ed default value
    // This should warn, not error out

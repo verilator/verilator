@@ -17,33 +17,32 @@
 // clang-format on
 
 // Compile in place
-#include "Vt_trace_two_b.cpp"
-#include "Vt_trace_two_b__Slow.cpp"
-#include "Vt_trace_two_b__Syms.cpp"
-#include "Vt_trace_two_b__Trace.cpp"
-#include "Vt_trace_two_b__Trace__Slow.cpp"
+#include "Vt_trace_two_b__ALL.cpp"
 
 // General headers
 #include "verilated.h"
+
 #include "systemc.h"
 
 VM_PREFIX* ap;
 Vt_trace_two_b* bp;
 
 int sc_main(int argc, char** argv) {
+    Verilated::debug(0);
+    Verilated::traceEverOn(true);
+    Verilated::commandArgs(argc, argv);
+
     sc_signal<bool> clk;
     sc_time sim_time(1100, SC_NS);
-    Verilated::commandArgs(argc, argv);
-    Verilated::traceEverOn(true);
-    Verilated::debug(0);
     srand48(5);
-    ap = new VM_PREFIX("topa");
-    bp = new Vt_trace_two_b("topb");
+    ap = new VM_PREFIX{"topa"};
+    bp = new Vt_trace_two_b{"topb"};
     ap->clk(clk);
     bp->clk(clk);
 
 #ifdef TEST_HDR_TRACE
     VerilatedVcdSc* tfp = new VerilatedVcdSc;
+    sc_core::sc_start(sc_core::SC_ZERO_TIME);
     ap->trace(tfp, 99);
     bp->trace(tfp, 99);
     tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");

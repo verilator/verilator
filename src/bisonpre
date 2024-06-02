@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=C0103,C0114,C0115,C0116,R0912,R0914,R0915,R1702,W0125
+# pylint: disable=C0103,C0114,C0115,C0116,C0209,R0912,R0914,R0915,R1702,W0125
 ######################################################################
 
 import argparse
@@ -17,27 +17,35 @@ def process():
 
     bison_version_check()
     supports_report = Bison_Version >= 2.3
+    # supports_counter_examples = Bison_Version >= 3.8
 
     clean_input(Args.input, tmp_prefix() + ".y")
 
     # Run bison
     command = (
-        Args.yacc + (" -t" if Args.debug else "") +
-        (" -d" if Args.definitions else "") +
-        (" -k" if Args.token_table else "") + (" -v" if Args.verbose else "") +
-        (" --report=itemset --report=lookahead" if
-         (Args.verbose and supports_report) else "")
+        Args.yacc  #
+        + (" -t" if Args.debug else "")  #
+        + (" -d" if Args.definitions else "")  #
+        + (" -k" if Args.token_table else "")  #
+        + (" -v" if Args.verbose else "")  #
+        + (" --report=itemset --report=lookahead" if
+           (Args.verbose and supports_report) else "")
+        # Useful but slow:
+        # (" -Wcounterexamples" if
+        # (Args.verbose and supports_counter_examples) else "")
+        #
         # -p required for GLR parsers; they write to -p basename, not -o
         + ((" -p " + Args.name_prefix) if Args.name_prefix else "") + " -b " +
-        tmp_prefix() + " -o " + tmp_prefix() + ".c" + " " + tmp_prefix() +
-        ".y")
+        tmp_prefix()  #
+        + " -o " + tmp_prefix() + ".c"  #
+        + " " + tmp_prefix() + ".y")
 
     print("  " + command)
     status = subprocess.call(command, shell=True)
     if status != 0:
         unlink_outputs()
         sys.exit("bisonpre: %Error: " + Args.yacc + " version " +
-                 Bison_Version + " run failed due to errors\n")
+                 str(Bison_Version) + " run failed due to errors\n")
 
     clean_output(tmp_prefix() + ".output",
                  output_prefix() + ".output", True, False)
@@ -80,10 +88,10 @@ def unlink_outputs():
 
 
 def bison_version_check():
-    sp = subprocess.Popen(Args.yacc + " --version",
+    with subprocess.Popen(Args.yacc + " --version",
                           shell=True,
-                          stdout=subprocess.PIPE)
-    out = str(sp.stdout.read())
+                          stdout=subprocess.PIPE) as sp:
+        out = str(sp.stdout.read())
     match = re.search(r'([0-9]+\.[0-9]+)', out)
     if match:
         v = float(match.group(1))
@@ -101,7 +109,7 @@ def bison_version_check():
 def clean_output(filename, outname, is_output, is_c):
     print("  edit " + filename + " " + outname)
 
-    with open(filename) as fh:
+    with open(filename, "r", encoding="utf-8") as fh:
         lines = fh.readlines()
 
     basename = re.sub(r'.*/', '', tmp_prefix() + ".")
@@ -150,7 +158,7 @@ def clean_output(filename, outname, is_output, is_c):
         lines = out
         out = []
 
-    with open(outname, "w") as fh:
+    with open(outname, "w", encoding="utf-8") as fh:
         for line in lines:
             # Fix filename refs
             line = re.sub(basename, newbase, line)
@@ -165,7 +173,7 @@ def clean_output(filename, outname, is_output, is_c):
 
 
 def warning_check(filename):
-    with open(filename) as fh:
+    with open(filename, "r", encoding="utf-8") as fh:
         linenum = 0
         for line in fh:
             linenum += 1
@@ -185,7 +193,7 @@ def clean_input(filename, outname):
     global Filename  # pylint: disable=global-variable-undefined
     Filename = filename
 
-    with open(filename) as fh:
+    with open(filename, "r", encoding="utf-8") as fh:
         lines = fh.readlines()
 
     # Find "%tokens<type>:"
@@ -391,14 +399,13 @@ def clean_input(filename, outname):
                 if not re.match(r'^\s*$', line):
                     sys.exit(
                         "%Error: " + filename + ":" + str(lineno) + ": Need " +
-                        needmore +
-                        " more blank lines to keep line numbers are constant\n"
-                    )
+                        str(needmore) +
+                        " more blank lines to keep line numbers constant\n")
                 needmore -= 1
             else:
                 lines.append(line)
 
-    with open(outname, "w") as fh:
+    with open(outname, "w", encoding="utf8") as fh:
         for line in lines:
             fh.write(line)
 
@@ -501,7 +508,7 @@ BISON GRAMMAR EXTENSIONS
     If the bison version is >= the specified version, include the given
     command.
 
-Copyright 2002-2021 by Wilson Snyder. This program is free software; you
+Copyright 2002-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

@@ -106,7 +106,7 @@ done
 
 if [ x"$src" = x ]
 then
-	echo "install:	no input file specified"
+	echo "install: no input file specified"
 	exit 1
 else
 	true
@@ -137,7 +137,7 @@ else
 
 	if [ x"$dst" = x ]
 	then
-		echo "install:	no destination specified"
+		echo "install: no destination specified"
 		exit 1
 	else
 		true

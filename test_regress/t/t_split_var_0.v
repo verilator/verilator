@@ -175,9 +175,9 @@ module barshift_2d_packed_array #(parameter DEPTH = 2, localparam WIDTH = 2**DEP
    (input [WIDTH-1:0] in, input [DEPTH-1:0] shift, output [WIDTH-1:0] out);
 
    localparam OFFSET = -2;
-   /*verilator lint_off LITENDIAN*/
+   /*verilator lint_off ASCRANGE*/
    reg [OFFSET:DEPTH+OFFSET][WIDTH-1:0] tmp /*verilator split_var*/;
-   /*verilator lint_on LITENDIAN*/
+   /*verilator lint_on ASCRANGE*/
 
    generate
       for(genvar i = 0; i < DEPTH; ++i) begin
@@ -201,9 +201,9 @@ module barshift_2d_packed_array_le #(parameter DEPTH = 2, localparam WIDTH = 2**
    (input [WIDTH-1:0] in, input [DEPTH-1:0] shift, output [WIDTH-1:0] out);
 
    localparam OFFSET = -2;
-   /*verilator lint_off LITENDIAN*/
+   /*verilator lint_off ASCRANGE*/
    reg [OFFSET:DEPTH+OFFSET][OFFSET:WIDTH-1+OFFSET] tmp /*verilator split_var*/;
-   /*verilator lint_on LITENDIAN*/
+   /*verilator lint_on ASCRANGE*/
 
    generate
       for(genvar i = 0; i < DEPTH; ++i) begin
@@ -245,9 +245,9 @@ endmodule
 module barshift_bitslice #(parameter DEPTH = 2, localparam WIDTH = 2**DEPTH)
    (input [WIDTH-1:0] in, input [DEPTH-1:0] shift, output [WIDTH-1:0] out);
 
-   /*verilator lint_off LITENDIAN*/
+   /*verilator lint_off ASCRANGE*/
    wire [0:WIDTH*(DEPTH+1) - 1] tmp /*verilator split_var*/;
-   /*verilator lint_on LITENDIAN*/
+   /*verilator lint_on ASCRANGE*/
 
    generate
       for(genvar i = 0; i < DEPTH; ++i) begin
@@ -267,10 +267,10 @@ endmodule
 
 module var_decl_with_init();
 
-   /*verilator lint_off LITENDIAN*/
+   /*verilator lint_off ASCRANGE*/
    logic [-1:30] var0 /* verilator split_var */ = {4'd0, 4'd1, 4'd2, 4'd3, 4'd4, 4'd5, 4'd6, 4'd7};
    logic [-1:30] var2 /* verilator split_var */;
-   /*verilator lint_on LITENDIAN*/
+   /*verilator lint_on ASCRANGE*/
    logic [30:-1] var1 /* verilator split_var */ = {4'd0, 4'd1, 4'd2, 4'd3, 4'd4, 4'd5, 4'd6, 4'd7};
    logic [30:-1] var3 /* verilator split_var */;
 
@@ -289,10 +289,10 @@ module t_array_rev(clk);  // from t_array_rev.v
 
    input clk;
 
-   integer cyc=0;
-   // verilator lint_off LITENDIAN
+   integer cyc = 0;
+   // verilator lint_off ASCRANGE
    logic   arrd [0:1] /*verilator split_var*/ = '{ 1'b1, 1'b0 };
-   // verilator lint_on LITENDIAN
+   // verilator lint_on ASCRANGE
    logic   y0, y1;
    logic   localbkw [1:0]/*verilator split_var*/ ;
 
@@ -442,11 +442,11 @@ module t(/*AUTOARG*/ clk);
    t_array_rev i_t_array_rev(clk);
 
    assign in = 8'b10001110;
-   /*verilator lint_off LITENDIAN*/
+   /*verilator lint_off ASCRANGE*/
    logic [7:0] [7:0] expc
                = {8'b10001110, 8'b01000111, 8'b10100011, 8'b11010001,
                   8'b11101000, 8'b01110100, 8'b00111010, 8'b00011101};
-   /*verilator lint_on LITENDIAN*/
+   /*verilator lint_on ASCRANGE*/
    always @(posedge clk) begin : always_block
       automatic bit failed = 0;
       $display("in:%b shift:%d expc:%b", in, shift, expc[7-shift]);

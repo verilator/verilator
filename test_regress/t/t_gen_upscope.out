@@ -1,6 +1,6 @@
+created tag with scope = top.t.tag
 created tag with scope = top.t.b.gen[0].tag
 created tag with scope = top.t.b.gen[1].tag
-created tag with scope = top.t.tag
 mod a has scope = top.t
 mod a has tag   = top.t.tag
 mod b has scope = top.t.b

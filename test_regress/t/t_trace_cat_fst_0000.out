@@ -1,5 +1,5 @@
 $date
-	Wed Apr 14 17:11:07 2021
+	Wed Feb 23 00:00:47 2022
 
 $end
 $version
@@ -12,8 +12,8 @@ $scope module top $end
 $var wire 1 ! clk $end
 $scope module t $end
 $var wire 1 ! clk $end
-$var integer 32 " cyc $end
-$var integer 32 # unchanged $end
+$var integer 32 " cyc [31:0] $end
+$var integer 32 # unchanged [31:0] $end
 $upscope $end
 $upscope $end
 $enddefinitions $end

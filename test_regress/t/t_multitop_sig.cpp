@@ -6,10 +6,13 @@
 // any use, without warranty, 2006 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-#include <iostream>
 #include <verilated.h>
-#include "Vt_multitop_sig.h"
 
+#include VM_PREFIX_INCLUDE
+
+#include <iostream>
+
+// These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 
 double sc_time_stamp() { return 0; }
@@ -17,9 +20,10 @@ double sc_time_stamp() { return 0; }
 int errors = 0;
 
 int main(int argc, char* argv[]) {
-    Vt_multitop_sig* topp = new Vt_multitop_sig("");
-
     Verilated::debug(0);
+    Verilated::commandArgs(argc, argv);
+
+    VM_PREFIX* topp = new VM_PREFIX{""};
 
     {
         topp->a__02Ein = 0;

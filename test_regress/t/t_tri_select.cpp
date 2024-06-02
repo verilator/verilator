@@ -3,7 +3,7 @@
 // any use, without warranty, 2020 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-#include "Vt_tri_select.h"
+#include VM_PREFIX_INCLUDE
 
 VM_PREFIX* tb = nullptr;
 
@@ -17,11 +17,10 @@ bool check() {
     bool verbose = false;
 #endif
 
-    int Y = ((tb->OE1) & (!tb->OE2))
-                ? tb->A1
-                : ((!tb->OE1) & (tb->OE2))
-                      ? tb->A2
-                      : ((tb->OE1) & (tb->OE2)) ? (tb->A1 | tb->A2) : 3;  // pullup
+    int Y = ((tb->OE1) & (!tb->OE2))   ? tb->A1
+            : ((!tb->OE1) & (tb->OE2)) ? tb->A2
+            : ((tb->OE1) & (tb->OE2))  ? (tb->A1 | tb->A2)
+                                       : 3;  // pullup
 
     int W = (((tb->OE2) ? (tb->A2 & 0x1) : 0) << tb->A1)
             | (((tb->OE1) ? (tb->A2 >> 1) & 0x1 : 0) << tb->A2);
@@ -43,12 +42,12 @@ bool check() {
 }
 
 int main() {
-    bool pass = true;
-
     Verilated::debug(0);
-    tb = new Vt_tri_select("tb");
+
+    tb = new VM_PREFIX{"tb"};
 
     // loop through every possibility and check the result
+    bool pass = true;
     for (tb->OE1 = 0; tb->OE1 < 2; tb->OE1++) {
         for (tb->OE2 = 0; tb->OE2 < 2; tb->OE2++) {
             for (tb->A1 = 0; tb->A1 < 4; tb->A1++) {

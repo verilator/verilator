@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt_all => 1);
 
 while (1) {
-    # Thi rule requires GNU make > 4.1 (or so, known broken in 3.81)
+    # This rule requires GNU make > 4.1 (or so, known broken in 3.81)
     #%__Slow.o: %__Slow.cpp
     #        $(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_SLOW) -c -o $@ $<
     if (make_version() < 4.1) {
@@ -29,13 +29,13 @@ while (1) {
     run(logfile => "$Self->{obj_dir}/vlt_gcc.log",
         tee => $self->{verbose},
         cmd=>[$ENV{MAKE},
-              "-C ".$Self->{obj_dir},
-              "-f $Self->{VM_PREFIX}.mk",
+              "-C " . $Self->{obj_dir},
+              "-f $Self->{vm_prefix}.mk",
               "-j 4",
-              "VM_PREFIX=$Self->{VM_PREFIX}",
+              "VM_PREFIX=$Self->{vm_prefix}",
               "TEST_OBJ_DIR=$Self->{obj_dir}",
               "CPPFLAGS_DRIVER=-D".uc($Self->{name}),
-              ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
+              ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1" : ""),
               "OPT_FAST=-O2",
               "OPT_SLOW=-O0",
               "OPT_GLOBAL=-Os",
@@ -47,7 +47,7 @@ while (1) {
         );
 
     # Splitting should set VM_PARALLEL_BUILDS to 1 by default
-    file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}_classes.mk", qr/VM_PARALLEL_BUILDS\s*=\s*1/);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}_classes.mk", qr/VM_PARALLEL_BUILDS\s*=\s*1/);
     check_splits();
     check_no_all_file();
     check_gcc_flags("$Self->{obj_dir}/vlt_gcc.log");
@@ -86,8 +86,8 @@ sub check_cpp {
     printf "  File %6d  %s\n", $size, $filename if $Self->{verbose};
     my $fh = IO::File->new("<$filename") or error("$! $filenme");
     my @funcs;
-    while (defined (my $line = $fh->getline)) {
-        if ($line =~ /^(void|IData)\s+(.*::.*)/) {
+    while (defined(my $line = $fh->getline)) {
+        if ($line =~ /^(void|IData)\s+(.*::.*){/) {
             my $func = $2;
             $func =~ s/\(.*$//;
             print "\tFunc $func\n" if $Self->{verbose};
@@ -96,25 +96,28 @@ sub check_cpp {
                 && $func !~ /::trace$/
                 && $func !~ /::traceInit$/
                 && $func !~ /::traceFull$/
+                && $func !~ /::final$/
+                && $func !~ /::prepareClone$/
+                && $func !~ /::atClone$/
                 ) {
                 push @funcs, $func;
             }
         }
     }
     if ($#funcs > 0) {
-        error("Split had multiple functions in $filename\n\t".join("\n\t",@funcs));
+        error("Split had multiple functions in $filename\n\t" . join("\n\t", @funcs));
     }
 }
 
 sub check_gcc_flags {
     my $filename = shift;
     my $fh = IO::File->new("<$filename") or error("$! $filenme");
-    while (defined (my $line = $fh->getline)) {
+    while (defined(my $line = $fh->getline)) {
         chomp $line;
         print ":log: $line\n" if $Self->{verbose};
-        if ($line =~ /$Self->{VM_PREFIX}\S*\.cpp/) {
-            my $filetype = ($line =~ /Slow|Syms/) ? "slow":"fast";
-            my $opt = ($line !~ /-O2/) ? "slow":"fast";
+        if ($line =~ /$Self->{vm_prefix}\S*\.cpp/) {
+            my $filetype = ($line =~ /Slow|Syms/) ? "slow" : "fast";
+            my $opt = ($line !~ /-O2/) ? "slow" : "fast";
             print "$filetype, $opt, $line\n" if $Self->{verbose};
             if ($filetype ne $opt) {
                 error("${filetype} file compiled as if was ${opt}: $line");

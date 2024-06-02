@@ -1,0 +1,42 @@
+%Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:120:28: Unsupported: Assignment of stream of unpacked array to a variable of size greater than 64
+                                                          : ... note: In instance 't'
+  120 |          packed_data_128   = {<<32{int_in}};
+      |                            ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:121:28: Unsupported: Assignment of stream of unpacked array to a variable of size greater than 64
+                                                          : ... note: In instance 't'
+  121 |          packed_data_128_i = {<<32{integer_in}};
+      |                            ^
+%Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:122:28: Unsupported: Assignment of stream of unpacked array to a variable of size greater than 64
+                                                          : ... note: In instance 't'
+  122 |          packed_data_256   = {<<64{longint_in}};
+      |                            ^
+%Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:123:28: Unsupported: Assignment of stream of unpacked array to a variable of size greater than 64
+                                                          : ... note: In instance 't'
+  123 |          packed_time_256   = {<<64{time_in}};
+      |                            ^
+%Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:126:28: Unsupported: Assignment of stream of unpacked array to a variable of size greater than 64
+                                                          : ... note: In instance 't'
+  126 |          v_packed_data_128 = {<<32{reg_in}};
+      |                            ^
+%Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:152:28: Unsupported: Assignment of stream of unpacked array to a variable of size greater than 64
+                                                          : ... note: In instance 't'
+  152 |          packed_data_128   = {<<int{int_in}};
+      |                            ^
+%Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:153:28: Unsupported: Assignment of stream of unpacked array to a variable of size greater than 64
+                                                          : ... note: In instance 't'
+  153 |          packed_data_128_i = {<<integer{integer_in}};
+      |                            ^
+%Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:154:28: Unsupported: Assignment of stream of unpacked array to a variable of size greater than 64
+                                                          : ... note: In instance 't'
+  154 |          packed_data_256   = {<<longint{longint_in}};
+      |                            ^
+%Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:155:28: Unsupported: Assignment of stream of unpacked array to a variable of size greater than 64
+                                                          : ... note: In instance 't'
+  155 |          packed_time_256   = {<<time{time_in}};
+      |                            ^
+%Error-UNSUPPORTED: t/t_stream_integer_type_unsup.v:158:28: Unsupported: Assignment of stream of unpacked array to a variable of size greater than 64
+                                                          : ... note: In instance 't'
+  158 |          v_packed_data_128 = {<<test_word{reg_in}};
+      |                            ^
+%Error: Exiting due to

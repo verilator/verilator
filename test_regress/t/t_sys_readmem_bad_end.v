@@ -11,6 +11,9 @@ module t;
    integer   i;
 
    initial begin
+      // No warning as has addresses
+      $readmemh("t/t_sys_readmem_bad_end2.mem", hex, 0, 15);
+      // Warning as wrong end address
       $readmemh("t/t_sys_readmem_bad_end.mem", hex, 0, 15);
       $write("*-* All Finished *-*\n");
       $finish;

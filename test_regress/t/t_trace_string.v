@@ -22,7 +22,7 @@ module t (/*AUTOARG*/
    localparam string REGX [0:31] = '{"zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2", "s0/fp", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
                                       "a6", "a7", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"};
 
-   function string regx (logic [5-1:0] r, bit abi=1'b0);
+   function automatic string regx (logic [5-1:0] r, bit abi=1'b0);
       regx = abi ? REGX[r] : $sformatf("x%0d", r);
    endfunction: regx
 

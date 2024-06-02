@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -17,9 +17,15 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-// Limited V3 headers here - this is a base class for Vlc etc
 #include "V3String.h"
+
 #include "V3Error.h"
+#include "V3FileLine.h"
+
+#ifndef V3ERROR_NO_GLOBAL_
+#include "V3Global.h"
+VL_DEFINE_DEBUG_FUNCTIONS;
+#endif
 
 #include <algorithm>
 
@@ -31,7 +37,7 @@ std::map<string, string> VName::s_dehashMap;
 // Wildcard
 
 // Double procedures, inlined, unrolls loop much better
-inline bool VString::wildmatchi(const char* s, const char* p) {
+bool VString::wildmatchi(const char* s, const char* p) VL_PURE {
     for (; *p; s++, p++) {
         if (*p != '*') {
             if (((*s) != (*p)) && *p != '?') return false;
@@ -47,7 +53,7 @@ inline bool VString::wildmatchi(const char* s, const char* p) {
     return (*s == '\0');
 }
 
-bool VString::wildmatch(const char* s, const char* p) {
+bool VString::wildmatch(const char* s, const char* p) VL_PURE {
     for (; *p; s++, p++) {
         if (*p != '*') {
             if (((*s) != (*p)) && *p != '?') return false;
@@ -63,7 +69,7 @@ bool VString::wildmatch(const char* s, const char* p) {
     return (*s == '\0');
 }
 
-bool VString::wildmatch(const string& s, const string& p) {
+bool VString::wildmatch(const string& s, const string& p) VL_PURE {
     return wildmatch(s.c_str(), p.c_str());
 }
 
@@ -74,24 +80,24 @@ string VString::dot(const string& a, const string& dot, const string& b) {
 }
 
 string VString::downcase(const string& str) {
-    string out = str;
-    for (auto& cr : out) cr = tolower(cr);
-    return out;
+    string result = str;
+    for (char& cr : result) cr = std::tolower(cr);
+    return result;
 }
 
 string VString::upcase(const string& str) {
-    string out = str;
-    for (auto& cr : out) cr = toupper(cr);
-    return out;
+    string result = str;
+    for (char& cr : result) cr = std::toupper(cr);
+    return result;
 }
 
 string VString::quoteAny(const string& str, char tgt, char esc) {
-    string out;
+    string result;
     for (const char c : str) {
-        if (c == tgt) out += esc;
-        out += c;
+        if (c == tgt) result += esc;
+        result += c;
     }
-    return out;
+    return result;
 }
 
 string VString::quoteStringLiteralForShell(const string& str) {
@@ -111,36 +117,123 @@ string VString::quoteStringLiteralForShell(const string& str) {
     return result;
 }
 
-string VString::spaceUnprintable(const string& str) {
-    string out;
+string VString::escapeStringForPath(const string& str) {
+    if (str.find(R"(\\)") != string::npos)
+        return str;  // if it has been escaped already, don't do it again
+    if (str.find('/') != string::npos) return str;  // can be replaced by `__MINGW32__` or `_WIN32`
+    string result;
+    const char space = ' ';  // escape space like this `Program Files`
+    const char escape = '\\';
     for (const char c : str) {
-        if (isprint(c)) {
-            out += c;
+        if (c == space || c == escape) result.push_back(escape);
+        result.push_back(c);
+    }
+    return result;
+}
+
+static int vl_decodexdigit(char c) {
+    return std::isdigit(c) ? c - '0' : std::tolower(c) - 'a' + 10;
+}
+
+string VString::unquoteSVString(const string& text, string& errOut) {
+    bool quoted = false;
+    string newtext;
+    newtext.reserve(text.size());
+    unsigned char octal_val = 0;
+    int octal_digits = 0;
+    for (string::const_iterator cp = text.begin(); cp != text.end(); ++cp) {
+        if (quoted) {
+            if (std::isdigit(*cp)) {
+                octal_val = octal_val * 8 + (*cp - '0');
+                if (++octal_digits == 3) {
+                    octal_digits = 0;
+                    quoted = false;
+                    newtext += octal_val;
+                }
+            } else {
+                if (octal_digits) {
+                    // Spec allows 1-3 digits
+                    octal_digits = 0;
+                    quoted = false;
+                    newtext += octal_val;
+                    --cp;  // Backup to reprocess terminating character as non-escaped
+                    continue;
+                }
+                quoted = false;
+                if (*cp == 'n') {
+                    newtext += '\n';
+                } else if (*cp == 'a') {
+                    newtext += '\a';  // SystemVerilog 3.1
+                } else if (*cp == 'f') {
+                    newtext += '\f';  // SystemVerilog 3.1
+                } else if (*cp == 'r') {
+                    newtext += '\r';
+                } else if (*cp == 't') {
+                    newtext += '\t';
+                } else if (*cp == 'v') {
+                    newtext += '\v';  // SystemVerilog 3.1
+                } else if (*cp == 'x' && std::isxdigit(cp[1])
+                           && std::isxdigit(cp[2])) {  // SystemVerilog 3.1
+                    newtext
+                        += static_cast<char>(16 * vl_decodexdigit(cp[1]) + vl_decodexdigit(cp[2]));
+                    cp += 2;
+                } else if (std::isalnum(*cp)) {
+                    errOut = "Unknown escape sequence: \\";
+                    errOut += *cp;
+                    break;
+                } else {
+                    newtext += *cp;
+                }
+            }
+        } else if (*cp == '\\') {
+            quoted = true;
+            octal_digits = 0;
         } else {
-            out += ' ';
+            newtext += *cp;
         }
     }
-    return out;
+    return newtext;
+}
+
+string VString::spaceUnprintable(const string& str) VL_PURE {
+    string result;
+    for (const char c : str) {
+        if (std::isprint(c)) {
+            result += c;
+        } else {
+            result += ' ';
+        }
+    }
+    return result;
 }
 
 string VString::removeWhitespace(const string& str) {
-    string out;
-    out.reserve(str.size());
+    string result;
+    result.reserve(str.size());
     for (const char c : str) {
-        if (!isspace(c)) out += c;
+        if (!std::isspace(c)) result += c;
     }
-    return out;
+    return result;
 }
 
 bool VString::isWhitespace(const string& str) {
     for (const char c : str) {
-        if (!isspace(c)) return false;
+        if (!std::isspace(c)) return false;
     }
     return true;
 }
 
+string::size_type VString::leadingWhitespaceCount(const string& str) {
+    string::size_type result = 0;
+    for (const char c : str) {
+        ++result;
+        if (!std::isspace(c)) break;
+    }
+    return result;
+}
+
 double VString::parseDouble(const string& str, bool* successp) {
-    char* strgp = new char[str.size() + 1];
+    char* const strgp = new char[str.size() + 1];
     char* dp = strgp;
     if (successp) *successp = true;
     for (const char* sp = str.c_str(); *sp; ++sp) {
@@ -148,13 +241,48 @@ double VString::parseDouble(const string& str, bool* successp) {
     }
     *dp++ = '\0';
     char* endp = strgp;
-    double d = strtod(strgp, &endp);
-    size_t parsed_len = endp - strgp;
-    if (parsed_len != strlen(strgp)) {
+    const double d = strtod(strgp, &endp);
+    const size_t parsed_len = endp - strgp;
+    if (parsed_len != std::strlen(strgp)) {
         if (successp) *successp = false;
     }
     VL_DO_DANGLING(delete[] strgp, strgp);
     return d;
+}
+
+string VString::replaceWord(const string& str, const string& from, const string& to) {
+    string result = str;
+    const size_t len = from.size();
+    UASSERT_STATIC(len > 0, "Cannot replace empty string");
+    for (size_t pos = 0; (pos = result.find(from, pos)) != string::npos; pos += len) {
+        // Only replace whole words
+        if (((pos > 0) && VString::isWordChar(result[pos - 1])) ||  //
+            ((pos + len < result.size()) && VString::isWordChar(result[pos + len]))) {
+            continue;
+        }
+        result.replace(pos, len, to);
+    }
+    return result;
+}
+
+bool VString::startsWith(const string& str, const string& prefix) {
+    return str.rfind(prefix, 0) == 0;  // Faster than .find(_) == 0
+}
+
+bool VString::endsWith(const string& str, const string& suffix) {
+    if (str.length() < suffix.length()) return false;
+    return str.compare(str.length() - suffix.length(), suffix.length(), suffix) == 0;
+}
+string VString::aOrAn(const char* word) {
+    switch (word[0]) {
+    case '\0': return "";
+    case 'a':
+    case 'e':
+    case 'i':
+    case 'o':
+    case 'u': return "an";
+    default: return "a";
+    }
 }
 
 //######################################################################
@@ -172,22 +300,21 @@ static const uint32_t sha256K[]
        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7,
        0xc67178f2};
 
-static inline uint32_t shaRotr32(uint32_t lhs, uint32_t rhs) VL_ATTR_ALWINLINE;
-static inline uint32_t shaRotr32(uint32_t lhs, uint32_t rhs) {
+VL_ATTR_ALWINLINE
+static uint32_t shaRotr32(uint32_t lhs, uint32_t rhs) VL_PURE {
     return lhs >> rhs | lhs << (32 - rhs);
 }
 
-static inline void sha256Block(uint32_t* h, const uint32_t* chunk) VL_ATTR_ALWINLINE;
-static inline void sha256Block(uint32_t* h, const uint32_t* chunk) {
+VL_ATTR_ALWINLINE
+static void sha256Block(uint32_t* h, const uint32_t* chunk) VL_PURE {
     uint32_t ah[8];
     const uint32_t* p = chunk;
 
     // Initialize working variables to current hash value
     for (unsigned i = 0; i < 8; i++) ah[i] = h[i];
     // Compression function main loop
+    uint32_t w[16] = {};
     for (unsigned i = 0; i < 4; ++i) {
-        uint32_t w[16];
-
         for (unsigned j = 0; j < 16; ++j) {
             if (i == 0) {
                 w[j] = *p++;
@@ -234,7 +361,7 @@ void VHashSha256::insert(const void* datap, size_t length) {
         // If there are large inserts it would be more efficient to avoid this copy
         // by copying bytes in the loop below from either m_remainder or the data
         // as appropriate.
-        tempData = m_remainder + string(static_cast<const char*>(datap), length);
+        tempData = m_remainder + std::string{static_cast<const char*>(datap), length};
         chunkLen = tempData.length();
         chunkp = reinterpret_cast<const uint8_t*>(tempData.data());
     }
@@ -257,7 +384,7 @@ void VHashSha256::insert(const void* datap, size_t length) {
         sha256Block(m_inthash, w);
     }
 
-    m_remainder = string(reinterpret_cast<const char*>(chunkp + posBegin), chunkLen - posEnd);
+    m_remainder = std::string(reinterpret_cast<const char*>(chunkp + posBegin), chunkLen - posEnd);
 }
 
 void VHashSha256::finalize() {
@@ -288,34 +415,34 @@ void VHashSha256::finalize() {
 
 string VHashSha256::digestBinary() {
     finalize();
-    string out;
-    out.reserve(32);
+    string result;
+    result.reserve(32);
     for (size_t i = 0; i < 32; ++i) {
-        out += (m_inthash[i >> 2] >> (((3 - i) & 0x3) << 3)) & 0xff;
+        result += (m_inthash[i >> 2] >> (((3 - i) & 0x3) << 3)) & 0xff;
     }
-    return out;
+    return result;
 }
 
 uint64_t VHashSha256::digestUInt64() {
     const string& binhash = digestBinary();
-    uint64_t out = 0;
+    uint64_t result = 0;
     for (size_t byte = 0; byte < sizeof(uint64_t); ++byte) {
-        unsigned char c = binhash[byte];
-        out = (out << 8) | c;
+        const unsigned char c = binhash[byte];
+        result = (result << 8) | c;
     }
-    return out;
+    return result;
 }
 
 string VHashSha256::digestHex() {
     static const char* const digits = "0123456789abcdef";
     const string& binhash = digestBinary();
-    string out;
-    out.reserve(70);
+    string result;
+    result.reserve(70);
     for (size_t byte = 0; byte < 32; ++byte) {
-        out += digits[(binhash[byte] >> 4) & 0xf];
-        out += digits[(binhash[byte] >> 0) & 0xf];
+        result += digits[(binhash[byte] >> 4) & 0xf];
+        result += digits[(binhash[byte] >> 0) & 0xf];
     }
-    return out;
+    return result;
 }
 
 string VHashSha256::digestSymbol() {
@@ -326,24 +453,24 @@ string VHashSha256::digestSymbol() {
     static const char* const digits
         = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789AB";
     const string& binhash = digestBinary();
-    string out;
-    out.reserve(28);
+    string result;
+    result.reserve(28);
     int pos = 0;
     for (; pos < (256 / 8) - 2; pos += 3) {
-        out += digits[((binhash[pos] >> 2) & 0x3f)];
-        out += digits[((binhash[pos] & 0x3) << 4)
-                      | (static_cast<int>(binhash[pos + 1] & 0xf0) >> 4)];
-        out += digits[((binhash[pos + 1] & 0xf) << 2)
-                      | (static_cast<int>(binhash[pos + 2] & 0xc0) >> 6)];
-        out += digits[((binhash[pos + 2] & 0x3f))];
+        result += digits[((binhash[pos] >> 2) & 0x3f)];
+        result += digits[((binhash[pos] & 0x3) << 4)
+                         | (static_cast<int>(binhash[pos + 1] & 0xf0) >> 4)];
+        result += digits[((binhash[pos + 1] & 0xf) << 2)
+                         | (static_cast<int>(binhash[pos + 2] & 0xc0) >> 6)];
+        result += digits[((binhash[pos + 2] & 0x3f))];
     }
     // Any leftover bits don't matter for our purpose
-    return out;
+    return result;
 }
 
 void VHashSha256::selfTestOne(const string& data, const string& data2, const string& exp,
                               const string& exp64) {
-    VHashSha256 digest(data);
+    VHashSha256 digest{data};
     if (data2 != "") digest.insert(data2);
     if (VL_UNCOVERABLE(digest.digestHex() != exp)) {
         std::cerr << "%Error: When hashing '" << data + data2 << "'\n"  // LCOV_EXCL_LINE
@@ -381,7 +508,7 @@ void VHashSha256::selfTest() {
 
 string VName::dehash(const string& in) {
     static const char VHSH[] = "__Vhsh";
-    static const size_t DOT_LEN = strlen("__DOT__");
+    static const size_t DOT_LEN = std::strlen("__DOT__");
     std::string dehashed;
 
     // Need to split 'in' into components separated by __DOT__, 'last_dot_pos'
@@ -389,15 +516,15 @@ string VName::dehash(const string& in) {
     for (string::size_type last_dot_pos = 0; last_dot_pos < in.size();) {
         const string::size_type next_dot_pos = in.find("__DOT__", last_dot_pos);
         // Two iterators defining the range between the last and next dots.
-        auto search_begin = std::begin(in) + last_dot_pos;
-        auto search_end
+        const auto search_begin = std::begin(in) + last_dot_pos;
+        const auto search_end
             = next_dot_pos == string::npos ? std::end(in) : std::begin(in) + next_dot_pos;
 
         // Search for __Vhsh between the two dots.
-        auto begin_vhsh
+        const auto begin_vhsh
             = std::search(search_begin, search_end, std::begin(VHSH), std::end(VHSH) - 1);
         if (begin_vhsh != search_end) {
-            std::string vhsh(begin_vhsh, search_end);
+            const std::string vhsh{begin_vhsh, search_end};
             const auto& it = s_dehashMap.find(vhsh);
             UASSERT(it != s_dehashMap.end(), "String not in reverse hash map '" << vhsh << "'");
             // Is this not the first component, but the first to require dehashing?
@@ -406,18 +533,18 @@ string VName::dehash(const string& in) {
                 dehashed = in.substr(0, last_dot_pos);
             }
             // Append the unhashed part of the component.
-            dehashed += std::string(search_begin, begin_vhsh);
+            dehashed += std::string{search_begin, begin_vhsh};
             // Append the bit that was lost to truncation but retrieved from the dehash map.
             dehashed += it->second;
         }
         // This component doesn't need dehashing but a previous one might have.
         else if (!dehashed.empty()) {
-            dehashed += std::string(search_begin, search_end);
+            dehashed += std::string{search_begin, search_end};
         }
 
         if (next_dot_pos != string::npos) {
             // Is there a __DOT__ to add to the dehashed version of 'in'?
-            if (!dehashed.empty()) { dehashed += "__DOT__"; }
+            if (!dehashed.empty()) dehashed += "__DOT__";
             last_dot_pos = next_dot_pos + DOT_LEN;
         } else {
             last_dot_pos = string::npos;
@@ -433,11 +560,16 @@ string VName::hashedName() {
         m_hashed = m_name;
         return m_hashed;
     } else {
-        VHashSha256 hash(m_name);
-        string suffix = "__Vhsh" + hash.digestSymbol();
+        VHashSha256 hash{m_name};
+        const string suffix = "__Vhsh" + hash.digestSymbol();
         if (s_minLength < s_maxLength) {
-            s_dehashMap[suffix] = m_name.substr(s_minLength);
-            m_hashed = m_name.substr(0, s_minLength) + suffix;
+            // Keep a prefix from the original name
+            // Backup over digits so adding __Vhash doesn't look like a encoded hex digit
+            // ("__0__Vhsh")
+            size_t prefLength = s_minLength;
+            while (prefLength >= 1 && m_name[prefLength - 1] != '_') --prefLength;
+            s_dehashMap[suffix] = m_name.substr(prefLength);
+            m_hashed = m_name.substr(0, prefLength) + suffix;
         } else {
             s_dehashMap[suffix] = m_name;
             m_hashed = suffix;
@@ -451,8 +583,8 @@ string VName::hashedName() {
 
 VSpellCheck::EditDistance VSpellCheck::editDistance(const string& s, const string& t) {
     // Wagner-Fischer algorithm for the Damerau-Levenshtein distance
-    size_t sLen = s.length();
-    size_t tLen = t.length();
+    const size_t sLen = s.length();
+    const size_t tLen = t.length();
     if (sLen == 0) return tLen;
     if (tLen == 0) return sLen;
     if (sLen >= LENGTH_LIMIT) return sLen;
@@ -467,14 +599,14 @@ VSpellCheck::EditDistance VSpellCheck::editDistance(const string& s, const strin
     for (size_t i = 0; i < tLen; i++) {
         s_v_next[0] = i + 1;
         for (size_t j = 0; j < sLen; j++) {
-            EditDistance cost = (s[j] == t[i] ? 0 : 1);
-            EditDistance deletion = s_v_next[j] + 1;
-            EditDistance insertion = s_v_one_ago[j + 1] + 1;
-            EditDistance substitution = s_v_one_ago[j] + cost;
+            const EditDistance cost = (s[j] == t[i] ? 0 : 1);
+            const EditDistance deletion = s_v_next[j] + 1;
+            const EditDistance insertion = s_v_one_ago[j + 1] + 1;
+            const EditDistance substitution = s_v_one_ago[j] + cost;
             EditDistance cheapest = std::min(deletion, insertion);
             cheapest = std::min(cheapest, substitution);
             if (i > 0 && j > 0 && s[j] == t[i - 1] && s[j - 1] == t[i]) {
-                EditDistance transposition = s_v_two_ago[j - 1] + 1;
+                const EditDistance transposition = s_v_two_ago[j - 1] + 1;
                 cheapest = std::min(cheapest, transposition);
             }
             s_v_next[j + 1] = cheapest;
@@ -485,14 +617,14 @@ VSpellCheck::EditDistance VSpellCheck::editDistance(const string& s, const strin
         }
     }
 
-    EditDistance result = s_v_next[sLen];
+    const EditDistance result = s_v_next[sLen];
     return result;
 }
 
 VSpellCheck::EditDistance VSpellCheck::cutoffDistance(size_t goal_len, size_t candidate_len) {
     // Return max acceptable edit distance
-    size_t max_length = std::max(goal_len, candidate_len);
-    size_t min_length = std::min(goal_len, candidate_len);
+    const size_t max_length = std::max(goal_len, candidate_len);
+    const size_t min_length = std::min(goal_len, candidate_len);
     if (max_length <= 1) return 0;
     if (max_length - min_length <= 1) return std::max(max_length / 3, static_cast<size_t>(1));
     return (max_length + 2) / 3;
@@ -500,19 +632,19 @@ VSpellCheck::EditDistance VSpellCheck::cutoffDistance(size_t goal_len, size_t ca
 
 string VSpellCheck::bestCandidateInfo(const string& goal, EditDistance& distancer) const {
     string bestCandidate;
-    size_t gLen = goal.length();
+    const size_t gLen = goal.length();
     distancer = LENGTH_LIMIT * 10;
     for (const string& candidate : m_candidates) {
-        size_t cLen = candidate.length();
+        const size_t cLen = candidate.length();
 
         // Min distance must be inserting/deleting to make lengths match
-        EditDistance min_distance = (cLen > gLen ? (cLen - gLen) : (gLen - cLen));
+        const EditDistance min_distance = (cLen > gLen ? (cLen - gLen) : (gLen - cLen));
         if (min_distance >= distancer) continue;  // Short-circuit if already better
 
-        EditDistance cutoff = cutoffDistance(gLen, cLen);
+        const EditDistance cutoff = cutoffDistance(gLen, cLen);
         if (min_distance > cutoff) continue;  // Short-circuit if already too bad
 
-        EditDistance dist = editDistance(goal, candidate);
+        const EditDistance dist = editDistance(goal, candidate);
         UINFO(9, "EditDistance dist=" << dist << " cutoff=" << cutoff << " goal=" << goal
                                       << " candidate=" << candidate << endl);
         if (dist < distancer && dist <= cutoff) {
@@ -536,7 +668,7 @@ void VSpellCheck::selfTestSuggestOne(bool matches, const string& c, const string
     EditDistance gdist;
     VSpellCheck speller;
     speller.pushCandidate(c);
-    string got = speller.bestCandidateInfo(goal, gdist /*ref*/);
+    const string got = speller.bestCandidateInfo(goal, gdist /*ref*/);
     if (matches) {
         UASSERT_SELFTEST(const string&, got, c);
         UASSERT_SELFTEST(EditDistance, gdist, dist);
@@ -561,7 +693,7 @@ void VSpellCheck::selfTest() {
         selfTestSuggestOne(false, "sqrt", "assert", 3);
     }
     {
-        VSpellCheck speller;
+        const VSpellCheck speller;
         UASSERT_SELFTEST(string, "", speller.bestCandidate(""));
     }
     {

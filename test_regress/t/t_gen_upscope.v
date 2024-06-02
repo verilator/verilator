@@ -36,7 +36,7 @@ module t (/*AUTOARG*/
    clk
    );
    input clk;
-   integer      cyc=0;
+   integer      cyc = 0;
 
    tag tag ();
    b b ();

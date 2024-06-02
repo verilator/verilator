@@ -8,9 +8,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
-	  // Inputs
-	  clk, addr, res
-	  );
+          // Inputs
+          clk, addr, res
+          );
 
    input clk;
 
@@ -33,7 +33,7 @@ module memory(addr, dout);
    output [15:0] dout;
 
    generate
-      genvar 	 g_cx;
+      genvar     g_cx;
       for (g_cx = 0; g_cx < CM_NUMXROWS; g_cx++)
         begin: cxrow_inst
            reg [15:0] cmem_xrow[0:CM_XROWSIZE - 1];

@@ -11,47 +11,44 @@ on:
 env:
   CI_OS_NAME: linux
   CI_COMMIT: ${{ github.sha }}
-  CCACHE_COMPRESS: 1
-  CCACHE_DIR: ${{ github.workspace }}/.ccache
-  CCACHE_MAXSIZE: 2Gi  # 2GiB for clang and gcc, 4GiB in total
   COVERAGE: 1
+  VERILATOR_ARCHIVE: verilator-coverage-${{ github.sha }}.tar.gz
+
+defaults:
+  run:
+    shell: bash
+    working-directory: repo
 
 jobs:
 
 
   Build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       CI_BUILD_STAGE_NAME: build
-      CI_RUNS_ON: ubuntu-20.04
-      CACHE_KEY: ubuntu-20.04-${{ matrix.compiler.cc }}-coverage
+      CI_RUNS_ON: ubuntu-22.04
     steps:
 
     - name: Checkout
-      uses: actions/checkout@v2
-
-    - name: Cache
-      uses: actions/cache@v2
-      env:
-        cache-name: ccache
+      uses: actions/checkout@v4
       with:
-        path: ${{ github.workspace }}/.ccache
-        key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: coverage-${{ env.cache-name }}
+        path: repo
 
     - name: Install packages for build
-      env:
-        CI_BUILD_STAGE_NAME: build
       run: ./ci/ci-install.bash
 
     - name: Build
-      run: |
-        ./ci/ci-script.bash
-        tar cvzf verilator-${CI_COMMIT}-coverage.tgz bin src/obj*/*.o src/obj*/*.gcno
+      run: ./ci/ci-script.bash
 
-    - uses: actions/upload-artifact@v2
+    - name: Tar up repository
+      working-directory: ${{ github.workspace }}
+      run: tar --posix -c -z -f ${{ env.VERILATOR_ARCHIVE }} repo
+
+    - name: Upload tar archive
+      uses: actions/upload-artifact@v4
       with:
-        path: verilator-${{ env.CI_COMMIT }}-coverage.tgz
+        path: ${{ github.workspace }}/${{ env.VERILATOR_ARCHIVE }}
+        name: ${{ env.VERILATOR_ARCHIVE }}
 
 
   Test:
@@ -75,33 +72,25 @@ jobs:
         - 9
         include:
         - { test: dist, num: '' }
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     name: test-${{ matrix.test }}${{ matrix.num }}
     env:
       CI_BUILD_STAGE_NAME: test
-      CI_RUNS_ON: ubuntu-20.04
-      CACHE_KEY: ubuntu-20.04-${{ matrix.compiler.cc }}-coverage
+      CI_RUNS_ON: ubuntu-22.04
     steps:
 
-    - name: Checkout
-      uses: actions/checkout@v2
-
-    - name: Cache
-      uses: actions/cache@v2
-      env:
-        cache-name: ccache
+    - name: Download tar archive
+      uses: actions/download-artifact@v4
       with:
-        path: ${{ github.workspace }}/.ccache
-        key: ${{ env.CACHE_KEY }}-${{ env.cache-name }}-${{ github.sha }}
-        restore-keys: coverage-${{ env.cache-name }}
+        name: ${{ env.VERILATOR_ARCHIVE }}
+        path: ${{ github.workspace }}
 
-    - uses: actions/download-artifact@v2
+    - name: Unpack tar archive
+      working-directory: ${{ github.workspace }}
+      run: tar -x -z -f ${{ env.VERILATOR_ARCHIVE }}
 
-    - name: Install Verilator and test dependencies
-      run: |
-        tar xvzf artifact/verilator-${CI_COMMIT}-coverage.tgz
-        touch src/obj*/*.o src/obj*/*.gcno
-        ./ci/ci-install.bash
+    - name: Install test dependencies
+      run: ./ci/ci-install.bash
 
     - name: Test
       env:

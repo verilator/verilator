@@ -8,8 +8,6 @@
 
 VM_PREFIX* tb = nullptr;
 
-double sc_time_stamp() { return 0; }
-
 bool check() {
     bool pass;
     int c = (tb->A >> tb->SEL) & 0x1;
@@ -35,12 +33,11 @@ bool check() {
 }
 
 int main() {
-    bool pass = true;
-
     Verilated::debug(0);
-    tb = new VM_PREFIX("tb");
+    tb = new VM_PREFIX{"tb"};
 
     // loop through every possibility and check the result
+    bool pass = true;
     for (tb->SEL = 0; tb->SEL < 2; tb->SEL++) {
         for (tb->A = 0; tb->A < 4; tb->A++) {
             tb->eval();

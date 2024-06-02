@@ -165,6 +165,11 @@ module t (/*AUTOARG*/);
       `checkh(qi.size, 1);
       `checkh(qi[0], 2);
 
+      d = '{1, 2};
+      de = '{1, 2};
+      `checkh(d == de, 1'b1);
+      `checkh(d != de, 1'b0);
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

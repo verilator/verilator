@@ -12,7 +12,9 @@ module t (/*AUTOARG*/
    );
    input clk;
 
+   /* verilator lint_off MULTIDRIVEN */
    wire [2:0] x;
+   /* verilator lint_on MULTIDRIVEN */
 
    assign x[1:0] = { x[0], clk };
    assign x[2:1] = x[1:0];

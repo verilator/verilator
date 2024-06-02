@@ -47,11 +47,21 @@ module t (/*AUTOARG*/
       f_split_1 = m_din;
    end
 
-   reg [15:0] l_split_1, l_split_2;
-   always @ (posedge clk) begin
-      l_split_2 <= l_split_1;
-      l_split_1 <= l_split_2 | m_din;
-   end
+   function logic[15:0]  sideeffect_func(logic [15:0] v);
+      /*verilator no_inline_task */
+      $display(" sideeffect_func() is called %t", $time);
+      return ~v;
+   endfunction
+   reg [15:0] m_split_1 = 0;
+   reg [15:0] m_split_2 = 0;
+   always @(posedge clk) begin
+      if (sideeffect_func(m_split_1) != 16'b0) begin
+         m_split_1 <= m_din;
+      end else begin
+         m_split_2 <= m_din;
+      end
+  end
+
 
    reg [15:0] z_split_1, z_split_2;
    always @ (posedge clk) begin
@@ -104,6 +114,7 @@ module t (/*AUTOARG*/
          if (!(c_split_1==16'h0112 && c_split_2==16'hfeed)) $stop;
          if (!(e_split_1==16'hfeed && e_split_2==16'hfeed)) $stop;
          if (!(f_split_1==16'hfeed && f_split_2==16'hfeed)) $stop;
+         if (!(m_split_1==16'hfeed && m_split_2==16'h0000)) $stop;
          if (!(z_split_1==16'h0112 && z_split_2==16'h0112)) $stop;
       end
       if (cyc==5) begin
@@ -113,6 +124,7 @@ module t (/*AUTOARG*/
          // Two valid orderings, as we don't know which posedge clk gets evaled first
          if (!(e_split_1==16'hfeed && e_split_2==16'hfeed) && !(e_split_1==16'he11e && e_split_2==16'he11e)) $stop;
          if (!(f_split_1==16'hfeed && f_split_2==16'hfeed) && !(f_split_1==16'he11e && f_split_2==16'hfeed)) $stop;
+         if (!(m_split_1==16'hfeed && m_split_2==16'h0000)) $stop;
          if (!(z_split_1==16'h0112 && z_split_2==16'h0112)) $stop;
       end
       if (cyc==6) begin
@@ -122,6 +134,7 @@ module t (/*AUTOARG*/
          // Two valid orderings, as we don't know which posedge clk gets evaled first
          if (!(e_split_1==16'he11e && e_split_2==16'he11e) && !(e_split_1==16'he22e && e_split_2==16'he22e)) $stop;
          if (!(f_split_1==16'he11e && f_split_2==16'hfeed) && !(f_split_1==16'he22e && f_split_2==16'he11e)) $stop;
+         if (!(m_split_1==16'he11e && m_split_2==16'h0000)) $stop;
          if (!(z_split_1==16'h1ee1 && z_split_2==16'h0112)) $stop;
       end
       if (cyc==7) begin

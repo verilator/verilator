@@ -27,27 +27,27 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==2) begin
-	 if (global_cell. getGlob(1'b0)  !== 32'hf00d) $stop;
-	 if (global_cell2.getGlob(1'b0) !== 32'hf22d) $stop;
+         if (global_cell. getGlob(1'b0)  !== 32'hf00d) $stop;
+         if (global_cell2.getGlob(1'b0) !== 32'hf22d) $stop;
       end
       if (cyc==3) begin
-	 if (ma0.        getName(1'b0) !== "ma  ") $stop;
-	 if (ma0.mb0.    getName(1'b0) !== "mb  ") $stop;
-	 if (ma0.mb0.mc0.getName(1'b0) !== "mc  ") $stop;
+         if (ma0.        getName(1'b0) !== "ma  ") $stop;
+         if (ma0.mb0.    getName(1'b0) !== "mb  ") $stop;
+         if (ma0.mb0.mc0.getName(1'b0) !== "mc  ") $stop;
       end
       if (cyc==4) begin
-	 if (ma0.mb0.    getP2(1'b0) !== 32'h0) $stop;
-	 if (ma0.mb0.mc0.getP3(1'b0) !== 32'h0) $stop;
-	 if (ma0.mb0.mc1.getP3(1'b0) !== 32'h1) $stop;
+         if (ma0.mb0.    getP2(1'b0) !== 32'h0) $stop;
+         if (ma0.mb0.mc0.getP3(1'b0) !== 32'h0) $stop;
+         if (ma0.mb0.mc1.getP3(1'b0) !== 32'h1) $stop;
       end
       if (cyc==5) begin
-	 ma0.        checkName(ma0.        getName(1'b0));
-	 ma0.mb0.    checkName(ma0.mb0.    getName(1'b0));
-	 ma0.mb0.mc0.checkName(ma0.mb0.mc0.getName(1'b0));
+         ma0.        checkName(ma0.        getName(1'b0));
+         ma0.mb0.    checkName(ma0.mb0.    getName(1'b0));
+         ma0.mb0.mc0.checkName(ma0.mb0.mc0.getName(1'b0));
       end
       if (cyc==9) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

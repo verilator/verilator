@@ -3,6 +3,8 @@
 // any use, without warranty, 2000-2011 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+// This file intentionally includes some tabs
+
 //===========================================================================
 // Includes
 `include "t_preproc_inc2.vh"
@@ -70,7 +72,7 @@ Line_Preproc_Check `__LINE__
 	comma","line)
 
 `define withquote(a, bar) a bar LLZZ "a" bar
-`withquote( x , y)  // Simulators disagree here; some substitute "a" others do not
+`withquote( x , y)  // IEEE 1800-2023 clarified that "a" not to substitute
 
 `define noparam (a,b)
 `noparam(a,b)
@@ -162,7 +164,7 @@ endmodule
 //"
 
 //======================================================================
-// Check IEEE1800-2017 `pragma protect encrypted modules
+// Check IEEE 1800-2017 `pragma protect encrypted modules
 module t_lint_pragma_protected;
 
 `pragma protect begin_protected
@@ -207,6 +209,10 @@ ZCBXb3JrIGFzIG==
 
 
 `pragma protect end_protected
+
+// encoding envelope
+`pragma protect
+`pragma protect end
 
 endmodule
 
@@ -560,7 +566,7 @@ module t;
 `undef DEF_NO_EXPAND
    //-----
    // bug441 derivative
-   // SHOULD(simulator-dependant): Quotes doesn't prevent arguments from expanding (like backslashes above)
+   // Clarified in IEEE 1800-2023: Quotes prevent arguments from expanding
 `define STR(name) "foo name baz"
    initial $write("GOT='%s' EXP='%s'\n", `STR(bar), "foo bar baz");
 `undef STR
@@ -685,6 +691,30 @@ endmodule
 // Verilog-Perl bug1668
 `define stringify(text) `"text`"
 `stringify(`NOT_DEFINED_STR)
+
+//======================================================================
+
+"""First line with "quoted"\nSecond line\
+Third line"""
+"""First line
+Second line"""
+
+`define QQQ """QQQ defform"""
+`define QQQS(x) x
+`QQQ
+`QQQS("""QQQ defval""")
+
+// string concat bug
+`define IDENTITY(arg) ``arg
+`IDENTITY("string argument")
+
+//======================================================================
+// See issue #5094 - IEEE 1800-2023 clarified proper behavior
+
+`define MAC_WITH_STR(foo) foo "foo foo foo" foo
+`MAC_WITH_STR(bar)
+`define MAC_WITH_3STR(foo) foo """foo foo foo""" foo
+`MAC_WITH_3STR(bar)
 
 //======================================================================
 // IEEE mandated predefines

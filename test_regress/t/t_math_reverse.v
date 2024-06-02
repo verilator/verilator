@@ -53,31 +53,31 @@ module t (/*AUTOARG*/
 
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc<=cyc+1;
-	 //$write("cyc=%0d crc=%x r=%x\n", cyc, crc, bitrev);
-	 crc <= {crc[6:0], ~^ {crc[7],crc[5],crc[4],crc[3]}};
-	 if (cyc==1) begin
-	    crc <= 8'hed;
-	 end
-	 if (cyc==2 && bitrev!=8'hb7) $stop;
-	 if (cyc==3 && bitrev!=8'h5b) $stop;
-	 if (cyc==4 && bitrev!=8'h2d) $stop;
-	 if (cyc==5 && bitrev!=8'h16) $stop;
-	 if (cyc==6 && bitrev!=8'h8b) $stop;
-	 if (cyc==7 && bitrev!=8'hc5) $stop;
-	 if (cyc==8 && bitrev!=8'he2) $stop;
-	 if (cyc==9 && bitrev!=8'hf1) $stop;
-	 if (bitrevb != bitrev) $stop;
-	 if (cyc==3 && bitrevr!=8'hb7) $stop;
-	 if (cyc==4 && bitrevr!=8'h5b) $stop;
-	 if (cyc==5 && bitrevr!=8'h2d) $stop;
-	 if (cyc==6 && bitrevr!=8'h16) $stop;
-	 if (cyc==7 && bitrevr!=8'h8b) $stop;
-	 if (cyc==8 && bitrevr!=8'hc5) $stop;
-	 if (cyc==9) begin
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         cyc<=cyc+1;
+         //$write("cyc=%0d crc=%x r=%x\n", cyc, crc, bitrev);
+         crc <= {crc[6:0], ~^ {crc[7],crc[5],crc[4],crc[3]}};
+         if (cyc==1) begin
+            crc <= 8'hed;
+         end
+         if (cyc==2 && bitrev!=8'hb7) $stop;
+         if (cyc==3 && bitrev!=8'h5b) $stop;
+         if (cyc==4 && bitrev!=8'h2d) $stop;
+         if (cyc==5 && bitrev!=8'h16) $stop;
+         if (cyc==6 && bitrev!=8'h8b) $stop;
+         if (cyc==7 && bitrev!=8'hc5) $stop;
+         if (cyc==8 && bitrev!=8'he2) $stop;
+         if (cyc==9 && bitrev!=8'hf1) $stop;
+         if (bitrevb != bitrev) $stop;
+         if (cyc==3 && bitrevr!=8'hb7) $stop;
+         if (cyc==4 && bitrevr!=8'h5b) $stop;
+         if (cyc==5 && bitrevr!=8'h2d) $stop;
+         if (cyc==6 && bitrevr!=8'h16) $stop;
+         if (cyc==7 && bitrevr!=8'h8b) $stop;
+         if (cyc==8 && bitrevr!=8'hc5) $stop;
+         if (cyc==9) begin
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 endmodule

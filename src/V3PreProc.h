@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2000-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2000-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -22,13 +22,12 @@
 
 #include "V3Error.h"
 #include "V3FileLine.h"
+#include "V3Global.h"
+#include "V3ThreadSafety.h"
 
-#include <map>
-#include <list>
 #include <iostream>
-
-// Compatibility with Verilog-Perl's preprocessor
-#define fatalSrc(msg) v3fatalSrc(msg)
+#include <list>
+#include <map>
 
 class VInFilter;
 class VSpellCheck;
@@ -38,8 +37,7 @@ class V3PreProc VL_NOT_FINAL {
     // After creating, call open(), then getline() in a loop.  The class will to the rest...
 
 protected:
-    // STATE
-    int m_debug;  // Debugging
+    VL_DEFINE_DEBUG_FUNCTIONS;
 
 public:
     // CONSTANTS
@@ -60,10 +58,7 @@ public:
     virtual bool isEof() const = 0;  // Return true on EOF.
     virtual void insertUnreadback(const string& text) = 0;
 
-    int debug() const { return m_debug; }
-    void debug(int level);
-
-    FileLine* fileline();  ///< File/Line number for last getline call
+    FileLine* fileline() VL_MT_DISABLED;  ///< File/Line number for last getline call
 
     // CONTROL METHODS
     // These options control how the parsing proceeds
@@ -98,12 +93,13 @@ public:
 
 protected:
     // CONSTRUCTORS
-    V3PreProc() { m_debug = 0; }
+    V3PreProc() {}
     void configure(FileLine* fl);
 
 public:
-    static V3PreProc* createPreProc(FileLine* fl);
+    static V3PreProc* createPreProc(FileLine* fl) VL_MT_DISABLED;
     virtual ~V3PreProc() = default;  // LCOV_EXCL_LINE  // Persistent
+    static void selfTest() VL_MT_DISABLED;
 };
 
 #endif  // Guard

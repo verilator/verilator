@@ -33,7 +33,7 @@ VERILATOR_FLAGS =
 # Generate C++
 VERILATOR_FLAGS += -cc
 # Optimize
-VERILATOR_FLAGS += -Os -x-assign 0
+VERILATOR_FLAGS += -x-assign fast
 # Warn abount lint issues; may not want this on less solid designs
 VERILATOR_FLAGS += -Wall
 # This example does not use vl_time_stamp but rather

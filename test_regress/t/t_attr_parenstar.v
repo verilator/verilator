@@ -26,12 +26,12 @@ module t (/*AUTOARG*/
 
    // Not legal in some simulators, legal in others
 //   always @(* // cmt
-//	    ) begin
+//          ) begin
 //      if (clk) begin end
 //   end
 
    always @ (*
-	     ) begin
+             ) begin
       if (clk) begin end
    end
 

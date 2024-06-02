@@ -11,6 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(dist => 1);
 
 # This test now does nothing, because using DRIVER_STD=oldest tends to blow up glibc.
+# Support for DRIVER_STD=oldest was removed from makefiles. This file remains for commentary.
 
 ok(1);
 1;

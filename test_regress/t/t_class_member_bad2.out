@@ -1,0 +1,25 @@
+%Error: t/t_class_member_bad2.v:9:8: Duplicate declaration of signal: 'vardup'
+    9 |    int vardup;
+      |        ^~~~~~
+        t/t_class_member_bad2.v:8:8: ... Location of original declaration
+    8 |    int vardup;
+      |        ^~~~~~
+%Error: t/t_class_member_bad2.v:12:9: Duplicate declaration of task: 'memdup'
+   12 |    task memdup;
+      |         ^~~~~~
+        t/t_class_member_bad2.v:10:9: ... Location of original declaration
+   10 |    task memdup;
+      |         ^~~~~~
+%Error: t/t_class_member_bad2.v:17:18: Duplicate declaration of task: 'funcdup'
+   17 |    function void funcdup;
+      |                  ^~~~~~~
+        t/t_class_member_bad2.v:15:18: ... Location of original declaration
+   15 |    function void funcdup;
+      |                  ^~~~~~~
+%Error: t/t_class_member_bad2.v:12:9: Duplicate declaration of member name: 'memdup'
+   12 |    task memdup;
+      |         ^~~~~~
+%Error: t/t_class_member_bad2.v:17:18: Duplicate declaration of member name: 'funcdup'
+   17 |    function void funcdup;
+      |                  ^~~~~~~
+%Error: Exiting due to

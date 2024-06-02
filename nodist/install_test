@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=C0103,C0114,C0115,C0116,R0801,R0915
+# pylint: disable=C0103,C0114,C0115,C0116,C0209,R0801,R0915
 ######################################################################
 
 import argparse
@@ -104,7 +104,7 @@ def run(command):
     os.system(command)
     status = subprocess.call(command, shell=True)
     if status < 0:
-        raise Exception("%Error: Command failed " + command + ", stopped")
+        raise RuntimeError("%Error: Command failed " + command + ", stopped")
 
 
 #######################################################################
@@ -118,7 +118,7 @@ parser = argparse.ArgumentParser(
 Verilator kit.  It isn't part of the normal "make test" due to the number
 of builds required.""",
     epilog=
-    """Copyright 2009-2021 by Wilson Snyder. This program is free software; you
+    """Copyright 2009-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

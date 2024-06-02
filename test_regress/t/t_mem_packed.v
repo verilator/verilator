@@ -31,7 +31,7 @@ module t (/*AUTOARG*/
 
    initial begin
       for (i0=0; i0<5; i0=i0+1) begin
-	 arr[i0] = 1 << (i0[1:0]*2);
+         arr[i0] = 1 << (i0[1:0]*2);
       end
    end
 
@@ -40,21 +40,21 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==0) begin
-	 // Setup
-	 sum <= 0;
-	 sum_w <= 0;
+         // Setup
+         sum <= 0;
+         sum_w <= 0;
       end
       else if (cyc >= 10 && cyc < 14) begin
-	 sum <= sum + arr[cyc-10];
+         sum <= sum + arr[cyc-10];
 
-	 sum_w <= sum_w + arr_w[cyc-10];
+         sum_w <= sum_w + arr_w[cyc-10];
       end
       else if (cyc==99) begin
-	 $write("[%0t] cyc==%0d sum=%x\n",$time, cyc, sum);
-	 if (sum != 8'h55) $stop;
-	 if (sum != sum_w) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("[%0t] cyc==%0d sum=%x\n", $time, cyc, sum);
+         if (sum != 8'h55) $stop;
+         if (sum != sum_w) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 
@@ -69,26 +69,26 @@ module t (/*AUTOARG*/
    logic [31:0] last_data_out;
    always @ (posedge clk) begin
       if (cyc <= 2) begin
-	 data_in[0][0] <= 0;
-	 data_in[0][1] <= 0;
-	 data_in[0][2] <= 0;
-	 data_in2[0][0] <= 0;
-	 data_in2[0][1] <= 0;
-	 data_in2[0][2] <= 0;
+         data_in[0][0] <= 0;
+         data_in[0][1] <= 0;
+         data_in[0][2] <= 0;
+         data_in2[0][0] <= 0;
+         data_in2[0][1] <= 0;
+         data_in2[0][2] <= 0;
       end
       else if (cyc > 2 && cyc < 99) begin
-	 data_in[0][0] <= data_in[0][0] + 1;
-	 data_in[0][1] <= data_in[0][1] + 1;
-	 data_in[0][2] <= data_in[0][2] + 1;
-	 data_in2[0][0] <= data_in2[0][0] + 1;
-	 data_in2[0][1] <= data_in2[0][1] + 1;
-	 data_in2[0][2] <= data_in2[0][2] + 1;
-	 last_data_out <= data_out;
+         data_in[0][0] <= data_in[0][0] + 1;
+         data_in[0][1] <= data_in[0][1] + 1;
+         data_in[0][2] <= data_in[0][2] + 1;
+         data_in2[0][0] <= data_in2[0][0] + 1;
+         data_in2[0][1] <= data_in2[0][1] + 1;
+         data_in2[0][2] <= data_in2[0][2] + 1;
+         last_data_out <= data_out;
 `ifdef TEST_VERBOSE
-	 $write("data_out %0x %0x\n", data_out, last_data_out);
+         $write("data_out %0x %0x\n", data_out, last_data_out);
 `endif
-	 if (cyc > 4 && data_out != last_data_out + 3) $stop;
-	 if (cyc > 4 && data_out != data_out2) $stop;
+         if (cyc > 4 && data_out != last_data_out + 3) $stop;
+         if (cyc > 4 && data_out != data_out2) $stop;
       end
    end
 
@@ -130,13 +130,13 @@ module t (/*AUTOARG*/
    initial begin
       for (int i=0; i<4; i=i+2) begin
          for (int j=0; j<8; j=j+2) begin
-	    vld[0][0][i][j] = 2'b00;
-	    vld[0][0][i+1][j+1] = 2'b00;
-	    vld2[i][j] = 2'b00;
-	    vld2[i+1][j+1] = 2'b00;
-	    not_rhs[i][j] = i[1:0];
-	    not_rhs[i+1][j+1] = i[1:0];
-	 end
+            vld[0][0][i][j] = 2'b00;
+            vld[0][0][i+1][j+1] = 2'b00;
+            vld2[i][j] = 2'b00;
+            vld2[i+1][j+1] = 2'b00;
+            not_rhs[i][j] = i[1:0];
+            not_rhs[i+1][j+1] = i[1:0];
+         end
       end
    end
 
@@ -147,15 +147,15 @@ module t (/*AUTOARG*/
       expect_cyc <= expect_cyc + 1;
       for (int i=0; i<4; i=i+1) begin
          for (int j=0; j<8; j=j+1) begin
-	    vld[0][0][i][j] <= vld[0][0][i][j] + 1;
-	    vld2[i][j] <= vld2[i][j] + 1;
-	    if (not_rhs[i][j] != ~not_lhs[i][j]) $stop;
-	    not_rhs[i][j] <= not_rhs[i][j] + 1;
-	 end
+            vld[0][0][i][j] <= vld[0][0][i][j] + 1;
+            vld2[i][j] <= vld2[i][j] + 1;
+            if (not_rhs[i][j] != ~not_lhs[i][j]) $stop;
+            not_rhs[i][j] <= not_rhs[i][j] + 1;
+         end
       end
       if (cyc % 8 == 0) begin
-	 vld[0][0][0][0] <= vld[0][0][0][0] - 1;
-	 vld2[0][0] <= vld2[0][0] - 1;
+         vld[0][0][0][0] <= vld[0][0][0][0] - 1;
+         vld2[0][0] <= vld2[0][0] - 1;
       end
       if (expect_cyc < 8 && !vld_xor) $stop;
       else if (expect_cyc > 7 && vld_xor) $stop;

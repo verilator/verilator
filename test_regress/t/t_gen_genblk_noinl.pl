@@ -16,7 +16,7 @@ scenarios(simulator => 1);
 $Self->{sim_time} = 11000;
 
 compile(
-    v_flags2 => ["-Oi"],
+    v_flags2 => ["-fno-inline"],
     );
 
 execute(

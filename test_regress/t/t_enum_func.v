@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 typedef enum { EN_ZERO,
-	       EN_ONE
-	       } En_t;
+               EN_ONE
+               } En_t;
 
 module t (/*AUTOARG*/
    // Inputs
@@ -16,9 +16,9 @@ module t (/*AUTOARG*/
 
    // Insure that we can declare a type with a function declaration
    function enum integer {
-			  EF_TRUE = 1,
-			  EF_FALSE = 0 }
-				    f_enum_inv ( input a);
+                          EF_TRUE = 1,
+                          EF_FALSE = 0 }
+                                    f_enum_inv ( input a);
       f_enum_inv = a ? EF_FALSE : EF_TRUE;
    endfunction
    initial begin
@@ -29,29 +29,29 @@ module t (/*AUTOARG*/
    En_t a, z;
 
    sub sub (/*AUTOINST*/
-	    // Outputs
-	    .z				(z),
-	    // Inputs
-	    .a				(a));
+            // Outputs
+            .z                          (z),
+            // Inputs
+            .a                          (a));
 
    integer    cyc; initial cyc=1;
    always @ (posedge clk) begin
       if (cyc!=0) begin
-	 cyc <= cyc + 1;
-	 if (cyc==1) begin
-	    a <= EN_ZERO;
-	 end
-	 if (cyc==2) begin
-	    a <= EN_ONE;
-	    if (z != EN_ONE) $stop;
-	 end
-	 if (cyc==3) begin
-	    if (z != EN_ZERO) $stop;
-	 end
-	 if (cyc==9) begin
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         cyc <= cyc + 1;
+         if (cyc==1) begin
+            a <= EN_ZERO;
+         end
+         if (cyc==2) begin
+            a <= EN_ONE;
+            if (z != EN_ONE) $stop;
+         end
+         if (cyc==3) begin
+            if (z != EN_ZERO) $stop;
+         end
+         if (cyc==9) begin
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 

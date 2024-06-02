@@ -23,16 +23,16 @@ module t (/*AUTOARG*/
    ifc itop();
 
    sub  c1 (.isub(itop),
-	    .i_value(4));
+            .i_value(4));
 
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==20) begin
-	 if (itop.value != 4) $stop;
-	 itop.hidden_from_isub = 20;
-	 if (itop.hidden_from_isub != 20) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if (itop.value != 4) $stop;
+         itop.hidden_from_isub = 20;
+         if (itop.hidden_from_isub != 20) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule

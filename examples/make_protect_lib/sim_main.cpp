@@ -16,23 +16,24 @@
 #include <verilated_vcd_c.h>
 #endif
 
-int main(int argc, char** argv, char** env) {
-    if (false && argc && argv && env) {}
+int main(int argc, char** argv) {
+    (void)argc;
+    (void)argv;
 
     // Construct context to hold simulation time, etc
-    VerilatedContext* contextp = new VerilatedContext;
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
     contextp->debug(0);
     contextp->randReset(2);
     contextp->commandArgs(argc, argv);
 
     // Construct the Verilated model, including the secret module
-    Vtop* top = new Vtop{contextp};
+    const std::unique_ptr<Vtop> top{new Vtop{contextp.get(), "TOP"}};
 
 #if VM_TRACE
     // When tracing, the contents of the secret module will not be seen
     VerilatedVcdC* tfp = nullptr;
     const char* flag = contextp->commandArgsPlusMatch("trace");
-    if (flag && 0 == strcmp(flag, "+trace")) {
+    if (flag && 0 == std::strcmp(flag, "+trace")) {
         contextp->traceEverOn(true);
         VL_PRINTF("Enabling waves into logs/vlt_dump.vcd...\n");
         tfp = new VerilatedVcdC;
@@ -64,12 +65,6 @@ int main(int argc, char** argv, char** env) {
         tfp = nullptr;
     }
 #endif
-
-    // Destroy model
-    delete top;
-    top = nullptr;
-    delete contextp;
-    contextp = nullptr;
 
     // Return good completion status
     // Don't use exit() or destructor won't get called

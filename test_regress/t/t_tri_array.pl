@@ -8,17 +8,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-scenarios(simulator => 1);
-
-# When fix, update ifdefs in t_sv_cpu files; search for t_tri_array
-$Self->{vlt_all} and unsupported("Verilator unsupported, tristate arrays");
+scenarios(simulator_st => 1);
 
 compile(
+    fails => $Self->{vlt_all},
+    expect_filename => $Self->{golden_filename},
     );
 
 execute(
     check_finished => 1,
-    );
+    ) if !$Self->{vlt_all};
 
 ok(1);
 1;

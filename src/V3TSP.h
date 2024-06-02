@@ -1,13 +1,13 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Implementation of Christofides' algorithm to
+// DESCRIPTION: Verilator: Implementation of Christofides algorithm to
 //              approximate the solution to the traveling salesman problem.
 //
 // Code available from: https://verilator.org
 //
 //*************************************************************************
 //
-// Copyright 2003-2021 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -22,6 +22,9 @@
 #include "verilatedos.h"
 
 #include "V3Error.h"
+#include "V3ThreadSafety.h"
+
+#include <vector>
 
 namespace V3TSP {
 // Perform a "Traveling Salesman Problem" optimizing sort
@@ -47,9 +50,9 @@ using StateVec = std::vector<const TspStateBase*>;
 
 // Given an unsorted set of TspState's, sort them to minimize
 // the transition cost for walking the sorted list.
-void tspSort(const StateVec& states, StateVec* resultp);
+void tspSort(const StateVec& states, StateVec* resultp) VL_MT_DISABLED;
 
-void selfTest();
+void selfTest() VL_MT_DISABLED;
 }  // namespace V3TSP
 
 #endif  // Guard

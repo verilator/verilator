@@ -15,11 +15,11 @@ $Self->{sim_time} = $Self->{cycles} * 10 + 1000;
 
 compile(
     v_flags2 => ["+define+SIM_CYCLES=$Self->{cycles}",],
-    verilator_flags2=>["-Wno-UNOPTTHREADS", "--stats"],
+    verilator_flags2 => ["-Wno-UNOPTTHREADS", "--stats", "-fno-dfg"],
     );
 
 if ($Self->{vlt}) {
-    file_grep($Self->{stats}, qr/Optimizations, Const bit op reduction\s+(\d+)/i, 898);
+    file_grep($Self->{stats}, qr/Optimizations, Const bit op reduction\s+(\d+)/i, 1058);
 }
 
 execute(

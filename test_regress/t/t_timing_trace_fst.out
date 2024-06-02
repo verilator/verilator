@@ -1,0 +1,96 @@
+$date
+	Sun Nov  5 12:08:16 2023
+
+$end
+$version
+	fstWriter
+$end
+$timescale
+	1ps
+$end
+$scope module TOP $end
+$scope module t $end
+$var parameter 32 ! CLK_PERIOD [31:0] $end
+$var parameter 32 " CLK_HALF_PERIOD [31:0] $end
+$var logic 1 # rst $end
+$var logic 1 $ clk $end
+$var logic 1 % a $end
+$var logic 1 & b $end
+$var logic 1 ' c $end
+$var logic 1 ( d $end
+$var event 1 ) ev $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+#0
+$dumpvars
+1)
+0(
+1'
+1&
+0%
+0$
+1#
+b00000000000000000000000000000101 "
+b00000000000000000000000000001010 !
+$end
+#5
+1$
+#10
+0$
+0'
+1)
+#15
+1$
+#20
+0$
+1)
+1'
+#25
+1$
+#30
+0$
+0'
+1)
+#35
+1$
+#40
+0$
+1)
+1'
+#45
+1$
+#50
+0$
+0'
+1)
+#55
+1$
+#60
+0$
+1)
+1'
+#65
+1$
+#70
+0$
+0'
+1)
+#75
+1$
+#80
+0$
+1)
+1'
+#85
+1$
+#90
+0$
+0'
+1)
+#95
+1$
+#100
+0$
+1)
+1'

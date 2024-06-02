@@ -11,7 +11,7 @@ module t (/*AUTOARG*/
 
    input clk;
    input fastclk;
-   reg 	 reset_l;
+   reg   reset_l;
 
    int cyc;
    initial reset_l = 0;
@@ -22,10 +22,10 @@ module t (/*AUTOARG*/
    end
 
    t_clk t (/*AUTOINST*/
-	    // Inputs
-	    .clk			(clk),
-	    .fastclk			(fastclk),
-	    .reset_l			(reset_l));
+            // Inputs
+            .clk                        (clk),
+            .fastclk                    (fastclk),
+            .reset_l                    (reset_l));
 endmodule
 
 module t_clk (/*AUTOARG*/
@@ -40,7 +40,7 @@ module t_clk (/*AUTOARG*/
    // surefire lint_off STMINI
    // surefire lint_off CWECSB
    // surefire lint_off NBAJAM
-   reg 	  _ranit; initial _ranit=0;
+   reg    _ranit; initial _ranit=0;
    // surefire lint_off UDDSMX
    reg [7:0] clk_clocks; initial clk_clocks = 0; // surefire lint_off_line WRTWRT
    wire [7:0] clk_clocks_d1r;
@@ -52,30 +52,28 @@ module t_clk (/*AUTOARG*/
    // verilator lint_on MULTIDRIVEN
    reg [7:0] int_clocks_copy;
 
-   // verilator lint_off GENCLK
-   reg 	     internal_clk; initial internal_clk = 0;
-   reg 	     reset_int_;
-   // verilator lint_on GENCLK
+   reg       internal_clk; initial internal_clk = 0;
+   reg       reset_int_;
 
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
       $write("[%0t] CLK1 %x\n", $time, reset_l);
 `endif
       if (!reset_l) begin
-	 clk_clocks <= 0;
-	 int_clocks <= 0;
-	 internal_clk <= 1'b1;
-	 reset_int_ <= 0;
+         clk_clocks <= 0;
+         int_clocks <= 0;
+         internal_clk <= 1'b1;
+         reset_int_ <= 0;
       end
       else begin
-	 internal_clk <= ~internal_clk;
-	 if (!_ranit) begin
-	    _ranit <= 1;
+         internal_clk <= ~internal_clk;
+         if (!_ranit) begin
+            _ranit <= 1;
 `ifdef TEST_VERBOSE
-	    $write("[%0t] t_clk: Running\n",$time);
+            $write("[%0t] t_clk: Running\n", $time);
 `endif
-	    reset_int_ <= 1;
-	 end
+            reset_int_ <= 1;
+         end
       end
    end
 
@@ -85,10 +83,10 @@ module t_clk (/*AUTOARG*/
       $write("[%0t] CLK2 %x sr=%x\n", $time, reset_l, sig_rst);
 `endif
       if (!reset_l) begin
-	 sig_rst <= 0;
+         sig_rst <= 0;
       end
       else begin
-	 sig_rst <= sig_rst + 1; // surefire lint_off_line ASWIBB
+         sig_rst <= sig_rst + 1; // surefire lint_off_line ASWIBB
       end
    end
 
@@ -97,20 +95,20 @@ module t_clk (/*AUTOARG*/
       $write("[%0t] CLK3 %x cc=%x sr=%x\n", $time, reset_l, clk_clocks, sig_rst);
 `endif
       if (!reset_l) begin
-	 clk_clocks <= 0;
+         clk_clocks <= 0;
       end
       else begin
-	 clk_clocks <= clk_clocks + 8'd1;
-	 if (clk_clocks == 4) begin
-	    if (sig_rst !== 4) $stop;
-	    if (clk_clocks_d1r !== 3) $stop;
-	    if (int_clocks !== 2) $stop;
-	    if (int_clocks_copy !== 2) $stop;
-	    if (clk_clocks_d1r !== clk_clocks_cp2_d1r) $stop;
-	    if (clk_clocks_d1sr !== clk_clocks_cp2_d1sr) $stop;
-	    $write("*-* All Finished *-*\n");
-	    $finish;
-	 end
+         clk_clocks <= clk_clocks + 8'd1;
+         if (clk_clocks == 4) begin
+            if (sig_rst !== 4) $stop;
+            if (clk_clocks_d1r !== 3) $stop;
+            if (int_clocks !== 2) $stop;
+            if (int_clocks_copy !== 2) $stop;
+            if (clk_clocks_d1r !== clk_clocks_cp2_d1r) $stop;
+            if (clk_clocks_d1sr !== clk_clocks_cp2_d1sr) $stop;
+            $write("*-* All Finished *-*\n");
+            $finish;
+         end
       end
    end
 
@@ -120,10 +118,10 @@ module t_clk (/*AUTOARG*/
       $write("[%0t] CLK4 %x\n", $time, reset_l);
 `endif
       if (!reset_int_) begin
-	 resetted <= 0;
+         resetted <= 0;
       end
       else begin
-	 resetted <= resetted + 8'd1;
+         resetted <= resetted + 8'd1;
       end
    end
 
@@ -136,13 +134,13 @@ module t_clk (/*AUTOARG*/
    end
 
    t_clk_flop flopa (.clk(clk), .clk2(fastclk), .a(clk_clocks),
-		     .q(clk_clocks_d1r), .q2(clk_clocks_d1sr));
+                     .q(clk_clocks_d1r), .q2(clk_clocks_d1sr));
    t_clk_flop flopb (.clk(clk), .clk2(fastclk), .a(clk_clocks),
-		     .q(clk_clocks_cp2_d1r), .q2(clk_clocks_cp2_d1sr));
+                     .q(clk_clocks_cp2_d1r), .q2(clk_clocks_cp2_d1sr));
    t_clk_two two (/*AUTOINST*/
-		  // Inputs
-		  .fastclk		(fastclk),
-		  .reset_l		(reset_l));
+                  // Inputs
+                  .fastclk              (fastclk),
+                  .reset_l              (reset_l));
 
 endmodule
 
@@ -170,9 +168,7 @@ module t_clk_two (/*AUTOARG*/
    );
    input fastclk;
    input reset_l;
-   // verilator lint_off GENCLK
    reg clk2;
-   // verilator lint_on GENCLK
    reg [31:0] count;
 
    t_clk_twob tb (.*);

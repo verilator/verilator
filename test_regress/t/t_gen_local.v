@@ -9,27 +9,27 @@ module t (/*AUTOARG*/
    clk
    );
    input clk;
-   integer 	cyc=0;
+   integer      cyc = 0;
 
    localparam N = 31;
 
-   wire [31:0] 	vec;
+   wire [31:0]  vec;
 
    generate
       genvar  g;  // bug461
       begin : topgen
-	 for (g=0; g<N; ++g) begin : gfor
-	    assign vec[g] = (g<2);
-	 end
+         for (g=0; g<N; ++g) begin : gfor
+            assign vec[g] = (g<2);
+         end
       end
    endgenerate
 
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc == 3) begin
-	 if (vec != 32'b0011) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if (vec != 32'b0011) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

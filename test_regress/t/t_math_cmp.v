@@ -15,42 +15,42 @@ module t (/*AUTOARG*/
    reg [2:0] index_b;
 
    prover #(4)    p4  (/*AUTOINST*/
-		       // Inputs
-		       .clk		(clk),
-		       .index_a		(index_a),
-		       .index_b		(index_b));
+                       // Inputs
+                       .clk             (clk),
+                       .index_a         (index_a),
+                       .index_b         (index_b));
    prover #(32)  p32  (/*AUTOINST*/
-		       // Inputs
-		       .clk		(clk),
-		       .index_a		(index_a),
-		       .index_b		(index_b));
+                       // Inputs
+                       .clk             (clk),
+                       .index_a         (index_a),
+                       .index_b         (index_b));
    prover #(63)  p63  (/*AUTOINST*/
-		       // Inputs
-		       .clk		(clk),
-		       .index_a		(index_a),
-		       .index_b		(index_b));
+                       // Inputs
+                       .clk             (clk),
+                       .index_a         (index_a),
+                       .index_b         (index_b));
    prover #(64)  p64  (/*AUTOINST*/
-		       // Inputs
-		       .clk		(clk),
-		       .index_a		(index_a),
-		       .index_b		(index_b));
+                       // Inputs
+                       .clk             (clk),
+                       .index_a         (index_a),
+                       .index_b         (index_b));
    prover #(72)  p72  (/*AUTOINST*/
-		       // Inputs
-		       .clk		(clk),
-		       .index_a		(index_a),
-		       .index_b		(index_b));
+                       // Inputs
+                       .clk             (clk),
+                       .index_a         (index_a),
+                       .index_b         (index_b));
    prover #(126) p126 (/*AUTOINST*/
-		       // Inputs
-		       .clk		(clk),
-		       .index_a		(index_a),
-		       .index_b		(index_b));
+                       // Inputs
+                       .clk             (clk),
+                       .index_a         (index_a),
+                       .index_b         (index_b));
    prover #(128) p128 (/*AUTOINST*/
-		       // Inputs
-		       .clk		(clk),
-		       .index_a		(index_a),
-		       .index_b		(index_b));
+                       // Inputs
+                       .clk             (clk),
+                       .index_a         (index_a),
+                       .index_b         (index_b));
 
-   integer cyc; initial cyc=0;
+   integer cyc; initial cyc = 0;
    initial index_a = 3'b0;
    initial index_b = 3'b0;
    always @* begin
@@ -61,8 +61,8 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==99) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 
@@ -80,25 +80,25 @@ module prover (
 
    reg signed [WIDTH-1:0] as;
    reg signed [WIDTH-1:0] bs;
-   wire [WIDTH-1:0] 	  b = bs;
+   wire [WIDTH-1:0]       b = bs;
 
    // verilator lint_off LATCH
    always @* begin
       casez (index_a)
-	 3'd0: as = {(WIDTH){1'd0}}; // 0
-	 3'd1: as = {{(WIDTH-1){1'd0}}, 1'b1}; // 1
-	 3'd2: as = {1'b0, {(WIDTH-1){1'd0}}}; // 127 or equiv
-	 3'd3: as = {(WIDTH){1'd1}}; // -1
-	 3'd4: as = {1'b1, {(WIDTH-1){1'd0}}}; // -128 or equiv
-	 default: $stop;
+         3'd0: as = {(WIDTH){1'd0}}; // 0
+         3'd1: as = {{(WIDTH-1){1'd0}}, 1'b1}; // 1
+         3'd2: as = {1'b0, {(WIDTH-1){1'd0}}}; // 127 or equiv
+         3'd3: as = {(WIDTH){1'd1}}; // -1
+         3'd4: as = {1'b1, {(WIDTH-1){1'd0}}}; // -128 or equiv
+         default: $stop;
       endcase
       casez (index_b)
-	 3'd0: bs = {(WIDTH){1'd0}}; // 0
-	 3'd1: bs = {{(WIDTH-1){1'd0}}, 1'b1}; // 1
-	 3'd2: bs = {1'b0, {(WIDTH-1){1'd0}}}; // 127 or equiv
-	 3'd3: bs = {(WIDTH){1'd1}}; // -1
-	 3'd4: bs = {1'b1, {(WIDTH-1){1'd0}}}; // -128 or equiv
-	 default: $stop;
+         3'd0: bs = {(WIDTH){1'd0}}; // 0
+         3'd1: bs = {{(WIDTH-1){1'd0}}, 1'b1}; // 1
+         3'd2: bs = {1'b0, {(WIDTH-1){1'd0}}}; // 127 or equiv
+         3'd3: bs = {(WIDTH){1'd1}}; // -1
+         3'd4: bs = {1'b1, {(WIDTH-1){1'd0}}}; // -128 or equiv
+         default: $stop;
       endcase
    end
    // verilator lint_on LATCH
@@ -117,21 +117,21 @@ module prover (
    reg [7:0] exp;
    reg [7:0] got;
 
-   integer   cyc=0;
+   integer   cyc = 0;
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc>2) begin
 `ifdef TEST_VERBOSE
-	 $write("results[%d][%d] = 8'b%b_%b_%b_%b_%b_%b_%b_%b;\n",
-      		index_a, index_b,
-      		gt, gts, gte, gtes, lt, lts, lte, ltes);
+         $write("results[%d][%d] = 8'b%b_%b_%b_%b_%b_%b_%b_%b;\n",
+                index_a, index_b,
+                gt, gts, gte, gtes, lt, lts, lte, ltes);
 `endif
-	 exp = results[index_a][index_b];
-	 got   = {gt, gts, gte, gtes, lt, lts, lte, ltes};
-	 if (exp !== got) begin
-	    $display("%%Error: bad comparison width=%0d: %d/%d got=%b exp=%b", WIDTH, index_a,index_b,got, exp);
-	    $stop;
-	 end
+         exp = results[index_a][index_b];
+         got   = {gt, gts, gte, gtes, lt, lts, lte, ltes};
+         if (exp !== got) begin
+            $display("%%Error: bad comparison width=%0d: %d/%d got=%b exp=%b", WIDTH, index_a,index_b,got, exp);
+            $stop;
+         end
       end
    end
 

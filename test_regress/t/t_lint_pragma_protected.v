@@ -1,9 +1,19 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2021 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
+
 // This part should pass OK
 
 module t_lint_pragma_protected;
 
 `pragma protect begin_protected
+// Any amount of whitespace should be ok
 `pragma protect version=1
+`pragma protect version = 1
+`pragma protect version= 1
+`pragma protect version =1
 `pragma protect encrypt_agent="XXXXX"
 `pragma protect encrypt_agent_info="YYYYY"
 `pragma protect data_method="AES128-CBC"

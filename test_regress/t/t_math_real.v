@@ -6,7 +6,9 @@
 // Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+`define stop $stop
+`define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define is_near_real(a,b)  (( ((a)<(b)) ? (b)-(a) : (a)-(b)) < (((a)/(b))*0.0001))
 
 module t (/*AUTOARG*/
@@ -28,10 +30,14 @@ module t (/*AUTOARG*/
    reg [95:0] ci96;
    reg signed [95:0] cis96;
    real  r, r2;
-   integer      cyc=0;
+   integer      cyc = 0;
+   string       s;
 
    realtime  uninit;
    initial if (uninit != 0.0) $stop;
+
+   localparam int TWENTY = 20;
+   localparam real TWENDIV = $ceil((real'(TWENTY)-14.0)/2.0);
 
    sub_cast_bug374 sub (.cyc5(cyc[4:0]), .*);
 
@@ -91,6 +97,10 @@ module t (/*AUTOARG*/
       for (r=1.0; r<2.0; r=r+0.1) i++;
       if (i!=10) $stop;
       // bug
+      ci64 = $realtobits(1.444);
+      if (ci64 != 64'h3ff71a9fbe76c8b4) $stop;
+      r = $bitstoreal(64'h3ff71a9fbe76c8b4);
+      if (r != 1.444) $stop;
       r = $bitstoreal($realtobits(1.414));
       if (r != 1.414) $stop;
       // bug
@@ -134,12 +144,41 @@ module t (/*AUTOARG*/
       if (r != 74276402357122816493947453440.0) $stop;
       r = real'(96'shf0000000_00000000_00000000);
       if (r != -4951760157141521099596496896.0) $stop;
+
+      r = 1.5;
+      if (r++ != 1.5) $stop;
+      if (r != 2.5) $stop;
+      if (r-- != 2.5) $stop;
+      if (r != 1.5) $stop;
+      if (++r != 2.5) $stop;
+      if (r != 2.5) $stop;
+      if (--r != 1.5) $stop;
+      if (r != 1.5) $stop;
+
+      r = 1.23456;
+      s = $sformatf("%g", r);
+      `checks(s, "1.23456");
+      r = 1.0/0;  // inf
+      s = $sformatf("%g", r);
+      `checks(s, "inf");
+      r = -1.0/0;  // -inf
+      s = $sformatf("%g", r);
+      `checks(s, "-inf");
+      r = $sqrt(-1.0);  // NaN
+      s = $sformatf("%g", r);
+      `checks(s, "-nan");
+      r = -$sqrt(-1.0);  // NaN
+      s = $sformatf("%g", r);
+      `checks(s, "nan");
+
+      if (real'(TWENTY) != 20.0) $stop;
+      if (TWENDIV != 3.0) $stop;
    end
 
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d crc=%x result=%x\n",$time, cyc, crc, result);
+      $write("[%0t] cyc==%0d crc=%x result=%x\n", $time, cyc, crc, result);
 `endif
       cyc <= cyc + 1;
       if (cyc==0) begin
