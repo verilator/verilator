@@ -19,8 +19,6 @@
 
 #include "config_build.h"
 
-#include "V3ThreadSafety.h"
-
 #include <V3Stats.h>
 
 #define _FOR_EACH_DFG_PEEPHOLE_OPTIMIZATION_APPLY(macro, arg) macro(arg, #arg)

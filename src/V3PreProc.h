@@ -23,7 +23,6 @@
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3Global.h"
-#include "V3ThreadSafety.h"
 
 #include <iostream>
 #include <list>

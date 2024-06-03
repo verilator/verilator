@@ -22,7 +22,6 @@
 
 #include "V3Ast.h"
 #include "V3Error.h"
-#include "V3ThreadSafety.h"
 
 //============================================================================
 /// Unroller with saved state, so caller can determine when pushDelete's are executed.

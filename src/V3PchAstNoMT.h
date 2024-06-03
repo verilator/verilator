@@ -37,7 +37,6 @@
 #include "V3Options.h"
 #include "V3StdFuture.h"
 #include "V3String.h"
-#include "V3ThreadSafety.h"
 
 #include <algorithm>
 #include <map>
