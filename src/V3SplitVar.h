@@ -19,8 +19,6 @@
 
 //============================================================================
 
-#include "V3ThreadSafety.h"
-
 class AstNetlist;
 class AstVar;
 

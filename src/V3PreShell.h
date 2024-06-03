@@ -22,7 +22,6 @@
 
 #include "V3Error.h"
 #include "V3FileLine.h"
-#include "V3ThreadSafety.h"
 
 class V3ParseImp;
 class VInFilter;

@@ -163,7 +163,6 @@ set(HEADERS
     V3Table.h
     V3Task.h
     V3ThreadPool.h
-    V3ThreadSafety.h
     V3Timing.h
     V3Trace.h
     V3TraceDecl.h

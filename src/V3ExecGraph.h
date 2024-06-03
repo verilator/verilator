@@ -21,7 +21,6 @@
 #include "verilatedos.h"
 
 #include "V3Graph.h"
-#include "V3ThreadSafety.h"
 
 class AstNetlist;
 class AstMTaskBody;

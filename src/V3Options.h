@@ -22,7 +22,6 @@
 
 #include "V3Error.h"
 #include "V3LangCode.h"
-#include "V3ThreadSafety.h"
 
 #include <map>
 #include <set>
