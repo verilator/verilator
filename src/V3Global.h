@@ -30,7 +30,6 @@
 #include "V3FileLine.h"
 #include "V3Mutex.h"
 #include "V3Options.h"
-#include "V3ThreadSafety.h"
 
 #include <string>
 #include <unordered_map>

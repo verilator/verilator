@@ -38,7 +38,6 @@
 #include "V3Global.h"
 #include "V3Hash.h"
 #include "V3List.h"
-#include "V3ThreadSafety.h"
 
 #include "V3Dfg__gen_forward_class_decls.h"  // From ./astgen
 

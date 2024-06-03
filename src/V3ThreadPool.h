@@ -22,7 +22,6 @@
 #endif
 
 #include "V3Mutex.h"
-#include "V3ThreadSafety.h"
 
 #include <atomic>
 #include <condition_variable>
