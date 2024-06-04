@@ -13,7 +13,7 @@ scenarios(simulator => 1);
 top_filename("t/t_hier_trace.v");
 
 compile(
-    verilator_flags2 => ['--trace', '-j 4', 't/t_hier_trace.vlt', '--top-module t', '--hierarchical', '--fno-inline'],
+    verilator_flags2 => ['--trace', '-j 4', 't/t_hier_trace_sub/t_hier_trace.vlt', '--top-module t', '--hierarchical', '--fno-inline', '-F t/t_hier_trace_sub/top.F'],
     );
 
 execute(
