@@ -429,8 +429,8 @@ string V3Options::allArgsStringForHierBlock(bool forTop) const {
                 continue;
             }
         } else {  // Not an option
-            if (vFiles.find(*it) != vFiles.end()  // Remove HDL
-                || m_cppFiles.find(*it) != m_cppFiles.end()) {  // Remove C++
+            if (// vFiles.find(*it) != vFiles.end()  // Remove HDL
+                /*||*/ m_cppFiles.find(*it) != m_cppFiles.end()) {  // Remove C++
                 continue;
             }
         }
