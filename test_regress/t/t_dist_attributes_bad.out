@@ -745,12 +745,12 @@ t/t_dist_attributes/mt_enabled.h:371:    [mt_safe]                              
 t/t_dist_attributes/mt_enabled.h:285:    [mt_unsafe]                              ConstructorCallsUnsafeLocalFunction::unsafe_function()
 
 %Error: "UnannotatedMtDisabledClass::unannotatedMtDisabledMethodBad()" defined in a file marked as VL_MT_DISABLED_CODE_UNIT has declaration(s) without VL_MT_DISABLED annotation
-t/t_dist_attributes/mt_disabled.cpp:23:  [mt_disabled]                          UnannotatedMtDisabledClass::unannotatedMtDisabledMethodBad()
-t/t_dist_attributes/mt_disabled.h:29:    []                                       UnannotatedMtDisabledClass::unannotatedMtDisabledMethodBad()
+t/t_dist_attributes/mt_disabled.cpp:23:  [mt_disabled, excludes]                UnannotatedMtDisabledClass::unannotatedMtDisabledMethodBad()
+t/t_dist_attributes/mt_disabled.h:27:    []                                       UnannotatedMtDisabledClass::unannotatedMtDisabledMethodBad()
 
 %Error: "UnannotatedMtDisabledClass::unannotatedMtDisabledStaticMethodBad()" defined in a file marked as VL_MT_DISABLED_CODE_UNIT has declaration(s) without VL_MT_DISABLED annotation
-t/t_dist_attributes/mt_disabled.cpp:26:  [mt_disabled]                          UnannotatedMtDisabledClass::unannotatedMtDisabledStaticMethodBad()
-t/t_dist_attributes/mt_disabled.h:30:    []                                       UnannotatedMtDisabledClass::unannotatedMtDisabledStaticMethodBad()
+t/t_dist_attributes/mt_disabled.cpp:26:  [mt_disabled, excludes]                UnannotatedMtDisabledClass::unannotatedMtDisabledStaticMethodBad()
+t/t_dist_attributes/mt_disabled.h:28:    []                                       UnannotatedMtDisabledClass::unannotatedMtDisabledStaticMethodBad()
 
 %Error: "ifh_test_caller_func_VL_MT_SAFE(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes/mt_enabled.cpp:53:   [mt_safe]                              ifh_test_caller_func_VL_MT_SAFE(VerilatedMutex &)
@@ -1169,7 +1169,7 @@ t/t_dist_attributes/mt_enabled.cpp:60:   [release]                              
 t/t_dist_attributes/mt_enabled.cpp:60:   [requires]                               sfc_VL_REQUIRES(VerilatedMutex &)
 
 %Error: "unannotatedMtDisabledFunctionBad()" defined in a file marked as VL_MT_DISABLED_CODE_UNIT has declaration(s) without VL_MT_DISABLED annotation
-t/t_dist_attributes/mt_disabled.cpp:20:  [mt_disabled]                          unannotatedMtDisabledFunctionBad()
-t/t_dist_attributes/mt_disabled.h:22:    []                                       unannotatedMtDisabledFunctionBad()
-t/t_dist_attributes/mt_disabled.h:25:    []                                       unannotatedMtDisabledFunctionBad()
+t/t_dist_attributes/mt_disabled.cpp:20:  [mt_disabled, excludes]                unannotatedMtDisabledFunctionBad()
+t/t_dist_attributes/mt_disabled.h:20:    []                                       unannotatedMtDisabledFunctionBad()
+t/t_dist_attributes/mt_disabled.h:23:    []                                       unannotatedMtDisabledFunctionBad()
 Number of functions reported unsafe: 229

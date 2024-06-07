@@ -18,6 +18,7 @@
 #define VERILATOR_V3DFGPASSES_H_
 
 #include "config_build.h"
+#include "verilatedos.h"
 
 #include "V3DfgPatternStats.h"
 #include "V3DfgPeephole.h"

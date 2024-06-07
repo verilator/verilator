@@ -202,7 +202,9 @@
 #define VL_PURE VL_CLANG_ATTR(annotate("PURE"))
 // Annotated function can be called only in MT_DISABLED context, i.e. either in a code unit
 // compiled with VL_MT_DISABLED_CODE_UNIT preprocessor definition, or in the main thread.
-#define VL_MT_DISABLED VL_CLANG_ATTR(annotate("MT_DISABLED")) VL_EXCLUDES(VlOs::MtScopeMutex::s_haveThreadScope)
+#define VL_MT_DISABLED \
+    VL_CLANG_ATTR(annotate("MT_DISABLED")) \
+    VL_EXCLUDES(VlOs::MtScopeMutex::s_haveThreadScope)
 // Comment tag that function is threadsafe
 #define VL_MT_SAFE VL_CLANG_ATTR(annotate("MT_SAFE"))
 // Comment tag that function is threadsafe, only if

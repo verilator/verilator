@@ -17,6 +17,8 @@
 #ifndef VERILATOR_V3SPLITVAR_H_
 #define VERILATOR_V3SPLITVAR_H_
 
+#include "verilatedos.h"
+
 //============================================================================
 
 class AstNetlist;
