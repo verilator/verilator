@@ -956,6 +956,7 @@ class AstClockingItem final : public AstNode {
     // @astgen op2 := exprp : Optional[AstNodeExpr]
     // @astgen op3 := assignp : Optional[AstAssign]
     // @astgen op4 := varp : Optional[AstVar]
+    // @astgen ptr := m_outputp : Optional[AstClockingItem]
     VDirection m_direction;
 
 public:
@@ -971,6 +972,9 @@ public:
     }
     ASTGEN_MEMBERS_AstClockingItem;
     VDirection direction() const { return m_direction; }
+    AstClockingItem* outputp() const { return m_outputp; }
+    void outputp(AstClockingItem* outputp) { m_outputp = outputp; }
+    bool maybePointedTo() const override { return true; }
 };
 class AstConstPool final : public AstNode {
     // Container for const static data

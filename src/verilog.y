@@ -5918,11 +5918,11 @@ clocking_item<clockingItemp>:   // IEEE: clocking_item
         |       yOUTPUT clocking_skewE list_of_clocking_decl_assign ';'
                         { $$ = GRAMMARP->makeClockingItemList($<fl>1, VDirection::OUTPUT, $2, $3); }
         |       yINPUT clocking_skewE yOUTPUT clocking_skewE list_of_clocking_decl_assign ';'
-                        { $$ = nullptr;
-                          BBUNSUP($5, "Unsupported: Mixed input/output clocking items"); }
+                        { $$ = GRAMMARP->makeClockingItemList($<fl>1, VDirection::INPUT, $2, $5->cloneTree(true));
+                          $$->addNext(GRAMMARP->makeClockingItemList($<fl>3, VDirection::OUTPUT, $4, $5)); }
         |       yINOUT list_of_clocking_decl_assign ';'
-                        { $$ = nullptr;
-                          BBUNSUP($1, "Unsupported: 'inout' clocking items"); }
+                        { $$ = GRAMMARP->makeClockingItemList($<fl>1, VDirection::INPUT, nullptr, $2->cloneTree(true));
+                          $$->addNext(GRAMMARP->makeClockingItemList($<fl>1, VDirection::OUTPUT, nullptr, $2)); }
         |       assertion_item_declaration
                         { $$ = nullptr;
                           BBUNSUP($1, "Unsupported: assertion items in clocking blocks"); }
