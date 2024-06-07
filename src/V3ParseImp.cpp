@@ -309,12 +309,13 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
         // Create output file with all the preprocessor output we buffered up
         const string vppfilename = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix()
                                    + "__" + nondirname + ".vpp";
-        std::ofstream* ofp = nullptr;
+        std::ofstream ofp;
         std::ostream* osp;
         if (v3Global.opt.preprocOnly()) {
             osp = &cout;
         } else {
-            osp = ofp = V3File::new_ofstream(vppfilename);
+            ofp = V3File::new_ofstream(vppfilename);
+            osp = &ofp;
         }
         if (osp->fail()) {
             fileline->v3error("Cannot write preprocessor output: " + vppfilename);
@@ -325,9 +326,8 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
         } else {
             preprocDumps(*osp, false);
         }
-        if (ofp) {
-            ofp->close();
-            VL_DO_DANGLING(delete ofp, ofp);
+        if (ofp.is_open()) {
+            ofp.close();
         }
     }
 
@@ -348,23 +348,22 @@ void V3ParseImp::dumpInputsFile() {
     static bool append = false;
     const string vppfilename
         = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix() + "__inputs.vpp";
-    std::ofstream* ofp = V3File::new_ofstream(vppfilename, append);
-    if (ofp->fail()) {
+    std::ofstream ofp = V3File::new_ofstream(vppfilename, append);
+    if (ofp.fail()) {
         v3error("Cannot write preprocessor output: " + vppfilename);
         return;
     }
     if (!append) {
         append = true;
         UINFO(1, "Writing all preprocessed output to " << vppfilename << endl);
-        *ofp << "// Dump of all post-preprocessor input\n";
-        *ofp << "// Blank lines and `line directives have been removed\n";
-        *ofp << "//\n";
-        V3Stats::infoHeader(*ofp, "// ");
+        ofp << "// Dump of all post-preprocessor input\n";
+        ofp << "// Blank lines and `line directives have been removed\n";
+        ofp << "//\n";
+        V3Stats::infoHeader(ofp, "// ");
     }
-    *ofp << "\n";
-    preprocDumps(*ofp, true);
-    ofp->close();
-    VL_DO_DANGLING(delete ofp, ofp);
+    ofp << "\n";
+    preprocDumps(ofp, true);
+    ofp.close();
 }
 
 void V3ParseImp::lexFile(const string& modname) {

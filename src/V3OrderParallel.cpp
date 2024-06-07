@@ -554,9 +554,8 @@ public:
     static void dumpCpFilePrefixed(const V3Graph& graph, const string& nameComment) {
         const string filename = v3Global.debugFilename(nameComment) + ".txt";
         UINFO(1, "Writing " << filename << endl);
-        const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
-        std::ostream* const osp = &(*ofp);  // &* needed to deref unique_ptr
-        if (osp->fail()) v3fatalStatic("Can't write " << filename);
+        std::ofstream osp = V3File::new_ofstream(filename);
+        if (osp.fail()) v3fatalStatic("Can't write " << filename);
 
         // Find start vertex with longest CP
         const LogicMTask* startp = nullptr;
@@ -586,17 +585,17 @@ public:
             }
         }
 
-        *osp << "totalCost = " << totalCost
+        osp << "totalCost = " << totalCost
              << " (should match the computed critical path cost (CP) for the graph)\n";
 
         // Dump
         for (const LogicMTask* mtaskp : path) {
-            *osp << "begin mtask with cost " << mtaskp->cost() << '\n';
+            osp << "begin mtask with cost " << mtaskp->cost() << '\n';
             for (const OrderMoveVertex& mVtx : mtaskp->vertexList()) {
                 const OrderLogicVertex* const logicp = mVtx.logicp();
                 if (!logicp) continue;
                 // Show nodes with hierarchical costs
-                V3InstrCount::count(logicp->nodep(), false, osp);
+                V3InstrCount::count(logicp->nodep(), false, &osp);
             }
         }
     }

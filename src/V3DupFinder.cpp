@@ -54,8 +54,8 @@ V3DupFinder::iterator V3DupFinder::findDuplicate(AstNode* nodep, V3DupFinderUser
 
 void V3DupFinder::dumpFile(const string& filename, bool tree) {
     UINFO(2, "Dumping " << filename << endl);
-    const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
-    if (logp->fail()) v3fatal("Can't write " << filename);
+    std::ofstream logp = V3File::new_ofstream(filename);
+    if (logp.fail()) v3fatal("Can't write " << filename);
 
     std::unordered_map<int, int> dist;
 
@@ -70,22 +70,22 @@ void V3DupFinder::dumpFile(const string& filename, bool tree) {
         if (it == cend()) break;
         num_in_bucket++;
     }
-    *logp << "\n*** STATS:\n\n";
-    *logp << "    #InBucket   Occurrences\n";
+    logp << "\n*** STATS:\n\n";
+    logp << "    #InBucket   Occurrences\n";
     for (const auto& i : dist) {
-        *logp << "    " << std::setw(9) << i.first << "  " << std::setw(12) << i.second << '\n';
+        logp << "    " << std::setw(9) << i.first << "  " << std::setw(12) << i.second << '\n';
     }
 
-    *logp << "\n*** Dump:\n\n";
+    logp << "\n*** Dump:\n\n";
     for (const auto& it : *this) {
         if (lasthash != it.first) {
             lasthash = it.first;
-            *logp << "    " << it.first << '\n';
+            logp << "    " << it.first << '\n';
         }
-        *logp << "\t" << it.second << '\n';
+        logp << "\t" << it.second << '\n';
         // Dumping the entire tree may make nearly N^2 sized dumps,
         // because the nodes under this one may also be in the hash table!
-        if (tree) it.second->dumpTree(*logp, "    ");
+        if (tree) it.second->dumpTree(logp, "    ");
     }
 }
 

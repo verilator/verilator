@@ -396,9 +396,9 @@ public:
     void dumpGraphFilePrefixed(const string& nameComment) const {
         if (dumpLevel()) {
             const string filename = v3Global.debugFilename(nameComment) + ".txt";
-            const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
-            if (logp->fail()) v3fatal("Can't write " << filename);
-            dumpGraph(*logp, nameComment);
+            std::ofstream logp = V3File::new_ofstream(filename);
+            if (logp.fail()) v3fatal("Can't write " << filename);
+            dumpGraph(logp, nameComment);
         }
     }
 

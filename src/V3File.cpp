@@ -145,26 +145,26 @@ V3FileDependImp dependImp;  // Depend implementation class
 // V3FileDependImp
 
 void V3FileDependImp::writeDepend(const string& filename) {
-    const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
-    if (ofp->fail()) v3fatal("Can't write " << filename);
+    std::ofstream ofp = V3File::new_ofstream(filename);
+    if (ofp.fail()) v3fatal("Can't write " << filename);
 
     for (const DependFile& i : m_filenameList) {
-        if (i.target()) *ofp << i.filename() << " ";
+        if (i.target()) ofp << i.filename() << " ";
     }
-    *ofp << " : ";
-    *ofp << v3Global.opt.buildDepBin();
-    *ofp << " ";
+    ofp << " : ";
+    ofp << v3Global.opt.buildDepBin();
+    ofp << " ";
 
     for (const DependFile& i : m_filenameList) {
-        if (!i.target()) *ofp << i.filename() << " ";
+        if (!i.target()) ofp << i.filename() << " ";
     }
 
-    *ofp << '\n';
+    ofp << '\n';
 
     if (v3Global.opt.makePhony()) {
-        *ofp << '\n';
+        ofp << '\n';
         for (const DependFile& i : m_filenameList) {
-            if (!i.target()) *ofp << i.filename() << ":\n";
+            if (!i.target()) ofp << i.filename() << ":\n";
         }
     }
 }
@@ -178,13 +178,13 @@ std::vector<string> V3FileDependImp::getAllDeps() const {
 }
 
 void V3FileDependImp::writeTimes(const string& filename, const string& cmdlineIn) {
-    const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
-    if (ofp->fail()) v3fatal("Can't write " << filename);
+    std::ofstream ofp = V3File::new_ofstream(filename);
+    if (ofp.fail()) v3fatal("Can't write " << filename);
 
     const string cmdline = stripQuotes(cmdlineIn);
-    *ofp << "# DESCR"
+    ofp << "# DESCR"
          << "IPTION: Verilator output: Timestamp data for --skip-identical.  Delete at will.\n";
-    *ofp << "C \"" << cmdline << "\"\n";
+    ofp << "C \"" << cmdline << "\"\n";
 
     for (std::set<DependFile>::iterator iter = m_filenameList.begin();
          iter != m_filenameList.end(); ++iter) {
@@ -200,35 +200,35 @@ void V3FileDependImp::writeTimes(const string& filename, const string& cmdlineIn
             showIno = 0;  // We're writing it, so need to ignore it
         }
 
-        *ofp << (iter->target() ? "T" : "S") << " ";
-        *ofp << " " << std::setw(8) << showSize;
-        *ofp << " " << std::setw(8) << showIno;
-        *ofp << " " << std::setw(11) << iter->cstime();
-        *ofp << " " << std::setw(11) << iter->cnstime();
-        *ofp << " " << std::setw(11) << iter->mstime();
-        *ofp << " " << std::setw(11) << iter->mnstime();
-        *ofp << " \"" << iter->filename() << "\"";
-        *ofp << '\n';
+        ofp << (iter->target() ? "T" : "S") << " ";
+        ofp << " " << std::setw(8) << showSize;
+        ofp << " " << std::setw(8) << showIno;
+        ofp << " " << std::setw(11) << iter->cstime();
+        ofp << " " << std::setw(11) << iter->cnstime();
+        ofp << " " << std::setw(11) << iter->mstime();
+        ofp << " " << std::setw(11) << iter->mnstime();
+        ofp << " \"" << iter->filename() << "\"";
+        ofp << '\n';
     }
 }
 
 bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn) {
-    const std::unique_ptr<std::ifstream> ifp{V3File::new_ifstream_nodepend(filename)};
-    if (ifp->fail()) {
+    std::ifstream ifp = V3File::new_ifstream_nodepend(filename);
+    if (ifp.fail()) {
         UINFO(2, "   --check-times failed: no input " << filename << endl);
         return false;
     }
     {
-        const string ignore = V3Os::getline(*ifp);
+        const string ignore = V3Os::getline(ifp);
         if (ignore.empty()) { /*used*/
         }
     }
     {
         char chkDir;
-        *ifp >> chkDir;
+        ifp >> chkDir;
         char quote;
-        *ifp >> quote;
-        const string chkCmdline = V3Os::getline(*ifp, '"');
+        ifp >> quote;
+        const string chkCmdline = V3Os::getline(ifp, '"');
         const string cmdline = stripQuotes(cmdlineIn);
         if (cmdline != chkCmdline) {
             UINFO(2, "   --check-times failed: different command line\n");
@@ -236,25 +236,25 @@ bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn
         }
     }
 
-    while (!ifp->eof()) {
+    while (!ifp.eof()) {
         char chkDir;
-        *ifp >> chkDir;
+        ifp >> chkDir;
         off_t chkSize;
-        *ifp >> chkSize;
+        ifp >> chkSize;
         ino_t chkIno;
-        *ifp >> chkIno;
-        if (ifp->eof()) break;  // Needed to read final whitespace before found eof
+        ifp >> chkIno;
+        if (ifp.eof()) break;  // Needed to read final whitespace before found eof
         time_t chkCstime;
-        *ifp >> chkCstime;
+        ifp >> chkCstime;
         time_t chkCnstime;
-        *ifp >> chkCnstime;
+        ifp >> chkCnstime;
         time_t chkMstime;
-        *ifp >> chkMstime;
+        ifp >> chkMstime;
         time_t chkMnstime;
-        *ifp >> chkMnstime;
+        ifp >> chkMnstime;
         char quote;
-        *ifp >> quote;
-        const string chkFilename = V3Os::getline(*ifp, '"');
+        ifp >> quote;
+        const string chkFilename = V3Os::getline(ifp, '"');
 
         V3Os::filesystemFlush(chkFilename);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
