@@ -1891,7 +1891,7 @@ V3Number& V3Number::opSub(const V3Number& lhs, const V3Number& rhs) {
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
-    V3Number negrhs(&rhs, rhs.width());
+    V3Number negrhs(&rhs, width());
     negrhs.opNegate(rhs);
     return opAdd(lhs, negrhs);
 }

@@ -225,6 +225,7 @@ Verilator 5.020 2024-01-01
 * Fix dynamic NBA conditions (#4773). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix `V3Fork` stage to run only if `--timing` is set (#4778). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix max multiply width and add runtime assertions if too small. (#4781)
+* Fix select value too wide (#5148) (#5153). [Dercury]
 
 
 Verilator 5.018 2023-10-30
