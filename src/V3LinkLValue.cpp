@@ -50,6 +50,10 @@ class LinkLValueVisitor final : public VNVisitor {
                 // so it is needed to check only if m_setContinuously is true
                 if (m_setStrengthSpecified) nodep->varp()->hasStrengthAssignment(true);
             }
+            if (const AstClockingItem* itemp = VN_CAST(nodep->varp()->backp(), ClockingItem)) {
+                UINFO(5, "ClkOut " << nodep << endl);
+                if (itemp->outputp()) nodep->varp(itemp->outputp()->varp());
+            }
             if (m_setForcedByCode) {
                 nodep->varp()->setForcedByCode();
             } else if (!nodep->varp()->isFuncLocal() && nodep->varp()->isReadOnly()) {

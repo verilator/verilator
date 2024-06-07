@@ -10,9 +10,7 @@ module t(/*AUTOARG*/
    );
    input clk;
 
-   global clocking cb @(posedge clk);
-       input #1 output #1step x;
-       inout y;
+   clocking cb @(posedge clk);
        output posedge #1 a;
        output negedge #1 b;
        output edge #1 b;

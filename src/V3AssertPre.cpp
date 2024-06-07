@@ -158,6 +158,13 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstClockingItem* const nodep) override {
+        // Get a ref to the sampled/driven variable
+        AstVar* const varp = nodep->varp();
+        if (!varp) {
+            // Unused item
+            pushDeletep(nodep->unlinkFrBack());
+            return;
+        }
         FileLine* const flp = nodep->fileline();
         V3Const::constifyEdit(nodep->skewp());
         if (!VN_IS(nodep->skewp(), Const)) {
@@ -168,9 +175,7 @@ private:
         AstConst* const skewp = VN_AS(nodep->skewp(), Const);
         if (skewp->num().isNegative()) skewp->v3error("Skew cannot be negative");
         AstNodeExpr* const exprp = nodep->exprp();
-        // Get a ref to the sampled/driven variable
-        AstVar* const varp = nodep->varp()->unlinkFrBack();
-        m_clockingp->addVarsp(varp);
+        m_clockingp->addVarsp(varp->unlinkFrBack());
         varp->user1p(nodep);
         if (nodep->direction() == VDirection::OUTPUT) {
             AstVarRef* const skewedRefp = new AstVarRef{flp, varp, VAccess::READ};
@@ -224,6 +229,7 @@ private:
                 AstVar* const queueVarp = new AstVar{
                     flp, VVarType::MODULETEMP,
                     "__Vqueue__" + m_clockingp->name() + "__DOT__" + varp->name(), queueDtp};
+                queueVarp->lifetime(VLifetime::STATIC);
                 m_clockingp->addNextHere(queueVarp);
                 // Create a process like this:
                 //     always queue.push(<sampled var>);
@@ -290,6 +296,8 @@ private:
         const std::string delayName = m_cycleDlyNames.get(nodep);
         AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__counter",
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
+        cntVarp->lifetime(VLifetime::AUTOMATIC);
+        cntVarp->funcLocal(true);
         AstBegin* const beginp = new AstBegin{flp, delayName + "__block", cntVarp, false, true};
         beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, valuep});
         beginp->addStmtsp(new AstWhile{

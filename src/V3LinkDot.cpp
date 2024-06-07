@@ -1211,6 +1211,23 @@ class LinkDotFindVisitor final : public VNVisitor {
                 foundp = m_modSymp;  // Conflicts with modname?
             }
             AstVar* const findvarp = foundp ? VN_CAST(foundp->nodep(), Var) : nullptr;
+            // clocking items can have duplicate names (inout)
+            if (findvarp && VN_IS(findvarp->backp(), ClockingItem)
+                && VN_IS(nodep->backp(), ClockingItem)) {
+                AstClockingItem* const itemp = VN_AS(nodep->backp(), ClockingItem);
+                AstClockingItem* const finditemp = VN_AS(findvarp->backp(), ClockingItem);
+                UINFO(4, "ClockCompl: " << itemp << " ;; " << finditemp << endl);
+                UINFO(4, "ClockCompV: " << nodep << " ;; " << findvarp << endl);
+                if (*itemp->exprp()->fileline() == *finditemp->exprp()->fileline()) {
+                    UASSERT_OBJ(finditemp->direction() == VDirection::INPUT
+                                    && itemp->direction() == VDirection::OUTPUT,
+                                itemp, "Input after output?");
+                    // pretend nothing found and rename
+                    foundp = nullptr;
+                    nodep->name("__Voutput_" + nodep->name());
+                    finditemp->outputp(itemp);
+                }
+            }
             bool ins = false;
             if (!foundp) {
                 ins = true;
@@ -2181,6 +2198,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             AstVar* const eventp = new AstVar{
                 clockingp->fileline(), VVarType::MODULETEMP, clockingp->name(), VFlagChildDType{},
                 new AstBasicDType{clockingp->fileline(), VBasicDTypeKwd::EVENT}};
+            eventp->lifetime(VLifetime::STATIC);
             clockingp->eventp(eventp);
             // Trigger the clocking event in Observed (IEEE 1800-2023 14.13)
             clockingp->addNextHere(new AstAlwaysObserved{
