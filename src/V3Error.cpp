@@ -89,7 +89,9 @@ void V3ErrorGuarded::vlAbortOrExit() VL_REQUIRES(m_mutex) {
         std::cerr << msgPrefix() << "Aborting since under --debug" << endl;
         V3Error::vlAbort();
     } else {
-        std::exit(1);
+        // Exit without triggering any global destructors.
+        // Used to prevent detached V3ThreadPool jobs accessing destroyed static objects.
+        ::_exit(1);
     }
 }
 
