@@ -18,6 +18,7 @@
 #define VERILATOR_V3DFGPEEPHOLE_H_
 
 #include "config_build.h"
+#include "verilatedos.h"
 
 #include <V3Stats.h>
 
