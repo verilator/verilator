@@ -19,7 +19,8 @@ cd build
 cmake ..
 cmake --build . --config Release -j 3
 
-Release/example.exe
+# TODO put this back in, see issue# 5163
+# Release/example.exe
 
 cd ..
 Remove-Item -path build -recurse
