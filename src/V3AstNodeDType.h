@@ -820,9 +820,9 @@ public:
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
-    int itemCount() const {
+    size_t itemCount() const {
         size_t count = 0;
-        for (AstNode* itemp = itemsp(); itemp; itemp = itemp->nextp()) count++;
+        for (AstNode* itemp = itemsp(); itemp; itemp = itemp->nextp()) ++count;
         return count;
     }
     bool isCompound() const override { return false; }

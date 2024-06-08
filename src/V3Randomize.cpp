@@ -309,9 +309,9 @@ class RandomizeVisitor final : public VNVisitor {
     AstVar* enumValueTabp(AstEnumDType* nodep) {
         if (nodep->user2p()) return VN_AS(nodep->user2p(), Var);
         UINFO(9, "Construct Venumvaltab " << nodep << endl);
-        AstNodeArrayDType* const vardtypep
-            = new AstUnpackArrayDType{nodep->fileline(), nodep->dtypep(),
-                                      new AstRange{nodep->fileline(), nodep->itemCount(), 0}};
+        AstNodeArrayDType* const vardtypep = new AstUnpackArrayDType{
+            nodep->fileline(), nodep->dtypep(),
+            new AstRange{nodep->fileline(), static_cast<int>(nodep->itemCount()), 0}};
         AstInitArray* const initp = new AstInitArray{nodep->fileline(), vardtypep, nullptr};
         v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
         AstVar* const varp
