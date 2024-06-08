@@ -705,8 +705,14 @@ public:
         case vpiOctStrVal:  // FALLTHRU
         case vpiDecStrVal:  // FALLTHRU
         case vpiHexStrVal:  // FALLTHRU
-        case vpiStringVal: m_storage.str = o.m_storage.str; break;
-        case vpiVectorVal: m_storage.vec = o.m_storage.vec; break;
+        case vpiStringVal: {
+            new (&m_storage.str) std::string{o.m_storage.str};
+            break;
+        }
+        case vpiVectorVal: {
+            new (&m_storage.vec) std::vector<s_vpi_vecval>{o.m_storage.vec};
+            break;
+        }
         }
     }
 
@@ -718,39 +724,16 @@ public:
         case vpiOctStrVal:  // FALLTHRU
         case vpiDecStrVal:  // FALLTHRU
         case vpiHexStrVal:  // FALLTHRU
-        case vpiStringVal: m_storage.str = std::move(o.m_storage.str); break;
-        case vpiVectorVal: m_storage.vec = std::move(o.m_storage.vec); break;
+        case vpiStringVal: {
+            new (&m_storage.str) std::string{std::move(o.m_storage.str)};
+            break;
+        }
+        case vpiVectorVal: {
+            new (&m_storage.vec) std::vector<s_vpi_vecval>{std::move(o.m_storage.vec)};
+            break;
+        }
         }
     }
-
-    VerilatedVpiPutHolder& operator=(VerilatedVpiPutHolder const& o) {
-        if (this == &o) { return *this; }
-        m_var = o.m_var;
-        m_value = o.m_value;
-        switch (m_value.format) {
-        case vpiBinStrVal:  // FALLTHRU
-        case vpiOctStrVal:  // FALLTHRU
-        case vpiDecStrVal:  // FALLTHRU
-        case vpiHexStrVal:  // FALLTHRU
-        case vpiStringVal: m_storage.str = o.m_storage.str; break;
-        case vpiVectorVal: m_storage.vec = o.m_storage.vec; break;
-        }
-        return *this;
-    };
-
-    VerilatedVpiPutHolder& operator=(VerilatedVpiPutHolder&& o) noexcept {
-        m_var = std::move(o.m_var);
-        m_value = std::move(o.m_value);
-        switch (m_value.format) {
-        case vpiBinStrVal:  // FALLTHRU
-        case vpiOctStrVal:  // FALLTHRU
-        case vpiDecStrVal:  // FALLTHRU
-        case vpiHexStrVal:  // FALLTHRU
-        case vpiStringVal: m_storage.str = std::move(o.m_storage.str); break;
-        case vpiVectorVal: m_storage.vec = std::move(o.m_storage.vec); break;
-        }
-        return *this;
-    };
 
     ~VerilatedVpiPutHolder() noexcept {
         switch (m_value.format) {
@@ -813,7 +796,7 @@ class VerilatedVpiImp final {
     std::array<VpioCbList, CB_ENUM_MAX_VALUE> m_cbCurrentLists;
     VpioFutureCbs m_futureCbs;  // Time based callbacks for future timestamps
     VpioFutureCbs m_nextCbs;  // cbNextSimTime callbacks
-    std::vector<VerilatedVpiPutHolder> m_inertialPuts;  // Pending vpi puts due to vpiInertialDelay
+    std::list<VerilatedVpiPutHolder> m_inertialPuts;  // Pending vpi puts due to vpiInertialDelay
     VerilatedVpiError* m_errorInfop = nullptr;  // Container for vpi error info
     VerilatedAssertOneThread m_assertOne;  // Assert only called from single thread
     uint64_t m_nextCallbackId = 1;  // Id to identify callback
