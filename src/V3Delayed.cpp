@@ -188,7 +188,7 @@ class DelayedVisitor final : public VNVisitor {
         }
 
         // If both blocking/non-blocking, it's OK
-        if (firstRefp->user1() == nonBlocking) return;
+        if (firstRefp->user1() == static_cast<int>(nonBlocking)) return;
 
         // Otherwise warn that both blocking and non-blocking assignments are used
         const AstNode* nonblockingp = nonBlocking ? nodep : firstRefp;
