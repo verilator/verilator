@@ -166,6 +166,7 @@ Homebrew
 Hornung
 Hossell
 Hsu
+Huggett
 Hutt
 Hyperthreading
 Ibrahim
