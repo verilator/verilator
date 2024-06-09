@@ -20,8 +20,6 @@ module Vt_debug_emitv_t;
     signed int [31:0] string
     ???? // ASSOCARRAYDTYPE
     signed int [31:0] 
-    ???? // UNSIZEDARRAYDTYPE
-
     ???? // DYNARRAYDTYPE
     signed int [31:0] signed int [31:0] signed int [31:0] signed int [31:0] signed int [31:0] signed int [31:0] signed int [31:0] signed realstringIData [31:0] signed logic [31:0] signed int [31:0] bit [0:0] logic [0:0]  e_t;
     typedef struct packed 
@@ -37,8 +35,6 @@ module Vt_debug_emitv_t;
     signed int [31:0] string
     ???? // ASSOCARRAYDTYPE
     signed int [31:0] 
-    ???? // UNSIZEDARRAYDTYPE
-
     ???? // DYNARRAYDTYPE
     signed int [31:0] signed int [31:0] signed int [31:0] signed int [31:0] signed int [31:0] signed int [31:0] signed int [31:0] signed realstringIData [31:0] signed logic [31:0] signed int [31:0] bit [0:0] logic [0:0]  ps_t;
     typedef struct 
@@ -53,8 +49,6 @@ module Vt_debug_emitv_t;
     signed int [31:0] string
     ???? // ASSOCARRAYDTYPE
     signed int [31:0] 
-    ???? // UNSIZEDARRAYDTYPE
-
     ???? // DYNARRAYDTYPE
     signed int [31:0] signed int [31:0] signed int [31:0] signed int [31:0] signed int [31:0] signed int [31:0] signed int [31:0] signed realstringIData [31:0] signed logic [31:0] signed int [31:0] bit [0:0] logic [0:0]  us_t;
     typedef union 
@@ -68,8 +62,6 @@ module Vt_debug_emitv_t;
     signed int [31:0] string
     ???? // ASSOCARRAYDTYPE
     signed int [31:0] 
-    ???? // UNSIZEDARRAYDTYPE
-
     ???? // DYNARRAYDTYPE
     signed int [31:0] signed int [31:0] signed int [31:0] signed int [31:0] signed int [31:0] signed int [31:0] signed int [31:0] signed realstringIData [31:0] signed logic [31:0] signed int [31:0] bit [0:0] logic [0:0]  union_t;
     struct packed 

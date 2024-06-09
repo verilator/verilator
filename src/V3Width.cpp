@@ -1528,7 +1528,8 @@ class WidthVisitor final : public VNVisitor {
         case VAttrType::DIM_SIZE: {
             UASSERT_OBJ(nodep->fromp() && nodep->fromp()->dtypep(), nodep, "Unsized expression");
             AstNodeDType* const dtypep = nodep->fromp()->dtypep();
-            if (VN_IS(dtypep, QueueDType)) {
+            if (VN_IS(dtypep, QueueDType)
+                    || VN_IS(dtypep, DynArrayDType)) {
                 switch (nodep->attrType()) {
                 case VAttrType::DIM_SIZE: {
                     AstNodeExpr* const fromp = VN_AS(nodep->fromp()->unlinkFrBack(), NodeExpr);
@@ -1570,7 +1571,11 @@ class WidthVisitor final : public VNVisitor {
                     break;
                 }
                 case VAttrType::DIM_BITS: {
-                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: $bits for queue");
+                    if (VN_IS(dtypep, DynArrayDType)) {
+                        nodep->v3warn(E_UNSUPPORTED, "Unsupported: $bits for dynamic array");
+                    } else {
+                        nodep->v3warn(E_UNSUPPORTED, "Unsupported: $bits for queue");
+                    }
                     break;
                 }
                 default: nodep->v3fatalSrc("Unhandled attribute type");
@@ -2151,14 +2156,32 @@ class WidthVisitor final : public VNVisitor {
         // Make sure dtype is sized
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype determined for var");
-        if (const AstUnsizedArrayDType* const unsizedp
-            = VN_CAST(nodep->dtypeSkipRefp(), UnsizedArrayDType)) {
-            if (!(m_ftaskp && m_ftaskp->dpiImport())) {
-                UINFO(9, "Unsized becomes dynamic array " << nodep << endl);
-                AstDynArrayDType* const newp
-                    = new AstDynArrayDType{unsizedp->fileline(), unsizedp->subDTypep()};
-                nodep->dtypep(newp);
-                v3Global.rootp()->typeTablep()->addTypesp(newp);
+        if (m_ftaskp && m_ftaskp->dpiImport()) {
+            AstNodeDType *dtp = nodep->dtypep();
+            AstNodeDType *np = nullptr;
+            while (VN_IS(dtp->skipRefp(), DynArrayDType)
+                    || VN_IS(dtp->skipRefp(), UnpackArrayDType)) {
+                if (const AstDynArrayDType* const unsizedp
+                    = VN_CAST(dtp->skipRefp(), DynArrayDType)) {
+                    if (!np) {
+                        UINFO(9, "Dynamic becomes unsized array (var itself) " << nodep << endl);
+                    } else {
+                        UINFO(9, "Dynamic becomes unsized array (subDType) " << dtp << endl);
+                    }
+                    AstUnsizedArrayDType* const newp
+                        = new AstUnsizedArrayDType{unsizedp->fileline(), unsizedp->subDTypep()};
+                    newp->dtypep(newp);
+                    if (!np) { // for Var itself
+                        nodep->dtypep(newp);
+                    } else { // for subDType
+                        np->virtRefDTypep(newp);
+                    }
+                    v3Global.rootp()->typeTablep()->addTypesp(newp);
+                    np = newp;
+                } else {
+                    np = dtp->skipRefp();
+                }
+                dtp = np->virtRefDTypep();
             }
         }
         if (AstWildcardArrayDType* const wildp
@@ -2458,6 +2481,7 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{vdtypep, PRELIM}.p());
+            if (nodep->didWidthAndSet()) return;
             nodep->dtypeFrom(vdtypep);
         }
         if (m_vup->final()) {
@@ -2480,6 +2504,7 @@ class WidthVisitor final : public VNVisitor {
                     iterateCheckTyped(nodep, "RHS", nodep->rhsp(), vdtypep->subDTypep(), FINAL);
                 }
             }
+            if (nodep->didWidthAndSet()) return;
             nodep->dtypeFrom(vdtypep);
         }
     }
@@ -3348,6 +3373,12 @@ class WidthVisitor final : public VNVisitor {
         return VN_AS(nodep->pinsp(), Arg)->exprp();
     }
     void methodCallLValueRecurse(AstMethodCall* nodep, AstNode* childp, const VAccess& access) {
+        if (const AstCMethodHard* const ichildp = VN_CAST(childp, CMethodHard)) {
+            if (ichildp->name() == "at") {
+                methodCallLValueRecurse(nodep, ichildp->fromp(), access);
+                return;
+            }
+        }
         if (AstNodeVarRef* const varrefp = VN_CAST(childp, NodeVarRef)) {
             varrefp->access(access);
         } else if (const AstMemberSel* const ichildp = VN_CAST(childp, MemberSel)) {
