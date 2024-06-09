@@ -1528,8 +1528,7 @@ class WidthVisitor final : public VNVisitor {
         case VAttrType::DIM_SIZE: {
             UASSERT_OBJ(nodep->fromp() && nodep->fromp()->dtypep(), nodep, "Unsized expression");
             AstNodeDType* const dtypep = nodep->fromp()->dtypep();
-            if (VN_IS(dtypep, QueueDType)
-                    || VN_IS(dtypep, DynArrayDType)) {
+            if (VN_IS(dtypep, QueueDType) || VN_IS(dtypep, DynArrayDType)) {
                 switch (nodep->attrType()) {
                 case VAttrType::DIM_SIZE: {
                     AstNodeExpr* const fromp = VN_AS(nodep->fromp()->unlinkFrBack(), NodeExpr);
@@ -2157,10 +2156,10 @@ class WidthVisitor final : public VNVisitor {
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype determined for var");
         if (m_ftaskp && m_ftaskp->dpiImport()) {
-            AstNodeDType *dtp = nodep->dtypep();
-            AstNodeDType *np = nullptr;
+            AstNodeDType* dtp = nodep->dtypep();
+            AstNodeDType* np = nullptr;
             while (VN_IS(dtp->skipRefp(), DynArrayDType)
-                    || VN_IS(dtp->skipRefp(), UnpackArrayDType)) {
+                   || VN_IS(dtp->skipRefp(), UnpackArrayDType)) {
                 if (const AstDynArrayDType* const unsizedp
                     = VN_CAST(dtp->skipRefp(), DynArrayDType)) {
                     if (!np) {
@@ -2171,9 +2170,9 @@ class WidthVisitor final : public VNVisitor {
                     AstUnsizedArrayDType* const newp
                         = new AstUnsizedArrayDType{unsizedp->fileline(), unsizedp->subDTypep()};
                     newp->dtypep(newp);
-                    if (!np) { // for Var itself
+                    if (!np) {  // for Var itself
                         nodep->dtypep(newp);
-                    } else { // for subDType
+                    } else {  // for subDType
                         np->virtRefDTypep(newp);
                     }
                     v3Global.rootp()->typeTablep()->addTypesp(newp);

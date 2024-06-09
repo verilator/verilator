@@ -903,10 +903,8 @@ std::pair<uint32_t, uint32_t> AstNodeDType::dimensions(bool includeBasic) {
             }
             dtypep = adtypep->subDTypep();
             continue;
-        } else if (VN_IS(dtypep, QueueDType)
-                || VN_IS(dtypep, DynArrayDType)
-                || VN_IS(dtypep, AssocArrayDType)
-                || VN_IS(dtypep, WildcardArrayDType)) {
+        } else if (VN_IS(dtypep, QueueDType) || VN_IS(dtypep, DynArrayDType)
+                   || VN_IS(dtypep, AssocArrayDType) || VN_IS(dtypep, WildcardArrayDType)) {
             unpacked++;
             dtypep = dtypep->subDTypep();
             continue;
