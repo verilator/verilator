@@ -880,7 +880,7 @@ class WidthVisitor final : public VNVisitor {
             const int width = nodep->elementsConst();
             if (width > (1 << 28)) {
                 nodep->v3error("Width of bit range is huge; vector of over 1 billion bits: 0x"
-                               << std::hex << width);
+                               << std::hex << width << std::dec);
             }
             // Note width() not set on range; use elementsConst()
             if (nodep->ascending() && !VN_IS(nodep->backp(), UnpackArrayDType)
