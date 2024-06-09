@@ -72,6 +72,10 @@
                                                 : ... note: In instance 't'
    25 |       sel2 = mi[1<<29 : 0];
       |                ^
+%Warning-SELRANGE: t/t_select_bad_range4.v:25:16: Extracting 536870913 bits from only 536870873 bit number
+                                                : ... note: In instance 't'
+   25 |       sel2 = mi[1<<29 : 0];
+      |                ^
 %Warning-WIDTHTRUNC: t/t_select_bad_range4.v:25:12: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's SEL generates 536870913 bits.
                                                   : ... note: In instance 't'
    25 |       sel2 = mi[1<<29 : 0];
