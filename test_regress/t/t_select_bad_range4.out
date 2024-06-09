@@ -20,15 +20,15 @@
                                      : ... note: In instance 't'
    21 |       sel2 = mi[44 +: 1<<29];
       |                ^
-%Warning-SELRANGE: t/t_select_bad_range4.v:21:16: Extracting 20000000 bits from only 6 bit number
+%Warning-SELRANGE: t/t_select_bad_range4.v:21:16: Extracting 536870912 bits from only 6 bit number
                                                 : ... note: In instance 't'
    21 |       sel2 = mi[44 +: 1<<29];
       |                ^
-%Warning-SELRANGE: t/t_select_bad_range4.v:21:16: Selection index out of range: 20000003:4 outside 2d:28
+%Warning-SELRANGE: t/t_select_bad_range4.v:21:16: Selection index out of range: 536870915:4 outside 45:40
                                                 : ... note: In instance 't'
    21 |       sel2 = mi[44 +: 1<<29];
       |                ^
-%Warning-WIDTHTRUNC: t/t_select_bad_range4.v:21:12: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's SEL generates 20000000 bits.
+%Warning-WIDTHTRUNC: t/t_select_bad_range4.v:21:12: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's SEL generates 536870912 bits.
                                                   : ... note: In instance 't'
    21 |       sel2 = mi[44 +: 1<<29];
       |            ^
@@ -44,7 +44,7 @@
                                                    : ... note: In instance 't'
    22 |       sel2 = mi[44 +: nonconst];
       |            ^
-%Warning-WIDTHEXPAND: t/t_select_bad_range4.v:23:17: Operator SUB expects 20 or 6 bits on the LHS, but LHS's VARREF 'nonconst' generates 1 bits.
+%Warning-WIDTHEXPAND: t/t_select_bad_range4.v:23:17: Operator SUB expects 32 or 6 bits on the LHS, but LHS's VARREF 'nonconst' generates 1 bits.
                                                    : ... note: In instance 't'
    23 |       sel2 = mi[nonconst];
       |                 ^~~~~~~~
@@ -64,15 +64,15 @@
                                                    : ... note: In instance 't'
    24 |       sel2 = mi[nonconst : nonconst];
       |            ^
-%Warning-SELRANGE: t/t_select_bad_range4.v:25:16: Extracting 20000001 bits from only 6 bit number
+%Warning-SELRANGE: t/t_select_bad_range4.v:25:16: Extracting 536870913 bits from only 6 bit number
                                                 : ... note: In instance 't'
    25 |       sel2 = mi[1<<29 : 0];
       |                ^
-%Warning-SELRANGE: t/t_select_bad_range4.v:25:16: Selection index out of range: 1fffffd8:ffffffd8 outside 2d:28
+%Warning-SELRANGE: t/t_select_bad_range4.v:25:16: Selection index out of range: 536870872:-40 outside 45:40
                                                 : ... note: In instance 't'
    25 |       sel2 = mi[1<<29 : 0];
       |                ^
-%Warning-WIDTHTRUNC: t/t_select_bad_range4.v:25:12: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's SEL generates 20000001 bits.
+%Warning-WIDTHTRUNC: t/t_select_bad_range4.v:25:12: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's SEL generates 536870913 bits.
                                                   : ... note: In instance 't'
    25 |       sel2 = mi[1<<29 : 0];
       |            ^
