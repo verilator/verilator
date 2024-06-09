@@ -18,6 +18,7 @@ compile(
 
 execute(
     check_finished => 1,
+    aslr_off => 1,  # Some GCC versions hit an address-sanitizer bug otherwise
     );
 
 file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.mk", qr/VL_DEBUG=1/);
