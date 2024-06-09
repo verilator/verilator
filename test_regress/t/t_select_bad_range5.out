@@ -12,6 +12,10 @@
                                                 : ... note: In instance 't'
    16 |    assign mi = unk[3:2];
       |                   ^
+%Warning-WIDTHEXPAND: t/t_select_bad_range5.v:16:19: Bit extraction of var[3:0] requires 2 bit index, not 1 bits.
+                                                   : ... note: In instance 't'
+   16 |    assign mi = unk[3:2];
+      |                   ^
 %Warning-WIDTHTRUNC: t/t_select_bad_range5.v:16:14: Operator ASSIGNW expects 1 bits on the Assign RHS, but Assign RHS's SEL generates 2 bits.
                                                   : ... note: In instance 't'
    16 |    assign mi = unk[3:2];

@@ -993,6 +993,12 @@ class WidthVisitor final : public VNVisitor {
                                                 << " outside " << frommsb << ":" << fromlsb);
                     UINFO(1, "    Related node: " << nodep << endl);
                 }
+                // Extend it.
+                const int extendTo = nodep->msbConst() + 1;
+                AstNodeDType* const subDTypep = nodep->findLogicDType(
+                    extendTo, extendTo, nodep->fromp()->dtypep()->numeric());
+                widthCheckSized(nodep, "errorless...", nodep->fromp(), subDTypep, EXTEND_EXP,
+                                false /*noerror*/);
             }
             // iterate FINAL is two blocks above
             //
