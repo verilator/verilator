@@ -1217,6 +1217,14 @@ List Of Warnings
    :vlopt:`--no-timing` option.
 
 
+.. option:: NONSTD
+
+   Warns when a non-standard language feature is used that has a standard
+   equivalent, which might behave differently in corner cases. For example
+   :code:`$psprintf` system function is replaced by its standard equivalent
+   :code:`$sformatf`.
+
+
 .. option:: NULLPORT
 
    Warns that a null port was detected in the module definition port
