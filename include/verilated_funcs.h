@@ -508,19 +508,18 @@ static inline void VL_ASSIGNBIT_WO(int bit, WDataOutP owp) VL_MT_SAFE {
     { (svar).write(rd); }
 #define VL_ASSIGN_SBQ(obits, svar, rd) \
     { (svar).write(rd); }
-#define VL_SC_BITS_PER_DIGIT 30  // This comes from sc_nbdefs.h BITS_PER_DIGIT
 #define VL_ASSIGN_SBW(obits, svar, rwp) \
     { \
         sc_dt::sc_biguint<(obits)> _butemp; \
         int32_t lsb = 0; \
         uint32_t* chunkp = _butemp.get_raw(); \
-        while (lsb + VL_SC_BITS_PER_DIGIT < (obits)) { \
+        while (lsb + BITS_PER_DIGIT < (obits)) { \
             static_assert(std::is_same<IData, EData>::value, "IData and EData mismatch"); \
-            const uint32_t data = VL_SEL_IWII(lsb + VL_SC_BITS_PER_DIGIT + 1, (rwp).data(), lsb, \
-                                              VL_SC_BITS_PER_DIGIT); \
-            *chunkp = data & VL_MASK_E(VL_SC_BITS_PER_DIGIT); \
+            const uint32_t data \
+                = VL_SEL_IWII(lsb + BITS_PER_DIGIT + 1, (rwp).data(), lsb, BITS_PER_DIGIT); \
+            *chunkp = data & VL_MASK_E(BITS_PER_DIGIT); \
             ++chunkp; \
-            lsb += VL_SC_BITS_PER_DIGIT; \
+            lsb += BITS_PER_DIGIT; \
         } \
         if (lsb < (obits)) { \
             const uint32_t msb_data = VL_SEL_IWII((obits) + 1, (rwp).data(), lsb, (obits)-lsb); \
