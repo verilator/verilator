@@ -251,6 +251,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$period"             { FL; return yaTIMINGSPEC; }
   "$pow"                { FL; return yD_POW; }
   "$printtimescale"     { FL; return yD_PRINTTIMESCALE; }
+  "$psprintf"           { FL; yylval.fl->v3warn(NONSTD, "Non-standard system function.\n" << yylval.fl->warnMore() << "... Suggest use standard '$sformatf' (IEEE 1800-2023 21.3.3)"); return yD_SFORMATF; }
   "$random"             { FL; return yD_RANDOM; }
   "$readmemb"           { FL; return yD_READMEMB; }
   "$readmemh"           { FL; return yD_READMEMH; }
