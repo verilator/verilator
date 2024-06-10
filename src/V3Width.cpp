@@ -581,8 +581,13 @@ class WidthVisitor final : public VNVisitor {
                                                  << vdtypep->prettyDTypeNameQ() << " data type");
             }
 
-            iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
-            iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
+            if (vdtypep && vdtypep->isString()) {
+                iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
+                iterateCheckString(nodep, "RHS", nodep->rhsp(), BOTH);
+            } else {
+                iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
+                iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
+            }
             nodep->dtypeSetLogicUnsized(nodep->lhsp()->width() + nodep->rhsp()->width(),
                                         nodep->lhsp()->widthMin() + nodep->rhsp()->widthMin(),
                                         VSigning::UNSIGNED);
@@ -773,7 +778,12 @@ class WidthVisitor final : public VNVisitor {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: Replication to form "
                                                  << vdtypep->prettyDTypeNameQ() << " data type");
             }
-            iterateCheckSizedSelf(nodep, "LHS", nodep->srcp(), SELF, BOTH);
+            if (vdtypep && vdtypep->isString()) {
+                iterateCheckString(nodep, "LHS", nodep->srcp(), BOTH);
+            } else {
+                iterateCheckSizedSelf(nodep, "LHS", nodep->srcp(), SELF, BOTH);
+            }
+
             if ((vdtypep && vdtypep->isString()) || nodep->srcp()->isString()) {
                 AstNode* const newp
                     = new AstReplicateN{nodep->fileline(), nodep->srcp()->unlinkFrBack(),
@@ -6731,11 +6741,11 @@ class WidthVisitor final : public VNVisitor {
         (void)underp;  // cppcheck
     }
     void iterateCheckString(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
+        AstNodeDType* const expDTypep = nodep->findStringDType();
         if (stage & PRELIM) {
-            underp = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, PRELIM}.p());
+            underp = userIterateSubtreeReturnEdits(underp, WidthVP{expDTypep, PRELIM}.p());
         }
         if (stage & FINAL) {
-            AstNodeDType* const expDTypep = nodep->findStringDType();
             underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         }
         (void)underp;  // cppcheck
