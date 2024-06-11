@@ -89,16 +89,17 @@ public:
         // Create data type
         const int width = elemDType->width();
         AstNodeDType* const subDTypep
-            = elemDType->isString()
+            = elemDType->isString() || elemDType->isDouble()
                   ? elemDType
                   : v3Global.rootp()->findBitDType(width, width, VSigning::UNSIGNED);
         AstUnpackArrayDType* const tableDTypep = new AstUnpackArrayDType{
             m_fl, subDTypep, new AstRange{m_fl, static_cast<int>(size), 0}};
         v3Global.rootp()->typeTablep()->addTypesp(tableDTypep);
         // Create table initializer (with default value 0)
-        AstConst* const defaultp = elemDType->isString()
-                                       ? new AstConst{m_fl, AstConst::String{}, ""}
-                                       : new AstConst{m_fl, AstConst::WidthedValue{}, width, 0};
+        AstConst* const defaultp
+            = elemDType->isString()   ? new AstConst{m_fl, AstConst::String{}, ""}
+              : elemDType->isDouble() ? new AstConst{m_fl, AstConst::RealDouble{}, 0.0}
+                                      : new AstConst{m_fl, AstConst::WidthedValue{}, width, 0};
         m_initp = new AstInitArray{m_fl, tableDTypep, defaultp};
     }
 
