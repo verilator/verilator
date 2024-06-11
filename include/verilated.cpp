@@ -2664,8 +2664,16 @@ void VerilatedContext::addModel(VerilatedModel* modelp) {
         m_ns.m_cpuTimeStart.start();
         m_ns.m_wallTimeStart.start();
     }
-    threadPoolp();  // Ensure thread pool is created, so m_threads cannot change any more
 
+    // We look for time passing, as opposed to post-eval(), as embedded
+    // models might get added inside initial blocks.
+    if (VL_UNLIKELY(time()))
+        VL_FATAL_MT(
+            __FILE__, __LINE__, "",
+            "Adding model when time is non-zero. ... Suggest check time(), or for restarting"
+            " model use a new VerilatedContext");
+
+    threadPoolp();  // Ensure thread pool is created, so m_threads cannot change any more
     m_threadsInModels += modelp->threads();
     if (VL_UNLIKELY(modelp->threads() > m_threads)) {
         std::ostringstream msg;

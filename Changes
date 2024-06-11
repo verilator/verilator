@@ -30,6 +30,7 @@ Verilator 5.025 devel
 * Add parameterless assert control system tasks (#5010). [Bartłomiej Chmiel]
 * Add traceCapable indication to model header (#5053). [Vito Gamberini]
 * Add increasing of stack size when possible (#5071) (#5104). [Yinan Xu]
+* Add assertion on reusing VerilatedContext (#5167).
 * Improve DFG regularization in cyclic graphs (#5142). [Geza Lore]
 * Improve VerilatedVpiPutHolder storage requirements (#5144). [Kaleb Barrett]
 * Fix missing flex include path variable (#4970) (#4971). [Christopher Taylor]
