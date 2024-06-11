@@ -87,12 +87,11 @@ thread is about 100 times faster than interpreted Verilog simulators such
 as `Icarus Verilog`_. Another 2-10x speedup might be gained from
 multithreading (yielding 200-1000x total over interpreted simulators).
 
-Verilator has typically similar or better performance versus
-closed-source Verilog simulators (e.g., Carbon Design Systems Carbonator,
-Modelsim/Questa, Cadence Incisive/NC-Verilog, Synopsys VCS, VTOC, and
-Pragmatic CVer/CVC). But, Verilator is open-sourced, so you can spend on
-computes rather than licenses. Thus, Verilator gives you the best
-simulation cycles/dollar.
+Verilator has typically similar or better performance versus closed-source
+Verilog simulators (e.g., Aldec Riviera-Pro, Cadence Incisive/NC-Verilog,
+Mentor ModelSim/Questa, Synopsys VCS, VTOC, and Pragmatic CVer/CVC). But,
+Verilator is open-sourced, so you can spend on computes rather than
+licenses. Thus, Verilator gives you the best simulation cycles/dollar.
 
 
 Installation & Documentation
