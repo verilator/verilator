@@ -36,7 +36,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <unordered_set>
 #include <utility>
 
 //=========================================================================
@@ -1402,7 +1401,7 @@ public:
     VlQueue<T_Key> unique_index(Func with_func) const {
         VlQueue<T_Key> out;
         IData index = 0;
-        std::unordered_set<T_Value> saw;
+        std::set<T_Value> saw;
         for (const auto& i : m_storage) {
             const auto i_mapped = with_func(index, i);
             auto it = saw.find(i_mapped);
