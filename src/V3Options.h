@@ -700,7 +700,7 @@ public:
     string allArgsString() const VL_MT_SAFE;  ///< Return all passed arguments as simple string
     // Return options for child hierarchical blocks when forTop==false, otherwise returns args for
     // the top module.
-    string allArgsStringForHierBlock(bool forTop) const;
+    string allArgsStringForHierBlock(bool forTop, bool forCMake) const;
     void parseOpts(FileLine* fl, int argc, char** argv) VL_MT_DISABLED;
     void parseOptsList(FileLine* fl, const string& optdir, int argc, char** argv) VL_MT_DISABLED;
     void parseOptsFile(FileLine* fl, const string& filename, bool rel) VL_MT_DISABLED;

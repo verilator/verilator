@@ -225,7 +225,7 @@ void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
     for (const string& opt : commandOpts) *of << opt << "\n";
     *of << hierBlockArgs().front() << "\n";
     for (const auto& hierblockp : m_children) *of << hierblockp->hierBlockArgs().front() << "\n";
-    *of << v3Global.opt.allArgsStringForHierBlock(false) << "\n";
+    *of << v3Global.opt.allArgsStringForHierBlock(false, forCMake) << "\n";
 }
 
 string V3HierBlock::commandArgsFileName(bool forCMake) const {
@@ -422,7 +422,7 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
     }
     *of << "--threads " << cvtToStr(v3Global.opt.threads()) << "\n";
     *of << (v3Global.opt.systemC() ? "--sc" : "--cc") << "\n";
-    *of << v3Global.opt.allArgsStringForHierBlock(true) << "\n";
+    *of << v3Global.opt.allArgsStringForHierBlock(true, forCMake) << "\n";
 }
 
 string V3HierBlockPlan::topCommandArgsFileName(bool forCMake) {
