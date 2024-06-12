@@ -283,6 +283,7 @@ void transformForks(AstNetlist* const netlistp) {
         // STATE
         bool m_inClass = false;  // Are we in a class?
         bool m_beginHasAwaits = false;  // Does the current begin have awaits?
+        bool m_awaitMoved = false;  // Has the current function lost awaits?
         AstFork* m_forkp = nullptr;  // Current fork
         AstCFunc* m_funcp = nullptr;  // Current function
 
@@ -344,7 +345,13 @@ void transformForks(AstNetlist* const netlistp) {
         }
         void visit(AstCFunc* nodep) override {
             m_funcp = nodep;
+            m_awaitMoved = false;
             iterateChildren(nodep);
+            if (nodep->isCoroutine() && m_awaitMoved
+                && !nodep->stmtsp()->exists([](AstCAwait*) { return true; })) {
+                // co_return at the end (either that or a co_await is required in a coroutine
+                nodep->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
+            }
             m_funcp = nullptr;
         }
         void visit(AstVar* nodep) override {
@@ -399,6 +406,8 @@ void transformForks(AstNetlist* const netlistp) {
                 if (!m_beginHasAwaits) {
                     // co_return at the end (either that or a co_await is required in a coroutine
                     newfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
+                } else {
+                    m_awaitMoved = true;
                 }
                 remapLocals(newfuncp, callp);
             } else {
