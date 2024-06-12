@@ -70,7 +70,7 @@ TEST FUNCTIONS
 int _mon_check_get_bad(){
     // error on unsupported handle
     int index[2] = {0,0};
-    s_vpi_arrayvalue bad_param_v;
+    s_vpi_arrayvalue bad_param_v = {vpiVectorVal,0,nullptr};
     TestVpiHandle bad_param_h = VPI_HANDLE("bad_param");
     CHECK_RESULT_NZ(bad_param_h);
     vpi_get_value_array(bad_param_h,&bad_param_v,index,1);
@@ -83,18 +83,19 @@ int _mon_check_get_bad(){
     CHECK_RESULT_Z(vpi_chk_error(nullptr)); //also checks error reset
 
     // return on null index pointer
-    s_vpi_arrayvalue bad_dim2_v = {UINT32_MAX,0,nullptr};
+    s_vpi_arrayvalue bad_dim2_v = {vpiVectorVal,0,nullptr};
     vpi_get_value_array(bad_dim2_h,&bad_dim2_v,nullptr,1);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
 
     // error on unsupported handle format
+    bad_dim2_v = s_vpi_arrayvalue{UINT32_MAX,0,nullptr};
     vpi_get_value_array(bad_dim2_h,&bad_dim2_v,index,1);
     CHECK_RESULT_NZ(vpi_chk_error(nullptr));
 
     // error on unsupported dimensions
     TestVpiHandle bad_dim1_h = VPI_HANDLE("bad_dim1");
     CHECK_RESULT_NZ(bad_dim1_h);
-    s_vpi_arrayvalue bad_dim1_v = {UINT32_MAX,0,nullptr};
+    s_vpi_arrayvalue bad_dim1_v = {vpiVectorVal,0,nullptr};
     vpi_get_value_array(bad_dim1_h,&bad_dim1_v,index,1);
     CHECK_RESULT_NZ(vpi_chk_error(nullptr));
 
