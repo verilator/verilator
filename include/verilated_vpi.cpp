@@ -2355,6 +2355,12 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_value valuep, const c
     return status;
 }
 
+bool vl_check_format(const VerilatedVar* varp, const p_vpi_arrayvalue arrayvaluep, const char* fullname, bool isGetValue){
+    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s", __func__,
+                  VerilatedVpiError::strFromVpiVal(arrayvaluep->format), fullname);
+    return false;
+}
+
 static void vl_strprintf(std::string& buffer, char const* fmt, ...) {
     va_list args, args_copy;
     va_start(args, fmt);
@@ -2816,6 +2822,8 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvaluep,
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
         return;
     }
+
+    if(!vl_check_format(vop->varp(), arrayvaluep, vop->fullname(), true)) return;
 
     return;
 }

@@ -69,17 +69,20 @@ TEST FUNCTIONS
 
 int _mon_check_get_bad(){
     int index[2] = {0,0};
-    TestVpiHandle bad_h = VPI_HANDLE("bad");
-    CHECK_RESULT_NZ(bad_h);
-
-    vpi_get_value_array(bad_h,nullptr,index,1);
-    CHECK_RESULT_Z(vpi_chk_error(nullptr));
-
     s_vpi_arrayvalue bad_param_v;
     TestVpiHandle bad_param_h = VPI_HANDLE("bad_param");
     CHECK_RESULT_NZ(bad_param_h);
-
     vpi_get_value_array(bad_param_h,&bad_param_v,index,1);
+    CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+
+    TestVpiHandle bad_h = VPI_HANDLE("bad");
+    CHECK_RESULT_NZ(bad_h);
+    vpi_get_value_array(bad_h,nullptr,index,1);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr)); //also checks error reset
+
+    s_vpi_arrayvalue bad_v;
+    bad_v.format = UINT32_MAX;
+    vpi_get_value_array(bad_h,&bad_v,index,1);
     CHECK_RESULT_NZ(vpi_chk_error(nullptr));
 
     return 0;
