@@ -2811,8 +2811,12 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvaluep,
     VL_VPI_ERROR_RESET_();
     if (VL_UNLIKELY(!arrayvaluep)) return;
 
+    const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
+    if (!vop) {
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
+        return;
+    }
 
-    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
     return;
 }
 

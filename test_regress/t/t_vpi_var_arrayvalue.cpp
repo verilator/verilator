@@ -69,11 +69,18 @@ TEST FUNCTIONS
 
 int _mon_check_get_bad(){
     int index[2] = {0,0};
-    TestVpiHandle vh = VPI_HANDLE("bad");
-    CHECK_RESULT_NZ(vh);
+    TestVpiHandle bad_h = VPI_HANDLE("bad");
+    CHECK_RESULT_NZ(bad_h);
 
-    vpi_get_value_array(vh,nullptr,index,1);
+    vpi_get_value_array(bad_h,nullptr,index,1);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
+
+    s_vpi_arrayvalue bad_param_v;
+    TestVpiHandle bad_param_h = VPI_HANDLE("bad_param");
+    CHECK_RESULT_NZ(bad_param_h);
+
+    vpi_get_value_array(bad_param_h,&bad_param_v,index,1);
+    CHECK_RESULT_NZ(vpi_chk_error(nullptr));
 
     return 0;
 }
@@ -84,7 +91,6 @@ extern "C" int mon_check() {
     printf("-mon_check()\n");
 #endif
     if(int status = _mon_check_get_bad()) return status;
-    // if(int status = _mon_check_get()) return status;
 #ifndef IS_VPI
     VerilatedVpi::selfTest();
 #endif
@@ -129,6 +135,7 @@ int main(int argc, char** argv) {
     uint64_t sim_time = 1100;
     contextp->debug(0);
     contextp->commandArgs(argc, argv);
+    contextp->fatalOnVpiError(0);
 
     const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
                                                         // Note null name - we're flattening it out

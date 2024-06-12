@@ -35,7 +35,8 @@ VARIABLE DEFINITIONS
    reg c_tests_done, v_tests_done;
 
    //mon_check_bad
-   logic bad [0:0]   /*verilator public_flat_rw */;
+   logic      bad [0:0] /*verilator public_flat_rw */;
+   localparam bad_param /*verilator public_flat_rw */ = 1;
 
 /*-------------------------------------------
 TICK COUNTER
