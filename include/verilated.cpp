@@ -2669,7 +2669,7 @@ void VerilatedContext::addModel(VerilatedModel* modelp) {
     // models might get added inside initial blocks.
     if (VL_UNLIKELY(time()))
         VL_FATAL_MT(
-            __FILE__, __LINE__, "",
+            "", 0, "",
             "Adding model when time is non-zero. ... Suggest check time(), or for restarting"
             " model use a new VerilatedContext");
 
