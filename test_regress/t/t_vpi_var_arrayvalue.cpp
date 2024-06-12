@@ -46,19 +46,45 @@ int errors = 0;
 
 unsigned int main_time = 0;
 
-//======================================================================
 
-int _mon_check_get(){
+/*-------------------------------------------
+MACRO CHECKERS
+-------------------------------------------*/
+
+#define CHECK_RESULT_NZ(got) \
+    if (!(got)) { \
+        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM, __LINE__); \
+        return __LINE__; \
+    }
+
+#define CHECK_RESULT_Z(got) \
+    if ((got)) { \
+        printf("%%Error: %s:%d: GOT = !NULL  EXP = NULL\n", FILENM, __LINE__); \
+        return __LINE__; \
+    }
+
+/*-------------------------------------------
+TEST FUNCTIONS
+-------------------------------------------*/
+
+int _mon_check_get_bad(){
+    int index[2] = {0,0};
+    TestVpiHandle vh = VPI_HANDLE("bad");
+    CHECK_RESULT_NZ(vh);
+
+    vpi_get_value_array(vh,nullptr,index,1);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+
     return 0;
 }
-
 
 extern "C" int mon_check() {
     // Callback from initial block in monitor
 #ifdef TEST_VERBOSE
     printf("-mon_check()\n");
 #endif
-    if(int status = _mon_check_get()) return status;
+    if(int status = _mon_check_get_bad()) return status;
+    // if(int status = _mon_check_get()) return status;
 #ifndef IS_VPI
     VerilatedVpi::selfTest();
 #endif

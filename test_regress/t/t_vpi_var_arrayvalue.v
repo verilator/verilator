@@ -28,10 +28,14 @@ extern "C" int mon_check();
 /*-------------------------------------------
 VARIABLE DEFINITIONS
 -------------------------------------------*/
+   //overhead
    input clk;
    integer status;
    reg [31:0] count;
    reg c_tests_done, v_tests_done;
+
+   //mon_check_bad
+   logic bad [0:0]   /*verilator public_flat_rw */;
 
 /*-------------------------------------------
 TICK COUNTER

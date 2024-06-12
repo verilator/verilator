@@ -2804,10 +2804,18 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
     return nullptr;
 }
 
-void vpi_get_value_array(vpiHandle /*object*/, p_vpi_arrayvalue /*arrayvalue_p*/,
-                         PLI_INT32* /*index_p*/, PLI_UINT32 /*num*/) {
-    VL_VPI_UNIMP_();
+void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvaluep,
+                         PLI_INT32* indexp, PLI_UINT32 num) {
+    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_get_value_array %p\n", object););
+    VerilatedVpiImp::assertOneCheck();
+    VL_VPI_ERROR_RESET_();
+    if (VL_UNLIKELY(!arrayvaluep)) return;
+
+
+    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
+    return;
 }
+
 void vpi_put_value_array(vpiHandle /*object*/, p_vpi_arrayvalue /*arrayvalue_p*/,
                          PLI_INT32* /*index_p*/, PLI_UINT32 /*num*/) {
     VL_VPI_UNIMP_();
