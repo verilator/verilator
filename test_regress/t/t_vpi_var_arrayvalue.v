@@ -35,7 +35,9 @@ VARIABLE DEFINITIONS
    reg c_tests_done, v_tests_done;
 
    //mon_check_bad
-   logic      bad [0:0] /*verilator public_flat_rw */;
+   logic      [7:0] bad_dim1                 /*verilator public_flat_rw */;
+   logic      [7:0] bad_dim2 [0:1]           /*verilator public_flat_rw */;
+   logic      [7:0] bad_dim3 [0:1][0:1]      /*verilator public_flat_rw */;
    localparam bad_param /*verilator public_flat_rw */ = 1;
 
 /*-------------------------------------------

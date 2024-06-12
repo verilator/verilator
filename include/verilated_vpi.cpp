@@ -2356,6 +2356,19 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_value valuep, const c
 }
 
 bool vl_check_format(const VerilatedVar* varp, const p_vpi_arrayvalue arrayvaluep, const char* fullname, bool isGetValue){
+    //variable must be an array (dims > 1)
+    if (!(varp->dims() >1)){
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported dimensions (%u)", __func__, varp->dims());
+        return false;
+    }
+
+    if (arrayvaluep->format == vpiVectorVal) {
+        switch (varp->vltype()) {
+            case VLVT_UINT8: return true;
+            default: return false;
+        }
+    }
+
     VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s", __func__,
                   VerilatedVpiError::strFromVpiVal(arrayvaluep->format), fullname);
     return false;
@@ -2816,6 +2829,7 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvaluep,
     VerilatedVpiImp::assertOneCheck();
     VL_VPI_ERROR_RESET_();
     if (VL_UNLIKELY(!arrayvaluep)) return;
+    if (VL_UNLIKELY(!indexp)) return;
 
     const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
     if (!vop) {
@@ -2823,7 +2837,9 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvaluep,
         return;
     }
 
-    if(!vl_check_format(vop->varp(), arrayvaluep, vop->fullname(), true)) return;
+    const auto varp = vop->varp();
+    const auto fullname = vop->fullname();
+    if (!vl_check_format(varp, arrayvaluep, fullname, true)) return;
 
     return;
 }
