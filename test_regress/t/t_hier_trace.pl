@@ -11,7 +11,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
-    verilator_flags2 => ['--trace', '-j 4', 't/t_hier_trace.vlt', '--top-module t', '--hierarchical'],
+    verilator_flags2 => ['--trace', '-j 4', 't/t_hier_trace_sub/t_hier_trace.vlt', '--top-module t', '--hierarchical', '-F t/t_hier_trace_sub/top.F'],
     );
 
 execute(
