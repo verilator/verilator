@@ -889,6 +889,7 @@ profcfunc
 profiler
 prototyptes
 ps
+psprintf
 pthread
 ptr
 pulldown
