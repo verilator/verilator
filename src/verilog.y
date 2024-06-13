@@ -4111,8 +4111,7 @@ function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine
         //                      // IEEE: randomize_call
         //                      // We implement randomize as a normal funcRef, since randomize isn't a keyword
         //                      // Note yNULL is already part of expressions, so they come for free
-        |       funcRef yWITH__CUR constraint_block
-                        { $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with' constraint"); }
+        |       funcRef yWITH__CUR constraint_block     { $$ = new AstWithParse{$2, $1, $3}; }
         |       funcRef yWITH__CUR '{' '}'              { $$ = new AstWithParse{$2, $1, nullptr}; }
         ;
 
@@ -7198,8 +7197,7 @@ localNextId<nodeExprp>:         // local
         //                      // Must call nextId without any additional tokens following
                 yLOCAL__COLONCOLON
                         { $$ = new AstClassOrPackageRef{$1, "local::", PARSEP->unitPackage($<fl>1), nullptr};
-                          SYMP->nextId(PARSEP->rootp());
-                          BBUNSUP($<fl>1, "Unsupported: Randomize 'local::'"); }
+                          SYMP->nextId(PARSEP->rootp()); }
         ;
 
 //^^^=========
