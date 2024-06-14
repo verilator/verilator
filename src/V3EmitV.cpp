@@ -608,8 +608,8 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         puts(";\n");
     }
     void visit(AstBasicDType* nodep) override {
-        if (nodep->isSigned()) putfs(nodep, "signed ");
         putfs(nodep, nodep->prettyName());
+        if (nodep->isSigned()) putfs(nodep, " signed");
         if (nodep->rangep()) {
             puts(" ");
             iterateAndNextConstNull(nodep->rangep());
