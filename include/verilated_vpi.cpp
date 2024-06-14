@@ -2841,6 +2841,11 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvaluep,
     const auto fullname = vop->fullname();
     if (!vl_check_format(varp, arrayvaluep, fullname, true)) return;
 
+    if(arrayvaluep->flags & ~(vpiUserAllocFlag)){
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported flags (%u)", __func__, arrayvaluep->flags);
+        return;
+    }
+
     return;
 }
 

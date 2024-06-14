@@ -92,6 +92,11 @@ int _mon_check_get_bad(){
     vpi_get_value_array(bad_dim2_h,&bad_dim2_v,index,1);
     CHECK_RESULT_NZ(vpi_chk_error(nullptr));
 
+    // error on unsupported flags
+    bad_dim2_v = s_vpi_arrayvalue{vpiVectorVal,UINT32_MAX,nullptr};
+    vpi_get_value_array(bad_dim2_h,&bad_dim2_v,index,1);
+    CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+
     // error on unsupported dimensions
     TestVpiHandle bad_dim1_h = VPI_HANDLE("bad_dim1");
     CHECK_RESULT_NZ(bad_dim1_h);
