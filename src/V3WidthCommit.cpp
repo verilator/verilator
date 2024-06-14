@@ -187,11 +187,13 @@ private:
     void visit(AstNodeFTask* nodep) override {
         iterateChildren(nodep);
         editDType(nodep);
-        AstClass* classp = VN_CAST(m_modp, Class);
-        if (nodep->classMethod() && nodep->pureVirtual() && classp && !classp->isInterfaceClass()
-            && !classp->isVirtual()) {
-            nodep->v3error(
-                "Illegal to have 'pure virtual' in non-virtual class (IEEE 1800-2023 8.21)");
+        {
+            const AstClass* const classp = VN_CAST(m_modp, Class);
+            if (nodep->classMethod() && nodep->pureVirtual() && classp
+                && !classp->isInterfaceClass() && !classp->isVirtual()) {
+                nodep->v3error(
+                    "Illegal to have 'pure virtual' in non-virtual class (IEEE 1800-2023 8.21)");
+            }
         }
         bool extended = false;
         if (const AstClass* const classp = VN_CAST(m_modp, Class)) {

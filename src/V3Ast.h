@@ -253,17 +253,17 @@ public:
         , m_final{false}
         , m_initial{false} {}
     class Extends {};
-    VBaseOverride(Extends)
+    explicit VBaseOverride(Extends)
         : m_extends{true}
         , m_final{false}
         , m_initial{false} {}
     class Final {};
-    VBaseOverride(Final)
+    explicit VBaseOverride(Final)
         : m_extends{false}
         , m_final{true}
         , m_initial{false} {}
     class Initial {};
-    VBaseOverride(Initial)
+    explicit VBaseOverride(Initial)
         : m_extends{false}
         , m_final{false}
         , m_initial{true} {}

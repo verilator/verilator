@@ -2264,9 +2264,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                      << "... Location of interface class's function\n"
                                      << interfaceSubp->warnContextSecondary());
                     }
-                    const auto it = m_ifClassImpNames.find(interfaceSubp->name());
-                    if (!existsInChild && it != m_ifClassImpNames.end()
-                        && it->second != interfaceSubp) {  // Not exact same function from diamond
+                    const auto itn = m_ifClassImpNames.find(interfaceSubp->name());
+                    if (!existsInChild && itn != m_ifClassImpNames.end()
+                        && itn->second != interfaceSubp) {  // Not exact same function from diamond
                         implementsClassp->v3error(
                             "Class " << implementsClassp->prettyNameQ() << impOrExtends
                                      << baseClassp->prettyNameQ()

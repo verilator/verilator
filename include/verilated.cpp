@@ -2909,7 +2909,7 @@ void VerilatedContext::statsPrintSummary() VL_MT_UNSAFE {
     VL_PRINTF("- Verilator: %s at %s; walltime %0.3f s; speed %s/s\n", endwhy.c_str(),
               simtime.c_str(), walltime, simtimePerf.c_str());
     const double modelMB = VlOs::memUsageBytes() / 1024.0 / 1024.0;
-    VL_PRINTF("- Verilator: cpu %0.3f s on %d threads; alloced %0.0f MB\n", cputime,
+    VL_PRINTF("- Verilator: cpu %0.3f s on %u threads; alloced %0.0f MB\n", cputime,
               threadsInModels(), modelMB);
 }
 

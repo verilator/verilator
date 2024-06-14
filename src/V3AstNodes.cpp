@@ -1632,10 +1632,7 @@ void AstClassRefDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "class:" << name();
 }
-string AstClassRefDType::prettyDTypeName(bool) const {
-    return "class{}"s + prettyName();
-    return prettyTypeName();
-}
+string AstClassRefDType::prettyDTypeName(bool) const { return "class{}"s + prettyName(); }
 string AstClassRefDType::name() const { return classp() ? classp()->name() : "<unlinked>"; }
 void AstNodeCoverOrAssert::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);

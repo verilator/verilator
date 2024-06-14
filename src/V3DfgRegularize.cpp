@@ -27,6 +27,7 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 std::string V3DfgRegularizeContext::tmpNamePrefix(DfgGraph& dfg) {
+    // cppcheck-suppress unreadVariable  // cppcheck bug
     V3Hash hash{dfg.modulep()->name()};
     hash += m_label;
     std::string name = hash.toString();

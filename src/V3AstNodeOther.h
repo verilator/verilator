@@ -2445,7 +2445,7 @@ class AstAlwaysPost final : public AstNodeProcedure {
     // Like always but 'post' scheduled, e.g. for array NBA commits
 
 public:
-    AstAlwaysPost(FileLine* fl)
+    explicit AstAlwaysPost(FileLine* fl)
         : ASTGEN_SUPER_AlwaysPost(fl, nullptr) {}
     ASTGEN_MEMBERS_AstAlwaysPost;
 };

@@ -48,7 +48,7 @@ public:
     int width() const { return m_width; }
     void* datap() const { return m_datap; }
     bool set(std::string&&) const;
-    void emit(std::ostream& s) const;
+    void emit(std::ostream& s) const override;
 };
 
 class VlRandomConst final : public VlRandomExpr {
@@ -61,7 +61,7 @@ public:
         , m_width{width} {
         assert(width <= sizeof(m_val) * 8);
     }
-    void emit(std::ostream& s) const;
+    void emit(std::ostream& s) const override;
 };
 
 class VlRandomExtract final : public VlRandomExpr {
@@ -72,7 +72,7 @@ public:
     VlRandomExtract(std::shared_ptr<const VlRandomExpr> expr, unsigned idx)
         : m_expr{expr}
         , m_idx{idx} {}
-    void emit(std::ostream& s) const;
+    void emit(std::ostream& s) const override;
 };
 
 class VlRandomBinOp final : public VlRandomExpr {
@@ -85,7 +85,7 @@ public:
         : m_op{op}
         , m_lhs{lhs}
         , m_rhs{rhs} {}
-    void emit(std::ostream& s) const;
+    void emit(std::ostream& s) const override;
 };
 
 //=============================================================================

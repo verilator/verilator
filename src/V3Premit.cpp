@@ -183,9 +183,11 @@ class PremitVisitor final : public VNVisitor {
 
     void visit(AstWhile* nodep) override {
         UINFO(4, "  WHILE  " << nodep << endl);
+        // cppcheck-suppress shadowVariable  // Also restored below
         START_STATEMENT_OR_RETURN(nodep);
         iterateAndNextNull(nodep->precondsp());
         {
+            // cppcheck-suppress shadowVariable  // Also restored above
             VL_RESTORER(m_inWhileCondp);
             m_inWhileCondp = nodep;
             iterateAndNextNull(nodep->condp());

@@ -58,7 +58,7 @@ class GatherMTaskAffinity final : VNVisitorConst {
     VL_UNMOVABLE(GatherMTaskAffinity);
 
     // VISIT
-    void visit(AstNodeVarRef* nodep) {
+    void visit(AstNodeVarRef* nodep) override {
         // Cheaper than relying on emplace().second
         if (nodep->user1SetOnce()) return;
         AstVar* const varp = nodep->varp();
@@ -74,17 +74,17 @@ class GatherMTaskAffinity final : VNVisitorConst {
         affinity[m_id] = true;
     }
 
-    void visit(AstCFunc* nodep) {
+    void visit(AstCFunc* nodep) override {
         if (nodep->user1SetOnce()) return;  // Prevent repeat traversals/recursion
         iterateChildrenConst(nodep);
     }
 
-    void visit(AstNodeCCall* nodep) {
+    void visit(AstNodeCCall* nodep) override {
         iterateChildrenConst(nodep);  // Arguments
         iterateConst(nodep->funcp());  // Callee
     }
 
-    void visit(AstNode* nodep) { iterateChildrenConst(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     static void apply(const ExecMTask* mTaskp, MTaskAffinityMap& results) {

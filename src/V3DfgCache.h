@@ -64,6 +64,7 @@ public:
 
     struct Hash final {
         size_t operator()(const KeySel& key) const {
+            // cppcheck-suppress unreadVariable  // cppcheck bug
             V3Hash hash{vertexHash(key.m_fromp)};
             hash += key.m_lsb;
             hash += key.m_width;
@@ -83,6 +84,7 @@ class KeyUnary final {
     const DfgVertex* const m_source0p;
 
 public:
+    // cppcheck-suppress noExplicitConstructor
     KeyUnary(DfgVertex* source0p)
         : m_source0p{source0p} {}
 
@@ -110,6 +112,7 @@ public:
 
     struct Hash final {
         size_t operator()(const KeyBinary& key) const {
+            // cppcheck-suppress unreadVariable  // cppcheck bug
             V3Hash hash{vertexHash(key.m_source0p)};
             hash += vertexHash(key.m_source1p);
             return hash.value();
@@ -137,6 +140,7 @@ public:
 
     struct Hash final {
         size_t operator()(const KeyTernary& key) const {
+            // cppcheck-suppress unreadVariable  // cppcheck bug
             V3Hash hash{vertexHash(key.m_source0p)};
             hash += vertexHash(key.m_source1p);
             hash += vertexHash(key.m_source2p);
@@ -348,7 +352,7 @@ class V3DfgCache final {
     inline CacheType<Vertex>& cacheForType();
 
 public:
-    V3DfgCache(DfgGraph& dfg)
+    explicit V3DfgCache(DfgGraph& dfg)
         : m_dfg{dfg} {}
 
     // Find a vertex of type 'Vertex', with the given operands, or create a new one and add it.
