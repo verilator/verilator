@@ -1,0 +1,7 @@
+%Error: t/t_package_local_bad.v:9:23: Illegal 'local::' outside 'randomize() with'
+    9 |       $display(local::x);
+      |                       ^
+%Error: t/t_package_local_bad.v:9:23: Can't find definition of scope/variable/func: 'x'
+    9 |       $display(local::x);
+      |                       ^
+%Error: Exiting due to

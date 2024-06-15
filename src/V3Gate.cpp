@@ -425,8 +425,8 @@ class GateClkDecomp final {
     void visit(GateVarVertex* vVtxp, int offset) {
         AstVarScope* const vscp = vVtxp->varScp();
 
-        // Can't propagate if this variable is forceable
-        if (vscp->varp()->isForceable()) return;
+        // Can't propagate if this variable might be forced
+        if (vscp->varp()->isForced()) return;
 
         // Check that we haven't been here before
         if (vscp->user2SetOnce()) return;
@@ -656,6 +656,9 @@ public:
         return m_substitutionp;
     }
     const std::vector<AstVarScope*>& readVscps() const { return m_readVscps; }
+    bool varAssigned(const AstVarScope* scopep) const {
+        return m_lhsVarRef && (m_lhsVarRef->varScopep() == scopep);
+    }
 };
 
 //######################################################################
@@ -772,6 +775,8 @@ class GateInline final {
 
             // Was it ok?
             if (!okVisitor.isSimple()) continue;
+            // If the varScope is already removed from logicp, no need to try substitution.
+            if (!okVisitor.varAssigned(vVtxp->varScp())) continue;
 
             // Does it read multiple source variables?
             if (okVisitor.readVscps().size() > 1) {
@@ -822,6 +827,8 @@ class GateInline final {
 
                 if (debug() >= 9) dstVtxp->nodep()->dumpTree("      inside: ");
 
+                UASSERT_OBJ(logicp != dstVtxp->nodep(), logicp,
+                            "Circular logic should have been rejected by okVisitor");
                 recordSubstitution(vscp, substp, dstVtxp->nodep());
 
                 // If the new replacement referred to a signal,

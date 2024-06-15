@@ -16,6 +16,5 @@ compile(
 
 execute();
 
-file_grep($Self->{run_log_filename}, qr/.*%Warning: System has stack size/);
 ok(1);
 1;

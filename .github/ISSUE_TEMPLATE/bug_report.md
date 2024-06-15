@@ -18,3 +18,5 @@ What 'verilator --version' are you using?  Did you try it with the git master ve
 What OS and distribution are you using?
 
 May we assist you in trying to fix this in Verilator yourself?
+
+(Please avoid attaching screenshots that show text - you can convert images to text using e.g. https://ocr.space)

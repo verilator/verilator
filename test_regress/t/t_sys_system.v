@@ -7,6 +7,7 @@
 module t;
 
    integer i;
+   string s;
 
    initial begin
 `ifndef VERILATOR
@@ -26,6 +27,9 @@ module t;
       if (i!==10) $stop;
       i = $system("exit     20"); // Wide
       if (i!==20) $stop;
+      s = "exit 10";
+      i = $system(s); // String
+      if (i!==10) $stop;
 `endif
 
       $write("*-* All Finished *-*\n");

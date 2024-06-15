@@ -83,15 +83,17 @@ module t (/*AUTOARG*/
    import "DPI-C" pure function void dpii_v_time     (input time      i, output time      o);
 `endif
 
-   import "DPI-C" pure function int dpii_f_strlen (input string i);
+   import "DPI-C" pure function int dpii_f_strlen(input string i);
 
-   import "DPI-C" function void dpii_f_void ();
+   import "DPI-C" function string dpii_f_null();
+
+   import "DPI-C" function void dpii_f_void();
 
    // Try a task
-   import "DPI-C" task dpii_t_void ();
-   import "DPI-C" context task dpii_t_void_context ();
+   import "DPI-C" task dpii_t_void();
+   import "DPI-C" context task dpii_t_void_context();
 
-   import "DPI-C" task dpii_t_int (input int       i, output int       o);
+   import "DPI-C" task dpii_t_int(input int       i, output int       o);
 
    // Try non-pure, aliasing with name
    import "DPI-C" dpii_fa_bit =  function int oth_f_int1(input int i);
@@ -229,25 +231,26 @@ module t (/*AUTOARG*/
       dpii_v_time     (i_tm,o_tm); if (o_tm != ~i_tm) $stop;
 `endif
 
-      if (dpii_f_strlen ("")!=0) $stop;
-      if (dpii_f_strlen ("s")!=1) $stop;
-      if (dpii_f_strlen ("st")!=2) $stop;
-      if (dpii_f_strlen ("str")!=3) $stop;
-      if (dpii_f_strlen ("stri")!=4) $stop;
-      if (dpii_f_strlen ("string_l")!=8) $stop;
-      if (dpii_f_strlen ("string_len")!=10) $stop;
+      if (dpii_f_strlen("") != 0) $stop;
+      if (dpii_f_strlen("s") != 1) $stop;
+      if (dpii_f_strlen("st") != 2) $stop;
+      if (dpii_f_strlen("str") != 3) $stop;
+      if (dpii_f_strlen("stri") != 4) $stop;
+      if (dpii_f_strlen("string_l") != 8) $stop;
+      if (dpii_f_strlen("string_len") != 10) $stop;
       string6 = "hello6";
 `ifdef VERILATOR
       string6 = $c48(string6); // Don't optimize away - want to see the constant conversion function
 `endif
-      if (dpii_f_strlen (string6) != 6) $stop;
+      if (dpii_f_strlen(string6) != 6) $stop;
 
+      if (dpii_f_null() != "") $stop;
       dpii_f_void();
       dpii_t_void();
       dpii_t_void_context();
 
       i_i = 32'h456789ab;
-      dpii_t_int     (i_i,o_i); if (o_b !== ~i_b) $stop;
+      dpii_t_int(i_i, o_i); if (o_b !== ~i_b) $stop;
 
       // Check alias
       if (oth_f_int1(32'd123) !== ~32'd123) $stop;
@@ -260,7 +263,7 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       i_b <= ~i_b;
       // This once mis-threw a BLKSEQ warning
-      dpii_v_bit (i_b,o_b); if (o_b !== ~i_b) $stop;
+      dpii_v_bit(i_b, o_b); if (o_b !== ~i_b) $stop;
    end
 
 endmodule

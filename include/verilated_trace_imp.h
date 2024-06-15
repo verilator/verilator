@@ -633,12 +633,13 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addModel(VerilatedModel* modelp)
 
     // Validate
     if (!newModel) {  // LCOV_EXCL_START
-        VL_FATAL_MT(__FILE__, __LINE__, "",
-                    "The same model has already been added to this trace file");
+        VL_FATAL_MT(
+            __FILE__, __LINE__, "",
+            "The same model has already been added to this trace file or VerilatedContext");
     }
     if (VL_UNCOVERABLE(m_contextp && contextp != m_contextp)) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
-                    "A trace file instance can only handle models from the same context");
+                    "A trace file instance can only handle models from the same VerilatedContext");
     }
     if (VL_UNCOVERABLE(m_didSomeDump)) {
         VL_FATAL_MT(__FILE__, __LINE__, "",

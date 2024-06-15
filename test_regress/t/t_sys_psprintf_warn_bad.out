@@ -1,0 +1,6 @@
+%Warning-NONSTD: t/t_sys_psprintf.v:21:13: Non-standard system function '$psprintf'; suggest use standard '$sformatf' (IEEE 1800-2023 21.3.3)
+   21 |       str = $psprintf("n=%b q=%d w=%s", n, q, wide);
+      |             ^~~~~~~~~
+                 ... For warning description see https://verilator.org/warn/NONSTD?v=latest
+                 ... Use "/* verilator lint_off NONSTD */" and lint_on around source to disable this message.
+%Error: Exiting due to

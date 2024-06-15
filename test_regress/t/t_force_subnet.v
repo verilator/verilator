@@ -23,15 +23,19 @@ module t(/*AUTOARG*/
       cyc <= cyc + 1;
       if (cyc == 10) begin
          `checkh(subnet, 8'h11);
-         force sub1.subnet = 8'h01;  // sub1.subnet same as subnet
+         force sub1.subnet = 8'h01;  // sub1.subnet *not* the same as subnet
       end
       else if (cyc == 11) begin
          `checkh(subnet, 8'h01);
-         force subnet = 8'h10;  // sub1.subnet same as subnet
+         force subnet = 8'h10;  // sub1.subnet *not* the same as subnet
       end
       else if (cyc == 12) begin
          `checkh(subnet, 8'h10);
-         release subnet;  // sub1.subnet same as subnet
+         release subnet;  // sub1.subnet *not* same as subnet
+      end
+      else if (cyc == 13) begin
+         `checkh(subnet, 8'h01);
+         release sub1.subnet;
       end
       else if (cyc == 13) begin
          `checkh(subnet, 8'h11);

@@ -788,6 +788,22 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
         info.m_type = "VlUnpacked<" + sub.m_type;
         info.m_type += ", " + cvtToStr(adtypep->declRange().elements());
         info.m_type += ">";
+    } else if (const auto* const adtypep = VN_CAST(dtypep, NBACommitQueueDType)) {
+        UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
+        compound = true;
+        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(compound, false);
+        AstNodeDType* eDTypep = adtypep->subDTypep();
+        unsigned rank = 0;
+        while (AstUnpackArrayDType* const uaDTypep = VN_CAST(eDTypep, UnpackArrayDType)) {
+            eDTypep = uaDTypep->subDTypep()->skipRefp();
+            ++rank;
+        }
+        info.m_type = "VlNBACommitQueue<";
+        info.m_type += sub.m_type;
+        info.m_type += adtypep->partial() ? ", true" : ", false";
+        info.m_type += ", " + eDTypep->cTypeRecurse(compound, false).m_type;
+        info.m_type += ", " + std::to_string(rank);
+        info.m_type += ">";
     } else if (packed && (VN_IS(dtypep, PackArrayDType))) {
         const AstPackArrayDType* const adtypep = VN_CAST(dtypep, PackArrayDType);
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(false, true);
@@ -827,6 +843,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "VlForkSync";
         } else if (bdtypep->isProcessRef()) {
             info.m_type = "VlProcessRef";
+        } else if (bdtypep->isRandomGenerator()) {
+            info.m_type = "VlRandomizer";
         } else if (bdtypep->isEvent()) {
             info.m_type = v3Global.assignsEvents() ? "VlAssignableEvent" : "VlEvent";
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
@@ -885,9 +903,10 @@ std::pair<uint32_t, uint32_t> AstNodeDType::dimensions(bool includeBasic) {
             }
             dtypep = adtypep->subDTypep();
             continue;
-        } else if (const AstQueueDType* const qdtypep = VN_CAST(dtypep, QueueDType)) {
+        } else if (VN_IS(dtypep, QueueDType) || VN_IS(dtypep, DynArrayDType)
+                   || VN_IS(dtypep, AssocArrayDType) || VN_IS(dtypep, WildcardArrayDType)) {
             unpacked++;
-            dtypep = qdtypep->subDTypep();
+            dtypep = dtypep->subDTypep();
             continue;
         } else if (const AstBasicDType* const adtypep = VN_CAST(dtypep, BasicDType)) {
             if (includeBasic && (adtypep->isRanged() || adtypep->isString())) packed++;
@@ -1442,7 +1461,32 @@ void AstAlways::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "keyword", keyword().ascii());
     dumpJsonGen(str);
 }
-
+AstAssertCtl::AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr* levelp,
+                           AstNodeExpr* itemsp)
+    : ASTGEN_SUPER_AssertCtl(fl)
+    , m_ctlType{ctlType} {
+    controlTypep(new AstConst{fl, ctlType});
+    if (!levelp) levelp = new AstConst{fl, 0};
+    this->levelp(levelp);
+    addItemsp(itemsp);
+}
+AstAssertCtl::AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr*, AstNodeExpr*,
+                           AstNodeExpr* levelp, AstNodeExpr* itemsp)
+    : ASTGEN_SUPER_AssertCtl(fl)
+    , m_ctlType{VAssertCtlType::_TO_BE_EVALUATED} {
+    this->controlTypep(controlTypep);
+    if (!levelp) levelp = new AstConst{fl, 0};
+    this->levelp(levelp);
+    addItemsp(itemsp);
+}
+void AstAssertCtl::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " [" << ctlType().ascii() << "]";
+}
+void AstAssertCtl::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "ctlType", ctlType().ascii());
+    dumpJsonGen(str);
+}
 void AstAttrOf::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " [" << attrType().ascii() << "]";
@@ -1463,7 +1507,7 @@ void AstBasicDType::dumpJson(std::ostream& str) const {
     }
     dumpJsonGen(str);
 }
-string AstBasicDType::prettyDTypeName() const {
+string AstBasicDType::prettyDTypeName(bool) const {
     std::ostringstream os;
     os << keyword().ascii();
     if (isRanged() && !rangep() && keyword().width() <= 1) {
@@ -1588,6 +1632,7 @@ void AstClassRefDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "class:" << name();
 }
+string AstClassRefDType::prettyDTypeName(bool) const { return "class{}"s + prettyName(); }
 string AstClassRefDType::name() const { return classp() ? classp()->name() : "<unlinked>"; }
 void AstNodeCoverOrAssert::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
@@ -1623,6 +1668,22 @@ void AstEnumDType::dumpJson(std::ostream& str) const {
 void AstEnumDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "enum";
+}
+string AstEnumDType::prettyDTypeName(bool full) const {
+    string result = "enum{";
+    if (full) {  // else shorten for error messages
+        for (AstEnumItem* itemp = itemsp(); itemp; itemp = VN_AS(itemp->nextp(), EnumItem)) {
+            result += itemp->prettyName() + "=";
+            if (AstConst* constp = VN_CAST(itemp->valuep(), Const)) {
+                result += constp->num().ascii(true, true);
+            } else {
+                result += "?";
+            }
+            result += ";";
+        }
+    }
+    result += "}" + prettyName();
+    return result;
 }
 void AstEnumItemRef::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
@@ -1938,6 +1999,18 @@ void AstNodeUOrStructDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isFourstate);
     dumpJsonGen(str);
 }
+string AstNodeUOrStructDType::prettyDTypeName(bool full) const {
+    string result = verilogKwd() + "{";
+    if (full) {  // else shorten for errors
+        for (AstMemberDType* itemp = membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            result += itemp->subDTypep()->prettyDTypeName(full);
+            result += " " + itemp->prettyName() + ";";
+        }
+    }
+    result += "}" + prettyName();
+    return result;
+}
 void AstNodeDType::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (generic()) str << " [GENERIC]";
@@ -1977,13 +2050,13 @@ void AstNodeArrayDType::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "declRange", cvtToStr(declRange()));
     dumpJsonGen(str);
 }
-string AstPackArrayDType::prettyDTypeName() const {
+string AstPackArrayDType::prettyDTypeName(bool full) const {
     std::ostringstream os;
-    if (const auto subp = subDTypep()) os << subp->prettyDTypeName();
+    if (const auto subp = subDTypep()) os << subp->prettyDTypeName(full);
     os << declRange();
     return os.str();
 }
-string AstUnpackArrayDType::prettyDTypeName() const {
+string AstUnpackArrayDType::prettyDTypeName(bool full) const {
     std::ostringstream os;
     string ranges = cvtToStr(declRange());
     // Unfortunately we need a single $ for the first unpacked, and all
@@ -1993,7 +2066,7 @@ string AstUnpackArrayDType::prettyDTypeName() const {
         ranges += cvtToStr(adtypep->declRange());
         subp = adtypep->subDTypep()->skipRefp();
     }
-    os << subp->prettyDTypeName() << "$" << ranges;
+    os << subp->prettyDTypeName(full) << "$" << ranges;
     return os.str();
 }
 std::vector<AstUnpackArrayDType*> AstUnpackArrayDType::unpackDimensions() {
@@ -2137,20 +2210,22 @@ void AstAssocArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "[assoc-" << nodeAddr(keyDTypep()) << "]";
 }
-string AstAssocArrayDType::prettyDTypeName() const {
-    return subDTypep()->prettyDTypeName() + "[" + keyDTypep()->prettyDTypeName() + "]";
+string AstAssocArrayDType::prettyDTypeName(bool full) const {
+    return subDTypep()->prettyDTypeName(full) + "$[" + keyDTypep()->prettyDTypeName(full) + "]";
 }
 void AstDynArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
-    str << "[]";
+    str << "$[]";
 }
-string AstDynArrayDType::prettyDTypeName() const { return subDTypep()->prettyDTypeName() + "[]"; }
+string AstDynArrayDType::prettyDTypeName(bool full) const {
+    return subDTypep()->prettyDTypeName(full) + "$[]";
+}
 void AstQueueDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "[queue]";
 }
-string AstQueueDType::prettyDTypeName() const {
-    string str = subDTypep()->prettyDTypeName() + "[$";
+string AstQueueDType::prettyDTypeName(bool full) const {
+    string str = subDTypep()->prettyDTypeName(full) + "$[$";
     if (boundConst()) str += ":" + cvtToStr(boundConst());
     return str + "]";
 }
@@ -2683,6 +2758,7 @@ void AstCMethodHard::setPurity() {
                                                           {"commit", false},
                                                           {"delay", false},
                                                           {"done", false},
+                                                          {"enqueue", false},
                                                           {"erase", false},
                                                           {"evaluate", false},
                                                           {"evaluation", false},
@@ -2695,6 +2771,7 @@ void AstCMethodHard::setPurity() {
                                                           {"find_last_index", true},
                                                           {"fire", false},
                                                           {"first", false},
+                                                          {"hard", false},
                                                           {"init", false},
                                                           {"insert", false},
                                                           {"inside", true},
@@ -2734,7 +2811,8 @@ void AstCMethodHard::setPurity() {
                                                           {"trigger", false},
                                                           {"unique", true},
                                                           {"unique_index", true},
-                                                          {"word", true}};
+                                                          {"word", true},
+                                                          {"write_var", false}};
 
     auto isPureIt = isPureMethod.find(name());
     UASSERT_OBJ(isPureIt != isPureMethod.end(), this, "Unknown purity of method " + name());

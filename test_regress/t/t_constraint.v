@@ -21,9 +21,7 @@ module t (/*AUTOARG*/);
       p = new;
       v = p.randomize();
       if (v != 1) $stop;
-`ifndef VERILATOR
       if (p.one != 1) $stop;
-`endif
 
       $write("*-* All Finished *-*\n");
       $finish;

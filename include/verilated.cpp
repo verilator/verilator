@@ -82,6 +82,12 @@
 
 #include "verilated_trace.h"
 
+#ifdef VM_SOLVER_DEFAULT
+#define VL_SOLVER_DEFAULT VM_SOLVER_DEFAULT
+#else
+#define VL_SOLVER_DEFAULT "z3 --in"
+#endif
+
 // Max characters in static char string for VL_VALUE_STRING
 constexpr unsigned VL_VALUE_STRING_MAX_WIDTH = 8192;
 
@@ -1171,8 +1177,8 @@ static char* _vl_vsss_read_bin(FILE* fp, int& floc, const WDataInP fromp, const 
 static void _vl_vsss_setbit(WDataOutP iowp, int obits, int lsb, int nbits, IData ld) VL_MT_SAFE {
     for (; nbits && lsb < obits; nbits--, lsb++, ld >>= 1) VL_ASSIGNBIT_WI(lsb, iowp, ld & 1);
 }
-static void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp,
-                           size_t posstart, size_t posend) VL_MT_SAFE {
+void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp, size_t posstart,
+                    size_t posend) VL_MT_SAFE {
     // Read in base "2^^baseLog2" digits from strp[posstart..posend-1] into owp of size obits.
     VL_ZERO_W(obits, owp);
     int lsb = 0;
@@ -1749,7 +1755,10 @@ IData VL_SYSTEM_IQ(QData lhs) VL_MT_SAFE {
 IData VL_SYSTEM_IW(int lhswords, const WDataInP lhsp) VL_MT_SAFE {
     char filenamez[VL_VALUE_STRING_MAX_CHARS + 1];
     _vl_vint_to_string(lhswords * VL_EDATASIZE, filenamez, lhsp);
-    const int code = std::system(filenamez);  // Yes, std::system() is threadsafe
+    return VL_SYSTEM_IN(filenamez);
+}
+IData VL_SYSTEM_IN(const std::string& lhs) VL_MT_SAFE {
+    const int code = std::system(lhs.c_str());  // Yes, std::system() is threadsafe
     return code >> 8;  // Want exit status
 }
 
@@ -2037,22 +2046,26 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
     if (VL_UNLIKELY(!m_fp)) return false;
     valuer = "";
     // Prep for reading
-    bool indata = false;
-    bool ignore_to_eol = false;
-    bool ignore_to_cmt = false;
-    bool reading_addr = false;
-    int lastc = ' ';
+    bool inData = false;
+    bool ignoreToEol = false;
+    bool ignoreToComment = false;
+    bool readingAddress = false;
+    int lastCh = ' ';
     // Read the data
     // We process a character at a time, as then we don't need to deal
     // with changing buffer sizes dynamically, etc.
     while (true) {
         int c = std::fgetc(m_fp);
         if (VL_UNLIKELY(c == EOF)) break;
+        const bool chIs4StateBin
+            = c == '0' || c == '1' || c == 'x' || c == 'X' || c == 'z' || c == 'Z';
+        const bool chIs2StateHex = std::isxdigit(c);
+        const bool chIs4StateHex = std::isxdigit(c) || chIs4StateBin;
         // printf("%d: Got '%c' Addr%lx IN%d IgE%d IgC%d\n",
-        //        m_linenum, c, m_addr, indata, ignore_to_eol, ignore_to_cmt);
+        //        m_linenum, c, m_addr, inData, ignoreToEol, ignoreToComment);
         // See if previous data value has completed, and if so return
         if (c == '_') continue;  // Ignore _ e.g. inside a number
-        if (indata && !std::isxdigit(c) && c != 'x' && c != 'X') {
+        if (inData && !chIs4StateHex) {
             // printf("Got data @%lx = %s\n", m_addr, valuer.c_str());
             ungetc(c, m_fp);
             addrr = m_addr;
@@ -2062,50 +2075,46 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
         // Parse line
         if (c == '\n') {
             ++m_linenum;
-            ignore_to_eol = false;
-            reading_addr = false;
+            ignoreToEol = false;
+            readingAddress = false;
         } else if (c == '\t' || c == ' ' || c == '\r' || c == '\f') {
-            reading_addr = false;
+            readingAddress = false;
         }
         // Skip // comments and detect /* comments
-        else if (ignore_to_cmt && lastc == '*' && c == '/') {
-            ignore_to_cmt = false;
-            reading_addr = false;
-        } else if (!ignore_to_eol && !ignore_to_cmt) {
-            if (lastc == '/' && c == '*') {
-                ignore_to_cmt = true;
-            } else if (lastc == '/' && c == '/') {
-                ignore_to_eol = true;
+        else if (ignoreToComment && lastCh == '*' && c == '/') {
+            ignoreToComment = false;
+            readingAddress = false;
+        } else if (!ignoreToEol && !ignoreToComment) {
+            if (lastCh == '/' && c == '*') {
+                ignoreToComment = true;
+            } else if (lastCh == '/' && c == '/') {
+                ignoreToEol = true;
             } else if (c == '/') {  // Part of /* or //
             } else if (c == '#') {
-                ignore_to_eol = true;
+                ignoreToEol = true;
             } else if (c == '@') {
-                reading_addr = true;
+                readingAddress = true;
                 m_anyAddr = true;
                 m_addr = 0;
-            }
-            // Check for hex or binary digits as file format requests
-            else if (std::isxdigit(c) || (!reading_addr && (c == 'x' || c == 'X'))) {
+            } else if (readingAddress && chIs2StateHex) {
                 c = std::tolower(c);
-                const int value
-                    = (c >= 'a' ? (c == 'x' ? VL_RAND_RESET_I(4) : (c - 'a' + 10)) : (c - '0'));
-                if (reading_addr) {
-                    // Decode @ addresses
-                    m_addr = (m_addr << 4) + value;
-                } else {
-                    indata = true;
-                    valuer += static_cast<char>(c);
-                    // printf(" Value width=%d  @%x = %c\n", width, m_addr, c);
-                    if (VL_UNLIKELY(value > 1 && !m_hex)) {
-                        VL_FATAL_MT(m_filename.c_str(), m_linenum, "",
-                                    "$readmemb (binary) file contains hex characters");
-                    }
+                const int addressValue = (c >= 'a') ? (c - 'a' + 10) : (c - '0');
+                m_addr = (m_addr << 4) + addressValue;
+            } else if (readingAddress && chIs4StateHex) {
+                VL_FATAL_MT(m_filename.c_str(), m_linenum, "",
+                            "$readmem address contains 4-state characters");
+            } else if (chIs4StateHex) {
+                inData = true;
+                valuer += static_cast<char>(c);
+                if (VL_UNLIKELY(!m_hex && !chIs4StateBin)) {
+                    VL_FATAL_MT(m_filename.c_str(), m_linenum, "",
+                                "$readmemb (binary) file contains hex characters");
                 }
             } else {
                 VL_FATAL_MT(m_filename.c_str(), m_linenum, "", "$readmem file syntax error");
             }
         }
-        lastc = c;
+        lastCh = c;
     }
 
     if (VL_UNLIKELY(m_end != ~0ULL && m_addr <= m_end && !m_anyAddr)) {
@@ -2114,7 +2123,7 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
     }
 
     addrr = m_addr;
-    return indata;  // EOF
+    return inData;  // EOF
 }
 void VlReadMem::setData(void* valuep, const std::string& rhs) {
     const QData shift = m_hex ? 4ULL : 1ULL;
@@ -2122,8 +2131,9 @@ void VlReadMem::setData(void* valuep, const std::string& rhs) {
     // Shift value in
     for (const auto& i : rhs) {
         const char c = std::tolower(i);
-        const int value
-            = (c >= 'a' ? (c == 'x' ? VL_RAND_RESET_I(4) : (c - 'a' + 10)) : (c - '0'));
+        const int value = (c == 'x' || c == 'z') ? VL_RAND_RESET_I(m_hex ? 4 : 1)
+                          : (c >= 'a')           ? (c - 'a' + 10)
+                                                 : (c - '0');
         if (m_bits <= 8) {
             CData* const datap = reinterpret_cast<CData*>(valuep);
             if (!innum) *datap = 0;
@@ -2457,6 +2467,7 @@ VerilatedContext::VerilatedContext()
     m_ns.m_coverageFilename = "coverage.dat";
     m_ns.m_profExecFilename = "profile_exec.dat";
     m_ns.m_profVltFilename = "profile.vlt";
+    m_ns.m_solverProgram = VlOs::getenvStr("VERILATOR_SOLVER", VL_SOLVER_DEFAULT);
     m_fdps.resize(31);
     std::fill(m_fdps.begin(), m_fdps.end(), static_cast<FILE*>(nullptr));
     m_fdFreeMct.resize(30);
@@ -2567,6 +2578,14 @@ std::string VerilatedContext::profVltFilename() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     return m_ns.m_profVltFilename;
 }
+void VerilatedContext::solverProgram(const std::string& flag) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    m_ns.m_solverProgram = flag;
+}
+std::string VerilatedContext::solverProgram() const VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_ns.m_solverProgram;
+}
 void VerilatedContext::quiet(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_quiet = flag;
@@ -2645,8 +2664,16 @@ void VerilatedContext::addModel(VerilatedModel* modelp) {
         m_ns.m_cpuTimeStart.start();
         m_ns.m_wallTimeStart.start();
     }
-    threadPoolp();  // Ensure thread pool is created, so m_threads cannot change any more
 
+    // We look for time passing, as opposed to post-eval(), as embedded
+    // models might get added inside initial blocks.
+    if (VL_UNLIKELY(time()))
+        VL_FATAL_MT(
+            "", 0, "",
+            "Adding model when time is non-zero. ... Suggest check time(), or for restarting"
+            " model use a new VerilatedContext");
+
+    threadPoolp();  // Ensure thread pool is created, so m_threads cannot change any more
     m_threadsInModels += modelp->threads();
     if (VL_UNLIKELY(modelp->threads() > m_threads)) {
         std::ostringstream msg;
@@ -2882,7 +2909,7 @@ void VerilatedContext::statsPrintSummary() VL_MT_UNSAFE {
     VL_PRINTF("- Verilator: %s at %s; walltime %0.3f s; speed %s/s\n", endwhy.c_str(),
               simtime.c_str(), walltime, simtimePerf.c_str());
     const double modelMB = VlOs::memUsageBytes() / 1024.0 / 1024.0;
-    VL_PRINTF("- Verilator: cpu %0.3f s on %d threads; alloced %0.0f MB\n", cputime,
+    VL_PRINTF("- Verilator: cpu %0.3f s on %u threads; alloced %0.0f MB\n", cputime,
               threadsInModels(), modelMB);
 }
 
@@ -2933,7 +2960,6 @@ void VerilatedContext::trace(VerilatedTraceBaseC* tfp, int levels, int options) 
         VL_FATAL_MT("", 0, "",
                     "Testbench C call to 'VerilatedContext::trace()' must not be called"
                     " after 'VerilatedTrace*::open()'\n");
-        return;
     }
     {
         // Legacy usage may call {modela}->trace(...) then {modelb}->trace(...)
@@ -3126,12 +3152,21 @@ void Verilated::stackCheck(QData needSize) VL_MT_UNSAFE {
         if (haveSize == RLIM_INFINITY) haveSize = 0;
     }
     // VL_PRINTF_MT("-Info: stackCheck(%" PRIu64 ") have %" PRIu64 "\n", needSize, haveSize);
-    // Check for 1.5x need, but suggest 2x so small model increase won't cause warning
-    // if the user follows the suggestions
-    if (VL_UNLIKELY(haveSize && needSize && haveSize < (needSize + needSize / 2))) {
-        VL_PRINTF_MT("%%Warning: System has stack size %" PRIu64 " kb"
-                     " which may be too small; suggest 'ulimit -s %" PRIu64 "' or larger\n",
-                     haveSize / 1024, (needSize * 2) / 1024);
+    // Check and request for 1.5x need. This is automated so the user doesn't need to do anything.
+    QData requestSize = needSize + needSize / 2;
+    if (VL_UNLIKELY(haveSize && needSize && haveSize < requestSize)) {
+        // Try to increase the stack limit to the requested size
+        rlim.rlim_cur = requestSize;
+        if (
+#ifdef _VL_TEST_RLIMIT_FAIL
+            true ||
+#endif
+            setrlimit(RLIMIT_STACK, &rlim)) {
+            VL_PRINTF_MT("%%Warning: System has stack size %" PRIu64 " kb"
+                         " which may be too small; failed to request more"
+                         " using 'ulimit -s %" PRIu64 "'\n",
+                         haveSize / 1024, requestSize);
+        }
     }
 #else
     (void)needSize;  // Unused argument

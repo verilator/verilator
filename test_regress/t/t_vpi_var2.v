@@ -55,6 +55,10 @@ extern "C" int mon_check();
    reg [31:0]      count;
    reg [31:0]      half_count;
 /*verilator public_off*/
+/*verilator public_flat_rw_on*/
+   reg [31:0]      delayed;
+   reg [31:0]      delayed_mem [16];
+/*verilator public_off*/
    reg             invisible2;
 
 /*verilator public_flat_rw_on @(posedge clk)*/
@@ -76,6 +80,7 @@ extern "C" int mon_check();
    // Test loop
    initial begin
       count = 0;
+      delayed = 0;
       onebit = 1'b0;
       fourthreetwoone[3] = 0; // stop icarus optimizing away
       text_byte = "B";
@@ -119,6 +124,8 @@ extern "C" int mon_check();
         half_count <= half_count + 2;
 
       if (count == 1000) begin
+         if (delayed != 123) $stop;
+         if (delayed_mem[7] != 456) $stop;
          $write("*-* All Finished *-*\n");
          $finish;
       end

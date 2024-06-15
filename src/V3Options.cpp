@@ -67,6 +67,7 @@ public:
     using DirMap = std::map<const string, std::set<std::string>>;  // Directory listing
 
     // STATE
+    std::list<string> m_lineArgs;  // List of command line argument encountered
     std::list<string> m_allArgs;  // List of every argument encountered
     std::list<string> m_incDirUsers;  // Include directories (ordered)
     std::set<string> m_incDirUserSet;  // Include directories (for removing duplicates)
@@ -393,6 +394,8 @@ void V3Options::addVFile(const string& filename) {
 }
 void V3Options::addForceInc(const string& filename) { m_forceIncs.push_back(filename); }
 
+void V3Options::addLineArg(const string& arg) { m_impp->m_lineArgs.push_back(arg); }
+
 void V3Options::addArg(const string& arg) { m_impp->m_allArgs.push_back(arg); }
 
 string V3Options::allArgsString() const VL_MT_SAFE {
@@ -405,12 +408,12 @@ string V3Options::allArgsString() const VL_MT_SAFE {
 }
 
 // Delete some options for Verilation of the hierarchical blocks.
-string V3Options::allArgsStringForHierBlock(bool forTop) const {
+string V3Options::allArgsStringForHierBlock(bool forTop, bool forCMake) const {
     std::set<string> vFiles;
     for (const auto& vFile : m_vFiles) vFiles.insert(vFile);
     string out;
-    for (std::list<string>::const_iterator it = m_impp->m_allArgs.begin();
-         it != m_impp->m_allArgs.end(); ++it) {
+    for (std::list<string>::const_iterator it = m_impp->m_lineArgs.begin();
+         it != m_impp->m_lineArgs.end(); ++it) {
         int skip = 0;
         if (it->length() >= 2 && (*it)[0] == '-' && (*it)[1] == '-') {
             skip = 2;
@@ -426,7 +429,7 @@ string V3Options::allArgsStringForHierBlock(bool forTop) const {
                 continue;
             }
         } else {  // Not an option
-            if (vFiles.find(*it) != vFiles.end()  // Remove HDL
+            if ((forCMake && vFiles.find(*it) != vFiles.end())  // Remove HDL
                 || m_cppFiles.find(*it) != m_cppFiles.end()) {  // Remove C++
                 continue;
             }
@@ -493,7 +496,10 @@ string V3Options::fileExists(const string& filename) {
         try {
             for (const auto& dirEntry : std::filesystem::directory_iterator(dir.c_str()))
                 setp->insert(dirEntry.path().filename().string());
-        } catch (std::filesystem::filesystem_error const& ex) { return ""; }
+        } catch (std::filesystem::filesystem_error const& ex) {
+            (void)ex;
+            return "";
+        }
 #else
         if (DIR* const dirp = opendir(dir.c_str())) {
             while (struct dirent* direntp = readdir(dirp)) setp->insert(direntp->d_name);
@@ -750,6 +756,18 @@ string V3Options::getenvVERILATOR_ROOT() {
     return V3Os::filenameCleanup(var);
 }
 
+string V3Options::getenvVERILATOR_SOLVER() {
+    string var = V3Os::getenvStr("VERILATOR_SOLVER", "");
+    // Treat compiled-in DEFENV string literals as C-strings to enable
+    // binary patching for relocatable installs (e.g. conda)
+    string defenv = string{DEFENV_VERILATOR_SOLVER}.c_str();
+    if (var == "" && defenv != "") {
+        var = defenv;
+        V3Os::setenvStr("VERILATOR_SOLVER", var, "Hardcoded at build time");
+    }
+    return var;
+}
+
 string V3Options::getStdPackagePath() {
     return V3Os::filenameJoin(getenvVERILATOR_ROOT(), "include", "verilated_std.sv");
 }
@@ -988,6 +1006,9 @@ string V3Options::argString(int argc, char** argv) {
 // V3 Options Parsing
 
 void V3Options::parseOpts(FileLine* fl, int argc, char** argv) VL_MT_DISABLED {
+    // Save command line options
+    for (int i = 0; i < argc; ++i) { addLineArg(argv[i]); }
+
     // Parse all options
     // Initial entry point from Verilator.cpp
     parseOptsList(fl, ".", argc, argv);
@@ -1307,6 +1328,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
 
     DECL_OPTION("-LDFLAGS", CbVal, callStrSetter(&V3Options::addLdLibs));
+    DECL_OPTION("-l2-name", Set, &m_l2Name);
+    DECL_OPTION("-no-l2name", CbCall, [this]() { m_l2Name = ""; }).undocumented();  // Historical
+    DECL_OPTION("-l2name", CbCall, [this]() { m_l2Name = "v"; }).undocumented();  // Historical
     const auto setLang = [this, fl](const char* valp) {
         const V3LangCode optval{valp};
         if (optval.legal()) {
@@ -1323,9 +1347,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-language", CbVal, setLang);
     DECL_OPTION("-lib-create", Set, &m_libCreate);
     DECL_OPTION("-lint-only", OnOff, &m_lintOnly);
-    DECL_OPTION("-l2-name", Set, &m_l2Name);
-    DECL_OPTION("-no-l2name", CbCall, [this]() { m_l2Name = ""; }).undocumented();  // Historical
-    DECL_OPTION("-l2name", CbCall, [this]() { m_l2Name = "v"; }).undocumented();  // Historical
+    DECL_OPTION("-localize-max-size", Set, &m_localizeMaxSize);
     DECL_OPTION("-main-top-name", Set, &m_mainTopName);
 
     DECL_OPTION("-MAKEFLAGS", CbVal, callStrSetter(&V3Options::addMakeFlags));
@@ -1388,6 +1410,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_pinsScBigUint = flag;
         m_pinsBv = 513;
     });
+    DECL_OPTION("-pins-inout-enables", OnOff, &m_pinsInoutEnables);
     DECL_OPTION("-pins-uint8", OnOff, &m_pinsUint8);
     DECL_OPTION("-pipe-filter", Set, &m_pipeFilter);
     DECL_OPTION("-pp-comments", OnOff, &m_ppComments);

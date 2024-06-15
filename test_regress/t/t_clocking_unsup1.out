@@ -1,17 +1,11 @@
-%Error-UNSUPPORTED: t/t_clocking_unsup1.v:14:26: Unsupported: Mixed input/output clocking items
-   14 |        input #1 output #1step x;
-      |                          ^
+%Error-UNSUPPORTED: t/t_clocking_unsup1.v:14:15: Unsupported: clocking event edge override
+   14 |        output posedge #1 a;
+      |               ^~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_clocking_unsup1.v:15:8: Unsupported: 'inout' clocking items
-   15 |        inout y;
-      |        ^~~~~
+%Error-UNSUPPORTED: t/t_clocking_unsup1.v:15:15: Unsupported: clocking event edge override
+   15 |        output negedge #1 b;
+      |               ^~~~~~~
 %Error-UNSUPPORTED: t/t_clocking_unsup1.v:16:15: Unsupported: clocking event edge override
-   16 |        output posedge #1 a;
-      |               ^~~~~~~
-%Error-UNSUPPORTED: t/t_clocking_unsup1.v:17:15: Unsupported: clocking event edge override
-   17 |        output negedge #1 b;
-      |               ^~~~~~~
-%Error-UNSUPPORTED: t/t_clocking_unsup1.v:18:15: Unsupported: clocking event edge override
-   18 |        output edge #1 b;
+   16 |        output edge #1 b;
       |               ^~~~
 %Error: Exiting due to

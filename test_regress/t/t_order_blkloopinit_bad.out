@@ -1,5 +1,18 @@
-%Error-BLKLOOPINIT: t/t_order_blkloopinit_bad.v:21:19: Unsupported: Delayed assignment to array inside for loops (non-delayed is ok - see docs)
-   21 |          array[i] <= 0;   
-      |                   ^~
+%Error-BLKLOOPINIT: t/t_order_blkloopinit_bad.v:26:20: Unsupported: Non-blocking assignment to array inside loop in suspendable process or fork
+                                                     : ... note: In instance 't'
+   26 |          array1[i] <= 0;   
+      |                    ^~
                     ... For error description see https://verilator.org/warn/BLKLOOPINIT?v=latest
+%Error-BLKLOOPINIT: t/t_order_blkloopinit_bad.v:36:20: Unsupported: Non-blocking assignment to array with compound element type inside loop
+                                                     : ... note: In instance 't'
+   36 |          array2[i] <= null;   
+      |                    ^~
+%Error-BLKLOOPINIT: t/t_order_blkloopinit_bad.v:45:20: Unsupported: Non-blocking assignment to array in both loop and suspendable process/fork
+                                                     : ... note: In instance 't'
+                    t/t_order_blkloopinit_bad.v:50:20: ... Location of non-blocking assignment in suspendable process/fork
+   50 |       #1 array3[0] <= 0;
+      |                    ^~
+                    t/t_order_blkloopinit_bad.v:45:20: ... Location of non-blocking assignment inside loop
+   45 |          array3[i] <= 0;   
+      |                    ^~
 %Error: Exiting due to

@@ -46,37 +46,20 @@ long long get_memory_usage() {
 }
 
 void make_and_destroy() {
-#ifdef VL_NO_LEGACY
     VerilatedContext* contextp = new VerilatedContext;
     contextp->debug(0);
     VM_PREFIX* topp = new VM_PREFIX{contextp};
-#else
-    Verilated::debug(0);
-    VM_PREFIX* topp = new VM_PREFIX;
-#endif
 
     topp->eval();
     topp->clk = true;
-    while (!
-#ifdef VL_NO_LEGACY
-           contextp->gotFinish()
-#else
-           Verilated::gotFinish()
-#endif
-    ) {
-#ifdef VL_NO_LEGACY
+    while (!contextp->gotFinish()) {
         contextp->timeInc(5);
-#else
-        main_time += 5;
-#endif
         topp->clk = !topp->clk;
         topp->eval();
     }
 
     VL_DO_DANGLING(delete topp, topp);
-#ifdef VL_NO_LEGACY
     VL_DO_DANGLING(delete contextp, contextp);
-#endif
 }
 
 int main(int argc, char* argv[]) {

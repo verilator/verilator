@@ -204,8 +204,7 @@ class UnrollVisitor final : public VNVisitor {
             iterateAndNextNull(tempp->stmtsp());
             m_varModeReplace = false;
             clonep = tempp->stmtsp()->unlinkFrBackWithNext();
-            tempp->deleteTree();
-            tempp = nullptr;
+            VL_DO_CLEAR(tempp->deleteTree(), tempp = nullptr);
             VL_DO_CLEAR(pushDeletep(m_varValuep), m_varValuep = nullptr);
         }
         SimulateVisitor simvis;
@@ -456,7 +455,7 @@ class UnrollVisitor final : public VNVisitor {
             && nodep->access().isReadOnly()) {
             AstNode* const newconstp = m_varValuep->cloneTree(false);
             nodep->replaceWith(newconstp);
-            pushDeletep(nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
 

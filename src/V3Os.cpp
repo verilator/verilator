@@ -86,26 +86,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Environment
 
 string V3Os::getenvStr(const string& envvar, const string& defaultValue) {
-    string ret = "";
-#if defined(_MSC_VER)
-    // Note: MinGW does not offer _dupenv_s
-    const char* envvalue = nullptr;
-    _dupenv_s((char**)&envvalue, nullptr, envvar.c_str());
-    if (envvalue != nullptr) {
-        const std::string result{envvalue};
-        free((void*)envvalue);
-        ret = result;
-    } else {
-        ret = defaultValue;
-    }
-#else
-    if (const char* const envvalue = getenv(envvar.c_str())) {
-        ret = envvalue;
-    } else {
-        ret = defaultValue;
-    }
-#endif
-    return VString::escapeStringForPath(ret);
+    return VString::escapeStringForPath(VlOs::getenvStr(envvar, defaultValue));
 }
 
 void V3Os::setenvStr(const string& envvar, const string& value, const string& why) {
@@ -122,7 +103,7 @@ void V3Os::setenvStr(const string& envvar, const string& value, const string& wh
     // setenv() replaced by putenv() in Solaris environment. Prototype is different
     // putenv() requires NAME=VALUE format
     const string vareq = envvar + "=" + value;
-    putenv(const_cast<char*>(vareq.c_str()));
+    putenv(strdup(vareq.c_str()));  // will leak if setting the same variable again
 #endif
 }
 

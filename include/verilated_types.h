@@ -36,7 +36,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <unordered_set>
 #include <utility>
 
 //=========================================================================
@@ -416,7 +415,19 @@ public:
 static int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE;
 
 template <std::size_t T_Words>
+struct VlWide;
+
+// Type trait to check if a type is VlWide
+template <typename>
+struct VlIsVlWide : public std::false_type {};
+
+template <std::size_t T_Words>
+struct VlIsVlWide<VlWide<T_Words>> : public std::true_type {};
+
+template <std::size_t T_Words>
 struct VlWide final {
+    static constexpr size_t Words = T_Words;
+
     // MEMBERS
     // This should be the only data member, otherwise generated static initializers need updating
     EData m_storage[T_Words];  // Contents of the packed array
@@ -891,8 +902,8 @@ public:
     }
 };
 
-template <class T_Value>
-std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
+template <class T_Value, size_t T_MaxSize>
+std::string VL_TO_STRING(const VlQueue<T_Value, T_MaxSize>& obj) {
     return obj.to_string();
 }
 
@@ -1309,7 +1320,11 @@ public:
     // Similar to 'neq' above, *this = that used for change detection
     void assign(const VlUnpacked<T_Value, T_Depth>& that) { *this = that; }
     bool operator==(const VlUnpacked<T_Value, T_Depth>& that) const { return !neq(that); }
-    bool operator!=(const VlUnpacked<T_Value, T_Depth>& that) { return neq(that); }
+    bool operator!=(const VlUnpacked<T_Value, T_Depth>& that) const { return neq(that); }
+    // interface to C style arrays (used in ports), see issue #5125
+    bool neq(const T_Value that[T_Depth]) const { return neq(*this, that); }
+    void assign(const T_Value that[T_Depth]) { std::copy_n(that, T_Depth, m_storage); }
+    void operator=(const T_Value that[T_Depth]) { assign(that); }
 
     // inside (set membership operator)
     bool inside(const T_Value& value) const {
@@ -1386,7 +1401,7 @@ public:
     VlQueue<T_Key> unique_index(Func with_func) const {
         VlQueue<T_Key> out;
         IData index = 0;
-        std::unordered_set<T_Value> saw;
+        std::set<T_Value> saw;
         for (const auto& i : m_storage) {
             const auto i_mapped = with_func(index, i);
             auto it = saw.find(i_mapped);
@@ -1499,6 +1514,15 @@ private:
         return false;
     }
 
+    template <typename T_Val, std::size_t T_Dep>
+    static bool neq(const VlUnpacked<T_Val, T_Dep>& a, const T_Val b[T_Dep]) {
+        for (size_t i = 0; i < T_Dep; ++i) {
+            // Recursive 'neq', in case T_Val is also a VlUnpacked<_, _>
+            if (neq(a.m_storage[i], b[i])) return true;
+        }
+        return false;
+    }
+
     template <typename T_Other>  //
     static bool neq(const T_Other& a, const T_Other& b) {
         // Base case (T_Other is not VlUnpacked<_, _>), fall back on !=
@@ -1510,6 +1534,181 @@ template <class T_Value, std::size_t T_Depth>
 std::string VL_TO_STRING(const VlUnpacked<T_Value, T_Depth>& obj) {
     return obj.to_string();
 }
+
+//===================================================================
+// Helper to apply the given indices to a target expression
+
+template <size_t Curr, size_t Rank, typename T_Target>
+struct VlApplyIndices final {
+    VL_ATTR_ALWINLINE
+    static auto& apply(T_Target& target, const size_t* indicesp) {
+        return VlApplyIndices<Curr + 1, Rank, decltype(target[indicesp[Curr]])>::apply(
+            target[indicesp[Curr]], indicesp);
+    }
+};
+
+template <size_t Rank, typename T_Target>
+struct VlApplyIndices<Rank, Rank, T_Target> final {
+    VL_ATTR_ALWINLINE
+    static T_Target& apply(T_Target& target, const size_t*) { return target; }
+};
+
+//===================================================================
+// Commit queue for NBAs - currently only for unpacked arrays
+//
+// This data-structure is used to handle non-blocking assignments
+// that might execute a variable number of times in a single
+// evaluation. It has 2 operations:
+// - 'enqueue' will add an update to the queue
+// - 'commit' will apply all enqueued updates to the target variable,
+//   in the order they were enqueued. This ensures the last NBA
+//   takes effect as it is expected.
+// There are 2 specializations of this class below:
+// - A version when a partial element update is not required,
+//   e.g, to handle:
+//      logic [31:0] array[N];
+//      for (int i = 0 ; i < N ; ++i) array[i] <= x;
+//   Here 'enqueue' takes the RHS ('x'), and the array indices ('i')
+//   as arguments.
+// - A different version when a partial element update is required,
+//   e.g. for:
+//      logic [31:0] array[N];
+//      for (int i = 0 ; i < N ; ++i) array[i][3:1] <= y;
+//   Here 'enqueue' takes one additional argument, which is a bitmask
+//   derived from the bit selects (_[3:1]), which masks the bits that
+//   need to be updated, and additionally the RHS is widened to a full
+//   element size, with the bits inserted into the masked region.
+template <typename T_Target,  // Type of the variable this commit queue updates
+          bool Partial,  // Whether partial element updates are necessary
+          // The following we could figure out from 'T_Target using type traits, but passing
+          // explicitly to avoid template expansion, as Verilator already knows them
+          typename T_Element,  // Non-array leaf element type of T_Target array
+          std::size_t T_Rank  // Rank of T_Target (i.e.: how many dimensions it has)
+          >
+class VlNBACommitQueue;
+
+// Specialization for whole element updates only
+template <typename T_Target, typename T_Element, std::size_t T_Rank>
+class VlNBACommitQueue<T_Target, /* Partial: */ false, T_Element, T_Rank> final {
+    // TYPES
+    struct Entry final {
+        T_Element value;
+        size_t indices[T_Rank];
+    };
+
+    // STATE
+    std::vector<Entry> m_pending;  // Pending updates, in program order
+
+public:
+    // CONSTRUCTOR
+    VlNBACommitQueue() = default;
+    VL_UNCOPYABLE(VlNBACommitQueue);
+
+    // METHODS
+    template <typename... Args>
+    void enqueue(const T_Element& value, Args... indices) {
+        m_pending.emplace_back(Entry{value, {indices...}});
+    }
+
+    // Note: T_Commit might be different from T_Target. Specifically, when the signal is a
+    // top-level IO port, T_Commit will be a native C array, while T_Target, will be a VlUnpacked
+    template <typename T_Commit>
+    void commit(T_Commit& target) {
+        if (m_pending.empty()) return;
+        for (const Entry& entry : m_pending) {
+            VlApplyIndices<0, T_Rank, T_Commit>::apply(target, entry.indices) = entry.value;
+        }
+        m_pending.clear();
+    }
+};
+
+// With partial element updates
+template <typename T_Target, typename T_Element, std::size_t T_Rank>
+class VlNBACommitQueue<T_Target, /* Partial: */ true, T_Element, T_Rank> final {
+    // TYPES
+    struct Entry final {
+        T_Element value;
+        T_Element mask;
+        size_t indices[T_Rank];
+    };
+
+    // STATE
+    std::vector<Entry> m_pending;  // Pending updates, in program order
+
+    // STATIC METHODS
+
+    // Binary & | ~ for elements to use for masking in partial updates. Sorry for the templates.
+    template <typename T>
+    VL_ATTR_ALWINLINE static typename std::enable_if<!VlIsVlWide<T>::value, T>::type
+    bAnd(const T& a, const T& b) {
+        return a & b;
+    }
+
+    template <typename T>
+    VL_ATTR_ALWINLINE static typename std::enable_if<VlIsVlWide<T>::value, T>::type
+    bAnd(const T& a, const T& b) {
+        T result;
+        for (size_t i = 0; i < T::Words; ++i) {
+            result.m_storage[i] = a.m_storage[i] & b.m_storage[i];
+        }
+        return result;
+    }
+
+    template <typename T>
+    VL_ATTR_ALWINLINE static typename std::enable_if<!VlIsVlWide<T>::value, T>::type
+    bOr(const T& a, const T& b) {
+        return a | b;
+    }
+
+    template <typename T>
+    VL_ATTR_ALWINLINE static typename std::enable_if<VlIsVlWide<T>::value, T>::type  //
+    bOr(const T& a, const T& b) {
+        T result;
+        for (size_t i = 0; i < T::Words; ++i) {
+            result.m_storage[i] = a.m_storage[i] | b.m_storage[i];
+        }
+        return result;
+    }
+
+    template <typename T>
+    VL_ATTR_ALWINLINE static typename std::enable_if<!VlIsVlWide<T>::value, T>::type
+    bNot(const T& a) {
+        return ~a;
+    }
+
+    template <typename T>
+    VL_ATTR_ALWINLINE static typename std::enable_if<VlIsVlWide<T>::value, T>::type
+    bNot(const T& a) {
+        T result;
+        for (size_t i = 0; i < T::Words; ++i) result.m_storage[i] = ~a.m_storage[i];
+        return result;
+    }
+
+public:
+    // CONSTRUCTOR
+    VlNBACommitQueue() = default;
+    VL_UNCOPYABLE(VlNBACommitQueue);
+
+    // METHODS
+    template <typename... Args>
+    void enqueue(const T_Element& value, const T_Element& mask, Args... indices) {
+        m_pending.emplace_back(Entry{value, mask, {indices...}});
+    }
+
+    // Note: T_Commit might be different from T_Target. Specifically, when the signal is a
+    // top-level IO port, T_Commit will be a native C array, while T_Target, will be a VlUnpacked
+    template <typename T_Commit>
+    void commit(T_Commit& target) {
+        if (m_pending.empty()) return;
+        for (const Entry& entry : m_pending) {  //
+            auto& ref = VlApplyIndices<0, T_Rank, T_Commit>::apply(target, entry.indices);
+            // Maybe inefficient, but it works for now ...
+            const auto oldValue = ref;
+            ref = bOr(bAnd(entry.value, entry.mask), bAnd(oldValue, bNot(entry.mask)));
+        }
+        m_pending.clear();
+    }
+};
 
 //===================================================================
 // Object that VlDeleter is capable of deleting

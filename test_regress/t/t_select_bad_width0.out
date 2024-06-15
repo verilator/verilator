@@ -1,0 +1,19 @@
+%Error: t/t_select_bad_width0.v:15:21: Width of bit extract must be positive (IEEE 1800-2023 11.5.1)
+                                     : ... note: In instance 't'
+   15 |       int part = val[left +: ZERO];
+      |                     ^
+%Warning-WIDTHEXPAND: t/t_select_bad_width0.v:15:21: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's SEL generates 1 bits.
+                                                   : ... note: In instance 't'
+   15 |       int part = val[left +: ZERO];
+      |                     ^
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
+                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
+%Error: t/t_select_bad_width0.v:17:17: Width of bit extract must be positive (IEEE 1800-2023 11.5.1)
+                                     : ... note: In instance 't'
+   17 |       part = val[left -: ZERO];
+      |                 ^
+%Warning-WIDTHEXPAND: t/t_select_bad_width0.v:17:12: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's SEL generates 1 bits.
+                                                   : ... note: In instance 't'
+   17 |       part = val[left -: ZERO];
+      |            ^
+%Error: Exiting due to

@@ -86,7 +86,7 @@ class PremitVisitor final : public VNVisitor {
             // Extract into constant pool.
             const bool merge = v3Global.opt.fMergeConstPool();
             varp = v3Global.rootp()->constPoolp()->findConst(constp, merge)->varp();
-            nodep->deleteTree();
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
             ++m_extractedToConstPool;
         } else {
             // Keep as local temporary.
@@ -183,9 +183,11 @@ class PremitVisitor final : public VNVisitor {
 
     void visit(AstWhile* nodep) override {
         UINFO(4, "  WHILE  " << nodep << endl);
+        // cppcheck-suppress shadowVariable  // Also restored below
         START_STATEMENT_OR_RETURN(nodep);
         iterateAndNextNull(nodep->precondsp());
         {
+            // cppcheck-suppress shadowVariable  // Also restored above
             VL_RESTORER(m_inWhileCondp);
             m_inWhileCondp = nodep;
             iterateAndNextNull(nodep->condp());

@@ -258,6 +258,7 @@ private:
     bool m_main = false;            // main switch: --main
     bool m_outFormatOk = false;     // main switch: --cc, --sc or --sp was specified
     bool m_pedantic = false;        // main switch: --Wpedantic
+    bool m_pinsInoutEnables = false;// main switch: --pins-inout-enables
     bool m_pinsScUint = false;      // main switch: --pins-sc-uint
     bool m_pinsScBigUint = false;   // main switch: --pins-sc-biguint
     bool m_pinsUint8 = false;       // main switch: --pins-uint8
@@ -308,6 +309,7 @@ private:
     int         m_instrCountDpi = 200;   // main switch: --instr-count-dpi
     bool        m_jsonEditNums = true; // main switch: --no-json-edit-nums
     bool        m_jsonIds = true; // main switch: --no-json-ids
+    int         m_localizeMaxSize = 1024;  // main switch: --localize-max-size
     VOptionBool m_makeDepend;  // main switch: -MMD
     int         m_maxNumWidth = 65536;  // main switch: --max-num-width
     int         m_moduleRecursion = 100;  // main switch: --module-recursion-depth
@@ -398,6 +400,7 @@ private:
 
 private:
     // METHODS
+    void addLineArg(const string& arg);
     void addArg(const string& arg);
     void addDefine(const string& defline, bool allowPlus) VL_MT_DISABLED;
     void addFuture(const string& flag);
@@ -509,6 +512,7 @@ public:
     bool outFormatOk() const { return m_outFormatOk; }
     bool keepTempFiles() const { return (V3Error::debugDefault() != 0); }
     bool pedantic() const { return m_pedantic; }
+    bool pinsInoutEnables() const { return m_pinsInoutEnables; }
     bool pinsScUint() const { return m_pinsScUint; }
     bool pinsScBigUint() const { return m_pinsScBigUint; }
     bool pinsUint8() const { return m_pinsUint8; }
@@ -544,6 +548,7 @@ public:
     int ifDepth() const { return m_ifDepth; }
     int inlineMult() const { return m_inlineMult; }
     int instrCountDpi() const { return m_instrCountDpi; }
+    int localizeMaxSize() const { return m_localizeMaxSize; }
     bool jsonEditNums() const { return m_jsonEditNums; }
     bool jsonIds() const { return m_jsonIds; }
     VOptionBool makeDepend() const { return m_makeDepend; }
@@ -695,7 +700,7 @@ public:
     string allArgsString() const VL_MT_SAFE;  ///< Return all passed arguments as simple string
     // Return options for child hierarchical blocks when forTop==false, otherwise returns args for
     // the top module.
-    string allArgsStringForHierBlock(bool forTop) const;
+    string allArgsStringForHierBlock(bool forTop, bool forCMake) const;
     void parseOpts(FileLine* fl, int argc, char** argv) VL_MT_DISABLED;
     void parseOptsList(FileLine* fl, const string& optdir, int argc, char** argv) VL_MT_DISABLED;
     void parseOptsFile(FileLine* fl, const string& filename, bool rel) VL_MT_DISABLED;
@@ -713,6 +718,7 @@ public:
     static string getenvSYSTEMC_INCLUDE();
     static string getenvSYSTEMC_LIBDIR();
     static string getenvVERILATOR_ROOT();
+    static string getenvVERILATOR_SOLVER();
     static string getStdPackagePath();
     static string getSupported(const string& var);
     static bool systemCSystemWide();

@@ -93,8 +93,7 @@ class SplitAsCleanVisitor final : public VNVisitor {
                 m_keepStmt = true;
             } else {
                 UINFO(6, "     Delete STMT " << nodep << endl);
-                nodep->unlinkFrBack();
-                pushDeletep(nodep);
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             }
         }
         // If something below matches, the upper statement remains too.

@@ -167,6 +167,16 @@ class WidthSelVisitor final : public VNVisitor {
             }
         }
     }
+    AstNodeExpr* newMulConst(FileLine* fl, uint32_t elwidth, AstNodeExpr* indexp) {
+        AstNodeExpr* const extendp = new AstExtend{fl, indexp};
+        extendp->dtypeSetLogicUnsized(
+            32, std::max(V3Number::log2b(elwidth) + 1, indexp->widthMin()), VSigning::UNSIGNED);
+        AstNodeExpr* const mulp
+            = new AstMul{fl, new AstConst{fl, AstConst::Unsized32{}, elwidth},
+                         // Extend needed as index might be e.g. 3 bits but constant e.g. 5 bits
+                         extendp};
+        return mulp;
+    }
 
     AstNodeDType* sliceDType(AstPackArrayDType* nodep, int msb, int lsb) {
         // Return slice needed for msb/lsb, either as original dtype or a new slice dtype
@@ -247,9 +257,7 @@ class WidthSelVisitor final : public VNVisitor {
             // cppcheck-suppress zerodivcond
             const int elwidth = adtypep->width() / fromRange.elements();
             AstSel* const newp = new AstSel{
-                nodep->fileline(), fromp,
-                new AstMul{nodep->fileline(),
-                           new AstConst(nodep->fileline(), AstConst::Unsized32{}, elwidth), subp},
+                nodep->fileline(), fromp, newMulConst(nodep->fileline(), elwidth, subp),
                 new AstConst(nodep->fileline(), AstConst::Unsized32{}, elwidth)};
             newp->declRange(fromRange);
             newp->declElWidth(elwidth);
@@ -428,8 +436,7 @@ class WidthSelVisitor final : public VNVisitor {
             const int elwidth = adtypep->width() / fromRange.elements();
             AstSel* const newp = new AstSel{
                 nodep->fileline(), fromp,
-                new AstMul{nodep->fileline(), newSubLsbOf(lsbp, fromRange),
-                           new AstConst(nodep->fileline(), AstConst::Unsized32{}, elwidth)},
+                newMulConst(nodep->fileline(), elwidth, newSubLsbOf(lsbp, fromRange)),
                 new AstConst(nodep->fileline(), AstConst::Unsized32{}, (msb - lsb + 1) * elwidth)};
             newp->declRange(fromRange);
             newp->declElWidth(elwidth);
@@ -583,10 +590,7 @@ class WidthSelVisitor final : public VNVisitor {
             } else {
                 nodep->v3fatalSrc("Bad Case");
             }
-            if (elwidth != 1) {
-                newlsbp = new AstMul{nodep->fileline(), newlsbp,
-                                     new AstConst(nodep->fileline(), elwidth)};
-            }
+            if (elwidth != 1) newlsbp = newMulConst(nodep->fileline(), elwidth, newlsbp);
             AstSel* const newp = new AstSel{nodep->fileline(), fromp, newlsbp, newwidthp};
             newp->declRange(fromRange);
             newp->declElWidth(elwidth);

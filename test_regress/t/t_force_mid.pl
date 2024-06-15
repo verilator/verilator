@@ -10,9 +10,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-lint(
-    fails => $Self->{vlt_all},
-    expect_filename => $Self->{golden_filename},
+compile(
+    make_top_shell => 0,
+    make_main => 0,
+    verilator_flags2 => ["--exe $Self->{t_dir}/t_force_mid.cpp"]
+    );
+
+execute(
+      check_finised => 1,
     );
 
 ok(1);

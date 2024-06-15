@@ -210,22 +210,35 @@ List Of Warnings
 
 .. option:: BLKLOOPINIT
 
-   .. TODO better example
-
-   This indicates that the initialization of an array needs to use
-   non-delayed assignments.  This is done in the interest of speed; if
-   delayed assignments were used, the simulator would have to copy large
-   arrays every cycle.  (In smaller loops, loop unrolling allows the
-   delayed assignment to work, though it's a bit slower than a non-delayed
-   assignment.)  Here's an example
+   Indicates certain constructs where non-blocking assignments to unpacked
+   arrays (memories) are not supported inside loops. These typically appear in
+   initialization/reset code:
 
    .. code-block:: sv
 
          always @(posedge clk)
             if (~reset_l)
                 for (i=0; i<`ARRAY_SIZE; i++)
-                    array[i] = 0;  // Non-delayed for verilator
+                    array[i] <= 0;  // Non-blocking assignment inside loop
+            else
+                array[address] <= data;
 
+   While this is supported in typical synthesizeable code (including the
+   example above), some complicated cases are not supported. Namely:
+
+   1. If the above loop is inside a suspendable process or fork statement.
+
+   2. If the variable is also the target of a '<=' non-blocking assignment
+   in a suspendable process or fork statement (in addition to a synthesizable
+   loop).
+
+   3. If the element type of the array is a compound type.
+
+   4. In versions before 5.026, any delayed assignment to an array.
+
+   It might slightly improve run-time performance if you change the
+   non-blocking assignment inside the loop into a blocking assignment
+   (that is: use '=' instead of '<='), if possible.
 
    This message is only seen on large or complicated loops because
    Verilator generally unrolls small loops.  You may want to try increasing
@@ -1202,6 +1215,14 @@ List Of Warnings
    Error when a timing-related construct that requires :vlopt:`--timing` has
    been encountered. Issued only if Verilator is run with the
    :vlopt:`--no-timing` option.
+
+
+.. option:: NONSTD
+
+   Warns when a non-standard language feature is used that has a standard
+   equivalent, which might behave differently in corner cases. For example
+   :code:`$psprintf` system function is replaced by its standard equivalent
+   :code:`$sformatf`.
 
 
 .. option:: NULLPORT

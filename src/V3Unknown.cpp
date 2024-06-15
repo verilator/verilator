@@ -192,6 +192,11 @@ class UnknownVisitor final : public VNVisitor {
             iterateChildren(nodep);
         }
     }
+    void visit(AstVar* nodep) override {
+        VL_RESTORER(m_allowXUnique);
+        if (nodep->isParam()) m_allowXUnique = false;
+        iterateChildren(nodep);
+    }
     void visitEqNeqCase(AstNodeBiop* nodep) {
         UINFO(4, " N/EQCASE->EQ " << nodep << endl);
         V3Const::constifyEdit(nodep->lhsp());  // lhsp may change

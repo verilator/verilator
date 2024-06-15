@@ -98,8 +98,6 @@ static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of
     if (hblockp) topModuleFile = hblockp->vFileIfNecessary();
     if (!forCMake) {
         if (!topModuleFile.empty()) *of << topModuleFile << "\n";
-        const V3StringList& vFiles = v3Global.opt.vFiles();
-        for (const string& i : vFiles) *of << i << "\n";
     }
     const V3StringSet& libraryFiles = v3Global.opt.libraryFiles();
     for (const string& i : libraryFiles) {
@@ -227,7 +225,7 @@ void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
     for (const string& opt : commandOpts) *of << opt << "\n";
     *of << hierBlockArgs().front() << "\n";
     for (const auto& hierblockp : m_children) *of << hierblockp->hierBlockArgs().front() << "\n";
-    *of << v3Global.opt.allArgsStringForHierBlock(false) << "\n";
+    *of << v3Global.opt.allArgsStringForHierBlock(false, forCMake) << "\n";
 }
 
 string V3HierBlock::commandArgsFileName(bool forCMake) const {
@@ -424,7 +422,7 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
     }
     *of << "--threads " << cvtToStr(v3Global.opt.threads()) << "\n";
     *of << (v3Global.opt.systemC() ? "--sc" : "--cc") << "\n";
-    *of << v3Global.opt.allArgsStringForHierBlock(true) << "\n";
+    *of << v3Global.opt.allArgsStringForHierBlock(true, forCMake) << "\n";
 }
 
 string V3HierBlockPlan::topCommandArgsFileName(bool forCMake) {

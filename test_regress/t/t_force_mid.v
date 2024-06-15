@@ -9,29 +9,47 @@
 
 module t(/*AUTOARG*/
    // Outputs
-   tried,
+   topout,
    // Inputs
-   clk
+   clk, topin
    );
 
    input clk;
-   output [3:0] tried;
+   input [3:0] topin;
+   output [3:0] topout;
 
    integer cyc = 0;
 
-   assign tried = 4'b0101;
+   assign topout = 4'b0101;
 
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc == 0) begin
-         if (tried != 4'b0101) $stop;
+         if (topout != 4'b0101) $stop;
+         if (topin != 4'b1001) $stop;
       end
       else if (cyc == 1) begin
-         force tried = 4'b1010;
+         force topout = 4'b1010;
       end
       else if (cyc == 2) begin
-         if (tried != 4'b1010) $stop;
+         if (topout != 4'b1010) $stop;
+         release topout;
       end
+      else if (cyc == 3) begin
+         if (topout != 4'b0101) $stop;
+      end
+      else if (cyc == 4) begin
+         force topin = 4'b1100;
+      end
+      else if (cyc == 5) begin
+         if (topin != 4'b1100) $stop;
+         release topin;
+      end
+      else if (cyc == 6) begin
+         if (topin != 4'b1001) $stop;
+      end
+
+
       //
       else if (cyc == 99) begin
          $write("*-* All Finished *-*\n");

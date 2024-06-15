@@ -30,8 +30,9 @@
 #include <condition_variable>
 #include <memory>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
+#include <type_traits>
+#include <map>
+#include <set>
 #include <vector>
 
 #include <deque>
@@ -294,7 +295,7 @@ private:
     uint64_t m_timeLastDump = 0;  // Last time we did a dump
     bool m_didSomeDump = false;  // Did at least one dump (i.e.: m_timeLastDump is valid)
     VerilatedContext* m_contextp = nullptr;  // The context used by the traced models
-    std::unordered_set<const VerilatedModel*> m_models;  // The collection of models being traced
+    std::set<const VerilatedModel*> m_models;  // The collection of models being traced
 
     void addCallbackRecord(std::vector<CallbackRecord>& cbVec, CallbackRecord&& cbRec)
         VL_MT_SAFE_EXCLUDES(m_mutex);

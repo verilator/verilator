@@ -1,0 +1,12 @@
+%Warning-CONSTRAINTIGN: t/t_randomize_method_with_unsup.v:47:40: 'with' constraint ignored (unsupported)
+   47 |          rand_result = obj.randomize() with { lb <= y && y <= ub; };
+      |                                        ^~~~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Warning-CONSTRAINTIGN: t/t_randomize_method_with_unsup.v:63:37: 'with' constraint ignored (unsupported)
+   63 |       rand_result = obj.randomize() with { 256 < y && y < 256; };
+      |                                     ^~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_method_with_unsup.v:67:37: 'with' constraint ignored (unsupported)
+   67 |       rand_result = obj.randomize() with { 16 <= z && z <= 32; };
+      |                                     ^~~~
+%Error: Exiting due to

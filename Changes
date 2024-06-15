@@ -8,6 +8,73 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
+Verilator 5.026 2024-06-15
+==========================
+
+**Major:**
+
+* Support constrained randomization with external solvers (#4947). [Arkadiusz Kozdra, Antmicro Ltd.]
+
+**Minor:**
+
+* Support `$psprintf` system function (#4314) (#5169). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support 2D dynamic array initialization (#4700) (#5122). [Valentin Atepalikhin]
+* Support __en/__out signals on top level inout ports (#4812) (#4856). [Paul Wright]
+* Support empty queue as dynarray default value (#5055). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support vpiInertialDelay (#5087). [Todd Strader]
+* Support NBAs to arrays inside loops (#5092). [Geza Lore]
+* Support parsing and otherwise ignoring inline constraints (#5126). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support `inout` clocking items (#5160). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support StructSel in unpacked array assignments (#5176). [Geza Lore]
+* Add error on zero width select (#5028).
+* Add CITATION.cff (#5057) (#5058). [Gijs Burghoorn]
+* Add VPI eval needed tracking (#5065). [Todd Strader]
+* Add `--localize-max-size` option and optimization (#5072).
+* Add parameterless assert control system tasks (#5010). [Bartłomiej Chmiel]
+* Add traceCapable indication to model header (#5053). [Vito Gamberini]
+* Add increasing of stack size when possible (#5071) (#5104). [Yinan Xu]
+* Add assertion on reusing VerilatedContext (#5167).
+* Improve DFG regularization in cyclic graphs (#5142). [Geza Lore]
+* Improve VerilatedVpiPutHolder storage requirements (#5144). [Kaleb Barrett]
+* Fix coroutines without awaits to have a co_return (#4208) (#5175). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Fix missing flex include path variable (#4970) (#4971). [Christopher Taylor]
+* Fix missing parameters with comma to be errors (#4979) (#5012). [Paul Swirhun]
+* Fix 'experimental/coroutine' file not found on MacOS (#5030) (#5031) (#5151). [Paul Bowen-Huggett]
+* Fix bound queue printing (#5032). [Aleksander Kiryk, Antmicro Ltd.]
+* Fix consecutive zero-delays (#5038). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix attempted to destroy locked thread pool error (#5040). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix `$system` with string argument (#5042).
+* Fix width extension on delays (#5043).
+* Fix `$typename` on array.min and others (#5049). [Gökçe Aydos]
+* Fix `make $(info)` which cannot be silenced (#5059). [Gökçe Aydos]
+* Fix CMake builds to export VERILATOR_ROOT (#5063). [Michael Bikovitsky]
+* Fix false ASSIGNIN on functions with explicit port map (#5069).
+* Fix 4-state value support for $readmem (#5070) (#5078). [Ethan Sifferman]
+* Fix DFG assertion with SystemC (#5076). [Geza Lore]
+* Fix `$typename` string to be more standard (#5082) (#5083). [Andrew Nolte]
+* Fix missed optimization in V3Delayed (#5089). [Geza Lore]
+* Fix macro expansion in strings per 1800-2023 (#5094). [Geza Lore]
+* Fix width extension of unpacked array select (#5095). [Varun Koyyalagunta]
+* Fix MacOS missing <type_traits> header (#5096) (#5097). [Vito Gamberini]
+* Fix assertion failure in V3Gate (#5101). [Yutetsu TAKATSUKASA]
+* Fix aliases for forced port signals (#5105). [Geza Lore]
+* Fix tracing interface functions (#5108). [Alex Solomatnikov]
+* Fix method calls parsing in constraints (#5110). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Fix vpiInertialDelay for memories (#5113). [Todd Strader]
+* Fix hierarchical compilation with nested -F (#5114) (#5124). [Alex Solomatnikov]
+* Fix references to ports in forks (#5123). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix output C++ type error on change detect of I/O arrays (#5125) (#5131). [Pawel Jewstafjew]
+* Fix x-valued parameters with `--x-assign unique` (#5129). [Ethan Sifferman]
+* Fix overflow of string on VPI reads (#5145) (#5146). [Kaleb Barrett]
+* Fix VerilatedVpiPutHolder class (#5156). [Kaleb Barrett]
+* Fix extending out-of-range select (#5159) (#5164). [Geza Lore]
+* Fix radix in width warnings (#5166). [Geza Lore]
+* Fix SystemC BITS_PER_DIGIT in VL_ASSIGN_SBW (#5170). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix non-constant replication in concats (#5171). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Fix table optimization when applied on real data type (#5172) (#5173). [Arthur Rosa]
+* Fix DPI import of null C-string (#5179).
+
+
 Verilator 5.024 2024-04-05
 ==========================
 
@@ -180,6 +247,7 @@ Verilator 5.020 2024-01-01
 * Fix dynamic NBA conditions (#4773). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix `V3Fork` stage to run only if `--timing` is set (#4778). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix max multiply width and add runtime assertions if too small. (#4781)
+* Fix select value too wide (#5148) (#5153). [Dercury]
 
 
 Verilator 5.018 2023-10-30

@@ -53,6 +53,7 @@ extern short int dpii_f_shortint(short int i);
 extern long long dpii_f_longint(long long i);
 extern void* dpii_f_chandle(void* i);
 extern const char* dpii_f_string(const char* i);
+extern const char* dpii_f_null();
 extern double dpii_f_real(double i);
 extern float dpii_f_shortreal(float i);
 
@@ -113,6 +114,7 @@ short int dpii_f_shortint(short int i) { return ~i; }
 long long dpii_f_longint(long long i) { return ~i; }
 void* dpii_f_chandle(void* i) { return i; }
 const char* dpii_f_string(const char* i) { return i; }
+const char* dpii_f_null() { return nullptr; }
 double dpii_f_real(double i) { return i + 1.5; }
 float dpii_f_shortreal(float i) { return i + 1.5f; }
 

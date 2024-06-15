@@ -1606,6 +1606,33 @@ sub cmake_version {
     return version->declare($cmake_version);
 }
 
+our $_have_solver = undef;
+sub have_solver {
+    if (!defined($_have_solver)) {
+        my $ok = `(z3 --help || cvc5 --help || cvc4 --help) 2>/dev/null`;
+        $ok ||= "";
+        if ($ok =~ /usage/i) {
+            $_have_solver = 1;
+        } else {
+            $_have_solver = 0;
+        }
+    }
+    return $_have_solver;
+}
+
+our $_aslr_off = undef;
+sub aslr_off {
+    if (!defined($_aslr_off)) {
+        my $ok = `setarch --addr-no-randomize echo ok 2>/dev/null` || "";
+        if ($ok =~ /ok/) {
+            $_aslr_off = "setarch --addr-no-randomize ";
+        } else {
+            $_aslr_off = "";
+        }
+    }
+    return $_aslr_off;
+}
+
 sub trace_filename {
     my $self = shift;
     return "$self->{obj_dir}/simx.fst" if $self->{trace_format} =~ /^fst/;
@@ -1670,6 +1697,7 @@ sub _run {
     my $self = (ref $_[0] ? shift : $Self);
     my %param = (tee => 1,
                  # cmd => [...]
+                 # aslr_off => # Disable address space layour randomization
                  # check_finished => 0  # Check for All Finished
                  # entering =>  # Print entering directory information
                  # expect =>  # Regexp to expect in output
@@ -1680,6 +1708,13 @@ sub _run {
                  @_);  # All legal arguments shown immediately above
 
     my $command = join(' ', @{$param{cmd}});
+
+    if ($param{aslr_off}) {
+        if (my $prefix = aslr_off()) {
+            $command = "$prefix $command";
+        }
+    }
+
     $command = "time $command" if $opt_benchmark && $command !~ /^cd /;
 
     if ($param{verilator_run}) {
@@ -2340,7 +2375,7 @@ sub files_identical {
                 $l1[$l] =~ s/CPU Time: +[0-9.]+ seconds[^\n]+/CPU Time: ###/mig;
                 $l1[$l] =~ s/\?v=[0-9.]+/?v=latest/mig;  # warning URL
                 $l1[$l] =~ s/_h[0-9a-f]{8}_/_h########_/mg;
-                $l1[$l] =~ s!%Error: \./!%Error: !mg; # clang gives ./ while GCC does not
+                $l1[$l] =~ s!%Error: /[^: ]+/([^/:])!%Error: .../$1!mg;  # avoid absolute paths
                 $l1[$l] =~ s/ \/[^ ]+\/verilated_std.sv/ verilated_std.sv/mg;
                 if ($l1[$l] =~ s/Exiting due to.*/Exiting due to/mig) {
                     splice @l1, $l+1;  # Trunc rest

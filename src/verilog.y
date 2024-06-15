@@ -807,6 +807,10 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_ACOSH        "$acosh"
 %token<fl>              yD_ASIN         "$asin"
 %token<fl>              yD_ASINH        "$asinh"
+%token<fl>              yD_ASSERTCTL    "$assertcontrol"
+%token<fl>              yD_ASSERTKILL   "$assertkill"
+%token<fl>              yD_ASSERTOFF    "$assertoff"
+%token<fl>              yD_ASSERTON     "$asserton"
 %token<fl>              yD_ATAN         "$atan"
 %token<fl>              yD_ATAN2        "$atan2"
 %token<fl>              yD_ATANH        "$atanh"
@@ -3264,8 +3268,14 @@ cellpinListE<pinp>:
         ;
 
 cellparamItListE<pinp>:         // IEEE: list_of_parameter_value_assignments/list_of_parameter_assignments
-                cellparamItemE                          { $$ = $1; }
-        |       cellparamItListE ',' cellparamItemE     { $$ = addNextNull($1, $3); }
+        //                      // Empty gets a node, to track class reference of #()
+                /*empty*/                               { $$ = new AstPin{CRELINE(), PINNUMINC(), "", nullptr}; }
+        |       cellparamItList                         { $$ = $1; }
+        ;
+
+cellparamItList<pinp>:          // IEEE: list_of_parameter_value_assignments/list_of_parameter_assignments
+                cellparamItem                           { $$ = $1; }
+        |       cellparamItList ',' cellparamItem       { $$ = addNextNull($1, $3); }
         ;
 
 cellpinItListE<pinp>:           // IEEE: list_of_port_connections
@@ -3273,10 +3283,9 @@ cellpinItListE<pinp>:           // IEEE: list_of_port_connections
         |       cellpinItListE ',' cellpinItemE         { $$ = addNextNull($1, $3); }
         ;
 
-cellparamItemE<pinp>:           // IEEE: named_parameter_assignment + empty
-        //                      // Note empty can match either () or (,); V3LinkCells cleans up ()
-                /* empty: ',,' is legal */              { $$ = new AstPin{CRELINE(), PINNUMINC(), "", nullptr}; }
-        |       yP_DOTSTAR                              { $$ = new AstPin{$1, PINNUMINC(), ".*", nullptr}; }
+cellparamItem<pinp>:            // IEEE: named_parameter_assignment + empty
+        //                      // Note empty is not allowed in parameter lists
+                yP_DOTSTAR                              { $$ = new AstPin{$1, PINNUMINC(), ".*", nullptr}; }
         |       '.' idAny '(' ')'
                         { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2, nullptr};
                           $$->svDotName(true); }
@@ -4102,8 +4111,7 @@ function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine
         //                      // IEEE: randomize_call
         //                      // We implement randomize as a normal funcRef, since randomize isn't a keyword
         //                      // Note yNULL is already part of expressions, so they come for free
-        |       funcRef yWITH__CUR constraint_block
-                        { $$ = $1; BBUNSUP($2, "Unsupported: randomize() 'with' constraint"); }
+        |       funcRef yWITH__CUR constraint_block     { $$ = new AstWithParse{$2, $1, $3}; }
         |       funcRef yWITH__CUR '{' '}'              { $$ = new AstWithParse{$2, $1, nullptr}; }
         ;
 
@@ -4218,6 +4226,21 @@ system_t_call<nodeStmtp>:       // IEEE: system_tf_call (as task)
         |       yD_FATAL    '(' expr ',' exprDispList ')'
                         { $$ = new AstDisplay{$1, VDisplayType::DT_FATAL, nullptr, $5};
                           $$->addNext(new AstStop{$1, false}); DEL($3); }
+        //
+        |       yD_ASSERTCTL '(' expr ')'                                            { $$ = new AstAssertCtl{$1, $3}; }
+        |       yD_ASSERTCTL '(' expr ',' exprE ')'                                  { $$ = new AstAssertCtl{$1, $3, $5}; }
+        |       yD_ASSERTCTL '(' expr ',' exprE ',' exprE ')'                        { $$ = new AstAssertCtl{$1, $3, $5, $7}; }
+        |       yD_ASSERTCTL '(' expr ',' exprE ',' exprE ',' exprE ')'              { $$ = new AstAssertCtl{$1, $3, $5, $7, $9}; }
+        |       yD_ASSERTCTL '(' expr ',' exprE ',' exprE ',' exprE ',' exprList ')' { $$ = new AstAssertCtl{$1, $3, $5, $7, $9, $11}; }
+        |       yD_ASSERTKILL parenE                     { $$ = new AstAssertCtl{$1, VAssertCtlType::KILL}; }
+        |       yD_ASSERTKILL '(' expr ')'               { $$ = new AstAssertCtl{$1, VAssertCtlType::KILL, $3}; }
+        |       yD_ASSERTKILL '(' exprE ',' exprList ')' { $$ = new AstAssertCtl{$1, VAssertCtlType::KILL, $3, $5}; }
+        |       yD_ASSERTOFF parenE                      { $$ = new AstAssertCtl{$1, VAssertCtlType::OFF}; }
+        |       yD_ASSERTOFF '(' expr ')'                { $$ = new AstAssertCtl{$1, VAssertCtlType::OFF, $3}; }
+        |       yD_ASSERTOFF '(' exprE ',' exprList ')'  { $$ = new AstAssertCtl{$1, VAssertCtlType::OFF, $3, $5}; }
+        |       yD_ASSERTON parenE                       { $$ = new AstAssertCtl{$1, VAssertCtlType::ON}; }
+        |       yD_ASSERTON '(' expr ')'                 { $$ = new AstAssertCtl{$1, VAssertCtlType::ON, $3}; }
+        |       yD_ASSERTON '(' exprE ',' exprList ')'   { $$ = new AstAssertCtl{$1, VAssertCtlType::ON, $3, $5}; }
         //
         |       yD_MONITOROFF parenE                    { $$ = new AstMonitorOff{$1, true}; }
         |       yD_MONITORON parenE                     { $$ = new AstMonitorOff{$1, false}; }
@@ -4794,7 +4817,7 @@ constExpr<nodeExprp>:
                 expr                                    { $$ = $1; }
         ;
 
-exprE<nodep>:                   // IEEE: optional expression
+exprE<nodeExprp>:               // IEEE: optional expression
                 /*empty*/                               { $$ = nullptr; }
         |       expr                                    { $$ = $1; }
         ;
@@ -5894,11 +5917,11 @@ clocking_item<clockingItemp>:   // IEEE: clocking_item
         |       yOUTPUT clocking_skewE list_of_clocking_decl_assign ';'
                         { $$ = GRAMMARP->makeClockingItemList($<fl>1, VDirection::OUTPUT, $2, $3); }
         |       yINPUT clocking_skewE yOUTPUT clocking_skewE list_of_clocking_decl_assign ';'
-                        { $$ = nullptr;
-                          BBUNSUP($5, "Unsupported: Mixed input/output clocking items"); }
+                        { $$ = GRAMMARP->makeClockingItemList($<fl>1, VDirection::INPUT, $2, $5->cloneTree(true));
+                          $$->addNext(GRAMMARP->makeClockingItemList($<fl>3, VDirection::OUTPUT, $4, $5)); }
         |       yINOUT list_of_clocking_decl_assign ';'
-                        { $$ = nullptr;
-                          BBUNSUP($1, "Unsupported: 'inout' clocking items"); }
+                        { $$ = GRAMMARP->makeClockingItemList($<fl>1, VDirection::INPUT, nullptr, $2->cloneTree(true));
+                          $$->addNext(GRAMMARP->makeClockingItemList($<fl>1, VDirection::OUTPUT, nullptr, $2)); }
         |       assertion_item_declaration
                         { $$ = nullptr;
                           BBUNSUP($1, "Unsupported: assertion items in clocking blocks"); }
@@ -7174,8 +7197,7 @@ localNextId<nodeExprp>:         // local
         //                      // Must call nextId without any additional tokens following
                 yLOCAL__COLONCOLON
                         { $$ = new AstClassOrPackageRef{$1, "local::", PARSEP->unitPackage($<fl>1), nullptr};
-                          SYMP->nextId(PARSEP->rootp());
-                          BBUNSUP($<fl>1, "Unsupported: Randomize 'local::'"); }
+                          SYMP->nextId(PARSEP->rootp()); }
         ;
 
 //^^^=========

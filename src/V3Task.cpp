@@ -305,6 +305,9 @@ struct TaskDpiUtils final {
         if (portp->basicp() && portp->basicp()->keyword() == VBasicDTypeKwd::CHANDLE) {
             frstmt = "VL_CVT_VP_Q(" + frName;
             ket = ")";
+        } else if (portp->basicp() && portp->basicp()->keyword() == VBasicDTypeKwd::STRING) {
+            frstmt = "VL_CVT_N_CSTR(" + frName;
+            ket = ")";
         } else if ((portp->basicp() && portp->basicp()->isDpiPrimitive())) {
             frstmt = frName;
         } else {
@@ -694,7 +697,7 @@ class TaskVisitor final : public VNVisitor {
                     // differ we may get C compilation problems later
                     const std::string dpiType = portp->dpiArgType(false, false);
                     dpiproto += dpiType;
-                    const std::string vType = portp->dtypep()->prettyDTypeName();
+                    const std::string vType = portp->dtypep()->prettyDTypeName(false);
                     if (!portp->isDpiOpenArray() && dpiType != vType) {
                         dpiproto += " /* " + vType + " */ ";
                     }
@@ -1589,14 +1592,13 @@ public:
 const char* const V3Task::s_dpiTemporaryVarSuffix = "__Vcvt";
 
 V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
-                                    V3TaskConnectState* statep) {
+                                    V3TaskConnectState* statep, bool makeChanges) {
     // Output list will be in order of the port declaration variables (so
     // func calls are made right in C)
     // Missing pin/expr?  We return (pinvar, nullptr)
     // Extra   pin/expr?  We clean it up
     UINFO(9, "taskConnects " << nodep << endl);
     std::map<const std::string, int> nameToIndex;
-    std::set<const AstVar*> argWrap;  // Which ports are defaulted, forcing arg wrapper creation
     V3TaskConnects tconnects;
     UASSERT_OBJ(nodep->taskp(), nodep, "unlinked");
 
@@ -1608,7 +1610,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
             if (portp->isIO()) {
                 tconnects.emplace_back(portp, static_cast<AstArg*>(nullptr));
                 nameToIndex.emplace(portp->name(), tpinnum);  // For name based connections
-                tpinnum++;
+                ++tpinnum;
                 if (portp->attrSFormat()) {
                     sformatp = portp;
                 } else if (sformatp) {
@@ -1630,17 +1632,19 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
             // By name
             const auto it = nameToIndex.find(argp->name());
             if (it == nameToIndex.end()) {
-                pinp->v3error("No such argument " << argp->prettyNameQ() << " in function call to "
-                                                  << nodep->taskp()->prettyTypeName());
-                // We'll just delete it; seems less error prone than making a false argument
-                VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
+                if (makeChanges) {
+                    pinp->v3error("No such argument " << argp->prettyNameQ()
+                                                      << " in function call to "
+                                                      << nodep->taskp()->prettyTypeName());
+                    // We'll just delete it; seems less error prone than making a false argument
+                    VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
+                }
             } else {
-                if (tconnects[it->second].second) {
+                if (tconnects[it->second].second && makeChanges) {
                     pinp->v3error("Duplicate argument " << argp->prettyNameQ()
                                                         << " in function call to "
                                                         << nodep->taskp()->prettyTypeName());
                 }
-                argp->name("");  // Can forget name as will add back in pin order
                 tconnects[it->second].second = argp;
                 reorganize = true;
             }
@@ -1649,8 +1653,8 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
                 if (sformatp) {
                     tconnects.emplace_back(sformatp, static_cast<AstArg*>(nullptr));
                     tconnects[ppinnum].second = argp;
-                    tpinnum++;
-                } else {
+                    ++tpinnum;
+                } else if (makeChanges) {
                     pinp->v3error("Too many arguments in function call to "
                                   << nodep->taskp()->prettyTypeName());
                     // We'll just delete it; seems less error prone than making a false argument
@@ -1660,10 +1664,13 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
                 tconnects[ppinnum].second = argp;
             }
         }
-        ppinnum++;
+        ++ppinnum;
     }
 
+    if (!makeChanges) return tconnects;
+
     // Connect missing ones
+    std::set<const AstVar*> argWrap;  // Which ports are defaulted, forcing arg wrapper creation
     for (int i = 0; i < tpinnum; ++i) {
         AstVar* const portp = tconnects[i].first;
         if (!tconnects[i].second || !tconnects[i].second->exprp()) {
@@ -1721,6 +1728,11 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
         } else {
             UINFO(9, "Connect " << portp << "  ->  NONE" << endl);
         }
+    }
+
+    for (const auto& tconnect : tconnects) {
+        AstArg* const argp = tconnect.second;
+        argp->name("");  // Can forget name as will add back in pin order
     }
 
     if (reorganize) {
@@ -1839,10 +1851,13 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
             newPortp->funcLocal(true);
             newTaskp->addStmtsp(newPortp);
             // Runtime-assign it to the default
-            AstAssign* const newAssignp = new AstAssign{
-                valuep->fileline(), new AstVarRef{valuep->fileline(), newPortp, VAccess::WRITE},
-                valuep->cloneTree(true)};
-            newTaskp->addStmtsp(newAssignp);
+            if (!VN_IS(valuep, EmptyQueue)) {
+                AstAssign* const newAssignp
+                    = new AstAssign{valuep->fileline(),
+                                    new AstVarRef{valuep->fileline(), newPortp, VAccess::WRITE},
+                                    valuep->cloneTree(true)};
+                newTaskp->addStmtsp(newAssignp);
+            }
         }
         oldNewVars.emplace(portp, newPortp);
         const VAccess pinAccess = portp->isWritable() ? VAccess::WRITE : VAccess::READ;

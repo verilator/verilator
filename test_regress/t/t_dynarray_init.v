@@ -13,6 +13,7 @@ module t (/*AUTOARG*/);
    int a2[] = {14, 15};
    int a3[] = '{16};
    int a4[] = {17};
+   int a5[] = {};
 
    initial begin
       `checkh(a1.size, 2);
@@ -28,6 +29,8 @@ module t (/*AUTOARG*/);
 
       `checkh(a4.size, 1);
       `checkh(a4[0], 17);
+
+      `checkh(a5.size, 0);
 
       $write("*-* All Finished *-*\n");
       $finish;

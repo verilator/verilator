@@ -817,6 +817,11 @@ Summary:
    If the design is not to be completely Verilated, see also the
    :vlopt:`--bbox-sys` and :vlopt:`--bbox-unsup` options.
 
+.. option:: --localize-max-size <value>
+
+   Rarely needed.  Set the maximum variable size in bytes for it to be
+   subject to localizing-to-stack optimization.  Defaults to 1024.
+
 .. option:: --make <build-tool>
 
    Generates a script for the specified build tool.
@@ -984,6 +989,13 @@ Summary:
    The more sc_bv is used, the worse for performance.  Use the
    :option:`/*verilator&32;sc_bv*/` metacomment to select specific ports to
    be sc_bv.
+
+.. option:: --pins-inout-enables
+
+   Specifies that the __en and __out outputs will always be created for
+   inouts in the top-level module. The __en variable has a one in a bit
+   position to indicate the corresponding bit of the __out variable has
+   a value being driven from within the Verilated model.
 
 .. option:: --pins-sc-uint
 
@@ -1732,9 +1744,9 @@ Summary:
 
    .. note::
 
-      This option applies only to values explicitly written as X
-      in modules (not classes) in the Verilog source code. Initial values
-      of clocks are set to 0 unless `--x-initial-edge` is
+      This option applies only to values explicitly written as X in modules
+      (not classes, nor parameters) in the Verilog source code. Initial
+      values of clocks are set to 0 unless `--x-initial-edge` is
       specified. Initial values of all other state holding variables are
       controlled with `--x-initial`.
 

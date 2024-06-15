@@ -32,14 +32,18 @@
 // clang-format off
 // Some preprocessor magic to support both Clang and GCC coroutines with both libc++ and libstdc++
 #if defined _LIBCPP_VERSION  // libc++
-# if __clang_major__ > 13  // Clang > 13 warns that coroutine types in std::experimental are deprecated
-#  pragma clang diagnostic push
-#  pragma clang diagnostic ignored "-Wdeprecated-experimental-coroutine"
+# if defined(__has_include) && !__has_include(<coroutine>) && __has_include(<experimental/coroutine>)
+#  if __clang_major__ > 13  // Clang > 13 warns that coroutine types in std::experimental are deprecated
+#   pragma clang diagnostic push
+#   pragma clang diagnostic ignored "-Wdeprecated-experimental-coroutine"
+#  endif
+#  include <experimental/coroutine>
+   namespace std {
+       using namespace experimental;  // Bring std::experimental into the std namespace
+   }
+# else
+#  include <coroutine>
 # endif
-# include <experimental/coroutine>
-  namespace std {
-      using namespace experimental;  // Bring std::experimental into the std namespace
-  }
 #else
 # if defined __clang__ && defined __GLIBCXX__ && !defined __cpp_impl_coroutine
 #  define __cpp_impl_coroutine 1  // Clang doesn't define this, but it's needed for libstdc++
@@ -165,6 +169,9 @@ class VlDelayScheduler final {
     VerilatedContext& m_context;
     VlDelayedCoroutineQueue m_queue;  // Coroutines to be restored at a certain simulation time
     std::vector<VlCoroutineHandle> m_zeroDelayed;  // Coroutines waiting for #0
+    std::vector<VlCoroutineHandle> m_zeroDlyResumed;  // Coroutines that waited for #0 and are
+                                                      // to be resumed. Kept as a field to avoid
+                                                      // reallocation.
 
 public:
     // CONSTRUCTORS
@@ -193,9 +200,9 @@ public:
             VlProcessRef process;  // Data of the suspended process, null if not needed
             VlDelayedCoroutineQueue& queue;
             std::vector<VlCoroutineHandle>& queueZeroDelay;
-            uint64_t delay;
-            VlDelayPhase phase;
-            VlFileLineDebug fileline;
+            const uint64_t delay;
+            const VlDelayPhase phase;
+            const VlFileLineDebug fileline;
 
             bool await_ready() const { return false; }  // Always suspend
             void await_suspend(std::coroutine_handle<> coro) {
@@ -208,7 +215,7 @@ public:
             void await_resume() const {}
         };
 
-        VlDelayPhase phase = (delay == 0) ? VlDelayPhase::INACTIVE : VlDelayPhase::ACTIVE;
+        const VlDelayPhase phase = (delay == 0) ? VlDelayPhase::INACTIVE : VlDelayPhase::ACTIVE;
 #ifdef VL_DEBUG
         if (phase == VlDelayPhase::INACTIVE) {
             VL_WARN_MT(filename, lineno, VL_UNKNOWN,

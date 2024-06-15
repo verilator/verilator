@@ -57,10 +57,13 @@ module t (/*AUTOARG*/);
    initial begin
 
       int v;
+      bit if_4 = '0;
       // TODO not testing constrained values
       v = p.randomize();
       if (v != 1) $stop;
       v = p.randomize() with {};
+      if (v != 1) $stop;
+      v = p.randomize() with { if_4 == local::if_4; header == 2; };
       if (v != 1) $stop;
       // TODO not testing other randomize forms as unused in UVM
 

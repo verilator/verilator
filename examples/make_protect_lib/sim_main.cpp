@@ -47,12 +47,12 @@ int main(int argc, char** argv) {
 
     // Simulate until $finish
     while (!contextp->gotFinish()) {
-        contextp->timeInc(1);
         top->clk = ~top->clk & 0x1;
         top->eval();
 #if VM_TRACE
         if (tfp) tfp->dump(contextp->time());
 #endif
+        contextp->timeInc(1);
     }
 
     // Final model cleanup

@@ -128,11 +128,11 @@ private:
         if (writesToVirtIface(nodep)) {
             // Convert to always, as we have to assign the trigger var
             FileLine* const flp = nodep->fileline();
-            AstAlwaysPost* const postp = new AstAlwaysPost{flp, nullptr, nullptr};
+            AstAlwaysPost* const postp = new AstAlwaysPost{flp};
             nodep->replaceWith(postp);
             postp->addStmtsp(
                 new AstAssign{flp, nodep->lhsp()->unlinkFrBack(), nodep->rhsp()->unlinkFrBack()});
-            nodep->deleteTree();
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
     void visit(AstNodeIf* nodep) override {

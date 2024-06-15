@@ -81,5 +81,11 @@ module Test(/*AUTOARG*/
 
    always @(posedge clk) begin
       out <= in;
+
+      // Assert control dump test.
+      $assertoff;
+      $assertkill;
+      assert(0);
+      $asserton;
    end
 endmodule

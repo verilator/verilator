@@ -81,7 +81,7 @@ class V3List final {
     }
 
     VL_ATTR_ALWINLINE
-    static void prefetch(T_Base* elementp, T_Base* fallbackp) {
+    static void prefetch(const T_Base* elementp, const T_Base* fallbackp) {
         UDEBUGONLY(UASSERT(fallbackp, "Prefetch fallback pointer must be non nullptr"););
         // This compiles to a branchless prefetch with cmove, with the address always valid
         VL_PREFETCH_RW(elementp ? elementp : fallbackp);
@@ -104,7 +104,7 @@ class V3List final {
         T_Base* m_currp;  // Currently iterated element, or 'nullptr' for 'end()' iterator
 
         VL_ATTR_ALWINLINE
-        SimpleItertatorImpl(T_Base* elementp)
+        explicit SimpleItertatorImpl(T_Base* elementp)
             : m_currp{elementp} {}
 
         VL_ATTR_ALWINLINE
@@ -159,7 +159,7 @@ class V3List final {
 
         ListType& m_list;  // The proxied list
 
-        UnlinkableProxy(ListType& list)
+        explicit UnlinkableProxy(ListType& list)
             : m_list{list} {}
 
         // Unlinkable iterator class template. This only supports enough for range based for loops.
@@ -179,11 +179,11 @@ class V3List final {
             T_Base* m_nextp;  // Next element after current, or 'nullptr' for 'end()' iterator
 
             VL_ATTR_ALWINLINE
-            UnlinkableItertatorImpl(T_Base* elementp)
+            explicit UnlinkableItertatorImpl(T_Base* elementp)
                 : m_currp{elementp}
                 , m_nextp{toLinks(m_currp).m_nextp} {}
             VL_ATTR_ALWINLINE
-            UnlinkableItertatorImpl(std::nullptr_t)
+            explicit UnlinkableItertatorImpl(std::nullptr_t)
                 : m_currp{nullptr}
                 , m_nextp{nullptr} {}
 

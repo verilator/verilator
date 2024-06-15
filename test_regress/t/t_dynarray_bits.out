@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_dynarray_bits.v:12:11: Unsupported: $bits for dynamic array
+                                             : ... note: In instance 't'
+   12 |       if ($bits(a) != 0) $stop;
+      |           ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Internal Error: t/t_dynarray_bits.v:12:20: ../V3Width.cpp:#: Node has no type
+                                                 : ... note: In instance 't'
+   12 |       if ($bits(a) != 0) $stop;
+      |                    ^~
+                        ... See the manual at https://verilator.org/verilator_doc.html for more assistance.

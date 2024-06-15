@@ -614,8 +614,13 @@ static inline double VL_ROUND(double n) {
 //=========================================================================
 // Time and performance
 
+#include <string>
+
 namespace VlOs {
 
+/// Get environment variable
+extern std::string getenvStr(const std::string& envvar,
+                             const std::string& defaultValue) VL_MT_SAFE;
 extern uint64_t memUsageBytes() VL_MT_SAFE;  ///< Return memory usage in bytes, or 0 if unknown
 
 // Internal: Record CPU time, starting point on construction, and current delta from that

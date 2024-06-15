@@ -1556,7 +1556,9 @@ class ConstVisitor final : public VNVisitor {
         }
         return false;
     }
-    bool operandsSameSize(AstNode* lhsp, AstNode* rhsp) { return lhsp->width() == rhsp->width(); }
+    static bool operandsSameWidth(const AstNode* lhsp, const AstNode* rhsp) {
+        return lhsp->width() == rhsp->width();
+    }
 
     //----------------------------------------
     // Constant Replacement functions.
@@ -3071,8 +3073,9 @@ class ConstVisitor final : public VNVisitor {
             && varrefp  // Don't do messes with BITREFs/ARRAYREFs
             && !varrefp->varp()->hasStrengthAssignment()  // Strengths are resolved in V3Tristate
             && !varrefp->varp()->valuep()  // Not already constified
-            && !varrefp->varScopep()) {  // Not scoped (or each scope may have different initial
-                                         // value)
+            && !varrefp->varScopep()  // Not scoped (or each scope may have different initial val.)
+            && !varrefp->varp()->isForced()  // Not forced (not really a constant)
+        ) {
             // ASSIGNW (VARREF, const) -> INITIAL ( ASSIGN (VARREF, const) )
             UINFO(4, "constAssignW " << nodep << endl);
             // Make a initial assignment
@@ -3542,7 +3545,7 @@ class ConstVisitor final : public VNVisitor {
     TREEOP ("AstMulS  {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
     TREEOP ("AstDiv   {$lhsp, $rhsp.isOne}",    "replaceWLhs(nodep)");
     TREEOP ("AstDivS  {$lhsp, $rhsp.isOne}",    "replaceWLhs(nodep)");
-    TREEOP ("AstMul   {operandIsPowTwo($lhsp), operandsSameSize($lhsp,,$rhsp)}", "replaceMulShift(nodep)");  // a*2^n -> a<<n
+    TREEOP ("AstMul   {operandIsPowTwo($lhsp), operandsSameWidth($lhsp,,$rhsp)}", "replaceMulShift(nodep)");  // a*2^n -> a<<n
     TREEOP ("AstDiv   {$lhsp, operandIsPowTwo($rhsp)}", "replaceDivShift(nodep)");  // a/2^n -> a>>n
     TREEOP ("AstModDiv{$lhsp, operandIsPowTwo($rhsp)}", "replaceModAnd(nodep)");  // a % 2^n -> a&(2^n-1)
     TREEOP ("AstPow   {operandIsTwo($lhsp), !$rhsp.isZero}",    "replacePowShift(nodep)");  // 2**a == 1<<a
@@ -3736,7 +3739,8 @@ class ConstVisitor final : public VNVisitor {
     TREEOPC("AstXor {matchBitOpTree(nodep)}", "DONE");
     // Note can't simplify a extend{extends}, extends{extend}, as the sign
     // bits end up in the wrong places
-    TREEOPV("AstExtend {$lhsp.castExtend}",  "replaceExtend(nodep, VN_AS(nodep->lhsp(), Extend)->lhsp())");
+    TREEOPV("AstExtend{operandsSameWidth(nodep,,$lhsp)}",  "replaceWLhs(nodep)");
+    TREEOPV("AstExtend{$lhsp.castExtend}",  "replaceExtend(nodep, VN_AS(nodep->lhsp(), Extend)->lhsp())");
     TREEOPV("AstExtendS{$lhsp.castExtendS}", "replaceExtend(nodep, VN_AS(nodep->lhsp(), ExtendS)->lhsp())");
     TREEOPV("AstReplicate{$srcp, $countp.isOne, $srcp->width()==nodep->width()}", "replaceWLhs(nodep)");  // {1{lhs}}->lhs
     TREEOPV("AstReplicateN{$lhsp, $rhsp.isOne, $lhsp->width()==nodep->width()}", "replaceWLhs(nodep)");  // {1{lhs}}->lhs

@@ -64,15 +64,6 @@ class ForceConvertVisitor final : public VNVisitor {
             m_rdVarp->addNext(m_enVarp);
             m_rdVarp->addNext(m_valVarp);
             varp->addNextHere(m_rdVarp);
-
-            if (varp->isPrimaryIO()) {
-                varp->v3warn(
-                    E_UNSUPPORTED,
-                    "Unsupported: Force/Release on primary input/output net "
-                        << varp->prettyNameQ() << "\n"
-                        << varp->warnMore()
-                        << "... Suggest assign it to/from a temporary net and force/release that");
-            }
         }
     };
 
@@ -173,13 +164,12 @@ class ForceConvertVisitor final : public VNVisitor {
 
     void visit(AstAssignForce* nodep) override {
         // The AstAssignForce node will be removed for sure
-        VNRelinker relinker;
-        nodep->unlinkFrBack(&relinker);
-        pushDeletep(nodep);
-
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* const lhsp = nodep->lhsp();  // The LValue we are forcing
         AstNodeExpr* const rhsp = nodep->rhsp();  // The value we are forcing it to
+        VNRelinker relinker;
+        nodep->unlinkFrBack(&relinker);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
 
         // Set corresponding enable signals to ones
         V3Number ones{lhsp, isRangedDType(lhsp) ? lhsp->width() : 1};
@@ -208,13 +198,12 @@ class ForceConvertVisitor final : public VNVisitor {
     }
 
     void visit(AstRelease* nodep) override {
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* const lhsp = nodep->lhsp();  // The LValue we are releasing
         // The AstRelease node will be removed for sure
         VNRelinker relinker;
         nodep->unlinkFrBack(&relinker);
-        pushDeletep(nodep);
-
-        FileLine* const flp = nodep->fileline();
-        AstNodeExpr* const lhsp = nodep->lhsp();  // The LValue we are releasing
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
 
         // Set corresponding enable signals to zero
         V3Number zero{lhsp, isRangedDType(lhsp) ? lhsp->width() : 1};

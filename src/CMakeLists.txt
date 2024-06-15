@@ -480,6 +480,7 @@ set_target_properties(${verilator} PROPERTIES
     MSVC_RUNTIME_LIBRARY  MultiThreaded$<IF:$<CONFIG:Release>,,DebugDLL>
     #JOB_POOL_LINK         one_job      # Linking takes lots of resources
     INTERPROCEDURAL_OPTIMIZATION_RELEASE  $<IF:MINGW,FALSE,TRUE>
+    INCLUDE_DIRECTORIES ${FLEX_INCLUDE_DIR}
 )
 
 add_dependencies(${verilator}

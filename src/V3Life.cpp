@@ -53,10 +53,7 @@ public:
     ~LifeState() {
         V3Stats::addStatSum("Optimizations, Lifetime assign deletions", m_statAssnDel);
         V3Stats::addStatSum("Optimizations, Lifetime constant prop", m_statAssnCon);
-        for (AstNode* ip : m_unlinkps) {
-            ip->unlinkFrBack();
-            ip->deleteTree();
-        }
+        for (AstNode* ip : m_unlinkps) VL_DO_DANGLING(ip->unlinkFrBack()->deleteTree(), ip);
     }
     // METHODS
     void pushUnlinkDeletep(AstNode* nodep) { m_unlinkps.push_back(nodep); }

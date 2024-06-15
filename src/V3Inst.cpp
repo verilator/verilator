@@ -463,7 +463,7 @@ private:
                 pushDeletep(pinVarp);
             }  // else pinVarp already unlinked when another instance did this step
             nodep->replaceWith(prevPinp);
-            pushDeletep(nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
 

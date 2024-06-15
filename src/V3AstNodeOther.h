@@ -956,6 +956,7 @@ class AstClockingItem final : public AstNode {
     // @astgen op2 := exprp : Optional[AstNodeExpr]
     // @astgen op3 := assignp : Optional[AstAssign]
     // @astgen op4 := varp : Optional[AstVar]
+    // @astgen ptr := m_outputp : Optional[AstClockingItem]
     VDirection m_direction;
 
 public:
@@ -971,6 +972,9 @@ public:
     }
     ASTGEN_MEMBERS_AstClockingItem;
     VDirection direction() const { return m_direction; }
+    AstClockingItem* outputp() const { return m_outputp; }
+    void outputp(AstClockingItem* outputp) { m_outputp = outputp; }
+    bool maybePointedTo() const override { return true; }
 };
 class AstConstPool final : public AstNode {
     // Container for const static data
@@ -1809,6 +1813,7 @@ class AstVar final : public AstNode {
     bool m_trace : 1;  // Trace this variable
     bool m_isLatched : 1;  // Not assigned in all control paths of combo always
     bool m_isForceable : 1;  // May be forced/released externally from user C code
+    bool m_isForcedByCode : 1;  // May be forced/released from AstAssignForce/AstRelease
     bool m_isWrittenByDpi : 1;  // This variable can be written by a DPI Export
     bool m_isWrittenBySuspendable : 1;  // This variable can be written by a suspendable process
 
@@ -1854,6 +1859,7 @@ class AstVar final : public AstNode {
         m_trace = false;
         m_isLatched = false;
         m_isForceable = false;
+        m_isForcedByCode = false;
         m_isWrittenByDpi = false;
         m_isWrittenBySuspendable = false;
         m_attrClocker = VVarAttrClocker::CLOCKER_UNKNOWN;
@@ -2009,6 +2015,8 @@ public:
     void isLatched(bool flag) { m_isLatched = flag; }
     bool isForceable() const { return m_isForceable; }
     void setForceable() { m_isForceable = true; }
+    void setForcedByCode() { m_isForcedByCode = true; }
+    bool isForced() const { return m_isForceable || m_isForcedByCode; }
     bool isWrittenByDpi() const { return m_isWrittenByDpi; }
     void setWrittenByDpi() { m_isWrittenByDpi = true; }
     bool isWrittenBySuspendable() const { return m_isWrittenBySuspendable; }
@@ -2434,13 +2442,11 @@ public:
     ASTGEN_MEMBERS_AstAlwaysObserved;
 };
 class AstAlwaysPost final : public AstNodeProcedure {
-    // Like always but post assignments for memory assignment IFs
-    // @astgen op1 := sensesp : Optional[AstSenTree] // Sensitivity list iff clocked
+    // Like always but 'post' scheduled, e.g. for array NBA commits
+
 public:
-    AstAlwaysPost(FileLine* fl, AstSenTree* sensesp, AstNode* stmtsp)
-        : ASTGEN_SUPER_AlwaysPost(fl, stmtsp) {
-        this->sensesp(sensesp);
-    }
+    explicit AstAlwaysPost(FileLine* fl)
+        : ASTGEN_SUPER_AlwaysPost(fl, nullptr) {}
     ASTGEN_MEMBERS_AstAlwaysPost;
 };
 class AstAlwaysPostponed final : public AstNodeProcedure {
@@ -2579,6 +2585,31 @@ public:
     // Special accessors
     bool isJustOneBodyStmt() const { return stmtsp() && !stmtsp()->nextp(); }
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
+};
+class AstAssertCtl final : public AstNodeStmt {
+    // @astgen op1 := controlTypep : AstNodeExpr
+    // @astgen op2 := levelp : AstNodeExpr
+    // @astgen op3 := itemsp : List[AstNodeExpr]
+    // Type of assertcontrol task; either known from parser or from evaluated
+    // controlTypep expression.
+    VAssertCtlType m_ctlType;  // $assert keyword type
+
+public:
+    AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr* levelp = nullptr,
+                 AstNodeExpr* itemsp = nullptr);
+    AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr* assertionTypep = nullptr,
+                 AstNodeExpr* directiveTypep = nullptr, AstNodeExpr* levelp = nullptr,
+                 AstNodeExpr* itemsp = nullptr);
+    ASTGEN_MEMBERS_AstAssertCtl;
+    string verilogKwd() const override { return m_ctlType.ascii(); }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
+    VAssertCtlType ctlType() const { return m_ctlType; }
+    void ctlType(int32_t type) { m_ctlType = VAssertCtlType{type}; }
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
 };
 class AstBreak final : public AstNodeStmt {
 public:

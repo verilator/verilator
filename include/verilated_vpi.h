@@ -54,6 +54,13 @@ public:
     static QData cbNextDeadline() VL_MT_UNSAFE_ONE;
     /// Debug dump of callbacks
     static void dumpCbs() VL_MT_UNSAFE_ONE;
+    /// Checks VPI dirty state (i.e. whether vpi_put_value() has
+    /// been called since the last clearEvalNeeded())
+    static bool evalNeeded() VL_MT_UNSAFE_ONE;
+    /// Clears VPI dirty state (see evalNeeded())
+    static void clearEvalNeeded() VL_MT_UNSAFE_ONE;
+    /// Perform inertially delayed puts
+    static void doInertialPuts() VL_MT_UNSAFE_ONE;
 
     // Self test, for internal use only
     static void selfTest() VL_MT_UNSAFE_ONE;

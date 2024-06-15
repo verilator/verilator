@@ -31,11 +31,14 @@
 #include "verilated.h"
 #include "verilated_imp.h"
 
+#include "vltstd/vpi_user.h"
+
+#include <cstdarg>
+#include <cstdio>
 #include <list>
 #include <map>
 #include <set>
 #include <string>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -630,6 +633,146 @@ public:
     void invalidate() { m_id = 0; }
 };
 
+class VerilatedVpiPutHolder final {
+    VerilatedVpioVar m_var;
+    s_vpi_value m_value;
+    union Storage {
+        char init = 0;  // to ensure trivial constructor
+        std::string str;
+        std::vector<s_vpi_vecval> vec;
+        ~Storage() noexcept {/* handled by VerilatedVpiPutHolder */};
+    } m_storage{};
+
+public:
+    VerilatedVpiPutHolder(const VerilatedVpioVar* vop, p_vpi_value valuep)
+        : m_var{vop} {
+        m_value.format = valuep->format;
+        switch (valuep->format) {
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
+        case vpiStringVal: {
+            new (&m_storage.str) std::string{valuep->value.str};
+            m_value.value.str = const_cast<char*>(m_storage.str.c_str());
+            break;
+        }
+        case vpiScalarVal: {
+            m_value.value.scalar = valuep->value.scalar;
+            break;
+        }
+        case vpiIntVal: {
+            m_value.value.integer = valuep->value.integer;
+            break;
+        }
+        case vpiRealVal: {
+            m_value.value.real = valuep->value.real;
+            break;
+        }
+        case vpiVectorVal: {
+            size_t words = 0;
+            switch (vop->varp()->vltype()) {
+            case VLVT_UINT8:
+            case VLVT_UINT16:
+            case VLVT_UINT32: {
+                words = 1;
+                break;
+            }
+            case VLVT_UINT64: {
+                words = 2;
+                break;
+            }
+            case VLVT_WDATA: {
+                words = VL_WORDS_I(vop->varp()->packed().elements());
+                break;
+            }
+            default: break;
+            }
+            new (&m_storage.vec)
+                std::vector<s_vpi_vecval>{valuep->value.vector, &valuep->value.vector[words]};
+            m_value.value.vector = m_storage.vec.data();
+            break;
+        }
+        }
+    }
+
+    VerilatedVpiPutHolder(VerilatedVpiPutHolder const& o)
+        : m_var{o.m_var}
+        , m_value{o.m_value} {
+        switch (m_value.format) {
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
+        case vpiStringVal: {
+            new (&m_storage.str) std::string{o.m_storage.str};
+            break;
+        }
+        case vpiVectorVal: {
+            new (&m_storage.vec) std::vector<s_vpi_vecval>{o.m_storage.vec};
+            break;
+        }
+        }
+    }
+
+    VerilatedVpiPutHolder(VerilatedVpiPutHolder&& o) noexcept
+        : m_var{std::move(o.m_var)}
+        , m_value{std::move(o.m_value)} {
+        switch (m_value.format) {
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
+        case vpiStringVal: {
+            new (&m_storage.str) std::string{std::move(o.m_storage.str)};
+            break;
+        }
+        case vpiVectorVal: {
+            new (&m_storage.vec) std::vector<s_vpi_vecval>{std::move(o.m_storage.vec)};
+            break;
+        }
+        }
+    }
+
+    ~VerilatedVpiPutHolder() noexcept {
+        switch (m_value.format) {
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
+        case vpiStringVal: m_storage.str.~basic_string(); break;
+        case vpiVectorVal: m_storage.vec.~vector(); break;
+        }
+    }
+
+    VerilatedVpioVar* varp() { return &m_var; }
+    p_vpi_value valuep() { return &m_value; }
+
+    static bool canInertialDelay(p_vpi_value valuep) {
+        switch (valuep->format) {
+        case vpiBinStrVal:  // FALLTHRU
+        case vpiOctStrVal:  // FALLTHRU
+        case vpiDecStrVal:  // FALLTHRU
+        case vpiHexStrVal:  // FALLTHRU
+        case vpiStringVal: {
+            if (VL_UNLIKELY(!valuep->value.str)) return false;
+            break;
+        }
+        case vpiScalarVal:  // FALLTHRU
+        case vpiIntVal:  // FALLTHRU
+        case vpiRealVal: break;
+        case vpiVectorVal: {
+            if (VL_UNLIKELY(!valuep->value.vector)) return false;
+            break;
+        }
+        default: {
+            return false;
+        }
+        }
+        return true;
+    }
+};
+
 struct VerilatedVpiTimedCbsCmp final {
     // Ordering sets keyed by time, then callback unique id
     bool operator()(const std::pair<QData, uint64_t>& a,
@@ -652,9 +795,11 @@ class VerilatedVpiImp final {
     std::array<VpioCbList, CB_ENUM_MAX_VALUE> m_cbCurrentLists;
     VpioFutureCbs m_futureCbs;  // Time based callbacks for future timestamps
     VpioFutureCbs m_nextCbs;  // cbNextSimTime callbacks
+    std::list<VerilatedVpiPutHolder> m_inertialPuts;  // Pending vpi puts due to vpiInertialDelay
     VerilatedVpiError* m_errorInfop = nullptr;  // Container for vpi error info
     VerilatedAssertOneThread m_assertOne;  // Assert only called from single thread
     uint64_t m_nextCallbackId = 1;  // Id to identify callback
+    bool m_evalNeeded = false;  // Model has had signals updated via vpi_put_value()
 
     static VerilatedVpiImp& s() {  // Singleton
         static VerilatedVpiImp s_s;
@@ -776,7 +921,7 @@ public:
         assertOneCheck();
         VpioCbList& cbObjList = s().m_cbCurrentLists[cbValueChange];
         bool called = false;
-        std::unordered_set<VerilatedVpioVar*> update;  // set of objects to update after callbacks
+        std::set<VerilatedVpioVar*> update;  // set of objects to update after callbacks
         if (cbObjList.empty()) return called;
         const auto last = std::prev(cbObjList.end());  // prevent looping over newly added elements
         for (auto it = cbObjList.begin(); true;) {
@@ -813,6 +958,17 @@ public:
     }
     static void dumpCbs() VL_MT_UNSAFE_ONE;
     static VerilatedVpiError* error_info() VL_MT_UNSAFE_ONE;  // getter for vpi error info
+    static void evalNeeded(bool evalNeeded) { s().m_evalNeeded = evalNeeded; }
+    static bool evalNeeded() { return s().m_evalNeeded; }
+    static void inertialDelay(const VerilatedVpioVar* vop, p_vpi_value valuep) {
+        s().m_inertialPuts.emplace_back(vop, valuep);
+    }
+    static void doInertialPuts() {
+        for (auto& it : s().m_inertialPuts) {
+            vpi_put_value(it.varp()->castVpiHandle(), it.valuep(), nullptr, vpiNoDelay);
+        }
+        s().m_inertialPuts.clear();
+    }
 };
 
 //======================================================================
@@ -914,6 +1070,11 @@ PLI_INT32 VerilatedVpioReasonCb::dovpi_remove_cb() {
     delete this;  // IEEE 37.2.2 a vpi_remove_cb does a vpi_release_handle
     return 1;
 }
+
+void VerilatedVpi::clearEvalNeeded() VL_MT_UNSAFE_ONE { VerilatedVpiImp::evalNeeded(false); }
+bool VerilatedVpi::evalNeeded() VL_MT_UNSAFE_ONE { return VerilatedVpiImp::evalNeeded(); }
+
+void VerilatedVpi::doInertialPuts() VL_MT_UNSAFE_ONE { VerilatedVpiImp::doInertialPuts(); }
 
 //======================================================================
 // VerilatedVpiImp implementation
@@ -2194,13 +2355,28 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_value valuep, const c
     return status;
 }
 
+static void vl_strprintf(std::string& buffer, char const* fmt, ...) {
+    va_list args, args_copy;
+    va_start(args, fmt);
+    buffer.clear();
+    // Make copy of args since we may need to call VL_VSNPRINTF more than once
+    va_copy(args_copy, args);
+    // Try VL_VSNPRINTF in existing buffer
+    const int result
+        = VL_VSNPRINTF(const_cast<char*>(buffer.data()), buffer.capacity(), fmt, args_copy);
+    va_end(args_copy);
+    const int required = result + 1;  // Returned size doesn't include NUL terminator
+    // If there wasn't enough space, reallocate and try again
+    if (buffer.capacity() < required) {
+        buffer.reserve(required * 2);
+        VL_VSNPRINTF(const_cast<char*>(buffer.data()), buffer.capacity(), fmt, args);
+    }
+    va_end(args);
+}
+
 void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
                   const char* fullname) {
     if (!vl_check_format(varp, valuep, fullname, true)) return;
-    // Maximum required size is for binary string, one byte per bit plus null termination
-    static thread_local char t_outStr[VL_VALUE_STRING_MAX_WORDS * VL_EDATASIZE + 1];
-    // cppcheck-suppress variableScope
-    static const thread_local int t_outStrSz = sizeof(t_outStr) - 1;
     // string data type is dynamic and may vary in size during simulation
     static thread_local std::string t_outDynamicStr;
     // We used to presume vpiValue.format = vpiIntVal or if single bit vpiScalarVal
@@ -2244,43 +2420,21 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             return;
         }
     } else if (valuep->format == vpiBinStrVal) {
-        valuep->value.str = t_outStr;
         int bits = varp->packed().elements();
+        t_outDynamicStr.resize(bits);
         const CData* datap = (reinterpret_cast<CData*>(varDatap));
-        int i;
-        if (bits > t_outStrSz) {
-            // limit maximum size of output to size of buffer to prevent overrun.
-            VL_VPI_WARNING_(
-                __FILE__, __LINE__,
-                "%s: Truncating string value of %s for %s"
-                " as buffer size (%d, VL_VALUE_STRING_MAX_WORDS=%d) is less than required (%d)",
-                __func__, VerilatedVpiError::strFromVpiVal(valuep->format), fullname, t_outStrSz,
-                VL_VALUE_STRING_MAX_WORDS, bits);
-            bits = t_outStrSz;
-        }
-        for (i = 0; i < bits; ++i) {
+        for (size_t i = 0; i < bits; ++i) {
             const char val = (datap[i >> 3] >> (i & 7)) & 1;
-            t_outStr[bits - i - 1] = val ? '1' : '0';
+            t_outDynamicStr[bits - i - 1] = val ? '1' : '0';
         }
-        t_outStr[i] = '\0';
+        valuep->value.str = const_cast<PLI_BYTE8*>(t_outDynamicStr.c_str());
         return;
     } else if (valuep->format == vpiOctStrVal) {
-        valuep->value.str = t_outStr;
         int chars = (varp->packed().elements() + 2) / 3;
+        t_outDynamicStr.resize(chars);
         const int bytes = VL_BYTES_I(varp->packed().elements());
         const CData* datap = (reinterpret_cast<CData*>(varDatap));
-        int i;
-        if (chars > t_outStrSz) {
-            // limit maximum size of output to size of buffer to prevent overrun.
-            VL_VPI_WARNING_(
-                __FILE__, __LINE__,
-                "%s: Truncating string value of %s for %s"
-                " as buffer size (%d, VL_VALUE_STRING_MAX_WORDS=%d) is less than required (%d)",
-                __func__, VerilatedVpiError::strFromVpiVal(valuep->format), fullname, t_outStrSz,
-                VL_VALUE_STRING_MAX_WORDS, chars);
-            chars = t_outStrSz;
-        }
-        for (i = 0; i < chars; ++i) {
+        for (size_t i = 0; i < chars; ++i) {
             const div_t idx = div(i * 3, 8);
             int val = datap[idx.quot];
             if ((idx.quot + 1) < bytes) {
@@ -2299,46 +2453,31 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
                     val &= (1 << rem) - 1;
                 }
             }
-            t_outStr[chars - i - 1] = '0' + (val & 7);
+            t_outDynamicStr[chars - i - 1] = '0' + (val & 7);
         }
-        t_outStr[i] = '\0';
+        valuep->value.str = const_cast<PLI_BYTE8*>(t_outDynamicStr.c_str());
         return;
     } else if (valuep->format == vpiDecStrVal) {
-        valuep->value.str = t_outStr;
-        // outStrSz does not include nullptr termination so add one
         if (varp->vltype() == VLVT_UINT8) {
-            VL_SNPRINTF(t_outStr, t_outStrSz + 1, "%hhu",
-                        static_cast<unsigned char>(*(reinterpret_cast<CData*>(varDatap))));
-            return;
+            vl_strprintf(t_outDynamicStr, "%hhu",
+                         static_cast<unsigned char>(*(reinterpret_cast<CData*>(varDatap))));
         } else if (varp->vltype() == VLVT_UINT16) {
-            VL_SNPRINTF(t_outStr, t_outStrSz + 1, "%hu",
-                        static_cast<unsigned short>(*(reinterpret_cast<SData*>(varDatap))));
-            return;
+            vl_strprintf(t_outDynamicStr, "%hu",
+                         static_cast<unsigned short>(*(reinterpret_cast<SData*>(varDatap))));
         } else if (varp->vltype() == VLVT_UINT32) {
-            VL_SNPRINTF(t_outStr, t_outStrSz + 1, "%u",
-                        static_cast<unsigned int>(*(reinterpret_cast<IData*>(varDatap))));
-            return;
+            vl_strprintf(t_outDynamicStr, "%u",
+                         static_cast<unsigned int>(*(reinterpret_cast<IData*>(varDatap))));
         } else if (varp->vltype() == VLVT_UINT64) {
-            VL_SNPRINTF(t_outStr, t_outStrSz + 1, "%llu",
-                        static_cast<unsigned long long>(*(reinterpret_cast<QData*>(varDatap))));
-            return;
+            vl_strprintf(t_outDynamicStr, "%llu",
+                         static_cast<unsigned long long>(*(reinterpret_cast<QData*>(varDatap))));
         }
+        valuep->value.str = const_cast<PLI_BYTE8*>(t_outDynamicStr.c_str());
+        return;
     } else if (valuep->format == vpiHexStrVal) {
-        valuep->value.str = t_outStr;
         int chars = (varp->packed().elements() + 3) >> 2;
+        t_outDynamicStr.resize(chars);
         const CData* datap = (reinterpret_cast<CData*>(varDatap));
-        int i;
-        if (chars > t_outStrSz) {
-            // limit maximum size of output to size of buffer to prevent overrun.
-            VL_VPI_WARNING_(
-                __FILE__, __LINE__,
-                "%s: Truncating string value of %s for %s"
-                " as buffer size (%d, VL_VALUE_STRING_MAX_WORDS=%d) is less than required (%d)",
-                __func__, VerilatedVpiError::strFromVpiVal(valuep->format), fullname, t_outStrSz,
-                VL_VALUE_STRING_MAX_WORDS, chars);
-            chars = t_outStrSz;
-        }
-        for (i = 0; i < chars; ++i) {
+        for (size_t i = 0; i < chars; ++i) {
             char val = (datap[i >> 1] >> ((i & 1) << 2)) & 15;
             if (i == (chars - 1)) {
                 // most significant char, mask off nonexistent bits when vector
@@ -2349,9 +2488,9 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
                     val &= (1 << rem) - 1;
                 }
             }
-            t_outStr[chars - i - 1] = "0123456789abcdef"[static_cast<int>(val)];
+            t_outDynamicStr[chars - i - 1] = "0123456789abcdef"[static_cast<int>(val)];
         }
-        t_outStr[i] = '\0';
+        valuep->value.str = const_cast<PLI_BYTE8*>(t_outDynamicStr.c_str());
         return;
     } else if (valuep->format == vpiStringVal) {
         if (varp->vltype() == VLVT_STRING) {
@@ -2364,26 +2503,15 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
                 return;
             }
         } else {
-            valuep->value.str = t_outStr;
             int bytes = VL_BYTES_I(varp->packed().elements());
+            t_outDynamicStr.resize(bytes);
             const CData* datap = (reinterpret_cast<CData*>(varDatap));
-            int i;
-            if (bytes > t_outStrSz) {
-                // limit maximum size of output to size of buffer to prevent overrun.
-                VL_VPI_WARNING_(__FILE__, __LINE__,
-                                "%s: Truncating string value of %s for %s"
-                                " as buffer size (%d, VL_VALUE_STRING_MAX_WORDS=%d) is less than "
-                                "required (%d)",
-                                __func__, VerilatedVpiError::strFromVpiVal(valuep->format),
-                                fullname, t_outStrSz, VL_VALUE_STRING_MAX_WORDS, bytes);
-                bytes = t_outStrSz;
-            }
-            for (i = 0; i < bytes; ++i) {
+            for (size_t i = 0; i < bytes; ++i) {
                 const char val = datap[bytes - i - 1];
                 // other simulators replace [leading?] zero chars with spaces, replicate here.
-                t_outStr[i] = val ? val : ' ';
+                t_outDynamicStr[i] = val ? val : ' ';
             }
-            t_outStr[i] = '\0';
+            valuep->value.str = const_cast<PLI_BYTE8*>(t_outDynamicStr.c_str());
             return;
         }
     } else if (valuep->format == vpiIntVal) {
@@ -2432,7 +2560,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value valuep) {
 }
 
 vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_p*/,
-                        PLI_INT32 /*flags*/) {
+                        PLI_INT32 flags) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_put_value %p %p\n", object, valuep););
     VerilatedVpiImp::assertOneCheck();
     VL_VPI_ERROR_RESET_();
@@ -2440,11 +2568,24 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         VL_VPI_WARNING_(__FILE__, __LINE__, "Ignoring vpi_put_value with nullptr value pointer");
         return nullptr;
     }
+    PLI_INT32 delay_mode = flags & 0xfff;
     if (const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object)) {
+        if (delay_mode == vpiInertialDelay) {
+            if (!VerilatedVpiPutHolder::canInertialDelay(valuep)) {
+                VL_VPI_WARNING_(
+                    __FILE__, __LINE__,
+                    "%s: Unsupported p_vpi_value as requested for '%s' with vpiInertialDelay",
+                    __func__, vop->fullname());
+                return nullptr;
+            }
+            VerilatedVpiImp::inertialDelay(vop, valuep);
+            return object;
+        }
         VL_DEBUG_IF_PLI(
             VL_DBG_MSGF("- vpi:   vpi_put_value name=%s fmt=%d vali=%d\n", vop->fullname(),
                         valuep->format, valuep->value.integer);
             VL_DBG_MSGF("- vpi:   varp=%p  putatp=%p\n", vop->varp()->datap(), vop->varDatap()););
+        VerilatedVpiImp::evalNeeded(true);
 
         if (VL_UNLIKELY(!vop->varp()->isPublicRW())) {
             VL_VPI_WARNING_(__FILE__, __LINE__,

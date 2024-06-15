@@ -115,6 +115,9 @@ extern void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp,
 extern WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP const lwp, WDataInP const rwp,
                               bool is_modulus) VL_MT_SAFE;
 
+extern void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp,
+                           size_t posstart, size_t posend) VL_MT_SAFE;
+
 extern IData VL_FGETS_IXI(int obits, void* destp, IData fpi) VL_MT_SAFE;
 
 extern void VL_FFLUSH_I(IData fdi) VL_MT_SAFE;
@@ -152,6 +155,7 @@ extern std::string VL_STACKTRACE_N() VL_MT_SAFE;
 extern IData VL_SYSTEM_IW(int lhswords, WDataInP const lhsp) VL_MT_SAFE;
 extern IData VL_SYSTEM_IQ(QData lhs) VL_MT_SAFE;
 inline IData VL_SYSTEM_II(IData lhs) VL_MT_SAFE { return VL_SYSTEM_IQ(lhs); }
+extern IData VL_SYSTEM_IN(const std::string& lhs) VL_MT_SAFE;
 
 extern IData VL_TESTPLUSARGS_I(const std::string& format) VL_MT_SAFE;
 extern const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE;  // PLIish
@@ -215,6 +219,10 @@ static inline QData VL_CVT_Q_D(double lhs) VL_PURE {
     return u.q;
 }
 // clang-format on
+// Return string from DPI char*
+static inline std::string VL_CVT_N_CSTR(const char* lhsp) VL_PURE {
+    return lhsp ? std::string{lhsp} : ""s;
+}
 
 // Return double from lhs (numeric) unsigned
 double VL_ITOR_D_W(int lbits, WDataInP const lwp) VL_PURE;
@@ -238,7 +246,7 @@ static inline double VL_ISTOR_D_Q(int lbits, QData lhs) VL_MT_SAFE {
     VL_SET_WQ(lwp, lhs);
     return VL_ISTOR_D_W(lbits, lwp);
 }
-// Return QData from double (numeric)
+// Return IData truncated from double (numeric)
 static inline IData VL_RTOI_I_D(double lhs) VL_PURE { return static_cast<int32_t>(VL_TRUNC(lhs)); }
 
 // Sign extend such that if MSB set, we get ffff_ffff, else 0s
@@ -504,19 +512,18 @@ static inline void VL_ASSIGNBIT_WO(int bit, WDataOutP owp) VL_MT_SAFE {
     { (svar).write(rd); }
 #define VL_ASSIGN_SBQ(obits, svar, rd) \
     { (svar).write(rd); }
-#define VL_SC_BITS_PER_DIGIT 30  // This comes from sc_nbdefs.h BITS_PER_DIGIT
 #define VL_ASSIGN_SBW(obits, svar, rwp) \
     { \
         sc_dt::sc_biguint<(obits)> _butemp; \
         int32_t lsb = 0; \
         uint32_t* chunkp = _butemp.get_raw(); \
-        while (lsb + VL_SC_BITS_PER_DIGIT < (obits)) { \
+        while (lsb + BITS_PER_DIGIT < (obits)) { \
             static_assert(std::is_same<IData, EData>::value, "IData and EData mismatch"); \
-            const uint32_t data = VL_SEL_IWII(lsb + VL_SC_BITS_PER_DIGIT + 1, (rwp).data(), lsb, \
-                                              VL_SC_BITS_PER_DIGIT); \
-            *chunkp = data & VL_MASK_E(VL_SC_BITS_PER_DIGIT); \
+            const uint32_t data \
+                = VL_SEL_IWII(lsb + BITS_PER_DIGIT + 1, (rwp).data(), lsb, BITS_PER_DIGIT); \
+            *chunkp = data & VL_MASK_E(BITS_PER_DIGIT); \
             ++chunkp; \
-            lsb += VL_SC_BITS_PER_DIGIT; \
+            lsb += BITS_PER_DIGIT; \
         } \
         if (lsb < (obits)) { \
             const uint32_t msb_data = VL_SEL_IWII((obits) + 1, (rwp).data(), lsb, (obits)-lsb); \

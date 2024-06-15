@@ -387,6 +387,7 @@ detailed descriptions of these arguments.
     --lib-create <name>         Create a DPI library
      +libext+<ext>+[ext]...     Extensions for finding modules
     --lint-only                 Lint, but do not make output
+    --localize-max-size <value>  Tune localize optimization variable size
     --make <build-tool>         Generate scripts for specified build tool
      -MAKEFLAGS <flags>         Arguments to pass to make during --build
     --main                      Generate C++ main() file
@@ -406,6 +407,7 @@ detailed descriptions of these arguments.
     --output-split-ctrace <statements>   Split tracing functions
      -P                         Disable line numbers and blanks with -E
     --pins-bv <bits>            Specify types for top-level ports
+    --pins-inout-enables        Specify that __en and __out signals be created for inouts
     --pins-sc-biguint           Specify types for top-level ports
     --pins-sc-uint              Specify types for top-level ports
     --pins-uint8                Specify types for top-level ports
