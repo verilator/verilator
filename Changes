@@ -72,6 +72,7 @@ Verilator 5.025 devel
 * Fix SystemC BITS_PER_DIGIT in VL_ASSIGN_SBW (#5170). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix non-constant replication in concats (#5171). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Fix table optimization when applied on real data type (#5172) (#5173). [Arthur Rosa]
+* Fix DPI import of null C-string (#5179).
 
 
 Verilator 5.024 2024-04-05

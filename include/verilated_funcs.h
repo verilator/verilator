@@ -219,6 +219,10 @@ static inline QData VL_CVT_Q_D(double lhs) VL_PURE {
     return u.q;
 }
 // clang-format on
+// Return string from DPI char*
+static inline std::string VL_CVT_N_CSTR(const char* lhsp) VL_PURE {
+    return lhsp ? std::string{lhsp} : ""s;
+}
 
 // Return double from lhs (numeric) unsigned
 double VL_ITOR_D_W(int lbits, WDataInP const lwp) VL_PURE;

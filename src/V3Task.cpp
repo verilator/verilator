@@ -305,6 +305,9 @@ struct TaskDpiUtils final {
         if (portp->basicp() && portp->basicp()->keyword() == VBasicDTypeKwd::CHANDLE) {
             frstmt = "VL_CVT_VP_Q(" + frName;
             ket = ")";
+        } else if (portp->basicp() && portp->basicp()->keyword() == VBasicDTypeKwd::STRING) {
+            frstmt = "VL_CVT_N_CSTR(" + frName;
+            ket = ")";
         } else if ((portp->basicp() && portp->basicp()->isDpiPrimitive())) {
             frstmt = frName;
         } else {
