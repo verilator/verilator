@@ -995,7 +995,7 @@ int V3PreProcImp::getStateToken() {
         int tok = getRawToken();
 
         // Most states emit white space and comments between tokens. (Unless collecting a string)
-        if (tok == VP_WHITE && state() != ps_STRIFY) return tok;
+        if (tok == VP_WHITE && state() != ps_STRIFY && state() != ps_JOIN) return tok;
         if (tok == VP_BACKQUOTE && state() != ps_STRIFY) tok = VP_TEXT;
         if (tok == VP_COMMENT) {
             if (!m_off) {
@@ -1417,7 +1417,7 @@ int V3PreProcImp::getStateToken() {
             }
         }
         case ps_JOIN: {
-            if (tok == VP_SYMBOL || tok == VP_TEXT || tok == VP_STRING) {
+            if (tok == VP_SYMBOL || tok == VP_TEXT || tok == VP_STRING || tok == VP_WHITE) {
                 UASSERT(!m_joinStack.empty(), "`` join stack empty, but in a ``");
                 const string lhs = m_joinStack.top();
                 m_joinStack.pop();
@@ -1429,7 +1429,7 @@ int V3PreProcImp::getStateToken() {
                 unputString(out);
                 statePop();
                 goto next_tok;
-            } else if (tok == VP_EOF || tok == VP_WHITE || tok == VP_COMMENT) {
+            } else if (tok == VP_EOF || tok == VP_COMMENT) {
                 // Other compilers just ignore this, so no warning
                 // "Expecting symbol to terminate ``; whitespace etc cannot
                 // follow ``. Found: "+tokenName(tok)+"\n"

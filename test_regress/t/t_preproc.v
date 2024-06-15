@@ -83,6 +83,9 @@ $display(`msg(left side, right side))
 `define foo(f) f``_suffix
 `foo(bar)  more
 
+`define with_space_before_suffix(f) f`` suffix_after_space
+`with_space_before_suffix(arg)
+
 `define zap(which)   \
 	$c("Zap(\"",which,"\");");
 `zap(bug1);

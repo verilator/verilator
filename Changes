@@ -13,6 +13,8 @@ Verilator 5.027 devel
 
 **Minor:**
 
+* Fix fusing macro arguments to not ignore whitespace (#5061). [Tudor Timi]
+
 
 Verilator 5.026 2024-06-15
 ==========================
