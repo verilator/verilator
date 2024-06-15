@@ -347,8 +347,9 @@ return(NULL);
 
 static void *fstMmap2(size_t __len, int __fd, fst_off_t __off)
 {
+DWORD64 len64 = __len;  /* Must be 64-bit for shift below */
 HANDLE handle = CreateFileMapping((HANDLE)_get_osfhandle(__fd), NULL,
-				  PAGE_READWRITE, (DWORD)(__len >> 32),
+				  PAGE_READWRITE, (DWORD)(len64 >> 32),
 				  (DWORD)__len, NULL);
 if (!handle) { return NULL; }
 
