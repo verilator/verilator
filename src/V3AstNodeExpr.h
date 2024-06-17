@@ -5645,6 +5645,7 @@ public:
     inline AstVarXRef(FileLine* fl, AstVar* varp, const string& dotted, const VAccess& access);
     ASTGEN_MEMBERS_AstVarXRef;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
+    void name(const std::string& name) override { m_name = name; }  // * = Var name
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     string dotted() const { return m_dotted; }

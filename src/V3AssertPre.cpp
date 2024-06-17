@@ -57,6 +57,7 @@ private:
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
+    std::vector<AstVarXRef*> m_xrefsp;  // list of xrefs that need name fixup
 
     // METHODS
 
@@ -156,6 +157,8 @@ private:
         m_clockingp = nodep;
         UINFO(8, "   CLOCKING" << nodep << endl);
         iterateChildren(nodep);
+        if (nodep->eventp()) nodep->addNextHere(nodep->eventp()->unlinkFrBack());
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstClockingItem* const nodep) override {
         // Get a ref to the sampled/driven variable
@@ -175,7 +178,8 @@ private:
         AstConst* const skewp = VN_AS(nodep->skewp(), Const);
         if (skewp->num().isNegative()) skewp->v3error("Skew cannot be negative");
         AstNodeExpr* const exprp = nodep->exprp();
-        m_clockingp->addVarsp(varp->unlinkFrBack());
+        varp->name(m_clockingp->name() + "__DOT__" + varp->name());
+        m_clockingp->addNextHere(varp->unlinkFrBack());
         varp->user1p(nodep);
         if (nodep->direction() == VDirection::OUTPUT) {
             AstVarRef* const skewedRefp = new AstVarRef{flp, varp, VAccess::READ};
@@ -226,9 +230,8 @@ private:
                 AstSampleQueueDType* const queueDtp
                     = new AstSampleQueueDType{flp, exprp->dtypep()};
                 m_netlistp->typeTablep()->addTypesp(queueDtp);
-                AstVar* const queueVarp = new AstVar{
-                    flp, VVarType::MODULETEMP,
-                    "__Vqueue__" + m_clockingp->name() + "__DOT__" + varp->name(), queueDtp};
+                AstVar* const queueVarp
+                    = new AstVar{flp, VVarType::MODULETEMP, "__Vqueue__" + varp->name(), queueDtp};
                 queueVarp->lifetime(VLifetime::STATIC);
                 m_clockingp->addNextHere(queueVarp);
                 // Create a process like this:
@@ -241,7 +244,7 @@ private:
                 m_clockingp->addNextHere(
                     new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, pushp->makeStmt()});
                 // Create a process like this:
-                //     always @<clocking event> queue.pop(<skew>, /*out*/<skewed var>});
+                //     always @<clocking event> queue.pop(<skew>, /*out*/<skewed var>);
                 AstCMethodHard* const popp = new AstCMethodHard{
                     flp, new AstVarRef{flp, queueVarp, VAccess::READWRITE}, "pop",
                     new AstTime{nodep->fileline(), m_modp->timeunit()}};
@@ -265,6 +268,7 @@ private:
                 nodep->v3error("Only cycle delays can be used in synchronous drives"
                                " (IEEE 1800-2023 14.16)");
             }
+            iterateChildren(nodep);
             return;
         }
         if (m_inAssign && !m_inSynchDrive) {
@@ -317,9 +321,26 @@ private:
         }
     }
     void visit(AstNodeVarRef* nodep) override {
-        if (AstClockingItem* const itemp = VN_CAST(nodep->varp()->user1p(), ClockingItem)) {
-            if (nodep->access().isReadOrRW() && !nodep->user1()
-                && itemp->direction() == VDirection::OUTPUT) {
+        UINFO(8, " -varref:  " << nodep << endl);
+        UINFO(8, " -varref-var-back:  " << nodep->varp()->backp() << endl);
+        UINFO(8, " -varref-var-user1:  " << nodep->varp()->user1p() << endl);
+        if (AstClockingItem* const itemp = VN_CAST(
+                nodep->varp()->user1p() ? nodep->varp()->user1p() : nodep->varp()->firstAbovep(),
+                ClockingItem)) {
+            if (nodep->user1()) return;
+
+            // ensure linking still works, this has to be done only once
+            if (AstVarXRef* xrefp = VN_CAST(nodep, VarXRef)) {
+                UINFO(8, " -clockvarxref-in:  " << xrefp << endl);
+                string dotted = xrefp->dotted();
+                const size_t dotPos = dotted.rfind('.');
+                dotted.erase(dotPos, string::npos);
+                xrefp->dotted(dotted);
+                UINFO(8, " -clockvarxref-out: " << xrefp << endl);
+                m_xrefsp.emplace_back(xrefp);
+            }
+
+            if (nodep->access().isReadOrRW() && itemp->direction() == VDirection::OUTPUT) {
                 nodep->v3error("Cannot read from output clockvar (IEEE 1800-2023 14.3)");
             }
             if (nodep->access().isWriteOrRW()) {
@@ -329,10 +350,11 @@ private:
                                        "to clockvars (IEEE 1800-2023 14.16)");
                     }
                     if (m_inAssign) m_inSynchDrive = true;
-                } else if (!nodep->user1() && itemp->direction() == VDirection::INPUT) {
+                } else if (itemp->direction() == VDirection::INPUT) {
                     nodep->v3error("Cannot write to input clockvar (IEEE 1800-2023 14.3)");
                 }
             }
+            nodep->user1(true);
         }
     }
     void visit(AstNodeAssign* nodep) override {
@@ -496,6 +518,8 @@ public:
         clearAssertInfo();
         // Process
         iterate(nodep);
+        // Fix up varref names
+        for (AstVarXRef* xrefp : m_xrefsp) xrefp->name(xrefp->varp()->name());
     }
     ~AssertPreVisitor() override = default;
 };
