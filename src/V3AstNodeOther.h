@@ -2786,7 +2786,7 @@ public:
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool isOutputter() override { return true; }
-    // but isPure()  true
+    bool isPure() override { return false; }
     AstCoverDecl* declp() const { return m_declp; }  // Where defined
 };
 class AstCoverToggle final : public AstNodeStmt {
@@ -3379,7 +3379,7 @@ public:
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool isOutputter() override { return true; }
-    // but isPure()  true
+    bool isPure() override { return false; }
     AstTraceDecl* declp() const { return m_declp; }
     VTraceType traceType() const { return m_traceType; }
     uint32_t baseCode() const { return m_baseCode; }
