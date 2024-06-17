@@ -98,7 +98,14 @@ set(PACKAGE_VERSION ${PROJECT_VERSION})
 
 configure_file(include/verilated_config.h.in include/verilated_config.h @ONLY)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/verilated_config.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+include(cmake/ConfigureVerilated.cmake)
+configure_verilated_mk(include/verilated.mk.in include/verilated.mk)
+
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/include/verilated_config.h
+    ${CMAKE_CURRENT_BINARY_DIR}/include/verilated.mk
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+)
 
 configure_package_config_file(verilator-config.cmake.in verilator-config.cmake
     INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}
@@ -114,13 +121,25 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/verilator-config-version.cmake DESTINA
 
 foreach (program
     verilator
-    verilator_gantt
     verilator_ccache_report
+    verilator_coverage
     verilator_difftree
+    verilator_gantt
+    verilator_includer
     verilator_profcfunc
 )
     install(PROGRAMS bin/${program} TYPE BIN)
 endforeach()
+
+if(VERILATOR_INSTALL_GDBINIT)
+    foreach(program
+        .gdbinit
+        .gdbinit.py
+    )
+        install(PROGRAMS src/${program} DESTINATION ${CMAKE_INSTALL_PREFIX}/src)
+    endforeach()
+endif()
+
 
 install(DIRECTORY examples TYPE DATA FILES_MATCHING
     PATTERN "examples/*/*.[chv]*"
@@ -129,8 +148,6 @@ install(DIRECTORY examples TYPE DATA FILES_MATCHING
 )
 
 install(DIRECTORY include TYPE DATA FILES_MATCHING
-    PATTERN "include/verilated_config.h"
-    PATTERN "include/verilated.mk"
     PATTERN "include/*.[chv]"
     PATTERN "include/*.cpp"
     PATTERN "include/*.sv"
