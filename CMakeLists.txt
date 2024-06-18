@@ -24,7 +24,7 @@ option(DEBUG_AND_RELEASE_AND_COVERAGE
     "Builds both the debug and release binaries, overriding CMAKE_BUILD_TYPE. Not supported under MSBuild.")
 
 find_package(Python3 COMPONENTS Interpreter)
-set(PYTHON3 Python3::Interpreter)
+set(PYTHON3 ${Python3_EXECUTABLE})
 set(CMAKE_INSTALL_DATADIR ${CMAKE_INSTALL_PREFIX})
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
@@ -95,10 +95,14 @@ endif()
 
 set(PACKAGE_NAME ${PROJECT_NAME})
 set(PACKAGE_VERSION ${PROJECT_VERSION})
+set(CXX ${CMAKE_CXX_COMPILER})
+set(AR ${CMAKE_AR})
 
 configure_file(include/verilated_config.h.in include/verilated_config.h @ONLY)
+configure_file(include/verilated.mk.in include/verilated.mk @ONLY)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/verilated_config.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/verilated.mk DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 
 configure_package_config_file(verilator-config.cmake.in verilator-config.cmake
     INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}
@@ -118,6 +122,7 @@ foreach (program
     verilator_ccache_report
     verilator_difftree
     verilator_profcfunc
+    verilator_includer
 )
     install(PROGRAMS bin/${program} TYPE BIN)
 endforeach()
@@ -130,7 +135,7 @@ install(DIRECTORY examples TYPE DATA FILES_MATCHING
 
 install(DIRECTORY include TYPE DATA FILES_MATCHING
     PATTERN "include/verilated_config.h"
-    PATTERN "include/verilated.mk"
+    #PATTERN "include/verilated.mk"
     PATTERN "include/*.[chv]"
     PATTERN "include/*.cpp"
     PATTERN "include/*.sv"
