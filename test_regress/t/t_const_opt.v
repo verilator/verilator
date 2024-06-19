@@ -566,4 +566,3 @@ module bug5186(input wire clk, input wire [31:0] in, output out);
       result <= bad;
    assign out = result;
 endmodule
-
