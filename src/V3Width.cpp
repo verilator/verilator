@@ -2792,6 +2792,7 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstMemberSel* nodep) override {
         UINFO(5, "   MEMBERSEL " << nodep << endl);
+        if (nodep->didWidth()) return;
         if (debug() >= 9) nodep->dumpTree("-  mbs-in: ");
         userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         if (debug() >= 9) nodep->dumpTree("-  mbs-ic: ");
@@ -2799,12 +2800,54 @@ class WidthVisitor final : public VNVisitor {
         UASSERT_OBJ(nodep->fromp()->dtypep(), nodep->fromp(), "Unlinked data type");
         AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
         UINFO(9, "     from dt " << fromDtp << endl);
-        if (AstNodeUOrStructDType* const adtypep = VN_CAST(fromDtp, NodeUOrStructDType)) {
+        const AstMemberSel* const fromSel = VN_CAST(nodep->fromp(), MemberSel);
+        if (AstClocking* const clockingp = fromSel && fromSel->varp()
+                                               ? VN_CAST(fromSel->varp()->firstAbovep(), Clocking)
+                                               : nullptr) {
+            // clocking event
+            UINFO(9, "     from clocking " << clockingp << endl);
+            if (AstVar* varp = memberSelClocking(nodep, clockingp)) {
+                if (!varp->didWidth()) userIterate(varp, nullptr);
+                AstMemberSel* fromp = VN_AS(nodep->fromp(), MemberSel);
+                fromp->replaceWith(fromp->fromp()->unlinkFrBack());
+                VL_DO_DANGLING(fromp->deleteTree(), fromp);
+                nodep->dtypep(varp->dtypep());
+                nodep->varp(varp);
+                nodep->didWidth(true);
+                if (AstIfaceRefDType* const adtypep
+                    = VN_CAST(nodep->fromp()->dtypep(), IfaceRefDType)) {
+                    nodep->varp()->sensIfacep(adtypep->ifacep());
+                }
+                UINFO(9, "     done clocking msel " << nodep << endl);
+                return;
+            }
+        } else if (AstNodeUOrStructDType* const adtypep = VN_CAST(fromDtp, NodeUOrStructDType)) {
             if (memberSelStruct(nodep, adtypep)) return;
         } else if (AstClassRefDType* const adtypep = VN_CAST(fromDtp, ClassRefDType)) {
             if (memberSelClass(nodep, adtypep)) return;
         } else if (AstIfaceRefDType* const adtypep = VN_CAST(fromDtp, IfaceRefDType)) {
-            if (AstNode* const foundp = memberSelIface(nodep, adtypep)) {
+            if (AstNode* foundp = memberSelIface(nodep, adtypep)) {
+                if (AstClocking* const clockingp = VN_CAST(foundp, Clocking)) {
+                    foundp = clockingp->eventp();
+                    if (!foundp) {
+                        AstVar* const eventp = new AstVar{
+                            clockingp->fileline(), VVarType::MODULETEMP, clockingp->name(),
+                            clockingp->findBasicDType(VBasicDTypeKwd::EVENT)};
+                        eventp->lifetime(VLifetime::STATIC);
+                        clockingp->eventp(eventp);
+                        // Trigger the clocking event in Observed (IEEE 1800-2023 14.13)
+                        clockingp->addNextHere(new AstAlwaysObserved{
+                            clockingp->fileline(),
+                            new AstSenTree{clockingp->fileline(),
+                                           clockingp->sensesp()->cloneTree(false)},
+                            new AstFireEvent{
+                                clockingp->fileline(),
+                                new AstVarRef{clockingp->fileline(), eventp, VAccess::WRITE},
+                                false}});
+                        v3Global.setHasEvents();
+                        foundp = eventp;
+                    }
+                }
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
                     nodep->dtypep(foundp->dtypep());
                     nodep->varp(varp);
@@ -2927,6 +2970,21 @@ class WidthVisitor final : public VNVisitor {
         nodep->v3error(
             "Member " << nodep->prettyNameQ() << " not found in interface "
                       << ifacep->prettyNameQ() << "\n"
+                      << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
+        return nullptr;  // Caller handles error
+    }
+    AstVar* memberSelClocking(AstMemberSel* nodep, AstClocking* clockingp) {
+        // Returns node if ok
+        VSpellCheck speller;
+        for (AstClockingItem* itemp = clockingp->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), ClockingItem)) {
+            if (itemp->varp()->name() == nodep->name()) return itemp->varp();
+            speller.pushCandidate(itemp->varp()->prettyName());
+        }
+        const string suggest = speller.bestCandidateMsg(nodep->prettyName());
+        nodep->v3error(
+            "Member " << nodep->prettyNameQ() << " not found in clocking block "
+                      << clockingp->prettyNameQ() << "\n"
                       << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
         return nullptr;  // Caller handles error
     }
