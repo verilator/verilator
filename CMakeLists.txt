@@ -135,7 +135,6 @@ install(DIRECTORY examples TYPE DATA FILES_MATCHING
 
 install(DIRECTORY include TYPE DATA FILES_MATCHING
     PATTERN "include/verilated_config.h"
-    #PATTERN "include/verilated.mk"
     PATTERN "include/*.[chv]"
     PATTERN "include/*.cpp"
     PATTERN "include/*.sv"
