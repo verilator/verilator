@@ -853,7 +853,8 @@ public:
         // of the masking node e.g. by the "AND with all ones" rule. If the result width happens
         // to be 1, we still need to ensure the AstAnd is not dropped, so use a wider mask in this
         // special case.
-        const int maskWidth = resultWidth == 1 ? VL_IDATASIZE : resultWidth;
+        const int maskWidth
+            = std::max(resultp->width(), resultWidth == 1 ? VL_IDATASIZE : resultWidth);
 
         // Apply final polarity flip
         if (needsFlip) {
