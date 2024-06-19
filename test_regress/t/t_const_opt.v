@@ -97,10 +97,11 @@ module Test(/*AUTOARG*/
    logic bug4837_out;
    logic bug4857_out;
    logic bug4864_out;
+   logic bug5186_out;
 
    output logic o;
 
-   logic [18:0] tmp;
+   logic [19:0] tmp;
    assign o = ^tmp;
 
    always_ff @(posedge clk) begin
@@ -135,6 +136,7 @@ module Test(/*AUTOARG*/
       tmp[16]<= bug4837_out;
       tmp[17]<= bug4857_out;
       tmp[18]<= bug4864_out;
+      tmp[19]<= bug5186_out;
    end
 
    bug3182 i_bug3182(.in(d[4:0]), .out(bug3182_out));
@@ -150,6 +152,7 @@ module Test(/*AUTOARG*/
    bug4837 i_bug4837(.clk(clk), .in(d), .out(bug4837_out));
    bug4857 i_bug4857(.clk(clk), .in(d), .out(bug4857_out));
    bug4864 i_bug4864(.clk(clk), .in(d), .out(bug4864_out));
+   bug5186 i_bug5186(.clk(clk), .in(d), .out(bug5186_out));
 
 endmodule
 
@@ -543,3 +546,24 @@ module bug4864(input wire clk, input wire [31:0] in, output wire out);
 
    assign out = sig_e;
 endmodule
+
+
+// See issue #5168
+// BitOpTree removes d[38] ^ d[38] correctly, but adds a cleaning AND as
+// (d[31] & 32'b1) even though d is 64 bit width.
+// matchMaskedShift() thinks the cleaning AND is redundant because the mask
+// value is 32 bit width.
+module bug5186(input wire clk, input wire [31:0] in, output out);
+   logic [63:0] d;
+   always_ff @(posedge clk)
+      d <= {d[31:0], in};
+
+   wire bad;
+   assign bad = {d[38:32], d[38] ^ d[31] ^ d[38]} != d[38:31];
+
+   logic result;
+   always_ff @ (posedge clk)
+      result <= bad;
+   assign out = result;
+endmodule
+
