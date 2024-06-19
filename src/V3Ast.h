@@ -1154,6 +1154,42 @@ constexpr bool operator==(VAssertCtlType::en lhs, const VAssertCtlType& rhs) {
 
 // ######################################################################
 
+class VAssertCtlAssertionType final {
+public:
+    // IEEE 1800-2023 Table 20-5
+    enum en : uint8_t {
+        _TO_BE_EVALUATED = 0,
+        CONCURRENT = 1,
+        SIMPLE_IMMEDIATE = 2,
+        OBSERVED_DEFERRED_IMMEDIATE = 4,
+        FINAL_DEFERRED_IMMEDIATE = 8,
+        EXPECT = 16,
+        UNIQUE = 32,
+        UNIQUE0 = 64,
+        PRIORITY = 128,
+    };
+    enum en m_e;
+    VAssertCtlAssertionType()
+        : m_e{_TO_BE_EVALUATED} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr explicit VAssertCtlAssertionType(en _e)
+        : m_e{_e} {}
+    explicit VAssertCtlAssertionType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+};
+constexpr bool operator==(const VAssertCtlAssertionType& lhs, const VAssertCtlAssertionType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VAssertCtlAssertionType& lhs, VAssertCtlAssertionType::en rhs) {
+    return lhs.m_e == rhs;
+}
+constexpr bool operator==(VAssertCtlAssertionType::en lhs, const VAssertCtlAssertionType& rhs) {
+    return lhs == rhs.m_e;
+}
+
+// ######################################################################
+
 class VCaseType final {
 public:
     enum en : uint8_t { CT_CASE, CT_CASEX, CT_CASEZ, CT_CASEINSIDE };

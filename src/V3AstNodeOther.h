@@ -2588,16 +2588,18 @@ public:
 };
 class AstAssertCtl final : public AstNodeStmt {
     // @astgen op1 := controlTypep : AstNodeExpr
-    // @astgen op2 := levelp : AstNodeExpr
-    // @astgen op3 := itemsp : List[AstNodeExpr]
+    // @astgen op2 := assertionTypesp : AstNodeExpr
+    // @astgen op3 := levelp : AstNodeExpr
+    // @astgen op4 := itemsp : List[AstNodeExpr]
     // Type of assertcontrol task; either known from parser or from evaluated
     // controlTypep expression.
-    VAssertCtlType m_ctlType;  // $assert keyword type
+    VAssertCtlType m_ctlType;  // $assert keyword type (control_type)
+    VAssertCtlAssertionType::en m_assertionTypes;  // Type of assertions affected
 
 public:
     AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr* levelp = nullptr,
                  AstNodeExpr* itemsp = nullptr);
-    AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr* assertionTypep = nullptr,
+    AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr* assertionTypesp = nullptr,
                  AstNodeExpr* directiveTypep = nullptr, AstNodeExpr* levelp = nullptr,
                  AstNodeExpr* itemsp = nullptr);
     ASTGEN_MEMBERS_AstAssertCtl;
