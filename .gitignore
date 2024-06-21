@@ -46,3 +46,6 @@ verilator-config-version.cmake
 /test_regress/snapshot/
 xmverilog.*
 xrun.history
+
+# Normal CMake build directory
+/build

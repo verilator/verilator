@@ -30,6 +30,7 @@ include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(CheckStructHasMember)
 include(ExternalProject)
+include(FindThreads)
 
 if (NOT WIN32)
     message(WARNING "CMake support on Linux/OSX is experimental.")

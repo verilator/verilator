@@ -488,6 +488,8 @@ add_dependencies(${verilator}
     V3PreLex_yy_cpp${CMAKE_BUILD_TYPE}
 )
 
+target_link_libraries(${verilator} PRIVATE Threads::Threads)
+
 # verilated_cov_key.h is only regenerated in a single-configuration environment.
 # This limitation can be lifted when `add_dependencies` will support generator
 # expressions. See https://gitlab.kitware.com/cmake/cmake/issues/19467
