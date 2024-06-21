@@ -1006,7 +1006,7 @@ Summary:
 
 .. option:: --pins-sc-uint-bool
 
-   Specifies SystemC inputs/outputs 1 bits wide should use sc_uint<1>.
+   Specifies SystemC inputs/outputs one bit wide should use sc_uint<1>.
 
 .. option:: --pins-sc-biguint
 
