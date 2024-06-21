@@ -448,14 +448,14 @@ public:
 
     // METHODS - User called
 
-    /// Enable assertions
-    void assertOn(bool flag) VL_MT_SAFE;
     /// Return if assertions enabled
     bool assertOn() const VL_MT_SAFE { return m_s.m_assertOn; }
-    /// Enable calculation of unused signals (for traces)
-    void calcUnusedSigs(bool flag) VL_MT_SAFE;
+    /// Enable assertions
+    void assertOn(bool flag) VL_MT_SAFE;
     /// Return if calculating of unused signals (for traces)
     bool calcUnusedSigs() const VL_MT_SAFE { return m_s.m_calcUnusedSigs; }
+    /// Enable calculation of unused signals (for traces)
+    void calcUnusedSigs(bool flag) VL_MT_SAFE;
     /// Record command-line arguments, for retrieval by $test$plusargs/$value$plusargs,
     /// and for parsing +verilator+ run-time arguments.
     /// This should be called before the first model is created.
@@ -470,52 +470,51 @@ public:
     /// Return VerilatedCovContext, allocate if needed
     /// Note if get unresolved reference then likely forgot to link verilated_cov.cpp
     VerilatedCovContext* coveragep() VL_MT_SAFE;
-    /// Set debug level
+    /// Return debug level
+    static inline int debug() VL_MT_SAFE;    /// Set debug level
     /// Debug is currently global, but for forward compatibility have a per-context method
     static inline void debug(int val) VL_MT_SAFE;
-    /// Return debug level
-    static inline int debug() VL_MT_SAFE;
+    /// Return current number of errors/assertions
+    int errorCount() const VL_MT_SAFE { return m_s.m_errorCount; }
     /// Set current number of errors/assertions
     void errorCount(int val) VL_MT_SAFE;
     /// Increment current number of errors/assertions
     void errorCountInc() VL_MT_SAFE;
-    /// Return current number of errors/assertions
-    int errorCount() const VL_MT_SAFE { return m_s.m_errorCount; }
-    /// Set number of errors/assertions before stop
-    void errorLimit(int val) VL_MT_SAFE;
     /// Return number of errors/assertions before stop
     int errorLimit() const VL_MT_SAFE { return m_s.m_errorLimit; }
-    /// Set to throw fatal error on $stop/non-fatal error
-    void fatalOnError(bool flag) VL_MT_SAFE;
+    /// Set number of errors/assertions before stop
+    void errorLimit(int val) VL_MT_SAFE;
     /// Return if to throw fatal error on $stop/non-fatal
     bool fatalOnError() const VL_MT_SAFE { return m_s.m_fatalOnError; }
-    /// Set to throw fatal error on VPI errors
-    void fatalOnVpiError(bool flag) VL_MT_SAFE;
+    /// Set to throw fatal error on $stop/non-fatal error
+    void fatalOnError(bool flag) VL_MT_SAFE;
     /// Return if to throw fatal error on VPI errors
     bool fatalOnVpiError() const VL_MT_SAFE { return m_s.m_fatalOnVpiError; }
-    /// Set if got a $stop or non-fatal error
-    void gotError(bool flag) VL_MT_SAFE;
+    /// Set to throw fatal error on VPI errors
+    void fatalOnVpiError(bool flag) VL_MT_SAFE;
     /// Return if got a $stop or non-fatal error
     bool gotError() const VL_MT_SAFE { return m_s.m_gotError; }
-    /// Set if got a $finish or $stop/error
-    void gotFinish(bool flag) VL_MT_SAFE;
+    /// Set if got a $stop or non-fatal error
+    void gotError(bool flag) VL_MT_SAFE;
     /// Return if got a $finish or $stop/error
     bool gotFinish() const VL_MT_SAFE { return m_s.m_gotFinish; }
-    /// Enable quiet (also prevents need for OS calls to get CPU time)
-    void quiet(bool flag) VL_MT_SAFE;
+    /// Set if got a $finish or $stop/error
+    void gotFinish(bool flag) VL_MT_SAFE;
     /// Return if quiet enabled
     bool quiet() const VL_MT_SAFE { return m_s.m_quiet; }
+    /// Enable quiet (also prevents need for OS calls to get CPU time)
+    void quiet(bool flag) VL_MT_SAFE;
+    /// Return randReset value
+    int randReset() VL_MT_SAFE { return m_s.m_randReset; }
     /// Select initial value of otherwise uninitialized signals.
     /// 0 = Set to zeros
     /// 1 = Set all bits to one
     /// 2 = Randomize all bits
     void randReset(int val) VL_MT_SAFE;
-    /// Return randReset value
-    int randReset() VL_MT_SAFE { return m_s.m_randReset; }
-    /// Return default random seed
-    void randSeed(int val) VL_MT_SAFE;
     /// Set default random seed, 0 = seed it automatically
     int randSeed() const VL_MT_SAFE { return m_s.m_randSeed; }
+    /// Return default random seed
+    void randSeed(int val) VL_MT_SAFE;
 
     /// Return statistic: CPU time delta from model created until now
     double statCpuTimeSinceStart() const VL_MT_SAFE_EXCLUDES(m_mutex);
@@ -607,27 +606,27 @@ public:
     enableExecutionProfiler(VerilatedVirtualBase* (*construct)(VerilatedContext&));
 
     // Internal: coverage
-    void coverageFilename(const std::string& flag) VL_MT_SAFE;
     std::string coverageFilename() const VL_MT_SAFE;
+    void coverageFilename(const std::string& flag) VL_MT_SAFE;
 
     // Internal: $dumpfile
-    void dumpfile(const std::string& flag) VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
     std::string dumpfile() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
+    void dumpfile(const std::string& flag) VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
     std::string dumpfileCheck() const VL_MT_SAFE_EXCLUDES(m_timeDumpMutex);
 
     // Internal: --prof-exec related settings
-    void profExecStart(uint64_t flag) VL_MT_SAFE;
     uint64_t profExecStart() const VL_MT_SAFE { return m_ns.m_profExecStart; }
-    void profExecWindow(uint64_t flag) VL_MT_SAFE;
+    void profExecStart(uint64_t flag) VL_MT_SAFE;
     uint32_t profExecWindow() const VL_MT_SAFE { return m_ns.m_profExecWindow; }
-    void profExecFilename(const std::string& flag) VL_MT_SAFE;
+    void profExecWindow(uint64_t flag) VL_MT_SAFE;
     std::string profExecFilename() const VL_MT_SAFE;
-    void profVltFilename(const std::string& flag) VL_MT_SAFE;
+    void profExecFilename(const std::string& flag) VL_MT_SAFE;
     std::string profVltFilename() const VL_MT_SAFE;
+    void profVltFilename(const std::string& flag) VL_MT_SAFE;
 
     // Internal: SMT solver program
-    void solverProgram(const std::string& flag) VL_MT_SAFE;
     std::string solverProgram() const VL_MT_SAFE;
+    void solverProgram(const std::string& flag) VL_MT_SAFE;
 
     // Internal: Find scope
     const VerilatedScope* scopeFind(const char* namep) const VL_MT_SAFE;
@@ -804,17 +803,17 @@ public:
     }
 
 #ifndef VL_NO_LEGACY
-    /// Call VerilatedContext::assertOn using current thread's VerilatedContext
-    static void assertOn(bool flag) VL_MT_SAFE { Verilated::threadContextp()->assertOn(flag); }
     /// Return VerilatedContext::assertOn() using current thread's VerilatedContext
     static bool assertOn() VL_MT_SAFE { return Verilated::threadContextp()->assertOn(); }
-    /// Call VerilatedContext::calcUnusedSigs using current thread's VerilatedContext
-    static void calcUnusedSigs(bool flag) VL_MT_SAFE {
-        Verilated::threadContextp()->calcUnusedSigs(flag);
-    }
+    /// Call VerilatedContext::assertOn using current thread's VerilatedContext
+    static void assertOn(bool flag) VL_MT_SAFE { Verilated::threadContextp()->assertOn(flag); }
     /// Return VerilatedContext::calcUnusedSigs using current thread's VerilatedContext
     static bool calcUnusedSigs() VL_MT_SAFE {
         return Verilated::threadContextp()->calcUnusedSigs();
+    }
+    /// Call VerilatedContext::calcUnusedSigs using current thread's VerilatedContext
+    static void calcUnusedSigs(bool flag) VL_MT_SAFE {
+        Verilated::threadContextp()->calcUnusedSigs(flag);
     }
     /// Call VerilatedContext::commandArgs using current thread's VerilatedContext
     static void commandArgs(int argc, const char** argv) VL_MT_SAFE {
@@ -958,8 +957,8 @@ public:
 
     // Internal: Set the mtaskId, called when an mtask starts
     // Per thread, so no need to be in VerilatedContext
-    static void mtaskId(uint32_t id) VL_MT_SAFE { t_s.t_mtaskId = id; }
     static uint32_t mtaskId() VL_MT_SAFE { return t_s.t_mtaskId; }
+    static void mtaskId(uint32_t id) VL_MT_SAFE { t_s.t_mtaskId = id; }
     static void endOfEvalReqdInc() VL_MT_SAFE { ++t_s.t_endOfEvalReqd; }
     static void endOfEvalReqdDec() VL_MT_SAFE { --t_s.t_endOfEvalReqd; }
 

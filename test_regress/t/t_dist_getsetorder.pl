@@ -24,16 +24,19 @@ foreach my $file (sort keys %files) {
 
     my $contents = file_contents($filename);
     my %seen_setters;
+    my %seen_getters;
     foreach my $line (split(/\n/, $contents . "\n\n")) {
+        next if $line =~ /^\s*\/\//; # skip commented lines
         if($line =~ /\s*void\s+([a-zA-Z0-9]+)\([a-zA-Z0-9]+.*/) {
             my $setter_name = $1;
             $seen_setters{$setter_name} = 1;
         } else {
             next unless $line =~ /\s*[a-zA-Z0-9]+\s+([a-zA-Z0-9]+)\(\s*\)/;
             my $getter_name = $1;
-            if(exists $seen_setters{$getter_name}) {
+            if(exists $seen_setters{$getter_name} and not (exists $seen_getters{$getter_name})) {
                 error("$getter_name came after its setter");
             }
+            $seen_getters{$getter_name} = 1;
         }
     }
 }
