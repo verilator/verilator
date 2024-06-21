@@ -127,6 +127,20 @@ int _mon_check_get_int(){
         CHECK_RESULT(vector_dim2_v.value.integers[i],i);
     }
 
+    // 2D vpiIntVal !userAllocFlag VLVT_UINT8 non-max num
+    vector_dim2_v = {vpiIntVal,vpiUserAllocFlag,nullptr};
+    PLI_INT32 integers[6] = {0,0,0,0,0,0};
+    vector_dim2_v.value.integers = integers;
+    vpi_get_value_array(vector_dim2_h,&vector_dim2_v,index,2);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for(auto i = 0; i < 6; i++){
+        if(i >= 2) {
+            CHECK_RESULT_Z(vector_dim2_v.value.integers[i]);
+            continue;
+        }
+        CHECK_RESULT(vector_dim2_v.value.integers[i],i);
+    }
+
     // 2D vpiIntVal !userAllocFlag VLVT_UINT8 non-zero index
     index[0] = 1;
     index[1] = 1;

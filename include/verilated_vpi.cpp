@@ -2814,17 +2814,19 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
     return nullptr;
 }
 
-void vl_get_value_array(const VerilatedVpioMemory* memop, const p_vpi_arrayvalue arrayvaluep, const int indexAddr, const int totalElements) {
+bool vl_get_value_array(const VerilatedVpioMemory* memop, const p_vpi_arrayvalue arrayvaluep, const PLI_UINT32 num, const int indexAddr, const int totalElements) {
     if(memop->type() == vpiMemoryWord){
+        const auto addr = (memop->offset() + totalElements - indexAddr) % totalElements;
+        const bool done = (memop->offset() + 1) == num;
+
         if (arrayvaluep->format == vpiIntVal) {
             if (memop->varp()->vltype() == VLVT_UINT8) {
                 const auto cdatap = reinterpret_cast<CData*>(memop->varDatap());
-                const auto addr = (memop->offset() + totalElements - indexAddr) % totalElements;
                 arrayvaluep->value.integers[addr] = *cdatap;
-                return;
+                return done;
             }
         }
-        return;
+        return true;
     }
 
     const auto varp = memop->varp();
@@ -2833,12 +2835,13 @@ void vl_get_value_array(const VerilatedVpioMemory* memop, const p_vpi_arrayvalue
     const auto right = varp->right(dim+1);
     const auto direction = left > right ? 1 : -1;
 
-    while((direction < 0 && left <= right)){
+    auto done = false;
+    while((direction < 0 && left <= right) && !done){
         const auto childMem = VerilatedVpioMemory(memop,left);
-        vl_get_value_array(&childMem, arrayvaluep, indexAddr, totalElements);
+        done = vl_get_value_array(&childMem, arrayvaluep, num, indexAddr, totalElements);
         left -= direction;
     }
-    return;
+    return done;
 }
 
 void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvaluep,
@@ -2883,7 +2886,7 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvaluep,
         totalElements *= varp->elements(d+1);
     }
 
-    vl_get_value_array(memop,arrayvaluep,indexOffset,totalElements);
+    vl_get_value_array(memop, arrayvaluep, num, indexOffset, totalElements);
     return;
 }
 
