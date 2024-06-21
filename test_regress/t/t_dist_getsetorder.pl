@@ -19,7 +19,7 @@ my %files = %{get_source_files($root)};
 foreach my $file (sort keys %files) {
     my $filename = "$root/$file";
     next if !-f $filename;  # git file might be deleted but not yet staged
-    next unless $file =~ /include.*verilated\.(h)(\.in)?$/;
+    next unless $file =~ /include.*verilated.*\.(h)(\.in)?$/;
     next if $file =~ /gtkwave/;
 
     my $contents = file_contents($filename);
@@ -33,8 +33,11 @@ foreach my $file (sort keys %files) {
         } else {
             next unless $line =~ /\s*[a-zA-Z0-9]+\s+([a-zA-Z0-9]+)\(\s*\)/;
             my $getter_name = $1;
+            if($file =~ /verilated_sc_trace/ and $getter_name == "cycle") {
+                next; # hardcoded check for cycle() which looks like a setter but isn't
+            }
             if(exists $seen_setters{$getter_name} and not (exists $seen_getters{$getter_name})) {
-                error("$getter_name came after its setter");
+                error("$getter_name came after its setter in $file");
             }
             $seen_getters{$getter_name} = 1;
         }
