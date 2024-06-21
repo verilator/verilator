@@ -117,10 +117,10 @@ int _mon_check_get_bad(){
 int _mon_check_get_int(){
     // 2D vpiIntVal VLVT_UINT8 
     int index[2] = {0,0};
-    TestVpiHandle vector_dim2_h = VPI_HANDLE("vector_dim2");
-    CHECK_RESULT_NZ(vector_dim2_h);
+    TestVpiHandle vector_dim2_8_h = VPI_HANDLE("vector_dim2_8");
+    CHECK_RESULT_NZ(vector_dim2_8_h);
     s_vpi_arrayvalue vector_dim2_v = {vpiIntVal,0,nullptr};
-    vpi_get_value_array(vector_dim2_h,&vector_dim2_v,index,6);
+    vpi_get_value_array(vector_dim2_8_h,&vector_dim2_v,index,6);
     CHECK_RESULT_NZ(vector_dim2_v.value.integers);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
@@ -131,7 +131,7 @@ int _mon_check_get_int(){
     vector_dim2_v = {vpiIntVal,vpiUserAllocFlag,nullptr};
     PLI_INT32 integers[6] = {0,0,0,0,0,0};
     vector_dim2_v.value.integers = integers;
-    vpi_get_value_array(vector_dim2_h,&vector_dim2_v,index,2);
+    vpi_get_value_array(vector_dim2_8_h,&vector_dim2_v,index,2);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
         if(i >= 2) {
@@ -145,14 +145,38 @@ int _mon_check_get_int(){
     index[0] = 1;
     index[1] = 1;
     vector_dim2_v = {vpiIntVal,0,nullptr};
-    vpi_get_value_array(vector_dim2_h,&vector_dim2_v,index,6);
+    vpi_get_value_array(vector_dim2_8_h,&vector_dim2_v,index,6);
     CHECK_RESULT_NZ(vector_dim2_v.value.integers);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
         CHECK_RESULT(vector_dim2_v.value.integers[i],(i+4)%6);
     }
 
-    return 0; 
+    // 2D vpiIntVal VLVT_UINT16
+    index[0] = 0;
+    index[1] = 0;
+    TestVpiHandle vector_dim2_16_h = VPI_HANDLE("vector_dim2_16");
+    CHECK_RESULT_NZ(vector_dim2_16_h);
+    vector_dim2_v = {vpiIntVal,0,nullptr};
+    vpi_get_value_array(vector_dim2_16_h,&vector_dim2_v,index,6);
+    CHECK_RESULT_NZ(vector_dim2_v.value.integers);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for(auto i = 0; i < 6; i++){
+        CHECK_RESULT(vector_dim2_v.value.integers[i],i+256);
+    }
+
+    // 2D vpiIntVal VLVT_UINT32
+    TestVpiHandle vector_dim2_32_h = VPI_HANDLE("vector_dim2_32");
+    CHECK_RESULT_NZ(vector_dim2_32_h);
+    vector_dim2_v = {vpiIntVal,0,nullptr};
+    vpi_get_value_array(vector_dim2_32_h,&vector_dim2_v,index,6);
+    CHECK_RESULT_NZ(vector_dim2_v.value.integers);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for(auto i = 0; i < 6; i++){
+        CHECK_RESULT(vector_dim2_v.value.integers[i],i+65536);
+    }
+
+    return 0;
 }
 
 extern "C" int mon_check() {

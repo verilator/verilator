@@ -2356,6 +2356,8 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_arrayvalue arrayvalue
     if (arrayvaluep->format == vpiIntVal) {
         switch (varp->vltype()) {
             case VLVT_UINT8: return true;
+            case VLVT_UINT16: return true;
+            case VLVT_UINT32: return true;
             default: return false;
         }
     }
@@ -2820,9 +2822,21 @@ bool vl_get_value_array(const VerilatedVpioMemory* memop, const p_vpi_arrayvalue
         const bool done = (memop->offset() + 1) == num;
 
         if (arrayvaluep->format == vpiIntVal) {
+            const auto valuep = arrayvaluep->value.integers + addr;
+        
             if (memop->varp()->vltype() == VLVT_UINT8) {
                 const auto cdatap = reinterpret_cast<CData*>(memop->varDatap());
-                arrayvaluep->value.integers[addr] = *cdatap;
+                *valuep = *cdatap;
+                return done;
+            }
+            if (memop->varp()->vltype() == VLVT_UINT16) {
+                const auto sdatap = reinterpret_cast<SData*>(memop->varDatap());
+                *valuep = *sdatap;
+                return done;
+            }
+            if (memop->varp()->vltype() == VLVT_UINT32) {
+                const auto idatap = reinterpret_cast<IData*>(memop->varDatap());
+                *valuep = *idatap;
                 return done;
             }
         }
