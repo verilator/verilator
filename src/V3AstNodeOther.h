@@ -2067,6 +2067,7 @@ public:
     bool isScQuad() const;
     bool isScBv() const;
     bool isScUint() const;
+    bool isScUintBool() const;
     bool isScBigUint() const;
     bool isScSensitive() const { return m_scSensitive; }
     bool isSigPublic() const;

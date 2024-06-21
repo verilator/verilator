@@ -410,6 +410,7 @@ detailed descriptions of these arguments.
     --pins-inout-enables        Specify that __en and __out signals be created for inouts
     --pins-sc-biguint           Specify types for top-level ports
     --pins-sc-uint              Specify types for top-level ports
+    --pins-sc-uint-bool         Specify types for top-level ports
     --pins-uint8                Specify types for top-level ports
     --no-pins64                 Don't use uint64_t's for 33-64 bit sigs
     --pipe-filter <command>     Filter all input through a script
