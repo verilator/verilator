@@ -63,6 +63,13 @@ MACRO CHECKERS
         return __LINE__; \
     }
 
+#define CHECK_RESULT(got, exp) \
+    if ((got) != (exp)) { \
+        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
+                  << "   EXP = " << (exp) << std::endl; \
+        return __LINE__; \
+    }
+
 /*-------------------------------------------
 TEST FUNCTIONS
 -------------------------------------------*/
@@ -107,12 +114,28 @@ int _mon_check_get_bad(){
     return 0;
 }
 
+int _mon_check_get_int(){
+    // 2D vpiIntVal !userAllocFlag VLVT_UINT8 
+    int index[2] = {0,0};
+    TestVpiHandle vector_dim2_h = VPI_HANDLE("vector_dim2");
+    CHECK_RESULT_NZ(vector_dim2_h);
+    s_vpi_arrayvalue vector_dim2_v = {vpiIntVal,0,nullptr};
+    vpi_get_value_array(vector_dim2_h,&vector_dim2_v,index,1);
+    CHECK_RESULT_NZ(vector_dim2_v.value.integers);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for(auto i = 0; i < 6; i++)
+        CHECK_RESULT(vector_dim2_v.value.integers[i],i);
+
+    return 0; 
+}
+
 extern "C" int mon_check() {
     // Callback from initial block in monitor
 #ifdef TEST_VERBOSE
     printf("-mon_check()\n");
 #endif
-    if(int status = _mon_check_get_bad()) return status;
+    // if(int status = _mon_check_get_bad()) return status;
+    if(int status = _mon_check_get_int()) return status;
 #ifndef IS_VPI
     VerilatedVpi::selfTest();
 #endif

@@ -149,6 +149,7 @@ public:
     int dims() const { return m_pdims + m_udims; }
     const VerilatedRange& packed() const VL_MT_SAFE { return m_packed; }
     const VerilatedRange& unpacked() const { return m_unpacked[0]; }
+    const VerilatedRange& unpacked(int dim) const { return m_unpacked[dim - 1]; }
     // DPI accessors
     int left(int dim) const VL_MT_SAFE {
         return dim == 0                                ? m_packed.left()

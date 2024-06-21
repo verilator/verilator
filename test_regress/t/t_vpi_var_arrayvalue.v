@@ -34,11 +34,20 @@ VARIABLE DEFINITIONS
    reg [31:0] count;
    reg c_tests_done, v_tests_done;
 
-   //mon_check_bad
+   //_mon_check_get_bad
    logic      [7:0] bad_dim1                 /*verilator public_flat_rw */;
    logic      [7:0] bad_dim2 [0:1]           /*verilator public_flat_rw */;
    logic      [7:0] bad_dim3 [0:1][0:1]      /*verilator public_flat_rw */;
    localparam bad_param /*verilator public_flat_rw */ = 1;
+
+   //_mon_check_get_vector
+   logic      [7:0] vector_dim2 [0:1][0:2] /*verilator public_flat_rw */;
+   assign vector_dim2[0][0] = 0;
+   assign vector_dim2[0][1] = 1;
+   assign vector_dim2[0][2] = 2;
+   assign vector_dim2[1][0] = 3;
+   assign vector_dim2[1][1] = 4;
+   assign vector_dim2[1][2] = 5;
 
 /*-------------------------------------------
 TICK COUNTER
