@@ -1156,17 +1156,17 @@ constexpr bool operator==(VAssertCtlType::en lhs, const VAssertCtlType& rhs) {
 
 class VAssertCtlAssertionType final {
 public:
-    // IEEE 1800-2023 Table 20-5
+    // IEEE 1800-2023 Table 20-6
     enum en : uint8_t {
         _TO_BE_EVALUATED = 0,
-        CONCURRENT = 1,
-        SIMPLE_IMMEDIATE = 2,
-        OBSERVED_DEFERRED_IMMEDIATE = 4,
-        FINAL_DEFERRED_IMMEDIATE = 8,
-        EXPECT = 16,
-        UNIQUE = 32,
-        UNIQUE0 = 64,
-        PRIORITY = 128,
+        CONCURRENT = (1 << 0),
+        SIMPLE_IMMEDIATE = (1 << 1),
+        OBSERVED_DEFERRED_IMMEDIATE = (1 << 2),
+        FINAL_DEFERRED_IMMEDIATE = (1 << 3),
+        EXPECT = (1 << 4),
+        UNIQUE = (1 << 5),
+        UNIQUE0 = (1 << 6),
+        PRIORITY = (1 << 7),
     };
     enum en m_e;
     VAssertCtlAssertionType()

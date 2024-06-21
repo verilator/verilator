@@ -45,6 +45,7 @@
 //     and DPI libraries are not needed there.
 //=========================================================================
 
+#include "verilated.h"
 #define VERILATOR_VERILATED_CPP_
 
 #include "verilated_config.h"
@@ -2494,9 +2495,25 @@ VerilatedContext::Serialized::Serialized() {
     m_timeprecision = picosecond;  // Initial value until overridden by _Vconfigure
 }
 
+bool VerilatedContext::assertOn() const VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_s.m_assertOn
+           & static_cast<VerilatedAssertionType_t>(VerilatedAssertionType::ASSERT_TYPE_MAX_VALUE);
+}
 void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
-    m_s.m_assertOn = flag;
+    // set all assert types to 'on' when true, set all types to 'off' when false
+    m_s.m_assertOn
+        = static_cast<VerilatedAssertionType_t>(VerilatedAssertionType::ASSERT_TYPE_MAX_VALUE)
+          * static_cast<VerilatedAssertionType_t>(flag);
+}
+bool VerilatedContext::getAssertOn(VerilatedAssertionType_t flags) const {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_s.m_assertOn & flags;
+}
+void VerilatedContext::setAssertOn(VerilatedAssertionType_t flags) {
+    const VerilatedLockGuard lock{m_mutex};
+    m_s.m_assertOn &= flags;
 }
 void VerilatedContext::calcUnusedSigs(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
