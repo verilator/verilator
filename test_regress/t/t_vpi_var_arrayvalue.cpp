@@ -120,11 +120,21 @@ int _mon_check_get_int(){
     TestVpiHandle vector_dim2_h = VPI_HANDLE("vector_dim2");
     CHECK_RESULT_NZ(vector_dim2_h);
     s_vpi_arrayvalue vector_dim2_v = {vpiIntVal,0,nullptr};
-    vpi_get_value_array(vector_dim2_h,&vector_dim2_v,index,1);
+    vpi_get_value_array(vector_dim2_h,&vector_dim2_v,index,6);
     CHECK_RESULT_NZ(vector_dim2_v.value.integers);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
-    for(auto i = 0; i < 6; i++)
+    for(auto i = 0; i < 6; i++){
         CHECK_RESULT(vector_dim2_v.value.integers[i],i);
+    }
+
+    // 2D vpiIntVal !userAllocFlag VLVT_UINT8 non-zero index
+    index[0] = 1;
+    index[1] = 1;
+    vpi_get_value_array(vector_dim2_h,&vector_dim2_v,index,6);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for(auto i = 0; i < 6; i++){
+        CHECK_RESULT(vector_dim2_v.value.integers[i],(i+4)%6);
+    }
 
     return 0; 
 }

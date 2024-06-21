@@ -2814,12 +2814,13 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
     return nullptr;
 }
 
-void vl_get_value_array(const VerilatedVpioMemory* memop, p_vpi_arrayvalue arrayvaluep) {
+void vl_get_value_array(const VerilatedVpioMemory* memop, const p_vpi_arrayvalue arrayvaluep, const int indexAddr, const int totalElements) {
     if(memop->type() == vpiMemoryWord){
         if (arrayvaluep->format == vpiIntVal) {
             if (memop->varp()->vltype() == VLVT_UINT8) {
                 const auto cdatap = reinterpret_cast<CData*>(memop->varDatap());
-                arrayvaluep->value.integers[memop->offset()] = *cdatap;
+                const auto addr = (memop->offset() + totalElements - indexAddr) % totalElements;
+                arrayvaluep->value.integers[addr] = *cdatap;
                 return;
             }
         }
@@ -2828,16 +2829,14 @@ void vl_get_value_array(const VerilatedVpioMemory* memop, p_vpi_arrayvalue array
 
     const auto varp = memop->varp();
     const auto dim = memop->udim();
-    auto left = varp->unpacked(dim+1).left();
-    const auto right = varp->unpacked(dim+1).right();
+    auto left = varp->left(dim+1);
+    const auto right = varp->right(dim+1);
     const auto direction = left > right ? 1 : -1;
 
-    auto i = 0;
     while((direction < 0 && left <= right)){
         const auto childMem = VerilatedVpioMemory(memop,left);
-        vl_get_value_array(&childMem, arrayvaluep);
+        vl_get_value_array(&childMem, arrayvaluep, indexAddr, totalElements);
         left -= direction;
-        i++;
     }
     return;
 }
@@ -2877,7 +2876,14 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvaluep,
         arrayvaluep->value.vectors    = reinterpret_cast<t_vpi_vecval*>(t_out);
     }
 
-    vl_get_value_array(memop,arrayvaluep);
+    auto indexOffset = 0;
+    auto totalElements = 1;
+    for (auto d = 0; d < varp->udims(); d++) {
+        indexOffset = (indexOffset * varp->elements(d+1)) + indexp[d];
+        totalElements *= varp->elements(d+1);
+    }
+
+    vl_get_value_array(memop,arrayvaluep,indexOffset,totalElements);
     return;
 }
 
