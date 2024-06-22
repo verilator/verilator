@@ -471,7 +471,7 @@ public:
     /// Note if get unresolved reference then likely forgot to link verilated_cov.cpp
     VerilatedCovContext* coveragep() VL_MT_SAFE;
     /// Return debug level
-    static inline int debug() VL_MT_SAFE;    /// Set debug level
+    static inline int debug() VL_MT_SAFE;  /// Set debug level
     /// Debug is currently global, but for forward compatibility have a per-context method
     static inline void debug(int val) VL_MT_SAFE;
     /// Return current number of errors/assertions
