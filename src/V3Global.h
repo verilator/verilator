@@ -185,10 +185,10 @@ public:
         UASSERT(!m_hierPlanp, "call once");
         m_hierPlanp = plan;
     }
-    void useParallelBuild(bool flag) { m_useParallelBuild = flag; }
     bool useParallelBuild() const { return m_useParallelBuild; }
-    void useRandomizeMethods(bool flag) { m_useRandomizeMethods = flag; }
+    void useParallelBuild(bool flag) { m_useParallelBuild = flag; }
     bool useRandomizeMethods() const { return m_useRandomizeMethods; }
+    void useRandomizeMethods(bool flag) { m_useRandomizeMethods = flag; }
     void saveJsonPtrFieldName(const std::string& fieldName);
     void ptrNamesDumpJson(std::ostream& os);
     void idPtrMapDumpJson(std::ostream& os);

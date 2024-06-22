@@ -138,48 +138,48 @@ public:
     void dpiOpenParentInc() { ++m_dpiOpenParent; }
     void dpiOpenParentClear() { m_dpiOpenParent = 0; }
     uint64_t dpiOpenParent() const { return m_dpiOpenParent; }
-    void taskPublic(bool flag) { m_taskPublic = flag; }
     bool taskPublic() const { return m_taskPublic; }
-    void attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
+    void taskPublic(bool flag) { m_taskPublic = flag; }
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }
-    void classMethod(bool flag) { m_classMethod = flag; }
+    void attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     bool classMethod() const { return m_classMethod; }
-    void isExternProto(bool flag) { m_externProto = flag; }
+    void classMethod(bool flag) { m_classMethod = flag; }
     bool isExternProto() const { return m_externProto; }
-    void isExternDef(bool flag) { m_externDef = flag; }
+    void isExternProto(bool flag) { m_externProto = flag; }
     bool isExternDef() const { return m_externDef; }
-    void prototype(bool flag) { m_prototype = flag; }
+    void isExternDef(bool flag) { m_externDef = flag; }
     bool prototype() const { return m_prototype; }
-    void dpiExport(bool flag) { m_dpiExport = flag; }
+    void prototype(bool flag) { m_prototype = flag; }
     bool dpiExport() const { return m_dpiExport; }
-    void dpiImport(bool flag) { m_dpiImport = flag; }
+    void dpiExport(bool flag) { m_dpiExport = flag; }
     bool dpiImport() const { return m_dpiImport; }
-    void dpiContext(bool flag) { m_dpiContext = flag; }
+    void dpiImport(bool flag) { m_dpiImport = flag; }
     bool dpiContext() const { return m_dpiContext; }
-    void dpiOpenChild(bool flag) { m_dpiOpenChild = flag; }
+    void dpiContext(bool flag) { m_dpiContext = flag; }
     bool dpiOpenChild() const { return m_dpiOpenChild; }
-    void dpiTask(bool flag) { m_dpiTask = flag; }
+    void dpiOpenChild(bool flag) { m_dpiOpenChild = flag; }
     bool dpiTask() const { return m_dpiTask; }
-    void isConstructor(bool flag) { m_isConstructor = flag; }
+    void dpiTask(bool flag) { m_dpiTask = flag; }
     bool isConstructor() const { return m_isConstructor; }
+    void isConstructor(bool flag) { m_isConstructor = flag; }
     bool isHideLocal() const { return m_isHideLocal; }
     void isHideLocal(bool flag) { m_isHideLocal = flag; }
     bool isHideProtected() const { return m_isHideProtected; }
     void isHideProtected(bool flag) { m_isHideProtected = flag; }
-    void dpiPure(bool flag) { m_dpiPure = flag; }
     bool dpiPure() const { return m_dpiPure; }
-    void pureVirtual(bool flag) { m_pureVirtual = flag; }
+    void dpiPure(bool flag) { m_dpiPure = flag; }
     bool pureVirtual() const { return m_pureVirtual; }
-    void recursive(bool flag) { m_recursive = flag; }
+    void pureVirtual(bool flag) { m_pureVirtual = flag; }
     bool recursive() const { return m_recursive; }
-    void isStatic(bool flag) { m_static = flag; }
+    void recursive(bool flag) { m_recursive = flag; }
     bool isStatic() const { return m_static; }
-    void underGenerate(bool flag) { m_underGenerate = flag; }
+    void isStatic(bool flag) { m_static = flag; }
     bool underGenerate() const { return m_underGenerate; }
-    void isVirtual(bool flag) { m_virtual = flag; }
+    void underGenerate(bool flag) { m_underGenerate = flag; }
     bool isVirtual() const { return m_virtual; }
-    void setNeedProcess() { m_needProcess = true; }
+    void isVirtual(bool flag) { m_virtual = flag; }
     bool needProcess() const { return m_needProcess; }
+    void setNeedProcess() { m_needProcess = true; }
     void baseOverride(const VBaseOverride& flag) { m_baseOverride = flag; }
     VBaseOverride baseOverride() const { return m_baseOverride; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
@@ -274,30 +274,30 @@ public:
     void level(int level) { m_level = level; }
     int level() const VL_MT_SAFE { return m_level; }
     bool isTop() const VL_MT_SAFE { return level() == 1; }
-    void modPublic(bool flag) { m_modPublic = flag; }
     bool modPublic() const { return m_modPublic; }
-    void modTrace(bool flag) { m_modTrace = flag; }
+    void modPublic(bool flag) { m_modPublic = flag; }
     bool modTrace() const { return m_modTrace; }
-    void dead(bool flag) { m_dead = flag; }
+    void modTrace(bool flag) { m_modTrace = flag; }
     bool dead() const { return m_dead; }
-    void hasGParam(bool flag) { m_hasGParam = flag; }
+    void dead(bool flag) { m_dead = flag; }
     bool hasGParam() const { return m_hasGParam; }
-    void hasParameterList(bool flag) { m_hasParameterList = flag; }
+    void hasGParam(bool flag) { m_hasGParam = flag; }
     bool hasParameterList() const { return m_hasParameterList; }
-    void hierBlock(bool flag) { m_hierBlock = flag; }
+    void hasParameterList(bool flag) { m_hasParameterList = flag; }
     bool hierBlock() const { return m_hierBlock; }
-    void internal(bool flag) { m_internal = flag; }
+    void hierBlock(bool flag) { m_hierBlock = flag; }
     bool internal() const { return m_internal; }
-    void recursive(bool flag) { m_recursive = flag; }
+    void internal(bool flag) { m_internal = flag; }
     bool recursive() const { return m_recursive; }
+    void recursive(bool flag) { m_recursive = flag; }
     void recursiveClone(bool flag) { m_recursiveClone = flag; }
     bool recursiveClone() const { return m_recursiveClone; }
-    void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
-    void timeunit(const VTimescale& flag) { m_timeunit = flag; }
+    void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VTimescale timeunit() const { return m_timeunit; }
-    void unconnectedDrive(const VOptionBool flag) { m_unconnectedDrive = flag; }
+    void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VOptionBool unconnectedDrive() const { return m_unconnectedDrive; }
+    void unconnectedDrive(const VOptionBool flag) { m_unconnectedDrive = flag; }
 };
 class AstNodeProcedure VL_NOT_FINAL : public AstNode {
     // IEEE procedure: initial, final, always
@@ -2191,8 +2191,8 @@ public:
     ASTGEN_MEMBERS_AstBegin;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    void generate(bool flag) { m_generate = flag; }
     bool generate() const { return m_generate; }
+    void generate(bool flag) { m_generate = flag; }
     void setNeedProcess() { m_needProcess = true; }
     bool needProcess() const { return m_needProcess; }
     bool implied() const { return m_implied; }
@@ -2688,10 +2688,10 @@ public:
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool same(const AstNode* /*samep*/) const override { return true; }
-    void isDisableSoft(bool flag) { m_isDisableSoft = flag; }
     bool isDisableSoft() const { return m_isDisableSoft; }
-    void isSoft(bool flag) { m_isSoft = flag; }
+    void isDisableSoft(bool flag) { m_isDisableSoft = flag; }
     bool isSoft() const { return m_isSoft; }
+    void isSoft(bool flag) { m_isSoft = flag; }
 };
 class AstConstraintUnique final : public AstNodeStmt {
     // Constraint unique statement
@@ -2747,8 +2747,8 @@ public:
     void dumpJson(std::ostream& str) const override;
     int instrCount() const override { return 1 + 2 * INSTR_COUNT_LD; }
     bool maybePointedTo() const override { return true; }
-    void binNum(int flag) { m_binNum = flag; }
     int binNum() const { return m_binNum; }
+    void binNum(int flag) { m_binNum = flag; }
     int offset() const { return m_offset; }
     const string& comment() const { return m_text; }  // text to insert in code
     const string& linescov() const { return m_linescov; }
@@ -3461,8 +3461,8 @@ public:
     // Stop statement searchback here
     void addNextStmt(AstNode* newp, AstNode* belowp) override;
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
-    void unrollFull(const VOptionBool flag) { m_unrollFull = flag; }
     VOptionBool unrollFull() const { return m_unrollFull; }
+    void unrollFull(const VOptionBool flag) { m_unrollFull = flag; }
 };
 
 // === AstNodeAssign ===
@@ -3792,8 +3792,8 @@ public:
         : ASTGEN_SUPER_TextBlock(fl, textp, tracking)
         , m_commas(commas) {}
     ASTGEN_MEMBERS_AstTextBlock;
-    void commas(bool flag) { m_commas = flag; }
     bool commas() const { return m_commas; }
+    void commas(bool flag) { m_commas = flag; }
     void addText(FileLine* fl, const string& textp, bool tracking = false) {
         addNodesp(new AstText{fl, textp, tracking});
     }

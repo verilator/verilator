@@ -877,11 +877,11 @@ public:
     bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
     int widthAlignBytes() const override { return 1; }
     int widthTotalBytes() const override { return 1; }
+    bool isVirtual() const { return m_virtual; }
     void isVirtual(bool flag) {
         m_virtual = flag;
         if (flag) v3Global.setHasVirtIfaces();
     }
-    bool isVirtual() const { return m_virtual; }
     FileLine* modportFileline() const { return m_modportFileline; }
     string cellName() const { return m_cellName; }
     void cellName(const string& name) { m_cellName = name; }
@@ -956,8 +956,8 @@ public:
     int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
     // METHODS
     void name(const string& name) override { m_name = name; }
-    void tag(const string& text) override { m_tag = text; }
     string tag() const override { return m_tag; }
+    void tag(const string& text) override { m_tag = text; }
     int lsb() const { return m_lsb; }
     void lsb(int lsb) { m_lsb = lsb; }
     bool isCompound() const override {

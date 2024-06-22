@@ -165,12 +165,12 @@ public:
                                        : "lightgreen"));
     }
     FileLine* fileline() const override { return nodep()->fileline(); }
-    void isTristate(bool flag) { m_isTristate = flag; }
     bool isTristate() const VL_MT_SAFE { return m_isTristate; }
-    void feedsTri(bool flag) { m_feedsTri = flag; }
+    void isTristate(bool flag) { m_isTristate = flag; }
     bool feedsTri() const VL_MT_SAFE { return m_feedsTri; }
-    void processed(bool flag) { m_processed = flag; }
+    void feedsTri(bool flag) { m_feedsTri = flag; }
     bool processed() const { return m_processed; }
+    void processed(bool flag) { m_processed = flag; }
 };
 
 //######################################################################

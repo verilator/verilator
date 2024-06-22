@@ -19,7 +19,7 @@ my %files = %{get_source_files($root)};
 foreach my $file (sort keys %files) {
     my $filename = "$root/$file";
     next if !-f $filename;  # git file might be deleted but not yet staged
-    next unless $file =~ /include.*verilated.*\.(h)(\.in)?$/;
+    next unless $file =~ /include.*verilated.*\.[ch].*$/;
     next if $file =~ /gtkwave/;
 
     my $contents = file_contents($filename);
@@ -27,17 +27,17 @@ foreach my $file (sort keys %files) {
     my %seen_getters;
     foreach my $line (split(/\n/, $contents . "\n\n")) {
         next if $line =~ /^\s*\/\//; # skip commented lines
-        if($line =~ /\s*void\s+([a-zA-Z0-9]+)\([a-zA-Z0-9]+.*/) {
+        if ($line =~ /\s*void\s+([a-zA-Z0-9_]+)\([a-zA-Z0-9_]+.*/) {
             my $setter_name = $1;
             $seen_setters{$setter_name} = 1;
         } else {
-            next unless $line =~ /\s*[a-zA-Z0-9]+\s+([a-zA-Z0-9]+)\(\s*\)/;
+            next unless $line =~ /\s*[a-zA-Z0-9_]+\s+([a-zA-Z0-9_]+)\(\s*\)/;
             my $getter_name = $1;
-            if($file =~ /verilated_sc_trace/ and $getter_name == "cycle") {
-                next; # hardcoded check for cycle() which looks like a setter but isn't
+            if ($file =~ /verilated_sc_trace/ and $getter_name == "cycle") {
+                next;  # hardcoded check for cycle() which looks like a setter but isn't
             }
-            if(exists $seen_setters{$getter_name} and not (exists $seen_getters{$getter_name})) {
-                error("$getter_name came after its setter in $file");
+            if (exists $seen_setters{$getter_name} and not (exists $seen_getters{$getter_name})) {
+                error("$file: '$getter_name()' came after its setter; suggest swap order");
             }
             $seen_getters{$getter_name} = 1;
         }

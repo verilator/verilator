@@ -87,8 +87,8 @@ public:
 
     // ACCESSORS
     const string& name() const { return m_name; }
-    void needed(bool flag) { m_needed = flag; }
     bool needed() const { return m_needed; }
+    void needed(bool flag) { m_needed = flag; }
     LinenoMap& lines() { return m_lines; }
 
     // METHODS

@@ -351,8 +351,8 @@ public:
     void execErrorExitCb() VL_REQUIRES(m_mutex) {
         if (m_errorExitCb) m_errorExitCb();
     }
-    void errorExitCb(ErrorExitCb cb) VL_REQUIRES(m_mutex) { m_errorExitCb = cb; }
     ErrorExitCb errorExitCb() VL_REQUIRES(m_mutex) { return m_errorExitCb; }
+    void errorExitCb(ErrorExitCb cb) VL_REQUIRES(m_mutex) { m_errorExitCb = cb; }
     bool isError(V3ErrorCode code, bool supp) VL_REQUIRES(m_mutex);
     void vlAbortOrExit() VL_REQUIRES(m_mutex);
     void errorContexted(bool flag) VL_REQUIRES(m_mutex) { m_errorContexted = flag; }
@@ -379,12 +379,12 @@ public:
         }
         m_pretendError[code] = flag;
     }
-    void debugDefault(int level) VL_MT_UNSAFE { m_debugDefault = level; }
     int debugDefault() VL_MT_SAFE { return m_debugDefault; }
-    void errorLimit(int level) VL_REQUIRES(m_mutex) { m_errorLimit = level; }
+    void debugDefault(int level) VL_MT_UNSAFE { m_debugDefault = level; }
     int errorLimit() VL_REQUIRES(m_mutex) { return m_errorLimit; }
-    void warnFatal(bool flag) VL_REQUIRES(m_mutex) { m_warnFatal = flag; }
+    void errorLimit(int level) VL_REQUIRES(m_mutex) { m_errorLimit = level; }
     bool warnFatal() VL_REQUIRES(m_mutex) { return m_warnFatal; }
+    void warnFatal(bool flag) VL_REQUIRES(m_mutex) { m_warnFatal = flag; }
     V3ErrorCode errorCode() VL_REQUIRES(m_mutex) { return m_errorCode; }
     bool errorContexted() VL_REQUIRES(m_mutex) { return m_errorContexted; }
     int warnCount() VL_REQUIRES(m_mutex) { return m_warnCount; }

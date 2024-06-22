@@ -125,13 +125,13 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
         void updateBitRange(const AstShiftR* shiftp) {
             m_lsb += VN_AS(shiftp->rhsp(), Const)->toUInt();
         }
+        int wordIdx() const { return m_wordIdx; }
         void wordIdx(int i) { m_wordIdx = i; }
+        bool polarity() const { return m_polarity; }
         void polarity(bool p) { m_polarity = p; }
 
         AstVarRef* refp() const { return m_refp; }
         const AstConst* constp() const { return m_constp; }
-        int wordIdx() const { return m_wordIdx; }
-        bool polarity() const { return m_polarity; }
         bool missingWordSel() const {
             // When V3Expand is skipped, WordSel is not inserted.
             return m_refp->isWide() && m_wordIdx == -1;
