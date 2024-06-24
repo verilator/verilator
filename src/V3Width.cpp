@@ -2814,6 +2814,7 @@ class WidthVisitor final : public VNVisitor {
                 nodep->dtypep(varp->dtypep());
                 nodep->varp(varp);
                 nodep->didWidth(true);
+                if (nodep->access().isWriteOrRW()) V3LinkLValue::linkLValueSet(nodep);
                 if (AstIfaceRefDType* const adtypep
                     = VN_CAST(nodep->fromp()->dtypep(), IfaceRefDType)) {
                     nodep->varp()->sensIfacep(adtypep->ifacep());
@@ -2849,6 +2850,7 @@ class WidthVisitor final : public VNVisitor {
                     }
                 }
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
+                    if (!varp->didWidth()) userIterate(varp, nullptr);
                     nodep->dtypep(foundp->dtypep());
                     nodep->varp(varp);
                     AstIface* const ifacep = adtypep->ifacep();

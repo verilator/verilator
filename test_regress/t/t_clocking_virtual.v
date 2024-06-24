@@ -5,19 +5,29 @@
 // SPDX-License-Identifier: CC0-1.0
 
 interface Iface;
-   logic clk = 1'b0, inp = 1'b0;
+   logic clk = 1'b0, inp = 1'b0, io = 1'b0;
    clocking cb @(posedge clk);
-       input #3 inp;
+       input #7 inp;
+       inout io;
    endclocking
    always @(posedge clk) inp <= 1'b1;
-   always #1 clk = ~clk;
+   always #5 clk <= ~clk;
 endinterface
 
 module main;
    initial begin
-      #2;
+      #6;
+      t.mod1.cb.io <= 1'b1;
+      if (t.mod0.io != 1'b0) $stop;
+      if (t.mod1.cb.io != 1'b0) $stop;
       if (t.mod1.cb.inp != 1'b0) $stop;
-      #4;
+      @(posedge t.mod0.io)
+      if ($time != 15) $stop;
+      if (t.mod0.io != 1'b1) $stop;
+      if (t.mod1.cb.io != 1'b0) $stop;
+      #1
+      if (t.mod0.cb.io != 1'b1) $stop;
+      if (t.mod1.cb.io != 1'b1) $stop;
       if (t.mod1.cb.inp != 1'b1) $stop;
    end
 endmodule
@@ -27,7 +37,7 @@ module t;
    Iface mod0();
    virtual Iface mod1 = mod0;
    initial begin
-      #7;
+      #20;
       $write("*-* All Finished *-*\n");
       $finish;
    end

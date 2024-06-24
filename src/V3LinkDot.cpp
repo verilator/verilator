@@ -3062,11 +3062,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // AstVarXRef's even though they are in the same module detect
                 // this and convert to normal VarRefs
                 if (!m_statep->forPrearray() && !m_statep->forScopeCreation()) {
-                    if (VN_IS(nodep->dtypep(), IfaceRefDType)) {
-                        AstVarRef* const newrefp
-                            = new AstVarRef{nodep->fileline(), nodep->varp(), nodep->access()};
-                        nodep->replaceWith(newrefp);
-                        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    if (const AstIfaceRefDType* const ifaceDtp
+                        = VN_CAST(nodep->dtypep(), IfaceRefDType)) {
+                        if (!ifaceDtp->isVirtual()) {
+                            AstVarRef* const newrefp
+                                = new AstVarRef{nodep->fileline(), nodep->varp(), nodep->access()};
+                            nodep->replaceWith(newrefp);
+                            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                        }
                     }
                 }
             } else {
