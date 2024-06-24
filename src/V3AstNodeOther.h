@@ -2588,13 +2588,14 @@ public:
 };
 class AstAssertCtl final : public AstNodeStmt {
     // @astgen op1 := controlTypep : AstNodeExpr
-    // @astgen op2 := assertionTypesp : AstNodeExpr
+    // @astgen op2 := assertionTypesp : Optional[AstNodeExpr]
     // @astgen op3 := levelp : AstNodeExpr
     // @astgen op4 := itemsp : List[AstNodeExpr]
     // Type of assertcontrol task; either known from parser or from evaluated
     // controlTypep expression.
     VAssertCtlType m_ctlType;  // $assert keyword type (control_type)
-    VAssertCtlAssertionType::en m_assertionTypes;  // Type of assertions affected
+    std::underlying_type<VAssertCtlAssertionType::en>::type
+        m_assertionTypes;  // Type of assertions affected
 
 public:
     AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr* levelp = nullptr,
@@ -2610,6 +2611,12 @@ public:
     bool isOutputter() override { return true; }
     VAssertCtlType ctlType() const { return m_ctlType; }
     void ctlType(int32_t type) { m_ctlType = VAssertCtlType{type}; }
+    std::underlying_type<VAssertCtlAssertionType::en>::type ctlAssertTypes() const {
+        return m_assertionTypes;
+    }
+    void ctlAssertTypes(std::underlying_type<VAssertCtlAssertionType::en>::type types) {
+        m_assertionTypes = types;
+    }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
 };
