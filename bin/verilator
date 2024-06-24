@@ -324,6 +324,7 @@ detailed descriptions of these arguments.
     --clk <signal-name>         Mark specified signal as clock
     --no-clk <signal-name>      Prevent marking specified signal as clock
     --compiler <compiler-name>  Tune for specified C++ compiler
+    --compiler-include          Include additional header in the precompiled one
     --converge-limit <loops>    Tune convergence settle time
     --coverage                  Enable all coverage
     --coverage-line             Enable line coverage

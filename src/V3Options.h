@@ -203,6 +203,7 @@ private:
     V3StringList m_cFlags;      // argument: user CFLAGS
     V3StringList m_ldLibs;      // argument: user LDFLAGS
     V3StringList m_makeFlags;   // argument: user MAKEFLAGS
+    V3StringSet m_compilerIncludes; // argument: user --compiler-include
     V3StringSet m_futures;      // argument: -Wfuture- list
     V3StringSet m_future0s;     // argument: -future list
     V3StringSet m_future1s;     // argument: -future1 list
@@ -434,6 +435,7 @@ public:
     // METHODS
     void addCppFile(const string& filename);
     void addCFlags(const string& filename);
+    void addCompilerIncludes(const string& filename);
     void addLdLibs(const string& filename);
     void addMakeFlags(const string& filename);
     void addLibraryFile(const string& filename);
@@ -626,6 +628,7 @@ public:
 
     const V3StringSet& cppFiles() const { return m_cppFiles; }
     const V3StringList& cFlags() const { return m_cFlags; }
+    const V3StringSet& compilerIncludes() const { return m_compilerIncludes; }
     const V3StringList& ldLibs() const { return m_ldLibs; }
     const V3StringList& makeFlags() const { return m_makeFlags; }
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
