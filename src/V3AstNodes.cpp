@@ -380,7 +380,9 @@ bool AstVar::isScBv() const {
 bool AstVar::isScUint() const {
     return ((isSc() && v3Global.opt.pinsScUint() && width() >= 2 && width() <= 64) && !isScBv());
 }
-bool AstVar::isScUintBool() const { return (isSc() && v3Global.opt.pinsScUintBool()); }
+bool AstVar::isScUintBool() const {
+    return (isSc() && v3Global.opt.pinsScUintBool() && width() == 1);
+}
 bool AstVar::isScBigUint() const {
     return ((isSc() && v3Global.opt.pinsScBigUint() && width() >= 65 && width() <= 512)
             && !isScBv());
@@ -672,14 +674,13 @@ string AstVar::scType() const {
     if (isScBigUint()) {
         return (string{"sc_dt::sc_biguint<"} + cvtToStr(widthMin())
                 + "> ");  // Keep the space so don't get >>
-    } else if (isScUint()) {
+    } else if (isScUint() || isScUintBool()) {
         return (string{"sc_dt::sc_uint<"} + cvtToStr(widthMin())
                 + "> ");  // Keep the space so don't get >>
     } else if (isScBv()) {
         return (string{"sc_dt::sc_bv<"} + cvtToStr(widthMin())
                 + "> ");  // Keep the space so don't get >>
     } else if (widthMin() == 1) {
-        if (v3Global.opt.pinsScUintBool()) { return "sc_dt::sc_uint<1> "; }
         return "bool";
     } else if (widthMin() <= VL_IDATASIZE) {
         if (widthMin() <= 8 && v3Global.opt.pinsUint8()) {

@@ -192,10 +192,10 @@ public:
     }
     void emitScIQW(AstVar* nodep) {
         UASSERT_OBJ(nodep->isSc(), nodep, "emitting SystemC operator on non-SC variable");
-        puts(nodep->isScBigUint() ? "SB"
-             : nodep->isScUint()  ? "SU"
-             : nodep->isScBv()    ? "SW"
-                                  : (nodep->isScQuad() ? "SQ" : "SI"));
+        puts(nodep->isScBigUint()                           ? "SB"
+             : (nodep->isScUint() || nodep->isScUintBool()) ? "SU"
+             : nodep->isScBv()                              ? "SW"
+                                                            : (nodep->isScQuad() ? "SQ" : "SI"));
     }
     void emitDatap(AstNode* nodep) {
         // When passing to a function with va_args the compiler doesn't
