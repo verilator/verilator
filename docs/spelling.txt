@@ -891,6 +891,7 @@ prototyptes
 ps
 psprintf
 pthread
+pthreads
 ptr
 pulldown
 pulldowns

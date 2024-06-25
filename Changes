@@ -42,6 +42,7 @@ Verilator 5.026 2024-06-15
 * Add traceCapable indication to model header (#5053). [Vito Gamberini]
 * Add increasing of stack size when possible (#5071) (#5104). [Yinan Xu]
 * Add assertion on reusing VerilatedContext (#5167).
+* Add `--pins-sc-uint-bool` to force SystemC uint type (#5192). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Improve DFG regularization in cyclic graphs (#5142). [Geza Lore]
 * Improve VerilatedVpiPutHolder storage requirements (#5144). [Kaleb Barrett]
 * Fix coroutines without awaits to have a co_return (#4208) (#5175). [Arkadiusz Kozdra, Antmicro Ltd.]
@@ -80,7 +81,11 @@ Verilator 5.026 2024-06-15
 * Fix SystemC BITS_PER_DIGIT in VL_ASSIGN_SBW (#5170). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix non-constant replication in concats (#5171). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Fix table optimization when applied on real data type (#5172) (#5173). [Arthur Rosa]
+* Fix signed types emitted in hierarchical Verilation (#5178). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix DPI import of null C-string (#5179).
+* Fix CMake installation missing verilated.mk (#5187) (#5188). [Philip Axer]
+* Fix linking with pthreads on CMake (#5194). [Tim Hutt]
+* Fix clang-17 coroutines configuration with -std=gnu++20 (#5200). [Gus Smith]
 
 
 Verilator 5.024 2024-04-05
