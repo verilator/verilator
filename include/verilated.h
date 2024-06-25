@@ -29,6 +29,7 @@
 
 #ifndef VERILATOR_VERILATED_H_
 #define VERILATOR_VERILATED_H_
+#include <limits>
 #define VERILATOR_VERILATED_H_INTERNAL_
 #ifdef VERILATOR_INTERNAL_
 // This file contains definition of VerilationMutex that should
@@ -163,7 +164,6 @@ enum class VerilatedAssertionType : uint8_t {
     ASSERT_TYPE_UNIQUE = (1 << 5),
     ASSERT_TYPE_UNIQUE0 = (1 << 6),
     ASSERT_TYPE_PRIORITY = (1 << 7),
-    ASSERT_TYPE_MAX_VALUE = (1 << 8) - 1
 };
 using VerilatedAssertionType_t = std::underlying_type<VerilatedAssertionType>::type;
 
@@ -374,8 +374,8 @@ protected:
         // No std::strings or pointers or will serialize badly!
         // Fast path
         uint64_t m_time = 0;  // Current $time (unscaled), 0=at zero, or legacy
-        VerilatedAssertionType_t m_assertOn = static_cast<VerilatedAssertionType_t>(
-            VerilatedAssertionType::ASSERT_TYPE_MAX_VALUE);  // Enabled assertion types
+        VerilatedAssertionType_t m_assertOn
+            = std::numeric_limits<VerilatedAssertionType_t>::max();  // Enabled assertion types
         bool m_calcUnusedSigs = false;  // Waves file on, need all signals calculated
         bool m_fatalOnError = true;  // Fatal on $stop/non-fatal error
         bool m_fatalOnVpiError = true;  // Fatal on vpi error/unsupported
@@ -465,8 +465,10 @@ public:
 
     /// Return if assertions enabled
     bool assertOn() const VL_MT_SAFE;
+    void assertOn(bool flag) VL_MT_SAFE;
     bool getAssertOn(VerilatedAssertionType_t flags) const VL_MT_SAFE;
     void setAssertOn(VerilatedAssertionType_t flags) VL_MT_SAFE;
+    void clearAssertOn(VerilatedAssertionType_t flags) VL_MT_SAFE;
     /// Return if calculating of unused signals (for traces)
     bool calcUnusedSigs() const VL_MT_SAFE { return m_s.m_calcUnusedSigs; }
     /// Enable calculation of unused signals (for traces)
@@ -820,12 +822,16 @@ public:
 #ifndef VL_NO_LEGACY
     /// Return VerilatedContext::assertOn() using current thread's VerilatedContext
     static bool assertOn() VL_MT_SAFE { return Verilated::threadContextp()->assertOn(); }
+    static void assertOn(bool flag) VL_MT_SAFE { Verilated::threadContextp()->assertOn(flag); }
     /// Call VerilatedContext::assertOn using current thread's VerilatedContext
     static void setAssertOn(VerilatedAssertionType_t flags) VL_MT_SAFE {
         Verilated::threadContextp()->setAssertOn(flags);
     }
     static bool getAssertOn(VerilatedAssertionType_t flags) VL_MT_SAFE {
         return Verilated::threadContextp()->getAssertOn(flags);
+    }
+    static void clearAssertOn(VerilatedAssertionType_t flags) VL_MT_SAFE {
+        Verilated::threadContextp()->clearAssertOn(flags);
     }
     /// Return VerilatedContext::calcUnusedSigs using current thread's VerilatedContext
     static bool calcUnusedSigs() VL_MT_SAFE {

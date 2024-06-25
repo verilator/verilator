@@ -398,13 +398,13 @@ class AstNodeCoverOrAssert VL_NOT_FINAL : public AstNodeStmt {
     // op3 used by some sub-types only
     // @astgen op4 := passsp: List[AstNode] // Statements when propp is passing/truthly
     string m_name;  // Name to report
-    const bool m_immediate;  // Immediate assertion/cover
+    const VAssertionType m_type;  // Assertion/cover type
 public:
-    AstNodeCoverOrAssert(VNType t, FileLine* fl, AstNode* propp, AstNode* passsp, bool immediate,
-                         const string& name = "")
+    AstNodeCoverOrAssert(VNType t, FileLine* fl, AstNode* propp, AstNode* passsp,
+                         VAssertionType::en type, const string& name = "")
         : AstNodeStmt{t, fl}
         , m_name{name}
-        , m_immediate{immediate} {
+        , m_type{type} {
         this->propp(propp);
         this->addPasssp(passsp);
     }
@@ -414,7 +414,14 @@ public:
     void name(const string& name) override { m_name = name; }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
-    bool immediate() const { return m_immediate; }
+    VAssertionType type() const { return m_type; }
+    bool immediate() const {
+        return this->type()
+                   & (VAssertionType::SIMPLE_IMMEDIATE
+                      | VAssertionType::OBSERVED_DEFERRED_IMMEDIATE
+                      | VAssertionType::FINAL_DEFERRED_IMMEDIATE)
+               || this->type() == VAssertionType::INTERNAL;
+    }
 };
 class AstNodeFor VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := initsp : List[AstNode]
@@ -2594,8 +2601,8 @@ class AstAssertCtl final : public AstNodeStmt {
     // Type of assertcontrol task; either known from parser or from evaluated
     // controlTypep expression.
     VAssertCtlType m_ctlType;  // $assert keyword type (control_type)
-    std::underlying_type<VAssertCtlAssertionType::en>::type
-        m_assertionTypes;  // Type of assertions affected
+    using VAssertionType_t = std::underlying_type<VAssertionType::en>::type;
+    VAssertionType_t m_assertionTypes;  // Type of assertions affected
 
 public:
     AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr* levelp = nullptr,
@@ -2611,12 +2618,8 @@ public:
     bool isOutputter() override { return true; }
     VAssertCtlType ctlType() const { return m_ctlType; }
     void ctlType(int32_t type) { m_ctlType = VAssertCtlType{type}; }
-    std::underlying_type<VAssertCtlAssertionType::en>::type ctlAssertTypes() const {
-        return m_assertionTypes;
-    }
-    void ctlAssertTypes(std::underlying_type<VAssertCtlAssertionType::en>::type types) {
-        m_assertionTypes = types;
-    }
+    VAssertionType_t ctlAssertTypes() const { return m_assertionTypes; }
+    void ctlAssertTypes(VAssertionType_t types) { m_assertionTypes = types; }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
 };
@@ -3628,11 +3631,12 @@ public:
 // === AstNodeCoverOrAssert ===
 class AstAssert final : public AstNodeCoverOrAssert {
     // @astgen op3 := failsp: List[AstNode] // Statements when propp is failing/falsey
+
 public:
     ASTGEN_MEMBERS_AstAssert;
-    AstAssert(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp, bool immediate,
-              const string& name = "")
-        : ASTGEN_SUPER_Assert(fl, propp, passsp, immediate, name) {
+    AstAssert(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp,
+              VAssertionType::en type, const string& name = "")
+        : ASTGEN_SUPER_Assert(fl, propp, passsp, type, name) {
         this->addFailsp(failsp);
     }
 };
@@ -3642,8 +3646,9 @@ class AstAssertIntrinsic final : public AstNodeCoverOrAssert {
 public:
     ASTGEN_MEMBERS_AstAssertIntrinsic;
     AstAssertIntrinsic(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp,
-                       bool immediate, const string& name = "")
-        : ASTGEN_SUPER_AssertIntrinsic(fl, propp, passsp, immediate, name) {
+                       const string& name = "")
+        // Intrinsic asserts are always enabled thus 'type' field is not used
+        : ASTGEN_SUPER_AssertIntrinsic(fl, propp, passsp, VAssertionType::INTERNAL, name) {
         this->addFailsp(failsp);
     }
 };
@@ -3651,16 +3656,16 @@ class AstCover final : public AstNodeCoverOrAssert {
     // @astgen op3 := coverincsp: List[AstNode] // Coverage node
 public:
     ASTGEN_MEMBERS_AstCover;
-    AstCover(FileLine* fl, AstNode* propp, AstNode* stmtsp, bool immediate,
+    AstCover(FileLine* fl, AstNode* propp, AstNode* stmtsp, VAssertionType::en type,
              const string& name = "")
-        : ASTGEN_SUPER_Cover(fl, propp, stmtsp, immediate, name) {}
-    virtual bool immediate() const { return false; }
+        : ASTGEN_SUPER_Cover(fl, propp, stmtsp, type, name) {}
 };
 class AstRestrict final : public AstNodeCoverOrAssert {
 public:
     ASTGEN_MEMBERS_AstRestrict;
     AstRestrict(FileLine* fl, AstNode* propp)
-        : ASTGEN_SUPER_Restrict(fl, propp, nullptr, false, "") {}
+        // Intrinsic asserts are always ignored thus 'type' field is not used
+        : ASTGEN_SUPER_Restrict(fl, propp, nullptr, VAssertionType::INTERNAL) {}
 };
 
 // === AstNodeFor ===

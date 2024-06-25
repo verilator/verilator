@@ -45,7 +45,6 @@
 //     and DPI libraries are not needed there.
 //=========================================================================
 
-#include "verilated.h"
 #define VERILATOR_VERILATED_CPP_
 
 #include "verilated_config.h"
@@ -2502,9 +2501,8 @@ bool VerilatedContext::assertOn() const VL_MT_SAFE {
 void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     // set all assert types to 'on' when true, set all types to 'off' when false
-    m_s.m_assertOn
-        = static_cast<VerilatedAssertionType_t>(VerilatedAssertionType::ASSERT_TYPE_MAX_VALUE)
-          * static_cast<VerilatedAssertionType_t>(flag);
+    m_s.m_assertOn = std::numeric_limits<VerilatedAssertionType_t>::max()
+                     * static_cast<VerilatedAssertionType_t>(flag);
 }
 bool VerilatedContext::getAssertOn(VerilatedAssertionType_t flags) const {
     const VerilatedLockGuard lock{m_mutex};
@@ -2513,6 +2511,10 @@ bool VerilatedContext::getAssertOn(VerilatedAssertionType_t flags) const {
 void VerilatedContext::setAssertOn(VerilatedAssertionType_t flags) {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_assertOn |= flags;
+}
+void VerilatedContext::clearAssertOn(VerilatedAssertionType_t flags) {
+    const VerilatedLockGuard lock{m_mutex};
+    m_s.m_assertOn &= flags;
 }
 void VerilatedContext::calcUnusedSigs(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};

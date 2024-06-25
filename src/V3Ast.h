@@ -1154,11 +1154,11 @@ constexpr bool operator==(VAssertCtlType::en lhs, const VAssertCtlType& rhs) {
 
 // ######################################################################
 
-class VAssertCtlAssertionType final {
+class VAssertionType final {
 public:
     // IEEE 1800-2023 Table 20-6
     enum en : uint8_t {
-        _TO_BE_EVALUATED = 0,
+        INTERNAL = 0,  // non IEEE type, for assertions that cannot be controlled
         CONCURRENT = (1 << 0),
         SIMPLE_IMMEDIATE = (1 << 1),
         OBSERVED_DEFERRED_IMMEDIATE = (1 << 2),
@@ -1169,22 +1169,34 @@ public:
         PRIORITY = (1 << 7),
     };
     enum en m_e;
-    VAssertCtlAssertionType()
-        : m_e{_TO_BE_EVALUATED} {}
+    VAssertionType()
+        : m_e{INTERNAL} {}
     // cppcheck-suppress noExplicitConstructor
-    constexpr explicit VAssertCtlAssertionType(en _e)
+    constexpr explicit VAssertionType(en _e)
         : m_e{_e} {}
-    explicit VAssertCtlAssertionType(int _e)
+    explicit VAssertionType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    const char* ascii() const {
+        static const char* const names[] = {"[INTERNAL]",
+                                            "[CONCURRENT]",
+                                            "[SIMPLE_IMMEDIATE]",
+                                            "[OBSERVED_DEFERRED_IMMEDIATE]",
+                                            "[FINAL_DEFERRED_IMMEDIATE]",
+                                            "[EXPECT]",
+                                            "[UNIQUE]",
+                                            "[UNIQUE0]",
+                                            "[PRIORITY]"};
+        return names[m_e];
+    }
     constexpr operator en() const { return m_e; }
 };
-constexpr bool operator==(const VAssertCtlAssertionType& lhs, const VAssertCtlAssertionType& rhs) {
+constexpr bool operator==(const VAssertionType& lhs, const VAssertionType& rhs) {
     return lhs.m_e == rhs.m_e;
 }
-constexpr bool operator==(const VAssertCtlAssertionType& lhs, VAssertCtlAssertionType::en rhs) {
+constexpr bool operator==(const VAssertionType& lhs, VAssertionType::en rhs) {
     return lhs.m_e == rhs;
 }
-constexpr bool operator==(VAssertCtlAssertionType::en lhs, const VAssertCtlAssertionType& rhs) {
+constexpr bool operator==(VAssertionType::en lhs, const VAssertionType& rhs) {
     return lhs == rhs.m_e;
 }
 

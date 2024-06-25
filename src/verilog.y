@@ -4269,7 +4269,7 @@ system_t_call<nodeStmtp>:       // IEEE: system_tf_call (as task)
                         { FileLine* const fl_nowarn = new FileLine{$1};
                           fl_nowarn->warnOff(V3ErrorCode::WIDTH, true);
                           $$ = new AstAssertIntrinsic{fl_nowarn, new AstCastDynamic{fl_nowarn, $5, $3},
-                                                      nullptr, nullptr, true}; }
+                                                      nullptr, nullptr}; }
         //
         // Any system function as a task
         |       system_f_call_or_t                      { $$ = new AstSysFuncAsTask{$<fl>1, $1}; }
@@ -6002,13 +6002,13 @@ immediate_assertion_statement<nodep>:   // ==IEEE: immediate_assertion_statement
 simple_immediate_assertion_statement<nodep>:    // ==IEEE: simple_immediate_assertion_statement
         //                      // action_block expanded here, for compatibility with AstAssert
                 assertOrAssume '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE
-                        { $$ = new AstAssert{$1, $3, $5, nullptr, true}; }
+                        { $$ = new AstAssert{$1, $3, $5, nullptr, VAssertionType::SIMPLE_IMMEDIATE}; }
         |       assertOrAssume '(' expr ')'           yELSE stmtBlock
-                        { $$ = new AstAssert{$1, $3, nullptr, $6, true}; }
+                        { $$ = new AstAssert{$1, $3, nullptr, $6, VAssertionType::SIMPLE_IMMEDIATE}; }
         |       assertOrAssume '(' expr ')' stmtBlock yELSE stmtBlock
-                        { $$ = new AstAssert{$1, $3, $5, $7, true}; }
+                        { $$ = new AstAssert{$1, $3, $5, $7, VAssertionType::SIMPLE_IMMEDIATE}; }
         //                      // IEEE: simple_immediate_cover_statement
-        |       yCOVER '(' expr ')' stmt                { $$ = new AstCover{$1, $3, $5, true}; }
+        |       yCOVER '(' expr ')' stmt                { $$ = new AstCover{$1, $3, $5, VAssertionType::SIMPLE_IMMEDIATE}; }
         ;
 
 assertOrAssume<fl>:
@@ -6016,23 +6016,23 @@ assertOrAssume<fl>:
         |       yASSUME                                 { $$ = $1; }
         ;
 
-final_zero:                     // IEEE: part of deferred_immediate_assertion_statement
+final_zero<assertiontypeen>:                     // IEEE: part of deferred_immediate_assertion_statement
                 '#' yaINTNUM
-                        { if ($2->isNeqZero()) { $<fl>2->v3error("Deferred assertions must use '#0' (IEEE 1800-2023 16.4)"); } }
+                        { if ($2->isNeqZero()) { $<fl>2->v3error("Deferred assertions must use '#0' (IEEE 1800-2023 16.4)"); } $$ = VAssertionType::OBSERVED_DEFERRED_IMMEDIATE; }
         //                      // 1800-2012:
-        |       yFINAL                                                  { }
+        |       yFINAL                                                  { $$ = VAssertionType::FINAL_DEFERRED_IMMEDIATE; }
         ;
 
 deferred_immediate_assertion_statement<nodep>:  // ==IEEE: deferred_immediate_assertion_statement
         //                      // IEEE: deferred_immediate_assert_statement
                 assertOrAssume final_zero '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE
-                        { $$ = new AstAssert{$1, $4, $6, nullptr, true}; }
+                        { $$ = new AstAssert{$1, $4, $6, nullptr, $2}; }
         |       assertOrAssume final_zero '(' expr ')'           yELSE stmtBlock
-                        { $$ = new AstAssert{$1, $4, nullptr, $7, true}; }
+                        { $$ = new AstAssert{$1, $4, nullptr, $7, $2}; }
         |       assertOrAssume final_zero '(' expr ')' stmtBlock yELSE stmtBlock
-                        { $$ = new AstAssert{$1, $4, $6, $8, true}; }
+                        { $$ = new AstAssert{$1, $4, $6, $8, $2}; }
         //                      // IEEE: deferred_immediate_cover_statement
-        |       yCOVER final_zero '(' expr ')' stmt     { $$ = new AstCover{$1, $4, $6, true}; }
+        |       yCOVER final_zero '(' expr ')' stmt     { $$ = new AstCover{$1, $4, $6, $2}; }
         ;
 
 concurrent_assertion_item<nodep>:       // IEEE: concurrent_assertion_item
@@ -6048,14 +6048,14 @@ concurrent_assertion_statement<nodep>:  // ==IEEE: concurrent_assertion_statemen
         //                      // IEEE: assume_property_statement
         //                      // action_block expanded here
                 assertOrAssume yPROPERTY '(' property_spec ')' stmt %prec prLOWER_THAN_ELSE
-                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, $6, nullptr, false}; }
+                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, $6, nullptr, VAssertionType::CONCURRENT}; }
         |       assertOrAssume yPROPERTY '(' property_spec ')' stmt yELSE stmt
-                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, $6, $8, false}; }
+                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, $6, $8, VAssertionType::CONCURRENT}; }
         |       assertOrAssume yPROPERTY '(' property_spec ')' yELSE stmt
-                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, nullptr, $7, false}; }
+                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, nullptr, $7, VAssertionType::CONCURRENT}; }
         //                      // IEEE: cover_property_statement
         |       yCOVER yPROPERTY '(' property_spec ')' stmtBlock
-                        { $$ = new AstCover{$1, $4, $6, false}; }
+                        { $$ = new AstCover{$1, $4, $6, VAssertionType::CONCURRENT}; }
         //                      // IEEE: cover_sequence_statement
         |       yCOVER ySEQUENCE '(' sexpr ')' stmt
                         { $$ = nullptr; BBUNSUP($2, "Unsupported: cover sequence"); }

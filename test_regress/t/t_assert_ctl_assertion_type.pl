@@ -11,13 +11,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 compile(
-    verilator_flags2 => ['--assert', '--timing'],
+    verilator_flags2 => ['--assert --timing --coverage-user'],
+    nc_flags2 => ["+nccovoverwrite +nccoverage+all +nccovtest+$Self->{name}"]
     );
 
 execute(
     all_run_flags => ["+verilator+error+limit+100"],
     expect_filename => $Self->{golden_filename},
     );
+
+# TODO cover checks
 
 ok(1);
 1;

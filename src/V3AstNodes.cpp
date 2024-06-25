@@ -1477,7 +1477,7 @@ AstAssertCtl::AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr*
                            AstNodeExpr*, AstNodeExpr* levelp, AstNodeExpr* itemsp)
     : ASTGEN_SUPER_AssertCtl(fl)
     , m_ctlType{VAssertCtlType::_TO_BE_EVALUATED}
-    , m_assertionTypes{VAssertCtlAssertionType::_TO_BE_EVALUATED} {
+    , m_assertionTypes{VAssertionType::INTERNAL} {
     this->controlTypep(controlTypep);
     this->assertionTypesp(assertionTypesp);
     if (!levelp) levelp = new AstConst{fl, 0};
@@ -1641,10 +1641,10 @@ string AstClassRefDType::prettyDTypeName(bool) const { return "class{}"s + prett
 string AstClassRefDType::name() const { return classp() ? classp()->name() : "<unlinked>"; }
 void AstNodeCoverOrAssert::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
-    if (immediate()) str << " [IMMEDIATE]";
+    str << this->type();
 }
 void AstNodeCoverOrAssert::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, immediate);
+    dumpJsonStr(str, "type", this->type().ascii());
     dumpJsonGen(str);
 }
 void AstClocking::dump(std::ostream& str) const {
