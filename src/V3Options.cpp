@@ -1406,6 +1406,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_pinsScUint = flag;
         if (!m_pinsScBigUint) m_pinsBv = 65;
     });
+    DECL_OPTION("-pins-sc-uint-bool", CbOnOff, [this](bool flag) { m_pinsScUintBool = flag; });
     DECL_OPTION("-pins-sc-biguint", CbOnOff, [this](bool flag) {
         m_pinsScBigUint = flag;
         m_pinsBv = 513;

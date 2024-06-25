@@ -694,7 +694,7 @@ class EmitCTrace final : EmitCFunc {
         const AstVarRef* const varrefp = VN_CAST(nodep->declp()->valuep(), VarRef);
         if (!varrefp) return false;
         AstVar* const varp = varrefp->varp();
-        return varp->isSc() && varp->isScUint();
+        return varp->isSc() && (varp->isScUint() || varp->isScUintBool());
     }
 
     void emitTraceInitOne(AstTraceDecl* nodep, int enumNum) {

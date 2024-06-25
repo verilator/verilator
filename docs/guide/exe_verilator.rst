@@ -1004,6 +1004,10 @@ Summary:
    :vlopt:`--pins-sc-biguint` combination, it results in sc_uint being used
    between 2 and 64 and sc_biguint being used between 65 and 512.
 
+.. option:: --pins-sc-uint-bool
+
+   Specifies SystemC inputs/outputs one bit wide should use sc_uint<1>.
+
 .. option:: --pins-sc-biguint
 
    Specifies SystemC inputs/outputs greater than 65 bits wide should use
