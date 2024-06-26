@@ -117,63 +117,63 @@ int _mon_check_get_bad(){
 int _mon_check_get_int(){
     // 2D vpiIntVal VLVT_UINT8 
     int index[2] = {0,0};
-    TestVpiHandle vector_dim2_8_h = VPI_HANDLE("vector_dim2_8");
-    CHECK_RESULT_NZ(vector_dim2_8_h);
-    s_vpi_arrayvalue vector_dim2_v = {vpiIntVal,0,nullptr};
-    vpi_get_value_array(vector_dim2_8_h,&vector_dim2_v,index,6);
-    CHECK_RESULT_NZ(vector_dim2_v.value.integers);
+    TestVpiHandle int_dim2_8_h = VPI_HANDLE("int_dim2_8");
+    CHECK_RESULT_NZ(int_dim2_8_h);
+    s_vpi_arrayvalue int_dim2_v = {vpiIntVal,0,nullptr};
+    vpi_get_value_array(int_dim2_8_h,&int_dim2_v,index,6);
+    CHECK_RESULT_NZ(int_dim2_v.value.integers);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(vector_dim2_v.value.integers[i],i+(1<<7));
+        CHECK_RESULT(int_dim2_v.value.integers[i],i+(1<<7));
     }
 
     // 2D vpiIntVal VLVT_UINT8 userAllocFlag non-max num
-    vector_dim2_v = {vpiIntVal,vpiUserAllocFlag,nullptr};
+    int_dim2_v = {vpiIntVal,vpiUserAllocFlag,nullptr};
     PLI_INT32 integers[6] = {0,0,0,0,0,0};
-    vector_dim2_v.value.integers = integers;
-    vpi_get_value_array(vector_dim2_8_h,&vector_dim2_v,index,2);
+    int_dim2_v.value.integers = integers;
+    vpi_get_value_array(int_dim2_8_h,&int_dim2_v,index,2);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
         if(i >= 2) {
-            CHECK_RESULT_Z(vector_dim2_v.value.integers[i]);
+            CHECK_RESULT_Z(int_dim2_v.value.integers[i]);
             continue;
         }
-        CHECK_RESULT(vector_dim2_v.value.integers[i],i+(1<<7));
+        CHECK_RESULT(int_dim2_v.value.integers[i],i+(1<<7));
     }
 
     // 2D vpiIntVal VLVT_UINT8 non-zero index
     index[0] = 1;
     index[1] = 1;
-    vector_dim2_v = {vpiIntVal,0,nullptr};
-    vpi_get_value_array(vector_dim2_8_h,&vector_dim2_v,index,6);
-    CHECK_RESULT_NZ(vector_dim2_v.value.integers);
+    int_dim2_v = {vpiIntVal,0,nullptr};
+    vpi_get_value_array(int_dim2_8_h,&int_dim2_v,index,6);
+    CHECK_RESULT_NZ(int_dim2_v.value.integers);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(vector_dim2_v.value.integers[i],((i+4)%6)+(1<<7));
+        CHECK_RESULT(int_dim2_v.value.integers[i],((i+4)%6)+(1<<7));
     }
 
     // 2D vpiIntVal VLVT_UINT16
     index[0] = 0;
     index[1] = 0;
-    TestVpiHandle vector_dim2_16_h = VPI_HANDLE("vector_dim2_16");
-    CHECK_RESULT_NZ(vector_dim2_16_h);
-    vector_dim2_v = {vpiIntVal,0,nullptr};
-    vpi_get_value_array(vector_dim2_16_h,&vector_dim2_v,index,6);
-    CHECK_RESULT_NZ(vector_dim2_v.value.integers);
+    TestVpiHandle int_dim2_16_h = VPI_HANDLE("int_dim2_16");
+    CHECK_RESULT_NZ(int_dim2_16_h);
+    int_dim2_v = {vpiIntVal,0,nullptr};
+    vpi_get_value_array(int_dim2_16_h,&int_dim2_v,index,6);
+    CHECK_RESULT_NZ(int_dim2_v.value.integers);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(vector_dim2_v.value.integers[i],i+(1<<15));
+        CHECK_RESULT(int_dim2_v.value.integers[i],i+(1<<15));
     }
 
     // 2D vpiIntVal VLVT_UINT32
-    TestVpiHandle vector_dim2_32_h = VPI_HANDLE("vector_dim2_32");
-    CHECK_RESULT_NZ(vector_dim2_32_h);
-    vector_dim2_v = {vpiIntVal,0,nullptr};
-    vpi_get_value_array(vector_dim2_32_h,&vector_dim2_v,index,6);
-    CHECK_RESULT_NZ(vector_dim2_v.value.integers);
+    TestVpiHandle int_dim2_32_h = VPI_HANDLE("int_dim2_32");
+    CHECK_RESULT_NZ(int_dim2_32_h);
+    int_dim2_v = {vpiIntVal,0,nullptr};
+    vpi_get_value_array(int_dim2_32_h,&int_dim2_v,index,6);
+    CHECK_RESULT_NZ(int_dim2_v.value.integers);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(vector_dim2_v.value.integers[i],i+(1<<31));
+        CHECK_RESULT(int_dim2_v.value.integers[i],i+(1<<31));
     }
 
     return 0;
