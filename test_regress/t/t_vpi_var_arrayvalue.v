@@ -74,6 +74,31 @@ VARIABLE DEFINITIONS
    assign real_dim2[1][1] = 4.5;
    assign real_dim2[1][2] = 5.5;
 
+   //_mon_check_get_vector
+   logic      [7:0] vector_dim2_8 [0:1][0:2] /*verilator public_flat_rw */;
+   assign vector_dim2_8[0][0] = 8'h80;
+   assign vector_dim2_8[0][1] = 8'h81;
+   assign vector_dim2_8[0][2] = 8'h82;
+   assign vector_dim2_8[1][0] = 8'h83;
+   assign vector_dim2_8[1][1] = 8'h84;
+   assign vector_dim2_8[1][2] = 8'h85;
+
+   logic      [15:0] vector_dim2_16 [0:1][0:2] /*verilator public_flat_rw */;
+   assign vector_dim2_16[0][0] = 16'h8000;
+   assign vector_dim2_16[0][1] = 16'h8001;
+   assign vector_dim2_16[0][2] = 16'h8002;
+   assign vector_dim2_16[1][0] = 16'h8003;
+   assign vector_dim2_16[1][1] = 16'h8004;
+   assign vector_dim2_16[1][2] = 16'h8005;
+
+   logic      [31:0] vector_dim2_32 [0:1][0:2] /*verilator public_flat_rw */;
+   assign vector_dim2_32[0][0] = 32'h80000000;
+   assign vector_dim2_32[0][1] = 32'h80000001;
+   assign vector_dim2_32[0][2] = 32'h80000002;
+   assign vector_dim2_32[1][0] = 32'h80000003;
+   assign vector_dim2_32[1][1] = 32'h80000004;
+   assign vector_dim2_32[1][2] = 32'h80000005;
+
 /*-------------------------------------------
 TICK COUNTER
 -------------------------------------------*/

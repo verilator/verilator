@@ -179,6 +179,44 @@ int _mon_check_get_int(){
     return 0;
 }
 
+int _mon_check_get_vector(){
+    // 2D vpiVectorVal VLVT_UINT8
+    int index[2] = {0,0};
+    TestVpiHandle vector_dim2_8_h = VPI_HANDLE("vector_dim2_8");
+    CHECK_RESULT_NZ(vector_dim2_8_h);
+    s_vpi_arrayvalue vector_dim2_8_v = {vpiVectorVal,0,nullptr};
+    vpi_get_value_array(vector_dim2_8_h,&vector_dim2_8_v,index,6);
+    CHECK_RESULT_NZ(vector_dim2_8_v.value.vectors);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for(auto i = 0; i < 6; i++){
+        CHECK_RESULT(vector_dim2_8_v.value.vectors[i].aval,i+(1<<7));
+    }
+
+    // 2D vpiVectorVal VLVT_UINT16
+    TestVpiHandle vector_dim2_16_h = VPI_HANDLE("vector_dim2_16");
+    CHECK_RESULT_NZ(vector_dim2_16_h);
+    s_vpi_arrayvalue vector_dim2_16_v = {vpiVectorVal,0,nullptr};
+    vpi_get_value_array(vector_dim2_16_h,&vector_dim2_16_v,index,6);
+    CHECK_RESULT_NZ(vector_dim2_16_v.value.vectors);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for(auto i = 0; i < 6; i++){
+        CHECK_RESULT(vector_dim2_16_v.value.vectors[i].aval,i+(1<<15));
+    }
+
+    // 2D vpiVectorVal VLVT_UINT32
+    TestVpiHandle vector_dim2_32_h = VPI_HANDLE("vector_dim2_32");
+    CHECK_RESULT_NZ(vector_dim2_32_h);
+    s_vpi_arrayvalue vector_dim2_32_v = {vpiVectorVal,0,nullptr};
+    vpi_get_value_array(vector_dim2_32_h,&vector_dim2_32_v,index,6);
+    CHECK_RESULT_NZ(vector_dim2_32_v.value.vectors);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for(auto i = 0; i < 6; i++){
+        CHECK_RESULT(vector_dim2_32_v.value.vectors[i].aval,i+(1<<31));
+    }
+
+    return 0;
+}
+
 int _mon_check_get_real(){
     // 2D vpiRealVal
     int index[2] = {0,0};
@@ -202,6 +240,7 @@ extern "C" int mon_check() {
 #endif
     if(int status = _mon_check_get_bad()) return status;
     if(int status = _mon_check_get_int()) return status;
+    if(int status = _mon_check_get_vector()) return status;
     if(int status = _mon_check_get_real()) return status;
 #ifndef IS_VPI
     VerilatedVpi::selfTest();
