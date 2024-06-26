@@ -107,6 +107,14 @@ VARIABLE DEFINITIONS
    assign vector_dim2_64[1][1] = 64'h8000000000000004;
    assign vector_dim2_64[1][2] = 64'h8000000000000005;
 
+   logic      [95:0] vector_dim2_96 [0:1][0:2] /*verilator public_flat_rw */;
+   assign vector_dim2_96[0][0] = 96'h800000004000000000000000;
+   assign vector_dim2_96[0][1] = 96'h800000004000000000000001;
+   assign vector_dim2_96[0][2] = 96'h800000004000000000000002;
+   assign vector_dim2_96[1][0] = 96'h800000004000000000000003;
+   assign vector_dim2_96[1][1] = 96'h800000004000000000000004;
+   assign vector_dim2_96[1][2] = 96'h800000004000000000000005;
+
 /*-------------------------------------------
 TICK COUNTER
 -------------------------------------------*/

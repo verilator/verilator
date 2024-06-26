@@ -225,8 +225,8 @@ int _mon_check_get_vector(){
     CHECK_RESULT_NZ(vector_dim2_64_v.value.vectors);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(vector_dim2_64_v.value.vectors[(2*i)].aval,(1<<31));
-        CHECK_RESULT(vector_dim2_64_v.value.vectors[(2*i)+1].aval,i);
+        CHECK_RESULT(vector_dim2_64_v.value.vectors[(2*i)].aval,i);
+        CHECK_RESULT(vector_dim2_64_v.value.vectors[(2*i)+1].aval,(1<<31));
         CHECK_RESULT_Z(vector_dim2_64_v.value.vectors[(2*i)].bval);
         CHECK_RESULT_Z(vector_dim2_64_v.value.vectors[(2*i)+1].bval);
     }
@@ -239,10 +239,42 @@ int _mon_check_get_vector(){
     CHECK_RESULT_NZ(vector_dim2_64_v.value.vectors);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(vector_dim2_64_v.value.vectors[(2*i)].aval,(1<<31));
-        CHECK_RESULT(vector_dim2_64_v.value.vectors[(2*i)+1].aval,(i+4)%6);
+        CHECK_RESULT(vector_dim2_64_v.value.vectors[(2*i)].aval,(i+4)%6);
+        CHECK_RESULT(vector_dim2_64_v.value.vectors[(2*i)+1].aval,(1<<31));
         CHECK_RESULT_Z(vector_dim2_64_v.value.vectors[(2*i)].bval);
         CHECK_RESULT_Z(vector_dim2_64_v.value.vectors[(2*i)+1].bval);
+    }
+
+    // 2D vpiVectorVal VLVT_WData non-zero index
+    TestVpiHandle vector_dim2_96_h = VPI_HANDLE("vector_dim2_96");
+    CHECK_RESULT_NZ(vector_dim2_96_h);
+    s_vpi_arrayvalue vector_dim2_96_v = {vpiVectorVal,0,nullptr};
+    vpi_get_value_array(vector_dim2_96_h,&vector_dim2_96_v,index,6);
+    CHECK_RESULT_NZ(vector_dim2_96_v.value.vectors);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for(auto i = 0; i < 6; i++){
+        CHECK_RESULT(vector_dim2_96_v.value.vectors[(3*i)].aval,(i+4)%6);
+        CHECK_RESULT(vector_dim2_96_v.value.vectors[(3*i)+1].aval,(1<<30));
+        CHECK_RESULT(vector_dim2_96_v.value.vectors[(3*i)+2].aval,(1<<31));
+        CHECK_RESULT_Z(vector_dim2_96_v.value.vectors[(3*i)].bval);
+        CHECK_RESULT_Z(vector_dim2_96_v.value.vectors[(3*i)+1].bval);
+        CHECK_RESULT_Z(vector_dim2_96_v.value.vectors[(3*i)+2].bval);
+    }
+
+    // 2D vpiVectorVal VLVT_WData
+    index[0] = 0;
+    index[1] = 0;
+    vector_dim2_96_v = {vpiVectorVal,0,nullptr};
+    vpi_get_value_array(vector_dim2_96_h,&vector_dim2_96_v,index,6);
+    CHECK_RESULT_NZ(vector_dim2_96_v.value.vectors);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for(auto i = 0; i < 6; i++){
+        CHECK_RESULT(vector_dim2_96_v.value.vectors[(3*i)].aval,i);
+        CHECK_RESULT(vector_dim2_96_v.value.vectors[(3*i)+1].aval,(1<<30));
+        CHECK_RESULT(vector_dim2_96_v.value.vectors[(3*i)+2].aval,(1<<31));
+        CHECK_RESULT_Z(vector_dim2_96_v.value.vectors[(3*i)].bval);
+        CHECK_RESULT_Z(vector_dim2_96_v.value.vectors[(3*i)+1].bval);
+        CHECK_RESULT_Z(vector_dim2_96_v.value.vectors[(3*i)+2].bval);
     }
 
     return 0;

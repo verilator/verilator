@@ -2879,18 +2879,25 @@ int vl_get_value_array(const VerilatedVpioMemory* memop, const p_vpi_arrayvalue 
                 valuep->bval = 0;
                 return 1;
             }
-            if (memop->varp()->vltype() == VLVT_UINT64) {
-                valuep = arrayvaluep->value.vectors + (2 * addr);
-                const auto qdatap = reinterpret_cast<QData*>(memop->varDatap()) + offset;
-                valuep->aval = static_cast<IData>(*qdatap >> 32ULL);
-                valuep->bval = 0;
-                (valuep + 1)->aval = static_cast<IData>(*qdatap);
-                (valuep + 1)->bval = 0;
+            if (memop->varp()->vltype() == VLVT_WDATA || memop->varp()->vltype() == VLVT_UINT64) {
+                const auto words = VL_WORDS_I(memop->varp()->packed().elements());
+                if (VL_UNCOVERABLE(words >= VL_VALUE_STRING_MAX_WORDS)) {
+                    VL_FATAL_MT(__FILE__, __LINE__, "",
+                                "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; increase and "
+                                "recompile");
+                }
+
+                valuep = arrayvaluep->value.vectors + (words * addr);
+                const auto edatap = reinterpret_cast<EData*>(memop->varDatap()) + (words * offset);
+
+                for (auto i = 0; i < words; i++) {
+                    (valuep + i)->aval = edatap[i];
+                    (valuep + i)->bval = 0;
+                }
                 return 1;
             }
         }
     }
-    
     
     const auto varp = memop->varp();
     const auto udim = memop->udim();
