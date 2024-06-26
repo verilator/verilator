@@ -190,6 +190,7 @@ int _mon_check_get_vector(){
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
         CHECK_RESULT(vector_dim2_8_v.value.vectors[i].aval,i+(1<<7));
+        CHECK_RESULT_Z(vector_dim2_8_v.value.vectors[i].bval);
     }
 
     // 2D vpiVectorVal VLVT_UINT16
@@ -201,6 +202,7 @@ int _mon_check_get_vector(){
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
         CHECK_RESULT(vector_dim2_16_v.value.vectors[i].aval,i+(1<<15));
+        CHECK_RESULT_Z(vector_dim2_16_v.value.vectors[i].bval);
     }
 
     // 2D vpiVectorVal VLVT_UINT32
@@ -212,6 +214,35 @@ int _mon_check_get_vector(){
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
         CHECK_RESULT(vector_dim2_32_v.value.vectors[i].aval,i+(1<<31));
+        CHECK_RESULT_Z(vector_dim2_32_v.value.vectors[i].bval);
+    }
+    
+    // 2D vpiVectorVal VLVT_UINT64
+    TestVpiHandle vector_dim2_64_h = VPI_HANDLE("vector_dim2_64");
+    CHECK_RESULT_NZ(vector_dim2_64_h);
+    s_vpi_arrayvalue vector_dim2_64_v = {vpiVectorVal,0,nullptr};
+    vpi_get_value_array(vector_dim2_64_h,&vector_dim2_64_v,index,6);
+    CHECK_RESULT_NZ(vector_dim2_64_v.value.vectors);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for(auto i = 0; i < 6; i++){
+        CHECK_RESULT(vector_dim2_64_v.value.vectors[(2*i)].aval,(1<<31));
+        CHECK_RESULT(vector_dim2_64_v.value.vectors[(2*i)+1].aval,i);
+        CHECK_RESULT_Z(vector_dim2_64_v.value.vectors[(2*i)].bval);
+        CHECK_RESULT_Z(vector_dim2_64_v.value.vectors[(2*i)+1].bval);
+    }
+
+    // 2D vpiVectorVal VLVT_UINT64 non-zero index
+    index[0] = 1;
+    index[1] = 1;
+    vector_dim2_64_v = {vpiVectorVal,0,nullptr};
+    vpi_get_value_array(vector_dim2_64_h,&vector_dim2_64_v,index,6);
+    CHECK_RESULT_NZ(vector_dim2_64_v.value.vectors);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for(auto i = 0; i < 6; i++){
+        CHECK_RESULT(vector_dim2_64_v.value.vectors[(2*i)].aval,(1<<31));
+        CHECK_RESULT(vector_dim2_64_v.value.vectors[(2*i)+1].aval,(i+4)%6);
+        CHECK_RESULT_Z(vector_dim2_64_v.value.vectors[(2*i)].bval);
+        CHECK_RESULT_Z(vector_dim2_64_v.value.vectors[(2*i)+1].bval);
     }
 
     return 0;
