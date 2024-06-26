@@ -76,15 +76,8 @@ class VerilatedVarProps VL_NOT_FINAL {
     const VerilatedVarFlags m_vlflags;  // Direction
     const int m_pdims;  // Packed dimensions, 0 = none
     const int m_udims;  // Unpacked dimensions, 0 = none
-    VerilatedRange m_packed;  // Packed array range
+    std::vector<VerilatedRange> m_packed;  // Packed array ranges
     std::vector<VerilatedRange> m_unpacked;  // Unpacked array ranges
-    void initUnpacked(const int* ulims) {
-        for (int i = 0; i < m_udims; ++i) {
-            const int uleft = ulims ? ulims[2 * i + 0] : 0;
-            const int uright = ulims ? ulims[2 * i + 1] : 0;
-            m_unpacked.emplace_back(uleft, uright);
-        }
-    }
     // CONSTRUCTORS
 protected:
     friend class VerilatedScope;
@@ -94,45 +87,18 @@ protected:
         , m_vlflags{vlflags}
         , m_pdims{pdims}
         , m_udims{udims} {
-        initUnpacked(nullptr);
+        for (auto i = 0; i < m_udims; ++i) {
+            m_unpacked.emplace_back(0, 0);
+        }
+        for (auto i = 0; i < m_pdims; ++i) {
+            m_packed.emplace_back(0, 0);
+        }
+        if(m_pdims == 0) {
+            m_packed.emplace_back(0,0);
+        }
     }
 
 public:
-    class Unpacked {};
-    // Without packed
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags)
-        : m_magic{MAGIC}
-        , m_vltype{vltype}
-        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
-        , m_pdims{0}
-        , m_udims{0} {}
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulims)
-        : m_magic{MAGIC}
-        , m_vltype{vltype}
-        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
-        , m_pdims{0}
-        , m_udims{udims} {
-        initUnpacked(ulims);
-    }
-    // With packed
-    class Packed {};
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pl, int pr)
-        : m_magic{MAGIC}
-        , m_vltype{vltype}
-        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
-        , m_pdims{1}
-        , m_udims{0}
-        , m_packed{pl, pr} {}
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pl, int pr, Unpacked,
-                      int udims, const int* ulims)
-        : m_magic{MAGIC}
-        , m_vltype{vltype}
-        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
-        , m_pdims{1}
-        , m_udims{udims}
-        , m_packed{pl, pr} {
-        initUnpacked(ulims);
-    }
 
     ~VerilatedVarProps() = default;
     // METHODS
@@ -146,40 +112,42 @@ public:
     // DPI compatible C standard layout
     bool isDpiCLayout() const { return ((m_vlflags & VLVF_DPI_CLAY) != 0); }
     int udims() const VL_MT_SAFE { return m_udims; }
+    int pdims() const VL_MT_SAFE { return m_pdims; }
     int dims() const { return m_pdims + m_udims; }
-    const VerilatedRange& packed() const VL_MT_SAFE { return m_packed; }
-    const VerilatedRange& unpacked() const { return m_unpacked[0]; }
-    const VerilatedRange& unpacked(int dim) const { return m_unpacked[dim - 1]; }
+    const VerilatedRange& packed() const VL_MT_SAFE { return m_packed[0]; } //deprecated
+    const VerilatedRange& packed(int pdim) const VL_MT_SAFE { return m_packed[pdim]; }
+    const VerilatedRange& unpacked() const VL_MT_SAFE { return m_unpacked[0]; } //deprecated
+    const VerilatedRange& unpacked(int udim) const VL_MT_SAFE { return m_unpacked[udim]; }
     // DPI accessors
     int left(int dim) const VL_MT_SAFE {
-        return dim == 0                                ? m_packed.left()
-               : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].left()
-                                                       : 0;
+        return dim < pdims()                ? m_packed[dim].left()
+               : VL_LIKELY(dim <= udims())  ? m_unpacked[dim - pdims()].left()
+                                            : 0;
     }
     int right(int dim) const VL_MT_SAFE {
-        return dim == 0                                ? m_packed.right()
-               : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].right()
-                                                       : 0;
+        return dim < pdims()                ? m_packed[dim].right()
+               : VL_LIKELY(dim <= udims())  ? m_unpacked[dim - pdims()].right()
+                                            : 0;
     }
     int low(int dim) const VL_MT_SAFE {
-        return dim == 0                                ? m_packed.low()
-               : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].low()
-                                                       : 0;
+        return dim < pdims()                ? m_packed[dim].low()
+               : VL_LIKELY(dim <= udims())  ? m_unpacked[dim - pdims()].low()
+                                            : 0;
     }
     int high(int dim) const VL_MT_SAFE {
-        return dim == 0                                ? m_packed.high()
-               : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].high()
-                                                       : 0;
+        return dim < pdims()                ? m_packed[dim].high()
+               : VL_LIKELY(dim <= udims())  ? m_unpacked[dim - pdims()].high()
+                                            : 0;
     }
     int increment(int dim) const {
-        return dim == 0                                ? m_packed.increment()
-               : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].increment()
-                                                       : 0;
+        return dim < pdims()                ? m_packed[dim].increment()
+               : VL_LIKELY(dim <= udims())  ? m_unpacked[dim - pdims()].increment()
+                                            : 0;
     }
     int elements(int dim) const VL_MT_SAFE {
-        return dim == 0                                ? m_packed.elements()
-               : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].elements()
-                                                       : 0;
+        return dim < pdims()                ? m_packed[dim].elements()
+               : VL_LIKELY(dim <= udims())  ? m_unpacked[dim - pdims()].elements()
+                                            : 0;
     }
     // Total size in bytes (note DPI limited to 4GB)
     size_t totalSize() const;
@@ -209,8 +177,8 @@ public:
     bool magicOk() const { return m_propsp->magicOk(); }
     VerilatedVarType vltype() const { return m_propsp->vltype(); }
     bool isDpiStdLayout() const { return m_propsp->isDpiCLayout(); }
-    const VerilatedRange& packed() const { return m_propsp->packed(); }
-    const VerilatedRange& unpacked() const { return m_propsp->unpacked(); }
+    const VerilatedRange& packed() const { return m_propsp->packed(0); } //deprecated call packed(n)
+    const VerilatedRange& unpacked() const { return m_propsp->unpacked(0); } //deprecated call unpacked(n)
     int udims() const VL_MT_SAFE { return m_propsp->udims(); }
     int left(int dim) const VL_MT_SAFE { return m_propsp->left(dim); }
     int right(int dim) const VL_MT_SAFE { return m_propsp->right(dim); }
@@ -237,8 +205,8 @@ protected:
     friend class VerilatedScope;
     // CONSTRUCTORS
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
-                 VerilatedVarFlags vlflags, int dims, bool isParam)
-        : VerilatedVarProps{vltype, vlflags, (dims > 0 ? 1 : 0), ((dims > 1) ? dims - 1 : 0)}
+                 VerilatedVarFlags vlflags, int pdims, int udims, bool isParam)
+        : VerilatedVarProps{vltype, vlflags, pdims, udims}
         , m_datap{datap}
         , m_namep{namep}
         , m_isParam{isParam} {}
@@ -247,8 +215,6 @@ public:
     ~VerilatedVar() = default;
     // ACCESSORS
     void* datap() const { return m_datap; }
-    const VerilatedRange& range() const { return packed(); }  // Deprecated
-    const VerilatedRange& array() const { return unpacked(); }  // Deprecated
     const char* name() const { return m_namep; }
     bool isParam() const { return m_isParam; }
 };

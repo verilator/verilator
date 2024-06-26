@@ -173,7 +173,8 @@ protected:
     std::string m_fullname;
     const VerilatedRange& get_range() const {
         // Determine number of dimensions and return outermost
-        return (m_varp->dims() > 1) ? m_varp->unpacked() : m_varp->packed();
+        if(m_varp->udims() > 0) return m_varp->unpacked(0);
+        return m_varp->packed(0);
     }
 
 public:
@@ -348,15 +349,12 @@ public:
 
 class VerilatedVpioMemory final : public VerilatedVpioVar {
     uint32_t m_udim = 0;
-    uint32_t m_offset = 0;
 public:
     VerilatedVpioMemory(const VerilatedVar* varp, const VerilatedScope* scopep) 
         : VerilatedVpioVar{varp, scopep} {}
     explicit VerilatedVpioMemory(const VerilatedVpioMemory* memop, const int32_t index) : VerilatedVpioVar{memop->varp(), memop->scopep()} {
         m_index = index;
         m_udim = memop->m_udim+1;
-        m_offset = (memop->m_offset*m_varp->elements(m_udim)) + this->index();
-        m_varDatap = static_cast<PLI_BYTE8*>(m_varp->datap()) + (m_offset * entSize());
     }   
     ~VerilatedVpioMemory() override = default;
     static VerilatedVpioMemory* castp(vpiHandle h) {
@@ -364,7 +362,6 @@ public:
     }
     uint32_t type() const override { return m_udim == m_varp->udims() ? vpiMemoryWord : vpiMemory; }
     uint32_t udim() const { return m_udim; }
-    uint32_t offset() const { return m_offset; }
 };
 
 class VerilatedVpioVarIter final : public VerilatedVpio {
@@ -2035,19 +2032,17 @@ vpiHandle vpi_handle_by_index(vpiHandle object, PLI_INT32 indx) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_handle_by_index %p %d\n", object, indx););
     VerilatedVpiImp::assertOneCheck();
     VL_VPI_ERROR_RESET_();
-    const VerilatedVpioMemory* const varop = VerilatedVpioMemory::castp(object);
-    if (VL_LIKELY(varop)) {
-        if (varop->varp()->dims() < 2) return nullptr;
-        if (VL_LIKELY(varop->varp()->unpacked(varop->udim()).left() >= varop->varp()->unpacked(varop->udim()).right())) {
-            if (VL_UNLIKELY(indx > varop->varp()->unpacked(varop->udim()).left()
-                            || indx < varop->varp()->unpacked(varop->udim()).right()))
-                return nullptr;
-            return (new VerilatedVpioMemory{varop, indx})->castVpiHandle();
-        }
-        if (VL_UNLIKELY(indx < varop->varp()->unpacked(varop->udim()).left()
-                        || indx > varop->varp()->unpacked(varop->udim()).right()))
-            return nullptr;
-        return (new VerilatedVpioMemory{varop, indx})->castVpiHandle();
+    const VerilatedVpioMemory* const memop = VerilatedVpioMemory::castp(object);
+    if (VL_LIKELY(memop)) {
+        const auto varp = memop->varp();
+        const auto udim = memop->udim();
+
+        //index must be within bounds
+        const auto left = varp->unpacked(udim).left();
+        const auto right = varp->unpacked(udim).right();
+        if (!(left <= indx && indx <= right) && !(right <= indx && indx <= left)) return nullptr;
+
+        return (new VerilatedVpioMemory{memop, indx})->castVpiHandle();
     }
     VL_VPI_INTERNAL_(__FILE__, __LINE__, "%s : can't resolve handle", __func__);
     return nullptr;
@@ -2358,6 +2353,12 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_arrayvalue arrayvalue
             case VLVT_UINT8: return true;
             case VLVT_UINT16: return true;
             case VLVT_UINT32: return true;
+            default: return false;
+        }
+    }
+    if (arrayvaluep->format == vpiRealVal) {
+        switch (varp->vltype()) {
+            case VLVT_REAL: return true;
             default: return false;
         }
     }
@@ -2816,46 +2817,52 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
     return nullptr;
 }
 
-bool vl_get_value_array(const VerilatedVpioMemory* memop, const p_vpi_arrayvalue arrayvaluep, const PLI_UINT32 num, const int indexAddr, const int totalElements) {
+int vl_get_value_array(const VerilatedVpioMemory* memop, const p_vpi_arrayvalue arrayvaluep, const PLI_UINT32 num, const int indexAddr, const int totalElements, const int offset) {
     if(memop->type() == vpiMemoryWord){
-        const auto addr = (memop->offset() + totalElements - indexAddr) % totalElements;
-        const bool done = (memop->offset() + 1) == num;
+        const auto addr = (offset + totalElements - indexAddr) % totalElements;
 
         if (arrayvaluep->format == vpiIntVal) {
             const auto valuep = arrayvaluep->value.integers + addr;
         
             if (memop->varp()->vltype() == VLVT_UINT8) {
-                const auto cdatap = reinterpret_cast<CData*>(memop->varDatap());
+                const auto cdatap = reinterpret_cast<CData*>(memop->varDatap()) + offset;
                 *valuep = *cdatap;
-                return done;
+                return 1;
             }
             if (memop->varp()->vltype() == VLVT_UINT16) {
-                const auto sdatap = reinterpret_cast<SData*>(memop->varDatap());
+                const auto sdatap = reinterpret_cast<SData*>(memop->varDatap()) + offset;
                 *valuep = *sdatap;
-                return done;
+                return 1;
             }
             if (memop->varp()->vltype() == VLVT_UINT32) {
-                const auto idatap = reinterpret_cast<IData*>(memop->varDatap());
+                const auto idatap = reinterpret_cast<IData*>(memop->varDatap()) + offset;
                 *valuep = *idatap;
-                return done;
+                return 1;
             }
         }
-        return true;
+
+        if (arrayvaluep->format == vpiRealVal) {
+            const auto valuep = arrayvaluep->value.reals + addr;
+            const auto idatap = reinterpret_cast<double*>(memop->varDatap()) + offset;
+            *valuep = *idatap;
+            return 1;
+        }
     }
-
+    
+    
     const auto varp = memop->varp();
-    const auto dim = memop->udim();
-    auto left = varp->left(dim+1);
-    const auto right = varp->right(dim+1);
+    const auto udim = memop->udim();
+    auto left = varp->unpacked(udim).left();
+    const auto right = varp->unpacked(udim).right();
     const auto direction = left > right ? 1 : -1;
-
-    auto done = false;
-    while((direction < 0 && left <= right) && !done){
+    
+    auto inc = 0;
+    while((direction < 0 && left <= right) && (offset+inc != num)){
         const auto childMem = VerilatedVpioMemory(memop,left);
-        done = vl_get_value_array(&childMem, arrayvaluep, num, indexAddr, totalElements);
+        inc += vl_get_value_array(&childMem, arrayvaluep, num, indexAddr, totalElements, offset+inc);
         left -= direction;
     }
-    return done;
+    return inc;
 }
 
 void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvaluep,
@@ -2895,12 +2902,15 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvaluep,
 
     auto indexOffset = 0;
     auto totalElements = 1;
+    const auto pdims = varp->pdims();
+
     for (auto d = 0; d < varp->udims(); d++) {
-        indexOffset = (indexOffset * varp->elements(d+1)) + indexp[d];
-        totalElements *= varp->elements(d+1);
+        auto dim = 0;
+        indexOffset = (indexOffset * varp->unpacked(d).elements()) + indexp[d];
+        totalElements *= varp->unpacked(d).elements();
     }
 
-    vl_get_value_array(memop, arrayvaluep, num, indexOffset, totalElements);
+    vl_get_value_array(memop, arrayvaluep, num, indexOffset, totalElements, 0);
     return;
 }
 

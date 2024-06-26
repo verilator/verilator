@@ -124,7 +124,7 @@ int _mon_check_get_int(){
     CHECK_RESULT_NZ(vector_dim2_v.value.integers);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(vector_dim2_v.value.integers[i],i);
+        CHECK_RESULT(vector_dim2_v.value.integers[i],i+(1<<7));
     }
 
     // 2D vpiIntVal VLVT_UINT8 userAllocFlag non-max num
@@ -138,7 +138,7 @@ int _mon_check_get_int(){
             CHECK_RESULT_Z(vector_dim2_v.value.integers[i]);
             continue;
         }
-        CHECK_RESULT(vector_dim2_v.value.integers[i],i);
+        CHECK_RESULT(vector_dim2_v.value.integers[i],i+(1<<7));
     }
 
     // 2D vpiIntVal VLVT_UINT8 non-zero index
@@ -149,7 +149,7 @@ int _mon_check_get_int(){
     CHECK_RESULT_NZ(vector_dim2_v.value.integers);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(vector_dim2_v.value.integers[i],(i+4)%6);
+        CHECK_RESULT(vector_dim2_v.value.integers[i],((i+4)%6)+(1<<7));
     }
 
     // 2D vpiIntVal VLVT_UINT16
@@ -162,7 +162,7 @@ int _mon_check_get_int(){
     CHECK_RESULT_NZ(vector_dim2_v.value.integers);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(vector_dim2_v.value.integers[i],i+256);
+        CHECK_RESULT(vector_dim2_v.value.integers[i],i+(1<<15));
     }
 
     // 2D vpiIntVal VLVT_UINT32
@@ -173,7 +173,23 @@ int _mon_check_get_int(){
     CHECK_RESULT_NZ(vector_dim2_v.value.integers);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(vector_dim2_v.value.integers[i],i+65536);
+        CHECK_RESULT(vector_dim2_v.value.integers[i],i+(1<<31));
+    }
+
+    return 0;
+}
+
+int _mon_check_get_real(){
+    // 2D vpiRealVal
+    int index[2] = {0,0};
+    TestVpiHandle real_dim2_h = VPI_HANDLE("real_dim2");
+    CHECK_RESULT_NZ(real_dim2_h);
+    s_vpi_arrayvalue real_dim2_v = {vpiRealVal,0,nullptr};
+    vpi_get_value_array(real_dim2_h,&real_dim2_v,index,6);
+    CHECK_RESULT_NZ(real_dim2_v.value.reals);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for(auto i = 0; i < 6; i++){
+        CHECK_RESULT(real_dim2_v.value.reals[i],i+0.5);
     }
 
     return 0;
@@ -184,8 +200,9 @@ extern "C" int mon_check() {
 #ifdef TEST_VERBOSE
     printf("-mon_check()\n");
 #endif
-    // if(int status = _mon_check_get_bad()) return status;
+    if(int status = _mon_check_get_bad()) return status;
     if(int status = _mon_check_get_int()) return status;
+    if(int status = _mon_check_get_real()) return status;
 #ifndef IS_VPI
     VerilatedVpi::selfTest();
 #endif

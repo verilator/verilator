@@ -993,7 +993,7 @@ void EmitCSyms::emitSymImp() {
                 pdim = 1;
             }
             if (pdim > 1) {
-                puts("//UNSUP ");  // VerilatedImp can't deal with >2d or packed arrays
+                puts("//UNSUP ");  // VerilatedImp can't deal with multi-dimensional packed arrays
             }
             putns(scopep, protect("__Vscope_" + it->second.m_scopeName));
             putns(varp, ".varInsert(__Vfinal,");
@@ -1025,7 +1025,9 @@ void EmitCSyms::emitSymImp() {
             puts(",");
             puts(varp->vlEnumDir());  // VLVD_IN etc
             puts(",");
-            puts(cvtToStr(pdim + udim));
+            puts(cvtToStr(pdim));
+            puts(",");
+            puts(cvtToStr(udim));
             puts(bounds);
             puts(");\n");
             ++m_numStmts;

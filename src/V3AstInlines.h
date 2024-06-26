@@ -34,6 +34,13 @@ int AstNode::widthInstrs() const {
     return (!dtypep() ? 1 : (dtypep()->isWide() ? dtypep()->widthWords() : 1));
 }
 bool AstNode::isDouble() const VL_MT_STABLE {
+    if (dtypep() && VN_IS(dtypep(), UnpackArrayDType)) {
+        if (auto subDTypep = VN_AS(dtypep(), UnpackArrayDType)->subDTypep()) {
+            while (const auto nextp = subDTypep->subDTypep()) { subDTypep = nextp; }
+            return subDTypep->isDouble();
+        }
+    }
+
     return dtypep() && VN_IS(dtypep(), BasicDType) && VN_AS(dtypep(), BasicDType)->isDouble();
 }
 bool AstNode::isString() const VL_MT_STABLE {

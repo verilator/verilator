@@ -3323,32 +3323,38 @@ void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_
 }
 
 void VerilatedScope::varInsert(int finalize, const char* namep, void* datap, bool isParam,
-                               VerilatedVarType vltype, int vlflags, int dims, ...) VL_MT_UNSAFE {
+                               VerilatedVarType vltype, int vlflags, int pdims, int udims, ...) VL_MT_UNSAFE {
     // Grab dimensions
     // In the future we may just create a large table at emit time and
     // statically construct from that.
     if (!finalize) return;
 
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
-    VerilatedVar var(namep, datap, vltype, static_cast<VerilatedVarFlags>(vlflags), dims, isParam);
+
+    if (pdims > 1) {
+        // We could have a linked list of ranges, but really this whole thing needs
+        // to be generalized to support structs and unions, etc.
+        const std::string msg = "Unsupported multi-dimensional public varInsert: "s + namep;
+        VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
+    }
+
+    VerilatedVar var(namep, datap, vltype, static_cast<VerilatedVarFlags>(vlflags), pdims, udims, isParam);
 
     va_list ap;
-    va_start(ap, dims);
-    for (int i = 0; i < dims; ++i) {
+    va_start(ap, udims);
+    for (int i = 0; i < var.dims(); ++i) {
         const int msb = va_arg(ap, int);
         const int lsb = va_arg(ap, int);
-        if (i == 0) {
-            var.m_packed.m_left = msb;
-            var.m_packed.m_right = lsb;
-        } else if (i >= 1 && i <= var.udims()) {
-            var.m_unpacked[i - 1].m_left = msb;
-            var.m_unpacked[i - 1].m_right = lsb;
-        } else {
-            // We could have a linked list of ranges, but really this whole thing needs
-            // to be generalized to support structs and unions, etc.
-            const std::string msg = "Unsupported multi-dimensional public varInsert: "s + namep;
-            VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
+        if (i < var.pdims()) {
+            var.m_packed[i].m_left = msb;
+            var.m_packed[i].m_right = lsb;
+            continue;
         }
+        if (i < (var.pdims()+var.udims())) {
+            var.m_unpacked[i - var.pdims()].m_left = msb;
+            var.m_unpacked[i - var.pdims()].m_right = lsb;
+            continue;
+        }   
     }
     va_end(ap);
 
