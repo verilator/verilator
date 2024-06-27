@@ -222,6 +222,13 @@ Summary:
      expressions into sub-expressions to avoid error C1009, and breaking
      deep blocks into functions to avoid error C1061.
 
+.. option:: --compiler-include <header-path>
+
+   Specifies additional headers to be included in the final PCH header.
+   It is required to add them to this header, due to compilers'
+   limitation that allow only one precompiled header per compilation.
+   Use this instead of ::vlopt:`-CFLAGS` with `-include <header-path>`.
+
 .. option:: --converge-limit <loops>
 
    Rarely needed.  Specifies the maximum number of runtime iterations
