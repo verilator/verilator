@@ -40,7 +40,7 @@ VARIABLE DEFINITIONS
    logic      [7:0] bad_dim3 [0:1][0:1]      /*verilator public_flat_rw */;
    localparam bad_param /*verilator public_flat_rw */ = 1;
 
-   //_mon_check_get_vector
+   //_mon_check_get_int
    logic      [7:0] int_dim2_8 [0:1][0:2] /*verilator public_flat_rw */;
    assign int_dim2_8[0][0] = 8'h80;
    assign int_dim2_8[0][1] = 8'h81;
@@ -48,6 +48,14 @@ VARIABLE DEFINITIONS
    assign int_dim2_8[1][0] = 8'h83;
    assign int_dim2_8[1][1] = 8'h84;
    assign int_dim2_8[1][2] = 8'h85;
+
+   logic      [7:0] int_dim2_8_desc [1:0][2:0] /*verilator public_flat_rw */;
+   assign int_dim2_8_desc[0][0] = 8'h80;
+   assign int_dim2_8_desc[0][1] = 8'h81;
+   assign int_dim2_8_desc[0][2] = 8'h82;
+   assign int_dim2_8_desc[1][0] = 8'h83;
+   assign int_dim2_8_desc[1][1] = 8'h84;
+   assign int_dim2_8_desc[1][2] = 8'h85;
 
    logic      [15:0] int_dim2_16 [0:1][0:2] /*verilator public_flat_rw */;
    assign int_dim2_16[0][0] = 16'h8000;

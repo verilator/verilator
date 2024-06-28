@@ -3007,13 +3007,12 @@ int vl_get_value_array(const VerilatedVpioMemory* memop, const p_vpi_arrayvalue 
     const auto udim = memop->udim();
     auto left = varp->unpacked(udim).left();
     const auto right = varp->unpacked(udim).right();
-    const auto direction = left > right ? 1 : -1;
-    
+    const auto direction = left < right ? 1 : -1;
     auto inc = 0;
-    while((direction < 0 && left <= right) && (offset+inc != num)){
+    while(((direction > 0 && left <= right) || (direction < 0 && left >= right)) && (offset+inc != num)){
         const auto childMem = VerilatedVpioMemory(memop,left);
         inc += vl_get_value_array(&childMem, arrayvaluep, num, indexAddr, totalElements, offset+inc);
-        left -= direction;
+        left += direction;
     }
     return inc;
 }

@@ -127,6 +127,17 @@ int _mon_check_get_int(){
         CHECK_RESULT(int_dim2_v.value.integers[i],i+(1<<7));
     }
 
+    // 2D vpiIntVal VLVT_UINT8 descending
+    TestVpiHandle int_dim2_8_desc_h = VPI_HANDLE("int_dim2_8_desc");
+    CHECK_RESULT_NZ(int_dim2_8_desc_h);
+    s_vpi_arrayvalue int_dim2_8_desc_v = {vpiIntVal,0,nullptr};
+    vpi_get_value_array(int_dim2_8_desc_h,&int_dim2_8_desc_v,index,6);
+    CHECK_RESULT_NZ(int_dim2_8_desc_v.value.integers);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for(auto i = 0; i < 6; i++){
+        CHECK_RESULT(int_dim2_8_desc_v.value.integers[i],i+(1<<7));
+    }
+
     // 2D vpiIntVal VLVT_UINT8 userAllocFlag non-max num
     int_dim2_v = {vpiIntVal,vpiUserAllocFlag,nullptr};
     PLI_INT32 integers[6] = {0,0,0,0,0,0};
