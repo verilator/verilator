@@ -125,12 +125,29 @@ VARIABLE DEFINITIONS
    assign rawvals_dim2_8[1][2] = 8'h85;
 
    logic      [15:0] rawvals_dim2_16 [0:1][0:2] /*verilator public_flat_rw */;
-   assign rawvals_dim2_16[0][0] = 16'h8000;
-   assign rawvals_dim2_16[0][1] = 16'h8001;
-   assign rawvals_dim2_16[0][2] = 16'h8002;
-   assign rawvals_dim2_16[1][0] = 16'h8003;
-   assign rawvals_dim2_16[1][1] = 16'h8004;
-   assign rawvals_dim2_16[1][2] = 16'h8005;
+   assign rawvals_dim2_16[0][0] = 16'h1000;
+   assign rawvals_dim2_16[0][1] = 16'h1101;
+   assign rawvals_dim2_16[0][2] = 16'h1202;
+   assign rawvals_dim2_16[1][0] = 16'h1303;
+   assign rawvals_dim2_16[1][1] = 16'h1404;
+   assign rawvals_dim2_16[1][2] = 16'h1505;
+
+   logic      [23:0] rawvals_dim2_24 [0:1][0:2] /*verilator public_flat_rw */;
+   assign rawvals_dim2_24[0][0] = 24'h201000;
+   assign rawvals_dim2_24[0][1] = 24'h211101;
+   assign rawvals_dim2_24[0][2] = 24'h221202;
+   assign rawvals_dim2_24[1][0] = 24'h231303;
+   assign rawvals_dim2_24[1][1] = 24'h241404;
+   assign rawvals_dim2_24[1][2] = 24'h251505;
+
+   logic      [39:0] rawvals_dim2_40 [0:1][0:2] /*verilator public_flat_rw */;
+   assign rawvals_dim2_40[0][0] = 40'h4030201000;
+   assign rawvals_dim2_40[0][1] = 40'h4131211101;
+   assign rawvals_dim2_40[0][2] = 40'h4232221202;
+   assign rawvals_dim2_40[1][0] = 40'h4333231303;
+   assign rawvals_dim2_40[1][1] = 40'h4434241404;
+   assign rawvals_dim2_40[1][2] = 40'h4535251505;
+
 
    logic      [71:0] rawvals_dim2_72 [0:1][0:2] /*verilator public_flat_rw */;
    assign rawvals_dim2_72[0][0] = 72'h807060504030201000;

@@ -2919,23 +2919,44 @@ int vl_get_value_array(const VerilatedVpioMemory* memop, const p_vpi_arrayvalue 
             const auto ngroups = memop->ngroups();
             const auto valuep = arrayvaluep->value.rawvals + (ngroups * addr);
 
+            if (memop->varp()->vltype() == VLVT_UINT8) {
+                const auto cdatap = reinterpret_cast<CData*>(memop->varDatap()) + offset;
+                *valuep = *cdatap;
+                return 1;
+            }
+            if (memop->varp()->vltype() == VLVT_UINT16) {
+                const auto sdatap = reinterpret_cast<SData*>(memop->varDatap()) + offset;
+                valuep[1] = static_cast<CData>(*sdatap >> 8ULL);
+                valuep[0] = static_cast<CData>(*sdatap);
+                return 1;
+            }
+            if (memop->varp()->vltype() == VLVT_UINT32) {
+                const auto idatap = reinterpret_cast<IData*>(memop->varDatap()) + offset;
+                for (auto i = 0; i < ngroups; i++) {
+                    valuep[i] = static_cast<CData>(*idatap >> (i*8ULL));
+                }
+                return 1;
+            }
+            if (memop->varp()->vltype() == VLVT_UINT64) {
+                const auto qdatap = reinterpret_cast<QData*>(memop->varDatap()) + offset;
+                for (auto i = 0; i < ngroups; i++) {
+                    valuep[i] = static_cast<CData>(*qdatap >> (i*8ULL));
+                }
+                return 1;
+            }
             if (memop->varp()->vltype() == VLVT_WDATA) {
                 const auto words = VL_WORDS_I(ngroups << 3);
                 const auto edatap = reinterpret_cast<EData*>(memop->varDatap()) + (words * offset);
 
                 for (auto i = 0; i < ngroups; i++) {
-                    const auto cdatap = reinterpret_cast<CData*>(edatap + (i >> 2));
-                    valuep[i] = cdatap[i & 3];
+                    const auto word = i >> 2;
+                    const auto byteSelect = i & 3;
+                    const auto cdata = static_cast<CData>(*(edatap + word) >> (byteSelect * 8ULL));
+
+                    valuep[i] = cdata;
                 }
                 return 1;
             }
-
-            // const auto cdatap = reinterpret_cast<CData*>(memop->varDatap()) + (ngroups * offset);
-
-            // for (auto i = 0; i < ngroups; i++) {
-            //     valuep[i] = cdatap[i];
-            // }
-            // return 1;
         }
     }
     
