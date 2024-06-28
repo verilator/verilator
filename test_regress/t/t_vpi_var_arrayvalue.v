@@ -117,12 +117,12 @@ VARIABLE DEFINITIONS
 
    //_mon_check_get_rawvals
    logic      [7:0] rawvals_dim2_8 [0:1][0:2] /*verilator public_flat_rw */;
-   assign rawvals_dim2_8[0][0] = 8'h80;
-   assign rawvals_dim2_8[0][1] = 8'h81;
-   assign rawvals_dim2_8[0][2] = 8'h82;
-   assign rawvals_dim2_8[1][0] = 8'h83;
-   assign rawvals_dim2_8[1][1] = 8'h84;
-   assign rawvals_dim2_8[1][2] = 8'h85;
+   assign rawvals_dim2_8[0][0] = 8'h00;
+   assign rawvals_dim2_8[0][1] = 8'h01;
+   assign rawvals_dim2_8[0][2] = 8'h02;
+   assign rawvals_dim2_8[1][0] = 8'h03;
+   assign rawvals_dim2_8[1][1] = 8'h04;
+   assign rawvals_dim2_8[1][2] = 8'h05;
 
    logic      [15:0] rawvals_dim2_16 [0:1][0:2] /*verilator public_flat_rw */;
    assign rawvals_dim2_16[0][0] = 16'h1000;

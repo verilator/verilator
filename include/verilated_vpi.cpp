@@ -2385,6 +2385,16 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_arrayvalue arrayvalue
             default: return false;
         }
     }
+    if (arrayvaluep->format == vpiRawFourStateVal) {
+        switch (varp->vltype()) {
+            case VLVT_UINT8: return true;
+            case VLVT_UINT16: return true;
+            case VLVT_UINT32: return true;
+            case VLVT_UINT64: return true;
+            case VLVT_WDATA: return true;
+            default: return false;
+        }
+    }
 
     VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s", __func__,
                   VerilatedVpiError::strFromVpiVal(arrayvaluep->format), fullname);
@@ -2915,17 +2925,31 @@ int vl_get_value_array(const VerilatedVpioMemory* memop, const p_vpi_arrayvalue 
             }
         }
 
-        if (arrayvaluep->format == vpiRawTwoStateVal) {
+        if (arrayvaluep->format == vpiRawTwoStateVal || arrayvaluep->format == vpiRawFourStateVal) {
+            const auto isFourState = arrayvaluep->format == vpiRawFourStateVal;
             const auto ngroups = memop->ngroups();
-            const auto valuep = arrayvaluep->value.rawvals + (ngroups * addr);
+            const auto valuep = arrayvaluep->value.rawvals + (ngroups * addr * (isFourState ? 2 : 1));
 
             if (memop->varp()->vltype() == VLVT_UINT8) {
                 const auto cdatap = reinterpret_cast<CData*>(memop->varDatap()) + offset;
                 *valuep = *cdatap;
+
+                if (isFourState) {
+                    valuep[1] = 0;
+                }
                 return 1;
             }
             if (memop->varp()->vltype() == VLVT_UINT16) {
                 const auto sdatap = reinterpret_cast<SData*>(memop->varDatap()) + offset;
+
+                if (isFourState) {
+                    valuep[3] = 0;
+                    valuep[2] = static_cast<CData>(*sdatap >> 8ULL);
+                    valuep[1] = 0;
+                    valuep[0] = static_cast<CData>(*sdatap);
+                    return 1;
+                }
+
                 valuep[1] = static_cast<CData>(*sdatap >> 8ULL);
                 valuep[0] = static_cast<CData>(*sdatap);
                 return 1;
@@ -2933,14 +2957,28 @@ int vl_get_value_array(const VerilatedVpioMemory* memop, const p_vpi_arrayvalue 
             if (memop->varp()->vltype() == VLVT_UINT32) {
                 const auto idatap = reinterpret_cast<IData*>(memop->varDatap()) + offset;
                 for (auto i = 0; i < ngroups; i++) {
-                    valuep[i] = static_cast<CData>(*idatap >> (i*8ULL));
+                    const auto cdata = static_cast<CData>(*idatap >> (i*8ULL));
+
+                    if (isFourState) {
+                        valuep[(2*i)] = cdata;
+                        valuep[(2*i)+1] = 0;
+                        continue;
+                    }
+                    valuep[i] = cdata;
                 }
                 return 1;
             }
             if (memop->varp()->vltype() == VLVT_UINT64) {
                 const auto qdatap = reinterpret_cast<QData*>(memop->varDatap()) + offset;
                 for (auto i = 0; i < ngroups; i++) {
-                    valuep[i] = static_cast<CData>(*qdatap >> (i*8ULL));
+                    const auto cdata = static_cast<CData>(*qdatap >> (i*8ULL));
+
+                    if (isFourState) {
+                        valuep[(2*i)] = cdata;
+                        valuep[(2*i)+1] = 0;
+                        continue;
+                    }
+                    valuep[i] = cdata;
                 }
                 return 1;
             }
@@ -2953,6 +2991,11 @@ int vl_get_value_array(const VerilatedVpioMemory* memop, const p_vpi_arrayvalue 
                     const auto byteSelect = i & 3;
                     const auto cdata = static_cast<CData>(*(edatap + word) >> (byteSelect * 8ULL));
 
+                    if (isFourState) {
+                        valuep[(2*i)] = cdata;
+                        valuep[(2*i)+1] = 0;
+                        continue;
+                    }
                     valuep[i] = cdata;
                 }
                 return 1;
@@ -3004,11 +3047,6 @@ void vl_get_value_array(const VerilatedVpioMemory* memop, const p_vpi_arrayvalue
         indexAddr = (indexAddr * varp->unpacked(d).elements()) + indexp[d];
         totalElements *= varp->unpacked(d).elements();
     }
-
-    // for(auto i = 0; i < memop->ngroups() * num; i++) {
-    //     const auto uval = reinterpret_cast<CData*>(memop->varDatap()) + i;
-    //     printf("i=%u uval=%u\n",i,*uval);
-    // }
 
     vl_get_value_array(memop, arrayvaluep, num, indexAddr, totalElements, 0);
 }

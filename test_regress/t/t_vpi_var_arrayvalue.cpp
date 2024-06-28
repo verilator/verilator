@@ -305,9 +305,9 @@ int _mon_check_get_rawvals(){
     vpi_get_value_array(rawvals_dim2_8_h,&rawvals_dim2_8_v,index,6);
     CHECK_RESULT_NZ(rawvals_dim2_8_v.value.rawvals);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    const auto rawvals_dim2_8_vp = reinterpret_cast<PLI_UBYTE8*>(rawvals_dim2_8_v.value.rawvals);
     for (auto i = 0; i < 6; i++) {
-        const auto val = static_cast<PLI_UBYTE8>(rawvals_dim2_8_v.value.rawvals[i]);
-        CHECK_RESULT(val,i+(1<<7));
+        CHECK_RESULT(rawvals_dim2_8_vp[i],i);
     }
 
     // 2D vpiRawTwoStateVal VLVT_UINT16
@@ -317,10 +317,10 @@ int _mon_check_get_rawvals(){
     vpi_get_value_array(rawvals_dim2_16_h,&rawvals_dim2_16_v,index,6);
     CHECK_RESULT_NZ(rawvals_dim2_16_v.value.rawvals);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    const auto rawvals_dim2_16_vp = reinterpret_cast<PLI_UBYTE8*>(rawvals_dim2_16_v.value.rawvals);
     for (auto i = 0; i < 6; i++) {
-        const auto rawvalsp = reinterpret_cast<PLI_UBYTE8*>(rawvals_dim2_16_v.value.rawvals);
         for (auto j = 0; j < 2; j++) {
-            CHECK_RESULT(rawvalsp[(2*i)+j],i+(j<<4));
+            CHECK_RESULT(rawvals_dim2_16_vp[(2*i)+j],i+(j<<4));
         }
     }
 
@@ -331,10 +331,10 @@ int _mon_check_get_rawvals(){
     vpi_get_value_array(rawvals_dim2_24_h,&rawvals_dim2_24_v,index,6);
     CHECK_RESULT_NZ(rawvals_dim2_24_v.value.rawvals);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    const auto rawvals_dim2_24_vp = reinterpret_cast<PLI_UBYTE8*>(rawvals_dim2_24_v.value.rawvals);
     for (auto i = 0; i < 3; i++) {
-        const auto rawvalsp = reinterpret_cast<PLI_UBYTE8*>(rawvals_dim2_24_v.value.rawvals);
         for (auto j = 0; j < 3; j++) {
-            CHECK_RESULT(rawvalsp[(3*i)+j],i+(j<<4));
+            CHECK_RESULT(rawvals_dim2_24_vp[(3*i)+j],i+(j<<4));
         }
     }
 
@@ -345,10 +345,10 @@ int _mon_check_get_rawvals(){
     vpi_get_value_array(rawvals_dim2_40_h,&rawvals_dim2_40_v,index,6);
     CHECK_RESULT_NZ(rawvals_dim2_40_v.value.rawvals);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    const auto rawvals_dim2_40_vp = reinterpret_cast<PLI_UBYTE8*>(rawvals_dim2_40_v.value.rawvals);
     for (auto i = 0; i < 6; i++) {
-        const auto rawvalsp = reinterpret_cast<PLI_UBYTE8*>(rawvals_dim2_40_v.value.rawvals);
         for (auto j = 0; j < 5; j++) {
-            CHECK_RESULT(rawvalsp[(5*i)+j],i+(j<<4));
+            CHECK_RESULT(rawvals_dim2_40_vp[(5*i)+j],i+(j<<4));
         }
     }
 
@@ -359,10 +359,10 @@ int _mon_check_get_rawvals(){
     vpi_get_value_array(rawvals_dim2_72_h,&rawvals_dim2_72_v,index,6);
     CHECK_RESULT_NZ(rawvals_dim2_72_v.value.rawvals);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    const auto rawvals_dim2_72_vp = reinterpret_cast<PLI_UBYTE8*>(rawvals_dim2_72_v.value.rawvals);
     for (auto i = 0; i < 6; i++) {
-        const auto rawvalsp = reinterpret_cast<PLI_UBYTE8*>(rawvals_dim2_72_v.value.rawvals);
         for (auto j = 0; j < 9; j++) {
-            CHECK_RESULT(rawvalsp[(9*i)+j],i+(j<<4));
+            CHECK_RESULT(rawvals_dim2_72_vp[(9*i)+j],i+(j<<4));
         }
     }
 
@@ -374,9 +374,82 @@ int _mon_check_get_rawvals(){
     CHECK_RESULT_NZ(rawvals_dim2_72_v.value.rawvals);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for (auto i = 0; i < 6; i++) {
-        const auto rawvalsp = reinterpret_cast<PLI_UBYTE8*>(rawvals_dim2_72_v.value.rawvals);
         for (auto j = 0; j < 9; j++) {
-            CHECK_RESULT(rawvalsp[(9*i)+j],((i+4)%6)+(j<<4));
+            CHECK_RESULT(rawvals_dim2_72_vp[(9*i)+j],((i+4)%6)+(j<<4));
+        }
+    }
+
+    // 2D vpiRawFourStateVal VLVT_UINT8
+    index[0] = 0;
+    index[1] = 0;
+    rawvals_dim2_8_v = {vpiRawFourStateVal,0,nullptr};
+    vpi_get_value_array(rawvals_dim2_8_h,&rawvals_dim2_8_v,index,6);
+    CHECK_RESULT_NZ(rawvals_dim2_8_v.value.rawvals);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for (auto i = 0; i < 6; i++) {
+        CHECK_RESULT(rawvals_dim2_8_vp[(2*i)],i);
+        CHECK_RESULT_Z(rawvals_dim2_8_vp[(2*i)+1]);
+    }
+
+    // 2D vpiRawFourStateVal VLVT_UINT16
+    rawvals_dim2_16_v = {vpiRawFourStateVal,0,nullptr};
+    vpi_get_value_array(rawvals_dim2_16_h,&rawvals_dim2_16_v,index,6);
+    CHECK_RESULT_NZ(rawvals_dim2_16_v.value.rawvals);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for (auto i = 0; i < 6; i++) {
+        for (auto j = 0; j < 2; j++) {
+            CHECK_RESULT(rawvals_dim2_16_vp[(2*((2*i)+j))],i+(j<<4));
+            CHECK_RESULT_Z(rawvals_dim2_16_vp[(2*((2*i)+j))+1]);
+        }
+    }
+
+    //2D vpiRawFourStateVal VLVT_UINT32
+    rawvals_dim2_24_v = {vpiRawFourStateVal,0,nullptr};
+    vpi_get_value_array(rawvals_dim2_24_h,&rawvals_dim2_24_v,index,6);
+    CHECK_RESULT_NZ(rawvals_dim2_24_v.value.rawvals);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for (auto i = 0; i < 3; i++) {
+        for (auto j = 0; j < 3; j++) {
+            CHECK_RESULT(rawvals_dim2_24_vp[(2*((3*i)+j))],i+(j<<4));
+            CHECK_RESULT_Z(rawvals_dim2_24_vp[(2*((3*i)+j))+1]);
+        }
+    }
+
+    // 2D vpiRawFourStateVal VLVT_UINT64
+    rawvals_dim2_40_v = {vpiRawFourStateVal,0,nullptr};
+    vpi_get_value_array(rawvals_dim2_40_h,&rawvals_dim2_40_v,index,6);
+    CHECK_RESULT_NZ(rawvals_dim2_40_v.value.rawvals);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for (auto i = 0; i < 6; i++) {
+        for (auto j = 0; j < 5; j++) {
+            CHECK_RESULT(rawvals_dim2_40_vp[(2*((5*i)+j))],i+(j<<4));
+            CHECK_RESULT_Z(rawvals_dim2_40_vp[(2*((5*i)+j))+1]);
+        }
+    }
+
+    // 2D vpiRawFourStateVal VLVT_WDATA
+    rawvals_dim2_72_v = {vpiRawFourStateVal,0,nullptr};
+    vpi_get_value_array(rawvals_dim2_72_h,&rawvals_dim2_72_v,index,6);
+    CHECK_RESULT_NZ(rawvals_dim2_72_v.value.rawvals);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for (auto i = 0; i < 6; i++) {
+        for (auto j = 0; j < 9; j++) {
+            CHECK_RESULT(rawvals_dim2_72_vp[(2*((9*i)+j))],i+(j<<4));
+            CHECK_RESULT_Z(rawvals_dim2_72_vp[(2*((9*i)+j))+1]);
+        }
+    }
+
+    // 2D vpiRawFourStateVal VLVT_WDATA non-zero index
+    index[0] = 1;
+    index[1] = 1;
+    rawvals_dim2_72_v = {vpiRawFourStateVal,0,nullptr};
+    vpi_get_value_array(rawvals_dim2_72_h,&rawvals_dim2_72_v,index,6);
+    CHECK_RESULT_NZ(rawvals_dim2_72_v.value.rawvals);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for (auto i = 0; i < 6; i++) {
+        for (auto j = 0; j < 9; j++) {
+            CHECK_RESULT(rawvals_dim2_72_vp[(2*((9*i)+j))],((i+4)%6)+(j<<4));
+            CHECK_RESULT_Z(rawvals_dim2_72_vp[(2*((9*i)+j))+1]);
         }
     }
     
