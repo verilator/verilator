@@ -115,6 +115,32 @@ VARIABLE DEFINITIONS
    assign vector_dim2_96[1][1] = 96'h800000004000000000000004;
    assign vector_dim2_96[1][2] = 96'h800000004000000000000005;
 
+   //_mon_check_get_rawvals
+   logic      [7:0] rawvals_dim2_8 [0:1][0:2] /*verilator public_flat_rw */;
+   assign rawvals_dim2_8[0][0] = 8'h80;
+   assign rawvals_dim2_8[0][1] = 8'h81;
+   assign rawvals_dim2_8[0][2] = 8'h82;
+   assign rawvals_dim2_8[1][0] = 8'h83;
+   assign rawvals_dim2_8[1][1] = 8'h84;
+   assign rawvals_dim2_8[1][2] = 8'h85;
+
+   logic      [15:0] rawvals_dim2_16 [0:1][0:2] /*verilator public_flat_rw */;
+   assign rawvals_dim2_16[0][0] = 16'h8000;
+   assign rawvals_dim2_16[0][1] = 16'h8001;
+   assign rawvals_dim2_16[0][2] = 16'h8002;
+   assign rawvals_dim2_16[1][0] = 16'h8003;
+   assign rawvals_dim2_16[1][1] = 16'h8004;
+   assign rawvals_dim2_16[1][2] = 16'h8005;
+
+   logic      [71:0] rawvals_dim2_72 [0:1][0:2] /*verilator public_flat_rw */;
+   assign rawvals_dim2_72[0][0] = 72'h807060504030201000;
+   assign rawvals_dim2_72[0][1] = 72'h817161514131211101;
+   assign rawvals_dim2_72[0][2] = 72'h827262524232221202;
+   assign rawvals_dim2_72[1][0] = 72'h837363534333231303;
+   assign rawvals_dim2_72[1][1] = 72'h847464544434241404;
+   assign rawvals_dim2_72[1][2] = 72'h857565554535251505;
+
+
 /*-------------------------------------------
 TICK COUNTER
 -------------------------------------------*/

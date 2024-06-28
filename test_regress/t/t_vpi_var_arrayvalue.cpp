@@ -65,8 +65,8 @@ MACRO CHECKERS
 
 #define CHECK_RESULT(got, exp) \
     if ((got) != (exp)) { \
-        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
-                  << "   EXP = " << (exp) << std::endl; \
+        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << +(got) \
+                  << "   EXP = " << +(exp) << std::endl; \
         return __LINE__; \
     }
 
@@ -296,6 +296,65 @@ int _mon_check_get_real(){
     return 0;
 }
 
+int _mon_check_get_rawvals(){
+    //2D vpiRawTwoStateVal VLVT_UINT8
+    int index[2] = {0,0};
+    // TestVpiHandle rawvals_dim2_8_h = VPI_HANDLE("rawvals_dim2_8");
+    // CHECK_RESULT_NZ(rawvals_dim2_8_h);
+    // s_vpi_arrayvalue rawvals_dim2_8_v = {vpiRawTwoStateVal,0,nullptr};
+    // vpi_get_value_array(rawvals_dim2_8_h,&rawvals_dim2_8_v,index,6);
+    // CHECK_RESULT_NZ(rawvals_dim2_8_v.value.rawvals);
+    // CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    // for (auto i = 0; i < 6; i++) {
+    //     printf("rawvals[%u]=%u\n",i,rawvals_dim2_8_v.value.rawvals[i]);
+    //     const auto val = static_cast<PLI_UBYTE8>(rawvals_dim2_8_v.value.rawvals[i]);
+    //     CHECK_RESULT(val,i+(1<<7));
+    // }
+
+    // //2D vpiRawTwoStateVal VLVT_UINT16
+    // TestVpiHandle rawvals_dim2_16_h = VPI_HANDLE("rawvals_dim2_16");
+    // CHECK_RESULT_NZ(rawvals_dim2_16_h);
+    // s_vpi_arrayvalue rawvals_dim2_16_v = {vpiRawTwoStateVal,0,nullptr};
+    // vpi_get_value_array(rawvals_dim2_16_h,&rawvals_dim2_16_v,index,6);
+    // CHECK_RESULT_NZ(rawvals_dim2_16_v.value.rawvals);
+    // CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    // for (auto i = 0; i < 6; i++) {
+    //     const auto rawvalsp = reinterpret_cast<PLI_UBYTE8*>(rawvals_dim2_16_v.value.rawvals);
+    //     CHECK_RESULT(rawvalsp[(2*i)],i);
+    //     CHECK_RESULT(rawvalsp[(2*i)+1],(1<<7));
+    // }
+
+    //2D vpiRawTwoStateVal VLVT_WDATA
+    TestVpiHandle rawvals_dim2_72_h = VPI_HANDLE("rawvals_dim2_72");
+    CHECK_RESULT_NZ(rawvals_dim2_72_h);
+    s_vpi_arrayvalue rawvals_dim2_72_v = {vpiRawTwoStateVal,0,nullptr};
+    vpi_get_value_array(rawvals_dim2_72_h,&rawvals_dim2_72_v,index,6);
+    CHECK_RESULT_NZ(rawvals_dim2_72_v.value.rawvals);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for (auto i = 0; i < 6; i++) {
+        const auto rawvalsp = reinterpret_cast<PLI_UBYTE8*>(rawvals_dim2_72_v.value.rawvals);
+        for (auto j = 0; j < 9; j++) {
+            CHECK_RESULT(rawvalsp[(9*i)+j],i+(j<<4));
+        }
+    }
+
+    //2D vpiRawTwoStateVal VLVT_WDATA non-zero index
+    index[0] = 1;
+    index[1] = 1;
+    rawvals_dim2_72_v = {vpiRawTwoStateVal,0,nullptr};
+    vpi_get_value_array(rawvals_dim2_72_h,&rawvals_dim2_72_v,index,6);
+    CHECK_RESULT_NZ(rawvals_dim2_72_v.value.rawvals);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    for (auto i = 0; i < 6; i++) {
+        const auto rawvalsp = reinterpret_cast<PLI_UBYTE8*>(rawvals_dim2_72_v.value.rawvals);
+        for (auto j = 0; j < 9; j++) {
+            CHECK_RESULT(rawvalsp[(9*i)+j],((i+4)%6)+(j<<4));
+        }
+    }
+    
+    return 0;
+}
+
 extern "C" int mon_check() {
     // Callback from initial block in monitor
 #ifdef TEST_VERBOSE
@@ -305,6 +364,7 @@ extern "C" int mon_check() {
     if(int status = _mon_check_get_int()) return status;
     if(int status = _mon_check_get_vector()) return status;
     if(int status = _mon_check_get_real()) return status;
+    if(int status = _mon_check_get_rawvals()) return status;
 #ifndef IS_VPI
     VerilatedVpi::selfTest();
 #endif

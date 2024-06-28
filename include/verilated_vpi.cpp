@@ -349,12 +349,14 @@ public:
 
 class VerilatedVpioMemory final : public VerilatedVpioVar {
     uint32_t m_udim = 0;
+    uint32_t m_ngroups = 0;
 public:
     VerilatedVpioMemory(const VerilatedVar* varp, const VerilatedScope* scopep) 
-        : VerilatedVpioVar{varp, scopep} {}
+        : VerilatedVpioVar{varp, scopep}, m_ngroups(VL_BYTES_I(varp->packed().elements())) {}
     explicit VerilatedVpioMemory(const VerilatedVpioMemory* memop, const int32_t index) : VerilatedVpioVar{memop->varp(), memop->scopep()} {
         m_index = index;
         m_udim = memop->m_udim+1;
+        m_ngroups = memop->m_ngroups;
     }   
     ~VerilatedVpioMemory() override = default;
     static VerilatedVpioMemory* castp(vpiHandle h) {
@@ -362,6 +364,7 @@ public:
     }
     uint32_t type() const override { return m_udim == m_varp->udims() ? vpiMemoryWord : vpiMemory; }
     uint32_t udim() const { return m_udim; }
+    uint32_t ngroups() const { return m_ngroups; }
 };
 
 class VerilatedVpioVarIter final : public VerilatedVpio {
@@ -2372,6 +2375,16 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_arrayvalue arrayvalue
             default: return false;
         }
     }
+    if (arrayvaluep->format == vpiRawTwoStateVal) {
+        switch (varp->vltype()) {
+            case VLVT_UINT8: return true;
+            case VLVT_UINT16: return true;
+            case VLVT_UINT32: return true;
+            case VLVT_UINT64: return true;
+            case VLVT_WDATA: return true;
+            default: return false;
+        }
+    }
 
     VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s", __func__,
                   VerilatedVpiError::strFromVpiVal(arrayvaluep->format), fullname);
@@ -2879,23 +2892,50 @@ int vl_get_value_array(const VerilatedVpioMemory* memop, const p_vpi_arrayvalue 
                 valuep->bval = 0;
                 return 1;
             }
-            if (memop->varp()->vltype() == VLVT_WDATA || memop->varp()->vltype() == VLVT_UINT64) {
-                const auto words = VL_WORDS_I(memop->varp()->packed().elements());
-                if (VL_UNCOVERABLE(words >= VL_VALUE_STRING_MAX_WORDS)) {
-                    VL_FATAL_MT(__FILE__, __LINE__, "",
-                                "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; increase and "
-                                "recompile");
-                }
+            if (memop->varp()->vltype() == VLVT_UINT64) {
+                valuep = arrayvaluep->value.vectors + (2*addr);
+                const auto qdatap = reinterpret_cast<QData*>(memop->varDatap()) + offset;
+                valuep[1].aval = static_cast<IData>(*qdatap >> 32ULL);
+                valuep[1].bval = 0;
+                valuep[0].aval = static_cast<IData>(*qdatap);
+                valuep[0].bval = 0;
+                return 1;
+            }
+            if (memop->varp()->vltype() == VLVT_WDATA) {
+                const auto words = memop->ngroups() >> 2;
 
                 valuep = arrayvaluep->value.vectors + (words * addr);
                 const auto edatap = reinterpret_cast<EData*>(memop->varDatap()) + (words * offset);
 
                 for (auto i = 0; i < words; i++) {
-                    (valuep + i)->aval = edatap[i];
-                    (valuep + i)->bval = 0;
+                    valuep[i].aval = edatap[i];
+                    valuep[i].bval = 0;
                 }
                 return 1;
             }
+        }
+
+        if (arrayvaluep->format == vpiRawTwoStateVal) {
+            const auto ngroups = memop->ngroups();
+            const auto valuep = arrayvaluep->value.rawvals + (ngroups * addr);
+
+            if (memop->varp()->vltype() == VLVT_WDATA) {
+                const auto words = VL_WORDS_I(ngroups << 3);
+                const auto edatap = reinterpret_cast<EData*>(memop->varDatap()) + (words * offset);
+
+                for (auto i = 0; i < ngroups; i++) {
+                    const auto cdatap = reinterpret_cast<CData*>(edatap + (i >> 2));
+                    valuep[i] = cdatap[i & 3];
+                }
+                return 1;
+            }
+
+            // const auto cdatap = reinterpret_cast<CData*>(memop->varDatap()) + (ngroups * offset);
+
+            // for (auto i = 0; i < ngroups; i++) {
+            //     valuep[i] = cdatap[i];
+            // }
+            // return 1;
         }
     }
     
@@ -2912,6 +2952,44 @@ int vl_get_value_array(const VerilatedVpioMemory* memop, const p_vpi_arrayvalue 
         left -= direction;
     }
     return inc;
+}
+
+void vl_get_value_array(const VerilatedVpioMemory* memop, const p_vpi_arrayvalue arrayvaluep, const PLI_UINT32 num, const PLI_INT32* indexp ) {
+    if(memop->ngroups() > VL_VALUE_STRING_MAX_CHARS) {
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+            "vpi_get_value_array with more than VL_VALUE_STRING_MAX_CHARS; increase and "
+            "recompile");
+    }
+
+    if(!(arrayvaluep->flags & vpiUserAllocFlag)){
+        static thread_local PLI_BYTE8 t_out[VL_VALUE_STRING_MAX_CHARS];
+        arrayvaluep->value.integers   = reinterpret_cast<PLI_INT32*>   (t_out);
+        // arrayvaluep->value.longints   = reinterpret_cast<PLI_INT64*>   (t_out);
+        arrayvaluep->value.rawvals    = reinterpret_cast<PLI_BYTE8*>   (t_out);
+        arrayvaluep->value.reals      = reinterpret_cast<double*>      (t_out);
+        // arrayvaluep->value.shortints  = reinterpret_cast<PLI_INT16*>   (t_out);
+        // arrayvaluep->value.shortreals = reinterpret_cast<float*>       (t_out);
+        // arrayvaluep->value.times      = reinterpret_cast<t_vpi_time*>  (t_out);
+        arrayvaluep->value.vectors    = reinterpret_cast<t_vpi_vecval*>(t_out);
+    }
+
+    const auto varp = memop->varp();
+    auto indexAddr = 0;
+    auto totalElements = 1;
+    const auto pdims = varp->pdims();
+
+    for (auto d = 0; d < varp->udims(); d++) {
+        auto dim = 0;
+        indexAddr = (indexAddr * varp->unpacked(d).elements()) + indexp[d];
+        totalElements *= varp->unpacked(d).elements();
+    }
+
+    // for(auto i = 0; i < memop->ngroups() * num; i++) {
+    //     const auto uval = reinterpret_cast<CData*>(memop->varDatap()) + i;
+    //     printf("i=%u uval=%u\n",i,*uval);
+    // }
+
+    vl_get_value_array(memop, arrayvaluep, num, indexAddr, totalElements, 0);
 }
 
 void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvaluep,
@@ -2937,30 +3015,7 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvaluep,
         return;
     }
 
-    if(!(arrayvaluep->flags & vpiUserAllocFlag)){
-        static thread_local PLI_BYTE8 t_out[VL_VALUE_STRING_MAX_CHARS];
-        arrayvaluep->value.integers   = reinterpret_cast<PLI_INT32*>   (t_out);
-        arrayvaluep->value.longints   = reinterpret_cast<PLI_INT64*>   (t_out);
-        arrayvaluep->value.rawvals    = reinterpret_cast<PLI_BYTE8*>   (t_out);
-        arrayvaluep->value.reals      = reinterpret_cast<double*>      (t_out);
-        arrayvaluep->value.shortints  = reinterpret_cast<PLI_INT16*>   (t_out);
-        arrayvaluep->value.shortreals = reinterpret_cast<float*>       (t_out);
-        arrayvaluep->value.times      = reinterpret_cast<t_vpi_time*>  (t_out);
-        arrayvaluep->value.vectors    = reinterpret_cast<t_vpi_vecval*>(t_out);
-    }
-
-    auto indexOffset = 0;
-    auto totalElements = 1;
-    const auto pdims = varp->pdims();
-
-    for (auto d = 0; d < varp->udims(); d++) {
-        auto dim = 0;
-        indexOffset = (indexOffset * varp->unpacked(d).elements()) + indexp[d];
-        totalElements *= varp->unpacked(d).elements();
-    }
-
-    vl_get_value_array(memop, arrayvaluep, num, indexOffset, totalElements, 0);
-    return;
+    vl_get_value_array(memop, arrayvaluep, num, indexp);
 }
 
 void vpi_put_value_array(vpiHandle /*object*/, p_vpi_arrayvalue /*arrayvalue_p*/,
