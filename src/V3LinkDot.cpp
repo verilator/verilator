@@ -2875,6 +2875,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
             } else if (VN_IS(foundp->nodep(), Clocking)) {
                 m_ds.m_dotSymp = foundp;
+                if (m_ds.m_dotText != "") m_ds.m_dotText += "." + nodep->name();
                 ok = m_ds.m_dotPos == DP_SCOPE;
             } else if (const AstNodeFTask* const ftaskp = VN_CAST(foundp->nodep(), NodeFTask)) {
 

@@ -95,7 +95,6 @@ class ClockVisitor final : public VNVisitor {
             = string{"__Vsampled__"} + vscp->scopep()->nameDotless() + "__" + varp->name();
         FileLine* const flp = vscp->fileline();
         AstVar* const newvarp = new AstVar{flp, VVarType::MODULETEMP, newvarname, varp->dtypep()};
-        newvarp->noReset(true);  // Reset by below assign
         m_scopep->modp()->addStmtsp(newvarp);
         AstVarScope* const newvscp = new AstVarScope{flp, m_scopep, newvarp};
         vscp->user1p(newvscp);

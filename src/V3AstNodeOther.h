@@ -926,8 +926,7 @@ class AstClocking final : public AstNode {
     // Children: SENITEM, CLOCKING ITEMs, VARs
     // @astgen op1 := sensesp : AstSenItem
     // @astgen op2 := itemsp : List[AstClockingItem]
-    // @astgen op3 := varsp : List[AstVar]
-    // @astgen op4 := eventp : Optional[AstVar]
+    // @astgen op3 := eventp : Optional[AstVar]
     std::string m_name;  // Clocking block name
     const bool m_isDefault = false;  // True if default clocking
     const bool m_isGlobal = false;  // True if global clocking
