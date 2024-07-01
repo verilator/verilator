@@ -348,16 +348,16 @@ public:
 };
 
 class VerilatedVpioMemory final : public VerilatedVpioVar {
-    uint32_t m_udim = 0;
-    uint32_t m_ngroups = 0;
+    const uint32_t m_udim = 0;
+    const uint32_t m_ngroups = 0;
 public:
     VerilatedVpioMemory(const VerilatedVar* varp, const VerilatedScope* scopep) 
         : VerilatedVpioVar{varp, scopep}, m_ngroups(VL_BYTES_I(varp->packed().elements())) {}
-    explicit VerilatedVpioMemory(const VerilatedVpioMemory* memop, const int32_t index) : VerilatedVpioVar{memop->varp(), memop->scopep()} {
-        m_index = index;
-        m_udim = memop->m_udim+1;
-        m_ngroups = memop->m_ngroups;
-    }   
+    explicit VerilatedVpioMemory(const VerilatedVpioMemory* memop, const int32_t index) 
+        : VerilatedVpioVar{memop->varp(), memop->scopep()},
+        m_udim(memop->m_udim+1),
+        m_ngroups(memop->m_ngroups)
+        { m_index = index; }
     ~VerilatedVpioMemory() override = default;
     static VerilatedVpioMemory* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioMemory*>(reinterpret_cast<VerilatedVpio*>(h));
@@ -3039,10 +3039,8 @@ void vl_get_value_array(const VerilatedVpioMemory* memop, const p_vpi_arrayvalue
     const auto varp = memop->varp();
     auto indexAddr = 0;
     auto totalElements = 1;
-    const auto pdims = varp->pdims();
 
     for (auto d = 0; d < varp->udims(); d++) {
-        auto dim = 0;
         indexAddr = (indexAddr * varp->unpacked(d).elements()) + indexp[d];
         totalElements *= varp->unpacked(d).elements();
     }
