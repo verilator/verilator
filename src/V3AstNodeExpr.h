@@ -1745,22 +1745,22 @@ public:
     }
     string emitC() override {
         if (m_reset) {
-            if (v3Global.opt.xAssign() == "unique"){
+            if (v3Global.opt.xAssign() == "unique") {
                 return "VL_RAND_RESET_%nq_A(%nw, %P)";
-            }else{
+            } else {
                 // This follow xInitial Randomization
                 return "VL_RAND_RESET_%nq(%nw, %P)";
             }
         }
-        if (seedp()){
-            if (urandom()){
+        if (seedp()) {
+            if (urandom()) {
                 return "VL_URANDOM_SEEDED_%nq%lq(%li)";
-            }else{
+            } else {
                 return "VL_RANDOM_SEEDED_%nq%lq(%li)";
             }
         }
 
-        if (isWide()){
+        if (isWide()) {
             return "VL_RANDOM_%nq(%nw, %P)";
         } else {
             return "VL_RANDOM_%nq()";
