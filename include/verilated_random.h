@@ -112,6 +112,7 @@ public:
         m_vars[name] = std::make_shared<const VlRandomVar>(name, width, &var);
     }
     void hard(std::string&& constraint);
+    void clear();
 #ifdef VL_DEBUG
     void dump() const;
 #endif
