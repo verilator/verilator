@@ -204,7 +204,7 @@ extern "C" int mon_check();
 // -------------------------------------------
    always @(posedge clk) begin
       if(c_tests_done && ~v_tests_done) begin
-         $write("%%Info: Checking results\n");
+         $write("-Info: Checking results\n");
          //insert tests here
          v_tests_done <= 1;
       end
