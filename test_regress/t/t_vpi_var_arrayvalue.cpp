@@ -124,7 +124,7 @@ int _mon_check_get_int(){
     CHECK_RESULT_NZ(int_dim2_v.value.integers);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(int_dim2_v.value.integers[i],i+(1<<7));
+        CHECK_RESULT(int_dim2_v.value.integers[i],i);
     }
 
     // 2D vpiIntVal VLVT_UINT8 descending
@@ -135,7 +135,7 @@ int _mon_check_get_int(){
     CHECK_RESULT_NZ(int_dim2_8_desc_v.value.integers);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(int_dim2_8_desc_v.value.integers[i],i+(1<<7));
+        CHECK_RESULT(int_dim2_8_desc_v.value.integers[i],i);
     }
 
     // 2D vpiIntVal VLVT_UINT8 userAllocFlag non-max num
@@ -149,7 +149,7 @@ int _mon_check_get_int(){
             CHECK_RESULT_Z(int_dim2_v.value.integers[i]);
             continue;
         }
-        CHECK_RESULT(int_dim2_v.value.integers[i],i+(1<<7));
+        CHECK_RESULT(int_dim2_v.value.integers[i],i);
     }
 
     // 2D vpiIntVal VLVT_UINT8 non-zero index
@@ -160,7 +160,7 @@ int _mon_check_get_int(){
     CHECK_RESULT_NZ(int_dim2_v.value.integers);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(int_dim2_v.value.integers[i],((i+4)%6)+(1<<7));
+        CHECK_RESULT(int_dim2_v.value.integers[i],(i+4)%6);
     }
 
     // 2D vpiIntVal VLVT_UINT16
@@ -173,7 +173,12 @@ int _mon_check_get_int(){
     CHECK_RESULT_NZ(int_dim2_v.value.integers);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(int_dim2_v.value.integers[i],i+(1<<15));
+        const auto val = int_dim2_v.value.integers[i];
+        for(auto j = 0; j < 2; j++){
+            const auto exp = (j << 4) + i; 
+            const auto res = static_cast<PLI_UBYTE8>(val >> (j*8));
+            CHECK_RESULT(res,exp);
+        }
     }
 
     // 2D vpiIntVal VLVT_UINT32
@@ -184,7 +189,12 @@ int _mon_check_get_int(){
     CHECK_RESULT_NZ(int_dim2_v.value.integers);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(int_dim2_v.value.integers[i],i+(1<<31));
+        const auto val = int_dim2_v.value.integers[i];
+        for(auto j = 0; j < 4; j++){
+            const auto exp = (j << 4) + i; 
+            const auto res = static_cast<PLI_UBYTE8>(val >> (j*8));
+            CHECK_RESULT(res,exp);
+        }
     }
 
     return 0;
@@ -200,7 +210,7 @@ int _mon_check_get_vector(){
     CHECK_RESULT_NZ(vector_dim2_8_v.value.vectors);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(vector_dim2_8_v.value.vectors[i].aval,i+(1<<7));
+        CHECK_RESULT(vector_dim2_8_v.value.vectors[i].aval,i);
         CHECK_RESULT_Z(vector_dim2_8_v.value.vectors[i].bval);
     }
 
@@ -212,8 +222,13 @@ int _mon_check_get_vector(){
     CHECK_RESULT_NZ(vector_dim2_16_v.value.vectors);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(vector_dim2_16_v.value.vectors[i].aval,i+(1<<15));
+        const auto val = vector_dim2_16_v.value.vectors[i].aval;
         CHECK_RESULT_Z(vector_dim2_16_v.value.vectors[i].bval);
+        for(auto j = 0; j < 2; j++){
+            const auto exp = (j << 4) + i; 
+            const auto res = static_cast<PLI_UBYTE8>(val >> (j*8));
+            CHECK_RESULT(res,exp);
+        }
     }
 
     // 2D vpiVectorVal VLVT_UINT32
@@ -224,8 +239,13 @@ int _mon_check_get_vector(){
     CHECK_RESULT_NZ(vector_dim2_32_v.value.vectors);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(vector_dim2_32_v.value.vectors[i].aval,i+(1<<31));
+        const auto val = vector_dim2_32_v.value.vectors[i].aval;
         CHECK_RESULT_Z(vector_dim2_32_v.value.vectors[i].bval);
+        for(auto j = 0; j < 4; j++){
+            const auto exp = (j << 4) + i; 
+            const auto res = static_cast<PLI_UBYTE8>(val >> (j*8));
+            CHECK_RESULT(res,exp);
+        }
     }
     
     // 2D vpiVectorVal VLVT_UINT64
@@ -236,10 +256,18 @@ int _mon_check_get_vector(){
     CHECK_RESULT_NZ(vector_dim2_64_v.value.vectors);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(vector_dim2_64_v.value.vectors[(2*i)].aval,i);
-        CHECK_RESULT(vector_dim2_64_v.value.vectors[(2*i)+1].aval,(1<<31));
-        CHECK_RESULT_Z(vector_dim2_64_v.value.vectors[(2*i)].bval);
-        CHECK_RESULT_Z(vector_dim2_64_v.value.vectors[(2*i)+1].bval);
+        const auto lswVal = vector_dim2_64_v.value.vectors[(2*i)].aval;
+        const auto mswVal = vector_dim2_64_v.value.vectors[(2*i)+1].aval;
+        CHECK_RESULT_Z(vector_dim2_16_v.value.vectors[(2*i)].bval);
+        CHECK_RESULT_Z(vector_dim2_16_v.value.vectors[(2*i)+1].bval);
+        for(auto j = 0; j < 4; j++){
+            const auto lswExp = (j << 4) + i;
+            const auto lswRes = static_cast<PLI_UBYTE8>(lswVal >> (j*8));
+            CHECK_RESULT(lswRes,lswExp);
+            const auto mswExp = ((j+4) << 4) + i;
+            const auto mswRes = static_cast<PLI_UBYTE8>(mswVal >> ((j+4)*8));
+            CHECK_RESULT(mswRes,mswExp);
+        }
     }
 
     // 2D vpiVectorVal VLVT_UINT64 non-zero index
@@ -250,10 +278,18 @@ int _mon_check_get_vector(){
     CHECK_RESULT_NZ(vector_dim2_64_v.value.vectors);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(vector_dim2_64_v.value.vectors[(2*i)].aval,(i+4)%6);
-        CHECK_RESULT(vector_dim2_64_v.value.vectors[(2*i)+1].aval,(1<<31));
-        CHECK_RESULT_Z(vector_dim2_64_v.value.vectors[(2*i)].bval);
-        CHECK_RESULT_Z(vector_dim2_64_v.value.vectors[(2*i)+1].bval);
+        const auto lswVal = vector_dim2_64_v.value.vectors[(2*i)].aval;
+        const auto mswVal = vector_dim2_64_v.value.vectors[(2*i)+1].aval;
+        CHECK_RESULT_Z(vector_dim2_16_v.value.vectors[(2*i)].bval);
+        CHECK_RESULT_Z(vector_dim2_16_v.value.vectors[(2*i)+1].bval);
+        for(auto j = 0; j < 4; j++){
+            const auto lswExp = (j << 4) + ((i+4)%6);
+            const auto lswRes = static_cast<PLI_UBYTE8>(lswVal >> (j*8));
+            CHECK_RESULT(lswRes,lswExp);
+            const auto mswExp = ((j+4) << 4) + ((i+4)%6);
+            const auto mswRes = static_cast<PLI_UBYTE8>(mswVal >> ((j+4)*8));
+            CHECK_RESULT(mswRes,mswExp);
+        }
     }
 
     // 2D vpiVectorVal VLVT_WData non-zero index
@@ -264,12 +300,26 @@ int _mon_check_get_vector(){
     CHECK_RESULT_NZ(vector_dim2_96_v.value.vectors);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(vector_dim2_96_v.value.vectors[(3*i)].aval,(i+4)%6);
-        CHECK_RESULT(vector_dim2_96_v.value.vectors[(3*i)+1].aval,(1<<30));
-        CHECK_RESULT(vector_dim2_96_v.value.vectors[(3*i)+2].aval,(1<<31));
+        // least significant word ... [31:0]
+        const auto lswVal = vector_dim2_96_v.value.vectors[(3*i)].aval;
+        // second least significant word ... [63:32]
+        const auto lsw1Val = vector_dim2_96_v.value.vectors[(3*i)+1].aval;
+        // most significant word ... [95:64]
+        const auto mswVal = vector_dim2_96_v.value.vectors[(3*i)+2].aval;
         CHECK_RESULT_Z(vector_dim2_96_v.value.vectors[(3*i)].bval);
         CHECK_RESULT_Z(vector_dim2_96_v.value.vectors[(3*i)+1].bval);
         CHECK_RESULT_Z(vector_dim2_96_v.value.vectors[(3*i)+2].bval);
+        for(auto j = 0; j < 4; j++) {
+            const auto lswRes = static_cast<PLI_UBYTE8>(lswVal >> (j*8));
+            const auto lsw1Res = static_cast<PLI_UBYTE8>(lsw1Val >> (j*8));
+            const auto mswRes = static_cast<PLI_UBYTE8>(mswVal >> (j*8));
+            const auto lswExp = (j << 4) + ((i+4)%6);
+            const auto lsw1Exp = ((j+4) << 4) + ((i+4)%6);
+            const auto mswExp = ((j+8) << 4) + ((i+4)%6);
+            CHECK_RESULT(lswRes,lswExp);
+            CHECK_RESULT(lsw1Res,lsw1Exp);
+            CHECK_RESULT(mswRes,mswExp);
+        }
     }
 
     // 2D vpiVectorVal VLVT_WData
@@ -280,12 +330,26 @@ int _mon_check_get_vector(){
     CHECK_RESULT_NZ(vector_dim2_96_v.value.vectors);
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
     for(auto i = 0; i < 6; i++){
-        CHECK_RESULT(vector_dim2_96_v.value.vectors[(3*i)].aval,i);
-        CHECK_RESULT(vector_dim2_96_v.value.vectors[(3*i)+1].aval,(1<<30));
-        CHECK_RESULT(vector_dim2_96_v.value.vectors[(3*i)+2].aval,(1<<31));
+        // least significant word ... [31:0]
+        const auto lswVal = vector_dim2_96_v.value.vectors[(3*i)].aval;
+        // second least significant word ... [63:32]
+        const auto lsw1Val = vector_dim2_96_v.value.vectors[(3*i)+1].aval;
+        // most significant word ... [95:64]
+        const auto mswVal = vector_dim2_96_v.value.vectors[(3*i)+2].aval;
         CHECK_RESULT_Z(vector_dim2_96_v.value.vectors[(3*i)].bval);
         CHECK_RESULT_Z(vector_dim2_96_v.value.vectors[(3*i)+1].bval);
         CHECK_RESULT_Z(vector_dim2_96_v.value.vectors[(3*i)+2].bval);
+        for(auto j = 0; j < 4; j++) {
+            const auto lswRes = static_cast<PLI_UBYTE8>(lswVal >> (j*8));
+            const auto lsw1Res = static_cast<PLI_UBYTE8>(lsw1Val >> (j*8));
+            const auto mswRes = static_cast<PLI_UBYTE8>(mswVal >> (j*8));
+            const auto lswExp = (j << 4) + i;
+            const auto lsw1Exp = ((j+4) << 4) + i;
+            const auto mswExp = ((j+8) << 4) + i;
+            CHECK_RESULT(lswRes,lswExp);
+            CHECK_RESULT(lsw1Res,lsw1Exp);
+            CHECK_RESULT(mswRes,mswExp);
+        }
     }
 
     return 0;

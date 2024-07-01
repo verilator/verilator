@@ -25,9 +25,9 @@ extern "C" int mon_check();
 `endif
 
 
-/*-------------------------------------------
-VARIABLE DEFINITIONS
--------------------------------------------*/
+// -------------------------------------------
+// VARIABLE DEFINITIONS
+// -------------------------------------------
    //overhead
    input clk;
    integer status;
@@ -42,36 +42,36 @@ VARIABLE DEFINITIONS
 
    //_mon_check_get_int
    logic      [7:0] int_dim2_8 [0:1][0:2] /*verilator public_flat_rw */;
-   assign int_dim2_8[0][0] = 8'h80;
-   assign int_dim2_8[0][1] = 8'h81;
-   assign int_dim2_8[0][2] = 8'h82;
-   assign int_dim2_8[1][0] = 8'h83;
-   assign int_dim2_8[1][1] = 8'h84;
-   assign int_dim2_8[1][2] = 8'h85;
+   assign int_dim2_8[0][0] = 8'h00;
+   assign int_dim2_8[0][1] = 8'h01;
+   assign int_dim2_8[0][2] = 8'h02;
+   assign int_dim2_8[1][0] = 8'h03;
+   assign int_dim2_8[1][1] = 8'h04;
+   assign int_dim2_8[1][2] = 8'h05;
 
    logic      [7:0] int_dim2_8_desc [1:0][2:0] /*verilator public_flat_rw */;
-   assign int_dim2_8_desc[0][0] = 8'h80;
-   assign int_dim2_8_desc[0][1] = 8'h81;
-   assign int_dim2_8_desc[0][2] = 8'h82;
-   assign int_dim2_8_desc[1][0] = 8'h83;
-   assign int_dim2_8_desc[1][1] = 8'h84;
-   assign int_dim2_8_desc[1][2] = 8'h85;
+   assign int_dim2_8_desc[0][0] = 8'h00;
+   assign int_dim2_8_desc[0][1] = 8'h01;
+   assign int_dim2_8_desc[0][2] = 8'h02;
+   assign int_dim2_8_desc[1][0] = 8'h03;
+   assign int_dim2_8_desc[1][1] = 8'h04;
+   assign int_dim2_8_desc[1][2] = 8'h05;
 
    logic      [15:0] int_dim2_16 [0:1][0:2] /*verilator public_flat_rw */;
-   assign int_dim2_16[0][0] = 16'h8000;
-   assign int_dim2_16[0][1] = 16'h8001;
-   assign int_dim2_16[0][2] = 16'h8002;
-   assign int_dim2_16[1][0] = 16'h8003;
-   assign int_dim2_16[1][1] = 16'h8004;
-   assign int_dim2_16[1][2] = 16'h8005;
+   assign int_dim2_16[0][0] = 16'h1000;
+   assign int_dim2_16[0][1] = 16'h1101;
+   assign int_dim2_16[0][2] = 16'h1202;
+   assign int_dim2_16[1][0] = 16'h1303;
+   assign int_dim2_16[1][1] = 16'h1404;
+   assign int_dim2_16[1][2] = 16'h1505;
 
    logic      [31:0] int_dim2_32 [0:1][0:2] /*verilator public_flat_rw */;
-   assign int_dim2_32[0][0] = 32'h80000000;
-   assign int_dim2_32[0][1] = 32'h80000001;
-   assign int_dim2_32[0][2] = 32'h80000002;
-   assign int_dim2_32[1][0] = 32'h80000003;
-   assign int_dim2_32[1][1] = 32'h80000004;
-   assign int_dim2_32[1][2] = 32'h80000005;
+   assign int_dim2_32[0][0] = 32'h30201000;
+   assign int_dim2_32[0][1] = 32'h31211101;
+   assign int_dim2_32[0][2] = 32'h32221202;
+   assign int_dim2_32[1][0] = 32'h33231303;
+   assign int_dim2_32[1][1] = 32'h34241404;
+   assign int_dim2_32[1][2] = 32'h35251505;
 
    //_mon_check_get_real
    real   real_dim2 [0:1][0:2] /*verilator public_flat_rw */;
@@ -84,44 +84,44 @@ VARIABLE DEFINITIONS
 
    //_mon_check_get_vector
    logic      [7:0] vector_dim2_8 [0:1][0:2] /*verilator public_flat_rw */;
-   assign vector_dim2_8[0][0] = 8'h80;
-   assign vector_dim2_8[0][1] = 8'h81;
-   assign vector_dim2_8[0][2] = 8'h82;
-   assign vector_dim2_8[1][0] = 8'h83;
-   assign vector_dim2_8[1][1] = 8'h84;
-   assign vector_dim2_8[1][2] = 8'h85;
+   assign vector_dim2_8[0][0] = 8'h00;
+   assign vector_dim2_8[0][1] = 8'h01;
+   assign vector_dim2_8[0][2] = 8'h02;
+   assign vector_dim2_8[1][0] = 8'h03;
+   assign vector_dim2_8[1][1] = 8'h04;
+   assign vector_dim2_8[1][2] = 8'h05;
 
    logic      [15:0] vector_dim2_16 [0:1][0:2] /*verilator public_flat_rw */;
-   assign vector_dim2_16[0][0] = 16'h8000;
-   assign vector_dim2_16[0][1] = 16'h8001;
-   assign vector_dim2_16[0][2] = 16'h8002;
-   assign vector_dim2_16[1][0] = 16'h8003;
-   assign vector_dim2_16[1][1] = 16'h8004;
-   assign vector_dim2_16[1][2] = 16'h8005;
+   assign vector_dim2_16[0][0] = 16'h1000;
+   assign vector_dim2_16[0][1] = 16'h1101;
+   assign vector_dim2_16[0][2] = 16'h1202;
+   assign vector_dim2_16[1][0] = 16'h1303;
+   assign vector_dim2_16[1][1] = 16'h1404;
+   assign vector_dim2_16[1][2] = 16'h1505;
 
-   logic      [31:0] vector_dim2_32 [0:1][0:2] /*verilator public_flat_rw */;
-   assign vector_dim2_32[0][0] = 32'h80000000;
-   assign vector_dim2_32[0][1] = 32'h80000001;
-   assign vector_dim2_32[0][2] = 32'h80000002;
-   assign vector_dim2_32[1][0] = 32'h80000003;
-   assign vector_dim2_32[1][1] = 32'h80000004;
-   assign vector_dim2_32[1][2] = 32'h80000005;
+   logic      [31:0] vector_dim2_32 [0:1][0:2] /*verilator public_flat_rw */; //vortex gpu -> 
+   assign vector_dim2_32[0][0] = 32'h30201000;
+   assign vector_dim2_32[0][1] = 32'h31211101;
+   assign vector_dim2_32[0][2] = 32'h32221202;
+   assign vector_dim2_32[1][0] = 32'h33231303;
+   assign vector_dim2_32[1][1] = 32'h34241404;
+   assign vector_dim2_32[1][2] = 32'h35251505;
 
    logic      [63:0] vector_dim2_64 [0:1][0:2] /*verilator public_flat_rw */;
-   assign vector_dim2_64[0][0] = 64'h8000000000000000;
-   assign vector_dim2_64[0][1] = 64'h8000000000000001;
-   assign vector_dim2_64[0][2] = 64'h8000000000000002;
-   assign vector_dim2_64[1][0] = 64'h8000000000000003;
-   assign vector_dim2_64[1][1] = 64'h8000000000000004;
-   assign vector_dim2_64[1][2] = 64'h8000000000000005;
+   assign vector_dim2_64[0][0] = 64'h7060504030201000;
+   assign vector_dim2_64[0][1] = 64'h7161514131211101;
+   assign vector_dim2_64[0][2] = 64'h7262524232221202;
+   assign vector_dim2_64[1][0] = 64'h7363534333231303;
+   assign vector_dim2_64[1][1] = 64'h7464544434241404;
+   assign vector_dim2_64[1][2] = 64'h7565554535251505;
 
    logic      [95:0] vector_dim2_96 [0:1][0:2] /*verilator public_flat_rw */;
-   assign vector_dim2_96[0][0] = 96'h800000004000000000000000;
-   assign vector_dim2_96[0][1] = 96'h800000004000000000000001;
-   assign vector_dim2_96[0][2] = 96'h800000004000000000000002;
-   assign vector_dim2_96[1][0] = 96'h800000004000000000000003;
-   assign vector_dim2_96[1][1] = 96'h800000004000000000000004;
-   assign vector_dim2_96[1][2] = 96'h800000004000000000000005;
+   assign vector_dim2_96[0][0] = 96'hb0a090807060504030201000;
+   assign vector_dim2_96[0][1] = 96'hb1a191817161514131211101;
+   assign vector_dim2_96[0][2] = 96'hb2a292827262524232221202;
+   assign vector_dim2_96[1][0] = 96'hb3a393837363534333231303;
+   assign vector_dim2_96[1][1] = 96'hb4a494847464544434241404;
+   assign vector_dim2_96[1][2] = 96'hb5a595857565554535251505;
 
    //_mon_check_get_rawvals
    logic      [7:0] rawvals_dim2_8 [0:1][0:2] /*verilator public_flat_rw */;
@@ -166,9 +166,9 @@ VARIABLE DEFINITIONS
    assign rawvals_dim2_72[1][2] = 72'h857565554535251505;
 
 
-/*-------------------------------------------
-TICK COUNTER
--------------------------------------------*/
+// -------------------------------------------
+// TICK COUNTER
+// -------------------------------------------
    always @(posedge clk) begin
       count <= count + 2;
       if (count == 1000) begin
@@ -177,9 +177,9 @@ TICK COUNTER
       end
    end
 
-/*-------------------------------------------
-C TEST SUITE
--------------------------------------------*/
+// -------------------------------------------
+// C TEST SUITE
+// -------------------------------------------
    initial begin
       c_tests_done = 0;
       v_tests_done = 0;
@@ -199,9 +199,9 @@ C TEST SUITE
       c_tests_done = 1;
    end
 
-/*-------------------------------------------
-VERILOG TEST SUITE
--------------------------------------------*/
+// -------------------------------------------
+// VERILOG TEST SUITE
+// -------------------------------------------
    always @(posedge clk) begin
       if(c_tests_done && ~v_tests_done) begin
          $write("%%Info: Checking results\n");
