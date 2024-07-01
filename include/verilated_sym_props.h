@@ -177,8 +177,8 @@ public:
     bool magicOk() const { return m_propsp->magicOk(); }
     VerilatedVarType vltype() const { return m_propsp->vltype(); }
     bool isDpiStdLayout() const { return m_propsp->isDpiCLayout(); }
-    const VerilatedRange& packed() const { return m_propsp->packed(0); } //deprecated call packed(n)
-    const VerilatedRange& unpacked() const { return m_propsp->unpacked(0); } //deprecated call unpacked(n)
+    const VerilatedRange& packed() const { return m_propsp->packed(0); }
+    const VerilatedRange& unpacked() const { return m_propsp->unpacked(0); }
     int udims() const VL_MT_SAFE { return m_propsp->udims(); }
     int left(int dim) const VL_MT_SAFE { return m_propsp->left(dim); }
     int right(int dim) const VL_MT_SAFE { return m_propsp->right(dim); }
