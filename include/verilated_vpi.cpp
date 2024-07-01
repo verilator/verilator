@@ -2344,13 +2344,7 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_value valuep, const c
     return status;
 }
 
-bool vl_check_format(const VerilatedVar* varp, const p_vpi_arrayvalue arrayvaluep, const char* fullname, bool isGetValue){
-    //variable must be an array (dims > 1)
-    if (!(varp->dims() >1)){
-        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported dimensions (%u)", __func__, varp->dims());
-        return false;
-    }
-
+bool vl_check_format(const VerilatedVar* varp, const p_vpi_arrayvalue arrayvaluep, const char* fullname){
     if (arrayvaluep->format == vpiIntVal) {
         switch (varp->vltype()) {
             case VLVT_UINT8: return true;
@@ -3064,7 +3058,7 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvaluep,
 
     const auto varp = memop->varp();
     const auto fullname = memop->fullname();
-    if (!vl_check_format(varp, arrayvaluep, fullname, true)) return;
+    if (!vl_check_format(varp, arrayvaluep, fullname)) return;
 
     if(arrayvaluep->flags & ~(vpiUserAllocFlag)){
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported flags (%u)", __func__, arrayvaluep->flags);
