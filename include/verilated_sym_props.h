@@ -78,6 +78,17 @@ class VerilatedVarProps VL_NOT_FINAL {
     const int m_udims;  // Unpacked dimensions, 0 = none
     std::vector<VerilatedRange> m_packed;  // Packed array ranges
     std::vector<VerilatedRange> m_unpacked;  // Unpacked array ranges
+    void initUnpacked(const int* ulims) {
+        for (int i = 0; i < m_udims; ++i) {
+            const int uleft = ulims ? ulims[2 * i + 0] : 0;
+            const int uright = ulims ? ulims[2 * i + 1] : 0;
+            m_unpacked.emplace_back(uleft, uright);
+        }
+    }
+    void initPacked(const int pleft, const int pright) {
+        // use for loop when multi-dimensional packed arrays are supported
+        m_packed.emplace_back(pleft, pright);
+    }
     // CONSTRUCTORS
 protected:
     friend class VerilatedScope;
@@ -87,18 +98,52 @@ protected:
         , m_vlflags{vlflags}
         , m_pdims{pdims}
         , m_udims{udims} {
-        for (auto i = 0; i < m_udims; ++i) {
-            m_unpacked.emplace_back(0, 0);
-        }
-        for (auto i = 0; i < m_pdims; ++i) {
-            m_packed.emplace_back(0, 0);
-        }
-        if(m_pdims == 0) {
-            m_packed.emplace_back(0,0);
-        }
+        initUnpacked(nullptr);
+        initPacked(0, 0); // packed ranges are set by VerilatedScope::varInsert() after construction
     }
 
 public:
+    class Unpacked {};
+    // Without packed
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags)
+        : m_magic{MAGIC}
+        , m_vltype{vltype}
+        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
+        , m_pdims{0}
+        , m_udims{0} {
+        initUnpacked(nullptr);
+        initPacked(0, 0);
+        }
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulims)
+        : m_magic{MAGIC}
+        , m_vltype{vltype}
+        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
+        , m_pdims{0}
+        , m_udims{udims} {
+        initUnpacked(ulims);
+        initPacked(0, 0);
+    }
+    // With packed
+    class Packed {};
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pl, int pr)
+        : m_magic{MAGIC}
+        , m_vltype{vltype}
+        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
+        , m_pdims{1}
+        , m_udims{0} {
+        initUnpacked(nullptr);
+        initPacked(pl, pr);
+        }
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pl, int pr, Unpacked,
+                      int udims, const int* ulims)
+        : m_magic{MAGIC}
+        , m_vltype{vltype}
+        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
+        , m_pdims{1}
+        , m_udims{udims} {
+        initUnpacked(ulims);
+        initPacked(pl, pr);
+    }
 
     ~VerilatedVarProps() = default;
     // METHODS
