@@ -984,9 +984,11 @@ protected:
     void visit(AstNodeIf* nodep) override {
         UINFO(4, "     IF " << nodep << endl);
         if (!nodep->condp()->isPure()) m_noReorderWhy = "Impure IF condition";
-        m_curIfConditional = nodep;
-        iterateAndNextNull(nodep->condp());
-        m_curIfConditional = nullptr;
+        {
+            VL_RESTORER(m_curIfConditional);
+            m_curIfConditional = nodep;
+            iterateAndNextNull(nodep->condp());
+        }
         scanBlock(nodep->thensp());
         scanBlock(nodep->elsesp());
     }
