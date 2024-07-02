@@ -20,7 +20,6 @@
 #include "V3Error.h"
 #include "V3Graph.h"
 #include "V3GraphAlg.h"
-#include "V3ThreadSafety.h"
 
 //######################################################################
 

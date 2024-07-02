@@ -30,7 +30,6 @@
 #include "V3FileLine.h"
 #include "V3Mutex.h"
 #include "V3Options.h"
-#include "V3ThreadSafety.h"
 
 #include <string>
 #include <unordered_map>
@@ -38,6 +37,7 @@
 
 class AstNetlist;
 class V3HierBlockPlan;
+class V3ThreadPool;
 
 //======================================================================
 // Restorer
@@ -101,6 +101,8 @@ class V3Global final {
     // created by makeInitNetlist(} so static constructors run first
     V3HierBlockPlan* m_hierPlanp = nullptr;  // Hierarchical Verilation plan,
     // nullptr unless hier_block, set via hierPlanp(V3HierBlockPlan*}
+    V3ThreadPool* m_threadPoolp = nullptr;  // Thread Pool,
+    // nullptr unless 'verilatedJobs' is known, set via threadPoolp(V3ThreadPool*)
     VWidthMinUsage m_widthMinUsage
         = VWidthMinUsage::LINT_WIDTH;  // What AstNode::widthMin() is used for
 
@@ -141,6 +143,11 @@ public:
 
     // ACCESSORS (general)
     AstNetlist* rootp() const VL_MT_SAFE { return m_rootp; }
+    V3ThreadPool* threadPoolp() const VL_PURE { return m_threadPoolp; }
+    void threadPoolp(V3ThreadPool* threadPoolp) {
+        UASSERT(!m_threadPoolp, "call once");
+        m_threadPoolp = threadPoolp;
+    }
     VWidthMinUsage widthMinUsage() const VL_PURE { return m_widthMinUsage; }
     bool assertDTypesResolved() const { return m_assertDTypesResolved; }
     bool assertScoped() const { return m_assertScoped; }

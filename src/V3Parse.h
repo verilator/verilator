@@ -22,7 +22,6 @@
 
 #include "V3Error.h"
 #include "V3Global.h"
-#include "V3ThreadSafety.h"
 
 class AstNetlist;
 class VInFilter;

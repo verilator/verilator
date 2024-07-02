@@ -22,7 +22,6 @@
 
 #include "V3Order.h"
 #include "V3OrderGraph.h"
-#include "V3ThreadSafety.h"
 
 #include <string>
 #include <unordered_map>
