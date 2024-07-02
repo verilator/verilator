@@ -2024,7 +2024,7 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
     if (varp->isParam()) {
         return (new VerilatedVpioParam{varp, scopep})->castVpiHandle();
     } 
-    if(varp->dims() > 1) {
+    if(varp->udims() > 0) {
         return (new VerilatedVpioMemory{varp, scopep})->castVpiHandle();
     }
     return (new VerilatedVpioVar{varp, scopep})->castVpiHandle();
@@ -2098,7 +2098,8 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
     case vpiParent: {
         const VerilatedVpioMemory* const vop = VerilatedVpioMemory::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
-        return (new VerilatedVpioVar{vop->varp(), vop->scopep()})->castVpiHandle();
+        if (vop->udim() == 0) return nullptr;
+        return (new VerilatedVpioMemory{vop->varp(), vop->scopep()})->castVpiHandle();
     }
     default:
         VL_VPI_WARNING_(__FILE__, __LINE__, "%s: Unsupported type %s, nothing will be returned",
