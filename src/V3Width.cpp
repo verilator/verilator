@@ -67,6 +67,7 @@
 
 #include "V3Width.h"
 
+#include "V3Ast.h"
 #include "V3Const.h"
 #include "V3Error.h"
 #include "V3Global.h"
@@ -3027,13 +3028,13 @@ class WidthVisitor final : public VNVisitor {
     }
     AstWith* methodWithArgument(AstMethodCall* nodep, bool required, bool arbReturn,
                                 AstNodeDType* returnDtp, AstNodeDType* indexDtp,
-                                AstNodeDType* valueDtp) {
+                                AstNodeDType* valueDtp, VNRelinker* relinker = nullptr) {
         UASSERT_OBJ(arbReturn || returnDtp, nodep, "Null return type");
         if (AstWith* const withp = VN_CAST(nodep->pinsp(), With)) {
             withp->indexArgRefp()->dtypep(indexDtp);
             withp->valueArgRefp()->dtypep(valueDtp);
             userIterate(withp, WidthVP{returnDtp, BOTH}.p());
-            withp->unlinkFrBack();
+            withp->unlinkFrBack(relinker);
             return withp;
         } else if (required) {
             nodep->v3error("'with' statement is required for ." << nodep->prettyName()
@@ -3701,11 +3702,15 @@ class WidthVisitor final : public VNVisitor {
                     nodep->dtypeFrom(ftaskp);
                     nodep->classOrPackagep(classp);
                     if (VN_IS(ftaskp, Task)) nodep->dtypeSetVoid();
-                    processFTaskRefArgs(nodep);
                     if (withp) {
-                        withp->v3warn(CONSTRAINTIGN, "'with' constraint ignored (unsupported)");
-                        VL_DO_DANGLING(withp->deleteTree(), withp);
+                        nodep->addPinsp(withp);
+                        UINFO(1, "WITHP:");
+                        withp->dumpTree();
+                        //withp->v3warn(CONSTRAINTIGN, "'with' constraint ignored (unsupported)");
+                        //VL_DO_DANGLING(withp->deleteTree(), withp);
                     }
+                    processFTaskRefArgs(nodep);
+                    UINFO(1, "Pinsp:");
                 }
                 return;
             } else if (nodep->name() == "get_randstate" || nodep->name() == "set_randstate") {

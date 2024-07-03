@@ -25,10 +25,14 @@
 //*************************************************************************
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+#include "verilatedos.h"
 
+#include "V3Ast.h"
 #include "V3Randomize.h"
 
+#include "V3Error.h"
 #include "V3MemberMap.h"
+#include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -131,7 +135,7 @@ class RandomizeMarkVisitor final : public VNVisitorConst {
 
 public:
     // CONSTRUCTORS
-    explicit RandomizeMarkVisitor(AstNetlist* nodep) {
+    explicit RandomizeMarkVisitor(AstNode* nodep) {
         iterateConst(nodep);
         markAllDerived();
     }
@@ -147,7 +151,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     //  AstNodeExpr::user1()    -> bool. Depending on a randomized variable
     // VNUser4InUse    m_inuser4;      (Allocated for use in RandomizeVisitor)
 
-    AstNodeFTask* const m_taskp;  // method to add write_var calls to
+    AstNodeStmt* m_taskbodyp;  // body of a method to add write_var calls to
     AstVar* const m_genp;  // VlRandomizer variable of the class
 
     bool editFormat(AstNodeExpr* nodep) {
@@ -222,7 +226,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 = new AstCExpr{varp->fileline(), "\"" + smtName + "\"", varp->width()};
             varnamep->dtypep(varp->dtypep());
             methodp->addPinsp(varnamep);
-            m_taskp->addStmtsp(methodp->makeStmt());
+            m_taskbodyp = AstNode::addNext(m_taskbodyp,
+                                           new AstStmtExpr{varp->fileline(), methodp});
         }
     }
     void visit(AstNodeBiop* nodep) override {
@@ -267,9 +272,13 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
 
 public:
+    AstNodeStmt* taskBody() const {
+        return m_taskbodyp;
+    }
+
     // CONSTRUCTORS
-    explicit ConstraintExprVisitor(AstConstraintExpr* nodep, AstNodeFTask* taskp, AstVar* genp)
-        : m_taskp(taskp)
+    explicit ConstraintExprVisitor(AstConstraintExpr* nodep, AstVar* genp)
+        : m_taskbodyp(nullptr)
         , m_genp(genp) {
         iterate(nodep);
     }
@@ -563,7 +572,10 @@ class RandomizeVisitor final : public VNVisitor {
                 pushDeletep(nodep->itemsp()->unlinkFrBack());
                 continue;
             }
-            { ConstraintExprVisitor{condsp->unlinkFrBack(), newp, genp}; }
+            {
+                ConstraintExprVisitor constraintExprVisitor{condsp->unlinkFrBack(), genp};
+                taskp->addStmtsp(constraintExprVisitor.taskBody());
+            }
             // Only hard constraints are now supported
             AstCMethodHard* const methodp = new AstCMethodHard{
                 condsp->fileline(), new AstVarRef{condsp->fileline(), genp, VAccess::READWRITE},
@@ -640,6 +652,149 @@ public:
     ~RandomizeVisitor() override = default;
 };
 
+template <typename TreeNodeType>
+class CaptureFrame {
+    TreeNodeType* m_treep; // Original tree
+    AstArg* m_argsp; // Original references turned into arguments
+    std::map<const AstVar*, AstVar*> m_varCloneMap; // Map original var nodes to their clones
+
+    AstVar* captureVariable(FileLine* fileline, AstVar* varp) {
+        auto it = m_varCloneMap.find(varp);
+        if (it == m_varCloneMap.end()) {
+            AstVar* newVarp = varp->cloneTree(false);
+            newVarp->fileline(fileline);
+            newVarp->varType(VVarType::BLOCKTEMP);
+            newVarp->funcLocal(true);
+            newVarp->direction(VDirection::INPUT);
+
+            m_varCloneMap.emplace(varp, newVarp);
+            return newVarp;
+        }
+        return it->second;
+    }
+
+public:
+    explicit CaptureFrame(TreeNodeType* nodep, bool clone = true, VNRelinker* linkerp = nullptr)
+        : m_argsp(nullptr)
+    {
+        TreeNodeType* m_treep = clone ? nodep->cloneTree(false) : nodep->unlinkFrBack(linkerp);
+
+        m_treep->foreach([&](AstVarRef* varrefp) {
+            UASSERT_OBJ(varrefp->varp(), varrefp, "Variable unlinked");
+            AstVar* newVarp = captureVariable(varrefp->fileline(), varrefp->varp());
+            auto newVarRefp = varrefp->cloneTree(false);
+            varrefp->varp(newVarp);
+            m_argsp = AstNode::addNext(m_argsp, new AstArg{varrefp->fileline(), "", newVarRefp});
+        });
+    }
+
+    TreeNodeType* getTree() const {
+        return m_treep;
+    }
+
+    AstVar* getVar(AstVar* varp) {
+        auto it = m_varCloneMap.find(varp);
+        if (it == m_varCloneMap.end()) {
+            return nullptr;
+        }
+        return it->second;
+    }
+
+    AstArg* getArgs() {
+        return m_argsp;
+    }
+};
+
+class TransformWithClausesVisitor final : public VNVisitor {
+    const VNUser4InUse m_inuser4;
+
+    V3UniqueNames m_uniqueNames; // For generating unique function names
+
+    AstNodeModule* m_modp = nullptr;  // Current module
+
+    // VISITORS
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_modp);
+        m_modp = nodep;
+        iterateChildren(nodep);
+    }
+
+    void visit(AstMethodCall* nodep) override {
+        // Will set user1 to true if this is a call to `randomize`
+        //RandomizeMarkVisitor randomizeMarkVisitor(nodep);
+
+        auto withp = VN_CAST(nodep->pinsp(), With);
+        if (!(nodep->name() == "randomize") || !withp) {
+            iterateChildren(nodep);
+            return;
+        }
+
+        UASSERT_OBJ(nodep->fromp()->dtypep(), nodep->fromp(), "Object dtype is not linked");
+        auto classrefdtypep = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType);
+        if (!classrefdtypep) {
+            nodep->v3warn(E_UNSUPPORTED, "Inline constraints are not supported for this node type");
+            return;
+        }
+        auto classp = classrefdtypep->classp();
+        UASSERT_OBJ(classp, classrefdtypep, "Class type is unlinked to its ref type");
+
+        // TODO: This part is copied  from `RandomizeVisitor`
+        auto genp = VN_CAST(m_modp->user4p(), Var);
+        if (!genp) {
+            genp = new AstVar(nodep->fileline(), VVarType::MEMBER, "constraint",
+                              m_modp->findBasicDType(VBasicDTypeKwd::RANDOM_GENERATOR));
+            classp->addMembersp(genp);
+            m_modp->user4p(genp);
+        }
+
+        // TODO: We should probably copy the expression and then replace the refs to variables
+        // with new refs. Look at V3Fork, it already does something like that.
+        AstArg* argsp = nullptr;
+        AstNode* funcbodyp = nullptr;
+
+        // Detach the expression and prepare variable copies
+        CaptureFrame<AstNode> captured{withp->exprp(), false};
+        UASSERT_OBJ(VN_IS(captured.getTree(), ConstraintExpr), withp->exprp(), "Wrong expr type");
+
+        // Add function arguments
+        for (AstArg* arg = captured.getArgs(); arg != nullptr; arg = VN_AS(arg->nextp(), Arg)) {
+            auto varrefp = VN_AS(arg->exprp(), VarRef);
+            funcbodyp = AstNode::addNext(funcbodyp, captured.getVar(varrefp->varp()));
+        }
+
+        // Generate a hardcoded call and add it to the function body
+        {
+            ConstraintExprVisitor constraintExprVisitor{VN_AS(captured.getTree(), ConstraintExpr),
+                                                        genp};
+            funcbodyp = AstNode::addNext(funcbodyp, constraintExprVisitor.taskBody());
+        }
+
+        // Add the newly implmented function to our class
+        auto funcp = new AstFunc{nodep->fileline(), m_uniqueNames.get(nodep), funcbodyp, nullptr};
+        funcp->classMethod(true);
+        VN_AS(m_modp, Class)->addMembersp(funcp);
+
+        v3Global.rootp()->typeTablep()->repairCache();
+
+        // Replace the node with a call to that function
+        auto callp = new AstMethodCall(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                       funcp->name(), captured.getArgs());
+        UINFO(1, "Added `%s` randomization procedure");
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
+
+    void visit(AstNode* nodep) override {
+        iterateChildren(nodep);
+    }
+
+public:
+    explicit TransformWithClausesVisitor(AstNode* nodep)
+        : m_uniqueNames("__Vrandwith")
+    {
+        iterate(nodep);
+    }
+};
+
 //######################################################################
 // Randomize method class functions
 
@@ -648,6 +803,9 @@ void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
     {
         const RandomizeMarkVisitor markVisitor{nodep};
         RandomizeVisitor{nodep};
+    }
+    {
+        TransformWithClausesVisitor{nodep};
     }
     V3Global::dumpCheckGlobalTree("randomize", 0, dumpTreeEitherLevel() >= 3);
 }
