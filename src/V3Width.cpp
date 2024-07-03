@@ -3704,13 +3704,12 @@ class WidthVisitor final : public VNVisitor {
                     if (VN_IS(ftaskp, Task)) nodep->dtypeSetVoid();
                     if (withp) {
                         nodep->addPinsp(withp);
-                        UINFO(1, "WITHP:");
-                        withp->dumpTree();
+                        //UINFO(1, "WITHP:\n");
+                        //withp->dumpTree();
                         //withp->v3warn(CONSTRAINTIGN, "'with' constraint ignored (unsupported)");
                         //VL_DO_DANGLING(withp->deleteTree(), withp);
                     }
                     processFTaskRefArgs(nodep);
-                    UINFO(1, "Pinsp:");
                 }
                 return;
             } else if (nodep->name() == "get_randstate" || nodep->name() == "set_randstate") {
