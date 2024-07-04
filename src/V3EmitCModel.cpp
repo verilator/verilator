@@ -119,6 +119,10 @@ class EmitCModel final : public EmitCFunc {
             }
         }
         if(v3Global.opt.emitAccessors()) {
+            puts("\n// ACCESSORS\n"
+                 "// The application code should use these methods to\n"
+                 "// propagate new values into/out from the Verilated model\n"
+                 "// instead of using signal variables directly.\n");
             for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
                 if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                     if (varp->isPrimaryIO()) {  //
