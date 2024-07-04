@@ -229,24 +229,11 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
 
 void EmitCBaseVisitorConst::emitVarAccessors(const AstVar* nodep) {
     assert(nodep->name().rfind("__Vm_sig_") == 0 && nodep->isIO());
-    string privateName = nodep->name();
-    string publicName = nodep->name().substr(9);
+    const string privateName = nodep->name();
+    const string publicName = nodep->name().substr(strlen("__Vm_sig_"));
 
-    puts("decltype(");
-    puts(privateName);
-    puts(") ");
-    puts(publicName);
-    puts("() {return ");
-    puts(privateName);
-    puts(";}\n");
-
-    puts("void ");
-    puts(publicName);
-    puts("(decltype(");
-    puts(privateName);
-    puts(") v) {");
-    puts(privateName);
-    puts("=v;}\n");
+    puts("decltype("s + privateName + ") "s + publicName + "() {return "s + privateName + ";}\n");
+    puts("void "s + publicName + "(decltype(" + privateName + ") v) {"s + privateName + "=v;}\n");
 }
 
 void EmitCBaseVisitorConst::emitModCUse(const AstNodeModule* modp, VUseType useType) {
