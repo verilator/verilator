@@ -5387,6 +5387,15 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->passsp(), nullptr);
         userIterateAndNext(nodep->failsp(), nullptr);
     }
+    void visit(AstAssertCtl* nodep) override {
+        if (nodep->assertionTypesp()
+            && nodep->assertionTypesp()->exists([](AstNodeBiop*) { return true; })) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: " << "binary operations in assertion_type argument");
+        } else {
+            visit(static_cast<AstNodeStmt*>(nodep));
+        }
+    }
     void visit(AstAssertIntrinsic* nodep) override {
         assertAtStatement(nodep);
         iterateCheckBool(nodep, "Property", nodep->propp(), BOTH);  // it's like an if() condition.

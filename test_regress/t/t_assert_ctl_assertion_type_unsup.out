@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_assert_ctl_assertion_type_unsup.v:13:7: Unsupported: binary operations in assertion_type argument
+                                                              : ... note: In instance 't'
+   13 |       $assertcontrol(OFF, CONCURRENT | UNIQUE);
+      |       ^~~~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
