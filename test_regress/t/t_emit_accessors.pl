@@ -10,12 +10,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-# For code coverage, so does not matter much what the input is
-top_filename("t/t_emit_accessors.v");
-
 compile(
-    verilator_flags2 => ["--emit-accessors"],
-    );
+    make_main => 0,
+    verilator_flags2 => [
+        "--emit-accessors",
+        "--exe",
+        "$Self->{t_dir}/$Self->{name}.cpp"
+    ],
+);
 
 ok(1);
 1;
