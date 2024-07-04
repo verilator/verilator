@@ -554,7 +554,8 @@ class RandomizeVisitor final : public VNVisitor {
             auto nextp = expressionsp->nextp();
             {
                 ConstraintExprVisitor constraintExprVisitor{condsp, genp, classp, m_scopep};
-                stmtsp = AstNode::addNext(stmtsp, constraintExprVisitor.taskBody());
+                if (constraintExprVisitor.taskBody())
+                    stmtsp = AstNode::addNext(stmtsp, constraintExprVisitor.taskBody());
             }
             // Only hard constraints are now supported
             auto genRefp = new AstVarRef{condsp->fileline(), genp, VAccess::READWRITE};
