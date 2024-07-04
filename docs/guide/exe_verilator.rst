@@ -485,8 +485,9 @@ Summary:
 
 .. option:: --emit-accessors
 
-   Emit a getter and setter for each signal in the model. Signals are still
-   available as public members, but with the `__Vm_sig_` prefix.
+   Emit getter and setter methods for each top-level signal in the
+   model top class. Signals are still available as public members,
+   but with the `__Vm_sig_` prefix.
 
 .. option:: --error-limit <value>
 
