@@ -10,8 +10,10 @@ module t_emit_accessors(
     input logic [31:0] in3,
     input logic [31:0] in4,
     output bit out1,
-    output logic [31:0] out2
+    output logic [31:0] out2,
+    output logic [77:0] out3
 );
     assign out1 = in1 & in2;
     assign out2 = in3 & in4;
+    assign out3 = 1;
 endmodule

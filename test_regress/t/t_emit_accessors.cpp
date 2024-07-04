@@ -27,6 +27,7 @@ int main(int argc, char* argv[]) {
 
     assert(topp->out1() == 0);
     assert(topp->out2() == 0xffffffff);
+    assert(topp->out3().at(0) == 1);
     
     topp->final();
     VL_DO_DANGLING(delete topp, topp);
