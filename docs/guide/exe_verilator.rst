@@ -483,6 +483,11 @@ Summary:
    See also :vlopt:`--dump-defines`, :vlopt:`-P`, and
    :vlopt:`--pp-comments` options.
 
+.. option:: --emit-accessors
+
+   Emit a getter and setter for each signal in the model. Signals are still
+   available as public members, but with the `__Vm_sig_` prefix.
+
 .. option:: --error-limit <value>
 
    After this number of errors are encountered during Verilator run, exit.
