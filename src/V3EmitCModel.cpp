@@ -121,6 +121,15 @@ class EmitCModel final : public EmitCFunc {
                 }
             }
         }
+        if(v3Global.opt.emitAccessors()) {
+            for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+                if (const AstVar* const varp = VN_CAST(nodep, Var)) {
+                    if (varp->isPrimaryIO()) {  //
+                        emitVarAccessors(varp);
+                    }
+                }
+            }
+        }
         if (optSystemC() && v3Global.usesTiming()) puts("sc_core::sc_event trigger_eval;\n");
 
         // Cells instantiated by the top level (for access to /* verilator public */)
