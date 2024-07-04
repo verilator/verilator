@@ -335,9 +335,9 @@ class CaptureFrame {
 public:
     explicit CaptureFrame(TreeNodeType* nodep, bool clone = true, VNRelinker* linkerp = nullptr)
         : m_argsp(nullptr)
-        , m_treep(clone ? nodep->cloneTree(false) : nodep->unlinkFrBack(linkerp))
+        , m_treep(clone ? nodep->cloneTree(true) : nodep->unlinkFrBackWithNext(linkerp))
     {
-        m_treep->foreach([&](AstVarRef* varrefp) {
+        m_treep->foreachAndNext([&](AstVarRef* varrefp) {
             UASSERT_OBJ(varrefp->varp(), varrefp, "Variable unlinked");
             if (!varrefp->varp()->isFuncLocal()) return;
             AstVar* newVarp = captureVariable(varrefp->fileline(), varrefp->varp());
@@ -543,15 +543,14 @@ class RandomizeVisitor final : public VNVisitor {
         AstNodeStmt* stmtsp = nullptr;
 
         while (expressionsp) {
+            auto nextp = expressionsp->nextp();
             AstConstraintExpr* const condsp = VN_CAST(expressionsp, ConstraintExpr);
             if (!condsp) {
                 expressionsp->v3warn(CONSTRAINTIGN, "Constraint expression ignored (unsupported)");
-                auto nextp = expressionsp->nextp();
                 pushDeletep(expressionsp->unlinkFrBack());
                 expressionsp = nextp;
                 continue;
             }
-            auto nextp = expressionsp->nextp();
             {
                 ConstraintExprVisitor constraintExprVisitor{condsp, genp, classp, m_scopep};
                 if (constraintExprVisitor.taskBody())
@@ -566,11 +565,10 @@ class RandomizeVisitor final : public VNVisitor {
                 "hard", condsp->exprp()->unlinkFrBack()};
             methodp->dtypeSetVoid();
             stmtsp = AstNode::addNext(stmtsp, new AstStmtExpr{condsp->fileline(), methodp});
-            expressionsp = expressionsp->nextp();
             if (condsp->backp()) condsp->unlinkFrBack();
             pushDeletep(condsp);
+            expressionsp = nextp;
         }
-
         return stmtsp;
     }
 
@@ -844,7 +842,7 @@ class RandomizeVisitor final : public VNVisitor {
             UINFO(1, "ConstraintExprVisitor running on:\n");
             captured.getTree()->dumpTree();
             randomizeFuncp->addStmtsp(implmentConstraintBlockSetup(
-                VN_AS(captured.getTree(), ConstraintExpr), localGenp, classp
+                captured.getTree(), localGenp, classp
             ));
         }
 
