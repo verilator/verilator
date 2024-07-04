@@ -14,4 +14,4 @@ module t_emit_accessors(
 );
     assign out1 = in1 & in2;
     assign out2 = in3 & in4;
-endmodule;
+endmodule
