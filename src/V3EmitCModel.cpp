@@ -115,6 +115,9 @@ class EmitCModel final : public EmitCFunc {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isPrimaryIO()) {  //
                     emitVarDecl(varp, /* asRef: */ true);
+                    if(v3Global.opt.emitAccessors()) {
+                        emitVarAccessors(varp);
+                    }
                 }
             }
         }
