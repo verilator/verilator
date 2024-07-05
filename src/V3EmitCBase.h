@@ -85,9 +85,40 @@ class EmitCBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst, public EmitCBa
 public:
     // STATE
     V3OutCFile* m_ofp = nullptr;
+    AstCFile* m_outFileNodep = nullptr;
     bool m_trackText = false;  // Always track AstText nodes
     // METHODS
+    void increaseComplexityScore(int64_t score) {
+        assert(m_outFileNodep);
+        m_outFileNodep->increaseComplexityScore(score);
+    }
+
+    // Returns pointer to current output file object.
     V3OutCFile* ofp() const VL_MT_SAFE { return m_ofp; }
+    // Returns pointer to the AST node that represents the output file (`ofp()`)
+    AstCFile* outFileNodep() const VL_MT_SAFE { return m_outFileNodep; }
+
+    // Sets ofp() and outFileNodep() to the given pointers, without closing a file these pointers
+    // currently point to.
+    void setOutputFile(V3OutCFile* ofp, AstCFile* nodep) {
+        m_ofp = ofp;
+        m_outFileNodep = nodep;
+    }
+
+    // Sets ofp() and outFileNodep() to null, without closing a file these pointers currently point
+    // to. NOTE: Dummy nullptr argument is taken to make function calls more explicit.
+    void setOutputFile(std::nullptr_t nullp) {
+        UASSERT(nullp == nullptr, "Expected nullptr as the argument");
+        m_ofp = nullp;
+        m_outFileNodep = nullp;
+    }
+
+    // Closes current output file. Sets ofp() and outFileNodep() to nullptr.
+    void closeOutputFile() {
+        VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+        m_outFileNodep = nullptr;
+    }
+
     void puts(const string& str) { ofp()->puts(str); }
     void putns(const AstNode* nodep, const string& str) { ofp()->putns(nodep, str); }
     void putsHeader() { ofp()->putsHeader(); }
