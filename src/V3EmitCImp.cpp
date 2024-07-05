@@ -247,6 +247,7 @@ class EmitCImp final : EmitCFunc {
     void emitCtorImp(const AstNodeModule* modp) {
         const string modName = prefixNameProtect(modp);
 
+        increaseComplexityScore(2);
         puts("\n");
         m_lazyDecls.emit("void " + modName + "__", protect("_ctor_var_reset"),
                          "(" + modName + "* vlSelf);");
@@ -274,6 +275,7 @@ class EmitCImp final : EmitCFunc {
                         putsQuoted(varp->nameProtect());
                         puts(")\n");
                     } else if (dtypep->isDelayScheduler()) {
+                        increaseComplexityScore(1);
                         puts(", ");
                         putns(varp, varp->nameProtect());
                         puts("{*symsp->_vm_contextp__}\n");
@@ -286,6 +288,7 @@ class EmitCImp final : EmitCFunc {
 
         puts(" {\n");
 
+        increaseComplexityScore(1);
         putsDecoration(modp, "// Reset structure values\n");
         puts(modName + "__" + protect("_ctor_var_reset") + "(this);\n");
         emitTextSection(modp, VNType::atScCtor);
@@ -297,13 +300,16 @@ class EmitCImp final : EmitCFunc {
 
         if (v3Global.opt.coverage()) {
             puts("\n");
+            increaseComplexityScore(2);
             m_lazyDecls.emit("void " + modName + "__", protect("_configure_coverage"),
                              "(" + modName + "* vlSelf, bool first);");
         }
 
+        increaseComplexityScore(2);
         puts("\nvoid " + modName + "::" + protect("__Vconfigure") + "(bool first) {\n");
         puts("(void)first;  // Prevent unused variable warning\n");
         if (v3Global.opt.coverage()) {
+            increaseComplexityScore(1);
             puts(modName + "__" + protect("_configure_coverage") + "(this, first);\n");
         }
         puts("}\n");
@@ -311,6 +317,7 @@ class EmitCImp final : EmitCFunc {
     }
     void emitCoverageImp() {
         if (v3Global.opt.coverage()) {
+            increaseComplexityScore(8);
             puts("\n// Coverage\n");
             // Rather than putting out VL_COVER_INSERT calls directly, we do it via this
             // function. This gets around gcc slowness constructing all of the template
@@ -348,6 +355,7 @@ class EmitCImp final : EmitCFunc {
         }
     }
     void emitDestructorImp(const AstNodeModule* modp) {
+        increaseComplexityScore(2);
         puts("\n");
         putns(modp, prefixNameProtect(modp) + "::~" + prefixNameProtect(modp) + "() {\n");
         emitTextSection(modp, VNType::atScDtor);
@@ -358,6 +366,7 @@ class EmitCImp final : EmitCFunc {
         if (v3Global.opt.savable()) {
             puts("\n// Savable\n");
             for (int de = 0; de < 2; ++de) {
+                increaseComplexityScore(4);
                 const string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
                 const string funcname = de ? "__Vdeserialize" : "__Vserialize";
                 const string op = de ? ">>" : "<<";
@@ -403,6 +412,7 @@ class EmitCImp final : EmitCFunc {
                             AstNodeDType* elementp = varp->dtypeSkipRefp();
                             for (AstUnpackArrayDType* arrayp = VN_CAST(elementp, UnpackArrayDType);
                                  arrayp; arrayp = VN_CAST(elementp, UnpackArrayDType)) {
+                                increaseComplexityScore(2);
                                 const int vecnum = vects++;
                                 UASSERT_OBJ(arrayp->hi() >= arrayp->lo(), varp,
                                             "Should have swapped msb & lsb earlier.");
@@ -419,6 +429,7 @@ class EmitCImp final : EmitCFunc {
                             // (i.e. packed types of more than 64 bits).
                             if (elementp->isWide()
                                 && !(basicp && basicp->keyword() == VBasicDTypeKwd::STRING)) {
+                                increaseComplexityScore(2);
                                 const int vecnum = vects++;
                                 const string ivar = "__Vi"s + cvtToStr(vecnum);
                                 puts("for (int __Vi" + cvtToStr(vecnum) + " = " + cvtToStr(0));
@@ -664,6 +675,7 @@ class EmitCTrace final : EmitCFunc {
         typesFp()->puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
         typesFp()->puts("\n");
 
+        increaseTypesFileComplexityScore(2);
         typesFp()->puts("\nvoid " + prefixNameProtect(m_modp) + "__"
                         + protect("traceDeclTypesSub" + cvtToStr(m_traceTypeSubs++)) + "("
                         + v3Global.opt.traceClassBase() + "* tracep) {\n");
@@ -685,9 +697,11 @@ class EmitCTrace final : EmitCFunc {
                             + v3Global.opt.traceClassBase() + "* tracep);\n");
         }
 
+        increaseTypesFileComplexityScore(2);
         typesFp()->puts("\nvoid " + prefixNameProtect(m_modp) + "__" + protect("trace_decl_types")
                         + "(" + v3Global.opt.traceClassBase() + "* tracep) {\n");
         for (int i = 0; i < m_traceTypeSubs; ++i) {
+            increaseTypesFileComplexityScore(1);
             typesFp()->puts(prefixNameProtect(m_modp) + "__"
                             + protect("traceDeclTypesSub" + cvtToStr(i)) + "(tracep);\n");
         }
@@ -720,6 +734,8 @@ class EmitCTrace final : EmitCFunc {
     }
 
     void emitTraceInitOne(AstTraceDecl* nodep, int enumNum) {
+        increaseComplexityScore(4);
+
         if (nodep->dtypep()->basicp()->isDouble()) {
             puts("tracep->declDouble(");
         } else if (nodep->isWide()) {
@@ -794,6 +810,8 @@ class EmitCTrace final : EmitCFunc {
                 closeTypesFile();
                 openNextTypesFile();
             }
+            increaseTypesFileComplexityScore(2);
+
             enumNum = ++m_enumNum;
             m_enumNumMap[nodep] = enumNum;
             int nvals = 0;
@@ -839,6 +857,8 @@ class EmitCTrace final : EmitCFunc {
     }
 
     void emitTraceChangeOne(AstTraceInc* nodep, int arrayindex) {
+        increaseComplexityScore(1);
+
         // Note: Both VTraceType::CHANGE and VTraceType::FULL use the 'full' methods
         const std::string func = nodep->traceType() == VTraceType::CHANGE ? "chg" : "full";
         bool emitWidth = true;
@@ -879,6 +899,8 @@ class EmitCTrace final : EmitCFunc {
     }
 
     void emitTraceValue(AstTraceInc* nodep, int arrayindex) {
+        increaseComplexityScore(1);
+
         if (AstVarRef* const varrefp = VN_CAST(nodep->valuep(), VarRef)) {
             AstVar* const varp = varrefp->varp();
             if (varp->isEvent()) puts("&");
@@ -933,6 +955,7 @@ class EmitCTrace final : EmitCFunc {
         EmitCFunc::visit(nodep);
     }
     void visit(AstTracePushPrefix* nodep) override {
+        increaseComplexityScore(1);
         putns(nodep, "tracep->pushPrefix(");
         putsQuoted(VIdProtect::protectWordsIf(nodep->prefix(), nodep->protect()));
         puts(", VerilatedTracePrefixType::");
@@ -940,16 +963,19 @@ class EmitCTrace final : EmitCFunc {
         puts(");\n");
     }
     void visit(AstTracePopPrefix* nodep) override {  //
+        increaseComplexityScore(1);
         putns(nodep, "tracep->popPrefix();\n");
     }
     void visit(AstTraceDecl* nodep) override {
         const int enumNum = emitTraceDeclDType(nodep->dtypep());
         putns(nodep, "");
         if (nodep->arrayRange().ranged()) {
+            increaseComplexityScore(2);
             puts("for (int i = 0; i < " + cvtToStr(nodep->arrayRange().elements()) + "; ++i) {\n");
             emitTraceInitOne(nodep, enumNum);
             puts("\n}\n");
         } else {
+            increaseComplexityScore(1);
             emitTraceInitOne(nodep, enumNum);
             puts("\n");
         }
