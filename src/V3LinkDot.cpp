@@ -759,6 +759,7 @@ class LinkDotFindVisitor final : public VNVisitor {
     bool m_explicitNew = false;  // Hit a "new" function
     int m_modBlockNum = 0;  // Begin block number in module, 0=none seen
     int m_modWithNum = 0;  // With block number, 0=none seen
+    int m_modArgNum = 0;  // Arg block number for randomize(), 0=none seen
 
     // METHODS
     void makeImplicitNew(AstClass* nodep) {
@@ -871,6 +872,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         VL_RESTORER(m_paramNum);
         VL_RESTORER(m_modBlockNum);
         VL_RESTORER(m_modWithNum);
+        VL_RESTORER(m_modArgNum);
         if (doit && nodep->user2()) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Identically recursive module (module instantiates "
@@ -897,6 +899,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             m_paramNum = 0;
             m_modBlockNum = 0;
             m_modWithNum = 0;
+            m_modArgNum = 0;
             // m_modSymp/m_curSymp for non-packages set by AstCell above this module
             // Iterate
             nodep->user2(true);
@@ -932,6 +935,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         VL_RESTORER(m_paramNum);
         VL_RESTORER(m_modBlockNum);
         VL_RESTORER(m_modWithNum);
+        VL_RESTORER(m_modArgNum);
         {
             UINFO(4, "     Link Class: " << nodep << endl);
             VSymEnt* const upperSymp = m_curSymp;
@@ -945,6 +949,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             m_paramNum = 0;
             m_modBlockNum = 0;
             m_modWithNum = 0;
+            m_modArgNum = 0;
             m_explicitNew = false;
             // m_modSymp/m_curSymp for non-packages set by AstCell above this module
             // Iterate
@@ -2056,8 +2061,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
     const AstCell* m_cellp = nullptr;  // Current cell
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    AstMethodCall* m_randMethodCallp = nullptr;  // Current randomize() method call
     int m_modportNum = 0;  // Uniqueify modport numbers
     bool m_inSens = false;  // True if in senitem
+    bool m_inWith = false;  // True if in with
     std::map<std::string, AstNode*> m_ifClassImpNames;  // Names imported from interface class
     std::set<AstClass*> m_extendsParam;  // Classes that have a parameterized super class
                                          // (except the default instances)
@@ -2682,6 +2689,21 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (m_fromSymp) {
                 foundp = m_fromSymp->findIdFlat(nodep->name());
                 if (foundp) {
+                    if (!m_inWith) {
+                        UASSERT_OBJ(m_randMethodCallp, nodep, "Expected to be under randomize()");
+                        // This will start failing once complex expressions are allowed on the LHS
+                        // of randomize() with args
+                        UASSERT_OBJ(VN_IS(m_randMethodCallp->fromp(), VarRef), m_randMethodCallp,
+                                    "Expected simple randomize target");
+                        // A ParseRef is used here so that the dot RHS gets resolved
+                        nodep->replaceWith(new AstMemberSel{
+                            nodep->fileline(),
+                            new AstParseRef{nodep->fileline(), VParseRefExp::PX_TEXT,
+                                            m_randMethodCallp->fromp()->name()},
+                            VFlagChildDType{}, nodep->name()});
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                        return;
+                    }
                     UINFO(9, " randomize-with fromSym " << foundp->nodep() << endl);
                     if (m_ds.m_dotPos != DP_NONE) m_ds.m_dotPos = DP_MEMBER;
                     AstLambdaArgRef* const lambdaRefp
@@ -3152,9 +3174,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // Created here so should already be resolved.
         VL_RESTORER(m_ds);
         VL_RESTORER(m_fromSymp);
+        VL_RESTORER(m_randMethodCallp);
         {
             m_ds.init(m_curSymp);
             if (nodep->name() == "randomize" && nodep->pinsp()) {
+                m_randMethodCallp = nodep;
                 const AstNodeDType* fromDtp = nodep->fromp()->dtypep();
                 if (!fromDtp) {
                     if (const AstNodeVarRef* const varRefp = VN_CAST(nodep->fromp(), NodeVarRef)) {
@@ -3171,9 +3195,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             fromDtp = varRefp->varp()->dtypeSkipRefp()->subDTypep();
                         }
                     }
-                    if (!fromDtp)
-                        nodep->v3warn(E_UNSUPPORTED,
-                                      "Unsupported: 'randomize() with' on complex expressions");
+                    if (!fromDtp) {
+                        if (VN_IS(nodep->pinsp(), With)) {
+                            nodep->v3warn(
+                                E_UNSUPPORTED,
+                                "Unsupported: 'randomize() with' on complex expressions");
+                        } else {
+                            nodep->v3warn(E_UNSUPPORTED,
+                                          "Unsupported: Inline random variable control with "
+                                          "'randomize()' called on complex expressions");
+                        }
+                    }
                 }
                 if (m_statep->forPrimary() && isParamedClassRefDType(fromDtp)) {
                     m_ds.m_unresolvedClass = true;
@@ -3186,14 +3218,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     else
                         m_fromSymp = m_statep->getNodeSym(classDtp->classp());
                 }
-                AstNode* pinsp = nodep->pinsp();
-                if (VN_IS(pinsp, With)) {
-                    iterate(pinsp);
-                    pinsp = pinsp->nextp();
-                }
-                m_fromSymp = nullptr;
-                iterateAndNextNull(pinsp);
-                return;
             }
             iterateChildren(nodep);
         }
@@ -3323,7 +3347,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
             if (m_fromSymp) {
                 VSymEnt* const foundp = m_fromSymp->findIdFlat(nodep->name());
-                if (foundp) {
+                if (foundp && m_inWith) {
                     UINFO(9, " randomize-with fromSym " << foundp->nodep() << endl);
                     AstNodeExpr* argsp = nullptr;
                     if (nodep->pinsp()) {
@@ -3577,8 +3601,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
         VL_RESTORER(m_curSymp);
+        VL_RESTORER(m_inWith);
         {
             m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
+            m_inWith = true;
             iterateChildren(nodep);
         }
         m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
