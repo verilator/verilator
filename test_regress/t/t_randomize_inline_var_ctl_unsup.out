@@ -1,0 +1,9 @@
+%Warning-CONSTRAINTIGN: t/t_randomize_inline_var_ctl_unsup.v:13:23: Inline random variable control (unsupported)
+   13 |       void'(randomize(one));
+      |                       ^~~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Warning-CONSTRAINTIGN: t/t_randomize_inline_var_ctl_unsup.v:14:23: Inline random variable control (unsupported)
+   14 |       void'(randomize(two, three));
+      |                       ^~~
+%Error: Exiting due to

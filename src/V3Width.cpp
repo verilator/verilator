@@ -2965,6 +2965,12 @@ class WidthVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     bool memberSelClass(AstMemberSel* nodep, AstClassRefDType* adtypep) {
+        if (nodep->name() == "rand_mode") {
+            nodep->replaceWith(new AstMethodCall{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                                 "rand_mode", nullptr});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return true;
+        }
         // Returns true if ok
         // No need to width-resolve the class, as it was done when we did the child
         AstClass* const first_classp = adtypep->classp();
@@ -3885,12 +3891,14 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void methodCallRandMode(AstMethodCall* nodep) {
-        // Method call on constraint (currently hacked as just a var)
         methodOkArguments(nodep, 0, 1);
-        nodep->v3warn(CONSTRAINTIGN, "rand_mode ignored (unsupported)");
-        // Disables ignored, so we just return "ON"
-        nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitTrue{}});
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        // IEEE 1800-2023 18.8
+        if (nodep->pinsp()) {
+            nodep->dtypep(nodep->findBasicDType(VBasicDTypeKwd::INT));
+        } else {
+            nodep->dtypeSetVoid();
+        }
+        v3Global.useRandomizeMethods(true);
     }
     void methodCallUnpack(AstMethodCall* nodep, AstUnpackArrayDType* adtypep) {
         enum : uint8_t {
@@ -6021,9 +6029,13 @@ class WidthVisitor final : public VNVisitor {
         // Function hasn't been widthed, so make it so.
         UINFO(5, "  FTASKREF " << nodep << endl);
         AstWith* withp = nullptr;
-        if (nodep->name() == "randomize" || nodep->name() == "srandom"
-            || (!nodep->taskp()
-                && (nodep->name() == "get_randstate" || nodep->name() == "set_randstate"))) {
+        if (nodep->name() == "rand_mode") {
+            v3Global.useRandomizeMethods(true);
+            nodep->dtypep(nodep->findBasicDType(VBasicDTypeKwd::INT));
+        } else if (nodep->name() == "randomize" || nodep->name() == "srandom"
+                   || (!nodep->taskp()
+                       && (nodep->name() == "get_randstate"
+                           || nodep->name() == "set_randstate"))) {
             // TODO perhaps this should move to V3LinkDot
             AstClass* const classp = VN_CAST(nodep->classOrPackagep(), Class);
             UASSERT_OBJ(classp, nodep, "Should have failed in V3LinkDot");
@@ -6035,7 +6047,8 @@ class WidthVisitor final : public VNVisitor {
                 withp = methodWithArgument(nodep, false, false, adtypep->findVoidDType(),
                                            adtypep->findBitDType(), adtypep);
                 if (nodep->pinsp()) {
-                    nodep->pinsp()->v3warn(CONSTRAINTIGN, "rand_mode ignored (unsupported)");
+                    nodep->pinsp()->v3warn(CONSTRAINTIGN,
+                                           "Inline random variable control (unsupported)");
                     nodep->pinsp()->unlinkFrBackWithNext()->deleteTree();
                 }
             } else if (nodep->name() == "srandom") {
@@ -6070,6 +6083,7 @@ class WidthVisitor final : public VNVisitor {
                 UASSERT_OBJ(false, nodep, "Bad case");
             }
         }
+        if (nodep->name() == "rand_mode") return;  // Handled in V3Randomize
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked");
         if (nodep->didWidth()) return;
         if ((nodep->taskp()->classMethod() && !nodep->taskp()->isStatic())
