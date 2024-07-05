@@ -19,6 +19,7 @@ Verilator 5.027 devel
 * Fix fusing macro arguments to not ignore whitespace (#5061). [Tudor Timi]
 * Fix mis-removing $value$plusargs calls (#5127) (#5137). [Seth Pellegrino]
 * Fix splitting if statements with impure conditions (#5219). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix top-level unpacked structure resets (#5221).
 * Fix concurrency for mailbox and semaphores (#5222). [Liam Braun]
 
 

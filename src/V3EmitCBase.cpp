@@ -211,11 +211,11 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
         if (nodep->isWide()) puts("," + cvtToStr(nodep->widthWords()));
         puts(");\n");
     } else {
-        // strings and other fundamental c types
+        // Strings and other fundamental C types
         if (nodep->isFuncLocal() && nodep->isString()) {
             const string name = nodep->name();
             const string suffix = V3Task::dpiTemporaryVarSuffix();
-            // string temporary variable for DPI-C needs to be static because c_str() will be
+            // String temporary variable for DPI-C needs to be static because c_str() will be
             // passed to C code and the lifetime of the variable must be long enough. See also
             // Issue 2622.
             const bool beStatic = name.size() >= suffix.size()

@@ -219,6 +219,7 @@ public:
     bool isCompound() const override { return !packed(); }
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     AstBasicDType* basicp() const override {
+        if (!m_packed) return nullptr;
         return (isFourstate()
                     ? VN_AS(findLogicRangeDType(VNumRange{width() - 1, 0}, width(), numeric()),
                             BasicDType)
