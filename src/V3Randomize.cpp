@@ -388,12 +388,26 @@ class RandomizeVisitor final : public VNVisitor {
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     AstNodeModule* m_modp = nullptr;  // Current module
     AstScope* m_scopep = nullptr; // Scope associated with current class
+    AstScope* m_pkgScope = nullptr; // Global package scope
     const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     size_t m_enumValueTabCount = 0;  // Number of tables with enum values created
     int m_randCaseNum = 0;  // Randcase number within a module for var naming
     std::map<std::string, AstCDType*> m_randcDtypes;  // RandC data type deduplication
 
     // METHODS
+    AstScope* pkgScope() const {
+        if (m_pkgScope) return m_pkgScope;
+        auto package = v3Global.rootp()->dollarUnitPkgAddp();
+        for (AstNode* stmtp = package->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            auto scopep = VN_CAST(stmtp, Scope);
+            if (scopep) return scopep;
+        }
+        auto scopep = new AstScope{v3Global.rootp()->fileline(), package, package->name(), nullptr,
+                                   nullptr};
+        package->addStmtsp(scopep);
+        return scopep;
+    }
+
     AstVar* enumValueTabp(AstEnumDType* nodep) {
         if (nodep->user2p()) return VN_AS(nodep->user2p(), Var);
         UINFO(9, "Construct Venumvaltab " << nodep << endl);
@@ -410,6 +424,10 @@ class RandomizeVisitor final : public VNVisitor {
         varp->valuep(initp);
         // Add to root, as don't know module we are in, and aids later structure sharing
         v3Global.rootp()->dollarUnitPkgAddp()->addStmtsp(varp);
+        auto varScopep = new AstVarScope{nodep->fileline(), pkgScope(), varp};
+        pkgScope()->addVarsp(varScopep);
+        varp->user3p(varScopep);
+
         UASSERT_OBJ(nodep->itemsp(), nodep, "Enum without items");
         for (AstEnumItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), EnumItem)) {
@@ -488,6 +506,7 @@ class RandomizeVisitor final : public VNVisitor {
                                                       EnumDType)) {
                 AstVarRef* const tabRefp
                     = new AstVarRef{fl, enumValueTabp(enumDtp), VAccess::READ};
+                tabRefp->varScopep(VN_AS(tabRefp->varp()->user3p(), VarScope));
                 tabRefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
                 AstNodeExpr* const randp
                     = newRandValue(fl, randcVarp, varrefp->findBasicDType(VBasicDTypeKwd::UINT32));
