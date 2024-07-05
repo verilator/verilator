@@ -13,8 +13,13 @@ Verilator 5.027 devel
 
 **Minor:**
 
+* Support state-dependent constraints (#5217). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support cross-module clocking variable access (#5184). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Add `--compiler-include` for additional C++ includes (#5139) (#5202). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix fusing macro arguments to not ignore whitespace (#5061). [Tudor Timi]
 * Fix mis-removing $value$plusargs calls (#5127) (#5137). [Seth Pellegrino]
+* Fix splitting if statements with impure conditions (#5219). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix concurrency for mailbox and semaphores (#5222). [Liam Braun]
 
 
 Verilator 5.026 2024-06-15
