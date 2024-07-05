@@ -551,11 +551,51 @@ public:
         return outputFiles;
     }
 
+    static void emitConcatenatingFile(const FileOrConcatenatedFilesList& entry) {
+        UASSERT(entry.isConcatenatingFile(), "Passed entry does not represent concatenating file");
+
+        V3OutCFile concatenatingFile{v3Global.opt.makeDir() + "/" + entry.fileName + ".cpp"};
+        concatenatingFile.putsHeader();
+        for (const auto& file : entry.concatenatedFileNames) {
+            concatenatingFile.puts("#include \"" + file + ".cpp\"\n");
+        }
+    }
+
     void putMakeClassEntry(V3OutMkFile& of, const string& name) {
         of.puts("\t" + V3Os::filenameNonDirExt(name) + " \\\n");
     }
 
     void emitClassMake() {
+        std::vector<FileOrConcatenatedFilesList> vmClassesSlowList{};
+        std::vector<FileOrConcatenatedFilesList> vmClassesFastList{};
+        if (v3Global.opt.outputSplitJobs() > 0) {
+            std::vector<FileNameWithScore> slowFiles{};
+            std::vector<FileNameWithScore> fastFiles{};
+            std::int64_t slowTotalScore = 0;
+            std::int64_t fastTotalScore = 0;
+
+            for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;
+                 nodep = VN_AS(nodep->nextp(), NodeFile)) {
+                const AstCFile* const cfilep = VN_CAST(nodep, CFile);
+                if (cfilep && cfilep->source() && cfilep->support() == false) {
+                    auto& files = cfilep->slow() ? slowFiles : fastFiles;
+                    auto& totalScore = cfilep->slow() ? slowTotalScore : fastTotalScore;
+
+                    FileNameWithScore f;
+                    f.name = V3Os::filenameNonDirExt(cfilep->name());
+                    f.score = cfilep->complexityScore();
+
+                    totalScore += f.score;
+                    files.push_back(std::move(f));
+                }
+            }
+
+            vmClassesSlowList = singleConcatenatedFilesList(std::move(slowFiles), slowTotalScore,
+                                                            "vm_classes_slow_");
+            vmClassesFastList = singleConcatenatedFilesList(std::move(fastFiles), fastTotalScore,
+                                                            "vm_classes_fast_");
+        }
+
         // Generate the makefile
         V3OutMkFile of{v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_classes.mk"};
         of.putsHeader();
@@ -633,6 +673,12 @@ public:
                         putMakeClassEntry(of, "verilated_profiler.cpp");
                     }
                 } else if (support == 2 && slow) {
+                } else if ((support == 0) && (v3Global.opt.outputSplitJobs() > 0)) {
+                    const auto& list = slow ? vmClassesSlowList : vmClassesFastList;
+                    for (const auto& entry : list) {
+                        if (entry.isConcatenatingFile()) { emitConcatenatingFile(entry); }
+                        putMakeClassEntry(of, entry.fileName);
+                    }
                 } else {
                     for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;
                          nodep = VN_AS(nodep->nextp(), NodeFile)) {
