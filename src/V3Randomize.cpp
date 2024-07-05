@@ -159,10 +159,8 @@ static AstScope* findClassScope(AstClass* classp) {
 
 class ConstraintExprVisitor final : public VNVisitor {
     // NODE STATE
-    //  AstVar::user4()         -> bool. Handled in constraints
     //  AstVar::user3p()        -> AstVarScope*. Scope associated with the variable
     //  AstNodeExpr::user1()    -> bool. Depending on a randomized variable
-    // VNUser4InUse    m_inuser4;      (Allocated for use in RandomizeVisitor)
 
     AstNodeStmt* m_taskbodyp;  // body of a method to add write_var calls to
     AstVar* const m_genp;  // VlRandomizer variable of the class
@@ -231,26 +229,23 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
 
-        if (!varp->user4()) {
-            varp->user4(true);
-            auto genRefp = new AstVarRef{varp->fileline(), m_genp, VAccess::READWRITE};
-            genRefp->classOrPackagep(m_classp);
-            genRefp->varScopep(VN_AS(m_genp->user3p(), VarScope));
-            AstCMethodHard* const methodp =
-                new AstCMethodHard{varp->fileline(), genRefp, "write_var"};
-            methodp->dtypeSetVoid();
-            auto varRefp = new AstVarRef{varp->fileline(), varp, VAccess::WRITE};
-            varRefp->classOrPackagep(classp);
-            varRefp->varScopep(varScopep);
-            methodp->addPinsp(varRefp);
-            methodp->addPinsp(new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{},
-                                           (size_t)varp->width()});
-            AstNodeExpr* const varnamep
-                = new AstCExpr{varp->fileline(), "\"" + smtName + "\"", varp->width()};
-            varnamep->dtypep(varp->dtypep());
-            methodp->addPinsp(varnamep);
-            m_taskbodyp = AstNode::addNext(m_taskbodyp, methodp->makeStmt());
-        }
+        auto genRefp = new AstVarRef{varp->fileline(), m_genp, VAccess::READWRITE};
+        genRefp->classOrPackagep(m_classp);
+        genRefp->varScopep(VN_AS(m_genp->user3p(), VarScope));
+        AstCMethodHard* const methodp =
+            new AstCMethodHard{varp->fileline(), genRefp, "write_var"};
+        methodp->dtypeSetVoid();
+        auto varRefp = new AstVarRef{varp->fileline(), varp, VAccess::WRITE};
+        varRefp->classOrPackagep(classp);
+        varRefp->varScopep(varScopep);
+        methodp->addPinsp(varRefp);
+        methodp->addPinsp(new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{},
+                                        (size_t)varp->width()});
+        AstNodeExpr* const varnamep
+            = new AstCExpr{varp->fileline(), "\"" + smtName + "\"", varp->width()};
+        varnamep->dtypep(varp->dtypep());
+        methodp->addPinsp(varnamep);
+        m_taskbodyp = AstNode::addNext(m_taskbodyp, methodp->makeStmt());
     }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
