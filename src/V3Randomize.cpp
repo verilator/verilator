@@ -35,6 +35,7 @@
 #include "V3Error.h"
 #include "V3MemberMap.h"
 #include "V3UniqueNames.h"
+#include <utility>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -315,34 +316,50 @@ template <typename TreeNodeType>
 class CaptureFrame {
     TreeNodeType* m_treep; // Original tree
     AstArg* m_argsp; // Original references turned into arguments
-    std::map<const AstVar*, AstVar*> m_varCloneMap; // Map original var nodes to their clones
+    AstScope* m_localScopep; // Scope of local variables local to the context of capture destination
+    // Map original var nodes to their clones and respective scopes
+    std::map<const AstVar*, std::pair<AstVar*, AstVarScope*>> m_varCloneMap;
 
-    AstVar* captureVariable(FileLine* fileline, AstVar* varp) {
-        auto it = m_varCloneMap.find(varp);
+    // We assume there's 1:1 mapping between variables and their scopes, as variables bound to
+    // multiple scopes happen when theiy are wthin modules with many instances which happen to
+    // not be inlined.
+    AstVar* captureVariable(FileLine* fileline, AstVarRef* varrefp, AstVarScope** varScopep) {
+        auto it = m_varCloneMap.find(varrefp->varp());
         if (it == m_varCloneMap.end()) {
-            AstVar* newVarp = varp->cloneTree(false);
+            auto newVarp = varrefp->varp()->cloneTree(false);
             newVarp->fileline(fileline);
             newVarp->varType(VVarType::BLOCKTEMP);
             newVarp->funcLocal(true);
             newVarp->direction(VDirection::INPUT);
+            *varScopep = new AstVarScope{fileline, m_localScopep, newVarp};
+            m_localScopep->addVarsp(*varScopep);
 
-            m_varCloneMap.emplace(varp, newVarp);
+            m_varCloneMap.emplace(varrefp->varp(), std::make_pair(newVarp, *varScopep));
             return newVarp;
         }
-        return it->second;
+        *varScopep = it->second.second;
+        return it->second.first;
     }
 
 public:
-    explicit CaptureFrame(TreeNodeType* nodep, bool clone = true, VNRelinker* linkerp = nullptr)
+    explicit CaptureFrame(TreeNodeType* nodep, AstScope* localScope, bool clone = true,
+                          VNRelinker* linkerp = nullptr)
         : m_argsp(nullptr)
         , m_treep(clone ? nodep->cloneTree(true) : nodep->unlinkFrBackWithNext(linkerp))
+        , m_localScopep(localScope)
     {
         m_treep->foreachAndNext([&](AstVarRef* varrefp) {
             UASSERT_OBJ(varrefp->varp(), varrefp, "Variable unlinked");
             if (!varrefp->varp()->isFuncLocal()) return;
-            AstVar* newVarp = captureVariable(varrefp->fileline(), varrefp->varp());
+            auto scopep = varrefp->varScopep()->scopep();
+            UASSERT_OBJ(scopep, varrefp, "VarRef does not have the scope bound to it");
+            if (scopep == m_localScopep) return;
+            AstVarScope* newVarScopep;
+            AstVar* newVarp = captureVariable(varrefp->fileline(), varrefp, &newVarScopep);
+            UASSERT_OBJ(newVarScopep, newVarp, "Scope not bound to a variable");
             auto newVarRefp = varrefp->cloneTree(false);
             varrefp->varp(newVarp);
+            varrefp->varScopep(newVarScopep);
             m_argsp = AstNode::addNext(m_argsp, new AstArg{varrefp->fileline(), "", newVarRefp});
         });
     }
@@ -351,10 +368,10 @@ public:
         return m_treep;
     }
 
-    AstVar* getVar(AstVar* varp) {
+    std::pair<AstVar*, AstVarScope*> getVar(AstVar* varp) {
         auto it = m_varCloneMap.find(varp);
         if (it == m_varCloneMap.end()) {
-            return nullptr;
+            return std::make_pair(nullptr, nullptr);
         }
         return it->second;
     }
@@ -831,14 +848,14 @@ class RandomizeVisitor final : public VNVisitor {
         AstNode* funcbodyp = nullptr;
 
         // Detach the expression and prepare variable copies
-        CaptureFrame<AstNode> captured{withp->exprp(), false};
+        CaptureFrame<AstNode> captured{withp->exprp(), scopep, false};
         UASSERT_OBJ(VN_IS(captured.getTree(), ConstraintExpr), captured.getTree(),
                     "Wrong expr type");
 
         // Add function arguments
         for (AstArg* arg = captured.getArgs(); arg != nullptr; arg = VN_AS(arg->nextp(), Arg)) {
             auto varrefp = VN_AS(arg->exprp(), VarRef);
-            randomizeFuncp->addStmtsp(captured.getVar(varrefp->varp()));
+            randomizeFuncp->addStmtsp(captured.getVar(varrefp->varp()).first);
         }
 
         // Add constraints clearing code
