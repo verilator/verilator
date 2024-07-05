@@ -10,17 +10,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-lint(
-    fails => $Self->{vlt_all},
-    verilator_flags2 => ['-DTEST1'],
-    expect_filename => ($Self->{golden_filename} =~ s/\.out$/_1.out/r),
-    );
+if (!$Self->have_solver) {
+    skip("No constraint solver installed");
+} else {
+    compile(
+        );
 
-lint(
-    fails => $Self->{vlt_all},
-    verilator_flags2 => ['-DTEST2'],
-    expect_filename => ($Self->{golden_filename} =~ s/\.out$/_2.out/r),
-    );
+    execute(
+        check_finished => 1,
+        );
+}
 
 ok(1);
 1;

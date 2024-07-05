@@ -12,14 +12,7 @@ scenarios(simulator => 1);
 
 lint(
     fails => $Self->{vlt_all},
-    verilator_flags2 => ['-DTEST1'],
-    expect_filename => ($Self->{golden_filename} =~ s/\.out$/_1.out/r),
-    );
-
-lint(
-    fails => $Self->{vlt_all},
-    verilator_flags2 => ['-DTEST2'],
-    expect_filename => ($Self->{golden_filename} =~ s/\.out$/_2.out/r),
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

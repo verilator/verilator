@@ -2385,11 +2385,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isInternal()) str << " [INTERNAL]";
     if (isLatched()) str << " [LATCHED]";
     if (isUsedLoopIdx()) str << " [LOOP]";
-    if (isRandC()) {
-        str << " [RANDC]";
-    } else if (isRand()) {
-        str << " [RAND]";
-    }
+    if (rand().isRandomizable()) str << rand();
     if (noReset()) str << " [!RST]";
     if (attrIsolateAssign()) str << " [aISO]";
     if (attrFileDescr()) str << " [aFD]";
