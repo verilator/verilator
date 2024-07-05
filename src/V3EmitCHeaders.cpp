@@ -498,8 +498,11 @@ class EmitCHeader final : public EmitCConstInit {
 
         // Open output file
         const string filename = v3Global.opt.makeDir() + "/" + prefixNameProtect(modp) + ".h";
-        newCFile(filename, /* slow: */ false, /* source: */ false);
-        m_ofp = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
+        auto* cfilep = newCFile(filename, /* slow: */ false, /* source: */ false);
+        auto* ofilep
+            = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
+
+        setOutputFile(ofilep, cfilep);
 
         ofp()->putsHeader();
         puts("// DESCRIPTION: Verilator output: Design internal header\n");
@@ -539,7 +542,7 @@ class EmitCHeader final : public EmitCConstInit {
         ofp()->putsEndGuard();
 
         // Close output file
-        VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+        closeOutputFile();
     }
     ~EmitCHeader() override = default;
 

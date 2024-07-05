@@ -1455,9 +1455,9 @@ public:
 
     EmitCFunc()
         : m_lazyDecls(*this) {}
-    EmitCFunc(AstNode* nodep, V3OutCFile* ofp, bool trackText = false)
+    EmitCFunc(AstNode* nodep, V3OutCFile* ofp, AstCFile* cfilep, bool trackText = false)
         : EmitCFunc{} {
-        m_ofp = ofp;
+        setOutputFile(ofp, cfilep);
         m_trackText = trackText;
         iterateConst(nodep);
     }

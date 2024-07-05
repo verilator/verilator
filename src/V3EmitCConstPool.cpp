@@ -38,17 +38,17 @@ class EmitCConstPool final : public EmitCConstInit {
 
     // METHODS
 
-    V3OutCFile* newOutCFile() const {
+    std::pair<V3OutCFile*, AstCFile*> newOutCFile() const {
         const string fileName = v3Global.opt.makeDir() + "/" + topClassName() + "__ConstPool_"
                                 + cvtToStr(m_outFileCount) + ".cpp";
-        newCFile(fileName, /* slow: */ true, /* source: */ true);
+        auto* const cfilep = newCFile(fileName, /* slow: */ true, /* source: */ true);
         V3OutCFile* const ofp = new V3OutCFile{fileName};
         ofp->putsHeader();
         ofp->puts("// DESCRIPTION: Verilator output: Constant pool\n");
         ofp->puts("//\n");
         ofp->puts("\n");
         ofp->puts("#include \"verilated.h\"\n");
-        return ofp;
+        return {ofp, cfilep};
     }
 
     void maybeSplitCFile() {
@@ -56,11 +56,12 @@ class EmitCConstPool final : public EmitCConstInit {
         // Splitting file, so using parallel build.
         v3Global.useParallelBuild(true);
         // Close current file
-        VL_DO_DANGLING(delete m_ofp, m_ofp);
+        closeOutputFile();
         // Open next file
         m_outFileSize = 0;
         ++m_outFileCount;
-        m_ofp = newOutCFile();
+        auto outFileAndNodePair = newOutCFile();
+        setOutputFile(outFileAndNodePair.first, outFileAndNodePair.second);
     }
 
     void emitVars(const AstConstPool* poolp) {
@@ -75,7 +76,8 @@ class EmitCConstPool final : public EmitCConstInit {
             return ap->name() < bp->name();
         });
 
-        m_ofp = newOutCFile();
+        auto outFileAndNodePair = newOutCFile();
+        setOutputFile(outFileAndNodePair.first, outFileAndNodePair.second);
 
         for (const AstVar* varp : varps) {
             maybeSplitCFile();
@@ -95,7 +97,7 @@ class EmitCConstPool final : public EmitCConstInit {
             }
         }
 
-        VL_DO_DANGLING(delete m_ofp, m_ofp);
+        closeOutputFile();
     }
 
     // VISITORS
