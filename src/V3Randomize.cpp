@@ -372,6 +372,7 @@ class RandomizeVisitor final : public VNVisitor {
     // Cleared on Netlist
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing
     //  AstEnumDType::user2()   -> AstVar*.  Pointer to table with enum values
+    //  AstConstraint::user2p() -> AstTask*. Pointer to constraint setup procedure
     //  AstClass::user3p()      -> AstFunc*. Pointer to randomize() method of a class
     //  AstVar::user3p()        -> AstVarScope*. Pointer to VarScope associated with this variable
     //  AstVar::user4()         -> bool. Handled in constraints
@@ -684,11 +685,14 @@ class RandomizeVisitor final : public VNVisitor {
         nodep->user1(false);
     }
     void visit(AstConstraint* nodep) override {
+        if (nodep->user2p()) return; // Already visited
+
         AstNodeFTask* const newp = VN_AS(m_memberMap.findMember(m_modp, "new"), NodeFTask);
         // TODO: This might be wrong for inline constraints
         UASSERT_OBJ(newp, m_modp, "No new() in class");
         AstFunc* const randomizep = V3Randomize::newRandomizeFunc(VN_AS(m_modp, Class), true);
         AstTask* const taskp = newSetupConstraintTask(VN_AS(m_modp, Class), nodep->name());
+        nodep->user2p(taskp);
         AstTaskRef* const setupTaskRefp
             = new AstTaskRef{nodep->fileline(), taskp->name(), nullptr};
         setupTaskRefp->taskp(taskp);
@@ -714,7 +718,6 @@ class RandomizeVisitor final : public VNVisitor {
         randomizep->addStmtsp(setupTaskRefp->makeStmt());
 
         taskp->addStmtsp(implmentConstraintBlockSetup(nodep->itemsp(), genp, VN_AS(m_modp, Class)));
-        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstRandCase* nodep) override {
         // RANDCASE
@@ -819,10 +822,22 @@ class RandomizeVisitor final : public VNVisitor {
             randomizeFuncp->addStmtsp(captured.getVar(varrefp->varp()));
         }
 
+        // Add constraints clearing code
+        randomizeFuncp->addStmtsp(implementConstraintsClear(randomizeFuncp->fileline(),
+                                                            classGenp, classp));
+
         randomizeFuncp->addStmtsp(localGenp);
 
         // Copy (derive) class constraints if present
         if (classGenp) {
+            classp->foreach([&](AstConstraint* constrp) {
+                AstTask* constrSetupFuncp = VN_AS(constrp->user2p(), Task);
+                UASSERT_OBJ(constrSetupFuncp, constrp, "Constraint not linked to setup procudure");
+                auto callp = new AstTaskRef(nodep->fileline(), constrSetupFuncp->name(), nullptr);
+                callp->taskp(constrSetupFuncp);
+                randomizeFuncp->addStmtsp(callp->makeStmt());
+            });
+
             // TODO: Optimize this by using copy contructor instead
             auto classGenRefp = new AstVarRef{nodep->fileline(), classGenp, VAccess::READ};
             classGenRefp->classOrPackagep(classp);
@@ -832,10 +847,6 @@ class RandomizeVisitor final : public VNVisitor {
             localGenRefp->varScopep(localGenScopep);
             randomizeFuncp->addStmtsp(new AstAssign{nodep->fileline(), localGenRefp, classGenRefp});
         }
-
-        // Add constraints clearing code
-        randomizeFuncp->addStmtsp(implementConstraintsClear(randomizeFuncp->fileline(),
-                                                            localGenp, classp));
 
         // Generate constraint setup code and a hardcoded call to the solver
         {
@@ -874,6 +885,9 @@ public:
     // CONSTRUCTORS
     explicit RandomizeVisitor(AstNetlist* nodep) : m_inlineUniqueNames("__Vrandwith") {
         iterate(nodep);
+        nodep->foreach([&](AstConstraint* constrp) {
+            VL_DO_DANGLING(pushDeletep(constrp->unlinkFrBack()), constrp);
+        });
     }
     ~RandomizeVisitor() override = default;
 };
