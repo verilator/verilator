@@ -118,7 +118,7 @@ class EmitCModel final : public EmitCFunc {
                 }
             }
         }
-        if(v3Global.opt.emitAccessors()) {
+        if (v3Global.opt.emitAccessors()) {
             puts("\n// ACCESSORS\n"
                  "// The application code should use these methods to\n"
                  "// propagate new values into/out from the Verilated model\n"
