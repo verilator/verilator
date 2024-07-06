@@ -357,7 +357,7 @@ detailed descriptions of these arguments.
     --dumpi-tree-json <level>   Enable dumping Ast .tree.json files at level
     --dumpi-<srcfile> <level>   Enable dumping everything in source file at level
      -E                         Preprocess, but do not compile
-    --emit-accessors            Emit getter and setter methods for top-level signals in model top class
+    --emit-accessors            Emit getter and setter methods for model top class
     --error-limit <value>       Abort after this number of errors
     --exe                       Link to create executable
     --expand-limit <value>      Set expand optimization limit

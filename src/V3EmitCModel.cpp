@@ -125,9 +125,7 @@ class EmitCModel final : public EmitCFunc {
                  "// instead of using signal variables directly.\n");
             for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
                 if (const AstVar* const varp = VN_CAST(nodep, Var)) {
-                    if (varp->isPrimaryIO()) {  //
-                        emitVarAccessors(varp);
-                    }
+                    if (varp->isPrimaryIO()) emitVarAccessors(varp);
                 }
             }
         }
