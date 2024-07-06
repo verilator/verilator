@@ -65,6 +65,10 @@ class NameVisitor final : public VNVisitorConst {
                 nodep->name(newname);
                 nodep->editCountInc();
             } else if (VN_IS(nodep, CFunc) && VN_AS(nodep, CFunc)->isConstructor()) {
+            } else if (v3Global.opt.emitAccessors() &&  VN_IS(nodep, Var) && VN_AS(nodep, Var)->isSigPublic()) {
+                const string newname = "__Vm_sig_" + nodep->name();
+                nodep->name(newname);
+                nodep->editCountInc();
             } else {
                 renameKeywordCheck(nodep);
             }
