@@ -161,8 +161,10 @@ static AstScope* findClassScope(AstClass* classp) {
 
 class ConstraintExprVisitor final : public VNVisitor {
     // NODE STATE
+    // AstVar::user4() -> bool. Handled in constraints
     //  AstVar::user3p()        -> AstVarScope*. Scope associated with the variable
     //  AstNodeExpr::user1()    -> bool. Depending on a randomized variable
+    // VNUser4InUse m_inuser4; (Allocated for use in RandomizeVisitor)
 
     AstNodeStmt* m_taskbodyp;  // body of a method to add write_var calls to
     AstVar* const m_genp;  // VlRandomizer variable of the class
@@ -229,6 +231,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
 
+        varp->user4(true);
         auto genRefp = new AstVarRef{varp->fileline(), m_genp, VAccess::READWRITE};
         genRefp->classOrPackagep(m_classp);
         genRefp->varScopep(VN_AS(m_genp->user3p(), VarScope));
