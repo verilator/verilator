@@ -297,8 +297,7 @@ public:
     explicit ConstraintExprVisitor(AstConstraintExpr* nodep, AstVar* genp, AstClass* classp)
         : m_taskbodyp(nullptr)
         , m_genp(genp)
-        , m_classp(classp)
-    {
+        , m_classp(classp) {
         iterate(nodep);
     }
 };
