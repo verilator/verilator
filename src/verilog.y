@@ -6002,13 +6002,13 @@ immediate_assertion_statement<nodep>:   // ==IEEE: immediate_assertion_statement
 simple_immediate_assertion_statement<nodep>:    // ==IEEE: simple_immediate_assertion_statement
         //                      // action_block expanded here, for compatibility with AstAssert
                 assertOrAssume '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE
-                        { $$ = new AstAssert{$1, $3, $5, nullptr, VAssertionType::SIMPLE_IMMEDIATE}; }
+                        { $$ = new AstAssert{$1, $3, $5, nullptr, VAssertType::SIMPLE_IMMEDIATE}; }
         |       assertOrAssume '(' expr ')'           yELSE stmtBlock
-                        { $$ = new AstAssert{$1, $3, nullptr, $6, VAssertionType::SIMPLE_IMMEDIATE}; }
+                        { $$ = new AstAssert{$1, $3, nullptr, $6, VAssertType::SIMPLE_IMMEDIATE}; }
         |       assertOrAssume '(' expr ')' stmtBlock yELSE stmtBlock
-                        { $$ = new AstAssert{$1, $3, $5, $7, VAssertionType::SIMPLE_IMMEDIATE}; }
+                        { $$ = new AstAssert{$1, $3, $5, $7, VAssertType::SIMPLE_IMMEDIATE}; }
         //                      // IEEE: simple_immediate_cover_statement
-        |       yCOVER '(' expr ')' stmt                { $$ = new AstCover{$1, $3, $5, VAssertionType::SIMPLE_IMMEDIATE}; }
+        |       yCOVER '(' expr ')' stmt                { $$ = new AstCover{$1, $3, $5, VAssertType::SIMPLE_IMMEDIATE}; }
         ;
 
 assertOrAssume<fl>:
@@ -6016,11 +6016,11 @@ assertOrAssume<fl>:
         |       yASSUME                                 { $$ = $1; }
         ;
 
-final_zero<assertiontypeen>:                     // IEEE: part of deferred_immediate_assertion_statement
+final_zero<asserttypeen>:                     // IEEE: part of deferred_immediate_assertion_statement
                 '#' yaINTNUM
-                        { if ($2->isNeqZero()) { $<fl>2->v3error("Deferred assertions must use '#0' (IEEE 1800-2023 16.4)"); } $$ = VAssertionType::OBSERVED_DEFERRED_IMMEDIATE; }
+                        { if ($2->isNeqZero()) { $<fl>2->v3error("Deferred assertions must use '#0' (IEEE 1800-2023 16.4)"); } $$ = VAssertType::OBSERVED_DEFERRED_IMMEDIATE; }
         //                      // 1800-2012:
-        |       yFINAL                                                  { $$ = VAssertionType::FINAL_DEFERRED_IMMEDIATE; }
+        |       yFINAL                                                  { $$ = VAssertType::FINAL_DEFERRED_IMMEDIATE; }
         ;
 
 deferred_immediate_assertion_statement<nodep>:  // ==IEEE: deferred_immediate_assertion_statement
@@ -6048,14 +6048,14 @@ concurrent_assertion_statement<nodep>:  // ==IEEE: concurrent_assertion_statemen
         //                      // IEEE: assume_property_statement
         //                      // action_block expanded here
                 assertOrAssume yPROPERTY '(' property_spec ')' stmt %prec prLOWER_THAN_ELSE
-                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, $6, nullptr, VAssertionType::CONCURRENT}; }
+                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, $6, nullptr, VAssertType::CONCURRENT}; }
         |       assertOrAssume yPROPERTY '(' property_spec ')' stmt yELSE stmt
-                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, $6, $8, VAssertionType::CONCURRENT}; }
+                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, $6, $8, VAssertType::CONCURRENT}; }
         |       assertOrAssume yPROPERTY '(' property_spec ')' yELSE stmt
-                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, nullptr, $7, VAssertionType::CONCURRENT}; }
+                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, nullptr, $7, VAssertType::CONCURRENT}; }
         //                      // IEEE: cover_property_statement
         |       yCOVER yPROPERTY '(' property_spec ')' stmtBlock
-                        { $$ = new AstCover{$1, $4, $6, VAssertionType::CONCURRENT}; }
+                        { $$ = new AstCover{$1, $4, $6, VAssertType::CONCURRENT}; }
         //                      // IEEE: cover_sequence_statement
         |       yCOVER ySEQUENCE '(' sexpr ')' stmt
                         { $$ = nullptr; BBUNSUP($2, "Unsupported: cover sequence"); }

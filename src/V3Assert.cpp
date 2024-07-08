@@ -36,7 +36,7 @@ class AssertVisitor final : public VNVisitor {
         COVER,  // cover statement
         ASSUME,  // assume statement
     };
-    using VAssertionType_t = std::underlying_type<VAssertionType::en>::type;
+    using VAssertType_t = std::underlying_type<VAssertType::en>::type;
     // NODE STATE/TYPES
     // Cleared on netlist
     //  AstNode::user()         -> bool.  True if processed
@@ -75,13 +75,13 @@ class AssertVisitor final : public VNVisitor {
                     + ((message != "") ? ": " : "") + message + "\n");
         }
     }
-    static bool resolveAssertionType(AstAssertCtl* nodep) {
-        if (!nodep->assertionTypesp()) {
-            nodep->ctlAssertTypes(std::numeric_limits<VAssertionType_t>::max());
+    static bool resolveAssertType(AstAssertCtl* nodep) {
+        if (!nodep->assertTypesp()) {
+            nodep->ctlAssertTypes(std::numeric_limits<VAssertType_t>::max());
             return true;
         }
-        if (const AstConst* const assertionTypesp = VN_CAST(nodep->assertionTypesp(), Const)) {
-            nodep->ctlAssertTypes(assertionTypesp->toUInt());
+        if (const AstConst* const assertTypesp = VN_CAST(nodep->assertTypesp(), Const)) {
+            nodep->ctlAssertTypes(assertTypesp->toUInt());
             return true;
         }
         return false;
@@ -134,7 +134,7 @@ class AssertVisitor final : public VNVisitor {
         return varrefp;
     }
     static AstNodeStmt* newIfAssertOn(AstNode* bodyp, DirectiveType directiveType,
-                                      VAssertionType::en type = VAssertionType::INTERNAL) {
+                                      VAssertType::en type = VAssertType::INTERNAL) {
         // Add a internal if to check assertions are on.
         // Don't make this a AND term, as it's unlikely to need to test this.
         FileLine* const fl = bodyp->fileline();
@@ -142,7 +142,7 @@ class AssertVisitor final : public VNVisitor {
         // If assertions are off, have constant propagation rip them out later
         // This allows syntax errors and such to be detected normally.
         AstNodeExpr* const condp
-            = type == VAssertionType::INTERNAL
+            = type == VAssertType::INTERNAL
                   ? static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitTrue{}})
               : assertTypeOn(directiveType)
                   ? static_cast<AstNodeExpr*>(new AstCExpr{
@@ -169,10 +169,10 @@ class AssertVisitor final : public VNVisitor {
     }
 
     AstNodeStmt* newFireAssert(AstNodeStmt* nodep, DirectiveType directiveType,
-                               VAssertionType::en assertionType, const string& message,
+                               VAssertType::en assertType, const string& message,
                                AstNodeExpr* exprsp = nullptr) {
         AstNodeStmt* bodysp = newFireAssertUnchecked(nodep, message, exprsp);
-        bodysp = newIfAssertOn(bodysp, directiveType, assertionType);
+        bodysp = newIfAssertOn(bodysp, directiveType, assertType);
         return bodysp;
     }
 
@@ -306,11 +306,11 @@ class AssertVisitor final : public VNVisitor {
                 = ((allow_none || hasDefaultElse)
                        ? static_cast<AstNodeExpr*>(new AstOneHot0{nodep->fileline(), propp})
                        : static_cast<AstNodeExpr*>(new AstOneHot{nodep->fileline(), propp}));
-            const VAssertionType::en assertionType
-                = nodep->uniquePragma() ? VAssertionType::UNIQUE : VAssertionType::UNIQUE0;
+            const VAssertType::en assertType
+                = nodep->uniquePragma() ? VAssertType::UNIQUE : VAssertType::UNIQUE0;
             AstIf* const checkifp
                 = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), ohot},
-                            newFireAssert(nodep, DirectiveType::IF, assertionType,
+                            newFireAssert(nodep, DirectiveType::IF, assertType,
                                           "'unique if' statement violated"),
                             newifp};
             checkifp->isBoundsCheck(true);  // To avoid LATCH warning
@@ -333,13 +333,13 @@ class AssertVisitor final : public VNVisitor {
             }
             const AstNodeDType* exprDtypep = nodep->exprp()->dtypep()->skipRefp();
 
-            VAssertionType::en assertionType = VAssertionType::INTERNAL;
+            VAssertType::en assertType = VAssertType::INTERNAL;
             if (nodep->priorityPragma()) {
-                assertionType = VAssertionType::PRIORITY;
+                assertType = VAssertType::PRIORITY;
             } else if (nodep->uniquePragma()) {
-                assertionType = VAssertionType::UNIQUE;
+                assertType = VAssertType::UNIQUE;
             } else if (nodep->unique0Pragma()) {
-                assertionType = VAssertionType::UNIQUE0;
+                assertType = VAssertType::UNIQUE0;
             }
 
             string valFmt;
@@ -351,7 +351,7 @@ class AssertVisitor final : public VNVisitor {
                 if (!has_default) {
                     nodep->addItemsp(new AstCaseItem{
                         nodep->fileline(), nullptr /*DEFAULT*/,
-                        newFireAssert(nodep, DirectiveType::CASE, assertionType,
+                        newFireAssert(nodep, DirectiveType::CASE, assertType,
                                       nodep->pragmaString() + ", but non-match found" + valFmt,
                                       valFmt.empty() ? nullptr
                                                      : nodep->exprp()->cloneTreePure(false))});
@@ -408,11 +408,11 @@ class AssertVisitor final : public VNVisitor {
                     const string pragmaStr = nodep->pragmaString();
                     if (!allow_none)
                         zeroIfp->addThensp(
-                            newFireAssert(nodep, DirectiveType::CASE, assertionType,
+                            newFireAssert(nodep, DirectiveType::CASE, assertType,
                                           pragmaStr + ", but none matched" + valFmt,
                                           valFmt.empty() ? nullptr : exprp->cloneTreePure(false)));
                     zeroIfp->addElsesp(
-                        newFireAssert(nodep, DirectiveType::CASE, assertionType,
+                        newFireAssert(nodep, DirectiveType::CASE, assertType,
                                       pragmaStr + ", but multiple matches found" + valFmt,
                                       valFmt.empty() ? nullptr : exprp->cloneTreePure(false)));
                     ohotIfp->addThensp(zeroIfp);
@@ -567,15 +567,15 @@ class AssertVisitor final : public VNVisitor {
 
         iterateChildren(nodep);
 
-        if (!resolveAssertionType(nodep)) {
+        if (!resolveAssertType(nodep)) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: non-const assert assertion type expression");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         } else if (nodep->ctlAssertTypes()
-                       & (VAssertionType::EXPECT | VAssertionType::UNIQUE | VAssertionType::UNIQUE0
-                          | VAssertionType::PRIORITY)
-                   && !(nodep->ctlAssertTypes() == std::numeric_limits<VAssertionType_t>::max())) {
+                       & (VAssertType::EXPECT | VAssertType::UNIQUE | VAssertType::UNIQUE0
+                          | VAssertType::PRIORITY)
+                   && !(nodep->ctlAssertTypes() == std::numeric_limits<VAssertType_t>::max())) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported assertcontrol assertion_type");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
@@ -602,7 +602,7 @@ class AssertVisitor final : public VNVisitor {
             nodep->replaceWith(new AstCExpr{
                 fl,
                 "vlSymsp->_vm_contextp__->clearAssertOn("s
-                    + std::to_string(static_cast<VAssertionType_t>(~nodep->ctlAssertTypes()))
+                    + std::to_string(static_cast<VAssertType_t>(~nodep->ctlAssertTypes()))
                     + ");\n"s,
                 1});
             break;

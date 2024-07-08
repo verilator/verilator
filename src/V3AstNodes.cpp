@@ -1473,13 +1473,13 @@ AstAssertCtl::AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr* le
     this->levelp(levelp);
     addItemsp(itemsp);
 }
-AstAssertCtl::AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr* assertionTypesp,
+AstAssertCtl::AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr* assertTypesp,
                            AstNodeExpr*, AstNodeExpr* levelp, AstNodeExpr* itemsp)
     : ASTGEN_SUPER_AssertCtl(fl)
     , m_ctlType{VAssertCtlType::_TO_BE_EVALUATED}
-    , m_assertionTypes{VAssertionType::INTERNAL} {
+    , m_assertTypes{VAssertType::INTERNAL} {
     this->controlTypep(controlTypep);
-    this->assertionTypesp(assertionTypesp);
+    this->assertTypesp(assertTypesp);
     if (!levelp) levelp = new AstConst{fl, 0};
     this->levelp(levelp);
     addItemsp(itemsp);

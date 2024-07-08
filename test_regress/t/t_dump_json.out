@@ -491,14 +491,14 @@
           {"type":"ASSERTCTL","name":"","addr":"(WH)","loc":"d,86:7,86:17","ctlType":"$assertoff",
            "controlTypep": [
             {"type":"CONST","name":"32'h4","addr":"(XH)","loc":"d,86:7,86:17","dtypep":"(MC)"}
-          ],"assertionTypesp": [],
+          ],"assertTypesp": [],
            "levelp": [
             {"type":"CONST","name":"32'h0","addr":"(YH)","loc":"d,86:7,86:17","dtypep":"(MC)"}
           ],"itemsp": []},
           {"type":"ASSERTCTL","name":"","addr":"(ZH)","loc":"d,87:7,87:18","ctlType":"$assertkill",
            "controlTypep": [
             {"type":"CONST","name":"32'h5","addr":"(AI)","loc":"d,87:7,87:18","dtypep":"(MC)"}
-          ],"assertionTypesp": [],
+          ],"assertTypesp": [],
            "levelp": [
             {"type":"CONST","name":"32'h0","addr":"(BI)","loc":"d,87:7,87:18","dtypep":"(MC)"}
           ],"itemsp": []},
@@ -509,7 +509,7 @@
           {"type":"ASSERTCTL","name":"","addr":"(EI)","loc":"d,89:7,89:16","ctlType":"$asserton",
            "controlTypep": [
             {"type":"CONST","name":"32'h3","addr":"(FI)","loc":"d,89:7,89:16","dtypep":"(MC)"}
-          ],"assertionTypesp": [],
+          ],"assertTypesp": [],
            "levelp": [
             {"type":"CONST","name":"32'h0","addr":"(GI)","loc":"d,89:7,89:16","dtypep":"(MC)"}
           ],"itemsp": []},
@@ -517,7 +517,7 @@
            "controlTypep": [
             {"type":"CONST","name":"?32?sh3","addr":"(II)","loc":"d,90:22,90:23","dtypep":"(QD)"}
           ],
-           "assertionTypesp": [
+           "assertTypesp": [
             {"type":"CONST","name":"?32?sh8","addr":"(JI)","loc":"d,90:25,90:26","dtypep":"(JF)"}
           ],
            "levelp": [

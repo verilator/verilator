@@ -155,7 +155,7 @@ enum VerilatedVarFlags {
 };
 
 // IEEE 1800-2023 Table 20-6
-enum class VerilatedAssertionType : uint8_t {
+enum class VerilatedAssertType : uint8_t {
     ASSERT_TYPE_CONCURRENT = (1 << 0),
     ASSERT_TYPE_SIMPLE_IMMEDIATE = (1 << 1),
     ASSERT_TYPE_OBSERVED_DEFERRED_IMMEDIATE = (1 << 2),
@@ -165,7 +165,7 @@ enum class VerilatedAssertionType : uint8_t {
     ASSERT_TYPE_UNIQUE0 = (1 << 6),
     ASSERT_TYPE_PRIORITY = (1 << 7),
 };
-using VerilatedAssertionType_t = std::underlying_type<VerilatedAssertionType>::type;
+using VerilatedAssertType_t = std::underlying_type<VerilatedAssertType>::type;
 
 //=============================================================================
 // Utility functions
@@ -374,8 +374,8 @@ protected:
         // No std::strings or pointers or will serialize badly!
         // Fast path
         uint64_t m_time = 0;  // Current $time (unscaled), 0=at zero, or legacy
-        VerilatedAssertionType_t m_assertOn
-            = std::numeric_limits<VerilatedAssertionType_t>::max();  // Enabled assertion types
+        VerilatedAssertType_t m_assertOn
+            = std::numeric_limits<VerilatedAssertType_t>::max();  // Enabled assertion types
         bool m_calcUnusedSigs = false;  // Waves file on, need all signals calculated
         bool m_fatalOnError = true;  // Fatal on $stop/non-fatal error
         bool m_fatalOnVpiError = true;  // Fatal on vpi error/unsupported
@@ -468,11 +468,11 @@ public:
     /// Enable all assertion types
     void assertOn(bool flag) VL_MT_SAFE;
     /// Get enabled status for given assertion types
-    bool getAssertOn(VerilatedAssertionType_t flags) const VL_MT_SAFE;
+    bool getAssertOn(VerilatedAssertType_t flags) const VL_MT_SAFE;
     /// Set enabled status for given assertion types
-    void setAssertOn(VerilatedAssertionType_t flags) VL_MT_SAFE;
+    void setAssertOn(VerilatedAssertType_t flags) VL_MT_SAFE;
     /// Clear enabled status for given assertion types
-    void clearAssertOn(VerilatedAssertionType_t flags) VL_MT_SAFE;
+    void clearAssertOn(VerilatedAssertType_t flags) VL_MT_SAFE;
     /// Return if calculating of unused signals (for traces)
     bool calcUnusedSigs() const VL_MT_SAFE { return m_s.m_calcUnusedSigs; }
     /// Enable calculation of unused signals (for traces)
@@ -829,15 +829,15 @@ public:
     /// Call VerilatedContext::assertOn using current thread's VerilatedContext
     static void assertOn(bool flag) VL_MT_SAFE { Verilated::threadContextp()->assertOn(flag); }
     /// Call VerilatedContext::setAssertOn using current thread's VerilatedContext
-    static void setAssertOn(VerilatedAssertionType_t flags) VL_MT_SAFE {
+    static void setAssertOn(VerilatedAssertType_t flags) VL_MT_SAFE {
         Verilated::threadContextp()->setAssertOn(flags);
     }
     /// Return VerilatedContext::getAssertOn() using current thread's VerilatedContext
-    static bool getAssertOn(VerilatedAssertionType_t flags) VL_MT_SAFE {
+    static bool getAssertOn(VerilatedAssertType_t flags) VL_MT_SAFE {
         return Verilated::threadContextp()->getAssertOn(flags);
     }
     /// Call VerilatedContext::clearAssertOn using current thread's VerilatedContext
-    static void clearAssertOn(VerilatedAssertionType_t flags) VL_MT_SAFE {
+    static void clearAssertOn(VerilatedAssertType_t flags) VL_MT_SAFE {
         Verilated::threadContextp()->clearAssertOn(flags);
     }
     /// Return VerilatedContext::calcUnusedSigs using current thread's VerilatedContext

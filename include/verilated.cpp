@@ -2501,18 +2501,18 @@ bool VerilatedContext::assertOn() const VL_MT_SAFE {
 void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
     // set all assert types to 'on' when true, set all types to 'off' when false
-    m_s.m_assertOn = std::numeric_limits<VerilatedAssertionType_t>::max()
-                     * static_cast<VerilatedAssertionType_t>(flag);
+    m_s.m_assertOn = std::numeric_limits<VerilatedAssertType_t>::max()
+                     * static_cast<VerilatedAssertType_t>(flag);
 }
-bool VerilatedContext::getAssertOn(VerilatedAssertionType_t flags) const {
+bool VerilatedContext::getAssertOn(VerilatedAssertType_t flags) const {
     const VerilatedLockGuard lock{m_mutex};
     return m_s.m_assertOn & flags;
 }
-void VerilatedContext::setAssertOn(VerilatedAssertionType_t flags) {
+void VerilatedContext::setAssertOn(VerilatedAssertType_t flags) {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_assertOn |= flags;
 }
-void VerilatedContext::clearAssertOn(VerilatedAssertionType_t flags) {
+void VerilatedContext::clearAssertOn(VerilatedAssertType_t flags) {
     const VerilatedLockGuard lock{m_mutex};
     m_s.m_assertOn &= flags;
 }

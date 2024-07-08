@@ -1154,7 +1154,7 @@ constexpr bool operator==(VAssertCtlType::en lhs, const VAssertCtlType& rhs) {
 
 // ######################################################################
 
-class VAssertionType final {
+class VAssertType final {
 public:
     // IEEE 1800-2023 Table 20-6
     enum en : uint8_t {
@@ -1169,12 +1169,12 @@ public:
         PRIORITY = (1 << 7),
     };
     enum en m_e;
-    VAssertionType()
+    VAssertType()
         : m_e{INTERNAL} {}
     // cppcheck-suppress noExplicitConstructor
-    constexpr explicit VAssertionType(en _e)
+    constexpr explicit VAssertType(en _e)
         : m_e{_e} {}
-    explicit VAssertionType(int _e)
+    explicit VAssertType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     const char* ascii() const {
         static const char* const names[] = {"[INTERNAL]",
@@ -1190,13 +1190,13 @@ public:
     }
     constexpr operator en() const { return m_e; }
 };
-constexpr bool operator==(const VAssertionType& lhs, const VAssertionType& rhs) {
+constexpr bool operator==(const VAssertType& lhs, const VAssertType& rhs) {
     return lhs.m_e == rhs.m_e;
 }
-constexpr bool operator==(const VAssertionType& lhs, VAssertionType::en rhs) {
+constexpr bool operator==(const VAssertType& lhs, VAssertType::en rhs) {
     return lhs.m_e == rhs;
 }
-constexpr bool operator==(VAssertionType::en lhs, const VAssertionType& rhs) {
+constexpr bool operator==(VAssertType::en lhs, const VAssertType& rhs) {
     return lhs == rhs.m_e;
 }
 
