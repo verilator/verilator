@@ -216,6 +216,7 @@ class AssertVisitor final : public VNVisitor {
             }
 
             if (bodysp && passsp) bodysp = bodysp->addNext(passsp);
+            if (bodysp) bodysp = newIfAssertOn(bodysp, DirectiveType::COVER, nodep->type());
             ifp = new AstIf{nodep->fileline(), propp, bodysp};
             ifp->isBoundsCheck(true);  // To avoid LATCH warning
             bodysp = ifp;

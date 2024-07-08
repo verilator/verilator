@@ -13,12 +13,12 @@
 `define RUN_ALL_ASSERTS \
    $display("==========\nRunning all asserts at: %s:%g\n==========", `__FILE__, `__LINE__); \
    run_all_asserts(`__FILE__, `__LINE__); \
-   cover_simple_immediate_`__LINE__: cover(0); \
-   cover_simple_immediate_stmt_`__LINE__: cover(0) `DISPLAY_PASS(`__FILE__, `__LINE__); \
-   cover_observed_deferred_immediate_`__LINE__: cover #0 (0); \
-   cover_observed_deferred_immediate_stmt_`__LINE__: cover #0 (0) `DISPLAY_PASS(`__FILE__, `__LINE__); \
-   cover_final_deferred_immediate_`__LINE__: cover final (0); \
-   cover_final_deferred_immediate_stmt_`__LINE__: cover final (0) `DISPLAY_PASS(`__FILE__, `__LINE__); \
+   cover_simple_immediate_`__LINE__: cover(1); \
+   cover_simple_immediate_stmt_`__LINE__: cover(1) `DISPLAY_PASS(`__FILE__, `__LINE__); \
+   cover_observed_deferred_immediate_`__LINE__: cover #0 (1); \
+   cover_observed_deferred_immediate_stmt_`__LINE__: cover #0 (1) `DISPLAY_PASS(`__FILE__, `__LINE__); \
+   cover_final_deferred_immediate_`__LINE__: cover final (1); \
+   cover_final_deferred_immediate_stmt_`__LINE__: cover final (1) `DISPLAY_PASS(`__FILE__, `__LINE__); \
 
 module t (/*AUTOARG*/
    clk
