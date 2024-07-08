@@ -29,7 +29,6 @@
 
 #ifndef VERILATOR_VERILATED_H_
 #define VERILATOR_VERILATED_H_
-#include <limits>
 #define VERILATOR_VERILATED_H_INTERNAL_
 #ifdef VERILATOR_INTERNAL_
 // This file contains definition of VerilationMutex that should
@@ -56,6 +55,7 @@
 #include <cstring>
 #include <deque>
 #include <functional>
+#include <limits>
 #include <map>
 #include <memory>
 #include <set>
@@ -465,9 +465,13 @@ public:
 
     /// Return if assertions enabled
     bool assertOn() const VL_MT_SAFE;
+    /// Enable all assertion types
     void assertOn(bool flag) VL_MT_SAFE;
+    /// Get enabled status for given assertion types
     bool getAssertOn(VerilatedAssertionType_t flags) const VL_MT_SAFE;
+    /// Set enabled status for given assertion types
     void setAssertOn(VerilatedAssertionType_t flags) VL_MT_SAFE;
+    /// Clear enabled status for given assertion types
     void clearAssertOn(VerilatedAssertionType_t flags) VL_MT_SAFE;
     /// Return if calculating of unused signals (for traces)
     bool calcUnusedSigs() const VL_MT_SAFE { return m_s.m_calcUnusedSigs; }
@@ -822,14 +826,17 @@ public:
 #ifndef VL_NO_LEGACY
     /// Return VerilatedContext::assertOn() using current thread's VerilatedContext
     static bool assertOn() VL_MT_SAFE { return Verilated::threadContextp()->assertOn(); }
-    static void assertOn(bool flag) VL_MT_SAFE { Verilated::threadContextp()->assertOn(flag); }
     /// Call VerilatedContext::assertOn using current thread's VerilatedContext
+    static void assertOn(bool flag) VL_MT_SAFE { Verilated::threadContextp()->assertOn(flag); }
+    /// Call VerilatedContext::setAssertOn using current thread's VerilatedContext
     static void setAssertOn(VerilatedAssertionType_t flags) VL_MT_SAFE {
         Verilated::threadContextp()->setAssertOn(flags);
     }
+    /// Return VerilatedContext::getAssertOn() using current thread's VerilatedContext
     static bool getAssertOn(VerilatedAssertionType_t flags) VL_MT_SAFE {
         return Verilated::threadContextp()->getAssertOn(flags);
     }
+    /// Call VerilatedContext::clearAssertOn using current thread's VerilatedContext
     static void clearAssertOn(VerilatedAssertionType_t flags) VL_MT_SAFE {
         Verilated::threadContextp()->clearAssertOn(flags);
     }

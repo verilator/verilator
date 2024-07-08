@@ -1158,7 +1158,7 @@ class VAssertionType final {
 public:
     // IEEE 1800-2023 Table 20-6
     enum en : uint8_t {
-        INTERNAL = 0,  // non IEEE type, for assertions that cannot be controlled
+        INTERNAL = 0,  // Non IEEE type, for assertions that should not be controlled.
         CONCURRENT = (1 << 0),
         SIMPLE_IMMEDIATE = (1 << 1),
         OBSERVED_DEFERRED_IMMEDIATE = (1 << 2),

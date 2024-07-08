@@ -3647,7 +3647,7 @@ public:
     ASTGEN_MEMBERS_AstAssertIntrinsic;
     AstAssertIntrinsic(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp,
                        const string& name = "")
-        // Intrinsic asserts are always enabled thus 'type' field is not used
+        // Intrinsic asserts are always enabled thus 'type' field is set to INTERNAL.
         : ASTGEN_SUPER_AssertIntrinsic(fl, propp, passsp, VAssertionType::INTERNAL, name) {
         this->addFailsp(failsp);
     }
@@ -3664,7 +3664,7 @@ class AstRestrict final : public AstNodeCoverOrAssert {
 public:
     ASTGEN_MEMBERS_AstRestrict;
     AstRestrict(FileLine* fl, AstNode* propp)
-        // Intrinsic asserts are always ignored thus 'type' field is not used
+        // Intrinsic asserts are always ignored thus 'type' field is set to INTERNAL.
         : ASTGEN_SUPER_Restrict(fl, propp, nullptr, VAssertionType::INTERNAL) {}
 };
 
