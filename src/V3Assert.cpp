@@ -93,18 +93,6 @@ class AssertVisitor final : public VNVisitor {
         }
         return false;
     }
-    // TODO
-    // Add common interface for AstIf and AstCase
-    template <class AstIfCase>
-    static VAssertionType::en ifCaseAssertionType(AstIfCase* nodep) {
-        static_assert(std::is_base_of<AstIf, AstIfCase>::value
-                          || std::is_base_of<AstCase, AstIfCase>::value,
-                      "only for AstIf and AstCase");
-        if (nodep->priorityPragma()) return VAssertionType::PRIORITY;
-        if (nodep->uniquePragma()) return VAssertionType::UNIQUE;
-        if (nodep->unique0Pragma()) return VAssertionType::UNIQUE0;
-        return VAssertionType::INTERNAL;
-    }
     void replaceDisplay(AstDisplay* nodep, const string& prefix) {
         nodep->fmtp()->text(
             assertDisplayMessage(nodep, prefix, nodep->fmtp()->text(), nodep->displayType()));
@@ -318,7 +306,8 @@ class AssertVisitor final : public VNVisitor {
                 = ((allow_none || hasDefaultElse)
                        ? static_cast<AstNodeExpr*>(new AstOneHot0{nodep->fileline(), propp})
                        : static_cast<AstNodeExpr*>(new AstOneHot{nodep->fileline(), propp}));
-            const VAssertionType::en assertionType = ifCaseAssertionType(nodep);
+            const VAssertionType::en assertionType
+                = nodep->uniquePragma() ? VAssertionType::UNIQUE : VAssertionType::UNIQUE0;
             AstIf* const checkifp
                 = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), ohot},
                             newFireAssert(nodep, DirectiveType::IF, assertionType,
@@ -344,7 +333,14 @@ class AssertVisitor final : public VNVisitor {
             }
             const AstNodeDType* exprDtypep = nodep->exprp()->dtypep()->skipRefp();
 
-            const VAssertionType::en assertionType = ifCaseAssertionType(nodep);
+            VAssertionType::en assertionType = VAssertionType::INTERNAL;
+            if (nodep->priorityPragma()) {
+                assertionType = VAssertionType::PRIORITY;
+            } else if (nodep->uniquePragma()) {
+                assertionType = VAssertionType::UNIQUE;
+            } else if (nodep->unique0Pragma()) {
+                assertionType = VAssertionType::UNIQUE0;
+            }
 
             string valFmt;
             if (exprDtypep->isIntegralOrPacked())
