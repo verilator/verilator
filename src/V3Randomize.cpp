@@ -160,7 +160,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         handle.relink(newp);
         return true;
     }
-    void editSMT(AstNodeExpr* nodep, AstNodeExpr* lhsp = nullptr, AstNodeExpr* rhsp = nullptr) {
+    void editSMT(AstNodeExpr* nodep, AstNodeExpr* lhsp = nullptr, AstNodeExpr* rhsp = nullptr,
+                 AstNodeExpr* thsp = nullptr) {
         // Replace incomputable (result-dependent) expression with SMT expression
         std::string smtExpr = nodep->emitSMT();  // Might need child width (AstExtend)
         UASSERT_OBJ(smtExpr != "", nodep,
@@ -168,6 +169,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         if (lhsp) lhsp = VN_AS(iterateSubtreeReturnEdits(lhsp->unlinkFrBack()), NodeExpr);
         if (rhsp) rhsp = VN_AS(iterateSubtreeReturnEdits(rhsp->unlinkFrBack()), NodeExpr);
+        if (thsp) thsp = VN_AS(iterateSubtreeReturnEdits(thsp->unlinkFrBack()), NodeExpr);
 
         AstNodeExpr* argsp = nullptr;
         for (string::iterator pos = smtExpr.begin(); pos != smtExpr.end(); ++pos) {
@@ -187,12 +189,19 @@ class ConstraintExprVisitor final : public VNVisitor {
                     argsp = AstNode::addNext(argsp, rhsp);
                     rhsp = nullptr;
                     break;
+                case 't':
+                    pos[0] = '@';
+                    UASSERT_OBJ(thsp, nodep, "emitSMT() references undef node");
+                    argsp = AstNode::addNext(argsp, thsp);
+                    thsp = nullptr;
+                    break;
                 default: nodep->v3fatalSrc("Unknown emitSMT format code: %" << pos[0]); break;
                 }
             }
         }
         UASSERT_OBJ(!lhsp, nodep, "Missing emitSMT %l for " << lhsp);
         UASSERT_OBJ(!rhsp, nodep, "Missing emitSMT %r for " << rhsp);
+        UASSERT_OBJ(!thsp, nodep, "Missing emitSMT %t for " << thsp);
         AstSFormatF* const newp = new AstSFormatF{nodep->fileline(), smtExpr, false, argsp};
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -232,6 +241,10 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstNodeUniop* nodep) override {
         if (editFormat(nodep)) return;
         editSMT(nodep, nodep->lhsp());
+    }
+    void visit(AstNodeTriop* nodep) override {
+        if (editFormat(nodep)) return;
+        editSMT(nodep, nodep->lhsp(), nodep->rhsp(), nodep->thsp());
     }
     void visit(AstReplicate* nodep) override {
         // Biop, but RHS is harmful

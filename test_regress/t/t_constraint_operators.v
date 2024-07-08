@@ -23,6 +23,7 @@ class Packet;
    constraint cmps { x < x || x <= x || x > x || x >= x; }
    constraint cmpu { b < b || b <= b || b > b || b >= b; }
    constraint ext { s64'(x) != u64'(tiny); }
+   constraint cond { (tiny == 1 ? b : c) != 17; }
 
 endclass
 
@@ -43,6 +44,7 @@ module t (/*AUTOARG*/);
       if (-~p.c == 'h22) $stop;
       if (((p.b ^ p.c) & (p.b >>> p.c | p.b >> p.c | p.b << p.c)) <= 0) $stop;
       if (p.x == int'(p.tiny)) $stop;
+      if ((p.tiny == 1 ? p.b : p.c) == 17) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
