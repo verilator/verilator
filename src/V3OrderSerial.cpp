@@ -34,7 +34,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 std::vector<AstActive*> V3Order::createSerial(OrderGraph& graph, const std::string& tag,
                                               const TrigToSenMap& trigToSen, bool slow) {
 
-    UINFO(2, "  Constructing serial code for '" + tag + "'");
+    UINFO(2, "  Constructing serial code for '" + tag + "'" << endl);
 
     // Build the move graph
     OrderMoveDomScope::clear();

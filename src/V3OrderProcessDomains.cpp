@@ -93,6 +93,13 @@ class V3OrderProcessDomains final {
             // For logic, start with the explicit hybrid sensitivities
             OrderLogicVertex* const lvtxp = vtxp->cast<OrderLogicVertex>();
             if (lvtxp) domainp = lvtxp->hybridp();
+            if (domainp)
+                UINFO(6, "      hybr d=" << cvtToHex(domainp)
+                                         << (domainp == m_deleteDomainp ? " [DEL]"
+                                             : domainp->hasCombo()      ? " [COMB]"
+                                             : domainp->isMulti()       ? " [MULT]"
+                                                                        : "")
+                                         << " " << vtxp << endl);
 
             // For each incoming edge, examine the source vertex
             for (V3GraphEdge& edge : vtxp->inEdges()) {
@@ -104,6 +111,12 @@ class V3OrderProcessDomains final {
 
                 AstSenTree* fromDomainp = fromVtxp->domainp();
 
+                UINFO(6, "      from d=" << cvtToHex(fromDomainp)
+                                         << (fromDomainp == m_deleteDomainp ? " [DEL]"
+                                             : fromDomainp->hasCombo()      ? " [COMB]"
+                                             : fromDomainp->isMulti()       ? " [MULT]"
+                                                                            : "")
+                                         << " " << vtxp << endl);
                 UASSERT(fromDomainp == m_deleteDomainp || !fromDomainp->hasCombo(),
                         "There should be no need for combinational domains");
 
@@ -113,6 +126,12 @@ class V3OrderProcessDomains final {
                     externalDomainps.clear();
                     m_externalDomains(vscp, externalDomainps);
                     for (AstSenTree* const externalDomainp : externalDomainps) {
+                        UINFO(6, "      xtrn d=" << cvtToHex(externalDomainp)
+                                                 << (externalDomainp == m_deleteDomainp ? " [DEL]"
+                                                     : externalDomainp->hasCombo()      ? " [COMB]"
+                                                     : externalDomainp->isMulti()       ? " [MULT]"
+                                                                                        : "")
+                                                 << " " << vtxp << " because of " << vscp << endl);
                         UASSERT_OBJ(!externalDomainp->hasCombo(), vscp,
                                     "There should be no need for combinational domains");
                         fromDomainp = combineDomains(fromDomainp, externalDomainp);
