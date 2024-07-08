@@ -1,6 +1,18 @@
-%Error-UNSUPPORTED: t/t_assert_ctl_assertion_type_unsup.v:13:7: Unsupported: binary operations in assertion_type argument
+%Error-UNSUPPORTED: t/t_assert_ctl_assertion_type_unsup.v:15:7: Unsupported assertcontrol assertion_type
                                                               : ... note: In instance 't'
-   13 |       $assertcontrol(OFF, CONCURRENT | UNIQUE);
+   15 |       $assertcontrol(OFF, EXPECT);
       |       ^~~~~~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_assert_ctl_assertion_type_unsup.v:16:7: Unsupported assertcontrol assertion_type
+                                                              : ... note: In instance 't'
+   16 |       $assertcontrol(OFF, UNIQUE);
+      |       ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_assertion_type_unsup.v:17:7: Unsupported assertcontrol assertion_type
+                                                              : ... note: In instance 't'
+   17 |       $assertcontrol(OFF, UNIQUE0);
+      |       ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_assert_ctl_assertion_type_unsup.v:18:7: Unsupported assertcontrol assertion_type
+                                                              : ... note: In instance 't'
+   18 |       $assertcontrol(OFF, PRIORITY);
+      |       ^~~~~~~~~~~~~~
 %Error: Exiting due to

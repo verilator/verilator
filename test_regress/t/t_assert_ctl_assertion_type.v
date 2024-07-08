@@ -33,14 +33,9 @@ module t (/*AUTOARG*/
    let SIMPLE_IMMEDIATE = 2;
    let OBSERVED_DEFERRED_IMMEDIATE = 4;
    let FINAL_DEFERRED_IMMEDIATE = 8;
-   let UNIQUE = 32;
-   let UNIQUE0 = 64;
-   let PRIORITY = 128;
-
-   let ALL = 255;
 
    /* CONCURRENT|SIMPLE_IMMEDIATE|OBSERVED_DEFERRED_IMMEDIATE|FINAL_DEFERRED_IMMEDIATE */
-   let ALL_ASSERTIONS = 15;
+   let ALL = 15;
 
    concurrent concurrent(.clk(clk));
 
@@ -92,10 +87,6 @@ module t (/*AUTOARG*/
       `RUN_ALL_ASSERTS;
       $assertcontrol(KILL, ALL);
       `RUN_ALL_ASSERTS;
-      $assertcontrol(ON, ALL_ASSERTIONS);
-      `RUN_ALL_ASSERTS;
-      $assertcontrol(OFF, ALL_ASSERTIONS);
-      `RUN_ALL_ASSERTS;
 
       // concurrent test
       #10;
@@ -113,8 +104,6 @@ task run_all_asserts(string file, integer line);
    run_simple_immediate(file, line);
    run_observed_deferred_immediate(file, line);
    run_final_deferred_immediate(file, line);
-   // TODO
-   //run_if_case(file, line);
 endtask
 
 task run_simple_immediate(string file, integer line);
@@ -157,28 +146,6 @@ task run_final_deferred_immediate(string file, integer line);
    assume_final_deferred_immediate_else: assume final (0) else `DISPLAY_FAIL(file, line);
    assume_final_deferred_immediate_stmt: assume final (0) `DISPLAY_PASS(file, line);
    assume_final_deferred_immediate_stmt_else: assume final (0) `DISPLAY_PASS(file, line); else `DISPLAY_FAIL(file, line);
-endtask
-
-task run_if_case(string file, integer line);
-   $display("Testing unique0_if at %s:%g", file, line);
-   unique0_if: unique0 if (0) `DISPLAY_PASS(file, line);
-   unique0_if_else: unique0 if (0) `DISPLAY_PASS(file, line); else `DISPLAY_FAIL(file, line);
-   $display("Testing unique_if at %s:%g", file, line);
-   unique_if: unique if (0) `DISPLAY_PASS(file, line);
-   unique_if_else: unique if (0) `DISPLAY_PASS(file, line); else `DISPLAY_FAIL(file, line);
-   $display("Testing priority_if at %s:%g", file, line);
-   priority_if: priority if (0) `DISPLAY_PASS(file, line);
-   priority_if_else: priority if (0) `DISPLAY_PASS(file, line); else `DISPLAY_FAIL(file, line);
-
-   $display("Testing unique0_case at %s:%g", file, line);
-   unique0_case: unique0 case (0) 1: `DISPLAY_PASS(file, line); endcase
-   unique0_case_default: unique0 case (0) 1: `DISPLAY_PASS(file, line); default: `DISPLAY_FAIL(file, line); endcase
-   $display("Testing unique_case at %s:%g", file, line);
-   unique_case: unique case (0) 1: `DISPLAY_PASS(file, line); endcase
-   unique_case_default: unique case (0) 1: `DISPLAY_PASS(file, line); default: `DISPLAY_FAIL(file, line); endcase
-   $display("Testing priority_case at %s:%g", file, line);
-   priority_case: priority case (0) 1: `DISPLAY_PASS(file, line); endcase
-   priority_case_default: priority case (0) 1: `DISPLAY_PASS(file, line); default: `DISPLAY_FAIL(file, line); endcase
 endtask
 
 module concurrent(input clk);

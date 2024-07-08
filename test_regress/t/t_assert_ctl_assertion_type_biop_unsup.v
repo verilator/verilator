@@ -6,15 +6,11 @@
 
 module t;
    let OFF = 4;
-   let EXPECT = 16;
-   let UNIQUE = 32;
-   let UNIQUE0 = 64;
-   let PRIORITY = 128;
+   let CONCURRENT = 1; 
+   let SIMPLE_IMMEDIATE = 2;
+   let OBSERVED_DEFERRED_IMMEDIATE = 4;
 
    initial begin
-      $assertcontrol(OFF, EXPECT);
-      $assertcontrol(OFF, UNIQUE);
-      $assertcontrol(OFF, UNIQUE0);
-      $assertcontrol(OFF, PRIORITY);
+      $assertcontrol(OFF, CONCURRENT | SIMPLE_IMMEDIATE | OBSERVED_DEFERRED_IMMEDIATE);
    end
 endmodule

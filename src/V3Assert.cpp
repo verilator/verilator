@@ -574,6 +574,13 @@ class AssertVisitor final : public VNVisitor {
                           "Unsupported: non-const assert assertion type expression");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
+        } else if (nodep->ctlAssertTypes()
+                       & (VAssertionType::EXPECT | VAssertionType::UNIQUE | VAssertionType::UNIQUE0
+                          | VAssertionType::PRIORITY)
+                   && !(nodep->ctlAssertTypes() == std::numeric_limits<VAssertionType_t>::max())) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported assertcontrol assertion_type");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
         }
         if (!resolveControlType(nodep)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: non-const assert control type expression");
