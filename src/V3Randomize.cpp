@@ -167,8 +167,6 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstNodeStmt* m_taskbodyp;  // body of a method to add write_var calls to
     AstVar* const m_genp;  // VlRandomizer variable of the class
     AstClass* const m_classp;  // Pointer to randomized class
-    AstScope* const m_scopep;  // Pointer to scope associated with randomization variables
-    AstScope* const m_classScopep;  // Pointer class's scope
 
     bool editFormat(AstNodeExpr* nodep) {
         if (nodep->user1()) return false;
@@ -293,14 +291,11 @@ public:
     AstNodeStmt* taskBody() const { return m_taskbodyp; }
 
     // CONSTRUCTORS
-    explicit ConstraintExprVisitor(AstConstraintExpr* nodep, AstVar* genp, AstClass* classp,
-                                   AstScope* scopep)
+    explicit ConstraintExprVisitor(AstConstraintExpr* nodep, AstVar* genp, AstClass* classp)
         : m_taskbodyp(nullptr)
         , m_genp(genp)
         , m_classp(classp)
-        , m_scopep(scopep)
-        , m_classScopep(findClassScope(classp)) {
-        UASSERT_OBJ(m_classScopep, classp, "Class is missing an associated scope");
+    {
         iterate(nodep);
     }
 };
@@ -576,7 +571,7 @@ class RandomizeVisitor final : public VNVisitor {
                 continue;
             }
             {
-                ConstraintExprVisitor constraintExprVisitor{condsp, genp, classp, m_scopep};
+                ConstraintExprVisitor constraintExprVisitor{condsp, genp, classp};
                 if (constraintExprVisitor.taskBody())
                     stmtsp = AstNode::addNext(stmtsp, constraintExprVisitor.taskBody());
             }
@@ -658,7 +653,6 @@ class RandomizeVisitor final : public VNVisitor {
         if (!beginValp) beginValp = new AstConst{fl, AstConst::WidthedValue{}, 32, 1};
 
         auto fvarRefp = new AstVarRef{fl, fvarp, VAccess::WRITE};
-        //UASSERT_OBJ(VN_AS(fvarp->user3p(), VarScope), fvarp, "VarScope is not linked");
         fvarRefp->varScopep(VN_AS(fvarp->user3p(), VarScope));
         funcp->addStmtsp(new AstAssign{fl, fvarRefp, beginValp});
 
