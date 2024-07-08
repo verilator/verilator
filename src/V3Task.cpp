@@ -1626,9 +1626,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
     bool reorganize = false;
     for (AstNode *nextp, *pinp = nodep->pinsp(); pinp; pinp = nextp) {
         nextp = pinp->nextp();
-        if (VN_IS(pinp, With)) {
-            continue;
-        }
+        if (VN_IS(pinp, With)) continue;
         AstArg* const argp = VN_AS(pinp, Arg);
         UASSERT_OBJ(argp, pinp, "Non-arg under ftask reference");
         if (argp->name() != "") {

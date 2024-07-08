@@ -3702,13 +3702,7 @@ class WidthVisitor final : public VNVisitor {
                     nodep->dtypeFrom(ftaskp);
                     nodep->classOrPackagep(classp);
                     if (VN_IS(ftaskp, Task)) nodep->dtypeSetVoid();
-                    if (withp) {
-                        nodep->addPinsp(withp);
-                        //UINFO(1, "WITHP:\n");
-                        //withp->dumpTree();
-                        //withp->v3warn(CONSTRAINTIGN, "'with' constraint ignored (unsupported)");
-                        //VL_DO_DANGLING(withp->deleteTree(), withp);
-                    }
+                    if (withp) nodep->addPinsp(withp);
                     processFTaskRefArgs(nodep);
                 }
                 return;
