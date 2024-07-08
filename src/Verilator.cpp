@@ -316,7 +316,8 @@ static void process() {
 
         // --FLATTENING---------------
 
-        if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
+        bool doScope = !(v3Global.opt.serializeOnly() && !v3Global.opt.flatten());
+        if (doScope) {
             // We're going to flatten the hierarchy, so as many optimizations that
             // can be done as possible should be before this....
 
@@ -335,7 +336,10 @@ static void process() {
         }
 
         // Add randomize() class methods if they are used by the design
-        if (v3Global.useRandomizeMethods()) V3Randomize::randomizeNetlist(v3Global.rootp());
+        if (v3Global.useRandomizeMethods())
+            V3Randomize::randomizeNetlist(v3Global.rootp(),
+            doScope
+        );
 
         // --SCOPE BASED OPTIMIZATIONS--------------
 
