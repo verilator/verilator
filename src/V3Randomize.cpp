@@ -751,6 +751,8 @@ class RandomizeVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         const std::string name = "__Vrandcase" + cvtToStr(m_randCaseNum++);
         AstVar* const randVarp = new AstVar{fl, VVarType::BLOCKTEMP, name, sumDTypep};
+        auto randVarScopep = new AstVarScope{fl, m_scopep, randVarp};
+        randVarp->user3p(randVarScopep);
         randVarp->noSubst(true);
         if (m_ftaskp) randVarp->funcLocal(true);
         AstNodeExpr* sump = new AstConst{fl, AstConst::WidthedValue{}, 64, 0};
@@ -765,10 +767,12 @@ class RandomizeVisitor final : public VNVisitor {
                 = new AstAdd{condp->fileline(), sump, new AstExtend{itemp->fileline(), condp, 64}};
             AstNode* const stmtsp
                 = itemp->stmtsp() ? itemp->stmtsp()->unlinkFrBackWithNext() : nullptr;
+            auto randVarRefp = new AstVarRef{fl, randVarp, VAccess::WRITE};
+            randVarRefp->varScopep(randVarScopep);
             AstNodeIf* const newifp
                 = new AstIf{itemp->fileline(),
                             new AstLte{condp->fileline(),
-                                       new AstVarRef{condp->fileline(), randVarp, VAccess::READ},
+                                       randVarRefp,
                                        sump->cloneTreePure(true)},
                             stmtsp, nullptr};
             ifsp->addElsesp(newifp);
@@ -784,12 +788,15 @@ class RandomizeVisitor final : public VNVisitor {
         AstNode* newp = randVarp;
         AstNodeExpr* randp = new AstRand{fl, nullptr, false};
         randp->dtypeSetUInt64();
-        newp->addNext(new AstAssign{fl, new AstVarRef{fl, randVarp, VAccess::WRITE},
+        auto randVarRefp = new AstVarRef{fl, randVarp, VAccess::WRITE};
+        randVarRefp->varScopep(randVarScopep);
+        newp->addNext(new AstAssign{fl, randVarRefp,
                                     new AstAdd{fl, new AstConst{fl, AstConst::Unsized64{}, 1},
                                                new AstModDiv{fl, randp, sump}}});
         newp->addNext(firstIfsp);
         if (debug() >= 9) newp->dumpTreeAndNext(cout, "-  rcnew: ");
         nodep->replaceWith(newp);
+        m_scopep->addVarsp(randVarScopep);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstMethodCall* nodep) override {
