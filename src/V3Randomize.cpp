@@ -710,7 +710,7 @@ class RandomizeVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (!nodep->user1()) return;  // Doesn't need randomize, or already processed
         UINFO(9, "Define randomize() for " << nodep << endl);
-        AstFunc* const funcp = V3Randomize::newRandomizeFunc(nodep);
+        AstFunc* const funcp = V3Randomize::newRandomizeFunc(m_memberMap, nodep);
         nodep->user3p(funcp);
         AstVar* const fvarp = VN_AS(funcp->fvarp(), Var);
         addPrePostCall(nodep, funcp, "pre_randomize");
@@ -758,7 +758,7 @@ class RandomizeVisitor final : public VNVisitor {
                         "Unsupported: random member variable with type of a current class");
                     continue;
                 }
-                AstFunc* const memberFuncp = V3Randomize::newRandomizeFunc(classRefp->classp());
+                AstFunc* const memberFuncp = V3Randomize::newRandomizeFunc(m_memberMap, classRefp->classp());
                 AstMethodCall* const callp = new AstMethodCall{
                     fl, new AstVarRef{fl, memberVarp, VAccess::WRITE}, "randomize", nullptr};
                 callp->taskp(memberFuncp);
@@ -784,7 +784,8 @@ class RandomizeVisitor final : public VNVisitor {
         if (nodep->user2p()) return;  // Already visited
         AstNodeFTask* const newp = VN_AS(m_memberMap.findMember(m_modp, "new"), NodeFTask);
         UASSERT_OBJ(newp, m_modp, "No new() in class");
-        AstFunc* const randomizep = V3Randomize::newRandomizeFunc(VN_AS(m_modp, Class));
+        AstFunc* const randomizep
+            = V3Randomize::newRandomizeFunc(m_memberMap, VN_AS(m_modp, Class));
         AstTask* const taskp = newSetupConstraintTask(VN_AS(m_modp, Class), nodep->name());
         nodep->user2p(taskp);
         AstTaskRef* const setupTaskRefp
@@ -902,7 +903,7 @@ class RandomizeVisitor final : public VNVisitor {
         localGenp->funcLocal(true);
 
         AstFunc* const randomizeFuncp
-            = V3Randomize::newRandomizeFunc(classp, m_inlineUniqueNames.get(nodep));
+            = V3Randomize::newRandomizeFunc(m_memberMap, classp, m_inlineUniqueNames.get(nodep));
 
         // Detach the expression and prepare variable copies
         const CaptureFrame<AstNode> captured{withp->exprp(), classp, false};
@@ -994,10 +995,8 @@ void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
     V3Global::dumpCheckGlobalTree("randomize", 0, dumpTreeEitherLevel() >= 3);
 }
 
-AstFunc* V3Randomize::newRandomizeFunc(AstClass* nodep, const std::string& name) {
-    VMemberMap memberMap;
+AstFunc* V3Randomize::newRandomizeFunc(VMemberMap& memberMap, AstClass* nodep, const std::string& name) {
     AstFunc* funcp = VN_AS(memberMap.findMember(nodep, name), Func);
-
     if (!funcp) {
         v3Global.useRandomizeMethods(true);
         AstNodeDType* const dtypep
@@ -1013,14 +1012,14 @@ AstFunc* V3Randomize::newRandomizeFunc(AstClass* nodep, const std::string& name)
         funcp->classMethod(true);
         funcp->isVirtual(nodep->isExtended());
         nodep->addMembersp(funcp);
+        memberMap.insert(nodep, funcp);
         AstClass* const basep = nodep->baseMostClassp();
         basep->needRNG(true);
     }
     return funcp;
 }
 
-AstFunc* V3Randomize::newSRandomFunc(AstClass* nodep) {
-    VMemberMap memberMap;
+AstFunc* V3Randomize::newSRandomFunc(VMemberMap& memberMap, AstClass* nodep) {
     AstClass* const basep = nodep->baseMostClassp();
     AstFunc* funcp = VN_AS(memberMap.findMember(basep, "srandom"), Func);
     if (!funcp) {
@@ -1036,6 +1035,7 @@ AstFunc* V3Randomize::newSRandomFunc(AstClass* nodep) {
         funcp->classMethod(true);
         funcp->isVirtual(false);
         basep->addMembersp(funcp);
+        memberMap.insert(nodep, funcp);
         funcp->addStmtsp(new AstCStmt{basep->fileline(), "__Vm_rng.srandom(seed);\n"});
         basep->needRNG(true);
     }
