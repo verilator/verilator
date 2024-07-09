@@ -493,6 +493,11 @@ class RandomizeVisitor final : public VNVisitor {
         AstVar* newp
             = new AstVar{varp->fileline(), VVarType::MEMBER, varp->name() + "__Vrandc", newdtp};
         newp->isInternal(true);
+        if (m_postScope) {
+            AstVarScope* newVarScopep = new AstVarScope{varp->fileline(), m_scopep, newp};
+            m_scopep->addVarsp(newVarScopep);
+            newp->user3p(newVarScopep);
+        }
         varp->addNextHere(newp);
         UINFO(9, "created " << varp << endl);
         return newp;
@@ -542,8 +547,9 @@ class RandomizeVisitor final : public VNVisitor {
     }
     AstNodeExpr* newRandValue(FileLine* fl, AstVar* randcVarp, AstNodeDType* dtypep) {
         if (randcVarp) {
-            AstNode* argsp = new AstVarRef{fl, randcVarp, VAccess::READWRITE};
-            argsp->addNext(new AstText{fl, ".randomize(__Vm_rng)"});
+            AstVarRef* argsp = new AstVarRef{fl, randcVarp, VAccess::READWRITE};
+            if (m_postScope) argsp->varScopep(VN_AS(randcVarp->user3p(), VarScope));
+            argsp->AstNode::addNext(new AstText{fl, ".randomize(__Vm_rng)"});
             AstCExpr* newp = new AstCExpr{fl, argsp};
             newp->dtypep(dtypep);
             return newp;
@@ -932,8 +938,7 @@ class RandomizeVisitor final : public VNVisitor {
         // Call the solver and set return value
         auto randNextp = new AstVarRef{nodep->fileline(), localGenp, VAccess::READWRITE};
         if (m_postScope) randNextp->varScopep(localGenScopep);
-        static_cast<AstNode*>(randNextp)->addNext(
-            new AstText{nodep->fileline(), ".next(__Vm_rng)"});
+        randNextp->AstNode::addNext(new AstText{nodep->fileline(), ".next(__Vm_rng)"});
         AstNodeExpr* const solverCallp = new AstCExpr{nodep->fileline(), randNextp};
         solverCallp->dtypeSetBit();
         auto fvarRefp = new AstVarRef{nodep->fileline(), VN_AS(randomizeFuncp->fvarp(), Var),
