@@ -575,7 +575,7 @@ class AssertVisitor final : public VNVisitor {
                        & (VAssertType::EXPECT | VAssertType::UNIQUE | VAssertType::UNIQUE0
                           | VAssertType::PRIORITY)
                    && !(nodep->ctlAssertTypes() == std::numeric_limits<VAssertType_t>::max())) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported assertcontrol assertion_type");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: assert control assertion_type");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
