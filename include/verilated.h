@@ -374,8 +374,8 @@ protected:
         // No std::strings or pointers or will serialize badly!
         // Fast path
         uint64_t m_time = 0;  // Current $time (unscaled), 0=at zero, or legacy
-        std::atomic<VerilatedAssertType_t> m_assertOn
-            = std::numeric_limits<VerilatedAssertType_t>::max();  // Enabled assertion types
+        std::atomic<VerilatedAssertType_t> m_assertOn{
+            std::numeric_limits<VerilatedAssertType_t>::max()};  // Enabled assertion types
         bool m_calcUnusedSigs = false;  // Waves file on, need all signals calculated
         bool m_fatalOnError = true;  // Fatal on $stop/non-fatal error
         bool m_fatalOnVpiError = true;  // Fatal on vpi error/unsupported
