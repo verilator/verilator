@@ -224,16 +224,14 @@ class AssertVisitor final : public VNVisitor {
             } else {
                 ++m_statAsNotImm;
             }
-            const DirectiveType directiveType
-                = VN_IS(nodep, AssertIntrinsic) ? DirectiveType::INTRINSIC : DirectiveType::ASSERT;
-            if (passsp) passsp = newIfAssertOn(passsp, directiveType, nodep->type());
-            if (failsp) failsp = newIfAssertOn(failsp, directiveType, nodep->type());
             if (!passsp && !failsp) failsp = newFireAssertUnchecked(nodep, "'assert' failed.");
             ifp = new AstIf{nodep->fileline(), propp, passsp, failsp};
             ifp->isBoundsCheck(true);  // To avoid LATCH warning
             // It's more LIKELY that we'll take the nullptr if clause
             // than the sim-killing else clause:
             ifp->branchPred(VBranchPred::BP_LIKELY);
+            const DirectiveType directiveType
+                = VN_IS(nodep, AssertIntrinsic) ? DirectiveType::INTRINSIC : DirectiveType::ASSERT;
             bodysp = newIfAssertOn(ifp, directiveType, nodep->type());
         } else {
             nodep->v3fatalSrc("Unknown node type");
