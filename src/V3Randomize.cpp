@@ -593,7 +593,11 @@ class RandomizeVisitor final : public VNVisitor {
             AstConstraintExpr* const condsp = VN_CAST(expressionsp, ConstraintExpr);
             if (!condsp) {
                 expressionsp->v3warn(CONSTRAINTIGN, "Constraint expression ignored (unsupported)");
-                pushDeletep(expressionsp->unlinkFrBack());
+                if (AstConstraintForeach* foreachp = VN_CAST(expressionsp, ConstraintForeach)) {
+                    removeConstraintForeach(foreachp);
+                } else {
+                    pushDeletep(expressionsp->unlinkFrBack());
+                }
                 expressionsp = nextp;
                 continue;
             }
@@ -616,6 +620,28 @@ class RandomizeVisitor final : public VNVisitor {
             expressionsp = nextp;
         }
         return std::make_pair(declStmtsp, hardStmtsp);
+    }
+
+    void removeConstraintForeach(AstConstraintForeach* nodep) {
+        if (m_postScope) {
+            // TODO: Optimize this code
+            for (AstNode* iterVarsp = VN_AS(nodep->arrayp(), SelLoopVars)->elementsp(); iterVarsp;
+                 iterVarsp = iterVarsp->nextp()) {
+                AstVar* iterVarp = VN_CAST(iterVarsp, Var);
+                if (!iterVarp) continue;
+
+                for (AstNode* scopeNodep = m_scopep->varsp(); scopeNodep;
+                    scopeNodep = scopeNodep->nextp()) {
+                    AstVarScope* varScopep = VN_CAST(scopeNodep, VarScope);
+                    if (varScopep && (varScopep->varp() == iterVarp)) {
+                        pushDeletep(varScopep->unlinkFrBack());
+                        break;
+                    }
+                }
+            }
+        }
+        pushDeletep(nodep->unlinkFrBack());
+        iterateChildren(nodep);
     }
 
     // VISITORS
