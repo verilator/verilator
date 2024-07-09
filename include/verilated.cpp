@@ -2504,16 +2504,13 @@ void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
     m_s.m_assertOn = std::numeric_limits<VerilatedAssertType_t>::max()
                      * static_cast<VerilatedAssertType_t>(flag);
 }
-bool VerilatedContext::getAssertOn(VerilatedAssertType_t flags) const {
-    const VerilatedLockGuard lock{m_mutex};
+bool VerilatedContext::getAssertOn(VerilatedAssertType_t flags) const VL_MT_SAFE {
     return m_s.m_assertOn & flags;
 }
-void VerilatedContext::setAssertOn(VerilatedAssertType_t flags) {
-    const VerilatedLockGuard lock{m_mutex};
+void VerilatedContext::setAssertOn(VerilatedAssertType_t flags) VL_MT_SAFE {
     m_s.m_assertOn |= flags;
 }
-void VerilatedContext::clearAssertOn(VerilatedAssertType_t flags) {
-    const VerilatedLockGuard lock{m_mutex};
+void VerilatedContext::clearAssertOn(VerilatedAssertType_t flags) VL_MT_SAFE {
     m_s.m_assertOn &= flags;
 }
 void VerilatedContext::calcUnusedSigs(bool flag) VL_MT_SAFE {
