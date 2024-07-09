@@ -440,6 +440,7 @@ class AssertVisitor final : public VNVisitor {
                 AstSampled* const newp = newSampledExpr(nodep);
                 relinkHandle.relink(newp);
                 newp->user1(1);
+                v3Global.setHasSampled();
             }
         }
     }

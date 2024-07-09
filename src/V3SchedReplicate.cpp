@@ -50,7 +50,9 @@ enum RegionFlags : uint8_t {
     NONE = 0x0,  //
     INPUT = 0x1,  // Variable/logic is driven from top level input
     ACTIVE = 0x2,  // Variable/logic is driven from 'act' region logic
-    NBA = 0x4  // Variable/logic is driven from 'nba' region logic
+    NBA = 0x4,  // Variable/logic is driven from 'nba' region logic
+    OBSERVED = 0x8,  // Variable/logic is driven from 'obs' region logic
+    REACTIVE = 0x10,  // Variable/logic is driven from 're' region logic
 };
 
 //##############################################################################
@@ -79,7 +81,34 @@ public:
         case INPUT | NBA: return "magenta";
         case ACTIVE | NBA: return "cyan";
         case INPUT | ACTIVE | NBA: return "gray80";  // don't want white on white background
-        default: v3fatal("There are only 3 region bits"); return "";
+
+        case REACTIVE: return "gray60";
+        case REACTIVE | INPUT: return "lightcoral";
+        case REACTIVE | ACTIVE: return "lightgreen";
+        case REACTIVE | NBA: return "lightblue";
+        case REACTIVE | INPUT | ACTIVE: return "lightyellow";
+        case REACTIVE | INPUT | NBA: return "lightpink";
+        case REACTIVE | ACTIVE | NBA: return "lightcyan";
+        case REACTIVE | INPUT | ACTIVE | NBA: return "gray90";
+
+        case OBSERVED: return "gray20";
+        case OBSERVED | INPUT: return "darkred";
+        case OBSERVED | ACTIVE: return "darkgreen";
+        case OBSERVED | NBA: return "darkblue";
+        case OBSERVED | INPUT | ACTIVE: return "gold";
+        case OBSERVED | INPUT | NBA: return "purple";
+        case OBSERVED | ACTIVE | NBA: return "darkcyan";
+        case OBSERVED | INPUT | ACTIVE | NBA: return "gray30";
+
+        case REACTIVE | OBSERVED: return "gray40";
+        case REACTIVE | OBSERVED | INPUT: return "indianred";
+        case REACTIVE | OBSERVED | ACTIVE: return "olive";
+        case REACTIVE | OBSERVED | NBA: return "dodgerBlue";
+        case REACTIVE | OBSERVED | INPUT | ACTIVE: return "khaki";
+        case REACTIVE | OBSERVED | INPUT | NBA: return "plum";
+        case REACTIVE | OBSERVED | ACTIVE | NBA: return "lightSeaGreen";
+        case REACTIVE | OBSERVED | INPUT | ACTIVE | NBA: return "gray50";
+        default: v3fatal("There are only 5 region bits"); return "";
         }
     }
     // LCOV_EXCL_STOP
@@ -213,6 +242,8 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
     for (const auto& pair : logicRegions.m_pre) addLogic(ACTIVE, pair.first, pair.second);
     for (const auto& pair : logicRegions.m_act) addLogic(ACTIVE, pair.first, pair.second);
     for (const auto& pair : logicRegions.m_nba) addLogic(NBA, pair.first, pair.second);
+    for (const auto& pair : logicRegions.m_obs) addLogic(OBSERVED, pair.first, pair.second);
+    for (const auto& pair : logicRegions.m_react) addLogic(REACTIVE, pair.first, pair.second);
 
     return graphp;
 }
@@ -251,6 +282,8 @@ LogicReplicas replicate(Graph* graphp) {
             if (targetRegions & INPUT) replicateTo(result.m_ico);
             if (targetRegions & ACTIVE) replicateTo(result.m_act);
             if (targetRegions & NBA) replicateTo(result.m_nba);
+            if (targetRegions & OBSERVED) replicateTo(result.m_obs);
+            if (targetRegions & REACTIVE) replicateTo(result.m_react);
         }
     }
     return result;
