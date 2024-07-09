@@ -1748,7 +1748,7 @@ public:
             if (v3Global.opt.xAssign() == "unique") {
                 return "VL_RAND_RESET_ASSIGN_%nq(%nw, %P)";
             } else {
-                // This follow xInitial Randomization
+                // This follows xInitial randomization
                 return "VL_RAND_RESET_%nq(%nw, %P)";
             }
         }
