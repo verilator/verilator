@@ -169,6 +169,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstNodeStmt* m_taskbodyp;  // body of a method to add write_var calls to
     AstVar* const m_genp;  // VlRandomizer variable of the class
     AstClass* const m_classp;  // Pointer to randomized class
+    bool m_markDeclaredConstrs; // Mark constraints as aready setup with `write_var`.
 
     bool editFormat(AstNodeExpr* nodep) {
         if (nodep->user1()) return false;
@@ -231,23 +232,25 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
 
-        varp->user4(true);
-        auto genRefp = new AstVarRef{varp->fileline(), m_genp, VAccess::READWRITE};
-        genRefp->classOrPackagep(m_classp);
-        genRefp->varScopep(VN_AS(m_genp->user3p(), VarScope));
-        AstCMethodHard* const methodp = new AstCMethodHard{varp->fileline(), genRefp, "write_var"};
-        methodp->dtypeSetVoid();
-        auto varRefp = new AstVarRef{varp->fileline(), varp, VAccess::WRITE};
-        varRefp->classOrPackagep(classp);
-        varRefp->varScopep(varScopep);
-        methodp->addPinsp(varRefp);
-        methodp->addPinsp(new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{},
-                                       (size_t)varp->width()});
-        AstNodeExpr* const varnamep
-            = new AstCExpr{varp->fileline(), "\"" + smtName + "\"", varp->width()};
-        varnamep->dtypep(varp->dtypep());
-        methodp->addPinsp(varnamep);
-        m_taskbodyp = AstNode::addNext(m_taskbodyp, methodp->makeStmt());
+        if (!varp->user4()) {
+            varp->user4(m_markDeclaredConstrs);
+            auto genRefp = new AstVarRef{varp->fileline(), m_genp, VAccess::READWRITE};
+            genRefp->classOrPackagep(m_classp);
+            genRefp->varScopep(VN_AS(m_genp->user3p(), VarScope));
+            AstCMethodHard* const methodp = new AstCMethodHard{varp->fileline(), genRefp, "write_var"};
+            methodp->dtypeSetVoid();
+            auto varRefp = new AstVarRef{varp->fileline(), varp, VAccess::WRITE};
+            varRefp->classOrPackagep(classp);
+            varRefp->varScopep(varScopep);
+            methodp->addPinsp(varRefp);
+            methodp->addPinsp(new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{},
+                                        (size_t)varp->width()});
+            AstNodeExpr* const varnamep
+                = new AstCExpr{varp->fileline(), "\"" + smtName + "\"", varp->width()};
+            varnamep->dtypep(varp->dtypep());
+            methodp->addPinsp(varnamep);
+            m_taskbodyp = AstNode::addNext(m_taskbodyp, methodp->makeStmt());
+        }
     }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
@@ -294,10 +297,12 @@ public:
     AstNodeStmt* taskBody() const { return m_taskbodyp; }
 
     // CONSTRUCTORS
-    explicit ConstraintExprVisitor(AstConstraintExpr* nodep, AstVar* genp, AstClass* classp)
+    explicit ConstraintExprVisitor(AstConstraintExpr* nodep, AstVar* genp, AstClass* classp,
+                                   bool markDeclaredConstrs)
         : m_taskbodyp(nullptr)
         , m_genp(genp)
-        , m_classp(classp) {
+        , m_classp(classp)
+        , m_markDeclaredConstrs(markDeclaredConstrs) {
         iterate(nodep);
     }
 };
@@ -401,6 +406,7 @@ class RandomizeVisitor final : public VNVisitor {
     size_t m_enumValueTabCount = 0;  // Number of tables with enum values created
     int m_randCaseNum = 0;  // Randcase number within a module for var naming
     std::map<std::string, AstCDType*> m_randcDtypes;  // RandC data type deduplication
+    bool m_inline = false;  // Constraints are inline
 
     // METHODS
     AstScope* pkgScope() const {
@@ -572,9 +578,10 @@ class RandomizeVisitor final : public VNVisitor {
         clearp->dtypeSetVoid();
         return clearp->makeStmt();
     }
-    AstNodeStmt* implementConstraintBlockSetup(AstNode* expressionsp, AstVar* genp,
-                                              AstClass* classp) {
-        AstNodeStmt* stmtsp = nullptr;
+    std::pair<AstNodeStmt*, AstNodeStmt*> implementConstraintBlockSetup(
+        AstNode* expressionsp, AstVar* genp, AstClass* classp) {
+        AstNodeStmt* declStmtsp = nullptr;
+        AstNodeStmt* hardStmtsp = nullptr;
 
         while (expressionsp) {
             auto nextp = expressionsp->nextp();
@@ -586,9 +593,9 @@ class RandomizeVisitor final : public VNVisitor {
                 continue;
             }
             {
-                ConstraintExprVisitor constraintExprVisitor{condsp, genp, classp};
+                ConstraintExprVisitor constraintExprVisitor{condsp, genp, classp, !m_inline};
                 if (constraintExprVisitor.taskBody())
-                    stmtsp = AstNode::addNext(stmtsp, constraintExprVisitor.taskBody());
+                    declStmtsp = AstNode::addNext(declStmtsp, constraintExprVisitor.taskBody());
             }
             // Only hard constraints are now supported
             auto genRefp = new AstVarRef{condsp->fileline(), genp, VAccess::READWRITE};
@@ -597,12 +604,12 @@ class RandomizeVisitor final : public VNVisitor {
             AstCMethodHard* const methodp = new AstCMethodHard{condsp->fileline(), genRefp, "hard",
                                                                condsp->exprp()->unlinkFrBack()};
             methodp->dtypeSetVoid();
-            stmtsp = AstNode::addNext(stmtsp, new AstStmtExpr{condsp->fileline(), methodp});
+            hardStmtsp = AstNode::addNext(hardStmtsp, new AstStmtExpr{condsp->fileline(), methodp});
             if (condsp->backp()) condsp->unlinkFrBack();
             pushDeletep(condsp);
             expressionsp = nextp;
         }
-        return stmtsp;
+        return std::make_pair(declStmtsp, hardStmtsp);
     }
 
     // VISITORS
@@ -766,8 +773,11 @@ class RandomizeVisitor final : public VNVisitor {
         }
         randomizep->addStmtsp(setupTaskRefp->makeStmt());
 
-        taskp->addStmtsp(
-            implementConstraintBlockSetup(nodep->itemsp(), genp, VN_AS(m_modp, Class)));
+        AstNodeStmt* declStmtsp, * hardStmtsp;
+        std::tie(declStmtsp, hardStmtsp) =
+            implementConstraintBlockSetup(nodep->itemsp(), genp, VN_AS(m_modp, Class));
+        (m_inline ? taskp : newp)->addStmtsp(declStmtsp);
+        taskp->addStmtsp(hardStmtsp);
     }
     void visit(AstRandCase* nodep) override {
         // RANDCASE
@@ -836,8 +846,15 @@ class RandomizeVisitor final : public VNVisitor {
     }
     void visit(AstMethodCall* nodep) override {
         auto withp = VN_CAST(nodep->pinsp(), With);
+
+        if (!(nodep->name() == "randomize") || !withp) {
+            iterateChildren(nodep);
+            return;
+        }
+
+        VL_RESTORER(m_inline);
+        m_inline = true;
         iterateChildren(nodep);
-        if (!(nodep->name() == "randomize") || !withp) return;
 
         UASSERT_OBJ(nodep->fromp()->dtypep(), nodep->fromp(), "Object dtype is not linked");
         auto classrefdtypep = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType);
@@ -908,12 +925,11 @@ class RandomizeVisitor final : public VNVisitor {
         }
 
         // Generate constraint setup code and a hardcoded call to the solver
-        {
-            UINFO(9, "ConstraintExprVisitor running on:\n");
-            if (debug() >= 9) captured.getTree()->dumpTree();
-            randomizeFuncp->addStmtsp(
-                implementConstraintBlockSetup(captured.getTree(), localGenp, classp));
-        }
+        AstNodeStmt* declStmtsp, * hardStmtsp;
+        std::tie(declStmtsp, hardStmtsp) =
+            implementConstraintBlockSetup(captured.getTree(), localGenp, classp);
+        randomizeFuncp->addStmtsp(declStmtsp);
+        randomizeFuncp->addStmtsp(hardStmtsp);
 
         // Call the solver and set return value
         auto randNextp = new AstVarRef{nodep->fileline(), localGenp, VAccess::READWRITE};
