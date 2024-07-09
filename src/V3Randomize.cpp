@@ -673,7 +673,7 @@ class RandomizeVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (!nodep->user1()) return;  // Doesn't need randomize, or already processed
         UINFO(9, "Define randomize() for " << nodep << endl);
-        AstFunc* const funcp = V3Randomize::newRandomizeFunc(nodep, true);
+        AstFunc* const funcp = V3Randomize::newRandomizeFunc(nodep, m_postScope);
         nodep->user3p(funcp);
         AstVar* const fvarp = VN_AS(funcp->fvarp(), Var);
         if (m_postScope)
@@ -915,7 +915,7 @@ class RandomizeVisitor final : public VNVisitor {
         }
 
         AstFunc* const randomizeFuncp
-            = V3Randomize::newRandomizeFunc(classp, true, m_inlineUniqueNames.get(nodep));
+            = V3Randomize::newRandomizeFunc(classp, m_postScope, m_inlineUniqueNames.get(nodep));
 
         // Detach the expression and prepare variable copies
         CaptureFrame<AstNode> captured{withp->exprp(), scopep, false};

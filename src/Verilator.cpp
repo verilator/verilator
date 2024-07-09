@@ -303,6 +303,8 @@ static void process() {
             V3DfgOptimizer::optimize(v3Global.rootp(), "post inline");
         }
 
+        V3Randomize::randomizeNetlist(v3Global.rootp(), false);
+
         // --PRE-FLAT OPTIMIZATIONS------------------
 
         // Initial const/dead to reduce work for ordering code
@@ -335,9 +337,9 @@ static void process() {
             V3Class::classAll(v3Global.rootp());
         }
 
-        // Add randomize() class methods if they are used by the design
-        if (v3Global.useRandomizeMethods())
-            V3Randomize::randomizeNetlist(v3Global.rootp(), doScope);
+        //// Add randomize() class methods if they are used by the design
+        //if (v3Global.useRandomizeMethods())
+        //    V3Randomize::randomizeNetlist(v3Global.rootp(), doScope);
 
         // --SCOPE BASED OPTIMIZATIONS--------------
 

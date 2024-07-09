@@ -54,7 +54,7 @@ class ScopeVisitor final : public VNVisitor {
 
     std::unordered_map<AstNodeModule*, AstScope*> m_packageScopes;  // Scopes for each package
     VarScopeMap m_varScopes;  // Varscopes created for each scope and var
-    std::set<std::pair<AstVarRef*, AstScope*>>
+    std::unordered_map<AstVarRef*, AstScope*>
         m_varRefScopes;  // Varrefs-in-scopes needing fixup when done
 
     // METHODS
@@ -68,6 +68,9 @@ class ScopeVisitor final : public VNVisitor {
                 UASSERT_OBJ(it2 != m_packageScopes.end(), nodep, "Can't locate package scope");
                 scopep = it2->second;
             }
+            UINFO(1, "scope, var: (" << AstNode::nodeAddr(scopep) << ", "
+                  << AstNode::nodeAddr(nodep->varp()) << ")" << " [ref: "
+                  << AstNode::nodeAddr(nodep) << "]" << endl);
             const auto it3 = m_varScopes.find(std::make_pair(nodep->varp(), scopep));
             UASSERT_OBJ(it3 != m_varScopes.end(), nodep, "Can't locate varref scope");
             AstVarScope* const varscp = it3->second;
@@ -259,6 +262,7 @@ class ScopeVisitor final : public VNVisitor {
         iterateChildren(clonep);
     }
     void visit(AstVar* nodep) override {
+        UINFO(4, "    VAR " << nodep << endl);
         // Make new scope variable
         if (!nodep->user1p()) {
             AstScope* scopep = m_scopep;
@@ -267,7 +271,6 @@ class ScopeVisitor final : public VNVisitor {
                 if (ifacerefp->cellp()) scopep = VN_AS(ifacerefp->cellp()->user2p(), Scope);
             }
             AstVarScope* const varscp = new AstVarScope{nodep->fileline(), scopep, nodep};
-            UINFO(6, "   New scope " << varscp << endl);
             if (m_aboveCellp && !m_aboveCellp->isTrace()) varscp->trace(false);
             nodep->user1p(varscp);
             if (v3Global.opt.isClocker(varscp->prettyName())) {
@@ -277,7 +280,10 @@ class ScopeVisitor final : public VNVisitor {
                 nodep->attrClocker(VVarAttrClocker::CLOCKER_NO);
             }
             UASSERT_OBJ(m_scopep, nodep, "No scope for var");
-            m_varScopes.emplace(std::make_pair(nodep, m_scopep), varscp);
+            UINFO(1, "assoc var (" << AstNode::nodeAddr(nodep) << ", "
+                  << AstNode::nodeAddr(m_scopep) << ") => " << AstNode::nodeAddr(varscp) << endl);
+            auto res = m_varScopes.emplace(std::make_pair(nodep, m_scopep), varscp);
+            UASSERT_OBJ(res.second, nodep, "Failed to insert node into a set");
             m_scopep->addVarsp(varscp);
         }
         iterateChildren(nodep);
@@ -290,7 +296,10 @@ class ScopeVisitor final : public VNVisitor {
         // the var's referenced package etc might not be created yet.
         // So push to a list and post-correct.
         // No check here for nodep->classOrPackagep(), will check when walk list.
-        m_varRefScopes.emplace(nodep, m_scopep);
+        UINFO(1, "assoc ref " << AstNode::nodeAddr(nodep) << " => " << AstNode::nodeAddr(m_scopep)
+              << endl);
+        auto r = m_varRefScopes.emplace(nodep, m_scopep);
+        UASSERT_OBJ(r.second, nodep, "Failed to assoc var node with scope ");
     }
     void visit(AstScopeName* nodep) override {
         // If there's a %m in the display text, we add a special node that will contain the name()
