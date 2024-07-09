@@ -106,6 +106,14 @@ extern IData VL_RAND_RESET_I(int obits) VL_MT_SAFE;
 extern QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE;
 /// Random reset a signal of given width (init time only)
 extern WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE;
+
+/// Random reset a signal of given width (assign time only)
+extern IData VL_RAND_RESET_ASSIGN_I(int obits) VL_MT_SAFE;
+/// Random reset a signal of given width (assign time only)
+extern QData VL_RAND_RESET_ASSIGN_Q(int obits) VL_MT_SAFE;
+/// Random reset a signal of given width (assign time only)
+extern WDataOutP VL_RAND_RESET_ASSIGN_W(int obits, WDataOutP outwp) VL_MT_SAFE;
+
 /// Zero reset a signal (slow - else use VL_ZERO_W)
 extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE;
 
