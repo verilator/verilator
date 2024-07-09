@@ -1532,7 +1532,7 @@ Verilator 4.026 2020-01-11
 * Fix expand optimization slowing --lint-only. Closes #2091. [Thomas Watts]
 * Fix %{number}s with strings. #2093. [agrobman]
 * Fix shebang breaking some shells. Closes #2067. [zdave]
-* Fix errors on using string in incorrect format (#5340). [John Demme]
+* Fix errors on using string in incorrect format (#5240). [John Demme]
 
 
 Verilator 4.024 2019-12-08
