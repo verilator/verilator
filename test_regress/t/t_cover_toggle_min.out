@@ -1,0 +1,6 @@
+TN:verilator_coverage
+SF:t/t_cover_toggle_min.v
+DA:10,0
+DA:11,0
+DA:12,1
+end_of_record
