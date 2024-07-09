@@ -828,18 +828,6 @@ public:
     static bool assertOn() VL_MT_SAFE { return Verilated::threadContextp()->assertOn(); }
     /// Call VerilatedContext::assertOn using current thread's VerilatedContext
     static void assertOn(bool flag) VL_MT_SAFE { Verilated::threadContextp()->assertOn(flag); }
-    /// Call VerilatedContext::setAssertOn using current thread's VerilatedContext
-    static void setAssertOn(VerilatedAssertType_t flags) VL_MT_SAFE {
-        Verilated::threadContextp()->setAssertOn(flags);
-    }
-    /// Return VerilatedContext::getAssertOn() using current thread's VerilatedContext
-    static bool getAssertOn(VerilatedAssertType_t flags) VL_MT_SAFE {
-        return Verilated::threadContextp()->getAssertOn(flags);
-    }
-    /// Call VerilatedContext::clearAssertOn using current thread's VerilatedContext
-    static void clearAssertOn(VerilatedAssertType_t flags) VL_MT_SAFE {
-        Verilated::threadContextp()->clearAssertOn(flags);
-    }
     /// Return VerilatedContext::calcUnusedSigs using current thread's VerilatedContext
     static bool calcUnusedSigs() VL_MT_SAFE {
         return Verilated::threadContextp()->calcUnusedSigs();
