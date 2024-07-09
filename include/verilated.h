@@ -468,11 +468,11 @@ public:
     /// Enable all assertion types
     void assertOn(bool flag) VL_MT_SAFE;
     /// Get enabled status for given assertion types
-    bool getAssertOn(VerilatedAssertType_t flags) const VL_MT_SAFE;
+    bool assertOnGet(VerilatedAssertType_t flags) const VL_MT_SAFE;
     /// Set enabled status for given assertion types
-    void setAssertOn(VerilatedAssertType_t flags) VL_MT_SAFE;
+    void assertOnSet(VerilatedAssertType_t flags) VL_MT_SAFE;
     /// Clear enabled status for given assertion types
-    void clearAssertOn(VerilatedAssertType_t flags) VL_MT_SAFE;
+    void assertOnClear(VerilatedAssertType_t flags) VL_MT_SAFE;
     /// Return if calculating of unused signals (for traces)
     bool calcUnusedSigs() const VL_MT_SAFE { return m_s.m_calcUnusedSigs; }
     /// Enable calculation of unused signals (for traces)

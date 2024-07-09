@@ -145,7 +145,7 @@ class AssertVisitor final : public VNVisitor {
             = type == VAssertType::INTERNAL
                   ? static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitTrue{}})
               : assertTypeOn(directiveType) ? static_cast<AstNodeExpr*>(new AstCExpr{
-                    fl, "vlSymsp->_vm_contextp__->getAssertOn("s + std::to_string(type) + ")"s, 1})
+                    fl, "vlSymsp->_vm_contextp__->assertOnGet("s + std::to_string(type) + ")"s, 1})
                                             : static_cast<AstNodeExpr*>(
                                                 new AstConst{fl, AstConst::BitFalse{}});
         AstNodeIf* const newp = new AstIf{fl, condp, bodyp};
@@ -588,7 +588,7 @@ class AssertVisitor final : public VNVisitor {
         case VAssertCtlType::ON:
             UINFO(9, "Generating assertctl for a module: " << m_modp << endl);
             nodep->replaceWith(new AstCExpr{fl,
-                                            "vlSymsp->_vm_contextp__->setAssertOn("s
+                                            "vlSymsp->_vm_contextp__->assertOnSet("s
                                                 + std::to_string(nodep->ctlAssertTypes())
                                                 + ");\n"s,
                                             1});
@@ -598,7 +598,7 @@ class AssertVisitor final : public VNVisitor {
             UINFO(9, "Generating assertctl for a module: " << m_modp << endl);
             nodep->replaceWith(new AstCExpr{
                 fl,
-                "vlSymsp->_vm_contextp__->clearAssertOn("s
+                "vlSymsp->_vm_contextp__->assertOnClear("s
                     + std::to_string(static_cast<VAssertType_t>(~nodep->ctlAssertTypes()))
                     + ");\n"s,
                 1});
