@@ -5388,13 +5388,8 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->failsp(), nullptr);
     }
     void visit(AstAssertCtl* nodep) override {
-        if (nodep->assertTypesp()
-            && nodep->assertTypesp()->exists([](AstNodeBiop*) { return true; })) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: "
-                                             << "binary operations in assertion_type argument");
-        } else {
-            visit(static_cast<AstNodeStmt*>(nodep));
-        }
+        assertAtStatement(nodep);
+        userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
     }
     void visit(AstAssertIntrinsic* nodep) override {
         assertAtStatement(nodep);

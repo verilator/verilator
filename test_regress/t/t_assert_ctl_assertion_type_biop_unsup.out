@@ -1,6 +1,0 @@
-%Error-UNSUPPORTED: t/t_assert_ctl_assertion_type_biop_unsup.v:14:7: Unsupported: binary operations in assertion_type argument
-                                                                   : ... note: In instance 't'
-   14 |       $assertcontrol(OFF, CONCURRENT | SIMPLE_IMMEDIATE | OBSERVED_DEFERRED_IMMEDIATE);
-      |       ^~~~~~~~~~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to
