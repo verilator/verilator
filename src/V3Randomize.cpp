@@ -309,7 +309,7 @@ public:
 };
 
 template <typename TreeNodeType>
-class CaptureFrame {
+class CaptureFrame final {
     TreeNodeType* m_treep;  // Original tree
     AstArg* m_argsp;  // Original references turned into arguments
     AstScope*
