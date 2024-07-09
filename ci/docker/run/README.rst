@@ -11,10 +11,10 @@ easily as a docker image, e.g.:
 
    docker run -ti verilator/verilator:latest --version
 
-This will install the container, run the latest Verilator and print
+This will pull the container from [docker hub](https://hub.docker.com/r/verilator/verilator), run the latest Verilator and print
 Verilator's version.
 
-Containers are automatically built for all released versions, so you may
+Containers are automatically built and pushed to docker hub for all released versions, so you may
 easily compare results across versions, e.g.:
 
 ::
