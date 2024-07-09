@@ -1,4 +1,4 @@
-%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:18:7: Unsupported: non-const assert assertion type expression
+%Error-UNSUPPORTED: t/t_assert_ctl_unsup.v:18:7: Unsupported: non-constant assert assertion-type expression
                                                : ... note: In instance 't.unsupported_ctl_type'
    18 |       $assertcontrol(1, a);
       |       ^~~~~~~~~~~~~~
