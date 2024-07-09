@@ -5033,6 +5033,13 @@ class WidthVisitor final : public VNVisitor {
         UASSERT_OBJ(nodep->lhsp()->dtypep()->widthSized(), nodep, "How can LValue be unsized?");
     }
 
+    void formatNoStringArg(AstNode* argp, char ch) {
+        if (argp && argp->isString()) {
+            argp->v3error("$display-line format of '%"s + ch + "' illegal with string argument\n"
+                          << argp->warnMore() << "... Suggest use '%s'");
+        }
+    }
+
     void visit(AstSFormatF* nodep) override {
         // Excludes NodeDisplay, see below
         if (m_vup && !m_vup->prelim()) return;  // Can be called as statement or function
@@ -5056,6 +5063,7 @@ class WidthVisitor final : public VNVisitor {
                 bool added = false;
                 const AstNodeDType* const dtypep = argp ? argp->dtypep()->skipRefp() : nullptr;
                 const AstBasicDType* const basicp = dtypep ? dtypep->basicp() : nullptr;
+                ch = std::tolower(ch);
                 if (ch == '?') {  // Unspecified by user, guess
                     if (argp && argp->isDouble()) {
                         ch = 'g';
@@ -5069,13 +5077,14 @@ class WidthVisitor final : public VNVisitor {
                         ch = 'p';
                     }
                 }
-                switch (std::tolower(ch)) {
+                switch (ch) {
                 case '%': break;  // %% - just output a %
                 case 'm': break;  // %m - auto insert "name"
                 case 'l': break;  // %m - auto insert "library"
                 case 'd': {  // Convert decimal to either 'd' or '#'
                     if (argp) {
                         AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);
+                        formatNoStringArg(argp, ch);
                         if (argp->isDouble()) {
                             spliceCvtS(argp, true, 64);
                             ch = '~';
@@ -5091,6 +5100,7 @@ class WidthVisitor final : public VNVisitor {
                 case 'x': {
                     if (argp) {
                         AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);
+                        formatNoStringArg(argp, ch);
                         if (argp->isDouble()) spliceCvtS(argp, true, 64);
                         argp = nextp;
                     }
@@ -5148,6 +5158,7 @@ class WidthVisitor final : public VNVisitor {
                 case 't': {  // Convert decimal time to realtime
                     if (argp) {
                         AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);
+                        formatNoStringArg(argp, ch);
                         if (argp->isDouble()) ch = '^';  // Convert it
                         UASSERT_OBJ(!nodep->timeunit().isNone(), nodep,
                                     "display %t has no time units");
@@ -5160,6 +5171,7 @@ class WidthVisitor final : public VNVisitor {
                 case 'g': {
                     if (argp) {
                         AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);
+                        formatNoStringArg(argp, ch);
                         if (!argp->isDouble()) {
                             iterateCheckReal(nodep, "Display argument", argp, BOTH);
                         }
