@@ -32,7 +32,8 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class SampledVisitor final : public VNVisitor {
     // NODE STATE
-    // ???
+    //  AstVarScope::user1()  -> AstVarScope*. The VarScope that stores sampled value
+    //  AstVarRef::user1()    -> bool. Whether already converted
     const VNUser1InUse m_user1InUse;
     // STATE
     AstScope* m_scopep = nullptr;  // Current scope
@@ -44,17 +45,16 @@ class SampledVisitor final : public VNVisitor {
         if (vscp->user1p()) return VN_AS(vscp->user1p(), VarScope);
         const AstVar* const varp = vscp->varp();
         const string newvarname
-            = string{"__Vsampled_"} + vscp->scopep()->nameDotless() + "__" + varp->name();
+            = "__Vsampled_" + vscp->scopep()->nameDotless() + "__" + varp->name();
         FileLine* const flp = vscp->fileline();
         AstVar* const newvarp = new AstVar{flp, VVarType::MODULETEMP, newvarname, varp->dtypep()};
         m_scopep->modp()->addStmtsp(newvarp);
         AstVarScope* const newvscp = new AstVarScope{flp, m_scopep, newvarp};
-        newvarp->direction(VDirection::INPUT);  // inform V3Sched that it will be driven later
+        newvarp->direction(VDirection::INPUT);  // Inform V3Sched that it will be driven later
         newvarp->primaryIO(true);
         vscp->user1p(newvscp);
         m_scopep->addVarsp(newvscp);
-        // At the top of _eval, assign them (we use valuep here as temporary storage during
-        // V3Sched)
+        // At the top of _eval, assign them (use valuep here as temporary storage during V3Sched)
         newvarp->valuep(new AstVarRef{flp, vscp, VAccess::READ});
         UINFO(4, "New Sampled: " << newvscp << endl);
         return newvscp;
@@ -63,19 +63,15 @@ class SampledVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstScope* nodep) override {
         VL_RESTORER(m_scopep);
-        {
-            m_scopep = nodep;
-            iterateChildren(nodep);
-        }
+        m_scopep = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstSampled* nodep) override {
         VL_RESTORER(m_inSampled);
-        {
-            m_inSampled = true;
-            iterateChildren(nodep);
-            nodep->replaceWith(nodep->exprp()->unlinkFrBack());
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        }
+        m_inSampled = true;
+        iterateChildren(nodep);
+        nodep->replaceWith(nodep->exprp()->unlinkFrBack());
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstVarRef* nodep) override {
         iterateChildren(nodep);

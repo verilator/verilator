@@ -2209,9 +2209,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                  new AstVarRef{clockingp->fileline(), eventp, VAccess::WRITE},
                                  false}});
             v3Global.setHasEvents();
-            eventp->user1p(new VSymEnt{m_statep->symsp(), eventp});
         }
-        return reinterpret_cast<VSymEnt*>(clockingp->eventp()->user1p());
+        AstVar* const eventp = clockingp->eventp();
+        if (!eventp->user1p()) eventp->user1p(new VSymEnt{m_statep->symsp(), eventp});
+        return reinterpret_cast<VSymEnt*>(eventp->user1p());
     }
 
     bool isParamedClassRefDType(const AstNode* classp) {
@@ -3045,7 +3046,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
             dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
                                            okSymp);  // Maybe nullptr
             if (!m_statep->forScopeCreation()) {
-                VSymEnt* const foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
+                VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
+                if (m_inSens && foundp) {
+                    if (AstClocking* const clockingp = VN_CAST(foundp->nodep(), Clocking)) {
+                        foundp = getCreateClockingEventSymEnt(clockingp);
+                    }
+                }
                 AstVar* const varp
                     = foundp ? foundToVarp(foundp, nodep, nodep->access()) : nullptr;
                 nodep->varp(varp);

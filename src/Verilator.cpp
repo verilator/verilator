@@ -439,7 +439,7 @@ static void process() {
             V3ActiveTop::activeTopAll(v3Global.rootp());
 
             // Remove SAMPLED
-            V3Sampled::sampledAll(v3Global.rootp());
+            if (v3Global.hasSampled()) V3Sampled::sampledAll(v3Global.rootp());
 
             if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "PreOrder");
 

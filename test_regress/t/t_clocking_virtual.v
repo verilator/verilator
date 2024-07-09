@@ -32,6 +32,18 @@ module main;
       if (t.mod0.cb.io != 1'b1) $stop;
       if (t.mod1.cb.io != 1'b1) $stop;
       if (t.mod1.cb.inp != 1'b1) $stop;
+      #8;
+      t.mod0.inp = 1'b0;
+      if (t.mod0.cb.inp != 1'b1) $stop;
+      @(t.mod1.cb)
+      if ($time != 25) $stop;
+      if (t.mod0.cb.inp != 1'b1) $stop;
+      t.mod0.inp = 1'b0;
+      @(t.mod0.cb)
+      if ($time != 35) $stop;
+      if (t.mod0.cb.inp != 1'b0) $stop;
+      $write("*-* All Finished *-*\n");
+      $finish;
    end
    initial begin
       @(posedge t.mod0.out)
@@ -44,9 +56,4 @@ module t;
    main main1();
    Iface mod0();
    virtual Iface mod1 = mod0;
-   initial begin
-      #20;
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
 endmodule

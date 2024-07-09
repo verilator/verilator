@@ -2804,22 +2804,23 @@ class WidthVisitor final : public VNVisitor {
         if (AstClocking* const clockingp = fromSel && fromSel->varp()
                                                ? VN_CAST(fromSel->varp()->firstAbovep(), Clocking)
                                                : nullptr) {
-            // clocking event
+            // In:  MEMBERSEL{MEMBERSEL{vifaceref, "cb", cb_event}, "clockvar", null}
+            // Out: MEMBERSEL{vifaceref, "clockvar", clockvar}
             UINFO(9, "     from clocking " << clockingp << endl);
-            if (AstVar* varp = memberSelClocking(nodep, clockingp)) {
+            if (AstVar* const varp = memberSelClocking(nodep, clockingp)) {
                 if (!varp->didWidth()) userIterate(varp, nullptr);
                 AstMemberSel* fromp = VN_AS(nodep->fromp(), MemberSel);
                 fromp->replaceWith(fromp->fromp()->unlinkFrBack());
                 VL_DO_DANGLING(fromp->deleteTree(), fromp);
                 nodep->dtypep(varp->dtypep());
                 nodep->varp(varp);
-                nodep->didWidth(true);
                 if (nodep->access().isWriteOrRW()) V3LinkLValue::linkLValueSet(nodep);
                 if (AstIfaceRefDType* const adtypep
                     = VN_CAST(nodep->fromp()->dtypep(), IfaceRefDType)) {
                     nodep->varp()->sensIfacep(adtypep->ifacep());
                 }
                 UINFO(9, "     done clocking msel " << nodep << endl);
+                nodep->didWidth(true);  // Must not visit again: will confuse scopes
                 return;
             }
         } else if (AstNodeUOrStructDType* const adtypep = VN_CAST(fromDtp, NodeUOrStructDType)) {
@@ -2857,6 +2858,7 @@ class WidthVisitor final : public VNVisitor {
                     varp->sensIfacep(ifacep);
                     nodep->fromp()->foreach(
                         [ifacep](AstVarRef* const refp) { refp->varp()->sensIfacep(ifacep); });
+                    nodep->didWidth(true);
                     return;
                 }
                 UINFO(1, "found object " << foundp << endl);
@@ -2910,6 +2912,7 @@ class WidthVisitor final : public VNVisitor {
                     }
                     nodep->dtypep(foundp->dtypep());
                     nodep->varp(varp);
+                    nodep->didWidth(true);
                     return true;
                 }
                 if (AstEnumItemRef* const adfoundp = VN_CAST(foundp, EnumItemRef)) {
