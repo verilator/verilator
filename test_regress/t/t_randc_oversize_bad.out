@@ -1,5 +1,5 @@
-%Error: t/t_randc_oversize_bad.v:8:21: Maximum implemented width for randc is 32 bits, 'i' is 38 bits
-                                     : ... note: In instance 't'
-    8 |    randc bit [37:0] i;
-      |                     ^
+%Error: t/t_randc_oversize_bad.v:16:13: Member 'randomize' not found in class 'Cls'
+                                      : ... note: In instance 't'
+   16 |       r = c.randomize;
+      |             ^~~~~~~~~
 %Error: Exiting due to

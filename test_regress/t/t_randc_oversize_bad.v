@@ -10,8 +10,9 @@ endclass
 
 module t (/*AUTOARG*/);
    Cls c;
+   bit r;
    initial begin
       c = new;
-      c.randomize;
+      r = c.randomize;
    end
 endmodule
