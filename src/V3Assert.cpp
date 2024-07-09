@@ -568,7 +568,7 @@ class AssertVisitor final : public VNVisitor {
 
         if (!resolveAssertType(nodep)) {
             nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: non-const assert assertion type expression");
+                          "Unsupported: non-constant assert assertion-type expression");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         } else if (nodep->ctlAssertTypes()
