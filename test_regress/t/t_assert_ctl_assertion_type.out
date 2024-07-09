@@ -1,79 +1,70 @@
 ==========
-Running all asserts at: t/t_assert_ctl_assertion_type.v:45
+Running all asserts at: t/t_assert_ctl_assertion_type.v:49
 ==========
-Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:45
-[0] %Error: t_assert_ctl_assertion_type.v:110: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
--Info: t/t_assert_ctl_assertion_type.v:110: Verilog $stop, ignored due to +verilator+error+limit
-Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:45
-Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:45
-Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:45
-[0] %Error: t_assert_ctl_assertion_type.v:116: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
-Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:45
-Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:45
-Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:45
-Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:45
-Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:45
-Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:45
-Passed 'top.t.cover_simple_immediate_stmt_45' at t/t_assert_ctl_assertion_type.v:45
+Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:49
+[0] %Error: t_assert_ctl_assertion_type.v:135: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
+-Info: t/t_assert_ctl_assertion_type.v:135: Verilog $stop, ignored due to +verilator+error+limit
+Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:49
+Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:49
+Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:49
+[0] %Error: t_assert_ctl_assertion_type.v:141: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
+Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:49
+Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:49
+Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:49
+Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:49
+Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:49
+Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:49
+Passed 'top.t.cover_simple_immediate_stmt_49' at t/t_assert_ctl_assertion_type.v:49
 ==========
-Running all asserts at: t/t_assert_ctl_assertion_type.v:47
+Running all asserts at: t/t_assert_ctl_assertion_type.v:51
 ==========
-Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:47
-Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:47
-Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:47
-Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:47
-Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:47
-Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:47
+Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:51
+Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:51
+Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:51
+Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:51
+Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:51
+Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:51
 ==========
-Running all asserts at: t/t_assert_ctl_assertion_type.v:52
+Running all asserts at: t/t_assert_ctl_assertion_type.v:56
 ==========
-Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:52
-Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:52
-Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:52
-[0] %Error: t_assert_ctl_assertion_type.v:124: Assertion failed in top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate: 'assert' failed.
-Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:52
-Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:52
-Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:52
-[0] %Error: t_assert_ctl_assertion_type.v:130: Assertion failed in top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate: 'assert' failed.
-Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:52
-Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:52
-Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:52
-Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:52
-Passed 'top.t.cover_observed_deferred_immediate_stmt_52' at t/t_assert_ctl_assertion_type.v:52
+Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:56
+Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:56
+Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:56
+[0] %Error: t_assert_ctl_assertion_type.v:149: Assertion failed in top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:56
+Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:56
+Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:56
+[0] %Error: t_assert_ctl_assertion_type.v:155: Assertion failed in top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:56
+Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:56
+Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:56
+Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:56
+Passed 'top.t.cover_observed_deferred_immediate_stmt_56' at t/t_assert_ctl_assertion_type.v:56
 ==========
-Running all asserts at: t/t_assert_ctl_assertion_type.v:54
+Running all asserts at: t/t_assert_ctl_assertion_type.v:58
 ==========
-Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:54
-Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:54
-Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:54
-Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:54
-Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:54
-Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:54
+Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:58
+Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:58
+Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:58
+Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:58
+Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:58
+Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:58
 ==========
-Running all asserts at: t/t_assert_ctl_assertion_type.v:59
+Running all asserts at: t/t_assert_ctl_assertion_type.v:63
 ==========
-Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:59
-Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:59
-Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:59
-Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:59
-Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:59
-[0] %Error: t_assert_ctl_assertion_type.v:138: Assertion failed in top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate: 'assert' failed.
-Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:59
-Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:59
-Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:59
-[0] %Error: t_assert_ctl_assertion_type.v:144: Assertion failed in top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate: 'assert' failed.
-Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:59
-Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:59
-Passed 'top.t.cover_final_deferred_immediate_stmt_59' at t/t_assert_ctl_assertion_type.v:59
-==========
-Running all asserts at: t/t_assert_ctl_assertion_type.v:61
-==========
-Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:61
-Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:61
-Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:61
-Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:61
-Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:61
-Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:61
+Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:63
+Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:63
+Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:63
+Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:63
+Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:63
+[0] %Error: t_assert_ctl_assertion_type.v:163: Assertion failed in top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:63
+Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:63
+Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:63
+[0] %Error: t_assert_ctl_assertion_type.v:169: Assertion failed in top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:63
+Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:63
+Passed 'top.t.cover_final_deferred_immediate_stmt_63' at t/t_assert_ctl_assertion_type.v:63
 ==========
 Running all asserts at: t/t_assert_ctl_assertion_type.v:65
 ==========
@@ -84,36 +75,6 @@ Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:65
 Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:65
 Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:65
 ==========
-Running all asserts at: t/t_assert_ctl_assertion_type.v:67
-==========
-Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:67
-[0] %Error: t_assert_ctl_assertion_type.v:110: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
-Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:67
-Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:67
-Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:67
-[0] %Error: t_assert_ctl_assertion_type.v:116: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
-Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:67
-Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:67
-Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:67
-[0] %Error: t_assert_ctl_assertion_type.v:124: Assertion failed in top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate: 'assert' failed.
-Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:67
-Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:67
-Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:67
-[0] %Error: t_assert_ctl_assertion_type.v:130: Assertion failed in top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate: 'assert' failed.
-Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:67
-Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:67
-Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:67
-[0] %Error: t_assert_ctl_assertion_type.v:138: Assertion failed in top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate: 'assert' failed.
-Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:67
-Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:67
-Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:67
-[0] %Error: t_assert_ctl_assertion_type.v:144: Assertion failed in top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate: 'assert' failed.
-Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:67
-Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:67
-Passed 'top.t.cover_simple_immediate_stmt_67' at t/t_assert_ctl_assertion_type.v:67
-Passed 'top.t.cover_observed_deferred_immediate_stmt_67' at t/t_assert_ctl_assertion_type.v:67
-Passed 'top.t.cover_final_deferred_immediate_stmt_67' at t/t_assert_ctl_assertion_type.v:67
-==========
 Running all asserts at: t/t_assert_ctl_assertion_type.v:69
 ==========
 Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:69
@@ -123,108 +84,122 @@ Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:69
 Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:69
 Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:69
 ==========
-Running all asserts at: t/t_assert_ctl_assertion_type.v:72
+Running all asserts at: t/t_assert_ctl_assertion_type.v:71
 ==========
-Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:72
-[0] %Error: t_assert_ctl_assertion_type.v:110: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
-Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:72
-Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:72
-Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:72
-[0] %Error: t_assert_ctl_assertion_type.v:116: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
-Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:72
-Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:72
-Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:72
-[0] %Error: t_assert_ctl_assertion_type.v:124: Assertion failed in top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate: 'assert' failed.
-Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:72
-Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:72
-Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:72
-[0] %Error: t_assert_ctl_assertion_type.v:130: Assertion failed in top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate: 'assert' failed.
-Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:72
-Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:72
-Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:72
-Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:72
-Passed 'top.t.cover_simple_immediate_stmt_72' at t/t_assert_ctl_assertion_type.v:72
-Passed 'top.t.cover_observed_deferred_immediate_stmt_72' at t/t_assert_ctl_assertion_type.v:72
+Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:71
+[0] %Error: t_assert_ctl_assertion_type.v:135: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
+Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:71
+Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:71
+Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:71
+[0] %Error: t_assert_ctl_assertion_type.v:141: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
+Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:71
+Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:71
+Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:71
+[0] %Error: t_assert_ctl_assertion_type.v:149: Assertion failed in top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:71
+Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:71
+Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:71
+[0] %Error: t_assert_ctl_assertion_type.v:155: Assertion failed in top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:71
+Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:71
+Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:71
+[0] %Error: t_assert_ctl_assertion_type.v:163: Assertion failed in top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:71
+Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:71
+Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:71
+[0] %Error: t_assert_ctl_assertion_type.v:169: Assertion failed in top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:71
+Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:71
+Passed 'top.t.cover_simple_immediate_stmt_71' at t/t_assert_ctl_assertion_type.v:71
+Passed 'top.t.cover_observed_deferred_immediate_stmt_71' at t/t_assert_ctl_assertion_type.v:71
+Passed 'top.t.cover_final_deferred_immediate_stmt_71' at t/t_assert_ctl_assertion_type.v:71
 ==========
-Running all asserts at: t/t_assert_ctl_assertion_type.v:74
+Running all asserts at: t/t_assert_ctl_assertion_type.v:73
 ==========
-Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:74
-[0] %Error: t_assert_ctl_assertion_type.v:110: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
-Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:74
-Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:74
-Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:74
-[0] %Error: t_assert_ctl_assertion_type.v:116: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
-Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:74
-Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:74
-Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:74
-[0] %Error: t_assert_ctl_assertion_type.v:124: Assertion failed in top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate: 'assert' failed.
-Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:74
-Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:74
-Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:74
-[0] %Error: t_assert_ctl_assertion_type.v:130: Assertion failed in top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate: 'assert' failed.
-Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:74
-Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:74
-Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:74
-[0] %Error: t_assert_ctl_assertion_type.v:138: Assertion failed in top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate: 'assert' failed.
-Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:74
-Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:74
-Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:74
-[0] %Error: t_assert_ctl_assertion_type.v:144: Assertion failed in top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate: 'assert' failed.
-Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:74
-Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:74
-Passed 'top.t.cover_simple_immediate_stmt_74' at t/t_assert_ctl_assertion_type.v:74
-Passed 'top.t.cover_observed_deferred_immediate_stmt_74' at t/t_assert_ctl_assertion_type.v:74
-Passed 'top.t.cover_final_deferred_immediate_stmt_74' at t/t_assert_ctl_assertion_type.v:74
+Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:73
+Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:73
+Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:73
+Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:73
+Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:73
+Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:73
 ==========
 Running all asserts at: t/t_assert_ctl_assertion_type.v:76
 ==========
 Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:76
-[0] %Error: t_assert_ctl_assertion_type.v:110: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
+[0] %Error: t_assert_ctl_assertion_type.v:135: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
 Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:76
 Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:76
 Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:76
-[0] %Error: t_assert_ctl_assertion_type.v:116: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
+[0] %Error: t_assert_ctl_assertion_type.v:141: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
 Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:76
 Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:76
 Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:76
+[0] %Error: t_assert_ctl_assertion_type.v:149: Assertion failed in top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:76
+Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:76
 Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:76
+[0] %Error: t_assert_ctl_assertion_type.v:155: Assertion failed in top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:76
+Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:76
 Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:76
 Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:76
 Passed 'top.t.cover_simple_immediate_stmt_76' at t/t_assert_ctl_assertion_type.v:76
+Passed 'top.t.cover_observed_deferred_immediate_stmt_76' at t/t_assert_ctl_assertion_type.v:76
 ==========
 Running all asserts at: t/t_assert_ctl_assertion_type.v:78
 ==========
 Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:78
-[0] %Error: t_assert_ctl_assertion_type.v:110: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
+[0] %Error: t_assert_ctl_assertion_type.v:135: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
 Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:78
 Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:78
 Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:78
-[0] %Error: t_assert_ctl_assertion_type.v:116: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
+[0] %Error: t_assert_ctl_assertion_type.v:141: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
 Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:78
 Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:78
 Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:78
+[0] %Error: t_assert_ctl_assertion_type.v:149: Assertion failed in top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:78
+Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:78
 Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:78
+[0] %Error: t_assert_ctl_assertion_type.v:155: Assertion failed in top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:78
+Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:78
 Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:78
+[0] %Error: t_assert_ctl_assertion_type.v:163: Assertion failed in top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:78
+Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:78
 Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:78
+[0] %Error: t_assert_ctl_assertion_type.v:169: Assertion failed in top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:78
+Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:78
 Passed 'top.t.cover_simple_immediate_stmt_78' at t/t_assert_ctl_assertion_type.v:78
+Passed 'top.t.cover_observed_deferred_immediate_stmt_78' at t/t_assert_ctl_assertion_type.v:78
+Passed 'top.t.cover_final_deferred_immediate_stmt_78' at t/t_assert_ctl_assertion_type.v:78
 ==========
 Running all asserts at: t/t_assert_ctl_assertion_type.v:80
 ==========
 Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:80
+[0] %Error: t_assert_ctl_assertion_type.v:135: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
+Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:80
+Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:80
 Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:80
+[0] %Error: t_assert_ctl_assertion_type.v:141: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
+Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:80
+Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:80
 Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:80
 Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:80
 Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:80
 Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:80
+Passed 'top.t.cover_simple_immediate_stmt_80' at t/t_assert_ctl_assertion_type.v:80
 ==========
 Running all asserts at: t/t_assert_ctl_assertion_type.v:82
 ==========
 Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:82
-[0] %Error: t_assert_ctl_assertion_type.v:110: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
+[0] %Error: t_assert_ctl_assertion_type.v:135: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
 Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:82
 Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:82
 Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:82
-[0] %Error: t_assert_ctl_assertion_type.v:116: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
+[0] %Error: t_assert_ctl_assertion_type.v:141: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
 Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:82
 Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:82
 Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:82
@@ -245,32 +220,18 @@ Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:84
 Running all asserts at: t/t_assert_ctl_assertion_type.v:86
 ==========
 Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:86
-[0] %Error: t_assert_ctl_assertion_type.v:110: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
+[0] %Error: t_assert_ctl_assertion_type.v:135: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
 Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:86
 Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:86
 Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:86
-[0] %Error: t_assert_ctl_assertion_type.v:116: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
+[0] %Error: t_assert_ctl_assertion_type.v:141: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
 Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:86
 Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:86
 Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:86
-[0] %Error: t_assert_ctl_assertion_type.v:124: Assertion failed in top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate: 'assert' failed.
-Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:86
-Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:86
 Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:86
-[0] %Error: t_assert_ctl_assertion_type.v:130: Assertion failed in top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate: 'assert' failed.
-Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:86
-Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:86
 Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:86
-[0] %Error: t_assert_ctl_assertion_type.v:138: Assertion failed in top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate: 'assert' failed.
-Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:86
-Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:86
 Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:86
-[0] %Error: t_assert_ctl_assertion_type.v:144: Assertion failed in top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate: 'assert' failed.
-Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:86
-Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:86
 Passed 'top.t.cover_simple_immediate_stmt_86' at t/t_assert_ctl_assertion_type.v:86
-Passed 'top.t.cover_observed_deferred_immediate_stmt_86' at t/t_assert_ctl_assertion_type.v:86
-Passed 'top.t.cover_final_deferred_immediate_stmt_86' at t/t_assert_ctl_assertion_type.v:86
 ==========
 Running all asserts at: t/t_assert_ctl_assertion_type.v:88
 ==========
@@ -280,11 +241,175 @@ Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:88
 Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:88
 Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:88
 Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:88
+==========
+Running all asserts at: t/t_assert_ctl_assertion_type.v:90
+==========
+Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:90
+[0] %Error: t_assert_ctl_assertion_type.v:135: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
+Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:90
+Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:90
+Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:90
+[0] %Error: t_assert_ctl_assertion_type.v:141: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
+Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:90
+Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:90
+Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:90
+[0] %Error: t_assert_ctl_assertion_type.v:149: Assertion failed in top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:90
+Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:90
+Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:90
+[0] %Error: t_assert_ctl_assertion_type.v:155: Assertion failed in top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:90
+Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:90
+Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:90
+[0] %Error: t_assert_ctl_assertion_type.v:163: Assertion failed in top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:90
+Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:90
+Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:90
+[0] %Error: t_assert_ctl_assertion_type.v:169: Assertion failed in top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:90
+Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:90
+Passed 'top.t.cover_simple_immediate_stmt_90' at t/t_assert_ctl_assertion_type.v:90
+Passed 'top.t.cover_observed_deferred_immediate_stmt_90' at t/t_assert_ctl_assertion_type.v:90
+Passed 'top.t.cover_final_deferred_immediate_stmt_90' at t/t_assert_ctl_assertion_type.v:90
+==========
+Running all asserts at: t/t_assert_ctl_assertion_type.v:92
+==========
+Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:92
+Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:92
+Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:92
+Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:92
+Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:92
+Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:92
+==========
+Running all asserts at: t/t_assert_ctl_assertion_type.v:97
+==========
+Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:97
+[0] %Error: t_assert_ctl_assertion_type.v:135: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
+Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:97
+Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:97
+Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:97
+Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:97
+[0] %Error: t_assert_ctl_assertion_type.v:149: Assertion failed in top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:97
+Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:97
+Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:97
+Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:97
+[0] %Error: t_assert_ctl_assertion_type.v:163: Assertion failed in top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:97
+Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:97
+Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:97
+==========
+Running all asserts at: t/t_assert_ctl_assertion_type.v:100
+==========
+Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:100
+Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:100
+Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:100
+Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:100
+Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:100
+Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:100
+Passed 'top.t.cover_simple_immediate_stmt_100' at t/t_assert_ctl_assertion_type.v:100
+Passed 'top.t.cover_observed_deferred_immediate_stmt_100' at t/t_assert_ctl_assertion_type.v:100
+Passed 'top.t.cover_final_deferred_immediate_stmt_100' at t/t_assert_ctl_assertion_type.v:100
+==========
+Running all asserts at: t/t_assert_ctl_assertion_type.v:103
+==========
+Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:103
+Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:103
+[0] %Error: t_assert_ctl_assertion_type.v:141: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
+Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:103
+Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:103
+Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:103
+Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:103
+[0] %Error: t_assert_ctl_assertion_type.v:155: Assertion failed in top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:103
+Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:103
+Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:103
+Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:103
+[0] %Error: t_assert_ctl_assertion_type.v:169: Assertion failed in top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:103
+Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:103
+==========
+Running all asserts at: t/t_assert_ctl_assertion_type.v:106
+==========
+Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:106
+[0] %Error: t_assert_ctl_assertion_type.v:135: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
+Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:106
+Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:106
+Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:106
+Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:106
+[0] %Error: t_assert_ctl_assertion_type.v:149: Assertion failed in top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:106
+Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:106
+Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:106
+Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:106
+[0] %Error: t_assert_ctl_assertion_type.v:163: Assertion failed in top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:106
+Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:106
+Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:106
+Passed 'top.t.cover_simple_immediate_stmt_106' at t/t_assert_ctl_assertion_type.v:106
+Passed 'top.t.cover_observed_deferred_immediate_stmt_106' at t/t_assert_ctl_assertion_type.v:106
+Passed 'top.t.cover_final_deferred_immediate_stmt_106' at t/t_assert_ctl_assertion_type.v:106
+==========
+Running all asserts at: t/t_assert_ctl_assertion_type.v:108
+==========
+Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:108
+[0] %Error: t_assert_ctl_assertion_type.v:135: Assertion failed in top.$unit.run_simple_immediate.assert_simple_immediate: 'assert' failed.
+Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:108
+Failed 'top.$unit.run_simple_immediate.assert_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:108
+Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:108
+[0] %Error: t_assert_ctl_assertion_type.v:141: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
+Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:108
+Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:108
+Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:108
+[0] %Error: t_assert_ctl_assertion_type.v:149: Assertion failed in top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:108
+Failed 'top.$unit.run_observed_deferred_immediate.assert_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:108
+Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:108
+[0] %Error: t_assert_ctl_assertion_type.v:155: Assertion failed in top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:108
+Failed 'top.$unit.run_observed_deferred_immediate.assume_observed_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:108
+Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:108
+[0] %Error: t_assert_ctl_assertion_type.v:163: Assertion failed in top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:108
+Failed 'top.$unit.run_final_deferred_immediate.assert_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:108
+Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:108
+[0] %Error: t_assert_ctl_assertion_type.v:169: Assertion failed in top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:108
+Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:108
+Passed 'top.t.cover_simple_immediate_stmt_108' at t/t_assert_ctl_assertion_type.v:108
+Passed 'top.t.cover_observed_deferred_immediate_stmt_108' at t/t_assert_ctl_assertion_type.v:108
+Passed 'top.t.cover_final_deferred_immediate_stmt_108' at t/t_assert_ctl_assertion_type.v:108
+==========
+Running all asserts at: t/t_assert_ctl_assertion_type.v:110
+==========
+Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:110
+Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:110
+Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:110
+Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:110
+Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:110
+Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:110
+==========
+Running all asserts at: t/t_assert_ctl_assertion_type.v:112
+==========
+Testing assert_simple_immediate at t/t_assert_ctl_assertion_type.v:112
+Testing assume_simple_immediate at t/t_assert_ctl_assertion_type.v:112
+[0] %Error: t_assert_ctl_assertion_type.v:141: Assertion failed in top.$unit.run_simple_immediate.assume_simple_immediate: 'assert' failed.
+Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_else' at t/t_assert_ctl_assertion_type.v:112
+Failed 'top.$unit.run_simple_immediate.assume_simple_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:112
+Testing assert_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:112
+Testing assume_observed_deferred_immediate at t/t_assert_ctl_assertion_type.v:112
+Testing assert_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:112
+Testing assume_final_deferred_immediate at t/t_assert_ctl_assertion_type.v:112
+[0] %Error: t_assert_ctl_assertion_type.v:169: Assertion failed in top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate: 'assert' failed.
+Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_else' at t/t_assert_ctl_assertion_type.v:112
+Failed 'top.$unit.run_final_deferred_immediate.assume_final_deferred_immediate_stmt_else' at t/t_assert_ctl_assertion_type.v:112
+Passed 'top.t.cover_simple_immediate_stmt_112' at t/t_assert_ctl_assertion_type.v:112
+Passed 'top.t.cover_final_deferred_immediate_stmt_112' at t/t_assert_ctl_assertion_type.v:112
 Disabling concurrent asserts, time: 10
 Enabling concurrent asserts, time: 20
-[20] %Error: t_assert_ctl_assertion_type.v:155: Assertion failed in top.t.concurrent.assert_concurrent: 'assert' failed.
-Failed 'top.t.concurrent.assert_concurrent_else' at t/t_assert_ctl_assertion_type.v:156
-Failed 'top.t.concurrent.assert_concurrent_stmt_else' at t/t_assert_ctl_assertion_type.v:158
-[20] %Error: t_assert_ctl_assertion_type.v:160: Assertion failed in top.t.concurrent.assume_concurrent: 'assert' failed.
-Failed 'top.t.concurrent.assume_concurrent_else' at t/t_assert_ctl_assertion_type.v:161
-Failed 'top.t.concurrent.assume_concurrent_stmt_else' at t/t_assert_ctl_assertion_type.v:163
+[20] %Error: t_assert_ctl_assertion_type.v:180: Assertion failed in top.t.concurrent.assert_concurrent: 'assert' failed.
+Failed 'top.t.concurrent.assert_concurrent_else' at t/t_assert_ctl_assertion_type.v:181
+Failed 'top.t.concurrent.assert_concurrent_stmt_else' at t/t_assert_ctl_assertion_type.v:183
+[20] %Error: t_assert_ctl_assertion_type.v:185: Assertion failed in top.t.concurrent.assume_concurrent: 'assert' failed.
+Failed 'top.t.concurrent.assume_concurrent_else' at t/t_assert_ctl_assertion_type.v:186
+Failed 'top.t.concurrent.assume_concurrent_stmt_else' at t/t_assert_ctl_assertion_type.v:188

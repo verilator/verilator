@@ -6003,18 +6003,18 @@ immediate_assertion_statement<nodep>:   // ==IEEE: immediate_assertion_statement
 simple_immediate_assertion_statement<nodep>:    // ==IEEE: simple_immediate_assertion_statement
         //                      // action_block expanded here, for compatibility with AstAssert
                 assertOrAssume '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE
-                        { $$ = new AstAssert{$1, $3, $5, nullptr, VAssertType::SIMPLE_IMMEDIATE}; }
+                        { $$ = new AstAssert{$<fl>1, $3, $5, nullptr, VAssertType::SIMPLE_IMMEDIATE, $1}; }
         |       assertOrAssume '(' expr ')'           yELSE stmtBlock
-                        { $$ = new AstAssert{$1, $3, nullptr, $6, VAssertType::SIMPLE_IMMEDIATE}; }
+                        { $$ = new AstAssert{$<fl>1, $3, nullptr, $6, VAssertType::SIMPLE_IMMEDIATE, $1}; }
         |       assertOrAssume '(' expr ')' stmtBlock yELSE stmtBlock
-                        { $$ = new AstAssert{$1, $3, $5, $7, VAssertType::SIMPLE_IMMEDIATE}; }
+                        { $$ = new AstAssert{$<fl>1, $3, $5, $7, VAssertType::SIMPLE_IMMEDIATE, $1}; }
         //                      // IEEE: simple_immediate_cover_statement
         |       yCOVER '(' expr ')' stmt                { $$ = new AstCover{$1, $3, $5, VAssertType::SIMPLE_IMMEDIATE}; }
         ;
 
-assertOrAssume<fl>:
-                yASSERT                                 { $$ = $1; }
-        |       yASSUME                                 { $$ = $1; }
+assertOrAssume<assertdirectivetypeen>:
+                yASSERT                                 { $$ = VAssertDirectiveType::ASSERT; }
+        |       yASSUME                                 { $$ = VAssertDirectiveType::ASSUME; }
         ;
 
 final_zero<asserttypeen>:                     // IEEE: part of deferred_immediate_assertion_statement
@@ -6028,11 +6028,11 @@ final_zero<asserttypeen>:                     // IEEE: part of deferred_immediat
 deferred_immediate_assertion_statement<nodep>:  // ==IEEE: deferred_immediate_assertion_statement
         //                      // IEEE: deferred_immediate_assert_statement
                 assertOrAssume final_zero '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE
-                        { $$ = new AstAssert{$1, $4, $6, nullptr, $2}; }
+                        { $$ = new AstAssert{$<fl>1, $4, $6, nullptr, $2, $1}; }
         |       assertOrAssume final_zero '(' expr ')'           yELSE stmtBlock
-                        { $$ = new AstAssert{$1, $4, nullptr, $7, $2}; }
+                        { $$ = new AstAssert{$<fl>1, $4, nullptr, $7, $2, $1}; }
         |       assertOrAssume final_zero '(' expr ')' stmtBlock yELSE stmtBlock
-                        { $$ = new AstAssert{$1, $4, $6, $8, $2}; }
+                        { $$ = new AstAssert{$<fl>1, $4, $6, $8, $2, $1}; }
         //                      // IEEE: deferred_immediate_cover_statement
         |       yCOVER final_zero '(' expr ')' stmt     { $$ = new AstCover{$1, $4, $6, $2}; }
         ;
@@ -6050,11 +6050,11 @@ concurrent_assertion_statement<nodep>:  // ==IEEE: concurrent_assertion_statemen
         //                      // IEEE: assume_property_statement
         //                      // action_block expanded here
                 assertOrAssume yPROPERTY '(' property_spec ')' stmt %prec prLOWER_THAN_ELSE
-                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, $6, nullptr, VAssertType::CONCURRENT}; }
+                        { $$ = new AstAssert{$<fl>1, new AstSampled{$<fl>1, $4}, $6, nullptr, VAssertType::CONCURRENT, $1}; }
         |       assertOrAssume yPROPERTY '(' property_spec ')' stmt yELSE stmt
-                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, $6, $8, VAssertType::CONCURRENT}; }
+                        { $$ = new AstAssert{$<fl>1, new AstSampled{$<fl>1, $4}, $6, $8, VAssertType::CONCURRENT, $1}; }
         |       assertOrAssume yPROPERTY '(' property_spec ')' yELSE stmt
-                        { $$ = new AstAssert{$1, new AstSampled{$1, $4}, nullptr, $7, VAssertType::CONCURRENT}; }
+                        { $$ = new AstAssert{$<fl>1, new AstSampled{$<fl>1, $4}, nullptr, $7, VAssertType::CONCURRENT, $1}; }
         //                      // IEEE: cover_property_statement
         |       yCOVER yPROPERTY '(' property_spec ')' stmtBlock
                         { $$ = new AstCover{$1, $4, $6, VAssertType::CONCURRENT}; }

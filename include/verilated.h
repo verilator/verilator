@@ -66,6 +66,7 @@
 #include <atomic>
 #include <mutex>
 #include <thread>
+#include <bitset>
 
 // Allow user to specify their own include file
 #ifdef VL_VERILATED_INCLUDE
@@ -165,7 +166,15 @@ enum class VerilatedAssertType : uint8_t {
     ASSERT_TYPE_UNIQUE0 = (1 << 6),
     ASSERT_TYPE_PRIORITY = (1 << 7),
 };
+
+// IEEE 1800-2023 Table 20-7
+enum class VerilatedAssertDirectiveType : uint8_t {
+    DIRECTIVE_TYPE_ASSERT = (1 << 0),
+    DIRECTIVE_TYPE_COVER = (1 << 1),
+    DIRECTIVE_TYPE_ASSUME = (1 << 2),
+};
 using VerilatedAssertType_t = std::underlying_type<VerilatedAssertType>::type;
+using VerilatedAssertDirectiveType_t = std::underlying_type<VerilatedAssertDirectiveType>::type;
 
 //=============================================================================
 // Utility functions
@@ -361,6 +370,16 @@ public:
 class VerilatedContext VL_NOT_FINAL {
     friend class VerilatedContextImp;
 
+private:
+    // MEMBERS
+    // Numer of assertion directive type members. Then each of them will represented as 1-bit in a
+    // mask.
+    static constexpr size_t assertDirectiveTypeMaskWidth = 3;
+    // Specifies how many groups of directive type bit groups there are based on a number of
+    // assertion types.
+    static constexpr size_t assertOnWidth
+        = assertDirectiveTypeMaskWidth * std::numeric_limits<VerilatedAssertType_t>::digits;
+
 protected:
     // TYPES
     using traceBaseModelCb_t
@@ -374,8 +393,10 @@ protected:
         // No std::strings or pointers or will serialize badly!
         // Fast path
         uint64_t m_time = 0;  // Current $time (unscaled), 0=at zero, or legacy
-        std::atomic<VerilatedAssertType_t> m_assertOn{
-            std::numeric_limits<VerilatedAssertType_t>::max()};  // Enabled assertion types
+        std::bitset<assertOnWidth> m_assertOn{
+            std::numeric_limits<uint32_t>::max()};  // Enabled assertions,
+                                                    // for each VerilatedAssertType we store
+                                                    // 3-bits, one for each directive type.
         bool m_calcUnusedSigs = false;  // Waves file on, need all signals calculated
         bool m_fatalOnError = true;  // Fatal on $stop/non-fatal error
         bool m_fatalOnVpiError = true;  // Fatal on vpi error/unsupported
@@ -468,11 +489,14 @@ public:
     /// Enable all assertion types
     void assertOn(bool flag) VL_MT_SAFE;
     /// Get enabled status for given assertion types
-    bool assertOnGet(VerilatedAssertType_t flags) const VL_MT_SAFE;
+    bool assertOnGet(VerilatedAssertType_t type,
+                     VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE;
     /// Set enabled status for given assertion types
-    void assertOnSet(VerilatedAssertType_t flags) VL_MT_SAFE;
+    void assertOnSet(VerilatedAssertType_t types,
+                     VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
     /// Clear enabled status for given assertion types
-    void assertOnClear(VerilatedAssertType_t flags) VL_MT_SAFE;
+    void assertOnClear(VerilatedAssertType_t types,
+                       VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
     /// Return if calculating of unused signals (for traces)
     bool calcUnusedSigs() const VL_MT_SAFE { return m_s.m_calcUnusedSigs; }
     /// Enable calculation of unused signals (for traces)

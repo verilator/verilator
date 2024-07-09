@@ -2506,22 +2506,44 @@ VerilatedContext::Serialized::Serialized() {
 
 bool VerilatedContext::assertOn() const VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
-    return m_s.m_assertOn;
+    return m_s.m_assertOn.any();
 }
 void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
-    // set all assert types to 'on' when true, set all types to 'off' when false
-    m_s.m_assertOn = std::numeric_limits<VerilatedAssertType_t>::max()
-                     * static_cast<VerilatedAssertType_t>(flag);
+    if (flag) {
+        m_s.m_assertOn.set();
+    } else {
+        m_s.m_assertOn.reset();
+    }
 }
-bool VerilatedContext::assertOnGet(VerilatedAssertType_t flags) const VL_MT_SAFE {
-    return m_s.m_assertOn & flags;
+bool VerilatedContext::assertOnGet(VerilatedAssertType_t type,
+                                   VerilatedAssertDirectiveType_t directive) const {
+    const VerilatedLockGuard lock{m_mutex};
+    // Calculate assert type offset and compare it with directive mask.
+    if (type == 0) return false;
+    uint32_t index = 0;
+    while (type >>= 1) ++index;
+    const std::bitset<assertOnWidth> assertsOn
+        = m_s.m_assertOn
+          & std::bitset<assertOnWidth>(directive << (index * assertDirectiveTypeMaskWidth));
+    return assertsOn.any();
 }
-void VerilatedContext::assertOnSet(VerilatedAssertType_t flags) VL_MT_SAFE {
-    m_s.m_assertOn |= flags;
+void VerilatedContext::assertOnSet(VerilatedAssertType_t types,
+                                   VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
+        // If assert type need to be changed OR with shifted directive mask.
+        if ((types >> i) & 1) m_s.m_assertOn |= directives << (i * assertDirectiveTypeMaskWidth);
+    }
 }
-void VerilatedContext::assertOnClear(VerilatedAssertType_t flags) VL_MT_SAFE {
-    m_s.m_assertOn &= flags;
+void VerilatedContext::assertOnClear(VerilatedAssertType_t types,
+                                     VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
+        // If assert type need to be changed AND with inverted and shifted directive mask.
+        if ((types >> i) & 1)
+            m_s.m_assertOn &= ~(directives << (i * assertDirectiveTypeMaskWidth));
+    }
 }
 void VerilatedContext::calcUnusedSigs(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};

@@ -399,12 +399,16 @@ class AstNodeCoverOrAssert VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op4 := passsp: List[AstNode] // Statements when propp is passing/truthly
     string m_name;  // Name to report
     const VAssertType m_type;  // Assertion/cover type
+    const VAssertDirectiveType m_directive;  // Assertion directive type
+
 public:
     AstNodeCoverOrAssert(VNType t, FileLine* fl, AstNode* propp, AstNode* passsp,
-                         VAssertType::en type, const string& name = "")
+                         VAssertType::en type, VAssertDirectiveType::en directive,
+                         const string& name = "")
         : AstNodeStmt{t, fl}
         , m_name{name}
-        , m_type{type} {
+        , m_type{type}
+        , m_directive{directive} {
         this->propp(propp);
         this->addPasssp(passsp);
     }
@@ -415,6 +419,7 @@ public:
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     VAssertType type() const { return m_type; }
+    VAssertDirectiveType directive() const { return m_directive; }
     bool immediate() const {
         return this->type()
                    & (VAssertType::SIMPLE_IMMEDIATE | VAssertType::OBSERVED_DEFERRED_IMMEDIATE
@@ -2615,17 +2620,20 @@ public:
 class AstAssertCtl final : public AstNodeStmt {
     // @astgen op1 := controlTypep : AstNodeExpr
     // @astgen op2 := assertTypesp : Optional[AstNodeExpr]
-    // @astgen op3 := levelp : AstNodeExpr
-    // @astgen op4 := itemsp : List[AstNodeExpr]
+    // @astgen op3 := directiveTypesp : Optional[AstNodeExpr]
     // Type of assertcontrol task; either known from parser or from evaluated
     // controlTypep expression.
     VAssertCtlType m_ctlType;  // $assert keyword type (control_type)
     using VAssertType_t = std::underlying_type<VAssertType::en>::type;
-    VAssertType_t m_assertTypes;  // Type of assertions affected
+    VAssertType_t m_assertTypes;  // Types of assertions affected
+    using VAssertDirectiveType_t = std::underlying_type<VAssertDirectiveType::en>::type;
+    VAssertDirectiveType_t m_directiveTypes;  // Types of directives affected
 
 public:
+    // $assertoff, $asserton, $assertkill
     AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr* levelp = nullptr,
                  AstNodeExpr* itemsp = nullptr);
+    // $assertcontrol
     AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr* assertTypesp = nullptr,
                  AstNodeExpr* directiveTypep = nullptr, AstNodeExpr* levelp = nullptr,
                  AstNodeExpr* itemsp = nullptr);
@@ -2639,6 +2647,8 @@ public:
     void ctlType(int32_t type) { m_ctlType = VAssertCtlType{type}; }
     VAssertType_t ctlAssertTypes() const { return m_assertTypes; }
     void ctlAssertTypes(VAssertType_t types) { m_assertTypes = types; }
+    VAssertDirectiveType_t ctlDirectiveTypes() const { return m_directiveTypes; }
+    void ctlDirectiveTypes(VAssertDirectiveType_t types) { m_directiveTypes = types; }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
 };
@@ -3654,8 +3664,8 @@ class AstAssert final : public AstNodeCoverOrAssert {
 public:
     ASTGEN_MEMBERS_AstAssert;
     AstAssert(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp, VAssertType::en type,
-              const string& name = "")
-        : ASTGEN_SUPER_Assert(fl, propp, passsp, type, name) {
+              VAssertDirectiveType::en directive, const string& name = "")
+        : ASTGEN_SUPER_Assert(fl, propp, passsp, type, directive, name) {
         this->addFailsp(failsp);
     }
 };
@@ -3667,7 +3677,8 @@ public:
     AstAssertIntrinsic(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp,
                        const string& name = "")
         // Intrinsic asserts are always enabled thus 'type' field is set to INTERNAL.
-        : ASTGEN_SUPER_AssertIntrinsic(fl, propp, passsp, VAssertType::INTERNAL, name) {
+        : ASTGEN_SUPER_AssertIntrinsic(fl, propp, passsp, VAssertType::INTERNAL,
+                                       VAssertDirectiveType::INTRINSIC, name) {
         this->addFailsp(failsp);
     }
 };
@@ -3677,14 +3688,15 @@ public:
     ASTGEN_MEMBERS_AstCover;
     AstCover(FileLine* fl, AstNode* propp, AstNode* stmtsp, VAssertType::en type,
              const string& name = "")
-        : ASTGEN_SUPER_Cover(fl, propp, stmtsp, type, name) {}
+        : ASTGEN_SUPER_Cover(fl, propp, stmtsp, type, VAssertDirectiveType::COVER, name) {}
 };
 class AstRestrict final : public AstNodeCoverOrAssert {
 public:
     ASTGEN_MEMBERS_AstRestrict;
     AstRestrict(FileLine* fl, AstNode* propp)
         // Intrinsic asserts are always ignored thus 'type' field is set to INTERNAL.
-        : ASTGEN_SUPER_Restrict(fl, propp, nullptr, VAssertType::INTERNAL) {}
+        : ASTGEN_SUPER_Restrict(fl, propp, nullptr, VAssertType::INTERNAL,
+                                VAssertDirectiveType::RESTRICT) {}
 };
 
 // === AstNodeFor ===
