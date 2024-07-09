@@ -29,7 +29,7 @@ module t (/*AUTOARG*/
    let OFF = 4;
    let KILL = 5;
 
-   let CONCURRENT = 1; 
+   let CONCURRENT = 1;
    let SIMPLE_IMMEDIATE = 2;
    let OBSERVED_DEFERRED_IMMEDIATE = 4;
    let FINAL_DEFERRED_IMMEDIATE = 8;

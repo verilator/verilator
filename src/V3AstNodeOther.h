@@ -417,8 +417,7 @@ public:
     VAssertType type() const { return m_type; }
     bool immediate() const {
         return this->type()
-                   & (VAssertType::SIMPLE_IMMEDIATE
-                      | VAssertType::OBSERVED_DEFERRED_IMMEDIATE
+                   & (VAssertType::SIMPLE_IMMEDIATE | VAssertType::OBSERVED_DEFERRED_IMMEDIATE
                       | VAssertType::FINAL_DEFERRED_IMMEDIATE)
                || this->type() == VAssertType::INTERNAL;
     }
@@ -3634,8 +3633,8 @@ class AstAssert final : public AstNodeCoverOrAssert {
 
 public:
     ASTGEN_MEMBERS_AstAssert;
-    AstAssert(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp,
-              VAssertType::en type, const string& name = "")
+    AstAssert(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp, VAssertType::en type,
+              const string& name = "")
         : ASTGEN_SUPER_Assert(fl, propp, passsp, type, name) {
         this->addFailsp(failsp);
     }

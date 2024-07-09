@@ -144,11 +144,10 @@ class AssertVisitor final : public VNVisitor {
         AstNodeExpr* const condp
             = type == VAssertType::INTERNAL
                   ? static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitTrue{}})
-              : assertTypeOn(directiveType)
-                  ? static_cast<AstNodeExpr*>(new AstCExpr{
-                        fl, "vlSymsp->_vm_contextp__->getAssertOn("s + std::to_string(type) + ")"s,
-                        1})
-                  : static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitFalse{}});
+              : assertTypeOn(directiveType) ? static_cast<AstNodeExpr*>(new AstCExpr{
+                    fl, "vlSymsp->_vm_contextp__->getAssertOn("s + std::to_string(type) + ")"s, 1})
+                                            : static_cast<AstNodeExpr*>(
+                                                new AstConst{fl, AstConst::BitFalse{}});
         AstNodeIf* const newp = new AstIf{fl, condp, bodyp};
         newp->isBoundsCheck(true);  // To avoid LATCH warning
         newp->user1(true);  // Don't assert/cover this if

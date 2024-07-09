@@ -20,7 +20,7 @@ execute(
     expect_filename => $Self->{golden_filename},
     );
 
-files_identical($Self->{coverage_filename}, "t/t_assert_ctl_assertion_type.coverage.out");
+files_identical($Self->{coverage_filename}, "t/t_assert_ctl_assertion_type_coverage.out");
 
 ok(1);
 1;

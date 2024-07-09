@@ -1193,12 +1193,8 @@ public:
 constexpr bool operator==(const VAssertType& lhs, const VAssertType& rhs) {
     return lhs.m_e == rhs.m_e;
 }
-constexpr bool operator==(const VAssertType& lhs, VAssertType::en rhs) {
-    return lhs.m_e == rhs;
-}
-constexpr bool operator==(VAssertType::en lhs, const VAssertType& rhs) {
-    return lhs == rhs.m_e;
-}
+constexpr bool operator==(const VAssertType& lhs, VAssertType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VAssertType::en lhs, const VAssertType& rhs) { return lhs == rhs.m_e; }
 
 // ######################################################################
 
