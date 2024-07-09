@@ -169,7 +169,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstNodeStmt* m_taskbodyp;  // body of a method to add write_var calls to
     AstVar* const m_genp;  // VlRandomizer variable of the class
     AstClass* const m_classp;  // Pointer to randomized class
-    bool m_markDeclaredConstrs; // Mark constraints as aready setup with `write_var`.
+    bool m_markDeclaredConstrs;  // Mark constraints as aready setup with `write_var`.
 
     bool editFormat(AstNodeExpr* nodep) {
         if (nodep->user1()) return false;
@@ -237,14 +237,15 @@ class ConstraintExprVisitor final : public VNVisitor {
             auto genRefp = new AstVarRef{varp->fileline(), m_genp, VAccess::READWRITE};
             genRefp->classOrPackagep(m_classp);
             genRefp->varScopep(VN_AS(m_genp->user3p(), VarScope));
-            AstCMethodHard* const methodp = new AstCMethodHard{varp->fileline(), genRefp, "write_var"};
+            AstCMethodHard* const methodp
+                = new AstCMethodHard{varp->fileline(), genRefp, "write_var"};
             methodp->dtypeSetVoid();
             auto varRefp = new AstVarRef{varp->fileline(), varp, VAccess::WRITE};
             varRefp->classOrPackagep(classp);
             varRefp->varScopep(varScopep);
             methodp->addPinsp(varRefp);
             methodp->addPinsp(new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{},
-                                        (size_t)varp->width()});
+                                           (size_t)varp->width()});
             AstNodeExpr* const varnamep
                 = new AstCExpr{varp->fileline(), "\"" + smtName + "\"", varp->width()};
             varnamep->dtypep(varp->dtypep());
@@ -393,7 +394,6 @@ class RandomizeVisitor final : public VNVisitor {
     const VNUser2InUse m_inuser2;
     const VNUser3InUse m_inuser3;
     const VNUser4InUse m_inuser4;
-
 
     // STATE
     V3UniqueNames m_inlineUniqueNames;  // For generating unique function names
@@ -569,8 +569,7 @@ class RandomizeVisitor final : public VNVisitor {
         }
         return taskp;
     }
-    AstNodeStmt* implementConstraintsClear(FileLine* fileline, AstVar* genp,
-                                           AstClass* classp) {
+    AstNodeStmt* implementConstraintsClear(FileLine* fileline, AstVar* genp, AstClass* classp) {
         auto genRefp = new AstVarRef{fileline, genp, VAccess::READWRITE};
         genRefp->classOrPackagep(classp);
         if (m_postScope) genRefp->varScopep(VN_AS(genp->user3p(), VarScope));
@@ -578,8 +577,8 @@ class RandomizeVisitor final : public VNVisitor {
         clearp->dtypeSetVoid();
         return clearp->makeStmt();
     }
-    std::pair<AstNodeStmt*, AstNodeStmt*> implementConstraintBlockSetup(
-        AstNode* expressionsp, AstVar* genp, AstClass* classp) {
+    std::pair<AstNodeStmt*, AstNodeStmt*>
+    implementConstraintBlockSetup(AstNode* expressionsp, AstVar* genp, AstClass* classp) {
         AstNodeStmt* declStmtsp = nullptr;
         AstNodeStmt* hardStmtsp = nullptr;
 
@@ -604,7 +603,8 @@ class RandomizeVisitor final : public VNVisitor {
             AstCMethodHard* const methodp = new AstCMethodHard{condsp->fileline(), genRefp, "hard",
                                                                condsp->exprp()->unlinkFrBack()};
             methodp->dtypeSetVoid();
-            hardStmtsp = AstNode::addNext(hardStmtsp, new AstStmtExpr{condsp->fileline(), methodp});
+            hardStmtsp
+                = AstNode::addNext(hardStmtsp, new AstStmtExpr{condsp->fileline(), methodp});
             if (condsp->backp()) condsp->unlinkFrBack();
             pushDeletep(condsp);
             expressionsp = nextp;
@@ -682,7 +682,7 @@ class RandomizeVisitor final : public VNVisitor {
         std::function<void(std::function<void(AstVar*, AstVarScope*)>)> foreachMember;
         if (m_postScope)
             foreachMember = [&](std::function<void(AstVar*, AstVarScope*)> action) {
-                for (AstNode* varscopep = m_scopep->varsp(); varscopep;\
+                for (AstNode* varscopep = m_scopep->varsp(); varscopep;
                      varscopep = varscopep->nextp()) {
                     AstVar* const memberVarp = VN_AS(varscopep, VarScope)->varp();
                     if (!memberVarp) continue;
@@ -743,8 +743,8 @@ class RandomizeVisitor final : public VNVisitor {
 
         AstNodeFTask* const newp = VN_AS(m_memberMap.findMember(m_modp, "new"), NodeFTask);
         UASSERT_OBJ(newp, m_modp, "No new() in class");
-        AstFunc* const randomizep =
-            V3Randomize::newRandomizeFunc(VN_AS(m_modp, Class), m_postScope);
+        AstFunc* const randomizep
+            = V3Randomize::newRandomizeFunc(VN_AS(m_modp, Class), m_postScope);
         AstTask* const taskp = newSetupConstraintTask(VN_AS(m_modp, Class), nodep->name());
         nodep->user2p(taskp);
         AstTaskRef* const setupTaskRefp
@@ -773,9 +773,9 @@ class RandomizeVisitor final : public VNVisitor {
         }
         randomizep->addStmtsp(setupTaskRefp->makeStmt());
 
-        AstNodeStmt* declStmtsp, * hardStmtsp;
-        std::tie(declStmtsp, hardStmtsp) =
-            implementConstraintBlockSetup(nodep->itemsp(), genp, VN_AS(m_modp, Class));
+        AstNodeStmt *declStmtsp, *hardStmtsp;
+        std::tie(declStmtsp, hardStmtsp)
+            = implementConstraintBlockSetup(nodep->itemsp(), genp, VN_AS(m_modp, Class));
         (m_inline ? taskp : newp)->addStmtsp(declStmtsp);
         taskp->addStmtsp(hardStmtsp);
     }
@@ -816,9 +816,7 @@ class RandomizeVisitor final : public VNVisitor {
             if (m_postScope) randVarRefp->varScopep(randVarScopep);
             AstNodeIf* const newifp
                 = new AstIf{itemp->fileline(),
-                            new AstLte{condp->fileline(),
-                                       randVarRefp,
-                                       sump->cloneTreePure(true)},
+                            new AstLte{condp->fileline(), randVarRefp, sump->cloneTreePure(true)},
                             stmtsp, nullptr};
             ifsp->addElsesp(newifp);
             ifsp = newifp;
@@ -877,8 +875,8 @@ class RandomizeVisitor final : public VNVisitor {
                                     classp->findBasicDType(VBasicDTypeKwd::RANDOM_GENERATOR)};
         localGenp->funcLocal(true);
         auto scopep = m_postScope ? VN_AS(classGenp->user3p(), VarScope)->scopep() : nullptr;
-        auto localGenScopep =
-            m_postScope ? new AstVarScope{nodep->fileline(), scopep, localGenp} : nullptr;
+        auto localGenScopep
+            = m_postScope ? new AstVarScope{nodep->fileline(), scopep, localGenp} : nullptr;
         if (m_postScope) {
             localGenp->user3p(localGenScopep);
             scopep->addVarsp(localGenScopep);
@@ -925,9 +923,9 @@ class RandomizeVisitor final : public VNVisitor {
         }
 
         // Generate constraint setup code and a hardcoded call to the solver
-        AstNodeStmt* declStmtsp, * hardStmtsp;
-        std::tie(declStmtsp, hardStmtsp) =
-            implementConstraintBlockSetup(captured.getTree(), localGenp, classp);
+        AstNodeStmt *declStmtsp, *hardStmtsp;
+        std::tie(declStmtsp, hardStmtsp)
+            = implementConstraintBlockSetup(captured.getTree(), localGenp, classp);
         randomizeFuncp->addStmtsp(declStmtsp);
         randomizeFuncp->addStmtsp(hardStmtsp);
 
@@ -975,7 +973,7 @@ void V3Randomize::randomizeNetlist(AstNetlist* nodep, bool postScope) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
         const RandomizeMarkVisitor markVisitor{nodep};
-    RandomizeVisitor randomizeVisitor{nodep, postScope};
+        RandomizeVisitor randomizeVisitor{nodep, postScope};
     }
     V3Global::dumpCheckGlobalTree("randomize", 0, dumpTreeEitherLevel() >= 3);
 }

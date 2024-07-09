@@ -337,9 +337,7 @@ static void process() {
 
         // Add randomize() class methods if they are used by the design
         if (v3Global.useRandomizeMethods())
-            V3Randomize::randomizeNetlist(v3Global.rootp(),
-            doScope
-        );
+            V3Randomize::randomizeNetlist(v3Global.rootp(), doScope);
 
         // --SCOPE BASED OPTIMIZATIONS--------------
 
