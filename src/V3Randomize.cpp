@@ -631,7 +631,7 @@ class RandomizeVisitor final : public VNVisitor {
                 if (!iterVarp) continue;
 
                 for (AstNode* scopeNodep = m_scopep->varsp(); scopeNodep;
-                    scopeNodep = scopeNodep->nextp()) {
+                     scopeNodep = scopeNodep->nextp()) {
                     AstVarScope* varScopep = VN_CAST(scopeNodep, VarScope);
                     if (varScopep && (varScopep->varp() == iterVarp)) {
                         pushDeletep(varScopep->unlinkFrBack());
