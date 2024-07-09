@@ -1177,15 +1177,15 @@ public:
     explicit VAssertType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     const char* ascii() const {
-        static const char* const names[] = {"[INTERNAL]",
-                                            "[CONCURRENT]",
-                                            "[SIMPLE_IMMEDIATE]",
-                                            "[OBSERVED_DEFERRED_IMMEDIATE]",
-                                            "[FINAL_DEFERRED_IMMEDIATE]",
-                                            "[EXPECT]",
-                                            "[UNIQUE]",
-                                            "[UNIQUE0]",
-                                            "[PRIORITY]"};
+        static const char* const names[] = {"INTERNAL",
+                                            "CONCURRENT",
+                                            "SIMPLE_IMMEDIATE",
+                                            "OBSERVED_DEFERRED_IMMEDIATE",
+                                            "FINAL_DEFERRED_IMMEDIATE",
+                                            "EXPECT",
+                                            "UNIQUE",
+                                            "UNIQUE0",
+                                            "PRIORITY"};
         return names[m_e];
     }
     constexpr operator en() const { return m_e; }

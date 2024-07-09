@@ -1641,10 +1641,10 @@ string AstClassRefDType::prettyDTypeName(bool) const { return "class{}"s + prett
 string AstClassRefDType::name() const { return classp() ? classp()->name() : "<unlinked>"; }
 void AstNodeCoverOrAssert::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
-    str << this->type();
+    str << " ["s + this->type().ascii() + "]";
 }
 void AstNodeCoverOrAssert::dumpJson(std::ostream& str) const {
-    dumpJsonStr(str, "type", this->type().ascii());
+    dumpJsonStr(str, "type", "["s + this->type().ascii() + "]");
     dumpJsonGen(str);
 }
 void AstClocking::dump(std::ostream& str) const {
