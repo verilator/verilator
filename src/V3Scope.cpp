@@ -277,8 +277,7 @@ class ScopeVisitor final : public VNVisitor {
                 nodep->attrClocker(VVarAttrClocker::CLOCKER_NO);
             }
             UASSERT_OBJ(m_scopep, nodep, "No scope for var");
-            auto res = m_varScopes.emplace(std::make_pair(nodep, m_scopep), varscp);
-            UASSERT_OBJ(res.second, nodep, "Failed to insert node into a set");
+            m_varScopes.emplace(std::make_pair(nodep, m_scopep), varscp);
             m_scopep->addVarsp(varscp);
         }
         iterateChildren(nodep);
@@ -291,8 +290,7 @@ class ScopeVisitor final : public VNVisitor {
         // the var's referenced package etc might not be created yet.
         // So push to a list and post-correct.
         // No check here for nodep->classOrPackagep(), will check when walk list.
-        auto r = m_varRefScopes.emplace(nodep, m_scopep);
-        UASSERT_OBJ(r.second, nodep, "Failed to assoc var node with scope ");
+        m_varRefScopes.emplace(nodep, m_scopep);
     }
     void visit(AstScopeName* nodep) override {
         // If there's a %m in the display text, we add a special node that will contain the name()
