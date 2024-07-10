@@ -31,6 +31,8 @@ class Packet;
       }
       if (header == 5 || header == 6) {
          iff_5_6 == '1;
+         iff_5_6 == '1;
+         iff_5_6 == '1;
       } else {
          iff_5_6 == '0;
       }

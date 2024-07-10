@@ -3,14 +3,6 @@
       |                         ^~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
-%Warning-CONSTRAINTIGN: t/t_randomize.v:26:7: Constraint expression ignored (unsupported)
-                                            : ... note: In instance 't'
-   26 |       if (header > 4) {
-      |       ^~
-%Warning-CONSTRAINTIGN: t/t_randomize.v:29:7: Constraint expression ignored (unsupported)
-                                            : ... note: In instance 't'
-   29 |       if (header == 5 || header == 6) {
-      |       ^~
 %Warning-CONSTRAINTIGN: t/t_randomize.v:37:7: Constraint expression ignored (unsupported)
                                             : ... note: In instance 't'
    37 |       foreach (array[i]) {
