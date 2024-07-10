@@ -281,7 +281,6 @@ class ConstraintExprVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstNodeVarRef* nodep) override {
         if (editFormat(nodep)) return;
-        auto classp = nodep->classOrPackagep();
         // In SMT just variable name, but we also ensure write_var for the variable
         const std::string smtName = nodep->name();  // Can be anything unique
         nodep->replaceWith(new AstSFormatF{nodep->fileline(), smtName, false, nullptr});
@@ -293,12 +292,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (!varp->user4()) {
             varp->user4(m_markDeclaredConstrs);
             auto genRefp = new AstVarRef{varp->fileline(), m_genp, VAccess::READWRITE};
-            genRefp->classOrPackagep(m_classp);
             AstCMethodHard* const methodp
                 = new AstCMethodHard{varp->fileline(), genRefp, "write_var"};
             methodp->dtypeSetVoid();
             auto varRefp = new AstVarRef{varp->fileline(), varp, VAccess::WRITE};
-            varRefp->classOrPackagep(classp);
             methodp->addPinsp(varRefp);
             methodp->addPinsp(new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{},
                                            (size_t)varp->width()});
@@ -659,9 +656,8 @@ class RandomizeVisitor final : public VNVisitor {
         nodep->addMembersp(taskp);
         return taskp;
     }
-    AstNodeStmt* implementConstraintsClear(FileLine* fileline, AstVar* genp, AstClass* classp) {
+    AstNodeStmt* implementConstraintsClear(FileLine* fileline, AstVar* genp) {
         auto genRefp = new AstVarRef{fileline, genp, VAccess::READWRITE};
-        genRefp->classOrPackagep(classp);
         AstCMethodHard* const clearp = new AstCMethodHard{fileline, genRefp, "clear"};
         clearp->dtypeSetVoid();
         return clearp->makeStmt();
@@ -711,7 +707,6 @@ class RandomizeVisitor final : public VNVisitor {
         if (m_modp->user4p()) {
             auto genRefp = new AstVarRef{nodep->fileline(), VN_AS(m_modp->user4p(), Var),
                                          VAccess::READWRITE};
-            genRefp->classOrPackagep(m_modp);
             AstNode* const argsp = genRefp;
             argsp->addNext(new AstText{fl, ".next(__Vm_rng)"});
             AstNodeExpr* const solverCallp = new AstCExpr{fl, argsp};
@@ -785,8 +780,7 @@ class RandomizeVisitor final : public VNVisitor {
         }
 
         if (!randomizep->stmtsp()) {
-            randomizep->addStmtsp(
-                implementConstraintsClear(randomizep->fileline(), genp, VN_AS(m_modp, Class)));
+            randomizep->addStmtsp(implementConstraintsClear(randomizep->fileline(), genp));
         }
         randomizep->addStmtsp(setupTaskRefp->makeStmt());
         {
@@ -902,7 +896,7 @@ class RandomizeVisitor final : public VNVisitor {
 
         // Add constraints clearing code
         randomizeFuncp->addStmtsp(
-            implementConstraintsClear(randomizeFuncp->fileline(), classGenp, classp));
+            implementConstraintsClear(randomizeFuncp->fileline(), classGenp));
 
         randomizeFuncp->addStmtsp(localGenp);
 
@@ -917,9 +911,7 @@ class RandomizeVisitor final : public VNVisitor {
             });
 
             auto classGenRefp = new AstVarRef{nodep->fileline(), classGenp, VAccess::READ};
-            classGenRefp->classOrPackagep(classp);
             auto localGenRefp = new AstVarRef{nodep->fileline(), localGenp, VAccess::WRITE};
-            localGenRefp->classOrPackagep(classp);
             randomizeFuncp->addStmtsp(
                 new AstAssign{nodep->fileline(), localGenRefp, classGenRefp});
         }
