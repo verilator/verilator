@@ -58,6 +58,9 @@ class RandomizeMarkVisitor final : public VNVisitorConst {
     BaseToDerivedMap m_baseToDerivedMap;  // Mapping from base classes to classes that extend them
     AstClass* m_classp = nullptr;  // Current class
     AstConstraintExpr* m_constraintExprp = nullptr;  // Current constraint expression
+    AstNodeModule* m_modp; // Current module
+    std::map<AstVar*, AstNodeModule*> m_moduleMap; // Variable -> module under which it is
+    std::set<AstNodeVarRef*> m_staticRefs; // References to static variables under `with` clauses
 
     // METHODS
     void markMembers(const AstClass* nodep) {
@@ -96,6 +99,12 @@ class RandomizeMarkVisitor final : public VNVisitorConst {
             if (p.first->user1()) markDerived(p.first);
         }
     }
+    void setPackageRefs() {
+        for (AstNodeVarRef* staticRefp : m_staticRefs) {
+            UINFO(1, "Updated classOrPackage ref for " << staticRefp->name() << endl);
+            staticRefp->classOrPackagep(m_moduleMap[staticRefp->varp()]);
+        }
+    }
 
     // VISITORS
     void visit(AstClass* nodep) override {
@@ -109,7 +118,7 @@ class RandomizeMarkVisitor final : public VNVisitorConst {
         }
     }
     void visit(AstMethodCall* nodep) override {
-        iterateChildrenConst(nodep);
+            iterateChildrenConst(nodep);
         if (nodep->name() != "randomize") return;
         if (const AstClassRefDType* const classRefp
             = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), ClassRefDType)) {
@@ -130,10 +139,23 @@ class RandomizeMarkVisitor final : public VNVisitorConst {
     }
     void visit(AstNodeVarRef* nodep) override {
         if (!m_constraintExprp) return;
+
+        if (nodep->varp()->lifetime().isStatic())
+            m_staticRefs.emplace(nodep);
+
         if (!nodep->varp()->isRand()) return;
         for (AstNode* backp = nodep; backp != m_constraintExprp && !backp->user1();
              backp = backp->backp())
             backp->user1(true);
+    }
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_modp);
+        m_modp = nodep;
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstVar* nodep) override {
+        m_moduleMap.emplace(nodep, m_modp);
+        iterateChildrenConst(nodep);
     }
 
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
@@ -143,6 +165,7 @@ public:
     explicit RandomizeMarkVisitor(AstNode* nodep) {
         iterateConst(nodep);
         markAllDerived();
+        setPackageRefs();
     }
     ~RandomizeMarkVisitor() override = default;
 };
@@ -314,13 +337,16 @@ class CaptureFrame final {
     AstArg* m_argsp;  // Original references turned into arguments
     AstScope*
         m_localScopep;  // Scope of local variables local to the context of capture destination
+    AstNodeModule* m_myModulep; // Module for which static references will stay uncaptured.
     // Map original var nodes to their clones and respective scopes
     std::map<const AstVar*, std::pair<AstVar*, AstVarScope*>> m_varCloneMap;
 
     // We assume there's 1:1 mapping between variables and their scopes, as variables bound to
-    // multiple scopes happen when theiy are wthin modules with many instances which happen to
-    // not be inlined.
-    AstVar* captureVariable(FileLine* fileline, AstVarRef* varrefp, AstVarScope** varScopep) {
+    // multiple scopes happen when they are wthin modules with many instances which happen to
+    // not be inlined. At this point, however, we can just reference them directly instead of
+    // capturing them.
+    bool captureVariable(FileLine* fileline, AstNodeVarRef* varrefp, AstVar** varp,
+                         AstVarScope** varScopep) {
         auto it = m_varCloneMap.find(varrefp->varp());
         if (it == m_varCloneMap.end()) {
             auto newVarp = varrefp->varp()->cloneTree(false);
@@ -328,6 +354,7 @@ class CaptureFrame final {
             newVarp->varType(VVarType::BLOCKTEMP);
             newVarp->funcLocal(true);
             newVarp->direction(VDirection::INPUT);
+            newVarp->lifetime(VLifetime::AUTOMATIC);
             if (m_localScopep) {
                 *varScopep = new AstVarScope{fileline, m_localScopep, newVarp};
                 m_localScopep->addVarsp(*varScopep);
@@ -336,31 +363,54 @@ class CaptureFrame final {
             }
 
             m_varCloneMap.emplace(varrefp->varp(), std::make_pair(newVarp, *varScopep));
-            return newVarp;
+            *varp = newVarp;
+            return true;
         }
         *varScopep = it->second.second;
-        return it->second.first;
+        *varp = it->second.first;
+        return false;
     }
 
 public:
-    explicit CaptureFrame(TreeNodeType* nodep, AstScope* localScope, bool clone = true,
+    explicit CaptureFrame(TreeNodeType* nodep, AstScope* localScopep, AstNodeModule* myModulep,
+                          bool clone = true,
                           VNRelinker* linkerp = nullptr)
         : m_treep(clone ? nodep->cloneTree(true) : nodep->unlinkFrBackWithNext(linkerp))
         , m_argsp(nullptr)
-        , m_localScopep(localScope) {
-        m_treep->foreachAndNext([&](AstVarRef* varrefp) {
+        , m_localScopep(localScopep)
+        , m_myModulep(myModulep) {
+        UINFO(1, "My module set to " << m_myModulep << endl);
+        m_treep->foreachAndNext([&](AstNodeVarRef* varrefp) {
             UASSERT_OBJ(varrefp->varp(), varrefp, "Variable unlinked");
-            if (!varrefp->varp()->isFuncLocal()) return;
+            if (!varrefp->varp()->isFuncLocal() && !VN_IS(varrefp, VarXRef)
+                && (varrefp->classOrPackagep() == m_myModulep))
+                return;
             if (m_localScopep) {
                 auto scopep = varrefp->varScopep()->scopep();
                 UASSERT_OBJ(scopep, varrefp, "VarRef does not have the scope bound to it");
                 if (scopep == m_localScopep) return;
             }
             AstVarScope* newVarScopep;
-            AstVar* newVarp = captureVariable(varrefp->fileline(), varrefp, &newVarScopep);
+            AstVar* newVarp;
+            bool newCapture =
+                captureVariable(varrefp->fileline(), varrefp, &newVarp, &newVarScopep);
             if (m_localScopep) UASSERT_OBJ(newVarScopep, newVarp, "Scope not bound to a variable");
-            auto newVarRefp = varrefp->cloneTree(false);
+            if (!varrefp->varp()->lifetime().isStatic()
+                || varrefp->classOrPackagep()) {
+                // Keeping classOrPackagep will cause a broken link after inlining
+                varrefp->classOrPackagep(nullptr); // AstScope will figure this out
+            }
+            AstNodeVarRef* newVarRefp = newCapture ? varrefp->cloneTree(false) : nullptr;
             varrefp->varp(newVarp);
+            if (!newCapture) return;
+            if (VN_IS(varrefp, VarXRef)) {
+                AstVarRef* notXVarRefp =
+                    new AstVarRef{varrefp->fileline(), newVarp, VAccess::READ};
+                notXVarRefp->classOrPackagep(varrefp->classOrPackagep());
+                varrefp->replaceWith(notXVarRefp);
+                varrefp->deleteTree();
+                varrefp = notXVarRefp;
+            }
             if (m_localScopep) varrefp->varScopep(newVarScopep);
             m_argsp = AstNode::addNext(m_argsp, new AstArg{varrefp->fileline(), "", newVarRefp});
         });
@@ -918,13 +968,13 @@ class RandomizeVisitor final : public VNVisitor {
             = V3Randomize::newRandomizeFunc(classp, m_postScope, m_inlineUniqueNames.get(nodep));
 
         // Detach the expression and prepare variable copies
-        CaptureFrame<AstNode> captured{withp->exprp(), scopep, false};
+        CaptureFrame<AstNode> captured{withp->exprp(), scopep, classp, false};
         UASSERT_OBJ(VN_IS(captured.getTree(), ConstraintExpr), captured.getTree(),
                     "Wrong expr type");
 
         // Add function arguments
         for (AstArg* arg = captured.getArgs(); arg != nullptr; arg = VN_AS(arg->nextp(), Arg)) {
-            auto varrefp = VN_AS(arg->exprp(), VarRef);
+            auto varrefp = VN_AS(arg->exprp(), NodeVarRef);
             randomizeFuncp->addStmtsp(captured.getVar(varrefp->varp()).first);
         }
 

@@ -114,46 +114,25 @@
           <stmtexpr loc="d,22,18,22,20">
             <cmethodhard loc="d,22,18,22,20" name="hard" dtype_id="7">
               <varref loc="d,22,18,22,20" name="constraint" dtype_id="8"/>
-              <sformatf loc="d,22,18,22,20" name="(and %@ %@)" dtype_id="2">
-                <sformatf loc="d,22,14,22,15" name="(bvsgt %@ %@)" dtype_id="2">
-                  <sformatf loc="d,22,7,22,13" name="header" dtype_id="2"/>
-                  <sformatf loc="d,22,16,22,17" name="#x%x" dtype_id="2">
-                    <const loc="d,22,16,22,17" name="32&apos;sh0" dtype_id="11"/>
-                  </sformatf>
-                </sformatf>
-                <sformatf loc="d,22,28,22,30" name="(bvsle %@ %@)" dtype_id="2">
-                  <sformatf loc="d,22,21,22,27" name="header" dtype_id="2"/>
-                  <sformatf loc="d,22,31,22,32" name="#x%x" dtype_id="2">
-                    <const loc="d,22,31,22,32" name="32&apos;sh7" dtype_id="11"/>
-                  </sformatf>
-                </sformatf>
-              </sformatf>
+              <const loc="d,22,18,22,20" name="&quot;(and (bvsgt header #x00000000) (bvsle header #x00000007))&quot;" dtype_id="2"/>
             </cmethodhard>
           </stmtexpr>
           <stmtexpr loc="d,23,14,23,16">
             <cmethodhard loc="d,23,14,23,16" name="hard" dtype_id="7">
               <varref loc="d,23,14,23,16" name="constraint" dtype_id="8"/>
-              <sformatf loc="d,23,14,23,16" name="(bvsle %@ %@)" dtype_id="2">
-                <sformatf loc="d,23,7,23,13" name="length" dtype_id="2"/>
-                <sformatf loc="d,23,17,23,19" name="#x%x" dtype_id="2">
-                  <const loc="d,23,17,23,19" name="32&apos;shf" dtype_id="11"/>
-                </sformatf>
-              </sformatf>
+              <const loc="d,23,14,23,16" name="&quot;(bvsle length #x0000000f)&quot;" dtype_id="2"/>
             </cmethodhard>
           </stmtexpr>
           <stmtexpr loc="d,24,14,24,16">
             <cmethodhard loc="d,24,14,24,16" name="hard" dtype_id="7">
               <varref loc="d,24,14,24,16" name="constraint" dtype_id="8"/>
-              <sformatf loc="d,24,14,24,16" name="(bvsge %@ %@)" dtype_id="2">
-                <sformatf loc="d,24,7,24,13" name="length" dtype_id="2"/>
-                <sformatf loc="d,24,17,24,23" name="header" dtype_id="2"/>
-              </sformatf>
+              <const loc="d,24,14,24,16" name="&quot;(bvsge length header)&quot;" dtype_id="2"/>
             </cmethodhard>
           </stmtexpr>
           <stmtexpr loc="d,25,7,25,13">
             <cmethodhard loc="d,25,7,25,13" name="hard" dtype_id="7">
               <varref loc="d,25,7,25,13" name="constraint" dtype_id="8"/>
-              <sformatf loc="d,25,7,25,13" name="length" dtype_id="2"/>
+              <const loc="d,25,7,25,13" name="&quot;length&quot;" dtype_id="2"/>
             </cmethodhard>
           </stmtexpr>
         </task>
@@ -164,22 +143,19 @@
           <stmtexpr loc="d,49,7,49,11">
             <cmethodhard loc="d,49,7,49,11" name="hard" dtype_id="7">
               <varref loc="d,49,7,49,11" name="constraint" dtype_id="8"/>
-              <sformatf loc="d,49,12,49,21" name="sublength" dtype_id="2"/>
+              <const loc="d,49,12,49,21" name="&quot;sublength&quot;" dtype_id="2"/>
             </cmethodhard>
           </stmtexpr>
           <stmtexpr loc="d,50,7,50,14">
             <cmethodhard loc="d,50,7,50,14" name="hard" dtype_id="7">
               <varref loc="d,50,7,50,14" name="constraint" dtype_id="8"/>
-              <sformatf loc="d,50,20,50,29" name="sublength" dtype_id="2"/>
+              <const loc="d,50,20,50,29" name="&quot;sublength&quot;" dtype_id="2"/>
             </cmethodhard>
           </stmtexpr>
           <stmtexpr loc="d,51,17,51,19">
             <cmethodhard loc="d,51,17,51,19" name="hard" dtype_id="7">
               <varref loc="d,51,17,51,19" name="constraint" dtype_id="8"/>
-              <sformatf loc="d,51,17,51,19" name="(bvsle %@ %@)" dtype_id="2">
-                <sformatf loc="d,51,7,51,16" name="sublength" dtype_id="2"/>
-                <sformatf loc="d,51,20,51,26" name="length" dtype_id="2"/>
-              </sformatf>
+              <const loc="d,51,17,51,19" name="&quot;(bvsle sublength length)&quot;" dtype_id="2"/>
             </cmethodhard>
           </stmtexpr>
         </task>
@@ -188,21 +164,18 @@
     </package>
     <typetable loc="a,0,0,0,0">
       <basicdtype loc="d,22,14,22,15" id="6" name="logic"/>
-      <basicdtype loc="d,25,21,25,22" id="12" name="logic" left="31" right="0"/>
+      <basicdtype loc="d,25,21,25,22" id="11" name="logic" left="31" right="0"/>
       <basicdtype loc="d,71,7,71,13" id="2" name="string"/>
-      <basicdtype loc="d,40,22,40,23" id="13" name="integer" left="31" right="0" signed="true"/>
       <basicdtype loc="d,8,9,8,12" id="3" name="int" left="31" right="0" signed="true"/>
       <basicdtype loc="d,11,9,11,12" id="4" name="bit"/>
       <unpackarraydtype loc="d,15,18,15,19" id="5" sub_dtype_id="3">
         <range loc="d,15,18,15,19">
-          <const loc="d,15,19,15,20" name="32&apos;h0" dtype_id="12"/>
-          <const loc="d,15,19,15,20" name="32&apos;h1" dtype_id="12"/>
+          <const loc="d,15,19,15,20" name="32&apos;h0" dtype_id="11"/>
+          <const loc="d,15,19,15,20" name="32&apos;h1" dtype_id="11"/>
         </range>
       </unpackarraydtype>
-      <basicdtype loc="d,32,18,32,20" id="14" name="logic" signed="true"/>
       <voiddtype loc="d,7,1,7,6" id="7"/>
       <classrefdtype loc="d,67,4,67,10" id="1" name="Packet"/>
-      <basicdtype loc="d,22,16,22,17" id="11" name="logic" left="31" right="0" signed="true"/>
       <basicdtype loc="d,7,1,7,6" id="10" name="bit" left="31" right="0" signed="true"/>
       <basicdtype loc="d,7,1,7,6" id="8" name="VlRandomizer"/>
       <basicdtype loc="d,8,9,8,12" id="9" name="logic" left="63" right="0"/>

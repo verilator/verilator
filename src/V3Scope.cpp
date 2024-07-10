@@ -68,9 +68,6 @@ class ScopeVisitor final : public VNVisitor {
                 UASSERT_OBJ(it2 != m_packageScopes.end(), nodep, "Can't locate package scope");
                 scopep = it2->second;
             }
-            UINFO(1, "scope, var: (" << AstNode::nodeAddr(scopep) << ", "
-                  << AstNode::nodeAddr(nodep->varp()) << ")" << " [ref: "
-                  << AstNode::nodeAddr(nodep) << "]" << endl);
             const auto it3 = m_varScopes.find(std::make_pair(nodep->varp(), scopep));
             UASSERT_OBJ(it3 != m_varScopes.end(), nodep, "Can't locate varref scope");
             AstVarScope* const varscp = it3->second;
@@ -280,8 +277,6 @@ class ScopeVisitor final : public VNVisitor {
                 nodep->attrClocker(VVarAttrClocker::CLOCKER_NO);
             }
             UASSERT_OBJ(m_scopep, nodep, "No scope for var");
-            UINFO(1, "assoc var (" << AstNode::nodeAddr(nodep) << ", "
-                  << AstNode::nodeAddr(m_scopep) << ") => " << AstNode::nodeAddr(varscp) << endl);
             auto res = m_varScopes.emplace(std::make_pair(nodep, m_scopep), varscp);
             UASSERT_OBJ(res.second, nodep, "Failed to insert node into a set");
             m_scopep->addVarsp(varscp);
@@ -296,8 +291,6 @@ class ScopeVisitor final : public VNVisitor {
         // the var's referenced package etc might not be created yet.
         // So push to a list and post-correct.
         // No check here for nodep->classOrPackagep(), will check when walk list.
-        UINFO(1, "assoc ref " << AstNode::nodeAddr(nodep) << " => " << AstNode::nodeAddr(m_scopep)
-              << endl);
         auto r = m_varRefScopes.emplace(nodep, m_scopep);
         UASSERT_OBJ(r.second, nodep, "Failed to assoc var node with scope ");
     }
