@@ -1831,6 +1831,13 @@ AstNodeUOrStructDType* AstMemberDType::getChildStructp() const {
     return VN_CAST(subdtp->skipRefp(), NodeUOrStructDType);  // Maybe nullptr
 }
 
+AstMemberSel::AstMemberSel(FileLine* fl, AstNodeExpr* fromp, AstVar* varp)
+    : ASTGEN_SUPER_MemberSel(fl)
+    , m_name{varp->name()} {
+    this->fromp(fromp);
+    this->varp(varp);
+    dtypep(varp->dtypep());
+}
 bool AstMemberSel::same(const AstNode* samep) const {
     const AstMemberSel* const sp = VN_DBG_AS(samep, MemberSel);
     return sp != nullptr && access() == sp->access() && fromp()->isSame(sp->fromp())
