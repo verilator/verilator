@@ -28,9 +28,9 @@ class AstNetlist;
 
 class V3Randomize final {
 public:
-    static void randomizeNetlist(AstNetlist* nodep, bool postScope) VL_MT_DISABLED;
+    static void randomizeNetlist(AstNetlist* nodep) VL_MT_DISABLED;
 
-    static AstFunc* newRandomizeFunc(AstClass* nodep, bool postScope = false,
+    static AstFunc* newRandomizeFunc(AstClass* nodep,
                                      std::string name = "randomize") VL_MT_DISABLED;
     static AstFunc* newSRandomFunc(AstClass* nodep) VL_MT_DISABLED;
 };

@@ -221,7 +221,7 @@ static void process() {
         if (v3Global.opt.coverage()) V3Coverage::coverage(v3Global.rootp());
 
         // Add randomize() class methods if they are used by the design
-        if (v3Global.useRandomizeMethods()) V3Randomize::randomizeNetlist(v3Global.rootp(), false);
+        if (v3Global.useRandomizeMethods()) V3Randomize::randomizeNetlist(v3Global.rootp());
 
         // Push constants, but only true constants preserving liveness
         // so V3Undriven sees variables to be eliminated, ie "if (0 && foo) ..."
