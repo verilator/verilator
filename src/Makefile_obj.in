@@ -284,6 +284,7 @@ RAW_OBJS_PCH_ASTNOMT = \
 	V3ProtectLib.o \
 	V3Randomize.o \
 	V3Reloop.o \
+	V3Sampled.o \
 	V3Sched.o \
 	V3SchedAcyclic.o \
 	V3SchedPartition.o \

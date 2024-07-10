@@ -1154,6 +1154,50 @@ constexpr bool operator==(VAssertCtlType::en lhs, const VAssertCtlType& rhs) {
 
 // ######################################################################
 
+class VAssertType final {
+public:
+    // IEEE 1800-2023 Table 20-6
+    enum en : uint8_t {
+        INTERNAL = 0,  // Non IEEE type, for assertions that should not be controlled.
+        CONCURRENT = (1 << 0),
+        SIMPLE_IMMEDIATE = (1 << 1),
+        OBSERVED_DEFERRED_IMMEDIATE = (1 << 2),
+        FINAL_DEFERRED_IMMEDIATE = (1 << 3),
+        EXPECT = (1 << 4),
+        UNIQUE = (1 << 5),
+        UNIQUE0 = (1 << 6),
+        PRIORITY = (1 << 7),
+    };
+    enum en m_e;
+    VAssertType()
+        : m_e{INTERNAL} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr explicit VAssertType(en _e)
+        : m_e{_e} {}
+    explicit VAssertType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    const char* ascii() const {
+        static const char* const names[] = {"INTERNAL",
+                                            "CONCURRENT",
+                                            "SIMPLE_IMMEDIATE",
+                                            "OBSERVED_DEFERRED_IMMEDIATE",
+                                            "FINAL_DEFERRED_IMMEDIATE",
+                                            "EXPECT",
+                                            "UNIQUE",
+                                            "UNIQUE0",
+                                            "PRIORITY"};
+        return names[m_e];
+    }
+    constexpr operator en() const { return m_e; }
+};
+constexpr bool operator==(const VAssertType& lhs, const VAssertType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VAssertType& lhs, VAssertType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VAssertType::en lhs, const VAssertType& rhs) { return lhs == rhs.m_e; }
+
+// ######################################################################
+
 class VCaseType final {
 public:
     enum en : uint8_t { CT_CASE, CT_CASEX, CT_CASEZ, CT_CASEINSIDE };

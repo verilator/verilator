@@ -118,6 +118,7 @@ public:
     void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope);
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);
     void emitVarDecl(const AstVar* nodep, bool asRef = false);
+    void emitVarAccessors(const AstVar* nodep);
     template <typename F>
     static void forModCUse(const AstNodeModule* modp, VUseType useType, F action) {
         for (AstNode* itemp = modp->stmtsp(); itemp; itemp = itemp->nextp()) {

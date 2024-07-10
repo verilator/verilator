@@ -491,27 +491,37 @@
           {"type":"ASSERTCTL","name":"","addr":"(WH)","loc":"d,86:7,86:17","ctlType":"$assertoff",
            "controlTypep": [
             {"type":"CONST","name":"32'h4","addr":"(XH)","loc":"d,86:7,86:17","dtypep":"(MC)"}
-          ],
+          ],"assertTypesp": [],
            "levelp": [
             {"type":"CONST","name":"32'h0","addr":"(YH)","loc":"d,86:7,86:17","dtypep":"(MC)"}
           ],"itemsp": []},
           {"type":"ASSERTCTL","name":"","addr":"(ZH)","loc":"d,87:7,87:18","ctlType":"$assertkill",
            "controlTypep": [
             {"type":"CONST","name":"32'h5","addr":"(AI)","loc":"d,87:7,87:18","dtypep":"(MC)"}
-          ],
+          ],"assertTypesp": [],
            "levelp": [
             {"type":"CONST","name":"32'h0","addr":"(BI)","loc":"d,87:7,87:18","dtypep":"(MC)"}
           ],"itemsp": []},
-          {"type":"ASSERT","name":"","addr":"(CI)","loc":"d,88:7,88:13","immediate":true,
+          {"type":"ASSERT","name":"","addr":"(CI)","loc":"d,88:7,88:13","type":"[SIMPLE_IMMEDIATE]",
            "propp": [
             {"type":"CONST","name":"?32?sh0","addr":"(DI)","loc":"d,88:14,88:15","dtypep":"(L)"}
           ],"sentreep": [],"failsp": [],"passsp": []},
           {"type":"ASSERTCTL","name":"","addr":"(EI)","loc":"d,89:7,89:16","ctlType":"$asserton",
            "controlTypep": [
             {"type":"CONST","name":"32'h3","addr":"(FI)","loc":"d,89:7,89:16","dtypep":"(MC)"}
-          ],
+          ],"assertTypesp": [],
            "levelp": [
             {"type":"CONST","name":"32'h0","addr":"(GI)","loc":"d,89:7,89:16","dtypep":"(MC)"}
+          ],"itemsp": []},
+          {"type":"ASSERTCTL","name":"","addr":"(HI)","loc":"d,90:7,90:21","ctlType":"",
+           "controlTypep": [
+            {"type":"CONST","name":"?32?sh3","addr":"(II)","loc":"d,90:22,90:23","dtypep":"(QD)"}
+          ],
+           "assertTypesp": [
+            {"type":"CONST","name":"?32?sh8","addr":"(JI)","loc":"d,90:25,90:26","dtypep":"(JF)"}
+          ],
+           "levelp": [
+            {"type":"CONST","name":"32'h0","addr":"(KI)","loc":"d,90:7,90:21","dtypep":"(MC)"}
           ],"itemsp": []}
         ]}
       ]}
@@ -519,16 +529,16 @@
   ],"activesp": []}
 ],"filesp": [],
  "miscsp": [
-  {"type":"TYPETABLE","name":"","addr":"(C)","loc":"a,0:0,0:0","constraintRefp":"UNLINKED","emptyQueuep":"UNLINKED","queueIndexp":"UNLINKED","streamp":"UNLINKED","voidp":"(HI)",
+  {"type":"TYPETABLE","name":"","addr":"(C)","loc":"a,0:0,0:0","constraintRefp":"UNLINKED","emptyQueuep":"UNLINKED","queueIndexp":"UNLINKED","streamp":"UNLINKED","voidp":"(LI)",
    "typesp": [
-    {"type":"BASICDTYPE","name":"integer","addr":"(II)","loc":"c,31:27,31:28","dtypep":"(II)","keyword":"integer","range":"31:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"integer","addr":"(MI)","loc":"c,31:27,31:28","dtypep":"(MI)","keyword":"integer","range":"31:0","generic":true,"rangep": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(L)","loc":"c,33:32,33:33","dtypep":"(L)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(UE)","loc":"c,50:22,50:24","dtypep":"(UE)","keyword":"logic","generic":true,"rangep": []},
-    {"type":"VOIDDTYPE","name":"","addr":"(HI)","loc":"c,51:21,51:30","dtypep":"(HI)","generic":false},
-    {"type":"BASICDTYPE","name":"logic","addr":"(QD)","loc":"c,119:22,119:23","dtypep":"(QD)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
-    {"type":"BASICDTYPE","name":"logic","addr":"(JI)","loc":"c,121:22,121:23","dtypep":"(JI)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
-    {"type":"BASICDTYPE","name":"logic","addr":"(KI)","loc":"c,156:17,156:56","dtypep":"(KI)","keyword":"logic","range":"295:0","generic":true,"rangep": []},
-    {"type":"BASICDTYPE","name":"string","addr":"(BG)","loc":"c,156:10,156:16","dtypep":"(BG)","keyword":"string","generic":true,"rangep": []},
+    {"type":"VOIDDTYPE","name":"","addr":"(LI)","loc":"c,51:21,51:30","dtypep":"(LI)","generic":false},
+    {"type":"BASICDTYPE","name":"logic","addr":"(QD)","loc":"c,125:22,125:23","dtypep":"(QD)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(NI)","loc":"c,127:22,127:23","dtypep":"(NI)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"logic","addr":"(OI)","loc":"c,162:17,162:56","dtypep":"(OI)","keyword":"logic","range":"295:0","generic":true,"rangep": []},
+    {"type":"BASICDTYPE","name":"string","addr":"(BG)","loc":"c,162:10,162:16","dtypep":"(BG)","keyword":"string","generic":true,"rangep": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(Q)","loc":"d,14:9,14:11","dtypep":"(Q)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(BB)","loc":"d,18:10,18:12","dtypep":"(BB)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(MC)","loc":"d,33:26,33:31","dtypep":"(MC)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
@@ -542,9 +552,9 @@
   ]},
   {"type":"CONSTPOOL","name":"","addr":"(D)","loc":"a,0:0,0:0",
    "modulep": [
-    {"type":"MODULE","name":"@CONST-POOL@","addr":"(LI)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","level":0,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
+    {"type":"MODULE","name":"@CONST-POOL@","addr":"(PI)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","level":0,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
      "stmtsp": [
-      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(MI)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(LI)","varsp": [],"blocksp": [],"inlinesp": []}
+      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(QI)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(PI)","varsp": [],"blocksp": [],"inlinesp": []}
     ],"activesp": []}
   ]}
 ]}

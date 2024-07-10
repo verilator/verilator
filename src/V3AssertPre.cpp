@@ -357,6 +357,26 @@ private:
             nodep->user1(true);
         }
     }
+    void visit(AstMemberSel* nodep) override {
+        if (AstClockingItem* const itemp = VN_CAST(
+                nodep->varp()->user1p() ? nodep->varp()->user1p() : nodep->varp()->firstAbovep(),
+                ClockingItem)) {
+            if (nodep->access().isReadOrRW() && itemp->direction() == VDirection::OUTPUT) {
+                nodep->v3error("Cannot read from output clockvar (IEEE 1800-2023 14.3)");
+            }
+            if (nodep->access().isWriteOrRW()) {
+                if (itemp->direction() == VDirection::OUTPUT) {
+                    if (!m_inAssignDlyLhs) {
+                        nodep->v3error("Only non-blocking assignments can write "
+                                       "to clockvars (IEEE 1800-2023 14.16)");
+                    }
+                    if (m_inAssign) m_inSynchDrive = true;
+                } else if (itemp->direction() == VDirection::INPUT) {
+                    nodep->v3error("Cannot write to input clockvar (IEEE 1800-2023 14.3)");
+                }
+            }
+        }
+    }
     void visit(AstNodeAssign* nodep) override {
         if (nodep->user1()) return;
         VL_RESTORER(m_inAssign);

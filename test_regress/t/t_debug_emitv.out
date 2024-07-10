@@ -21,7 +21,7 @@ module Vt_debug_emitv_t;
     ???? // ASSOCARRAYDTYPE
     int signed [31:0] 
     ???? // DYNARRAYDTYPE
-    int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] real signedstringIData [31:0] logic signed [31:0] int signed [31:0] bit [0:0] logic [0:0]  e_t;
+    int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] real signedstringIData [31:0] logic signed [31:0] int signed [31:0]  e_t;
     typedef struct packed 
     {int signed [31:0]  a;}logic signed [2:0] struct 
     {logic signed [2:0]  a;}logicunion 
@@ -36,7 +36,7 @@ module Vt_debug_emitv_t;
     ???? // ASSOCARRAYDTYPE
     int signed [31:0] 
     ???? // DYNARRAYDTYPE
-    int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] real signedstringIData [31:0] logic signed [31:0] int signed [31:0] bit [0:0] logic [0:0]  ps_t;
+    int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] real signedstringIData [31:0] logic signed [31:0] int signed [31:0]  ps_t;
     typedef struct 
     {logic signed [2:0]  a;}logicunion 
     {logic a;}struct packed 
@@ -50,7 +50,7 @@ module Vt_debug_emitv_t;
     ???? // ASSOCARRAYDTYPE
     int signed [31:0] 
     ???? // DYNARRAYDTYPE
-    int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] real signedstringIData [31:0] logic signed [31:0] int signed [31:0] bit [0:0] logic [0:0]  us_t;
+    int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] real signedstringIData [31:0] logic signed [31:0] int signed [31:0]  us_t;
     typedef union 
     {logic a;}struct packed 
     {int signed [31:0]  a;}bit [31:0] const struct packed 
@@ -63,7 +63,7 @@ module Vt_debug_emitv_t;
     ???? // ASSOCARRAYDTYPE
     int signed [31:0] 
     ???? // DYNARRAYDTYPE
-    int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] real signedstringIData [31:0] logic signed [31:0] int signed [31:0] bit [0:0] logic [0:0]  union_t;
+    int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] int signed [31:0] real signedstringIData [31:0] logic signed [31:0] int signed [31:0]  union_t;
     struct packed 
     {int signed [31:0]  a;} ps[0:2];
     struct 

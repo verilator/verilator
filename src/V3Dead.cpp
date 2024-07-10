@@ -311,7 +311,7 @@ class DeadVisitor final : public VNVisitor {
         // still get deleted.
     }
     void visit(AstNode* nodep) override {
-        if (nodep->isOutputter()) m_sideEffect = true;
+        if (!m_sideEffect && !nodep->isPure()) m_sideEffect = true;
         iterateChildren(nodep);
         checkAll(nodep);
     }

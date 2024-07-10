@@ -50,7 +50,8 @@ class LinkLValueVisitor final : public VNVisitor {
                 // so it is needed to check only if m_setContinuously is true
                 if (m_setStrengthSpecified) nodep->varp()->hasStrengthAssignment(true);
             }
-            if (const AstClockingItem* itemp = VN_CAST(nodep->varp()->backp(), ClockingItem)) {
+            if (const AstClockingItem* const itemp
+                = VN_CAST(nodep->varp()->backp(), ClockingItem)) {
                 UINFO(5, "ClkOut " << nodep << endl);
                 if (itemp->outputp()) nodep->varp(itemp->outputp()->varp());
             }
@@ -285,6 +286,13 @@ class LinkLValueVisitor final : public VNVisitor {
     void visit(AstMemberSel* nodep) override {
         if (m_setRefLvalue != VAccess::NOCHANGE) {
             nodep->access(m_setRefLvalue);
+            if (nodep->varp() && nodep->access().isWriteOrRW()) {
+                if (const AstClockingItem* const itemp
+                    = VN_CAST(nodep->varp()->backp(), ClockingItem)) {
+                    UINFO(5, "ClkOut " << nodep << endl);
+                    if (itemp->outputp()) nodep->varp(itemp->outputp()->varp());
+                }
+            }
         } else {
             // It is the only place where the access is set to member select nodes.
             // If it doesn't have to be set to WRITE, it means that it is READ.

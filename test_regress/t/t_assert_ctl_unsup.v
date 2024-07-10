@@ -4,8 +4,8 @@
 // any use, without warranty, 2024 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
-module t;
-   unsupported_ctl_type unsupported_ctl_type();
+module t(input logic clk);
+   unsupported_ctl_type unsupported_ctl_type(clk ? 1 : 2);
    unsupported_ctl_type_expr unsupported_ctl_type_expr();
    bad_assertcontrol_ctl_type bad_assertcontrol_ctl_type();
    assert_class assert_class();
@@ -13,9 +13,9 @@ module t;
    assert_iface_class assert_iface_class();
 endmodule
 
-module unsupported_ctl_type;
+module unsupported_ctl_type(input int a);
    initial begin
-      $assertcontrol(1);
+      $assertcontrol(1, a);
       $assertcontrol(2);
       $assertcontrol(6);
       $assertcontrol(7);

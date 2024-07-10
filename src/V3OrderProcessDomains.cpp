@@ -58,6 +58,15 @@ class V3OrderProcessDomains final {
 
     // METHODS
 
+    // Dump a domain for debugging
+    std::string debugDomain(AstSenTree* domainp) {
+        return cvtToHex(domainp)
+               + (domainp == m_deleteDomainp ? " [DEL]"
+                  : domainp->hasCombo()      ? " [COMB]"
+                  : domainp->isMulti()       ? " [MULT]"
+                                             : "");
+    }
+
     // Make a domain that merges the two domains
     AstSenTree* combineDomains(AstSenTree* ap, AstSenTree* bp) {
         if (ap == bp) return ap;
@@ -93,6 +102,7 @@ class V3OrderProcessDomains final {
             // For logic, start with the explicit hybrid sensitivities
             OrderLogicVertex* const lvtxp = vtxp->cast<OrderLogicVertex>();
             if (lvtxp) domainp = lvtxp->hybridp();
+            if (domainp) UINFO(6, "      hybr d=" << debugDomain(domainp) << " " << vtxp << endl);
 
             // For each incoming edge, examine the source vertex
             for (V3GraphEdge& edge : vtxp->inEdges()) {
@@ -104,6 +114,7 @@ class V3OrderProcessDomains final {
 
                 AstSenTree* fromDomainp = fromVtxp->domainp();
 
+                UINFO(6, "      from d=" << debugDomain(fromDomainp) << " " << fromVtxp << endl);
                 UASSERT(fromDomainp == m_deleteDomainp || !fromDomainp->hasCombo(),
                         "There should be no need for combinational domains");
 
@@ -113,6 +124,8 @@ class V3OrderProcessDomains final {
                     externalDomainps.clear();
                     m_externalDomains(vscp, externalDomainps);
                     for (AstSenTree* const externalDomainp : externalDomainps) {
+                        UINFO(6, "      xtrn d=" << debugDomain(externalDomainp) << " " << fromVtxp
+                                                 << " because of " << vscp << endl);
                         UASSERT_OBJ(!externalDomainp->hasCombo(), vscp,
                                     "There should be no need for combinational domains");
                         fromDomainp = combineDomains(fromDomainp, externalDomainp);
@@ -140,12 +153,7 @@ class V3OrderProcessDomains final {
             // Set the domain of the vertex
             vtxp->domainp(domainp);
 
-            UINFO(5, "      done d=" << cvtToHex(domainp)
-                                     << (domainp == m_deleteDomainp ? " [DEL]"
-                                         : domainp->hasCombo()      ? " [COMB]"
-                                         : domainp->isMulti()       ? " [MULT]"
-                                                                    : "")
-                                     << " " << vtxp << endl);
+            UINFO(5, "      done d=" << debugDomain(domainp) << " " << vtxp << endl);
         }
     }
 

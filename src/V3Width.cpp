@@ -2793,6 +2793,7 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstMemberSel* nodep) override {
         UINFO(5, "   MEMBERSEL " << nodep << endl);
+        if (nodep->didWidth()) return;
         if (debug() >= 9) nodep->dumpTree("-  mbs-in: ");
         userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         if (debug() >= 9) nodep->dumpTree("-  mbs-ic: ");
@@ -2800,19 +2801,65 @@ class WidthVisitor final : public VNVisitor {
         UASSERT_OBJ(nodep->fromp()->dtypep(), nodep->fromp(), "Unlinked data type");
         AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
         UINFO(9, "     from dt " << fromDtp << endl);
-        if (AstNodeUOrStructDType* const adtypep = VN_CAST(fromDtp, NodeUOrStructDType)) {
+        const AstMemberSel* const fromSel = VN_CAST(nodep->fromp(), MemberSel);
+        if (AstClocking* const clockingp = fromSel && fromSel->varp()
+                                               ? VN_CAST(fromSel->varp()->firstAbovep(), Clocking)
+                                               : nullptr) {
+            // In:  MEMBERSEL{MEMBERSEL{vifaceref, "cb", cb_event}, "clockvar", null}
+            // Out: MEMBERSEL{vifaceref, "clockvar", clockvar}
+            UINFO(9, "     from clocking " << clockingp << endl);
+            if (AstVar* const varp = memberSelClocking(nodep, clockingp)) {
+                if (!varp->didWidth()) userIterate(varp, nullptr);
+                AstMemberSel* fromp = VN_AS(nodep->fromp(), MemberSel);
+                fromp->replaceWith(fromp->fromp()->unlinkFrBack());
+                VL_DO_DANGLING(fromp->deleteTree(), fromp);
+                nodep->dtypep(varp->dtypep());
+                nodep->varp(varp);
+                if (nodep->access().isWriteOrRW()) V3LinkLValue::linkLValueSet(nodep);
+                if (AstIfaceRefDType* const adtypep
+                    = VN_CAST(nodep->fromp()->dtypep(), IfaceRefDType)) {
+                    nodep->varp()->sensIfacep(adtypep->ifacep());
+                }
+                UINFO(9, "     done clocking msel " << nodep << endl);
+                nodep->didWidth(true);  // Must not visit again: will confuse scopes
+                return;
+            }
+        } else if (AstNodeUOrStructDType* const adtypep = VN_CAST(fromDtp, NodeUOrStructDType)) {
             if (memberSelStruct(nodep, adtypep)) return;
         } else if (AstClassRefDType* const adtypep = VN_CAST(fromDtp, ClassRefDType)) {
             if (memberSelClass(nodep, adtypep)) return;
         } else if (AstIfaceRefDType* const adtypep = VN_CAST(fromDtp, IfaceRefDType)) {
-            if (AstNode* const foundp = memberSelIface(nodep, adtypep)) {
+            if (AstNode* foundp = memberSelIface(nodep, adtypep)) {
+                if (AstClocking* const clockingp = VN_CAST(foundp, Clocking)) {
+                    foundp = clockingp->eventp();
+                    if (!foundp) {
+                        AstVar* const eventp = new AstVar{
+                            clockingp->fileline(), VVarType::MODULETEMP, clockingp->name(),
+                            clockingp->findBasicDType(VBasicDTypeKwd::EVENT)};
+                        eventp->lifetime(VLifetime::STATIC);
+                        clockingp->eventp(eventp);
+                        // Trigger the clocking event in Observed (IEEE 1800-2023 14.13)
+                        clockingp->addNextHere(new AstAlwaysObserved{
+                            clockingp->fileline(),
+                            new AstSenTree{clockingp->fileline(),
+                                           clockingp->sensesp()->cloneTree(false)},
+                            new AstFireEvent{
+                                clockingp->fileline(),
+                                new AstVarRef{clockingp->fileline(), eventp, VAccess::WRITE},
+                                false}});
+                        v3Global.setHasEvents();
+                        foundp = eventp;
+                    }
+                }
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
+                    if (!varp->didWidth()) userIterate(varp, nullptr);
                     nodep->dtypep(foundp->dtypep());
                     nodep->varp(varp);
                     AstIface* const ifacep = adtypep->ifacep();
                     varp->sensIfacep(ifacep);
                     nodep->fromp()->foreach(
                         [ifacep](AstVarRef* const refp) { refp->varp()->sensIfacep(ifacep); });
+                    nodep->didWidth(true);
                     return;
                 }
                 UINFO(1, "found object " << foundp << endl);
@@ -2866,6 +2913,7 @@ class WidthVisitor final : public VNVisitor {
                     }
                     nodep->dtypep(foundp->dtypep());
                     nodep->varp(varp);
+                    nodep->didWidth(true);
                     return true;
                 }
                 if (AstEnumItemRef* const adfoundp = VN_CAST(foundp, EnumItemRef)) {
@@ -2928,6 +2976,21 @@ class WidthVisitor final : public VNVisitor {
         nodep->v3error(
             "Member " << nodep->prettyNameQ() << " not found in interface "
                       << ifacep->prettyNameQ() << "\n"
+                      << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
+        return nullptr;  // Caller handles error
+    }
+    AstVar* memberSelClocking(AstMemberSel* nodep, AstClocking* clockingp) {
+        // Returns node if ok
+        VSpellCheck speller;
+        for (AstClockingItem* itemp = clockingp->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), ClockingItem)) {
+            if (itemp->varp()->name() == nodep->name()) return itemp->varp();
+            speller.pushCandidate(itemp->varp()->prettyName());
+        }
+        const string suggest = speller.bestCandidateMsg(nodep->prettyName());
+        nodep->v3error(
+            "Member " << nodep->prettyNameQ() << " not found in clocking block "
+                      << clockingp->prettyNameQ() << "\n"
                       << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
         return nullptr;  // Caller handles error
     }
@@ -5031,6 +5094,13 @@ class WidthVisitor final : public VNVisitor {
         UASSERT_OBJ(nodep->lhsp()->dtypep()->widthSized(), nodep, "How can LValue be unsized?");
     }
 
+    void formatNoStringArg(AstNode* argp, char ch) {
+        if (argp && argp->isString()) {
+            argp->v3error("$display-line format of '%"s + ch + "' illegal with string argument\n"
+                          << argp->warnMore() << "... Suggest use '%s'");
+        }
+    }
+
     void visit(AstSFormatF* nodep) override {
         // Excludes NodeDisplay, see below
         if (m_vup && !m_vup->prelim()) return;  // Can be called as statement or function
@@ -5054,6 +5124,7 @@ class WidthVisitor final : public VNVisitor {
                 bool added = false;
                 const AstNodeDType* const dtypep = argp ? argp->dtypep()->skipRefp() : nullptr;
                 const AstBasicDType* const basicp = dtypep ? dtypep->basicp() : nullptr;
+                ch = std::tolower(ch);
                 if (ch == '?') {  // Unspecified by user, guess
                     if (argp && argp->isDouble()) {
                         ch = 'g';
@@ -5067,13 +5138,14 @@ class WidthVisitor final : public VNVisitor {
                         ch = 'p';
                     }
                 }
-                switch (std::tolower(ch)) {
+                switch (ch) {
                 case '%': break;  // %% - just output a %
                 case 'm': break;  // %m - auto insert "name"
                 case 'l': break;  // %m - auto insert "library"
                 case 'd': {  // Convert decimal to either 'd' or '#'
                     if (argp) {
                         AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);
+                        formatNoStringArg(argp, ch);
                         if (argp->isDouble()) {
                             spliceCvtS(argp, true, 64);
                             ch = '~';
@@ -5089,6 +5161,7 @@ class WidthVisitor final : public VNVisitor {
                 case 'x': {
                     if (argp) {
                         AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);
+                        formatNoStringArg(argp, ch);
                         if (argp->isDouble()) spliceCvtS(argp, true, 64);
                         argp = nextp;
                     }
@@ -5146,6 +5219,7 @@ class WidthVisitor final : public VNVisitor {
                 case 't': {  // Convert decimal time to realtime
                     if (argp) {
                         AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);
+                        formatNoStringArg(argp, ch);
                         if (argp->isDouble()) ch = '^';  // Convert it
                         UASSERT_OBJ(!nodep->timeunit().isNone(), nodep,
                                     "display %t has no time units");
@@ -5158,6 +5232,7 @@ class WidthVisitor final : public VNVisitor {
                 case 'g': {
                     if (argp) {
                         AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);
+                        formatNoStringArg(argp, ch);
                         if (!argp->isDouble()) {
                             iterateCheckReal(nodep, "Display argument", argp, BOTH);
                         }
@@ -5384,6 +5459,10 @@ class WidthVisitor final : public VNVisitor {
         iterateCheckBool(nodep, "Property", nodep->propp(), BOTH);  // it's like an if() condition.
         userIterateAndNext(nodep->passsp(), nullptr);
         userIterateAndNext(nodep->failsp(), nullptr);
+    }
+    void visit(AstAssertCtl* nodep) override {
+        assertAtStatement(nodep);
+        userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
     }
     void visit(AstAssertIntrinsic* nodep) override {
         assertAtStatement(nodep);

@@ -2210,9 +2210,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                  new AstVarRef{clockingp->fileline(), eventp, VAccess::WRITE},
                                  false}});
             v3Global.setHasEvents();
-            eventp->user1p(new VSymEnt{m_statep->symsp(), eventp});
         }
-        return reinterpret_cast<VSymEnt*>(clockingp->eventp()->user1p());
+        AstVar* const eventp = clockingp->eventp();
+        if (!eventp->user1p()) eventp->user1p(new VSymEnt{m_statep->symsp(), eventp});
+        return reinterpret_cast<VSymEnt*>(eventp->user1p());
     }
 
     bool isParamedClassRefDType(const AstNode* classp) {
@@ -3046,7 +3047,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
             dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
                                            okSymp);  // Maybe nullptr
             if (!m_statep->forScopeCreation()) {
-                VSymEnt* const foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
+                VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
+                if (m_inSens && foundp) {
+                    if (AstClocking* const clockingp = VN_CAST(foundp->nodep(), Clocking)) {
+                        foundp = getCreateClockingEventSymEnt(clockingp);
+                    }
+                }
                 AstVar* const varp
                     = foundp ? foundToVarp(foundp, nodep, nodep->access()) : nullptr;
                 nodep->varp(varp);
@@ -3063,11 +3069,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // AstVarXRef's even though they are in the same module detect
                 // this and convert to normal VarRefs
                 if (!m_statep->forPrearray() && !m_statep->forScopeCreation()) {
-                    if (VN_IS(nodep->dtypep(), IfaceRefDType)) {
-                        AstVarRef* const newrefp
-                            = new AstVarRef{nodep->fileline(), nodep->varp(), nodep->access()};
-                        nodep->replaceWith(newrefp);
-                        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    if (const AstIfaceRefDType* const ifaceDtp
+                        = VN_CAST(nodep->dtypep(), IfaceRefDType)) {
+                        if (!ifaceDtp->isVirtual()) {
+                            AstVarRef* const newrefp
+                                = new AstVarRef{nodep->fileline(), nodep->varp(), nodep->access()};
+                            nodep->replaceWith(newrefp);
+                            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                        }
                     }
                 }
             } else {

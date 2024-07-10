@@ -1240,6 +1240,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         if (flag) m_std = false;
         m_preprocOnly = flag;
     });
+    DECL_OPTION("-emit-accessors", OnOff, &m_emitAccessors);
     DECL_OPTION("-error-limit", CbVal, static_cast<void (*)(int)>(&V3Error::errorLimit));
     DECL_OPTION("-exe", OnOff, &m_exe);
     DECL_OPTION("-expand-limit", CbVal,

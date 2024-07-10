@@ -1170,10 +1170,14 @@ void schedule(AstNetlist* netlistp) {
     // (including combinationally generated signals) are computed within the act region.
     LogicRegions logicRegions
         = partition(logicClasses.m_clocked, logicClasses.m_comb, logicClasses.m_hybrid);
+    logicRegions.m_obs = logicClasses.m_observed;
+    logicRegions.m_react = logicClasses.m_reactive;
     if (v3Global.opt.stats()) {
         addSizeStat("size of region: Active Pre", logicRegions.m_pre);
         addSizeStat("size of region: Active", logicRegions.m_act);
         addSizeStat("size of region: NBA", logicRegions.m_nba);
+        addSizeStat("size of region: Observed", logicRegions.m_obs);
+        addSizeStat("size of region: Reactive", logicRegions.m_react);
         V3Stats::statsStage("sched-partition");
     }
 
@@ -1183,6 +1187,8 @@ void schedule(AstNetlist* netlistp) {
         addSizeStat("size of replicated logic: Input", logicReplicas.m_ico);
         addSizeStat("size of replicated logic: Active", logicReplicas.m_act);
         addSizeStat("size of replicated logic: NBA", logicReplicas.m_nba);
+        addSizeStat("size of replicated logic: Observed", logicReplicas.m_obs);
+        addSizeStat("size of replicated logic: Reactive", logicReplicas.m_react);
         V3Stats::statsStage("sched-replicate");
     }
 
@@ -1207,8 +1213,8 @@ void schedule(AstNetlist* netlistp) {
     const auto& senTreeps = getSenTreesUsedBy({&logicRegions.m_pre,  //
                                                &logicRegions.m_act,  //
                                                &logicRegions.m_nba,  //
-                                               &logicClasses.m_observed,  //
-                                               &logicClasses.m_reactive,  //
+                                               &logicRegions.m_obs,  //
+                                               &logicRegions.m_react,  //
                                                &timingKit.m_lbs});
     const TriggerKit& actTrig
         = createTriggers(netlistp, initp, senExprBuilder, senTreeps, "act", extraTriggers);
@@ -1225,7 +1231,7 @@ void schedule(AstNetlist* netlistp) {
     AstVarScope* const preTrigVscp = scopeTopp->createTempLike("__VpreTriggered", actTrigVscp);
 
     const auto cloneMapWithNewTriggerReferences
-        = [=](std::unordered_map<const AstSenTree*, AstSenTree*> map, AstVarScope* vscp) {
+        = [=](const std::unordered_map<const AstSenTree*, AstSenTree*>& map, AstVarScope* vscp) {
               // Copy map
               auto newMap{map};
               // Replace references in each mapped value with a reference to the given vscp
@@ -1293,6 +1299,7 @@ void schedule(AstNetlist* netlistp) {
     // Orders a region's logic and creates the region eval function
     const auto order = [&](const std::string& name,
                            const std::vector<V3Sched::LogicByScope*>& logic) -> EvalKit {
+        UINFO(2, "Scheduling " << name << " #logic = " << logic.size() << endl);
         AstVarScope* const trigVscp
             = scopeTopp->createTempLike("__V" + name + "Triggered", actTrigVscp);
         const auto trigMap = cloneMapWithNewTriggerReferences(actTrigMap, trigVscp);
@@ -1350,18 +1357,21 @@ void schedule(AstNetlist* netlistp) {
 
     // Orders a region's logic and creates the region eval function (only if there is any logic in
     // the region)
-    const auto orderIfNonEmpty = [&](const std::string& name, LogicByScope& lbs) -> EvalKit {
-        if (lbs.empty()) return {};
-        const auto& kit = order(name, {&lbs});
+    const auto orderIfNonEmpty
+        = [&](const std::string& name, const std::vector<LogicByScope*>& logic) -> EvalKit {
+        if (logic[0]->empty())
+            return {};  // if region is empty, replica is supposed to be empty as well
+        const auto& kit = order(name, logic);
         if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-" + name);
         return kit;
     };
 
     // Step 11: Create the 'obs' region evaluation function
-    const EvalKit& obsKit = orderIfNonEmpty("obs", logicClasses.m_observed);
+    const EvalKit& obsKit = orderIfNonEmpty("obs", {&logicRegions.m_obs, &logicReplicas.m_obs});
 
     // Step 12: Create the 're' region evaluation function
-    const EvalKit& reactKit = orderIfNonEmpty("react", logicClasses.m_reactive);
+    const EvalKit& reactKit
+        = orderIfNonEmpty("react", {&logicRegions.m_react, &logicReplicas.m_react});
 
     // Step 13: Create the 'postponed' region evaluation function
     auto* const postponedFuncp = createPostponed(netlistp, logicClasses);

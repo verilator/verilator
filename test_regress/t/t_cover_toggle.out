@@ -30,7 +30,7 @@
            union {
               real val1;  // TODO use bit [7:0] here
               real val2;  // TODO use bit [3:0] here
-%000001    } utoggle;
+           } utoggle;
         
            const reg aconst = '0;
         

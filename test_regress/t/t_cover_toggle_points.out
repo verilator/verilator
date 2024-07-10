@@ -36,8 +36,7 @@
            union {
               real val1;  // TODO use bit [7:0] here
               real val2;  // TODO use bit [3:0] here
-%000001    } utoggle;
--000001  point: comment=utoggle.val1
+           } utoggle;
         
            const reg aconst = '0;
         

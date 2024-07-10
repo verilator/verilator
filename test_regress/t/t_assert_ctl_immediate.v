@@ -29,10 +29,6 @@ module module_with_assert(input clk);
 endmodule
 
 module module_with_assertctl(input clk);
-   let ON = 3;
-   let OFF = 4;
-   let KILL = 5;
-
    function void assert_off; begin
       $assertoff;
    end
@@ -47,23 +43,6 @@ module module_with_assertctl(input clk);
    endfunction
 
    initial begin
-      assert(0);
-      $assertoff;
-      assert(0);
-      $asserton;
-      assert(0);
-      $assertkill;
-      assert(0);
-
-      $assertcontrol(ON);
-      assert(0);
-      $assertcontrol(OFF);
-      assert(0);
-      $assertcontrol(ON);
-      assert(0);
-      $assertcontrol(KILL);
-      assert(0);
-
       assert_on();
       assert(0);
       assert_off();

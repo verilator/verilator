@@ -2494,9 +2494,24 @@ VerilatedContext::Serialized::Serialized() {
     m_timeprecision = picosecond;  // Initial value until overridden by _Vconfigure
 }
 
+bool VerilatedContext::assertOn() const VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_mutex};
+    return m_s.m_assertOn;
+}
 void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};
-    m_s.m_assertOn = flag;
+    // set all assert types to 'on' when true, set all types to 'off' when false
+    m_s.m_assertOn = std::numeric_limits<VerilatedAssertType_t>::max()
+                     * static_cast<VerilatedAssertType_t>(flag);
+}
+bool VerilatedContext::assertOnGet(VerilatedAssertType_t flags) const VL_MT_SAFE {
+    return m_s.m_assertOn & flags;
+}
+void VerilatedContext::assertOnSet(VerilatedAssertType_t flags) VL_MT_SAFE {
+    m_s.m_assertOn |= flags;
+}
+void VerilatedContext::assertOnClear(VerilatedAssertType_t flags) VL_MT_SAFE {
+    m_s.m_assertOn &= flags;
 }
 void VerilatedContext::calcUnusedSigs(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};

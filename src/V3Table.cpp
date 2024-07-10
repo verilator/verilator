@@ -209,6 +209,10 @@ private:
         // Instruction count bytes (ok, it's space also not time :)
         const double time  // max(_, 1), so we won't divide by zero
             = std::max<double>(chkvis.instrCount() * TABLE_BYTES_PER_INST + chkvis.dataCount(), 1);
+        if (chkvis.isImpure()) chkvis.clearOptimizable(nodep, "Table creates side effects");
+        if (!m_outWidthBytes || !m_inWidthBits) {
+            chkvis.clearOptimizable(nodep, "Table has no outputs");
+        }
         if (chkvis.instrCount() < TABLE_MIN_NODE_COUNT) {
             chkvis.clearOptimizable(nodep, "Table has too few nodes involved");
         }
@@ -220,12 +224,6 @@ private:
         }
         if (m_totalBytes > TABLE_TOTAL_BYTES) {
             chkvis.clearOptimizable(nodep, "Table out of memory");
-        }
-        if (!m_outWidthBytes || !m_inWidthBits) {
-            chkvis.clearOptimizable(nodep, "Table has no outputs");
-        }
-        if (chkvis.isOutputter()) {
-            chkvis.clearOptimizable(nodep, "Table creates display output");
         }
         UINFO(4, "  Test: Opt=" << (chkvis.optimizable() ? "OK" : "NO") << ", Instrs="
                                 << chkvis.instrCount() << " Data=" << chkvis.dataCount()

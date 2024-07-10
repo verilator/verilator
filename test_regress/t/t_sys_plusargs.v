@@ -14,6 +14,7 @@ module t;
    string      sv_str;
    reg [7*8:1] p_in;
    string      sv_in;
+   integer unread;  // never read
 
    initial begin
       if ($test$plusargs("PLUS")!==1) $stop;
@@ -118,6 +119,14 @@ module t;
       p_i = 0;
       if ($value$plusargs("INT=%d", p_i)) ;
       if (p_i !== 32'd1234) $stop;
+
+      // bug5127 - assign side effect test
+      p_i = 0;
+      p_r = 0;
+      unread = $value$plusargs("INT=%d", p_i);
+      unread = $value$plusargs("REAL=%e", p_r);
+      if (p_i !== 32'd1234) $stop;
+      if (p_r !== 1.2345) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

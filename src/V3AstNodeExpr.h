@@ -420,6 +420,7 @@ public:
                        const V3Number& ths) override;
     string emitVerilog() override { return "%k(%l %f? %r %k: %t)"; }
     string emitC() override { return "VL_COND_%nq%lq%rq%tq(%nw, %P, %li, %ri, %ti)"; }
+    string emitSMT() const override { return "(ite %l %r %t)"; }
     bool cleanOut() const override { return false; }  // clean if e1 & e2 clean
     bool cleanLhs() const override { return true; }
     bool cleanRhs() const override { return false; }

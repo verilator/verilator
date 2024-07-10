@@ -8,3 +8,5 @@ assignees: ''
 ---
 
 How may we help - what is your question?
+
+(If reporting a bug or requesting a feature please use one of the other issue templates.)

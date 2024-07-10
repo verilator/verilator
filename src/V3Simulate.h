@@ -107,7 +107,7 @@ private:
     bool m_anyAssignDly;  ///< True if found a delayed assignment
     bool m_anyAssignComb;  ///< True if found a non-delayed assignment
     bool m_inDlyAssign;  ///< Under delayed assignment
-    bool m_isOutputter;  // Creates output
+    bool m_isImpure;  // Not pure
     int m_instrCount;  ///< Number of nodes
     int m_dataCount;  ///< Bytes of data
     AstJumpGo* m_jumpp = nullptr;  ///< Jump label we're branching from
@@ -214,7 +214,7 @@ public:
     AstNode* whyNotNodep() const { return m_whyNotNodep; }
 
     bool isAssignDly() const { return m_anyAssignDly; }
-    bool isOutputter() const { return m_isOutputter; }
+    bool isImpure() const { return m_isImpure; }
     int instrCount() const { return m_instrCount; }
     int dataCount() const { return m_dataCount; }
 
@@ -359,7 +359,7 @@ private:
             // UINFO(9, "     !predictopt " << nodep << endl);
             clearOptimizable(nodep, "Isn't predictable");
         }
-        if (nodep->isOutputter()) m_isOutputter = true;
+        if (!nodep->isPure()) m_isImpure = true;
     }
 
     void knownBadNodeType(AstNode* nodep) {
@@ -1231,7 +1231,7 @@ public:
         m_anyAssignComb = false;
         m_anyAssignDly = false;
         m_inDlyAssign = false;
-        m_isOutputter = false;
+        m_isImpure = false;
         m_instrCount = 0;
         m_dataCount = 0;
         m_jumpp = nullptr;
