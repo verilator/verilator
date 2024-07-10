@@ -54,7 +54,7 @@ class ScopeVisitor final : public VNVisitor {
 
     std::unordered_map<AstNodeModule*, AstScope*> m_packageScopes;  // Scopes for each package
     VarScopeMap m_varScopes;  // Varscopes created for each scope and var
-    std::unordered_map<AstVarRef*, AstScope*>
+    std::set<std::pair<AstVarRef*, AstScope*>>
         m_varRefScopes;  // Varrefs-in-scopes needing fixup when done
 
     // METHODS
@@ -259,7 +259,6 @@ class ScopeVisitor final : public VNVisitor {
         iterateChildren(clonep);
     }
     void visit(AstVar* nodep) override {
-        UINFO(4, "    VAR " << nodep << endl);
         // Make new scope variable
         if (!nodep->user1p()) {
             AstScope* scopep = m_scopep;
@@ -268,6 +267,7 @@ class ScopeVisitor final : public VNVisitor {
                 if (ifacerefp->cellp()) scopep = VN_AS(ifacerefp->cellp()->user2p(), Scope);
             }
             AstVarScope* const varscp = new AstVarScope{nodep->fileline(), scopep, nodep};
+            UINFO(6, "   New scope " << varscp << endl);
             if (m_aboveCellp && !m_aboveCellp->isTrace()) varscp->trace(false);
             nodep->user1p(varscp);
             if (v3Global.opt.isClocker(varscp->prettyName())) {
