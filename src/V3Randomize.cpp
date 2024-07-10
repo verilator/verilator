@@ -58,9 +58,9 @@ class RandomizeMarkVisitor final : public VNVisitorConst {
     BaseToDerivedMap m_baseToDerivedMap;  // Mapping from base classes to classes that extend them
     AstClass* m_classp = nullptr;  // Current class
     AstNode* m_constraintExprp = nullptr;  // Current constraint expression
-    AstNodeModule* m_modp; // Current module
-    std::map<AstVar*, AstNodeModule*> m_moduleMap; // Variable -> module under which it is
-    std::set<AstNodeVarRef*> m_staticRefs; // References to static variables under `with` clauses
+    AstNodeModule* m_modp;  // Current module
+    std::map<AstVar*, AstNodeModule*> m_moduleMap;  // Variable -> module under which it is
+    std::set<AstNodeVarRef*> m_staticRefs;  // References to static variables under `with` clauses
 
     // METHODS
     void markMembers(const AstClass* nodep) {
@@ -118,7 +118,7 @@ class RandomizeMarkVisitor final : public VNVisitorConst {
         }
     }
     void visit(AstMethodCall* nodep) override {
-            iterateChildrenConst(nodep);
+        iterateChildrenConst(nodep);
         if (nodep->name() != "randomize") return;
         if (const AstClassRefDType* const classRefp
             = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), ClassRefDType)) {
@@ -149,8 +149,7 @@ class RandomizeMarkVisitor final : public VNVisitorConst {
     void visit(AstNodeVarRef* nodep) override {
         if (!m_constraintExprp) return;
 
-        if (nodep->varp()->lifetime().isStatic())
-            m_staticRefs.emplace(nodep);
+        if (nodep->varp()->lifetime().isStatic()) m_staticRefs.emplace(nodep);
 
         if (!nodep->varp()->isRand()) return;
         for (AstNode* backp = nodep; backp != m_constraintExprp && !backp->user1();
@@ -444,7 +443,7 @@ class CaptureFrame final {
     AstArg* m_argsp;  // Original references turned into arguments
     AstScope*
         m_localScopep;  // Scope of local variables local to the context of capture destination
-    AstNodeModule* m_myModulep; // Module for which static references will stay uncaptured.
+    AstNodeModule* m_myModulep;  // Module for which static references will stay uncaptured.
     // Map original var nodes to their clones and respective scopes
     std::map<const AstVar*, std::pair<AstVar*, AstVarScope*>> m_varCloneMap;
 
@@ -480,8 +479,7 @@ class CaptureFrame final {
 
 public:
     explicit CaptureFrame(TreeNodeType* nodep, AstScope* localScopep, AstNodeModule* myModulep,
-                          bool clone = true,
-                          VNRelinker* linkerp = nullptr)
+                          bool clone = true, VNRelinker* linkerp = nullptr)
         : m_treep(clone ? nodep->cloneTree(true) : nodep->unlinkFrBackWithNext(linkerp))
         , m_argsp(nullptr)
         , m_localScopep(localScopep)
@@ -499,20 +497,19 @@ public:
             }
             AstVarScope* newVarScopep;
             AstVar* newVarp;
-            bool newCapture =
-                captureVariable(varrefp->fileline(), varrefp, &newVarp, &newVarScopep);
+            bool newCapture
+                = captureVariable(varrefp->fileline(), varrefp, &newVarp, &newVarScopep);
             if (m_localScopep) UASSERT_OBJ(newVarScopep, newVarp, "Scope not bound to a variable");
-            if (!varrefp->varp()->lifetime().isStatic()
-                || varrefp->classOrPackagep()) {
+            if (!varrefp->varp()->lifetime().isStatic() || varrefp->classOrPackagep()) {
                 // Keeping classOrPackagep will cause a broken link after inlining
-                varrefp->classOrPackagep(nullptr); // AstScope will figure this out
+                varrefp->classOrPackagep(nullptr);  // AstScope will figure this out
             }
             AstNodeVarRef* newVarRefp = newCapture ? varrefp->cloneTree(false) : nullptr;
             varrefp->varp(newVarp);
             if (!newCapture) return;
             if (VN_IS(varrefp, VarXRef)) {
-                AstVarRef* notXVarRefp =
-                    new AstVarRef{varrefp->fileline(), newVarp, VAccess::READ};
+                AstVarRef* notXVarRefp
+                    = new AstVarRef{varrefp->fileline(), newVarp, VAccess::READ};
                 notXVarRefp->classOrPackagep(varrefp->classOrPackagep());
                 varrefp->replaceWith(notXVarRefp);
                 varrefp->deleteTree();
@@ -922,8 +919,10 @@ class RandomizeVisitor final : public VNVisitor {
                 implementConstraintsClear(randomizep->fileline(), genp, VN_AS(m_modp, Class)));
         }
         randomizep->addStmtsp(setupTaskRefp->makeStmt());
-        { ConstraintExprVisitor{nodep->itemsp(), (m_inline ? taskp : newp), genp,
-                                VN_AS(m_modp, Class), !m_inline}; }
+        {
+            ConstraintExprVisitor{nodep->itemsp(), (m_inline ? taskp : newp), genp,
+                                  VN_AS(m_modp, Class), !m_inline};
+        }
         if (nodep->itemsp()) taskp->addStmtsp(nodep->itemsp()->unlinkFrBackWithNext());
     }
     void visit(AstRandCase* nodep) override {
@@ -1071,7 +1070,10 @@ class RandomizeVisitor final : public VNVisitor {
 
         // Generate constraint setup code and a hardcoded call to the solver
         randomizeFuncp->addStmtsp(captured.getTree());
-        { ConstraintExprVisitor{captured.getTree(), randomizeFuncp, localGenp, classp, !m_inline}; }
+        {
+            ConstraintExprVisitor{captured.getTree(), randomizeFuncp, localGenp, classp,
+                                  !m_inline};
+        }
 
         // Call the solver and set return value
         auto randNextp = new AstVarRef{nodep->fileline(), localGenp, VAccess::READWRITE};
