@@ -1,0 +1,6 @@
+[0] %Error: t_assert_ctl_immediate.v:47: Assertion failed in top.t.module_with_assertctl: 'assert' failed.
+-Info: t/t_assert_ctl_immediate.v:47: Verilog $stop, ignored due to +verilator+error+limit
+[0] %Error: t_assert_ctl_immediate.v:53: Assertion failed in top.t.module_with_assertctl: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:41: Assertion failed in top.t.module_with_assertctl.f_assert: 'assert' failed.
+[0] %Error: t_assert_ctl_immediate.v:41: Assertion failed in top.t.module_with_assertctl.f_assert: 'assert' failed.
+*-* All Finished *-*

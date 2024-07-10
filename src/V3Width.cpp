@@ -5462,6 +5462,10 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->passsp(), nullptr);
         userIterateAndNext(nodep->failsp(), nullptr);
     }
+    void visit(AstAssertCtl* nodep) override {
+        assertAtStatement(nodep);
+        userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
+    }
     void visit(AstAssertIntrinsic* nodep) override {
         assertAtStatement(nodep);
         iterateCheckBool(nodep, "Property", nodep->propp(), BOTH);  // it's like an if() condition.

@@ -87,5 +87,6 @@ module Test(/*AUTOARG*/
       $assertkill;
       assert(0);
       $asserton;
+      $assertcontrol(3, 8);
    end
 endmodule
