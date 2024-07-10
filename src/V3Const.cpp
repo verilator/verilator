@@ -3451,12 +3451,6 @@ class ConstVisitor final : public VNVisitor {
         }
     }
 
-    void visit(AstConstraintExpr* nodep) override {
-        // Do not optimize constraint expressions because it confuses the solver
-        // TODO: Allow _some_ optimization, because stuff like `(bvand x #xffffffffffff)`
-        // is not good
-    }
-
     //-----
     // Below lines are magic expressions processed by astgen
     //  TREE_SKIP_VISIT("AstNODETYPE")    # Rename normal visit to visitGen and don't iterate
