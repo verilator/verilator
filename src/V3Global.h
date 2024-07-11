@@ -146,7 +146,7 @@ public:
     AstNetlist* rootp() const VL_MT_SAFE { return m_rootp; }
     V3ThreadPool* threadPoolp() const VL_PURE { return m_threadPoolp; }
     void threadPoolp(V3ThreadPool* threadPoolp) {
-        UASSERT(!m_threadPoolp, "call once");
+        UASSERT(!m_threadPoolp, "attempted to create multiple threadPool singletons");
         m_threadPoolp = threadPoolp;
     }
     VWidthMinUsage widthMinUsage() const VL_PURE { return m_widthMinUsage; }
