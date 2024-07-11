@@ -1,0 +1,4 @@
+%Error-UNSUPPORTED: Unsupported: Using --output-split (= 20000000) with --output-split-jobs is not supported.
+                    ... Suggest remove --output-split.
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
