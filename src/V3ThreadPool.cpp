@@ -55,7 +55,7 @@ void V3ThreadPool::wait() {
         std::this_thread::yield();
     }
     if (m_shutdown) {
-        for (auto& worker : m_workers) { worker.join(); }
+        for (auto& worker : m_workers) worker.join();
     }
 }
 
