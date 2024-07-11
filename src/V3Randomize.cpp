@@ -478,17 +478,26 @@ class RandomizeVisitor final : public VNVisitor {
         UINFO(9, "created " << varp << endl);
         return newp;
     }
-    AstNodeStmt* newRandStmtsp(FileLine* fl, AstNodeVarRef* varrefp, AstVar* randcVarp,
-                               int offset = 0, AstMemberDType* memberp = nullptr) {
+    AstNodeStmt* newRandStmtsp(FileLine* fl, AstNodeExpr* exprp, AstVar* randcVarp, int offset = 0,
+                               AstMemberDType* memberp = nullptr) {
         if (const auto* const structDtp
-            = VN_CAST(memberp ? memberp->subDTypep()->skipRefp() : varrefp->dtypep()->skipRefp(),
+            = VN_CAST(memberp ? memberp->subDTypep()->skipRefp() : exprp->dtypep()->skipRefp(),
                       StructDType)) {
             AstNodeStmt* stmtsp = nullptr;
-            offset += memberp ? memberp->lsb() : 0;
+            if (structDtp->packed()) offset += memberp ? memberp->lsb() : 0;
             for (AstMemberDType* smemberp = structDtp->membersp(); smemberp;
                  smemberp = VN_AS(smemberp->nextp(), MemberDType)) {
-                AstNodeStmt* const randp = newRandStmtsp(
-                    fl, stmtsp ? varrefp->cloneTree(false) : varrefp, nullptr, offset, smemberp);
+                AstNodeStmt* randp = nullptr;
+                if (structDtp->packed()) {
+                    randp = newRandStmtsp(fl, stmtsp ? exprp->cloneTree(false) : exprp, nullptr,
+                                          offset, smemberp);
+                } else {
+                    AstStructSel* structSelp
+                        = new AstStructSel{fl, exprp->cloneTree(false), smemberp->name()};
+                    structSelp->dtypep(smemberp->childDTypep());
+                    if (!structSelp->dtypep()) structSelp->dtypep(smemberp->subDTypep());
+                    randp = newRandStmtsp(fl, structSelp, nullptr);
+                }
                 if (stmtsp) {
                     stmtsp->addNext(randp);
                 } else {
@@ -499,24 +508,24 @@ class RandomizeVisitor final : public VNVisitor {
         } else {
             AstNodeExpr* valp;
             if (AstEnumDType* const enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
-                                                              : varrefp->dtypep()->subDTypep(),
+                                                              : exprp->dtypep()->subDTypep(),
                                                       EnumDType)) {
                 AstVarRef* const tabRefp
                     = new AstVarRef{fl, enumValueTabp(enumDtp), VAccess::READ};
                 tabRefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
                 AstNodeExpr* const randp
-                    = newRandValue(fl, randcVarp, varrefp->findBasicDType(VBasicDTypeKwd::UINT32));
+                    = newRandValue(fl, randcVarp, exprp->findBasicDType(VBasicDTypeKwd::UINT32));
                 AstNodeExpr* const moddivp = new AstModDiv{
                     fl, randp, new AstConst{fl, static_cast<uint32_t>(enumDtp->itemCount())}};
                 moddivp->dtypep(enumDtp);
                 valp = new AstArraySel{fl, tabRefp, moddivp};
             } else {
-                valp = newRandValue(fl, randcVarp,
-                                    (memberp ? memberp->dtypep() : varrefp->varp()->dtypep()));
+                valp
+                    = newRandValue(fl, randcVarp, (memberp ? memberp->dtypep() : exprp->dtypep()));
             }
             return new AstAssign{fl,
-                                 new AstSel{fl, varrefp, offset + (memberp ? memberp->lsb() : 0),
-                                            memberp ? memberp->width() : varrefp->width()},
+                                 new AstSel{fl, exprp, offset + (memberp ? memberp->lsb() : 0),
+                                            memberp ? memberp->width() : exprp->width()},
                                  valp};
         }
     }
