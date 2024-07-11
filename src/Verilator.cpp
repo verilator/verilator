@@ -660,7 +660,7 @@ static void verilate(const string& argString) {
     V3MutexConfig::s().configure(v3Global.opt.verilateJobs() > 1 /*enable*/);
 
     // Initialize thread pool
-    v3Global.threadPoolp(new V3ThreadPool(v3Global.opt.verilateJobs()));
+    v3Global.threadPoolp(new V3ThreadPool{v3Global.opt.verilateJobs()});
 
     // --FRONTEND------------------
 
