@@ -22,6 +22,7 @@ Verilator 5.027 devel
 * Fix unknown conversion on queues (#5220). [Alex Solomatnikov]
 * Fix top-level unpacked structure resets (#5221).
 * Fix concurrency for mailbox and semaphores (#5222). [Liam Braun]
+* Fix error on empty generate with -O0 (#5250).
 
 
 Verilator 5.026 2024-06-15

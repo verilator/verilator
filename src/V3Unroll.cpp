@@ -356,7 +356,11 @@ class UnrollVisitor final : public VNVisitor {
             }
         }
         if (!newbodysp) {  // initp might have effects after the loop
-            newbodysp = initp;  // Maybe nullptr
+            if (m_generate && initp) {  // GENFOR(ASSIGN(...)) need to move under a new Initial
+                newbodysp = new AstInitial{initp->fileline(), initp};
+            } else {
+                newbodysp = initp;  // Maybe nullptr
+            }
             initp = nullptr;
         }
         // Replace the FOR()
