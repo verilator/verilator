@@ -23,6 +23,10 @@ class Bar;
   endfunction
 endclass
 
+class Baz;
+  rand int v;
+endclass
+
 module submodule();
   int sub_var = 7;
 endmodule
@@ -35,9 +39,14 @@ module mwith();
   submodule sub1();
   submodule sub2();
 
+  function automatic int return_3();
+    return 3;
+  endfunction
+
   initial begin
     int c = 30;
     Foo foo = new(c);
+    Baz baz = new;
     $display("foo.x = %d", foo.x);
     $display("-----------------");
 
@@ -59,7 +68,10 @@ module mwith();
 
     // Check capture of a static variable
     if (foo.randomize() with { a > sub1.sub_var; } != 1) $stop;
+    // Check reference to a function
     if (foo.randomize() with { a > return_2(); } != 1) $stop;
+    // Check randomization of class with no constraints
+    if (baz.randomize() with { v inside {[2:10]}; } != 1) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish();

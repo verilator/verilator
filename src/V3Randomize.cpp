@@ -451,7 +451,6 @@ public:
         : m_treep(clone ? nodep->cloneTree(true) : nodep->unlinkFrBackWithNext(linkerp))
         , m_argsp(nullptr)
         , m_myModulep(myModulep) {
-        UINFO(1, "My module set to " << m_myModulep << endl);
         m_treep->foreachAndNext([&](AstNodeVarRef* varrefp) {
             UASSERT_OBJ(varrefp->varp(), varrefp, "Variable unlinked");
             if (!varrefp->varp()->isFuncLocal() && !VN_IS(varrefp, VarXRef)
@@ -894,8 +893,10 @@ class RandomizeVisitor final : public VNVisitor {
         }
 
         // Add constraints clearing code
-        randomizeFuncp->addStmtsp(
-            implementConstraintsClear(randomizeFuncp->fileline(), classGenp));
+        if (classGenp) {
+            randomizeFuncp->addStmtsp(
+                implementConstraintsClear(randomizeFuncp->fileline(), classGenp));
+        }
 
         randomizeFuncp->addStmtsp(localGenp);
 
