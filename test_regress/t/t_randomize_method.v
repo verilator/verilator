@@ -38,6 +38,13 @@ typedef struct packed {
    longint     z;
 } StructOuter;
 
+typedef struct {
+   int         i;
+   StructOuter j;
+   Enum        k;
+   longint     z;
+} StructUnpacked;
+
 class BaseCls;
 endclass
 
@@ -79,7 +86,7 @@ class OtherCls;
    rand logic[47:0] x;
    rand logic[31:0] y;
    rand logic[23:0] z;
-   rand StructOuter str;
+   rand StructUnpacked str;
 
    function new;
       v = 0;
@@ -87,7 +94,9 @@ class OtherCls;
       x = 0;
       y = 0;
       z = 0;
-      str = '{x: 1'b0, y: ONE, z: 64'd0, s: '{a: 32'd0, b: 1'b0, c: ONE}};
+      str.i = 0;
+      str.j = '{x: 1'b0, y: ONE, z: 64'd0, s: '{a: 32'd0, b: 1'b0, c: ONE}};
+      str.k = ONE;
    endfunction
 
 endclass
@@ -152,8 +161,9 @@ module t (/*AUTOARG*/);
          rand_result = der_int.randomize();
          rand_result = der_contain.randomize();
          if (!(derived.l inside {ONE, TWO, THREE, FOUR})) $stop;
-         if (!(other.str.s.c inside {ONE, TWO, THREE, FOUR})) $stop;
-         if (!(other.str.y inside {ONE, TWO, THREE, FOUR})) $stop;
+         if (!(other.str.j.s.c inside {ONE, TWO, THREE, FOUR})) $stop;
+         if (!(other.str.j.y inside {ONE, TWO, THREE, FOUR})) $stop;
+         if (!(other.str.k inside {ONE, TWO, THREE, FOUR})) $stop;
          if (derived.i.e != 0) $stop;
          if (derived.k != 0) $stop;
          if (other.v != 0) $stop;
@@ -172,12 +182,14 @@ module t (/*AUTOARG*/);
       `check_rand(other, other.x);
       `check_rand(other, other.y);
       `check_rand(other, other.z);
-      `check_rand(other, other.str.x);
-      `check_rand(other, other.str.y);
-      `check_rand(other, other.str.z);
-      `check_rand(other, other.str.s.a);
-      `check_rand(other, other.str.s.b);
-      `check_rand(other, other.str.s.c);
+      `check_rand(other, other.str.i);
+      `check_rand(other, other.str.j.x);
+      `check_rand(other, other.str.j.y);
+      `check_rand(other, other.str.j.z);
+      `check_rand(other, other.str.j.s.a);
+      `check_rand(other, other.str.j.s.b);
+      `check_rand(other, other.str.j.s.c);
+      `check_rand(other, other.str.k);
       `check_rand(der_int, der_int.a);
       `check_rand(der_contain, der_contain.cls1.a);
       `check_rand(der_contain, der_contain.a);
