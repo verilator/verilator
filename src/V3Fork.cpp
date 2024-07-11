@@ -46,7 +46,6 @@
 #include "V3MemberMap.h"
 
 #include <set>
-#include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -167,9 +166,7 @@ public:
             AstMemberSel* const memberselp = new AstMemberSel{
                 varp->fileline(),
                 new AstVarRef{varp->fileline(), m_instance.m_handlep, VAccess::WRITE},
-                varp->dtypep()};
-            memberselp->name(varp->name());
-            memberselp->varp(VN_AS(memberMap.findMember(m_instance.m_classp, varp->name()), Var));
+                VN_AS(memberMap.findMember(m_instance.m_classp, varp->name()), Var)};
             AstNode* initAsgnp
                 = new AstAssign{varp->fileline(), memberselp,
                                 new AstVarRef{varp->fileline(), varp, VAccess::READ}};
@@ -307,8 +304,7 @@ class DynScopeVisitor final : public VNVisitor {
         refp->unlinkFrBack(&handle);
         AstMemberSel* const membersel = new AstMemberSel{
             refp->fileline(), new AstVarRef{refp->fileline(), dynScope.m_handlep, refp->access()},
-            refp->dtypep()};
-        membersel->name(refp->varp()->name());
+            refp->varp()};
         if (refp->varp()->direction() == VDirection::INPUT) {
             membersel->varp(
                 VN_AS(m_memberMap.findMember(dynScope.m_classp, refp->varp()->name()), Var));

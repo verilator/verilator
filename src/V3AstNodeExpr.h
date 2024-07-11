@@ -1564,12 +1564,7 @@ public:
         this->fromp(fromp);
         dtypep(nullptr);  // V3Width will resolve
     }
-    AstMemberSel(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
-        : ASTGEN_SUPER_MemberSel(fl)
-        , m_name{dtp->name()} {
-        this->fromp(fromp);
-        dtypep(dtp);
-    }
+    AstMemberSel(FileLine* fl, AstNodeExpr* fromp, AstVar* varp);
     ASTGEN_MEMBERS_AstMemberSel;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
