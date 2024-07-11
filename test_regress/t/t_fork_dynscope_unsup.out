@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_fork_dynscope_unsup.v:17:7: Unsupported: Writing to a captured inout variable in a fork after a timing control
+                                                  : ... note: In instance 't'
+   17 |       p = #1 1;
+      |       ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_fork_dynscope_unsup.v:22:5: Unsupported: Writing to a captured output variable in a non-blocking assignment after a timing control
+                                                  : ... note: In instance 't'
+   22 |     q <= #1 1;
+      |     ^
+%Error: Exiting due to
