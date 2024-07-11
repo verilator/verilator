@@ -445,24 +445,41 @@ class CaptureFrame final {
         return false;
     }
 
+    template <typename Action>
+    static void foreachSuperClass(AstClass* classp, Action action) {
+        for (AstClassExtends* extendsp = classp->extendsp(); extendsp;
+             extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {
+            AstClass* const superclassp = VN_AS(extendsp->childDTypep(), ClassRefDType)->classp();
+            action(superclassp);
+            foreachSuperClass(superclassp, action);
+        }
+    }
+
 public:
     explicit CaptureFrame(TreeNodeType* const nodep, AstNodeModule* const myModulep,
                           const bool clone = true, VNRelinker* const linkerp = nullptr)
         : m_treep(clone ? nodep->cloneTree(true) : nodep->unlinkFrBackWithNext(linkerp))
         , m_argsp(nullptr)
         , m_myModulep(myModulep) {
+
+        std::set<AstNodeModule*> visibleModules = {myModulep};
+        if (AstClass* classp = VN_CAST(m_myModulep, Class)) {
+            foreachSuperClass(classp, [&](AstClass* superclassp) {
+                visibleModules.emplace(superclassp);
+            });
+        }
         m_treep->foreachAndNext([&](AstNodeVarRef* varrefp) {
             UASSERT_OBJ(varrefp->varp(), varrefp, "Variable unlinked");
             if (!varrefp->varp()->isFuncLocal() && !VN_IS(varrefp, VarXRef)
-                && (varrefp->classOrPackagep() == m_myModulep))
+                && (visibleModules.count(varrefp->classOrPackagep())))
                 return;
             AstVar* newVarp;
             bool newCapture = captureVariable(varrefp->fileline(), varrefp, &newVarp);
+            AstNodeVarRef* const newVarRefp = newCapture ? varrefp->cloneTree(false) : nullptr;
             if (!varrefp->varp()->lifetime().isStatic() || varrefp->classOrPackagep()) {
                 // Keeping classOrPackagep will cause a broken link after inlining
                 varrefp->classOrPackagep(nullptr);  // AstScope will figure this out
             }
-            AstNodeVarRef* const newVarRefp = newCapture ? varrefp->cloneTree(false) : nullptr;
             varrefp->varp(newVarp);
             if (!newCapture) return;
             if (VN_IS(varrefp, VarXRef)) {
@@ -895,8 +912,12 @@ class RandomizeVisitor final : public VNVisitor {
                     "Wrong expr type");
 
         // Add function arguments
-        for (AstArg* arg = captured.getArgs(); arg; arg = VN_AS(arg->nextp(), Arg)) {
-            AstNodeVarRef* varrefp = VN_AS(arg->exprp(), NodeVarRef);
+        for (AstArg* argp = captured.getArgs(); argp; argp = VN_AS(argp->nextp(), Arg)) {
+            AstNodeVarRef* varrefp = VN_AS(argp->exprp(), NodeVarRef);
+            if ((varrefp->classOrPackagep() == m_modp) || VN_IS(varrefp, VarXRef)) {
+                // Keeping classOrPackagep will cause a broken link after inlining
+                varrefp->classOrPackagep(nullptr);
+            }
             randomizeFuncp->addStmtsp(captured.getVar(varrefp->varp()));
         }
 

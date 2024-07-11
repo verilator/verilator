@@ -4,7 +4,23 @@
 // any use, without warranty, 2024 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
 
-class Foo;
+class Boo;
+  function new();
+    boo = 6;
+  endfunction
+
+  int unsigned boo;
+endclass
+
+class Boo2;
+  function new();
+    boo = 6;
+  endfunction
+
+  int unsigned boo;
+endclass
+
+class Foo extends Boo;
   rand int unsigned a;
   rand int unsigned b;
   int x;
@@ -16,10 +32,22 @@ class Foo;
   constraint constr1_c { b < x; }
 endclass
 
-class Bar;
+// Current AstWith representation makes VARs of caller indistinguishable from VARs of randomized
+// object if both the caller and callee are the same module, but different instances.
+// That's why for the purpose of this test, the caller derives a different class
+class Bar extends Boo2;
   // Give the local variables a different scope by defining the functino under Bar
   static function bit test_local_constrdep(Foo foo, int c);
     return foo.randomize() with { a <= c; a > 1; x % a == 0; } == 1;
+  endfunction
+
+  function bit test_capture_of_callers_derived_var(Foo foo);
+    boo = 4;
+    return (foo.randomize() with { a == local::boo; } == 1) && (foo.a == 4);
+  endfunction
+
+  static function bit test_capture_of_callees_derived_var(Foo foo);
+    return (foo.randomize() with { a == boo; } == 1) && (foo.a == 6);
   endfunction
 endclass
 
@@ -47,6 +75,7 @@ module mwith();
     int c = 30;
     Foo foo = new(c);
     Baz baz = new;
+    Bar bar = new;
     $display("foo.x = %d", foo.x);
     $display("-----------------");
 
@@ -72,6 +101,10 @@ module mwith();
     if (foo.randomize() with { a > return_2(); } != 1) $stop;
     // Check randomization of class with no constraints
     if (baz.randomize() with { v inside {[2:10]}; } != 1) $stop;
+    // Check randomization with captured non-static variable from different AstNodeModule
+    if (!bar.test_capture_of_callers_derived_var(foo)) $stop;
+    // Check randomization with non-captured non-static variable from different AstNodeModule
+    if (!Bar::test_capture_of_callees_derived_var(foo)) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish();
