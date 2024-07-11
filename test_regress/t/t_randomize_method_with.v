@@ -27,6 +27,10 @@ module submodule();
   int sub_var = 7;
 endmodule
 
+function automatic int return_2();
+  return 2;
+endfunction
+
 module mwith();
   submodule sub1();
   submodule sub2();
@@ -55,6 +59,7 @@ module mwith();
 
     // Check capture of a static variable
     if (foo.randomize() with { a > sub1.sub_var; } != 1) $stop;
+    if (foo.randomize() with { a > return_2(); } != 1) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish();
