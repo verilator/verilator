@@ -660,7 +660,7 @@ public:
 };
 
 // Used by clang's -fthread-safety, ensures that only one instance of V3ThreadScope
-// is created at the time.
+// is created at a time
 class VL_CAPABILITY("mutex") MtScopeMutex final {
 public:
     static MtScopeMutex s_haveThreadScope;
