@@ -42,7 +42,7 @@ class V3ThreadPool final {
 
 public:
     // CONSTRUCTORS
-    explicit V3ThreadPool(unsigned numThreads);
+    explicit V3ThreadPool(int numThreads);
     ~V3ThreadPool() VL_EXCLUDES(m_mutex);
     VL_UNCOPYABLE(V3ThreadPool);
     VL_UNMOVABLE(V3ThreadPool);

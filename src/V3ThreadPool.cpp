@@ -20,10 +20,10 @@
 #include "V3Global.h"
 #include "V3Mutex.h"
 
-V3ThreadPool::V3ThreadPool(unsigned numThreads) {
-    numThreads = std::max(numThreads, 1U);
+V3ThreadPool::V3ThreadPool(int numThreads) {
+    numThreads = std::max(numThreads, 1);
     if (numThreads == 1) return;
-    for (unsigned int i = 0; i < numThreads; ++i) {
+    for (int i = 0; i < numThreads; ++i) {
         m_workers.emplace_back(&V3ThreadPool::startWorker, this);
     }
 }
