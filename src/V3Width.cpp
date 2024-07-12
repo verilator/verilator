@@ -3091,13 +3091,13 @@ class WidthVisitor final : public VNVisitor {
     }
     AstWith* methodWithArgument(AstMethodCall* nodep, bool required, bool arbReturn,
                                 AstNodeDType* returnDtp, AstNodeDType* indexDtp,
-                                AstNodeDType* valueDtp, VNRelinker* relinker = nullptr) {
+                                AstNodeDType* valueDtp) {
         UASSERT_OBJ(arbReturn || returnDtp, nodep, "Null return type");
         if (AstWith* const withp = VN_CAST(nodep->pinsp(), With)) {
             withp->indexArgRefp()->dtypep(indexDtp);
             withp->valueArgRefp()->dtypep(valueDtp);
             userIterate(withp, WidthVP{returnDtp, BOTH}.p());
-            withp->unlinkFrBack(relinker);
+            withp->unlinkFrBack();
             return withp;
         } else if (required) {
             nodep->v3error("'with' statement is required for ." << nodep->prettyName()
