@@ -464,9 +464,8 @@ public:
 
         std::set<AstNodeModule*> visibleModules = {myModulep};
         if (AstClass* classp = VN_CAST(m_myModulep, Class)) {
-            foreachSuperClass(classp, [&](AstClass* superclassp) {
-                visibleModules.emplace(superclassp);
-            });
+            foreachSuperClass(classp,
+                              [&](AstClass* superclassp) { visibleModules.emplace(superclassp); });
         }
         m_treep->foreachAndNext([&](AstNodeVarRef* varrefp) {
             UASSERT_OBJ(varrefp->varp(), varrefp, "Variable unlinked");
