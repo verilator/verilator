@@ -220,6 +220,7 @@ class WidthVisitor final : public VNVisitor {
     const AstWith* m_withp = nullptr;  // Current 'with' statement
     const AstFunc* m_funcp = nullptr;  // Current function
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
+    const AstNodeExpr* m_randomizeFromp = nullptr;  // Current randomize method call fromp
     const bool m_paramsOnly;  // Computing parameter value; limit operation
     const bool m_doGenerate;  // Do errors later inside generate statement
     int m_dtTables = 0;  // Number of created data type tables
@@ -2914,6 +2915,8 @@ class WidthVisitor final : public VNVisitor {
                     nodep->dtypep(foundp->dtypep());
                     nodep->varp(varp);
                     nodep->didWidth(true);
+                    if (nodep->fromp()->sameTree(m_randomizeFromp) && varp->isRand())  // null-safe
+                        V3LinkLValue::linkLValueSet(nodep);
                     return true;
                 }
                 if (AstEnumItemRef* const adfoundp = VN_CAST(foundp, EnumItemRef)) {
@@ -3712,10 +3715,12 @@ class WidthVisitor final : public VNVisitor {
         AstClass* const first_classp = adtypep->classp();
         AstWith* withp = nullptr;
         if (nodep->name() == "randomize") {
+            VL_RESTORER(m_randomizeFromp);
+            m_randomizeFromp = nodep->fromp();
             withp = methodWithArgument(nodep, false, false, adtypep->findVoidDType(),
                                        adtypep->findBitDType(), adtypep);
             methodOkArguments(nodep, 0, 0);
-            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READWRITE);
             V3Randomize::newRandomizeFunc(first_classp);
             m_memberMap.clear();
         } else if (nodep->name() == "srandom") {
