@@ -1,0 +1,4 @@
+%Error: t/t_randomize_method_with_bad.v:18:42: Can't find definition of task/function: 'in_mod_function'
+   18 |     int res = foo.randomize() with { v < in_mod_function(); };
+      |                                          ^~~~~~~~~~~~~~~
+%Error: Exiting due to

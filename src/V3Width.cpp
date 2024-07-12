@@ -67,6 +67,7 @@
 
 #include "V3Width.h"
 
+#include "V3Ast.h"
 #include "V3Const.h"
 #include "V3Error.h"
 #include "V3Global.h"
@@ -3764,11 +3765,8 @@ class WidthVisitor final : public VNVisitor {
                     nodep->dtypeFrom(ftaskp);
                     nodep->classOrPackagep(classp);
                     if (VN_IS(ftaskp, Task)) nodep->dtypeSetVoid();
+                    if (withp) nodep->addPinsp(withp);
                     processFTaskRefArgs(nodep);
-                    if (withp) {
-                        withp->v3warn(CONSTRAINTIGN, "'with' constraint ignored (unsupported)");
-                        VL_DO_DANGLING(withp->deleteTree(), withp);
-                    }
                 }
                 return;
             } else if (nodep->name() == "get_randstate" || nodep->name() == "set_randstate") {

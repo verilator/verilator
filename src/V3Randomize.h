@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Node attributes/ expression widths
+// DESCRIPTION: Verilator: Generate randomization procedures
 //
 // Code available from: https://verilator.org
 //
@@ -30,7 +30,8 @@ class V3Randomize final {
 public:
     static void randomizeNetlist(AstNetlist* nodep) VL_MT_DISABLED;
 
-    static AstFunc* newRandomizeFunc(AstClass* nodep) VL_MT_DISABLED;
+    static AstFunc* newRandomizeFunc(AstClass* nodep,
+                                     const std::string& name = "randomize") VL_MT_DISABLED;
     static AstFunc* newSRandomFunc(AstClass* nodep) VL_MT_DISABLED;
 };
 

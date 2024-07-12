@@ -22,9 +22,10 @@ endclass
 
 module t (/*AUTOARG*/);
    Cls obj;
+   int res;
 
    initial begin
       obj = new;
-      obj.randomize();
+      res = obj.randomize();
    end
 endmodule
