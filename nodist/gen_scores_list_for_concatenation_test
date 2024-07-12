@@ -11,7 +11,7 @@
 #   ./nodist/gen_scores_list_for_concatenation_test \
 #        200x15-100 2x999 16x50 2x999 100x50-150 500 4-33 8x0-999 0-7 \
 #        > test_files_list.txt
-#   ./bin/verilator --debugi-V3EmitMk 6 --output-split-jobs 10 \
+#   ./bin/verilator --debugi-V3EmitMk 6 --output-concatenation-groups 10 \
 #               --debug-test-concatenation ./test_files_list.txt
 
 import argparse

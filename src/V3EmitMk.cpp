@@ -271,7 +271,7 @@ public:
                   return outputFiles;
               };
 
-        const int totalBucketsNum = v3Global.opt.outputSplitJobs();
+        const int totalBucketsNum = v3Global.opt.outputConcatenationGroups();
         UINFO(5, "Number of buckets: " << totalBucketsNum << endl);
         UASSERT(totalBucketsNum > 0, "More than 0 buckets required");
 
@@ -554,7 +554,7 @@ public:
     void emitClassMake() {
         std::vector<FileOrConcatenatedFilesList> vmClassesSlowList{};
         std::vector<FileOrConcatenatedFilesList> vmClassesFastList{};
-        if (v3Global.opt.outputSplitJobs() > 0) {
+        if (v3Global.opt.outputConcatenationGroups() > 0) {
             std::vector<FileNameWithScore> slowFiles{};
             std::vector<FileNameWithScore> fastFiles{};
             std::int64_t slowTotalScore = 0;
@@ -659,7 +659,7 @@ public:
                         putMakeClassEntry(of, "verilated_profiler.cpp");
                     }
                 } else if (support == 2 && slow) {
-                } else if ((support == 0) && (v3Global.opt.outputSplitJobs() > 0)) {
+                } else if ((support == 0) && (v3Global.opt.outputConcatenationGroups() > 0)) {
                     const auto& list = slow ? vmClassesSlowList : vmClassesFastList;
                     for (const auto& entry : list) {
                         if (entry.isConcatenatingFile()) { emitConcatenatingFile(entry); }

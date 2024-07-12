@@ -10,15 +10,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator",
-            "--output-split-jobs", "10",
-            "--debug-test-concatenation",
-            "$Self->{t_dir}/t_output_split_jobs_splitting.dat"],
-    logfile => "$Self->{obj_dir}/output_split_jobs.log",
+lint(
+    verilator_flags2 => ["--output-concatenation-groups -1"],
+    fails => 1,
     expect_filename => $Self->{golden_filename},
-    tee => 0,
-    verilator_run => 1,
-    fails => 0,
     );
 
 ok(1);
