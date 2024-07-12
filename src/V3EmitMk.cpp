@@ -316,22 +316,8 @@ public:
 
         debugLogScoreHistogram(sortedScores);
 
-        // Calculate scores standard deviation
-
-        double scoreThresholdSd = 0.0;
-        {
-            const double mean = double(totalScore) / sortedScores.size();
-            double sum = 0.0;
-            for (auto score : sortedScores) {
-                const auto p2 = std::pow(score - mean, 2);
-                sum += p2;
-            }
-            scoreThresholdSd = std::sqrt(sum / sortedScores.size());
-        }
-
         // Input files with a score exceeding this value are excluded from concatenation.
-        const std::int64_t concatenableFileMaxScore
-            = static_cast<std::int64_t>(scoreThresholdSd * 3);
+        const std::int64_t concatenableFileMaxScore = totalScore / totalBucketsNum / 2;
 
         UINFO(5, "Concatenable file max score: " << concatenableFileMaxScore << endl);
 
