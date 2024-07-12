@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+# pylint: disable=C0114,C0115,C0116,C0209,C0302,R0902,R0911,R0912,R0914,R0915,E1101
+#
+# Copyright 2022-2024 by Wilson Snyder. Verilator is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU Lesser
+# General Public License Version 3 or the Apache License 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Apache-2.0
+#
+# Usage Example:
+#
+#   ./nodist/gen_scores_list_for_concatenation_test \
+#        200x15-100 2x999 16x50 2x999 100x50-150 500 4-33 8x0-999 0-7 \
+#        > test_files_list.txt
+#   ./bin/verilator --debugi-V3EmitMk 6 --output-split-jobs 10 \
+#               --debug-test-concatenation ./test_files_list.txt
+
+import argparse
+import random
+import re
+import sys
+
+
+def parse_sequence_params(sequence_params: str) -> tuple[int, int, int] | None:
+    m = re.match(r"^(?:([1-9][0-9]*)x)?(0|[1-9][0-9]*)(?:-(0|[1-9][0-9]*))?$", sequence_params)
+
+    repeat = 1
+    min_score = 1
+    max_score = 1
+
+    if not m:
+        return None
+
+    if m.group(1) is not None:
+        repeat = int(m.group(1))
+
+    min_score = int(m.group(2))
+    max_score = int(m.group(2))
+
+    if m.group(3) is not None:
+        max_score = int(m.group(3))
+
+    if max_score < min_score:
+        min_score, max_score = max_score, min_score
+
+    return (repeat, min_score, max_score)
+
+
+def gen_sequence_scores(repeat: int, min_score: int, max_score: int) -> list[int]:
+    result: list[int] = []
+    for _ in range(repeat):
+        score = min_score
+        if min_score != max_score:
+            score = random.randrange(min_score, max_score)
+        result.append(score)
+    return result
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        allow_abbrev=False,
+        formatter_class=argparse.RawTextHelpFormatter,
+        description="Generates input list for .cpp file concatenation test",
+        epilog="Copyright 2024 by Wilson Snyder. Verilator is free software;\n"
+        "you can redistribute it and/or modify it under the terms of either the GNU\n"
+        "Lesser General Public License Version 3 or the Apache License 2.0.\n"
+        "SPDX-License-Identifier: LGPL-3.0-only OR Apache-2.0\n")
+
+    parser.add_argument(
+        "sequence_params",
+        type=str,
+        nargs="+",
+        help="Defines how to generate a sequence of entries. Syntax:\n"
+        "\n"
+        "    [{repeat}x]{score}\n" + "    [{repeat}x]{min_score}-{max_score}\n"
+        "\n"
+        "Where:\n" + "    repeat                  number of entries in the list (1 by default)\n"
+        "    score                   use `score` for each entry\n" +
+        "    min_score/max_score     use random score between min and max\n"
+        "                            for each entry\n"
+        "\n"
+        "Examples:\n"
+        "    120x5-80        120 entries, each with a random score between 5 and 80\n"
+        "                    (inclusive) each.\n"
+        "    1000-2000       1 entry with a random score between 1000 and 2000\n"
+        "                    (inclusive).\n"
+        "    10x24           10 entries, each with score 24.\n"
+        "    9000            1 entry with score 9000.\n")
+
+    cmdline = parser.parse_args()
+
+    all_sequence_params: list[tuple[str, int, int, int]] = []
+    for params_str in cmdline.sequence_params:
+        sequence_params = parse_sequence_params(params_str)
+        if sequence_params is None:
+            # Exit with error message
+            parser.error(f"Invalid sequence_params value: {params_str}")
+
+        all_sequence_params.append((params_str, *sequence_params))
+
+    abs_ent_idx = 0
+    for seq_idx, (params_str, repeat, min_score, max_score) in enumerate(all_sequence_params):
+        for seq_ent_idx, score in enumerate(gen_sequence_scores(repeat, min_score, max_score)):
+            print(f"{score:>12}\t"
+                  f"dummy_cpp_file_{abs_ent_idx:04}"
+                  f".seq_{seq_idx:02}_{params_str}_{seq_ent_idx}"
+                  f".score_{score}")
+            abs_ent_idx += 1
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

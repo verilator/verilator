@@ -950,6 +950,29 @@ public:
 //######################################################################
 // Gate class functions
 
+void V3EmitMk::debugTestConcatenation(const char* inputFile) {
+    const std::unique_ptr<std::ifstream> ifp{V3File::new_ifstream_nodepend(inputFile)};
+    std::vector<EmitMk::FileNameWithScore> inputList;
+    std::int64_t totalScore = 0;
+
+    EmitMk::FileNameWithScore current{};
+    while ((*ifp) >> current.score >> std::ws) {
+        char ch;
+        while (ch = ifp->get(), ch && ch != ' ' && ch != '\t' && ch != '\n' && ch != '\r') {
+            current.name.push_back(ch);
+        }
+        totalScore += current.score;
+        inputList.push_back(std::move(current));
+        current = EmitMk::FileNameWithScore{};
+    }
+
+    const std::vector<EmitMk::FileOrConcatenatedFilesList> list
+        = EmitMk::singleConcatenatedFilesList(std::move(inputList), totalScore,
+                                              "concatenating_file_");
+
+    EmitMk::debugLogOutputFilesList(list, true);
+}
+
 void V3EmitMk::emitmk() {
     UINFO(2, __FUNCTION__ << ": " << endl);
     const EmitMk emitter;
