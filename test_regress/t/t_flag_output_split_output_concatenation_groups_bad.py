@@ -11,16 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.run(
-    cmd=[
-        os.environ['VERILATOR_ROOT'] + "/bin/verilator", "--output-split-jobs", "10",
-        "--debug-test-concatenation", test.t_dir + "/t_output_split_jobs_splitting.dat"
-    ],
-    logfile=test.obj_dir + "/output_split_jobs.log",
-    expect_filename=test.golden_filename,
-    tee=False,
-    verilator_run=True,
-    fails=False,
-)
+test.lint(verilator_flags2=['--output-split 20000000 --output-concatenation-groups 10'],
+          fails=True,
+          expect_filename=test.golden_filename)
 
 test.passes()

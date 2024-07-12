@@ -319,7 +319,7 @@ private:
     int         m_outputSplit = -1;  // main switch: --output-split
     int         m_outputSplitCFuncs = -1;  // main switch: --output-split-cfuncs
     int         m_outputSplitCTrace = -1;  // main switch: --output-split-ctrace
-    int         m_outputSplitJobs = 0;  // main switch: --output-split-jobs
+    int         m_outputConcatenationGroups = 0;  // main switch: --output-concatenation-groups
     int         m_pinsBv = 65;       // main switch: --pins-bv
     int         m_publicDepth = 0;   // main switch: --public-depth
     int         m_reloopLimit = 40; // main switch: --reloop-limit
@@ -566,7 +566,7 @@ public:
     int outputSplit() const { return m_outputSplit; }
     int outputSplitCFuncs() const { return m_outputSplitCFuncs; }
     int outputSplitCTrace() const { return m_outputSplitCTrace; }
-    int outputSplitJobs() const { return m_outputSplitJobs; }
+    int outputConcatenationGroups() const { return m_outputConcatenationGroups; }
     int pinsBv() const VL_MT_SAFE { return m_pinsBv; }
     int publicDepth() const { return m_publicDepth; }
     int reloopLimit() const { return m_reloopLimit; }
