@@ -740,3 +740,9 @@ predef `SV_COV_PARTIAL 2
 //======================================================================
 // After `undefineall above, for testing --dump-defines
 `define WITH_ARG(a) (a)(a)
+
+//======================================================================
+// Macros defining comments that should show up at place of expansion
+`define MACRO_DEFINING_COMMENT() /``* some_vendor_comment macro generated *``/
+`MACRO_DEFINING_COMMENT()
+`MACRO_DEFINING_COMMENT()

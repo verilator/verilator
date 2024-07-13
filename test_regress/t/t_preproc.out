@@ -1065,3 +1065,10 @@ predef 2 2
  
 
 `line 744 "t/t_preproc.v" 0
+ 
+ 
+ 
+/* some_vendor_comment macro generated */
+/* some_vendor_comment macro generated */
+
+`line 750 "t/t_preproc.v" 0

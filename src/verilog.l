@@ -787,7 +787,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator unroll_full*/"           { FL; return yVL_UNROLL_FULL; }
 
   "/**/"                                { FL_FWD; FL_BRK; }
-  "/*"[^*]+"*/"                         { FL; V3ParseImp::lexVerilatorCmtBad(yylval.fl, yytext); FL_BRK; }
+  "/*"{ws}*"verilator "[^*]+"*/"        { FL; V3ParseImp::lexVerilatorCmtBad(yylval.fl, yytext); FL_BRK; } // unhandled comments
+  "/*"[^*]+"*/"                         { FL_FWD; FL_BRK; }  // Ignore single line /**/ comments
 }
 
   /************************************************************************/
