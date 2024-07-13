@@ -1839,6 +1839,7 @@ class LinkDotScopeVisitor final : public VNVisitor {
         symp->fallbackp(m_modSymp);
         // No recursion, we don't want to pick up variables
     }
+    void visit(AstConstraintForeach* nodep) override { iterateChildren(nodep); }
     void visit(AstWith* nodep) override {
         VSymEnt* const symp = m_statep->insertBlock(m_modSymp, nodep->name(), nodep, nullptr);
         symp->fallbackp(m_modSymp);
