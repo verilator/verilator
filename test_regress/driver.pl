@@ -1319,6 +1319,9 @@ sub execute {
     delete $ENV{SYSTEMC_DISABLE_COPYRIGHT_MESSAGE};
     $ENV{SYSTEMC_DISABLE_COPYRIGHT_MESSAGE} = "DISABLE" if !$self->{verbose};
 
+    $ENV{VERILATOR_SOLVER} = "test.pl-file-needs-have_solver()-call"
+        if !$self->{_have_solver_called};
+
     my $run_env = $param{run_env};
     $run_env .= ' ' if $run_env;
 
@@ -1612,6 +1615,8 @@ sub cmake_version {
 
 our $_have_solver = undef;
 sub have_solver {
+    my $self = (ref $_[0] ? shift : $Self);
+    $self->{_have_solver_called} = 1;
     if (!defined($_have_solver)) {
         my $ok = `(z3 --help || cvc5 --help || cvc4 --help) 2>/dev/null`;
         $ok ||= "";
