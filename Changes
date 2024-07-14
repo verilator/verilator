@@ -22,6 +22,7 @@ Verilator 5.027 devel
 * Add `--compiler-include` for additional C++ includes (#5139) (#5202). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Add `--emit-accessors` (#5182) (#5227). [Ryan Ziegler]
 * Fix fusing macro arguments to not ignore whitespace (#5061). [Tudor Timi]
+* Fix classes/modules of case-similar names (#5109). [Arkadiusz Kozdra]
 * Fix mis-removing $value$plusargs calls (#5127) (#5137). [Seth Pellegrino]
 * Fix splitting if statements with impure conditions (#5219). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix unknown conversion on queues (#5220). [Alex Solomatnikov]
