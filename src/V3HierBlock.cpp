@@ -88,7 +88,7 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-static string V3HierCommandArgsFileName(const string& prefix, bool forCMake) {
+static string V3HierCommandArgsFilename(const string& prefix, bool forCMake) {
     return v3Global.opt.makeDir() + "/" + prefix
            + (forCMake ? "__hierCMakeArgs.f" : "__hierMkArgs.f");
 }
@@ -184,21 +184,27 @@ V3StringList V3HierBlock::hierBlockArgs() const {
 
 string V3HierBlock::hierPrefix() const { return "V" + modp()->name(); }
 
-string V3HierBlock::hierSomeFile(bool withDir, const char* prefix, const char* suffix) const {
+string V3HierBlock::hierSomeFilename(bool withDir, const char* prefix, const char* suffix) const {
     string s;
     if (withDir) s = hierPrefix() + '/';
     s += prefix + modp()->name() + suffix;
     return s;
 }
 
-string V3HierBlock::hierWrapper(bool withDir) const { return hierSomeFile(withDir, "", ".sv"); }
+string V3HierBlock::hierWrapperFilename(bool withDir) const {
+    return hierSomeFilename(withDir, "", ".sv");
+}
 
-string V3HierBlock::hierMk(bool withDir) const { return hierSomeFile(withDir, "V", ".mk"); }
+string V3HierBlock::hierMkFilename(bool withDir) const {
+    return hierSomeFilename(withDir, "V", ".mk");
+}
 
-string V3HierBlock::hierLib(bool withDir) const { return hierSomeFile(withDir, "lib", ".a"); }
+string V3HierBlock::hierLibFilename(bool withDir) const {
+    return hierSomeFilename(withDir, "lib", ".a");
+}
 
-string V3HierBlock::hierGenerated(bool withDir) const {
-    return hierWrapper(withDir) + ' ' + hierMk(withDir);
+string V3HierBlock::hierGeneratedFilenames(bool withDir) const {
+    return hierWrapperFilename(withDir) + ' ' + hierMkFilename(withDir);
 }
 
 string V3HierBlock::vFileIfNecessary() const {
@@ -211,12 +217,12 @@ string V3HierBlock::vFileIfNecessary() const {
 }
 
 void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
-    const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(commandArgsFileName(forCMake))};
+    const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(commandArgsFilename(forCMake))};
     *of << "--cc\n";
 
     if (!forCMake) {
         for (const auto& hierblockp : m_children) {
-            *of << v3Global.opt.makeDir() << "/" << hierblockp->hierWrapper(true) << "\n";
+            *of << v3Global.opt.makeDir() << "/" << hierblockp->hierWrapperFilename(true) << "\n";
         }
         *of << "-Mdir " << v3Global.opt.makeDir() << "/" << hierPrefix() << " \n";
     }
@@ -228,8 +234,8 @@ void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
     *of << v3Global.opt.allArgsStringForHierBlock(false, forCMake) << "\n";
 }
 
-string V3HierBlock::commandArgsFileName(bool forCMake) const {
-    return V3HierCommandArgsFileName(hierPrefix(), forCMake);
+string V3HierBlock::commandArgsFilename(bool forCMake) const {
+    return V3HierCommandArgsFilename(hierPrefix(), forCMake);
 }
 
 //######################################################################
@@ -394,11 +400,11 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
     }
     // For the top module
     const std::unique_ptr<std::ofstream> of{
-        V3File::new_ofstream(topCommandArgsFileName(forCMake))};
+        V3File::new_ofstream(topCommandArgsFilename(forCMake))};
     if (!forCMake) {
         // Load wrappers first not to be overwritten by the original HDL
         for (const_iterator it = begin(); it != end(); ++it) {
-            *of << it->second->hierWrapper(true) << "\n";
+            *of << it->second->hierWrapperFilename(true) << "\n";
         }
     }
     V3HierWriteCommonInputs(nullptr, of.get(), forCMake);
@@ -425,6 +431,6 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
     *of << v3Global.opt.allArgsStringForHierBlock(true, forCMake) << "\n";
 }
 
-string V3HierBlockPlan::topCommandArgsFileName(bool forCMake) {
-    return V3HierCommandArgsFileName(v3Global.opt.prefix(), forCMake);
+string V3HierBlockPlan::topCommandArgsFilename(bool forCMake) {
+    return V3HierCommandArgsFilename(v3Global.opt.prefix(), forCMake);
 }

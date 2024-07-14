@@ -77,16 +77,17 @@ public:
     V3StringList commandArgs(bool forCMake) const VL_MT_DISABLED;
     V3StringList hierBlockArgs() const VL_MT_DISABLED;
     string hierPrefix() const VL_MT_DISABLED;
-    string hierSomeFile(bool withDir, const char* prefix, const char* suffix) const VL_MT_DISABLED;
-    string hierWrapper(bool withDir) const VL_MT_DISABLED;
-    string hierMk(bool withDir) const VL_MT_DISABLED;
-    string hierLib(bool withDir) const VL_MT_DISABLED;
-    string hierGenerated(bool withDir) const VL_MT_DISABLED;
+    string hierSomeFilename(bool withDir, const char* prefix,
+                            const char* suffix) const VL_MT_DISABLED;
+    string hierWrapperFilename(bool withDir) const VL_MT_DISABLED;
+    string hierMkFilename(bool withDir) const VL_MT_DISABLED;
+    string hierLibFilename(bool withDir) const VL_MT_DISABLED;
+    string hierGeneratedFilenames(bool withDir) const VL_MT_DISABLED;
     // Returns the original HDL file if it is not included in v3Global.opt.vFiles().
     string vFileIfNecessary() const VL_MT_DISABLED;
     // Write command line arguments to .f file for this hierarchical block
     void writeCommandArgsFile(bool forCMake) const VL_MT_DISABLED;
-    string commandArgsFileName(bool forCMake) const VL_MT_DISABLED;
+    string commandArgsFilename(bool forCMake) const VL_MT_DISABLED;
 };
 
 //######################################################################
@@ -117,7 +118,7 @@ public:
 
     // Write command line arguments to .f files for child Verilation run
     void writeCommandArgsFiles(bool forCMake) const VL_MT_DISABLED;
-    static string topCommandArgsFileName(bool forCMake) VL_MT_DISABLED;
+    static string topCommandArgsFilename(bool forCMake) VL_MT_DISABLED;
 
     static void createPlan(AstNetlist* nodep) VL_MT_DISABLED;
 };
