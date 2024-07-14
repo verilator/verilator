@@ -1111,7 +1111,7 @@ public:
         BROKEN_RTN(!fmtp());
         return nullptr;
     }
-    string verilogKwd() const override { return string{"$"} + string{displayType().ascii()}; }
+    string verilogKwd() const override { return "$"s + string{displayType().ascii()}; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
@@ -2894,8 +2894,8 @@ public:
         return nullptr;
     }
     string verilogKwd() const override {
-        return (filep() ? string{"$f"} + string{displayType().ascii()}
-                        : string{"$"} + string{displayType().ascii()});
+        return (filep() ? "$f"s + string{displayType().ascii()}
+                        : "$"s + string{displayType().ascii()});
     }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }

@@ -398,7 +398,7 @@ class EmitCImp final : EmitCFunc {
                                 const int vecnum = vects++;
                                 UASSERT_OBJ(arrayp->hi() >= arrayp->lo(), varp,
                                             "Should have swapped msb & lsb earlier.");
-                                const string ivar = string{"__Vi"} + cvtToStr(vecnum);
+                                const string ivar = "__Vi"s + cvtToStr(vecnum);
                                 puts("for (int __Vi" + cvtToStr(vecnum) + " = " + cvtToStr(0));
                                 puts("; " + ivar + " < " + cvtToStr(arrayp->elementsConst()));
                                 puts("; ++" + ivar + ") {\n");
@@ -412,7 +412,7 @@ class EmitCImp final : EmitCFunc {
                             if (elementp->isWide()
                                 && !(basicp && basicp->keyword() == VBasicDTypeKwd::STRING)) {
                                 const int vecnum = vects++;
-                                const string ivar = string{"__Vi"} + cvtToStr(vecnum);
+                                const string ivar = "__Vi"s + cvtToStr(vecnum);
                                 puts("for (int __Vi" + cvtToStr(vecnum) + " = " + cvtToStr(0));
                                 puts("; " + ivar + " < " + cvtToStr(elementp->widthWords()));
                                 puts("; ++" + ivar + ") {\n");

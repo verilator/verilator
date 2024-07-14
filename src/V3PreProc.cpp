@@ -1223,8 +1223,8 @@ int V3PreProcImp::getStateToken() {
                 if (VString::removeWhitespace(string{yyourtext(), yyourleng()}).empty()) {
                     return tok;
                 } else {
-                    error(std::string{"Syntax error in `ifdef () expression; unexpected: '"}
-                          + tokenName(tok) + "'\n");
+                    error("Syntax error in `ifdef () expression; unexpected: '"s + tokenName(tok)
+                          + "'\n");
                 }
                 goto next_tok;
             }
