@@ -43,10 +43,10 @@ public:
     };
     ///< @return file path without repeated separators and ./ prefix
     static string filenameCleanup(const string& filename) VL_PURE;
+    ///< @return extension (.) part of filename
+    static string filenameExt(const string& filename) VL_PURE;
     ///< @return non-directory part of filename
     static string filenameNonDir(const string& filename) VL_PURE;
-    ///< @return non-extensioned (no .) part of filename
-    static string filenameNonExt(const string& filename) VL_PURE;
     ///< @return basename of filename
     static string filenameNonDirExt(const string& filename) VL_PURE;
     ///< @return directory part of filename

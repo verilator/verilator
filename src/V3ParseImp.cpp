@@ -287,7 +287,7 @@ void V3ParseImp::preprocDumps(std::ostream& os, bool forInputs) {
 void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
                            const string& errmsg) {  // "" for no error, make fake node
     const string nondirname = V3Os::filenameNonDir(modfilename);
-    const string modname = V3Os::filenameNonExt(modfilename);
+    const string modname = V3Os::filenameNonDirExt(modfilename);
 
     UINFO(2, __FUNCTION__ << ": " << modname << (inLibrary ? " [LIB]" : "") << endl);
     m_lexFileline = new FileLine{fileline};
