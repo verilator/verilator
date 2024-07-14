@@ -445,8 +445,12 @@ void EmitCFunc::emitDereference(AstNode* nodep, const string& pointer) {
         putns(nodep, pointer.substr(2, pointer.length() - 3));
         puts(".");
     } else {
-        putns(nodep, pointer);
-        puts("->");
+        if (pointer == "vlSelf" && m_usevlSelfRef) {
+            puts("vlSelfRef.");
+        } else {
+            putns(nodep, pointer);
+            puts("->");
+        }
     }
 }
 
