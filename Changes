@@ -30,6 +30,7 @@ Verilator 5.027 devel
 * Fix error on empty generate with -O0 (#5250).
 * Fix unconstrained randomization of unpacked structs (#5252). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix inlining of variables driven from forced vars (#5259). [Geza Lore]
+* Fix tracing with `--main-top-name -` (#5261). [Ethan Sifferman]
 
 
 Verilator 5.026 2024-06-15

@@ -551,11 +551,11 @@ class EmitCModel final : public EmitCFunc {
              "0.\");\n");
         puts("}\n");
         puts("vlSymsp->__Vm_baseCode = code;\n");
-        puts("tracep->pushPrefix(std::string{vlSymsp->name()}, "
+        puts("if (strlen(vlSymsp->name())) tracep->pushPrefix(std::string{vlSymsp->name()}, "
              "VerilatedTracePrefixType::SCOPE_MODULE);\n");
         puts(topModNameProtected + "__" + protect("trace_decl_types") + "(tracep);\n");
         puts(topModNameProtected + "__" + protect("trace_init_top") + "(vlSelf, tracep);\n");
-        puts("tracep->popPrefix();\n");
+        puts("if (strlen(vlSymsp->name())) tracep->popPrefix();\n");
         puts("}\n");
 
         // Forward declaration
