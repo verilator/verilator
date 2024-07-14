@@ -1740,13 +1740,27 @@ public:
                        : (m_urandom ? "%f$urandom()" : "%f$random()");
     }
     string emitC() override {
-        return m_reset ? "VL_RAND_RESET_%nq(%nw, %P)"
-               : seedp()
-                   // cppcheck-has-bug-suppress knownConditionTrueFalse
-                   ? (urandom() ? "VL_URANDOM_SEEDED_%nq%lq(%li)"  //
-                                : "VL_RANDOM_SEEDED_%nq%lq(%li)")
-                   : (isWide() ? "VL_RANDOM_%nq(%nw, %P)"  //
-                               : "VL_RANDOM_%nq()");
+        if (m_reset) {
+            if (v3Global.opt.xAssign() == "unique") {
+                return "VL_RAND_RESET_ASSIGN_%nq(%nw, %P)";
+            } else {
+                // This follows xInitial randomization
+                return "VL_RAND_RESET_%nq(%nw, %P)";
+            }
+        }
+        if (seedp()) {
+            if (urandom()) {
+                return "VL_URANDOM_SEEDED_%nq%lq(%li)";
+            } else {
+                return "VL_RANDOM_SEEDED_%nq%lq(%li)";
+            }
+        }
+
+        if (isWide()) {
+            return "VL_RANDOM_%nq(%nw, %P)";
+        } else {
+            return "VL_RANDOM_%nq()";
+        }
     }
     bool cleanOut() const override { return false; }
     bool isGateOptimizable() const override { return false; }

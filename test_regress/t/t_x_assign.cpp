@@ -45,10 +45,17 @@ int main(int argc, const char** argv) {
     top->clk = 1;
     top->eval();
 
+#if defined(T_X_ASSIGN_UNIQUE_0) || defined(T_X_ASSIGN_UNIQUE_1)
+    if (top->o_int == 0 || top->o_int == -1) {
+        vl_fatal(__FILE__, __LINE__, "TOP.t", "x assign was not unique");
+        exit(1);
+    }
+#else
     if (top->o != EXPECTED) {
         vl_fatal(__FILE__, __LINE__, "TOP.t", "incorrect module output");
         exit(1);
     }
+#endif
 
     VL_DO_DANGLING(delete top, top);
     std::cout << "*-* All Finished *-*" << std::endl;
