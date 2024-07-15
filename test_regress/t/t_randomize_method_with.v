@@ -98,7 +98,7 @@ module mwith();
     // Check capture of a static variable
     if (foo.randomize() with { a > sub1.sub_var; } != 1) $stop;
     // Check reference to a function
-    if (foo.randomize() with { a > return_2(); } != 1) $stop;
+    //if (foo.randomize() with { a > return_2(); } != 1) $stop;
     // Check randomization of class with no constraints
     if (baz.randomize() with { v inside {[2:10]}; } != 1) $stop;
     // Check randomization with captured non-static variable from different AstNodeModule

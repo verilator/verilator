@@ -37,6 +37,8 @@
 #include "V3MemberMap.h"
 #include "V3UniqueNames.h"
 
+#include <queue>
+#include <tuple>
 #include <utility>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -429,14 +431,78 @@ public:
     }
 };
 
+class ClassLookupHelper final {
+    const std::set<AstClass*> m_visibleModules;
+    const std::vector<AstClass*> m_symLookupOrder;
+    std::map<AstNode*, AstClass*> m_classMap;
+
+    using inits_t = std::tuple<std::set<AstClass*>, std::vector<AstClass*>>;
+
+    // BFS search
+    template <typename Action>
+    static void foreachSuperClass(AstClass* classp, Action action) {
+        std::queue<AstClass*> classes;
+        classes.push(classp);
+        while (!classes.empty()) {
+            classp = classes.front();
+            classes.pop();
+            for (AstClassExtends* extendsp = classp->extendsp(); extendsp;
+                extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {
+                AstClass* const superClassp =
+                    VN_AS(extendsp->childDTypep(), ClassRefDType)->classp();
+                action(superClassp);
+                classes.push(superClassp);
+            }
+        }
+    }
+
+    static inits_t init(AstClass* classp) {
+        std::set<AstClass*> visibleModules = {classp};
+        std::vector<AstClass*> symLookupOrder = {classp};
+        foreachSuperClass(classp, [&](AstClass* superclassp) {
+            visibleModules.emplace(superclassp);
+            symLookupOrder.push_back(superclassp);
+        });
+        return inits_t(visibleModules, symLookupOrder);
+    }
+
+    ClassLookupHelper(inits_t inits)
+        : m_visibleModules(std::get<0>(inits))
+        , m_symLookupOrder(std::get<1>(inits))
+        {}
+
+public:
+    bool moduleInClass(AstNodeModule* modp) const {
+        if (AstClass* classp = VN_CAST(modp, Class)) {
+            return m_visibleModules.count(classp);
+        }
+        return false;
+    }
+
+    AstClass* findDeclarationClass(AstNode* nodep) {
+        auto it = m_classMap.find(nodep);
+        if (it != m_classMap.end()) return it->second;
+        for (AstNode* backp = nodep; backp; backp = backp->backp()) {
+            AstClass* classp = VN_CAST(backp, Class);
+            if (classp) {
+                UASSERT_OBJ(moduleInClass(classp), nodep, "Node does not belong to class");
+                m_classMap.emplace(nodep, classp);
+                return classp;
+            }
+        }
+        return nullptr;
+    }
+
+    ClassLookupHelper(AstClass* classp) : ClassLookupHelper(init(classp)) {}
+};
+
 class CaptureVisitor final : public VNVisitor {
     AstArg* m_argsp;  // Original references turned into arguments
     //AstNodeModule* m_myModulep;  // Module for which static references will stay uncaptured.
     AstClass* m_classp;
-    std::set<AstNodeModule*> m_visibleModules;
-    // Map original var nodes to their clones
-    std::map<const AstVar*, AstVar*> m_varCloneMap;
+    std::map<const AstVar*, AstVar*> m_varCloneMap; // Map original var nodes to their clones
     std::set<AstNode*> m_ignore;
+    ClassLookupHelper m_lookup;
 
     bool captureVariable(FileLine* const fileline, AstNodeVarRef* varrefp, AstVar*& varp) {
         auto it = m_varCloneMap.find(varrefp->varp());
@@ -456,29 +522,12 @@ class CaptureVisitor final : public VNVisitor {
         return false;
     }
 
-    template <typename Action>
-    static void foreachSuperClass(AstClass* classp, Action action) {
-        for (AstClassExtends* extendsp = classp->extendsp(); extendsp;
-             extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {
-            AstClass* const superclassp = VN_AS(extendsp->childDTypep(), ClassRefDType)->classp();
-            action(superclassp);
-            foreachSuperClass(superclassp, action);
-        }
-    }
-
-    std::set<AstNodeModule*> initVisibleModules(AstClass* classp) {
-        std::set<AstNodeModule*> visibleModules = {classp};
-        foreachSuperClass(classp,
-                          [&](AstClass* superclassp) { visibleModules.emplace(superclassp); });
-        return visibleModules;
-    }
-
     void visit(AstNodeVarRef* nodep) override {
         if (m_ignore.count(nodep)) return;
         m_ignore.emplace(nodep);
         UASSERT_OBJ(nodep->varp(), nodep, "Variable unlinked");
         if (!nodep->varp()->isFuncLocal() && !VN_IS(nodep, VarXRef)
-            && (m_visibleModules.count(nodep->classOrPackagep())))
+            && (m_lookup.moduleInClass(nodep->classOrPackagep())))
             return;
         AstVar* newVarp;
         bool newCapture = captureVariable(nodep->fileline(), nodep, newVarp /*ref*/);
@@ -507,8 +556,9 @@ class CaptureVisitor final : public VNVisitor {
             return;
         }
         AstVarRef* varRefp = new AstVarRef(nodep->fileline(), nodep->varp(), nodep->access());
-        if (lambdaArgp->classOrPackagep() != m_classp) {
-            varRefp->classOrPackagep(lambdaArgp->classOrPackagep());
+        AstClass* declClassp = m_lookup.findDeclarationClass(nodep->varp());
+        if (declClassp != m_classp) {
+            varRefp->classOrPackagep(declClassp);
         }
         varRefp->user1(nodep->user1());
         nodep->replaceWith(varRefp);
@@ -523,7 +573,7 @@ public:
                             VNRelinker* const linkerp = nullptr)
         : m_argsp(nullptr)
         , m_classp(classp)
-        , m_visibleModules(initVisibleModules(classp)) {
+        , m_lookup(classp) {
         iterateAndNextNull(nodep);
     }
 
