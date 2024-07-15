@@ -11,4 +11,5 @@
 
 // no header guards to check if included once in pch file
 
-static inline int ext_equal(int actual, int expected) { return actual == expected; }
+extern "C" int dpii_add_check(int actual, int expected);
+extern "C" void dpii_add(int a, int b, int* out);

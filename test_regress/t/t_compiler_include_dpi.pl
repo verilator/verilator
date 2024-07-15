@@ -9,11 +9,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 scenarios(simulator => 1);
+top_filename("t/t_compiler_include_dpi.v");
 
 compile(
-    make_top_shell => 0,
-    make_main => 0,
-    verilator_flags2 => ["--exe", "$Self->{t_dir}/$Self->{name}.cpp", "--compiler-include $Self->{t_dir}/t_compiler_include.h", "--output-split 0"],
+    v_flags2 => ["t/t_compiler_include_dpi.cpp"],
+    verilator_flags2 => ["-Wall -Wno-DECLFILENAME --compiler-include $Self->{t_dir}/t_compiler_include_dpi.h --output-split 0"],
     );
 
 execute(

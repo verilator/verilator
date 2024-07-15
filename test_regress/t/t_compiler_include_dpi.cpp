@@ -9,6 +9,7 @@
 //
 //*************************************************************************
 
-// no header guards to check if included once in pch file
+// t_compiler_include.h is implicitly included by `--compiler-include`
 
-static inline int ext_equal(int actual, int expected) { return actual == expected; }
+int dpii_add_check(int actual, int expected) { return actual == expected; }
+void dpii_add(int a, int b, int* out) { *out = a + b; }
