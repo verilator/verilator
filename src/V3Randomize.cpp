@@ -419,13 +419,13 @@ public:
     }
 };
 
-template <typename TreeNodeType>
-class CaptureFrame final {
-    TreeNodeType* m_treep;  // Original tree
+class CaptureVisitor final : public VNVisitor {
     AstArg* m_argsp;  // Original references turned into arguments
-    AstNodeModule* m_myModulep;  // Module for which static references will stay uncaptured.
+    //AstNodeModule* m_myModulep;  // Module for which static references will stay uncaptured.
+    std::set<AstNodeModule*> m_visibleModules;
     // Map original var nodes to their clones
     std::map<const AstVar*, AstVar*> m_varCloneMap;
+    std::set<AstNode*> m_ignore;
 
     bool captureVariable(FileLine* const fileline, AstNodeVarRef* varrefp, AstVar*& varp) {
         auto it = m_varCloneMap.find(varrefp->varp());
@@ -455,47 +455,51 @@ class CaptureFrame final {
         }
     }
 
-public:
-    explicit CaptureFrame(TreeNodeType* const nodep, AstNodeModule* const myModulep,
-                          const bool clone = true, VNRelinker* const linkerp = nullptr)
-        : m_treep(clone ? nodep->cloneTree(true) : nodep->unlinkFrBackWithNext(linkerp))
-        , m_argsp(nullptr)
-        , m_myModulep(myModulep) {
+    std::set<AstNodeModule*> initVisibleModules(AstClass* classp) {
+        std::set<AstNodeModule*> visibleModules = {classp};
+        foreachSuperClass(classp,
+                          [&](AstClass* superclassp) { visibleModules.emplace(superclassp); });
+        return visibleModules;
+    }
 
-        std::set<AstNodeModule*> visibleModules = {myModulep};
-        if (AstClass* classp = VN_CAST(m_myModulep, Class)) {
-            foreachSuperClass(classp,
-                              [&](AstClass* superclassp) { visibleModules.emplace(superclassp); });
+    void visit(AstNodeVarRef* nodep) override {
+        if (m_ignore.count(nodep)) return;
+        m_ignore.emplace(nodep);
+        UASSERT_OBJ(nodep->varp(), nodep, "Variable unlinked");
+        if (!nodep->varp()->isFuncLocal() && !VN_IS(nodep, VarXRef)
+            && (m_visibleModules.count(nodep->classOrPackagep())))
+            return;
+        AstVar* newVarp;
+        bool newCapture = captureVariable(nodep->fileline(), nodep, newVarp /*ref*/);
+        AstNodeVarRef* const newVarRefp = newCapture ? nodep->cloneTree(false) : nullptr;
+        if (!nodep->varp()->lifetime().isStatic() || nodep->classOrPackagep()) {
+            // Keeping classOrPackagep will cause a broken link after inlining
+            nodep->classOrPackagep(nullptr);  // AstScope will figure this out
         }
-        m_treep->foreachAndNext([&](AstNodeVarRef* varrefp) {
-            UASSERT_OBJ(varrefp->varp(), varrefp, "Variable unlinked");
-            if (!varrefp->varp()->isFuncLocal() && !VN_IS(varrefp, VarXRef)
-                && (visibleModules.count(varrefp->classOrPackagep())))
-                return;
-            AstVar* newVarp;
-            bool newCapture = captureVariable(varrefp->fileline(), varrefp, newVarp /*ref*/);
-            AstNodeVarRef* const newVarRefp = newCapture ? varrefp->cloneTree(false) : nullptr;
-            if (!varrefp->varp()->lifetime().isStatic() || varrefp->classOrPackagep()) {
-                // Keeping classOrPackagep will cause a broken link after inlining
-                varrefp->classOrPackagep(nullptr);  // AstScope will figure this out
-            }
-            varrefp->varp(newVarp);
-            if (!newCapture) return;
-            if (VN_IS(varrefp, VarXRef)) {
-                AstVarRef* const notXVarRefp
-                    = new AstVarRef{varrefp->fileline(), newVarp, VAccess::READ};
-                notXVarRefp->classOrPackagep(varrefp->classOrPackagep());
-                varrefp->replaceWith(notXVarRefp);
-                varrefp->deleteTree();
-                varrefp = notXVarRefp;
-            }
-            m_argsp = AstNode::addNext(m_argsp, new AstArg{varrefp->fileline(), "", newVarRefp});
-        });
+        nodep->varp(newVarp);
+        if (!newCapture) return;
+        if (VN_IS(nodep, VarXRef)) {
+            AstVarRef* const notXVarRefp
+                = new AstVarRef{nodep->fileline(), newVarp, VAccess::READ};
+            notXVarRefp->classOrPackagep(nodep->classOrPackagep());
+            nodep->replaceWith(notXVarRefp);
+            nodep->deleteTree();
+            nodep = notXVarRefp;
+        }
+        m_ignore.emplace(nodep);
+        m_argsp = AstNode::addNext(m_argsp, new AstArg{nodep->fileline(), "", newVarRefp});
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    explicit CaptureVisitor(AstNode* const nodep, AstClass* const classp, const bool clone = true,
+                            VNRelinker* const linkerp = nullptr)
+        : m_argsp(nullptr)
+        , m_visibleModules(initVisibleModules(classp)) {
+        iterateAndNextNull(nodep);
     }
 
     // PUBLIC METHODS
-
-    TreeNodeType* getTree() const { return m_treep; }
 
     AstVar* getVar(AstVar* const varp) const {
         const auto it = m_varCloneMap.find(varp);
@@ -905,9 +909,9 @@ class RandomizeVisitor final : public VNVisitor {
             = V3Randomize::newRandomizeFunc(classp, m_inlineUniqueNames.get(nodep));
 
         // Detach the expression and prepare variable copies
-        const CaptureFrame<AstNode> captured{withp->exprp(), classp, false};
-        UASSERT_OBJ(VN_IS(captured.getTree(), ConstraintExpr), captured.getTree(),
-                    "Wrong expr type");
+        const CaptureVisitor captured{withp->exprp(), classp, false};
+        //UASSERT_OBJ(VN_IS(captured.getTree(), ConstraintExpr), captured.getTree(),
+        //            "Wrong expr type");
 
         // Add function arguments
         for (AstArg* argp = captured.getArgs(); argp; argp = VN_AS(argp->nextp(), Arg)) {
@@ -943,8 +947,9 @@ class RandomizeVisitor final : public VNVisitor {
         }
 
         // Generate constraint setup code and a hardcoded call to the solver
-        randomizeFuncp->addStmtsp(captured.getTree());
-        { ConstraintExprVisitor{captured.getTree(), randomizeFuncp, localGenp, !m_inline}; }
+        AstNode* capturedTreep = withp->exprp()->unlinkFrBackWithNext();
+        randomizeFuncp->addStmtsp(capturedTreep);
+        { ConstraintExprVisitor{capturedTreep, randomizeFuncp, localGenp, !m_inline}; }
 
         // Call the solver and set return value
         AstVarRef* const randNextp
