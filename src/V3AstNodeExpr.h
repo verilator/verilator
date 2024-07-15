@@ -1142,6 +1142,39 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
 };
+class AstDist final : public AstNodeExpr {
+    // @astgen op1 := exprp : AstNodeExpr
+    // @astgen op2 := itemsp : List[AstDistItem]
+public:
+    AstDist(FileLine* fl, AstNodeExpr* exprp, AstDistItem* itemsp)
+        : ASTGEN_SUPER_Inside(fl) {
+        this->exprp(exprp);
+        this->addItemsp(itemsp);
+        dtypeSetBit();
+    }
+    ASTGEN_MEMBERS_AstDist;
+    string emitVerilog() override { return "%l dist { %r }"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return false; }  // NA
+};
+class AstDistItem final : public AstNodeExpr {
+    // Constraint distribution item
+    // @astgen op1 := rangep : AstNodeExpr
+    // @astgen op2 := weightp : AstNodeExpr
+    bool m_isWhole = false;  // True for weight ':/', false for ':='
+public:
+    AstDistItem(FileLine* fl, AstNodeExpr* rangep, AstNodeExpr* weightp)
+        : ASTGEN_SUPER_DistItem(fl) {
+        this->rangep(rangep);
+        this->weightp(weightp);
+    }
+    ASTGEN_MEMBERS_AstDistItem;
+    string emitVerilog() override { return "%l "s + (m_isWhole ? ":/" : ":=") + " %r"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return false; }  // NA
+    void isWhole(bool flag) { m_isWhole = flag; }
+    bool isWhole() const { return m_isWhole; }
+};
 class AstDot final : public AstNodeExpr {
     // A dot separating paths in an AstVarXRef, AstFuncRef or AstTaskRef
     // These are eliminated in the link stage

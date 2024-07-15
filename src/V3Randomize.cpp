@@ -328,6 +328,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Fall back to "(ite cond then else)"
         visit(static_cast<AstNodeTriop*>(nodep));
     }
+    void visit(AstDist* nodep) override {
+        nodep->v3warn(CONSTRAINTIGN, "Constraint expression ignored (unsupported)");
+        nodep->replaceWith(new AstSFormatF{nodep->fileline(), "true", false, nullptr});
+    }
     void visit(AstReplicate* nodep) override {
         // Biop, but RHS is harmful
         if (editFormat(nodep)) return;
