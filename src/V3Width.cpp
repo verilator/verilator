@@ -3716,13 +3716,11 @@ class WidthVisitor final : public VNVisitor {
                                        adtypep->findBitDType(), adtypep);
             methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
-            V3Randomize::newRandomizeFunc(first_classp);
-            m_memberMap.clear();
+            V3Randomize::newRandomizeFunc(m_memberMap, first_classp);
         } else if (nodep->name() == "srandom") {
             methodOkArguments(nodep, 1, 1);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
-            V3Randomize::newSRandomFunc(first_classp);
-            m_memberMap.clear();
+            V3Randomize::newSRandomFunc(m_memberMap, first_classp);
         }
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
         for (AstClass* classp = first_classp; classp;) {
@@ -5956,10 +5954,9 @@ class WidthVisitor final : public VNVisitor {
             AstClass* const classp = VN_CAST(nodep->classOrPackagep(), Class);
             UASSERT_OBJ(classp, nodep, "Should have failed in V3LinkDot");
             if (nodep->name() == "randomize") {
-                nodep->taskp(V3Randomize::newRandomizeFunc(classp));
-                m_memberMap.clear();
+                nodep->taskp(V3Randomize::newRandomizeFunc(m_memberMap, classp));
             } else if (nodep->name() == "srandom") {
-                nodep->taskp(V3Randomize::newSRandomFunc(classp));
+                nodep->taskp(V3Randomize::newSRandomFunc(m_memberMap, classp));
                 m_memberMap.clear();
             } else if (nodep->name() == "get_randstate") {
                 methodOkArguments(nodep, 0, 0);
