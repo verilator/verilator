@@ -331,6 +331,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstDist* nodep) override {
         nodep->v3warn(CONSTRAINTIGN, "Constraint expression ignored (unsupported)");
         nodep->replaceWith(new AstSFormatF{nodep->fileline(), "true", false, nullptr});
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstReplicate* nodep) override {
         // Biop, but RHS is harmful
