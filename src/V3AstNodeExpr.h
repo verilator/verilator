@@ -1532,6 +1532,9 @@ class AstLambdaArgRef final : public AstNodeExpr {
     // Lambda argument usage
     // These are not AstVarRefs because we need to be able to delete/clone lambdas during
     // optimizations and AstVar's are painful to remove.
+    // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Class/package of the task
+    ASTGEN_MEMBERS_AstLambdaArgRef;
+private:
     string m_name;  // Name of variable
     bool m_index;  // Index, not value
 
@@ -1540,7 +1543,8 @@ public:
         : ASTGEN_SUPER_LambdaArgRef(fl)
         , m_name{name}
         , m_index(index) {}
-    ASTGEN_MEMBERS_AstLambdaArgRef;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool same(const AstNode* /*samep*/) const override { return true; }
     string emitVerilog() override { return name(); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -1549,6 +1553,8 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     void name(const string& name) override { m_name = name; }
     bool index() const { return m_index; }
+    AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
+    void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
 };
 class AstMemberSel final : public AstNodeExpr {
     // @astgen op1 := fromp : AstNodeExpr

@@ -156,6 +156,16 @@ class RandomizeMarkVisitor final : public VNVisitorConst {
              backp = backp->backp())
             backp->user1(true);
     }
+    void visit(AstMemberSel* nodep) override {
+        if (!m_constraintExprp) return;
+
+        if (VN_IS(nodep->fromp(), LambdaArgRef)) {
+            if (!nodep->varp()->isRand()) return;
+            for (AstNode* backp = nodep; backp != m_constraintExprp && !backp->user1();
+                backp = backp->backp())
+                backp->user1(true);
+        }
+    }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         m_modp = nodep;
@@ -422,6 +432,7 @@ public:
 class CaptureVisitor final : public VNVisitor {
     AstArg* m_argsp;  // Original references turned into arguments
     //AstNodeModule* m_myModulep;  // Module for which static references will stay uncaptured.
+    AstClass* m_classp;
     std::set<AstNodeModule*> m_visibleModules;
     // Map original var nodes to their clones
     std::map<const AstVar*, AstVar*> m_varCloneMap;
@@ -489,12 +500,29 @@ class CaptureVisitor final : public VNVisitor {
         m_ignore.emplace(nodep);
         m_argsp = AstNode::addNext(m_argsp, new AstArg{nodep->fileline(), "", newVarRefp});
     }
+    void visit(AstMemberSel* nodep) override {
+        AstLambdaArgRef* const lambdaArgp = VN_CAST(nodep->fromp(), LambdaArgRef);
+        if (!lambdaArgp) {
+            iterateChildren(nodep);
+            return;
+        }
+        AstVarRef* varRefp = new AstVarRef(nodep->fileline(), nodep->varp(), nodep->access());
+        if (lambdaArgp->classOrPackagep() != m_classp) {
+            varRefp->classOrPackagep(lambdaArgp->classOrPackagep());
+        }
+        varRefp->user1(nodep->user1());
+        nodep->replaceWith(varRefp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        m_ignore.emplace(varRefp);
+        return;
+    }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     explicit CaptureVisitor(AstNode* const nodep, AstClass* const classp, const bool clone = true,
                             VNRelinker* const linkerp = nullptr)
         : m_argsp(nullptr)
+        , m_classp(classp)
         , m_visibleModules(initVisibleModules(classp)) {
         iterateAndNextNull(nodep);
     }
