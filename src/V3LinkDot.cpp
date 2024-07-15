@@ -2048,7 +2048,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
     const AstCell* m_cellp = nullptr;  // Current cell
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
-    AstNodeExpr* m_fromp = nullptr;  // Current randomize fromp expression
     int m_modportNum = 0;  // Uniqueify modport numbers
     bool m_inSens = false;  // True if in senitem
     std::map<std::string, AstNode*> m_ifClassImpNames;  // Names imported from interface class
@@ -2674,9 +2673,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (foundp) {
                     UINFO(9, " randomize-with fromSym " << foundp->nodep() << endl);
                     if (m_ds.m_dotPos != DP_NONE) m_ds.m_dotPos = DP_MEMBER;
-                    nodep->replaceWith(new AstMemberSel{nodep->fileline(),
-                                                        m_fromp->cloneTree(false),
-                                                        VFlagChildDType{}, nodep->name()});
+                    nodep->replaceWith(new AstMemberSel{
+                        nodep->fileline(), new AstLambdaArgRef{nodep->fileline(), "item", false},
+                        VFlagChildDType{}, nodep->name()});
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
                 }
@@ -3141,7 +3140,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // Created here so should already be resolved.
         VL_RESTORER(m_ds);
         VL_RESTORER(m_fromSymp);
-        VL_RESTORER(m_fromp);
         {
             m_ds.init(m_curSymp);
             if (nodep->name() == "randomize" && nodep->pinsp()) {
@@ -3176,7 +3174,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     else
                         m_fromSymp = m_statep->getNodeSym(classDtp->classp());
                 }
-                m_fromp = nodep->fromp();
                 AstNode* pinsp = nodep->pinsp();
                 if (VN_IS(pinsp, With)) {
                     iterate(pinsp);
@@ -3315,9 +3312,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     AstNodeExpr* argsp = nullptr;
                     if (nodep->pinsp()) argsp = nodep->pinsp()->unlinkFrBackWithNext();
                     if (m_ds.m_dotPos != DP_NONE) m_ds.m_dotPos = DP_MEMBER;
-                    AstNode* const newp
-                        = new AstMethodCall{nodep->fileline(), m_fromp->cloneTree(false),
-                                            VFlagChildDType{}, nodep->name(), argsp};
+                    AstNode* const newp = new AstMethodCall{
+                        nodep->fileline(), new AstLambdaArgRef{nodep->fileline(), "item", false},
+                        VFlagChildDType{}, nodep->name(), argsp};
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
