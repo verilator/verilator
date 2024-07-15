@@ -758,7 +758,8 @@ class RandomizeVisitor final : public VNVisitor {
                         "Unsupported: random member variable with type of a current class");
                     continue;
                 }
-                AstFunc* const memberFuncp = V3Randomize::newRandomizeFunc(m_memberMap, classRefp->classp());
+                AstFunc* const memberFuncp
+                    = V3Randomize::newRandomizeFunc(m_memberMap, classRefp->classp());
                 AstMethodCall* const callp = new AstMethodCall{
                     fl, new AstVarRef{fl, memberVarp, VAccess::WRITE}, "randomize", nullptr};
                 callp->taskp(memberFuncp);
@@ -995,7 +996,8 @@ void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
     V3Global::dumpCheckGlobalTree("randomize", 0, dumpTreeEitherLevel() >= 3);
 }
 
-AstFunc* V3Randomize::newRandomizeFunc(VMemberMap& memberMap, AstClass* nodep, const std::string& name) {
+AstFunc* V3Randomize::newRandomizeFunc(VMemberMap& memberMap, AstClass* nodep,
+                                       const std::string& name) {
     AstFunc* funcp = VN_AS(memberMap.findMember(nodep, name), Func);
     if (!funcp) {
         v3Global.useRandomizeMethods(true);
