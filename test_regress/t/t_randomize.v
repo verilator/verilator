@@ -11,7 +11,7 @@ class Packet;
    rand bit if_4;
    rand bit iff_5_6;
 
-   rand int array[2];  // 2,4,6
+   /*rand*/ int array[2];  // 2,4,6  // TODO: add rand when supported
 
    constraint empty {}
 
