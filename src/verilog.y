@@ -5057,7 +5057,7 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         //
         //                      // IEEE: expression_or_dist - here to avoid reduce problems
         //                      // "expr yDIST '{' dist_list '}'"
-        |       ~l~expr yDIST '{' dist_list '}'         { $$ = $1; $4->deleteTree(); }
+        |       ~l~expr yDIST '{' dist_list '}'         { $$ = new AstDist{$2, $1, $4}; }
         ;
 
 fexpr<nodeExprp>:                   // For use as first part of statement (disambiguates <=)
@@ -7383,7 +7383,7 @@ constraint_set<nodep>:  // ==IEEE: constraint_set
         |       '{' constraint_expressionList '}'       { $$ = $2; }
         ;
 
-dist_list<nodep>:  // ==IEEE: dist_list
+dist_list<distItemp>:  // ==IEEE: dist_list
                 dist_item                               { $$ = $1; }
         |       dist_list ',' dist_item                 { $$ = addNextNull($1, $3); }
         ;
