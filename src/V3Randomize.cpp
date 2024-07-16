@@ -164,7 +164,7 @@ class RandomizeMarkVisitor final : public VNVisitorConst {
         if (VN_IS(nodep->fromp(), LambdaArgRef)) {
             if (!nodep->varp()->isRand()) return;
             for (AstNode* backp = nodep; backp != m_constraintExprp && !backp->user1();
-                backp = backp->backp())
+                 backp = backp->backp())
                 backp->user1(true);
         }
     }
@@ -449,9 +449,9 @@ class ClassLookupHelper final {
             classp = classes.front();
             classes.pop();
             for (AstClassExtends* extendsp = classp->extendsp(); extendsp;
-                extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {
-                AstClass* const superClassp =
-                    VN_AS(extendsp->childDTypep(), ClassRefDType)->classp();
+                 extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {
+                AstClass* const superClassp
+                    = VN_AS(extendsp->childDTypep(), ClassRefDType)->classp();
                 action(superClassp);
                 classes.push(superClassp);
             }
@@ -470,14 +470,11 @@ class ClassLookupHelper final {
 
     ClassLookupHelper(inits_t inits)
         : m_visibleModules(std::get<0>(inits))
-        , m_symLookupOrder(std::get<1>(inits))
-        {}
+        , m_symLookupOrder(std::get<1>(inits)) {}
 
 public:
     bool moduleInClass(AstNodeModule* modp) const {
-        if (AstClass* classp = VN_CAST(modp, Class)) {
-            return m_visibleModules.count(classp);
-        }
+        if (AstClass* classp = VN_CAST(modp, Class)) { return m_visibleModules.count(classp); }
         return false;
     }
 
@@ -496,17 +493,18 @@ public:
         return nullptr;
     }
 
-    ClassLookupHelper(AstClass* classp) : ClassLookupHelper(init(classp)) {}
+    ClassLookupHelper(AstClass* classp)
+        : ClassLookupHelper(init(classp)) {}
 };
 
 class CaptureVisitor final : public VNVisitor {
     AstArg* m_argsp;  // Original references turned into arguments
-    AstNodeModule* m_callerp; // Module of the outer context (for capturing `this`)
+    AstNodeModule* m_callerp;  // Module of the outer context (for capturing `this`)
     AstClass* m_classp;  // Module of inner context (for symbol lookup)
-    std::map<const AstVar*, AstVar*> m_varCloneMap; // Map original var nodes to their clones
-    std::set<AstNode*> m_ignore; // Nodes to ignore for capturing
-    ClassLookupHelper m_lookup; // Util for class lookup
-    AstVar* m_thisp = nullptr; // Variable for outer context's object, if necessary
+    std::map<const AstVar*, AstVar*> m_varCloneMap;  // Map original var nodes to their clones
+    std::set<AstNode*> m_ignore;  // Nodes to ignore for capturing
+    ClassLookupHelper m_lookup;  // Util for class lookup
+    AstVar* m_thisp = nullptr;  // Variable for outer context's object, if necessary
 
     // METHODS
 
@@ -535,12 +533,14 @@ class CaptureVisitor final : public VNVisitor {
     }
 
     template <typename NodeT>
-    bool isReferenceToInnerMember(NodeT nodep) { return VN_IS(nodep->fromp(), LambdaArgRef); }
+    bool isReferenceToInnerMember(NodeT nodep) {
+        return VN_IS(nodep->fromp(), LambdaArgRef);
+    }
 
     AstVar* importThisp(FileLine* fl) {
         if (!m_thisp) {
-            AstClassRefDType* const refDTypep =
-                new AstClassRefDType{fl, VN_AS(m_callerp, Class), nullptr};
+            AstClassRefDType* const refDTypep
+                = new AstClassRefDType{fl, VN_AS(m_callerp, Class), nullptr};
             v3Global.rootp()->typeTablep()->addTypesp(refDTypep);
             m_thisp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vthis", refDTypep};
             m_thisp->funcLocal(true);
@@ -556,7 +556,6 @@ class CaptureVisitor final : public VNVisitor {
         if (it == m_varCloneMap.end()) { return nullptr; }
         return it->second;
     }
-
 
     // VISITORS
 
@@ -603,12 +602,11 @@ class CaptureVisitor final : public VNVisitor {
             AstNodeExpr* const pinsp = nodep->pinsp();
             if (pinsp) pinsp->unlinkFrBack();
             AstVar* thisp = importThisp(nodep->fileline());
-            AstVarRef* const thisRefp =
-                new AstVarRef{nodep->fileline(), thisp,
-                              nodep->isPure() ? VAccess::READ : VAccess::READWRITE};
+            AstVarRef* const thisRefp = new AstVarRef{
+                nodep->fileline(), thisp, nodep->isPure() ? VAccess::READ : VAccess::READWRITE};
             m_ignore.emplace(thisRefp);
-            AstMethodCall* const methodCallp =
-                new AstMethodCall{nodep->fileline(), thisRefp, thisp->name(), pinsp};
+            AstMethodCall* const methodCallp
+                = new AstMethodCall{nodep->fileline(), thisRefp, thisp->name(), pinsp};
             methodCallp->taskp(nodep->taskp());
             methodCallp->dtypep(nodep->dtypep());
             nodep->replaceWith(methodCallp);

@@ -1534,6 +1534,7 @@ class AstLambdaArgRef final : public AstNodeExpr {
     // optimizations and AstVar's are painful to remove.
     // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Class/package of the task
     ASTGEN_MEMBERS_AstLambdaArgRef;
+
 private:
     string m_name;  // Name of variable
     bool m_index;  // Index, not value
