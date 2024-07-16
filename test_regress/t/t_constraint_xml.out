@@ -47,199 +47,23 @@
             <varref loc="d,62,7,62,13" name="strings_equal" dtype_id="4"/>
           </assign>
         </func>
-        <func loc="d,7,1,7,6" name="new" dtype_id="7">
-          <stmtexpr loc="d,8,13,8,19">
-            <cmethodhard loc="d,8,13,8,19" name="write_var" dtype_id="7">
-              <varref loc="d,8,13,8,19" name="constraint" dtype_id="8"/>
-              <varref loc="d,8,13,8,19" name="header" dtype_id="3"/>
-              <const loc="d,8,9,8,12" name="64&apos;h20" dtype_id="9"/>
-              <cexpr loc="d,8,13,8,19" dtype_id="3">
-                <text loc="d,8,13,8,19"/>
-              </cexpr>
-            </cmethodhard>
-          </stmtexpr>
-          <stmtexpr loc="d,9,13,9,19">
-            <cmethodhard loc="d,9,13,9,19" name="write_var" dtype_id="7">
-              <varref loc="d,9,13,9,19" name="constraint" dtype_id="8"/>
-              <varref loc="d,9,13,9,19" name="length" dtype_id="3"/>
-              <const loc="d,8,9,8,12" name="64&apos;h20" dtype_id="9"/>
-              <cexpr loc="d,9,13,9,19" dtype_id="3">
-                <text loc="d,9,13,9,19"/>
-              </cexpr>
-            </cmethodhard>
-          </stmtexpr>
-          <stmtexpr loc="d,11,13,11,17">
-            <cmethodhard loc="d,11,13,11,17" name="write_var" dtype_id="7">
-              <varref loc="d,11,13,11,17" name="constraint" dtype_id="8"/>
-              <varref loc="d,11,13,11,17" name="if_4" dtype_id="4"/>
-              <const loc="d,11,9,11,12" name="64&apos;h1" dtype_id="9"/>
-              <cexpr loc="d,11,13,11,17" dtype_id="4">
-                <text loc="d,11,13,11,17"/>
-              </cexpr>
-            </cmethodhard>
-          </stmtexpr>
-          <stmtexpr loc="d,12,13,12,20">
-            <cmethodhard loc="d,12,13,12,20" name="write_var" dtype_id="7">
-              <varref loc="d,12,13,12,20" name="constraint" dtype_id="8"/>
-              <varref loc="d,12,13,12,20" name="iff_5_6" dtype_id="4"/>
-              <const loc="d,11,9,11,12" name="64&apos;h1" dtype_id="9"/>
-              <cexpr loc="d,12,13,12,20" dtype_id="4">
-                <text loc="d,12,13,12,20"/>
-              </cexpr>
-            </cmethodhard>
-          </stmtexpr>
-          <stmtexpr loc="d,10,13,10,22">
-            <cmethodhard loc="d,10,13,10,22" name="write_var" dtype_id="7">
-              <varref loc="d,10,13,10,22" name="constraint" dtype_id="8"/>
-              <varref loc="d,10,13,10,22" name="sublength" dtype_id="3"/>
-              <const loc="d,8,9,8,12" name="64&apos;h20" dtype_id="9"/>
-              <cexpr loc="d,10,13,10,22" dtype_id="3">
-                <text loc="d,10,13,10,22"/>
-              </cexpr>
-            </cmethodhard>
-          </stmtexpr>
-          <stmtexpr loc="d,13,13,13,24">
-            <cmethodhard loc="d,13,13,13,24" name="write_var" dtype_id="7">
-              <varref loc="d,13,13,13,24" name="constraint" dtype_id="8"/>
-              <varref loc="d,13,13,13,24" name="if_state_ok" dtype_id="4"/>
-              <const loc="d,11,9,11,12" name="64&apos;h1" dtype_id="9"/>
-              <cexpr loc="d,13,13,13,24" dtype_id="4">
-                <text loc="d,13,13,13,24"/>
-              </cexpr>
-            </cmethodhard>
-          </stmtexpr>
-        </func>
-        <func loc="d,7,1,7,6" name="randomize" dtype_id="10">
-          <var loc="d,7,1,7,6" name="randomize" dtype_id="10" dir="output" vartype="bit" origName="randomize"/>
-          <stmtexpr loc="d,7,1,7,6">
-            <cmethodhard loc="d,7,1,7,6" name="clear" dtype_id="7">
-              <varref loc="d,7,1,7,6" name="constraint" dtype_id="8"/>
-            </cmethodhard>
-          </stmtexpr>
-          <stmtexpr loc="d,19,15,19,20">
-            <taskref loc="d,19,15,19,20" name="empty_setup_constraint" dtype_id="7"/>
-          </stmtexpr>
-          <stmtexpr loc="d,21,15,21,19">
-            <taskref loc="d,21,15,21,19" name="size_setup_constraint" dtype_id="7"/>
-          </stmtexpr>
-          <stmtexpr loc="d,28,15,28,18">
-            <taskref loc="d,28,15,28,18" name="ifs_setup_constraint" dtype_id="7"/>
-          </stmtexpr>
-          <stmtexpr loc="d,41,15,41,23">
-            <taskref loc="d,41,15,41,23" name="arr_uniq_setup_constraint" dtype_id="7"/>
-          </stmtexpr>
-          <stmtexpr loc="d,48,15,48,20">
-            <taskref loc="d,48,15,48,20" name="order_setup_constraint" dtype_id="7"/>
-          </stmtexpr>
-          <stmtexpr loc="d,50,15,50,18">
-            <taskref loc="d,50,15,50,18" name="dis_setup_constraint" dtype_id="7"/>
-          </stmtexpr>
-          <stmtexpr loc="d,56,15,56,19">
-            <taskref loc="d,56,15,56,19" name="meth_setup_constraint" dtype_id="7"/>
-          </stmtexpr>
-        </func>
-        <task loc="d,7,1,7,6" name="empty_setup_constraint"/>
-        <var loc="d,19,15,19,20" name="constraint" dtype_id="8" vartype="VlRandomizer" origName="constraint"/>
-        <task loc="d,7,1,7,6" name="size_setup_constraint">
-          <stmtexpr loc="d,22,18,22,20">
-            <cmethodhard loc="d,22,18,22,20" name="hard" dtype_id="7">
-              <varref loc="d,22,18,22,20" name="constraint" dtype_id="8"/>
-              <const loc="d,22,18,22,20" name="&quot;(and (bvsgt header #x00000000) (bvsle header #x00000007))&quot;" dtype_id="2"/>
-            </cmethodhard>
-          </stmtexpr>
-          <stmtexpr loc="d,23,14,23,16">
-            <cmethodhard loc="d,23,14,23,16" name="hard" dtype_id="7">
-              <varref loc="d,23,14,23,16" name="constraint" dtype_id="8"/>
-              <const loc="d,23,14,23,16" name="&quot;(bvsle length #x0000000f)&quot;" dtype_id="2"/>
-            </cmethodhard>
-          </stmtexpr>
-          <stmtexpr loc="d,24,14,24,16">
-            <cmethodhard loc="d,24,14,24,16" name="hard" dtype_id="7">
-              <varref loc="d,24,14,24,16" name="constraint" dtype_id="8"/>
-              <const loc="d,24,14,24,16" name="&quot;(bvsge length header)&quot;" dtype_id="2"/>
-            </cmethodhard>
-          </stmtexpr>
-          <stmtexpr loc="d,25,14,25,18">
-            <cmethodhard loc="d,25,14,25,18" name="hard" dtype_id="7">
-              <varref loc="d,25,14,25,18" name="constraint" dtype_id="8"/>
-              <const loc="d,25,14,25,18" name="&quot;true&quot;" dtype_id="2"/>
-            </cmethodhard>
-          </stmtexpr>
-        </task>
-        <task loc="d,7,1,7,6" name="ifs_setup_constraint">
-          <stmtexpr loc="d,29,7,29,9">
-            <cmethodhard loc="d,29,7,29,9" name="hard" dtype_id="7">
-              <varref loc="d,29,7,29,9" name="constraint" dtype_id="8"/>
-              <const loc="d,29,7,29,9" name="&quot;(=&gt; (bvsgt header #x00000004) (= if_4 #b1))&quot;" dtype_id="2"/>
-            </cmethodhard>
-          </stmtexpr>
-          <stmtexpr loc="d,32,7,32,9">
-            <cmethodhard loc="d,32,7,32,9" name="hard" dtype_id="7">
-              <varref loc="d,32,7,32,9" name="constraint" dtype_id="8"/>
-              <const loc="d,32,7,32,9" name="&quot;(ite (or (= header #x00000005) (= header #x00000006)) (and (= iff_5_6 #b1) (= iff_5_6 #b1) (= iff_5_6 #b1)) (= iff_5_6 #b0))&quot;" dtype_id="2"/>
-            </cmethodhard>
-          </stmtexpr>
-        </task>
-        <task loc="d,7,1,7,6" name="arr_uniq_setup_constraint"/>
-        <task loc="d,7,1,7,6" name="order_setup_constraint"/>
-        <task loc="d,7,1,7,6" name="dis_setup_constraint">
-          <stmtexpr loc="d,51,7,51,11">
-            <cmethodhard loc="d,51,7,51,11" name="hard" dtype_id="7">
-              <varref loc="d,51,7,51,11" name="constraint" dtype_id="8"/>
-              <const loc="d,51,12,51,21" name="&quot;sublength&quot;" dtype_id="2"/>
-            </cmethodhard>
-          </stmtexpr>
-          <stmtexpr loc="d,52,7,52,14">
-            <cmethodhard loc="d,52,7,52,14" name="hard" dtype_id="7">
-              <varref loc="d,52,7,52,14" name="constraint" dtype_id="8"/>
-              <const loc="d,52,20,52,29" name="&quot;sublength&quot;" dtype_id="2"/>
-            </cmethodhard>
-          </stmtexpr>
-          <stmtexpr loc="d,53,17,53,19">
-            <cmethodhard loc="d,53,17,53,19" name="hard" dtype_id="7">
-              <varref loc="d,53,17,53,19" name="constraint" dtype_id="8"/>
-              <const loc="d,53,17,53,19" name="&quot;(bvsle sublength length)&quot;" dtype_id="2"/>
-            </cmethodhard>
-          </stmtexpr>
-        </task>
-        <task loc="d,7,1,7,6" name="meth_setup_constraint">
-          <stmtexpr loc="d,57,7,57,9">
-            <cmethodhard loc="d,57,7,57,9" name="hard" dtype_id="7">
-              <varref loc="d,57,7,57,9" name="constraint" dtype_id="8"/>
-              <sformatf loc="d,57,7,57,9" name="(=&gt; %@ (= if_state_ok #b1))" dtype_id="2">
-                <sformatf loc="d,57,11,57,24" name="#b%b" dtype_id="2">
-                  <funcref loc="d,57,11,57,24" name="strings_equal" dtype_id="4">
-                    <arg loc="d,57,25,57,30">
-                      <varref loc="d,57,25,57,30" name="state" dtype_id="2"/>
-                    </arg>
-                    <arg loc="d,57,32,57,36">
-                      <const loc="d,57,32,57,36" name="&quot;ok&quot;" dtype_id="2"/>
-                    </arg>
-                  </funcref>
-                </sformatf>
-              </sformatf>
-            </cmethodhard>
-          </stmtexpr>
-        </task>
+        <func loc="d,7,1,7,6" name="new" dtype_id="7"/>
       </class>
     </package>
     <typetable loc="a,0,0,0,0">
       <basicdtype loc="d,22,14,22,15" id="6" name="logic"/>
-      <basicdtype loc="d,25,21,25,22" id="11" name="logic" left="31" right="0"/>
+      <basicdtype loc="d,25,21,25,22" id="8" name="logic" left="31" right="0"/>
       <basicdtype loc="d,73,7,73,13" id="2" name="string"/>
       <basicdtype loc="d,8,9,8,12" id="3" name="int" left="31" right="0" signed="true"/>
       <basicdtype loc="d,11,9,11,12" id="4" name="bit"/>
       <unpackarraydtype loc="d,15,18,15,19" id="5" sub_dtype_id="3">
         <range loc="d,15,18,15,19">
-          <const loc="d,15,19,15,20" name="32&apos;h0" dtype_id="11"/>
-          <const loc="d,15,19,15,20" name="32&apos;h1" dtype_id="11"/>
+          <const loc="d,15,19,15,20" name="32&apos;h0" dtype_id="8"/>
+          <const loc="d,15,19,15,20" name="32&apos;h1" dtype_id="8"/>
         </range>
       </unpackarraydtype>
       <voiddtype loc="d,7,1,7,6" id="7"/>
       <classrefdtype loc="d,69,4,69,10" id="1" name="Packet"/>
-      <basicdtype loc="d,7,1,7,6" id="10" name="bit" left="31" right="0" signed="true"/>
-      <basicdtype loc="d,7,1,7,6" id="8" name="VlRandomizer"/>
-      <basicdtype loc="d,8,9,8,12" id="9" name="logic" left="63" right="0"/>
     </typetable>
   </netlist>
 </verilator_xml>

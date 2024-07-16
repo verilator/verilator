@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: Verilog Test module
+// DESCRIPTION: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2020 by Wilson Snyder.
@@ -45,7 +45,7 @@ typedef struct {
    longint     z;
 } StructUnpacked;
 
-class BaseCls;
+class BaseCls1;
 endclass
 
 class Inner;
@@ -65,7 +65,7 @@ class Inner;
 
 endclass
 
-class DerivedCls extends BaseCls;
+class DerivedCls1 extends BaseCls1;
    rand Inner i;
    rand int j;
    int k;
@@ -79,6 +79,24 @@ class DerivedCls extends BaseCls;
    endfunction
 
 endclass
+
+class BaseCls2;
+   rand int i;
+
+   function new;
+      i = 0;
+   endfunction
+endclass
+
+class DerivedCls2 extends BaseCls2;
+   rand int j;
+
+   function new;
+      super.new;
+      j = 0;
+   endfunction
+endclass
+
 
 class OtherCls;
    logic[63:0] v;
@@ -102,7 +120,7 @@ class OtherCls;
 endclass
 
 class ContainsNull;
-   rand BaseCls b;
+   rand BaseCls1 b;
 endclass
 
 class ClsWithInt;
@@ -137,35 +155,37 @@ endclass
 
 module t (/*AUTOARG*/);
 
-   DerivedCls derived;
+   DerivedCls1 derived1;
+   DerivedCls2 derived2;
    OtherCls other;
-   BaseCls base;
+   BaseCls1 base;
    ContainsNull cont;
    DeriveClsWithInt der_int;
    DeriveAndContainClsWithInt der_contain;
    ClsContainUsedOnlyHere cls_cont_used;
 
    initial begin
-      int rand_result;
-      derived = new;
+      derived1 = new;
+      derived2 = new;
       other = new;
       cont = new;
       der_int = new;
       der_contain = new;
-      base = derived;
+      base = derived1;
       cls_cont_used = new;
       for (int i = 0; i < 10; i++) begin
-         rand_result = base.randomize();
-         rand_result = other.randomize();
-         rand_result = cont.randomize();
-         rand_result = der_int.randomize();
-         rand_result = der_contain.randomize();
-         if (!(derived.l inside {ONE, TWO, THREE, FOUR})) $stop;
+         void'(base.randomize());
+         void'(derived2.randomize());
+         void'(other.randomize());
+         void'(cont.randomize());
+         void'(der_int.randomize());
+         void'(der_contain.randomize());
+         if (!(derived1.l inside {ONE, TWO, THREE, FOUR})) $stop;
          if (!(other.str.j.s.c inside {ONE, TWO, THREE, FOUR})) $stop;
          if (!(other.str.j.y inside {ONE, TWO, THREE, FOUR})) $stop;
          if (!(other.str.k inside {ONE, TWO, THREE, FOUR})) $stop;
-         if (derived.i.e != 0) $stop;
-         if (derived.k != 0) $stop;
+         if (derived1.i.e != 0) $stop;
+         if (derived1.k != 0) $stop;
          if (other.v != 0) $stop;
          if (cont.b != null) $stop;
          if (der_int.b != 0) $stop;
@@ -173,11 +193,13 @@ module t (/*AUTOARG*/);
          if (der_contain.cls1.b != 0) $stop;
          if (der_contain.b != 0) $stop;
       end
-      `check_rand(derived, derived.i.a);
-      `check_rand(derived, derived.i.b);
-      `check_rand(derived, derived.i.c);
-      `check_rand(derived, derived.j);
-      `check_rand(derived, derived.l);
+      `check_rand(derived1, derived1.i.a);
+      `check_rand(derived1, derived1.i.b);
+      `check_rand(derived1, derived1.i.c);
+      `check_rand(derived1, derived1.j);
+      `check_rand(derived1, derived1.l);
+      `check_rand(derived2, derived2.i);
+      `check_rand(derived2, derived2.j);
       `check_rand(other, other.w);
       `check_rand(other, other.x);
       `check_rand(other, other.y);

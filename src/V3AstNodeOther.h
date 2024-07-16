@@ -2334,6 +2334,21 @@ public:
     // Return the lowest class extended from, or this class
     AstClass* baseMostClassp();
     static bool isCacheableChild(const AstNode* nodep);
+    // Iterates top level members of the class, taking into account inheritance (starting from the
+    // root superclass). Note: after V3Scope, several children are moved under an AstScope and will
+    // not be found by this.
+    template <typename Callable>
+    void foreachMember(const Callable& visit) {
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 1>::type;
+        if (AstClassExtends* const extendsp = this->extendsp()) {
+            extendsp->classp()->foreachMember(visit);
+        }
+        for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (T_Node* memberp = AstNode::privateCast<T_Node, decltype(stmtp)>(stmtp)) {
+                visit(this, memberp);
+            }
+        }
+    }
 };
 class AstClassPackage final : public AstNodeModule {
     // The static information portion of a class (treated similarly to a package)
