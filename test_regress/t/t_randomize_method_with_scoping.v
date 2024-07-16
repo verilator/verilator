@@ -18,23 +18,24 @@ class Cls;
    endfunction
 endclass
 class SubA extends Cls;
-   c1 e;
+   c1 e = new;
    function c1 get_c();
       return e;
    endfunction
 endclass
 class SubB extends Cls;
-   c2 e;
+   c2 e = new;
    SubA f = new;
    function c2 get_c();
       return e;
    endfunction
    function int doit;
       // access ambiguous names so width complains if we miss something
+      doit = 1;
       doit = f.randomize() with { x == local::x; };
       doit &= f.randomize() with { e.c1_f == local::e.c2_f; };
-      doit &= f.randomize() with { get_x() == local::get_x(); };
-      doit &= f.randomize() with { get_c().c1_f == local::get_c().c2_f; };
+      doit &= f.randomize() with { x == local::get_x() - get_x(); };
+      doit &= f.randomize() with { x == local::get_c().c2_f - get_c().c1_f; };
       doit &= f.randomize() with { (get_c).c1_f == (local::get_c).c2_f; };
    endfunction
 endclass

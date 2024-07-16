@@ -14,7 +14,6 @@ if (!$Self->have_solver) {
     skip("No constraint solver installed");
 } else {
     compile(
-        verilator_flags2 => ['-Wno-CONSTRAINTIGN'],
         );
 
     execute(

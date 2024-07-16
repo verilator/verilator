@@ -297,6 +297,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         nodep->replaceWith(new AstSFormatF{nodep->fileline(), smtName, false, nullptr});
 
         AstVar* const varp = nodep->varp();
+        AstNodeModule* const classOrPackagep = nodep->classOrPackagep();
 
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
 
@@ -307,6 +308,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 "write_var"};
             methodp->dtypeSetVoid();
             AstVarRef* varRefp = new AstVarRef{varp->fileline(), varp, VAccess::WRITE};
+            varRefp->classOrPackagep(classOrPackagep);
             methodp->addPinsp(varRefp);
             methodp->addPinsp(new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{},
                                            (size_t)varp->width()});
@@ -479,13 +481,14 @@ public:
         return false;
     }
 
-    AstClass* findDeclarationClass(AstNode* nodep) {
+    AstClass* findDeclarationClass(AstNode* nodep, bool visibleOnly = true) {
         auto it = m_classMap.find(nodep);
         if (it != m_classMap.end()) return it->second;
         for (AstNode* backp = nodep; backp; backp = backp->backp()) {
             AstClass* classp = VN_CAST(backp, Class);
             if (classp) {
-                UASSERT_OBJ(moduleInClass(classp), nodep, "Node does not belong to class");
+                if (visibleOnly)
+                    UASSERT_OBJ(moduleInClass(classp), nodep, "Node does not belong to class");
                 m_classMap.emplace(nodep, classp);
                 return classp;
             }
@@ -498,11 +501,14 @@ public:
 
 class CaptureVisitor final : public VNVisitor {
     AstArg* m_argsp;  // Original references turned into arguments
-    //AstNodeModule* m_myModulep;  // Module for which static references will stay uncaptured.
-    AstClass* m_classp;
+    AstNodeModule* m_callerp; // Module of the outer context (for capturing `this`)
+    AstClass* m_classp;  // Module of inner context (for symbol lookup)
     std::map<const AstVar*, AstVar*> m_varCloneMap; // Map original var nodes to their clones
-    std::set<AstNode*> m_ignore;
-    ClassLookupHelper m_lookup;
+    std::set<AstNode*> m_ignore; // Nodes to ignore for capturing
+    ClassLookupHelper m_lookup; // Util for class lookup
+    AstVar* m_thisp = nullptr; // Variable for outer context's object, if necessary
+
+    // METHODS
 
     bool captureVariable(FileLine* const fileline, AstNodeVarRef* varrefp, AstVar*& varp) {
         auto it = m_varCloneMap.find(varrefp->varp());
@@ -522,12 +528,45 @@ class CaptureVisitor final : public VNVisitor {
         return false;
     }
 
+    template <typename NodeT>
+    void fixupClassOrPackage(AstNode* memberp, NodeT refp) {
+        AstClass* const declClassp = m_lookup.findDeclarationClass(memberp);
+        if (declClassp != m_classp) refp->classOrPackagep(declClassp);
+    }
+
+    template <typename NodeT>
+    bool isReferenceToInnerMember(NodeT nodep) { return VN_IS(nodep->fromp(), LambdaArgRef); }
+
+    AstVar* importThisp(FileLine* fl) {
+        if (!m_thisp) {
+            AstClassRefDType* const refDTypep =
+                new AstClassRefDType{fl, VN_AS(m_callerp, Class), nullptr};
+            v3Global.rootp()->typeTablep()->addTypesp(refDTypep);
+            m_thisp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vthis", refDTypep};
+            m_thisp->funcLocal(true);
+            m_thisp->lifetime(VLifetime::AUTOMATIC);
+            m_thisp->direction(VDirection::INPUT);
+            m_argsp = AstNode::addNext(m_argsp, new AstArg{fl, "", new AstThisRef{fl, refDTypep}});
+        }
+        return m_thisp;
+    }
+
+    AstVar* getVar(AstVar* const varp) const {
+        const auto it = m_varCloneMap.find(varp);
+        if (it == m_varCloneMap.end()) { return nullptr; }
+        return it->second;
+    }
+
+
+    // VISITORS
+
     void visit(AstNodeVarRef* nodep) override {
         if (m_ignore.count(nodep)) return;
         m_ignore.emplace(nodep);
         UASSERT_OBJ(nodep->varp(), nodep, "Variable unlinked");
+        // TODO: Review this condition
         if (!nodep->varp()->isFuncLocal() && !VN_IS(nodep, VarXRef)
-            && (m_lookup.moduleInClass(nodep->classOrPackagep())))
+            && !m_lookup.findDeclarationClass(nodep, false))
             return;
         AstVar* newVarp;
         bool newCapture = captureVariable(nodep->fileline(), nodep, newVarp /*ref*/);
@@ -549,29 +588,75 @@ class CaptureVisitor final : public VNVisitor {
         m_ignore.emplace(nodep);
         m_argsp = AstNode::addNext(m_argsp, new AstArg{nodep->fileline(), "", newVarRefp});
     }
+    void visit(AstNodeFTaskRef* nodep) override {
+        if (m_ignore.count(nodep)) return;
+        m_ignore.emplace(nodep);
+        UASSERT_OBJ(nodep->taskp(), nodep, "Task unlinked");
+        // We assume that constraint targets are not referenced this way.
+        if (VN_IS(nodep, MethodCall) || VN_IS(nodep, New)) {
+            m_ignore.emplace(nodep);
+            iterateChildren(nodep);
+            return;
+        }
+        AstClass* classp = m_lookup.findDeclarationClass(nodep, false);
+        if ((classp == m_callerp) && VN_IS(m_callerp, Class)) {
+            AstNodeExpr* const pinsp = nodep->pinsp();
+            if (pinsp) pinsp->unlinkFrBack();
+            AstVar* thisp = importThisp(nodep->fileline());
+            AstVarRef* const thisRefp =
+                new AstVarRef{nodep->fileline(), thisp,
+                              nodep->isPure() ? VAccess::READ : VAccess::READWRITE};
+            m_ignore.emplace(thisRefp);
+            AstMethodCall* const methodCallp =
+                new AstMethodCall{nodep->fileline(), thisRefp, thisp->name(), pinsp};
+            methodCallp->taskp(nodep->taskp());
+            methodCallp->dtypep(nodep->dtypep());
+            nodep->replaceWith(methodCallp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            m_ignore.emplace(methodCallp);
+        }
+    }
     void visit(AstMemberSel* nodep) override {
-        AstLambdaArgRef* const lambdaArgp = VN_CAST(nodep->fromp(), LambdaArgRef);
-        if (!lambdaArgp) {
+        if (!isReferenceToInnerMember(nodep)) {
             iterateChildren(nodep);
             return;
         }
         AstVarRef* varRefp = new AstVarRef(nodep->fileline(), nodep->varp(), nodep->access());
-        AstClass* declClassp = m_lookup.findDeclarationClass(nodep->varp());
-        if (declClassp != m_classp) {
-            varRefp->classOrPackagep(declClassp);
-        }
+        fixupClassOrPackage(nodep->varp(), varRefp);
         varRefp->user1(nodep->user1());
         nodep->replaceWith(varRefp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         m_ignore.emplace(varRefp);
         return;
     }
+    void visit(AstMethodCall* nodep) override {
+        if (!isReferenceToInnerMember(nodep)) {
+            iterateChildren(nodep);
+            return;
+        }
+        AstNodeExpr* pinsp = nodep->pinsp() ? nodep->pinsp()->unlinkFrBackWithNext() : nullptr;
+        AstNodeFTaskRef* taskRefp = nullptr;
+        if (VN_IS(nodep->taskp(), Task))
+            taskRefp = new AstTaskRef{nodep->fileline(), nodep->name(), pinsp};
+        else if (VN_IS(nodep->taskp(), Func))
+            taskRefp = new AstFuncRef{nodep->fileline(), nodep->name(), pinsp};
+        UASSERT_OBJ(taskRefp, nodep, "Node needs to point to regular method");
+        taskRefp->taskp(nodep->taskp());
+        taskRefp->dtypep(nodep->dtypep());
+        fixupClassOrPackage(nodep->taskp(), taskRefp);
+        taskRefp->user1(nodep->user1());
+        nodep->replaceWith(taskRefp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        m_ignore.emplace(taskRefp);
+        return;
+    }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
-    explicit CaptureVisitor(AstNode* const nodep, AstClass* const classp, const bool clone = true,
-                            VNRelinker* const linkerp = nullptr)
+    explicit CaptureVisitor(AstNode* const nodep, AstNodeModule* callerp, AstClass* const classp,
+                            const bool clone = true, VNRelinker* const linkerp = nullptr)
         : m_argsp(nullptr)
+        , m_callerp(callerp)
         , m_classp(classp)
         , m_lookup(classp) {
         iterateAndNextNull(nodep);
@@ -579,13 +664,22 @@ public:
 
     // PUBLIC METHODS
 
-    AstVar* getVar(AstVar* const varp) const {
-        const auto it = m_varCloneMap.find(varp);
-        if (it == m_varCloneMap.end()) { return nullptr; }
-        return it->second;
-    }
-
     AstArg* getArgs() const { return m_argsp; }
+
+    void addFunctionArguments(AstNodeFTask* funcp) const {
+        for (AstArg* argp = getArgs(); argp; argp = VN_AS(argp->nextp(), Arg)) {
+            if (AstNodeVarRef* varrefp = VN_CAST(argp->exprp(), NodeVarRef)) {
+                if ((varrefp->classOrPackagep() == m_callerp) || VN_IS(varrefp, VarXRef)) {
+                    // Keeping classOrPackagep will cause a broken link after inlining
+                    varrefp->classOrPackagep(nullptr);
+                }
+                funcp->addStmtsp(getVar(varrefp->varp()));
+            } else {
+                UASSERT_OBJ(VN_IS(argp->exprp(), ThisRef), argp->exprp(), "Wrong arg expression");
+                funcp->addStmtsp(m_thisp);
+            }
+        }
+    }
 };
 
 //######################################################################
@@ -987,19 +1081,12 @@ class RandomizeVisitor final : public VNVisitor {
             = V3Randomize::newRandomizeFunc(classp, m_inlineUniqueNames.get(nodep));
 
         // Detach the expression and prepare variable copies
-        const CaptureVisitor captured{withp->exprp(), classp, false};
+        const CaptureVisitor captured{withp->exprp(), m_modp, classp, false};
         //UASSERT_OBJ(VN_IS(captured.getTree(), ConstraintExpr), captured.getTree(),
         //            "Wrong expr type");
 
         // Add function arguments
-        for (AstArg* argp = captured.getArgs(); argp; argp = VN_AS(argp->nextp(), Arg)) {
-            AstNodeVarRef* varrefp = VN_AS(argp->exprp(), NodeVarRef);
-            if ((varrefp->classOrPackagep() == m_modp) || VN_IS(varrefp, VarXRef)) {
-                // Keeping classOrPackagep will cause a broken link after inlining
-                varrefp->classOrPackagep(nullptr);
-            }
-            randomizeFuncp->addStmtsp(captured.getVar(varrefp->varp()));
-        }
+        captured.addFunctionArguments(randomizeFuncp);
 
         // Add constraints clearing code
         if (classGenp) {

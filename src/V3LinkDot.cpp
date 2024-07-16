@@ -2669,7 +2669,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             string baddot;
             VSymEnt* okSymp = nullptr;
             if (m_fromSymp) {
-                foundp = m_fromSymp->findIdFallback(nodep->name());
+                foundp = m_fromSymp->findIdFlat(nodep->name());
                 if (foundp) {
                     UINFO(9, " randomize-with fromSym " << foundp->nodep() << endl);
                     if (m_ds.m_dotPos != DP_NONE) m_ds.m_dotPos = DP_MEMBER;
@@ -3309,7 +3309,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                                okSymp);  // Maybe nullptr
             }
             if (m_fromSymp) {
-                VSymEnt* const foundp = m_fromSymp->findIdFallback(nodep->name());
+                VSymEnt* const foundp = m_fromSymp->findIdFlat(nodep->name());
                 if (foundp) {
                     UINFO(9, " randomize-with fromSym " << foundp->nodep() << endl);
                     AstNodeExpr* argsp = nullptr;

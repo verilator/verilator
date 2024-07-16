@@ -2137,6 +2137,10 @@ public:
         : ASTGEN_SUPER_ThisRef(fl) {
         childDTypep(dtypep);
     }
+    AstThisRef(FileLine* fl, AstClassRefDType* dtypep)
+        : ASTGEN_SUPER_ThisRef(fl) {
+        this->dtypep(dtypep);
+    }
     ASTGEN_MEMBERS_AstThisRef;
     string emitC() override { return "this"; }
     string emitVerilog() override { return "this"; }
