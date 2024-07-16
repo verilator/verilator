@@ -2569,14 +2569,6 @@ private:
     template <typename T_Arg, bool Default, typename Callable>
     inline static bool predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const Callable& p);
 
-    template <typename T_Callable>
-    struct Arg0NoPointerNoCV final {
-        using Traits = FunctionTraits<T_Callable>;
-        using T_Arg0 = typename Traits::template arg<0>::type;
-        using T_Arg0NoPtr = typename std::remove_pointer<T_Arg0>::type;
-        using type = typename std::remove_cv<T_Arg0NoPtr>::type;
-    };
-
 public:
     // Given a callable 'f' that takes a single argument of some AstNode subtype 'T_Node', traverse
     // the tree rooted at this node, and call 'f' in pre-order on each node that is of type
@@ -2587,7 +2579,7 @@ public:
     // caches in modern CPUs, while it is basically unpredictable for VNVisitor.
     template <typename Callable>
     void foreach(Callable&& f) {
-        using T_Node = typename Arg0NoPointerNoCV<Callable>::type;
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
         static_assert(vlstd::is_invocable<Callable, T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Callable 'f' must have a signature compatible with 'void(T_Node*)', "
@@ -2598,7 +2590,7 @@ public:
     // Same as above, but for 'const' nodes
     template <typename Callable>
     void foreach(Callable&& f) const {
-        using T_Node = typename Arg0NoPointerNoCV<Callable>::type;
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
         static_assert(vlstd::is_invocable<Callable, const T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Callable 'f' must have a signature compatible with 'void(const T_Node*)', "
@@ -2609,7 +2601,7 @@ public:
     // Same as 'foreach' but also traverses 'this->nextp()' transitively
     template <typename Callable>
     void foreachAndNext(Callable&& f) {
-        using T_Node = typename Arg0NoPointerNoCV<Callable>::type;
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
         static_assert(vlstd::is_invocable<Callable, T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Callable 'f' must have a signature compatible with 'void(T_Node*)', "
@@ -2620,7 +2612,7 @@ public:
     // Same as above, but for 'const' nodes
     template <typename Callable>
     void foreachAndNext(Callable&& f) const {
-        using T_Node = typename Arg0NoPointerNoCV<Callable>::type;
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
         static_assert(vlstd::is_invocable<Callable, const T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Callable 'f' must have a signature compatible with 'void(const T_Node*)', "
@@ -2635,7 +2627,7 @@ public:
     // be determined.
     template <typename Callable>
     bool exists(Callable&& p) {
-        using T_Node = typename Arg0NoPointerNoCV<Callable>::type;
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
         static_assert(vlstd::is_invocable_r<bool, Callable, T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Predicate 'p' must have a signature compatible with 'bool(T_Node*)', "
@@ -2646,7 +2638,7 @@ public:
     // Same as above, but for 'const' nodes
     template <typename Callable>
     bool exists(Callable&& p) const {
-        using T_Node = typename Arg0NoPointerNoCV<Callable>::type;
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
         static_assert(vlstd::is_invocable_r<bool, Callable, const T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Predicate 'p' must have a signature compatible with 'bool(const T_Node*)', "
@@ -2660,7 +2652,7 @@ public:
     // in some arbitrary order and is terminated as soon as the result can be determined.
     template <typename Callable>
     bool forall(Callable&& p) {
-        using T_Node = typename Arg0NoPointerNoCV<Callable>::type;
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
         static_assert(vlstd::is_invocable_r<bool, Callable, T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Predicate 'p' must have a signature compatible with 'bool(T_Node*)', "
@@ -2671,7 +2663,7 @@ public:
     // Same as above, but for 'const' nodes
     template <typename Callable>
     bool forall(Callable&& p) const {
-        using T_Node = typename Arg0NoPointerNoCV<Callable>::type;
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
         static_assert(vlstd::is_invocable_r<bool, Callable, const T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Predicate 'p' must have a signature compatible with 'bool(const T_Node*)', "
