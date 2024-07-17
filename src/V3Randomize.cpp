@@ -598,44 +598,23 @@ class CaptureVisitor final : public VNVisitor {
         return it->second;
     }
 
-    static const int CALLER_IS_CLASS = 0x1;
-    static const int VAR_HAS_AUTO_LIFETIME = 0x2;
-    static const int VAR_IS_FUNCLOCAL = 0x4;
-    static const int VAR_DECLARED_IN_CALLER = 0x08;
-    static const int VAR_IS_FIELD_OF_CALLER = 0x10;
-    static const int REF_IS_XREF = 0x20;
-
-    int callerIsClass() const { return VN_IS(m_callerp, Class) ? CALLER_IS_CLASS : 0x0; }
-    int varInCallersClassHierarchy(AstVar* varp) {
-        AstNodeModule* const modp = m_lookup.findDeclaringModule(varp, false);
-        int const in_caller = (modp == m_callerp) ? VAR_DECLARED_IN_CALLER : 0x0;
-        int const field_of_caller
-            = modp ? (m_lookup.moduleInClassHierarchy(modp) ? VAR_IS_FIELD_OF_CALLER : 0x0) : 0x0;
-        return in_caller | field_of_caller;
-    }
-    int varHasAutomaticLifetime(AstVar* varp) const {
-        return varp->lifetime().isAutomatic() ? VAR_HAS_AUTO_LIFETIME : 0x0;
-    }
-    int varIsFuncLocal(AstVar* varp) const { return varp->isFuncLocal() ? VAR_IS_FUNCLOCAL : 0x0; }
-    int varIsXRef(AstNodeVarRef* varRefp) { return VN_IS(varRefp, VarXRef) ? REF_IS_XREF : 0x0; }
-    int getCapCond(AstNodeVarRef* varRefp) {
-        return callerIsClass() | varHasAutomaticLifetime(varRefp->varp())
-               | varIsFuncLocal(varRefp->varp()) | varInCallersClassHierarchy(varRefp->varp())
-               | varIsXRef(varRefp);
-    }
-
-    static bool matchAll(int cond, int mask) { return (cond & mask) == mask; }
-
     CaptureMode getVarRefCaptureMode(AstNodeVarRef* varRefp) {
-        int cond = getCapCond(varRefp);
-        if (matchAll(cond, REF_IS_XREF)) return CaptureMode::CAP_VALUE | CaptureMode::CAP_F_XREF;
-        if (matchAll(cond, VAR_IS_FUNCLOCAL | VAR_HAS_AUTO_LIFETIME))
-            return CaptureMode::CAP_VALUE;
+        AstNodeModule* const modp = m_lookup.findDeclaringModule(varRefp->varp(), false);
+
+        bool callerIsClass = VN_IS(m_callerp, Class);
+        bool refIsXref = VN_IS(varRefp, VarXRef);
+        bool varIsFuncLocal = varRefp->varp()->isFuncLocal();
+        bool varHasAutomaticLifetime = varRefp->varp()->lifetime().isAutomatic();
+        bool varIsDeclaredInCaller = modp == m_callerp;
+        bool varIsFieldOfCaller = modp ? m_lookup.moduleInClassHierarchy(modp) : false;
+
+        if (refIsXref) return CaptureMode::CAP_VALUE | CaptureMode::CAP_F_XREF;
+        if (varIsFuncLocal && varHasAutomaticLifetime) return CaptureMode::CAP_VALUE;
         // Static var in function (will not be inlined, because it's in class)
-        if (matchAll(cond, CALLER_IS_CLASS | VAR_IS_FUNCLOCAL)) return CaptureMode::CAP_VALUE;
-        if (matchAll(cond, CALLER_IS_CLASS | VAR_DECLARED_IN_CALLER)) return CaptureMode::CAP_THIS;
-        if (matchAll(cond, CALLER_IS_CLASS | VAR_IS_FIELD_OF_CALLER)) return CaptureMode::CAP_THIS;
-        UASSERT_OBJ(!matchAll(cond, CALLER_IS_CLASS), varRefp, "Invalid reference?");
+        if (callerIsClass && varIsFuncLocal) return CaptureMode::CAP_VALUE;
+        if (callerIsClass && varIsDeclaredInCaller) return CaptureMode::CAP_THIS;
+        if (callerIsClass && varIsFieldOfCaller) return CaptureMode::CAP_THIS;
+        UASSERT_OBJ(!callerIsClass, varRefp, "Invalid reference?");
         return CaptureMode::CAP_VALUE;
     }
 
