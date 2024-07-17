@@ -2356,11 +2356,6 @@ int AstVarRef::instrCount() const {
     // Otherwise as a load/store
     return widthInstrs() * (access().isReadOrRW() ? INSTR_COUNT_LD : 1);
 }
-void AstLambdaArgRef::dump(std::ostream& str) const {
-    this->AstNodeExpr::dump(str);
-    if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
-}
-void AstLambdaArgRef::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstVar::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isSc()) str << " [SC]";

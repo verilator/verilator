@@ -2675,7 +2675,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (m_ds.m_dotPos != DP_NONE) m_ds.m_dotPos = DP_MEMBER;
                     AstLambdaArgRef* const lambdaRefp
                         = new AstLambdaArgRef{nodep->fileline(), "item", false};
-                    lambdaRefp->classOrPackagep(m_fromSymp->classOrPackagep());
                     nodep->replaceWith(new AstMemberSel{nodep->fileline(), lambdaRefp,
                                                         VFlagChildDType{}, nodep->name()});
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
