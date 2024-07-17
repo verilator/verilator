@@ -148,6 +148,7 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
 protected:
     EmitCLazyDecls m_lazyDecls;  // Visitor for emitting lazy declarations
     bool m_useSelfForThis = false;  // Replace "this" with "vlSelf"
+    bool m_usevlSelfRef = false;  // Use vlSelfRef reference instead of vlSelf pointer
     const AstNodeModule* m_modp = nullptr;  // Current module being emitted
     const AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
     bool m_instantiatesOwnProcess = false;
@@ -343,6 +344,21 @@ public:
             }
         }
 
+        if (m_useSelfForThis) {
+            m_usevlSelfRef = true;
+            /*
+             * Using reference to the vlSelf pointer will help the C++
+             * compiler to have dereferenceable hints, which can help to
+             * reduce the need for branch instructions in the generated
+             * code to allow the compiler to generate load store after the
+             * if condition (including short-circuit evaluation)
+             * speculatively and also reduce the data cache pollution when
+             * executing in the wrong path to make verilator-generated code
+             * run faster.
+             */
+            puts("auto &vlSelfRef = std::ref(*vlSelf).get();\n");
+        }
+
         if (nodep->initsp()) {
             putsDecoration(nodep, "// Init\n");
             iterateAndNextConstNull(nodep->initsp());
@@ -357,6 +373,8 @@ public:
             putsDecoration(nodep, "// Final\n");
             iterateAndNextConstNull(nodep->finalsp());
         }
+
+        m_usevlSelfRef = false;
 
         puts("}\n");
         if (nodep->ifdef() != "") puts("#endif  // " + nodep->ifdef() + "\n");
@@ -620,7 +638,7 @@ public:
             if (!v3Global.opt.protectIds()) return;
         }
         if (!(nodep->protect() && v3Global.opt.protectIds())) {
-            putsDecoration(nodep, string{"// "} + nodep->name() + at + "\n");
+            putsDecoration(nodep, "// "s + nodep->name() + at + "\n");
         }
         iterateChildrenConst(nodep);
     }
@@ -1458,7 +1476,7 @@ public:
 
     // Default
     void visit(AstNode* nodep) override {
-        putns(nodep, string{"\n???? // "} + nodep->prettyTypeName() + "\n");
+        putns(nodep, "\n???? // "s + nodep->prettyTypeName() + "\n");
         iterateChildrenConst(nodep);
         // LCOV_EXCL_START
         if (!v3Global.opt.lintOnly()) {  // An internal problem, so suppress

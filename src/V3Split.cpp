@@ -146,7 +146,7 @@ public:
     SplitVarPostVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex{graphp, nodep} {}
     ~SplitVarPostVertex() override = default;
-    string name() const override { return string{"POST "} + SplitNodeVertex::name(); }
+    string name() const override { return "POST "s + SplitNodeVertex::name(); }
     string dotColor() const override { return "CadetBlue"; }
 };
 

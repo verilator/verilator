@@ -537,7 +537,7 @@ void EmitCSyms::emitSymHdr() {
     puts("\n// CONSTRUCTORS\n");
     puts(symClassName() + "(VerilatedContext* contextp, const char* namep, " + topClassName()
          + "* modelp);\n");
-    puts(string{"~"} + symClassName() + "();\n");
+    puts("~"s + symClassName() + "();\n");
 
     for (const auto& i : m_usesVfinal) {
         puts("void " + symClassName() + "_" + cvtToStr(i.first) + "(");

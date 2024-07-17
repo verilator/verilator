@@ -66,9 +66,8 @@ public:
     static string topClassName() VL_MT_SAFE {  // Return name of top wrapper module
         return v3Global.opt.prefix();
     }
-    static string prefixNameProtect(const AstNode* nodep) VL_MT_STABLE {  // C++ name with prefix
-        return v3Global.opt.modPrefix() + "_" + VIdProtect::protect(nodep->name());
-    }
+    // Return C++ class name for a module/class object
+    static string prefixNameProtect(const AstNode* nodep) VL_MT_STABLE;
     static bool isAnonOk(const AstVar* varp) {
         AstNodeDType* const dtp = varp->dtypep()->skipRefp();
         return v3Global.opt.compLimitMembers() != 0  // Enabled

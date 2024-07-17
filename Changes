@@ -15,14 +15,23 @@ Verilator 5.027 devel
 
 * Support state-dependent constraints (#5217). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Support cross-module clocking variable access (#5184). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support inline constraints for class randomization methods (#5234). [Krzysztof Boroński]
+* Support clocking blocks in virtual interfaces (#5235). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support `$assertcontrol` assertion_type (#5236). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Support conditional constraints (#5245). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Add `--compiler-include` for additional C++ includes (#5139) (#5202). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Add `--emit-accessors` (#5182) (#5227). [Ryan Ziegler]
 * Fix fusing macro arguments to not ignore whitespace (#5061). [Tudor Timi]
+* Fix classes/modules of case-similar names (#5109). [Arkadiusz Kozdra]
 * Fix mis-removing $value$plusargs calls (#5127) (#5137). [Seth Pellegrino]
 * Fix splitting if statements with impure conditions (#5219). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix unknown conversion on queues (#5220). [Alex Solomatnikov]
 * Fix top-level unpacked structure resets (#5221).
 * Fix concurrency for mailbox and semaphores (#5222). [Liam Braun]
 * Fix error on empty generate with -O0 (#5250).
+* Fix unconstrained randomization of unpacked structs (#5252). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix inlining of variables driven from forced vars (#5259). [Geza Lore]
+* Fix tracing with `--main-top-name -` (#5261). [Ethan Sifferman]
 
 
 Verilator 5.026 2024-06-15

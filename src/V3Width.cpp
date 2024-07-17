@@ -2151,8 +2151,11 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->rangesp(), WidthVP{SELF, BOTH}.p());
     }
     void visit(AstDistItem* nodep) override {
-        userIterate(nodep->rangep(), WidthVP{SELF, BOTH}.p());
-        userIterate(nodep->weightp(), WidthVP{SELF, BOTH}.p());
+        userIterate(nodep->rangep(), m_vup);
+        if (m_vup->prelim()) {  // First stage evaluation
+            userIterate(nodep->weightp(), WidthVP{SELF, BOTH}.p());
+        }
+        nodep->dtypep(nodep->rangep()->dtypep());
     }
     void visit(AstVar* nodep) override {
         // if (debug()) nodep->dumpTree("-  InitPre: ");
@@ -2575,6 +2578,46 @@ class WidthVisitor final : public VNVisitor {
             }
         }
     }
+    void visit(AstDist* nodep) override {
+        userIterateAndNext(nodep->exprp(), WidthVP{CONTEXT_DET, PRELIM}.p());
+        for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
+            nextip = itemp->nextp();  // iterate may cause the node to get replaced
+            VL_DO_DANGLING(userIterate(itemp, WidthVP{CONTEXT_DET, PRELIM}.p()), itemp);
+        }
+
+        AstBasicDType* dtype = VN_CAST(nodep->exprp()->dtypep(), BasicDType);
+        AstNodeDType* subDTypep = nullptr;
+        nodep->dtypeSetBit();
+
+        if (dtype && dtype->isString()) {
+            nodep->dtypeSetString();
+            subDTypep = nodep->findStringDType();
+        } else if (dtype && dtype->isDouble()) {
+            nodep->dtypeSetDouble();
+            subDTypep = nodep->findDoubleDType();
+        } else {
+            // Take width as maximum across all items
+            int width = nodep->exprp()->width();
+            int mwidth = nodep->exprp()->widthMin();
+            for (const AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
+                width = std::max(width, itemp->width());
+                mwidth = std::max(mwidth, itemp->widthMin());
+            }
+            subDTypep = nodep->findLogicDType(width, mwidth, nodep->exprp()->dtypep()->numeric());
+        }
+
+        iterateCheck(nodep, "Dist expression", nodep->exprp(), CONTEXT_DET, FINAL, subDTypep,
+                     EXTEND_EXP);
+        for (AstDistItem *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
+            nextip
+                = VN_AS(itemp->nextp(), DistItem);  // iterate may cause the node to get replaced
+            iterateCheck(nodep, "Dist Item", itemp, CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
+        }
+
+        if (debug() >= 9) nodep->dumpTree("-  dist-out: ");
+        nodep->dtypep(subDTypep);
+    }
+
     void visit(AstInside* nodep) override {
         userIterateAndNext(nodep->exprp(), WidthVP{CONTEXT_DET, PRELIM}.p());
         for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
@@ -3720,14 +3763,12 @@ class WidthVisitor final : public VNVisitor {
             withp = methodWithArgument(nodep, false, false, adtypep->findVoidDType(),
                                        adtypep->findBitDType(), adtypep);
             methodOkArguments(nodep, 0, 0);
-            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READWRITE);
-            V3Randomize::newRandomizeFunc(first_classp);
-            m_memberMap.clear();
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
+            V3Randomize::newRandomizeFunc(m_memberMap, first_classp);
         } else if (nodep->name() == "srandom") {
             methodOkArguments(nodep, 1, 1);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
-            V3Randomize::newSRandomFunc(first_classp);
-            m_memberMap.clear();
+            V3Randomize::newSRandomFunc(m_memberMap, first_classp);
         }
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
         for (AstClass* classp = first_classp; classp;) {
@@ -5961,10 +6002,9 @@ class WidthVisitor final : public VNVisitor {
             AstClass* const classp = VN_CAST(nodep->classOrPackagep(), Class);
             UASSERT_OBJ(classp, nodep, "Should have failed in V3LinkDot");
             if (nodep->name() == "randomize") {
-                nodep->taskp(V3Randomize::newRandomizeFunc(classp));
-                m_memberMap.clear();
+                nodep->taskp(V3Randomize::newRandomizeFunc(m_memberMap, classp));
             } else if (nodep->name() == "srandom") {
-                nodep->taskp(V3Randomize::newSRandomFunc(classp));
+                nodep->taskp(V3Randomize::newSRandomFunc(m_memberMap, classp));
                 m_memberMap.clear();
             } else if (nodep->name() == "get_randstate") {
                 methodOkArguments(nodep, 0, 0);

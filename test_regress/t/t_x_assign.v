@@ -8,9 +8,11 @@
 
 module t_x_assign(
    input wire clk,
-   output reg o
+   output reg o,
+   output reg[31:0] o_int
 );
    always @(posedge clk) begin
       if (1'bx) o <= 1'd1; else o <= 1'd0;
+      o_int <= 'x;
    end
 endmodule

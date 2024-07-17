@@ -221,7 +221,7 @@
 +000020  point: comment=block
  000020       $write("");  // Always covered
 +000020  point: comment=block
- 000020       if (0) begin  // CHECK_COVER(0,"top.t.b*",0)
+%000000       if (0) begin  // CHECK_COVER(0,"top.t.b*",0)
 -000000  point: comment=if
 +000020  point: comment=else
                  // Make sure that we don't optimize away zero buckets
@@ -350,7 +350,7 @@
                  // because under coverage_module_off
 %000001          $write("");
 -000001  point: comment=if
-%000001          if (0) ;  // CHECK_COVER(0,"top.t.o1",1)
+%000000          if (0) ;  // CHECK_COVER(0,"top.t.o1",1)
 -000000  point: comment=if
 -000001  point: comment=else
               end

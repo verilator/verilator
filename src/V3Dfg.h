@@ -705,15 +705,15 @@ public:
     // Dump graph in Graphviz format into the given stream 'os'. 'label' is added to the name of
     // the graph which is included in the output.
     void dumpDot(std::ostream& os, const string& label = "") const VL_MT_DISABLED;
-    // Dump graph in Graphviz format into a new file with the given 'fileName'. 'label' is added to
+    // Dump graph in Graphviz format into a new file with the given 'filename'. 'label' is added to
     // the name of the graph which is included in the output.
-    void dumpDotFile(const string& fileName, const string& label = "") const VL_MT_DISABLED;
+    void dumpDotFile(const string& filename, const string& label = "") const VL_MT_DISABLED;
     // Dump graph in Graphviz format into a new automatically numbered debug file. 'label' is
     // added to the name of the graph, which is included in the file name and the output.
     void dumpDotFilePrefixed(const string& label = "") const VL_MT_DISABLED;
     // Dump upstream (source) logic cone starting from given vertex into a file with the given
-    // 'fileName'. 'name' is the name of the graph, which is included in the output.
-    void dumpDotUpstreamCone(const string& fileName, const DfgVertex& vtx,
+    // 'filename'. 'name' is the name of the graph, which is included in the output.
+    void dumpDotUpstreamCone(const string& filename, const DfgVertex& vtx,
                              const string& name = "") const VL_MT_DISABLED;
     // Dump all individual logic cones driving external variables in Graphviz format into separate
     // new automatically numbered debug files. 'label' is added to the name of the graph, which is

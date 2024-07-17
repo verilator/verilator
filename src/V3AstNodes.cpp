@@ -672,14 +672,13 @@ string AstVar::dpiTmpVarType(const string& varName) const {
 
 string AstVar::scType() const {
     if (isScBigUint()) {
-        return (string{"sc_dt::sc_biguint<"} + cvtToStr(widthMin())
+        return ("sc_dt::sc_biguint<"s + cvtToStr(widthMin())
                 + "> ");  // Keep the space so don't get >>
     } else if (isScUint() || isScUintBool()) {
-        return (string{"sc_dt::sc_uint<"} + cvtToStr(widthMin())
+        return ("sc_dt::sc_uint<"s + cvtToStr(widthMin())
                 + "> ");  // Keep the space so don't get >>
     } else if (isScBv()) {
-        return (string{"sc_dt::sc_bv<"} + cvtToStr(widthMin())
-                + "> ");  // Keep the space so don't get >>
+        return ("sc_dt::sc_bv<"s + cvtToStr(widthMin()) + "> ");  // Keep the space so don't get >>
     } else if (widthMin() == 1) {
         return "bool";
     } else if (widthMin() <= VL_IDATASIZE) {

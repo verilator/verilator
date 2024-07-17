@@ -157,9 +157,9 @@ public:
         of.puts("VERILATOR_ROOT = "
                 + V3OutFormatter::quoteNameControls(V3Options::getenvVERILATOR_ROOT()) + "\n");
         of.puts("# SystemC include directory with systemc.h (from $SYSTEMC_INCLUDE)\n");
-        of.puts(string{"SYSTEMC_INCLUDE ?= "} + V3Options::getenvSYSTEMC_INCLUDE() + "\n");
+        of.puts("SYSTEMC_INCLUDE ?= "s + V3Options::getenvSYSTEMC_INCLUDE() + "\n");
         of.puts("# SystemC library directory with libsystemc.a (from $SYSTEMC_LIBDIR)\n");
-        of.puts(string{"SYSTEMC_LIBDIR ?= "} + V3Options::getenvSYSTEMC_LIBDIR() + "\n");
+        of.puts("SYSTEMC_LIBDIR ?= "s + V3Options::getenvSYSTEMC_LIBDIR() + "\n");
 
         // Only check it if we really need the value
         if (v3Global.opt.systemC() && !V3Options::systemCFound()) {
@@ -170,22 +170,22 @@ public:
 
         of.puts("\n### Switches...\n");
         of.puts("# C++ code coverage  0/1 (from --prof-c)\n");
-        of.puts(string{"VM_PROFC = "} + ((v3Global.opt.profC()) ? "1" : "0") + "\n");
+        of.puts("VM_PROFC = "s + ((v3Global.opt.profC()) ? "1" : "0") + "\n");
         of.puts("# SystemC output mode?  0/1 (from --sc)\n");
-        of.puts(string{"VM_SC = "} + ((v3Global.opt.systemC()) ? "1" : "0") + "\n");
+        of.puts("VM_SC = "s + ((v3Global.opt.systemC()) ? "1" : "0") + "\n");
         of.puts("# Legacy or SystemC output mode?  0/1 (from --sc)\n");
-        of.puts(string{"VM_SP_OR_SC = $(VM_SC)\n"});
+        of.puts("VM_SP_OR_SC = $(VM_SC)\n");
         of.puts("# Deprecated\n");
-        of.puts(string{"VM_PCLI = "} + (v3Global.opt.systemC() ? "0" : "1") + "\n");
+        of.puts("VM_PCLI = "s + (v3Global.opt.systemC() ? "0" : "1") + "\n");
         of.puts(
             "# Deprecated: SystemC architecture to find link library path (from $SYSTEMC_ARCH)\n");
-        of.puts(string{"VM_SC_TARGET_ARCH = "} + V3Options::getenvSYSTEMC_ARCH() + "\n");
+        of.puts("VM_SC_TARGET_ARCH = "s + V3Options::getenvSYSTEMC_ARCH() + "\n");
 
         of.puts("\n### Vars...\n");
         of.puts("# Design prefix (from --prefix)\n");
-        of.puts(string{"VM_PREFIX = "} + v3Global.opt.prefix() + "\n");
+        of.puts("VM_PREFIX = "s + v3Global.opt.prefix() + "\n");
         of.puts("# Module prefix (from --prefix)\n");
-        of.puts(string{"VM_MODPREFIX = "} + v3Global.opt.modPrefix() + "\n");
+        of.puts("VM_MODPREFIX = "s + v3Global.opt.modPrefix() + "\n");
 
         of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
         of.puts("VM_USER_CFLAGS = \\\n");
@@ -209,7 +209,7 @@ public:
         of.puts("VM_USER_CLASSES = \\\n");
         const V3StringSet& cppFiles = v3Global.opt.cppFiles();
         for (const auto& cppfile : cppFiles) {
-            of.puts("\t" + V3Os::filenameNonExt(cppfile) + " \\\n");
+            of.puts("\t" + V3Os::filenameNonDirExt(cppfile) + " \\\n");
             const string dir = V3Os::filenameDir(cppfile);
             dirs.insert(dir);
         }
@@ -237,7 +237,7 @@ public:
         }
 
         for (const string& cppfile : cppFiles) {
-            const string basename = V3Os::filenameNonExt(cppfile);
+            const string basename = V3Os::filenameNonDirExt(cppfile);
             // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
             of.puts(basename + ".o: " + cppfile + "\n");
             of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<\n");
@@ -346,7 +346,7 @@ class EmitMkHierVerilation final {
             = m_planp->hierBlocksSorted();  // leaf comes first
         // List in order of leaf-last order so that linker can resolve dependency
         for (const auto& block : vlstd::reverse_view(blocks)) {
-            of.puts("\t" + block->hierLib(true) + " \\\n");
+            of.puts("\t" + block->hierLibFilename(true) + " \\\n");
         }
         of.puts("\n");
 
@@ -365,12 +365,12 @@ class EmitMkHierVerilation final {
 
         // Top level module
         {
-            const string argsFile = v3Global.hierPlanp()->topCommandArgsFileName(false);
+            const string argsFile = v3Global.hierPlanp()->topCommandArgsFilename(false);
             of.puts("\n# Verilate the top module\n");
             of.puts(v3Global.opt.prefix()
                     + ".mk: $(VM_HIER_INPUT_FILES) $(VM_HIER_VERILOG_LIBS) ");
             of.puts(V3Os::filenameNonDir(argsFile) + " ");
-            for (const auto& itr : *m_planp) of.puts(itr.second->hierWrapper(true) + " ");
+            for (const auto& itr : *m_planp) of.puts(itr.second->hierWrapperFilename(true) + " ");
             of.puts("\n");
             emitLaunchVerilator(of, argsFile);
         }
@@ -379,29 +379,29 @@ class EmitMkHierVerilation final {
         of.puts("\n# Verilate hierarchical blocks\n");
         for (const V3HierBlock* const blockp : m_planp->hierBlocksSorted()) {
             const string prefix = blockp->hierPrefix();
-            const string argsFile = blockp->commandArgsFileName(false);
-            of.puts(blockp->hierGenerated(true));
+            const string argsFilename = blockp->commandArgsFilename(false);
+            of.puts(blockp->hierGeneratedFilenames(true));
             of.puts(": $(VM_HIER_INPUT_FILES) $(VM_HIER_VERILOG_LIBS) ");
-            of.puts(V3Os::filenameNonDir(argsFile) + " ");
+            of.puts(V3Os::filenameNonDir(argsFilename) + " ");
             const V3HierBlock::HierBlockSet& children = blockp->children();
             for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
                  child != children.end(); ++child) {
-                of.puts((*child)->hierWrapper(true) + " ");
+                of.puts((*child)->hierWrapperFilename(true) + " ");
             }
             of.puts("\n");
-            emitLaunchVerilator(of, argsFile);
+            emitLaunchVerilator(of, argsFilename);
 
             // Rule to build lib*.a
-            of.puts(blockp->hierLib(true));
+            of.puts(blockp->hierLibFilename(true));
             of.puts(": ");
-            of.puts(blockp->hierMk(true));
+            of.puts(blockp->hierMkFilename(true));
             of.puts(" ");
             for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
                  child != children.end(); ++child) {
-                of.puts((*child)->hierLib(true));
+                of.puts((*child)->hierLibFilename(true));
                 of.puts(" ");
             }
-            of.puts("\n\t$(MAKE) -f " + blockp->hierMk(false) + " -C " + prefix);
+            of.puts("\n\t$(MAKE) -f " + blockp->hierMkFilename(false) + " -C " + prefix);
             of.puts(" VM_PREFIX=" + prefix);
             of.puts("\n\n");
         }

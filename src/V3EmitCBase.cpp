@@ -36,6 +36,42 @@ EmitCParentModule::EmitCParentModule() {
 }
 
 //######################################################################
+// EmitCBase implementation
+
+string EmitCBase::prefixNameProtect(const AstNode* nodep) VL_MT_STABLE {
+    const string prefix = v3Global.opt.modPrefix() + "_" + VIdProtect::protect(nodep->name());
+    // If all-uppercase prefix conflicts with a previous usage of the
+    // prefix with different capitalization, rename to avoid conflict.
+    // This is to support OSes where filename compares are non-case significant.
+    // STATIC:
+    static V3Mutex s_mutex;
+    const V3LockGuard lock{s_mutex};  // Otherwise map access is unsafe
+    static std::map<std::string, std::string> s_memoized;
+    static std::map<std::string, std::string> s_ucToPrefix;
+    // Memoize results
+    const auto mit = s_memoized.find(prefix);
+    if (mit != s_memoized.end()) return mit->second;
+    //
+    // Check capitalization
+    const string prefixUpper = VString::upcase(prefix);
+    string result;
+    {
+        const auto it = s_ucToPrefix.find(prefixUpper);
+        if (it == s_ucToPrefix.end()) {
+            s_ucToPrefix.emplace(prefixUpper, prefix);
+            result = prefix;
+        } else if (it->second == prefix) {
+            result = prefix;  // Same capitialization as last time
+        } else {
+            VHashSha256 hash{prefix};
+            result = prefix + "__Vphsh" + hash.digestSymbol();
+        }
+    }
+    s_memoized.emplace(prefix, result);
+    return result;
+}
+
+//######################################################################
 // EmitCBaseVisitor implementation
 
 string EmitCBaseVisitorConst::funcNameProtect(const AstCFunc* nodep, const AstNodeModule* modp) {

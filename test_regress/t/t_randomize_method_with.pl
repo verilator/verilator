@@ -10,14 +10,18 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-compile(
-    # Ensure we test captures of static variables
-    verilator_flags2 => ["--fno-inline"],
-    );
+if (!$Self->have_solver) {
+    skip("No constraint solver installed");
+} else {
+    compile(
+        # Ensure we test captures of static variables
+        verilator_flags2 => ["--fno-inline"],
+        );
 
-execute(
-    check_finished => 1,
-    );
+    execute(
+        check_finished => 1,
+        );
+}
 
 ok(1);
 1;

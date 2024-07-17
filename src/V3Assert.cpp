@@ -66,11 +66,11 @@ class AssertVisitor final : public VNVisitor {
     string assertDisplayMessage(AstNode* nodep, const string& prefix, const string& message,
                                 VDisplayType severity) {
         if (severity == VDisplayType::DT_ERROR || severity == VDisplayType::DT_FATAL) {
-            return (string{"[%0t] " + prefix + ": "} + nodep->fileline()->filebasename() + ":"
+            return ("[%0t] "s + prefix + ": " + nodep->fileline()->filebasename() + ":"
                     + cvtToStr(nodep->fileline()->lineno()) + ": Assertion failed in %m"
                     + ((message != "") ? ": " : "") + message + "\n");
         } else {
-            return (string{"[%0t] " + prefix + ": "} + nodep->fileline()->filebasename() + ":"
+            return ("[%0t] "s + prefix + ": " + nodep->fileline()->filebasename() + ":"
                     + cvtToStr(nodep->fileline()->lineno()) + ": %m"
                     + ((message != "") ? ": " : "") + message + "\n");
         }

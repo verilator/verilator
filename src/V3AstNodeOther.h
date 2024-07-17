@@ -1064,24 +1064,6 @@ public:
     bool same(const AstNode*) const override { return true; }
     string path() const { return m_path; }
 };
-class AstDistItem final : public AstNode {
-    // Constraint distribution item
-    // @astgen op1 := rangep : AstNodeExpr
-    // @astgen op2 := weightp : AstNodeExpr
-    bool m_isWhole = false;  // True for weight ':/', false for ':='
-public:
-    AstDistItem(FileLine* fl, AstNodeExpr* rangep, AstNodeExpr* weightp)
-        : ASTGEN_SUPER_DistItem(fl) {
-        this->rangep(rangep);
-        this->weightp(weightp);
-    }
-    ASTGEN_MEMBERS_AstDistItem;
-    bool isGateOptimizable() const override { return false; }
-    bool isPredictOptimizable() const override { return false; }
-    bool same(const AstNode* /*samep*/) const override { return true; }
-    void isWhole(bool flag) { m_isWhole = flag; }
-    bool isWhole() const { return m_isWhole; }
-};
 class AstDpiExport final : public AstNode {
     // We could put an AstNodeFTaskRef instead of the verilog function name,
     // however we're not *calling* it, so that seems somehow wrong.
@@ -1111,7 +1093,7 @@ public:
         BROKEN_RTN(!fmtp());
         return nullptr;
     }
-    string verilogKwd() const override { return string{"$"} + string{displayType().ascii()}; }
+    string verilogKwd() const override { return "$"s + string{displayType().ascii()}; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
@@ -2352,6 +2334,21 @@ public:
     // Return the lowest class extended from, or this class
     AstClass* baseMostClassp();
     static bool isCacheableChild(const AstNode* nodep);
+    // Iterates top level members of the class, taking into account inheritance (starting from the
+    // root superclass). Note: after V3Scope, several children are moved under an AstScope and will
+    // not be found by this.
+    template <typename Callable>
+    void foreachMember(const Callable& visit) {
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 1>::type;
+        if (AstClassExtends* const extendsp = this->extendsp()) {
+            extendsp->classp()->foreachMember(visit);
+        }
+        for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (T_Node* memberp = AstNode::privateCast<T_Node, decltype(stmtp)>(stmtp)) {
+                visit(this, memberp);
+            }
+        }
+    }
 };
 class AstClassPackage final : public AstNodeModule {
     // The static information portion of a class (treated similarly to a package)
@@ -2894,8 +2891,8 @@ public:
         return nullptr;
     }
     string verilogKwd() const override {
-        return (filep() ? string{"$f"} + string{displayType().ascii()}
-                        : string{"$"} + string{displayType().ascii()});
+        return (filep() ? "$f"s + string{displayType().ascii()}
+                        : "$"s + string{displayType().ascii()});
     }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }

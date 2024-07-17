@@ -412,6 +412,8 @@ IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
     data &= VL_MASK_I(obits);
     return data;
 }
+IData VL_RAND_RESET_ASSIGN_I(int obits) VL_MT_SAFE { return VL_RANDOM_I() & VL_MASK_I(obits); }
+
 QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE {
     if (Verilated::threadContextp()->randReset() == 0) return 0;
     QData data = ~0ULL;
@@ -421,9 +423,17 @@ QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE {
     data &= VL_MASK_Q(obits);
     return data;
 }
+
+QData VL_RAND_RESET_ASSIGN_Q(int obits) VL_MT_SAFE { return VL_RANDOM_Q() & VL_MASK_Q(obits); }
+
 WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = VL_RAND_RESET_I(32);
     outwp[VL_WORDS_I(obits) - 1] = VL_RAND_RESET_I(32) & VL_MASK_E(obits);
+    return outwp;
+}
+WDataOutP VL_RAND_RESET_ASSIGN_W(int obits, WDataOutP outwp) VL_MT_SAFE {
+    for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = VL_RAND_RESET_ASSIGN_I(32);
+    outwp[VL_WORDS_I(obits) - 1] = VL_RAND_RESET_ASSIGN_I(32) & VL_MASK_E(obits);
     return outwp;
 }
 WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {

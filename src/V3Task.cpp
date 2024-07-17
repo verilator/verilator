@@ -560,7 +560,7 @@ class TaskVisitor final : public VNVisitor {
         AstNode* const newbodysp
             = refp->taskp()->stmtsp() ? refp->taskp()->stmtsp()->cloneTree(true) : nullptr;
         AstNode* const beginp
-            = new AstComment{refp->fileline(), string{"Function: "} + refp->name(), true};
+            = new AstComment{refp->fileline(), "Function: "s + refp->name(), true};
         if (newbodysp) beginp->addNext(newbodysp);
         if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-  newbegi: ");
         //
@@ -612,7 +612,7 @@ class TaskVisitor final : public VNVisitor {
         UASSERT_OBJ(cfuncp, refp, "No non-inline task associated with this task call?");
         //
         AstNode* const beginp
-            = new AstComment{refp->fileline(), string{"Function: "} + refp->name(), true};
+            = new AstComment{refp->fileline(), "Function: "s + refp->name(), true};
         AstNodeCCall* ccallp;
         if (VN_IS(refp, New)) {
             AstCNew* const cnewp = new AstCNew{refp->fileline(), cfuncp};

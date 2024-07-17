@@ -165,6 +165,17 @@ string V3Os::filenameDir(const string& filename) VL_PURE {
     }
 }
 
+string V3Os::filenameExt(const string& filename) VL_PURE {
+    string base = filenameNonDir(filename);
+    string::size_type pos;
+    if ((pos = base.find('.')) != string::npos) {
+        base.erase(0, pos);
+        return base;
+    } else {
+        return "";
+    }
+}
+
 string V3Os::filenameNonDir(const string& filename) VL_PURE {
     // std::filesystem::path::filename
     auto it = filename.rbegin();
@@ -174,15 +185,11 @@ string V3Os::filenameNonDir(const string& filename) VL_PURE {
     return string{it.base(), filename.end()};
 }
 
-string V3Os::filenameNonExt(const string& filename) VL_PURE {
+string V3Os::filenameNonDirExt(const string& filename) VL_PURE {
     string base = filenameNonDir(filename);
     string::size_type pos;
     if ((pos = base.find('.')) != string::npos) base.erase(pos);
     return base;
-}
-
-string V3Os::filenameNonDirExt(const string& filename) VL_PURE {
-    return filenameNonExt(filenameNonDir(filename));
 }
 
 string V3Os::filenameSubstitute(const string& filename) {
@@ -441,5 +448,9 @@ void V3Os::selfTest() {
     UASSERT_SELFTEST(string, filenameCleanup("aaa/bbb/ccc/"), "aaa/bbb/ccc");
     UASSERT_SELFTEST(string, filenameCleanup("./aaa/bbb/ccc/"), "aaa/bbb/ccc");
     UASSERT_SELFTEST(string, filenameCleanup("../aaa/bbb/ccc/"), "../aaa/bbb/ccc");
+    UASSERT_SELFTEST(string, filenameDir("a.a/b.b/f.e"), "a.a/b.b");
+    UASSERT_SELFTEST(string, filenameExt("a.a/b.b/f"), "");
+    UASSERT_SELFTEST(string, filenameExt("a.a/b.b/f.e"), ".e");
+    UASSERT_SELFTEST(string, filenameNonDirExt("a.a/b.b/f.e"), "f");
 #endif
 }
