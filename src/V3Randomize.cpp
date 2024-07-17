@@ -901,25 +901,33 @@ class RandomizeVisitor final : public VNVisitor {
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    void visit(AstMethodCall* nodep) override {
+    void visit(AstNodeFTaskRef* nodep) override {
         AstWith* const withp = VN_CAST(nodep->pinsp(), With);
 
         if (!(nodep->name() == "randomize") || !withp) {
             iterateChildren(nodep);
             return;
         }
+        withp->unlinkFrBack();
 
         iterateChildren(nodep);
 
-        UASSERT_OBJ(nodep->fromp()->dtypep(), nodep->fromp(), "Object dtype is not linked");
-        AstClassRefDType* const classrefdtypep = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType);
-        if (!classrefdtypep) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Inline constraints are not supported for this node type");
-            return;
+        AstClass* classp = nullptr;
+        if (AstMethodCall* callp = VN_CAST(nodep, MethodCall)) {
+            UASSERT_OBJ(callp->fromp()->dtypep(), callp->fromp(), "Object dtype is not linked");
+            AstClassRefDType* const classrefdtypep
+                = VN_CAST(callp->fromp()->dtypep(), ClassRefDType);
+            if (!classrefdtypep) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Inline constraints are not supported for this node type");
+                return;
+            }
+            classp = classrefdtypep->classp();
+            UASSERT_OBJ(classp, classrefdtypep, "Class type is unlinked to its ref type");
+        } else {
+            classp = VN_CAST(m_modp, Class);
+            UASSERT_OBJ(classp, m_modp, "Module not class, should have failed in V3Width");
         }
-        AstClass* const classp = classrefdtypep->classp();
-        UASSERT_OBJ(classp, classrefdtypep, "Class type is unlinked to its ref type");
         if (classp->user1()) {
             // We need to first ensure that the class randomizer is instantiated if needed
             // NOTE: This is safe only because AstClass visit function overwrites all
@@ -988,15 +996,13 @@ class RandomizeVisitor final : public VNVisitor {
             solverCallp});
 
         // Replace the node with a call to that function
-        AstMethodCall* const callp
-            = new AstMethodCall(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                randomizeFuncp->name(), captured.getArgs());
-        callp->taskp(randomizeFuncp);
-        callp->dtypeFrom(randomizeFuncp->dtypep());
-        callp->classOrPackagep(classp);
-        nodep->replaceWith(callp);
+        nodep->name(randomizeFuncp->name());
+        nodep->addPinsp(captured.getArgs());
+        nodep->taskp(randomizeFuncp);
+        nodep->dtypeFrom(randomizeFuncp->dtypep());
+        nodep->classOrPackagep(classp);
         UINFO(9, "Added `%s` randomization procedure");
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(withp->deleteTree(), withp);
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 

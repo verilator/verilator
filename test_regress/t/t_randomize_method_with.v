@@ -30,6 +30,9 @@ class Foo extends Boo;
   endfunction
 
   constraint constr1_c { b < x; }
+  function bit test_this_randomize;
+    return this.randomize() with { a <= boo; } == 1;
+  endfunction
 endclass
 
 // Current AstWith representation makes VARs of caller indistinguishable from VARs of randomized
@@ -55,6 +58,13 @@ class Baz;
   rand int v;
 endclass
 
+class Baz2;
+  rand int v;
+  function bit test_this_randomize;
+    return this.randomize() with { v == 5; } == 1;
+  endfunction
+endclass
+
 module submodule();
   int sub_var = 7;
 endmodule
@@ -75,6 +85,7 @@ module mwith();
     int c = 30;
     Foo foo = new(c);
     Baz baz = new;
+    Baz2 baz2 = new;
     Bar bar = new;
     $display("foo.x = %d", foo.x);
     $display("-----------------");
@@ -105,6 +116,10 @@ module mwith();
     if (!bar.test_capture_of_callers_derived_var(foo)) $stop;
     // Check randomization with non-captured non-static variable from different AstNodeModule
     if (!Bar::test_capture_of_callees_derived_var(foo)) $stop;
+    // Check this.randomize()
+    if (!foo.test_this_randomize()) $stop;
+    // Check this.randomize() with no constraints
+    if (!baz2.test_this_randomize()) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish();
