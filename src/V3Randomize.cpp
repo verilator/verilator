@@ -660,8 +660,6 @@ class CaptureVisitor final : public VNVisitor {
         CaptureMode capMode = getVarRefCaptureMode(nodep);
         if (mode(capMode) == CaptureMode::NO_CAP) return;
 
-        //UASSERT_OBJ(mode(capMode) != CaptureMode::CAP_THIS, nodep, "Capture `this` unsupported");
-
         if (mode(capMode) == CaptureMode::CAP_VALUE) captureRefByValue(nodep, capMode);
         if (mode(capMode) == CaptureMode::CAP_THIS) captureRefByThis(nodep, capMode);
     }
@@ -1171,8 +1169,6 @@ class RandomizeVisitor final : public VNVisitor {
 
         // Detach the expression and prepare variable copies
         const CaptureVisitor captured{withp->exprp(), m_modp, classp, false};
-        //UASSERT_OBJ(VN_IS(captured.getTree(), ConstraintExpr), captured.getTree(),
-        //            "Wrong expr type");
 
         // Add function arguments
         captured.addFunctionArguments(randomizeFuncp);
