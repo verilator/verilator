@@ -299,7 +299,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 "write_var"};
             methodp->dtypeSetVoid();
             AstClass* const classp = VN_AS(varp->user2p(), Class);
-            AstVarRef* varRefp = new AstVarRef{varp->fileline(), classp, varp, VAccess::WRITE};
+            AstVarRef* const varRefp = new AstVarRef{varp->fileline(), classp, varp, VAccess::WRITE};
             methodp->addPinsp(varRefp);
             methodp->addPinsp(new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{},
                                            (size_t)varp->width()});
@@ -735,7 +735,7 @@ class RandomizeVisitor final : public VNVisitor {
     }
     AstTask* getCreateConstraintSetupFunc(AstClass* classp) {
         if (classp->user2p()) return VN_AS(classp->user2p(), Task);
-        AstTask* setupAllTaskp = new AstTask{classp->fileline(), "__Vsetup_constraints", nullptr};
+        AstTask* const setupAllTaskp = new AstTask{classp->fileline(), "__Vsetup_constraints", nullptr};
         setupAllTaskp->classMethod(true);
         setupAllTaskp->isVirtual(true);
         classp->addMembersp(setupAllTaskp);
@@ -959,8 +959,8 @@ class RandomizeVisitor final : public VNVisitor {
 
         // Copy (derive) class constraints if present
         if (classGenp) {
-            AstTask* constrSetupFuncp = getCreateConstraintSetupFunc(classp);
-            auto callp = new AstTaskRef{nodep->fileline(), constrSetupFuncp->name(), nullptr};
+            AstTask* const constrSetupFuncp = getCreateConstraintSetupFunc(classp);
+            AstTaskRef* const callp = new AstTaskRef{nodep->fileline(), constrSetupFuncp->name(), nullptr};
             callp->taskp(constrSetupFuncp);
             randomizeFuncp->addStmtsp(callp->makeStmt());
             randomizeFuncp->addStmtsp(new AstAssign{
