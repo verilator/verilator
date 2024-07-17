@@ -1,13 +1,17 @@
-%Error: t/t_foreach_type_bad.v:19:18: Illegal to foreach loop on 'CLASSREFDTYPE 'Cls''
+%Error: t/t_foreach_type_bad.v:19:18: Illegal 'foreach' loop on CLASSREFDTYPE 'Cls' data type
+                                    : ... note: In instance 't'
    19 |       foreach (c[i]);   
       |                  ^
-%Error: t/t_foreach_type_bad.v:21:18: Illegal to foreach loop on basic 'BASICDTYPE 'real''
+%Error: t/t_foreach_type_bad.v:21:18: Illegal 'foreach' loop on BASICDTYPE 'real' data type
+                                    : ... note: In instance 't'
    21 |       foreach (r[i]);   
       |                  ^
-%Error: t/t_foreach_type_bad.v:23:21: Illegal to foreach loop on basic 'BASICDTYPE 'bit''
+%Error: t/t_foreach_type_bad.v:23:21: Illegal 'foreach' loop on BASICDTYPE 'bit' data type
+                                    : ... note: In instance 't'
    23 |       foreach (b[i, j, k]);   
       |                     ^
-%Error: t/t_foreach_type_bad.v:25:18: Illegal to foreach loop on basic 'BASICDTYPE 'real''
+%Error: t/t_foreach_type_bad.v:25:18: Illegal 'foreach' loop on BASICDTYPE 'real' data type
+                                    : ... note: In instance 't'
    25 |       foreach (r[, i]);   
       |                  ^
 %Error: Exiting due to

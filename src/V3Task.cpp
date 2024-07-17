@@ -1563,6 +1563,10 @@ class TaskVisitor final : public VNVisitor {
         // Done the loop
         m_insStmtp = nullptr;  // Next thing should be new statement
     }
+    void visit(AstNodeForeach* nodep) override {  // LCOV_EXCL_LINE
+        nodep->v3fatalSrc(
+            "Foreach statements should have been converted to while statements in V3Begin.cpp");
+    }
     void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
             "For statements should have been converted to while statements in V3Begin.cpp");
