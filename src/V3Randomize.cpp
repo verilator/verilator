@@ -20,7 +20,12 @@
 // Mark all classes that inherit from previously marked classed
 // Mark all classes whose instances are randomized member variables of marked classes
 // Each marked class:
-//      define a virtual randomize() method that randomizes its random variables
+//      * define a virtual randomize() method that randomizes its random variables
+// Each call to randomize():
+//      * define __Vrandwith### functions for randomize() calls with inline constraints and
+//        put then into randomized classes
+//      * replace calls to randomize() that use inline constraints with calls to __Vrandwith###
+//        functions
 //
 //*************************************************************************
 
@@ -473,10 +478,7 @@ class ClassLookupHelper final {
         , m_symLookupOrder(std::get<1>(inits)) {}
 
 public:
-    bool moduleInClassHierarchy(AstNodeModule* modp) const {
-        if (AstClass* classp = VN_CAST(modp, Class)) { return m_visibleModules.count(modp); }
-        return false;
-    }
+    bool moduleInClassHierarchy(AstNodeModule* modp) const { return m_visibleModules.count(modp); }
 
     AstNodeModule* findDeclaringModule(AstNode* nodep, bool classHierarchyOnly = true) {
         auto it = m_classMap.find(nodep);
@@ -612,13 +614,43 @@ class CaptureVisitor final : public VNVisitor {
             return CaptureMode::CAP_VALUE;
         // Static var in function (will not be inlined, because it's in class)
         if (matchAll(cond, CALLER_IS_CLASS | VAR_IS_FUNCLOCAL)) return CaptureMode::CAP_VALUE;
-        if (matchAll(cond, CALLER_IS_CLASS | VAR_DECLARED_IN_CALLER))
-            return CaptureMode::CAP_VALUE;  // TODO: Should be CAP_THIS
-        if (matchAll(cond, CALLER_IS_CLASS | VAR_IS_FIELD_OF_CALLER))
-            // TODO: Should be CAP_THIS
-            return CaptureMode::CAP_VALUE;
+        if (matchAll(cond, CALLER_IS_CLASS | VAR_DECLARED_IN_CALLER)) return CaptureMode::CAP_THIS;
+        if (matchAll(cond, CALLER_IS_CLASS | VAR_IS_FIELD_OF_CALLER)) return CaptureMode::CAP_THIS;
         UASSERT_OBJ(!matchAll(cond, CALLER_IS_CLASS), varRefp, "Invalid reference?");
         return CaptureMode::CAP_VALUE;
+    }
+
+    void captureRefByValue(AstNodeVarRef* nodep, CaptureMode capModeFlags) {
+        AstVar* newVarp;
+        bool newCapture = captureVariable(nodep->fileline(), nodep, newVarp /*ref*/);
+        AstNodeVarRef* const newVarRefp = newCapture ? nodep->cloneTree(false) : nullptr;
+        if (!hasFlags(capModeFlags, CaptureMode::CAP_F_SET_CLASSORPACKAGEP)) {
+            // Keeping classOrPackagep will cause a broken link after inlining
+            nodep->classOrPackagep(nullptr);  // AstScope will figure this out
+        }
+        nodep->varp(newVarp);
+        if (!newCapture) return;
+        if (hasFlags(capModeFlags, CaptureMode::CAP_F_XREF)) {
+            AstVarRef* const notXVarRefp
+                = new AstVarRef{nodep->fileline(), newVarp, VAccess::READ};
+            notXVarRefp->classOrPackagep(nodep->classOrPackagep());
+            nodep->replaceWith(notXVarRefp);
+            nodep->deleteTree();
+            nodep = notXVarRefp;
+        }
+        m_ignore.emplace(nodep);
+        m_argsp = AstNode::addNext(m_argsp, new AstArg{nodep->fileline(), "", newVarRefp});
+    }
+
+    void captureRefByThis(AstNodeVarRef* nodep, CaptureMode capModeFlags) {
+        AstVar* const thisp = importThisp(nodep->fileline());
+        AstVarRef* const thisRefp = new AstVarRef{nodep->fileline(), thisp, nodep->access()};
+        m_ignore.emplace(thisRefp);
+        AstMemberSel* const memberSelp
+            = new AstMemberSel(nodep->fileline(), thisRefp, nodep->varp());
+        nodep->replaceWith(memberSelp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        m_ignore.emplace(memberSelp);
     }
 
     // VISITORS
@@ -630,27 +662,10 @@ class CaptureVisitor final : public VNVisitor {
         CaptureMode capMode = getVarRefCaptureMode(nodep);
         if (mode(capMode) == CaptureMode::NO_CAP) return;
 
-        UASSERT_OBJ(mode(capMode) != CaptureMode::CAP_THIS, nodep, "Capture `this` unsupported");
+        //UASSERT_OBJ(mode(capMode) != CaptureMode::CAP_THIS, nodep, "Capture `this` unsupported");
 
-        AstVar* newVarp;
-        bool newCapture = captureVariable(nodep->fileline(), nodep, newVarp /*ref*/);
-        AstNodeVarRef* const newVarRefp = newCapture ? nodep->cloneTree(false) : nullptr;
-        if (!hasFlags(capMode, CaptureMode::CAP_F_SET_CLASSORPACKAGEP)) {
-            // Keeping classOrPackagep will cause a broken link after inlining
-            nodep->classOrPackagep(nullptr);  // AstScope will figure this out
-        }
-        nodep->varp(newVarp);
-        if (!newCapture) return;
-        if (hasFlags(capMode, CaptureMode::CAP_F_XREF)) {
-            AstVarRef* const notXVarRefp
-                = new AstVarRef{nodep->fileline(), newVarp, VAccess::READ};
-            notXVarRefp->classOrPackagep(nodep->classOrPackagep());
-            nodep->replaceWith(notXVarRefp);
-            nodep->deleteTree();
-            nodep = notXVarRefp;
-        }
-        m_ignore.emplace(nodep);
-        m_argsp = AstNode::addNext(m_argsp, new AstArg{nodep->fileline(), "", newVarRefp});
+        if (mode(capMode) == CaptureMode::CAP_VALUE) captureRefByValue(nodep, capMode);
+        if (mode(capMode) == CaptureMode::CAP_THIS) captureRefByThis(nodep, capMode);
     }
     void visit(AstNodeFTaskRef* nodep) override {
         if (m_ignore.count(nodep)) return;
@@ -666,7 +681,7 @@ class CaptureVisitor final : public VNVisitor {
         if ((classp == m_callerp) && VN_IS(m_callerp, Class)) {
             AstNodeExpr* const pinsp = nodep->pinsp();
             if (pinsp) pinsp->unlinkFrBack();
-            AstVar* thisp = importThisp(nodep->fileline());
+            AstVar* const thisp = importThisp(nodep->fileline());
             AstVarRef* const thisRefp = new AstVarRef{
                 nodep->fileline(), thisp, nodep->isPure() ? VAccess::READ : VAccess::READWRITE};
             m_ignore.emplace(thisRefp);
@@ -1141,7 +1156,7 @@ class RandomizeVisitor final : public VNVisitor {
         localGenp->funcLocal(true);
 
         AstFunc* const randomizeFuncp
-            = V3Randomize::newRandomizeFunc(classp, m_inlineUniqueNames.get(nodep));
+            = V3Randomize::newRandomizeFunc(classp, m_inlineUniqueNames.get(nodep), false);
 
         // Detach the expression and prepare variable copies
         const CaptureVisitor captured{withp->exprp(), m_modp, classp, false};
@@ -1227,7 +1242,8 @@ void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
     V3Global::dumpCheckGlobalTree("randomize", 0, dumpTreeEitherLevel() >= 3);
 }
 
-AstFunc* V3Randomize::newRandomizeFunc(AstClass* nodep, const std::string& name) {
+AstFunc* V3Randomize::newRandomizeFunc(AstClass* nodep, const std::string& name,
+                                       bool allowVirtual) {
     VMemberMap memberMap;
     AstFunc* funcp = VN_AS(memberMap.findMember(nodep, name), Func);
 
@@ -1244,7 +1260,7 @@ AstFunc* V3Randomize::newRandomizeFunc(AstClass* nodep, const std::string& name)
         funcp = new AstFunc{nodep->fileline(), name, nullptr, fvarp};
         funcp->dtypep(dtypep);
         funcp->classMethod(true);
-        funcp->isVirtual(nodep->isExtended());
+        funcp->isVirtual(allowVirtual && nodep->isExtended());
         nodep->addMembersp(funcp);
         AstClass* const basep = nodep->baseMostClassp();
         basep->needRNG(true);
