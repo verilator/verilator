@@ -434,11 +434,11 @@ public:
 };
 
 class ClassLookupHelper final {
-    const std::set<AstClass*> m_visibleModules;
-    const std::vector<AstClass*> m_symLookupOrder;
-    std::map<AstNode*, AstClass*> m_classMap;
+    const std::set<AstNodeModule*> m_visibleModules;
+    const std::vector<AstNodeModule*> m_symLookupOrder;
+    std::map<AstNode*, AstNodeModule*> m_classMap;
 
-    using inits_t = std::tuple<std::set<AstClass*>, std::vector<AstClass*>>;
+    using inits_t = std::tuple<std::set<AstNodeModule*>, std::vector<AstNodeModule*>>;
 
     // BFS search
     template <typename Action>
@@ -459,8 +459,8 @@ class ClassLookupHelper final {
     }
 
     static inits_t init(AstClass* classp) {
-        std::set<AstClass*> visibleModules = {classp};
-        std::vector<AstClass*> symLookupOrder = {classp};
+        std::set<AstNodeModule*> visibleModules = {classp};
+        std::vector<AstNodeModule*> symLookupOrder = {classp};
         foreachSuperClass(classp, [&](AstClass* superclassp) {
             visibleModules.emplace(superclassp);
             symLookupOrder.push_back(superclassp);
@@ -473,21 +473,22 @@ class ClassLookupHelper final {
         , m_symLookupOrder(std::get<1>(inits)) {}
 
 public:
-    bool moduleInClass(AstNodeModule* modp) const {
-        if (AstClass* classp = VN_CAST(modp, Class)) { return m_visibleModules.count(classp); }
+    bool moduleInClassHierarchy(AstNodeModule* modp) const {
+        if (AstClass* classp = VN_CAST(modp, Class)) { return m_visibleModules.count(modp); }
         return false;
     }
 
-    AstClass* findDeclarationClass(AstNode* nodep, bool visibleOnly = true) {
+    AstNodeModule* findDeclaringModule(AstNode* nodep, bool classHierarchyOnly = true) {
         auto it = m_classMap.find(nodep);
         if (it != m_classMap.end()) return it->second;
         for (AstNode* backp = nodep; backp; backp = backp->backp()) {
-            AstClass* classp = VN_CAST(backp, Class);
-            if (classp) {
-                if (visibleOnly)
-                    UASSERT_OBJ(moduleInClass(classp), nodep, "Node does not belong to class");
-                m_classMap.emplace(nodep, classp);
-                return classp;
+            AstNodeModule* modp = VN_CAST(backp, NodeModule);
+            if (modp) {
+                m_classMap.emplace(nodep, modp);
+                if (classHierarchyOnly)
+                    UASSERT_OBJ(moduleInClassHierarchy(modp), nodep,
+                                "Node does not belong to class");
+                return modp;
             }
         }
         return nullptr;
@@ -496,6 +497,25 @@ public:
     ClassLookupHelper(AstClass* classp)
         : ClassLookupHelper(init(classp)) {}
 };
+
+enum class CaptureMode : uint8_t {
+    NO_CAP = 0x0,
+    CAP_VALUE = 0x01,
+    CAP_THIS = 0x02,
+    CAP_F_SET_CLASSORPACKAGEP = 0x4,
+    CAP_F_XREF = 0x8
+};
+CaptureMode operator|(CaptureMode a, CaptureMode b) {
+    return static_cast<CaptureMode>(static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
+}
+CaptureMode operator&(CaptureMode a, CaptureMode b) {
+    return static_cast<CaptureMode>(static_cast<uint8_t>(a) & static_cast<uint8_t>(b));
+}
+CaptureMode mode(CaptureMode a) { return a & static_cast<CaptureMode>(0x3); }
+bool hasFlags(CaptureMode a, CaptureMode flags) {
+    return ((static_cast<uint8_t>(a) & 0xc & static_cast<uint8_t>(flags))
+            == static_cast<uint8_t>(flags));
+}
 
 class CaptureVisitor final : public VNVisitor {
     AstArg* m_argsp;  // Original references turned into arguments
@@ -528,7 +548,7 @@ class CaptureVisitor final : public VNVisitor {
 
     template <typename NodeT>
     void fixupClassOrPackage(AstNode* memberp, NodeT refp) {
-        AstClass* const declClassp = m_lookup.findDeclarationClass(memberp);
+        AstNodeModule* const declClassp = m_lookup.findDeclaringModule(memberp, false);
         if (declClassp != m_classp) refp->classOrPackagep(declClassp);
     }
 
@@ -557,26 +577,71 @@ class CaptureVisitor final : public VNVisitor {
         return it->second;
     }
 
+    static const int CALLER_IS_CLASS = 0x1;
+    static const int VAR_HAS_AUTO_LIFETIME = 0x2;
+    static const int VAR_IS_FUNCLOCAL = 0x4;
+    static const int VAR_DECLARED_IN_CALLER = 0x08;
+    static const int VAR_IS_FIELD_OF_CALLER = 0x10;
+    static const int REF_IS_XREF = 0x20;
+
+    int callerIsClass() const { return VN_IS(m_callerp, Class) ? CALLER_IS_CLASS : 0x0; }
+    int varInCallersClassHierarchy(AstVar* varp) {
+        AstNodeModule* const modp = m_lookup.findDeclaringModule(varp, false);
+        int const in_caller = (modp == m_callerp) ? VAR_DECLARED_IN_CALLER : 0x0;
+        int const field_of_caller
+            = modp ? (m_lookup.moduleInClassHierarchy(modp) ? VAR_IS_FIELD_OF_CALLER : 0x0) : 0x0;
+        return in_caller | field_of_caller;
+    }
+    int varHasAutomaticLifetime(AstVar* varp) const {
+        return varp->lifetime().isAutomatic() ? VAR_HAS_AUTO_LIFETIME : 0x0;
+    }
+    int varIsFuncLocal(AstVar* varp) const { return varp->isFuncLocal() ? VAR_IS_FUNCLOCAL : 0x0; }
+    int varIsXRef(AstNodeVarRef* varRefp) { return VN_IS(varRefp, VarXRef) ? REF_IS_XREF : 0x0; }
+    int getCapCond(AstNodeVarRef* varRefp) {
+        return callerIsClass() | varHasAutomaticLifetime(varRefp->varp())
+               | varIsFuncLocal(varRefp->varp()) | varInCallersClassHierarchy(varRefp->varp())
+               | varIsXRef(varRefp);
+    }
+
+    static bool matchAll(int cond, int mask) { return (cond & mask) == mask; }
+
+    CaptureMode getVarRefCaptureMode(AstNodeVarRef* varRefp) {
+        int cond = getCapCond(varRefp);
+        if (matchAll(cond, REF_IS_XREF)) return CaptureMode::CAP_VALUE | CaptureMode::CAP_F_XREF;
+        if (matchAll(cond, VAR_IS_FUNCLOCAL | VAR_HAS_AUTO_LIFETIME))
+            return CaptureMode::CAP_VALUE;
+        // Static var in function (will not be inlined, because it's in class)
+        if (matchAll(cond, CALLER_IS_CLASS | VAR_IS_FUNCLOCAL)) return CaptureMode::CAP_VALUE;
+        if (matchAll(cond, CALLER_IS_CLASS | VAR_DECLARED_IN_CALLER))
+            return CaptureMode::CAP_VALUE;  // TODO: Should be CAP_THIS
+        if (matchAll(cond, CALLER_IS_CLASS | VAR_IS_FIELD_OF_CALLER))
+            // TODO: Should be CAP_THIS
+            return CaptureMode::CAP_VALUE;
+        UASSERT_OBJ(!matchAll(cond, CALLER_IS_CLASS), varRefp, "Invalid reference?");
+        return CaptureMode::CAP_VALUE;
+    }
+
     // VISITORS
 
     void visit(AstNodeVarRef* nodep) override {
         if (m_ignore.count(nodep)) return;
         m_ignore.emplace(nodep);
         UASSERT_OBJ(nodep->varp(), nodep, "Variable unlinked");
-        // TODO: Review this condition
-        if (!nodep->varp()->isFuncLocal() && !VN_IS(nodep, VarXRef)
-            && !m_lookup.findDeclarationClass(nodep, false))
-            return;
+        CaptureMode capMode = getVarRefCaptureMode(nodep);
+        if (mode(capMode) == CaptureMode::NO_CAP) return;
+
+        UASSERT_OBJ(mode(capMode) != CaptureMode::CAP_THIS, nodep, "Capture `this` unsupported");
+
         AstVar* newVarp;
         bool newCapture = captureVariable(nodep->fileline(), nodep, newVarp /*ref*/);
         AstNodeVarRef* const newVarRefp = newCapture ? nodep->cloneTree(false) : nullptr;
-        if (!nodep->varp()->lifetime().isStatic() || nodep->classOrPackagep()) {
+        if (!hasFlags(capMode, CaptureMode::CAP_F_SET_CLASSORPACKAGEP)) {
             // Keeping classOrPackagep will cause a broken link after inlining
             nodep->classOrPackagep(nullptr);  // AstScope will figure this out
         }
         nodep->varp(newVarp);
         if (!newCapture) return;
-        if (VN_IS(nodep, VarXRef)) {
+        if (hasFlags(capMode, CaptureMode::CAP_F_XREF)) {
             AstVarRef* const notXVarRefp
                 = new AstVarRef{nodep->fileline(), newVarp, VAccess::READ};
             notXVarRefp->classOrPackagep(nodep->classOrPackagep());
@@ -597,7 +662,7 @@ class CaptureVisitor final : public VNVisitor {
             iterateChildren(nodep);
             return;
         }
-        AstClass* classp = m_lookup.findDeclarationClass(nodep, false);
+        AstClass* classp = VN_CAST(m_lookup.findDeclaringModule(nodep, false), Class);
         if ((classp == m_callerp) && VN_IS(m_callerp, Class)) {
             AstNodeExpr* const pinsp = nodep->pinsp();
             if (pinsp) pinsp->unlinkFrBack();
