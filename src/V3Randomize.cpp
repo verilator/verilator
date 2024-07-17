@@ -1187,9 +1187,8 @@ class RandomizeVisitor final : public VNVisitor {
                          classp->findBasicDType(VBasicDTypeKwd::RANDOM_GENERATOR)};
         localGenp->funcLocal(true);
 
-        AstFunc* const randomizeFuncp
-            = V3Randomize::newRandomizeFunc(m_memberMap, classp, m_inlineUniqueNames.get(nodep),
-                                            false);
+        AstFunc* const randomizeFuncp = V3Randomize::newRandomizeFunc(
+            m_memberMap, classp, m_inlineUniqueNames.get(nodep), false);
 
         // Detach the expression and prepare variable copies
         const CaptureVisitor captured{withp->exprp(), m_modp, classp, false};
