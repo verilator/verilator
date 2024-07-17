@@ -5659,6 +5659,8 @@ public:
     // This form only allowed post-link because output/wire compression may
     // lead to deletion of AstVar's
     inline AstVarRef(FileLine* fl, AstVar* varp, const VAccess& access);
+    inline AstVarRef(FileLine* fl, AstNodeModule* classOrPackagep, AstVar* varp,
+                     const VAccess& access);
     // This form only allowed post-link (see above)
     inline AstVarRef(FileLine* fl, AstVarScope* varscp, const VAccess& access);
     ASTGEN_MEMBERS_AstVarRef;
