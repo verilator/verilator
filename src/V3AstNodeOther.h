@@ -2338,16 +2338,39 @@ public:
     // root superclass). Note: after V3Scope, several children are moved under an AstScope and will
     // not be found by this.
     template <typename Callable>
-    void foreachMember(const Callable& visit) {
+    void foreachMember(const Callable& f) {
         using T_Node = typename FunctionArgNoPointerNoCV<Callable, 1>::type;
+        static_assert(
+            vlstd::is_invocable<Callable, AstClass*, T_Node*>::value
+                && std::is_base_of<AstNode, T_Node>::value,
+            "Callable 'f' must have a signature compatible with 'void(AstClass*, T_Node*)', "
+            "with 'T_Node' being a subtype of 'AstNode'");
         if (AstClassExtends* const extendsp = this->extendsp()) {
-            extendsp->classp()->foreachMember(visit);
+            extendsp->classp()->foreachMember(f);
         }
         for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (T_Node* memberp = AstNode::privateCast<T_Node, decltype(stmtp)>(stmtp)) {
-                visit(this, memberp);
+                f(this, memberp);
             }
         }
+    }
+    // Same as above, but stops after first match
+    template <typename Callable>
+    bool existsMember(const Callable& p) const {
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 1>::type;
+        static_assert(vlstd::is_invocable_r<bool, Callable, const AstClass*, const T_Node*>::value
+                          && std::is_base_of<AstNode, T_Node>::value,
+                      "Predicate 'p' must have a signature compatible with 'bool(const AstClass*, "
+                      "const T_Node*)', with 'T_Node' being a subtype of 'AstNode'");
+        if (AstClassExtends* const extendsp = this->extendsp()) {
+            if (extendsp->classp()->existsMember(p)) return true;
+        }
+        for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (T_Node* memberp = AstNode::privateCast<T_Node, decltype(stmtp)>(stmtp)) {
+                if (p(this, memberp)) return true;
+            }
+        }
+        return false;
     }
 };
 class AstClassPackage final : public AstNodeModule {
