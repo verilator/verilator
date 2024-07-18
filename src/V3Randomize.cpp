@@ -556,7 +556,7 @@ class RandomizeVisitor final : public VNVisitor {
         if (classp->user3p()) return VN_AS(classp->user3p(), Var);
         if (classp->extendsp()) return getCreateRandomGenerator(classp->extendsp()->classp());
         AstVar* const genp = new AstVar{classp->fileline(), VVarType::MEMBER, "constraint",
-                          classp->findBasicDType(VBasicDTypeKwd::RANDOM_GENERATOR)};
+                                        classp->findBasicDType(VBasicDTypeKwd::RANDOM_GENERATOR)};
         genp->user2p(classp);
         classp->addMembersp(genp);
         classp->user3p(genp);
