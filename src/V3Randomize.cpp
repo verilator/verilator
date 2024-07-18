@@ -552,6 +552,26 @@ class RandomizeVisitor final : public VNVisitor {
     std::map<std::string, AstCDType*> m_randcDtypes;  // RandC data type deduplication
 
     // METHODS
+    AstVar* getCreateRandomGenerator(AstClass* classp) {
+        if (classp->user3p()) return VN_AS(classp->user3p(), Var);
+        if (classp->extendsp()) return getCreateRandomGenerator(classp->extendsp()->classp());
+        AstVar* const genp = new AstVar{classp->fileline(), VVarType::MEMBER, "constraint",
+                                        classp->findBasicDType(VBasicDTypeKwd::RANDOM_GENERATOR)};
+        genp->user2p(classp);
+        classp->addMembersp(genp);
+        classp->user3p(genp);
+        return genp;
+    }
+    AstTask* getCreateConstraintSetupFunc(AstClass* classp) {
+        if (classp->user2p()) return VN_AS(classp->user2p(), Task);
+        AstTask* const setupAllTaskp
+            = new AstTask{classp->fileline(), "__Vsetup_constraints", nullptr};
+        setupAllTaskp->classMethod(true);
+        setupAllTaskp->isVirtual(true);
+        classp->addMembersp(setupAllTaskp);
+        classp->user2p(setupAllTaskp);
+        return setupAllTaskp;
+    }
     AstVar* enumValueTabp(AstEnumDType* const nodep) {
         if (nodep->user2p()) return VN_AS(nodep->user2p(), Var);
         UINFO(9, "Construct Venumvaltab " << nodep << endl);
@@ -720,29 +740,6 @@ class RandomizeVisitor final : public VNVisitor {
         VL_RESTORER(m_ftaskp);
         m_ftaskp = nodep;
         iterateChildren(nodep);
-    }
-    AstVar* getCreateRandomGenerator(AstClass* classp) {
-        if (classp->user3p()) return VN_AS(classp->user3p(), Var);
-        AstVar* genp = nullptr;
-        if (classp->extendsp()) genp = getCreateRandomGenerator(classp->extendsp()->classp());
-        if (!genp) {
-            genp = new AstVar{classp->fileline(), VVarType::MEMBER, "constraint",
-                              classp->findBasicDType(VBasicDTypeKwd::RANDOM_GENERATOR)};
-            genp->user2p(classp);
-            classp->addMembersp(genp);
-            classp->user3p(genp);
-        }
-        return genp;
-    }
-    AstTask* getCreateConstraintSetupFunc(AstClass* classp) {
-        if (classp->user2p()) return VN_AS(classp->user2p(), Task);
-        AstTask* const setupAllTaskp
-            = new AstTask{classp->fileline(), "__Vsetup_constraints", nullptr};
-        setupAllTaskp->classMethod(true);
-        setupAllTaskp->isVirtual(true);
-        classp->addMembersp(setupAllTaskp);
-        classp->user2p(setupAllTaskp);
-        return setupAllTaskp;
     }
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_modp);
