@@ -551,7 +551,12 @@ private:
     }
     void visit(AstInitArray* nodep) override {
         checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
         if (!m_checkOnly && optimizable()) newValue(nodep, nodep);
+    }
+    void visit(AstInitItem* nodep) override {
+        checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstEnumItemRef* nodep) override {
         checkNodeInfo(nodep);
@@ -833,7 +838,7 @@ private:
                 clearOptimizable(nodep, "Array initialization has too few elements, need element "
                                             + cvtToStr(offset));
             } else {
-                setValue(nodep, itemp);
+                setValue(nodep, fetchValue(itemp));
             }
         } else {
             clearOptimizable(nodep, "Array select of non-array");
