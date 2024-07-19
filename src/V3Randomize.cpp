@@ -552,7 +552,7 @@ class RandomizeVisitor final : public VNVisitor {
     std::map<std::string, AstCDType*> m_randcDtypes;  // RandC data type deduplication
 
     // METHODS
-    void createRandomGenerator(AstClass* classp) {
+    void createRandomGenerator(AstClass* const classp) {
         if (classp->user3p()) return;
         if (classp->extendsp()) {
             createRandomGenerator(classp->extendsp()->classp());
@@ -564,7 +564,7 @@ class RandomizeVisitor final : public VNVisitor {
         classp->addMembersp(genp);
         classp->user3p(genp);
     }
-    AstVar* getRandomGenerator(AstClass* classp) {
+    AstVar* getRandomGenerator(AstClass* const classp) {
         if (classp->user3p()) return VN_AS(classp->user3p(), Var);
         if (classp->extendsp()) return getRandomGenerator(classp->extendsp()->classp());
         return nullptr;
@@ -580,7 +580,7 @@ class RandomizeVisitor final : public VNVisitor {
         return setupAllTaskp;
     }
     void createRandomizeClassVars(AstNetlist* const netlistp) {
-        netlistp->foreach([&](AstClass* classp) {
+        netlistp->foreach([&](AstClass* const classp) {
             if (classp->existsMember(
                     [&](const AstClass*, const AstConstraint*) { return true; })) {
                 createRandomGenerator(classp);
@@ -773,7 +773,7 @@ class RandomizeVisitor final : public VNVisitor {
         AstNodeExpr* beginValp = nullptr;
         AstVar* genp = getRandomGenerator(nodep);
         if (genp) {
-            nodep->foreachMember([&](AstClass* classp, AstConstraint* constrp) {
+            nodep->foreachMember([&](AstClass* const classp, AstConstraint* const constrp) {
                 AstTask* taskp = VN_AS(constrp->user2p(), Task);
                 if (!taskp) {
                     taskp = newSetupConstraintTask(classp, constrp->name());
@@ -784,7 +784,7 @@ class RandomizeVisitor final : public VNVisitor {
                 setupTaskRefp->taskp(taskp);
                 setupTaskRefp->classOrPackagep(classp);
 
-                AstTask* setupAllTaskp = getCreateConstraintSetupFunc(nodep);
+                AstTask* const setupAllTaskp = getCreateConstraintSetupFunc(nodep);
 
                 setupAllTaskp->addStmtsp(setupTaskRefp->makeStmt());
 
