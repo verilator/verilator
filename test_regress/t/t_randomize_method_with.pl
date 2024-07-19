@@ -23,5 +23,10 @@ if (!$Self->have_solver) {
         );
 }
 
+for my $file (glob_all("$Self->{obj_dir}/$Self->{vm_prefix}*Baz*.cpp")) {
+    # Check that "Baz" has no constrained random generator
+    file_grep_not($file, "this->__PVT__constraint");
+}
+
 ok(1);
 1;
