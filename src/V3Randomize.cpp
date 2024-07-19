@@ -913,7 +913,7 @@ class RandomizeVisitor final : public VNVisitor {
         iterateChildren(nodep);
 
         AstClass* classp = nullptr;
-        if (AstMethodCall* callp = VN_CAST(nodep, MethodCall)) {
+        if (AstMethodCall* const callp = VN_CAST(nodep, MethodCall)) {
             UASSERT_OBJ(callp->fromp()->dtypep(), callp->fromp(), "Object dtype is not linked");
             AstClassRefDType* const classrefdtypep
                 = VN_CAST(callp->fromp()->dtypep(), ClassRefDType);
