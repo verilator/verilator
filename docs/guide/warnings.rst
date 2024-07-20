@@ -419,9 +419,9 @@ List Of Warnings
 
 .. option:: CONSTRAINTIGN
 
-   Warns that Verilator does not support :code:`constraint`,
-   :code:`constraint_mode`, or :code:`rand_mode`, and the construct was are
-   ignored.
+   Warns that Verilator does not support certain forms of
+   :code:`constraint`, :code:`constraint_mode`, or :code:`rand_mode`, and
+   the construct was are ignored.
 
    Ignoring this warning may make Verilator randomize() simulations differ
    from other simulators.
@@ -1264,7 +1264,7 @@ List Of Warnings
 
 .. option:: PINMISSING
 
-   .. TODO better example
+   .. TODO better example (frequent)
 
    Warns that a module has a pin that is not mentioned in an instance.  If
    a pin is not missing it should still be specified on the instance
@@ -1272,6 +1272,22 @@ List Of Warnings
 
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_PKGNODECL_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_PKGNODECL_msg.rst
+
+   Repaired example:
+
+   .. code-block:: sv
+      :emphasize-lines: 2
+
+         sub sub (
+                  .port());
 
    Other tools with similar warnings: Icarus Verilog's portbind, "warning:
    Instantiating module ... with dangling input port (...)". Slang's
@@ -1304,7 +1320,7 @@ List Of Warnings
          generate
             if (A==0) begin
                b b_inst1 (.x(1'b0));  //<--- error nonexistent port
-               b #(.PX(1'b0)) b_inst2 (); //<--- error nonexistent parameter
+               b #(.PX(1'b0)) b_inst2 ();  //<--- error nonexistent parameter
             end
           endgenerate
        endmodule
@@ -1346,11 +1362,22 @@ List Of Warnings
 
 .. option:: PKGNODECL
 
-   .. TODO better example
+   An error that a package/class appears to have been referenced that has
+   not yet been declared.  According to IEEE 1800-2023 26.3, all packages
+   must be declared before being used.
 
-   An error that a package/class appears to have been referenced that has not
-   yet been declared.  According to IEEE 1800-2023 26.3, all packages must
-   be declared before being used.
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_PKGNODECL_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_PKGNODECL_msg.rst
+
+   Often the package is declared in its own header file.  In this case add
+   an include of that package header file to the referencing file.  (And
+   make sure you have header guards in the package's header file to prevent
+   multiple declarations of the package.)
 
 
 .. option:: PREPROCZERO
@@ -1375,7 +1402,7 @@ List Of Warnings
        `endif
 
    The portable way to suppress this warning is to use a define value other
-   than zero to when used in a preprocessor expression.
+   than zero, when it is to be used in a preprocessor expression.
 
 
 .. option:: PROCASSWIRE
@@ -1897,7 +1924,8 @@ List Of Warnings
 
 .. option:: UNPACKED
 
-   Warns that unpacked structs and unions are not supported.
+   Warns that unpacked structs and unions are not supported because
+   :vlopt:`--structs-packed` was used, or by up through version 5.004.
 
    Ignoring this warning will make Verilator treat the structure as packed,
    which may make Verilator simulations differ from other simulators. This
@@ -1948,14 +1976,16 @@ List Of Warnings
 
    .. TODO better example
 
-   Warns that the specified genvar is never used/consumed.
+   Warns that the specified genvar is never used/consumed. See similar
+   :option:`UNUSEDSIGNAL`.
 
 
 .. option:: UNUSEDPARAM
 
    .. TODO better example
 
-   Warns that the specified parameter is never used/consumed.
+   Warns that the specified parameter is never used/consumed. See similar
+   :option:`UNUSEDSIGNAL`.
 
 
 .. option:: UNUSEDSIGNAL
@@ -2078,16 +2108,18 @@ List Of Warnings
 
 .. option:: WAITCONST
 
-   .. code-block:: sv
-
-         wait(1);  // Blocks forever
-
    Warns that a `wait` statement awaits a constant condition, which means it
    either blocks forever or never blocks.
 
    As a special case `wait(0)` with the literal constant `0` (as opposed to
    something that elaborates to zero), does not warn, as it is presumed the
    code is making the intent clear.
+
+   Faulty example:
+
+   .. code-block:: sv
+
+         wait(1);  // Blocks forever
 
 
 .. option:: WIDTH
@@ -2125,7 +2157,7 @@ List Of Warnings
 
    .. include:: ../../docs/gen/ex_WIDTHEXPAND_1_faulty.rst
 
-   Results in a WIDTHEXPAND warning:
+   Results in a :option:`WIDTHEXPAND` warning:
 
    .. include:: ../../docs/gen/ex_WIDTHEXPAND_1_msg.rst
 
@@ -2136,15 +2168,18 @@ List Of Warnings
 
 .. option:: WIDTHTRUNC
 
-   A more granular WIDTH warning, for when a value is truncated.
+   A more granular :option:`WIDTH` warning, for when a value is
+   truncated. See :option:`WIDTH`.
 
 .. option:: WIDTHEXPAND
 
-   A more granular WIDTH warning, for when a value is zero expanded.
+   A more granular :option:`WIDTH` warning, for when a value is zero
+   expanded. See :option:`WIDTH`.
 
 .. option:: WIDTHXZEXPAND
 
-   A more granular WIDTH warning, for when a value is X/Z expanded.
+   A more granular :option:`WIDTH` warning, for when a value is X/Z
+   expanded. See :option:`WIDTH`.
 
 .. option:: WIDTHCONCAT
 
@@ -2193,7 +2228,7 @@ List Of Warnings
             #(parameter int MY_PARAM = 0);
            reg [7:0] data;
            always @* begin
-             data = {MY_PARAM{1'b1}}; //<--- WARNING
+             data = {MY_PARAM{1'b1}};  //<--- Warning
            end
          endmodule
 
@@ -2214,7 +2249,7 @@ List Of Warnings
       :emphasize-lines: 2
 
          module dut
-            #(parameter int MY_PARAM = 1); //<--- REPAIRED
+            #(parameter int MY_PARAM = 1);  //<--- REPAIRED
            reg [7:0] data;
            always @* begin
              data = {MY_PARAM{1'b1}};
