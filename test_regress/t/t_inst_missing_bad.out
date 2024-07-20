@@ -6,4 +6,7 @@
 %Warning-PINMISSING: t/t_inst_missing_bad.v:13:8: Cell has missing pin: 'missing'
    13 |    sub sub (ok, , nc);
       |        ^~~
+                     t/t_inst_missing_bad.v:16:51: ... Location of port declaration
+   16 | module sub (input ok, input none, input nc, input missing);
+      |                                                   ^~~~~~~
 %Error: Exiting due to
