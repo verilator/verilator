@@ -65,6 +65,13 @@ void V3ThreadPool::workerJobLoop() {
     while (true) {
         std::function<void()> job;
         {
+            // Locking before `condition_variable::wait` is required to ensure that the
+            // `m_cv` condition will be executed under a lock. Taking a lock
+            // before `condition_variable::wait` may lead to missed
+            // `condition_variable::notify_all` notification (when a thread waits at the lock
+            // before) but, according to C++ standard, the `condition_variable::wait` first checks
+            // the condition and then waits for the notification, thus even when notification is
+            // missed, the condition still will be checked.
             const V3LockGuard lock{m_mutex};
             m_cv.wait(m_mutex,
                       [&]() VL_REQUIRES(m_mutex) { return !m_queue.empty() || m_shutdown; });
