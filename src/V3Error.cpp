@@ -290,8 +290,8 @@ std::ostringstream& V3Error::v3errorPrep(V3ErrorCode code) VL_ACQUIRE(s().m_mute
     s().v3errorPrep(code);
     return v3errorStr();
 }
-std::ostringstream& V3Error::v3errorPrepFileLine(V3ErrorCode code, const char* file, int line,
-                                                 bool mtDisabledCodeUnit) VL_ACQUIRE(s().m_mutex) {
+std::ostringstream& V3Error::v3errorPrepFileLine(V3ErrorCode code, const char* file, int line)
+    VL_ACQUIRE(s().m_mutex) {
     v3errorPrep(code) << file << ":" << std::dec << line << ": ";
     return v3errorStr();
 }

@@ -529,8 +529,7 @@ public:
     // Internals for v3error()/v3fatal() macros only
     // Error end takes the string stream to output, be careful to seek() as needed
     static std::ostringstream& v3errorPrep(V3ErrorCode code) VL_ACQUIRE(s().m_mutex);
-    static std::ostringstream& v3errorPrepFileLine(V3ErrorCode code, const char* file, int line,
-                                                   bool mtDisabledCodeUnit)
+    static std::ostringstream& v3errorPrepFileLine(V3ErrorCode code, const char* file, int line)
         VL_ACQUIRE(s().m_mutex);
     static std::ostringstream& v3errorStr() VL_REQUIRES(s().m_mutex);
     // static, but often overridden in classes.
@@ -570,9 +569,7 @@ void v3errorEndFatal(std::ostringstream& sstr)
 // Use this instead of fatal() to mention the source code line.
 #define v3fatalSrc(msg) \
     v3errorEndFatal(v3errorBuildMessage( \
-        V3Error::v3errorPrepFileLine(V3ErrorCode::EC_FATALSRC, __FILE__, __LINE__, \
-                                     VL_MT_DISABLED_CODE_UNIT_DEFINED), \
-        msg))
+        V3Error::v3errorPrepFileLine(V3ErrorCode::EC_FATALSRC, __FILE__, __LINE__), msg))
 // Use this when normal v3fatal is called in static method that overrides fileline.
 #define v3fatalStatic(msg) \
     ::v3errorEndFatal(v3errorBuildMessage(V3Error::v3errorPrep(V3ErrorCode::EC_FATAL), msg))
