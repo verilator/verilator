@@ -19,20 +19,30 @@ Verilator 5.027 devel
 * Support clocking blocks in virtual interfaces (#5235). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Support `$assertcontrol` assertion_type (#5236). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Support conditional constraints (#5245). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support `this.randomize with` (#5282). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Add `--compiler-include` for additional C++ includes (#5139) (#5202). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Add `--emit-accessors` (#5182) (#5227). [Ryan Ziegler]
 * Add suggestions on misspelled PLI functions.
+* Add warning on dist in constraints (#5264). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Improve emitted code to use a reference for VlSelf (#5254). [Yangyu Chen]
 * Fix fusing macro arguments to not ignore whitespace (#5061). [Tudor Timi]
 * Fix classes/modules of case-similar names (#5109). [Arkadiusz Kozdra]
 * Fix mis-removing $value$plusargs calls (#5127) (#5137). [Seth Pellegrino]
+* Fix incorrect result of width mismatch (#5186) (#5189). [Yutetsu TAKATSUKASA]
+* Fix `--x-assign` to be independent from `+verilator+rand+reset` (#5214). [Andrew Nolte]
 * Fix splitting if statements with impure conditions (#5219). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix unknown conversion on queues (#5220). [Alex Solomatnikov]
 * Fix top-level unpacked structure resets (#5221).
 * Fix concurrency for mailbox and semaphores (#5222). [Liam Braun]
+* Fix toggle coverage aggregation on same line (#5248). [Krzysztof Obłonczek]
 * Fix error on empty generate with -O0 (#5250).
 * Fix unconstrained randomization of unpacked structs (#5252). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix inlining of variables driven from forced vars (#5259). [Geza Lore]
 * Fix tracing with `--main-top-name -` (#5261). [Ethan Sifferman]
+* Fix randomization when used with inheritance (#5268). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix inline constraints creating class random generator (#5280). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix elaborating foreach loops (#5285). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Fix randomizing current object with `rand` class instance member (#5292). [Krzysztof Bieganski, Antmicro Ltd.]
 
 
 Verilator 5.026 2024-06-15
