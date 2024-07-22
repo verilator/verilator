@@ -119,20 +119,20 @@ class RandomizeMarkVisitor final : public VNVisitorConst {
             m_baseToDerivedMap[basep].insert(nodep);
         }
     }
-    void visit(AstMethodCall* nodep) override {
-        if (nodep->name() != "randomize") return;
-        if (const AstClassRefDType* const classRefp
-            = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), ClassRefDType)) {
-            AstClass* const classp = classRefp->classp();
-            classp->user1(true);
-            markMembers(classp);
-        }
-        iterateChildrenConst(nodep);
-    }
     void visit(AstNodeFTaskRef* nodep) override {
         iterateChildrenConst(nodep);
         if (nodep->name() != "randomize") return;
-        if (m_classp) m_classp->user1(true);
+        AstClass* classp = m_classp;
+        if (const AstMethodCall* const methodCallp = VN_CAST(nodep, MethodCall)) {
+            if (const AstClassRefDType* const classRefp
+                = VN_CAST(methodCallp->fromp()->dtypep()->skipRefp(), ClassRefDType)) {
+                classp = classRefp->classp();
+            }
+        }
+        if (classp) {
+            classp->user1(true);
+            markMembers(classp);
+        }
     }
     void visit(AstConstraintExpr* nodep) override {
         VL_RESTORER(m_constraintExprp);
