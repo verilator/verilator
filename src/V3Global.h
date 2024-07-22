@@ -32,6 +32,7 @@
 #include "V3Options.h"
 
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -133,6 +134,9 @@ class V3Global final {
     // Names of fields that were dumped by dumpJsonPtr()
     std::unordered_set<std::string> m_jsonPtrNames;
 
+    // Id of the main thread
+    const std::thread::id m_mainThreadId = std::this_thread::get_id();
+
 public:
     // Options
     V3Options opt;  // All options; let user see them directly
@@ -203,6 +207,7 @@ public:
     void ptrNamesDumpJson(std::ostream& os);
     void idPtrMapDumpJson(std::ostream& os);
     const std::string& ptrToId(const void* p);
+    std::thread::id mainThreadId() const { return m_mainThreadId; }
 };
 
 extern V3Global v3Global;
