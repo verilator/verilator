@@ -673,7 +673,7 @@ class CaptureVisitor final : public VNVisitor {
             iterateChildren(nodep);
             return;
         }
-        AstClass* classp = VN_CAST(m_lookup.findDeclaringModule(nodep, false), Class);
+        AstClass* classp = VN_CAST(m_lookup.findDeclaringModule(nodep->taskp(), false), Class);
         if ((classp == m_callerp) && VN_IS(m_callerp, Class)) {
             AstNodeExpr* const pinsp = nodep->pinsp();
             if (pinsp) pinsp->unlinkFrBack();
