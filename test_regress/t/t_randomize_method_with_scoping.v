@@ -32,7 +32,13 @@ class SubB extends Cls;
    function int doit;
       // access ambiguous names so width complains if we miss something
       doit = 1;
+
+      f.x = 4;
+      x = 5;
+
       doit = f.randomize() with { x == local::x; };
+      if (f.x != x) $stop;
+
       doit &= f.randomize() with { e.c1_f == local::e.c2_f; };
       doit &= f.randomize() with { x == local::get_x() - get_x(); };
       doit &= f.randomize() with { x == local::get_c().c2_f - get_c().c1_f; };

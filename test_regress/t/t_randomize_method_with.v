@@ -38,10 +38,17 @@ class Bar extends Boo;
 
   function bit test_capture_of_callers_derived_var(Foo foo);
     boo = 4;
+    foo.a = 3;
     return (foo.randomize() with { a == local::boo; } == 1) && (foo.a == 4);
   endfunction
 
   static function bit test_capture_of_callees_derived_var(Foo foo);
+    foo.a = 5;
+    return (foo.randomize() with { a == boo; } == 1) && (foo.a == 6);
+  endfunction
+
+  static function bit test_capture_of_local_qualifier(Foo foo);
+    foo.a = 5;
     return (foo.randomize() with { a == boo; } == 1) && (foo.a == 6);
   endfunction
 endclass
