@@ -411,8 +411,12 @@ class LinkCellsVisitor final : public VNVisitor {
                             newp->svImplicit(true);
                             nodep->addPinsp(newp);
                         } else {  // warn on the CELL that needs it, not the port
-                            nodep->v3warn(PINMISSING,
-                                          "Cell has missing pin: " << portp->prettyNameQ());
+                            nodep->v3warn(PINMISSING, "Cell has missing pin: "
+                                                          << portp->prettyNameQ() << '\n'
+                                                          << nodep->warnContextPrimary() << '\n'
+                                                          << portp->warnOther()
+                                                          << "... Location of port declaration\n"
+                                                          << portp->warnContextSecondary());
                             AstPin* const newp
                                 = new AstPin{nodep->fileline(), 0, portp->name(), nullptr};
                             nodep->addPinsp(newp);

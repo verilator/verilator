@@ -6,7 +6,7 @@
 
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
-`define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkp(gotv,expv_s) do begin string gotv_s; gotv_s = $sformatf("%p", gotv); if ((gotv_s) !== (expv_s)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv_s), (expv_s)); `stop; end end while(0);
 
 module t (/*AUTOARG*/);
    initial begin
@@ -17,65 +17,65 @@ module t (/*AUTOARG*/);
       string v;
 
       q = '{1, 2, 2, 4, 3};
-      v = $sformatf("%p", q); `checks(v, "'{'h1, 'h2, 'h2, 'h4, 'h3} ");
+      `checkp(q, "'{'h1, 'h2, 'h2, 'h4, 'h3} ");
 
       // NOT tested: with ... selectors
 
       q.sort;
-      v = $sformatf("%p", q); `checks(v, "'{'h1, 'h2, 'h2, 'h3, 'h4} ");
+      `checkp(q, "'{'h1, 'h2, 'h2, 'h3, 'h4} ");
       q.sort with (item == 2);
-      v = $sformatf("%p", q); `checks(v, "'{'h1, 'h3, 'h4, 'h2, 'h2} ");
+      `checkp(q, "'{'h1, 'h3, 'h4, 'h2, 'h2} ");
       q.sort(x) with (x == 3);
-      v = $sformatf("%p", q); `checks(v, "'{'h1, 'h4, 'h2, 'h2, 'h3} ");
+      `checkp(q, "'{'h1, 'h4, 'h2, 'h2, 'h3} ");
 
       q.rsort;
-      v = $sformatf("%p", q); `checks(v, "'{'h4, 'h3, 'h2, 'h2, 'h1} ");
+      `checkp(q, "'{'h4, 'h3, 'h2, 'h2, 'h1} ");
       q.rsort with (item == 2);
-      v = $sformatf("%p", q); `checks(v, "'{'h2, 'h2, 'h4, 'h3, 'h1} ");
+      `checkp(q, "'{'h2, 'h2, 'h4, 'h3, 'h1} ");
 
       qv = q.unique;
-      v = $sformatf("%p", qv); `checks(v, "'{'h2, 'h4, 'h3, 'h1} ");
+      `checkp(qv, "'{'h2, 'h4, 'h3, 'h1} ");
       qi = q.unique_index; qi.sort;
-      v = $sformatf("%p", qi); `checks(v, "'{'h0, 'h2, 'h3, 'h4} ");
+      `checkp(qi, "'{'h0, 'h2, 'h3, 'h4} ");
       q.reverse;
-      v = $sformatf("%p", q); `checks(v, "'{'h1, 'h3, 'h4, 'h2, 'h2} ");
+      `checkp(q, "'{'h1, 'h3, 'h4, 'h2, 'h2} ");
       q.shuffle(); q.sort;
-      v = $sformatf("%p", q); `checks(v, "'{'h1, 'h2, 'h2, 'h3, 'h4} ");
+      `checkp(q, "'{'h1, 'h2, 'h2, 'h3, 'h4} ");
 
       // These require an with clause or are illegal
       // TODO add a lint check that with clause is provided
       qv = q.find with (item == 2);
-      v = $sformatf("%p", qv); `checks(v, "'{'h2, 'h2} ");
+      `checkp(qv, "'{'h2, 'h2} ");
       qv = q.find_first with (item == 2);
-      v = $sformatf("%p", qv); `checks(v, "'{'h2} ");
+      `checkp(qv, "'{'h2} ");
       qv = q.find_last with (item == 2);
-      v = $sformatf("%p", qv); `checks(v, "'{'h2} ");
+      `checkp(qv, "'{'h2} ");
 
       qv = q.find with (item == 20);
-      v = $sformatf("%p", qv); `checks(v, "'{}");
+      `checkp(qv, "'{}");
       qv = q.find_first with (item == 20);
-      v = $sformatf("%p", qv); `checks(v, "'{}");
+      `checkp(qv, "'{}");
       qv = q.find_last with (item == 20);
-      v = $sformatf("%p", qv); `checks(v, "'{}");
+      `checkp(qv, "'{}");
 
       qi = q.find_index with (item == 2); qi.sort;
-      v = $sformatf("%p", qi); `checks(v, "'{'h1, 'h2} ");
+      `checkp(qi, "'{'h1, 'h2} ");
       qi = q.find_first_index with (item == 2);
-      v = $sformatf("%p", qi); `checks(v, "'{'h1} ");
+      `checkp(qi, "'{'h1} ");
       qi = q.find_last_index with (item == 2);
-      v = $sformatf("%p", qi); `checks(v, "'{'h2} ");
+      `checkp(qi, "'{'h2} ");
 
       qi = q.find_index with (item == 20); qi.sort;
-      v = $sformatf("%p", qi); `checks(v, "'{}");
+      `checkp(qi, "'{}");
       qi = q.find_first_index with (item == 20);
-      v = $sformatf("%p", qi); `checks(v, "'{}");
+      `checkp(qi, "'{}");
       qi = q.find_last_index with (item == 20);
-      v = $sformatf("%p", qi); `checks(v, "'{}");
+      `checkp(qi, "'{}");
 
       qv = q.min;
-      v = $sformatf("%p", qv); `checks(v, "'{'h1} ");
+      `checkp(qv, "'{'h1} ");
       qv = q.max;
-      v = $sformatf("%p", qv); `checks(v, "'{'h4} ");
+      `checkp(qv, "'{'h4} ");
 
       // Reduction methods
 

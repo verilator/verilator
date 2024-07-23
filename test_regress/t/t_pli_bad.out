@@ -10,4 +10,12 @@
 %Error: t/t_pli_bad.v:13:11: Unsupported or unknown PLI call: '$unknown_pli_function'
    13 |       i = $unknown_pli_function("arg", i);
       |           ^~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_pli_bad.v:15:7: Unsupported or unknown PLI call: '$sformatff'
+                          : ... Suggested alternative: '$sformatf'
+   15 |       $sformatff();   
+      |       ^~~~~~~~~~
+%Error: t/t_pli_bad.v:16:11: Unsupported or unknown PLI call: '$sformatff'
+                           : ... Suggested alternative: '$sformatf'
+   16 |       i = $sformatff();   
+      |           ^~~~~~~~~~
 %Error: Exiting due to

@@ -1,6 +1,9 @@
 %Warning-PINMISSING: t/t_udp_bad.v:10:10: Cell has missing pin: 'c_bad'
    10 |    udp_x x (a, b);
       |          ^
+                     t/t_udp_bad.v:14:28: ... Location of port declaration
+   14 | primitive udp_x (a_bad, b, c_bad);
+      |                            ^~~~~
                      ... For warning description see https://verilator.org/warn/PINMISSING?v=latest
                      ... Use "/* verilator lint_off PINMISSING */" and lint_on around source to disable this message.
 %Error: t/t_udp_bad.v:14:18: Pin is not an in/out/inout/interface: 'a_bad'

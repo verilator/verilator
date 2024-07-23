@@ -67,6 +67,7 @@
 
 #include "V3Graph.h"
 #include "V3MemberMap.h"
+#include "V3Parse.h"
 #include "V3String.h"
 #include "V3SymTable.h"
 
@@ -3394,8 +3395,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             VL_DO_DANGLING(nodep->deleteTree(), nodep);
                             return;
                         } else {
+                            VSpellCheck speller;
+                            V3Parse::candidatePli(&speller);
+                            const string suggest = speller.bestCandidateMsg(nodep->prettyName());
                             nodep->v3error(
-                                "Unsupported or unknown PLI call: " << nodep->prettyNameQ());
+                                "Unsupported or unknown PLI call: "
+                                << nodep->prettyNameQ() << '\n'
+                                << (suggest.empty() ? "" : nodep->warnMore() + suggest));
                         }
                     } else {
                         const string suggest = m_statep->suggestSymFallback(

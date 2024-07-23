@@ -63,6 +63,17 @@ const char* V3ParseImp::tokenName(int token) {
 #endif
 }
 
+void V3ParseImp::candidatePli(VSpellCheck* spellerp) {
+#if !YYERROR_VERBOSE
+#error "Need lex token names"
+#endif
+    for (int i = 0; yytname[i]; ++i) {
+        if (yytname[i][0] != '\"') continue;
+        if (yytname[i][1] != '$') continue;
+        spellerp->pushCandidate(string{yytname[i]}.substr(1, strlen(yytname[i]) - 2));
+    }
+}
+
 void V3ParseImp::parserClear() {
     // Clear up any dynamic memory V3Parser required
     VARDTYPE(nullptr);

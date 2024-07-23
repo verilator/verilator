@@ -6,7 +6,7 @@
 
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
-`define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkp(gotv,expv_s) do begin string gotv_s; gotv_s = $sformatf("%p", gotv); if ((gotv_s) !== (expv_s)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv_s), (expv_s)); `stop; end end while(0);
 
 module t (/*AUTOARG*/);
    typedef struct { int x, y; } point;
@@ -18,10 +18,9 @@ module t (/*AUTOARG*/);
       point points_q[int];
       point points_qv[$];
       int i;
-      string v;
 
       q = '{10:1, 11:2, 12:2, 13:4, 14:3};
-      v = $sformatf("%p", q); `checks(v, "'{'ha:'h1, 'hb:'h2, 'hc:'h2, 'hd:'h4, 'he:'h3} ");
+      `checkp(q, "'{'ha:'h1, 'hb:'h2, 'hc:'h2, 'hd:'h4, 'he:'h3} ");
 
       // NOT tested: with ... selectors
 
@@ -30,15 +29,15 @@ module t (/*AUTOARG*/);
       //q.reverse;  // Not legal on assoc - see t_assoc_meth_bad
       //q.shuffle;  // Not legal on assoc - see t_assoc_meth_bad
 
-      v = $sformatf("%p", qe); `checks(v, "'{}");
+      `checkp(qe, "'{}");
       qv = q.unique;
-      v = $sformatf("%p", qv); `checks(v, "'{'h1, 'h2, 'h4, 'h3} ");
+      `checkp(qv, "'{'h1, 'h2, 'h4, 'h3} ");
       qv = qe.unique;
-      v = $sformatf("%p", qv); `checks(v, "'{}");
+      `checkp(qv, "'{}");
       qi = q.unique_index; qi.sort;
-      v = $sformatf("%p", qi); `checks(v, "'{'ha, 'hb, 'hd, 'he} ");
+      `checkp(qi, "'{'ha, 'hb, 'hd, 'he} ");
       qi = qe.unique_index;
-      v = $sformatf("%p", qi); `checks(v, "'{}");
+      `checkp(qi, "'{}");
 
       points_q[0] = point'{1, 2};
       points_q[1] = point'{2, 4};
@@ -48,61 +47,61 @@ module t (/*AUTOARG*/);
       `checkh(points_qv.size, 2);
       qi = points_q.unique_index(p) with (p.x + p.y);
       qi.sort;
-      v = $sformatf("%p", qi); `checks(v, "'{'h0, 'h1, 'h5} ");
+      `checkp(qi, "'{'h0, 'h1, 'h5} ");
 
       // These require an with clause or are illegal
       // TODO add a lint check that with clause is provided
       qv = q.find with (item == 2);
-      v = $sformatf("%p", qv); `checks(v, "'{'h2, 'h2} ");
+      `checkp(qv, "'{'h2, 'h2} ");
       qv = q.find_first with (item == 2);
-      v = $sformatf("%p", qv); `checks(v, "'{'h2} ");
+      `checkp(qv, "'{'h2} ");
       qv = q.find_last with (item == 2);
-      v = $sformatf("%p", qv); `checks(v, "'{'h2} ");
+      `checkp(qv, "'{'h2} ");
 
       qv = q.find with (item == 20);
-      v = $sformatf("%p", qv); `checks(v, "'{}");
+      `checkp(qv, "'{}");
       qv = q.find_first with (item == 20);
-      v = $sformatf("%p", qv); `checks(v, "'{}");
+      `checkp(qv, "'{}");
       qv = q.find_last with (item == 20);
-      v = $sformatf("%p", qv); `checks(v, "'{}");
+      `checkp(qv, "'{}");
 
       qi = q.find_index with (item == 2); qi.sort;
-      v = $sformatf("%p", qi); `checks(v, "'{'hb, 'hc} ");
+      `checkp(qi, "'{'hb, 'hc} ");
       qi = q.find_first_index with (item == 2);
-      v = $sformatf("%p", qi); `checks(v, "'{'hb} ");
+      `checkp(qi, "'{'hb} ");
       qi = q.find_last_index with (item == 2);
-      v = $sformatf("%p", qi); `checks(v, "'{'hc} ");
+      `checkp(qi, "'{'hc} ");
 
       qi = q.find_index with (item == 20); qi.sort;
-      v = $sformatf("%p", qi); `checks(v, "'{}");
+      `checkp(qi, "'{}");
       qi = q.find_first_index with (item == 20);
-      v = $sformatf("%p", qi); `checks(v, "'{}");
+      `checkp(qi, "'{}");
       qi = q.find_last_index with (item == 20);
-      v = $sformatf("%p", qi); `checks(v, "'{}");
+      `checkp(qi, "'{}");
 
       qi = q.find_index with (item.index == 12);
-      v = $sformatf("%p", qi); `checks(v, "'{'hc} ");
+      `checkp(qi, "'{'hc} ");
       qi = q.find with (item.index == 12);
-      v = $sformatf("%p", qi); `checks(v, "'{'h2} ");
+      `checkp(qi, "'{'h2} ");
 
       qv = q.min;
-      v = $sformatf("%p", qv); `checks(v, "'{'h1} ");
+      `checkp(qv, "'{'h1} ");
       points_qv = points_q.min(p) with (p.x + p.y);
       if (points_qv[0].x != 1 || points_qv[0].y != 2) $stop;
 
       qv = q.max;
-      v = $sformatf("%p", qv); `checks(v, "'{'h4} ");
+      `checkp(qv, "'{'h4} ");
       points_qv = points_q.max(p) with (p.x + p.y);
       if (points_qv[0].x != 2 || points_qv[0].y != 4) $stop;
 
       qv = qe.min;
-      v = $sformatf("%p", qv); `checks(v, "'{}");
+      `checkp(qv, "'{}");
       qv = qe.min(x) with (x + 1);
-      v = $sformatf("%p", qv); `checks(v, "'{}");
+      `checkp(qv, "'{}");
       qv = qe.max;
-      v = $sformatf("%p", qv); `checks(v, "'{}");
+      `checkp(qv, "'{}");
       qv = qe.max(x) with (x + 1);
-      v = $sformatf("%p", qv); `checks(v, "'{}");
+      `checkp(qv, "'{}");
 
       // Reduction methods
 

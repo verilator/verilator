@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 `define stop $stop
-`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkp(gotv,expv_s) do begin string gotv_s; gotv_s = $sformatf("%p", gotv); if ((gotv_s) !== (expv_s)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv_s), (expv_s)); `stop; end end while(0);
 
 // See also t_class_param_mod.v
 
@@ -199,8 +199,8 @@ module t (/*AUTOARG*/);
       if (c4.member != 4'ha) $stop;
       if (c12.get_member() != 12'haaa) $stop;
       if (c4.get_member() != 4'ha) $stop;
-      `checks($sformatf("%p", c12), "'{member:'haaa}");
-      `checks($sformatf("%p", c4), "'{member:'ha}");
+      `checkp(c12, "'{member:'haaa}");
+      `checkp(c4, "'{member:'ha}");
 
       if ($bits(src_logic.field) != 1) $stop;
       if ($bits(src_int.field) != 32) $stop;

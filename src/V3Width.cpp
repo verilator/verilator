@@ -3135,7 +3135,7 @@ class WidthVisitor final : public VNVisitor {
                                              << nodep->fromp()->dtypep()->prettyTypeName() << "'");
         }
     }
-    AstWith* methodWithArgument(AstMethodCall* nodep, bool required, bool arbReturn,
+    AstWith* methodWithArgument(AstNodeFTaskRef* nodep, bool required, bool arbReturn,
                                 AstNodeDType* returnDtp, AstNodeDType* indexDtp,
                                 AstNodeDType* valueDtp) {
         UASSERT_OBJ(arbReturn || returnDtp, nodep, "Null return type");
@@ -5995,6 +5995,7 @@ class WidthVisitor final : public VNVisitor {
         // For arguments, is assignment-like context; see IEEE rules in AstNodeAssign
         // Function hasn't been widthed, so make it so.
         UINFO(5, "  FTASKREF " << nodep << endl);
+        AstWith* withp = nullptr;
         if (nodep->name() == "randomize" || nodep->name() == "srandom"
             || (!nodep->taskp()
                 && (nodep->name() == "get_randstate" || nodep->name() == "set_randstate"))) {
@@ -6003,6 +6004,15 @@ class WidthVisitor final : public VNVisitor {
             UASSERT_OBJ(classp, nodep, "Should have failed in V3LinkDot");
             if (nodep->name() == "randomize") {
                 nodep->taskp(V3Randomize::newRandomizeFunc(m_memberMap, classp));
+                AstClassRefDType* const adtypep
+                    = new AstClassRefDType{nodep->fileline(), classp, nullptr};
+                v3Global.rootp()->typeTablep()->addTypesp(adtypep);
+                withp = methodWithArgument(nodep, false, false, adtypep->findVoidDType(),
+                                           adtypep->findBitDType(), adtypep);
+                if (nodep->pinsp()) {
+                    nodep->pinsp()->v3warn(CONSTRAINTIGN, "rand_mode ignored (unsupported)");
+                    nodep->pinsp()->unlinkFrBackWithNext()->deleteTree();
+                }
             } else if (nodep->name() == "srandom") {
                 nodep->taskp(V3Randomize::newSRandomFunc(m_memberMap, classp));
                 m_memberMap.clear();
@@ -6046,6 +6056,7 @@ class WidthVisitor final : public VNVisitor {
         userIterate(nodep->taskp(), nullptr);
         // And do the arguments to the task/function too
         processFTaskRefArgs(nodep);
+        nodep->addPinsp(withp);
         nodep->didWidth(true);
     }
     void visit(AstNodeProcedure* nodep) override {

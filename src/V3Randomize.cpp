@@ -126,20 +126,20 @@ class RandomizeMarkVisitor final : public VNVisitorConst {
             m_baseToDerivedMap[basep].insert(nodep);
         }
     }
-    void visit(AstMethodCall* nodep) override {
-        if (nodep->name() != "randomize") return;
-        if (const AstClassRefDType* const classRefp
-            = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), ClassRefDType)) {
-            AstClass* const classp = classRefp->classp();
-            classp->user1(true);
-            markMembers(classp);
-        }
-        iterateChildrenConst(nodep);
-    }
     void visit(AstNodeFTaskRef* nodep) override {
         iterateChildrenConst(nodep);
         if (nodep->name() != "randomize") return;
-        if (m_classp) m_classp->user1(true);
+        AstClass* classp = m_classp;
+        if (const AstMethodCall* const methodCallp = VN_CAST(nodep, MethodCall)) {
+            if (const AstClassRefDType* const classRefp
+                = VN_CAST(methodCallp->fromp()->dtypep()->skipRefp(), ClassRefDType)) {
+                classp = classRefp->classp();
+            }
+        }
+        if (classp) {
+            classp->user1(true);
+            markMembers(classp);
+        }
     }
     void visit(AstConstraintExpr* nodep) override {
         VL_RESTORER(m_constraintExprp);
@@ -783,6 +783,41 @@ class RandomizeVisitor final : public VNVisitor {
     std::map<std::string, AstCDType*> m_randcDtypes;  // RandC data type deduplication
 
     // METHODS
+    void createRandomGenerator(AstClass* const classp) {
+        if (classp->user3p()) return;
+        if (classp->extendsp()) {
+            createRandomGenerator(classp->extendsp()->classp());
+            return;
+        }
+        AstVar* const genp = new AstVar{classp->fileline(), VVarType::MEMBER, "constraint",
+                                        classp->findBasicDType(VBasicDTypeKwd::RANDOM_GENERATOR)};
+        genp->user2p(classp);
+        classp->addMembersp(genp);
+        classp->user3p(genp);
+    }
+    AstVar* getRandomGenerator(AstClass* const classp) {
+        if (classp->user3p()) return VN_AS(classp->user3p(), Var);
+        if (classp->extendsp()) return getRandomGenerator(classp->extendsp()->classp());
+        return nullptr;
+    }
+    AstTask* getCreateConstraintSetupFunc(AstClass* classp) {
+        if (classp->user2p()) return VN_AS(classp->user2p(), Task);
+        AstTask* const setupAllTaskp
+            = new AstTask{classp->fileline(), "__Vsetup_constraints", nullptr};
+        setupAllTaskp->classMethod(true);
+        setupAllTaskp->isVirtual(true);
+        classp->addMembersp(setupAllTaskp);
+        classp->user2p(setupAllTaskp);
+        return setupAllTaskp;
+    }
+    void createRandomizeClassVars(AstNetlist* const netlistp) {
+        netlistp->foreach([&](AstClass* const classp) {
+            if (classp->existsMember(
+                    [&](const AstClass*, const AstConstraint*) { return true; })) {
+                createRandomGenerator(classp);
+            }
+        });
+    }
     AstVar* enumValueTabp(AstEnumDType* const nodep) {
         if (nodep->user2p()) return VN_AS(nodep->user2p(), Var);
         UINFO(9, "Construct Venumvaltab " << nodep << endl);
@@ -952,29 +987,6 @@ class RandomizeVisitor final : public VNVisitor {
         m_ftaskp = nodep;
         iterateChildren(nodep);
     }
-    AstVar* getCreateRandomGenerator(AstClass* classp) {
-        if (classp->user3p()) return VN_AS(classp->user3p(), Var);
-        AstVar* genp = nullptr;
-        if (classp->extendsp()) genp = getCreateRandomGenerator(classp->extendsp()->classp());
-        if (!genp) {
-            genp = new AstVar{classp->fileline(), VVarType::MEMBER, "constraint",
-                              classp->findBasicDType(VBasicDTypeKwd::RANDOM_GENERATOR)};
-            genp->user2p(classp);
-            classp->addMembersp(genp);
-            classp->user3p(genp);
-        }
-        return genp;
-    }
-    AstTask* getCreateConstraintSetupFunc(AstClass* classp) {
-        if (classp->user2p()) return VN_AS(classp->user2p(), Task);
-        AstTask* const setupAllTaskp
-            = new AstTask{classp->fileline(), "__Vsetup_constraints", nullptr};
-        setupAllTaskp->classMethod(true);
-        setupAllTaskp->isVirtual(true);
-        classp->addMembersp(setupAllTaskp);
-        classp->user2p(setupAllTaskp);
-        return setupAllTaskp;
-    }
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_randCaseNum);
@@ -990,27 +1002,26 @@ class RandomizeVisitor final : public VNVisitor {
         FileLine* fl = nodep->fileline();
 
         AstNodeExpr* beginValp = nullptr;
-        AstVar* genp = nullptr;
-        nodep->foreachMember([&](AstClass* classp, AstConstraint* constrp) {
-            AstTask* taskp = VN_AS(constrp->user2p(), Task);
-            if (!taskp) {
-                taskp = newSetupConstraintTask(classp, constrp->name());
-                constrp->user2p(taskp);
-            }
-            AstTaskRef* const setupTaskRefp
-                = new AstTaskRef{constrp->fileline(), taskp->name(), nullptr};
-            setupTaskRefp->taskp(taskp);
-            setupTaskRefp->classOrPackagep(classp);
-
-            genp = getCreateRandomGenerator(nodep);
-            AstTask* setupAllTaskp = getCreateConstraintSetupFunc(nodep);
-
-            setupAllTaskp->addStmtsp(setupTaskRefp->makeStmt());
-
-            { ConstraintExprVisitor{m_memberMap, constrp->itemsp(), nullptr, genp}; }
-            if (constrp->itemsp()) taskp->addStmtsp(constrp->itemsp()->unlinkFrBackWithNext());
-        });
+        AstVar* genp = getRandomGenerator(nodep);
         if (genp) {
+            nodep->foreachMember([&](AstClass* const classp, AstConstraint* const constrp) {
+                AstTask* taskp = VN_AS(constrp->user2p(), Task);
+                if (!taskp) {
+                    taskp = newSetupConstraintTask(classp, constrp->name());
+                    constrp->user2p(taskp);
+                }
+                AstTaskRef* const setupTaskRefp
+                    = new AstTaskRef{constrp->fileline(), taskp->name(), nullptr};
+                setupTaskRefp->taskp(taskp);
+                setupTaskRefp->classOrPackagep(classp);
+
+                AstTask* const setupAllTaskp = getCreateConstraintSetupFunc(nodep);
+
+                setupAllTaskp->addStmtsp(setupTaskRefp->makeStmt());
+
+                ConstraintExprVisitor{m_memberMap, constrp->itemsp(), nullptr, genp};
+                if (constrp->itemsp()) taskp->addStmtsp(constrp->itemsp()->unlinkFrBackWithNext());
+            });
             randomizep->addStmtsp(implementConstraintsClear(fl, genp));
             AstTask* setupAllTaskp = getCreateConstraintSetupFunc(nodep);
             AstTaskRef* const setupTaskRefp = new AstTaskRef{fl, setupAllTaskp->name(), nullptr};
@@ -1132,33 +1143,41 @@ class RandomizeVisitor final : public VNVisitor {
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    void visit(AstMethodCall* nodep) override {
+    void visit(AstNodeFTaskRef* nodep) override {
         AstWith* const withp = VN_CAST(nodep->pinsp(), With);
 
         if (!(nodep->name() == "randomize") || !withp) {
             iterateChildren(nodep);
             return;
         }
+        withp->unlinkFrBack();
 
         iterateChildren(nodep);
 
-        UASSERT_OBJ(nodep->fromp()->dtypep(), nodep->fromp(), "Object dtype is not linked");
-        AstClassRefDType* const classrefdtypep = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType);
-        if (!classrefdtypep) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Inline constraints are not supported for this node type");
-            return;
+        AstClass* classp = nullptr;
+        if (AstMethodCall* const callp = VN_CAST(nodep, MethodCall)) {
+            UASSERT_OBJ(callp->fromp()->dtypep(), callp->fromp(), "Object dtype is not linked");
+            AstClassRefDType* const classrefdtypep
+                = VN_CAST(callp->fromp()->dtypep(), ClassRefDType);
+            if (!classrefdtypep) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Inline constraints are not supported for this node type");
+                return;
+            }
+            classp = classrefdtypep->classp();
+            UASSERT_OBJ(classp, classrefdtypep, "Class type is unlinked to its ref type");
+        } else {
+            classp = VN_CAST(m_modp, Class);
+            UASSERT_OBJ(classp, m_modp, "Module not class, should have failed in V3Width");
         }
-        AstClass* const classp = classrefdtypep->classp();
-        UASSERT_OBJ(classp, classrefdtypep, "Class type is unlinked to its ref type");
         if (classp->user1()) {
-            // We need to first ensure that the class randomizer is instantiated if needed
+            // We need to first ensure that the class constraints are transformed
             // NOTE: This is safe only because AstClass visit function overwrites all
             // nesting-dependent state variables
             iterate(classp);
         }
 
-        AstVar* const classGenp = getCreateRandomGenerator(classp);
+        AstVar* const classGenp = getRandomGenerator(classp);
         AstVar* const localGenp
             = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP, "randomizer",
                          classp->findBasicDType(VBasicDTypeKwd::RANDOM_GENERATOR)};
@@ -1211,15 +1230,13 @@ class RandomizeVisitor final : public VNVisitor {
             solverCallp});
 
         // Replace the node with a call to that function
-        AstMethodCall* const callp
-            = new AstMethodCall(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                randomizeFuncp->name(), captured.getArgs());
-        callp->taskp(randomizeFuncp);
-        callp->dtypeFrom(randomizeFuncp->dtypep());
-        callp->classOrPackagep(classp);
-        nodep->replaceWith(callp);
+        nodep->name(randomizeFuncp->name());
+        nodep->addPinsp(captured.getArgs());
+        nodep->taskp(randomizeFuncp);
+        nodep->dtypeFrom(randomizeFuncp->dtypep());
+        nodep->classOrPackagep(classp);
         UINFO(9, "Added `%s` randomization procedure");
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        VL_DO_DANGLING(withp->deleteTree(), withp);
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
@@ -1227,6 +1244,7 @@ public:
     // CONSTRUCTORS
     explicit RandomizeVisitor(AstNetlist* nodep)
         : m_inlineUniqueNames("__Vrandwith") {
+        createRandomizeClassVars(nodep);
         iterate(nodep);
         nodep->foreach([&](AstConstraint* constrp) {
             VL_DO_DANGLING(pushDeletep(constrp->unlinkFrBack()), constrp);

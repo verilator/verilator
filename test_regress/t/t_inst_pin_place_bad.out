@@ -1,6 +1,9 @@
 %Warning-PINMISSING: t/t_inst_pin_place_bad.v:21:7: Cell has missing pin: 'pin_1'
    21 |     ) i_sub (
       |       ^~~~~
+                     t/t_inst_pin_place_bad.v:11:11: ... Location of port declaration
+   11 |     input pin_1
+      |           ^~~~~
                      ... For warning description see https://verilator.org/warn/PINMISSING?v=latest
                      ... Use "/* verilator lint_off PINMISSING */" and lint_on around source to disable this message.
 %Error: t/t_inst_pin_place_bad.v:22:10: Instance attempts to connect to 'PARAM_A', but it is a parameter
