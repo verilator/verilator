@@ -507,18 +507,15 @@ class AssertVisitor final : public VNVisitor {
             const auto fl = nodep->fileline();
             AstNode* monExprsp = nodep->fmtp()->exprsp();
             AstSenItem* monSenItemsp = nullptr;
-            AstSenItem* SenItem = nullptr;
-            int monsenflag = 1;
-            while (monExprsp != NULL) {
+            while (monExprsp) {
                 if (AstNodeVarRef* varrefp = VN_CAST(monExprsp, NodeVarRef)) {
-                    SenItem = new AstSenItem(
+                    AstSenItem* const senItemp = new AstSenItem(
                         fl, VEdgeType::ET_CHANGED,
-                        (AstNodeExpr*)(new AstVarRef{fl, varrefp->varp(), VAccess::READ}));
-                    if (monsenflag) {
-                        monSenItemsp = SenItem;
-                        monsenflag = 0;
+                        new AstVarRef{fl, varrefp->varp(), VAccess::READ});
+                    if (!monSenItemsp) {
+                        monSenItemsp = senItemp;
                     } else {
-                        monSenItemsp->addNext(SenItem);
+                        monSenItemsp->addNext(senItemp);
                     }
                 }
                 monExprsp = monExprsp->nextp();
