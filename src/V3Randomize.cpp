@@ -167,7 +167,6 @@ class RandomizeMarkVisitor final : public VNVisitorConst {
     }
     void visit(AstMemberSel* nodep) override {
         if (!m_constraintExprp) return;
-
         if (VN_IS(nodep->fromp(), LambdaArgRef)) {
             if (!nodep->varp()->isRand()) return;
             for (AstNode* backp = nodep; backp != m_constraintExprp && !backp->user1();
@@ -520,7 +519,7 @@ public:
 };
 
 enum class CaptureMode : uint8_t {
-    NO_CAP = 0x0,
+    CAP_NO = 0x0,
     CAP_VALUE = 0x01,
     CAP_THIS = 0x02,
     CAP_F_SET_CLASSORPACKAGEP = 0x4,
@@ -658,8 +657,7 @@ class CaptureVisitor final : public VNVisitor {
         m_ignore.emplace(nodep);
         UASSERT_OBJ(nodep->varp(), nodep, "Variable unlinked");
         CaptureMode capMode = getVarRefCaptureMode(nodep);
-        if (mode(capMode) == CaptureMode::NO_CAP) return;
-
+        if (mode(capMode) == CaptureMode::CAP_NO) return;
         if (mode(capMode) == CaptureMode::CAP_VALUE) captureRefByValue(nodep, capMode);
         if (mode(capMode) == CaptureMode::CAP_THIS) captureRefByThis(nodep, capMode);
     }
