@@ -509,9 +509,9 @@ class AssertVisitor final : public VNVisitor {
             AstSenItem* monSenItemsp = nullptr;
             while (monExprsp) {
                 if (AstNodeVarRef* varrefp = VN_CAST(monExprsp, NodeVarRef)) {
-                    AstSenItem* const senItemp = new AstSenItem(
-                        fl, VEdgeType::ET_CHANGED,
-                        new AstVarRef{fl, varrefp->varp(), VAccess::READ});
+                    AstSenItem* const senItemp
+                        = new AstSenItem(fl, VEdgeType::ET_CHANGED,
+                                         new AstVarRef{fl, varrefp->varp(), VAccess::READ});
                     if (!monSenItemsp) {
                         monSenItemsp = senItemp;
                     } else {
