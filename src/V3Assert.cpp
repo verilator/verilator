@@ -505,23 +505,22 @@ class AssertVisitor final : public VNVisitor {
         } else if (nodep->displayType() == VDisplayType::DT_MONITOR) {
             nodep->displayType(VDisplayType::DT_DISPLAY);
             const auto fl = nodep->fileline();
-            AstNode* monExprsp =  nodep->fmtp()->exprsp();
+            AstNode* monExprsp = nodep->fmtp()->exprsp();
             AstSenItem* monSenItemsp = nullptr;
             AstSenItem* SenItem = nullptr;
-            int monsenflag =1;
-            while(monExprsp  != NULL)
-            {
-                if (AstNodeVarRef* varrefp = VN_CAST(monExprsp, NodeVarRef))
-                 {
-                    SenItem = new AstSenItem(fl, VEdgeType::ET_CHANGED, (AstNodeExpr*)(new AstVarRef{fl, varrefp->varp(), VAccess::READ}));
-                    if(monsenflag) {
-                        monSenItemsp= SenItem;
+            int monsenflag = 1;
+            while (monExprsp != NULL) {
+                if (AstNodeVarRef* varrefp = VN_CAST(monExprsp, NodeVarRef)) {
+                    SenItem = new AstSenItem(
+                        fl, VEdgeType::ET_CHANGED,
+                        (AstNodeExpr*)(new AstVarRef{fl, varrefp->varp(), VAccess::READ}));
+                    if (monsenflag) {
+                        monSenItemsp = SenItem;
                         monsenflag = 0;
-                    }
-                    else {
+                    } else {
                         monSenItemsp->addNext(SenItem);
                     }
-                 }
+                }
                 monExprsp = monExprsp->nextp();
             }
             AstSenTree* const monSenTree = new AstSenTree{fl, monSenItemsp};
