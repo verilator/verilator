@@ -198,7 +198,22 @@ private:
         }
         // We make multiple edges if a task is called multiple times from another task.
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked task");
-        new TaskEdge{&m_callGraph, m_curVxp, getFTaskVertex(nodep->taskp())};
+        TaskFTaskVertex* const taskVtxp = getFTaskVertex(nodep->taskp());
+        new TaskEdge{&m_callGraph, m_curVxp, taskVtxp};
+        // Do we have to disable inlining the function?
+        const V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
+        if (!taskVtxp->noInline()) {  // Else short-circuit below
+            for (const auto& itr : tconnects) {
+                const AstVar* const portp = itr.first;
+                const AstArg* const argp = itr.second;
+                if (const AstNodeExpr* const pinp = argp->exprp()) {
+                    if ((portp->isRef() || portp->isConstRef()) && !VN_IS(pinp, VarRef)) {
+                        UINFO(9, "No function inline due to ref " << pinp << endl);
+                        taskVtxp->noInline(true);
+                    }
+                }
+            }
+        }
     }
     void visit(AstNodeFTask* nodep) override {
         UINFO(9, "  TASK " << nodep << endl);
@@ -494,12 +509,7 @@ class TaskVisitor final : public VNVisitor {
                         UASSERT_OBJ(localVscp, varrefp, "Null var scope");
                         portp->user2p(localVscp);
                     } else {
-                        pinp->v3warn(E_TASKNSVAR, "Unsupported: ref argument of inlined "
-                                                  "function/task is not a simple variable");
-                        // Providing a var to avoid an internal error.
-                        AstVarScope* const newvscp
-                            = createVarScope(portp, namePrefix + "__" + portp->shortName());
-                        portp->user2p(newvscp);
+                        pinp->v3fatalSrc("ref argument should have caused non-inline of function");
                     }
                 }
             } else if (portp->isInoutish()) {

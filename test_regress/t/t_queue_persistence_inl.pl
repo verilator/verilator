@@ -18,9 +18,11 @@ if (!$Self->have_coroutines) {
 else {
     compile(
         timing_loop => 1,
-        verilator_flags2 => ["--binary --timing"],
-        fails => 1,   # bug3385 need to fix "ref"
-        expect_filename => $Self->{golden_filename},
+        verilator_flags2 => ["--timing"],
+        );
+
+    execute(
+        check_finished => 1,
         );
 }
 
