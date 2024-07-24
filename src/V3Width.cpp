@@ -547,18 +547,37 @@ class WidthVisitor final : public VNVisitor {
         AstNodeDType* const vdtypep = m_vup->dtypeNullSkipRefp();
         userIterate(vdtypep, WidthVP{SELF, BOTH}.p());
         // Conversions
-        if (VN_IS(vdtypep, QueueDType)) {
+        if (const AstDynArrayDType* const adtypep = VN_CAST(vdtypep, DynArrayDType)) {
+            // IEEE 1800-2023 10.10 requires looking at argument data type
+            // to determine if value or push
+            userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, PRELIM}.p());
+            userIterateAndNext(nodep->rhsp(), WidthVP{vdtypep, PRELIM}.p());
             // Queue "element 0" is lhsp, so we need to swap arguments
-            auto* const newp = new AstConsQueue{nodep->fileline(), nodep->rhsp()->unlinkFrBack(),
-                                                nodep->lhsp()->unlinkFrBack()};
+            const bool lhsIsValue = AstNode::computeCastable(adtypep->subDTypep(),
+                                                             nodep->lhsp()->dtypep(), nullptr).isAssignable();
+            const bool rhsIsValue = AstNode::computeCastable(adtypep->subDTypep(),
+                                                             nodep->rhsp()->dtypep(), nullptr).isAssignable();
+            AstConsDynArray* const newp
+                = new AstConsDynArray{nodep->fileline(), rhsIsValue, nodep->rhsp()->unlinkFrBack(),
+                                      lhsIsValue, nodep->lhsp()->unlinkFrBack()};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             userIterateChildren(newp, m_vup);
             return;
         }
-        if (VN_IS(vdtypep, DynArrayDType)) {
-            auto* const newp = new AstConsDynArray{
-                nodep->fileline(), nodep->rhsp()->unlinkFrBack(), nodep->lhsp()->unlinkFrBack()};
+        if (const AstQueueDType* const adtypep = VN_CAST(vdtypep, QueueDType)) {
+            // IEEE 1800-2023 10.10 requires looking at argument data type
+            // to determine if value or push
+            userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, PRELIM}.p());
+            userIterateAndNext(nodep->rhsp(), WidthVP{vdtypep, PRELIM}.p());
+            // Queue "element 0" is lhsp, so we need to swap arguments
+            const bool lhsIsValue = AstNode::computeCastable(adtypep->subDTypep(),
+                                                             nodep->lhsp()->dtypep(), nullptr).isAssignable();
+            const bool rhsIsValue = AstNode::computeCastable(adtypep->subDTypep(),
+                                                                nodep->rhsp()->dtypep(), nullptr).isAssignable();
+            AstConsQueue* const newp
+                = new AstConsQueue{nodep->fileline(), rhsIsValue, nodep->rhsp()->unlinkFrBack(),
+                                   lhsIsValue, nodep->lhsp()->unlinkFrBack()};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             userIterateChildren(newp, m_vup);
@@ -2498,29 +2517,31 @@ class WidthVisitor final : public VNVisitor {
         AstDynArrayDType* const vdtypep = VN_AS(m_vup->dtypep()->skipRefp(), DynArrayDType);
         UASSERT_OBJ(vdtypep, nodep, "ConsDynArray requires queue upper parent data type");
         if (m_vup->prelim()) {
-            userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, PRELIM}.p());
-            userIterateAndNext(nodep->rhsp(), WidthVP{vdtypep, PRELIM}.p());
-            if (nodep->didWidthAndSet()) return;
+            AstNodeDType* const lhsDtp = nodep->lhsIsValue() ? vdtypep->subDTypep() : vdtypep;
+            AstNodeDType* const rhsDtp = nodep->rhsIsValue() ? vdtypep->subDTypep() : vdtypep;
+            userIterateAndNext(nodep->lhsp(), WidthVP{lhsDtp, PRELIM}.p());
+            userIterateAndNext(nodep->rhsp(), WidthVP{rhsDtp, PRELIM}.p());
             nodep->dtypeFrom(vdtypep);
         }
         if (m_vup->final()) {
+            if (nodep->didWidthAndSet()) return;
             // Arguments can be either elements of the queue or a queue itself
             // Concats (part of tree of concats) must always become ConsDynArray's
+            AstNodeDType* const lhsDtp = nodep->lhsIsValue() ? vdtypep->subDTypep() : vdtypep;
+            AstNodeDType* const rhsDtp = nodep->rhsIsValue() ? vdtypep->subDTypep() : vdtypep;
             if (nodep->lhsp()) {
-                if (VN_IS(nodep->lhsp()->dtypep(), DynArrayDType)
-                    || VN_IS(nodep->lhsp(), ConsDynArray)) {
-                    userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, FINAL}.p());
-                } else {
+                if (nodep->lhsIsValue()) {
                     // Sub elements are not queues, but concats, must always pass concats down
-                    iterateCheckTyped(nodep, "LHS", nodep->lhsp(), vdtypep->subDTypep(), FINAL);
+                    iterateCheckTyped(nodep, "LHS", nodep->lhsp(), lhsDtp, FINAL);
+                } else {
+                    userIterateAndNext(nodep->lhsp(), WidthVP{lhsDtp, FINAL}.p());
                 }
             }
             if (nodep->rhsp()) {
-                if (VN_IS(nodep->rhsp()->dtypep(), DynArrayDType)
-                    || VN_IS(nodep->rhsp(), ConsDynArray)) {
-                    userIterateAndNext(nodep->rhsp(), WidthVP{vdtypep, FINAL}.p());
+                if (nodep->rhsIsValue()) {
+                    iterateCheckTyped(nodep, "RHS", nodep->rhsp(), rhsDtp, FINAL);
                 } else {
-                    iterateCheckTyped(nodep, "RHS", nodep->rhsp(), vdtypep->subDTypep(), FINAL);
+                    userIterateAndNext(nodep->rhsp(), WidthVP{rhsDtp, FINAL}.p());
                 }
             }
             if (nodep->didWidthAndSet()) return;
@@ -2532,28 +2553,31 @@ class WidthVisitor final : public VNVisitor {
         AstQueueDType* const vdtypep = VN_AS(m_vup->dtypep()->skipRefp(), QueueDType);
         UASSERT_OBJ(vdtypep, nodep, "ConsQueue requires queue upper parent data type");
         if (m_vup->prelim()) {
-            userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, PRELIM}.p());
-            userIterateAndNext(nodep->rhsp(), WidthVP{vdtypep, PRELIM}.p());
+            AstNodeDType* const lhsDtp = nodep->lhsIsValue() ? vdtypep->subDTypep() : vdtypep;
+            AstNodeDType* const rhsDtp = nodep->rhsIsValue() ? vdtypep->subDTypep() : vdtypep;
+            userIterateAndNext(nodep->lhsp(), WidthVP{lhsDtp, PRELIM}.p());
+            userIterateAndNext(nodep->rhsp(), WidthVP{rhsDtp, PRELIM}.p());
             nodep->dtypeFrom(vdtypep);
         }
         if (m_vup->final()) {
+            if (nodep->didWidthAndSet()) return;
             // Arguments can be either elements of the queue or a queue itself
             // Concats (part of tree of concats) must always become ConsQueue's
+            AstNodeDType* const lhsDtp = nodep->lhsIsValue() ? vdtypep->subDTypep() : vdtypep;
+            AstNodeDType* const rhsDtp = nodep->rhsIsValue() ? vdtypep->subDTypep() : vdtypep;
             if (nodep->lhsp()) {
-                if (VN_IS(nodep->lhsp()->dtypep(), QueueDType)
-                    || VN_IS(nodep->lhsp(), ConsQueue)) {
-                    userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, FINAL}.p());
-                } else {
+                if (nodep->lhsIsValue()) {
                     // Sub elements are not queues, but concats, must always pass concats down
-                    iterateCheckTyped(nodep, "LHS", nodep->lhsp(), vdtypep->subDTypep(), FINAL);
+                    iterateCheckTyped(nodep, "LHS", nodep->lhsp(), lhsDtp, FINAL);
+                } else {
+                    userIterateAndNext(nodep->lhsp(), WidthVP{lhsDtp, FINAL}.p());
                 }
             }
             if (nodep->rhsp()) {
-                if (VN_IS(nodep->rhsp()->dtypep(), QueueDType)
-                    || VN_IS(nodep->rhsp(), ConsQueue)) {
-                    userIterateAndNext(nodep->rhsp(), WidthVP{vdtypep, FINAL}.p());
+                if (nodep->rhsIsValue()) {
+                    iterateCheckTyped(nodep, "RHS", nodep->rhsp(), rhsDtp, FINAL);
                 } else {
-                    iterateCheckTyped(nodep, "RHS", nodep->rhsp(), vdtypep->subDTypep(), FINAL);
+                    userIterateAndNext(nodep->rhsp(), WidthVP{rhsDtp, FINAL}.p());
                 }
             }
             nodep->dtypeFrom(vdtypep);
@@ -2572,7 +2596,8 @@ class WidthVisitor final : public VNVisitor {
             if (VN_IS(arrayp, NodeArrayDType) || VN_IS(arrayp, AssocArrayDType)) {
                 userIterateChildren(nodep, WidthVP{arrayp->subDTypep(), BOTH}.p());
             } else {
-                UINFO(1, "dtype object " << vdtypep->skipRefp() << endl);
+                UINFO(1, "on " << nodep << endl);
+                UINFO(1, "dtype object " << arrayp << endl);
                 nodep->v3fatalSrc("InitArray on non-array");
             }
         }
@@ -4503,7 +4528,8 @@ class WidthVisitor final : public VNVisitor {
              patp = VN_AS(patp->nextp(), PatMember)) {
             patp->dtypep(arrayp->subDTypep());
             AstNodeExpr* const valuep = patternMemberValueIterate(patp);
-            AstConsDynArray* const newap = new AstConsDynArray{nodep->fileline(), valuep, newp};
+            AstConsDynArray* const newap
+                = new AstConsDynArray{nodep->fileline(), true, valuep, false, newp};
             newap->dtypeFrom(arrayp);
             newp = newap;
         }
@@ -4518,7 +4544,8 @@ class WidthVisitor final : public VNVisitor {
              patp = VN_AS(patp->nextp(), PatMember)) {
             patp->dtypep(arrayp->subDTypep());
             AstNodeExpr* const valuep = patternMemberValueIterate(patp);
-            AstConsQueue* const newap = new AstConsQueue{nodep->fileline(), valuep, newp};
+            AstConsQueue* const newap
+                = new AstConsQueue{nodep->fileline(), true, valuep, false, newp};
             newap->dtypeFrom(arrayp);
             newp = newap;
         }

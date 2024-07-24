@@ -42,6 +42,7 @@ Verilator 5.027 devel
 * Fix randomization when used with inheritance (#5268). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix inline constraints creating class random generator (#5280). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix elaborating foreach loops (#5285). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Fix initializing static array in dynamic arrays and queues (#5287). [Baruch Sterin]
 * Fix randomizing current object with `rand` class instance member (#5292). [Krzysztof Bieganski, Antmicro Ltd.]
 
 

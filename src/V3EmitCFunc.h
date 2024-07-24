@@ -1420,9 +1420,12 @@ public:
     void visit(AstConsDynArray* nodep) override {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
         if (!nodep->lhsp()) {
-            putns(nodep, "()");
+            putns(nodep, "{}");
         } else {
-            putns(nodep, "::cons(");
+            puts("::cons");
+            puts(nodep->lhsIsValue() ? "V" : "C");
+            if (nodep->rhsp()) puts(nodep->rhsIsValue() ? "V" : "C");
+            puts("(");
             iterateAndNextConstNull(nodep->lhsp());
             if (nodep->rhsp()) {
                 puts(", ");
@@ -1451,9 +1454,12 @@ public:
     void visit(AstConsQueue* nodep) override {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
         if (!nodep->lhsp()) {
-            puts("()");
+            puts("{}");
         } else {
-            puts("::cons(");
+            puts("::cons");
+            puts(nodep->lhsIsValue() ? "V" : "C");
+            if (nodep->rhsp()) puts(nodep->rhsIsValue() ? "V" : "C");
+            puts("(");
             iterateAndNextConstNull(nodep->lhsp());
             if (nodep->rhsp()) {
                 puts(", ");
