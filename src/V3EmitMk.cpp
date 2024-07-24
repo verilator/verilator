@@ -236,11 +236,18 @@ public:
             of.puts("\n");
         }
 
+        const string compilerIncludePch
+            = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_PCH_H).fast.gch";
+        const string compilerIncludeFlag
+            = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_PCH_I_FAST)";
         for (const string& cppfile : cppFiles) {
             const string basename = V3Os::filenameNonDirExt(cppfile);
             // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-            of.puts(basename + ".o: " + cppfile + "\n");
-            of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<\n");
+            of.puts(basename + ".o: " + cppfile + " " + compilerIncludePch + "\n");
+
+            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
+            of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) "
+                    + compilerIncludeFlag + " -c -o $@ $<\n");
         }
 
         if (v3Global.opt.exe()) {

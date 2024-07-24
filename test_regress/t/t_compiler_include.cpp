@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2009-2024 by Antmicro. This program is free software; you can
+// Copyright 2024 by Antmicro. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -9,34 +9,23 @@
 //
 //*************************************************************************
 
-#include "svdpi.h"
+// t_compiler_include.h is implicitly included by `--compiler-include`
 
-// These require the above. Comment prevents clang-format moving them
-#include "TestCheck.h"
+#include <verilated.h>
+#include VM_PREFIX_INCLUDE
 
-//======================================================================
+int main() {
+    Verilated::debug(0);
 
-// clang-format off
-#if defined(VERILATOR)
-# include "Vt_compiler_include__Dpi.h"
-#elif defined(VCS)
-# include "../vc_hdrs.h"
-#elif defined(NC)
-# define NEED_EXTERNS
-// #elif defined(MS)
-// # define NEED_EXTERNS
-#else
-# error "Unknown simulator for DPI test"
-#endif
-// clang-format on
+    VM_PREFIX* topp = new VM_PREFIX;
+    topp->in = 123;
+    topp->eval();
 
-#ifdef NEED_EXTERNS
-extern "C" {
-// If get ncsim: *F,NOFDPI: Function {foo} not found in default libdpi.
-// Then probably forgot to list a function here.
+    if (ext_equal(topp->in, topp->out))
+        VL_PRINTF("*-* All Finished *-*\n");
+    else
+        VL_PRINTF("in (%d) != out (%d)\n", topp->in, topp->out);
 
-extern void dpii_add(int a, int b, int* out);
+    topp->final();
+    VL_DO_DANGLING(delete topp, topp);
 }
-#endif
-
-void dpii_add(int a, int b, int* out) { *out = a + b; }
