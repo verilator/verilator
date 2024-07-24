@@ -288,6 +288,43 @@ AC_DEFUN([_MY_CXX_CHECK_OPT],
     _MY_CXX_CHECK_IFELSE($2, $1="$$1 $2")
    ])
 
+AC_DEFUN([_MY_CXX_CHECK_CORO_SET],
+   [# _MY_CXX_CHECK_CORO_SET(variable,option)
+    # Check if compiler supports coroutines with specific option. If it does,
+    # set variable to option, only if not previously set.
+    # Define HAVE_COROUTINES if supported.
+    if test "$$1" = ""; then
+      if test "$2" != ""; then
+        _my_msg_opt=" with $2"
+      else
+        _my_msg_opt=""
+      fi
+      AC_MSG_CHECKING([whether coroutines are supported by $CXX$_my_msg_opt])
+      ACO_SAVE_CXXFLAGS="$CXXFLAGS"
+      CXXFLAGS="$CXXFLAGS $2"
+      AC_LINK_IFELSE(
+         [AC_LANG_PROGRAM([
+            #if defined(__clang__) && !defined(__cpp_impl_coroutine)
+            #define __cpp_impl_coroutine 1
+            #endif
+            #include <coroutine>
+          ],[[std::coroutine_handle<> h;]])],
+         [_my_result=yes],
+         [AC_LINK_IFELSE(
+             [AC_LANG_PROGRAM(
+                [#include <experimental/coroutine>],
+                [[std::experimental::coroutine_handle<> h;]])],
+             [_my_result=yes],
+             [_my_result=no])])
+      AC_MSG_RESULT($_my_result)
+      CXXFLAGS="$ACO_SAVE_CXXFLAGS"
+      if test "$_my_result" = "yes" ; then
+        $1="$2"
+        AC_DEFINE([HAVE_COROUTINES],[1],[Defined if coroutines are supported by $CXX])
+      fi
+    fi
+  ])
+
 AC_DEFUN([_MY_LDLIBS_CHECK_FLAG],
    [# _MY_LDLIBS_CHECK_FLAG(flag) -- Check if linker supports specific options
     # Set $_my_result appropriately
@@ -373,33 +410,12 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_WEXTRA,-Wthread-safety)
 AC_SUBST(CFG_CXXFLAGS_WEXTRA)
 
 # Flags for coroutine support for dynamic scheduling
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_COROUTINES,-fcoroutines-ts)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_COROUTINES,-fcoroutines)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_COROUTINES,-fcoroutines-ts -Wno-deprecated-experimental-coroutine)
-_MY_CXX_CHECK_SET(CFG_CXXFLAGS_COROUTINES,-std=gnu++20)
+_MY_CXX_CHECK_CORO_SET(CFG_CXXFLAGS_COROUTINES, "")
+_MY_CXX_CHECK_CORO_SET(CFG_CXXFLAGS_COROUTINES,-fcoroutines-ts)
+_MY_CXX_CHECK_CORO_SET(CFG_CXXFLAGS_COROUTINES,-fcoroutines)
+_MY_CXX_CHECK_CORO_SET(CFG_CXXFLAGS_COROUTINES,-fcoroutines-ts -Wno-deprecated-experimental-coroutine)
+_MY_CXX_CHECK_CORO_SET(CFG_CXXFLAGS_COROUTINES,-std=gnu++20)
 AC_SUBST(CFG_CXXFLAGS_COROUTINES)
-
-# HAVE_COROUTINES
-# Check if coroutines are supported at all
-AC_MSG_CHECKING([whether coroutines are supported by $CXX])
-ACO_SAVE_CXXFLAGS="$CXXFLAGS"
-CXXFLAGS="$CXXFLAGS $CFG_CXXFLAGS_COROUTINES"
-AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM([
-#ifdef __clang__
-#define __cpp_impl_coroutine 1
-#endif
-#include <coroutine>
-    ],[[]])],
-    [_my_result=yes
-     AC_DEFINE([HAVE_COROUTINES],[1],[Defined if coroutines are supported by $CXX])],
-    [AC_LINK_IFELSE(
-        [AC_LANG_PROGRAM([#include <experimental/coroutine>],[[]])],
-        [_my_result=yes
-         AC_DEFINE([HAVE_COROUTINES],[1],[Defined if coroutines are supported by $CXX])],
-        [_my_result=no])])
-AC_MSG_RESULT($_my_result)
-CXXFLAGS="$ACO_SAVE_CXXFLAGS"
 AC_SUBST(HAVE_COROUTINES)
 
 # Flags for compiling Verilator internals including parser always
