@@ -103,6 +103,11 @@ module t(input clk);
      logic tmp = in + 1;
    endfunction
 
+   function static func_module_input;
+     // Do not warn on assignment referencing module I/O.
+     logic tmp = clk;
+   endfunction
+
    iface iface();
    prog prog;
 
