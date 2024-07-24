@@ -6545,10 +6545,19 @@ class WidthVisitor final : public VNVisitor {
             bool warnOn = true;
             // No warning if "X = 1'b1<<N"; assume user is doing what they want
             if (nodep->lhsp()->isOne() && VN_IS(nodep->backp(), NodeAssign)) warnOn = false;
+            // We don't currently suppress these, as it's the upper operator (e.g. assign)
+            // that reports the WIDTHEXPAND.
+            AstConst* const shiftp = VN_CAST(nodep->rhsp(), Const);
+            if (shiftp && !shiftp->num().isFourState() && shiftp->width() <= 32) {
+                const int64_t shiftVal = shiftp->num().toSQuad();
+                if (VN_IS(nodep, ShiftL)) {
+                    if (shiftVal > 0 && nodep->width() == nodep->lhsp()->width() + shiftVal)
+                        warnOn = false;
+                }
+            }
             iterateCheck(nodep, "LHS", nodep->lhsp(), CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP,
                          warnOn);
             if (nodep->rhsp()->width() > 32) {
-                AstConst* const shiftp = VN_CAST(nodep->rhsp(), Const);
                 if (shiftp && shiftp->num().mostSetBitP1() <= 32) {
                     // If (number)<<96'h1, then make it into (number)<<32'h1
                     V3Number num(shiftp, 32, 0);
