@@ -105,8 +105,8 @@ class LinkLValueVisitor final : public VNVisitor {
                 return refp->varp() && refp->varp()->isIO();
             });
             if (rhsHasIO) {
-                nodep->rhsp()->v3error("Unsupported: static declaration assignment\n"
-                                       "with I/O variable inside a function/task");
+                nodep->rhsp()->v3warn(E_UNSUPPORTED, "Static declaration assignment\n"
+                                                     "with I/O variable inside a function/task");
             }
         }
     }
