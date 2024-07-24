@@ -14,6 +14,10 @@ with I/O variable inside a function/task
 with I/O variable inside a function/task
    98 |      logic tmp = out;
       |                  ^~~
+%Error: t/t_var_static_assign_decl_bad.v:103:21: Unsupported: static declaration assignment
+with I/O variable inside a function/task
+  103 |      logic tmp = in + 1;
+      |                     ^
 %Error: t/t_var_static_assign_decl_bad.v:9:15: Unsupported: static declaration assignment
 with I/O variable inside a function/task
     9 |   logic tmp = in;

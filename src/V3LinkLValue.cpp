@@ -101,11 +101,12 @@ class LinkLValueVisitor final : public VNVisitor {
             iterateAndNextNull(nodep->rhsp());
         }
         if (m_inInitialStatic && m_inFunc) {
-            if (const AstVarRef* const refp = VN_CAST(nodep->rhsp(), VarRef)) {
-                if (refp->varp() && refp->varp()->isIO()) {
-                    refp->v3error("Unsupported: static declaration assignment\n"
-                                  "with I/O variable inside a function/task");
-                }
+            const bool rhsHasIO = nodep->rhsp() && nodep->rhsp()->exists([](AstNodeVarRef* refp) {
+                return refp->varp() && refp->varp()->isIO();
+            });
+            if (rhsHasIO) {
+                nodep->rhsp()->v3error("Unsupported: static declaration assignment\n"
+                                       "with I/O variable inside a function/task");
             }
         }
     }

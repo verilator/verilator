@@ -98,6 +98,11 @@ module t(input clk);
      logic tmp = out;
    endfunction
 
+   function static func_assign_expr;
+     input logic in;
+     logic tmp = in + 1;
+   endfunction
+
    iface iface();
    prog prog;
 
