@@ -505,6 +505,22 @@ class AssertVisitor final : public VNVisitor {
         } else if (nodep->displayType() == VDisplayType::DT_MONITOR) {
             nodep->displayType(VDisplayType::DT_DISPLAY);
             const auto fl = nodep->fileline();
+            AstNode* monExprsp = nodep->fmtp()->exprsp();
+            AstSenItem* monSenItemsp = nullptr;
+            while (monExprsp) {
+                if (AstNodeVarRef* varrefp = VN_CAST(monExprsp, NodeVarRef)) {
+                    AstSenItem* const senItemp
+                        = new AstSenItem(fl, VEdgeType::ET_CHANGED,
+                                         new AstVarRef{fl, varrefp->varp(), VAccess::READ});
+                    if (!monSenItemsp) {
+                        monSenItemsp = senItemp;
+                    } else {
+                        monSenItemsp->addNext(senItemp);
+                    }
+                }
+                monExprsp = monExprsp->nextp();
+            }
+            AstSenTree* const monSenTree = new AstSenTree{fl, monSenItemsp};
             const auto monNum = ++m_monitorNum;
             // Where $monitor was we do "__VmonitorNum = N;"
             const auto newsetp = new AstAssign{fl, newMonitorNumVarRefp(nodep, VAccess::WRITE),
@@ -520,7 +536,7 @@ class AssertVisitor final : public VNVisitor {
                 stmtsp};
             ifp->isBoundsCheck(true);  // To avoid LATCH warning
             ifp->branchPred(VBranchPred::BP_UNLIKELY);
-            AstNode* const newp = new AstAlways{fl, VAlwaysKwd::ALWAYS, nullptr, ifp};
+            AstNode* const newp = new AstAlways{fl, VAlwaysKwd::ALWAYS, monSenTree, ifp};
             m_modp->addStmtsp(newp);
         } else if (nodep->displayType() == VDisplayType::DT_STROBE) {
             nodep->displayType(VDisplayType::DT_DISPLAY);
