@@ -553,10 +553,12 @@ class WidthVisitor final : public VNVisitor {
             userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{vdtypep, PRELIM}.p());
             // Queue "element 0" is lhsp, so we need to swap arguments
-            const bool lhsIsValue = AstNode::computeCastable(adtypep->subDTypep(),
-                                                             nodep->lhsp()->dtypep(), nullptr).isAssignable();
-            const bool rhsIsValue = AstNode::computeCastable(adtypep->subDTypep(),
-                                                             nodep->rhsp()->dtypep(), nullptr).isAssignable();
+            const bool lhsIsValue
+                = AstNode::computeCastable(adtypep->subDTypep(), nodep->lhsp()->dtypep(), nullptr)
+                      .isAssignable();
+            const bool rhsIsValue
+                = AstNode::computeCastable(adtypep->subDTypep(), nodep->rhsp()->dtypep(), nullptr)
+                      .isAssignable();
             AstConsDynArray* const newp
                 = new AstConsDynArray{nodep->fileline(), rhsIsValue, nodep->rhsp()->unlinkFrBack(),
                                       lhsIsValue, nodep->lhsp()->unlinkFrBack()};
@@ -571,10 +573,12 @@ class WidthVisitor final : public VNVisitor {
             userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{vdtypep, PRELIM}.p());
             // Queue "element 0" is lhsp, so we need to swap arguments
-            const bool lhsIsValue = AstNode::computeCastable(adtypep->subDTypep(),
-                                                             nodep->lhsp()->dtypep(), nullptr).isAssignable();
-            const bool rhsIsValue = AstNode::computeCastable(adtypep->subDTypep(),
-                                                                nodep->rhsp()->dtypep(), nullptr).isAssignable();
+            const bool lhsIsValue
+                = AstNode::computeCastable(adtypep->subDTypep(), nodep->lhsp()->dtypep(), nullptr)
+                      .isAssignable();
+            const bool rhsIsValue
+                = AstNode::computeCastable(adtypep->subDTypep(), nodep->rhsp()->dtypep(), nullptr)
+                      .isAssignable();
             AstConsQueue* const newp
                 = new AstConsQueue{nodep->fileline(), rhsIsValue, nodep->rhsp()->unlinkFrBack(),
                                    lhsIsValue, nodep->lhsp()->unlinkFrBack()};
