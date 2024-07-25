@@ -360,8 +360,8 @@ bool DfgVertex::equals(const DfgVertex& that, EqualsCache& cache) const {
 
     const auto key = (this < &that) ? EqualsCache::key_type{this, &that}  //
                                     : EqualsCache::key_type{&that, this};
-    // Note: the recursive invocation can cause a re-hash of the cache which invalidates iterators
-    uint8_t result = cache[key];
+    // Note: the recursive invocation can cause a re-hash but that will not invalidate references
+    uint8_t& result = cache[key];
     if (!result) {
         result = 2;  // Assume equals
         auto thisPair = this->sourceEdges();
@@ -380,7 +380,6 @@ bool DfgVertex::equals(const DfgVertex& that, EqualsCache& cache) const {
                 break;
             }
         }
-        cache[key] = result;
     }
     return result >> 1;
 }
