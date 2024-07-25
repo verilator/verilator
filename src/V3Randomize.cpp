@@ -657,7 +657,10 @@ class CaptureVisitor final : public VNVisitor {
         if (mode(capMode) == CaptureMode::CAP_THIS) captureRefByThis(nodep, capMode);
     }
     void visit(AstNodeFTaskRef* nodep) override {
-        if (m_ignore.count(nodep)) return;
+        if (m_ignore.count(nodep)) {
+            iterateChildren(nodep);
+            return;
+        }
         m_ignore.emplace(nodep);
         UASSERT_OBJ(nodep->taskp(), nodep, "Task unlinked");
         // We assume that constraint targets are not referenced this way.
@@ -697,7 +700,7 @@ class CaptureVisitor final : public VNVisitor {
         m_ignore.emplace(varRefp);
     }
     void visit(AstMethodCall* nodep) override {
-        if (!isReferenceToInnerMember(nodep)) {
+        if (!isReferenceToInnerMember(nodep) || m_ignore.count(nodep)) {
             iterateChildren(nodep);
             return;
         }
