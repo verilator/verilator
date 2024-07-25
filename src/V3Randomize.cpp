@@ -457,11 +457,10 @@ public:
 };
 
 class ClassLookupHelper final {
-    const std::set<AstNodeModule*> m_visibleModules;
-    const std::vector<AstNodeModule*> m_symLookupOrder;
-    std::map<AstNode*, AstNodeModule*> m_classMap;
-
-    using inits_t = std::tuple<std::set<AstNodeModule*>, std::vector<AstNodeModule*>>;
+    const std::set<AstNodeModule*>
+        m_visibleModules;  // Modules directly reachale from our lookup point
+    std::map<AstNode*, AstNodeModule*>
+        m_classMap;  // Memoized mapping between nodes and modules that define them
 
     // BFS search
     template <typename Action>
@@ -481,28 +480,24 @@ class ClassLookupHelper final {
         }
     }
 
-    static inits_t init(AstClass* classp) {
+    static std::set<AstNodeModule*> initVisibleModules(AstClass* classp) {
         std::set<AstNodeModule*> visibleModules = {classp};
         std::vector<AstNodeModule*> symLookupOrder = {classp};
-        foreachSuperClass(classp, [&](AstClass* superclassp) {
-            visibleModules.emplace(superclassp);
-            symLookupOrder.push_back(superclassp);
-        });
-        return inits_t(visibleModules, symLookupOrder);
+        foreachSuperClass(classp,
+                          [&](AstClass* superclassp) { visibleModules.emplace(superclassp); });
+        return visibleModules;
     }
 
-    ClassLookupHelper(inits_t inits)
-        : m_visibleModules(std::get<0>(inits))
-        , m_symLookupOrder(std::get<1>(inits)) {}
-
 public:
-    bool moduleInClassHierarchy(AstNodeModule* modp) const { return m_visibleModules.count(modp); }
+    bool moduleInClassHierarchy(AstNodeModule* modp) const {
+        return m_visibleModules.count(modp) != 0;
+    }
 
     AstNodeModule* findDeclaringModule(AstNode* nodep, bool classHierarchyOnly = true) {
         auto it = m_classMap.find(nodep);
         if (it != m_classMap.end()) return it->second;
         for (AstNode* backp = nodep; backp; backp = backp->backp()) {
-            AstNodeModule* modp = VN_CAST(backp, NodeModule);
+            AstNodeModule* const modp = VN_CAST(backp, NodeModule);
             if (modp) {
                 m_classMap.emplace(nodep, modp);
                 if (classHierarchyOnly)
@@ -515,7 +510,7 @@ public:
     }
 
     ClassLookupHelper(AstClass* classp)
-        : ClassLookupHelper(init(classp)) {}
+        : m_visibleModules(initVisibleModules(classp)) {}
 };
 
 enum class CaptureMode : uint8_t {
@@ -600,12 +595,12 @@ class CaptureVisitor final : public VNVisitor {
     CaptureMode getVarRefCaptureMode(AstNodeVarRef* varRefp) {
         AstNodeModule* const modp = m_lookup.findDeclaringModule(varRefp->varp(), false);
 
-        bool callerIsClass = VN_IS(m_callerp, Class);
-        bool refIsXref = VN_IS(varRefp, VarXRef);
-        bool varIsFuncLocal = varRefp->varp()->isFuncLocal();
-        bool varHasAutomaticLifetime = varRefp->varp()->lifetime().isAutomatic();
-        bool varIsDeclaredInCaller = modp == m_callerp;
-        bool varIsFieldOfCaller = modp ? m_lookup.moduleInClassHierarchy(modp) : false;
+        const bool callerIsClass = VN_IS(m_callerp, Class);
+        const bool refIsXref = VN_IS(varRefp, VarXRef);
+        const bool varIsFuncLocal = varRefp->varp()->isFuncLocal();
+        const bool varHasAutomaticLifetime = varRefp->varp()->lifetime().isAutomatic();
+        const bool varIsDeclaredInCaller = modp == m_callerp;
+        const bool varIsFieldOfCaller = modp ? m_lookup.moduleInClassHierarchy(modp) : false;
 
         if (refIsXref) return CaptureMode::CAP_VALUE | CaptureMode::CAP_F_XREF;
         if (varIsFuncLocal && varHasAutomaticLifetime) return CaptureMode::CAP_VALUE;
@@ -693,20 +688,21 @@ class CaptureVisitor final : public VNVisitor {
             iterateChildren(nodep);
             return;
         }
-        AstVarRef* varRefp = new AstVarRef(nodep->fileline(), nodep->varp(), nodep->access());
+        AstVarRef* const varRefp
+            = new AstVarRef(nodep->fileline(), nodep->varp(), nodep->access());
         fixupClassOrPackage(nodep->varp(), varRefp);
         varRefp->user1(nodep->user1());
         nodep->replaceWith(varRefp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         m_ignore.emplace(varRefp);
-        return;
     }
     void visit(AstMethodCall* nodep) override {
         if (!isReferenceToInnerMember(nodep)) {
             iterateChildren(nodep);
             return;
         }
-        AstNodeExpr* pinsp = nodep->pinsp() ? nodep->pinsp()->unlinkFrBackWithNext() : nullptr;
+        AstNodeExpr* const pinsp
+            = nodep->pinsp() ? nodep->pinsp()->unlinkFrBackWithNext() : nullptr;
         AstNodeFTaskRef* taskRefp = nullptr;
         if (VN_IS(nodep->taskp(), Task))
             taskRefp = new AstTaskRef{nodep->fileline(), nodep->name(), pinsp};
@@ -720,7 +716,6 @@ class CaptureVisitor final : public VNVisitor {
         nodep->replaceWith(taskRefp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         m_ignore.emplace(taskRefp);
-        return;
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
@@ -1212,7 +1207,7 @@ class RandomizeVisitor final : public VNVisitor {
         }
 
         // Generate constraint setup code and a hardcoded call to the solver
-        AstNode* capturedTreep = withp->exprp()->unlinkFrBackWithNext();
+        AstNode* const capturedTreep = withp->exprp()->unlinkFrBackWithNext();
         randomizeFuncp->addStmtsp(capturedTreep);
         { ConstraintExprVisitor{m_memberMap, capturedTreep, randomizeFuncp, localGenp}; }
 
