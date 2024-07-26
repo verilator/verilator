@@ -4885,7 +4885,7 @@ class WidthVisitor final : public VNVisitor {
             } else if (AstBasicDType* const adtypep = VN_CAST(fromDtp, BasicDType)) {
                 if (!adtypep->isString() && !adtypep->isRanged()) {
                     argsp->v3error("Illegal 'foreach' loop on " << fromDtp->prettyTypeName()
-                                                              << " data type");
+                                                                << " data type");
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                     return;
                 }
@@ -4894,7 +4894,7 @@ class WidthVisitor final : public VNVisitor {
                 varp->dtypeFrom(adtypep->keyDTypep());
             } else {
                 argsp->v3error("Illegal 'foreach' loop on " << fromDtp->prettyTypeName()
-                                                          << " data type");
+                                                            << " data type");
                 VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                 return;
             }
