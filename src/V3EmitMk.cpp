@@ -295,12 +295,12 @@ public:
             // Return early if there's nothing to do.
             bool returnEarly = false;
             if (inputFiles.size() < MIN_FILES_COUNT) {
-                UINFO(0, "File concatenation skipped: Too few files ("
+                UINFO(4, "File concatenation skipped: Too few files ("
                              << inputFiles.size() << " < " << MIN_FILES_COUNT << ")" << endl);
                 returnEarly = true;
             }
             if (inputFiles.size() < (MIN_FILES_PER_BUCKET * totalBucketsNum)) {
-                UINFO(0, "File concatenation skipped: Too few files per bucket ("
+                UINFO(4, "File concatenation skipped: Too few files per bucket ("
                              << inputFiles.size() << " < " << MIN_FILES_PER_BUCKET << " - "
                              << totalBucketsNum << ")" << endl);
                 returnEarly = true;
@@ -379,12 +379,12 @@ public:
             // Check concatenation conditions again using more precise data
             bool returnEarly = false;
             if (concatenableFilesCount < MIN_FILES_COUNT) {
-                UINFO(0, "File concatenation skipped: Too few files ("
+                UINFO(4, "File concatenation skipped: Too few files ("
                              << concatenableFilesCount << " < " << MIN_FILES_COUNT << ")" << endl);
                 returnEarly = true;
             }
             if (concatenableFilesCount < (MIN_FILES_PER_BUCKET * totalBucketsNum)) {
-                UINFO(0, "File concatenation skipped: Too few files per bucket ("
+                UINFO(4, "File concatenation skipped: Too few files per bucket ("
                              << concatenableFilesCount << " < " << MIN_FILES_PER_BUCKET << " * "
                              << totalBucketsNum << ")" << endl);
                 returnEarly = true;
