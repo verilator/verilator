@@ -15,6 +15,7 @@ module t (/*AUTOARG*/);
       $error;
       $error("User elaboration-time error");
       $fatal(0, "User elaboration-time fatal");
+      $fatal;
    end
 
 endmodule

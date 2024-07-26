@@ -570,7 +570,7 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const VL_MT_STABLE {
     }
     if (isNull()) {
         if (VL_UNCOVERABLE(!isEqZero())) {
-            out << "-%E-null-not-zero";
+            out << "-%E-null-not-zero";  // LCOV_EXCL_LINE
         } else {
             out << " [null]";
         }

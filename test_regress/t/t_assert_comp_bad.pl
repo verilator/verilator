@@ -61,7 +61,7 @@ if (!-r "$root/.git") {
     extract(
         in => $Self->{golden_filename},
         out => "../docs/gen/ex_USERFATAL_msg.rst",
-        regexp => qr/USERFATAL/);
+        regexp => qr/USERFATAL:.* User/);
 }
 
 ok(1);
