@@ -4954,6 +4954,7 @@ class WidthVisitor final : public VNVisitor {
                     AstVar* const first_varp = new AstVar{
                         fl, VVarType::BLOCKTEMP, varp->name() + "__Vfirst", VFlagBitPacked{}, 1};
                     first_varp->usedLoopIdx(true);
+                    first_varp->lifetime(VLifetime::AUTOMATIC);
                     AstNodeExpr* const firstp = new AstMethodCall{
                         fl, fromp->cloneTreePure(false), "first",
                         new AstArg{fl, "", new AstVarRef{fl, varp, VAccess::READWRITE}}};
@@ -4976,7 +4977,7 @@ class WidthVisitor final : public VNVisitor {
                     stmtsp->addNext(first_varp);
                     stmtsp->addNext(
                         new AstIf{fl, new AstNeq{fl, new AstConst{fl, 0}, firstp}, ifbodyp});
-                    loopp = new AstBegin{nodep->fileline(), "", stmtsp, false, true};
+                    loopp = stmtsp;
                     // Prep for next
                     fromDtp = fromDtp->subDTypep();
                 } else {
@@ -5036,12 +5037,10 @@ class WidthVisitor final : public VNVisitor {
         FileLine* const fl = varp->fileline();
         auto* const whilep = new AstWhile{
             fl, condp, bodysp, new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, incp}};
-        varp->lifetime(VLifetime::AUTOMATIC);
         AstNode* const stmtsp = varp;  // New statements for under new Begin
         stmtsp->addNext(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, leftp});
         stmtsp->addNext(whilep);
-        AstNode* const newp = new AstBegin{nodep->fileline(), "", stmtsp, false, true};
-        return newp;
+        return stmtsp;
     }
 
     void visit(AstNodeAssign* nodep) override {
