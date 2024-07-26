@@ -192,9 +192,10 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
       fatal "Unknown test: $TESTS"
       ;;
   esac
+
   # 22.04: ccache -s -v
   ccache -s
-  fi
+
 else
   ##############################################################################
   # Unknown build stage
