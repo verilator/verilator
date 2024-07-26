@@ -33,12 +33,12 @@ public:
 
     struct FileOrConcatenatedFilesList final {
         std::string m_fileName;
-        std::vector<std::string> m_concatenatedFileNames{};
+        std::vector<std::string> m_concatenatedFilenames{};
 
         // Concatenating file score for debugTestConcatenation
         std::int64_t m_dbgScore = 0;
 
-        bool isConcatenatingFile() const { return !m_concatenatedFileNames.empty(); }
+        bool isConcatenatingFile() const { return !m_concatenatedFilenames.empty(); }
     };
 
     struct FilenameWithScore final {
@@ -215,7 +215,7 @@ public:
                                                << entry.m_fileName
                                                << "  (concatenating file; total score: "
                                                << entry.m_dbgScore << ")" << endl);
-                for (const auto& f : entry.m_concatenatedFileNames) {
+                for (const auto& f : entry.m_concatenatedFilenames) {
                     DEBUG_LOG_OUTPUT_FILE_LIST_MSG(logMsgPrefixListEntry(1) << f << endl);
                 }
             } else {
@@ -234,7 +234,7 @@ public:
         auto ofIt = outputFiles.begin();
         while (ifIt != inputFiles.end() && ofIt != outputFiles.end()) {
             if (ofIt->isConcatenatingFile()) {
-                for (const auto& ocf : ofIt->m_concatenatedFileNames) {
+                for (const auto& ocf : ofIt->m_concatenatedFilenames) {
                     UASSERT(ifIt != inputFiles.end(),
                             "More output files than input files. First extra file: " << ocf);
                     UASSERT(ifIt->m_filename == ocf,
@@ -509,19 +509,19 @@ public:
                     if (bucketScore == 0 || fileIt->m_score == 0 || diffNow > diffIfAdded) {
                         // Bucket score will be better with the file in it.
                         bucketScore += fileIt->m_score;
-                        bucket.m_concatenatedFileNames.push_back(std::move(fileIt->m_filename));
+                        bucket.m_concatenatedFilenames.push_back(std::move(fileIt->m_filename));
                     } else {
                         // Best possible bucket score reached, process next bucket.
                         break;
                     }
                 }
 
-                if (bucket.m_concatenatedFileNames.size() == 1) {
+                if (bucket.m_concatenatedFilenames.size() == 1) {
                     // Unwrap the bucket if it contains only one file.
                     FileOrConcatenatedFilesList file;
-                    file.m_fileName = bucket.m_concatenatedFileNames.front();
+                    file.m_fileName = bucket.m_concatenatedFilenames.front();
                     outputFiles.push_back(std::move(file));
-                } else if (bucket.m_concatenatedFileNames.size() > 1) {
+                } else if (bucket.m_concatenatedFilenames.size() > 1) {
                     bucket.m_dbgScore = bucketScore;
                     outputFiles.push_back(std::move(bucket));
                 }
@@ -531,7 +531,7 @@ public:
             for (; fileIt != list.m_files.end(); ++fileIt) {
                 // The Work List is out of buckets, but some files were left.
                 // Add them to the last bucket.
-                outputFiles.back().m_concatenatedFileNames.push_back(fileIt->m_filename);
+                outputFiles.back().m_concatenatedFilenames.push_back(fileIt->m_filename);
             }
         }
 
@@ -546,7 +546,7 @@ public:
 
         V3OutCFile concatenatingFile{v3Global.opt.makeDir() + "/" + entry.m_fileName + ".cpp"};
         concatenatingFile.putsHeader();
-        for (const auto& file : entry.m_concatenatedFileNames) {
+        for (const auto& file : entry.m_concatenatedFilenames) {
             concatenatingFile.puts("#include \"" + file + ".cpp\"\n");
         }
     }
@@ -995,9 +995,7 @@ void V3EmitMk::debugTestConcatenation(const char* inputFile) {
     EmitMk::FilenameWithScore current{};
     while ((*ifp) >> current.m_score >> std::ws) {
         char ch;
-        while (ch = ifp->get(), ch && !std::isspace(ch)) {
-            current.m_filename.push_back(ch);
-        }
+        while (ch = ifp->get(), ch && !std::isspace(ch)) { current.m_filename.push_back(ch); }
         totalScore += current.m_score;
         inputList.push_back(std::move(current));
         current = EmitMk::FilenameWithScore{};
