@@ -18,6 +18,7 @@
 
 #include "V3EmitC.h"
 #include "V3EmitCFunc.h"
+#include "V3File.h"
 #include "V3ThreadPool.h"
 #include "V3UniqueNames.h"
 
@@ -173,10 +174,10 @@ class EmitCImp final : EmitCFunc {
             // Unfortunately we have some lint checks here, so we can't just skip processing.
             // We should move them to a different stage.
             const string filename = VL_DEV_NULL;
-            auto* file = createCFile(filename, /* slow: */ m_slow, /* source: */ true);
+            AstCFile* const file = createCFile(filename, /* slow: */ m_slow, /* source: */ true);
             m_cfilesr.push_back(file);
-            auto* ofilep = new V3OutCFile{filename};
-            auto* afilep = file;
+            V3OutCFile* const ofilep = new V3OutCFile{filename};
+            AstCFile* const afilep = file;
             setOutputFile(ofilep, afilep);
         } else {
             string filename = v3Global.opt.makeDir() + "/" + prefixNameProtect(m_fileModp);
@@ -186,11 +187,11 @@ class EmitCImp final : EmitCFunc {
             }
             if (m_slow) filename += "__Slow";
             filename += ".cpp";
-            auto* file = createCFile(filename, /* slow: */ m_slow, /* source: */ true);
+            AstCFile* const file = createCFile(filename, /* slow: */ m_slow, /* source: */ true);
             m_cfilesr.push_back(file);
-            auto* ofilep
+            V3OutCFile* const ofilep
                 = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
-            auto* afilep = file;
+            AstCFile* const afilep = file;
             setOutputFile(ofilep, afilep);
         }
 
@@ -628,12 +629,8 @@ class EmitCTrace final : EmitCFunc {
         cfilep->support(true);
         m_cfilesr.push_back(cfilep);
 
-        V3OutCFile* ofilep = nullptr;
-        if (optSystemC()) {
-            ofilep = new V3OutScFile{filename};
-        } else {
-            ofilep = new V3OutCFile{filename};
-        }
+        V3OutCFile* const ofilep
+            = optSystemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
         setOutputFile(ofilep, cfilep);
 
         putsHeader();

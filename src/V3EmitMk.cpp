@@ -88,7 +88,7 @@ public:
         constexpr int MAX_BAR_LENGTH = 80;
         constexpr int MAX_INTERVALS_NUM = 60;
 
-        const auto topScore = sortedScores.back();
+        const int64_t topScore = sortedScores.back();
         UINFO(LOG_LEVEL, "Top score: " << topScore << endl);
         const int maxScoreWidth = topScore < 10       ? 1
                                   : topScore < 100    ? 2
@@ -97,8 +97,9 @@ public:
                                   : topScore < 100000 ? 5
                                                       : 7;
 
-        const int intervalsNum = std::min<int>(topScore + 1, MAX_INTERVALS_NUM);
-        const double intervalWidth = double(topScore + 1) / intervalsNum;
+        const int64_t intervalsNum = std::min<int64_t>(topScore + 1, MAX_INTERVALS_NUM);
+        const double intervalWidth
+            = static_cast<double>(topScore + 1) / static_cast<int>(intervalsNum);
 
         struct Interval final {
             int64_t m_lowerBound = 0;
@@ -164,8 +165,8 @@ public:
             } else {
                 // Log only first and last file
                 if (list.m_files.size() > 3) {
-                    const auto& first = list.m_files.front();
-                    const auto& last = list.m_files.back();
+                    const FilenameWithScore& first = list.m_files.front();
+                    const FilenameWithScore& last = list.m_files.back();
                     UINFO(5, logMsgPrefixListEntry(1, 1)
                                  << first.m_filename << "  ("
                                  << "score: " << first.m_score << ")" << endl);
@@ -341,7 +342,7 @@ public:
                 workLists.back().m_isConcatenable = fileIsConcatenable;
             }
             // Add inputFile to the last list
-            auto& list = workLists.back();
+            WorkList& list = workLists.back();
             list.m_files.push_back({inputFile.m_filename, inputFile.m_score});
             list.m_totalScore += inputFile.m_score;
         }
@@ -502,8 +503,8 @@ public:
                 ++concatenatedFileId;
 
                 for (; fileIt != list.m_files.end(); ++fileIt) {
-                    auto diffNow = std::abs(listIdealBucketScore - bucketScore);
-                    auto diffIfAdded
+                    int64_t diffNow = std::abs(listIdealBucketScore - bucketScore);
+                    int64_t diffIfAdded
                         = std::abs(listIdealBucketScore - bucketScore - fileIt->m_score);
                     if (bucketScore == 0 || fileIt->m_score == 0 || diffNow > diffIfAdded) {
                         // Bucket score will be better with the file in it.
@@ -567,8 +568,8 @@ public:
                  nodep = VN_AS(nodep->nextp(), NodeFile)) {
                 const AstCFile* const cfilep = VN_CAST(nodep, CFile);
                 if (cfilep && cfilep->source() && cfilep->support() == false) {
-                    auto& files = cfilep->slow() ? slowFiles : fastFiles;
-                    auto& totalScore = cfilep->slow() ? slowTotalScore : fastTotalScore;
+                    std::vector<FilenameWithScore>& files = cfilep->slow() ? slowFiles : fastFiles;
+                    int64_t& totalScore = cfilep->slow() ? slowTotalScore : fastTotalScore;
 
                     FilenameWithScore f;
                     f.m_filename = V3Os::filenameNonDirExt(cfilep->name());
@@ -663,7 +664,8 @@ public:
                     }
                 } else if (support == 2 && slow) {
                 } else if ((support == 0) && (v3Global.opt.outputGroups() > 0)) {
-                    const auto& list = slow ? vmClassesSlowList : vmClassesFastList;
+                    const std::vector<FileOrConcatenatedFilesList>& list
+                        = slow ? vmClassesSlowList : vmClassesFastList;
                     for (const auto& entry : list) {
                         if (entry.isConcatenatingFile()) { emitConcatenatingFile(entry); }
                         putMakeClassEntry(of, entry.m_fileName);

@@ -403,14 +403,8 @@ public:
 void EmitCSyms::emitSymHdr() {
     UINFO(6, __FUNCTION__ << ": " << endl);
     const string filename = v3Global.opt.makeDir() + "/" + symClassName() + ".h";
-    auto* cfilep = newCFile(filename, true /*slow*/, false /*source*/);
-
-    V3OutCFile* ofilep = nullptr;
-    if (v3Global.opt.systemC()) {
-        ofilep = new V3OutScFile{filename};
-    } else {
-        ofilep = new V3OutCFile{filename};
-    }
+    AstCFile* const cfilep = newCFile(filename, true /*slow*/, false /*source*/);
+    V3OutCFile* const ofilep = optSystemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
     setOutputFile(ofilep, cfilep);
 
     ofp()->putsHeader();
@@ -643,12 +637,7 @@ void EmitCSyms::checkSplit(bool usesVfinal) {
     m_usesVfinal[m_funcNum] = usesVfinal;
     closeSplit();
 
-    V3OutCFile* ofilep = nullptr;
-    if (v3Global.opt.systemC()) {
-        ofilep = new V3OutScFile{filename};
-    } else {
-        ofilep = new V3OutCFile{filename};
-    }
+    V3OutCFile* const ofilep = optSystemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
     setOutputFile(ofilep, cfilep);
 
     increaseComplexityScore(1);
@@ -733,12 +722,7 @@ void EmitCSyms::emitSymImp() {
     AstCFile* const cfilep = newCFile(filename, true /*slow*/, true /*source*/);
     cfilep->support(true);
 
-    V3OutCFile* ofilep = nullptr;
-    if (v3Global.opt.systemC()) {
-        ofilep = new V3OutScFile{filename};
-    } else {
-        ofilep = new V3OutCFile{filename};
-    }
+    V3OutCFile* const ofilep = optSystemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
     setOutputFile(ofilep, cfilep);
 
     m_ofpBase = ofp();

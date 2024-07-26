@@ -30,6 +30,9 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Const pool emitter
 
 class EmitCConstPool final : public EmitCConstInit {
+    // TYPES
+    using OutCFilePair = std::pair<V3OutCFile*, AstCFile*>;
+
     // MEMBERS
     uint32_t m_outFileCount = 0;
     int m_outFileSize = 0;
@@ -38,10 +41,10 @@ class EmitCConstPool final : public EmitCConstInit {
 
     // METHODS
 
-    std::pair<V3OutCFile*, AstCFile*> newOutCFile() const {
+    OutCFilePair newOutCFile() const {
         const string fileName = v3Global.opt.makeDir() + "/" + topClassName() + "__ConstPool_"
                                 + cvtToStr(m_outFileCount) + ".cpp";
-        auto* const cfilep = newCFile(fileName, /* slow: */ true, /* source: */ true);
+        AstCFile* const cfilep = newCFile(fileName, /* slow: */ true, /* source: */ true);
         V3OutCFile* const ofp = new V3OutCFile{fileName};
         ofp->putsHeader();
         ofp->puts("// DESCRIPTION: Verilator output: Constant pool\n");
@@ -60,7 +63,7 @@ class EmitCConstPool final : public EmitCConstInit {
         // Open next file
         m_outFileSize = 0;
         ++m_outFileCount;
-        auto outFileAndNodePair = newOutCFile();
+        const OutCFilePair outFileAndNodePair = newOutCFile();
         setOutputFile(outFileAndNodePair.first, outFileAndNodePair.second);
     }
 
@@ -76,7 +79,7 @@ class EmitCConstPool final : public EmitCConstInit {
             return ap->name() < bp->name();
         });
 
-        auto outFileAndNodePair = newOutCFile();
+        const OutCFilePair outFileAndNodePair = newOutCFile();
         setOutputFile(outFileAndNodePair.first, outFileAndNodePair.second);
 
         for (const AstVar* varp : varps) {
