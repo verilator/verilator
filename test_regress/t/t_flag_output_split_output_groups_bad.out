@@ -1,4 +1,4 @@
-%Error-UNSUPPORTED: Unsupported: Using --output-split (= 20000000) with --output-concatenation-groups is not supported.
+%Error-UNSUPPORTED: Unsupported: Using --output-split (= 20000000) with --output-groups is not supported.
                     ... Suggest remove --output-split.
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to
