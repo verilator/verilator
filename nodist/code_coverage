@@ -180,7 +180,7 @@ def test():
     if Args.stage_enabled[18]:
         ci_fold_start("upload")
         print("Stage 18: Upload")
-        cmd = "bash <(cat ci/coverage-upload.sh) -f " + cc_dir + "/app_total.info"
+        cmd = "codecov -v do-upload --disable-search -Z -f " + cc_dir + "/app_total.info"
         print("print: Not running: export CODECOV_TOKEN=<hidden>")
         print("print: Not running: " + cmd)
         ci_fold_end()

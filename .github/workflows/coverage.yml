@@ -102,6 +102,6 @@ jobs:
       with:
         fail_ci_if_error: true
         disable_search: true
-        files: ./nodist/obj_dir/coverage/app_total.info
+        files: ${{ github.workspace }}/nodist/obj_dir/coverage/app_total.info
         token: ${{ secrets.CODECOV_TOKEN }}
         verbose: true
