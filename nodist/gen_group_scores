@@ -8,7 +8,7 @@
 #
 # Usage Example:
 #
-#   ./nodist/gen_scores_list_for_concatenation_test \
+#   ./nodist/gen_group_scores \
 #        200x15-100 2x999 16x50 2x999 100x50-150 500 4-33 8x0-999 0-7 \
 #        > test_files_list.txt
 #   ./bin/verilator --debugi-V3EmitMk 6 --output-groups 10 \
