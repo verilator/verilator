@@ -405,10 +405,10 @@ detailed descriptions of these arguments.
      -O3                        High-performance optimizations
      -O<optimization-letter>    Selectable optimizations
      -o <executable>            Name of final executable
+    --output-groups <value>     Group output files
     --output-split <statements>          Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split model functions
     --output-split-ctrace <statements>   Split tracing functions
-    --output-groups <value>     Group output files
      -P                         Disable line numbers and blanks with -E
     --pins-bv <bits>            Specify types for top-level ports
     --pins-inout-enables        Specify that __en and __out signals be created for inouts
