@@ -42,7 +42,7 @@ private:
     // MAIN METHOD
     void emitInt() {
         const string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__main.cpp";
-        auto* cfilep = newCFile(filename, false /*slow*/, true /*source*/);
+        AstCFile* const cfilep = newCFile(filename, false /*slow*/, true /*source*/);
         V3OutCFile cf{filename};
         setOutputFile(&cf, cfilep);
 
