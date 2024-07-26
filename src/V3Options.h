@@ -720,6 +720,7 @@ public:
     static string getenvMAKE();
     static string getenvMAKEFLAGS();
     static string getenvPERL();
+    static string getenvPYTHON3();
     static string getenvSYSTEMC();
     static string getenvSYSTEMC_ARCH();
     static string getenvSYSTEMC_INCLUDE();

@@ -45,6 +45,7 @@ Verilator 5.027 devel
 * Fix elaborating foreach loops (#5285). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Fix initializing static array in dynamic arrays and queues (#5287). [Baruch Sterin]
 * Fix randomizing current object with `rand` class instance member (#5292). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix Python3 path discovery in make flows to avoid mixing system and user python interpreters (#5307) [Markus Krause]
 
 
 Verilator 5.026 2024-06-15
