@@ -680,7 +680,7 @@ class EmitCModel final : public EmitCFunc {
             iterateConst(funcp);
         }
 
-        if (ofp()) { closeOutputFile(); }
+        if (ofp()) closeOutputFile();
     }
 
     void main(AstNodeModule* modp) {
