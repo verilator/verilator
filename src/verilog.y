@@ -3646,7 +3646,8 @@ statement_item<nodep>:          // IEEE: statement_item
         |       statementFor                            { $$ = $1; }
         |       yDO stmtBlock yWHILE '(' expr ')' ';'   { $$ = new AstDoWhile{$1, $5, $2}; }
         //                      // IEEE says array_identifier here, but dotted accepted in VMM and 1800-2009
-        |       yFOREACH '(' idClassSelForeach ')' stmtBlock    { $$ = new AstForeach{$1, $3, $5}; }
+        |       yFOREACH '(' idClassSelForeach ')' stmtBlock
+                        { $$ = new AstBegin{$1, "", new AstForeach{$1, $3, $5}, false, true}; }
         //
         //                      // IEEE: jump_statement
         |       yRETURN ';'                             { $$ = new AstReturn{$1}; }
