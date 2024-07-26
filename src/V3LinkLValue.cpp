@@ -110,7 +110,7 @@ class LinkLValueVisitor final : public VNVisitor {
                 nodep->rhsp()->v3warn(E_UNSUPPORTED,
                                       "Static variable declaration assignment\n"
                                           << nodep->rhsp()->warnMore()
-                                          << "with I/O variable inside a function/task");
+                                          << "is dependent on function/task I/O variable");
             }
         }
     }
