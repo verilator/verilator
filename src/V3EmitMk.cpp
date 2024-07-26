@@ -985,9 +985,7 @@ void V3EmitMk::debugTestConcatenation(const char* inputFile) {
     EmitMk::FilenameWithScore current{};
     while ((*ifp) >> current.m_score >> std::ws) {
         char ch;
-        while (ch = ifp->get(), ch && !std::isspace(ch)) {
-            current.m_filename.push_back(ch);
-        }
+        while (ch = ifp->get(), ch && !std::isspace(ch)) { current.m_filename.push_back(ch); }
         totalScore += current.m_score;
         inputList.push_back(std::move(current));
         current = EmitMk::FilenameWithScore{};
