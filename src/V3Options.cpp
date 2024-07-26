@@ -637,6 +637,8 @@ string V3Options::getenvBuiltins(const string& var) {
         return getenvMAKE();
     } else if (var == "PERL") {
         return getenvPERL();
+    } else if (var == "PYTHON3") {
+        return getenvPYTHON3();
     } else if (var == "SYSTEMC") {
         return getenvSYSTEMC();
     } else if (var == "SYSTEMC_ARCH") {
@@ -664,6 +666,10 @@ string V3Options::getenvMAKEFLAGS() {  //
 
 string V3Options::getenvPERL() {  //
     return V3Os::filenameCleanup(V3Os::getenvStr("PERL", "perl"));
+}
+
+string V3Options::getenvPYTHON3() {  //
+    return V3Os::filenameCleanup(V3Os::getenvStr("PYTHON3", "python3"));
 }
 
 string V3Options::getenvSYSTEMC() {
@@ -1955,6 +1961,7 @@ void V3Options::showVersion(bool verbose) {
     cout << "Environment:\n";
     cout << "    MAKE               = " << V3Os::getenvStr("MAKE", "") << "\n";
     cout << "    PERL               = " << V3Os::getenvStr("PERL", "") << "\n";
+    cout << "    PYTHON3            = " << V3Os::getenvStr("PYTHON3", "") << "\n";
     cout << "    SYSTEMC            = " << V3Os::getenvStr("SYSTEMC", "") << "\n";
     cout << "    SYSTEMC_ARCH       = " << V3Os::getenvStr("SYSTEMC_ARCH", "") << "\n";
     cout << "    SYSTEMC_INCLUDE    = " << V3Os::getenvStr("SYSTEMC_INCLUDE", "") << "\n";
