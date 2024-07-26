@@ -50,9 +50,46 @@ program prog;
    endtask
 endprogram
 
-module mod(input in, input clk);
+module no_warn#(PARAM = 1)(input in, input clk);
+  typedef enum {A, B} enum_t;
+
   // Do not warn on variables under modules.
   logic tmp = in;
+
+  // Do not warn on assignment with module var.
+  function static func;
+    static logic func_var = tmp;
+  endfunction
+
+  // Do not warn on constant assignments.
+  function static func_param;
+    static logic func_var = PARAM;
+    static logic func_enum = A;
+  endfunction
+
+  // Do not warn on non-IO assignments.
+  function static func_local;
+    automatic logic loc;
+    static logic func_var = loc;
+  endfunction
+
+   // Do not warn on assignment referencing module I/O.
+   function static func_module_input;
+     logic tmp = in;
+   endfunction
+
+   // Do not warn on automatic assignment.
+   function automatic func_auto;
+     input logic in;
+     logic tmp = in;
+   endfunction
+
+   // Do not warn on assignment separate from declaration.
+   function static func_decl_and_assign;
+     input logic in;
+     logic tmp;
+     tmp = in;
+   endfunction
 
   // Do not warn on variables under blocks.
   initial begin
@@ -75,22 +112,9 @@ module t(input clk);
      logic tmp = in;
    endtask
 
-   function automatic func_auto;
-     input logic in;
-     // Do not warn on automatic assignment.
-     logic tmp = in;
-   endfunction
-
    function automatic func_auto_with_static;
      input logic in;
      static logic tmp = in;
-   endfunction
-
-   function static func_decl_and_assign;
-     input logic in;
-     logic tmp;
-     // Do not warn on assignment separate from declaration.
-     tmp = in;
    endfunction
 
    function static func_assign_out;
@@ -112,7 +136,7 @@ module t(input clk);
    prog prog;
 
    logic in;
-   mod mod(.in(in), .clk(clk));
+   no_warn no_warn(.in(in), .clk(clk));
 
    initial begin
       $write("*-* All Finished *-*\n");

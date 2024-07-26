@@ -1,23 +1,23 @@
-%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:70:18: Static variable declaration assignment
-                                                          : with I/O variable inside a function/task
-   70 |      logic tmp = in;
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:107:18: Static variable declaration assignment
+                                                           : with I/O variable inside a function/task
+  107 |      logic tmp = in;
       |                  ^~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:75:18: Static variable declaration assignment
-                                                          : with I/O variable inside a function/task
-   75 |      logic tmp = in;
-      |                  ^~
-%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:86:25: Static variable declaration assignment
-                                                          : with I/O variable inside a function/task
-   86 |      static logic tmp = in;
-      |                         ^~
-%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:98:18: Static variable declaration assignment
-                                                          : with I/O variable inside a function/task
-   98 |      logic tmp = out;
-      |                  ^~~
-%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:103:21: Static variable declaration assignment
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:112:18: Static variable declaration assignment
                                                            : with I/O variable inside a function/task
-  103 |      logic tmp = in + 1;
+  112 |      logic tmp = in;
+      |                  ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:117:25: Static variable declaration assignment
+                                                           : with I/O variable inside a function/task
+  117 |      static logic tmp = in;
+      |                         ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:122:18: Static variable declaration assignment
+                                                           : with I/O variable inside a function/task
+  122 |      logic tmp = out;
+      |                  ^~~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:127:21: Static variable declaration assignment
+                                                           : with I/O variable inside a function/task
+  127 |      logic tmp = in + 1;
       |                     ^
 %Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:9:15: Static variable declaration assignment
                                                          : with I/O variable inside a function/task
