@@ -116,7 +116,7 @@ public:
 
         for (const auto score : sortedScores) {
             const int ivIdx = int((score) / intervalWidth);
-            intervals[ivIdx].m_size += 1;
+            ++intervals[ivIdx].m_size;
         }
 
         int topIntervalSize = 0;
