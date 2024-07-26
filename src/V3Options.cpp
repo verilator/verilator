@@ -916,7 +916,7 @@ void V3Options::notify() VL_MT_DISABLED {
     UASSERT(!(useTraceParallel() && useTraceOffload()),
             "Cannot use both parallel and offloaded tracing");
 
-    if (m_outputConcatenationGroups > 0) {
+    if (m_outputGroups > 0) {
         const std::pair<int&, std::string> valueNamePairs[] = {
             {m_outputSplit, "--output-split"},
             {m_outputSplitCFuncs, "--output-split-cfuncs"},
@@ -927,7 +927,7 @@ void V3Options::notify() VL_MT_DISABLED {
                 cmdfl->v3warn(E_UNSUPPORTED,
                               "Unsupported: Using " + pair.second
                                   + " (= " + std::to_string(pair.first) + ")"
-                                  + " with --output-concatenation-groups is not supported.\n"  //
+                                  + " with --output-groups is not supported.\n"  //
                                   + cmdfl->warnMore() + "... Suggest remove " + pair.second + ".");
             }
             pair.first = std::numeric_limits<int>::max();
@@ -1432,11 +1432,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             fl->v3error("--output-split-ctrace must be >= 0: " << valp);
         }
     });
-    DECL_OPTION("-output-concatenation-groups", CbVal, [this, fl](const char* valp) {
-        m_outputConcatenationGroups = std::atoi(valp);
-        if (m_outputConcatenationGroups < 0) {
-            fl->v3error("--output-concatenation-groups must be >= 0: " << valp);
-        }
+    DECL_OPTION("-output-groups", CbVal, [this, fl](const char* valp) {
+        m_outputGroups = std::atoi(valp);
+        if (m_outputGroups < 0) { fl->v3error("--output-groups must be >= 0: " << valp); }
     });
 
     DECL_OPTION("-P", Set, &m_preprocNoLine);
