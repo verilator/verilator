@@ -41,7 +41,7 @@ public:
         bool isConcatenatingFile() const { return !m_concatenatedFileNames.empty(); }
     };
 
-    struct FileNameWithScore final {
+    struct FilenameWithScore final {
         std::string m_filename;
         std::int64_t m_score;
     };
@@ -49,7 +49,7 @@ public:
     // Data of a single work unit used in `singleConcatenatedFilesList()`.
     struct WorkList final {
         std::int64_t m_totalScore = 0;
-        std::vector<FileNameWithScore> m_files{};
+        std::vector<FilenameWithScore> m_files{};
         // Number of buckets assigned for this list. Used only in concatenable lists.
         int m_bucketsNum = 0;
         // Indicated whether files on this list can be concatenated.
@@ -227,7 +227,7 @@ public:
     }
 
     static void
-    checkInputAndOutputListsEquality(const std::vector<FileNameWithScore>& inputFiles,
+    checkInputAndOutputListsEquality(const std::vector<FilenameWithScore>& inputFiles,
                                      const std::vector<FileOrConcatenatedFilesList>& outputFiles) {
         auto ifIt = inputFiles.begin();
         auto ofIt = outputFiles.begin();
@@ -255,7 +255,7 @@ public:
     }
 
     static std::vector<FileOrConcatenatedFilesList>
-    singleConcatenatedFilesList(std::vector<FileNameWithScore> inputFiles, std::int64_t totalScore,
+    singleConcatenatedFilesList(std::vector<FilenameWithScore> inputFiles, std::int64_t totalScore,
                                 std::string concatenatingFilePrefix) {
         UINFO(4, __FUNCTION__ << ":" << endl);
         UINFO(5, "Number of input files: " << inputFiles.size() << endl);
@@ -264,7 +264,7 @@ public:
 
         // Called when the concatenation is aborted
         static const auto convertInputFilesToOutputFiles
-            = [](std::vector<FileNameWithScore> inputFiles) {
+            = [](std::vector<FilenameWithScore> inputFiles) {
                   std::vector<FileOrConcatenatedFilesList> outputFiles;
                   outputFiles.reserve(inputFiles.size());
                   for (auto& file : inputFiles) {
@@ -313,7 +313,7 @@ public:
         std::vector<std::int64_t> sortedScores;
         sortedScores.reserve(inputFiles.size());
         std::transform(inputFiles.begin(), inputFiles.end(), std::back_inserter(sortedScores),
-                       [](const FileNameWithScore& inputFile) { return inputFile.m_score; });
+                       [](const FilenameWithScore& inputFile) { return inputFile.m_score; });
         std::sort(sortedScores.begin(), sortedScores.end());
 
         debugLogScoreHistogram(sortedScores);
@@ -558,8 +558,8 @@ public:
         std::vector<FileOrConcatenatedFilesList> vmClassesSlowList{};
         std::vector<FileOrConcatenatedFilesList> vmClassesFastList{};
         if (v3Global.opt.outputGroups() > 0) {
-            std::vector<FileNameWithScore> slowFiles{};
-            std::vector<FileNameWithScore> fastFiles{};
+            std::vector<FilenameWithScore> slowFiles{};
+            std::vector<FilenameWithScore> fastFiles{};
             std::int64_t slowTotalScore = 0;
             std::int64_t fastTotalScore = 0;
 
@@ -570,7 +570,7 @@ public:
                     auto& files = cfilep->slow() ? slowFiles : fastFiles;
                     auto& totalScore = cfilep->slow() ? slowTotalScore : fastTotalScore;
 
-                    FileNameWithScore f;
+                    FilenameWithScore f;
                     f.m_filename = V3Os::filenameNonDirExt(cfilep->name());
                     f.m_score = cfilep->complexityScore();
 
@@ -987,10 +987,10 @@ public:
 
 void V3EmitMk::debugTestConcatenation(const char* inputFile) {
     const std::unique_ptr<std::ifstream> ifp{V3File::new_ifstream_nodepend(inputFile)};
-    std::vector<EmitMk::FileNameWithScore> inputList;
+    std::vector<EmitMk::FilenameWithScore> inputList;
     std::int64_t totalScore = 0;
 
-    EmitMk::FileNameWithScore current{};
+    EmitMk::FilenameWithScore current{};
     while ((*ifp) >> current.m_score >> std::ws) {
         char ch;
         while (ch = ifp->get(), ch && ch != ' ' && ch != '\t' && ch != '\n' && ch != '\r') {
@@ -998,7 +998,7 @@ void V3EmitMk::debugTestConcatenation(const char* inputFile) {
         }
         totalScore += current.m_score;
         inputList.push_back(std::move(current));
-        current = EmitMk::FileNameWithScore{};
+        current = EmitMk::FilenameWithScore{};
     }
 
     const std::vector<EmitMk::FileOrConcatenatedFilesList> list
