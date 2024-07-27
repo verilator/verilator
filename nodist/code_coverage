@@ -180,7 +180,13 @@ def test():
     if Args.stage_enabled[18]:
         ci_fold_start("upload")
         print("Stage 18: Upload")
-        cmd = "codecov -v do-upload --disable-search -Z -f " + cc_dir + "/app_total.info"
+        # curl -Os https://cli.codecov.io/latest/linux/codecov ; sudo chmod +x codecov
+        # --disable-search does not seem to work, so we use a temp directory
+        upload_dir = "nodist/obj_dir/upload"
+        os.makedirs(upload_dir, exist_ok=True)
+        cmd = ("( cd " + upload_dir +
+               " && ../../../ci/codecov -v do-upload --fail-on-error" +
+               " -f ../../../" + cc_dir + "/app_total.info )")
         print("print: Not running: export CODECOV_TOKEN=<hidden>")
         print("print: Not running: " + cmd)
         ci_fold_end()
@@ -364,12 +370,13 @@ parser.add_argument('--scenarios',
                     help='pass test scenarios onto driver.pl test harness')
 parser.add_argument(
     '--stages',
+    '--stage',
     action='store',
     help='runs a specific stage or range of stages (see the script)')
 parser.add_argument(
+    '--tests',
     '--test',
     action='append',
-    dest='tests',
     default=[],
     help=
     'Instead of normal regressions, run the specified test(s), may be used multiple times'

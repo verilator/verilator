@@ -26,7 +26,7 @@ our @Exempt_Files_List = qw(
     README.rst
     ci/ci-win-compile.ps1
     ci/ci-win-test.ps1
-    ci/coverage-upload.sh
+    ci/codecov
     docs/CONTRIBUTING.rst
     docs/CONTRIBUTORS
     docs/README.rst
