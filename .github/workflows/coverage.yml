@@ -100,4 +100,4 @@ jobs:
     - name: Upload coverage data to Codecov
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      run: ( cd nodist/obj_dir/upload && ../../../ci/codecov -v do-upload --fail-on-error -f ../../../nodist/obj_dir/coverage/app_total.info )
+      run: ( cd nodist/obj_dir/upload && ../../../ci/codecov -v do-upload -Z --sha ${{ github.sha }} -f ../../../nodist/obj_dir/coverage/app_total.info )
