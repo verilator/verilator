@@ -51,10 +51,10 @@ double DeltaCpuTime::gettime() VL_MT_SAFE {
 #else
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     timespec ts;
-    if (0 != clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts))  // MT-Safe
+    if (0 == clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts))  // MT-Safe  // LCOV_EXCL_BR_LINE
         return ts.tv_sec + ts.tv_nsec * 1e-9;
 #endif
-    return 0.0;
+    return 0.0;  // LCOV_EXCL_LINE
 }
 double DeltaWallTime::gettime() VL_MT_SAFE {
 #if defined(_WIN32) || defined(__MINGW32__)
@@ -66,9 +66,9 @@ double DeltaWallTime::gettime() VL_MT_SAFE {
 #else
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     timespec ts;
-    if (0 == clock_gettime(CLOCK_MONOTONIC, &ts))  // MT-Safe
+    if (0 == clock_gettime(CLOCK_MONOTONIC, &ts))  // MT-Safe  // LCOV_EXCL_BR_LINE
         return ts.tv_sec + ts.tv_nsec * 1e-9;
-    return 0.0;
+    return 0.0;  // LCOV_EXCL_LINE
 #endif
 }
 
