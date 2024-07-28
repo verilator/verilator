@@ -190,7 +190,7 @@ def test():
                "/app_total.info )")
         print("print: Not running:")
         print("  export CODECOV_TOKEN=<hidden>")
-        print("  find . -name '*.gcno' -exec rm {} \;")
+        print("  find . -name '*.gcno' -exec rm {} \\;")
         print("  " + cmd)
         ci_fold_end()
 
