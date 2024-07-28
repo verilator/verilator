@@ -181,14 +181,17 @@ def test():
         ci_fold_start("upload")
         print("Stage 18: Upload")
         # curl -Os https://cli.codecov.io/latest/linux/codecov ; sudo chmod +x codecov
-        # --disable-search does not seem to work, so we use a temp directory
+        # --disable-search does not seem to work
+        # -d with false directory does not seem to work
+        # So, remove gcno files before calling codecov
         upload_dir = "nodist/obj_dir/upload"
         os.makedirs(upload_dir, exist_ok=True)
-        cmd = ("( cd " + upload_dir +
-               " && ../../../ci/codecov -v do-upload --fail-on-error" +
-               " -f ../../../" + cc_dir + "/app_total.info )")
-        print("print: Not running: export CODECOV_TOKEN=<hidden>")
-        print("print: Not running: " + cmd)
+        cmd = ("ci/codecov -v upload-process -Z" +
+               " -f " + cc_dir + "/app_total.info )")
+        print("print: Not running:")
+        print("  export CODECOV_TOKEN=<hidden>")
+        print("  find . -name '*.gcno' -exec rm {} \;")
+        print("  " + cmd)
         ci_fold_end()
 
     if Args.stage_enabled[19]:

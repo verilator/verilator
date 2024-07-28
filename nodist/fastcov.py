@@ -675,7 +675,7 @@ def distillLine(line_raw, lines, branches, include_exceptional_branches):
     count       = int(line_raw["count"])
     if count <  0:
         if "function_name" in line_raw:
-            logging.warning("Ignoring negative count found in %s.", line_raw["function_name"])
+            logging.warning("Ignoring negative count found in '%s'.", line_raw["function_name"])
         else:
             logging.warning("Ignoring negative count.")
         count = 0
