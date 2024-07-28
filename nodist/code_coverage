@@ -262,12 +262,21 @@ def cleanup_abs_paths_info(cc_dir, infile, outfile):
     lines = []
     with open(infile, "r", encoding="utf8") as fh:
         for line in fh:
-            if re.search(r'^SF:', line):
+            if re.search(r'^SF:', line) and not re.search(r'^SF:/usr/', line):
                 line = re.sub(os.environ['VERILATOR_ROOT'] + '/',
                               '',
                               line,
                               count=1)
                 line = re.sub(cc_dir + '/', '', line, count=1)
+                line = re.sub(r'^SF:.*?/include/',
+                              'SF:include/',
+                              line,
+                              count=1)
+                line = re.sub(r'^SF:.*?/src/', 'SF:src/', line, count=1)
+                line = re.sub(r'^SF:.*?/test_regress/',
+                              'SF:test_regress/',
+                              line,
+                              count=1)
                 line = re.sub(r'obj_dbg/verilog.y$', 'verilog.y', line)
                 # print("Remaining SF: "+line)
             lines.append(line)

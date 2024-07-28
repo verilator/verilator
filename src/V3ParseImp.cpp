@@ -404,9 +404,9 @@ size_t V3ParseImp::tokenPipeScanParam(size_t depth) {
     int parens = 1;  // Count first (
     while (true) {
         const int tok = tokenPeekp(depth)->token;
-        if (tok == 0) {
+        if (tok == 0) {  // LCOV_EXCL_BR_LINE
             UINFO(9, "tokenPipeScanParam hit EOF; probably syntax error to come");
-            break;
+            break;  // LCOV_EXCL_LINE
         } else if (tok == '(') {
             ++parens;
         } else if (tok == ')') {
@@ -430,9 +430,9 @@ size_t V3ParseImp::tokenPipeScanType(size_t depth) {
     int parens = 1;  // Count first (
     while (true) {
         const int tok = tokenPeekp(depth)->token;
-        if (tok == 0) {
+        if (tok == 0) {  // LCOV_EXCL_BR_LINE
             UINFO(9, "tokenPipeScanType hit EOF; probably syntax error to come");
-            break;
+            break;  // LCOV_EXCL_LINE
         } else if (tok == '(') {
             ++parens;
         } else if (tok == ')') {

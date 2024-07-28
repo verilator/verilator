@@ -707,9 +707,9 @@ string V3Options::getenvSYSTEMC_ARCH() {
         uname(&uts);
         const string sysname = VString::downcase(uts.sysname);  // aka  'uname -s'
         if (VL_UNCOVERABLE(VString::wildmatch(sysname.c_str(), "*solaris*"))) {
-            var = "gccsparcOS5";
+            var = "gccsparcOS5";  // LCOV_EXCL_LINE
         } else if (VL_UNCOVERABLE(VString::wildmatch(sysname.c_str(), "*cygwin*"))) {
-            var = "cygwin";
+            var = "cygwin";  // LCOV_EXCL_LINE
         } else {
             var = "linux";
         }

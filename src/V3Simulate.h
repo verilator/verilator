@@ -183,11 +183,11 @@ public:
         //  and fetchConst should not be called or it may assert.
         if (!m_whyNotNodep) {
             m_whyNotNodep = nodep;
-            if (debug() >= 5) {
+            if (debug() >= 5) {  // LCOV_EXCL_START
                 UINFO(0, "Clear optimizable: " << why);
                 if (nodep) std::cout << ": " << nodep;
                 std::cout << std::endl;
-            }
+            }  // LCOV_EXCL_STOP
             m_whyNotOptimizable = why;
             std::ostringstream stack;
             for (const auto& callstack : vlstd::reverse_view(m_callStack)) {

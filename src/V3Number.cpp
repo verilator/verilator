@@ -1202,16 +1202,6 @@ V3Number& V3Number::opBitsZ(const V3Number& lhs) {  // 0/1->1, X/Z->0
     }
     return *this;
 }
-V3Number& V3Number::opBitsNonZ(const V3Number& lhs) {  // 0/1->1, X/Z->0
-    // op i, L(lhs) bit return
-    NUM_ASSERT_OP_ARGS1(lhs);
-    NUM_ASSERT_LOGIC_ARGS1(lhs);
-    setZero();
-    for (int bit = 0; bit < width(); bit++) {
-        if (!lhs.bitIsZ(bit)) setBit(bit, 1);
-    }
-    return *this;
-}
 
 //======================================================================
 // Operators - Simple per-bit logical ops

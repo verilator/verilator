@@ -19,6 +19,11 @@ package p62;
           ALLONE = '1 } e62_t /*verilator public*/;
 endpackage
 
+package pw;
+   typedef enum logic [99:0] {  // Too wide for public
+          WIDE = 100'h123} ewide_t /*verilator public*/;
+endpackage
+
 module t (/*AUTOARG*/);
 
    enum integer {

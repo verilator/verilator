@@ -102,4 +102,4 @@ jobs:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       run: |
         find . -name '*.gcno' -exec rm {} \;
-        ./ci/codecov -v do-upload -Z --sha ${{ github.sha }} -f nodist/obj_dir/coverage/app_total.info
+        ./ci/codecov -v upload-process -Z --sha ${{ github.sha }} -f nodist/obj_dir/coverage/app_total.info

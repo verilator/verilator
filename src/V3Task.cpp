@@ -1020,7 +1020,7 @@ class TaskVisitor final : public VNVisitor {
                         portp->v3warn(
                             E_UNSUPPORTED,
                             "Unsupported: DPI argument of type "
-                                << portp->basicp()->prettyTypeName() << '\n'
+                                << portp->dtypep()->prettyTypeName() << '\n'
                                 << portp->warnMore()
                                 << "... For best portability, use bit, byte, int, or longint");
                         // We don't warn on logic either, although the 4-stateness is lost.

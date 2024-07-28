@@ -1481,15 +1481,13 @@ public:
     }
 
     // Default
-    void visit(AstNode* nodep) override {
+    void visit(AstNode* nodep) override {  // LCOV_EXCL_START
         putns(nodep, "\n???? // "s + nodep->prettyTypeName() + "\n");
         iterateChildrenConst(nodep);
-        // LCOV_EXCL_START
         if (!v3Global.opt.lintOnly()) {  // An internal problem, so suppress
             nodep->v3fatalSrc("Unknown node type reached emitter: " << nodep->prettyTypeName());
         }
-        // LCOV_EXCL_STOP
-    }
+    }  // LCOV_EXCL_STOP
 
     EmitCFunc()
         : m_lazyDecls(*this) {}
