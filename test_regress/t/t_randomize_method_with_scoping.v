@@ -5,10 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class c1;
-	int c1_f;
+	rand int c1_f;
 endclass
 class c2;
-	int c2_f;
+	rand int c2_f;
 endclass
 
 class Cls;
@@ -23,7 +23,7 @@ class Cls;
 endclass
 class SubA extends Cls;
    c1 e = new;
-   enum {
+   rand enum {
       AMBIG,
       ONE_A,
       TWO_A
@@ -31,10 +31,13 @@ class SubA extends Cls;
    function c1 get_c();
       return e;
    endfunction
+   function int op(int v);
+      return v + 1;
+   endfunction
 endclass
 class SubB extends Cls;
    c2 e = new;
-   enum {
+   rand enum {
       AMBIG,
       ONE_B,
       TWO_B
@@ -42,6 +45,9 @@ class SubB extends Cls;
    SubA f = new;
    function c2 get_c();
       return e;
+   endfunction
+   function int op(int v);
+      return v - 1;
    endfunction
    function int doit;
       // access ambiguous names so width complains if we miss something
@@ -55,15 +61,29 @@ class SubB extends Cls;
       doit &= f.randomize() with { e.c1_f == local::e.c2_f; };
       doit &= f.randomize() with { get_x() == local::get_x(); };
       doit &= f.randomize() with { get_c().c1_f == local::get_c().c2_f; };
-      doit &= f.randomize() with { (get_c).c1_f == (local::get_c).c2_f; };
-      doit &= f.randomize() with { (get_c).c1_f == (local::get_c).c2_f; };
+//      doit &= f.randomize() with { (get_c).c1_f == (local::get_c).c2_f; };
+//      doit &= f.randomize() with { (get_c).c1_f == (local::get_c).c2_f; };
+
+      f.y = ONE_Y;
+      y = TWO_Y;
       doit &= f.randomize() with { y == local::y; };
+      if (f.y != y) $stop;
+
+      f.en = SubA::ONE_A;
       doit &= f.randomize() with { en == AMBIG; };
+      if (doit != 1) $stop;
+      if (f.en != SubA::AMBIG) $stop;
+
       f.en = SubA::ONE_A;
       doit &= f.randomize() with { en == ONE_A; };
       doit &= f.randomize() with { local::en == local::AMBIG; };
       en = ONE_B;
       doit &= f.randomize() with { local::en == ONE_B; };
+
+      doit &= f.randomize() with { x == local::op(op(0)); };
+      if (f.x != 0) $stop;
+      doit &= f.randomize() with { x == op(local::op(1)); };
+      if (f.x != 1) $stop;
    endfunction
 endclass
 

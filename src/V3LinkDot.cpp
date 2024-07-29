@@ -65,6 +65,7 @@
 
 #include "V3LinkDot.h"
 
+#include "V3Global.h"
 #include "V3Graph.h"
 #include "V3MemberMap.h"
 #include "V3Parse.h"
@@ -2526,7 +2527,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 && (VN_IS(nodep->lhsp(), CellRef) || VN_IS(nodep->lhsp(), CellArrayRef))) {
                 m_ds.m_unlinkedScopep = nodep->lhsp();
             }
-            m_fromSymp = nullptr;
+            //m_fromSymp = nullptr;
             if (!m_ds.m_dotErr) {  // Once something wrong, give up
                 // Top 'final' dot RHS is final RHS, else it's a
                 // DOT(DOT(x,*here*),real-rhs) which we consider a RHS
@@ -2582,6 +2583,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     "ParseRefs should no longer exist");
         const DotStates lastStates = m_ds;
         const bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
+
+        VL_RESTORER(m_fromSymp);
+
         if (start) {
             m_ds.init(m_curSymp);
             // Note m_ds.m_dot remains nullptr; this is a reference not under a dot
@@ -2649,8 +2653,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     = VN_AS(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
                 classOrPackagep = cpackagerefp->classOrPackagep();
                 UASSERT_OBJ(classOrPackagep, m_ds.m_dotp->lhsp(), "Bad package link");
-                if (cpackagerefp->name() != "local::")
+                if (cpackagerefp->name() == "local::") {
+                    m_fromSymp = nullptr;
+                } else {
                     m_ds.m_dotSymp = m_statep->getNodeSym(classOrPackagep);
+                }
                 m_ds.m_dotPos = DP_SCOPE;
             } else if (m_ds.m_dotPos == DP_SCOPE) {
                 // {a}.{b}, where {a} maybe a module name
@@ -3181,7 +3188,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     iterate(pinsp);
                     pinsp = pinsp->nextp();
                 }
-                if (m_fromSymp) m_ds.init(m_fromSymp);
+                //if (m_fromSymp) m_ds.init(m_fromSymp);
                 m_fromSymp = nullptr;
                 iterateAndNextNull(pinsp);
                 return;
@@ -3217,6 +3224,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
         }
 
+        VL_RESTORER(m_fromSymp);
+
         bool staticAccess = false;
         if (m_ds.m_unresolvedClass) {
             // Unable to link before V3Param
@@ -3237,8 +3246,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
             AstClassOrPackageRef* const cpackagerefp
                 = VN_AS(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
             UASSERT_OBJ(cpackagerefp->classOrPackagep(), m_ds.m_dotp->lhsp(), "Bad package link");
-            if (cpackagerefp->name() != "local::")
+            if (cpackagerefp->name() == "local::") {
+                //m_ds.m_dotSymp = m_curSymp;
+                m_fromSymp = nullptr;
+            } else {
                 nodep->classOrPackagep(cpackagerefp->classOrPackagep());
+            }
             // Class/package :: HERE function() . method_called_on_function_return_value()
             m_ds.m_dotPos = DP_MEMBER;
             m_ds.m_dotp = nullptr;
@@ -3312,7 +3325,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (foundp) {
                     UINFO(9, " randomize-with fromSym " << foundp->nodep() << endl);
                     AstNodeExpr* argsp = nullptr;
-                    if (nodep->pinsp()) argsp = nodep->pinsp()->unlinkFrBackWithNext();
+                    if (nodep->pinsp()) {
+                        iterateAndNextNull(nodep->pinsp());
+                        argsp = nodep->pinsp()->unlinkFrBackWithNext();
+                    }
                     if (m_ds.m_dotPos != DP_NONE) m_ds.m_dotPos = DP_MEMBER;
                     AstNode* const newp = new AstMethodCall{
                         nodep->fileline(), new AstLambdaArgRef{nodep->fileline(), "item", false},
