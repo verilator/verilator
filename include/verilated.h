@@ -374,12 +374,14 @@ private:
     // MEMBERS
     // Numer of assertion directive type members. Then each of them will represented as 1-bit in a
     // mask.
-    static constexpr size_t assertDirectiveTypeMaskWidth = 3;
+    static constexpr size_t ASSERT_DIRECTIVE_TYPE_MASK_WIDTH = 3;
     // Specifies how many groups of directive type bit groups there are based on a number of
-    // assertion types. Note: we add one bit to store information whether Verilator's internal
+    // assertion types.
+    // Note: we add one bit to store information whether Verilator's internal
     // directive types are enabled, for example `violation if`s.
-    static constexpr size_t assertOnWidth
-        = assertDirectiveTypeMaskWidth * std::numeric_limits<VerilatedAssertType_t>::digits + 1;
+    static constexpr size_t ASSERT_ON_WIDTH
+        = ASSERT_DIRECTIVE_TYPE_MASK_WIDTH * std::numeric_limits<VerilatedAssertType_t>::digits
+          + 1;
 
 protected:
     // TYPES
@@ -394,7 +396,7 @@ protected:
         // No std::strings or pointers or will serialize badly!
         // Fast path
         uint64_t m_time = 0;  // Current $time (unscaled), 0=at zero, or legacy
-        std::bitset<assertOnWidth> m_assertOn{
+        std::bitset<ASSERT_ON_WIDTH> m_assertOn{
             std::numeric_limits<uint32_t>::max()};  // Enabled assertions,
                                                     // for each VerilatedAssertType we store
                                                     // 3-bits, one for each directive type. Last

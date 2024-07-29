@@ -86,6 +86,7 @@ void verilatedTest() {
 }
 int main(int argc, char** argv) {
     verilatedTest();
+    if (errors) return 10;
 
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
     contextp->threads(1);
@@ -109,5 +110,5 @@ int main(int argc, char** argv) {
     }
     topp->final();
 
-    return errors ? 10 : 0;
+    return 0;
 }

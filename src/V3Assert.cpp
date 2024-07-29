@@ -50,12 +50,6 @@ class AssertVisitor final : public VNVisitor {
     bool m_inSampled = false;  // True inside a sampled expression
 
     // METHODS
-    static bool assertTypeOn(VAssertDirectiveType::en type) {
-        if (v3Global.opt.assertOn()) return true;
-        if (type == VAssertDirectiveType::VIOLATION_CASE && v3Global.opt.assertCaseOn())
-            return true;
-        return false;
-    }
     static AstNodeExpr* assertOnCond(FileLine* fl, VAssertType::en type,
                                      VAssertDirectiveType::en directiveType) {
         switch (directiveType) {

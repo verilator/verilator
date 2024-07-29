@@ -1178,7 +1178,9 @@ public:
     explicit VAssertDirectiveType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     const char* ascii() const {
-        static const char* const names[] = {"", "ASSERT", "COVER", "ASSUME", "", "", "", ""};
+        static const char* const names[]
+            = {"INTERNAL",       "ASSERT",       "COVER",     "ASSUME",
+               "VIOLATION_CASE", "VIOLATION_IF", "INTRINSIC", "RESTRICT"};
         return names[m_e];
     }
     constexpr operator en() const { return m_e; }
