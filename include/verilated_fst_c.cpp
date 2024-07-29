@@ -166,7 +166,6 @@ void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum,
     const bool enabled = Super::declCode(code, hierarchicalName, bits);
     if (!enabled) return;
 
-    assert(hierarchicalName.rfind(' ') != std::string::npos);
     std::stringstream name_ss;
     name_ss << lastWord(hierarchicalName);
     if (array) name_ss << "[" << arraynum << "]";
