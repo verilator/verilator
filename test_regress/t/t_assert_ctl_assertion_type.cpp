@@ -6,16 +6,21 @@
 // any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+#include "verilated_cov.h"
 #include <verilated.h>
+#include VM_PREFIX_INCLUDE
 
 // These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 
+unsigned int main_time = 0;
+
+double sc_time_stamp() { return main_time; }
 //======================================================================
 
 int errors = 0;
 
-void test() {
+void verilatedTest() {
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
     // Assert enable/disable
     contextp->assertOn(true);
@@ -79,10 +84,30 @@ void test() {
     // Now everything is disabled
     TEST_CHECK_Z(contextp->assertOn());
 }
-int main() {
-    Verilated::debug(0);
+int main(int argc, char** argv) {
+    verilatedTest();
 
-    test();
+    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    contextp->threads(1);
+    contextp->commandArgs(argc, argv);
+    contextp->debug(0);
+
+    srand48(5);
+
+    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{"top"}};
+    constexpr uint64_t sim_time = 100;
+    while ((contextp->time() < sim_time) && !contextp->gotFinish()) {
+        topp->clk = !topp->clk;
+        topp->eval();
+        contextp->timeInc(1);
+    }
+    const std::string filename = std::string{VL_STRINGIFY(TEST_OBJ_DIR) "/coverage.dat"};
+    contextp->coveragep()->write(filename);
+
+    if (!contextp->gotFinish()) {
+        vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
+    }
+    topp->final();
 
     return errors ? 10 : 0;
 }

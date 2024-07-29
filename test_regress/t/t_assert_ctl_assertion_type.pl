@@ -11,8 +11,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 compile(
-    verilator_flags2 => ['--assert --timing --coverage-user'],
-    nc_flags2 => ["+nccovoverwrite +nccoverage+all +nccovtest+$Self->{name}"]
+    make_top_shell => 0,
+    make_main => 0,
+    verilator_flags2 => ["--assert", "--timing", "--coverage-user", "--exe $Self->{t_dir}/$Self->{name}.cpp"],
+    nc_flags2 => ["+nccovoverwrite", "+nccoverage+all", "+nccovtest+$Self->{name}"],
     );
 
 execute(
