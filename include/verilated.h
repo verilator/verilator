@@ -376,9 +376,10 @@ private:
     // mask.
     static constexpr size_t assertDirectiveTypeMaskWidth = 3;
     // Specifies how many groups of directive type bit groups there are based on a number of
-    // assertion types.
+    // assertion types. Note: we add one bit to store information whether Verilator's internal
+    // directive types are enabled, for example `violation if`s.
     static constexpr size_t assertOnWidth
-        = assertDirectiveTypeMaskWidth * std::numeric_limits<VerilatedAssertType_t>::digits;
+        = assertDirectiveTypeMaskWidth * std::numeric_limits<VerilatedAssertType_t>::digits + 1;
 
 protected:
     // TYPES
@@ -396,7 +397,8 @@ protected:
         std::bitset<assertOnWidth> m_assertOn{
             std::numeric_limits<uint32_t>::max()};  // Enabled assertions,
                                                     // for each VerilatedAssertType we store
-                                                    // 3-bits, one for each directive type.
+                                                    // 3-bits, one for each directive type. Last
+                                                    // bit guards internal directive types.
         bool m_calcUnusedSigs = false;  // Waves file on, need all signals calculated
         bool m_fatalOnError = true;  // Fatal on $stop/non-fatal error
         bool m_fatalOnVpiError = true;  // Fatal on vpi error/unsupported

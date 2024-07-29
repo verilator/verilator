@@ -13,24 +13,24 @@
 
 //======================================================================
 
-unsigned int main_time = 0;
 int errors = 0;
-
-double sc_time_stamp() { return main_time; }
 
 void test() {
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    // assertOn
+    // Assert enable/disable
+    contextp->assertOn(true);
     TEST_CHECK_NZ(contextp->assertOn());
     contextp->assertOn(false);
     TEST_CHECK_Z(contextp->assertOn());
     TEST_CHECK_Z(contextp->assertOnGet(1, 1));
 
+    // Setting one type
     contextp->assertOnSet(1, 1);
     TEST_CHECK_NZ(contextp->assertOnGet(1, 1));
     TEST_CHECK_NZ(contextp->assertOn());
     TEST_CHECK_Z(contextp->assertOnGet(2, 2));
 
+    // Setting types
     contextp->assertOn(false);
     contextp->assertOnSet(1, 3);
     TEST_CHECK_NZ(contextp->assertOnGet(1, 3));
@@ -40,6 +40,7 @@ void test() {
     TEST_CHECK_Z(contextp->assertOnGet(2, 0));
     TEST_CHECK_Z(contextp->assertOnGet(0, 0));
 
+    // Setting multiple types separately
     contextp->assertOn(false);
     contextp->assertOnSet(0, 1);
     contextp->assertOnSet(1, 2);
@@ -55,6 +56,7 @@ void test() {
     TEST_CHECK_Z(contextp->assertOnGet(4, 1));
     TEST_CHECK_Z(contextp->assertOnGet(8, 7));
 
+    // Clearing selected types
     contextp->assertOn(true);
     TEST_CHECK_NZ(contextp->assertOnGet(255, 6));
     contextp->assertOnClear(1, 3);
@@ -68,8 +70,13 @@ void test() {
     TEST_CHECK_NZ(contextp->assertOnGet(4, 2));
     TEST_CHECK_NZ(contextp->assertOn());
 
+    // Clearing all assert types
     contextp->assertOn(true);
     contextp->assertOnClear(255, 7);
+    // Everything is disabled except internal asserts
+    TEST_CHECK_NZ(contextp->assertOn());
+    contextp->assertOn(false);
+    // Now everything is disabled
     TEST_CHECK_Z(contextp->assertOn());
 }
 int main() {

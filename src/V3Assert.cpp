@@ -56,6 +56,40 @@ class AssertVisitor final : public VNVisitor {
             return true;
         return false;
     }
+    static AstNodeExpr* assertOnCond(FileLine* fl, VAssertType::en type,
+                                     VAssertDirectiveType::en directiveType) {
+        switch (directiveType) {
+        case VAssertDirectiveType::INTRINSIC: return new AstConst{fl, AstConst::BitTrue{}};
+        case VAssertDirectiveType::VIOLATION_CASE: {
+            if (v3Global.opt.assertCaseOn()) {
+                return new AstCExpr{fl, "vlSymsp->_vm_contextp__->assertOn()", 1};
+            }
+            // If assertions are off, have constant propagation rip them out later
+            // This allows syntax errors and such to be detected normally.
+            return new AstConst{fl, AstConst::BitFalse{}};
+        }
+        case VAssertDirectiveType::ASSERT:
+        case VAssertDirectiveType::COVER:
+        case VAssertDirectiveType::ASSUME: {
+            if (v3Global.opt.assertOn()) {
+                return new AstCExpr{fl,
+                                    "vlSymsp->_vm_contextp__->assertOnGet("s + std::to_string(type)
+                                        + ", "s + std::to_string(directiveType) + ")"s,
+                                    1};
+            }
+            return new AstConst{fl, AstConst::BitFalse{}};
+        }
+        case VAssertDirectiveType::INTERNAL:
+        case VAssertDirectiveType::VIOLATION_IF:
+        case VAssertDirectiveType::RESTRICT: {
+            if (v3Global.opt.assertOn()) {
+                return new AstCExpr{fl, "vlSymsp->_vm_contextp__->assertOn()", 1};
+            }
+            return new AstConst{fl, AstConst::BitFalse{}};
+        }
+        }
+        VL_UNREACHABLE;
+    }
     string assertDisplayMessage(AstNode* nodep, const string& prefix, const string& message,
                                 VDisplayType severity) {
         if (severity == VDisplayType::DT_ERROR || severity == VDisplayType::DT_FATAL) {
@@ -144,18 +178,7 @@ class AssertVisitor final : public VNVisitor {
         // Don't make this a AND term, as it's unlikely to need to test this.
         FileLine* const fl = bodyp->fileline();
 
-        // If assertions are off, have constant propagation rip them out later
-        // This allows syntax errors and such to be detected normally.
-        AstNodeExpr* const condp
-            = directiveType == VAssertDirectiveType::INTRINSIC
-                  ? static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitTrue{}})
-              : assertTypeOn(directiveType)
-                  ? static_cast<AstNodeExpr*>(new AstCExpr{
-                        fl,
-                        "vlSymsp->_vm_contextp__->assertOnGet("s + std::to_string(type) + ", "s
-                            + std::to_string(directiveType) + ")"s,
-                        1})
-                  : static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitFalse{}});
+        AstNodeExpr* const condp = assertOnCond(fl, type, directiveType);
         AstNodeIf* const newp = new AstIf{fl, condp, bodyp};
         newp->isBoundsCheck(true);  // To avoid LATCH warning
         newp->user1(true);  // Don't assert/cover this if
