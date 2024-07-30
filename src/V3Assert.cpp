@@ -26,9 +26,10 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Assert class functions
 
 class AssertVisitor final : public VNVisitor {
-    // TYPES
-    using VAssertType_t = std::underlying_type<VAssertType::en>::type;
-    using VAssertDirectiveType_t = std::underlying_type<VAssertDirectiveType::en>::type;
+    // CONSTANTS
+    static constexpr uint8_t ALL_ASSERT_TYPES
+        = std::numeric_limits<std::underlying_type<VAssertType::en>::type>::max();
+
     // NODE STATE/TYPES
     // Cleared on netlist
     //  AstNode::user()         -> bool.  True if processed
@@ -98,7 +99,7 @@ class AssertVisitor final : public VNVisitor {
     }
     static bool resolveAssertType(AstAssertCtl* nodep) {
         if (!nodep->assertTypesp()) {
-            nodep->ctlAssertTypes(std::numeric_limits<VAssertType_t>::max());
+            nodep->ctlAssertTypes(ALL_ASSERT_TYPES);
             return true;
         }
         if (const AstConst* const assertTypesp = VN_CAST(nodep->assertTypesp(), Const)) {
@@ -612,7 +613,7 @@ class AssertVisitor final : public VNVisitor {
         } else if (nodep->ctlAssertTypes()
                        & (VAssertType::EXPECT | VAssertType::UNIQUE | VAssertType::UNIQUE0
                           | VAssertType::PRIORITY)
-                   && !(nodep->ctlAssertTypes() == std::numeric_limits<VAssertType_t>::max())) {
+                   && !(nodep->ctlAssertTypes() == ALL_ASSERT_TYPES)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: assert control assertion_type");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
