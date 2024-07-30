@@ -63,7 +63,6 @@ void verilatedTest() {
 
     // Clearing selected types
     contextp->assertOn(true);
-    TEST_CHECK_NZ(contextp->assertOnGet(255, 6));
     contextp->assertOnClear(1, 3);
     contextp->assertOnClear(1, 4);
     TEST_CHECK_Z(contextp->assertOnGet(1, 1));

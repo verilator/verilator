@@ -2524,7 +2524,10 @@ bool VerilatedContext::assertOnGet(VerilatedAssertType_t type,
     if (type == 0) return false;
 
     // Get index of 3-bit group guarding assertion type status.
-    const IData typeMaskPosition = VL_CTZ_I(type);
+    // Since the assertOnGet is generated __always__ for a single assert type, we assume that only
+    // a single bit will be set. Thus, ceil log2 will work fine.
+    VL_DEBUG_IFDEF(assert((type & (type - 1)) == 0););
+    const IData typeMaskPosition = VL_CLOG2_I(type);
     // Check if directive type bit is enabled in corresponding assertion type bits.
     return m_s.m_assertOn & (directive << (typeMaskPosition * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH));
 }

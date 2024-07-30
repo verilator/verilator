@@ -819,20 +819,6 @@ static inline IData VL_CLOG2_W(int words, WDataInP const lwp) VL_PURE {
     }
     return 0;
 }
-static inline uint32_t VL_CTZ_I(IData val) {
-    if (VL_UNLIKELY(!val)) return 0;
-#if defined(__GNUC__) && !defined(VL_NO_BUILTINS)
-    return __builtin_ctz(val);
-#else
-    int bit = 0;
-    val = ~val;
-    while (val & 1) {
-        ++bit;
-        val >>= 1;
-    }
-    return bit;
-#endif
-}
 
 static inline IData VL_MOSTSETBITP1_W(int words, WDataInP const lwp) VL_PURE {
     // MSB set bit plus one; similar to FLS.  0=value is zero
