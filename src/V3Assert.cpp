@@ -50,8 +50,8 @@ class AssertVisitor final : public VNVisitor {
     bool m_inSampled = false;  // True inside a sampled expression
 
     // METHODS
-    static AstNodeExpr* assertOnCond(FileLine* fl, VAssertType::en type,
-                                     VAssertDirectiveType::en directiveType) {
+    static AstNodeExpr* assertOnCond(FileLine* fl, VAssertType type,
+                                     VAssertDirectiveType directiveType) {
         switch (directiveType) {
         case VAssertDirectiveType::INTRINSIC: return new AstConst{fl, AstConst::BitTrue{}};
         case VAssertDirectiveType::VIOLATION_CASE: {
@@ -166,8 +166,8 @@ class AssertVisitor final : public VNVisitor {
         varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
         return varrefp;
     }
-    static AstNodeStmt* newIfAssertOn(AstNode* bodyp, VAssertDirectiveType::en directiveType,
-                                      VAssertType::en type = VAssertType::INTERNAL) {
+    static AstNodeStmt* newIfAssertOn(AstNode* bodyp, VAssertDirectiveType directiveType,
+                                      VAssertType type = VAssertType::INTERNAL) {
         // Add a internal if to check assertions are on.
         // Don't make this a AND term, as it's unlikely to need to test this.
         FileLine* const fl = bodyp->fileline();
@@ -192,8 +192,8 @@ class AssertVisitor final : public VNVisitor {
         return bodysp;
     }
 
-    AstNodeStmt* newFireAssert(AstNodeStmt* nodep, VAssertDirectiveType::en directiveType,
-                               VAssertType::en assertType, const string& message,
+    AstNodeStmt* newFireAssert(AstNodeStmt* nodep, VAssertDirectiveType directiveType,
+                               VAssertType assertType, const string& message,
                                AstNodeExpr* exprsp = nullptr) {
         AstNodeStmt* bodysp = newFireAssertUnchecked(nodep, message, exprsp);
         bodysp = newIfAssertOn(bodysp, directiveType, assertType);
@@ -326,7 +326,7 @@ class AssertVisitor final : public VNVisitor {
                 = ((allow_none || hasDefaultElse)
                        ? static_cast<AstNodeExpr*>(new AstOneHot0{nodep->fileline(), propp})
                        : static_cast<AstNodeExpr*>(new AstOneHot{nodep->fileline(), propp}));
-            const VAssertType::en assertType
+            const VAssertType assertType
                 = nodep->uniquePragma() ? VAssertType::UNIQUE : VAssertType::UNIQUE0;
             AstIf* const checkifp
                 = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), ohot},
@@ -353,7 +353,7 @@ class AssertVisitor final : public VNVisitor {
             }
             const AstNodeDType* exprDtypep = nodep->exprp()->dtypep()->skipRefp();
 
-            VAssertType::en assertType = VAssertType::INTERNAL;
+            VAssertType assertType = VAssertType::INTERNAL;
             if (nodep->priorityPragma()) {
                 assertType = VAssertType::PRIORITY;
             } else if (nodep->uniquePragma()) {

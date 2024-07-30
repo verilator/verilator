@@ -1173,7 +1173,7 @@ public:
     VAssertDirectiveType()
         : m_e{ASSERT} {}
     // cppcheck-suppress noExplicitConstructor
-    constexpr explicit VAssertDirectiveType(en _e)
+    constexpr VAssertDirectiveType(en _e)
         : m_e{_e} {}
     explicit VAssertDirectiveType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
@@ -1215,7 +1215,7 @@ public:
     VAssertType()
         : m_e{INTERNAL} {}
     // cppcheck-suppress noExplicitConstructor
-    constexpr explicit VAssertType(en _e)
+    constexpr VAssertType(en _e)
         : m_e{_e} {}
     explicit VAssertType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
