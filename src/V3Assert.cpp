@@ -99,11 +99,11 @@ class AssertVisitor final : public VNVisitor {
     }
     static bool resolveAssertType(AstAssertCtl* nodep) {
         if (!nodep->assertTypesp()) {
-            nodep->ctlAssertTypes(ALL_ASSERT_TYPES);
+            nodep->ctlAssertTypes(static_cast<VAssertType::en>(ALL_ASSERT_TYPES));
             return true;
         }
         if (const AstConst* const assertTypesp = VN_CAST(nodep->assertTypesp(), Const)) {
-            nodep->ctlAssertTypes(assertTypesp->toUInt());
+            nodep->ctlAssertTypes(static_cast<VAssertType::en>(assertTypesp->toUInt()));
             return true;
         }
         return false;
@@ -122,7 +122,8 @@ class AssertVisitor final : public VNVisitor {
             return true;
         }
         if (const AstConst* const directiveTypesp = VN_CAST(nodep->directiveTypesp(), Const)) {
-            nodep->ctlDirectiveTypes(directiveTypesp->toUInt());
+            nodep->ctlDirectiveTypes(
+                static_cast<VAssertDirectiveType::en>(directiveTypesp->toUInt()));
             return true;
         }
         return false;
@@ -610,10 +611,11 @@ class AssertVisitor final : public VNVisitor {
                           "Unsupported: non-constant assert assertion-type expression");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
-        } else if (nodep->ctlAssertTypes()
-                       & (VAssertType::EXPECT | VAssertType::UNIQUE | VAssertType::UNIQUE0
-                          | VAssertType::PRIORITY)
-                   && !(nodep->ctlAssertTypes() == ALL_ASSERT_TYPES)) {
+        }
+        if (nodep->ctlAssertTypes() != ALL_ASSERT_TYPES
+            && nodep->ctlAssertTypes().containsAny(VAssertType::EXPECT | VAssertType::UNIQUE
+                                                   | VAssertType::UNIQUE0
+                                                   | VAssertType::PRIORITY)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: assert control assertion_type");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;

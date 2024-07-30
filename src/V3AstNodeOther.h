@@ -2624,10 +2624,8 @@ class AstAssertCtl final : public AstNodeStmt {
     // Type of assertcontrol task; either known from parser or from evaluated
     // controlTypep expression.
     VAssertCtlType m_ctlType;  // $assert keyword type (control_type)
-    using VAssertType_t = std::underlying_type<VAssertType::en>::type;
-    VAssertType_t m_assertTypes;  // Types of assertions affected
-    using VAssertDirectiveType_t = std::underlying_type<VAssertDirectiveType::en>::type;
-    VAssertDirectiveType_t m_directiveTypes;  // Types of directives affected
+    VAssertType m_assertTypes;  // Types of assertions affected
+    VAssertDirectiveType m_directiveTypes;  // Types of directives affected
 
 public:
     AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr* levelp = nullptr,
@@ -2643,10 +2641,10 @@ public:
     bool isOutputter() override { return true; }
     VAssertCtlType ctlType() const { return m_ctlType; }
     void ctlType(int32_t type) { m_ctlType = VAssertCtlType{type}; }
-    VAssertType_t ctlAssertTypes() const { return m_assertTypes; }
-    void ctlAssertTypes(VAssertType_t types) { m_assertTypes = types; }
-    VAssertDirectiveType_t ctlDirectiveTypes() const { return m_directiveTypes; }
-    void ctlDirectiveTypes(VAssertDirectiveType_t types) { m_directiveTypes = types; }
+    VAssertType ctlAssertTypes() const { return m_assertTypes; }
+    void ctlAssertTypes(VAssertType types) { m_assertTypes = types; }
+    VAssertDirectiveType ctlDirectiveTypes() const { return m_directiveTypes; }
+    void ctlDirectiveTypes(VAssertDirectiveType types) { m_directiveTypes = types; }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
 };

@@ -1194,6 +1194,10 @@ constexpr bool operator==(const VAssertDirectiveType& lhs, VAssertDirectiveType:
 constexpr bool operator==(VAssertDirectiveType::en lhs, const VAssertDirectiveType& rhs) {
     return lhs == rhs.m_e;
 }
+constexpr VAssertDirectiveType::en operator|(VAssertDirectiveType::en lhs,
+                                             VAssertDirectiveType::en rhs) {
+    return VAssertDirectiveType::en(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
+}
 
 // ######################################################################
 
@@ -1219,6 +1223,7 @@ public:
         : m_e{_e} {}
     explicit VAssertType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    bool containsAny(VAssertType other) const { return m_e & other.m_e; }
     const char* ascii() const {
         static const char* const names[] = {"INTERNAL",
                                             "CONCURRENT",
@@ -1238,6 +1243,9 @@ constexpr bool operator==(const VAssertType& lhs, const VAssertType& rhs) {
 }
 constexpr bool operator==(const VAssertType& lhs, VAssertType::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VAssertType::en lhs, const VAssertType& rhs) { return lhs == rhs.m_e; }
+constexpr VAssertType::en operator|(VAssertType::en lhs, VAssertType::en rhs) {
+    return VAssertType::en(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
+}
 
 // ######################################################################
 
