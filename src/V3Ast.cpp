@@ -1229,7 +1229,6 @@ void AstNode::dumpGdbHeader() const {  // For GDB only  // LCOV_EXCL_START
     dumpPtrs(cout);
     cout << "  Fileline = " << fileline() << endl;
 }  // LCOV_EXCL_STOP
-void __attribute__((noinline)) AstNode::cDumpTree() { dumpTree("[DEBUG DUMP]: "); }
 // cppcheck-suppress unusedFunction  // Debug only
 void AstNode::dumpTreeGdb(const AstNode* nodep) {  // For GDB only  // LCOV_EXCL_START
     if (!nodep) {

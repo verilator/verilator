@@ -3185,7 +3185,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     iterate(pinsp);
                     pinsp = pinsp->nextp();
                 }
-                //if (m_fromSymp) m_ds.init(m_fromSymp);
                 m_fromSymp = nullptr;
                 iterateAndNextNull(pinsp);
                 return;
@@ -3244,7 +3243,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 = VN_AS(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
             UASSERT_OBJ(cpackagerefp->classOrPackagep(), m_ds.m_dotp->lhsp(), "Bad package link");
             if (cpackagerefp->name() == "local::") {
-                //m_ds.m_dotSymp = m_curSymp;
                 m_fromSymp = nullptr;
             } else {
                 nodep->classOrPackagep(cpackagerefp->classOrPackagep());

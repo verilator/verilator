@@ -2349,7 +2349,6 @@ public:
     void dumpTree(const string& indent, int maxDepth = 0) const {
         dumpTree(std::cout, indent, maxDepth);
     }
-    void __attribute__((noinline)) cDumpTree();
     static void dumpTreeGdb(const AstNode* nodep);  // For GDB only
     void dumpTreeAndNext(std::ostream& os = std::cout, const string& indent = "    ",
                          int maxDepth = 0) const;
