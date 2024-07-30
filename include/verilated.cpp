@@ -2528,6 +2528,7 @@ bool VerilatedContext::assertOnGet(VerilatedAssertType_t type,
     // a single bit will be set. Thus, ceil log2 will work fine.
     VL_DEBUG_IFDEF(assert((type & (type - 1)) == 0););
     const IData typeMaskPosition = VL_CLOG2_I(type);
+
     // Check if directive type bit is enabled in corresponding assertion type bits.
     return m_s.m_assertOn & (directive << (typeMaskPosition * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH));
 }

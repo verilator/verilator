@@ -66,7 +66,6 @@
 #include <atomic>
 #include <mutex>
 #include <thread>
-#include <bitset>
 
 // Allow user to specify their own include file
 #ifdef VL_VERILATED_INCLUDE
