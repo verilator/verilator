@@ -2508,7 +2508,7 @@ bool VerilatedContext::assertOn() const VL_MT_SAFE { return m_s.m_assertOn; }
 void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
     if (flag) {
         // Shifting by 32 is an undefined behavior here.
-        static_assert(ASSERT_ON_WIDTH < 32);
+        static_assert(ASSERT_ON_WIDTH < 32, "ASSERT_ON_WIDTH must be less than 32");
         // Set a subset of bits.
         m_s.m_assertOn |= (static_cast<uint32_t>(1) << ASSERT_ON_WIDTH) - 1;
     } else {
