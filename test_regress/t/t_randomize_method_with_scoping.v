@@ -61,8 +61,7 @@ class SubB extends Cls;
       doit &= f.randomize() with { e.c1_f == local::e.c2_f; };
       doit &= f.randomize() with { get_x() == local::get_x(); };
       doit &= f.randomize() with { get_c().c1_f == local::get_c().c2_f; };
-//      doit &= f.randomize() with { (get_c).c1_f == (local::get_c).c2_f; };
-//      doit &= f.randomize() with { (get_c).c1_f == (local::get_c).c2_f; };
+      doit &= f.randomize() with { (get_c).c1_f == (local::get_c).c2_f; };
 
       f.y = ONE_Y;
       y = TWO_Y;
@@ -83,6 +82,10 @@ class SubB extends Cls;
       doit &= f.randomize() with { x == local::op(op(0)); };
       if (f.x != 0) $stop;
       doit &= f.randomize() with { x == op(local::op(1)); };
+      if (f.x != 1) $stop;
+      doit &= f.randomize() with { x == local::op(op(local::op(op(0)))); };
+      if (f.x != 0) $stop;
+      doit &= f.randomize() with { x == op(local::op(op(local::op(1)))); };
       if (f.x != 1) $stop;
    endfunction
 endclass

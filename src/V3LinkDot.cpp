@@ -2527,7 +2527,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 && (VN_IS(nodep->lhsp(), CellRef) || VN_IS(nodep->lhsp(), CellArrayRef))) {
                 m_ds.m_unlinkedScopep = nodep->lhsp();
             }
-            //m_fromSymp = nullptr;
             if (!m_ds.m_dotErr) {  // Once something wrong, give up
                 // Top 'final' dot RHS is final RHS, else it's a
                 // DOT(DOT(x,*here*),real-rhs) which we consider a RHS
@@ -2583,8 +2582,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     "ParseRefs should no longer exist");
         const DotStates lastStates = m_ds;
         const bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
-
-        VL_RESTORER(m_fromSymp);
 
         if (start) {
             m_ds.init(m_curSymp);
