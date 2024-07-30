@@ -396,7 +396,7 @@ protected:
         // No std::strings or pointers or will serialize badly!
         // Fast path
         uint64_t m_time = 0;  // Current $time (unscaled), 0=at zero, or legacy
-        std::bitset<ASSERT_ON_WIDTH> m_assertOn{
+        std::atomic<uint32_t> m_assertOn{
             std::numeric_limits<uint32_t>::max()};  // Enabled assertions,
                                                     // for each VerilatedAssertType we store
                                                     // 3-bits, one for each directive type. Last

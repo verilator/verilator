@@ -2504,21 +2504,19 @@ VerilatedContext::Serialized::Serialized() {
     m_timeprecision = picosecond;  // Initial value until overridden by _Vconfigure
 }
 
-bool VerilatedContext::assertOn() const VL_MT_SAFE {
-    const VerilatedLockGuard lock{m_mutex};
-    return m_s.m_assertOn.any();
-}
+bool VerilatedContext::assertOn() const VL_MT_SAFE { return m_s.m_assertOn; }
 void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
-    const VerilatedLockGuard lock{m_mutex};
     if (flag) {
-        m_s.m_assertOn.set();
+        // Shifting by 32 is an undefined behavior here.
+        static_assert(ASSERT_ON_WIDTH < 32);
+        // Set a subset of bits.
+        m_s.m_assertOn |= (static_cast<uint32_t>(1) << ASSERT_ON_WIDTH) - 1;
     } else {
-        m_s.m_assertOn.reset();
+        m_s.m_assertOn = 0;
     }
 }
 bool VerilatedContext::assertOnGet(VerilatedAssertType_t type,
-                                   VerilatedAssertDirectiveType_t directive) const {
-    const VerilatedLockGuard lock{m_mutex};
+                                   VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE {
     // Check if selected directive type bit in the assertOn is enabled for assertion type.
     // Note: it is assumed that this is checked only for one type at the time.
 
@@ -2526,17 +2524,12 @@ bool VerilatedContext::assertOnGet(VerilatedAssertType_t type,
     if (type == 0) return false;
 
     // Get index of 3-bit group guarding assertion type status.
-    const uint32_t typeMaskPosition = VL_CTZ_I(type);
+    const IData typeMaskPosition = VL_CTZ_I(type);
     // Check if directive type bit is enabled in corresponding assertion type bits.
-    const std::bitset<ASSERT_ON_WIDTH> assertsOn
-        = m_s.m_assertOn
-          & std::bitset<ASSERT_ON_WIDTH>(directive
-                                         << (typeMaskPosition * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH));
-    return assertsOn.any();
+    return m_s.m_assertOn & (directive << (typeMaskPosition * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH));
 }
 void VerilatedContext::assertOnSet(VerilatedAssertType_t types,
                                    VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
-    const VerilatedLockGuard lock{m_mutex};
     // For each assertion type, set directive bits.
 
     // Iterate through all positions of assertion type bits. If bit for this assertion type is set,
@@ -2548,8 +2541,6 @@ void VerilatedContext::assertOnSet(VerilatedAssertType_t types,
 }
 void VerilatedContext::assertOnClear(VerilatedAssertType_t types,
                                      VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
-    const VerilatedLockGuard lock{m_mutex};
-
     // Iterate through all positions of assertion type bits. If bit for this assertion type is set,
     // clear directive type bits mask at this group index.
     for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
