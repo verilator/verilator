@@ -402,9 +402,8 @@ class AstNodeCoverOrAssert VL_NOT_FINAL : public AstNodeStmt {
     const VAssertDirectiveType m_directive;  // Assertion directive type
 
 public:
-    AstNodeCoverOrAssert(VNType t, FileLine* fl, AstNode* propp, AstNode* passsp,
-                         VAssertType::en type, VAssertDirectiveType::en directive,
-                         const string& name = "")
+    AstNodeCoverOrAssert(VNType t, FileLine* fl, AstNode* propp, AstNode* passsp, VAssertType type,
+                         VAssertDirectiveType directive, const string& name = "")
         : AstNodeStmt{t, fl}
         , m_name{name}
         , m_type{type}
@@ -421,9 +420,9 @@ public:
     VAssertType type() const { return m_type; }
     VAssertDirectiveType directive() const { return m_directive; }
     bool immediate() const {
-        return this->type()
-                   & (VAssertType::SIMPLE_IMMEDIATE | VAssertType::OBSERVED_DEFERRED_IMMEDIATE
-                      | VAssertType::FINAL_DEFERRED_IMMEDIATE)
+        return this->type().containsAny(VAssertType::SIMPLE_IMMEDIATE
+                                        | VAssertType::OBSERVED_DEFERRED_IMMEDIATE
+                                        | VAssertType::FINAL_DEFERRED_IMMEDIATE)
                || this->type() == VAssertType::INTERNAL;
     }
 };
@@ -3659,8 +3658,8 @@ class AstAssert final : public AstNodeCoverOrAssert {
 
 public:
     ASTGEN_MEMBERS_AstAssert;
-    AstAssert(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp, VAssertType::en type,
-              VAssertDirectiveType::en directive, const string& name = "")
+    AstAssert(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp, VAssertType type,
+              VAssertDirectiveType directive, const string& name = "")
         : ASTGEN_SUPER_Assert(fl, propp, passsp, type, directive, name) {
         this->addFailsp(failsp);
     }
@@ -3682,7 +3681,7 @@ class AstCover final : public AstNodeCoverOrAssert {
     // @astgen op3 := coverincsp: List[AstNode] // Coverage node
 public:
     ASTGEN_MEMBERS_AstCover;
-    AstCover(FileLine* fl, AstNode* propp, AstNode* stmtsp, VAssertType::en type,
+    AstCover(FileLine* fl, AstNode* propp, AstNode* stmtsp, VAssertType type,
              const string& name = "")
         : ASTGEN_SUPER_Cover(fl, propp, stmtsp, type, VAssertDirectiveType::COVER, name) {}
 };

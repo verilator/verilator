@@ -99,11 +99,11 @@ class AssertVisitor final : public VNVisitor {
     }
     static bool resolveAssertType(AstAssertCtl* nodep) {
         if (!nodep->assertTypesp()) {
-            nodep->ctlAssertTypes(static_cast<VAssertType::en>(ALL_ASSERT_TYPES));
+            nodep->ctlAssertTypes(VAssertType{ALL_ASSERT_TYPES});
             return true;
         }
         if (const AstConst* const assertTypesp = VN_CAST(nodep->assertTypesp(), Const)) {
-            nodep->ctlAssertTypes(static_cast<VAssertType::en>(assertTypesp->toUInt()));
+            nodep->ctlAssertTypes(VAssertType{assertTypesp->toSInt()});
             return true;
         }
         return false;
@@ -122,8 +122,7 @@ class AssertVisitor final : public VNVisitor {
             return true;
         }
         if (const AstConst* const directiveTypesp = VN_CAST(nodep->directiveTypesp(), Const)) {
-            nodep->ctlDirectiveTypes(
-                static_cast<VAssertDirectiveType::en>(directiveTypesp->toUInt()));
+            nodep->ctlDirectiveTypes(VAssertDirectiveType{directiveTypesp->toSInt()});
             return true;
         }
         return false;
