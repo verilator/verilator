@@ -20,6 +20,8 @@ module t (/*AUTOARG*/);
       bit [5:0] arr6[$];
       bit [5:0] bit6 = 6'b111000;
       bit [5:0] ans;
+      bit [3:0] arr4[] = '{25{4'b1000}};
+      bit [99:0] bit100;
       enum_t ans_enum;
 
       { >> bit {arr}} = bit6;
@@ -76,6 +78,14 @@ module t (/*AUTOARG*/);
       ans_enum = enum_t'({ << bit[5:0] {arr6} });
       `checkh(ans_enum, bit6);
 
+      bit100 = { >> bit {arr4} };
+      `checkh(bit100[3:0], 4'b1000);
+      bit100 = { << bit {arr4} };
+      `checkh(bit100[3:0], 4'b0001);
+      { >> bit {arr4} } = bit100;
+      `checkh(arr4[0], 4'b0001);
+      { << bit {arr4} } = bit100;
+      `checkh(arr4[0], 4'b1000);
       $write("*-* All Finished *-*\n");
       $finish;
    end

@@ -1601,31 +1601,67 @@ static inline void VL_ASSIGN_UNPACK_Q(VlUnpacked<T, T_Depth>& q, size_t elem_siz
 }
 
 template <typename T>
-static inline IData VL_DYN_TO_I(const VlQueue<T>& q, int elem_size) {
+static inline IData VL_PACK_II(int obits, int lbits, const VlQueue<T>& q) {
     IData ret = 0;
-    for (int i = 0; i < q.size(); ++i) ret |= q.at(i) << (i * elem_size);
+    for (int i = 0; i < q.size(); ++i) ret |= q.at(i) << (i * lbits);
+    return ret;
+}
+
+template <typename T, std::size_t T_Depth>
+static inline IData VL_PACK_II(int obits, int lbits, const VlUnpacked<T, T_Depth>& q) {
+    IData ret = 0;
+    for (size_t i = 0; i < T_Depth; ++i) ret |= q[T_Depth - 1 - i] << (i * lbits);
+    return ret;
+}
+
+#define VL_PACK_QI VL_PACK_QQ
+
+template <typename T>
+static inline QData VL_PACK_QQ(int obits, int lbits, const VlQueue<T>& q) {
+    QData ret = 0;
+    for (int i = 0; i < q.size(); ++i) ret |= q.at(i) << (i * lbits);
+    return ret;
+}
+
+template <typename T, std::size_t T_Depth>
+static inline QData VL_PACK_QQ(int obits, int lbits, const VlUnpacked<T, T_Depth>& q) {
+    QData ret = 0;
+    for (size_t i = 0; i < T_Depth; ++i) ret |= q[T_Depth - 1 - i] << (i * lbits);
     return ret;
 }
 
 template <typename T>
-static inline QData VL_DYN_TO_Q(const VlQueue<T>& q, int elem_size) {
-    QData ret = 0;
-    for (int i = 0; i < q.size(); ++i) ret |= q.at(i) << (i * elem_size);
-    return ret;
+static inline WDataOutP VL_PACK_WI(int obits, int lbits, WDataOutP owp, const VlQueue<T>& q) {
+    VL_MEMSET_ZERO_W(owp + 1, VL_WORDS_I(obits) - 1);
+    for (int i = 0; i < q.size(); ++i)
+        _vl_insert_WI(owp, q.at(i), i * lbits + lbits - 1, i * lbits);
+    return owp;
 }
 
 template <typename T, std::size_t T_Depth>
-static inline IData VL_UNPACK_TO_I(const VlUnpacked<T, T_Depth>& q, size_t elem_size) {
-    IData ret = 0;
-    for (size_t i = 0; i < T_Depth; ++i) ret |= q[T_Depth - 1 - i] << (i * elem_size);
-    return ret;
+static inline WDataOutP VL_PACK_WI(int obits, int lbits, WDataOutP owp,
+                                   const VlUnpacked<T, T_Depth>& q) {
+    VL_MEMSET_ZERO_W(owp + 1, VL_WORDS_I(obits) - 1);
+    for (size_t i = 0; i < T_Depth; ++i)
+        _vl_insert_WI(owp, q[T_Depth - 1 - i], i * lbits + lbits - 1, i * lbits);
+    return owp;
+}
+
+template <typename T>
+static inline WDataOutP VL_PACK_WQ(int obits, int lbits, WDataOutP owp, const VlQueue<T>& q) {
+    VL_MEMSET_ZERO_W(owp + 1, VL_WORDS_I(obits) - 1);
+    for (int i = 0; i < q.size(); ++i)
+        _vl_insert_WQ(owp, q.at(i), i * lbits + lbits - 1, i * lbits);
+    return owp;
 }
 
 template <typename T, std::size_t T_Depth>
-static inline QData VL_UNPACK_TO_Q(const VlUnpacked<T, T_Depth>& q, size_t elem_size) {
-    QData ret = 0;
-    for (size_t i = 0; i < T_Depth; ++i) ret |= q[T_Depth - 1 - i] << (i * elem_size);
-    return ret;
+static inline WDataOutP VL_PACK_WQ(int obits, int lbits, WDataOutP owp,
+                                   const VlUnpacked<T, T_Depth>& q) {
+    VL_MEMSET_ZERO_W(owp + 1, VL_WORDS_I(obits) - 1);
+    for (size_t i = 0; i < T_Depth; ++i)
+        _vl_insert_WQ(owp, q[T_Depth - 1 - i], i * lbits + lbits - 1, i * lbits);
+    return owp;
 }
 
 // Because concats are common and wide, it's valuable to always have a clean output.
