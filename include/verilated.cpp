@@ -2507,10 +2507,7 @@ VerilatedContext::Serialized::Serialized() {
 bool VerilatedContext::assertOn() const VL_MT_SAFE { return m_s.m_assertOn; }
 void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
     if (flag) {
-        // Shifting by 32 is an undefined behavior here.
-        static_assert(ASSERT_ON_WIDTH < 32, "ASSERT_ON_WIDTH must be less than 32");
-        // Set a subset of bits.
-        m_s.m_assertOn |= (static_cast<uint32_t>(1) << ASSERT_ON_WIDTH) - 1;
+        m_s.m_assertOn = VL_MASK_I(ASSERT_ON_WIDTH);
     } else {
         m_s.m_assertOn = 0;
     }
@@ -2539,7 +2536,7 @@ void VerilatedContext::assertOnSet(VerilatedAssertType_t types,
     // Iterate through all positions of assertion type bits. If bit for this assertion type is set,
     // set directive type bits mask at this group index.
     for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
-        if ((types >> i) & 1)
+        if (VL_BITISSET_I(types, i))
             m_s.m_assertOn |= directives << (i * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH);
     }
 }
@@ -2548,7 +2545,7 @@ void VerilatedContext::assertOnClear(VerilatedAssertType_t types,
     // Iterate through all positions of assertion type bits. If bit for this assertion type is set,
     // clear directive type bits mask at this group index.
     for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
-        if ((types >> i) & 1)
+        if (VL_BITISSET_I(types, i))
             m_s.m_assertOn &= ~(directives << (i * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH));
     }
 }
