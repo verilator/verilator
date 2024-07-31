@@ -2506,11 +2506,8 @@ VerilatedContext::Serialized::Serialized() {
 
 bool VerilatedContext::assertOn() const VL_MT_SAFE { return m_s.m_assertOn; }
 void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
-    if (flag) {
-        m_s.m_assertOn = VL_MASK_I(ASSERT_ON_WIDTH);
-    } else {
-        m_s.m_assertOn = 0;
-    }
+    // Set all assert and directive types when true, clear otherwise.
+    m_s.m_assertOn = VL_MASK_I(ASSERT_ON_WIDTH) * flag;
 }
 bool VerilatedContext::assertOnGet(VerilatedAssertType_t type,
                                    VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE {
