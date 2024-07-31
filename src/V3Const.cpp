@@ -2185,12 +2185,12 @@ class ConstVisitor final : public VNVisitor {
                                                      nodep->lhsp()->dtypep()};
                 // Handling the case where lhs is wider than rhs by inserting zeros. StreamL does
                 // not require this, since the left streaming operator implicitly handles this.
-                const uint32_t packedBits = nodep->lhsp()->widthMin();
-                const uint32_t unpackBits
+                const int packedBits = nodep->lhsp()->widthMin();
+                const int unpackBits
                     = srcDTypep->arrayUnpackedElements() * srcDTypep->subDTypep()->widthMin();
                 const uint32_t offset = packedBits > unpackBits ? packedBits - unpackBits : 0;
                 srcp = new AstShiftL{srcp->fileline(), srcp,
-                                     new AstConst{srcp->fileline(), offset}, 64};
+                                     new AstConst{srcp->fileline(), offset}, packedBits};
             }
             nodep->rhsp(srcp);
             VL_DO_DANGLING(pushDeletep(streamp), streamp);
