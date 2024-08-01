@@ -1586,21 +1586,6 @@ static inline WDataOutP VL_STREAML_WWI(int lbits, WDataOutP owp, WDataInP const 
 }
 
 template <typename T>
-static inline void VL_ASSIGN_DYN_Q(VlQueue<T>& q, int elem_size, int lbits, QData from) {
-    const int size = (lbits + elem_size - 1) / elem_size;
-    q.renew(size);
-    const QData mask = VL_MASK_Q(elem_size);
-    for (int i = 0; i < size; ++i) q.at(i) = (T)((from >> (i * elem_size)) & mask);
-}
-
-template <typename T, std::size_t T_Depth>
-static inline void VL_ASSIGN_UNPACK_Q(VlUnpacked<T, T_Depth>& q, size_t elem_size, QData from) {
-    const QData mask = VL_MASK_Q(elem_size);
-    for (size_t i = 0; i < T_Depth; ++i)
-        q[i] = (T)((from >> ((T_Depth - 1 - i) * elem_size)) & mask);
-}
-
-template <typename T>
 static inline IData VL_PACK_II(int obits, int lbits, const VlQueue<T>& q) {
     IData ret = 0;
     for (int i = 0; i < q.size(); ++i) ret |= q.at(i) << (i * lbits);
@@ -1619,14 +1604,14 @@ static inline IData VL_PACK_II(int obits, int lbits, const VlUnpacked<T, T_Depth
 template <typename T>
 static inline QData VL_PACK_QQ(int obits, int lbits, const VlQueue<T>& q) {
     QData ret = 0;
-    for (int i = 0; i < q.size(); ++i) ret |= q.at(i) << (i * lbits);
+    for (int i = 0; i < q.size(); ++i) ret |= (QData)q.at(i) << (i * lbits);
     return ret;
 }
 
 template <typename T, std::size_t T_Depth>
 static inline QData VL_PACK_QQ(int obits, int lbits, const VlUnpacked<T, T_Depth>& q) {
     QData ret = 0;
-    for (size_t i = 0; i < T_Depth; ++i) ret |= q[T_Depth - 1 - i] << (i * lbits);
+    for (size_t i = 0; i < T_Depth; ++i) ret |= (QData)q[T_Depth - 1 - i] << (i * lbits);
     return ret;
 }
 
@@ -2102,6 +2087,72 @@ static inline WDataOutP VL_SEL_WWII(int obits, int lbits, WDataOutP owp, WDataIn
 
 //======================================================================
 // Expressions needing insert/select
+
+template <typename T>
+static inline void VL_ASSIGN_DYN_II(int lbits, int rbits, VlQueue<T>& q, IData from) {
+    const int size = (rbits + lbits - 1) / lbits;
+    q.renew(size);
+    const IData mask = VL_MASK_I(lbits);
+    for (int i = 0; i < size; ++i) q.at(i) = (T)((from >> (i * lbits)) & mask);
+}
+
+#define VL_ASSIGN_DYN_IQ VL_ASSIGN_DYN_QQ
+
+template <typename T>
+static inline void VL_ASSIGN_DYN_QQ(int lbits, int rbits, VlQueue<T>& q, QData from) {
+    const int size = (rbits + lbits - 1) / lbits;
+    q.renew(size);
+    const QData mask = VL_MASK_Q(lbits);
+    for (int i = 0; i < size; ++i) q.at(i) = (T)((from >> (i * lbits)) & mask);
+}
+
+template <typename T>
+static inline void VL_ASSIGN_DYN_IW(int lbits, int rbits, VlQueue<T>& q, WDataInP rwp) {
+    const int size = (rbits + lbits - 1) / lbits;
+    q.renew(size);
+    const IData mask = VL_MASK_I(lbits);
+    for (int i = 0; i < size; ++i) q.at(i) = (T)(VL_SEL_IWII(rbits, rwp, i * lbits, lbits) & mask);
+}
+
+template <typename T>
+static inline void VL_ASSIGN_DYN_QW(int lbits, int rbits, VlQueue<T>& q, WDataInP rwp) {
+    const int size = (rbits + lbits - 1) / lbits;
+    q.renew(size);
+    const QData mask = VL_MASK_Q(lbits);
+    for (int i = 0; i < size; ++i) q.at(i) = (T)(VL_SEL_QWII(rbits, rwp, i * lbits, lbits) & mask);
+}
+
+template <typename T, std::size_t T_Depth>
+static inline void VL_ASSIGN_UNPACK_II(int lbits, int rbits, VlUnpacked<T, T_Depth>& q,
+                                       QData from) {
+    const IData mask = VL_MASK_I(lbits);
+    for (size_t i = 0; i < T_Depth; ++i) q[i] = (T)((from >> ((T_Depth - 1 - i) * lbits)) & mask);
+}
+
+#define VL_ASSIGN_UNPACK_IQ VL_ASSIGN_UNPACK_QQ
+
+template <typename T, std::size_t T_Depth>
+static inline void VL_ASSIGN_UNPACK_QQ(int lbits, int rbits, VlUnpacked<T, T_Depth>& q,
+                                       QData from) {
+    const QData mask = VL_MASK_Q(lbits);
+    for (size_t i = 0; i < T_Depth; ++i) q[i] = (T)((from >> ((T_Depth - 1 - i) * lbits)) & mask);
+}
+
+template <typename T, std::size_t T_Depth>
+static inline void VL_ASSIGN_UNPACK_IW(int lbits, int rbits, VlUnpacked<T, T_Depth>& q,
+                                       WDataInP rwp) {
+    const IData mask = VL_MASK_I(lbits);
+    for (size_t i = 0; i < T_Depth; ++i)
+        q[i] = (T)(VL_SEL_IWII(rbits, rwp, (T_Depth - 1 - i) * lbits, lbits) & mask);
+}
+
+template <typename T, std::size_t T_Depth>
+static inline void VL_ASSIGN_UNPACK_QW(int lbits, int rbits, VlUnpacked<T, T_Depth>& q,
+                                       WDataInP rwp) {
+    const QData mask = VL_MASK_Q(lbits);
+    for (size_t i = 0; i < T_Depth; ++i)
+        q[i] = (T)(VL_SEL_QWII(rbits, rwp, (T_Depth - 1 - i) * lbits, lbits) & mask);
+}
 
 // Return QData from double (numeric)
 // EMIT_RULE: VL_RTOIROUND_Q_D:  oclean=dirty; lclean==clean/real

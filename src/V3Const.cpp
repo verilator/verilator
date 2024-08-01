@@ -2216,6 +2216,7 @@ class ConstVisitor final : public VNVisitor {
             }
             nodep->lhsp(dstp);
             nodep->rhsp(streamp);
+            nodep->dtypep(dstp->dtypep());
             return true;
         } else if (m_doV && VN_IS(nodep->lhsp(), StreamR)) {
             // The right stream operator on lhs of assignment statement does
@@ -2247,6 +2248,7 @@ class ConstVisitor final : public VNVisitor {
             }
             nodep->lhsp(dstp);
             nodep->rhsp(srcp);
+            nodep->dtypep(dstp->dtypep());
             VL_DO_DANGLING(pushDeletep(streamp), streamp);
             // Further reduce, any of the nodes may have more reductions.
             return true;
