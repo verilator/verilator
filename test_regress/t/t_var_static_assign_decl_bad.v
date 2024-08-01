@@ -15,39 +15,39 @@ task static task_stat;
 endtask
 
 package pkg;
-   function static func_stat;
-     input logic in;
-     logic tmp = in;
-   endfunction
+  function static func_stat;
+    input logic in;
+    logic tmp = in;
+  endfunction
 
-   task static task_stat;
-     input logic in;
-     logic tmp = in;
-   endtask
+  task static task_stat;
+    input logic in;
+    logic tmp = in;
+  endtask
 endpackage
 
 interface iface;
-   function static func_stat;
-     input logic in;
-     logic tmp = in;
-   endfunction
+  function static func_stat;
+    input logic in;
+    logic tmp = in;
+  endfunction
 
-   task static task_stat;
-     input logic in;
-     logic tmp = in;
-   endtask
+  task static task_stat;
+    input logic in;
+    logic tmp = in;
+  endtask
 endinterface
 
 program prog;
-   function static func_stat;
-     input logic in;
-     logic tmp = in;
-   endfunction
+  function static func_stat;
+    input logic in;
+    logic tmp = in;
+  endfunction
 
-   task static task_stat;
-     input logic in;
-     logic tmp = in;
-   endtask
+  task static task_stat;
+    input logic in;
+    logic tmp = in;
+  endtask
 endprogram
 
 module no_warn#(PARAM = 1)(input in, input clk);
@@ -67,29 +67,23 @@ module no_warn#(PARAM = 1)(input in, input clk);
     static logic func_enum = A;
   endfunction
 
-  // Do not warn on non-IO assignments.
-  function static func_local;
-    automatic logic loc;
-    static logic func_var = loc;
+  // Do not warn on assignment referencing module I/O.
+  function static func_module_input;
+    logic tmp = in;
   endfunction
 
-   // Do not warn on assignment referencing module I/O.
-   function static func_module_input;
-     logic tmp = in;
-   endfunction
+  // Do not warn on automatic assignment.
+  function automatic func_auto;
+    input logic in;
+    logic tmp = in;
+  endfunction
 
-   // Do not warn on automatic assignment.
-   function automatic func_auto;
-     input logic in;
-     logic tmp = in;
-   endfunction
-
-   // Do not warn on assignment separate from declaration.
-   function static func_decl_and_assign;
-     input logic in;
-     logic tmp;
-     tmp = in;
-   endfunction
+  // Do not warn on assignment separate from declaration.
+  function static func_decl_and_assign;
+    input logic in;
+    logic tmp;
+    tmp = in;
+  endfunction
 
   // Do not warn on variables under blocks.
   initial begin
@@ -102,44 +96,56 @@ module no_warn#(PARAM = 1)(input in, input clk);
 endmodule
 
 module t(input clk);
-   function static func_stat;
-     input logic in;
-     logic tmp = in;
-   endfunction
+  function static func_stat;
+    input logic in;
+    logic tmp = in;
+  endfunction
 
-   task static task_stat;
-     input logic in;
-     logic tmp = in;
-   endtask
+  task static task_stat;
+    input logic in;
+    logic tmp = in;
+  endtask
 
-   function automatic func_auto_with_static;
-     input logic in;
-     static logic tmp = in;
-   endfunction
+  function automatic func_auto_with_static;
+    input logic in;
+    static logic tmp = in;
+  endfunction
 
-   function static func_assign_out;
-     output logic out;
-     logic tmp = out;
-   endfunction
+  function static func_assign_out;
+    output logic out;
+    logic tmp = out;
+  endfunction
 
-   function static func_assign_expr;
-     input logic in;
-     logic tmp = in + 1;
-   endfunction
+  function static func_assign_expr;
+    input logic in;
+    logic tmp = in + 1;
+  endfunction
 
-   function static func_module_input;
-     // Do not warn on assignment referencing module I/O.
-     logic tmp = clk;
-   endfunction
+  function static int func_assign_static_in_to_auto(input int i);
+    automatic int tmp = i;
+    static int foo = tmp + 1;
+    return foo;
+  endfunction
 
-   iface iface();
-   prog prog;
+  function static int func_assign_auto_to_static();
+    automatic int tmp = 0;
+    static int foo = tmp + 1;
+    return foo;
+  endfunction
 
-   logic in;
-   no_warn no_warn(.in(in), .clk(clk));
+  function static func_local;
+    automatic logic loc;
+    static logic func_var = loc;
+  endfunction
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  iface iface();
+  prog prog;
+
+  logic in;
+  no_warn no_warn(.in(in), .clk(clk));
+
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule

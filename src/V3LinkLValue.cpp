@@ -100,17 +100,29 @@ class LinkLValueVisitor final : public VNVisitor {
             m_setStrengthSpecified = false;
             iterateAndNextNull(nodep->rhsp());
         }
+
         if (m_inInitialStatic && m_inFunc) {
-            const bool rhsHasIO = nodep->rhsp() && nodep->rhsp()->exists([](AstNodeVarRef* refp) {
-                // Exclude module I/O referenced from a function/task.
-                return refp->varp() && refp->varp()->isIO()
-                       && refp->varp()->lifetime() != VLifetime::NONE;
-            });
+            const bool rhsHasIO
+                = nodep->rhsp() && nodep->rhsp()->exists([](const AstNodeVarRef* const refp) {
+                      // Exclude module I/O referenced from a function/task.
+                      return refp->varp() && refp->varp()->isIO()
+                             && refp->varp()->lifetime() != VLifetime::NONE;
+                  });
             if (rhsHasIO) {
                 nodep->rhsp()->v3warn(E_UNSUPPORTED,
-                                      "Static variable declaration assignment\n"
+                                      "Static variable initializer\n"
                                           << nodep->rhsp()->warnMore()
                                           << "is dependent on function/task I/O variable");
+            } else {
+                const bool rhsHasAutomatic
+                    = nodep->rhsp() && nodep->rhsp()->exists([](const AstNodeVarRef* const refp) {
+                          return refp->varp() && refp->varp()->lifetime() == VLifetime::AUTOMATIC;
+                      });
+                if (rhsHasAutomatic) {
+                    nodep->rhsp()->v3error("Static variable initializer\n"
+                                           << nodep->rhsp()->warnMore()
+                                           << "is dependent on automatic variable");
+                }
             }
         }
     }

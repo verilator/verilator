@@ -1,54 +1,66 @@
-%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:107:18: Static variable declaration assignment
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:101:17: Static variable initializer
                                                            : is dependent on function/task I/O variable
-  107 |      logic tmp = in;
-      |                  ^~
+  101 |     logic tmp = in;
+      |                 ^~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:112:18: Static variable declaration assignment
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:106:17: Static variable initializer
                                                            : is dependent on function/task I/O variable
-  112 |      logic tmp = in;
-      |                  ^~
-%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:117:25: Static variable declaration assignment
+  106 |     logic tmp = in;
+      |                 ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:111:24: Static variable initializer
                                                            : is dependent on function/task I/O variable
-  117 |      static logic tmp = in;
-      |                         ^~
-%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:122:18: Static variable declaration assignment
+  111 |     static logic tmp = in;
+      |                        ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:116:17: Static variable initializer
                                                            : is dependent on function/task I/O variable
-  122 |      logic tmp = out;
-      |                  ^~~
-%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:127:21: Static variable declaration assignment
+  116 |     logic tmp = out;
+      |                 ^~~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:121:20: Static variable initializer
                                                            : is dependent on function/task I/O variable
-  127 |      logic tmp = in + 1;
-      |                     ^
-%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:9:15: Static variable declaration assignment
+  121 |     logic tmp = in + 1;
+      |                    ^
+%Error: t/t_var_static_assign_decl_bad.v:126:26: Static variable initializer
+                                               : is dependent on automatic variable
+  126 |     static int foo = tmp + 1;
+      |                          ^
+%Error: t/t_var_static_assign_decl_bad.v:132:26: Static variable initializer
+                                               : is dependent on automatic variable
+  132 |     static int foo = tmp + 1;
+      |                          ^
+%Error: t/t_var_static_assign_decl_bad.v:138:29: Static variable initializer
+                                               : is dependent on automatic variable
+  138 |     static logic func_var = loc;
+      |                             ^~~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:9:15: Static variable initializer
                                                          : is dependent on function/task I/O variable
     9 |   logic tmp = in;
       |               ^~
-%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:14:15: Static variable declaration assignment
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:14:15: Static variable initializer
                                                           : is dependent on function/task I/O variable
    14 |   logic tmp = in;
       |               ^~
-%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:20:18: Static variable declaration assignment
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:20:17: Static variable initializer
                                                           : is dependent on function/task I/O variable
-   20 |      logic tmp = in;
-      |                  ^~
-%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:25:18: Static variable declaration assignment
+   20 |     logic tmp = in;
+      |                 ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:25:17: Static variable initializer
                                                           : is dependent on function/task I/O variable
-   25 |      logic tmp = in;
-      |                  ^~
-%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:32:18: Static variable declaration assignment
+   25 |     logic tmp = in;
+      |                 ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:32:17: Static variable initializer
                                                           : is dependent on function/task I/O variable
-   32 |      logic tmp = in;
-      |                  ^~
-%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:37:18: Static variable declaration assignment
+   32 |     logic tmp = in;
+      |                 ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:37:17: Static variable initializer
                                                           : is dependent on function/task I/O variable
-   37 |      logic tmp = in;
-      |                  ^~
-%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:44:18: Static variable declaration assignment
+   37 |     logic tmp = in;
+      |                 ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:44:17: Static variable initializer
                                                           : is dependent on function/task I/O variable
-   44 |      logic tmp = in;
-      |                  ^~
-%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:49:18: Static variable declaration assignment
+   44 |     logic tmp = in;
+      |                 ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:49:17: Static variable initializer
                                                           : is dependent on function/task I/O variable
-   49 |      logic tmp = in;
-      |                  ^~
+   49 |     logic tmp = in;
+      |                 ^~
 %Error: Exiting due to
