@@ -1102,22 +1102,23 @@ public:
 };
 class AstConstraintRef final : public AstNodeExpr {
     // A reference to a constraint identifier
-    // Not saving pointer to constraint yet, as constraint_mode is an unsupported construct
-    // @astgen op4 := scopeNamep : Optional[AstScopeName]
+    // @astgen op1 := fromp : Optional[AstNodeExpr]
     //
+    // @astgen ptr := m_constrp : AstConstraint  // The constraint pointed to
     // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Class/package of constraint
-    string m_name;  // Name of constraint
 
 public:
-    AstConstraintRef(FileLine* fl, const string& name)
-        : ASTGEN_SUPER_ConstraintRef(fl)
-        , m_name{name} {
+    AstConstraintRef(FileLine* fl, AstNodeExpr* fromp, AstConstraint* constrp)
+        : ASTGEN_SUPER_ConstraintRef(fl) {
+        this->fromp(fromp);
+        this->constrp(constrp);
         dtypep(findConstraintRefDType());
     }
     ASTGEN_MEMBERS_AstConstraintRef;
-    string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
-    void name(const string& name) override { m_name = name; }
-    AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
+    string name() const override VL_MT_STABLE;
+    AstConstraint* constrp() const VL_MT_STABLE { return m_constrp; }
+    void constrp(AstConstraint* nodep) { m_constrp = nodep; }
+    AstNodeModule* classOrPackagep() const VL_MT_STABLE { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
 
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
