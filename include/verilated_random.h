@@ -38,15 +38,19 @@ class VlRandomVar final : public VlRandomExpr {
     const char* const m_name;  // Variable name
     void* const m_datap;  // Reference to variable data
     const int m_width;  // Variable width in bits
+    const std::uint32_t m_randModeIdx;  // rand_mode index
 
 public:
-    VlRandomVar(const char* name, int width, void* datap)
+    VlRandomVar(const char* name, int width, void* datap, std::uint32_t randModeIdx)
         : m_name{name}
         , m_datap{datap}
-        , m_width{width} {}
+        , m_width{width}
+        , m_randModeIdx{randModeIdx} {}
     const char* name() const { return m_name; }
     int width() const { return m_width; }
     void* datap() const { return m_datap; }
+    std::uint32_t randModeIdx() const { return m_randModeIdx; }
+    bool randModeIdxNone() const { return randModeIdx() == std::numeric_limits<unsigned>::max(); }
     bool set(std::string&&) const;
     void emit(std::ostream& s) const override;
 };
@@ -94,8 +98,9 @@ public:
 class VlRandomizer final {
     // MEMBERS
     std::vector<std::string> m_constraints;  // Solver-dependent constraints
-    std::map<std::string, std::shared_ptr<const VlRandomVar>>
-        m_vars;  // Solver-dependent variables
+    std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
+                                                                       // variables
+    const VlQueue<CData>* m_randmode;  // rand_mode state;
 
     // PRIVATE METHODS
     std::shared_ptr<const VlRandomExpr> randomConstraint(VlRNG& rngr, int bits);
@@ -106,13 +111,15 @@ public:
     // Finds the next solution satisfying the constraints
     bool next(VlRNG& rngr);
     template <typename T>
-    void write_var(T& var, int width, const char* name) {
+    void write_var(T& var, int width, const char* name,
+                   std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         auto it = m_vars.find(name);
         if (it != m_vars.end()) return;
-        m_vars[name] = std::make_shared<const VlRandomVar>(name, width, &var);
+        m_vars[name] = std::make_shared<const VlRandomVar>(name, width, &var, randmodeIdx);
     }
     void hard(std::string&& constraint);
     void clear();
+    void set_randmode(const VlQueue<CData>& randmode) { m_randmode = &randmode; }
 #ifdef VL_DEBUG
     void dump() const;
 #endif

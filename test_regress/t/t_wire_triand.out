@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_wire_triand.v:11:4: Unsupported: triand
+   11 |    triand ta;
+      |    ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_wire_triand.v:12:4: Unsupported: trior
+   12 |    trior to;
+      |    ^~~~~
+%Error: Exiting due to

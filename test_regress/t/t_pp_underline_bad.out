@@ -1,6 +1,9 @@
 %Error: t/t_pp_underline_bad.v:8:4: Extra underscore in meta-comment; use /*verilator {...}*/ not /*verilator_{...}*/
     8 |    // verilator_no_inline_module
       |    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_pp_underline_bad.v:10:19: Extra underscore in meta-comment; use /*synopsys {...}*/ not /*synopsys_{...}*/
+   10 |       case (1'b1) // synopsys_full_case
+      |                   ^~~~~~~~~~~~~~~~~~~~~
 %Error: t/t_pp_underline_bad.v:8:4: Unknown verilator comment: '/*verilator _no_inline_module*/'
     8 |    /*verilator _no_inline_module*/ 
       |    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

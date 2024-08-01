@@ -1488,6 +1488,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                     // We use an int type, this might get changed in V3Width when types resolve
                     argrefp = new AstVar{parserefp->fileline(), VVarType::BLOCKTEMP,
                                          parserefp->name(), argp->findSigned32DType()};
+                    argrefp->lifetime(VLifetime::AUTOMATIC);
                     parserefp->replaceWith(argrefp);
                     VL_DO_DANGLING(parserefp->deleteTree(), parserefp);
                     // Insert argref's name into symbol table
@@ -3371,8 +3372,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 } else if (VN_IS(nodep, New) && m_statep->forPrearray()) {
                     // Resolved in V3Width
                 } else if (nodep->name() == "randomize" || nodep->name() == "srandom"
-                           || nodep->name() == "get_randstate"
-                           || nodep->name() == "set_randstate") {
+                           || nodep->name() == "get_randstate" || nodep->name() == "set_randstate"
+                           || nodep->name() == "rand_mode") {
                     if (AstClass* const classp = VN_CAST(m_modp, Class)) {
                         nodep->classOrPackagep(classp);
                     } else {

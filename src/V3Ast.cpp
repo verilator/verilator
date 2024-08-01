@@ -1585,7 +1585,7 @@ VCastable AstNode::computeCastable(const AstNodeDType* toDtp, const AstNodeDType
     const auto castable = computeCastableImp(toDtp, fromDtp, fromConstp);
     UINFO(9, "  castable=" << castable << "  for " << toDtp << endl);
     UINFO(9, "     =?= " << fromDtp << endl);
-    UINFO(9, "     const= " << fromConstp << endl);
+    if (fromConstp) UINFO(9, "     const= " << fromConstp << endl);
     return castable;
 }
 

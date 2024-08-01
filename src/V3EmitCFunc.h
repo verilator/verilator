@@ -1420,9 +1420,12 @@ public:
     void visit(AstConsDynArray* nodep) override {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
         if (!nodep->lhsp()) {
-            putns(nodep, "()");
+            putns(nodep, "{}");
         } else {
-            putns(nodep, "::cons(");
+            puts("::cons");
+            puts(nodep->lhsIsValue() ? "V" : "C");
+            if (nodep->rhsp()) puts(nodep->rhsIsValue() ? "V" : "C");
+            puts("(");
             iterateAndNextConstNull(nodep->lhsp());
             if (nodep->rhsp()) {
                 puts(", ");
@@ -1451,9 +1454,12 @@ public:
     void visit(AstConsQueue* nodep) override {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
         if (!nodep->lhsp()) {
-            puts("()");
+            puts("{}");
         } else {
-            puts("::cons(");
+            puts("::cons");
+            puts(nodep->lhsIsValue() ? "V" : "C");
+            if (nodep->rhsp()) puts(nodep->rhsIsValue() ? "V" : "C");
+            puts("(");
             iterateAndNextConstNull(nodep->lhsp());
             if (nodep->rhsp()) {
                 puts(", ");
@@ -1475,15 +1481,13 @@ public:
     }
 
     // Default
-    void visit(AstNode* nodep) override {
+    void visit(AstNode* nodep) override {  // LCOV_EXCL_START
         putns(nodep, "\n???? // "s + nodep->prettyTypeName() + "\n");
         iterateChildrenConst(nodep);
-        // LCOV_EXCL_START
         if (!v3Global.opt.lintOnly()) {  // An internal problem, so suppress
             nodep->v3fatalSrc("Unknown node type reached emitter: " << nodep->prettyTypeName());
         }
-        // LCOV_EXCL_STOP
-    }
+    }  // LCOV_EXCL_STOP
 
     EmitCFunc()
         : m_lazyDecls(*this) {}

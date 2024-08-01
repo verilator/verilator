@@ -11,8 +11,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
-    v_flags2 => ["t/t_compiler_include.cpp"],
-    verilator_flags2 => ["-Wall -Wno-DECLFILENAME --compiler-include $Self->{t_dir}/t_compiler_include.h"],
+    make_top_shell => 0,
+    make_main => 0,
+    verilator_flags2 => ["--exe", "$Self->{t_dir}/$Self->{name}.cpp", "--compiler-include $Self->{t_dir}/t_compiler_include.h", "--output-split 0"],
     );
 
 execute(

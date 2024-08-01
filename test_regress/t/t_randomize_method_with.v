@@ -4,6 +4,20 @@
 // any use, without warranty, 2024 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
 
+`define check_rand(cl, field) \
+begin \
+   longint prev_result; \
+   int ok = 0; \
+   for (int i = 0; i < 10; i++) begin \
+      longint result; \
+      void'(cl.randomize()); \
+      result = longint'(field); \
+      if (i > 0 && result != prev_result) ok = 1; \
+      prev_result = result; \
+   end \
+   if (ok != 1) $stop; \
+end
+
 class Boo;
   function new();
     boo = 6;
@@ -72,6 +86,15 @@ function automatic int return_2();
   return 2;
 endfunction
 
+class Cls;
+   rand int a;
+   rand int b;
+endclass
+
+class Cls2 extends Cls;
+   rand int c;
+endclass
+
 module mwith();
   submodule sub1();
   submodule sub2();
@@ -86,6 +109,8 @@ module mwith();
     Baz baz = new;
     Baz2 baz2 = new;
     Bar bar = new;
+    Cls2 cls2 = new;
+    Cls cls = cls2;
     $display("foo.x = %d", foo.x);
     $display("-----------------");
 
@@ -105,6 +130,10 @@ module mwith();
         $display("Failed to randomize foo with inline constraints");
     end
 
+    if (cls.randomize() with { b == 1;} != 1) $stop;
+    if (cls.b != 1) $stop;
+    `check_rand(cls2, cls2.a);
+    `check_rand(cls2, cls2.c);
     // Check capture of a static variable
     if (foo.randomize() with { a > sub1.sub_var; } != 1) $stop;
     // Check reference to a function

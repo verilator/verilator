@@ -121,11 +121,12 @@ public:
         UINFO(9, "     SymInsert se" << cvtToHex(this) << " '" << name << "' se" << cvtToHex(entp)
                                      << "  " << entp->nodep() << endl);
         if (name != "" && m_idNameMap.find(name) != m_idNameMap.end()) {
-            if (!V3Error::errorCount()) {  // Else may have just reported warning
+            // If didn't already report warning
+            if (!V3Error::errorCount()) {  // LCOV_EXCL_START
                 if (debug() >= 9 || V3Error::debugDefault())
                     dumpSelf(std::cout, "- err-dump: ", 1);
                 entp->nodep()->v3fatalSrc("Inserting two symbols with same name: " << name);
-            }
+            }  // LCOV_EXCL_STOP
         } else {
             m_idNameMap.emplace(name, entp);
         }

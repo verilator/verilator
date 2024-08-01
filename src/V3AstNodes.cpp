@@ -322,6 +322,28 @@ AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* l
     return new AstLogAnd{fileline(), ap, bp};
 }
 
+void AstConsDynArray::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (lhsIsValue()) str << " [LVAL]";
+    if (rhsIsValue()) str << " [RVAL]";
+}
+void AstConsDynArray::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, lhsIsValue);
+    dumpJsonBoolFunc(str, rhsIsValue);
+    dumpJsonGen(str);
+}
+
+void AstConsQueue::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (lhsIsValue()) str << " [LVAL]";
+    if (rhsIsValue()) str << " [RVAL]";
+}
+void AstConsQueue::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, lhsIsValue);
+    dumpJsonBoolFunc(str, rhsIsValue);
+    dumpJsonGen(str);
+}
+
 AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
     bool success = false;
     if (literal[0] == '"') {
@@ -2812,6 +2834,7 @@ void AstCMethodHard::setPurity() {
                                                           {"reverse", false},
                                                           {"rsort", false},
                                                           {"set", false},
+                                                          {"set_randmode", false},
                                                           {"shuffle", false},
                                                           {"size", true},
                                                           {"slice", true},

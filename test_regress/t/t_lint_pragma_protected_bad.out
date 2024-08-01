@@ -47,7 +47,34 @@
 %Warning-PROTECTED: t/t_lint_pragma_protected_bad.v:74:17: A '`pragma protected data_block' encrypted section was detected and will be skipped.
 %Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:75:1: BASE64 line too long in `pragma protect key_bloock/data_block
 %Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:75:1: BASE64 encoding length mismatch in `pragma protect key_bloock/data_block
-%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:83:1: `pragma is missing a pragma_expression.
-   83 | `pragma
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:77:17: Multiple `pragma protected encoding sections
+   77 | `pragma protect encoding = (enctype = "UUENCODE", line_length = 1, bytes = 4)
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_lint_pragma_protected_bad.v:77:17: Unsupported: only BASE64 is recognized for `pragma protected encoding
+   77 | `pragma protect encoding = (enctype = "UUENCODE", line_length = 1, bytes = 4)
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Warning-PROTECTED: t/t_lint_pragma_protected_bad.v:79:17: A '`pragma protected data_block' encrypted section was detected and will be skipped.
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:80:1: BASE64 line too long in `pragma protect key_bloock/data_block
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:80:1: BASE64 encoding length mismatch in `pragma protect key_bloock/data_block
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:81:17: Multiple `pragma protected encoding sections
+   81 | `pragma protect encoding = (enctype = "QUOTED-PRINTABLE", line_length = 1, bytes = 4)
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:81:17: Illegal encoding type for `pragma protected encoding
+   81 | `pragma protect encoding = (enctype = "QUOTED-PRINTABLE", line_length = 1, bytes = 4)
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_lint_pragma_protected_bad.v:81:17: Unsupported: only BASE64 is recognized for `pragma protected encoding
+   81 | `pragma protect encoding = (enctype = "QUOTED-PRINTABLE", line_length = 1, bytes = 4)
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Warning-PROTECTED: t/t_lint_pragma_protected_bad.v:83:17: A '`pragma protected data_block' encrypted section was detected and will be skipped.
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:84:1: BASE64 encoding (too short) in `pragma protect key_bloock/data_block
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:84:1: BASE64 encoding length mismatch in `pragma protect key_bloock/data_block
+%Error-UNSUPPORTED: t/t_lint_pragma_protected_bad.v:85:17: Unsupported: only BASE64 is recognized for `pragma protected encoding
+   85 | `pragma protect encoding = (enctype = "RAW", line_length = 1, bytes = 4)
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Warning-PROTECTED: t/t_lint_pragma_protected_bad.v:87:17: A '`pragma protected data_block' encrypted section was detected and will be skipped.
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:88:1: BASE64 line too long in `pragma protect key_bloock/data_block
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:88:1: BASE64 encoding length mismatch in `pragma protect key_bloock/data_block
+%Error-BADSTDPRAGMA: t/t_lint_pragma_protected_bad.v:96:1: `pragma is missing a pragma_expression.
+   96 | `pragma
       | ^~~~~~~
 %Error: Exiting due to

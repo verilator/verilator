@@ -768,7 +768,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
             }
             return out;
         }
-    } else {
+    } else {  // LCOV_EXCL_BR_LINE
         v3fatalSrc("Unknown node type in reset generator: " << varp->prettyTypeName());
     }
     return "";

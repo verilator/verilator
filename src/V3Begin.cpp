@@ -327,6 +327,7 @@ private:
 
     // VISITORS
     void visit(AstNodeFTaskRef* nodep) override {
+        UASSERT_OBJ(nodep->taskp(), nodep, "unlinked");
         if (nodep->taskp()->user1()) {  // It was converted
             UINFO(9, "    relinkFTask " << nodep << endl);
             nodep->name(nodep->taskp()->name());

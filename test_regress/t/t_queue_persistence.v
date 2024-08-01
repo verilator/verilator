@@ -9,7 +9,8 @@
 
 module t(/*AUTOARG*/);
 
-   int q[$];
+   int qdel[$];
+   int qkept[$];
 
    task automatic func(ref int vrefed);
 `ifdef TEST_NOINLINE
@@ -18,23 +19,35 @@ module t(/*AUTOARG*/);
       `checkd(vrefed, 2);
       #100;
       vrefed = 10;
+      #10;
       `checkd(vrefed, 10);
    endtask
 
    initial begin
-      q.push_back(1);
-      q.push_back(2);
-      q.push_back(3);
-      `checkd(q[0], 1);
-      `checkd(q[1], 2);
-      `checkd(q[2], 3);
-      func(q[1]);
+      qkept.push_back(1);
+      qkept.push_back(2);
+      qkept.push_back(3);
+      qdel = qkept;
+      $display("qkept=%p  qdel=%p", qkept, qdel);
+      `checkd(qkept[0], 1);
+      `checkd(qkept[1], 2);
+      `checkd(qkept[2], 3);
+
+      func(qdel[1]);
+      func(qkept[1]);
+
+      $display("qkept=%p  qdel=%p", qkept, qdel);
+      `checkd(qdel.size, 0);
+      `checkd(qkept[0], 1);
+      `checkd(qkept[1], 10);
+      `checkd(qkept[2], 3);
    end
 
    initial begin
       #50;
-      `checkd(q[1], 2);
-      q.delete();
+      `checkd(qdel[1], 2);
+      `checkd(qkept[1], 2);
+      qdel.delete();
       #100;
 
       $write("*-* All Finished *-*\n");

@@ -74,6 +74,19 @@ aW5pdGlvbnMuCgogIEFzIHVzZWQgaGVyZWluLCAidGhpcyBMaWNlbnNlIiByZWZlcnMgdG8gdmVyTOOL
 aW5p
 
 
+`pragma protect encoding = (enctype = "UUENCODE", line_length = 1, bytes = 4)
+`pragma protect data_block
+aW5p
+
+`pragma protect encoding = (enctype = "QUOTED-PRINTABLE", line_length = 1, bytes = 4)
+`pragma protect data_block
+aW5p
+
+`pragma protect encoding = (enctype = "RAW", line_length = 1, bytes = 4)
+`pragma protect data_block
+aW5p
+
+
 `pragma protect end_protected
 
 // Should trigger unknown pragma warning, although in principle unknown pragmas should be safely ignored.

@@ -151,8 +151,11 @@ public:
             of.puts("default: lib" + v3Global.opt.prefix() + "\n");
         }
         of.puts("\n### Constants...\n");
-        of.puts("# Perl executable (from $PERL)\n");
+        of.puts("# Perl executable (from $PERL, defaults to 'perl' if not set)\n");
         of.puts("PERL = " + V3OutFormatter::quoteNameControls(V3Options::getenvPERL()) + "\n");
+        of.puts("# Python3 executable (from $PYTHON3, defaults to 'python3' if not set)\n");
+        of.puts("PYTHON3 = " + V3OutFormatter::quoteNameControls(V3Options::getenvPYTHON3())
+                + "\n");
         of.puts("# Path to Verilator kit (from $VERILATOR_ROOT)\n");
         of.puts("VERILATOR_ROOT = "
                 + V3OutFormatter::quoteNameControls(V3Options::getenvVERILATOR_ROOT()) + "\n");
@@ -236,11 +239,18 @@ public:
             of.puts("\n");
         }
 
+        const string compilerIncludePch
+            = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_PCH_H).fast.gch";
+        const string compilerIncludeFlag
+            = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_PCH_I_FAST)";
         for (const string& cppfile : cppFiles) {
             const string basename = V3Os::filenameNonDirExt(cppfile);
             // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-            of.puts(basename + ".o: " + cppfile + "\n");
-            of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<\n");
+            of.puts(basename + ".o: " + cppfile + " " + compilerIncludePch + "\n");
+
+            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
+            of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) "
+                    + compilerIncludeFlag + " -c -o $@ $<\n");
         }
 
         if (v3Global.opt.exe()) {

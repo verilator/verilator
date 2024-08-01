@@ -81,7 +81,10 @@ class CMakeEmitter final {
 
         *of << "\n### Constants...\n";
         cmake_set(*of, "PERL", V3OutFormatter::quoteNameControls(V3Options::getenvPERL()),
-                  "FILEPATH", "Perl executable (from $PERL)");
+                  "FILEPATH", "Perl executable (from $PERL, defaults to 'perl' if not set)");
+        cmake_set(*of, "PYTHON3", V3OutFormatter::quoteNameControls(V3Options::getenvPYTHON3()),
+                  "FILEPATH",
+                  "Python3 executable (from $PYTHON3, defaults to 'python3' if not set)");
         cmake_set(*of, "VERILATOR_ROOT",
                   V3OutFormatter::quoteNameControls(V3Options::getenvVERILATOR_ROOT()), "PATH",
                   "Path to Verilator kit (from $VERILATOR_ROOT)");

@@ -192,13 +192,10 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
       fatal "Unknown test: $TESTS"
       ;;
   esac
+
   # 22.04: ccache -s -v
   ccache -s
 
-  # Upload coverage data
-  if [[ $TESTS == coverage-* ]]; then
-    bash <(cat ci/coverage-upload.sh) -f nodist/obj_dir/coverage/app_total.info
-  fi
 else
   ##############################################################################
   # Unknown build stage

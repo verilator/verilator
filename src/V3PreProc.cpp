@@ -1254,10 +1254,10 @@ int V3PreProcImp::getStateToken() {
             static string newlines;
             newlines = "\n";  // Always start with trailing return
             if (tok == VP_DEFVALUE) {
-                if (debug() >= 5) {
+                if (debug() >= 5) {  // LCOV_EXCL_START
                     cout << "DefValue='" << V3PreLex::cleanDbgStrg(m_lexp->m_defValue)
                          << "'  formals='" << V3PreLex::cleanDbgStrg(m_formals) << "'\n";
-                }
+                }  // LCOV_EXCL_STOP
                 // Add any formals
                 const string formals = m_formals;
                 string value = m_lexp->m_defValue;

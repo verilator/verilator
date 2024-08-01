@@ -570,7 +570,7 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const VL_MT_STABLE {
     }
     if (isNull()) {
         if (VL_UNCOVERABLE(!isEqZero())) {
-            out << "-%E-null-not-zero";
+            out << "-%E-null-not-zero";  // LCOV_EXCL_LINE
         } else {
             out << " [null]";
         }
@@ -1202,16 +1202,6 @@ V3Number& V3Number::opBitsZ(const V3Number& lhs) {  // 0/1->1, X/Z->0
     }
     return *this;
 }
-V3Number& V3Number::opBitsNonZ(const V3Number& lhs) {  // 0/1->1, X/Z->0
-    // op i, L(lhs) bit return
-    NUM_ASSERT_OP_ARGS1(lhs);
-    NUM_ASSERT_LOGIC_ARGS1(lhs);
-    setZero();
-    for (int bit = 0; bit < width(); bit++) {
-        if (!lhs.bitIsZ(bit)) setBit(bit, 1);
-    }
-    return *this;
-}
 
 //======================================================================
 // Operators - Simple per-bit logical ops
@@ -1706,11 +1696,13 @@ V3Number& V3Number::opWildEq(const V3Number& lhs, const V3Number& rhs) {
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
     char outc = 1;
     for (int bit = 0; bit < std::max(lhs.width(), rhs.width()); bit++) {
-        if (!rhs.bitIsXZ(bit) && lhs.bitIs(bit) != rhs.bitIs(bit)) {
-            outc = 0;
-            goto last;
+        if (!rhs.bitIsXZ(bit)) {
+            if (lhs.bitIs(bit) != rhs.bitIs(bit)) {
+                outc = 0;
+                goto last;
+            }
+            if (lhs.bitIsXZ(bit)) outc = 'x';
         }
-        if (lhs.bitIsXZ(bit)) outc = 'x';
     }
 last:
     return setSingleBits(outc);
@@ -1721,11 +1713,13 @@ V3Number& V3Number::opWildNeq(const V3Number& lhs, const V3Number& rhs) {
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
     char outc = 0;
     for (int bit = 0; bit < std::max(lhs.width(), rhs.width()); bit++) {
-        if (!rhs.bitIsXZ(bit) && lhs.bitIs(bit) != rhs.bitIs(bit)) {
-            outc = 1;
-            goto last;
+        if (!rhs.bitIsXZ(bit)) {
+            if (lhs.bitIs(bit) != rhs.bitIs(bit)) {
+                outc = 1;
+                goto last;
+            }
+            if (lhs.bitIsXZ(bit)) outc = 'x';
         }
-        if (lhs.bitIsXZ(bit)) outc = 'x';
     }
 last:
     return setSingleBits(outc);

@@ -96,3 +96,10 @@ jobs:
       env:
         TESTS: coverage-${{ matrix.test }}${{ matrix.num }}
       run: ./ci/ci-script.bash
+
+    - name: Upload coverage data to Codecov
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      run: |
+        find . -name '*.gcno' -exec rm {} \;
+        ./ci/codecov -v upload-process -Z --sha ${{ github.sha }} -f nodist/obj_dir/coverage/app_total.info

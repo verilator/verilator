@@ -262,6 +262,16 @@ class SliceVisitor final : public VNVisitor {
         m_okInitArray = true;
         iterateChildren(nodep);
     }
+    void visit(AstConsDynArray* nodep) override {
+        VL_RESTORER(m_okInitArray);
+        m_okInitArray = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstConsQueue* nodep) override {
+        VL_RESTORER(m_okInitArray);
+        m_okInitArray = true;
+        iterateChildren(nodep);
+    }
     void visit(AstInitArray* nodep) override {
         UASSERT_OBJ(!m_assignp || m_okInitArray, nodep,
                     "Array initialization should have been removed earlier");

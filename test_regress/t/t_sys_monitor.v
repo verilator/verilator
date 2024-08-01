@@ -38,6 +38,7 @@ module t(/*AUTOARG*/
          $monitoron;
       end
       else if (cyc == 30) begin
+      	 $monitoroff;  // To avoid inconsistent output between --vlt and --vltmt
          $write("*-* All Finished *-*\n");
          $finish;
       end

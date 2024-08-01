@@ -810,19 +810,38 @@ class AstConsDynArray final : public AstNodeExpr {
     // Construct a queue and return object, '{}. '{lhs}, '{lhs. rhs}
     // @astgen op1 := lhsp : Optional[AstNode]
     // @astgen op2 := rhsp : Optional[AstNode]
+    const bool m_lhsIsValue = false;  // LHS constructs value inside the queue, not concat
+    const bool m_rhsIsValue = false;  // RHS constructs value inside the queue, not concat
 public:
-    explicit AstConsDynArray(FileLine* fl, AstNode* lhsp = nullptr, AstNode* rhsp = nullptr)
-        : ASTGEN_SUPER_ConsDynArray(fl) {
+    explicit AstConsDynArray(FileLine* fl)
+        : ASTGEN_SUPER_ConsDynArray(fl) {}
+    explicit AstConsDynArray(FileLine* fl, bool lhsIsValue, AstNode* lhsp)
+        : ASTGEN_SUPER_ConsDynArray(fl)
+        , m_lhsIsValue(lhsIsValue) {
+        this->lhsp(lhsp);
+    }
+    explicit AstConsDynArray(FileLine* fl, bool lhsIsValue, AstNode* lhsp, bool rhsIsValue,
+                             AstNode* rhsp)
+        : ASTGEN_SUPER_ConsDynArray(fl)
+        , m_lhsIsValue(lhsIsValue)
+        , m_rhsIsValue(rhsIsValue) {
         this->lhsp(lhsp);
         this->rhsp(rhsp);
     }
     ASTGEN_MEMBERS_AstConsDynArray;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string emitVerilog() override { return "'{%l, %r}"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     int instrCount() const override { return widthInstrs(); }
-    bool same(const AstNode* /*samep*/) const override { return true; }
+    bool same(const AstNode* samep) const override {
+        const AstConsDynArray* const sp = VN_DBG_AS(samep, ConsDynArray);
+        return m_lhsIsValue == sp->m_lhsIsValue && m_rhsIsValue == sp->m_rhsIsValue;
+    }
+    bool lhsIsValue() const { return m_lhsIsValue; }
+    bool rhsIsValue() const { return m_rhsIsValue; }
 };
 class AstConsPackMember final : public AstNodeExpr {
     // Construct a packed array single emement [member1: value1]
@@ -873,19 +892,38 @@ class AstConsQueue final : public AstNodeExpr {
     // Construct a queue and return object, '{}. '{lhs}, '{lhs. rhs}
     // @astgen op1 := lhsp : Optional[AstNode]
     // @astgen op2 := rhsp : Optional[AstNode]
+    const bool m_lhsIsValue = false;  // LHS constructs value inside the queue, not concat
+    const bool m_rhsIsValue = false;  // RHS constructs value inside the queue, not concat
 public:
-    explicit AstConsQueue(FileLine* fl, AstNode* lhsp = nullptr, AstNode* rhsp = nullptr)
-        : ASTGEN_SUPER_ConsQueue(fl) {
+    explicit AstConsQueue(FileLine* fl)
+        : ASTGEN_SUPER_ConsQueue(fl) {}
+    explicit AstConsQueue(FileLine* fl, bool lhsIsValue, AstNode* lhsp)
+        : ASTGEN_SUPER_ConsQueue(fl)
+        , m_lhsIsValue(lhsIsValue) {
+        this->lhsp(lhsp);
+    }
+    explicit AstConsQueue(FileLine* fl, bool lhsIsValue, AstNode* lhsp, bool rhsIsValue,
+                          AstNode* rhsp)
+        : ASTGEN_SUPER_ConsQueue(fl)
+        , m_lhsIsValue(lhsIsValue)
+        , m_rhsIsValue(rhsIsValue) {
         this->lhsp(lhsp);
         this->rhsp(rhsp);
     }
     ASTGEN_MEMBERS_AstConsQueue;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string emitVerilog() override { return "'{%l, %r}"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     int instrCount() const override { return widthInstrs(); }
-    bool same(const AstNode* /*samep*/) const override { return true; }
+    bool same(const AstNode* samep) const override {
+        const AstConsQueue* const sp = VN_DBG_AS(samep, ConsQueue);
+        return m_lhsIsValue == sp->m_lhsIsValue && m_rhsIsValue == sp->m_rhsIsValue;
+    }
+    bool lhsIsValue() const { return m_lhsIsValue; }
+    bool rhsIsValue() const { return m_rhsIsValue; }
 };
 class AstConsWildcard final : public AstNodeExpr {
     // Construct a wildcard assoc array and return object, '{}

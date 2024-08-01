@@ -4,6 +4,9 @@
 // any use, without warranty, 2007 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
+
 module t (/*AUTOARG*/
    // Inputs
    clk
@@ -34,6 +37,25 @@ module t (/*AUTOARG*/
 
    // What checksum will we end up with
 `define EXPECTED_SUM 64'h1a0d07009b6a30d2
+
+   initial begin
+      `checkh(3'b101 ==? 3'b100, 1'b0);
+      `checkh(3'b101 ==? 3'b101, 1'b1);
+      `checkh(3'b100 ==? 3'b10x, 1'b1);
+      `checkh(3'b101 ==? 3'b10x, 1'b1);
+      `checkh(3'b10x ==? 3'b10?, 1'b1);
+      `checkh(3'b110 ==? 3'b10?, 1'b0);
+      `checkh(3'b111 ==? 3'b10?, 1'b0);
+      `checkh(3'b11x ==? 3'b10?, 1'b0);
+      `checkh(3'b101 !=? 3'b100, !1'b0);
+      `checkh(3'b101 !=? 3'b101, !1'b1);
+      `checkh(3'b100 !=? 3'b10x, !1'b1);
+      `checkh(3'b101 !=? 3'b10x, !1'b1);
+      `checkh(3'b10x !=? 3'b10?, !1'b1);
+      `checkh(3'b110 !=? 3'b10?, !1'b0);
+      `checkh(3'b111 !=? 3'b10?, !1'b0);
+      `checkh(3'b11x !=? 3'b10?, !1'b0);
+   end
 
    // Test loop
    always @ (posedge clk) begin

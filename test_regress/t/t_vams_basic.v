@@ -27,6 +27,8 @@ module t (/*AUTOARG*/
    sub sub (.*);
 
    initial begin
+      check(`__LINE__, asin(0.5)        , 0.523599);
+      check(`__LINE__, asinh(0.5)       , 0.481212);
       check(`__LINE__, atan(0.5)        , 0.463648);
       check(`__LINE__, atan2(0.5, 0.3)  , 1.03038);
       check(`__LINE__, atanh(0.5)       , 0.549306);
