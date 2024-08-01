@@ -102,12 +102,11 @@ class LinkLValueVisitor final : public VNVisitor {
         }
 
         if (m_inInitialStatic && m_inFunc) {
-            const bool rhsHasIO
-                = nodep->rhsp() && nodep->rhsp()->exists([](const AstNodeVarRef* const refp) {
-                      // Exclude module I/O referenced from a function/task.
-                      return refp->varp() && refp->varp()->isIO()
-                             && refp->varp()->lifetime() != VLifetime::NONE;
-                  });
+            const bool rhsHasIO = nodep->rhsp()->exists([](const AstNodeVarRef* const refp) {
+                // Exclude module I/O referenced from a function/task.
+                return refp->varp() && refp->varp()->isIO()
+                       && refp->varp()->lifetime() != VLifetime::NONE;
+            });
             if (rhsHasIO) {
                 nodep->rhsp()->v3warn(E_UNSUPPORTED,
                                       "Static variable initializer\n"
@@ -115,7 +114,7 @@ class LinkLValueVisitor final : public VNVisitor {
                                           << "is dependent on function/task I/O variable");
             } else {
                 const bool rhsHasAutomatic
-                    = nodep->rhsp() && nodep->rhsp()->exists([](const AstNodeVarRef* const refp) {
+                    = nodep->rhsp()->exists([](const AstNodeVarRef* const refp) {
                           return refp->varp() && refp->varp()->lifetime() == VLifetime::AUTOMATIC;
                       });
                 if (rhsHasAutomatic) {
