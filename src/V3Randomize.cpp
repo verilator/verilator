@@ -1564,8 +1564,10 @@ class RandomizeVisitor final : public VNVisitor {
         // Generate constraint setup code and a hardcoded call to the solver
         AstNode* const capturedTreep = withp->exprp()->unlinkFrBackWithNext();
         randomizeFuncp->addStmtsp(capturedTreep);
-        { ConstraintExprVisitor{m_memberMap, capturedTreep, randomizeFuncp, localGenp,
-                                randModeVarp}; }
+        {
+            ConstraintExprVisitor{m_memberMap, capturedTreep, randomizeFuncp, localGenp,
+                                  randModeVarp};
+        }
 
         // Call the solver and set return value
         AstVarRef* const randNextp
