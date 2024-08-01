@@ -374,6 +374,8 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
     return nullptr;
 }
 
+string AstConstraintRef::name() const { return constrp()->name(); }
+
 AstNetlist::AstNetlist()
     : ASTGEN_SUPER_Netlist(new FileLine{FileLine::builtInFilename()})
     , m_typeTablep{new AstTypeTable{fileline()}}
