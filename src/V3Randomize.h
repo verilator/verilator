@@ -33,7 +33,8 @@ public:
     static void randomizeNetlist(AstNetlist* nodep) VL_MT_DISABLED;
 
     static AstFunc* newRandomizeFunc(VMemberMap& memberMap, AstClass* nodep,
-                                     const std::string& name = "randomize") VL_MT_DISABLED;
+                                     const std::string& name = "randomize",
+                                     bool allowVirtual = true) VL_MT_DISABLED;
     static AstFunc* newSRandomFunc(VMemberMap& memberMap, AstClass* nodep) VL_MT_DISABLED;
 };
 
