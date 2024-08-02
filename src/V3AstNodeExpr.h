@@ -1138,30 +1138,16 @@ public:
     string emitC() override { return "VL_PACK_%nq%rq(%nw, %rw, %P, %li)"; }
     bool cleanOut() const override { return true; }
 };
-class AstCvtPackedToDynArray final : public AstNodeExpr {
-    // Cast from packed array to dynamic queue data type
+class AstCvtPackedToArray final : public AstNodeExpr {
+    // Cast from packed array to dynamic/unpacked queue data type
     // @astgen op1 := fromp : AstNodeExpr
 public:
-    AstCvtPackedToDynArray(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
-        : ASTGEN_SUPER_CvtPackedToDynArray(fl) {
+    AstCvtPackedToArray(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
+        : ASTGEN_SUPER_CvtPackedToArray(fl) {
         this->fromp(fromp);
         dtypeFrom(dtp);
     }
-    ASTGEN_MEMBERS_AstCvtPackedToDynArray;
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return true; }
-};
-class AstCvtPackedToUnpackArray final : public AstNodeExpr {
-    // Cast from packed array to dynamic queue data type
-    // @astgen op1 := fromp : AstNodeExpr
-public:
-    AstCvtPackedToUnpackArray(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
-        : ASTGEN_SUPER_CvtPackedToUnpackArray(fl) {
-        this->fromp(fromp);
-        dtypeFrom(dtp);
-    }
-    ASTGEN_MEMBERS_AstCvtPackedToUnpackArray;
+    ASTGEN_MEMBERS_AstCvtPackedToArray;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
