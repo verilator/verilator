@@ -21,7 +21,11 @@ module t (/*AUTOARG*/);
       bit [5:0] bit6 = 6'b111000;
       bit [5:0] ans;
       bit [3:0] arr4[] = '{25{4'b1000}};
+      bit [7:0] arr8[] = '{8{8'b00110011}};
+      bit [63:0] arr64[] = '{5{64'h0123456789abcdef}};
+      bit [63:0] bit64;
       bit [99:0] bit100;
+      bit [319:0] bit320;
       enum_t ans_enum;
 
       { >> bit {arr}} = bit6;
@@ -78,14 +82,35 @@ module t (/*AUTOARG*/);
       ans_enum = enum_t'({ << bit[5:0] {arr6} });
       `checkh(ans_enum, bit6);
 
+      bit64 = { >> bit {arr8} };
+      `checkh(bit64[7:0], 8'b00110011);
+      bit64 = { << bit {arr8} };
+      `checkh(bit64[7:0], 8'b11001100);
+
+      { >> bit {arr8} } = bit64;
+      `checkh(arr8[0], 8'b11001100);
+      { << bit {arr8} } = bit64;
+      `checkh(arr8[0], 8'b00110011);
+
       bit100 = { >> bit {arr4} };
       `checkh(bit100[3:0], 4'b1000);
       bit100 = { << bit {arr4} };
       `checkh(bit100[3:0], 4'b0001);
+
+      bit320 = { >> byte {arr64} };
+      `checkh(bit320[63:0], 64'h0123456789abcdef);
+      bit320 = { << byte {arr64} };
+      `checkh(bit320[63:0], 64'hefcdab8967452301);
+
       { >> bit {arr4} } = bit100;
       `checkh(arr4[0], 4'b0001);
       { << bit {arr4} } = bit100;
       `checkh(arr4[0], 4'b1000);
+
+      { >> byte {arr64} } = bit320;
+      `checkh(arr64[0], 64'hefcdab8967452301);
+      { << byte {arr64} } = bit320;
+      `checkh(arr64[0], 64'h0123456789abcdef);
       $write("*-* All Finished *-*\n");
       $finish;
    end
