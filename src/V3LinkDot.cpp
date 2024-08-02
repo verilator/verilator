@@ -919,9 +919,21 @@ class LinkDotFindVisitor final : public VNVisitor {
             iterateChildren(nodep);
             nodep->user4(true);
         } else {  // !doit
-            // Will be optimized away later
-            // Can't remove now, as our backwards iterator will throw up
-            UINFO(5, "Module not under any CELL or top - dead module: " << nodep << endl);
+            if (nodep->name() == "_V_type_parameters") {
+                UINFO(5, "Module with type parameters" << endl);
+                for (const AstNode* node = nodep->op2p(); node; node = node->nextp()) {
+                    if (const AstTypedef* const tdef = VN_CAST(node, Typedef)) {
+                        UINFO(3, "Type parameter typedef: " << tdef << endl);
+                        VSymEnt* const upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
+                        m_curSymp = m_modSymp = m_statep->insertBlock(upperSymp, nodep->name(),
+                                                                      nodep, m_classOrPackagep);
+                    }
+                }
+            } else {
+                // Will be optimized away later
+                // Can't remove now, as our backwards iterator will throw up
+                UINFO(5, "Module not under any CELL or top - dead module: " << nodep << endl);
+            }
         }
     }
 
@@ -1367,6 +1379,25 @@ class LinkDotFindVisitor final : public VNVisitor {
     }
     void visit(AstParamTypeDType* nodep) override {
         UASSERT_OBJ(m_curSymp, nodep, "Parameter type not under module/package/$unit");
+
+        // Replace missing param types with provided hierarchical type params.
+        if (const VSymEnt* const typedefEntp = m_curSymp->findIdFallback("_V_type_parameters")) {
+            const AstModule* modp = VN_CAST(typedefEntp->nodep(), Module);
+
+            for (const AstNode* node = modp->stmtsp(); node; node = node->nextp()) {
+                const AstTypedef* tdefp = VN_CAST(node, Typedef);
+
+                if (tdefp && tdefp->name() == nodep->name() && m_statep->forPrimary()) {
+                    UINFO(8, "Replacing type of" << nodep << endl << " with " << tdefp << endl);
+                    AstNodeDType* const newType = tdefp->childDTypep();
+                    AstNodeDType* const oldType = nodep->childDTypep();
+
+                    oldType->replaceWith(newType->cloneTree(false));
+                    oldType->deleteTree();
+                }
+            }
+        }
+
         iterateChildren(nodep);
         m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
         if (m_statep->forPrimary() && nodep->isGParam()) {

@@ -853,10 +853,6 @@ void V3Options::notify() VL_MT_DISABLED {
                 + ". Suggest see manual");
     }
 
-    if (m_exe && !v3Global.opt.libCreate().empty()) {
-        cmdfl->v3error("--exe cannot be used together with --lib-create. Suggest see manual");
-    }
-
     // Make sure at least one make system is enabled
     if (!m_gmake && !m_cmake) m_gmake = true;
 
@@ -864,8 +860,11 @@ void V3Options::notify() VL_MT_DISABLED {
         cmdfl->v3error(
             "--hierarchical must not be set with --hierarchical-child or --hierarchical-block");
     }
-    if (m_hierChild && m_hierBlocks.empty()) {
-        cmdfl->v3error("--hierarchical-block must be set when --hierarchical-child is set");
+    if (m_hierChild) {
+        if (m_hierBlocks.empty()) {
+            cmdfl->v3error("--hierarchical-block must be set when --hierarchical-child is set");
+        }
+        m_main = false;
     }
 
     if (protectIds()) {
@@ -1326,6 +1325,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_hierBlocks.emplace(opt.mangledName(), opt);
     });
     DECL_OPTION("-hierarchical-child", Set, &m_hierChild);
+    DECL_OPTION("-hierarchical-type-param-file", CbVal,
+                [this](const char* optp) { m_hierTypeParamFile = optp; });
 
     DECL_OPTION("-I", CbPartialMatch,
                 [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });

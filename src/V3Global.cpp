@@ -79,6 +79,13 @@ void V3Global::readFiles() {
                          "Cannot find file containing library module: ");
     }
 
+    // Read hierarchical type parameter file
+    const string filename = v3Global.opt.hierTypeParamFile();
+    if (!filename.empty()) {
+        parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filename, false,
+                         "Cannot find file containing hierarchical type parameter declarations");
+    }
+
     // v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("parse.tree"));
     V3Error::abortIfErrors();
 

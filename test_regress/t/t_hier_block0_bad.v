@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2020 by Yutetsu TAKATSUKASA
+// without warranty, 2020-2024 by Yutetsu TAKATSUKASA and Antmicro.
 // SPDX-License-Identifier: Unlicense
 
 `define HIER_BLOCK /*verilator hier_block*/
@@ -19,7 +19,6 @@ module t (/*AUTOARG*/
    // unpacked array cannot be passed to hierarchical block
    localparam logic UNPACKED[0:1] = '{1'b1, 1'b0};
    sub0 #(UNPACKED) i_sub0(.clk(clk), .in(8'(count)), .out(out0));
-   // Passing type parameter is not supported
    sub1 #(.T(logic[7:0])) i_sub1(.in(out0), .out(out1));
 
    always_ff @(posedge clk) begin
