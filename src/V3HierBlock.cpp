@@ -93,6 +93,10 @@ static string V3HierCommandArgsFilename(const string& prefix, bool forCMake) {
            + (forCMake ? "__hierCMakeArgs.f" : "__hierMkArgs.f");
 }
 
+static string V3HierTypeParametersFileName(const string& prefix) {
+    return v3Global.opt.makeDir() + "/" + prefix + "__hierTypeParameters.vs";
+}
+
 static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of, bool forCMake) {
     string topModuleFile;
     if (hblockp) topModuleFile = hblockp->vFileIfNecessary();
@@ -107,7 +111,8 @@ static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of
 
 //######################################################################
 
-V3HierBlock::StrGParams V3HierBlock::stringifyParams(const GParams& gparams, bool forGOption) {
+V3HierBlock::StrGParams V3HierBlock::stringifyParams(const V3HierBlockParams::GParams& gparams,
+                                                     bool forGOption) {
     StrGParams strParams;
     for (const auto& gparam : gparams) {
         if (const AstConst* const constp = VN_CAST(gparam->valuep(), Const)) {
@@ -138,6 +143,22 @@ V3HierBlock::StrGParams V3HierBlock::stringifyParams(const GParams& gparams, boo
     return strParams;
 }
 
+V3HierBlock::StrGParams
+V3HierBlock::stringifyParams(const V3HierBlockParams::GTypeParams& params) {
+    StrGParams strParams;
+
+    for (const AstParamTypeDType* const gparam : params) {
+        if (const AstBasicDType* const basicp = VN_CAST(gparam->childDTypep(), BasicDType)) {
+            strParams.emplace_back(gparam->name(), basicp->prettyDTypeName(/*full*/ true));
+        } else {
+            gparam->v3warn(E_UNSUPPORTED,
+                           "Only basic types are supported as hierarchical type parameters");
+        }
+    }
+
+    return strParams;
+}
+
 V3HierBlock::~V3HierBlock() {
     UASSERT(m_children.empty(), "at least one module must be a leaf");
     for (const auto& hierblockp : m_children) {
@@ -159,17 +180,21 @@ V3StringList V3HierBlock::commandArgs(bool forCMake) const {
         opts.push_back(" --protect-key " + v3Global.opt.protectKeyDefaulted());
     opts.push_back(" --hierarchical-child " + cvtToStr(v3Global.opt.threads()));
 
-    const StrGParams gparamsStr = stringifyParams(gparams(), true);
-    for (StrGParams::const_iterator paramIt = gparamsStr.begin(); paramIt != gparamsStr.end();
-         ++paramIt) {
-        opts.push_back("-G" + paramIt->first + "=" + paramIt->second + "");
+    const StrGParams gparamsStr = stringifyParams(params().gparams(), true);
+    for (const StrGParam& param : gparamsStr) {
+        const string name = param.first;
+        const string value = param.second;
+        opts.push_back("-G" + name + "=" + value + "");
     }
+    if (!params().gTypeParams().empty())
+        opts.push_back(" --hierarchical-type-param-file " + typeParametersFilename());
+
     return opts;
 }
 
 V3StringList V3HierBlock::hierBlockArgs() const {
     V3StringList opts;
-    const StrGParams gparamsStr = stringifyParams(gparams(), false);
+    const StrGParams gparamsStr = stringifyParams(params().gparams(), false);
     opts.push_back("--hierarchical-block ");
     string s = modp()->origName();  // origName
     s += "," + modp()->name();  // mangledName
@@ -238,6 +263,23 @@ string V3HierBlock::commandArgsFilename(bool forCMake) const {
     return V3HierCommandArgsFilename(hierPrefix(), forCMake);
 }
 
+string V3HierBlock::typeParametersFilename() const {
+    return V3HierTypeParametersFileName(hierPrefix());
+}
+
+void V3HierBlock::writeTypeParametersFile() const {
+    const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(typeParametersFilename())};
+
+    const V3HierBlock::StrGParams params = stringifyParams(m_params.gTypeParams());
+    if (!params.empty()) { *of << "module _V_type_parameters();\n"; }
+    for (const StrGParam& param : params) {
+        const string name = param.first;
+        const string value = param.second;
+        *of << "typedef " + value + " " + name + ";\n";
+    }
+    if (!params.empty()) { *of << "endmodule\n"; };
+}
+
 //######################################################################
 // Collect how hierarchical blocks are used
 class HierBlockUsageCollectVisitor final : public VNVisitorConst {
@@ -251,7 +293,7 @@ class HierBlockUsageCollectVisitor final : public VNVisitorConst {
     AstModule* m_modp = nullptr;  // The current module
     AstModule* m_hierBlockp = nullptr;  // The nearest parent module that is a hierarchical block
     ModuleSet m_referred;  // Modules that have hier_block pragma
-    V3HierBlock::GParams m_gparams;  // list of variables that is VVarType::GPARAM
+    V3HierBlockParams m_params;
 
     void visit(AstModule* nodep) override {
         // Don't visit twice
@@ -262,23 +304,23 @@ class HierBlockUsageCollectVisitor final : public VNVisitorConst {
         VL_RESTORER(m_modp);
         AstModule* const prevHierBlockp = m_hierBlockp;
         ModuleSet prevReferred;
-        V3HierBlock::GParams prevGParams;
+        V3HierBlockParams previousParams;
         m_modp = nodep;
         if (nodep->hierBlock()) {
             m_hierBlockp = nodep;
             prevReferred.swap(m_referred);
         }
-        prevGParams.swap(m_gparams);
+        previousParams.swap(m_params);
 
         iterateChildrenConst(nodep);
 
         if (nodep->hierBlock()) {
-            m_planp->add(nodep, m_gparams);
+            m_planp->add(nodep, m_params);
             for (const AstModule* modp : m_referred) m_planp->registerUsage(nodep, modp);
             m_hierBlockp = prevHierBlockp;
             m_referred = prevReferred;
         }
-        m_gparams = prevGParams;
+        m_params.swap(previousParams);
     }
     void visit(AstCell* nodep) override {
         // Visit used module here to know that the module is hier_block or not.
@@ -294,8 +336,10 @@ class HierBlockUsageCollectVisitor final : public VNVisitorConst {
         if (m_modp && m_modp->hierBlock() && nodep->isIfaceRef() && !nodep->isIfaceParent()) {
             nodep->v3error("Modport cannot be used at the hierarchical block boundary");
         }
-        if (nodep->isGParam() && nodep->overriddenParam()) m_gparams.push_back(nodep);
+        if (nodep->isGParam() && nodep->overriddenParam()) m_params.add(nodep);
     }
+
+    void visit(AstParamTypeDType* nodep) override { m_params.add(nodep); }
 
     void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
@@ -309,11 +353,12 @@ public:
 
 //######################################################################
 
-void V3HierBlockPlan::add(const AstNodeModule* modp, const std::vector<AstVar*>& gparams) {
+void V3HierBlockPlan::add(const AstNodeModule* modp, const V3HierBlockParams& params) {
     const auto pair = m_blocks.emplace(modp, nullptr);
     if (pair.second) {
-        V3HierBlock* hblockp = new V3HierBlock{modp, gparams};
-        UINFO(3, "Add " << modp->prettyNameQ() << " with " << gparams.size() << " parameters"
+        V3HierBlock* hblockp = new V3HierBlock{modp, params};
+        UINFO(3, "Add " << modp->prettyNameQ() << " with " << params.gparams().size()
+                        << " parameters and " << params.gTypeParams().size() << " type parameters"
                         << std::endl);
         pair.first->second = hblockp;
     }
@@ -433,4 +478,10 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
 
 string V3HierBlockPlan::topCommandArgsFilename(bool forCMake) {
     return V3HierCommandArgsFilename(v3Global.opt.prefix(), forCMake);
+}
+
+void V3HierBlockPlan::writeTypeParametersFiles() const {
+    for (const std::pair<const AstNodeModule* const, V3HierBlock*>& block : *this) {
+        block.second->writeTypeParametersFile();
+    }
 }
