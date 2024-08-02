@@ -1326,8 +1326,8 @@ int V3PreProcImp::getStateToken() {
                     // NOP: out = m_preprocp->defSubstitute(out);
                 }
                 VL_DO_DANGLING(m_defRefs.pop(), refp);
-                if (m_defRefs.empty()) {
-                    statePop();
+                statePop();
+                if (m_defRefs.empty() || state() == ps_STRIFY || state() == ps_JOIN) {
                     if (state()
                         == ps_JOIN) {  // Handle {left}```FOO(ARG) where `FOO(ARG) might be empty
                         UASSERT(!m_joinStack.empty(), "`` join stack empty, but in a ``");
@@ -1345,7 +1345,8 @@ int V3PreProcImp::getStateToken() {
                         unputDefrefString("__IF_OFF_IGNORED_DEFINE");
                     }
                     m_lexp->m_parenLevel = 0;
-                } else {  // Finished a defref inside a upper defref
+                } else {  // Finished a defref inside a upper defref,
+                          // and not under stringification or join.
                     // Can't subst now, or
                     // `define a(ign) x,y
                     // foo(`a(ign),`b)  would break because a contains comma
@@ -1353,7 +1354,7 @@ int V3PreProcImp::getStateToken() {
                     refp->nextarg(refp->nextarg() + m_lexp->m_defValue + out);
                     m_lexp->m_defValue = "";
                     m_lexp->m_parenLevel = refp->parenLevel();
-                    statePop();  // Will go to ps_DEFARG, as we're under another define
+                    // Will go to ps_DEFARG, as we're under another define
                 }
                 goto next_tok;
             } else if (tok == VP_DEFREF) {
@@ -1551,7 +1552,7 @@ int V3PreProcImp::getStateToken() {
                     }
                     // Similar code in parenthesized define (Search for END_OF_DEFARG)
                     // NOP: out = m_preprocp->defSubstitute(out);
-                    if (m_defRefs.empty()) {
+                    if (m_defRefs.empty() || state() == ps_STRIFY || state() == ps_JOIN) {
                         // Just output the substitution
                         if (state() == ps_JOIN) {  // Handle {left}```FOO where `FOO might be empty
                             UASSERT(!m_joinStack.empty(), "`` join stack empty, but in a ``");
@@ -1569,7 +1570,7 @@ int V3PreProcImp::getStateToken() {
                             unputDefrefString("__IF_OFF_IGNORED_DEFINE");
                         }
                     } else {
-                        // Inside another define.
+                        // Inside another define, and not under stringification or join.
                         // Can't subst now, or
                         // `define a x,y
                         // foo(`a,`b)  would break because a contains comma

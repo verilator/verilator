@@ -740,3 +740,16 @@ predef `SV_COV_PARTIAL 2
 //======================================================================
 // After `undefineall above, for testing --dump-defines
 `define WITH_ARG(a) (a)(a)
+
+//======================================================================
+// Stringify in nested macro
+`define foo test
+`define a x,y
+`define bar(a, b) test a b
+`define baz(a, b) test``a``b
+`define qux(x) string boo = x;
+`define quux(x) `qux(`"x`")
+`quux(`foo)
+`quux(`bar(`a,`a))
+`quux(`baz(`a,`bar(x,`a)))
+`quux(`baz(`bar(`a,x), quux(`foo)))
