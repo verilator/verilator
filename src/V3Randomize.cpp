@@ -513,9 +513,31 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
+    void visit(AstForeach* nodep) override {}
     void visit(AstConstraintForeach* nodep) override {
-        nodep->v3warn(CONSTRAINTIGN, "Constraint expression ignored (unsupported)");
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        // Convert to plain foreach
+        FileLine* const fl = nodep->fileline();
+
+        if (m_wantSingle) {
+            AstNode* const itemp = editSingle(fl, nodep->stmtsp());
+            AstNode* const cstmtp = new AstText{fl, "ret += \" \" + "};
+            cstmtp->addNext(itemp);
+            cstmtp->addNext(new AstText{fl, ";"});
+            AstNode* const exprsp = new AstText{fl, "([&]{ std::string ret = \"(and\";"};
+            exprsp->addNext(new AstBegin{
+                fl, "",
+                new AstForeach{fl, nodep->arrayp()->unlinkFrBack(), new AstCStmt{fl, cstmtp}},
+                false, true});
+            exprsp->addNext(new AstText{fl, "return ret + \")\"; })()"});
+            AstNodeExpr* const newp = new AstCExpr{fl, exprsp};
+            newp->dtypeSetString();
+            nodep->replaceWith(new AstSFormatF{fl, "%@", false, newp});
+        } else {
+            iterateAndNextNull(nodep->stmtsp());
+            nodep->replaceWith(new AstForeach{fl, nodep->arrayp()->unlinkFrBack(),
+                                              nodep->stmtsp()->unlinkFrBackWithNext()});
+        }
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstConstraintBefore* nodep) override {
         nodep->v3warn(CONSTRAINTIGN, "Constraint expression ignored (unsupported)");
