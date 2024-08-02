@@ -1065,3 +1065,17 @@ predef 2 2
  
 
 `line 744 "t/t_preproc.v" 0
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+string boo = "test";
+string boo = "test x,y x,y";
+string boo = "testx,ytest x x,y";
+string boo = "testtest x,y xquux(test)";
+
+`line 757 "t/t_preproc.v" 0
