@@ -2503,7 +2503,7 @@ protected:
     static void dumpJsonStr(std::ostream& os, const std::string& name, const std::string& val);
     static void dumpJsonPtr(std::ostream& os, const std::string& name, const AstNode* const valp);
 
-private:
+protected:
     void iterateListBackwardsConst(VNVisitorConst& v);
 
     // For internal use only.

@@ -2353,9 +2353,7 @@ public:
             extendsp->classp()->foreachMember(f);
         }
         for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (T_Node* memberp = AstNode::privateCast<T_Node, decltype(stmtp)>(stmtp)) {
-                f(this, memberp);
-            }
+            if (AstNode::privateTypeTest<T_Node>(stmtp)) f(this, static_cast<T_Node*>(stmtp));
         }
     }
     // Same as above, but stops after first match
@@ -2370,8 +2368,8 @@ public:
             if (extendsp->classp()->existsMember(p)) return true;
         }
         for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (T_Node* memberp = AstNode::privateCast<T_Node, decltype(stmtp)>(stmtp)) {
-                if (p(this, memberp)) return true;
+            if (AstNode::privateTypeTest<T_Node>(stmtp)) {
+                if (p(this, static_cast<T_Node*>(stmtp))) return true;
             }
         }
         return false;
