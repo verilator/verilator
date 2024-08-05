@@ -15,4 +15,12 @@
                                                          : ... note: In instance 't'
    20 |       p.m_static.rand_mode(0);
       |                  ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_randomize_rand_mode_unsup.v:21:57: Unsupported: 'rand_mode()' on static variable
+                                                         : ... note: In instance 't'
+   21 |       $display("p.m_static.rand_mode()=%0d", p.m_static.rand_mode());
+      |                                                         ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_randomize_rand_mode_unsup.v:22:9: Unsupported: 'rand_mode()' on static variable: 'm_static'
+                                                        : ... note: In instance 't'
+   22 |       p.rand_mode(0);
+      |         ^~~~~~~~~
 %Error: Exiting due to

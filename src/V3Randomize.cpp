@@ -247,6 +247,11 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     // Called on 'this' or a non-rand class instance
                     randModeTarget.classp->foreachMember([&](AstClass*, AstVar* varp) {
                         if (!varp->isRand()) return;
+                        if (varp->lifetime().isStatic()) {
+                            nodep->v3warn(E_UNSUPPORTED,
+                                          "Unsupported: 'rand_mode()' on static variable: "
+                                              << varp->prettyNameQ());
+                        }
                         VarRandMode randMode = {};
                         randMode.usesRandMode = true;
                         varp->user1(randMode.asInt);

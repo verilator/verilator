@@ -18,5 +18,7 @@ module t;
       p.m_unp_arr[0].rand_mode(0);
       p.m_struct.y.rand_mode(0);
       p.m_static.rand_mode(0);
+      $display("p.m_static.rand_mode()=%0d", p.m_static.rand_mode());
+      p.rand_mode(0);
    end
 endmodule
