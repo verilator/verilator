@@ -7,6 +7,8 @@
 class Packet;
    rand int m_dyn_arr[];
    rand int m_unp_arr[10];
+   rand struct { int y; } m_struct;
+   static rand int m_static;
 endclass
 
 module t;
@@ -14,5 +16,7 @@ module t;
       Packet p = new;
       p.m_dyn_arr[0].rand_mode(0);
       p.m_unp_arr[0].rand_mode(0);
+      p.m_struct.y.rand_mode(0);
+      p.m_static.rand_mode(0);
    end
 endmodule
