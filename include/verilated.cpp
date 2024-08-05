@@ -2504,24 +2504,47 @@ VerilatedContext::Serialized::Serialized() {
     m_timeprecision = picosecond;  // Initial value until overridden by _Vconfigure
 }
 
-bool VerilatedContext::assertOn() const VL_MT_SAFE {
-    const VerilatedLockGuard lock{m_mutex};
-    return m_s.m_assertOn;
-}
+bool VerilatedContext::assertOn() const VL_MT_SAFE { return m_s.m_assertOn; }
 void VerilatedContext::assertOn(bool flag) VL_MT_SAFE {
-    const VerilatedLockGuard lock{m_mutex};
-    // set all assert types to 'on' when true, set all types to 'off' when false
-    m_s.m_assertOn = std::numeric_limits<VerilatedAssertType_t>::max()
-                     * static_cast<VerilatedAssertType_t>(flag);
+    // Set all assert and directive types when true, clear otherwise.
+    m_s.m_assertOn = VL_MASK_I(ASSERT_ON_WIDTH) * flag;
 }
-bool VerilatedContext::assertOnGet(VerilatedAssertType_t flags) const VL_MT_SAFE {
-    return m_s.m_assertOn & flags;
+bool VerilatedContext::assertOnGet(VerilatedAssertType_t type,
+                                   VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE {
+    // Check if selected directive type bit in the assertOn is enabled for assertion type.
+    // Note: it is assumed that this is checked only for one type at the time.
+
+    // Flag unspecified assertion types as disabled.
+    if (type == 0) return false;
+
+    // Get index of 3-bit group guarding assertion type status.
+    // Since the assertOnGet is generated __always__ for a single assert type, we assume that only
+    // a single bit will be set. Thus, ceil log2 will work fine.
+    VL_DEBUG_IFDEF(assert((type & (type - 1)) == 0););
+    const IData typeMaskPosition = VL_CLOG2_I(type);
+
+    // Check if directive type bit is enabled in corresponding assertion type bits.
+    return m_s.m_assertOn & (directive << (typeMaskPosition * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH));
 }
-void VerilatedContext::assertOnSet(VerilatedAssertType_t flags) VL_MT_SAFE {
-    m_s.m_assertOn |= flags;
+void VerilatedContext::assertOnSet(VerilatedAssertType_t types,
+                                   VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
+    // For each assertion type, set directive bits.
+
+    // Iterate through all positions of assertion type bits. If bit for this assertion type is set,
+    // set directive type bits mask at this group index.
+    for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
+        if (VL_BITISSET_I(types, i))
+            m_s.m_assertOn |= directives << (i * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH);
+    }
 }
-void VerilatedContext::assertOnClear(VerilatedAssertType_t flags) VL_MT_SAFE {
-    m_s.m_assertOn &= flags;
+void VerilatedContext::assertOnClear(VerilatedAssertType_t types,
+                                     VerilatedAssertDirectiveType_t directives) VL_MT_SAFE {
+    // Iterate through all positions of assertion type bits. If bit for this assertion type is set,
+    // clear directive type bits mask at this group index.
+    for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
+        if (VL_BITISSET_I(types, i))
+            m_s.m_assertOn &= ~(directives << (i * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH));
+    }
 }
 void VerilatedContext::calcUnusedSigs(bool flag) VL_MT_SAFE {
     const VerilatedLockGuard lock{m_mutex};

@@ -1485,25 +1485,20 @@ void AstAlways::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "keyword", keyword().ascii());
     dumpJsonGen(str);
 }
-AstAssertCtl::AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr* levelp,
-                           AstNodeExpr* itemsp)
+AstAssertCtl::AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr*, AstNodeExpr*)
     : ASTGEN_SUPER_AssertCtl(fl)
     , m_ctlType{ctlType} {
     controlTypep(new AstConst{fl, ctlType});
-    if (!levelp) levelp = new AstConst{fl, 0};
-    this->levelp(levelp);
-    addItemsp(itemsp);
 }
 AstAssertCtl::AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr* assertTypesp,
-                           AstNodeExpr*, AstNodeExpr* levelp, AstNodeExpr* itemsp)
+                           AstNodeExpr* directiveTypep, AstNodeExpr*, AstNodeExpr*)
     : ASTGEN_SUPER_AssertCtl(fl)
     , m_ctlType{VAssertCtlType::_TO_BE_EVALUATED}
-    , m_assertTypes{VAssertType::INTERNAL} {
+    , m_assertTypes{VAssertType::INTERNAL}
+    , m_directiveTypes{VAssertDirectiveType::INTERNAL} {
     this->controlTypep(controlTypep);
     this->assertTypesp(assertTypesp);
-    if (!levelp) levelp = new AstConst{fl, 0};
-    this->levelp(levelp);
-    addItemsp(itemsp);
+    this->directiveTypesp(directiveTypep);
 }
 void AstAssertCtl::dump(std::ostream& str) const {
     this->AstNode::dump(str);

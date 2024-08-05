@@ -117,6 +117,7 @@ struct V3ParseBisonYYSType final {
         V3ErrorCode::en errcodeen;
         VAttrType::en attrtypeen;
         VAssertType::en asserttypeen;
+        VAssertDirectiveType::en assertdirectivetypeen;
         VLifetime::en lifetime;
         VStrength::en strength;
 

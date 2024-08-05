@@ -20,23 +20,16 @@
 
 #include "V3Stats.h"
 
-#include <limits>
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 // Assert class functions
 
 class AssertVisitor final : public VNVisitor {
-    // TYPES
-    enum class DirectiveType : uint8_t {
-        INTRINSIC,  // AstNodeAssertIntrinsinc
-        CASE,  // unique/unique0/priority case related checks
-        IF,  // unique/unique0/priority if related checks
-        ASSERT,  // assert statement
-        COVER,  // cover statement
-        ASSUME,  // assume statement
-    };
-    using VAssertType_t = std::underlying_type<VAssertType::en>::type;
+    // CONSTANTS
+    static constexpr uint8_t ALL_ASSERT_TYPES
+        = std::numeric_limits<std::underlying_type<VAssertType::en>::type>::max();
+
     // NODE STATE/TYPES
     // Cleared on netlist
     //  AstNode::user()         -> bool.  True if processed
@@ -58,10 +51,39 @@ class AssertVisitor final : public VNVisitor {
     bool m_inSampled = false;  // True inside a sampled expression
 
     // METHODS
-    static bool assertTypeOn(DirectiveType type) {
-        if (v3Global.opt.assertOn()) return true;
-        if (type == DirectiveType::CASE && v3Global.opt.assertCaseOn()) return true;
-        return false;
+    static AstNodeExpr* assertOnCond(FileLine* fl, VAssertType type,
+                                     VAssertDirectiveType directiveType) {
+        switch (directiveType) {
+        case VAssertDirectiveType::INTRINSIC: return new AstConst{fl, AstConst::BitTrue{}};
+        case VAssertDirectiveType::VIOLATION_CASE: {
+            if (v3Global.opt.assertCaseOn()) {
+                return new AstCExpr{fl, "vlSymsp->_vm_contextp__->assertOn()", 1};
+            }
+            // If assertions are off, have constant propagation rip them out later
+            // This allows syntax errors and such to be detected normally.
+            return new AstConst{fl, AstConst::BitFalse{}};
+        }
+        case VAssertDirectiveType::ASSERT:
+        case VAssertDirectiveType::COVER:
+        case VAssertDirectiveType::ASSUME: {
+            if (v3Global.opt.assertOn()) {
+                return new AstCExpr{fl,
+                                    "vlSymsp->_vm_contextp__->assertOnGet("s + std::to_string(type)
+                                        + ", "s + std::to_string(directiveType) + ")"s,
+                                    1};
+            }
+            return new AstConst{fl, AstConst::BitFalse{}};
+        }
+        case VAssertDirectiveType::INTERNAL:
+        case VAssertDirectiveType::VIOLATION_IF:
+        case VAssertDirectiveType::RESTRICT: {
+            if (v3Global.opt.assertOn()) {
+                return new AstCExpr{fl, "vlSymsp->_vm_contextp__->assertOn()", 1};
+            }
+            return new AstConst{fl, AstConst::BitFalse{}};
+        }
+        }
+        VL_UNREACHABLE;
     }
     string assertDisplayMessage(AstNode* nodep, const string& prefix, const string& message,
                                 VDisplayType severity) {
@@ -77,11 +99,11 @@ class AssertVisitor final : public VNVisitor {
     }
     static bool resolveAssertType(AstAssertCtl* nodep) {
         if (!nodep->assertTypesp()) {
-            nodep->ctlAssertTypes(std::numeric_limits<VAssertType_t>::max());
+            nodep->ctlAssertTypes(VAssertType{ALL_ASSERT_TYPES});
             return true;
         }
         if (const AstConst* const assertTypesp = VN_CAST(nodep->assertTypesp(), Const)) {
-            nodep->ctlAssertTypes(assertTypesp->toUInt());
+            nodep->ctlAssertTypes(VAssertType{assertTypesp->toSInt()});
             return true;
         }
         return false;
@@ -89,6 +111,18 @@ class AssertVisitor final : public VNVisitor {
     static bool resolveControlType(AstAssertCtl* nodep) {
         if (const AstConst* const constp = VN_CAST(nodep->controlTypep(), Const)) {
             nodep->ctlType(constp->toSInt());
+            return true;
+        }
+        return false;
+    }
+    static bool resolveDirectiveType(AstAssertCtl* nodep) {
+        if (!nodep->directiveTypesp()) {
+            nodep->ctlDirectiveTypes(VAssertDirectiveType::ASSERT | VAssertDirectiveType::ASSUME
+                                     | VAssertDirectiveType::COVER);
+            return true;
+        }
+        if (const AstConst* const directiveTypesp = VN_CAST(nodep->directiveTypesp(), Const)) {
+            nodep->ctlDirectiveTypes(VAssertDirectiveType{directiveTypesp->toSInt()});
             return true;
         }
         return false;
@@ -133,21 +167,13 @@ class AssertVisitor final : public VNVisitor {
         varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
         return varrefp;
     }
-    static AstNodeStmt* newIfAssertOn(AstNode* bodyp, DirectiveType directiveType,
-                                      VAssertType::en type = VAssertType::INTERNAL) {
+    static AstNodeStmt* newIfAssertOn(AstNode* bodyp, VAssertDirectiveType directiveType,
+                                      VAssertType type = VAssertType::INTERNAL) {
         // Add a internal if to check assertions are on.
         // Don't make this a AND term, as it's unlikely to need to test this.
         FileLine* const fl = bodyp->fileline();
 
-        // If assertions are off, have constant propagation rip them out later
-        // This allows syntax errors and such to be detected normally.
-        AstNodeExpr* const condp
-            = type == VAssertType::INTERNAL
-                  ? static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitTrue{}})
-              : assertTypeOn(directiveType) ? static_cast<AstNodeExpr*>(new AstCExpr{
-                    fl, "vlSymsp->_vm_contextp__->assertOnGet("s + std::to_string(type) + ")"s, 1})
-                                            : static_cast<AstNodeExpr*>(
-                                                new AstConst{fl, AstConst::BitFalse{}});
+        AstNodeExpr* const condp = assertOnCond(fl, type, directiveType);
         AstNodeIf* const newp = new AstIf{fl, condp, bodyp};
         newp->isBoundsCheck(true);  // To avoid LATCH warning
         newp->user1(true);  // Don't assert/cover this if
@@ -167,8 +193,8 @@ class AssertVisitor final : public VNVisitor {
         return bodysp;
     }
 
-    AstNodeStmt* newFireAssert(AstNodeStmt* nodep, DirectiveType directiveType,
-                               VAssertType::en assertType, const string& message,
+    AstNodeStmt* newFireAssert(AstNodeStmt* nodep, VAssertDirectiveType directiveType,
+                               VAssertType assertType, const string& message,
                                AstNodeExpr* exprsp = nullptr) {
         AstNodeStmt* bodysp = newFireAssertUnchecked(nodep, message, exprsp);
         bodysp = newIfAssertOn(bodysp, directiveType, assertType);
@@ -214,7 +240,7 @@ class AssertVisitor final : public VNVisitor {
             }
 
             if (bodysp && passsp) bodysp = bodysp->addNext(passsp);
-            if (bodysp) bodysp = newIfAssertOn(bodysp, DirectiveType::COVER, nodep->type());
+            if (bodysp) bodysp = newIfAssertOn(bodysp, nodep->directive(), nodep->type());
             ifp = new AstIf{nodep->fileline(), propp, bodysp};
             ifp->isBoundsCheck(true);  // To avoid LATCH warning
             bodysp = ifp;
@@ -230,9 +256,7 @@ class AssertVisitor final : public VNVisitor {
             // It's more LIKELY that we'll take the nullptr if clause
             // than the sim-killing else clause:
             ifp->branchPred(VBranchPred::BP_LIKELY);
-            const DirectiveType directiveType
-                = VN_IS(nodep, AssertIntrinsic) ? DirectiveType::INTRINSIC : DirectiveType::ASSERT;
-            bodysp = newIfAssertOn(ifp, directiveType, nodep->type());
+            bodysp = newIfAssertOn(ifp, nodep->directive(), nodep->type());
         } else {
             nodep->v3fatalSrc("Unknown node type");
         }
@@ -303,11 +327,11 @@ class AssertVisitor final : public VNVisitor {
                 = ((allow_none || hasDefaultElse)
                        ? static_cast<AstNodeExpr*>(new AstOneHot0{nodep->fileline(), propp})
                        : static_cast<AstNodeExpr*>(new AstOneHot{nodep->fileline(), propp}));
-            const VAssertType::en assertType
+            const VAssertType assertType
                 = nodep->uniquePragma() ? VAssertType::UNIQUE : VAssertType::UNIQUE0;
             AstIf* const checkifp
                 = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), ohot},
-                            newFireAssert(nodep, DirectiveType::IF, assertType,
+                            newFireAssert(nodep, VAssertDirectiveType::VIOLATION_IF, assertType,
                                           "'unique if' statement violated"),
                             newifp};
             checkifp->isBoundsCheck(true);  // To avoid LATCH warning
@@ -330,7 +354,7 @@ class AssertVisitor final : public VNVisitor {
             }
             const AstNodeDType* exprDtypep = nodep->exprp()->dtypep()->skipRefp();
 
-            VAssertType::en assertType = VAssertType::INTERNAL;
+            VAssertType assertType = VAssertType::INTERNAL;
             if (nodep->priorityPragma()) {
                 assertType = VAssertType::PRIORITY;
             } else if (nodep->uniquePragma()) {
@@ -348,7 +372,7 @@ class AssertVisitor final : public VNVisitor {
                 if (!has_default) {
                     nodep->addItemsp(new AstCaseItem{
                         nodep->fileline(), nullptr /*DEFAULT*/,
-                        newFireAssert(nodep, DirectiveType::CASE, assertType,
+                        newFireAssert(nodep, VAssertDirectiveType::VIOLATION_CASE, assertType,
                                       nodep->pragmaString() + ", but non-match found" + valFmt,
                                       valFmt.empty() ? nullptr
                                                      : nodep->exprp()->cloneTreePure(false))});
@@ -405,11 +429,11 @@ class AssertVisitor final : public VNVisitor {
                     const string pragmaStr = nodep->pragmaString();
                     if (!allow_none)
                         zeroIfp->addThensp(
-                            newFireAssert(nodep, DirectiveType::CASE, assertType,
+                            newFireAssert(nodep, VAssertDirectiveType::VIOLATION_CASE, assertType,
                                           pragmaStr + ", but none matched" + valFmt,
                                           valFmt.empty() ? nullptr : exprp->cloneTreePure(false)));
                     zeroIfp->addElsesp(
-                        newFireAssert(nodep, DirectiveType::CASE, assertType,
+                        newFireAssert(nodep, VAssertDirectiveType::VIOLATION_CASE, assertType,
                                       pragmaStr + ", but multiple matches found" + valFmt,
                                       valFmt.empty() ? nullptr : exprp->cloneTreePure(false)));
                     ohotIfp->addThensp(zeroIfp);
@@ -586,10 +610,11 @@ class AssertVisitor final : public VNVisitor {
                           "Unsupported: non-constant assert assertion-type expression");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
-        } else if (nodep->ctlAssertTypes()
-                       & (VAssertType::EXPECT | VAssertType::UNIQUE | VAssertType::UNIQUE0
-                          | VAssertType::PRIORITY)
-                   && !(nodep->ctlAssertTypes() == std::numeric_limits<VAssertType_t>::max())) {
+        }
+        if (nodep->ctlAssertTypes() != ALL_ASSERT_TYPES
+            && nodep->ctlAssertTypes().containsAny(VAssertType::EXPECT | VAssertType::UNIQUE
+                                                   | VAssertType::UNIQUE0
+                                                   | VAssertType::PRIORITY)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: assert control assertion_type");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
@@ -599,26 +624,32 @@ class AssertVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
+        if (!resolveDirectiveType(nodep)) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: non-const assert directive type expression");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
 
         FileLine* const fl = nodep->fileline();
         switch (nodep->ctlType()) {
         case VAssertCtlType::ON:
             UINFO(9, "Generating assertctl for a module: " << m_modp << endl);
-            nodep->replaceWith(new AstCExpr{fl,
-                                            "vlSymsp->_vm_contextp__->assertOnSet("s
-                                                + std::to_string(nodep->ctlAssertTypes())
-                                                + ");\n"s,
-                                            1});
+            nodep->replaceWith(new AstCExpr{
+                fl,
+                "vlSymsp->_vm_contextp__->assertOnSet("s + std::to_string(nodep->ctlAssertTypes())
+                    + ", "s + std::to_string(nodep->ctlDirectiveTypes()) + ");\n"s,
+                1});
             break;
         case VAssertCtlType::OFF:
         case VAssertCtlType::KILL: {
             UINFO(9, "Generating assertctl for a module: " << m_modp << endl);
-            nodep->replaceWith(new AstCExpr{
-                fl,
-                "vlSymsp->_vm_contextp__->assertOnClear("s
-                    + std::to_string(static_cast<VAssertType_t>(~nodep->ctlAssertTypes()))
-                    + ");\n"s,
-                1});
+            nodep->replaceWith(new AstCExpr{fl,
+                                            "vlSymsp->_vm_contextp__->assertOnClear("s
+                                                + std::to_string(nodep->ctlAssertTypes()) + " ,"s
+                                                + std::to_string(nodep->ctlDirectiveTypes())
+                                                + ");\n"s,
+                                            1});
             break;
         }
         case VAssertCtlType::LOCK:

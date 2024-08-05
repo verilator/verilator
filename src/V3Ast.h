@@ -1154,6 +1154,53 @@ constexpr bool operator==(VAssertCtlType::en lhs, const VAssertCtlType& rhs) {
 
 // ######################################################################
 
+class VAssertDirectiveType final {
+public:
+    // IEEE 1800-2023 Table 20-7
+    enum en : uint8_t {
+        INTERNAL = 0,  // Non IEEE type, for directives to be evaluated from expression.
+        ASSERT = (1 << 0),
+        COVER = (1 << 1),
+        ASSUME = (1 << 2),
+        VIOLATION_CASE = (1 << 3),  // Non IEEE type, for case constructs
+                                    // with unique, unique0 or priority pragmas.
+        VIOLATION_IF = (1 << 4),  // Non IEEE type, for if constructs
+                                  // with unique, unique0 or priority pragmas.
+        INTRINSIC = (1 << 5),  // Non IEEE type, for intrinsic assertions.
+        RESTRICT = (1 << 6),  // Non IEEE type, for ignored restrict assertions.
+    };
+    enum en m_e;
+    VAssertDirectiveType()
+        : m_e{ASSERT} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VAssertDirectiveType(en _e)
+        : m_e{_e} {}
+    explicit VAssertDirectiveType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    const char* ascii() const {
+        static const char* const names[]
+            = {"INTERNAL",       "ASSERT",       "COVER",     "ASSUME",
+               "VIOLATION_CASE", "VIOLATION_IF", "INTRINSIC", "RESTRICT"};
+        return names[m_e];
+    }
+    constexpr operator en() const { return m_e; }
+};
+constexpr bool operator==(const VAssertDirectiveType& lhs, const VAssertDirectiveType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VAssertDirectiveType& lhs, VAssertDirectiveType::en rhs) {
+    return lhs.m_e == rhs;
+}
+constexpr bool operator==(VAssertDirectiveType::en lhs, const VAssertDirectiveType& rhs) {
+    return lhs == rhs.m_e;
+}
+constexpr VAssertDirectiveType::en operator|(VAssertDirectiveType::en lhs,
+                                             VAssertDirectiveType::en rhs) {
+    return VAssertDirectiveType::en(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
+}
+
+// ######################################################################
+
 class VAssertType final {
 public:
     // IEEE 1800-2023 Table 20-6
@@ -1172,10 +1219,11 @@ public:
     VAssertType()
         : m_e{INTERNAL} {}
     // cppcheck-suppress noExplicitConstructor
-    constexpr explicit VAssertType(en _e)
+    constexpr VAssertType(en _e)
         : m_e{_e} {}
     explicit VAssertType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    bool containsAny(VAssertType other) const { return m_e & other.m_e; }
     const char* ascii() const {
         static const char* const names[] = {"INTERNAL",
                                             "CONCURRENT",
@@ -1195,6 +1243,9 @@ constexpr bool operator==(const VAssertType& lhs, const VAssertType& rhs) {
 }
 constexpr bool operator==(const VAssertType& lhs, VAssertType::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VAssertType::en lhs, const VAssertType& rhs) { return lhs == rhs.m_e; }
+constexpr VAssertType::en operator|(VAssertType::en lhs, VAssertType::en rhs) {
+    return VAssertType::en(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
+}
 
 // ######################################################################
 

@@ -34,27 +34,31 @@ module t (/*AUTOARG*/
    let OBSERVED_DEFERRED_IMMEDIATE = 4;
    let FINAL_DEFERRED_IMMEDIATE = 8;
 
-   let ALL = CONCURRENT|SIMPLE_IMMEDIATE|OBSERVED_DEFERRED_IMMEDIATE|FINAL_DEFERRED_IMMEDIATE;
+   let ALL_TYPES = CONCURRENT|SIMPLE_IMMEDIATE|OBSERVED_DEFERRED_IMMEDIATE|FINAL_DEFERRED_IMMEDIATE;
+
+   let ASSERT = 1;
+   let COVER = 2;
+   let ASSUME = 4;
 
    concurrent concurrent(.clk(clk));
 
    initial begin
       // simple immediate
-      $assertcontrol(OFF, ALL);
+      $assertcontrol(OFF, ALL_TYPES);
       $assertcontrol(ON, SIMPLE_IMMEDIATE);
       `RUN_ALL_ASSERTS
       $assertcontrol(OFF, SIMPLE_IMMEDIATE);
       `RUN_ALL_ASSERTS
 
       // observed deferred immediate
-      $assertcontrol(OFF, ALL);
+      $assertcontrol(OFF, ALL_TYPES);
       $assertcontrol(ON, OBSERVED_DEFERRED_IMMEDIATE);
       `RUN_ALL_ASSERTS
       $assertcontrol(OFF, OBSERVED_DEFERRED_IMMEDIATE);
       `RUN_ALL_ASSERTS
 
       // final deferred immediate
-      $assertcontrol(OFF, ALL);
+      $assertcontrol(OFF, ALL_TYPES);
       $assertcontrol(ON, FINAL_DEFERRED_IMMEDIATE);
       `RUN_ALL_ASSERTS
       $assertcontrol(OFF, FINAL_DEFERRED_IMMEDIATE);
@@ -80,17 +84,38 @@ module t (/*AUTOARG*/
       `RUN_ALL_ASSERTS;
       $assertcontrol(ON, SIMPLE_IMMEDIATE);
       `RUN_ALL_ASSERTS;
-      $assertcontrol(OFF, ALL);
+      $assertcontrol(OFF, ALL_TYPES);
       `RUN_ALL_ASSERTS;
-      $assertcontrol(ON, ALL);
+      $assertcontrol(ON, ALL_TYPES);
       `RUN_ALL_ASSERTS;
-      $assertcontrol(KILL, ALL);
+      $assertcontrol(KILL, ALL_TYPES);
       `RUN_ALL_ASSERTS;
+
+      // directive_type test
+      $assertoff;
+      $assertcontrol(ON, ALL_TYPES, ASSERT);
+      `RUN_ALL_ASSERTS;
+      $assertcontrol(OFF, ALL_TYPES, ASSERT);
+      $assertcontrol(ON, ALL_TYPES, COVER);
+      `RUN_ALL_ASSERTS;
+      $assertcontrol(OFF, ALL_TYPES, COVER);
+      $assertcontrol(ON, ALL_TYPES, ASSUME);
+      `RUN_ALL_ASSERTS;
+      $assertcontrol(OFF, ALL_TYPES, ASSUME);
+      $assertcontrol(ON, ALL_TYPES, ASSERT|COVER);
+      `RUN_ALL_ASSERTS;
+      $assertcontrol(ON, ALL_TYPES, ASSUME);
+      `RUN_ALL_ASSERTS;
+      $assertoff;
+      `RUN_ALL_ASSERTS;
+      $assertcontrol(ON, SIMPLE_IMMEDIATE|FINAL_DEFERRED_IMMEDIATE, COVER|ASSUME);
+      `RUN_ALL_ASSERTS;
+      $assertoff;
 
       // concurrent test
       #10;
       $display("Disabling concurrent asserts, time: %g", $time);
-      $assertcontrol(ON, ALL);
+      $assertcontrol(ON, ALL_TYPES);
       $assertcontrol(OFF, CONCURRENT);
       #10;
       $display("Enabling concurrent asserts, time: %g", $time);
