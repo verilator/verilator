@@ -447,12 +447,6 @@ struct VlWide final {
         }
         return false;
     }
-    operator bool() VL_PURE {
-        for (size_t i = 0; i < T_Words; ++i) {
-            if (m_storage[i]) return true;
-        }
-        return false;
-    }
 
     // METHODS
     const EData& at(size_t index) const { return m_storage[index]; }
