@@ -1,0 +1,66 @@
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:101:17: Static variable initializer
+                                                           : is dependent on function/task I/O variable
+  101 |     logic tmp = in;
+      |                 ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:106:17: Static variable initializer
+                                                           : is dependent on function/task I/O variable
+  106 |     logic tmp = in;
+      |                 ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:111:24: Static variable initializer
+                                                           : is dependent on function/task I/O variable
+  111 |     static logic tmp = in;
+      |                        ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:116:17: Static variable initializer
+                                                           : is dependent on function/task I/O variable
+  116 |     logic tmp = out;
+      |                 ^~~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:121:20: Static variable initializer
+                                                           : is dependent on function/task I/O variable
+  121 |     logic tmp = in + 1;
+      |                    ^
+%Error: t/t_var_static_assign_decl_bad.v:126:26: Static variable initializer
+                                               : is dependent on automatic variable
+  126 |     static int foo = tmp + 1;
+      |                          ^
+%Error: t/t_var_static_assign_decl_bad.v:132:26: Static variable initializer
+                                               : is dependent on automatic variable
+  132 |     static int foo = tmp + 1;
+      |                          ^
+%Error: t/t_var_static_assign_decl_bad.v:138:29: Static variable initializer
+                                               : is dependent on automatic variable
+  138 |     static logic func_var = loc;
+      |                             ^~~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:9:15: Static variable initializer
+                                                         : is dependent on function/task I/O variable
+    9 |   logic tmp = in;
+      |               ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:14:15: Static variable initializer
+                                                          : is dependent on function/task I/O variable
+   14 |   logic tmp = in;
+      |               ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:20:17: Static variable initializer
+                                                          : is dependent on function/task I/O variable
+   20 |     logic tmp = in;
+      |                 ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:25:17: Static variable initializer
+                                                          : is dependent on function/task I/O variable
+   25 |     logic tmp = in;
+      |                 ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:32:17: Static variable initializer
+                                                          : is dependent on function/task I/O variable
+   32 |     logic tmp = in;
+      |                 ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:37:17: Static variable initializer
+                                                          : is dependent on function/task I/O variable
+   37 |     logic tmp = in;
+      |                 ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:44:17: Static variable initializer
+                                                          : is dependent on function/task I/O variable
+   44 |     logic tmp = in;
+      |                 ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:49:17: Static variable initializer
+                                                          : is dependent on function/task I/O variable
+   49 |     logic tmp = in;
+      |                 ^~
+%Error: Exiting due to

@@ -37,6 +37,8 @@ class LinkLValueVisitor final : public VNVisitor {
     bool m_setStrengthSpecified = false;  // Set that var has assignment with strength specified.
     bool m_setForcedByCode = false;  // Set that var is the target of an AstAssignForce/AstRelease
     bool m_setIfRand = false;  // Update VarRefs if var declared as rand
+    bool m_inInitialStatic = false;  // Set if inside AstInitialStatic
+    bool m_inFunc = false;  // Set if inside AstNodeFTask
     VAccess m_setRefLvalue;  // Set VarRefs to lvalues for pin assignments
 
     // VISITs
@@ -98,6 +100,35 @@ class LinkLValueVisitor final : public VNVisitor {
             m_setStrengthSpecified = false;
             iterateAndNextNull(nodep->rhsp());
         }
+
+        if (m_inInitialStatic && m_inFunc) {
+            const bool rhsHasIO = nodep->rhsp()->exists([](const AstNodeVarRef* const refp) {
+                // Exclude module I/O referenced from a function/task.
+                return refp->varp() && refp->varp()->isIO()
+                       && refp->varp()->lifetime() != VLifetime::NONE;
+            });
+            if (rhsHasIO) {
+                nodep->rhsp()->v3warn(E_UNSUPPORTED,
+                                      "Static variable initializer\n"
+                                          << nodep->rhsp()->warnMore()
+                                          << "is dependent on function/task I/O variable");
+            } else {
+                const bool rhsHasAutomatic
+                    = nodep->rhsp()->exists([](const AstNodeVarRef* const refp) {
+                          return refp->varp() && refp->varp()->lifetime() == VLifetime::AUTOMATIC;
+                      });
+                if (rhsHasAutomatic) {
+                    nodep->rhsp()->v3error("Static variable initializer\n"
+                                           << nodep->rhsp()->warnMore()
+                                           << "is dependent on automatic variable");
+                }
+            }
+        }
+    }
+    void visit(AstInitialStatic* nodep) override {
+        VL_RESTORER(m_inInitialStatic);
+        m_inInitialStatic = true;
+        iterateChildren(nodep);
     }
     void visit(AstRelease* nodep) override {
         VL_RESTORER(m_setRefLvalue);
@@ -326,6 +357,11 @@ class LinkLValueVisitor final : public VNVisitor {
     void visit(AstConstraint* nodep) override {
         VL_RESTORER(m_setIfRand);
         m_setIfRand = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_inFunc);
+        m_inFunc = true;
         iterateChildren(nodep);
     }
 
