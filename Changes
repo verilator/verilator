@@ -19,16 +19,21 @@ Verilator 5.027 devel
 * Support clocking blocks in virtual interfaces (#5235). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Support `$assertcontrol` assertion_type (#5236). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Support conditional constraints (#5245). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support`--compiler-include` headers in user-supplied cpp files  (#5271). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Support `rand_mode` (#5273). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support `this.randomize with` (#5282). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support foreach constraints (#5302). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Add `--compiler-include` for additional C++ includes (#5139) (#5202). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Add `--emit-accessors` (#5182) (#5227). [Ryan Ziegler]
 * Add suggestions on misspelled PLI functions.
 * Add warning on dist in constraints (#5264). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Improve emitted code to use a reference for VlSelf (#5254). [Yangyu Chen]
+* Fix monitor block sensitivity items (#4400) (#5294). [Udaya Raj Subedi]
 * Fix fusing macro arguments to not ignore whitespace (#5061). [Tudor Timi]
 * Fix classes/modules of case-similar names (#5109). [Arkadiusz Kozdra]
 * Fix mis-removing $value$plusargs calls (#5127) (#5137). [Seth Pellegrino]
 * Fix incorrect result of width mismatch (#5186) (#5189). [Yutetsu TAKATSUKASA]
+* Fix compiler coroutine check (#5190) (#5300). [Ricardo Barbedo]
 * Fix `--x-assign` to be independent from `+verilator+rand+reset` (#5214). [Andrew Nolte]
 * Fix splitting if statements with impure conditions (#5219). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix unknown conversion on queues (#5220). [Alex Solomatnikov]
@@ -44,8 +49,17 @@ Verilator 5.027 devel
 * Fix WIDTHEXPAND on left shift of intuitive amount (#5284). [Greg Taylor]
 * Fix elaborating foreach loops (#5285). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Fix initializing static array in dynamic arrays and queues (#5287). [Baruch Sterin]
+* Fix WIDTHEXPAND on left shift of intuitive amount (#5284). [Wilson Snyder]
+* Fix initializing static array in dynamic arrays and queues (#5287). [Wilson Snyder]
+* Fix static variable initializers in procedures (#5296). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix randomizing current object with `rand` class instance member (#5292). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix handling of rand fields not referenced in constraints (#5305). [Ryszard Rozak, Antmicro Ltd.]
 * Fix Python3 path discovery in make flows to avoid mixing system and user python interpreters (#5307) [Markus Krause]
+* Fix make flows to pass PYTHON3 (like PERL) (#5307) (#5308). [Markus Krause]
+* Fix stringify in nested preprocessor macros (#5323). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix ==? and !=? with X values.
+* Fix CPU time being zero.
+* Fix inline function ref port persistence.
 
 
 Verilator 5.026 2024-06-15

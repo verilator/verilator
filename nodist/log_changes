@@ -20,7 +20,7 @@ def message_section(msg):
         return 30
     if re.match(r'^Fix', msg):
         return 40
-    if re.match(r'^Internals', msg):
+    if re.match(r'^(Internals|CI|Tests)', msg):
         return -1
     return 0
 
@@ -82,8 +82,11 @@ def process():
     print("Insertion-sort the following lines into 'Changes' file:")
     print()
 
+    dedup = {}
     for key in sorted(msgs.keys()):
-        print(msgs[key])
+        if msgs[key] not in dedup:
+            dedup[msgs[key]] = True
+            print(msgs[key])
 
     print()
     print("You may now want to clean up spelling, and commit:")
