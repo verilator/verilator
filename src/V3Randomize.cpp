@@ -64,23 +64,29 @@ struct RandModeTarget final {
             return RandModeTarget::get(methodHardp->fromp(), modp);
         }
         AstVar* receiverp = nullptr;
+        AstClass* classp = VN_CAST(modp, Class);
         if (AstVarRef* const varrefp = VN_CAST(fromp, VarRef)) {
             receiverp = varrefp->varp();
+            if (receiverp->isRand()) {
+                fromp = nullptr;
+                if (receiverp->lifetime().isStatic()) {
+                    classp = VN_AS(varrefp->classOrPackagep(), Class);
+                }
+            }
         } else if (AstMemberSel* const memberSelp = VN_CAST(fromp, MemberSel)) {
             receiverp = memberSelp->varp();
+            if (receiverp->isRand()) {
+                fromp = memberSelp->fromp();
+                classp = VN_AS(fromp->dtypep()->skipRefp(), ClassRefDType)->classp();
+            }
         }
         UASSERT_OBJ(receiverp, fromp, "Unknown rand_mode() receiver");
-        if (receiverp->isRand()) {
-            if (AstMemberSel* const memberselp = VN_CAST(fromp, MemberSel)) {
-                return {receiverp, memberselp->fromp(),
-                        VN_AS(memberselp->fromp()->dtypep()->skipRefp(), ClassRefDType)->classp()};
-            }
-        } else {
+        if (!receiverp->isRand()) {
             AstClassRefDType* const classRefDtp
                 = VN_CAST(receiverp->dtypep()->skipRefp(), ClassRefDType);
-            if (classRefDtp) return {receiverp, fromp, classRefDtp->classp()};
+            if (classRefDtp) classp = classRefDtp->classp();
         }
-        return {receiverp, nullptr, VN_AS(modp, Class)};
+        return {receiverp, fromp, classp};
     }
 };
 
@@ -192,6 +198,10 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: 'rand_mode()' on unpacked array element");
                 valid = false;
+            } else if (VN_IS(fromp, StructSel)) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: 'rand_mode()' on unpacked struct element");
+                valid = false;
             } else if (VN_IS(fromp, Sel)) {
                 nodep->v3error("Cannot call 'rand_mode()' on packed array element");
                 valid = false;
@@ -223,6 +233,11 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 } else if (nodep->pinsp() && !VN_IS(nodep->backp(), StmtExpr)) {
                     nodep->v3error("'rand_mode()' with arguments cannot be called as a function");
                     valid = false;
+                } else if (randModeTarget.receiverp
+                           && randModeTarget.receiverp->lifetime().isStatic()
+                           && randModeTarget.receiverp->isRand()) {
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'rand_mode()' on static variable");
+                    valid = false;
                 } else if (randModeTarget.receiverp && randModeTarget.receiverp->isRand()) {
                     // Called on a rand member variable
                     VarRandMode randMode = {};
@@ -232,6 +247,11 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     // Called on 'this' or a non-rand class instance
                     randModeTarget.classp->foreachMember([&](AstClass*, AstVar* varp) {
                         if (!varp->isRand()) return;
+                        if (varp->lifetime().isStatic()) {
+                            nodep->v3warn(E_UNSUPPORTED,
+                                          "Unsupported: 'rand_mode()' on static variable: "
+                                              << varp->prettyNameQ());
+                        }
                         VarRandMode randMode = {};
                         randMode.usesRandMode = true;
                         varp->user1(randMode.asInt);
