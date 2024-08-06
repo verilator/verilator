@@ -48,6 +48,7 @@ protected:
         VL_RESTORER(m_inUnpacked);
         VL_RESTORER(m_unpackedWord);
         m_inUnpacked = true;
+        increaseComplexityScore(1);
         if (const AstAssocArrayDType* const dtypep
             = VN_CAST(nodep->dtypep()->skipRefp(), AssocArrayDType)) {
             // Note the double {{ initializer. The first { starts the initializer of the
@@ -100,6 +101,7 @@ protected:
     void visit(AstConst* nodep) override {
         const V3Number& num = nodep->num();
         UASSERT_OBJ(!num.isFourState(), nodep, "4-state value in constant pool");
+        increaseComplexityScore(1);
         const AstNodeDType* const dtypep = nodep->dtypep();
         if (num.isNull()) {
             putns(nodep, "VlNull{}");

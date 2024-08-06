@@ -18,6 +18,7 @@
 
 #include "V3Options.h"
 
+#include "V3EmitMk.h"
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3Global.h"
@@ -911,9 +912,28 @@ void V3Options::notify() VL_MT_DISABLED {
     UASSERT(!(useTraceParallel() && useTraceOffload()),
             "Cannot use both parallel and offloaded tracing");
 
-    // Default split limits if not specified
-    if (m_outputSplitCFuncs < 0) m_outputSplitCFuncs = m_outputSplit;
-    if (m_outputSplitCTrace < 0) m_outputSplitCTrace = m_outputSplit;
+    if (m_outputGroups > 0) {
+        const std::pair<int&, std::string> valueNamePairs[] = {
+            {m_outputSplit, "--output-split"},
+            {m_outputSplitCFuncs, "--output-split-cfuncs"},
+            {m_outputSplitCTrace, "--output-split-ctrace"},
+        };
+        for (auto& pair : valueNamePairs) {
+            if (pair.first > 0) {
+                cmdfl->v3warn(E_UNSUPPORTED,
+                              "Unsupported: Using " + pair.second
+                                  + " (= " + std::to_string(pair.first) + ")"
+                                  + " with --output-groups is not supported.\n"  //
+                                  + cmdfl->warnMore() + "... Suggest remove " + pair.second + ".");
+            }
+            pair.first = std::numeric_limits<int>::max();
+        }
+    } else {
+        // Default split limits if not specified
+        if (m_outputSplit < 0) { m_outputSplit = 20000; }
+        if (m_outputSplitCFuncs < 0) m_outputSplitCFuncs = m_outputSplit;
+        if (m_outputSplitCTrace < 0) m_outputSplitCTrace = m_outputSplit;
+    }
 
     if (v3Global.opt.main() && v3Global.opt.systemC()) {
         cmdfl->v3warn(E_UNSUPPORTED,
@@ -1229,6 +1249,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-debug-self-test", OnOff, &m_debugSelfTest).undocumented();
     DECL_OPTION("-debug-sigsegv", CbCall, throwSigsegv).undocumented();  // See also --debug-abort
     DECL_OPTION("-debug-stack-check", OnOff, &m_debugStackCheck).undocumented();
+    DECL_OPTION("-debug-test-concatenation", CbVal, [](const char* path) VL_MT_DISABLED {
+        V3EmitMk::debugTestConcatenation(path);
+        std::exit(0);
+    }).undocumented();
     DECL_OPTION("-debug-width", OnOff, &m_debugWidth).undocumented();
     DECL_OPTION("-decoration", CbCall, [this, fl]() { decorations(fl, "medium"); });
     DECL_OPTION("-decorations", CbVal, [this, fl](const char* optp) { decorations(fl, optp); });
@@ -1401,6 +1425,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         if (m_outputSplitCTrace < 0) {
             fl->v3error("--output-split-ctrace must be >= 0: " << valp);
         }
+    });
+    DECL_OPTION("-output-groups", CbVal, [this, fl](const char* valp) {
+        m_outputGroups = std::atoi(valp);
+        if (m_outputGroups < 0) { fl->v3error("--output-groups must be >= 0: " << valp); }
     });
 
     DECL_OPTION("-P", Set, &m_preprocNoLine);
