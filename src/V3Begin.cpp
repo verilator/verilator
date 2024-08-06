@@ -462,8 +462,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                 rightp->dtypeSetSigned32();
                 rightp->protect(false);
                 loopp = createForeachLoop(nodep, bodyPointp, varp, leftp, rightp, VNType::atLt);
-            } else if (const AstAssocArrayDType* const adtypep
-                       = VN_CAST(fromDtp, AssocArrayDType)) {
+            } else if (VN_IS(fromDtp, AssocArrayDType)) {
                 // Make this: var KEY_TYPE index;
                 //            bit index__Vfirst;
                 //            index__Vfirst = 0;

@@ -368,7 +368,7 @@ class HasherVisitor final : public VNVisitorConst {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
     }
     void visit(AstInitArray* nodep) override {
-        if (const AstAssocArrayDType* const dtypep = VN_CAST(nodep->dtypep(), AssocArrayDType)) {
+        if (VN_IS(nodep->dtypep(), AssocArrayDType)) {
             if (nodep->defaultp()) {
                 m_hash
                     += hashNodeAndIterate(nodep->defaultp(), HASH_DTYPE, HASH_CHILDREN, []() {});

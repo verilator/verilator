@@ -476,7 +476,7 @@ protected:
         // vertexes not involved with this step as unimportant
         for (V3GraphVertex& vertex : m_graph.vertices()) {
             if (!vertex.user()) {
-                if (const SplitLogicVertex* const vvertexp = vertex.cast<SplitLogicVertex>()) {
+                if (vertex.is<SplitLogicVertex>()) {
                     for (V3GraphEdge& edge : vertex.inEdges()) {
                         SplitEdge& oedge = static_cast<SplitEdge&>(edge);
                         oedge.setIgnoreThisStep();

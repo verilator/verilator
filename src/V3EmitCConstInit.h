@@ -48,8 +48,7 @@ protected:
         VL_RESTORER(m_inUnpacked);
         VL_RESTORER(m_unpackedWord);
         m_inUnpacked = true;
-        if (const AstAssocArrayDType* const dtypep
-            = VN_CAST(nodep->dtypep()->skipRefp(), AssocArrayDType)) {
+        if (VN_IS(nodep->dtypep()->skipRefp(), AssocArrayDType)) {
             // Note the double {{ initializer. The first { starts the initializer of the
             // VlUnpacked, and the second starts the initializer of m_storage within the
             // VlUnpacked.
