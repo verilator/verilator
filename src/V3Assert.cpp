@@ -360,11 +360,12 @@ class AssertVisitor final : public VNVisitor {
                     //     else $error("multiple match");
                     // end
                     AstNodeExpr* const ohot = new AstOneHot{nodep->fileline(), propp};
+                    AstConst* const zero = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, propp->width(), 0};
                     AstIf* const ohotIfp
                         = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), ohot}};
                     AstIf* const zeroIfp
                         = new AstIf{nodep->fileline(),
-                                    new AstLogNot{nodep->fileline(), propp->cloneTreePure(false)}};
+                                    new AstEq{nodep->fileline(), propp->cloneTreePure(false), zero}};
                     AstNodeExpr* const exprp = nodep->exprp();
                     const string pragmaStr = nodep->pragmaString();
                     if (!allow_none)
