@@ -1003,6 +1003,10 @@ const char* AstJumpBlock::broken() const {
     return nullptr;
 }
 bool AstJumpBlock::isPure() {
+    if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
+    return m_purity.get();
+}
+bool AstJumpBlock::getPurityRecurse() const {
     for (AstNode* stmtp = this->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
         if (!stmtp->isPure()) return false;
     }
