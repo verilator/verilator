@@ -12,6 +12,7 @@ scenarios(simulator => 1);
 
 compile(
     verilator_flags2 => ["--assert"],
+    sanitize => 0,  # GCC 11.4.0 hang bug
     );
 
 execute(
