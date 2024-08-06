@@ -449,13 +449,7 @@ public:
             putns(castp, "VL_UNPACK_");
             emitIQW(nodep->dtypep()->subDTypep());
             emitIQW(castp->fromp());
-            puts("<");
-            putbs(castp->dtypep()->subDTypep()->cType("", false, false));
-            if (VN_IS(castp->dtypep(), UnpackArrayDType)) {
-                puts(", ");
-                puts(cvtToStr(castp->dtypep()->arrayUnpackedElements()));
-            }
-            puts(">(");
+            puts("(");
             putns(castp->dtypep(), cvtToStr(castp->dtypep()->subDTypep()->widthMin()));
             puts(", ");
             puts(cvtToStr(castp->fromp()->widthMin()));
