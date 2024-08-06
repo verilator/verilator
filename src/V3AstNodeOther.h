@@ -3057,6 +3057,7 @@ class AstJumpBlock final : public AstNodeStmt {
     //
     // @astgen ptr := m_labelp : AstJumpLabel  // [After V3Jump] Pointer to declaration
     int m_labelNum = 0;  // Set by V3EmitCSyms to tell final V3Emit what to increment
+    VIsCached m_purity;  // Pure state
 public:
     // After construction must call ->labelp to associate with appropriate label
     AstJumpBlock(FileLine* fl, AstNode* stmtsp)
@@ -3072,6 +3073,10 @@ public:
     void labelNum(int flag) { m_labelNum = flag; }
     AstJumpLabel* labelp() const { return m_labelp; }
     void labelp(AstJumpLabel* labelp) { m_labelp = labelp; }
+    bool isPure() override;
+
+private:
+    bool getPurityRecurse() const;
 };
 class AstJumpGo final : public AstNodeStmt {
     // Jump point; branch down to a JumpLabel
@@ -3263,6 +3268,7 @@ public:
         this->exprp(exprp);
     }
     ASTGEN_MEMBERS_AstStmtExpr;
+    bool isPure() override { return exprp()->isPure(); }
 };
 class AstStop final : public AstNodeStmt {
 public:
