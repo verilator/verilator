@@ -3072,6 +3072,7 @@ public:
     void labelNum(int flag) { m_labelNum = flag; }
     AstJumpLabel* labelp() const { return m_labelp; }
     void labelp(AstJumpLabel* labelp) { m_labelp = labelp; }
+    bool isPure() override;
 };
 class AstJumpGo final : public AstNodeStmt {
     // Jump point; branch down to a JumpLabel
@@ -3263,6 +3264,7 @@ public:
         this->exprp(exprp);
     }
     ASTGEN_MEMBERS_AstStmtExpr;
+    bool isPure() override { return exprp()->isPure(); }
 };
 class AstStop final : public AstNodeStmt {
 public:

@@ -1002,6 +1002,12 @@ const char* AstJumpBlock::broken() const {
     BROKEN_RTN(!labelp()->brokeExistsBelow());
     return nullptr;
 }
+bool AstJumpBlock::isPure() {
+    for (AstNode* stmtp = this->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        if (!stmtp->isPure()) return false;
+    }
+    return true;
+}
 
 string AstScope::nameDotless() const {
     string result = shortName();
