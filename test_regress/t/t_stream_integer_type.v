@@ -47,6 +47,9 @@ module t (/*AUTOARG*/
 
    logic [255:0] packed_time_256;
    logic [255:0] packed_time_256_ref;
+
+   logic [511:0] v_packed_data_512;
+   logic [511:0] v_packed_data_512_ref;
    //
    //integer_atom_type
    //
@@ -74,6 +77,7 @@ module t (/*AUTOARG*/
    typedef bit [15:0] test_short;
    typedef bit [31:0] test_word;
    typedef bit [63:0] test_long;
+   typedef bit [127:0] test_wide;
    //
    test_byte bit_in[4];
    test_byte bit_out[4];
@@ -83,6 +87,9 @@ module t (/*AUTOARG*/
    //
    test_word reg_in[4];
    test_word reg_out[4];
+   //
+   test_wide wide_in[4];
+   test_wide wide_out[4];
    //
    string             error = "";
 
@@ -124,6 +131,7 @@ module t (/*AUTOARG*/
          v_packed_data_32  = {<<8{bit_in}};
          v_packed_data_64  = {<<16{logic_in}};
          v_packed_data_128 = {<<32{reg_in}};
+         v_packed_data_512 = {<<32{wide_in}};
          //unpack
          {<<8{byte_out}}      = packed_data_32;
          {<<16{shortint_out}} = packed_data_64;
@@ -134,6 +142,7 @@ module t (/*AUTOARG*/
          {<<8{bit_out}}       = v_packed_data_32;
          {<<16{logic_out}}    = v_packed_data_64;
          {<<32{reg_out}}      = v_packed_data_128;
+         {<<32{wide_out}}     = v_packed_data_512;
          error_ = comp_in_out();
       end // if (error == "")
       return error_;
@@ -234,6 +243,10 @@ module t (/*AUTOARG*/
          foreach (reg_in[i]) $display("reg_in[%0d]%0h, reg_out=%0h", i, reg_in[i], reg_out[i]);
          $display("v_packed_data_128=%0h, v_packed_data_128_ref=%0h", v_packed_data_128, v_packed_data_128_ref);
       end
+      if (error == "integer_vector_type wide") begin
+         foreach (wide_in[i]) $display("wide_in[%0d]%0h, wide_out=%0h", i, wide_in[i], wide_out[i]);
+         $display("v_packed_data_512=%0h, v_packed_data_512_ref=%0h", v_packed_data_512, v_packed_data_512_ref);
+      end
    endfunction : print_data_error
 
    function static void print_all_data (string name = "");
@@ -263,6 +276,9 @@ module t (/*AUTOARG*/
 
       foreach (reg_in[i]) $display(" %s reg_in[%0d]%0h, reg_out=%0h", name, i, reg_in[i], reg_out[i]);
       $display(" %s v_packed_data_128=%0h, v_packed_data_128_ref=%0h", name, v_packed_data_128, v_packed_data_128_ref);
+
+      foreach (wide_in[i]) $display(" %s wide_in[%0d]%0h, wide_out=%0h", name, i, wide_in[i], wide_out[i]);
+      $display(" %s v_packed_data_512=%0h, v_packed_data_512_ref=%0h", name, v_packed_data_512, v_packed_data_512_ref);
    endfunction : print_all_data
 
    function void init_data();
@@ -325,6 +341,9 @@ module t (/*AUTOARG*/
 
       if (error_ == "") foreach (reg_in[i]) if (reg_in[i] !== reg_out[i]) error_ = "integer_vector_type reg";
       if (error_ == "") if (v_packed_data_128 !== v_packed_data_128_ref) error_ = "integer_vector_type reg";
+
+      if (error_ == "") foreach (wide_in[i]) if (wide_in[i] !== wide_out[i]) error_ = "integer_vector_type wide";
+      if (error_ == "") if (v_packed_data_128 !== v_packed_data_128_ref) error_ = "integer_vector_type wide";
 
       return error_;
    endfunction : comp_in_out

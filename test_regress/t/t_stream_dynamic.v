@@ -23,6 +23,7 @@ module t (/*AUTOARG*/);
       bit [3:0] arr4[] = '{25{4'b1000}};
       bit [7:0] arr8[] = '{8{8'b00110011}};
       bit [63:0] arr64[] = '{5{64'h0123456789abcdef}};
+      bit [159:0] arr160[] = '{2{160'h0123456789abcdef0123456789abcdef01234567}};
       bit [63:0] bit64;
       bit [99:0] bit100;
       bit [319:0] bit320;
@@ -97,20 +98,40 @@ module t (/*AUTOARG*/);
       bit100 = { << bit {arr4} };
       `checkh(bit100[3:0], 4'b0001);
 
-      bit320 = { >> byte {arr64} };
-      `checkh(bit320[63:0], 64'h0123456789abcdef);
-      bit320 = { << byte {arr64} };
-      `checkh(bit320[63:0], 64'hefcdab8967452301);
-
       { >> bit {arr4} } = bit100;
       `checkh(arr4[0], 4'b0001);
       { << bit {arr4} } = bit100;
       `checkh(arr4[0], 4'b1000);
 
+      bit320 = { >> byte {arr64} };
+      `checkh(bit320[63:0], 64'h0123456789abcdef);
+      bit320 = { << byte {arr64} };
+      `checkh(bit320[63:0], 64'hefcdab8967452301);
+
       { >> byte {arr64} } = bit320;
       `checkh(arr64[0], 64'hefcdab8967452301);
       { << byte {arr64} } = bit320;
       `checkh(arr64[0], 64'h0123456789abcdef);
+
+      { >> bit {arr64} } = bit64;
+      `checkh(arr64[0], 64'hcccccccccccccccc);
+      { << bit {arr64} } = bit64;
+      `checkh(arr64[0], 64'h3333333333333333);
+
+      bit64 = { >> bit {arr64} };
+      `checkh(bit64, 64'h3333333333333333);
+      bit64 = { << bit {arr64} };
+      `checkh(bit64, 64'hcccccccccccccccc);
+
+      bit320 = { >> byte {arr160} };
+      `checkh(bit320[159:0], 160'h0123456789abcdef0123456789abcdef01234567);
+      bit320 = { << byte {arr160} };
+      `checkh(bit320[159:0], 160'h67452301efcdab8967452301efcdab8967452301);
+
+      { >> byte {arr160} } = bit320;
+      `checkh(arr160[0], 160'h67452301efcdab8967452301efcdab8967452301);
+      { << byte {arr160} } = bit320;
+      `checkh(arr160[0], 160'h0123456789abcdef0123456789abcdef01234567);
       $write("*-* All Finished *-*\n");
       $finish;
    end
