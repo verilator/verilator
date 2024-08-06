@@ -3074,6 +3074,7 @@ public:
     AstJumpLabel* labelp() const { return m_labelp; }
     void labelp(AstJumpLabel* labelp) { m_labelp = labelp; }
     bool isPure() override;
+
 private:
     bool getPurityRecurse() const;
 };
