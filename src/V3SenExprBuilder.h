@@ -139,8 +139,7 @@ class SenExprBuilder final {
                 return prevp;
             }
 
-            if (AstUnpackArrayDType* const dtypep
-                = VN_CAST(exprp->dtypep()->skipRefp(), UnpackArrayDType)) {
+            if (VN_IS(exprp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 AstCMethodHard* const cmhp = new AstCMethodHard{flp, wrPrev(), "assign", rdCurr()};
                 cmhp->dtypeSetVoid();
                 m_postUpdates.push_back(cmhp->makeStmt());
