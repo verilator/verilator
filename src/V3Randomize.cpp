@@ -1008,7 +1008,8 @@ class RandomizeVisitor final : public VNVisitor {
 
     // STATE
     V3UniqueNames m_inlineUniqueNames;  // For generating unique function names
-    V3UniqueNames m_randModeUniqueNames;  // For generating unique rand mode state var names
+    V3UniqueNames m_randModeUniqueNames{"__Vrandmode"};  // For generating unique rand mode state
+                                                         // var names
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     AstNodeModule* m_modp = nullptr;  // Current module
     const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
@@ -1346,23 +1347,24 @@ class RandomizeVisitor final : public VNVisitor {
         }
         return nullptr;
     }
-    AstVar* makeTmpVar(AstNodeExpr* siblingExprp, AstVar* randModeVarp, AstNode*& preStmtsp,
-                       AstNodeStmt*& postStmtsp) {
+    AstVar* makeTmpRandModeVar(AstNodeExpr* siblingExprp, AstVar* randModeVarp,
+                               AstNode*& storeStmtspr, AstNodeStmt*& restoreStmtspr) {
         FileLine* const fl = randModeVarp->fileline();
         AstVar* const randModeTmpVarp
             = new AstVar{fl, VVarType::BLOCKTEMP, m_randModeUniqueNames.get(randModeVarp),
                          randModeVarp->dtypep()};
         randModeTmpVarp->funcLocal(m_ftaskp);
         randModeTmpVarp->lifetime(VLifetime::AUTOMATIC);
-        preStmtsp = AstNode::addNext(
-            preStmtsp, new AstAssign{fl, new AstVarRef{fl, randModeTmpVarp, VAccess::WRITE},
-                                     makeSiblingRefp(siblingExprp, randModeVarp, VAccess::READ)});
-        preStmtsp = AstNode::addNext(
-            preStmtsp,
+        storeStmtspr = AstNode::addNext(
+            storeStmtspr,
+            new AstAssign{fl, new AstVarRef{fl, randModeTmpVarp, VAccess::WRITE},
+                          makeSiblingRefp(siblingExprp, randModeVarp, VAccess::READ)});
+        storeStmtspr = AstNode::addNext(
+            storeStmtspr,
             makeRandModeInitLoop(fl, makeSiblingRefp(siblingExprp, randModeVarp, VAccess::WRITE),
                                  new AstConst{fl, 0}, m_ftaskp));
-        postStmtsp = AstNode::addNext(
-            postStmtsp,
+        restoreStmtspr = AstNode::addNext(
+            restoreStmtspr,
             new AstAssign{fl, makeSiblingRefp(siblingExprp, randModeVarp, VAccess::WRITE),
                           new AstVarRef{fl, randModeTmpVarp, VAccess::READ}});
         return randModeTmpVarp;
@@ -1752,7 +1754,7 @@ class RandomizeVisitor final : public VNVisitor {
                     AstVar* const randModeVarp = getRandModeVar(classp);
                     if (savedRandModeVarps.find(randModeVarp) == savedRandModeVarps.end()) {
                         AstVar* const randModeTmpVarp
-                            = makeTmpVar(exprp, randModeVarp, storeStmtsp, restoreStmtsp);
+                            = makeTmpRandModeVar(exprp, randModeVarp, storeStmtsp, restoreStmtsp);
                         savedRandModeVarps.insert(randModeVarp);
                         tmpVarps = AstNode::addNext(tmpVarps, randModeTmpVarp);
                     }
