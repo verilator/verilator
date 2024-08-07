@@ -195,4 +195,5 @@ package std;
          $urandom(s.atoi());  // Set the seed using a string
       endfunction
    endclass
+   function int randomize(); endfunction
 endpackage
