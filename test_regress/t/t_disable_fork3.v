@@ -4,6 +4,13 @@
 // any use, without warranty, 2023 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
 
+class C;
+   task proc;
+      disable fork;
+      wait fork;
+   endtask
+endclass
+
 module t;
    initial begin
       fork begin
