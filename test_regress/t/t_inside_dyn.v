@@ -7,6 +7,7 @@
 module t;
    int q[$] = '{1, 2, 3};
    bit dyn[] = '{0, 0};
+   string sq[] = '{"C", "D"};
 
    initial begin
       if (!(1 inside {q})) $stop;
@@ -15,6 +16,7 @@ module t;
 
       if (!(0 inside {dyn})) $stop;
       if (1 inside {dyn}) $stop;
+      if (!("C" inside {sq})) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

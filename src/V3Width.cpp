@@ -2700,8 +2700,11 @@ class WidthVisitor final : public VNVisitor {
             } else if (VN_IS(itemDtp, UnpackArrayDType) || VN_IS(itemDtp, DynArrayDType)
                        || VN_IS(itemDtp, QueueDType)) {
                 // Unsupported in parameters
-                inewp = new AstCMethodHard{itemp->fileline(), itemp->unlinkFrBack(), "inside",
-                                           nodep->exprp()->cloneTreePure(true)};
+                AstNodeExpr* exprp = nodep->exprp()->cloneTreePure(true);
+                inewp = new AstCMethodHard{nodep->fileline(), itemp->unlinkFrBack(), "inside",
+                                           exprp};
+                iterateCheckTyped(nodep, "inside value", exprp, itemDtp->subDTypep(), BOTH);
+                VL_DANGLING(exprp);  // Might have been replaced
                 inewp->dtypeSetBit();
                 inewp->didWidth(true);
             } else if (VN_IS(itemDtp, AssocArrayDType)) {
