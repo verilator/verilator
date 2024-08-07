@@ -5012,7 +5012,7 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         //                      // IEEE: cast/constant_cast
         //                      // expanded from casting_type
         |       simple_type yP_TICK '(' expr ')'
-                        { $$ = new AstCast{$1->fileline(), $4, VFlagChildDType{}, $1}; }
+                        { $$ = new AstCast{$2, $4, VFlagChildDType{}, $1}; }
         |       yTYPE__ETC '(' exprOrDataType ')' yP_TICK '(' expr ')'
                         { $$ = new AstCast{$1, $7, VFlagChildDType{},
                                            new AstRefDType{$1, AstRefDType::FlagTypeOfExpr{}, $3}}; }
