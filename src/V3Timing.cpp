@@ -341,16 +341,11 @@ class TimingSuspendableVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeCCall* nodep) override {
-        if (!m_underFork || (m_underFork & F_MIGHT_SUSPEND))
-            new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep->funcp()),
-                            getSuspendDepVtx(m_procp), m_underFork ? P_FORK : P_CALL};
+        new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep->funcp()), getSuspendDepVtx(m_procp),
+                        P_CALL};
 
         new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep->funcp()),
                         getNeedsProcDepVtx(m_procp), P_CALL};
-
-        if (m_underFork && !(m_underFork & F_MIGHT_SUSPEND)) {
-            addFlags(nodep, T_NEEDS_PROC | T_ALLOCS_PROC);
-        }
 
         iterateChildren(nodep);
     }
@@ -365,9 +360,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
         new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep), getNeedsProcDepVtx(m_procp),
                         P_CALL};
 
-        if (m_underFork && !(m_underFork & F_MIGHT_SUSPEND)) {
-            addFlags(nodep, T_NEEDS_PROC | T_ALLOCS_PROC);
-        }
+        if (m_underFork) addFlags(nodep, T_NEEDS_PROC | T_ALLOCS_PROC);
 
         m_procp = nodep;
         m_underFork = 0;
@@ -1128,11 +1121,22 @@ class TimingControlVisitor final : public VNVisitor {
         // var
         alwaysp->addNextHere(nodep);
     }
+    void visit(AstDisableFork* nodep) override {
+        if (hasFlags(m_procp, T_HAS_PROC)) return;
+        // never reached by any process; remove to avoid compilation error
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
     void visit(AstWaitFork* nodep) override {
-        AstCExpr* const exprp = new AstCExpr{nodep->fileline(), "vlProcess->completedFork()", 1};
-        exprp->pure(false);
-        AstWait* const waitp = new AstWait{nodep->fileline(), exprp, nullptr};
-        nodep->replaceWith(waitp);
+        if (hasFlags(m_procp, T_HAS_PROC)) {
+            AstCExpr* const exprp
+                = new AstCExpr{nodep->fileline(), "vlProcess->completedFork()", 1};
+            exprp->pure(false);
+            AstWait* const waitp = new AstWait{nodep->fileline(), exprp, nullptr};
+            nodep->replaceWith(waitp);
+        } else {
+            // never reached by any process; remove to avoid compilation error
+            nodep->unlinkFrBack();
+        }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstWait* nodep) override {
