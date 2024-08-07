@@ -1678,31 +1678,8 @@ class RandomizeVisitor final : public VNVisitor {
         if (nodep->name() != "randomize") return;
 
         if (nodep->pinsp()) {
-            // Normalize arguments to always be a member sel from nodep->fromp(), if applicable
-            // e.g. a.randomize(b, a.c) -> a.randomize(a.b, a.c)
-            // This will simplify further processing
-            if (AstNodeExpr* const fromp = getFromp(nodep)) {
-                for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
-                    AstArg* const argp = VN_CAST(pinp, Arg);
-                    if (!argp) continue;
-                    if (AstVarRef* const varrefp = VN_CAST(argp->exprp(), VarRef)) {
-                        argp->exprp()->replaceWith(new AstMemberSel{
-                            argp->fileline(), fromp->cloneTree(false), varrefp->varp()});
-                        VL_DO_DANGLING(varrefp->deleteTree(), varrefp);
-                        continue;
-                    }
-                    AstNodeExpr* const prefixp = sliceToCommonPrefix(nodep, argp->exprp());
-                    if (prefixp == fromp) continue;
-                    AstNodeExpr* innermostFromp = argp->exprp();
-                    while (AstMemberSel* const memberSelp = VN_CAST(innermostFromp, MemberSel)) {
-                        innermostFromp = memberSelp->fromp();
-                    }
-                    AstVarRef* const varrefp = VN_AS(innermostFromp, VarRef);
-                    varrefp->replaceWith(new AstMemberSel{
-                        argp->fileline(), fromp->cloneTree(false), varrefp->varp()});
-                    VL_DO_DANGLING(varrefp->deleteTree(), varrefp);
-                }
-            }
+            // This assumes arguments to always be a member sel from nodep->fromp(), if applicable
+            // e.g. LinkDot transformed a.randomize(b, a.c) -> a.randomize(a.b, a.c)
             // Merge pins with common prefixes so that setting their rand mode doesn't interfere
             // with each other.
             // e.g. a.randomize(a.b, a.c, a.b.d) -> a.randomize(a.b, a.c)
