@@ -115,7 +115,7 @@ public:
     string vFileIfNecessary() const VL_MT_DISABLED;
     // Write command line arguments to .f file for this hierarchical block
     void writeCommandArgsFile(bool forCMake) const VL_MT_DISABLED;
-    void writeTypeParametersFile() const VL_MT_DISABLED;
+    void writeParametersFile() const VL_MT_DISABLED;
     string commandArgsFilename(bool forCMake) const VL_MT_DISABLED;
     string typeParametersFilename() const VL_MT_DISABLED;
 };
@@ -148,7 +148,7 @@ public:
 
     // Write command line arguments to .f files for child Verilation run
     void writeCommandArgsFiles(bool forCMake) const VL_MT_DISABLED;
-    void writeTypeParametersFiles() const VL_MT_DISABLED;
+    void writeParametersFiles() const VL_MT_DISABLED;
     static string topCommandArgsFilename(bool forCMake) VL_MT_DISABLED;
 
     static void createPlan(AstNetlist* nodep) VL_MT_DISABLED;
