@@ -1327,8 +1327,8 @@ class RandomizeVisitor final : public VNVisitor {
         } else if (AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
             return varrefp->varp();
         }
-        exprp->v3fatal("Not a MemberSel or VarRef");
-        return nullptr;
+        exprp->v3fatalSrc("Not a MemberSel nor VarRef");
+        return nullptr;  // LCOV_EXCL_LINE
     }
     AstNodeExpr* makeSiblingRefp(AstNodeExpr* const exprp, AstVar* const varp,
                                  const VAccess access) {
