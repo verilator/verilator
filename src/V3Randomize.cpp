@@ -1424,8 +1424,7 @@ class RandomizeVisitor final : public VNVisitor {
         nodep->foreachMember([&](AstClass* classp, AstVar* memberVarp) {
             if (!memberVarp->rand().isRandomizable()) return;
             const VarRandMode randMode = {.asInt = memberVarp->user1()};
-            if (randMode.usesRandMode
-                && !memberVarp->isRand()) {  // Not randomizable by default
+            if (randMode.usesRandMode && !memberVarp->isRand()) {  // Not randomizable by default
                 AstCMethodHard* atp = new AstCMethodHard{
                     nodep->fileline(),
                     new AstVarRef{fl, VN_AS(randModeVarp->user2p(), NodeModule), randModeVarp,
@@ -1532,9 +1531,9 @@ class RandomizeVisitor final : public VNVisitor {
                     tmpVarps = AstNode::addNext(tmpVarps, randModeTmpVarp);
                 }
                 const VarRandMode randMode = {.asInt = randVarp->user1()};
-                AstCMethodHard* atp = new AstCMethodHard{
-                    fl, makeSiblingRefp(exprp, randModeVarp, VAccess::WRITE), "at",
-                    new AstConst{fl, randMode.index}};
+                AstCMethodHard* atp
+                    = new AstCMethodHard{fl, makeSiblingRefp(exprp, randModeVarp, VAccess::WRITE),
+                                         "at", new AstConst{fl, randMode.index}};
                 atp->dtypeSetUInt32();
                 setStmtsp
                     = AstNode::addNext(setStmtsp, new AstAssign{fl, atp, new AstConst{fl, 1}});

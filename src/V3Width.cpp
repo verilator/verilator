@@ -2994,8 +2994,7 @@ class WidthVisitor final : public VNVisitor {
                     nodep->dtypep(foundp->dtypep());
                     nodep->varp(varp);
                     nodep->didWidth(true);
-                    if (nodep->fromp()->sameTree(m_randomizeFromp)
-                        && varp->isRand())  // null-safe
+                    if (nodep->fromp()->sameTree(m_randomizeFromp) && varp->isRand())  // null-safe
                         V3LinkLValue::linkLValueSet(nodep);
                     return true;
                 }
