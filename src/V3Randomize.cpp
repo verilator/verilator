@@ -1471,6 +1471,90 @@ class RandomizeVisitor final : public VNVisitor {
         });
     }
 
+    // Handle inline random variable control. After this, the randomize() call has no args
+    void handleRandomizeArgs(AstNodeFTaskRef* const nodep) {
+        if (!nodep->pinsp()) return;
+        // This assumes arguments to always be a member sel from nodep->fromp(), if applicable
+        // e.g. LinkDot transformed a.randomize(b, a.c) -> a.randomize(a.b, a.c)
+        // Merge pins with common prefixes so that setting their rand mode doesn't interfere
+        // with each other.
+        // e.g. a.randomize(a.b, a.c, a.b.d) -> a.randomize(a.b, a.c)
+        for (AstNode *pinp = nodep->pinsp(), *nextp = nullptr; pinp; pinp = nextp) {
+            nextp = pinp->nextp();
+            AstArg* const argp = VN_CAST(pinp, Arg);
+            if (!argp) continue;
+            AstNode* otherNextp = nullptr;
+            for (AstNode* otherPinp = nextp; otherPinp; otherPinp = otherNextp) {
+                otherNextp = otherPinp->nextp();
+                AstArg* const otherArgp = VN_CAST(otherPinp, Arg);
+                if (!otherArgp) continue;
+                if (AstNodeExpr* const prefixp
+                    = sliceToCommonPrefix(argp->exprp(), otherArgp->exprp())) {
+                    if (prefixp == argp->exprp()) {
+                        if (nextp == otherPinp) nextp = nextp->nextp();
+                        VL_DO_DANGLING(otherPinp->unlinkFrBack()->deleteTree(), otherPinp);
+                        continue;
+                    }
+                }
+                if (AstNodeExpr* const prefixp
+                    = sliceToCommonPrefix(otherArgp->exprp(), argp->exprp())) {
+                    if (prefixp == otherArgp->exprp()) {
+                        VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
+                        break;
+                    }
+                }
+            }
+        }
+        // Construct temp vars, and store and restore statements
+        std::set<AstVar*> savedRandModeVarps;
+        AstVar* tmpVarps = nullptr;
+        AstNode* storeStmtsp = nullptr;
+        AstNode* setStmtsp = nullptr;
+        AstNodeStmt* restoreStmtsp = nullptr;
+        for (AstNode *pinp = nodep->pinsp(), *nextp = nullptr; pinp; pinp = nextp) {
+            nextp = pinp->nextp();
+            AstArg* const argp = VN_CAST(pinp, Arg);
+            if (!argp) continue;
+            AstNodeExpr* exprp = VN_AS(pinp, Arg)->exprp();
+            AstNodeExpr* const commonPrefixp = sliceToCommonPrefix(exprp, nodep);
+            UASSERT_OBJ(commonPrefixp != exprp, nodep,
+                        "Common prefix should be different than pin");
+            FileLine* const fl = argp->fileline();
+            while (exprp) {
+                if (commonPrefixp == exprp) break;
+                AstVar* const randVarp = getVarFromRef(exprp);
+                AstClass* const classp = VN_AS(randVarp->user2p(), Class);
+                AstVar* const randModeVarp = getRandModeVar(classp);
+                if (savedRandModeVarps.find(randModeVarp) == savedRandModeVarps.end()) {
+                    AstVar* const randModeTmpVarp
+                        = makeTmpRandModeVar(exprp, randModeVarp, storeStmtsp, restoreStmtsp);
+                    savedRandModeVarps.insert(randModeVarp);
+                    tmpVarps = AstNode::addNext(tmpVarps, randModeTmpVarp);
+                }
+                const VarRandMode randMode = {.asInt = randVarp->user1()};
+                AstCMethodHard* atp = new AstCMethodHard{
+                    fl, makeSiblingRefp(exprp, randModeVarp, VAccess::WRITE), "at",
+                    new AstConst{fl, randMode.index}};
+                atp->dtypeSetUInt32();
+                setStmtsp
+                    = AstNode::addNext(setStmtsp, new AstAssign{fl, atp, new AstConst{fl, 1}});
+                exprp = getFromp(exprp);
+            }
+            pinp->unlinkFrBack()->deleteTree();
+        }
+        if (tmpVarps) {
+            UASSERT_OBJ(storeStmtsp && setStmtsp && restoreStmtsp, nodep, "Should have stmts");
+            VNRelinker relinker;
+            m_stmtp->unlinkFrBack(&relinker);
+            AstNode* const stmtsp = tmpVarps;
+            stmtsp->addNext(storeStmtsp);
+            stmtsp->addNext(setStmtsp);
+            stmtsp->addNext(m_stmtp);
+            stmtsp->addNext(restoreStmtsp);
+            relinker.relink(new AstBegin{nodep->fileline(), "", stmtsp, false, true});
+        }
+    }
+
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
@@ -1677,87 +1761,7 @@ class RandomizeVisitor final : public VNVisitor {
 
         if (nodep->name() != "randomize") return;
 
-        if (nodep->pinsp()) {
-            // This assumes arguments to always be a member sel from nodep->fromp(), if applicable
-            // e.g. LinkDot transformed a.randomize(b, a.c) -> a.randomize(a.b, a.c)
-            // Merge pins with common prefixes so that setting their rand mode doesn't interfere
-            // with each other.
-            // e.g. a.randomize(a.b, a.c, a.b.d) -> a.randomize(a.b, a.c)
-            for (AstNode *pinp = nodep->pinsp(), *nextp = nullptr; pinp; pinp = nextp) {
-                nextp = pinp->nextp();
-                AstArg* const argp = VN_CAST(pinp, Arg);
-                if (!argp) continue;
-                AstNode* otherNextp = nullptr;
-                for (AstNode* otherPinp = nextp; otherPinp; otherPinp = otherNextp) {
-                    otherNextp = otherPinp->nextp();
-                    AstArg* const otherArgp = VN_CAST(otherPinp, Arg);
-                    if (!otherArgp) continue;
-                    if (AstNodeExpr* const prefixp
-                        = sliceToCommonPrefix(argp->exprp(), otherArgp->exprp())) {
-                        if (prefixp == argp->exprp()) {
-                            if (nextp == otherPinp) nextp = nextp->nextp();
-                            VL_DO_DANGLING(otherPinp->unlinkFrBack()->deleteTree(), otherPinp);
-                            continue;
-                        }
-                    }
-                    if (AstNodeExpr* const prefixp
-                        = sliceToCommonPrefix(otherArgp->exprp(), argp->exprp())) {
-                        if (prefixp == otherArgp->exprp()) {
-                            VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
-                            break;
-                        }
-                    }
-                }
-            }
-            // Construct temp vars, and store and restore statements
-            std::set<AstVar*> savedRandModeVarps;
-            AstVar* tmpVarps = nullptr;
-            AstNode* storeStmtsp = nullptr;
-            AstNode* setStmtsp = nullptr;
-            AstNodeStmt* restoreStmtsp = nullptr;
-            for (AstNode *pinp = nodep->pinsp(), *nextp = nullptr; pinp; pinp = nextp) {
-                nextp = pinp->nextp();
-                AstArg* const argp = VN_CAST(pinp, Arg);
-                if (!argp) continue;
-                AstNodeExpr* exprp = VN_AS(pinp, Arg)->exprp();
-                AstNodeExpr* const commonPrefixp = sliceToCommonPrefix(exprp, nodep);
-                UASSERT_OBJ(commonPrefixp != exprp, nodep,
-                            "Common prefix should be different than pin");
-                FileLine* const fl = argp->fileline();
-                while (exprp) {
-                    if (commonPrefixp == exprp) break;
-                    AstVar* const randVarp = getVarFromRef(exprp);
-                    AstClass* const classp = VN_AS(randVarp->user2p(), Class);
-                    AstVar* const randModeVarp = getRandModeVar(classp);
-                    if (savedRandModeVarps.find(randModeVarp) == savedRandModeVarps.end()) {
-                        AstVar* const randModeTmpVarp
-                            = makeTmpRandModeVar(exprp, randModeVarp, storeStmtsp, restoreStmtsp);
-                        savedRandModeVarps.insert(randModeVarp);
-                        tmpVarps = AstNode::addNext(tmpVarps, randModeTmpVarp);
-                    }
-                    const VarRandMode randMode = {.asInt = randVarp->user1()};
-                    AstCMethodHard* atp = new AstCMethodHard{
-                        fl, makeSiblingRefp(exprp, randModeVarp, VAccess::WRITE), "at",
-                        new AstConst{fl, randMode.index}};
-                    atp->dtypeSetUInt32();
-                    setStmtsp
-                        = AstNode::addNext(setStmtsp, new AstAssign{fl, atp, new AstConst{fl, 1}});
-                    exprp = getFromp(exprp);
-                }
-                pinp->unlinkFrBack()->deleteTree();
-            }
-            if (tmpVarps) {
-                UASSERT_OBJ(storeStmtsp && setStmtsp && restoreStmtsp, nodep, "Should have stmts");
-                VNRelinker relinker;
-                m_stmtp->unlinkFrBack(&relinker);
-                AstNode* const stmtsp = tmpVarps;
-                stmtsp->addNext(storeStmtsp);
-                stmtsp->addNext(setStmtsp);
-                stmtsp->addNext(m_stmtp);
-                stmtsp->addNext(restoreStmtsp);
-                relinker.relink(new AstBegin{nodep->fileline(), "", stmtsp, false, true});
-            }
-        }
+        handleRandomizeArgs(nodep);
 
         AstWith* const withp = VN_CAST(nodep->pinsp(), With);
 
