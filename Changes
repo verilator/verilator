@@ -57,6 +57,7 @@ Verilator 5.027 devel
 * Fix Python3 path discovery in make flows to avoid mixing system and user python interpreters (#5307) [Markus Krause]
 * Fix make flows to pass PYTHON3 (like PERL) (#5307) (#5308). [Markus Krause]
 * Fix stringify in nested preprocessor macros (#5323). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix $sformat with array arguments (#5330). [Abe Jordan]
 * Fix ==? and !=? with X values.
 * Fix CPU time being zero.
 * Fix inline function ref port persistence.

@@ -1203,7 +1203,7 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->attrp(), WidthVP{SELF, BOTH}.p());
         AstNode* const selp = V3Width::widthSelNoIterEdit(nodep);
         if (selp != nodep) {
-            nodep = nullptr;
+            VL_DANGLING(nodep);
             userIterate(selp, m_vup);
             return;
         }
@@ -5051,6 +5051,11 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
+    void visit(AstSFormat* nodep) override {
+        assertAtStatement(nodep);
+        userIterateAndNext(nodep->fmtp(), WidthVP{SELF, BOTH}.p());
+        userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
+    }
     void visit(AstSFormatF* nodep) override {
         // Excludes NodeDisplay, see below
         if (m_vup && !m_vup->prelim()) return;  // Can be called as statement or function
