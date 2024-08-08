@@ -182,18 +182,47 @@ private:
         m_clockingp->addNextHere(varp->unlinkFrBack());
         varp->user1p(nodep);
         if (nodep->direction() == VDirection::OUTPUT) {
-            AstVarRef* const skewedRefp = new AstVarRef{flp, varp, VAccess::READ};
-            skewedRefp->user1(true);
-            AstAssign* const assignp = new AstAssign{flp, exprp->cloneTreePure(false), skewedRefp};
+            exprp->foreach([](AstNodeVarRef* varrefp) {
+                // Prevent confusing BLKANDNBLK warnings on clockvars due to generated assignments
+                varrefp->fileline()->warnOff(V3ErrorCode::BLKANDNBLK, true);
+            });
+            AstVarRef* const skewedReadRefp = new AstVarRef{flp, varp, VAccess::READ};
+            skewedReadRefp->user1(true);
+            // Initialize the clockvar
+            AstVarRef* const skewedWriteRefp = new AstVarRef{flp, varp, VAccess::WRITE};
+            skewedWriteRefp->user1(true);
+            AstInitialStatic* const initClockvarp = new AstInitialStatic{
+                flp, new AstAssign{flp, skewedWriteRefp, exprp->cloneTreePure(false)}};
+            m_modp->addStmtsp(initClockvarp);
+            // A var to keep the previous value of the clockvar
+            AstVar* const prevVarp = new AstVar{
+                flp, VVarType::MODULETEMP, "__Vclocking_prev__" + varp->name(), exprp->dtypep()};
+            prevVarp->lifetime(VLifetime::STATIC);
+            AstInitialStatic* const initPrevClockvarp = new AstInitialStatic{
+                flp, new AstAssign{flp, new AstVarRef{flp, prevVarp, VAccess::WRITE},
+                                   skewedReadRefp->cloneTreePure(false)}};
+            m_modp->addStmtsp(prevVarp);
+            m_modp->addStmtsp(initPrevClockvarp);
+            // Assign the clockvar to the actual var; only do it if the clockvar's value has
+            // changed
+            AstAssign* const assignp
+                = new AstAssign{flp, exprp->cloneTreePure(false), skewedReadRefp};
+            AstIf* const ifp
+                = new AstIf{flp,
+                            new AstNeq{flp, new AstVarRef{flp, prevVarp, VAccess::READ},
+                                       skewedReadRefp->cloneTreePure(false)},
+                            assignp};
+            ifp->addThensp(new AstAssign{flp, new AstVarRef{flp, prevVarp, VAccess::WRITE},
+                                         skewedReadRefp->cloneTree(false)});
             if (skewp->isZero()) {
                 // Drive the var in Re-NBA (IEEE 1800-2023 14.16)
                 m_clockingp->addNextHere(new AstAlwaysReactive{
-                    flp, new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, assignp});
+                    flp, new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, ifp});
             } else if (skewp->fileline()->timingOn()) {
                 // Create a fork so that this AlwaysObserved can be retriggered before the
                 // assignment happens. Also then it can be combo, avoiding the need for creating
                 // new triggers.
-                AstFork* const forkp = new AstFork{flp, "", assignp};
+                AstFork* const forkp = new AstFork{flp, "", ifp};
                 forkp->joinType(VJoinType::JOIN_NONE);
                 // Use Observed for this to make sure we do not miss the event
                 m_clockingp->addNextHere(new AstAlwaysObserved{
