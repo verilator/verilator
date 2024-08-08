@@ -94,7 +94,7 @@ static string V3HierCommandArgsFilename(const string& prefix, bool forCMake) {
 }
 
 static string V3HierTypeParametersFileName(const string& prefix) {
-    return v3Global.opt.makeDir() + "/" + prefix + "__hierTypeParameters.vs";
+    return v3Global.opt.makeDir() + "/" + prefix + "__hierParameters.v";
 }
 
 static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of, bool forCMake) {
