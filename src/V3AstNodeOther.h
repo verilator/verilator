@@ -2059,6 +2059,8 @@ public:
     bool isSigUserRdPublic() const { return m_sigUserRdPublic; }
     bool isSigUserRWPublic() const { return m_sigUserRWPublic; }
     bool isTrace() const { return m_trace; }
+    bool isRand() const { return m_rand.isRand(); }
+    bool isRandC() const { return m_rand.isRandC(); }
     bool isConst() const VL_MT_SAFE { return m_isConst; }
     bool isStatic() const VL_MT_SAFE { return m_isStatic; }
     bool isLatched() const { return m_isLatched; }

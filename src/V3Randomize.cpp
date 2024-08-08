@@ -76,7 +76,7 @@ struct RandModeTarget final {
         AstClass* classp = VN_CAST(modp, Class);
         if (AstVarRef* const varrefp = VN_CAST(fromp, VarRef)) {
             receiverp = varrefp->varp();
-            if (receiverp->rand().isRand()) {
+            if (receiverp->isRand()) {
                 fromp = nullptr;
                 if (receiverp->lifetime().isStatic()) {
                     classp = VN_AS(varrefp->classOrPackagep(), Class);
@@ -84,13 +84,13 @@ struct RandModeTarget final {
             }
         } else if (AstMemberSel* const memberSelp = VN_CAST(fromp, MemberSel)) {
             receiverp = memberSelp->varp();
-            if (receiverp->rand().isRand()) {
+            if (receiverp->isRand()) {
                 fromp = memberSelp->fromp();
                 classp = VN_AS(fromp->dtypep()->skipRefp(), ClassRefDType)->classp();
             }
         }
         UASSERT_OBJ(receiverp, fromp, "Unknown rand_mode() receiver");
-        if (!receiverp->rand().isRand()) {
+        if (!receiverp->isRand()) {
             AstClassRefDType* const classRefDtp
                 = VN_CAST(receiverp->dtypep()->skipRefp(), ClassRefDType);
             if (classRefDtp) classp = classRefDtp->classp();
@@ -239,7 +239,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             }
             if (valid) {
                 const RandModeTarget randModeTarget = RandModeTarget::get(fromp, m_classp);
-                if ((!randModeTarget.receiverp || !randModeTarget.receiverp->rand().isRand())
+                if ((!randModeTarget.receiverp || !randModeTarget.receiverp->isRand())
                     && !nodep->pinsp()) {
                     nodep->v3error(
                         "Cannot call 'rand_mode()' as a function on non-random variable");
@@ -252,10 +252,10 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     valid = false;
                 } else if (randModeTarget.receiverp
                            && randModeTarget.receiverp->lifetime().isStatic()
-                           && randModeTarget.receiverp->rand().isRand()) {
+                           && randModeTarget.receiverp->isRand()) {
                     nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'rand_mode()' on static variable");
                     valid = false;
-                } else if (randModeTarget.receiverp && randModeTarget.receiverp->rand().isRand()) {
+                } else if (randModeTarget.receiverp && randModeTarget.receiverp->isRand()) {
                     // Called on a rand member variable
                     VarRandMode randMode = {};
                     randMode.usesRandMode = true;
@@ -263,7 +263,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 } else {
                     // Called on 'this' or a non-rand class instance
                     randModeTarget.classp->foreachMember([&](AstClass*, AstVar* varp) {
-                        if (!varp->rand().isRand()) return;
+                        if (!varp->isRand()) return;
                         if (varp->lifetime().isStatic()) {
                             nodep->v3warn(E_UNSUPPORTED,
                                           "Unsupported: 'rand_mode()' on static variable: "
@@ -1205,7 +1205,7 @@ class RandomizeVisitor final : public VNVisitor {
 
     AstVar* newRandcVarsp(AstVar* const varp) {
         // If a randc, make a VlRandC object to hold the state
-        if (!varp->rand().isRandC()) return nullptr;
+        if (!varp->isRandC()) return nullptr;
         uint64_t items = 0;
 
         if (AstEnumDType* const enumDtp = VN_CAST(varp->dtypep()->skipRefToEnump(), EnumDType)) {
@@ -1425,7 +1425,7 @@ class RandomizeVisitor final : public VNVisitor {
             if (!memberVarp->rand().isRandomizable()) return;
             const VarRandMode randMode = {.asInt = memberVarp->user1()};
             if (randMode.usesRandMode
-                && !memberVarp->rand().isRand()) {  // Not randomizable by default
+                && !memberVarp->isRand()) {  // Not randomizable by default
                 AstCMethodHard* atp = new AstCMethodHard{
                     nodep->fileline(),
                     new AstVarRef{fl, VN_AS(randModeVarp->user2p(), NodeModule), randModeVarp,
@@ -1644,7 +1644,7 @@ class RandomizeVisitor final : public VNVisitor {
             if (nodep->pinsp()) {  // Set rand mode
                 UASSERT_OBJ(VN_IS(nodep->backp(), StmtExpr), nodep, "Should be a statement");
                 AstNodeExpr* const rhsp = VN_AS(nodep->pinsp(), Arg)->exprp()->unlinkFrBack();
-                if (randModeTarget.receiverp && randModeTarget.receiverp->rand().isRand()) {
+                if (randModeTarget.receiverp && randModeTarget.receiverp->isRand()) {
                     // Called on a rand member variable. Set the variable's rand mode
                     const VarRandMode randMode = {.asInt = randModeTarget.receiverp->user1()};
                     UASSERT_OBJ(randMode.usesRandMode, nodep, "Failed to set usesRandMode");
@@ -1662,7 +1662,7 @@ class RandomizeVisitor final : public VNVisitor {
                 pushDeletep(m_stmtp);
             } else {  // Retrieve rand mode
                 UASSERT_OBJ(randModeTarget.receiverp, nodep, "Should have receiver");
-                UASSERT_OBJ(randModeTarget.receiverp->rand().isRand(), nodep, "Should be rand");
+                UASSERT_OBJ(randModeTarget.receiverp->isRand(), nodep, "Should be rand");
                 const VarRandMode randMode = {.asInt = randModeTarget.receiverp->user1()};
                 UASSERT_OBJ(randMode.usesRandMode, nodep, "Failed to set usesRandMode");
                 AstCMethodHard* const atp

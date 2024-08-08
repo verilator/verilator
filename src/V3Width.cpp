@@ -2995,7 +2995,7 @@ class WidthVisitor final : public VNVisitor {
                     nodep->varp(varp);
                     nodep->didWidth(true);
                     if (nodep->fromp()->sameTree(m_randomizeFromp)
-                        && varp->rand().isRand())  // null-safe
+                        && varp->isRand())  // null-safe
                         V3LinkLValue::linkLValueSet(nodep);
                     return true;
                 }
@@ -3843,7 +3843,7 @@ class WidthVisitor final : public VNVisitor {
                     exprp = nullptr;
                 }
                 // All variables in the dot hierarchy must be randomizable
-                if (randVarp && !randVarp->rand().isRand()) randVarp->rand(VRandAttr::RAND_INLINE);
+                if (randVarp && !randVarp->isRand()) randVarp->rand(VRandAttr::RAND_INLINE);
             }
             if (!argp) continue;  // Errored out, bail
             // randVarp is now the leftmost element from the dot hierarchy in argp->exprp()
