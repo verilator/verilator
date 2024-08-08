@@ -15,14 +15,10 @@ endclass
 
 module t;
    initial begin
-`ifdef TEST1
       Foo foo = Foo::get();
       Foo foos[] = new[1];
       void'(foo.randomize(Foo::get().x));
       void'(foo.randomize(foos[0].x));
       void'(foo.randomize(null));
-`elsif TEST2 // This exits earlier than the other errors, thus a separate run is needed
-      void'(Foo::get().randomize(x));
-`endif
    end
 endmodule
