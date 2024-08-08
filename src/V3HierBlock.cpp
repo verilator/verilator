@@ -269,13 +269,13 @@ void V3HierBlock::writeParametersFile() const {
     const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(typeParametersFilename())};
 
     const V3HierBlock::StrGParams params = stringifyParams(m_params.gTypeParams());
-    if (!params.empty()) { *of << "module _V_type_parameters();\n"; }
+    if (!params.empty()) *of << "module _V_type_parameters();\n";
     for (const StrGParam& param : params) {
         const string name = param.first;
         const string value = param.second;
         *of << "typedef " + value + " " + name + ";\n";
     }
-    if (!params.empty()) { *of << "endmodule\n"; };
+    if (!params.empty()) *of << "endmodule\n";
 }
 
 //######################################################################
