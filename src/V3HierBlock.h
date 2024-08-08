@@ -20,7 +20,6 @@
 #include "verilatedos.h"
 
 #include "V3Options.h"
-#include "V3ThreadSafety.h"
 
 #include <map>
 #include <set>

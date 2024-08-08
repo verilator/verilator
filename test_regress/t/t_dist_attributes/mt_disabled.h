@@ -17,8 +17,6 @@
 
 #include "verilatedos.h"
 
-#include "V3ThreadSafety.h"
-
 void unannotatedMtDisabledFunctionBad();
 
 // Duplicate to check that every declaration is reported

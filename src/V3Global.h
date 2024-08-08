@@ -30,14 +30,15 @@
 #include "V3FileLine.h"
 #include "V3Mutex.h"
 #include "V3Options.h"
-#include "V3ThreadSafety.h"
 
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 
 class AstNetlist;
 class V3HierBlockPlan;
+class V3ThreadPool;
 
 //======================================================================
 // Restorer
@@ -101,6 +102,8 @@ class V3Global final {
     // created by makeInitNetlist(} so static constructors run first
     V3HierBlockPlan* m_hierPlanp = nullptr;  // Hierarchical Verilation plan,
     // nullptr unless hier_block, set via hierPlanp(V3HierBlockPlan*}
+    V3ThreadPool* m_threadPoolp = nullptr;  // Thread Pool,
+    // nullptr unless 'verilatedJobs' is known, set via threadPoolp(V3ThreadPool*)
     VWidthMinUsage m_widthMinUsage
         = VWidthMinUsage::LINT_WIDTH;  // What AstNode::widthMin() is used for
 
@@ -131,6 +134,9 @@ class V3Global final {
     // Names of fields that were dumped by dumpJsonPtr()
     std::unordered_set<std::string> m_jsonPtrNames;
 
+    // Id of the main thread
+    const std::thread::id m_mainThreadId = std::this_thread::get_id();
+
 public:
     // Options
     V3Options opt;  // All options; let user see them directly
@@ -142,6 +148,11 @@ public:
 
     // ACCESSORS (general)
     AstNetlist* rootp() const VL_MT_SAFE { return m_rootp; }
+    V3ThreadPool* threadPoolp() const VL_PURE { return m_threadPoolp; }
+    void threadPoolp(V3ThreadPool* threadPoolp) {
+        UASSERT(!m_threadPoolp, "attempted to create multiple threadPool singletons");
+        m_threadPoolp = threadPoolp;
+    }
     VWidthMinUsage widthMinUsage() const VL_PURE { return m_widthMinUsage; }
     bool assertDTypesResolved() const { return m_assertDTypesResolved; }
     bool assertScoped() const { return m_assertScoped; }
@@ -196,6 +207,7 @@ public:
     void ptrNamesDumpJson(std::ostream& os);
     void idPtrMapDumpJson(std::ostream& os);
     const std::string& ptrToId(const void* p);
+    std::thread::id mainThreadId() const { return m_mainThreadId; }
 };
 
 extern V3Global v3Global;
