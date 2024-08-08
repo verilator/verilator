@@ -2830,6 +2830,8 @@ class ConstVisitor final : public VNVisitor {
     void visit(AstSenItem* nodep) override {
         iterateChildren(nodep);
         if (m_doNConst
+            && !v3Global.opt.timing().isSetTrue()  // If --timing, V3Sched would turn this into an
+                                                   // infinite loop. See #5080
             && (VN_IS(nodep->sensp(), Const) || VN_IS(nodep->sensp(), EnumItemRef)
                 || (nodep->varrefp() && nodep->varrefp()->varp()->isParam()))) {
             // Constants in sensitivity lists may be removed (we'll simplify later)
