@@ -120,8 +120,6 @@ class DelayedVisitor final : public VNVisitor {
         AstVarScope* delayVscp = nullptr;
         // Points to AstActive block of the shadow variable 'delayVscp/post block 'postp'
         AstActive* activep = nullptr;
-        // Post block for this variable used in suspendable processes
-        AstAlwaysPost* suspPostp = nullptr;
         // Post block for this variable
         AstAlwaysPost* postp = nullptr;
         // First reference encountered to the VarScope
@@ -386,17 +384,11 @@ class DelayedVisitor final : public VNVisitor {
             }
 
             // Get/Create 'Post' ordered block to commit the delayed value
-            AstAlwaysPost* postp = m_vscpAux(vscp).suspPostp;
-            if (!postp) {
-                postp = new AstAlwaysPost{flp};
-                if (!m_procp->user2p()) {
-                    m_procp->user2p(createActiveLike(lhsComponents.refp->fileline(), m_activep));
-                    // TODO: Somebody needs to explain me how it makes sense to set this
-                    //       inside this 'if'. Shouldn't it be outside this 'if'? See #5084
-                    m_vscpAux(vscp).suspPostp = postp;
-                }
-                VN_AS(m_procp->user2p(), Active)->addStmtsp(postp);
+            AstAlwaysPost* postp = new AstAlwaysPost{flp};
+            if (!m_procp->user2p()) {
+                m_procp->user2p(createActiveLike(lhsComponents.refp->fileline(), m_activep));
             }
+            VN_AS(m_procp->user2p(), Active)->addStmtsp(postp);
 
             // Create the flag denoting an update is pending - no reuse here
             AstVarScope* const setVscp = createNewVarScope(vscp, "__VdlySet" + baseName, 1);
