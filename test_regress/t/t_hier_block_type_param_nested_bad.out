@@ -1,6 +1,0 @@
-%Error-UNSUPPORTED: t/t_hier_block_type_param_nested_bad.v:44:21: Only basic types are supported as hierarchical type parameters
-                                                                : ... note: In instance 't.test.subTest'
-   44 |    #(parameter type TYPE_t = logic [8:0])
-      |                     ^~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to

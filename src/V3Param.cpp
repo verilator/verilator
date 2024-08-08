@@ -50,6 +50,7 @@
 
 #include "V3Case.h"
 #include "V3Const.h"
+#include "V3EmitV.h"
 #include "V3Hasher.h"
 #include "V3Os.h"
 #include "V3Parse.h"
@@ -169,9 +170,6 @@ public:
                     UINFO(5, "Matched " << modvarp->name() << " " << constp << " and "
                                         << pIt->second.get() << std::endl);
                     ++paramIdx;
-                } else if (const AstBasicDType* const dtype = VN_CAST(pinp->op1p(), BasicDType)) {
-                    UINFO(5, "Found dtype type parameter" << dtype << endl);
-                    // TODO validation similar to AstVar situation
                 }
             }
             if (found && paramIdx == hierIt->second->params().size()) break;
@@ -495,7 +493,7 @@ class ParamProcessor final {
             if (const AstVar* const varp = pinp->modVarp()) {
                 if (!pinp->exprp()) continue;
                 if (varp->isGParam()) { pins.emplace(varp->name(), pinp->exprp()); }
-            } else if (VN_IS(pinp->exprp(), BasicDType)) {
+            } else if (VN_IS(pinp->exprp(), BasicDType) || VN_IS(pinp->exprp(), NodeDType)) {
                 pins.emplace(pinp->name(), pinp->exprp());
             }
             pinp = VN_AS(pinp->nextp(), Pin);
@@ -516,7 +514,7 @@ class ParamProcessor final {
                         params.emplace(varp->name(), constp);
                     }
                 } else if (const AstParamTypeDType* const p = VN_CAST(stmtp, ParamTypeDType)) {
-                    params.emplace(p->name(), p->childDTypep());
+                    params.emplace(p->name(), p->skipRefp());
                 }
             }
             pair.first->second = std::move(params);
@@ -527,18 +525,23 @@ class ParamProcessor final {
         string longname = modp->origName();
         for (auto&& defaultValue : paramsIt->second) {
             const auto pinIt = pins.find(defaultValue.first);
+            // If the pin does not have a value assigned, use the default one.
             const AstNode* const node = pinIt == pins.end() ? defaultValue.second : pinIt->second;
             // This longname is not valid as verilog symbol, but ok, because it will be hashed
             longname += "_" + defaultValue.first + "=";
             // constp can be nullptr
 
             if (const AstConst* const p = VN_CAST(node, Const)) {
+                // Treat modules parametrized with the same values but with different type as the
+                // same.
                 longname += p->num().ascii(false);
-            } else if (const AstBasicDType* const p = VN_CAST(node, BasicDType)) {
-                // TODO check if name is correct
-                longname += p->prettyDTypeName(/*full*/ true);
+            } else if (node) {
+                std::stringstream type;
+                V3EmitV::verilogForTree(node, type);
+                longname += type.str();
             }
         }
+        UINFO(9, "       module params longname: " << longname << endl);
 
         const auto iter = m_longMap.find(longname);
         if (iter != m_longMap.end()) return iter->second;  // Already calculated

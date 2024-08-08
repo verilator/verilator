@@ -76,6 +76,7 @@
 
 #include "V3HierBlock.h"
 
+#include "V3EmitV.h"
 #include "V3File.h"
 #include "V3Os.h"
 #include "V3Stats.h"
@@ -148,12 +149,9 @@ V3HierBlock::stringifyParams(const V3HierBlockParams::GTypeParams& params) {
     StrGParams strParams;
 
     for (const AstParamTypeDType* const gparam : params) {
-        if (const AstBasicDType* const basicp = VN_CAST(gparam->childDTypep(), BasicDType)) {
-            strParams.emplace_back(gparam->name(), basicp->prettyDTypeName(/*full*/ true));
-        } else {
-            gparam->v3warn(E_UNSUPPORTED,
-                           "Only basic types are supported as hierarchical type parameters");
-        }
+        std::stringstream type;
+        V3EmitV::verilogForTree(gparam->skipRefp(), type);
+        strParams.emplace_back(gparam->name(), type.str());
     }
 
     return strParams;
