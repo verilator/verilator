@@ -93,7 +93,7 @@ static string V3HierCommandArgsFilename(const string& prefix, bool forCMake) {
            + (forCMake ? "__hierCMakeArgs.f" : "__hierMkArgs.f");
 }
 
-static string V3HierTypeParametersFileName(const string& prefix) {
+static string V3HierParametersFileName(const string& prefix) {
     return v3Global.opt.makeDir() + "/" + prefix + "__hierParameters.v";
 }
 
@@ -187,7 +187,7 @@ V3StringList V3HierBlock::commandArgs(bool forCMake) const {
         opts.push_back("-G" + name + "=" + value + "");
     }
     if (!params().gTypeParams().empty())
-        opts.push_back(" --hierarchical-type-param-file " + typeParametersFilename());
+        opts.push_back(" --hierarchical-param-file " + typeParametersFilename());
 
     return opts;
 }
@@ -264,10 +264,10 @@ string V3HierBlock::commandArgsFilename(bool forCMake) const {
 }
 
 string V3HierBlock::typeParametersFilename() const {
-    return V3HierTypeParametersFileName(hierPrefix());
+    return V3HierParametersFileName(hierPrefix());
 }
 
-void V3HierBlock::writeTypeParametersFile() const {
+void V3HierBlock::writeParametersFile() const {
     const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(typeParametersFilename())};
 
     const V3HierBlock::StrGParams params = stringifyParams(m_params.gTypeParams());
@@ -480,8 +480,8 @@ string V3HierBlockPlan::topCommandArgsFilename(bool forCMake) {
     return V3HierCommandArgsFilename(v3Global.opt.prefix(), forCMake);
 }
 
-void V3HierBlockPlan::writeTypeParametersFiles() const {
+void V3HierBlockPlan::writeParametersFiles() const {
     for (const std::pair<const AstNodeModule* const, V3HierBlock*>& block : *this) {
-        block.second->writeTypeParametersFile();
+        block.second->writeParametersFile();
     }
 }
