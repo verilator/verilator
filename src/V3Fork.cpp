@@ -107,7 +107,7 @@ public:
 
         // Move variables into the class
         for (AstVar* varp : m_captureOrder) {
-            if (varp->direction() == VDirection::INPUT) {
+            if (varp->direction().isAny()) {
                 varp = varp->cloneTree(false);
                 varp->direction(VDirection::NONE);
             } else {
@@ -161,16 +161,28 @@ public:
 
         AstNode* initsp = nullptr;  // Arguments need to be copied
         for (AstVar* varp : m_captureOrder) {
-            if (varp->direction() != VDirection::INPUT) continue;
+            if (!varp->direction().isAny()) continue;
 
-            AstMemberSel* const memberselp = new AstMemberSel{
-                varp->fileline(),
-                new AstVarRef{varp->fileline(), m_instance.m_handlep, VAccess::WRITE},
-                VN_AS(memberMap.findMember(m_instance.m_classp, varp->name()), Var)};
-            AstNode* initAsgnp
-                = new AstAssign{varp->fileline(), memberselp,
-                                new AstVarRef{varp->fileline(), varp, VAccess::READ}};
-            initsp = AstNode::addNext(initsp, initAsgnp);
+            if (varp->direction().isNonOutput()) {
+                AstMemberSel* const memberselp = new AstMemberSel{
+                    varp->fileline(),
+                    new AstVarRef{varp->fileline(), m_instance.m_handlep, VAccess::WRITE},
+                    VN_AS(memberMap.findMember(m_instance.m_classp, varp->name()), Var)};
+                AstNode* initAsgnp
+                    = new AstAssign{varp->fileline(), memberselp,
+                                    new AstVarRef{varp->fileline(), varp, VAccess::READ}};
+                initsp = AstNode::addNext(initsp, initAsgnp);
+            }
+            if (varp->direction().isWritable()) {
+                AstMemberSel* const memberselp = new AstMemberSel{
+                    varp->fileline(),
+                    new AstVarRef{varp->fileline(), m_instance.m_handlep, VAccess::READ},
+                    VN_AS(memberMap.findMember(m_instance.m_classp, varp->name()), Var)};
+                AstNode* writebackAsgnp = new AstAssign{
+                    varp->fileline(), new AstVarRef{varp->fileline(), varp, VAccess::WRITE},
+                    memberselp};
+                stmtp = AstNode::addNext(stmtp, writebackAsgnp);
+            }
         }
         if (initsp) AstNode::addNext(asgnp, initsp);
 
@@ -305,7 +317,7 @@ class DynScopeVisitor final : public VNVisitor {
         AstMemberSel* const membersel = new AstMemberSel{
             refp->fileline(), new AstVarRef{refp->fileline(), dynScope.m_handlep, refp->access()},
             refp->varp()};
-        if (refp->varp()->direction() == VDirection::INPUT) {
+        if (refp->varp()->direction().isAny()) {
             membersel->varp(
                 VN_AS(m_memberMap.findMember(dynScope.m_classp, refp->varp()->name()), Var));
         } else {
@@ -403,8 +415,17 @@ class DynScopeVisitor final : public VNVisitor {
     void visit(AstVarRef* nodep) override {
         ForkDynScopeFrame* const framep = frameOf(nodep->varp());
         if (!framep) return;
-
         if (needsDynScope(nodep)) {
+            if (m_afterTimingControl && nodep->varp()->isWritable()
+                && nodep->access().isWriteOrRW()) {
+                // The output variable may not exist after a delay, so we can't just write to it
+                nodep->v3warn(
+                    E_UNSUPPORTED,
+                    "Unsupported: Writing to a captured "
+                        << (nodep->varp()->isInoutish() ? "inout" : "output") << " variable in a "
+                        << (VN_IS(nodep->backp(), AssignDly) ? "non-blocking assignment" : "fork")
+                        << " after a timing control");
+            }
             if (!framep->instance().initialized()) framep->createInstancePrototype();
             framep->captureVarInsert(nodep->varp());
         }
@@ -430,7 +451,7 @@ class DynScopeVisitor final : public VNVisitor {
             forkp->addStmtsp(nodep);
             UINFO(9, "assign new fork " << forkp << endl);
         } else {
-            iterateChildren(nodep);
+            visit(static_cast<AstNodeStmt*>(nodep));
         }
     }
     void visit(AstNode* nodep) override {
