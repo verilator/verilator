@@ -1762,6 +1762,7 @@ class AstVar final : public AstNode {
     VDirection m_declDirection;  // Declared direction input/output etc
     VLifetime m_lifetime;  // Lifetime
     VVarAttrClocker m_attrClocker;
+    VRandAttr m_rand;  // Randomizability of this variable (rand, randc, etc)
     int m_pinNum = 0;  // For XML, if non-zero the connection pin number
     bool m_ansi : 1;  // Params or pins declared in the module header, rather than the body
     bool m_declTyped : 1;  // Declared as type (for dedup check)
@@ -1785,8 +1786,6 @@ class AstVar final : public AstNode {
     bool m_attrSFormat : 1;  // User sformat attribute
     bool m_attrSplitVar : 1;  // declared with split_var metacomment
     bool m_fileDescr : 1;  // File descriptor
-    bool m_isRand : 1;  // Random variable
-    bool m_isRandC : 1;  // Random cyclic variable (isRand also set)
     bool m_isConst : 1;  // Table contains constant data
     bool m_isContinuously : 1;  // Ever assigned continuously (for force/release)
     bool m_hasStrengthAssignment : 1;  // Is on LHS of assignment with strength specifier
@@ -1831,8 +1830,6 @@ class AstVar final : public AstNode {
         m_attrSFormat = false;
         m_attrSplitVar = false;
         m_fileDescr = false;
-        m_isRand = false;
-        m_isRandC = false;
         m_isConst = false;
         m_isContinuously = false;
         m_hasStrengthAssignment = false;
@@ -1957,6 +1954,7 @@ public:
     void attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     void attrSFormat(bool flag) { m_attrSFormat = flag; }
     void attrSplitVar(bool flag) { m_attrSplitVar = flag; }
+    void rand(const VRandAttr flag) { m_rand = flag; }
     void usedClock(bool flag) { m_usedClock = flag; }
     void usedParam(bool flag) { m_usedParam = flag; }
     void usedLoopIdx(bool flag) { m_usedLoopIdx = flag; }
@@ -1973,11 +1971,6 @@ public:
     void sc(bool flag) { m_sc = flag; }
     void scSensitive(bool flag) { m_scSensitive = flag; }
     void primaryIO(bool flag) { m_primaryIO = flag; }
-    void isRand(bool flag) { m_isRand = flag; }
-    void isRandC(bool flag) {
-        m_isRandC = flag;
-        if (flag) isRand(true);
-    }
     void isConst(bool flag) { m_isConst = flag; }
     void isContinuously(bool flag) { m_isContinuously = flag; }
     void isStatic(bool flag) { m_isStatic = flag; }
@@ -2066,8 +2059,8 @@ public:
     bool isSigUserRdPublic() const { return m_sigUserRdPublic; }
     bool isSigUserRWPublic() const { return m_sigUserRWPublic; }
     bool isTrace() const { return m_trace; }
-    bool isRand() const { return m_isRand; }
-    bool isRandC() const { return m_isRandC; }
+    bool isRand() const { return m_rand.isRand(); }
+    bool isRandC() const { return m_rand.isRandC(); }
     bool isConst() const VL_MT_SAFE { return m_isConst; }
     bool isStatic() const VL_MT_SAFE { return m_isStatic; }
     bool isLatched() const { return m_isLatched; }
@@ -2084,6 +2077,7 @@ public:
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }
     AstIface* sensIfacep() const { return m_sensIfacep; }
     VVarAttrClocker attrClocker() const { return m_attrClocker; }
+    VRandAttr rand() const { return m_rand; }
     string verilogKwd() const override;
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }

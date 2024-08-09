@@ -1,0 +1,14 @@
+%Error-UNSUPPORTED: t/t_randomize_inline_var_ctl_unsup_1.v:20:37: Unsupported: Non-variable expression as 'randomize()' argument
+                                                                : ... note: In instance 't'
+   20 |       void'(foo.randomize(Foo::get().x));
+      |                                     ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_randomize_inline_var_ctl_unsup_1.v:21:34: Unsupported: Non-variable expression as 'randomize()' argument
+                                                                : ... note: In instance 't'
+   21 |       void'(foo.randomize(foos[0].x));
+      |                                  ^
+%Error-UNSUPPORTED: t/t_randomize_inline_var_ctl_unsup_1.v:22:27: Unsupported: 'randomize(null)'
+                                                                : ... note: In instance 't'
+   22 |       void'(foo.randomize(null));
+      |                           ^~~~
+%Error: Exiting due to

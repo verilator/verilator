@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_randomize_inline_var_ctl_unsup_2.v:17:29: Unsupported: Inline random variable control with 'randomize()' called on complex expressions
+   17 |    initial void'(Foo::get().randomize(x));
+      |                             ^~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_randomize_inline_var_ctl_unsup_2.v:17:39: Can't find definition of variable: 'x'
+   17 |    initial void'(Foo::get().randomize(x));
+      |                                       ^
+%Error: Exiting due to
