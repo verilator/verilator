@@ -3611,6 +3611,7 @@ public:
         });
     }
     bool brokeLhsMustBeLvalue() const override { return true; }
+    AstDelay* getLhsNetDelay() const;
     AstAlways* convertToAlways();
 };
 

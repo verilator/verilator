@@ -2899,6 +2899,15 @@ void AstCUse::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
 }
 
+static AstDelay* getLhsNetDelayRecurse(const AstNodeExpr* const nodep) {
+    if (const AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
+        if (refp->varp()->delayp()) return refp->varp()->delayp();
+    } else if (const AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+        return getLhsNetDelayRecurse(selp->fromp());
+    }
+    return nullptr;
+}
+AstDelay* AstAssignW::getLhsNetDelay() const { return getLhsNetDelayRecurse(lhsp()); }
 AstAlways* AstAssignW::convertToAlways() {
     const bool hasTimingControl = isTimingControl();
     AstNodeExpr* const lhs1p = lhsp()->unlinkFrBack();
