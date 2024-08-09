@@ -553,7 +553,7 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
     // Find a filename to read the specified module name,
     // using the incdir and libext's.
     // Return "" if not found.
-    const string filename = V3Os::filenameCleanup(modname);
+    const string filename = V3Os::filenameCleanup(VName::dehash(modname));
     if (!V3Os::filenameIsRel(filename)) {
         // filename is an absolute path, so can find getStdPackagePath()
         string exists = filePathCheckOneDir(filename, "");
@@ -585,8 +585,8 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
     static bool shown_notfound_msg = false;
     if (modname.find("__Vhsh") != string::npos) {
         std::cerr << V3Error::warnMoreStandalone()
-                  << "... Unsupported: Name is longer than 127 characters;"
-                  << " automatic file lookup not supported.\n";
+                  << "... Note: Name is longer than 127 characters; automatic"
+                  << " file lookup may have failed due to OS filename length limits.\n";
         std::cerr << V3Error::warnMoreStandalone()
                   << "... Suggest putting filename with this module/package"
                   << " onto command line instead.\n";
