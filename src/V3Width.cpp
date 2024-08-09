@@ -5917,6 +5917,18 @@ class WidthVisitor final : public VNVisitor {
                            || nodep->name() == "set_randstate"))) {
             // TODO perhaps this should move to V3LinkDot
             AstClass* const classp = VN_CAST(nodep->classOrPackagep(), Class);
+            if (!classp) {
+                AstNodeDType* const adtypep = nodep->findBitDType();
+                withp = methodWithArgument(nodep, false, false, adtypep->findVoidDType(),
+                                           adtypep->findBitDType(), adtypep);
+                for (const AstNode* argp = nodep->pinsp(); argp; argp = argp->nextp())
+                    userIterateAndNext(VN_AS(argp, Arg)->exprp(), WidthVP{SELF, BOTH}.p());
+                nodep->addPinsp(withp);
+                nodep->v3warn(CONSTRAINTIGN, "std::randomize ignored (unsupported)");
+                nodep->replaceWith(new AstConst{nodep->fileline(), 0});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
             UASSERT_OBJ(classp, nodep, "Should have failed in V3LinkDot");
             if (nodep->name() == "randomize") {
                 nodep->taskp(V3Randomize::newRandomizeFunc(m_memberMap, classp));

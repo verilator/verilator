@@ -1508,11 +1508,15 @@ class LinkDotFindVisitor final : public VNVisitor {
 
     void visit(AstWithParse* nodep) override {
         // Change WITHPARSE(FUNCREF, equation) to FUNCREF(WITH(equation))
-        const auto funcrefp = VN_AS(nodep->funcrefp(), NodeFTaskRef);
+        AstNodeFTaskRef* funcrefp = VN_CAST(nodep->funcrefp(), NodeFTaskRef);
+        if (const AstDot* const dotp = VN_CAST(nodep->funcrefp(), Dot))
+            funcrefp = VN_CAST(dotp->rhsp(), NodeFTaskRef);
         UASSERT_OBJ(funcrefp, nodep, "'with' only can operate on a function/task");
         string name = "item";
         FileLine* argFl = nodep->fileline();
-        if (const auto argp = VN_CAST(funcrefp->pinsp(), Arg)) {
+        AstArg* argp = VN_CAST(funcrefp->pinsp(), Arg);
+        if (argp) argp->unlinkFrBackWithNext();
+        if (argp && funcrefp->name() != "randomize") {
             if (const auto parserefp = VN_CAST(argp->exprp(), ParseRef)) {
                 name = parserefp->name();
                 argFl = parserefp->fileline();
@@ -1521,7 +1525,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             }
             if (argp->nextp())
                 argp->nextp()->v3error("'with' function expects only up to one argument");
-            VL_DO_DANGLING(argp->unlinkFrBackWithNext()->deleteTree(), argp);
+            VL_DO_DANGLING(argp->deleteTree(), argp);
         }
         // Type depends on the method used, let V3Width figure it out later
         if (nodep->exprsp()) {  // Else empty expression and pretend no "with"
@@ -1531,7 +1535,8 @@ class LinkDotFindVisitor final : public VNVisitor {
                                           nodep->exprsp()->unlinkFrBackWithNext()};
             funcrefp->addPinsp(newp);
         }
-        nodep->replaceWith(funcrefp->unlinkFrBack());
+        funcrefp->addPinsp(argp);
+        nodep->replaceWith(nodep->funcrefp()->unlinkFrBack());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstWith* nodep) override {
