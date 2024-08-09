@@ -2094,18 +2094,11 @@ signing<signstate>:             // ==IEEE: signing
 //************************************************
 // Data Types
 
-simple_type<nodeDTypep>:                // ==IEEE: simple_type
+simple_typeNoRef<nodeDTypep>:   // IEEE: simple_type without idType
         //                      // IEEE: integer_type
                 integer_atom_type                       { $$ = $1; }
         |       integer_vector_type                     { $$ = $1; }
         |       non_integer_type                        { $$ = $1; }
-        //                      // IEEE: ps_type_identifier
-        //                      // IEEE: ps_parameter_identifier (presumably a PARAMETER TYPE)
-        //                      // Even though we looked up the type and have a AstNode* to it,
-        //                      // we can't fully resolve it because it may have been just a forward definition.
-        |       packageClassScopeE idType
-                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
-                          $$ = refp; }
         //
         //                      // { generate_block_identifer ... } '.'
         //                      // Need to determine if generate_block_identifier can be lex-detected
@@ -3955,7 +3948,13 @@ patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_patt
         |       yaFLOATNUM                              { $$ = new AstConst{$<fl>1, AstConst::RealDouble{}, $1}; }
         |       id                                      { $$ = new AstText{$<fl>1, *$1}; }
         |       strAsInt                                { $$ = $1; }
-        |       simple_type                             { $$ = $1; }
+        |       simple_typeNoRef                        { $$ = $1; }
+        //                      // expanded from simple_type ps_type_identifier (part of simple_type)
+        //                      // expanded from simple_type ps_parameter_identifier (part of simple_type)
+        |       packageClassScopeE idType
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
+                          $$ = refp; }
+
         ;
 
 assignment_pattern<patternp>:   // ==IEEE: assignment_pattern
@@ -5006,8 +5005,14 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         //
         //                      // IEEE: cast/constant_cast
         //                      // expanded from casting_type
-        |       simple_type yP_TICK '(' expr ')'
+        |       simple_typeNoRef yP_TICK '(' expr ')'
                         { $$ = new AstCast{$2, $4, VFlagChildDType{}, $1}; }
+        //                      // expanded from simple_type ps_type_identifier (part of simple_type)
+        //                      // expanded from simple_type ps_parameter_identifier (part of simple_type)
+        |       packageClassScopeE idType yP_TICK '(' expr ')'
+                        { $$ = new AstCast{$3, $5, VFlagChildDType{},
+                                           new AstRefDType{$<fl>2, *$2, $1, nullptr}}; }
+        //
         |       yTYPE__ETC '(' exprOrDataType ')' yP_TICK '(' expr ')'
                         { $$ = new AstCast{$1, $7, VFlagChildDType{},
                                            new AstRefDType{$1, AstRefDType::FlagTypeOfExpr{}, $3}}; }
