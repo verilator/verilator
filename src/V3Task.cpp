@@ -1664,7 +1664,9 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
                 reorganize = true;
             }
         } else {  // By pin number
-            if (ppinnum >= tpinnum) {
+            if (nodep->taskp()->prettyName() == "randomize") {
+                // Arguments to randomize() are special, will be handled in V3Randomize
+            } else if (ppinnum >= tpinnum) {
                 if (sformatp) {
                     tconnects.emplace_back(sformatp, static_cast<AstArg*>(nullptr));
                     tconnects[ppinnum].second = argp;

@@ -80,8 +80,9 @@ private:
         bool local = false;
         bool prot = false;
         if (!defp) {
-            // rand_mode() handled in V3Randomize
-            UASSERT_OBJ(nodep->name() == "rand_mode", nodep, "Only rand_mode() can have no def");
+            // rand_mode() / constraint_mode() handled in V3Randomize
+            UASSERT_OBJ(nodep->name() == "rand_mode" || nodep->name() == "constraint_mode", nodep,
+                        "Only rand_mode() and constraint_mode() can have no def");
             return;
         }
         if (const auto varp = VN_CAST(defp, Var)) {

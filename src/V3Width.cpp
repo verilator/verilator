@@ -2951,6 +2951,7 @@ class WidthVisitor final : public VNVisitor {
                    || VN_IS(fromDtp, UnpackArrayDType)  //
                    || VN_IS(fromDtp, DynArrayDType)  //
                    || VN_IS(fromDtp, QueueDType)  //
+                   || VN_IS(fromDtp, ConstraintRefDType)  //
                    || VN_IS(fromDtp, BasicDType)) {
             // Method call on enum without following parenthesis, e.g. "ENUM.next"
             // Convert this into a method call, and let that visitor figure out what to do next
@@ -2997,8 +2998,15 @@ class WidthVisitor final : public VNVisitor {
                     nodep->dtypep(foundp->dtypep());
                     nodep->varp(varp);
                     nodep->didWidth(true);
-                    if (nodep->fromp()->sameTree(m_randomizeFromp) && varp->isRand())  // null-safe
+                    if (nodep->fromp()->sameTree(m_randomizeFromp)
+                        && varp->rand().isRand())  // null-safe
                         V3LinkLValue::linkLValueSet(nodep);
+                    return true;
+                }
+                if (AstConstraint* constrp = VN_CAST(foundp, Constraint)) {
+                    nodep->replaceWith(new AstConstraintRef{
+                        nodep->fileline(), nodep->fromp()->unlinkFrBack(), constrp});
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return true;
                 }
                 if (AstEnumItemRef* const adfoundp = VN_CAST(foundp, EnumItemRef)) {
@@ -3134,8 +3142,10 @@ class WidthVisitor final : public VNVisitor {
         // Should check types the method requires, but at present we don't do much
         userIterate(nodep->fromp(), WidthVP{SELF, BOTH}.p());
         // Any AstWith is checked later when know types, in methodWithArgument
-        for (AstArg* argp = VN_CAST(nodep->pinsp(), Arg); argp; argp = VN_AS(argp->nextp(), Arg)) {
-            if (argp->exprp()) userIterate(argp->exprp(), WidthVP{SELF, BOTH}.p());
+        for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
+            if (AstArg* const argp = VN_CAST(pinp, Arg)) {
+                if (argp->exprp()) userIterate(argp->exprp(), WidthVP{SELF, BOTH}.p());
+            }
         }
         // Find the fromp dtype - should be a class
         UASSERT_OBJ(nodep->fromp() && nodep->fromp()->dtypep(), nodep, "Unsized expression");
@@ -3145,6 +3155,8 @@ class WidthVisitor final : public VNVisitor {
         userIterate(fromDtp, WidthVP{SELF, BOTH}.p());
         if (nodep->name() == "rand_mode") {
             methodCallRandMode(nodep);
+        } else if (nodep->name() == "constraint_mode") {
+            methodCallConstraint(nodep, nullptr);
         } else if (AstEnumDType* const adtypep = VN_CAST(fromDtp, EnumDType)) {
             methodCallEnum(nodep, adtypep);
         } else if (AstAssocArrayDType* const adtypep = VN_CAST(fromDtp, AssocArrayDType)) {
@@ -3178,13 +3190,16 @@ class WidthVisitor final : public VNVisitor {
                                 AstNodeDType* returnDtp, AstNodeDType* indexDtp,
                                 AstNodeDType* valueDtp) {
         UASSERT_OBJ(arbReturn || returnDtp, nodep, "Null return type");
-        if (AstWith* const withp = VN_CAST(nodep->pinsp(), With)) {
-            withp->indexArgRefp()->dtypep(indexDtp);
-            withp->valueArgRefp()->dtypep(valueDtp);
-            userIterate(withp, WidthVP{returnDtp, BOTH}.p());
-            withp->unlinkFrBack();
-            return withp;
-        } else if (required) {
+        for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
+            if (AstWith* const withp = VN_CAST(pinp, With)) {
+                withp->indexArgRefp()->dtypep(indexDtp);
+                withp->valueArgRefp()->dtypep(valueDtp);
+                userIterate(withp, WidthVP{returnDtp, BOTH}.p());
+                withp->unlinkFrBack();
+                return withp;
+            }
+        }
+        if (required) {
             nodep->v3error("'with' statement is required for ." << nodep->prettyName()
                                                                 << " method");
         }
@@ -3792,6 +3807,79 @@ class WidthVisitor final : public VNVisitor {
         nodep->v3error("Member reference from interface to "
                        << nodep->prettyNameQ() << " is not referencing a valid task or function ");
     }
+    void handleRandomizeArgs(AstNodeFTaskRef* const nodep, AstClass* const classp) {
+        bool hasNonNullArgs = false;
+        AstConst* nullp = nullptr;
+        for (AstNode *pinp = nodep->pinsp(), *nextp = nullptr; pinp; pinp = nextp) {
+            nextp = pinp->nextp();
+            AstArg* const argp = VN_CAST(pinp, Arg);
+            if (!argp) continue;
+            AstVar* randVarp = nullptr;
+            AstNodeExpr* exprp = argp->exprp();
+            if (AstConst* const constp = VN_CAST(exprp, Const)) {
+                if (constp->num().isNull()) {
+                    nullp = constp;
+                    continue;
+                }
+            }
+            hasNonNullArgs = true;
+            AstVar* fromVarp = nullptr;  // If it's a method call, the leftmost element
+                                         // of the dot hierarchy
+            if (AstMethodCall* methodCallp = VN_CAST(nodep, MethodCall)) {
+                AstNodeExpr* fromp = methodCallp->fromp();
+                while (AstMemberSel* const memberSelp = VN_CAST(fromp, MemberSel)) {
+                    fromp = memberSelp->fromp();
+                }
+                AstVarRef* const varrefp = VN_AS(fromp, VarRef);
+                fromVarp = varrefp->varp();
+            }
+            if (!VN_IS(exprp, VarRef) && !VN_IS(exprp, MemberSel)) {
+                argp->v3error("'randomize()' argument must be a variable contained in "
+                              << (fromVarp ? fromVarp->prettyNameQ() : classp->prettyNameQ()));
+                VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
+                continue;
+            }
+            while (exprp) {
+                if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
+                    randVarp = memberSelp->varp();
+                    exprp = memberSelp->fromp();
+                } else {
+                    if (AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
+                        randVarp = varrefp->varp();
+                    } else {
+                        argp->v3warn(E_UNSUPPORTED,
+                                     "Unsupported: complex expression as 'randomize()' argument");
+                        VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
+                    }
+                    exprp = nullptr;
+                }
+                // All variables in the dot hierarchy must be randomizable
+                if (randVarp && !randVarp->rand().isRand()) randVarp->rand(VRandAttr::RAND_INLINE);
+            }
+            if (!argp) continue;  // Errored out, bail
+            // randVarp is now the leftmost element from the dot hierarchy in argp->exprp()
+            if (randVarp == fromVarp) {
+                // The passed in variable is MemberSel'ected from the MethodCall target
+            } else if (classp->existsMember([&](const AstClass*, const AstVar* memberVarp) {
+                           return memberVarp == randVarp;
+                       })) {
+                // The passed in variable is contained in the method call target
+            } else {
+                // Passed in a constant or complex expression, or the above conditions are not
+                // met
+                argp->v3error("'randomize()' argument must be a variable contained in "
+                              << (fromVarp ? fromVarp->prettyNameQ() : classp->prettyNameQ()));
+                VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
+            }
+        }
+        if (nullp) {
+            if (hasNonNullArgs) {
+                nullp->v3error("Cannot pass more arguments to 'randomize(null)'");
+            } else {
+                nullp->v3warn(E_UNSUPPORTED, "Unsupported: 'randomize(null)'");
+            }
+        }
+    }
     void methodCallClass(AstMethodCall* nodep, AstClassRefDType* adtypep) {
         // No need to width-resolve the class, as it was done when we did the child
         AstClass* const first_classp = adtypep->classp();
@@ -3801,9 +3889,9 @@ class WidthVisitor final : public VNVisitor {
             m_randomizeFromp = nodep->fromp();
             withp = methodWithArgument(nodep, false, false, adtypep->findVoidDType(),
                                        adtypep->findBitDType(), adtypep);
-            methodOkArguments(nodep, 0, 0);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             V3Randomize::newRandomizeFunc(m_memberMap, first_classp);
+            handleRandomizeArgs(nodep, first_classp);
         } else if (nodep->name() == "srandom") {
             methodOkArguments(nodep, 1, 1);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
@@ -3862,10 +3950,8 @@ class WidthVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             } else if (nodep->name() == "constraint_mode") {
-                nodep->v3warn(CONSTRAINTIGN, "Unsupported: 'constraint_mode' called on object");
-                nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitTrue{}});
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                return;
+                v3Global.useRandomizeMethods(true);
+                nodep->dtypep(nodep->findBasicDType(VBasicDTypeKwd::INT));
             }
             classp = classp->extendsp() ? classp->extendsp()->classp() : nullptr;
         }
@@ -3889,10 +3975,12 @@ class WidthVisitor final : public VNVisitor {
         // Method call on constraint
         if (nodep->name() == "constraint_mode") {
             methodOkArguments(nodep, 0, 1);
-            nodep->v3warn(CONSTRAINTIGN, "constraint_mode ignored (unsupported)");
-            // Constraints ignored, so we just return "OFF"
-            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            if (nodep->pinsp()) {
+                nodep->dtypep(nodep->findBasicDType(VBasicDTypeKwd::INT));
+            } else {
+                nodep->dtypeSetVoid();
+            }
+            v3Global.useRandomizeMethods(true);
         } else {
             nodep->v3error("No such constraint method " << nodep->prettyNameQ());
             nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
@@ -5908,9 +5996,10 @@ class WidthVisitor final : public VNVisitor {
         // Function hasn't been widthed, so make it so.
         UINFO(5, "  FTASKREF " << nodep << endl);
         AstWith* withp = nullptr;
-        if (nodep->name() == "rand_mode") {
+        if (nodep->name() == "rand_mode" || nodep->name() == "constraint_mode") {
             v3Global.useRandomizeMethods(true);
             nodep->dtypep(nodep->findBasicDType(VBasicDTypeKwd::INT));
+            return;  // Handled in V3Randomize
         } else if (nodep->name() == "randomize" || nodep->name() == "srandom"
                    || (!nodep->taskp()
                        && (nodep->name() == "get_randstate"
@@ -5925,11 +6014,7 @@ class WidthVisitor final : public VNVisitor {
                 v3Global.rootp()->typeTablep()->addTypesp(adtypep);
                 withp = methodWithArgument(nodep, false, false, adtypep->findVoidDType(),
                                            adtypep->findBitDType(), adtypep);
-                if (nodep->pinsp()) {
-                    nodep->pinsp()->v3warn(CONSTRAINTIGN,
-                                           "Inline random variable control (unsupported)");
-                    nodep->pinsp()->unlinkFrBackWithNext()->deleteTree();
-                }
+                handleRandomizeArgs(nodep, classp);
             } else if (nodep->name() == "srandom") {
                 nodep->taskp(V3Randomize::newSRandomFunc(m_memberMap, classp));
                 m_memberMap.clear();
@@ -5962,7 +6047,6 @@ class WidthVisitor final : public VNVisitor {
                 UASSERT_OBJ(false, nodep, "Bad case");
             }
         }
-        if (nodep->name() == "rand_mode") return;  // Handled in V3Randomize
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked");
         if (nodep->didWidth()) return;
         if ((nodep->taskp()->classMethod() && !nodep->taskp()->isStatic())

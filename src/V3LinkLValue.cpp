@@ -45,7 +45,7 @@ class LinkLValueVisitor final : public VNVisitor {
     // Result handing
     void visit(AstNodeVarRef* nodep) override {
         // VarRef: LValue its reference
-        if (m_setIfRand && !(nodep->varp() && nodep->varp()->isRand())) return;
+        if (m_setIfRand && !(nodep->varp() && nodep->varp()->rand().isRand())) return;
         if (m_setRefLvalue != VAccess::NOCHANGE) nodep->access(m_setRefLvalue);
         if (nodep->varp() && nodep->access().isWriteOrRW()) {
             if (m_setContinuously) {
