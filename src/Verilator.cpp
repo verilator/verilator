@@ -744,6 +744,7 @@ static void verilate(const string& argString) {
             v3Global.hierPlanp()->writeCommandArgsFiles(true);
             V3EmitCMake::emit();
         }
+        v3Global.hierPlanp()->writeParametersFiles();
     }
     if (v3Global.opt.makeDepend().isTrue()) {
         string filename = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix();
