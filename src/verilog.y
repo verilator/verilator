@@ -1818,12 +1818,14 @@ modportPortsDecl<nodep>:
         //                      // IEEE: yIMPORT modport_tf_port
         //                      // IEEE: yEXPORT modport_tf_port
         //                      // modport_tf_port expanded here
-        |       yIMPORT id/*tf_identifier*/              { $$ = new AstModportFTaskRef{$<fl>2, *$2, false};
-                                                           GRAMMARP->m_modportImpExpActive = true;
-                                                           GRAMMARP->m_modportImpExpLastIsExport = false; }
-        |       yEXPORT id/*tf_identifier*/              { $$ = new AstModportFTaskRef{$<fl>2, *$2, true};
-                                                           GRAMMARP->m_modportImpExpActive = true;
-                                                           GRAMMARP->m_modportImpExpLastIsExport = true; }
+        |       yIMPORT idAny/*tf_identifier*/
+                        { $$ = new AstModportFTaskRef{$<fl>2, *$2, false};
+                          GRAMMARP->m_modportImpExpActive = true;
+                          GRAMMARP->m_modportImpExpLastIsExport = false; }
+        |       yEXPORT idAny/*tf_identifier*/
+                        { $$ = new AstModportFTaskRef{$<fl>2, *$2, true};
+                          GRAMMARP->m_modportImpExpActive = true;
+                          GRAMMARP->m_modportImpExpLastIsExport = true; }
         |       yIMPORT method_prototype
                         { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: Modport import with prototype"); }
         |       yEXPORT method_prototype
@@ -2164,7 +2166,7 @@ data_typeVirtual<nodeDTypep>:           // ==IEEE: data_type after yVIRTUAL [ yI
                         { AstIfaceRefDType* const ifrefp = new AstIfaceRefDType{$<fl>1, "", *$1};
                           ifrefp->isVirtual(true);
                           $$ = ifrefp; }
-        |       id/*interface*/ '.' id/*modport*/
+        |       id/*interface*/ '.' idAny/*modport*/
                         { AstIfaceRefDType* const ifrefp = new AstIfaceRefDType{$<fl>1, $<fl>3, "", *$1, *$3};
                           ifrefp->isVirtual(true);
                           $$ = ifrefp; }
@@ -2172,7 +2174,7 @@ data_typeVirtual<nodeDTypep>:           // ==IEEE: data_type after yVIRTUAL [ yI
                         { AstIfaceRefDType* const ifrefp = new AstIfaceRefDType{$<fl>1, nullptr, "", *$1, "", $2};
                           ifrefp->isVirtual(true);
                           $$ = ifrefp; }
-        |       id/*interface*/ parameter_value_assignmentClass '.' id/*modport*/
+        |       id/*interface*/ parameter_value_assignmentClass '.' idAny/*modport*/
                         { AstIfaceRefDType* const ifrefp = new AstIfaceRefDType{$<fl>1, $<fl>4, "", *$1, *$4, $2};
                           ifrefp->isVirtual(true);
                           $$ = ifrefp; }
@@ -2563,22 +2565,22 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstNodeDType* const dtp = $2;
                           $$ = GRAMMARP->createTypedef($<fl>3, *$3, $5, dtp, $4); }
-        |       yTYPEDEF packageClassScope idType packed_dimensionListE
+        |       yTYPEDEF packageClassScope idAny packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>3, *$3, $2, nullptr};
                           AstNodeDType* const dtp = GRAMMARP->createArray(refp, $4, true);
                           $$ = GRAMMARP->createTypedef($<fl>5, *$5, $7, dtp, $6); }
-        |       yTYPEDEF packageClassScope idType parameter_value_assignmentClass packed_dimensionListE
+        |       yTYPEDEF packageClassScope idAny parameter_value_assignmentClass packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>3, *$3, $2, $4};
                           AstNodeDType* const dtp = GRAMMARP->createArray(refp, $5, true);
                           $$ = GRAMMARP->createTypedef($<fl>6, *$6, $8, dtp, $7); }
-        |       yTYPEDEF idType packed_dimensionListE
+        |       yTYPEDEF idAny packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
                           AstNodeDType* const dtp = GRAMMARP->createArray(refp, $3, true);
                           $$ = GRAMMARP->createTypedef($<fl>4, *$4, $6, dtp, $5); }
-        |       yTYPEDEF idType parameter_value_assignmentClass packed_dimensionListE
+        |       yTYPEDEF idAny parameter_value_assignmentClass packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, $3};
                           AstNodeDType* const dtp = GRAMMARP->createArray(refp, $4, true);
@@ -3198,7 +3200,7 @@ instDecl<nodep>:
                                           GRAMMARP->m_instParamp = nullptr);
                           } }
         //                      // IEEE: interface_identifier' .' modport_identifier list_of_interface_identifiers
-        |       id/*interface*/ '.' id/*modport*/
+        |       id/*interface*/ '.' idAny/*modport*/
         /*mid*/         { VARRESET_NONLIST(VVarType::IFACEREF);
                           AstNodeDType* const dtp = new AstIfaceRefDType{$<fl>1, $<fl>3, "", *$1, *$3};
                           VARDTYPE(dtp); }
@@ -3897,13 +3899,13 @@ caseCondList<nodeExprp>:        // IEEE: part of case_item
         ;
 
 patternNoExpr<nodep>:           // IEEE: pattern **Excluding Expr*
-                '.' id/*variable*/
+                '.' idAny/*variable*/
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
         |       yP_DOTSTAR
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
         //                      // IEEE: "expr" excluded; expand in callers
-        //                      // "yTAGGED id [expr]" Already part of expr
-        //UNSUP yTAGGED id/*member_identifier*/ patternNoExpr
+        //                      // "yTAGGED idAny [expr]" Already part of expr
+        //UNSUP yTAGGED idAny/*member_identifier*/ patternNoExpr
         //UNSUP         { $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
         //                      // "yP_TICKBRA patternList '}'" part of expr under assignment_pattern
         ;
@@ -4544,7 +4546,7 @@ taskId<nodeFTaskp>:
                         { $$ = new AstTask{$<fl>$, *$1, nullptr};
                           SYMP->pushNewUnderNodeOrCurrent($$, nullptr); }
         //
-        |       id/*interface_identifier*/ '.' id
+        |       id/*interface_identifier*/ '.' idAny
                         { $$ = new AstTask{$<fl>$, *$3, nullptr};
                           BBUNSUP($2, "Unsupported: Out of block function declaration");
                           SYMP->pushNewUnderNodeOrCurrent($$, nullptr); }
@@ -4603,7 +4605,7 @@ fIdScoped<funcp>:               // IEEE: part of function_body_declaration/task_
                           $<scp>$ = nullptr;
                           $$ = new AstFunc{$<fl>$, *$1, nullptr, nullptr}; }
         //
-        |       id/*interface_identifier*/ '.' id
+        |       id/*interface_identifier*/ '.' idAny
                         { $<fl>$ = $<fl>1;
                           $<scp>$ = nullptr;
                           $$ = new AstFunc{$<fl>$, *$1, nullptr, nullptr};
