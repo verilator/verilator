@@ -1,6 +1,6 @@
-%Error: obj_vlt/t_inst_long_bad/t_inst_long.v:4:3: Cannot find file containing module: 'long_long_long_long_long_long___Vhsh1JZCXQVBM1QiASYlLmgTuAXYyUr7VAbJYwVHfiAD'
-    4 |   long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_ inst ();
+%Error: t/t_inst_long_bad.v:9:3: Cannot find file containing module: 'long_long_long_long_long_long___Vhsh1JZCXQVBM1QiASYlLmgTuAXYyUr7VAbJYwVHfiAD'
+    9 |   long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_ inst ();
       |   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ... Unsupported: Name is longer than 127 characters; automatic file lookup not supported.
+        ... Note: Name is longer than 127 characters; automatic file lookup may have failed due to OS filename length limits.
         ... Suggest putting filename with this module/package onto command line instead.
 %Error: Exiting due to
