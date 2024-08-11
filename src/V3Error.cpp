@@ -53,25 +53,11 @@ V3ErrorCode::V3ErrorCode(const char* msgp) {
 //
 
 bool V3ErrorGuarded::isError(V3ErrorCode code, bool supp) VL_REQUIRES(m_mutex) {
-    if (supp) {
-        return false;
-    } else if (code == V3ErrorCode::USERINFO) {
-        return false;
-    } else if (code == V3ErrorCode::EC_INFO) {
-        return false;
-    } else if (code == V3ErrorCode::EC_FATAL) {
-        return true;
-    } else if (code == V3ErrorCode::EC_FATALEXIT) {
-        return true;
-    } else if (code == V3ErrorCode::EC_FATALSRC) {
-        return true;
-    } else if (code == V3ErrorCode::EC_ERROR) {
-        return true;
-    } else if (code < V3ErrorCode::EC_FIRST_WARN || pretendError(code)) {
-        return true;
-    } else {
-        return false;
-    }
+    if (code.hardError()) return true;
+    if (supp) return false;
+    if (code == V3ErrorCode::USERINFO || code == V3ErrorCode::EC_INFO) return false;
+    if (pretendError(code)) return true;
+    return false;
 }
 
 string V3ErrorGuarded::msgPrefix() VL_REQUIRES(m_mutex) {
@@ -180,7 +166,7 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
         }
         if (!m_describedEachWarn[m_errorCode] && !m_pretendError[m_errorCode]) {
             m_describedEachWarn[m_errorCode] = true;
-            if (m_errorCode >= V3ErrorCode::EC_FIRST_WARN && !m_describedWarnings) {
+            if (!m_errorCode.hardError() && !m_describedWarnings) {
                 m_describedWarnings = true;
                 std::cerr << warnMore() << "... Use \"/* verilator lint_off "
                           << m_errorCode.ascii()

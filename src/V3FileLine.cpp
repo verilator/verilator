@@ -371,7 +371,7 @@ bool FileLine::warnOff(const string& msg, bool flag) {
         return true;
     }
     const V3ErrorCode code{cmsg};
-    if (code < V3ErrorCode::EC_FIRST_WARN) {
+    if (code.hardError()) {
         return false;
     } else {
         warnOff(code, flag);

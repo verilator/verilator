@@ -226,6 +226,10 @@ public:
     }
     // Warnings that warn about nasty side effects
     bool dangerous() const VL_MT_SAFE { return (m_e == COMBDLY); }
+    // Insuppressible error codes that should always stop elaboration
+    bool hardError() const VL_MT_SAFE {
+        return (m_e != EC_INFO && m_e < V3ErrorCode::EC_FIRST_WARN);
+    }
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
     bool pretendError() const VL_MT_SAFE {
