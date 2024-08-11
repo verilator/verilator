@@ -61,6 +61,7 @@ Verilator 5.027 devel
 * Fix ==? and !=? with X values.
 * Fix CPU time being zero.
 * Fix inline function ref port persistence.
+* Fix `lint_off -match` incorrectly suppressing critical errors (#5351). [Ethan Sifferman]
 
 
 Verilator 5.026 2024-06-15

@@ -1,0 +1,6 @@
+%Error-NEEDTIMINGOPT: t/t_vlt_match_error.v:21:13: Use --timing or --no-timing to specify how delays should be handled
+                                                 : ... note: In instance 'DECLFILENAME'
+   21 |     initial #1;
+      |             ^
+                      ... For error description see https://verilator.org/warn/NEEDTIMINGOPT?v=latest
+%Error: Exiting due to

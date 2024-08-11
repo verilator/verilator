@@ -336,6 +336,7 @@ public:
         }
     }
     bool waive(V3ErrorCode code, const string& match) {
+        if (code < V3ErrorCode::EC_FIRST_WARN || code.pretendError()) return false;
         for (const auto& itr : m_waivers) {
             if ((code.isUnder(itr.first) || (itr.first == V3ErrorCode::I_LINT))
                 && VString::wildmatch(match, itr.second)) {
