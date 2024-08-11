@@ -421,7 +421,7 @@ size_t V3ParseImp::tokenPipeScanParam(size_t depth) {
     return depth;
 }
 
-size_t V3ParseImp::tokenPipeScanType(size_t depth) {
+size_t V3ParseImp::tokenPipeScanTypeEq(size_t depth) {
     // Search around IEEE type_reference to see if is expression
     // Return location of following token, or input if not found
     // yTYPE__ETC '(' ... ')'  ['==' '===' '!=' '!===']
@@ -431,7 +431,7 @@ size_t V3ParseImp::tokenPipeScanType(size_t depth) {
     while (true) {
         const int tok = tokenPeekp(depth)->token;
         if (tok == 0) {  // LCOV_EXCL_BR_LINE
-            UINFO(9, "tokenPipeScanType hit EOF; probably syntax error to come");
+            UINFO(9, "tokenPipeScanTypeEq hit EOF; probably syntax error to come");
             break;  // LCOV_EXCL_LINE
         } else if (tok == '(') {
             ++parens;
@@ -519,7 +519,7 @@ void V3ParseImp::tokenPipeline() {
             }
         } else if (token == yTYPE__LEX) {
             VL_RESTORER(yylval);  // Remember value, as about to read ahead
-            const size_t depth = tokenPipeScanType(0);
+            const size_t depth = tokenPipeScanTypeEq(0);
             const int postToken = tokenPeekp(depth)->token;
             if (  // v-- token                v-- postToken
                   // yTYPE__EQ '(' .... ')' EQ_OPERATOR yTYPE_ETC '(' ... ')'
