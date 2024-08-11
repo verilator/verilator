@@ -49,8 +49,6 @@ Verilator 5.027 devel
 * Fix WIDTHEXPAND on left shift of intuitive amount (#5284). [Greg Taylor]
 * Fix elaborating foreach loops (#5285). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Fix initializing static array in dynamic arrays and queues (#5287). [Baruch Sterin]
-* Fix WIDTHEXPAND on left shift of intuitive amount (#5284). [Wilson Snyder]
-* Fix initializing static array in dynamic arrays and queues (#5287). [Wilson Snyder]
 * Fix static variable initializers in procedures (#5296). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix randomizing current object with `rand` class instance member (#5292). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix handling of rand fields not referenced in constraints (#5305). [Ryszard Rozak, Antmicro Ltd.]
