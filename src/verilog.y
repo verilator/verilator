@@ -2269,8 +2269,6 @@ member_decl_assignment<memberDTypep>:   // Derived from IEEE: variable_decl_assi
         //
         //                      // IEEE: "[ covergroup_variable_identifier ] '=' class_new
         //                      // Pushed into variable_declExpr:class_new
-        |       '=' class_new
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: member declaration assignment with new()"); }
         ;
 
 list_of_variable_decl_assignments<varp>:        // ==IEEE: list_of_variable_decl_assignments
@@ -3956,7 +3954,6 @@ patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_patt
         |       packageClassScopeE idType
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
                           $$ = refp; }
-
         ;
 
 assignment_pattern<patternp>:   // ==IEEE: assignment_pattern
