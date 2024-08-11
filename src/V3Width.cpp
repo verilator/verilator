@@ -4102,7 +4102,9 @@ class WidthVisitor final : public VNVisitor {
             AstClassRefDType* const refp
                 = m_vup ? VN_CAST(m_vup->dtypeNullSkipRefp(), ClassRefDType) : nullptr;
             if (!refp) {  // e.g. int a = new;
-                nodep->v3error("new() not expected in this context");
+                nodep->v3error("new() assignment not legal to non-class data type "
+                               + (m_vup->dtypeNullp() ? m_vup->dtypep()->prettyDTypeNameQ() : ""));
+                nodep->dtypep(m_vup->dtypep());
                 return;
             }
             nodep->dtypep(refp);
@@ -4137,7 +4139,9 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->didWidthAndSet()) return;
         AstClassRefDType* const refp = VN_CAST(m_vup->dtypeNullSkipRefp(), ClassRefDType);
         if (!refp) {  // e.g. int a = new;
-            nodep->v3error("new() not expected in this context");
+            nodep->v3error("new() cannot copy from non-class data type "
+                           + (m_vup->dtypeNullp() ? m_vup->dtypep()->prettyDTypeNameQ() : ""));
+            nodep->dtypep(m_vup->dtypep());
             return;
         }
         nodep->dtypep(refp);
@@ -4936,16 +4940,17 @@ class WidthVisitor final : public VNVisitor {
         assertAtStatement(nodep);
         // if (debug()) nodep->dumpTree("-  AssignPre: ");
         {
-            // if (debug()) nodep->dumpTree("-    assin:: ");
+            if (debug()) nodep->dumpTree("-    assin:: ");
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
             UASSERT_OBJ(nodep->lhsp()->dtypep(), nodep, "How can LHS be untyped?");
             UASSERT_OBJ(nodep->lhsp()->dtypep()->widthSized(), nodep, "How can LHS be unsized?");
             nodep->dtypeFrom(nodep->lhsp());
             //
             // AstPattern needs to know the proposed data type of the lhs, so pass on the prelim
+            if (debug()) nodep->dumpTree("-    assrhs: ");
             userIterateAndNext(nodep->rhsp(), WidthVP{nodep->dtypep(), PRELIM}.p());
             //
-            // if (debug()) nodep->dumpTree("-    assign: ");
+            if (debug()) nodep->dumpTree("-    assign: ");
             AstNodeDType* const lhsDTypep
                 = nodep->lhsp()->dtypep();  // Note we use rhsp for context determined
             iterateCheckAssign(nodep, "Assign RHS", nodep->rhsp(), FINAL, lhsDTypep);
