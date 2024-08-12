@@ -46,17 +46,17 @@ class LifeState final {
 public:
     VDouble0 m_statAssnDel;  // Statistic tracking
     VDouble0 m_statAssnCon;  // Statistic tracking
-    std::vector<AstNode*> m_unlinkps;
+    std::vector<AstNode*> m_deleteps;
 
     // CONSTRUCTORS
     LifeState() = default;
     ~LifeState() {
         V3Stats::addStatSum("Optimizations, Lifetime assign deletions", m_statAssnDel);
         V3Stats::addStatSum("Optimizations, Lifetime constant prop", m_statAssnCon);
-        for (AstNode* ip : m_unlinkps) VL_DO_DANGLING(ip->unlinkFrBack()->deleteTree(), ip);
+        for (AstNode* ip : m_deleteps) { VL_DO_DANGLING(ip->deleteTree(), ip); }
     }
     // METHODS
-    void pushUnlinkDeletep(AstNode* nodep) { m_unlinkps.push_back(nodep); }
+    void pushDeletep(AstNode* nodep) { m_deleteps.push_back(nodep); }
 };
 
 //######################################################################
@@ -145,7 +145,8 @@ public:
                 // above our current iteration point.
                 if (debug() > 4) oldassp->dumpTree("-      REMOVE/SAMEBLK: ");
                 entp->complexAssign();
-                VL_DO_DANGLING(m_statep->pushUnlinkDeletep(oldassp), oldassp);
+                oldassp->unlinkFrBack();
+                VL_DO_DANGLING(m_statep->pushDeletep(oldassp), oldassp);
                 ++m_statep->m_statAssnDel;
             }
         }
