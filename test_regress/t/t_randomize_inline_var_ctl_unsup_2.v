@@ -4,13 +4,15 @@
 // any use, without warranty, 2024 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
-class Packet;
-   rand int one;
-   int two;
-   static int three;
+class Foo;
+   int x;
 
-   function void test;
-      void'(randomize(one));
-      void'(randomize(two, three));
+   static function Foo get;
+      Foo foo = new;
+      return foo;
    endfunction
 endclass
+
+module t;
+   initial void'(Foo::get().randomize(x));
+endmodule

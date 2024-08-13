@@ -1680,6 +1680,36 @@ public:
     bool operator==(const VSelfPointerText& other) const { return *m_strp == *other.m_strp; }
 };
 
+// ######################################################################
+// Defines what kind of randomization is done on a variable
+
+class VRandAttr final {
+public:
+    enum en : uint8_t {
+        NONE,  // Not randomizable
+        RAND,  // Has a rand modifier
+        RAND_CYCLIC,  // Has a randc modifier
+        RAND_INLINE  // Not rand/randc, but used in inline random variable control
+    };
+    enum en m_e;
+    const char* ascii() const {
+        static const char* const names[] = {"NONE", "RAND", "RANDC", "RAND-INLINE"};
+        return names[m_e];
+    }
+    VRandAttr()
+        : m_e{NONE} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VRandAttr(en _e)
+        : m_e{_e} {}
+    constexpr operator en() const { return m_e; }
+    bool isRandomizable() const { return m_e != NONE; }
+    bool isRand() const { return m_e == RAND || m_e == RAND_CYCLIC; }
+    bool isRandC() const { return m_e == RAND_CYCLIC; }
+};
+inline std::ostream& operator<<(std::ostream& os, const VRandAttr& rhs) {
+    return os << rhs.ascii();
+}
+
 //######################################################################
 // AstNUser - Generic base class for AST User nodes.
 //          - Also used to allow parameter passing up/down iterate calls
