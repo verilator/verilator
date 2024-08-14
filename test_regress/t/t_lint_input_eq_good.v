@@ -7,7 +7,7 @@
 module t
    (
   input wire i,
-  input wire i2 = i   // Good under 1800-2009
+  input wire i2 = i   // Good under IEEE 1800-2009
    );
 
 endmodule

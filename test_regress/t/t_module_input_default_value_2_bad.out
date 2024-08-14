@@ -1,4 +1,4 @@
-%Error-ASSIGNIN: t/t_module_input_default_value_fail2.v:17:5: Assigning to input/const variable: 'i'
+%Error-ASSIGNIN: t/t_module_input_default_value_2_bad.v:17:5: Assigning to input/const variable: 'i'
                                                             : ... note: In instance 't.u_dut_should_fail_compile1'
    17 |     i = 1'b0;  
       |     ^

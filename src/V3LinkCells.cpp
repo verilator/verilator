@@ -422,13 +422,12 @@ class LinkCellsVisitor final : public VNVisitor {
 
                             // Get the AstVar for this AstPort, if it exists, using this
                             // inefficient O(n) lookup to match the port name.
-                            const AstVar* portp_varp;
-                            portp_varp = nullptr;
+                            const AstVar* portp_varp = nullptr;
                             for (AstNode* module_stmtsp = nodep->modp()->stmtsp(); module_stmtsp;
                                  module_stmtsp = module_stmtsp->nextp()) {
                                 if (const AstVar* const varp = VN_CAST(module_stmtsp, Var)) {
-                                    if (varp->isParam() == false
-                                        && varp->name().compare(portp->name()) == 0) {
+                                    if (!varp->isParam()
+                                        && varp->name() == portp->name()) {
                                         // not a parameter, same name, break, this is our varp
                                         // (AstVar*)
                                         portp_varp = varp;
@@ -439,8 +438,7 @@ class LinkCellsVisitor final : public VNVisitor {
 
                             // Is the matching Module port: an INPUT, with default value (in
                             // valuep):
-                            if (portp_varp && portp_varp->isInput() && portp_varp->valuep()
-                                && sizeof(portp_varp->valuep()) > 0) {
+                            if (portp_varp && portp_varp->isInput() && portp_varp->valuep()) {
                                 // Do not warn
                                 // Create b/c not already connected, and it does exist.
                                 AstPin* const newp

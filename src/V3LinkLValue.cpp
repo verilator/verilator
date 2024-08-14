@@ -62,7 +62,7 @@ class LinkLValueVisitor final : public VNVisitor {
             if (m_setForcedByCode) {
                 nodep->varp()->setForcedByCode();
             } else if (!nodep->varp()->isFuncLocal() && nodep->varp()->isReadOnly()) {
-                // Note: This is now allowed b/c 1800-2009 module input with default value.
+                // This is allowed with IEEE 1800-2009 module input with default value.
                 // the checking now happens in V3Width::visit(AstNodeVarRef*)
                 // If you were to check here, it would fail on module inputs with default value,
                 // because Inputs are isReadOnly()=true, and we don't yet have visibility into
