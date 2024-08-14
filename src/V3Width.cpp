@@ -2343,10 +2343,9 @@ class WidthVisitor final : public VNVisitor {
         // if (debug() >= 9) nodep->dumpTree("-  VRout: ");
         if (nodep->access().isWriteOrRW() && nodep->varp()->direction() == VDirection::CONSTREF) {
             nodep->v3error("Assigning to const ref variable: " << nodep->prettyNameQ());
-        } else if (!nodep->varp()->isForced()
-                   && nodep->access().isWriteOrRW() && nodep->varp()->isInput()
-                   && !nodep->varp()->isFuncLocal() && nodep->varp()->isReadOnly()
-                   && (!m_ftaskp || !m_ftaskp->isConstructor())
+        } else if (!nodep->varp()->isForced() && nodep->access().isWriteOrRW()
+                   && nodep->varp()->isInput() && !nodep->varp()->isFuncLocal()
+                   && nodep->varp()->isReadOnly() && (!m_ftaskp || !m_ftaskp->isConstructor())
                    && !VN_IS(m_procedurep, InitialAutomatic)
                    && !VN_IS(m_procedurep, InitialStatic)) {
             nodep->v3warn(ASSIGNIN, "Assigning to input/const variable: " << nodep->prettyNameQ());
