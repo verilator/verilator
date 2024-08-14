@@ -1,5 +1,0 @@
-%Error-UNSUPPORTED: t/t_lint_input_eq_bad.v:10:15: Unsupported: Default value on module input: 'i2'
-   10 |    input wire i2 = i    
-      |               ^~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to
