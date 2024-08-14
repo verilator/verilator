@@ -426,8 +426,7 @@ class LinkCellsVisitor final : public VNVisitor {
                             for (AstNode* module_stmtsp = nodep->modp()->stmtsp(); module_stmtsp;
                                  module_stmtsp = module_stmtsp->nextp()) {
                                 if (const AstVar* const varp = VN_CAST(module_stmtsp, Var)) {
-                                    if (!varp->isParam()
-                                        && varp->name() == portp->name()) {
+                                    if (!varp->isParam() && varp->name() == portp->name()) {
                                         // not a parameter, same name, break, this is our varp
                                         // (AstVar*)
                                         portp_varp = varp;
