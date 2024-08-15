@@ -371,9 +371,12 @@ class LinkParseVisitor final : public VNVisitor {
             FileLine* const fl = nodep->valuep()->fileline();
             if (nodep->isParam() || (m_ftaskp && nodep->isNonOutput())) {
                 // 1. Parameters and function inputs: It's a default to use if not overridden
-            } else if (!m_ftaskp && !VN_IS(m_modp, Class) && nodep->isNonOutput()) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Default value on module input: "
-                                                 << nodep->prettyNameQ());
+            } else if (!m_ftaskp && !VN_IS(m_modp, Class) && nodep->isNonOutput()
+                       && !nodep->isInput()) {
+                // Module inout/ref/constref: const default to use
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: Default value on module inout/ref/constref: "
+                                  << nodep->prettyNameQ());
                 nodep->valuep()->unlinkFrBack()->deleteTree();
             }  // 2. Under modules/class, it's an initial value to be loaded at time 0 via an
                // AstInitial

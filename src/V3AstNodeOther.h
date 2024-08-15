@@ -2014,6 +2014,7 @@ public:
     bool isContinuously() const { return m_isContinuously; }
     bool isDeclTyped() const { return m_declTyped; }
     bool isInoutish() const { return m_direction.isInoutish(); }
+    bool isInput() const { return m_direction.isInput(); }
     bool isNonOutput() const { return m_direction.isNonOutput(); }
     bool isReadOnly() const VL_MT_SAFE { return m_direction.isReadOnly(); }
     bool isConstRef() const VL_MT_SAFE { return m_direction.isConstRef(); }

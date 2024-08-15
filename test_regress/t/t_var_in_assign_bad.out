@@ -1,8 +1,10 @@
-%Error-ASSIGNIN: t/t_var_in_assign_bad.v:12:16: Assigning to input/const variable: 'value'
-   12 |    assign      value = 4'h0;
-      |                ^~~~~
-                 ... For error description see https://verilator.org/warn/ASSIGNIN?v=latest
 %Error-ASSIGNIN: t/t_var_in_assign_bad.v:21:16: Assigning to input/const variable: 'valueSub'
+                                              : ... note: In instance 't.sub'
    21 |    assign      valueSub = 4'h0;
       |                ^~~~~~~~
+                 ... For error description see https://verilator.org/warn/ASSIGNIN?v=latest
+%Error-ASSIGNIN: t/t_var_in_assign_bad.v:12:16: Assigning to input/const variable: 'value'
+                                              : ... note: In instance 't'
+   12 |    assign      value = 4'h0;
+      |                ^~~~~
 %Error: Exiting due to
