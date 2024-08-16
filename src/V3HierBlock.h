@@ -84,7 +84,6 @@ private:
     VL_UNCOPYABLE(V3HierBlock);
     static StrGParams stringifyParams(const V3HierBlockParams::GParams& params,
                                       bool forGOption) VL_MT_DISABLED;
-    static StrGParams stringifyParams(const V3HierBlockParams::GTypeParams& params) VL_MT_DISABLED;
 
 public:
     V3HierBlock(const AstNodeModule* modp, const V3HierBlockParams& params)

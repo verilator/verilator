@@ -602,7 +602,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     }
     void visit(AstTypedef* nodep) override {
         putfs(nodep, "typedef ");
-        iterateAndNextConstNull(nodep->dtypep());
+        iterateAndNextConstNull(nodep->subDTypep());
         puts(" ");
         puts(nodep->prettyName());
         puts(";\n");

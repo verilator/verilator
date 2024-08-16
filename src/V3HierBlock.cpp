@@ -144,19 +144,6 @@ V3HierBlock::StrGParams V3HierBlock::stringifyParams(const V3HierBlockParams::GP
     return strParams;
 }
 
-V3HierBlock::StrGParams
-V3HierBlock::stringifyParams(const V3HierBlockParams::GTypeParams& params) {
-    StrGParams strParams;
-
-    for (const AstParamTypeDType* const gparam : params) {
-        std::stringstream type;
-        V3EmitV::verilogForTree(gparam->skipRefp(), type);
-        strParams.emplace_back(gparam->name(), type.str());
-    }
-
-    return strParams;
-}
-
 V3HierBlock::~V3HierBlock() {
     UASSERT(m_children.empty(), "at least one module must be a leaf");
     for (const auto& hierblockp : m_children) {
@@ -266,16 +253,22 @@ string V3HierBlock::typeParametersFilename() const {
 }
 
 void V3HierBlock::writeParametersFile() const {
-    const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(typeParametersFilename())};
+    if (m_params.gTypeParams().empty()) return;
 
-    const V3HierBlock::StrGParams params = stringifyParams(m_params.gTypeParams());
-    if (!params.empty()) *of << "module _V_type_parameters();\n";
-    for (const StrGParam& param : params) {
-        const string name = param.first;
-        const string value = param.second;
-        *of << "typedef " + value + " " + name + ";\n";
+    VHashSha256 hash{"type params"};
+    const string moduleName = "Vhsh" + hash.digestSymbol();
+    const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(typeParametersFilename())};
+    *of << "module " << moduleName << ";\n";
+    for (const AstParamTypeDType* const gparam : m_params.gTypeParams()) {
+        AstTypedef* tdefp
+            = new AstTypedef(new FileLine{FileLine::builtInFilename()}, gparam->name(), nullptr,
+                             VFlagChildDType{}, gparam->skipRefp()->cloneTreePure(true));
+        V3EmitV::verilogForTree(tdefp, *of);
+        VL_DO_DANGLING(tdefp->deleteTree(), tdefp);
     }
-    if (!params.empty()) *of << "endmodule\n";
+    *of << "endmodule\n\n";
+    *of << "`verilator_config\n";
+    *of << "hier_params -module \"" << moduleName << "\"\n";
 }
 
 //######################################################################
@@ -340,6 +333,7 @@ class HierBlockUsageCollectVisitor final : public VNVisitorConst {
     void visit(AstParamTypeDType* nodep) override { m_params.add(nodep); }
 
     void visit(AstNodeExpr*) override {}  // Accelerate
+    void visit(AstConstPool*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:

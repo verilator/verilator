@@ -473,6 +473,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_FORCEABLE              "forceable"
 %token<fl>              yVLT_FULL_CASE              "full_case"
 %token<fl>              yVLT_HIER_BLOCK             "hier_block"
+%token<fl>              yVLT_HIER_PARAMS            "hier_params"
 %token<fl>              yVLT_INLINE                 "inline"
 %token<fl>              yVLT_ISOLATE_ASSIGNMENTS    "isolate_assignments"
 %token<fl>              yVLT_LINT_OFF               "lint_off"
@@ -7497,6 +7498,8 @@ vltItem:
                         { V3Config::addCaseFull(*$3, $5->toUInt()); }
         |       yVLT_HIER_BLOCK vltDModuleE
                         { V3Config::addModulePragma(*$2, VPragmaType::HIER_BLOCK); }
+        |       yVLT_HIER_PARAMS vltDModuleE
+                        { V3Config::addModulePragma(*$2, VPragmaType::HIER_PARAMS); }
         |       yVLT_PARALLEL_CASE yVLT_D_FILE yaSTRING
                         { V3Config::addCaseParallel(*$3, 0); }
         |       yVLT_PARALLEL_CASE yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
