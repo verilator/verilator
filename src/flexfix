@@ -48,13 +48,12 @@ for line in sys.stdin:
     line = re.sub(r'(#line \d+ ".*)_pretmp', r'\1', line)
     # Fix 'register' storage class specifier is deprecated and incompatible with C++17
     line = re.sub(r'register ', '', line)
-    # Fix use of 'int' instead of 'size_t' to match declaration of FlexInput and FlexOutput on Mac OS only
-    if platform.system() == "Darwin":
-        line = re.sub(r"int yyFlexLexer::LexerInput\( char\* buf, int /\* max_size \*/ \)",
-                      "size_t yyFlexLexer::LexerInput( char* buf, size_t /* max_size */ )", line)
-        line = re.sub(r"int yyFlexLexer::LexerInput\( char\* buf, int max_size \)",
-                        "size_t yyFlexLexer::LexerInput( char* buf, size_t max_size )", line)
-        line = re.sub(r"void yyFlexLexer::LexerOutput\( const char\* buf, int size \)",
-                      "void yyFlexLexer::LexerOutput( const char* buf, size_t size )", line)
+    # Force LexerInput/Output types to match those specified by the Flex declaration (might not be int on some platforms)
+    line = re.sub(r"int yyFlexLexer::LexerInput\( char\* buf, int /\* max_size \*/ \)",
+                   "yy_size_t yyFlexLexer::LexerInput( char* buf, yy_size_t /* max_size */ )", line)
+    line = re.sub(r"int yyFlexLexer::LexerInput\( char\* buf, int max_size \)",
+                    "yy_size_t yyFlexLexer::LexerInput( char* buf, yy_size_t max_size )", line)
+    line = re.sub(r"void yyFlexLexer::LexerOutput\( const char\* buf, int size \)",
+                  "void yyFlexLexer::LexerOutput( const char* buf, yy_size_t size )", line)
 
     print(line, end='')
