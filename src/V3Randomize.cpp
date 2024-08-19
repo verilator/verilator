@@ -1272,9 +1272,9 @@ class RandomizeVisitor final : public VNVisitor {
                 }
             }
             return stmtsp;
-        } else if (const auto* const unionDtp
-            = VN_CAST(memberp ? memberp->subDTypep()->skipRefp() : exprp->dtypep()->skipRefp(),
-                      UnionDType)){
+        } else if (const auto* const unionDtp = VN_CAST(memberp ? memberp->subDTypep()->skipRefp()
+                                                                : exprp->dtypep()->skipRefp(),
+                                                        UnionDType)) {
             AstNodeStmt* stmtsp = nullptr;
             if (unionDtp->packed()) offset += memberp ? memberp->lsb() : 0;
             for (AstMemberDType* smemberp = unionDtp->membersp(); smemberp;
@@ -1476,7 +1476,8 @@ class RandomizeVisitor final : public VNVisitor {
             }
             if (memberVarp->user3()) return;  // Handled in constraints
             const AstNodeDType* const dtypep = memberVarp->dtypep()->skipRefp();
-            if (VN_IS(dtypep, BasicDType) || VN_IS(dtypep, StructDType) || VN_IS(dtypep, UnionDType)) {
+            if (VN_IS(dtypep, BasicDType) || VN_IS(dtypep, StructDType)
+                || VN_IS(dtypep, UnionDType)) {
                 AstVar* const randcVarp = newRandcVarsp(memberVarp);
                 AstVarRef* const refp = new AstVarRef{fl, classp, memberVarp, VAccess::WRITE};
                 AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp);
