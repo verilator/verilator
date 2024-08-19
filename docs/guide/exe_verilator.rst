@@ -1996,6 +1996,13 @@ The grammar of configuration commands is as follows:
    that the setting is ignored unless the :vlopt:`--hierarchical` option is
    specified.  See :ref:`Hierarchical Verilation`.
 
+.. option:: hier_params -module "<modulename>"
+
+   Specifies that the module contains parameters for hier block. This option
+   is used internally to specify parameters for deparametrized hier block instances.
+   This option should not be used directly.
+   See :ref:`Hierarchical Verilation`.
+
 .. option:: inline -module "<modulename>"
 
    Specifies the module may be inlined into any modules that use this
