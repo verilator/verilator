@@ -346,7 +346,7 @@ private:
     string      m_buildDepBin;  // main switch: --build-dep-bin {filename}
     string      m_exeName;      // main switch: -o {name}
     string      m_flags;        // main switch: -f {name}
-    string      m_hierParamFile; // main switch: --hierarchical-param-file
+    string      m_hierParamsFile; // main switch: --hierarchical-params-file
     string      m_l2Name;       // main switch: --l2name; "" for top-module's name
     string      m_libCreate;    // main switch: --lib-create {lib_name}
     string      m_mainTopName;  // main switch: --main-top-name
@@ -601,7 +601,7 @@ public:
     int compLimitParens() const { return m_compLimitParens; }
 
     string exeName() const { return m_exeName != "" ? m_exeName : prefix(); }
-    string hierParamFile() const { return m_hierParamFile; }
+    string hierParamFile() const { return m_hierParamsFile; }
     string l2Name() const { return m_l2Name; }
     string libCreate() const { return m_libCreate; }
     string libCreateName(bool shared) {

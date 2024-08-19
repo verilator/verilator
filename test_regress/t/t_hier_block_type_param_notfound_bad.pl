@@ -12,7 +12,7 @@ scenarios(vlt => 1);
 top_filename("t/t_hier_block_type_param.v");
 
 compile (
-    verilator_flags2 => ["--hierarchical-param-file", "/does-not-exist"],
+    verilator_flags2 => ["--hierarchical-params-file", "/does-not-exist"],
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

@@ -172,7 +172,7 @@ V3StringList V3HierBlock::commandArgs(bool forCMake) const {
         opts.push_back("-G" + name + "=" + value + "");
     }
     if (!params().gTypeParams().empty())
-        opts.push_back(" --hierarchical-param-file " + typeParametersFilename());
+        opts.push_back(" --hierarchical-params-file " + typeParametersFilename());
 
     return opts;
 }
