@@ -79,7 +79,7 @@ module TestNonAnsi (/*AUTOARG*/
    out,
    // Inputs
    clk, in
-   );
+   ); /*verilator hier_block*/
    parameter type p_t = shortint;
 
    input clk;
@@ -97,7 +97,7 @@ module TestAnsi
     input clk,
     input p_t in,
     output p_t out
-    );
+    ); /*verilator hier_block*/
    always @(posedge clk) begin
       out <= ~in;
    end
