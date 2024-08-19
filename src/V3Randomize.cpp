@@ -708,8 +708,7 @@ public:
 };
 
 class ClassLookupHelper final {
-    const std::set<AstNodeModule*>
-        m_visibleModules;  // Modules directly reachale from our lookup point
+    std::set<AstNodeModule*> m_visibleModules;  // Modules directly reachable from our lookup point
     std::map<AstNode*, AstNodeModule*>
         m_classMap;  // Memoized mapping between nodes and modules that define them
 
@@ -760,8 +759,9 @@ public:
         return nullptr;
     }
 
-    ClassLookupHelper(AstClass* classp)
-        : m_visibleModules(initVisibleModules(classp)) {}
+    ClassLookupHelper(AstClass* classp) {
+        if (classp) m_visibleModules = initVisibleModules(classp);
+    }
 };
 
 enum class CaptureMode : uint8_t {
@@ -786,7 +786,7 @@ bool hasFlags(CaptureMode a, CaptureMode flags) {
 class CaptureVisitor final : public VNVisitor {
     AstArg* m_argsp;  // Original references turned into arguments
     AstNodeModule* m_callerp;  // Module of the outer context (for capturing `this`)
-    AstClass* m_classp;  // Module of inner context (for symbol lookup)
+    AstClass* m_targetp;  // Module of inner context (for symbol lookup)
     std::map<const AstVar*, AstVar*> m_varCloneMap;  // Map original var nodes to their clones
     std::set<AstNode*> m_ignore;  // Nodes to ignore for capturing
     ClassLookupHelper m_lookup;  // Util for class lookup
@@ -815,7 +815,7 @@ class CaptureVisitor final : public VNVisitor {
     template <typename NodeT>
     void fixupClassOrPackage(AstNode* memberp, NodeT refp) {
         AstNodeModule* const declClassp = m_lookup.findDeclaringModule(memberp, false);
-        if (declClassp != m_classp) refp->classOrPackagep(declClassp);
+        if (declClassp != m_targetp) refp->classOrPackagep(declClassp);
     }
 
     template <typename NodeT>
@@ -974,12 +974,11 @@ class CaptureVisitor final : public VNVisitor {
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
-    explicit CaptureVisitor(AstNode* const nodep, AstNodeModule* callerp, AstClass* const classp,
-                            const bool clone = true, VNRelinker* const linkerp = nullptr)
+    explicit CaptureVisitor(AstNode* const nodep, AstNodeModule* callerp, AstClass* const targetp)
         : m_argsp(nullptr)
         , m_callerp(callerp)
-        , m_classp(classp)
-        , m_lookup(classp) {
+        , m_targetp(targetp)
+        , m_lookup(VN_CAST(callerp, Class)) {
         iterateAndNextNull(nodep);
     }
 
@@ -1821,7 +1820,7 @@ class RandomizeVisitor final : public VNVisitor {
             m_memberMap, classp, m_inlineUniqueNames.get(nodep), false);
 
         // Detach the expression and prepare variable copies
-        const CaptureVisitor captured{withp->exprp(), m_modp, classp, false};
+        const CaptureVisitor captured{withp->exprp(), m_modp, classp};
 
         // Add function arguments
         captured.addFunctionArguments(randomizeFuncp);
