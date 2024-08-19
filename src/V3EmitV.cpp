@@ -630,7 +630,13 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         iterateConst(nodep->subDTypep());
         iterateAndNextConstNull(nodep->rangep());
     }
-    void visit(AstRefDType* nodep) override { iterateConst(nodep->skipRefp()); }
+    void visit(AstRefDType* nodep) override {
+        if (nodep->subDTypep()) {
+            iterateConst(nodep->skipRefp());
+        } else {
+            puts("\n???? // "s + nodep->prettyTypeName() + " -> UNLINKED\n");
+        }
+    }
     void visit(AstNodeUOrStructDType* nodep) override {
         puts(nodep->verilogKwd() + " ");
         if (nodep->packed()) puts("packed ");
