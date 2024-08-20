@@ -551,8 +551,10 @@ class WidthSelVisitor final : public VNVisitor {
                 // down array: msb/hi -: width
                 // up array:   msb/lo +: width
                 // up array:   lsb/hi -: width
-                const int32_t msb = VN_IS(nodep, SelPlus) ? rhs + width - 1 : rhs;
-                const int32_t lsb = VN_IS(nodep, SelPlus) ? rhs : rhs - width + 1;
+                const int32_t msb
+                    = (VN_IS(nodep, SelPlus) ? rhs + width - 1 : rhs) - fromRange.lo();
+                const int32_t lsb
+                    = (VN_IS(nodep, SelPlus) ? rhs : rhs - width + 1) - fromRange.lo();
                 AstSliceSel* const newp = new AstSliceSel{
                     nodep->fileline(), fromp, VNumRange{msb, lsb, fromRange.ascending()}};
                 nodep->replaceWith(newp);
