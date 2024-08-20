@@ -462,6 +462,7 @@ Wojciech
 Wolfel
 Wouters
 Wpedantic
+Wunused
 Wwarn
 XSim
 Xcelium
@@ -977,7 +978,9 @@ submakes
 submodule
 submodules
 substring
+superclass
 suspendable
+suspendables
 sv
 svBitVal
 svBitVecVal
