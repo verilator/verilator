@@ -575,7 +575,7 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
 
     // Warn and return not found
     if (errmsg != "") {
-        fl->v3error(errmsg + filename);
+        fl->v3error(errmsg + "'"s + filename + "'"s);
         filePathLookedMsg(fl, filename);
     }
     return "";
