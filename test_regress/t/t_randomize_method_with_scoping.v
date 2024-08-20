@@ -36,6 +36,9 @@ class SubA extends Cls;
    endfunction
 endclass
 class SubB extends Cls;
+   int z;
+endclass
+class SubC extends SubB;
    c2 e = new;
    rand enum {
       AMBIG,
@@ -57,6 +60,10 @@ class SubB extends Cls;
       x = 5;
       doit = f.randomize() with { x == local::x; };
       if (f.x != x) $stop;
+
+      z = 6;
+      doit &= f.randomize() with { x == z; };
+      if (f.x != z) $stop;
 
       doit &= f.randomize() with { e.c1_f == local::e.c2_f; };
       doit &= f.randomize() with { get_x() == local::get_x(); };
@@ -91,7 +98,7 @@ class SubB extends Cls;
 endclass
 
 module t (/*AUTOARG*/);
-   SubB obj = new;
+   SubC obj = new;
 
    initial begin
       if (obj.doit != 1) $stop;
