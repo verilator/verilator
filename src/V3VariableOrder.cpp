@@ -20,7 +20,7 @@
 //
 //*************************************************************************
 
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+#include "V3PchAstMT.h"
 
 #include "V3VariableOrder.h"
 
@@ -28,6 +28,7 @@
 #include "V3EmitCBase.h"
 #include "V3ExecGraph.h"
 #include "V3TSP.h"
+#include "V3ThreadPool.h"
 
 #include <vector>
 
@@ -127,17 +128,12 @@ public:
 
 uint32_t VarTspSorter::s_serialNext = 0;
 
+struct VarAttributes final {
+    uint8_t stratum;  // Roughly equivalent to alignment requirement, to avoid padding
+    bool anonOk;  // Can be emitted as part of anonymous structure
+};
 class VariableOrder final {
-    // NODE STATE
-    //  AstVar::user1()    -> attributes, via m_attributes
-    const VNUser1InUse m_user1InUse;  // AstVar
-
-    struct VarAttributes final {
-        uint32_t stratum;  // Roughly equivalent to alignment requirement, to avoid padding
-        bool anonOk;  // Can be emitted as part of anonymous structure
-    };
-
-    AstUser1Allocator<AstVar, VarAttributes> m_attributes;  // Attributes used for sorting
+    std::unordered_map<const AstVar*, VarAttributes> m_attributes;
 
     const MTaskAffinityMap& m_mTaskAffinity;
 
@@ -157,8 +153,11 @@ class VariableOrder final {
                         if (ap->isStatic() != bp->isStatic()) {  // Non-statics before statics
                             return bp->isStatic();
                         }
-                        const auto& attrA = m_attributes(ap);
-                        const auto& attrB = m_attributes(bp);
+                        UASSERT(m_attributes.find(ap) != m_attributes.end()
+                                    && m_attributes.find(bp) != m_attributes.end(),
+                                "m_attributes should be populated for each AstVar");
+                        const auto& attrA = m_attributes.at(ap);
+                        const auto& attrB = m_attributes.at(bp);
                         if (attrA.anonOk != attrB.anonOk) {  // Anons before non-anons
                             return attrA.anonOk;
                         }
@@ -218,22 +217,21 @@ class VariableOrder final {
                 // Unlink, add to vector
                 varp->unlinkFrBack();
                 varps.push_back(varp);
+
                 // Compute attributes up front
-                auto& attributes = m_attributes(varp);
                 // Stratum
                 const int sigbytes = varp->dtypeSkipRefp()->widthAlignBytes();
-                attributes.stratum = (v3Global.opt.hierChild() && varp->isPrimaryIO()) ? 0
-                                     : (varp->isUsedClock() && varp->widthMin() == 1)  ? 1
-                                     : VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)  ? 9
-                                     : (varp->basicp() && varp->basicp()->isOpaque())  ? 8
-                                     : (varp->isScBv() || varp->isScBigUint())         ? 7
-                                     : (sigbytes == 8)                                 ? 6
-                                     : (sigbytes == 4)                                 ? 5
-                                     : (sigbytes == 2)                                 ? 3
-                                     : (sigbytes == 1)                                 ? 2
-                                                                                       : 10;
-                // Anonymous structure ok
-                attributes.anonOk = EmitCBase::isAnonOk(varp);
+                const uint8_t stratum = (v3Global.opt.hierChild() && varp->isPrimaryIO()) ? 0
+                                        : (varp->isUsedClock() && varp->widthMin() == 1)  ? 1
+                                        : VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)  ? 9
+                                        : (varp->basicp() && varp->basicp()->isOpaque())  ? 8
+                                        : (varp->isScBv() || varp->isScBigUint())         ? 7
+                                        : (sigbytes == 8)                                 ? 6
+                                        : (sigbytes == 4)                                 ? 5
+                                        : (sigbytes == 2)                                 ? 3
+                                        : (sigbytes == 1)                                 ? 2
+                                                                                          : 10;
+                m_attributes.emplace(varp, VarAttributes{stratum, EmitCBase::isAnonOk(varp)});
             }
         }
 
@@ -281,10 +279,15 @@ void V3VariableOrder::orderAll(AstNetlist* netlistp) {
         });
     }
 
-    // Order variables in each module
-    for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
-         modp = VN_AS(modp->nextp(), NodeModule)) {
-        VariableOrder::processModule(modp, mTaskAffinity);
+    {
+        V3ThreadScope threadScope;
+
+        // Order variables in each module
+        for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
+             modp = VN_AS(modp->nextp(), NodeModule)) {
+            threadScope.enqueue(
+                [modp, mTaskAffinity]() { VariableOrder::processModule(modp, mTaskAffinity); });
+        }
     }
 
     // Done
