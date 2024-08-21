@@ -40,6 +40,8 @@ run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_coverage",
     verilator_run => 1,
     );
 
+files_identical("$Self->{obj_dir}/coverage.info", $Self->{name} . ".info.out");
+
 # If installed
 if (`lcov --version` !~ /version/i
     || `genhtml --version` !~ /version ([0-9.]+)/i) {

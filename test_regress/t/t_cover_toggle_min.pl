@@ -27,7 +27,7 @@ if (-e ("$Self->{obj_dir}/coverage.dat")) {  # Don't try to write .info if test 
     verilator_run => 1,
     );
 
-    files_identical("$Self->{obj_dir}/coverage.info", $Self->{golden_filename});
+    files_identical("$Self->{obj_dir}/coverage.info", $Self->{name} . ".info.out");
 }
 
 ok(1);
