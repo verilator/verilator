@@ -34,6 +34,9 @@ module t (/*AUTOARG*/);
    initial begin
       va = ia;
       vb = ia;
+
+      if (va == null) $stop;
+
       $display("va==vb? %b", va==vb);
       $display("va!=vb? %b", va!=vb);
       vb = ib;
@@ -53,12 +56,18 @@ module t (/*AUTOARG*/);
       $display("va.addr=%x", va.addr, " va.data=%x", va.data, " ia.addr=%x", ia.addr, " ia.data=%x", ia.data);
       $display("vb.addr=%x", vb.addr, " vb.data=%x", vb.data, " ib.addr=%x", ib.addr, " ib.data=%x", ib.data);
 
+      if (ca.fa) $stop;
+
       ca.fa = ia;
       ca.fb = ib;
       cb.fa = ib;
       cb.fb = ia;
       gen.x[0] = va;
       gen.x[1] = vb;
+
+      if (ca == null) $stop;
+      if (ca.fa == null) $stop;
+      if (!ca.fa ) $stop;
 
       pa = va;
       pb = vb;
