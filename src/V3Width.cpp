@@ -7023,8 +7023,7 @@ class WidthVisitor final : public VNVisitor {
                 = new AstNeqD{nodep->fileline(), VN_AS(underp, NodeExpr),
                               new AstConst{nodep->fileline(), AstConst::RealDouble{}, 0.0}};
             linker.relink(newp);
-        } else if (VN_IS(underVDTypep, ClassRefDType)
-                   || VN_IS(underVDTypep, IfaceRefDType)
+        } else if (VN_IS(underVDTypep, ClassRefDType) || VN_IS(underVDTypep, IfaceRefDType)
                    || (VN_IS(underVDTypep, BasicDType)
                        && VN_AS(underVDTypep, BasicDType)->keyword() == VBasicDTypeKwd::CHANDLE)) {
             // Allow warning-free "if (handle)"
