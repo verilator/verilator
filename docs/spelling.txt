@@ -592,6 +592,7 @@ defname
 defparam
 demangling
 dep
+deparametrized
 der
 dereference
 desassign
@@ -718,6 +719,7 @@ hh
 hier
 hierCMakeArgs
 hierMkArgs
+hierParameters
 hierVer
 hx
 hyperthreading
@@ -848,6 +850,7 @@ oversubscription
 parallelized
 param
 parameterization
+parameterized
 parameterized
 parameterless
 params
@@ -1109,3 +1112,4 @@ zdave
 Øyvind
 Алексеевич
 Исаак
+

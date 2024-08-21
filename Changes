@@ -23,10 +23,12 @@ Verilator 5.027 devel
 * Support `rand_mode` (#5273). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support `this.randomize with` (#5282). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Support foreach constraints (#5302). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support `parameter type` in hierarchical blocks (#5309) (#5333). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Support assertcontrol directive type  (#5310). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Support inline random variable control (#5317). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support streaming operator on arrays and wide data (#5326). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Support streams to/from arrays of wide data (#5334). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support `constraint_mode` (#5338). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support constraining AstSel (#5344). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Support default value on module input (#5358) (#5373). [Drew Ranck]
 * Add `--compiler-include` for additional C++ includes (#5139) (#5202). [Bartłomiej Chmiel, Antmicro Ltd.]
@@ -80,6 +82,7 @@ Verilator 5.027 devel
 * Fix lint_off on Errors (#5351) (#5363). [Ethan Sifferman]
 * Fix cache config file resolution performance (#5369). [Geza Lore]
 * Fix capturing fields from superclass in `randomize() with` (#5389). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix virtual interface null checks (#5391). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix ==? and !=? with X values.
 * Fix CPU time being zero.
 * Fix inline function ref port persistence.

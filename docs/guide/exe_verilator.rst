@@ -725,9 +725,10 @@ Summary:
 
 .. option:: --hierarchical-params-file <filename>
 
-   Internal flag inserted during V3HierBlock phase, specifies name of hierarchical
-   parameters file for de-parametrized modules with :option:`/*verilator&32;hier_block*/`
-   metacomment. See :ref:`Hierarchical Verilation`.
+   Internal flag inserted used during :vlopt:`--hierarchical`; specifies
+   name of hierarchical parameters file for deparametrized modules with
+   :option:`/*verilator&32;hier_block*/` metacomment. See
+   :ref:`Hierarchical Verilation`.
 
 .. option:: -I<dir>
 
