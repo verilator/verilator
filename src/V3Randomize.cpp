@@ -737,7 +737,6 @@ class CaptureVisitor final : public VNVisitor {
     AstClass* m_targetp;  // Module of inner context (for symbol lookup)
     std::map<const AstVar*, AstVar*> m_varCloneMap;  // Map original var nodes to their clones
     std::set<AstNode*> m_ignore;  // Nodes to ignore for capturing
-    std::set<AstNodeModule*> m_visibleModules;  // Modules whose scopes are visible
     AstVar* m_thisp = nullptr;  // Variable for outer context's object, if necessary
 
     // METHODS
@@ -792,21 +791,20 @@ class CaptureVisitor final : public VNVisitor {
     }
 
     CaptureMode getVarRefCaptureMode(AstNodeVarRef* varRefp) {
-        AstNodeModule* const modp = VN_AS(varRefp->varp()->user2p(), NodeModule);
+        AstNodeModule* const varModp = VN_AS(varRefp->varp()->user2p(), NodeModule);
+        AstClass* const varClassp = VN_CAST(varModp, Class);
+        AstClass* const callerClassp = VN_CAST(m_callerp, Class);
 
-        const bool callerIsClass = VN_IS(m_callerp, Class);
+        const bool callerIsClass = callerClassp;
         const bool refIsXref = VN_IS(varRefp, VarXRef);
         const bool varIsFuncLocal = varRefp->varp()->isFuncLocal();
         const bool varHasAutomaticLifetime = varRefp->varp()->lifetime().isAutomatic();
-        const bool varIsDeclaredInCaller = modp == m_callerp;
         const bool varIsFieldOfCaller
-            = modp ? m_visibleModules.find(modp) != m_visibleModules.end() : false;
-
+            = callerClassp && varClassp ? isSuperClassOf(varClassp, callerClassp) : false;
         if (refIsXref) return CaptureMode::CAP_VALUE | CaptureMode::CAP_F_XREF;
         if (varIsFuncLocal && varHasAutomaticLifetime) return CaptureMode::CAP_VALUE;
         // Static var in function (will not be inlined, because it's in class)
         if (callerIsClass && varIsFuncLocal) return CaptureMode::CAP_VALUE;
-        if (callerIsClass && varIsDeclaredInCaller) return CaptureMode::CAP_THIS;
         if (callerIsClass && varIsFieldOfCaller) return CaptureMode::CAP_THIS;
         UASSERT_OBJ(!callerIsClass, varRefp, "Invalid reference?");
         return CaptureMode::CAP_VALUE;
@@ -845,13 +843,15 @@ class CaptureVisitor final : public VNVisitor {
         m_ignore.emplace(memberSelp);
     }
 
-    void fetchVisibleModules(AstClass* classp) {
-        for (AstClassExtends* extendsp = classp->extendsp(); extendsp;
+    // Returns true if the first class is a superclass of the second class
+    bool isSuperClassOf(AstClass* const classIsp, AstClass* const classOfp) {
+        if (classIsp == classOfp) return true;
+        for (AstClassExtends* extendsp = classOfp->extendsp(); extendsp;
              extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {
             AstClass* const superClassp = VN_AS(extendsp->childDTypep(), ClassRefDType)->classp();
-            m_visibleModules.insert(superClassp);
-            fetchVisibleModules(superClassp);
+            if (isSuperClassOf(classIsp, superClassp)) return true;
         }
+        return false;
     }
 
     // VISITORS
@@ -936,7 +936,6 @@ public:
         : m_argsp(nullptr)
         , m_callerp(callerp)
         , m_targetp(targetp) {
-        if (AstClass* classp = VN_CAST(callerp, Class)) fetchVisibleModules(classp);
         iterateAndNextNull(nodep);
     }
 
