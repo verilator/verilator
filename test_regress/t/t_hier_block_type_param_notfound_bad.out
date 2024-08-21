@@ -1,4 +1,4 @@
-%Error: Cannot open file containing hierarchical parameter declarations: '/does-not-exist'/does-not-exist
+%Error: Cannot open file containing hierarchical parameter declarations: '/does-not-exist'
         ... Looked in:
              t//does-not-exist
              t//does-not-exist.v

@@ -83,8 +83,7 @@ void V3Global::readFiles() {
     const string filename = v3Global.opt.hierParamFile();
     if (!filename.empty()) {
         parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filename, false,
-                         "Cannot open file containing hierarchical parameter declarations: '"
-                             + filename + "'");
+                         "Cannot open file containing hierarchical parameter declarations: ");
     }
 
     // v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("parse.tree"));
