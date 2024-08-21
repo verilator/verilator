@@ -864,8 +864,11 @@ void V3Options::notify() VL_MT_DISABLED {
         cmdfl->v3error(
             "--hierarchical must not be set with --hierarchical-child or --hierarchical-block");
     }
-    if (m_hierChild && m_hierBlocks.empty()) {
-        cmdfl->v3error("--hierarchical-block must be set when --hierarchical-child is set");
+    if (m_hierChild) {
+        if (m_hierBlocks.empty()) {
+            cmdfl->v3error("--hierarchical-block must be set when --hierarchical-child is set");
+        }
+        m_main = false;
     }
 
     if (protectIds()) {
@@ -1326,6 +1329,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_hierBlocks.emplace(opt.mangledName(), opt);
     });
     DECL_OPTION("-hierarchical-child", Set, &m_hierChild);
+    DECL_OPTION("-hierarchical-params-file", CbVal,
+                [this](const char* optp) { m_hierParamsFile = optp; });
 
     DECL_OPTION("-I", CbPartialMatch,
                 [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });

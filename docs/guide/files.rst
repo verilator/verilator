@@ -48,12 +48,6 @@ For --cc/--sc, it creates:
      - Make include file for compiling (from --make gmake)
    * - *{prefix}*\ _classes.mk
      - Make include file with class names (from --make gmake)
-   * - *{prefix}*\ _hier.mk
-     - Make file for hierarchy blocks (from --make gmake)
-   * - *{prefix}*\ __hierMkArgs.f
-     - Arguments for hierarchical Verilation (from --make gmake)
-   * - *{prefix}*\ __hierCMakeArgs.f
-     - Arguments for hierarchical Verilation (from --make cmake)
    * - *{prefix}*\ .h
      - Model header
    * - *{prefix}*\ .cpp
@@ -95,16 +89,24 @@ For --cc/--sc, it creates:
    * - *{prefix}{each_verilog_module}{__DepSet_hash__n}*\ .cpp
      - Additional lower C++ files (hashed to reduce build times)
 
-For --hierarchy mode, it creates:
+For --hierarchical mode, it creates:
 
 .. list-table::
 
    * - V\ *{hier_block}*\ /
-     - Directory to Verilate each hierarchy block (from --hierarchy)
+     - Directory to Verilate each hierarchical block (from --hierarchical)
    * - *{prefix}*\ __hierVer.d
-     - Make dependencies of the top module (from --hierarchy)
+     - Make dependencies of the top module (from --hierarchical)
+   * - *{prefix}*\ _hier.mk
+     - Make file for hierarchical blocks (from --make gmake)
+   * - *{prefix}*\ __hierCMakeArgs.f
+     - Arguments for hierarchical Verilation (from --make cmake)
+   * - *{prefix}*\ __hierMkArgs.f
+     - Arguments for hierarchical Verilation (from --make gmake)
+   * - *{prefix}*\ __hierParameters.v
+     - Module parameters for hierarchical blocks
    * - *{prefix}*\ __hier.dir
-     - Directory to store .dot, .vpp, .tree of top module (from --hierarchy)
+     - Directory to store .dot, .vpp, .tree of top module (from --hierarchical)
 
 In specific debug and other modes, it also creates:
 

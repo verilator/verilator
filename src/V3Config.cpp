@@ -200,6 +200,9 @@ public:
             modp->addStmtsp(nodep);
         }
         for (const auto& itr : m_modPragmas) {
+            // Catch hier param modules to mark their attributes before they are
+            // flagged dead in LinkDot.
+            if (itr == VPragmaType::HIER_PARAMS) modp->hierParams(true);
             AstNode* const nodep = new AstPragma{modp->fileline(), itr};
             modp->addStmtsp(nodep);
         }

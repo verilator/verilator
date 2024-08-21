@@ -751,6 +751,8 @@ class LinkDotFindVisitor final : public VNVisitor {
     AstClocking* m_clockingp = nullptr;  // Current clocking block
     VSymEnt* m_modSymp = nullptr;  // Symbol Entry for current module
     VSymEnt* m_curSymp = nullptr;  // Symbol Entry for current table, where to lookup/insert
+    string
+        m_hierParamsName;  // Name of module with hierarchical type parameters, empty when not used
     string m_scope;  // Scope text
     const AstNodeBlock* m_blockp = nullptr;  // Current Begin/end block
     const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
@@ -919,9 +921,22 @@ class LinkDotFindVisitor final : public VNVisitor {
             iterateChildren(nodep);
             nodep->user4(true);
         } else {  // !doit
-            // Will be optimized away later
-            // Can't remove now, as our backwards iterator will throw up
-            UINFO(5, "Module not under any CELL or top - dead module: " << nodep << endl);
+            if (nodep->hierParams()) {
+                UINFO(1, "Found module with hier type parameters" << endl);
+                m_hierParamsName = nodep->name();
+                for (const AstNode* node = nodep->op2p(); node; node = node->nextp()) {
+                    if (const AstTypedef* const tdef = VN_CAST(node, Typedef)) {
+                        UINFO(1, "Inserting hier type parameter typedef: " << tdef << endl);
+                        VSymEnt* const upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
+                        m_curSymp = m_modSymp = m_statep->insertBlock(upperSymp, nodep->name(),
+                                                                      nodep, m_classOrPackagep);
+                    }
+                }
+            } else {
+                // Will be optimized away later
+                // Can't remove now, as our backwards iterator will throw up
+                UINFO(5, "Module not under any CELL or top - dead module: " << nodep << endl);
+            }
         }
     }
 
@@ -1367,6 +1382,29 @@ class LinkDotFindVisitor final : public VNVisitor {
     }
     void visit(AstParamTypeDType* nodep) override {
         UASSERT_OBJ(m_curSymp, nodep, "Parameter type not under module/package/$unit");
+
+        // Replace missing param types with provided hierarchical type params.
+        if (!m_hierParamsName.empty()) {
+            if (const VSymEnt* const typedefEntp = m_curSymp->findIdFallback(m_hierParamsName)) {
+                const AstModule* modp = VN_CAST(typedefEntp->nodep(), Module);
+
+                for (const AstNode* node = modp ? modp->stmtsp() : nullptr; node;
+                     node = node->nextp()) {
+                    const AstTypedef* tdefp = VN_CAST(node, Typedef);
+
+                    if (tdefp && tdefp->name() == nodep->name() && m_statep->forPrimary()) {
+                        UINFO(8, "Replacing type of" << nodep << endl
+                                                     << " with " << tdefp << endl);
+                        AstNodeDType* const newType = tdefp->childDTypep();
+                        AstNodeDType* const oldType = nodep->childDTypep();
+
+                        oldType->replaceWith(newType->cloneTree(false));
+                        oldType->deleteTree();
+                    }
+                }
+            }
+        }
+
         iterateChildren(nodep);
         m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
         if (m_statep->forPrimary() && nodep->isGParam()) {
@@ -1615,7 +1653,7 @@ class LinkDotParamVisitor final : public VNVisitor {
     void visit(AstConstPool*) override {}
     void visit(AstNodeModule* nodep) override {
         UINFO(5, "   " << nodep << endl);
-        if (nodep->dead() || !nodep->user4()) {
+        if ((nodep->dead() || !nodep->user4()) && !nodep->hierParams()) {
             UINFO(4, "Mark dead module " << nodep << endl);
             UASSERT_OBJ(m_statep->forPrearray(), nodep,
                         "Dead module persisted past where should have removed");

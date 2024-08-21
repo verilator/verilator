@@ -50,6 +50,7 @@
 
 #include "V3Case.h"
 #include "V3Const.h"
+#include "V3EmitV.h"
 #include "V3Hasher.h"
 #include "V3Os.h"
 #include "V3Parse.h"
@@ -90,7 +91,9 @@ class ParameterizedHierBlocks final {
 
 public:
     ParameterizedHierBlocks(const V3HierBlockOptSet& hierOpts, AstNetlist* nodep)
-        : m_hierSubRun(!v3Global.opt.hierBlocks().empty() || v3Global.opt.hierChild()) {
+        : m_hierSubRun((!v3Global.opt.hierBlocks().empty() || v3Global.opt.hierChild())
+                       // Exclude consolidation
+                       && !v3Global.opt.hierParamFile().empty()) {
         for (const auto& hierOpt : hierOpts) {
             m_hierBlockOptsByOrigName.emplace(hierOpt.second.origName(), &hierOpt.second);
             const V3HierarchicalBlockOption::ParamStrMap& params = hierOpt.second.params();
@@ -146,8 +149,6 @@ public:
             UASSERT(params.size() == hierIt->second->params().size(), "not match");
             for (AstPin* pinp = firstPinp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
                 if (!pinp->exprp()) continue;
-                UASSERT_OBJ(!pinp->modPTypep(), pinp,
-                            "module with type parameter must not be a hierarchical block");
                 if (const AstVar* const modvarp = pinp->modVarp()) {
                     AstConst* const constp = VN_AS(pinp->exprp(), Const);
                     UASSERT_OBJ(constp, pinp,
@@ -275,7 +276,7 @@ class ParamProcessor final {
     // Database to get lib-create wrapper that matches parameters in hierarchical Verilation
     ParameterizedHierBlocks m_hierBlocks;
     // Default parameter values key:parameter name, value:default value (can be nullptr)
-    using DefaultValueMap = std::map<std::string, AstConst*>;
+    using DefaultValueMap = std::map<std::string, AstNode*>;
     // Default parameter values of hierarchical blocks
     std::map<AstNodeModule*, DefaultValueMap> m_defaultParameterValues;
     VNDeleter m_deleter;  // Used to delay deletion of nodes
@@ -457,7 +458,7 @@ class ParamProcessor final {
     }
     // Check if parameter setting during instantiation is simple enough for hierarchical Verilation
     void checkSupportedParam(AstNodeModule* modp, AstPin* pinp) const {
-        // InitArray and AstParamTypeDType are not supported because that can not be set via -G
+        // InitArray is not supported because that can not be set via -G
         // option.
         if (pinp->modVarp()) {
             bool supported = false;
@@ -465,13 +466,11 @@ class ParamProcessor final {
                 supported = !constp->isOpaque();
             }
             if (!supported) {
-                pinp->v3error(AstNode::prettyNameQ(modp->origName())
-                              << " has hier_block metacomment, hierarchical Verilation"
-                              << " supports only integer/floating point/string parameters");
+                pinp->v3error(
+                    AstNode::prettyNameQ(modp->origName())
+                    << " has hier_block metacomment, hierarchical Verilation"
+                    << " supports only integer/floating point/string and type param parameters");
             }
-        } else {
-            pinp->v3error(AstNode::prettyNameQ(modp->origName())
-                          << " has hier_block metacomment, but 'parameter type' is not supported");
         }
     }
     bool moduleExists(const string& modName) const {
@@ -487,16 +486,18 @@ class ParamProcessor final {
         //  - Hash the long name to get valid Verilog symbol
         UASSERT_OBJ(modp->hierBlock(), modp, "should be used for hierarchical block");
 
-        std::map<string, AstConst*> pins;
-        for (AstPin* pinp = paramPinsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+        std::map<string, AstNode*> pins;
+
+        AstPin* pinp = paramPinsp;
+        while (pinp) {
             checkSupportedParam(modp, pinp);
             if (const AstVar* const varp = pinp->modVarp()) {
                 if (!pinp->exprp()) continue;
-                if (varp->isGParam()) {
-                    AstConst* const constp = VN_CAST(pinp->exprp(), Const);
-                    pins.emplace(varp->name(), constp);
-                }
+                if (varp->isGParam()) { pins.emplace(varp->name(), pinp->exprp()); }
+            } else if (VN_IS(pinp->exprp(), BasicDType) || VN_IS(pinp->exprp(), NodeDType)) {
+                pins.emplace(pinp->name(), pinp->exprp());
             }
+            pinp = VN_AS(pinp->nextp(), Pin);
         }
 
         const auto pair = m_defaultParameterValues.emplace(
@@ -513,6 +514,8 @@ class ParamProcessor final {
                         // nullptr means that the parameter is using some default value.
                         params.emplace(varp->name(), constp);
                     }
+                } else if (const AstParamTypeDType* const p = VN_CAST(stmtp, ParamTypeDType)) {
+                    params.emplace(p->name(), p->skipRefp());
                 }
             }
             pair.first->second = std::move(params);
@@ -523,13 +526,23 @@ class ParamProcessor final {
         string longname = modp->origName();
         for (auto&& defaultValue : paramsIt->second) {
             const auto pinIt = pins.find(defaultValue.first);
-            const AstConst* const constp
-                = pinIt == pins.end() ? defaultValue.second : pinIt->second;
+            // If the pin does not have a value assigned, use the default one.
+            const AstNode* const node = pinIt == pins.end() ? defaultValue.second : pinIt->second;
             // This longname is not valid as verilog symbol, but ok, because it will be hashed
             longname += "_" + defaultValue.first + "=";
             // constp can be nullptr
-            if (constp) longname += constp->num().ascii(false);
+
+            if (const AstConst* const p = VN_CAST(node, Const)) {
+                // Treat modules parametrized with the same values but with different type as the
+                // same.
+                longname += p->num().ascii(false);
+            } else if (node) {
+                std::stringstream type;
+                V3EmitV::verilogForTree(node, type);
+                longname += type.str();
+            }
         }
+        UINFO(9, "       module params longname: " << longname << endl);
 
         const auto iter = m_longMap.find(longname);
         if (iter != m_longMap.end()) return iter->second;  // Already calculated
