@@ -1998,7 +1998,7 @@ The grammar of configuration commands is as follows:
 
 .. option:: hier_params -module "<modulename>"
 
-   Specifies that the module contains parameters for hier block. This option
+   Specifies that the module contains parameters a :vlopt:`--hierarchical` block. This option
    is used internally to specify parameters for deparametrized hier block instances.
    This option should not be used directly.
    See :ref:`Hierarchical Verilation`.
