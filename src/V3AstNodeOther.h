@@ -1035,6 +1035,7 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
+    bool maybePointedTo() const override { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
     void isStatic(bool flag) { m_isStatic = flag; }
     bool isStatic() const { return m_isStatic; }

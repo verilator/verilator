@@ -2956,6 +2956,7 @@ class WidthVisitor final : public VNVisitor {
                    || VN_IS(fromDtp, UnpackArrayDType)  //
                    || VN_IS(fromDtp, DynArrayDType)  //
                    || VN_IS(fromDtp, QueueDType)  //
+                   || VN_IS(fromDtp, ConstraintRefDType)  //
                    || VN_IS(fromDtp, BasicDType)) {
             // Method call on enum without following parenthesis, e.g. "ENUM.next"
             // Convert this into a method call, and let that visitor figure out what to do next
@@ -3004,6 +3005,12 @@ class WidthVisitor final : public VNVisitor {
                     nodep->didWidth(true);
                     if (nodep->fromp()->sameTree(m_randomizeFromp) && varp->isRand())  // null-safe
                         V3LinkLValue::linkLValueSet(nodep);
+                    return true;
+                }
+                if (AstConstraint* constrp = VN_CAST(foundp, Constraint)) {
+                    nodep->replaceWith(new AstConstraintRef{
+                        nodep->fileline(), nodep->fromp()->unlinkFrBack(), constrp});
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return true;
                 }
                 if (AstEnumItemRef* const adfoundp = VN_CAST(foundp, EnumItemRef)) {
@@ -3152,6 +3159,8 @@ class WidthVisitor final : public VNVisitor {
         userIterate(fromDtp, WidthVP{SELF, BOTH}.p());
         if (nodep->name() == "rand_mode") {
             methodCallRandMode(nodep);
+        } else if (nodep->name() == "constraint_mode") {
+            methodCallConstraint(nodep, nullptr);
         } else if (AstEnumDType* const adtypep = VN_CAST(fromDtp, EnumDType)) {
             methodCallEnum(nodep, adtypep);
         } else if (AstAssocArrayDType* const adtypep = VN_CAST(fromDtp, AssocArrayDType)) {
@@ -3947,10 +3956,8 @@ class WidthVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             } else if (nodep->name() == "constraint_mode") {
-                nodep->v3warn(CONSTRAINTIGN, "Unsupported: 'constraint_mode' called on object");
-                nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitTrue{}});
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                return;
+                v3Global.useRandomizeMethods(true);
+                nodep->dtypep(nodep->findBasicDType(VBasicDTypeKwd::INT));
             }
             classp = classp->extendsp() ? classp->extendsp()->classp() : nullptr;
         }
@@ -3971,13 +3978,15 @@ class WidthVisitor final : public VNVisitor {
         nodep->dtypeSetSigned32();  // Guess on error
     }
     void methodCallConstraint(AstMethodCall* nodep, AstConstraintRefDType*) {
-        // Method call on constraint
         if (nodep->name() == "constraint_mode") {
+            // IEEE 1800-2023 18.9
             methodOkArguments(nodep, 0, 1);
-            nodep->v3warn(CONSTRAINTIGN, "constraint_mode ignored (unsupported)");
-            // Constraints ignored, so we just return "OFF"
-            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            if (nodep->pinsp()) {
+                nodep->dtypep(nodep->findBasicDType(VBasicDTypeKwd::INT));
+            } else {
+                nodep->dtypeSetVoid();
+            }
+            v3Global.useRandomizeMethods(true);
         } else {
             nodep->v3error("No such constraint method " << nodep->prettyNameQ());
             nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
@@ -5998,9 +6007,10 @@ class WidthVisitor final : public VNVisitor {
         // Function hasn't been widthed, so make it so.
         UINFO(5, "  FTASKREF " << nodep << endl);
         AstWith* withp = nullptr;
-        if (nodep->name() == "rand_mode") {
+        if (nodep->name() == "rand_mode" || nodep->name() == "constraint_mode") {
             v3Global.useRandomizeMethods(true);
             nodep->dtypep(nodep->findBasicDType(VBasicDTypeKwd::INT));
+            return;  // Handled in V3Randomize
         } else if (nodep->name() == "randomize" || nodep->name() == "srandom"
                    || (!nodep->taskp()
                        && (nodep->name() == "get_randstate"
@@ -6060,7 +6070,6 @@ class WidthVisitor final : public VNVisitor {
                 UASSERT_OBJ(false, nodep, "Bad case");
             }
         }
-        if (nodep->name() == "rand_mode") return;  // Handled in V3Randomize
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked");
         if (nodep->didWidth()) return;
         if ((nodep->taskp()->classMethod() && !nodep->taskp()->isStatic())

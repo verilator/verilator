@@ -2932,7 +2932,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 }
             } else if (AstConstraint* const consp = VN_CAST(foundp->nodep(), Constraint)) {
-                AstNode* const newp = new AstConstraintRef{nodep->fileline(), consp->name()};
+                AstNode* const newp = new AstConstraintRef{nodep->fileline(), nullptr, consp};
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 ok = true;
@@ -3440,7 +3440,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     // Resolved in V3Width
                 } else if (nodep->name() == "randomize" || nodep->name() == "srandom"
                            || nodep->name() == "get_randstate" || nodep->name() == "set_randstate"
-                           || nodep->name() == "rand_mode") {
+                           || nodep->name() == "rand_mode" || nodep->name() == "constraint_mode") {
                     if (AstClass* const classp = VN_CAST(m_modp, Class)) {
                         nodep->classOrPackagep(classp);
                     } else {
