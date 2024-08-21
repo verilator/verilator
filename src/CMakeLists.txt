@@ -142,6 +142,7 @@ set(HEADERS
     V3Randomize.h
     V3Reloop.h
     V3Rtti.h
+    V3Sampled.h
     V3Sched.h
     V3Scope.h
     V3Scoreboard.h
@@ -288,6 +289,7 @@ set(COMMON_SOURCES
     V3ProtectLib.cpp
     V3Randomize.cpp
     V3Reloop.cpp
+    V3Sampled.cpp
     V3Sched.cpp
     V3SchedAcyclic.cpp
     V3SchedPartition.cpp
@@ -487,6 +489,8 @@ add_dependencies(${verilator}
     V3Lexer_yy_cpp${CMAKE_BUILD_TYPE}
     V3PreLex_yy_cpp${CMAKE_BUILD_TYPE}
 )
+
+target_link_libraries(${verilator} PRIVATE Threads::Threads)
 
 # verilated_cov_key.h is only regenerated in a single-configuration environment.
 # This limitation can be lifted when `add_dependencies` will support generator

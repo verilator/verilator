@@ -1,6 +1,9 @@
 %Warning-PINMISSING: t/t_lint_pindup_bad.v:18:4: Cell has missing pin: 'exists'
    18 |    sub (.o(o),
       |    ^~~
+                     t/t_lint_pindup_bad.v:32:15: ... Location of port declaration
+   32 |    input wire exists
+      |               ^~~~~~
                      ... For warning description see https://verilator.org/warn/PINMISSING?v=latest
                      ... Use "/* verilator lint_off PINMISSING */" and lint_on around source to disable this message.
 %Error: t/t_lint_pindup_bad.v:20:10: Duplicate pin connection: 'i'

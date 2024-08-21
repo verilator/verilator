@@ -189,19 +189,19 @@ void DfgGraph::dumpDot(std::ostream& os, const string& label) const {
     os << "}\n";
 }
 
-void DfgGraph::dumpDotFile(const string& fileName, const string& label) const {
+void DfgGraph::dumpDotFile(const string& filename, const string& label) const {
     // This generates a file used by graphviz, https://www.graphviz.org
     // "hardcoded" parameters:
-    const std::unique_ptr<std::ofstream> os{V3File::new_ofstream(fileName)};
-    if (os->fail()) v3fatal("Cannot write to file: " << fileName);
+    const std::unique_ptr<std::ofstream> os{V3File::new_ofstream(filename)};
+    if (os->fail()) v3fatal("Cannot write to file: " << filename);
     dumpDot(*os.get(), label);
     os->close();
 }
 
 void DfgGraph::dumpDotFilePrefixed(const string& label) const {
-    string fileName = name();
-    if (!label.empty()) fileName += "-" + label;
-    dumpDotFile(v3Global.debugFilename(fileName) + ".dot", label);
+    string filename = name();
+    if (!label.empty()) filename += "-" + label;
+    dumpDotFile(v3Global.debugFilename(filename) + ".dot", label);
 }
 
 // Dump upstream logic cone starting from given vertex
@@ -360,8 +360,8 @@ bool DfgVertex::equals(const DfgVertex& that, EqualsCache& cache) const {
 
     const auto key = (this < &that) ? EqualsCache::key_type{this, &that}  //
                                     : EqualsCache::key_type{&that, this};
-    // Note: the recursive invocation can cause a re-hash of the cache which invalidates iterators
-    uint8_t result = cache[key];
+    // Note: the recursive invocation can cause a re-hash but that will not invalidate references
+    uint8_t& result = cache[key];
     if (!result) {
         result = 2;  // Assume equals
         auto thisPair = this->sourceEdges();
@@ -380,7 +380,6 @@ bool DfgVertex::equals(const DfgVertex& that, EqualsCache& cache) const {
                 break;
             }
         }
-        cache[key] = result;
     }
     return result >> 1;
 }

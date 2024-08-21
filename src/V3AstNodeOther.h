@@ -138,48 +138,48 @@ public:
     void dpiOpenParentInc() { ++m_dpiOpenParent; }
     void dpiOpenParentClear() { m_dpiOpenParent = 0; }
     uint64_t dpiOpenParent() const { return m_dpiOpenParent; }
-    void taskPublic(bool flag) { m_taskPublic = flag; }
     bool taskPublic() const { return m_taskPublic; }
-    void attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
+    void taskPublic(bool flag) { m_taskPublic = flag; }
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }
-    void classMethod(bool flag) { m_classMethod = flag; }
+    void attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     bool classMethod() const { return m_classMethod; }
-    void isExternProto(bool flag) { m_externProto = flag; }
+    void classMethod(bool flag) { m_classMethod = flag; }
     bool isExternProto() const { return m_externProto; }
-    void isExternDef(bool flag) { m_externDef = flag; }
+    void isExternProto(bool flag) { m_externProto = flag; }
     bool isExternDef() const { return m_externDef; }
-    void prototype(bool flag) { m_prototype = flag; }
+    void isExternDef(bool flag) { m_externDef = flag; }
     bool prototype() const { return m_prototype; }
-    void dpiExport(bool flag) { m_dpiExport = flag; }
+    void prototype(bool flag) { m_prototype = flag; }
     bool dpiExport() const { return m_dpiExport; }
-    void dpiImport(bool flag) { m_dpiImport = flag; }
+    void dpiExport(bool flag) { m_dpiExport = flag; }
     bool dpiImport() const { return m_dpiImport; }
-    void dpiContext(bool flag) { m_dpiContext = flag; }
+    void dpiImport(bool flag) { m_dpiImport = flag; }
     bool dpiContext() const { return m_dpiContext; }
-    void dpiOpenChild(bool flag) { m_dpiOpenChild = flag; }
+    void dpiContext(bool flag) { m_dpiContext = flag; }
     bool dpiOpenChild() const { return m_dpiOpenChild; }
-    void dpiTask(bool flag) { m_dpiTask = flag; }
+    void dpiOpenChild(bool flag) { m_dpiOpenChild = flag; }
     bool dpiTask() const { return m_dpiTask; }
-    void isConstructor(bool flag) { m_isConstructor = flag; }
+    void dpiTask(bool flag) { m_dpiTask = flag; }
     bool isConstructor() const { return m_isConstructor; }
+    void isConstructor(bool flag) { m_isConstructor = flag; }
     bool isHideLocal() const { return m_isHideLocal; }
     void isHideLocal(bool flag) { m_isHideLocal = flag; }
     bool isHideProtected() const { return m_isHideProtected; }
     void isHideProtected(bool flag) { m_isHideProtected = flag; }
-    void dpiPure(bool flag) { m_dpiPure = flag; }
     bool dpiPure() const { return m_dpiPure; }
-    void pureVirtual(bool flag) { m_pureVirtual = flag; }
+    void dpiPure(bool flag) { m_dpiPure = flag; }
     bool pureVirtual() const { return m_pureVirtual; }
-    void recursive(bool flag) { m_recursive = flag; }
+    void pureVirtual(bool flag) { m_pureVirtual = flag; }
     bool recursive() const { return m_recursive; }
-    void isStatic(bool flag) { m_static = flag; }
+    void recursive(bool flag) { m_recursive = flag; }
     bool isStatic() const { return m_static; }
-    void underGenerate(bool flag) { m_underGenerate = flag; }
+    void isStatic(bool flag) { m_static = flag; }
     bool underGenerate() const { return m_underGenerate; }
-    void isVirtual(bool flag) { m_virtual = flag; }
+    void underGenerate(bool flag) { m_underGenerate = flag; }
     bool isVirtual() const { return m_virtual; }
-    void setNeedProcess() { m_needProcess = true; }
+    void isVirtual(bool flag) { m_virtual = flag; }
     bool needProcess() const { return m_needProcess; }
+    void setNeedProcess() { m_needProcess = true; }
     void baseOverride(const VBaseOverride& flag) { m_baseOverride = flag; }
     VBaseOverride baseOverride() const { return m_baseOverride; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
@@ -238,6 +238,7 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     bool m_hasGParam : 1;  // Has global parameter (for link)
     bool m_hasParameterList : 1;  // Has #() for parameter declaration
     bool m_hierBlock : 1;  // Hierarchical Block marked by HIER_BLOCK pragma
+    bool m_hierParams : 1;  // Block containing params for parametrized hier blocks
     bool m_internal : 1;  // Internally created
     bool m_recursive : 1;  // Recursive module
     bool m_recursiveClone : 1;  // If recursive, what module it clones, otherwise nullptr
@@ -253,6 +254,7 @@ protected:
         , m_hasGParam{false}
         , m_hasParameterList{false}
         , m_hierBlock{false}
+        , m_hierParams{false}
         , m_internal{false}
         , m_recursive{false}
         , m_recursiveClone{false} {}
@@ -274,30 +276,32 @@ public:
     void level(int level) { m_level = level; }
     int level() const VL_MT_SAFE { return m_level; }
     bool isTop() const VL_MT_SAFE { return level() == 1; }
-    void modPublic(bool flag) { m_modPublic = flag; }
     bool modPublic() const { return m_modPublic; }
-    void modTrace(bool flag) { m_modTrace = flag; }
+    void modPublic(bool flag) { m_modPublic = flag; }
     bool modTrace() const { return m_modTrace; }
-    void dead(bool flag) { m_dead = flag; }
+    void modTrace(bool flag) { m_modTrace = flag; }
     bool dead() const { return m_dead; }
-    void hasGParam(bool flag) { m_hasGParam = flag; }
+    void dead(bool flag) { m_dead = flag; }
     bool hasGParam() const { return m_hasGParam; }
-    void hasParameterList(bool flag) { m_hasParameterList = flag; }
+    void hasGParam(bool flag) { m_hasGParam = flag; }
     bool hasParameterList() const { return m_hasParameterList; }
-    void hierBlock(bool flag) { m_hierBlock = flag; }
+    void hasParameterList(bool flag) { m_hasParameterList = flag; }
     bool hierBlock() const { return m_hierBlock; }
-    void internal(bool flag) { m_internal = flag; }
+    void hierBlock(bool flag) { m_hierBlock = flag; }
+    bool hierParams() const { return m_hierParams; }
+    void hierParams(bool flag) { m_hierParams = flag; }
     bool internal() const { return m_internal; }
-    void recursive(bool flag) { m_recursive = flag; }
+    void internal(bool flag) { m_internal = flag; }
     bool recursive() const { return m_recursive; }
+    void recursive(bool flag) { m_recursive = flag; }
     void recursiveClone(bool flag) { m_recursiveClone = flag; }
     bool recursiveClone() const { return m_recursiveClone; }
-    void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
-    void timeunit(const VTimescale& flag) { m_timeunit = flag; }
+    void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VTimescale timeunit() const { return m_timeunit; }
-    void unconnectedDrive(const VOptionBool flag) { m_unconnectedDrive = flag; }
+    void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VOptionBool unconnectedDrive() const { return m_unconnectedDrive; }
+    void unconnectedDrive(const VOptionBool flag) { m_unconnectedDrive = flag; }
 };
 class AstNodeProcedure VL_NOT_FINAL : public AstNode {
     // IEEE procedure: initial, final, always
@@ -398,13 +402,16 @@ class AstNodeCoverOrAssert VL_NOT_FINAL : public AstNodeStmt {
     // op3 used by some sub-types only
     // @astgen op4 := passsp: List[AstNode] // Statements when propp is passing/truthly
     string m_name;  // Name to report
-    const bool m_immediate;  // Immediate assertion/cover
+    const VAssertType m_type;  // Assertion/cover type
+    const VAssertDirectiveType m_directive;  // Assertion directive type
+
 public:
-    AstNodeCoverOrAssert(VNType t, FileLine* fl, AstNode* propp, AstNode* passsp, bool immediate,
-                         const string& name = "")
+    AstNodeCoverOrAssert(VNType t, FileLine* fl, AstNode* propp, AstNode* passsp, VAssertType type,
+                         VAssertDirectiveType directive, const string& name = "")
         : AstNodeStmt{t, fl}
         , m_name{name}
-        , m_immediate{immediate} {
+        , m_type{type}
+        , m_directive{directive} {
         this->propp(propp);
         this->addPasssp(passsp);
     }
@@ -414,7 +421,14 @@ public:
     void name(const string& name) override { m_name = name; }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
-    bool immediate() const { return m_immediate; }
+    VAssertType type() const { return m_type; }
+    VAssertDirectiveType directive() const { return m_directive; }
+    bool immediate() const {
+        return this->type().containsAny(VAssertType::SIMPLE_IMMEDIATE
+                                        | VAssertType::OBSERVED_DEFERRED_IMMEDIATE
+                                        | VAssertType::FINAL_DEFERRED_IMMEDIATE)
+               || this->type() == VAssertType::INTERNAL;
+    }
 };
 class AstNodeFor VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := initsp : List[AstNode]
@@ -926,8 +940,7 @@ class AstClocking final : public AstNode {
     // Children: SENITEM, CLOCKING ITEMs, VARs
     // @astgen op1 := sensesp : AstSenItem
     // @astgen op2 := itemsp : List[AstClockingItem]
-    // @astgen op3 := varsp : List[AstVar]
-    // @astgen op4 := eventp : Optional[AstVar]
+    // @astgen op3 := eventp : Optional[AstVar]
     std::string m_name;  // Clocking block name
     const bool m_isDefault = false;  // True if default clocking
     const bool m_isGlobal = false;  // True if global clocking
@@ -1022,6 +1035,7 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
+    bool maybePointedTo() const override { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
     void isStatic(bool flag) { m_isStatic = flag; }
     bool isStatic() const { return m_isStatic; }
@@ -1059,24 +1073,6 @@ public:
     bool same(const AstNode*) const override { return true; }
     string path() const { return m_path; }
 };
-class AstDistItem final : public AstNode {
-    // Constraint distribution item
-    // @astgen op1 := rangep : AstNodeExpr
-    // @astgen op2 := weightp : AstNodeExpr
-    bool m_isWhole = false;  // True for weight ':/', false for ':='
-public:
-    AstDistItem(FileLine* fl, AstNodeExpr* rangep, AstNodeExpr* weightp)
-        : ASTGEN_SUPER_DistItem(fl) {
-        this->rangep(rangep);
-        this->weightp(weightp);
-    }
-    ASTGEN_MEMBERS_AstDistItem;
-    bool isGateOptimizable() const override { return false; }
-    bool isPredictOptimizable() const override { return false; }
-    bool same(const AstNode* /*samep*/) const override { return true; }
-    void isWhole(bool flag) { m_isWhole = flag; }
-    bool isWhole() const { return m_isWhole; }
-};
 class AstDpiExport final : public AstNode {
     // We could put an AstNodeFTaskRef instead of the verilog function name,
     // however we're not *calling* it, so that seems somehow wrong.
@@ -1106,7 +1102,7 @@ public:
         BROKEN_RTN(!fmtp());
         return nullptr;
     }
-    string verilogKwd() const override { return string{"$"} + string{displayType().ascii()}; }
+    string verilogKwd() const override { return "$"s + string{displayType().ascii()}; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
@@ -1771,6 +1767,7 @@ class AstVar final : public AstNode {
     VDirection m_declDirection;  // Declared direction input/output etc
     VLifetime m_lifetime;  // Lifetime
     VVarAttrClocker m_attrClocker;
+    VRandAttr m_rand;  // Randomizability of this variable (rand, randc, etc)
     int m_pinNum = 0;  // For XML, if non-zero the connection pin number
     bool m_ansi : 1;  // Params or pins declared in the module header, rather than the body
     bool m_declTyped : 1;  // Declared as type (for dedup check)
@@ -1794,8 +1791,6 @@ class AstVar final : public AstNode {
     bool m_attrSFormat : 1;  // User sformat attribute
     bool m_attrSplitVar : 1;  // declared with split_var metacomment
     bool m_fileDescr : 1;  // File descriptor
-    bool m_isRand : 1;  // Random variable
-    bool m_isRandC : 1;  // Random cyclic variable (isRand also set)
     bool m_isConst : 1;  // Table contains constant data
     bool m_isContinuously : 1;  // Ever assigned continuously (for force/release)
     bool m_hasStrengthAssignment : 1;  // Is on LHS of assignment with strength specifier
@@ -1840,8 +1835,6 @@ class AstVar final : public AstNode {
         m_attrSFormat = false;
         m_attrSplitVar = false;
         m_fileDescr = false;
-        m_isRand = false;
-        m_isRandC = false;
         m_isConst = false;
         m_isContinuously = false;
         m_hasStrengthAssignment = false;
@@ -1966,6 +1959,7 @@ public:
     void attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     void attrSFormat(bool flag) { m_attrSFormat = flag; }
     void attrSplitVar(bool flag) { m_attrSplitVar = flag; }
+    void rand(const VRandAttr flag) { m_rand = flag; }
     void usedClock(bool flag) { m_usedClock = flag; }
     void usedParam(bool flag) { m_usedParam = flag; }
     void usedLoopIdx(bool flag) { m_usedLoopIdx = flag; }
@@ -1982,11 +1976,6 @@ public:
     void sc(bool flag) { m_sc = flag; }
     void scSensitive(bool flag) { m_scSensitive = flag; }
     void primaryIO(bool flag) { m_primaryIO = flag; }
-    void isRand(bool flag) { m_isRand = flag; }
-    void isRandC(bool flag) {
-        m_isRandC = flag;
-        if (flag) isRand(true);
-    }
     void isConst(bool flag) { m_isConst = flag; }
     void isContinuously(bool flag) { m_isContinuously = flag; }
     void isStatic(bool flag) { m_isStatic = flag; }
@@ -2030,6 +2019,7 @@ public:
     bool isContinuously() const { return m_isContinuously; }
     bool isDeclTyped() const { return m_declTyped; }
     bool isInoutish() const { return m_direction.isInoutish(); }
+    bool isInput() const { return m_direction.isInput(); }
     bool isNonOutput() const { return m_direction.isNonOutput(); }
     bool isReadOnly() const VL_MT_SAFE { return m_direction.isReadOnly(); }
     bool isConstRef() const VL_MT_SAFE { return m_direction.isConstRef(); }
@@ -2067,6 +2057,7 @@ public:
     bool isScQuad() const;
     bool isScBv() const;
     bool isScUint() const;
+    bool isScUintBool() const;
     bool isScBigUint() const;
     bool isScSensitive() const { return m_scSensitive; }
     bool isSigPublic() const;
@@ -2074,8 +2065,8 @@ public:
     bool isSigUserRdPublic() const { return m_sigUserRdPublic; }
     bool isSigUserRWPublic() const { return m_sigUserRWPublic; }
     bool isTrace() const { return m_trace; }
-    bool isRand() const { return m_isRand; }
-    bool isRandC() const { return m_isRandC; }
+    bool isRand() const { return m_rand.isRand(); }
+    bool isRandC() const { return m_rand.isRandC(); }
     bool isConst() const VL_MT_SAFE { return m_isConst; }
     bool isStatic() const VL_MT_SAFE { return m_isStatic; }
     bool isLatched() const { return m_isLatched; }
@@ -2092,6 +2083,7 @@ public:
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }
     AstIface* sensIfacep() const { return m_sensIfacep; }
     VVarAttrClocker attrClocker() const { return m_attrClocker; }
+    VRandAttr rand() const { return m_rand; }
     string verilogKwd() const override;
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
@@ -2191,8 +2183,8 @@ public:
     ASTGEN_MEMBERS_AstBegin;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    void generate(bool flag) { m_generate = flag; }
     bool generate() const { return m_generate; }
+    void generate(bool flag) { m_generate = flag; }
     void setNeedProcess() { m_needProcess = true; }
     bool needProcess() const { return m_needProcess; }
     bool implied() const { return m_implied; }
@@ -2346,6 +2338,42 @@ public:
     // Return the lowest class extended from, or this class
     AstClass* baseMostClassp();
     static bool isCacheableChild(const AstNode* nodep);
+    // Iterates top level members of the class, taking into account inheritance (starting from the
+    // root superclass). Note: after V3Scope, several children are moved under an AstScope and will
+    // not be found by this.
+    template <typename Callable>
+    void foreachMember(const Callable& f) {
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 1>::type;
+        static_assert(
+            vlstd::is_invocable<Callable, AstClass*, T_Node*>::value
+                && std::is_base_of<AstNode, T_Node>::value,
+            "Callable 'f' must have a signature compatible with 'void(AstClass*, T_Node*)', "
+            "with 'T_Node' being a subtype of 'AstNode'");
+        if (AstClassExtends* const extendsp = this->extendsp()) {
+            extendsp->classp()->foreachMember(f);
+        }
+        for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstNode::privateTypeTest<T_Node>(stmtp)) f(this, static_cast<T_Node*>(stmtp));
+        }
+    }
+    // Same as above, but stops after first match
+    template <typename Callable>
+    bool existsMember(const Callable& p) const {
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 1>::type;
+        static_assert(vlstd::is_invocable_r<bool, Callable, const AstClass*, const T_Node*>::value
+                          && std::is_base_of<AstNode, T_Node>::value,
+                      "Predicate 'p' must have a signature compatible with 'bool(const AstClass*, "
+                      "const T_Node*)', with 'T_Node' being a subtype of 'AstNode'");
+        if (AstClassExtends* const extendsp = this->extendsp()) {
+            if (extendsp->classp()->existsMember(p)) return true;
+        }
+        for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstNode::privateTypeTest<T_Node>(stmtp)) {
+                if (p(this, static_cast<T_Node*>(stmtp))) return true;
+            }
+        }
+        return false;
+    }
 };
 class AstClassPackage final : public AstNodeModule {
     // The static information portion of a class (treated similarly to a package)
@@ -2588,16 +2616,18 @@ public:
 };
 class AstAssertCtl final : public AstNodeStmt {
     // @astgen op1 := controlTypep : AstNodeExpr
-    // @astgen op2 := levelp : AstNodeExpr
-    // @astgen op3 := itemsp : List[AstNodeExpr]
+    // @astgen op2 := assertTypesp : Optional[AstNodeExpr]
+    // @astgen op3 := directiveTypesp : Optional[AstNodeExpr]
     // Type of assertcontrol task; either known from parser or from evaluated
     // controlTypep expression.
-    VAssertCtlType m_ctlType;  // $assert keyword type
+    VAssertCtlType m_ctlType;  // $assert keyword type (control_type)
+    VAssertType m_assertTypes;  // Types of assertions affected
+    VAssertDirectiveType m_directiveTypes;  // Types of directives affected
 
 public:
     AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr* levelp = nullptr,
                  AstNodeExpr* itemsp = nullptr);
-    AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr* assertionTypep = nullptr,
+    AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr* assertTypesp = nullptr,
                  AstNodeExpr* directiveTypep = nullptr, AstNodeExpr* levelp = nullptr,
                  AstNodeExpr* itemsp = nullptr);
     ASTGEN_MEMBERS_AstAssertCtl;
@@ -2608,6 +2638,10 @@ public:
     bool isOutputter() override { return true; }
     VAssertCtlType ctlType() const { return m_ctlType; }
     void ctlType(int32_t type) { m_ctlType = VAssertCtlType{type}; }
+    VAssertType ctlAssertTypes() const { return m_assertTypes; }
+    void ctlAssertTypes(VAssertType types) { m_assertTypes = types; }
+    VAssertDirectiveType ctlDirectiveTypes() const { return m_directiveTypes; }
+    void ctlDirectiveTypes(VAssertDirectiveType types) { m_directiveTypes = types; }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
 };
@@ -2688,10 +2722,10 @@ public:
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool same(const AstNode* /*samep*/) const override { return true; }
-    void isDisableSoft(bool flag) { m_isDisableSoft = flag; }
     bool isDisableSoft() const { return m_isDisableSoft; }
-    void isSoft(bool flag) { m_isSoft = flag; }
+    void isDisableSoft(bool flag) { m_isDisableSoft = flag; }
     bool isSoft() const { return m_isSoft; }
+    void isSoft(bool flag) { m_isSoft = flag; }
 };
 class AstConstraintUnique final : public AstNodeStmt {
     // Constraint unique statement
@@ -2747,8 +2781,8 @@ public:
     void dumpJson(std::ostream& str) const override;
     int instrCount() const override { return 1 + 2 * INSTR_COUNT_LD; }
     bool maybePointedTo() const override { return true; }
-    void binNum(int flag) { m_binNum = flag; }
     int binNum() const { return m_binNum; }
+    void binNum(int flag) { m_binNum = flag; }
     int offset() const { return m_offset; }
     const string& comment() const { return m_text; }  // text to insert in code
     const string& linescov() const { return m_linescov; }
@@ -2786,7 +2820,7 @@ public:
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool isOutputter() override { return true; }
-    // but isPure()  true
+    bool isPure() override { return false; }
     AstCoverDecl* declp() const { return m_declp; }  // Where defined
 };
 class AstCoverToggle final : public AstNodeStmt {
@@ -2883,8 +2917,8 @@ public:
         return nullptr;
     }
     string verilogKwd() const override {
-        return (filep() ? string{"$f"} + string{displayType().ascii()}
-                        : string{"$"} + string{displayType().ascii()});
+        return (filep() ? "$f"s + string{displayType().ascii()}
+                        : "$"s + string{displayType().ascii()});
     }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
@@ -3021,6 +3055,7 @@ class AstJumpBlock final : public AstNodeStmt {
     //
     // @astgen ptr := m_labelp : AstJumpLabel  // [After V3Jump] Pointer to declaration
     int m_labelNum = 0;  // Set by V3EmitCSyms to tell final V3Emit what to increment
+    VIsCached m_purity;  // Pure state
 public:
     // After construction must call ->labelp to associate with appropriate label
     AstJumpBlock(FileLine* fl, AstNode* stmtsp)
@@ -3036,6 +3071,10 @@ public:
     void labelNum(int flag) { m_labelNum = flag; }
     AstJumpLabel* labelp() const { return m_labelp; }
     void labelp(AstJumpLabel* labelp) { m_labelp = labelp; }
+    bool isPure() override;
+
+private:
+    bool getPurityRecurse() const;
 };
 class AstJumpGo final : public AstNodeStmt {
     // Jump point; branch down to a JumpLabel
@@ -3227,6 +3266,7 @@ public:
         this->exprp(exprp);
     }
     ASTGEN_MEMBERS_AstStmtExpr;
+    bool isPure() override { return exprp()->isPure(); }
 };
 class AstStop final : public AstNodeStmt {
 public:
@@ -3379,7 +3419,7 @@ public:
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool isOutputter() override { return true; }
-    // but isPure()  true
+    bool isPure() override { return false; }
     AstTraceDecl* declp() const { return m_declp; }
     VTraceType traceType() const { return m_traceType; }
     uint32_t baseCode() const { return m_baseCode; }
@@ -3461,8 +3501,8 @@ public:
     // Stop statement searchback here
     void addNextStmt(AstNode* newp, AstNode* belowp) override;
     bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
-    void unrollFull(const VOptionBool flag) { m_unrollFull = flag; }
     VOptionBool unrollFull() const { return m_unrollFull; }
+    void unrollFull(const VOptionBool flag) { m_unrollFull = flag; }
 };
 
 // === AstNodeAssign ===
@@ -3619,11 +3659,12 @@ public:
 // === AstNodeCoverOrAssert ===
 class AstAssert final : public AstNodeCoverOrAssert {
     // @astgen op3 := failsp: List[AstNode] // Statements when propp is failing/falsey
+
 public:
     ASTGEN_MEMBERS_AstAssert;
-    AstAssert(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp, bool immediate,
-              const string& name = "")
-        : ASTGEN_SUPER_Assert(fl, propp, passsp, immediate, name) {
+    AstAssert(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp, VAssertType type,
+              VAssertDirectiveType directive, const string& name = "")
+        : ASTGEN_SUPER_Assert(fl, propp, passsp, type, directive, name) {
         this->addFailsp(failsp);
     }
 };
@@ -3633,8 +3674,10 @@ class AstAssertIntrinsic final : public AstNodeCoverOrAssert {
 public:
     ASTGEN_MEMBERS_AstAssertIntrinsic;
     AstAssertIntrinsic(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp,
-                       bool immediate, const string& name = "")
-        : ASTGEN_SUPER_AssertIntrinsic(fl, propp, passsp, immediate, name) {
+                       const string& name = "")
+        // Intrinsic asserts are always enabled thus 'type' field is set to INTERNAL.
+        : ASTGEN_SUPER_AssertIntrinsic(fl, propp, passsp, VAssertType::INTERNAL,
+                                       VAssertDirectiveType::INTRINSIC, name) {
         this->addFailsp(failsp);
     }
 };
@@ -3642,16 +3685,17 @@ class AstCover final : public AstNodeCoverOrAssert {
     // @astgen op3 := coverincsp: List[AstNode] // Coverage node
 public:
     ASTGEN_MEMBERS_AstCover;
-    AstCover(FileLine* fl, AstNode* propp, AstNode* stmtsp, bool immediate,
+    AstCover(FileLine* fl, AstNode* propp, AstNode* stmtsp, VAssertType type,
              const string& name = "")
-        : ASTGEN_SUPER_Cover(fl, propp, stmtsp, immediate, name) {}
-    virtual bool immediate() const { return false; }
+        : ASTGEN_SUPER_Cover(fl, propp, stmtsp, type, VAssertDirectiveType::COVER, name) {}
 };
 class AstRestrict final : public AstNodeCoverOrAssert {
 public:
     ASTGEN_MEMBERS_AstRestrict;
     AstRestrict(FileLine* fl, AstNode* propp)
-        : ASTGEN_SUPER_Restrict(fl, propp, nullptr, false, "") {}
+        // Intrinsic asserts are always ignored thus 'type' field is set to INTERNAL.
+        : ASTGEN_SUPER_Restrict(fl, propp, nullptr, VAssertType::INTERNAL,
+                                VAssertDirectiveType::RESTRICT) {}
 };
 
 // === AstNodeFor ===
@@ -3792,8 +3836,8 @@ public:
         : ASTGEN_SUPER_TextBlock(fl, textp, tracking)
         , m_commas(commas) {}
     ASTGEN_MEMBERS_AstTextBlock;
-    void commas(bool flag) { m_commas = flag; }
     bool commas() const { return m_commas; }
+    void commas(bool flag) { m_commas = flag; }
     void addText(FileLine* fl, const string& textp, bool tracking = false) {
         addNodesp(new AstText{fl, textp, tracking});
     }

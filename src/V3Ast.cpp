@@ -801,7 +801,6 @@ AstNode* AstNode::cloneTreeIter(bool needPure) {
                          << this->warnMore()
                          << "... Suggest use a temporary variable in place of this expression");
         // this->v3fatalSrc("cloneTreePure debug backtrace");  // Comment in to debug where caused
-        // it
     }
     AstNode* const newp = this->clone();
     if (this->m_op1p) newp->op1p(this->m_op1p->cloneTreeIterList(needPure));
@@ -1586,7 +1585,7 @@ VCastable AstNode::computeCastable(const AstNodeDType* toDtp, const AstNodeDType
     const auto castable = computeCastableImp(toDtp, fromDtp, fromConstp);
     UINFO(9, "  castable=" << castable << "  for " << toDtp << endl);
     UINFO(9, "     =?= " << fromDtp << endl);
-    UINFO(9, "     const= " << fromConstp << endl);
+    if (fromConstp) UINFO(9, "     const= " << fromConstp << endl);
     return castable;
 }
 

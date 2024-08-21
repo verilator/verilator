@@ -1,24 +1,9 @@
-%Warning-CONSTRAINTIGN: t/t_randomize.v:66:25: 'with' constraint ignored (unsupported)
-   66 |       v = p.randomize() with { if_4 == local::if_4; header == 2; };
-      |                         ^~~~
+%Warning-CONSTRAINTIGN: t/t_randomize.v:22:14: Constraint expression ignored (unsupported)
+                                             : ... note: In instance 't'
+   22 |       length dist { [0:1], [2:5] :/ 2, 6 := 6, 7 := 10, 1};
+      |              ^~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
-%Warning-CONSTRAINTIGN: t/t_randomize.v:38:16: State-dependent constraint ignored (unsupported)
-                                             : ... note: In instance 't'
-   38 |          array[i] inside {2, 4, 6};
-      |                ^
-%Warning-CONSTRAINTIGN: t/t_randomize.v:26:7: Constraint expression ignored (unsupported)
-                                            : ... note: In instance 't'
-   26 |       if (header > 4) {
-      |       ^~
-%Warning-CONSTRAINTIGN: t/t_randomize.v:29:7: Constraint expression ignored (unsupported)
-                                            : ... note: In instance 't'
-   29 |       if (header == 5 || header == 6) {
-      |       ^~
-%Warning-CONSTRAINTIGN: t/t_randomize.v:37:7: Constraint expression ignored (unsupported)
-                                            : ... note: In instance 't'
-   37 |       foreach (array[i]) {
-      |       ^~~~~~~
 %Warning-CONSTRAINTIGN: t/t_randomize.v:40:7: Constraint expression ignored (unsupported)
                                             : ... note: In instance 't'
    40 |       unique { array[0], array[1] };
@@ -27,8 +12,4 @@
                                              : ... note: In instance 't'
    43 |    constraint order { solve length before header; }
       |                       ^~~~~
-%Error-UNSUPPORTED: t/t_randomize.v:14:13: Unsupported: random member variable with type 'int$[0:1]'
-                                         : ... note: In instance 't'
-   14 |    rand int array[2];   
-      |             ^~~~~
 %Error: Exiting due to

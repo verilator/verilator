@@ -324,6 +324,7 @@ detailed descriptions of these arguments.
     --clk <signal-name>         Mark specified signal as clock
     --no-clk <signal-name>      Prevent marking specified signal as clock
     --compiler <compiler-name>  Tune for specified C++ compiler
+    --compiler-include          Include additional header in the precompiled one
     --converge-limit <loops>    Tune convergence settle time
     --coverage                  Enable all coverage
     --coverage-line             Enable line coverage
@@ -356,6 +357,7 @@ detailed descriptions of these arguments.
     --dumpi-tree-json <level>   Enable dumping Ast .tree.json files at level
     --dumpi-<srcfile> <level>   Enable dumping everything in source file at level
      -E                         Preprocess, but do not compile
+    --emit-accessors            Emit getter and setter methods for model top class
     --error-limit <value>       Abort after this number of errors
     --exe                       Link to create executable
     --expand-limit <value>      Set expand optimization limit
@@ -375,6 +377,7 @@ detailed descriptions of these arguments.
     --get-supported <feature>   Get if feature is supported
     --help                      Show this help
     --hierarchical              Enable hierarchical Verilation
+    --hierarchical-params-file <name> Internal option that specifies parameters file for hier blocks
      -I<dir>                    Directory to search for includes
     --if-depth <value>          Tune IFDEPTH warning
      +incdir+<dir>              Directory to search for includes
@@ -410,6 +413,7 @@ detailed descriptions of these arguments.
     --pins-inout-enables        Specify that __en and __out signals be created for inouts
     --pins-sc-biguint           Specify types for top-level ports
     --pins-sc-uint              Specify types for top-level ports
+    --pins-sc-uint-bool         Specify types for top-level ports
     --pins-uint8                Specify types for top-level ports
     --no-pins64                 Don't use uint64_t's for 33-64 bit sigs
     --pipe-filter <command>     Filter all input through a script
@@ -459,8 +463,8 @@ detailed descriptions of these arguments.
     --trace-coverage            Enable tracing of coverage
     --trace-depth <levels>      Depth of tracing
     --trace-fst                 Enable FST waveform creation
-    --trace-max-array <depth>   Maximum bit width for tracing
-    --trace-max-width <width>   Maximum array depth for tracing
+    --trace-max-array <depth>   Maximum array depth for tracing
+    --trace-max-width <width>   Maximum bit width for tracing
     --trace-params              Enable tracing of parameters
     --trace-structs             Enable tracing structure names
     --trace-threads <threads>   Enable FST waveform creation on separate threads

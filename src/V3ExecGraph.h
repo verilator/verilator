@@ -52,8 +52,8 @@ public:
     void priority(uint32_t pri) { m_priority = pri; }
     uint32_t cost() const { return m_cost; }
     void cost(uint32_t cost) { m_cost = cost; }
-    void predictStart(uint64_t time) { m_predictStart = time; }
     uint64_t predictStart() const { return m_predictStart; }
+    void predictStart(uint64_t time) { m_predictStart = time; }
     string name() const override VL_MT_STABLE { return "mt"s + std::to_string(id()); }
     string hashName() const { return m_hashName; }
     void dump(std::ostream& str) const;

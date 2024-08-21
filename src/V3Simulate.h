@@ -107,7 +107,7 @@ private:
     bool m_anyAssignDly;  ///< True if found a delayed assignment
     bool m_anyAssignComb;  ///< True if found a non-delayed assignment
     bool m_inDlyAssign;  ///< Under delayed assignment
-    bool m_isOutputter;  // Creates output
+    bool m_isImpure;  // Not pure
     int m_instrCount;  ///< Number of nodes
     int m_dataCount;  ///< Bytes of data
     AstJumpGo* m_jumpp = nullptr;  ///< Jump label we're branching from
@@ -183,11 +183,11 @@ public:
         //  and fetchConst should not be called or it may assert.
         if (!m_whyNotNodep) {
             m_whyNotNodep = nodep;
-            if (debug() >= 5) {
+            if (debug() >= 5) {  // LCOV_EXCL_START
                 UINFO(0, "Clear optimizable: " << why);
                 if (nodep) std::cout << ": " << nodep;
                 std::cout << std::endl;
-            }
+            }  // LCOV_EXCL_STOP
             m_whyNotOptimizable = why;
             std::ostringstream stack;
             for (const auto& callstack : vlstd::reverse_view(m_callStack)) {
@@ -214,7 +214,7 @@ public:
     AstNode* whyNotNodep() const { return m_whyNotNodep; }
 
     bool isAssignDly() const { return m_anyAssignDly; }
-    bool isOutputter() const { return m_isOutputter; }
+    bool isImpure() const { return m_isImpure; }
     int instrCount() const { return m_instrCount; }
     int dataCount() const { return m_dataCount; }
 
@@ -359,7 +359,7 @@ private:
             // UINFO(9, "     !predictopt " << nodep << endl);
             clearOptimizable(nodep, "Isn't predictable");
         }
-        if (nodep->isOutputter()) m_isOutputter = true;
+        if (!nodep->isPure()) m_isImpure = true;
     }
 
     void knownBadNodeType(AstNode* nodep) {
@@ -551,7 +551,12 @@ private:
     }
     void visit(AstInitArray* nodep) override {
         checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
         if (!m_checkOnly && optimizable()) newValue(nodep, nodep);
+    }
+    void visit(AstInitItem* nodep) override {
+        checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstEnumItemRef* nodep) override {
         checkNodeInfo(nodep);
@@ -833,7 +838,7 @@ private:
                 clearOptimizable(nodep, "Array initialization has too few elements, need element "
                                             + cvtToStr(offset));
             } else {
-                setValue(nodep, itemp);
+                setValue(nodep, fetchValue(itemp));
             }
         } else {
             clearOptimizable(nodep, "Array select of non-array");
@@ -1231,7 +1236,7 @@ public:
         m_anyAssignComb = false;
         m_anyAssignDly = false;
         m_inDlyAssign = false;
-        m_isOutputter = false;
+        m_isImpure = false;
         m_instrCount = 0;
         m_dataCount = 0;
         m_jumpp = nullptr;

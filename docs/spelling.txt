@@ -379,6 +379,7 @@ Srini
 Srinivasan
 Stamness
 Stephane
+Sterin
 Stoddard
 Stroebel
 Strouble
@@ -461,6 +462,7 @@ Wojciech
 Wolfel
 Wouters
 Wpedantic
+Wunused
 Wwarn
 XSim
 Xcelium
@@ -497,6 +499,7 @@ architected
 args
 arrarys
 assertOn
+assertcontrol
 astgen
 async
 atClone
@@ -589,6 +592,7 @@ defname
 defparam
 demangling
 dep
+deparametrized
 der
 dereference
 desassign
@@ -701,6 +705,7 @@ genvar
 genvars
 getenv
 getline
+getter
 ggdb
 glibc
 gmake
@@ -714,6 +719,7 @@ hh
 hier
 hierCMakeArgs
 hierMkArgs
+hierParameters
 hierVer
 hx
 hyperthreading
@@ -845,6 +851,7 @@ parallelized
 param
 parameterization
 parameterized
+parameterized
 parameterless
 params
 parens
@@ -891,6 +898,7 @@ prototyptes
 ps
 psprintf
 pthread
+pthreads
 ptr
 pulldown
 pulldowns
@@ -973,7 +981,9 @@ submakes
 submodule
 submodules
 substring
+superclass
 suspendable
+suspendables
 sv
 svBitVal
 svBitVecVal
@@ -1102,3 +1112,4 @@ zdave
 Øyvind
 Алексеевич
 Исаак
+

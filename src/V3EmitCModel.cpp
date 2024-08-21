@@ -118,6 +118,17 @@ class EmitCModel final : public EmitCFunc {
                 }
             }
         }
+        if (v3Global.opt.emitAccessors()) {
+            puts("\n// ACCESSORS\n"
+                 "// The application code should use these methods to\n"
+                 "// propagate new values into/out from the Verilated model\n"
+                 "// instead of using signal variables directly.\n");
+            for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+                if (const AstVar* const varp = VN_CAST(nodep, Var)) {
+                    if (varp->isPrimaryIO()) emitVarAccessors(varp);
+                }
+            }
+        }
         if (optSystemC() && v3Global.usesTiming()) puts("sc_core::sc_event trigger_eval;\n");
 
         // Cells instantiated by the top level (for access to /* verilator public */)
@@ -540,11 +551,11 @@ class EmitCModel final : public EmitCFunc {
              "0.\");\n");
         puts("}\n");
         puts("vlSymsp->__Vm_baseCode = code;\n");
-        puts("tracep->pushPrefix(std::string{vlSymsp->name()}, "
+        puts("if (strlen(vlSymsp->name())) tracep->pushPrefix(std::string{vlSymsp->name()}, "
              "VerilatedTracePrefixType::SCOPE_MODULE);\n");
         puts(topModNameProtected + "__" + protect("trace_decl_types") + "(tracep);\n");
         puts(topModNameProtected + "__" + protect("trace_init_top") + "(vlSelf, tracep);\n");
-        puts("tracep->popPrefix();\n");
+        puts("if (strlen(vlSymsp->name())) tracep->popPrefix();\n");
         puts("}\n");
 
         // Forward declaration

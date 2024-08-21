@@ -98,6 +98,8 @@ struct LogicRegions final {
     LogicByScope m_pre;  // AstAssignPre logic in 'act' region
     LogicByScope m_act;  // 'act' region logic
     LogicByScope m_nba;  // 'nba' region logic
+    LogicByScope m_obs;  // AstAlwaysObserved logic in 'obs' region
+    LogicByScope m_react;  // AstAlwaysReactive logic in 're' region
 
     LogicRegions() = default;
     VL_UNCOPYABLE(LogicRegions);
@@ -111,6 +113,8 @@ struct LogicReplicas final {
     LogicByScope m_ico;  // Logic replicated into the 'ico' (Input Combinational) region
     LogicByScope m_act;  // Logic replicated into the 'act' region
     LogicByScope m_nba;  // Logic replicated into the 'nba' region
+    LogicByScope m_obs;  // Logic replicated into the 'obs' region
+    LogicByScope m_react;  // Logic replicated into the 're' region
 
     LogicReplicas() = default;
     VL_UNCOPYABLE(LogicReplicas);

@@ -13,6 +13,7 @@ scenarios(simulator => 1);
 $Self->{verilated_randReset} = 1;  # allow checking if we initialize vars to zero only when needed
 
 compile(
+    verilator_flags2 => ["--x-assign 1"],
     );
 
 execute(

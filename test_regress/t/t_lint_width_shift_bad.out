@@ -1,0 +1,23 @@
+%Warning-WIDTHTRUNC: t/t_lint_width_shift_bad.v:19:15: Operator ASSIGNW expects 3 bits on the Assign RHS, but Assign RHS's SHIFTL generates 4 bits.
+                                                     : ... note: In instance 't'
+   19 |    assign ol3 = i4 << 1;   
+      |               ^
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
+%Warning-WIDTHTRUNC: t/t_lint_width_shift_bad.v:23:15: Operator ASSIGNW expects 3 bits on the Assign RHS, but Assign RHS's SHIFTR generates 4 bits.
+                                                     : ... note: In instance 't'
+   23 |    assign or3 = i4 >> 1;   
+      |               ^
+%Warning-WIDTHEXPAND: t/t_lint_width_shift_bad.v:25:20: Operator SHIFTR expects 5 bits on the LHS, but LHS's VARREF 'i4' generates 4 bits.
+                                                      : ... note: In instance 't'
+   25 |    assign or5 = i4 >> 1;   
+      |                    ^~
+%Warning-WIDTHTRUNC: t/t_lint_width_shift_bad.v:27:15: Operator ASSIGNW expects 3 bits on the Assign RHS, but Assign RHS's SHIFTRS generates 4 bits.
+                                                     : ... note: In instance 't'
+   27 |    assign os3 = i4 >>> 1;   
+      |               ^
+%Warning-WIDTHEXPAND: t/t_lint_width_shift_bad.v:29:20: Operator SHIFTRS expects 5 bits on the LHS, but LHS's VARREF 'i4' generates 4 bits.
+                                                      : ... note: In instance 't'
+   29 |    assign os5 = i4 >>> 1;   
+      |                    ^~~
+%Error: Exiting due to

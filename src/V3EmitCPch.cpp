@@ -57,6 +57,11 @@ public:
         of.puts("#include \"" + symClassName() + ".h\"\n");
         of.puts("#include \"" + topClassName() + ".h\"\n");
 
+        of.puts("\n// Additional include files added using '--compiler-include'\n");
+        for (const string& filename : v3Global.opt.compilerIncludes()) {
+            of.puts("#include \"" + filename + "\"\n");
+        }
+
         of.putsEndGuard();
     }
 

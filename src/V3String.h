@@ -90,9 +90,9 @@ public:
     // Return {a}{dot}{b}, omitting dot if a or b are empty
     static string dot(const string& a, const string& dot, const string& b);
     // Convert string to lowercase (tolower)
-    static string downcase(const string& str);
+    static string downcase(const string& str) VL_PURE;
     // Convert string to upper case (toupper)
-    static string upcase(const string& str);
+    static string upcase(const string& str) VL_PURE;
     // Insert esc just before tgt
     static string quoteAny(const string& str, char tgt, char esc);
     // Replace any \'s with \\  (two consecutive backslashes)

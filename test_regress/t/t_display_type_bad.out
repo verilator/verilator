@@ -1,0 +1,21 @@
+%Error: t/t_display_type_bad.v:10:31: $display-line format of '%d' illegal with string argument
+                                    : ... note: In instance 't'
+                                    : ... Suggest use '%s'
+   10 |       $display("%d %x %f %t", s, s, s, s);
+      |                               ^
+%Error: t/t_display_type_bad.v:10:34: $display-line format of '%x' illegal with string argument
+                                    : ... note: In instance 't'
+                                    : ... Suggest use '%s'
+   10 |       $display("%d %x %f %t", s, s, s, s);
+      |                                  ^
+%Error: t/t_display_type_bad.v:10:37: $display-line format of '%f' illegal with string argument
+                                    : ... note: In instance 't'
+                                    : ... Suggest use '%s'
+   10 |       $display("%d %x %f %t", s, s, s, s);
+      |                                     ^
+%Error: t/t_display_type_bad.v:10:40: $display-line format of '%t' illegal with string argument
+                                    : ... note: In instance 't'
+                                    : ... Suggest use '%s'
+   10 |       $display("%d %x %f %t", s, s, s, s);
+      |                                        ^
+%Error: Exiting due to

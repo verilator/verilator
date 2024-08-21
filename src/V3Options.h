@@ -203,6 +203,7 @@ private:
     V3StringList m_cFlags;      // argument: user CFLAGS
     V3StringList m_ldLibs;      // argument: user LDFLAGS
     V3StringList m_makeFlags;   // argument: user MAKEFLAGS
+    V3StringSet m_compilerIncludes; // argument: user --compiler-include
     V3StringSet m_futures;      // argument: -Wfuture- list
     V3StringSet m_future0s;     // argument: -future list
     V3StringSet m_future1s;     // argument: -future1 list
@@ -249,6 +250,7 @@ private:
     bool m_decoration = true;       // main switch: --decoration
     bool m_decorationNodes = false;  // main switch: --decoration=nodes
     bool m_dpiHdrOnly = false;      // main switch: --dpi-hdr-only
+    bool m_emitAccessors = false;   // main switch: --emit-accessors
     bool m_exe = false;             // main switch: --exe
     bool m_flatten = false;         // main switch: --flatten
     bool m_hierarchical = false;    // main switch: --hierarchical
@@ -260,6 +262,7 @@ private:
     bool m_pedantic = false;        // main switch: --Wpedantic
     bool m_pinsInoutEnables = false;// main switch: --pins-inout-enables
     bool m_pinsScUint = false;      // main switch: --pins-sc-uint
+    bool m_pinsScUintBool = false;  // main switch: --pins-sc-uint-bool
     bool m_pinsScBigUint = false;   // main switch: --pins-sc-biguint
     bool m_pinsUint8 = false;       // main switch: --pins-uint8
     bool m_ppComments = false;      // main switch: --pp-comments
@@ -343,6 +346,7 @@ private:
     string      m_buildDepBin;  // main switch: --build-dep-bin {filename}
     string      m_exeName;      // main switch: -o {name}
     string      m_flags;        // main switch: -f {name}
+    string      m_hierParamsFile; // main switch: --hierarchical-params-file
     string      m_l2Name;       // main switch: --l2name; "" for top-module's name
     string      m_libCreate;    // main switch: --lib-create {lib_name}
     string      m_mainTopName;  // main switch: --main-top-name
@@ -434,6 +438,7 @@ public:
     // METHODS
     void addCppFile(const string& filename);
     void addCFlags(const string& filename);
+    void addCompilerIncludes(const string& filename);
     void addLdLibs(const string& filename);
     void addMakeFlags(const string& filename);
     void addLibraryFile(const string& filename);
@@ -496,6 +501,7 @@ public:
     bool dumpTreeDot() const {
         return m_dumpLevel.count("tree-dot") && m_dumpLevel.at("tree-dot");
     }
+    bool emitAccessors() const { return m_emitAccessors; }
     bool exe() const { return m_exe; }
     bool flatten() const { return m_flatten; }
     bool gmake() const { return m_gmake; }
@@ -514,6 +520,7 @@ public:
     bool pedantic() const { return m_pedantic; }
     bool pinsInoutEnables() const { return m_pinsInoutEnables; }
     bool pinsScUint() const { return m_pinsScUint; }
+    bool pinsScUintBool() const { return m_pinsScUintBool; }
     bool pinsScBigUint() const { return m_pinsScBigUint; }
     bool pinsUint8() const { return m_pinsUint8; }
     bool ppComments() const { return m_ppComments; }
@@ -594,6 +601,7 @@ public:
     int compLimitParens() const { return m_compLimitParens; }
 
     string exeName() const { return m_exeName != "" ? m_exeName : prefix(); }
+    string hierParamFile() const { return m_hierParamsFile; }
     string l2Name() const { return m_l2Name; }
     string libCreate() const { return m_libCreate; }
     string libCreateName(bool shared) {
@@ -626,6 +634,7 @@ public:
 
     const V3StringSet& cppFiles() const { return m_cppFiles; }
     const V3StringList& cFlags() const { return m_cFlags; }
+    const V3StringSet& compilerIncludes() const { return m_compilerIncludes; }
     const V3StringList& ldLibs() const { return m_ldLibs; }
     const V3StringList& makeFlags() const { return m_makeFlags; }
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
@@ -713,6 +722,7 @@ public:
     static string getenvMAKE();
     static string getenvMAKEFLAGS();
     static string getenvPERL();
+    static string getenvPYTHON3();
     static string getenvSYSTEMC();
     static string getenvSYSTEMC_ARCH();
     static string getenvSYSTEMC_INCLUDE();

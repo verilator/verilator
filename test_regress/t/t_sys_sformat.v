@@ -17,6 +17,7 @@ module t;
    reg [48*8:1] str2;
    string str3;
 
+   reg [39:0] instruction_str [1:0];
 
    real         r;
 
@@ -86,6 +87,11 @@ module t;
       $sformat(str3, "%s", str3);  // optimize the call to $sformat(str3, "%s", "foo")
 `ifdef TEST_VERBOSE  $display("str3=%0s", str3);  `endif
       if (str3 != "foo") $stop;
+
+      $sformat(instruction_str[0], "%s", "Hello");
+      $sformat(instruction_str[1], "%s", "World");
+      if (instruction_str[0] != "Hello") $stop;
+      if (instruction_str[1] != "World") $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

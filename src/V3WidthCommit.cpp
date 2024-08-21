@@ -79,6 +79,12 @@ private:
         // Check local/protected status and complain
         bool local = false;
         bool prot = false;
+        if (!defp) {
+            // rand_mode() / constraint_mode() handled in V3Randomize
+            UASSERT_OBJ(nodep->name() == "rand_mode" || nodep->name() == "constraint_mode", nodep,
+                        "Only rand_mode() and constraint_mode() can have no def");
+            return;
+        }
         if (const auto varp = VN_CAST(defp, Var)) {
             local = varp->isHideLocal();
             prot = varp->isHideProtected();

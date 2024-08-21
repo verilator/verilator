@@ -967,6 +967,10 @@ sub _compile_vlt_flags {
     my $checkflags = $self->_checkflags(%param);
     die "%Error: specify threads via 'threads =>' argument, not as a command line option" unless ($checkflags !~ /(^|\s)-?-threads\s/);
     $self->{coverage} = 1 if ($checkflags =~ /-coverage\b/);
+    my $driver_verilator_flags = ' '.join(' ', driver_verilator_flags()).' ';
+    $self->{pins_sc_uint_bool} = 1 if (($checkflags =~ /-pins-sc-uint-bool\b/)
+                            || ($driver_verilator_flags =~ /-pins-sc-uint-bool\b/));
+
     $self->{savable} = 1 if ($checkflags =~ /-savable\b/);
     $self->{sc} = 1 if ($checkflags =~ /-sc\b/);
     $self->{timing} = 1 if ($checkflags =~ / -?-timing\b/ || $checkflags =~ / -?-binary\b/ );
@@ -1315,6 +1319,9 @@ sub execute {
     delete $ENV{SYSTEMC_DISABLE_COPYRIGHT_MESSAGE};
     $ENV{SYSTEMC_DISABLE_COPYRIGHT_MESSAGE} = "DISABLE" if !$self->{verbose};
 
+    $ENV{VERILATOR_SOLVER} = "test.pl-file-needs-have_solver()-call"
+        if !$self->{_have_solver_called};
+
     my $run_env = $param{run_env};
     $run_env .= ' ' if $run_env;
 
@@ -1608,6 +1615,8 @@ sub cmake_version {
 
 our $_have_solver = undef;
 sub have_solver {
+    my $self = (ref $_[0] ? shift : $Self);
+    $self->{_have_solver_called} = 1;
     if (!defined($_have_solver)) {
         my $ok = `(z3 --help || cvc5 --help || cvc4 --help) 2>/dev/null`;
         $ok ||= "";
@@ -1963,8 +1972,13 @@ sub _make_main {
     if ($self->sc) {
         print $fh "extern int sc_main(int argc, char** argv);\n";
         print $fh "int sc_main(int argc, char** argv) {\n";
-        print $fh "    sc_signal<bool> fastclk;\n" if $self->{inputs}{fastclk};
-        print $fh "    sc_signal<bool> clk;\n" if $self->{inputs}{clk};
+        if ($self->{pins_sc_uint_bool}) {
+            print $fh "    sc_signal<sc_dt::sc_uint<1>> fastclk;\n" if $self->{inputs}{fastclk};
+            print $fh "    sc_signal<sc_dt::sc_uint<1>> clk;\n" if $self->{inputs}{clk};
+        } else {
+            print $fh "    sc_signal<bool> fastclk;\n" if $self->{inputs}{fastclk};
+            print $fh "    sc_signal<bool> clk;\n" if $self->{inputs}{clk};
+        }
         print $fh "    sc_set_time_resolution(1, $Self->{sc_time_resolution});\n";
         print $fh "    sc_time sim_time($self->{sim_time}, $Self->{sc_time_resolution});\n";
     } else {
@@ -2059,7 +2073,11 @@ sub _make_main {
             print $fh "            topp->nextTimeSlot() / MAIN_TIME_MULTIPLIER <= cycles) {\n";
             print $fh "            new_time = topp->nextTimeSlot();\n";
             print $fh "        } else {\n";
-            print $fh "            ${set}clk = !${set}clk;\n";
+            if ($self->{pins_sc_uint_bool}) {
+                print $fh "            ${set}clk.write(!${set}clk.read());\n";
+            } else {
+                print $fh "            ${set}clk = !${set}clk;\n";
+            }
             print $fh "        }\n";
             print $fh "        contextp->time(new_time);\n";
         } else {
@@ -2070,11 +2088,19 @@ sub _make_main {
         for (my $i = 0; $i < 5; $i++) {
             my $action = 0;
             if ($self->{inputs}{fastclk}) {
-                print $fh "        ${set}fastclk = !${set}fastclk;\n";
+                if ($self->{pins_sc_uint_bool}) {
+                    print $fh "        ${set}fastclk.write(!${set}fastclk.read());\n";
+                } else {
+                    print $fh "        ${set}fastclk = !${set}fastclk;\n";
+                }
                 $action = 1;
             }
             if ($i == 0 && $self->{inputs}{clk}) {
-                print $fh "        ${set}clk = !${set}clk;\n";
+                if ($self->{pins_sc_uint_bool}) {
+                    print $fh "        ${set}clk.write(!${set}clk.read());\n";
+                } else {
+                    print $fh "        ${set}clk = !${set}clk;\n";
+                }
                 $action = 1;
             }
             if ($self->{savable}) {
@@ -2206,10 +2232,18 @@ sub _make_top_v {
     print $fh "        fastclk = 1;\n" if $self->{inputs}{fastclk};
     print $fh "        clk = 1;\n" if $self->{inputs}{clk};
     print $fh "        while (\$time < $self->{sim_time}) begin\n";
-    for (my $i = 0; $i < 5; $i++) {
-        print $fh "          #1;\n";
-        print $fh "          fastclk = !fastclk;\n" if $self->{inputs}{fastclk};
-        print $fh "          clk = !clk;\n" if $i == 4 && $self->{inputs}{clk};
+    if ($self->{pins_sc_uint_bool}) {
+        for (my $i = 0; $i < 5; $i++) {
+            print $fh "          #1;\n";
+            print $fh "          fastclk.write(!fastclk.read());\n" if $self->{inputs}{fastclk};
+            print $fh "          clk.write(!clk.read());\n" if $i == 4 && $self->{inputs}{clk};
+        }
+    } else {
+        for (my $i = 0; $i < 5; $i++) {
+            print $fh "          #1;\n";
+            print $fh "          fastclk = !fastclk;\n" if $self->{inputs}{fastclk};
+            print $fh "          clk = !clk;\n" if $i == 4 && $self->{inputs}{clk};
+        }
     }
     print $fh "        end\n";
     print $fh "    end\n";

@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: Verilog Test module
+// DESCRIPTION: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2020 by Wilson Snyder.
@@ -38,7 +38,14 @@ typedef struct packed {
    longint     z;
 } StructOuter;
 
-class BaseCls;
+typedef struct {
+   int         i;
+   StructOuter j;
+   Enum        k;
+   longint     z;
+} StructUnpacked;
+
+class BaseCls1;
 endclass
 
 class Inner;
@@ -58,7 +65,7 @@ class Inner;
 
 endclass
 
-class DerivedCls extends BaseCls;
+class DerivedCls1 extends BaseCls1;
    rand Inner i;
    rand int j;
    int k;
@@ -73,13 +80,31 @@ class DerivedCls extends BaseCls;
 
 endclass
 
+class BaseCls2;
+   rand int i;
+
+   function new;
+      i = 0;
+   endfunction
+endclass
+
+class DerivedCls2 extends BaseCls2;
+   rand int j;
+
+   function new;
+      super.new;
+      j = 0;
+   endfunction
+endclass
+
+
 class OtherCls;
    logic[63:0] v;
    rand logic[63:0] w;
    rand logic[47:0] x;
    rand logic[31:0] y;
    rand logic[23:0] z;
-   rand StructOuter str;
+   rand StructUnpacked str;
 
    function new;
       v = 0;
@@ -87,13 +112,15 @@ class OtherCls;
       x = 0;
       y = 0;
       z = 0;
-      str = '{x: 1'b0, y: ONE, z: 64'd0, s: '{a: 32'd0, b: 1'b0, c: ONE}};
+      str.i = 0;
+      str.j = '{x: 1'b0, y: ONE, z: 64'd0, s: '{a: 32'd0, b: 1'b0, c: ONE}};
+      str.k = ONE;
    endfunction
 
 endclass
 
 class ContainsNull;
-   rand BaseCls b;
+   rand BaseCls1 b;
 endclass
 
 class ClsWithInt;
@@ -128,34 +155,37 @@ endclass
 
 module t (/*AUTOARG*/);
 
-   DerivedCls derived;
+   DerivedCls1 derived1;
+   DerivedCls2 derived2;
    OtherCls other;
-   BaseCls base;
+   BaseCls1 base;
    ContainsNull cont;
    DeriveClsWithInt der_int;
    DeriveAndContainClsWithInt der_contain;
    ClsContainUsedOnlyHere cls_cont_used;
 
    initial begin
-      int rand_result;
-      derived = new;
+      derived1 = new;
+      derived2 = new;
       other = new;
       cont = new;
       der_int = new;
       der_contain = new;
-      base = derived;
+      base = derived1;
       cls_cont_used = new;
       for (int i = 0; i < 10; i++) begin
-         rand_result = base.randomize();
-         rand_result = other.randomize();
-         rand_result = cont.randomize();
-         rand_result = der_int.randomize();
-         rand_result = der_contain.randomize();
-         if (!(derived.l inside {ONE, TWO, THREE, FOUR})) $stop;
-         if (!(other.str.s.c inside {ONE, TWO, THREE, FOUR})) $stop;
-         if (!(other.str.y inside {ONE, TWO, THREE, FOUR})) $stop;
-         if (derived.i.e != 0) $stop;
-         if (derived.k != 0) $stop;
+         void'(base.randomize());
+         void'(derived2.randomize());
+         void'(other.randomize());
+         void'(cont.randomize());
+         void'(der_int.randomize());
+         void'(der_contain.randomize());
+         if (!(derived1.l inside {ONE, TWO, THREE, FOUR})) $stop;
+         if (!(other.str.j.s.c inside {ONE, TWO, THREE, FOUR})) $stop;
+         if (!(other.str.j.y inside {ONE, TWO, THREE, FOUR})) $stop;
+         if (!(other.str.k inside {ONE, TWO, THREE, FOUR})) $stop;
+         if (derived1.i.e != 0) $stop;
+         if (derived1.k != 0) $stop;
          if (other.v != 0) $stop;
          if (cont.b != null) $stop;
          if (der_int.b != 0) $stop;
@@ -163,21 +193,25 @@ module t (/*AUTOARG*/);
          if (der_contain.cls1.b != 0) $stop;
          if (der_contain.b != 0) $stop;
       end
-      `check_rand(derived, derived.i.a);
-      `check_rand(derived, derived.i.b);
-      `check_rand(derived, derived.i.c);
-      `check_rand(derived, derived.j);
-      `check_rand(derived, derived.l);
+      `check_rand(derived1, derived1.i.a);
+      `check_rand(derived1, derived1.i.b);
+      `check_rand(derived1, derived1.i.c);
+      `check_rand(derived1, derived1.j);
+      `check_rand(derived1, derived1.l);
+      `check_rand(derived2, derived2.i);
+      `check_rand(derived2, derived2.j);
       `check_rand(other, other.w);
       `check_rand(other, other.x);
       `check_rand(other, other.y);
       `check_rand(other, other.z);
-      `check_rand(other, other.str.x);
-      `check_rand(other, other.str.y);
-      `check_rand(other, other.str.z);
-      `check_rand(other, other.str.s.a);
-      `check_rand(other, other.str.s.b);
-      `check_rand(other, other.str.s.c);
+      `check_rand(other, other.str.i);
+      `check_rand(other, other.str.j.x);
+      `check_rand(other, other.str.j.y);
+      `check_rand(other, other.str.j.z);
+      `check_rand(other, other.str.j.s.a);
+      `check_rand(other, other.str.j.s.b);
+      `check_rand(other, other.str.j.s.c);
+      `check_rand(other, other.str.k);
       `check_rand(der_int, der_int.a);
       `check_rand(der_contain, der_contain.cls1.a);
       `check_rand(der_contain, der_contain.a);

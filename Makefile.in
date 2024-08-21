@@ -447,6 +447,7 @@ PY_PROGRAMS = \
 	nodist/fuzzer/actual_fail \
 	nodist/fuzzer/generate_dictionary \
 	nodist/install_test \
+	nodist/log_changes \
 
 PY_FILES = \
 	$(PY_PROGRAMS) \

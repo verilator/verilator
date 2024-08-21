@@ -6,6 +6,7 @@
 
 `define stop $stop
 `define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkp(gotv,expv_s) do begin string gotv_s; gotv_s = $sformatf("%p", gotv); if ((gotv_s) !== (expv_s)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv_s), (expv_s)); `stop; end end while(0);
 
 class Cls;
    typedef struct {
@@ -50,12 +51,10 @@ module x;
 
       istr.m_i = 12;
       istr.m_s = "str1";
-      s = $sformatf("%p", istr);
-      `checks(s, "'{m_i:'hc, m_s:\"str1\"}");
+      `checkp(istr, "'{m_i:'hc, m_s:\"str1\"}");
 
       istr = '{m_i: '1, m_s: "str2"};
-      s = $sformatf("%p", istr);
-      `checks(s, "'{m_i:'hffff, m_s:\"str2\"}");
+      `checkp(istr, "'{m_i:'hffff, m_s:\"str2\"}");
 
       c = new;
       s = c.get_cstr().m_strg;

@@ -226,6 +226,10 @@ public:
     }
     // Warnings that warn about nasty side effects
     bool dangerous() const VL_MT_SAFE { return (m_e == COMBDLY); }
+    // Insuppressible error codes that should always stop elaboration
+    bool hardError() const VL_MT_SAFE {
+        return (m_e != EC_INFO && m_e < V3ErrorCode::EC_FIRST_WARN);
+    }
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
     bool pretendError() const VL_MT_SAFE {
@@ -351,8 +355,8 @@ public:
     void execErrorExitCb() VL_REQUIRES(m_mutex) {
         if (m_errorExitCb) m_errorExitCb();
     }
-    void errorExitCb(ErrorExitCb cb) VL_REQUIRES(m_mutex) { m_errorExitCb = cb; }
     ErrorExitCb errorExitCb() VL_REQUIRES(m_mutex) { return m_errorExitCb; }
+    void errorExitCb(ErrorExitCb cb) VL_REQUIRES(m_mutex) { m_errorExitCb = cb; }
     bool isError(V3ErrorCode code, bool supp) VL_REQUIRES(m_mutex);
     void vlAbortOrExit() VL_REQUIRES(m_mutex);
     void errorContexted(bool flag) VL_REQUIRES(m_mutex) { m_errorContexted = flag; }
@@ -379,12 +383,12 @@ public:
         }
         m_pretendError[code] = flag;
     }
-    void debugDefault(int level) VL_MT_UNSAFE { m_debugDefault = level; }
     int debugDefault() VL_MT_SAFE { return m_debugDefault; }
-    void errorLimit(int level) VL_REQUIRES(m_mutex) { m_errorLimit = level; }
+    void debugDefault(int level) VL_MT_UNSAFE { m_debugDefault = level; }
     int errorLimit() VL_REQUIRES(m_mutex) { return m_errorLimit; }
-    void warnFatal(bool flag) VL_REQUIRES(m_mutex) { m_warnFatal = flag; }
+    void errorLimit(int level) VL_REQUIRES(m_mutex) { m_errorLimit = level; }
     bool warnFatal() VL_REQUIRES(m_mutex) { return m_warnFatal; }
+    void warnFatal(bool flag) VL_REQUIRES(m_mutex) { m_warnFatal = flag; }
     V3ErrorCode errorCode() VL_REQUIRES(m_mutex) { return m_errorCode; }
     bool errorContexted() VL_REQUIRES(m_mutex) { return m_errorContexted; }
     int warnCount() VL_REQUIRES(m_mutex) { return m_warnCount; }

@@ -361,6 +361,9 @@ void V3Options::checkParameters() {
 
 void V3Options::addCppFile(const string& filename) { m_cppFiles.insert(filename); }
 void V3Options::addCFlags(const string& filename) { m_cFlags.push_back(filename); }
+void V3Options::addCompilerIncludes(const string& filename) {
+    m_compilerIncludes.insert(filename);
+}
 void V3Options::addLdLibs(const string& filename) { m_ldLibs.push_back(filename); }
 void V3Options::addMakeFlags(const string& filename) { m_makeFlags.push_back(filename); }
 void V3Options::addFuture(const string& flag) { m_futures.insert(flag); }
@@ -550,7 +553,7 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
     // Find a filename to read the specified module name,
     // using the incdir and libext's.
     // Return "" if not found.
-    const string filename = V3Os::filenameCleanup(modname);
+    const string filename = V3Os::filenameCleanup(VName::dehash(modname));
     if (!V3Os::filenameIsRel(filename)) {
         // filename is an absolute path, so can find getStdPackagePath()
         string exists = filePathCheckOneDir(filename, "");
@@ -572,7 +575,7 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
 
     // Warn and return not found
     if (errmsg != "") {
-        fl->v3error(errmsg + filename);
+        fl->v3error(errmsg + "'"s + filename + "'"s);
         filePathLookedMsg(fl, filename);
     }
     return "";
@@ -582,8 +585,8 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
     static bool shown_notfound_msg = false;
     if (modname.find("__Vhsh") != string::npos) {
         std::cerr << V3Error::warnMoreStandalone()
-                  << "... Unsupported: Name is longer than 127 characters;"
-                  << " automatic file lookup not supported.\n";
+                  << "... Note: Name is longer than 127 characters; automatic"
+                  << " file lookup may have failed due to OS filename length limits.\n";
         std::cerr << V3Error::warnMoreStandalone()
                   << "... Suggest putting filename with this module/package"
                   << " onto command line instead.\n";
@@ -634,6 +637,8 @@ string V3Options::getenvBuiltins(const string& var) {
         return getenvMAKE();
     } else if (var == "PERL") {
         return getenvPERL();
+    } else if (var == "PYTHON3") {
+        return getenvPYTHON3();
     } else if (var == "SYSTEMC") {
         return getenvSYSTEMC();
     } else if (var == "SYSTEMC_ARCH") {
@@ -661,6 +666,10 @@ string V3Options::getenvMAKEFLAGS() {  //
 
 string V3Options::getenvPERL() {  //
     return V3Os::filenameCleanup(V3Os::getenvStr("PERL", "perl"));
+}
+
+string V3Options::getenvPYTHON3() {  //
+    return V3Os::filenameCleanup(V3Os::getenvStr("PYTHON3", "python3"));
 }
 
 string V3Options::getenvSYSTEMC() {
@@ -698,9 +707,9 @@ string V3Options::getenvSYSTEMC_ARCH() {
         uname(&uts);
         const string sysname = VString::downcase(uts.sysname);  // aka  'uname -s'
         if (VL_UNCOVERABLE(VString::wildmatch(sysname.c_str(), "*solaris*"))) {
-            var = "gccsparcOS5";
+            var = "gccsparcOS5";  // LCOV_EXCL_LINE
         } else if (VL_UNCOVERABLE(VString::wildmatch(sysname.c_str(), "*cygwin*"))) {
-            var = "cygwin";
+            var = "cygwin";  // LCOV_EXCL_LINE
         } else {
             var = "linux";
         }
@@ -855,8 +864,11 @@ void V3Options::notify() VL_MT_DISABLED {
         cmdfl->v3error(
             "--hierarchical must not be set with --hierarchical-child or --hierarchical-block");
     }
-    if (m_hierChild && m_hierBlocks.empty()) {
-        cmdfl->v3error("--hierarchical-block must be set when --hierarchical-child is set");
+    if (m_hierChild) {
+        if (m_hierBlocks.empty()) {
+            cmdfl->v3error("--hierarchical-block must be set when --hierarchical-child is set");
+        }
+        m_main = false;
     }
 
     if (protectIds()) {
@@ -1022,10 +1034,9 @@ void V3Options::parseOpts(FileLine* fl, int argc, char** argv) VL_MT_DISABLED {
     }
 
     // Default prefix to the filename
-    if (prefix() == "" && topModule() != "")
-        m_prefix = string{"V"} + AstNode::encodeName(topModule());
+    if (prefix() == "" && topModule() != "") m_prefix = "V"s + AstNode::encodeName(topModule());
     if (prefix() == "" && vFilesList.size() >= 1)
-        m_prefix = string{"V"} + AstNode::encodeName(V3Os::filenameNonExt(*(vFilesList.begin())));
+        m_prefix = "V"s + AstNode::encodeName(V3Os::filenameNonDirExt(*(vFilesList.begin())));
     if (modPrefix() == "") m_modPrefix = prefix();
 
     // Find files in makedir
@@ -1186,6 +1197,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                         << fl->warnMore() << "... Suggest 'clang', 'gcc', or 'msvc'");
         }
     });
+    DECL_OPTION("-compiler-include", CbVal, callStrSetter(&V3Options::addCompilerIncludes));
     DECL_OPTION("-coverage", CbOnOff, [this](bool flag) { coverage(flag); });
     DECL_OPTION("-converge-limit", Set, &m_convergeLimit);
     DECL_OPTION("-coverage-line", OnOff, &m_coverageLine);
@@ -1236,6 +1248,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         if (flag) m_std = false;
         m_preprocOnly = flag;
     });
+    DECL_OPTION("-emit-accessors", OnOff, &m_emitAccessors);
     DECL_OPTION("-error-limit", CbVal, static_cast<void (*)(int)>(&V3Error::errorLimit));
     DECL_OPTION("-exe", OnOff, &m_exe);
     DECL_OPTION("-expand-limit", CbVal,
@@ -1316,6 +1329,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_hierBlocks.emplace(opt.mangledName(), opt);
     });
     DECL_OPTION("-hierarchical-child", Set, &m_hierChild);
+    DECL_OPTION("-hierarchical-params-file", CbVal,
+                [this](const char* optp) { m_hierParamsFile = optp; });
 
     DECL_OPTION("-I", CbPartialMatch,
                 [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
@@ -1406,6 +1421,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_pinsScUint = flag;
         if (!m_pinsScBigUint) m_pinsBv = 65;
     });
+    DECL_OPTION("-pins-sc-uint-bool", CbOnOff, [this](bool flag) { m_pinsScUintBool = flag; });
     DECL_OPTION("-pins-sc-biguint", CbOnOff, [this](bool flag) {
         m_pinsScBigUint = flag;
         m_pinsBv = 513;
@@ -1950,6 +1966,7 @@ void V3Options::showVersion(bool verbose) {
     cout << "Environment:\n";
     cout << "    MAKE               = " << V3Os::getenvStr("MAKE", "") << "\n";
     cout << "    PERL               = " << V3Os::getenvStr("PERL", "") << "\n";
+    cout << "    PYTHON3            = " << V3Os::getenvStr("PYTHON3", "") << "\n";
     cout << "    SYSTEMC            = " << V3Os::getenvStr("SYSTEMC", "") << "\n";
     cout << "    SYSTEMC_ARCH       = " << V3Os::getenvStr("SYSTEMC_ARCH", "") << "\n";
     cout << "    SYSTEMC_INCLUDE    = " << V3Os::getenvStr("SYSTEMC_INCLUDE", "") << "\n";

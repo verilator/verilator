@@ -148,6 +148,7 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
 protected:
     EmitCLazyDecls m_lazyDecls;  // Visitor for emitting lazy declarations
     bool m_useSelfForThis = false;  // Replace "this" with "vlSelf"
+    bool m_usevlSelfRef = false;  // Use vlSelfRef reference instead of vlSelf pointer
     const AstNodeModule* m_modp = nullptr;  // Current module being emitted
     const AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
     bool m_instantiatesOwnProcess = false;
@@ -192,10 +193,10 @@ public:
     }
     void emitScIQW(AstVar* nodep) {
         UASSERT_OBJ(nodep->isSc(), nodep, "emitting SystemC operator on non-SC variable");
-        puts(nodep->isScBigUint() ? "SB"
-             : nodep->isScUint()  ? "SU"
-             : nodep->isScBv()    ? "SW"
-                                  : (nodep->isScQuad() ? "SQ" : "SI"));
+        puts(nodep->isScBigUint()                           ? "SB"
+             : (nodep->isScUint() || nodep->isScUintBool()) ? "SU"
+             : nodep->isScBv()                              ? "SW"
+                                                            : (nodep->isScQuad() ? "SQ" : "SI"));
     }
     void emitDatap(AstNode* nodep) {
         // When passing to a function with va_args the compiler doesn't
@@ -343,6 +344,21 @@ public:
             }
         }
 
+        if (m_useSelfForThis) {
+            m_usevlSelfRef = true;
+            /*
+             * Using reference to the vlSelf pointer will help the C++
+             * compiler to have dereferenceable hints, which can help to
+             * reduce the need for branch instructions in the generated
+             * code to allow the compiler to generate load store after the
+             * if condition (including short-circuit evaluation)
+             * speculatively and also reduce the data cache pollution when
+             * executing in the wrong path to make verilator-generated code
+             * run faster.
+             */
+            puts("auto &vlSelfRef = std::ref(*vlSelf).get();\n");
+        }
+
         if (nodep->initsp()) {
             putsDecoration(nodep, "// Init\n");
             iterateAndNextConstNull(nodep->initsp());
@@ -358,6 +374,8 @@ public:
             iterateAndNextConstNull(nodep->finalsp());
         }
 
+        m_usevlSelfRef = false;
+
         puts("}\n");
         if (nodep->ifdef() != "") puts("#endif  // " + nodep->ifdef() + "\n");
     }
@@ -367,32 +385,9 @@ public:
         emitVarDecl(nodep);
     }
 
-    void visit(AstCvtDynArrayToPacked* nodep) override {
-        putns(nodep, "VL_DYN_TO_");
-        emitIQW(nodep);
-        const AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
-        putns(elemDTypep, "<");
-        putbs(elemDTypep->cType("", false, false));
-        puts(">(");
-        iterateAndNextConstNull(nodep->fromp());
-        puts(", ");
-        putns(elemDTypep, cvtToStr(elemDTypep->widthMin()));
-        puts(")");
-    }
-
-    void visit(AstCvtUnpackArrayToPacked* nodep) override {
-        putns(nodep, "VL_UNPACK_TO_");
-        emitIQW(nodep);
-        const AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
-        putns(elemDTypep, "<");
-        putbs(elemDTypep->cType("", false, false));
-        puts(",");
-        puts(cvtToStr(nodep->fromp()->dtypep()->arrayUnpackedElements()));
-        puts(">(");
-        iterateAndNextConstNull(nodep->fromp());
-        puts(", ");
-        putns(elemDTypep, cvtToStr(elemDTypep->widthMin()));
-        puts(")");
+    void visit(AstCvtArrayToPacked* nodep) override {
+        AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
+        emitOpName(nodep, nodep->emitC(), nodep->fromp(), elemDTypep, nullptr);
     }
 
     void visit(AstNodeAssign* nodep) override {
@@ -449,29 +444,17 @@ public:
             puts(cvtToStr(nodep->widthMin()) + ",");
             iterateAndNextConstNull(nodep->lhsp());
             puts(", ");
-        } else if (const AstCvtPackedToDynArray* const castp
-                   = VN_CAST(nodep->rhsp(), CvtPackedToDynArray)) {
-            putns(castp, "VL_ASSIGN_DYN_Q<");
-            putbs(castp->dtypep()->subDTypep()->cType("", false, false));
-            puts(">(");
-            iterateAndNextConstNull(nodep->lhsp());
-            puts(", ");
+        } else if (const AstCvtPackedToArray* const castp
+                   = VN_CAST(nodep->rhsp(), CvtPackedToArray)) {
+            putns(castp, "VL_UNPACK_");
+            emitIQW(nodep->dtypep()->subDTypep());
+            emitIQW(castp->fromp());
+            puts("(");
             putns(castp->dtypep(), cvtToStr(castp->dtypep()->subDTypep()->widthMin()));
             puts(", ");
             puts(cvtToStr(castp->fromp()->widthMin()));
             puts(", ");
-            rhs = false;
-            iterateAndNextConstNull(castp->fromp());
-        } else if (const AstCvtPackedToUnpackArray* const castp
-                   = VN_CAST(nodep->rhsp(), CvtPackedToUnpackArray)) {
-            putns(castp, "VL_ASSIGN_UNPACK_Q<");
-            putbs(castp->dtypep()->subDTypep()->cType("", false, false));
-            puts(", ");
-            puts(cvtToStr(castp->dtypep()->arrayUnpackedElements()));
-            puts(">(");
             iterateAndNextConstNull(nodep->lhsp());
-            puts(", ");
-            putns(castp->dtypep(), cvtToStr(castp->dtypep()->subDTypep()->widthMin()));
             puts(", ");
             rhs = false;
             iterateAndNextConstNull(castp->fromp());
@@ -620,7 +603,7 @@ public:
             if (!v3Global.opt.protectIds()) return;
         }
         if (!(nodep->protect() && v3Global.opt.protectIds())) {
-            putsDecoration(nodep, string{"// "} + nodep->name() + at + "\n");
+            putsDecoration(nodep, "// "s + nodep->name() + at + "\n");
         }
         iterateChildrenConst(nodep);
     }
@@ -1280,8 +1263,7 @@ public:
                 return;
             }
         }
-        emitOpName(nodep, "VL_STREAML_%nq%lq%rq(%lw, %P, %li, %ri)", nodep->lhsp(), nodep->rhsp(),
-                   nullptr);
+        emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
     }
     void visit(AstCastDynamic* nodep) override {
         putnbs(nodep, "VL_CAST_DYNAMIC(");
@@ -1402,9 +1384,12 @@ public:
     void visit(AstConsDynArray* nodep) override {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
         if (!nodep->lhsp()) {
-            putns(nodep, "()");
+            putns(nodep, "{}");
         } else {
-            putns(nodep, "::cons(");
+            puts("::cons");
+            puts(nodep->lhsIsValue() ? "V" : "C");
+            if (nodep->rhsp()) puts(nodep->rhsIsValue() ? "V" : "C");
+            puts("(");
             iterateAndNextConstNull(nodep->lhsp());
             if (nodep->rhsp()) {
                 puts(", ");
@@ -1433,9 +1418,12 @@ public:
     void visit(AstConsQueue* nodep) override {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
         if (!nodep->lhsp()) {
-            puts("()");
+            puts("{}");
         } else {
-            puts("::cons(");
+            puts("::cons");
+            puts(nodep->lhsIsValue() ? "V" : "C");
+            if (nodep->rhsp()) puts(nodep->rhsIsValue() ? "V" : "C");
+            puts("(");
             iterateAndNextConstNull(nodep->lhsp());
             if (nodep->rhsp()) {
                 puts(", ");
@@ -1457,15 +1445,13 @@ public:
     }
 
     // Default
-    void visit(AstNode* nodep) override {
-        putns(nodep, string{"\n???? // "} + nodep->prettyTypeName() + "\n");
+    void visit(AstNode* nodep) override {  // LCOV_EXCL_START
+        putns(nodep, "\n???? // "s + nodep->prettyTypeName() + "\n");
         iterateChildrenConst(nodep);
-        // LCOV_EXCL_START
         if (!v3Global.opt.lintOnly()) {  // An internal problem, so suppress
             nodep->v3fatalSrc("Unknown node type reached emitter: " << nodep->prettyTypeName());
         }
-        // LCOV_EXCL_STOP
-    }
+    }  // LCOV_EXCL_STOP
 
     EmitCFunc()
         : m_lazyDecls(*this) {}

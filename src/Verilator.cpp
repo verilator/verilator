@@ -81,6 +81,7 @@
 #include "V3ProtectLib.h"
 #include "V3Randomize.h"
 #include "V3Reloop.h"
+#include "V3Sampled.h"
 #include "V3Sched.h"
 #include "V3Scope.h"
 #include "V3Scoreboard.h"
@@ -437,6 +438,9 @@ static void process() {
             // down to a module and now be identical
             V3ActiveTop::activeTopAll(v3Global.rootp());
 
+            // Remove SAMPLED
+            if (v3Global.hasSampled()) V3Sampled::sampledAll(v3Global.rootp());
+
             if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "PreOrder");
 
             // Schedule the logic
@@ -740,6 +744,7 @@ static void verilate(const string& argString) {
             v3Global.hierPlanp()->writeCommandArgsFiles(true);
             V3EmitCMake::emit();
         }
+        v3Global.hierPlanp()->writeParametersFiles();
     }
     if (v3Global.opt.makeDepend().isTrue()) {
         string filename = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix();

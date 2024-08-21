@@ -670,7 +670,6 @@ public:
     V3Number& opBitsOne(const V3Number& lhs);  // 1->1, 0/X/Z->0
     V3Number& opBitsXZ(const V3Number& lhs);  // 0/1->0, X/Z->1
     V3Number& opBitsZ(const V3Number& lhs);  // Z->1, 0/1/X->0
-    V3Number& opBitsNonZ(const V3Number& lhs);  // Z->0, 0/1/X->1
     //
     V3Number& opAssign(const V3Number& lhs);
     V3Number& opAssignNonXZ(const V3Number& lhs, bool ignoreXZ = true);

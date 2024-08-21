@@ -403,8 +403,12 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
 
         auto it = m_vars.find(name);
         if (it == m_vars.end()) continue;
+        const VlRandomVar& varr = *it->second;
+        if (m_randmode && !varr.randModeIdxNone()) {
+            if (!(m_randmode->at(varr.randModeIdx()))) continue;
+        }
 
-        it->second->set(std::move(value));
+        varr.set(std::move(value));
     }
 
     return true;
@@ -413,6 +417,8 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
 void VlRandomizer::hard(std::string&& constraint) {
     m_constraints.emplace_back(std::move(constraint));
 }
+
+void VlRandomizer::clear() { m_constraints.clear(); }
 
 #ifdef VL_DEBUG
 void VlRandomizer::dump() const {

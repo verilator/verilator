@@ -219,6 +219,7 @@ public:
     bool isCompound() const override { return !packed(); }
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     AstBasicDType* basicp() const override {
+        if (!m_packed) return nullptr;
         return (isFourstate()
                     ? VN_AS(findLogicRangeDType(VNumRange{width() - 1, 0}, width(), numeric()),
                             BasicDType)
@@ -875,13 +876,13 @@ public:
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
-    int widthAlignBytes() const override { return 1; }
-    int widthTotalBytes() const override { return 1; }
+    int widthAlignBytes() const override { return 0; }
+    int widthTotalBytes() const override { return 0; }
+    bool isVirtual() const { return m_virtual; }
     void isVirtual(bool flag) {
         m_virtual = flag;
         if (flag) v3Global.setHasVirtIfaces();
     }
-    bool isVirtual() const { return m_virtual; }
     FileLine* modportFileline() const { return m_modportFileline; }
     string cellName() const { return m_cellName; }
     void cellName(const string& name) { m_cellName = name; }
@@ -956,8 +957,8 @@ public:
     int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
     // METHODS
     void name(const string& name) override { m_name = name; }
-    void tag(const string& text) override { m_tag = text; }
     string tag() const override { return m_tag; }
+    void tag(const string& text) override { m_tag = text; }
     int lsb() const { return m_lsb; }
     void lsb(int lsb) { m_lsb = lsb; }
     bool isCompound() const override {

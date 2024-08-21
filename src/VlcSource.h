@@ -20,6 +20,7 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include <limits>
 #include <map>
 #include <set>
 #include <utility>
@@ -36,7 +37,7 @@ class VlcSourceCount final {
 
     // MEMBERS
     const int m_lineno;  ///< Line number
-    uint64_t m_count = 0;  ///< Count
+    uint64_t m_count = std::numeric_limits<uint64_t>::max();  ///< Count
     bool m_ok = false;  ///< Coverage is above threshold
     PointsSet m_points;  // Points on this line
 
@@ -53,13 +54,11 @@ public:
 
     // METHODS
     void incCount(uint64_t count, bool ok) {
-        if (!m_count) {
-            m_count = count;
+        if (m_count == std::numeric_limits<uint64_t>::max())
             m_ok = ok;
-        } else {
-            m_count = std::min(m_count, count);
-            if (!ok) m_ok = false;
-        }
+        else
+            m_ok = m_ok && ok;
+        m_count = std::min(m_count, count);
     }
     void insertPoint(const VlcPoint* pointp) { m_points.emplace(pointp); }
     PointsSet& points() { return m_points; }
@@ -87,8 +86,8 @@ public:
 
     // ACCESSORS
     const string& name() const { return m_name; }
-    void needed(bool flag) { m_needed = flag; }
     bool needed() const { return m_needed; }
+    void needed(bool flag) { m_needed = flag; }
     LinenoMap& lines() { return m_lines; }
 
     // METHODS

@@ -25,6 +25,9 @@ foreach my $file (sort keys %files) {
     checkPattern($filename, $contents,
                  qr/.*[a-z](?<!:ref):\`[^`]+\n/,
                  "tag:`...` should not be split between lines");
+    checkPattern($filename, $contents,
+                 qr/.*[a-z](?<!:ref):\'/,
+                 "tag:`...' should use backticks instead");
 }
 
 ok(1);

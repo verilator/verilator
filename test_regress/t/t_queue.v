@@ -8,6 +8,7 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checkg(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%g' exp='%g'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkp(gotv,expv_s) do begin string gotv_s; gotv_s = $sformatf("%p", gotv); if ((gotv_s) !== (expv_s)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv_s), (expv_s)); `stop; end end while(0);
 
 module t (/*AUTOARG*/
    // Inputs
@@ -134,8 +135,8 @@ module t (/*AUTOARG*/
          v = q[4]; `checks(v, "");
          //Unsup: `checkh(q[$], "b2");
 
-         v = $sformatf("%p", q); `checks(v, "'{\"f2\", \"f1\", \"b1\", \"b2\"} ");
-         v = $sformatf("%p", p); `checks(v, "'{}");
+         `checkp(q, "'{\"f2\", \"f1\", \"b1\", \"b2\"} ");
+         `checkp(p, "'{}");
 
          //Unsup: q.delete(1);
          //Unsup: v = q[1]; `checks(v, "b1");

@@ -36,9 +36,11 @@ module t
             assign ifs[i].logic_in_intf  = data[i];
         end
     endgenerate
+    // verilator lint_off SIDEEFFECT
     modify_interface m3 (
         .value(data[return_3()]),
         .intf_inst(ifs[return_3()]));
+    // verilator lint_on SIDEEFFECT
 
     modify_interface m4 (
         .value(data[4]),

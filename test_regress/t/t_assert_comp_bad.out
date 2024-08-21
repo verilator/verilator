@@ -32,4 +32,8 @@
                                               : ... note: In instance 't'
    17 |       $fatal(0, "User elaboration-time fatal");
       |       ^~~~~~
+%Warning-USERFATAL: t/t_assert_comp_bad.v:18:7: Elaboration system task message (IEEE 1800-2023 20.11)
+                                              : ... note: In instance 't'
+   18 |       $fatal;
+      |       ^~~~~~
 %Error: Exiting due to

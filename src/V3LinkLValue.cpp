@@ -36,12 +36,16 @@ class LinkLValueVisitor final : public VNVisitor {
     bool m_setContinuously = false;  // Set that var has some continuous assignment
     bool m_setStrengthSpecified = false;  // Set that var has assignment with strength specified.
     bool m_setForcedByCode = false;  // Set that var is the target of an AstAssignForce/AstRelease
+    bool m_setIfRand = false;  // Update VarRefs if var declared as rand
+    bool m_inInitialStatic = false;  // Set if inside AstInitialStatic
+    bool m_inFunc = false;  // Set if inside AstNodeFTask
     VAccess m_setRefLvalue;  // Set VarRefs to lvalues for pin assignments
 
     // VISITs
     // Result handing
     void visit(AstNodeVarRef* nodep) override {
         // VarRef: LValue its reference
+        if (m_setIfRand && !(nodep->varp() && nodep->varp()->isRand())) return;
         if (m_setRefLvalue != VAccess::NOCHANGE) nodep->access(m_setRefLvalue);
         if (nodep->varp() && nodep->access().isWriteOrRW()) {
             if (m_setContinuously) {
@@ -50,15 +54,19 @@ class LinkLValueVisitor final : public VNVisitor {
                 // so it is needed to check only if m_setContinuously is true
                 if (m_setStrengthSpecified) nodep->varp()->hasStrengthAssignment(true);
             }
-            if (const AstClockingItem* itemp = VN_CAST(nodep->varp()->backp(), ClockingItem)) {
+            if (const AstClockingItem* const itemp
+                = VN_CAST(nodep->varp()->backp(), ClockingItem)) {
                 UINFO(5, "ClkOut " << nodep << endl);
                 if (itemp->outputp()) nodep->varp(itemp->outputp()->varp());
             }
             if (m_setForcedByCode) {
                 nodep->varp()->setForcedByCode();
             } else if (!nodep->varp()->isFuncLocal() && nodep->varp()->isReadOnly()) {
-                nodep->v3warn(ASSIGNIN,
-                              "Assigning to input/const variable: " << nodep->prettyNameQ());
+                // This is allowed with IEEE 1800-2009 module input with default value.
+                // the checking now happens in V3Width::visit(AstNodeVarRef*)
+                // If you were to check here, it would fail on module inputs with default value,
+                // because Inputs are isReadOnly()=true, and we don't yet have visibility into
+                // it being an Initial style procedure.
             }
         }
         iterateChildren(nodep);
@@ -95,6 +103,35 @@ class LinkLValueVisitor final : public VNVisitor {
             m_setStrengthSpecified = false;
             iterateAndNextNull(nodep->rhsp());
         }
+
+        if (m_inInitialStatic && m_inFunc) {
+            const bool rhsHasIO = nodep->rhsp()->exists([](const AstNodeVarRef* const refp) {
+                // Exclude module I/O referenced from a function/task.
+                return refp->varp() && refp->varp()->isIO()
+                       && refp->varp()->lifetime() != VLifetime::NONE;
+            });
+            if (rhsHasIO) {
+                nodep->rhsp()->v3warn(E_UNSUPPORTED,
+                                      "Static variable initializer\n"
+                                          << nodep->rhsp()->warnMore()
+                                          << "is dependent on function/task I/O variable");
+            } else {
+                const bool rhsHasAutomatic
+                    = nodep->rhsp()->exists([](const AstNodeVarRef* const refp) {
+                          return refp->varp() && refp->varp()->lifetime() == VLifetime::AUTOMATIC;
+                      });
+                if (rhsHasAutomatic) {
+                    nodep->rhsp()->v3error("Static variable initializer\n"
+                                           << nodep->rhsp()->warnMore()
+                                           << "is dependent on automatic variable");
+                }
+            }
+        }
+    }
+    void visit(AstInitialStatic* nodep) override {
+        VL_RESTORER(m_inInitialStatic);
+        m_inInitialStatic = true;
+        iterateChildren(nodep);
     }
     void visit(AstRelease* nodep) override {
         VL_RESTORER(m_setRefLvalue);
@@ -285,6 +322,13 @@ class LinkLValueVisitor final : public VNVisitor {
     void visit(AstMemberSel* nodep) override {
         if (m_setRefLvalue != VAccess::NOCHANGE) {
             nodep->access(m_setRefLvalue);
+            if (nodep->varp() && nodep->access().isWriteOrRW()) {
+                if (const AstClockingItem* const itemp
+                    = VN_CAST(nodep->varp()->backp(), ClockingItem)) {
+                    UINFO(5, "ClkOut " << nodep << endl);
+                    if (itemp->outputp()) nodep->varp(itemp->outputp()->varp());
+                }
+            }
         } else {
             // It is the only place where the access is set to member select nodes.
             // If it doesn't have to be set to WRITE, it means that it is READ.
@@ -312,6 +356,16 @@ class LinkLValueVisitor final : public VNVisitor {
                 iterate(pinp);
             }
         }
+    }
+    void visit(AstConstraint* nodep) override {
+        VL_RESTORER(m_setIfRand);
+        m_setIfRand = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_inFunc);
+        m_inFunc = true;
+        iterateChildren(nodep);
     }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }

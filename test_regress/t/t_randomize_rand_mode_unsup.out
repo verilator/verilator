@@ -1,0 +1,26 @@
+%Error-UNSUPPORTED: t/t_randomize_rand_mode_unsup.v:17:22: Unsupported: 'rand_mode()' on dynamic array element
+                                                         : ... note: In instance 't'
+   17 |       p.m_dyn_arr[0].rand_mode(0);
+      |                      ^~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_randomize_rand_mode_unsup.v:18:22: Unsupported: 'rand_mode()' on unpacked array element
+                                                         : ... note: In instance 't'
+   18 |       p.m_unp_arr[0].rand_mode(0);
+      |                      ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_randomize_rand_mode_unsup.v:19:20: Unsupported: 'rand_mode()' on unpacked struct element
+                                                         : ... note: In instance 't'
+   19 |       p.m_struct.y.rand_mode(0);
+      |                    ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_randomize_rand_mode_unsup.v:20:18: Unsupported: 'rand_mode()' on static variable
+                                                         : ... note: In instance 't'
+   20 |       p.m_static.rand_mode(0);
+      |                  ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_randomize_rand_mode_unsup.v:21:57: Unsupported: 'rand_mode()' on static variable
+                                                         : ... note: In instance 't'
+   21 |       $display("p.m_static.rand_mode()=%0d", p.m_static.rand_mode());
+      |                                                         ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_randomize_rand_mode_unsup.v:22:9: Unsupported: 'rand_mode()' on static variable: 'm_static'
+                                                        : ... note: In instance 't'
+   22 |       p.rand_mode(0);
+      |         ^~~~~~~~~
+%Error: Exiting due to

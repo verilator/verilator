@@ -958,8 +958,8 @@ public:
     }
     static void dumpCbs() VL_MT_UNSAFE_ONE;
     static VerilatedVpiError* error_info() VL_MT_UNSAFE_ONE;  // getter for vpi error info
-    static void evalNeeded(bool evalNeeded) { s().m_evalNeeded = evalNeeded; }
     static bool evalNeeded() { return s().m_evalNeeded; }
+    static void evalNeeded(bool evalNeeded) { s().m_evalNeeded = evalNeeded; }
     static void inertialDelay(const VerilatedVpioVar* vop, p_vpi_value valuep) {
         s().m_inertialPuts.emplace_back(vop, valuep);
     }

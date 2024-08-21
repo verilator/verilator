@@ -259,9 +259,11 @@ How do I view waveforms (aka dumps or traces)?
 """"""""""""""""""""""""""""""""""""""""""""""
 
 Verilator creates standard VCD (Value Change Dump) and FST files.  VCD
-files are viewable with the open-source GTKWave (recommended), or Dinotrace
-(legacy) programs, or any of the many closed-source offerings; FST is
-supported only by GTKWave.
+files are viewable with the open-source
+`GTKWave <http://gtkwave.sourceforge.net/>`_,
+`Surfer <https://surfer-project.org/>`_, Dinotrace (legacy), or any of the
+many closed-source viewer offerings; FST is supported only by GTKWave and
+Surfer.
 
 
 How do I speed up writing large waveform (trace) files?

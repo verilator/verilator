@@ -8,6 +8,7 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checkg(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%g' exp='%g'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkp(gotv,expv_s) do begin string gotv_s; gotv_s = $sformatf("%p", gotv); if ((gotv_s) !== (expv_s)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv_s), (expv_s)); `stop; end end while(0);
 
 module t (/*AUTOARG*/
    // Inputs
@@ -44,7 +45,7 @@ module t (/*AUTOARG*/
          i = a.last(k); `checkh(i, 1); `checks(k, 4'd3);
          i = a.prev(k); `checkh(i, 1); `checks(k, 4'd2);
          i = a.prev(k); `checkh(i, 0);
-         v = $sformatf("%p", a); `checks(v, "'{'h2:\"bared\", 'h3:\"fooed\"} ");
+         `checkp(a, "'{'h2:\"bared\", 'h3:\"fooed\"} ");
 
          a.first(k); `checks(k, 4'd2);
          a.next(k); `checks(k, 4'd3);
@@ -79,8 +80,8 @@ module t (/*AUTOARG*/
          i = a.last(k); `checkh(i, 1); `checks(k, "foo");
          i = a.prev(k); `checkh(i, 1); `checks(k, "bar");
          i = a.prev(k); `checkh(i, 0);
-         v = $sformatf("%p", a["foo"]); `checks(v, "\"fooed\"");
-         v = $sformatf("%p", a); `checks(v, "'{\"bar\":\"bared\", \"foo\":\"fooed\"} ");
+         `checkp(a["foo"], "\"fooed\"");
+         `checkp(a, "'{\"bar\":\"bared\", \"foo\":\"fooed\"} ");
 
          a.delete("bar");
          i = a.size(); `checkh(i, 1);

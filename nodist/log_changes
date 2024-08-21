@@ -1,0 +1,120 @@
+#!/usr/bin/env python3
+# pylint: disable=C0114,C0116,C0209,R0912,R0915
+######################################################################
+
+import argparse
+import os
+import re
+#from pprint import pprint,pformat
+
+#######################################################################
+
+
+def message_section(msg):
+    """Return sorting-section number for given commit message"""
+    if re.match(r'^Support', msg):
+        return 10
+    if re.match(r'^Add', msg):
+        return 20
+    if re.match(r'^Improve', msg):
+        return 30
+    if re.match(r'^Fix', msg):
+        return 40
+    if re.match(r'^(Internals|CI|Tests)', msg):
+        return -1
+    return 0
+
+
+def process():
+    cmd = "git log"
+
+    msgs = {}
+    with os.popen(cmd) as fh:
+        author = ""
+        lineno = 0
+        for line in fh:
+            lineno += 1
+            line = line.rstrip()
+            if re.match(r'^Date', line):
+                continue
+            if re.match(r'^commit', line):
+                continue
+            if re.search(r'Commentary: Changes update', line):
+                break
+
+            am = re.match(r'^Author: (.*) <(.*)>', line)
+            dm = re.match(r'^  +(.*)', line)
+
+            if am:
+                email = am.group(2)
+                author = am.group(1)
+                if re.search(r'antmicro', email):
+                    author += ", Antmicro Ltd."
+                if re.search(r'github action', author):
+                    author = ""
+                    continue
+
+            elif author != "" and dm:
+                msg = dm.group(1)
+                if not re.search(r'\.$', msg):
+                    msg += '.'
+                msg += ' [' + author + ']'
+
+                mid = re.search(r'\(#([0-9][0-9][0-9][0-9]+)', line)
+                if mid:
+                    bug_id = mid.group(1)
+                else:
+                    bug_id = " %d" % lineno
+
+                section = message_section(msg)
+                if section >= 0:
+                    key = "%06s_%06s_%06d" % (section, bug_id, lineno)
+                    msgs[key] = '* ' + msg
+                    # print("i [%s]  %s" % (key, msg))
+
+                author = ""
+
+    if not msgs:
+        print("No Changes need to be inserted.")
+        return
+
+    print()
+    print("Insertion-sort the following lines into 'Changes' file:")
+    print()
+
+    dedup = {}
+    for key in sorted(msgs.keys()):
+        if msgs[key] not in dedup:
+            dedup[msgs[key]] = True
+            print(msgs[key])
+
+    print()
+    print("You may now want to clean up spelling, and commit:")
+    print("  (cd docs ; make spelling)")
+    print("  git ci -am 'Commentary: Changes update'")
+    print()
+
+
+#######################################################################
+
+parser = argparse.ArgumentParser(
+    allow_abbrev=False,
+    prog="log_changes",
+    description="Create example entries for 'Changes' from parsing 'git log'",
+    epilog=
+    """Copyright 2019-2024 by Wilson Snyder. This program is free software; you
+can redistribute it and/or modify it under the terms of either the GNU
+Lesser General Public License Version 3 or the Perl Artistic License
+Version 2.0.
+
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
+
+parser.add_argument('--debug', action='store_true', help='enable debug')
+Args = parser.parse_args()
+
+process()
+
+######################################################################
+# Local Variables:
+# compile-command: "cd .. ; nodist/log_changes"
+# End:

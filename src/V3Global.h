@@ -114,6 +114,7 @@ class V3Global final {
     bool m_dpi = false;  // Need __Dpi include files
     bool m_hasEvents = false;  // Design uses SystemVerilog named events
     bool m_hasClasses = false;  // Design uses SystemVerilog classes
+    bool m_hasSampled = false;  // Design uses SAMPLED expresions
     bool m_hasVirtIfaces = false;  // Design uses virtual interfaces
     bool m_usesProbDist = false;  // Uses $dist_*
     bool m_usesStdPackage = false;  // Design uses the std package
@@ -168,6 +169,8 @@ public:
     void setHasEvents() { m_hasEvents = true; }
     bool hasClasses() const { return m_hasClasses; }
     void setHasClasses() { m_hasClasses = true; }
+    bool hasSampled() const { return m_hasSampled; }
+    void setHasSampled() { m_hasSampled = true; }
     bool hasVirtIfaces() const { return m_hasVirtIfaces; }
     void setHasVirtIfaces() { m_hasVirtIfaces = true; }
     bool usesProbDist() const { return m_usesProbDist; }
@@ -185,10 +188,10 @@ public:
         UASSERT(!m_hierPlanp, "call once");
         m_hierPlanp = plan;
     }
-    void useParallelBuild(bool flag) { m_useParallelBuild = flag; }
     bool useParallelBuild() const { return m_useParallelBuild; }
-    void useRandomizeMethods(bool flag) { m_useRandomizeMethods = flag; }
+    void useParallelBuild(bool flag) { m_useParallelBuild = flag; }
     bool useRandomizeMethods() const { return m_useRandomizeMethods; }
+    void useRandomizeMethods(bool flag) { m_useRandomizeMethods = flag; }
     void saveJsonPtrFieldName(const std::string& fieldName);
     void ptrNamesDumpJson(std::ostream& os);
     void idPtrMapDumpJson(std::ostream& os);

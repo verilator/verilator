@@ -322,6 +322,28 @@ AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* l
     return new AstLogAnd{fileline(), ap, bp};
 }
 
+void AstConsDynArray::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (lhsIsValue()) str << " [LVAL]";
+    if (rhsIsValue()) str << " [RVAL]";
+}
+void AstConsDynArray::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, lhsIsValue);
+    dumpJsonBoolFunc(str, rhsIsValue);
+    dumpJsonGen(str);
+}
+
+void AstConsQueue::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (lhsIsValue()) str << " [LVAL]";
+    if (rhsIsValue()) str << " [RVAL]";
+}
+void AstConsQueue::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, lhsIsValue);
+    dumpJsonBoolFunc(str, rhsIsValue);
+    dumpJsonGen(str);
+}
+
 AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
     bool success = false;
     if (literal[0] == '"') {
@@ -352,6 +374,8 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
     return nullptr;
 }
 
+string AstConstraintRef::name() const { return constrp()->name(); }
+
 AstNetlist::AstNetlist()
     : ASTGEN_SUPER_Netlist(new FileLine{FileLine::builtInFilename()})
     , m_typeTablep{new AstTypeTable{fileline()}}
@@ -379,6 +403,9 @@ bool AstVar::isScBv() const {
 }
 bool AstVar::isScUint() const {
     return ((isSc() && v3Global.opt.pinsScUint() && width() >= 2 && width() <= 64) && !isScBv());
+}
+bool AstVar::isScUintBool() const {
+    return (isSc() && v3Global.opt.pinsScUintBool() && width() == 1);
 }
 bool AstVar::isScBigUint() const {
     return ((isSc() && v3Global.opt.pinsScBigUint() && width() >= 65 && width() <= 512)
@@ -669,14 +696,13 @@ string AstVar::dpiTmpVarType(const string& varName) const {
 
 string AstVar::scType() const {
     if (isScBigUint()) {
-        return (string{"sc_dt::sc_biguint<"} + cvtToStr(widthMin())
+        return ("sc_dt::sc_biguint<"s + cvtToStr(widthMin())
                 + "> ");  // Keep the space so don't get >>
-    } else if (isScUint()) {
-        return (string{"sc_dt::sc_uint<"} + cvtToStr(widthMin())
+    } else if (isScUint() || isScUintBool()) {
+        return ("sc_dt::sc_uint<"s + cvtToStr(widthMin())
                 + "> ");  // Keep the space so don't get >>
     } else if (isScBv()) {
-        return (string{"sc_dt::sc_bv<"} + cvtToStr(widthMin())
-                + "> ");  // Keep the space so don't get >>
+        return ("sc_dt::sc_bv<"s + cvtToStr(widthMin()) + "> ");  // Keep the space so don't get >>
     } else if (widthMin() == 1) {
         return "bool";
     } else if (widthMin() <= VL_IDATASIZE) {
@@ -977,6 +1003,16 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
 const char* AstJumpBlock::broken() const {
     BROKEN_RTN(!labelp()->brokeExistsBelow());
     return nullptr;
+}
+bool AstJumpBlock::isPure() {
+    if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
+    return m_purity.get();
+}
+bool AstJumpBlock::getPurityRecurse() const {
+    for (AstNode* stmtp = this->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        if (!stmtp->isPure()) return false;
+    }
+    return true;
 }
 
 string AstScope::nameDotless() const {
@@ -1461,23 +1497,20 @@ void AstAlways::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "keyword", keyword().ascii());
     dumpJsonGen(str);
 }
-AstAssertCtl::AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr* levelp,
-                           AstNodeExpr* itemsp)
+AstAssertCtl::AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr*, AstNodeExpr*)
     : ASTGEN_SUPER_AssertCtl(fl)
     , m_ctlType{ctlType} {
     controlTypep(new AstConst{fl, ctlType});
-    if (!levelp) levelp = new AstConst{fl, 0};
-    this->levelp(levelp);
-    addItemsp(itemsp);
 }
-AstAssertCtl::AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr*, AstNodeExpr*,
-                           AstNodeExpr* levelp, AstNodeExpr* itemsp)
+AstAssertCtl::AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr* assertTypesp,
+                           AstNodeExpr* directiveTypep, AstNodeExpr*, AstNodeExpr*)
     : ASTGEN_SUPER_AssertCtl(fl)
-    , m_ctlType{VAssertCtlType::_TO_BE_EVALUATED} {
+    , m_ctlType{VAssertCtlType::_TO_BE_EVALUATED}
+    , m_assertTypes{VAssertType::INTERNAL}
+    , m_directiveTypes{VAssertDirectiveType::INTERNAL} {
     this->controlTypep(controlTypep);
-    if (!levelp) levelp = new AstConst{fl, 0};
-    this->levelp(levelp);
-    addItemsp(itemsp);
+    this->assertTypesp(assertTypesp);
+    this->directiveTypesp(directiveTypep);
 }
 void AstAssertCtl::dump(std::ostream& str) const {
     this->AstNode::dump(str);
@@ -1636,10 +1669,10 @@ string AstClassRefDType::prettyDTypeName(bool) const { return "class{}"s + prett
 string AstClassRefDType::name() const { return classp() ? classp()->name() : "<unlinked>"; }
 void AstNodeCoverOrAssert::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
-    if (immediate()) str << " [IMMEDIATE]";
+    str << " ["s + this->type().ascii() + "]";
 }
 void AstNodeCoverOrAssert::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, immediate);
+    dumpJsonStr(str, "type", "["s + this->type().ascii() + "]");
     dumpJsonGen(str);
 }
 void AstClocking::dump(std::ostream& str) const {
@@ -1826,6 +1859,13 @@ AstNodeUOrStructDType* AstMemberDType::getChildStructp() const {
     return VN_CAST(subdtp->skipRefp(), NodeUOrStructDType);  // Maybe nullptr
 }
 
+AstMemberSel::AstMemberSel(FileLine* fl, AstNodeExpr* fromp, AstVar* varp)
+    : ASTGEN_SUPER_MemberSel(fl)
+    , m_name{varp->name()} {
+    this->fromp(fromp);
+    this->varp(varp);
+    dtypep(varp->dtypep());
+}
 bool AstMemberSel::same(const AstNode* samep) const {
     const AstMemberSel* const sp = VN_DBG_AS(samep, MemberSel);
     return sp != nullptr && access() == sp->access() && fromp()->isSame(sp->fromp())
@@ -2357,11 +2397,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isInternal()) str << " [INTERNAL]";
     if (isLatched()) str << " [LATCHED]";
     if (isUsedLoopIdx()) str << " [LOOP]";
-    if (isRandC()) {
-        str << " [RANDC]";
-    } else if (isRand()) {
-        str << " [RAND]";
-    }
+    if (rand().isRandomizable()) str << rand();
     if (noReset()) str << " [!RST]";
     if (attrIsolateAssign()) str << " [aISO]";
     if (attrFileDescr()) str << " [aFD]";
@@ -2801,6 +2837,7 @@ void AstCMethodHard::setPurity() {
                                                           {"reverse", false},
                                                           {"rsort", false},
                                                           {"set", false},
+                                                          {"set_randmode", false},
                                                           {"shuffle", false},
                                                           {"size", true},
                                                           {"slice", true},

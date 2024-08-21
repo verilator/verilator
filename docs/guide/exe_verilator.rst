@@ -222,6 +222,13 @@ Summary:
      expressions into sub-expressions to avoid error C1009, and breaking
      deep blocks into functions to avoid error C1061.
 
+.. option:: --compiler-include <header-path>
+
+   Specifies additional headers to be included in the final PCH header.
+   It is required to add them to this header, due to compilers'
+   limitation that allow only one precompiled header per compilation.
+   Use this instead of ::vlopt:`-CFLAGS` with `-include <header-path>`.
+
 .. option:: --converge-limit <loops>
 
    Rarely needed.  Specifies the maximum number of runtime iterations
@@ -476,6 +483,12 @@ Summary:
    See also :vlopt:`--dump-defines`, :vlopt:`-P`, and
    :vlopt:`--pp-comments` options.
 
+.. option:: --emit-accessors
+
+   Emit getter and setter methods for each top-level signal in the
+   model top class. Signals are still available as public members,
+   but with the `__Vm_sig_` prefix.
+
 .. option:: --error-limit <value>
 
    After this number of errors are encountered during Verilator run, exit.
@@ -708,6 +721,13 @@ Summary:
 
    Enable hierarchical Verilation; otherwise, the
    :option:`/*verilator&32;hier_block*/` metacomment is ignored.  See
+   :ref:`Hierarchical Verilation`.
+
+.. option:: --hierarchical-params-file <filename>
+
+   Internal flag inserted used during :vlopt:`--hierarchical`; specifies
+   name of hierarchical parameters file for deparametrized modules with
+   :option:`/*verilator&32;hier_block*/` metacomment. See
    :ref:`Hierarchical Verilation`.
 
 .. option:: -I<dir>
@@ -1003,6 +1023,10 @@ Summary:
    sc_uint between 2 and 64.  When combined with the
    :vlopt:`--pins-sc-biguint` combination, it results in sc_uint being used
    between 2 and 64 and sc_biguint being used between 65 and 512.
+
+.. option:: --pins-sc-uint-bool
+
+   Specifies SystemC inputs/outputs one bit wide should use sc_uint<1>.
 
 .. option:: --pins-sc-biguint
 
@@ -1978,6 +2002,13 @@ The grammar of configuration commands is as follows:
    Specifies that the module is an unit of hierarchical Verilation.  Note
    that the setting is ignored unless the :vlopt:`--hierarchical` option is
    specified.  See :ref:`Hierarchical Verilation`.
+
+.. option:: hier_params -module "<modulename>"
+
+   Specifies that the module contains parameters a :vlopt:`--hierarchical` block. This option
+   is used internally to specify parameters for deparametrized hier block instances.
+   This option should not be used directly.
+   See :ref:`Hierarchical Verilation`.
 
 .. option:: inline -module "<modulename>"
 

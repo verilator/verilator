@@ -108,7 +108,11 @@ primitive udp_mux2 (z, a, b, sel);
       1   ?  0 : 1 ;
       0   ?  0 : 0 ;
       1   1  x : 1 ;
-      0   0  x : 0 ;
+      // Next blank line is intentional for parser
+
+      // Next \ at EOL is intentional for parser
+      0   0  x \
+               : 0 ;
    endtable
 endprimitive
 

@@ -20,7 +20,7 @@ run(
     verilator_run => 1,
     );
 
-foreach my $var (qw(MAKE PERL SYSTEMC SYSTEMC_ARCH SYSTEMC_LIBDIR VERILATOR_ROOT)) {
+foreach my $var (qw(MAKE PERL PYTHON3 SYSTEMC SYSTEMC_ARCH SYSTEMC_LIBDIR VERILATOR_ROOT)) {
     run(
         cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator --getenv ${var}"],
         logfile => "$Self->{obj_dir}/simx.log",

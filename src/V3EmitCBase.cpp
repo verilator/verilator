@@ -36,6 +36,42 @@ EmitCParentModule::EmitCParentModule() {
 }
 
 //######################################################################
+// EmitCBase implementation
+
+string EmitCBase::prefixNameProtect(const AstNode* nodep) VL_MT_STABLE {
+    const string prefix = v3Global.opt.modPrefix() + "_" + VIdProtect::protect(nodep->name());
+    // If all-uppercase prefix conflicts with a previous usage of the
+    // prefix with different capitalization, rename to avoid conflict.
+    // This is to support OSes where filename compares are non-case significant.
+    // STATIC:
+    static V3Mutex s_mutex;
+    const V3LockGuard lock{s_mutex};  // Otherwise map access is unsafe
+    static std::map<std::string, std::string> s_memoized;
+    static std::map<std::string, std::string> s_ucToPrefix;
+    // Memoize results
+    const auto mit = s_memoized.find(prefix);
+    if (mit != s_memoized.end()) return mit->second;
+    //
+    // Check capitalization
+    const string prefixUpper = VString::upcase(prefix);
+    string result;
+    {
+        const auto it = s_ucToPrefix.find(prefixUpper);
+        if (it == s_ucToPrefix.end()) {
+            s_ucToPrefix.emplace(prefixUpper, prefix);
+            result = prefix;
+        } else if (it->second == prefix) {
+            result = prefix;  // Same capitialization as last time
+        } else {
+            VHashSha256 hash{prefix};
+            result = prefix + "__Vphsh" + hash.digestSymbol();
+        }
+    }
+    s_memoized.emplace(prefix, result);
+    return result;
+}
+
+//######################################################################
 // EmitCBaseVisitor implementation
 
 string EmitCBaseVisitorConst::funcNameProtect(const AstCFunc* nodep, const AstNodeModule* modp) {
@@ -211,11 +247,11 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
         if (nodep->isWide()) puts("," + cvtToStr(nodep->widthWords()));
         puts(");\n");
     } else {
-        // strings and other fundamental c types
+        // Strings and other fundamental C types
         if (nodep->isFuncLocal() && nodep->isString()) {
             const string name = nodep->name();
             const string suffix = V3Task::dpiTemporaryVarSuffix();
-            // string temporary variable for DPI-C needs to be static because c_str() will be
+            // String temporary variable for DPI-C needs to be static because c_str() will be
             // passed to C code and the lifetime of the variable must be long enough. See also
             // Issue 2622.
             const bool beStatic = name.size() >= suffix.size()
@@ -225,6 +261,15 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
         putns(nodep, nodep->vlArgType(true, false, false, "", asRef));
         puts(";\n");
     }
+}
+
+void EmitCBaseVisitorConst::emitVarAccessors(const AstVar* nodep) {
+    assert(nodep->name().rfind("__Vm_sig_") == 0 && nodep->isIO());
+    const string privateName = nodep->name();
+    const string publicName = nodep->name().substr(strlen("__Vm_sig_"));
+
+    puts("decltype("s + privateName + ") "s + publicName + "() {return "s + privateName + ";}\n");
+    puts("void "s + publicName + "(decltype(" + privateName + ") v) {"s + privateName + "=v;}\n");
 }
 
 void EmitCBaseVisitorConst::emitModCUse(const AstNodeModule* modp, VUseType useType) {

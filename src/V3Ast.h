@@ -330,6 +330,7 @@ public:
         ILLEGAL,
         COVERAGE_BLOCK_OFF,
         HIER_BLOCK,
+        HIER_PARAMS,
         INLINE_MODULE,
         NO_INLINE_MODULE,
         NO_INLINE_TASK,
@@ -787,6 +788,7 @@ public:
     bool isAny() const { return m_e != NONE; }
     // Looks like inout - "ish" because not identical to being an INOUT
     bool isInoutish() const { return m_e == INOUT; }
+    bool isInput() const { return m_e == INPUT; }
     bool isNonOutput() const {
         return m_e == INPUT || m_e == INOUT || m_e == REF || m_e == CONSTREF;
     }
@@ -1154,6 +1156,101 @@ constexpr bool operator==(VAssertCtlType::en lhs, const VAssertCtlType& rhs) {
 
 // ######################################################################
 
+class VAssertDirectiveType final {
+public:
+    // IEEE 1800-2023 Table 20-7
+    enum en : uint8_t {
+        INTERNAL = 0,  // Non IEEE type, for directives to be evaluated from expression.
+        ASSERT = (1 << 0),
+        COVER = (1 << 1),
+        ASSUME = (1 << 2),
+        VIOLATION_CASE = (1 << 3),  // Non IEEE type, for case constructs
+                                    // with unique, unique0 or priority pragmas.
+        VIOLATION_IF = (1 << 4),  // Non IEEE type, for if constructs
+                                  // with unique, unique0 or priority pragmas.
+        INTRINSIC = (1 << 5),  // Non IEEE type, for intrinsic assertions.
+        RESTRICT = (1 << 6),  // Non IEEE type, for ignored restrict assertions.
+    };
+    enum en m_e;
+    VAssertDirectiveType()
+        : m_e{ASSERT} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VAssertDirectiveType(en _e)
+        : m_e{_e} {}
+    explicit VAssertDirectiveType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    const char* ascii() const {
+        static const char* const names[]
+            = {"INTERNAL",       "ASSERT",       "COVER",     "ASSUME",
+               "VIOLATION_CASE", "VIOLATION_IF", "INTRINSIC", "RESTRICT"};
+        return names[m_e];
+    }
+    constexpr operator en() const { return m_e; }
+};
+constexpr bool operator==(const VAssertDirectiveType& lhs, const VAssertDirectiveType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VAssertDirectiveType& lhs, VAssertDirectiveType::en rhs) {
+    return lhs.m_e == rhs;
+}
+constexpr bool operator==(VAssertDirectiveType::en lhs, const VAssertDirectiveType& rhs) {
+    return lhs == rhs.m_e;
+}
+constexpr VAssertDirectiveType::en operator|(VAssertDirectiveType::en lhs,
+                                             VAssertDirectiveType::en rhs) {
+    return VAssertDirectiveType::en(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
+}
+
+// ######################################################################
+
+class VAssertType final {
+public:
+    // IEEE 1800-2023 Table 20-6
+    enum en : uint8_t {
+        INTERNAL = 0,  // Non IEEE type, for assertions that should not be controlled.
+        CONCURRENT = (1 << 0),
+        SIMPLE_IMMEDIATE = (1 << 1),
+        OBSERVED_DEFERRED_IMMEDIATE = (1 << 2),
+        FINAL_DEFERRED_IMMEDIATE = (1 << 3),
+        EXPECT = (1 << 4),
+        UNIQUE = (1 << 5),
+        UNIQUE0 = (1 << 6),
+        PRIORITY = (1 << 7),
+    };
+    enum en m_e;
+    VAssertType()
+        : m_e{INTERNAL} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VAssertType(en _e)
+        : m_e{_e} {}
+    explicit VAssertType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    bool containsAny(VAssertType other) const { return m_e & other.m_e; }
+    const char* ascii() const {
+        static const char* const names[] = {"INTERNAL",
+                                            "CONCURRENT",
+                                            "SIMPLE_IMMEDIATE",
+                                            "OBSERVED_DEFERRED_IMMEDIATE",
+                                            "FINAL_DEFERRED_IMMEDIATE",
+                                            "EXPECT",
+                                            "UNIQUE",
+                                            "UNIQUE0",
+                                            "PRIORITY"};
+        return names[m_e];
+    }
+    constexpr operator en() const { return m_e; }
+};
+constexpr bool operator==(const VAssertType& lhs, const VAssertType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VAssertType& lhs, VAssertType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VAssertType::en lhs, const VAssertType& rhs) { return lhs == rhs.m_e; }
+constexpr VAssertType::en operator|(VAssertType::en lhs, VAssertType::en rhs) {
+    return VAssertType::en(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
+}
+
+// ######################################################################
+
 class VCaseType final {
 public:
     enum en : uint8_t { CT_CASE, CT_CASEX, CT_CASEZ, CT_CASEINSIDE };
@@ -1493,6 +1590,7 @@ public:
                "ENUM_IMPLICIT", "DYNAMIC_CLASS", "INCOMPATIBLE"};
         return names[m_e];
     }
+    bool isAssignable() const { return m_e != UNSUPPORTED && m_e != INCOMPATIBLE; }
     VCastable()
         : m_e{UNSUPPORTED} {}
     // cppcheck-suppress noExplicitConstructor
@@ -1583,6 +1681,36 @@ public:
     const std::string& asString() const { return *m_strp; }
     bool operator==(const VSelfPointerText& other) const { return *m_strp == *other.m_strp; }
 };
+
+// ######################################################################
+// Defines what kind of randomization is done on a variable
+
+class VRandAttr final {
+public:
+    enum en : uint8_t {
+        NONE,  // Not randomizable
+        RAND,  // Has a rand modifier
+        RAND_CYCLIC,  // Has a randc modifier
+        RAND_INLINE  // Not rand/randc, but used in inline random variable control
+    };
+    enum en m_e;
+    const char* ascii() const {
+        static const char* const names[] = {"NONE", "RAND", "RANDC", "RAND-INLINE"};
+        return names[m_e];
+    }
+    VRandAttr()
+        : m_e{NONE} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VRandAttr(en _e)
+        : m_e{_e} {}
+    constexpr operator en() const { return m_e; }
+    bool isRandomizable() const { return m_e != NONE; }
+    bool isRand() const { return m_e == RAND || m_e == RAND_CYCLIC; }
+    bool isRandC() const { return m_e == RAND_CYCLIC; }
+};
+inline std::ostream& operator<<(std::ostream& os, const VRandAttr& rhs) {
+    return os << rhs.ascii();
+}
 
 //######################################################################
 // AstNUser - Generic base class for AST User nodes.
@@ -2076,8 +2204,8 @@ public:
     void fileline(FileLine* fl) { m_fileline = fl; }
     inline bool width1() const;
     inline int widthInstrs() const;
-    void didWidth(bool flag) { m_flags.didWidth = flag; }
     bool didWidth() const { return m_flags.didWidth; }
+    void didWidth(bool flag) { m_flags.didWidth = flag; }
     bool didWidthAndSet() {
         if (didWidth()) return true;
         didWidth(true);
@@ -2407,7 +2535,7 @@ protected:
     static void dumpJsonStr(std::ostream& os, const std::string& name, const std::string& val);
     static void dumpJsonPtr(std::ostream& os, const std::string& name, const AstNode* const valp);
 
-private:
+protected:
     void iterateListBackwardsConst(VNVisitorConst& v);
 
     // For internal use only.
@@ -2525,14 +2653,6 @@ private:
     template <typename T_Arg, bool Default, typename Callable>
     inline static bool predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const Callable& p);
 
-    template <typename T_Callable>
-    struct Arg0NoPointerNoCV final {
-        using Traits = FunctionTraits<T_Callable>;
-        using T_Arg0 = typename Traits::template arg<0>::type;
-        using T_Arg0NoPtr = typename std::remove_pointer<T_Arg0>::type;
-        using type = typename std::remove_cv<T_Arg0NoPtr>::type;
-    };
-
 public:
     // Given a callable 'f' that takes a single argument of some AstNode subtype 'T_Node', traverse
     // the tree rooted at this node, and call 'f' in pre-order on each node that is of type
@@ -2543,7 +2663,7 @@ public:
     // caches in modern CPUs, while it is basically unpredictable for VNVisitor.
     template <typename Callable>
     void foreach(Callable&& f) {
-        using T_Node = typename Arg0NoPointerNoCV<Callable>::type;
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
         static_assert(vlstd::is_invocable<Callable, T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Callable 'f' must have a signature compatible with 'void(T_Node*)', "
@@ -2554,7 +2674,7 @@ public:
     // Same as above, but for 'const' nodes
     template <typename Callable>
     void foreach(Callable&& f) const {
-        using T_Node = typename Arg0NoPointerNoCV<Callable>::type;
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
         static_assert(vlstd::is_invocable<Callable, const T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Callable 'f' must have a signature compatible with 'void(const T_Node*)', "
@@ -2565,7 +2685,7 @@ public:
     // Same as 'foreach' but also traverses 'this->nextp()' transitively
     template <typename Callable>
     void foreachAndNext(Callable&& f) {
-        using T_Node = typename Arg0NoPointerNoCV<Callable>::type;
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
         static_assert(vlstd::is_invocable<Callable, T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Callable 'f' must have a signature compatible with 'void(T_Node*)', "
@@ -2576,7 +2696,7 @@ public:
     // Same as above, but for 'const' nodes
     template <typename Callable>
     void foreachAndNext(Callable&& f) const {
-        using T_Node = typename Arg0NoPointerNoCV<Callable>::type;
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
         static_assert(vlstd::is_invocable<Callable, const T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Callable 'f' must have a signature compatible with 'void(const T_Node*)', "
@@ -2591,7 +2711,7 @@ public:
     // be determined.
     template <typename Callable>
     bool exists(Callable&& p) {
-        using T_Node = typename Arg0NoPointerNoCV<Callable>::type;
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
         static_assert(vlstd::is_invocable_r<bool, Callable, T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Predicate 'p' must have a signature compatible with 'bool(T_Node*)', "
@@ -2602,7 +2722,7 @@ public:
     // Same as above, but for 'const' nodes
     template <typename Callable>
     bool exists(Callable&& p) const {
-        using T_Node = typename Arg0NoPointerNoCV<Callable>::type;
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
         static_assert(vlstd::is_invocable_r<bool, Callable, const T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Predicate 'p' must have a signature compatible with 'bool(const T_Node*)', "
@@ -2616,7 +2736,7 @@ public:
     // in some arbitrary order and is terminated as soon as the result can be determined.
     template <typename Callable>
     bool forall(Callable&& p) {
-        using T_Node = typename Arg0NoPointerNoCV<Callable>::type;
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
         static_assert(vlstd::is_invocable_r<bool, Callable, T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Predicate 'p' must have a signature compatible with 'bool(T_Node*)', "
@@ -2627,7 +2747,7 @@ public:
     // Same as above, but for 'const' nodes
     template <typename Callable>
     bool forall(Callable&& p) const {
-        using T_Node = typename Arg0NoPointerNoCV<Callable>::type;
+        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
         static_assert(vlstd::is_invocable_r<bool, Callable, const T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Predicate 'p' must have a signature compatible with 'bool(const T_Node*)', "

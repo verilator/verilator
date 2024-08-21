@@ -160,13 +160,10 @@ void V3DfgPasses::inlineVars(DfgGraph& dfg) {
                 DfgVertex* const driverp = varp->source(0);
 
                 // We must keep the original driver in certain cases, when swapping them would
-                // not be functionally or technically (implementation reasons) equivalent
+                // not be functionally or technically (implementation reasons) equivalent:
+                // 1. If driven from a SystemC variable (assignment is non-trivial)
                 if (DfgVertexVar* const driverVarp = driverp->cast<DfgVarPacked>()) {
-                    const AstVar* const astVarp = driverVarp->varp();
-                    // If driven from a SystemC variable
-                    if (astVarp->isSc()) continue;
-                    // If the variable is forced
-                    if (astVarp->isForced()) continue;
+                    if (driverVarp->varp()->isSc()) continue;
                 }
 
                 varp->forEachSinkEdge([=](DfgEdge& edge) { edge.relinkSource(driverp); });
