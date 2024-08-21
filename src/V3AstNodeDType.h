@@ -876,8 +876,8 @@ public:
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
-    int widthAlignBytes() const override { return 1; }
-    int widthTotalBytes() const override { return 1; }
+    int widthAlignBytes() const override { return 0; }
+    int widthTotalBytes() const override { return 0; }
     bool isVirtual() const { return m_virtual; }
     void isVirtual(bool flag) {
         m_virtual = flag;

@@ -1787,12 +1787,16 @@ public:
 };
 
 //===================================================================
-// Represents the null pointer. Used for setting VlClassRef to null instead of
-// via nullptr_t, to prevent the implicit conversion of 0 to nullptr.
+// Represents the null pointer. Used for:
+// * setting VlClassRef to null instead of via nullptr_t, to prevent the implicit conversion of 0
+//   to nullptr,
+// * comparing interface pointers to null.
 
 struct VlNull final {
     operator bool() const { return false; }
+    bool operator==(void* ptr) const { return !ptr; }
 };
+inline bool operator==(void* ptr, VlNull) { return !ptr; }
 
 //===================================================================
 // Verilog class reference container
