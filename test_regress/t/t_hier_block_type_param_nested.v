@@ -8,19 +8,18 @@ module t(
    clk
    );
    input clk;
-   logic [21:0] in1;
-   logic [21:0] out1;
+   logic [2:0] in1;
+   logic [2:0] out1;
 
    assign in1 = 0;
-   typedef logic[21:0] PARAM_T;
-   Test #(.TYPE_t(PARAM_T)) test(.out (out1), .in (in1));
 
-   logic [63:0] in2;
-   logic [63:0] out2;
+   Test #(.TYPE_t(logic[2:0])) test(.out (out1), .in (in1));
+
+   logic [3:0] in2;
+   logic [3:0] out2;
 
    assign in2 = 0;
-   typedef logic[63:0] PARAM2_T;
-   Test #(.TYPE_t(PARAM2_T)) test2(.out (out2), .in (in2));
+   Test #(.TYPE_t(logic[3:0])) test2(.out (out2), .in (in2));
 
    always @ (posedge clk) begin
       if (out1 !== ~in1) $stop;
@@ -32,11 +31,23 @@ module t(
 endmodule
 
 module Test
-   #(parameter type TYPE_t = logic [4:0])
+   #(parameter type TYPE_t = logic [5:0])
    (
    output TYPE_t out,
    input TYPE_t in
-   ); /*verilator hier_block*/
+   );
+   /*verilator hier_block*/
+
+   SubTest #(.TYPE_t(TYPE_t)) subTest(.out(out), .in(in));
+endmodule
+
+module SubTest
+   #(parameter type TYPE_t = logic [8:0])
+   (
+   output TYPE_t out,
+   input TYPE_t in
+   );
+   /*verilator hier_block*/
 
    assign out = ~ in;
 endmodule

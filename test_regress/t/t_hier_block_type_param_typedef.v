@@ -36,7 +36,8 @@ module Test
    (
    output TYPE_t out,
    input TYPE_t in
-   ); /*verilator hier_block*/
+   );
+   /*verilator hier_block*/
 
    assign out = ~ in;
 endmodule
