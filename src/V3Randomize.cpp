@@ -122,6 +122,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     //                                    randomized variable
     //  AstVar::user1()         -> bool.  Set true to indicate needs rand_mode
     //  AstVar::user2p()        -> AstNodeModule*. Pointer to containing module
+    //  AstNodeFTask::user2p()  -> AstNodeModule*. Pointer to containing module
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
 
@@ -367,6 +368,10 @@ class RandomizeMarkVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         m_modp = nodep;
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstNodeFTask* nodep) override {
+        nodep->user2p(m_modp);
         iterateChildrenConst(nodep);
     }
     void visit(AstVar* nodep) override {
@@ -707,63 +712,6 @@ public:
     }
 };
 
-class ClassLookupHelper final {
-    std::set<AstNodeModule*> m_visibleModules;  // Modules directly reachable from our lookup point
-    std::map<AstNode*, AstNodeModule*>
-        m_classMap;  // Memoized mapping between nodes and modules that define them
-
-    // BFS search
-    template <typename Action>
-    static void foreachSuperClass(AstClass* classp, Action action) {
-        std::queue<AstClass*> classes;
-        classes.push(classp);
-        while (!classes.empty()) {
-            classp = classes.front();
-            classes.pop();
-            for (AstClassExtends* extendsp = classp->extendsp(); extendsp;
-                 extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {
-                AstClass* const superClassp
-                    = VN_AS(extendsp->childDTypep(), ClassRefDType)->classp();
-                action(superClassp);
-                classes.push(superClassp);
-            }
-        }
-    }
-
-    static std::set<AstNodeModule*> initVisibleModules(AstClass* classp) {
-        std::set<AstNodeModule*> visibleModules = {classp};
-        std::vector<AstNodeModule*> symLookupOrder = {classp};
-        foreachSuperClass(classp,
-                          [&](AstClass* superclassp) { visibleModules.emplace(superclassp); });
-        return visibleModules;
-    }
-
-public:
-    bool moduleInClassHierarchy(AstNodeModule* modp) const {
-        return m_visibleModules.count(modp) != 0;
-    }
-
-    AstNodeModule* findDeclaringModule(AstNode* nodep, bool classHierarchyOnly = true) {
-        auto it = m_classMap.find(nodep);
-        if (it != m_classMap.end()) return it->second;
-        for (AstNode* backp = nodep; backp; backp = backp->backp()) {
-            AstNodeModule* const modp = VN_CAST(backp, NodeModule);
-            if (modp) {
-                m_classMap.emplace(nodep, modp);
-                if (classHierarchyOnly)
-                    UASSERT_OBJ(moduleInClassHierarchy(modp), nodep,
-                                "Node does not belong to class");
-                return modp;
-            }
-        }
-        return nullptr;
-    }
-
-    ClassLookupHelper(AstClass* classp) {
-        if (classp) m_visibleModules = initVisibleModules(classp);
-    }
-};
-
 enum class CaptureMode : uint8_t {
     CAP_NO = 0x0,
     CAP_VALUE = 0x01,
@@ -789,7 +737,7 @@ class CaptureVisitor final : public VNVisitor {
     AstClass* m_targetp;  // Module of inner context (for symbol lookup)
     std::map<const AstVar*, AstVar*> m_varCloneMap;  // Map original var nodes to their clones
     std::set<AstNode*> m_ignore;  // Nodes to ignore for capturing
-    ClassLookupHelper m_lookup;  // Util for class lookup
+    std::set<AstNodeModule*> m_visibleModules;  // Modules whose scopes are visible
     AstVar* m_thisp = nullptr;  // Variable for outer context's object, if necessary
 
     // METHODS
@@ -814,7 +762,7 @@ class CaptureVisitor final : public VNVisitor {
 
     template <typename NodeT>
     void fixupClassOrPackage(AstNode* memberp, NodeT refp) {
-        AstNodeModule* const declClassp = m_lookup.findDeclaringModule(memberp, false);
+        AstNodeModule* const declClassp = VN_AS(memberp->user2p(), NodeModule);
         if (declClassp != m_targetp) refp->classOrPackagep(declClassp);
     }
 
@@ -844,14 +792,15 @@ class CaptureVisitor final : public VNVisitor {
     }
 
     CaptureMode getVarRefCaptureMode(AstNodeVarRef* varRefp) {
-        AstNodeModule* const modp = m_lookup.findDeclaringModule(varRefp->varp(), false);
+        AstNodeModule* const modp = VN_AS(varRefp->varp()->user2p(), NodeModule);
 
         const bool callerIsClass = VN_IS(m_callerp, Class);
         const bool refIsXref = VN_IS(varRefp, VarXRef);
         const bool varIsFuncLocal = varRefp->varp()->isFuncLocal();
         const bool varHasAutomaticLifetime = varRefp->varp()->lifetime().isAutomatic();
         const bool varIsDeclaredInCaller = modp == m_callerp;
-        const bool varIsFieldOfCaller = modp ? m_lookup.moduleInClassHierarchy(modp) : false;
+        const bool varIsFieldOfCaller
+            = modp ? m_visibleModules.find(modp) != m_visibleModules.end() : false;
 
         if (refIsXref) return CaptureMode::CAP_VALUE | CaptureMode::CAP_F_XREF;
         if (varIsFuncLocal && varHasAutomaticLifetime) return CaptureMode::CAP_VALUE;
@@ -896,6 +845,15 @@ class CaptureVisitor final : public VNVisitor {
         m_ignore.emplace(memberSelp);
     }
 
+    void fetchVisibleModules(AstClass* classp) {
+        for (AstClassExtends* extendsp = classp->extendsp(); extendsp;
+             extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {
+            AstClass* const superClassp = VN_AS(extendsp->childDTypep(), ClassRefDType)->classp();
+            m_visibleModules.insert(superClassp);
+            fetchVisibleModules(superClassp);
+        }
+    }
+
     // VISITORS
 
     void visit(AstNodeVarRef* nodep) override {
@@ -920,7 +878,7 @@ class CaptureVisitor final : public VNVisitor {
             iterateChildren(nodep);
             return;
         }
-        AstClass* classp = VN_CAST(m_lookup.findDeclaringModule(nodep->taskp(), false), Class);
+        AstClass* classp = VN_CAST(nodep->taskp()->user2p(), Class);
         if ((classp == m_callerp) && VN_IS(m_callerp, Class)) {
             AstNodeExpr* const pinsp = nodep->pinsp();
             if (pinsp) pinsp->unlinkFrBack();
@@ -977,8 +935,8 @@ public:
     explicit CaptureVisitor(AstNode* const nodep, AstNodeModule* callerp, AstClass* const targetp)
         : m_argsp(nullptr)
         , m_callerp(callerp)
-        , m_targetp(targetp)
-        , m_lookup(VN_CAST(callerp, Class)) {
+        , m_targetp(targetp) {
+        if (AstClass* classp = VN_CAST(callerp, Class)) fetchVisibleModules(classp);
         iterateAndNextNull(nodep);
     }
 
@@ -1009,7 +967,8 @@ class RandomizeVisitor final : public VNVisitor {
     // NODE STATE
     // Cleared on Netlist
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing
-    //  AstVar::user2p()        -> AstClass*. Pointer to containing class
+    //  AstVar::user2p()        -> AstNodeModule*. Pointer to containing module
+    //  AstNodeFTask::user2p()  -> AstNodeModule*. Pointer to containing module
     //  AstEnumDType::user2()   -> AstVar*.  Pointer to table with enum values
     //  AstConstraint::user2p() -> AstTask*. Pointer to constraint setup procedure
     //  AstClass::user2p()      -> AstTask*. Pointer to full constraint setup procedure
