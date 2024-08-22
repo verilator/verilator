@@ -2758,6 +2758,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         nodep->replaceWith(new AstMemberSel{
                             nodep->fileline(), m_randMethodCallp->fromp()->cloneTree(false),
                             VFlagChildDType{}, nodep->name()});
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
                         return;
                     }
                     UINFO(9, " randomize-with fromSym " << foundp->nodep() << endl);
