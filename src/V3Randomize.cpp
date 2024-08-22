@@ -1250,9 +1250,6 @@ class RandomizeVisitor final : public VNVisitor {
         if (const auto* const structDtp
             = VN_CAST(memberp ? memberp->subDTypep()->skipRefp() : exprp->dtypep()->skipRefp(),
                       StructDType)) {
-            UINFO(2, "Struct newRandStmtsp, memberp: " << memberp << " || exprp: " << exprp
-                                                       << " || exprp->dtypep(): "
-                                                       << exprp->dtypep() << endl);
             AstNodeStmt* stmtsp = nullptr;
             if (structDtp->packed()) offset += memberp ? memberp->lsb() : 0;
             for (AstMemberDType* smemberp = structDtp->membersp(); smemberp;
@@ -1274,14 +1271,10 @@ class RandomizeVisitor final : public VNVisitor {
                     stmtsp = randp;
                 }
             }
-            UINFO(2, "Struct newRandStmtsp, stmtsp: " << stmtsp << endl);
             return stmtsp;
         } else if (const auto* const unionDtp = VN_CAST(memberp ? memberp->subDTypep()->skipRefp()
                                                                 : exprp->dtypep()->skipRefp(),
                                                         UnionDType)) {
-            UINFO(2, "Union newRandStmtsp, memberp: " << memberp << " || exprp: " << exprp
-                                                      << " || exprp->dtypep(): " << exprp->dtypep()
-                                                      << endl);
             AstNodeStmt* stmtsp = nullptr;
             if (!unionDtp->packed()) {
                 unionDtp->v3warn(E_UNSUPPORTED, "Unsupported: IEEE 1800-2023: Unpacked unions "
@@ -1297,13 +1290,8 @@ class RandomizeVisitor final : public VNVisitor {
             } else {
                 stmtsp = randp;
             }
-            UINFO(2, "Union newRandStmtsp, stmtsp: " << stmtsp << endl);
             return stmtsp;
         } else {
-            UINFO(2, "Others newRandStmtsp, memberp: "
-                         << memberp << " || memberp->subDTypep: " << memberp->subDTypep()
-                         << " || exprp: " << exprp << " || exprp->dtypep(): " << exprp->dtypep()
-                         << endl);
             AstNodeExpr* valp;
             if (AstEnumDType* const enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
                                                               : exprp->dtypep()->subDTypep(),
