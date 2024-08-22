@@ -1250,6 +1250,7 @@ class RandomizeVisitor final : public VNVisitor {
         if (const auto* const structDtp
             = VN_CAST(memberp ? memberp->subDTypep()->skipRefp() : exprp->dtypep()->skipRefp(),
                       StructDType)) {
+            UINFO(2, "Struct newRandStmtsp, memberp: " << memberp << " || exprp: " << exprp << " || exprp->dtypep(): " << exprp->dtypep() << endl);
             AstNodeStmt* stmtsp = nullptr;
             if (structDtp->packed()) offset += memberp ? memberp->lsb() : 0;
             for (AstMemberDType* smemberp = structDtp->membersp(); smemberp;
@@ -1271,33 +1272,31 @@ class RandomizeVisitor final : public VNVisitor {
                     stmtsp = randp;
                 }
             }
+            UINFO(2, "Struct newRandStmtsp, stmtsp: " << stmtsp << endl);
             return stmtsp;
         } else if (const auto* const unionDtp = VN_CAST(memberp ? memberp->subDTypep()->skipRefp()
                                                                 : exprp->dtypep()->skipRefp(),
                                                         UnionDType)) {
+            UINFO(2, "Union newRandStmtsp, memberp: " << memberp << " || exprp: " << exprp << " || exprp->dtypep(): " << exprp->dtypep() << endl);
             AstNodeStmt* stmtsp = nullptr;
-            if (unionDtp->packed()) offset += memberp ? memberp->lsb() : 0;
-            for (AstMemberDType* smemberp = unionDtp->membersp(); smemberp;
-                 smemberp = VN_AS(smemberp->nextp(), MemberDType)) {
-                AstNodeStmt* randp = nullptr;
-                if (unionDtp->packed()) {
-                    randp = newRandStmtsp(fl, stmtsp ? exprp->cloneTree(false) : exprp, nullptr,
-                                          offset, smemberp);
-                } else {
-                    AstStructSel* unionSelp
-                        = new AstStructSel{fl, exprp->cloneTree(false), smemberp->name()};
-                    unionSelp->dtypep(smemberp->childDTypep());
-                    if (!unionSelp->dtypep()) unionSelp->dtypep(smemberp->subDTypep());
-                    randp = newRandStmtsp(fl, unionSelp, nullptr);
-                }
-                if (stmtsp) {
-                    stmtsp->addNext(randp);
-                } else {
-                    stmtsp = randp;
-                }
+            if (!unionDtp->packed()) {
+                unionDtp->v3warn(E_UNSUPPORTED,
+                                       "Unsupported: IEEE 1800-2023: Unpacked unions shall not be declared as rand or randc.");
+                return nullptr;
             }
+            AstMemberDType* firstMemberp = unionDtp->membersp();
+            AstNodeStmt* randp = nullptr;
+            randp = newRandStmtsp(fl, stmtsp ? exprp->cloneTree(false) : exprp, nullptr,
+                                          offset, firstMemberp);
+            if (stmtsp) {
+                stmtsp->addNext(randp);
+            } else {
+                stmtsp = randp;
+            }
+            UINFO(2, "Union newRandStmtsp, stmtsp: " << stmtsp << endl);
             return stmtsp;
         } else {
+            UINFO(2, "Others newRandStmtsp, memberp: " << memberp << " || memberp->subDTypep: " << memberp->subDTypep() << " || exprp: " << exprp << " || exprp->dtypep(): " << exprp->dtypep() << endl);
             AstNodeExpr* valp;
             if (AstEnumDType* const enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
                                                               : exprp->dtypep()->subDTypep(),
@@ -1476,8 +1475,9 @@ class RandomizeVisitor final : public VNVisitor {
             }
             if (memberVarp->user3()) return;  // Handled in constraints
             const AstNodeDType* const dtypep = memberVarp->dtypep()->skipRefp();
+            UINFO(2, " addBasicRandomizeBody, dtypep " << dtypep << endl);
             if (VN_IS(dtypep, BasicDType) || VN_IS(dtypep, StructDType)
-                || VN_IS(dtypep, UnionDType)) {
+                || VN_IS(dtypep, UnionDType) ) {
                 AstVar* const randcVarp = newRandcVarsp(memberVarp);
                 AstVarRef* const refp = new AstVarRef{fl, classp, memberVarp, VAccess::WRITE};
                 AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp);
