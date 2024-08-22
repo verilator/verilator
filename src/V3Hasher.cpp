@@ -33,8 +33,23 @@ class HasherVisitor final : public VNVisitorConst {
     // STATE
     V3Hash m_hash;  // Hash value accumulator
     const bool m_cacheInUser4;  // Use user4 to cache each V3Hash?
+    std::set<AstNode*> m_visited;  // Keeps track of some visited nodes to prevent
+                                   // infinite recursion
 
     // METHODS
+
+    void guardRecursion(AstNode* const nodep, std::function<void()>&& f) {
+        // Guard against infinite recursion if there's no caching
+        // Otherwise caching does the same but faster
+        if (!m_cacheInUser4) {
+            if (m_visited.find(nodep) != m_visited.end()) {
+                m_hash += V3Hash{nodep->name()};
+                return;
+            }
+            m_visited.insert(nodep);
+        }
+        f();
+    }
 
     V3Hash hashNodeAndIterate(AstNode* nodep, bool hashDType, bool hashChildren,
                               std::function<void()>&& f) {
@@ -410,14 +425,16 @@ class HasherVisitor final : public VNVisitorConst {
         });
     }
     void visit(AstCFunc* nodep) override {
-        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [this, nodep]() {  //
-            // We might be in a recursive function, if so on *second* call
-            // here we need to break what would be an infinite loop.
-            nodep->user4(V3Hash{1}.value());  // Set this "first" call
-            // So that a second call will then exit hashNodeAndIterate
-            // Having a constant in the hash just means the recursion will
-            // end, it shouldn't change the CFunc having a unique hash itself.
-            m_hash += nodep->isLoose();
+        guardRecursion(nodep, [this, nodep]() {  //
+            m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [this, nodep]() {  //
+                // We might be in a recursive function, if so on *second* call
+                // here we need to break what would be an infinite loop.
+                if (m_cacheInUser4) nodep->user4(V3Hash{1}.value());  // Set this "first" call
+                // So that a second call will then exit hashNodeAndIterate
+                // Having a constant in the hash just means the recursion will
+                // end, it shouldn't change the CFunc having a unique hash itself.
+                m_hash += nodep->isLoose();
+            });
         });
     }
     void visit(AstVar* nodep) override {
@@ -469,8 +486,12 @@ class HasherVisitor final : public VNVisitorConst {
                                      [this, nodep]() { m_hash += nodep->name(); });
     }
     void visit(AstNodeFTask* nodep) override {
-        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [this, nodep]() {  //
-            m_hash += nodep->name();
+        guardRecursion(nodep, [this, nodep]() {  //
+            m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [this, nodep]() {  //
+                m_hash += nodep->name();
+                // See comments in AstCFunc
+                if (m_cacheInUser4) nodep->user4(V3Hash{1}.value());
+            });
         });
     }
     void visit(AstModport* nodep) override {
