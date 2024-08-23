@@ -1275,7 +1275,6 @@ class RandomizeVisitor final : public VNVisitor {
         } else if (const auto* const unionDtp = VN_CAST(memberp ? memberp->subDTypep()->skipRefp()
                                                                 : exprp->dtypep()->skipRefp(),
                                                         UnionDType)) {
-            AstNodeStmt* stmtsp = nullptr;
             if (!unionDtp->packed()) {
                 unionDtp->v3warn(E_UNSUPPORTED, "Unsupported: IEEE 1800-2023: Unpacked unions "
                                                 "shall not be declared as rand or randc.");
