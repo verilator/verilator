@@ -19,10 +19,12 @@ module t_randomize_union_bad;
     initial begin
         test_unpacked_union = new();
         repeat(10) begin
-            if (!test_unpacked_union.randomize()) $error("Randomization failed");
-            $display("UnpackedUnion: int_value: %d, bits: %b", test_unpacked_union.union_instance.int_value, test_unpacked_union.union_instance.bits);
+            int success;
+            success = test_unpacked_union.randomize();
+            if (success != 1) $stop;
+            $display("UnpackedUnion: int_value: %b, bits: %b", test_unpacked_union.union_instance.int_value, test_unpacked_union.union_instance.bits);
         end
-
+        $write("*-* All Finished *-*\n");
         $finish;
     end
 endmodule

@@ -1,0 +1,20 @@
+======================================================================
+dist/t_randomize_union_bad: ==================================================
+dist/t_randomize_union_bad: -Skip: Skip: scenario 'dist' not enabled for test
+======================================================================
+vlt/t_randomize_union_bad: ==================================================
+	perl /home/yilou/Desktop/OSVISE/planvtech/verilator/bin/verilator --prefix Vt_randomize_union_bad ../obj_vlt/t_randomize_union_bad/Vt_randomize_union_bad__main.cpp --exe --make gmake --x-assign unique -cc -Mdir obj_vlt/t_randomize_union_bad --fdedup --debug-check --comp-limit-members 10 --clk clk  -f input.vc +define+TEST_OBJ_DIR=obj_vlt/t_randomize_union_bad +define+TEST_DUMPFILE=obj_vlt/t_randomize_union_bad/simx.vcd t/t_randomize_union_bad.v    > obj_vlt/t_randomize_union_bad/vlt_compile.log
+%Error-UNSUPPORTED: t/t_randomize_union_bad.v:1:9: Unsupported: IEEE 1800-2023: Unpacked unions shall not be declared as rand or randc.
+    1 | typedef union {
+      |         ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=5.027
+%Error: Exiting due to 1 error(s)
+        ... See the manual at https://verilator.org/verilator_doc.html for more assistance.
+(Exec expected to fail, and did.)
+vlt/t_randomize_union_bad: %Error: Missing ok
+vlt/t_randomize_union_bad: FAILED: Missing ok
+
+======================================================================
+	#vlt/t_randomize_union_bad: %Error: Missing ok
+		make && test_regress/t/t_randomize_union_bad.pl  --vlt
+==TESTS DONE, FAILED: Passed 0  Failed 1  Time 0:02

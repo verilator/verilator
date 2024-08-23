@@ -100,7 +100,9 @@ module t_randomize_union;
         test_simple_union_constrained = new();
         $display("\n--- Test 1: SimpleUnion Constrained Test ---");
         repeat(10) begin
-            if (!test_simple_union_constrained.randomize()) $error("Randomization failed");
+            int success;
+            success = test_simple_union_constrained.randomize();
+            if (success != 1) $stop;
             $display("SimpleUnion (Constrained): int_value: %b, bits: %b", test_simple_union_constrained.union_instance.int_value, test_simple_union_constrained.union_instance.bits);
         end
 
@@ -108,7 +110,9 @@ module t_randomize_union;
         test_simple_union_unconstrained = new();
         $display("\n--- Test 2: SimpleUnion Unconstrained Test ---");
         repeat(10) begin
-            if (!test_simple_union_unconstrained.randomize()) $error("Randomization failed");
+            int success;
+            success = test_simple_union_unconstrained.randomize();
+            if (success != 1) $stop;
             $display("SimpleUnion (Unconstrained): int_value: %b, bits: %b", test_simple_union_unconstrained.union_instance.int_value, test_simple_union_unconstrained.union_instance.bits);
         end
 
@@ -116,7 +120,9 @@ module t_randomize_union;
         test_struct_in_union_constrained = new();
         $display("\n--- Test 3: StructInUnion Constrained Test ---");
         repeat(10) begin
-            if (!test_struct_in_union_constrained.randomize()) $error("Randomization failed");
+            int success;
+            success = test_struct_in_union_constrained.randomize();
+            if (success != 1) $stop;
             $display("StructInUnion (Constrained): struct.a: %b, struct.b: %b, inner_bits: %b", test_struct_in_union_constrained.union_instance.struct_fields.field_a, test_struct_in_union_constrained.union_instance.struct_fields.field_b, test_struct_in_union_constrained.union_instance.inner_bits);
         end
 
@@ -124,7 +130,9 @@ module t_randomize_union;
         test_struct_in_union_unconstrained = new();
         $display("\n--- Test 4: StructInUnion Unconstrained Test ---");
         repeat(10) begin
-            if (!test_struct_in_union_unconstrained.randomize()) $error("Randomization failed");
+            int success;
+            success = test_struct_in_union_unconstrained.randomize();
+            if (success != 1) $stop;
             $display("StructInUnion (Unconstrained): struct.a: %b, struct.b: %b, inner_bits: %b", test_struct_in_union_unconstrained.union_instance.struct_fields.field_a, test_struct_in_union_unconstrained.union_instance.struct_fields.field_b, test_struct_in_union_unconstrained.union_instance.inner_bits);
         end
 
@@ -132,7 +140,9 @@ module t_randomize_union;
         test_union_in_union_constrained = new();
         $display("\n--- Test 5: UnionInUnion Constrained Test ---");
         repeat(10) begin
-            if (!test_union_in_union_constrained.randomize()) $error("Randomization failed");
+            int success;
+            success = test_union_in_union_constrained.randomize();
+            if (success != 1) $stop;
             $display("UnionInUnion (Constrained): outer_bits: %b, inner_union.struct: %b, b: %b", test_union_in_union_constrained.union_instance.outer_bits, test_union_in_union_constrained.union_instance.inner_union.struct_fields.field_a, test_union_in_union_constrained.union_instance.inner_union.struct_fields.field_b);
         end
 
@@ -140,10 +150,12 @@ module t_randomize_union;
         test_union_in_union_unconstrained = new();
         $display("\n--- Test 6: UnionInUnion Unconstrained Test ---");
         repeat(10) begin
-            if (!test_union_in_union_unconstrained.randomize()) $error("Randomization failed");
+            int success;
+            success = test_union_in_union_unconstrained.randomize();
+            if (success != 1) $stop;
             $display("UnionInUnion (Unconstrained): outer_bits: %b, inner_union.struct: %b, inner_union.inner_bits: %b", test_union_in_union_unconstrained.union_instance.outer_bits, test_union_in_union_unconstrained.union_instance.inner_union.struct_fields, test_union_in_union_unconstrained.union_instance.inner_union.inner_bits);
         end
-
+        $write("*-* All Finished *-*\n");
         $finish;
     end
 
