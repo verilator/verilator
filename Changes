@@ -13,6 +13,9 @@ Verilator 5.029 devel
 
 **Minor:**
 
+* Improve Verilation thread pool (#5161). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix dot fallback finding wrong symbols (#5394). [Arkadiusz Kozdra, Antmicro Ltd.]
+
 
 Verilator 5.028 2024-08-21
 ==========================
