@@ -1281,10 +1281,7 @@ class RandomizeVisitor final : public VNVisitor {
                 return nullptr;
             }
             AstMemberDType* const firstMemberp = unionDtp->membersp();
-            AstNodeStmt* randp = nullptr;
-            stmtsp = newRandStmtsp(fl, stmtsp ? exprp->cloneTree(false) : exprp, nullptr, offset,
-                                   firstMemberp);
-            return stmtsp;
+            return newRandStmtsp(fl, exprp, nullptr, offset, firstMemberp);
         } else {
             AstNodeExpr* valp;
             if (AstEnumDType* const enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
