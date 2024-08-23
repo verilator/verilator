@@ -337,11 +337,15 @@ bool VlRandomizer::next(VlRNG& rngr) {
 
     f << "(set-option :produce-models true)\n";
     f << "(set-logic QF_BV)\n";
+    f << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
+    f << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
     for (const auto& var : m_vars) {
         f << "(declare-fun " << var.second->name() << " () (_ BitVec " << var.second->width()
           << "))\n";
     }
-    for (const std::string& constraint : m_constraints) { f << "(assert " << constraint << ")\n"; }
+    for (const std::string& constraint : m_constraints) {
+        f << "(assert (= #b1 " << constraint << "))\n";
+    }
     f << "(check-sat)\n";
 
     bool sat = parseSolution(f);

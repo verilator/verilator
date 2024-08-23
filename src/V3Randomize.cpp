@@ -546,7 +546,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (!exprsp->nextp()) return exprsp;
 
         std::ostringstream fmt;
-        fmt << "(and";
+        fmt << "(bvand";
         for (AstNode* itemp = exprsp; itemp; itemp = itemp->nextp()) fmt << " %@";
         fmt << ')';
         return new AstSFormatF{fl, fmt.str(), false, exprsp};
@@ -690,7 +690,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNode* const cstmtp = new AstText{fl, "ret += \" \" + "};
             cstmtp->addNext(itemp);
             cstmtp->addNext(new AstText{fl, ";"});
-            AstNode* const exprsp = new AstText{fl, "([&]{ std::string ret = \"(and\";"};
+            AstNode* const exprsp = new AstText{fl, "([&]{ std::string ret = \"(bvand\";"};
             exprsp->addNext(new AstBegin{
                 fl, "",
                 new AstForeach{fl, nodep->arrayp()->unlinkFrBack(), new AstCStmt{fl, cstmtp}},
