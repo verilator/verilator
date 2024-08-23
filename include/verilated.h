@@ -221,19 +221,6 @@ public:
     void unlock() VL_RELEASE() VL_MT_SAFE { m_mutex.unlock(); }
     /// Try to acquire mutex.  Returns true on success, and false on failure.
     bool try_lock() VL_TRY_ACQUIRE(true) VL_MT_SAFE { return m_mutex.try_lock(); }
-    /// Acquire/lock mutex and check for stop request
-    /// It tries to lock the mutex and if it fails, it check if stop request was send.
-    /// It returns after locking mutex.
-    /// This function should be extracted to V3ThreadPool, but due to clang thread-safety
-    /// limitations it needs to be placed here.
-    void lockCheckStopRequest(std::function<void()> checkStopRequestFunction)
-        VL_ACQUIRE() VL_MT_SAFE {
-        while (true) {
-            checkStopRequestFunction();
-            if (m_mutex.try_lock()) return;
-            VL_CPU_RELAX();
-        }
-    }
 };
 
 /// Lock guard for mutex (ala std::unique_lock), wrapped to allow -fthread_safety checks

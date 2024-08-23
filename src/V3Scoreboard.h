@@ -22,7 +22,6 @@
 
 #include "V3Error.h"
 #include "V3PairingHeap.h"
-#include "V3ThreadSafety.h"
 
 //===============================================================================================
 // V3Scoreboard is essentially a heap that can be hinted that some elements have changed keys, at

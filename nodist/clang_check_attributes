@@ -752,15 +752,15 @@ class CallAnnotationsValidator:
         # Implicitly mark definitions in VL_MT_DISABLED_CODE_UNIT .cpp files as
         # VL_MT_DISABLED. Existence of the annotation on declarations in .h
         # files is verified below.
-        # Also sets VL_REQUIRES, as this annotation is added together with
+        # Also sets VL_EXCLUDES, as this annotation is added together with
         # explicit VL_MT_DISABLED.
         if self.is_mt_disabled_code_unit():
             if node.location.file.name == self._main_source_file:
                 annotations.mt_disabled = True
-                annotations.requires = True
+                annotations.excludes = True
             if refd.location.file.name == self._main_source_file:
                 def_annotations.mt_disabled = True
-                def_annotations.requires = True
+                def_annotations.excludes = True
 
         if not (def_annotations.is_empty() or def_annotations == annotations):
             # Use definition's annotations for the diagnostic

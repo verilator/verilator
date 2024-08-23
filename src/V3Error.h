@@ -24,9 +24,6 @@
 
 // Limited V3 headers here - this is a base class for Vlc etc
 #include "V3String.h"
-#ifndef VL_MT_DISABLED_CODE_UNIT
-#include "V3ThreadPool.h"
-#endif
 
 #include <array>
 #include <bitset>
@@ -531,11 +528,8 @@ public:
 
     // Internals for v3error()/v3fatal() macros only
     // Error end takes the string stream to output, be careful to seek() as needed
-    static void v3errorAcquireLock(bool checkStopRequest) VL_ACQUIRE(s().m_mutex);
-    static std::ostringstream& v3errorPrep(V3ErrorCode code, bool mtDisabledCodeUnit)
-        VL_ACQUIRE(s().m_mutex);
-    static std::ostringstream& v3errorPrepFileLine(V3ErrorCode code, const char* file, int line,
-                                                   bool mtDisabledCodeUnit)
+    static std::ostringstream& v3errorPrep(V3ErrorCode code) VL_ACQUIRE(s().m_mutex);
+    static std::ostringstream& v3errorPrepFileLine(V3ErrorCode code, const char* file, int line)
         VL_ACQUIRE(s().m_mutex);
     static std::ostringstream& v3errorStr() VL_REQUIRES(s().m_mutex);
     // static, but often overridden in classes.
@@ -563,12 +557,9 @@ void v3errorEndFatal(std::ostringstream& sstr)
 // the comma operator (,) to guarantee the execution order here.
 #define v3errorBuildMessage(prep, msg) \
     (prep, static_cast<std::ostringstream&>(V3Error::v3errorStr() << msg))
-#define v3warnCode(code, msg) \
-    v3errorEnd( \
-        v3errorBuildMessage(V3Error::v3errorPrep(code, VL_MT_DISABLED_CODE_UNIT_DEFINED), msg))
+#define v3warnCode(code, msg) v3errorEnd(v3errorBuildMessage(V3Error::v3errorPrep(code), msg))
 #define v3warnCodeFatal(code, msg) \
-    v3errorEndFatal( \
-        v3errorBuildMessage(V3Error::v3errorPrep(code, VL_MT_DISABLED_CODE_UNIT_DEFINED), msg))
+    v3errorEndFatal(v3errorBuildMessage(V3Error::v3errorPrep(code), msg))
 #define v3warn(code, msg) v3warnCode(V3ErrorCode::code, msg)
 #define v3info(msg) v3warnCode(V3ErrorCode::EC_INFO, msg)
 #define v3error(msg) v3warnCode(V3ErrorCode::EC_ERROR, msg)
@@ -578,13 +569,10 @@ void v3errorEndFatal(std::ostringstream& sstr)
 // Use this instead of fatal() to mention the source code line.
 #define v3fatalSrc(msg) \
     v3errorEndFatal(v3errorBuildMessage( \
-        V3Error::v3errorPrepFileLine(V3ErrorCode::EC_FATALSRC, __FILE__, __LINE__, \
-                                     VL_MT_DISABLED_CODE_UNIT_DEFINED), \
-        msg))
+        V3Error::v3errorPrepFileLine(V3ErrorCode::EC_FATALSRC, __FILE__, __LINE__), msg))
 // Use this when normal v3fatal is called in static method that overrides fileline.
 #define v3fatalStatic(msg) \
-    ::v3errorEndFatal(v3errorBuildMessage( \
-        V3Error::v3errorPrep(V3ErrorCode::EC_FATAL, VL_MT_DISABLED_CODE_UNIT_DEFINED), msg))
+    ::v3errorEndFatal(v3errorBuildMessage(V3Error::v3errorPrep(V3ErrorCode::EC_FATAL), msg))
 
 #define UINFO(level, stmsg) \
     do { \

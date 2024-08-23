@@ -25,7 +25,6 @@
 #include "V3Global.h"
 #include "V3Parse.h"
 #include "V3ParseSym.h"
-#include "V3ThreadSafety.h"
 
 #include <algorithm>
 #include <deque>

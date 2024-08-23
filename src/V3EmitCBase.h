@@ -22,7 +22,6 @@
 
 #include "V3Ast.h"
 #include "V3File.h"
-#include "V3ThreadSafety.h"
 
 #include <cmath>
 #include <cstdarg>

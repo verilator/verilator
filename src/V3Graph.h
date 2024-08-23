@@ -23,7 +23,6 @@
 #include "V3Error.h"
 #include "V3List.h"
 #include "V3Rtti.h"
-#include "V3ThreadSafety.h"
 
 #include <algorithm>
 #include <functional>
