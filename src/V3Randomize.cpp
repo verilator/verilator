@@ -1276,7 +1276,8 @@ class RandomizeVisitor final : public VNVisitor {
                                                                 : exprp->dtypep()->skipRefp(),
                                                         UnionDType)) {
             if (!unionDtp->packed()) {
-                unionDtp->v3error("Unpacked unions shall not be declared as rand or randc. (IEEE 1800-2023 18.4)");
+                unionDtp->v3error("Unpacked unions shall not be declared as rand or randc. (IEEE "
+                                  "1800-2023 18.4)");
                 return nullptr;
             }
             AstMemberDType* const firstMemberp = unionDtp->membersp();
