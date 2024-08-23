@@ -107,6 +107,10 @@ class VlRandomizer final {
     bool parseSolution(std::iostream& file);
 
 public:
+    // CONSTRUCTORS
+    VlRandomizer() = default;
+    ~VlRandomizer() = default;
+
     // METHODS
     // Finds the next solution satisfying the constraints
     bool next(VlRNG& rngr);

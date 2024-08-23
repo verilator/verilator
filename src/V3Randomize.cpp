@@ -1556,10 +1556,10 @@ class RandomizeVisitor final : public VNVisitor {
             if (receiverp) {
                 // Called on a rand member variable/constraint. Set the variable/constraint's
                 // mode
-                const RandomizeMode mode = {.asInt = receiverp->user1()};
-                UASSERT_OBJ(mode.usesMode, ftaskRefp, "Failed to set usesMode");
+                const RandomizeMode rmode = {.asInt = receiverp->user1()};
+                UASSERT_OBJ(rmode.usesMode, ftaskRefp, "Failed to set usesMode");
                 AstCMethodHard* const atp
-                    = new AstCMethodHard{fl, lhsp, "at", new AstConst{fl, mode.index}};
+                    = new AstCMethodHard{fl, lhsp, "at", new AstConst{fl, rmode.index}};
                 atp->dtypeSetUInt32();
                 m_stmtp->replaceWith(new AstAssign{fl, atp, rhsp});
             } else {
@@ -1571,10 +1571,10 @@ class RandomizeVisitor final : public VNVisitor {
             pushDeletep(m_stmtp);
         } else {
             UASSERT_OBJ(receiverp, ftaskRefp, "Should have receiver");
-            const RandomizeMode mode = {.asInt = receiverp->user1()};
-            UASSERT_OBJ(mode.usesMode, ftaskRefp, "Failed to set usesMode");
+            const RandomizeMode rmode = {.asInt = receiverp->user1()};
+            UASSERT_OBJ(rmode.usesMode, ftaskRefp, "Failed to set usesMode");
             AstCMethodHard* const atp
-                = new AstCMethodHard{fl, lhsp, "at", new AstConst{fl, mode.index}};
+                = new AstCMethodHard{fl, lhsp, "at", new AstConst{fl, rmode.index}};
             atp->dtypeSetUInt32();
             ftaskRefp->replaceWith(atp);
             VL_DO_DANGLING(pushDeletep(ftaskRefp), ftaskRefp);

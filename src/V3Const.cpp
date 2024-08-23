@@ -548,6 +548,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
                 VL_RESTORER(m_leafp);
                 Restorer restorer{*this};
                 LeafInfo leafInfo{m_lsb};
+                // cppcheck-suppress danglingLifetime
                 m_leafp = &leafInfo;
                 AstNodeExpr* opp = right ? nodep->rhsp() : nodep->lhsp();
                 const bool origFailed = m_failed;

@@ -597,6 +597,7 @@ public:
     // Can't just overload operator[] or provide a "at" reference to set,
     // because we need to be able to insert only when the value is set
     T_Value& at(int32_t index) {
+        // cppcheck-suppress variableScope
         static thread_local T_Value t_throwAway;
         // Needs to work for dynamic arrays, so does not use T_MaxSize
         if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
@@ -1794,9 +1795,9 @@ public:
 
 struct VlNull final {
     operator bool() const { return false; }
-    bool operator==(void* ptr) const { return !ptr; }
+    bool operator==(const void* ptr) const { return !ptr; }
 };
-inline bool operator==(void* ptr, VlNull) { return !ptr; }
+inline bool operator==(const void* ptr, VlNull) { return !ptr; }
 
 //===================================================================
 // Verilog class reference container

@@ -49,7 +49,7 @@ class V3DfgRegularizeContext final {
 public:
     VDouble0 m_temporariesIntroduced;  // Number of temporaries introduced
 
-    std::string tmpNamePrefix(DfgGraph&);  // Return prefix to use for given graph
+    std::string tmpNamePrefix(const DfgGraph&);  // Return prefix to use for given graph
 
     explicit V3DfgRegularizeContext(const std::string& label)
         : m_label{label} {}

@@ -2349,8 +2349,8 @@ public:
                 && std::is_base_of<AstNode, T_Node>::value,
             "Callable 'f' must have a signature compatible with 'void(AstClass*, T_Node*)', "
             "with 'T_Node' being a subtype of 'AstNode'");
-        if (AstClassExtends* const extendsp = this->extendsp()) {
-            extendsp->classp()->foreachMember(f);
+        if (AstClassExtends* const cextendsp = this->extendsp()) {
+            cextendsp->classp()->foreachMember(f);
         }
         for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstNode::privateTypeTest<T_Node>(stmtp)) f(this, static_cast<T_Node*>(stmtp));
@@ -2364,8 +2364,8 @@ public:
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Predicate 'p' must have a signature compatible with 'bool(const AstClass*, "
                       "const T_Node*)', with 'T_Node' being a subtype of 'AstNode'");
-        if (AstClassExtends* const extendsp = this->extendsp()) {
-            if (extendsp->classp()->existsMember(p)) return true;
+        if (AstClassExtends* const cextendsp = this->extendsp()) {
+            if (cextendsp->classp()->existsMember(p)) return true;
         }
         for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstNode::privateTypeTest<T_Node>(stmtp)) {
