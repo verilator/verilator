@@ -1281,15 +1281,10 @@ class RandomizeVisitor final : public VNVisitor {
                                                 "shall not be declared as rand or randc.");
                 return nullptr;
             }
-            AstMemberDType* firstMemberp = unionDtp->membersp();
+            AstMemberDType* const firstMemberp = unionDtp->membersp();
             AstNodeStmt* randp = nullptr;
-            randp = newRandStmtsp(fl, stmtsp ? exprp->cloneTree(false) : exprp, nullptr, offset,
+            stmtsp = newRandStmtsp(fl, stmtsp ? exprp->cloneTree(false) : exprp, nullptr, offset,
                                   firstMemberp);
-            if (stmtsp) {
-                stmtsp->addNext(randp);
-            } else {
-                stmtsp = randp;
-            }
             return stmtsp;
         } else {
             AstNodeExpr* valp;
@@ -1470,7 +1465,6 @@ class RandomizeVisitor final : public VNVisitor {
             }
             if (memberVarp->user3()) return;  // Handled in constraints
             const AstNodeDType* const dtypep = memberVarp->dtypep()->skipRefp();
-            UINFO(2, " addBasicRandomizeBody, dtypep " << dtypep << endl);
             if (VN_IS(dtypep, BasicDType) || VN_IS(dtypep, StructDType)
                 || VN_IS(dtypep, UnionDType)) {
                 AstVar* const randcVarp = newRandcVarsp(memberVarp);
