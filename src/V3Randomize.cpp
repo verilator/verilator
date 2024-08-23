@@ -799,8 +799,7 @@ class CaptureVisitor final : public VNVisitor {
         const bool refIsXref = VN_IS(varRefp, VarXRef);
         const bool varIsFuncLocal = varRefp->varp()->isFuncLocal();
         const bool varHasAutomaticLifetime = varRefp->varp()->lifetime().isAutomatic();
-        const bool varIsFieldOfCaller
-            = callerClassp && varClassp ? isSuperClassOf(varClassp, callerClassp) : false;
+        const bool varIsFieldOfCaller = AstClass::isClassExtendedFrom(callerClassp, varClassp);
         if (refIsXref) return CaptureMode::CAP_VALUE | CaptureMode::CAP_F_XREF;
         if (varIsFuncLocal && varHasAutomaticLifetime) return CaptureMode::CAP_VALUE;
         // Static var in function (will not be inlined, because it's in class)
@@ -841,17 +840,6 @@ class CaptureVisitor final : public VNVisitor {
         nodep->replaceWith(memberSelp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         m_ignore.emplace(memberSelp);
-    }
-
-    // Returns true if the first class is a superclass of the second class
-    bool isSuperClassOf(AstClass* const classIsp, AstClass* const classOfp) {
-        if (classIsp == classOfp) return true;
-        for (AstClassExtends* extendsp = classOfp->extendsp(); extendsp;
-             extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {
-            AstClass* const superClassp = VN_AS(extendsp->childDTypep(), ClassRefDType)->classp();
-            if (isSuperClassOf(classIsp, superClassp)) return true;
-        }
-        return false;
     }
 
     // VISITORS
