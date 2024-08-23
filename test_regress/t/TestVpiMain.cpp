@@ -121,7 +121,7 @@ int main(int argc, char** argv) {
             VerilatedVpi::callCbs(cbReadWriteSynch);
             VerilatedVpi::doInertialPuts();
             settle_value_callbacks();
-        } while (VerilatedVpi::evalNeeded());
+        } while (VerilatedVpi::evalNeeded() || VerilatedVpi::hasCbs(cbReadWriteSynch));
 
         top->eval_end_step();
 
