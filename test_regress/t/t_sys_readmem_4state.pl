@@ -16,7 +16,6 @@ compile(
 
 execute(
     all_run_flags => ["+verilator+rand+reset+1"],
-    check_finished => 1,
     );
 
 files_identical("$Self->{obj_dir}/t_sys_readmem_4state_b.mem", "t/t_sys_readmem_4state_b.out");

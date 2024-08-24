@@ -24,7 +24,6 @@ if (!$Self->have_cmake) {
     }
 
     execute(
-        check_finished => 1,
         );
 }
 ok(1);

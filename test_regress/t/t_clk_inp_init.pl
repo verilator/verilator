@@ -13,7 +13,7 @@ scenarios(simulator => 1);
 compile(make_main => 0,
         verilator_flags2 => ["--exe $Self->{t_dir}/$Self->{name}.cpp"]);
 
-execute(check_finished => 1);
+execute();
 
 ok(1);
 1;

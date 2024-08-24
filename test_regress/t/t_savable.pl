@@ -24,7 +24,6 @@ execute(
 
 execute(
     all_run_flags => ['+save_restore=1'],
-    check_finished => 1,
     );
 
 ok(1);

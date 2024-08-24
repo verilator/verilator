@@ -19,7 +19,6 @@ compile(
     verilator_flags2 => ["-Wno-BLKANDNBLK -language 1800-2005 --exe $Self->{t_dir}/$Self->{name}.cpp"], );
 
 execute(
-    check_finished => 1,
     );
 
 ok(1);

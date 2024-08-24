@@ -29,7 +29,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 file_grep_not($Self->{stats}, qr/HierBlock,\s+Hierarchical blocks\s+(\d+)/i);

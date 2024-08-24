@@ -15,7 +15,6 @@ unlink("$Self->{obj_dir}/t_sys_file_basic_uz_test.log");
 compile();
 
 execute(
-    check_finished => 1,
     );
 
 files_identical("$Self->{obj_dir}/t_sys_file_basic_uz_test.log", $Self->{golden_filename});

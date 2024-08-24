@@ -29,7 +29,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 file_grep($Self->{obj_dir} . "/Vsub0/sub0.sv", /^module\s+(\S+)\s+/, "sub0");

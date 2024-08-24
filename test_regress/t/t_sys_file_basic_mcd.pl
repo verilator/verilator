@@ -14,7 +14,6 @@ unlink("$Self->{obj_dir}/t_sys_file_basic_mcd.log");
 
 compile();
 execute(
-    check_finished => 1,
     expect_filename => $Self->{golden_filename},
     );
 

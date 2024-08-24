@@ -28,7 +28,6 @@ sub dotest {
     setenv('GMON_OUT_PREFIX', "$Self->{obj_dir}/gmon.out");
 
     execute(
-        check_finished => 1,
         );
 
     my $gmon_path;

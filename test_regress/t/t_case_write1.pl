@@ -15,7 +15,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 files_identical("$Self->{obj_dir}/$Self->{name}_logger.log", $Self->{golden_filename});

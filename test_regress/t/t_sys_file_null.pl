@@ -14,7 +14,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 my $fn = "$Self->{obj_dir}/zeros.log";

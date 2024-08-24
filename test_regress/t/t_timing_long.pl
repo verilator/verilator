@@ -61,7 +61,6 @@ if ($Self->have_coroutines) {
         );
 
     execute(
-        check_finished => 1,
         );
 }
 
@@ -71,7 +70,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 ok(1);

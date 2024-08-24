@@ -17,7 +17,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     aslr_off => 1,  # Some GCC versions hit an address-sanitizer bug otherwise
     );
 

@@ -25,7 +25,6 @@ foreach my $l_opt (@l_opt) {
         );
 
     execute(
-        check_finished => 1,
         );
 }
 

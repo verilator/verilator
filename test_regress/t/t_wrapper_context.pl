@@ -21,7 +21,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 files_identical_sorted("$Self->{obj_dir}/coverage_top0.dat", "t/t_wrapper_context_top0.out");

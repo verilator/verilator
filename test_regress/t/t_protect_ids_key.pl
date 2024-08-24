@@ -18,7 +18,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 # Since using a named key, we can check for always identical map

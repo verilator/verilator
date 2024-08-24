@@ -18,7 +18,6 @@ compile(
 
 execute(
     all_run_flags => ["+verilator+debug"],
-    check_finished => 1,
     );
 
 if (!$Self->{vltmt}) {  # vltmt output may vary between thread exec order

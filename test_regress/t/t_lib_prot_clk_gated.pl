@@ -60,7 +60,6 @@ while (1) {
         );
 
     execute(
-        check_finished => 1,
         xsim_run_flags2 => ["--sv_lib",
                             "$secret_dir/libsecret",
                             "--dpi_absolute"],

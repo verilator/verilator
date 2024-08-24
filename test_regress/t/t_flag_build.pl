@@ -18,7 +18,6 @@ compile(  # Don't call cmake nor gmake from driver.pl
     );
 
 execute(
-    check_finished => 1,
     );
 
 # If '-MAKEFLAGS --trace' is not properly processed,

@@ -16,7 +16,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 file_grep("$Self->{obj_dir}/t_sys_file_scan_test.log",

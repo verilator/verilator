@@ -14,7 +14,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 files_identical("$Self->{obj_dir}/t_sys_writemem_c_b.mem", "t/t_sys_readmem_assoc_c_b.out");

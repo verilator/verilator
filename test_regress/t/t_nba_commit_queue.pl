@@ -15,7 +15,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 file_grep($Self->{stats}, qr/Dynamic NBA, variables needing commit queue without partial updates\s+(\d+)/i,

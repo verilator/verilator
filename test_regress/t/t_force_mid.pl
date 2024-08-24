@@ -17,7 +17,6 @@ compile(
     );
 
 execute(
-      check_finised => 1,
     );
 
 ok(1);

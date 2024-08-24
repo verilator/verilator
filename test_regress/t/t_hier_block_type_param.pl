@@ -15,7 +15,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 file_grep($Self->{obj_dir} . "/VTest_1/Test_1.sv", /^module\s+(\S+)\s+/, "Test");

@@ -16,7 +16,6 @@ compile(
 
 execute(
     all_run_flags => [" +verilator+coverage+file+$Self->{obj_dir}/coverage_renamed.dat"],
-    check_finished => 1,
     );
 
 files_identical_sorted("$Self->{obj_dir}/coverage_renamed.dat", "t/t_cover_main.out");

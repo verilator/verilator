@@ -14,11 +14,10 @@ compile(
     make_top_shell => 0,
     make_main => 0,
     verilator_flags2 => ["--exe --pins-sc-biguint --sc $Self->{t_dir}/t_vl_assign_sbw.cpp"],
-);
+    );
 
 execute(
-    check_finished => 1
-);
+    );
 
 ok(1);
 1;

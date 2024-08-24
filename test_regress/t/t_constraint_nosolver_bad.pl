@@ -18,7 +18,6 @@ compile(
 execute(
     run_env => 'VERILATOR_SOLVER=someimaginarysolver',
     fails => 1,
-    check_finished => 0,
     expect_filename => $Self->{golden_filename},
     );
 

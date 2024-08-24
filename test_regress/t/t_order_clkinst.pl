@@ -18,7 +18,7 @@ scenarios(simulator => 1);
 
 compile(verilator_flags2 => ["--trace"]);
 
-execute(check_finished => 1);
+execute();
 
 vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
 

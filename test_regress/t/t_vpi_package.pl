@@ -22,7 +22,6 @@ compile(
 
 execute(
     use_libvpi => 1,
-    check_finished => 1
     );
 
 ok(1);

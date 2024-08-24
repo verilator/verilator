@@ -21,7 +21,6 @@ else {
     );
 
     execute(
-        check_finished => 1,
     );
 
     fst_identical($Self->trace_filename, $Self->{golden_filename});

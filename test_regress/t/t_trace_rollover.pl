@@ -19,7 +19,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 system("cat $Self->{obj_dir}/simrollover_cat*.vcd "

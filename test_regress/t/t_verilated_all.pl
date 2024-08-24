@@ -28,7 +28,6 @@ execute(
     all_run_flags => [" +verilator+prof+exec+file+/dev/null",
                       " +verilator+prof+vlt+file+/dev/null",
                       ],
-    check_finished => 1,
     );
 
 my %hit;

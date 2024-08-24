@@ -14,7 +14,7 @@ compile(
     verilator_flags2 => ["--stats"],
     );
 
-execute(check_finished => 1);
+execute();
 
 # The parameter array should have been put in the constant pool
 if ($Self->{vlt_all}) {

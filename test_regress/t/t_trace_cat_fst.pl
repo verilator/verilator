@@ -17,7 +17,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 fst_identical("$Self->{obj_dir}/simpart_0000.fst",

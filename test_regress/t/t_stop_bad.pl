@@ -15,7 +15,6 @@ compile(
 
 execute(
     fails => 1,
-    check_finished => 0,
     expect_filename => $Self->{golden_filename},
     );
 

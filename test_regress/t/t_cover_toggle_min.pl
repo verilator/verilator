@@ -16,7 +16,6 @@ compile(
 
 execute(
     all_run_flags => [" +verilator+coverage+file+$Self->{obj_dir}/coverage.dat"],
-    check_finished => 1,
     );
 
 if (-e ("$Self->{obj_dir}/coverage.dat")) {  # Don't try to write .info if test was skipped

@@ -17,7 +17,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 if ($Self->{vlt_all}) {

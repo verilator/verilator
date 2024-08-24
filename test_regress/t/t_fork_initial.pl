@@ -18,7 +18,6 @@ compile(
 
 # issue #4471 - add this
 #execute(
-#    check_finished => 1,
 #    );
 
 ok(1);

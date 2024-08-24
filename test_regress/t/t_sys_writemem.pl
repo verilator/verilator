@@ -31,7 +31,6 @@ compile(v_flags2 => [
         ]);
 
 execute(
-    check_finished => 1,
     );
 
 for (my $i = 1; $i <= 8; $i++) {

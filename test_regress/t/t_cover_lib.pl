@@ -19,7 +19,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 files_identical_sorted("$Self->{obj_dir}/coverage1.dat", "t/t_cover_lib_1.out");

@@ -34,7 +34,6 @@ execute(
                       " +verilator+prof+exec+file+$Self->{obj_dir}/profile_exec.dat",
                       " +verilator+prof+vlt+file+$Self->{obj_dir}/profile.vlt",
                       ],
-    check_finished => 1,
     );
 
 # For now, verilator_gantt still reads from STDIN

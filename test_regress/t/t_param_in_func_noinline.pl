@@ -16,7 +16,7 @@ compile(
     verilator_flags2 => ["--stats", "+define+NO_INLINE=1"],
     );
 
-execute(check_finished => 1);
+execute();
 
 # The parameter array should have been put in the constant pool
 if ($Self->{vlt_all}) {

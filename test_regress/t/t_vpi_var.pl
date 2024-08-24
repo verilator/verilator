@@ -22,7 +22,6 @@ compile(
 
 execute(
     use_libvpi => 1,
-    check_finished => 1,
     all_run_flags => ['+PLUS +INT=1234 +STRSTR']
     );
 

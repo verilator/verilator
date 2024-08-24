@@ -50,7 +50,6 @@ while (1) {
         );
 
     execute(
-        check_finished => 1,
         run_env => "DYLD_FALLBACK_LIBRARY_PATH=$abs_secret_dir"
         );
 

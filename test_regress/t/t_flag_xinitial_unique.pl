@@ -15,7 +15,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 my @files = glob_all("$Self->{obj_dir}/$Self->{vm_prefix}___024root__DepSet_*__Slow.cpp");

@@ -22,7 +22,6 @@ if ($Self->cxx_version =~ /clang/) {
     #Here:   if (VL_UNLIKELY(VL_NEQ_W(12, __Vtemp1, vlSymsp->TOP__t.__PVT__str)))
 } else {
     execute(
-        check_finished => 1,
         );
 }
 

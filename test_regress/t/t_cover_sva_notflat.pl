@@ -15,7 +15,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 #if ($Self->{nc}) ... # See t_assert_cover.pl for NC version

@@ -19,7 +19,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     executable => "$Self->{obj_dir}/Vprefix",
     );
 

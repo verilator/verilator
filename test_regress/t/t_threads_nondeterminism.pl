@@ -18,7 +18,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 file_grep("$Self->{obj_dir}/vlt_compile.log", qr/hash of shape/i);

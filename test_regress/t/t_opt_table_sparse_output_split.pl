@@ -28,7 +28,6 @@ file_grep("$Self->{obj_dir}/$Self->{vm_prefix}_classes.mk", qr/VM_PARALLEL_BUILD
 check_splits(2);
 
 execute(
-    check_finished => 1,
     expect_filename => $Self->{golden_filename},
     );
 

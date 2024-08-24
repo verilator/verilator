@@ -19,7 +19,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 file_grep($Self->{stats}, qr/SplitVar,\s+Split packed variables\s+(\d+)/i, 13);

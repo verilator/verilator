@@ -22,7 +22,6 @@ else {
         );
 
     execute(
-        check_finished => 1,
         );
 }
 

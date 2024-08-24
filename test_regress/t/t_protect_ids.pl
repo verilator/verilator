@@ -30,7 +30,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 # 'to="PS"' indicates means we probably mis-protected something already protected

@@ -44,7 +44,6 @@ while (1) {
         ]);
 
     execute(
-        check_finished => 1,
         );
 
     # Never spliting, so should set VM_PARALLEL_BUILDS to 0 by default

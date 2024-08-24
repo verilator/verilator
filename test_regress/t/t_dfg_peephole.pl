@@ -80,7 +80,6 @@ if (!-r "$root/.git") {
     # Execute test to check equivalence
     execute(
         executable => "$Self->{obj_dir}/obj_opt/Vopt",
-        check_finished => 1,
         );
 
     sub check {

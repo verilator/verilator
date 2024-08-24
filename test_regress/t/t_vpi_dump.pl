@@ -24,7 +24,6 @@ compile(
 
 execute(
     use_libvpi => 1,
-    check_finished => 1,
     expect_filename => $Self->{golden_filename},
     xrun_run_expect_filename => ($Self->{golden_filename} =~ s/\.out$/.xrun.out/r),
     iv_run_expect_filename => ($Self->{golden_filename} =~ s/\.out$/.iv.out/r),

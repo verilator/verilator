@@ -50,7 +50,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 # Must be <<9000 above to prove this worked

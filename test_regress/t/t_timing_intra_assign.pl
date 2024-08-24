@@ -15,7 +15,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     expect_filename => $Self->{golden_filename},
     );
 
@@ -24,7 +23,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     expect_filename => $Self->{golden_filename},
     );
 

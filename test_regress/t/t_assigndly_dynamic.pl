@@ -15,7 +15,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 compile(
@@ -23,7 +22,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 ok(1);

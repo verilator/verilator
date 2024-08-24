@@ -27,7 +27,6 @@ if ($Self->{vlt_all}) {
 }
 
 execute(
-    check_finished => 1,
     );
 
 ok(1);

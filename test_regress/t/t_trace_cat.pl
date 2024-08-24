@@ -17,7 +17,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 system("cat $Self->{obj_dir}/simpart_0000.vcd "

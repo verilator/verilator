@@ -54,7 +54,6 @@ if (-e $Self->{obj_dir} . '/Vt_flag_verilate_990_final.tree') {
 }
 
 execute(
-    check_finished => 1,
     );
 
 ok(1);

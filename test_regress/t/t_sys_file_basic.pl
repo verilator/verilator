@@ -18,7 +18,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 files_identical("$Self->{obj_dir}/t_sys_file_basic_test.log", $Self->{golden_filename});

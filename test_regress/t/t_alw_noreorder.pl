@@ -24,7 +24,6 @@ file_grep_any(\@files, qr/dly__t__DOT__v1/i);
 file_grep_any(\@files, qr/dly__t__DOT__v2/i);
 
 execute(
-    check_finished => 1,
     );
 
 ok(1);

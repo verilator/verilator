@@ -18,7 +18,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 vcd_identical($Self->trace_filename, $Self->{golden_filename});

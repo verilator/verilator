@@ -15,7 +15,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 # Value must differ from that in t_opt_localize_max_size.pl

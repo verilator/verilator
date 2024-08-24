@@ -23,7 +23,6 @@ execute(
                       " +verilator+prof+exec+file+/dev/null",
                       " +verilator+prof+vlt+file+$Self->{obj_dir}/profile.vlt",
                       ],
-    check_finished => 1,
     );
 
 file_grep("$Self->{obj_dir}/profile.vlt", qr/profile_data/i);
@@ -36,7 +35,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 ok(1);

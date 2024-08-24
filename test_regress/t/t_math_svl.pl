@@ -14,7 +14,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     # Make sure we get the finish statement called
     expect =>
 '\*-\* All Finished \*-\*

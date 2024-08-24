@@ -18,7 +18,6 @@ if (!$Self->have_solver) {
         );
 
     execute(
-        check_finished => 1,
         );
 }
 

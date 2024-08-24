@@ -26,12 +26,11 @@ compile(
     make_pli => 1,
     iv_flags2 => ["-g2005-sv -D USE_VPI_NOT_DPI"],
     v_flags2 => ["+define+USE_VPI_NOT_DPI"],
-);
+    );
 
 execute(
     use_libvpi => 1,
-    check_finished => 1
-);
+    );
 
 ok(1);
 1;

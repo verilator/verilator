@@ -14,7 +14,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 # bug2227, Verilator unsupported, class dead

@@ -14,7 +14,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     expect =>
 '[10] hello
 [20] world

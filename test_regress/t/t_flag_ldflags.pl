@@ -42,7 +42,6 @@ if ($^O eq "darwin") {
 }
 
 execute(
-    check_finished => 1,
     run_env => "LD_LIBRARY_PATH=$Self->{obj_dir}:$ENV{LD_LIBRARY_PATH}",
     );
 

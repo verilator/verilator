@@ -1322,6 +1322,8 @@ sub execute {
     $ENV{VERILATOR_SOLVER} = "test.pl-file-needs-have_solver()-call"
         if !$self->{_have_solver_called};
 
+    $param{check_finished} = 1 if !defined $param{check_finished} && !$param{fails};
+
     my $run_env = $param{run_env};
     $run_env .= ' ' if $run_env;
 
@@ -1848,7 +1850,7 @@ sub _run {
             # Finished?
             if ($param{check_finished} && $wholefile !~ /\*\-\* All Finished \*\-\*/) {
                 next if $moretry;
-                $self->error("Missing All Finished\n");
+                $self->error("Missing '*-* All Finished *-*'\n");
             }
             if ($param{expect}) {
                 # Strip debugging comments

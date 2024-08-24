@@ -15,7 +15,6 @@ compile(
 
 execute(
     all_run_flags => ["+verilator+debug +verilator+debugi+9 +verilator+rand+reset+1"],
-    check_finished => 1,
     expect => (q{.*Verilated::debug is on.*}),
     );
 

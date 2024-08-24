@@ -49,7 +49,6 @@ while (1) {
         );
 
     execute(
-        check_finished => 1,
         );
 
 

@@ -25,7 +25,6 @@ execute(
     # run_env => "VPI_TRACE=" . Cwd::getcwd() . "/$Self->{obj_dir}/$Self->{name}_vpi.log",
     # run_env => "VPI_TRACE=/tmp/$Self->{name}_vpi.log",
     use_libvpi => 1,
-    check_finished => 1,
     );
 
 ok(1);

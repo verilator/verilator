@@ -25,7 +25,6 @@ if ($nout !~ /cpu/ || $nout =~ /No NUMA support available/i) {
 } else {
     execute(
         run_env => 'numactl -m 0 -C 0,0,0,0,0,0,0,0',
-        check_finished => 1,
         );
     ok(1);
 }

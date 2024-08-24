@@ -17,7 +17,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_coverage",

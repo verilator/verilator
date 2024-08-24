@@ -18,7 +18,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 # Read the input .v file and do any CHECK_COVER requests

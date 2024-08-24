@@ -51,7 +51,6 @@ compile(
     );
 
 execute(
-    check_finished => 1,
     );
 
 file_grep($Self->{stats}, qr/Verilate jobs: 2/);

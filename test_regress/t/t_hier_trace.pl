@@ -16,7 +16,6 @@ compile(
 
 execute(
     all_run_flags => ['-j 4'],
-    check_finished => 1,
     );
 
 vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});

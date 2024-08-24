@@ -27,7 +27,6 @@ run(logfile => "$Self->{obj_dir}/cxx_compile.log",
             . " && cp $Self->{t_dir}/t_flag_lib_dpi.mk t_flag_lib_dpi.mk"
             . " && $ENV{MAKE} -f t_flag_lib_dpi.mk t_flag_lib_dpi_test"
             . " && ./t_flag_lib_dpi_test"],
-    check_finished => 1,
     );
 
 ok(1);

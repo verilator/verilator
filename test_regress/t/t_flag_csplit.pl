@@ -43,7 +43,6 @@ while (1) {
         ]);
 
     execute(
-        check_finished => 1,
         );
 
     # Splitting should set VM_PARALLEL_BUILDS to 1 by default
