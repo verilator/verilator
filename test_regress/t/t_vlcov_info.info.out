@@ -1,4 +1,13 @@
 TN:verilator_coverage
 SF:file1.sp
 DA:159,0
+BRDA:159,0,0,0
+BRDA:159,0,1,1
+BRDA:159,0,2,20
+BRDA:159,0,3,0
+BRDA:159,0,4,1
+BRDA:159,0,5,9
+BRDA:159,0,6,22
+BRF:7
+BRH:2
 end_of_record

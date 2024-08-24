@@ -37,7 +37,7 @@
 %000000    reg [1:0][1:0] ptoggle; initial ptoggle=0;
         
            integer cyc; initial cyc=1;
-%000000    wire [7:0] cyc_copy = cyc[7:0];
+~000000    wire [7:0] cyc_copy = cyc[7:0];
 %000002    wire       toggle_up;
         
            typedef struct {
@@ -116,7 +116,7 @@
            // CHECK_COVER(-1,"top.t.a*",4)
            // 2 edges * (t.a1 and t.a2)
         
-%000000    input [7:0] cyc_copy;
+~000000    input [7:0] cyc_copy;
            // CHECK_COVER(-1,"top.t.a*","cyc_copy[0]",22)
            // CHECK_COVER(-2,"top.t.a*","cyc_copy[1]",10)
            // CHECK_COVER(-3,"top.t.a*","cyc_copy[2]",4)
