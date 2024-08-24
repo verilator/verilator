@@ -200,7 +200,7 @@ public:
                 varNum.opIToRD(pinValuep->num());
                 var = varNum.toDouble();
             }
-            return v3EpsilonEqual(var, hierOptParamp->num().toDouble());
+            return V3Number::epsilonEqual(var, hierOptParamp->num().toDouble());
         } else {  // Now integer type is assumed
             // Bitwidth of hierOptParamp is accurate because V3Width already calculated in the
             // previous run. Bitwidth of pinValuep is before width analysis, so pinValuep is casted

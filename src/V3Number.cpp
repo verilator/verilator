@@ -388,6 +388,17 @@ void V3Number::nodep(AstNode* nodep) VL_MT_STABLE {
 //======================================================================
 // Global
 
+bool V3Number::epsilonEqual(double a, double b) {
+    return std::fabs(a - b)
+           <= (std::numeric_limits<double>::epsilon() * std::max(1.0, std::max(a, b)));
+}
+
+bool V3Number::epsilonIntegral(double a) {
+    const double dint = static_cast<double>(static_cast<int64_t>(a));
+    // Check all the rounding possibilities, as we did truncation above rather than rounding
+    return epsilonEqual(a, dint) || epsilonEqual(a, dint - 1) || epsilonEqual(a, dint + 1);
+}
+
 int V3Number::log2b(uint32_t num) {
     // See also opCLog2
     for (int bit = 31; bit > 0; bit--) {
@@ -2551,6 +2562,23 @@ void V3Number::selfTest() {
 
 void V3Number::selfTestThis() {
     // The self test has a "this" so UASSERT_SELFTEST/errorEndFatal works correctly
+
+    UASSERT_SELFTEST(bool, V3Number::epsilonEqual(0, 0), true);
+    UASSERT_SELFTEST(bool, V3Number::epsilonEqual(1e19, 1e19), true);
+    UASSERT_SELFTEST(bool, V3Number::epsilonEqual(9, 0.0001), false);
+    UASSERT_SELFTEST(bool, V3Number::epsilonEqual(1, 1 + std::numeric_limits<double>::epsilon()),
+                     true);
+    UASSERT_SELFTEST(bool, V3Number::epsilonEqual(0.009, 0.00899999999999999931998839741709),
+                     true);
+
+    UASSERT_SELFTEST(bool, V3Number::epsilonIntegral(0), true);
+    UASSERT_SELFTEST(bool, V3Number::epsilonIntegral(1), true);
+    UASSERT_SELFTEST(bool, V3Number::epsilonIntegral(-1), true);
+    UASSERT_SELFTEST(bool, V3Number::epsilonIntegral(1.0001), false);
+    UASSERT_SELFTEST(bool, V3Number::epsilonIntegral(0.9999), false);
+    UASSERT_SELFTEST(bool, V3Number::epsilonIntegral(-1.0001), false);
+    UASSERT_SELFTEST(bool, V3Number::epsilonIntegral(-0.9999), false);
+
     UASSERT_SELFTEST(int, log2b(0), 0);
     UASSERT_SELFTEST(int, log2b(1), 0);
     UASSERT_SELFTEST(int, log2b(0x40000000UL), 30);

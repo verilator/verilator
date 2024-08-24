@@ -1506,9 +1506,9 @@ class WidthVisitor final : public VNVisitor {
         const AstConst* const constp = VN_CAST(nodep->lhsp(), Const);
         UASSERT_OBJ(constp && constp->isDouble(), nodep, "Times should be doubles");
         UASSERT_OBJ(!nodep->timeunit().isNone(), nodep, "$time import no units");
-        double time = constp->num().toDouble();
+        const double timePrescale = constp->num().toDouble();
         UASSERT_OBJ(!v3Global.rootp()->timeprecision().isNone(), nodep, "Never set precision?");
-        time /= nodep->timeunit().multiplier();
+        const double time = timePrescale / nodep->timeunit().multiplier();
         // IEEE claims you should round to time precision here, but no simulator seems to do this
         AstConst* const newp = new AstConst{nodep->fileline(), AstConst::RealDouble{}, time};
         nodep->replaceWith(newp);
@@ -7305,10 +7305,7 @@ class WidthVisitor final : public VNVisitor {
             if (const AstConst* const constp = VN_CAST(nodep, Const)) {
                 // We convert to/from int32_t rather than use floor() as want to make sure is
                 // representable in integer's number of bits
-                if (constp->isDouble()
-                    && v3EpsilonEqual(
-                        constp->num().toDouble(),
-                        static_cast<double>(static_cast<int32_t>(constp->num().toDouble())))) {
+                if (constp->isDouble() && V3Number::epsilonIntegral(constp->num().toDouble())) {
                     warnOn = false;
                 }
             }

@@ -32,14 +32,6 @@
 
 //============================================================================
 
-// Return if two numbers within Epsilon of each other
-inline bool v3EpsilonEqual(double a, double b) {
-    return std::fabs(a - b)
-           <= (std::numeric_limits<double>::epsilon() * std::max(1.0, std::max(a, b)));
-}
-
-//============================================================================
-
 class AstNode;
 class AstNodeDType;
 class FileLine;
@@ -662,6 +654,8 @@ public:
     bool operator<(const V3Number& rhs) const { return isLtXZ(rhs); }
 
     // STATICS
+    static bool epsilonEqual(double a, double b);  // True if number within Epsilon of the other
+    static bool epsilonIntegral(double a);  // True if number rounds to integer within Epsilon
     static int log2b(uint32_t num);
     static int log2bQuad(uint64_t num);
     static void selfTest();
