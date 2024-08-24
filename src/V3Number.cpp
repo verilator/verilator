@@ -2539,3 +2539,20 @@ V3Number& V3Number::opLteN(const V3Number& lhs, const V3Number& rhs) {
     NUM_ASSERT_STRING_ARGS2(lhs, rhs);
     return setSingleBits(lhs.toString() <= rhs.toString());
 }
+
+//======================================================================
+
+void V3Number::selfTest() {
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    FileLine* const fl = new FileLine{FileLine::builtInFilename()};
+    V3Number num{fl, 32, 0};
+    num.selfTestThis();
+}
+
+void V3Number::selfTestThis() {
+    // The self test has a "this" so UASSERT_SELFTEST/errorEndFatal works correctly
+    UASSERT_SELFTEST(int, log2b(0), 0);
+    UASSERT_SELFTEST(int, log2b(1), 0);
+    UASSERT_SELFTEST(int, log2b(0x40000000UL), 30);
+    UASSERT_SELFTEST(int, log2bQuad(0x4000000000000000ULL), 62);
+}

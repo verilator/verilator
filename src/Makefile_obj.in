@@ -355,9 +355,6 @@ $(TGT): $(PREDEP_H) $(OBJS)
 	@echo "      Linking $@..."
 	${LINK} ${LDFLAGS} -o $@ $(OBJS) $(CCMALLOC) ${LIBS}
 
-V3Number_test: V3Number_test.o
-	${LINK} ${LDFLAGS} -o $@ $^ ${LIBS}
-
 #### Modules
 
 %__gen.cpp: %.cpp $(ASTGEN) $(AST_DEFS) $(DFG_DEFS)

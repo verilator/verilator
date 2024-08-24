@@ -533,6 +533,7 @@ public:
     ~V3Number() {}
 
 private:
+    void selfTestThis();
     void create(AstNode* nodep, const char* sourcep) {
         init(nodep, 0);
         m_fileline = nullptr;
@@ -663,6 +664,7 @@ public:
     // STATICS
     static int log2b(uint32_t num);
     static int log2bQuad(uint64_t num);
+    static void selfTest();
 
     // MATH
     // "this" is the output, as we need the output width before some computations
