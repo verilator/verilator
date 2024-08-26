@@ -17,9 +17,9 @@ compile(
 execute(
     );
 
-file_grep($Self->{stats}, qr/Dynamic NBA, variables needing commit queue without partial updates\s+(\d+)/i,
+file_grep($Self->{stats}, qr/Dynamic NBA, variables needing commit queue without partial updates\s+(\d+)/,
           6);
-file_grep($Self->{stats}, qr/Dynamic NBA, variables needing commit queue with partial updates\s+(\d+)/i,
+file_grep($Self->{stats}, qr/Dynamic NBA, variables needing commit queue with partial updates\s+(\d+)/,
           3);
 
 ok(1);

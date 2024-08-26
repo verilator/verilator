@@ -19,7 +19,7 @@ compile(
     make_main => 0,
     );
 
-file_grep($Self->{stats}, qr/Optimizations, Unrolled Loops\s+(\d+)/i, 3);
+file_grep($Self->{stats}, qr/Optimizations, Unrolled Loops\s+(\d+)/, 3);
 
 ok(1);
 1;

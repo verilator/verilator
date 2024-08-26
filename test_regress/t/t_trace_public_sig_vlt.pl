@@ -31,7 +31,7 @@ execute(
 vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
 
 # vcd_identical doesn't detect "$var a.b;" vs "$scope module a; $var b;"
-file_grep("$Self->{obj_dir}/simx.vcd", qr/module glbl/i);
+file_grep("$Self->{obj_dir}/simx.vcd", qr/module glbl/);
 
 ok(1);
 1;

@@ -47,13 +47,13 @@ run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_gantt",
     );
 
 if ($Self->{vltmt}) {
-    file_grep("$Self->{obj_dir}/gantt.log", qr/Total threads += 2/i);
-    file_grep("$Self->{obj_dir}/gantt.log", qr/Total mtasks += 7/i);
+    file_grep("$Self->{obj_dir}/gantt.log", qr/Total threads += 2/);
+    file_grep("$Self->{obj_dir}/gantt.log", qr/Total mtasks += 7/);
 } else {
-    file_grep("$Self->{obj_dir}/gantt.log", qr/Total threads += 1/i);
-    file_grep("$Self->{obj_dir}/gantt.log", qr/Total mtasks += 0/i);
+    file_grep("$Self->{obj_dir}/gantt.log", qr/Total threads += 1/);
+    file_grep("$Self->{obj_dir}/gantt.log", qr/Total mtasks += 0/);
 }
-file_grep("$Self->{obj_dir}/gantt.log", qr/\|\s+4\s+\|\s+4\.0+\s+\|\s+eval/i);
+file_grep("$Self->{obj_dir}/gantt.log", qr/\|\s+4\s+\|\s+4\.0+\s+\|\s+eval/);
 
 # Diff to itself, just to check parsing
 vcd_identical("$Self->{obj_dir}/profile_exec.vcd", "$Self->{obj_dir}/profile_exec.vcd");

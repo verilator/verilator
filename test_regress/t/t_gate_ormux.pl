@@ -19,7 +19,7 @@ compile(
     );
 
 if ($Self->{vlt}) {
-    file_grep($Self->{stats}, qr/Optimizations, Const bit op reduction\s+(\d+)/i, 1058);
+    file_grep($Self->{stats}, qr/Optimizations, Const bit op reduction\s+(\d+)/, 1058);
 }
 
 execute(

@@ -14,7 +14,7 @@ compile(
     verilator_flags2 => ["-MMD -MP"],
     );
 
-file_grep("$Self->{obj_dir}/Vt_flag_mmd__ver.d", qr!t/t_flag_mmd.v!x);
+file_grep("$Self->{obj_dir}/Vt_flag_mmd__ver.d", qr!t/t_flag_mmd.v!);
 
 ok(1);
 1;

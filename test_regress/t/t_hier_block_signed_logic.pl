@@ -18,6 +18,6 @@ execute(
     );
 
 file_grep($Self->{obj_dir} . "/Vsub/sub.sv", /^module\s+(\S+)\s+/, "sub");
-file_grep($Self->{stats}, qr/HierBlock,\s+Hierarchical blocks\s+(\d+)/i, 1);
+file_grep($Self->{stats}, qr/HierBlock,\s+Hierarchical blocks\s+(\d+)/, 1);
 
 ok(1);

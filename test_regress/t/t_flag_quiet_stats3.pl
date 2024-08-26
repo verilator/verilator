@@ -18,7 +18,7 @@ compile(
     logfile => $Self->{run_log_filename},
     );
 
-file_grep($Self->{obj_dir}.'/vlt_compile.log', qr/V e r i l a t/i,);
+file_grep($Self->{obj_dir}.'/vlt_compile.log', qr/V e r i l a t/);
 
 ok(1);
 1;

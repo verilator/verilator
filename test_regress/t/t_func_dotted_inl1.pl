@@ -18,9 +18,9 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep_not("$out_filename", qr/"ma0"/i);
-    file_grep_not("$out_filename", qr/"mb0"/i);
-    file_grep_not("$out_filename", qr/"mc0"/i);
+    file_grep_not("$out_filename", qr/"ma0"/);
+    file_grep_not("$out_filename", qr/"mb0"/);
+    file_grep_not("$out_filename", qr/"mc0"/);
 }
 
 execute(

@@ -14,7 +14,7 @@ compile(
     verilator_flags2 => ["--stats"],
     );
 
-file_grep($Self->{stats}, qr/Optimizations, MergeCond merges\s+(\d+)/i, 0);
+file_grep($Self->{stats}, qr/Optimizations, MergeCond merges\s+(\d+)/, 0);
 
 ok(1);
 1;

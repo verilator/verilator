@@ -53,7 +53,7 @@ execute(
     );
 
 # Must be <<9000 above to prove this worked
-file_grep($Self->{stats}, qr/Optimizations, Gate sigs deleted\s+(\d+)/i, 8575);
+file_grep($Self->{stats}, qr/Optimizations, Gate sigs deleted\s+(\d+)/, 8575);
 
 ok(1);
 1;

@@ -19,7 +19,7 @@ execute(
     fails => 1,
     );
 
-file_grep($Self->{run_log_filename}, qr/vpi_release_handle.*called on same object twice/i);
+file_grep($Self->{run_log_filename}, qr/vpi_release_handle.*called on same object twice/);
 
 ok(1);
 

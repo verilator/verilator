@@ -20,7 +20,7 @@ foreach my $file (
       glob_all("$Self->{obj_dir}/$Self->{vm_prefix}*.h"),
       glob_all("$Self->{obj_dir}/$Self->{vm_prefix}*.cpp")
     ) {
-    file_grep_not($file, qr/__Vfork_/i);
+    file_grep_not($file, qr/__Vfork_/);
 }
 
 ok(1);

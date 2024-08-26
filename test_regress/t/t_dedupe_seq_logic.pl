@@ -15,7 +15,7 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep($Self->{stats}, qr/Optimizations, Gate sigs deduped\s+(\d+)/i, 6);
+    file_grep($Self->{stats}, qr/Optimizations, Gate sigs deduped\s+(\d+)/, 6);
 }
 
 ok(1);

@@ -86,7 +86,7 @@ if (!-r "$root/.git") {
       my $name = shift;
       $name = lc $name;
       $name =~ s/_/ /g;
-      file_grep("$Self->{obj_dir}/obj_opt/Vopt__stats.txt", qr/DFG\s+(pre|post) inline Peephole, ${name}\s+([1-9]\d*)/i);
+      file_grep("$Self->{obj_dir}/obj_opt/Vopt__stats.txt", qr/DFG\s+(pre|post) inline Peephole, ${name}\s+([1-9]\d*)/);
     }
 
     # Check all optimizations defined in

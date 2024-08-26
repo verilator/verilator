@@ -18,7 +18,7 @@ compile(
 execute(
     );
 
-file_grep($Self->{stats}, qr/SplitVar,\s+Split packed variables\s+(\d+)/i, 0);
-file_grep($Self->{stats}, qr/SplitVar,\s+Split unpacked arrays\s+(\d+)/i, 0);
+file_grep($Self->{stats}, qr/SplitVar,\s+Split packed variables\s+(\d+)/, 0);
+file_grep($Self->{stats}, qr/SplitVar,\s+Split unpacked arrays\s+(\d+)/, 0);
 ok(1);
 1;

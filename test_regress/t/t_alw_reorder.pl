@@ -14,7 +14,7 @@ compile(
     verilator_flags2 => ["--stats"],
     );
 
-file_grep($Self->{stats}, qr/Optimizations, Split always\s+(\d+)/i, 0);
+file_grep($Self->{stats}, qr/Optimizations, Split always\s+(\d+)/, 0);
 # Important: if reorder succeeded, we should see no dly vars.
 # Equally important: twin test t_alw_noreorder should see dly vars,
 #  is identical to this test except for disabling the reorder step.
@@ -22,9 +22,9 @@ foreach my $file (
       glob_all("$Self->{obj_dir}/$Self->{vm_prefix}*.h"),
       glob_all("$Self->{obj_dir}/$Self->{vm_prefix}*.cpp")
     ) {
-    file_grep_not($file, qr/dly__t__DOT__v1/i);
-    file_grep_not($file, qr/dly__t__DOT__v2/i);
-    file_grep_not($file, qr/dly__t__DOT__v3/i);
+    file_grep_not($file, qr/dly__t__DOT__v1/);
+    file_grep_not($file, qr/dly__t__DOT__v2/);
+    file_grep_not($file, qr/dly__t__DOT__v3/);
 }
 
 execute(

@@ -25,7 +25,7 @@ execute(
                       ],
     );
 
-file_grep("$Self->{obj_dir}/profile.vlt", qr/profile_data/i);
+file_grep("$Self->{obj_dir}/profile.vlt", qr/profile_data/);
 
 compile(
     # Intentionally no --prof-pgo here to make sure profile data can be read in

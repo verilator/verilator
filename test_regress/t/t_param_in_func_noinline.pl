@@ -20,7 +20,7 @@ execute();
 
 # The parameter array should have been put in the constant pool
 if ($Self->{vlt_all}) {
-    file_grep($Self->{stats}, qr/ConstPool, Tables emitted\s+(\d+)/i, 3);
+    file_grep($Self->{stats}, qr/ConstPool, Tables emitted\s+(\d+)/, 3);
 }
 
 # Shouldn't have any references to the parameter array
@@ -28,7 +28,7 @@ foreach my $file (
       glob_all("$Self->{obj_dir}/$Self->{vm_prefix}*.h"),
       glob_all("$Self->{obj_dir}/$Self->{vm_prefix}*.cpp")
     ) {
-    file_grep_not($file, qr/digits/i);
+    file_grep_not($file, qr/digits/);
 }
 
 ok(1);

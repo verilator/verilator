@@ -18,23 +18,23 @@ compile(
     );
 
 {
-    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_in<sc_dt::sc_uint<1>\s> \s+ &i1;/x);
-    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_in<uint32_t> \s+ &i8;/x);
-    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_in<uint32_t> \s+ &i16;/x);
-    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_in<uint32_t> \s+ &i32;/x);
-    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_in<uint64_t> \s+ &i64;/x);
-    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_in<sc_dt::sc_bv<65>\s> \s+ &i65;/x);
-    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_in<sc_dt::sc_bv<128>\s> \s+ &i128;/x);
-    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_in<sc_dt::sc_bv<513>\s> \s+ &i513;/x);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_in<sc_dt::sc_uint<1>\s>\s+&i1;/);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_in<uint32_t>\s+&i8;/);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_in<uint32_t>\s+&i16;/);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_in<uint32_t>\s+&i32;/);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_in<uint64_t>\s+&i64;/);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_in<sc_dt::sc_bv<65>\s>\s+&i65;/);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_in<sc_dt::sc_bv<128>\s>\s+&i128;/);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_in<sc_dt::sc_bv<513>\s>\s+&i513;/);
 
-    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_out<sc_dt::sc_uint<1>\s> \s+ &o1;/x);
-    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_out<uint32_t> \s+ &o8;/x);
-    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_out<uint32_t> \s+ &o16;/x);
-    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_out<uint32_t> \s+ &o32;/x);
-    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_out<uint64_t> \s+ &o64;/x);
-    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_out<sc_dt::sc_bv<65>\s> \s+ &o65;/x);
-    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_out<sc_dt::sc_bv<128>\s> \s+ &o128;/x);
-    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_out<sc_dt::sc_bv<513>\s> \s+ &o513;/x);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_out<sc_dt::sc_uint<1>\s>\s+&o1;/);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_out<uint32_t>\s+&o8;/);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_out<uint32_t>\s+&o16;/);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_out<uint32_t>\s+&o32;/);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_out<uint64_t>\s+&o64;/);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_out<sc_dt::sc_bv<65>\s>\s+&o65;/);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_out<sc_dt::sc_bv<128>\s>\s+&o128;/);
+    file_grep("$Self->{obj_dir}/$Self->{vm_prefix}.h", qr/sc_core::sc_out<sc_dt::sc_bv<513>\s>\s+&o513;/);
 }
 
 execute();

@@ -15,7 +15,7 @@ compile(
     );
 
 my @files = glob_all("$Self->{obj_dir}/$Self->{vm_prefix}_*.h");
-file_grep_any(\@files, qr/keptdead/ix);
+file_grep_any(\@files, qr/keptdead/);
 
 ok(1);
 1;

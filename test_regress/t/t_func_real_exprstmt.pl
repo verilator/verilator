@@ -16,7 +16,7 @@ compile(
 
 if ($Self->{vlt_all}) {
     # Check no EXPRSTMTs in final output - should get optimized away
-    file_grep_not($Self->{stats}, qr/Node count, EXPRSTMT/i);
+    file_grep_not($Self->{stats}, qr/Node count, EXPRSTMT/);
 }
 
 execute(

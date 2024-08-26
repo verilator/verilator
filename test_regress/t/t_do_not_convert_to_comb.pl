@@ -15,7 +15,7 @@ compile(
     );
 
 # We must not convert these blocks into combinational blocks
-file_grep($Self->{stats}, qr/Scheduling, size of class: combinational\s+(\d+)/i, 0);
+file_grep($Self->{stats}, qr/Scheduling, size of class: combinational\s+(\d+)/, 0);
 
 ok(1);
 1;

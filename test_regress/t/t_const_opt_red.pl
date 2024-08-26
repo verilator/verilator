@@ -18,7 +18,7 @@ execute(
     );
 
 if ($Self->{vlt}) {
-    file_grep($Self->{stats}, qr/Optimizations, Const bit op reduction\s+(\d+)/i, 158);
+    file_grep($Self->{stats}, qr/Optimizations, Const bit op reduction\s+(\d+)/, 158);
 }
 
 ok(1);

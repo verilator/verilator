@@ -27,7 +27,7 @@ sub check {
         verilator_run => 1,
         );
 
-    file_grep($logfile, qr/(DISTRIBUTION|usage:)/i);
+    file_grep($logfile, qr/(DISTRIBUTION|usage:)/);
 }
 
 check("perl", "$ENV{VERILATOR_ROOT}/bin/verilator");

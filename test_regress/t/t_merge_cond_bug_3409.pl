@@ -17,11 +17,11 @@ compile(
 execute();
 
 if ($Self->{vlt_all}) {
-    file_grep($Self->{stats}, qr/Optimizations, MergeCond merges\s+(\d+)/i,
+    file_grep($Self->{stats}, qr/Optimizations, MergeCond merges\s+(\d+)/,
               0);
-    file_grep($Self->{stats}, qr/Optimizations, MergeCond merged items\s+(\d+)/i,
+    file_grep($Self->{stats}, qr/Optimizations, MergeCond merged items\s+(\d+)/,
               0);
-    file_grep($Self->{stats}, qr/Optimizations, MergeCond longest merge\s+(\d+)/i,
+    file_grep($Self->{stats}, qr/Optimizations, MergeCond longest merge\s+(\d+)/,
               0);
 }
 

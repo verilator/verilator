@@ -20,7 +20,7 @@ compile(
 execute(
     );
 
-file_grep("$Self->{obj_dir}/vlt_compile.log", qr/hash of shape/i);
+file_grep("$Self->{obj_dir}/vlt_compile.log", qr/Hash of shape/);
 
 ok(1);
 1;

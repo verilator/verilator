@@ -19,7 +19,7 @@ execute(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/x);
+    file_grep("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/);
     my $sig = quotemeta("bra[ket]slash/dash-colon:9");
     file_grep("$Self->{obj_dir}/simx.vcd", qr/ $sig/);
     file_grep("$Self->{obj_dir}/simx.vcd", qr/ other\.cyc /);

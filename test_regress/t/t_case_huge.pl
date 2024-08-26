@@ -15,11 +15,11 @@ compile(
     );
 
 if ($Self->{vlt}) {
-    file_grep($Self->{stats}, qr/Optimizations, Tables created\s+(\d+)/i, 10);
-    file_grep($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/i, 8);
+    file_grep($Self->{stats}, qr/Optimizations, Tables created\s+(\d+)/, 10);
+    file_grep($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/, 8);
 } elsif ($Self->{vltmt}) {
-    file_grep($Self->{stats}, qr/Optimizations, Tables created\s+(\d+)/i, 10);
-    file_grep($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/i, 9);
+    file_grep($Self->{stats}, qr/Optimizations, Tables created\s+(\d+)/, 10);
+    file_grep($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/, 9);
 }
 
 execute(

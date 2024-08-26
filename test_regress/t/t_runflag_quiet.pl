@@ -19,7 +19,7 @@ execute(
     logfile => "$Self->{obj_dir}/sim__quiet.log",
     );
 
-file_grep_not("$Self->{obj_dir}/sim__quiet.log", qr/S i m u l a t/i,);
+file_grep_not("$Self->{obj_dir}/sim__quiet.log", qr/S i m u l a t/);
 
 #---
 
@@ -28,7 +28,7 @@ execute(
     logfile => "$Self->{obj_dir}/sim__noquiet.log",
     );
 
-file_grep("$Self->{obj_dir}/sim__noquiet.log", qr/S i m u l a t/i,);
+file_grep("$Self->{obj_dir}/sim__noquiet.log", qr/S i m u l a t/);
 
 ok(1);
 

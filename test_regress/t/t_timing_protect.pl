@@ -28,8 +28,8 @@ else {
         # Check for secret in any outputs
         my $any;
         foreach my $filename (glob $Self->{obj_dir} . "/*.[ch]*") {
-            file_grep_not($filename, qr/event[123]/i);
-            file_grep_not($filename, qr/t_timing_fork_join/i);
+            file_grep_not($filename, qr/event[123]/);
+            file_grep_not($filename, qr/t_timing_fork_join/);
             $any = 1;
     }
     $any or $Self->error("No outputs found");

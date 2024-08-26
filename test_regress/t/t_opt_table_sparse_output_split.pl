@@ -18,8 +18,8 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep($Self->{stats}, qr/Optimizations, Tables created\s+(\d+)/i, 1);
-    file_grep($Self->{stats}, qr/ConstPool, Tables emitted\s+(\d+)/i, 2);
+    file_grep($Self->{stats}, qr/Optimizations, Tables created\s+(\d+)/, 1);
+    file_grep($Self->{stats}, qr/ConstPool, Tables emitted\s+(\d+)/, 2);
 }
 
 # Splitting should set VM_PARALLEL_BUILDS to 1 by default

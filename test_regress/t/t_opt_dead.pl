@@ -18,8 +18,8 @@ execute(
 
 # bug2227, Verilator unsupported, class dead
 # This is what we really want:
-#   file_grep_not("$Self->{obj_dir}/V$Self->{name}__Syms.h", qr/dead/ix);
-file_grep("$Self->{obj_dir}/V$Self->{name}__Syms.h", qr/dead/ix);
+#   file_grep_not("$Self->{obj_dir}/V$Self->{name}__Syms.h", qr/dead/);
+file_grep("$Self->{obj_dir}/V$Self->{name}__Syms.h", qr/dead/);
 
 ok(1);
 1;

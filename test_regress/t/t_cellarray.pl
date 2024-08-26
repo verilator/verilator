@@ -18,7 +18,7 @@ execute(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep($Self->{stats}, qr/Optimizations, Gate assign merged\s+(\d+)/i, 28);
+    file_grep($Self->{stats}, qr/Optimizations, Gate assign merged\s+(\d+)/, 28);
 }
 
 ok(1);

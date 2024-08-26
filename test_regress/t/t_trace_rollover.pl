@@ -27,9 +27,9 @@ system("cat $Self->{obj_dir}/simrollover_cat*.vcd "
 vcd_identical("$Self->{obj_dir}/simall.vcd",
               $Self->{golden_filename});
 
-file_grep_not("$Self->{obj_dir}/simrollover_cat0000.vcd", qr/^#/i);
-file_grep("$Self->{obj_dir}/simrollover_cat0001.vcd", qr/^#/i);
-file_grep("$Self->{obj_dir}/simrollover_cat0002.vcd", qr/^#/i);
+file_grep_not("$Self->{obj_dir}/simrollover_cat0000.vcd", qr/^#/);
+file_grep("$Self->{obj_dir}/simrollover_cat0001.vcd", qr/^#/);
+file_grep("$Self->{obj_dir}/simrollover_cat0002.vcd", qr/^#/);
 
 ok(1);
 1;
