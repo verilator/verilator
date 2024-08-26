@@ -12,7 +12,7 @@ class cls;
 endclass
 module t;
    cls obj;
-   task t;
+   task static t;
       int _ = obj.randomize() with {1 == 1;};
    endtask
 endmodule
