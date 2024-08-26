@@ -32,8 +32,16 @@ endclass
 class D;
    rand bit posit;
    rand int x;
+   int o[$];  // empty
+   int p[$] = {1};
    int q[$] = {0, 0, 0, 0, 0};
    constraint fore {
+      if (posit == 1) {
+         foreach(o[i]) o[i] > 0;
+      }
+      if (posit == 1) {
+         foreach(p[i]) p[i] > 0;
+      }
       if (posit == 1) {
          x < 7;
          foreach(q[i])
