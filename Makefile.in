@@ -411,7 +411,8 @@ analyzer-include:
 	-rm -rf examples/*/obj*
 	scan-build $(MAKE) -k examples
 
-format: clang-format yapf format-pl-exec
+format:
+	$(MAKE) -j 4 clang-format yapf format-pl-exec
 
 CLANGFORMAT = clang-format-14
 CLANGFORMAT_FLAGS = -i
