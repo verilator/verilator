@@ -90,12 +90,7 @@ public:
 
         const int64_t topScore = sortedScores.back();
         UINFO(LOG_LEVEL, "Top score: " << topScore << endl);
-        const int maxScoreWidth = topScore < 10       ? 1
-                                  : topScore < 100    ? 2
-                                  : topScore < 1000   ? 3
-                                  : topScore < 10000  ? 4
-                                  : topScore < 100000 ? 5
-                                                      : 7;
+        const int maxScoreWidth = std::to_string(topScore).length();
 
         const int64_t intervalsNum = std::min<int64_t>(topScore + 1, MAX_INTERVALS_NUM);
         const double intervalWidth
