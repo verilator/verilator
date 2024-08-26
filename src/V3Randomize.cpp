@@ -1319,6 +1319,16 @@ class RandomizeVisitor final : public VNVisitor {
                 }
             }
             return stmtsp;
+        } else if (const auto* const unionDtp = VN_CAST(memberp ? memberp->subDTypep()->skipRefp()
+                                                                : exprp->dtypep()->skipRefp(),
+                                                        UnionDType)) {
+            if (!unionDtp->packed()) {
+                unionDtp->v3error("Unpacked unions shall not be declared as rand or randc."
+                                  " (IEEE 1800-2023 18.4)");
+                return nullptr;
+            }
+            AstMemberDType* const firstMemberp = unionDtp->membersp();
+            return newRandStmtsp(fl, exprp, nullptr, offset, firstMemberp);
         } else {
             AstNodeExpr* valp;
             if (AstEnumDType* const enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
@@ -1498,7 +1508,8 @@ class RandomizeVisitor final : public VNVisitor {
             }
             if (memberVarp->user3()) return;  // Handled in constraints
             const AstNodeDType* const dtypep = memberVarp->dtypep()->skipRefp();
-            if (VN_IS(dtypep, BasicDType) || VN_IS(dtypep, StructDType)) {
+            if (VN_IS(dtypep, BasicDType) || VN_IS(dtypep, StructDType)
+                || VN_IS(dtypep, UnionDType)) {
                 AstVar* const randcVarp = newRandcVarsp(memberVarp);
                 AstVarRef* const refp = new AstVarRef{fl, classp, memberVarp, VAccess::WRITE};
                 AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp);
