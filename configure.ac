@@ -29,6 +29,9 @@ AC_DEFINE_UNQUOTED([PACKAGE_VERSION_STRING_CHAR],
         [Package version as a number])
 AC_SUBST(PACKAGE_VERSION_STRING_CHAR)
 
+######################################################################
+## Arguments/flag checking
+
 # Ignore automake flags passed by Ubuntu builds
 AC_ARG_ENABLE([dependency-tracking],
               [AS_HELP_STRING([--disable-dependency-tracking], [ignored])])
@@ -155,6 +158,11 @@ AC_ARG_WITH([solver],
               )
 AC_SUBST(CFG_WITH_SOLVER)
 AC_MSG_RESULT($CFG_WITH_SOLVER)
+
+######################################################################
+## Compiler checks
+
+AC_MSG_RESULT([compiler CXX inbound is set to... $CXX])
 
 # Compiler flags (ensure they are not empty to avoid configure defaults)
 CFLAGS="$CFLAGS "
@@ -622,6 +630,9 @@ LIBS="$ACO_SAVE_LIBS"
 AC_SUBST(HAVE_SYSTEMC)
 
 # Checks for system services
+
+######################################################################
+## Output
 
 # Other install directories
 pkgdatadir=${datadir}/verilator
