@@ -94,20 +94,21 @@ public:
             = static_cast<double>(topScore + 1) / static_cast<int>(intervalsNum);
 
         struct Interval final {
-            int64_t m_lowerBound = 0;
+            uint64_t m_lowerBound = 0;
             int m_size = 0;
         };
 
         std::vector<Interval> intervals;
         intervals.resize(intervalsNum);
 
-        for (int64_t score = topScore; score >= 0; --score) {
-            const int ivIdx = int(int64_t(score) / intervalWidth);
-            intervals[ivIdx].m_lowerBound = int64_t(score);
+        for (uint64_t score = topScore; score >= 1; --score) {
+            const unsigned int ivIdx = (unsigned int)(score / intervalWidth);
+            intervals[ivIdx].m_lowerBound = score;
         }
+        intervals[0].m_lowerBound = 0;
 
         for (const auto score : sortedScores) {
-            const int ivIdx = int((score) / intervalWidth);
+            const unsigned int ivIdx = (unsigned int)(score / intervalWidth);
             ++intervals[ivIdx].m_size;
         }
 
