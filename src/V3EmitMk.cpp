@@ -82,9 +82,6 @@ public:
     // Debug logging: prints scores histogram
     static void debugLogScoreHistogram(const std::vector<std::int64_t>& sortedScores) {
         constexpr int LOG_LEVEL = 6;
-
-        if (debug() < LOG_LEVEL) return;
-
         constexpr int MAX_BAR_LENGTH = 80;
         constexpr int MAX_INTERVALS_NUM = 60;
 
@@ -312,7 +309,7 @@ public:
                        [](const FilenameWithScore& inputFile) { return inputFile.m_score; });
         std::sort(sortedScores.begin(), sortedScores.end());
 
-        debugLogScoreHistogram(sortedScores);
+        if (debug() >= 6) debugLogScoreHistogram(sortedScores);
 
         // Input files with a score exceeding this value are excluded from concatenation.
         const std::int64_t concatenableFileMaxScore = totalScore / totalBucketsNum / 2;
