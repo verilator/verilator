@@ -173,6 +173,12 @@ public:
                                     new AstVarRef{varp->fileline(), varp, VAccess::READ}};
                 initsp = AstNode::addNext(initsp, initAsgnp);
             }
+
+            if (AstBasicDType* const dtypep = VN_CAST(varp->dtypep()->skipRefp(), BasicDType)) {
+                v3Global.setAssignsEvents();
+                if (dtypep->isEvent()) continue;
+            }
+
             if (varp->direction().isWritable()) {
                 AstMemberSel* const memberselp = new AstMemberSel{
                     varp->fileline(),
@@ -416,7 +422,12 @@ class DynScopeVisitor final : public VNVisitor {
         ForkDynScopeFrame* const framep = frameOf(nodep->varp());
         if (!framep) return;
         if (needsDynScope(nodep)) {
-            if (m_afterTimingControl && nodep->varp()->isWritable()
+            bool isEvent = false;
+            if (AstBasicDType* const dtypep = VN_CAST(nodep->dtypep()->skipRefp(), BasicDType)) {
+                v3Global.setAssignsEvents();
+                isEvent = dtypep->isEvent();
+            }
+            if (!isEvent && m_afterTimingControl && nodep->varp()->isWritable()
                 && nodep->access().isWriteOrRW()) {
                 // The output variable may not exist after a delay, so we can't just write to it
                 nodep->v3warn(

@@ -925,12 +925,6 @@ class TimingControlVisitor final : public VNVisitor {
         // Do not allow waiting on local named events, as they get enqueued for clearing, but can
         // go out of scope before that happens
         if (!nodep->sensesp()) nodep->v3warn(E_UNSUPPORTED, "Unsupported: no sense equation (@*)");
-        if (nodep->sensesp()->exists([](const AstNodeVarRef* refp) {
-                AstBasicDType* const dtypep = refp->dtypep()->skipRefp()->basicp();
-                return dtypep && dtypep->isEvent() && refp->varp()->isFuncLocal();
-            })) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: waiting on local event variables");
-        }
         FileLine* const flp = nodep->fileline();
         // Relink child statements after the event control
         if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBackWithNext());
