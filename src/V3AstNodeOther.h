@@ -2263,7 +2263,7 @@ public:
 class AstCFile final : public AstNodeFile {
     // C++ output file
     // Parents:  NETLIST
-    int64_t m_complexityScore = 0;
+    uint64_t m_complexityScore = 0;
     bool m_slow : 1;  ///< Compile w/o optimization
     bool m_source : 1;  ///< Source file (vs header file)
     bool m_support : 1;  ///< Support file (non systemc)
@@ -2276,9 +2276,9 @@ public:
     ASTGEN_MEMBERS_AstCFile;
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
-    int64_t complexityScore() const { return m_complexityScore; }
-    void complexityScore(int64_t newScore) { m_complexityScore = newScore; }
-    void increaseComplexityScore(int64_t score) { m_complexityScore += score; }
+    uint64_t complexityScore() const { return m_complexityScore; }
+    void complexityScore(uint64_t newScore) { m_complexityScore = newScore; }
+    void increaseComplexityScore(uint64_t score) { m_complexityScore += score; }
     bool slow() const { return m_slow; }
     void slow(bool flag) { m_slow = flag; }
     bool source() const { return m_source; }

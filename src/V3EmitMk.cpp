@@ -36,19 +36,19 @@ public:
         std::vector<std::string> m_concatenatedFilenames{};
 
         // Concatenating file score for debugTestConcatenation
-        std::int64_t m_dbgScore = 0;
+        uint64_t m_dbgScore = 0;
 
         bool isConcatenatingFile() const { return !m_concatenatedFilenames.empty(); }
     };
 
     struct FilenameWithScore final {
         std::string m_filename;
-        std::int64_t m_score;
+        uint64_t m_score;
     };
 
     // Data of a single work unit used in `singleConcatenatedFilesList()`.
     struct WorkList final {
-        std::int64_t m_totalScore = 0;
+        uint64_t m_totalScore = 0;
         std::vector<FilenameWithScore> m_files{};
         // Number of buckets assigned for this list. Used only in concatenable lists.
         int m_bucketsNum = 0;
@@ -80,7 +80,7 @@ public:
     };
 
     // Debug logging: prints scores histogram
-    static void debugLogScoreHistogram(const std::vector<std::int64_t>& sortedScores) {
+    static void debugLogScoreHistogram(const std::vector<uint64_t>& sortedScores) {
         constexpr int LOG_LEVEL = 6;
         constexpr int MAX_BAR_LENGTH = 80;
         constexpr int MAX_INTERVALS_NUM = 60;
@@ -248,7 +248,7 @@ public:
     }
 
     static std::vector<FileOrConcatenatedFilesList>
-    singleConcatenatedFilesList(std::vector<FilenameWithScore> inputFiles, std::int64_t totalScore,
+    singleConcatenatedFilesList(std::vector<FilenameWithScore> inputFiles, uint64_t totalScore,
                                 std::string concatenatingFilePrefix) {
         UINFO(4, __FUNCTION__ << ":" << endl);
         UINFO(5, "Number of input files: " << inputFiles.size() << endl);
@@ -303,7 +303,7 @@ public:
         // Calculate score threshold for filtering out upper outliers.
 
         // All scores arranged in ascending order.
-        std::vector<std::int64_t> sortedScores;
+        std::vector<uint64_t> sortedScores;
         sortedScores.reserve(inputFiles.size());
         std::transform(inputFiles.begin(), inputFiles.end(), std::back_inserter(sortedScores),
                        [](const FilenameWithScore& inputFile) { return inputFile.m_score; });
@@ -312,7 +312,7 @@ public:
         if (debug() >= 6) debugLogScoreHistogram(sortedScores);
 
         // Input files with a score exceeding this value are excluded from concatenation.
-        const std::int64_t concatenableFileMaxScore = totalScore / totalBucketsNum / 2;
+        const uint64_t concatenableFileMaxScore = totalScore / totalBucketsNum / 2;
 
         UINFO(5, "Concatenable file max score: " << concatenableFileMaxScore << endl);
 
@@ -439,7 +439,7 @@ public:
             }
         }
 
-        const std::int64_t idealBucketScore = concatenableFilesTotalScore / totalBucketsNum;
+        const uint64_t idealBucketScore = concatenableFilesTotalScore / totalBucketsNum;
 
         UINFO(5, "Number of buckets: " << totalBucketsNum << endl);
         UINFO(5, "Ideal bucket score: " << idealBucketScore << endl);
@@ -484,20 +484,20 @@ public:
             }
 
             // Ideal bucket score limited to buckets and score of the current Work List.
-            const std::int64_t listIdealBucketScore = list.m_totalScore / list.m_bucketsNum;
+            const uint64_t listIdealBucketScore = list.m_totalScore / list.m_bucketsNum;
 
             auto fileIt = list.m_files.begin();
             for (int i = 0; i < list.m_bucketsNum; ++i) {
                 FileOrConcatenatedFilesList bucket;
-                std::int64_t bucketScore = 0;
+                uint64_t bucketScore = 0;
 
                 bucket.m_fileName = concatenatingFilePrefix + std::to_string(concatenatedFileId);
                 ++concatenatedFileId;
 
                 for (; fileIt != list.m_files.end(); ++fileIt) {
-                    int64_t diffNow = std::abs(listIdealBucketScore - bucketScore);
-                    int64_t diffIfAdded
-                        = std::abs(listIdealBucketScore - bucketScore - fileIt->m_score);
+                    uint64_t diffNow = std::abs((int64_t)(listIdealBucketScore - bucketScore));
+                    uint64_t diffIfAdded = std::abs(
+                        (int64_t)(listIdealBucketScore - bucketScore - fileIt->m_score));
                     if (bucketScore == 0 || fileIt->m_score == 0 || diffNow > diffIfAdded) {
                         // Bucket score will be better with the file in it.
                         bucketScore += fileIt->m_score;
@@ -553,15 +553,15 @@ public:
         if (v3Global.opt.outputGroups() > 0) {
             std::vector<FilenameWithScore> slowFiles{};
             std::vector<FilenameWithScore> fastFiles{};
-            std::int64_t slowTotalScore = 0;
-            std::int64_t fastTotalScore = 0;
+            uint64_t slowTotalScore = 0;
+            uint64_t fastTotalScore = 0;
 
             for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;
                  nodep = VN_AS(nodep->nextp(), NodeFile)) {
                 const AstCFile* const cfilep = VN_CAST(nodep, CFile);
                 if (cfilep && cfilep->source() && cfilep->support() == false) {
                     std::vector<FilenameWithScore>& files = cfilep->slow() ? slowFiles : fastFiles;
-                    int64_t& totalScore = cfilep->slow() ? slowTotalScore : fastTotalScore;
+                    uint64_t& totalScore = cfilep->slow() ? slowTotalScore : fastTotalScore;
 
                     FilenameWithScore f;
                     f.m_filename = V3Os::filenameNonDirExt(cfilep->name());
@@ -982,7 +982,7 @@ public:
 void V3EmitMk::debugTestConcatenation(const char* inputFile) {
     const std::unique_ptr<std::ifstream> ifp{V3File::new_ifstream_nodepend(inputFile)};
     std::vector<EmitMk::FilenameWithScore> inputList;
-    std::int64_t totalScore = 0;
+    uint64_t totalScore = 0;
 
     EmitMk::FilenameWithScore current{};
     while ((*ifp) >> current.m_score >> std::ws) {
