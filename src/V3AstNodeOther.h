@@ -2027,7 +2027,7 @@ public:
     bool isRef() const VL_MT_SAFE { return m_direction.isRef(); }
     bool isWritable() const VL_MT_SAFE { return m_direction.isWritable(); }
     bool isTristate() const { return m_tristate; }
-    bool isPrimaryIO() const { return m_primaryIO; }
+    bool isPrimaryIO() const VL_MT_SAFE { return m_primaryIO; }
     bool isPrimaryInish() const { return isPrimaryIO() && isNonOutput(); }
     bool isIfaceRef() const { return (varType() == VVarType::IFACEREF); }
     bool isIfaceParent() const { return m_isIfaceParent; }
@@ -2051,15 +2051,15 @@ public:
         AstBasicDType* bdtypep = basicp();
         return bdtypep && bdtypep->isBitLogic();
     }
-    bool isUsedClock() const { return m_usedClock; }
+    bool isUsedClock() const VL_MT_SAFE { return m_usedClock; }
     bool isUsedParam() const { return m_usedParam; }
     bool isUsedLoopIdx() const { return m_usedLoopIdx; }
     bool isSc() const VL_MT_SAFE { return m_sc; }
     bool isScQuad() const;
-    bool isScBv() const;
+    bool isScBv() const VL_MT_STABLE;
     bool isScUint() const;
     bool isScUintBool() const;
-    bool isScBigUint() const;
+    bool isScBigUint() const VL_MT_STABLE;
     bool isScSensitive() const { return m_scSensitive; }
     bool isSigPublic() const;
     bool isSigModPublic() const { return m_sigModPublic; }

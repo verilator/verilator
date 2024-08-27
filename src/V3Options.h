@@ -432,7 +432,7 @@ public:
     unsigned debugLevel(const string& tag) const VL_MT_SAFE;
     unsigned debugSrcLevel(const string& srcfile_path) const VL_MT_SAFE;
     unsigned dumpLevel(const string& tag) const VL_MT_SAFE;
-    unsigned dumpSrcLevel(const string& srcfile_path) const;
+    unsigned dumpSrcLevel(const string& srcfile_path) const VL_MT_SAFE;
 
     // METHODS
     void addCppFile(const string& filename);
@@ -520,7 +520,7 @@ public:
     bool pinsInoutEnables() const { return m_pinsInoutEnables; }
     bool pinsScUint() const { return m_pinsScUint; }
     bool pinsScUintBool() const { return m_pinsScUintBool; }
-    bool pinsScBigUint() const { return m_pinsScBigUint; }
+    bool pinsScBigUint() const VL_MT_SAFE { return m_pinsScBigUint; }
     bool pinsUint8() const { return m_pinsUint8; }
     bool ppComments() const { return m_ppComments; }
     bool profC() const { return m_profC; }
@@ -563,7 +563,7 @@ public:
     int outputSplit() const { return m_outputSplit; }
     int outputSplitCFuncs() const { return m_outputSplitCFuncs; }
     int outputSplitCTrace() const { return m_outputSplitCTrace; }
-    int pinsBv() const { return m_pinsBv; }
+    int pinsBv() const VL_MT_SAFE { return m_pinsBv; }
     int publicDepth() const { return m_publicDepth; }
     int reloopLimit() const { return m_reloopLimit; }
     VOptionBool skipIdentical() const { return m_skipIdentical; }
@@ -596,7 +596,7 @@ public:
     int verilateJobs() const { return m_verilateJobs; }
 
     int compLimitBlocks() const { return m_compLimitBlocks; }
-    int compLimitMembers() const { return m_compLimitMembers; }
+    int compLimitMembers() const VL_MT_SAFE { return m_compLimitMembers; }
     int compLimitParens() const { return m_compLimitParens; }
 
     string exeName() const { return m_exeName != "" ? m_exeName : prefix(); }

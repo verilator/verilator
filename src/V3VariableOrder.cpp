@@ -136,9 +136,12 @@ class VariableOrder final {
     std::unordered_map<const AstVar*, VarAttributes> m_attributes;
 
     const MTaskAffinityMap& m_mTaskAffinity;
+    std::vector<AstVar*>& m_varps;
 
-    VariableOrder(AstNodeModule* modp, const MTaskAffinityMap& mTaskAffinity)
-        : m_mTaskAffinity{mTaskAffinity} {
+    VariableOrder(AstNodeModule* modp, const MTaskAffinityMap& mTaskAffinity,
+                  std::vector<AstVar*>& varps)
+        : m_mTaskAffinity{mTaskAffinity}
+        , m_varps{varps} {
         orderModuleVars(modp);
     }
     ~VariableOrder() = default;
@@ -208,15 +211,11 @@ class VariableOrder final {
     }
 
     void orderModuleVars(AstNodeModule* modp) {
-        std::vector<AstVar*> varps;
-
         // Unlink all module variables from the module, compute attributes
         for (AstNode *nodep = modp->stmtsp(), *nextp; nodep; nodep = nextp) {
             nextp = nodep->nextp();
             if (AstVar* const varp = VN_CAST(nodep, Var)) {
-                // Unlink, add to vector
-                varp->unlinkFrBack();
-                varps.push_back(varp);
+                m_varps.push_back(varp);
 
                 // Compute attributes up front
                 // Stratum
@@ -235,31 +234,19 @@ class VariableOrder final {
             }
         }
 
-        if (!varps.empty()) {
-            // Sort variables
+        if (!m_varps.empty()) {
             if (!v3Global.opt.mtasks()) {
-                simpleSortVars(varps);
+                simpleSortVars(m_varps);
             } else {
-                tspSortVars(varps);
+                tspSortVars(m_varps);
             }
-
-            // Insert them back under the module, in the new order, but at
-            // the front of the list so they come out first in dumps/XML.
-            auto it = varps.cbegin();
-            AstVar* const firstp = *it++;
-            for (; it != varps.cend(); ++it) firstp->addNext(*it);
-            if (AstNode* const stmtsp = modp->stmtsp()) {
-                stmtsp->unlinkFrBackWithNext();
-                AstNode::addNext<AstNode, AstNode>(firstp, stmtsp);
-            }
-            modp->addStmtsp(firstp);
         }
     }
 
 public:
-    static void processModule(AstNodeModule* modp,
-                              const MTaskAffinityMap& mTaskAffinity) VL_MT_STABLE {
-        VariableOrder{modp, mTaskAffinity};
+    static void processModule(AstNodeModule* modp, const MTaskAffinityMap& mTaskAffinity,
+                              std::vector<AstVar*>& varps) VL_MT_STABLE {
+        VariableOrder{modp, mTaskAffinity, varps};
     }
 };
 
@@ -279,15 +266,43 @@ void V3VariableOrder::orderAll(AstNetlist* netlistp) {
             }
         });
     }
+    if (v3Global.opt.stats()) V3Stats::statsStage("variableorder-gather");
 
+    // Sort variables for each module
+    std::unordered_map<AstNodeModule*, std::vector<AstVar*>> sortedVars;
     {
         V3ThreadScope threadScope;
 
-        // Order variables in each module
         for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
              modp = VN_AS(modp->nextp(), NodeModule)) {
-            threadScope.enqueue(
-                [modp, mTaskAffinity]() { VariableOrder::processModule(modp, mTaskAffinity); });
+            std::vector<AstVar*>& varps = sortedVars[modp];
+            threadScope.enqueue([modp, mTaskAffinity, &varps]() {
+                VariableOrder::processModule(modp, mTaskAffinity, varps);
+            });
+        }
+    }
+    if (v3Global.opt.stats()) V3Stats::statsStage("variableorder-sort");
+
+    // Insert them back under the module, in the new order, but at
+    // the front of the list so they come out first in dumps/XML.
+    for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
+         modp = VN_AS(modp->nextp(), NodeModule)) {
+        const std::vector<AstVar*>& varps = sortedVars[modp];
+
+        if (!varps.empty()) {
+            auto it = varps.cbegin();
+            AstVar* const firstp = *it++;
+            firstp->unlinkFrBack();
+            for (; it != varps.cend(); ++it) {
+                AstVar* const varp = *it;
+                varp->unlinkFrBack();
+                firstp->addNext(varp);
+            }
+            if (AstNode* const stmtsp = modp->stmtsp()) {
+                stmtsp->unlinkFrBackWithNext();
+                AstNode::addNext<AstNode, AstNode>(firstp, stmtsp);
+            }
+            modp->addStmtsp(firstp);
         }
     }
 
