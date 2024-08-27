@@ -33,6 +33,7 @@
 class VlRandomExpr VL_NOT_FINAL {
 public:
     virtual void emit(std::ostream& s) const = 0;
+    virtual ~VlRandomExpr() = default;
 };
 class VlRandomVar final : public VlRandomExpr {
     const char* const m_name;  // Variable name
@@ -55,19 +56,6 @@ public:
     void emit(std::ostream& s) const override;
 };
 
-class VlRandomConst final : public VlRandomExpr {
-    const QData m_val;  // Constant value
-    const int m_width;  // Constant width in bits
-
-public:
-    VlRandomConst(QData val, int width)
-        : m_val{val}
-        , m_width{width} {
-        assert(width <= sizeof(m_val) * 8);
-    }
-    void emit(std::ostream& s) const override;
-};
-
 class VlRandomExtract final : public VlRandomExpr {
     const std::shared_ptr<const VlRandomExpr> m_expr;  // Sub-expression
     const unsigned m_idx;  // Extracted index
@@ -76,19 +64,6 @@ public:
     VlRandomExtract(std::shared_ptr<const VlRandomExpr> expr, unsigned idx)
         : m_expr{expr}
         , m_idx{idx} {}
-    void emit(std::ostream& s) const override;
-};
-
-class VlRandomBinOp final : public VlRandomExpr {
-    const char* const m_op;  // Binary operation identifier
-    const std::shared_ptr<const VlRandomExpr> m_lhs, m_rhs;  // Sub-expressions
-
-public:
-    VlRandomBinOp(const char* op, std::shared_ptr<const VlRandomExpr> lhs,
-                  std::shared_ptr<const VlRandomExpr> rhs)
-        : m_op{op}
-        , m_lhs{lhs}
-        , m_rhs{rhs} {}
     void emit(std::ostream& s) const override;
 };
 
@@ -103,7 +78,7 @@ class VlRandomizer final {
     const VlQueue<CData>* m_randmode;  // rand_mode state;
 
     // PRIVATE METHODS
-    std::shared_ptr<const VlRandomExpr> randomConstraint(VlRNG& rngr, int bits);
+    void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
     bool parseSolution(std::iostream& file);
 
 public:
