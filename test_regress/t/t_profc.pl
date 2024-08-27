@@ -12,11 +12,13 @@ scenarios(vlt => 1);
 
 top_filename("t_prof.v");
 
+dotest();
+
 ok(1);
 
 sub dotest {
     compile(
-        verilator_flags2 => ["--stats --prof-c"],
+        verilator_flags2 => ["--stats --prof-c +define+T_PROF"],
         );
 
     unlink $_ foreach (glob "$Self->{obj_dir}/gmon.out.*");
