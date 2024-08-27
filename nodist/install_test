@@ -41,8 +41,7 @@ def test():
         run("/bin/mkdir -p " + prefix)
         run("cd " + blddir + " && make install")
         run("test -e " + prefix + "/share/man/man1/verilator.1")
-        run("test -e " + prefix +
-            "/share/verilator/examples/make_tracing_c/Makefile")
+        run("test -e " + prefix + "/share/verilator/examples/make_tracing_c/Makefile")
         run("test -e " + prefix + "/share/verilator/include/verilated.h")
         run("test -e " + prefix + "/bin/verilator")
         run("test -e " + prefix + "/bin/verilator_bin")
@@ -58,10 +57,8 @@ def test():
         run("/bin/mkdir -p " + odir)
         path = prefix + "/bin" + ":" + prefix + "/share/bin"
         write_verilog(odir)
-        run("cd " + odir + " && PATH=" + path +
-            ":$PATH verilator --cc top.v --exe sim_main.cpp")
-        run("cd " + odir + "/obj_dir && PATH=" + path +
-            ":$PATH make -f Vtop.mk")
+        run("cd " + odir + " && PATH=" + path + ":$PATH verilator --cc top.v --exe sim_main.cpp")
+        run("cd " + odir + "/obj_dir && PATH=" + path + ":$PATH make -f Vtop.mk")
         run("cd " + odir + " && PATH=" + path + ":$PATH obj_dir/Vtop")
 
     # run a test using exact path to binary
@@ -72,8 +69,7 @@ def test():
         run("/bin/mkdir -p " + odir)
         write_verilog(odir)
         bin1 = prefix + "/bin"
-        run("cd " + odir + " && " + bin1 +
-            "/verilator --cc top.v --exe sim_main.cpp")
+        run("cd " + odir + " && " + bin1 + "/verilator --cc top.v --exe sim_main.cpp")
         run("cd " + odir + "/obj_dir && make -f Vtop.mk")
         run("cd " + odir + "/obj_dir && ./Vtop")
 
@@ -88,8 +84,7 @@ def write_verilog(odir):
 
 def cleanenv():
     for var in os.environ:
-        if var in ('VERILATOR_ROOT', 'VERILATOR_INCLUDE',
-                   'VERILATOR_NO_OPT_BUILD'):
+        if var in ('VERILATOR_ROOT', 'VERILATOR_INCLUDE', 'VERILATOR_NO_OPT_BUILD'):
             print("unset %s # Was '%s'" % (var, os.environ[var]))
             del os.environ[var]
 
@@ -113,21 +108,16 @@ def run(command):
 parser = argparse.ArgumentParser(
     allow_abbrev=False,
     formatter_class=argparse.RawDescriptionHelpFormatter,
-    description=
-    """install_test performs several make-and-install iterations to verify the
+    description="""install_test performs several make-and-install iterations to verify the
 Verilator kit.  It isn't part of the normal "make test" due to the number
 of builds required.""",
-    epilog=
-    """Copyright 2009-2024 by Wilson Snyder. This program is free software; you
+    epilog="""Copyright 2009-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
 
 SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
-parser.add_argument('--debug',
-                    action='store_const',
-                    const=9,
-                    help='enable debug')
+parser.add_argument('--debug', action='store_const', const=9, help='enable debug')
 parser.add_argument('--stage',
                     type=int,
                     default=0,

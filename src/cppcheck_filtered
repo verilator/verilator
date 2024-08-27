@@ -115,11 +115,9 @@ def _suppress(filename, linenum, eid):
         return True
     if eid == 'constParameter' and re.search(r'gtkwave/', filename):
         return True
-    if eid == 'ctuOneDefinitionRuleViolation' and re.search(
-            r'vltstd/', filename):
+    if eid == 'ctuOneDefinitionRuleViolation' and re.search(r'vltstd/', filename):
         return True
-    if eid == 'duplicateConditionalAssign' and re.search(
-            r'gtkwave/', filename):
+    if eid == 'duplicateConditionalAssign' and re.search(r'gtkwave/', filename):
         return True
     if eid == 'knownConditionTrueFalse' and re.search(r'gtkwave/', filename):
         return True
@@ -151,8 +149,7 @@ def _suppress(filename, linenum, eid):
         return True
 
     if not os.path.exists(filename):
-        print("%Warning: " + filename + " does not exist, ignored",
-              file=sys.stderr)
+        print("%Warning: " + filename + " does not exist, ignored", file=sys.stderr)
         return False
 
     with open(filename, "r", encoding="utf8") as fh:
@@ -160,13 +157,11 @@ def _suppress(filename, linenum, eid):
         for line in fh:
             lineno += 1
             if (lineno + 1) == linenum:
-                match = re.search(
-                    r'(cppcheck|cppcheck-has-bug|cppverilator)-suppress((\s+\S+)+)',
-                    line)
+                match = re.search(r'(cppcheck|cppcheck-has-bug|cppverilator)-suppress((\s+\S+)+)',
+                                  line)
                 if match:
                     for supid in match.group(2).split():
-                        if (supid == eid or (eid in SuppressMap
-                                             and supid == SuppressMap[eid])):
+                        if (supid == eid or (eid in SuppressMap and supid == SuppressMap[eid])):
                             return True
         return False
 
@@ -182,8 +177,7 @@ filters out unnecessary warnings related to Verilator. Run as:
 
     cd $VERILATOR_ROOT
     make -k cppcheck""",
-    epilog=
-    """Copyright 2014-2024 by Wilson Snyder. This program is free software; you
+    epilog="""Copyright 2014-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

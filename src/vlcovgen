@@ -19,11 +19,9 @@ def read_keys(filename):
             if re.match(r'^\s*$', line):
                 continue
             if re.search(r'^\s*VLCOVGEN_ITEM', line):
-                match = re.search(r'^\s*VLCOVGEN_ITEM *\( *"([^"]+)" *\)',
-                                  line)
+                match = re.search(r'^\s*VLCOVGEN_ITEM *\( *"([^"]+)" *\)', line)
                 if not match:
-                    sys.exit("%Error: " + filename +
-                             ": vlcovgen misformed VLCOVGEN_ITEM line")
+                    sys.exit("%Error: " + filename + ": vlcovgen misformed VLCOVGEN_ITEM line")
                 code = "{" + match.group(1) + "}"
                 data = eval(code)
                 # pprint(data)
@@ -59,9 +57,8 @@ def write_keys(filename):
                 deleting = True
                 out.append(line)
                 for keyref in sorted(Items, key=lambda a: a['name']):
-                    out.append(
-                        "        if (key == \"%s\") return VL_CIK_%s;\n" %
-                        (keyref['name'], keyref['name'].upper()))
+                    out.append("        if (key == \"%s\") return VL_CIK_%s;\n" %
+                               (keyref['name'], keyref['name'].upper()))
             elif re.search(r'VLCOVGEN_.*AUTO_EDIT_END', line):
                 deleting = False
                 out.append(line)
@@ -80,19 +77,15 @@ def write_keys(filename):
 parser = argparse.ArgumentParser(
     allow_abbrev=False,
     formatter_class=argparse.RawDescriptionHelpFormatter,
-    description=
-    """Generate verilated_cov headers to reduce C++ code duplication.""",
-    epilog=
-    """Copyright 2002-2024 by Wilson Snyder. This program is free software; you
+    description="""Generate verilated_cov headers to reduce C++ code duplication.""",
+    epilog="""Copyright 2002-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
 
 SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
 
-parser.add_argument('--srcdir',
-                    action='store',
-                    help='directory containing Verilator sources')
+parser.add_argument('--srcdir', action='store', help='directory containing Verilator sources')
 
 parser.set_defaults(srcdir=".")
 

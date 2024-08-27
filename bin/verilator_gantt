@@ -15,11 +15,7 @@ LongestVcdStrValueLength = 0
 Threads = collections.defaultdict(lambda: [])  # List of records per thread id
 Mtasks = collections.defaultdict(lambda: {'elapsed': 0, 'end': 0})
 Cpus = collections.defaultdict(lambda: {'mtask_time': 0})
-Global = {
-    'args': {},
-    'cpuinfo': collections.defaultdict(lambda: {}),
-    'stats': {}
-}
+Global = {'args': {}, 'cpuinfo': collections.defaultdict(lambda: {}), 'stats': {}}
 ElapsedTime = None  # total elapsed time
 ExecGraphTime = 0  # total elapsed time excuting an exec graph
 ExecGraphIntervals = []  # list of (start, end) pairs
@@ -31,8 +27,7 @@ def read_data(filename):
     with open(filename, "r", encoding="utf8") as fh:
         re_thread = re.compile(r'^VLPROFTHREAD (\d+)$')
         re_record = re.compile(r'^VLPROFEXEC (\S+) (\d+)(.*)$')
-        re_payload_mtaskBegin = re.compile(
-            r'id (\d+) predictStart (\d+) cpu (\d+)')
+        re_payload_mtaskBegin = re.compile(r'id (\d+) predictStart (\d+) cpu (\d+)')
         re_payload_mtaskEnd = re.compile(r'id (\d+) predictCost (\d+)')
 
         re_arg1 = re.compile(r'VLPROF arg\s+(\S+)\+([0-9.]*)\s*')
@@ -57,8 +52,7 @@ def read_data(filename):
                 tick = int(tick)
                 payload = payload.strip()
                 if kind == "SECTION_PUSH":
-                    LongestVcdStrValueLength = max(LongestVcdStrValueLength,
-                                                   len(payload))
+                    LongestVcdStrValueLength = max(LongestVcdStrValueLength, len(payload))
                     SectionStack.append(payload)
                     Sections.append((tick, tuple(SectionStack)))
                 elif kind == "SECTION_POP":
@@ -66,15 +60,13 @@ def read_data(filename):
                     SectionStack.pop()
                     Sections.append((tick, tuple(SectionStack)))
                 elif kind == "MTASK_BEGIN":
-                    mtask, predict_start, ecpu = re_payload_mtaskBegin.match(
-                        payload).groups()
+                    mtask, predict_start, ecpu = re_payload_mtaskBegin.match(payload).groups()
                     mtask = int(mtask)
                     predict_start = int(predict_start)
                     ecpu = int(ecpu)
                     mTaskThread[mtask] = thread
                     records = Threads[thread]
-                    assert not records or records[-1]['start'] <= records[-1][
-                        'end'] <= tick
+                    assert not records or records[-1]['start'] <= records[-1]['end'] <= tick
                     records.append({
                         'start': tick,
                         'mtask': mtask,
@@ -85,8 +77,7 @@ def read_data(filename):
                     Mtasks[mtask]['thread'] = thread
                     Mtasks[mtask]['predict_start'] = predict_start
                 elif kind == "MTASK_END":
-                    mtask, predict_cost = re_payload_mtaskEnd.match(
-                        payload).groups()
+                    mtask, predict_cost = re_payload_mtaskEnd.match(payload).groups()
                     mtask = int(mtask)
                     predict_cost = int(predict_cost)
                     begin = Mtasks[mtask]['begin']
@@ -163,8 +154,7 @@ def report():
 
     print("\nSummary:")
     print("  Total elapsed time = {} rdtsc ticks".format(ElapsedTime))
-    print("  Parallelized code  = {:.2%} of elapsed time".format(
-        ExecGraphTime / ElapsedTime))
+    print("  Parallelized code  = {:.2%} of elapsed time".format(ExecGraphTime / ElapsedTime))
     print("  Total threads      = %d" % nthreads)
     print("  Total CPUs used    = %d" % ncpus)
     print("  Total mtasks       = %d" % len(Mtasks))
@@ -176,15 +166,12 @@ def report():
 
     if nthreads > ncpus:
         print()
-        print("%%Warning: There were fewer CPUs (%d) than threads (%d)." %
-              (ncpus, nthreads))
+        print("%%Warning: There were fewer CPUs (%d) than threads (%d)." % (ncpus, nthreads))
         print("        : See docs on use of numactl.")
     else:
         if 'cpu_socket_cores_warning' in Global:
             print()
-            print(
-                "%Warning: Multiple threads scheduled on same hyperthreaded core."
-            )
+            print("%Warning: Multiple threads scheduled on same hyperthreaded core.")
             print("        : See docs on use of numactl.")
         if 'cpu_sockets_warning' in Global:
             print()
@@ -228,8 +215,7 @@ def report_mtasks():
     serialTime = ElapsedTime - ExecGraphTime
 
     def subReport(elapsed, work):
-        print("  Thread utilization = {:7.2%}".format(work /
-                                                      (elapsed * nthreads)))
+        print("  Thread utilization = {:7.2%}".format(work / (elapsed * nthreads)))
         print("  Speedup            = {:6.3}x".format(work / elapsed))
 
     print("\nParallelized code, measured:")
@@ -256,8 +242,7 @@ def report_mtasks():
         if Mtasks[mtask]['elapsed'] > 0:
             if Mtasks[mtask]['predict_cost'] == 0:
                 Mtasks[mtask]['predict_cost'] = 1  # don't log(0) below
-            p2e_ratio = math.log(Mtasks[mtask]['predict_cost'] /
-                                 Mtasks[mtask]['elapsed'])
+            p2e_ratio = math.log(Mtasks[mtask]['predict_cost'] / Mtasks[mtask]['elapsed'])
             p2e_ratios.append(p2e_ratio)
 
             if p2e_ratio > max_p2e:
@@ -269,18 +254,14 @@ def report_mtasks():
 
     print("\nMTask statistics:")
     print("  Longest mtask id = {}".format(long_mtask))
-    print("  Longest mtask time = {:.2%} of time elapsed in parallelized code".
-          format(long_mtask_time / ExecGraphTime))
+    print("  Longest mtask time = {:.2%} of time elapsed in parallelized code".format(
+        long_mtask_time / ExecGraphTime))
     print("  min log(p2e) = %0.3f" % min_p2e, end="")
 
-    print("  from mtask %d (predict %d," %
-          (min_mtask, Mtasks[min_mtask]['predict_cost']),
-          end="")
+    print("  from mtask %d (predict %d," % (min_mtask, Mtasks[min_mtask]['predict_cost']), end="")
     print(" elapsed %d)" % Mtasks[min_mtask]['elapsed'])
     print("  max log(p2e) = %0.3f" % max_p2e, end="")
-    print("  from mtask %d (predict %d," %
-          (max_mtask, Mtasks[max_mtask]['predict_cost']),
-          end="")
+    print("  from mtask %d (predict %d," % (max_mtask, Mtasks[max_mtask]['predict_cost']), end="")
     print(" elapsed %d)" % Mtasks[max_mtask]['elapsed'])
 
     stddev = statistics.pstdev(p2e_ratios)
@@ -315,8 +296,8 @@ def report_cpus():
                 model = cpuinfo['model_name']
 
         print("  {:3d} | {:7.2%} / {:16d} | {:>6s} | {:>4s} | {}".format(
-            cpu, Cpus[cpu]['mtask_time'] / ElapsedTime,
-            Cpus[cpu]['mtask_time'], socket, core, model))
+            cpu, Cpus[cpu]['mtask_time'] / ElapsedTime, Cpus[cpu]['mtask_time'], socket, core,
+            model))
 
     if len(Global['cpu_sockets']) > 1:
         Global['cpu_sockets_warning'] = True
@@ -366,8 +347,8 @@ def report_sections():
 
     def printTree(prefix, name, entries, tree):
         print("  {:7.2%} | {:7.2%} | {:8} | {:10.2f} | {}".format(
-            treeSum(tree) / ElapsedTime, tree[0] / ElapsedTime, tree[2],
-            tree[2] / entries, prefix + name))
+            treeSum(tree) / ElapsedTime, tree[0] / ElapsedTime, tree[2], tree[2] / entries,
+            prefix + name))
         for k in sorted(tree[1], key=lambda _: -treeSum(tree[1][_])):
             printTree(prefix + "  ", k, tree[2], tree[1][k])
 
@@ -438,10 +419,8 @@ def write_vcd(filename):
                 addValue(code, start, mtask)
                 addValue(code, end, None)
 
-        tStart = sorted(_['start'] for records in Threads.values()
-                        for _ in records)
-        tEnd = sorted(_['end'] for records in Threads.values()
-                      for _ in records)
+        tStart = sorted(_['start'] for records in Threads.values() for _ in records)
+        tEnd = sorted(_['end'] for records in Threads.values() for _ in records)
 
         # Predicted graph
         for start, end in ExecGraphIntervals:
@@ -455,11 +434,10 @@ def write_vcd(filename):
             # Predict mtasks that fill the time the execution occupied
             for mtask in Mtasks:
                 thread = Mtasks[mtask]['thread']
-                pred_scaled_start = start + int(
-                    Mtasks[mtask]['predict_start'] * measured_scaling)
+                pred_scaled_start = start + int(Mtasks[mtask]['predict_start'] * measured_scaling)
                 pred_scaled_end = start + int(
-                    (Mtasks[mtask]['predict_start'] +
-                     Mtasks[mtask]['predict_cost']) * measured_scaling)
+                    (Mtasks[mtask]['predict_start'] + Mtasks[mtask]['predict_cost']) *
+                    measured_scaling)
                 if pred_scaled_start == pred_scaled_end:
                     continue
 
@@ -545,8 +523,7 @@ Verilator_gantt creates a visual representation to help analyze Verilator
 
 For documentation see
 https://verilator.org/guide/latest/exe_verilator_gantt.html""",
-    epilog=
-    """Copyright 2018-2024 by Wilson Snyder. This program is free software; you
+    epilog="""Copyright 2018-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
@@ -554,12 +531,8 @@ Version 2.0.
 SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
 
 parser.add_argument('--debug', action='store_true', help='enable debug')
-parser.add_argument('--no-vcd',
-                    help='disable creating vcd',
-                    action='store_true')
-parser.add_argument('--vcd',
-                    help='filename for vcd outpue',
-                    default='profile_exec.vcd')
+parser.add_argument('--no-vcd', help='disable creating vcd', action='store_true')
+parser.add_argument('--vcd', help='filename for vcd outpue', default='profile_exec.vcd')
 parser.add_argument('filename',
                     help='input profile_exec.dat filename to process',
                     default='profile_exec.dat')
