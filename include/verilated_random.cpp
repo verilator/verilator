@@ -297,7 +297,7 @@ bool VlRandomVar::set(std::string&& val) const {
 }
 
 void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits) {
-    IData hash = VL_RANDOM_RNG_I(rngr) & ((1 << bits) - 1);
+    const IData hash = VL_RANDOM_RNG_I(rngr) & ((1 << bits) - 1);
     std::vector<std::unique_ptr<const VlRandomExpr>> varbits;
     for (const auto& var : m_vars) {
         for (int i = 0; i < var.second->width(); i++)
