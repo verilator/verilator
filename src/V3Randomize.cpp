@@ -595,8 +595,11 @@ class ConstraintExprVisitor final : public VNVisitor {
                 = new AstVarRef{varp->fileline(), classp, varp, VAccess::WRITE};
             varRefp->classOrPackagep(classOrPackagep);
             methodp->addPinsp(varRefp);
-            methodp->addPinsp(new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{},
-                                           (size_t)varp->width()});
+            size_t width = varp->width();
+            if (VN_IS(varp->dtypep(), DynArrayDType) || VN_IS(varp->dtypep(), QueueDType))
+                width = varp->dtypep()->subDTypep()->width();
+            methodp->addPinsp(
+                new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, width});
             AstNodeExpr* const varnamep
                 = new AstCExpr{varp->fileline(), "\"" + smtName + "\"", varp->width()};
             varnamep->dtypep(varp->dtypep());
@@ -741,18 +744,23 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstCMethodHard* nodep) override {
         if (editFormat(nodep)) return;
 
-        UASSERT_OBJ(nodep->name() == "size", nodep, "Non-size method call in constraints");
+        if (nodep->name() == "at" && nodep->fromp()->user1()) {
+            iterateChildren(nodep);
+            AstNodeExpr* const argsp
+                = AstNode::addNext(nodep->fromp()->unlinkFrBack(), nodep->pinsp()->unlinkFrBack());
+            AstSFormatF* const newp
+                = new AstSFormatF{nodep->fileline(), "(select %@ %@)", false, argsp};
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
+        }
 
-        AstNode* fromp = nodep->fromp();
-        // Warn early while the dtype is still there
-        fromp->v3warn(E_UNSUPPORTED, "Unsupported: random member variable with type "
-                                         << fromp->dtypep()->prettyDTypeNameQ());
+        nodep->v3warn(CONSTRAINTIGN,
+                      "Unsupported: randomizing this expression, treating as state");
+        nodep->user1(false);
 
-        iterateChildren(nodep);  // Might change fromp
-        fromp = nodep->fromp()->unlinkFrBack();
-        fromp->dtypep(nodep->dtypep());
-        nodep->replaceWith(fromp);
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        if (editFormat(nodep)) return;
+        nodep->v3fatalSrc("Method not handled in constraints? " << nodep);
     }
     void visit(AstNodeExpr* nodep) override {
         if (editFormat(nodep)) return;

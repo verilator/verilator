@@ -27,10 +27,12 @@
 
 #include "verilated.h"
 
+#include <ostream>
+
 //=============================================================================
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
 
-class VlRandomVar final {
+class VlRandomVar VL_NOT_FINAL {
     const char* const m_name;  // Variable name
     void* const m_datap;  // Reference to variable data
     const int m_width;  // Variable width in bits
@@ -42,12 +44,50 @@ public:
         , m_datap{datap}
         , m_width{width}
         , m_randModeIdx{randModeIdx} {}
+    virtual ~VlRandomVar() = default;
     const char* name() const { return m_name; }
     int width() const { return m_width; }
-    void* datap() const { return m_datap; }
+    virtual void* datap(int idx) const { return m_datap; }
     std::uint32_t randModeIdx() const { return m_randModeIdx; }
     bool randModeIdxNone() const { return randModeIdx() == std::numeric_limits<unsigned>::max(); }
-    bool set(std::string&&) const;
+    bool set(const std::string& idx, const std::string& val) const;
+    virtual void emitGetValue(std::ostream& s) const;
+    virtual void emitExtract(std::ostream& s, int i) const;
+    virtual void emitType(std::ostream& s) const;
+    virtual int totalWidth() const;
+};
+
+template <typename T>
+class VlRandomQueueVar final : public VlRandomVar {
+public:
+    VlRandomQueueVar(const char* name, int width, void* datap, std::uint32_t randModeIdx)
+        : VlRandomVar{name, width, datap, randModeIdx} {}
+    void* datap(int idx) const override {
+        return &static_cast<T*>(VlRandomVar::datap(idx))->atWrite(idx);
+    }
+    void emitSelect(std::ostream& s, int i) const {
+        s << " (select " << name() << " #x";
+        for (int j = 28; j >= 0; j -= 4) s << "0123456789abcdef"[(i >> j) & 0xf];
+        s << ')';
+    }
+    void emitGetValue(std::ostream& s) const override {
+        const int length = static_cast<T*>(VlRandomVar::datap(0))->size();
+        for (int i = 0; i < length; i++) emitSelect(s, i);
+    }
+    void emitType(std::ostream& s) const override {
+        s << "(Array (_ BitVec 32) (_ BitVec " << width() << "))";
+    }
+    int totalWidth() const override {
+        const int length = static_cast<T*>(VlRandomVar::datap(0))->size();
+        return width() * length;
+    }
+    void emitExtract(std::ostream& s, int i) const override {
+        const int j = i / width();
+        i = i % width();
+        s << " ((_ extract " << i << ' ' << i << ')';
+        emitSelect(s, j);
+        s << ')';
+    }
 };
 
 //=============================================================================
@@ -75,10 +115,16 @@ public:
     template <typename T>
     void write_var(T& var, int width, const char* name,
                    std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        auto it = m_vars.find(name);
-        if (it != m_vars.end()) return;
+        if (m_vars.find(name) != m_vars.end()) return;
         // TODO: make_unique once VlRandomizer is per-instance not per-ref
         m_vars[name] = std::make_shared<const VlRandomVar>(name, width, &var, randmodeIdx);
+    }
+    template <typename T>
+    void write_var(VlQueue<T>& var, int width, const char* name,
+                   std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
+        if (m_vars.find(name) != m_vars.end()) return;
+        m_vars[name]
+            = std::make_shared<const VlRandomQueueVar<VlQueue<T>>>(name, width, &var, randmodeIdx);
     }
     void hard(std::string&& constraint);
     void clear();
