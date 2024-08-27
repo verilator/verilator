@@ -695,11 +695,13 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNode* const cstmtp = new AstText{fl, "ret += \" \" + "};
             cstmtp->addNext(itemp);
             cstmtp->addNext(new AstText{fl, ";"});
-            AstNode* const exprsp = new AstText{fl, "([&]{ std::string ret = \"(bvand\";"};
+            AstNode* const exprsp = new AstText{fl, "([&]{ std::string ret;"};
             exprsp->addNext(new AstBegin{
                 fl, "",
                 new AstForeach{fl, nodep->arrayp()->unlinkFrBack(), new AstCStmt{fl, cstmtp}},
                 false, true});
+            exprsp->addNext(
+                new AstText{fl, "return ret.empty() ? \"#b1\" : \"(bvand \" + ret + \")\";"});
             exprsp->addNext(new AstText{fl, "return ret + \")\"; })()"});
             AstNodeExpr* const newp = new AstCExpr{fl, exprsp};
             newp->dtypeSetString();
