@@ -177,7 +177,7 @@ def test():
         # So, remove gcno files before calling codecov
         upload_dir = "nodist/obj_dir/upload"
         os.makedirs(upload_dir, exist_ok=True)
-        cmd = ("ci/codecov -v upload-process -Z" + " -f " + cc_dir + "/app_total.info )")
+        cmd = "ci/codecov -v upload-process -Z" + " -f " + cc_dir + "/app_total.info )"
         print("print: Not running:")
         print("  export CODECOV_TOKEN=<hidden>")
         print("  find . -name '*.gcno' -exec rm {} \\;")
