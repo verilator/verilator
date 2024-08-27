@@ -441,6 +441,7 @@ PY_PROGRAMS = \
 	src/flexfix \
 	src/vlcovgen \
 	src/.gdbinit.py \
+	test_regress/*.py \
 	test_regress/t/*.pf \
 	nodist/clang_check_attributes \
 	nodist/code_coverage \
@@ -454,11 +455,14 @@ PY_FILES = \
 	$(PY_PROGRAMS) \
 	nodist/code_coverage.dat \
 
+PY_FILES_NOLINT = \
+	test_regress/t/*.py \
+
 YAPF = yapf3
-YAPF_FLAGS = -i
+YAPF_FLAGS = -i --parallel
 
 yapf:
-	$(YAPF) $(YAPF_FLAGS) $(PY_FILES)
+	$(YAPF) $(YAPF_FLAGS) $(PY_FILES) $(PY_FILES_NOLINT)
 
 PYLINT = pylint
 PYLINT_FLAGS = --score=n --disable=R0801
