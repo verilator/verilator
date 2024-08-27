@@ -570,7 +570,7 @@ public:
     bool stopFail() const { return m_stopFail; }
     int threads() const VL_MT_SAFE { return m_threads; }
     int threadsMaxMTasks() const { return m_threadsMaxMTasks; }
-    bool mtasks() const { return (m_threads > 1); }
+    bool mtasks() const VL_MT_SAFE { return (m_threads > 1); }
     VTimescale timeDefaultPrec() const { return m_timeDefaultPrec; }
     VTimescale timeDefaultUnit() const { return m_timeDefaultUnit; }
     VTimescale timeOverridePrec() const { return m_timeOverridePrec; }
@@ -693,7 +693,7 @@ public:
     }
 
     bool hierarchical() const { return m_hierarchical; }
-    int hierChild() const { return m_hierChild; }
+    int hierChild() const VL_MT_SAFE { return m_hierChild; }
     bool hierTop() const VL_MT_SAFE { return !m_hierChild && !m_hierBlocks.empty(); }
     const V3HierBlockOptSet& hierBlocks() const { return m_hierBlocks; }
     // Directory to save .tree, .dot, .dat, .vpp for hierarchical block top

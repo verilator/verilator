@@ -257,7 +257,8 @@ class VariableOrder final {
     }
 
 public:
-    static void processModule(AstNodeModule* modp, const MTaskAffinityMap& mTaskAffinity) {
+    static void processModule(AstNodeModule* modp,
+                              const MTaskAffinityMap& mTaskAffinity) VL_MT_STABLE {
         VariableOrder{modp, mTaskAffinity};
     }
 };

@@ -49,7 +49,7 @@ using StateVec = std::vector<const TspStateBase*>;
 
 // Given an unsorted set of TspState's, sort them to minimize
 // the transition cost for walking the sorted list.
-void tspSort(const StateVec& states, StateVec* resultp) VL_MT_DISABLED;
+void tspSort(const StateVec& states, StateVec* resultp) VL_MT_SAFE;
 
 void selfTest() VL_MT_DISABLED;
 }  // namespace V3TSP
