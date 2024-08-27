@@ -49,6 +49,9 @@ public:
     /// Call callbacks of arbitrary types.
     /// User wrapper code should call this from their main loops.
     static bool callCbs(uint32_t reason) VL_MT_UNSAFE_ONE;
+    /// Returns true if there are callbacks of the given reason registered.
+    /// User wrapper code should call this from their main loops.
+    static bool hasCbs(uint32_t reason) VL_MT_UNSAFE_ONE;
     /// Returns time of the next registered VPI callback, or
     /// ~(0ULL) if none are registered
     static QData cbNextDeadline() VL_MT_UNSAFE_ONE;

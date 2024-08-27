@@ -896,6 +896,9 @@ public:
         if (VL_LIKELY(it != s().m_futureCbs.cend())) return it->first.first;
         return ~0ULL;  // maxquad
     }
+    static bool hasCbs(const uint32_t reason) VL_MT_UNSAFE_ONE {
+        return !s().m_cbCurrentLists[reason].empty();
+    }
     static bool callCbs(const uint32_t reason) VL_MT_UNSAFE_ONE {
         VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: callCbs reason=%u\n", reason););
         assertOneCheck();
@@ -1054,6 +1057,10 @@ public:
 
 bool VerilatedVpi::callCbs(uint32_t reason) VL_MT_UNSAFE_ONE {
     return VerilatedVpiImp::callCbs(reason);
+}
+
+bool VerilatedVpi::hasCbs(uint32_t reason) VL_MT_UNSAFE_ONE {
+    return VerilatedVpiImp::hasCbs(reason);
 }
 
 // Historical, before we had multiple kinds of timed callbacks
