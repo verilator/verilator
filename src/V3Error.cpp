@@ -123,7 +123,7 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
     // Skip suppressed messages
     if (m_errorSuppressed
         // On debug, show only non default-off warning to prevent pages of warnings
-        && (!debug() || m_errorCode.defaultsOff()))
+        && (!debug() || debug() < 3 || m_errorCode.defaultsOff()))
         return;
     string msg = msgPrefix() + sstr.str();
     // If suppressed print only first line to reduce verbosity

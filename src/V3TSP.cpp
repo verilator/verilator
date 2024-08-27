@@ -377,8 +377,8 @@ public:
         }
 
         UINFO(6, "Tour was: ");
-        for (const Vertex* vxp : tour) UINFONL(6, " " << vxp->key());
-        UINFONL(6, "\n");
+        for (const Vertex* vxp : tour) UINFONL(6, "- " << vxp->key());
+        UINFONL(6, "-\n");
     }
 
     void dumpGraph(std::ostream& os, const string& nameComment) const {
