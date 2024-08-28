@@ -1918,6 +1918,8 @@ class RandomizeVisitor final : public VNVisitor {
         AstFunc* const randomizeFuncp = V3Randomize::newRandomizeFunc(
             m_memberMap, classp, m_inlineUniqueNames.get(nodep), false);
 
+        addPrePostCall(classp, randomizeFuncp, "pre_randomize");
+
         // Detach the expression and prepare variable copies
         const CaptureVisitor captured{withp->exprp(), m_modp, classp};
 
@@ -1974,6 +1976,8 @@ class RandomizeVisitor final : public VNVisitor {
             nodep->fileline(),
             new AstVarRef{nodep->fileline(), VN_AS(randomizeFuncp->fvarp(), Var), VAccess::WRITE},
             new AstAnd{nodep->fileline(), basicRandomizeFuncCallp, solverCallp}});
+
+        addPrePostCall(classp, randomizeFuncp, "post_randomize");
 
         // Replace the node with a call to that function
         nodep->name(randomizeFuncp->name());

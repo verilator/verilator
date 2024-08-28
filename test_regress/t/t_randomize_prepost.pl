@@ -10,11 +10,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-compile(
-    );
+if (!$Self->have_solver) {
+    skip("No constraint solver installed");
+} else {
+    compile(
+        );
 
-execute(
-    );
+    execute(
+        );
+}
 
 ok(1);
 1;
