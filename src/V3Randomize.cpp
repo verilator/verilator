@@ -1331,6 +1331,23 @@ class RandomizeVisitor final : public VNVisitor {
             }
             AstMemberDType* const firstMemberp = unionDtp->membersp();
             return newRandStmtsp(fl, exprp, nullptr, offset, firstMemberp);
+        } else if (AstUnpackArrayDType* const unpackarrayDType = VN_CAST(memberp ? memberp->subDTypep()->skipRefp()
+                                                                : exprp->dtypep()->skipRefp(),
+                                                        UnpackArrayDType)) {
+            AstNodeStmt* stmtsp = nullptr;
+            int elemCount = unpackarrayDType->elementsConst();
+            for (int i = 0; i < elemCount; ++i) {
+                AstNodeExpr* elementExprp = new AstArraySel(fl, stmtsp ? exprp->cloneTree(false) : exprp, i);
+                elementExprp->dtypep(unpackarrayDType->subDTypep());
+                AstNodeStmt* randp = nullptr;
+                randp = newRandStmtsp(fl, elementExprp, nullptr);
+                if (stmtsp) {
+                    stmtsp->addNext(randp);
+                } else {
+                    stmtsp = randp;
+                }
+            }
+            return stmtsp;
         } else {
             AstNodeExpr* valp;
             if (AstEnumDType* const enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
@@ -1511,7 +1528,8 @@ class RandomizeVisitor final : public VNVisitor {
             if (memberVarp->user3()) return;  // Handled in constraints
             const AstNodeDType* const dtypep = memberVarp->dtypep()->skipRefp();
             if (VN_IS(dtypep, BasicDType) || VN_IS(dtypep, StructDType)
-                || VN_IS(dtypep, UnionDType)) {
+                || VN_IS(dtypep, UnionDType) || VN_IS(dtypep, PackArrayDType)
+                || VN_IS(dtypep, UnpackArrayDType)) {
                 AstVar* const randcVarp = newRandcVarsp(memberVarp);
                 AstVarRef* const refp = new AstVarRef{fl, classp, memberVarp, VAccess::WRITE};
                 AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp);
