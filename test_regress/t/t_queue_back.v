@@ -14,8 +14,9 @@ module t(/*AUTOARG*/);
    endfunction
 
    initial begin
-      q = { 20, 50, 40 };
+      q = { 60, 50, 40 };
       set_val(q[$-1], 30);
+      q[$-2] = 20;
 
       r = q[$];
       if (r != 40) $stop;

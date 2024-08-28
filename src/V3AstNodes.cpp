@@ -2793,6 +2793,7 @@ void AstCMethodHard::setPurity() {
                                                           {"assign", false},
                                                           {"at", true},
                                                           {"atBack", true},
+                                                          {"atWrite", true},
                                                           {"awaitingCurrentTime", true},
                                                           {"clear", false},
                                                           {"clearFired", false},
@@ -2856,6 +2857,16 @@ void AstCMethodHard::setPurity() {
                                                           {"word", true},
                                                           {"write_var", false}};
 
+    if (name() == "atWriteAppend" || name() == "atWriteAppendBack") {
+        m_pure = false;
+        // Treat atWriteAppend as pure if the argument is a loop iterator
+        if (AstNodeExpr* const argp = pinsp()) {
+            if (AstVarRef* const varrefp = VN_CAST(argp, VarRef)) {
+                if (varrefp->varp()->isUsedLoopIdx()) m_pure = true;
+            }
+        }
+        return;
+    }
     auto isPureIt = isPureMethod.find(name());
     UASSERT_OBJ(isPureIt != isPureMethod.end(), this, "Unknown purity of method " + name());
     m_pure = isPureIt->second;

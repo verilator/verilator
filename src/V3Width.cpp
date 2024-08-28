@@ -3557,7 +3557,8 @@ class WidthVisitor final : public VNVisitor {
     }
     void methodCallLValueRecurse(AstMethodCall* nodep, AstNode* childp, const VAccess& access) {
         if (const AstCMethodHard* const ichildp = VN_CAST(childp, CMethodHard)) {
-            if (ichildp->name() == "at") {
+            if (ichildp->name() == "at" || ichildp->name() == "atWrite"
+                || ichildp->name() == "atWriteAppend" || ichildp->name() == "atWriteAppendBack") {
                 methodCallLValueRecurse(nodep, ichildp->fromp(), access);
                 return;
             }
@@ -3638,8 +3639,13 @@ class WidthVisitor final : public VNVisitor {
         AstCMethodHard* newp = nullptr;
         if (nodep->name() == "at") {  // Created internally for []
             methodOkArguments(nodep, 1, 1);
-            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(), "at"};
+            newp->dtypeFrom(adtypep->subDTypep());
+        } else if (nodep->name() == "atWrite") {  // Created internally for []
+            methodOkArguments(nodep, 1, 1);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
+            newp
+                = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(), "atWrite"};
             newp->dtypeFrom(adtypep->subDTypep());
         } else if (nodep->name() == "size") {
             methodOkArguments(nodep, 0, 0);
@@ -3678,6 +3684,12 @@ class WidthVisitor final : public VNVisitor {
     void methodCallQueue(AstMethodCall* nodep, AstQueueDType* adtypep) {
         AstCMethodHard* newp = nullptr;
         if (nodep->name() == "at" || nodep->name() == "atBack") {  // Created internally for []
+            methodOkArguments(nodep, 1, 1);
+            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                      nodep->name()};
+            newp->dtypeFrom(adtypep->subDTypep());
+        } else if (nodep->name() == "atWriteAppend"
+                   || nodep->name() == "atWriteAppendBack") {  // Created internally for []
             methodOkArguments(nodep, 1, 1);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),

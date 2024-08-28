@@ -593,19 +593,28 @@ public:
         return v;
     }
 
-    // Setting. Verilog: assoc[index] = v
-    // Can't just overload operator[] or provide a "at" reference to set,
-    // because we need to be able to insert only when the value is set
-    T_Value& at(int32_t index) {
+    // Setting. Verilog: assoc[index] = v (should only be used by dynamic arrays)
+    T_Value& atWrite(int32_t index) {
         // cppcheck-suppress variableScope
         static thread_local T_Value t_throwAway;
         // Needs to work for dynamic arrays, so does not use T_MaxSize
-        if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
+        if (VL_UNLIKELY(index < 0) || VL_UNLIKELY(index >= m_deque.size())) {
             t_throwAway = atDefault();
             return t_throwAway;
-        } else {
-            return m_deque[index];
         }
+        return m_deque[index];
+    }
+    // Setting. Verilog: assoc[index] = v (should only be used by queues)
+    T_Value& atWriteAppend(int32_t index) {
+        // cppcheck-suppress variableScope
+        static thread_local T_Value t_throwAway;
+        if (VL_UNLIKELY(index < 0 || index > m_deque.size())) {
+            t_throwAway = atDefault();
+            return t_throwAway;
+        } else if (VL_UNLIKELY(index == m_deque.size())) {
+            push_back(atDefault());
+        }
+        return m_deque[index];
     }
     // Accessing. Verilog: v = assoc[index]
     const T_Value& at(int32_t index) const {
@@ -617,7 +626,7 @@ public:
         }
     }
     // Access with an index counted from end (e.g. q[$])
-    T_Value& atBack(int32_t index) { return at(m_deque.size() - 1 - index); }
+    T_Value& atWriteAppendBack(int32_t index) { return atWriteAppend(m_deque.size() - 1 - index); }
     const T_Value& atBack(int32_t index) const { return at(m_deque.size() - 1 - index); }
 
     // function void q.insert(index, value);

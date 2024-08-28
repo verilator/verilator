@@ -2206,84 +2206,94 @@ static inline void VL_UNPACK_II(int lbits, int rbits, VlQueue<CData>& q, IData f
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.at(i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_II(int lbits, int rbits, VlQueue<SData>& q, IData from) {
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.at(i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_II(int lbits, int rbits, VlQueue<IData>& q, IData from) {
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.at(i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_IQ(int lbits, int rbits, VlQueue<CData>& q, QData from) {
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.at(i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_IQ(int lbits, int rbits, VlQueue<SData>& q, QData from) {
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.at(i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_IQ(int lbits, int rbits, VlQueue<IData>& q, QData from) {
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.at(i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_QQ(int lbits, int rbits, VlQueue<QData>& q, QData from) {
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const QData mask = VL_MASK_Q(lbits);
-    for (size_t i = 0; i < size; ++i) q.at(i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_IW(int lbits, int rbits, VlQueue<CData>& q, WDataInP rwp) {
     const int size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.at(i) = VL_SEL_IWII(rbits, rwp, i * lbits, lbits) & mask;
+    for (size_t i = 0; i < size; ++i) {
+        q.atWrite(i) = VL_SEL_IWII(rbits, rwp, i * lbits, lbits) & mask;
+    }
 }
 
 static inline void VL_UNPACK_IW(int lbits, int rbits, VlQueue<SData>& q, WDataInP rwp) {
     const int size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.at(i) = VL_SEL_IWII(rbits, rwp, i * lbits, lbits) & mask;
+    for (size_t i = 0; i < size; ++i) {
+        q.atWrite(i) = VL_SEL_IWII(rbits, rwp, i * lbits, lbits) & mask;
+    }
 }
 
 static inline void VL_UNPACK_IW(int lbits, int rbits, VlQueue<IData>& q, WDataInP rwp) {
     const int size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.at(i) = VL_SEL_IWII(rbits, rwp, i * lbits, lbits) & mask;
+    for (size_t i = 0; i < size; ++i) {
+        q.atWrite(i) = VL_SEL_IWII(rbits, rwp, i * lbits, lbits) & mask;
+    }
 }
 
 static inline void VL_UNPACK_QW(int lbits, int rbits, VlQueue<QData>& q, WDataInP rwp) {
     const int size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const QData mask = VL_MASK_Q(lbits);
-    for (size_t i = 0; i < size; ++i) q.at(i) = VL_SEL_QWII(rbits, rwp, i * lbits, lbits) & mask;
+    for (size_t i = 0; i < size; ++i) {
+        q.atWrite(i) = VL_SEL_QWII(rbits, rwp, i * lbits, lbits) & mask;
+    }
 }
 
 template <std::size_t N>
 static inline void VL_UNPACK_WW(int lbits, int rbits, VlQueue<VlWide<N>>& q, WDataInP rwp) {
     const int size = (rbits + lbits - 1) / lbits;
     q.renew(size);
-    for (size_t i = 0; i < size; ++i) VL_SEL_WWII(lbits, rbits, q.at(i), rwp, i * lbits, lbits);
+    for (size_t i = 0; i < size; ++i) {
+        VL_SEL_WWII(lbits, rbits, q.atWrite(i), rwp, i * lbits, lbits);
+    }
 }
 
 template <std::size_t T_Depth>

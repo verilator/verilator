@@ -22,9 +22,24 @@ module t (/*AUTOARG*/
 
    typedef integer q_t[$];
 
+   function void set_val(ref integer lhs, input integer rhs);
+      lhs = rhs;
+   endfunction
+
    initial begin
       q_t iq;
       iq.push_back(42);
+
+      // Resize via []
+      set_val(iq[0], 9000);
+      `checkh(iq.size(), 1);
+      `checks(iq[0], 9000);
+      iq[1]++;
+      `checkh(iq.size(), 2);
+      `checks(iq[1], 1);
+      iq[1000] = 1000;
+      `checkh(iq.size(), 2);
+      `checks(iq[1000], 0);
    end
 
    always @ (posedge clk) begin
@@ -184,6 +199,10 @@ module t (/*AUTOARG*/
          `checks(q[0], "front");
          //Unsup: `checks(q[$], "front");
 
+         // Resize via []
+         q[0] = "long";
+         `checkh(q.size(), 1);
+         `checks(q[0], "long");
       end
 
       begin
