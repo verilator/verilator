@@ -253,12 +253,6 @@ static Process& getSolver() {
 //======================================================================
 // VlRandomizer:: Methods
 
-void VlRandomVar::emit(std::ostream& s) const { s << m_name; }
-void VlRandomExtract::emit(std::ostream& s) const {
-    s << "((_ extract " << m_idx << ' ' << m_idx << ") ";
-    m_expr->emit(s);
-    s << ')';
-}
 bool VlRandomVar::set(std::string&& val) const {
     VlWide<VL_WQ_WORDS_E> qowp;
     VL_SET_WQ(qowp, 0ULL);
@@ -298,23 +292,26 @@ bool VlRandomVar::set(std::string&& val) const {
 
 void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits) {
     const IData hash = VL_RANDOM_RNG_I(rngr) & ((1 << bits) - 1);
-    std::vector<std::unique_ptr<const VlRandomExpr>> varbits;
-    for (const auto& var : m_vars) {
-        for (int i = 0; i < var.second->width(); i++)
-            varbits.emplace_back(std::make_unique<const VlRandomExtract>(var.second, i));
-    }
+    int varBits = 0;
+    for (const auto& var : m_vars) varBits += var.second->width();
     os << "(= #b";
     for (int i = bits - 1; i >= 0; i--) os << (VL_BITISSET_I(hash, i) ? '1' : '0');
     if (bits > 1) os << " (concat";
     for (int i = 0; i < bits; i++) {
-        if (varbits.size() > 2) os << " (bvxor";
-        for (unsigned j = 0; j * 2 < varbits.size(); j++) {
-            unsigned idx = j + VL_RANDOM_RNG_I(rngr) % (varbits.size() - j);
-            std::swap(varbits[idx], varbits[j]);
-            os << ' ';
-            varbits[j]->emit(os);
+        IData varBitsLeft = varBits;
+        IData varBitsWant = (varBits + 1) / 2;
+        if (varBits > 2) os << " (bvxor";
+        for (const auto& var : m_vars) {
+            for (int j = 0; j < var.second->width(); j++, varBitsLeft--) {
+                bool doEmit = VL_RANDOM_RNG_I(rngr) % varBitsLeft < varBitsWant;
+                if (doEmit) {
+                    os << " ((_ extract " << j << ' ' << j << ") " << var.second->name() << ')';
+                    if (--varBitsWant == 0) break;
+                }
+            }
+            if (varBitsWant == 0) break;
         }
-        if (varbits.size() > 2) os << ')';
+        if (varBits > 2) os << ')';
     }
     if (bits > 1) os << ')';
     os << ')';
