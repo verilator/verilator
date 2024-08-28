@@ -303,7 +303,7 @@ void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits) {
         if (varBits > 2) os << " (bvxor";
         for (const auto& var : m_vars) {
             for (int j = 0; j < var.second->width(); j++, varBitsLeft--) {
-                bool doEmit = VL_RANDOM_RNG_I(rngr) % varBitsLeft < varBitsWant;
+                const bool doEmit = (VL_RANDOM_RNG_I(rngr) % varBitsLeft) < varBitsWant;
                 if (doEmit) {
                     os << " ((_ extract " << j << ' ' << j << ") " << var.second->name() << ')';
                     if (--varBitsWant == 0) break;
