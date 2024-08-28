@@ -253,23 +253,6 @@ static Process& getSolver() {
 //======================================================================
 // VlRandomizer:: Methods
 
-void VlRandomVar::emit(std::ostream& s) const { s << m_name; }
-void VlRandomConst::emit(std::ostream& s) const {
-    s << "#b";
-    for (int i = 0; i < m_width; i++) s << (VL_BITISSET_Q(m_val, m_width - i - 1) ? '1' : '0');
-}
-void VlRandomBinOp::emit(std::ostream& s) const {
-    s << '(' << m_op << ' ';
-    m_lhs->emit(s);
-    s << ' ';
-    m_rhs->emit(s);
-    s << ')';
-}
-void VlRandomExtract::emit(std::ostream& s) const {
-    s << "((_ extract " << m_idx << ' ' << m_idx << ") ";
-    m_expr->emit(s);
-    s << ')';
-}
 bool VlRandomVar::set(std::string&& val) const {
     VlWide<VL_WQ_WORDS_E> qowp;
     VL_SET_WQ(qowp, 0ULL);
@@ -307,27 +290,31 @@ bool VlRandomVar::set(std::string&& val) const {
     return true;
 }
 
-std::shared_ptr<const VlRandomExpr> VlRandomizer::randomConstraint(VlRNG& rngr, int bits) {
-    unsigned long long hash = VL_RANDOM_RNG_I(rngr) & ((1 << bits) - 1);
-    std::shared_ptr<const VlRandomExpr> concat = nullptr;
-    std::vector<std::shared_ptr<const VlRandomExpr>> varbits;
-    for (const auto& var : m_vars) {
-        for (int i = 0; i < var.second->width(); i++)
-            varbits.emplace_back(std::make_shared<const VlRandomExtract>(var.second, i));
-    }
+void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits) {
+    const IData hash = VL_RANDOM_RNG_I(rngr) & ((1 << bits) - 1);
+    int varBits = 0;
+    for (const auto& var : m_vars) varBits += var.second->width();
+    os << "(= #b";
+    for (int i = bits - 1; i >= 0; i--) os << (VL_BITISSET_I(hash, i) ? '1' : '0');
+    if (bits > 1) os << " (concat";
     for (int i = 0; i < bits; i++) {
-        std::shared_ptr<const VlRandomExpr> bit = nullptr;
-        for (unsigned j = 0; j * 2 < varbits.size(); j++) {
-            unsigned idx = j + VL_RANDOM_RNG_I(rngr) % (varbits.size() - j);
-            auto sel = varbits[idx];
-            std::swap(varbits[idx], varbits[j]);
-            bit = bit == nullptr ? sel : std::make_shared<const VlRandomBinOp>("bvxor", bit, sel);
+        IData varBitsLeft = varBits;
+        IData varBitsWant = (varBits + 1) / 2;
+        if (varBits > 2) os << " (bvxor";
+        for (const auto& var : m_vars) {
+            for (int j = 0; j < var.second->width(); j++, varBitsLeft--) {
+                const bool doEmit = (VL_RANDOM_RNG_I(rngr) % varBitsLeft) < varBitsWant;
+                if (doEmit) {
+                    os << " ((_ extract " << j << ' ' << j << ") " << var.second->name() << ')';
+                    if (--varBitsWant == 0) break;
+                }
+            }
+            if (varBitsWant == 0) break;
         }
-        concat = concat == nullptr ? bit
-                                   : std::make_shared<const VlRandomBinOp>("concat", concat, bit);
+        if (varBits > 2) os << ')';
     }
-    return std::make_shared<const VlRandomBinOp>(
-        "=", concat, std::make_shared<const VlRandomConst>(hash, bits));
+    if (bits > 1) os << ')';
+    os << ')';
 }
 
 bool VlRandomizer::next(VlRNG& rngr) {
@@ -356,7 +343,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
 
     for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; i++) {
         f << "(assert ";
-        randomConstraint(rngr, _VL_SOLVER_HASH_LEN)->emit(f);
+        randomConstraint(f, rngr, _VL_SOLVER_HASH_LEN);
         f << ")\n";
         f << "\n(check-sat)\n";
         sat = parseSolution(f);

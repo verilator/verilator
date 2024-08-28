@@ -30,11 +30,7 @@
 //=============================================================================
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
 
-class VlRandomExpr VL_NOT_FINAL {
-public:
-    virtual void emit(std::ostream& s) const = 0;
-};
-class VlRandomVar final : public VlRandomExpr {
+class VlRandomVar final {
     const char* const m_name;  // Variable name
     void* const m_datap;  // Reference to variable data
     const int m_width;  // Variable width in bits
@@ -52,44 +48,6 @@ public:
     std::uint32_t randModeIdx() const { return m_randModeIdx; }
     bool randModeIdxNone() const { return randModeIdx() == std::numeric_limits<unsigned>::max(); }
     bool set(std::string&&) const;
-    void emit(std::ostream& s) const override;
-};
-
-class VlRandomConst final : public VlRandomExpr {
-    const QData m_val;  // Constant value
-    const int m_width;  // Constant width in bits
-
-public:
-    VlRandomConst(QData val, int width)
-        : m_val{val}
-        , m_width{width} {
-        assert(width <= sizeof(m_val) * 8);
-    }
-    void emit(std::ostream& s) const override;
-};
-
-class VlRandomExtract final : public VlRandomExpr {
-    const std::shared_ptr<const VlRandomExpr> m_expr;  // Sub-expression
-    const unsigned m_idx;  // Extracted index
-
-public:
-    VlRandomExtract(std::shared_ptr<const VlRandomExpr> expr, unsigned idx)
-        : m_expr{expr}
-        , m_idx{idx} {}
-    void emit(std::ostream& s) const override;
-};
-
-class VlRandomBinOp final : public VlRandomExpr {
-    const char* const m_op;  // Binary operation identifier
-    const std::shared_ptr<const VlRandomExpr> m_lhs, m_rhs;  // Sub-expressions
-
-public:
-    VlRandomBinOp(const char* op, std::shared_ptr<const VlRandomExpr> lhs,
-                  std::shared_ptr<const VlRandomExpr> rhs)
-        : m_op{op}
-        , m_lhs{lhs}
-        , m_rhs{rhs} {}
-    void emit(std::ostream& s) const override;
 };
 
 //=============================================================================
@@ -103,7 +61,7 @@ class VlRandomizer final {
     const VlQueue<CData>* m_randmode;  // rand_mode state;
 
     // PRIVATE METHODS
-    std::shared_ptr<const VlRandomExpr> randomConstraint(VlRNG& rngr, int bits);
+    void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
     bool parseSolution(std::iostream& file);
 
 public:
@@ -119,6 +77,7 @@ public:
                    std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         auto it = m_vars.find(name);
         if (it != m_vars.end()) return;
+        // TODO: make_unique once VlRandomizer is per-instance not per-ref
         m_vars[name] = std::make_shared<const VlRandomVar>(name, width, &var, randmodeIdx);
     }
     void hard(std::string&& constraint);
