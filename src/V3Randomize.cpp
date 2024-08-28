@@ -1331,13 +1331,14 @@ class RandomizeVisitor final : public VNVisitor {
             }
             AstMemberDType* const firstMemberp = unionDtp->membersp();
             return newRandStmtsp(fl, exprp, nullptr, offset, firstMemberp);
-        } else if (AstUnpackArrayDType* const unpackarrayDType = VN_CAST(memberp ? memberp->subDTypep()->skipRefp()
-                                                                : exprp->dtypep()->skipRefp(),
-                                                        UnpackArrayDType)) {
+        } else if (AstUnpackArrayDType* const unpackarrayDType = VN_CAST(
+                       memberp ? memberp->subDTypep()->skipRefp() : exprp->dtypep()->skipRefp(),
+                       UnpackArrayDType)) {
             AstNodeStmt* stmtsp = nullptr;
             int elemCount = unpackarrayDType->elementsConst();
             for (int i = 0; i < elemCount; ++i) {
-                AstNodeExpr* elementExprp = new AstArraySel(fl, stmtsp ? exprp->cloneTree(false) : exprp, i);
+                AstNodeExpr* elementExprp
+                    = new AstArraySel(fl, stmtsp ? exprp->cloneTree(false) : exprp, i);
                 elementExprp->dtypep(unpackarrayDType->subDTypep());
                 AstNodeStmt* randp = nullptr;
                 randp = newRandStmtsp(fl, elementExprp, nullptr);
