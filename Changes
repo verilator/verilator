@@ -13,9 +13,15 @@ Verilator 5.029 devel
 
 **Minor:**
 
+* Support unconstrained randomization for unions (#5395) (#5396). [Yilou Wang]
+* Add method to check if there are VPI callbacks of the given type (#5399). [Kaleb Barrett]
 * Improve Verilation thread pool (#5161). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix REALCVT warning on integral timescale conversions (#5378). [Liam Braun]
 * Fix dot fallback finding wrong symbols (#5394). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Fix infinite recursion due to recursive functions/tasks (#5398). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix empty `foreach` in `if` in constraints (#5408). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix queue `[$-i]` select as reference argument (#5411). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix `pre`/`post_randomize` on `randomize() with` (#5412). [Krzysztof Bieganski, Antmicro Ltd.]
 
 
 Verilator 5.028 2024-08-21
