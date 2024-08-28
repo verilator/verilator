@@ -9,8 +9,13 @@ module t(/*AUTOARG*/);
    int q[$];
    int r;
 
+   function void set_val(ref int lhs, input int rhs);
+      lhs = rhs;
+   endfunction
+
    initial begin
-      q = { 20, 30, 40 };
+      q = { 20, 50, 40 };
+      set_val(q[$-1], 30);
 
       r = q[$];
       if (r != 40) $stop;

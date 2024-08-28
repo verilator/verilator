@@ -493,7 +493,7 @@ class TaskVisitor final : public VNVisitor {
                     || VN_IS(pinp, ArraySel)) {
                     refArgOk = true;
                 } else if (const AstCMethodHard* const cMethodp = VN_CAST(pinp, CMethodHard)) {
-                    refArgOk = cMethodp->name() == "at";
+                    refArgOk = cMethodp->name() == "at" || cMethodp->name() == "atBack";
                 }
                 if (refArgOk) {
                     if (AstVarRef* const varrefp = VN_CAST(pinp, VarRef)) {
