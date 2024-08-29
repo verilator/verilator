@@ -7,7 +7,6 @@
 class Cls;
    rand int assocarr[string];
    rand int dynarr[];
-   rand int unpackarr[5];
    rand Cls cls;
    rand int i;
    int st;

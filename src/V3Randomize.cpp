@@ -1296,9 +1296,8 @@ class RandomizeVisitor final : public VNVisitor {
     }
     AstNodeStmt* newRandStmtsp(FileLine* fl, AstNodeExpr* exprp, AstVar* randcVarp, int offset = 0,
                                AstMemberDType* memberp = nullptr) {
-        if (const auto* const structDtp
-            = VN_CAST(memberp ? memberp->subDTypep()->skipRefp() : exprp->dtypep()->skipRefp(),
-                      StructDType)) {
+        AstNodeDType* const memberDtp = memberp ? memberp->subDTypep()->skipRefp() : exprp->dtypep()->skipRefp();
+        if (const auto* const structDtp = VN_CAST(memberDtp, StructDType)) {
             AstNodeStmt* stmtsp = nullptr;
             if (structDtp->packed()) offset += memberp ? memberp->lsb() : 0;
             for (AstMemberDType* smemberp = structDtp->membersp(); smemberp;
@@ -1314,16 +1313,10 @@ class RandomizeVisitor final : public VNVisitor {
                     if (!structSelp->dtypep()) structSelp->dtypep(smemberp->subDTypep());
                     randp = newRandStmtsp(fl, structSelp, nullptr);
                 }
-                if (stmtsp) {
-                    stmtsp->addNext(randp);
-                } else {
-                    stmtsp = randp;
-                }
+                stmtsp = stmtsp ? stmtsp->addNext(randp) : randp;
             }
             return stmtsp;
-        } else if (const auto* const unionDtp = VN_CAST(memberp ? memberp->subDTypep()->skipRefp()
-                                                                : exprp->dtypep()->skipRefp(),
-                                                        UnionDType)) {
+        } else if (const auto* const unionDtp = VN_CAST(memberDtp, UnionDType)) {
             if (!unionDtp->packed()) {
                 unionDtp->v3error("Unpacked unions shall not be declared as rand or randc."
                                   " (IEEE 1800-2023 18.4)");
@@ -1331,29 +1324,20 @@ class RandomizeVisitor final : public VNVisitor {
             }
             AstMemberDType* const firstMemberp = unionDtp->membersp();
             return newRandStmtsp(fl, exprp, nullptr, offset, firstMemberp);
-        } else if (AstUnpackArrayDType* const unpackarrayDType = VN_CAST(
-                       memberp ? memberp->subDTypep()->skipRefp() : exprp->dtypep()->skipRefp(),
-                       UnpackArrayDType)) {
+        } else if (AstUnpackArrayDType* const unpackarrayDtp = VN_CAST(memberDtp, UnpackArrayDType)) {
             AstNodeStmt* stmtsp = nullptr;
-            int elemCount = unpackarrayDType->elementsConst();
+            int elemCount = unpackarrayDtp->elementsConst();
             for (int i = 0; i < elemCount; ++i) {
                 AstNodeExpr* elementExprp
-                    = new AstArraySel(fl, stmtsp ? exprp->cloneTree(false) : exprp, i);
-                elementExprp->dtypep(unpackarrayDType->subDTypep());
-                AstNodeStmt* randp = nullptr;
-                randp = newRandStmtsp(fl, elementExprp, nullptr);
-                if (stmtsp) {
-                    stmtsp->addNext(randp);
-                } else {
-                    stmtsp = randp;
-                }
+                    = new AstArraySel{fl, stmtsp ? exprp->cloneTree(false) : exprp, i};
+                elementExprp->dtypep(unpackarrayDtp->subDTypep());
+                AstNodeStmt* randp = newRandStmtsp(fl, elementExprp, nullptr);
+                stmtsp = stmtsp ? stmtsp->addNext(randp) : randp;
             }
             return stmtsp;
         } else {
             AstNodeExpr* valp;
-            if (AstEnumDType* const enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
-                                                              : exprp->dtypep()->subDTypep(),
-                                                      EnumDType)) {
+            if (AstEnumDType* const enumDtp = VN_CAST(memberDtp, EnumDType)) {
                 AstVarRef* const tabRefp
                     = new AstVarRef{fl, enumValueTabp(enumDtp), VAccess::READ};
                 tabRefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
