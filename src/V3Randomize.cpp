@@ -865,8 +865,10 @@ class CaptureVisitor final : public VNVisitor {
         const bool varIsFuncLocal = varRefp->varp()->isFuncLocal();
         const bool varHasAutomaticLifetime = varRefp->varp()->lifetime().isAutomatic();
         const bool varIsFieldOfCaller = AstClass::isClassExtendedFrom(callerClassp, varClassp);
+        const bool varIsParam = varRefp->varp()->isParam();
         if (refIsXref) return CaptureMode::CAP_VALUE | CaptureMode::CAP_F_XREF;
         if (varIsFuncLocal && varHasAutomaticLifetime) return CaptureMode::CAP_VALUE;
+        if (varIsParam) return CaptureMode::CAP_VALUE;
         // Static var in function (will not be inlined, because it's in class)
         if (callerIsClass && varIsFuncLocal) return CaptureMode::CAP_VALUE;
         if (callerIsClass && varIsFieldOfCaller) return CaptureMode::CAP_THIS;

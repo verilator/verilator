@@ -10,7 +10,9 @@ endclass
 class c2;
 	rand int c2_f;
 endclass
-
+package pkg;
+   localparam int PARAM = 42;
+endpackage
 class Cls;
    rand int x;
    rand enum {
@@ -39,6 +41,7 @@ class SubB extends Cls;
    int z;
 endclass
 class SubC extends SubB;
+   import pkg::*;
    c2 e = new;
    rand enum {
       AMBIG,
@@ -79,6 +82,10 @@ class SubC extends SubB;
       doit &= f.randomize() with { en == AMBIG; };
       if (doit != 1) $stop;
       if (f.en != SubA::AMBIG) $stop;
+
+      doit &= f.randomize() with { x == PARAM; };
+      if (doit != 1) $stop;
+      if (f.x != PARAM) $stop;
 
       f.en = SubA::ONE_A;
       doit &= f.randomize() with { en == ONE_A; };
