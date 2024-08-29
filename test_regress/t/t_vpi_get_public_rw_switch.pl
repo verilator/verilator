@@ -10,9 +10,6 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-skip("Known compiler limitation")
-    if $Self->cxx_version =~ /\(GCC\) 4.4/;
-
 vm_prefix("Vt_vpi_get");
 top_filename("t/t_vpi_get.v");
 pli_filename("t_vpi_get.cpp");

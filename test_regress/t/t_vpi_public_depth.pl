@@ -10,9 +10,6 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-skip("Known compiler limitation")
-    if $Self->cxx_version =~ /\(GCC\) 4.4/;
-
 compile(
     make_top_shell => 0,
     make_main => 0,

@@ -13,9 +13,6 @@ scenarios(simulator => 1);
 # same vpi script should work with --public-params instead of inline publics
 pli_filename("t_vpi_param.cpp");
 
-skip("Known compiler limitation")
-    if $Self->cxx_version =~ /\(GCC\) 4.4/;
-
 compile(
     make_top_shell => 0,
     make_main => 0,

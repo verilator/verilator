@@ -13,9 +13,6 @@ scenarios(simulator => 1);
 pli_filename("t_vpi_public_depth.cpp");
 top_filename("t/t_vpi_public_depth.v");
 
-skip("Known compiler limitation")
-    if $Self->cxx_version =~ /\(GCC\) 4.4/;
-
 compile(
     make_top_shell => 0,
     make_main => 0,
