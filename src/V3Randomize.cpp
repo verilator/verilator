@@ -1207,12 +1207,13 @@ class RandomizeVisitor final : public VNVisitor {
         return new AstBegin{fl, "", stmtsp, false, true};
     }
     static AstNodeStmt* wrapIfRandMode(AstClass* classp, AstVar* const varp, AstNodeStmt* stmtp) {
-        return VN_AS(wrapIfMode({.asInt = varp->user1()}, getRandModeVar(classp), stmtp),
-                     NodeStmt);
+        const RandomizeMode rmode = {.asInt = varp->user1()};
+        return VN_AS(wrapIfMode(rmode, getRandModeVar(classp), stmtp), NodeStmt);
     }
     static AstNode* wrapIfConstraintMode(AstClass* classp, AstConstraint* const constrp,
                                          AstNode* stmtp) {
-        return wrapIfMode({.asInt = constrp->user1()}, getConstraintModeVar(classp), stmtp);
+        const RandomizeMode rmode = {.asInt = constrp->user1()};
+        return wrapIfMode(rmode, getConstraintModeVar(classp), stmtp);
     }
     static AstNode* wrapIfMode(const RandomizeMode mode, AstVar* modeVarp, AstNode* stmtp) {
         FileLine* const fl = stmtp->fileline();
