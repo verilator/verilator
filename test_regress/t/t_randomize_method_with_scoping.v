@@ -10,9 +10,7 @@ endclass
 class c2;
 	rand int c2_f;
 endclass
-package pkg;
-   localparam int PARAM = 42;
-endpackage
+localparam int PARAM = 42;
 class Cls;
    rand int x;
    rand enum {
@@ -41,7 +39,6 @@ class SubB extends Cls;
    int z;
 endclass
 class SubC extends SubB;
-   import pkg::*;
    c2 e = new;
    rand enum {
       AMBIG,
