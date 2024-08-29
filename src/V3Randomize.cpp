@@ -1296,7 +1296,8 @@ class RandomizeVisitor final : public VNVisitor {
     }
     AstNodeStmt* newRandStmtsp(FileLine* fl, AstNodeExpr* exprp, AstVar* randcVarp, int offset = 0,
                                AstMemberDType* memberp = nullptr) {
-        AstNodeDType* const memberDtp = memberp ? memberp->subDTypep()->skipRefp() : exprp->dtypep()->skipRefp();
+        AstNodeDType* const memberDtp
+            = memberp ? memberp->subDTypep()->skipRefp() : exprp->dtypep()->skipRefp();
         if (const auto* const structDtp = VN_CAST(memberDtp, StructDType)) {
             AstNodeStmt* stmtsp = nullptr;
             if (structDtp->packed()) offset += memberp ? memberp->lsb() : 0;
@@ -1324,7 +1325,8 @@ class RandomizeVisitor final : public VNVisitor {
             }
             AstMemberDType* const firstMemberp = unionDtp->membersp();
             return newRandStmtsp(fl, exprp, nullptr, offset, firstMemberp);
-        } else if (AstUnpackArrayDType* const unpackarrayDtp = VN_CAST(memberDtp, UnpackArrayDType)) {
+        } else if (AstUnpackArrayDType* const unpackarrayDtp
+                   = VN_CAST(memberDtp, UnpackArrayDType)) {
             AstNodeStmt* stmtsp = nullptr;
             int elemCount = unpackarrayDtp->elementsConst();
             for (int i = 0; i < elemCount; ++i) {
