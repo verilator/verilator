@@ -20256,9 +20256,7 @@ virtual class uvm_sequence_base extends uvm_sequence_item;
     if (is_rel_default != wait_rel_default)
       uvm_report_fatal("RELMSM",
         "is_relevant() was implemented without defining wait_for_relevant()", UVM_NONE);
-//TODO issue #4495 - unsupported local event - may want to model the larger context where is used - might be case where edit upstream?
-//TODO  %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:20247:5: Unsupported: waiting on local event variables
-//TODO    @e;
+    @e;
   endtask
   task lock(uvm_sequencer_base sequencer = null);
     if (sequencer == null)
