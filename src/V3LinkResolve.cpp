@@ -376,6 +376,7 @@ class LinkResolveVisitor final : public VNVisitor {
         expectFormat(nodep, nodep->text(), nodep->exprsp(), true);
     }
     void visit(AstSFormatF* nodep) override {
+        if (nodep->user2SetOnce()) return;
         iterateChildren(nodep);
         // Cleanup old-school displays without format arguments
         if (!nodep->hasFormat()) {
