@@ -19,12 +19,12 @@ execute(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/);
+    file_grep($Self->trace_filename, qr/\$enddefinitions/);
     my $sig = quotemeta("bra[ket]slash/dash-colon:9");
-    file_grep("$Self->{obj_dir}/simx.vcd", qr/ $sig/);
-    file_grep("$Self->{obj_dir}/simx.vcd", qr/ other\.cyc /);
-    file_grep("$Self->{obj_dir}/simx.vcd", qr/ module mod\.with_dot /);
-    vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
+    file_grep($Self->trace_filename, qr/ $sig/);
+    file_grep($Self->trace_filename, qr/ other\.cyc /);
+    file_grep($Self->trace_filename, qr/ module mod\.with_dot /);
+    vcd_identical($Self->trace_filename, $Self->{golden_filename});
 }
 
 ok(1);

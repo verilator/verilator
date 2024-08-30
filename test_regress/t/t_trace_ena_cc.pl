@@ -22,10 +22,10 @@ execute(
 if ($Self->{vlt_all}) {
     file_grep("$Self->{obj_dir}/V$Self->{name}__Trace__0__Slow.cpp", qr/c_trace_on\"/);
     file_grep_not("$Self->{obj_dir}/V$Self->{name}__Trace__0__Slow.cpp", qr/_trace_off\"/);
-    file_grep("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/);
-    file_grep_not("$Self->{obj_dir}/simx.vcd", qr/inside_sub/);
+    file_grep($Self->trace_filename, qr/\$enddefinitions/);
+    file_grep_not($Self->trace_filename, qr/inside_sub/);
 
-    vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
+    vcd_identical($Self->trace_filename, $Self->{golden_filename});
 }
 
 ok(1);

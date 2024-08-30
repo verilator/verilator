@@ -18,7 +18,7 @@ execute(
     );
 
 if ($Self->{vlt_all}) {
-   file_grep("$Self->{obj_dir}/simx.vcd", "sub_t_i");
+   file_grep($Self->trace_filename, "sub_t_i");
 };
 
 ok(1);

@@ -28,10 +28,10 @@ if ($Self->{vlt_all}) {
 execute(
     );
 
-vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
+vcd_identical($Self->trace_filename, $Self->{golden_filename});
 
 # vcd_identical doesn't detect "$var a.b;" vs "$scope module a; $var b;"
-file_grep("$Self->{obj_dir}/simx.vcd", qr/module glbl/);
+file_grep($Self->trace_filename, qr/module glbl/);
 
 ok(1);
 1;

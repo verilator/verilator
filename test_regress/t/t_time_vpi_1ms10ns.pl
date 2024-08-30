@@ -24,7 +24,7 @@ execute(
     expect_filename => $Self->{golden_filename},
     );
 
-file_grep("$Self->{obj_dir}/simx.vcd", qr!timescale +10ns!);
+file_grep($Self->trace_filename, qr!timescale +10ns!);
 
 ok(1);
 

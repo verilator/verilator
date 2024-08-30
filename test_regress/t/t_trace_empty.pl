@@ -17,7 +17,7 @@ compile(
 execute(
     );
 
-file_grep_not("$Self->{obj_dir}/simx.vcd", qr/var/);
+file_grep_not($Self->trace_filename, qr/var/);
 
 ok(1);
 1;

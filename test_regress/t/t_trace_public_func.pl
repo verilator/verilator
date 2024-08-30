@@ -22,7 +22,7 @@ compile(
 execute(
     );
 
-vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
+vcd_identical($Self->trace_filename, $Self->{golden_filename});
 
 ok(1);
 1;

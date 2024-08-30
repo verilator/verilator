@@ -20,7 +20,7 @@ execute(
     );
 
 if ($Self->{vlt_all}) {
-    !-r "$Self->{obj_dir}/simx.vcd" or error("Tracing should be off\n");
+    !-r $Self->trace_filename or error("Tracing should be off\n");
 }
 
 ok(1);

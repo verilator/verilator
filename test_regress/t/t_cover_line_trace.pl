@@ -28,7 +28,7 @@ run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_coverage",
     );
 
 files_identical("$Self->{obj_dir}/annotated/t_cover_line.v", "t/t_cover_line.out");
-vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
+vcd_identical($Self->trace_filename, $Self->{golden_filename});
 
 ok(1);
 1;

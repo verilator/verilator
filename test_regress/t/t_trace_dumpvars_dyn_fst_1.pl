@@ -20,7 +20,7 @@ compile(
 execute(
     );
 
-fst_identical("$Self->{obj_dir}/simx.fst", $Self->{golden_filename});
+fst_identical($Self->trace_filename, $Self->{golden_filename});
 
 ok(1);
 1;

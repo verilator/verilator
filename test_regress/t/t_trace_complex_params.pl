@@ -19,9 +19,9 @@ compile(
 execute(
     );
 
-file_grep("$Self->{obj_dir}/simx.vcd", qr/ PARAM /);
+file_grep($Self->trace_filename, qr/ PARAM /);
 
-vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
+vcd_identical($Self->trace_filename, $Self->{golden_filename});
 
 ok(1);
 1;

@@ -27,9 +27,9 @@ execute(
 
 if ($Self->{vlt} && $Self->{trace}) {
     # We can see the ports of the secret module
-    file_grep("$Self->{obj_dir}/simx.vcd", qr/accum_in/);
+    file_grep($Self->trace_filename, qr/accum_in/);
     # and we can see what's inside (because we didn't use --protect-lib)
-    file_grep("$Self->{obj_dir}/simx.vcd", qr/secret_/);
+    file_grep($Self->trace_filename, qr/secret_/);
 }
 
 ok(1);

@@ -19,7 +19,7 @@ execute(
     );
 
 if ($Self->{vlt_all}) {
-    vcd_identical("$Self->{obj_dir}/simx.vcd",
+    vcd_identical($Self->trace_filename,
                   $Self->{golden_filename});
 }
 ok(1);
