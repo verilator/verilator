@@ -76,14 +76,12 @@ class LinkResolveVisitor final : public VNVisitor {
         }
     }
     void visit(AstInitialAutomatic* nodep) override {
+        iterateChildren(nodep);
         // Initial assignments under function/tasks can just be simple
         // assignments without the initial
         if (m_ftaskp) {
             nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else {
-            // No need for this if a parent function/task is already iterating
-            iterateChildren(nodep);
         }
     }
     void visit(AstNodeCoverOrAssert* nodep) override {
@@ -378,6 +376,7 @@ class LinkResolveVisitor final : public VNVisitor {
         expectFormat(nodep, nodep->text(), nodep->exprsp(), true);
     }
     void visit(AstSFormatF* nodep) override {
+        if (nodep->user2SetOnce()) return;
         iterateChildren(nodep);
         // Cleanup old-school displays without format arguments
         if (!nodep->hasFormat()) {
