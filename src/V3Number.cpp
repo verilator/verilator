@@ -247,15 +247,7 @@ void V3Number::create(const char* sourcep) {
                     product.opMul(*this, ten);
                     opAdd(product, addend);
                     if (product.bitsValue(width(), 4)) {  // Overflowed
-                        static int warned = 0;
-                        v3error("Too many digits for "
-                                << width() << " bit number: " << sourcep << '\n'
-                                << ((!sized() && !warned++) ? (
-                                        V3Error::warnMore() + "... As that number was unsized"
-                                        + " ('d...) it is limited to 32 bits"
-                                          " (IEEE 1800-2023 5.7.1)\n"
-                                        + V3Error::warnMore() + "... Suggest adding a size to it.")
-                                                            : ""));
+                        warnTooMany(sourcep);
                         while (*(cp + 1)) cp++;  // Skip ahead so don't get multiple warnings
                     }
                 }
@@ -291,7 +283,7 @@ void V3Number::create(const char* sourcep) {
         for (const char* cp = value_startp + std::strlen(value_startp) - 1; cp >= value_startp;
              cp--) {
             if (*cp != '_' && *cp != '0' && obit >= width()) {
-                v3error("Too many digits for " << width() << " bit number: " << sourcep);
+                warnTooMany(sourcep);
                 break;
             }
             switch (std::tolower(base)) {
@@ -377,6 +369,18 @@ void V3Number::create(const char* sourcep) {
 
     // printf("Dump \"%s\"  CP \"%s\"  B '%c' %d W %d\n", sourcep, value_startp, base, width(),
     // m_value[0]);
+}
+
+void V3Number::warnTooMany(const string& value) {
+    static int warned = 0;
+    v3error("Too many digits for "
+            << width() << " bit number: '" << value << "'\n"
+            << ((!sized() && !warned++)
+                    ? (V3Error::warnMore() + "... As that number was unsized"
+                       + " ('...) it is limited to 32 bits"
+                         " (IEEE 1800-2023 5.7.1)\n"
+                       + V3Error::warnMore() + "... Suggest adding a size to it.")
+                    : ""));
 }
 
 void V3Number::nodep(AstNode* nodep) VL_MT_STABLE {

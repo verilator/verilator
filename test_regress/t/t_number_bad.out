@@ -16,7 +16,7 @@
 %Error: t/t_number_bad.v:17:33: Illegal character in binary constant: 4
    17 |    parameter logic [3:0] FOO7 = 1'b1?4'hF:4'h1;   
       |                                 ^~~~~~
-%Error: t/t_number_bad.v:17:33: Too many digits for 1 bit number: 1'b1?4
+%Error: t/t_number_bad.v:17:33: Too many digits for 1 bit number: '1'b1?4'
    17 |    parameter logic [3:0] FOO7 = 1'b1?4'hF:4'h1;   
       |                                 ^~~~~~
 %Error: t/t_number_bad.v:17:39: syntax error, unexpected INTEGER NUMBER, expecting ';'
