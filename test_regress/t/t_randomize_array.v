@@ -39,7 +39,7 @@ class unconstrained_unpacked_array_test;
                         '{default: '{default: 'h1}},
                         '{default: '{default: 'h2}}};
   endfunction
-  
+
   function void check_randomization();
     foreach (unpacked_array[i]) begin
       foreach (unpacked_array[i][j]) begin
@@ -52,12 +52,10 @@ class unconstrained_unpacked_array_test;
 endclass
 
 module t_randomize_array;
-  
   unconstrained_packed_array_test  packed_class;
   unconstrained_unpacked_array_test unpacked_class;
 
   initial begin
-    
     // Test 1: Packed Array Unconstrained Constrained Test
     packed_class = new();
     repeat(2) begin
