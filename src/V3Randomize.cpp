@@ -1339,7 +1339,9 @@ class RandomizeVisitor final : public VNVisitor {
             return stmtsp;
         } else {
             AstNodeExpr* valp;
-            if (AstEnumDType* const enumDtp = VN_CAST(memberDtp, EnumDType)) {
+            if (AstEnumDType* const enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
+                                                              : exprp->dtypep()->subDTypep(),
+                                                      EnumDType)) {
                 AstVarRef* const tabRefp
                     = new AstVarRef{fl, enumValueTabp(enumDtp), VAccess::READ};
                 tabRefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
