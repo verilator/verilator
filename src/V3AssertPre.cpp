@@ -216,8 +216,16 @@ private:
                                          skewedReadRefp->cloneTree(false)});
             if (skewp->isZero()) {
                 // Drive the var in Re-NBA (IEEE 1800-2023 14.16)
-                m_clockingp->addNextHere(new AstAlwaysReactive{
-                    flp, new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, ifp});
+                AstSenTree* senTreep
+                    = new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)};
+                senTreep->addSensesp(
+                    new AstSenItem{flp, VEdgeType::ET_CHANGED, skewedReadRefp->cloneTree(false)});
+                AstCMethodHard* const trigp = new AstCMethodHard{
+                    nodep->fileline(),
+                    new AstVarRef{flp, m_clockingp->ensureEventp(), VAccess::READ}, "isTriggered"};
+                trigp->dtypeSetBit();
+                ifp->condp(new AstLogAnd{flp, ifp->condp()->unlinkFrBack(), trigp});
+                m_clockingp->addNextHere(new AstAlwaysReactive{flp, senTreep, ifp});
             } else if (skewp->fileline()->timingOn()) {
                 // Create a fork so that this AlwaysObserved can be retriggered before the
                 // assignment happens. Also then it can be combo, avoiding the need for creating
