@@ -598,7 +598,7 @@ public:
         // cppcheck-suppress variableScope
         static thread_local T_Value t_throwAway;
         // Needs to work for dynamic arrays, so does not use T_MaxSize
-        if (VL_UNLIKELY(index < 0) || VL_UNLIKELY(index >= m_deque.size())) {
+        if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
             t_throwAway = atDefault();
             return t_throwAway;
         }
