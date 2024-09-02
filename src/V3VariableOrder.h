@@ -17,6 +17,9 @@
 #ifndef VERILATOR_V3VARIABLEORDER_H_
 #define VERILATOR_V3VARIABLEORDER_H_
 
+#include "config_build.h"
+#include "verilatedos.h"
+
 class AstNetlist;
 
 //============================================================================
