@@ -192,14 +192,6 @@ class SenExprBuilder final {
                 AstCMethodHard* const clearp = new AstCMethodHard{flp, currp(), "clearFired"};
                 clearp->dtypeSetVoid();
                 ifp->addThensp(clearp->makeStmt());
-
-                // Enqueue for clearing 'triggered' state on next eval
-                AstTextBlock* const blockp = new AstTextBlock{flp};
-                ifp->addThensp(blockp);
-                const auto add = [&](const string& text) { blockp->addText(flp, text, true); };
-                add("vlSymsp->enqueueTriggeredEventForClearing(");
-                blockp->addNodesp(currp());
-                add(");\n");
             }
 
             // Get 'fired' state
