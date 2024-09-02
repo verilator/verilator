@@ -20,7 +20,7 @@ run(cmd => ["$ENV{VERILATOR_ROOT}/bin/verilator_coverage",
     verilator_run => 1,
     );
 
-files_identical("$Self->{obj_dir}/coverage.info", $Self->{name} . ".info.out");
+files_identical("$Self->{obj_dir}/coverage.info", "t/" . $Self->{name} . ".info.out");
 
 ok(1);
 1;
