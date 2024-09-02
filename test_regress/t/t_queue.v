@@ -205,6 +205,25 @@ module t (/*AUTOARG*/
          `checks(q[0], "long");
       end
 
+      // Append to queue of queues using []
+      begin
+         int q[$][$];
+         q[0][0] = 1;
+         `checkh(q.size(), 1);
+         `checkh(q[0].size(), 1);
+         `checks(q[0][0], 1);
+      end
+
+      // Do not append with [] if used as index
+      begin
+         int p[$];
+         int q[$];
+         q[p[0]] = 1;
+         `checkh(p.size(), 0);
+         `checkh(q.size(), 1);
+         `checks(q[0], 1);
+      end
+
       begin
          typedef struct packed {
             bit [7:0] opcode;
