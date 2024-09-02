@@ -5,10 +5,10 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class c1;
-	rand int c1_f;
+        rand int c1_f;
 endclass
 class c2;
-	rand int c2_f;
+        rand int c2_f;
 endclass
 localparam int PARAM = 42;
 class Cls;

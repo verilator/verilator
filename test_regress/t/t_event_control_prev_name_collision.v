@@ -44,7 +44,7 @@ module Q(
 endmodule
 
 module Test(
-  input        	reset,
+  input         reset,
   output        valid
 );
   wire ready_e;
