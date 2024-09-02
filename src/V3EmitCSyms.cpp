@@ -550,21 +550,18 @@ void EmitCSyms::emitSymHdr() {
 
     if (v3Global.hasEvents()) {
         if (v3Global.assignsEvents()) {
-            puts("void enqueueTriggeredEventForClearing(VlAssignableEvent& event) {\n");
+            puts("void fireEvent(VlAssignableEvent& event) {\n");
         } else {
-            puts("void enqueueTriggeredEventForClearing(VlEvent& event) {\n");
+            puts("void fireEvent(VlEvent& event) {\n");
         }
-        puts("#ifdef VL_DEBUG\n");
-        puts("if (VL_UNLIKELY(!event.isTriggered())) {\n");
-        puts("VL_FATAL_MT(__FILE__, __LINE__, __FILE__, \"event passed to "
-             "'enqueueTriggeredEventForClearing' was not triggered\");\n");
-        puts("}\n");
-        puts("#endif\n");
+        puts("if (VL_LIKELY(!event.isTriggered())) {\n");
         if (v3Global.assignsEvents()) {
             puts("__Vm_triggeredEvents.push_back(event);\n");
         } else {
             puts("__Vm_triggeredEvents.push_back(&event);\n");
         }
+        puts("}\n");
+        puts("event.fire();\n");
         puts("}\n");
         puts("void clearTriggeredEvents() {\n");
         if (v3Global.assignsEvents()) {

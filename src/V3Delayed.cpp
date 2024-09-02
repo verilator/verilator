@@ -720,9 +720,18 @@ class DelayedVisitor final : public VNVisitor {
     void visit(AstFireEvent* nodep) override {
         UASSERT_OBJ(v3Global.hasEvents(), nodep, "Inconsistent");
         FileLine* const flp = nodep->fileline();
+
+        AstNodeExpr* const eventp = nodep->operandp()->unlinkFrBack();
+
+        // Enqueue for clearing 'triggered' state on next eval
+        AstTextBlock* const blockp = new AstTextBlock{flp};
+        blockp->addText(flp, "vlSymsp->fireEvent(", true);
+        blockp->addNodesp(eventp);
+        blockp->addText(flp, ");\n", true);
+
+        AstNode* newp = new AstCStmt{flp, blockp};
         if (nodep->isDelayed()) {
-            AstVarRef* const vrefp = VN_AS(nodep->operandp(), VarRef);
-            vrefp->unlinkFrBack();
+            AstVarRef* const vrefp = VN_AS(eventp, VarRef);
             const std::string newvarname = "__Vdly__" + vrefp->varp()->shortName();
             AstVarScope* const dlyvscp = createNewVarScope(vrefp->varScopep(), newvarname, 1);
 
@@ -736,24 +745,17 @@ class DelayedVisitor final : public VNVisitor {
             {
                 AstIf* const ifp = new AstIf{flp, dlyRef(VAccess::READ)};
                 postp->addStmtsp(ifp);
-                AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "fire"};
-                callp->dtypeSetVoid();
-                ifp->addThensp(callp->makeStmt());
+                ifp->addThensp(newp);
             }
 
             AstActive* const activep = createActiveLike(flp, m_activep);
             activep->addStmtsp(prep);
             activep->addStmtsp(postp);
 
-            AstAssign* const assignp = new AstAssign{flp, dlyRef(VAccess::WRITE),
-                                                     new AstConst{flp, AstConst::BitTrue{}}};
-            nodep->replaceWith(assignp);
-        } else {
-            AstCMethodHard* const callp
-                = new AstCMethodHard{flp, nodep->operandp()->unlinkFrBack(), "fire"};
-            callp->dtypeSetVoid();
-            nodep->replaceWith(callp->makeStmt());
+            newp = new AstAssign{flp, dlyRef(VAccess::WRITE),
+                                 new AstConst{flp, AstConst::BitTrue{}}};
         }
+        nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
