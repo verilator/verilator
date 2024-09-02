@@ -34,7 +34,7 @@ sub printfll {
     my %names;
     foreach my $line (split /\n/, $grep) {
         next if $line !~ /%[a-z0-9]*ll/;
-        next if $line !~ /\blong\S+long\b/;  # Assume a cast
+        next if $line =~ /lintok-format-ll/;
         print "$line\n";
         if ($line =~ /^([^:]+)/) {
             $names{$1} = 1;

@@ -2475,7 +2475,7 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             vl_strprintf(t_outDynamicStr, "%u",
                          static_cast<unsigned int>(*(reinterpret_cast<IData*>(varDatap))));
         } else if (varp->vltype() == VLVT_UINT64) {
-            vl_strprintf(t_outDynamicStr, "%llu",
+            vl_strprintf(t_outDynamicStr, "%llu",  // lintok-format-ll
                          static_cast<unsigned long long>(*(reinterpret_cast<QData*>(varDatap))));
         }
         valuep->value.str = const_cast<PLI_BYTE8*>(t_outDynamicStr.c_str());
@@ -2697,7 +2697,8 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         } else if (valuep->format == vpiDecStrVal) {
             char remainder[16];
             unsigned long long val;
-            const int success = std::sscanf(valuep->value.str, "%30llu%15s", &val, remainder);
+            const int success = std::sscanf(valuep->value.str, "%30llu%15s", // lintok-format-ll
+                                            &val, remainder);
             if (success < 1) {
                 VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Parsing failed for '%s' as value %s for %s",
                               __func__, valuep->value.str,
