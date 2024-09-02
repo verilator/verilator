@@ -31,7 +31,7 @@ module t(/*AUTOARG*/
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d crc=%x result=%x\n", $time, cyc, crc);
+      $write("[%0t] cyc==%0d crc=%x\n", $time, cyc, crc);
 `endif
       cyc <= cyc + 1;
       crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
