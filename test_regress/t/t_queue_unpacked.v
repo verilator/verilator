@@ -36,6 +36,11 @@ module t (/*AUTOARG*/);
          `checks(b0[1], "world");
          `checks(b1[0], "bye");
          `checks(b1[1], "world");
+
+         iq[2][0] = "goodbye";
+         iq[2][1] = "world";
+         `checks(iq[2][0], "goodbye");
+         `checks(iq[2][1], "world");
       end
 
 `ifndef verilator

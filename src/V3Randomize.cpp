@@ -224,7 +224,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 nodep->v3error("Cannot call 'rand_mode()' on packed array element");
                 valid = false;
             } else if (AstCMethodHard* const methodHardp = VN_CAST(fromp, CMethodHard)) {
-                if (methodHardp->name() == "at" && VN_IS(fromp, CMethodHard)) {
+                if (methodHardp->name() == "at" || methodHardp->name() == "atWrite") {
                     nodep->v3warn(E_UNSUPPORTED,
                                   "Unsupported: 'rand_mode()' on dynamic array element");
                     valid = false;
@@ -1194,15 +1194,15 @@ class RandomizeVisitor final : public VNVisitor {
         iterVarp->lifetime(VLifetime::AUTOMATIC);
         AstCMethodHard* const sizep = new AstCMethodHard{fl, lhsp, "size", nullptr};
         sizep->dtypeSetUInt32();
-        AstCMethodHard* const atp = new AstCMethodHard{fl, lhsp->cloneTree(false), "at",
-                                                       new AstVarRef{fl, iterVarp, VAccess::READ}};
-        atp->dtypeSetUInt32();
+        AstCMethodHard* const setp = new AstCMethodHard{
+            fl, lhsp->cloneTree(false), "atWrite", new AstVarRef{fl, iterVarp, VAccess::READ}};
+        setp->dtypeSetUInt32();
         AstNode* const stmtsp = iterVarp;
         stmtsp->addNext(
             new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE}, new AstConst{fl, 0}});
         stmtsp->addNext(
             new AstWhile{fl, new AstLt{fl, new AstVarRef{fl, iterVarp, VAccess::READ}, sizep},
-                         new AstAssign{fl, atp, rhsp},
+                         new AstAssign{fl, setp, rhsp},
                          new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
                                        new AstAdd{fl, new AstConst{fl, 1},
                                                   new AstVarRef{fl, iterVarp, VAccess::READ}}}});
@@ -1503,13 +1503,13 @@ class RandomizeVisitor final : public VNVisitor {
             const RandomizeMode randMode = {.asInt = memberVarp->user1()};
             if (randMode.usesMode
                 && !memberVarp->rand().isRand()) {  // Not randomizable by default
-                AstCMethodHard* atp = new AstCMethodHard{
+                AstCMethodHard* setp = new AstCMethodHard{
                     nodep->fileline(),
                     new AstVarRef{fl, VN_AS(randModeVarp->user2p(), NodeModule), randModeVarp,
                                   VAccess::WRITE},
-                    "at", new AstConst{nodep->fileline(), randMode.index}};
-                atp->dtypeSetUInt32();
-                newp->addStmtsp(new AstAssign{fl, atp, new AstConst{fl, 0}});
+                    "atWrite", new AstConst{nodep->fileline(), randMode.index}};
+                setp->dtypeSetUInt32();
+                newp->addStmtsp(new AstAssign{fl, setp, new AstConst{fl, 0}});
             }
             if (memberVarp->user3()) return;  // Handled in constraints
             const AstNodeDType* const dtypep = memberVarp->dtypep()->skipRefp();
@@ -1574,10 +1574,10 @@ class RandomizeVisitor final : public VNVisitor {
                 // mode
                 const RandomizeMode rmode = {.asInt = receiverp->user1()};
                 UASSERT_OBJ(rmode.usesMode, ftaskRefp, "Failed to set usesMode");
-                AstCMethodHard* const atp
-                    = new AstCMethodHard{fl, lhsp, "at", new AstConst{fl, rmode.index}};
-                atp->dtypeSetUInt32();
-                m_stmtp->replaceWith(new AstAssign{fl, atp, rhsp});
+                AstCMethodHard* const setp
+                    = new AstCMethodHard{fl, lhsp, "atWrite", new AstConst{fl, rmode.index}};
+                setp->dtypeSetUInt32();
+                m_stmtp->replaceWith(new AstAssign{fl, setp, rhsp});
             } else {
                 // For rand_mode: Called on 'this' or a non-rand class instance.
                 // For constraint_mode: Called on a class instance.
@@ -1589,10 +1589,10 @@ class RandomizeVisitor final : public VNVisitor {
             UASSERT_OBJ(receiverp, ftaskRefp, "Should have receiver");
             const RandomizeMode rmode = {.asInt = receiverp->user1()};
             UASSERT_OBJ(rmode.usesMode, ftaskRefp, "Failed to set usesMode");
-            AstCMethodHard* const atp
-                = new AstCMethodHard{fl, lhsp, "at", new AstConst{fl, rmode.index}};
-            atp->dtypeSetUInt32();
-            ftaskRefp->replaceWith(atp);
+            AstCMethodHard* const setp
+                = new AstCMethodHard{fl, lhsp, "atWrite", new AstConst{fl, rmode.index}};
+            setp->dtypeSetUInt32();
+            ftaskRefp->replaceWith(setp);
             VL_DO_DANGLING(pushDeletep(ftaskRefp), ftaskRefp);
         }
     };
@@ -1658,12 +1658,12 @@ class RandomizeVisitor final : public VNVisitor {
                     tmpVarps = AstNode::addNext(tmpVarps, randModeTmpVarp);
                 }
                 const RandomizeMode randMode = {.asInt = randVarp->user1()};
-                AstCMethodHard* atp
+                AstCMethodHard* setp
                     = new AstCMethodHard{fl, makeSiblingRefp(exprp, randModeVarp, VAccess::WRITE),
-                                         "at", new AstConst{fl, randMode.index}};
-                atp->dtypeSetUInt32();
+                                         "atWrite", new AstConst{fl, randMode.index}};
+                setp->dtypeSetUInt32();
                 setStmtsp
-                    = AstNode::addNext(setStmtsp, new AstAssign{fl, atp, new AstConst{fl, 1}});
+                    = AstNode::addNext(setStmtsp, new AstAssign{fl, setp, new AstConst{fl, 1}});
                 exprp = getFromp(exprp);
             }
             pinp->unlinkFrBack()->deleteTree();
