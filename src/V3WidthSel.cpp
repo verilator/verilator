@@ -218,10 +218,16 @@ class WidthSelVisitor final : public VNVisitor {
     static bool isPossibleWrite(AstNodeExpr* nodep) {
         AstNode* abovep = nodep->firstAbovep();
         if (AstNodeAssign* const assignp = VN_CAST(abovep, NodeAssign)) {
+            // On an assign LHS, assume a write
             return assignp->lhsp() == nodep;
         }
         if (AstMethodCall* const methodCallp = VN_CAST(abovep, MethodCall)) {
+            // A method call can write
             return methodCallp->fromp() == nodep;
+        }
+        if (AstNodePreSel* const preSelp = VN_CAST(abovep, NodePreSel)) {
+            // If we're not selected from, it's not a write (we're the index)
+            if (preSelp->fromp() != nodep) return false;
         }
         AstNodeExpr* exprp = VN_CAST(abovep, NodeExpr);
         return exprp ? isPossibleWrite(exprp) : false;
