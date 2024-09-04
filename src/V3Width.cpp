@@ -2614,6 +2614,8 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstDist* nodep) override {
+        //  x dist {a :/ p, b :/ q} --> (p > 0 && x == a) || (q > 0 && x == b)
+        nodep->v3warn(CONSTRAINTIGN, "Constraint expression ignored (imperfect distribution)");
         userIterateAndNext(nodep->exprp(), WidthVP{CONTEXT_DET, PRELIM}.p());
         for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = itemp->nextp();  // iterate may cause the node to get replaced
@@ -2643,14 +2645,31 @@ class WidthVisitor final : public VNVisitor {
 
         iterateCheck(nodep, "Dist expression", nodep->exprp(), CONTEXT_DET, FINAL, subDTypep,
                      EXTEND_EXP);
-        for (AstDistItem *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
-            nextip
-                = VN_AS(itemp->nextp(), DistItem);  // iterate may cause the node to get replaced
-            iterateCheck(nodep, "Dist Item", itemp, CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
+        for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
+            nextip = itemp->nextp();
+            itemp = VN_AS(itemp, DistItem)->rangep();
+            // InsideRange will get replaced with Lte&Gte and finalized later
+            if (!VN_IS(itemp, InsideRange))
+                iterateCheck(nodep, "Dist Item", itemp, CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
         }
+        AstNodeExpr* newp = nullptr;
+        for (AstDistItem* itemp = nodep->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), DistItem)) {
+            AstNodeExpr* inewp = insideItem(nodep, nodep->exprp(), itemp->rangep());
+            if (!inewp) continue;
+            AstNodeExpr* const cmpp
+                = new AstGt{itemp->fileline(), itemp->weightp()->unlinkFrBack(),
+                            new AstConst{itemp->fileline(), 0}};
+            cmpp->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
+            cmpp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
+            inewp = new AstLogAnd{itemp->fileline(), cmpp, inewp};
+            newp = newp ? new AstLogOr{nodep->fileline(), newp, inewp} : inewp;
+        }
+        if (!newp) newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
 
         if (debug() >= 9) nodep->dumpTree("-  dist-out: ");
-        nodep->dtypep(subDTypep);
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     void visit(AstInside* nodep) override {
@@ -2696,40 +2715,39 @@ class WidthVisitor final : public VNVisitor {
         AstNodeExpr* newp = nullptr;
         for (AstNodeExpr *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = VN_AS(itemp->nextp(), NodeExpr);  // Will be unlinking
-            AstNodeExpr* inewp;
-            const AstNodeDType* const itemDtp = itemp->dtypep()->skipRefp();
-            if (AstInsideRange* const irangep = VN_CAST(itemp, InsideRange)) {
-                // Similar logic in V3Case
-                inewp = irangep->newAndFromInside(nodep->exprp(), irangep->lhsp()->unlinkFrBack(),
-                                                  irangep->rhsp()->unlinkFrBack());
-            } else if (VN_IS(itemDtp, UnpackArrayDType) || VN_IS(itemDtp, DynArrayDType)
-                       || VN_IS(itemDtp, QueueDType)) {
-                // Unsupported in parameters
-                AstNodeExpr* exprp = nodep->exprp()->cloneTreePure(true);
-                inewp = new AstCMethodHard{nodep->fileline(), itemp->unlinkFrBack(), "inside",
-                                           exprp};
-                iterateCheckTyped(nodep, "inside value", exprp, itemDtp->subDTypep(), BOTH);
-                VL_DANGLING(exprp);  // Might have been replaced
-                inewp->dtypeSetBit();
-                inewp->didWidth(true);
-            } else if (VN_IS(itemDtp, AssocArrayDType)) {
-                nodep->v3error("Inside operator not specified on associative arrays "
-                               "(IEEE 1800-2023 11.4.13)");
-                continue;
-            } else {
-                inewp = AstEqWild::newTyped(itemp->fileline(), nodep->exprp()->cloneTreePure(true),
-                                            itemp->unlinkFrBack());
-            }
-            if (newp) {
-                newp = new AstLogOr{nodep->fileline(), newp, inewp};
-            } else {
-                newp = inewp;
-            }
+            AstNodeExpr* inewp = insideItem(nodep, nodep->exprp(), itemp);
+            if (!inewp) continue;
+            newp = newp ? new AstLogOr{nodep->fileline(), newp, inewp} : inewp;
         }
         if (!newp) newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
         if (debug() >= 9) newp->dumpTree("-  inside-out: ");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    AstNodeExpr* insideItem(AstNode* nodep, AstNodeExpr* exprp, AstNodeExpr* itemp) {
+        const AstNodeDType* const itemDtp = itemp->dtypep()->skipRefp();
+        if (AstInsideRange* const irangep = VN_CAST(itemp, InsideRange)) {
+            // Similar logic in V3Case
+            return irangep->newAndFromInside(exprp, irangep->lhsp()->unlinkFrBack(),
+                                             irangep->rhsp()->unlinkFrBack());
+        } else if (VN_IS(itemDtp, UnpackArrayDType) || VN_IS(itemDtp, DynArrayDType)
+                   || VN_IS(itemDtp, QueueDType)) {
+            // Unsupported in parameters
+            AstNodeExpr* cexprp = exprp->cloneTreePure(true);
+            AstNodeExpr* inewp
+                = new AstCMethodHard{nodep->fileline(), itemp->unlinkFrBack(), "inside", cexprp};
+            iterateCheckTyped(nodep, "inside value", cexprp, itemDtp->subDTypep(), BOTH);
+            VL_DANGLING(cexprp);  // Might have been replaced
+            inewp->dtypeSetBit();
+            inewp->didWidth(true);
+            return inewp;
+        } else if (VN_IS(itemDtp, AssocArrayDType)) {
+            nodep->v3error("Inside operator not specified on associative arrays "
+                           "(IEEE 1800-2023 11.4.13)");
+            return nullptr;
+        }
+        return AstEqWild::newTyped(itemp->fileline(), exprp->cloneTreePure(true),
+                                   itemp->unlinkFrBack());
     }
     void visit(AstInsideRange* nodep) override {
         // Just do each side; AstInside will rip these nodes out later
