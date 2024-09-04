@@ -327,6 +327,24 @@ AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* l
     return new AstLogAnd{fileline(), ap, bp};
 }
 
+AstVar* AstClocking::ensureEventp(bool childDType) {
+    if (!eventp()) {
+        AstVar* const evp
+            = childDType ? new AstVar{fileline(), VVarType::MODULETEMP, m_name, VFlagChildDType{},
+                                      new AstBasicDType{fileline(), VBasicDTypeKwd::EVENT}}
+                         : new AstVar{fileline(), VVarType::MODULETEMP, m_name,
+                                      findBasicDType(VBasicDTypeKwd::EVENT)};
+        evp->lifetime(VLifetime::STATIC);
+        eventp(evp);
+        // Trigger the clocking event in Observed (IEEE 1800-2023 14.13)
+        addNextHere(new AstAlwaysObserved{
+            fileline(), new AstSenTree{fileline(), sensesp()->cloneTree(false)},
+            new AstFireEvent{fileline(), new AstVarRef{fileline(), evp, VAccess::WRITE}, false}});
+        v3Global.setHasEvents();
+    }
+    return eventp();
+}
+
 void AstConsDynArray::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (lhsIsValue()) str << " [LVAL]";

@@ -2911,27 +2911,8 @@ class WidthVisitor final : public VNVisitor {
             if (memberSelClass(nodep, adtypep)) return;
         } else if (AstIfaceRefDType* const adtypep = VN_CAST(fromDtp, IfaceRefDType)) {
             if (AstNode* foundp = memberSelIface(nodep, adtypep)) {
-                if (AstClocking* const clockingp = VN_CAST(foundp, Clocking)) {
-                    foundp = clockingp->eventp();
-                    if (!foundp) {
-                        AstVar* const eventp = new AstVar{
-                            clockingp->fileline(), VVarType::MODULETEMP, clockingp->name(),
-                            clockingp->findBasicDType(VBasicDTypeKwd::EVENT)};
-                        eventp->lifetime(VLifetime::STATIC);
-                        clockingp->eventp(eventp);
-                        // Trigger the clocking event in Observed (IEEE 1800-2023 14.13)
-                        clockingp->addNextHere(new AstAlwaysObserved{
-                            clockingp->fileline(),
-                            new AstSenTree{clockingp->fileline(),
-                                           clockingp->sensesp()->cloneTree(false)},
-                            new AstFireEvent{
-                                clockingp->fileline(),
-                                new AstVarRef{clockingp->fileline(), eventp, VAccess::WRITE},
-                                false}});
-                        v3Global.setHasEvents();
-                        foundp = eventp;
-                    }
-                }
+                if (AstClocking* const clockingp = VN_CAST(foundp, Clocking))
+                    foundp = clockingp->ensureEventp();
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
                     if (!varp->didWidth()) userIterate(varp, nullptr);
                     nodep->dtypep(foundp->dtypep());
