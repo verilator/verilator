@@ -2267,22 +2267,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
     }
     VSymEnt* getCreateClockingEventSymEnt(AstClocking* clockingp) {
-        if (!clockingp->eventp()) {
-            AstVar* const eventp = new AstVar{
-                clockingp->fileline(), VVarType::MODULETEMP, clockingp->name(), VFlagChildDType{},
-                new AstBasicDType{clockingp->fileline(), VBasicDTypeKwd::EVENT}};
-            eventp->lifetime(VLifetime::STATIC);
-            clockingp->eventp(eventp);
-            // Trigger the clocking event in Observed (IEEE 1800-2023 14.13)
-            clockingp->addNextHere(new AstAlwaysObserved{
-                clockingp->fileline(),
-                new AstSenTree{clockingp->fileline(), clockingp->sensesp()->cloneTree(false)},
-                new AstFireEvent{clockingp->fileline(),
-                                 new AstVarRef{clockingp->fileline(), eventp, VAccess::WRITE},
-                                 false}});
-            v3Global.setHasEvents();
-        }
-        AstVar* const eventp = clockingp->eventp();
+        AstVar* const eventp = clockingp->ensureEventp(true);
         if (!eventp->user1p()) eventp->user1p(new VSymEnt{m_statep->symsp(), eventp});
         return reinterpret_cast<VSymEnt*>(eventp->user1p());
     }

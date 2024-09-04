@@ -961,6 +961,7 @@ public:
     std::string name() const override VL_MT_STABLE { return m_name; }
     bool isDefault() const { return m_isDefault; }
     bool isGlobal() const { return m_isGlobal; }
+    AstVar* ensureEventp(bool childDType = false);
 };
 class AstClockingItem final : public AstNode {
     // Parents:  CLOCKING
