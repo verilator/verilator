@@ -11,4 +11,4 @@
 
 import sys
 
-sys.exit("%Error: t_pipe_exit_bad.pf: Intentional bad exit status...")
+sys.exit("%Error: t_pipe_exit_bad_pf.pf: Intentional bad exit status...")

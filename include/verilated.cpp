@@ -3002,7 +3002,7 @@ const VerilatedScopeNameMap* VerilatedContext::scopeNameMap() VL_MT_SAFE {
 //======================================================================
 // VerilatedContext:: Methods - trace
 
-void VerilatedContext::trace(VerilatedTraceBaseC* tfp, int levels, int options) VL_MT_SAFE {
+void VerilatedContext::trace(VerilatedTraceBaseC* tfp, int levels, int options) {
     VL_DEBUG_IF(VL_DBG_MSGF("+ VerilatedContext::trace\n"););
     if (tfp->isOpen()) {
         VL_FATAL_MT("", 0, "",

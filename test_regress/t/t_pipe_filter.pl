@@ -13,7 +13,7 @@ scenarios(vlt => 1);
 my $stdout_filename = "$Self->{obj_dir}/$Self->{name}__test.vpp";
 
 compile(
-    verilator_flags2 => ['-E --pipe-filter \'python3 t/t_pipe_filter.pf\' '],
+    verilator_flags2 => ['-E --pipe-filter \'python3 t/t_pipe_filter_pf.pf\' '],
     verilator_make_gmake => 0,
     make_top_shell => 0,
     make_main => 0,

@@ -15,11 +15,11 @@ import sys
 Debug = False
 
 if Debug:
-    sys.stderr.write("t_pipe_filter.pf: Hello from t_pipe_filter.pf\n")
+    sys.stderr.write("t_pipe_filter_pf.pf: Hello from t_pipe_filter_pf.pf\n")
 
 for cmd in sys.stdin:
     if Debug:
-        sys.stderr.write("t_pipe_filter.pf: gotcmd: " + cmd)
+        sys.stderr.write("t_pipe_filter_pf.pf: gotcmd: " + cmd)
 
     match = re.match(r'read "(.*)"', cmd)
     if match:
@@ -53,9 +53,9 @@ for cmd in sys.stdin:
         print("Content-Length: " + str(len(wholefile)) + "\n" + wholefile)
         sys.stdout.flush()
     else:
-        sys.exit("t_pipe_filter.pf: %Error: Unknown command: " + cmd)
+        sys.exit("t_pipe_filter_pf.pf: %Error: Unknown command: " + cmd)
 
 if Debug:
-    sys.stderr.write("t_pipe_filter.pf: Fin\n")
+    sys.stderr.write("t_pipe_filter_pf.pf: Fin\n")
 
 sys.exit(0)

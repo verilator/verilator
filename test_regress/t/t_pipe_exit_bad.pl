@@ -13,11 +13,11 @@ scenarios(vlt => 1);
 top_filename("t/t_pipe_filter.v");
 
 lint(
-    verilator_flags2 => ['-E --pipe-filter \'python3 t/t_pipe_exit_bad.pf\' '],
+    verilator_flags2 => ['-E --pipe-filter \'python3 t/t_pipe_exit_bad_pf.pf\' '],
     stdout_filename => $stdout_filename,
     fails => 1,
     expect =>
-'%Error: t_pipe_exit_bad.pf: Intentional bad exit status....*',
+'%Error: t_pipe_exit_bad_pf.pf: Intentional bad exit status....*',
     );
 ok(1);
 
