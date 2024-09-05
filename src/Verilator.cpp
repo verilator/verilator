@@ -81,6 +81,7 @@
 #include "V3ProtectLib.h"
 #include "V3Randomize.h"
 #include "V3Reloop.h"
+#include "V3ReuseWideTemps.h"
 #include "V3Sampled.h"
 #include "V3Sched.h"
 #include "V3Scope.h"
@@ -510,6 +511,9 @@ static void process() {
 
             // Move wide constants to BLOCK temps / ConstPool.
             V3Premit::premitAll(v3Global.rootp());
+
+            // Reuse wide temporaries created during V3Premit.
+            if (v3Global.opt.fWideTempOpt()) V3ReuseWideTemps::reuseAll(v3Global.rootp());
         }
 
         // Expand macros and wide operators into C++ primitives

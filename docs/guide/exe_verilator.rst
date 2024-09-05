@@ -621,6 +621,12 @@ Summary:
    are typically used only when recommended by a maintainer to help debug
    or work around an issue.
 
+.. option:: -fno-wide-temp-opt
+
+   Rarely needed. Disables ReuseWideTemp optimization to prevent creating
+   extra wide temporaries for designs with smaller number of module
+   variables.
+
 .. option:: -future0 <option>
 
    Rarely needed.  Suppress an unknown Verilator option for an option that
