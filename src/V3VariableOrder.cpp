@@ -114,10 +114,10 @@ public:
     }
     bool operator<(const VarTspSorter& other) const { return m_serial < other.m_serial; }
     const MTaskIdVec& mTaskIds() const { return m_mTaskIds; }
-    int cost(const TspStateBase* otherp) const override {
+    int cost(const TspStateBase* otherp) const override VL_MT_SAFE {
         return cost(static_cast<const VarTspSorter*>(otherp));
     }
-    int cost(const VarTspSorter* otherp) const {
+    int cost(const VarTspSorter* otherp) const VL_MT_SAFE {
         // Compute the number of MTasks not shared (Hamming distance)
         int cost = 0;
         const size_t size = ExecMTask::numUsedIds();
