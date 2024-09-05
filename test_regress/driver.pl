@@ -2391,6 +2391,7 @@ sub files_identical {
                 !/^- [^\n]+\n/
                     && !/^- [a-z.0-9]+:\d+:[^\n]+\n/
                     && !/^-node:/
+                    && !/^Aborted \(core dumped\)/
                     && !/^dot [^\n]+\n/
                     && !/^In file: .*\/sc_.*:\d+/
                     && !/^libgcov.*/

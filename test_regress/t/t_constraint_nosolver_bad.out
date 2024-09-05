@@ -5,4 +5,3 @@ Process::open: execvp(someimaginarysolver): No such file or directory
 
 %Error: t/t_constraint.v:23: Verilog $stop
 Aborting...
-Aborted (core dumped)
