@@ -2715,7 +2715,7 @@ class WidthVisitor final : public VNVisitor {
         AstNodeExpr* newp = nullptr;
         for (AstNodeExpr *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = VN_AS(itemp->nextp(), NodeExpr);  // Will be unlinking
-            AstNodeExpr* inewp = insideItem(nodep, nodep->exprp(), itemp);
+            AstNodeExpr* const inewp = insideItem(nodep, nodep->exprp(), itemp);
             if (!inewp) continue;
             newp = newp ? new AstLogOr{nodep->fileline(), newp, inewp} : inewp;
         }
@@ -2733,8 +2733,8 @@ class WidthVisitor final : public VNVisitor {
         } else if (VN_IS(itemDtp, UnpackArrayDType) || VN_IS(itemDtp, DynArrayDType)
                    || VN_IS(itemDtp, QueueDType)) {
             // Unsupported in parameters
-            AstNodeExpr* cexprp = exprp->cloneTreePure(true);
-            AstNodeExpr* inewp
+            AstNodeExpr* const cexprp = exprp->cloneTreePure(true);
+            AstNodeExpr* const inewp
                 = new AstCMethodHard{nodep->fileline(), itemp->unlinkFrBack(), "inside", cexprp};
             iterateCheckTyped(nodep, "inside value", cexprp, itemDtp->subDTypep(), BOTH);
             VL_DANGLING(cexprp);  // Might have been replaced
