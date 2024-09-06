@@ -1104,9 +1104,13 @@ class TimingControlVisitor final : public VNVisitor {
         // and if at assignment time its generation differs from the current generation, it won't
         // be performed
         AstFork* const forkp = VN_AS(alwaysp->stmtsp(), Fork);
+        UASSERT_OBJ(forkp, alwaysp, "Fork should be there from convertToAlways()");
         AstBegin* const beginp = VN_AS(forkp->stmtsp(), Begin);
+        UASSERT_OBJ(beginp, alwaysp, "Begin should be there from convertToAlways()");
         AstAssign* const preAssignp = VN_AS(beginp->stmtsp(), Assign);
+        UASSERT_OBJ(preAssignp, alwaysp, "Pre-assign should be there from convertToAlways()");
         AstAssign* const postAssignp = VN_AS(preAssignp->nextp()->nextp(), Assign);
+        UASSERT_OBJ(postAssignp, alwaysp, "Post-assign should be there from convertToAlways()");
         // Increment generation and copy it to a local
         AstVarScope* const generationVarp
             = createTemp(flp, m_contAsgnGenNames.get(alwaysp), alwaysp->findUInt64DType());
