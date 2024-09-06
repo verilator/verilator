@@ -447,8 +447,7 @@ class TimingControlVisitor final : public VNVisitor {
     //                                                                   been processed.
     //  AstAssignW::user1()                             -> bool.         Set true if the assignment
     //                                                                   represents the net delay
-    //  AstSenTree::user1()                             -> AstVarScope*.
-    //  Trigger scheduler assigned
+    //  AstSenTree::user1()                             -> AstVarScope*. Trigger scheduler assigned
     //                                                                   to this sentree
     //  Ast{NodeProcedure,CFunc,Begin}::user2()         -> bool.         Set true if process/task
     //                                                                   is suspendable
