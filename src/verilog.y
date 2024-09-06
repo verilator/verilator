@@ -83,7 +83,8 @@ public:
     AstCase* m_caseAttrp = nullptr;  // Current case statement for attribute adding
     AstNodeDType* m_varDTypep = nullptr;  // Pointer to data type for next signal declaration
     AstNodeDType* m_memDTypep = nullptr;  // Pointer to data type for next member declaration
-    AstDelay* m_netDelayp = nullptr;  // Pointer to delay for next signal declaration
+    std::unique_ptr<AstDelay> m_netDelayp = nullptr;  // Pointer to delay for next signal
+                                                      // declaration
     AstStrengthSpec* m_netStrengthp = nullptr;  // Pointer to strength for next net declaration
     FileLine* m_instModuleFl = nullptr;  // Fileline of module referenced for instantiations
     AstPin* m_instParamp = nullptr;  // Parameters for instantiations
@@ -211,7 +212,8 @@ public:
         if (m_varDTypep) VL_DO_CLEAR(m_varDTypep->deleteTree(), m_varDTypep = nullptr);
         m_varDTypep = dtypep;
     }
-    void setNetDelay(AstDelay* netDelayp) { m_netDelayp = netDelayp; }
+    void setNetDelay(AstDelay* netDelayp) { m_netDelayp.reset(netDelayp); }
+    AstDelay* getNetDelay() { return m_netDelayp.release(); }
     void setNetStrength(AstStrengthSpec* netStrengthp) { m_netStrengthp = netStrengthp; }
     void pinPush() {
         m_pinStack.push(m_pinNum);
@@ -3045,8 +3047,10 @@ netSig<varp>:                   // IEEE: net_decl_assignment -  one element from
                 netId sigAttrListE
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2); }
         |       netId sigAttrListE '=' expr
-                        { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
-                          auto* const assignp = new AstAssignW{$3, new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}, $4};
+                        { AstDelay* const delayp = GRAMMARP->getNetDelay();
+                          AstAssignW* const assignp = new AstAssignW{$3, new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}, $4, delayp};
+                          $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
+                          if (delayp) GRAMMARP->setNetDelay(delayp->cloneTree(false));
                           if (GRAMMARP->m_netStrengthp) assignp->strengthSpecp(GRAMMARP->m_netStrengthp->cloneTree(false));
                           AstNode::addNext<AstNode, AstNode>($$, assignp); }
         |       netId variable_dimensionList sigAttrListE

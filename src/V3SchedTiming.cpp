@@ -300,14 +300,8 @@ void transformForks(AstNetlist* const netlistp) {
                 // If not a fork..join, copy. All write refs should've been handled by V3Fork
                 bool passByValue = !m_forkp->joinType().join();
                 if (!varp->isFuncLocal()) {
-                    if (VString::startsWith(varp->name(), "__Vintra")) {
-                        // Pass it by value to the new function, as otherwise there are issues with
-                        // -flocalize (see t_timing_intra_assign)
-                        passByValue = true;
-                    } else {
-                        // Not func local. Its lifetime is longer than the forked process. Skip
-                        return;
-                    }
+                    // Not func local. Its lifetime is longer than the forked process. Skip
+                    return;
                 } else if (!varp->user1()) {
                     // Not declared before the fork. It cannot outlive the forked process
                     return;
