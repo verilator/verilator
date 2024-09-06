@@ -433,7 +433,7 @@ private:
 //######################################################################
 // Main algorithm
 
-void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
+void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) VL_MT_SAFE {
     UASSERT(resultp->empty(), "Output graph must start empty");
 
     // Make this TSP implementation work for graphs of size 0 or 1
@@ -536,14 +536,14 @@ public:
         , m_ypos{ypos}
         , m_serial{++s_serialNext} {}
     ~TspTestState() override = default;
-    int cost(const TspStateBase* otherp) const override {
+    int cost(const TspStateBase* otherp) const override VL_MT_SAFE {
         return cost(dynamic_cast<const TspTestState*>(otherp));
     }
-    static unsigned diff(unsigned a, unsigned b) {
+    static unsigned diff(unsigned a, unsigned b) VL_PURE {
         if (a > b) return a - b;
         return b - a;
     }
-    virtual int cost(const TspTestState* otherp) const {
+    int cost(const TspTestState* otherp) const VL_PURE {
         // For test purposes, each TspTestState is merely a point
         // on the Cartesian plane; cost is the linear distance
         // between two points.

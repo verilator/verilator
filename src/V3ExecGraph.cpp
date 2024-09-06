@@ -48,7 +48,7 @@ void ExecMTask::dump(std::ostream& str) const {
     if (priority() || cost()) str << " [pr=" << priority() << " c=" << cvtToStr(cost()) << "]";
 }
 
-uint32_t ExecMTask::s_nextId = 0;
+std::atomic<uint32_t> ExecMTask::s_nextId{0};
 
 namespace V3ExecGraph {
 

@@ -26,7 +26,7 @@ class AstNetlist;
 
 class V3VariableOrder final {
 public:
-    static void orderAll(AstNetlist*) VL_MT_DISABLED;
+    static void orderAll(AstNetlist*);
 };
 
 #endif  // Guard
