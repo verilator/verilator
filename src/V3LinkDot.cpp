@@ -69,6 +69,7 @@
 #include "V3Graph.h"
 #include "V3MemberMap.h"
 #include "V3Parse.h"
+#include "V3Randomize.h"
 #include "V3String.h"
 #include "V3SymTable.h"
 
@@ -1103,11 +1104,18 @@ class LinkDotFindVisitor final : public VNVisitor {
         VL_RESTORER(m_curSymp);
         VSymEnt* upSymp = m_curSymp;
         {
-            if (VN_IS(m_curSymp->nodep(), Class)
-                && VN_AS(m_curSymp->nodep(), Class)->isInterfaceClass() && !nodep->pureVirtual()
-                && !nodep->isConstructor()) {
-                nodep->v3error("Interface class functions must be pure virtual"
-                               << " (IEEE 1800-2023 8.26): " << nodep->prettyNameQ());
+            if (VN_IS(m_curSymp->nodep(), Class)) {
+                if (VN_AS(m_curSymp->nodep(), Class)->isInterfaceClass() && !nodep->pureVirtual()
+                    && !nodep->isConstructor()) {
+                    nodep->v3error("Interface class functions must be pure virtual"
+                                   << " (IEEE 1800-2023 8.26): " << nodep->prettyNameQ());
+                }
+                if (m_statep->forPrimary()
+                    && (nodep->name() == "randomize" || nodep->name() == "srandom")) {
+                    nodep->v3error(nodep->prettyNameQ()
+                                   << " is a predefined class method; redefinition not allowed"
+                                      " (IEEE 1800-2023 18.6.3)");
+                }
             }
             // Change to appropriate package if extern declaration (vs definition)
             if (nodep->classOrPackagep()) {
@@ -3408,6 +3416,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
                 }
+            }
+            if (first && nodep->name() == "randomize" && VN_IS(m_modp, Class)) {
+                // need special handling to avoid falling back to std::randomize
+                VMemberMap memberMap;
+                AstFunc* const randFuncp = V3Randomize::newRandomizeFunc(
+                    memberMap, VN_AS(m_modp, Class), nodep->name(), true, true);
+                nodep->taskp(randFuncp);
+                m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), randFuncp, m_modp);
             }
             VSymEnt* const foundp
                 = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, first);
