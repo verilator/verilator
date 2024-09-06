@@ -63,6 +63,7 @@ public:
     string annotateOut() const { return m_annotateOut; }
     bool annotateAll() const { return m_annotateAll; }
     int annotateMin() const { return m_annotateMin; }
+    bool countOk(uint64_t count) const { return count >= static_cast<uint64_t>(m_annotateMin); }
     bool annotatePoints() const { return m_annotatePoints; }
     bool rank() const { return m_rank; }
     bool unlink() const { return m_unlink; }

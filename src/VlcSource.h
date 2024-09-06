@@ -20,6 +20,8 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "VlcPoint.h"
+
 #include <limits>
 #include <map>
 #include <set>
@@ -37,8 +39,8 @@ class VlcSourceCount final {
 
     // MEMBERS
     const int m_lineno;  ///< Line number
-    uint64_t m_count = std::numeric_limits<uint64_t>::max();  ///< Count
-    bool m_ok = false;  ///< Coverage is above threshold
+    uint64_t m_maxCount = 0;  ///< Max count
+    uint64_t m_minCount = std::numeric_limits<uint64_t>::max();  ///< Min count
     PointsSet m_points;  // Points on this line
 
 public:
@@ -49,19 +51,16 @@ public:
 
     // ACCESSORS
     int lineno() const { return m_lineno; }
-    uint64_t count() const { return m_count; }
-    bool ok() const { return m_ok; }
+    uint64_t maxCount() const { return m_maxCount; }
+    uint64_t minCount() const { return m_minCount; }
 
     // METHODS
-    void incCount(uint64_t count, bool ok) {
-        if (m_count == std::numeric_limits<uint64_t>::max())
-            m_ok = ok;
-        else
-            m_ok = m_ok && ok;
-        m_count = std::min(m_count, count);
+    void insertPoint(const VlcPoint* pointp) {
+        m_maxCount = std::max(m_maxCount, pointp->count());
+        m_minCount = std::min(m_minCount, pointp->count());
+        m_points.emplace(pointp);
     }
-    void insertPoint(const VlcPoint* pointp) { m_points.emplace(pointp); }
-    PointsSet& points() { return m_points; }
+    const PointsSet& points() { return m_points; }
 };
 
 //********************************************************************
@@ -91,9 +90,8 @@ public:
     LinenoMap& lines() { return m_lines; }
 
     // METHODS
-    void lineIncCount(int lineno, uint64_t count, bool ok, const VlcPoint* pointp) {
+    void insertPoint(int lineno, const VlcPoint* pointp) {
         VlcSourceCount& sc = m_lines.emplace(lineno, lineno).first->second;
-        sc.incCount(count, ok);
         sc.insertPoint(pointp);
     }
 };

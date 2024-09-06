@@ -50,6 +50,7 @@ if (`lcov --version` !~ /version/i
 } else {
     run(cmd => ["genhtml",
                 "$Self->{obj_dir}/coverage.info",
+                "--branch-coverage",
                 "--output-directory $Self->{obj_dir}/html",
         ]);
 }
