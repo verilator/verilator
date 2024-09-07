@@ -33,6 +33,7 @@ Verilator 5.029 devel
 * Fix sformatf internal error on initial automatics (#5423). [Todd Strader]
 * Fix clearing trigger of events with no sensitivity trees (#5426). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Fix driving clocking block in reactive region (#5430). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix associative array next/prev/first/last mis-propagating constants (#5435). [Ethan Sifferman]
 
 
 Verilator 5.028 2024-08-21

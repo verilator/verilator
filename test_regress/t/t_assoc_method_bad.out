@@ -18,12 +18,21 @@
                                     : ... note: In instance 't'
    18 |       v = a.first();   
       |             ^~~~~
+%Error-UNSUPPORTED: t/t_assoc_method_bad.v:18:13: Unsupported: Non-variable on LHS of built-in method 'first'
+                                                : ... note: In instance 't'
+   18 |       v = a.first();   
+      |             ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: t/t_assoc_method_bad.v:19:13: The 2 arguments passed to .next method does not match its requiring 1 arguments
                                     : ... note: In instance 't'
    19 |       v = a.next(k, "bad2");   
       |             ^~~~
 %Error: t/t_assoc_method_bad.v:20:13: The 0 arguments passed to .last method does not match its requiring 1 arguments
                                     : ... note: In instance 't'
+   20 |       v = a.last();   
+      |             ^~~~
+%Error-UNSUPPORTED: t/t_assoc_method_bad.v:20:13: Unsupported: Non-variable on LHS of built-in method 'last'
+                                                : ... note: In instance 't'
    20 |       v = a.last();   
       |             ^~~~
 %Error: t/t_assoc_method_bad.v:21:13: The 2 arguments passed to .prev method does not match its requiring 1 arguments

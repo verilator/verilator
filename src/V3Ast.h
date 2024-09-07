@@ -215,7 +215,7 @@ public:
         return names[m_e];
     }
     const char* arrow() const {
-        static const char* const names[] = {"[RV] <-", "[LV] =>", "[LV] <=>", "--"};
+        static const char* const names[] = {"[RV] <-", "[LV] =>", "[LRV] <=>", "--"};
         return names[m_e];
     }
     VAccess()

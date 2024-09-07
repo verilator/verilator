@@ -3432,6 +3432,7 @@ class WidthVisitor final : public VNVisitor {
                    || nodep->name() == "prev") {
             methodOkArguments(nodep, 1, 1);
             AstNodeExpr* const index_exprp = methodCallAssocIndexExpr(nodep, adtypep);
+            methodCallLValueRecurse(nodep, index_exprp, VAccess::READWRITE);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(),  // first/last/next/prev
                                       index_exprp->unlinkFrBack()};
