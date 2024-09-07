@@ -658,7 +658,7 @@ sub new {
         pli_flags => ["-I$ENV{VERILATOR_ROOT}/include/vltstd -fPIC -shared"
                       . (($^O eq "darwin" )
                          ? " -Wl,-undefined,dynamic_lookup"
-                         : " -export-dynamic")
+                         : " -rdynamic")
                       . ($opt_verbose ? " -DTEST_VERBOSE=1" : "")
                       . " -o $self->{obj_dir}/libvpi.so"],
         tool_c_flags => [],
