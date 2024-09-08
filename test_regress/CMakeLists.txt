@@ -19,7 +19,7 @@ set(TEST_REQUIRED_VARS NAME CSOURCES OPT_FAST OPT_GLOBAL
                             VERILATOR_SOURCES SYSTEMC VERBOSE VERILATION)
 foreach(var ${TEST_REQUIRED_VARS})
   if (NOT DEFINED TEST_${var})
-    message(FATAL_ERROR "TEST_${var} not defined. This CMakeLists.txt file is meant to be run by driver.pl.")
+    message(FATAL_ERROR "TEST_${var} not defined. This CMakeLists.txt file is meant to be run by driver.py.")
   endif()
 endforeach()
 

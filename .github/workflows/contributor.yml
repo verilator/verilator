@@ -14,4 +14,4 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
-    - run: test_regress/t/t_dist_contributors.pl
+    - run: test_regress/t/t_dist_contributors.py

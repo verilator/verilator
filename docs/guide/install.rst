@@ -130,7 +130,6 @@ Those developing Verilator itself may also want these (see internals.rst):
    sudo pip3 install sphinx sphinx_rtd_theme sphinxcontrib-spelling breathe ruff
    sudo pip3 install git+https://github.com/antmicro/astsee.git
    cpan install Pod::Perldoc
-   cpan install Parallel::Forker
 
 
 Install SystemC

@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+# DESCRIPTION: Verilator: Verilog Test driver/expect definition
+#
+# Copyright 2024 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+import vltest_bootstrap
+
+test.scenarios('vlt')
+
+test.compile(v_flags2=["--coverage t/t_cover_lib_c.cpp"],
+             verilator_flags2=["--exe -Wall -Wno-DECLFILENAME"],
+             make_flags=['CPPFLAGS_ADD=-DTEST_OBJ_DIR="' + test.obj_dir + '"'],
+             make_top_shell=False,
+             make_main=False)
+
+test.execute()
+test.files_identical_sorted(test.obj_dir + "/coverage1.dat", "t/t_cover_lib_1.out")
+test.files_identical_sorted(test.obj_dir + "/coverage2.dat", "t/t_cover_lib_2.out")
+test.files_identical_sorted(test.obj_dir + "/coverage3.dat", "t/t_cover_lib_3.out")
+test.files_identical_sorted(test.obj_dir + "/coverage4.dat", "t/t_cover_lib_4.out")
+test.files_identical_sorted(test.obj_dir + "/coverage1_per_instance.dat",
+                            "t/t_cover_lib_1_per_instance.out")
+
+test.passes()
