@@ -3,7 +3,7 @@
 //------------------------------------------------------------------------------
 // To recreate:
 //   Using verilator_ext_tests
-//   t/t_uvm_parse.pl --debug --no-dump-tree
+//   t/t_uvm_parse.py --debug --no-dump-tree
 //   Copy to here t/obj_vlt/Vt_uvm_parse/Vt_uvm_parse__inputs.vpp
 //   M-x untabify
 //   (global-replace-regexp "[ ]+$" "")

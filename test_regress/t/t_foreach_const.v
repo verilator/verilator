@@ -34,7 +34,7 @@ module t (/*AUTOARG*/);
    function [63:0] test1;
       test1 = 0;
       // We use 'index_' as the prefix for all loop vars,
-      // this allows t_foreach.pl to confirm that all loops
+      // this allows t_foreach.py to confirm that all loops
       // have been unrolled and flattened away and no loop vars
       // remain in the generated .cpp
       foreach (depth1_array[index_a]) begin

@@ -350,10 +350,10 @@ SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
 parser.add_argument('--debug', action='store_true', help='enable debug')
 parser.add_argument('--hashset',
                     action='store',
-                    help='pass test hashset onto driver.pl test harness')
+                    help='pass test hashset onto driver.py test harness')
 parser.add_argument('--scenarios',
                     action='store',
-                    help='pass test scenarios onto driver.pl test harness')
+                    help='pass test scenarios onto driver.py test harness')
 parser.add_argument('--stages',
                     '--stage',
                     action='store',

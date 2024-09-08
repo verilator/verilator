@@ -40,12 +40,12 @@ module t (clk);
    // Alternatively, the test may be run with "--threads-dpi all" in which case
    // it should confirm that the calls do run concurrently and do detect a
    // collision (they should, if the test is set up right.)  This is
-   // t_dpi_threads_collide.pl.
+   // t_dpi_threads_collide.py.
    //
    // Q) Is it a risk that the partitioner will merge or serialize these always
    //    blocks, just by luck, even if the DPI-call serialization code fails?
    //
-   // A) Yes, that's why t_dpi_threads_collide.pl also passes
+   // A) Yes, that's why t_dpi_threads_collide.py also passes
    //    --no-threads-do-coaren to disable MTask coarsening.  This ensures that
    //    the MTask graph at the end of FixDataHazards (where we resolve DPI
    //    hazards) is basically the final MTasks graph, and that data hazards

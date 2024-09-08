@@ -68,9 +68,6 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
       sudo apt-get install bear mold ||
       sudo apt-get install bear mold
     fi
-    if [ "$COVERAGE" = 1 ]; then
-      yes yes | sudo cpan -fi Parallel::Forker
-    fi
   elif [ "$CI_OS_NAME" = "osx" ]; then
     brew update
     brew install ccache perl gperftools
@@ -94,7 +91,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     # libfl-dev needed for internal coverage's test runs
     sudo apt-get install gdb gtkwave lcov libfl-dev ccache jq z3 ||
     sudo apt-get install gdb gtkwave lcov libfl-dev ccache jq z3
-    # Required for test_regress/t/t_dist_attributes.pl
+    # Required for test_regress/t/t_dist_attributes.py
     if [ "$CI_RUNS_ON" = "ubuntu-22.04" ] || [ "$CI_RUNS_ON" = "ubuntu-24.04" ]; then
       sudo apt-get install python3-clang mold ||
       sudo apt-get install python3-clang mold
@@ -114,10 +111,6 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     fatal "Unknown os: '$CI_OS_NAME'"
   fi
   # Common installs
-  if [ "$CI_RUNS_ON" != "ubuntu-14.04" ]; then
-    CI_CPAN_REPO=https://cpan.org
-  fi
-  yes yes | sudo cpan -M $CI_CPAN_REPO -fi Parallel::Forker
   install-vcddiff
   # Workaround -fsanitize=address crash
   sudo sysctl -w vm.mmap_rnd_bits=28

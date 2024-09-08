@@ -11,6 +11,10 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 5.029 devel
 ==========================
 
+**Major:**
+
+* Self-tests have been converted to Python, run `{testname}.py` instead of `{testname}.pl`.
+
 **Minor:**
 
 * Support IEEE-compliant intra-assign delays (#3711) (#5441). [Krzysztof Bieganski, Antmicro Ltd.]

@@ -52,6 +52,7 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 MAKEINFO = makeinfo
 POD2TEXT = pod2text
+PYTHON3 = @PYTHON3@
 MKINSTALLDIRS = $(SHELL) $(srcdir)/src/mkinstalldirs
 
 # Version (for docs/guide/conf.py)
@@ -156,7 +157,7 @@ msg_test: all_nomsg
 .PHONY: test
 ifeq ($(CFG_WITH_LONGTESTS),yes)  # Local... Else don't burden users
 test: smoke-test test_regress
-# examples is part of test_regress's test_regress/t/t_a2_examples.pl
+# examples is part of test_regress's test_regress/t/t_a2_examples.py
 # (because that allows it to run in parallel with other test_regress's)
 else
 test: smoke-test examples
@@ -168,8 +169,8 @@ endif
 	@echo
 
 smoke-test: all_nomsg
-	test_regress/t/t_a1_first_cc.pl
-	test_regress/t/t_a2_first_sc.pl
+	test_regress/t/t_a1_first_cc.py
+	test_regress/t/t_a2_first_sc.py
 
 test_regress: all_nomsg
 	$(MAKE) -C test_regress
@@ -412,7 +413,7 @@ analyzer-include:
 	scan-build $(MAKE) -k examples
 
 format:
-	$(MAKE) -j 4 clang-format yapf format-pl-exec
+	$(MAKE) -j 4 clang-format yapf format-exec
 
 CLANGFORMAT = clang-format-14
 CLANGFORMAT_FLAGS = -i
@@ -423,6 +424,7 @@ clang-format:
 		|| echo "*** You are not using clang-format-14, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
 
+# Python programs, subject to format and lint
 PY_PROGRAMS = \
 	bin/verilator_ccache_report \
 	bin/verilator_difftree \
@@ -441,6 +443,7 @@ PY_PROGRAMS = \
 	src/flexfix \
 	src/vlcovgen \
 	src/.gdbinit.py \
+	test_regress/*.py \
 	test_regress/t/*.pf \
 	nodist/clang_check_attributes \
 	nodist/code_coverage \
@@ -450,36 +453,44 @@ PY_PROGRAMS = \
 	nodist/install_test \
 	nodist/log_changes \
 
+# Python files, subject to format but not lint
 PY_FILES = \
 	$(PY_PROGRAMS) \
 	nodist/code_coverage.dat \
+	test_regress/t/*.py \
 
-PY_FILES_NOLINT = \
+# Python files, test_regress tests
+PY_TEST_FILES = \
+	test_regress/t/*.py \
 
 YAPF = yapf3
 YAPF_FLAGS = -i --parallel
 
 yapf:
-	$(YAPF) $(YAPF_FLAGS) $(PY_FILES) $(PY_FILES_NOLINT)
+	$(YAPF) $(YAPF_FLAGS) $(PY_FILES)
 
 PYLINT = pylint
-PYLINT_FLAGS = --score=n --disable=R0801
+PYLINT_FLAGS = --recursive=n --score=n --disable=R0801
+PYLINT_TEST_FLAGS = $(PYLINT_FLAGS) --disable=C0103,C0114,C0116,C0209,C0411,C0413,C0301,R0801,R0912,R0915,R0916,R1702,W0511,W0621
 
 RUFF = ruff
 RUFF_FLAGS = check --ignore=E402,E501,E701
 
 # "make -k" so can see all tool result errors
 lint-py:
-	$(MAKE) -k lint-py-pylint lint-py-ruff
+	$(MAKE) -k lint-py-pylint lint-py-pylint-tests lint-py-ruff
 
 lint-py-pylint:
 	$(PYLINT) $(PYLINT_FLAGS) $(PY_PROGRAMS)
 
+lint-py-pylint-tests:
+	$(PYLINT) $(PYLINT_TEST_FLAGS) $(PY_TEST_FILES) | $(PYTHON3) nodist/lint_py_test_filter
+
 lint-py-ruff:
 	$(RUFF) $(RUFF_FLAGS) $(PY_PROGRAMS)
 
-format-pl-exec:
-	-chmod a+x test_regress/t/*.pl
+format-exec:
+	-chmod a+x test_regress/t/*.py
 
 install-msg:
 	@echo
