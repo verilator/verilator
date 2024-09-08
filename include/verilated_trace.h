@@ -610,7 +610,7 @@ public:
     void chgEvent(uint32_t code, const VlEventBase* newval) {
         if (newval->isTriggered()) chgEventTriggered(code);
     }
-    void chgEventTriggered(uint32_t code) {  // FIXME
+    void chgEventTriggered(uint32_t code) {
         m_offloadBufferWritep[0] = VerilatedTraceOffloadCommand::CHG_EVENT;
         m_offloadBufferWritep[1] = code;
         m_offloadBufferWritep += 2;
