@@ -61,7 +61,7 @@ data should be written.
 Points are children of each line coverage- branches or toggle points.
 When point counts are aggregated into a line, the minimum and maximum counts
 are used to determine the status of the line (complete, partial, failing)
-The count is equal to the minimum of the points.
+The count is equal to the maximum of the points.
 
 Coverage data is annotated at the beginning of the line and is formatted
 as a special character followed by the number of coverage hits. The special
@@ -84,7 +84,7 @@ to filter the report.
                                // number of hits (0) is below the min.
   -000000  point: comment=b    // Begins with -, because
                                // number of hits (0) is below the min.
-  ~000000  if (cyc!=0) begin   // Begins with ~, because
+  ~000010  if (cyc!=0) begin   // Begins with ~, because
                                // branches are below and above the min.
   +000010  point: comment=if   // The if branch is above the min.
   -000000  point: comment=else // The else branch is below the min.

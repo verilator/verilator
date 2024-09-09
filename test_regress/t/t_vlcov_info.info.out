@@ -1,6 +1,6 @@
 TN:verilator_coverage
 SF:file1.sp
-DA:159,0
+DA:159,22
 BRDA:159,0,0,0
 BRDA:159,0,1,1
 BRDA:159,0,2,20

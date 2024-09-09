@@ -120,7 +120,7 @@ void VlcTop::writeInfo(const string& filename) {
         int branchesHit = 0;
         for (auto& li : lines) {
             VlcSourceCount& sc = li.second;
-            os << "DA:" << sc.lineno() << "," << sc.minCount() << "\n";
+            os << "DA:" << sc.lineno() << "," << sc.maxCount() << "\n";
             int num_branches = sc.points().size();
             if (num_branches == 1) continue;
             branchesFound += num_branches;
@@ -319,7 +319,7 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
                 } else {
                     os << "%";
                 }
-                os << std::setfill('0') << std::setw(6) << sc.minCount() << " " << line << '\n';
+                os << std::setfill('0') << std::setw(6) << sc.maxCount() << " " << line << '\n';
 
                 if (opt.annotatePoints()) {
                     for (auto& pit : sc.points()) pit->dumpAnnotate(os, opt.annotateMin());
