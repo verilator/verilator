@@ -750,7 +750,7 @@ class V3DfgPeephole final : public DfgVisitor {
 
         // Full width select, replace with the source.
         if (fromp->width() == width) {
-            UASSERT_OBJ(lsb == 0, fromp, "OOPS");
+            UASSERT_OBJ(lsb == 0, fromp, "Out of range select should have been fixed up earlier");
             APPLYING(REMOVE_FULL_WIDTH_SEL) {
                 replace(vtxp, fromp);
                 return;
