@@ -685,7 +685,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    void visit(AstForeach* nodep) override {}
+    void visit(AstBegin* nodep) override {}
     void visit(AstConstraintForeach* nodep) override {
         // Convert to plain foreach
         FileLine* const fl = nodep->fileline();
@@ -708,8 +708,11 @@ class ConstraintExprVisitor final : public VNVisitor {
             nodep->replaceWith(new AstSFormatF{fl, "%@", false, newp});
         } else {
             iterateAndNextNull(nodep->stmtsp());
-            nodep->replaceWith(new AstForeach{fl, nodep->arrayp()->unlinkFrBack(),
-                                              nodep->stmtsp()->unlinkFrBackWithNext()});
+            nodep->replaceWith(
+                new AstBegin{fl, "",
+                             new AstForeach{fl, nodep->arrayp()->unlinkFrBack(),
+                                            nodep->stmtsp()->unlinkFrBackWithNext()},
+                             false, true});
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
