@@ -27,6 +27,7 @@ Verilator 5.029 devel
 * Improve performance of V3VariableOrder with parallelism (#5406). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix performance of V3Trace when many activity blocks (#5372). [Deniz Güzel]
 * Fix REALCVT warning on integral timescale conversions (#5378). [Liam Braun]
+* Fix multidimensional function return value selects (#5382). [Gökçe Aydos]
 * Fix dot fallback finding wrong symbols (#5394). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Fix infinite recursion due to recursive functions/tasks (#5398). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix V3Randomize compile error on old GCC (#5403) (#5417). [Krzysztof Bieganski, Antmicro Ltd.]
@@ -38,6 +39,7 @@ Verilator 5.029 devel
 * Fix clearing trigger of events with no sensitivity trees (#5426). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Fix driving clocking block in reactive region (#5430). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix associative array next/prev/first/last mis-propagating constants (#5435). [Ethan Sifferman]
+
 
 
 Verilator 5.028 2024-08-21

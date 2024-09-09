@@ -125,6 +125,7 @@ public:
         return v3Global.opt.trace() && m_tracingParse && fl->tracingOn();
     }
     AstRange* scrubRange(AstNodeRange* rangep) VL_MT_DISABLED;
+    AstNodePreSel* scrubSel(AstNodeExpr* fromp, AstNodePreSel* selp) VL_MT_DISABLED;
     AstNodeDType* createArray(AstNodeDType* basep, AstNodeRange* rangep,
                               bool isPacked) VL_MT_DISABLED;
     AstVar* createVariable(FileLine* fileline, const string& name, AstNodeRange* arrayp,
@@ -1130,6 +1131,13 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %nonassoc yELSE
 
 //BISONPRE_TYPES
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
 //  Blank lines for type insertion
 //  Blank lines for type insertion
 //  Blank lines for type insertion
@@ -3112,11 +3120,24 @@ rangeList<nodeRangep>:          // IEEE: {packed_dimension}
         |       rangeList anyrange                      { $$ = $1->addNext($2); }
         ;
 
-// IEEE: select
-// Merged into more general idArray
-
 anyrange<nodeRangep>:
                 '[' constExpr ':' constExpr ']'         { $$ = new AstRange{$1, $2, $4}; }
+        ;
+
+part_select_rangeList<nodePreSelp>:  // IEEE: part_select_range (as used after function calls)
+                part_select_range                        { $$ = $1; }
+        |       part_select_rangeList part_select_range  { $$ = GRAMMARP->scrubSel($1, $2); }
+        ;
+
+part_select_range<nodePreSelp>:
+                '[' expr ']'
+                        { $$ = new AstSelBit{$1, new AstParseHolder{$1}, $2}; }
+        |       '[' constExpr ':' constExpr ']'
+                        { $$ = new AstSelExtract{$1, new AstParseHolder{$1}, $2, $4}; }
+        |       '[' expr yP_PLUSCOLON constExpr ']'
+                        { $$ = new AstSelPlus{$1, new AstParseHolder{$1}, $2, $4}; }
+        |       '[' expr yP_MINUSCOLON constExpr ']'
+                        { $$ = new AstSelMinus{$1, new AstParseHolder{$1}, $2, $4}; }
         ;
 
 packed_dimensionListE<nodeRangep>:      // IEEE: [{ packed_dimension }]
@@ -4964,38 +4985,22 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
                         { $$ = new AstSelMinus{$7, new AstReplicate{$3, $4, $2}, $8, $10}; }
         //                      // UNSUP some other rules above
         //
+        //                      // IEEE grammar error: function_subroutine_call [ range_expression ]
+        //                      // should be instead:  function_subroutine_call [ part_select_range ]
         |       function_subroutine_callNoMethod
                         { $$ = $1; }
-        |       function_subroutine_callNoMethod '[' expr ']'
-                        { $$ = new AstSelBit{$2, $1, $3}; }
-        |       function_subroutine_callNoMethod '[' constExpr ':' constExpr ']'
-                        { $$ = new AstSelExtract{$2, $1, $3, $5}; }
-        |       function_subroutine_callNoMethod '[' expr yP_PLUSCOLON constExpr ']'
-                        { $$ = new AstSelPlus{$2, $1, $3, $5}; }
-        |       function_subroutine_callNoMethod '[' expr yP_MINUSCOLON constExpr ']'
-                        { $$ = new AstSelMinus{$2, $1, $3, $5}; }
+        |       function_subroutine_callNoMethod part_select_rangeList
+                        { $$ = GRAMMARP->scrubSel($1, $2); }
         //                      // method_call
         |       ~l~expr '.' function_subroutine_callNoMethod
                         { $$ = new AstDot{$2, false, $1, $3}; }
-        |       ~l~expr '.' function_subroutine_callNoMethod '[' expr ']'
-                        { $$ = new AstSelBit{$4, new AstDot{$2, false, $1, $3}, $5}; }
-        |       ~l~expr '.' function_subroutine_callNoMethod '[' constExpr ':' constExpr ']'
-                        { $$ = new AstSelExtract{$4, new AstDot{$2, false, $1, $3}, $5, $7}; }
-        |       ~l~expr '.' function_subroutine_callNoMethod '[' expr yP_PLUSCOLON constExpr ']'
-                        { $$ = new AstSelPlus{$4, new AstDot{$2, false, $1, $3}, $5, $7}; }
-        |       ~l~expr '.' function_subroutine_callNoMethod '[' expr yP_MINUSCOLON constExpr ']'
-                        { $$ = new AstSelMinus{$4, new AstDot{$2, false, $1, $3}, $5, $7}; }
+        |       ~l~expr '.' function_subroutine_callNoMethod part_select_rangeList
+                        { $$ = GRAMMARP->scrubSel(new AstDot{$2, false, $1, $3}, $4); }
         //                      // method_call:array_method requires a '.'
         |       ~l~expr '.' array_methodWith
                         { $$ = new AstDot{$2, false, $1, $3}; }
-        |       ~l~expr '.' array_methodWith '[' expr ']'
-                        { $$ = new AstSelBit{$4, new AstDot{$2, false, $1, $3}, $5}; }
-        |       ~l~expr '.' array_methodWith '[' constExpr ':' constExpr ']'
-                        { $$ = new AstSelExtract{$4, new AstDot{$2, false, $1, $3}, $5, $7}; }
-        |       ~l~expr '.' array_methodWith '[' expr yP_PLUSCOLON constExpr ']'
-                        { $$ = new AstSelPlus{$4, new AstDot{$2, false, $1, $3}, $5, $7}; }
-        |       ~l~expr '.' array_methodWith '[' expr yP_MINUSCOLON constExpr ']'
-                        { $$ = new AstSelMinus{$4, new AstDot{$2, false, $1, $3}, $5, $7}; }
+        |       ~l~expr '.' array_methodWith part_select_rangeList
+                        { $$ = GRAMMARP->scrubSel(new AstDot{$2, false, $1, $3}, $4); }
         //
         //                      // IEEE: let_expression
         //                      // see funcRef
