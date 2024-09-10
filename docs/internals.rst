@@ -2100,13 +2100,13 @@ driver.py Non-Scenario Arguments
   memory leaks.
 
 --site
-  Run site specific tests also.
+  Run site-specific tests also.
 
 --stop
   Stop on the first error.
 
 --trace
-  Set the simulator specific flags to request waveform tracing.
+  Set the simulator-specific flags to request waveform tracing.
 
 --valgrind
   Same as ``verilator --valgrind``: Run Verilator under `Valgrind <https://valgrind.org/>`_.

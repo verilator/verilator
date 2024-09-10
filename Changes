@@ -584,7 +584,7 @@ Verilator 5.012 2023-06-13
 * Fix wide structure VL_TOSTRING_W generation (#4188) (#4189). [Aylon Chaim Porat]
 * Fix references to members of parameterized base classes (#4196). [Ryszard Rozak, Antmicro Ltd]
 * Fix tracing undefined alignment (#4201) (#4288) [John Wehle]
-* Fix class specific same methods for AstVarScope, AstVar, and AstScope (#4203) (#4250). [John Wehle]
+* Fix class-specific same methods for AstVarScope, AstVar, and AstScope (#4203) (#4250). [John Wehle]
 * Fix dotted references in parameterized classes (#4206). [Ryszard Rozak, Antmicro Ltd]
 * Fix bit selections under parameterized classes (#4210). [Ryszard Rozak, Antmicro Ltd]
 * Fix duplicate std:: declaration with -I (#4215). [Harald Pretl]

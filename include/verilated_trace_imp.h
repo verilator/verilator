@@ -12,7 +12,7 @@
 //=============================================================================
 //
 // Verilated tracing implementation code template common to all formats.
-// This file is included by the format specific implementations and
+// This file is included by the format-specific implementations and
 // should not be used otherwise.
 //
 //=============================================================================
@@ -299,7 +299,7 @@ VerilatedTrace<VL_SUB_T, VL_BUF_T>::~VerilatedTrace() {
 }
 
 //=========================================================================
-// Internals available to format specific implementations
+// Internals available to format-specific implementations
 
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
@@ -401,7 +401,7 @@ bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const std::stri
 }
 
 //=========================================================================
-// Internals available to format specific implementations
+// Internals available to format-specific implementations
 
 template <>
 std::string VerilatedTrace<VL_SUB_T, VL_BUF_T>::timeResStr() const {
@@ -543,7 +543,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dump(uint64_t timeui) VL_MT_SAFE_EXCLUD
 
     Verilated::quiesce();
 
-    // Call hook for format specific behaviour
+    // Call hook for format-specific behaviour
     if (VL_UNLIKELY(m_fullDump)) {
         if (!preFullDump()) return;
     } else {
@@ -667,7 +667,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addModel(VerilatedModel* modelp)
         VL_FATAL_MT(__FILE__, __LINE__, "", "Cannot use parallel tracing with offloading");
     }  // LCOV_EXCL_STOP
 
-    // Configure format specific sub class
+    // Configure format-specific sub class
     configure(*(configp.get()));
 }
 
@@ -818,8 +818,8 @@ VerilatedTraceBuffer<VL_BUF_T>::VerilatedTraceBuffer(Trace& owner)
     , m_sigs_enabledp{owner.m_sigs_enabledp} {}
 
 // These functions must write the new value back into the old value store,
-// and subsequently call the format specific emit* implementations. Note
-// that this file must be included in the format specific implementation, so
+// and subsequently call the format-specific emit* implementations. Note
+// that this file must be included in the format-specific implementation, so
 // the emit* functions can be inlined for performance.
 
 template <>
@@ -831,10 +831,10 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullBit(uint32_t* oldp, CData newval) {
 }
 
 template <>
-void VerilatedTraceBuffer<VL_BUF_T>::fullEvent(uint32_t* oldp, const VlEventBase* newval) {
+void VerilatedTraceBuffer<VL_BUF_T>::fullEvent(uint32_t* oldp, const VlEventBase* newvalp) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     *oldp = 1;  // Do we really store an "event" ?
-    emitEvent(code, newval);
+    emitEvent(code, newvalp);
 }
 
 template <>

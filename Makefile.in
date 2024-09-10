@@ -77,7 +77,7 @@ datadir = @datadir@
 # Directory in which to install documentation info files.
 infodir = @infodir@
 
-# Directory in which to install package specific files
+# Directory in which to install package-specific files
 # Generally ${prefix}/share/verilator
 pkgdatadir = @pkgdatadir@
 

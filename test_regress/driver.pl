@@ -1024,7 +1024,7 @@ sub lint {
     my $self = (ref $_[0] ? shift : $Self);
     my %param = (#
                  %{$self},  # Default arguments are from $self
-                 # Lint specific default overrides
+                 # Lint-specific default overrides
                  make_main => 0,
                  make_top_shell => 0,
                  verilator_flags2 => ["--lint-only"],
