@@ -1706,6 +1706,7 @@ class RandomizeVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (!nodep->user1()) return;  // Doesn't need randomize, or already processed
         UINFO(9, "Define randomize() for " << nodep << endl);
+        nodep->baseMostClassp()->needRNG(true);
         AstFunc* const randomizep = V3Randomize::newRandomizeFunc(m_memberMap, nodep);
         AstVar* const fvarp = VN_AS(randomizep->fvarp(), Var);
         addPrePostCall(nodep, randomizep, "pre_randomize");
@@ -2027,26 +2028,30 @@ void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
 }
 
 AstFunc* V3Randomize::newRandomizeFunc(VMemberMap& memberMap, AstClass* nodep,
-                                       const std::string& name, bool allowVirtual) {
+                                       const std::string& name, bool allowVirtual,
+                                       bool childDType) {
     AstFunc* funcp = VN_AS(memberMap.findMember(nodep, name), Func);
     if (!funcp) {
         v3Global.useRandomizeMethods(true);
         AstNodeDType* const dtypep
-            = nodep->findBitDType(32, 32, VSigning::SIGNED);  // IEEE says int return of 0/1
-        AstVar* const fvarp = new AstVar{nodep->fileline(), VVarType::MEMBER, name, dtypep};
+            = childDType
+                  ? new AstBasicDType{nodep->fileline(), VBasicDTypeKwd::INT}
+                  : nodep->findBitDType(32, 32, VSigning::SIGNED);  // IEEE says int return of 0/1
+        AstVar* const fvarp = childDType
+                                  ? new AstVar{nodep->fileline(), VVarType::MEMBER, name,
+                                               VFlagChildDType{}, dtypep}
+                                  : new AstVar{nodep->fileline(), VVarType::MEMBER, name, dtypep};
         fvarp->lifetime(VLifetime::AUTOMATIC);
         fvarp->funcLocal(true);
         fvarp->funcReturn(true);
         fvarp->direction(VDirection::OUTPUT);
         nodep->addMembersp(funcp);
         funcp = new AstFunc{nodep->fileline(), name, nullptr, fvarp};
-        funcp->dtypep(dtypep);
+        if (!childDType) funcp->dtypep(dtypep);
         funcp->classMethod(true);
         funcp->isVirtual(allowVirtual && nodep->isExtended());
         nodep->addMembersp(funcp);
         memberMap.insert(nodep, funcp);
-        AstClass* const basep = nodep->baseMostClassp();
-        basep->needRNG(true);
     }
     return funcp;
 }
