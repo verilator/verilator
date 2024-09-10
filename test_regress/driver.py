@@ -1657,7 +1657,7 @@ class VlTest:
             self.setenv('GCOV_PREFIX_STRIP', '99')
             self.setenv('GCOV_PREFIX',
                         os.path.abspath(__file__ + "/../obj_dist/gcov_" + str(self.running_id)))
-            VtOs.mkdir_ok(os.environ['GCOV_PREFIX'])
+            os.makedirs(os.environ['GCOV_PREFIX'], exist_ok=True)
         else:
             VtOs.delenv('GCOV_PREFIX_STRIP')
             VtOs.delenv('GCOV_PREFIX')
