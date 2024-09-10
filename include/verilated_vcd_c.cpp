@@ -573,16 +573,11 @@ void VerilatedVcdBuffer::finishLine(uint32_t code, char* writep) {
 // so always inline them.
 
 VL_ATTR_ALWINLINE
-void VerilatedVcdBuffer::emitEvent(uint32_t code, const VlEventBase* newvalp) {
-    const bool triggered = newvalp->isTriggered();
-    // TODO : It seems that untriggered events are not filtered
-    // should be tested before this last step
-    if (triggered) {
-        // Don't prefetch suffix as it's a bit too late;
-        char* wp = m_writep;
-        *wp++ = '1';
-        finishLine(code, wp);
-    }
+void VerilatedVcdBuffer::emitEvent(uint32_t code) {
+    // Don't prefetch suffix as it's a bit too late;
+    char* wp = m_writep;
+    *wp++ = '1';
+    finishLine(code, wp);
 }
 
 VL_ATTR_ALWINLINE

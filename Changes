@@ -32,6 +32,7 @@ Verilator 5.029 devel
 * Fix dot fallback finding wrong symbols (#5394). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Fix infinite recursion due to recursive functions/tasks (#5398). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix V3Randomize compile error on old GCC (#5403) (#5417). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix extra events in traces (#5405).
 * Fix empty `foreach` in `if` in constraints (#5408). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix queue `[$-i]` select as reference argument (#5411). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix `pre`/`post_randomize` on `randomize() with` (#5412). [Krzysztof Bieganski, Antmicro Ltd.]
