@@ -210,6 +210,7 @@ private:
     V3StringSet m_clockers;     // argument: Verilog -clk signals
     V3StringSet m_noClockers;   // argument: Verilog -noclk signals
     V3StringList m_vFiles;      // argument: Verilog files to read
+    V3StringSet m_vltFiles;     // argument: Verilator config files to read
     V3StringList m_forceIncs;   // argument: -FI
     DebugLevelMap m_debugLevel; // argument: --debugi-<srcfile/tag> <level>
     DebugLevelMap m_dumpLevel;  // argument: --dumpi-<srcfile/tag> <level>
@@ -444,6 +445,7 @@ public:
     void addClocker(const string& signame);
     void addNoClocker(const string& signame);
     void addVFile(const string& filename);
+    void addVltFile(const string& filename);
     void addForceInc(const string& filename);
     bool available() const VL_MT_SAFE { return m_available; }
     void ccSet();
@@ -638,6 +640,7 @@ public:
     const V3StringList& makeFlags() const { return m_makeFlags; }
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
     const V3StringList& vFiles() const { return m_vFiles; }
+    const V3StringSet& vltFiles() const { return m_vltFiles; }
     const V3StringList& forceIncs() const { return m_forceIncs; }
 
     bool hasParameter(const string& name);

@@ -395,6 +395,7 @@ void V3Options::addVFile(const string& filename) {
     // in a specific order and multiple of them.
     m_vFiles.push_back(filename);
 }
+void V3Options::addVltFile(const string& filename) { m_vltFiles.insert(filename); }
 void V3Options::addForceInc(const string& filename) { m_forceIncs.push_back(filename); }
 
 void V3Options::addLineArg(const string& arg) { m_impp->m_lineArgs.push_back(arg); }
@@ -1772,6 +1773,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                        || suffixed(filename, ".o")  //
                        || suffixed(filename, ".so")) {
                 V3Options::addLdLibs(filename);
+            } else if (suffixed(filename, ".vlt")) {
+                V3Options::addVltFile(filename);
             } else {
                 V3Options::addVFile(filename);
             }

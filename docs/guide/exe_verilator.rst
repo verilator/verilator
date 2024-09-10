@@ -1909,8 +1909,12 @@ Configuration Files
 
 In addition to the command line, warnings and other features for the
 :command:`verilator` command may be controlled with configuration files,
-typically named with the .vlt extension (what makes it a configuration file
-is the :option:`\`verilator_config` directive). An example:
+typically named with the `.vlt` extension (what makes it a configuration
+file is the :option:`\`verilator_config` directive).  These files, when
+named `.vlt`, are read before source code files; if this behavior is
+undesired, name the config file with a `.v` suffix.
+
+An example:
 
 .. code-block:: sv
 

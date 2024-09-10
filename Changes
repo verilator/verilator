@@ -17,6 +17,7 @@ Verilator 5.029 devel
 
 **Minor:**
 
+* Change .vlt config files to be read before .v files (#5185). [David Moberg]
 * Support IEEE-compliant intra-assign delays (#3711) (#5441). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support unconstrained randomization for unions (#5395) (#5396). [Yilou Wang]
 * Support appending to queue via `[]` (#5421). [Krzysztof Bieganski, Antmicro Ltd.]
