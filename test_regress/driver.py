@@ -252,7 +252,7 @@ class Forker:
         self._running = {}  # key of pid, value of Process
 
     def is_any_left(self) -> bool:
-        return len(self._left) > 0 or self.num_running() > 0
+        return self.num_running() > 0 or (len(self._left) > 0 and not Quitting)
 
     def max_proc(self, n: int) -> None:
         self._max_processes = n
@@ -268,8 +268,8 @@ class Forker:
                 nrunning += 1
         for process in completed:
             self._finished(process)
-        while len(self._left) and nrunning < self._max_processes:
-            process = self._left.pop()
+        while len(self._left) and nrunning < self._max_processes and not Quitting:
+            process = self._left.popleft()
             self._run(process)
             nrunning += 1
 
@@ -418,9 +418,12 @@ class Runner:
         test = VlTest(py_filename=process.name,
                       scenario=process.scenario,
                       running_id=process.running_id)
+        test._quit = Quitting
         test._read_status()
         if test.ok:
             self.ok_cnt += 1
+        elif test._quit:
+            pass
         elif test._scenario_off and not test.errors:
             pass
         elif test._skips and not test.errors and not test.errors_keep_going:
@@ -586,6 +589,7 @@ class VlTest:
         self._have_solver_called = False
         self._inputs = {}
         self._ok = False
+        self._quit = False
         self._scenario_off = False  # scenarios() didn't match running scenario
         self._skips = None
 
@@ -803,6 +807,8 @@ class VlTest:
     def error_keep_going(self, message: str) -> None:
         """Called from tests as: error_keep_going("Reason message")
         Newline is optional. Only first line is passed to summaries"""
+        if self._quit:
+            return
         message = message.rstrip() + "\n"
         print("%Warning: " + self.scenario + "/" + self.name + ": " + message,
               file=sys.stderr,
@@ -2648,7 +2654,7 @@ def run_them() -> None:
                 runner.one_test(py_filename=test_py, scenario=scenario)
     runner.wait_and_report()
 
-    if Args.rerun and runner.fail_cnt:
+    if Args.rerun and runner.fail_cnt and not Quitting:
         print('=' * 70)
         print('=' * 70)
         print("RERUN  ==\n")
@@ -2698,15 +2704,20 @@ forker = None
 Start = time.time()
 Vltmt_Threads = 3
 _Parameter_Next_Level = None
+Quitting = False
 
 
-def sig_term(signum, env) -> None:  # pylint: disable=unused-argument
+def sig_int(signum, env) -> None:  # pylint: disable=unused-argument
+    global Quitting
+    if Quitting:
+        sys.exit("\nQuitting (immediately)...")
+    print("\nQuitting... (send another interrupt signal for immediate quit)")
+    Quitting = True
     if forker:
         forker.kill_tree_all()
-    sys.exit("Quitting...")
 
 
-signal.signal(signal.SIGTERM, sig_term)
+signal.signal(signal.SIGINT, sig_int)
 
 Orig_ARGV_Sw = []
 for arg in sys.argv:
