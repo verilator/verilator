@@ -1327,15 +1327,32 @@ class RandomizeVisitor final : public VNVisitor {
             return newRandStmtsp(fl, exprp, nullptr, offset, firstMemberp);
         } else if (AstUnpackArrayDType* const unpackarrayDtp
                    = VN_CAST(memberDtp, UnpackArrayDType)) {
-            AstNodeStmt* stmtsp = nullptr;
-            int elemCount = unpackarrayDtp->elementsConst();
-            for (int i = 0; i < elemCount; ++i) {
-                AstNodeExpr* elementExprp
-                    = new AstArraySel{fl, stmtsp ? exprp->cloneTree(false) : exprp, i};
-                elementExprp->dtypep(unpackarrayDtp->subDTypep());
-                AstNodeStmt* randp = newRandStmtsp(fl, elementExprp, nullptr);
-                stmtsp = stmtsp ? stmtsp->addNext(randp) : randp;
-            }
+
+            int elementCount = unpackarrayDtp->elementsConst();
+            std::pair<uint32_t, uint32_t> dims = unpackarrayDtp->dimensions(/*includeBasic=*/true);
+            uint32_t currentDimension = dims.second;
+            std::string indexDimension = std::to_string(currentDimension);
+            string loopIndexStr = "loop_index_" + indexDimension;
+            
+            AstVar* loopIndexp = new AstVar{fl, VVarType::BLOCKTEMP, loopIndexStr, new AstBasicDType(fl, VBasicDTypeKwd::INTEGER)};
+            loopIndexp->lifetime(VLifetime::AUTOMATIC);
+            AstVarRef* loopIndexRefp = new AstVarRef{fl, loopIndexp, VAccess::READ};
+            
+            loopIndexRefp->dumpTreeJson(cout);
+
+            AstNodeExpr* loopVarElementExprp
+                        = new AstArraySel{fl, exprp->cloneTree(false), new AstSel{fl, loopIndexRefp->cloneTree(false), 0, elementCount}};
+            loopVarElementExprp->dtypep(unpackarrayDtp->subDTypep());
+
+            AstNodeExpr* loopBodyElementExprp
+                        = new AstArraySel{fl, exprp->cloneTree(false), loopIndexRefp};
+            loopBodyElementExprp->dtypep(unpackarrayDtp->subDTypep());
+
+            AstSelLoopVars* loopVarp = new AstSelLoopVars{fl, loopVarElementExprp->cloneTree(false), loopIndexp};
+            
+            AstNodeStmt* loopBodyp = newRandStmtsp(fl, loopBodyElementExprp, nullptr);
+            AstNodeStmt* stmtsp = new AstForeach{fl, loopVarp, loopBodyp};
+
             return stmtsp;
         } else {
             AstNodeExpr* valp;
