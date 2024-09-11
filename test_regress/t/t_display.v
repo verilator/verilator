@@ -164,6 +164,7 @@ module t;
                "hel", "lo, fr", "om a very long string. Percent %s are literally substituted in.");
       $display("hel", "lo, fr", "om a concatenated string.");
       $write("hel", "lo, fr", "om a concatenated format string [%0t].\n", $time);
+      $display("two %d", 2, " args %d", 3, "with commas");
       $display("extra argument: ", $time);
       $display($time,, ": pre argument",, "after");
       $display("empty: >%s<", "");

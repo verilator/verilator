@@ -5181,7 +5181,7 @@ class WidthVisitor final : public VNVisitor {
                         ch = 'g';
                     } else if (argp && argp->isString()) {
                         ch = '@';
-                    } else if (nodep->missingArgChar() == 'd' && argp->isSigned()) {
+                    } else if (argp && nodep->missingArgChar() == 'd' && argp->isSigned()) {
                         ch = '~';
                     } else if (basicp) {
                         ch = nodep->missingArgChar();
