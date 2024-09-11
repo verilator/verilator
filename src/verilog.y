@@ -6551,12 +6551,11 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
                           GRAMMARP->endLabel($<fl>7, $1, $7); }
         ;
 
-covergroup_declarationFront<classp>:  // IEEE: part of covergroup_declaration
+covergroup_declarationFront<constraintp>:  // IEEE: part of covergroup_declaration
                 yCOVERGROUP idAny
-                        { $$ = new AstClass{$<fl>2, *$2};
+                        { $$ = new AstConstraint{$<fl>2, *$2, nullptr};
                           BBUNSUP($<fl>1, "Unsupported: covergroup");
-                          SYMP->pushNew($<classp>$);
-                          v3Global.setHasClasses(); }
+                          SYMP->pushNew($<constraintp>$); }
         ;
 
 cgexpr<nodeExprp>:  // IEEE-2012: covergroup_expression, before that just expression
