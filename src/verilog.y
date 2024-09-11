@@ -6733,6 +6733,8 @@ cross_body<nodep>:  // ==IEEE: cross_body
 cross_body_itemSemiList<nodep>:  // IEEE: part of cross_body
                 cross_body_item ';'                     { $$ = $1; }
         |       cross_body_itemSemiList cross_body_item ';'  { $$ = addNextNull($1, $2); }
+        |       error ';'                               { $$ = nullptr; }
+        |       cross_body_itemSemiList error ';'       { $$ = $1; }
         ;
 
 cross_body_item<nodep>:  // ==IEEE: cross_body_item
@@ -7331,6 +7333,8 @@ constraintIdNew<constraintp>:  // IEEE: id part of class_constraint
 
 constraint_block<nodep>:  // ==IEEE: constraint_block
                 '{' constraint_block_itemList '}'               { $$ = $2; }
+        |       '{' error '}'                                   { $$ = nullptr; }
+        |       '{' constraint_block_itemList error '}'         { $$ = $2; }
         ;
 
 constraint_block_itemList<nodep>:  // IEEE: { constraint_block_item }
@@ -7387,11 +7391,15 @@ constraint_expression<nodep>:  // ==IEEE: constraint_expression
                         { AstConstraintExpr* const newp = new AstConstraintExpr{$1, $3};
                           newp->isDisableSoft(true);
                           $$ = newp; }
+        |       error ';'
+                        { $$ = nullptr; }
         ;
 
 constraint_set<nodep>:  // ==IEEE: constraint_set
                 constraint_expression                   { $$ = $1; }
         |       '{' constraint_expressionList '}'       { $$ = $2; }
+        |       '{' error '}'                           { $$ = nullptr; }
+        |       '{' constraint_expressionList error '}' { $$ = $2; }
         ;
 
 dist_list<distItemp>:  // ==IEEE: dist_list
