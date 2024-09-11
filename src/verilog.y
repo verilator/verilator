@@ -7030,14 +7030,14 @@ class_declaration<nodep>:       // ==IEEE: part of class_declaration
         /*mid*/         { // Allow resolving types declared in base extends class
                           if ($<scp>3) SYMP->importExtends($<scp>3);
                         }
-        /*cont*/    class_itemListE yENDCLASS endLabelE
+        /*cont*/    class_itemListEnd endLabelE
                         { $$ = $1; $1->addMembersp($2);
                           if ($2) $1->isParameterized(true);
                           $1->addExtendsp($3);
                           $1->addExtendsp($4);
                           $1->addMembersp($7);
                           SYMP->popScope($$);
-                          GRAMMARP->endLabel($<fl>9, $1, $9); }
+                          GRAMMARP->endLabel($<fl>8, $1, $8); }
         ;
 
 classFront<classp>:             // IEEE: part of class_declaration
@@ -7216,9 +7216,11 @@ localNextId<nodeExprp>:         // local
 
 //^^^=========
 
-class_itemListE<nodep>:
-                /* empty */                             { $$ = nullptr; }
-        |       class_itemList                          { $$ = $1; }
+class_itemListEnd<nodep>:
+                yENDCLASS                               { $$ = nullptr; }
+        |       class_itemList yENDCLASS                { $$ = $1; }
+        |       error yENDCLASS                         { $$ = nullptr; }
+        |       class_itemList error yENDCLASS          { $$ = $1; }
         ;
 
 class_itemList<nodep>:
