@@ -1333,23 +1333,26 @@ class RandomizeVisitor final : public VNVisitor {
             uint32_t currentDimension = dims.second;
             std::string indexDimension = std::to_string(currentDimension);
             string loopIndexStr = "loop_index_" + indexDimension;
-            
-            AstVar* loopIndexp = new AstVar{fl, VVarType::BLOCKTEMP, loopIndexStr, new AstBasicDType(fl, VBasicDTypeKwd::INTEGER)};
+
+            AstVar* loopIndexp = new AstVar{fl, VVarType::BLOCKTEMP, loopIndexStr,
+                                            new AstBasicDType(fl, VBasicDTypeKwd::INTEGER)};
             loopIndexp->lifetime(VLifetime::AUTOMATIC);
             AstVarRef* loopIndexRefp = new AstVarRef{fl, loopIndexp, VAccess::READ};
-            
+
             loopIndexRefp->dumpTreeJson(cout);
 
-            AstNodeExpr* loopVarElementExprp
-                        = new AstArraySel{fl, exprp->cloneTree(false), new AstSel{fl, loopIndexRefp->cloneTree(false), 0, elementCount}};
+            AstNodeExpr* loopVarElementExprp = new AstArraySel{
+                fl, exprp->cloneTree(false),
+                new AstSel{fl, loopIndexRefp->cloneTree(false), 0, elementCount}};
             loopVarElementExprp->dtypep(unpackarrayDtp->subDTypep());
 
             AstNodeExpr* loopBodyElementExprp
-                        = new AstArraySel{fl, exprp->cloneTree(false), loopIndexRefp};
+                = new AstArraySel{fl, exprp->cloneTree(false), loopIndexRefp};
             loopBodyElementExprp->dtypep(unpackarrayDtp->subDTypep());
 
-            AstSelLoopVars* loopVarp = new AstSelLoopVars{fl, loopVarElementExprp->cloneTree(false), loopIndexp};
-            
+            AstSelLoopVars* loopVarp
+                = new AstSelLoopVars{fl, loopVarElementExprp->cloneTree(false), loopIndexp};
+
             AstNodeStmt* loopBodyp = newRandStmtsp(fl, loopBodyElementExprp, nullptr);
             AstNodeStmt* stmtsp = new AstForeach{fl, loopVarp, loopBodyp};
 
