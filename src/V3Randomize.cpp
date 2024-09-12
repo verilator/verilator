@@ -640,11 +640,6 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Fall back to "(ite cond then else)"
         visit(static_cast<AstNodeTriop*>(nodep));
     }
-    void visit(AstDist* nodep) override {
-        nodep->v3warn(CONSTRAINTIGN, "Constraint expression ignored (unsupported)");
-        nodep->replaceWith(new AstSFormatF{nodep->fileline(), "true", false, nullptr});
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
-    }
     void visit(AstReplicate* nodep) override {
         // Biop, but RHS is harmful
         if (editFormat(nodep)) return;
@@ -720,7 +715,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstConstraintBefore* nodep) override {
-        nodep->v3warn(CONSTRAINTIGN, "Constraint expression ignored (unsupported)");
+        nodep->v3warn(CONSTRAINTIGN, "Constraint expression ignored (imperfect distribution)");
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     void visit(AstConstraintUnique* nodep) override {
