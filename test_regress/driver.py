@@ -2180,9 +2180,9 @@ class VlTest:
                 fn2, 'r', encoding='latin-1', newline='\n')
         except FileNotFoundError:
             f2 = None
-            if 'HARNESS_UPDATE_GOLDEN' not in os.environ:
-                if not moretry:
-                    self.error("Files_identical file does not exist: " + fn2)
+            if not moretry:
+                self.copy_if_golden(fn1, fn2)
+                self.error("Files_identical file does not exist: " + fn2)
             return True
         ok = self._files_identical_reader(f1,
                                           f2,
@@ -2204,12 +2204,13 @@ class VlTest:
         if is_logfile:
             l1o = []
             for line in l1s:
-                if (re.match(r'^- [^\n]+\n', line) or re.match(r'^- [a-z.0-9]+:\d+:[^\n]+\n', line)
-                        or re.match(r'^-node:', line) or re.match(r'^dot [^\n]+\n', line)
-                        or re.match(r'^Aborted \(core dumped\)', line)
-                        or re.match(r'^dot [^\n]+\n', line)
-                        or re.match(r'^In file: .*\/sc_.*:\d+', line)
-                        or re.match(r'^libgcov.*', line)
+                if (re.match(r'^- [^\n]+\n', line)  #
+                        or re.match(r'^- [a-z.0-9]+:\d+:[^\n]+\n', line)
+                        or re.match(r'^-node:', line)  #
+                        or re.match(r'^dot [^\n]+\n', line)  #
+                        or re.match(r'^Aborted', line)  #
+                        or re.match(r'^In file: .*\/sc_.*:\d+', line)  #
+                        or re.match(r'^libgcov.*', line)  #
                         or re.match(r'--- \/tmp\/', line)  # t_difftree.py
                         or re.match(r'\+\+\+ \/tmp\/', line)  # t_difftree.py
                         or re.match(r'^==[0-9]+== ?[^\n]*\n', line)):  # valgrind
