@@ -86,12 +86,9 @@ public:
     // STATE
     V3OutCFile* m_ofp = nullptr;
     AstCFile* m_outFileNodep = nullptr;
+    int m_splitSize = 0;  // # of cfunc nodes placed into output file
     bool m_trackText = false;  // Always track AstText nodes
     // METHODS
-    void increaseComplexityScore(int64_t score) {
-        assert(m_outFileNodep);
-        m_outFileNodep->increaseComplexityScore(score);
-    }
 
     // Returns pointer to current output file object.
     V3OutCFile* ofp() const VL_MT_SAFE { return m_ofp; }
@@ -116,6 +113,7 @@ public:
     // Closes current output file. Sets ofp() and outFileNodep() to nullptr.
     void closeOutputFile() {
         VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+        m_outFileNodep->complexityScore(m_splitSize);
         m_outFileNodep = nullptr;
     }
 

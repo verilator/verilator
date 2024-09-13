@@ -54,7 +54,6 @@ class EmitCModel final : public EmitCFunc {
 
     void emitHeader(AstNodeModule* modp) {
         UASSERT(!ofp(), "Output file should not be open");
-        UASSERT(!outFileNodep(), "Output file node already created");
 
         const string filename = v3Global.opt.makeDir() + "/" + topClassName() + ".h";
         setOutputFile(v3Global.opt.systemC() ? new V3OutScFile{filename}
@@ -615,7 +614,6 @@ class EmitCModel final : public EmitCFunc {
 
     void emitImplementation(AstNodeModule* modp) {
         UASSERT(!ofp(), "Output file should not be open");
-        UASSERT(!outFileNodep(), "Output file node already created");
 
         const string filename = v3Global.opt.makeDir() + "/" + topClassName() + ".cpp";
         setOutputFile(v3Global.opt.systemC() ? new V3OutScFile{filename}
@@ -644,7 +642,6 @@ class EmitCModel final : public EmitCFunc {
 
     void emitDpiExportDispatchers(AstNodeModule* modp) {
         UASSERT(!ofp(), "Output file should not be open");
-        UASSERT(!outFileNodep(), "Output file node already created");
 
         // Emit DPI Export dispatchers
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {

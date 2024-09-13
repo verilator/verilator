@@ -2278,7 +2278,6 @@ public:
     void dumpJson(std::ostream& str = std::cout) const override;
     uint64_t complexityScore() const { return m_complexityScore; }
     void complexityScore(uint64_t newScore) { m_complexityScore = newScore; }
-    void increaseComplexityScore(uint64_t score) { m_complexityScore += score; }
     bool slow() const { return m_slow; }
     void slow(bool flag) { m_slow = flag; }
     bool source() const { return m_source; }
