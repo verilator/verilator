@@ -1,0 +1,11 @@
+%Error-UNSUPPORTED: t/t_gen_defparam_bad.v:9:12: Unsupported: defparam with no dot
+    9 |      id_15 = id_14;
+      |            ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_gen_defparam_bad.v:11:18: Unsupported: defparam with no dot
+   11 |    defparam id_8 = 1, id_9 = 1;
+      |                  ^
+%Error-UNSUPPORTED: t/t_gen_defparam_bad.v:11:28: Unsupported: defparam with no dot
+   11 |    defparam id_8 = 1, id_9 = 1;
+      |                            ^
+%Error: Exiting due to

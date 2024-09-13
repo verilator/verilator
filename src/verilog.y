@@ -3182,12 +3182,14 @@ type_assignment<varp>:          // ==IEEE: type_assignment
 
 list_of_type_assignments<varp>:         // ==IEEE: list_of_type_assignments
                 type_assignment                         { $$ = $1; }
-        |       list_of_type_assignments ',' type_assignment    { $$ = $1->addNext($3); }
+        |       list_of_type_assignments ',' type_assignment
+                        { $$ = addNextNull($1, $3); }
         ;
 
 list_of_defparam_assignments<nodep>:    //== IEEE: list_of_defparam_assignments
                 defparam_assignment                     { $$ = $1; }
-        |       list_of_defparam_assignments ',' defparam_assignment    { $$ = $1->addNext($3); }
+        |       list_of_defparam_assignments ',' defparam_assignment
+                        { $$ = addNextNull($1, $3); }
         ;
 
 defparam_assignment<nodep>:     // ==IEEE: defparam_assignment
@@ -5615,7 +5617,7 @@ gateXorPinList<nodeExprp>:
         ;
 gateUnsupPinList<nodeExprp>:
                 gatePinExpr                             { $$ = $1; }
-        |       gateUnsupPinList ',' gatePinExpr        { $$ = $1->addNext($3); }
+        |       gateUnsupPinList ',' gatePinExpr        { $$ = addNextNull($1, $3); }
         ;
 
 gatePinExpr<nodeExprp>:
