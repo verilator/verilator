@@ -3273,7 +3273,8 @@ class AstStop final : public AstNodeStmt {
     const bool m_isFatal;  // $fatal not $stop
 public:
     AstStop(FileLine* fl, bool isFatal)
-        : ASTGEN_SUPER_Stop(fl), m_isFatal(isFatal) {}
+        : ASTGEN_SUPER_Stop(fl)
+        , m_isFatal(isFatal) {}
     ASTGEN_MEMBERS_AstStop;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
