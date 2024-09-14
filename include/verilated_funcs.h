@@ -42,19 +42,20 @@ extern void vl_finish(const char* filename, int linenum, const char* hier) VL_MT
 /// Routine to call for $stop and non-fatal error
 /// User code may wish to replace this function, to do so, define VL_USER_STOP.
 /// This code does not have to be thread safe.
-/// Verilator internal code must call VL_FINISH_MT instead, which eventually calls this.
+/// Verilator internal code must call VL_STOP_MT instead, which eventually calls this.
 extern void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE;
 
 /// Routine to call for fatal messages
 /// User code may wish to replace this function, to do so, define VL_USER_FATAL.
 /// This code does not have to be thread safe.
-/// Verilator internal code must call VL_FINISH_MT instead, which eventually calls this.
+/// Verilator internal code must call VL_FATAL_MT instead, which eventually calls this.
 extern void vl_fatal(const char* filename, int linenum, const char* hier,
                      const char* msg) VL_MT_UNSAFE;
 
 /// Routine to call for warning messages
 /// User code may wish to replace this function, to do so, define VL_USER_WARN.
 /// This code does not have to be thread safe.
+/// Verilator internal code must call VL_WARN_MT instead, which eventually calls this.
 extern void vl_warn(const char* filename, int linenum, const char* hier,
                     const char* msg) VL_MT_UNSAFE;
 

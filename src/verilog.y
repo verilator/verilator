@@ -164,7 +164,7 @@ public:
     }
     AstDisplay* createDisplayError(FileLine* fileline) {
         AstDisplay* nodep = new AstDisplay{fileline, VDisplayType::DT_ERROR, "", nullptr, nullptr};
-        AstNode::addNext<AstNode, AstNode>(nodep, new AstStop{fileline, true});
+        AstNode::addNext<AstNode, AstNode>(nodep, new AstStop{fileline, false});
         return nodep;
     }
     AstNodeExpr* createGatePin(AstNodeExpr* exprp) {
@@ -4238,16 +4238,16 @@ system_t_call<nodeStmtp>:       // IEEE: system_tf_call (as task)
         |       yD_ERROR    parenE                              { $$ = GRAMMARP->createDisplayError($1); }
         |       yD_ERROR    '(' commasE exprDispList ')'
                         { $$ = new AstDisplay{$1, VDisplayType::DT_ERROR, nullptr, $4};
-                          $$->addNext(new AstStop{$1, true}); }
+                          $$->addNext(new AstStop{$1, false}); }
         |       yD_FATAL    parenE
                         { $$ = new AstDisplay{$1, VDisplayType::DT_FATAL, nullptr, nullptr};
-                          $$->addNext(new AstStop{$1, false}); }
+                          $$->addNext(new AstStop{$1, true}); }
         |       yD_FATAL    '(' expr ')'
                         { $$ = new AstDisplay{$1, VDisplayType::DT_FATAL, nullptr, nullptr};
-                          $$->addNext(new AstStop{$1, false}); DEL($3); }
+                          $$->addNext(new AstStop{$1, true}); DEL($3); }
         |       yD_FATAL    '(' expr ',' exprDispList ')'
                         { $$ = new AstDisplay{$1, VDisplayType::DT_FATAL, nullptr, $5};
-                          $$->addNext(new AstStop{$1, false}); DEL($3); }
+                          $$->addNext(new AstStop{$1, true}); DEL($3); }
         //
         |       yD_ASSERTCTL '(' expr ')'                                            { $$ = new AstAssertCtl{$1, $3}; }
         |       yD_ASSERTCTL '(' expr ',' exprE ')'                                  { $$ = new AstAssertCtl{$1, $3, $5}; }

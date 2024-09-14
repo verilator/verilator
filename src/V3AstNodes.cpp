@@ -2699,6 +2699,14 @@ void AstFork::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "joinType", joinType().ascii());
     dumpJsonGen(str);
 }
+void AstStop::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    if (isFatal()) str << " [FATAL]";
+}
+void AstStop::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, isFatal);
+    dumpJsonGen(str);
+}
 void AstTraceDecl::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     if (code()) str << " [code=" << code() << "]";

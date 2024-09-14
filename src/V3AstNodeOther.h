@@ -3270,10 +3270,13 @@ public:
     bool isPure() override { return exprp()->isPure(); }
 };
 class AstStop final : public AstNodeStmt {
+    const bool m_isFatal;  // $fatal not $stop
 public:
-    AstStop(FileLine* fl, bool maybe)
-        : ASTGEN_SUPER_Stop(fl) {}
+    AstStop(FileLine* fl, bool isFatal)
+        : ASTGEN_SUPER_Stop(fl), m_isFatal(isFatal) {}
     ASTGEN_MEMBERS_AstStop;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
@@ -3281,6 +3284,8 @@ public:
     bool isUnlikely() const override { return true; }
     int instrCount() const override { return 0; }  // Rarely executes
     bool same(const AstNode* samep) const override { return fileline() == samep->fileline(); }
+    string emitVerilog() const { return m_isFatal ? "$fatal" : "$stop"; }
+    bool isFatal() const { return m_isFatal; }
 };
 class AstSysFuncAsTask final : public AstNodeStmt {
     // TODO: This is superseded by AstStmtExpr, remove

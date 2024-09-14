@@ -399,7 +399,7 @@
                       ]}
                     ],
                      "thensp": [
-                      {"type":"STOP","name":"","addr":"(NG)","loc":"d,55:44,55:49"}
+                      {"type":"STOP","name":"","addr":"(NG)","loc":"d,55:44,55:49","isFatal":false}
                     ],"elsesp": []},
                     {"type":"IF","name":"","addr":"(OG)","loc":"d,58:10,58:12",
                      "condp": [
@@ -412,7 +412,7 @@
                       ]}
                     ],
                      "thensp": [
-                      {"type":"STOP","name":"","addr":"(SG)","loc":"d,58:44,58:49"}
+                      {"type":"STOP","name":"","addr":"(SG)","loc":"d,58:44,58:49","isFatal":false}
                     ],"elsesp": []},
                     {"type":"DISPLAY","name":"","addr":"(TG)","loc":"d,59:10,59:16",
                      "fmtp": [

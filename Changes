@@ -26,6 +26,7 @@ Verilator 5.029 devel
 * Add method to check if there are VPI callbacks of the given type (#5399). [Kaleb Barrett]
 * Improve Verilation thread pool (#5161). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Improve performance of V3VariableOrder with parallelism (#5406). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix `$fatal` to not be affected by `+verilator+error+limit` (#5135). [Gökçe Aydos]
 * Fix display with multiple string formats (#5311). [Luiza de Melo]
 * Fix performance of V3Trace when many activity blocks (#5372). [Deniz Güzel]
 * Fix REALCVT warning on integral timescale conversions (#5378). [Liam Braun]
