@@ -1330,7 +1330,7 @@ class VlTest:
             'expect_filename': None,
             'fails': False,
             'run_env': '',
-            'tee': False,
+            'tee': True,
         }
         param.update(vars(self))
         param.update(kwargs)
@@ -1728,7 +1728,7 @@ class VlTest:
                 with open(logfile, 'r', encoding="utf8") as fh:
                     firstline = fh.read()
                 firstline = firstline.strip()
-                firstline = re.sub(r'(^|\n)- [^\n]+', '\1', firstline)  # Debug message
+                firstline = re.sub(r'(^|\n)- [^\n]+', r'\1', firstline)  # Debug message
             self.error("Exec of " + cmd[0] + " failed: " + firstline)
         if fails and status:
             print("(Exec expected to fail, and did.)")
