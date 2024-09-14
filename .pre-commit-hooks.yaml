@@ -1,0 +1,7 @@
+- id: verilator
+  name: verilator-lint
+  description: Runs verilator Docker image to lint (System) Verilog designs
+  args: [--lint-only, -Wall]
+  language: docker_image
+  entry: verilator/verilator:v5.026
+  types_or: ["verilog", "system-verilog"]
