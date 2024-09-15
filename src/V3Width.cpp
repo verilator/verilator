@@ -2784,7 +2784,7 @@ class WidthVisitor final : public VNVisitor {
                                << " in packed struct/union (IEEE 1800-2023 7.2.1)");
             if ((VN_IS(nodep, UnionDType) || nodep->packed()) && itemp->valuep()) {
                 itemp->v3error("Initial values not allowed in packed struct/union"
-                               " (IEEE 1800-2023 7.2.1)");
+                               " (IEEE 1800-2023 7.2.2)");
                 pushDeletep(itemp->valuep()->unlinkFrBack());
             } else if (itemp->valuep()) {
                 itemp->valuep()->v3warn(E_UNSUPPORTED,
