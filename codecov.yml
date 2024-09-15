@@ -1,3 +1,4 @@
+---
 # DESCRIPTION: codecov.io config
 #
 # Copyright 2020-2024 by Wilson Snyder. This program is free software; you
@@ -8,31 +9,28 @@
 ####################
 # Validate:
 #  curl --data-binary @codecov.yml https://codecov.io/validate
-
+#
 codecov:
-  require_ci_to_pass: no
-
+  require_ci_to_pass: false
 coverage:
   precision: 2
   round: down
-  range: "50...100"
+  range: 50...100
   ignore:
-    - "ci"
-    - "docs"
-    - "examples"
-    - "include/gtkwave"
-    - "include/vltstd"
-    - "test_regress"
-
+    - "ci"  #
+    - "docs"  #
+    - "examples"  #
+    - "include/gtkwave"  #
+    - "include/vltstd"  #
+    - "test_regress"  #
 parsers:
   gcov:
     branch_detection:
-      conditional: yes
-      loop: yes
-      method: no
-      macro: no
-
+      conditional: true
+      loop: true
+      method: false
+      macro: false
 comment:
   layout: "reach,diff,flags,tree"
   behavior: default
-  require_changes: yes
+  require_changes: true

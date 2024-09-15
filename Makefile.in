@@ -458,6 +458,11 @@ clang-format:
 		|| echo "*** You are not using clang-format-14, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
 
+YAMLFIX = YAMLFIX_WHITELINES=1 YAMLFIX_LINE_LENGTH=130 YAMLFIX_preserve_quotes=true yamlfix
+
+yamlfix:
+	$(YAMLFIX) .
+
 # Python programs, subject to format and lint
 PY_PROGRAMS = \
 	bin/verilator_ccache_report \
