@@ -97,6 +97,7 @@ PACKAGE_VERSION = @PACKAGE_VERSION@
 
 #### End of system configuration section. ####
 ######################################################################
+# Main build targets
 
 .SUFFIXES:
 
@@ -147,6 +148,9 @@ verilator_exe verilator_bin$(EXEEXT) verilator_bin_dbg$(EXEEXT) verilator_covera
 	@echo "making verilator in src"
 	$(MAKE) -C src $(OBJCACHE_JOBS)
 
+######################################################################
+# Tests
+
 .PHONY:msg_test
 msg_test: all_nomsg
 	@echo "Build complete!"
@@ -184,6 +188,9 @@ examples: all_nomsg
 	  $(MAKE) -C $$p VERILATOR_ROOT=`pwd` || exit 10; \
 	done
 
+######################################################################
+# Docs
+
 .PHONY: docs
 docs: info
 
@@ -204,6 +211,20 @@ verilator.html:
 .PHONY: verilator.pdf
 verilator.pdf: Makefile
 	$(MAKE) -C docs verilator.pdf
+
+TAGFILES=${srcdir}/*/*.cpp ${srcdir}/*/*.h ${srcdir}/*/*.in \
+	${srcdir}/*.in ${srcdir}/*.pod
+
+TAGS: $(TAGFILES)
+	etags $(TAGFILES)
+
+.PHONY: doxygen
+
+doxygen:
+	$(MAKE) -C docs doxygen
+
+######################################################################
+# Install
 
 # Public executables intended to be invoked directly by the user
 # Don't put wildcards in these variables, it might cause an uninstall of other stuff
@@ -344,6 +365,19 @@ install: all_nomsg install-all
 install-all: installbin installredirect installman installdata install-msg
 
 install-here: installman info
+
+install-msg:
+	@echo
+	@echo "Installed binaries to $(DESTDIR)$(bindir)/verilator"
+	@echo "Installed man to $(DESTDIR)$(mandir)/man1"
+	@echo "Installed examples to $(DESTDIR)$(pkgdatadir)/examples"
+	@echo
+	@echo "For documentation see 'man verilator' or 'verilator --help'"
+	@echo "For forums and to report bugs see https://verilator.org"
+	@echo
+
+######################################################################
+# Format/Lint
 
 # Use --xml flag to see the cppcheck code to use for suppression
 CPPCHECK1_CPP = $(wildcard $(srcdir)/include/*.cpp)
@@ -492,15 +526,8 @@ lint-py-ruff:
 format-exec:
 	-chmod a+x test_regress/t/*.py
 
-install-msg:
-	@echo
-	@echo "Installed binaries to $(DESTDIR)$(bindir)/verilator"
-	@echo "Installed man to $(DESTDIR)$(mandir)/man1"
-	@echo "Installed examples to $(DESTDIR)$(pkgdatadir)/examples"
-	@echo
-	@echo "For documentation see 'man verilator' or 'verilator --help'"
-	@echo "For forums and to report bugs see https://verilator.org"
-	@echo
+######################################################################
+# Configure
 
 IN_WILD := ${srcdir}/*.in ${srcdir}/*/*.in
 
@@ -520,6 +547,9 @@ ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users
 else
 	autoconf
 endif
+
+######################################################################
+# Clean
 
 maintainer-clean::
 	@echo "This command is intended for maintainers to use;"
@@ -550,17 +580,6 @@ distclean maintainer-clean::
 	rm -f verilator_bin* verilator_coverage_bin*
 	rm -f bin/verilator_bin* bin/verilator_coverage_bin*
 	rm -f include/verilated.mk include/verilated_config.h
-
-TAGFILES=${srcdir}/*/*.cpp ${srcdir}/*/*.h ${srcdir}/*/*.in \
-	${srcdir}/*.in ${srcdir}/*.pod
-
-TAGS: $(TAGFILES)
-	etags $(TAGFILES)
-
-.PHONY: doxygen
-
-doxygen:
-	$(MAKE) -C docs doxygen
 
 ######################################################################
 # Distributions
