@@ -405,7 +405,7 @@ detailed descriptions of these arguments.
      -O3                        High-performance optimizations
      -O<optimization-letter>    Selectable optimizations
      -o <executable>            Name of final executable
-    --output-groups <value>     Group output files
+    --output-groups <files>     Group .cpp files into larger ones
     --output-split <statements>          Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split model functions
     --output-split-ctrace <statements>   Split tracing functions
