@@ -1336,25 +1336,31 @@ class RandomizeVisitor final : public VNVisitor {
             return newRandStmtsp(fl, exprp, nullptr, offset, firstMemberp);
         } else if (AstUnpackArrayDType* const unpackarrayDtp
                    = VN_CAST(memberDtp, UnpackArrayDType)) {
-            V3UniqueNames* randUniqueVarp = new V3UniqueNames{"__Vrandtemp"}; 
+            V3UniqueNames* randUniqueVarp = new V3UniqueNames{"__Vrandtemp"};
             AstNodeDType* tempDTypep = unpackarrayDtp;
             AstArraySel* tempUnpackArraySelp = nullptr;
             AstVar* randLoopIndxp = nullptr;
             while (VN_CAST(tempDTypep, UnpackArrayDType)) {
-                AstVar* tempRandLoopIndxp = new AstVar{fl, VVarType::VAR, randUniqueVarp->get(""), 
-                    unpackarrayDtp->findBasicDType(VBasicDTypeKwd::UINT32)};
+                AstVar* tempRandLoopIndxp
+                    = new AstVar{fl, VVarType::VAR, randUniqueVarp->get(""),
+                                 unpackarrayDtp->findBasicDType(VBasicDTypeKwd::UINT32)};
                 if (randLoopIndxp) {
                     randLoopIndxp->addNext(tempRandLoopIndxp);
                 } else {
                     randLoopIndxp = tempRandLoopIndxp;
                 }
-                tempUnpackArraySelp = tempUnpackArraySelp ? 
-                    new AstArraySel{fl, tempUnpackArraySelp, new AstVarRef{fl, tempRandLoopIndxp, VAccess::READ}} :
-                    new AstArraySel{fl, exprp, new AstVarRef{fl, tempRandLoopIndxp, VAccess::READ}};
+                tempUnpackArraySelp
+                    = tempUnpackArraySelp
+                          ? new AstArraySel{fl, tempUnpackArraySelp,
+                                            new AstVarRef{fl, tempRandLoopIndxp, VAccess::READ}}
+                          : new AstArraySel{fl, exprp,
+                                            new AstVarRef{fl, tempRandLoopIndxp, VAccess::READ}};
                 tempDTypep = tempDTypep->virtRefDTypep();
             }
-            AstSelLoopVars* randLoopVarp = new AstSelLoopVars{fl, exprp->cloneTree(false), randLoopIndxp};
-            AstNodeStmt* stmtsp = new AstForeach{fl, randLoopVarp, newRandStmtsp(fl, tempUnpackArraySelp, nullptr)};
+            AstSelLoopVars* randLoopVarp
+                = new AstSelLoopVars{fl, exprp->cloneTree(false), randLoopIndxp};
+            AstNodeStmt* stmtsp = new AstForeach{fl, randLoopVarp,
+                                                 newRandStmtsp(fl, tempUnpackArraySelp, nullptr)};
             return stmtsp;
         } else {
             AstNodeExpr* valp;
