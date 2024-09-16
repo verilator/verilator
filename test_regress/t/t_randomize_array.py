@@ -1,5 +1,4 @@
-#!/usr/bin/env perl
-if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
+#!/usr/bin/env python3
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
 # Copyright 2024 by Wilson Snyder. This program is free software; you
@@ -8,18 +7,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-scenarios(simulator => 1);
+import vltest_bootstrap
 
-if (!$Self->have_solver) {
-    skip("No constraint solver installed");
-} else {
-    compile(
-        );
+test.scenarios('simulator')
 
-    execute(
-        check_finished => 1,
-        );
-}
+if not test.have_solver:
+    test.skip("No constraint solver installed")
 
-ok(1);
-1;
+test.compile()
+
+test.execute()
+
+test.passes()

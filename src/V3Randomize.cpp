@@ -1336,35 +1336,25 @@ class RandomizeVisitor final : public VNVisitor {
             return newRandStmtsp(fl, exprp, nullptr, offset, firstMemberp);
         } else if (AstUnpackArrayDType* const unpackarrayDtp
                    = VN_CAST(memberDtp, UnpackArrayDType)) {
-
-            int elementCount = unpackarrayDtp->elementsConst();
-            std::pair<uint32_t, uint32_t> dims = unpackarrayDtp->dimensions(/*includeBasic=*/true);
-            uint32_t currentDimension = dims.second;
-            std::string indexDimension = std::to_string(currentDimension);
-            string loopIndexStr = "loop_index_" + indexDimension;
-
-            AstVar* loopIndexp = new AstVar{fl, VVarType::BLOCKTEMP, loopIndexStr,
-                                            new AstBasicDType(fl, VBasicDTypeKwd::INTEGER)};
-            loopIndexp->lifetime(VLifetime::AUTOMATIC);
-            AstVarRef* loopIndexRefp = new AstVarRef{fl, loopIndexp, VAccess::READ};
-
-            loopIndexRefp->dumpTreeJson(cout);
-
-            AstNodeExpr* loopVarElementExprp = new AstArraySel{
-                fl, exprp->cloneTree(false),
-                new AstSel{fl, loopIndexRefp->cloneTree(false), 0, elementCount}};
-            loopVarElementExprp->dtypep(unpackarrayDtp->subDTypep());
-
-            AstNodeExpr* loopBodyElementExprp
-                = new AstArraySel{fl, exprp->cloneTree(false), loopIndexRefp};
-            loopBodyElementExprp->dtypep(unpackarrayDtp->subDTypep());
-
-            AstSelLoopVars* loopVarp
-                = new AstSelLoopVars{fl, loopVarElementExprp->cloneTree(false), loopIndexp};
-
-            AstNodeStmt* loopBodyp = newRandStmtsp(fl, loopBodyElementExprp, nullptr);
-            AstNodeStmt* stmtsp = new AstForeach{fl, loopVarp, loopBodyp};
-
+            V3UniqueNames* randUniqueVarp = new V3UniqueNames{"__Vrandtemp"}; 
+            AstNodeDType* tempDTypep = unpackarrayDtp;
+            AstArraySel* tempUnpackArraySelp = nullptr;
+            AstVar* randLoopIndxp = nullptr;
+            while (VN_CAST(tempDTypep, UnpackArrayDType)) {
+                AstVar* tempRandLoopIndxp = new AstVar{fl, VVarType::VAR, randUniqueVarp->get(""), 
+                    unpackarrayDtp->findBasicDType(VBasicDTypeKwd::UINT32)};
+                if (randLoopIndxp) {
+                    randLoopIndxp->addNext(tempRandLoopIndxp);
+                } else {
+                    randLoopIndxp = tempRandLoopIndxp;
+                }
+                tempUnpackArraySelp = tempUnpackArraySelp ? 
+                    new AstArraySel{fl, tempUnpackArraySelp, new AstVarRef{fl, tempRandLoopIndxp, VAccess::READ}} :
+                    new AstArraySel{fl, exprp, new AstVarRef{fl, tempRandLoopIndxp, VAccess::READ}};
+                tempDTypep = tempDTypep->virtRefDTypep();
+            }
+            AstSelLoopVars* randLoopVarp = new AstSelLoopVars{fl, exprp->cloneTree(false), randLoopIndxp};
+            AstNodeStmt* stmtsp = new AstForeach{fl, randLoopVarp, newRandStmtsp(fl, tempUnpackArraySelp, nullptr)};
             return stmtsp;
         } else {
             AstNodeExpr* valp;
@@ -1551,7 +1541,7 @@ class RandomizeVisitor final : public VNVisitor {
                 AstVar* const randcVarp = newRandcVarsp(memberVarp);
                 AstVarRef* const refp = new AstVarRef{fl, classp, memberVarp, VAccess::WRITE};
                 AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp);
-                basicRandomizep->addStmtsp(stmtp);
+                basicRandomizep->addStmtsp(new AstBegin{fl, "", stmtp});
             } else if (const AstClassRefDType* const classRefp = VN_CAST(dtypep, ClassRefDType)) {
                 if (classRefp->classp() == nodep) {
                     memberVarp->v3warn(E_UNSUPPORTED,
