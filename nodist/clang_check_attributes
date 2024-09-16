@@ -304,6 +304,7 @@ class CallAnnotationsValidator:
         self._defines: dict[str, str] = {}
         self._call_location: Optional[FunctionInfo] = None
         self._caller: Optional[FunctionInfo] = None
+        self._class_context: list[clang.cindex.Cursor] = []
         self._constructor_context: list[clang.cindex.Cursor] = []
         self._level: int = 0
 
@@ -695,6 +696,18 @@ class CallAnnotationsValidator:
     def process_function_definition(self, node: clang.cindex.Cursor):
         [supported, refd, annotations, _] = self.get_referenced_node_info(node)
 
+        # Fetch virtual annotations from base class.
+        # Set refd to virtual definition if present.
+        for ctx in self._class_context:
+            for base_specifier in ctx.get_children():
+                for base_declaration in base_specifier.referenced.get_children():
+                    if base_declaration.displayname == node.displayname:
+                        virtual_annotations = VlAnnotations.from_nodes_list(
+                            base_declaration.get_children())
+                        refd = base_declaration
+                        annotations = annotations | virtual_annotations
+                        break
+
         if refd and self._is_ignored_def(node, refd):
             return None
 
@@ -719,7 +732,7 @@ class CallAnnotationsValidator:
                 def_annotations.mt_disabled = True
                 def_annotations.excludes = True
 
-        if not (def_annotations.is_empty() or def_annotations == annotations):
+        if def_annotations != annotations:
             # Use definition's annotations for the diagnostic
             # source (i.e. the definition)
             self._caller = FunctionInfo.from_node(node, refd, def_annotations)
@@ -728,9 +741,10 @@ class CallAnnotationsValidator:
             self.emit_diagnostic(FunctionInfo.from_node(refd, refd, annotations),
                                  DiagnosticKind.ANNOTATIONS_DEF_DECL_MISMATCH)
 
-        # Use concatenation of definition and declaration annotations
-        # for calls validation.
-        self._caller = FunctionInfo.from_node(node, refd, def_annotations | annotations)
+        else:
+            # Use concatenation of definition and declaration annotations
+            # for calls validation.
+            self._caller = FunctionInfo.from_node(node, refd, def_annotations | annotations)
         prev_call_location = self._call_location
         self._call_location = self._caller
 
@@ -759,6 +773,13 @@ class CallAnnotationsValidator:
 
     def dispatch_node(self, node: clang.cindex.Cursor):
         if node.kind in [
+                CursorKind.CLASS_DECL, CursorKind.STRUCT_DECL, CursorKind.UNION_DECL,
+                CursorKind.ENUM_DECL, CursorKind.UNEXPOSED_DECL
+        ]:
+            for child in node.get_children():
+                if child.kind is CursorKind.CXX_BASE_SPECIFIER:
+                    self._class_context.append(child)
+        elif node.kind in [
                 CursorKind.CXX_METHOD, CursorKind.FUNCTION_DECL, CursorKind.CONSTRUCTOR,
                 CursorKind.CONVERSION_FUNCTION
         ]:
