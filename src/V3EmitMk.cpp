@@ -492,7 +492,8 @@ public:
                 FileOrConcatenatedFilesList bucket;
                 uint64_t bucketScore = 0;
 
-                bucket.m_fileName = concatenatingFilePrefix + std::to_string(concatenatedFileId);
+                bucket.m_fileName = v3Global.opt.prefix() + "_" + concatenatingFilePrefix
+                                    + std::to_string(concatenatedFileId);
                 ++concatenatedFileId;
 
                 for (; fileIt != list.m_files.end(); ++fileIt) {

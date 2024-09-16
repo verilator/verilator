@@ -1,5 +1,5 @@
 List of output files after execution of concatenation:
-* concatenating_file_0  (concatenating file; total score: 2292)
+* _concatenating_file_0  (concatenating file; total score: 2956)
   * dummy_cpp_file_0000.seq_00_2x0_0.score_0
   * dummy_cpp_file_0001.seq_00_2x0_1.score_0
   * dummy_cpp_file_0002.seq_01_200x15-100_0.score_35
@@ -46,7 +46,6 @@ List of output files after execution of concatenation:
   * dummy_cpp_file_0043.seq_01_200x15-100_41.score_71
   * dummy_cpp_file_0044.seq_01_200x15-100_42.score_75
   * dummy_cpp_file_0045.seq_01_200x15-100_43.score_56
-* concatenating_file_1  (concatenating file; total score: 2278)
   * dummy_cpp_file_0046.seq_01_200x15-100_44.score_33
   * dummy_cpp_file_0047.seq_01_200x15-100_45.score_24
   * dummy_cpp_file_0048.seq_01_200x15-100_46.score_32
@@ -60,6 +59,7 @@ List of output files after execution of concatenation:
   * dummy_cpp_file_0056.seq_01_200x15-100_54.score_28
   * dummy_cpp_file_0057.seq_01_200x15-100_55.score_57
   * dummy_cpp_file_0058.seq_01_200x15-100_56.score_90
+* _concatenating_file_1  (concatenating file; total score: 2953)
   * dummy_cpp_file_0059.seq_01_200x15-100_57.score_97
   * dummy_cpp_file_0060.seq_01_200x15-100_58.score_89
   * dummy_cpp_file_0061.seq_01_200x15-100_59.score_51
@@ -87,7 +87,6 @@ List of output files after execution of concatenation:
   * dummy_cpp_file_0083.seq_01_200x15-100_81.score_38
   * dummy_cpp_file_0084.seq_01_200x15-100_82.score_48
   * dummy_cpp_file_0085.seq_01_200x15-100_83.score_95
-* concatenating_file_2  (concatenating file; total score: 2242)
   * dummy_cpp_file_0086.seq_01_200x15-100_84.score_68
   * dummy_cpp_file_0087.seq_01_200x15-100_85.score_37
   * dummy_cpp_file_0088.seq_01_200x15-100_86.score_53
@@ -113,6 +112,7 @@ List of output files after execution of concatenation:
   * dummy_cpp_file_0108.seq_01_200x15-100_106.score_75
   * dummy_cpp_file_0109.seq_01_200x15-100_107.score_17
   * dummy_cpp_file_0110.seq_01_200x15-100_108.score_39
+* _concatenating_file_2  (concatenating file; total score: 2954)
   * dummy_cpp_file_0111.seq_01_200x15-100_109.score_18
   * dummy_cpp_file_0112.seq_01_200x15-100_110.score_25
   * dummy_cpp_file_0113.seq_01_200x15-100_111.score_99
@@ -129,7 +129,6 @@ List of output files after execution of concatenation:
   * dummy_cpp_file_0124.seq_01_200x15-100_122.score_68
   * dummy_cpp_file_0125.seq_01_200x15-100_123.score_51
   * dummy_cpp_file_0126.seq_01_200x15-100_124.score_63
-* concatenating_file_3  (concatenating file; total score: 2275)
   * dummy_cpp_file_0127.seq_01_200x15-100_125.score_77
   * dummy_cpp_file_0128.seq_01_200x15-100_126.score_63
   * dummy_cpp_file_0129.seq_01_200x15-100_127.score_33
@@ -166,10 +165,10 @@ List of output files after execution of concatenation:
   * dummy_cpp_file_0160.seq_01_200x15-100_158.score_27
   * dummy_cpp_file_0161.seq_01_200x15-100_159.score_26
   * dummy_cpp_file_0162.seq_01_200x15-100_160.score_81
+* _concatenating_file_3  (concatenating file; total score: 2463)
   * dummy_cpp_file_0163.seq_01_200x15-100_161.score_99
   * dummy_cpp_file_0164.seq_01_200x15-100_162.score_73
   * dummy_cpp_file_0165.seq_01_200x15-100_163.score_52
-* concatenating_file_4  (concatenating file; total score: 2239)
   * dummy_cpp_file_0166.seq_01_200x15-100_164.score_63
   * dummy_cpp_file_0167.seq_01_200x15-100_165.score_68
   * dummy_cpp_file_0168.seq_01_200x15-100_166.score_73
@@ -206,9 +205,9 @@ List of output files after execution of concatenation:
   * dummy_cpp_file_0199.seq_01_200x15-100_197.score_88
   * dummy_cpp_file_0200.seq_01_200x15-100_198.score_18
   * dummy_cpp_file_0201.seq_01_200x15-100_199.score_27
-* dummy_cpp_file_0202.seq_02_2x999_0.score_999
-* dummy_cpp_file_0203.seq_02_2x999_1.score_999
-* concatenating_file_5  (concatenating file; total score: 800)
+* _concatenating_file_4  (concatenating file; total score: 2798)
+  * dummy_cpp_file_0202.seq_02_2x999_0.score_999
+  * dummy_cpp_file_0203.seq_02_2x999_1.score_999
   * dummy_cpp_file_0204.seq_03_16x50_0.score_50
   * dummy_cpp_file_0205.seq_03_16x50_1.score_50
   * dummy_cpp_file_0206.seq_03_16x50_2.score_50
@@ -225,9 +224,9 @@ List of output files after execution of concatenation:
   * dummy_cpp_file_0217.seq_03_16x50_13.score_50
   * dummy_cpp_file_0218.seq_03_16x50_14.score_50
   * dummy_cpp_file_0219.seq_03_16x50_15.score_50
-* dummy_cpp_file_0220.seq_04_2x999_0.score_999
-* dummy_cpp_file_0221.seq_04_2x999_1.score_999
-* concatenating_file_6  (concatenating file; total score: 2343)
+* _concatenating_file_5  (concatenating file; total score: 2927)
+  * dummy_cpp_file_0220.seq_04_2x999_0.score_999
+  * dummy_cpp_file_0221.seq_04_2x999_1.score_999
   * dummy_cpp_file_0222.seq_05_100x50-150_0.score_75
   * dummy_cpp_file_0223.seq_05_100x50-150_1.score_58
   * dummy_cpp_file_0224.seq_05_100x50-150_2.score_113
@@ -238,6 +237,7 @@ List of output files after execution of concatenation:
   * dummy_cpp_file_0229.seq_05_100x50-150_7.score_98
   * dummy_cpp_file_0230.seq_05_100x50-150_8.score_62
   * dummy_cpp_file_0231.seq_05_100x50-150_9.score_120
+* _concatenating_file_6  (concatenating file; total score: 2941)
   * dummy_cpp_file_0232.seq_05_100x50-150_10.score_76
   * dummy_cpp_file_0233.seq_05_100x50-150_11.score_105
   * dummy_cpp_file_0234.seq_05_100x50-150_12.score_86
@@ -254,7 +254,6 @@ List of output files after execution of concatenation:
   * dummy_cpp_file_0245.seq_05_100x50-150_23.score_61
   * dummy_cpp_file_0246.seq_05_100x50-150_24.score_60
   * dummy_cpp_file_0247.seq_05_100x50-150_25.score_81
-* concatenating_file_7  (concatenating file; total score: 2364)
   * dummy_cpp_file_0248.seq_05_100x50-150_26.score_62
   * dummy_cpp_file_0249.seq_05_100x50-150_27.score_87
   * dummy_cpp_file_0250.seq_05_100x50-150_28.score_72
@@ -272,6 +271,7 @@ List of output files after execution of concatenation:
   * dummy_cpp_file_0262.seq_05_100x50-150_40.score_79
   * dummy_cpp_file_0263.seq_05_100x50-150_41.score_52
   * dummy_cpp_file_0264.seq_05_100x50-150_42.score_104
+* _concatenating_file_7  (concatenating file; total score: 2920)
   * dummy_cpp_file_0265.seq_05_100x50-150_43.score_117
   * dummy_cpp_file_0266.seq_05_100x50-150_44.score_134
   * dummy_cpp_file_0267.seq_05_100x50-150_45.score_114
@@ -281,7 +281,6 @@ List of output files after execution of concatenation:
   * dummy_cpp_file_0271.seq_05_100x50-150_49.score_104
   * dummy_cpp_file_0272.seq_05_100x50-150_50.score_53
   * dummy_cpp_file_0273.seq_05_100x50-150_51.score_95
-* concatenating_file_8  (concatenating file; total score: 2305)
   * dummy_cpp_file_0274.seq_05_100x50-150_52.score_95
   * dummy_cpp_file_0275.seq_05_100x50-150_53.score_149
   * dummy_cpp_file_0276.seq_05_100x50-150_54.score_93
@@ -303,9 +302,9 @@ List of output files after execution of concatenation:
   * dummy_cpp_file_0292.seq_05_100x50-150_70.score_122
   * dummy_cpp_file_0293.seq_05_100x50-150_71.score_71
   * dummy_cpp_file_0294.seq_05_100x50-150_72.score_147
+* _concatenating_file_8  (concatenating file; total score: 3014)
   * dummy_cpp_file_0295.seq_05_100x50-150_73.score_128
   * dummy_cpp_file_0296.seq_05_100x50-150_74.score_94
-* concatenating_file_9  (concatenating file; total score: 2292)
   * dummy_cpp_file_0297.seq_05_100x50-150_75.score_137
   * dummy_cpp_file_0298.seq_05_100x50-150_76.score_109
   * dummy_cpp_file_0299.seq_05_100x50-150_77.score_137
@@ -331,18 +330,19 @@ List of output files after execution of concatenation:
   * dummy_cpp_file_0319.seq_05_100x50-150_97.score_90
   * dummy_cpp_file_0320.seq_05_100x50-150_98.score_53
   * dummy_cpp_file_0321.seq_05_100x50-150_99.score_88
-* dummy_cpp_file_0322.seq_06_500_0.score_500
-* dummy_cpp_file_0323.seq_07_4-33_0.score_15
-* dummy_cpp_file_0324.seq_08_8x0-999_0.score_126
-* dummy_cpp_file_0325.seq_08_8x0-999_1.score_449
-* dummy_cpp_file_0326.seq_08_8x0-999_2.score_890
-* dummy_cpp_file_0327.seq_08_8x0-999_3.score_25
-* dummy_cpp_file_0328.seq_08_8x0-999_4.score_228
-* dummy_cpp_file_0329.seq_08_8x0-999_5.score_801
-* dummy_cpp_file_0330.seq_08_8x0-999_6.score_901
-* dummy_cpp_file_0331.seq_08_8x0-999_7.score_22
-* dummy_cpp_file_0332.seq_09_3x0_0.score_0
-* dummy_cpp_file_0333.seq_09_3x0_1.score_0
-* dummy_cpp_file_0334.seq_09_3x0_2.score_0
-* dummy_cpp_file_0335.seq_10_0_0.score_0
-* dummy_cpp_file_0336.seq_11_0-7_0.score_6
+  * dummy_cpp_file_0322.seq_06_500_0.score_500
+* _concatenating_file_9  (concatenating file; total score: 2534)
+  * dummy_cpp_file_0323.seq_07_4-33_0.score_15
+  * dummy_cpp_file_0324.seq_08_8x0-999_0.score_126
+  * dummy_cpp_file_0325.seq_08_8x0-999_1.score_449
+  * dummy_cpp_file_0326.seq_08_8x0-999_2.score_890
+  * dummy_cpp_file_0327.seq_08_8x0-999_3.score_25
+  * dummy_cpp_file_0328.seq_08_8x0-999_4.score_228
+  * dummy_cpp_file_0329.seq_08_8x0-999_5.score_801
+  * dummy_cpp_file_0330.seq_08_8x0-999_6.score_901
+  * dummy_cpp_file_0331.seq_08_8x0-999_7.score_22
+  * dummy_cpp_file_0332.seq_09_3x0_0.score_0
+  * dummy_cpp_file_0333.seq_09_3x0_1.score_0
+  * dummy_cpp_file_0334.seq_09_3x0_2.score_0
+  * dummy_cpp_file_0335.seq_10_0_0.score_0
+  * dummy_cpp_file_0336.seq_11_0-7_0.score_6
