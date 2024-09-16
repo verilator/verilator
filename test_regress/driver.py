@@ -1695,7 +1695,7 @@ class VlTest:
                     if got:
                         data = rawbuf[0:got]
                         if tee:
-                            sys.stdout.write(data.decode())
+                            sys.stdout.write(data.decode('latin-1'))
                             if interactive_debugger:
                                 sys.stdout.flush()
                         if logfh:
@@ -1726,9 +1726,12 @@ class VlTest:
             firstline = ""
             if logfile:
                 with open(logfile, 'r', encoding="utf8") as fh:
-                    firstline = fh.read()
-                firstline = firstline.strip()
-                firstline = re.sub(r'(^|\n)- [^\n]+', r'\1', firstline)  # Debug message
+                    for line in fh:
+                        line = line.rstrip()
+                        if re.match(r'^- ', line):  # Debug message
+                            continue
+                        firstline = line
+                        break
             self.error("Exec of " + cmd[0] + " failed: " + firstline)
         if fails and status:
             print("(Exec expected to fail, and did.)")
@@ -2629,7 +2632,7 @@ def max_procs() -> int:
 def _parameter(param: str) -> None:
     global _Parameter_Next_Level
     if _Parameter_Next_Level:
-        if not re.match(r'^(\d+)$', _Parameter_Next_Level):
+        if not re.match(r'^(\d+)$', param):
             sys.exit("%Error: Expected number following " + _Parameter_Next_Level + ": " + param)
         Arg_Driver_Verilator_Flags.append(param)
         _Parameter_Next_Level = None
