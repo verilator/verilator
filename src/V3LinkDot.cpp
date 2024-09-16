@@ -2107,13 +2107,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
     // TYPES
     enum DotPosition : uint8_t {
+        // Must match ascii() method below
         DP_NONE = 0,  // Not under a DOT
         DP_PACKAGE,  // {package}:: DOT
         DP_FIRST,  // {scope-or-var} DOT
         DP_SCOPE,  // DOT... {scope-or-var} DOT
         DP_FINAL,  // [DOT...] {var-or-func-or-dtype} with no following dots
-        DP_MEMBER
-    };  // DOT {member-name} [DOT...]
+        DP_MEMBER  // DOT {member-name} [DOT...]
+    };
 
     // STATE
     LinkDotState* const m_statep;  // State, including dotted symbol table
@@ -2160,7 +2161,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_unlinkedScopep = nullptr;
         }
         string ascii() const {
-            static const char* const names[] = {"NONE", "PACKAGE", "SCOPE", "FINAL", "MEMBER"};
+            static const char* const names[]
+                = {"NONE", "PACKAGE", "FIRST", "SCOPE", "FINAL", "MEMBER"};
             std::ostringstream sstr;
             sstr << "ds=" << names[m_dotPos];
             sstr << "  dse" << cvtToHex(m_dotSymp);
