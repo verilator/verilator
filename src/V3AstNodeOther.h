@@ -961,6 +961,7 @@ public:
     std::string name() const override VL_MT_STABLE { return m_name; }
     bool isDefault() const { return m_isDefault; }
     bool isGlobal() const { return m_isGlobal; }
+    AstVar* ensureEventp(bool childDType = false);
 };
 class AstClockingItem final : public AstNode {
     // Parents:  CLOCKING
@@ -2026,7 +2027,7 @@ public:
     bool isRef() const VL_MT_SAFE { return m_direction.isRef(); }
     bool isWritable() const VL_MT_SAFE { return m_direction.isWritable(); }
     bool isTristate() const { return m_tristate; }
-    bool isPrimaryIO() const { return m_primaryIO; }
+    bool isPrimaryIO() const VL_MT_SAFE { return m_primaryIO; }
     bool isPrimaryInish() const { return isPrimaryIO() && isNonOutput(); }
     bool isIfaceRef() const { return (varType() == VVarType::IFACEREF); }
     bool isIfaceParent() const { return m_isIfaceParent; }
@@ -2050,15 +2051,15 @@ public:
         AstBasicDType* bdtypep = basicp();
         return bdtypep && bdtypep->isBitLogic();
     }
-    bool isUsedClock() const { return m_usedClock; }
+    bool isUsedClock() const VL_MT_SAFE { return m_usedClock; }
     bool isUsedParam() const { return m_usedParam; }
     bool isUsedLoopIdx() const { return m_usedLoopIdx; }
     bool isSc() const VL_MT_SAFE { return m_sc; }
     bool isScQuad() const;
-    bool isScBv() const;
+    bool isScBv() const VL_MT_STABLE;
     bool isScUint() const;
     bool isScUintBool() const;
-    bool isScBigUint() const;
+    bool isScBigUint() const VL_MT_STABLE;
     bool isScSensitive() const { return m_scSensitive; }
     bool isSigPublic() const;
     bool isSigModPublic() const { return m_sigModPublic; }
@@ -3269,10 +3270,14 @@ public:
     bool isPure() override { return exprp()->isPure(); }
 };
 class AstStop final : public AstNodeStmt {
+    const bool m_isFatal;  // $fatal not $stop
 public:
-    AstStop(FileLine* fl, bool maybe)
-        : ASTGEN_SUPER_Stop(fl) {}
+    AstStop(FileLine* fl, bool isFatal)
+        : ASTGEN_SUPER_Stop(fl)
+        , m_isFatal(isFatal) {}
     ASTGEN_MEMBERS_AstStop;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
@@ -3280,6 +3285,8 @@ public:
     bool isUnlikely() const override { return true; }
     int instrCount() const override { return 0; }  // Rarely executes
     bool same(const AstNode* samep) const override { return fileline() == samep->fileline(); }
+    string emitVerilog() const { return m_isFatal ? "$fatal" : "$stop"; }
+    bool isFatal() const { return m_isFatal; }
 };
 class AstSysFuncAsTask final : public AstNodeStmt {
     // TODO: This is superseded by AstStmtExpr, remove
@@ -3610,6 +3617,7 @@ public:
         });
     }
     bool brokeLhsMustBeLvalue() const override { return true; }
+    AstDelay* getLhsNetDelay() const;
     AstAlways* convertToAlways();
 };
 

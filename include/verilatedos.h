@@ -593,9 +593,9 @@ static inline double VL_ROUND(double n) {
 #endif
 
 //=========================================================================
-// Macros controlling target specific optimizations
+// Macros controlling target-specific optimizations
 
-// Define VL_PORTABLE_ONLY to disable all target specific optimizations
+// Define VL_PORTABLE_ONLY to disable all target-specific optimizations
 #ifndef VL_PORTABLE_ONLY
 # ifdef __x86_64__
 #  define VL_X86_64 1

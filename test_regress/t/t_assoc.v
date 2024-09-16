@@ -121,6 +121,29 @@ module t (/*AUTOARG*/
          `checkh(sum, 1 + 2);
       end
 
+      begin   // Issue #5435
+         int a;
+         int ok;
+         int dict [int];
+
+         dict[3] = 'h13;
+         dict[4] = 'h14;
+         dict[5] = 'h15;
+
+         a = 4;
+         ok = dict.first(a);
+         if (a != 3) $stop;
+         if (ok != 1) $stop;
+         a = 4;
+         ok = dict.next(a);
+         if (a != 5) $stop;
+         if (ok != 1) $stop;
+         a = 4;
+         ok = dict.last(a);
+         if (a != 5) $stop;
+         if (ok != 1) $stop;
+      end
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

@@ -1660,6 +1660,17 @@ public:
     bool same(const AstNode* /*samep*/) const override { return true; }
     int instrCount() const override { return widthInstrs(); }
 };
+class AstParseHolder final : public AstNodeExpr {
+    // A reference to something soon to replace, used in a select at parse time
+    // that needs conversion to pull the upper lvalue later
+public:
+    AstParseHolder(FileLine* fl)
+        : ASTGEN_SUPER_ParseHolder(fl) {}
+    ASTGEN_MEMBERS_AstParseHolder;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(true); }
+};
 class AstParseRef final : public AstNodeExpr {
     // A reference to a variable, function or task
     // We don't know which at parse time due to bison constraints

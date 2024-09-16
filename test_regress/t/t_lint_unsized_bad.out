@@ -1,6 +1,18 @@
-%Error: t/t_lint_unsized_bad.v:8:22: Too many digits for 32 bit number: 'd123456789123456789123456789
-        ... As that number was unsized ('d...) it is limited to 32 bits (IEEE 1800-2023 5.7.1)
+%Error: t/t_lint_unsized_bad.v:8:22: Too many digits for 32 bit number: ''d123456789123456789123456789'
+        ... As that number was unsized ('...) it is limited to 32 bits (IEEE 1800-2023 5.7.1)
         ... Suggest adding a size to it.
     8 |    bit [256:0] num = 'd123456789123456789123456789;
       |                      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_lint_unsized_bad.v:9:22: Too many digits for 32 bit number: ''h123456789123456789123456789'
+    9 |    bit [256:0] num = 'h123456789123456789123456789;
+      |                      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_lint_unsized_bad.v:10:22: Illegal character in octal constant
+   10 |    bit [256:0] num = 'o123456789123456789123456789;
+      |                      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_lint_unsized_bad.v:10:22: Too many digits for 32 bit number: ''o123456789123456789123456789'
+   10 |    bit [256:0] num = 'o123456789123456789123456789;
+      |                      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_lint_unsized_bad.v:11:22: Too many digits for 32 bit number: ''b10101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010'
+   11 |    bit [256:0] num = 'b10101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010;
+      |                      ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 %Error: Exiting due to

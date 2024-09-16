@@ -58,6 +58,13 @@ void V3Global::readFiles() {
 
     V3Parse parser{v3Global.rootp(), &filter, &parseSyms};
 
+    // Read .vlt files
+    const V3StringSet& vltFiles = v3Global.opt.vltFiles();
+    for (const string& filename : vltFiles) {
+        parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filename, false,
+                         "Cannot find file containing .vlt file: ");
+    }
+
     // Parse the std package
     if (v3Global.opt.std()) {
         parser.parseFile(new FileLine{V3Options::getStdPackagePath()},

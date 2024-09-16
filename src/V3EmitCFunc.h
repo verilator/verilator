@@ -1004,6 +1004,7 @@ public:
         puts(", ");
         puts(cvtToStr(nodep->fileline()->lineno()));
         puts(", \"\"");
+        if (nodep->isFatal()) puts(", false");
         puts(");\n");
     }
     void visit(AstFinish* nodep) override {

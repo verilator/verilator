@@ -12,13 +12,13 @@
 //*************************************************************************
 ///
 /// \file
-/// \brief Verilator common target specific intrinsics header
+/// \brief Verilator common target-specific intrinsics header
 ///
 /// This file is not part of the Verilated public-facing API.
 ///
-/// It is only for internal use; code using machine specific intrinsics for
+/// It is only for internal use; code using machine-specific intrinsics for
 /// optimization should include this header rather than directly including
-/// he target specific headers. We provide macros to check for availability
+/// the target-specific headers. We provide macros to check for availability
 /// of instruction sets, and a common mechanism to disable them.
 ///
 //*************************************************************************

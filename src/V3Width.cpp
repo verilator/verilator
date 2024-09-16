@@ -2614,6 +2614,8 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstDist* nodep) override {
+        //  x dist {a :/ p, b :/ q} --> (p > 0 && x == a) || (q > 0 && x == b)
+        nodep->v3warn(CONSTRAINTIGN, "Constraint expression ignored (imperfect distribution)");
         userIterateAndNext(nodep->exprp(), WidthVP{CONTEXT_DET, PRELIM}.p());
         for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = itemp->nextp();  // iterate may cause the node to get replaced
@@ -2643,14 +2645,31 @@ class WidthVisitor final : public VNVisitor {
 
         iterateCheck(nodep, "Dist expression", nodep->exprp(), CONTEXT_DET, FINAL, subDTypep,
                      EXTEND_EXP);
-        for (AstDistItem *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
-            nextip
-                = VN_AS(itemp->nextp(), DistItem);  // iterate may cause the node to get replaced
-            iterateCheck(nodep, "Dist Item", itemp, CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
+        for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
+            nextip = itemp->nextp();
+            itemp = VN_AS(itemp, DistItem)->rangep();
+            // InsideRange will get replaced with Lte&Gte and finalized later
+            if (!VN_IS(itemp, InsideRange))
+                iterateCheck(nodep, "Dist Item", itemp, CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
         }
+        AstNodeExpr* newp = nullptr;
+        for (AstDistItem* itemp = nodep->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), DistItem)) {
+            AstNodeExpr* inewp = insideItem(nodep, nodep->exprp(), itemp->rangep());
+            if (!inewp) continue;
+            AstNodeExpr* const cmpp
+                = new AstGt{itemp->fileline(), itemp->weightp()->unlinkFrBack(),
+                            new AstConst{itemp->fileline(), 0}};
+            cmpp->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
+            cmpp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
+            inewp = new AstLogAnd{itemp->fileline(), cmpp, inewp};
+            newp = newp ? new AstLogOr{nodep->fileline(), newp, inewp} : inewp;
+        }
+        if (!newp) newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
 
         if (debug() >= 9) nodep->dumpTree("-  dist-out: ");
-        nodep->dtypep(subDTypep);
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     void visit(AstInside* nodep) override {
@@ -2696,40 +2715,39 @@ class WidthVisitor final : public VNVisitor {
         AstNodeExpr* newp = nullptr;
         for (AstNodeExpr *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = VN_AS(itemp->nextp(), NodeExpr);  // Will be unlinking
-            AstNodeExpr* inewp;
-            const AstNodeDType* const itemDtp = itemp->dtypep()->skipRefp();
-            if (AstInsideRange* const irangep = VN_CAST(itemp, InsideRange)) {
-                // Similar logic in V3Case
-                inewp = irangep->newAndFromInside(nodep->exprp(), irangep->lhsp()->unlinkFrBack(),
-                                                  irangep->rhsp()->unlinkFrBack());
-            } else if (VN_IS(itemDtp, UnpackArrayDType) || VN_IS(itemDtp, DynArrayDType)
-                       || VN_IS(itemDtp, QueueDType)) {
-                // Unsupported in parameters
-                AstNodeExpr* exprp = nodep->exprp()->cloneTreePure(true);
-                inewp = new AstCMethodHard{nodep->fileline(), itemp->unlinkFrBack(), "inside",
-                                           exprp};
-                iterateCheckTyped(nodep, "inside value", exprp, itemDtp->subDTypep(), BOTH);
-                VL_DANGLING(exprp);  // Might have been replaced
-                inewp->dtypeSetBit();
-                inewp->didWidth(true);
-            } else if (VN_IS(itemDtp, AssocArrayDType)) {
-                nodep->v3error("Inside operator not specified on associative arrays "
-                               "(IEEE 1800-2023 11.4.13)");
-                continue;
-            } else {
-                inewp = AstEqWild::newTyped(itemp->fileline(), nodep->exprp()->cloneTreePure(true),
-                                            itemp->unlinkFrBack());
-            }
-            if (newp) {
-                newp = new AstLogOr{nodep->fileline(), newp, inewp};
-            } else {
-                newp = inewp;
-            }
+            AstNodeExpr* const inewp = insideItem(nodep, nodep->exprp(), itemp);
+            if (!inewp) continue;
+            newp = newp ? new AstLogOr{nodep->fileline(), newp, inewp} : inewp;
         }
         if (!newp) newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
         if (debug() >= 9) newp->dumpTree("-  inside-out: ");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    AstNodeExpr* insideItem(AstNode* nodep, AstNodeExpr* exprp, AstNodeExpr* itemp) {
+        const AstNodeDType* const itemDtp = itemp->dtypep()->skipRefp();
+        if (AstInsideRange* const irangep = VN_CAST(itemp, InsideRange)) {
+            // Similar logic in V3Case
+            return irangep->newAndFromInside(exprp, irangep->lhsp()->unlinkFrBack(),
+                                             irangep->rhsp()->unlinkFrBack());
+        } else if (VN_IS(itemDtp, UnpackArrayDType) || VN_IS(itemDtp, DynArrayDType)
+                   || VN_IS(itemDtp, QueueDType)) {
+            // Unsupported in parameters
+            AstNodeExpr* const cexprp = exprp->cloneTreePure(true);
+            AstNodeExpr* const inewp
+                = new AstCMethodHard{nodep->fileline(), itemp->unlinkFrBack(), "inside", cexprp};
+            iterateCheckTyped(nodep, "inside value", cexprp, itemDtp->subDTypep(), BOTH);
+            VL_DANGLING(cexprp);  // Might have been replaced
+            inewp->dtypeSetBit();
+            inewp->didWidth(true);
+            return inewp;
+        } else if (VN_IS(itemDtp, AssocArrayDType)) {
+            nodep->v3error("Inside operator not specified on associative arrays "
+                           "(IEEE 1800-2023 11.4.13)");
+            return nullptr;
+        }
+        return AstEqWild::newTyped(itemp->fileline(), exprp->cloneTreePure(true),
+                                   itemp->unlinkFrBack());
     }
     void visit(AstInsideRange* nodep) override {
         // Just do each side; AstInside will rip these nodes out later
@@ -2766,7 +2784,7 @@ class WidthVisitor final : public VNVisitor {
                                << " in packed struct/union (IEEE 1800-2023 7.2.1)");
             if ((VN_IS(nodep, UnionDType) || nodep->packed()) && itemp->valuep()) {
                 itemp->v3error("Initial values not allowed in packed struct/union"
-                               " (IEEE 1800-2023 7.2.1)");
+                               " (IEEE 1800-2023 7.2.2)");
                 pushDeletep(itemp->valuep()->unlinkFrBack());
             } else if (itemp->valuep()) {
                 itemp->valuep()->v3warn(E_UNSUPPORTED,
@@ -2911,27 +2929,8 @@ class WidthVisitor final : public VNVisitor {
             if (memberSelClass(nodep, adtypep)) return;
         } else if (AstIfaceRefDType* const adtypep = VN_CAST(fromDtp, IfaceRefDType)) {
             if (AstNode* foundp = memberSelIface(nodep, adtypep)) {
-                if (AstClocking* const clockingp = VN_CAST(foundp, Clocking)) {
-                    foundp = clockingp->eventp();
-                    if (!foundp) {
-                        AstVar* const eventp = new AstVar{
-                            clockingp->fileline(), VVarType::MODULETEMP, clockingp->name(),
-                            clockingp->findBasicDType(VBasicDTypeKwd::EVENT)};
-                        eventp->lifetime(VLifetime::STATIC);
-                        clockingp->eventp(eventp);
-                        // Trigger the clocking event in Observed (IEEE 1800-2023 14.13)
-                        clockingp->addNextHere(new AstAlwaysObserved{
-                            clockingp->fileline(),
-                            new AstSenTree{clockingp->fileline(),
-                                           clockingp->sensesp()->cloneTree(false)},
-                            new AstFireEvent{
-                                clockingp->fileline(),
-                                new AstVarRef{clockingp->fileline(), eventp, VAccess::WRITE},
-                                false}});
-                        v3Global.setHasEvents();
-                        foundp = eventp;
-                    }
-                }
+                if (AstClocking* const clockingp = VN_CAST(foundp, Clocking))
+                    foundp = clockingp->ensureEventp();
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
                     if (!varp->didWidth()) userIterate(varp, nullptr);
                     nodep->dtypep(foundp->dtypep());
@@ -3451,6 +3450,7 @@ class WidthVisitor final : public VNVisitor {
                    || nodep->name() == "prev") {
             methodOkArguments(nodep, 1, 1);
             AstNodeExpr* const index_exprp = methodCallAssocIndexExpr(nodep, adtypep);
+            methodCallLValueRecurse(nodep, index_exprp, VAccess::READWRITE);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       nodep->name(),  // first/last/next/prev
                                       index_exprp->unlinkFrBack()};
@@ -3557,7 +3557,8 @@ class WidthVisitor final : public VNVisitor {
     }
     void methodCallLValueRecurse(AstMethodCall* nodep, AstNode* childp, const VAccess& access) {
         if (const AstCMethodHard* const ichildp = VN_CAST(childp, CMethodHard)) {
-            if (ichildp->name() == "at") {
+            if (ichildp->name() == "at" || ichildp->name() == "atWrite"
+                || ichildp->name() == "atWriteAppend" || ichildp->name() == "atWriteAppendBack") {
                 methodCallLValueRecurse(nodep, ichildp->fromp(), access);
                 return;
             }
@@ -3638,8 +3639,13 @@ class WidthVisitor final : public VNVisitor {
         AstCMethodHard* newp = nullptr;
         if (nodep->name() == "at") {  // Created internally for []
             methodOkArguments(nodep, 1, 1);
-            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(), "at"};
+            newp->dtypeFrom(adtypep->subDTypep());
+        } else if (nodep->name() == "atWrite") {  // Created internally for []
+            methodOkArguments(nodep, 1, 1);
+            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
+            newp
+                = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(), "atWrite"};
             newp->dtypeFrom(adtypep->subDTypep());
         } else if (nodep->name() == "size") {
             methodOkArguments(nodep, 0, 0);
@@ -3678,6 +3684,12 @@ class WidthVisitor final : public VNVisitor {
     void methodCallQueue(AstMethodCall* nodep, AstQueueDType* adtypep) {
         AstCMethodHard* newp = nullptr;
         if (nodep->name() == "at" || nodep->name() == "atBack") {  // Created internally for []
+            methodOkArguments(nodep, 1, 1);
+            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                      nodep->name()};
+            newp->dtypeFrom(adtypep->subDTypep());
+        } else if (nodep->name() == "atWriteAppend"
+                   || nodep->name() == "atWriteAppendBack") {  // Created internally for []
             methodOkArguments(nodep, 1, 1);
             methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
@@ -5187,7 +5199,7 @@ class WidthVisitor final : public VNVisitor {
                         ch = 'g';
                     } else if (argp && argp->isString()) {
                         ch = '@';
-                    } else if (nodep->missingArgChar() == 'd' && argp->isSigned()) {
+                    } else if (argp && nodep->missingArgChar() == 'd' && argp->isSigned()) {
                         ch = '~';
                     } else if (basicp) {
                         ch = nodep->missingArgChar();
@@ -6031,7 +6043,6 @@ class WidthVisitor final : public VNVisitor {
             }
             UASSERT_OBJ(classp, nodep, "Should have failed in V3LinkDot");
             if (nodep->name() == "randomize") {
-                nodep->taskp(V3Randomize::newRandomizeFunc(m_memberMap, classp));
                 AstClassRefDType* const adtypep
                     = new AstClassRefDType{nodep->fileline(), classp, nullptr};
                 v3Global.rootp()->typeTablep()->addTypesp(adtypep);
@@ -6968,7 +6979,7 @@ class WidthVisitor final : public VNVisitor {
         // Check using assignment-like context rules
         // if (debug()) nodep->dumpTree("-  checkass: ");
         UASSERT_OBJ(stage == FINAL, nodep, "Bad width call");
-        // Create unpacked byte from string perl IEEE 1800-2023 5.9
+        // Create unpacked byte from string see IEEE 1800-2023 5.9
         if (AstConst* constp = VN_CAST(rhsp, Const)) {
             if (const AstUnpackArrayDType* const arrayp
                 = VN_CAST(lhsDTypep->skipRefp(), UnpackArrayDType)) {

@@ -34,10 +34,10 @@
         
            const reg aconst = '0;
         
-%000000    reg [1:0][1:0] ptoggle; initial ptoggle=0;
+%000002    reg [1:0][1:0] ptoggle; initial ptoggle=0;
         
            integer cyc; initial cyc=1;
-%000000    wire [7:0] cyc_copy = cyc[7:0];
+~000011    wire [7:0] cyc_copy = cyc[7:0];
 %000002    wire       toggle_up;
         
            typedef struct {
@@ -70,7 +70,7 @@
                      .clk                       (clk),
                      .toggle                    (toggle));
         
-%000000    reg [1:0]  memory[121:110];
+%000001    reg [1:0]  memory[121:110];
         
            wire [1023:0] largeish = {992'h0, cyc};
            // CHECK_COVER_MISSING(-1)
@@ -116,7 +116,7 @@
            // CHECK_COVER(-1,"top.t.a*",4)
            // 2 edges * (t.a1 and t.a2)
         
-%000000    input [7:0] cyc_copy;
+~000022    input [7:0] cyc_copy;
            // CHECK_COVER(-1,"top.t.a*","cyc_copy[0]",22)
            // CHECK_COVER(-2,"top.t.a*","cyc_copy[1]",10)
            // CHECK_COVER(-3,"top.t.a*","cyc_copy[2]",4)

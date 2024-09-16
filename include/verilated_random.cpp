@@ -230,7 +230,7 @@ static Process& getSolver() {
 
     const char* const* const cmd = &s_argv[0];
     s_solver.open(cmd);
-    s_solver << "(set-logic QF_BV)\n";
+    s_solver << "(set-logic QF_ABV)\n";
     s_solver << "(check-sat)\n";
     s_solver << "(reset)\n";
     std::string s;
@@ -253,12 +253,13 @@ static Process& getSolver() {
 //======================================================================
 // VlRandomizer:: Methods
 
-bool VlRandomVar::set(std::string&& val) const {
-    VlWide<VL_WQ_WORDS_E> qowp;
-    VL_SET_WQ(qowp, 0ULL);
-    WDataOutP owp = qowp;
-    int obits = width();
-    if (obits > VL_QUADSIZE) owp = reinterpret_cast<WDataOutP>(datap());
+void VlRandomVar::emitGetValue(std::ostream& s) const { s << ' ' << m_name; }
+void VlRandomVar::emitExtract(std::ostream& s, int i) const {
+    s << " ((_ extract " << i << ' ' << i << ") " << m_name << ')';
+}
+void VlRandomVar::emitType(std::ostream& s) const { s << "(_ BitVec " << width() << ')'; }
+int VlRandomVar::totalWidth() const { return m_width; }
+static bool parseSMTNum(int obits, WDataOutP owp, const std::string& val) {
     int i;
     for (i = 0; val[i] && val[i] != '#'; i++) {}
     if (val[i++] != '#') return false;
@@ -272,17 +273,31 @@ bool VlRandomVar::set(std::string&& val) const {
                    "Internal: Unable to parse solver's randomized number");
         return false;
     }
+    return true;
+}
+bool VlRandomVar::set(const std::string& idx, const std::string& val) const {
+    VlWide<VL_WQ_WORDS_E> qowp;
+    VL_SET_WQ(qowp, 0ULL);
+    WDataOutP owp = qowp;
+    const int obits = width();
+    VlWide<VL_WQ_WORDS_E> qiwp;
+    VL_SET_WQ(qiwp, 0ULL);
+    if (!idx.empty() && !parseSMTNum(64, qiwp, idx)) return false;
+    const int nidx = qiwp[0];
+    if (obits > VL_QUADSIZE) owp = reinterpret_cast<WDataOutP>(datap(nidx));
+    if (!parseSMTNum(obits, owp, val)) return false;
+
     if (obits <= VL_BYTESIZE) {
-        CData* const p = static_cast<CData*>(datap());
+        CData* const p = static_cast<CData*>(datap(nidx));
         *p = VL_CLEAN_II(obits, obits, owp[0]);
     } else if (obits <= VL_SHORTSIZE) {
-        SData* const p = static_cast<SData*>(datap());
+        SData* const p = static_cast<SData*>(datap(nidx));
         *p = VL_CLEAN_II(obits, obits, owp[0]);
     } else if (obits <= VL_IDATASIZE) {
-        IData* const p = static_cast<IData*>(datap());
+        IData* const p = static_cast<IData*>(datap(nidx));
         *p = VL_CLEAN_II(obits, obits, owp[0]);
     } else if (obits <= VL_QUADSIZE) {
-        QData* const p = static_cast<QData*>(datap());
+        QData* const p = static_cast<QData*>(datap(nidx));
         *p = VL_CLEAN_QQ(obits, obits, VL_SET_QW(owp));
     } else {
         _vl_clean_inplace_w(obits, owp);
@@ -293,7 +308,7 @@ bool VlRandomVar::set(std::string&& val) const {
 void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits) {
     const IData hash = VL_RANDOM_RNG_I(rngr) & ((1 << bits) - 1);
     int varBits = 0;
-    for (const auto& var : m_vars) varBits += var.second->width();
+    for (const auto& var : m_vars) varBits += var.second->totalWidth();
     os << "(= #b";
     for (int i = bits - 1; i >= 0; i--) os << (VL_BITISSET_I(hash, i) ? '1' : '0');
     if (bits > 1) os << " (concat";
@@ -302,10 +317,10 @@ void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits) {
         IData varBitsWant = (varBits + 1) / 2;
         if (varBits > 2) os << " (bvxor";
         for (const auto& var : m_vars) {
-            for (int j = 0; j < var.second->width(); j++, varBitsLeft--) {
+            for (int j = 0; j < var.second->totalWidth(); j++, varBitsLeft--) {
                 const bool doEmit = (VL_RANDOM_RNG_I(rngr) % varBitsLeft) < varBitsWant;
                 if (doEmit) {
-                    os << " ((_ extract " << j << ' ' << j << ") " << var.second->name() << ')';
+                    var.second->emitExtract(os, j);
                     if (--varBitsWant == 0) break;
                 }
             }
@@ -323,12 +338,13 @@ bool VlRandomizer::next(VlRNG& rngr) {
     if (!f) return false;
 
     f << "(set-option :produce-models true)\n";
-    f << "(set-logic QF_BV)\n";
+    f << "(set-logic QF_ABV)\n";
     f << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
     f << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
     for (const auto& var : m_vars) {
-        f << "(declare-fun " << var.second->name() << " () (_ BitVec " << var.second->width()
-          << "))\n";
+        f << "(declare-fun " << var.second->name() << " () ";
+        var.second->emitType(f);
+        f << ")\n";
     }
     for (const std::string& constraint : m_constraints) {
         f << "(assert (= #b1 " << constraint << "))\n";
@@ -367,7 +383,7 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
     }
 
     f << "(get-value (";
-    for (const auto& var : m_vars) f << var.second->name() << ' ';
+    for (const auto& var : m_vars) var.second->emitGetValue(f);
     f << "))\n";
 
     // Quasi-parse S-expression of the form ((x #xVALUE) (y #bVALUE) (z #xVALUE))
@@ -388,8 +404,12 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
             return false;
         }
 
-        std::string name, value;
+        std::string name, idx, value;
         f >> name;
+        if (name == "(select") {
+            f >> name;
+            std::getline(f, idx, ')');
+        }
         std::getline(f, value, ')');
 
         auto it = m_vars.find(name);
@@ -399,7 +419,7 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
             if (!(m_randmode->at(varr.randModeIdx()))) continue;
         }
 
-        varr.set(std::move(value));
+        varr.set(idx, value);
     }
 
     return true;

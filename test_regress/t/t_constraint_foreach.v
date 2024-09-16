@@ -26,6 +26,8 @@ class C;
       x < 7;
       foreach(q[i])
          x > i;
+      foreach(q[i])  // loop again with the same index name
+         x > i;
    };
 endclass
 

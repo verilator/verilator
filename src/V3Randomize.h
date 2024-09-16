@@ -32,7 +32,8 @@ public:
 
     static AstFunc* newRandomizeFunc(VMemberMap& memberMap, AstClass* nodep,
                                      const std::string& name = "randomize",
-                                     bool allowVirtual = true) VL_MT_DISABLED;
+                                     bool allowVirtual = true,
+                                     bool childDType = false) VL_MT_DISABLED;
     static AstFunc* newSRandomFunc(VMemberMap& memberMap, AstClass* nodep) VL_MT_DISABLED;
 };
 

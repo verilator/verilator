@@ -22,9 +22,10 @@ module t_case_huge_sub3 (/*AUTOARG*/
    // End of automatics
 
    // =============================
-   // Created from perl
-   //for $i (0..255) { $r=rand(4); printf "\t8'h%02x: begin outr <= outr^index[8:5]^4'h%01x; end\n", $i,
-   //rand(256); };
+   // Created from Pthon3:
+   // for i in range(256):
+   //     print("        8'h%02x: begin outr <= outr^index[8:5]^4'h%01x; end"
+   //           % (i, random.randint(0,15)))
 
    // Reset cheating
    initial outr = 4'b0;

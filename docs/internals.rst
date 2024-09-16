@@ -1472,9 +1472,6 @@ For all tests to pass, you must install the following packages:
 
 -  SystemC to compile the SystemC outputs, see http://systemc.org
 
--  Parallel::Forker from CPAN to run tests in parallel; you can install
-   this with e.g. "sudo cpan install Parallel::Forker".
-
 -  vcddiff to find differences in VCD outputs. See the readme at
    https://github.com/veripool/vcddiff
 
@@ -1484,7 +1481,7 @@ For all tests to pass, you must install the following packages:
 Controlling the Test Driver
 ---------------------------
 
-The test driver script `driver.pl` runs tests; see the `Test Driver`
+The test driver script `driver.py` runs tests; see the `Test Driver`
 section.  The individual test drivers are written in Perl; see `Test
 Language`.
 
@@ -1497,7 +1494,7 @@ A specific regression test can be executed manually. To start the
 
 ::
 
-   test_regress/t/t_EXAMPLE.pl
+   test_regress/t/t_EXAMPLE.py
 
 
 Regression Testing for Developers
@@ -1516,13 +1513,6 @@ Developers will also want to call ./configure with two extra flags:
    in the ``test_regress`` directory when using *make test*'. This is
    disabled by default, as SystemC installation problems would otherwise
    falsely indicate a Verilator problem.
-
-When enabling the long tests, some additional Perl modules are needed,
-which you can install using cpan.
-
-::
-
-   cpan install Parallel::Forker
 
 There are some traps to avoid when running regression tests
 
@@ -1871,7 +1861,7 @@ represent the pointers (``op1p``, ``op2p``, etc) between the nodes.
 Debugging with GDB
 ------------------
 
-The `driver.pl` script accepts ``--debug --gdb`` to start
+The `driver.py` script accepts ``--debug --gdb`` to start
 Verilator under gdb and break when an error is hit, or the program is about
 to exit. You can also use ``--debug --gdbbt`` to just backtrace and then
 exit gdb. To debug the Verilated executable, use ``--gdbsim``.
@@ -1882,7 +1872,7 @@ can use ``--debug`` and look at the underlying invocation of
 
 ::
 
-   t/t_alw_dly.pl --debug
+   t/t_alw_dly.py --debug
 
 shows it invokes the command:
 
@@ -1979,7 +1969,7 @@ Generally, what would you do to add a new feature?
    Follow the convention described above about the AstNode type hierarchy.
    Ordering of definitions is enforced by ``astgen``.
 
-5. Now you can run ``test_regress/t/t_<newtestcase>.pl --debug`` and it'll
+5. Now you can run ``test_regress/t/t_<newtestcase>.py --debug`` and it'll
    probably fail, but you'll see a
    ``test_regress/obj_dir/t_<newtestcase>/*.tree`` file which you can examine
    to see if the parsing worked. See also the sections above on debugging.
@@ -2028,7 +2018,7 @@ IEEE 1800-2023 33 Config
 Test Driver
 ===========
 
-This section documents the test driver script, `driver.pl`.  driver.pl
+This section documents the test driver script, `driver.py`.  driver.py
 invokes Verilator or another simulator on each test file.  For test file
 contents description see `Test Language`.
 
@@ -2040,7 +2030,7 @@ the regression tests with OBJCACHE enabled and in parallel on a machine
 with many cores.  See the -j option and OBJCACHE environment variable.
 
 
-driver.pl Non-Scenario Arguments
+driver.py Non-Scenario Arguments
 --------------------------------
 
 --benchmark [<cycles>]
@@ -2110,13 +2100,13 @@ driver.pl Non-Scenario Arguments
   memory leaks.
 
 --site
-  Run site specific tests also.
+  Run site-specific tests also.
 
 --stop
   Stop on the first error.
 
 --trace
-  Set the simulator specific flags to request waveform tracing.
+  Set the simulator-specific flags to request waveform tracing.
 
 --valgrind
   Same as ``verilator --valgrind``: Run Verilator under `Valgrind <https://valgrind.org/>`_.
@@ -2129,7 +2119,7 @@ driver.pl Non-Scenario Arguments
   For tests using the standard C++ wrapper, enable runtime debug mode.
 
 
-driver.pl Scenario Arguments
+driver.py Scenario Arguments
 ----------------------------
 
 The following options control which simulator is used, and which tests are
@@ -2171,7 +2161,7 @@ simultaneously.
   Run Xilinx XSim simulator tests.
 
 
-driver.pl Environment
+driver.py Environment
 ---------------------
 
 HARNESS_UPDATE_GOLDEN
@@ -2231,30 +2221,30 @@ VERILATOR_XVLOG
 Test Language
 =============
 
-This section describes the format of the ``test_regress/t/*.pl`` test
-language files, executed by `driver.pl`.
+This section describes the format of the ``test_regress/t/*.py`` test
+language files, executed by `driver.py`.
 
 Test Language Summary
 ---------------------
 
 For convenience, a summary of the most commonly used features is provided
 here, with a reference in a later section. All test files typically have a
-call to the ``lint`` or ``compile`` subroutine to compile the test. For
-run-time tests, this is followed by a call to the ``execute``
-subroutine. Both of these functions can optionally be provided with
-arguments specifying additional options.
+call to the ``test.lint`` or ``test.compile`` methods to compile the
+test. For run-time tests, this is followed by a call to the
+``test.execute`` method. Both of these functions can optionally be provided
+with arguments specifying additional options.
 
-If those complete, the script calls ``ok`` to increment the count of
-successful tests and then returns 1 as its result.
+If those complete, the script calls ``test.passes`` to increment the count
+of successful tests.
 
-The driver.pl script assumes by default that the source Verilog file name
+The driver.py script assumes by default that the source Verilog file name
 matches the test script name. So a test whose driver is
-``t/t_mytest.pl`` will expect a Verilog source file ``t/t_mytest.v``.
+``t/t_mytest.py`` will expect a Verilog source file ``t/t_mytest.v``.
 This can be changed using the ``top_filename`` subroutine, for example
 
 ::
 
-   top_filename("t/t_myothertest.v");
+   test.top_filename = "t/t_myothertest.v"
 
 By default, all tests will run with major simulators (Icarus Verilog, NC,
 VCS, ModelSim, etc.) as well as Verilator, to allow results to be
@@ -2263,26 +2253,25 @@ can use the following:
 
 ::
 
-   scenarios(vlt => 1);
+   test.scenarios('vlt')
 
-Of the many options that can be set through arguments to ``compiler`` and
-``execute``, the following are particularly useful:
+Of the many options that can be set through arguments to ``test.compiler``
+and ``test.execute``, the following are particularly useful:
 
 ``verilator_flags2``
   A list of flags to be passed to verilator when compiling.
 
 ``fails``
-  Set to 1 to indicate that the compilation or execution is intended to fail.
+  Set true to indicate that the compilation or execution is intended to fail.
 
 For example, the following would specify that compilation requires two
 defines and is expected to fail.
 
 ::
 
-   compile(
+   test.compile(
       verilator_flags2 => ["-DSMALL_CLOCK -DGATED_COMMENT"],
-      fails => 1,
-      );
+      fails = True)
 
 Hints On Writing Tests
 ----------------------
@@ -2295,10 +2284,10 @@ same name as the test, but with .cpp as suffix
 
 ::
 
-   compile(
-      make_top_shell   => 0,
-      make_main        => 0,
-      verilator_flags2 => ["--exe $Self->{t_dir}/$Self->{name}.cpp"], );
+   test.compile(
+      make_top_shell=False,
+      make_main=False,
+      verilator_flags2=["--exe", test.t_dir + "/" + test.name + ".cpp"])
 
 Tests should be self-checking, rather than producing lots of output. If a
 test succeeds it should print ``*-* All Finished *-*`` to standard output
@@ -2338,9 +2327,8 @@ compile time, it is the only option. For example:
 ::
 
    compile(
-      fails => 1,
-      expect_filename => $Self->{golden_filename},
-      );
+      fails=True,
+      expect_filename=test.golden_filename)
 
 Note ``expect_filename`` strips some debugging information from the logfile
 when comparing.
@@ -2349,9 +2337,9 @@ when comparing.
 Test Language Compile/Lint/Run Arguments
 ----------------------------------------
 
-This section describes common arguments to ``compile()``, ``lint()``, and
-``run()``.  The full list of arguments can be found by looking at the
-``driver.pl`` source code.
+This section describes common arguments to ``test.compile``, ``test.lint``,
+and ``test.run``.  The full list of arguments can be found by looking at
+the ``driver.py`` source code.
 
 all_run_flags
   A list of flags to be passed when running the simulator (Verilated model

@@ -46,6 +46,8 @@ extern int dpii_failure();
 int errors = 0;
 int dpii_failure() { return errors; }
 
+#define TEST_MAX_NELEMS 1024
+
 static void _invert(int bits, svBitVecVal o[], const svBitVecVal i[]) {
     for (int w = 0; w < SV_PACKED_DATA_NELEMS(bits); ++w) o[w] = ~i[w];
     o[SV_PACKED_DATA_NELEMS(bits) - 1] &= SV_MASK(bits & 31);
@@ -91,9 +93,13 @@ static void _dpii_bit_vecval_ux(int bits, int p, int u, const svOpenArrayHandle 
     TEST_CHECK_HEX_EQ(dim, u);
 #endif
 
-    svBitVecVal vv[SV_PACKED_DATA_NELEMS(bits)];
-    svBitVecVal vv2[SV_PACKED_DATA_NELEMS(bits)];
-    svBitVecVal vo[SV_PACKED_DATA_NELEMS(bits)];
+    if (SV_PACKED_DATA_NELEMS(bits) > TEST_MAX_NELEMS) {
+        fprintf(stderr, "%%Error: Increase TEST_MAX_NELEMS\n");
+        abort();
+    }
+    svBitVecVal vv[TEST_MAX_NELEMS];
+    svBitVecVal vv2[TEST_MAX_NELEMS];
+    svBitVecVal vo[TEST_MAX_NELEMS];
     for (int a = svLow(i, 1); a <= svHigh(i, 1); ++a) {
         fflush(stdout);
         if (dim == 1) {
@@ -162,9 +168,13 @@ static void _dpii_logic_vecval_ux(int bits, int p, int u, const svOpenArrayHandl
     TEST_CHECK_HEX_EQ(dim, u);
 #endif
 
-    svLogicVecVal vv[SV_PACKED_DATA_NELEMS(bits)];
-    svLogicVecVal vv2[SV_PACKED_DATA_NELEMS(bits)];
-    svLogicVecVal vo[SV_PACKED_DATA_NELEMS(bits)];
+    if (SV_PACKED_DATA_NELEMS(bits) > TEST_MAX_NELEMS) {
+        fprintf(stderr, "%%Error: Increase TEST_MAX_NELEMS\n");
+        abort();
+    }
+    svLogicVecVal vv[TEST_MAX_NELEMS];
+    svLogicVecVal vv2[TEST_MAX_NELEMS];
+    svLogicVecVal vo[TEST_MAX_NELEMS];
     for (int a = svLow(i, 1); a <= svHigh(i, 1); ++a) {
         fflush(stdout);
         if (dim == 1) {

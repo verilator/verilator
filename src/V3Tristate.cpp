@@ -1247,7 +1247,10 @@ class TristateVisitor final : public TristateBaseVisitor {
         VL_RESTORER(m_alhs);
         VL_RESTORER(m_currentStrength);
         if (m_graphing) {
-            if (AstAssignW* assignWp = VN_CAST(nodep, AssignW)) addToAssignmentList(assignWp);
+            if (AstAssignW* assignWp = VN_CAST(nodep, AssignW)) {
+                if (assignWp->timingControlp() || assignWp->getLhsNetDelay()) return;
+                addToAssignmentList(assignWp);
+            }
 
             if (nodep->user2() & U2_GRAPHING) return;
             VL_RESTORER(m_logicp);

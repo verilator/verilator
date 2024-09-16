@@ -492,8 +492,12 @@ class TaskVisitor final : public VNVisitor {
                 if (VN_IS(pinp, VarRef) || VN_IS(pinp, MemberSel) || VN_IS(pinp, StructSel)
                     || VN_IS(pinp, ArraySel)) {
                     refArgOk = true;
-                } else if (const AstCMethodHard* const cMethodp = VN_CAST(pinp, CMethodHard)) {
+                } else if (AstCMethodHard* const cMethodp = VN_CAST(pinp, CMethodHard)) {
                     refArgOk = cMethodp->name() == "at" || cMethodp->name() == "atBack";
+                    if (VN_IS(cMethodp->fromp()->dtypep()->skipRefp(), QueueDType)) {
+                        cMethodp->name(cMethodp->name() == "at" ? "atWriteAppend"
+                                                                : "atWriteAppendBack");
+                    }
                 }
                 if (refArgOk) {
                     if (AstVarRef* const varrefp = VN_CAST(pinp, VarRef)) {

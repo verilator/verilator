@@ -196,6 +196,14 @@ module t (/*AUTOARG*/);
       `checkh(qa1[0].size, 4);
       qa1[0].delete;
 
+      qa1[$-1].delete;
+      `checkh(qa1[$-1].size, 0);
+
+      qa1.delete;
+      `checkh(qa1.size, 0);
+      `checkh(qa1[$-1].size, 0);
+      `checkh(qa1.size, 0);
+
       s1.a = new [4];
       `checkh(s1.a.size, 4);
       s1.a.delete;

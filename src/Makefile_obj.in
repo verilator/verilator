@@ -49,7 +49,7 @@ prefix = @prefix@
 # Directory in which to install data across multiple architectures
 datarootdir = @datarootdir@
 
-# Directory in which to install package specific files
+# Directory in which to install package-specific files
 # Generally ${prefix}/share/verilator
 pkgdatadir = @pkgdatadir@
 
@@ -210,6 +210,7 @@ RAW_OBJS_PCH_ASTMT = \
 	V3Options.o \
 	V3Stats.o \
 	V3StatsReport.o \
+	V3VariableOrder.o \
 
 RAW_OBJS_PCH_ASTNOMT = \
 	V3Active.o \
@@ -309,7 +310,6 @@ RAW_OBJS_PCH_ASTNOMT = \
 	V3Undriven.o \
 	V3Unknown.o \
 	V3Unroll.o \
-	V3VariableOrder.o \
 	V3Width.o \
 	V3WidthCommit.o \
 	V3WidthSel.o \

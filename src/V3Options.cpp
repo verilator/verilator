@@ -395,6 +395,7 @@ void V3Options::addVFile(const string& filename) {
     // in a specific order and multiple of them.
     m_vFiles.push_back(filename);
 }
+void V3Options::addVltFile(const string& filename) { m_vltFiles.insert(filename); }
 void V3Options::addForceInc(const string& filename) { m_forceIncs.push_back(filename); }
 
 void V3Options::addLineArg(const string& arg) { m_impp->m_lineArgs.push_back(arg); }
@@ -1772,6 +1773,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                        || suffixed(filename, ".o")  //
                        || suffixed(filename, ".so")) {
                 V3Options::addLdLibs(filename);
+            } else if (suffixed(filename, ".vlt")) {
+                V3Options::addVltFile(filename);
             } else {
                 V3Options::addVFile(filename);
             }
@@ -2032,7 +2035,7 @@ unsigned V3Options::dumpLevel(const string& tag) const VL_MT_SAFE {
     return iter != m_dumpLevel.end() ? iter->second : 0;
 }
 
-unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const {
+unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const VL_MT_SAFE {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means we need to strip the filenames: ../Foo.cpp -> Foo
     return dumpLevel(V3Os::filenameNonDirExt(srcfile_path));

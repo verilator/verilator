@@ -199,6 +199,8 @@ AC_PATH_PROG(PYTHON3,python3)
 if test "x$PYTHON3" = "x" ; then
    AC_MSG_ERROR([Cannot find "python3" in your PATH, please install it])
 fi
+python3_version=$($PYTHON3 --version | head -1)
+AC_MSG_RESULT([$PYTHON3 --version = $python3_version])
 
 AC_PATH_PROG(LEX,flex)
 if test "x$LEX" = "x" ; then

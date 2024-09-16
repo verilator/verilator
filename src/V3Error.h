@@ -657,7 +657,7 @@ void v3errorEndFatal(std::ostringstream& sstr)
 
 // Takes an optional "name" (as __VA_ARGS__)
 #define VL_DEFINE_DUMP(func, tag) \
-    VL_ATTR_UNUSED static int dump##func() { \
+    VL_ATTR_UNUSED static int dump##func() VL_MT_SAFE { \
         static int level = -1; \
         if (VL_UNLIKELY(level < 0)) { \
             const unsigned dumpTag = v3Global.opt.dumpLevel(tag); \

@@ -21,8 +21,11 @@ module t_case_huge_sub2 (/*AUTOARG*/
    // End of automatics
 
    // =============================
-   // Created from perl
-   // for $i (0..1023) { printf "\t10'h%03x: begin outa = 10'h%03x; outb = 2'b%02b; outc = 1'b%d; end\n", $i, rand(1024),rand(4),rand(2); };
+   // Created from Python3:
+   // for i in range(1024):
+   //     print("        10'h%03x: begin outa = 10'h%03x; outb = 2'b%d%d; outc = 1'b%d; end"
+   //           % (i, random.randint(0,1024), random.randint(0,1),
+   //              random.randint(0,1), random.randint(0,1)))
 
    always @(/*AS*/index) begin
       case (index[7:0])

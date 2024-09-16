@@ -658,7 +658,7 @@ sub new {
         pli_flags => ["-I$ENV{VERILATOR_ROOT}/include/vltstd -fPIC -shared"
                       . (($^O eq "darwin" )
                          ? " -Wl,-undefined,dynamic_lookup"
-                         : " -export-dynamic")
+                         : " -rdynamic")
                       . ($opt_verbose ? " -DTEST_VERBOSE=1" : "")
                       . " -o $self->{obj_dir}/libvpi.so"],
         tool_c_flags => [],
@@ -1024,7 +1024,7 @@ sub lint {
     my $self = (ref $_[0] ? shift : $Self);
     my %param = (#
                  %{$self},  # Default arguments are from $self
-                 # Lint specific default overrides
+                 # Lint-specific default overrides
                  make_main => 0,
                  make_top_shell => 0,
                  verilator_flags2 => ["--lint-only"],
@@ -2391,6 +2391,7 @@ sub files_identical {
                 !/^- [^\n]+\n/
                     && !/^- [a-z.0-9]+:\d+:[^\n]+\n/
                     && !/^-node:/
+                    && !/^Aborted \(core dumped\)/
                     && !/^dot [^\n]+\n/
                     && !/^In file: .*\/sc_.*:\d+/
                     && !/^libgcov.*/

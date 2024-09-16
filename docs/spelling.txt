@@ -74,6 +74,7 @@ Deepa
 Defparams
 Delm
 Denio
+Deniz
 Deprecations
 Deroo
 Desai
@@ -149,6 +150,7 @@ Grulfen
 Gu
 Gunter
 Guo
+Güzel
 Hameed
 Hao
 Haojin
@@ -1112,4 +1114,3 @@ zdave
 Øyvind
 Алексеевич
 Исаак
-

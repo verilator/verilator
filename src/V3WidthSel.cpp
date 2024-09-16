@@ -215,6 +215,24 @@ class WidthSelVisitor final : public VNVisitor {
         }
     }
 
+    static bool isPossibleWrite(AstNodeExpr* nodep) {
+        AstNode* abovep = nodep->firstAbovep();
+        if (AstNodeAssign* const assignp = VN_CAST(abovep, NodeAssign)) {
+            // On an assign LHS, assume a write
+            return assignp->lhsp() == nodep;
+        }
+        if (AstMethodCall* const methodCallp = VN_CAST(abovep, MethodCall)) {
+            // A method call can write
+            return methodCallp->fromp() == nodep;
+        }
+        if (AstNodePreSel* const preSelp = VN_CAST(abovep, NodePreSel)) {
+            // If we're not selected from, it's not a write (we're the index)
+            if (preSelp->fromp() != nodep) return false;
+        }
+        AstNodeExpr* exprp = VN_CAST(abovep, NodeExpr);
+        return exprp ? isPossibleWrite(exprp) : false;
+    }
+
     // VISITORS
     // If adding new visitors, ensure V3Width's visit(TYPE) calls into here
 
@@ -282,7 +300,9 @@ class WidthSelVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (const AstDynArrayDType* const adtypep = VN_CAST(ddtypep, DynArrayDType)) {
             // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
-            AstCMethodHard* const newp = new AstCMethodHard{nodep->fileline(), fromp, "at", rhsp};
+            const char* methodName = isPossibleWrite(nodep) ? "atWrite" : "at";
+            AstCMethodHard* const newp
+                = new AstCMethodHard{nodep->fileline(), fromp, methodName, rhsp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
             if (debug() >= 9) newp->dumpTree("-  SELBTq: ");
             nodep->replaceWith(newp);
@@ -290,10 +310,12 @@ class WidthSelVisitor final : public VNVisitor {
         } else if (const AstQueueDType* const adtypep = VN_CAST(ddtypep, QueueDType)) {
             // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
             AstCMethodHard* newp;
+            const char* methodName = isPossibleWrite(nodep) ? "atWriteAppend" : "at";
             if (AstNodeExpr* const backnessp = selQueueBackness(rhsp)) {
-                newp = new AstCMethodHard{nodep->fileline(), fromp, "atBack", backnessp};
+                newp = new AstCMethodHard{nodep->fileline(), fromp,
+                                          std::string(methodName) + "Back", backnessp};
             } else {
-                newp = new AstCMethodHard{nodep->fileline(), fromp, "at", rhsp};
+                newp = new AstCMethodHard{nodep->fileline(), fromp, methodName, rhsp};
             }
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
             if (debug() >= 9) newp->dumpTree("-  SELBTq: ");

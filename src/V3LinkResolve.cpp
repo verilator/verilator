@@ -113,14 +113,7 @@ class LinkResolveVisitor final : public VNVisitor {
         // NodeTask: Remember its name for later resolution
         if (m_underGenerate) nodep->underGenerate(true);
         // Remember the existing symbol table scope
-        if (m_classp) {
-            if (nodep->name() == "randomize" || nodep->name() == "srandom") {
-                nodep->v3error(nodep->prettyNameQ()
-                               << " is a predefined class method; redefinition not allowed"
-                                  " (IEEE 1800-2023 18.6.3)");
-            }
-            nodep->classMethod(true);
-        }
+        if (m_classp) nodep->classMethod(true);
         // V3LinkDot moved the isExternDef into the class, the extern proto was
         // checked to exist, and now isn't needed
         nodep->isExternDef(false);
@@ -376,6 +369,7 @@ class LinkResolveVisitor final : public VNVisitor {
         expectFormat(nodep, nodep->text(), nodep->exprsp(), true);
     }
     void visit(AstSFormatF* nodep) override {
+        if (nodep->user2SetOnce()) return;
         iterateChildren(nodep);
         // Cleanup old-school displays without format arguments
         if (!nodep->hasFormat()) {

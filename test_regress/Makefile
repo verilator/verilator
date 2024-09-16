@@ -48,30 +48,30 @@ DRIVER_HASHSET ?=
 
 .PHONY: test
 test:
-	$(PERL) driver.pl $(DRIVER_FLAGS) $(SCENARIOS) $(DRIVER_HASHSET)
+	$(PYTHON3) driver.py $(DRIVER_FLAGS) $(SCENARIOS) $(DRIVER_HASHSET)
 
 ######################################################################
 
 vcs:
-	$(PERL) driver.pl $(DRIVER_FLAGS) --vcs --stop
+	$(PYTHON3) driver.py $(DRIVER_FLAGS) --vcs --stop
 
 ######################################################################
 
 nc:
-	$(PERL) driver.pl $(DRIVER_FLAGS) --nc --stop
+	$(PYTHON3) driver.py $(DRIVER_FLAGS) --nc --stop
 
 ######################################################################
 
 vlt:
-	$(PERL) driver.pl $(DRIVER_FLAGS) --vlt --stop
+	$(PYTHON3) driver.py $(DRIVER_FLAGS) --vlt --stop
 
 vltmt:
-	$(PERL) driver.pl $(DRIVER_FLAGS) --vltmt --stop
+	$(PYTHON3) driver.py $(DRIVER_FLAGS) --vltmt --stop
 
 ######################################################################
 
 random:
-	$(PERL) driver.pl $(DRIVER_FLAGS) --optimize : --stop
+	$(PYTHON3) driver.py $(DRIVER_FLAGS) --optimize : --stop
 
 random_forever:
 	while ( VERILATOR_NO_DEBUG=1 CPPFLAGS_ADD=-Wno-error $(MAKE) random ) ; do \

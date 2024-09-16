@@ -19,6 +19,8 @@ module t (/*AUTOARG*/);
       if (q.size() != 3) $stop;
       q.push_front(0);
       if (q.size() != 3) $stop;
+      q[3] = -1;
+      if (q.size() != 3) $stop;
       if (q[0] != 0) $stop;
       if (q[1] != 1) $stop;
       if (q[2] != 2) $stop;

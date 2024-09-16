@@ -69,6 +69,7 @@
 #include "V3Graph.h"
 #include "V3MemberMap.h"
 #include "V3Parse.h"
+#include "V3Randomize.h"
 #include "V3String.h"
 #include "V3SymTable.h"
 
@@ -1103,11 +1104,18 @@ class LinkDotFindVisitor final : public VNVisitor {
         VL_RESTORER(m_curSymp);
         VSymEnt* upSymp = m_curSymp;
         {
-            if (VN_IS(m_curSymp->nodep(), Class)
-                && VN_AS(m_curSymp->nodep(), Class)->isInterfaceClass() && !nodep->pureVirtual()
-                && !nodep->isConstructor()) {
-                nodep->v3error("Interface class functions must be pure virtual"
-                               << " (IEEE 1800-2023 8.26): " << nodep->prettyNameQ());
+            if (VN_IS(m_curSymp->nodep(), Class)) {
+                if (VN_AS(m_curSymp->nodep(), Class)->isInterfaceClass() && !nodep->pureVirtual()
+                    && !nodep->isConstructor()) {
+                    nodep->v3error("Interface class functions must be pure virtual"
+                                   << " (IEEE 1800-2023 8.26): " << nodep->prettyNameQ());
+                }
+                if (m_statep->forPrimary()
+                    && (nodep->name() == "randomize" || nodep->name() == "srandom")) {
+                    nodep->v3error(nodep->prettyNameQ()
+                                   << " is a predefined class method; redefinition not allowed"
+                                      " (IEEE 1800-2023 18.6.3)");
+                }
             }
             // Change to appropriate package if extern declaration (vs definition)
             if (nodep->classOrPackagep()) {
@@ -2099,13 +2107,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
     // TYPES
     enum DotPosition : uint8_t {
+        // Must match ascii() method below
         DP_NONE = 0,  // Not under a DOT
         DP_PACKAGE,  // {package}:: DOT
         DP_FIRST,  // {scope-or-var} DOT
         DP_SCOPE,  // DOT... {scope-or-var} DOT
         DP_FINAL,  // [DOT...] {var-or-func-or-dtype} with no following dots
-        DP_MEMBER
-    };  // DOT {member-name} [DOT...]
+        DP_MEMBER  // DOT {member-name} [DOT...]
+    };
 
     // STATE
     LinkDotState* const m_statep;  // State, including dotted symbol table
@@ -2152,7 +2161,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_unlinkedScopep = nullptr;
         }
         string ascii() const {
-            static const char* const names[] = {"NONE", "PACKAGE", "SCOPE", "FINAL", "MEMBER"};
+            static const char* const names[]
+                = {"NONE", "PACKAGE", "FIRST", "SCOPE", "FINAL", "MEMBER"};
             std::ostringstream sstr;
             sstr << "ds=" << names[m_dotPos];
             sstr << "  dse" << cvtToHex(m_dotSymp);
@@ -2267,22 +2277,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
     }
     VSymEnt* getCreateClockingEventSymEnt(AstClocking* clockingp) {
-        if (!clockingp->eventp()) {
-            AstVar* const eventp = new AstVar{
-                clockingp->fileline(), VVarType::MODULETEMP, clockingp->name(), VFlagChildDType{},
-                new AstBasicDType{clockingp->fileline(), VBasicDTypeKwd::EVENT}};
-            eventp->lifetime(VLifetime::STATIC);
-            clockingp->eventp(eventp);
-            // Trigger the clocking event in Observed (IEEE 1800-2023 14.13)
-            clockingp->addNextHere(new AstAlwaysObserved{
-                clockingp->fileline(),
-                new AstSenTree{clockingp->fileline(), clockingp->sensesp()->cloneTree(false)},
-                new AstFireEvent{clockingp->fileline(),
-                                 new AstVarRef{clockingp->fileline(), eventp, VAccess::WRITE},
-                                 false}});
-            v3Global.setHasEvents();
-        }
-        AstVar* const eventp = clockingp->eventp();
+        AstVar* const eventp = clockingp->ensureEventp(true);
         if (!eventp->user1p()) eventp->user1p(new VSymEnt{m_statep->symsp(), eventp});
         return reinterpret_cast<VSymEnt*>(eventp->user1p());
     }
@@ -3423,6 +3418,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
                 }
+            }
+            if (first && nodep->name() == "randomize" && VN_IS(m_modp, Class)) {
+                // need special handling to avoid falling back to std::randomize
+                VMemberMap memberMap;
+                AstFunc* const randFuncp = V3Randomize::newRandomizeFunc(
+                    memberMap, VN_AS(m_modp, Class), nodep->name(), true, true);
+                nodep->taskp(randFuncp);
+                m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), randFuncp, m_modp);
             }
             VSymEnt* const foundp
                 = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, first);

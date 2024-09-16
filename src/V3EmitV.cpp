@@ -375,7 +375,10 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         iterateAndNextConstNull(nodep->lhsp());
         puts(";\n");
     }
-    void visit(AstStop* nodep) override { putfs(nodep, "$stop;\n"); }
+    void visit(AstStop* nodep) override {
+        emitVerilogFormat(nodep, nodep->emitVerilog());
+        puts(";\n");
+    }
     void visit(AstFinish* nodep) override { putfs(nodep, "$finish;\n"); }
     void visit(AstStmtExpr* nodep) override {
         iterateConst(nodep->exprp());

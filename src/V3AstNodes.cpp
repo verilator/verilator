@@ -327,6 +327,24 @@ AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* l
     return new AstLogAnd{fileline(), ap, bp};
 }
 
+AstVar* AstClocking::ensureEventp(bool childDType) {
+    if (!eventp()) {
+        AstVar* const evp
+            = childDType ? new AstVar{fileline(), VVarType::MODULETEMP, m_name, VFlagChildDType{},
+                                      new AstBasicDType{fileline(), VBasicDTypeKwd::EVENT}}
+                         : new AstVar{fileline(), VVarType::MODULETEMP, m_name,
+                                      findBasicDType(VBasicDTypeKwd::EVENT)};
+        evp->lifetime(VLifetime::STATIC);
+        eventp(evp);
+        // Trigger the clocking event in Observed (IEEE 1800-2023 14.13)
+        addNextHere(new AstAlwaysObserved{
+            fileline(), new AstSenTree{fileline(), sensesp()->cloneTree(false)},
+            new AstFireEvent{fileline(), new AstVarRef{fileline(), evp, VAccess::WRITE}, false}});
+        v3Global.setHasEvents();
+    }
+    return eventp();
+}
+
 void AstConsDynArray::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (lhsIsValue()) str << " [LVAL]";
@@ -2681,6 +2699,14 @@ void AstFork::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "joinType", joinType().ascii());
     dumpJsonGen(str);
 }
+void AstStop::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    if (isFatal()) str << " [FATAL]";
+}
+void AstStop::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, isFatal);
+    dumpJsonGen(str);
+}
 void AstTraceDecl::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     if (code()) str << " [code=" << code() << "]";
@@ -2793,6 +2819,7 @@ void AstCMethodHard::setPurity() {
                                                           {"assign", false},
                                                           {"at", true},
                                                           {"atBack", true},
+                                                          {"atWrite", true},
                                                           {"awaitingCurrentTime", true},
                                                           {"clear", false},
                                                           {"clearFired", false},
@@ -2856,6 +2883,16 @@ void AstCMethodHard::setPurity() {
                                                           {"word", true},
                                                           {"write_var", false}};
 
+    if (name() == "atWriteAppend" || name() == "atWriteAppendBack") {
+        m_pure = false;
+        // Treat atWriteAppend as pure if the argument is a loop iterator
+        if (AstNodeExpr* const argp = pinsp()) {
+            if (AstVarRef* const varrefp = VN_CAST(argp, VarRef)) {
+                if (varrefp->varp()->isUsedLoopIdx()) m_pure = true;
+            }
+        }
+        return;
+    }
     auto isPureIt = isPureMethod.find(name());
     UASSERT_OBJ(isPureIt != isPureMethod.end(), this, "Unknown purity of method " + name());
     m_pure = isPureIt->second;
@@ -2870,6 +2907,15 @@ void AstCUse::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
 }
 
+static AstDelay* getLhsNetDelayRecurse(const AstNodeExpr* const nodep) {
+    if (const AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
+        if (refp->varp()->delayp()) return refp->varp()->delayp();
+    } else if (const AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+        return getLhsNetDelayRecurse(selp->fromp());
+    }
+    return nullptr;
+}
+AstDelay* AstAssignW::getLhsNetDelay() const { return getLhsNetDelayRecurse(lhsp()); }
 AstAlways* AstAssignW::convertToAlways() {
     const bool hasTimingControl = isTimingControl();
     AstNodeExpr* const lhs1p = lhsp()->unlinkFrBack();
