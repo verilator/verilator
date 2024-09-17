@@ -787,10 +787,11 @@ class CallAnnotationsValidator:
         ]:
             if node.is_definition():
                 return self.process_function_definition(node)
-            # else:
             return self.process_function_declaration(node)
 
-        return self.iterate_children(node.get_children(), self.dispatch_node)
+        result = self.iterate_children(node.get_children(), self.dispatch_node)
+        self._base_func_declarations = {}
+        return result
 
     def process_translation_unit(self, translation_unit: clang.cindex.TranslationUnit):
         self._level += 1

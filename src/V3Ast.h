@@ -2362,8 +2362,9 @@ public:
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicRangeDType(const VNumRange& range, int widthMin,
-                                      VSigning numeric) const;
-    AstNodeDType* findBitRangeDType(const VNumRange& range, int widthMin, VSigning numeric) const;
+                                      VSigning numeric) const VL_MT_STABLE;
+    AstNodeDType* findBitRangeDType(const VNumRange& range, int widthMin,
+                                    VSigning numeric) const VL_MT_STABLE;
     AstNodeDType* findBasicDType(VBasicDTypeKwd kwd) const;
     static AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
