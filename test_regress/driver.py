@@ -2799,7 +2799,7 @@ for arg in rest:
 if Args.debug:
     Arg_Driver_Verilator_Flags.append("--debug --no-skip-identical")
     logging.basicConfig(level=logging.DEBUG)
-    logging.info("In driver.py, ARGV=" + pformat(sys.argv))
+    logging.info("In driver.py, ARGV=" + ' '.join(sys.argv))
 
 if Args.golden:
     os.environ['HARNESS_UPDATE_GOLDEN'] = '1'
