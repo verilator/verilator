@@ -51,9 +51,45 @@ class unconstrained_unpacked_array_test;
 
 endclass
 
+class unconstrained_dynamic_array_test;
+
+  rand int dynamic_array_1d[];
+  rand int dynamic_array_2d[][];
+
+  function new();
+    // Initialize 1D dynamic array
+    dynamic_array_1d = new[5];
+    foreach(dynamic_array_1d[i]) begin
+      dynamic_array_1d[i] = 'h0 + i;
+    end
+
+    // Initialize 2D dynamic array
+    dynamic_array_2d = new[3];
+    foreach(dynamic_array_2d[i]) begin
+      dynamic_array_2d[i] = new[3];
+      foreach(dynamic_array_2d[i][j]) begin
+        dynamic_array_2d[i][j] = 'h0 + i + j;
+      end
+    end
+  endfunction
+
+  function void check_randomization();
+    foreach (dynamic_array_1d[i]) begin
+      `check_rand(this, dynamic_array_1d[i])
+    end
+    foreach (dynamic_array_2d[i]) begin
+      foreach (dynamic_array_2d[i][j]) begin
+        `check_rand(this, dynamic_array_2d[i][j])
+      end
+    end
+  endfunction
+
+endclass
+
 module t_randomize_array;
   unconstrained_packed_array_test  packed_class;
   unconstrained_unpacked_array_test unpacked_class;
+  unconstrained_dynamic_array_test dynamic_class;
 
   initial begin
     // Test 1: Packed Array Unconstrained Constrained Test
@@ -66,6 +102,11 @@ module t_randomize_array;
     unpacked_class = new();
     repeat(2) begin
       unpacked_class.check_randomization();
+    end
+
+    dynamic_class = new();
+    repeat(2) begin
+      dynamic_class.check_randomization();
     end
 
     $write("*-* All Finished *-*\n");
