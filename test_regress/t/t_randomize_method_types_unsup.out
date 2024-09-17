@@ -7,5 +7,8 @@
                                                            : ... note: In instance 't'
     8 |    rand int assocarr[string];
       |             ^~~~~~~~
-%Error: Verilator internal fault, sorry. Suggest trying --debug --gdbbt
-%Error: Command Failed
+%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:10:13: Unsupported: random member variable with the type of the containing class
+                                                            : ... note: In instance 't'
+   10 |    rand Cls cls;
+      |             ^~~
+%Error: Exiting due to
