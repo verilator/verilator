@@ -709,39 +709,39 @@ t/t_dist_attributes/mt_enabled.h:124:    []                                     
 t/t_dist_attributes/mt_enabled.cpp:75:   [requires]                             TestClass::scm_ua_VL_REQUIRES(VerilatedMutex &)
 
 %Error: "TestClassConstructor::safe_function_calls_constructor_global_object_bad()" is stable_tree but calls non-stable_tree or non-mtsafe
-t/t_dist_attributes/mt_enabled.h:405:    [stable_tree]                          TestClassConstructor::safe_function_calls_constructor_global_object_bad()
+t/t_dist_attributes/mt_enabled.h:426:    [stable_tree]                          TestClassConstructor::safe_function_calls_constructor_global_object_bad()
 t/t_dist_attributes/mt_enabled.h:355:    []                                       DummyClass::dummy_function()
 
 %Error: "TestClassConstructor::safe_function_calls_constructor_global_object_member_bad()" is stable_tree but calls non-stable_tree or non-mtsafe
-t/t_dist_attributes/mt_enabled.h:408:    [stable_tree]                          TestClassConstructor::safe_function_calls_constructor_global_object_member_bad()
+t/t_dist_attributes/mt_enabled.h:429:    [stable_tree]                          TestClassConstructor::safe_function_calls_constructor_global_object_member_bad()
 t/t_dist_attributes/mt_enabled.h:350:    []                                       DummyClass2::dummy_function2()
 
 %Error: "TestClassConstructor::safe_function_calls_constructor_local_calls_class_global_bad()" is mtsafe but calls non-mtsafe function(s)
-t/t_dist_attributes/mt_enabled.h:402:    [mt_safe]                              TestClassConstructor::safe_function_calls_constructor_local_calls_class_global_bad()
+t/t_dist_attributes/mt_enabled.h:423:    [mt_safe]                              TestClassConstructor::safe_function_calls_constructor_local_calls_class_global_bad()
 t/t_dist_attributes/mt_enabled.h:280:    []                                       StaticClass::static_class_function()
 
 %Error: "TestClassConstructor::safe_function_calls_constructor_local_calls_global_bad()" is mtsafe but calls non-mtsafe function(s)
-t/t_dist_attributes/mt_enabled.h:399:    [mt_safe]                              TestClassConstructor::safe_function_calls_constructor_local_calls_global_bad()
+t/t_dist_attributes/mt_enabled.h:420:    [mt_safe]                              TestClassConstructor::safe_function_calls_constructor_local_calls_global_bad()
 t/t_dist_attributes/mt_enabled.h:276:    []                                       static_function()
 
 %Error: "TestClassConstructor::safe_function_calls_constructor_with_unsafepointer_bad()" is mtsafe but calls non-mtsafe function(s)
-t/t_dist_attributes/mt_enabled.h:391:    [mt_safe]                              TestClassConstructor::safe_function_calls_constructor_with_unsafepointer_bad()
+t/t_dist_attributes/mt_enabled.h:412:    [mt_safe]                              TestClassConstructor::safe_function_calls_constructor_with_unsafepointer_bad()
 t/t_dist_attributes/mt_enabled.h:311:    [mt_unsafe]                              UnsafeFunction::unsafe_function()
 
 %Error: "TestClassConstructor::safe_function_calls_constructor_with_unsafereference_bad()" is mtsafe but calls non-mtsafe function(s)
-t/t_dist_attributes/mt_enabled.h:395:    [mt_safe]                              TestClassConstructor::safe_function_calls_constructor_with_unsafereference_bad()
+t/t_dist_attributes/mt_enabled.h:416:    [mt_safe]                              TestClassConstructor::safe_function_calls_constructor_with_unsafereference_bad()
 t/t_dist_attributes/mt_enabled.h:311:    [mt_unsafe]                              UnsafeFunction::unsafe_function()
 
 %Error: "TestClassConstructor::safe_function_local_function_global_bad()" is mtsafe but calls non-mtsafe function(s)
-t/t_dist_attributes/mt_enabled.h:377:    [mt_safe]                              TestClassConstructor::safe_function_local_function_global_bad()
+t/t_dist_attributes/mt_enabled.h:398:    [mt_safe]                              TestClassConstructor::safe_function_local_function_global_bad()
 t/t_dist_attributes/mt_enabled.h:276:    []                                       static_function()
 
 %Error: "TestClassConstructor::safe_function_static_constructor_bad()" is mtsafe but calls non-mtsafe function(s)
-t/t_dist_attributes/mt_enabled.h:374:    [mt_safe]                              TestClassConstructor::safe_function_static_constructor_bad()
+t/t_dist_attributes/mt_enabled.h:395:    [mt_safe]                              TestClassConstructor::safe_function_static_constructor_bad()
 t/t_dist_attributes/mt_enabled.h:276:    []                                       static_function()
 
 %Error: "TestClassConstructor::safe_function_unsafe_constructor_bad()" is mtsafe but calls non-mtsafe function(s)
-t/t_dist_attributes/mt_enabled.h:371:    [mt_safe]                              TestClassConstructor::safe_function_unsafe_constructor_bad()
+t/t_dist_attributes/mt_enabled.h:392:    [mt_safe]                              TestClassConstructor::safe_function_unsafe_constructor_bad()
 t/t_dist_attributes/mt_enabled.h:285:    [mt_unsafe]                              ConstructorCallsUnsafeLocalFunction::unsafe_function()
 
 %Error: "UnannotatedMtDisabledClass::unannotatedMtDisabledMethodBad()" defined in a file marked as VL_MT_DISABLED_CODE_UNIT has declaration(s) without VL_MT_DISABLED annotation
@@ -753,6 +753,14 @@ t/t_dist_attributes/mt_disabled.h:27:    []                                     
 t/t_dist_attributes/mt_disabled.h:28:    [mt_disabled, excludes]                UnannotatedMtDisabledClass::unannotatedMtDisabledStaticMethodBad() [declaration]
 t/t_dist_attributes/mt_disabled.cpp:26:  []                                     UnannotatedMtDisabledClass::unannotatedMtDisabledStaticMethodBad()
 t/t_dist_attributes/mt_disabled.h:28:    []                                       UnannotatedMtDisabledClass::unannotatedMtDisabledStaticMethodBad()
+
+%Error: "VirtualInheritance::Base1::func(int, int)" is pure but calls non-pure function(s)
+t/t_dist_attributes/mt_enabled.h:382:    [pure]                                 VirtualInheritance::Base1::func(int, int)
+t/t_dist_attributes/mt_enabled.h:384:    []                                       VirtualInheritance::Derived::notPure()
+
+%Error: "VirtualInheritance::Base2::func()" is pure but calls non-pure function(s)
+t/t_dist_attributes/mt_enabled.h:383:    [pure]                                 VirtualInheritance::Base2::func()
+t/t_dist_attributes/mt_enabled.h:384:    []                                       VirtualInheritance::Derived::notPure()
 
 %Error: "ifh_test_caller_func_VL_MT_SAFE(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)
 t/t_dist_attributes/mt_enabled.cpp:53:   [mt_safe]                              ifh_test_caller_func_VL_MT_SAFE(VerilatedMutex &)
@@ -1175,4 +1183,4 @@ t/t_dist_attributes/mt_disabled.h:20:    [mt_disabled, excludes]                
 t/t_dist_attributes/mt_disabled.cpp:20:  []                                     unannotatedMtDisabledFunctionBad()
 t/t_dist_attributes/mt_disabled.h:20:    []                                       unannotatedMtDisabledFunctionBad()
 t/t_dist_attributes/mt_disabled.h:23:    []                                       unannotatedMtDisabledFunctionBad()
-Number of functions reported unsafe: 229
+Number of functions reported unsafe: 230
