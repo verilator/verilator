@@ -2414,6 +2414,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void visit(AstCell* nodep) override {
         // Cell: Recurse inside or cleanup not founds
         checkNoDot(nodep);
+        VL_RESTORER(m_usedPins);
         m_usedPins.clear();
         UASSERT_OBJ(nodep->modp(), nodep,
                     "Cell has unlinked module");  // V3LinkCell should have errored out
@@ -2443,6 +2444,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void visit(AstClassRefDType* nodep) override {
         // Cell: Recurse inside or cleanup not founds
         checkNoDot(nodep);
+        VL_RESTORER(m_usedPins);
         m_usedPins.clear();
         UASSERT_OBJ(nodep->classp(), nodep, "ClassRef has unlinked class");
         UASSERT_OBJ(m_statep->forPrimary() || !nodep->paramsp(), nodep,
@@ -3054,6 +3056,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void visit(AstClassOrPackageRef* nodep) override {
         // Class: Recurse inside or cleanup not founds
         // checkNoDot not appropriate, can be under a dot
+        VL_RESTORER(m_usedPins);
         m_usedPins.clear();
         UASSERT_OBJ(m_statep->forPrimary() || VN_IS(nodep->classOrPackageNodep(), ParamTypeDType)
                         || nodep->classOrPackagep(),
@@ -4002,6 +4005,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             UASSERT_OBJ(ifacep, nodep, "Port parameters of AstIfaceRefDType without ifacep()");
             if (ifacep->dead()) return;
             checkNoDot(nodep);
+            VL_RESTORER(m_usedPins);
             m_usedPins.clear();
             VL_RESTORER(m_pinSymp);
             m_pinSymp = m_statep->getNodeSym(ifacep);
