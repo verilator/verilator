@@ -38,7 +38,8 @@ ccjson_file = test.obj_dir + "/compile_commands.json"
 aroot_dir = os.path.abspath(root)
 srcs_dir = os.path.abspath("./t/t_dist_attributes")
 common_args = [
-    "clang++", "-std=c++14", "-I" + aroot_dir + "/include", "-I" + aroot_dir + "/src", "-c"
+    "clang++", "-std=c++14", "-I" + aroot_dir +
+    "/include", "-I" + aroot_dir + "/src", "-c"
 ]
 
 ccjson = [
@@ -74,7 +75,7 @@ test.run(
     # headers from the `../include` directory.
     cmd=[
         "python3", aroot + "/nodist/clang_check_attributes", "--verilator-root=.",
-        "--compile-commands-dir=" + test.obj_dir, srcfiles_str
+        "--compile-commands-dir=" + test.obj_dir, "--jobs=1", srcfiles_str
     ])
 
 test.files_identical(test.run_log_filename, test.golden_filename)
