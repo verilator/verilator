@@ -173,11 +173,10 @@ class EmitCImp final : EmitCFunc {
             // Unfortunately we have some lint checks here, so we can't just skip processing.
             // We should move them to a different stage.
             const string filename = VL_DEV_NULL;
-            AstCFile* const file = createCFile(filename, /* slow: */ m_slow, /* source: */ true);
-            m_cfilesr.push_back(file);
+            AstCFile* const filep = createCFile(filename, /* slow: */ m_slow, /* source: */ true);
+            m_cfilesr.push_back(filep);
             V3OutCFile* const ofilep = new V3OutCFile{filename};
-            AstCFile* const afilep = file;
-            setOutputFile(ofilep, afilep);
+            setOutputFile(ofilep, filep);
         } else {
             string filename = v3Global.opt.makeDir() + "/" + prefixNameProtect(m_fileModp);
             if (!subFileName.empty()) {
@@ -186,12 +185,11 @@ class EmitCImp final : EmitCFunc {
             }
             if (m_slow) filename += "__Slow";
             filename += ".cpp";
-            AstCFile* const file = createCFile(filename, /* slow: */ m_slow, /* source: */ true);
-            m_cfilesr.push_back(file);
+            AstCFile* const filep = createCFile(filename, /* slow: */ m_slow, /* source: */ true);
+            m_cfilesr.push_back(filep);
             V3OutCFile* const ofilep
                 = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
-            AstCFile* const afilep = file;
-            setOutputFile(ofilep, afilep);
+            setOutputFile(ofilep, filep);
         }
 
         putsHeader();
