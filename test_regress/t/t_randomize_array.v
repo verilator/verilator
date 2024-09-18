@@ -86,10 +86,31 @@ class unconstrained_dynamic_array_test;
 
 endclass
 
+class unconstrained_struct_with_array_test;
+
+  typedef struct {
+    rand bit [7:0] byte_array[4];
+  } struct_with_array_t;
+
+  rand struct_with_array_t struct_with_array;
+
+  function new();
+    struct_with_array = '{'{default: 'h0}};
+  endfunction
+
+  function void check_randomization();
+    foreach (struct_with_array.byte_array[i]) begin
+      `check_rand(this, struct_with_array.byte_array[i])
+    end
+  endfunction
+
+endclass
+
 module t_randomize_array;
   unconstrained_packed_array_test  packed_class;
   unconstrained_unpacked_array_test unpacked_class;
   unconstrained_dynamic_array_test dynamic_class;
+  unconstrained_struct_with_array_test struct_with_array_class;
 
   initial begin
     // Test 1: Packed Array Unconstrained Constrained Test
@@ -104,9 +125,17 @@ module t_randomize_array;
       unpacked_class.check_randomization();
     end
 
+    // Test 3: Dynamic Array Unconstrained Constrained Test
     dynamic_class = new();
     repeat(2) begin
       dynamic_class.check_randomization();
+    end
+
+    // Test 4: Struct Containing Array Test
+
+    struct_with_array_class = new();
+    repeat(2) begin
+      struct_with_array_class.check_randomization();
     end
 
     $write("*-* All Finished *-*\n");

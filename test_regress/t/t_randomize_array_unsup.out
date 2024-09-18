@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_randomize_array_unsup.v:21:1: Unsupported: CreateArrayForeachLoop currently does not supportdata type. (Multiple-Member-Struct Array's unconstrained randomization is not fully supported)
+   21 | class unconstrained_struct_array_test;
+      | ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
