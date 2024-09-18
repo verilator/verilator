@@ -28,6 +28,8 @@
 #include "verilated.h"
 
 #include <ostream>
+#include <iostream>
+#include <sstream>
 
 //=============================================================================
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
@@ -37,16 +39,19 @@ class VlRandomVar VL_NOT_FINAL {
     void* const m_datap;  // Reference to variable data
     const int m_width;  // Variable width in bits
     const std::uint32_t m_randModeIdx;  // rand_mode index
+    const int m_dimension;  //Variable dimension, default is 0
 
 public:
-    VlRandomVar(const char* name, int width, void* datap, std::uint32_t randModeIdx)
+    VlRandomVar(const char* name, int width, void* datap, int dimension, std::uint32_t randModeIdx)
         : m_name{name}
         , m_datap{datap}
         , m_width{width}
+        , m_dimension{dimension}
         , m_randModeIdx{randModeIdx} {}
     virtual ~VlRandomVar() = default;
     const char* name() const { return m_name; }
     int width() const { return m_width; }
+    int dimension() const { return m_dimension; }
     virtual void* datap(int idx) const { return m_datap; }
     std::uint32_t randModeIdx() const { return m_randModeIdx; }
     bool randModeIdxNone() const { return randModeIdx() == std::numeric_limits<unsigned>::max(); }
@@ -60,8 +65,8 @@ public:
 template <typename T>
 class VlRandomQueueVar final : public VlRandomVar {
 public:
-    VlRandomQueueVar(const char* name, int width, void* datap, std::uint32_t randModeIdx)
-        : VlRandomVar{name, width, datap, randModeIdx} {}
+    VlRandomQueueVar(const char* name, int width, void* datap, int dimension, std::uint32_t randModeIdx)
+        : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
     void* datap(int idx) const override {
         return &static_cast<T*>(VlRandomVar::datap(idx))->atWrite(idx);
     }
@@ -90,6 +95,97 @@ public:
     }
 };
 
+template <typename T>
+class VlRandomArrayVar final : public VlRandomVar {
+public:
+    VlRandomArrayVar(const char* name, int width, void* datap, int dimension, std::uint32_t randModeIdx)
+        : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
+    
+    void* datap(int idx) const override {
+        std::cout << "datap: " << std::endl;
+        return &static_cast<T*>(VlRandomVar::datap(idx))->operator[](idx);
+    }
+
+    void emitSelect(std::ostream& s, const std::vector<int>& indices) const {
+        
+        std::cout << "emitSelect called with indices: ";
+        for (const auto& idx : indices) {
+            std::cout << idx << " ";
+        }
+        std::cout << std::endl;
+
+        for (size_t idx = 0; idx < indices.size(); ++idx) {
+            s << "(select ";
+        }
+        s << name();
+
+        for (size_t idx = 0; idx < indices.size(); ++idx) {
+            s << " #x";
+            for (int j = 28; j >= 0; j -= 4) {
+                s << "0123456789abcdef"[(indices[idx] >> j) & 0xf];
+            }
+            s << ")";
+        }
+}
+
+    void emitGetValue(std::ostream& s) const override {
+        auto var = static_cast<const T*>(datap(0));
+        int total_dimensions = dimension();
+
+        std::vector<int> lengths;
+
+        for (int dim = 0; dim < total_dimensions; dim++) {
+            int len = var->find_length(dim);
+            lengths.push_back(len);
+            std::cout << "Length of dimension " << (dim) << ": " << len << std::endl;
+        }
+
+        std::vector<int> indices(total_dimensions, 0);
+        //std::string selectStatements;
+        while (true) {
+            //std::ostringstream selectStatementStream;
+            //emitSelect(selectStatementStream, indices);
+            //selectStatements += selectStatementStream.str();
+            emitSelect(s, indices);
+            int currentDimension = total_dimensions - 1;
+            while (currentDimension >= 0 && ++indices[currentDimension] >= lengths[currentDimension]) {
+                indices[currentDimension] = 0;
+                --currentDimension;
+            }
+            if (currentDimension < 0) {
+                break;
+            }
+        }
+        //std::cout << selectStatements;
+    }
+
+    void emitType(std::ostream& s) const override {
+        if (dimension() > 0) {
+            // Unpacked array with one or more dimensions
+            for (int i = 0; i < dimension(); ++i) { s << "(Array (_ BitVec 32) "; }
+            s << "(_ BitVec " << width() << ")";
+            for (int i = 0; i < dimension(); ++i) { s << ")"; }
+        } else {
+            // Invalid dimension, dimension < 0
+            VL_WARN_MT(__FILE__, __LINE__, "randomize", "Invalid dimension detected");
+        }
+    }
+    int totalWidth() const override {
+        const int length = static_cast<T*>(VlRandomVar::datap(0))->size();
+        std::cout << "length:= " << length << std::endl;
+        return width() * length;
+    }
+    /*
+    void emitExtract(std::ostream& s, int i) const override {
+        const int j = i / width();
+        i = i % width();
+        s << " ((_ extract " << i << ' ' << i << ')';
+        emitSelect(s, j);
+        s << ')';
+    }
+    */
+    
+};
 //=============================================================================
 // VlRandomizer is the object holding constraints and variable references.
 
@@ -113,19 +209,44 @@ public:
     // Finds the next solution satisfying the constraints
     bool next(VlRNG& rngr);
     template <typename T>
-    void write_var(T& var, int width, const char* name,
+    void write_var(T& var, int width, const char* name, int dimension,
                    std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
         // TODO: make_unique once VlRandomizer is per-instance not per-ref
-        m_vars[name] = std::make_shared<const VlRandomVar>(name, width, &var, randmodeIdx);
+        m_vars[name] = std::make_shared<const VlRandomVar>(name, width, &var, dimension, randmodeIdx);
     }
     template <typename T>
-    void write_var(VlQueue<T>& var, int width, const char* name,
+    void write_var(VlQueue<T>& var, int width, const char* name, int dimension,
                    std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
         m_vars[name]
-            = std::make_shared<const VlRandomQueueVar<VlQueue<T>>>(name, width, &var, randmodeIdx);
+            = std::make_shared<const VlRandomQueueVar<VlQueue<T>>>(name, width, &var, dimension, randmodeIdx);
+        std::cout << "queue-Unpacked: " << name << std::endl;
     }
+    
+    template <typename T, std::size_t N>
+    void write_var(VlUnpacked<T, N>& var, int width, const char* name, int dimension,
+                   std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
+
+        if (m_vars.find(name) != m_vars.end()) return;
+        /*
+        if (dimension > 1){
+            for (int i = 0; i < N; ++i) {
+                std::string element_name = std::string(name) + "[" + std::to_string(i) + "]";
+                write_var(var[i], width, element_name.c_str(), dimension - 1, randmodeIdx);
+            }
+        } else {
+        
+            m_vars[name] = std::make_shared<const VlRandomArrayVar<VlUnpacked<T, N>>>(name, width, &var, dimension, randmodeIdx);
+
+            std::cout << "Array-Unpacked: " << m_vars[name] << "N = " << N << ", Dimension = " << dimension << ", Name = " << name << std::endl;
+        }
+        */
+        m_vars[name] = std::make_shared<const VlRandomArrayVar<VlUnpacked<T, N>>>(name, width, &var, dimension, randmodeIdx);
+
+        std::cout << "Array-Unpacked: " << m_vars[name] << "N = " << N << ", Dimension = " << dimension << ", Name = " << name << std::endl;
+    }
+    
     void hard(std::string&& constraint);
     void clear();
     void set_randmode(const VlQueue<CData>& randmode) { m_randmode = &randmode; }

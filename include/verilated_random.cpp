@@ -250,6 +250,135 @@ static Process& getSolver() {
     return s_solver;
 }
 
+void copystream(std::iostream& input, std::ostream& output) {
+    std::string line;
+    while (std::getline(input, line)) {
+        output << line << "\n";
+    }
+}
+
+std::pair<std::string, bool> readUntilBalanced(std::iostream& stream) {
+    std::string result;
+    std::string token;
+    int parenCount = 0;
+    bool started = false;
+    bool endFlag = false;
+
+    while (stream >> token) {
+        for (char c : token) {
+            if (c == '(') {
+                parenCount++;
+                started = true;
+            } else if (c == ')') {
+                parenCount--;
+            }
+        }
+        result += token + " ";
+
+        if (started && parenCount <= 0) {
+            if (parenCount < 0) {
+                endFlag = true; // Indicate that we have extra closing parenthesis
+            }
+            break;
+        }
+    }
+    // Remove trailing space and return the balanced expression and end flag
+    if (!result.empty() && result.back() == ' ') {
+        result.pop_back();
+    }
+    return {result, endFlag};
+}
+
+std::string trim(const std::string& str) {
+    std::string result = str;
+    result.erase(result.find_last_not_of(" \n\r\t") + 1);
+    result.erase(0, result.find_first_not_of(" \n\r\t"));
+    // Remove trailing ')' if it exists
+    while (!result.empty() && result.back() == ')') {
+        result.pop_back();
+    }
+    return result;
+}
+struct ParsedExpr {
+    std::string name;
+    std::vector<std::string> indices;
+    std::string value;
+    bool isSelectOperation = false;
+};
+std::string extractNextToken(const std::string& expr, size_t& pos) {
+    // Skip any leading whitespace
+    while (pos < expr.size() && isspace(expr[pos])) {
+        ++pos;
+    }
+    if (pos >= expr.size()) {
+        return "";
+    }
+    // Handle nested structures by balancing parentheses
+    if (expr[pos] == '(') {
+        int parenCount = 0;
+        size_t startPos = pos;
+        do {
+            if (expr[pos] == '(') {
+                parenCount++;
+            } else if (expr[pos] == ')') {
+                parenCount--;
+            }
+            ++pos;
+        } while (pos < expr.size() && parenCount > 0);
+        return expr.substr(startPos, pos - startPos);
+    }
+
+    // Handle simple tokens (until next whitespace or parentheses)
+    size_t startPos = pos;
+    while (pos < expr.size() && !isspace(expr[pos]) && expr[pos] != '(' && expr[pos] != ')') {
+        ++pos;
+    }
+    return expr.substr(startPos, pos - startPos);
+}
+ParsedExpr parseSelectExpr(const std::string& expr, size_t& pos) {
+    ParsedExpr result;
+    result.isSelectOperation = true;
+
+    std::string token;
+    while (pos < expr.size()) {
+        token = extractNextToken(expr, pos);
+        if (token == "(select") {
+            // Recursively parse the next select expression
+            ParsedExpr innerResult = parseSelectExpr(expr, pos);
+            result.name = innerResult.name;
+            result.indices = innerResult.indices;
+        } else if (!token.empty() && token[0] != '(') {
+            result.name = token;  // The array or variable name
+        } else if (!token.empty()) {
+            result.indices.push_back(trim(token));  // The indices for the select operation
+        }
+    }
+    return result;
+}
+ParsedExpr parseExpr(const std::string& expr) {
+    ParsedExpr result;
+
+    size_t pos = 0;
+    std::string token = extractNextToken(expr, pos);
+
+    if (token == "(select") {
+        // If it's a select operation, parse it
+        result = parseSelectExpr(expr, pos);
+        std::cout << "[SELECT Parsing] Array Name: " << result.name << std::endl;
+        std::cout << "Indices: ";
+        for (const auto& idx : result.indices) {
+            std::cout << idx << " ";
+        }
+        std::cout << std::endl;
+    } else {
+        // Simple assignment (just trim and assign the result)
+        size_t nameEnd = token.find(' ');
+        result.name = token.substr(0, nameEnd);
+        result.value = trim(expr.substr(pos));
+        std::cout << "[SIMPLE Parsing] Name: " << result.name << ", Value: " << result.value << std::endl;
+    }
+    return result;
+}
 //======================================================================
 // VlRandomizer:: Methods
 
@@ -356,7 +485,8 @@ bool VlRandomizer::next(VlRNG& rngr) {
         f << "(reset)\n";
         return false;
     }
-
+    std::cout << sat << std::endl;
+    /*
     for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; i++) {
         f << "(assert ";
         randomConstraint(f, rngr, _VL_SOLVER_HASH_LEN);
@@ -364,7 +494,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
         f << "\n(check-sat)\n";
         sat = parseSolution(f);
     }
-
+    */
     f << "(reset)\n";
     return true;
 }
@@ -372,7 +502,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
 bool VlRandomizer::parseSolution(std::iostream& f) {
     std::string sat;
     do { std::getline(f, sat); } while (sat == "");
-
+    dump();
     if (sat == "unsat") return false;
     if (sat != "sat") {
         std::stringstream msg;
@@ -394,34 +524,29 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
                    "Internal: Unable to parse solver's response: invalid S-expression");
         return false;
     }
-
     while (true) {
-        f >> c;
-        if (c == ')') break;
-        if (c != '(') {
-            VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                       "Internal: Unable to parse solver's response: invalid S-expression");
-            return false;
-        }
+        auto [expr, endFlag] = readUntilBalanced(f);
+        std::cout << " Received result in parseSolution: " << expr << std::endl;
+        if (expr.empty()) break;
 
-        std::string name, idx, value;
-        f >> name;
-        if (name == "(select") {
-            f >> name;
-            std::getline(f, idx, ')');
+        ParsedExpr parsed = parseExpr(expr);
+        std::cout << " In parseSolution: " << std::endl;
+        auto it = m_vars.find(parsed.name);
+        if (it != m_vars.end()) {
+            const VlRandomVar& varr = *it->second;
+            if (parsed.isSelectOperation) {
+                std::cout << "Assigning value '" << parsed.value 
+                    << "' to array/variable '" << parsed.name 
+                    << "' at index '" << parsed.idx << "'" << std::endl;
+                varr.set(parsed.idx, parsed.value);
+            } else {
+                std::cout << "Assigning value '" << parsed.value 
+                    << "' to variable '" << parsed.name << "'" << std::endl;
+                varr.set("", parsed.value);
+            }
         }
-        std::getline(f, value, ')');
-
-        auto it = m_vars.find(name);
-        if (it == m_vars.end()) continue;
-        const VlRandomVar& varr = *it->second;
-        if (m_randmode && !varr.randModeIdxNone()) {
-            if (!(m_randmode->at(varr.randModeIdx()))) continue;
-        }
-
-        varr.set(idx, value);
+        if (endFlag) break;
     }
-
     return true;
 }
 

@@ -1322,6 +1322,21 @@ public:
     WData* data() { return &m_storage[0]; }
     const WData* data() const { return &m_storage[0]; }
 
+    std::size_t size() const { return T_Depth; }
+    // Find the length at a specific dimension
+    template <std::size_t CurrentDimension = 0>
+    int find_length(int dimension) const {
+        if (dimension == CurrentDimension) {
+            return size();
+        } else {
+            if constexpr (std::is_class_v<T_Value>) {
+                return m_storage[0].template find_length<CurrentDimension + 1>(dimension);
+            } else {
+                return size();
+            }
+        }
+    }
+
     T_Value& operator[](size_t index) { return m_storage[index]; }
     const T_Value& operator[](size_t index) const { return m_storage[index]; }
 
