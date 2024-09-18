@@ -1331,7 +1331,7 @@ class RandomizeVisitor final : public VNVisitor {
             if (VN_IS(tempElementp->dtypep()->skipRefp(), StructDType)) {
                 tempElementp->v3warn(
                     E_UNSUPPORTED, "Unsupported: CreateArrayForeachLoop currently does not support"
-                                   "data type. (Multiple-Member-Struct Array's unconstrained "
+                                   "data type. (Struct-Array unconstrained "
                                    "randomization is not fully supported)");
             }
             AstSelLoopVars* const randLoopVarp
