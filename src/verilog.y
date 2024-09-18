@@ -7312,8 +7312,6 @@ memberQualOne<qualifiers>:                      // IEEE: property_qualifier + me
 
 class_constraint<constraintp>:  // ==IEEE: class_constraint
         //                      // IEEE: constraint_declaration
-        //                      // UNSUP: We have the unsupported warning on the randomize() call, so don't bother on
-        //                      // constraint blocks. When we support randomize we need to make AST nodes for below rules
                 constraintStaticE yCONSTRAINT dynamic_override_specifiersE constraintIdNew constraint_block
                         { $$ = $4; $$->isStatic($1); $$->addItemsp($5); SYMP->popScope($$); }
         |       constraintStaticE yCONSTRAINT dynamic_override_specifiersE constraintIdNew '{' '}'
