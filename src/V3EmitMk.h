@@ -29,7 +29,6 @@ public:
     // Number of source files after which to use parallel compiles
     static const size_t PARALLEL_FILE_CNT_THRESHOLD = 128;
 
-    static void debugTestConcatenation(const char* inputFile) VL_MT_DISABLED;
     static void emitmk() VL_MT_DISABLED;
     static void emitHierVerilation(const V3HierBlockPlan* planp) VL_MT_DISABLED;
 };

@@ -1253,10 +1253,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-debug-self-test", OnOff, &m_debugSelfTest).undocumented();
     DECL_OPTION("-debug-sigsegv", CbCall, throwSigsegv).undocumented();  // See also --debug-abort
     DECL_OPTION("-debug-stack-check", OnOff, &m_debugStackCheck).undocumented();
-    DECL_OPTION("-debug-test-concatenation", CbVal, [](const char* path) VL_MT_DISABLED {
-        V3EmitMk::debugTestConcatenation(path);
-        std::exit(0);
-    }).undocumented();
     DECL_OPTION("-debug-width", OnOff, &m_debugWidth).undocumented();
     DECL_OPTION("-decoration", CbCall, [this, fl]() { decorations(fl, "medium"); });
     DECL_OPTION("-decorations", CbVal, [this, fl](const char* optp) { decorations(fl, optp); });

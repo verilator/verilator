@@ -489,7 +489,6 @@ PY_PROGRAMS = \
 	nodist/dot_importer \
 	nodist/fuzzer/actual_fail \
 	nodist/fuzzer/generate_dictionary \
-	nodist/gen_group_scores \
 	nodist/install_test \
 	nodist/log_changes \
 

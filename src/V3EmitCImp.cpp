@@ -592,7 +592,6 @@ class EmitCTrace final : EmitCFunc {
     int m_typeSplitSize = 0;  // # of cfunc nodes placed into output file
 
     // METHODS
-
     void openNextOutputFile() {
         UASSERT(!ofp(), "Output file already open");
 
@@ -705,7 +704,6 @@ class EmitCTrace final : EmitCFunc {
     }
 
     void emitTraceInitOne(AstTraceDecl* nodep, int enumNum) {
-
         if (nodep->dtypep()->basicp()->isDouble()) {
             puts("tracep->declDouble(");
         } else if (nodep->isWide()) {
@@ -780,7 +778,6 @@ class EmitCTrace final : EmitCFunc {
                 closeTypesFile();
                 openNextTypesFile();
             }
-
             enumNum = ++m_enumNum;
             m_enumNumMap[nodep] = enumNum;
             int nvals = 0;
@@ -826,7 +823,6 @@ class EmitCTrace final : EmitCFunc {
     }
 
     void emitTraceChangeOne(AstTraceInc* nodep, int arrayindex) {
-
         // Note: Both VTraceType::CHANGE and VTraceType::FULL use the 'full' methods
         const std::string func = nodep->traceType() == VTraceType::CHANGE ? "chg" : "full";
         bool emitWidth = true;
@@ -867,7 +863,6 @@ class EmitCTrace final : EmitCFunc {
     }
 
     void emitTraceValue(AstTraceInc* nodep, int arrayindex) {
-
         if (AstVarRef* const varrefp = VN_CAST(nodep->valuep(), VarRef)) {
             AstVar* const varp = varrefp->varp();
             if (varp->isEvent()) puts("&");

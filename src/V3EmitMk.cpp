@@ -35,9 +35,6 @@ public:
         std::string m_fileName;
         std::vector<std::string> m_concatenatedFilenames{};
 
-        // Concatenating file score for debugTestConcatenation
-        uint64_t m_dbgScore = 0;
-
         bool isConcatenatingFile() const { return !m_concatenatedFilenames.empty(); }
     };
 
@@ -182,42 +179,27 @@ public:
     // Debug logging: prints list of output files. List of grouped files is additionally printed
     // for each concatenating file.
     static void
-    debugLogOutputFilesList(const std::vector<FileOrConcatenatedFilesList>& outputFiles,
-                            bool logToStdOut = false) {
+    debugLogOutputFilesList(const std::vector<FileOrConcatenatedFilesList>& outputFiles) {
+        // TODO: make a selfTest checking against wildly uneven distribution
         constexpr int LOG_LEVEL = 5;
 
-        if (!logToStdOut && debug() < LOG_LEVEL) return;
+        if (debug() < LOG_LEVEL) return;
 
         std::stringstream line;
 
-// Prints to stdout or debug log, depending on value of `logToStdOut`.
-#define DEBUG_LOG_OUTPUT_FILE_LIST_MSG(stmt) \
-    line << stmt; \
-    if (!logToStdOut) \
-        UINFO(LOG_LEVEL, line.str()); \
-    else \
-        std::cout << line.str(); \
-    line.str(std::string{});
-
-        DEBUG_LOG_OUTPUT_FILE_LIST_MSG(
-            "List of output files after execution of concatenation:" << endl);
+        UINFO(LOG_LEVEL, "List of output files after execution of concatenation:" << endl);
 
         for (const auto& entry : outputFiles) {
             if (entry.isConcatenatingFile()) {
-                DEBUG_LOG_OUTPUT_FILE_LIST_MSG(logMsgPrefixListEntry(0)
-                                               << entry.m_fileName
-                                               << "  (concatenating file; total score: "
-                                               << entry.m_dbgScore << ")" << endl);
+                UINFO(LOG_LEVEL, logMsgPrefixListEntry(0)
+                                     << entry.m_fileName << "  (concatenating file)" << endl);
                 for (const auto& f : entry.m_concatenatedFilenames) {
-                    DEBUG_LOG_OUTPUT_FILE_LIST_MSG(logMsgPrefixListEntry(1) << f << endl);
+                    UINFO(LOG_LEVEL, logMsgPrefixListEntry(1) << f << endl);
                 }
             } else {
-                DEBUG_LOG_OUTPUT_FILE_LIST_MSG(logMsgPrefixListEntry(0)
-                                               << entry.m_fileName << endl);
+                UINFO(LOG_LEVEL, logMsgPrefixListEntry(0) << entry.m_fileName << endl);
             }
         }
-
-#undef DEBUG_LOG_OUTPUT_FILE_LIST_MSG
     }
 
     static void
@@ -315,7 +297,7 @@ public:
         // Input files with a score exceeding this value are excluded from concatenation.
         const uint64_t concatenableFileMaxScore = totalScore / totalBucketsNum / 2;
 
-        UINFO(5, "Concatenable file max score: " << concatenableFileMaxScore << endl);
+        V3Stats::addStat("Concatenation max score", concatenableFileMaxScore);
 
         // Create initial Work Lists.
 
@@ -328,6 +310,9 @@ public:
             UINFO(6, logMsgPrefixListEntryWithStatus(fileIsConcatenable, 0)
                          << inputFile.m_filename << "  ("
                          << "score: " << inputFile.m_score << ")" << endl);
+            V3Stats::addStatSum(fileIsConcatenable ? "Concatenation total grouped score"
+                                                   : "Concatenation total non-grouped score",
+                                inputFile.m_score);
             // Add new list if the last list's concatenability does not match the inputFile's
             // concatenability
             if (workLists.empty() || workLists.back().m_isConcatenable != fileIsConcatenable) {
@@ -442,8 +427,7 @@ public:
 
         const uint64_t idealBucketScore = concatenableFilesTotalScore / totalBucketsNum;
 
-        UINFO(5, "Number of buckets: " << totalBucketsNum << endl);
-        UINFO(5, "Ideal bucket score: " << idealBucketScore << endl);
+        V3Stats::addStat("Concatenation ideal bucket score", idealBucketScore);
 
         UINFO(5, "Buckets assigned to Work Lists:" << endl);
         int availableBuckets = totalBucketsNum;
@@ -516,7 +500,6 @@ public:
                     file.m_fileName = bucket.m_concatenatedFilenames.front();
                     outputFiles.push_back(std::move(file));
                 } else if (bucket.m_concatenatedFilenames.size() > 1) {
-                    bucket.m_dbgScore = bucketScore;
                     outputFiles.push_back(std::move(bucket));
                 }
                 // Most likely no bucket will be empty in normal situations. If it happen the
@@ -980,27 +963,6 @@ public:
 
 //######################################################################
 // Gate class functions
-
-void V3EmitMk::debugTestConcatenation(const char* inputFile) {
-    const std::unique_ptr<std::ifstream> ifp{V3File::new_ifstream_nodepend(inputFile)};
-    std::vector<EmitMk::FilenameWithScore> inputList;
-    uint64_t totalScore = 0;
-
-    EmitMk::FilenameWithScore current{};
-    while ((*ifp) >> current.m_score >> std::ws) {
-        char ch;
-        while (ch = ifp->get(), ch && !std::isspace(ch)) { current.m_filename.push_back(ch); }
-        totalScore += current.m_score;
-        inputList.push_back(std::move(current));
-        current = EmitMk::FilenameWithScore{};
-    }
-
-    const std::vector<EmitMk::FileOrConcatenatedFilesList> list
-        = EmitMk::singleConcatenatedFilesList(std::move(inputList), totalScore,
-                                              "concatenating_file_");
-
-    EmitMk::debugLogOutputFilesList(list, true);
-}
 
 void V3EmitMk::emitmk() {
     UINFO(2, __FUNCTION__ << ": " << endl);
