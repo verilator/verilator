@@ -41,7 +41,7 @@ class unconstrained_struct_array_test;
 endclass
 
 module t_randomize_array_unsup;
-    
+
     unconstrained_struct_array_test struct_array_class;
 
     initial begin

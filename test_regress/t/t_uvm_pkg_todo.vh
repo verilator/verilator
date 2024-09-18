@@ -21072,21 +21072,15 @@ typedef class uvm_tlm_extension_base;
 class uvm_tlm_generic_payload extends uvm_sequence_item;
    rand bit [63:0]             m_address;
    rand uvm_tlm_command_e          m_command;
-   //TODO issue-4625 - Rand fields of dynamic array types
-   //TODO %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:21081:35: Unsupported: random member variable with type 'byte[]'
-   /*TODO rand*/ byte unsigned             m_data[];
+   rand byte unsigned             m_data[];
    rand int unsigned           m_length;
    rand uvm_tlm_response_status_e  m_response_status;
    bit m_dmi;
-   //TODO issue-4625 - Rand fields of dynamic array types
-   //TODO %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:21081:35: Unsupported: random member variable with type 'byte[]'
-   /*TODO rand*/ byte unsigned          m_byte_enable[];
+   rand byte unsigned          m_byte_enable[];
    rand int unsigned m_byte_enable_length;
    rand int unsigned m_streaming_width;
    protected uvm_tlm_extension_base m_extensions [uvm_tlm_extension_base];
-   //TODO issue-4625 - Rand fields of dynamic array types
-   //TODO %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:21081:35: Unsupported: random member variable with type 'CLASSREFDTYPE 'uvm_tlm_extension_base'[]'
-   local /*rand*/ uvm_tlm_extension_base m_rand_exts[];
+   local rand uvm_tlm_extension_base m_rand_exts[];
    typedef uvm_object_registry#(uvm_tlm_generic_payload,"uvm_tlm_generic_payload") type_id;
    static function uvm_tlm_generic_payload type_id_create (string name="",
                                      uvm_component parent=null,
@@ -22450,9 +22444,7 @@ class uvm_reg_item extends uvm_sequence_item;
   uvm_elem_kind_e element_kind;
   uvm_object element;
   rand uvm_access_e kind;
-  //TODO issue-4625 - Rand fields of dynamic array types
-  //TODO %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:21081:35: Unsupported: random member variable with type 'bit[]'
-  /*rand*/ uvm_reg_data_t value[];
+  rand uvm_reg_data_t value[];
   constraint max_values { value.size() > 0 && value.size() < 1000; }
   rand uvm_reg_addr_t offset;
   uvm_status_e status;
