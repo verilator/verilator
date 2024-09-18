@@ -38,8 +38,7 @@ ccjson_file = test.obj_dir + "/compile_commands.json"
 aroot_dir = os.path.abspath(root)
 srcs_dir = os.path.abspath("./t/t_dist_attributes")
 common_args = [
-    "clang++", "-std=c++14", "-I" + aroot_dir +
-    "/include", "-I" + aroot_dir + "/src", "-c"
+    "clang++", "-std=c++14", "-I" + aroot_dir + "/include", "-I" + aroot_dir + "/src", "-c"
 ]
 
 ccjson = [

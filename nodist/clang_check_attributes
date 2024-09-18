@@ -704,8 +704,7 @@ class CallAnnotationsValidator:
         signature = node.displayname
         if signature in self._base_func_declarations:
             refd = self._base_func_declarations[signature]
-            virtual_annotations = VlAnnotations.from_nodes_list(
-                refd.get_children())
+            virtual_annotations = VlAnnotations.from_nodes_list(refd.get_children())
             annotations = annotations | virtual_annotations
 
         if refd and self._is_ignored_def(node, refd):
