@@ -252,9 +252,7 @@ static Process& getSolver() {
 
 void copystream(std::iostream& input, std::ostream& output) {
     std::string line;
-    while (std::getline(input, line)) {
-        output << line << "\n";
-    }
+    while (std::getline(input, line)) { output << line << "\n"; }
 }
 
 std::pair<std::string, bool> readUntilBalanced(std::iostream& stream) {
@@ -277,15 +275,13 @@ std::pair<std::string, bool> readUntilBalanced(std::iostream& stream) {
 
         if (started && parenCount <= 0) {
             if (parenCount < 0) {
-                endFlag = true; // Indicate that we have extra closing parenthesis
+                endFlag = true;  // Indicate that we have extra closing parenthesis
             }
             break;
         }
     }
     // Remove trailing space and return the balanced expression and end flag
-    if (!result.empty() && result.back() == ' ') {
-        result.pop_back();
-    }
+    if (!result.empty() && result.back() == ' ') { result.pop_back(); }
     return {result, endFlag};
 }
 
@@ -294,9 +290,7 @@ std::string trim(const std::string& str) {
     result.erase(result.find_last_not_of(" \n\r\t") + 1);
     result.erase(0, result.find_first_not_of(" \n\r\t"));
     // Remove trailing ')' if it exists
-    while (!result.empty() && result.back() == ')') {
-        result.pop_back();
-    }
+    while (!result.empty() && result.back() == ')') { result.pop_back(); }
     return result;
 }
 struct ParsedExpr {
@@ -307,12 +301,8 @@ struct ParsedExpr {
 };
 std::string extractNextToken(const std::string& expr, size_t& pos) {
     // Skip any leading whitespace
-    while (pos < expr.size() && isspace(expr[pos])) {
-        ++pos;
-    }
-    if (pos >= expr.size()) {
-        return "";
-    }
+    while (pos < expr.size() && isspace(expr[pos])) { ++pos; }
+    if (pos >= expr.size()) { return ""; }
     // Handle nested structures by balancing parentheses
     if (expr[pos] == '(') {
         int parenCount = 0;
@@ -366,16 +356,15 @@ ParsedExpr parseExpr(const std::string& expr) {
         result = parseSelectExpr(expr, pos);
         std::cout << "[SELECT Parsing] Array Name: " << result.name << std::endl;
         std::cout << "Indices: ";
-        for (const auto& idx : result.indices) {
-            std::cout << idx << " ";
-        }
+        for (const auto& idx : result.indices) { std::cout << idx << " "; }
         std::cout << std::endl;
     } else {
         // Simple assignment (just trim and assign the result)
         size_t nameEnd = token.find(' ');
         result.name = token.substr(0, nameEnd);
         result.value = trim(expr.substr(pos));
-        std::cout << "[SIMPLE Parsing] Name: " << result.name << ", Value: " << result.value << std::endl;
+        std::cout << "[SIMPLE Parsing] Name: " << result.name << ", Value: " << result.value
+                  << std::endl;
     }
     return result;
 }
@@ -535,13 +524,12 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
         if (it != m_vars.end()) {
             const VlRandomVar& varr = *it->second;
             if (parsed.isSelectOperation) {
-                std::cout << "Assigning value '" << parsed.value 
-                    << "' to array/variable '" << parsed.name 
-                    << "' at index '" << parsed.idx << "'" << std::endl;
+                std::cout << "Assigning value '" << parsed.value << "' to array/variable '"
+                          << parsed.name << "' at index '" << parsed.idx << "'" << std::endl;
                 varr.set(parsed.idx, parsed.value);
             } else {
-                std::cout << "Assigning value '" << parsed.value 
-                    << "' to variable '" << parsed.name << "'" << std::endl;
+                std::cout << "Assigning value '" << parsed.value << "' to variable '"
+                          << parsed.name << "'" << std::endl;
                 varr.set("", parsed.value);
             }
         }

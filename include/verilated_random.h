@@ -27,8 +27,8 @@
 
 #include "verilated.h"
 
-#include <ostream>
 #include <iostream>
+#include <ostream>
 #include <sstream>
 
 //=============================================================================
@@ -65,7 +65,8 @@ public:
 template <typename T>
 class VlRandomQueueVar final : public VlRandomVar {
 public:
-    VlRandomQueueVar(const char* name, int width, void* datap, int dimension, std::uint32_t randModeIdx)
+    VlRandomQueueVar(const char* name, int width, void* datap, int dimension,
+                     std::uint32_t randModeIdx)
         : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
     void* datap(int idx) const override {
         return &static_cast<T*>(VlRandomVar::datap(idx))->atWrite(idx);
@@ -98,25 +99,22 @@ public:
 template <typename T>
 class VlRandomArrayVar final : public VlRandomVar {
 public:
-    VlRandomArrayVar(const char* name, int width, void* datap, int dimension, std::uint32_t randModeIdx)
+    VlRandomArrayVar(const char* name, int width, void* datap, int dimension,
+                     std::uint32_t randModeIdx)
         : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
-    
+
     void* datap(int idx) const override {
         std::cout << "datap: " << std::endl;
         return &static_cast<T*>(VlRandomVar::datap(idx))->operator[](idx);
     }
 
     void emitSelect(std::ostream& s, const std::vector<int>& indices) const {
-        
+
         std::cout << "emitSelect called with indices: ";
-        for (const auto& idx : indices) {
-            std::cout << idx << " ";
-        }
+        for (const auto& idx : indices) { std::cout << idx << " "; }
         std::cout << std::endl;
 
-        for (size_t idx = 0; idx < indices.size(); ++idx) {
-            s << "(select ";
-        }
+        for (size_t idx = 0; idx < indices.size(); ++idx) { s << "(select "; }
         s << name();
 
         for (size_t idx = 0; idx < indices.size(); ++idx) {
@@ -126,7 +124,7 @@ public:
             }
             s << ")";
         }
-}
+    }
 
     void emitGetValue(std::ostream& s) const override {
         auto var = static_cast<const T*>(datap(0));
@@ -148,13 +146,12 @@ public:
             //selectStatements += selectStatementStream.str();
             emitSelect(s, indices);
             int currentDimension = total_dimensions - 1;
-            while (currentDimension >= 0 && ++indices[currentDimension] >= lengths[currentDimension]) {
+            while (currentDimension >= 0
+                   && ++indices[currentDimension] >= lengths[currentDimension]) {
                 indices[currentDimension] = 0;
                 --currentDimension;
             }
-            if (currentDimension < 0) {
-                break;
-            }
+            if (currentDimension < 0) { break; }
         }
         //std::cout << selectStatements;
     }
@@ -184,7 +181,6 @@ public:
         s << ')';
     }
     */
-    
 };
 //=============================================================================
 // VlRandomizer is the object holding constraints and variable references.
@@ -213,17 +209,18 @@ public:
                    std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
         // TODO: make_unique once VlRandomizer is per-instance not per-ref
-        m_vars[name] = std::make_shared<const VlRandomVar>(name, width, &var, dimension, randmodeIdx);
+        m_vars[name]
+            = std::make_shared<const VlRandomVar>(name, width, &var, dimension, randmodeIdx);
     }
     template <typename T>
     void write_var(VlQueue<T>& var, int width, const char* name, int dimension,
                    std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
-        m_vars[name]
-            = std::make_shared<const VlRandomQueueVar<VlQueue<T>>>(name, width, &var, dimension, randmodeIdx);
+        m_vars[name] = std::make_shared<const VlRandomQueueVar<VlQueue<T>>>(
+            name, width, &var, dimension, randmodeIdx);
         std::cout << "queue-Unpacked: " << name << std::endl;
     }
-    
+
     template <typename T, std::size_t N>
     void write_var(VlUnpacked<T, N>& var, int width, const char* name, int dimension,
                    std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
@@ -236,17 +233,21 @@ public:
                 write_var(var[i], width, element_name.c_str(), dimension - 1, randmodeIdx);
             }
         } else {
-        
-            m_vars[name] = std::make_shared<const VlRandomArrayVar<VlUnpacked<T, N>>>(name, width, &var, dimension, randmodeIdx);
 
-            std::cout << "Array-Unpacked: " << m_vars[name] << "N = " << N << ", Dimension = " << dimension << ", Name = " << name << std::endl;
+            m_vars[name] = std::make_shared<const VlRandomArrayVar<VlUnpacked<T, N>>>(name, width,
+        &var, dimension, randmodeIdx);
+
+            std::cout << "Array-Unpacked: " << m_vars[name] << "N = " << N << ", Dimension = " <<
+        dimension << ", Name = " << name << std::endl;
         }
         */
-        m_vars[name] = std::make_shared<const VlRandomArrayVar<VlUnpacked<T, N>>>(name, width, &var, dimension, randmodeIdx);
+        m_vars[name] = std::make_shared<const VlRandomArrayVar<VlUnpacked<T, N>>>(
+            name, width, &var, dimension, randmodeIdx);
 
-        std::cout << "Array-Unpacked: " << m_vars[name] << "N = " << N << ", Dimension = " << dimension << ", Name = " << name << std::endl;
+        std::cout << "Array-Unpacked: " << m_vars[name] << "N = " << N
+                  << ", Dimension = " << dimension << ", Name = " << name << std::endl;
     }
-    
+
     void hard(std::string&& constraint);
     void clear();
     void set_randmode(const VlQueue<CData>& randmode) { m_randmode = &randmode; }

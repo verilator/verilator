@@ -598,7 +598,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 "write_var"};
             uint32_t dimension = 0;
             if (VN_IS(varp->dtypep(), UnpackArrayDType)) {
-                std::pair<uint32_t, uint32_t> dims = varp->dtypep()->dimensions(/*includeBasic=*/true);
+                std::pair<uint32_t, uint32_t> dims
+                    = varp->dtypep()->dimensions(/*includeBasic=*/true);
                 uint32_t packedDimensions = dims.first;
                 uint32_t unpackedDimensions = dims.second;
                 dimension = unpackedDimensions;
@@ -622,8 +623,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 methodp->addPinsp(
                     new AstConst{varp->fileline(), AstConst::Unsized64{}, randMode.index});
             }
-            methodp->addPinsp(new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{},
-                                           dimension});
+            methodp->addPinsp(
+                new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, dimension});
             AstNodeFTask* initTaskp = m_inlineInitTaskp;
             if (!initTaskp) {
                 varp->user3(true);  // Mark as set up in new()
