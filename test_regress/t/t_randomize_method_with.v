@@ -134,6 +134,13 @@ module mwith();
     if (cls.b != 1) $stop;
     `check_rand(cls2, cls2.a);
     `check_rand(cls2, cls2.c);
+
+    // Check randomize as a task
+    // verilator lint_off IGNOREDRETURN
+    cls.randomize() with { b == 2;};
+    // verilator lint_on IGNOREDRETURN
+    if (cls.b != 2) $stop;
+
     // Check capture of a static variable
     if (foo.randomize() with { a > sub1.sub_var; } != 1) $stop;
     // Check reference to a function
