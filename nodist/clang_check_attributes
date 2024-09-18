@@ -48,9 +48,11 @@ def fully_qualified_name(node):
     if node.kind == CursorKind.TRANSLATION_UNIT:
         return []
     res = fully_qualified_name(node.semantic_parent)
+    displayname = node.displayname
+    displayname = [displayname] if displayname else []
     if res:
-        return res + ([node.displayname] if node.displayname else [])
-    return [node.displayname] if node.displayname else []
+        return res + displayname
+    return displayname
 
 
 # Returns True, if `class_node` contains node
@@ -139,31 +141,32 @@ class VlAnnotations:
         result = VlAnnotations()
         for node in nodes:
             if node.kind == CursorKind.ANNOTATE_ATTR:
-                if node.displayname == "MT_START":
+                displayname = node.displayname
+                if displayname == "MT_START":
                     result.mt_start = True
-                elif node.displayname == "MT_SAFE":
+                elif displayname == "MT_SAFE":
                     result.mt_safe = True
-                elif node.displayname == "MT_STABLE":
+                elif displayname == "MT_STABLE":
                     result.stable_tree = True
-                elif node.displayname == "MT_SAFE_POSTINIT":
+                elif displayname == "MT_SAFE_POSTINIT":
                     result.mt_safe_postinit = True
-                elif node.displayname == "MT_UNSAFE":
+                elif displayname == "MT_UNSAFE":
                     result.mt_unsafe = True
-                elif node.displayname == "MT_UNSAFE_ONE":
+                elif displayname == "MT_UNSAFE_ONE":
                     result.mt_unsafe_one = True
-                elif node.displayname == "MT_DISABLED":
+                elif displayname == "MT_DISABLED":
                     result.mt_disabled = True
-                elif node.displayname == "PURE":
+                elif displayname == "PURE":
                     result.pure = True
-                elif node.displayname in ["ACQUIRE", "ACQUIRE_SHARED"]:
+                elif displayname in ["ACQUIRE", "ACQUIRE_SHARED"]:
                     result.acquire = True
-                elif node.displayname in ["RELEASE", "RELEASE_SHARED"]:
+                elif displayname in ["RELEASE", "RELEASE_SHARED"]:
                     result.release = True
-                elif node.displayname == "REQUIRES":
+                elif displayname == "REQUIRES":
                     result.requires = True
-                elif node.displayname in ["EXCLUDES", "MT_SAFE_EXCLUDES"]:
+                elif displayname in ["EXCLUDES", "MT_SAFE_EXCLUDES"]:
                     result.excludes = True
-                elif node.displayname == "GUARDED_BY":
+                elif displayname == "GUARDED_BY":
                     result.guarded = True
             # Attributes are always at the beginning
             elif not node.kind.is_attribute():
@@ -304,7 +307,7 @@ class CallAnnotationsValidator:
         self._defines: dict[str, str] = {}
         self._call_location: Optional[FunctionInfo] = None
         self._caller: Optional[FunctionInfo] = None
-        self._class_context: list[clang.cindex.Cursor] = []
+        self._base_func_declarations: dict[str, clang.cindex.Cursor] = {}
         self._constructor_context: list[clang.cindex.Cursor] = []
         self._level: int = 0
 
@@ -698,15 +701,12 @@ class CallAnnotationsValidator:
 
         # Fetch virtual annotations from base class.
         # Set refd to virtual definition if present.
-        for ctx in self._class_context:
-            for base_specifier in ctx.get_children():
-                for base_declaration in base_specifier.referenced.get_children():
-                    if base_declaration.displayname == node.displayname:
-                        virtual_annotations = VlAnnotations.from_nodes_list(
-                            base_declaration.get_children())
-                        refd = base_declaration
-                        annotations = annotations | virtual_annotations
-                        break
+        signature = node.displayname
+        if signature in self._base_func_declarations:
+            refd = self._base_func_declarations[signature]
+            virtual_annotations = VlAnnotations.from_nodes_list(
+                refd.get_children())
+            annotations = annotations | virtual_annotations
 
         if refd and self._is_ignored_def(node, refd):
             return None
@@ -778,7 +778,9 @@ class CallAnnotationsValidator:
         ]:
             for child in node.get_children():
                 if child.kind is CursorKind.CXX_BASE_SPECIFIER:
-                    self._class_context.append(child)
+                    for base in child.get_children():
+                        for declaration in base.referenced.get_children():
+                            self._base_func_declarations[declaration.displayname] = declaration
         elif node.kind in [
                 CursorKind.CXX_METHOD, CursorKind.FUNCTION_DECL, CursorKind.CONSTRUCTOR,
                 CursorKind.CONVERSION_FUNCTION
