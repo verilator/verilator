@@ -14,4 +14,4 @@ os.chdir(os.path.dirname(os.path.realpath(__file__)) + "/..")
 # Avoid chdir leaving the .. which confuses later commands
 os.environ['PWD'] = os.getcwd()
 args = list(map(lambda arg: re.sub(r'.*/test_regress/', '', arg), sys.argv))
-os.execl("./driver.py", "--bootstrapped", *args)
+os.execl("./driver.py", "--bootstrapped", "-j", "1", *args)
