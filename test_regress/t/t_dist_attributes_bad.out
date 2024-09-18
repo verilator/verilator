@@ -754,12 +754,12 @@ t/t_dist_attributes/mt_disabled.h:28:    [mt_disabled, excludes]                
 t/t_dist_attributes/mt_disabled.cpp:26:  []                                     UnannotatedMtDisabledClass::unannotatedMtDisabledStaticMethodBad()
 t/t_dist_attributes/mt_disabled.h:28:    []                                       UnannotatedMtDisabledClass::unannotatedMtDisabledStaticMethodBad()
 
-%Error: "VirtualInheritance::Derived::func()" is pure but calls non-pure function(s)
-t/t_dist_attributes/mt_enabled.h:383:    [pure]                                 VirtualInheritance::Derived::func()
+%Error: "VirtualInheritance::Base1::func(int, int)" is pure but calls non-pure function(s)
+t/t_dist_attributes/mt_enabled.h:382:    [pure]                                 VirtualInheritance::Base1::func(int, int)
 t/t_dist_attributes/mt_enabled.h:384:    []                                       VirtualInheritance::Derived::notPure()
 
-%Error: "VirtualInheritance::Derived::func(int, int)" is pure but calls non-pure function(s)
-t/t_dist_attributes/mt_enabled.h:382:    [pure]                                 VirtualInheritance::Derived::func(int, int)
+%Error: "VirtualInheritance::Base2::func()" is pure but calls non-pure function(s)
+t/t_dist_attributes/mt_enabled.h:383:    [pure]                                 VirtualInheritance::Base2::func()
 t/t_dist_attributes/mt_enabled.h:384:    []                                       VirtualInheritance::Derived::notPure()
 
 %Error: "ifh_test_caller_func_VL_MT_SAFE(VerilatedMutex &)" is mtsafe but calls non-mtsafe function(s)

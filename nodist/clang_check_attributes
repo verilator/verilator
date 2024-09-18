@@ -771,16 +771,14 @@ class CallAnnotationsValidator:
     # Nodes not located inside definition
 
     def dispatch_node(self, node: clang.cindex.Cursor):
-        if node.kind in [
-                CursorKind.CLASS_DECL, CursorKind.STRUCT_DECL, CursorKind.UNION_DECL,
-                CursorKind.ENUM_DECL, CursorKind.UNEXPOSED_DECL
-        ]:
-            for child in node.get_children():
-                if child.kind is CursorKind.CXX_BASE_SPECIFIER:
-                    for base in child.get_children():
-                        for declaration in base.referenced.get_children():
-                            self._base_func_declarations[declaration.displayname] = declaration
-        elif node.kind in [
+        kind = node.kind
+        if kind is CursorKind.CXX_BASE_SPECIFIER:
+            # Get referenced virtual declarations from base class.
+            for base in node.get_children():
+                if base.referenced:
+                    for declaration in base.referenced.get_children():
+                        self._base_func_declarations[declaration.displayname] = declaration
+        elif kind in [
                 CursorKind.CXX_METHOD, CursorKind.FUNCTION_DECL, CursorKind.CONSTRUCTOR,
                 CursorKind.CONVERSION_FUNCTION
         ]:
@@ -789,7 +787,13 @@ class CallAnnotationsValidator:
             return self.process_function_declaration(node)
 
         result = self.iterate_children(node.get_children(), self.dispatch_node)
-        self._base_func_declarations = {}
+
+        # Clean declarations if class declaration processing is finished.
+        if kind in [
+                CursorKind.CLASS_DECL, CursorKind.STRUCT_DECL, CursorKind.UNION_DECL,
+                CursorKind.ENUM_DECL, CursorKind.UNEXPOSED_DECL
+        ]:
+            self._base_func_declarations = {}
         return result
 
     def process_translation_unit(self, translation_unit: clang.cindex.TranslationUnit):
