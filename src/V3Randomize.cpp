@@ -1309,63 +1309,38 @@ class RandomizeVisitor final : public VNVisitor {
         AstNodeDType* tempDTypep = dtypep;
         AstVar* randLoopIndxp = nullptr;
         AstNodeStmt* stmtsp = nullptr;
-
-        if (VN_CAST(tempDTypep, DynArrayDType)) {
-            AstCMethodHard* tempElementp = nullptr;
-            while (VN_CAST(tempDTypep, DynArrayDType)) {
-                AstVar* const newRandLoopIndxp
-                    = new AstVar{fl, VVarType::VAR, uniqueNamep->get(""),
-                                 dtypep->findBasicDType(VBasicDTypeKwd::UINT32)};
-                randLoopIndxp = AstNode::addNext(randLoopIndxp, newRandLoopIndxp);
-                tempElementp
-                    = tempElementp
-                          ? new AstCMethodHard{fl, tempElementp, "atWrite",
-                                               new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}}
-                          : new AstCMethodHard{fl, exprp, "atWrite",
-                                               new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}};
-                tempElementp->dtypep(tempDTypep->subDTypep());
-                tempDTypep = tempDTypep->virtRefDTypep();
-            }
+        auto createLoopIndex = [&](AstNodeDType* tempDTypep) {
+            return new AstVar{fl, VVarType::VAR, uniqueNamep->get(""),
+                            dtypep->findBasicDType(VBasicDTypeKwd::UINT32)};
+        };
+        auto handleUnsupportedStruct = [&](AstNodeExpr* tempElementp) {
             if (VN_IS(tempElementp->dtypep()->skipRefp(), StructDType)) {
-                tempElementp->v3warn(
+                tempElementp->dtypep()->v3warn(
                     E_UNSUPPORTED,
                     "Unsupported: CreateArrayForeachLoop currently does not support "
                     "this data type. (Struct-Array unconstrained "
                     "randomization is not fully supported)");
             }
+        };
+        auto createForeachLoop = [&](AstNodeExpr* tempElementp, AstVar* randLoopIndxp) {
             AstSelLoopVars* const randLoopVarp
                 = new AstSelLoopVars{fl, exprp->cloneTree(false), randLoopIndxp};
-            stmtsp = new AstForeach{fl, randLoopVarp, newRandStmtsp(fl, tempElementp, nullptr)};
-        } else if (VN_CAST(tempDTypep, UnpackArrayDType)) {
-            AstArraySel* tempElementp = nullptr;
-            while (VN_CAST(tempDTypep, UnpackArrayDType)) {
-                AstVar* const newRandLoopIndxp
-                    = new AstVar{fl, VVarType::VAR, uniqueNamep->get(""),
-                                 dtypep->findBasicDType((VBasicDTypeKwd::UINT32))};
-                randLoopIndxp = AstNode::addNext(randLoopIndxp, newRandLoopIndxp);
-                tempElementp
-                    = tempElementp
-                          ? new AstArraySel{fl, tempElementp,
-                                            new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}}
-                          : new AstArraySel{fl, exprp,
-                                            new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}};
-                tempElementp->dtypep(tempDTypep->subDTypep());
-                tempDTypep = tempDTypep->virtRefDTypep();
-            }
-            if (VN_IS(tempElementp->dtypep()->skipRefp(), StructDType)) {
-                tempElementp->v3warn(
-                    E_UNSUPPORTED,
-                    "Unsupported: CreateArrayForeachLoop currently does not support "
-                    "this data type. (Struct-Array unconstrained "
-                    "randomization is not fully supported)");
-            }
-            AstSelLoopVars* const randLoopVarp
-                = new AstSelLoopVars{fl, exprp->cloneTree(false), randLoopIndxp};
-            stmtsp = new AstForeach{fl, randLoopVarp, newRandStmtsp(fl, tempElementp, nullptr)};
-        } else {
-            // CreateArrayForeachLoop currently only supports
-            //     UnpackArrayDType and DynArrayDType
+            return new AstForeach{fl, randLoopVarp, newRandStmtsp(fl, tempElementp, nullptr)};
+        };
+        AstNodeExpr* tempElementp = nullptr;
+        while (VN_CAST(tempDTypep, DynArrayDType) || VN_CAST(tempDTypep, UnpackArrayDType)) {
+            AstVar* const newRandLoopIndxp = createLoopIndex(tempDTypep);
+            randLoopIndxp = AstNode::addNext(randLoopIndxp, newRandLoopIndxp);
+            tempElementp = VN_CAST(tempDTypep, DynArrayDType)
+                           ? static_cast<AstNodeExpr*>(new AstCMethodHard{fl, tempElementp ? tempElementp : exprp, "atWrite",
+                                                new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}})
+                           : static_cast<AstNodeExpr*>(new AstArraySel{fl, tempElementp ? tempElementp : exprp,
+                                             new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}});
+            tempElementp->dtypep(tempDTypep->subDTypep());
+            tempDTypep = tempDTypep->virtRefDTypep();
         }
+        handleUnsupportedStruct(tempElementp);
+        stmtsp = createForeachLoop(tempElementp, randLoopIndxp);
         return stmtsp;
     }
     AstNodeStmt* newRandStmtsp(FileLine* fl, AstNodeExpr* exprp, AstVar* randcVarp, int offset = 0,
