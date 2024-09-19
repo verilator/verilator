@@ -1328,9 +1328,10 @@ class RandomizeVisitor final : public VNVisitor {
             }
             if (VN_IS(tempElementp->dtypep()->skipRefp(), StructDType)) {
                 tempElementp->v3warn(
-                    E_UNSUPPORTED, "Unsupported: CreateArrayForeachLoop currently does not support "
-                                   "this data type. (Struct-Array unconstrained "
-                                   "randomization is not fully supported)");
+                    E_UNSUPPORTED,
+                    "Unsupported: CreateArrayForeachLoop currently does not support "
+                    "this data type. (Struct-Array unconstrained "
+                    "randomization is not fully supported)");
             }
             AstSelLoopVars* const randLoopVarp
                 = new AstSelLoopVars{fl, exprp->cloneTree(false), randLoopIndxp};
@@ -1353,9 +1354,10 @@ class RandomizeVisitor final : public VNVisitor {
             }
             if (VN_IS(tempElementp->dtypep()->skipRefp(), StructDType)) {
                 tempElementp->v3warn(
-                    E_UNSUPPORTED, "Unsupported: CreateArrayForeachLoop currently does not support "
-                                   "this data type. (Struct-Array unconstrained "
-                                   "randomization is not fully supported)");
+                    E_UNSUPPORTED,
+                    "Unsupported: CreateArrayForeachLoop currently does not support "
+                    "this data type. (Struct-Array unconstrained "
+                    "randomization is not fully supported)");
             }
             AstSelLoopVars* const randLoopVarp
                 = new AstSelLoopVars{fl, exprp->cloneTree(false), randLoopIndxp};
@@ -1400,7 +1402,8 @@ class RandomizeVisitor final : public VNVisitor {
             return newRandStmtsp(fl, exprp, nullptr, offset, firstMemberp);
         } else if (AstDynArrayDType* const dynarrayDtp = VN_CAST(memberDtp, DynArrayDType)) {
             return createArrayForeachLoop(fl, dynarrayDtp, exprp);
-        } else if (AstUnpackArrayDType* const unpackarrayDtp = VN_CAST(memberDtp, UnpackArrayDType)) {
+        } else if (AstUnpackArrayDType* const unpackarrayDtp
+                   = VN_CAST(memberDtp, UnpackArrayDType)) {
             return createArrayForeachLoop(fl, unpackarrayDtp, exprp);
         } else {
             AstNodeExpr* valp;
