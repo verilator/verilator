@@ -24,14 +24,14 @@ class unconstrained_struct_array_test;
     rand int field_a;
     rand int field_b;
   } simple_struct_t;
-  
+
   rand simple_struct_t struct_array_2[];  // Dynamic array
   rand simple_struct_t struct_array_1[3]; // Unpacked array
-  
+
 
   function new();
     struct_array_1 = '{'{default: 0}, '{default: 1}, '{default: 2}};
-    
+
     struct_array_2 = new[3];
     foreach (struct_array_2[i]) begin
       struct_array_2[i].field_a = i;
