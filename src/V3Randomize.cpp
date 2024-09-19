@@ -1363,9 +1363,8 @@ class RandomizeVisitor final : public VNVisitor {
                 = new AstSelLoopVars{fl, exprp->cloneTree(false), randLoopIndxp};
             stmtsp = new AstForeach{fl, randLoopVarp, newRandStmtsp(fl, tempElementp, nullptr)};
         } else {
-            dtypep->v3warn(E_UNSUPPORTED,
-                           "Unsupported: CreateArrayForeachLoop currently only supports "
-                           "UnpackArrayDType and DynArrayDType.");
+            // CreateArrayForeachLoop currently only supports
+            //     UnpackArrayDType and DynArrayDType
         }
         return stmtsp;
     }
