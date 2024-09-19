@@ -16,7 +16,7 @@ test.compile(make_top_shell=False,
              make_pli=True,
              verilator_flags2=[
                  "--exe --vpi", test.pli_filename,
-                 test.t_dir + "/TestVpiMain.cpp"
+                 test.t_dir + "/TestVpiHierarchyMain.cpp"
              ],
              make_flags=['CPPFLAGS_ADD=-DVL_NO_LEGACY'])
 
