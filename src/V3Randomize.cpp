@@ -1326,12 +1326,10 @@ class RandomizeVisitor final : public VNVisitor {
                 tempElementp->dtypep(tempDTypep->subDTypep());
                 tempDTypep = tempDTypep->virtRefDTypep();
             }
-            UINFO(2, "element: " << tempElementp << " data type: " << tempElementp->dtypep()
-                                 << std::endl);
             if (VN_IS(tempElementp->dtypep()->skipRefp(), StructDType)) {
                 tempElementp->v3warn(
-                    E_UNSUPPORTED, "Unsupported: CreateArrayForeachLoop currently does not support"
-                                   "data type. (Struct-Array unconstrained "
+                    E_UNSUPPORTED, "Unsupported: CreateArrayForeachLoop currently does not support "
+                                   "this data type. (Struct-Array unconstrained "
                                    "randomization is not fully supported)");
             }
             AstSelLoopVars* const randLoopVarp
@@ -1353,12 +1351,10 @@ class RandomizeVisitor final : public VNVisitor {
                 tempElementp->dtypep(tempDTypep->subDTypep());
                 tempDTypep = tempDTypep->virtRefDTypep();
             }
-            UINFO(2, "element: " << tempElementp << " data type: " << tempElementp->dtypep()
-                                 << std::endl);
             if (VN_IS(tempElementp->dtypep()->skipRefp(), StructDType)) {
                 tempElementp->v3warn(
-                    E_UNSUPPORTED, "Unsupported: CreateArrayForeachLoop currently does not support"
-                                   "data type. (Multiple-Member-Struct Array's unconstrained "
+                    E_UNSUPPORTED, "Unsupported: CreateArrayForeachLoop currently does not support "
+                                   "this data type. (Struct-Array unconstrained "
                                    "randomization is not fully supported)");
             }
             AstSelLoopVars* const randLoopVarp
@@ -1366,8 +1362,8 @@ class RandomizeVisitor final : public VNVisitor {
             stmtsp = new AstForeach{fl, randLoopVarp, newRandStmtsp(fl, tempElementp, nullptr)};
         } else {
             dtypep->v3warn(E_UNSUPPORTED,
-                           "Unsupported: CreateArrayForeachLoop currently does not support "
-                           "data type.");
+                           "Unsupported: CreateArrayForeachLoop currently only supports "
+                           "UnpackArrayDType and DynArrayDType.");
         }
         return stmtsp;
     }
@@ -1404,8 +1400,7 @@ class RandomizeVisitor final : public VNVisitor {
             return newRandStmtsp(fl, exprp, nullptr, offset, firstMemberp);
         } else if (AstDynArrayDType* const dynarrayDtp = VN_CAST(memberDtp, DynArrayDType)) {
             return createArrayForeachLoop(fl, dynarrayDtp, exprp);
-        } else if (AstUnpackArrayDType* const unpackarrayDtp
-                   = VN_CAST(memberDtp, UnpackArrayDType)) {
+        } else if (AstUnpackArrayDType* const unpackarrayDtp = VN_CAST(memberDtp, UnpackArrayDType)) {
             return createArrayForeachLoop(fl, unpackarrayDtp, exprp);
         } else {
             AstNodeExpr* valp;
