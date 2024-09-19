@@ -135,8 +135,7 @@ def profcfunc(filename):
 
     design_width = 1
     for func, func_item in vfuncs.items():
-        if design_width < len(func_item['design']):
-            design_width = len(func_item['design'])
+        design_width = max(design_width, len(func_item['design']))
 
     print("Verilog code profile:")
     print("   These are split into three categories:")

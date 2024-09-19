@@ -11,11 +11,12 @@ import sys
 
 ######################################################################
 
+Bison_Version = None
+
 
 def process():
     unlink_outputs()
 
-    bison_version_check()
     supports_report = Bison_Version >= 2.3
     # supports_counter_examples = Bison_Version >= 3.8
 
@@ -93,9 +94,7 @@ def bison_version_check():
         if v < 1.875:
             sys.exit("bisonpre: %Error: '" + Args.yacc + "' is version " + v +
                      "; version 1.875 or newer is required\n")
-        global Bison_Version  # pylint: disable=global-variable-undefined
-        Bison_Version = v
-        return
+        return v
 
     sys.exit("bisonpre: %Error: '" + Args.yacc + "' is not installed, or not working\n")
 
@@ -514,6 +513,8 @@ parser.add_argument('-v', '--verbose', action='store_true', help='Passed to biso
 parser.add_argument('input', help='Passed to bison. Input grammar file.')
 
 Args = parser.parse_args()
+
+Bison_Version = bison_version_check()
 
 process()
 
