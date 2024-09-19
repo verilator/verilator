@@ -3,5 +3,5 @@
   description: Runs verilator Docker image to lint (System) Verilog designs
   args: [--lint-only]
   language: docker_image
-  entry: verilator/verilator:v5.026
+  entry: verilator/verilator:latest
   types_or: ["verilog", "system-verilog"]
