@@ -2801,18 +2801,18 @@ if Args.debug:
     logging.basicConfig(level=logging.DEBUG)
     logging.info("In driver.py, ARGV=" + ' '.join(sys.argv))
 
+interactive_debugger = Args.gdb or Args.gdbsim or Args.rr or Args.rrsim
+if Args.jobs > 1 and interactive_debugger:
+    sys.exit("%Error: Unable to use -j > 1 with --gdb* and --rr* options")
+
 if Args.golden:
     os.environ['HARNESS_UPDATE_GOLDEN'] = '1'
 if Args.jobs == 0:
-    Args.jobs = calc_jobs()
+    Args.jobs = 1 if interactive_debugger else calc_jobs()
 if not Args.scenarios:
     Args.scenarios = []
     Args.scenarios.append('dist')
     Args.scenarios.append('vlt')
-
-interactive_debugger = Args.gdb or Args.gdbsim or Args.rr or Args.rrsim
-if Args.jobs > 1 and interactive_debugger:
-    sys.exit("%Error: Unable to use -j > 1 with --gdb* and --rr* options")
 
 forker = Forker(Args.jobs)
 
