@@ -22444,7 +22444,9 @@ class uvm_reg_item extends uvm_sequence_item;
   uvm_elem_kind_e element_kind;
   uvm_object element;
   rand uvm_access_e kind;
-  rand uvm_reg_data_t value[];
+  //TODO issue-4625 - Rand fields of dynamic array types
+  //TODO %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:21081:35: Unsupported: random member variable with type 'bit[]'
+  /*rand*/ uvm_reg_data_t value[];
   constraint max_values { value.size() > 0 && value.size() < 1000; }
   rand uvm_reg_addr_t offset;
   uvm_status_e status;
