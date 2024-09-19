@@ -247,9 +247,10 @@ Verilator 5.024 2024-04-05
 * Fix preprocessor to respect strings in joins (#5007).
 * Fix tracing class parameters (#5014).
 * Fix memory leaks (#5016). [Geza Lore]
-* Fix $readmem with missing newline (#5019). [Josse Van Delm]
+* Fix `$readmem` with missing newline (#5019). [Josse Van Delm]
 * Fix internal error on missing pattern key (#5023).
 * Fix tracing replicated hierarchical models (#5027).
+* Fix false LIFETIME warning on `repeat` in `fork-join` (#5456).
 
 
 Verilator 5.022 2024-02-24
