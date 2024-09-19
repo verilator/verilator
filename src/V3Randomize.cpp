@@ -1311,7 +1311,7 @@ class RandomizeVisitor final : public VNVisitor {
         AstNodeStmt* stmtsp = nullptr;
         auto createLoopIndex = [&](AstNodeDType* tempDTypep) {
             return new AstVar{fl, VVarType::VAR, uniqueNamep->get(""),
-                            dtypep->findBasicDType(VBasicDTypeKwd::UINT32)};
+                              dtypep->findBasicDType(VBasicDTypeKwd::UINT32)};
         };
         auto handleUnsupportedStruct = [&](AstNodeExpr* tempElementp) {
             if (VN_IS(tempElementp->dtypep()->skipRefp(), StructDType)) {
@@ -1331,11 +1331,14 @@ class RandomizeVisitor final : public VNVisitor {
         while (VN_CAST(tempDTypep, DynArrayDType) || VN_CAST(tempDTypep, UnpackArrayDType)) {
             AstVar* const newRandLoopIndxp = createLoopIndex(tempDTypep);
             randLoopIndxp = AstNode::addNext(randLoopIndxp, newRandLoopIndxp);
-            tempElementp = VN_CAST(tempDTypep, DynArrayDType)
-                           ? static_cast<AstNodeExpr*>(new AstCMethodHard{fl, tempElementp ? tempElementp : exprp, "atWrite",
-                                                new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}})
-                           : static_cast<AstNodeExpr*>(new AstArraySel{fl, tempElementp ? tempElementp : exprp,
-                                             new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}});
+            tempElementp
+                = VN_CAST(tempDTypep, DynArrayDType)
+                      ? static_cast<AstNodeExpr*>(
+                          new AstCMethodHard{fl, tempElementp ? tempElementp : exprp, "atWrite",
+                                             new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}})
+                      : static_cast<AstNodeExpr*>(
+                          new AstArraySel{fl, tempElementp ? tempElementp : exprp,
+                                          new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}});
             tempElementp->dtypep(tempDTypep->subDTypep());
             tempDTypep = tempDTypep->virtRefDTypep();
         }
