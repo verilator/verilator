@@ -14,9 +14,10 @@ test.scenarios('vlt')
 test.setenv('FOOBARTEST', "gotit")
 
 test.run(cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator --getenv FOOBARTEST"],
-         expect=r'gotit',
-         logfile=test.obj_dir + "/simx.log",
+         logfile=test.compile_log_filename,
          verilator_run=True)
+
+test.file_grep(test.compile_log_filename, r'gotit')
 
 for var in [
         'MAKE', 'PERL', 'PYTHON3', 'SYSTEMC', 'SYSTEMC_ARCH', 'SYSTEMC_LIBDIR', 'VERILATOR_ROOT'

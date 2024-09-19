@@ -14,6 +14,6 @@ test.top_filename = "t/t_flag_quiet_stats.v"
 
 test.compile(verilator_flags2=['--quiet'], verilator_make_gcc=False, logfile=test.run_log_filename)
 
-test.file_grep_not(test.obj_dir + '/vlt_compile.log', r'V e r i l a t')
+test.file_grep_not(test.compile_log_filename, r'V e r i l a t')
 
 test.passes()

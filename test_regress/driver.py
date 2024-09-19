@@ -432,8 +432,7 @@ class Runner:
         else:
             error_msg = test.errors if test.errors else test.errors_keep_going
             test.oprint("FAILED: " + error_msg)
-            j = " -j" if Args.jobs else ""
-            makecmd = VtOs.getenv_def('VERILATOR_MAKE', os.environ['MAKE']) + j + " &&"
+            makecmd = VtOs.getenv_def('VERILATOR_MAKE', os.environ['MAKE']) + " &&"
             upperdir = 'test_regress/' if re.search(r'test_regress', os.getcwd()) else ''
             self.fail_msgs.append("\t#" + test.soprint("%Error: " + error_msg) + "\t\t" + makecmd +
                                   " " + upperdir + test.py_filename +
@@ -763,6 +762,7 @@ class VlTest:
         self.coverage_filename = self.obj_dir + "/coverage.dat"
         self.golden_filename = re.sub(r'\.py$', '.out', self.py_filename)
         self.main_filename = self.obj_dir + "/" + self.vm_prefix + "__main.cpp"
+        self.compile_log_filename = self.obj_dir + "/vlt_compile.log"
         self.run_log_filename = self.obj_dir + "/vlt_sim.log"
         self.stats = self.obj_dir + "/V" + self.name + "__stats.txt"
         self.top_filename = re.sub(r'\.py$', '', self.py_filename) + '.' + self.v_suffix
@@ -1055,7 +1055,6 @@ class VlTest:
     def compile(self, **kwargs) -> None:
         """Run simulation compiler.  Arguments similar to run(); default arguments are from self"""
         param = {
-            'expect': None,
             'expect_filename': None,
             'fails': False,
             'make_flags': [],
@@ -1234,7 +1233,6 @@ class VlTest:
                     self.run(logfile=self.obj_dir + "/vlt_compile.log",
                              fails=param['fails'],
                              tee=param['tee'],
-                             expect=param['expect'],
                              expect_filename=param['expect_filename'],
                              verilator_run=True,
                              cmd=vlt_cmd)
@@ -1251,7 +1249,6 @@ class VlTest:
                     logfile=self.obj_dir + "/vlt_cmake.log",
                     fails=param['fails'],
                     tee=param['tee'],
-                    expect=param['expect'],
                     expect_filename=param['expect_filename'],
                     verilator_run=True,
                     cmd=[
@@ -1326,7 +1323,6 @@ class VlTest:
             'entering': False,
             'check_finished': False,
             'executable': None,
-            'expect': None,
             'expect_filename': None,
             'fails': False,
             'run_env': '',
@@ -1363,7 +1359,6 @@ class VlTest:
                     ' '.join(param['all_run_flags']),
                 ],
                 *param,
-                expect=param['atsim_run_expect'],  # non-verilator expect isn't the same
                 expect_filename=param['atsim_run_expect_filename'],
             )
         elif param['ghdl']:
@@ -1376,7 +1371,6 @@ class VlTest:
                     ' '.join(param['all_run_flags']),
                 ],
                 *param,
-                expect=param['ghdl_run_expect'],  # non-verilator expect isn't the same
                 expect_filename=param['ghdl_run_expect_filename'],
             )
         elif param['iv']:
@@ -1393,7 +1387,6 @@ class VlTest:
                 fails=param['fails'],
                 cmd=cmd,
                 *param,
-                expect=param['iv_run_expect'],  # non-verilator expect isn't the same
                 expect_filename=param['iv_run_expect_filename'],
             )
         elif param['ms']:
@@ -1409,7 +1402,6 @@ class VlTest:
                     (" top")
                 ],
                 *param,
-                expect=param['ms_run_expect'],  # non-verilator expect isn't the same
                 expect_filename=param['ms_expect_filename'],
             )
         elif param['nc']:
@@ -1422,7 +1414,6 @@ class VlTest:
                     ' '.join(param['all_run_flags']),
                 ],
                 *param,
-                expect=param['nc_run_expect'],  # non-verilator expect isn't the same
                 expect_filename=param['nc_run_expect_filename'],
             )
         elif param['vcs']:
@@ -1436,7 +1427,6 @@ class VlTest:
                     ' '.join(param['all_run_flags']),
                 ],
                 *param,
-                expect=param['vcs_run_expect'],  # non-verilator expect isn't the same
                 expect_filename=param['vcs_run_expect_filename'],
             )
         elif param['xrun']:
@@ -1455,7 +1445,6 @@ class VlTest:
                     param['top_filename'],
                 ],
                 *param,
-                expect=param['xrun_run_expect'],  # non-verilator expect isn't the same
                 expect_filename=param['xrun_run_expect_filename'],
             )
         elif param['xsim']:
@@ -1468,7 +1457,6 @@ class VlTest:
                     ' '.join(param['all_run_flags']), (" " + self.name + ".top")
                 ],
                 *param,
-                expect=param['xsim_run_expect'],  # non-verilator expect isn't the same
                 expect_filename=param['xsim_expect_filename'],
             )
         elif param['vlt_all']:
@@ -1489,7 +1477,6 @@ class VlTest:
                 aslr_off=param['aslr_off'],  # Disable address space layour randomization
                 check_finished=param['check_finished'],  # Check for All Finished
                 entering=param['entering'],  # Print entering directory information
-                expect=param['expect'],
                 expect_filename=param['expect_filename'],
                 fails=param['fails'],
                 logfile=param.get('logfile', self.obj_dir + "/vlt_sim.log"),
@@ -1634,7 +1621,6 @@ class VlTest:
             aslr_off=False,  # Disable address space layour randomization
             check_finished=False,  # Check for All Finished
             entering=None,  # Print entering directory information
-            expect=None,  # Regexp to expect in output
             expect_filename=None,  # Filename that should match logfile
             fails=False,  # Command should fail
             logfile=None,  # Filename to write putput to
@@ -1741,12 +1727,12 @@ class VlTest:
             return False
 
         # Read the log file a couple of times to allow for NFS delays
-        if check_finished or expect:
+        if check_finished:
             for tryn in range(self.tries() - 1, -1, -1):
                 if tryn != self.tries() - 1:
                     time.sleep(1)
                 moretry = tryn != 0
-                if self._run_log_try(cmd, logfile, check_finished, moretry, expect):
+                if not self._run_log_try(logfile, check_finished, moretry):
                     break
         if expect_filename:
             self.files_identical(logfile, expect_filename, is_logfile=True)
@@ -1754,8 +1740,8 @@ class VlTest:
 
         return True
 
-    def _run_log_try(self, cmd: str, logfile: str, check_finished: bool, moretry: bool,
-                     expect) -> None:
+    def _run_log_try(self, logfile: str, check_finished: bool, moretry: bool) -> bool:
+        # If moretry, then return true to try again
         with open(logfile, 'r', encoding='latin-1', newline='\n') as fh:
             if not fh and moretry:
                 return True
@@ -1766,31 +1752,6 @@ class VlTest:
             if moretry:
                 return True
             self.error("Missing '*-* All Finished *-*'")
-        if expect:
-            # Strip debugging comments
-            # See also files_identical
-            wholefile = re.sub(r'^- [^\n]+\n', '', wholefile)
-            wholefile = re.sub(r'^- [a-z.0-9]+:\d+:[^\n]+\n', '', wholefile)
-            wholefile = re.sub(r'^dot [^\n]+\n', '', wholefile)
-            wholefile = re.sub(r'^==[0-9]+== [^\n]+\n', '', wholefile)  # Valgrind
-            # Compare
-            quoted = (re.escape(expect) or self._try_regex(wholefile, expect) == 1
-                      or re.search(expect, wholefile))
-            ok = (wholefile == expect or self._try_regex(wholefile, expect) == 1
-                  or re.search(quoted, wholefile))
-            if not ok:
-                #print("**BAD  " + self.name + " " + logfile + " MT " + moretry + "  " + try)
-                if moretry:
-                    return True
-                self.error("Miscompares in output from " + cmd[0])
-                if ok < 1:
-                    self.error("Might be error in regexp format")
-                print("GOT:")
-                print(wholefile)
-                print("ENDGOT")
-                print("EXPECT:")
-                print(expect)
-                print("ENDEXPECT")
 
         return False
 
@@ -2170,6 +2131,7 @@ class VlTest:
                 break
 
     def _files_identical_try(self, fn1: str, fn2: str, is_logfile: bool, moretry: bool) -> bool:
+        # If moretry, then return true to try again
         try:
             f1 = open(  # pylint: disable=consider-using-with
                 fn1, 'r', encoding='latin-1', newline='\n')
@@ -2187,20 +2149,21 @@ class VlTest:
                 self.copy_if_golden(fn1, fn2)
                 self.error("Files_identical file does not exist: " + fn2)
             return True
-        ok = self._files_identical_reader(f1,
-                                          f2,
-                                          fn1=fn1,
-                                          fn2=fn2,
-                                          is_logfile=is_logfile,
-                                          moretry=moretry)
+        again = self._files_identical_reader(f1,
+                                             f2,
+                                             fn1=fn1,
+                                             fn2=fn2,
+                                             is_logfile=is_logfile,
+                                             moretry=moretry)
         if f1:
             f1.close()
         if f2:
             f2.close()
-        return ok
+        return again
 
     def _files_identical_reader(self, f1, f2, fn1: str, fn2: str, is_logfile: bool,
                                 moretry: bool) -> None:
+        # If moretry, then return true to try again
         l1s = f1.readlines()
         l2s = f2.readlines() if f2 else []
         # print(" rawGOT="+pformat(l1s)+"\n rawEXP="+pformat(l2s))
@@ -2270,7 +2233,7 @@ class VlTest:
                           file=sys.stderr)
                 return False
 
-        return True
+        return False  # Good
 
     def files_identical_sorted(self, fn1: str, fn2: str, is_logfile=False) -> None:
         """Test if two files, after sorting both, have identical contents"""

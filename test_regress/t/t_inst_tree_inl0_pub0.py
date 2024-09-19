@@ -30,6 +30,7 @@ if test.vlt_all:
     test.file_grep(out_filename,
                    r'{"type":"MODULE","name":"l5__P2",.*"loc":"f,83:[^"]*",.*"origName":"l5"')
 
-test.execute(expect=r"\] (%m|.*t\.ps): Clocked", )
+test.execute()
+test.file_grep(test.run_log_filename, r"\] (%m|.*t\.ps): Clocked")
 
 test.passes()

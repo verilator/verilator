@@ -16,6 +16,6 @@ test.compile(verilator_flags2=['--quiet --no-quiet-stats'],
              verilator_make_gcc=False,
              logfile=test.run_log_filename)
 
-test.file_grep(test.obj_dir + '/vlt_compile.log', r'V e r i l a t')
+test.file_grep(test.compile_log_filename, r'V e r i l a t')
 
 test.passes()
