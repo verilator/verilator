@@ -1344,11 +1344,54 @@ class RandomizeVisitor final : public VNVisitor {
         UINFO(9, "created " << varp << endl);
         return newp;
     }
+    AstNodeStmt* createArrayForeachLoop(FileLine* const fl, AstNodeDType* const dtypep,
+                                        AstNodeExpr* exprp) {
+        V3UniqueNames* uniqueNamep = new V3UniqueNames{"__Vrandarr"};
+        AstNodeDType* tempDTypep = dtypep;
+        AstVar* randLoopIndxp = nullptr;
+        AstNodeStmt* stmtsp = nullptr;
+        auto createLoopIndex = [&](AstNodeDType* tempDTypep) {
+            return new AstVar{fl, VVarType::VAR, uniqueNamep->get(""),
+                              dtypep->findBasicDType(VBasicDTypeKwd::UINT32)};
+        };
+        auto handleUnsupportedStruct = [&](AstNodeExpr* tempElementp) {
+            if (VN_IS(tempElementp->dtypep()->skipRefp(), StructDType)) {
+                tempElementp->dtypep()->v3warn(
+                    E_UNSUPPORTED,
+                    "Unsupported: CreateArrayForeachLoop currently does not support "
+                    "this data type. (Struct-Array unconstrained "
+                    "randomization is not fully supported)");
+            }
+        };
+        auto createForeachLoop = [&](AstNodeExpr* tempElementp, AstVar* randLoopIndxp) {
+            AstSelLoopVars* const randLoopVarp
+                = new AstSelLoopVars{fl, exprp->cloneTree(false), randLoopIndxp};
+            return new AstForeach{fl, randLoopVarp, newRandStmtsp(fl, tempElementp, nullptr)};
+        };
+        AstNodeExpr* tempElementp = nullptr;
+        while (VN_CAST(tempDTypep, DynArrayDType) || VN_CAST(tempDTypep, UnpackArrayDType)) {
+            AstVar* const newRandLoopIndxp = createLoopIndex(tempDTypep);
+            randLoopIndxp = AstNode::addNext(randLoopIndxp, newRandLoopIndxp);
+            tempElementp
+                = VN_CAST(tempDTypep, DynArrayDType)
+                      ? static_cast<AstNodeExpr*>(
+                          new AstCMethodHard{fl, tempElementp ? tempElementp : exprp, "atWrite",
+                                             new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}})
+                      : static_cast<AstNodeExpr*>(
+                          new AstArraySel{fl, tempElementp ? tempElementp : exprp,
+                                          new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}});
+            tempElementp->dtypep(tempDTypep->subDTypep());
+            tempDTypep = tempDTypep->virtRefDTypep();
+        }
+        handleUnsupportedStruct(tempElementp);
+        stmtsp = createForeachLoop(tempElementp, randLoopIndxp);
+        return stmtsp;
+    }
     AstNodeStmt* newRandStmtsp(FileLine* fl, AstNodeExpr* exprp, AstVar* randcVarp, int offset = 0,
                                AstMemberDType* memberp = nullptr) {
-        if (const auto* const structDtp
-            = VN_CAST(memberp ? memberp->subDTypep()->skipRefp() : exprp->dtypep()->skipRefp(),
-                      StructDType)) {
+        AstNodeDType* const memberDtp
+            = memberp ? memberp->subDTypep()->skipRefp() : exprp->dtypep()->skipRefp();
+        if (const auto* const structDtp = VN_CAST(memberDtp, StructDType)) {
             AstNodeStmt* stmtsp = nullptr;
             if (structDtp->packed()) offset += memberp ? memberp->lsb() : 0;
             for (AstMemberDType* smemberp = structDtp->membersp(); smemberp;
@@ -1364,16 +1407,10 @@ class RandomizeVisitor final : public VNVisitor {
                     if (!structSelp->dtypep()) structSelp->dtypep(smemberp->subDTypep());
                     randp = newRandStmtsp(fl, structSelp, nullptr);
                 }
-                if (stmtsp) {
-                    stmtsp->addNext(randp);
-                } else {
-                    stmtsp = randp;
-                }
+                stmtsp = stmtsp ? stmtsp->addNext(randp) : randp;
             }
             return stmtsp;
-        } else if (const auto* const unionDtp = VN_CAST(memberp ? memberp->subDTypep()->skipRefp()
-                                                                : exprp->dtypep()->skipRefp(),
-                                                        UnionDType)) {
+        } else if (const auto* const unionDtp = VN_CAST(memberDtp, UnionDType)) {
             if (!unionDtp->packed()) {
                 unionDtp->v3error("Unpacked unions shall not be declared as rand or randc."
                                   " (IEEE 1800-2023 18.4)");
@@ -1381,6 +1418,11 @@ class RandomizeVisitor final : public VNVisitor {
             }
             AstMemberDType* const firstMemberp = unionDtp->membersp();
             return newRandStmtsp(fl, exprp, nullptr, offset, firstMemberp);
+        } else if (AstDynArrayDType* const dynarrayDtp = VN_CAST(memberDtp, DynArrayDType)) {
+            return createArrayForeachLoop(fl, dynarrayDtp, exprp);
+        } else if (AstUnpackArrayDType* const unpackarrayDtp
+                   = VN_CAST(memberDtp, UnpackArrayDType)) {
+            return createArrayForeachLoop(fl, unpackarrayDtp, exprp);
         } else {
             AstNodeExpr* valp;
             if (AstEnumDType* const enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
@@ -1561,11 +1603,12 @@ class RandomizeVisitor final : public VNVisitor {
             if (memberVarp->user3()) return;  // Handled in constraints
             const AstNodeDType* const dtypep = memberVarp->dtypep()->skipRefp();
             if (VN_IS(dtypep, BasicDType) || VN_IS(dtypep, StructDType)
-                || VN_IS(dtypep, UnionDType)) {
+                || VN_IS(dtypep, UnionDType) || VN_IS(dtypep, PackArrayDType)
+                || VN_IS(dtypep, UnpackArrayDType) || VN_IS(dtypep, DynArrayDType)) {
                 AstVar* const randcVarp = newRandcVarsp(memberVarp);
                 AstVarRef* const refp = new AstVarRef{fl, classp, memberVarp, VAccess::WRITE};
                 AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp);
-                basicRandomizep->addStmtsp(stmtp);
+                basicRandomizep->addStmtsp(new AstBegin{fl, "", stmtp});
             } else if (const AstClassRefDType* const classRefp = VN_CAST(dtypep, ClassRefDType)) {
                 if (classRefp->classp() == nodep) {
                     memberVarp->v3warn(E_UNSUPPORTED,

@@ -1,5 +1,5 @@
-%Warning-CONSTRAINTIGN: t/t_randomize_method_types_unsup.v:14:32: Unsupported: randomizing this expression, treating as state
-   14 |    constraint dynsize { dynarr.size < 20; }
+%Warning-CONSTRAINTIGN: t/t_randomize_method_types_unsup.v:13:32: Unsupported: randomizing this expression, treating as state
+   13 |    constraint dynsize { dynarr.size < 20; }
       |                                ^~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
@@ -7,16 +7,8 @@
                                                            : ... note: In instance 't'
     8 |    rand int assocarr[string];
       |             ^~~~~~~~
-%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:9:13: Unsupported: random member variable with type 'int$[]'
-                                                           : ... note: In instance 't'
-    9 |    rand int dynarr[];
-      |             ^~~~~~
-%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:10:13: Unsupported: random member variable with type 'int$[0:4]'
+%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:10:13: Unsupported: random member variable with the type of the containing class
                                                             : ... note: In instance 't'
-   10 |    rand int unpackarr[5];
-      |             ^~~~~~~~~
-%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:11:13: Unsupported: random member variable with the type of the containing class
-                                                            : ... note: In instance 't'
-   11 |    rand Cls cls;
+   10 |    rand Cls cls;
       |             ^~~
 %Error: Exiting due to
