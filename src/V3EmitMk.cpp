@@ -37,8 +37,8 @@ public:
         std::string m_filename;
         uint64_t m_score;
     };
-private:
 
+private:
     // Data of a single work unit used in `singleConcatenatedFilesList()`.
     struct WorkList final {
         uint64_t m_totalScore = 0;
@@ -477,7 +477,6 @@ public:
 
         return outputFiles;
     }
-
 };
 
 // ######################################################################
@@ -486,6 +485,7 @@ public:
 class EmitMk final {
     using FileOrConcatenatedFilesList = OutputGroup::FileOrConcatenatedFilesList;
     using FilenameWithScore = OutputGroup::FilenameWithScore;
+
 public:
     // METHODS
 
@@ -528,10 +528,10 @@ public:
                 }
             }
 
-            vmClassesSlowList = OutputGroup::singleConcatenatedFilesList(std::move(slowFiles), slowTotalScore,
-                                                            "vm_classes_slow_");
-            vmClassesFastList = OutputGroup::singleConcatenatedFilesList(std::move(fastFiles), fastTotalScore,
-                                                            "vm_classes_fast_");
+            vmClassesSlowList = OutputGroup::singleConcatenatedFilesList(
+                std::move(slowFiles), slowTotalScore, "vm_classes_slow_");
+            vmClassesFastList = OutputGroup::singleConcatenatedFilesList(
+                std::move(fastFiles), fastTotalScore, "vm_classes_fast_");
         }
 
         // Generate the makefile
