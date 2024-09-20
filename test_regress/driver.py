@@ -1693,7 +1693,9 @@ class VlTest:
 
                 rawbuf = bytearray(2048)
 
-                while proc.poll() is None:
+                while True:
+                    finished = proc.poll()
+                    # Need to check readinto once, even after poll "completes"
                     got = proc.stdout.readinto(rawbuf)
                     if got:
                         data = rawbuf[0:got]
@@ -1703,6 +1705,8 @@ class VlTest:
                                 sys.stdout.flush()
                         if logfh:
                             logfh.write(data)
+                    if finished is not None:
+                        break
 
                 if logfh:
                     logfh.close()
