@@ -24,13 +24,8 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-// ######################################################################
-//  Emit statements and expressions
-
-class EmitMk final {
+class OutputGroup final {
 public:
-    // METHODS
-
     struct FileOrConcatenatedFilesList final {
         std::string m_fileName;
         std::vector<std::string> m_concatenatedFilenames{};
@@ -42,6 +37,7 @@ public:
         std::string m_filename;
         uint64_t m_score;
     };
+private:
 
     // Data of a single work unit used in `singleConcatenatedFilesList()`.
     struct WorkList final {
@@ -106,6 +102,8 @@ public:
         os << std::setw(maxScoreWidth) << (topScore + 1) << endl;
         os << endl;
     }
+
+    // STATIC METHODS
 
     // Debug logging: dumps Work Lists and their lists of files
     static void dumpWorkLists(std::ostream& os, const std::vector<WorkList>& workLists) {
@@ -179,6 +177,7 @@ public:
                 "More output files than input files. First extra file: " << ofIt->m_fileName);
     }
 
+public:
     static std::vector<FileOrConcatenatedFilesList>
     singleConcatenatedFilesList(std::vector<FilenameWithScore> inputFiles, uint64_t totalScore,
                                 std::string concatenatingFilePrefix) {
@@ -479,6 +478,17 @@ public:
         return outputFiles;
     }
 
+};
+
+// ######################################################################
+//  Emit statements and expressions
+
+class EmitMk final {
+    using FileOrConcatenatedFilesList = OutputGroup::FileOrConcatenatedFilesList;
+    using FilenameWithScore = OutputGroup::FilenameWithScore;
+public:
+    // METHODS
+
     static void emitConcatenatingFile(const FileOrConcatenatedFilesList& entry) {
         UASSERT(entry.isConcatenatingFile(), "Passed entry does not represent concatenating file");
 
@@ -518,9 +528,9 @@ public:
                 }
             }
 
-            vmClassesSlowList = singleConcatenatedFilesList(std::move(slowFiles), slowTotalScore,
+            vmClassesSlowList = OutputGroup::singleConcatenatedFilesList(std::move(slowFiles), slowTotalScore,
                                                             "vm_classes_slow_");
-            vmClassesFastList = singleConcatenatedFilesList(std::move(fastFiles), fastTotalScore,
+            vmClassesFastList = OutputGroup::singleConcatenatedFilesList(std::move(fastFiles), fastTotalScore,
                                                             "vm_classes_fast_");
         }
 
