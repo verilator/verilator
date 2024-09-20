@@ -55,6 +55,7 @@ Verilator 5.029 devel
 * Fix foreach colliding index names (#5444). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Fix fault on defparam with UNSUPPORTED ignored (#5450). [Luiza de Melo]
 * Fix class reference with pin that is a class reference (#5454).
+* Fix timing mode not exiting on empty events (#5472).
 
 
 Verilator 5.028 2024-08-21

@@ -85,8 +85,10 @@ private:
         puts(/**/ "// Evaluate model\n");
         puts(/**/ "topp->eval();\n");
         puts(/**/ "// Advance time\n");
-        if (v3Global.rootp()->delaySchedulerp()) {
+        if (v3Global.rootp()->delaySchedulerp() || v3Global.opt.timing()) {
             puts("if (!topp->eventsPending()) break;\n");
+        }
+        if (v3Global.rootp()->delaySchedulerp()) {
             puts("contextp->time(topp->nextTimeSlot());\n");
         } else {
             puts("contextp->timeInc(1);\n");
