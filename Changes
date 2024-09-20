@@ -13,24 +13,31 @@ Verilator 5.029 devel
 
 **Major:**
 
-* Self-tests have been converted to Python, run `{testname}.py` instead of `{testname}.pl`.
+* Self-tests have been converted to Python, run `{test_name}.py` instead of `{test_name}.pl`.
 
 **Minor:**
 
 * Change .vlt config files to be read before .v files (#5185). [David Moberg]
+* Change to use maximum for cover point aggregation (#5402). [Andrew Nolte]
 * Support IEEE-compliant intra-assign delays (#3711) (#5441). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support unconstrained randomization for unions (#5395) (#5396). [Yilou Wang]
+* Support basic constrained queue randomization (#5413). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support packed/unpacked and dynamic array unconstrained randomization (#5414) (#5415). [Yilou Wang]
 * Support appending to queue via `[]` (#5421). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support named event locals (#5422). [Krzysztof Bieganski, Antmicro Ltd.]
+* Support basic dist constraints (#5431). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support inside array constraints (#5448). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Add partial coverage symbol and branch data in lcov info files (#5388). [Andrew Nolte]
 * Add method to check if there are VPI callbacks of the given type (#5399). [Kaleb Barrett]
 * Improve Verilation thread pool (#5161). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Improve performance of V3VariableOrder with parallelism (#5406). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Improve parser error handling. [Arkadiusz Kozdra, Antmicro Ltd.]
 * Fix `$fatal` to not be affected by `+verilator+error+limit` (#5135). [Gökçe Aydos]
 * Fix display with multiple string formats (#5311). [Luiza de Melo]
 * Fix performance of V3Trace when many activity blocks (#5372). [Deniz Güzel]
 * Fix REALCVT warning on integral timescale conversions (#5378). [Liam Braun]
 * Fix multidimensional function return value selects (#5382). [Gökçe Aydos]
+* Fix internal error in out-of-range select (#5393) (#5443). [Geza Lore]
 * Fix dot fallback finding wrong symbols (#5394). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Fix infinite recursion due to recursive functions/tasks (#5398). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix V3Randomize compile error on old GCC (#5403) (#5417). [Krzysztof Bieganski, Antmicro Ltd.]
@@ -43,6 +50,8 @@ Verilator 5.029 devel
 * Fix clearing trigger of events with no sensitivity trees (#5426). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Fix driving clocking block in reactive region (#5430). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix associative array next/prev/first/last mis-propagating constants (#5435). [Ethan Sifferman]
+* Fix randomize treated as std::randomize in classes (#5436). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Fix foreach colliding index names (#5444). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Fix fault on defparam with UNSUPPORTED ignored (#5450). [Luiza de Melo]
 * Fix class reference with pin that is a class reference (#5454).
 
