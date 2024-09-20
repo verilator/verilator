@@ -47,7 +47,6 @@ All_Scenarios = {
 # Globals
 test = None
 Arg_Tests = []
-Arg_Driver_Verilator_Flags = []
 Quitting = False
 Vltmt_Threads = 3
 
@@ -1523,7 +1522,7 @@ class VlTest:
 
     @property
     def driver_verilator_flags(self) -> list:
-        return Arg_Driver_Verilator_Flags
+        return Args.passdown_verilator_flags
 
     @property
     def get_default_vltmt_threads(self) -> int:
@@ -2605,15 +2604,15 @@ def _parameter(param: str) -> None:
     if _Parameter_Next_Level:
         if not re.match(r'^(\d+)$', param):
             sys.exit("%Error: Expected number following " + _Parameter_Next_Level + ": " + param)
-        Arg_Driver_Verilator_Flags.append(param)
+        Args.passdown_verilator_flags.append(param)
         _Parameter_Next_Level = None
     elif re.search(r'\.py', param):
         Arg_Tests.append(param)
     elif re.match(r'^-?(-debugi|-dumpi)', param):
-        Arg_Driver_Verilator_Flags.append(param)
+        Args.passdown_verilator_flags.append(param)
         _Parameter_Next_Level = param
     elif re.match(r'^-?(-W||-debug-check)', param):
-        Arg_Driver_Verilator_Flags.append(param)
+        Args.passdown_verilator_flags.append(param)
     else:
         sys.exit("%Error: Unknown parameter: " + param)
 
@@ -2759,12 +2758,13 @@ if __name__ == '__main__':
                             help='scenario-enable ' + scen)
 
     (Args, rest) = parser.parse_known_intermixed_args()
+    Args.passdown_verilator_flags = []
 
     for arg in rest:
         _parameter(arg)
 
     if Args.debug:
-        Arg_Driver_Verilator_Flags.append("--debug --no-skip-identical")
+        Args.passdown_verilator_flags.append("--debug --no-skip-identical")
         logging.basicConfig(level=logging.DEBUG)
         logging.info("In driver.py, ARGV=" + ' '.join(sys.argv))
 
@@ -2784,7 +2784,7 @@ if __name__ == '__main__':
 
     Args.orig_argv_sw = []
     for arg in sys.argv:
-        if re.match(r'^-', arg) and not re.match(r'^-j', arg):
+        if re.match(r'^-', arg) and not re.match(r'^-j$', arg):
             Args.orig_argv_sw.append(arg)
 
     Args.test_dirs = ["t"]
