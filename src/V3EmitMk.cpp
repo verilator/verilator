@@ -59,36 +59,17 @@ public:
             : m_dbgId{id} {}
     };
 
-    // Debug logging helper: Returns properly indented "* " string.
-    // Used as a prefix of log lines representing list entry.
-    static std::string logMsgPrefixListEntry(unsigned level, unsigned ancestorsWithStatusNum = 0) {
-        UASSERT(level >= ancestorsWithStatusNum,
-                "Level must include number of ancestors with status");
-        const int spacesNum = ancestorsWithStatusNum * 6 + (level - ancestorsWithStatusNum) * 2;
-        const std::string indentSpaces = std::string(spacesNum, ' ');
-        return indentSpaces + "* ";
-    };
-
-    // Debug logging helper: Returns properly indented "* [+] " if status is true,
-    // otherwise "- [ ]". Used as a prefix of log lines representing list entry.
-    static std::string logMsgPrefixListEntryWithStatus(bool status, int level,
-                                                       int ancestorsWithStatusNum = 0) {
-        return logMsgPrefixListEntry(level, ancestorsWithStatusNum) + (status ? "[+] " : "[ ] ");
-    };
-
     // Debug logging: prints scores histogram
-    static void debugLogScoreHistogram(const std::vector<uint64_t>& sortedScores) {
-        constexpr int LOG_LEVEL = 6;
+    static void dumpLogScoreHistogram(std::ostream& os,
+                                      const std::vector<uint64_t>& sortedScores) {
         constexpr int MAX_BAR_LENGTH = 80;
         constexpr int MAX_INTERVALS_NUM = 60;
 
         const int64_t topScore = sortedScores.back();
-        UINFO(LOG_LEVEL, "Top score: " << topScore << endl);
+        os << "Top score: " << topScore << endl;
         const int maxScoreWidth = std::to_string(topScore).length();
 
         const int64_t intervalsNum = std::min<int64_t>(topScore + 1, MAX_INTERVALS_NUM);
-        const double intervalWidth
-            = static_cast<double>(topScore + 1) / static_cast<int>(intervalsNum);
 
         struct Interval final {
             uint64_t m_lowerBound = 0;
@@ -99,105 +80,73 @@ public:
         intervals.resize(intervalsNum);
 
         for (uint64_t score = topScore; score >= 1; --score) {
-            const unsigned int ivIdx = (unsigned int)(score / intervalWidth);
+            const unsigned int ivIdx = score * intervalsNum / (topScore + 1);
             intervals[ivIdx].m_lowerBound = score;
         }
         intervals[0].m_lowerBound = 0;
 
         for (const auto score : sortedScores) {
-            const unsigned int ivIdx = (unsigned int)(score / intervalWidth);
+            const unsigned int ivIdx = score * intervalsNum / (topScore + 1);
             ++intervals[ivIdx].m_size;
         }
 
         int topIntervalSize = 0;
         for (const auto& iv : intervals) topIntervalSize = std::max(topIntervalSize, iv.m_size);
 
-        UINFO(LOG_LEVEL, "Input files' scores histogram:" << endl);
+        os << "Input files' scores histogram:" << endl;
 
-        const double barLenToIvSizeRatio = double(MAX_BAR_LENGTH + 1) / topIntervalSize;
         for (int ivIdx = 0; ivIdx < intervalsNum; ++ivIdx) {
-            const auto iv = intervals[ivIdx];
-            const std::array<std::string, 9> barChars
-                = {" ",
-                   // Block characters, from "left one eight block" to "full block"
-                   "\u258E", "\u258E", "\u258D", "\u258C", "\u258B", "\u258A", "\u2589", "\u2588"};
-            const auto scaledSize
-                = int(std::round(iv.m_size * barLenToIvSizeRatio * barChars.size()));
+            const Interval& iv = intervals[ivIdx];
+            const int scaledSize = iv.m_size * (MAX_BAR_LENGTH + 1) / topIntervalSize;
 
-            std::string line = " |";
-            for (int i = 0; i < int(scaledSize / barChars.size()); ++i) line += barChars.back();
-            line += barChars[scaledSize % barChars.size()];
+            std::string line = " |" + std::string(scaledSize, '#');
 
-            UINFO(LOG_LEVEL, std::setw(maxScoreWidth)
-                                 << iv.m_lowerBound << line << "  " << iv.m_size << endl);
+            os << std::setw(maxScoreWidth) << iv.m_lowerBound << line << "  " << iv.m_size << endl;
         }
-        UINFO(LOG_LEVEL, std::setw(maxScoreWidth) << (topScore + 1) << endl);
+        os << std::setw(maxScoreWidth) << (topScore + 1) << endl;
+        os << endl;
     }
 
-    // Debug logging: prints Work Lists and their lists of files
-    static void debugLogWorkLists(const std::vector<WorkList>& workLists) {
-        constexpr int LOG_LEVEL = 5;
-
-        if (debug() < LOG_LEVEL) return;
-
-        UINFO(5, "Initial Work Lists with their concatenation eligibility status:" << endl);
+    // Debug logging: dumps Work Lists and their lists of files
+    static void dumpWorkLists(std::ostream& os, const std::vector<WorkList>& workLists) {
+        os << "Initial Work Lists with their concatenation eligibility status:" << endl;
         for (const auto& list : workLists) {
-            UINFO(5, logMsgPrefixListEntryWithStatus(list.m_isConcatenable, 0)
-                         << "Work List #" << list.m_dbgId << "  ("
-                         << "num of files: " << list.m_files.size() << "; "
-                         << "total score: " << list.m_totalScore << ")" << endl);
-            if (debug() >= 6) {
+            os << "+ [" << (list.m_isConcatenable ? 'x' : ' ') << "] "
+               << "Work List #" << list.m_dbgId << "  ("
+               << "num of files: " << list.m_files.size() << "; "
+               << "total score: " << list.m_totalScore << ")" << endl;
+            if (debug() >= 6 || list.m_files.size() < 4) {
                 // Log all files
                 for (const auto& file : list.m_files)
-                    UINFO(6, logMsgPrefixListEntry(1, 1)
-                                 << file.m_filename << "  ("
-                                 << "score: " << file.m_score << ")" << endl);
+                    os << "| + " << file.m_filename << "  ("
+                       << "score: " << file.m_score << ")" << endl;
             } else {
                 // Log only first and last file
-                if (list.m_files.size() > 3) {
-                    const FilenameWithScore& first = list.m_files.front();
-                    const FilenameWithScore& last = list.m_files.back();
-                    UINFO(5, logMsgPrefixListEntry(1, 1)
-                                 << first.m_filename << "  ("
-                                 << "score: " << first.m_score << ")" << endl);
-                    UINFO(5, logMsgPrefixListEntry(1, 1)
-                                 << "(... " << (list.m_files.size() - 2) << " files ...)" << endl);
-                    UINFO(5, logMsgPrefixListEntry(1, 1)
-                                 << last.m_filename << "  ("
-                                 << "score: " << last.m_score << ")" << endl);
-                } else {
-                    // Print full list, as it is as long or shorter than abbreviated list.
-                    for (const auto& file : list.m_files)
-                        UINFO(5, logMsgPrefixListEntry(1)
-                                     << file.m_filename << "  ("
-                                     << "score: " << file.m_score << ")" << endl);
-                }
+                const FilenameWithScore& first = list.m_files.front();
+                const FilenameWithScore& last = list.m_files.back();
+                os << "| + " << first.m_filename << "  ("
+                   << "score: " << first.m_score << ")" << endl;
+                os << "| | "
+                   << "(... " << (list.m_files.size() - 2) << " files ...)" << endl;
+                os << "| + " << last.m_filename << "  ("
+                   << "score: " << last.m_score << ")" << endl;
             }
         }
+        os << endl;
     }
 
-    // Debug logging: prints list of output files. List of grouped files is additionally printed
+    // Debug logging: dumps list of output files. List of grouped files is additionally printed
     // for each concatenating file.
-    static void
-    debugLogOutputFilesList(const std::vector<FileOrConcatenatedFilesList>& outputFiles) {
-        // TODO: make a selfTest checking against wildly uneven distribution
-        constexpr int LOG_LEVEL = 5;
-
-        if (debug() < LOG_LEVEL) return;
-
-        std::stringstream line;
-
-        UINFO(LOG_LEVEL, "List of output files after execution of concatenation:" << endl);
+    static void dumpOutputList(std::ostream& os,
+                               const std::vector<FileOrConcatenatedFilesList>& outputFiles) {
+        os << "List of output files after execution of concatenation:" << endl;
 
         for (const auto& entry : outputFiles) {
             if (entry.isConcatenatingFile()) {
-                UINFO(LOG_LEVEL, logMsgPrefixListEntry(0)
-                                     << entry.m_fileName << "  (concatenating file)" << endl);
-                for (const auto& f : entry.m_concatenatedFilenames) {
-                    UINFO(LOG_LEVEL, logMsgPrefixListEntry(1) << f << endl);
-                }
+                os << "+ " << entry.m_fileName << "  (concatenating file)" << endl;
+                for (const auto& f : entry.m_concatenatedFilenames) { os << "| + " << f << endl; }
             } else {
-                UINFO(LOG_LEVEL, logMsgPrefixListEntry(0) << entry.m_fileName << endl);
+                os << "+ " << entry.m_fileName << endl;
             }
         }
     }
@@ -292,7 +241,14 @@ public:
                        [](const FilenameWithScore& inputFile) { return inputFile.m_score; });
         std::sort(sortedScores.begin(), sortedScores.end());
 
-        if (debug() >= 6) debugLogScoreHistogram(sortedScores);
+        std::unique_ptr<std::ofstream> logp;
+        if (dumpLevel() >= 6) {
+            const string filename = v3Global.debugFilename("outputgroup") + ".txt";
+            logp = std::unique_ptr<std::ofstream>{V3File::new_ofstream(filename)};
+            if (logp->fail()) v3fatal("Can't write " << filename);
+        }
+
+        if (logp) dumpLogScoreHistogram(*logp, sortedScores);
 
         // Input files with a score exceeding this value are excluded from concatenation.
         const uint64_t concatenableFileMaxScore = totalScore / totalBucketsNum / 2;
@@ -307,9 +263,9 @@ public:
         UINFO(6, "Input files with their concatenation eligibility status:" << endl);
         for (const auto& inputFile : inputFiles) {
             const bool fileIsConcatenable = (inputFile.m_score <= concatenableFileMaxScore);
-            UINFO(6, logMsgPrefixListEntryWithStatus(fileIsConcatenable, 0)
-                         << inputFile.m_filename << "  ("
-                         << "score: " << inputFile.m_score << ")" << endl);
+            UINFO(6, " + [" << (fileIsConcatenable ? 'x' : ' ') << "] " << inputFile.m_filename
+                            << "  ("
+                            << "score: " << inputFile.m_score << ")" << endl);
             V3Stats::addStatSum(fileIsConcatenable ? "Concatenation total grouped score"
                                                    : "Concatenation total non-grouped score",
                                 inputFile.m_score);
@@ -351,7 +307,7 @@ public:
             concatenableListsByDescSize.push_back(&list);
         }
 
-        debugLogWorkLists(workLists);
+        if (logp) dumpWorkLists(*logp, workLists);
 
         {
             // Check concatenation conditions again using more precise data
@@ -396,7 +352,7 @@ public:
                 std::for_each(
                     concatenableListsByDescSize.begin(),
                     concatenableListsByDescSize.begin() + totalBucketsNum, [](auto* listp) {
-                        UINFO(5, logMsgPrefixListEntryWithStatus(true, 0)
+                        UINFO(5, "+ [x] "
                                      << "Work List #" << listp->m_dbgId << "  ("
                                      << "num of files: " << listp->m_files.size() << "; "
                                      << "total score: " << listp->m_totalScore << ")" << endl);
@@ -407,7 +363,7 @@ public:
                           concatenableListsByDescSize.end(), [](auto* listp) {
                               listp->m_isConcatenable = false;
 
-                              UINFO(5, logMsgPrefixListEntryWithStatus(false, 0)
+                              UINFO(5, "+ [ ]"
                                            << "Work List #" << listp->m_dbgId << "  ("
                                            << "num of files: " << listp->m_files.size() << "; "
                                            << "total score: " << listp->m_totalScore << ")"
@@ -436,16 +392,16 @@ public:
                 listp->m_bucketsNum = std::min<int>(
                     availableBuckets, std::max<int>(1, listp->m_totalScore / idealBucketScore));
                 availableBuckets -= listp->m_bucketsNum;
-                UINFO(5, logMsgPrefixListEntry(0)
+                UINFO(5, "+ "
                              << "[" << std::setw(2) << listp->m_bucketsNum << "] "
                              << "Work List #" << listp->m_dbgId << endl);
             } else {
                 // Out of buckets. Instead of recalculating everything just exclude the list.
                 listp->m_isConcatenable = false;
-                UINFO(5, logMsgPrefixListEntry(0) << "[ 0] "
-                                                  << "Work List #" << std::left << std::setw(4)
-                                                  << listp->m_dbgId << std::right << " "
-                                                  << "(excluding from concatenation)" << endl);
+                UINFO(5, "+ [ 0] "
+                             << "Work List #" << std::left << std::setw(4) << listp->m_dbgId
+                             << std::right << " "
+                             << "(excluding from concatenation)" << endl);
             }
         }
 
@@ -512,7 +468,7 @@ public:
             }
         }
 
-        debugLogOutputFilesList(outputFiles);
+        if (logp) dumpOutputList(*logp, outputFiles);
         checkInputAndOutputListsEquality(inputFiles, outputFiles);
 
         return outputFiles;
