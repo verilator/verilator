@@ -260,12 +260,13 @@ public:
         std::vector<WorkList> workLists{};
         int nextWorkListId = 0;
 
-        UINFO(6, "Input files with their concatenation eligibility status:" << endl);
+        if (logp) *logp << "Input files with their concatenation eligibility status:" << endl;
         for (const auto& inputFile : inputFiles) {
             const bool fileIsConcatenable = (inputFile.m_score <= concatenableFileMaxScore);
-            UINFO(6, " + [" << (fileIsConcatenable ? 'x' : ' ') << "] " << inputFile.m_filename
-                            << "  ("
-                            << "score: " << inputFile.m_score << ")" << endl);
+            if (logp)
+                *logp << " + [" << (fileIsConcatenable ? 'x' : ' ') << "] " << inputFile.m_filename
+                      << "  ("
+                      << "score: " << inputFile.m_score << ")" << endl;
             V3Stats::addStatSum(fileIsConcatenable ? "Concatenation total grouped score"
                                                    : "Concatenation total non-grouped score",
                                 inputFile.m_score);
@@ -280,6 +281,7 @@ public:
             list.m_files.push_back({inputFile.m_filename, inputFile.m_score});
             list.m_totalScore += inputFile.m_score;
         }
+        if (logp) *logp << endl;
 
         // Collect stats and mark lists with only one file as non-concatenable
 
@@ -343,32 +345,32 @@ public:
         // their score to ConcatenableFilesMaxScore.
         if (concatenableFilesListsCount > static_cast<std::size_t>(totalBucketsNum)) {
             // Debugging: Log which work lists will be kept
-            if (debug() >= 5) {
-                UINFO(5,
-                      "More Work Lists than buckets; "
-                          << "Work Lists with statuses indicating whether the list will be kept:"
-                          << endl);
+            if (logp) {
+                *logp << "More Work Lists than buckets; "
+                      << "Work Lists with statuses indicating whether the list will be kept:"
+                      << endl;
                 // Only lists that will be kept. List that will be removed are logged below.
-                std::for_each(
-                    concatenableListsByDescSize.begin(),
-                    concatenableListsByDescSize.begin() + totalBucketsNum, [](auto* listp) {
-                        UINFO(5, "+ [x] "
-                                     << "Work List #" << listp->m_dbgId << "  ("
-                                     << "num of files: " << listp->m_files.size() << "; "
-                                     << "total score: " << listp->m_totalScore << ")" << endl);
-                    });
+                std::for_each(concatenableListsByDescSize.begin(),
+                              concatenableListsByDescSize.begin() + totalBucketsNum,
+                              [&](auto* listp) {
+                                  *logp << "+ [x] "
+                                        << "Work List #" << listp->m_dbgId << "  ("
+                                        << "num of files: " << listp->m_files.size() << "; "
+                                        << "total score: " << listp->m_totalScore << ")" << endl;
+                              });
             }
             // NOTE: Not just debug logging - notice `isConcatenable` assignment in the loop.
             std::for_each(concatenableListsByDescSize.begin() + totalBucketsNum,
-                          concatenableListsByDescSize.end(), [](auto* listp) {
+                          concatenableListsByDescSize.end(), [&](auto* listp) {
                               listp->m_isConcatenable = false;
 
-                              UINFO(5, "+ [ ]"
-                                           << "Work List #" << listp->m_dbgId << "  ("
-                                           << "num of files: " << listp->m_files.size() << "; "
-                                           << "total score: " << listp->m_totalScore << ")"
-                                           << endl);
+                              if (logp)
+                                  *logp << "+ [ ]"
+                                        << "Work List #" << listp->m_dbgId << "  ("
+                                        << "num of files: " << listp->m_files.size() << "; "
+                                        << "total score: " << listp->m_totalScore << ")" << endl;
                           });
+            if (logp) *logp << endl;
 
             concatenableListsByDescSize.resize(totalBucketsNum);
             concatenableFilesListsCount = totalBucketsNum;
@@ -385,25 +387,28 @@ public:
 
         V3Stats::addStat("Concatenation ideal bucket score", idealBucketScore);
 
-        UINFO(5, "Buckets assigned to Work Lists:" << endl);
+        if (logp) *logp << "Buckets assigned to Work Lists:" << endl;
         int availableBuckets = totalBucketsNum;
         for (auto* listp : concatenableListsByDescSize) {
             if (availableBuckets > 0) {
                 listp->m_bucketsNum = std::min<int>(
                     availableBuckets, std::max<int>(1, listp->m_totalScore / idealBucketScore));
                 availableBuckets -= listp->m_bucketsNum;
-                UINFO(5, "+ "
-                             << "[" << std::setw(2) << listp->m_bucketsNum << "] "
-                             << "Work List #" << listp->m_dbgId << endl);
+                if (logp)
+                    *logp << "+ "
+                          << "[" << std::setw(2) << listp->m_bucketsNum << "] "
+                          << "Work List #" << listp->m_dbgId << endl;
             } else {
                 // Out of buckets. Instead of recalculating everything just exclude the list.
                 listp->m_isConcatenable = false;
-                UINFO(5, "+ [ 0] "
-                             << "Work List #" << std::left << std::setw(4) << listp->m_dbgId
-                             << std::right << " "
-                             << "(excluding from concatenation)" << endl);
+                if (logp)
+                    *logp << "+ [ 0] "
+                          << "Work List #" << std::left << std::setw(4) << listp->m_dbgId
+                          << std::right << " "
+                          << "(excluding from concatenation)" << endl;
             }
         }
+        if (logp) *logp << endl;
 
         // Assign files to buckets and build final list of files
 
