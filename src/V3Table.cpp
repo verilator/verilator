@@ -210,6 +210,9 @@ private:
         const double time  // max(_, 1), so we won't divide by zero
             = std::max<double>(chkvis.instrCount() * TABLE_BYTES_PER_INST + chkvis.dataCount(), 1);
         if (chkvis.isImpure()) chkvis.clearOptimizable(nodep, "Table creates side effects");
+        if (chkvis.isCoverage()) {
+            chkvis.clearOptimizable(nodep, "Table removes coverage points");
+        }
         if (!m_outWidthBytes || !m_inWidthBits) {
             chkvis.clearOptimizable(nodep, "Table has no outputs");
         }
