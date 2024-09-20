@@ -348,14 +348,21 @@ class ParamProcessor final {
                 key += "[" + cvtToStr(dtypep->left()) + ":" + cvtToStr(dtypep->right()) + "]";
             }
         } else if (const AstPackArrayDType* const dtypep = VN_CAST(nodep, PackArrayDType)) {
-            key += dtypep->prettyDTypeName(true);
+            key += "[";
+            key += cvtToStr(dtypep->left());
+            key += ":";
+            key += cvtToStr(dtypep->right());
+            key += "] ";
+            key += paramValueString(dtypep->subDTypep());
         } else if (const AstInitArray* const initp = VN_CAST(nodep, InitArray)) {
             key += "{";
             for (auto it : initp->map()) {
-                key += it.second->valuep()->name();
+                key += paramValueString(it.second->valuep());
                 key += ",";
             }
             key += "}";
+        } else if (const AstNodeDType* const dtypep = VN_CAST(nodep, NodeDType)) {
+            key += dtypep->prettyDTypeName(true);
         }
         UASSERT_OBJ(!key.empty(), nodep, "Parameter yielded no value string");
         return key;
