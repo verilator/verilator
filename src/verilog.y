@@ -4579,6 +4579,7 @@ taskId<nodeFTaskp>:
         |       packageClassScope id
                         { $$ = new AstTask{$<fl>$, *$2, nullptr};
                           $$->classOrPackagep($1);
+                          $$->classMethod(true);
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>1); }
         ;
 
@@ -4620,6 +4621,7 @@ funcIdNew<nodeFTaskp>:          // IEEE: from class_constructor_declaration
                         { $$ = new AstFunc{$<fl>2, "new", nullptr, nullptr};
                           $$->classOrPackagep($1);
                           $$->isConstructor(true);
+                          $$->classMethod(true);
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>1); }
         ;
 
@@ -4640,6 +4642,7 @@ fIdScoped<funcp>:               // IEEE: part of function_body_declaration/task_
                         { $<fl>$ = $<fl>1;
                           $<scp>$ = $<scp>1;
                           $$ = new AstFunc{$<fl>$, *$2, nullptr, nullptr};
+                          $$->classMethod(true);
                           $$->classOrPackagep($1); }
         ;
 

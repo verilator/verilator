@@ -3066,6 +3066,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
         VL_RESTORER(m_ds);
         VL_RESTORER(m_pinSymp);
 
+        if (nodep->name() == "std" && !nodep->classOrPackagep()) {
+            nodep->classOrPackagep(v3Global.rootp()->stdPackagep());
+        }
         // ClassRef's have pins, so track
         if (nodep->classOrPackagep()) {
             m_pinSymp = m_statep->getNodeSym(nodep->classOrPackagep());

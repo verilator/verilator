@@ -45,7 +45,6 @@ class LinkParseVisitor final : public VNVisitor {
     using ImplTypedefMap = std::map<const std::pair<void*, std::string>, AstTypedef*>;
 
     // STATE
-    AstPackage* const m_stdPackagep;  // SystemVerilog std package
     AstVar* m_varp = nullptr;  // Variable we're under
     ImplTypedefMap m_implTypedef;  // Created typedefs for each <container,name>
     std::unordered_set<FileLine*> m_filelines;  // Filelines that have been seen
@@ -192,9 +191,7 @@ class LinkParseVisitor final : public VNVisitor {
                 if (!nodep->lifetime().isNone()) {
                     m_lifetime = nodep->lifetime();
                 } else {
-                    const AstClassOrPackageRef* const classPkgRefp
-                        = VN_AS(nodep->classOrPackagep(), ClassOrPackageRef);
-                    if (classPkgRefp && VN_IS(classPkgRefp->classOrPackageNodep(), Class)) {
+                    if (nodep->classMethod()) {
                         // Class methods are automatic by default
                         m_lifetime = VLifetime::AUTOMATIC;
                     } else if (nodep->dpiImport() || VN_IS(nodep, Property)) {
@@ -841,10 +838,8 @@ class LinkParseVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }
-    void visit(AstClassOrPackageRef* nodep) override {
-        if (nodep->name() == "std" && !nodep->classOrPackagep()) {
-            nodep->classOrPackagep(m_stdPackagep);
-        }
+    void visit(AstClassOrPackageRef* nodep) override {  //
+        iterateChildren(nodep);
     }
     void visit(AstClocking* nodep) override {
         cleanFileline(nodep);
@@ -917,10 +912,7 @@ class LinkParseVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit LinkParseVisitor(AstNetlist* rootp)
-        : m_stdPackagep{rootp->stdPackagep()} {
-        iterate(rootp);
-    }
+    explicit LinkParseVisitor(AstNetlist* rootp) { iterate(rootp); }
     ~LinkParseVisitor() override {
         V3Stats::addStatSum(V3Stats::STAT_SOURCE_MODULES, m_statModules);
     }
