@@ -10,13 +10,15 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_const_opt.v"
+test.top_filename = "t/t_opt_const.v"
 
-test.compile(verilator_flags2=["-Wno-UNOPTTHREADS", "--stats", test.t_dir + "/t_const_opt.cpp"])
+test.compile(verilator_flags2=[
+    "-Wno-UNOPTTHREADS", "-fno-dfg", "-fno-expand", "--stats", test.t_dir + "/t_opt_const.cpp"
+])
 
 test.execute()
 
 if test.vlt:
-    test.file_grep(test.stats, r'Optimizations, Const bit op reduction\s+(\d+)', 40)
+    test.file_grep(test.stats, r'Optimizations, Const bit op reduction\s+(\d+)', 1)
 
 test.passes()

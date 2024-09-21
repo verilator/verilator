@@ -12,6 +12,6 @@ module t (/*AUTOARG*/);
    string s;
    initial begin
       // verilator lint_off PKGNODECL
-      s = ClsRigh::m_s;  // Bad typo
+      s = ClsRigh::m_s;  // Bad typo, issue #5475
    end
 endmodule
