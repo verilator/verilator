@@ -9,11 +9,15 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
 test.top_filename = "t/t_timing_fork_comb.v"
 
-test.compile(verilator_flags2=["--exe --main --timing -Wno-UNOPTFLAT"])
+# Should convert the first always into combo and detect cycle
+test.lint(fails=True, verilator_flags2=["--timing"])
 
-test.execute()
+test.file_grep(
+    test.compile_log_filename,
+    r'%Warning-UNOPTFLAT: t/t_timing_fork_comb.v:\d+:\d+: Signal unoptimizable: Circular combinational logic:'
+)
 
 test.passes()

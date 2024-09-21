@@ -451,7 +451,7 @@ class Runner:
             makecmd = VtOs.getenv_def('VERILATOR_MAKE', os.environ['MAKE']) + " &&"
             upperdir = 'test_regress/' if re.search(r'test_regress', os.getcwd()) else ''
             self.fail_msgs.append("\t#" + test.soprint("%Error: " + error_msg) + "\t\t" + makecmd +
-                                  " " + upperdir + test.py_filename +
+                                  " " + upperdir + test.py_filename + ' ' +
                                   ' '.join(self._manual_args()) + " --" + test.scenario + "\n")
             self.fail_tests.append(test)
             self.fail_cnt += 1

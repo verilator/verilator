@@ -11,13 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-# Should convert the first always into combo and detect cycle
-test.compile(fails=True, verilator_flags2=["--timing"])
-
-test.file_grep(
-    test.compile_log_filename,
-    r'%Warning-UNOPTFLAT: t/t_timing_fork_comb.v:\d+:\d+: Signal unoptimizable: Circular combinational logic:'
-)
+test.compile(verilator_flags2=["--exe --main --timing -Wno-UNOPTFLAT"])
 
 test.execute()
 
