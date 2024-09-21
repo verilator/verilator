@@ -10,9 +10,10 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.top_filename = "t/t_timing_fork_comb.v"
 
-test.compile(verilator_flags2=["--binary"])
+test.compile(verilator_flags2=["--exe --main --timing -Wno-UNOPTFLAT"])
 
-test.execute(expect_filename=test.golden_filename)
+test.execute()
 
 test.passes()

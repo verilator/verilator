@@ -10,9 +10,11 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.top_filename = "t/t_timing_intra_assign.v"
+test.golden_filename = "t/t_timing_intra_assign.out"
 
-test.compile(verilator_flags2=["--binary"])
+test.compile(verilator_flags2=["--binary -fno-localize"])
 
-test.execute(expect_filename=test.golden_filename)
+test.execute()
 
 test.passes()

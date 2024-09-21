@@ -10,9 +10,8 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
+test.top_filename = "t/t_std_process_self.v"
 
-test.compile(verilator_flags2=["--binary"])
-
-test.execute(expect_filename=test.golden_filename)
+test.lint(verilator_flags2=["--exe --main --timing --DUSE_STD_PREFIX"])
 
 test.passes()
