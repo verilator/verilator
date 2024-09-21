@@ -6,7 +6,6 @@
 
 program t;
    initial begin
-      #1;
       $write("*-* All Finished *-*\n");
       // No $finish
    end
