@@ -49,10 +49,12 @@ class VerilatedTraceOffloadBuffer;
 //=============================================================================
 // Common enumerations
 
-enum class VerilatedTracePrefixType : uint32_t {
+enum class VerilatedTracePrefixType : uint8_t {
     // Note: Entries must match VTracePrefixType (by name, not necessarily by value)
     ARRAY_PACKED,
     ARRAY_UNPACKED,
+    ROOTIO_MODULE,  // $rootio, used when name()=="", other modules become peers
+    ROOTIO_WRAPPER,  // "Above" ROOTIO_MODULE
     SCOPE_MODULE,
     SCOPE_INTERFACE,
     STRUCT_PACKED,
@@ -61,7 +63,7 @@ enum class VerilatedTracePrefixType : uint32_t {
 };
 
 // Direction attribute for ports
-enum class VerilatedTraceSigDirection : uint32_t {
+enum class VerilatedTraceSigDirection : uint8_t {
     NONE,
     INPUT,
     OUTPUT,
@@ -69,7 +71,7 @@ enum class VerilatedTraceSigDirection : uint32_t {
 };
 
 // Kind of signal. Similar to nettype but with a few more alternatives
-enum class VerilatedTraceSigKind : uint32_t {
+enum class VerilatedTraceSigKind : uint8_t {
     PARAMETER,
     SUPPLY0,
     SUPPLY1,
@@ -81,7 +83,7 @@ enum class VerilatedTraceSigKind : uint32_t {
 };
 
 // Base data type of signal
-enum class VerilatedTraceSigType : uint32_t {
+enum class VerilatedTraceSigType : uint8_t {
     DOUBLE,
     INTEGER,
     BIT,

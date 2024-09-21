@@ -24,27 +24,15 @@
 unsigned long long main_time = 0;
 double sc_time_stamp() { return (double)main_time; }
 
-const unsigned long long dt_2 = 3;
-
 int main(int argc, char** argv) {
     Verilated::debug(0);
     Verilated::traceEverOn(true);
     Verilated::commandArgs(argc, argv);
 
-    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{"top"}};
+    // This test is to specifically check "" as the below upper model name
+    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{""}};
 
     std::unique_ptr<TRACE_CLASS> tfp{new TRACE_CLASS};
-
-#if defined(T_TRACE_DUMPVARS_DYN_VCD_0) || defined(T_TRACE_DUMPVARS_DYN_FST_0)
-    tfp->dumpvars(0, "");
-#elif defined(T_TRACE_DUMPVARS_DYN_VCD_1) || defined(T_TRACE_DUMPVARS_DYN_FST_1)
-    tfp->dumpvars(99, "t");  // This should not match "top."
-    tfp->dumpvars(1, "top.t.cyc");  // A signal
-    tfp->dumpvars(1, "top.t.sub1a");  // Scope
-    tfp->dumpvars(2, "top.t.sub1b");  // Scope
-#else
-#error "Bad test"
-#endif
 
     top->trace(tfp.get(), 99);
     tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/" TRACE_FILE_NAME);
