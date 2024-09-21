@@ -167,6 +167,10 @@ public:
             const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
             if (logp->fail()) v3fatal("Can't write " << filename);
             std::ostream& os = *logp;
+            // TODO the symbol table has node pointers which may be
+            // dangling, as we call deleteTree in these visitors without
+            // pushing for later deletion (or deleting from the symbol table)
+            // So, only completely safe to call this when under --debug or --debug-leak.
             m_syms.dumpSelf(os);
             bool first = true;
             for (int samn = 0; samn < SAMN__MAX; ++samn) {
@@ -907,8 +911,8 @@ class LinkDotFindVisitor final : public VNVisitor {
                 } else {
                     VSymEnt* const upperSymp = m_statep->dunitEntp();
                     m_scope = nodep->name();
-                    m_curSymp = m_modSymp = m_statep->insertBlock(
-                        upperSymp, nodep->name() + "::", nodep, m_classOrPackagep);
+                    m_curSymp = m_modSymp = m_statep->insertBlock(upperSymp, nodep->name(), nodep,
+                                                                  m_classOrPackagep);
                     UINFO(9, "New module scope " << m_curSymp << endl);
                 }
             }
