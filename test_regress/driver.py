@@ -1705,7 +1705,7 @@ class VlTest:
                                 sys.stdout.flush()
                         if logfh:
                             logfh.write(data)
-                    if finished is not None:
+                    elif finished is not None:
                         break
 
                 if logfh:
