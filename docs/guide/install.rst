@@ -40,7 +40,7 @@ To use the hook, add the following entry to your :code:`.pre-commit-config.yaml`
 
    repos:
      - repo: https://github.com/verilator/verilator
-       rev: v5.026
+       rev: v5.026  # or later
        hooks:
          - id: verilator
 
