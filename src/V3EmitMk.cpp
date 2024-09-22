@@ -213,9 +213,12 @@ public:
         const V3StringSet& cppFiles = v3Global.opt.cppFiles();
         for (const auto& cppfile : cppFiles) {
             of.puts("\t" + V3Os::filenameNonDirExt(cppfile) + " \\\n");
-            const string dir = V3Os::filenameDir(cppfile);
+            const string dir
+                = V3Os::filenameRelativePath(V3Os::filenameDir(cppfile), v3Global.opt.makeDir());
             dirs.insert(dir);
         }
+        dirs.insert(V3Os::filenameRelativePath(".", v3Global.opt.makeDir()));
+
         of.puts("\n");
 
         of.puts("# User .cpp directories (from .cpp's on Verilator command line)\n");

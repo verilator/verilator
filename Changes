@@ -59,6 +59,7 @@ Verilator 5.029 devel
 * Fix class reference with pin that is a class reference (#5454).
 * Fix tracing when name() is empty (#5470). [Sam Shahrestani]
 * Fix timing mode not exiting on empty events (#5472).
+* Fix --binary with .cpp PLI filenames under relative directory paths.
 
 
 Verilator 5.028 2024-08-21
