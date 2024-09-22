@@ -2560,16 +2560,28 @@ data_declarationVarFrontClass:  // IEEE: part of data_declaration (for class_pro
         ;
 
 nettype_declaration<nodep>:  // IEEE: nettype_declaration/net_type_declaration
-                yNETTYPE data_type idAny/*nettype_identifier*/ ';'
+        //                      // Union of data_typeAny and nettype_identifier matching
+                yNETTYPE data_typeNoRef
+        /*cont*/   idAny/*nettype_identifier*/ ';'
                         { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
-        //                      // package_scope part of data_type
-        |       yNETTYPE data_type idAny yWITH__ETC packageClassScopeE id/*tf_identifier*/ ';'
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
-        |       yNETTYPE packageClassScopeE id/*nettype_identifier*/ idAny/*nettype_identifier*/ ';'
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
-        |       yNETTYPE packageClassScopeE id/*nettype_identifier*/ idAny/*nettype_identifier*/
+        |       yNETTYPE data_typeNoRef
+        /*cont*/   idAny/*nettype_identifier*/
         /*cont*/   yWITH__ETC packageClassScopeE id/*tf_identifier*/ ';'
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype with"); }
+        |       yNETTYPE packageClassScopeE idAny packed_dimensionListE
+        /*cont*/   idAny/*nettype_identifier*/ ';'
                         { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
+        |       yNETTYPE packageClassScopeE idAny packed_dimensionListE
+        /*cont*/   idAny/*nettype_identifier*/
+        /*cont*/   yWITH__ETC packageClassScopeE id/*tf_identifier*/ ';'
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype with"); }
+        |       yNETTYPE packageClassScopeE idAny parameter_value_assignmentClass packed_dimensionListE
+        /*cont*/   idAny/*nettype_identifier*/ ';'
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
+        |       yNETTYPE packageClassScopeE idAny parameter_value_assignmentClass packed_dimensionListE
+        /*cont*/   idAny/*nettype_identifier*/
+        /*cont*/   yWITH__ETC packageClassScopeE id/*tf_identifier*/ ';'
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype with"); }
         ;
 
 implicit_typeE<nodeDTypep>:             // IEEE: part of *data_type_or_implicit
