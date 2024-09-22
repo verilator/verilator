@@ -2137,6 +2137,26 @@ data_type<nodeDTypep>:          // ==IEEE: data_type
                           $$ = GRAMMARP->createArray(refp, $4, true); }
         ;
 
+data_typeAny<nodeDTypep>:       // ==IEEE: data_type (accepting idAny)
+        //                      // IEEE: data_type_or_incomplete_class_scoped_type parses same as this
+        //                      // as can't tell them apart until link
+        //                      // This expansion also replicated elsewhere, IE data_type__AndID
+                data_typeNoRef                          { $$ = $1; }
+        //
+        //                      // REFERENCES
+        //
+        //                      // IEEE: [ class_scope | package_scope ] type_identifier { packed_dimension }
+        //                      // IEEE: class_type
+        //                      // IEEE: ps_covergroup_identifier
+        //                      // Don't distinguish between types and classes so all these combined
+        |       packageClassScopeE idAny packed_dimensionListE
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
+                          $$ = GRAMMARP->createArray(refp, $3, true); }
+        |       packageClassScopeE idAny parameter_value_assignmentClass packed_dimensionListE
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, $3};
+                          $$ = GRAMMARP->createArray(refp, $4, true); }
+        ;
+
 data_typeBasic<nodeDTypep>:             // IEEE: part of data_type
                 integer_vector_type signingE rangeListE { $1->setSignedState($2); $$ = GRAMMARP->addRange($1, $3, true); }
         |       integer_atom_type signingE              { $1->setSignedState($2); $$ = $1; }
@@ -3176,7 +3196,7 @@ type_assignment<varp>:          // ==IEEE: type_assignment
         //                      // note exptOrDataType being a data_type is only for yPARAMETER yTYPE
                 idAny/*new-parameter*/ sigAttrListE
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2); }
-        |       idAny/*new-parameter*/ sigAttrListE '=' data_type
+        |       idAny/*new-parameter*/ sigAttrListE '=' data_typeAny
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2); $$->valuep($4); }
         ;
 

@@ -3928,7 +3928,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     nodep->refDTypep(defp);
                     nodep->classOrPackagep(foundp->classOrPackagep());
                 }
-            } else if (AstClass* const defp = foundp ? VN_AS(foundp->nodep(), Class) : nullptr) {
+            } else if (AstClass* const defp = foundp ? VN_CAST(foundp->nodep(), Class) : nullptr) {
                 AstPin* const paramsp = nodep->paramsp();
                 if (paramsp) paramsp->unlinkFrBackWithNext();
                 AstClassRefDType* const newp
@@ -3941,7 +3941,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 return;
             } else {
                 if (foundp) UINFO(1, "Found sym node: " << foundp->nodep() << endl);
-                nodep->v3error("Can't find typedef: " << nodep->prettyNameQ());
+                if (foundp) {
+                    nodep->v3error("Expecting a data type: " << nodep->prettyNameQ());
+                } else {
+                    nodep->v3error("Can't find typedef: " << nodep->prettyNameQ());
+                }
             }
         }
         iterateChildren(nodep);
