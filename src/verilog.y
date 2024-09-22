@@ -2297,9 +2297,6 @@ member_decl_assignment<memberDTypep>:   // Derived from IEEE: variable_decl_assi
         //                      // IEEE: "class_variable_identifier [ '=' class_new ]"
         //                      // variable_dimensionE must be empty
         //                      // Pushed into variable_declExpr:dynamic_array_new
-        //
-        //                      // IEEE: "[ covergroup_variable_identifier ] '=' class_new
-        //                      // Pushed into variable_declExpr:class_new
         ;
 
 list_of_variable_decl_assignments<varp>:        // ==IEEE: list_of_variable_decl_assignments
@@ -2319,11 +2316,6 @@ variable_decl_assignment<varp>: // ==IEEE: variable_decl_assignment
         //                      // IEEE: "class_variable_identifier [ '=' class_new ]"
         //                      // variable_dimensionE must be empty
         //                      // Pushed into variable_declExpr:dynamic_array_new
-        //
-        //                      // IEEE: "[ covergroup_variable_identifier ] '=' class_new
-        //                      // Pushed into variable_declExpr:class_new
-        |       '=' class_new
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: declaration assignment with new()"); }
         ;
 
 list_of_tf_variable_identifiers<nodep>: // ==IEEE: list_of_tf_variable_identifiers
