@@ -36,7 +36,7 @@ It encapsulates the :ref:`Verilator Build Docker Container`, so you need docker 
 The verilator image will be downloaded automatically.
 To use the hook, add the following entry to your `.pre-commit-config.yaml`:
 
-:: code-block:: yaml
+.. code-block:: yaml
 
    repos:
      - repo: https://github.com/verilator/verilator
