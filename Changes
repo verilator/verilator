@@ -62,6 +62,7 @@ Verilator 5.029 devel
 * Fix tracing when name() is empty (#5470). [Sam Shahrestani]
 * Fix timing mode not exiting on empty events (#5472).
 * Fix --binary with .cpp PLI filenames under relative directory paths.
+* Fix extra dot in coverage point hierarchy when using name()=''.
 
 
 Verilator 5.028 2024-08-21
