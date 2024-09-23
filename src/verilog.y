@@ -2137,6 +2137,26 @@ data_type<nodeDTypep>:          // ==IEEE: data_type
                           $$ = GRAMMARP->createArray(refp, $4, true); }
         ;
 
+data_typeAny<nodeDTypep>:       // ==IEEE: data_type (accepting idAny)
+        //                      // IEEE: data_type_or_incomplete_class_scoped_type parses same as this
+        //                      // as can't tell them apart until link
+        //                      // This expansion also replicated elsewhere, IE data_type__AndID
+                data_typeNoRef                          { $$ = $1; }
+        //
+        //                      // REFERENCES
+        //
+        //                      // IEEE: [ class_scope | package_scope ] type_identifier { packed_dimension }
+        //                      // IEEE: class_type
+        //                      // IEEE: ps_covergroup_identifier
+        //                      // Don't distinguish between types and classes so all these combined
+        |       packageClassScopeE idAny packed_dimensionListE
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
+                          $$ = GRAMMARP->createArray(refp, $3, true); }
+        |       packageClassScopeE idAny parameter_value_assignmentClass packed_dimensionListE
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, $3};
+                          $$ = GRAMMARP->createArray(refp, $4, true); }
+        ;
+
 data_typeBasic<nodeDTypep>:             // IEEE: part of data_type
                 integer_vector_type signingE rangeListE { $1->setSignedState($2); $$ = GRAMMARP->addRange($1, $3, true); }
         |       integer_atom_type signingE              { $1->setSignedState($2); $$ = $1; }
@@ -2192,7 +2212,7 @@ data_typeVirtual<nodeDTypep>:           // ==IEEE: data_type after yVIRTUAL [ yI
         ;
 
 data_type_or_void<nodeDTypep>:  // ==IEEE: data_type_or_void
-                data_type                               { $$ = $1; }
+                data_typeAny                            { $$ = $1; }
         |       yVOID
                         { $$ = new AstBasicDType{$1, LOGIC_IMPLICIT};
                           BBUNSUP($1, "Unsupported: void (for tagged unions)"); }
@@ -2277,9 +2297,6 @@ member_decl_assignment<memberDTypep>:   // Derived from IEEE: variable_decl_assi
         //                      // IEEE: "class_variable_identifier [ '=' class_new ]"
         //                      // variable_dimensionE must be empty
         //                      // Pushed into variable_declExpr:dynamic_array_new
-        //
-        //                      // IEEE: "[ covergroup_variable_identifier ] '=' class_new
-        //                      // Pushed into variable_declExpr:class_new
         ;
 
 list_of_variable_decl_assignments<varp>:        // ==IEEE: list_of_variable_decl_assignments
@@ -2299,11 +2316,6 @@ variable_decl_assignment<varp>: // ==IEEE: variable_decl_assignment
         //                      // IEEE: "class_variable_identifier [ '=' class_new ]"
         //                      // variable_dimensionE must be empty
         //                      // Pushed into variable_declExpr:dynamic_array_new
-        //
-        //                      // IEEE: "[ covergroup_variable_identifier ] '=' class_new
-        //                      // Pushed into variable_declExpr:class_new
-        |       '=' class_new
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: declaration assignment with new()"); }
         ;
 
 list_of_tf_variable_identifiers<nodep>: // ==IEEE: list_of_tf_variable_identifiers
@@ -2540,16 +2552,28 @@ data_declarationVarFrontClass:  // IEEE: part of data_declaration (for class_pro
         ;
 
 nettype_declaration<nodep>:  // IEEE: nettype_declaration/net_type_declaration
-                yNETTYPE data_type idAny/*nettype_identifier*/ ';'
+        //                      // Union of data_typeAny and nettype_identifier matching
+                yNETTYPE data_typeNoRef
+        /*cont*/   idAny/*nettype_identifier*/ ';'
                         { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
-        //                      // package_scope part of data_type
-        |       yNETTYPE data_type idAny yWITH__ETC packageClassScopeE id/*tf_identifier*/ ';'
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
-        |       yNETTYPE packageClassScopeE id/*nettype_identifier*/ idAny/*nettype_identifier*/ ';'
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
-        |       yNETTYPE packageClassScopeE id/*nettype_identifier*/ idAny/*nettype_identifier*/
+        |       yNETTYPE data_typeNoRef
+        /*cont*/   idAny/*nettype_identifier*/
         /*cont*/   yWITH__ETC packageClassScopeE id/*tf_identifier*/ ';'
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype with"); }
+        |       yNETTYPE packageClassScopeE idAny packed_dimensionListE
+        /*cont*/   idAny/*nettype_identifier*/ ';'
                         { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
+        |       yNETTYPE packageClassScopeE idAny packed_dimensionListE
+        /*cont*/   idAny/*nettype_identifier*/
+        /*cont*/   yWITH__ETC packageClassScopeE id/*tf_identifier*/ ';'
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype with"); }
+        |       yNETTYPE packageClassScopeE idAny parameter_value_assignmentClass packed_dimensionListE
+        /*cont*/   idAny/*nettype_identifier*/ ';'
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
+        |       yNETTYPE packageClassScopeE idAny parameter_value_assignmentClass packed_dimensionListE
+        /*cont*/   idAny/*nettype_identifier*/
+        /*cont*/   yWITH__ETC packageClassScopeE id/*tf_identifier*/ ';'
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype with"); }
         ;
 
 implicit_typeE<nodeDTypep>:             // IEEE: part of *data_type_or_implicit
@@ -3176,7 +3200,7 @@ type_assignment<varp>:          // ==IEEE: type_assignment
         //                      // note exptOrDataType being a data_type is only for yPARAMETER yTYPE
                 idAny/*new-parameter*/ sigAttrListE
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2); }
-        |       idAny/*new-parameter*/ sigAttrListE '=' data_type
+        |       idAny/*new-parameter*/ sigAttrListE '=' data_typeAny
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2); $$->valuep($4); }
         ;
 
@@ -4118,7 +4142,7 @@ task_subroutine_callNoMethod<nodeExprp>:    // function_subroutine_callNoMethod 
         //                      // IEEE: randomize_call
         //                      // We implement randomize as a normal funcRef, since randomize isn't a keyword
         //                      // Note yNULL is already part of expressions, so they come for free
-        //UNSUP funcRef yWITH__CUR constraint_block     { }
+        |       funcRef yWITH__CUR constraint_block     { $$ = new AstWithParse{$2, $1, $3}; }
         ;
 
 function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine_call (as function)
@@ -4579,6 +4603,7 @@ taskId<nodeFTaskp>:
         |       packageClassScope id
                         { $$ = new AstTask{$<fl>$, *$2, nullptr};
                           $$->classOrPackagep($1);
+                          $$->classMethod(true);
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>1); }
         ;
 
@@ -4620,6 +4645,7 @@ funcIdNew<nodeFTaskp>:          // IEEE: from class_constructor_declaration
                         { $$ = new AstFunc{$<fl>2, "new", nullptr, nullptr};
                           $$->classOrPackagep($1);
                           $$->isConstructor(true);
+                          $$->classMethod(true);
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>1); }
         ;
 
@@ -4640,6 +4666,7 @@ fIdScoped<funcp>:               // IEEE: part of function_body_declaration/task_
                         { $<fl>$ = $<fl>1;
                           $<scp>$ = $<scp>1;
                           $$ = new AstFunc{$<fl>$, *$2, nullptr, nullptr};
+                          $$->classMethod(true);
                           $$->classOrPackagep($1); }
         ;
 
@@ -7312,8 +7339,6 @@ memberQualOne<qualifiers>:                      // IEEE: property_qualifier + me
 
 class_constraint<constraintp>:  // ==IEEE: class_constraint
         //                      // IEEE: constraint_declaration
-        //                      // UNSUP: We have the unsupported warning on the randomize() call, so don't bother on
-        //                      // constraint blocks. When we support randomize we need to make AST nodes for below rules
                 constraintStaticE yCONSTRAINT dynamic_override_specifiersE constraintIdNew constraint_block
                         { $$ = $4; $$->isStatic($1); $$->addItemsp($5); SYMP->popScope($$); }
         |       constraintStaticE yCONSTRAINT dynamic_override_specifiersE constraintIdNew '{' '}'

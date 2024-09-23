@@ -13,9 +13,9 @@ test.scenarios('simulator')
 
 test.compile()
 
-test.execute(
-    # Make sure we get the finish statement called
-    expect=r"""\*-\* All Finished \*-\*
-Goodbye world, at cycle \d+.*""")
+test.execute()
+
+# Make sure we get the finish statement called
+test.file_grep(test.run_log_filename, r'Goodbye world, at cycle \d')
 
 test.passes()

@@ -852,6 +852,10 @@ def write_type_tests(prefix, nodeList):
             base = "DfgVertex"
             variable = "vtxp"
             enum = "VDfgType"
+        else:
+            base = None
+            variable = None
+            enum = None
         for node in nodeList:
             fh.write(
                 "template<> inline bool {b}::privateTypeTest<{p}{n}>(const {b}* {v}) {{ ".format(

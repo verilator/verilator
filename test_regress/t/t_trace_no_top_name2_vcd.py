@@ -9,14 +9,14 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
-test.top_filename = "t/t_const_opt.v"
+test.scenarios('vlt')
+test.pli_filename = "t/t_trace_no_top_name2.cpp"
+test.top_filename = "t/t_trace_no_top_name2.v"
 
-test.compile(verilator_flags2=["-Wno-UNOPTTHREADS", "--stats", test.t_dir + "/t_const_opt.cpp"])
+test.compile(make_main=False, verilator_flags2=["--trace --exe", test.pli_filename])
 
 test.execute()
 
-if test.vlt:
-    test.file_grep(test.stats, r'Optimizations, Const bit op reduction\s+(\d+)', 40)
+test.vcd_identical(test.trace_filename, test.golden_filename)
 
 test.passes()

@@ -245,6 +245,7 @@ Liwei
 Lockhart
 Longo
 Luca
+Luiza
 Lussier
 Lübeck
 MMD
@@ -275,6 +276,8 @@ MinW
 Mindspeed
 MingW
 Miodrag
+Moberg
+Mobert
 ModelSim
 Modport
 Moinak
@@ -587,6 +590,7 @@ datadir
 datafiles
 david
 ddd
+de
 deassign
 debugi
 defenv

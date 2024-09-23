@@ -28,6 +28,7 @@ Now, let's create an example Verilog, and SystemC wrapper file:
 
      cat >sc_main.cpp <<'EOF'
        #include "Vour.h"
+       using namespace sc_core;
        int sc_main(int argc, char** argv) {
            Verilated::commandArgs(argc, argv);
            sc_clock clk{"clk", 10, SC_NS, 0.5, 3, SC_NS, true};

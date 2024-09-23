@@ -2350,11 +2350,6 @@ check_finished
   string ``*-* All Finished *-*`` being printed on standard output. This is
   the normal way for successful tests to finish.
 
-expect
-  A quoted list of strings or regular expression to be matched in the
-  output. See `Hints On Writing Tests` for more detail on how this argument
-  should be used.
-
 fails
   True to indicate this step is expected to fail.  Tests that are expected
   to fail generally have _bad in their filename.

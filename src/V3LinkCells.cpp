@@ -490,12 +490,13 @@ class LinkCellsVisitor final : public VNVisitor {
                 nodep->addNextHere(varp);
                 nodep->hasIfaceVar(true);
             }
-            if (nodep->hasNoParens()) {
-                nodep->v3error("Interface instantiation "
-                               << nodep->prettyNameQ() << " requires parenthesis\n"
-                               << nodep->warnMore() << "... Suggest use '" << nodep->prettyName()
-                               << "()'");
-            }
+        }
+        if (nodep->hasNoParens()) {
+            // Need in the grammar, otherwise it looks like "id/*data_type*/ id/*new_var*/;"
+            nodep->v3error("Instantiation " << nodep->prettyNameQ()
+                                            << " requires parenthesis (IEEE 1800-2023 23.3.2)\n"
+                                            << nodep->warnMore() << "... Suggest use '"
+                                            << nodep->prettyName() << "()'");
         }
         if (nodep->modp()) {  //
             iterateChildren(nodep);

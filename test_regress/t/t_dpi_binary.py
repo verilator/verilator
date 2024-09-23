@@ -10,15 +10,10 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_const_opt.v"
+test.pli_filename = "t/t_dpi_binary_c.cpp"
 
-test.compile(verilator_flags2=[
-    "-Wno-UNOPTTHREADS", "-fno-dfg", "-fno-expand", "--stats", test.t_dir + "/t_const_opt.cpp"
-])
+test.compile(v_flags2=[test.pli_filename], verilator_flags2=['--binary'])
 
 test.execute()
-
-if test.vlt:
-    test.file_grep(test.stats, r'Optimizations, Const bit op reduction\s+(\d+)', 1)
 
 test.passes()

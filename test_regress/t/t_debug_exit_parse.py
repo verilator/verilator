@@ -12,6 +12,8 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t_EXAMPLE.v"
 
-test.lint(verilator_flags2=["--debug-exit-parse"], expect='--debug-exit-parse')
+test.lint(verilator_flags2=["--debug-exit-parse"])
+
+test.file_grep(test.compile_log_filename, r'--debug-exit-parse')
 
 test.passes()

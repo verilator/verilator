@@ -33,6 +33,7 @@ if test.vlt_all:
         r'{"type":"VAR","name":"u.u0.u1.u0.u0.z",.*"loc":"f,83:[^"]*",.*"origName":"z",.*,"isSigPublic":true,.*dtypeName":"logic",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true'
     )
 
-test.execute(expect=r"\] (%m|.*t\.ps): Clocked")
+test.execute()
+test.file_grep(test.run_log_filename, r"\] (%m|.*t\.ps): Clocked")
 
 test.passes()

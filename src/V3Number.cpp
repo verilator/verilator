@@ -198,7 +198,7 @@ void V3Number::create(const char* sourcep) {
     }
     // Otherwise...
     else if (!sized()) {
-        width(32, false);  // Says IEEE 1800-2012 5.7.1
+        width(v3Global.opt.maxNumWidth(), false);  // Will change width below
         if (unbased) isSigned(true);  // Also says the spec.
     }
 
@@ -213,6 +213,7 @@ void V3Number::create(const char* sourcep) {
     }
 
     int obit = 0;  // Start at LSB
+    int base_align = 1;
     if (std::tolower(base) == 'd') {
         // Ignore leading zeros so we don't issue too many digit errors when lots of leading 0's
         while (*value_startp == '_' || *value_startp == '0') value_startp++;
@@ -258,11 +259,13 @@ void V3Number::create(const char* sourcep) {
             case 'z':
             case '?': {
                 got_z = 1;
+                if (!userSized) width(32, false);
                 setAllBitsZ();
                 break;
             }
             case 'x': {
                 got_x = 1;
+                if (!userSized) width(32, false);
                 setAllBitsX();
                 break;
             }
@@ -288,6 +291,7 @@ void V3Number::create(const char* sourcep) {
             }
             switch (std::tolower(base)) {
             case 'b': {
+                base_align = 1;
                 switch (std::tolower(*cp)) {
                 case '0': setBit(obit++, 0); break;
                 case '1': setBit(obit++, 1); break;
@@ -302,6 +306,7 @@ void V3Number::create(const char* sourcep) {
 
             case 'o':
             case 'c': {
+                base_align = 3;
                 switch (std::tolower(*cp)) {  // clang-format off
                 case '0': setBit(obit++, 0); setBit(obit++, 0);  setBit(obit++, 0);  break;
                 case '1': setBit(obit++, 1); setBit(obit++, 0);  setBit(obit++, 0);  break;
@@ -322,6 +327,7 @@ void V3Number::create(const char* sourcep) {
             }
 
             case 'h': {
+                base_align = 4;
                 switch (std::tolower(*cp)) {  // clang-format off
                 case '0': setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); break;
                 case '1': setBit(obit++,1); setBit(obit++,0); setBit(obit++,0); setBit(obit++,0); break;
@@ -359,6 +365,11 @@ void V3Number::create(const char* sourcep) {
         }
     }
 
+    // If was unsized, trim width per IEEE 1800-2023 5.7.1
+    if (!userSized && !m_data.m_autoExtend) {
+        width(std::max(32, base_align * ((widthMin() + base_align - 1) / base_align)), false);
+    }
+
     // Z or X extend specific width values.  Spec says we don't 1 extend.
     // This fixes 2'bx to become 2'bxx.
     while (obit <= width() && obit && bitIsXZ(obit - 1)) {
@@ -372,15 +383,7 @@ void V3Number::create(const char* sourcep) {
 }
 
 void V3Number::warnTooMany(const string& value) {
-    static int warned = 0;
-    v3error("Too many digits for "
-            << width() << " bit number: '" << value << "'\n"
-            << ((!sized() && !warned++)
-                    ? (V3Error::warnMore() + "... As that number was unsized"
-                       + " ('...) it is limited to 32 bits"
-                         " (IEEE 1800-2023 5.7.1)\n"
-                       + V3Error::warnMore() + "... Suggest adding a size to it.")
-                    : ""));
+    v3error("Too many digits for " << width() << " bit number: '" << value << "'\n");
 }
 
 void V3Number::nodep(AstNode* nodep) VL_MT_STABLE {

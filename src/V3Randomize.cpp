@@ -557,6 +557,21 @@ class ConstraintExprVisitor final : public VNVisitor {
         return new AstSFormatF{fl, fmt.str(), false, exprsp};
     }
 
+    AstNodeExpr* newSel(FileLine* fl, AstNodeExpr* arrayp, AstNodeExpr* idxp) {
+        // similar to V3WidthSel.cpp
+        AstNodeDType* const arrDtp = arrayp->unlinkFrBack()->dtypep();
+        AstNodeExpr* selp = nullptr;
+        if (VN_IS(arrDtp, QueueDType) || VN_IS(arrDtp, DynArrayDType))
+            selp = new AstCMethodHard{fl, arrayp, "at", idxp};
+        else if (VN_IS(arrDtp, UnpackArrayDType))
+            selp = new AstArraySel{fl, arrayp, idxp};
+        else if (VN_IS(arrDtp, AssocArrayDType))
+            selp = new AstAssocSel{fl, arrayp, idxp};
+        UASSERT_OBJ(selp, arrayp, "Selecting from non-array?");
+        selp->dtypep(arrDtp->subDTypep());
+        return selp;
+    }
+
     // VISITORS
     void visit(AstNodeVarRef* nodep) override {
         AstVar* const varp = nodep->varp();
@@ -699,8 +714,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 new AstForeach{fl, nodep->arrayp()->unlinkFrBack(), new AstCStmt{fl, cstmtp}},
                 false, true});
             exprsp->addNext(
-                new AstText{fl, "return ret.empty() ? \"#b1\" : \"(bvand \" + ret + \")\";"});
-            exprsp->addNext(new AstText{fl, "return ret + \")\"; })()"});
+                new AstText{fl, "return ret.empty() ? \"#b1\" : \"(bvand\" + ret + \")\";})()"});
             AstNodeExpr* const newp = new AstCExpr{fl, exprsp};
             newp->dtypeSetString();
             nodep->replaceWith(new AstSFormatF{fl, "%@", false, newp});
@@ -741,14 +755,41 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void visit(AstCMethodHard* nodep) override {
         if (editFormat(nodep)) return;
+        FileLine* const fl = nodep->fileline();
 
         if (nodep->name() == "at" && nodep->fromp()->user1()) {
             iterateChildren(nodep);
             AstNodeExpr* const argsp
                 = AstNode::addNext(nodep->fromp()->unlinkFrBack(), nodep->pinsp()->unlinkFrBack());
-            AstSFormatF* const newp
-                = new AstSFormatF{nodep->fileline(), "(select %@ %@)", false, argsp};
+            AstSFormatF* const newp = new AstSFormatF{fl, "(select %@ %@)", false, argsp};
             nodep->replaceWith(newp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
+        }
+
+        if (nodep->name() == "inside") {
+            bool randArr = nodep->fromp()->user1();
+
+            AstVar* const newVarp
+                = new AstVar{fl, VVarType::BLOCKTEMP, "__Vinside", nodep->findSigned32DType()};
+            AstNodeExpr* const idxRefp = new AstVarRef{nodep->fileline(), newVarp, VAccess::READ};
+            AstSelLoopVars* const arrayp
+                = new AstSelLoopVars{fl, nodep->fromp()->cloneTreePure(false), newVarp};
+            AstNodeExpr* const selp = newSel(nodep->fileline(), nodep->fromp(), idxRefp);
+            selp->user1(randArr);
+            AstNode* const itemp = new AstEq{fl, selp, nodep->pinsp()->unlinkFrBack()};
+            itemp->user1(true);
+            AstNode* const cstmtp = new AstText{fl, "ret += \" \" + "};
+            cstmtp->addNext(iterateSubtreeReturnEdits(itemp));
+            cstmtp->addNext(new AstText{fl, ";"});
+            AstNode* const exprsp = new AstText{fl, "([&]{ std::string ret;"};
+            exprsp->addNext(new AstBegin{
+                fl, "", new AstForeach{fl, arrayp, new AstCStmt{fl, cstmtp}}, false, true});
+            exprsp->addNext(
+                new AstText{fl, "return ret.empty() ? \"#b0\" : \"(bvor\" + ret + \")\";})()"});
+            AstNodeExpr* const newp = new AstCExpr{fl, exprsp};
+            newp->dtypeSetString();
+            nodep->replaceWith(new AstSFormatF{fl, "%@", false, newp});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }

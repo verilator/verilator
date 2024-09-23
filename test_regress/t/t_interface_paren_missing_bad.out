@@ -1,4 +1,4 @@
-%Error: t/t_interface_paren_missing_bad.v:13:9: Interface instantiation 'intf_i' requires parenthesis
+%Error: t/t_interface_paren_missing_bad.v:13:9: Instantiation 'intf_i' requires parenthesis (IEEE 1800-2023 23.3.2)
                                               : ... Suggest use 'intf_i()'
    13 |    intf intf_i;
       |         ^~~~~~

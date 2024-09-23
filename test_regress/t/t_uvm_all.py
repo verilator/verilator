@@ -11,12 +11,15 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(v_flags2=[
-    "--binary --timing", "-Wno-PKGNODECL -Wno-IMPLICITSTATIC -Wno-CONSTRAINTIGN -Wno-MISINDENT",
-    "-Wno-WIDTHEXPAND -Wno-WIDTHTRUNC -Wno-CASTCONST -Wno-REALCVT",
-    "--error-limit 200 --debug-exit-uvm"
-],
-             verilator_make_gmake=False)
+test.compile(
+    v_flags2=[
+        "--binary --timing",  #
+        "-Wno-PKGNODECL -Wno-IMPLICITSTATIC -Wno-MISINDENT",
+        "-Wno-CASEINCOMPLETE -Wno-CASTCONST -Wno-SYMRSVDWORD -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC",
+        "-Wno-REALCVT",  # TODO note mostly related to $realtime - could suppress or fix upstream
+        "--error-limit 200 --debug-exit-uvm"
+    ],
+    verilator_make_gmake=False)
 
 #test.execute()
 

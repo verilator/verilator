@@ -723,6 +723,14 @@ class TaskVisitor final : public VNVisitor {
         return dpiproto;
     }
 
+    static void checkLegalCIdentifier(AstNode* nodep, const string& name) {
+        if (name.end() != std::find_if(name.begin(), name.end(), [](char c) {
+                return !std::isalnum(c) && c != '_';
+            })) {
+            nodep->v3error("DPI function has illegal characters in C identifier name: " << name);
+        }
+    }
+
     static AstNode* createDpiTemp(AstVar* portp, const string& suffix) {
         const string stmt = portp->dpiTmpVarType(portp->name() + suffix) + ";\n";
         return new AstCStmt{portp->fileline(), stmt};
@@ -822,8 +830,11 @@ class TaskVisitor final : public VNVisitor {
     }
 
     AstCFunc* makeDpiExportDispatcher(AstNodeFTask* nodep, AstVar* rtnvarp) {
+        // Verilog name has __ conversion and other tricks, to match DPI C code, back that out
+        const string name = AstNode::prettyName(nodep->cname());
+        checkLegalCIdentifier(nodep, name);
         const char* const tmpSuffixp = V3Task::dpiTemporaryVarSuffix();
-        AstCFunc* const funcp = new AstCFunc{nodep->fileline(), nodep->cname(), m_scopep,
+        AstCFunc* const funcp = new AstCFunc{nodep->fileline(), name, m_scopep,
                                              (rtnvarp ? rtnvarp->dpiArgType(true, true) : "")};
         funcp->dpiExportDispatcher(true);
         funcp->dpiContext(nodep->dpiContext());
@@ -831,7 +842,7 @@ class TaskVisitor final : public VNVisitor {
         funcp->entryPoint(true);
         funcp->isStatic(true);
         funcp->protect(false);
-        funcp->cname(nodep->cname());
+        funcp->cname(name);
         // Add DPI Export to top, since it's a global function
         m_topScopep->scopep()->addBlocksp(funcp);
 
@@ -949,15 +960,14 @@ class TaskVisitor final : public VNVisitor {
     }
 
     AstCFunc* makeDpiImportPrototype(AstNodeFTask* nodep, AstVar* rtnvarp) {
-        if (nodep->cname() != AstNode::prettyName(nodep->cname())) {
-            nodep->v3error("DPI function has illegal characters in C identifier name: "
-                           << AstNode::prettyNameQ(nodep->cname()));
-        }
+        // Verilog name has __ conversion and other tricks, to match DPI C code, back that out
+        const string name = AstNode::prettyName(nodep->cname());
+        checkLegalCIdentifier(nodep, name);
         // Tasks (but not void functions) return a boolean 'int' indicating disabled
         const string rtnType = rtnvarp            ? rtnvarp->dpiArgType(true, true)
                                : nodep->dpiTask() ? "int"
                                                   : "";
-        AstCFunc* const funcp = new AstCFunc{nodep->fileline(), nodep->cname(), m_scopep, rtnType};
+        AstCFunc* const funcp = new AstCFunc{nodep->fileline(), name, m_scopep, rtnType};
         funcp->dpiContext(nodep->dpiContext());
         funcp->dpiImportPrototype(true);
         funcp->dontCombine(true);
