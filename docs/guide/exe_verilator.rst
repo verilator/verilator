@@ -964,13 +964,13 @@ Summary:
    effective output .cpp files.  This is useful if the compiler startup
    overhead cumulated from compiling many small files becomes unacceptable,
    which can happen in designs making extensive use of SystemVerilog classes,
-   templates or generate blocks.  Incompatible with :vlopt:`--output-split`.
+   templates or generate blocks.
 
    Using :vlopt:`--output-groups` can adversely impact caching and stability
    (as in reproducibility) of compiled code.  Compilation of larger .cpp
    files also has higher memory requirements.  Too low values might result in
-   swap thrashing with large designs, high values only negate the benefits of
-   :vlopt:`--output-split`.  The value should range from 2 to 20.
+   swap thrashing with large designs, high values give no benefits.  The
+   value should range from 2 to 20 for small to medium designs.
 
    This option is off by default.
 

@@ -18,7 +18,6 @@
 
 #include "V3Options.h"
 
-#include "V3EmitMk.h"
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3Global.h"
@@ -916,28 +915,9 @@ void V3Options::notify() VL_MT_DISABLED {
     UASSERT(!(useTraceParallel() && useTraceOffload()),
             "Cannot use both parallel and offloaded tracing");
 
-    if (m_outputGroups > 0) {
-        const std::pair<int&, std::string> valueNamePairs[] = {
-            {m_outputSplit, "--output-split"},
-            {m_outputSplitCFuncs, "--output-split-cfuncs"},
-            {m_outputSplitCTrace, "--output-split-ctrace"},
-        };
-        for (auto& pair : valueNamePairs) {
-            if (pair.first > 0) {
-                cmdfl->v3warn(E_UNSUPPORTED,
-                              "Unsupported: Using " + pair.second
-                                  + " (= " + std::to_string(pair.first) + ")"
-                                  + " with --output-groups is not supported.\n"  //
-                                  + cmdfl->warnMore() + "... Suggest remove " + pair.second + ".");
-            }
-            pair.first = std::numeric_limits<int>::max();
-        }
-    } else {
-        // Default split limits if not specified
-        if (m_outputSplit < 0) { m_outputSplit = 20000; }
-        if (m_outputSplitCFuncs < 0) m_outputSplitCFuncs = m_outputSplit;
-        if (m_outputSplitCTrace < 0) m_outputSplitCTrace = m_outputSplit;
-    }
+    // Default split limits if not specified
+    if (m_outputSplitCFuncs < 0) m_outputSplitCFuncs = m_outputSplit;
+    if (m_outputSplitCTrace < 0) m_outputSplitCTrace = m_outputSplit;
 
     if (v3Global.opt.main() && v3Global.opt.systemC()) {
         cmdfl->v3warn(E_UNSUPPORTED,

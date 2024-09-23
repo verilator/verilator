@@ -316,10 +316,10 @@ private:
     VOptionBool m_makeDepend;  // main switch: -MMD
     int         m_maxNumWidth = 65536;  // main switch: --max-num-width
     int         m_moduleRecursion = 100;  // main switch: --module-recursion-depth
-    int         m_outputSplit = -1;  // main switch: --output-split
+    int         m_outputGroups = 0;  // main switch: --output-groups
+    int         m_outputSplit = 20000;  // main switch: --output-split
     int         m_outputSplitCFuncs = -1;  // main switch: --output-split-cfuncs
     int         m_outputSplitCTrace = -1;  // main switch: --output-split-ctrace
-    int         m_outputGroups = 0;  // main switch: --output-groups
     int         m_pinsBv = 65;       // main switch: --pins-bv
     int         m_publicDepth = 0;   // main switch: --public-depth
     int         m_reloopLimit = 40; // main switch: --reloop-limit
