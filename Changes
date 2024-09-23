@@ -27,7 +27,7 @@ Verilator 5.029 devel
 * Support named event locals (#5422). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support basic dist constraints (#5431). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Support inside array constraints (#5448). [Arkadiusz Kozdra, Antmicro Ltd.]
-* Support DPI imports and exports with double underscores.
+* Support DPI imports and exports with double underscores (#5481).
 * Add error on instances without parenthesis.
 * Add partial coverage symbol and branch data in lcov info files (#5388). [Andrew Nolte]
 * Add method to check if there are VPI callbacks of the given type (#5399). [Kaleb Barrett]
