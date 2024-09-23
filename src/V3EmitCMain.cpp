@@ -52,10 +52,7 @@ private:
         // Optional main top name argument, with empty string replacement
         string topArg;
         string topName = v3Global.opt.mainTopName();
-        if (!topName.empty()) {
-            if (topName == "-") topName = "";
-            topArg = ", \"" + topName + "\"";
-        }
+        if (topName == "-") topName = "";
 
         // Heavily commented output, as users are likely to look at or copy this code
         ofp()->putsHeader();
@@ -77,7 +74,7 @@ private:
 
         puts("// Construct the Verilated model, from Vtop.h generated from Verilating\n");
         puts("const std::unique_ptr<" + topClassName() + "> topp{new " + topClassName()
-             + "{contextp.get()" + topArg + "}};\n");
+             + "{contextp.get(), \"" + topName + "\"}};\n");
         puts("\n");
 
         puts("// Simulate until $finish\n");

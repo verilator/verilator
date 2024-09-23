@@ -19,6 +19,7 @@ Verilator 5.029 devel
 
 * Change .vlt config files to be read before .v files (#5185). [David Moberg]
 * Change to use maximum for cover point aggregation (#5402). [Andrew Nolte]
+* Change `--main` and `--binary` to use a TOP hierarchy name of "" (#5482).
 * Support IEEE-compliant intra-assign delays (#3711) (#5441). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support unconstrained randomization for unions (#5395) (#5396). [Yilou Wang]
 * Support basic constrained queue randomization (#5413). [Arkadiusz Kozdra, Antmicro Ltd.]
