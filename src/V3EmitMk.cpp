@@ -24,10 +24,11 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-class OutputGroup final {
+// Groups adjacent files in a list, evenly distributing sum of scores
+class EmitGroup final {
 public:
     struct FileOrConcatenatedFilesList final {
-        std::string m_fileName;
+        std::string m_filename;
         std::vector<std::string> m_concatenatedFilenames{};
 
         bool isConcatenatingFile() const { return !m_concatenatedFilenames.empty(); }
@@ -74,7 +75,7 @@ private:
     std::string m_groupFilePrefix;
     std::vector<WorkList> m_workLists;
 
-    OutputGroup(std::vector<FilenameWithScore> inputFiles, uint64_t totalScore,
+    EmitGroup(std::vector<FilenameWithScore> inputFiles, uint64_t totalScore,
                 std::string groupFilePrefix)
         : m_inputFiles{std::move(inputFiles)}
         , m_totalScore{totalScore}
@@ -165,10 +166,10 @@ private:
 
         for (const auto& entry : m_outputFiles) {
             if (entry.isConcatenatingFile()) {
-                os << "+ " << entry.m_fileName << "  (concatenating file)" << endl;
+                os << "+ " << entry.m_filename << "  (concatenating file)" << endl;
                 for (const auto& f : entry.m_concatenatedFilenames) { os << "| + " << f << endl; }
             } else {
-                os << "+ " << entry.m_fileName << endl;
+                os << "+ " << entry.m_filename << endl;
             }
         }
     }
@@ -187,8 +188,8 @@ private:
                 }
                 ++ofIt;
             } else {
-                UASSERT(ifIt->m_filename == ofIt->m_fileName,
-                        "Name mismatch: " << ifIt->m_filename << " != " << ofIt->m_fileName);
+                UASSERT(ifIt->m_filename == ofIt->m_filename,
+                        "Name mismatch: " << ifIt->m_filename << " != " << ofIt->m_filename);
                 ++ifIt;
                 ++ofIt;
             }
@@ -196,14 +197,14 @@ private:
         UASSERT(ifIt == m_inputFiles.end(),
                 "More input files than input files. First extra file: " << ifIt->m_filename);
         UASSERT(ofIt == m_outputFiles.end(),
-                "More output files than input files. First extra file: " << ofIt->m_fileName);
+                "More output files than input files. First extra file: " << ofIt->m_filename);
     }
 
 public:
     static std::vector<FileOrConcatenatedFilesList>
     singleConcatenatedFilesList(std::vector<FilenameWithScore> inputFiles, uint64_t totalScore,
-                                std::string concatenatingFilePrefix) {
-        OutputGroup group{std::move(inputFiles), totalScore, concatenatingFilePrefix};
+                                std::string groupFilePrefix) {
+        EmitGroup group{std::move(inputFiles), totalScore, groupFilePrefix};
         group.process();
         return group.m_outputFiles;
     }
@@ -227,7 +228,7 @@ public:
 
         m_outputFiles.reserve(m_inputFiles.size());
         for (auto& file : m_inputFiles) {
-            m_outputFiles.push_back({/*fileName=*/std::move(file.m_filename)});
+            m_outputFiles.push_back({/*filename=*/std::move(file.m_filename)});
         }
         return true;
     }
@@ -425,7 +426,7 @@ public:
             if (!list.m_isConcatenable) {
                 for (auto& file : list.m_files) {
                     FileOrConcatenatedFilesList e{};
-                    e.m_fileName = std::move(file.m_filename);
+                    e.m_filename = std::move(file.m_filename);
                     m_outputFiles.push_back(std::move(e));
                 }
                 continue;
@@ -439,7 +440,7 @@ public:
                 FileOrConcatenatedFilesList bucket;
                 uint64_t bucketScore = 0;
 
-                bucket.m_fileName = v3Global.opt.prefix() + "_" + m_groupFilePrefix
+                bucket.m_filename = v3Global.opt.prefix() + "_" + m_groupFilePrefix
                                     + std::to_string(concatenatedFileId);
                 ++concatenatedFileId;
 
@@ -460,7 +461,7 @@ public:
                 if (bucket.m_concatenatedFilenames.size() == 1) {
                     // Unwrap the bucket if it contains only one file.
                     FileOrConcatenatedFilesList file;
-                    file.m_fileName = bucket.m_concatenatedFilenames.front();
+                    file.m_filename = bucket.m_concatenatedFilenames.front();
                     m_outputFiles.push_back(std::move(file));
                 } else if (bucket.m_concatenatedFilenames.size() > 1) {
                     m_outputFiles.push_back(std::move(bucket));
@@ -481,8 +482,8 @@ public:
 //  Emit statements and expressions
 
 class EmitMk final {
-    using FileOrConcatenatedFilesList = OutputGroup::FileOrConcatenatedFilesList;
-    using FilenameWithScore = OutputGroup::FilenameWithScore;
+    using FileOrConcatenatedFilesList = EmitGroup::FileOrConcatenatedFilesList;
+    using FilenameWithScore = EmitGroup::FilenameWithScore;
 
 public:
     // METHODS
@@ -490,7 +491,7 @@ public:
     static void emitConcatenatingFile(const FileOrConcatenatedFilesList& entry) {
         UASSERT(entry.isConcatenatingFile(), "Passed entry does not represent concatenating file");
 
-        V3OutCFile concatenatingFile{v3Global.opt.makeDir() + "/" + entry.m_fileName + ".cpp"};
+        V3OutCFile concatenatingFile{v3Global.opt.makeDir() + "/" + entry.m_filename + ".cpp"};
         concatenatingFile.putsHeader();
         for (const auto& file : entry.m_concatenatedFilenames) {
             concatenatingFile.puts("#include \"" + file + ".cpp\"\n");
@@ -526,9 +527,9 @@ public:
                 }
             }
 
-            vmClassesSlowList = OutputGroup::singleConcatenatedFilesList(
+            vmClassesSlowList = EmitGroup::singleConcatenatedFilesList(
                 std::move(slowFiles), slowTotalScore, "vm_classes_slow_");
-            vmClassesFastList = OutputGroup::singleConcatenatedFilesList(
+            vmClassesFastList = EmitGroup::singleConcatenatedFilesList(
                 std::move(fastFiles), fastTotalScore, "vm_classes_fast_");
         }
 
@@ -609,12 +610,12 @@ public:
                         putMakeClassEntry(of, "verilated_profiler.cpp");
                     }
                 } else if (support == 2 && slow) {
-                } else if ((support == 0) && (v3Global.opt.outputGroups() > 0)) {
+                } else if (support == 0 && v3Global.opt.outputGroups() > 0) {
                     const std::vector<FileOrConcatenatedFilesList>& list
                         = slow ? vmClassesSlowList : vmClassesFastList;
                     for (const auto& entry : list) {
                         if (entry.isConcatenatingFile()) { emitConcatenatingFile(entry); }
-                        putMakeClassEntry(of, entry.m_fileName);
+                        putMakeClassEntry(of, entry.m_filename);
                     }
                 } else {
                     for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;
