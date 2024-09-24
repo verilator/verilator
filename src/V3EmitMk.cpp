@@ -69,11 +69,13 @@ private:
 
     // MEMBERS
 
-    std::vector<FilenameWithScore> m_inputFiles;
-    std::vector<FileOrConcatenatedFilesList> m_outputFiles;
-    uint64_t m_totalScore;
-    std::string m_groupFilePrefix;
-    std::vector<WorkList> m_workLists;
+    std::vector<FilenameWithScore> m_inputFiles;  // List of filenames from initial AstCFile list
+    std::vector<FileOrConcatenatedFilesList>
+        m_outputFiles;  // Output list of files and group files
+    uint64_t m_totalScore;  // Sum of file scores
+    std::string m_groupFilePrefix;  // Prefix for output group filenames
+    std::vector<WorkList> m_workLists;  // Lists of small enough files
+    std::unique_ptr<std::ofstream> m_logp;  // Dump file
 
     EmitGroup(std::vector<FilenameWithScore> inputFiles, uint64_t totalScore,
               std::string groupFilePrefix)
@@ -82,10 +84,16 @@ private:
         , m_groupFilePrefix{groupFilePrefix} {}
 
     // Debug logging: prints scores histogram
-    static void dumpLogScoreHistogram(std::ostream& os,
-                                      const std::vector<uint64_t>& sortedScores) {
+    void dumpLogScoreHistogram(std::ostream& os) {
         constexpr int MAX_BAR_LENGTH = 80;
         constexpr int MAX_INTERVALS_NUM = 60;
+
+        // All scores arranged in ascending order.
+        std::vector<uint64_t> sortedScores;
+        sortedScores.reserve(m_inputFiles.size());
+        std::transform(m_inputFiles.begin(), m_inputFiles.end(), std::back_inserter(sortedScores),
+                       [](const FilenameWithScore& inputFile) { return inputFile.m_score; });
+        std::sort(sortedScores.begin(), sortedScores.end());
 
         const int64_t topScore = sortedScores.back();
         os << "Top score: " << topScore << endl;
@@ -233,52 +241,24 @@ public:
         return true;
     }
 
-    void process() {
-        UINFO(4, __FUNCTION__ << ":" << endl);
-        UINFO(5, "Number of input files: " << m_inputFiles.size() << endl);
-        UINFO(5, "Total score: " << m_totalScore << endl);
-        UINFO(5, "Group file prefix: " << m_groupFilePrefix << endl);
+    void createWorkLists() {
+        // Create initial Work Lists.
 
         const int totalBucketsNum = v3Global.opt.outputGroups();
-        UINFO(5, "Number of buckets: " << totalBucketsNum << endl);
-        UASSERT(totalBucketsNum > 0, "More than 0 buckets required");
-
-        if (fallbackNoGrouping(m_inputFiles.size(), totalBucketsNum)) return;
-
-        // Calculate score threshold for filtering out upper outliers.
-
-        // All scores arranged in ascending order.
-        std::vector<uint64_t> sortedScores;
-        sortedScores.reserve(m_inputFiles.size());
-        std::transform(m_inputFiles.begin(), m_inputFiles.end(), std::back_inserter(sortedScores),
-                       [](const FilenameWithScore& inputFile) { return inputFile.m_score; });
-        std::sort(sortedScores.begin(), sortedScores.end());
-
-        std::unique_ptr<std::ofstream> logp;
-        if (dumpLevel() >= 6) {
-            const string filename = v3Global.debugFilename("outputgroup") + ".txt";
-            logp = std::unique_ptr<std::ofstream>{V3File::new_ofstream(filename)};
-            if (logp->fail()) v3fatal("Can't write " << filename);
-        }
-
-        if (logp) dumpLogScoreHistogram(*logp, sortedScores);
-
         // Input files with a score exceeding this value are excluded from concatenation.
         const uint64_t concatenableFileMaxScore = m_totalScore / totalBucketsNum / 2;
 
         V3Stats::addStat("Concatenation max score", concatenableFileMaxScore);
 
-        // Create initial Work Lists.
-
         int nextWorkListId = 0;
 
-        if (logp) *logp << "Input files with their concatenation eligibility status:" << endl;
+        if (m_logp) *m_logp << "Input files with their concatenation eligibility status:" << endl;
         for (const auto& inputFile : m_inputFiles) {
             const bool fileIsConcatenable = (inputFile.m_score <= concatenableFileMaxScore);
-            if (logp)
-                *logp << " + [" << (fileIsConcatenable ? 'x' : ' ') << "] " << inputFile.m_filename
-                      << "  ("
-                      << "score: " << inputFile.m_score << ")" << endl;
+            if (m_logp)
+                *m_logp << " + [" << (fileIsConcatenable ? 'x' : ' ') << "] "
+                        << inputFile.m_filename << "  ("
+                        << "score: " << inputFile.m_score << ")" << endl;
             V3Stats::addStatSum(fileIsConcatenable ? "Concatenation total grouped score"
                                                    : "Concatenation total non-grouped score",
                                 inputFile.m_score);
@@ -293,7 +273,29 @@ public:
             list.m_files.push_back({inputFile.m_filename, inputFile.m_score});
             list.m_totalScore += inputFile.m_score;
         }
-        if (logp) *logp << endl;
+        if (m_logp) *m_logp << endl;
+    }
+    void process() {
+        UINFO(4, __FUNCTION__ << ":" << endl);
+        UINFO(5, "Number of input files: " << m_inputFiles.size() << endl);
+        UINFO(5, "Total score: " << m_totalScore << endl);
+        UINFO(5, "Group file prefix: " << m_groupFilePrefix << endl);
+
+        const int totalBucketsNum = v3Global.opt.outputGroups();
+        UINFO(5, "Number of buckets: " << totalBucketsNum << endl);
+        UASSERT(totalBucketsNum > 0, "More than 0 buckets required");
+
+        if (fallbackNoGrouping(m_inputFiles.size(), totalBucketsNum)) return;
+
+        if (dumpLevel() >= 6) {
+            const string filename = v3Global.debugFilename("outputgroup") + ".txt";
+            m_logp = std::unique_ptr<std::ofstream>{V3File::new_ofstream(filename)};
+            if (m_logp->fail()) v3fatal("Can't write " << filename);
+        }
+
+        if (m_logp) dumpLogScoreHistogram(*m_logp);
+
+        createWorkLists();
 
         // Collect stats and mark lists with only one file as non-concatenable
 
@@ -321,7 +323,7 @@ public:
             concatenableListsByDescSize.push_back(&list);
         }
 
-        if (logp) dumpWorkLists(*logp);
+        if (m_logp) dumpWorkLists(*m_logp);
 
         // Check concatenation conditions again using more precise data
         if (fallbackNoGrouping(concatenableFilesCount, totalBucketsNum)) return;
@@ -343,18 +345,18 @@ public:
         // their score to ConcatenableFilesMaxScore.
         if (concatenableFilesListsCount > static_cast<size_t>(totalBucketsNum)) {
             // Debugging: Log which work lists will be kept
-            if (logp) {
-                *logp << "More Work Lists than buckets; "
-                      << "Work Lists with statuses indicating whether the list will be kept:"
-                      << endl;
+            if (m_logp) {
+                *m_logp << "More Work Lists than buckets; "
+                        << "Work Lists with statuses indicating whether the list will be kept:"
+                        << endl;
                 // Only lists that will be kept. List that will be removed are logged below.
                 std::for_each(concatenableListsByDescSize.begin(),
                               concatenableListsByDescSize.begin() + totalBucketsNum,
                               [&](auto* listp) {
-                                  *logp << "+ [x] "
-                                        << "Work List #" << listp->m_dbgId << "  ("
-                                        << "num of files: " << listp->m_files.size() << "; "
-                                        << "total score: " << listp->m_totalScore << ")" << endl;
+                                  *m_logp << "+ [x] "
+                                          << "Work List #" << listp->m_dbgId << "  ("
+                                          << "num of files: " << listp->m_files.size() << "; "
+                                          << "total score: " << listp->m_totalScore << ")" << endl;
                               });
             }
             // NOTE: Not just debug logging - notice `isConcatenable` assignment in the loop.
@@ -362,13 +364,13 @@ public:
                           concatenableListsByDescSize.end(), [&](auto* listp) {
                               listp->m_isConcatenable = false;
 
-                              if (logp)
-                                  *logp << "+ [ ]"
-                                        << "Work List #" << listp->m_dbgId << "  ("
-                                        << "num of files: " << listp->m_files.size() << "; "
-                                        << "total score: " << listp->m_totalScore << ")" << endl;
+                              if (m_logp)
+                                  *m_logp << "+ [ ]"
+                                          << "Work List #" << listp->m_dbgId << "  ("
+                                          << "num of files: " << listp->m_files.size() << "; "
+                                          << "total score: " << listp->m_totalScore << ")" << endl;
                           });
-            if (logp) *logp << endl;
+            if (m_logp) *m_logp << endl;
 
             concatenableListsByDescSize.resize(totalBucketsNum);
             concatenableFilesListsCount = totalBucketsNum;
@@ -385,32 +387,32 @@ public:
 
         V3Stats::addStat("Concatenation ideal bucket score", idealBucketScore);
 
-        if (logp) *logp << "Buckets assigned to Work Lists:" << endl;
+        if (m_logp) *m_logp << "Buckets assigned to Work Lists:" << endl;
         int availableBuckets = totalBucketsNum;
         for (auto* listp : concatenableListsByDescSize) {
             if (availableBuckets > 0) {
-                listp->m_bucketsNum = std::min<int>(
+                listp->m_bucketsNum = std::min(
                     availableBuckets, std::max<int>(1, listp->m_totalScore / idealBucketScore));
                 availableBuckets -= listp->m_bucketsNum;
-                if (logp)
-                    *logp << "+ "
-                          << "[" << std::setw(2) << listp->m_bucketsNum << "] "
-                          << "Work List #" << listp->m_dbgId << endl;
+                if (m_logp)
+                    *m_logp << "+ "
+                            << "[" << std::setw(2) << listp->m_bucketsNum << "] "
+                            << "Work List #" << listp->m_dbgId << endl;
             } else {
                 // Out of buckets. Instead of recalculating everything just exclude the list.
                 listp->m_isConcatenable = false;
-                if (logp)
-                    *logp << "+ [ 0] "
-                          << "Work List #" << std::left << std::setw(4) << listp->m_dbgId
-                          << std::right << " "
-                          << "(excluding from concatenation)" << endl;
+                if (m_logp)
+                    *m_logp << "+ [ 0] "
+                            << "Work List #" << std::left << std::setw(4) << listp->m_dbgId
+                            << std::right << " "
+                            << "(excluding from concatenation)" << endl;
             }
         }
-        if (logp) *logp << endl;
+        if (m_logp) *m_logp << endl;
 
         buildOutputList();
 
-        if (logp) dumpOutputList(*logp);
+        if (m_logp) dumpOutputList(*m_logp);
         assertFilesSame();
     }
 
