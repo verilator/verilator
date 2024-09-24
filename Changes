@@ -63,6 +63,7 @@ Verilator 5.029 devel
 * Fix timing mode not exiting on empty events (#5472).
 * Fix --binary with .cpp PLI filenames under relative directory paths.
 * Fix extra dot in coverage point hierarchy when using name()=''.
+* Fix short-circuting with associative array access (#5484). [Ethan Sifferman]
 
 
 Verilator 5.028 2024-08-21
