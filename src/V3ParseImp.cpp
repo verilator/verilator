@@ -656,7 +656,8 @@ int V3ParseImp::tokenToBison() {
     m_bisonLastFileline = yylval.fl;
 
     // yylval.scp = nullptr;   // Symbol table not yet needed - no packages
-    if (debugFlex() >= 6 || debugBison() >= 6) {  // --debugi-flex and --debugi-bison
+    if (debug() >= 6 || debugFlex() >= 6
+        || debugBison() >= 6) {  // --debugi-flex and --debugi-bison
         cout << "tokenToBison  " << yylval << endl;
     }
     return yylval.token;

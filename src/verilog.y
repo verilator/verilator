@@ -3242,7 +3242,9 @@ instDecl<nodep>:
         //                      // Currently disambiguated from data_declaration based on
         //                      // VARs being type, and cells non-type.
         //                      // IEEE requires a '(' to disambiguate, we need TODO force this
-                id parameter_value_assignmentE {INSTPREP($<fl>1, *$1, $2);} instnameList ';'
+                id parameter_value_assignmentE
+        /*mid*/         { INSTPREP($<fl>1, *$1, $2); }
+        /*cont*/    instnameList ';'
                         { $$ = $4;
                           GRAMMARP->m_impliedDecl = false;
                           if (GRAMMARP->m_instParamp) {
@@ -3257,6 +3259,12 @@ instDecl<nodep>:
         /*cont*/    mpInstnameList ';'
                         { $$ = VARDONEP($5, nullptr, nullptr); }
         //UNSUP: strengthSpecE for udp_instantiations
+        //                      // IEEE: part of udp_instance when no name_of_instance
+        //                      // Note no unpacked dimension nor list of instances
+        |       id
+        /*mid*/         { INSTPREP($<fl>1, *$1, nullptr); }
+        /*cont*/    instnameParenUdpn ';'
+                        { $$ = $3; GRAMMARP->m_impliedDecl = false; }
         ;
 
 mpInstnameList<nodep>:          // Similar to instnameList, but for modport instantiations which have no parenthesis
@@ -3278,7 +3286,10 @@ instnameParen<nodep>:
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, $4, $2, true); }
         |       id instRangeListE
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, nullptr, $2, false); }
-        |       '(' cellpinListE ')'  // When UDP has empty name, unpacked dimensions must not be used
+        ;
+
+instnameParenUdpn<nodep>:  // IEEE: part of udp_instance when no name_of_instance
+                '(' cellpinListE ')'  // When UDP has empty name, unpacked dimensions must not be used
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, "", $2, nullptr, true); }
         ;
 
@@ -4607,7 +4618,7 @@ taskId<nodeFTaskp>:
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>1); }
         ;
 
-funcId<nodeFTaskp>:                     // IEEE: function_data_type_or_implicit + part of function_body_declaration
+funcId<nodeFTaskp>:             // IEEE: function_data_type_or_implicit + part of function_body_declaration
         //                      // IEEE: function_data_type_or_implicit must be expanded here to prevent conflict
         //                      // function_data_type expanded here to prevent conflicts with
         //                      // implicit_type:empty vs data_type:ID
@@ -6551,9 +6562,6 @@ boolean_abbrev<nodeExprp>:  // ==IEEE: boolean_abbrev
         |       yP_BRAMINUSGT constExpr ':' constExpr ']'
                         { $$ = $2; BBUNSUP($<fl>1, "Unsupported: [-> boolean abbrev expression"); }
         ;
-
-//************************************************
-// Let
 
 //************************************************
 // Covergroup
