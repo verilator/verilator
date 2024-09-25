@@ -463,6 +463,14 @@ YAMLFIX = YAMLFIX_WHITELINES=1 YAMLFIX_LINE_LENGTH=130 YAMLFIX_preserve_quotes=t
 yamlfix:
 	$(YAMLFIX) .
 
+# CMake files
+CMAKE_FILES = \
+	CMakeLists.txt \
+	examples/*/CMakeLists.txt \
+	src/CMakeLists.txt \
+	test_regress/CMakeLists.txt \
+	*.cmake.in \
+
 # Python programs, subject to format and lint
 PY_PROGRAMS = \
 	bin/verilator_ccache_report \
@@ -507,6 +515,12 @@ YAPF_FLAGS = -i --parallel
 
 yapf:
 	$(YAPF) $(YAPF_FLAGS) $(PY_FILES)
+
+GERSEMI = gersemi
+GERSEMI_FLAGS = -i
+
+format-cmake:
+	$(GERSEMI) $(GERSEMI_FLAGS) $(CMAKE_FILES)
 
 PYLINT = pylint
 PYLINT_FLAGS = --recursive=n --score=n --disable=R0801
