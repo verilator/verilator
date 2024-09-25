@@ -110,7 +110,7 @@ private:
 
         intervals[0].m_lowerBound = 0;
         for (int i = 1; i < intervalsNum; i++) {
-           intervals[i].m_lowerBound = (topScore + 1) * i / intervalsNum + 1;
+            intervals[i].m_lowerBound = (topScore + 1) * i / intervalsNum + 1;
         }
 
         for (const uint64_t score : sortedScores) {
