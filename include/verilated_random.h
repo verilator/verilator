@@ -60,6 +60,7 @@ public:
     virtual void emitExtract(std::ostream& s, int i) const;
     virtual void emitType(std::ostream& s) const;
     virtual int totalWidth() const;
+    virtual int getLength(int dimension) const {return -1;}
 };
 
 template <typename T>
@@ -104,15 +105,24 @@ public:
         : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
 
     void* datap(int idx) const override {
-        std::cout << "datap: " << std::endl;
-        return &static_cast<T*>(VlRandomVar::datap(idx))->operator[](idx);
+        if (idx < 0) { return &static_cast<T*>(VlRandomVar::datap(0))->operator[](0); }
+        std::vector<size_t> indices(dimension());
+        std::cout << "Debug: datap Initial idx = " << idx << std::endl;
+        for (int dim = dimension() - 1; dim >= 0; --dim) {
+            int length = getLength(dim);
+            indices[dim] = idx % length;
+            idx /= length;
+        }
+        
+        std::cout << "datap indices: ";
+        for (const auto& ind : indices) {
+            std::cout << ind << " ";
+        }
+        std::cout << std::endl;
+        return &static_cast<T*>(VlRandomVar::datap(0))->find_element(indices);
     }
 
     void emitSelect(std::ostream& s, const std::vector<int>& indices) const {
-
-        std::cout << "emitSelect called with indices: ";
-        for (const auto& idx : indices) { std::cout << idx << " "; }
-        std::cout << std::endl;
 
         for (size_t idx = 0; idx < indices.size(); ++idx) { s << "(select "; }
         s << name();
@@ -126,24 +136,22 @@ public:
         }
     }
 
-    void emitGetValue(std::ostream& s) const override {
-        auto var = static_cast<const T*>(datap(0));
-        int total_dimensions = dimension();
+    int getLength(int dimension) const override {
+        auto var = static_cast<const T*>(datap(-1));
+        int lenth = var->find_length(dimension);
+        return lenth;
+    }
 
+    void emitGetValue(std::ostream& s) const override {
+        int total_dimensions = dimension();
         std::vector<int> lengths;
 
         for (int dim = 0; dim < total_dimensions; dim++) {
-            int len = var->find_length(dim);
+            int len = getLength(dim);
             lengths.push_back(len);
-            std::cout << "Length of dimension " << (dim) << ": " << len << std::endl;
         }
-
         std::vector<int> indices(total_dimensions, 0);
-        //std::string selectStatements;
         while (true) {
-            //std::ostringstream selectStatementStream;
-            //emitSelect(selectStatementStream, indices);
-            //selectStatements += selectStatementStream.str();
             emitSelect(s, indices);
             int currentDimension = total_dimensions - 1;
             while (currentDimension >= 0
@@ -153,7 +161,6 @@ public:
             }
             if (currentDimension < 0) { break; }
         }
-        //std::cout << selectStatements;
     }
 
     void emitType(std::ostream& s) const override {
@@ -168,19 +175,40 @@ public:
         }
     }
     int totalWidth() const override {
-        const int length = static_cast<T*>(VlRandomVar::datap(0))->size();
-        std::cout << "length:= " << length << std::endl;
-        return width() * length;
+        int totalLength = 1;
+        for (int dim = 0; dim < dimension(); ++dim) {
+            int length = getLength(dim);
+            if (length == -1) {
+                std::cout << "Error: Invalid dimension or length for dimension " << dim << std::endl;
+                return 0;
+            }
+            totalLength *= length;
+        }
+        return width() * totalLength;
     }
-    /*
     void emitExtract(std::ostream& s, int i) const override {
         const int j = i / width();
         i = i % width();
+        std::vector<int> indices(dimension());
+        int idx = j;
+        //std::cout << "Debug: emitExtract Initial idx = " << idx << std::endl;
+
+        for (int dim = dimension() - 1; dim >= 0; --dim) {
+            int length = getLength(dim);
+            indices[dim] = idx % length;
+            idx /= length;
+        }
+        /*
+        std::cout << "emitExtract indices: ";
+        for (const auto& ind : indices) {
+            std::cout << ind << " ";
+        }
+        std::cout << std::endl;
+        */
         s << " ((_ extract " << i << ' ' << i << ')';
-        emitSelect(s, j);
+        emitSelect(s, indices);
         s << ')';
     }
-    */
 };
 //=============================================================================
 // VlRandomizer is the object holding constraints and variable references.
