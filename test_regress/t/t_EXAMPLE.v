@@ -45,7 +45,7 @@ module t(/*AUTOARG*/
    wire [63:0] result = {32'h0, out};
 
    // Test loop
-   always @ (posedge clk) begin
+   always @(posedge clk) begin
 `ifdef TEST_VERBOSE
       $write("[%0t] cyc==%0d crc=%x result=%x\n", $time, cyc, crc, result);
 `endif
