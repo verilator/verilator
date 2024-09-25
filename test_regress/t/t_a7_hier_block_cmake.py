@@ -26,9 +26,11 @@ test.run(logfile=test.obj_dir + "/cmake.log",
              "-DCMAKE_PREFIX_PATH=" + os.environ["VERILATOR_ROOT"], threads
          ])
 
-test.run(
-    logfile=test.obj_dir + "/build.log",
-    cmd=['cd "' + test.obj_dir + '" && cmake --build', '.', '--', "CXX_FLAGS=" + str(threads)])
+test.run(logfile=test.obj_dir + "/build.log",
+         cmd=[
+             'cd "' + test.obj_dir + '" && cmake --build', '.', ('-v' if test.verbose else ''),
+             '--', "CXX_FLAGS=" + str(threads)
+         ])
 
 test.run(logfile=test.obj_dir + "/run.log",
          cmd=['cd "' + test.obj_dir + '" && ./t_hier_block_cmake', '.'])

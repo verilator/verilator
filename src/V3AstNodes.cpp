@@ -2896,6 +2896,15 @@ void AstCMethodHard::setPurity() {
     auto isPureIt = isPureMethod.find(name());
     UASSERT_OBJ(isPureIt != isPureMethod.end(), this, "Unknown purity of method " + name());
     m_pure = isPureIt->second;
+    if (!m_pure) return;
+    if (!fromp()->isPure()) m_pure = false;
+    if (!m_pure) return;
+    for (AstNodeExpr* argp = pinsp(); argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
+        if (!argp->isPure()) {
+            m_pure = false;
+            return;
+        }
+    }
 }
 
 void AstCUse::dump(std::ostream& str) const {
