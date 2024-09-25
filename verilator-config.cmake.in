@@ -227,6 +227,37 @@ function(verilate TARGET)
         set(COMPILER gcc)
     endif()
 
+    set(OBJCACHE "" CACHE STRING "Path for ccache, auto-detected if empty")
+    option(OBJCACHE_ENABLED "Compile Verilator with ccache" ON)
+
+    if(OBJCACHE_ENABLED)
+        if(OBJCACHE STREQUAL "")
+            find_program(OBJCACHE_PATH ccache)
+            if(OBJCACHE_PATH STREQUAL "OBJCACHE_PATH-NOTFOUND")
+                set(OBJCACHE_PATH "")
+            endif()
+        else()
+            set(OBJCACHE_PATH "${OBJCACHE}")
+        endif()
+        if(NOT OBJCACHE_PATH STREQUAL "")
+            execute_process(
+                COMMAND "${OBJCACHE_PATH}" --version
+                OUTPUT_VARIABLE objcache_version
+            )
+            string(
+                REGEX MATCH
+                "[^\n\r]+"
+                objcache_version
+                "${objcache_version}"
+            )
+            message(
+                STATUS
+                "Found ccache: ${OBJCACHE_PATH} (\"${objcache_version}\")"
+            )
+            set(CMAKE_CXX_COMPILER_LAUNCHER "${OBJCACHE_PATH}")
+        endif()
+    endif()
+
     get_target_property(BINARY_DIR "${TARGET}" BINARY_DIR)
     get_target_property(TARGET_NAME "${TARGET}" NAME)
     set(VDIR

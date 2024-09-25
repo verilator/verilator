@@ -8,6 +8,7 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import multiprocessing
 
 # If a test fails, broken .cmake may disturb the next run
 test.clean_objs()
@@ -29,7 +30,7 @@ test.run(logfile=test.obj_dir + "/cmake.log",
 test.run(logfile=test.obj_dir + "/build.log",
          cmd=[
              'cd "' + test.obj_dir + '" && cmake --build', '.', ('-v' if test.verbose else ''),
-             '--', "CXX_FLAGS=" + str(threads)
+             '-j ' + str(multiprocessing.cpu_count()), '--', "CXX_FLAGS=" + str(threads)
          ])
 
 test.run(logfile=test.obj_dir + "/run.log",
