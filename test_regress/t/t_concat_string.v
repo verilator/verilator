@@ -18,6 +18,13 @@ module t (/*AUTOARG*/);
       s = {"abcd", e.name(), "ijkl"};
       if (s != "abcdefghijkl") $stop;
 
+      // hang V3Width if complexity grows exponential (2**52 should suffice)
+      s = {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+           "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+           "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+           "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"};
+      if (s != "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz") $stop;
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

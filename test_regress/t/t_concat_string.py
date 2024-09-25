@@ -11,6 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
+signal.alarm(2)  # 2s timeout
+
 test.compile()
 
 test.execute()
