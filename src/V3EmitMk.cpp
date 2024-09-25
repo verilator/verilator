@@ -108,11 +108,10 @@ private:
         std::vector<Interval> intervals;
         intervals.resize(intervalsNum);
 
-        for (uint64_t score = topScore; score >= 1; --score) {
-            const unsigned int ivIdx = score * intervalsNum / (topScore + 1);
-            intervals[ivIdx].m_lowerBound = score;
-        }
         intervals[0].m_lowerBound = 0;
+        for (int i = 1; i < intervalsNum; i++) {
+           intervals[i].m_lowerBound = (topScore + 1) * i / intervalsNum + 1;
+        }
 
         for (const uint64_t score : sortedScores) {
             const unsigned int ivIdx = score * intervalsNum / (topScore + 1);
