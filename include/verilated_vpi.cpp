@@ -334,7 +334,7 @@ public:
         case VLVT_STRING: type = vpiStringVar; break;
         default: break;
         }
-        return (varp()->dims() > 1) ? vpiMemory : type;  // but might be wire, logic
+        return (varp()->dims() > 1) ? vpiRegArray : type;  // but might be wire, logic
     }
     void* prevDatap() const { return m_prevDatap; }
     void* varDatap() const { return m_varDatap; }
@@ -358,7 +358,7 @@ public:
     static VerilatedVpioMemoryWord* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioMemoryWord*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    uint32_t type() const override { return vpiMemoryWord; }
+    uint32_t type() const override { return vpiReg; }
     uint32_t size() const override { return varp()->packed().elements(); }
     const VerilatedRange* rangep() const override { return &(varp()->packed()); }
     const char* fullname() const override {
@@ -2162,9 +2162,21 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
         return ((new VerilatedVpioRangeIter{vop->rangep()})->castVpiHandle());
     }
     case vpiReg: {
-        const VerilatedVpioScope* const vop = VerilatedVpioScope::castp(object);
-        if (VL_UNLIKELY(!vop)) return nullptr;
-        return ((new VerilatedVpioVarIter{vop})->castVpiHandle());
+        if (const VerilatedVpioScope* const vop = VerilatedVpioScope::castp(object)) {
+            if (VL_UNLIKELY(!vop)) return nullptr;
+            return ((new VerilatedVpioVarIter{vop})->castVpiHandle());
+        } else if (const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object)) {
+            if (VL_UNLIKELY(!vop)) return nullptr;
+            if (vop->varp()->dims() < 2) return nullptr;
+            if (vop->varp()->dims() > 2) {
+                VL_VPI_WARNING_(__FILE__, __LINE__,
+                                "%s: %s, object %s has unsupported number of indices (%d)",
+                                __func__, VerilatedVpiError::strFromVpiMethod(type),
+                                vop->fullname(), vop->varp()->dims());
+            }
+
+            return (new VerilatedVpioMemoryWordIter{object, vop->varp()})->castVpiHandle();
+        }
     }
     case vpiParameter: {
         const VerilatedVpioScope* const vop = VerilatedVpioScope::castp(object);
@@ -2812,10 +2824,83 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
     return nullptr;
 }
 
-void vpi_get_value_array(vpiHandle /*object*/, p_vpi_arrayvalue /*arrayvalue_p*/,
-                         PLI_INT32* /*index_p*/, PLI_UINT32 /*num*/) {
-    VL_VPI_UNIMP_();
+void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
+                        PLI_INT32* index_p, PLI_UINT32 num) {
+    // if (!vl_check_array_format(vop->varp(), arrayvalue_p)) return;
+
+    const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
+    const VerilatedVar* const varp = vop->varp();
+    int size = vpi_get(vpiSize, object);
+    int index = index_p[0];
+
+    if (arrayvalue_p->format == vpiIntVal) {
+        PLI_INT32 *integers;
+
+        if (arrayvalue_p->flags & vpiUserAllocFlag) {
+            integers = arrayvalue_p->value.integers;
+        } else {            
+            integers = (PLI_INT32*)malloc(num * 4);
+            arrayvalue_p->value.integers = integers;
+        }
+
+        if (varp->vltype() == VLVT_UINT8) {
+            CData *ptr = reinterpret_cast<CData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                integers[i] = ptr[index++];
+                index = index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT16) {
+            SData *ptr = reinterpret_cast<SData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                integers[i] = ptr[index++];
+                index = index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT32) {
+            IData *ptr = reinterpret_cast<IData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                integers[i] = ptr[index++];
+                index = index % size;
+            }
+        }
+
+        return;
+    }
+
+    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for %s", __func__,
+                  VerilatedVpiError::strFromVpiVal(arrayvalue_p->format), vop->fullname());
 }
+
+void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
+                         PLI_INT32* index_p, PLI_UINT32 num) {
+    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_get_value_array %p\n", object););
+    VerilatedVpiImp::assertOneCheck();
+
+    VL_VPI_ERROR_RESET_();
+    if (VL_UNLIKELY(!object)) return;
+
+    const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
+    if (!vop) {
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
+    }
+
+    if (vop->type() != vpiRegArray) {
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported type (%p, %u)", __func__,
+            object, vop->type());
+    }
+
+    const VerilatedVar* const varp = vop->varp();
+
+    if (varp->dims() != 2) {
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: object %s has unsupported number of indices (%d)",
+            __func__, vop->fullname(), varp->dims());
+    }
+
+    vl_get_value_array(object, arrayvalue_p, index_p, num);
+}
+
 void vpi_put_value_array(vpiHandle /*object*/, p_vpi_arrayvalue /*arrayvalue_p*/,
                          PLI_INT32* /*index_p*/, PLI_UINT32 /*num*/) {
     VL_VPI_UNIMP_();
