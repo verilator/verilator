@@ -19,5 +19,7 @@ test.execute()
 test.file_grep_not(test.obj_dir + "/vlt_gcc.log", "Foo")
 test.file_grep(test.obj_dir + "/vlt_gcc.log", "vm_classes_slow_1.cpp")
 test.file_grep(test.obj_dir + "/vlt_gcc.log", "vm_classes_fast_1.cpp")
+test.file_grep_not(test.obj_dir + "/vlt_gcc.log", "vm_classes_slow_2.cpp")
+test.file_grep_not(test.obj_dir + "/vlt_gcc.log", "vm_classes_fast_2.cpp")
 
 test.passes()

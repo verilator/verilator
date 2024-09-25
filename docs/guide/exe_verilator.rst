@@ -972,7 +972,7 @@ Summary:
    swap thrashing with large designs, high values give no benefits.  The
    value should range from 2 to 20 for small to medium designs.
 
-   This option is off by default.
+   Default is zero, which disables this feature.
 
 .. option:: --output-split <statements>
 
