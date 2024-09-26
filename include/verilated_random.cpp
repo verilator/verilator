@@ -22,10 +22,10 @@
 
 #include "verilated_random.h"
 
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <streambuf>
-#include <iomanip>
 
 #define _VL_SOLVER_HASH_LEN 1
 #define _VL_SOLVER_HASH_LEN_TOTAL 4
@@ -267,7 +267,8 @@ std::string readUntilBalanced(std::istream& stream) {
     }
     return result;
 }
-std::string parseNestedSelect(const std::string& nested_select_expr, std::vector<std::string>& indices) {
+std::string parseNestedSelect(const std::string& nested_select_expr,
+                              std::vector<std::string>& indices) {
     std::istringstream nestedStream(nested_select_expr);
     std::string name, idx;
     nestedStream >> name;
@@ -488,7 +489,9 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
         if (indices.size() > 1) {
             std::string flattenedIndex = flattenIndices(indices, &varr);
             varr.set(flattenedIndex, value);
-        } else { varr.set(idx, value); }
+        } else {
+            varr.set(idx, value);
+        }
     }
     return true;
 }

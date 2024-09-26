@@ -1338,7 +1338,8 @@ public:
     template <std::size_t CurrentDimension = 0>
     auto& find_element(const std::vector<size_t>& indices) {
         if constexpr (std::is_class_v<T_Value>) {
-            return m_storage[indices[CurrentDimension]].template find_element<CurrentDimension + 1>(indices);
+            return m_storage[indices[CurrentDimension]]
+                .template find_element<CurrentDimension + 1>(indices);
         } else {
             return m_storage[indices[CurrentDimension]];
         }

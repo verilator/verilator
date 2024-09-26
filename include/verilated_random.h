@@ -60,7 +60,7 @@ public:
     virtual void emitExtract(std::ostream& s, int i) const;
     virtual void emitType(std::ostream& s) const;
     virtual int totalWidth() const;
-    virtual int getLength(int dimension) const {return -1;}
+    virtual int getLength(int dimension) const { return -1; }
 };
 
 template <typename T>
