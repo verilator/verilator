@@ -2823,10 +2823,104 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
     VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
     return nullptr;
 }
+bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arrayvalue_p, const char* fullname) {
+    bool status = true;
+
+    // Check for vpiVectorVal format
+    if (arrayvalue_p->format == vpiVectorVal) {
+        switch (varp->vltype()) {
+            case VLVT_UINT8:
+            case VLVT_UINT16:
+            case VLVT_UINT32:
+            case VLVT_UINT64:
+            case VLVT_WDATA:
+                return status;  // Valid match
+            default:
+                return false;   // Invalid format
+        }
+    }
+
+    // Check for vpiIntVal format
+    else if (arrayvalue_p->format == vpiIntVal) {
+        switch (varp->vltype()) {
+            case VLVT_UINT8:
+            case VLVT_UINT16:
+            case VLVT_UINT32:
+                return status;  // Valid match
+            default:
+                return false;   // Invalid format
+        }
+    }
+
+    // Check for vpiRealVal format
+    else if (arrayvalue_p->format == vpiRealVal) {
+        switch (varp->vltype()) {
+            case VLVT_REAL:
+                return status;  // Valid match
+            default:
+                return false;   // Invalid format
+        }
+    }
+
+    // Check for vpiTimeVal format
+    else if (arrayvalue_p->format == vpiTimeVal) {
+        switch (varp->vltype()) {
+            case VLVT_UINT64:
+            case VLVT_REAL:
+                return status;  // Valid match
+            default:
+                return false;   // Invalid format
+        }
+    }
+
+    // Check for vpiRawTwoStateVal format
+    else if (arrayvalue_p->format == vpiRawTwoStateVal) {
+        switch (varp->vltype()) {
+            // size in bytes is multiples of 8 depends on ngroups
+            case VLVT_UINT8:
+            case VLVT_UINT16:
+            case VLVT_UINT32:
+            case VLVT_UINT64:
+            case VLVT_WDATA:
+                return status;  // Valid match
+            default:
+                return false;   // Invalid format
+        }
+    }
+
+    // Check for vpiShortIntVal format
+    else if (arrayvalue_p->format == vpiShortIntVal) {
+        switch (varp->vltype()) {
+            case VLVT_UINT16:
+                return status;  // Valid match
+            default:
+                return false;   // Invalid format
+        }
+    }
+
+    // Check for vpiLongIntVal format
+    else if (arrayvalue_p->format == vpiLongIntVal) {
+        switch (varp->vltype()) {
+            case VLVT_UINT64:
+                return status;  // Valid match
+            default:
+                return false;   // Invalid format
+        }
+    }
+
+    // Unsupported format, log an error and return false
+    else {
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for %s", 
+                      __func__, VerilatedVpiError::strFromVpiVal(arrayvalue_p->format), fullname);
+        return false;
+    }
+
+    return status;
+}
 
 void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                         PLI_INT32* index_p, PLI_UINT32 num) {
-    // if (!vl_check_array_format(vop->varp(), arrayvalue_p)) return;
+    if (!vl_check_array_format(vop->varp(), arrayvalue_p)) return;
 
     const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
     const VerilatedVar* const varp = vop->varp();
