@@ -2903,7 +2903,7 @@ c_generate_item<nodep>:  // IEEE: generate_item (for checkers)
         ;
 
 conditional_generate_construct<nodep>:  // ==IEEE: conditional_generate_construct
-                yCASE '(' exprTypeCompare ')' ~c~case_generate_itemListE yENDCASE
+                yCASE '(' exprTypeCompare ')' ~c~case_generate_itemList yENDCASE
                         { $$ = new AstGenCase{$1, $3, $5}; }
         |       yIF '(' exprTypeCompare ')' ~c~generate_block_or_null %prec prLOWER_THAN_ELSE
                         { $$ = new AstGenIf{$1, $3, $5, nullptr}; }
@@ -2992,15 +2992,6 @@ genvar_iteration<nodep>:        // ==IEEE: genvar_iteration
         |       varRefBase yP_MINUSMINUS
                         { $$ = new AstAssign{$2, $1, new AstSub{$2, $1->cloneTreePure(true),
                                                                 new AstConst{$2, AstConst::StringToParse{}, "'b1"}}}; }
-        ;
-
-case_generate_itemListE<caseItemp>: // IEEE: [{ case_generate_itemList }]
-                /* empty */                             { $$ = nullptr; }
-        |       ~c~case_generate_itemList               { $$ = $1; }
-        ;
-
-c_case_generate_itemListE<caseItemp>:  // IEEE: { case_generate_item } (for checkers)
-                BISONPRE_COPY(case_generate_itemListE,{s/~c~/c_/g})      // {copied}
         ;
 
 case_generate_itemList<caseItemp>:  // IEEE: { case_generate_itemList }
@@ -3621,15 +3612,15 @@ statement_item<nodep>:          // IEEE: statement_item
                         { $$ = new AstRelease{$1, $2}; v3Global.setHasForceableSignals(); }
         //
         //                      // IEEE: case_statement
-        |       unique_priorityE caseStart caseAttrE case_itemListE yENDCASE
+        |       unique_priorityE caseStart caseAttrE case_itemList yENDCASE
                         { $$ = $2; if ($4) $2->addItemsp($4);
                           if ($1 == uniq_UNIQUE) $2->uniquePragma(true);
                           if ($1 == uniq_UNIQUE0) $2->unique0Pragma(true);
                           if ($1 == uniq_PRIORITY) $2->priorityPragma(true); }
-        // &&& is part of expr so case_patternListE aliases to case_itemListE
-        |       unique_priorityE caseStart caseAttrE yMATCHES case_patternListE yENDCASE
+        // &&& is part of expr so case_patternList aliases to case_itemList
+        |       unique_priorityE caseStart caseAttrE yMATCHES case_itemList yENDCASE
                         { $$ = nullptr; BBUNSUP($4, "Unsupported: matches (for tagged union)"); }
-        |       unique_priorityE caseStart caseAttrE yINSIDE case_insideListE yENDCASE
+        |       unique_priorityE caseStart caseAttrE yINSIDE case_inside_itemList yENDCASE
                         { $$ = $2; if ($5) $2->addItemsp($5);
                           if (!$2->caseSimple()) $4->v3error("Illegal to have inside on a casex/casez");
                           $2->caseInsideSet();
@@ -3885,20 +3876,6 @@ caseAttrE:
                 /*empty*/                               { }
         |       caseAttrE yVL_FULL_CASE                 { GRAMMARP->m_caseAttrp->fullPragma(true); }
         |       caseAttrE yVL_PARALLEL_CASE             { GRAMMARP->m_caseAttrp->parallelPragma(true); }
-        ;
-
-case_patternListE<caseItemp>:  // IEEE: case_pattern_item
-                case_itemListE                          { $$ = $1; }
-        ;
-
-case_itemListE<caseItemp>:      // IEEE: [ { case_item } ]
-                /* empty */                             { $$ = nullptr; }
-        |       case_itemList                           { $$ = $1; }
-        ;
-
-case_insideListE<caseItemp>:    // IEEE: [ { case_inside_item } ]
-                /* empty */                             { $$ = nullptr; }
-        |       case_inside_itemList                    { $$ = $1; }
         ;
 
 case_itemList<caseItemp>:       // IEEE: { case_item + ... }
