@@ -250,6 +250,7 @@ static Process& getSolver() {
     while (getline(s_solver, s)) {}
     return s_solver;
 }
+
 std::string readUntilBalanced(std::istream& stream) {
     std::string result;
     std::string token;
@@ -267,6 +268,7 @@ std::string readUntilBalanced(std::istream& stream) {
     }
     return result;
 }
+
 std::string parseNestedSelect(const std::string& nested_select_expr,
                               std::vector<std::string>& indices) {
     std::istringstream nestedStream(nested_select_expr);
@@ -280,6 +282,7 @@ std::string parseNestedSelect(const std::string& nested_select_expr,
     indices.push_back(idx);
     return name;
 }
+
 std::string flattenIndices(const std::vector<std::string>& indices, const VlRandomVar* var) {
     int flattenedIndex = 0;
     int multiplier = 1;
@@ -427,13 +430,12 @@ bool VlRandomizer::next(VlRNG& rngr) {
     }
     for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; i++) {
         f << "(assert ";
-        std::ostringstream outputStream;
         randomConstraint(f, rngr, _VL_SOLVER_HASH_LEN);
-        std::cout << outputStream.str() << std::endl;
         f << ")\n";
         f << "\n(check-sat)\n";
         sat = parseSolution(f);
     }
+
     f << "(reset)\n";
     return true;
 }
@@ -441,6 +443,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
 bool VlRandomizer::parseSolution(std::iostream& f) {
     std::string sat;
     do { std::getline(f, sat); } while (sat == "");
+
     if (sat == "unsat") return false;
     if (sat != "sat") {
         std::stringstream msg;
@@ -462,6 +465,7 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
                    "Internal: Unable to parse solver's response: invalid S-expression");
         return false;
     }
+
     while (true) {
         f >> c;
         if (c == ')') break;
@@ -470,7 +474,7 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
                        "Internal: Unable to parse solver's response: invalid S-expression");
             return false;
         }
-        std::string name, value, idx;
+        std::string name, idx, value;
         std::vector<std::string> indices;
         f >> name;
         indices.clear();

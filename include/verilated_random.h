@@ -27,9 +27,7 @@
 
 #include "verilated.h"
 
-#include <iostream>
 #include <ostream>
-#include <sstream>
 
 //=============================================================================
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
