@@ -346,17 +346,17 @@ public:
     }
 };
 
-class VerilatedVpioMemoryWord final : public VerilatedVpioVar {
+class VerilatedVpioReg final : public VerilatedVpioVar {
 public:
-    VerilatedVpioMemoryWord(const VerilatedVar* varp, const VerilatedScope* scopep, int32_t index,
+    VerilatedVpioReg(const VerilatedVar* varp, const VerilatedScope* scopep, int32_t index,
                             int offset)
         : VerilatedVpioVar{varp, scopep} {
         m_index = index;
         m_varDatap = (static_cast<uint8_t*>(varp->datap())) + entSize() * offset;
     }
-    ~VerilatedVpioMemoryWord() override = default;
-    static VerilatedVpioMemoryWord* castp(vpiHandle h) {
-        return dynamic_cast<VerilatedVpioMemoryWord*>(reinterpret_cast<VerilatedVpio*>(h));
+    ~VerilatedVpioReg() override = default;
+    static VerilatedVpioReg* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioReg*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     uint32_t type() const override { return vpiReg; }
     uint32_t size() const override { return varp()->packed().elements(); }
@@ -430,7 +430,7 @@ public:
     }
 };
 
-class VerilatedVpioMemoryWordIter final : public VerilatedVpio {
+class VerilatedVpioRegIter final : public VerilatedVpio {
     const vpiHandle m_handle;
     const VerilatedVar* const m_varp;
     int32_t m_iteration;
@@ -438,14 +438,14 @@ class VerilatedVpioMemoryWordIter final : public VerilatedVpio {
     bool m_done = false;
 
 public:
-    VerilatedVpioMemoryWordIter(const vpiHandle handle, const VerilatedVar* varp)
+    VerilatedVpioRegIter(const vpiHandle handle, const VerilatedVar* varp)
         : m_handle{handle}
         , m_varp{varp}
         , m_iteration{varp->unpacked().right()}
         , m_direction{VL_LIKELY(varp->unpacked().left() > varp->unpacked().right()) ? 1 : -1} {}
-    ~VerilatedVpioMemoryWordIter() override = default;
-    static VerilatedVpioMemoryWordIter* castp(vpiHandle h) {
-        return dynamic_cast<VerilatedVpioMemoryWordIter*>(reinterpret_cast<VerilatedVpio*>(h));
+    ~VerilatedVpioRegIter() override = default;
+    static VerilatedVpioRegIter* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioRegIter*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     uint32_t type() const override { return vpiIterator; }
     void iterationInc() {
@@ -2045,7 +2045,7 @@ vpiHandle vpi_handle_by_index(vpiHandle object, PLI_INT32 indx) {
     VerilatedVpiImp::assertOneCheck();
     VL_VPI_ERROR_RESET_();
     // Memory words are not indexable
-    const VerilatedVpioMemoryWord* const vop = VerilatedVpioMemoryWord::castp(object);
+    const VerilatedVpioReg* const vop = VerilatedVpioReg::castp(object);
     if (VL_UNLIKELY(vop)) return nullptr;
     const VerilatedVpioVar* const varop = VerilatedVpioVar::castp(object);
     if (VL_LIKELY(varop)) {
@@ -2054,14 +2054,14 @@ vpiHandle vpi_handle_by_index(vpiHandle object, PLI_INT32 indx) {
             if (VL_UNLIKELY(indx > varop->varp()->unpacked().left()
                             || indx < varop->varp()->unpacked().right()))
                 return nullptr;
-            return (new VerilatedVpioMemoryWord{varop->varp(), varop->scopep(), indx,
+            return (new VerilatedVpioReg{varop->varp(), varop->scopep(), indx,
                                                 indx - varop->varp()->unpacked().right()})
                 ->castVpiHandle();
         }
         if (VL_UNLIKELY(indx < varop->varp()->unpacked().left()
                         || indx > varop->varp()->unpacked().right()))
             return nullptr;
-        return (new VerilatedVpioMemoryWord{varop->varp(), varop->scopep(), indx,
+        return (new VerilatedVpioReg{varop->varp(), varop->scopep(), indx,
                                             indx - varop->varp()->unpacked().left()})
             ->castVpiHandle();
     }
@@ -2114,7 +2114,7 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
         return (new VerilatedVpioScope{vop->scopep()})->castVpiHandle();
     }
     case vpiParent: {
-        const VerilatedVpioMemoryWord* const vop = VerilatedVpioMemoryWord::castp(object);
+        const VerilatedVpioReg* const vop = VerilatedVpioReg::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
         return (new VerilatedVpioVar{vop->varp(), vop->scopep()})->castVpiHandle();
     }
@@ -2146,7 +2146,7 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
                             VerilatedVpiError::strFromVpiMethod(type), vop->fullname(),
                             vop->varp()->dims());
         }
-        return (new VerilatedVpioMemoryWordIter{object, vop->varp()})->castVpiHandle();
+        return (new VerilatedVpioRegIter{object, vop->varp()})->castVpiHandle();
     }
     case vpiRange: {
         const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
@@ -2175,7 +2175,7 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
                                 vop->fullname(), vop->varp()->dims());
             }
 
-            return (new VerilatedVpioMemoryWordIter{object, vop->varp()})->castVpiHandle();
+            return (new VerilatedVpioRegIter{object, vop->varp()})->castVpiHandle();
         }
     }
     case vpiParameter: {
@@ -2823,10 +2823,11 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
     VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
     return nullptr;
 }
-bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arrayvalue_p, const char* fullname) {
+
+bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arrayvalue_p,
+                            const char* fullname) {
     bool status = true;
 
-    // Check for vpiVectorVal format
     if (arrayvalue_p->format == vpiVectorVal) {
         switch (varp->vltype()) {
             case VLVT_UINT8:
@@ -2834,95 +2835,72 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
             case VLVT_UINT32:
             case VLVT_UINT64:
             case VLVT_WDATA:
-                return status;  // Valid match
+                return status;
             default:
-                return false;   // Invalid format
+                status = false;
         }
-    }
-
-    // Check for vpiIntVal format
-    else if (arrayvalue_p->format == vpiIntVal) {
+    } else if (arrayvalue_p->format == vpiIntVal) {
         switch (varp->vltype()) {
             case VLVT_UINT8:
             case VLVT_UINT16:
             case VLVT_UINT32:
-                return status;  // Valid match
+                return status;
             default:
-                return false;   // Invalid format
+                status = false;
         }
-    }
-
-    // Check for vpiRealVal format
-    else if (arrayvalue_p->format == vpiRealVal) {
+    } else if (arrayvalue_p->format == vpiRealVal) {
         switch (varp->vltype()) {
             case VLVT_REAL:
-                return status;  // Valid match
+                return status;
             default:
-                return false;   // Invalid format
+                status = false;
         }
-    }
-
-    // Check for vpiTimeVal format
-    else if (arrayvalue_p->format == vpiTimeVal) {
+    } else if (arrayvalue_p->format == vpiTimeVal) {
         switch (varp->vltype()) {
             case VLVT_UINT64:
             case VLVT_REAL:
-                return status;  // Valid match
+                return status;
             default:
-                return false;   // Invalid format
+                status = false;
         }
-    }
-
-    // Check for vpiRawTwoStateVal format
-    else if (arrayvalue_p->format == vpiRawTwoStateVal) {
+    } else if (arrayvalue_p->format == vpiRawTwoStateVal) {
         switch (varp->vltype()) {
-            // size in bytes is multiples of 8 depends on ngroups
             case VLVT_UINT8:
             case VLVT_UINT16:
             case VLVT_UINT32:
             case VLVT_UINT64:
             case VLVT_WDATA:
-                return status;  // Valid match
+                return status;
             default:
-                return false;   // Invalid format
+                status = false;
         }
-    }
-
-    // Check for vpiShortIntVal format
-    else if (arrayvalue_p->format == vpiShortIntVal) {
+    } else if (arrayvalue_p->format == vpiShortIntVal) {
         switch (varp->vltype()) {
             case VLVT_UINT16:
-                return status;  // Valid match
+                return status;
             default:
-                return false;   // Invalid format
+                status = false;
         }
-    }
-
-    // Check for vpiLongIntVal format
-    else if (arrayvalue_p->format == vpiLongIntVal) {
+    } else if (arrayvalue_p->format == vpiLongIntVal) {
         switch (varp->vltype()) {
             case VLVT_UINT64:
-                return status;  // Valid match
+                return status;
             default:
-                return false;   // Invalid format
+                status = false;
         }
     }
 
-    // Unsupported format, log an error and return false
-    else {
-        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for %s", 
-                      __func__, VerilatedVpiError::strFromVpiVal(arrayvalue_p->format), fullname);
-        return false;
-    }
+    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for %s",
+                __func__, VerilatedVpiError::strFromVpiVal(arrayvalue_p->format), fullname);
 
     return status;
 }
 
 void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                         PLI_INT32* index_p, PLI_UINT32 num) {
-    if (!vl_check_array_format(vop->varp(), arrayvalue_p)) return;
-
     const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
+    if (!vl_check_array_format(vop->varp(), arrayvalue_p, vop->fullname())) return;
+
     const VerilatedVar* const varp = vop->varp();
     int size = vpi_get(vpiSize, object);
     int index = index_p[0];
