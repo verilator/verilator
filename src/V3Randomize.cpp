@@ -598,10 +598,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                 "write_var"};
             uint32_t dimension = 0;
             if (VN_IS(varp->dtypep(), UnpackArrayDType)) {
-                std::pair<uint32_t, uint32_t> dims
+                const std::pair<uint32_t, uint32_t> dims
                     = varp->dtypep()->dimensions(/*includeBasic=*/true);
-                uint32_t packedDimensions = dims.first;
-                uint32_t unpackedDimensions = dims.second;
+                const uint32_t unpackedDimensions = dims.second;
                 dimension = unpackedDimensions;
             }
             methodp->dtypeSetVoid();

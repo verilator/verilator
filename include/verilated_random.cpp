@@ -22,7 +22,6 @@
 
 #include "verilated_random.h"
 
-#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <streambuf>
@@ -258,13 +257,13 @@ std::string readUntilBalanced(std::istream& stream) {
     while (stream >> token) {
         for (char c : token) {
             if (c == '(') {
-                parenCount++;
+                ++parenCount;
             } else if (c == ')') {
-                parenCount--;
+                --parenCount;
             }
         }
         result += token + " ";
-        if (parenCount == 0) { break; }
+        if (parenCount == 0) break;
     }
     return result;
 }
@@ -288,39 +287,31 @@ std::string flattenIndices(const std::vector<std::string>& indices, const VlRand
     int multiplier = 1;
     for (int i = indices.size() - 1; i >= 0; --i) {
         int indexValue = 0;
-        try {
-            std::string trimmedIndex = indices[i];
-            trimmedIndex.erase(0, trimmedIndex.find_first_not_of(" \t"));
-            trimmedIndex.erase(trimmedIndex.find_last_not_of(" \t") + 1);
-            if (trimmedIndex.find("#x") == 0) {
-                indexValue = std::stoul(trimmedIndex.substr(2), nullptr, 16);
-            } else if (trimmedIndex.find("#b") == 0) {
-                indexValue = std::stoul(trimmedIndex.substr(2), nullptr, 2);
-            } else {
-                indexValue = std::stoul(trimmedIndex, nullptr, 10);
-            }
-        } catch (const std::exception& e) {
-            std::stringstream msg;
-            msg << "Error in index parsing: " << e.what() << std::endl;
-            msg << "Index string: " << indices[i] << " at position " << i << std::endl;
-            const std::string str = msg.str();
-            VL_WARN_MT(__FILE__, __LINE__, "flattenIndices", str.c_str());
-            return "Error";
+        std::string trimmedIndex = indices[i];
+
+        trimmedIndex.erase(0, trimmedIndex.find_first_not_of(" \t"));
+        trimmedIndex.erase(trimmedIndex.find_last_not_of(" \t") + 1);
+
+        if (trimmedIndex.find("#x") == 0) {
+            indexValue = std::strtoul(trimmedIndex.substr(2).c_str(), nullptr, 16);
+        } else if (trimmedIndex.find("#b") == 0) {
+            indexValue = std::strtoul(trimmedIndex.substr(2).c_str(), nullptr, 2);
+        } else {
+            indexValue = std::strtoul(trimmedIndex.c_str(), nullptr, 10);
         }
         int length = var->getLength(i);
         if (length == -1) {
-            std::stringstream msg;
-            msg << "Internal: Wrong Call: Only RandomArray can call getLength() " << std::endl;
-            const std::string str = msg.str();
-            VL_WARN_MT(__FILE__, __LINE__, "randomize", str.c_str());
+            VL_WARN_MT(__FILE__, __LINE__, "randomize", "Internal: Wrong Call: Only RandomArray can call getLength()");
             break;
         }
         flattenedIndex += indexValue * multiplier;
         multiplier *= length;
     }
-    std::stringstream ss;
-    ss << "#x" << std::setfill('0') << std::setw(8) << std::hex << flattenedIndex;
-    return ss.str();
+    std::string hexString = std::to_string(flattenedIndex);
+    while (hexString.size() < 8) {
+        hexString.insert(0, "0");
+    }
+    return "#x" + hexString;
 }
 //======================================================================
 // VlRandomizer:: Methods

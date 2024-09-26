@@ -147,7 +147,7 @@ public:
                 indices[currentDimension] = 0;
                 --currentDimension;
             }
-            if (currentDimension < 0) { break; }
+            if (currentDimension < 0) break;
         }
     }
 
@@ -162,7 +162,7 @@ public:
         int totalLength = 1;
         for (int dim = 0; dim < dimension(); ++dim) {
             int length = getLength(dim);
-            if (length == -1) { return 0; }
+            if (length == -1) return 0;
             totalLength *= length;
         }
         return width() * totalLength;
