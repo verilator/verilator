@@ -321,6 +321,8 @@ class EmitCImp final : EmitCFunc {
             }
             // static doesn't need save-restore as is constant
             puts("static uint32_t fake_zero_count = 0;\n");
+            puts("std::string fullhier = std::string{VerilatedModule::name()} + hierp;\n");
+            puts("if (!fullhier.empty() && fullhier[0] == '.') fullhier = fullhier.substr(1);\n");
             // Used for second++ instantiation of identical bin
             puts("if (!enable) count32p = &fake_zero_count;\n");
             puts("*count32p = 0;\n");
@@ -329,9 +331,7 @@ class EmitCImp final : EmitCFunc {
             puts("  \"filename\",filenamep,");
             puts("  \"lineno\",lineno,");
             puts("  \"column\",column,\n");
-            // Need to move hier into scopes and back out if do this
-            // puts( "\"hier\",std::string{vlSymsp->name()} + hierp,");
-            puts("\"hier\",std::string{VerilatedModule::name()} + hierp,");
+            puts("\"hier\",fullhier,");
             puts("  \"page\",pagep,");
             puts("  \"comment\",commentp,");
             puts("  (linescovp[0] ? \"linescov\" : \"\"), linescovp);\n");

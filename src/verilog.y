@@ -1412,12 +1412,17 @@ udpFront<nodeModulep>:
                           SYMP->pushNew($$); }
         ;
 
-parameter_value_assignmentE<pinp>:      // IEEE: [ parameter_value_assignment ]
+parameter_value_assignmentInstE<pinp>:      // IEEE: [ parameter_value_assignment ] for instance
                 /* empty */                             { $$ = nullptr; }
-        |       parameter_value_assignment              { $$ = $1; }
+        |       parameter_value_assignmentInst          { $$ = $1; }
         ;
 
-parameter_value_assignment<pinp>:       // IEEE: parameter_value_assignment
+parameter_value_assignmentClassE<pinp>:      // IEEE: [ parameter_value_assignment ] for classes
+                /* empty */                             { $$ = nullptr; }
+        |       parameter_value_assignmentClass         { $$ = $1; }
+        ;
+
+parameter_value_assignmentInst<pinp>:       // IEEE: parameter_value_assignment for instance
                 '#' '(' cellparamListE ')'              { $$ = $3; }
         //                      // Parentheses are optional around a single parameter
         |       '#' yaINTNUM                            { $$ = new AstPin{$<fl>2, 1, "", new AstConst{$<fl>2, *$2}}; }
@@ -2898,7 +2903,7 @@ c_generate_item<nodep>:  // IEEE: generate_item (for checkers)
         ;
 
 conditional_generate_construct<nodep>:  // ==IEEE: conditional_generate_construct
-                yCASE '(' exprTypeCompare ')' ~c~case_generate_itemListE yENDCASE
+                yCASE '(' exprTypeCompare ')' ~c~case_generate_itemList yENDCASE
                         { $$ = new AstGenCase{$1, $3, $5}; }
         |       yIF '(' exprTypeCompare ')' ~c~generate_block_or_null %prec prLOWER_THAN_ELSE
                         { $$ = new AstGenIf{$1, $3, $5, nullptr}; }
@@ -2987,15 +2992,6 @@ genvar_iteration<nodep>:        // ==IEEE: genvar_iteration
         |       varRefBase yP_MINUSMINUS
                         { $$ = new AstAssign{$2, $1, new AstSub{$2, $1->cloneTreePure(true),
                                                                 new AstConst{$2, AstConst::StringToParse{}, "'b1"}}}; }
-        ;
-
-case_generate_itemListE<caseItemp>: // IEEE: [{ case_generate_itemList }]
-                /* empty */                             { $$ = nullptr; }
-        |       ~c~case_generate_itemList               { $$ = $1; }
-        ;
-
-c_case_generate_itemListE<caseItemp>:  // IEEE: { case_generate_item } (for checkers)
-                BISONPRE_COPY(case_generate_itemListE,{s/~c~/c_/g})      // {copied}
         ;
 
 case_generate_itemList<caseItemp>:  // IEEE: { case_generate_itemList }
@@ -3242,7 +3238,9 @@ instDecl<nodep>:
         //                      // Currently disambiguated from data_declaration based on
         //                      // VARs being type, and cells non-type.
         //                      // IEEE requires a '(' to disambiguate, we need TODO force this
-                id parameter_value_assignmentE {INSTPREP($<fl>1, *$1, $2);} instnameList ';'
+                id parameter_value_assignmentInstE
+        /*mid*/         { INSTPREP($<fl>1, *$1, $2); }
+        /*cont*/    instnameList ';'
                         { $$ = $4;
                           GRAMMARP->m_impliedDecl = false;
                           if (GRAMMARP->m_instParamp) {
@@ -3257,6 +3255,12 @@ instDecl<nodep>:
         /*cont*/    mpInstnameList ';'
                         { $$ = VARDONEP($5, nullptr, nullptr); }
         //UNSUP: strengthSpecE for udp_instantiations
+        //                      // IEEE: part of udp_instance when no name_of_instance
+        //                      // Note no unpacked dimension nor list of instances
+        |       id
+        /*mid*/         { INSTPREP($<fl>1, *$1, nullptr); }
+        /*cont*/    instnameParenUdpn ';'
+                        { $$ = $3; GRAMMARP->m_impliedDecl = false; }
         ;
 
 mpInstnameList<nodep>:          // Similar to instnameList, but for modport instantiations which have no parenthesis
@@ -3278,7 +3282,10 @@ instnameParen<nodep>:
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, $4, $2, true); }
         |       id instRangeListE
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, nullptr, $2, false); }
-        |       '(' cellpinListE ')'  // When UDP has empty name, unpacked dimensions must not be used
+        ;
+
+instnameParenUdpn<nodep>:  // IEEE: part of udp_instance when no name_of_instance
+                '(' cellpinListE ')'  // When UDP has empty name, unpacked dimensions must not be used
                         { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, "", $2, nullptr, true); }
         ;
 
@@ -3605,15 +3612,15 @@ statement_item<nodep>:          // IEEE: statement_item
                         { $$ = new AstRelease{$1, $2}; v3Global.setHasForceableSignals(); }
         //
         //                      // IEEE: case_statement
-        |       unique_priorityE caseStart caseAttrE case_itemListE yENDCASE
+        |       unique_priorityE caseStart caseAttrE case_itemList yENDCASE
                         { $$ = $2; if ($4) $2->addItemsp($4);
                           if ($1 == uniq_UNIQUE) $2->uniquePragma(true);
                           if ($1 == uniq_UNIQUE0) $2->unique0Pragma(true);
                           if ($1 == uniq_PRIORITY) $2->priorityPragma(true); }
-        // &&& is part of expr so case_patternListE aliases to case_itemListE
-        |       unique_priorityE caseStart caseAttrE yMATCHES case_patternListE yENDCASE
+        // &&& is part of expr so case_patternList aliases to case_itemList
+        |       unique_priorityE caseStart caseAttrE yMATCHES case_itemList yENDCASE
                         { $$ = nullptr; BBUNSUP($4, "Unsupported: matches (for tagged union)"); }
-        |       unique_priorityE caseStart caseAttrE yINSIDE case_insideListE yENDCASE
+        |       unique_priorityE caseStart caseAttrE yINSIDE case_inside_itemList yENDCASE
                         { $$ = $2; if ($5) $2->addItemsp($5);
                           if (!$2->caseSimple()) $4->v3error("Illegal to have inside on a casex/casez");
                           $2->caseInsideSet();
@@ -3869,20 +3876,6 @@ caseAttrE:
                 /*empty*/                               { }
         |       caseAttrE yVL_FULL_CASE                 { GRAMMARP->m_caseAttrp->fullPragma(true); }
         |       caseAttrE yVL_PARALLEL_CASE             { GRAMMARP->m_caseAttrp->parallelPragma(true); }
-        ;
-
-case_patternListE<caseItemp>:  // IEEE: case_pattern_item
-                case_itemListE                          { $$ = $1; }
-        ;
-
-case_itemListE<caseItemp>:      // IEEE: [ { case_item } ]
-                /* empty */                             { $$ = nullptr; }
-        |       case_itemList                           { $$ = $1; }
-        ;
-
-case_insideListE<caseItemp>:    // IEEE: [ { case_inside_item } ]
-                /* empty */                             { $$ = nullptr; }
-        |       case_inside_itemList                    { $$ = $1; }
         ;
 
 case_itemList<caseItemp>:       // IEEE: { case_item + ... }
@@ -4495,7 +4488,14 @@ property_actual_arg<nodeExprp>:  // ==IEEE: property_actual_arg
 exprOrDataType<nodep>:          // expr | data_type: combined to prevent conflicts
                 expr                                    { $$ = $1; }
         //                      // data_type includes id that overlaps expr, so special flavor
-        |       data_type                               { $$ = $1; }
+        //                      // data_type expanded:
+        |       data_typeNoRef                          { $$ = $1; }
+        |       packageClassScopeE idType packed_dimensionListE
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
+                          $$ = GRAMMARP->createArray(refp, $3, true); }
+        |       packageClassScopeE idType parameter_value_assignmentClass packed_dimensionListE
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, $3};
+                          $$ = GRAMMARP->createArray(refp, $4, true); }
         //                      // not in spec, but needed for $past(sig,1,,@(posedge clk))
         //UNSUP event_control                           { }
         ;
@@ -4607,7 +4607,7 @@ taskId<nodeFTaskp>:
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>1); }
         ;
 
-funcId<nodeFTaskp>:                     // IEEE: function_data_type_or_implicit + part of function_body_declaration
+funcId<nodeFTaskp>:             // IEEE: function_data_type_or_implicit + part of function_body_declaration
         //                      // IEEE: function_data_type_or_implicit must be expanded here to prevent conflict
         //                      // function_data_type expanded here to prevent conflicts with
         //                      // implicit_type:empty vs data_type:ID
@@ -4623,10 +4623,20 @@ funcId<nodeFTaskp>:                     // IEEE: function_data_type_or_implicit 
                         { $$ = $2;
                           $$->fvarp(new AstBasicDType{$<fl>2, LOGIC_IMPLICIT, $1});
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>2); }
-        |       data_type fIdScoped
+        |       data_typeNoRef fIdScoped
                         { $$ = $2;
                           $$->fvarp($1);
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>2); }
+        |       packageClassScopeE idType packed_dimensionListE fIdScoped
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
+                          $$ = $4;
+                          $$->fvarp(GRAMMARP->createArray(refp, $3, true));
+                          SYMP->pushNewUnderNodeOrCurrent($$, $<scp>4); }
+        |       packageClassScopeE idType parameter_value_assignmentClass packed_dimensionListE fIdScoped
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, $3};
+                          $$ = $5;
+                          $$->fvarp(GRAMMARP->createArray(refp, $4, true));
+                          SYMP->pushNewUnderNodeOrCurrent($$, $<scp>5); }
         //                      // To verilator tasks are the same as void functions (we separately detect time passing)
         |       yVOID taskId
                         { $$ = $2; }
@@ -6553,9 +6563,6 @@ boolean_abbrev<nodeExprp>:  // ==IEEE: boolean_abbrev
         ;
 
 //************************************************
-// Let
-
-//************************************************
 // Covergroup
 
 covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
@@ -7143,12 +7150,12 @@ class_typeExtImpOne<nodeExprp>:  // part of IEEE: class_type, where we either ge
         //                      // If idAny below is otherwise, not legal
                 idAny
         /*mid*/         { /* no nextId as not refing it above this*/ }
-        /*cont*/    parameter_value_assignmentE
+        /*cont*/    parameter_value_assignmentClassE
                         { $$ = new AstClassOrPackageRef{$<fl>1, *$1, $<scp>1, $3};
                           $<scp>$ = $<scp>1; }
         |       idCC
         /*mid*/         { /* no nextId as not refing it above this*/ }
-        /*cont*/    parameter_value_assignmentE
+        /*cont*/    parameter_value_assignmentClassE
                         { $$ = new AstClassOrPackageRef{$<fl>1, *$1, $<scp>1, $3};
                           $<scp>$ = $<scp>1; }
         //
@@ -7219,7 +7226,7 @@ packageClassScopeItem<nodeExprp>:   // IEEE: package_scope or [package_scope]::[
         /*cont*/    yP_COLONCOLON
                         { $$ = new AstClassOrPackageRef{$<fl>1, *$1, $<scp>1, nullptr}; $<scp>$ = $<scp>1; }
         //
-        |       idCC parameter_value_assignment
+        |       idCC parameter_value_assignmentClass
         /*mid*/         { SYMP->nextId($<scp>1); }   // Change next *after* we handle parameters, not before
         /*cont*/    yP_COLONCOLON
                         { $$ = new AstClassOrPackageRef{$<fl>1, *$1, $<scp>1, $2}; $<scp>$ = $<scp>1; }

@@ -29,6 +29,7 @@ Verilator 5.029 devel
 * Support basic dist constraints (#5431). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Support inside array constraints (#5448). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Support DPI imports and exports with double underscores (#5481).
+* Support objcache when compiling Verilated files with cmake.
 * Add error on instances without parenthesis.
 * Add partial coverage symbol and branch data in lcov info files (#5388). [Andrew Nolte]
 * Add method to check if there are VPI callbacks of the given type (#5399). [Kaleb Barrett]
@@ -62,6 +63,9 @@ Verilator 5.029 devel
 * Fix tracing when name() is empty (#5470). [Sam Shahrestani]
 * Fix timing mode not exiting on empty events (#5472).
 * Fix --binary with .cpp PLI filenames under relative directory paths.
+* Fix extra dot in coverage point hierarchy when using name()=''.
+* Fix short-circuting with associative array access (#5484). [Ethan Sifferman]
+* Fix short-circuting on method calls (#5486). [Ethan Sifferman]
 
 
 Verilator 5.028 2024-08-21

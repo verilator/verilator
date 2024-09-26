@@ -111,7 +111,7 @@ class OrderMoveGraphBuilder final {
                 if (senTreep->sensesp()->nextp()) return nullptr;
 
                 // Find the original AstSenTree
-                auto it = m_trigToSen.find(senTreep->sensesp());
+                auto it = m_trigToSen.find(senTreep);
                 if (it == m_trigToSen.end()) return nullptr;
 
                 // If more than one AstSenItems on the original, then not a simple AstSenTree

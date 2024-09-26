@@ -29,6 +29,7 @@ def process():
         + (" -d" if Args.definitions else "")  #
         + (" -k" if Args.token_table else "")  #
         + (" -v" if Args.verbose else "")  #
+        + (" -Wcounterexamples" if Args.Wcounterexamples else "")  #
         + (" --report=itemset --report=lookahead" if (Args.verbose and supports_report) else "")
         # Useful but slow:
         # (" -Wcounterexamples" if
@@ -509,6 +510,7 @@ parser.add_argument('-o',
 parser.add_argument('-p', '--name-prefix', action='store', help='Passed to bison.')
 parser.add_argument('-t', '--debug', action='store_true', help='Passed to bison.')
 parser.add_argument('-v', '--verbose', action='store_true', help='Passed to bison.')
+parser.add_argument('-Wcounterexamples', action='store_true', help='Passed to bison.')
 
 parser.add_argument('input', help='Passed to bison. Input grammar file.')
 

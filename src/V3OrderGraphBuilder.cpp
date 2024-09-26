@@ -134,9 +134,8 @@ class OrderGraphBuilder final : public VNVisitor {
 
         // This is the original sensitivity of the block (i.e.: not the ref into the TRIGGERVEC)
 
-        const AstSenTree* const senTreep = nodep->sensesp()->hasCombo()
-                                               ? nodep->sensesp()
-                                               : m_trigToSen.at(nodep->sensesp()->sensesp());
+        const AstSenTree* const senTreep
+            = nodep->sensesp()->hasCombo() ? nodep->sensesp() : m_trigToSen.at(nodep->sensesp());
 
         m_inClocked = senTreep->hasClocked();
 
