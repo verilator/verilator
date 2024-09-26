@@ -301,16 +301,15 @@ std::string flattenIndices(const std::vector<std::string>& indices, const VlRand
         }
         int length = var->getLength(i);
         if (length == -1) {
-            VL_WARN_MT(__FILE__, __LINE__, "randomize", "Internal: Wrong Call: Only RandomArray can call getLength()");
+            VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                       "Internal: Wrong Call: Only RandomArray can call getLength()");
             break;
         }
         flattenedIndex += indexValue * multiplier;
         multiplier *= length;
     }
     std::string hexString = std::to_string(flattenedIndex);
-    while (hexString.size() < 8) {
-        hexString.insert(0, "0");
-    }
+    while (hexString.size() < 8) { hexString.insert(0, "0"); }
     return "#x" + hexString;
 }
 //======================================================================
