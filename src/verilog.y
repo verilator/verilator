@@ -1412,12 +1412,17 @@ udpFront<nodeModulep>:
                           SYMP->pushNew($$); }
         ;
 
-parameter_value_assignmentE<pinp>:      // IEEE: [ parameter_value_assignment ]
+parameter_value_assignmentInstE<pinp>:      // IEEE: [ parameter_value_assignment ] for instance
                 /* empty */                             { $$ = nullptr; }
-        |       parameter_value_assignment              { $$ = $1; }
+        |       parameter_value_assignmentInst          { $$ = $1; }
         ;
 
-parameter_value_assignment<pinp>:       // IEEE: parameter_value_assignment
+parameter_value_assignmentClassE<pinp>:      // IEEE: [ parameter_value_assignment ] for classes
+                /* empty */                             { $$ = nullptr; }
+        |       parameter_value_assignmentClass         { $$ = $1; }
+        ;
+
+parameter_value_assignmentInst<pinp>:       // IEEE: parameter_value_assignment for instance
                 '#' '(' cellparamListE ')'              { $$ = $3; }
         //                      // Parentheses are optional around a single parameter
         |       '#' yaINTNUM                            { $$ = new AstPin{$<fl>2, 1, "", new AstConst{$<fl>2, *$2}}; }
@@ -3242,7 +3247,7 @@ instDecl<nodep>:
         //                      // Currently disambiguated from data_declaration based on
         //                      // VARs being type, and cells non-type.
         //                      // IEEE requires a '(' to disambiguate, we need TODO force this
-                id parameter_value_assignmentE
+                id parameter_value_assignmentInstE
         /*mid*/         { INSTPREP($<fl>1, *$1, $2); }
         /*cont*/    instnameList ';'
                         { $$ = $4;
@@ -4506,7 +4511,14 @@ property_actual_arg<nodeExprp>:  // ==IEEE: property_actual_arg
 exprOrDataType<nodep>:          // expr | data_type: combined to prevent conflicts
                 expr                                    { $$ = $1; }
         //                      // data_type includes id that overlaps expr, so special flavor
-        |       data_type                               { $$ = $1; }
+        //                      // data_type expanded:
+        |       data_typeNoRef                          { $$ = $1; }
+        |       packageClassScopeE idType packed_dimensionListE
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
+                          $$ = GRAMMARP->createArray(refp, $3, true); }
+        |       packageClassScopeE idType parameter_value_assignmentClass packed_dimensionListE
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, $3};
+                          $$ = GRAMMARP->createArray(refp, $4, true); }
         //                      // not in spec, but needed for $past(sig,1,,@(posedge clk))
         //UNSUP event_control                           { }
         ;
@@ -4634,10 +4646,20 @@ funcId<nodeFTaskp>:             // IEEE: function_data_type_or_implicit + part o
                         { $$ = $2;
                           $$->fvarp(new AstBasicDType{$<fl>2, LOGIC_IMPLICIT, $1});
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>2); }
-        |       data_type fIdScoped
+        |       data_typeNoRef fIdScoped
                         { $$ = $2;
                           $$->fvarp($1);
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>2); }
+        |       packageClassScopeE idType packed_dimensionListE fIdScoped
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
+                          $$ = $4;
+                          $$->fvarp(GRAMMARP->createArray(refp, $3, true));
+                          SYMP->pushNewUnderNodeOrCurrent($$, $<scp>4); }
+        |       packageClassScopeE idType parameter_value_assignmentClass packed_dimensionListE fIdScoped
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, $3};
+                          $$ = $5;
+                          $$->fvarp(GRAMMARP->createArray(refp, $4, true));
+                          SYMP->pushNewUnderNodeOrCurrent($$, $<scp>5); }
         //                      // To verilator tasks are the same as void functions (we separately detect time passing)
         |       yVOID taskId
                         { $$ = $2; }
@@ -7151,12 +7173,12 @@ class_typeExtImpOne<nodeExprp>:  // part of IEEE: class_type, where we either ge
         //                      // If idAny below is otherwise, not legal
                 idAny
         /*mid*/         { /* no nextId as not refing it above this*/ }
-        /*cont*/    parameter_value_assignmentE
+        /*cont*/    parameter_value_assignmentClassE
                         { $$ = new AstClassOrPackageRef{$<fl>1, *$1, $<scp>1, $3};
                           $<scp>$ = $<scp>1; }
         |       idCC
         /*mid*/         { /* no nextId as not refing it above this*/ }
-        /*cont*/    parameter_value_assignmentE
+        /*cont*/    parameter_value_assignmentClassE
                         { $$ = new AstClassOrPackageRef{$<fl>1, *$1, $<scp>1, $3};
                           $<scp>$ = $<scp>1; }
         //
@@ -7227,7 +7249,7 @@ packageClassScopeItem<nodeExprp>:   // IEEE: package_scope or [package_scope]::[
         /*cont*/    yP_COLONCOLON
                         { $$ = new AstClassOrPackageRef{$<fl>1, *$1, $<scp>1, nullptr}; $<scp>$ = $<scp>1; }
         //
-        |       idCC parameter_value_assignment
+        |       idCC parameter_value_assignmentClass
         /*mid*/         { SYMP->nextId($<scp>1); }   // Change next *after* we handle parameters, not before
         /*cont*/    yP_COLONCOLON
                         { $$ = new AstClassOrPackageRef{$<fl>1, *$1, $<scp>1, $2}; $<scp>$ = $<scp>1; }
