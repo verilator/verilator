@@ -255,7 +255,7 @@ std::string readUntilBalanced(std::istream& stream) {
     std::string token;
     int parenCount = 1;
     while (stream >> token) {
-        for (char c : token) {
+        for (const char c : token) {
             if (c == '(') {
                 ++parenCount;
             } else if (c == ')') {
@@ -274,7 +274,7 @@ std::string parseNestedSelect(const std::string& nested_select_expr,
     std::string name, idx;
     nestedStream >> name;
     if (name == "(select") {
-        std::string further_nested_expr = readUntilBalanced(nestedStream);
+        const std::string further_nested_expr = readUntilBalanced(nestedStream);
         name = parseNestedSelect(further_nested_expr, indices);
     }
     std::getline(nestedStream, idx, ')');
@@ -282,7 +282,7 @@ std::string parseNestedSelect(const std::string& nested_select_expr,
     return name;
 }
 
-std::string flattenIndices(const std::vector<std::string>& indices, const VlRandomVar* var) {
+std::string flattenIndices(const std::vector<std::string>& indices, const VlRandomVar* const var) {
     int flattenedIndex = 0;
     int multiplier = 1;
     for (int i = indices.size() - 1; i >= 0; --i) {
@@ -299,7 +299,7 @@ std::string flattenIndices(const std::vector<std::string>& indices, const VlRand
         } else {
             indexValue = std::strtoul(trimmedIndex.c_str(), nullptr, 10);
         }
-        int length = var->getLength(i);
+        const int length = var->getLength(i);
         if (length == -1) {
             VL_WARN_MT(__FILE__, __LINE__, "randomize",
                        "Internal: Wrong Call: Only RandomArray can call getLength()");
@@ -469,19 +469,19 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
         f >> name;
         indices.clear();
         if (name == "(select") {
-            std::string selectExpr = readUntilBalanced(f);
+            const std::string selectExpr = readUntilBalanced(f);
             name = parseNestedSelect(selectExpr, indices);
             idx = indices[0];
         }
         std::getline(f, value, ')');
-        auto it = m_vars.find(name);
+        const auto it = m_vars.find(name);
         if (it == m_vars.end()) continue;
         const VlRandomVar& varr = *it->second;
         if (m_randmode && !varr.randModeIdxNone()) {
             if (!(m_randmode->at(varr.randModeIdx()))) continue;
         }
         if (indices.size() > 1) {
-            std::string flattenedIndex = flattenIndices(indices, &varr);
+            const std::string flattenedIndex = flattenIndices(indices, &varr);
             varr.set(flattenedIndex, value);
         } else {
             varr.set(idx, value);

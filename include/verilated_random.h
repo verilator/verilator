@@ -103,10 +103,10 @@ public:
         : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
 
     void* datap(int idx) const override {
-        if (idx < 0) { return &static_cast<T*>(VlRandomVar::datap(0))->operator[](0); }
+        if (idx < 0) return &static_cast<T*>(VlRandomVar::datap(0))->operator[](0);
         std::vector<size_t> indices(dimension());
         for (int dim = dimension() - 1; dim >= 0; --dim) {
-            int length = getLength(dim);
+            const int length = getLength(dim);
             indices[dim] = idx % length;
             idx /= length;
         }
@@ -114,7 +114,7 @@ public:
     }
 
     void emitSelect(std::ostream& s, const std::vector<int>& indices) const {
-        for (size_t idx = 0; idx < indices.size(); ++idx) { s << "(select "; }
+        for (size_t idx = 0; idx < indices.size(); ++idx) s << "(select ";
         s << name();
         for (size_t idx = 0; idx < indices.size(); ++idx) {
             s << " #x";
@@ -126,16 +126,16 @@ public:
     }
 
     int getLength(int dimension) const override {
-        auto var = static_cast<const T*>(datap(-1));
-        int lenth = var->find_length(dimension);
+        const auto var = static_cast<const T*>(datap(-1));
+        const int lenth = var->find_length(dimension);
         return lenth;
     }
 
     void emitGetValue(std::ostream& s) const override {
-        int total_dimensions = dimension();
+        const int total_dimensions = dimension();
         std::vector<int> lengths;
         for (int dim = 0; dim < total_dimensions; dim++) {
-            int len = getLength(dim);
+            const int len = getLength(dim);
             lengths.push_back(len);
         }
         std::vector<int> indices(total_dimensions, 0);
@@ -153,20 +153,22 @@ public:
 
     void emitType(std::ostream& s) const override {
         if (dimension() > 0) {
-            for (int i = 0; i < dimension(); ++i) { s << "(Array (_ BitVec 32) "; }
+            for (int i = 0; i < dimension(); ++i) s << "(Array (_ BitVec 32) ";
             s << "(_ BitVec " << width() << ")";
-            for (int i = 0; i < dimension(); ++i) { s << ")"; }
+            for (int i = 0; i < dimension(); ++i) s << ")";
         }
     }
+
     int totalWidth() const override {
         int totalLength = 1;
         for (int dim = 0; dim < dimension(); ++dim) {
-            int length = getLength(dim);
+            const int length = getLength(dim);
             if (length == -1) return 0;
             totalLength *= length;
         }
         return width() * totalLength;
     }
+
     void emitExtract(std::ostream& s, int i) const override {
         const int j = i / width();
         i = i % width();
