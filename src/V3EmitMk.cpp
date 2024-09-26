@@ -59,7 +59,7 @@ private:
     // Minimum number of input files required to perform concatenation.
     // Concatenation of a small number of files does not give any performance advantages.
     // The value has been chosen arbitrarily, most likely could be larger.
-    static constexpr size_t MIN_FILES_COUNT = 100;
+    static constexpr size_t MIN_FILES_COUNT = 16;
 
     // Concatenation of only a few files most likely does not increase performance.
     // The value has been chosen arbitrarily.
@@ -515,9 +515,9 @@ public:
             }
 
             vmClassesSlowList = EmitGroup::singleConcatenatedFilesList(
-                std::move(slowFiles), slowTotalScore, "vm_classes_slow_");
+                std::move(slowFiles), slowTotalScore, "vm_classes_Slow_");
             vmClassesFastList = EmitGroup::singleConcatenatedFilesList(
-                std::move(fastFiles), fastTotalScore, "vm_classes_fast_");
+                std::move(fastFiles), fastTotalScore, "vm_classes_");
         }
 
         // Generate the makefile

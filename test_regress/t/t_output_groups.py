@@ -11,15 +11,15 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(verilator_flags2=["--no-skip-identical", "--output-groups", "2"])
+test.compile(verilator_flags2=["--output-groups", "2"])
 
 test.execute()
 
-# Check that only vm_classes_*.cpp were compiled
-test.file_grep_not(test.obj_dir + "/vlt_gcc.log", "Foo")
-test.file_grep(test.obj_dir + "/vlt_gcc.log", "vm_classes_slow_1.cpp")
-test.file_grep(test.obj_dir + "/vlt_gcc.log", "vm_classes_fast_1.cpp")
-test.file_grep_not(test.obj_dir + "/vlt_gcc.log", "vm_classes_slow_2.cpp")
-test.file_grep_not(test.obj_dir + "/vlt_gcc.log", "vm_classes_fast_2.cpp")
+# Check that only vm_classes_*.cpp are to be compiled
+test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", "Foo")
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", "vm_classes_Slow_1")
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", "vm_classes_1")
+test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", "vm_classes_Slow_2")
+test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", "vm_classes_2")
 
 test.passes()
