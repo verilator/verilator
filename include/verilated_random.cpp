@@ -250,24 +250,11 @@ static Process& getSolver() {
     while (getline(s_solver, s)) {}
     return s_solver;
 }
-void printStream(std::iostream& input) {
-    std::streampos currentPos = input.tellg();
-
-    std::string line;
-    while (std::getline(input, line)) {
-        std::cout << line << "\n";
-    }
-    input.clear();
-    input.seekg(currentPos);
-}
-std::pair<std::string, bool> readUntilBalanced(std::istream& stream) {
+std::string readUntilBalanced(std::istream& stream) {
     std::string result;
     std::string token;
     int parenCount = 1;
-    bool endFlag = false;
-
     while (stream >> token) {
-
         for (char c : token) {
             if (c == '(') {
                 parenCount++;
@@ -278,16 +265,14 @@ std::pair<std::string, bool> readUntilBalanced(std::istream& stream) {
         result += token + " ";
         if (parenCount == 0) { break; }
     }
-    if (parenCount < 0) { endFlag = true; }
-    return {result, endFlag};
+    return result;
 }
 std::string parseNestedSelect(const std::string& nested_select_expr, std::vector<std::string>& indices) {
     std::istringstream nestedStream(nested_select_expr);
     std::string name, idx;
-
     nestedStream >> name;
     if (name == "(select") {
-        auto [further_nested_expr, hasExtraCloseParen] = readUntilBalanced(nestedStream);
+        std::string further_nested_expr = readUntilBalanced(nestedStream);
         name = parseNestedSelect(further_nested_expr, indices);
     }
     std::getline(nestedStream, idx, ')');
@@ -297,9 +282,7 @@ std::string parseNestedSelect(const std::string& nested_select_expr, std::vector
 std::string flattenIndices(const std::vector<std::string>& indices, const VlRandomVar* var) {
     int flattenedIndex = 0;
     int multiplier = 1;
-
     for (int i = indices.size() - 1; i >= 0; --i) {
-
         int indexValue = 0;
         try {
             std::string trimmedIndex = indices[i];
@@ -313,10 +296,13 @@ std::string flattenIndices(const std::vector<std::string>& indices, const VlRand
                 indexValue = std::stoul(trimmedIndex, nullptr, 10);
             }
         } catch (const std::exception& e) {
-            std::cerr << "Error parsing index: " << indices[i] << " - " << e.what() << std::endl;
+            std::stringstream msg;
+            msg << "Error in index parsing: " << e.what() << std::endl;
+            msg << "Index string: " << indices[i] << " at position " << i << std::endl;
+            const std::string str = msg.str();
+            VL_WARN_MT(__FILE__, __LINE__, "flattenIndices", str.c_str());
             return "Error";
         }
-
         int length = var->getLength(i);
         if (length == -1) {
             std::stringstream msg;
@@ -454,7 +440,6 @@ bool VlRandomizer::next(VlRNG& rngr) {
 bool VlRandomizer::parseSolution(std::iostream& f) {
     std::string sat;
     do { std::getline(f, sat); } while (sat == "");
-    //dump();
     if (sat == "unsat") return false;
     if (sat != "sat") {
         std::stringstream msg;
@@ -467,8 +452,6 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
     f << "(get-value (";
     for (const auto& var : m_vars) var.second->emitGetValue(f);
     f << "))\n";
-
-    //printStream(f);
 
     // Quasi-parse S-expression of the form ((x #xVALUE) (y #bVALUE) (z #xVALUE))
     char c;
@@ -490,38 +473,23 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
         std::vector<std::string> indices;
         f >> name;
         indices.clear();
-        
         if (name == "(select") {
-            auto [selectExpr, hasExtraCloseParen] = readUntilBalanced(f);
+            std::string selectExpr = readUntilBalanced(f);
             name = parseNestedSelect(selectExpr, indices);
             idx = indices[0];
         }
         std::getline(f, value, ')');
-
         auto it = m_vars.find(name);
         if (it == m_vars.end()) continue;
         const VlRandomVar& varr = *it->second;
         if (m_randmode && !varr.randModeIdxNone()) {
             if (!(m_randmode->at(varr.randModeIdx()))) continue;
         }
-
         if (indices.size() > 1) {
-            std::cout << "Complete indices: ";
-            for (const auto& ind : indices) {
-                std::cout << ind << " ";
-            }
-            std::cout << std::endl;
-
             std::string flattenedIndex = flattenIndices(indices, &varr);
-            std::cout << "Setting value '" << value << "' to array '" << name 
-                      << "' at flattened index '" << flattenedIndex << "'" << std::endl;
             varr.set(flattenedIndex, value);
-        } else {
-            std::cout << "Setting value '" << value << "' to variable/queue '" << name << "' at index '" << idx << "'" << std::endl;
-            varr.set(idx, value);
-        }
+        } else { varr.set(idx, value); }
     }
-
     return true;
 }
 

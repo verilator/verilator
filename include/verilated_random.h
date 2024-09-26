@@ -107,26 +107,17 @@ public:
     void* datap(int idx) const override {
         if (idx < 0) { return &static_cast<T*>(VlRandomVar::datap(0))->operator[](0); }
         std::vector<size_t> indices(dimension());
-        std::cout << "Debug: datap Initial idx = " << idx << std::endl;
         for (int dim = dimension() - 1; dim >= 0; --dim) {
             int length = getLength(dim);
             indices[dim] = idx % length;
             idx /= length;
         }
-        
-        std::cout << "datap indices: ";
-        for (const auto& ind : indices) {
-            std::cout << ind << " ";
-        }
-        std::cout << std::endl;
         return &static_cast<T*>(VlRandomVar::datap(0))->find_element(indices);
     }
 
     void emitSelect(std::ostream& s, const std::vector<int>& indices) const {
-
         for (size_t idx = 0; idx < indices.size(); ++idx) { s << "(select "; }
         s << name();
-
         for (size_t idx = 0; idx < indices.size(); ++idx) {
             s << " #x";
             for (int j = 28; j >= 0; j -= 4) {
@@ -145,7 +136,6 @@ public:
     void emitGetValue(std::ostream& s) const override {
         int total_dimensions = dimension();
         std::vector<int> lengths;
-
         for (int dim = 0; dim < total_dimensions; dim++) {
             int len = getLength(dim);
             lengths.push_back(len);
@@ -165,23 +155,16 @@ public:
 
     void emitType(std::ostream& s) const override {
         if (dimension() > 0) {
-            // Unpacked array with one or more dimensions
             for (int i = 0; i < dimension(); ++i) { s << "(Array (_ BitVec 32) "; }
             s << "(_ BitVec " << width() << ")";
             for (int i = 0; i < dimension(); ++i) { s << ")"; }
-        } else {
-            // Invalid dimension, dimension < 0
-            VL_WARN_MT(__FILE__, __LINE__, "randomize", "Invalid dimension detected");
         }
     }
     int totalWidth() const override {
         int totalLength = 1;
         for (int dim = 0; dim < dimension(); ++dim) {
             int length = getLength(dim);
-            if (length == -1) {
-                std::cout << "Error: Invalid dimension or length for dimension " << dim << std::endl;
-                return 0;
-            }
+            if (length == -1) { return 0; }
             totalLength *= length;
         }
         return width() * totalLength;
@@ -191,20 +174,11 @@ public:
         i = i % width();
         std::vector<int> indices(dimension());
         int idx = j;
-        //std::cout << "Debug: emitExtract Initial idx = " << idx << std::endl;
-
         for (int dim = dimension() - 1; dim >= 0; --dim) {
             int length = getLength(dim);
             indices[dim] = idx % length;
             idx /= length;
         }
-        /*
-        std::cout << "emitExtract indices: ";
-        for (const auto& ind : indices) {
-            std::cout << ind << " ";
-        }
-        std::cout << std::endl;
-        */
         s << " ((_ extract " << i << ' ' << i << ')';
         emitSelect(s, indices);
         s << ')';
@@ -246,36 +220,14 @@ public:
         if (m_vars.find(name) != m_vars.end()) return;
         m_vars[name] = std::make_shared<const VlRandomQueueVar<VlQueue<T>>>(
             name, width, &var, dimension, randmodeIdx);
-        std::cout << "queue-Unpacked: " << name << std::endl;
     }
-
     template <typename T, std::size_t N>
     void write_var(VlUnpacked<T, N>& var, int width, const char* name, int dimension,
                    std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-
         if (m_vars.find(name) != m_vars.end()) return;
-        /*
-        if (dimension > 1){
-            for (int i = 0; i < N; ++i) {
-                std::string element_name = std::string(name) + "[" + std::to_string(i) + "]";
-                write_var(var[i], width, element_name.c_str(), dimension - 1, randmodeIdx);
-            }
-        } else {
-
-            m_vars[name] = std::make_shared<const VlRandomArrayVar<VlUnpacked<T, N>>>(name, width,
-        &var, dimension, randmodeIdx);
-
-            std::cout << "Array-Unpacked: " << m_vars[name] << "N = " << N << ", Dimension = " <<
-        dimension << ", Name = " << name << std::endl;
-        }
-        */
         m_vars[name] = std::make_shared<const VlRandomArrayVar<VlUnpacked<T, N>>>(
             name, width, &var, dimension, randmodeIdx);
-
-        std::cout << "Array-Unpacked: " << m_vars[name] << "N = " << N
-                  << ", Dimension = " << dimension << ", Name = " << name << std::endl;
     }
-
     void hard(std::string&& constraint);
     void clear();
     void set_randmode(const VlQueue<CData>& randmode) { m_randmode = &randmode; }

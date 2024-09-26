@@ -1323,7 +1323,6 @@ public:
     const WData* data() const { return &m_storage[0]; }
 
     std::size_t size() const { return T_Depth; }
-    // Find the length at a specific dimension
     template <std::size_t CurrentDimension = 0>
     int find_length(int dimension) const {
         if (dimension == CurrentDimension) {
@@ -1336,7 +1335,6 @@ public:
             }
         }
     }
-
     template <std::size_t CurrentDimension = 0>
     auto& find_element(const std::vector<size_t>& indices) {
         if constexpr (std::is_class_v<T_Value>) {
