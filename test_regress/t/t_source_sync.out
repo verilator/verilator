@@ -1,7 +1,16 @@
-%Error: t/t_source_sync.v:8:14: syntax error, unexpected /*verilator clocker*/, expecting ',' or ';'
-    8 |    logic clk /*verilator clocker*/ ;
+%Error: t/t_source_sync.v:17:16: syntax error, unexpected IDENTIFIER
+   17 |       Invalid1 invalid1;   
+      |                ^~~~~~~~
+%Error: t/t_source_sync.v:20:16: syntax error, unexpected IDENTIFIER
+   20 |       Invalid2 invalid2;   
+      |                ^~~~~~~~
+%Error: t/t_source_sync.v:24:22: syntax error, unexpected IDENTIFIER, expecting "'{"
+   24 |       pkg::cls::defi invalid;   
+      |                      ^~~~~~~
+%Error: t/t_source_sync.v:30:14: syntax error, unexpected /*verilator clocker*/, expecting ',' or ';'
+   30 |    logic clk /*verilator clocker*/ ;
       |              ^~~~~~~~~~~~~~~~~~~~~
-%Error: t/t_source_sync.v:10:1: syntax error, unexpected '}'
-   10 | } ss_s;
-      | ^
+%Error: t/t_source_sync.v:34:1: syntax error, unexpected endmodule
+   34 | endmodule
+      | ^~~~~~~~~
 %Error: Exiting due to

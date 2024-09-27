@@ -2248,18 +2248,28 @@ struct_unionDecl<nodeUOrStructDTypep>:  // IEEE: part of data_type
         //                      // packedSigningE is NOP for unpacked
                 ySTRUCT        packedSigningE '{'
         /*mid*/         { $<nodeUOrStructDTypep>$ = new AstStructDType{$1, $2}; SYMP->pushNew($<nodeUOrStructDTypep>$); }
-        /*cont*/    struct_union_memberList '}'
+        /*cont*/    struct_union_memberListEnd
                         { $$ = $<nodeUOrStructDTypep>4; $$->addMembersp($5); SYMP->popScope($$); }
         |       yUNION taggedSoftE packedSigningE '{'
         /*mid*/         { $<nodeUOrStructDTypep>$ = new AstUnionDType{$1, $3}; SYMP->pushNew($<nodeUOrStructDTypep>$); }
-        /*cont*/    struct_union_memberList '}'
+        /*cont*/    struct_union_memberListEnd
                         { $$ = $<nodeUOrStructDTypep>5; $$->addMembersp($6); SYMP->popScope($$); }
+        ;
+
+struct_union_memberListEnd<memberDTypep>: // IEEE: { struct_union_member } '}'
+                struct_union_memberList '}'                     { $$ = $1; }
+        //
+        |       struct_union_memberList error '}'               { $$ = $1; }
+        |       error '}'                                       { $$ = nullptr; }
         ;
 
 struct_union_memberList<memberDTypep>: // IEEE: { struct_union_member }
                 struct_union_member                             { $$ = $1; }
 
         |       struct_union_memberList struct_union_member     { $$ = addNextNull($1, $2); }
+        //
+        |       struct_union_memberList error ';'               { $$ = $1; }
+        |       error ';'                                       { $$ = nullptr; }
         ;
 
 struct_union_member<memberDTypep>:     // ==IEEE: struct_union_member
@@ -2634,6 +2644,8 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
         |       yTYPEDEF yUNION idAny ';'               { $$ = GRAMMARP->createTypedefFwd($<fl>3, *$3); }
         |       yTYPEDEF yCLASS idAny ';'               { $$ = GRAMMARP->createTypedefFwd($<fl>3, *$3); }
         |       yTYPEDEF yINTERFACE yCLASS idAny ';'    { $$ = GRAMMARP->createTypedefFwd($<fl>4, *$4); }
+        //
+        |       yTYPEDEF error idAny ';'                { $$ = GRAMMARP->createTypedefFwd($<fl>3, *$3); }
         ;
 
 dtypeAttrListE<nodep>:
@@ -3559,6 +3571,9 @@ blockDeclStmtListE<nodep>:      // IEEE: [ { block_item_declaration } { statemen
 block_item_declarationList<nodep>:      // IEEE: [ block_item_declaration ]
                 block_item_declaration                  { $$ = $1; }
         |       block_item_declarationList block_item_declaration       { $$ = addNextNull($1, $2); }
+        //
+        |       block_item_declarationList error ';'    { $$ = $1; }
+        |       error ';'                               { $$ = nullptr; }
         ;
 
 block_item_declaration<nodep>:  // ==IEEE: block_item_declaration
@@ -3570,6 +3585,8 @@ block_item_declaration<nodep>:  // ==IEEE: block_item_declaration
 stmtList<nodep>:
                 stmtBlock                               { $$ = $1; }
         |       stmtList stmtBlock                      { $$ = addNextNull($1, $2); }
+        //
+        |       stmtList error ';'                      { $$ = $1; }
         ;
 
 stmt<nodep>:                    // IEEE: statement_or_null == function_statement_or_null
@@ -3752,8 +3769,6 @@ statement_item<nodep>:          // IEEE: statement_item
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: expect"); }
         |       yEXPECT '(' property_spec ')' yELSE stmt
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: expect"); }
-        //
-        |       error ';'                               { $$ = nullptr; }
         ;
 
 statementFor<beginp>:           // IEEE: part of statement
@@ -6655,11 +6670,17 @@ bins_or_empty<nodep>:  // ==IEEE: bins_or_empty
                 '{' bins_or_optionsList '}'             { $$ = $2; }
         |       '{' '}'                                 { $$ = nullptr; }
         |       ';'                                     { $$ = nullptr; }
+        //
+        |       '{' bins_or_optionsList error '}'       { $$ = $2; }
+        |       '{' error '}'                           { $$ = nullptr; }
         ;
 
 bins_or_optionsList<nodep>:  // IEEE: { bins_or_options ';' }
                 bins_or_options ';'                     { $$ = $1; }
         |       bins_or_optionsList bins_or_options ';' { $$ = addNextNull($1, $2); }
+        //
+        |       bins_or_optionsList error ';'           { $$ = $1; }
+        |       error ';'                               { $$ = nullptr; }
         ;
 
 bins_or_options<nodep>:  // ==IEEE: bins_or_options
@@ -6764,11 +6785,15 @@ cross_body<nodep>:  // ==IEEE: cross_body
         //                      // IEEE-2012: No semicolon here, mistake in spec
         |       '{' cross_body_itemSemiList '}'         { $$ = $2; }
         |       ';'                                     { $$ = nullptr; }
+        //
+        |       '{' cross_body_itemSemiList error '}'   { $$ = $2; }
+        |       '{' error '}'                           { $$ = nullptr; }
         ;
 
 cross_body_itemSemiList<nodep>:  // IEEE: part of cross_body
                 cross_body_item ';'                     { $$ = $1; }
         |       cross_body_itemSemiList cross_body_item ';'  { $$ = addNextNull($1, $2); }
+        //
         |       error ';'                               { $$ = nullptr; }
         |       cross_body_itemSemiList error ';'       { $$ = $1; }
         ;
@@ -7369,6 +7394,7 @@ constraintIdNew<constraintp>:  // IEEE: id part of class_constraint
 
 constraint_block<nodep>:  // ==IEEE: constraint_block
                 '{' constraint_block_itemList '}'               { $$ = $2; }
+        //
         |       '{' error '}'                                   { $$ = nullptr; }
         |       '{' constraint_block_itemList error '}'         { $$ = $2; }
         ;
@@ -7427,6 +7453,7 @@ constraint_expression<nodep>:  // ==IEEE: constraint_expression
                         { AstConstraintExpr* const newp = new AstConstraintExpr{$1, $3};
                           newp->isDisableSoft(true);
                           $$ = newp; }
+        //
         |       error ';'
                         { $$ = nullptr; }
         ;
@@ -7434,6 +7461,7 @@ constraint_expression<nodep>:  // ==IEEE: constraint_expression
 constraint_set<nodep>:  // ==IEEE: constraint_set
                 constraint_expression                   { $$ = $1; }
         |       '{' constraint_expressionList '}'       { $$ = $2; }
+        //
         |       '{' error '}'                           { $$ = nullptr; }
         |       '{' constraint_expressionList error '}' { $$ = $2; }
         ;
