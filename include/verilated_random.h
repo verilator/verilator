@@ -36,8 +36,8 @@ class VlRandomVar VL_NOT_FINAL {
     const char* const m_name;  // Variable name
     void* const m_datap;  // Reference to variable data
     const int m_width;  // Variable width in bits
-    const std::uint32_t m_randModeIdx;  // rand_mode index
     const int m_dimension;  //Variable dimension, default is 0
+    const std::uint32_t m_randModeIdx;  // rand_mode index
 
 public:
     VlRandomVar(const char* name, int width, void* datap, int dimension, std::uint32_t randModeIdx)
