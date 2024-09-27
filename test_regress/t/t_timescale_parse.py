@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
 
 test.compile(make_top_shell=False, make_main=False, verilator_flags2=["--exe", test.pli_filename])
 
