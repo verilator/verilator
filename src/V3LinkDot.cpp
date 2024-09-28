@@ -489,6 +489,15 @@ public:
                 }
             } else if (ifacerefp->ifaceViaCellp()->dead()) {
                 if (varp->isIfaceRef()) {
+                    if (forPrimary() && !varp->isIfaceParent()
+                        && !v3Global.opt.topIfacesSupported()) {
+                        // Only AstIfaceRefDType's at this point correspond to ports;
+                        // haven't made additional ones for interconnect yet, so assert is simple
+                        // What breaks later is we don't have a Scope/Cell representing
+                        // the interface to attach to
+                        varp->v3warn(E_UNSUPPORTED,
+                                     "Unsupported: Interfaced port on top level module");
+                    }
                     ifacerefp->v3error("Parent instance's interface is not found: "
                                        << AstNode::prettyNameQ(ifacerefp->ifaceName()));
                 } else {

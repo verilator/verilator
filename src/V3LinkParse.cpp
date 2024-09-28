@@ -398,15 +398,6 @@ class LinkParseVisitor final : public VNVisitor {
                                   VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)});
             }
         }
-        if (nodep->isIfaceRef() && !nodep->isIfaceParent() && !v3Global.opt.topIfacesSupported()) {
-            // Only AstIfaceRefDType's at this point correspond to ports;
-            // haven't made additional ones for interconnect yet, so assert is simple
-            // What breaks later is we don't have a Scope/Cell representing
-            // the interface to attach to
-            if (m_modp->level() <= 2) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Interfaced port on top level module");
-            }
-        }
     }
     void visit(AstConst* nodep) override {
         if (nodep->num().autoExtend() && nodep->fileline()->language() < V3LangCode::L1800_2005) {
