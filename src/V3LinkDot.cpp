@@ -3050,8 +3050,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     m_ds.m_dotPos = DP_MEMBER;
                 } else {
                     // Cells/interfaces can't be implicit
-                    const bool isCell = foundp ? VN_IS(foundp->nodep(), Cell) : false;
-                    const bool checkImplicit = (!m_ds.m_dotp && m_ds.m_dotText == "" && !isCell);
+                    const bool checkImplicit = (!m_ds.m_dotp && m_ds.m_dotText == "" && !foundp);
                     const bool err
                         = !(checkImplicit && m_statep->implicitOk(m_modp, nodep->name()));
                     if (err) {
@@ -3086,7 +3085,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (checkImplicit) {
                         // Create if implicit, and also if error (so only complain once)
                         // Else if a scope is allowed, making a signal won't help error cascade
-                        auto varp = createImplicitVar(m_curSymp, nodep, m_modp, m_modSymp, err);
+                        AstVar* const varp
+                            = createImplicitVar(m_curSymp, nodep, m_modp, m_modSymp, err);
                         AstVarRef* const newp
                             = new AstVarRef{nodep->fileline(), varp, VAccess::READ};
                         nodep->replaceWith(newp);
@@ -4133,7 +4133,7 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
         v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-find.tree"));
     }
     if (step == LDS_PRIMARY || step == LDS_PARAMED) {
-        // Initial link stage, resolve parameters
+        // Initial link stage, resolve parameters and interfaces
         const LinkDotParamVisitor visitors{rootp, &state};
         if (dumpTreeEitherLevel() >= 9) {
             V3Global::dumpCheckGlobalTree("prelinkdot-param");

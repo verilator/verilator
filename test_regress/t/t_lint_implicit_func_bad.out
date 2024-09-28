@@ -1,0 +1,4 @@
+%Error: t/t_lint_implicit_func_bad.v:12:11: Illegal call of a task as a function: 'imp_func_conflict'
+   12 |    assign imp_func_conflict = 1'b1;
+      |           ^~~~~~~~~~~~~~~~~
+%Error: Exiting due to
