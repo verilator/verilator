@@ -20,25 +20,25 @@ int main(int argc, char** argv) {
     Verilated::debug(0);
     Verilated::traceEverOn(true);
     Verilated::commandArgs(argc, argv);
+    {
+        VM_PREFIX top{"top"};
 
-    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{"top"}};
+        VerilatedVcdC tf;
+        top.trace(&tf, 99);
+        tf.open(VL_STRINGIFY(TEST_OBJ_DIR) "/simno_trace_top.vcd");
 
-    std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};
-    top->trace(tfp.get(), 99);
-    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simno_trace_top.vcd");
+        top.clk = 0;
 
-    top->clk = 0;
-
-    while (main_time < 1900) {  // Creates 2 files
-        top->clk = !top->clk;
-        top->eval();
-        tfp->dump((unsigned int)(main_time));
-        ++main_time;
+        while (main_time < 1900) {  // Creates 2 files
+            top.clk = !top.clk;
+            top.eval();
+            tf.dump((unsigned int)(main_time));
+            ++main_time;
+        }
+        tf.close();
+        top.final();
     }
-    tfp->close();
-    top->final();
-    tfp.reset();
-    top.reset();
+
     printf("*-* All Finished *-*\n");
     return 0;
 }

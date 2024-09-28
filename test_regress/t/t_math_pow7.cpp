@@ -12,30 +12,30 @@
 
 int errors = 0;
 
-std::unique_ptr<VM_PREFIX> topp;
 int main(int argc, char** argv) {
     vluint64_t sim_time = 1100;
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    contextp->commandArgs(argc, argv);
-    topp.reset(new VM_PREFIX{"top"});
+    {
+        VerilatedContext context;
+        context.commandArgs(argc, argv);
+        VM_PREFIX top{"top"};
 
-    topp->eval();
-    { contextp->timeInc(10); }
+        top.eval();
+        { context.timeInc(10); }
 
-    int cyc = 0;
+        int cyc = 0;
 
-    while ((contextp->time() < sim_time) && !contextp->gotFinish()) {
-        topp->eval();
-        contextp->timeInc(5);
+        while ((context.time() < sim_time) && !context.gotFinish()) {
+            top.eval();
+            context.timeInc(5);
 
-        ++cyc;
-        if (cyc > 10) break;
+            ++cyc;
+            if (cyc > 10) break;
+        }
+
+        TEST_CHECK_EQ(top.out_data, 1);
+
+        top.final();
     }
-
-    TEST_CHECK_EQ(topp->out_data, 1);
-
-    topp->final();
-    topp.reset();
 
     printf("*-* All Finished *-*\n");
     return errors != 0;

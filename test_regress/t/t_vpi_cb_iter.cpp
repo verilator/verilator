@@ -145,15 +145,13 @@ static void register_filler_cb() {
 double sc_time_stamp() { return main_time; }
 
 int main(int argc, char** argv) {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    VerilatedContext context;
 
     uint64_t sim_time = 100;
-    contextp->debug(0);
-    contextp->commandArgs(argc, argv);
+    context.debug(0);
+    context.commandArgs(argc, argv);
 
-    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
-                                                        // Note null name - we're flattening it out
-                                                        ""}};
+    VM_PREFIX top{&context, ""};  // Note null name - we're flattening it out
 
     reregister_value_cb();
     TEST_CHECK_NZ(vh_value_cb);
@@ -161,23 +159,23 @@ int main(int argc, char** argv) {
     TEST_CHECK_NZ(vh_rw_cb);
     register_filler_cb();
 
-    topp->eval();
-    topp->clk = 0;
+    top.eval();
+    top.clk = 0;
 
-    while (main_time < sim_time && !contextp->gotFinish()) {
+    while (main_time < sim_time && !context.gotFinish()) {
         main_time += 1;
         if (verbose) VL_PRINTF("Sim Time %d got_error %d\n", main_time, errors);
-        topp->clk = !topp->clk;
-        topp->eval();
+        top.clk = !top.clk;
+        top.eval();
         VerilatedVpi::callValueCbs();
         VerilatedVpi::callCbs(cbReadWriteSynch);
         if (errors) vl_stop(__FILE__, __LINE__, "TOP-cpp");
     }
 
-    if (!contextp->gotFinish()) {
+    if (!context.gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
-    topp->final();
+    top.final();
 
     return errors ? 10 : 0;
 }

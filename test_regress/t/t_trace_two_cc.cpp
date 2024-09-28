@@ -23,73 +23,67 @@
 // Compile in place
 #include "Vt_trace_two_b__ALL.cpp"
 
-VM_PREFIX* ap;
-Vt_trace_two_b* bp;
-
 int main(int argc, char** argv) {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    VerilatedContext context;
 
     uint64_t sim_time = 1100;
-    contextp->debug(0);
-    contextp->commandArgs(argc, argv);
-    contextp->traceEverOn(true);
+    context.debug(0);
+    context.commandArgs(argc, argv);
+    context.traceEverOn(true);
     srand48(5);
-    ap = new VM_PREFIX{contextp.get(), "topa"};
-    bp = new Vt_trace_two_b{contextp.get(), "topb"};
+    VM_PREFIX a{&context, "topa"};
+    Vt_trace_two_b b{&context, "topb"};
 
     // clang-format off
 #ifdef TEST_HDR_TRACE
-    contextp->traceEverOn(true);
+    context.traceEverOn(true);
 # ifdef TEST_FST
-    VerilatedFstC* tfp = new VerilatedFstC;
-    ap->trace(tfp, 99);
-    bp->trace(tfp, 99);
-    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.fst");
+    VerilatedFstC tf;
+    a.trace(&tf, 99);
+    b.trace(&tf, 99);
+    tf.open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.fst");
 # else
-    VerilatedVcdC* tfp = new VerilatedVcdC;
-    ap->trace(tfp, 99);
-    bp->trace(tfp, 99);
-    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
+    VerilatedVcdC tf;
+    a.trace(&tf, 99);
+    b.trace(&tf, 99);
+    tf.open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 # endif
 #endif
     // clang-format on
 
 #ifdef TEST_HDR_TRACE
-    ap->eval_step();
-    bp->eval_step();
-    ap->eval_end_step();
-    bp->eval_end_step();
-    if (tfp) tfp->dump(contextp->time());
+    a.eval_step();
+    b.eval_step();
+    a.eval_end_step();
+    b.eval_end_step();
+    tf.dump(context.time());
 #endif
 
     {
-        ap->clk = false;
-        contextp->timeInc(10);
+        a.clk = false;
+        context.timeInc(10);
     }
-    while (contextp->time() < sim_time && !contextp->gotFinish()) {
-        ap->clk = !ap->clk;
-        bp->clk = ap->clk;
-        ap->eval_step();
-        bp->eval_step();
-        ap->eval_end_step();
-        bp->eval_end_step();
+    while (context.time() < sim_time && !context.gotFinish()) {
+        a.clk = !a.clk;
+        b.clk = a.clk;
+        a.eval_step();
+        b.eval_step();
+        a.eval_end_step();
+        b.eval_end_step();
 #ifdef TEST_HDR_TRACE
-        if (tfp) tfp->dump(contextp->time());
+        tf.dump(context.time());
 #endif
-        contextp->timeInc(5);
+        context.timeInc(5);
     }
-    if (!contextp->gotFinish()) {
+    if (!context.gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
-    ap->final();
-    bp->final();
+    a.final();
+    b.final();
 
 #ifdef TEST_HDR_TRACE
-    if (tfp) tfp->close();
-    VL_DO_DANGLING(delete tfp, tfp);
+    tf.close();
 #endif
 
-    VL_DO_DANGLING(delete ap, ap);
-    VL_DO_DANGLING(delete bp, bp);
     return 0;
 }

@@ -31,44 +31,44 @@ int main(int argc, char** argv) {
     Verilated::traceEverOn(true);
     Verilated::commandArgs(argc, argv);
 
-    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{"top"}};
+    {
+        VM_PREFIX top{"top"};
 
-    std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};
-    top->trace(tfp.get(), 99);
+        VerilatedVcdC* tfp = new VerilatedVcdC;
+        top.trace(tfp, 99);
 
-    // Test for traceCapable - randomly-ish selected this test
-    TEST_CHECK_EQ(top->traceCapable, true);
+        // Test for traceCapable - randomly-ish selected this test
+        TEST_CHECK_EQ(top.traceCapable, true);
 
-    tfp->open(trace_name());
+        tfp->open(trace_name());
 
-    top->clk = 0;
+        top.clk = 0;
 
-    while (main_time < 190) {  // Creates 2 files
-        top->clk = !top->clk;
-        top->eval();
+        while (main_time < 190) {  // Creates 2 files
+            top.clk = !top.clk;
+            top.eval();
 
-        if ((main_time % 100) == 0) {
+            if ((main_time % 100) == 0) {
 #if defined(T_TRACE_CAT)
-            tfp->openNext(true);
+                tfp->openNext(true);
 #elif defined(T_TRACE_CAT_REOPEN)
-            tfp->close();
-            tfp->open(trace_name());
+                tfp->close();
+                tfp->open(trace_name());
 #elif defined(T_TRACE_CAT_RENEW)
-            tfp->close();
-            tfp.reset(new VerilatedVcdC);
-            top->trace(tfp.get(), 99);
-            tfp->open(trace_name());
+                tfp->close();
+                tfp = new VerilatedVcdC;
+                top.trace(tfp, 99);
+                tfp->open(trace_name());
 #else
 #error "Unknown test"
 #endif
+            }
+            tfp->dump((unsigned int)(main_time));
+            ++main_time;
         }
-        tfp->dump((unsigned int)(main_time));
-        ++main_time;
+        tfp->close();
+        top.final();
     }
-    tfp->close();
-    top->final();
-    tfp.reset();
-    top.reset();
     printf("*-* All Finished *-*\n");
     return errors;
 }

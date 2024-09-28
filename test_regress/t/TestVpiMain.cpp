@@ -50,7 +50,7 @@ static bool settle_value_callbacks() {
 }
 
 int main(int argc, char** argv) {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    VerilatedContext context;
     bool traceOn = false;
 
     for (int i = 1; i < argc; ++i) {
@@ -71,17 +71,15 @@ int main(int argc, char** argv) {
     }
 
     (void)traceOn;  // Prevent unused if VM_TRACE not defined
-    contextp->commandArgs(argc, argv);
+    context.commandArgs(argc, argv);
 #ifdef VERILATOR_SIM_DEBUG
-    contextp->debug(99);
+    context.debug(99);
 #endif
-    const std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{contextp.get(),
-                                                       // Note null name - we're flattening it out
-                                                       ""}};
-    contextp->fatalOnVpiError(false);  // otherwise it will fail on systemtf
+    VM_PREFIX top{&context, ""};  // Note null name - we're flattening it out
+    context.fatalOnVpiError(false);  // otherwise it will fail on systemtf
 
 #ifdef VERILATOR_SIM_DEBUG
-    contextp->internalsDump();
+    context.internalsDump();
 #endif
     for (auto it = &vlog_startup_routines[0]; *it != nullptr; it++) {
         auto routine = *it;
@@ -92,26 +90,26 @@ int main(int argc, char** argv) {
 
 #if VM_TRACE
 #if VM_TRACE_FST
-    std::unique_ptr<VerilatedFstC> tfp(new VerilatedFstC);
+    VerilatedFstC tf;
     const char* traceFile = "dump.fst";
 #else
-    std::unique_ptr<VerilatedVcdC> tfp(new VerilatedVcdC);
+    VerilatedVcdC tf;
     const char* traceFile = "dump.vcd";
 #endif
 
     if (traceOn) {
-        contextp->traceEverOn(true);
-        top->trace(tfp.get(), 99);
-        tfp->open(traceFile);
+        context.traceEverOn(true);
+        top.trace(&tf, 99);
+        tf.open(traceFile);
     }
 #endif
 
-    while (!contextp->gotFinish()) {
+    while (!context.gotFinish()) {
         do {
             // We must evaluate whole design until we process all 'events' for
             // this time step
             do {
-                top->eval_step();
+                top.eval_step();
                 VerilatedVpi::clearEvalNeeded();
                 VerilatedVpi::doInertialPuts();
                 settle_value_callbacks();
@@ -123,20 +121,20 @@ int main(int argc, char** argv) {
             settle_value_callbacks();
         } while (VerilatedVpi::evalNeeded() || VerilatedVpi::hasCbs(cbReadWriteSynch));
 
-        top->eval_end_step();
+        top.eval_end_step();
 
         // Call ReadOnly callbacks
         VerilatedVpi::callCbs(cbReadOnlySynch);
 
 #if VM_TRACE
-        if (traceOn) { tfp->dump(contextp->time()); }
+        if (traceOn) { tf.dump(context.time()); }
 #endif
         // cocotb controls the clock inputs using cbAfterDelay so
         // skip ahead to the next registered callback
         const uint64_t NO_TOP_EVENTS_PENDING = static_cast<uint64_t>(~0ULL);
         const uint64_t next_time_cocotb = VerilatedVpi::cbNextDeadline();
         const uint64_t next_time_timing
-            = top->eventsPending() ? top->nextTimeSlot() : NO_TOP_EVENTS_PENDING;
+            = top.eventsPending() ? top.nextTimeSlot() : NO_TOP_EVENTS_PENDING;
         const uint64_t next_time = std::min(next_time_cocotb, next_time_timing);
 
         // If there are no more cbAfterDelay callbacks,
@@ -144,7 +142,7 @@ int main(int argc, char** argv) {
         if (next_time == NO_TOP_EVENTS_PENDING) {
             break;
         } else {
-            contextp->time(next_time);
+            context.time(next_time);
         }
 
         // Call registered NextSimTime
@@ -162,10 +160,10 @@ int main(int argc, char** argv) {
 
     VerilatedVpi::callCbs(cbEndOfSimulation);
 
-    top->final();
+    top.final();
 
 #if VM_TRACE
-    if (traceOn) { tfp->close(); }
+    if (traceOn) { tf.close(); }
 #endif
 
 // VM_COVERAGE is a define which is set if Verilator is

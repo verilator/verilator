@@ -18,25 +18,25 @@
 int main(int argc, char** argv, char**) {
     // Setup context, defaults, and parse command line
     Verilated::debug(0);
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    contextp->commandArgs(argc, argv);
+    VerilatedContext context;
+    context.commandArgs(argc, argv);
 
     // Construct the Verilated model, from Vtop.h generated from Verilating
-    const std::unique_ptr<Vt_flag_lib_dpi> topp{new Vt_flag_lib_dpi{contextp.get()}};
+    Vt_flag_lib_dpi top{&context};
 
     // Simulate until $finish
-    while (!contextp->gotFinish()) {
+    while (!context.gotFinish()) {
         // Evaluate model
-        topp->eval();
+        top.eval();
         // Advance time
-        contextp->timeInc(1);
+        context.timeInc(1);
     }
 
-    if (!contextp->gotFinish()) {
+    if (!context.gotFinish()) {
         VL_DEBUG_IF(VL_PRINTF("+ Exiting without $finish; no events left\n"););
     }
 
     // Final model cleanup
-    topp->final();
+    top.final();
     return 0;
 }

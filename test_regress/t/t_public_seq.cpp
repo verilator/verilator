@@ -12,34 +12,32 @@
 // General headers
 #include "verilated.h"
 
-std::unique_ptr<Vt_public_seq> topp;
 int main(int argc, char** argv) {
     vluint64_t sim_time = 1100;
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    contextp->debug(0);
-    contextp->commandArgs(argc, argv);
+    VerilatedContext context;
+    context.debug(0);
+    context.commandArgs(argc, argv);
     srand48(5);
-    topp.reset(new VM_PREFIX{"top"});
+    VM_PREFIX top{"top"};
 
-    topp->clk = 0;
-    topp->eval();
-    { contextp->timeInc(10); }
+    top.clk = 0;
+    top.eval();
+    { context.timeInc(10); }
 
     int cyc = 0;
 
-    while ((contextp->time() < sim_time) && !contextp->gotFinish()) {
-        if (cyc >= 5) ++topp->rootp->t__DOT__pub_byte;
-        topp->eval();
-        topp->clk = !topp->clk;
-        topp->eval();
-        contextp->timeInc(5);
-        if (topp->clk) cyc++;
+    while ((context.time() < sim_time) && !context.gotFinish()) {
+        if (cyc >= 5) ++top.rootp->t__DOT__pub_byte;
+        top.eval();
+        top.clk = !top.clk;
+        top.eval();
+        context.timeInc(5);
+        if (top.clk) cyc++;
     }
-    if (!contextp->gotFinish()) {
+    if (!context.gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
-    topp->final();
+    top.final();
 
-    topp.reset();
     return 0;
 }

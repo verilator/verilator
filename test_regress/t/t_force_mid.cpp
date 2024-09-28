@@ -13,34 +13,33 @@
 #include "Vt_force_mid.h"
 // General headers
 #include "verilated.h"
-std::unique_ptr<Vt_force_mid> topp;
+
 int main(int argc, char** argv) {
     uint64_t sim_time = 1100;
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    contextp->commandArgs(argc, argv);
-    contextp->debug(0);
+    VerilatedContext context;
+    Vt_force_mid top{"top"};
+    context.commandArgs(argc, argv);
+    context.debug(0);
     srand48(5);
-    topp.reset(new Vt_force_mid{"top"});
-    topp->topin = 0x9;
-    topp->eval();
+    top.topin = 0x9;
+    top.eval();
     {
-        topp->clk = false;
-        contextp->timeInc(10 * MAIN_TIME_MULTIPLIER);
+        top.clk = false;
+        context.timeInc(10 * MAIN_TIME_MULTIPLIER);
     }
-    while ((contextp->time() < sim_time * MAIN_TIME_MULTIPLIER) && !contextp->gotFinish()) {
-        topp->clk = !topp->clk;
-        topp->eval();
-        contextp->timeInc(1 * MAIN_TIME_MULTIPLIER);
-        contextp->timeInc(1 * MAIN_TIME_MULTIPLIER);
-        contextp->timeInc(1 * MAIN_TIME_MULTIPLIER);
-        contextp->timeInc(1 * MAIN_TIME_MULTIPLIER);
-        contextp->timeInc(1 * MAIN_TIME_MULTIPLIER);
+    while ((context.time() < sim_time * MAIN_TIME_MULTIPLIER) && !context.gotFinish()) {
+        top.clk = !top.clk;
+        top.eval();
+        context.timeInc(1 * MAIN_TIME_MULTIPLIER);
+        context.timeInc(1 * MAIN_TIME_MULTIPLIER);
+        context.timeInc(1 * MAIN_TIME_MULTIPLIER);
+        context.timeInc(1 * MAIN_TIME_MULTIPLIER);
+        context.timeInc(1 * MAIN_TIME_MULTIPLIER);
     }
-    if (!contextp->gotFinish()) {
+    if (!context.gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
-    topp->final();
+    top.final();
 
-    topp.reset();
     return 0;
 }

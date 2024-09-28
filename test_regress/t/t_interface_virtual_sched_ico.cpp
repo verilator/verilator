@@ -17,34 +17,34 @@
 #include <memory>
 
 int main(int argc, char** argv) {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    contextp->debug(0);
-    contextp->commandArgs(argc, argv);
+    VerilatedContext context;
+    context.debug(0);
+    context.commandArgs(argc, argv);
     srand48(5);
 
-    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX};
-    topp->clk = false;
-    topp->inc1 = 1;
-    topp->eval();
-    topp->inc2 = 1;
-    topp->eval();
+    VM_PREFIX top;
+    top.clk = false;
+    top.inc1 = 1;
+    top.eval();
+    top.inc2 = 1;
+    top.eval();
 
     bool flop = true;
-    while (!contextp->gotFinish() && contextp->time() < 100000) {
-        contextp->timeInc(5);
-        if (topp->clk) {
+    while (!context.gotFinish() && context.time() < 100000) {
+        context.timeInc(5);
+        if (top.clk) {
             if (flop) {
-                topp->inc1 += 1;
+                top.inc1 += 1;
             } else {
-                topp->inc2 += 1;
+                top.inc2 += 1;
             }
             flop = !flop;
         }
-        topp->clk = !topp->clk;
-        topp->eval();
+        top.clk = !top.clk;
+        top.eval();
     }
 
-    if (!contextp->gotFinish()) {
+    if (!context.gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     return 0;

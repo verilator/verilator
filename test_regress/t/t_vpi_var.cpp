@@ -974,40 +974,38 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 
 double sc_time_stamp() { return main_time; }
 int main(int argc, char** argv) {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    VerilatedContext context;
 
     uint64_t sim_time = 1100;
-    contextp->debug(0);
-    contextp->commandArgs(argc, argv);
+    context.debug(0);
+    context.commandArgs(argc, argv);
 
-    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
-                                                        // Note null name - we're flattening it out
-                                                        ""}};
+    VM_PREFIX top{&context, ""};  // Note null name - we're flattening it out
 
 #ifdef VERILATOR
 #ifdef TEST_VERBOSE
-    contextp->scopesDump();
+    context.scopesDump();
 #endif
 #endif
 
 #if VM_TRACE
-    contextp->traceEverOn(true);
+    context.traceEverOn(true);
     VL_PRINTF("Enabling waves...\n");
     VerilatedVcdC* tfp = new VerilatedVcdC;
-    topp->trace(tfp, 99);
+    top.trace(tfp, 99);
     tfp->open(STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 #endif
 
-    topp->eval();
-    topp->clk = 0;
+    top.eval();
+    top.clk = 0;
     main_time += 10;
 
-    while (vl_time_stamp64() < sim_time && !contextp->gotFinish()) {
+    while (vl_time_stamp64() < sim_time && !context.gotFinish()) {
         main_time += 1;
         VerilatedVpi::doInertialPuts();
-        topp->eval();
+        top.eval();
         VerilatedVpi::callValueCbs();
-        topp->clk = !topp->clk;
+        top.clk = !top.clk;
         // mon_do();
 #if VM_TRACE
         if (tfp) tfp->dump(main_time);
@@ -1025,10 +1023,10 @@ int main(int argc, char** argv) {
     if (!VerilatedVpi::evalNeeded()) {
         vl_fatal(FILENM, __LINE__, "main", "%Error: Unexpected VPI clean state");
     }
-    if (!contextp->gotFinish()) {
+    if (!context.gotFinish()) {
         vl_fatal(FILENM, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
-    topp->final();
+    top.final();
 
 #if VM_TRACE
     if (tfp) tfp->close();

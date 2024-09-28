@@ -17,102 +17,102 @@
 #include VM_PREFIX_ROOT_INCLUDE
 
 int main(int argc, char** argv) {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    contextp->debug(0);
-    contextp->commandArgs(argc, argv);
+    VerilatedContext context;
+    context.debug(0);
+    context.commandArgs(argc, argv);
     srand48(5);
 
-    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{"top"}};
+    VM_PREFIX top{"top"};
 
-    topp->clk = false;
-    topp->rst = true;
-    topp->eval();
+    top.clk = false;
+    top.rst = true;
+    top.eval();
 #if VM_TRACE
-    contextp->traceEverOn(true);
-    std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};
-    topp->trace(tfp.get(), 99);
-    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
-    tfp->dump(contextp->time());
+    context.traceEverOn(true);
+    VerilatedVcdC tf;
+    top.trace(&tf, 99);
+    tf.open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
+    tf.dump(context.time());
 #endif
-    contextp->timeInc(5);
+    context.timeInc(5);
 
-    topp->clk = true;
-    topp->eval();
-    topp->rst = false;
-    topp->eval();
+    top.clk = true;
+    top.eval();
+    top.rst = false;
+    top.eval();
 #if VM_TRACE
-    tfp->dump(contextp->time());
+    tf.dump(context.time());
 #endif
-    contextp->timeInc(5);
+    context.timeInc(5);
 
-    while (contextp->time() < 1000 && !contextp->gotFinish()) {
-        topp->clk = !topp->clk;
-        topp->eval();
+    while (context.time() < 1000 && !context.gotFinish()) {
+        top.clk = !top.clk;
+        top.eval();
 
-        if (topp->clk) {
+        if (top.clk) {
             bool needsSecondEval = false;
 
-            if (topp->cyc == 3) {
-                topp->rootp->t__DOT__net_1__VforceEn = 1;
-                topp->rootp->t__DOT__net_1__VforceVal = 0;
+            if (top.cyc == 3) {
+                top.rootp->t__DOT__net_1__VforceEn = 1;
+                top.rootp->t__DOT__net_1__VforceVal = 0;
                 needsSecondEval = true;
             }
-            if (topp->cyc == 5) {
-                topp->rootp->t__DOT__net_1__VforceVal = 1;
+            if (top.cyc == 5) {
+                top.rootp->t__DOT__net_1__VforceVal = 1;
                 needsSecondEval = true;
             }
-            if (topp->cyc == 8) {
-                topp->rootp->t__DOT__net_1__VforceEn = 0;
-                needsSecondEval = true;
-            }
-
-            if (topp->cyc == 4) {
-                topp->rootp->t__DOT__net_8__VforceEn = 0xff;
-                topp->rootp->t__DOT__net_8__VforceVal = 0x5f;
-                needsSecondEval = true;
-            }
-            if (topp->cyc == 6) {
-                topp->rootp->t__DOT__net_8__VforceVal = 0xf5;
-                needsSecondEval = true;
-            }
-            if (topp->cyc == 9) {
-                topp->rootp->t__DOT__net_8__VforceEn = 0;
+            if (top.cyc == 8) {
+                top.rootp->t__DOT__net_1__VforceEn = 0;
                 needsSecondEval = true;
             }
 
-            if (topp->cyc == 10) {
-                topp->rootp->t__DOT__net_1__VforceEn = 1;
-                topp->rootp->t__DOT__net_8__VforceEn = 0xff;
-                topp->rootp->t__DOT__net_1__VforceVal = 1;
-                topp->rootp->t__DOT__net_8__VforceVal = 0x5a;
+            if (top.cyc == 4) {
+                top.rootp->t__DOT__net_8__VforceEn = 0xff;
+                top.rootp->t__DOT__net_8__VforceVal = 0x5f;
                 needsSecondEval = true;
             }
-            if (topp->cyc == 12) {
-                topp->rootp->t__DOT__net_1__VforceVal = 0;
-                topp->rootp->t__DOT__net_8__VforceVal = 0xa5;
+            if (top.cyc == 6) {
+                top.rootp->t__DOT__net_8__VforceVal = 0xf5;
                 needsSecondEval = true;
             }
-            if (topp->cyc == 14) {
-                topp->rootp->t__DOT__net_1__VforceEn = 0;
-                topp->rootp->t__DOT__net_8__VforceEn = 0;
+            if (top.cyc == 9) {
+                top.rootp->t__DOT__net_8__VforceEn = 0;
                 needsSecondEval = true;
             }
 
-            if (needsSecondEval) topp->eval();
+            if (top.cyc == 10) {
+                top.rootp->t__DOT__net_1__VforceEn = 1;
+                top.rootp->t__DOT__net_8__VforceEn = 0xff;
+                top.rootp->t__DOT__net_1__VforceVal = 1;
+                top.rootp->t__DOT__net_8__VforceVal = 0x5a;
+                needsSecondEval = true;
+            }
+            if (top.cyc == 12) {
+                top.rootp->t__DOT__net_1__VforceVal = 0;
+                top.rootp->t__DOT__net_8__VforceVal = 0xa5;
+                needsSecondEval = true;
+            }
+            if (top.cyc == 14) {
+                top.rootp->t__DOT__net_1__VforceEn = 0;
+                top.rootp->t__DOT__net_8__VforceEn = 0;
+                needsSecondEval = true;
+            }
+
+            if (needsSecondEval) top.eval();
         }
 #if VM_TRACE
-        tfp->dump(contextp->time());
+        tf.dump(context.time());
 #endif
-        contextp->timeInc(5);
+        context.timeInc(5);
     }
 
-    if (!contextp->gotFinish()) {
+    if (!context.gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
 
-    topp->final();
+    top.final();
 #if VM_TRACE
-    tfp->close();
+    tf.close();
 #endif
 
     return 0;

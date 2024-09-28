@@ -30,24 +30,25 @@ int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
 
     // This test is to specifically check "" as the below upper model name
-    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{""}};
+    VM_PREFIX top{""};
 
-    std::unique_ptr<TRACE_CLASS> tfp{new TRACE_CLASS};
+    TRACE_CLASS tf;
 
-    top->trace(tfp.get(), 99);
-    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/" TRACE_FILE_NAME);
-    top->clk = 0;
+    {
+        top.trace(&tf, 99);
+        tf.open(VL_STRINGIFY(TEST_OBJ_DIR) "/" TRACE_FILE_NAME);
+        top.clk = 0;
 
-    while (main_time <= 20) {
-        top->eval();
-        tfp->dump((unsigned int)(main_time));
-        ++main_time;
-        top->clk = !top->clk;
+        while (main_time <= 20) {
+            top.eval();
+            tf.dump((unsigned int)(main_time));
+            ++main_time;
+            top.clk = !top.clk;
+        }
+        tf.close();
+        top.final();
     }
-    tfp->close();
-    top->final();
-    tfp.reset();
-    top.reset();
+
     printf("*-* All Finished *-*\n");
     return 0;
 }

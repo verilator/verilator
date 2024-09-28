@@ -335,31 +335,29 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 #else
 
 int main(int argc, char** argv) {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    VerilatedContext context;
 
     uint64_t sim_time = 100;
     bool cbs_called;
-    contextp->commandArgs(argc, argv);
+    context.commandArgs(argc, argv);
 
-    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
-                                                        // Note null name - we're flattening it out
-                                                        ""}};
+    VM_PREFIX top{&context, ""};  // Note null name - we're flattening it out
 
-    if (verbose) VL_PRINTF("-- { Sim Time %" PRId64 " } --\n", contextp->time());
+    if (verbose) VL_PRINTF("-- { Sim Time %" PRId64 " } --\n", context.time());
 
     register_test_callback(nullptr);
 
-    topp->eval();
-    topp->clk = 0;
-    contextp->timeInc(1);
+    top.eval();
+    top.clk = 0;
+    context.timeInc(1);
 
-    while (contextp->time() < sim_time && !contextp->gotFinish()) {
+    while (context.time() < sim_time && !context.gotFinish()) {
         if (verbose) {
             VL_PRINTF("-- { Sim Time %" PRId64 " , Callback %s (%d) , Testcase State %d } --\n",
-                      contextp->time(), cb_reason_to_string(*cb_iter), *cb_iter, *state_iter);
+                      context.time(), cb_reason_to_string(*cb_iter), *cb_iter, *state_iter);
         }
 
-        topp->eval();
+        top.eval();
 
         for (const auto& i : cbs_to_test) {
             if (verbose) {
@@ -382,29 +380,28 @@ int main(int argc, char** argv) {
         VerilatedVpi::callTimedCbs();
 
         int64_t next_time = VerilatedVpi::cbNextDeadline();
-        contextp->time(next_time);
-        if (next_time == -1 && !contextp->gotFinish()) {
+        context.time(next_time);
+        if (next_time == -1 && !context.gotFinish()) {
             if (verbose)
-                VL_PRINTF("-- { Sim Time %" PRId64 " , No more testcases } --\n",
-                          contextp->time());
+                VL_PRINTF("-- { Sim Time %" PRId64 " , No more testcases } --\n", context.time());
             if (got_error) {
                 vl_stop(__FILE__, __LINE__, "TOP-cpp");
             } else {
                 VL_PRINTF("*-* All Finished *-*\n");
-                contextp->gotFinish(true);
+                context.gotFinish(true);
             }
         }
 
         // Count updates on rising edge, so cycle through falling edge as well
-        topp->clk = !topp->clk;
-        topp->eval();
-        topp->clk = !topp->clk;
+        top.clk = !top.clk;
+        top.eval();
+        top.clk = !top.clk;
     }
 
-    if (!contextp->gotFinish()) {
+    if (!context.gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
-    topp->final();
+    top.final();
 
     return 0;
 }

@@ -115,12 +115,12 @@ typedef struct packed {
 int errors = 0;
 
 int main(int argc, char** argv) {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    contextp->debug(0);
-    contextp->randReset(2);
-    contextp->commandArgs(argc, argv);
+    VerilatedContext context;
+    context.debug(0);
+    context.randReset(2);
+    context.commandArgs(argc, argv);
 
-    const std::unique_ptr<VM_PREFIX> adder{new VM_PREFIX{contextp.get()}};
+    VM_PREFIX adder{&context};
 
     {
         IN_T in1, in2;
@@ -138,10 +138,10 @@ int main(int argc, char** argv) {
         in2.__SYM__nullptr[3] = 0x30;
         in2.get__0.a = 0x20;
 
-        adder->op1 = in1.get();
-        adder->op2 = in2.get();
-        adder->eval();
-        out.set(adder->out);
+        adder.op1 = in1.get();
+        adder.op2 = in2.get();
+        adder.eval();
+        out.set(adder.out);
 
         TEST_CHECK_EQ(out.__SYM__nullptr[0], 0x11);
         TEST_CHECK_EQ(out.__SYM__nullptr[1], 0x22);
@@ -159,10 +159,10 @@ int main(int argc, char** argv) {
         op1a.b = 0x1fe;
         op1b.b = 0x1ef;
 
-        adder->op1a = op1a.get();
-        adder->op1b = op1b.get();
-        adder->eval();
-        out1.set(adder->out1);
+        adder.op1a = op1a.get();
+        adder.op1b = op1b.get();
+        adder.eval();
+        out1.set(adder.out1);
 
         TEST_CHECK_EQ(out1.a, op1a.a + op1b.a);
         TEST_CHECK_EQ(out1.b, op1a.b + op1b.b);
@@ -177,10 +177,10 @@ int main(int argc, char** argv) {
         op2a.c = 0x11212;
         op2b.c = 0x12121;
 
-        adder->op2a = op2a.get();
-        adder->op2b = op2b.get();
-        adder->eval();
-        out2.set(adder->out2);
+        adder.op2a = op2a.get();
+        adder.op2b = op2b.get();
+        adder.eval();
+        out2.set(adder.out2);
 
         TEST_CHECK_EQ(out2.a, op2a.a + op2b.a);
         TEST_CHECK_EQ(out2.b, op2a.b + op2b.b);
@@ -198,10 +198,10 @@ int main(int argc, char** argv) {
         op3a.d = 0x123232323ULL;
         op3b.d = 0x32323232ULL;
 
-        adder->op3a = op3a.get();
-        adder->op3b = op3b.get();
-        adder->eval();
-        out3.set(adder->out3);
+        adder.op3a = op3a.get();
+        adder.op3b = op3b.get();
+        adder.eval();
+        out3.set(adder.out3);
 
         TEST_CHECK_EQ(out3.a, op3a.a + op3b.a);
         TEST_CHECK_EQ(out3.b, op3a.b + op3b.b);
@@ -226,10 +226,10 @@ int main(int argc, char** argv) {
         op4a.e[2] = 0xe;
         op4b.e[2] = 0xf;
 
-        adder->op4a = op4a.get();
-        adder->op4b = op4b.get();
-        adder->eval();
-        out4.set(adder->out4);
+        adder.op4a = op4a.get();
+        adder.op4b = op4b.get();
+        adder.eval();
+        out4.set(adder.out4);
 
         TEST_CHECK_EQ(out4.a, op4a.a + op4b.a);
         TEST_CHECK_EQ(out4.b, op4a.b + op4b.b);

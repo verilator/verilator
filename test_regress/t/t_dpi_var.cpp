@@ -111,38 +111,36 @@ void mon_eval() {
 //======================================================================
 
 int main(int argc, char** argv) {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    VerilatedContext context;
 
     uint64_t sim_time = 1100;
-    contextp->debug(0);
-    contextp->commandArgs(argc, argv);
+    context.debug(0);
+    context.commandArgs(argc, argv);
 
-    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
-                                                        // Note null name - we're flattening it out
-                                                        ""}};
+    VM_PREFIX top{&context, ""};  // Note null name - we're flattening it out
 
     // clang-format off
 #ifdef VERILATOR
 # ifdef TEST_VERBOSE
-    contextp->scopesDump();
+    context.scopesDump();
 # endif
 #endif
     // clang-format on
 
-    topp->eval();
-    topp->clk = 0;
-    contextp->timeInc(10);
+    top.eval();
+    top.clk = 0;
+    context.timeInc(10);
 
-    while (contextp->time() < sim_time && !contextp->gotFinish()) {
-        contextp->timeInc(1);
-        topp->eval();
-        topp->clk = !topp->clk;
+    while (context.time() < sim_time && !context.gotFinish()) {
+        context.timeInc(1);
+        top.eval();
+        top.clk = !top.clk;
         // mon_do();
     }
-    if (!contextp->gotFinish()) {
+    if (!context.gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
-    topp->final();
+    top.final();
 
     return 0;
 }

@@ -12,13 +12,13 @@
 #include VM_PREFIX_INCLUDE
 
 int main(int argc, char** argv) {
-    std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    contextp->traceEverOn(true);
-    std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};
-    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get()}};
-    topp->trace(tfp.get(), 99);  // Error!
-    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/dump.vcd");  // Error! shall put to the next line!
-    tfp->dump(0);
-    tfp->close();
+    VerilatedContext context;
+    context.traceEverOn(true);
+    VerilatedVcdC tf;
+    VM_PREFIX top{&context};
+    top.trace(&tf, 99);  // Error!
+    tf.open(VL_STRINGIFY(TEST_OBJ_DIR) "/dump.vcd");  // Error! shall put to the next line!
+    tf.dump(0);
+    tf.close();
     return 0;
 }

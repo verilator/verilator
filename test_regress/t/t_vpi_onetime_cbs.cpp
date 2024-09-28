@@ -280,32 +280,30 @@ void (*vlog_startup_routines[])(void) = {VPIRegister, 0};
 
 int main(int argc, char** argv, char** env) {
     double sim_time = 100;
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    VerilatedContext context;
 
     bool cbs_called;
-    contextp->commandArgs(argc, argv);
-    // contextp->debug(9);
+    context.commandArgs(argc, argv);
+    // context.debug(9);
 
-    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
-                                                        // Note null name - we're flattening it out
-                                                        ""}};
+    VM_PREFIX top{&context, ""};  // Note null name - we're flattening it out
 
-    topp->clk = 1;
+    top.clk = 1;
 
     // StartOfSimulationCallback(nullptr);
     VPIRegister();
 
     VerilatedVpi::callCbs(cbStartOfSimulation);
 
-    topp->clk = 0;
-    topp->eval();
+    top.clk = 0;
+    top.eval();
 
-    while (contextp->time() < sim_time && !contextp->gotFinish()) {
+    while (context.time() < sim_time && !context.gotFinish()) {
         VerilatedVpi::callTimedCbs();
         VerilatedVpi::callCbs(cbNextSimTime);
         VerilatedVpi::callCbs(cbAtStartOfSimTime);
 
-        topp->eval();
+        top.eval();
 
         VerilatedVpi::callValueCbs();
         VerilatedVpi::callCbs(cbReadWriteSynch);
@@ -313,28 +311,28 @@ int main(int argc, char** argv, char** env) {
         VerilatedVpi::callCbs(cbAtEndOfSimTime);
 
         const uint64_t next_time = VerilatedVpi::cbNextDeadline();
-        if (next_time != -1) contextp->time(next_time);
+        if (next_time != -1) context.time(next_time);
         if (verbose)
-            vpi_printf(const_cast<char*>("- [@%" PRId64 "] time change\n"), contextp->time());
-        if (next_time == -1 && !contextp->gotFinish()) {
+            vpi_printf(const_cast<char*>("- [@%" PRId64 "] time change\n"), context.time());
+        if (next_time == -1 && !context.gotFinish()) {
             if (got_error) {
                 vl_stop(__FILE__, __LINE__, "TOP-cpp");
             } else {
                 VerilatedVpi::callCbs(cbEndOfSimulation);
-                contextp->gotFinish(true);
+                context.gotFinish(true);
             }
         }
 
         // Count updates on rising edge, so cycle through falling edge as well
-        topp->clk = !topp->clk;
-        topp->eval();
-        topp->clk = !topp->clk;
+        top.clk = !top.clk;
+        top.eval();
+        top.clk = !top.clk;
     }
 
-    if (!contextp->gotFinish()) {
+    if (!context.gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
-    topp->final();
+    top.final();
 
     exit(0L);
 }

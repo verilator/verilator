@@ -18,23 +18,23 @@
 const unsigned long long dt_2 = 3;
 
 int main(int argc, char** argv) {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    VerilatedContext context;
 
-    VM_PREFIX* top = new VM_PREFIX{contextp.get(), "top"};
+    VM_PREFIX top{&context, "top"};
 
-    contextp->debug(0);
-    contextp->traceEverOn(true);
+    context.debug(0);
+    context.traceEverOn(true);
 
-    VerilatedVcdC* tfp = new VerilatedVcdC;
-    top->trace(tfp, 99);
-    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
+    VerilatedVcdC tf;
+    top.trace(&tf, 99);
+    tf.open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 
-    top->CLK = 0;
-    top->eval();
-    tfp->dump(contextp->time());
-    contextp->timeInc(1);
+    top.CLK = 0;
+    top.eval();
+    tf.dump(context.time());
+    context.timeInc(1);
 
-    const VerilatedScopeNameMap* scopeMapp = contextp->scopeNameMap();
+    const VerilatedScopeNameMap* scopeMapp = context.scopeNameMap();
     for (VerilatedScopeNameMap::const_iterator it = scopeMapp->begin(); it != scopeMapp->end();
          ++it) {
 #ifdef TEST_VERBOSE
@@ -104,16 +104,16 @@ int main(int argc, char** argv) {
         }
     }
 
-    top->CLK = 0;
-    top->eval();
-    tfp->dump(contextp->time());
-    contextp->timeInc(1);
+    top.CLK = 0;
+    top.eval();
+    tf.dump(context.time());
+    context.timeInc(1);
 
     // Posedge on clock, expect all the public bits to flip
-    top->CLK = 1;
-    top->eval();
-    tfp->dump(contextp->time());
-    contextp->timeInc(1);
+    top.CLK = 1;
+    top.eval();
+    tf.dump(context.time());
+    context.timeInc(1);
 
     for (VerilatedScopeNameMap::const_iterator it = scopeMapp->begin(); it != scopeMapp->end();
          ++it) {
@@ -151,15 +151,13 @@ int main(int argc, char** argv) {
         }
     }
 
-    top->CLK = 0;
-    top->eval();
-    tfp->dump(contextp->time());
-    contextp->timeInc(1);
+    top.CLK = 0;
+    top.eval();
+    tf.dump(context.time());
+    context.timeInc(1);
 
-    tfp->close();
-    top->final();
-    VL_DO_DANGLING(delete tfp, tfp);
-    VL_DO_DANGLING(delete top, top);
+    tf.close();
+    top.final();
 
     VL_PRINTF("*-* All Finished *-*\n");
 

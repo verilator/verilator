@@ -90,37 +90,37 @@ void sim(VM_PREFIX* topp) {
 
 int main(int argc, char** argv) {
     // Create contexts
-    std::unique_ptr<VerilatedContext> context0p{new VerilatedContext};
-    std::unique_ptr<VerilatedContext> context1p{new VerilatedContext};
+    VerilatedContext context0;
+    VerilatedContext context1;
 
     // configuration
-    context0p->threads(1);
-    context1p->threads(1);
-    context0p->fatalOnError(false);
-    context1p->fatalOnError(false);
-    context0p->traceEverOn(true);
-    context1p->traceEverOn(true);
+    context0.threads(1);
+    context1.threads(1);
+    context0.fatalOnError(false);
+    context1.fatalOnError(false);
+    context0.traceEverOn(true);
+    context1.traceEverOn(true);
 
     // error number checks
-    TEST_CHECK_EQ(context0p->errorCount(), 0);
-    TEST_CHECK_EQ(context1p->errorCount(), 0);
-    context0p->errorCount(1);
-    TEST_CHECK_EQ(context0p->errorCount(), 1);
-    context0p->errorCount(0);
-    TEST_CHECK_EQ(context0p->errorCount(), 0);
+    TEST_CHECK_EQ(context0.errorCount(), 0);
+    TEST_CHECK_EQ(context1.errorCount(), 0);
+    context0.errorCount(1);
+    TEST_CHECK_EQ(context0.errorCount(), 1);
+    context0.errorCount(0);
+    TEST_CHECK_EQ(context0.errorCount(), 0);
 
     // instantiate verilated design
-    std::unique_ptr<VM_PREFIX> top0p{new VM_PREFIX{context0p.get(), "top0"}};
-    std::unique_ptr<VM_PREFIX> top1p{new VM_PREFIX{context1p.get(), "top1"}};
+    VM_PREFIX top0{&context0, "top0"};
+    VM_PREFIX top1{&context1, "top1"};
 
-    top0p->trace_number = 0;
-    top0p->trace_number = 1;
+    top0.trace_number = 0;
+    top0.trace_number = 1;
 
     std::cout << "Below '%Error: ... Verilog $stop' is expected as part of the test\n";
 
     // create threads
-    std::thread t0(sim, top0p.get());
-    std::thread t1(sim, top1p.get());
+    std::thread t0(sim, &top0);
+    std::thread t1(sim, &top1);
 
     // wait to finish
     t0.join();
@@ -131,7 +131,7 @@ int main(int argc, char** argv) {
     if (errors) {
         std::cout << "Error: comparison errors" << std::endl;
         pass = false;
-    } else if (top0p->done_o && top1p->done_o) {
+    } else if (top0.done_o && top1.done_o) {
         std::cout << "*-* All Finished *-*" << std::endl;
     } else {
         std::cout << "Error: Early termination!" << std::endl;
@@ -139,8 +139,8 @@ int main(int argc, char** argv) {
     }
 
     // final model cleanup
-    top0p->final();
-    top1p->final();
+    top0.final();
+    top1.final();
 
     // exit successful
     return pass ? 0 : 10;

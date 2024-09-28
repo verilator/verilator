@@ -64,12 +64,12 @@ endclass  //cls
 int errors = 0;
 
 int main(int argc, char** argv) {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    contextp->debug(0);
-    contextp->randReset(2);
-    contextp->commandArgs(argc, argv);
+    VerilatedContext context;
+    context.debug(0);
+    context.randReset(2);
+    context.commandArgs(argc, argv);
 
-    const std::unique_ptr<VM_PREFIX> adder{new VM_PREFIX{contextp.get()}};
+    VM_PREFIX adder{&context};
 
     {
         IN_T in;
@@ -86,13 +86,13 @@ int main(int argc, char** argv) {
         }
         in.anon.a = 0x1;
 
-        adder->op1 = in.get();
-        adder->eval();
-        out.set(adder->out);
+        adder.op1 = in.get();
+        adder.eval();
+        out.set(adder.out);
 
         std::memset(reinterpret_cast<void*>(&tmp), 0xff, sizeof(tmp));
         // `set` function should clear upper bits of `tmp.a`
-        tmp.set(adder->rootp->add__DOT__op2->__PVT__in);
+        tmp.set(adder.rootp->add__DOT__op2->__PVT__in);
 
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 3; ++j) {

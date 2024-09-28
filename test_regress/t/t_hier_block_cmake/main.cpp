@@ -9,22 +9,23 @@
 //
 //*************************************************************************
 
-#include <memory>
 #include "Vt_hier_block.h"
 
-int main(int argc, char *argv[]) {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+#include <memory>
+
+int main(int argc, char* argv[]) {
+    VerilatedContext context;
     // TEST_THREADS is set in t_hier_block_cmake.py
-    contextp->threads(TEST_THREADS);
-    contextp->commandArgs(argc, argv);
-    std::unique_ptr<Vt_hier_block> top{new Vt_hier_block{contextp.get(), "top"}};
-    for (int i = 0; i < 100 && !contextp->gotFinish(); ++i) {
-        top->eval();
-        top->clk ^= 1;
+    context.threads(TEST_THREADS);
+    context.commandArgs(argc, argv);
+    Vt_hier_block top{&context, "top"};
+    for (int i = 0; i < 100 && !context.gotFinish(); ++i) {
+        top.eval();
+        top.clk ^= 1;
     }
-    if (!contextp->gotFinish()) {
+    if (!context.gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
-    top->final();
+    top.final();
     return 0;
 }

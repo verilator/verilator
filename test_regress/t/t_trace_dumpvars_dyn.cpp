@@ -31,35 +31,37 @@ int main(int argc, char** argv) {
     Verilated::traceEverOn(true);
     Verilated::commandArgs(argc, argv);
 
-    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{"top"}};
+    {
 
-    std::unique_ptr<TRACE_CLASS> tfp{new TRACE_CLASS};
+        VM_PREFIX top{"top"};
+
+        TRACE_CLASS tf;
 
 #if defined(T_TRACE_DUMPVARS_DYN_VCD_0) || defined(T_TRACE_DUMPVARS_DYN_FST_0)
-    tfp->dumpvars(0, "");
+        tf.dumpvars(0, "");
 #elif defined(T_TRACE_DUMPVARS_DYN_VCD_1) || defined(T_TRACE_DUMPVARS_DYN_FST_1)
-    tfp->dumpvars(99, "t");  // This should not match "top."
-    tfp->dumpvars(1, "top.t.cyc");  // A signal
-    tfp->dumpvars(1, "top.t.sub1a");  // Scope
-    tfp->dumpvars(2, "top.t.sub1b");  // Scope
+        tf.dumpvars(99, "t");  // This should not match "top."
+        tf.dumpvars(1, "top.t.cyc");  // A signal
+        tf.dumpvars(1, "top.t.sub1a");  // Scope
+        tf.dumpvars(2, "top.t.sub1b");  // Scope
 #else
 #error "Bad test"
 #endif
 
-    top->trace(tfp.get(), 99);
-    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/" TRACE_FILE_NAME);
-    top->clk = 0;
+        top.trace(&tf, 99);
+        tf.open(VL_STRINGIFY(TEST_OBJ_DIR) "/" TRACE_FILE_NAME);
+        top.clk = 0;
 
-    while (main_time <= 20) {
-        top->eval();
-        tfp->dump((unsigned int)(main_time));
-        ++main_time;
-        top->clk = !top->clk;
+        while (main_time <= 20) {
+            top.eval();
+            tf.dump((unsigned int)(main_time));
+            ++main_time;
+            top.clk = !top.clk;
+        }
+        tf.close();
+        top.final();
     }
-    tfp->close();
-    top->final();
-    tfp.reset();
-    top.reset();
+
     printf("*-* All Finished *-*\n");
     return 0;
 }

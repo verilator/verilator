@@ -11,13 +11,13 @@
 
 int main(int argc, char** argv) {
     // Create contexts
-    VerilatedContext* contextp{new VerilatedContext};
+    VerilatedContext context;
 
     for (int i = 0; i < 2; ++i) {
-        std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp, "TOP"}};
-        topp->eval();
-        contextp->timeInc(1);
-        topp->eval();
+        VM_PREFIX top{&context, "TOP"};
+        top.eval();
+        context.timeInc(1);
+        top.eval();
     }
 
     return 0;

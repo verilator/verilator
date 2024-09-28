@@ -11,14 +11,14 @@
 
 int main(int argc, char** argv) {
     // Create contexts
-    VerilatedContext* contextp{new VerilatedContext};
+    VerilatedContext context;
 
     // Ideally we'd do this, but then address sanitizer blows up
     // delete contextp;  // Test mistake - deleting contextp
-    contextp->selfTestClearMagic();
+    context.selfTestClearMagic();
 
     // instantiate verilated design
-    std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp, "TOP"}};
+    VM_PREFIX top{&context, "TOP"};
 
     return 0;
 }

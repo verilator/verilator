@@ -27,30 +27,31 @@ int main(int argc, char** argv) {
     Verilated::traceEverOn(true);
     Verilated::commandArgs(argc, argv);
 
-    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{"top"}};
+    {
+        VM_PREFIX top{"top"};
 
-    std::unique_ptr<VerilatedFstC> tfp{new VerilatedFstC};
-    top->trace(tfp.get(), 99);
+        VerilatedFstC tf;
+        top.trace(&tf, 99);
 
-    tfp->open(trace_name());
+        tf.open(trace_name());
 
-    top->clk = 0;
+        top.clk = 0;
 
-    while (main_time < 190) {  // Creates 2 files
-        top->clk = !top->clk;
-        top->eval();
+        while (main_time < 190) {  // Creates 2 files
+            top.clk = !top.clk;
+            top.eval();
 
-        if ((main_time % 100) == 0) {
-            tfp->close();
-            tfp->open(trace_name());
+            if ((main_time % 100) == 0) {
+                tf.close();
+                tf.open(trace_name());
+            }
+            tf.dump((unsigned int)(main_time));
+            ++main_time;
         }
-        tfp->dump((unsigned int)(main_time));
-        ++main_time;
+        tf.close();
+        top.final();
     }
-    tfp->close();
-    top->final();
-    tfp.reset();
-    top.reset();
+
     printf("*-* All Finished *-*\n");
     return 0;
 }

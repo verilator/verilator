@@ -163,54 +163,52 @@ extern "C" int mon_check() {
 //======================================================================
 
 int main(int argc, char** argv) {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    VerilatedContext context;
 
     uint64_t sim_time = 1100;
-    contextp->commandArgs(argc, argv);
-    // contextp->debug(9);
+    context.commandArgs(argc, argv);
+    // context.debug(9);
     // We're going to be checking for these errors so don't crash out
-    contextp->fatalOnVpiError(0);
+    context.fatalOnVpiError(0);
 
-    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
-                                                        // Note null name - we're flattening it out
-                                                        ""}};
+    VM_PREFIX top{&context, ""};  // Note null name - we're flattening it out
 
 #ifdef VERILATOR
 #ifdef TEST_VERBOSE
-    contextp->scopesDump();
+    context.scopesDump();
 #endif
 #endif
 
 #if VM_TRACE
-    contextp->traceEverOn(true);
+    context.traceEverOn(true);
     VL_PRINTF("Enabling waves...\n");
-    VerilatedVcdC* tfp = new VerilatedVcdC;
-    topp->trace(tfp, 99);
-    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
+    VerilatedVcdC tf;
+    top.trace(&tf, 99);
+    tf.open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 #endif
 
-    topp->eval();
-    topp->clk = 0;
-    contextp->timeInc(10);
+    top.eval();
+    top.clk = 0;
+    context.timeInc(10);
 
-    while (contextp->time() < sim_time && !contextp->gotFinish()) {
-        contextp->timeInc(1);
-        topp->eval();
+    while (context.time() < sim_time && !context.gotFinish()) {
+        context.timeInc(1);
+        top.eval();
         // VerilatedVpi::callValueCbs();   // Make sure can link without verilated_vpi.h included
-        topp->clk = !topp->clk;
+        top.clk = !top.clk;
         // mon_do();
 #if VM_TRACE
-        if (tfp) tfp->dump(contextp->time());
+        tf.dump(context.time());
 #endif
     }
     if (!callback_count) vl_fatal(FILENM, __LINE__, "main", "%Error: never got callbacks");
-    if (!contextp->gotFinish()) {
+    if (!context.gotFinish()) {
         vl_fatal(FILENM, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
-    topp->final();
+    top.final();
 
 #if VM_TRACE
-    if (tfp) tfp->close();
+    tf.close();
 #endif
 
     return 0;

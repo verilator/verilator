@@ -15,29 +15,29 @@
 int main(int argc, char** argv) {
     srand48(5);
 
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    VerilatedContext context;
     // VL_USE_THREADS define is set in t_gantt_two.py
-    contextp->threads(TEST_USE_THREADS);
-    contextp->debug(0);
-    contextp->commandArgs(argc, argv);
+    context.threads(TEST_USE_THREADS);
+    context.debug(0);
+    context.commandArgs(argc, argv);
 
-    std::unique_ptr<VM_PREFIX> topap{new VM_PREFIX{contextp.get(), "topa"}};
-    std::unique_ptr<VM_PREFIX> topbp{new VM_PREFIX{contextp.get(), "topb"}};
+    VM_PREFIX topa{&context, "topa"};
+    VM_PREFIX topb{&context, "topb"};
 
-    topap->clk = false;
-    topap->eval();
-    topbp->clk = false;
-    topbp->eval();
+    topa.clk = false;
+    topa.eval();
+    topb.clk = false;
+    topb.eval();
 
-    contextp->timeInc(10);
-    while ((contextp->time() < 1100) && !contextp->gotFinish()) {
-        topap->clk = !topap->clk;
-        topap->eval();
-        topbp->clk = !topbp->clk;
-        topbp->eval();
-        contextp->timeInc(5);
+    context.timeInc(10);
+    while ((context.time() < 1100) && !context.gotFinish()) {
+        topa.clk = !topa.clk;
+        topa.eval();
+        topb.clk = !topb.clk;
+        topb.eval();
+        context.timeInc(5);
     }
-    if (!contextp->gotFinish()) {
+    if (!context.gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     return 0;

@@ -90,33 +90,31 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 #else
 
 int main(int argc, char** argv) {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    VerilatedContext context;
 
     uint64_t sim_time = 1100;
-    contextp->debug(0);
-    contextp->commandArgs(argc, argv);
+    context.debug(0);
+    context.commandArgs(argc, argv);
     // we're going to be checking for these errors do don't crash out
-    contextp->fatalOnVpiError(0);
+    context.fatalOnVpiError(0);
 
     // Test second construction
-    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(),
-                                                        // Note null name - we're flattening it out
-                                                        ""}};
+    VM_PREFIX top{&context, ""};  // Note null name - we're flattening it out
 
 #ifdef VERILATOR
 #ifdef TEST_VERBOSE
-    contextp->scopesDump();
+    context.scopesDump();
 #endif
 #endif
 
-    topp->eval();
+    top.eval();
     VerilatedVpi::callValueCbs();
     TestVpiHandle vh = vpi_handle_by_name((PLI_BYTE8*)"top.sv_if_i.a", NULL);
     CHECK_RESULT_NZ(vh);
     TestVpiHandle it = vpi_iterate(vpiModule, NULL);
     CHECK_RESULT_NZ(it);
 
-    topp->final();
+    top.final();
     return 0;
 }
 

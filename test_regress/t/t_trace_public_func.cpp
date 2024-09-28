@@ -32,25 +32,26 @@ int main(int argc, char** argv) {
     Verilated::traceEverOn(true);
     Verilated::commandArgs(argc, argv);
 
-    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{"top"}};
+    {
+        VM_PREFIX top{"top"};
 
-    std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};
-    top->trace(tfp.get(), 99);
-    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
+        VerilatedVcdC tf;
+        top.trace(&tf, 99);
+        tf.open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 
-    while (main_time <= 20) {
-        top->CLK = (main_time / dt_2) % 2;
-        top->eval();
+        while (main_time <= 20) {
+            top.CLK = (main_time / dt_2) % 2;
+            top.eval();
 
-        top->t->glbl->setGSR(main_time < 7);
+            top.t->glbl->setGSR(main_time < 7);
 
-        tfp->dump((unsigned int)(main_time));
-        ++main_time;
+            tf.dump((unsigned int)(main_time));
+            ++main_time;
+        }
+        tf.close();
+        top.final();
     }
-    tfp->close();
-    top->final();
-    tfp.reset();
-    top.reset();
+
     printf("*-* All Finished *-*\n");
     return 0;
 }
