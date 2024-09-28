@@ -2857,7 +2857,8 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
         }
     } else if (arrayvalue_p->format == vpiTimeVal) {
         switch (varp->vltype()) {
-            case VLVT_UINT64:
+            //time value is stored uint32 high&low or real 
+            case VLVT_UINT32:
             case VLVT_REAL:
                 return status;
             default:
