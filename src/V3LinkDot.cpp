@@ -1496,6 +1496,7 @@ class LinkDotFindVisitor final : public VNVisitor {
     }
     void visit(AstPackageImport* nodep) override {
         UINFO(4, "  Link: " << nodep << endl);
+        if (!nodep->packagep()) return;  // Errored in V3LinkCells
         VSymEnt* const srcp = m_statep->getNodeSym(nodep->packagep());
         if (nodep->name() == "*") {
             if (nodep->packagep() != v3Global.rootp()->stdPackagep()) {
@@ -1506,10 +1507,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             }
         } else {
             VSymEnt* const impp = srcp->findIdFlat(nodep->name());
-            if (!impp) {
-                nodep->v3error("Import object not found: '" << nodep->packagep()->prettyName()
-                                                            << "::" << nodep->prettyName() << "'");
-            }
+            if (!impp) { nodep->v3error("Import object not found: " << nodep->prettyPkgNameQ()); }
         }
         m_curSymp->importFromPackage(m_statep->symsp(), srcp, nodep->name());
         UINFO(9, "    Link Done: " << nodep << endl);
@@ -1517,6 +1515,7 @@ class LinkDotFindVisitor final : public VNVisitor {
     }
     void visit(AstPackageExport* nodep) override {
         UINFO(9, "  Link: " << nodep << endl);
+        if (!nodep->packagep()) return;  // Errored in V3LinkCells
         VSymEnt* const srcp = m_statep->getNodeSym(nodep->packagep());
         if (nodep->name() != "*") {
             VSymEnt* const impp = srcp->findIdFlat(nodep->name());

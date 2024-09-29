@@ -22,6 +22,7 @@ for s in [
         'EOF in unterminated string',  # Instead get normal unterminated
         'Enum names without values only allowed on numeric types',  # Hard to hit
         'Enum ranges must be integral, per spec',  # Hard to hit
+        'Import package not found: ',  # Errors earlier, until future parser released
         'Return with return value isn\'t underneath a function',  # Hard to hit, get other bad return messages
         'Syntax error: Range \':\', \'+:\' etc are not allowed in the instance ',  # Instead get syntax error
         'Syntax error parsing real: \'',  # Instead can't lex the number

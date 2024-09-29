@@ -2196,14 +2196,28 @@ void AstNodeModule::dumpJson(std::ostream& str) const {
 }
 void AstPackageExport::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    str << " -> " << packagep();
+    if (packagep()) {
+        str << " -> " << packagep();
+    } else {
+        str << " ->UNLINKED:" << pkgName();
+    }
 }
 void AstPackageExport::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstPackageExport::pkgNameFrom() {
+    if (packagep()) m_pkgName = packagep()->name();
+}
 void AstPackageImport::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    str << " -> " << packagep();
+    if (packagep()) {
+        str << " -> " << packagep();
+    } else {
+        str << " ->UNLINKED:" << pkgName();
+    }
 }
 void AstPackageImport::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstPackageImport::pkgNameFrom() {
+    if (packagep()) m_pkgName = packagep()->name();
+}
 void AstPatMember::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (isDefault()) str << " [DEFAULT]";

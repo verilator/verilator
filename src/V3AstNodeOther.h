@@ -1339,19 +1339,32 @@ class AstPackageExport final : public AstNode {
     // A package export declaration
     //
     // @astgen ptr := m_packagep : Optional[AstPackage]  // Package hierarchy
-    string m_name;
+    string m_name;  // What imported e.g. "*"
+    string m_pkgName;  // Module the cell instances
 
 public:
     AstPackageExport(FileLine* fl, AstPackage* packagep, const string& name)
         : ASTGEN_SUPER_PackageExport(fl)
         , m_name{name}
-        , m_packagep{packagep} {}
+        , m_packagep{packagep} {
+        pkgNameFrom();
+    }
+    AstPackageExport(FileLine* fl, const string& pkgName, const string& name)
+        : ASTGEN_SUPER_PackageExport(fl)
+        , m_name{name}
+        , m_pkgName{pkgName}
+        , m_packagep{nullptr} {}
     ASTGEN_MEMBERS_AstPackageExport;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
+    string pkgName() const VL_MT_STABLE { return m_pkgName; }
+    string prettyPkgNameQ() const { return "'" + prettyName(pkgName()) + "'"; }
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep = nodep; }
+
+private:
+    void pkgNameFrom();
 };
 class AstPackageExportStarStar final : public AstNode {
     // A package export *::* declaration
@@ -1365,19 +1378,32 @@ class AstPackageImport final : public AstNode {
     // A package import declaration
     //
     // @astgen ptr := m_packagep : Optional[AstPackage]  // Package hierarchy
-    string m_name;
+    string m_name;  // What imported e.g. "*"
+    string m_pkgName;  // Module the cell instances
 
 public:
     AstPackageImport(FileLine* fl, AstPackage* packagep, const string& name)
         : ASTGEN_SUPER_PackageImport(fl)
         , m_name{name}
-        , m_packagep{packagep} {}
+        , m_packagep{packagep} {
+        pkgNameFrom();
+    }
+    AstPackageImport(FileLine* fl, const string& pkgName, const string& name)
+        : ASTGEN_SUPER_PackageImport(fl)
+        , m_name{name}
+        , m_pkgName{pkgName}
+        , m_packagep{nullptr} {}
     ASTGEN_MEMBERS_AstPackageImport;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
+    string pkgName() const VL_MT_STABLE { return m_pkgName; }
+    string prettyPkgNameQ() const { return "'" + prettyName(pkgName()) + "'"; }
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep = nodep; }
+
+private:
+    void pkgNameFrom();
 };
 class AstPin final : public AstNode {
     // A port or parameter assignment on an instantiation
