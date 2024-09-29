@@ -899,6 +899,8 @@ public:
         SUPPLY1,
         WIRE,
         WREAL,
+        TRIAND,
+        TRIOR,
         TRIWIRE,
         TRI0,
         TRI1,
@@ -919,20 +921,24 @@ public:
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[]
-            = {"?",          "GPARAM",   "LPARAM",  "GENVAR",   "VAR",   "SUPPLY0", "SUPPLY1",
-               "WIRE",       "WREAL",    "TRIWIRE", "TRI0",     "TRI1",  "PORT",    "BLOCKTEMP",
-               "MODULETEMP", "STMTTEMP", "XTEMP",   "IFACEREF", "MEMBER"};
+            = {"?",    "GPARAM",    "LPARAM",     "GENVAR",   "VAR",     "SUPPLY0",  "SUPPLY1",
+               "WIRE", "WREAL",     "TRIAND",     "TRIOR",    "TRIWIRE", "TRI0",     "TRI1",
+               "PORT", "BLOCKTEMP", "MODULETEMP", "STMTTEMP", "XTEMP",   "IFACEREF", "MEMBER"};
         return names[m_e];
     }
     bool isParam() const { return m_e == GPARAM || m_e == LPARAM; }
     bool isSignal() const {
         return (m_e == WIRE || m_e == WREAL || m_e == TRIWIRE || m_e == TRI0 || m_e == TRI1
-                || m_e == PORT || m_e == SUPPLY0 || m_e == SUPPLY1 || m_e == VAR);
+                || m_e == PORT || m_e == SUPPLY0 || m_e == SUPPLY1 || m_e == VAR || m_e == TRIOR
+                || m_e == TRIAND);
     }
     bool isNet() const {
         return (m_e == WIRE || m_e == TRIWIRE || m_e == TRI0 || m_e == TRI1 || m_e == SUPPLY0
-                || m_e == SUPPLY1);
+                || m_e == SUPPLY1 || m_e == TRIOR || m_e == TRIAND);
     }
+    bool isWor() const { return (m_e == TRIOR); }
+    bool isWand() const { return (m_e == TRIAND); }
+    bool isWiredNet() const { return (m_e == TRIOR || m_e == TRIAND); }
     bool isContAssignable() const {  // In Verilog, always ok in SystemVerilog
         return (m_e == SUPPLY0 || m_e == SUPPLY1 || m_e == WIRE || m_e == WREAL || m_e == TRIWIRE
                 || m_e == TRI0 || m_e == TRI1 || m_e == PORT || m_e == BLOCKTEMP
@@ -963,6 +969,8 @@ public:
             /* SUPPLY1:      */ "SUPPLY1",
             /* WIRE:         */ "WIRE",
             /* WREAL:        */ "WIRE",
+            /* TRIAND:       */ "TRIAND",
+            /* TRIOR:        */ "TRIOR",
             /* TRIWIRE:      */ "TRI",
             /* TRI0:         */ "TRI0",
             /* TRI1:         */ "TRI1",
