@@ -51,8 +51,8 @@ static void checkResult(bool p, const char* msg_fail) {
 
 // Main function instantiates the model and steps through the test.
 int main() {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    const std::unique_ptr<VM_PREFIX> dut{new VM_PREFIX{contextp.get(), "dut"}};
+    VerilatedContext context;
+    VM_PREFIX dut{&context, "dut"};
 
     svScope scope = svGetScopeFromName("dut.t");
     if (!scope) vl_fatal(__FILE__, __LINE__, "dut", "No svGetScopeFromName result");
@@ -60,7 +60,7 @@ int main() {
 
     // evaluate the model with no signal changes to get the initial blocks
     // executed.
-    dut->eval();
+    dut.eval();
 
 #ifdef TEST_VERBOSE
     std::cout << "Initial DPI values\n";
@@ -96,7 +96,7 @@ int main() {
                 "Bad initial DPI values.");
 
     // Initialize the clock
-    dut->clk = 0;
+    dut.clk = 0;
 
     // Check we can read a scalar register.
 #ifdef TEST_VERBOSE
@@ -104,25 +104,24 @@ int main() {
     std::cout << "===============================\n";
 #endif
 
-    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
-        dut->clk = 1 - dut->clk;
+    for (int i = 0; !context.gotFinish() && (i < 4); i++) {
+        dut.clk = 1 - dut.clk;
         a = (int)a_read();
-        logReg(dut->clk, "read a", a, " (before clk)");
-        dut->eval();
+        logReg(dut.clk, "read a", a, " (before clk)");
+        dut.eval();
 
         int a_after = (int)a_read();
-        logReg(dut->clk, "read a", a_after, " (after clk)");
+        logReg(dut.clk, "read a", a_after, " (after clk)");
 #ifdef TEST_VERBOSE
         std::cout << std::endl;
 #endif
         // On a posedge, a should toggle, on a negedge it should stay the
         // same.
-        checkResult(((dut->clk == 1) && (a_after == (1 - a)))
-                        || ((dut->clk == 0) && (a_after == a)),
+        checkResult(((dut.clk == 1) && (a_after == (1 - a))) || ((dut.clk == 0) && (a_after == a)),
                     "Test of scalar register reading failed.");
     }
 
-    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
+    checkFinish(&context, "t_dpi_accessors unexpected finish");
 
     // Check we can read a vector register.
 #ifdef TEST_VERBOSE
@@ -130,22 +129,21 @@ int main() {
     std::cout << "===============================\n";
 #endif
 
-    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
-        dut->clk = 1 - dut->clk;
+    for (int i = 0; !context.gotFinish() && (i < 4); i++) {
+        dut.clk = 1 - dut.clk;
         b = (int)b_read();
-        logRegHex(dut->clk, "read b", 8, b, " (before clk)");
+        logRegHex(dut.clk, "read b", 8, b, " (before clk)");
 
-        dut->eval();
+        dut.eval();
 
         int b_after = (int)b_read();
-        logRegHex(dut->clk, "read b", 8, b_after, " (after clk)");
+        logRegHex(dut.clk, "read b", 8, b_after, " (after clk)");
         // b should increment on a posedge and stay the same on a negedge.
-        checkResult(((dut->clk == 1) && (b_after == (b + 1)))
-                        || ((dut->clk == 0) && (b_after == b)),
+        checkResult(((dut.clk == 1) && (b_after == (b + 1))) || ((dut.clk == 0) && (b_after == b)),
                     "Test of vector register reading failed.");
     }
 
-    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
+    checkFinish(&context, "t_dpi_accessors unexpected finish");
 
     // Test we can read an array element
 #ifdef TEST_VERBOSE
@@ -154,22 +152,22 @@ int main() {
     std::cout << "=============================\n";
 #endif
 
-    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
-        dut->clk = 1 - dut->clk;
+    for (int i = 0; !context.gotFinish() && (i < 4); i++) {
+        dut.clk = 1 - dut.clk;
         mem32 = (int)mem32_read();
-        logRegHex(dut->clk, "read mem32", 8, mem32, " (before clk)");
+        logRegHex(dut.clk, "read mem32", 8, mem32, " (before clk)");
 
-        dut->eval();
+        dut.eval();
 
         mem32 = (int)mem32_read();
-        logRegHex(dut->clk, "read mem32", 8, mem32, " (after clk)");
+        logRegHex(dut.clk, "read mem32", 8, mem32, " (after clk)");
 
         // In this case, the value never changes. But we should check it is
         // what we expect (0x20).
         checkResult(mem32 == 0x20, "Test of array element reading failed.");
     }
 
-    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
+    checkFinish(&context, "t_dpi_accessors unexpected finish");
 
     // Check we can read a scalar wire
 #ifdef TEST_VERBOSE
@@ -178,19 +176,19 @@ int main() {
     std::cout << "===========================\n";
 #endif
 
-    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
-        dut->clk = 1 - dut->clk;
+    for (int i = 0; !context.gotFinish() && (i < 4); i++) {
+        dut.clk = 1 - dut.clk;
         a = (int)a_read();
         c = (int)c_read();
-        logReg(dut->clk, "read a", a, " (before clk)");
-        logReg(dut->clk, "read c", c, " (before clk)");
+        logReg(dut.clk, "read a", a, " (before clk)");
+        logReg(dut.clk, "read c", c, " (before clk)");
 
-        dut->eval();
+        dut.eval();
 
         a = (int)a_read();
         c = (int)c_read();
-        logReg(dut->clk, "read a", a, " (after clk)");
-        logReg(dut->clk, "read c", c, " (after clk)");
+        logReg(dut.clk, "read a", a, " (after clk)");
+        logReg(dut.clk, "read c", c, " (after clk)");
         // "c" is continuously assigned as the inverse of "a", but in
         // Verilator, that means that it will only change value when "a"
         // changes on the posedge of a clock. That is "c" always holds the
@@ -198,7 +196,7 @@ int main() {
         checkResult(c == (1 - a), "Test of scalar wire reading failed.");
     }
 
-    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
+    checkFinish(&context, "t_dpi_accessors unexpected finish");
 
     // Check we can read a vector wire
 #ifdef TEST_VERBOSE
@@ -207,19 +205,19 @@ int main() {
     std::cout << "===========================\n";
 #endif
 
-    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
-        dut->clk = 1 - dut->clk;
+    for (int i = 0; !context.gotFinish() && (i < 4); i++) {
+        dut.clk = 1 - dut.clk;
         b = (int)b_read();
         d = (int)d_read();
-        logRegHex(dut->clk, "read b", 8, b, " (before clk)");
-        logRegHex(dut->clk, "read d", 8, d, " (before clk)");
+        logRegHex(dut.clk, "read b", 8, b, " (before clk)");
+        logRegHex(dut.clk, "read d", 8, d, " (before clk)");
 
-        dut->eval();
+        dut.eval();
 
         b = (int)b_read();
         d = (int)d_read();
-        logRegHex(dut->clk, "read b", 8, b, " (after clk)");
-        logRegHex(dut->clk, "read d", 8, d, " (after clk)");
+        logRegHex(dut.clk, "read b", 8, b, " (after clk)");
+        logRegHex(dut.clk, "read d", 8, d, " (after clk)");
 
         // "d" is continuously assigned as the (8-bit) bitwise inverse of "b",
         // but in Verilator, that means that it will only change value when
@@ -228,7 +226,7 @@ int main() {
         checkResult(d == ((~b) & 0xff), "Test of vector wire reading failed.");
     }
 
-    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
+    checkFinish(&context, "t_dpi_accessors unexpected finish");
 
     // Check we can write a scalar register
 #ifdef TEST_VERBOSE
@@ -237,27 +235,26 @@ int main() {
     std::cout << "===============================\n";
 #endif
 
-    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
-        dut->clk = 1 - dut->clk;
+    for (int i = 0; !context.gotFinish() && (i < 4); i++) {
+        dut.clk = 1 - dut.clk;
         a = 1 - (int)a_read();
         a_write(reinterpret_cast<const svBitVecVal*>(&a));
-        logReg(dut->clk, "write a", a, " (before clk)");
+        logReg(dut.clk, "write a", a, " (before clk)");
         a = a_read();
-        logReg(dut->clk, "read  a", a, " (before clk)");
+        logReg(dut.clk, "read  a", a, " (before clk)");
 
-        dut->eval();
+        dut.eval();
 
         int a_after = (int)a_read();
-        logReg(dut->clk, "read  a", a_after, " (after clk)");
+        logReg(dut.clk, "read  a", a_after, " (after clk)");
 
         // On a posedge clock, the value of a that is written should toggle,
         // on a negedge, it should not.
-        checkResult(((dut->clk == 1) && (a_after == (1 - a)))
-                        || ((dut->clk == 0) && (a_after == a)),
+        checkResult(((dut.clk == 1) && (a_after == (1 - a))) || ((dut.clk == 0) && (a_after == a)),
                     "Test of scalar register writing failed.");
     }
 
-    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
+    checkFinish(&context, "t_dpi_accessors unexpected finish");
 
     // Check we can write a vector register
 #ifdef TEST_VERBOSE
@@ -266,27 +263,26 @@ int main() {
     std::cout << "===============================\n";
 #endif
 
-    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
-        dut->clk = 1 - dut->clk;
+    for (int i = 0; !context.gotFinish() && (i < 4); i++) {
+        dut.clk = 1 - dut.clk;
         b = (int)b_read() - 1;
         b_write(reinterpret_cast<const svBitVecVal*>(&b));
-        logRegHex(dut->clk, "write b", 8, b, " (before clk)");
+        logRegHex(dut.clk, "write b", 8, b, " (before clk)");
         b = (int)b_read();
-        logRegHex(dut->clk, "read  b", 8, b, " (before clk)");
+        logRegHex(dut.clk, "read  b", 8, b, " (before clk)");
 
-        dut->eval();
+        dut.eval();
 
         int b_after = (int)b_read();
-        logRegHex(dut->clk, "read  b", 8, b_after, " (after clk)");
+        logRegHex(dut.clk, "read  b", 8, b_after, " (after clk)");
 
         // The value of "b" written should increment on a posedge and stay the
         // same on a negedge.
-        checkResult(((dut->clk == 1) && (b_after == (b + 1)))
-                        || ((dut->clk == 0) && (b_after == b)),
+        checkResult(((dut.clk == 1) && (b_after == (b + 1))) || ((dut.clk == 0) && (b_after == b)),
                     "Test of vector register writing failed.");
     }
 
-    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
+    checkFinish(&context, "t_dpi_accessors unexpected finish");
 
     // Test we can write an array element
 #ifdef TEST_VERBOSE
@@ -295,18 +291,18 @@ int main() {
     std::cout << "=============================\n";
 #endif
 
-    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
-        dut->clk = 1 - dut->clk;
+    for (int i = 0; !context.gotFinish() && (i < 4); i++) {
+        dut.clk = 1 - dut.clk;
         mem32 = (int)mem32_read() - 1;
         mem32_write(reinterpret_cast<const svBitVecVal*>(&mem32));
-        logRegHex(dut->clk, "write mem32", 8, mem32, " (before clk)");
+        logRegHex(dut.clk, "write mem32", 8, mem32, " (before clk)");
         mem32 = (int)mem32_read();
-        logRegHex(dut->clk, "read  mem32", 8, mem32, " (before clk)");
+        logRegHex(dut.clk, "read  mem32", 8, mem32, " (before clk)");
 
-        dut->eval();
+        dut.eval();
 
         int mem32_after = (int)mem32_read();
-        logRegHex(dut->clk, "read  mem32", 8, mem32_after, " (after clk)");
+        logRegHex(dut.clk, "read  mem32", 8, mem32_after, " (after clk)");
 
         // In this case, the value we write never changes (this would only
         // happen if this part of the test coincided with the 32nd element
@@ -315,7 +311,7 @@ int main() {
         checkResult(mem32_after == mem32, "Test of array element writing failed.");
     }
 
-    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
+    checkFinish(&context, "t_dpi_accessors unexpected finish");
 
     // Check we can read a vector register slice
 #ifdef TEST_VERBOSE
@@ -324,25 +320,25 @@ int main() {
     std::cout << "=====================================\n";
 #endif
 
-    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
-        dut->clk = 1 - dut->clk;
+    for (int i = 0; !context.gotFinish() && (i < 4); i++) {
+        dut.clk = 1 - dut.clk;
         b = (int)b_read();
         int b_slice = (int)b_slice_read();
-        logRegHex(dut->clk, "read b [7:0]", 8, b, " (before clk)");
-        logRegHex(dut->clk, "read b [3:0]", 4, b_slice, " (before clk)");
+        logRegHex(dut.clk, "read b [7:0]", 8, b, " (before clk)");
+        logRegHex(dut.clk, "read b [3:0]", 4, b_slice, " (before clk)");
 
-        dut->eval();
+        dut.eval();
 
         b = (int)b_read();
         b_slice = (int)b_slice_read();
-        logRegHex(dut->clk, "read b [7:0]", 8, b, " (after clk)");
-        logRegHex(dut->clk, "read b [3:0]", 4, b_slice, " (after clk)");
+        logRegHex(dut.clk, "read b [7:0]", 8, b, " (after clk)");
+        logRegHex(dut.clk, "read b [3:0]", 4, b_slice, " (after clk)");
 
         // The slice of "b" should always be the bottom 4 bits of "b"
         checkResult(b_slice == (b & 0x0f), "Test of vector register slice reading failed.");
     }
 
-    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
+    checkFinish(&context, "t_dpi_accessors unexpected finish");
 
     // Test we can read an array element slice
 #ifdef TEST_VERBOSE
@@ -351,19 +347,19 @@ int main() {
     std::cout << "===================================\n";
 #endif
 
-    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
-        dut->clk = 1 - dut->clk;
+    for (int i = 0; !context.gotFinish() && (i < 4); i++) {
+        dut.clk = 1 - dut.clk;
         mem32 = (int)mem32_read();
         int mem32_slice = (int)mem32_slice_read();
-        logRegHex(dut->clk, "read mem32 [7:0]    ", 8, mem32, " (before clk)");
-        logRegHex(dut->clk, "read mem32 [7:6,2:0]", 5, mem32_slice, " (before clk)");
+        logRegHex(dut.clk, "read mem32 [7:0]    ", 8, mem32, " (before clk)");
+        logRegHex(dut.clk, "read mem32 [7:6,2:0]", 5, mem32_slice, " (before clk)");
 
-        dut->eval();
+        dut.eval();
 
         mem32 = (int)mem32_read();
         mem32_slice = (int)mem32_slice_read();
-        logRegHex(dut->clk, "read mem32 [7:0]    ", 8, mem32, " (after clk)");
-        logRegHex(dut->clk, "read mem32 [7:6,2:0]", 5, mem32_slice, " (after clk)");
+        logRegHex(dut.clk, "read mem32 [7:0]    ", 8, mem32, " (after clk)");
+        logRegHex(dut.clk, "read mem32 [7:6,2:0]", 5, mem32_slice, " (after clk)");
 
         // The slice of "mem32" should always be the concatenation of the top
         // 2 and bottom 3 bits of "mem32"
@@ -371,7 +367,7 @@ int main() {
                     "Test of array element slice reading failed.");
     }
 
-    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
+    checkFinish(&context, "t_dpi_accessors unexpected finish");
 
     // Check we can read a vector wire slice
 #ifdef TEST_VERBOSE
@@ -380,29 +376,29 @@ int main() {
     std::cout << "=================================\n";
 #endif
 
-    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
-        dut->clk = 1 - dut->clk;
+    for (int i = 0; !context.gotFinish() && (i < 4); i++) {
+        dut.clk = 1 - dut.clk;
         b = (int)b_read();
         d = (int)d_read();
         int d_slice = (int)d_slice_read();
-        logRegHex(dut->clk, "read b [7:0]", 8, b, " (before clk)");
-        logRegHex(dut->clk, "read d [7:0]", 8, d, " (before clk)");
-        logRegHex(dut->clk, "read d [6:1]", 6, d_slice, " (before clk)");
+        logRegHex(dut.clk, "read b [7:0]", 8, b, " (before clk)");
+        logRegHex(dut.clk, "read d [7:0]", 8, d, " (before clk)");
+        logRegHex(dut.clk, "read d [6:1]", 6, d_slice, " (before clk)");
 
-        dut->eval();
+        dut.eval();
 
         b = (int)b_read();
         d = (int)d_read();
         d_slice = (int)d_slice_read();
-        logRegHex(dut->clk, "read b [7:0]", 8, b, " (after clk)");
-        logRegHex(dut->clk, "read d [7:0]", 8, d, " (after clk)");
-        logRegHex(dut->clk, "read d [6:1]", 6, d_slice, " (after clk)");
+        logRegHex(dut.clk, "read b [7:0]", 8, b, " (after clk)");
+        logRegHex(dut.clk, "read d [7:0]", 8, d, " (after clk)");
+        logRegHex(dut.clk, "read d [6:1]", 6, d_slice, " (after clk)");
 
         // The slice of "d" should always be the middle 6 bits of "d".
         checkResult(d_slice == ((d & 0x7e) >> 1), "Test of vector wire slice reading failed.");
     }
 
-    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
+    checkFinish(&context, "t_dpi_accessors unexpected finish");
 
     // Check we can write a vector register slice
 #ifdef TEST_VERBOSE
@@ -411,37 +407,37 @@ int main() {
     std::cout << "=====================================\n";
 #endif
 
-    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
-        dut->clk = 1 - dut->clk;
+    for (int i = 0; !context.gotFinish() && (i < 4); i++) {
+        dut.clk = 1 - dut.clk;
 
         b = (int)b_read();
         int b_slice = (int)b_slice_read();
-        logRegHex(dut->clk, "read  b [7:0]", 8, b, " (before write)");
-        logRegHex(dut->clk, "read  b [3:0]", 4, b_slice, " (before write)");
+        logRegHex(dut.clk, "read  b [7:0]", 8, b, " (before write)");
+        logRegHex(dut.clk, "read  b [3:0]", 4, b_slice, " (before write)");
 
         b_slice--;
         b_slice_write(reinterpret_cast<const svBitVecVal*>(&b_slice));
-        logRegHex(dut->clk, "write b [3:0]", 4, b_slice, " (before clk)");
+        logRegHex(dut.clk, "write b [3:0]", 4, b_slice, " (before clk)");
 
         int b_after = (int)b_read();
         int b_slice_after = (int)b_slice_read();
-        logRegHex(dut->clk, "read  b [7:0]", 8, b_after, " (before clk)");
-        logRegHex(dut->clk, "read  b [3:0]", 4, b_slice_after, " (before clk)");
+        logRegHex(dut.clk, "read  b [7:0]", 8, b_after, " (before clk)");
+        logRegHex(dut.clk, "read  b [3:0]", 4, b_slice_after, " (before clk)");
 
         // We must test that when we wrote the slice of "b", we only wrote the
         // correct bits. The slice of b is b[3:0]
         int b_new = (b & 0xf0) | (b_slice & 0x0f);
         checkResult(b_after == b_new, "Test of vector register slice writing failed.");
 
-        dut->eval();
+        dut.eval();
 
         b = (int)b_read();
         b_slice = (int)b_slice_read();
-        logRegHex(dut->clk, "read  b [7:0]", 8, b, " (after clk)");
-        logRegHex(dut->clk, "read  b [3:0]", 4, b_slice, " (after clk)");
+        logRegHex(dut.clk, "read  b [7:0]", 8, b, " (after clk)");
+        logRegHex(dut.clk, "read  b [3:0]", 4, b_slice, " (after clk)");
     }
 
-    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
+    checkFinish(&context, "t_dpi_accessors unexpected finish");
 
     // Test we can write an array element slice
 #ifdef TEST_VERBOSE
@@ -450,34 +446,34 @@ int main() {
     std::cout << "===================================\n";
 #endif
 
-    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
-        dut->clk = 1 - dut->clk;
+    for (int i = 0; !context.gotFinish() && (i < 4); i++) {
+        dut.clk = 1 - dut.clk;
 
         mem32 = (int)mem32_read();
         int mem32_slice = (int)mem32_slice_read();
-        logRegHex(dut->clk, "read  mem32 [7:0]    ", 8, mem32, " (before write)");
-        logRegHex(dut->clk, "read  mem32 [7:6,2:0]", 5, mem32_slice, " (before write)");
+        logRegHex(dut.clk, "read  mem32 [7:0]    ", 8, mem32, " (before write)");
+        logRegHex(dut.clk, "read  mem32 [7:6,2:0]", 5, mem32_slice, " (before write)");
 
         mem32_slice--;
         mem32_slice_write(reinterpret_cast<const svBitVecVal*>(&mem32_slice));
-        logRegHex(dut->clk, "write mem32 [7:6,2:0]", 5, mem32_slice, " (before clk)");
+        logRegHex(dut.clk, "write mem32 [7:6,2:0]", 5, mem32_slice, " (before clk)");
 
         int mem32_after = (int)mem32_read();
         int mem32_slice_after = (int)mem32_slice_read();
-        logRegHex(dut->clk, "read  mem32 [7:0]    ", 8, mem32_after, " (before clk)");
-        logRegHex(dut->clk, "read  mem32 [7:6,2:0]", 5, mem32_slice_after, " (before clk)");
+        logRegHex(dut.clk, "read  mem32 [7:0]    ", 8, mem32_after, " (before clk)");
+        logRegHex(dut.clk, "read  mem32 [7:6,2:0]", 5, mem32_slice_after, " (before clk)");
 
         // We must test that when we wrote the slice of "mem32", we only wrote
         // the correct bits. The slice of "mem32" is {mem32[7:6], mem32[2:0]}.
         int mem32_new = (mem32 & 0x38) | ((mem32_slice & 0x18) << 3) | (mem32_slice & 0x7);
         checkResult(mem32_after == mem32_new, "Test of vector register slice writing failed.");
 
-        dut->eval();
+        dut.eval();
 
         mem32 = (int)mem32_read();
         mem32_slice = (int)mem32_slice_read();
-        logRegHex(dut->clk, "read  mem32 [7:0]    ", 8, mem32, " (after clk)");
-        logRegHex(dut->clk, "read  mem32 [7:6,2:0]", 5, mem32_slice, " (after clk)");
+        logRegHex(dut.clk, "read  mem32 [7:0]    ", 8, mem32, " (after clk)");
+        logRegHex(dut.clk, "read  mem32 [7:6,2:0]", 5, mem32_slice, " (after clk)");
 
         // We have already tested that array element writing works, so we just
         // check that the slice of "mem32" after the clock is the
@@ -486,7 +482,7 @@ int main() {
                     "Test of array element slice writing failed.");
     }
 
-    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
+    checkFinish(&context, "t_dpi_accessors unexpected finish");
 
     // Check we can read complex registers
 #ifdef TEST_VERBOSE
@@ -495,28 +491,28 @@ int main() {
     std::cout << "================================\n";
 #endif
 
-    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
-        dut->clk = 1 - dut->clk;
+    for (int i = 0; !context.gotFinish() && (i < 4); i++) {
+        dut.clk = 1 - dut.clk;
 
         b = (int)b_read();
         mem32 = (int)mem32_read();
         e = (int)e_read();
         int l1 = (int)l1_read();
-        logRegHex(dut->clk, "read b    ", 8, b, " (before clk)");
-        logRegHex(dut->clk, "read mem32", 8, mem32, " (before clk)");
-        logRegHex(dut->clk, "read e    ", 8, e, " (before clk)");
-        logRegHex(dut->clk, "read l1   ", 15, l1, " (before clk)");
+        logRegHex(dut.clk, "read b    ", 8, b, " (before clk)");
+        logRegHex(dut.clk, "read mem32", 8, mem32, " (before clk)");
+        logRegHex(dut.clk, "read e    ", 8, e, " (before clk)");
+        logRegHex(dut.clk, "read l1   ", 15, l1, " (before clk)");
 
-        dut->eval();
+        dut.eval();
 
         b = (int)b_read();
         mem32 = (int)mem32_read();
         e = (int)e_read();
         l1 = (int)l1_read();
-        logRegHex(dut->clk, "read b    ", 8, b, " (after clk)");
-        logRegHex(dut->clk, "read mem32", 8, mem32, " (after clk)");
-        logRegHex(dut->clk, "read e    ", 8, e, " (after clk)");
-        logRegHex(dut->clk, "read l1   ", 15, l1, " (after clk)");
+        logRegHex(dut.clk, "read b    ", 8, b, " (after clk)");
+        logRegHex(dut.clk, "read mem32", 8, mem32, " (after clk)");
+        logRegHex(dut.clk, "read e    ", 8, e, " (after clk)");
+        logRegHex(dut.clk, "read l1   ", 15, l1, " (after clk)");
 
         // We have already tested that reading of registers, memory elements
         // and wires works. So we just need to check that l1 reads back as the
@@ -532,10 +528,10 @@ int main() {
     std::cout << std::endl;
 #endif
 
-    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
+    checkFinish(&context, "t_dpi_accessors unexpected finish");
 
-    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
-        dut->clk = 1 - dut->clk;
+    for (int i = 0; !context.gotFinish() && (i < 4); i++) {
+        dut.clk = 1 - dut.clk;
 
         e = 0x05 | (i << 4);
         f = 0xa0 | i;
@@ -545,18 +541,18 @@ int main() {
         e = (int)e_read();
         f = (int)f_read();
         int l2 = (int)l2_read();
-        logRegHex(dut->clk, "read e ", 8, e, " (before clk)");
-        logRegHex(dut->clk, "read f ", 8, f, " (before clk)");
-        logRegHex(dut->clk, "read l2", 8, l2, " (before clk)");
+        logRegHex(dut.clk, "read e ", 8, e, " (before clk)");
+        logRegHex(dut.clk, "read f ", 8, f, " (before clk)");
+        logRegHex(dut.clk, "read l2", 8, l2, " (before clk)");
 
-        dut->eval();
+        dut.eval();
 
         e = (int)e_read();
         f = (int)f_read();
         l2 = (int)l2_read();
-        logRegHex(dut->clk, "read e ", 8, e, " (before clk)");
-        logRegHex(dut->clk, "read f ", 8, f, " (before clk)");
-        logRegHex(dut->clk, "read l2", 8, l2, " (before clk)");
+        logRegHex(dut.clk, "read e ", 8, e, " (before clk)");
+        logRegHex(dut.clk, "read f ", 8, f, " (before clk)");
+        logRegHex(dut.clk, "read l2", 8, l2, " (before clk)");
 
         // We have already tested that reading of registers, memory elements
         // and wires works. So we just need to check that l1 reads back as the
@@ -566,7 +562,7 @@ int main() {
                     "Test of complex register reading l2 failed.");
     }
 
-    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
+    checkFinish(&context, "t_dpi_accessors unexpected finish");
 
     // Test we can write a complex register
 #ifdef TEST_VERBOSE
@@ -575,28 +571,28 @@ int main() {
     std::cout << "================================\n";
 #endif
 
-    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
-        dut->clk = 1 - dut->clk;
+    for (int i = 0; !context.gotFinish() && (i < 4); i++) {
+        dut.clk = 1 - dut.clk;
 
         b = (int)b_read();
         mem32 = (int)mem32_read();
         e = (int)e_read();
-        logRegHex(dut->clk, "read  b    ", 8, b, " (before write)");
-        logRegHex(dut->clk, "read  mem32", 8, mem32, " (before write)");
-        logRegHex(dut->clk, "read  e    ", 8, e, " (before write)");
+        logRegHex(dut.clk, "read  b    ", 8, b, " (before write)");
+        logRegHex(dut.clk, "read  mem32", 8, mem32, " (before write)");
+        logRegHex(dut.clk, "read  e    ", 8, e, " (before write)");
 
         int l1 = 0x5a5a;
         l1_write(reinterpret_cast<const svBitVecVal*>(&l1));
-        logRegHex(dut->clk, "write l1   ", 15, l1, " (before clk)");
+        logRegHex(dut.clk, "write l1   ", 15, l1, " (before clk)");
 
         int b_after = (int)b_read();
         int mem32_after = (int)mem32_read();
         int e_after = (int)e_read();
         int l1_after = (int)l1_read();
-        logRegHex(dut->clk, "read  b    ", 8, b_after, " (before clk)");
-        logRegHex(dut->clk, "read  mem32", 8, mem32_after, " (before clk)");
-        logRegHex(dut->clk, "read  e    ", 8, e_after, " (before clk)");
-        logRegHex(dut->clk, "read  l1   ", 15, l1_after, " (before clk)");
+        logRegHex(dut.clk, "read  b    ", 8, b_after, " (before clk)");
+        logRegHex(dut.clk, "read  mem32", 8, mem32_after, " (before clk)");
+        logRegHex(dut.clk, "read  e    ", 8, e_after, " (before clk)");
+        logRegHex(dut.clk, "read  l1   ", 15, l1_after, " (before clk)");
 
         // We need to check that when we write l1, the correct fields, and
         // only the correct fields are set in its component registers, wires
@@ -608,42 +604,42 @@ int main() {
         checkResult((b_new == b_after) && (mem32_new == mem32_after) && (e_new == e_after),
                     "Test of complex register writing l1 failed.");
 
-        dut->eval();
+        dut.eval();
 
         b = (int)b_read();
         mem32 = (int)mem32_read();
         d = (int)d_read();
         l1 = (int)l1_read();
-        logRegHex(dut->clk, "read  b    ", 8, b, " (after clk)");
-        logRegHex(dut->clk, "read  mem32", 8, mem32, " (after clk)");
-        logRegHex(dut->clk, "read  d    ", 8, d, " (after clk)");
-        logRegHex(dut->clk, "read  l1   ", 15, l1, " (after clk)");
+        logRegHex(dut.clk, "read  b    ", 8, b, " (after clk)");
+        logRegHex(dut.clk, "read  mem32", 8, mem32, " (after clk)");
+        logRegHex(dut.clk, "read  d    ", 8, d, " (after clk)");
+        logRegHex(dut.clk, "read  l1   ", 15, l1, " (after clk)");
     }
 
 #ifdef TEST_VERBOSE
     std::cout << std::endl;
 #endif
 
-    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
+    checkFinish(&context, "t_dpi_accessors unexpected finish");
 
-    for (int i = 0; !contextp->gotFinish() && (i < 4); i++) {
-        dut->clk = 1 - dut->clk;
+    for (int i = 0; !context.gotFinish() && (i < 4); i++) {
+        dut.clk = 1 - dut.clk;
 
         e = (int)e_read();
         f = (int)f_read();
-        logRegHex(dut->clk, "read  e ", 8, e, " (before write)");
-        logRegHex(dut->clk, "read  f ", 8, f, " (before write)");
+        logRegHex(dut.clk, "read  e ", 8, e, " (before write)");
+        logRegHex(dut.clk, "read  f ", 8, f, " (before write)");
 
         int l2 = 0xa5 + i;
         l2_write(reinterpret_cast<const svBitVecVal*>(&l2));
-        logRegHex(dut->clk, "write l2", 8, l2, " (before clk)");
+        logRegHex(dut.clk, "write l2", 8, l2, " (before clk)");
 
         int e_after = (int)e_read();
         int f_after = (int)f_read();
         int l2_after = (int)l2_read();
-        logRegHex(dut->clk, "read  e ", 8, e_after, " (before clk)");
-        logRegHex(dut->clk, "read  f ", 8, f_after, " (before clk)");
-        logRegHex(dut->clk, "read  l2", 8, l2_after, " (before clk)");
+        logRegHex(dut.clk, "read  e ", 8, e_after, " (before clk)");
+        logRegHex(dut.clk, "read  f ", 8, f_after, " (before clk)");
+        logRegHex(dut.clk, "read  l2", 8, l2_after, " (before clk)");
 
         // We need to check that when we write l2, the correct fields, and
         // only the correct fields are set in its component registers. l is 8
@@ -653,20 +649,20 @@ int main() {
         checkResult((e_new == e_after) && (f_new == f_after),
                     "Test of complex register writing l2 failed.");
 
-        dut->eval();
+        dut.eval();
 
         e = (int)e_read();
         f = (int)f_read();
         l2 = (int)l2_read();
-        logRegHex(dut->clk, "read  e ", 8, e, " (before clk)");
-        logRegHex(dut->clk, "read  f ", 8, f, " (before clk)");
-        logRegHex(dut->clk, "read  l2", 8, l2, " (before clk)");
+        logRegHex(dut.clk, "read  e ", 8, e, " (before clk)");
+        logRegHex(dut.clk, "read  f ", 8, f, " (before clk)");
+        logRegHex(dut.clk, "read  l2", 8, l2, " (before clk)");
     }
 
-    checkFinish(contextp.get(), "t_dpi_accessors unexpected finish");
+    checkFinish(&context, "t_dpi_accessors unexpected finish");
 
     // Tidy up
-    dut->final();
+    dut.final();
     std::cout << "*-* All Finished *-*\n";
 }
 
