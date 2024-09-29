@@ -2850,7 +2850,7 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
         }
     } else if (arrayvalue_p->format == vpiRealVal) {
         switch (varp->vltype()) {
-            case VLVT_REAL:
+            case VLVT_UINT64:
                 return status;
             default:
                 status = false;
@@ -2998,6 +2998,25 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
             }
         }
 
+        return;
+    }
+    else if(arrayvalue_p->format==vpiRealVal) {
+
+        double *reals;
+
+        if (arrayvalue_p->flags & vpiUserAllocFlag) {
+            reals = arrayvalue_p->value.reals;
+        } else {            
+            reals = (double*)malloc(num * 8);
+            arrayvalue_p->value.reals = reals;
+        }
+        if(varp->vltype()==VLVT_UINT64) {
+            QData *ptr = reinterpret_cast<QData*>(vop->varDatap());
+            for (int i = 0; i < num; i++) {
+                reals[i] = ptr[index++];
+                index = index % size;
+            }
+        }
         return;
     }
 
