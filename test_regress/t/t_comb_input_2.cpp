@@ -14,27 +14,25 @@
 #include "Vt_comb_input_2.h"
 #include "Vt_comb_input_2__Syms.h"
 
-#include <memory>
-
 int main(int argc, char** argv) {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    contextp->debug(0);
-    contextp->commandArgs(argc, argv);
+    VerilatedContext context;
+    context.debug(0);
+    context.commandArgs(argc, argv);
     srand48(5);
 
-    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX};
-    topp->inc = 1;
-    topp->clk = false;
-    topp->eval();
+    VM_PREFIX top;
+    top.inc = 1;
+    top.clk = false;
+    top.eval();
 
-    while (!contextp->gotFinish() && contextp->time() < 100000) {
-        contextp->timeInc(5);
-        if (topp->clk) topp->inc += 1;
-        topp->clk = !topp->clk;
-        topp->eval();
+    while (!context.gotFinish() && context.time() < 100000) {
+        context.timeInc(5);
+        if (top.clk) top.inc += 1;
+        top.clk = !top.clk;
+        top.eval();
     }
 
-    if (!contextp->gotFinish()) {
+    if (!context.gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     return 0;

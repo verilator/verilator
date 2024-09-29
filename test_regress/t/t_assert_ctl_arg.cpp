@@ -21,93 +21,93 @@ double sc_time_stamp() { return main_time; }
 int errors = 0;
 
 void verilatedTest() {
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    VerilatedContext context;
     // Assert enable/disable
-    contextp->assertOn(true);
-    TEST_CHECK_NZ(contextp->assertOn());
-    contextp->assertOn(false);
-    TEST_CHECK_Z(contextp->assertOn());
-    TEST_CHECK_Z(contextp->assertOnGet(1, 1));
+    context.assertOn(true);
+    TEST_CHECK_NZ(context.assertOn());
+    context.assertOn(false);
+    TEST_CHECK_Z(context.assertOn());
+    TEST_CHECK_Z(context.assertOnGet(1, 1));
 
     // Setting one type
-    contextp->assertOnSet(1, 1);
-    TEST_CHECK_NZ(contextp->assertOnGet(1, 1));
-    TEST_CHECK_NZ(contextp->assertOn());
-    TEST_CHECK_Z(contextp->assertOnGet(2, 2));
+    context.assertOnSet(1, 1);
+    TEST_CHECK_NZ(context.assertOnGet(1, 1));
+    TEST_CHECK_NZ(context.assertOn());
+    TEST_CHECK_Z(context.assertOnGet(2, 2));
 
     // Setting types
-    contextp->assertOn(false);
-    contextp->assertOnSet(1, 3);
-    TEST_CHECK_NZ(contextp->assertOnGet(1, 3));
-    TEST_CHECK_NZ(contextp->assertOnGet(1, 2));
-    TEST_CHECK_NZ(contextp->assertOnGet(1, 1));
-    TEST_CHECK_Z(contextp->assertOnGet(1, 0));
-    TEST_CHECK_Z(contextp->assertOnGet(2, 0));
-    TEST_CHECK_Z(contextp->assertOnGet(0, 0));
+    context.assertOn(false);
+    context.assertOnSet(1, 3);
+    TEST_CHECK_NZ(context.assertOnGet(1, 3));
+    TEST_CHECK_NZ(context.assertOnGet(1, 2));
+    TEST_CHECK_NZ(context.assertOnGet(1, 1));
+    TEST_CHECK_Z(context.assertOnGet(1, 0));
+    TEST_CHECK_Z(context.assertOnGet(2, 0));
+    TEST_CHECK_Z(context.assertOnGet(0, 0));
 
     // Setting multiple types separately
-    contextp->assertOn(false);
-    contextp->assertOnSet(0, 1);
-    contextp->assertOnSet(1, 2);
-    contextp->assertOnSet(2, 3);
-    TEST_CHECK_NZ(contextp->assertOn());
-    TEST_CHECK_Z(contextp->assertOnGet(0, 1));
-    TEST_CHECK_Z(contextp->assertOnGet(1, 1));
-    TEST_CHECK_NZ(contextp->assertOnGet(1, 2));
-    TEST_CHECK_NZ(contextp->assertOnGet(2, 1));
-    TEST_CHECK_NZ(contextp->assertOnGet(2, 2));
-    TEST_CHECK_NZ(contextp->assertOnGet(2, 3));
-    TEST_CHECK_Z(contextp->assertOnGet(0, 2));
-    TEST_CHECK_Z(contextp->assertOnGet(4, 1));
-    TEST_CHECK_Z(contextp->assertOnGet(8, 7));
+    context.assertOn(false);
+    context.assertOnSet(0, 1);
+    context.assertOnSet(1, 2);
+    context.assertOnSet(2, 3);
+    TEST_CHECK_NZ(context.assertOn());
+    TEST_CHECK_Z(context.assertOnGet(0, 1));
+    TEST_CHECK_Z(context.assertOnGet(1, 1));
+    TEST_CHECK_NZ(context.assertOnGet(1, 2));
+    TEST_CHECK_NZ(context.assertOnGet(2, 1));
+    TEST_CHECK_NZ(context.assertOnGet(2, 2));
+    TEST_CHECK_NZ(context.assertOnGet(2, 3));
+    TEST_CHECK_Z(context.assertOnGet(0, 2));
+    TEST_CHECK_Z(context.assertOnGet(4, 1));
+    TEST_CHECK_Z(context.assertOnGet(8, 7));
 
     // Clearing selected types
-    contextp->assertOn(true);
-    contextp->assertOnClear(1, 3);
-    contextp->assertOnClear(1, 4);
-    TEST_CHECK_Z(contextp->assertOnGet(1, 1));
-    TEST_CHECK_Z(contextp->assertOnGet(1, 2));
-    TEST_CHECK_Z(contextp->assertOnGet(1, 4));
-    contextp->assertOnClear(4, 4);
-    TEST_CHECK_Z(contextp->assertOnGet(4, 4));
-    TEST_CHECK_NZ(contextp->assertOnGet(4, 1));
-    TEST_CHECK_NZ(contextp->assertOnGet(4, 2));
-    TEST_CHECK_NZ(contextp->assertOn());
+    context.assertOn(true);
+    context.assertOnClear(1, 3);
+    context.assertOnClear(1, 4);
+    TEST_CHECK_Z(context.assertOnGet(1, 1));
+    TEST_CHECK_Z(context.assertOnGet(1, 2));
+    TEST_CHECK_Z(context.assertOnGet(1, 4));
+    context.assertOnClear(4, 4);
+    TEST_CHECK_Z(context.assertOnGet(4, 4));
+    TEST_CHECK_NZ(context.assertOnGet(4, 1));
+    TEST_CHECK_NZ(context.assertOnGet(4, 2));
+    TEST_CHECK_NZ(context.assertOn());
 
     // Clearing all assert types
-    contextp->assertOn(true);
-    contextp->assertOnClear(255, 7);
+    context.assertOn(true);
+    context.assertOnClear(255, 7);
     // Everything is disabled except internal asserts
-    TEST_CHECK_NZ(contextp->assertOn());
-    contextp->assertOn(false);
+    TEST_CHECK_NZ(context.assertOn());
+    context.assertOn(false);
     // Now everything is disabled
-    TEST_CHECK_Z(contextp->assertOn());
+    TEST_CHECK_Z(context.assertOn());
 }
 int main(int argc, char** argv) {
     verilatedTest();
     if (errors) return 10;
 
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    contextp->threads(1);
-    contextp->commandArgs(argc, argv);
-    contextp->debug(0);
+    VerilatedContext context;
+    context.threads(1);
+    context.commandArgs(argc, argv);
+    context.debug(0);
 
     srand48(5);
 
-    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{"top"}};
+    VM_PREFIX top{"top"};
     constexpr uint64_t sim_time = 100;
-    while ((contextp->time() < sim_time) && !contextp->gotFinish()) {
-        topp->clk = !topp->clk;
-        topp->eval();
-        contextp->timeInc(1);
+    while ((context.time() < sim_time) && !context.gotFinish()) {
+        top.clk = !top.clk;
+        top.eval();
+        context.timeInc(1);
     }
     const std::string filename = std::string{VL_STRINGIFY(TEST_OBJ_DIR) "/coverage.dat"};
-    contextp->coveragep()->write(filename);
+    context.coveragep()->write(filename);
 
-    if (!contextp->gotFinish()) {
+    if (!context.gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
-    topp->final();
+    top.final();
 
     return 0;
 }

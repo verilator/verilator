@@ -11,40 +11,40 @@ void oneTest(int argc, char** argv, int seed) {
     VL_PRINTF("== Seed=%d\n", seed);
 #endif
 
-    const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
-    contextp->commandArgs(argc, argv);
+    VerilatedContext context;
+    context.commandArgs(argc, argv);
 
     // Randomise initial state
     srand48(seed);
     srand48(5);
-    contextp->randReset(123);
+    context.randReset(123);
 
     // Construct the Verilated model, from Vtop.h generated from Verilating
-    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get()}};
+    VM_PREFIX top{&context};
 
     // Start not in reset
-    topp->rst_n = 1;
-    topp->clk = 0;
-    topp->eval();
+    top.rst_n = 1;
+    top.clk = 0;
+    top.eval();
 
     // Tick for a little bit
-    while (contextp->time() < sim_time && !contextp->gotFinish()) {
-        topp->clk = 0;
-        topp->eval();
+    while (context.time() < sim_time && !context.gotFinish()) {
+        top.clk = 0;
+        top.eval();
 
-        contextp->timeInc(5);
+        context.timeInc(5);
 
-        topp->clk = 1;
-        topp->eval();
+        top.clk = 1;
+        top.eval();
 
-        contextp->timeInc(5);
+        context.timeInc(5);
     }
 
-    if (!contextp->gotFinish()) {
+    if (!context.gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
 
-    topp->final();
+    top.final();
 }
 
 int main(int argc, char** argv) {
