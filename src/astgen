@@ -913,7 +913,7 @@ def write_ast_impl(filename):
     with open_file(filename) as fh:
 
         def emitBlock(pattern, **fmt):
-            fh.write(textwrap.indent(textwrap.dedent(pattern), "    ").format(**fmt))
+            fh.write(pattern.format(**fmt))
 
         for node in AstNodeList:
             if node.name == "Node":
@@ -931,7 +931,8 @@ def write_ast_impl(filename):
                               "    BROKEN_RTN(!m_{name}->brokeExists());\n",
                               name=ptr['name'])
             # Node's broken rules can be specialized by declaring broken()
-            emitBlock("    return Ast{t}::broken(); }}\n", t=node.name)
+            emitBlock("    return Ast{t}::broken();\n", t=node.name)
+            emitBlock("}}\n", t=node.name)
 
             emitBlock("void Ast{t}::cloneRelinkGen() {{\n", t=node.name)
             if node.superClass.name != 'Node':
