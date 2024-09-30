@@ -2993,8 +2993,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                 case VLVT_UINT64:
                     ngroups = 8; break;
                 case VLVT_WDATA: {
-                    int elemBits = varp->packed().elements();
-                    ngroups = (elemBits + 7) / 8; break;
+                    ngroups = VL_WORDS_I(varp->packed().elements()) * sizeof(WData); break;
                 }
                 default:
                     ngroups = 0; break;
@@ -3036,13 +3035,17 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                 index = index % size;
             }
         } else if (varp->vltype() == VLVT_WDATA) {
-            CData *ptr = reinterpret_cast<CData*>(vop->varDatap());
+            WData *rawvals = reinterpret_cast<WData*>(value_ptr);
+            WData *ptr = reinterpret_cast<WData*>(vop->varDatap());
 
-            int elemBits = varp->packed().elements();
-            int ngroups = (elemBits + 7) / 8;
+            const int words = VL_WORDS_I(varp->packed().elements());
 
             for (int i = 0; i < num; i++) {
-                std::memcpy(&value_ptr[i * ngroups], &ptr[index++ * ngroups], ngroups);
+                for (int j = 0; j < words; j++) {
+                    rawvals[i * words + j] = ptr[index * words + j];
+                }
+
+                index = ++index % size;
             }
         }
 
