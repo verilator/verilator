@@ -29,14 +29,16 @@ Verilator 5.029 devel
 * Support basic dist constraints (#5431). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Support inside array constraints (#5448). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Support DPI imports and exports with double underscores (#5481).
-* Support objcache when compiling Verilated files with cmake.
+* Support ccache when compiling Verilated files with cmake.
 * Add error on instances without parenthesis.
+* Add Docker pre-commit hook (#5238) (#5452). [Chris Bachhuber]
 * Add partial coverage symbol and branch data in lcov info files (#5388). [Andrew Nolte]
 * Add method to check if there are VPI callbacks of the given type (#5399). [Kaleb Barrett]
 * Remove warning on unsized numbers exceeding 32-bits.
 * Improve Verilation thread pool (#5161). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Improve performance of V3VariableOrder with parallelism (#5406). [Bartłomiej Chmiel, Antmicro Ltd.]
-* Improve parser error handling. [Arkadiusz Kozdra, Antmicro Ltd.]
+* Improve parser error handling (#5493). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Improve process trigger performance (#5483). [Geza Lore]
 * Fix suppression of WIDTH* warnings when immediately under a size cast (#3417).
 * Fix `$fatal` to not be affected by `+verilator+error+limit` (#5135). [Gökçe Aydos]
 * Fix display with multiple string formats (#5311). [Luiza de Melo]
@@ -60,12 +62,16 @@ Verilator 5.029 devel
 * Fix foreach colliding index names (#5444). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Fix fault on defparam with UNSUPPORTED ignored (#5450). [Luiza de Melo]
 * Fix class reference with pin that is a class reference (#5454).
+* Fix user-type parameter overlap (#5469). [Todd Strader]
 * Fix tracing when name() is empty (#5470). [Sam Shahrestani]
 * Fix timing mode not exiting on empty events (#5472).
 * Fix --binary with .cpp PLI filenames under relative directory paths.
 * Fix extra dot in coverage point hierarchy when using name()=''.
-* Fix short-circuting with associative array access (#5484). [Ethan Sifferman]
-* Fix short-circuting on method calls (#5486). [Ethan Sifferman]
+* Fix short-circuiting with associative array access (#5484). [Ethan Sifferman]
+* Fix short-circuiting on method calls (#5486). [Ethan Sifferman]
+* Fix exponential concatenate performance (#5488). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Fix V3Table trying to generate 'x' bits in the lookup table. (#5491). [Geza Lore]
+* Fix randomize with foreach constraints (#5492). [Arkadiusz Kozdra, Antmicro Ltd.]
 
 
 Verilator 5.028 2024-08-21

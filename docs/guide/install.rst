@@ -31,9 +31,11 @@ For other distributions, refer to `Repology Verilator Distro Packages
 pre-commit Quick Install
 =============================
 
-You can use verliator's `pre-commit <https://pre-commit.com/>`_ hook to lint your code before committing it.
-It encapsulates the :ref:`Verilator Build Docker Container`_, so you need docker on your system to use it.
-The verilator image will be downloaded automatically.
+You can use Verilator's `pre-commit <https://pre-commit.com/>`__ hook to
+lint your code before committing it.  It encapsulates the :ref:`Verilator
+Build Docker Container`, so you need docker on your system to use it.  The
+verilator image will be downloaded automatically.
+
 To use the hook, add the following entry to your :code:`.pre-commit-config.yaml`:
 
 .. code-block:: yaml
