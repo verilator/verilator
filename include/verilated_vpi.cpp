@@ -2850,14 +2850,13 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
         }
     } else if (arrayvalue_p->format == vpiRealVal) {
         switch (varp->vltype()) {
-            case VLVT_UINT64:
+            case VLVT_REAL:
                 return status;
             default:
                 status = false;
         }
     } else if (arrayvalue_p->format == vpiTimeVal) {
         switch (varp->vltype()) {
-            //time value is stored uint32 high&low or real 
             case VLVT_UINT32:
             case VLVT_REAL:
                 return status;
@@ -2940,6 +2939,42 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
         }
 
         return;
+    } else if (arrayvalue_p->format == vpiShortIntVal) {
+        PLI_INT16 *shortints;
+
+        if (arrayvalue_p->flags & vpiUserAllocFlag) {
+            shortints = arrayvalue_p->value.shortints;
+        } else {            
+            shortints = (PLI_INT16*)malloc(num * 2);
+            arrayvalue_p->value.shortints = shortints;
+        }
+
+        if (varp->vltype() == VLVT_UINT16) {
+            SData *ptr = reinterpret_cast<SData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                shortints[i] = ptr[index++];
+                index = index % size;
+            }
+        }
+    } else if (arrayvalue_p->format == vpiLongIntVal) {
+        PLI_INT64 *longints;
+
+        if (arrayvalue_p->flags & vpiUserAllocFlag) {
+            longints = arrayvalue_p->value.longints;
+        } else {            
+            longints = (PLI_INT64*)malloc(num * 8);
+            arrayvalue_p->value.longints = longints;
+        }
+
+        if (varp->vltype() == VLVT_UINT64) {
+            QData *ptr = reinterpret_cast<QData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                longints[i] = ptr[index++];
+                index = index % size;
+            }
+        }
     } else if (arrayvalue_p->format == vpiRawTwoStateVal) {
         PLI_BYTE8 *value_ptr;
 
@@ -2957,6 +2992,10 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                     ngroups = 4; break;
                 case VLVT_UINT64:
                     ngroups = 8; break;
+                case VLVT_WDATA: {
+                    int elemBits = varp->packed().elements();
+                    ngroups = (elemBits + 7) / 8; break;
+                }
                 default:
                     ngroups = 0; break;
             }
@@ -2996,29 +3035,41 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                 rawvals[i] = ptr[index++];
                 index = index % size;
             }
+        } else if (varp->vltype() == VLVT_WDATA) {
+            CData *ptr = reinterpret_cast<CData*>(vop->varDatap());
+
+            int elemBits = varp->packed().elements();
+            int ngroups = (elemBits + 7) / 8;
+
+            for (int i = 0; i < num; i++) {
+                std::memcpy(&value_ptr[i * ngroups], &ptr[index++ * ngroups], ngroups);
+            }
         }
 
         return;
-    }
-    else if(arrayvalue_p->format==vpiRealVal) {
-
+    } else if (arrayvalue_p->format == vpiRealVal) {
         double *reals;
 
         if (arrayvalue_p->flags & vpiUserAllocFlag) {
             reals = arrayvalue_p->value.reals;
         } else {            
-            reals = (double*)malloc(num * 8);
+            reals = (double*)malloc(num * sizeof(double));
             arrayvalue_p->value.reals = reals;
         }
-        if(varp->vltype()==VLVT_UINT64) {
-            QData *ptr = reinterpret_cast<QData*>(vop->varDatap());
+
+        if (varp->vltype() == VLVT_REAL) {
+            double *ptr = reinterpret_cast<double*>(vop->varDatap());
+
             for (int i = 0; i < num; i++) {
                 reals[i] = ptr[index++];
                 index = index % size;
             }
         }
+
         return;
     }
+
+    arrayvalue_p->value.rawvals = nullptr;
 
     VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for %s", __func__,
                   VerilatedVpiError::strFromVpiVal(arrayvalue_p->format), vop->fullname());
@@ -3047,18 +3098,6 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
     if (varp->dims() != 2) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: object %s has unsupported number of indices (%d)",
             __func__, vop->fullname(), varp->dims());
-    }
-
-    switch (varp->vltype()) {
-        case VLVT_UINT8:
-        case VLVT_UINT16:
-        case VLVT_UINT32:
-        case VLVT_UINT64:
-        case VLVT_REAL:
-            break;
-        default:
-            VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported type (%u) as requested for %s", __func__,
-                  varp->vltype(), vop->fullname());
     }
 
     vl_get_value_array(object, arrayvalue_p, index_p, num);
