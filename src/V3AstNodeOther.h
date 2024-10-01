@@ -1407,7 +1407,7 @@ private:
 };
 class AstPin final : public AstNode {
     // A port or parameter assignment on an instantiation
-    // @astgen op1 := exprp : Optional[AstNode] // NodeExpr or NodeDType (nullptr if unconnected)
+    // @astgen op1 := exprp : Optional[AstNode<AstNodeExpr|AstNodeDType>]  // nullptr=unconnected
     //
     // @astgen ptr := m_modVarp : Optional[AstVar]  // Input/output connects to on submodule
     // @astgen ptr := m_modPTypep : Optional[AstParamTypeDType]  // Param type connects to on sub
@@ -1781,7 +1781,8 @@ class AstVar final : public AstNode {
     // @astgen op2 := delayp : Optional[AstDelay] // Net delay
     // Initial value that never changes (static const), or constructor argument for
     // MTASKSTATE variables
-    // @astgen op3 := valuep : Optional[AstNode] // May be a DType for type parameter defaults
+    // @astgen op3 := valuep : Optional[AstNode<AstNodeExpr|AstNodeDType>]
+    //     Value is a DType for type parameter defaults
     // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse
     // @astgen ptr := m_sensIfacep : Optional[AstIface]  // Interface type to which reads from this
     //                                                      var are sensitive
@@ -2559,7 +2560,7 @@ public:
 class AstBracketRange final : public AstNodeRange {
     // Parser only concept "[lhsp]", an AstUnknownRange, QueueRange or Range,
     // unknown until lhsp type is determined
-    // @astgen op1 := elementsp : AstNode // Expr or DType
+    // @astgen op1 := elementsp : AstNode<AstNodeExpr|AstNodeDType>
 public:
     AstBracketRange(FileLine* fl, AstNode* elementsp)
         : ASTGEN_SUPER_BracketRange(fl) {

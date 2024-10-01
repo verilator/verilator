@@ -1121,7 +1121,7 @@ public:
     bool isCompound() const override { return true; }
 };
 class AstRefDType final : public AstNodeDType {
-    // @astgen op1 := typeofp : Optional[AstNode]
+    // @astgen op1 := typeofp : Optional[AstNode<AstNodeExpr|AstNodeDType>]
     // @astgen op2 := classOrPackageOpp : Optional[AstNodeExpr]
     // @astgen op3 := paramsp : List[AstPin]
     //
