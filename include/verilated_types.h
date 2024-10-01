@@ -1350,8 +1350,8 @@ public:
 
     template <std::size_t CurrentDimension = 0, typename U = T_Value>
     auto& find_element(const std::vector<size_t>& indices, std::true_type) {
-        return m_storage[indices[CurrentDimension]]
-            .template find_element<CurrentDimension + 1>(indices);
+        return m_storage[indices[CurrentDimension]].template find_element<CurrentDimension + 1>(
+            indices);
     }
 
     template <std::size_t CurrentDimension = 0>
