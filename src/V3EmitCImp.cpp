@@ -163,7 +163,7 @@ class EmitCImp final : EmitCFunc {
 
     // METHODS
     void openNextOutputFile(const std::set<string>& headers, const string& subFileName) {
-        UASSERT(!m_ofp, "Output file already open");
+        UASSERT(!ofp(), "Output file already open");
 
         splitSizeReset();  // Reset file size tracking
         m_lazyDecls.reset();  // Need to emit new lazy declarations
@@ -172,8 +172,10 @@ class EmitCImp final : EmitCFunc {
             // Unfortunately we have some lint checks here, so we can't just skip processing.
             // We should move them to a different stage.
             const string filename = VL_DEV_NULL;
-            m_cfilesr.push_back(createCFile(filename, /* slow: */ m_slow, /* source: */ true));
-            m_ofp = new V3OutCFile{filename};
+            AstCFile* const filep = createCFile(filename, /* slow: */ m_slow, /* source: */ true);
+            m_cfilesr.push_back(filep);
+            V3OutCFile* const ofilep = new V3OutCFile{filename};
+            setOutputFile(ofilep, filep);
         } else {
             string filename = v3Global.opt.makeDir() + "/" + prefixNameProtect(m_fileModp);
             if (!subFileName.empty()) {
@@ -182,8 +184,11 @@ class EmitCImp final : EmitCFunc {
             }
             if (m_slow) filename += "__Slow";
             filename += ".cpp";
-            m_cfilesr.push_back(createCFile(filename, /* slow: */ m_slow, /* source: */ true));
-            m_ofp = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
+            AstCFile* const filep = createCFile(filename, /* slow: */ m_slow, /* source: */ true);
+            m_cfilesr.push_back(filep);
+            V3OutCFile* const ofilep
+                = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
+            setOutputFile(ofilep, filep);
         }
 
         putsHeader();
@@ -477,7 +482,7 @@ class EmitCImp final : EmitCFunc {
                 doCommonImp(classp);
             }
 
-            VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+            closeOutputFile();
         }
     }
     void emitCFuncImp(const AstNodeModule* modp) {
@@ -522,7 +527,7 @@ class EmitCImp final : EmitCFunc {
                 iterateConst(funcp);
             }
             // Close output file
-            VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+            closeOutputFile();
         }
     }
 
@@ -532,7 +537,7 @@ class EmitCImp final : EmitCFunc {
             // Splitting file, so using parallel build.
             v3Global.useParallelBuild(true);
             // Close old file
-            VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+            closeOutputFile();
             // Open a new file
             openNextOutputFile(*m_requiredHeadersp, m_subFileName);
         }
@@ -587,7 +592,7 @@ class EmitCTrace final : EmitCFunc {
 
     // METHODS
     void openNextOutputFile() {
-        UASSERT(!m_ofp, "Output file already open");
+        UASSERT(!ofp(), "Output file already open");
 
         splitSizeReset();  // Reset file size tracking
         m_lazyDecls.reset();  // Need to emit new lazy declarations
@@ -602,11 +607,10 @@ class EmitCTrace final : EmitCFunc {
         cfilep->support(true);
         m_cfilesr.push_back(cfilep);
 
-        if (optSystemC()) {
-            m_ofp = new V3OutScFile{filename};
-        } else {
-            m_ofp = new V3OutCFile{filename};
-        }
+        V3OutCFile* const ofilep
+            = optSystemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
+        setOutputFile(ofilep, cfilep);
+
         putsHeader();
         puts("// DESCR"
              "IPTION: Verilator output: Tracing implementation internals\n");
@@ -904,7 +908,7 @@ class EmitCTrace final : EmitCFunc {
             // Splitting file, so using parallel build.
             v3Global.useParallelBuild(true);
             // Close old file
-            VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+            closeOutputFile();
             // Open a new file
             openNextOutputFile();
         }
@@ -956,7 +960,7 @@ class EmitCTrace final : EmitCFunc {
             if (AstCFunc* const funcp = VN_CAST(nodep, CFunc)) iterateConst(funcp);
         }
         // Close output file
-        VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+        closeOutputFile();
         if (m_slow) {
             callTypeSubs();
             closeTypesFile();
@@ -1023,7 +1027,7 @@ void V3EmitC::emitcFiles() {
             V3OutCFile of{cfilep->name()};
             of.puts("// DESCR"
                     "IPTION: Verilator generated C++\n");
-            const EmitCFunc visitor{cfilep->tblockp(), &of, true};
+            const EmitCFunc visitor{cfilep->tblockp(), &of, cfilep, true};
         }
     }
 }

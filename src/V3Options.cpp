@@ -1408,6 +1408,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             fl->v3error("--output-split-ctrace must be >= 0: " << valp);
         }
     });
+    DECL_OPTION("-output-groups", CbVal, [this, fl](const char* valp) {
+        m_outputGroups = std::atoi(valp);
+        if (m_outputGroups < 0) { fl->v3error("--output-groups must be >= 0: " << valp); }
+    });
 
     DECL_OPTION("-P", Set, &m_preprocNoLine);
     DECL_OPTION("-pvalue+", CbPartialMatch,

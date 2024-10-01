@@ -958,6 +958,22 @@ Summary:
    delayed assignments.  This option should only be used when suggested by
    the developers.
 
+.. option:: --output-groups <numfiles>
+
+   Enables concatenating the output .cpp files into the given number of
+   effective output .cpp files.  This is useful if the compiler startup
+   overhead cumulated from compiling many small files becomes unacceptable,
+   which can happen in designs making extensive use of SystemVerilog classes,
+   templates or generate blocks.
+
+   Using :vlopt:`--output-groups` can adversely impact caching and stability
+   (as in reproducibility) of compiled code.  Compilation of larger .cpp
+   files also has higher memory requirements.  Too low values might result in
+   swap thrashing with large designs, high values give no benefits.  The
+   value should range from 2 to 20 for small to medium designs.
+
+   Default is zero, which disables this feature.
+
 .. option:: --output-split <statements>
 
    Enables splitting the output .cpp files into multiple outputs.  When a

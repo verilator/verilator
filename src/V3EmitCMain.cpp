@@ -42,9 +42,9 @@ private:
     // MAIN METHOD
     void emitInt() {
         const string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__main.cpp";
-        newCFile(filename, false /*slow*/, true /*source*/);
+        AstCFile* const cfilep = newCFile(filename, false /*slow*/, true /*source*/);
         V3OutCFile cf{filename};
-        m_ofp = &cf;
+        setOutputFile(&cf, cfilep);
 
         // Not defining main_time/vl_time_stamp, so
         v3Global.opt.addCFlags("-DVL_TIME_CONTEXT");  // On MSVC++ anyways
@@ -116,7 +116,7 @@ private:
         puts("return 0;\n");
         puts("}\n");
 
-        m_ofp = nullptr;
+        setOutputFile(nullptr);
     }
 };
 
