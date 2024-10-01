@@ -28,7 +28,8 @@ option(
 
 find_package(Python3 COMPONENTS Interpreter)
 set(PYTHON3 ${Python3_EXECUTABLE})
-set(CMAKE_INSTALL_DATADIR ${CMAKE_INSTALL_PREFIX})
+# See also CMake built-in; CMAKE_INSTALL_PREFIX is applied by the install command.
+set(CMAKE_INSTALL_DATADIR .)
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 include(CheckStructHasMember)
@@ -115,33 +116,33 @@ configure_file(include/verilated.mk.in include/verilated.mk @ONLY)
 
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/include/verilated_config.h
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+    DESTINATION include
 )
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/include/verilated.mk
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+    DESTINATION include
 )
 
 configure_package_config_file(
     verilator-config.cmake.in
     verilator-config.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}
+    INSTALL_DESTINATION .
 )
 
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/verilator-config.cmake
-    DESTINATION ${CMAKE_INSTALL_PREFIX}
+    DESTINATION .
 )
 
 configure_package_config_file(
     verilator-config-version.cmake.in
     verilator-config-version.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}
+    INSTALL_DESTINATION .
 )
 
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/verilator-config-version.cmake
-    DESTINATION ${CMAKE_INSTALL_PREFIX}
+    DESTINATION .
 )
 
 foreach(
