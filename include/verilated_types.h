@@ -1323,26 +1323,40 @@ public:
     const WData* data() const { return &m_storage[0]; }
 
     std::size_t size() const { return T_Depth; }
-    template <std::size_t CurrentDimension = 0>
-    int find_length(int dimension) const {
+    // To fit C++14
+    template <std::size_t CurrentDimension = 0, typename U = T_Value>
+    int find_length(int dimension, std::false_type) const {
+        return size();
+    }
+
+    template <std::size_t CurrentDimension = 0, typename U = T_Value>
+    int find_length(int dimension, std::true_type) const {
         if (dimension == CurrentDimension) {
             return size();
         } else {
-            if constexpr (std::is_class_v<T_Value>) {
-                return m_storage[0].template find_length<CurrentDimension + 1>(dimension);
-            } else {
-                return size();
-            }
+            return m_storage[0].template find_length<CurrentDimension + 1>(dimension);
         }
     }
+
+    template <std::size_t CurrentDimension = 0>
+    int find_length(int dimension) const {
+        return find_length<CurrentDimension>(dimension, std::is_class<T_Value>{});
+    }
+
+    template <std::size_t CurrentDimension = 0, typename U = T_Value>
+    auto& find_element(const std::vector<size_t>& indices, std::false_type) {
+        return m_storage[indices[CurrentDimension]];
+    }
+
+    template <std::size_t CurrentDimension = 0, typename U = T_Value>
+    auto& find_element(const std::vector<size_t>& indices, std::true_type) {
+        return m_storage[indices[CurrentDimension]]
+            .template find_element<CurrentDimension + 1>(indices);
+    }
+
     template <std::size_t CurrentDimension = 0>
     auto& find_element(const std::vector<size_t>& indices) {
-        if constexpr (std::is_class_v<T_Value>) {
-            return m_storage[indices[CurrentDimension]]
-                .template find_element<CurrentDimension + 1>(indices);
-        } else {
-            return m_storage[indices[CurrentDimension]];
-        }
+        return find_element<CurrentDimension>(indices, std::is_class<T_Value>{});
     }
 
     T_Value& operator[](size_t index) { return m_storage[index]; }
