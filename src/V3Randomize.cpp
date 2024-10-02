@@ -618,12 +618,12 @@ class ConstraintExprVisitor final : public VNVisitor {
                 = new AstCExpr{varp->fileline(), "\"" + smtName + "\"", varp->width()};
             varnamep->dtypep(varp->dtypep());
             methodp->addPinsp(varnamep);
+            methodp->addPinsp(
+                new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, dimension});
             if (randMode.usesMode) {
                 methodp->addPinsp(
                     new AstConst{varp->fileline(), AstConst::Unsized64{}, randMode.index});
             }
-            methodp->addPinsp(
-                new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, dimension});
             AstNodeFTask* initTaskp = m_inlineInitTaskp;
             if (!initTaskp) {
                 varp->user3(true);  // Mark as set up in new()
