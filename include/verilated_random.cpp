@@ -250,6 +250,68 @@ static Process& getSolver() {
     return s_solver;
 }
 
+std::string readUntilBalanced(std::istream& stream) {
+    std::string result;
+    std::string token;
+    int parenCount = 1;
+    while (stream >> token) {
+        for (const char c : token) {
+            if (c == '(') {
+                ++parenCount;
+            } else if (c == ')') {
+                --parenCount;
+            }
+        }
+        result += token + " ";
+        if (parenCount == 0) break;
+    }
+    return result;
+}
+
+std::string parseNestedSelect(const std::string& nested_select_expr,
+                              std::vector<std::string>& indices) {
+    std::istringstream nestedStream(nested_select_expr);
+    std::string name, idx;
+    nestedStream >> name;
+    if (name == "(select") {
+        const std::string further_nested_expr = readUntilBalanced(nestedStream);
+        name = parseNestedSelect(further_nested_expr, indices);
+    }
+    std::getline(nestedStream, idx, ')');
+    indices.push_back(idx);
+    return name;
+}
+
+std::string flattenIndices(const std::vector<std::string>& indices, const VlRandomVar* const var) {
+    int flattenedIndex = 0;
+    int multiplier = 1;
+    for (int i = indices.size() - 1; i >= 0; --i) {
+        int indexValue = 0;
+        std::string trimmedIndex = indices[i];
+
+        trimmedIndex.erase(0, trimmedIndex.find_first_not_of(" \t"));
+        trimmedIndex.erase(trimmedIndex.find_last_not_of(" \t") + 1);
+
+        if (trimmedIndex.find("#x") == 0) {
+            indexValue = std::strtoul(trimmedIndex.substr(2).c_str(), nullptr, 16);
+        } else if (trimmedIndex.find("#b") == 0) {
+            indexValue = std::strtoul(trimmedIndex.substr(2).c_str(), nullptr, 2);
+        } else {
+            indexValue = std::strtoul(trimmedIndex.c_str(), nullptr, 10);
+        }
+        const int length = var->getLength(i);
+        if (length == -1) {
+            VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                       "Internal: Wrong Call: Only RandomArray can call getLength()");
+            break;
+        }
+        flattenedIndex += indexValue * multiplier;
+        multiplier *= length;
+    }
+    std::string hexString = std::to_string(flattenedIndex);
+    while (hexString.size() < 8) { hexString.insert(0, "0"); }
+    return "#x" + hexString;
+}
 //======================================================================
 // VlRandomizer:: Methods
 
@@ -356,7 +418,6 @@ bool VlRandomizer::next(VlRNG& rngr) {
         f << "(reset)\n";
         return false;
     }
-
     for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; i++) {
         f << "(assert ";
         randomConstraint(f, rngr, _VL_SOLVER_HASH_LEN);
@@ -403,25 +464,29 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
                        "Internal: Unable to parse solver's response: invalid S-expression");
             return false;
         }
-
         std::string name, idx, value;
+        std::vector<std::string> indices;
         f >> name;
+        indices.clear();
         if (name == "(select") {
-            f >> name;
-            std::getline(f, idx, ')');
+            const std::string selectExpr = readUntilBalanced(f);
+            name = parseNestedSelect(selectExpr, indices);
+            idx = indices[0];
         }
         std::getline(f, value, ')');
-
-        auto it = m_vars.find(name);
+        const auto it = m_vars.find(name);
         if (it == m_vars.end()) continue;
         const VlRandomVar& varr = *it->second;
         if (m_randmode && !varr.randModeIdxNone()) {
             if (!(m_randmode->at(varr.randModeIdx()))) continue;
         }
-
-        varr.set(idx, value);
+        if (indices.size() > 1) {
+            const std::string flattenedIndex = flattenIndices(indices, &varr);
+            varr.set(flattenedIndex, value);
+        } else {
+            varr.set(idx, value);
+        }
     }
-
     return true;
 }
 

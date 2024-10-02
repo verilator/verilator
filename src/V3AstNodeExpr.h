@@ -4147,6 +4147,7 @@ public:
     }
     string emitVerilog() override { return "%k(%l%f[%r])"; }
     string emitC() override { return "%li%k[%ri]"; }
+    string emitSMT() const override { return "(select %l %r)"; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return false; }
     bool cleanRhs() const override { return true; }

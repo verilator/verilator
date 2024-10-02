@@ -428,6 +428,13 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 backp->user1(true);
         }
     }
+    void visit(AstArraySel* nodep) override {
+        if (!m_constraintExprp) return;
+        for (AstNode* backp = nodep; backp != m_constraintExprp && !backp->user1();
+             backp = backp->backp())
+            backp->user1(true);
+        iterateChildrenConst(nodep);
+    }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         m_modp = nodep;
@@ -604,6 +611,13 @@ class ConstraintExprVisitor final : public VNVisitor {
                 new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
                               VAccess::READWRITE},
                 "write_var"};
+            uint32_t dimension = 0;
+            if (VN_IS(varp->dtypep(), UnpackArrayDType)) {
+                const std::pair<uint32_t, uint32_t> dims
+                    = varp->dtypep()->dimensions(/*includeBasic=*/true);
+                const uint32_t unpackedDimensions = dims.second;
+                dimension = unpackedDimensions;
+            }
             methodp->dtypeSetVoid();
             AstClass* const classp = VN_AS(varp->user2p(), Class);
             AstVarRef* const varRefp
@@ -619,6 +633,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 = new AstCExpr{varp->fileline(), "\"" + smtName + "\"", varp->width()};
             varnamep->dtypep(varp->dtypep());
             methodp->addPinsp(varnamep);
+            methodp->addPinsp(
+                new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, dimension});
             if (randMode.usesMode) {
                 methodp->addPinsp(
                     new AstConst{varp->fileline(), AstConst::Unsized64{}, randMode.index});
@@ -675,6 +691,15 @@ class ConstraintExprVisitor final : public VNVisitor {
         handle.relink(lsbp);
 
         editSMT(nodep, nodep->fromp(), lsbp, msbp);
+    }
+    void visit(AstArraySel* nodep) override {
+        if (editFormat(nodep)) return;
+        FileLine* const fl = nodep->fileline();
+        VNRelinker handle;
+        AstNodeExpr* const indexp
+            = new AstSFormatF{fl, "#x%8x", false, nodep->bitp()->unlinkFrBack(&handle)};
+        handle.relink(indexp);
+        editSMT(nodep, nodep->fromp(), indexp);
     }
     void visit(AstSFormatF* nodep) override {}
     void visit(AstStmtExpr* nodep) override {}
