@@ -1749,6 +1749,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                 val = std::atoi(argv[i]);  // Can't be negative due to isdigit above
                 if (val == 0) val = std::thread::hardware_concurrency();
                 ++i;
+            } else {
+                fl->v3error("-j argument requires a value");
             }
             if (m_buildJobs == -1) m_buildJobs = val;
             if (m_verilateJobs == -1) m_verilateJobs = val;

@@ -44,7 +44,7 @@ endif
 run:
 	@echo "-- Verilator hello-world simple example"
 	@echo "-- VERILATE & COMPILE ------"
-	$(VERILATOR) -sc --exe --build -j top.v sc_main.cpp
+	$(VERILATOR) -sc --exe --build -j 1 top.v sc_main.cpp
 	@echo "-- RUN ---------------------"
 	obj_dir/Vtop
 	@echo "-- DONE --------------------"
