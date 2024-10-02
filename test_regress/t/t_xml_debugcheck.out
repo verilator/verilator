@@ -61,7 +61,7 @@
         <creset loc="d,52,17,52,18">
           <varref loc="d,52,17,52,18" name="t.unnamedblk1.e" dtype_id="2"/>
         </creset>
-        <var loc="d,49,123,49,127" name="__Vtemp_1" dtype_id="10" vartype="string" origName="__Vtemp_1"/>
+        <var loc="d,49,122,49,126" name="__Vtemp_1" dtype_id="10" vartype="string" origName="__Vtemp_1"/>
         <assign loc="d,32,9,32,10" dtype_id="11">
           <const loc="d,32,11,32,14" name="4&apos;h3" dtype_id="11"/>
           <varref loc="d,32,7,32,8" name="t.e" dtype_id="11"/>
@@ -487,8 +487,8 @@
           </begin>
         </if>
         <if loc="d,49,10,49,12">
-          <neqn loc="d,49,23,49,26" dtype_id="9">
-            <const loc="d,49,28,49,33" name="&quot;E03&quot;" dtype_id="10"/>
+          <neqn loc="d,49,23,49,25" dtype_id="9">
+            <const loc="d,49,27,49,32" name="&quot;E03&quot;" dtype_id="10"/>
             <arraysel loc="d,49,17,49,21" dtype_id="10">
               <varref loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16"/>
               <and loc="d,49,17,49,21" dtype_id="13">
@@ -500,24 +500,24 @@
             </arraysel>
           </neqn>
           <begin>
-            <assign loc="d,49,123,49,127" dtype_id="10">
-              <arraysel loc="d,49,123,49,127" dtype_id="10">
+            <assign loc="d,49,122,49,126" dtype_id="10">
+              <arraysel loc="d,49,122,49,126" dtype_id="10">
                 <varref loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16"/>
-                <and loc="d,49,123,49,127" dtype_id="13">
-                  <const loc="d,49,123,49,127" name="32&apos;h7" dtype_id="14"/>
-                  <ccast loc="d,49,121,49,122" dtype_id="13">
-                    <varref loc="d,49,121,49,122" name="t.e" dtype_id="13"/>
+                <and loc="d,49,122,49,126" dtype_id="13">
+                  <const loc="d,49,122,49,126" name="32&apos;h7" dtype_id="14"/>
+                  <ccast loc="d,49,120,49,121" dtype_id="13">
+                    <varref loc="d,49,120,49,121" name="t.e" dtype_id="13"/>
                   </ccast>
                 </and>
               </arraysel>
-              <varref loc="d,49,123,49,127" name="__Vtemp_1" dtype_id="10"/>
+              <varref loc="d,49,122,49,126" name="__Vtemp_1" dtype_id="10"/>
             </assign>
-            <display loc="d,49,42,49,48" displaytype="$write">
-              <sformatf loc="d,49,42,49,48" name="%%Error: t/t_enum_type_methods.v:49:  got=&apos;%@&apos; exp=&apos;E03&apos;&#10;" dtype_id="10">
-                <varref loc="d,49,123,49,127" name="__Vtemp_1" dtype_id="10"/>
+            <display loc="d,49,41,49,47" displaytype="$write">
+              <sformatf loc="d,49,41,49,47" name="%%Error: t/t_enum_type_methods.v:49:  got=&apos;%@&apos; exp=&apos;E03&apos;&#10;" dtype_id="10">
+                <varref loc="d,49,122,49,126" name="__Vtemp_1" dtype_id="10"/>
               </sformatf>
             </display>
-            <stop loc="d,49,140,49,145"/>
+            <stop loc="d,49,139,49,144"/>
           </begin>
         </if>
         <assign loc="d,51,11,51,12" dtype_id="10">
@@ -585,17 +585,17 @@
           <varref loc="d,56,7,56,10" name="t.all" dtype_id="10"/>
         </assign>
         <if loc="d,57,10,57,12">
-          <neqn loc="d,57,20,57,23" dtype_id="9">
-            <const loc="d,57,25,57,36" name="&quot;E01E03E04&quot;" dtype_id="10"/>
+          <neqn loc="d,57,20,57,22" dtype_id="9">
+            <const loc="d,57,24,57,35" name="&quot;E01E03E04&quot;" dtype_id="10"/>
             <varref loc="d,57,15,57,18" name="t.all" dtype_id="10"/>
           </neqn>
           <begin>
-            <display loc="d,57,45,57,51" displaytype="$write">
-              <sformatf loc="d,57,45,57,51" name="%%Error: t/t_enum_type_methods.v:57:  got=&apos;%@&apos; exp=&apos;E01E03E04&apos;&#10;" dtype_id="10">
-                <varref loc="d,57,124,57,127" name="t.all" dtype_id="10"/>
+            <display loc="d,57,44,57,50" displaytype="$write">
+              <sformatf loc="d,57,44,57,50" name="%%Error: t/t_enum_type_methods.v:57:  got=&apos;%@&apos; exp=&apos;E01E03E04&apos;&#10;" dtype_id="10">
+                <varref loc="d,57,123,57,126" name="t.all" dtype_id="10"/>
               </sformatf>
             </display>
-            <stop loc="d,57,146,57,151"/>
+            <stop loc="d,57,145,57,150"/>
           </begin>
         </if>
       </cfunc>
@@ -712,9 +712,9 @@
         <creset loc="d,24,9,24,10">
           <varref loc="d,24,9,24,10" name="__Vdly__t.e" dtype_id="2"/>
         </creset>
-        <var loc="d,68,126,68,130" name="__Vtemp_1" dtype_id="10" vartype="string" origName="__Vtemp_1"/>
-        <var loc="d,78,126,78,130" name="__Vtemp_2" dtype_id="10" vartype="string" origName="__Vtemp_2"/>
-        <var loc="d,88,126,88,130" name="__Vtemp_3" dtype_id="10" vartype="string" origName="__Vtemp_3"/>
+        <var loc="d,68,125,68,129" name="__Vtemp_1" dtype_id="10" vartype="string" origName="__Vtemp_1"/>
+        <var loc="d,78,125,78,129" name="__Vtemp_2" dtype_id="10" vartype="string" origName="__Vtemp_2"/>
+        <var loc="d,88,125,88,129" name="__Vtemp_3" dtype_id="10" vartype="string" origName="__Vtemp_3"/>
         <assignpre loc="d,65,10,65,11" dtype_id="11">
           <varref loc="d,65,10,65,11" name="t.e" dtype_id="11"/>
           <varref loc="d,65,10,65,11" name="__Vdly__t.e" dtype_id="11"/>
@@ -751,8 +751,8 @@
               </eq>
               <begin>
                 <if loc="d,68,13,68,15">
-                  <neqn loc="d,68,26,68,29" dtype_id="9">
-                    <const loc="d,68,31,68,36" name="&quot;E01&quot;" dtype_id="10"/>
+                  <neqn loc="d,68,26,68,28" dtype_id="9">
+                    <const loc="d,68,30,68,35" name="&quot;E01&quot;" dtype_id="10"/>
                     <arraysel loc="d,68,20,68,24" dtype_id="10">
                       <varref loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16"/>
                       <and loc="d,68,20,68,24" dtype_id="13">
@@ -764,24 +764,24 @@
                     </arraysel>
                   </neqn>
                   <begin>
-                    <assign loc="d,68,126,68,130" dtype_id="10">
-                      <arraysel loc="d,68,126,68,130" dtype_id="10">
+                    <assign loc="d,68,125,68,129" dtype_id="10">
+                      <arraysel loc="d,68,125,68,129" dtype_id="10">
                         <varref loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16"/>
-                        <and loc="d,68,126,68,130" dtype_id="13">
-                          <const loc="d,68,126,68,130" name="32&apos;h7" dtype_id="14"/>
-                          <ccast loc="d,68,124,68,125" dtype_id="13">
-                            <varref loc="d,68,124,68,125" name="t.e" dtype_id="13"/>
+                        <and loc="d,68,125,68,129" dtype_id="13">
+                          <const loc="d,68,125,68,129" name="32&apos;h7" dtype_id="14"/>
+                          <ccast loc="d,68,123,68,124" dtype_id="13">
+                            <varref loc="d,68,123,68,124" name="t.e" dtype_id="13"/>
                           </ccast>
                         </and>
                       </arraysel>
-                      <varref loc="d,68,126,68,130" name="__Vtemp_1" dtype_id="10"/>
+                      <varref loc="d,68,125,68,129" name="__Vtemp_1" dtype_id="10"/>
                     </assign>
-                    <display loc="d,68,45,68,51" displaytype="$write">
-                      <sformatf loc="d,68,45,68,51" name="%%Error: t/t_enum_type_methods.v:68:  got=&apos;%@&apos; exp=&apos;E01&apos;&#10;" dtype_id="10">
-                        <varref loc="d,68,126,68,130" name="__Vtemp_1" dtype_id="10"/>
+                    <display loc="d,68,44,68,50" displaytype="$write">
+                      <sformatf loc="d,68,44,68,50" name="%%Error: t/t_enum_type_methods.v:68:  got=&apos;%@&apos; exp=&apos;E01&apos;&#10;" dtype_id="10">
+                        <varref loc="d,68,125,68,129" name="__Vtemp_1" dtype_id="10"/>
                       </sformatf>
                     </display>
-                    <stop loc="d,68,143,68,148"/>
+                    <stop loc="d,68,142,68,147"/>
                   </begin>
                 </if>
                 <if loc="d,69,13,69,15">
@@ -1001,8 +1001,8 @@
                   </eq>
                   <begin>
                     <if loc="d,78,13,78,15">
-                      <neqn loc="d,78,26,78,29" dtype_id="9">
-                        <const loc="d,78,31,78,36" name="&quot;E03&quot;" dtype_id="10"/>
+                      <neqn loc="d,78,26,78,28" dtype_id="9">
+                        <const loc="d,78,30,78,35" name="&quot;E03&quot;" dtype_id="10"/>
                         <arraysel loc="d,78,20,78,24" dtype_id="10">
                           <varref loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16"/>
                           <and loc="d,78,20,78,24" dtype_id="13">
@@ -1014,24 +1014,24 @@
                         </arraysel>
                       </neqn>
                       <begin>
-                        <assign loc="d,78,126,78,130" dtype_id="10">
-                          <arraysel loc="d,78,126,78,130" dtype_id="10">
+                        <assign loc="d,78,125,78,129" dtype_id="10">
+                          <arraysel loc="d,78,125,78,129" dtype_id="10">
                             <varref loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16"/>
-                            <and loc="d,78,126,78,130" dtype_id="13">
-                              <const loc="d,78,126,78,130" name="32&apos;h7" dtype_id="14"/>
-                              <ccast loc="d,78,124,78,125" dtype_id="13">
-                                <varref loc="d,78,124,78,125" name="t.e" dtype_id="13"/>
+                            <and loc="d,78,125,78,129" dtype_id="13">
+                              <const loc="d,78,125,78,129" name="32&apos;h7" dtype_id="14"/>
+                              <ccast loc="d,78,123,78,124" dtype_id="13">
+                                <varref loc="d,78,123,78,124" name="t.e" dtype_id="13"/>
                               </ccast>
                             </and>
                           </arraysel>
-                          <varref loc="d,78,126,78,130" name="__Vtemp_2" dtype_id="10"/>
+                          <varref loc="d,78,125,78,129" name="__Vtemp_2" dtype_id="10"/>
                         </assign>
-                        <display loc="d,78,45,78,51" displaytype="$write">
-                          <sformatf loc="d,78,45,78,51" name="%%Error: t/t_enum_type_methods.v:78:  got=&apos;%@&apos; exp=&apos;E03&apos;&#10;" dtype_id="10">
-                            <varref loc="d,78,126,78,130" name="__Vtemp_2" dtype_id="10"/>
+                        <display loc="d,78,44,78,50" displaytype="$write">
+                          <sformatf loc="d,78,44,78,50" name="%%Error: t/t_enum_type_methods.v:78:  got=&apos;%@&apos; exp=&apos;E03&apos;&#10;" dtype_id="10">
+                            <varref loc="d,78,125,78,129" name="__Vtemp_2" dtype_id="10"/>
                           </sformatf>
                         </display>
-                        <stop loc="d,78,143,78,148"/>
+                        <stop loc="d,78,142,78,147"/>
                       </begin>
                     </if>
                     <if loc="d,79,13,79,15">
@@ -1251,8 +1251,8 @@
                       </eq>
                       <begin>
                         <if loc="d,88,13,88,15">
-                          <neqn loc="d,88,26,88,29" dtype_id="9">
-                            <const loc="d,88,31,88,36" name="&quot;E04&quot;" dtype_id="10"/>
+                          <neqn loc="d,88,26,88,28" dtype_id="9">
+                            <const loc="d,88,30,88,35" name="&quot;E04&quot;" dtype_id="10"/>
                             <arraysel loc="d,88,20,88,24" dtype_id="10">
                               <varref loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16"/>
                               <and loc="d,88,20,88,24" dtype_id="13">
@@ -1264,24 +1264,24 @@
                             </arraysel>
                           </neqn>
                           <begin>
-                            <assign loc="d,88,126,88,130" dtype_id="10">
-                              <arraysel loc="d,88,126,88,130" dtype_id="10">
+                            <assign loc="d,88,125,88,129" dtype_id="10">
+                              <arraysel loc="d,88,125,88,129" dtype_id="10">
                                 <varref loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16"/>
-                                <and loc="d,88,126,88,130" dtype_id="13">
-                                  <const loc="d,88,126,88,130" name="32&apos;h7" dtype_id="14"/>
-                                  <ccast loc="d,88,124,88,125" dtype_id="13">
-                                    <varref loc="d,88,124,88,125" name="t.e" dtype_id="13"/>
+                                <and loc="d,88,125,88,129" dtype_id="13">
+                                  <const loc="d,88,125,88,129" name="32&apos;h7" dtype_id="14"/>
+                                  <ccast loc="d,88,123,88,124" dtype_id="13">
+                                    <varref loc="d,88,123,88,124" name="t.e" dtype_id="13"/>
                                   </ccast>
                                 </and>
                               </arraysel>
-                              <varref loc="d,88,126,88,130" name="__Vtemp_3" dtype_id="10"/>
+                              <varref loc="d,88,125,88,129" name="__Vtemp_3" dtype_id="10"/>
                             </assign>
-                            <display loc="d,88,45,88,51" displaytype="$write">
-                              <sformatf loc="d,88,45,88,51" name="%%Error: t/t_enum_type_methods.v:88:  got=&apos;%@&apos; exp=&apos;E04&apos;&#10;" dtype_id="10">
-                                <varref loc="d,88,126,88,130" name="__Vtemp_3" dtype_id="10"/>
+                            <display loc="d,88,44,88,50" displaytype="$write">
+                              <sformatf loc="d,88,44,88,50" name="%%Error: t/t_enum_type_methods.v:88:  got=&apos;%@&apos; exp=&apos;E04&apos;&#10;" dtype_id="10">
+                                <varref loc="d,88,125,88,129" name="__Vtemp_3" dtype_id="10"/>
                               </sformatf>
                             </display>
-                            <stop loc="d,88,143,88,148"/>
+                            <stop loc="d,88,142,88,147"/>
                           </begin>
                         </if>
                         <if loc="d,89,13,89,15">
