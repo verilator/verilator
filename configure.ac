@@ -190,12 +190,12 @@ if test "x$AR" = "x" ; then
    AC_MSG_ERROR([Cannot find "ar" in your PATH, please install it])
 fi
 
-AC_PATH_PROG(PERL,perl)
+AC_CHECK_PROG(PERL,perl)
 if test "x$PERL" = "x" ; then
    AC_MSG_ERROR([Cannot find "perl" in your PATH, please install it])
 fi
 
-AC_PATH_PROG(PYTHON3,python3)
+AC_CHECK_PROG(PYTHON3,python3)
 if test "x$PYTHON3" = "x" ; then
    AC_MSG_ERROR([Cannot find "python3" in your PATH, please install it])
 fi
