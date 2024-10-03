@@ -30,6 +30,7 @@ Verilator 5.029 devel
 * Support inside array constraints (#5448). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Support DPI imports and exports with double underscores (#5481).
 * Support ccache when compiling Verilated files with cmake.
+* Add error on misused genvar (#408). [Alex Solomatnikov]
 * Add error on instances without parenthesis.
 * Add Docker pre-commit hook (#5238) (#5452). [Chris Bachhuber]
 * Add partial coverage symbol and branch data in lcov info files (#5388). [Andrew Nolte]

@@ -11,9 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(
-    # Should fail, but bug408, Verilator unsupported
-    # expect_filename = test.golden_filename
-    fails=not test.vlt)
+test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.passes()
