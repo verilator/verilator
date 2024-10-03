@@ -11,7 +11,8 @@ module test;
   class baz #(parameter type E = foo_e);
     static function void print();
       E enum_item;
-      $display("%s", enum_item.first().name());
+      if (enum_item.first().name() != "BAR_0")
+        $stop;
     endfunction
   endclass
 
