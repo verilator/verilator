@@ -768,7 +768,8 @@ class ParamProcessor final {
                 }
             }
         } else if (AstParamTypeDType* const modvarp = pinp->modPTypep()) {
-            AstNodeDType* const exprp = VN_CAST(pinp->exprp(), NodeDType);
+            AstNodeDType* rawTypep = VN_CAST(pinp->exprp(), NodeDType);
+            AstNodeDType* const exprp = rawTypep ? rawTypep->skipRefToEnump() : nullptr;
             const AstNodeDType* const origp = modvarp->skipRefToEnump();
             if (!exprp) {
                 pinp->v3error("Parameter type pin value isn't a type: Param "
