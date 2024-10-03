@@ -183,11 +183,11 @@ public:
         //  and fetchConst should not be called or it may assert.
         if (!m_whyNotNodep) {
             m_whyNotNodep = nodep;
-            if (debug() >= 5) {
+            if (debug() >= 5) {  // LCOV_EXCL_START
                 UINFO(0, "Clear optimizable: " << why);
                 if (nodep) std::cout << ": " << nodep;
                 std::cout << std::endl;
-            }
+            }  // LCOV_EXCL_STOP
             m_whyNotOptimizable = why;
             std::ostringstream stack;
             for (const auto& callstack : vlstd::reverse_view(m_callStack)) {
@@ -258,6 +258,7 @@ public:
     void newValue(AstNode* nodep, const AstNodeExpr* valuep) {
         if (const AstConst* const constp = VN_CAST(valuep, Const)) {
             newConst(nodep)->num().opAssign(constp->num());
+            UINFO(9, "     new val " << valuep->name() << " on " << nodep << endl);
         } else if (fetchValueNull(nodep) != valuep) {
             // const_cast, as clonep() is set on valuep, but nothing should care
             setValue(nodep, newTrackedClone(const_cast<AstNodeExpr*>(valuep)));
@@ -266,6 +267,7 @@ public:
     void newOutValue(AstNode* nodep, const AstNodeExpr* valuep) {
         if (const AstConst* const constp = VN_CAST(valuep, Const)) {
             newOutConst(nodep)->num().opAssign(constp->num());
+            UINFO(9, "     new oval " << valuep->name() << " on " << nodep << endl);
         } else if (fetchOutValueNull(nodep) != valuep) {
             // const_cast, as clonep() is set on valuep, but nothing should care
             setOutValue(nodep, newTrackedClone(const_cast<AstNodeExpr*>(valuep)));
@@ -282,7 +284,7 @@ private:
         // Set a constant value for this node
         if (!VN_IS(m_varAux(nodep).valuep, Const)) {
             AstConst* const constp = allocConst(nodep);
-            setValue(nodep, constp);
+            m_varAux(nodep).valuep = constp;
             return constp;
         } else {
             return fetchConst(nodep);
@@ -292,7 +294,7 @@ private:
         // Set a var-output constant value for this node
         if (!VN_IS(m_varAux(nodep).outValuep, Const)) {
             AstConst* const constp = allocConst(nodep);
-            setOutValue(nodep, constp);
+            m_varAux(nodep).outValuep = constp;
             return constp;
         } else {
             return fetchOutConst(nodep);
@@ -551,7 +553,12 @@ private:
     }
     void visit(AstInitArray* nodep) override {
         checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
         if (!m_checkOnly && optimizable()) newValue(nodep, nodep);
+    }
+    void visit(AstInitItem* nodep) override {
+        checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstEnumItemRef* nodep) override {
         checkNodeInfo(nodep);
@@ -589,9 +596,18 @@ private:
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
         if (!m_checkOnly && optimizable()) {
+            AstConst* const valuep = newConst(nodep);
             nodep->numberOperate(newConst(nodep)->num(), fetchConst(nodep->lhsp())->num(),
                                  fetchConst(nodep->rhsp())->num(),
                                  fetchConst(nodep->thsp())->num());
+            // See #5490. 'numberOperate' on partially out of range select yields 'x' bits,
+            // but in reality it would yield '0's without V3Table, so force 'x' bits to '0',
+            // to ensure the result is the same with and without V3Table.
+            if (!m_params && VN_IS(nodep, Sel) && valuep->num().isAnyX()) {
+                V3Number num{valuep, valuep->width()};
+                num.opAssign(valuep->num());
+                valuep->num().opBitsOne(num);
+            }
         }
     }
     void visit(AstNodeQuadop* nodep) override {
@@ -833,7 +849,7 @@ private:
                 clearOptimizable(nodep, "Array initialization has too few elements, need element "
                                             + cvtToStr(offset));
             } else {
-                setValue(nodep, itemp);
+                setValue(nodep, fetchValue(itemp));
             }
         } else {
             clearOptimizable(nodep, "Array select of non-array");

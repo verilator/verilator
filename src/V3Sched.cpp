@@ -100,10 +100,7 @@ void remapSensitivities(const LogicByScope& lbs,
 void invertAndMergeSenTreeMap(
     V3Order::TrigToSenMap& result,
     const std::unordered_map<const AstSenTree*, AstSenTree*>& senTreeMap) {
-    for (const auto& pair : senTreeMap) {
-        UASSERT_OBJ(!pair.second->sensesp()->nextp(), pair.second, "Should be single AstSenIem");
-        result.emplace(pair.second->sensesp(), pair.first);
-    }
+    for (const auto& pair : senTreeMap) result.emplace(pair.second, pair.first);
 }
 
 //============================================================================
@@ -598,9 +595,30 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
     AstScope* const scopeTopp = topScopep->scopep();
     FileLine* const flp = scopeTopp->fileline();
 
+    // Gather all the unique SenItems under the SenTrees
+    // List of unique SenItems used by all 'senTreeps'
+    std::vector<const AstSenItem*> senItemps;
+    // Map from SenItem to the equivalent index in 'senItemps'
+    std::unordered_map<const AstSenItem*, size_t> senItemp2Index;
+    {
+        // Set of unique SenItems
+        std::unordered_set<VNRef<const AstSenItem>> uniqueSenItemps;
+        for (const AstSenTree* const senTreep : senTreeps) {
+            for (const AstSenItem *itemp = senTreep->sensesp(), *nextp; itemp; itemp = nextp) {
+                nextp = VN_AS(itemp->nextp(), SenItem);
+                const auto pair = uniqueSenItemps.emplace(*itemp);
+                if (pair.second) {
+                    senItemp2Index.emplace(itemp, senItemps.size());
+                    senItemps.push_back(itemp);
+                }
+                senItemp2Index.emplace(itemp, senItemp2Index.at(&(pair.first->get())));
+            }
+        }
+    }
+
     std::unordered_map<const AstSenTree*, AstSenTree*> map;
 
-    const uint32_t nTriggers = senTreeps.size() + extraTriggers.size();
+    const uint32_t nTriggers = senItemps.size() + extraTriggers.size();
 
     // Create the TRIGGERVEC variable
     AstBasicDType* const tDtypep
@@ -673,19 +691,17 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
     // Add trigger computation
     uint32_t triggerNumber = extraTriggers.size();
     AstNodeStmt* initialTrigsp = nullptr;
-    for (const AstSenTree* const senTreep : senTreeps) {
-        UASSERT_OBJ(senTreep->hasClocked() || senTreep->hasHybrid(), senTreep,
+    std::vector<uint32_t> senItemIndex2TriggerIndex;
+    senItemIndex2TriggerIndex.reserve(senItemps.size());
+    for (const AstSenItem* const senItemp : senItemps) {
+        UASSERT_OBJ(senItemp->isClocked() || senItemp->isHybrid(), senItemp,
                     "Cannot create trigger expression for non-clocked sensitivity");
 
-        // Create the trigger AstSenTrees and associate them with the original AstSenTree
-        AstNodeExpr* const senp = getTrig(triggerNumber);
-        AstSenItem* const senItemp = new AstSenItem{flp, VEdgeType::ET_TRUE, senp};
-        AstSenTree* const trigpSenp = new AstSenTree{flp, senItemp};
-        topScopep->addSenTreesp(trigpSenp);
-        map[senTreep] = trigpSenp;
+        // Store the trigger number
+        senItemIndex2TriggerIndex.push_back(triggerNumber);
 
         // Add the trigger computation
-        const auto& pair = senExprBuilder.build(senTreep);
+        const auto& pair = senExprBuilder.build(senItemp);
         funcp->addStmtsp(setTrig(triggerNumber, pair.first));
 
         // Add initialization time trigger
@@ -696,12 +712,27 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
         // Add a debug statement for this trigger
         std::stringstream ss;
-        V3EmitV::verilogForTree(senTreep, ss);
+        ss << "@(";
+        V3EmitV::verilogForTree(senItemp, ss);
+        ss << ")";
         addDebug(triggerNumber, ss.str());
 
         //
         ++triggerNumber;
     }
+
+    // Construct the map from old SenTrees to new SenTrees
+    for (const AstSenTree* const senTreep : senTreeps) {
+        AstSenTree* const trigpSenp = new AstSenTree{flp, nullptr};
+        for (const AstSenItem *itemp = senTreep->sensesp(), *nextp; itemp; itemp = nextp) {
+            nextp = VN_AS(itemp->nextp(), SenItem);
+            const uint32_t tiggerIndex = senItemIndex2TriggerIndex.at(senItemp2Index.at(itemp));
+            trigpSenp->addSensesp(new AstSenItem{flp, VEdgeType::ET_TRUE, getTrig(tiggerIndex)});
+        }
+        topScopep->addSenTreesp(trigpSenp);
+        map[senTreep] = trigpSenp;
+    }
+
     // Add the init and update statements
     for (AstNodeStmt* const nodep : senExprBuilder.getAndClearInits()) {
         initFuncp->addStmtsp(nodep);

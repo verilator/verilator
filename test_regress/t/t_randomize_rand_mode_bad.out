@@ -1,0 +1,27 @@
+%Error: t/t_randomize_rand_mode_bad.v:22:15: Cannot call 'rand_mode()' on non-random, non-class variable
+                                           : ... note: In instance 't'
+   22 |       p.m_val.rand_mode(0);
+      |               ^~~~~~~~~
+%Error: t/t_randomize_rand_mode_bad.v:23:19: Cannot call 'rand_mode()' on packed array element
+                                           : ... note: In instance 't'
+   23 |       p.m_pack[0].rand_mode(0);
+      |                   ^~~~~~~~~
+%Error: t/t_randomize_rand_mode_bad.v:24:39: Cannot call 'rand_mode()' as a function on non-random variable
+                                           : ... note: In instance 't'
+   24 |       $display("p.rand_mode()=%0d", p.rand_mode());
+      |                                       ^~~~~~~~~
+%Error: t/t_randomize_rand_mode_bad.v:25:18: 'rand_mode()' with arguments cannot be called as a function
+                                           : ... note: In instance 't'
+   25 |       $display(p.rand_mode(0));
+      |                  ^~~~~~~~~
+%Warning-IGNOREDRETURN: t/t_randomize_rand_mode_bad.v:26:21: Ignoring return value of non-void function (IEEE 1800-2023 13.4.1)
+                                                           : ... note: In instance 't'
+   26 |       p.m_other_val.rand_mode();
+      |                     ^~~~~~~~~
+                        ... For warning description see https://verilator.org/warn/IGNOREDRETURN?v=latest
+                        ... Use "/* verilator lint_off IGNOREDRETURN */" and lint_on around source to disable this message.
+%Error: t/t_randomize_rand_mode_bad.v:13:14: Cannot call 'rand_mode()' as a function on non-random variable
+                                           : ... note: In instance 't'
+   13 |       return rand_mode();
+      |              ^~~~~~~~~
+%Error: Exiting due to

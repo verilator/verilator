@@ -8,6 +8,7 @@ class Packet;
    rand int x;
    rand bit [31:0] b;
    rand bit [31:0] c;
+   rand bit [31:0] d;
    rand bit tiny;
    rand bit zero;
    rand bit one;
@@ -31,10 +32,11 @@ class Packet;
    constraint cond { (tiny == 1 ? b : c) != 17; }
    constraint zero_c { zero == 0; }
    constraint one_c { one == 1; }
+   constraint sel { d[15:8] == 8'h55; }
    constraint ifelse {
-      if (one == 1) out0 == 'h333;
+      if (one) out0 == 'h333;
 
-      if (one == 0) tiny != tiny;
+      if (!one) tiny != tiny;
       else out1 == 'h333;
       if (one == 1) out2 == 'h333;
       else tiny != tiny;
@@ -56,6 +58,11 @@ class Packet;
       else
          if (one == 1) tiny != tiny;
          else { tiny != tiny; }
+
+      if (one && zero) tiny != tiny;
+      if (~one && zero) tiny != tiny;
+      if (zero || (one & zero)) tiny != tiny;
+      if (zero && (one | zero)) tiny != tiny;
    }
 
 endclass
@@ -88,6 +95,7 @@ module t (/*AUTOARG*/);
       if (p.out4 != 'h333) $stop;
       if (p.out5 != 'h333) $stop;
       if (p.out6 != 'h333) $stop;
+      if (p.d[15:8] != 'h55) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

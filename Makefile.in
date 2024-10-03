@@ -52,6 +52,7 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 MAKEINFO = makeinfo
 POD2TEXT = pod2text
+PYTHON3 = @PYTHON3@
 MKINSTALLDIRS = $(SHELL) $(srcdir)/src/mkinstalldirs
 
 # Version (for docs/guide/conf.py)
@@ -76,7 +77,7 @@ datadir = @datadir@
 # Directory in which to install documentation info files.
 infodir = @infodir@
 
-# Directory in which to install package specific files
+# Directory in which to install package-specific files
 # Generally ${prefix}/share/verilator
 pkgdatadir = @pkgdatadir@
 
@@ -96,6 +97,7 @@ PACKAGE_VERSION = @PACKAGE_VERSION@
 
 #### End of system configuration section. ####
 ######################################################################
+# Main build targets
 
 .SUFFIXES:
 
@@ -146,6 +148,9 @@ verilator_exe verilator_bin$(EXEEXT) verilator_bin_dbg$(EXEEXT) verilator_covera
 	@echo "making verilator in src"
 	$(MAKE) -C src $(OBJCACHE_JOBS)
 
+######################################################################
+# Tests
+
 .PHONY:msg_test
 msg_test: all_nomsg
 	@echo "Build complete!"
@@ -156,7 +161,7 @@ msg_test: all_nomsg
 .PHONY: test
 ifeq ($(CFG_WITH_LONGTESTS),yes)  # Local... Else don't burden users
 test: smoke-test test_regress
-# examples is part of test_regress's test_regress/t/t_a2_examples.pl
+# examples is part of test_regress's test_regress/t/t_a2_examples.py
 # (because that allows it to run in parallel with other test_regress's)
 else
 test: smoke-test examples
@@ -168,8 +173,8 @@ endif
 	@echo
 
 smoke-test: all_nomsg
-	test_regress/t/t_a1_first_cc.pl
-	test_regress/t/t_a2_first_sc.pl
+	test_regress/t/t_a1_first_cc.py
+	test_regress/t/t_a2_first_sc.py
 
 test_regress: all_nomsg
 	$(MAKE) -C test_regress
@@ -182,6 +187,9 @@ examples: all_nomsg
 	for p in $(EXAMPLES) ; do \
 	  $(MAKE) -C $$p VERILATOR_ROOT=`pwd` || exit 10; \
 	done
+
+######################################################################
+# Docs
 
 .PHONY: docs
 docs: info
@@ -203,6 +211,20 @@ verilator.html:
 .PHONY: verilator.pdf
 verilator.pdf: Makefile
 	$(MAKE) -C docs verilator.pdf
+
+TAGFILES=${srcdir}/*/*.cpp ${srcdir}/*/*.h ${srcdir}/*/*.in \
+	${srcdir}/*.in ${srcdir}/*.pod
+
+TAGS: $(TAGFILES)
+	etags $(TAGFILES)
+
+.PHONY: doxygen
+
+doxygen:
+	$(MAKE) -C docs doxygen
+
+######################################################################
+# Install
 
 # Public executables intended to be invoked directly by the user
 # Don't put wildcards in these variables, it might cause an uninstall of other stuff
@@ -344,6 +366,19 @@ install-all: installbin installredirect installman installdata install-msg
 
 install-here: installman info
 
+install-msg:
+	@echo
+	@echo "Installed binaries to $(DESTDIR)$(bindir)/verilator"
+	@echo "Installed man to $(DESTDIR)$(mandir)/man1"
+	@echo "Installed examples to $(DESTDIR)$(pkgdatadir)/examples"
+	@echo
+	@echo "For documentation see 'man verilator' or 'verilator --help'"
+	@echo "For forums and to report bugs see https://verilator.org"
+	@echo
+
+######################################################################
+# Format/Lint
+
 # Use --xml flag to see the cppcheck code to use for suppression
 CPPCHECK1_CPP = $(wildcard $(srcdir)/include/*.cpp)
 CPPCHECK2_CPP = $(wildcard $(srcdir)/examples/*/*.cpp)
@@ -411,7 +446,8 @@ analyzer-include:
 	-rm -rf examples/*/obj*
 	scan-build $(MAKE) -k examples
 
-format: clang-format yapf format-pl-exec
+format:
+	$(MAKE) -j 4 clang-format yapf format-exec
 
 CLANGFORMAT = clang-format-14
 CLANGFORMAT_FLAGS = -i
@@ -422,6 +458,20 @@ clang-format:
 		|| echo "*** You are not using clang-format-14, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
 
+YAMLFIX = YAMLFIX_WHITELINES=1 YAMLFIX_LINE_LENGTH=130 YAMLFIX_preserve_quotes=true yamlfix
+
+yamlfix:
+	$(YAMLFIX) .
+
+# CMake files
+CMAKE_FILES = \
+	CMakeLists.txt \
+	examples/*/CMakeLists.txt \
+	src/CMakeLists.txt \
+	test_regress/CMakeLists.txt \
+	*.cmake.in \
+
+# Python programs, subject to format and lint
 PY_PROGRAMS = \
 	bin/verilator_ccache_report \
 	bin/verilator_difftree \
@@ -440,6 +490,7 @@ PY_PROGRAMS = \
 	src/flexfix \
 	src/vlcovgen \
 	src/.gdbinit.py \
+	test_regress/*.py \
 	test_regress/t/*.pf \
 	nodist/clang_check_attributes \
 	nodist/code_coverage \
@@ -447,45 +498,55 @@ PY_PROGRAMS = \
 	nodist/fuzzer/actual_fail \
 	nodist/fuzzer/generate_dictionary \
 	nodist/install_test \
+	nodist/log_changes \
 
+# Python files, subject to format but not lint
 PY_FILES = \
 	$(PY_PROGRAMS) \
 	nodist/code_coverage.dat \
+	test_regress/t/*.py \
+
+# Python files, test_regress tests
+PY_TEST_FILES = \
+	test_regress/t/*.py \
 
 YAPF = yapf3
-YAPF_FLAGS = -i
+YAPF_FLAGS = -i --parallel
 
 yapf:
 	$(YAPF) $(YAPF_FLAGS) $(PY_FILES)
 
+GERSEMI = gersemi
+GERSEMI_FLAGS = -i
+
+format-cmake:
+	$(GERSEMI) $(GERSEMI_FLAGS) $(CMAKE_FILES)
+
 PYLINT = pylint
-PYLINT_FLAGS = --score=n --disable=R0801
+PYLINT_FLAGS = --recursive=n --score=n --disable=R0801
+PYLINT_TEST_FLAGS = $(PYLINT_FLAGS) --disable=C0103,C0114,C0116,C0209,C0411,C0413,C0301,R0801,R0912,R0915,R0916,R1702,W0511,W0621
 
 RUFF = ruff
 RUFF_FLAGS = check --ignore=E402,E501,E701
 
 # "make -k" so can see all tool result errors
 lint-py:
-	$(MAKE) -k lint-py-pylint lint-py-ruff
+	$(MAKE) -k lint-py-pylint lint-py-pylint-tests lint-py-ruff
 
 lint-py-pylint:
 	$(PYLINT) $(PYLINT_FLAGS) $(PY_PROGRAMS)
 
+lint-py-pylint-tests:
+	$(PYLINT) $(PYLINT_TEST_FLAGS) $(PY_TEST_FILES) | $(PYTHON3) nodist/lint_py_test_filter
+
 lint-py-ruff:
 	$(RUFF) $(RUFF_FLAGS) $(PY_PROGRAMS)
 
-format-pl-exec:
-	-chmod a+x test_regress/t/*.pl
+format-exec:
+	-chmod a+x test_regress/t/*.py
 
-install-msg:
-	@echo
-	@echo "Installed binaries to $(DESTDIR)$(bindir)/verilator"
-	@echo "Installed man to $(DESTDIR)$(mandir)/man1"
-	@echo "Installed examples to $(DESTDIR)$(pkgdatadir)/examples"
-	@echo
-	@echo "For documentation see 'man verilator' or 'verilator --help'"
-	@echo "For forums and to report bugs see https://verilator.org"
-	@echo
+######################################################################
+# Configure
 
 IN_WILD := ${srcdir}/*.in ${srcdir}/*/*.in
 
@@ -505,6 +566,9 @@ ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users
 else
 	autoconf
 endif
+
+######################################################################
+# Clean
 
 maintainer-clean::
 	@echo "This command is intended for maintainers to use;"
@@ -535,17 +599,6 @@ distclean maintainer-clean::
 	rm -f verilator_bin* verilator_coverage_bin*
 	rm -f bin/verilator_bin* bin/verilator_coverage_bin*
 	rm -f include/verilated.mk include/verilated_config.h
-
-TAGFILES=${srcdir}/*/*.cpp ${srcdir}/*/*.h ${srcdir}/*/*.in \
-	${srcdir}/*.in ${srcdir}/*.pod
-
-TAGS: $(TAGFILES)
-	etags $(TAGFILES)
-
-.PHONY: doxygen
-
-doxygen:
-	$(MAKE) -C docs doxygen
 
 ######################################################################
 # Distributions

@@ -47,4 +47,12 @@ struct FunctionTraits<ReturnType (ClassType::*)(Args...) const> VL_NOT_FINAL {
     };
 };
 
+template <typename T_Callable, size_t index>
+struct FunctionArgNoPointerNoCV final {
+    using Traits = FunctionTraits<T_Callable>;
+    using T_Arg = typename Traits::template arg<index>::type;
+    using T_ArgNoPtr = typename std::remove_pointer<T_Arg>::type;
+    using type = typename std::remove_cv<T_ArgNoPtr>::type;
+};
+
 #endif

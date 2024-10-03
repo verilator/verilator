@@ -1,0 +1,14 @@
+TN:verilator_coverage
+SF:t/t_cover_toggle_min.v
+DA:10,1
+BRDA:10,0,0,1
+BRDA:10,0,1,0
+DA:11,1
+BRDA:11,0,0,0
+BRDA:11,0,1,1
+DA:12,2
+BRDA:12,0,0,2
+BRDA:12,0,1,1
+BRF:6
+BRH:0
+end_of_record

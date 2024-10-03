@@ -22,7 +22,6 @@
 #include "verilatedos.h"
 
 #include "V3Error.h"
-#include "V3ThreadSafety.h"
 
 #include <vector>
 
@@ -35,7 +34,7 @@ public:
     // This is the cost function that the TSP sort will minimize.
     // All costs in V3TSP are int, chosen to match the type of
     // V3GraphEdge::weight() which will reflect each edge's cost.
-    virtual int cost(const TspStateBase* otherp) const = 0;
+    virtual int cost(const TspStateBase* otherp) const VL_MT_SAFE = 0;
 
     // This operator< must place a meaningless, arbitrary, but
     // stable order on all TspStateBase's. It's used only to
@@ -50,7 +49,7 @@ using StateVec = std::vector<const TspStateBase*>;
 
 // Given an unsorted set of TspState's, sort them to minimize
 // the transition cost for walking the sorted list.
-void tspSort(const StateVec& states, StateVec* resultp) VL_MT_DISABLED;
+void tspSort(const StateVec& states, StateVec* resultp) VL_MT_SAFE;
 
 void selfTest() VL_MT_DISABLED;
 }  // namespace V3TSP

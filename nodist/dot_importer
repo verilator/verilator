@@ -20,8 +20,7 @@ def dotread(filename):
         vnum = 0
 
         vertex_re = re.compile(r'^\t([a-zA-Z0-9_]+)\t(.*)$')
-        edge_re = re.compile(
-            r'^\t([a-zA-Z0-9_]+)\s+->\s+([a-zA-Z0-9_]+)\s*(.*)$')
+        edge_re = re.compile(r'^\t([a-zA-Z0-9_]+)\s+->\s+([a-zA-Z0-9_]+)\s*(.*)$')
 
         for line in fh:
             vertex_match = re.search(vertex_re, line)
@@ -29,11 +28,7 @@ def dotread(filename):
             if vertex_match:
                 if vertex_match.group(1) != 'nTITLE':
                     header = False
-                    Vertexes.append({
-                        'num': vnum,
-                        'line': line,
-                        'name': vertex_match.group(1)
-                    })
+                    Vertexes.append({'num': vnum, 'line': line, 'name': vertex_match.group(1)})
                     vnum += 1
             elif edge_match:
                 fromv = edge_match.group(1)
@@ -65,14 +60,13 @@ def cwrite(filename):
         fh.write("void V3GraphTestImport::dotImport() {\n")
         fh.write("    auto* gp = &m_graph;\n")
         for ver in sorted(Vertexes, key=lambda ver: ver['num']):
-            fh.write(
-                "    auto* %s = new V3GraphTestVertex{gp, \"%s\"};  if (%s) {}\n"
-                % (ver['name'], ver['name'], ver['name']))
+            fh.write("    auto* %s = new V3GraphTestVertex{gp, \"%s\"};  if (%s) {}\n" %
+                     (ver['name'], ver['name'], ver['name']))
         fh.write("\n")
         for edge in Edges:
-            fh.write("    new V3GraphEdge{gp, %s, %s, %s, %s};\n" %
-                     (edge['from'], edge['to'], edge['weight'],
-                      "true" if edge['cutable'] else "false"))
+            fh.write(
+                "    new V3GraphEdge{gp, %s, %s, %s, %s};\n" %
+                (edge['from'], edge['to'], edge['weight'], "true" if edge['cutable'] else "false"))
         fh.write("}\n")
 
 
@@ -82,22 +76,17 @@ def cwrite(filename):
 parser = argparse.ArgumentParser(
     allow_abbrev=False,
     formatter_class=argparse.RawDescriptionHelpFormatter,
-    description=
-    """dot_importer takes a graphvis .dot file and converts into .cpp file.
+    description="""dot_importer takes a graphvis .dot file and converts into .cpp file.
 This x.cpp file is then manually included in V3GraphTest.cpp to verify
 various xsub-algorithms.""",
-    epilog=
-    """Copyright 2005-2024 by Wilson Snyder. This program is free software; you
+    epilog="""Copyright 2005-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
 
 SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
 
-parser.add_argument('--debug',
-                    action='store_const',
-                    const=9,
-                    help='enable debug')
+parser.add_argument('--debug', action='store_const', const=9, help='enable debug')
 parser.add_argument('filename', help='input .dot filename to process')
 
 Args = parser.parse_args()

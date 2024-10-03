@@ -66,6 +66,9 @@ module t;
 `endif
    task dpix_t_time(input time i, output time o);  o = ~i; endtask
 
+   export "DPI-C" function dpix__under___score;
+   function int dpix__under___score(input int i);  return i + 1; endfunction
+
    int lineno;
 
    initial begin

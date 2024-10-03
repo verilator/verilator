@@ -45,7 +45,6 @@ class LinkParseVisitor final : public VNVisitor {
     using ImplTypedefMap = std::map<const std::pair<void*, std::string>, AstTypedef*>;
 
     // STATE
-    AstPackage* const m_stdPackagep;  // SystemVerilog std package
     AstVar* m_varp = nullptr;  // Variable we're under
     ImplTypedefMap m_implTypedef;  // Created typedefs for each <container,name>
     std::unordered_set<FileLine*> m_filelines;  // Filelines that have been seen
@@ -192,9 +191,7 @@ class LinkParseVisitor final : public VNVisitor {
                 if (!nodep->lifetime().isNone()) {
                     m_lifetime = nodep->lifetime();
                 } else {
-                    const AstClassOrPackageRef* const classPkgRefp
-                        = VN_AS(nodep->classOrPackagep(), ClassOrPackageRef);
-                    if (classPkgRefp && VN_IS(classPkgRefp->classOrPackageNodep(), Class)) {
+                    if (nodep->classMethod()) {
                         // Class methods are automatic by default
                         m_lifetime = VLifetime::AUTOMATIC;
                     } else if (nodep->dpiImport() || VN_IS(nodep, Property)) {
@@ -371,9 +368,12 @@ class LinkParseVisitor final : public VNVisitor {
             FileLine* const fl = nodep->valuep()->fileline();
             if (nodep->isParam() || (m_ftaskp && nodep->isNonOutput())) {
                 // 1. Parameters and function inputs: It's a default to use if not overridden
-            } else if (!m_ftaskp && !VN_IS(m_modp, Class) && nodep->isNonOutput()) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Default value on module input: "
-                                                 << nodep->prettyNameQ());
+            } else if (!m_ftaskp && !VN_IS(m_modp, Class) && nodep->isNonOutput()
+                       && !nodep->isInput()) {
+                // Module inout/ref/constref: const default to use
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: Default value on module inout/ref/constref: "
+                                  << nodep->prettyNameQ());
                 nodep->valuep()->unlinkFrBack()->deleteTree();
             }  // 2. Under modules/class, it's an initial value to be loaded at time 0 via an
                // AstInitial
@@ -396,15 +396,6 @@ class LinkParseVisitor final : public VNVisitor {
                 nodep->addNextHere(
                     new AstAssign{fl, new AstVarRef{fl, nodep, VAccess::WRITE},
                                   VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)});
-            }
-        }
-        if (nodep->isIfaceRef() && !nodep->isIfaceParent() && !v3Global.opt.topIfacesSupported()) {
-            // Only AstIfaceRefDType's at this point correspond to ports;
-            // haven't made additional ones for interconnect yet, so assert is simple
-            // What breaks later is we don't have a Scope/Cell representing
-            // the interface to attach to
-            if (m_modp->level() <= 2) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Interfaced port on top level module");
             }
         }
     }
@@ -838,10 +829,8 @@ class LinkParseVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }
-    void visit(AstClassOrPackageRef* nodep) override {
-        if (nodep->name() == "std" && !nodep->classOrPackagep()) {
-            nodep->classOrPackagep(m_stdPackagep);
-        }
+    void visit(AstClassOrPackageRef* nodep) override {  //
+        iterateChildren(nodep);
     }
     void visit(AstClocking* nodep) override {
         cleanFileline(nodep);
@@ -914,10 +903,7 @@ class LinkParseVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit LinkParseVisitor(AstNetlist* rootp)
-        : m_stdPackagep{rootp->stdPackagep()} {
-        iterate(rootp);
-    }
+    explicit LinkParseVisitor(AstNetlist* rootp) { iterate(rootp); }
     ~LinkParseVisitor() override {
         V3Stats::addStatSum(V3Stats::STAT_SOURCE_MODULES, m_statModules);
     }

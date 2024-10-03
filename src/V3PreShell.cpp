@@ -87,7 +87,7 @@ protected:
     bool preproc(FileLine* fl, const string& modname, VInFilter* filterp, V3ParseImp* parsep,
                  const string& errmsg) {  // "" for no error
         // Preprocess the given module, putting output in vppFilename
-        UINFONL(1, "  Preprocessing " << modname << endl);
+        UINFO(1, "Preprocessing " << modname << endl);
 
         // Preprocess
         s_filterp = filterp;

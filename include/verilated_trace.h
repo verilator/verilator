@@ -49,10 +49,12 @@ class VerilatedTraceOffloadBuffer;
 //=============================================================================
 // Common enumerations
 
-enum class VerilatedTracePrefixType : uint32_t {
+enum class VerilatedTracePrefixType : uint8_t {
     // Note: Entries must match VTracePrefixType (by name, not necessarily by value)
     ARRAY_PACKED,
     ARRAY_UNPACKED,
+    ROOTIO_MODULE,  // $rootio, used when name()=="", other modules become peers
+    ROOTIO_WRAPPER,  // "Above" ROOTIO_MODULE
     SCOPE_MODULE,
     SCOPE_INTERFACE,
     STRUCT_PACKED,
@@ -61,7 +63,7 @@ enum class VerilatedTracePrefixType : uint32_t {
 };
 
 // Direction attribute for ports
-enum class VerilatedTraceSigDirection : uint32_t {
+enum class VerilatedTraceSigDirection : uint8_t {
     NONE,
     INPUT,
     OUTPUT,
@@ -69,7 +71,7 @@ enum class VerilatedTraceSigDirection : uint32_t {
 };
 
 // Kind of signal. Similar to nettype but with a few more alternatives
-enum class VerilatedTraceSigKind : uint32_t {
+enum class VerilatedTraceSigKind : uint8_t {
     PARAMETER,
     SUPPLY0,
     SUPPLY1,
@@ -81,7 +83,7 @@ enum class VerilatedTraceSigKind : uint32_t {
 };
 
 // Base data type of signal
-enum class VerilatedTraceSigType : uint32_t {
+enum class VerilatedTraceSigType : uint8_t {
     DOUBLE,
     INTEGER,
     BIT,
@@ -198,8 +200,8 @@ public:
 //=============================================================================
 // VerilatedTrace
 
-// T_Trace is the format specific subclass of VerilatedTrace.
-// T_Buffer is the format specific base class of VerilatedTraceBuffer.
+// T_Trace is the format-specific subclass of VerilatedTrace.
+// T_Buffer is the format-specific base class of VerilatedTraceBuffer.
 template <class T_Trace, class T_Buffer>
 class VerilatedTrace VL_NOT_FINAL {
 public:
@@ -348,7 +350,7 @@ private:
 
 protected:
     //=========================================================================
-    // Internals available to format specific implementations
+    // Internals available to format-specific implementations
 
     mutable VerilatedMutex m_mutex;  // Ensure dump() etc only called from single thread
 
@@ -381,7 +383,7 @@ protected:
     }
 
     //=========================================================================
-    // Virtual functions to be provided by the format specific implementation
+    // Virtual functions to be provided by the format-specific implementation
 
     // Called when the trace moves forward to a new time point
     virtual void emitTimeChange(uint64_t timeui) = 0;
@@ -438,7 +440,7 @@ public:
 //=============================================================================
 // VerilatedTraceBuffer
 
-// T_Buffer is the format specific base class of VerilatedTraceBuffer.
+// T_Buffer is the format-specific base class of VerilatedTraceBuffer.
 // The format-specific hot-path methods use duck-typing via T_Buffer for performance.
 template <class T_Buffer>
 class VerilatedTraceBuffer VL_NOT_FINAL : public T_Buffer {
@@ -464,7 +466,7 @@ public:
     // Hot path internal interface to Verilator generated code
 
     // Implementation note: We rely on the following duck-typed implementations
-    // in the derived class T_Derived. These emit* functions record a format
+    // in the derived class T_Derived. These emit* functions record a format-
     // specific trace entry. Normally one would use pure virtual functions for
     // these here, but we cannot afford dynamic dispatch for calling these as
     // this is very hot code during tracing.
@@ -487,7 +489,8 @@ public:
     void fullQData(uint32_t* oldp, QData newval, int bits);
     void fullWData(uint32_t* oldp, const WData* newvalp, int bits);
     void fullDouble(uint32_t* oldp, double newval);
-    void fullEvent(uint32_t* oldp, const VlEventBase* newval);
+    void fullEvent(uint32_t* oldp, const VlEventBase* newvalp);
+    void fullEventTriggered(uint32_t* oldp);
 
     // In non-offload mode, these are called directly by the trace callbacks,
     // and are called chg*. In offload mode, they are called by the worker
@@ -524,9 +527,10 @@ public:
             }
         }
     }
-    VL_ATTR_ALWINLINE void chgEvent(uint32_t* oldp, const VlEventBase* newval) {
-        fullEvent(oldp, newval);
+    VL_ATTR_ALWINLINE void chgEvent(uint32_t* oldp, const VlEventBase* newvalp) {
+        if (newvalp->isTriggered()) fullEvent(oldp, newvalp);
     }
+    VL_ATTR_ALWINLINE void chgEventTriggered(uint32_t* oldp) { fullEventTriggered(oldp); }
     VL_ATTR_ALWINLINE void chgDouble(uint32_t* oldp, double newval) {
         double old;
         std::memcpy(&old, oldp, sizeof(old));
@@ -537,7 +541,7 @@ public:
 //=============================================================================
 // VerilatedTraceOffloadBuffer
 
-// T_Buffer is the format specific base class of VerilatedTraceBuffer.
+// T_Buffer is the format-specific base class of VerilatedTraceBuffer.
 // The format-specific hot-path methods use duck-typing via T_Buffer for performance.
 template <class T_Buffer>
 class VerilatedTraceOffloadBuffer final : public VerilatedTraceBuffer<T_Buffer> {
@@ -605,7 +609,10 @@ public:
         m_offloadBufferWritep += 4;
         VL_DEBUG_IF(assert(m_offloadBufferWritep <= m_offloadBufferEndp););
     }
-    void chgEvent(uint32_t code, const VlEventBase* newval) {
+    void chgEvent(uint32_t code, const VlEventBase* newvalp) {
+        if (newvalp->isTriggered()) chgEventTriggered(code);
+    }
+    void chgEventTriggered(uint32_t code) {
         m_offloadBufferWritep[0] = VerilatedTraceOffloadCommand::CHG_EVENT;
         m_offloadBufferWritep[1] = code;
         m_offloadBufferWritep += 2;

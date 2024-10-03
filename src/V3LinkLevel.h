@@ -22,7 +22,6 @@
 
 #include "V3Ast.h"
 #include "V3Error.h"
-#include "V3ThreadSafety.h"
 
 #include <vector>
 

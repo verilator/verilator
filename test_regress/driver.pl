@@ -658,7 +658,7 @@ sub new {
         pli_flags => ["-I$ENV{VERILATOR_ROOT}/include/vltstd -fPIC -shared"
                       . (($^O eq "darwin" )
                          ? " -Wl,-undefined,dynamic_lookup"
-                         : " -export-dynamic")
+                         : " -rdynamic")
                       . ($opt_verbose ? " -DTEST_VERBOSE=1" : "")
                       . " -o $self->{obj_dir}/libvpi.so"],
         tool_c_flags => [],
@@ -1024,7 +1024,7 @@ sub lint {
     my $self = (ref $_[0] ? shift : $Self);
     my %param = (#
                  %{$self},  # Default arguments are from $self
-                 # Lint specific default overrides
+                 # Lint-specific default overrides
                  make_main => 0,
                  make_top_shell => 0,
                  verilator_flags2 => ["--lint-only"],
@@ -1319,6 +1319,11 @@ sub execute {
     delete $ENV{SYSTEMC_DISABLE_COPYRIGHT_MESSAGE};
     $ENV{SYSTEMC_DISABLE_COPYRIGHT_MESSAGE} = "DISABLE" if !$self->{verbose};
 
+    $ENV{VERILATOR_SOLVER} = "test.pl-file-needs-have_solver()-call"
+        if !$self->{_have_solver_called};
+
+    $param{check_finished} = 1 if !defined $param{check_finished} && !$param{fails};
+
     my $run_env = $param{run_env};
     $run_env .= ' ' if $run_env;
 
@@ -1612,6 +1617,8 @@ sub cmake_version {
 
 our $_have_solver = undef;
 sub have_solver {
+    my $self = (ref $_[0] ? shift : $Self);
+    $self->{_have_solver_called} = 1;
     if (!defined($_have_solver)) {
         my $ok = `(z3 --help || cvc5 --help || cvc4 --help) 2>/dev/null`;
         $ok ||= "";
@@ -1843,7 +1850,7 @@ sub _run {
             # Finished?
             if ($param{check_finished} && $wholefile !~ /\*\-\* All Finished \*\-\*/) {
                 next if $moretry;
-                $self->error("Missing All Finished\n");
+                $self->error("Missing '*-* All Finished *-*'\n");
             }
             if ($param{expect}) {
                 # Strip debugging comments
@@ -2384,6 +2391,7 @@ sub files_identical {
                 !/^- [^\n]+\n/
                     && !/^- [a-z.0-9]+:\d+:[^\n]+\n/
                     && !/^-node:/
+                    && !/^Aborted \(core dumped\)/
                     && !/^dot [^\n]+\n/
                     && !/^In file: .*\/sc_.*:\d+/
                     && !/^libgcov.*/

@@ -1,0 +1,6 @@
+%Error-ASSIGNIN: t/t_module_input_default_value_1_bad.v:16:10: Assigning to input/const variable: 'i'
+                                                             : ... note: In instance 't.u_dut_should_fail_compile1'
+   16 |   assign i = 1'b0;  
+      |          ^
+                 ... For error description see https://verilator.org/warn/ASSIGNIN?v=latest
+%Error: Exiting due to

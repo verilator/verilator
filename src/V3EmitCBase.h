@@ -22,7 +22,6 @@
 
 #include "V3Ast.h"
 #include "V3File.h"
-#include "V3ThreadSafety.h"
 
 #include <cmath>
 #include <cstdarg>
@@ -66,10 +65,9 @@ public:
     static string topClassName() VL_MT_SAFE {  // Return name of top wrapper module
         return v3Global.opt.prefix();
     }
-    static string prefixNameProtect(const AstNode* nodep) VL_MT_STABLE {  // C++ name with prefix
-        return v3Global.opt.modPrefix() + "_" + VIdProtect::protect(nodep->name());
-    }
-    static bool isAnonOk(const AstVar* varp) {
+    // Return C++ class name for a module/class object
+    static string prefixNameProtect(const AstNode* nodep) VL_MT_STABLE;
+    static bool isAnonOk(const AstVar* varp) VL_MT_STABLE {
         AstNodeDType* const dtp = varp->dtypep()->skipRefp();
         return v3Global.opt.compLimitMembers() != 0  // Enabled
                && !varp->isStatic()  // Not a static variable
@@ -87,9 +85,38 @@ class EmitCBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst, public EmitCBa
 public:
     // STATE
     V3OutCFile* m_ofp = nullptr;
+    AstCFile* m_outFileNodep = nullptr;
+    int m_splitSize = 0;  // # of cfunc nodes placed into output file
     bool m_trackText = false;  // Always track AstText nodes
     // METHODS
+
+    // Returns pointer to current output file object.
     V3OutCFile* ofp() const VL_MT_SAFE { return m_ofp; }
+    // Returns pointer to the AST node that represents the output file (`ofp()`)
+    AstCFile* outFileNodep() const VL_MT_SAFE { return m_outFileNodep; }
+
+    // Sets ofp() and outFileNodep() to the given pointers, without closing a file these pointers
+    // currently point to.
+    void setOutputFile(V3OutCFile* ofp, AstCFile* nodep) {
+        m_ofp = ofp;
+        m_outFileNodep = nodep;
+    }
+
+    // Sets ofp() and outFileNodep() to null, without closing a file these pointers currently point
+    // to. NOTE: Dummy nullptr argument is taken to make function calls more explicit.
+    void setOutputFile(std::nullptr_t nullp) {
+        UASSERT(nullp == nullptr, "Expected nullptr as the argument");
+        m_ofp = nullp;
+        m_outFileNodep = nullp;
+    }
+
+    // Closes current output file. Sets ofp() and outFileNodep() to nullptr.
+    void closeOutputFile() {
+        VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+        m_outFileNodep->complexityScore(m_splitSize);
+        m_outFileNodep = nullptr;
+    }
+
     void puts(const string& str) { ofp()->puts(str); }
     void putns(const AstNode* nodep, const string& str) { ofp()->putns(nodep, str); }
     void putsHeader() { ofp()->putsHeader(); }

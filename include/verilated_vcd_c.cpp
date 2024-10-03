@@ -305,8 +305,22 @@ void VerilatedVcd::printIndent(int level_change) {
 }
 
 void VerilatedVcd::pushPrefix(const std::string& name, VerilatedTracePrefixType type) {
-    std::string newPrefix = m_prefixStack.back().first + name;
+    assert(!m_prefixStack.empty());  // Constructor makes an empty entry
+    std::string pname = name;
+    // An empty name means this is the root of a model created with name()=="".  The
+    // tools get upset if we try to pass this as empty, so we put the signals under a
+    // new scope, but the signals further down will be peers, not children (as usual
+    // for name()!="")
+    // Terminate earlier $root?
+    if (m_prefixStack.back().second == VerilatedTracePrefixType::ROOTIO_MODULE) popPrefix();
+    if (pname.empty()) {  // Start new temporary root
+        pname = "$rootio";  // VCD names are not backslash escaped
+        m_prefixStack.emplace_back("", VerilatedTracePrefixType::ROOTIO_WRAPPER);
+        type = VerilatedTracePrefixType::ROOTIO_MODULE;
+    }
+    std::string newPrefix = m_prefixStack.back().first + pname;
     switch (type) {
+    case VerilatedTracePrefixType::ROOTIO_MODULE:
     case VerilatedTracePrefixType::SCOPE_MODULE:
     case VerilatedTracePrefixType::SCOPE_INTERFACE:
     case VerilatedTracePrefixType::STRUCT_PACKED:
@@ -326,7 +340,9 @@ void VerilatedVcd::pushPrefix(const std::string& name, VerilatedTracePrefixType 
 }
 
 void VerilatedVcd::popPrefix() {
+    assert(!m_prefixStack.empty());
     switch (m_prefixStack.back().second) {
+    case VerilatedTracePrefixType::ROOTIO_MODULE:
     case VerilatedTracePrefixType::SCOPE_MODULE:
     case VerilatedTracePrefixType::SCOPE_INTERFACE:
     case VerilatedTracePrefixType::STRUCT_PACKED:
@@ -338,7 +354,7 @@ void VerilatedVcd::popPrefix() {
     default: break;
     }
     m_prefixStack.pop_back();
-    assert(!m_prefixStack.empty());
+    assert(!m_prefixStack.empty());  // Always one left, the constructor's initial one
 }
 
 void VerilatedVcd::declare(uint32_t code, const char* name, const char* wirep, bool array,
@@ -573,16 +589,11 @@ void VerilatedVcdBuffer::finishLine(uint32_t code, char* writep) {
 // so always inline them.
 
 VL_ATTR_ALWINLINE
-void VerilatedVcdBuffer::emitEvent(uint32_t code, const VlEventBase* newval) {
-    const bool triggered = newval->isTriggered();
-    // TODO : It seems that untriggered events are not filtered
-    // should be tested before this last step
-    if (triggered) {
-        // Don't prefetch suffix as it's a bit too late;
-        char* wp = m_writep;
-        *wp++ = '1';
-        finishLine(code, wp);
-    }
+void VerilatedVcdBuffer::emitEvent(uint32_t code) {
+    // Don't prefetch suffix as it's a bit too late;
+    char* wp = m_writep;
+    *wp++ = '1';
+    finishLine(code, wp);
 }
 
 VL_ATTR_ALWINLINE

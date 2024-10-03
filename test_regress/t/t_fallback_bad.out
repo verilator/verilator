@@ -1,0 +1,30 @@
+%Error: t/t_fallback_bad.v:26:16: Can't find definition of task/function: 'tsk'
+   26 |          super.tsk;
+      |                ^~~
+%Error: t/t_fallback_bad.v:27:15: Can't find definition of task/function: 'tsk'
+   27 |          this.tsk;
+      |               ^~~
+%Error: t/t_fallback_bad.v:28:16: Can't find definition of variable: 'f'
+   28 |          super.f = 8;
+      |                ^
+%Error: t/t_fallback_bad.v:29:15: Can't find definition of variable: 'f'
+   29 |          this.f = 8;
+      |               ^
+%Error: t/t_fallback_bad.v:30:20: Can't find definition of 'tsk' in dotted task/function: 'sub1.sub2.tsk'
+   30 |          sub1.sub2.tsk;
+      |                    ^~~
+        ... Known scopes under 'tsk': sub2
+%Error: t/t_fallback_bad.v:31:15: Can't find definition of scope/variable/func: 'f'
+   31 |          pkg::f = 8;
+      |               ^
+%Error: t/t_fallback_bad.v:32:15: Can't find definition of task/function: 'tsk'
+   32 |          pkg::tsk();
+      |               ^~~
+%Error: t/t_fallback_bad.v:33:20: Can't find definition of 'f' in dotted variable: 'sub1.sub2.f'
+   33 |          sub1.sub2.f = 8;
+      |                    ^
+%Error: t/t_fallback_bad.v:34:20: Can't find definition of 'f' in dotted scope/variable: 'sub1.sub2.f'
+   34 |          sub1.sub2.f.f = 8;
+      |                    ^
+        ... Known scopes under 'sub1.sub2': <no instances found>
+%Error: Exiting due to

@@ -4,15 +4,21 @@
 // any use, without warranty, 2024 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
 
+`define check_rand(cl, field) \
+begin \
+   longint prev_result; \
+   int ok = 0; \
+   for (int i = 0; i < 10; i++) begin \
+      longint result; \
+      void'(cl.randomize()); \
+      result = longint'(field); \
+      if (i > 0 && result != prev_result) ok = 1; \
+      prev_result = result; \
+   end \
+   if (ok != 1) $stop; \
+end
+
 class Boo;
-  function new();
-    boo = 6;
-  endfunction
-
-  int unsigned boo;
-endclass
-
-class Boo2;
   function new();
     boo = 6;
   endfunction
@@ -30,12 +36,15 @@ class Foo extends Boo;
   endfunction
 
   constraint constr1_c { b < x; }
+  function bit test_this_randomize;
+    return this.randomize() with { a <= boo; } == 1;
+  endfunction
 endclass
 
 // Current AstWith representation makes VARs of caller indistinguishable from VARs of randomized
 // object if both the caller and callee are the same module, but different instances.
 // That's why for the purpose of this test, the caller derives a different class
-class Bar extends Boo2;
+class Bar extends Boo;
   // Give the local variables a different scope by defining the functino under Bar
   static function bit test_local_constrdep(Foo foo, int c);
     return foo.randomize() with { a <= c; a > 1; x % a == 0; } == 1;
@@ -43,16 +52,30 @@ class Bar extends Boo2;
 
   function bit test_capture_of_callers_derived_var(Foo foo);
     boo = 4;
+    foo.a = 3;
     return (foo.randomize() with { a == local::boo; } == 1) && (foo.a == 4);
   endfunction
 
   static function bit test_capture_of_callees_derived_var(Foo foo);
+    foo.a = 5;
+    return (foo.randomize() with { a == boo; } == 1) && (foo.a == 6);
+  endfunction
+
+  static function bit test_capture_of_local_qualifier(Foo foo);
+    foo.a = 5;
     return (foo.randomize() with { a == boo; } == 1) && (foo.a == 6);
   endfunction
 endclass
 
 class Baz;
   rand int v;
+endclass
+
+class Baz2;
+  rand int v;
+  function bit test_this_randomize;
+    return this.randomize() with { v == 5; } == 1;
+  endfunction
 endclass
 
 module submodule();
@@ -62,6 +85,15 @@ endmodule
 function automatic int return_2();
   return 2;
 endfunction
+
+class Cls;
+   rand int a;
+   rand int b;
+endclass
+
+class Cls2 extends Cls;
+   rand int c;
+endclass
 
 module mwith();
   submodule sub1();
@@ -75,7 +107,10 @@ module mwith();
     int c = 30;
     Foo foo = new(c);
     Baz baz = new;
+    Baz2 baz2 = new;
     Bar bar = new;
+    Cls2 cls2 = new;
+    Cls cls = cls2;
     $display("foo.x = %d", foo.x);
     $display("-----------------");
 
@@ -95,6 +130,17 @@ module mwith();
         $display("Failed to randomize foo with inline constraints");
     end
 
+    if (cls.randomize() with { b == 1;} != 1) $stop;
+    if (cls.b != 1) $stop;
+    `check_rand(cls2, cls2.a);
+    `check_rand(cls2, cls2.c);
+
+    // Check randomize as a task
+    // verilator lint_off IGNOREDRETURN
+    cls.randomize() with { b == 2;};
+    // verilator lint_on IGNOREDRETURN
+    if (cls.b != 2) $stop;
+
     // Check capture of a static variable
     if (foo.randomize() with { a > sub1.sub_var; } != 1) $stop;
     // Check reference to a function
@@ -105,6 +151,10 @@ module mwith();
     if (!bar.test_capture_of_callers_derived_var(foo)) $stop;
     // Check randomization with non-captured non-static variable from different AstNodeModule
     if (!Bar::test_capture_of_callees_derived_var(foo)) $stop;
+    // Check this.randomize()
+    if (!foo.test_this_randomize()) $stop;
+    // Check this.randomize() with no constraints
+    if (!baz2.test_this_randomize()) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish();

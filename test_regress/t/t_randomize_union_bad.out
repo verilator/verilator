@@ -1,0 +1,4 @@
+%Error: t/t_randomize_union_bad.v:7:9: Unpacked unions shall not be declared as rand or randc. (IEEE 1800-2023 18.4)
+    7 | typedef union {
+      |         ^~~~~
+%Error: Exiting due to

@@ -18,6 +18,7 @@ module t(/*AUTOARG*/
 
    event e1;
    event e2;
+   event e3;
 `ifndef IVERILOG
    event ev [3:0];
 `endif
@@ -50,16 +51,21 @@ module t(/*AUTOARG*/
             if (last_event != 0) $stop;
             -> e1;
             if (!e1.triggered) $stop;
+            if (e3.triggered) $stop;
+            -> e3;
+            if (!e3.triggered) $stop;
          end
          11: begin
             if (last_event != 32'b10) $stop;
             last_event = 0;
+            if (e3.triggered) $stop;
          end
          //
          13: begin
             if (last_event != 0) $stop;
             ->> e2;
             if (e2.triggered) $stop;
+            if (e3.triggered) $stop;
          end
          14: begin
             if (last_event != 32'b100) $stop;

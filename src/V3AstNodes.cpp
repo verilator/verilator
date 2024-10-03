@@ -76,7 +76,12 @@ bool AstNodeFTaskRef::isPure() {
         // cached.
         return false;
     } else {
-        if (!m_purity.isCached()) m_purity.set(this->getPurityRecurse());
+        if (!m_purity.isCached()) {
+            m_purity.set(true);  // To prevent infinite recursion, set to true before getting
+                                 // the actual purity. If there are impure statements in the
+                                 // task/function, they'll taint this call anyway.
+            m_purity.set(this->getPurityRecurse());
+        }
         return m_purity.get();
     }
 }
@@ -322,6 +327,46 @@ AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* l
     return new AstLogAnd{fileline(), ap, bp};
 }
 
+AstVar* AstClocking::ensureEventp(bool childDType) {
+    if (!eventp()) {
+        AstVar* const evp
+            = childDType ? new AstVar{fileline(), VVarType::MODULETEMP, m_name, VFlagChildDType{},
+                                      new AstBasicDType{fileline(), VBasicDTypeKwd::EVENT}}
+                         : new AstVar{fileline(), VVarType::MODULETEMP, m_name,
+                                      findBasicDType(VBasicDTypeKwd::EVENT)};
+        evp->lifetime(VLifetime::STATIC);
+        eventp(evp);
+        // Trigger the clocking event in Observed (IEEE 1800-2023 14.13)
+        addNextHere(new AstAlwaysObserved{
+            fileline(), new AstSenTree{fileline(), sensesp()->cloneTree(false)},
+            new AstFireEvent{fileline(), new AstVarRef{fileline(), evp, VAccess::WRITE}, false}});
+        v3Global.setHasEvents();
+    }
+    return eventp();
+}
+
+void AstConsDynArray::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (lhsIsValue()) str << " [LVAL]";
+    if (rhsIsValue()) str << " [RVAL]";
+}
+void AstConsDynArray::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, lhsIsValue);
+    dumpJsonBoolFunc(str, rhsIsValue);
+    dumpJsonGen(str);
+}
+
+void AstConsQueue::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    if (lhsIsValue()) str << " [LVAL]";
+    if (rhsIsValue()) str << " [RVAL]";
+}
+void AstConsQueue::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, lhsIsValue);
+    dumpJsonBoolFunc(str, rhsIsValue);
+    dumpJsonGen(str);
+}
+
 AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
     bool success = false;
     if (literal[0] == '"') {
@@ -351,6 +396,8 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
     }
     return nullptr;
 }
+
+string AstConstraintRef::name() const { return constrp()->name(); }
 
 AstNetlist::AstNetlist()
     : ASTGEN_SUPER_Netlist(new FileLine{FileLine::builtInFilename()})
@@ -672,14 +719,13 @@ string AstVar::dpiTmpVarType(const string& varName) const {
 
 string AstVar::scType() const {
     if (isScBigUint()) {
-        return (string{"sc_dt::sc_biguint<"} + cvtToStr(widthMin())
+        return ("sc_dt::sc_biguint<"s + cvtToStr(widthMin())
                 + "> ");  // Keep the space so don't get >>
     } else if (isScUint() || isScUintBool()) {
-        return (string{"sc_dt::sc_uint<"} + cvtToStr(widthMin())
+        return ("sc_dt::sc_uint<"s + cvtToStr(widthMin())
                 + "> ");  // Keep the space so don't get >>
     } else if (isScBv()) {
-        return (string{"sc_dt::sc_bv<"} + cvtToStr(widthMin())
-                + "> ");  // Keep the space so don't get >>
+        return ("sc_dt::sc_bv<"s + cvtToStr(widthMin()) + "> ");  // Keep the space so don't get >>
     } else if (widthMin() == 1) {
         return "bool";
     } else if (widthMin() <= VL_IDATASIZE) {
@@ -980,6 +1026,16 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
 const char* AstJumpBlock::broken() const {
     BROKEN_RTN(!labelp()->brokeExistsBelow());
     return nullptr;
+}
+bool AstJumpBlock::isPure() {
+    if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
+    return m_purity.get();
+}
+bool AstJumpBlock::getPurityRecurse() const {
+    for (AstNode* stmtp = this->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        if (!stmtp->isPure()) return false;
+    }
+    return true;
 }
 
 string AstScope::nameDotless() const {
@@ -1464,25 +1520,20 @@ void AstAlways::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "keyword", keyword().ascii());
     dumpJsonGen(str);
 }
-AstAssertCtl::AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr* levelp,
-                           AstNodeExpr* itemsp)
+AstAssertCtl::AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr*, AstNodeExpr*)
     : ASTGEN_SUPER_AssertCtl(fl)
     , m_ctlType{ctlType} {
     controlTypep(new AstConst{fl, ctlType});
-    if (!levelp) levelp = new AstConst{fl, 0};
-    this->levelp(levelp);
-    addItemsp(itemsp);
 }
 AstAssertCtl::AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr* assertTypesp,
-                           AstNodeExpr*, AstNodeExpr* levelp, AstNodeExpr* itemsp)
+                           AstNodeExpr* directiveTypep, AstNodeExpr*, AstNodeExpr*)
     : ASTGEN_SUPER_AssertCtl(fl)
     , m_ctlType{VAssertCtlType::_TO_BE_EVALUATED}
-    , m_assertTypes{VAssertType::INTERNAL} {
+    , m_assertTypes{VAssertType::INTERNAL}
+    , m_directiveTypes{VAssertDirectiveType::INTERNAL} {
     this->controlTypep(controlTypep);
     this->assertTypesp(assertTypesp);
-    if (!levelp) levelp = new AstConst{fl, 0};
-    this->levelp(levelp);
-    addItemsp(itemsp);
+    this->directiveTypesp(directiveTypep);
 }
 void AstAssertCtl::dump(std::ostream& str) const {
     this->AstNode::dump(str);
@@ -2145,14 +2196,28 @@ void AstNodeModule::dumpJson(std::ostream& str) const {
 }
 void AstPackageExport::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    str << " -> " << packagep();
+    if (packagep()) {
+        str << " -> " << packagep();
+    } else {
+        str << " ->UNLINKED:" << pkgName();
+    }
 }
 void AstPackageExport::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstPackageExport::pkgNameFrom() {
+    if (packagep()) m_pkgName = packagep()->name();
+}
 void AstPackageImport::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    str << " -> " << packagep();
+    if (packagep()) {
+        str << " -> " << packagep();
+    } else {
+        str << " ->UNLINKED:" << pkgName();
+    }
 }
 void AstPackageImport::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstPackageImport::pkgNameFrom() {
+    if (packagep()) m_pkgName = packagep()->name();
+}
 void AstPatMember::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (isDefault()) str << " [DEFAULT]";
@@ -2369,11 +2434,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isInternal()) str << " [INTERNAL]";
     if (isLatched()) str << " [LATCHED]";
     if (isUsedLoopIdx()) str << " [LOOP]";
-    if (isRandC()) {
-        str << " [RANDC]";
-    } else if (isRand()) {
-        str << " [RAND]";
-    }
+    if (rand().isRandomizable()) str << rand();
     if (noReset()) str << " [!RST]";
     if (attrIsolateAssign()) str << " [aISO]";
     if (attrFileDescr()) str << " [aFD]";
@@ -2652,6 +2713,14 @@ void AstFork::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "joinType", joinType().ascii());
     dumpJsonGen(str);
 }
+void AstStop::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    if (isFatal()) str << " [FATAL]";
+}
+void AstStop::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, isFatal);
+    dumpJsonGen(str);
+}
 void AstTraceDecl::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     if (code()) str << " [code=" << code() << "]";
@@ -2764,6 +2833,7 @@ void AstCMethodHard::setPurity() {
                                                           {"assign", false},
                                                           {"at", true},
                                                           {"atBack", true},
+                                                          {"atWrite", true},
                                                           {"awaitingCurrentTime", true},
                                                           {"clear", false},
                                                           {"clearFired", false},
@@ -2813,6 +2883,7 @@ void AstCMethodHard::setPurity() {
                                                           {"reverse", false},
                                                           {"rsort", false},
                                                           {"set", false},
+                                                          {"set_randmode", false},
                                                           {"shuffle", false},
                                                           {"size", true},
                                                           {"slice", true},
@@ -2826,9 +2897,28 @@ void AstCMethodHard::setPurity() {
                                                           {"word", true},
                                                           {"write_var", false}};
 
+    if (name() == "atWriteAppend" || name() == "atWriteAppendBack") {
+        m_pure = false;
+        // Treat atWriteAppend as pure if the argument is a loop iterator
+        if (AstNodeExpr* const argp = pinsp()) {
+            if (AstVarRef* const varrefp = VN_CAST(argp, VarRef)) {
+                if (varrefp->varp()->isUsedLoopIdx()) m_pure = true;
+            }
+        }
+        return;
+    }
     auto isPureIt = isPureMethod.find(name());
     UASSERT_OBJ(isPureIt != isPureMethod.end(), this, "Unknown purity of method " + name());
     m_pure = isPureIt->second;
+    if (!m_pure) return;
+    if (!fromp()->isPure()) m_pure = false;
+    if (!m_pure) return;
+    for (AstNodeExpr* argp = pinsp(); argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
+        if (!argp->isPure()) {
+            m_pure = false;
+            return;
+        }
+    }
 }
 
 void AstCUse::dump(std::ostream& str) const {
@@ -2840,6 +2930,15 @@ void AstCUse::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
 }
 
+static AstDelay* getLhsNetDelayRecurse(const AstNodeExpr* const nodep) {
+    if (const AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
+        if (refp->varp()->delayp()) return refp->varp()->delayp();
+    } else if (const AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+        return getLhsNetDelayRecurse(selp->fromp());
+    }
+    return nullptr;
+}
+AstDelay* AstAssignW::getLhsNetDelay() const { return getLhsNetDelayRecurse(lhsp()); }
 AstAlways* AstAssignW::convertToAlways() {
     const bool hasTimingControl = isTimingControl();
     AstNodeExpr* const lhs1p = lhsp()->unlinkFrBack();

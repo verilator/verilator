@@ -377,6 +377,7 @@ detailed descriptions of these arguments.
     --get-supported <feature>   Get if feature is supported
     --help                      Show this help
     --hierarchical              Enable hierarchical Verilation
+    --hierarchical-params-file <name> Internal option that specifies parameters file for hier blocks
      -I<dir>                    Directory to search for includes
     --if-depth <value>          Tune IFDEPTH warning
      +incdir+<dir>              Directory to search for includes
@@ -404,6 +405,7 @@ detailed descriptions of these arguments.
      -O3                        High-performance optimizations
      -O<optimization-letter>    Selectable optimizations
      -o <executable>            Name of final executable
+    --output-groups <numfiles>  Group .cpp files into larger ones
     --output-split <statements>          Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split model functions
     --output-split-ctrace <statements>   Split tracing functions

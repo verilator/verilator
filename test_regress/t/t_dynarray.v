@@ -7,6 +7,7 @@
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkp(gotv,expv_s) do begin string gotv_s; gotv_s = $sformatf("%p", gotv); if ((gotv_s) !== (expv_s)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv_s), (expv_s)); `stop; end end while(0);
 
 module t (/*AUTOARG*/
    // Inputs
@@ -17,7 +18,6 @@ module t (/*AUTOARG*/
    integer cyc = 0;
 
    integer i;
-   string  v;
 
    // verilator lint_off UNUSED
    integer unused[];
@@ -42,7 +42,7 @@ module t (/*AUTOARG*/
       cyc <= cyc + 1;
       begin
          `checkh(a.size, 0);
-         v = $sformatf("%p", a); `checks(v, "'{}");
+         `checkp(a, "'{}");
 
          `checkh(s.size, 3);
          `checks(s[0], "hello");
@@ -57,7 +57,7 @@ module t (/*AUTOARG*/
          `checkh(a[0], 10);
          `checkh(a[1], 11);
          `checkh(a[2], 12);
-         v = $sformatf("%p", a); `checks(v, "'{'ha, 'hb, 'hc} ");
+         `checkp(a, "'{'ha, 'hb, 'hc} ");
          a.delete;
          `checkh(a.size, 0);
 

@@ -1,0 +1,9 @@
+%Warning-PINMISSING: t/t_lint_pinmissing_bad.v:8:8: Cell has missing pin: 'port'
+    8 |    sub sub();   
+      |        ^~~
+                     t/t_lint_pinmissing_bad.v:11:11: ... Location of port declaration
+   11 |   (output port);
+      |           ^~~~
+                     ... For warning description see https://verilator.org/warn/PINMISSING?v=latest
+                     ... Use "/* verilator lint_off PINMISSING */" and lint_on around source to disable this message.
+%Error: Exiting due to

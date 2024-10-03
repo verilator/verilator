@@ -7,6 +7,7 @@
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkp(gotv,expv_s) do begin string gotv_s; gotv_s = $sformatf("%p", gotv); if ((gotv_s) !== (expv_s)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv_s), (expv_s)); `stop; end end while(0);
 
 module t (/*AUTOARG*/);
    initial begin
@@ -18,46 +19,46 @@ module t (/*AUTOARG*/);
 
       q.push_front("non-empty");
       i = q.size(); `checkh(i, 1);
-      v = $sformatf("%p", q); `checks(v, "'{\"non-empty\"} ");
+      `checkp(q, "'{\"non-empty\"} ");
 
       q = '{};
       i = q.size(); `checkh(i, 0);
 
       q = '{"q"};
-      v = $sformatf("%p", q); `checks(v, "'{\"q\"} ");
+      `checkp(q, "'{\"q\"} ");
 
       q = {};
       i = q.size(); `checkh(i, 0);
 
       q = '{"q", "b", "c", "d", "e", "f"};
       if (q[0] !== "q") $stop;
-      v = $sformatf("%p", q); `checks(v, "'{\"q\", \"b\", \"c\", \"d\", \"e\", \"f\"} ");
+      `checkp(q, "'{\"q\", \"b\", \"c\", \"d\", \"e\", \"f\"} ");
 
       q = {"q", "b", "c", "d", "e", "f"};
-      v = $sformatf("%p", q); `checks(v, "'{\"q\", \"b\", \"c\", \"d\", \"e\", \"f\"} ");
+      `checkp(q, "'{\"q\", \"b\", \"c\", \"d\", \"e\", \"f\"} ");
 
       q.delete(1);
       v = q[1]; `checks(v, "c");
-      v = $sformatf("%p", q); `checks(v, "'{\"q\", \"c\", \"d\", \"e\", \"f\"} ");
+      `checkp(q, "'{\"q\", \"c\", \"d\", \"e\", \"f\"} ");
 
       q.insert(0, "ins0");
       q.insert(2, "ins2");
       v = q[0]; `checks(v, "ins0");
       v = q[2]; `checks(v, "ins2");
-      v = $sformatf("%p", q); `checks(v, "'{\"ins0\", \"q\", \"ins2\", \"c\", \"d\", \"e\", \"f\"} ");
+      `checkp(q, "'{\"ins0\", \"q\", \"ins2\", \"c\", \"d\", \"e\", \"f\"} ");
 
       // Slicing
       q = '{"q", "b", "c", "d", "e", "f"};
       q = q[-1:0];
-      v = $sformatf("%p", q); `checks(v, "'{\"q\"} ");
+      `checkp(q, "'{\"q\"} ");
       q = '{"q", "b", "c", "d", "e", "f"};
       q = q[2:3];
-      v = $sformatf("%p", q); `checks(v, "'{\"c\", \"d\"} ");
+      `checkp(q, "'{\"c\", \"d\"} ");
       q = '{"q", "b", "c", "d", "e", "f"};
       q = q[3:$];
-      v = $sformatf("%p", q); `checks(v, "'{\"d\", \"e\", \"f\"} ");
+      `checkp(q, "'{\"d\", \"e\", \"f\"} ");
       q = q[$:$];
-      v = $sformatf("%p", q); `checks(v, "'{\"f\"} ");
+      `checkp(q, "'{\"f\"} ");
 
       // Similar using implied notation
       q = '{"f"};
@@ -65,14 +66,14 @@ module t (/*AUTOARG*/);
       q = {q, "f2"};  // push_front
       q = {"b1", q};  // push_back
       q = {"b2", q};  // push_back
-      v = $sformatf("%p", q); `checks(v, "'{\"b2\", \"b1\", \"f\", \"f1\", \"f2\"} ");
+      `checkp(q, "'{\"b2\", \"b1\", \"f\", \"f1\", \"f2\"} ");
 
       q = {q[0], q[2:$]};  // delete element 1
-      v = $sformatf("%p", q); `checks(v, "'{\"b2\", \"f\", \"f1\", \"f2\"} ");
+      `checkp(q, "'{\"b2\", \"f\", \"f1\", \"f2\"} ");
 
       q = {"a", "b"};
       q = {q, q};
-      v = $sformatf("%p", q); `checks(v, "'{\"a\", \"b\", \"a\", \"b\"} ");
+      `checkp(q, "'{\"a\", \"b\", \"a\", \"b\"} ");
 
       begin
          string ai[$] = '{ "Foo", "Bar" };

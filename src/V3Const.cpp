@@ -20,7 +20,7 @@
 //          If operands are constant, replace this node with constant.
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -548,6 +548,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
                 VL_RESTORER(m_leafp);
                 Restorer restorer{*this};
                 LeafInfo leafInfo{m_lsb};
+                // cppcheck-suppress danglingLifetime
                 m_leafp = &leafInfo;
                 AstNodeExpr* opp = right ? nodep->rhsp() : nodep->lhsp();
                 const bool origFailed = m_failed;
@@ -853,7 +854,8 @@ public:
         // of the masking node e.g. by the "AND with all ones" rule. If the result width happens
         // to be 1, we still need to ensure the AstAnd is not dropped, so use a wider mask in this
         // special case.
-        const int maskWidth = resultWidth == 1 ? VL_IDATASIZE : resultWidth;
+        const int maskWidth
+            = std::max(resultp->width(), resultWidth == 1 ? VL_IDATASIZE : resultWidth);
 
         // Apply final polarity flip
         if (needsFlip) {
@@ -2170,26 +2172,17 @@ class ConstVisitor final : public VNVisitor {
             AstNodeExpr* srcp = streamp->lhsp()->unlinkFrBack();
             AstNodeDType* const srcDTypep = srcp->dtypep();
             if (VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)) {
-                if (nodep->lhsp()->widthMin() > 64) {
-                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assignment of stream of dynamic "
-                                                 "array to a variable of size greater than 64");
-                }
-                srcp = new AstCvtDynArrayToPacked{srcp->fileline(), srcp, srcDTypep};
+                srcp = new AstCvtArrayToPacked{srcp->fileline(), srcp, nodep->dtypep()};
             } else if (VN_IS(srcDTypep, UnpackArrayDType)) {
-                if (nodep->lhsp()->widthMin() > 64) {
-                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assignment of stream of dynamic "
-                                                 "array to a variable of size greater than 64");
-                }
-                srcp = new AstCvtUnpackArrayToPacked{srcp->fileline(), srcp,
-                                                     nodep->lhsp()->dtypep()};
+                srcp = new AstCvtArrayToPacked{srcp->fileline(), srcp, srcDTypep};
                 // Handling the case where lhs is wider than rhs by inserting zeros. StreamL does
                 // not require this, since the left streaming operator implicitly handles this.
-                const uint32_t packedBits = nodep->lhsp()->widthMin();
-                const uint32_t unpackBits
+                const int packedBits = nodep->lhsp()->widthMin();
+                const int unpackBits
                     = srcDTypep->arrayUnpackedElements() * srcDTypep->subDTypep()->widthMin();
                 const uint32_t offset = packedBits > unpackBits ? packedBits - unpackBits : 0;
                 srcp = new AstShiftL{srcp->fileline(), srcp,
-                                     new AstConst{srcp->fileline(), offset}, 64};
+                                     new AstConst{srcp->fileline(), offset}, packedBits};
             }
             nodep->rhsp(srcp);
             VL_DO_DANGLING(pushDeletep(streamp), streamp);
@@ -2211,19 +2204,18 @@ class ConstVisitor final : public VNVisitor {
                 streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(), VSigning::UNSIGNED);
             }
             if (VN_IS(dstp->dtypep(), UnpackArrayDType)) {
-                streamp
-                    = new AstCvtPackedToUnpackArray{nodep->fileline(), streamp, dstp->dtypep()};
+                streamp = new AstCvtPackedToArray{nodep->fileline(), streamp, dstp->dtypep()};
             } else {
                 UASSERT(sWidth >= dWidth, "sWidth >= dWidth should have caused an error earlier");
                 if (dWidth == 0) {
-                    streamp
-                        = new AstCvtPackedToDynArray{nodep->fileline(), streamp, dstp->dtypep()};
+                    streamp = new AstCvtPackedToArray{nodep->fileline(), streamp, dstp->dtypep()};
                 } else if (sWidth >= dWidth) {
                     streamp = new AstSel{streamp->fileline(), streamp, sWidth - dWidth, dWidth};
                 }
             }
             nodep->lhsp(dstp);
             nodep->rhsp(streamp);
+            nodep->dtypep(dstp->dtypep());
             return true;
         } else if (m_doV && VN_IS(nodep->lhsp(), StreamR)) {
             // The right stream operator on lhs of assignment statement does
@@ -2244,17 +2236,18 @@ class ConstVisitor final : public VNVisitor {
                     srcp
                         = new AstSel{streamp->fileline(), srcp, sWidth - dstBitWidth, dstBitWidth};
                 }
-                srcp = new AstCvtPackedToUnpackArray{nodep->fileline(), srcp, dstp->dtypep()};
+                srcp = new AstCvtPackedToArray{nodep->fileline(), srcp, dstp->dtypep()};
             } else {
                 UASSERT(sWidth >= dWidth, "sWidth >= dWidth should have caused an error earlier");
                 if (dWidth == 0) {
-                    srcp = new AstCvtPackedToDynArray{nodep->fileline(), srcp, dstp->dtypep()};
+                    srcp = new AstCvtPackedToArray{nodep->fileline(), srcp, dstp->dtypep()};
                 } else if (sWidth >= dWidth) {
                     srcp = new AstSel{streamp->fileline(), srcp, sWidth - dWidth, dWidth};
                 }
             }
             nodep->lhsp(dstp);
             nodep->rhsp(srcp);
+            nodep->dtypep(dstp->dtypep());
             VL_DO_DANGLING(pushDeletep(streamp), streamp);
             // Further reduce, any of the nodes may have more reductions.
             return true;
@@ -2263,21 +2256,10 @@ class ConstVisitor final : public VNVisitor {
             AstStreamL* streamp = VN_AS(nodep->rhsp(), StreamL);
             AstNodeExpr* const srcp = streamp->lhsp();
             const AstNodeDType* const srcDTypep = srcp->dtypep();
-            if (VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)) {
-                if (lhsDtypep->widthMin() > 64) {
-                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assignment of stream of dynamic "
-                                                 "array to a variable of size greater than 64");
-                }
-                srcp->unlinkFrBack();
-                streamp->lhsp(new AstCvtDynArrayToPacked{srcp->fileline(), srcp, lhsDtypep});
-                streamp->dtypeFrom(lhsDtypep);
-            } else if (VN_IS(srcDTypep, UnpackArrayDType)) {
-                if (lhsDtypep->widthMin() > 64) {
-                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assignment of stream of unpacked "
-                                                 "array to a variable of size greater than 64");
-                }
-                srcp->unlinkFrBack();
-                streamp->lhsp(new AstCvtUnpackArrayToPacked{srcp->fileline(), srcp, lhsDtypep});
+            if (VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)
+                || VN_IS(srcDTypep, UnpackArrayDType)) {
+                streamp->lhsp(new AstCvtArrayToPacked{srcp->fileline(), srcp->unlinkFrBack(),
+                                                      nodep->dtypep()});
                 streamp->dtypeFrom(lhsDtypep);
             }
         } else if (m_doV && replaceAssignMultiSel(nodep)) {
@@ -2849,6 +2831,8 @@ class ConstVisitor final : public VNVisitor {
     void visit(AstSenItem* nodep) override {
         iterateChildren(nodep);
         if (m_doNConst
+            && !v3Global.opt.timing().isSetTrue()  // If --timing, V3Sched would turn this into an
+                                                   // infinite loop. See #5080
             && (VN_IS(nodep->sensp(), Const) || VN_IS(nodep->sensp(), EnumItemRef)
                 || (nodep->varrefp() && nodep->varrefp()->varp()->isParam()))) {
             // Constants in sensitivity lists may be removed (we'll simplify later)

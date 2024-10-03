@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   sub #(.REAL(2.0)) sub;
+   sub #(.REAL(2.0)) sub();
 endmodule
 
 module sub ();

@@ -228,7 +228,7 @@ class SliceVisitor final : public VNVisitor {
             AstNodeDType* const dtp = nodep->lhsp()->dtypep()->skipRefp();
             AstNode* stp = nodep->rhsp();
             if (const AstUnpackArrayDType* const arrayp = VN_CAST(dtp, UnpackArrayDType)) {
-                if (!VN_IS(stp, CvtPackedToUnpackArray)) {
+                if (!VN_IS(stp, CvtPackedToArray)) {
                     // Left and right could have different ascending/descending range,
                     // but #elements is common and all variables are realigned to start at zero
                     // Assign of an ascending range slice to a descending range one must reverse
@@ -258,6 +258,16 @@ class SliceVisitor final : public VNVisitor {
     }
 
     void visit(AstConsPackUOrStruct* nodep) override {
+        VL_RESTORER(m_okInitArray);
+        m_okInitArray = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstConsDynArray* nodep) override {
+        VL_RESTORER(m_okInitArray);
+        m_okInitArray = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstConsQueue* nodep) override {
         VL_RESTORER(m_okInitArray);
         m_okInitArray = true;
         iterateChildren(nodep);

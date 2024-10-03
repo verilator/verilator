@@ -81,7 +81,10 @@ class CMakeEmitter final {
 
         *of << "\n### Constants...\n";
         cmake_set(*of, "PERL", V3OutFormatter::quoteNameControls(V3Options::getenvPERL()),
-                  "FILEPATH", "Perl executable (from $PERL)");
+                  "FILEPATH", "Perl executable (from $PERL, defaults to 'perl' if not set)");
+        cmake_set(*of, "PYTHON3", V3OutFormatter::quoteNameControls(V3Options::getenvPYTHON3()),
+                  "FILEPATH",
+                  "Python3 executable (from $PYTHON3, defaults to 'python3' if not set)");
         cmake_set(*of, "VERILATOR_ROOT",
                   V3OutFormatter::quoteNameControls(V3Options::getenvVERILATOR_ROOT()), "PATH",
                   "Path to Verilator kit (from $VERILATOR_ROOT)");
@@ -212,7 +215,7 @@ class CMakeEmitter final {
                     << hblockp->modp()->name() << " DIRECTORY "
                     << v3Global.opt.makeDir() + "/" + prefix << " SOURCES ";
                 for (const auto& childr : children) {
-                    *of << " " << v3Global.opt.makeDir() + "/" + childr->hierWrapper(true);
+                    *of << " " << v3Global.opt.makeDir() + "/" + childr->hierWrapperFilename(true);
                 }
                 *of << " ";
                 const string vFile = hblockp->vFileIfNecessary();
@@ -220,7 +223,7 @@ class CMakeEmitter final {
                 const V3StringList& vFiles = v3Global.opt.vFiles();
                 for (const string& i : vFiles) *of << V3Os::filenameRealPath(i) << " ";
                 *of << " VERILATOR_ARGS ";
-                *of << "-f " << hblockp->commandArgsFileName(true)
+                *of << "-f " << hblockp->commandArgsFilename(true)
                     << " -CFLAGS -fPIC"  // hierarchical block will be static, but may be linked
                                          // with .so
                     << ")\n";
@@ -230,11 +233,11 @@ class CMakeEmitter final {
                 << v3Global.rootp()->topModulep()->name() << " DIRECTORY "
                 << v3Global.opt.makeDir() << " SOURCES ";
             for (const auto& itr : *planp) {
-                *of << " " << v3Global.opt.makeDir() + "/" + itr.second->hierWrapper(true);
+                *of << " " << v3Global.opt.makeDir() + "/" + itr.second->hierWrapperFilename(true);
             }
             *of << " " << cmake_list(v3Global.opt.vFiles());
             *of << " VERILATOR_ARGS ";
-            *of << "-f " << planp->topCommandArgsFileName(true);
+            *of << "-f " << planp->topCommandArgsFilename(true);
             *of << ")\n";
         }
     }

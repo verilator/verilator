@@ -20,7 +20,7 @@
 //
 //*************************************************************************
 
-#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
+#include "V3PchAstMT.h"
 
 #include "V3VariableOrder.h"
 
@@ -28,6 +28,7 @@
 #include "V3EmitCBase.h"
 #include "V3ExecGraph.h"
 #include "V3TSP.h"
+#include "V3ThreadPool.h"
 
 #include <vector>
 
@@ -113,10 +114,10 @@ public:
     }
     bool operator<(const VarTspSorter& other) const { return m_serial < other.m_serial; }
     const MTaskIdVec& mTaskIds() const { return m_mTaskIds; }
-    int cost(const TspStateBase* otherp) const override {
+    int cost(const TspStateBase* otherp) const override VL_MT_SAFE {
         return cost(static_cast<const VarTspSorter*>(otherp));
     }
-    int cost(const VarTspSorter* otherp) const {
+    int cost(const VarTspSorter* otherp) const VL_MT_SAFE {
         // Compute the number of MTasks not shared (Hamming distance)
         int cost = 0;
         const size_t size = ExecMTask::numUsedIds();
@@ -127,22 +128,20 @@ public:
 
 uint32_t VarTspSorter::s_serialNext = 0;
 
+struct VarAttributes final {
+    uint8_t stratum;  // Roughly equivalent to alignment requirement, to avoid padding
+    bool anonOk;  // Can be emitted as part of anonymous structure
+};
 class VariableOrder final {
-    // NODE STATE
-    //  AstVar::user1()    -> attributes, via m_attributes
-    const VNUser1InUse m_user1InUse;  // AstVar
-
-    struct VarAttributes final {
-        uint32_t stratum;  // Roughly equivalent to alignment requirement, to avoid padding
-        bool anonOk;  // Can be emitted as part of anonymous structure
-    };
-
-    AstUser1Allocator<AstVar, VarAttributes> m_attributes;  // Attributes used for sorting
+    std::unordered_map<const AstVar*, VarAttributes> m_attributes;
 
     const MTaskAffinityMap& m_mTaskAffinity;
+    std::vector<AstVar*>& m_varps;
 
-    VariableOrder(AstNodeModule* modp, const MTaskAffinityMap& mTaskAffinity)
-        : m_mTaskAffinity{mTaskAffinity} {
+    VariableOrder(AstNodeModule* modp, const MTaskAffinityMap& mTaskAffinity,
+                  std::vector<AstVar*>& varps)
+        : m_mTaskAffinity{mTaskAffinity}
+        , m_varps{varps} {
         orderModuleVars(modp);
     }
     ~VariableOrder() = default;
@@ -157,8 +156,11 @@ class VariableOrder final {
                         if (ap->isStatic() != bp->isStatic()) {  // Non-statics before statics
                             return bp->isStatic();
                         }
-                        const auto& attrA = m_attributes(ap);
-                        const auto& attrB = m_attributes(bp);
+                        UASSERT(m_attributes.find(ap) != m_attributes.end()
+                                    && m_attributes.find(bp) != m_attributes.end(),
+                                "m_attributes should be populated for each AstVar");
+                        const auto& attrA = m_attributes.at(ap);
+                        const auto& attrB = m_attributes.at(bp);
                         if (attrA.anonOk != attrB.anonOk) {  // Anons before non-anons
                             return attrA.anonOk;
                         }
@@ -209,58 +211,42 @@ class VariableOrder final {
     }
 
     void orderModuleVars(AstNodeModule* modp) {
-        std::vector<AstVar*> varps;
-
         // Unlink all module variables from the module, compute attributes
         for (AstNode *nodep = modp->stmtsp(), *nextp; nodep; nodep = nextp) {
             nextp = nodep->nextp();
             if (AstVar* const varp = VN_CAST(nodep, Var)) {
-                // Unlink, add to vector
-                varp->unlinkFrBack();
-                varps.push_back(varp);
+                m_varps.push_back(varp);
+
                 // Compute attributes up front
-                auto& attributes = m_attributes(varp);
                 // Stratum
                 const int sigbytes = varp->dtypeSkipRefp()->widthAlignBytes();
-                attributes.stratum = (v3Global.opt.hierChild() && varp->isPrimaryIO()) ? 0
-                                     : (varp->isUsedClock() && varp->widthMin() == 1)  ? 1
-                                     : VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)  ? 9
-                                     : (varp->basicp() && varp->basicp()->isOpaque())  ? 8
-                                     : (varp->isScBv() || varp->isScBigUint())         ? 7
-                                     : (sigbytes == 8)                                 ? 6
-                                     : (sigbytes == 4)                                 ? 5
-                                     : (sigbytes == 2)                                 ? 3
-                                     : (sigbytes == 1)                                 ? 2
-                                                                                       : 10;
-                // Anonymous structure ok
-                attributes.anonOk = EmitCBase::isAnonOk(varp);
+                const uint8_t stratum = (v3Global.opt.hierChild() && varp->isPrimaryIO()) ? 0
+                                        : (varp->isUsedClock() && varp->widthMin() == 1)  ? 1
+                                        : VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)  ? 9
+                                        : (varp->basicp() && varp->basicp()->isOpaque())  ? 8
+                                        : (varp->isScBv() || varp->isScBigUint())         ? 7
+                                        : (sigbytes == 8)                                 ? 6
+                                        : (sigbytes == 4)                                 ? 5
+                                        : (sigbytes == 2)                                 ? 3
+                                        : (sigbytes == 1)                                 ? 2
+                                                                                          : 10;
+                m_attributes.emplace(varp, VarAttributes{stratum, EmitCBase::isAnonOk(varp)});
             }
         }
 
-        if (!varps.empty()) {
-            // Sort variables
+        if (!m_varps.empty()) {
             if (!v3Global.opt.mtasks()) {
-                simpleSortVars(varps);
+                simpleSortVars(m_varps);
             } else {
-                tspSortVars(varps);
+                tspSortVars(m_varps);
             }
-
-            // Insert them back under the module, in the new order, but at
-            // the front of the list so they come out first in dumps/XML.
-            auto it = varps.cbegin();
-            AstVar* const firstp = *it++;
-            for (; it != varps.cend(); ++it) firstp->addNext(*it);
-            if (AstNode* const stmtsp = modp->stmtsp()) {
-                stmtsp->unlinkFrBackWithNext();
-                AstNode::addNext<AstNode, AstNode>(firstp, stmtsp);
-            }
-            modp->addStmtsp(firstp);
         }
     }
 
 public:
-    static void processModule(AstNodeModule* modp, const MTaskAffinityMap& mTaskAffinity) {
-        VariableOrder{modp, mTaskAffinity};
+    static void processModule(AstNodeModule* modp, const MTaskAffinityMap& mTaskAffinity,
+                              std::vector<AstVar*>& varps) VL_MT_STABLE {
+        VariableOrder{modp, mTaskAffinity, varps};
     }
 };
 
@@ -280,11 +266,44 @@ void V3VariableOrder::orderAll(AstNetlist* netlistp) {
             }
         });
     }
+    if (v3Global.opt.stats()) V3Stats::statsStage("variableorder-gather");
 
-    // Order variables in each module
+    // Sort variables for each module
+    std::unordered_map<AstNodeModule*, std::vector<AstVar*>> sortedVars;
+    {
+        V3ThreadScope threadScope;
+
+        for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
+             modp = VN_AS(modp->nextp(), NodeModule)) {
+            std::vector<AstVar*>& varps = sortedVars[modp];
+            threadScope.enqueue([modp, mTaskAffinity, &varps]() {
+                VariableOrder::processModule(modp, mTaskAffinity, varps);
+            });
+        }
+    }
+    if (v3Global.opt.stats()) V3Stats::statsStage("variableorder-sort");
+
+    // Insert them back under the module, in the new order, but at
+    // the front of the list so they come out first in dumps/XML.
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
          modp = VN_AS(modp->nextp(), NodeModule)) {
-        VariableOrder::processModule(modp, mTaskAffinity);
+        const std::vector<AstVar*>& varps = sortedVars[modp];
+
+        if (!varps.empty()) {
+            auto it = varps.cbegin();
+            AstVar* const firstp = *it++;
+            firstp->unlinkFrBack();
+            for (; it != varps.cend(); ++it) {
+                AstVar* const varp = *it;
+                varp->unlinkFrBack();
+                firstp->addNext(varp);
+            }
+            if (AstNode* const stmtsp = modp->stmtsp()) {
+                stmtsp->unlinkFrBackWithNext();
+                AstNode::addNext<AstNode, AstNode>(firstp, stmtsp);
+            }
+            modp->addStmtsp(firstp);
+        }
     }
 
     // Done

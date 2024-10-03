@@ -20,6 +20,7 @@
 
 #include "V3String.h"
 
+#include <memory>
 #include <set>
 #include <unordered_map>
 
@@ -34,11 +35,12 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // function that takes a reference of this type to join multiple entities into one.
 template <typename T>
 class V3ConfigWildcardResolver final {
-    using Map = std::map<const std::string, T>;
-
     mutable V3Mutex m_mutex;  // protects members
-    Map m_mapWildcard VL_GUARDED_BY(m_mutex);  // Wildcard strings to entities
-    Map m_mapResolved VL_GUARDED_BY(m_mutex);  // Resolved strings to converged entities
+    // Pattern strings (wildcard, or simple name) to entities
+    std::map<const std::string, T> m_mapPatterns VL_GUARDED_BY(m_mutex);
+    // Resolved strings to converged entities - nullptr, iff none of the patterns applies
+    std::map<const std::string, std::unique_ptr<T>> m_mapResolved VL_GUARDED_BY(m_mutex);
+
 public:
     V3ConfigWildcardResolver() = default;
     ~V3ConfigWildcardResolver() = default;
@@ -48,41 +50,36 @@ public:
         VL_EXCLUDES(other.m_mutex) {
         V3LockGuard lock{m_mutex};
         V3LockGuard otherLock{other.m_mutex};
-        for (const auto& itr : other.m_mapResolved) m_mapResolved[itr.first].update(itr.second);
-        for (const auto& itr : other.m_mapWildcard) m_mapWildcard[itr.first].update(itr.second);
+        // Clear the resolved cache, as 'other' might add new patterns that need to be applied as
+        // well.
+        m_mapResolved.clear();
+        for (const auto& itr : other.m_mapPatterns) m_mapPatterns[itr.first].update(itr.second);
     }
 
-    // Access and create a (wildcard) entity
+    // Access and create a pattern entry
     T& at(const string& name) VL_MT_SAFE_EXCLUDES(m_mutex) {
         V3LockGuard lock{m_mutex};
-        // Don't store into wildcards if the name is not a wildcard string
-        return m_mapWildcard[name];
+        // We might be adding a new entry under this, so clear the cache.
+        m_mapResolved.clear();
+        return m_mapPatterns[name];
     }
-    // Access an entity and resolve wildcards that match it
+    // Access an entity and resolve patterns that match it
     T* resolve(const string& name) VL_MT_SAFE_EXCLUDES(m_mutex) {
         V3LockGuard lock{m_mutex};
         // Lookup if it was resolved before, typically not
-        auto it = m_mapResolved.find(name);
-        if (VL_UNLIKELY(it != m_mapResolved.end())) return &it->second;
-
-        T* newp = nullptr;
-        // Cannot be resolved, create if matched
-
-        // Update this entity with all matches in the wildcards
-        for (const auto& wildent : m_mapWildcard) {
-            if (VString::wildmatch(name, wildent.first)) {
-                if (!newp) {
-                    newp = &m_mapResolved[name];  // Emplace and get pointer
+        const auto pair = m_mapResolved.emplace(name, nullptr);
+        std::unique_ptr<T>& entryr = pair.first->second;
+        // Resolve entry when first requested, cache the result
+        if (pair.second) {
+            // Update the entity with all matches in the patterns
+            for (const auto& patEnt : m_mapPatterns) {
+                if (VString::wildmatch(name, patEnt.first)) {
+                    if (!entryr) entryr.reset(new T{});
+                    entryr->update(patEnt.second);
                 }
-                newp->update(wildent.second);
             }
         }
-        return newp;
-    }
-    // Flush on update
-    void flush() VL_MT_SAFE_EXCLUDES(m_mutex) {
-        V3LockGuard lock{m_mutex};
-        m_mapResolved.clear();
+        return entryr.get();
     }
 };
 
@@ -203,6 +200,9 @@ public:
             modp->addStmtsp(nodep);
         }
         for (const auto& itr : m_modPragmas) {
+            // Catch hier param modules to mark their attributes before they are
+            // flagged dead in LinkDot.
+            if (itr == VPragmaType::HIER_PARAMS) modp->hierParams(true);
             AstNode* const nodep = new AstPragma{modp->fileline(), itr};
             modp->addStmtsp(nodep);
         }
@@ -336,6 +336,7 @@ public:
         }
     }
     bool waive(V3ErrorCode code, const string& match) {
+        if (code.hardError()) return false;
         for (const auto& itr : m_waivers) {
             if ((code.isUnder(itr.first) || (itr.first == V3ErrorCode::I_LINT))
                 && VString::wildmatch(match, itr.second)) {
@@ -508,7 +509,6 @@ void V3Config::addIgnore(V3ErrorCode code, bool on, const string& filename, int 
     } else {
         V3ConfigResolver::s().files().at(filename).addIgnore(code, min, on);
         if (max) V3ConfigResolver::s().files().at(filename).addIgnore(code, max, !on);
-        V3ConfigResolver::s().files().flush();
     }
 }
 

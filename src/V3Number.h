@@ -32,14 +32,6 @@
 
 //============================================================================
 
-// Return if two numbers within Epsilon of each other
-inline bool v3EpsilonEqual(double a, double b) {
-    return std::fabs(a - b)
-           <= (std::numeric_limits<double>::epsilon() * std::max(1.0, std::max(a, b)));
-}
-
-//============================================================================
-
 class AstNode;
 class AstNodeDType;
 class FileLine;
@@ -533,6 +525,7 @@ public:
     ~V3Number() {}
 
 private:
+    void selfTestThis();
     void create(AstNode* nodep, const char* sourcep) {
         init(nodep, 0);
         m_fileline = nullptr;
@@ -565,6 +558,7 @@ private:
     string displayed(const string& vformat) const VL_MT_STABLE {
         return displayed(m_fileline, vformat);
     }
+    void warnTooMany(const string& value);
 
 public:
     void v3errorEnd(const std::ostringstream& sstr) const VL_RELEASE(V3Error::s().m_mutex);
@@ -661,8 +655,11 @@ public:
     bool operator<(const V3Number& rhs) const { return isLtXZ(rhs); }
 
     // STATICS
+    static bool epsilonEqual(double a, double b);  // True if number within Epsilon of the other
+    static bool epsilonIntegral(double a);  // True if number rounds to integer within Epsilon
     static int log2b(uint32_t num);
     static int log2bQuad(uint64_t num);
+    static void selfTest();
 
     // MATH
     // "this" is the output, as we need the output width before some computations
@@ -670,7 +667,6 @@ public:
     V3Number& opBitsOne(const V3Number& lhs);  // 1->1, 0/X/Z->0
     V3Number& opBitsXZ(const V3Number& lhs);  // 0/1->0, X/Z->1
     V3Number& opBitsZ(const V3Number& lhs);  // Z->1, 0/1/X->0
-    V3Number& opBitsNonZ(const V3Number& lhs);  // Z->0, 0/1/X->1
     //
     V3Number& opAssign(const V3Number& lhs);
     V3Number& opAssignNonXZ(const V3Number& lhs, bool ignoreXZ = true);

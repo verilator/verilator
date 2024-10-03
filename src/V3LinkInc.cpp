@@ -246,7 +246,7 @@ class LinkIncVisitor final : public VNVisitor {
 
         // Prepare a temporary variable
         FileLine* const fl = nodep->fileline();
-        const string name = string{"__Vincrement"} + cvtToStr(++m_modIncrementsNum);
+        const string name = "__Vincrement"s + cvtToStr(++m_modIncrementsNum);
         AstVar* const varp = new AstVar{
             fl, VVarType::BLOCKTEMP, name, VFlagChildDType{},
             new AstRefDType{fl, AstRefDType::FlagTypeOfExpr{}, readp->cloneTree(true)}};

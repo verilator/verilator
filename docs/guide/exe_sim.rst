@@ -40,8 +40,8 @@ Summary:
 .. option:: +verilator+error+limit+<value>
 
    Set number of non-fatal errors (e.g. assertion failures) before exiting
-   simulation runtime. Also affects number of $stop calls needed before
-   exit. Defaults to 1.
+   simulation runtime. Also affects number of `$stop` calls needed before
+   exit. Does not affect `$fatal`. Defaults to 1.
 
 .. option:: +verilator+help
 

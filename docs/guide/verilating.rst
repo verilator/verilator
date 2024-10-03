@@ -304,9 +304,9 @@ GNU Make
 ========
 
 Verilator defaults to creating GNU Make makefiles for the model.  Verilator
-will call make automatically when the :vlopt:'--build' option is used.
+will call make automatically when the :vlopt:`--build` option is used.
 
-If calling Verilator from a makefile, the :vlopt:'-MMD' option will create
+If calling Verilator from a makefile, the :vlopt:`--MMD` option will create
 a dependency file, allowing Make to only run Verilator if input Verilog
 files change.
 

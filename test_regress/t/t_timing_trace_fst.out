@@ -1,5 +1,5 @@
 $date
-	Sun Nov  5 12:08:16 2023
+	Sun Sep 22 22:53:52 2024
 
 $end
 $version
@@ -8,7 +8,8 @@ $end
 $timescale
 	1ps
 $end
-$scope module TOP $end
+$scope module $rootio $end
+$upscope $end
 $scope module t $end
 $var parameter 32 ! CLK_PERIOD [31:0] $end
 $var parameter 32 " CLK_HALF_PERIOD [31:0] $end
@@ -19,7 +20,6 @@ $var logic 1 & b $end
 $var logic 1 ' c $end
 $var logic 1 ( d $end
 $var event 1 ) ev $end
-$upscope $end
 $upscope $end
 $enddefinitions $end
 #0

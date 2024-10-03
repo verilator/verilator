@@ -1,6 +1,15 @@
-%Warning-REALCVT: t/t_lint_realcvt_bad.v:10:11: Implicit conversion of real to integer
-   10 |       i = 23.2;
-      |           ^~~~
+%Warning-REALCVT: t/t_lint_realcvt_bad.v:12:18: Implicit conversion of real to integer
+   12 |    time t_bad1 = 9.001ns;   
+      |                  ^~~~~~~
                   ... For warning description see https://verilator.org/warn/REALCVT?v=latest
                   ... Use "/* verilator lint_off REALCVT */" and lint_on around source to disable this message.
+%Warning-REALCVT: t/t_lint_realcvt_bad.v:13:18: Implicit conversion of real to integer
+   13 |    time t_bad2 = 9.999ns;   
+      |                  ^~~~~~~
+%Warning-REALCVT: t/t_lint_realcvt_bad.v:17:18: Implicit conversion of real to integer
+   17 |    time t_bad3 = 9ps;   
+      |                  ^~~
+%Warning-REALCVT: t/t_lint_realcvt_bad.v:23:22: Implicit conversion of real to integer
+   23 |    integer i_bad21 = 23.1;
+      |                      ^~~~
 %Error: Exiting due to

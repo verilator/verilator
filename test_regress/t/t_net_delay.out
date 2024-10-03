@@ -1,15 +1,35 @@
-%Warning-STMTDLY: t/t_net_delay.v:16:14: Ignoring delay on this statement due to --no-timing
+%Warning-STMTDLY: t/t_net_delay.v:14:11: Ignoring delay on this statement due to --no-timing
                                        : ... note: In instance 't'
-   16 |    wire[3:0] #4 val1 = half_cyc;
-      |              ^
+   14 |    always #2 clk = ~clk;
+      |           ^
                   ... For warning description see https://verilator.org/warn/STMTDLY?v=latest
                   ... Use "/* verilator lint_off STMTDLY */" and lint_on around source to disable this message.
-%Warning-STMTDLY: t/t_net_delay.v:17:14: Ignoring delay on this statement due to --no-timing
+%Warning-STMTDLY: t/t_net_delay.v:20:14: Ignoring delay on this statement due to --no-timing
                                        : ... note: In instance 't'
-   17 |    wire[3:0] #4 val2;
+   20 |    wire[3:0] #3 val1;
       |              ^
-%Warning-ASSIGNDLY: t/t_net_delay.v:20:11: Ignoring timing control on this assignment/primitive due to --no-timing
+%Warning-STMTDLY: t/t_net_delay.v:21:14: Ignoring delay on this statement due to --no-timing
+                                       : ... note: In instance 't'
+   21 |    wire[3:0] #3 val2;
+      |              ^
+%Warning-ASSIGNDLY: t/t_net_delay.v:22:14: Ignoring timing control on this assignment/primitive due to --no-timing
                                          : ... note: In instance 't'
-   20 |    assign #4 val2 = half_cyc;
+   22 |    wire[3:0] #5 val3 = cyc;
+      |              ^
+%Warning-STMTDLY: t/t_net_delay.v:23:14: Ignoring delay on this statement due to --no-timing
+                                       : ... note: In instance 't'
+   23 |    wire[3:0] #5 val4;
+      |              ^
+%Warning-ASSIGNDLY: t/t_net_delay.v:24:14: Ignoring timing control on this assignment/primitive due to --no-timing
+                                         : ... note: In instance 't'
+   24 |    wire[3:0] #3 val5 = x, val6 = cyc;
+      |              ^
+%Warning-ASSIGNDLY: t/t_net_delay.v:27:11: Ignoring timing control on this assignment/primitive due to --no-timing
+                                         : ... note: In instance 't'
+   27 |    assign #3 val2 = cyc;
       |           ^
+%Warning-STMTDLY: t/t_net_delay.v:39:26: Ignoring delay on this statement due to --no-timing
+                                       : ... note: In instance 't'
+   39 |    always @(posedge clk) #1 begin
+      |                          ^
 %Error: Exiting due to

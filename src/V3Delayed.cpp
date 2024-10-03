@@ -120,8 +120,6 @@ class DelayedVisitor final : public VNVisitor {
         AstVarScope* delayVscp = nullptr;
         // Points to AstActive block of the shadow variable 'delayVscp/post block 'postp'
         AstActive* activep = nullptr;
-        // Post block for this variable used in suspendable processes
-        AstAlwaysPost* suspPostp = nullptr;
         // Post block for this variable
         AstAlwaysPost* postp = nullptr;
         // First reference encountered to the VarScope
@@ -386,17 +384,11 @@ class DelayedVisitor final : public VNVisitor {
             }
 
             // Get/Create 'Post' ordered block to commit the delayed value
-            AstAlwaysPost* postp = m_vscpAux(vscp).suspPostp;
-            if (!postp) {
-                postp = new AstAlwaysPost{flp};
-                if (!m_procp->user2p()) {
-                    m_procp->user2p(createActiveLike(lhsComponents.refp->fileline(), m_activep));
-                    // TODO: Somebody needs to explain me how it makes sense to set this
-                    //       inside this 'if'. Shouldn't it be outside this 'if'? See #5084
-                    m_vscpAux(vscp).suspPostp = postp;
-                }
-                VN_AS(m_procp->user2p(), Active)->addStmtsp(postp);
+            AstAlwaysPost* postp = new AstAlwaysPost{flp};
+            if (!m_procp->user2p()) {
+                m_procp->user2p(createActiveLike(lhsComponents.refp->fileline(), m_activep));
             }
+            VN_AS(m_procp->user2p(), Active)->addStmtsp(postp);
 
             // Create the flag denoting an update is pending - no reuse here
             AstVarScope* const setVscp = createNewVarScope(vscp, "__VdlySet" + baseName, 1);
@@ -728,9 +720,18 @@ class DelayedVisitor final : public VNVisitor {
     void visit(AstFireEvent* nodep) override {
         UASSERT_OBJ(v3Global.hasEvents(), nodep, "Inconsistent");
         FileLine* const flp = nodep->fileline();
+
+        AstNodeExpr* const eventp = nodep->operandp()->unlinkFrBack();
+
+        // Enqueue for clearing 'triggered' state on next eval
+        AstTextBlock* const blockp = new AstTextBlock{flp};
+        blockp->addText(flp, "vlSymsp->fireEvent(", true);
+        blockp->addNodesp(eventp);
+        blockp->addText(flp, ");\n", true);
+
+        AstNode* newp = new AstCStmt{flp, blockp};
         if (nodep->isDelayed()) {
-            AstVarRef* const vrefp = VN_AS(nodep->operandp(), VarRef);
-            vrefp->unlinkFrBack();
+            AstVarRef* const vrefp = VN_AS(eventp, VarRef);
             const std::string newvarname = "__Vdly__" + vrefp->varp()->shortName();
             AstVarScope* const dlyvscp = createNewVarScope(vrefp->varScopep(), newvarname, 1);
 
@@ -744,24 +745,17 @@ class DelayedVisitor final : public VNVisitor {
             {
                 AstIf* const ifp = new AstIf{flp, dlyRef(VAccess::READ)};
                 postp->addStmtsp(ifp);
-                AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "fire"};
-                callp->dtypeSetVoid();
-                ifp->addThensp(callp->makeStmt());
+                ifp->addThensp(newp);
             }
 
             AstActive* const activep = createActiveLike(flp, m_activep);
             activep->addStmtsp(prep);
             activep->addStmtsp(postp);
 
-            AstAssign* const assignp = new AstAssign{flp, dlyRef(VAccess::WRITE),
-                                                     new AstConst{flp, AstConst::BitTrue{}}};
-            nodep->replaceWith(assignp);
-        } else {
-            AstCMethodHard* const callp
-                = new AstCMethodHard{flp, nodep->operandp()->unlinkFrBack(), "fire"};
-            callp->dtypeSetVoid();
-            nodep->replaceWith(callp->makeStmt());
+            newp = new AstAssign{flp, dlyRef(VAccess::WRITE),
+                                 new AstConst{flp, AstConst::BitTrue{}}};
         }
+        nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 

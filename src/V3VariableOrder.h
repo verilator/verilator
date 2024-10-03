@@ -20,15 +20,13 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3ThreadSafety.h"
-
 class AstNetlist;
 
 //============================================================================
 
 class V3VariableOrder final {
 public:
-    static void orderAll(AstNetlist*) VL_MT_DISABLED;
+    static void orderAll(AstNetlist*);
 };
 
 #endif  // Guard

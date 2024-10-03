@@ -193,7 +193,7 @@ class DescopeVisitor final : public VNVisitor {
                 // to come up with some return value
                 // newfuncp->addStmtsp(new AstDisplay(newfuncp->fileline(),
                 //                                   VDisplayType::DT_WARNING,
-                //                                   string{"%%Error: "}+name+"() called with bad
+                //                                   "%%Error: "s+name+"() called with bad
                 //                                   scope", nullptr));
                 // newfuncp->addStmtsp(new AstStop(newfuncp->fileline()));
                 if (debug() >= 9) newfuncp->dumpTree("-  newfunc: ");

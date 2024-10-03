@@ -1,10 +1,10 @@
-%Error: t/t_cast_class_incompat_bad.v:26:16: Dynamic, not static cast, required to cast 'class{}BaseExtended' from 'class{}Base'
+%Error: t/t_cast_class_incompat_bad.v:26:28: Dynamic, not static cast, required to cast 'class{}BaseExtended' from 'class{}Base'
                                            : ... note: In instance 't'
                                            : ... Suggest dynamic $cast
    26 |       cls_ab = BaseExtended'(cls_a);   
-      |                ^~~~~~~~~~~~
-%Error: t/t_cast_class_incompat_bad.v:27:15: Incompatible types to static cast to 'class{}Other' from 'class{}BaseExtended'
+      |                            ^
+%Error: t/t_cast_class_incompat_bad.v:27:20: Incompatible types to static cast to 'class{}Other' from 'class{}BaseExtended'
                                            : ... note: In instance 't'
    27 |       other = Other'(cls_ab);   
-      |               ^~~~~
+      |                    ^
 %Error: Exiting due to

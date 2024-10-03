@@ -1,0 +1,4 @@
+%Error: t/t_vlt_match_error.v:17:12: Importing from missing package 'hi'
+   17 |     import hi::*;
+      |            ^~
+%Error: Exiting due to

@@ -160,6 +160,10 @@ AstCExpr::AstCExpr(FileLine* fl, const string& textStmt, int setwidth, bool clea
 
 AstVarRef::AstVarRef(FileLine* fl, AstVar* varp, const VAccess& access)
     : ASTGEN_SUPER_VarRef(fl, varp, access) {}
+AstVarRef::AstVarRef(FileLine* fl, AstNodeModule* pkgp, AstVar* varp, const VAccess& access)
+    : AstVarRef{fl, varp, access} {
+    classOrPackagep(pkgp);
+}
 // This form only allowed post-link (see above)
 AstVarRef::AstVarRef(FileLine* fl, AstVarScope* varscp, const VAccess& access)
     : ASTGEN_SUPER_VarRef(fl, varscp->varp(), access) {

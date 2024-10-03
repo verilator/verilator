@@ -165,6 +165,17 @@ string V3Os::filenameDir(const string& filename) VL_PURE {
     }
 }
 
+string V3Os::filenameExt(const string& filename) VL_PURE {
+    string base = filenameNonDir(filename);
+    string::size_type pos;
+    if ((pos = base.find('.')) != string::npos) {
+        base.erase(0, pos);
+        return base;
+    } else {
+        return "";
+    }
+}
+
 string V3Os::filenameNonDir(const string& filename) VL_PURE {
     // std::filesystem::path::filename
     auto it = filename.rbegin();
@@ -174,15 +185,11 @@ string V3Os::filenameNonDir(const string& filename) VL_PURE {
     return string{it.base(), filename.end()};
 }
 
-string V3Os::filenameNonExt(const string& filename) VL_PURE {
+string V3Os::filenameNonDirExt(const string& filename) VL_PURE {
     string base = filenameNonDir(filename);
     string::size_type pos;
     if ((pos = base.find('.')) != string::npos) base.erase(pos);
     return base;
-}
-
-string V3Os::filenameNonDirExt(const string& filename) VL_PURE {
-    return filenameNonExt(filenameNonDir(filename));
 }
 
 string V3Os::filenameSubstitute(const string& filename) {
@@ -244,6 +251,55 @@ string V3Os::filenameRealPath(const string& filename) VL_PURE {
     } else {
         return filename;
     }
+}
+
+string V3Os::filenameRelativePath(const string& filename, const string& base) VL_PURE {
+    const string a = V3Os::filenameRealPath(filename);
+    const string b = V3Os::filenameRealPath(base);
+    string result;
+    if (a == b) return ".";
+
+    auto aIt = a.begin();
+    auto bIt = b.begin();
+    while (aIt != a.end() && bIt != b.end()) {
+        // UINFO(9, "fnrp scan " << (aIt - a.begin()) << " " << a.substr(aIt - a.begin()) << endl);
+        // UINFO(9, "fnrp scan " << (bIt - b.begin()) << " " << b.substr(bIt - b.begin()) << endl);
+        auto aWordIt = aIt;  // position of next slash
+        for (; aWordIt != a.end(); ++aWordIt) {
+            if (isSlash(*aWordIt)) break;
+        }
+
+        auto bWordIt = bIt;  // position of next slash
+        for (; bWordIt != b.end(); ++bWordIt) {
+            if (isSlash(*bWordIt)) break;
+        }
+
+        const string aWord = a.substr(aIt - a.begin(), aWordIt - aIt);
+        const string bWord = b.substr(bIt - b.begin(), bWordIt - bIt);
+        if (aWord != bWord) break;
+        aIt = aWordIt;
+        bIt = bWordIt;
+        if (aIt != a.end()) ++aIt;  // Skip slash
+        if (bIt != b.end()) ++bIt;  // Skip slash
+    }
+
+    while (bIt != b.end()) {
+        for (; bIt != b.end(); ++bIt) {
+            if (isSlash(*bIt)) {
+                ++bIt;
+                break;
+            }
+        }
+        if (!result.empty()) result += "/";
+        result += "..";
+    }
+
+    const string aLeft = a.substr(aIt - a.begin());
+    if (!aLeft.empty()) {
+        if (!result.empty()) result += "/";
+        result += aLeft;
+    }
+    return filenameCleanup(result);
 }
 
 bool V3Os::filenameIsRel(const string& filename) VL_PURE {
@@ -441,5 +497,23 @@ void V3Os::selfTest() {
     UASSERT_SELFTEST(string, filenameCleanup("aaa/bbb/ccc/"), "aaa/bbb/ccc");
     UASSERT_SELFTEST(string, filenameCleanup("./aaa/bbb/ccc/"), "aaa/bbb/ccc");
     UASSERT_SELFTEST(string, filenameCleanup("../aaa/bbb/ccc/"), "../aaa/bbb/ccc");
+    UASSERT_SELFTEST(string, filenameDir("a.a/b.b/f.e"), "a.a/b.b");
+    UASSERT_SELFTEST(string, filenameExt("a.a/b.b/f"), "");
+    UASSERT_SELFTEST(string, filenameExt("a.a/b.b/f.e"), ".e");
+    UASSERT_SELFTEST(string, filenameNonDirExt("a.a/b.b/f.e"), "f");
+    UASSERT_SELFTEST(string, filenameRelativePath("/a/b", "/a/b"), ".");
+    UASSERT_SELFTEST(string, filenameRelativePath("/a/b", "/a/b/c"), "..");
+    UASSERT_SELFTEST(string, filenameRelativePath("/a/b", "/a/b/c/d"), "../..");
+    UASSERT_SELFTEST(string, filenameRelativePath("/a/b/x", "/a/b/c/d"), "../../x");
+    UASSERT_SELFTEST(string, filenameRelativePath("/a/b/x/y", "/"), "a/b/x/y");
+    UASSERT_SELFTEST(string, filenameRelativePath("/a/b/x/y", "/a/b"), "x/y");
+    UASSERT_SELFTEST(string, filenameRelativePath("/a/b/x/y", "/a/q"), "../b/x/y");
+    UASSERT_SELFTEST(string, filenameRelativePath("a/b", "a/b"), ".");
+    UASSERT_SELFTEST(string, filenameRelativePath("a/b", "a/b/c"), "..");
+    UASSERT_SELFTEST(string, filenameRelativePath("a/b", "a/b/c/d"), "../..");
+    UASSERT_SELFTEST(string, filenameRelativePath("a/b/x", "a/b/c/d"), "../../x");
+    UASSERT_SELFTEST(string, filenameRelativePath("a/b/x/y", ""), "a/b/x/y");
+    UASSERT_SELFTEST(string, filenameRelativePath("a/b/x/y", "a/b"), "x/y");
+    UASSERT_SELFTEST(string, filenameRelativePath("a/b/x/y", "a/q"), "../b/x/y");
 #endif
 }

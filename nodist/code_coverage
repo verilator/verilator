@@ -58,15 +58,12 @@ def test():
             if not Args.scenarios or re.match('dist', Args.scenarios):
                 run("make examples VERILATOR_NO_OPT_BUILD=1")
             run("make test_regress VERILATOR_NO_OPT_BUILD=1" +
-                (" SCENARIOS='" + Args.scenarios +
-                 "'" if Args.scenarios else "") +
-                (" DRIVER_HASHSET='--hashset=" + Args.hashset +
-                 "'" if Args.hashset else "") +
+                (" SCENARIOS='" + Args.scenarios + "'" if Args.scenarios else "") +
+                (" DRIVER_HASHSET='--hashset=" + Args.hashset + "'" if Args.hashset else "") +
                 ('' if Args.stop else ' || true'))
         else:
             for test in Args.tests:
-                if not os.path.exists(test) and os.path.exists(
-                        "test_regress/t/" + test):
+                if not os.path.exists(test) and os.path.exists("test_regress/t/" + test):
                     test = "test_regress/t/" + test
                 run(test)
         ci_fold_end()
@@ -78,8 +75,7 @@ def test():
         os.makedirs(cc_dir, exist_ok=True)
         os.makedirs(cc_dir + "/info", exist_ok=True)
 
-        with subprocess.Popen("find . -print | grep .gcda",
-                              shell=True,
+        with subprocess.Popen("find . -print | grep .gcda", shell=True,
                               stdout=subprocess.PIPE) as sp:
             datout = sp.stdout.read()
 
@@ -98,8 +94,7 @@ def test():
                     del dats[dat]
                     break
 
-        with subprocess.Popen("find . -print | grep .gcno",
-                              shell=True,
+        with subprocess.Popen("find . -print | grep .gcno", shell=True,
                               stdout=subprocess.PIPE) as sp:
             datout = sp.stdout.read()
 
@@ -116,8 +111,7 @@ def test():
                 if gbase in gcnos:
                     os.symlink(gcnos[gbase], gcno)
                 else:
-                    print("MISSING .gcno for a .gcda: " + gcno,
-                          file=sys.stderr)
+                    print("MISSING .gcno for a .gcda: " + gcno, file=sys.stderr)
         ci_fold_end()
 
     if Args.stage_enabled[5]:
@@ -142,8 +136,7 @@ def test():
     if Args.stage_enabled[11]:
         ci_fold_start("dirs")
         print("Stage 11: Cleanup paths")
-        cleanup_abs_paths_info(cc_dir, cc_dir + "/app_total.info",
-                               cc_dir + "/app_total.info")
+        cleanup_abs_paths_info(cc_dir, cc_dir + "/app_total.info", cc_dir + "/app_total.info")
         ci_fold_end()
 
     if Args.stage_enabled[12]:
@@ -164,34 +157,38 @@ def test():
             inc = "--include " + inc
         if exc != '':
             exc = "--exclude " + exc
-        run("cd " + cc_dir + " ; " + RealPath +
-            "/fastcov.py -C app_total.info " + inc + " " + exc +
-            " -x --lcov -o app_total_f.info")
+        run("cd " + cc_dir + " ; " + RealPath + "/fastcov.py -C app_total.info " + inc + " " +
+            exc + " -x --lcov -o app_total_f.info")
         ci_fold_end()
 
     if Args.stage_enabled[17]:
         ci_fold_start("report")
         print("Stage 17: Create HTML")
         run("cd " + cc_dir + " ; genhtml app_total_f.info --demangle-cpp" +
-            " --rc lcov_branch_coverage=1 --rc genhtml_hi_limit=100 --output-directory html"
-            )
+            " --rc lcov_branch_coverage=1 --rc genhtml_hi_limit=100 --output-directory html")
         ci_fold_end()
 
     if Args.stage_enabled[18]:
         ci_fold_start("upload")
         print("Stage 18: Upload")
-        cmd = "bash <(cat ci/coverage-upload.sh) -f " + cc_dir + "/app_total.info"
-        print("print: Not running: export CODECOV_TOKEN=<hidden>")
-        print("print: Not running: " + cmd)
+        # curl -Os https://cli.codecov.io/latest/linux/codecov ; sudo chmod +x codecov
+        # --disable-search does not seem to work
+        # -d with false directory does not seem to work
+        # So, remove gcno files before calling codecov
+        upload_dir = "nodist/obj_dir/upload"
+        os.makedirs(upload_dir, exist_ok=True)
+        cmd = "ci/codecov -v upload-process -Z" + " -f " + cc_dir + "/app_total.info )"
+        print("print: Not running:")
+        print("  export CODECOV_TOKEN=<hidden>")
+        print("  find . -name '*.gcno' -exec rm {} \\;")
+        print("  " + cmd)
         ci_fold_end()
 
     if Args.stage_enabled[19]:
         print("*-* All Finished *-*")
         print("")
         print("* See report in " + cc_dir + "/html/index.html")
-        print(
-            "* Remember to make distclean && ./configure before working on non-coverage"
-        )
+        print("* Remember to make distclean && ./configure before working on non-coverage")
 
 
 def clone_sources(cc_dir):
@@ -200,9 +197,8 @@ def clone_sources(cc_dir):
     for globf in Source_Globs:
         for infile in glob.glob(globf):
             if re.match(r'^/', infile):
-                sys.exit(
-                    "%Error: source globs should be relative not absolute filenames, "
-                    + infile)
+                sys.exit("%Error: source globs should be relative not absolute filenames, " +
+                         infile)
             outfile = cc_dir + "/" + infile
             outpath = re.sub(r'/[^/]*$', '', outfile, count=1)
             os.makedirs(outpath, exist_ok=True)
@@ -243,22 +239,20 @@ def clone_sources(cc_dir):
                                 done = True
 
                         ofh.write(line + "\n")
-    print("Number of source lines automatically LCOV_EXCL_LINE'ed: %d" %
-          excluded_lines)
-    print("Number of source lines automatically LCOV_EXCL_BR_LINE'ed: %d" %
-          excluded_br_lines)
+    print("Number of source lines automatically LCOV_EXCL_LINE'ed: %d" % excluded_lines)
+    print("Number of source lines automatically LCOV_EXCL_BR_LINE'ed: %d" % excluded_br_lines)
 
 
 def cleanup_abs_paths_info(cc_dir, infile, outfile):
     lines = []
     with open(infile, "r", encoding="utf8") as fh:
         for line in fh:
-            if re.search(r'^SF:', line):
-                line = re.sub(os.environ['VERILATOR_ROOT'] + '/',
-                              '',
-                              line,
-                              count=1)
+            if re.search(r'^SF:', line) and not re.search(r'^SF:/usr/', line):
+                line = re.sub(os.environ['VERILATOR_ROOT'] + '/', '', line, count=1)
                 line = re.sub(cc_dir + '/', '', line, count=1)
+                line = re.sub(r'^SF:.*?/include/', 'SF:include/', line, count=1)
+                line = re.sub(r'^SF:.*?/src/', 'SF:src/', line, count=1)
+                line = re.sub(r'^SF:.*?/test_regress/', 'SF:test_regress/', line, count=1)
                 line = re.sub(r'obj_dbg/verilog.y$', 'verilog.y', line)
                 # print("Remaining SF: "+line)
             lines.append(line)
@@ -340,15 +334,13 @@ def ci_fold_end():
 parser = argparse.ArgumentParser(
     allow_abbrev=False,
     formatter_class=argparse.RawDescriptionHelpFormatter,
-    description=
-    """code_coverage builds Verilator with C++ coverage support and runs
+    description="""code_coverage builds Verilator with C++ coverage support and runs
 tests with coverage enabled. This will rebuild the current object
 files. Run as:
 
   cd $VERILATOR_ROOT
   nodist/code_coverage""",
-    epilog=
-    """Copyright 2019-2024 by Wilson Snyder. This program is free software; you
+    epilog="""Copyright 2019-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
@@ -358,22 +350,20 @@ SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
 parser.add_argument('--debug', action='store_true', help='enable debug')
 parser.add_argument('--hashset',
                     action='store',
-                    help='pass test hashset onto driver.pl test harness')
+                    help='pass test hashset onto driver.py test harness')
 parser.add_argument('--scenarios',
                     action='store',
-                    help='pass test scenarios onto driver.pl test harness')
+                    help='pass test scenarios onto driver.py test harness')
+parser.add_argument('--stages',
+                    '--stage',
+                    action='store',
+                    help='runs a specific stage or range of stages (see the script)')
 parser.add_argument(
-    '--stages',
-    action='store',
-    help='runs a specific stage or range of stages (see the script)')
-parser.add_argument(
+    '--tests',
     '--test',
     action='append',
-    dest='tests',
     default=[],
-    help=
-    'Instead of normal regressions, run the specified test(s), may be used multiple times'
-)
+    help='Instead of normal regressions, run the specified test(s), may be used multiple times')
 parser.add_argument('--no-stop',
                     dest='stop',
                     action='store_false',

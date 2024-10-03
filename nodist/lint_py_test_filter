@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+# pylint: disable=
+######################################################################
+
+import argparse
+import re
+import sys
+
+SUPPRESSES = [
+    "**********",
+    "E0602: Undefined variable 'test' (undefined-variable)",
+    "E0602: Undefined variable 're' (undefined-variable)",
+    "E0602: Undefined variable 'os' (undefined-variable)",
+    "E0602: Undefined variable 'glob' (undefined-variable)",
+    "W0611: Unused import vltest_bootstrap (unused-import)",
+    ]
+
+######################################################################
+
+def process():
+    anymsg = False
+    for line in sys.stdin:
+        line = line.rstrip();
+        show = True
+        for msg in SUPPRESSES:
+            if msg in line:
+                show = False
+                continue
+        if show:
+            print(line)
+            anymsg = True
+
+    if anymsg:
+        sys.exit("%Error: See messages above")
+
+#######################################################################
+#######################################################################
+
+parser = argparse.ArgumentParser(
+    allow_abbrev=False,
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description="""lint_py_test_filter is used to filter
+pylint output for expected errors in Verilator test_regress/*.py tests.""",
+    epilog="""Copyright 2024-2024 by Wilson Snyder. This program is free software; you
+can redistribute it and/or modify it under the terms of either the GNU
+Lesser General Public License Version 3 or the Perl Artistic License
+Version 2.0.
+
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
+
+parser.add_argument('--debug', action='store_true', help='enable debug')
+
+Args = parser.parse_args()
+process()
+
+######################################################################
+# Local Variables:
+# compile-command: "cd .. ; make lint-py-pylint-tests"
+# End:

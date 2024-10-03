@@ -22,7 +22,6 @@
 
 #include "V3Error.h"
 #include "V3Global.h"
-#include "V3ThreadSafety.h"
 
 class AstNetlist;
 class VInFilter;
@@ -49,6 +48,9 @@ public:
 
     // Push preprocessed text to the lexer
     static void ppPushText(V3ParseImp* impp, const string& text) VL_MT_DISABLED;
+
+    // Suggest PLI functions for spell check
+    static void candidatePli(VSpellCheck* spellerp) VL_MT_DISABLED;
 };
 
 #endif  // Guard

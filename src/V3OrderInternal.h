@@ -22,7 +22,6 @@
 
 #include "V3Order.h"
 #include "V3OrderGraph.h"
-#include "V3ThreadSafety.h"
 
 #include <string>
 #include <unordered_map>
@@ -49,7 +48,6 @@ void orderOrderGraph(OrderGraph& graph, const std::string& tag);
 void processDomains(AstNetlist* netlistp,  //
                     OrderGraph& graph,  //
                     const std::string& tag,  //
-                    const TrigToSenMap& trigToSen,  //
                     const ExternalDomainsProvider& externalDomains);
 
 std::vector<AstActive*> createSerial(OrderGraph& orderGraph,  //

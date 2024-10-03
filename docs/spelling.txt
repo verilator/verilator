@@ -74,6 +74,7 @@ Deepa
 Defparams
 Delm
 Denio
+Deniz
 Deprecations
 Deroo
 Desai
@@ -149,6 +150,7 @@ Grulfen
 Gu
 Gunter
 Guo
+Güzel
 Hameed
 Hao
 Haojin
@@ -243,6 +245,7 @@ Liwei
 Lockhart
 Longo
 Luca
+Luiza
 Lussier
 Lübeck
 MMD
@@ -273,6 +276,8 @@ MinW
 Mindspeed
 MingW
 Miodrag
+Moberg
+Mobert
 ModelSim
 Modport
 Moinak
@@ -354,6 +359,7 @@ Sasselli
 Scharrer
 Seitz
 Shahid
+Shahrestani
 Shankar
 Shanshan
 Sharad
@@ -379,6 +385,7 @@ Srini
 Srinivasan
 Stamness
 Stephane
+Sterin
 Stoddard
 Stroebel
 Strouble
@@ -461,6 +468,7 @@ Wojciech
 Wolfel
 Wouters
 Wpedantic
+Wunused
 Wwarn
 XSim
 Xcelium
@@ -497,6 +505,7 @@ architected
 args
 arrarys
 assertOn
+assertcontrol
 astgen
 async
 atClone
@@ -582,6 +591,7 @@ datadir
 datafiles
 david
 ddd
+de
 deassign
 debugi
 defenv
@@ -589,6 +599,7 @@ defname
 defparam
 demangling
 dep
+deparametrized
 der
 dereference
 desassign
@@ -701,6 +712,7 @@ genvar
 genvars
 getenv
 getline
+getter
 ggdb
 glibc
 gmake
@@ -714,6 +726,7 @@ hh
 hier
 hierCMakeArgs
 hierMkArgs
+hierParameters
 hierVer
 hx
 hyperthreading
@@ -845,6 +858,7 @@ parallelized
 param
 parameterization
 parameterized
+parameterized
 parameterless
 params
 parens
@@ -974,7 +988,9 @@ submakes
 submodule
 submodules
 substring
+superclass
 suspendable
+suspendables
 sv
 svBitVal
 svBitVecVal

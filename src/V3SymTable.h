@@ -64,12 +64,12 @@ public:
 
     void dumpIterate(std::ostream& os, VSymConstMap& doneSymsr, const string& indent,
                      int numLevels, const string& searchName) const {
-        os << indent << "+ " << std::left << std::setw(30)
-           << (searchName == "" ? "\"\"" : searchName) << std::setw(0) << std::right;
+        os << indent << "+ " << std::left << std::setw(30) << ("'"s + searchName + "'"s)
+           << std::setw(0) << std::right;
         os << "  se" << cvtToHex(this) << std::setw(0);
         os << "  fallb=se" << cvtToHex(m_fallbackp);
         if (m_symPrefix != "") os << "  symPrefix=" << m_symPrefix;
-        os << "  n=" << nodep();
+        if (nodep()) os << "  n=" << nodep();
         os << '\n';
         if (VL_UNCOVERABLE(!doneSymsr.insert(this).second)) {
             os << indent << "| ^ duplicate, so no children printed\n";  // LCOV_EXCL_LINE
@@ -121,11 +121,12 @@ public:
         UINFO(9, "     SymInsert se" << cvtToHex(this) << " '" << name << "' se" << cvtToHex(entp)
                                      << "  " << entp->nodep() << endl);
         if (name != "" && m_idNameMap.find(name) != m_idNameMap.end()) {
-            if (!V3Error::errorCount()) {  // Else may have just reported warning
+            // If didn't already report warning
+            if (!V3Error::errorCount()) {  // LCOV_EXCL_START
                 if (debug() >= 9 || V3Error::debugDefault())
                     dumpSelf(std::cout, "- err-dump: ", 1);
                 entp->nodep()->v3fatalSrc("Inserting two symbols with same name: " << name);
-            }
+            }  // LCOV_EXCL_STOP
         } else {
             m_idNameMap.emplace(name, entp);
         }

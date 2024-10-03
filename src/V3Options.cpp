@@ -395,6 +395,7 @@ void V3Options::addVFile(const string& filename) {
     // in a specific order and multiple of them.
     m_vFiles.push_back(filename);
 }
+void V3Options::addVltFile(const string& filename) { m_vltFiles.insert(filename); }
 void V3Options::addForceInc(const string& filename) { m_forceIncs.push_back(filename); }
 
 void V3Options::addLineArg(const string& arg) { m_impp->m_lineArgs.push_back(arg); }
@@ -553,7 +554,7 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
     // Find a filename to read the specified module name,
     // using the incdir and libext's.
     // Return "" if not found.
-    const string filename = V3Os::filenameCleanup(modname);
+    const string filename = V3Os::filenameCleanup(VName::dehash(modname));
     if (!V3Os::filenameIsRel(filename)) {
         // filename is an absolute path, so can find getStdPackagePath()
         string exists = filePathCheckOneDir(filename, "");
@@ -575,7 +576,7 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
 
     // Warn and return not found
     if (errmsg != "") {
-        fl->v3error(errmsg + filename);
+        fl->v3error(errmsg + "'"s + filename + "'"s);
         filePathLookedMsg(fl, filename);
     }
     return "";
@@ -585,8 +586,8 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
     static bool shown_notfound_msg = false;
     if (modname.find("__Vhsh") != string::npos) {
         std::cerr << V3Error::warnMoreStandalone()
-                  << "... Unsupported: Name is longer than 127 characters;"
-                  << " automatic file lookup not supported.\n";
+                  << "... Note: Name is longer than 127 characters; automatic"
+                  << " file lookup may have failed due to OS filename length limits.\n";
         std::cerr << V3Error::warnMoreStandalone()
                   << "... Suggest putting filename with this module/package"
                   << " onto command line instead.\n";
@@ -637,6 +638,8 @@ string V3Options::getenvBuiltins(const string& var) {
         return getenvMAKE();
     } else if (var == "PERL") {
         return getenvPERL();
+    } else if (var == "PYTHON3") {
+        return getenvPYTHON3();
     } else if (var == "SYSTEMC") {
         return getenvSYSTEMC();
     } else if (var == "SYSTEMC_ARCH") {
@@ -664,6 +667,10 @@ string V3Options::getenvMAKEFLAGS() {  //
 
 string V3Options::getenvPERL() {  //
     return V3Os::filenameCleanup(V3Os::getenvStr("PERL", "perl"));
+}
+
+string V3Options::getenvPYTHON3() {  //
+    return V3Os::filenameCleanup(V3Os::getenvStr("PYTHON3", "python3"));
 }
 
 string V3Options::getenvSYSTEMC() {
@@ -701,9 +708,9 @@ string V3Options::getenvSYSTEMC_ARCH() {
         uname(&uts);
         const string sysname = VString::downcase(uts.sysname);  // aka  'uname -s'
         if (VL_UNCOVERABLE(VString::wildmatch(sysname.c_str(), "*solaris*"))) {
-            var = "gccsparcOS5";
+            var = "gccsparcOS5";  // LCOV_EXCL_LINE
         } else if (VL_UNCOVERABLE(VString::wildmatch(sysname.c_str(), "*cygwin*"))) {
-            var = "cygwin";
+            var = "cygwin";  // LCOV_EXCL_LINE
         } else {
             var = "linux";
         }
@@ -858,8 +865,11 @@ void V3Options::notify() VL_MT_DISABLED {
         cmdfl->v3error(
             "--hierarchical must not be set with --hierarchical-child or --hierarchical-block");
     }
-    if (m_hierChild && m_hierBlocks.empty()) {
-        cmdfl->v3error("--hierarchical-block must be set when --hierarchical-child is set");
+    if (m_hierChild) {
+        if (m_hierBlocks.empty()) {
+            cmdfl->v3error("--hierarchical-block must be set when --hierarchical-child is set");
+        }
+        m_main = false;
     }
 
     if (protectIds()) {
@@ -1025,10 +1035,9 @@ void V3Options::parseOpts(FileLine* fl, int argc, char** argv) VL_MT_DISABLED {
     }
 
     // Default prefix to the filename
-    if (prefix() == "" && topModule() != "")
-        m_prefix = string{"V"} + AstNode::encodeName(topModule());
+    if (prefix() == "" && topModule() != "") m_prefix = "V"s + AstNode::encodeName(topModule());
     if (prefix() == "" && vFilesList.size() >= 1)
-        m_prefix = string{"V"} + AstNode::encodeName(V3Os::filenameNonExt(*(vFilesList.begin())));
+        m_prefix = "V"s + AstNode::encodeName(V3Os::filenameNonDirExt(*(vFilesList.begin())));
     if (modPrefix() == "") m_modPrefix = prefix();
 
     // Find files in makedir
@@ -1321,6 +1330,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_hierBlocks.emplace(opt.mangledName(), opt);
     });
     DECL_OPTION("-hierarchical-child", Set, &m_hierChild);
+    DECL_OPTION("-hierarchical-params-file", CbVal,
+                [this](const char* optp) { m_hierParamsFile = optp; });
 
     DECL_OPTION("-I", CbPartialMatch,
                 [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
@@ -1396,6 +1407,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         if (m_outputSplitCTrace < 0) {
             fl->v3error("--output-split-ctrace must be >= 0: " << valp);
         }
+    });
+    DECL_OPTION("-output-groups", CbVal, [this, fl](const char* valp) {
+        m_outputGroups = std::atoi(valp);
+        if (m_outputGroups < 0) { fl->v3error("--output-groups must be >= 0: " << valp); }
     });
 
     DECL_OPTION("-P", Set, &m_preprocNoLine);
@@ -1762,6 +1777,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                        || suffixed(filename, ".o")  //
                        || suffixed(filename, ".so")) {
                 V3Options::addLdLibs(filename);
+            } else if (suffixed(filename, ".vlt")) {
+                V3Options::addVltFile(filename);
             } else {
                 V3Options::addVFile(filename);
             }
@@ -1956,6 +1973,7 @@ void V3Options::showVersion(bool verbose) {
     cout << "Environment:\n";
     cout << "    MAKE               = " << V3Os::getenvStr("MAKE", "") << "\n";
     cout << "    PERL               = " << V3Os::getenvStr("PERL", "") << "\n";
+    cout << "    PYTHON3            = " << V3Os::getenvStr("PYTHON3", "") << "\n";
     cout << "    SYSTEMC            = " << V3Os::getenvStr("SYSTEMC", "") << "\n";
     cout << "    SYSTEMC_ARCH       = " << V3Os::getenvStr("SYSTEMC_ARCH", "") << "\n";
     cout << "    SYSTEMC_INCLUDE    = " << V3Os::getenvStr("SYSTEMC_INCLUDE", "") << "\n";
@@ -2021,7 +2039,7 @@ unsigned V3Options::dumpLevel(const string& tag) const VL_MT_SAFE {
     return iter != m_dumpLevel.end() ? iter->second : 0;
 }
 
-unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const {
+unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const VL_MT_SAFE {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means we need to strip the filenames: ../Foo.cpp -> Foo
     return dumpLevel(V3Os::filenameNonDirExt(srcfile_path));

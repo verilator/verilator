@@ -20,8 +20,6 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3ThreadSafety.h"
-
 #include <functional>
 #include <unordered_map>
 #include <vector>
@@ -42,8 +40,8 @@ namespace V3Order {
 
 // Callable to add extra external Triggers to a variable
 using ExternalDomainsProvider = std::function<void(const AstVarScope*, std::vector<AstSenTree*>&)>;
-// Map from Trigger expression to original Sensitivity tree
-using TrigToSenMap = std::unordered_map<const AstSenItem*, const AstSenTree*>;
+// Map from Trigger Sensitivity tree to original Sensitivity tree
+using TrigToSenMap = std::unordered_map<const AstSenTree*, const AstSenTree*>;
 
 AstCFunc* order(
     AstNetlist* netlistp,  //

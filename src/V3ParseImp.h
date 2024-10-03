@@ -25,7 +25,6 @@
 #include "V3Global.h"
 #include "V3Parse.h"
 #include "V3ParseSym.h"
-#include "V3ThreadSafety.h"
 
 #include <algorithm>
 #include <deque>
@@ -82,8 +81,8 @@ struct VMemberQualifiers final {
     }
     void applyToNodes(AstVar* nodesp) const {
         for (AstVar* nodep = nodesp; nodep; nodep = VN_AS(nodep->nextp(), Var)) {
-            if (m_rand) nodep->isRand(true);
-            if (m_randc) nodep->isRandC(true);
+            if (m_rand) nodep->rand(VRandAttr::RAND);
+            if (m_randc) nodep->rand(VRandAttr::RAND_CYCLIC);
             if (m_local) nodep->isHideLocal(true);
             if (m_protected) nodep->isHideProtected(true);
             if (m_static) nodep->lifetime(VLifetime::STATIC);
@@ -117,6 +116,7 @@ struct V3ParseBisonYYSType final {
         V3ErrorCode::en errcodeen;
         VAttrType::en attrtypeen;
         VAssertType::en asserttypeen;
+        VAssertDirectiveType::en assertdirectivetypeen;
         VLifetime::en lifetime;
         VStrength::en strength;
 
@@ -294,6 +294,7 @@ public:
     void parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
                    const string& errmsg) VL_MT_DISABLED;
     void dumpInputsFile() VL_MT_DISABLED;
+    static void candidatePli(VSpellCheck* spellerp) VL_MT_DISABLED;
 
 private:
     void preprocDumps(std::ostream& os);
@@ -301,9 +302,10 @@ private:
     void yylexReadTok() VL_MT_DISABLED;
     void tokenPull() VL_MT_DISABLED;
     void tokenPipeline() VL_MT_DISABLED;  // Internal; called from tokenToBison
+    int tokenPipelineId(int token) VL_MT_DISABLED;
     void tokenPipelineSym() VL_MT_DISABLED;
     size_t tokenPipeScanParam(size_t depth) VL_MT_DISABLED;
-    size_t tokenPipeScanType(size_t depth) VL_MT_DISABLED;
+    size_t tokenPipeScanTypeEq(size_t depth) VL_MT_DISABLED;
     const V3ParseBisonYYSType* tokenPeekp(size_t depth) VL_MT_DISABLED;
     void preprocDumps(std::ostream& os, bool forInputs) VL_MT_DISABLED;
 };

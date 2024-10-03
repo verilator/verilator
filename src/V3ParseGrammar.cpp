@@ -63,6 +63,17 @@ const char* V3ParseImp::tokenName(int token) {
 #endif
 }
 
+void V3ParseImp::candidatePli(VSpellCheck* spellerp) {
+#if !YYERROR_VERBOSE
+#error "Need lex token names"
+#endif
+    for (int i = 0; yytname[i]; ++i) {
+        if (yytname[i][0] != '\"') continue;
+        if (yytname[i][1] != '$') continue;
+        spellerp->pushCandidate(string{yytname[i]}.substr(1, strlen(yytname[i]) - 2));
+    }
+}
+
 void V3ParseImp::parserClear() {
     // Clear up any dynamic memory V3Parser required
     VARDTYPE(nullptr);
@@ -115,6 +126,23 @@ AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {
         nrangep->nextp()->unlinkFrBackWithNext()->deleteTree();
     }
     return VN_CAST(nrangep, Range);
+}
+
+AstNodePreSel* V3ParseGrammar::scrubSel(AstNodeExpr* fromp, AstNodePreSel* selp) VL_MT_DISABLED {
+    // SEL(PARSELVALUE, ...) -> SEL(fromp, ...)
+    AstNodePreSel* subSelp = selp;
+    while (true) {
+        if (VN_IS(subSelp->fromp(), ParseHolder)) break;
+        if (AstNodePreSel* const lowerSelp = VN_CAST(subSelp->fromp(), NodePreSel)) {
+            subSelp = lowerSelp;
+            continue;
+        }
+        subSelp->v3fatalSrc("Couldn't find where to insert expression into select");
+    }
+    AstNode* subSelFromp = subSelp->fromp();
+    subSelFromp->replaceWith(fromp);
+    VL_DO_DANGLING(subSelFromp->deleteTree(), subSelFromp);
+    return selp;
 }
 
 AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nrangep,
@@ -215,8 +243,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     nodep->ansi(m_pinAnsi);
     nodep->declTyped(m_varDeclTyped);
     nodep->lifetime(m_varLifetime);
-    nodep->delayp(m_netDelayp);
-    m_netDelayp = nullptr;
+    nodep->delayp(getNetDelay());
     if (GRAMMARP->m_varDecl != VVarType::UNKNOWN) nodep->combineType(GRAMMARP->m_varDecl);
     if (GRAMMARP->m_varIO != VDirection::NONE) {
         nodep->declDirection(GRAMMARP->m_varIO);

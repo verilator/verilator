@@ -723,6 +723,13 @@ Summary:
    :option:`/*verilator&32;hier_block*/` metacomment is ignored.  See
    :ref:`Hierarchical Verilation`.
 
+.. option:: --hierarchical-params-file <filename>
+
+   Internal flag inserted used during :vlopt:`--hierarchical`; specifies
+   name of hierarchical parameters file for deparametrized modules with
+   :option:`/*verilator&32;hier_block*/` metacomment. See
+   :ref:`Hierarchical Verilation`.
+
 .. option:: -I<dir>
 
    See :vlopt:`-y`.
@@ -950,6 +957,22 @@ Summary:
    Rarely needed.  Disables a bug fix for ordering of clock enables with
    delayed assignments.  This option should only be used when suggested by
    the developers.
+
+.. option:: --output-groups <numfiles>
+
+   Enables concatenating the output .cpp files into the given number of
+   effective output .cpp files.  This is useful if the compiler startup
+   overhead cumulated from compiling many small files becomes unacceptable,
+   which can happen in designs making extensive use of SystemVerilog classes,
+   templates or generate blocks.
+
+   Using :vlopt:`--output-groups` can adversely impact caching and stability
+   (as in reproducibility) of compiled code.  Compilation of larger .cpp
+   files also has higher memory requirements.  Too low values might result in
+   swap thrashing with large designs, high values give no benefits.  The
+   value should range from 2 to 20 for small to medium designs.
+
+   Default is zero, which disables this feature.
 
 .. option:: --output-split <statements>
 
@@ -1902,8 +1925,12 @@ Configuration Files
 
 In addition to the command line, warnings and other features for the
 :command:`verilator` command may be controlled with configuration files,
-typically named with the .vlt extension (what makes it a configuration file
-is the :option:`\`verilator_config` directive). An example:
+typically named with the `.vlt` extension (what makes it a configuration
+file is the :option:`\`verilator_config` directive).  These files, when
+named `.vlt`, are read before source code files; if this behavior is
+undesired, name the config file with a `.v` suffix.
+
+An example:
 
 .. code-block:: sv
 
@@ -1995,6 +2022,13 @@ The grammar of configuration commands is as follows:
    Specifies that the module is an unit of hierarchical Verilation.  Note
    that the setting is ignored unless the :vlopt:`--hierarchical` option is
    specified.  See :ref:`Hierarchical Verilation`.
+
+.. option:: hier_params -module "<modulename>"
+
+   Specifies that the module contains parameters a :vlopt:`--hierarchical` block. This option
+   is used internally to specify parameters for deparametrized hier block instances.
+   This option should not be used directly.
+   See :ref:`Hierarchical Verilation`.
 
 .. option:: inline -module "<modulename>"
 

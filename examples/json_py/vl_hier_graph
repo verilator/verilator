@@ -24,8 +24,7 @@ class VlHierGraph:
         self.next_vertex_number = 0
         self.addr_to_number = {}
 
-        with NamedTemporaryFile() as tree_temp, NamedTemporaryFile(
-        ) as meta_temp:
+        with NamedTemporaryFile() as tree_temp, NamedTemporaryFile() as meta_temp:
             vargs = [
                 '--json-only-output',
                 tree_temp.name,
@@ -45,9 +44,7 @@ class VlHierGraph:
             fh.write("digraph {\n")
             fh.write("  dpi=300;\n")
             fh.write("  order=LR;\n")
-            fh.write(
-                "  node [fontsize=8 shape=\"box\" margin=0.01 width=0 height=0]"
-            )
+            fh.write("  node [fontsize=8 shape=\"box\" margin=0.01 width=0 height=0]")
             fh.write("  edge [fontsize=6]")
             # Find cells
             modules = self.flatten(self.tree, lambda n: n['type'] == "MODULE")
@@ -101,8 +98,7 @@ class VlHierGraph:
             print("\t%s " % command)
         status = subprocess.call(command, shell=True)
         if status != 0:
-            raise RuntimeError("Command failed running Verilator with '" +
-                               command + "', stopped")
+            raise RuntimeError("Command failed running Verilator with '" + command + "', stopped")
 
 
 #######################################################################
@@ -111,8 +107,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         allow_abbrev=False,
         formatter_class=argparse.RawTextHelpFormatter,
-        description=
-        """Example of using Verilator JSON output to create a .dot file showing the
+        description="""Example of using Verilator JSON output to create a .dot file showing the
 design module hierarchy.
 
 Example usage:
@@ -134,11 +129,7 @@ This file ONLY is placed under the Creative Commons Public Domain, for
 any use, without warranty, 2019 by Wilson Snyder.
 SPDX-License-Identifier: CC0-1.0
 """)
-    parser.add_argument('-debug',
-                        '--debug',
-                        action='store_const',
-                        const=9,
-                        help='enable debug')
+    parser.add_argument('-debug', '--debug', action='store_const', const=9, help='enable debug')
     parser.add_argument('-o',
                         '--o',
                         action='store',
@@ -147,18 +138,14 @@ SPDX-License-Identifier: CC0-1.0
                         help='output filename')
     (args, rem) = parser.parse_known_args()
 
-    print(
-        "NOTE: vl_hier_graph is only an example starting point for writing your own tool."
-    )
+    print("NOTE: vl_hier_graph is only an example starting point for writing your own tool.")
     # That is:
     # 1. We will accept basic patches
     # 2. We are not expecting to make this globally useful. (e.g. we don't cleanup obj_dir)
     # 3. "make install" will not install this.
     # 4. This has not had production-worthy validation.
 
-    fc = VlHierGraph(output_filename=args.o,
-                     debug=args.debug,
-                     verilator_args=rem)
+    fc = VlHierGraph(output_filename=args.o, debug=args.debug, verilator_args=rem)
 
 ######################################################################
 # Local Variables:

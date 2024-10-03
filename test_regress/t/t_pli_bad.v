@@ -11,6 +11,10 @@ module t;
       $unknown_pli_task("arg", i);
       i = $unknown_pli_function;
       i = $unknown_pli_function("arg", i);
+
+      $sformatff();  // Typo
+      i = $sformatff();  // Typo
+
       $stop;
    end
 endmodule

@@ -146,7 +146,7 @@ public:
     SplitVarPostVertex(V3Graph* graphp, AstNode* nodep)
         : SplitNodeVertex{graphp, nodep} {}
     ~SplitVarPostVertex() override = default;
-    string name() const override { return string{"POST "} + SplitNodeVertex::name(); }
+    string name() const override { return "POST "s + SplitNodeVertex::name(); }
     string dotColor() const override { return "CadetBlue"; }
 };
 
@@ -476,7 +476,7 @@ protected:
         // vertexes not involved with this step as unimportant
         for (V3GraphVertex& vertex : m_graph.vertices()) {
             if (!vertex.user()) {
-                if (const SplitLogicVertex* const vvertexp = vertex.cast<SplitLogicVertex>()) {
+                if (vertex.is<SplitLogicVertex>()) {
                     for (V3GraphEdge& edge : vertex.inEdges()) {
                         SplitEdge& oedge = static_cast<SplitEdge&>(edge);
                         oedge.setIgnoreThisStep();

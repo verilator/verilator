@@ -18,8 +18,7 @@ class VlSphinxFix:
         if os.path.isdir(path):
             for basefile in os.listdir(path):
                 file = os.path.join(path, basefile)
-                if ((basefile != ".") and (basefile != "..")
-                        and basefile not in self.SkipBasenames
+                if ((basefile != ".") and (basefile != "..") and basefile not in self.SkipBasenames
                         and not os.path.islink(file)):
                     self.process(file)
         elif re.search(r'\.(html|tex)$', path):
@@ -54,18 +53,14 @@ parser = argparse.ArgumentParser(
     allow_abbrev=False,
     formatter_class=argparse.RawDescriptionHelpFormatter,
     description="""Post-process Sphinx HTML.""",
-    epilog=
-    """ Copyright 2021-2024 by Wilson Snyder.  This package is free software;
+    epilog=""" Copyright 2021-2024 by Wilson Snyder.  This package is free software;
 you can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
 
 SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
 
-parser.add_argument('--debug',
-                    action='store_const',
-                    const=9,
-                    help='enable debug')
+parser.add_argument('--debug', action='store_const', const=9, help='enable debug')
 parser.add_argument('path', help='path to edit')
 Args = parser.parse_args()
 

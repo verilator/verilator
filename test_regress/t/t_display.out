@@ -65,6 +65,7 @@ assoc_c='{}
 [0] hello, from a very long string. Percent %s are literally substituted in.
 hello, from a concatenated string.
 hello, from a concatenated format string [0].
+two           2 args           3with commas
 extra argument:                    0
                    0 : pre argument after
 empty: > <
@@ -88,11 +89,16 @@ multiline
 log10(2) =                    2
 x
 xxXa
-XXX 1x5X
+xxxX2
+XXX
+Zx5X
+zx5X
          x
          z
          X
          Z
 ZzX
+ZzXx
+XXXx
          10
 *-* All Finished *-*

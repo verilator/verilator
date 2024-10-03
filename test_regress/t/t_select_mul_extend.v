@@ -19,19 +19,19 @@ module t(/*AUTOARG*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [31:0]		out;			// From test of Test.v
+   wire [31:0]          out;                    // From test of Test.v
    // End of automatics
 
    Test test(/*AUTOINST*/
-	     // Outputs
-	     .out			(out[31:0]),
-	     // Inputs
-	     .clk			(clk),
-	     .in			(in[31:0]));
+             // Outputs
+             .out                       (out[31:0]),
+             // Inputs
+             .clk                       (clk),
+             .in                        (in[31:0]));
 
    Test2 test2(/*AUTOINST*/
-	       // Inputs
-	       .clk			(clk));
+               // Inputs
+               .clk                     (clk));
 
    // Aggregate outputs into a single result vector
    wire [63:0] result = {32'h0, out};
@@ -87,7 +87,7 @@ module Test(/*AUTOARG*/
          if (i == (cond ? (2-cnt)%8 : 0)) begin
             q[i] = 31'(in);
          end
-	 else begin
+         else begin
             q[i] = '0;
          end
       end

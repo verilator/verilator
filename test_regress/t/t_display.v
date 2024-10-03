@@ -164,6 +164,7 @@ module t;
                "hel", "lo, fr", "om a very long string. Percent %s are literally substituted in.");
       $display("hel", "lo, fr", "om a concatenated string.");
       $write("hel", "lo, fr", "om a concatenated format string [%0t].\n", $time);
+      $display("two %d", 2, " args %d", 3, "with commas");
       $display("extra argument: ", $time);
       $display($time,, ": pre argument",, "after");
       $display("empty: >%s<", "");
@@ -200,12 +201,17 @@ multiline", $time);
       // unknown and high-impedance values
       $display("%d", 1'bx);
       $display("%h", 14'bx01010);
-      $display("%h %o", 12'b001xxx101x01, 12'b001xxx101x01);
+      $display("%o", 14'bx01010);
+      $display("%h", 12'b001x_xx10_1x01);
+      $display("%o", 12'bz01_xxx_101_x01);
+      $display("%o", 12'bzzz_xxx_101_x01);
       $display("%d", 32'bx);
       $display("%d", 32'bz);
       $display("%d", 32'b11x11z111);
       $display("%d", 32'b11111z111);
       $display("%h", 12'b1zz1_zzzz_1x1z);
+      $display("%o", 12'b1zz_zzz_x1x_xxx);
+      $display("%o", 12'b1zx_zzx_x1z_xxx);
 
       $display(,, 10);  // Strange but legal
 

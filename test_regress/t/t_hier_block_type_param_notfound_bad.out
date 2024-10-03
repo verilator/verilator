@@ -1,0 +1,12 @@
+%Error: Cannot open file containing hierarchical parameter declarations: '/does-not-exist'
+        ... Looked in:
+             t//does-not-exist
+             t//does-not-exist.v
+             t//does-not-exist.sv
+             /does-not-exist
+             /does-not-exist.v
+             /does-not-exist.sv
+             obj_vlt/t_hier_block_type_param_notfound_bad//does-not-exist
+             obj_vlt/t_hier_block_type_param_notfound_bad//does-not-exist.v
+             obj_vlt/t_hier_block_type_param_notfound_bad//does-not-exist.sv
+%Error: Exiting due to

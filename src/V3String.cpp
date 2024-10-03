@@ -79,13 +79,13 @@ string VString::dot(const string& a, const string& dot, const string& b) {
     return a + dot + b;
 }
 
-string VString::downcase(const string& str) {
+string VString::downcase(const string& str) VL_PURE {
     string result = str;
     for (char& cr : result) cr = std::tolower(cr);
     return result;
 }
 
-string VString::upcase(const string& str) {
+string VString::upcase(const string& str) VL_PURE {
     string result = str;
     for (char& cr : result) cr = std::toupper(cr);
     return result;

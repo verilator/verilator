@@ -49,7 +49,7 @@
         
  000010    always @ (posedge clk) begin
 +000010  point: comment=block
-%000000       if (cyc!=0) begin
+~000010       if (cyc!=0) begin
 +000010  point: comment=if
 -000000  point: comment=else
  000010          cyc <= cyc + 1;
@@ -57,10 +57,10 @@
  000010          toggle <= '0;
 +000010  point: comment=if
                  // Single and multiline if
-%000001          if (cyc==3) $write("");
+%000009          if (cyc==3) $write("");
 -000001  point: comment=if
 -000009  point: comment=else
-%000001          if (cyc==3)
+%000009          if (cyc==3)
 -000001  point: comment=if
 -000009  point: comment=else
 %000001            begin
@@ -69,10 +69,10 @@
 -000001  point: comment=if
                    end
                  // Single and multiline else
-%000001          if (cyc==3) ; else $write("");
+%000009          if (cyc==3) ; else $write("");
 -000001  point: comment=if
 -000009  point: comment=else
-%000001          if (cyc==3) ;
+%000009          if (cyc==3) ;
 -000001  point: comment=if
 -000009  point: comment=else
                  else
@@ -82,10 +82,10 @@
 -000009  point: comment=else
                    end
                  // Single and multiline if else
-%000001          if (cyc==3) $write(""); else $write("");
+%000009          if (cyc==3) $write(""); else $write("");
 -000001  point: comment=if
 -000009  point: comment=else
-%000001          if (cyc==3)
+%000009          if (cyc==3)
 -000001  point: comment=if
 -000009  point: comment=else
 %000001            begin
@@ -114,7 +114,7 @@
 %000001               $write("");
 -000001  point: comment=elsif
                    end
-%000001          else if (cyc==5)
+%000007          else if (cyc==5)
 -000001  point: comment=if
 -000007  point: comment=else
 %000001            begin
@@ -138,10 +138,10 @@
                  end
 %000000          do ; while (0);
 -000000  point: comment=block
-%000000          do begin
+~000010          do begin
 +000010  point: comment=if
 -000000  point: comment=block
-%000000             $write("");
+~000010             $write("");
 +000010  point: comment=if
 -000000  point: comment=block
 %000000          end while (0);
@@ -162,7 +162,7 @@
                     call_task();
         `endif
                  end
-%000001          else if (cyc==10) begin
+%000007          else if (cyc==10) begin
 -000001  point: comment=if
 -000007  point: comment=else
 %000001             $write("*-* All Finished *-*\n");
@@ -190,7 +190,7 @@
            input toggle;
  000020    always @ (posedge clk) begin
 +000020  point: comment=block
-%000002       if (toggle) begin  // CHECK_COVER(0,"top.t.a*",2)
+~000018       if (toggle) begin  // CHECK_COVER(0,"top.t.a*",2)
 -000002  point: comment=if
 +000018  point: comment=else
 %000002          $write("");
@@ -221,14 +221,14 @@
 +000020  point: comment=block
  000020       $write("");  // Always covered
 +000020  point: comment=block
- 000020       if (0) begin  // CHECK_COVER(0,"top.t.b*",0)
+~000020       if (0) begin  // CHECK_COVER(0,"top.t.b*",0)
 -000000  point: comment=if
 +000020  point: comment=else
                  // Make sure that we don't optimize away zero buckets
 %000000          $write("");
 -000000  point: comment=if
               end
-%000002       if (toggle) begin  // CHECK_COVER(0,"top.t.b*",2)
+~000018       if (toggle) begin  // CHECK_COVER(0,"top.t.b*",2)
 -000002  point: comment=if
 +000018  point: comment=else
                  // t.b1 and t.b2 collapse to a count of 2
@@ -254,7 +254,7 @@
 -000001  point: comment=block
 %000001       m_toggle = toggle;
 -000001  point: comment=block
-%000000       if (m_toggle) begin  // CHECK_COVER(0,"top.$unit::Cls",1)
+%000001       if (m_toggle) begin  // CHECK_COVER(0,"top.$unit::Cls",1)
 -000001  point: comment=if
 -000000  point: comment=else
 %000001          $write("");
@@ -263,7 +263,7 @@
            endfunction
  000011    static function void fstatic(bit toggle);
 +000011  point: comment=block
-%000000       if (1) begin  // CHECK_COVER(0,"top.$unit::Cls",1)
+~000011       if (1) begin  // CHECK_COVER(0,"top.$unit::Cls",1)
 +000011  point: comment=if
 -000000  point: comment=else
  000011          $write("");
@@ -272,7 +272,7 @@
            endfunction
  000011    function void fauto();
 +000011  point: comment=block
-%000000       if (m_toggle) begin  // CHECK_COVER(0,"top.$unit::Cls",1)
+~000011       if (m_toggle) begin  // CHECK_COVER(0,"top.$unit::Cls",1)
 +000011  point: comment=if
 -000000  point: comment=else
  000011          $write("");
@@ -301,13 +301,13 @@
               input external;
  000011       begin
 +000011  point: comment=block
-%000001          if (toggle) begin  // CHECK_COVER(0,"top.t.t1",1)
+~000010          if (toggle) begin  // CHECK_COVER(0,"top.t.t1",1)
 -000001  point: comment=if
 +000010  point: comment=else
 %000001             $write("");
 -000001  point: comment=if
                  end
-%000001          if (external) begin  // CHECK_COVER(0,"top.t.t1",1)
+~000010          if (external) begin  // CHECK_COVER(0,"top.t.t1",1)
 -000001  point: comment=if
 +000010  point: comment=else
 %000001             $write("[%0t] Got external pulse\n", $time);
@@ -344,7 +344,7 @@
            // verilator coverage_on
  000010    always @ (posedge clk) begin
 +000010  point: comment=block
-%000001       if (toggle) begin
+%000009       if (toggle) begin
 -000001  point: comment=if
 -000009  point: comment=else
                  // because under coverage_module_off

@@ -29,7 +29,7 @@ module b8
    c9
    #(.A (A),
      .B (8))
-   c9;
+   c9();
 
 endmodule
 
@@ -39,9 +39,9 @@ module t;
    localparam P14 = f_add2(2, 3, f_add(4, 5));
    //localparam P24 = f_add2(7, 8, 9);
 
-   b8 b8;
-   b8 #(.A (6)) b8_a6;
-   b8 #(.A (7)) b8_a7;
+   b8 b8();
+   b8 #(.A (6)) b8_a6();
+   b8 #(.A (7)) b8_a7();
 
    initial begin
       // Should never get here

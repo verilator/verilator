@@ -47,8 +47,7 @@ def diff_dir(a, b):
         diff_file(a, b)
         anyfile = True
     if not anyfile:
-        sys.stderr.write(
-            "%Warning: No .tree files found that have similar base names\n")
+        sys.stderr.write("%Warning: No .tree files found that have similar base names\n")
 
 
 def diff_file(a, b):
@@ -109,18 +108,14 @@ parser = argparse.ArgumentParser(
 Verilator_difftree is used for debugging Verilator tree output files.
 It performs a diff between two files, or all files common between two
 directories, ignoring irrelevant pointer differences.""",
-    epilog=
-    """Copyright 2005-2024 by Wilson Snyder. This program is free software; you
+    epilog="""Copyright 2005-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
 
 SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
 
-parser.add_argument('--debug',
-                    action='store_const',
-                    const=9,
-                    help='enable debug')
+parser.add_argument('--debug', action='store_const', const=9, help='enable debug')
 parser.add_argument('--no-lineno',
                     action='store_false',
                     help='do not show differences in line numbering')

@@ -247,10 +247,30 @@ class LinkCellsVisitor final : public VNVisitor {
         // Note cannot do modport resolution here; modports are allowed underneath generates
     }
 
+    void visit(AstPackageExport* nodep) override {
+        // Package Import: We need to do the package before the use of a package
+        iterateChildren(nodep);
+        if (!nodep->packagep()) {
+            AstNodeModule* const modp = resolveModule(nodep, nodep->pkgName());
+            if (AstPackage* const pkgp = VN_CAST(modp, Package)) nodep->packagep(pkgp);
+            if (!nodep->packagep()) {
+                nodep->v3error("Export package not found: " << nodep->prettyPkgNameQ());
+                return;
+            }
+        }
+    }
     void visit(AstPackageImport* nodep) override {
         // Package Import: We need to do the package before the use of a package
         iterateChildren(nodep);
-        UASSERT_OBJ(nodep->packagep(), nodep, "Unlinked package");  // Parser should set packagep
+        if (!nodep->packagep()) {
+            AstNodeModule* const modp = resolveModule(nodep, nodep->pkgName());
+            if (AstPackage* const pkgp = VN_CAST(modp, Package)) nodep->packagep(pkgp);
+            // If not found, V3LinkDot will report errors
+            if (!nodep->packagep()) {
+                nodep->v3error("Import package not found: " << nodep->prettyPkgNameQ());
+                return;
+            }
+        }
         new V3GraphEdge{&m_graph, vertex(m_modp), vertex(nodep->packagep()), 1, false};
     }
 
@@ -398,6 +418,7 @@ class LinkCellsVisitor final : public VNVisitor {
             for (AstNode* portnodep = nodep->modp()->stmtsp(); portnodep;
                  portnodep = portnodep->nextp()) {
                 if (const AstPort* const portp = VN_CAST(portnodep, Port)) {
+
                     if (ports.find(portp->name()) == ports.end()
                         && ports.find("__pinNumber" + cvtToStr(portp->pinNum())) == ports.end()) {
                         if (pinStar) {
@@ -411,11 +432,49 @@ class LinkCellsVisitor final : public VNVisitor {
                             newp->svImplicit(true);
                             nodep->addPinsp(newp);
                         } else {  // warn on the CELL that needs it, not the port
-                            nodep->v3warn(PINMISSING,
-                                          "Cell has missing pin: " << portp->prettyNameQ());
-                            AstPin* const newp
-                                = new AstPin{nodep->fileline(), 0, portp->name(), nullptr};
-                            nodep->addPinsp(newp);
+
+                            // We *might* not want to warn on this port, if it happened to be
+                            // an input with a default value in the module declaration. Our
+                            // AstPort* (portp) doesn't have that information, but the Module
+                            // (nodep->modp()) statements do that have information in an AstVar*
+                            // with the same name() as the port. We'll look for that in-line here,
+                            // if a port is missing on this instance.
+
+                            // Get the AstVar for this AstPort, if it exists, using this
+                            // inefficient O(n) lookup to match the port name.
+                            const AstVar* portp_varp = nullptr;
+                            for (AstNode* module_stmtsp = nodep->modp()->stmtsp(); module_stmtsp;
+                                 module_stmtsp = module_stmtsp->nextp()) {
+                                if (const AstVar* const varp = VN_CAST(module_stmtsp, Var)) {
+                                    if (!varp->isParam() && varp->name() == portp->name()) {
+                                        // not a parameter, same name, break, this is our varp
+                                        // (AstVar*)
+                                        portp_varp = varp;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // Is the matching Module port: an INPUT, with default value (in
+                            // valuep):
+                            if (portp_varp && portp_varp->isInput() && portp_varp->valuep()) {
+                                // Do not warn
+                                // Create b/c not already connected, and it does exist.
+                                AstPin* const newp
+                                    = new AstPin{nodep->fileline(), 0, portp->name(), nullptr};
+                                nodep->addPinsp(newp);
+                            } else {
+                                nodep->v3warn(PINMISSING,
+                                              "Cell has missing pin: "
+                                                  << portp->prettyNameQ() << '\n'
+                                                  << nodep->warnContextPrimary() << '\n'
+                                                  << portp->warnOther()
+                                                  << "... Location of port declaration\n"
+                                                  << portp->warnContextSecondary());
+                                AstPin* const newp
+                                    = new AstPin{nodep->fileline(), 0, portp->name(), nullptr};
+                                nodep->addPinsp(newp);
+                            }
                         }
                     }
                 }
@@ -451,12 +510,13 @@ class LinkCellsVisitor final : public VNVisitor {
                 nodep->addNextHere(varp);
                 nodep->hasIfaceVar(true);
             }
-            if (nodep->hasNoParens()) {
-                nodep->v3error("Interface instantiation "
-                               << nodep->prettyNameQ() << " requires parenthesis\n"
-                               << nodep->warnMore() << "... Suggest use '" << nodep->prettyName()
-                               << "()'");
-            }
+        }
+        if (nodep->hasNoParens()) {
+            // Need in the grammar, otherwise it looks like "id/*data_type*/ id/*new_var*/;"
+            nodep->v3error("Instantiation " << nodep->prettyNameQ()
+                                            << " requires parenthesis (IEEE 1800-2023 23.3.2)\n"
+                                            << nodep->warnMore() << "... Suggest use '"
+                                            << nodep->prettyName() << "()'");
         }
         if (nodep->modp()) {  //
             iterateChildren(nodep);

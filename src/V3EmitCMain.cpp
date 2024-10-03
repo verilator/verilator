@@ -42,9 +42,9 @@ private:
     // MAIN METHOD
     void emitInt() {
         const string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__main.cpp";
-        newCFile(filename, false /*slow*/, true /*source*/);
+        AstCFile* const cfilep = newCFile(filename, false /*slow*/, true /*source*/);
         V3OutCFile cf{filename};
-        m_ofp = &cf;
+        setOutputFile(&cf, cfilep);
 
         // Not defining main_time/vl_time_stamp, so
         v3Global.opt.addCFlags("-DVL_TIME_CONTEXT");  // On MSVC++ anyways
@@ -52,10 +52,7 @@ private:
         // Optional main top name argument, with empty string replacement
         string topArg;
         string topName = v3Global.opt.mainTopName();
-        if (!topName.empty()) {
-            if (topName == "-") topName = "";
-            topArg = ", \"" + topName + "\"";
-        }
+        if (topName == "-") topName = "";
 
         // Heavily commented output, as users are likely to look at or copy this code
         ofp()->putsHeader();
@@ -77,7 +74,7 @@ private:
 
         puts("// Construct the Verilated model, from Vtop.h generated from Verilating\n");
         puts("const std::unique_ptr<" + topClassName() + "> topp{new " + topClassName()
-             + "{contextp.get()" + topArg + "}};\n");
+             + "{contextp.get(), \"" + topName + "\"}};\n");
         puts("\n");
 
         puts("// Simulate until $finish\n");
@@ -85,8 +82,10 @@ private:
         puts(/**/ "// Evaluate model\n");
         puts(/**/ "topp->eval();\n");
         puts(/**/ "// Advance time\n");
-        if (v3Global.rootp()->delaySchedulerp()) {
+        if (v3Global.rootp()->delaySchedulerp() || v3Global.opt.timing()) {
             puts("if (!topp->eventsPending()) break;\n");
+        }
+        if (v3Global.rootp()->delaySchedulerp()) {
             puts("contextp->time(topp->nextTimeSlot());\n");
         } else {
             puts("contextp->timeInc(1);\n");
@@ -117,7 +116,7 @@ private:
         puts("return 0;\n");
         puts("}\n");
 
-        m_ofp = nullptr;
+        setOutputFile(nullptr);
     }
 };
 

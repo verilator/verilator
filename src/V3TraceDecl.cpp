@@ -173,7 +173,7 @@ class TraceDeclVisitor final : public VNVisitor {
         } else if (!nodep->isTrace()) {
             return "Verilator instance trace_off";
         } else {
-            const string prettyName = varp->prettyName();
+            const string prettyName = nodep->prettyName();
             if (!v3Global.opt.traceUnderscore()) {
                 if (!prettyName.empty() && prettyName[0] == '_') return "Leading underscore";
                 if (prettyName.find("._") != string::npos) return "Inlined leading underscore";

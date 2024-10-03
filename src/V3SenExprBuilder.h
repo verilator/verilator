@@ -139,8 +139,7 @@ class SenExprBuilder final {
                 return prevp;
             }
 
-            if (AstUnpackArrayDType* const dtypep
-                = VN_CAST(exprp->dtypep()->skipRefp(), UnpackArrayDType)) {
+            if (VN_IS(exprp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 AstCMethodHard* const cmhp = new AstCMethodHard{flp, wrPrev(), "assign", rdCurr()};
                 cmhp->dtypeSetVoid();
                 m_postUpdates.push_back(cmhp->makeStmt());
@@ -152,7 +151,7 @@ class SenExprBuilder final {
         return prevp;
     }
 
-    std::pair<AstNodeExpr*, bool> createTerm(AstSenItem* senItemp) {
+    std::pair<AstNodeExpr*, bool> createTerm(const AstSenItem* senItemp) {
         FileLine* const flp = senItemp->fileline();
         AstNodeExpr* const senp = senItemp->sensp();
 
@@ -193,14 +192,6 @@ class SenExprBuilder final {
                 AstCMethodHard* const clearp = new AstCMethodHard{flp, currp(), "clearFired"};
                 clearp->dtypeSetVoid();
                 ifp->addThensp(clearp->makeStmt());
-
-                // Enqueue for clearing 'triggered' state on next eval
-                AstTextBlock* const blockp = new AstTextBlock{flp};
-                ifp->addThensp(blockp);
-                const auto add = [&](const string& text) { blockp->addText(flp, text, true); };
-                add("vlSymsp->enqueueTriggeredEventForClearing(");
-                blockp->addNodesp(currp());
-                add(");\n");
             }
 
             // Get 'fired' state
@@ -219,6 +210,15 @@ class SenExprBuilder final {
 public:
     // Returns the expression computing the trigger, and a bool indicating that
     // this trigger should be fired on the first evaluation (at initialization)
+    std::pair<AstNodeExpr*, bool> build(const AstSenItem* senItemp) {
+        auto term = createTerm(senItemp);
+        if (AstNodeExpr* const condp = senItemp->condp()) {
+            term.first = new AstAnd{senItemp->fileline(), condp->cloneTreePure(false), term.first};
+        }
+        return term;
+    }
+
+    // Like above, but for a whole SenTree
     std::pair<AstNodeExpr*, bool> build(const AstSenTree* senTreep) {
         FileLine* const flp = senTreep->fileline();
         AstNodeExpr* resultp = nullptr;
@@ -227,8 +227,6 @@ public:
              senItemp = VN_AS(senItemp->nextp(), SenItem)) {
             const auto& pair = createTerm(senItemp);
             if (AstNodeExpr* termp = pair.first) {
-                AstNodeExpr* const condp = senItemp->condp();
-                if (condp) termp = new AstAnd{flp, condp->cloneTreePure(false), termp};
                 resultp = resultp ? new AstOr{flp, resultp, termp} : termp;
                 firedAtInitialization |= pair.second;
             }

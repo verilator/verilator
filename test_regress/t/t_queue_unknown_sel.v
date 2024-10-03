@@ -16,21 +16,21 @@ package z_pkg;
    localparam int MASKW=DATAW/8;
    localparam int SIZEW=4;
    typedef enum   logic [OPCODEW-1:0] {
-				       A   = 3'h 0,
-				       B   = 3'h 1
-				       } a_op_t;
+                                       A   = 3'h 0,
+                                       B   = 3'h 1
+                                       } a_op_t;
    typedef enum   logic [OPCODEW-1:0] {
-				       C   = 3'h 0,
-				       D   = 3'h 1
-				       } b_op_t;
+                                       C   = 3'h 0,
+                                       D   = 3'h 1
+                                       } b_op_t;
    typedef enum   logic [OPCODEW-1:0] {
-				       E   = 3'h 0,
-				       F   = 3'h 1
-				       } c_op_t;
+                                       E   = 3'h 0,
+                                       F   = 3'h 1
+                                       } c_op_t;
    typedef enum   logic [OPCODEW-1:0] {
-				       G       = 3'h 0,
-				       H       = 3'h 1
-				       } d_op_t;
+                                       G       = 3'h 0,
+                                       H       = 3'h 1
+                                       } d_op_t;
    typedef logic [CIDW-1:0] cid_t;
    typedef logic [SIDW-1:0] sid_t;
    typedef logic [CTAGW-1:0] ctag_t;
@@ -40,17 +40,17 @@ package z_pkg;
    typedef logic [SIZEW-1:0]  size_t;
    typedef logic [DATAW-1:0]  data_t;
    typedef logic [MASKW-1:0]  mask_t;
-   typedef struct 	      packed {
+   typedef struct             packed {
       cid_t        cid;
       a_op_t       opcode;
       address_t    address;
    } x1_ch_t;
-   typedef struct 	      packed {
+   typedef struct             packed {
       cid_t        cid;
       b_op_t      opcode;
       address_t    address;
    } x2_ch_t;
-   typedef struct 	      packed {
+   typedef struct             packed {
       cid_t        cid;
       sid_t        sid;
       ctag_t       ctag;
@@ -59,61 +59,61 @@ package z_pkg;
       state_t   state2;
       state_t   state3;
       address_t    address;
-      logic 		      f4;
+      logic                   f4;
       size_t       size;
-      logic 		      f2;
+      logic                   f2;
    } x3_ch_t;
-   typedef struct 	      packed {
+   typedef struct             packed {
       cid_t        cid;
       sid_t        sid;
       ctag_t       ctag;
       stag_t       stag;
       d_op_t       opcode;
       state_t   state1;
-      logic 		      f4;
-      logic 		      f1;
+      logic                   f4;
+      logic                   f1;
       size_t       size;
-      logic 		      f3;
+      logic                   f3;
    } x4_ch_t;
-   typedef struct 	      packed {
+   typedef struct             packed {
       cid_t        cid;
       ctag_t       ctag;
       stag_t       stag;
       d_op_t       opcode;
-      logic 		      f1;
-      logic 		      f3;
+      logic                   f1;
+      logic                   f3;
    } x5_ch_t;
-   typedef struct 	      packed {
-      logic 		      last;
-      logic 		      corrupt;
+   typedef struct             packed {
+      logic                   last;
+      logic                   corrupt;
    } x6_ch_t;
-   typedef struct 	      packed {
+   typedef struct             packed {
       sid_t        sid;
       stag_t       stag;
    } x7_ch_t;
-   typedef enum 	      {
-			       CH_X1,
-			       CH_Y1,
-			       CH_Y2,
-			       CH_X2,
-			       CH_X3,
-			       CH_Y3,
-			       CH_X4,
-			       CH_X5,
-			       CH_X6,
-			       CH_X7
-			       } channel_t;
+   typedef enum               {
+                               CH_X1,
+                               CH_Y1,
+                               CH_Y2,
+                               CH_X2,
+                               CH_X3,
+                               CH_Y3,
+                               CH_X4,
+                               CH_X5,
+                               CH_X6,
+                               CH_X7
+                               } channel_t;
    parameter channel_t CH_ALL[CH_X7+1] = '{CH_X1, CH_Y1, CH_Y2, CH_X2, CH_X3, CH_Y3, CH_X4, CH_X5, CH_X6, CH_X7};
-   typedef enum 	      {
-			       TXN_0,
-			       TXN_1,
-			       TXN_2,
-			       TXN_3,
-			       TXN_4,
-			       TXN_5,
-			       TXN_6,
-			       TXN_7
-			       } txn_type_t;
+   typedef enum               {
+                               TXN_0,
+                               TXN_1,
+                               TXN_2,
+                               TXN_3,
+                               TXN_4,
+                               TXN_5,
+                               TXN_6,
+                               TXN_7
+                               } txn_type_t;
    function txn_type_t txn_type(bit [2:0] opcode, channel_t ch);
       case(opcode)
         3'd0: begin
@@ -219,47 +219,47 @@ interface z_if;
    function automatic logic x5_trig(); return x5_valid; endfunction
    function automatic logic x6_trig(); return x6_valid; endfunction
    modport sender (
-		   output x1_valid,
-		   output x1,
-		   input  x2_valid,
-		   input  x2,
-		   output x3_valid,
-		   output x3,
-		   input  x4_valid,
-		   input  x4,
-		   input  x5_valid,
-		   input  x5,
-		   input  x6_valid,
-		   input  x6,
-		   input  x6_data,
-		   output x7_valid,
-		   output x7,
-		   import x2_trig,
-		   import x4_trig,
-		   import x5_trig,
-		   import x6_trig
-		   );
+                   output x1_valid,
+                   output x1,
+                   input  x2_valid,
+                   input  x2,
+                   output x3_valid,
+                   output x3,
+                   input  x4_valid,
+                   input  x4,
+                   input  x5_valid,
+                   input  x5,
+                   input  x6_valid,
+                   input  x6,
+                   input  x6_data,
+                   output x7_valid,
+                   output x7,
+                   import x2_trig,
+                   import x4_trig,
+                   import x5_trig,
+                   import x6_trig
+                   );
    modport receiver (
-		     input  x1_valid,
-		     input  x1,
-		     output x2_valid,
-		     output x2,
-		     input  x3_valid,
-		     input  x3,
-		     output x4_valid,
-		     output x4,
-		     output x5_valid,
-		     output x5,
-		     output x6_valid,
-		     output x6,
-		     output x6_data,
-		     input  x7_valid,
-		     input  x7,
-		     import x2_trig,
-		     import x4_trig,
-		     import x5_trig,
-		     import x6_trig
-		     );
+                     input  x1_valid,
+                     input  x1,
+                     output x2_valid,
+                     output x2,
+                     input  x3_valid,
+                     input  x3,
+                     output x4_valid,
+                     output x4,
+                     output x5_valid,
+                     output x5,
+                     output x6_valid,
+                     output x6,
+                     output x6_data,
+                     input  x7_valid,
+                     input  x7,
+                     import x2_trig,
+                     import x4_trig,
+                     import x5_trig,
+                     import x6_trig
+                     );
 endinterface
 class z_txn_class;
    import z_pkg::*;
@@ -273,14 +273,14 @@ class z_txn_class;
    rand state_t   state1;
    rand state_t   state2;
    rand state_t   state3;
-   rand logic 		    f1;
-   rand logic 		    f2;
-   rand logic 		    f3;
-   rand logic 		    f4;
+   rand logic               f1;
+   rand logic               f2;
+   rand logic               f3;
+   rand logic               f4;
    data_t            data[];
    mask_t            mask[];
-   bit 			    corrupt[];
-   logic [2:0] 		    req_opcode;
+   bit                      corrupt[];
+   logic [2:0]              req_opcode;
 endclass
 module z_bfm_sender import z_pkg::*;
    (
@@ -294,93 +294,93 @@ module z_bfm_sender import z_pkg::*;
    z_txn_class z_txn[ch.num()];
    always @(posedge clk or negedge reset_l) begin
       if (!reset_l) begin
-	 z_if_sender.x1_valid <= '0;
-	 z_if_sender.x3_valid <= '0;
-	 z_if_sender.x7_valid <= '0;
+         z_if_sender.x1_valid <= '0;
+         z_if_sender.x3_valid <= '0;
+         z_if_sender.x7_valid <= '0;
       end
       else begin
-	 foreach (CH_ALL[i]) begin
-	    case(CH_ALL[i])
+         foreach (CH_ALL[i]) begin
+            case(CH_ALL[i])
               CH_X1: begin
-		 if (z_txn_qs[i].size() > 0) begin
-		    z_txn[i] = z_txn_qs[i].pop_front();
-		    z_if_sender.x1_valid     <= '1;
-		    z_if_sender.x1.cid       <= z_txn[i].cid;
-		    z_if_sender.x1.opcode    <= a_op_t'(z_txn[i].req_opcode);
-		    z_if_sender.x1.address   <= z_txn[i].address;
-		 end
-	      end
+                 if (z_txn_qs[i].size() > 0) begin
+                    z_txn[i] = z_txn_qs[i].pop_front();
+                    z_if_sender.x1_valid     <= '1;
+                    z_if_sender.x1.cid       <= z_txn[i].cid;
+                    z_if_sender.x1.opcode    <= a_op_t'(z_txn[i].req_opcode);
+                    z_if_sender.x1.address   <= z_txn[i].address;
+                 end
+              end
               CH_X3: begin
-		 if (z_txn_qs[i].size() > 0) begin
-		    z_txn[i] = z_txn_qs[i].pop_front();
-		    z_if_sender.x3_valid     <= '1;
-		    z_if_sender.x3.cid       <= z_txn[i].cid;
-		    z_if_sender.x3.sid       <= z_txn[i].sid;
-		    z_if_sender.x3.ctag      <= z_txn[i].ctag;
-		    z_if_sender.x3.stag      <= z_txn[i].stag;
-		    z_if_sender.x3.opcode    <= c_op_t'(z_txn[i].req_opcode);
-		    z_if_sender.x3.state2    <= z_txn[i].state2;
-		    z_if_sender.x3.state3    <= z_txn[i].state3;
-		    z_if_sender.x3.address   <= z_txn[i].address;
-		    z_if_sender.x3.f4       <= z_txn[i].f4;
-		    z_if_sender.x3.size      <= z_txn[i].size;
-		    z_if_sender.x3.f2     <= z_txn[i].f2;
-		 end
-	      end
+                 if (z_txn_qs[i].size() > 0) begin
+                    z_txn[i] = z_txn_qs[i].pop_front();
+                    z_if_sender.x3_valid     <= '1;
+                    z_if_sender.x3.cid       <= z_txn[i].cid;
+                    z_if_sender.x3.sid       <= z_txn[i].sid;
+                    z_if_sender.x3.ctag      <= z_txn[i].ctag;
+                    z_if_sender.x3.stag      <= z_txn[i].stag;
+                    z_if_sender.x3.opcode    <= c_op_t'(z_txn[i].req_opcode);
+                    z_if_sender.x3.state2    <= z_txn[i].state2;
+                    z_if_sender.x3.state3    <= z_txn[i].state3;
+                    z_if_sender.x3.address   <= z_txn[i].address;
+                    z_if_sender.x3.f4       <= z_txn[i].f4;
+                    z_if_sender.x3.size      <= z_txn[i].size;
+                    z_if_sender.x3.f2     <= z_txn[i].f2;
+                 end
+              end
               CH_X7: begin
-		 if (z_txn_qs[i].size() > 0) begin
-		    z_txn[i] = z_txn_qs[i].pop_front();
-		    z_if_sender.x7.sid       <= z_txn[i].sid;
-		    z_if_sender.x7.stag      <= z_txn[i].stag;
-		 end
-	      end
+                 if (z_txn_qs[i].size() > 0) begin
+                    z_txn[i] = z_txn_qs[i].pop_front();
+                    z_if_sender.x7.sid       <= z_txn[i].sid;
+                    z_if_sender.x7.stag      <= z_txn[i].stag;
+                 end
+              end
               CH_X2: begin
-		 if (z_if_sender.x2_trig()) begin
-		    z_txn[i] = new;
-		    z_txn[i].req_txn_type = txn_type(z_if_sender.x2.opcode, ch);
-		    z_txn[i].cid          = z_if_sender.x2.cid;
-		    z_txn[i].address      = z_if_sender.x2.address;
-		    z_txn_qs[i].push_back(z_txn[i]);
-		 end
-	      end
+                 if (z_if_sender.x2_trig()) begin
+                    z_txn[i] = new;
+                    z_txn[i].req_txn_type = txn_type(z_if_sender.x2.opcode, ch);
+                    z_txn[i].cid          = z_if_sender.x2.cid;
+                    z_txn[i].address      = z_if_sender.x2.address;
+                    z_txn_qs[i].push_back(z_txn[i]);
+                 end
+              end
               CH_X4: begin
-		 if (z_if_sender.x4_trig()) begin
-		    z_txn[i] = new;
-		    z_txn[i].req_txn_type = txn_type(z_if_sender.x4.opcode, ch);
-		    z_txn[i].cid          = z_if_sender.x4.cid;
-		    z_txn[i].sid          = z_if_sender.x4.sid;
-		    z_txn[i].ctag         = z_if_sender.x4.ctag;
-		    z_txn[i].stag         = z_if_sender.x4.stag;
-		    z_txn[i].state1       = z_if_sender.x4.state1;
-		    z_txn[i].f1       = z_if_sender.x4.f1;
-		    z_txn[i].f4          = z_if_sender.x4.f4;
-		    z_txn[i].size         = z_if_sender.x4.size;
-		    z_txn[i].f3      = z_if_sender.x4.f3;
-		    z_txn_qs[i].push_back(z_txn[i]);
-		 end
-	      end
+                 if (z_if_sender.x4_trig()) begin
+                    z_txn[i] = new;
+                    z_txn[i].req_txn_type = txn_type(z_if_sender.x4.opcode, ch);
+                    z_txn[i].cid          = z_if_sender.x4.cid;
+                    z_txn[i].sid          = z_if_sender.x4.sid;
+                    z_txn[i].ctag         = z_if_sender.x4.ctag;
+                    z_txn[i].stag         = z_if_sender.x4.stag;
+                    z_txn[i].state1       = z_if_sender.x4.state1;
+                    z_txn[i].f1       = z_if_sender.x4.f1;
+                    z_txn[i].f4          = z_if_sender.x4.f4;
+                    z_txn[i].size         = z_if_sender.x4.size;
+                    z_txn[i].f3      = z_if_sender.x4.f3;
+                    z_txn_qs[i].push_back(z_txn[i]);
+                 end
+              end
               CH_X5: begin
-		 if (z_if_sender.x5_trig()) begin
-		    z_txn[i] = new;
-		    z_txn[i].req_txn_type = txn_type(z_if_sender.x5.opcode, ch);
-		    z_txn[i].cid          = z_if_sender.x5.cid;
-		    z_txn[i].ctag         = z_if_sender.x5.ctag;
-		    z_txn[i].f1       = z_if_sender.x5.f1;
-		    z_txn_qs[i].push_back(z_txn[i]);
-		 end
+                 if (z_if_sender.x5_trig()) begin
+                    z_txn[i] = new;
+                    z_txn[i].req_txn_type = txn_type(z_if_sender.x5.opcode, ch);
+                    z_txn[i].cid          = z_if_sender.x5.cid;
+                    z_txn[i].ctag         = z_if_sender.x5.ctag;
+                    z_txn[i].f1       = z_if_sender.x5.f1;
+                    z_txn_qs[i].push_back(z_txn[i]);
+                 end
               end
               CH_X6: begin
-		 if (z_if_sender.x6_trig()) begin
-		    z_txn[i] = new;
-		    z_txn[i].data         = new[1];
-		    z_txn[i].corrupt      = new[1];
-		    z_txn[i].data[0]      = z_if_sender.x6_data;
-		    z_txn[i].corrupt[0]   = z_if_sender.x6.corrupt;
-		    z_txn_qs[i].push_back(z_txn[i]);
-		 end
-	      end
-	    endcase
-	 end
+                 if (z_if_sender.x6_trig()) begin
+                    z_txn[i] = new;
+                    z_txn[i].data         = new[1];
+                    z_txn[i].corrupt      = new[1];
+                    z_txn[i].data[0]      = z_if_sender.x6_data;
+                    z_txn[i].corrupt[0]   = z_if_sender.x6.corrupt;
+                    z_txn_qs[i].push_back(z_txn[i]);
+                 end
+              end
+            endcase
+         end
       end
    end
 endmodule
@@ -392,9 +392,9 @@ module test_core_wrapper
    mmio_z
    );
    z_bfm_sender mem_z_bfm( .z_if_sender(z),
-			   .*);
+                           .*);
    z_bfm_sender mmio_z_bfm( .z_if_sender(mmio_z),
-		   	    .*);
+                            .*);
 endmodule
 module t
   (
@@ -404,6 +404,6 @@ module t
    z_if         z(),
      mmio_z();
    test_core_wrapper tile( .z     (z.sender),
-			   .mmio_z(mmio_z.sender),
-			   .*);
+                           .mmio_z(mmio_z.sender),
+                           .*);
 endmodule

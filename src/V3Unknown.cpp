@@ -410,8 +410,10 @@ class UnknownVisitor final : public VNVisitor {
                 nodep->unlinkFrBack(&replaceHandle);
                 V3Number xnum{nodep, nodep->width()};
                 xnum.setAllBitsX();
-                AstNode* const newp = new AstCondBound{nodep->fileline(), condp, nodep,
-                                                       new AstConst{nodep->fileline(), xnum}};
+                AstNodeExpr* const xexprp = new AstConst{nodep->fileline(), xnum};
+                AstNodeExpr* const newp
+                    = condp->isZero() ? xexprp
+                                      : new AstCondBound{nodep->fileline(), condp, nodep, xexprp};
                 if (debug() >= 9) newp->dumpTree("-        _new: ");
                 // Link in conditional
                 replaceHandle.relink(newp);

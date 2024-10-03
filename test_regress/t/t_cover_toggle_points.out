@@ -40,14 +40,14 @@
         
            const reg aconst = '0;
         
-%000000    reg [1:0][1:0] ptoggle; initial ptoggle=0;
+%000002    reg [1:0][1:0] ptoggle; initial ptoggle=0;
 -000002  point: comment=ptoggle[0][0]
 -000000  point: comment=ptoggle[0][1]
 -000000  point: comment=ptoggle[1][0]
 -000000  point: comment=ptoggle[1][1]
         
            integer cyc; initial cyc=1;
-%000000    wire [7:0] cyc_copy = cyc[7:0];
+~000011    wire [7:0] cyc_copy = cyc[7:0];
 +000011  point: comment=cyc_copy[0]
 -000005  point: comment=cyc_copy[1]
 -000002  point: comment=cyc_copy[2]
@@ -89,7 +89,7 @@
                      .clk                       (clk),
                      .toggle                    (toggle));
         
-%000000    reg [1:0]  memory[121:110];
+%000001    reg [1:0]  memory[121:110];
 -000001  point: comment=memory[110][0]
 -000000  point: comment=memory[110][1]
 -000000  point: comment=memory[111][0]
@@ -161,7 +161,7 @@
            // CHECK_COVER(-1,"top.t.a*",4)
            // 2 edges * (t.a1 and t.a2)
         
-%000000    input [7:0] cyc_copy;
+~000022    input [7:0] cyc_copy;
 +000022  point: comment=cyc_copy[0]
 +000010  point: comment=cyc_copy[1]
 -000004  point: comment=cyc_copy[2]

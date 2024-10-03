@@ -95,8 +95,7 @@ void VerilatedDeserialize::header() VL_MT_UNSAFE_ONE {
     if (VL_UNLIKELY(os.readDiffers(VLTSAVE_HEADER_STR, std::strlen(VLTSAVE_HEADER_STR)))) {
         const std::string fn = filename();
         const std::string msg
-            = std::
-                  string{"Can't deserialize; file has wrong header signature, or file not found: "}
+            = "Can't deserialize; file has wrong header signature, or file not found: "s
               + filename();
         VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
         // Die before we close() as close would infinite loop

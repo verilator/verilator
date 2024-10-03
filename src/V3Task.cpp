@@ -198,7 +198,22 @@ private:
         }
         // We make multiple edges if a task is called multiple times from another task.
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked task");
-        new TaskEdge{&m_callGraph, m_curVxp, getFTaskVertex(nodep->taskp())};
+        TaskFTaskVertex* const taskVtxp = getFTaskVertex(nodep->taskp());
+        new TaskEdge{&m_callGraph, m_curVxp, taskVtxp};
+        // Do we have to disable inlining the function?
+        const V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
+        if (!taskVtxp->noInline()) {  // Else short-circuit below
+            for (const auto& itr : tconnects) {
+                const AstVar* const portp = itr.first;
+                const AstArg* const argp = itr.second;
+                if (const AstNodeExpr* const pinp = argp->exprp()) {
+                    if ((portp->isRef() || portp->isConstRef()) && !VN_IS(pinp, VarRef)) {
+                        UINFO(9, "No function inline due to ref " << pinp << endl);
+                        taskVtxp->noInline(true);
+                    }
+                }
+            }
+        }
     }
     void visit(AstNodeFTask* nodep) override {
         UINFO(9, "  TASK " << nodep << endl);
@@ -477,8 +492,12 @@ class TaskVisitor final : public VNVisitor {
                 if (VN_IS(pinp, VarRef) || VN_IS(pinp, MemberSel) || VN_IS(pinp, StructSel)
                     || VN_IS(pinp, ArraySel)) {
                     refArgOk = true;
-                } else if (const AstCMethodHard* const cMethodp = VN_CAST(pinp, CMethodHard)) {
-                    refArgOk = cMethodp->name() == "at";
+                } else if (AstCMethodHard* const cMethodp = VN_CAST(pinp, CMethodHard)) {
+                    refArgOk = cMethodp->name() == "at" || cMethodp->name() == "atBack";
+                    if (VN_IS(cMethodp->fromp()->dtypep()->skipRefp(), QueueDType)) {
+                        cMethodp->name(cMethodp->name() == "at" ? "atWriteAppend"
+                                                                : "atWriteAppendBack");
+                    }
                 }
                 if (refArgOk) {
                     if (AstVarRef* const varrefp = VN_CAST(pinp, VarRef)) {
@@ -494,12 +513,7 @@ class TaskVisitor final : public VNVisitor {
                         UASSERT_OBJ(localVscp, varrefp, "Null var scope");
                         portp->user2p(localVscp);
                     } else {
-                        pinp->v3warn(E_TASKNSVAR, "Unsupported: ref argument of inlined "
-                                                  "function/task is not a simple variable");
-                        // Providing a var to avoid an internal error.
-                        AstVarScope* const newvscp
-                            = createVarScope(portp, namePrefix + "__" + portp->shortName());
-                        portp->user2p(newvscp);
+                        pinp->v3fatalSrc("ref argument should have caused non-inline of function");
                     }
                 }
             } else if (portp->isInoutish()) {
@@ -560,7 +574,7 @@ class TaskVisitor final : public VNVisitor {
         AstNode* const newbodysp
             = refp->taskp()->stmtsp() ? refp->taskp()->stmtsp()->cloneTree(true) : nullptr;
         AstNode* const beginp
-            = new AstComment{refp->fileline(), string{"Function: "} + refp->name(), true};
+            = new AstComment{refp->fileline(), "Function: "s + refp->name(), true};
         if (newbodysp) beginp->addNext(newbodysp);
         if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-  newbegi: ");
         //
@@ -612,7 +626,7 @@ class TaskVisitor final : public VNVisitor {
         UASSERT_OBJ(cfuncp, refp, "No non-inline task associated with this task call?");
         //
         AstNode* const beginp
-            = new AstComment{refp->fileline(), string{"Function: "} + refp->name(), true};
+            = new AstComment{refp->fileline(), "Function: "s + refp->name(), true};
         AstNodeCCall* ccallp;
         if (VN_IS(refp, New)) {
             AstCNew* const cnewp = new AstCNew{refp->fileline(), cfuncp};
@@ -707,6 +721,14 @@ class TaskVisitor final : public VNVisitor {
         }
         dpiproto += ")";
         return dpiproto;
+    }
+
+    static void checkLegalCIdentifier(AstNode* nodep, const string& name) {
+        if (name.end() != std::find_if(name.begin(), name.end(), [](char c) {
+                return !std::isalnum(c) && c != '_';
+            })) {
+            nodep->v3error("DPI function has illegal characters in C identifier name: " << name);
+        }
     }
 
     static AstNode* createDpiTemp(AstVar* portp, const string& suffix) {
@@ -808,8 +830,11 @@ class TaskVisitor final : public VNVisitor {
     }
 
     AstCFunc* makeDpiExportDispatcher(AstNodeFTask* nodep, AstVar* rtnvarp) {
+        // Verilog name has __ conversion and other tricks, to match DPI C code, back that out
+        const string name = AstNode::prettyName(nodep->cname());
+        checkLegalCIdentifier(nodep, name);
         const char* const tmpSuffixp = V3Task::dpiTemporaryVarSuffix();
-        AstCFunc* const funcp = new AstCFunc{nodep->fileline(), nodep->cname(), m_scopep,
+        AstCFunc* const funcp = new AstCFunc{nodep->fileline(), name, m_scopep,
                                              (rtnvarp ? rtnvarp->dpiArgType(true, true) : "")};
         funcp->dpiExportDispatcher(true);
         funcp->dpiContext(nodep->dpiContext());
@@ -817,7 +842,7 @@ class TaskVisitor final : public VNVisitor {
         funcp->entryPoint(true);
         funcp->isStatic(true);
         funcp->protect(false);
-        funcp->cname(nodep->cname());
+        funcp->cname(name);
         // Add DPI Export to top, since it's a global function
         m_topScopep->scopep()->addBlocksp(funcp);
 
@@ -935,15 +960,14 @@ class TaskVisitor final : public VNVisitor {
     }
 
     AstCFunc* makeDpiImportPrototype(AstNodeFTask* nodep, AstVar* rtnvarp) {
-        if (nodep->cname() != AstNode::prettyName(nodep->cname())) {
-            nodep->v3error("DPI function has illegal characters in C identifier name: "
-                           << AstNode::prettyNameQ(nodep->cname()));
-        }
+        // Verilog name has __ conversion and other tricks, to match DPI C code, back that out
+        const string name = AstNode::prettyName(nodep->cname());
+        checkLegalCIdentifier(nodep, name);
         // Tasks (but not void functions) return a boolean 'int' indicating disabled
         const string rtnType = rtnvarp            ? rtnvarp->dpiArgType(true, true)
                                : nodep->dpiTask() ? "int"
                                                   : "";
-        AstCFunc* const funcp = new AstCFunc{nodep->fileline(), nodep->cname(), m_scopep, rtnType};
+        AstCFunc* const funcp = new AstCFunc{nodep->fileline(), name, m_scopep, rtnType};
         funcp->dpiContext(nodep->dpiContext());
         funcp->dpiImportPrototype(true);
         funcp->dontCombine(true);
@@ -1010,7 +1034,7 @@ class TaskVisitor final : public VNVisitor {
                         portp->v3warn(
                             E_UNSUPPORTED,
                             "Unsupported: DPI argument of type "
-                                << portp->basicp()->prettyTypeName() << '\n'
+                                << portp->dtypep()->prettyTypeName() << '\n'
                                 << portp->warnMore()
                                 << "... For best portability, use bit, byte, int, or longint");
                         // We don't warn on logic either, although the 4-stateness is lost.
@@ -1553,6 +1577,10 @@ class TaskVisitor final : public VNVisitor {
         // Done the loop
         m_insStmtp = nullptr;  // Next thing should be new statement
     }
+    void visit(AstNodeForeach* nodep) override {  // LCOV_EXCL_LINE
+        nodep->v3fatalSrc(
+            "Foreach statements should have been converted to while statements in V3Begin.cpp");
+    }
     void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
             "For statements should have been converted to while statements in V3Begin.cpp");
@@ -1650,7 +1678,9 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
                 reorganize = true;
             }
         } else {  // By pin number
-            if (ppinnum >= tpinnum) {
+            if (nodep->taskp()->prettyName() == "randomize") {
+                // Arguments to randomize() are special, will be handled in V3Randomize
+            } else if (ppinnum >= tpinnum) {
                 if (sformatp) {
                     tconnects.emplace_back(sformatp, static_cast<AstArg*>(nullptr));
                     tconnects[ppinnum].second = argp;
