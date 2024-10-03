@@ -22,7 +22,6 @@ import time
 
 from functools import lru_cache  # Eventually use python 3.9's cache
 from pprint import pformat, pprint
-from packaging import version
 
 if False:  # pylint: disable=using-constant-test
     pprint(pformat("Ignored"))  # Prevent unused warning
@@ -1577,7 +1576,12 @@ class VlTest:
     @property
     def have_cmake(self) -> bool:
         ver = Capabilities.cmake_version
-        return ver and version.parse(ver) >= version.parse("3.8")
+        if not ver:
+            return False
+        m = re.match(r'^(\d+)\.(\d+)$', ver)
+        if not m:
+            return False
+        return int(m.group(1)) > 3 or int(m.group(2)) >= 8  # >= 3.8
 
     @property
     def have_coroutines(self) -> bool:
