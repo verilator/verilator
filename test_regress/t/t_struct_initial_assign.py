@@ -13,6 +13,6 @@ test.scenarios('simulator')
 
 test.compile(verilator_flags2=["--timing"])
 
-test.execute(fails=test.vlt_all)  # Issue #5380
+test.execute(fails=test.vlt_all)  # Issue #5381
 
 test.passes()
