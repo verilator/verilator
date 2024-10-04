@@ -110,7 +110,7 @@ class LinkResolveVisitor final : public VNVisitor {
         // just gross errors of using genvar outside any generate
         if (nodep->varp() && nodep->varp()->isGenVar() && !m_underGenFor) {
             nodep->v3error("Genvar " << nodep->prettyNameQ()
-                                     << " used outside generate for loop (IEEE 1800-2024 27.4)");
+                                     << " used outside generate for loop (IEEE 1800-2023 27.4)");
         }
         iterateChildren(nodep);
     }
