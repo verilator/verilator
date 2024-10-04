@@ -190,26 +190,26 @@ if test "x$AR" = "x" ; then
    AC_MSG_ERROR([Cannot find "ar" in your PATH, please install it])
 fi
 
-AC_PATH_PROG(PERL,perl)
+AC_CHECK_PROG(PERL,perl,perl)
 if test "x$PERL" = "x" ; then
    AC_MSG_ERROR([Cannot find "perl" in your PATH, please install it])
 fi
 
-AC_PATH_PROG(PYTHON3,python3)
+AC_CHECK_PROG(PYTHON3,python3,python3)
 if test "x$PYTHON3" = "x" ; then
    AC_MSG_ERROR([Cannot find "python3" in your PATH, please install it])
 fi
 python3_version=$($PYTHON3 --version | head -1)
 AC_MSG_RESULT([$PYTHON3 --version = $python3_version])
 
-AC_PATH_PROG(LEX,flex)
+AC_CHECK_PROG(LEX,flex,flex)
 if test "x$LEX" = "x" ; then
    AC_MSG_ERROR([Cannot find "flex" in your PATH, please install it])
 fi
 flex_version=$($LEX --version | head -1)
 AC_MSG_RESULT([$LEX --version = $flex_version])
 
-AC_PATH_PROG(YACC,bison)
+AC_CHECK_PROG(YACC,bison,bison)
 if test "x$YACC" = "x" ; then
    AC_MSG_ERROR([Cannot find "bison" in your PATH, please install it])
 fi
