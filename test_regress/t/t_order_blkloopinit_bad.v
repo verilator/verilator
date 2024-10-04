@@ -17,17 +17,7 @@ module t (/*AUTOARG*/
 
    localparam SIZE = 65536;
 
-   // Unsupported case 1: Array NBA inside suspendable
-   int array1 [SIZE];
-   always @ (posedge clk) begin
-      #1;
-      o <= array1[1];
-      for (int i=0; i<SIZE; i++) begin
-         array1[i] <= 0;  // BLKLOOPINIT
-      end
-   end
-
-   // Unsupported case 2: Array NBA to compund type
+   // Unsupported case 1: Array NBA to compund type
    class C; endclass
    C array2[SIZE];
    always @ (negedge clk) begin
@@ -35,19 +25,6 @@ module t (/*AUTOARG*/
       for (int i=0; i<SIZE; i++) begin
          array2[i] <= null;  // BLKLOOPINIT
       end
-   end
-
-   // Unsupported case 3: Array NBA to array also assigned in suspendable
-   int array3 [SIZE];
-   always @ (posedge clk) begin
-      o <= array3[1];
-      for (int i=0; i<SIZE; i++) begin
-         array3[i] <= 0;  // BLKLOOPINIT
-      end
-   end
-
-   always @(posedge clk) begin
-      #1 array3[0] <= 0;
    end
 
 endmodule

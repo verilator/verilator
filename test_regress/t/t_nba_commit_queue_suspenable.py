@@ -11,13 +11,13 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(verilator_flags2=["-unroll-count 1", "--stats"])
+test.compile(verilator_flags2=["--exe", "--main", "--timing", "-unroll-count 1", "--stats"])
 
 test.execute()
 
 test.file_grep(test.stats,
-               r'NBA, variables using ValueQueueWhole scheme\s+(\d+)', 6)
+               r'NBA, variables using ValueQueueWhole scheme\s+(\d+)', 2)
 test.file_grep(test.stats,
-               r'NBA, variables using ValueQueuePartial scheme\s+(\d+)', 3)
+               r'NBA, variables using ValueQueuePartial scheme\s+(\d+)', 0)
 
 test.passes()
