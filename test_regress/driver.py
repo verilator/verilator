@@ -1343,6 +1343,7 @@ class VlTest:
             'fails': False,
             'run_env': '',
             'tee': True,
+            'use_libvpi': False
         }
         param.update(vars(self))
         param.update(kwargs)
@@ -1366,115 +1367,118 @@ class VlTest:
             run_env = run_env + ' '
 
         if param['atsim']:
-            self.run(
-                logfile=self.obj_dir + "/atsim_sim.log",
-                fails=param['fails'],
-                cmd=[
-                    "echo q | " + run_env + self.obj_dir + "/athdl_sv",
-                    ' '.join(param['atsim_run_flags']),
-                    ' '.join(param['all_run_flags']),
-                ],
-                *param,
-                expect_filename=param['atsim_run_expect_filename'],
-            )
+            cmd = [
+                "echo q | " + run_env + self.obj_dir + "/athdl_sv",
+                ' '.join(param['atsim_run_flags']), ' '.join(param['all_run_flags'])
+            ]
+            self.run(cmd=cmd,
+                     check_finished=param['check_finished'],
+                     entering=param['entering'],
+                     expect_filename=param.get('atsim_run_expect_filename', None),
+                     fails=param['fails'],
+                     logfile=param.get('logfile', self.obj_dir + "/atsim_sim.log"),
+                     tee=param['tee'])
         elif param['ghdl']:
-            self.run(
-                logfile=self.obj_dir + "/ghdl_sim.log",
-                fails=param['fails'],
-                cmd=[
-                    run_env + self.obj_dir + "/simghdl",
-                    ' '.join(param['ghdl_run_flags']),
-                    ' '.join(param['all_run_flags']),
-                ],
-                *param,
-                expect_filename=param['ghdl_run_expect_filename'],
-            )
+            cmd = [
+                run_env + self.obj_dir + "/simghdl", ' '.join(param['ghdl_run_flags']),
+                ' '.join(param['all_run_flags'])
+            ]
+            self.run(cmd=cmd,
+                     check_finished=param['check_finished'],
+                     entering=param['entering'],
+                     expect_filename=param.get('ghdl_run_expect_filename', None),
+                     fails=param['fails'],
+                     logfile=param.get('logfile', self.obj_dir + "/ghdl_sim.log"),
+                     tee=param['tee'])
         elif param['iv']:
             cmd = [
-                run_env + self.obj_dir + "/simiv",
-                ' '.join(param['iv_run_flags']),
-                ' '.join(param['all_run_flags']),
+                run_env + self.obj_dir + "/simiv", ' '.join(param['iv_run_flags']),
+                ' '.join(param['all_run_flags'])
             ]
             if param['use_libvpi']:
                 # Don't enter command line on $stop, include vpi
                 cmd += ["vvp -n -m " + self.obj_dir + "/libvpi.so"]
-            self.run(
-                logfile=self.obj_dir + "/iv_sim.log",
-                fails=param['fails'],
-                cmd=cmd,
-                *param,
-                expect_filename=param['iv_run_expect_filename'],
-            )
+            self.run(cmd=cmd,
+                     check_finished=param['check_finished'],
+                     entering=param['entering'],
+                     expect_filename=param.get('iv_run_expect_filename', None),
+                     fails=param['fails'],
+                     logfile=param.get('logfile', self.obj_dir + "/vlt_sim.log"),
+                     tee=param['tee'])
         elif param['ms']:
             pli_opt = ""
             if param['use_libvpi']:
                 pli_opt = "-pli " + self.obj_dir + "/libvpi.so"
-            self.run(
-                logfile=self.obj_dir + "/ms_sim.log",
-                fails=param['fails'],
-                cmd=[
-                    "echo q | " + run_env + VtOs.getenv_def('VERILATOR_MODELSIM', "vsim"),
-                    ' '.join(param['ms_run_flags']), ' '.join(param['all_run_flags']), pli_opt,
-                    (" top")
-                ],
-                *param,
-                expect_filename=param['ms_expect_filename'],
-            )
+            cmd = [
+                "echo q | " + run_env + VtOs.getenv_def('VERILATOR_MODELSIM', "vsim"),
+                ' '.join(param['ms_run_flags']), ' '.join(param['all_run_flags']), pli_opt,
+                (" top")
+            ]
+            self.run(cmd=cmd,
+                     check_finished=param['check_finished'],
+                     entering=param['entering'],
+                     expect_filename=param.get('ms_run_expect_filename', None),
+                     fails=param['fails'],
+                     logfile=param.get('logfile', self.obj_dir + "/ms_sim.log"),
+                     tee=param['tee'])
         elif param['nc']:
-            self.run(
-                logfile=self.obj_dir + "/nc_sim.log",
-                fails=param['fails'],
-                cmd=[
-                    "echo q | " + run_env + VtOs.getenv_def('VERILATOR_NCVERILOG', "ncverilog"),
-                    ' '.join(param['nc_run_flags']),
-                    ' '.join(param['all_run_flags']),
-                ],
-                *param,
-                expect_filename=param['nc_run_expect_filename'],
-            )
+            cmd = [
+                "echo q | " + run_env + VtOs.getenv_def('VERILATOR_NCVERILOG', "ncverilog"),
+                ' '.join(param['nc_run_flags']), ' '.join(param['all_run_flags'])
+            ]
+            self.run(cmd=cmd,
+                     check_finished=param['check_finished'],
+                     entering=param['entering'],
+                     expect_filename=param.get('nc_run_expect_filename', None),
+                     fails=param['fails'],
+                     logfile=param.get('logfile', self.obj_dir + "/nc_sim.log"),
+                     tee=param['tee'])
         elif param['vcs']:
             # my $fh = IO::File->new(">simv.key") or die "%Error: $! simv.key,"
             # fh.print("quit\n"); fh.close()
-            self.run(
-                logfile=self.obj_dir + "/vcs_sim.log",
-                cmd=[
-                    "echo q | " + run_env + "./simv",
-                    ' '.join(param['vcs_run_flags']),
-                    ' '.join(param['all_run_flags']),
-                ],
-                *param,
-                expect_filename=param['vcs_run_expect_filename'],
-            )
+            cmd = [
+                "echo q | " + run_env + "./simv", ' '.join(param['vcs_run_flags']),
+                ' '.join(param['all_run_flags'])
+            ]
+            self.run(cmd=cmd,
+                     check_finished=param['check_finished'],
+                     entering=param['entering'],
+                     expect_filename=param.get('vcs_run_expect_filename', None),
+                     fails=param['fails'],
+                     logfile=param.get('logfile', self.obj_dir + "/vcs_sim.log"),
+                     tee=param['tee'])
         elif param['xrun']:
             pli_opt = ""
             if param['use_libvpi']:
                 pli_opt = "-loadvpi " + self.obj_dir + "/libvpi.so:vpi_compat_bootstrap"
-            self.run(
-                logfile=self.obj_dir + "/xrun_sim.log",
-                fails=param['fails'],
-                cmd=[
-                    "echo q | " + run_env + VtOs.getenv_def('VERILATOR_XRUN', "xrun"),
-                    ' '.join(param['xrun_run_flags']),
-                    ' '.join(param['xrun_flags2']),
-                    ' '.join(param['all_run_flags']),
-                    pli_opt,
-                    param['top_filename'],
-                ],
-                *param,
-                expect_filename=param['xrun_run_expect_filename'],
-            )
+            cmd = [
+                "echo q | " + run_env + VtOs.getenv_def('VERILATOR_XRUN', "xrun"),
+                ' '.join(param['xrun_run_flags']),
+                ' '.join(param['xrun_flags2']),
+                ' '.join(param['all_run_flags']),
+                pli_opt,
+                param['top_filename'],
+            ]
+            self.run(cmd=cmd,
+                     check_finished=param['check_finished'],
+                     entering=param['entering'],
+                     expect_filename=param.get('xrun_run_expect_filename', None),
+                     fails=param['fails'],
+                     logfile=param.get('logfile', self.obj_dir + "/xrun_sim.log"),
+                     tee=param['tee'])
         elif param['xsim']:
-            self.run(
-                logfile=self.obj_dir + "/xsim_sim.log",
-                fails=param['fails'],
-                cmd=[
-                    run_env + VtOs.getenv_def('VERILATOR_XELAB', "xelab"),
-                    ' '.join(param['xsim_run_flags']), ' '.join(param['xsim_run_flags2']),
-                    ' '.join(param['all_run_flags']), (" " + self.name + ".top")
-                ],
-                *param,
-                expect_filename=param['xsim_expect_filename'],
-            )
+            cmd = [
+                run_env + VtOs.getenv_def('VERILATOR_XELAB', "xelab"),
+                ' '.join(param['xsim_run_flags']), ' '.join(param['xsim_run_flags2']),
+                ' '.join(param['all_run_flags']), (" " + self.name + ".top")
+            ]
+            self.run(cmd=cmd,
+                     check_finished=param['check_finished'],
+                     entering=param['entering'],
+                     expect_filename=param.get('xsim_run_expect_filename', None),
+                     fails=param['fails'],
+                     logfile=param.get('logfile', self.obj_dir + "/xsim_sim.log"),
+                     tee=param['tee'])
         elif param['vlt_all']:
             if not param['executable']:
                 param['executable'] = self.obj_dir + "/" + param['vm_prefix']
@@ -1483,13 +1487,13 @@ class VlTest:
                 debugger = VtOs.getenv_def('VERILATOR_GDB', "gdb") + " "
             elif Args.rrsim:
                 debugger = "rr record "
+            cmd = [
+                (run_env + debugger + param['executable'] + (" -ex 'run " if Args.gdbsim else "")),
+                *param['all_run_flags'],
+                ("'" if Args.gdbsim else ""),
+            ]
             self.run(
-                cmd=[
-                    (run_env + debugger + param['executable'] +
-                     (" -ex 'run " if Args.gdbsim else "")),
-                    *param['all_run_flags'],
-                    ("'" if Args.gdbsim else ""),
-                ],
+                cmd=cmd,
                 aslr_off=param['aslr_off'],  # Disable address space layour randomization
                 check_finished=param['check_finished'],  # Check for All Finished
                 entering=param['entering'],  # Print entering directory information
@@ -2072,7 +2076,7 @@ class VlTest:
     def _make_top_v(self) -> None:
         self._read_inputs_v()
 
-        with open(self.top_shell_filename(), 'w', encoding="utf8") as fh:
+        with open(self.top_shell_filename, 'w', encoding="utf8") as fh:
             fh.write("module top;\n")
             for inp in sorted(self._inputs.keys()):
                 fh.write("    reg " + inp + ";\n")
@@ -2107,7 +2111,7 @@ class VlTest:
                 fh.write("        fastclk = 1;\n")
             if 'clk' in self._inputs:
                 fh.write("        clk = 1;\n")
-            fh.write("        while (" + time + " < " + self.sim_time + ") begin\n")
+            fh.write("        while ($time < " + str(self.sim_time) + ") begin\n")
             for i in range(6):
                 fh.write("          #1;\n")
                 if 'fastclk' in self._inputs:
