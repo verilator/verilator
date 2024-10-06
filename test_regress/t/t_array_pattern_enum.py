@@ -9,6 +9,8 @@
 
 import vltest_bootstrap
 
+test.skip('Needs clang fix')
+
 test.scenarios('simulator')
 
 test.compile()
