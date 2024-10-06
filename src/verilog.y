@@ -187,7 +187,7 @@ public:
     AstNode* createTypedef(FileLine* fl, const string& name, AstNode* attrsp, AstNodeDType* basep,
                            AstNodeRange* rangep) {
         AstTypedef* const nodep = new AstTypedef{fl, name, attrsp, VFlagChildDType{},
-                                              GRAMMARP->createArray(basep, rangep, false)};
+                                                 GRAMMARP->createArray(basep, rangep, false)};
         SYMP->reinsert(nodep);
         PARSEP->tagNodep(nodep);
         return nodep;
