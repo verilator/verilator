@@ -4408,8 +4408,7 @@ class WidthVisitor final : public VNVisitor {
                                 }
                                 memp = VN_AS(memp->nextp(), MemberDType);
                             }
-                        } else if (AstNodeDType* nodedtypep
-                                   = VN_CAST(patp->keyp(), NodeDType)) {
+                        } else if (AstNodeDType* nodedtypep = VN_CAST(patp->keyp(), NodeDType)) {
                             // data_type: default_value
                             userIterate(nodedtypep, WidthVP{SELF, BOTH}.p());
                             const string dtype = nodedtypep->dtypep()->prettyDTypeName(true);
