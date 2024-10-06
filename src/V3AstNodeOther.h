@@ -1714,12 +1714,16 @@ class AstTypedef final : public AstNode {
     string m_name;
     string m_tag;  // Holds the string of the verilator tag -- used in XML output.
     bool m_attrPublic = false;
+    bool m_isHideLocal : 1;  // Verilog local
+    bool m_isHideProtected : 1;  // Verilog protected
 
 public:
     AstTypedef(FileLine* fl, const string& name, AstNode* attrsp, VFlagChildDType,
                AstNodeDType* dtp)
         : ASTGEN_SUPER_Typedef(fl)
-        , m_name{name} {
+        , m_name{name}
+        , m_isHideLocal{false}
+        , m_isHideProtected{false} {
         childDTypep(dtp);  // Only for parser
         addAttrsp(attrsp);
         dtypep(nullptr);  // V3Width will resolve
@@ -1738,6 +1742,10 @@ public:
     void name(const string& flag) override { m_name = flag; }
     bool attrPublic() const { return m_attrPublic; }
     void attrPublic(bool flag) { m_attrPublic = flag; }
+    bool isHideLocal() const { return m_isHideLocal; }
+    void isHideLocal(bool flag) { m_isHideLocal = flag; }
+    bool isHideProtected() const { return m_isHideProtected; }
+    void isHideProtected(bool flag) { m_isHideProtected = flag; }
     void tag(const string& text) override { m_tag = text; }
     string tag() const override { return m_tag; }
 };

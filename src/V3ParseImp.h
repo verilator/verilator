@@ -74,9 +74,17 @@ struct VMemberQualifiers final {
             if (m_static) nodep->isStatic(true);
             if (m_virtual) nodep->isVirtual(true);
             if (m_const || m_rand || m_randc) {
-                nodep->v3error("Syntax error: 'const'/'rand'/'randc' not allowed before "
-                               "function/task declaration");
+                nodep->v3error("Syntax error: 'const'/'rand'/'randc' not allowed "
+                               "before function/task declaration");
             }
+        }
+    }
+    void applyToNodes(AstTypedef* nodep) const {
+        if (m_local) nodep->isHideLocal(true);
+        if (m_protected) nodep->isHideProtected(true);
+        if (m_static || m_virtual || m_rand || m_randc) {
+            nodep->v3error("Syntax error: 'static'/'virtual'/'rand'/'randc' not allowed "
+                           "before typedef declaration");
         }
     }
     void applyToNodes(AstVar* nodesp) const {

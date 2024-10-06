@@ -1853,13 +1853,11 @@ class WidthVisitor final : public VNVisitor {
             if (AstNodeDType* typeofDtp = VN_CAST(nodep->typeofp(), NodeDType)) {
                 // It's directly a type, e.g. "type(int)"
                 typeofDtp = iterateEditMoveDTypep(nodep, typeofDtp);  // Changes typeofp
-                nodep->typedefp(nullptr);
                 nodep->refDTypep(typeofDtp);
             } else {
                 // Type comes from expression's type, e.g. "type(variable)"
                 userIterateAndNext(nodep->typeofp(), WidthVP{SELF, BOTH}.p());
                 AstNode* const typeofp = nodep->typeofp();
-                nodep->typedefp(nullptr);
                 nodep->refDTypep(typeofp->dtypep());
                 VL_DO_DANGLING(typeofp->unlinkFrBack()->deleteTree(), typeofp);
             }
@@ -1873,7 +1871,6 @@ class WidthVisitor final : public VNVisitor {
             // this node's childDTypep
             userIterate(nodep->subDTypep(), nullptr);
             nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
-            nodep->typedefp(nullptr);  // Note until line above subDTypep() may have followed this
             // Widths are resolved, but special iterate to check for recursion
             userIterate(nodep->subDTypep(), nullptr);
         }
@@ -1883,6 +1880,7 @@ class WidthVisitor final : public VNVisitor {
         nodep->dtypeFrom(nodep->subDTypep());
         nodep->widthFromSub(nodep->subDTypep());
         UINFO(4, "dtWidthed " << nodep << endl);
+        // No nodep->typedefp(nullptr) for now; V3WidthCommit needs to check accesses
         nodep->doingWidth(false);
     }
     void visit(AstTypedef* nodep) override {

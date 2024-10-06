@@ -186,14 +186,14 @@ public:
     }
     AstNode* createTypedef(FileLine* fl, const string& name, AstNode* attrsp, AstNodeDType* basep,
                            AstNodeRange* rangep) {
-        AstNode* const nodep = new AstTypedef{fl, name, attrsp, VFlagChildDType{},
+        AstTypedef* const nodep = new AstTypedef{fl, name, attrsp, VFlagChildDType{},
                                               GRAMMARP->createArray(basep, rangep, false)};
         SYMP->reinsert(nodep);
         PARSEP->tagNodep(nodep);
         return nodep;
     }
     AstNode* createTypedefFwd(FileLine* fl, const string& name) {
-        AstNode* const nodep = new AstTypedefFwd{fl, name};
+        AstTypedefFwd* const nodep = new AstTypedefFwd{fl, name};
         SYMP->reinsert(nodep);
         PARSEP->tagNodep(nodep);
         return nodep;
@@ -2479,11 +2479,13 @@ data_declaration<nodep>:        // ==IEEE: data_declaration
         ;
 
 class_property<nodep>:          // ==IEEE: class_property, which is {property_qualifier} data_declaration
-                memberQualListE data_declarationVarClass                { $$ = $2; $1.applyToNodes($2); }
+                memberQualListE data_declarationVarClass
+                        { $$ = $2; $1.applyToNodes($2); }
+        |       memberQualListE type_declaration
+                        { $$ = $2; if (VN_IS($2, Typedef)) $1.applyToNodes(VN_AS($2, Typedef)); }
         //                      // UNSUP: Import needs to apply local/protected from memberQualList, and error on others
-        |       memberQualListE type_declaration                        { $$ = $2; }
-        //                      // UNSUP: Import needs to apply local/protected from memberQualList, and error on others
-        |       memberQualListE package_import_declaration              { $$ = $2; }
+        |       memberQualListE package_import_declaration
+                        { $$ = $2; }
         //                      // IEEE: virtual_interface_declaration
         //                      // "yVIRTUAL yID yID" looks just like a data_declaration
         //                      // Therefore the virtual_interface_declaration term isn't used
