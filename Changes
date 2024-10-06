@@ -74,6 +74,7 @@ Verilator 5.029 devel
 * Fix exponential concatenate performance (#5488). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Fix V3Table trying to generate 'x' bits in the lookup table. (#5491). [Geza Lore]
 * Fix randomize with foreach constraints (#5492). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Fix pattern initialization with typedef key (#5512). [Eugene Feinberg]
 
 
 Verilator 5.028 2024-08-21
