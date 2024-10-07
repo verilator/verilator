@@ -21,10 +21,7 @@ task t_dunit_static_ok(input int in_ok = 1);
    $display("%d", ++cnt_ok);
 endtask
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+module t (/*AUTOARG*/);
 
    function int f_implicit_static();
       int cnt = 0;
@@ -41,8 +38,6 @@ module t (/*AUTOARG*/
       int cnt = 0;
       return ++cnt;
    endfunction
-
-   input clk;
 
    int   a, b;
    initial begin

@@ -15,11 +15,7 @@ module sub (output string s);
    initial s = $sformatf("%m");
 endmodule
 
-module t
-  (
-   clk
-   );
-   input clk;
+module t;
 
    string str [2:0][1:0];
 
