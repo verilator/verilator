@@ -1356,7 +1356,7 @@ class RandomizeVisitor final : public VNVisitor {
                     fl, VVarType::VAR, uniqueNamep->get(""),
                     dtypep->findBasicDType(
                         ((AstBasicDType*)VN_AS(tempDTypep, AssocArrayDType)->keyDTypep())
-                            ->keyword())};  // ((AstBasicDType*)((AstAssocArrayDType*)tempDTypep)->keyDTypep())->keyword()
+                            ->keyword())};
             }
             return new AstVar{fl, VVarType::VAR, uniqueNamep->get(""),
                               dtypep->findBasicDType(VBasicDTypeKwd::UINT32)};
@@ -1387,14 +1387,13 @@ class RandomizeVisitor final : public VNVisitor {
                   : VN_CAST(tempDTypep, UnpackArrayDType) ? static_cast<AstNodeExpr*>(
                         new AstArraySel{fl, tempElementp ? tempElementp : exprp,
                                         new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}})
-                  : VN_CAST(tempDTypep, AssocArrayDType)
-                      ? static_cast<AstNodeExpr*>(
-                          new AstAssocSel{fl, tempElementp ? tempElementp : exprp,
-                                          new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}})
-                      : static_cast<AstNodeExpr*>(new AstCMethodHard{
-                          fl, tempElementp ? tempElementp : exprp, "atWriteAppend",
-                          new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}});
-
+                  : VN_CAST(tempDTypep, AssocArrayDType) ? static_cast<AstNodeExpr*>(
+                        new AstAssocSel{fl, tempElementp ? tempElementp : exprp,
+                                        new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}})
+                  : VN_CAST(tempDTypep, QueueDType) ? static_cast<AstNodeExpr*>(new AstCMethodHard{
+                        fl, tempElementp ? tempElementp : exprp, "atWriteAppend",
+                        new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}})
+                                                    : nullptr;
             tempElementp->dtypep(tempDTypep->subDTypep());
             tempDTypep = tempDTypep->virtRefDTypep();
         }
