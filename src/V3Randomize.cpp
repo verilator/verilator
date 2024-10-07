@@ -1619,7 +1619,7 @@ class RandomizeVisitor final : public VNVisitor {
                 newp->addStmtsp(new AstAssign{fl, setp, new AstConst{fl, 0}});
             }
             if (memberVarp->user3()) return;  // Handled in constraints
-            const AstNodeDType* const dtypep = memberVarp->dtypep()->skipRefp();   
+            const AstNodeDType* const dtypep = memberVarp->dtypep()->skipRefp();
             if (const AstClassRefDType* const classRefp = VN_CAST(dtypep, ClassRefDType)) {
                 if (classRefp->classp() == nodep) {
                     memberVarp->v3warn(E_UNSUPPORTED,
