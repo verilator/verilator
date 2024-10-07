@@ -2905,13 +2905,21 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
     int size = vpi_get(vpiSize, object);
     int index = index_p[0];
 
+    static thread_local WData out_ptr[VL_VALUE_STRING_MAX_WORDS];
+
     if (arrayvalue_p->format == vpiIntVal) {
         PLI_INT32 *integers;
 
         if (arrayvalue_p->flags & vpiUserAllocFlag) {
             integers = arrayvalue_p->value.integers;
-        } else {            
-            integers = (PLI_INT32*)malloc(num * 4);
+        } else {
+            if (VL_UNCOVERABLE(num >= VL_VALUE_STRING_MAX_WORDS)) {
+                VL_FATAL_MT(__FILE__, __LINE__, "",
+                            "vpi_get_value with more than VL_VALUE_STRING_MAX_WORDS; increase and "
+                            "recompile");
+            }
+
+            integers = (PLI_INT32*)out_ptr;
             arrayvalue_p->value.integers = integers;
         }
 
@@ -2944,8 +2952,15 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 
         if (arrayvalue_p->flags & vpiUserAllocFlag) {
             shortints = arrayvalue_p->value.shortints;
-        } else {            
-            shortints = (PLI_INT16*)malloc(num * 2);
+        } else {
+            const int words = VL_WORDS_I(num * 16);
+            if (VL_UNCOVERABLE(words >= VL_VALUE_STRING_MAX_WORDS)) {
+                VL_FATAL_MT(__FILE__, __LINE__, "",
+                            "vpi_get_value with more than VL_VALUE_STRING_MAX_WORDS; increase and "
+                            "recompile");
+            }
+
+            shortints = (PLI_INT16*)out_ptr;
             arrayvalue_p->value.shortints = shortints;
         }
 
@@ -2962,8 +2977,15 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 
         if (arrayvalue_p->flags & vpiUserAllocFlag) {
             longints = arrayvalue_p->value.longints;
-        } else {            
-            longints = (PLI_INT64*)malloc(num * 8);
+        } else {
+            const int words = VL_WORDS_I(num * 64);
+            if (VL_UNCOVERABLE(words >= VL_VALUE_STRING_MAX_WORDS)) {
+                VL_FATAL_MT(__FILE__, __LINE__, "",
+                            "vpi_get_value with more than VL_VALUE_STRING_MAX_WORDS; increase and "
+                            "recompile");
+            }
+
+            longints = (PLI_INT64*)out_ptr;
             arrayvalue_p->value.longints = longints;
         }
 
@@ -2999,7 +3021,14 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                     ngroups = 0; break;
             }
 
-            value_ptr = (PLI_BYTE8*)malloc(ngroups * num);
+            const int words = VL_WORDS_I(ngroups * 8 * num);
+            if (VL_UNCOVERABLE(words >= VL_VALUE_STRING_MAX_WORDS)) {
+                VL_FATAL_MT(__FILE__, __LINE__, "",
+                            "vpi_get_value with more than VL_VALUE_STRING_MAX_WORDS; increase and "
+                            "recompile");
+            }
+
+            value_ptr = (PLI_BYTE8*)out_ptr;
             arrayvalue_p->value.rawvals = value_ptr;
         }
 
@@ -3035,8 +3064,8 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                 index = index % size;
             }
         } else if (varp->vltype() == VLVT_WDATA) {
-            WData *rawvals = reinterpret_cast<WData*>(value_ptr);
             WData *ptr = reinterpret_cast<WData*>(vop->varDatap());
+            WData *rawvals = reinterpret_cast<WData*>(value_ptr);
 
             const int words = VL_WORDS_I(varp->packed().elements());
 
@@ -3055,8 +3084,14 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 
         if (arrayvalue_p->flags & vpiUserAllocFlag) {
             reals = arrayvalue_p->value.reals;
-        } else {            
-            reals = (double*)malloc(num * sizeof(double));
+        } else {
+            if (VL_UNCOVERABLE(num >= VL_VALUE_STRING_MAX_WORDS)) {
+                VL_FATAL_MT(__FILE__, __LINE__, "",
+                            "vpi_get_value with more than VL_VALUE_STRING_MAX_WORDS; increase and "
+                            "recompile");
+            }
+
+            reals = (double*)out_ptr;
             arrayvalue_p->value.reals = reals;
         }
 
