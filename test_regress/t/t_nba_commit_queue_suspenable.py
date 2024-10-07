@@ -15,9 +15,7 @@ test.compile(verilator_flags2=["--exe", "--main", "--timing", "-unroll-count 1",
 
 test.execute()
 
-test.file_grep(test.stats,
-               r'NBA, variables using ValueQueueWhole scheme\s+(\d+)', 2)
-test.file_grep(test.stats,
-               r'NBA, variables using ValueQueuePartial scheme\s+(\d+)', 0)
+test.file_grep(test.stats, r'NBA, variables using ValueQueueWhole scheme\s+(\d+)', 2)
+test.file_grep(test.stats, r'NBA, variables using ValueQueuePartial scheme\s+(\d+)', 0)
 
 test.passes()
