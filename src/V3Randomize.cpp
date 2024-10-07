@@ -1619,16 +1619,8 @@ class RandomizeVisitor final : public VNVisitor {
                 newp->addStmtsp(new AstAssign{fl, setp, new AstConst{fl, 0}});
             }
             if (memberVarp->user3()) return;  // Handled in constraints
-            const AstNodeDType* const dtypep = memberVarp->dtypep()->skipRefp();
-            if (VN_IS(dtypep, BasicDType) || VN_IS(dtypep, StructDType)
-                || VN_IS(dtypep, UnionDType) || VN_IS(dtypep, PackArrayDType)
-                || VN_IS(dtypep, UnpackArrayDType) || VN_IS(dtypep, DynArrayDType)
-                || VN_IS(dtypep, AssocArrayDType) || VN_IS(dtypep, QueueDType)) {
-                AstVar* const randcVarp = newRandcVarsp(memberVarp);
-                AstVarRef* const refp = new AstVarRef{fl, classp, memberVarp, VAccess::WRITE};
-                AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp);
-                basicRandomizep->addStmtsp(new AstBegin{fl, "", stmtp});
-            } else if (const AstClassRefDType* const classRefp = VN_CAST(dtypep, ClassRefDType)) {
+            const AstNodeDType* const dtypep = memberVarp->dtypep()->skipRefp();   
+            if (const AstClassRefDType* const classRefp = VN_CAST(dtypep, ClassRefDType)) {
                 if (classRefp->classp() == nodep) {
                     memberVarp->v3warn(E_UNSUPPORTED,
                                        "Unsupported: random member variable with the "
@@ -1652,8 +1644,10 @@ class RandomizeVisitor final : public VNVisitor {
                                   new AstAnd{fl, basicFvarRefReadp, callp}}};
                 basicRandomizep->addStmtsp(wrapIfRandMode(nodep, memberVarp, assignIfNotNullp));
             } else {
-                memberVarp->v3warn(E_UNSUPPORTED, "Unsupported: random member variable with type "
-                                                      << memberVarp->dtypep()->prettyDTypeNameQ());
+                AstVar* const randcVarp = newRandcVarsp(memberVarp);
+                AstVarRef* const refp = new AstVarRef{fl, classp, memberVarp, VAccess::WRITE};
+                AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp);
+                basicRandomizep->addStmtsp(new AstBegin{fl, "", stmtp});
             }
         });
     }
