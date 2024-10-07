@@ -1376,24 +1376,20 @@ class RandomizeVisitor final : public VNVisitor {
             return new AstForeach{fl, randLoopVarp, newRandStmtsp(fl, tempElementp, nullptr)};
         };
         AstNodeExpr* tempElementp = nullptr;
-        while (VN_CAST(tempDTypep, DynArrayDType) || VN_CAST(tempDTypep, UnpackArrayDType)
-               || VN_CAST(tempDTypep, AssocArrayDType) || VN_CAST(tempDTypep, QueueDType)) {
+        while (VN_IS(tempDTypep, DynArrayDType) || VN_IS(tempDTypep, UnpackArrayDType)
+               || VN_IS(tempDTypep, AssocArrayDType) || VN_IS(tempDTypep, QueueDType)) {
             AstVar* const newRandLoopIndxp = createLoopIndex(tempDTypep);
             randLoopIndxp = AstNode::addNext(randLoopIndxp, newRandLoopIndxp);
-            tempElementp
-                = VN_CAST(tempDTypep, DynArrayDType) ? static_cast<AstNodeExpr*>(
-                      new AstCMethodHard{fl, tempElementp ? tempElementp : exprp, "atWrite",
-                                         new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}})
-                  : VN_CAST(tempDTypep, UnpackArrayDType) ? static_cast<AstNodeExpr*>(
-                        new AstArraySel{fl, tempElementp ? tempElementp : exprp,
-                                        new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}})
-                  : VN_CAST(tempDTypep, AssocArrayDType) ? static_cast<AstNodeExpr*>(
-                        new AstAssocSel{fl, tempElementp ? tempElementp : exprp,
-                                        new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}})
-                  : VN_CAST(tempDTypep, QueueDType) ? static_cast<AstNodeExpr*>(new AstCMethodHard{
-                        fl, tempElementp ? tempElementp : exprp, "atWriteAppend",
-                        new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}})
-                                                    : nullptr;
+            AstNodeExpr* tempExprp = tempElementp ? tempElementp : exprp;
+            AstVarRef* tempRefp = new AstVarRef{fl, newRandLoopIndxp, VAccess::READ};
+            if (VN_IS(tempDTypep, DynArrayDType))
+                tempElementp = new AstCMethodHard{fl, tempExprp, "atWrite", tempRefp};
+            else if (VN_IS(tempDTypep, UnpackArrayDType))
+                tempElementp = new AstArraySel{fl, tempExprp, tempRefp};
+            else if (VN_IS(tempDTypep, AssocArrayDType))
+                tempElementp = new AstAssocSel{fl, tempExprp, tempRefp};
+            else if (VN_IS(tempDTypep, QueueDType))
+                tempElementp = new AstCMethodHard{fl, tempExprp, "atWriteAppend", tempRefp};
             tempElementp->dtypep(tempDTypep->subDTypep());
             tempDTypep = tempDTypep->virtRefDTypep();
         }

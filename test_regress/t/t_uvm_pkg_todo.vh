@@ -26868,7 +26868,7 @@ class uvm_reg_fifo extends uvm_reg;
     local int unsigned m_size;
     //TODO issue-4625 - Rand fields of dynamic array types
     //TODO %Error-UNSUPPORTED: t/t_uvm_pkg_todo.vh:21081:35: Unsupported: random member variable with type 'bit[$]'
-    /*rand*/ uvm_reg_data_t fifo[$];
+    rand uvm_reg_data_t fifo[$];
     constraint valid_fifo_size {
       fifo.size() <= m_size;
     }
