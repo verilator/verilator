@@ -1351,6 +1351,10 @@ class RandomizeVisitor final : public VNVisitor {
         AstVar* randLoopIndxp = nullptr;
         AstNodeStmt* stmtsp = nullptr;
         auto createLoopIndex = [&](AstNodeDType* tempDTypep) {
+            if(VN_IS(tempDTypep, AssocArrayDType) ){
+                return new AstVar{fl, VVarType::VAR, uniqueNamep->get(""),
+                              dtypep->findBasicDType( ((AstBasicDType*)VN_AS(tempDTypep,AssocArrayDType)->keyDTypep())->keyword() )}; // ((AstBasicDType*)((AstAssocArrayDType*)tempDTypep)->keyDTypep())->keyword() 
+            }
             return new AstVar{fl, VVarType::VAR, uniqueNamep->get(""),
                               dtypep->findBasicDType(VBasicDTypeKwd::UINT32)};
         };
@@ -1369,7 +1373,7 @@ class RandomizeVisitor final : public VNVisitor {
             return new AstForeach{fl, randLoopVarp, newRandStmtsp(fl, tempElementp, nullptr)};
         };
         AstNodeExpr* tempElementp = nullptr;
-        while (VN_CAST(tempDTypep, DynArrayDType) || VN_CAST(tempDTypep, UnpackArrayDType)) {
+        while (VN_CAST(tempDTypep, DynArrayDType) || VN_CAST(tempDTypep, UnpackArrayDType)|| VN_CAST(tempDTypep, AssocArrayDType) || VN_CAST(tempDTypep, QueueDType)) {
             AstVar* const newRandLoopIndxp = createLoopIndex(tempDTypep);
             randLoopIndxp = AstNode::addNext(randLoopIndxp, newRandLoopIndxp);
             tempElementp
@@ -1377,9 +1381,18 @@ class RandomizeVisitor final : public VNVisitor {
                       ? static_cast<AstNodeExpr*>(
                           new AstCMethodHard{fl, tempElementp ? tempElementp : exprp, "atWrite",
                                              new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}})
+                      : VN_CAST(tempDTypep, UnpackArrayDType) 
+                      ? static_cast<AstNodeExpr*>(
+                        new AstArraySel{fl, tempElementp ? tempElementp : exprp,
+                                        new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}})
+                      : VN_CAST(tempDTypep, AssocArrayDType) 
+                      ? static_cast<AstNodeExpr*>(
+                        new AstAssocSel{fl, tempElementp ? tempElementp : exprp,
+                                        new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}})
                       : static_cast<AstNodeExpr*>(
-                          new AstArraySel{fl, tempElementp ? tempElementp : exprp,
-                                          new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}});
+                        new AstCMethodHard{fl, tempElementp ? tempElementp : exprp, "atWriteAppend",
+                                             new AstVarRef{fl, newRandLoopIndxp, VAccess::READ}});
+
             tempElementp->dtypep(tempDTypep->subDTypep());
             tempDTypep = tempDTypep->virtRefDTypep();
         }
@@ -1420,10 +1433,14 @@ class RandomizeVisitor final : public VNVisitor {
             return newRandStmtsp(fl, exprp, nullptr, offset, firstMemberp);
         } else if (AstDynArrayDType* const dynarrayDtp = VN_CAST(memberDtp, DynArrayDType)) {
             return createArrayForeachLoop(fl, dynarrayDtp, exprp);
-        } else if (AstUnpackArrayDType* const unpackarrayDtp
-                   = VN_CAST(memberDtp, UnpackArrayDType)) {
+        } else if (AstQueueDType* const queueDtp = VN_CAST(memberDtp, QueueDType)) {
+            return createArrayForeachLoop(fl, queueDtp, exprp);
+        } else if (AstUnpackArrayDType* const unpackarrayDtp = VN_CAST(memberDtp, UnpackArrayDType)) {
             return createArrayForeachLoop(fl, unpackarrayDtp, exprp);
-        } else {
+        }else if (AstAssocArrayDType* const assocarrayDtp = VN_CAST(memberDtp, AssocArrayDType)) {
+            return createArrayForeachLoop(fl, assocarrayDtp, exprp);
+        }
+         else {
             AstNodeExpr* valp;
             if (AstEnumDType* const enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
                                                               : exprp->dtypep()->subDTypep(),
@@ -1604,7 +1621,8 @@ class RandomizeVisitor final : public VNVisitor {
             const AstNodeDType* const dtypep = memberVarp->dtypep()->skipRefp();
             if (VN_IS(dtypep, BasicDType) || VN_IS(dtypep, StructDType)
                 || VN_IS(dtypep, UnionDType) || VN_IS(dtypep, PackArrayDType)
-                || VN_IS(dtypep, UnpackArrayDType) || VN_IS(dtypep, DynArrayDType)) {
+                || VN_IS(dtypep, UnpackArrayDType) || VN_IS(dtypep, DynArrayDType)
+                || VN_IS(dtypep, AssocArrayDType)|| VN_IS(dtypep, QueueDType)) {
                 AstVar* const randcVarp = newRandcVarsp(memberVarp);
                 AstVarRef* const refp = new AstVarRef{fl, classp, memberVarp, VAccess::WRITE};
                 AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp);
