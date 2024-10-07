@@ -110,6 +110,7 @@ Eugen
 Fabrizio
 Faucher
 Faure
+Feinberg
 Fekete
 Ferrandi
 Flachs
@@ -936,6 +937,7 @@ redeclaring
 regs
 reloop
 replaceShiftOp
+reproducibility
 resetall
 respecified
 rodata

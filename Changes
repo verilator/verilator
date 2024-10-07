@@ -13,6 +13,7 @@ Verilator 5.029 devel
 
 **Major:**
 
+* Add `-output-groups` to build with concatenated .cpp files (#5257). [Mariusz Glebocki]
 * Self-tests have been converted to Python, run `{test_name}.py` instead of `{test_name}.pl`.
 
 **Minor:**
@@ -27,6 +28,7 @@ Verilator 5.029 devel
 * Support appending to queue via `[]` (#5421). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support named event locals (#5422). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support basic dist constraints (#5431). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support unpacked array constrained randomization (#5437) (#5489). [Yilou Wang]
 * Support inside array constraints (#5448). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Support DPI imports and exports with double underscores (#5481).
 * Support ccache when compiling Verilated files with cmake.
@@ -43,6 +45,7 @@ Verilator 5.029 devel
 * Improve process trigger performance (#5483). [Geza Lore]
 * Fix suppression of WIDTH* warnings when immediately under a size cast (#3417).
 * Fix `$fatal` to not be affected by `+verilator+error+limit` (#5135). [Gökçe Aydos]
+* Fix equivalence checking when replacing type parameters (#5213) (#5255). [Han Qi]
 * Fix display with multiple string formats (#5311). [Luiza de Melo]
 * Fix performance of V3Trace when many activity blocks (#5372). [Deniz Güzel]
 * Fix REALCVT warning on integral timescale conversions (#5378). [Liam Braun]
@@ -75,7 +78,10 @@ Verilator 5.029 devel
 * Fix exponential concatenate performance (#5488). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Fix V3Table trying to generate 'x' bits in the lookup table. (#5491). [Geza Lore]
 * Fix randomize with foreach constraints (#5492). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Fix explicit CMAKE_INSTALL_PREFIX usages (#5500). [Fabian Keßler]
+* Fix configure inserting absolute paths for Python and Perl (#5504) (#5505). [Nathan Graybeal]
 * Fix pattern initialization with typedef key (#5512). [Eugene Feinberg]
+* Fix -j option without argument in hierarchical Verilation (#5514). [Ryszard Rozak, Antmicro Ltd.]
 
 
 Verilator 5.028 2024-08-21
