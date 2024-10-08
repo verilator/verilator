@@ -511,9 +511,9 @@ V3Number& V3Number::setValue1() {
     return *this;
 }
 
-V3Number& V3Number::setMask(int nbits) {
+V3Number& V3Number::setMask(int nbits, int lsb) {
     setZero();
-    for (int bit = 0; bit < nbits; bit++) setBit(bit, 1);
+    for (int bit = lsb; bit < lsb + nbits; bit++) setBit(bit, 1);
     return *this;
 }
 

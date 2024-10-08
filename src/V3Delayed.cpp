@@ -531,10 +531,7 @@ class DelayedVisitor final : public VNVisitor {
                         // Constant mask we can compute here
                         if (AstConst* const cLsbp = VN_CAST(sLsbp, Const)) {
                             AstConst* const cp = new AstConst{flp, AstConst::DTyped{}, eDTypep};
-                            cp->num().setAllBits0();
-                            const int lsb = cLsbp->toSInt();
-                            const int msb = lsb + sWidthp->toSInt() - 1;
-                            for (int bit = lsb; bit <= msb; ++bit) cp->num().setBit(bit, '1');
+                            cp->num().setMask(sWidthp->toSInt(), cLsbp->toSInt());
                             return cp;
                         }
 

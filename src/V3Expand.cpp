@@ -551,7 +551,7 @@ class ExpandVisitor final : public VNVisitor {
             const int lsb = lhsp->lsbConst();
             const int msb = lhsp->msbConst();
             V3Number maskset{nodep, destp->widthMin()};
-            for (int bit = lsb; bit < (msb + 1); bit++) maskset.setBit(bit, 1);
+            maskset.setMask(msb + 1 - lsb, lsb);
             V3Number maskold{nodep, destp->widthMin()};
             maskold.opNot(maskset);
             if (destwide) {
@@ -654,7 +654,7 @@ class ExpandVisitor final : public VNVisitor {
                 fixCloneLvalue(oldvalp);
 
                 V3Number maskwidth{nodep, destp->widthMin()};
-                for (int bit = 0; bit < lhsp->widthConst(); bit++) maskwidth.setBit(bit, 1);
+                maskwidth.setMask(lhsp->widthConst());
 
                 if (destp->isQuad() && !rhsp->isQuad()) rhsp = new AstCCast{nfl, rhsp, nodep};
                 if (!ones) {
