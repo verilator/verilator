@@ -3,10 +3,6 @@
       |                                ^~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
-%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:8:13: Unsupported: random member variable with type 'int$[string]'
-                                                           : ... note: In instance 't'
-    8 |    rand int assocarr[string];
-      |             ^~~~~~~~
 %Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:10:13: Unsupported: random member variable with the type of the containing class
                                                             : ... note: In instance 't'
    10 |    rand Cls cls;

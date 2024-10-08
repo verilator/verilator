@@ -106,11 +106,47 @@ class unconstrained_struct_with_array_test;
 
 endclass
 
+class unconstrained_associative_array_test;
+
+  rand int associative_array[string];
+
+  function new();
+    associative_array["key1"] = 0;
+    associative_array["key2"] = 0;
+  endfunction
+
+  function void check_randomization();
+    `check_rand(this, associative_array["key1"]);
+    `check_rand(this, associative_array["key2"]);
+  endfunction
+
+endclass
+
+class unconstrained_queue_test;
+
+  rand int queue_array[$];
+
+  function new();
+    for (int i = 0; i < 3; i++) begin
+        queue_array.push_back('h0 + i);
+    end
+  endfunction
+
+  function void check_randomization();
+    foreach (queue_array[i]) begin
+      `check_rand(this, queue_array[i]);
+    end
+  endfunction
+
+endclass
+
 module t_randomize_array;
   unconstrained_packed_array_test  packed_class;
   unconstrained_unpacked_array_test unpacked_class;
   unconstrained_dynamic_array_test dynamic_class;
   unconstrained_struct_with_array_test struct_with_array_class;
+  unconstrained_associative_array_test associative_array_class;
+  unconstrained_queue_test queue_class;
 
   initial begin
     // Test 1: Packed Array Unconstrained Constrained Test
@@ -132,10 +168,21 @@ module t_randomize_array;
     end
 
     // Test 4: Struct Containing Array Test
-
     struct_with_array_class = new();
     repeat(2) begin
       struct_with_array_class.check_randomization();
+    end
+
+    // Test 5: Associative Array Unconstrained Test
+    associative_array_class = new();
+    repeat(2) begin
+      associative_array_class.check_randomization();
+    end
+
+    // Test 6: Queue Unconstrained Test
+    queue_class = new();
+    repeat(2) begin
+      queue_class.check_randomization();
     end
 
     $write("*-* All Finished *-*\n");
