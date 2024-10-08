@@ -576,7 +576,8 @@ public:
     V3Number& setAllBits0();
     V3Number& setAllBits1();
     V3Number& setValue1();
-    V3Number& setMask(int nbits);  // IE if nbits=1, then 0b1, if 2->0b11, if 3->0b111 etc
+    // IE if nbits=1, then 0b1, if 2->0b11, if 3->0b111 etc
+    V3Number& setMask(int nbits, int lsb = 0);
 
     // ACCESSORS
     string ascii(bool prefixed = true, bool cleanVerilog = false) const VL_MT_STABLE;
