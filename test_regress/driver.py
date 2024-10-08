@@ -1757,9 +1757,11 @@ class VlTest:
 
         # Read the log file a couple of times to allow for NFS delays
         if check_finished:
+            delay = 0.25
             for tryn in range(Args.log_retries - 1, -1, -1):
                 if tryn != Args.log_retries - 1:
-                    time.sleep(1)
+                    time.sleep(delay)
+                    delay = min(1, delay * 2)
                 moretry = tryn != 0
                 if not self._run_log_try(logfile, check_finished, moretry):
                     break
@@ -2151,9 +2153,11 @@ class VlTest:
 
     def files_identical(self, fn1: str, fn2: str, is_logfile=False) -> None:
         """Test if two files have identical contents"""
+        delay = 0.25
         for tryn in range(Args.log_retries, -1, -1):
             if tryn != Args.log_retries - 1:
-                time.sleep(1)
+                time.sleep(delay)
+                delay = min(1, delay * 2)
             moretry = tryn != 0
             if not self._files_identical_try(
                     fn1=fn1, fn2=fn2, is_logfile=is_logfile, moretry=moretry):
