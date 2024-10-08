@@ -3326,27 +3326,9 @@ class WidthVisitor final : public VNVisitor {
                     }
                 }
             }
-            // Need a runtime lookup table.  Yuk.
-            const uint64_t msbdim = enumMaxValue(nodep, adtypep);
-            const bool assoc = msbdim > ENUM_LOOKUP_BITS;
-            if (assoc) {
-                AstVar* const varp = enumVarp(adtypep, attrType, true, 0);
-                AstNode* const newp = new AstAssocSel{nodep->fileline(), newVarRefDollarUnit(varp),
-                                                      nodep->fromp()->unlinkFrBack()};
-                newp->dtypeFrom(adtypep);  // To prevent a later ENUMVALUE
-                nodep->replaceWith(newp);
-            } else {
-                const int selwidth = V3Number::log2b(msbdim) + 1;  // Width to address a bit
-                AstVar* const varp = enumVarp(adtypep, attrType, false, (1ULL << selwidth) - 1);
-                AstNode* const newp = new AstArraySel{
-                    nodep->fileline(), newVarRefDollarUnit(varp),
-                    // Select in case widths are off due to msblen!=width
-                    // We return "random" values if outside the range, which is fine
-                    // as next/previous on illegal values just need something good out
-                    new AstSel{nodep->fileline(), nodep->fromp()->unlinkFrBack(), 0, selwidth}};
-                newp->dtypeFrom(adtypep);  // To prevent a later ENUMVALUE
-                nodep->replaceWith(newp);
-            }
+            AstNodeExpr* const newp
+                = enumSelect(nodep->fromp()->unlinkFrBack(), adtypep, attrType);
+            nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else {
             nodep->v3error("Unknown built-in enum method " << nodep->prettyNameQ());
@@ -7763,6 +7745,30 @@ class WidthVisitor final : public VNVisitor {
             pair.first->second = varp;
         }
         return pair.first->second;
+    }
+    AstNodeExpr* enumSelect(AstNodeExpr* nodep, AstEnumDType* adtypep, VAttrType attrType) {
+        // Return expression to get given attrType information from a enum's value (nodep)
+        // Need a runtime lookup table.  Yuk.
+        const uint64_t msbdim = enumMaxValue(nodep, adtypep);
+        const bool assoc = msbdim > ENUM_LOOKUP_BITS;
+        if (assoc) {
+            AstVar* const varp = enumVarp(adtypep, attrType, true, 0);
+            AstNodeExpr* const newp
+                = new AstAssocSel{nodep->fileline(), newVarRefDollarUnit(varp), nodep};
+            newp->dtypeFrom(adtypep);  // To prevent a later ENUMVALUE
+            return newp;
+        } else {
+            const int selwidth = V3Number::log2b(msbdim) + 1;  // Width to address a bit
+            AstVar* const varp = enumVarp(adtypep, attrType, false, (1ULL << selwidth) - 1);
+            AstNodeExpr* const newp = new AstArraySel{
+                nodep->fileline(), newVarRefDollarUnit(varp),
+                // Select in case widths are off due to msblen!=width
+                // We return "random" values if outside the range, which is fine
+                // as next/previous on illegal values just need something good out
+                new AstSel{nodep->fileline(), nodep, 0, selwidth}};
+            newp->dtypeFrom(adtypep);  // To prevent a later ENUMVALUE
+            return newp;
+        }
     }
 
     PatVecMap patVectorMap(AstPattern* nodep, const VNumRange& range) {
