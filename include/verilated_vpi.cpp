@@ -2863,7 +2863,8 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
             default:
                 status = false;
         }
-    } else if (arrayvalue_p->format == vpiRawTwoStateVal) {
+    } else if ((arrayvalue_p->format == vpiRawTwoStateVal)
+        || (arrayvalue_p->format == vpiRawFourStateVal)) {
         switch (varp->vltype()) {
             case VLVT_UINT8:
             case VLVT_UINT16:
@@ -2905,7 +2906,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
     int size = vpi_get(vpiSize, object);
     int index = index_p[0];
 
-    static thread_local WData out_ptr[VL_VALUE_STRING_MAX_WORDS];
+    static thread_local EData out_ptr[VL_VALUE_STRING_MAX_WORDS * 2];
 
     if (arrayvalue_p->format == vpiIntVal) {
         PLI_INT32 *integers;
@@ -2915,8 +2916,8 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
         } else {
             if (VL_UNCOVERABLE(num >= VL_VALUE_STRING_MAX_WORDS)) {
                 VL_FATAL_MT(__FILE__, __LINE__, "",
-                            "vpi_get_value with more than VL_VALUE_STRING_MAX_WORDS; increase and "
-                            "recompile");
+                            "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; "
+                            "increase and recompile");
             }
 
             integers = (PLI_INT32*)out_ptr;
@@ -2956,8 +2957,8 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
             const int words = VL_WORDS_I(num * 16);
             if (VL_UNCOVERABLE(words >= VL_VALUE_STRING_MAX_WORDS)) {
                 VL_FATAL_MT(__FILE__, __LINE__, "",
-                            "vpi_get_value with more than VL_VALUE_STRING_MAX_WORDS; increase and "
-                            "recompile");
+                            "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; "
+                            "increase and recompile");
             }
 
             shortints = (PLI_INT16*)out_ptr;
@@ -2981,8 +2982,8 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
             const int words = VL_WORDS_I(num * 64);
             if (VL_UNCOVERABLE(words >= VL_VALUE_STRING_MAX_WORDS)) {
                 VL_FATAL_MT(__FILE__, __LINE__, "",
-                            "vpi_get_value with more than VL_VALUE_STRING_MAX_WORDS; increase and "
-                            "recompile");
+                            "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; "
+                            "increase and recompile");
             }
 
             longints = (PLI_INT64*)out_ptr;
@@ -2997,6 +2998,83 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                 index = index % size;
             }
         }
+    } else if (arrayvalue_p->format == vpiVectorVal) {
+        p_vpi_vecval vectors;
+
+        if (arrayvalue_p->flags & vpiUserAllocFlag) {
+            vectors = arrayvalue_p->value.vectors;
+        } else {
+            int ngroups;
+
+            switch (varp->vltype()) {
+                case VLVT_UINT8:
+                    ngroups = 1; break;
+                case VLVT_UINT16:
+                    ngroups = 2; break;
+                case VLVT_UINT32:
+                    ngroups = 4; break;
+                case VLVT_UINT64:
+                    ngroups = 8; break;
+                case VLVT_WDATA:
+                    ngroups = VL_WORDS_I(varp->packed().elements()) * sizeof(WData); break;
+                default:
+                    ngroups = 0; break;
+            }
+
+            const int words = VL_WORDS_I(ngroups * 8 * num);
+            if (VL_UNCOVERABLE(words >= VL_VALUE_STRING_MAX_WORDS)) {
+                VL_FATAL_MT(__FILE__, __LINE__, "",
+                            "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; "
+                            "increase and recompile");
+            }
+
+            vectors = (p_vpi_vecval)out_ptr;
+            arrayvalue_p->value.vectors = vectors;
+        }
+
+        if (varp->vltype() == VLVT_UINT8) {
+            CData *ptr = reinterpret_cast<CData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                vectors[i].aval = ptr[index++];
+                vectors[i].bval = 0x00;
+
+                index = index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT16) {
+            SData *ptr = reinterpret_cast<SData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                vectors[i].aval = ptr[index++];
+                vectors[i].bval = 0x00;
+
+                index = index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT32) {
+            IData *ptr = reinterpret_cast<IData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                vectors[i].aval = ptr[index++];
+                vectors[i].bval = 0x00;
+
+                index = index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT64) {
+            QData *ptr = reinterpret_cast<QData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                vectors[1].aval = static_cast<IData>(ptr[index] >> 32ULL);
+                vectors[1].bval = 0x00;
+                vectors[0].aval = static_cast<IData>(ptr[index++]);
+                vectors[0].bval = 0x00;
+
+                vectors += 2;
+
+                index = index % size;
+            }
+        }
+
+        return;
     } else if (arrayvalue_p->format == vpiRawTwoStateVal) {
         PLI_BYTE8 *value_ptr;
 
@@ -3014,9 +3092,8 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                     ngroups = 4; break;
                 case VLVT_UINT64:
                     ngroups = 8; break;
-                case VLVT_WDATA: {
+                case VLVT_WDATA:
                     ngroups = VL_WORDS_I(varp->packed().elements()) * sizeof(WData); break;
-                }
                 default:
                     ngroups = 0; break;
             }
@@ -3024,8 +3101,8 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
             const int words = VL_WORDS_I(ngroups * 8 * num);
             if (VL_UNCOVERABLE(words >= VL_VALUE_STRING_MAX_WORDS)) {
                 VL_FATAL_MT(__FILE__, __LINE__, "",
-                            "vpi_get_value with more than VL_VALUE_STRING_MAX_WORDS; increase and "
-                            "recompile");
+                            "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; "
+                            "increase and recompile");
             }
 
             value_ptr = (PLI_BYTE8*)out_ptr;
@@ -3064,8 +3141,8 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                 index = index % size;
             }
         } else if (varp->vltype() == VLVT_WDATA) {
-            WData *ptr = reinterpret_cast<WData*>(vop->varDatap());
-            WData *rawvals = reinterpret_cast<WData*>(value_ptr);
+            EData *ptr = reinterpret_cast<EData*>(vop->varDatap());
+            EData *rawvals = reinterpret_cast<EData*>(value_ptr);
 
             const int words = VL_WORDS_I(varp->packed().elements());
 
@@ -3087,8 +3164,8 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
         } else {
             if (VL_UNCOVERABLE(num >= VL_VALUE_STRING_MAX_WORDS)) {
                 VL_FATAL_MT(__FILE__, __LINE__, "",
-                            "vpi_get_value with more than VL_VALUE_STRING_MAX_WORDS; increase and "
-                            "recompile");
+                            "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; "
+                            "increase and recompile");
             }
 
             reals = (double*)out_ptr;
