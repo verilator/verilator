@@ -35,9 +35,10 @@ class CoverageJoinVisitor final : public VNVisitor {
     // NODE STATE
     // VNUser4InUse     In V3Hasher via V3DupFinder
 
-    // STATE
+    // STATE - per active
     std::vector<AstCoverToggle*> m_toggleps;  // List of of all AstCoverToggle's
 
+    // STATE - Statistic tracking
     VDouble0 m_statToggleJoins;  // Statistic tracking
 
     // METHODS

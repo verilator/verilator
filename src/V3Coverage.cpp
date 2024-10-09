@@ -65,22 +65,24 @@ class CoverageVisitor final : public VNVisitor {
                    && v3Global.opt.coverageLine();
         }
     };
-    int m_nextHandle = 0;
 
     // NODE STATE
     // Entire netlist:
     //  AstIf::user1()                  -> bool.  True indicates ifelse processed
     const VNUser1InUse m_inuser1;
 
-    // STATE
+    // STATE - across all visitors
+    int m_nextHandle = 0;
+
+    // STATE - for current visit position (use VL_RESTORER)
     CheckState m_state;  // State save-restored on each new coverage scope/block
     AstNodeModule* m_modp = nullptr;  // Current module to add statement to
     bool m_inToggleOff = false;  // In function/task etc
-    // Uniquification of inserted variable names
-    std::unordered_map<std::string, uint32_t> m_varnames;
     string m_beginHier;  // AstBegin hier name for user coverage points
-    std::unordered_map<int, LinenoSet>
-        m_handleLines;  // All line numbers for a given m_stateHandle
+
+    // STATE - cleared each module
+    std::unordered_map<std::string, uint32_t> m_varnames;  // Uniquify inserted variable names
+    std::unordered_map<int, LinenoSet> m_handleLines;  // Line numbers for given m_stateHandle
 
     // METHODS
 
@@ -207,18 +209,16 @@ class CoverageVisitor final : public VNVisitor {
         const AstNodeModule* const origModp = m_modp;
         VL_RESTORER(m_modp);
         VL_RESTORER(m_state);
-        {
-            createHandle(nodep);
-            m_modp = nodep;
-            m_state.m_inModOff
-                = nodep->isTop();  // Ignore coverage on top module; it's a shell we created
-            if (!origModp) {
-                // No blocks cross (non-nested) modules, so save some memory
-                m_varnames.clear();
-                m_handleLines.clear();
-            }
-            iterateChildren(nodep);
+        createHandle(nodep);
+        m_modp = nodep;
+        m_state.m_inModOff
+            = nodep->isTop();  // Ignore coverage on top module; it's a shell we created
+        if (!origModp) {
+            // No blocks cross (non-nested) modules, so save some memory
+            m_varnames.clear();
+            m_handleLines.clear();
         }
+        iterateChildren(nodep);
     }
 
     void visit(AstNodeProcedure* nodep) override { iterateProcedure(nodep); }
@@ -229,24 +229,22 @@ class CoverageVisitor final : public VNVisitor {
     void iterateProcedure(AstNode* nodep) {
         VL_RESTORER(m_state);
         VL_RESTORER(m_inToggleOff);
-        {
-            m_inToggleOff = true;
-            createHandle(nodep);
-            iterateChildren(nodep);
-            if (m_state.lineCoverageOn(nodep)) {
-                lineTrack(nodep);
-                AstNode* const newp
-                    = newCoverInc(nodep->fileline(), "", "v_line", "block",
-                                  linesCov(m_state, nodep), 0, traceNameForLine(nodep, "block"));
-                if (AstNodeProcedure* const itemp = VN_CAST(nodep, NodeProcedure)) {
-                    itemp->addStmtsp(newp);
-                } else if (AstNodeFTask* const itemp = VN_CAST(nodep, NodeFTask)) {
-                    itemp->addStmtsp(newp);
-                } else if (AstWhile* const itemp = VN_CAST(nodep, While)) {
-                    itemp->addStmtsp(newp);
-                } else {
-                    nodep->v3fatalSrc("Bad node type");
-                }
+        m_inToggleOff = true;
+        createHandle(nodep);
+        iterateChildren(nodep);
+        if (m_state.lineCoverageOn(nodep)) {
+            lineTrack(nodep);
+            AstNode* const newp
+                = newCoverInc(nodep->fileline(), "", "v_line", "block", linesCov(m_state, nodep),
+                              0, traceNameForLine(nodep, "block"));
+            if (AstNodeProcedure* const itemp = VN_CAST(nodep, NodeProcedure)) {
+                itemp->addStmtsp(newp);
+            } else if (AstNodeFTask* const itemp = VN_CAST(nodep, NodeFTask)) {
+                itemp->addStmtsp(newp);
+            } else if (AstWhile* const itemp = VN_CAST(nodep, While)) {
+                itemp->addStmtsp(newp);
+            } else {
+                nodep->v3fatalSrc("Bad node type");
             }
         }
     }
@@ -488,33 +486,29 @@ class CoverageVisitor final : public VNVisitor {
         UINFO(4, " CASEI: " << nodep << endl);
         if (m_state.lineCoverageOn(nodep)) {
             VL_RESTORER(m_state);
-            {
-                createHandle(nodep);
-                iterateAndNextNull(nodep->stmtsp());
-                if (m_state.lineCoverageOn(nodep)) {  // if the case body didn't disable it
-                    lineTrack(nodep);
-                    UINFO(4, "   COVER: " << nodep << endl);
-                    nodep->addStmtsp(newCoverInc(nodep->fileline(), "", "v_line", "case",
-                                                 linesCov(m_state, nodep), 0,
-                                                 traceNameForLine(nodep, "case")));
-                }
+            createHandle(nodep);
+            iterateAndNextNull(nodep->stmtsp());
+            if (m_state.lineCoverageOn(nodep)) {  // if the case body didn't disable it
+                lineTrack(nodep);
+                UINFO(4, "   COVER: " << nodep << endl);
+                nodep->addStmtsp(newCoverInc(nodep->fileline(), "", "v_line", "case",
+                                             linesCov(m_state, nodep), 0,
+                                             traceNameForLine(nodep, "case")));
             }
         }
     }
     void visit(AstCover* nodep) override {
         UINFO(4, " COVER: " << nodep << endl);
         VL_RESTORER(m_state);
-        {
-            m_state.m_on = true;  // Always do cover blocks, even if there's a $stop
-            createHandle(nodep);
-            iterateChildren(nodep);
-            if (!nodep->coverincsp() && v3Global.opt.coverageUser()) {
-                // Note the name may be overridden by V3Assert processing
-                lineTrack(nodep);
-                nodep->addCoverincsp(newCoverInc(nodep->fileline(), m_beginHier, "v_user", "cover",
-                                                 linesCov(m_state, nodep), 0,
-                                                 m_beginHier + "_vlCoverageUserTrace"));
-            }
+        m_state.m_on = true;  // Always do cover blocks, even if there's a $stop
+        createHandle(nodep);
+        iterateChildren(nodep);
+        if (!nodep->coverincsp() && v3Global.opt.coverageUser()) {
+            // Note the name may be overridden by V3Assert processing
+            lineTrack(nodep);
+            nodep->addCoverincsp(newCoverInc(nodep->fileline(), m_beginHier, "v_user", "cover",
+                                             linesCov(m_state, nodep), 0,
+                                             m_beginHier + "_vlCoverageUserTrace"));
         }
     }
     void visit(AstStop* nodep) override {
@@ -540,14 +534,12 @@ class CoverageVisitor final : public VNVisitor {
         // covers the code in that line.)
         VL_RESTORER(m_beginHier);
         VL_RESTORER(m_inToggleOff);
-        {
-            m_inToggleOff = true;
-            if (nodep->name() != "") {
-                m_beginHier = m_beginHier + (m_beginHier != "" ? "." : "") + nodep->name();
-            }
-            iterateChildren(nodep);
-            lineTrack(nodep);
+        m_inToggleOff = true;
+        if (nodep->name() != "") {
+            m_beginHier = m_beginHier + (m_beginHier != "" ? "." : "") + nodep->name();
         }
+        iterateChildren(nodep);
+        lineTrack(nodep);
     }
 
     // VISITORS - BOTH
