@@ -2073,6 +2073,9 @@ public:
     bool isInternal() const { return m_isInternal; }
     bool isSignal() const { return varType().isSignal(); }
     bool isNet() const { return varType().isNet(); }
+    bool isWor() const { return varType().isWor(); }
+    bool isWand() const { return varType().isWand(); }
+    bool isWiredNet() const { return varType().isWiredNet(); }
     bool isTemp() const { return varType().isTemp(); }
     bool isToggleCoverable() const {
         return ((isIO() || isSignal())

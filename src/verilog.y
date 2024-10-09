@@ -1994,12 +1994,12 @@ net_type:                       // ==IEEE: net_type
         |       yTRI                                    { VARDECL(TRIWIRE); }
         |       yTRI0                                   { VARDECL(TRI0); }
         |       yTRI1                                   { VARDECL(TRI1); }
-        |       yTRIAND                                 { VARDECL(WIRE); BBUNSUP($1, "Unsupported: triand"); }
-        |       yTRIOR                                  { VARDECL(WIRE); BBUNSUP($1, "Unsupported: trior"); }
+        |       yTRIAND                                 { VARDECL(TRIAND); }
+        |       yTRIOR                                  { VARDECL(TRIOR); }
         |       yTRIREG                                 { VARDECL(WIRE); BBUNSUP($1, "Unsupported: trireg"); }
-        |       yWAND                                   { VARDECL(WIRE); BBUNSUP($1, "Unsupported: wand"); }
+        |       yWAND                                   { VARDECL(TRIAND); }
         |       yWIRE                                   { VARDECL(WIRE); }
-        |       yWOR                                    { VARDECL(WIRE); BBUNSUP($1, "Unsupported: wor"); }
+        |       yWOR                                    { VARDECL(TRIOR); }
         //                      // VAMS - somewhat hackish
         |       yWREAL                                  { VARDECL(WREAL); }
         ;
