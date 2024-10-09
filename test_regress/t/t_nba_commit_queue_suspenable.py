@@ -9,8 +9,13 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('vlt_all')
 
-test.lint(verilator_flags2=[], fails=True, expect_filename=test.golden_filename)
+test.compile(verilator_flags2=["--exe", "--main", "--timing", "-unroll-count 1", "--stats"])
+
+test.execute()
+
+test.file_grep(test.stats, r'NBA, variables using ValueQueueWhole scheme\s+(\d+)', 2)
+test.file_grep(test.stats, r'NBA, variables using ValueQueuePartial scheme\s+(\d+)', 0)
 
 test.passes()

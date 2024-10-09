@@ -15,9 +15,7 @@ test.compile(verilator_flags2=["-unroll-count 1", "--stats"])
 
 test.execute()
 
-test.file_grep(test.stats,
-               r'Dynamic NBA, variables needing commit queue without partial updates\s+(\d+)', 6)
-test.file_grep(test.stats,
-               r'Dynamic NBA, variables needing commit queue with partial updates\s+(\d+)', 3)
+test.file_grep(test.stats, r'NBA, variables using ValueQueueWhole scheme\s+(\d+)', 6)
+test.file_grep(test.stats, r'NBA, variables using ValueQueuePartial scheme\s+(\d+)', 3)
 
 test.passes()
