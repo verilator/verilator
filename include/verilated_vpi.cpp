@@ -3072,6 +3072,19 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 
                 index = index % size;
             }
+        } else if (varp->vltype() == VLVT_WDATA) {
+            EData *ptr = reinterpret_cast<EData*>(vop->varDatap());
+
+            const int words = VL_WORDS_I(varp->packed().elements());
+
+            for (int i = 0; i < num; i++) {
+                for (int j = 0; j < words; j++) {
+                    vectors[i * words + j].aval = ptr[index * words + j];
+                    vectors[i * words + j].bval = 0x00;
+                }
+
+                index = ++index % size;
+            }
         }
 
         return;
