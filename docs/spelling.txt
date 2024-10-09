@@ -1027,6 +1027,8 @@ traceEverOn
 tran
 treei
 tri
+triand
+trior
 tristate
 tristates
 trunc
@@ -1102,6 +1104,7 @@ warmup
 waveforms
 whitespace
 widthed
+wor
 wreal
 writeb
 writeme

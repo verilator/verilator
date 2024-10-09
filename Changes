@@ -22,6 +22,7 @@ Verilator 5.029 devel
 * Change to use maximum for cover point aggregation (#5402). [Andrew Nolte]
 * Change `--main` and `--binary` to use a TOP hierarchy name of "" (#5482).
 * Support IEEE-compliant intra-assign delays (#3711) (#5441). [Krzysztof Bieganski, Antmicro Ltd.]
+* Support `wor`, `trior`, `wand`, `triand` (#5386) (#5496). [Zhou Shen]
 * Support unconstrained randomization for unions (#5395) (#5396). [Yilou Wang]
 * Support basic constrained queue randomization (#5413). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Support packed/unpacked and dynamic array unconstrained randomization (#5414) (#5415). [Yilou Wang]
@@ -33,6 +34,7 @@ Verilator 5.029 devel
 * Support DPI imports and exports with double underscores (#5481).
 * Support ccache when compiling Verilated files with cmake.
 * Support `local` and `protected` on `typedef` (#5460).
+* Support unconstrained randomization for associative array and queue (#5515). [Yilou Wang]
 * Add error on misused genvar (#408). [Alex Solomatnikov]
 * Add error on instances without parenthesis.
 * Add Docker pre-commit hook (#5238) (#5452). [Chris Bachhuber]
