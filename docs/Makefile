@@ -23,7 +23,7 @@ SPHINXBUILD ?= sphinx-build
 SOURCEDIR = guide
 BUILDDIR = _build
 
-SPHINXOPTS ?= -c guide
+SPHINXOPTS ?= -c guide -j 4 -q
 ifneq ($(VERILATOR_ANALYTICS_ID),)
 SPHINXOPTS += -D html_theme_options.analytics_id=$(VERILATOR_ANALYTICS_ID)
 endif
