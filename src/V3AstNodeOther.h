@@ -1847,6 +1847,7 @@ class AstVar final : public AstNode {
     bool m_isForcedByCode : 1;  // May be forced/released from AstAssignForce/AstRelease
     bool m_isWrittenByDpi : 1;  // This variable can be written by a DPI Export
     bool m_isWrittenBySuspendable : 1;  // This variable can be written by a suspendable process
+    bool m_ignorePostWrite : 1;  // Ignore writes in 'Post' blocks during ordering
 
     void init() {
         m_ansi = false;
@@ -1891,6 +1892,7 @@ class AstVar final : public AstNode {
         m_isForcedByCode = false;
         m_isWrittenByDpi = false;
         m_isWrittenBySuspendable = false;
+        m_ignorePostWrite = false;
         m_attrClocker = VVarAttrClocker::CLOCKER_UNKNOWN;
     }
 
@@ -2046,6 +2048,8 @@ public:
     void setWrittenByDpi() { m_isWrittenByDpi = true; }
     bool isWrittenBySuspendable() const { return m_isWrittenBySuspendable; }
     void setWrittenBySuspendable() { m_isWrittenBySuspendable = true; }
+    bool ignorePostWrite() const { return m_ignorePostWrite; }
+    void setIgnorePostWrite() { m_ignorePostWrite = true; }
 
     // METHODS
     void name(const string& name) override { m_name = name; }

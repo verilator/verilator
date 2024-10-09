@@ -510,6 +510,7 @@ class DelayedVisitor final : public VNVisitor {
 
         // Create new flag
         AstVarScope* const flagVscp = createTemp(flp, scopep, "__VdlySet" + baseName, 1);
+        flagVscp->varp()->setIgnorePostWrite();
         // Set the flag at the original NBA
         nodep->addHereThisAsNext(  //
             new AstAssign{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
@@ -543,6 +544,7 @@ class DelayedVisitor final : public VNVisitor {
         const std::string name = "__VdlyCommitQueue" + vscp->varp()->shortName();
         AstVarScope* const queueVscp = createTemp(flp, scopep, name, cqDTypep);
         queueVscp->varp()->noReset(true);
+        queueVscp->varp()->setIgnorePostWrite();
         vscpInfo.valueQueueKit().vscp = queueVscp;
         // Create the AstActive for the Post logic
         AstActive* const activep
@@ -556,7 +558,7 @@ class DelayedVisitor final : public VNVisitor {
         AstCMethodHard* const callp
             = new AstCMethodHard{flp, new AstVarRef{flp, queueVscp, VAccess::READWRITE}, "commit"};
         callp->dtypeSetVoid();
-        callp->addPinsp(new AstVarRef{flp, vscp, VAccess::READWRITE});
+        callp->addPinsp(new AstVarRef{flp, vscp, VAccess::WRITE});
         postp->addStmtsp(callp->makeStmt());
     }
 
