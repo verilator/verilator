@@ -208,6 +208,14 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
         }
         ofp()->putsQuoted(m_emitDispState.m_format);
         ofp()->puts(",0");  // MSVC++ requires va_args to not be off reference
+        auto isString = [](AstNode* argp) {
+            AstVarRef* pStrRef = VN_CAST(argp, VarRef);
+            if (pStrRef && pStrRef->dtypep()->basicp()
+            && pStrRef->dtypep()->basicp()->keyword() == VBasicDTypeKwd::STRING) {
+                return true;
+            }
+            return false;
+        };
         // Arguments
         for (unsigned i = 0; i < m_emitDispState.m_argsp.size(); i++) {
             const char fmt = m_emitDispState.m_argsChar[i];
@@ -220,7 +228,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
                 if (func != "") {
                     puts(func);
                 } else if (argp) {
-                    const bool addrof = isScan || (fmt == '@');
+                    const bool addrof = isScan || (fmt == '@') || (isString(argp));
                     if (addrof) puts("&(");
                     iterateConst(argp);
                     if (!addrof) emitDatap(argp);
