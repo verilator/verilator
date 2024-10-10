@@ -427,7 +427,8 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     AstNode* bodyPointp = new AstBegin{nodep->fileline(), "[EditWrapper]", nullptr};
     AstNode* newp = nullptr;
     AstNode* lastp = nodep;
-
+    // subfromp used to traverse each dimension of multi-d queue/dyn-arr's
+    AstNodeExpr* subfromp = fromp->cloneTreePure(false);
     // Major dimension first
     for (AstNode *argsp = loopsp->elementsp(), *next_argsp; argsp; argsp = next_argsp) {
         next_argsp = argsp->nextp();
@@ -458,7 +459,10 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
             } else if (VN_IS(fromDtp, DynArrayDType) || VN_IS(fromDtp, QueueDType)) {
                 AstConst* const leftp = new AstConst{fl, 0};
                 AstNodeExpr* const rightp
-                    = new AstCMethodHard{fl, fromp->cloneTreePure(false), "size"};
+                    = new AstCMethodHard{fl, subfromp->cloneTreePure(false), "size"};
+                AstVarRef* varRefp = new AstVarRef{fl, varp, VAccess::READ};
+                subfromp = new AstCMethodHard{fl, subfromp, "at", varRefp};
+                subfromp->dtypep(fromDtp);
                 rightp->dtypeSetSigned32();
                 rightp->protect(false);
                 loopp = createForeachLoop(nodep, bodyPointp, varp, leftp, rightp, VNType::atLt);
