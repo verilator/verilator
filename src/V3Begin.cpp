@@ -427,7 +427,8 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     AstNode* bodyPointp = new AstBegin{nodep->fileline(), "[EditWrapper]", nullptr};
     AstNode* newp = nullptr;
     AstNode* lastp = nodep;
-    // subfromp used to traverse each dimension of multi-d variable-sized unpacked array (queue, dyn-arr and associative-arr)
+    // subfromp used to traverse each dimension of multi-d variable-sized unpacked array (queue,
+    // dyn-arr and associative-arr)
     AstNodeExpr* subfromp = fromp->cloneTreePure(false);
     // Major dimension first
     for (AstNode *argsp = loopsp->elementsp(), *next_argsp; argsp; argsp = next_argsp) {
