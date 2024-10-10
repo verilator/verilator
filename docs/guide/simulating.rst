@@ -18,7 +18,9 @@ Simulation Summary Report
 =========================
 
 When simulation finishes, it will print a report to stdout summarizing the
-simulation. This requires the model being Verilated with :vlopt:`--main`.
+simulation. This requires the model being Verilated with :vlopt:`--main`,
+or the user's `main()` calling `VerilatedContext->statsPrintSummary()`.
+
 The report may be disabled with :vlopt:`+verilator+quiet`.
 
 For example:
