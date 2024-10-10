@@ -1214,9 +1214,8 @@ public:
         puts(")");
     }
     void visit(AstNewCopy* nodep) override {
-        putns(nodep, "VL_NEW(" + prefixNameProtect(nodep->dtypep()) + ", "
-                         + optionalProcArg(nodep->dtypep()));
-        puts("*");  // i.e. make into a reference
+        putns(nodep, "VL_NEW(" + prefixNameProtect(nodep->dtypep()));
+        puts(", *");  // i.e. make into a reference
         iterateAndNextConstNull(nodep->rhsp());
         puts(")");
     }
