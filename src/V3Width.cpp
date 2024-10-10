@@ -5198,7 +5198,7 @@ class WidthVisitor final : public VNVisitor {
                 case 'd': {  // Convert decimal to either 'd' or '#'
                     if (argp) {
                         AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);
-                        formatNoStringArg(argp, ch);
+                        //formatNoStringArg(argp, ch);
                         if (argp->isDouble()) {
                             spliceCvtS(argp, true, 64);
                             ch = '~';
@@ -5214,7 +5214,7 @@ class WidthVisitor final : public VNVisitor {
                 case 'x': {
                     if (argp) {
                         AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);
-                        formatNoStringArg(argp, ch);
+                        //formatNoStringArg(argp, ch);
                         if (argp->isDouble()) spliceCvtS(argp, true, 64);
                         argp = nextp;
                     }
@@ -5272,7 +5272,7 @@ class WidthVisitor final : public VNVisitor {
                 case 't': {  // Convert decimal time to realtime
                     if (argp) {
                         AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);
-                        formatNoStringArg(argp, ch);
+                        //formatNoStringArg(argp, ch);
                         if (argp->isDouble()) ch = '^';  // Convert it
                         UASSERT_OBJ(!nodep->timeunit().isNone(), nodep,
                                     "display %t has no time units");
@@ -5285,7 +5285,7 @@ class WidthVisitor final : public VNVisitor {
                 case 'g': {
                     if (argp) {
                         AstNodeExpr* const nextp = VN_AS(argp->nextp(), NodeExpr);
-                        formatNoStringArg(argp, ch);
+                        //formatNoStringArg(argp, ch);
                         if (!argp->isDouble()) {
                             iterateCheckReal(nodep, "Display argument", argp, BOTH);
                         }

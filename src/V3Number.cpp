@@ -645,6 +645,11 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STAB
     for (; pos != vformat.cend() && (std::isdigit(pos[0]) || pos[0] == '.'); ++pos) {
         fmtsize += pos[0];
     }
+    auto strNumDisplay = [&] {
+        VerilogStringLiteral str;
+        V3Number tmpStrNum(str, nullptr, m_data.str());
+        return tmpStrNum.displayed(fileline(), vformat);
+    };
     string str;
     const char code = std::tolower(pos[0]);
     switch (code) {
@@ -652,6 +657,9 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STAB
     case 'o':  // FALLTHRU
     case 'h':  // FALLTHRU
     case 'x': {
+        // For string type to be displayed with data format b/o/h/x, build
+        // a corresponding data type object to realize display.
+        if (isString()) { return strNumDisplay(); }
         int bit = width() - 1;
         if (left || !fmtsize.empty()) {
             while (bit && bitIs0(bit)) --bit;
@@ -763,6 +771,9 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STAB
     case '~':  // Signed decimal
     case 't':  // Time
     case 'd': {  // Unsigned decimal
+        // For string type to be displayed with data format ~/t/d, build
+        // a corresponding data type object to realize display.
+        if (isString()) { return strNumDisplay(); }
         const bool issigned = (code == '~');
         if (fmtsize == "" && !left) {
             const double mantissabits = width() - (issigned ? 1 : 0);

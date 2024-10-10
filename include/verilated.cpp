@@ -918,11 +918,25 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
             }
             default: {
                 // Deal with all read-and-print somethings
-                const int lbits = va_arg(ap, int);
+                int lbits = va_arg(ap, int);
                 QData ld = 0;
                 VlWide<VL_WQ_WORDS_E> qlwp;
                 WDataInP lwp = nullptr;
-                if (lbits <= VL_QUADSIZE) {
+                std::unique_ptr<uint32_t> strptr;
+                if (lbits == -1) { // For C++ string
+                    const std::string* const cstrp = va_arg(ap, const std::string*);
+                    lbits = cstrp->length() * 8;
+                    if (lbits <= VL_QUADSIZE) {
+                        ld = VL_NTOI_Q(lbits, *cstrp);
+                        VL_SET_WQ(qlwp, ld);
+                        lwp = qlwp;
+                    } else {
+                        int width = (lbits + VL_IDATASIZE - 1) / VL_IDATASIZE;
+                        strptr.reset(new IData[width]);
+                        VL_NTOI_W(lbits, strptr.get(), *cstrp);
+                        lwp = strptr.get();
+                    }
+                } else if (lbits <= VL_QUADSIZE) {
                     ld = VL_VA_ARG_Q_(ap, lbits);
                     VL_SET_WQ(qlwp, ld);
                     lwp = qlwp;
