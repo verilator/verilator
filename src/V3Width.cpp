@@ -4622,9 +4622,12 @@ class WidthVisitor final : public VNVisitor {
         for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
              patp = VN_AS(patp->nextp(), PatMember)) {
             patp->dtypep(arrayp->subDTypep());
-            AstNodeExpr* const valuep = patternMemberValueIterate(patp);
+            AstNodeExpr* const rhsp = patternMemberValueIterate(patp);
+            const bool rhsIsValue
+                = AstNode::computeCastable(rhsp->dtypep(), arrayp->subDTypep(), nullptr)
+                      .isAssignable();
             AstConsDynArray* const newap
-                = new AstConsDynArray{nodep->fileline(), true, valuep, false, newp};
+                = new AstConsDynArray{nodep->fileline(), rhsIsValue, rhsp, false, newp};
             newap->dtypeFrom(arrayp);
             newp = newap;
         }
@@ -4638,9 +4641,12 @@ class WidthVisitor final : public VNVisitor {
         for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
              patp = VN_AS(patp->nextp(), PatMember)) {
             patp->dtypep(arrayp->subDTypep());
-            AstNodeExpr* const valuep = patternMemberValueIterate(patp);
+            AstNodeExpr* const rhsp = patternMemberValueIterate(patp);
+            const bool rhsIsValue
+                = AstNode::computeCastable(rhsp->dtypep(), arrayp->subDTypep(), nullptr)
+                      .isAssignable();
             AstConsQueue* const newap
-                = new AstConsQueue{nodep->fileline(), true, valuep, false, newp};
+                = new AstConsQueue{nodep->fileline(), rhsIsValue, rhsp, false, newp};
             newap->dtypeFrom(arrayp);
             newp = newap;
         }
