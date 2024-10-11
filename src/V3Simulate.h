@@ -108,6 +108,7 @@ private:
     bool m_anyAssignComb;  ///< True if found a non-delayed assignment
     bool m_inDlyAssign;  ///< Under delayed assignment
     bool m_isImpure;  // Not pure
+    bool m_isCoverage;  // Has coverage
     int m_instrCount;  ///< Number of nodes
     int m_dataCount;  ///< Bytes of data
     AstJumpGo* m_jumpp = nullptr;  ///< Jump label we're branching from
@@ -215,6 +216,7 @@ public:
 
     bool isAssignDly() const { return m_anyAssignDly; }
     bool isImpure() const { return m_isImpure; }
+    bool isCoverage() const { return m_isCoverage; }
     int instrCount() const { return m_instrCount; }
     int dataCount() const { return m_dataCount; }
 
@@ -1196,8 +1198,7 @@ private:
         }
     }
 
-    // Ignore coverage - from a function we're inlining
-    void visit(AstCoverInc* nodep) override {}
+    void visit(AstCoverInc* nodep) override { m_isCoverage = true; }
 
     // ====
     // Known Bad
@@ -1248,6 +1249,7 @@ public:
         m_anyAssignDly = false;
         m_inDlyAssign = false;
         m_isImpure = false;
+        m_isCoverage = false;
         m_instrCount = 0;
         m_dataCount = 0;
         m_jumpp = nullptr;
