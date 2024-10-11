@@ -119,11 +119,11 @@ class UnknownVisitor final : public VNVisitor {
             m_modp->addStmtsp(varp);
             AstNode* const abovep = prep->backp();  // Grab above point before we replace 'prep'
             AstNode* currentStmtNode = abovep;
-            while(!VN_IS(currentStmtNode, NodeStmt))
-                currentStmtNode = currentStmtNode->backp();
+            while (!VN_IS(currentStmtNode, NodeStmt)) currentStmtNode = currentStmtNode->backp();
             VNRelinker linkContext;
             currentStmtNode = currentStmtNode->unlinkFrBackWithNext(&linkContext);
-            AstNode* newAssignStmt = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, prep->cloneTree(false)};
+            AstNode* newAssignStmt = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                                   prep->cloneTree(false)};
             newAssignStmt->addNextStmt(currentStmtNode, newAssignStmt);
             linkContext.relink(newAssignStmt);
             prep->replaceWith(new AstVarRef{fl, varp, VAccess::WRITE});
