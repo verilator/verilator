@@ -70,7 +70,7 @@
           <neq loc="d,38,26,38,29" dtype_id="9">
             <const loc="d,38,31,38,34" name="4&apos;h4" dtype_id="11"/>
             <arraysel loc="d,38,15,38,16" dtype_id="11">
-              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
               <and loc="d,38,15,38,16" dtype_id="13">
                 <const loc="d,38,15,38,16" name="32&apos;h7" dtype_id="14"/>
                 <ccast loc="d,38,15,38,16" dtype_id="13">
@@ -83,7 +83,7 @@
             <display loc="d,38,43,38,49" displaytype="$write">
               <sformatf loc="d,38,43,38,49" name="%%Error: t/t_enum_type_methods.v:38:  got=&apos;h%x exp=&apos;h4&#10;" dtype_id="10">
                 <arraysel loc="d,38,122,38,123" dtype_id="11">
-                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                   <and loc="d,38,122,38,123" dtype_id="13">
                     <const loc="d,38,122,38,123" name="32&apos;h7" dtype_id="14"/>
                     <ccast loc="d,38,122,38,123" dtype_id="13">
@@ -100,11 +100,11 @@
           <neq loc="d,39,34,39,37" dtype_id="9">
             <const loc="d,39,39,39,42" name="4&apos;h1" dtype_id="11"/>
             <arraysel loc="d,39,15,39,16" dtype_id="11">
-              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
               <and loc="d,39,15,39,16" dtype_id="13">
                 <const loc="d,39,15,39,16" name="32&apos;h7" dtype_id="14"/>
                 <arraysel loc="d,39,15,39,16" dtype_id="13">
-                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                   <and loc="d,39,15,39,16" dtype_id="13">
                     <const loc="d,39,15,39,16" name="32&apos;h7" dtype_id="14"/>
                     <ccast loc="d,39,15,39,16" dtype_id="13">
@@ -119,11 +119,11 @@
             <display loc="d,39,51,39,57" displaytype="$write">
               <sformatf loc="d,39,51,39,57" name="%%Error: t/t_enum_type_methods.v:39:  got=&apos;h%x exp=&apos;h1&#10;" dtype_id="10">
                 <arraysel loc="d,39,130,39,131" dtype_id="11">
-                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                   <and loc="d,39,130,39,131" dtype_id="13">
                     <const loc="d,39,130,39,131" name="32&apos;h7" dtype_id="14"/>
                     <arraysel loc="d,39,130,39,131" dtype_id="13">
-                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                       <and loc="d,39,130,39,131" dtype_id="13">
                         <const loc="d,39,130,39,131" name="32&apos;h7" dtype_id="14"/>
                         <ccast loc="d,39,130,39,131" dtype_id="13">
@@ -142,11 +142,11 @@
           <neq loc="d,40,26,40,29" dtype_id="9">
             <const loc="d,40,31,40,34" name="4&apos;h1" dtype_id="11"/>
             <arraysel loc="d,40,15,40,16" dtype_id="11">
-              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
               <and loc="d,40,15,40,16" dtype_id="13">
                 <const loc="d,40,15,40,16" name="32&apos;h7" dtype_id="14"/>
                 <arraysel loc="d,40,15,40,16" dtype_id="13">
-                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                   <and loc="d,40,15,40,16" dtype_id="13">
                     <const loc="d,40,15,40,16" name="32&apos;h7" dtype_id="14"/>
                     <ccast loc="d,40,15,40,16" dtype_id="13">
@@ -161,11 +161,11 @@
             <display loc="d,40,43,40,49" displaytype="$write">
               <sformatf loc="d,40,43,40,49" name="%%Error: t/t_enum_type_methods.v:40:  got=&apos;h%x exp=&apos;h1&#10;" dtype_id="10">
                 <arraysel loc="d,40,122,40,123" dtype_id="11">
-                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                   <and loc="d,40,122,40,123" dtype_id="13">
                     <const loc="d,40,122,40,123" name="32&apos;h7" dtype_id="14"/>
                     <arraysel loc="d,40,122,40,123" dtype_id="13">
-                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                       <and loc="d,40,122,40,123" dtype_id="13">
                         <const loc="d,40,122,40,123" name="32&apos;h7" dtype_id="14"/>
                         <ccast loc="d,40,122,40,123" dtype_id="13">
@@ -184,15 +184,15 @@
           <neq loc="d,41,42,41,45" dtype_id="9">
             <const loc="d,41,47,41,50" name="4&apos;h3" dtype_id="11"/>
             <arraysel loc="d,41,15,41,16" dtype_id="11">
-              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
               <and loc="d,41,15,41,16" dtype_id="13">
                 <const loc="d,41,15,41,16" name="32&apos;h7" dtype_id="14"/>
                 <arraysel loc="d,41,15,41,16" dtype_id="13">
-                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                   <and loc="d,41,15,41,16" dtype_id="13">
                     <const loc="d,41,15,41,16" name="32&apos;h7" dtype_id="14"/>
                     <arraysel loc="d,41,15,41,16" dtype_id="13">
-                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                       <and loc="d,41,15,41,16" dtype_id="13">
                         <const loc="d,41,15,41,16" name="32&apos;h7" dtype_id="14"/>
                         <ccast loc="d,41,15,41,16" dtype_id="13">
@@ -209,15 +209,15 @@
             <display loc="d,41,59,41,65" displaytype="$write">
               <sformatf loc="d,41,59,41,65" name="%%Error: t/t_enum_type_methods.v:41:  got=&apos;h%x exp=&apos;h3&#10;" dtype_id="10">
                 <arraysel loc="d,41,138,41,139" dtype_id="11">
-                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                   <and loc="d,41,138,41,139" dtype_id="13">
                     <const loc="d,41,138,41,139" name="32&apos;h7" dtype_id="14"/>
                     <arraysel loc="d,41,138,41,139" dtype_id="13">
-                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                       <and loc="d,41,138,41,139" dtype_id="13">
                         <const loc="d,41,138,41,139" name="32&apos;h7" dtype_id="14"/>
                         <arraysel loc="d,41,138,41,139" dtype_id="13">
-                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                           <and loc="d,41,138,41,139" dtype_id="13">
                             <const loc="d,41,138,41,139" name="32&apos;h7" dtype_id="14"/>
                             <ccast loc="d,41,138,41,139" dtype_id="13">
@@ -238,15 +238,15 @@
           <neq loc="d,42,34,42,37" dtype_id="9">
             <const loc="d,42,39,42,42" name="4&apos;h3" dtype_id="11"/>
             <arraysel loc="d,42,15,42,16" dtype_id="11">
-              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
               <and loc="d,42,15,42,16" dtype_id="13">
                 <const loc="d,42,15,42,16" name="32&apos;h7" dtype_id="14"/>
                 <arraysel loc="d,42,15,42,16" dtype_id="13">
-                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                   <and loc="d,42,15,42,16" dtype_id="13">
                     <const loc="d,42,15,42,16" name="32&apos;h7" dtype_id="14"/>
                     <arraysel loc="d,42,15,42,16" dtype_id="13">
-                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                       <and loc="d,42,15,42,16" dtype_id="13">
                         <const loc="d,42,15,42,16" name="32&apos;h7" dtype_id="14"/>
                         <ccast loc="d,42,15,42,16" dtype_id="13">
@@ -263,15 +263,15 @@
             <display loc="d,42,51,42,57" displaytype="$write">
               <sformatf loc="d,42,51,42,57" name="%%Error: t/t_enum_type_methods.v:42:  got=&apos;h%x exp=&apos;h3&#10;" dtype_id="10">
                 <arraysel loc="d,42,130,42,131" dtype_id="11">
-                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                   <and loc="d,42,130,42,131" dtype_id="13">
                     <const loc="d,42,130,42,131" name="32&apos;h7" dtype_id="14"/>
                     <arraysel loc="d,42,130,42,131" dtype_id="13">
-                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                       <and loc="d,42,130,42,131" dtype_id="13">
                         <const loc="d,42,130,42,131" name="32&apos;h7" dtype_id="14"/>
                         <arraysel loc="d,42,130,42,131" dtype_id="13">
-                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                           <and loc="d,42,130,42,131" dtype_id="13">
                             <const loc="d,42,130,42,131" name="32&apos;h7" dtype_id="14"/>
                             <ccast loc="d,42,130,42,131" dtype_id="13">
@@ -292,15 +292,15 @@
           <neq loc="d,43,26,43,29" dtype_id="9">
             <const loc="d,43,31,43,34" name="4&apos;h3" dtype_id="11"/>
             <arraysel loc="d,43,15,43,16" dtype_id="11">
-              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
               <and loc="d,43,15,43,16" dtype_id="13">
                 <const loc="d,43,15,43,16" name="32&apos;h7" dtype_id="14"/>
                 <arraysel loc="d,43,15,43,16" dtype_id="13">
-                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                   <and loc="d,43,15,43,16" dtype_id="13">
                     <const loc="d,43,15,43,16" name="32&apos;h7" dtype_id="14"/>
                     <arraysel loc="d,43,15,43,16" dtype_id="13">
-                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                       <and loc="d,43,15,43,16" dtype_id="13">
                         <const loc="d,43,15,43,16" name="32&apos;h7" dtype_id="14"/>
                         <ccast loc="d,43,15,43,16" dtype_id="13">
@@ -317,15 +317,15 @@
             <display loc="d,43,43,43,49" displaytype="$write">
               <sformatf loc="d,43,43,43,49" name="%%Error: t/t_enum_type_methods.v:43:  got=&apos;h%x exp=&apos;h3&#10;" dtype_id="10">
                 <arraysel loc="d,43,122,43,123" dtype_id="11">
-                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                   <and loc="d,43,122,43,123" dtype_id="13">
                     <const loc="d,43,122,43,123" name="32&apos;h7" dtype_id="14"/>
                     <arraysel loc="d,43,122,43,123" dtype_id="13">
-                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                       <and loc="d,43,122,43,123" dtype_id="13">
                         <const loc="d,43,122,43,123" name="32&apos;h7" dtype_id="14"/>
                         <arraysel loc="d,43,122,43,123" dtype_id="13">
-                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                           <and loc="d,43,122,43,123" dtype_id="13">
                             <const loc="d,43,122,43,123" name="32&apos;h7" dtype_id="14"/>
                             <ccast loc="d,43,122,43,123" dtype_id="13">
@@ -490,7 +490,7 @@
           <neqn loc="d,49,23,49,25" dtype_id="9">
             <const loc="d,49,27,49,32" name="&quot;E03&quot;" dtype_id="10"/>
             <arraysel loc="d,49,15,49,16" dtype_id="10">
-              <varref loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16"/>
+              <varref loc="d,17,12,17,16" name="__Venumtab_enum_name1" dtype_id="16"/>
               <and loc="d,49,15,49,16" dtype_id="13">
                 <const loc="d,49,15,49,16" name="32&apos;h7" dtype_id="14"/>
                 <ccast loc="d,49,15,49,16" dtype_id="13">
@@ -502,7 +502,7 @@
           <begin>
             <assign loc="d,49,120,49,121" dtype_id="10">
               <arraysel loc="d,49,120,49,121" dtype_id="10">
-                <varref loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16"/>
+                <varref loc="d,17,12,17,16" name="__Venumtab_enum_name1" dtype_id="16"/>
                 <and loc="d,49,120,49,121" dtype_id="13">
                   <const loc="d,49,120,49,121" name="32&apos;h7" dtype_id="14"/>
                   <ccast loc="d,49,120,49,121" dtype_id="13">
@@ -543,17 +543,15 @@
             <assign loc="d,53,14,53,15" dtype_id="10">
               <concatn loc="d,53,20,53,21" dtype_id="10">
                 <varref loc="d,53,17,53,20" name="t.all" dtype_id="10"/>
-                <cvtpackstring loc="d,53,22,53,23" dtype_id="10">
-                  <arraysel loc="d,53,22,53,23" dtype_id="10">
-                    <varref loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16"/>
-                    <and loc="d,53,22,53,23" dtype_id="13">
-                      <const loc="d,53,22,53,23" name="32&apos;h7" dtype_id="14"/>
-                      <ccast loc="d,53,22,53,23" dtype_id="13">
-                        <varref loc="d,53,22,53,23" name="t.unnamedblk1.e" dtype_id="13"/>
-                      </ccast>
-                    </and>
-                  </arraysel>
-                </cvtpackstring>
+                <arraysel loc="d,53,22,53,23" dtype_id="10">
+                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_name1" dtype_id="16"/>
+                  <and loc="d,53,22,53,23" dtype_id="13">
+                    <const loc="d,53,22,53,23" name="32&apos;h7" dtype_id="14"/>
+                    <ccast loc="d,53,22,53,23" dtype_id="13">
+                      <varref loc="d,53,22,53,23" name="t.unnamedblk1.e" dtype_id="13"/>
+                    </ccast>
+                  </and>
+                </arraysel>
               </concatn>
               <varref loc="d,53,10,53,13" name="t.all" dtype_id="10"/>
             </assign>
@@ -561,7 +559,7 @@
           <begin>
             <assign loc="d,52,45,52,46" dtype_id="11">
               <arraysel loc="d,52,47,52,48" dtype_id="11">
-                <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                 <and loc="d,52,47,52,48" dtype_id="13">
                   <const loc="d,52,47,52,48" name="32&apos;h7" dtype_id="14"/>
                   <ccast loc="d,52,47,52,48" dtype_id="13">
@@ -580,7 +578,7 @@
         <assign loc="d,56,11,56,12" dtype_id="10">
           <concatn loc="d,56,17,56,18" dtype_id="10">
             <varref loc="d,56,14,56,17" name="t.all" dtype_id="10"/>
-            <const loc="d,56,19,56,20" name="&quot;E04&quot;" dtype_id="10"/>
+            <const loc="d,17,12,17,16" name="&quot;E04&quot;" dtype_id="10"/>
           </concatn>
           <varref loc="d,56,7,56,10" name="t.all" dtype_id="10"/>
         </assign>
@@ -754,7 +752,7 @@
                   <neqn loc="d,68,26,68,28" dtype_id="9">
                     <const loc="d,68,30,68,35" name="&quot;E01&quot;" dtype_id="10"/>
                     <arraysel loc="d,68,18,68,19" dtype_id="10">
-                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16"/>
+                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_name1" dtype_id="16"/>
                       <and loc="d,68,18,68,19" dtype_id="13">
                         <const loc="d,68,18,68,19" name="32&apos;h7" dtype_id="14"/>
                         <ccast loc="d,68,18,68,19" dtype_id="13">
@@ -766,7 +764,7 @@
                   <begin>
                     <assign loc="d,68,123,68,124" dtype_id="10">
                       <arraysel loc="d,68,123,68,124" dtype_id="10">
-                        <varref loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16"/>
+                        <varref loc="d,17,12,17,16" name="__Venumtab_enum_name1" dtype_id="16"/>
                         <and loc="d,68,123,68,124" dtype_id="13">
                           <const loc="d,68,123,68,124" name="32&apos;h7" dtype_id="14"/>
                           <ccast loc="d,68,123,68,124" dtype_id="13">
@@ -788,7 +786,7 @@
                   <neq loc="d,69,26,69,29" dtype_id="9">
                     <const loc="d,69,31,69,34" name="4&apos;h3" dtype_id="11"/>
                     <arraysel loc="d,69,18,69,19" dtype_id="11">
-                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                       <and loc="d,69,18,69,19" dtype_id="13">
                         <const loc="d,69,18,69,19" name="32&apos;h7" dtype_id="14"/>
                         <ccast loc="d,69,18,69,19" dtype_id="13">
@@ -801,7 +799,7 @@
                     <display loc="d,69,43,69,49" displaytype="$write">
                       <sformatf loc="d,69,43,69,49" name="%%Error: t/t_enum_type_methods.v:69:  got=&apos;h%x exp=&apos;h3&#10;" dtype_id="10">
                         <arraysel loc="d,69,122,69,123" dtype_id="11">
-                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                           <and loc="d,69,122,69,123" dtype_id="13">
                             <const loc="d,69,122,69,123" name="32&apos;h7" dtype_id="14"/>
                             <ccast loc="d,69,122,69,123" dtype_id="13">
@@ -818,7 +816,7 @@
                   <neq loc="d,70,29,70,32" dtype_id="9">
                     <const loc="d,70,34,70,37" name="4&apos;h3" dtype_id="11"/>
                     <arraysel loc="d,70,18,70,19" dtype_id="11">
-                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                       <and loc="d,70,18,70,19" dtype_id="13">
                         <const loc="d,70,18,70,19" name="32&apos;h7" dtype_id="14"/>
                         <ccast loc="d,70,18,70,19" dtype_id="13">
@@ -831,7 +829,7 @@
                     <display loc="d,70,46,70,52" displaytype="$write">
                       <sformatf loc="d,70,46,70,52" name="%%Error: t/t_enum_type_methods.v:70:  got=&apos;h%x exp=&apos;h3&#10;" dtype_id="10">
                         <arraysel loc="d,70,125,70,126" dtype_id="11">
-                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                           <and loc="d,70,125,70,126" dtype_id="13">
                             <const loc="d,70,125,70,126" name="32&apos;h7" dtype_id="14"/>
                             <ccast loc="d,70,125,70,126" dtype_id="13">
@@ -848,11 +846,11 @@
                   <neq loc="d,71,29,71,32" dtype_id="9">
                     <const loc="d,71,34,71,37" name="4&apos;h4" dtype_id="11"/>
                     <arraysel loc="d,71,18,71,19" dtype_id="11">
-                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                       <and loc="d,71,18,71,19" dtype_id="13">
                         <const loc="d,71,18,71,19" name="32&apos;h7" dtype_id="14"/>
                         <arraysel loc="d,71,18,71,19" dtype_id="13">
-                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                           <and loc="d,71,18,71,19" dtype_id="13">
                             <const loc="d,71,18,71,19" name="32&apos;h7" dtype_id="14"/>
                             <ccast loc="d,71,18,71,19" dtype_id="13">
@@ -867,11 +865,11 @@
                     <display loc="d,71,46,71,52" displaytype="$write">
                       <sformatf loc="d,71,46,71,52" name="%%Error: t/t_enum_type_methods.v:71:  got=&apos;h%x exp=&apos;h4&#10;" dtype_id="10">
                         <arraysel loc="d,71,125,71,126" dtype_id="11">
-                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                           <and loc="d,71,125,71,126" dtype_id="13">
                             <const loc="d,71,125,71,126" name="32&apos;h7" dtype_id="14"/>
                             <arraysel loc="d,71,125,71,126" dtype_id="13">
-                              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                               <and loc="d,71,125,71,126" dtype_id="13">
                                 <const loc="d,71,125,71,126" name="32&apos;h7" dtype_id="14"/>
                                 <ccast loc="d,71,125,71,126" dtype_id="13">
@@ -1004,7 +1002,7 @@
                       <neqn loc="d,78,26,78,28" dtype_id="9">
                         <const loc="d,78,30,78,35" name="&quot;E03&quot;" dtype_id="10"/>
                         <arraysel loc="d,78,18,78,19" dtype_id="10">
-                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16"/>
+                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_name1" dtype_id="16"/>
                           <and loc="d,78,18,78,19" dtype_id="13">
                             <const loc="d,78,18,78,19" name="32&apos;h7" dtype_id="14"/>
                             <ccast loc="d,78,18,78,19" dtype_id="13">
@@ -1016,7 +1014,7 @@
                       <begin>
                         <assign loc="d,78,123,78,124" dtype_id="10">
                           <arraysel loc="d,78,123,78,124" dtype_id="10">
-                            <varref loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16"/>
+                            <varref loc="d,17,12,17,16" name="__Venumtab_enum_name1" dtype_id="16"/>
                             <and loc="d,78,123,78,124" dtype_id="13">
                               <const loc="d,78,123,78,124" name="32&apos;h7" dtype_id="14"/>
                               <ccast loc="d,78,123,78,124" dtype_id="13">
@@ -1038,7 +1036,7 @@
                       <neq loc="d,79,26,79,29" dtype_id="9">
                         <const loc="d,79,31,79,34" name="4&apos;h4" dtype_id="11"/>
                         <arraysel loc="d,79,18,79,19" dtype_id="11">
-                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                           <and loc="d,79,18,79,19" dtype_id="13">
                             <const loc="d,79,18,79,19" name="32&apos;h7" dtype_id="14"/>
                             <ccast loc="d,79,18,79,19" dtype_id="13">
@@ -1051,7 +1049,7 @@
                         <display loc="d,79,43,79,49" displaytype="$write">
                           <sformatf loc="d,79,43,79,49" name="%%Error: t/t_enum_type_methods.v:79:  got=&apos;h%x exp=&apos;h4&#10;" dtype_id="10">
                             <arraysel loc="d,79,122,79,123" dtype_id="11">
-                              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                               <and loc="d,79,122,79,123" dtype_id="13">
                                 <const loc="d,79,122,79,123" name="32&apos;h7" dtype_id="14"/>
                                 <ccast loc="d,79,122,79,123" dtype_id="13">
@@ -1068,7 +1066,7 @@
                       <neq loc="d,80,29,80,32" dtype_id="9">
                         <const loc="d,80,34,80,37" name="4&apos;h4" dtype_id="11"/>
                         <arraysel loc="d,80,18,80,19" dtype_id="11">
-                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                           <and loc="d,80,18,80,19" dtype_id="13">
                             <const loc="d,80,18,80,19" name="32&apos;h7" dtype_id="14"/>
                             <ccast loc="d,80,18,80,19" dtype_id="13">
@@ -1081,7 +1079,7 @@
                         <display loc="d,80,46,80,52" displaytype="$write">
                           <sformatf loc="d,80,46,80,52" name="%%Error: t/t_enum_type_methods.v:80:  got=&apos;h%x exp=&apos;h4&#10;" dtype_id="10">
                             <arraysel loc="d,80,125,80,126" dtype_id="11">
-                              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                               <and loc="d,80,125,80,126" dtype_id="13">
                                 <const loc="d,80,125,80,126" name="32&apos;h7" dtype_id="14"/>
                                 <ccast loc="d,80,125,80,126" dtype_id="13">
@@ -1098,11 +1096,11 @@
                       <neq loc="d,81,29,81,32" dtype_id="9">
                         <const loc="d,81,34,81,37" name="4&apos;h1" dtype_id="11"/>
                         <arraysel loc="d,81,18,81,19" dtype_id="11">
-                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                           <and loc="d,81,18,81,19" dtype_id="13">
                             <const loc="d,81,18,81,19" name="32&apos;h7" dtype_id="14"/>
                             <arraysel loc="d,81,18,81,19" dtype_id="13">
-                              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                               <and loc="d,81,18,81,19" dtype_id="13">
                                 <const loc="d,81,18,81,19" name="32&apos;h7" dtype_id="14"/>
                                 <ccast loc="d,81,18,81,19" dtype_id="13">
@@ -1117,11 +1115,11 @@
                         <display loc="d,81,46,81,52" displaytype="$write">
                           <sformatf loc="d,81,46,81,52" name="%%Error: t/t_enum_type_methods.v:81:  got=&apos;h%x exp=&apos;h1&#10;" dtype_id="10">
                             <arraysel loc="d,81,125,81,126" dtype_id="11">
-                              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                               <and loc="d,81,125,81,126" dtype_id="13">
                                 <const loc="d,81,125,81,126" name="32&apos;h7" dtype_id="14"/>
                                 <arraysel loc="d,81,125,81,126" dtype_id="13">
-                                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                                   <and loc="d,81,125,81,126" dtype_id="13">
                                     <const loc="d,81,125,81,126" name="32&apos;h7" dtype_id="14"/>
                                     <ccast loc="d,81,125,81,126" dtype_id="13">
@@ -1254,7 +1252,7 @@
                           <neqn loc="d,88,26,88,28" dtype_id="9">
                             <const loc="d,88,30,88,35" name="&quot;E04&quot;" dtype_id="10"/>
                             <arraysel loc="d,88,18,88,19" dtype_id="10">
-                              <varref loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16"/>
+                              <varref loc="d,17,12,17,16" name="__Venumtab_enum_name1" dtype_id="16"/>
                               <and loc="d,88,18,88,19" dtype_id="13">
                                 <const loc="d,88,18,88,19" name="32&apos;h7" dtype_id="14"/>
                                 <ccast loc="d,88,18,88,19" dtype_id="13">
@@ -1266,7 +1264,7 @@
                           <begin>
                             <assign loc="d,88,123,88,124" dtype_id="10">
                               <arraysel loc="d,88,123,88,124" dtype_id="10">
-                                <varref loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16"/>
+                                <varref loc="d,17,12,17,16" name="__Venumtab_enum_name1" dtype_id="16"/>
                                 <and loc="d,88,123,88,124" dtype_id="13">
                                   <const loc="d,88,123,88,124" name="32&apos;h7" dtype_id="14"/>
                                   <ccast loc="d,88,123,88,124" dtype_id="13">
@@ -1288,7 +1286,7 @@
                           <neq loc="d,89,26,89,29" dtype_id="9">
                             <const loc="d,89,31,89,34" name="4&apos;h1" dtype_id="11"/>
                             <arraysel loc="d,89,18,89,19" dtype_id="11">
-                              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                               <and loc="d,89,18,89,19" dtype_id="13">
                                 <const loc="d,89,18,89,19" name="32&apos;h7" dtype_id="14"/>
                                 <ccast loc="d,89,18,89,19" dtype_id="13">
@@ -1301,7 +1299,7 @@
                             <display loc="d,89,43,89,49" displaytype="$write">
                               <sformatf loc="d,89,43,89,49" name="%%Error: t/t_enum_type_methods.v:89:  got=&apos;h%x exp=&apos;h1&#10;" dtype_id="10">
                                 <arraysel loc="d,89,122,89,123" dtype_id="11">
-                                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                                   <and loc="d,89,122,89,123" dtype_id="13">
                                     <const loc="d,89,122,89,123" name="32&apos;h7" dtype_id="14"/>
                                     <ccast loc="d,89,122,89,123" dtype_id="13">
@@ -1318,7 +1316,7 @@
                           <neq loc="d,90,29,90,32" dtype_id="9">
                             <const loc="d,90,34,90,37" name="4&apos;h1" dtype_id="11"/>
                             <arraysel loc="d,90,18,90,19" dtype_id="11">
-                              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                               <and loc="d,90,18,90,19" dtype_id="13">
                                 <const loc="d,90,18,90,19" name="32&apos;h7" dtype_id="14"/>
                                 <ccast loc="d,90,18,90,19" dtype_id="13">
@@ -1331,7 +1329,7 @@
                             <display loc="d,90,46,90,52" displaytype="$write">
                               <sformatf loc="d,90,46,90,52" name="%%Error: t/t_enum_type_methods.v:90:  got=&apos;h%x exp=&apos;h1&#10;" dtype_id="10">
                                 <arraysel loc="d,90,125,90,126" dtype_id="11">
-                                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                                   <and loc="d,90,125,90,126" dtype_id="13">
                                     <const loc="d,90,125,90,126" name="32&apos;h7" dtype_id="14"/>
                                     <ccast loc="d,90,125,90,126" dtype_id="13">
@@ -1348,11 +1346,11 @@
                           <neq loc="d,91,29,91,32" dtype_id="9">
                             <const loc="d,91,34,91,37" name="4&apos;h3" dtype_id="11"/>
                             <arraysel loc="d,91,18,91,19" dtype_id="11">
-                              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                              <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                               <and loc="d,91,18,91,19" dtype_id="13">
                                 <const loc="d,91,18,91,19" name="32&apos;h7" dtype_id="14"/>
                                 <arraysel loc="d,91,18,91,19" dtype_id="13">
-                                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                                   <and loc="d,91,18,91,19" dtype_id="13">
                                     <const loc="d,91,18,91,19" name="32&apos;h7" dtype_id="14"/>
                                     <ccast loc="d,91,18,91,19" dtype_id="13">
@@ -1367,11 +1365,11 @@
                             <display loc="d,91,46,91,52" displaytype="$write">
                               <sformatf loc="d,91,46,91,52" name="%%Error: t/t_enum_type_methods.v:91:  got=&apos;h%x exp=&apos;h3&#10;" dtype_id="10">
                                 <arraysel loc="d,91,125,91,126" dtype_id="11">
-                                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                                   <and loc="d,91,125,91,126" dtype_id="13">
                                     <const loc="d,91,125,91,126" name="32&apos;h7" dtype_id="14"/>
                                     <arraysel loc="d,91,125,91,126" dtype_id="13">
-                                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+                                      <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
                                       <and loc="d,91,125,91,126" dtype_id="13">
                                         <const loc="d,91,125,91,126" name="32&apos;h7" dtype_id="14"/>
                                         <ccast loc="d,91,125,91,126" dtype_id="13">
@@ -1731,7 +1729,7 @@
       <cuse loc="a,0,0,0,0" name="$unit"/>
     </module>
     <package loc="a,0,0,0,0" name="$unit" origName="__024unit">
-      <var loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12" vartype="" origName="__Venumtab_enum_next0">
+      <var loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12" vartype="" origName="__Venumtab_enum_next1">
         <initarray>
           <inititem index="1">
             <const loc="d,19,30,19,31" name="4&apos;h3" dtype_id="11"/>
@@ -1757,7 +1755,7 @@
           </inititem>
         </initarray>
       </var>
-      <var loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16" vartype="" origName="__Venumtab_enum_name2">
+      <var loc="d,17,12,17,16" name="__Venumtab_enum_name1" dtype_id="16" vartype="" origName="__Venumtab_enum_name1">
         <initarray>
           <inititem index="1">
             <const loc="d,17,12,17,16" name="&quot;E01&quot;" dtype_id="10"/>
@@ -1773,13 +1771,13 @@
       <scope loc="a,0,0,0,0" name="$unit"/>
       <cfunc loc="a,0,0,0,0" name="_ctor_var_reset">
         <creset loc="d,17,12,17,16">
-          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next0" dtype_id="12"/>
+          <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
         </creset>
         <creset loc="d,17,12,17,16">
           <varref loc="d,17,12,17,16" name="__Venumtab_enum_prev1" dtype_id="15"/>
         </creset>
         <creset loc="d,17,12,17,16">
-          <varref loc="d,17,12,17,16" name="__Venumtab_enum_name2" dtype_id="16"/>
+          <varref loc="d,17,12,17,16" name="__Venumtab_enum_name1" dtype_id="16"/>
         </creset>
       </cfunc>
     </package>
