@@ -2850,15 +2850,7 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
         }
     } else if (arrayvalue_p->format == vpiRealVal) {
         switch (varp->vltype()) {
-            case VLVT_REAL:
-                return status;
-            default:
-                status = false;
-        }
-    } else if (arrayvalue_p->format == vpiTimeVal) {
-        switch (varp->vltype()) {
-            case VLVT_UINT32:
-            case VLVT_REAL:
+            case VLVT_UINT64:
                 return status;
             default:
                 status = false;
@@ -2877,6 +2869,7 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
         }
     } else if (arrayvalue_p->format == vpiShortIntVal) {
         switch (varp->vltype()) {
+            case VLVT_UINT8:
             case VLVT_UINT16:
                 return status;
             default:
@@ -2884,6 +2877,8 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
         }
     } else if (arrayvalue_p->format == vpiLongIntVal) {
         switch (varp->vltype()) {
+            case VLVT_UINT8:
+            case VLVT_UINT16:
             case VLVT_UINT64:
                 return status;
             default:
@@ -2903,7 +2898,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
     if (!vl_check_array_format(vop->varp(), arrayvalue_p, vop->fullname())) return;
 
     const VerilatedVar* const varp = vop->varp();
-    int size = vpi_get(vpiSize, object);
+    int size = vop->size();
     int index = index_p[0];
 
     static thread_local EData out_ptr[VL_VALUE_STRING_MAX_WORDS * 2];
@@ -2965,7 +2960,14 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
             arrayvalue_p->value.shortints = shortints;
         }
 
-        if (varp->vltype() == VLVT_UINT16) {
+        if (varp->vltype() == VLVT_UINT8) {
+            CData *ptr = reinterpret_cast<CData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                shortints[i] = ptr[index++];
+                index = index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT16) {
             SData *ptr = reinterpret_cast<SData*>(vop->varDatap());
 
             for (int i = 0; i < num; i++) {
@@ -2990,7 +2992,21 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
             arrayvalue_p->value.longints = longints;
         }
 
-        if (varp->vltype() == VLVT_UINT64) {
+        if (varp->vltype() == VLVT_UINT8) {
+            CData *ptr = reinterpret_cast<CData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                longints[i] = ptr[index++];
+                index = index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT16) {
+            SData *ptr = reinterpret_cast<SData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                longints[i] = ptr[index++];
+                index = index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT64) {
             QData *ptr = reinterpret_cast<QData*>(vop->varDatap());
 
             for (int i = 0; i < num; i++) {
@@ -3185,7 +3201,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
             arrayvalue_p->value.reals = reals;
         }
 
-        if (varp->vltype() == VLVT_REAL) {
+        if (varp->vltype() == VLVT_UINT64) {
             double *ptr = reinterpret_cast<double*>(vop->varDatap());
 
             for (int i = 0; i < num; i++) {
@@ -3217,8 +3233,8 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
     }
 
     if (vop->type() != vpiRegArray) {
-        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported type (%p, %u)", __func__,
-            object, vop->type());
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported type (%p, %s)", __func__,
+            object, VerilatedVpiError::strFromVpiObjType(vop->type()));
     }
 
     const VerilatedVar* const varp = vop->varp();
