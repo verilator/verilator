@@ -125,33 +125,33 @@ class UnknownVisitor final : public VNVisitor {
             AstNode* selnodep = prep->cloneTree(true);
             AstNode* itrselnodep;
             AstNode* backupselnodep = selnodep;
-            while (itrselnodep = VN_AS(backupselnodep->op1p(), NodeExpr)) {
+            while ((itrselnodep = VN_AS(backupselnodep->op1p(), NodeExpr))) {
                 if (VN_IS(itrselnodep, VarRef)) {
                     VN_AS(itrselnodep, VarRef)->access(VAccess::READ);
                     break;
                 }
                 backupselnodep = itrselnodep;
-
-                AstNode* newAssignStmt = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
-                                                       (AstNodeExpr*)selnodep};
-                newAssignStmt->addNextStmt(currentStmtNode, newAssignStmt);
-                linkContext.relink(newAssignStmt);
-                prep->replaceWith(new AstVarRef{fl, varp, VAccess::WRITE});
-                if (m_timingControlp) m_timingControlp->unlinkFrBack();
-                AstIf* const newp = new AstIf{
-                    fl, condp,
-                    (needDly ? static_cast<AstNode*>(new AstAssignDly{
-                         fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp})
-                             : static_cast<AstNode*>(
-                                 new AstAssign{fl, prep, new AstVarRef{fl, varp, VAccess::READ},
-                                               m_timingControlp}))};
-                newp->branchPred(VBranchPred::BP_LIKELY);
-                newp->isBoundsCheck(true);
-                if (debug() >= 9) newp->dumpTree("-     _new: ");
-                abovep->addNextStmt(newp, abovep);
-                prep->user2p(newp);  // Save so we may LogAnd it next time
             }
+            AstNode* newAssignStmt = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                                  (AstNodeExpr*)selnodep};
+            newAssignStmt->addNextStmt(currentStmtNode, newAssignStmt);
+            linkContext.relink(newAssignStmt);
+            prep->replaceWith(new AstVarRef{fl, varp, VAccess::WRITE});
+            if (m_timingControlp) m_timingControlp->unlinkFrBack();
+            AstIf* const newp = new AstIf{
+                fl, condp,
+                (needDly
+                     ? static_cast<AstNode*>(new AstAssignDly{
+                         fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp})
+                     : static_cast<AstNode*>(new AstAssign{
+                         fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp}))};
+            newp->branchPred(VBranchPred::BP_LIKELY);
+            newp->isBoundsCheck(true);
+            if (debug() >= 9) newp->dumpTree("-     _new: ");
+            abovep->addNextStmt(newp, abovep);
+            prep->user2p(newp);  // Save so we may LogAnd it next time
         }
+    }
 
         // VISITORS
         void visit(AstNodeModule * nodep) override {
