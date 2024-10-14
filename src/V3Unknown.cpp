@@ -416,9 +416,8 @@ class UnknownVisitor final : public VNVisitor {
                              new AstConst(nodep->fileline(), AstConst::WidthedValue{},
                                           nodep->lsbp()->width(), maxmsb),
                              nodep->lsbp()->cloneTreePure(false)};
-            // See if the condition is constant true (e.g. always in bound due to constant
-            // select) Note below has null backp(); the Edit function knows how to deal with
-            // that.
+            // See if the condition is constant true (e.g. always in bound due to constant select)
+            // Note below has null backp(); the Edit function knows how to deal with that.
             condp = V3Const::constifyEdit(condp);
             if (condp->isOne()) {
                 // We don't need to add a conditional; we know the existing expression is ok
@@ -457,8 +456,7 @@ class UnknownVisitor final : public VNVisitor {
             if (const AstNodeVarRef* const varrefp = VN_CAST(basefromp, NodeVarRef)) {
                 lvalue = varrefp->access().isWriteOrRW();
             } else if (VN_IS(basefromp, Const)) {
-                // If it's a PARAMETER[bit], then basefromp may be a constant instead of a
-                // varrefp
+                // If it's a PARAMETER[bit], then basefromp may be a constant instead of a varrefp
             } else {
                 // Normally one of above, but might have MEMBERSEL or otherwise
             }
