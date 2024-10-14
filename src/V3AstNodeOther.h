@@ -193,6 +193,7 @@ public:
         isHideLocal(fromp->isHideLocal());
         isHideProtected(fromp->isHideProtected());
         isVirtual(fromp->isVirtual());
+        isStatic(fromp->isStatic());
         lifetime(fromp->lifetime());
         underGenerate(fromp->underGenerate());
     }
