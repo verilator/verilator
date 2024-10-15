@@ -1333,6 +1333,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                     } else {
                         findvarp->combineType(nodep);
                         findvarp->fileline()->modifyStateInherit(nodep->fileline());
+                        UASSERT_OBJ(nodep->getChildDTypep(), nodep, "Var has no child type");
                         if (nodep->getChildDTypep()->numeric().isSigned()
                             && !findvarp->getChildDTypep()->numeric().isSigned()) {
                             findvarp->getChildDTypep()->numeric(VSigning{true});

@@ -347,6 +347,8 @@ class UnknownVisitor final : public VNVisitor {
                 AstVar* const newvarp
                     = new AstVar{nodep->fileline(), VVarType::XTEMP, m_xrandNames.get(nodep),
                                  VFlagLogicPacked{}, nodep->width()};
+                // NOCOMMIT ??
+                UASSERT_OBJ(newvarp->getChildDTypep(), newvarp, "Var has no child type (at construction)");
                 newvarp->lifetime(VLifetime::STATIC);
                 ++m_statUnkVars;
                 VNRelinker replaceHandle;
