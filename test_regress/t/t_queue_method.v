@@ -26,6 +26,7 @@ module t (/*AUTOARG*/);
       int qvunused[$];  // Value returns (unused)
       int qi[$];  // Index returns
       int i;
+      bit b;
       string string_q[$];
       string string_qv[$];
       point_3d points_q[$];  // Same as q and qv, but complex value type
@@ -186,9 +187,13 @@ module t (/*AUTOARG*/);
 
       i = qe.sum;
       `checkh(i, 32'h0);
+      i = qe.sum with (item + 1);
+      `checkh(i, 32'h0);
 
       i = qe.product;
-      `checkh(i, 32'h0);
+      `checkh(i, 32'h1);
+      i = qe.product with (item + 1);
+      `checkh(i, 32'h1);
 
       q = '{32'b1100, 32'b1010};
       i = q.and;
@@ -205,16 +210,37 @@ module t (/*AUTOARG*/);
       `checkh(i, 32'b0110);
 
       i = qe.and;
-      `checkh(i, 32'b0);
+      `checkh(i, 32'hffff_ffff);
+      i = qe.and with (item + 1);
+      `checkh(i, 32'hffff_ffff);
       i = qe.or;
       `checkh(i, 32'b0);
+      i = qe.or with (item + 1);
+      `checkh(i, 32'b0);
       i = qe.xor;
+      `checkh(i, 32'b0);
+      i = qe.xor with (item + 1);
       `checkh(i, 32'b0);
 
       q = '{1, 2};
       qe = '{1, 2};
       `checkh(q == qe, 1'b1);
       `checkh(q != qe, 1'b0);
+
+      string_q = {"a", "bc", "def", "ghij"};
+
+      i = string_q.sum with (item.len);
+      `checkh(i, 10);
+      i = string_q.product with (item.len);
+      `checkh(i, 24);
+      b = string_q.sum with (item == "bc");
+      `checkh(b, 1'b1);
+      b = string_q.sum with (item == "");
+      `checkh(b, 1'b0);
+      b = string_q.product with (item inside {"a", "bc", "def"});
+      `checkh(b, 1'b0);
+      b = string_q.product with (item inside {"a", "bc", "def", "ghij"});
+      `checkh(b, 1'b1);
 
       $write("*-* All Finished *-*\n");
       $finish;

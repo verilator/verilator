@@ -8,8 +8,14 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checkp(gotv,expv_s) do begin string gotv_s; gotv_s = $sformatf("%p", gotv); if ((gotv_s) !== (expv_s)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv_s), (expv_s)); `stop; end end while(0);
 
+
 module t (/*AUTOARG*/);
    typedef struct { int x, y; } point;
+
+   function automatic int vec_len_squared(point p);
+      return p.x * p.x + p.y * p.y;
+   endfunction
+
    initial begin
       int q[int];
       int qe[int];  // Empty
@@ -18,6 +24,7 @@ module t (/*AUTOARG*/);
       point points_q[int];
       point points_qv[$];
       int i;
+      bit b;
 
       q = '{10:1, 11:2, 12:2, 13:4, 14:3};
       `checkp(q, "'{'ha:'h1, 'hb:'h2, 'hc:'h2, 'hd:'h4, 'he:'h3} ");
@@ -116,8 +123,12 @@ module t (/*AUTOARG*/);
 
       i = qe.sum;
       `checkh(i, 32'h0);
-      i = qe.product;
+      i = qe.sum with (item + 1);
       `checkh(i, 32'h0);
+      i = qe.product;
+      `checkh(i, 32'h1);
+      i = qe.product with (item + 1);
+      `checkh(i, 32'h1);
 
       q = '{10:32'b1100, 11:32'b1010};
       i = q.and;
@@ -134,10 +145,16 @@ module t (/*AUTOARG*/);
       `checkh(i, 32'b0110);
 
       i = qe.and;
-      `checkh(i, 32'b0);
+      `checkh(i, 32'hffff_ffff);
+      i = qe.and with (item + 1);
+      `checkh(i, 32'hffff_ffff);
       i = qe.or;
       `checkh(i, 32'b0);
+      i = qe.or with (item + 1);
+      `checkh(i, 32'b0);
       i = qe.xor;
+      `checkh(i, 32'b0);
+      i = qe.xor with (item + 1);
       `checkh(i, 32'b0);
 
       i = q.and();
@@ -154,7 +171,7 @@ module t (/*AUTOARG*/);
       `checkh(i, 32'b0110);
 
       i = qe.and();
-      `checkh(i, 32'b0);
+      `checkh(i, 32'hffff_ffff);
       i = qe.or();
       `checkh(i, 32'b0);
       i = qe.xor();
@@ -164,6 +181,19 @@ module t (/*AUTOARG*/);
       qe = '{10:1, 11:2};
       `checkh(q == qe, 1'b1);
       `checkh(q != qe, 1'b0);
+
+      i = points_q.sum with (vec_len_squared(item));
+      `checkh(i, 32'h2a);
+      i = points_q.product with (vec_len_squared(item));
+      `checkh(i, 32'h6a4);
+      b = points_q.sum with (vec_len_squared(item) == 5);
+      `checkh(b, 1'b1);
+      b = points_q.sum with (vec_len_squared(item) == 0);
+      `checkh(b, 1'b0);
+      b = points_q.product with (vec_len_squared(item) inside {5, 17});
+      `checkh(b, 1'b0);
+      b = points_q.sum with (vec_len_squared(item) inside {5, 17, 20});
+      `checkh(b, 1'b1);
 
       $write("*-* All Finished *-*\n");
       $finish;
