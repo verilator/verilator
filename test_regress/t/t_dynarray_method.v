@@ -131,7 +131,7 @@ module t (/*AUTOARG*/);
       `checkh(i, 32'h0);
 
       i = de.product;
-      `checkh(i, 32'h0);
+      `checkh(i, 32'h1);
 
       d = '{32'b1100, 32'b1010};
 
@@ -149,7 +149,7 @@ module t (/*AUTOARG*/);
       `checkh(i, 32'b0110);
 
       i = de.and;
-      `checkh(i, 32'b0);
+      `checkh(i, 32'hffff_ffff);
       i = de.or;
       `checkh(i, 32'b0);
       i = de.xor;

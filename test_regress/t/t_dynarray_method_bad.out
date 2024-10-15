@@ -1,0 +1,27 @@
+%Warning-WIDTHTRUNC: t/t_dynarray_method_bad.v:19:9: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's CMETHODHARD 'r_sum' generates 64 bits.
+                                                   : ... note: In instance 't'
+   19 |       i = s.sum with (item.len);
+      |         ^
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
+%Warning-WIDTHTRUNC: t/t_dynarray_method_bad.v:21:9: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's CMETHODHARD 'r_product' generates 64 bits.
+                                                   : ... note: In instance 't'
+   21 |       i = s.product with (item.len);
+      |         ^
+%Warning-WIDTHTRUNC: t/t_dynarray_method_bad.v:23:9: Operator ASSIGN expects 1 bits on the Assign RHS, but Assign RHS's CMETHODHARD 'r_sum' generates 64 bits.
+                                                   : ... note: In instance 't'
+   23 |       b = s.sum with (item == "hello");
+      |         ^
+%Warning-WIDTHTRUNC: t/t_dynarray_method_bad.v:25:9: Operator ASSIGN expects 1 bits on the Assign RHS, but Assign RHS's CMETHODHARD 'r_sum' generates 64 bits.
+                                                   : ... note: In instance 't'
+   25 |       b = s.sum with (item == "");
+      |         ^
+%Warning-WIDTHTRUNC: t/t_dynarray_method_bad.v:27:9: Operator ASSIGN expects 1 bits on the Assign RHS, but Assign RHS's CMETHODHARD 'r_product' generates 64 bits.
+                                                   : ... note: In instance 't'
+   27 |       b = s.product with (item inside {"hello", "sad"});
+      |         ^
+%Warning-WIDTHTRUNC: t/t_dynarray_method_bad.v:29:9: Operator ASSIGN expects 1 bits on the Assign RHS, but Assign RHS's CMETHODHARD 'r_product' generates 64 bits.
+                                                   : ... note: In instance 't'
+   29 |       b = s.product with (item inside { "hello", "sad", "world" });
+      |         ^
+%Error: Exiting due to
