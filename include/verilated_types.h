@@ -881,7 +881,7 @@ public:
         return out;
     }
     template <typename Func>
-    T_Value r_xor(Func with_func) const {
+    WithFuncReturnType<Func> r_xor(Func with_func) const {
         WithFuncReturnType<Func> out = WithFuncReturnType<Func>(0);
         IData index = 0;
         for (const auto& i : m_deque) out ^= with_func(index++, i);
