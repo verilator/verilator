@@ -876,7 +876,7 @@ public:
         return out;
     }
     T_Value r_xor() const {
-        T_Value out = T_Value(0);  // Type must have assignment operator
+        T_Value out = T_Value(0);
         for (const auto& i : m_deque) out ^= i;
         return out;
     }
