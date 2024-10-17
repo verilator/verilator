@@ -118,24 +118,28 @@ class UnknownVisitor final : public VNVisitor {
                 = new AstVar{fl, VVarType::MODULETEMP, m_lvboundNames.get(prep), prep->dtypep()};
             m_modp->addStmtsp(varp);
             AstNode* const abovep = prep->backp();  // Grab above point before we replace 'prep'
-            AstNode* currentStmtNode = abovep;
-            while (!VN_IS(currentStmtNode, NodeStmt)) currentStmtNode = currentStmtNode->backp();
+            AstNode* currentStmtp = abovep;
+            while (currentStmtp && !VN_IS(currentStmtp, NodeStmt))
+                currentStmtp = currentStmtp->backp();
             VNRelinker linkContext;
-            currentStmtNode = currentStmtNode->unlinkFrBackWithNext(&linkContext);
-            AstNode* selnodep = prep->cloneTree(true);
-            AstNode* itrselnodep;
-            AstNode* backupselnodep = selnodep;
-            while ((itrselnodep = VN_AS(backupselnodep->op1p(), NodeExpr))) {
-                if (VN_IS(itrselnodep, VarRef)) {
-                    VN_AS(itrselnodep, VarRef)->access(VAccess::READ);
+            currentStmtp = currentStmtp->unlinkFrBackWithNext(&linkContext);
+            AstNodeExpr* selExprp = prep->cloneTree(true);
+            AstNodeExpr* currentExprp = selExprp;
+            while (AstNodeExpr* itrSelExprp = VN_AS(currentExprp->op1p(), NodeExpr)) {
+                if (VN_IS(itrSelExprp, VarRef)) {
+                    // Mark the variable reference as READ access to avoid assignment issues
+                    VN_AS(itrSelExprp, VarRef)->access(VAccess::READ);
                     break;
                 }
-                backupselnodep = itrselnodep;
+                currentExprp = itrSelExprp;
             }
-            AstNode* newAssignStmt = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
-                                                   (AstNodeExpr*)selnodep};
-            newAssignStmt->addNextStmt(currentStmtNode, newAssignStmt);
-            linkContext.relink(newAssignStmt);
+            // Before assigning the value to the temporary variable, first assign the current array
+            // element to it. This ensures any field modifications happen on the correct instance
+            // and prevents overwriting other fields.
+            AstNode* newAssignp
+                = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, selExprp};
+            newAssignp->addNextStmt(currentStmtp, newAssignp);
+            linkContext.relink(newAssignp);
             prep->replaceWith(new AstVarRef{fl, varp, VAccess::WRITE});
             if (m_timingControlp) m_timingControlp->unlinkFrBack();
             AstIf* const newp = new AstIf{
