@@ -840,18 +840,27 @@ public:
         return out;
     }
     T_Value r_product() const {
+#ifdef VERILATOR_BIG3_NULLARY_ARITHMETICS_QUIRKS
+        if (m_deque.empty()) return T_Value(0);
+#endif
         T_Value out = T_Value(1);
         for (const auto& i : m_deque) out *= i;
         return out;
     }
     template <typename Func>
     WithFuncReturnType<Func> r_product(Func with_func) const {
+#ifdef VERILATOR_BIG3_NULLARY_ARITHMETICS_QUIRKS
+        if (m_deque.empty()) return WithFuncReturnType<Func>(0);
+#endif
         WithFuncReturnType<Func> out = WithFuncReturnType<Func>(1);
         IData index = 0;
         for (const auto& i : m_deque) out *= with_func(index++, i);
         return out;
     }
     T_Value r_and() const {
+#ifdef VERILATOR_BIG3_NULLARY_ARITHMETICS_QUIRKS
+        if (m_deque.empty()) return T_Value(0);
+#endif
         T_Value out = ~T_Value(0);
         for (const auto& i : m_deque) out &= i;
         return out;
@@ -876,6 +885,9 @@ public:
         return out;
     }
     T_Value r_xor() const {
+#ifdef VERILATOR_BIG3_NULLARY_ARITHMETICS_QUIRKS
+        if (m_deque.empty()) return T_Value(0);
+#endif
         T_Value out = T_Value(0);
         for (const auto& i : m_deque) out ^= i;
         return out;
@@ -1174,23 +1186,35 @@ public:
         return out;
     }
     T_Value r_product() const {
+#ifdef VERILATOR_BIG3_NULLARY_ARITHMETICS_QUIRKS
+        if (m_map.empty()) return T_Value(0);
+#endif
         T_Value out = T_Value(1);
         for (const auto& i : m_map) out *= i.second;
         return out;
     }
     template <typename Func>
     WithFuncReturnType<Func> r_product(Func with_func) const {
+#ifdef VERILATOR_BIG3_NULLARY_ARITHMETICS_QUIRKS
+        if (m_map.empty()) return WithFuncReturnType<Func>(0);
+#endif
         WithFuncReturnType<Func> out = WithFuncReturnType<Func>(1);
         for (const auto& i : m_map) out *= with_func(i.first, i.second);
         return out;
     }
     T_Value r_and() const {
+#ifdef VERILATOR_BIG3_NULLARY_ARITHMETICS_QUIRKS
+        if (m_map.empty()) return T_Value(0);
+#endif
         T_Value out = ~T_Value(0);
         for (const auto& i : m_map) out &= i.second;
         return out;
     }
     template <typename Func>
     WithFuncReturnType<Func> r_and(Func with_func) const {
+#ifdef VERILATOR_BIG3_NULLARY_ARITHMETICS_QUIRKS
+        if (m_map.empty()) return WithFuncReturnType<Func>(0);
+#endif
         WithFuncReturnType<Func> out = ~WithFuncReturnType<Func>(0);
         for (const auto& i : m_map) out &= with_func(i.first, i.second);
         return out;

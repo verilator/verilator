@@ -399,6 +399,7 @@ detailed descriptions of these arguments.
     --Mdir <directory>          Name of output object directory
     --MMD                       Create .d dependency files
     --mod-prefix <topname>      Name to prepend to lower classes
+    --no-null-arithmetics-quirks  Return neutral element for nullary reductions instead of zero
     --MP                        Create phony dependency targets
      +notimingchecks            Ignored
      -O0                        Disable optimizations
