@@ -12,7 +12,6 @@ import vltest_bootstrap
 test.scenarios('simulator')
 
 test.compile()
-# test.compile(verilator_flags2=["--x-assign 0"])
 
 test.execute()
 
