@@ -270,7 +270,7 @@ installbin: | mkbindirs
 	done
 	perl -p -i -e 'use File::Spec;' \
 	           -e' $$path = File::Spec->abs2rel("$(realpath $(DESTDIR)$(pkgdatadir))", "$(realpath $(DESTDIR)$(bindir))");' \
-	           -e 's/my \$$verilator_pkdatadir_relpath = .*/my \$$verilator_pkdatadir_relpath = "$$path";/g' \
+	           -e 's/my \$$verilator_pkgdatadir_relpath = .*/my \$$verilator_pkgdatadir_relpath = "$$path";/g' \
 	           -- "$(DESTDIR)/$(bindir)/verilator"
 	cd bin; \
 	for p in $(VL_INST_PUBLIC_BIN_FILES) ; do \
