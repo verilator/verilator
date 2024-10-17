@@ -95,7 +95,10 @@ class CMakeEmitter final {
         *of << "\n### Compiler flags...\n";
 
         *of << "# User CFLAGS (from -CFLAGS on Verilator command line)\n";
-        cmake_set_raw(*of, name + "_USER_CFLAGS", cmake_list(v3Global.opt.cFlags()));
+        V3StringList cFlagsList = v3Global.opt.cFlags();
+        if (v3Global.opt.nullArithmeticsQuirks())
+            cFlagsList.push_back("-DVERILATOR_BIG3_NULLARY_ARITHMETICS_QUIRKS");
+        cmake_set_raw(*of, name + "_USER_CFLAGS", cmake_list(cFlagsList));
 
         *of << "# User LDLIBS (from -LDFLAGS on Verilator command line)\n";
         cmake_set_raw(*of, name + "_USER_LDLIBS", cmake_list(v3Global.opt.ldLibs()));

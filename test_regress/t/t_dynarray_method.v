@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2019 by Wilson Snyder.
+// any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
 `define stop $stop
@@ -131,7 +131,7 @@ module t (/*AUTOARG*/);
       `checkh(i, 32'h0);
 
       i = de.product;
-      `checkh(i, 32'h0);
+      `checkh(i, 32'h1);
 
       d = '{32'b1100, 32'b1010};
 
@@ -149,7 +149,7 @@ module t (/*AUTOARG*/);
       `checkh(i, 32'b0110);
 
       i = de.and;
-      `checkh(i, 32'b0);
+      `checkh(i, 32'hffff_ffff);
       i = de.or;
       `checkh(i, 32'b0);
       i = de.xor;
