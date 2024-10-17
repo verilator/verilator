@@ -106,6 +106,37 @@ class unconstrained_struct_with_array_test;
 
 endclass
 
+class unconstrained_struct_array_test;
+
+  typedef struct {
+    rand int field_a;
+    rand int field_b;
+  } simple_struct_t;
+  rand simple_struct_t struct_array_1[3]; // Unpacked array
+  rand simple_struct_t struct_array_2[][];  // Dynamic array
+
+  function new();
+    struct_array_1 = '{'{default: 0}, '{default: 1}, '{default: 2}};
+
+    struct_array_2 = new[3];
+    foreach (struct_array_2[i]) begin
+      struct_array_2[i] = new[4];
+    end
+  endfunction
+
+  function void check_randomization();
+    foreach (struct_array_1[i]) begin
+      `check_rand(this, struct_array_1[i].field_a)
+      `check_rand(this, struct_array_1[i].field_b)
+    end
+    foreach (struct_array_2[i, j]) begin
+      `check_rand(this, struct_array_2[i][j].field_a)
+      `check_rand(this, struct_array_2[i][j].field_b)
+    end
+  endfunction
+
+endclass
+
 class unconstrained_associative_array_test;
 
   rand int associative_array_1d[string];
@@ -172,6 +203,7 @@ module t_randomize_array;
   unconstrained_unpacked_array_test unpacked_class;
   unconstrained_dynamic_array_test dynamic_class;
   unconstrained_struct_with_array_test struct_with_array_class;
+  unconstrained_struct_array_test struct_array_class;
   unconstrained_associative_array_test associative_array_class;
   unconstrained_queue_test queue_class;
 
@@ -198,6 +230,11 @@ module t_randomize_array;
     struct_with_array_class = new();
     repeat(2) begin
       struct_with_array_class.check_randomization();
+    end
+
+    struct_array_class = new();
+    repeat(2) begin
+      struct_array_class.check_randomization();
     end
 
     // Test 5: Associative Array Unconstrained Test
