@@ -3104,6 +3104,99 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
         }
 
         return;
+    } else if (arrayvalue_p->format == vpiRawFourStateVal) {
+        PLI_BYTE8 *value_ptr;
+
+        if (arrayvalue_p->flags & vpiUserAllocFlag) {
+            value_ptr = arrayvalue_p->value.rawvals;
+        } else {
+            int ngroups;
+
+            switch (varp->vltype()) {
+                case VLVT_UINT8:
+                    ngroups = 1; break;
+                case VLVT_UINT16:
+                    ngroups = 2; break;
+                case VLVT_UINT32:
+                    ngroups = 4; break;
+                case VLVT_UINT64:
+                    ngroups = 8; break;
+                case VLVT_WDATA:
+                    ngroups = VL_WORDS_I(varp->packed().elements()) * sizeof(WData); break;
+                default:
+                    ngroups = 0; break;
+            }
+
+            const int words = VL_WORDS_I(ngroups * 8 * num);
+            if (VL_UNCOVERABLE(words >= VL_VALUE_STRING_MAX_WORDS)) {
+                VL_FATAL_MT(__FILE__, __LINE__, "",
+                            "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; "
+                            "increase and recompile");
+            }
+
+            value_ptr = (PLI_BYTE8*)out_ptr;
+            arrayvalue_p->value.rawvals = value_ptr;
+        }
+
+        if (varp->vltype() == VLVT_UINT8) {
+            CData *ptr = reinterpret_cast<CData*>(vop->varDatap());
+
+            struct s_rawvals {
+                uint8_t aval;
+                uint8_t bval;
+            } *rawvals = reinterpret_cast<s_rawvals*>(value_ptr);
+
+            for (int i = 0; i < num; i++) {
+                rawvals[i].aval = ptr[index++];
+                rawvals[i].bval = 0x00;
+
+                index = index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT16) {
+            SData *ptr = reinterpret_cast<SData*>(vop->varDatap());
+
+            struct s_rawvals {
+                uint16_t aval;
+                uint16_t bval;
+            } *rawvals = reinterpret_cast<s_rawvals*>(value_ptr);
+
+            for (int i = 0; i < num; i++) {
+                rawvals[i].aval = ptr[index++];
+                rawvals[i].bval = 0x00;
+
+                index = index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT32) {
+            IData *ptr = reinterpret_cast<IData*>(vop->varDatap());
+
+            struct s_rawvals {
+                uint32_t aval;
+                uint32_t bval;
+            } *rawvals = reinterpret_cast<s_rawvals*>(value_ptr);
+
+            for (int i = 0; i < num; i++) {
+                rawvals[i].aval = ptr[index++];
+                rawvals[i].bval = 0x00;
+
+                index = index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT64) {
+            QData *ptr = reinterpret_cast<QData*>(vop->varDatap());
+
+            struct s_rawvals {
+                uint64_t aval;
+                uint64_t bval;
+            } *rawvals = reinterpret_cast<s_rawvals*>(value_ptr);
+
+            for (int i = 0; i < num; i++) {
+                rawvals[i].aval = ptr[index++];
+                rawvals[i].bval = 0x00;
+
+                index = index % size;
+            }
+        }
+
+        return;
     } else if (arrayvalue_p->format == vpiRawTwoStateVal) {
         PLI_BYTE8 *value_ptr;
 
