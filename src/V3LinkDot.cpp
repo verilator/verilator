@@ -1333,9 +1333,10 @@ class LinkDotFindVisitor final : public VNVisitor {
                     } else {
                         findvarp->combineType(nodep);
                         findvarp->fileline()->modifyStateInherit(nodep->fileline());
-                        if (nodep->getChildDTypep()->numeric().isSigned()
-                            && !findvarp->getChildDTypep()->numeric().isSigned()) {
-                            findvarp->getChildDTypep()->numeric(VSigning{true});
+                        UASSERT_OBJ(nodep->subDTypep(), nodep, "Var has no type");
+                        if (nodep->subDTypep()->numeric().isSigned()
+                            && !findvarp->subDTypep()->numeric().isSigned()) {
+                            findvarp->subDTypep()->numeric(VSigning{true});
                         }
                         AstBasicDType* const bdtypep
                             = VN_CAST(findvarp->childDTypep(), BasicDType);

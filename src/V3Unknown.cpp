@@ -141,14 +141,16 @@ class UnknownVisitor final : public VNVisitor {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_constXCvt);
         VL_RESTORER(m_allowXUnique);
+        auto nameCountMap = std::make_unique<NameCountMap>();
         {
             m_modp = nodep;
             m_constXCvt = true;
             // Class X randomization causes Vxrand in strange places, so disable
             if (VN_IS(nodep, Class)) m_allowXUnique = false;
             m_lvboundNames.reset();
-            m_xrandNames.reset();
+            m_xrandNames.swap(nameCountMap);
             iterateChildren(nodep);
+            m_xrandNames.swap(nameCountMap);
         }
     }
     void visit(AstAssignDly* nodep) override {
