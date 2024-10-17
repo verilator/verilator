@@ -31,7 +31,10 @@ def test():
         print("== stage 0")
         run("/bin/rm -rf " + blddir)
         run("/bin/mkdir -p " + blddir)
-        run("cd " + blddir + " && " + srcdir + "/configure --prefix " + prefix)
+        # Matches Ubuntu's e.g. /usr/share/pkgconfig/verilator.pc
+        run("cd " + blddir + " && " + srcdir + "/configure --prefix " + prefix +
+            " --exec-prefix " + prefix + " --datarootdir " + prefix + "/share" + " --includedir " +
+            prefix + "/share/verilator/include")
         run("cd " + blddir + " && make -j " + str(calc_jobs()))
 
     # Install it under the prefix

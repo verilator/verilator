@@ -266,11 +266,15 @@ mkbindirs:
 installbin: | mkbindirs
 	cd $(srcdir)/bin; \
 	for p in $(VL_INST_PUBLIC_SCRIPT_FILES) ; do \
-	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkgdatadir)/bin/$$p; \
+	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/$$p; \
 	done
+	perl -p -i -e 'use File::Spec;' \
+	           -e' $$path = File::Spec->abs2rel("$(realpath $(DESTDIR)$(pkgdatadir))", "$(realpath $(DESTDIR)$(bindir))");' \
+	           -e 's/my \$$verilator_pkgdatadir_relpath = .*/my \$$verilator_pkgdatadir_relpath = "$$path";/g' \
+	           -- "$(DESTDIR)/$(bindir)/verilator"
 	cd bin; \
 	for p in $(VL_INST_PUBLIC_BIN_FILES) ; do \
-	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkgdatadir)/bin/$$p; \
+	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/$$p; \
 	done
 	cd $(srcdir)/bin; \
 	for p in $(VL_INST_PRIVATE_SCRIPT_FILES) ; do \
@@ -280,11 +284,11 @@ installbin: | mkbindirs
 installredirect: installbin | mkbindirs
 	cp ${srcdir}/bin/redirect ${srcdir}/bin/redirect.tmp
 	perl -p -i -e 'use File::Spec;' \
-	           -e' $$path = File::Spec->abs2rel("$(realpath $(DESTDIR)$(pkgdatadir)/bin)", "$(realpath $(DESTDIR)$(bindir))");' \
+	           -e' $$path = File::Spec->abs2rel("$(realpath $(DESTDIR)$(bindir))", "$(realpath $(DESTDIR)$(pkgdatadir)/bin)");' \
 	           -e 's/RELPATH.*/"$$path";/g' -- "${srcdir}/bin/redirect.tmp"
 	cd $(srcdir)/bin; \
 	for p in $(VL_INST_PUBLIC_SCRIPT_FILES) $(VL_INST_PUBLIC_BIN_FILES) ; do \
-	  $(INSTALL_PROGRAM) redirect.tmp $(DESTDIR)$(bindir)/$$p; \
+	  $(INSTALL_PROGRAM) redirect.tmp $(DESTDIR)$(pkgdatadir)/bin/$$p; \
 	done
 	rm ${srcdir}/bin/redirect.tmp
 
