@@ -27,17 +27,20 @@
 #include <map>
 #include <string>
 
+using NameCountMap = std::map<std::string, unsigned>;
 class V3UniqueNames final {
     const std::string m_prefix;  // Prefix to attach to all names
 
-    std::map<std::string, unsigned> m_multiplicity;  // Suffix number for given key
+    std::unique_ptr<NameCountMap> m_multiplicity;  // Suffix number for given key
 
     const bool m_addSuffix = true;  // Ad suffix or not
 
 public:
-    V3UniqueNames() = default;
+    V3UniqueNames()
+        : m_multiplicity{std::make_unique<NameCountMap>()} {}
     explicit V3UniqueNames(const std::string& prefix, bool addSuffix = true)
         : m_prefix{prefix}
+        , m_multiplicity{std::make_unique<NameCountMap>()}
         , m_addSuffix(addSuffix) {
         if (!m_prefix.empty()) {
             UASSERT(VString::startsWith(m_prefix, "__V"), "Prefix must start with '__V'");
@@ -49,15 +52,15 @@ public:
     // time we are called with the same argument.
     std::string get(const std::string& name) {
         if (!m_addSuffix) {
-            if (m_multiplicity.count(name) == 0) {
-                m_multiplicity[name] = 0;
+            if (m_multiplicity->count(name) == 0) {
+                (*m_multiplicity)[name] = 0;
                 return name;
             } else {
-                return get(name + "__" + cvtToStr(m_multiplicity[name]++));
+                return get(name + "__" + cvtToStr((*m_multiplicity)[name]++));
             }
         }
         // NORMAL mode
-        const unsigned num = m_multiplicity[name]++;
+        const unsigned num = (*m_multiplicity)[name]++;
         std::string result;
         if (!m_prefix.empty()) {
             result += m_prefix;
@@ -74,7 +77,9 @@ public:
     std::string get(const AstNode* nodep) { return get(V3Hasher::uncachedHash(nodep).toString()); }
 
     // Reset to initial state (as if just constructed)
-    void reset() { m_multiplicity.clear(); }
+    void reset() { m_multiplicity->clear(); }
+
+    void swap(std::unique_ptr<NameCountMap>& other) { m_multiplicity.swap(other); }
 };
 
 #endif  // Guard
