@@ -4,7 +4,7 @@
 #
 # Include it in your CMakeLists.txt using:
 #
-#     find_package(verilate)
+#     find_package(verilator)
 #
 #  This script adds a verilate function.
 #
