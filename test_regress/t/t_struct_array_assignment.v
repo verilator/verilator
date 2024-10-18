@@ -7,12 +7,12 @@
 class unconstrained_struct_array_test;
 
   typedef struct {
-    rand int field_a;
-    rand int field_b;
-    rand int field_c;
+    int field_a;
+    int field_b;
+    int field_c;
   } simple_struct_t;
 
-  rand simple_struct_t struct_array[3]; // Unpacked array
+  simple_struct_t struct_array[3]; // Unpacked array
 
   function new();
     // Initialize struct_array
