@@ -1413,8 +1413,13 @@ class RandomizeVisitor final : public VNVisitor {
             AstVarRef* tempRefp = new AstVarRef{fl, newRandLoopIndxp, VAccess::READ};
             if (VN_IS(tempDTypep, DynArrayDType))
                 tempElementp = new AstCMethodHard{fl, tempExprp, "atWrite", tempRefp};
-            else if (VN_IS(tempDTypep, UnpackArrayDType))
-                tempElementp = new AstArraySel{fl, tempExprp, tempRefp};
+            else if (VN_IS(tempDTypep, UnpackArrayDType)){
+                AstNodeArrayDType* aryDTypep = VN_CAST(tempDTypep, NodeArrayDType);
+                tempElementp = new AstArraySel{fl, tempExprp, new AstSel{fl, new AstSub{fl, tempRefp, new AstConst{fl,static_cast<uint32_t>(aryDTypep->lo())}}, 
+                                                                            new AstConst{fl, 0},   
+                                                                            new AstConst{fl,static_cast<uint32_t>(V3Number::log2b(aryDTypep->elementsConst()) + 1)}}};
+                //tempElementp = new AstArraySel{fl, tempExprp, tempRefp};
+            }
             else if (VN_IS(tempDTypep, AssocArrayDType))
                 tempElementp = new AstAssocSel{fl, tempExprp, tempRefp};
             else if (VN_IS(tempDTypep, QueueDType))
