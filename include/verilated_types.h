@@ -485,6 +485,8 @@ private:
 
 public:
     using const_iterator = typename Deque::const_iterator;
+    template <class Func>
+    using WithFuncReturnType = decltype(std::declval<Func>()(0, std::declval<T_Value>()));
 
 private:
     // MEMBERS
@@ -831,70 +833,63 @@ public:
         return out;
     }
     template <typename Func>
-    T_Value r_sum(Func with_func) const {
-        T_Value out(0);  // Type must have assignment operator
+    WithFuncReturnType<Func> r_sum(Func with_func) const {
+        WithFuncReturnType<Func> out = WithFuncReturnType<Func>(0);
         IData index = 0;
         for (const auto& i : m_deque) out += with_func(index++, i);
         return out;
     }
     T_Value r_product() const {
-        if (m_deque.empty()) return T_Value(0);
-        auto it = m_deque.cbegin();
-        T_Value out{*it};
-        ++it;
-        for (; it != m_deque.cend(); ++it) out *= *it;
+        if (m_deque.empty()) return T_Value(0);  // The big three do it this way
+        T_Value out = T_Value(1);
+        for (const auto& i : m_deque) out *= i;
         return out;
     }
     template <typename Func>
-    T_Value r_product(Func with_func) const {
-        if (m_deque.empty()) return T_Value(0);
-        auto it = m_deque.cbegin();
+    WithFuncReturnType<Func> r_product(Func with_func) const {
+        if (m_deque.empty()) return WithFuncReturnType<Func>(0);  // The big three do it this way
+        WithFuncReturnType<Func> out = WithFuncReturnType<Func>(1);
         IData index = 0;
-        T_Value out{with_func(index, *it)};
-        ++it;
-        ++index;
-        for (; it != m_deque.cend(); ++it) out *= with_func(index++, *it);
+        for (const auto& i : m_deque) out *= with_func(index++, i);
         return out;
     }
     T_Value r_and() const {
-        if (m_deque.empty()) return T_Value(0);
-        auto it = m_deque.cbegin();
-        T_Value out{*it};
-        ++it;
-        for (; it != m_deque.cend(); ++it) out &= *it;
+        if (m_deque.empty()) return T_Value(0);  // The big three do it this way
+        T_Value out = ~T_Value(0);
+        for (const auto& i : m_deque) out &= i;
         return out;
     }
     template <typename Func>
-    T_Value r_and(Func with_func) const {
-        if (m_deque.empty()) return T_Value(0);
-        auto it = m_deque.cbegin();
+    WithFuncReturnType<Func> r_and(Func with_func) const {
+        if (m_deque.empty()) return WithFuncReturnType<Func>(0);  // The big three do it this way
         IData index = 0;
-        T_Value out{with_func(index, *it)};
-        ++it;
-        ++index;
-        for (; it != m_deque.cend(); ++it) out &= with_func(index, *it);
+        WithFuncReturnType<Func> out = ~WithFuncReturnType<Func>(0);
+        for (const auto& i : m_deque) out &= with_func(index++, i);
         return out;
     }
     T_Value r_or() const {
-        T_Value out(0);  // Type must have assignment operator
+        T_Value out = T_Value(0);
         for (const auto& i : m_deque) out |= i;
         return out;
     }
     template <typename Func>
-    T_Value r_or(Func with_func) const {
-        T_Value out(0);  // Type must have assignment operator
+    WithFuncReturnType<Func> r_or(Func with_func) const {
+        WithFuncReturnType<Func> out = WithFuncReturnType<Func>(0);
         IData index = 0;
         for (const auto& i : m_deque) out |= with_func(index++, i);
         return out;
     }
     T_Value r_xor() const {
-        T_Value out(0);  // Type must have assignment operator
+#ifdef VERILATOR_BIG3_NULLARY_ARITHMETICS_QUIRKS
+        if (m_deque.empty()) return T_Value(0);
+#endif
+        T_Value out = T_Value(0);
         for (const auto& i : m_deque) out ^= i;
         return out;
     }
     template <typename Func>
-    T_Value r_xor(Func with_func) const {
-        T_Value out(0);  // Type must have assignment operator
+    WithFuncReturnType<Func> r_xor(Func with_func) const {
+        WithFuncReturnType<Func> out = WithFuncReturnType<Func>(0);
         IData index = 0;
         for (const auto& i : m_deque) out ^= with_func(index++, i);
         return out;
@@ -931,6 +926,9 @@ private:
 
 public:
     using const_iterator = typename Map::const_iterator;
+    template <class Func>
+    using WithFuncReturnType
+        = decltype(std::declval<Func>()(std::declval<T_Key>(), std::declval<T_Value>()));
 
 private:
     // MEMBERS
@@ -1177,64 +1175,56 @@ public:
         return out;
     }
     template <typename Func>
-    T_Value r_sum(Func with_func) const {
-        T_Value out(0);  // Type must have assignment operator
+    WithFuncReturnType<Func> r_sum(Func with_func) const {
+        WithFuncReturnType<Func> out = WithFuncReturnType<Func>(0);
         for (const auto& i : m_map) out += with_func(i.first, i.second);
         return out;
     }
     T_Value r_product() const {
-        if (m_map.empty()) return T_Value(0);
-        auto it = m_map.cbegin();
-        T_Value out{it->second};
-        ++it;
-        for (; it != m_map.cend(); ++it) out *= it->second;
+        if (m_map.empty()) return T_Value(0);  // The big three do it this way
+        T_Value out = T_Value(1);
+        for (const auto& i : m_map) out *= i.second;
         return out;
     }
     template <typename Func>
-    T_Value r_product(Func with_func) const {
-        if (m_map.empty()) return T_Value(0);
-        auto it = m_map.cbegin();
-        T_Value out{with_func(it->first, it->second)};
-        ++it;
-        for (; it != m_map.cend(); ++it) out *= with_func(it->first, it->second);
+    WithFuncReturnType<Func> r_product(Func with_func) const {
+        if (m_map.empty()) return WithFuncReturnType<Func>(0);  // The big three do it this way
+        WithFuncReturnType<Func> out = WithFuncReturnType<Func>(1);
+        for (const auto& i : m_map) out *= with_func(i.first, i.second);
         return out;
     }
     T_Value r_and() const {
-        if (m_map.empty()) return T_Value(0);
-        auto it = m_map.cbegin();
-        T_Value out{it->second};
-        ++it;
-        for (; it != m_map.cend(); ++it) out &= it->second;
+        if (m_map.empty()) return T_Value(0);  // The big three do it this way
+        T_Value out = ~T_Value(0);
+        for (const auto& i : m_map) out &= i.second;
         return out;
     }
     template <typename Func>
-    T_Value r_and(Func with_func) const {
-        if (m_map.empty()) return T_Value(0);
-        auto it = m_map.cbegin();
-        T_Value out{with_func(it->first, it->second)};
-        ++it;
-        for (; it != m_map.cend(); ++it) out &= with_func(it->first, it->second);
+    WithFuncReturnType<Func> r_and(Func with_func) const {
+        if (m_map.empty()) return WithFuncReturnType<Func>(0);  // The big three do it this way
+        WithFuncReturnType<Func> out = ~WithFuncReturnType<Func>(0);
+        for (const auto& i : m_map) out &= with_func(i.first, i.second);
         return out;
     }
     T_Value r_or() const {
-        T_Value out(0);  // Type must have assignment operator
+        T_Value out = T_Value(0);
         for (const auto& i : m_map) out |= i.second;
         return out;
     }
     template <typename Func>
     T_Value r_or(Func with_func) const {
-        T_Value out(0);  // Type must have assignment operator
+        T_Value out = T_Value(0);
         for (const auto& i : m_map) out |= with_func(i.first, i.second);
         return out;
     }
     T_Value r_xor() const {
-        T_Value out(0);  // Type must have assignment operator
+        T_Value out = T_Value(0);
         for (const auto& i : m_map) out ^= i.second;
         return out;
     }
     template <typename Func>
-    T_Value r_xor(Func with_func) const {
-        T_Value out(0);  // Type must have assignment operator
+    WithFuncReturnType<Func> r_xor(Func with_func) const {
+        WithFuncReturnType<Func> out = WithFuncReturnType<Func>(0);
         for (const auto& i : m_map) out ^= with_func(i.first, i.second);
         return out;
     }
