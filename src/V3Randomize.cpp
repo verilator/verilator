@@ -1423,7 +1423,7 @@ class RandomizeVisitor final : public VNVisitor {
                                    new AstConst{fl, static_cast<uint32_t>(aryDTypep->lo())}},
                         new AstConst{fl, 0},
                         new AstConst{fl, static_cast<uint32_t>(
-                                             V3Number::log2b(aryDTypep->elementsConst()) + 1)}}};
+                                             V3Number::log2b(aryDTypep->hi()) + 1)}}};
                 //tempElementp = new AstArraySel{fl, tempExprp, tempRefp};
             } else if (VN_IS(tempDTypep, AssocArrayDType))
                 tempElementp = new AstAssocSel{fl, tempExprp, tempRefp};
