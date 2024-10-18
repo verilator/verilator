@@ -19,7 +19,6 @@
 #include "V3EmitMk.h"
 
 #include "V3EmitCBase.h"
-#include "V3Global.h"
 #include "V3HierBlock.h"
 #include "V3Os.h"
 
@@ -689,8 +688,6 @@ public:
             of.puts("\t-DVM_SOLVER_DEFAULT='\"" + V3OutFormatter::quoteNameControls(solver)
                     + "\"' \\\n");
         if (!v3Global.opt.libCreate().empty()) of.puts("\t-fPIC \\\n");
-        if (v3Global.opt.nullArithmeticsQuirks())
-            of.puts("-DVERILATOR_BIG3_NULLARY_ARITHMETICS_QUIRKS \\\n");
         const V3StringList& cFlags = v3Global.opt.cFlags();
         for (const string& i : cFlags) of.puts("\t" + i + " \\\n");
         of.puts("\n");

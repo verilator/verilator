@@ -1399,8 +1399,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-max-num-width", Set, &m_maxNumWidth);
     DECL_OPTION("-mod-prefix", Set, &m_modPrefix);
 
-    DECL_OPTION("-null-arithmetics-quirks", OnOff, &m_nullArithmeticsQuirks);
-
     DECL_OPTION("-O0", CbCall, [this]() { optimize(0); });
     DECL_OPTION("-O1", CbCall, [this]() { optimize(1); });
     DECL_OPTION("-O2", CbCall, [this]() { optimize(2); });

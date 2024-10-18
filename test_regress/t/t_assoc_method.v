@@ -126,9 +126,9 @@ module t (/*AUTOARG*/);
       i = qe.sum with (item + 1);
       `checkh(i, 32'h0);
       i = qe.product;
-      `checkh(i, 32'h1);
+      `checkh(i, 32'h0);
       i = qe.product with (item + 1);
-      `checkh(i, 32'h1);
+      `checkh(i, 32'h0);
 
       q = '{10:32'b1100, 11:32'b1010};
       i = q.and;
@@ -145,9 +145,9 @@ module t (/*AUTOARG*/);
       `checkh(i, 32'b0110);
 
       i = qe.and;
-      `checkh(i, 32'hffff_ffff);
+      `checkh(i, 32'b0);
       i = qe.and with (item + 1);
-      `checkh(i, 32'hffff_ffff);
+      `checkh(i, 32'h0);
       i = qe.or;
       `checkh(i, 32'b0);
       i = qe.or with (item + 1);
@@ -171,7 +171,7 @@ module t (/*AUTOARG*/);
       `checkh(i, 32'b0110);
 
       i = qe.and();
-      `checkh(i, 32'hffff_ffff);
+      `checkh(i, 32'b0);
       i = qe.or();
       `checkh(i, 32'b0);
       i = qe.xor();
