@@ -3359,6 +3359,14 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
             __func__, vop->fullname(), varp->dims());
     }
 
+    int minRange = fmin(vop->rangep()->left(), vop->rangep()->right());
+    int maxRange = fmax(vop->rangep()->left(), vop->rangep()->right());
+
+    if ((index_p[0] > maxRange) || (index_p[0] < minRange)) {
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: index %u for object %s is out of bounds [%u,%u]",
+            __func__, index_p[0], vop->fullname(), minRange, maxRange);
+    }
+
     vl_get_value_array(object, arrayvalue_p, index_p, num);
 }
 
