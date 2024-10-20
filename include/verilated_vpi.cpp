@@ -2903,6 +2903,9 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 
     static thread_local EData out_ptr[VL_VALUE_STRING_MAX_WORDS * 2];
 
+    if (VL_UNLIKELY(!vop->rangep())) return;
+    index -= fmin(vop->rangep()->left(), vop->rangep()->right());
+
     if (arrayvalue_p->format == vpiIntVal) {
         PLI_INT32 *integers;
 
@@ -3193,6 +3196,25 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                 rawvals[i].bval = 0x00;
 
                 index = index % size;
+            }
+        } else if (varp->vltype() == VLVT_WDATA) {
+            EData *ptr = reinterpret_cast<EData*>(vop->varDatap());
+            EData *rawvals = reinterpret_cast<EData*>(value_ptr);
+
+            const int words = VL_WORDS_I(varp->packed().elements());
+
+            for (int i = 0; i < num; i++) {
+                int j = 0;
+
+                for (; j < words; j++) {
+                    rawvals[i * words * 2 + j] = ptr[index * words + j];
+                }
+
+                for (; j < (words * 2); j++) {
+                    rawvals[i * words * 2 + j] = 0x00;
+                }
+
+                index = ++index % size;
             }
         }
 
