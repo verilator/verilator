@@ -1414,7 +1414,7 @@ class RandomizeVisitor final : public VNVisitor {
             if (VN_IS(tempDTypep, DynArrayDType))
                 tempElementp = new AstCMethodHard{fl, tempExprp, "atWrite", tempRefp};
             else if (VN_IS(tempDTypep, UnpackArrayDType)) {
-                AstNodeArrayDType* aryDTypep = VN_CAST(tempDTypep, NodeArrayDType);
+                AstNodeArrayDType* const aryDTypep = VN_CAST(tempDTypep, NodeArrayDType);
                 // Adjust the bitp to ensure it covers all possible indices
                 tempElementp = new AstArraySel{
                     fl, tempExprp,
