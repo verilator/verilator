@@ -123,12 +123,12 @@ class UnknownVisitor final : public VNVisitor {
                 currentStmtp = currentStmtp->backp();
             VNRelinker linkContext;
             currentStmtp = currentStmtp->unlinkFrBackWithNext(&linkContext);
-            AstNodeExpr* selExprp = prep->cloneTree(true);
+            AstNodeExpr* const selExprp = prep->cloneTree(true);
             AstNodeExpr* currentExprp = selExprp;
             while (AstNodeExpr* itrSelExprp = VN_AS(currentExprp->op1p(), NodeExpr)) {
-                if (VN_IS(itrSelExprp, VarRef)) {
+                if (AstVarRef* const selRefp = VN_CAST(itrSelExprp, VarRef)) {
                     // Mark the variable reference as READ access to avoid assignment issues
-                    VN_AS(itrSelExprp, VarRef)->access(VAccess::READ);
+                    selRefp->access(VAccess::READ);
                     break;
                 }
                 currentExprp = itrSelExprp;
@@ -136,7 +136,7 @@ class UnknownVisitor final : public VNVisitor {
             // Before assigning the value to the temporary variable, first assign the current array
             // element to it. This ensures any field modifications happen on the correct instance
             // and prevents overwriting other fields.
-            AstNode* newAssignp
+            AstNode* const newAssignp
                 = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, selExprp};
             newAssignp->addNextStmt(currentStmtp, newAssignp);
             linkContext.relink(newAssignp);
