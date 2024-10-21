@@ -119,6 +119,28 @@ class UnknownVisitor final : public VNVisitor {
                 = new AstVar{fl, VVarType::MODULETEMP, m_lvboundNames.get(prep), prep->dtypep()};
             m_modp->addStmtsp(varp);
             AstNode* const abovep = prep->backp();  // Grab above point before we replace 'prep'
+            AstNode* currentStmtp = abovep;
+            while (currentStmtp && !VN_IS(currentStmtp, NodeStmt))
+                currentStmtp = currentStmtp->backp();
+            VNRelinker linkContext;
+            currentStmtp = currentStmtp->unlinkFrBackWithNext(&linkContext);
+            AstNodeExpr* const selExprp = prep->cloneTree(true);
+            AstNodeExpr* currentExprp = selExprp;
+            while (AstNodeExpr* itrSelExprp = VN_AS(currentExprp->op1p(), NodeExpr)) {
+                if (AstVarRef* const selRefp = VN_CAST(itrSelExprp, VarRef)) {
+                    // Mark the variable reference as READ access to avoid assignment issues
+                    selRefp->access(VAccess::READ);
+                    break;
+                }
+                currentExprp = itrSelExprp;
+            }
+            // Before assigning the value to the temporary variable, first assign the current array
+            // element to it. This ensures any field modifications happen on the correct instance
+            // and prevents overwriting other fields.
+            AstNode* const newAssignp
+                = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, selExprp};
+            newAssignp->addNextStmt(currentStmtp, newAssignp);
+            linkContext.relink(newAssignp);
             prep->replaceWith(new AstVarRef{fl, varp, VAccess::WRITE});
             if (m_timingControlp) m_timingControlp->unlinkFrBack();
             AstIf* const newp = new AstIf{
