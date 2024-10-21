@@ -35,7 +35,7 @@ class unconstrained_unpacked_array_test;
 
   rand bit [2:0] [15:0] unpacked_array [3][5];
   rand int unpacked_array1 [9:3][4:8];
-  rand int unpacked_array2 [3:9][8:4]; 
+  rand int unpacked_array2 [3:9][8:4];
   function new();
     unpacked_array = '{ '{default: '{default: 'h0}},
                         '{default: '{default: 'h1}},
