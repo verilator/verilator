@@ -34,10 +34,12 @@ endclass
 class unconstrained_unpacked_array_test;
 
   rand bit [2:0] [15:0] unpacked_array [3][5];
+  rand int unpacked_array1 [9:3][4:8];
   function new();
     unpacked_array = '{ '{default: '{default: 'h0}},
                         '{default: '{default: 'h1}},
                         '{default: '{default: 'h2}}};
+    unpacked_array1 = '{default: '{default: 0}};
   endfunction
 
   function void check_randomization();
@@ -46,6 +48,9 @@ class unconstrained_unpacked_array_test;
         // At the innermost packed level, invoke check_rand
         `check_rand(this, this.unpacked_array[i][j])
       end
+    end
+    foreach (unpacked_array1[i, j]) begin
+      `check_rand(this, this.unpacked_array1[i][j])
     end
   endfunction
 
