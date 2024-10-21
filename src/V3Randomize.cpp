@@ -1404,9 +1404,19 @@ class RandomizeVisitor final : public VNVisitor {
             AstVarRef* tempRefp = new AstVarRef{fl, newRandLoopIndxp, VAccess::READ};
             if (VN_IS(tempDTypep, DynArrayDType))
                 tempElementp = new AstCMethodHard{fl, tempExprp, "atWrite", tempRefp};
-            else if (VN_IS(tempDTypep, UnpackArrayDType))
-                tempElementp = new AstArraySel{fl, tempExprp, tempRefp};
-            else if (VN_IS(tempDTypep, AssocArrayDType))
+            else if (VN_IS(tempDTypep, UnpackArrayDType)) {
+                AstNodeArrayDType* const aryDTypep = VN_CAST(tempDTypep, NodeArrayDType);
+                // Adjust the bitp to ensure it covers all possible indices
+                tempElementp = new AstArraySel{
+                    fl, tempExprp,
+                    new AstSel{
+                        fl,
+                        new AstSub{fl, tempRefp,
+                                   new AstConst{fl, static_cast<uint32_t>(aryDTypep->lo())}},
+                        new AstConst{fl, 0},
+                        new AstConst{
+                            fl, static_cast<uint32_t>(V3Number::log2b(aryDTypep->hi()) + 1)}}};
+            } else if (VN_IS(tempDTypep, AssocArrayDType))
                 tempElementp = new AstAssocSel{fl, tempExprp, tempRefp};
             else if (VN_IS(tempDTypep, QueueDType))
                 tempElementp = new AstCMethodHard{fl, tempExprp, "atWriteAppend", tempRefp};
