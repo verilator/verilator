@@ -85,6 +85,7 @@ Verilator 5.029 devel
 * Fix configure inserting absolute paths for Python and Perl (#5504) (#5505). [Nathan Graybeal]
 * Fix pattern initialization with typedef key (#5512). [Eugene Feinberg]
 * Fix `-j` option without argument in hierarchical Verilation (#5514). [Ryszard Rozak, Antmicro Ltd.]
+* Fix long module names crashing string handling (#5546). [Filip Badáň]
 
 
 Verilator 5.028 2024-08-21

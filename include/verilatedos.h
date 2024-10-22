@@ -468,8 +468,6 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
     #define VL_VALUE_STRING_MAX_WORDS 64  ///< Max size in words of String conversion operation
 #endif
 
-#define VL_VALUE_STRING_MAX_CHARS (VL_VALUE_STRING_MAX_WORDS * VL_EDATASIZE / VL_BYTESIZE)
-
 //=========================================================================
 // Base macros
 
