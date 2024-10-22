@@ -21,6 +21,7 @@ Verilator 5.029 devel
 * Change .vlt config files to be read before .v files (#5185). [David Moberg]
 * Change to use maximum for cover point aggregation (#5402). [Andrew Nolte]
 * Change `--main` and `--binary` to use a TOP hierarchy name of "" (#5482).
+* Change install of public executables into bindir instead of pkgdatadir (#5140) (#5544). [Geza Lore]
 * Support IEEE-compliant intra-assign delays (#3711) (#5441). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support `wor`, `trior`, `wand`, `triand` (#5386) (#5496). [Zhou Shen]
 * Support unconstrained randomization for unions (#5395) (#5396). [Yilou Wang]
@@ -85,6 +86,15 @@ Verilator 5.029 devel
 * Fix configure inserting absolute paths for Python and Perl (#5504) (#5505). [Nathan Graybeal]
 * Fix pattern initialization with typedef key (#5512). [Eugene Feinberg]
 * Fix `-j` option without argument in hierarchical Verilation (#5514). [Ryszard Rozak, Antmicro Ltd.]
+* Fix `foreach` with 2-D queues and dynamic arrays (#5525) (#5529). [Yilou Wang]
+* Fix struct array assignment (#5455) (#5537). [Yilou Wang]
+* Fix copy constructor of classes that use std::process (#5528). [Ryszard Rozak, Antmicro Ltd.]
+* Fix foreach on associative array (#5530). [Yilou Wang]
+* Fix multi-range indices assignment (#5534) (#5547). [Yilou Wang]
+* Fix static function wrappers (#5536). [Ryszard Rozak, Antmicro Ltd.]
+* Fix assignments of concatenation to queues and dynamic arrays (#5540). [Ryszard Rozak, Antmicro Ltd.]
+* Fix container reduction methods (#5542). [Krzysztof Boroński]
+* Fix complex user type problem with `--x-assign` (#5543). [Todd Strader]
 * Fix long module names crashing string handling (#5546). [Filip Badáň]
 
 

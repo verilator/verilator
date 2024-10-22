@@ -20,6 +20,7 @@ Ashutosh
 Ast
 Atmel
 Aurelien
+Badáň
 Bagri
 Balboni
 Baltazar
@@ -113,6 +114,7 @@ Faure
 Feinberg
 Fekete
 Ferrandi
+Filip
 Flachs
 Flavien
 Florian
@@ -523,6 +525,7 @@ basename
 bbox
 benchmarking
 biguint
+bindir
 biops
 bisonpre
 bitOpTree
@@ -873,6 +876,7 @@ phelter
 picoChip
 pinIndex
 pinout
+pkgdatadir
 plusargs
 pmos
 poping
