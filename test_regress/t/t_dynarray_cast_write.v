@@ -16,12 +16,17 @@ endclass
 
 module t (/*AUTOARG*/);
    initial begin
+      int sel_bit = 3;
       Bar bar = new;
       Foo foo = bar;
-      Bar bars[] = new[1];
+      Bar bars[] = new[4];
       $cast(bars[0], foo);
-
       if (bars[0].x != 2) $stop;
+      $cast(bars[sel_bit[0]], foo);
+      if (bars[1].x != 2) $stop;
+
+      $cast(bars[sel_bit[1:0]], foo);
+      if (bars[3].x != 2) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
