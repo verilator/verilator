@@ -3520,9 +3520,19 @@ class WidthVisitor final : public VNVisitor {
         return VN_AS(nodep->pinsp(), Arg)->exprp();
     }
     void methodCallLValueRecurse(AstMethodCall* nodep, AstNode* childp, const VAccess& access) {
-        if (const AstCMethodHard* const ichildp = VN_CAST(childp, CMethodHard)) {
-            if (ichildp->name() == "at" || ichildp->name() == "atWrite"
-                || ichildp->name() == "atWriteAppend" || ichildp->name() == "atWriteAppendBack") {
+        if (AstCMethodHard* const ichildp = VN_CAST(childp, CMethodHard)) {
+            const std::string name = ichildp->name();
+            if (name == "at" || name == "atWrite" || name == "atBack" || name == "atWriteAppend"
+                || name == "atWriteAppendBack") {
+                const AstNodeDType* const fromDtypep = ichildp->fromp()->dtypep()->skipRefp();
+                if (VN_IS(fromDtypep, QueueDType) || VN_IS(fromDtypep, DynArrayDType)) {
+                    // Change access methods to writable ones
+                    if (name == "at") {
+                        ichildp->name("atWrite");
+                    } else if (name == "atBack") {
+                        ichildp->name("atWriteAppendBack");
+                    }
+                }
                 methodCallLValueRecurse(nodep, ichildp->fromp(), access);
                 return;
             }
