@@ -2459,8 +2459,8 @@ class VlTest:
             return
         count = len(re.findall(regexp, contents))
         if expcount != count:
-            self.error("File_grep_count: " + filename + ": Got='" + count + "' Expected='" +
-                       expcount + "' in regexp: '" + regexp + "'")
+            self.error("File_grep_count: " + filename + ": Got='" + str(count) + "' Expected='" +
+                       str(expcount) + "' in regexp: '" + regexp + "'")
 
     def file_grep_any(self, filenames: list, regexp, expvalue=None) -> None:
         for filename in filenames:
