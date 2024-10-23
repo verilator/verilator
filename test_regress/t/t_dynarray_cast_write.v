@@ -22,8 +22,12 @@ module t (/*AUTOARG*/);
       Bar bars[] = new[4];
       $cast(bars[0], foo);
       if (bars[0].x != 2) $stop;
+
       $cast(bars[sel_bit[0]], foo);
       if (bars[1].x != 2) $stop;
+
+      $cast(bars[bars[0].x], foo);
+      if (bars[2].x != 2) $stop;
 
       $cast(bars[sel_bit[1:0]], foo);
       if (bars[3].x != 2) $stop;
