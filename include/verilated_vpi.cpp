@@ -2903,7 +2903,11 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 
     static thread_local EData out_ptr[VL_VALUE_STRING_MAX_WORDS * 2];
 
-    if (VL_UNLIKELY(!vop->rangep())) return;
+    if (num > size) {
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: requested elements (%u) exceed array size (%u)",
+                    __func__, num, size);
+    }
+
     index -= fmin(vop->rangep()->left(), vop->rangep()->right());
 
     if (arrayvalue_p->format == vpiIntVal) {
@@ -3359,6 +3363,8 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
             __func__, vop->fullname(), varp->dims());
     }
 
+    if (VL_UNLIKELY(!vop->rangep())) return;
+
     int minRange = fmin(vop->rangep()->left(), vop->rangep()->right());
     int maxRange = fmax(vop->rangep()->left(), vop->rangep()->right());
 
@@ -3370,9 +3376,99 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
     vl_get_value_array(object, arrayvalue_p, index_p, num);
 }
 
-void vpi_put_value_array(vpiHandle /*object*/, p_vpi_arrayvalue /*arrayvalue_p*/,
-                         PLI_INT32* /*index_p*/, PLI_UINT32 /*num*/) {
-    VL_VPI_UNIMP_();
+void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
+                        PLI_INT32* index_p, PLI_UINT32 num) {
+    const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
+    if (!vl_check_array_format(vop->varp(), arrayvalue_p, vop->fullname())) return;
+
+    const VerilatedVar* const varp = vop->varp();
+    int size = vop->size();
+    int index = index_p[0];
+
+    if (VL_UNLIKELY(!vop->rangep())) return;
+    index -= fmin(vop->rangep()->left(), vop->rangep()->right());
+
+    if (arrayvalue_p->format == vpiIntVal) {
+        PLI_INT32 *integers = arrayvalue_p->value.integers;
+
+        if (varp->vltype() == VLVT_UINT8) {
+            CData *ptr = reinterpret_cast<CData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                ptr[index++] = integers[i];
+                index = index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT16) {
+            SData *ptr = reinterpret_cast<SData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                ptr[index++] = integers[i];
+                index = index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT32) {
+            IData *ptr = reinterpret_cast<IData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                ptr[index++] = integers[i];
+                index = index % size;
+            }
+        }
+
+        return;
+    }
+
+    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for %s", __func__,
+                  VerilatedVpiError::strFromVpiVal(arrayvalue_p->format), vop->fullname());
+}
+
+void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
+                         PLI_INT32* index_p, PLI_UINT32 num) {
+    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_put_value_array %p\n", object););
+    VerilatedVpiImp::assertOneCheck();
+
+    VL_VPI_ERROR_RESET_();
+    if (VL_UNLIKELY(!object)) return;
+
+    const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
+    if (!vop) {
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
+    }
+
+    if (vop->type() != vpiRegArray) {
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported type (%p, %s)", __func__,
+            object, VerilatedVpiError::strFromVpiObjType(vop->type()));
+    }
+
+    const VerilatedVar* const varp = vop->varp();
+
+    if (varp->dims() != 2) {
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: object %s has unsupported number of indices (%d)",
+            __func__, vop->fullname(), varp->dims());
+    }
+
+    if (VL_UNLIKELY(!vop->rangep())) return;
+
+    int minRange = fmin(vop->rangep()->left(), vop->rangep()->right());
+    int maxRange = fmax(vop->rangep()->left(), vop->rangep()->right());
+
+    if ((index_p[0] > maxRange) || (index_p[0] < minRange)) {
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: index %u for object %s is out of bounds [%u,%u]",
+            __func__, index_p[0], vop->fullname(), minRange, maxRange);
+    }
+
+    if (VL_UNLIKELY(!vop->varp()->isPublicRW())) {
+        VL_VPI_ERROR_(__FILE__, __LINE__,
+                        "Ignoring vpi_put_value_array to signal marked read-only,"
+                        " use public_flat_rw instead: %s",
+                        vop->fullname());
+    }
+
+    if (arrayvalue_p->flags & ~(vpiPropagateOff | vpiOneValue | vpiNoDelay)) {
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported flags (%x)",
+                        __func__, arrayvalue_p->flags);
+    }
+
+    vl_put_value_array(object, arrayvalue_p, index_p, num);
 }
 
 // time processing
