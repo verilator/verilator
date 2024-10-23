@@ -2903,7 +2903,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 
     static thread_local EData out_ptr[VL_VALUE_STRING_MAX_WORDS * 2];
 
-    if (num > size) {
+    if (VL_UNCOVERABLE(num > size)) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: requested elements (%u) exceed array size (%u)",
                     __func__, num, size);
     }
@@ -3347,7 +3347,7 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
     if (VL_UNLIKELY(!object)) return;
 
     const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
-    if (!vop) {
+    if (VL_UNLIKELY(!vop)) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
     }
 
@@ -3385,7 +3385,6 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
     int size = vop->size();
     int index = index_p[0];
 
-    if (VL_UNLIKELY(!vop->rangep())) return;
     index -= fmin(vop->rangep()->left(), vop->rangep()->right());
 
     if (arrayvalue_p->format == vpiIntVal) {
@@ -3430,7 +3429,7 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
     if (VL_UNLIKELY(!object)) return;
 
     const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
-    if (!vop) {
+    if (VL_UNLIKELY(!vop)) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
     }
 
