@@ -708,7 +708,7 @@ class TraceVisitor final : public VNVisitor {
                 // Track splitting due to size
                 UASSERT_OBJ(incFulp->nodeCount() == incChgp->nodeCount(), declp,
                             "Should have equal cost");
-                auto range = declp->arrayRange();
+                const VNumRange range = declp->arrayRange();
                 if (range.ranged()) {
                     // 2x because each element is a TraceInc and a VarRef
                     subStmts += range.elements() * 2;
