@@ -457,6 +457,7 @@ public:
             rhs = false;
             iterateAndNextConstNull(castp->fromp());
         } else if (nodep->isWide() && VN_IS(nodep->lhsp(), VarRef)  //
+                   && !VN_IS(nodep->rhsp(), CCast)  //
                    && !VN_IS(nodep->rhsp(), CExpr)  //
                    && !VN_IS(nodep->rhsp(), CMethodHard)  //
                    && !VN_IS(nodep->rhsp(), VarRef)  //
@@ -1174,6 +1175,8 @@ public:
             putns(nodep, "(SData)(");
         } else if (nodep->size() <= VL_IDATASIZE) {
             putns(nodep, "(IData)(");
+        } else if (nodep->isWide()) {
+            putns(nodep, "VlWide<" + std::to_string(nodep->widthWords()) + ">(");
         } else {
             putns(nodep, "(QData)(");
         }

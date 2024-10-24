@@ -456,6 +456,12 @@ struct VlWide final {
     bool operator<(const VlWide<T_Words>& rhs) const {
         return _vl_cmp_w(T_Words, data(), rhs.data()) < 0;
     }
+    template <std::size_t T_NewWords>
+    explicit operator VlWide<T_NewWords>() {
+        VlWide<T_NewWords> out;
+        std::memcpy(out.data(), this->data(), std::min(T_NewWords, T_Words) * sizeof(EData));
+        return out;
+    }
 };
 
 // Convert a C array to std::array reference by pointer magic, without copy.

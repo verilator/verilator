@@ -70,15 +70,19 @@ class CastVisitor final : public VNVisitor {
         nodep->user1(1);  // Now must be of known size
     }
     static int castSize(AstNode* nodep) {
-        if (nodep->isQuad()) {
-            return VL_QUADSIZE;
-        } else if (nodep->width() <= 8) {
-            return 8;
-        } else if (nodep->width() <= 16) {
-            return 16;
-        } else {
-            return VL_IDATASIZE;
-        }
+        if (nodep->isQuad()) return VL_QUADSIZE;
+        if (nodep->width() <= VL_BYTESIZE) return VL_BYTESIZE;
+        if (nodep->width() <= VL_SHORTSIZE) return VL_SHORTSIZE;
+        if (nodep->isWide()) return nodep->widthWords() * VL_EDATASIZE;
+        return VL_IDATASIZE;
+    }
+    static bool isDynamicWideTemp(const AstVarRef* const nodep) {
+        AstNodeDType* const backDTypep = VN_AS(nodep->backp(), NodeExpr)->dtypep()->skipRefp();
+        AstVar* const varp = nodep->varp();
+        return varp->isWide() && varp->isStatementTemp()
+               && (VN_IS(backDTypep, AssocArrayDType) || VN_IS(backDTypep, WildcardArrayDType)
+                   || VN_IS(backDTypep, DynArrayDType) || VN_IS(backDTypep, QueueDType)
+                   || VN_IS(backDTypep, StreamDType) || VN_IS(backDTypep, UnpackArrayDType));
     }
     void ensureCast(AstNodeExpr* nodep) {
         if (castSize(nodep->backp()) != castSize(nodep) || !nodep->user1()) {
@@ -183,17 +187,22 @@ class CastVisitor final : public VNVisitor {
         }
     }
     void visit(AstVarRef* nodep) override {
-        const AstNode* const backp = nodep->backp();
+        AstNode* const backp = nodep->backp();
         if (nodep->access().isReadOnly() && VN_IS(backp, NodeExpr) && !VN_IS(backp, CCast)
             && !VN_IS(backp, NodeCCall) && !VN_IS(backp, CMethodHard) && !VN_IS(backp, SFormatF)
             && !VN_IS(backp, ArraySel) && !VN_IS(backp, StructSel) && !VN_IS(backp, RedXor)
+            && !VN_IS(backp, WordSel) && !VN_IS(backp, Concat)
             && (nodep->varp()->basicp() && !nodep->varp()->basicp()->isTriggerVec()
                 && !nodep->varp()->basicp()->isForkSync()
                 && !nodep->varp()->basicp()->isProcessRef() && !nodep->varp()->basicp()->isEvent())
-            && backp->width() && castSize(nodep) != castSize(nodep->varp())) {
-            // Cast vars to IData first, else below has upper bits wrongly set
-            //  CData x=3; out = (QData)(x<<30);
-            insertCast(nodep, castSize(nodep));
+            && castSize(nodep) != castSize(nodep->varp())) {
+            // Cast types under nodes with known width.
+            // Cast wide temporaries under dynamic types to avoid signature mismatches.
+            if (backp->width() || isDynamicWideTemp(nodep)) {
+                // Cast vars to IData first, else below has upper bits wrongly set
+                //  CData x=3; out = (QData)(x<<30);
+                insertCast(nodep, castSize(nodep));
+            }
         }
         nodep->user1(1);
     }

@@ -399,6 +399,7 @@ private:
     bool m_fSubstConst;  // main switch: -fno-subst-const: final constant substitution
     bool m_fTable;       // main switch: -fno-table: lookup table creation
     bool m_fTaskifyAll = false;  // main switch: --ftaskify-all-forked
+    bool m_fWideTempOpt = true;  // main switch: -fno-wide-temp-opt
     // clang-format on
 
     bool m_available = false;  // Set to true at the end of option parsing
@@ -689,6 +690,7 @@ public:
     bool fSubstConst() const { return m_fSubstConst; }
     bool fTable() const { return m_fTable; }
     bool fTaskifyAll() const { return m_fTaskifyAll; }
+    bool fWideTempOpt() const { return m_fWideTempOpt; }
 
     string traceClassBase() const VL_MT_SAFE { return m_traceFormat.classBase(); }
     string traceClassLang() const { return m_traceFormat.classBase() + (systemC() ? "Sc" : "C"); }

@@ -208,6 +208,7 @@ RAW_OBJS_PCH_ASTMT = \
 	V3Hasher.o \
 	V3Number.o \
 	V3Options.o \
+	V3ReuseWideTemps.o \
 	V3Stats.o \
 	V3StatsReport.o \
 	V3VariableOrder.o \
