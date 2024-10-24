@@ -3387,6 +3387,11 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 
     index -= fmin(vop->rangep()->left(), vop->rangep()->right());
 
+    if (VL_UNCOVERABLE(num > size)) {
+        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: requested elements to set (%u) exceed array size (%u)",
+                      __func__, num, size);
+    }
+
     if (arrayvalue_p->format == vpiIntVal) {
         PLI_INT32 *integers = arrayvalue_p->value.integers;
 
