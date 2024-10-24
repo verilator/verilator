@@ -3459,6 +3459,17 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
             }
         }
         return;
+    } else if (arrayvalue_p->format==vpiRealVal) {
+        double *reals=arrayvalue_p->value.reals;
+
+        if (varp->vltype() == VLVT_UINT64) {
+            double *ptr = reinterpret_cast<double*>(vop->varDatap());
+            for (int i = 0; i < num; i++) {
+                ptr[index++]=reals[i] ;
+                index = index % size;
+            }
+        }
+        return;
     }
     VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for %s", __func__,
                   VerilatedVpiError::strFromVpiVal(arrayvalue_p->format), vop->fullname());
