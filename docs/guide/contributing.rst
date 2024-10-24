@@ -23,8 +23,8 @@ Next, try the :vlopt:`--debug` option.  This will enable additional
 internal assertions, and may help identify the problem.
 
 Finally, reduce your code to the smallest possible routine that exhibits
-the bug.  Even better, create a test in the :file:`test_regress/t`
-directory, as follows:
+the bug (see: :ref:`Minimizing bug-inducing code`).  Even better, create
+a test in the :file:`test_regress/t` directory, as follows:
 
 .. code-block:: bash
 
@@ -62,6 +62,22 @@ Finally, report the bug at `Verilator Issues
 <https://verilator.org/issues>`_.  The bug will become publicly visible; if
 this is unacceptable, mail the bug report to ``wsnyder@wsnyder.org``.
 
+Minimizing bug-inducing code
+============================
+
+In some cases, the part of the code that causes the bug is clearly visible
+and the design can be easily manually reduced. In other cases, the bug is
+caused by a complex interaction of many parts of the design, and it is not
+clear which parts are necessary to reproduce the bug. In these cases, an
+Open Source tool called `sv-bugpoint
+<https://github.com/antmicro/sv-bugpoint>_` can be used to automatically
+reduce a SystemVerilog design to the smallest possible reproducer.
+It can be used to automatically reduce a design with hundreds of thousands of
+lines design to a minimal test case while preserving the bug-inducing behavior.
+
+Please refer to the `README
+<https://github.com/antmicro/sv-bugpoint/blob/main/README.md>`_ file for more
+information on how to use `sv-bugpoint`.
 
 .. Contributing
 .. ============
