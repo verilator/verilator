@@ -73,7 +73,7 @@ Open Source tool called `sv-bugpoint
 <https://github.com/antmicro/sv-bugpoint>_` can be used to automatically
 reduce a SystemVerilog design to the smallest possible reproducer.
 It can be used to automatically reduce a design with hundreds of thousands of
-lines design to a minimal test case while preserving the bug-inducing behavior.
+lines to a minimal test case while preserving the bug-inducing behavior.
 
 Please refer to the `README
 <https://github.com/antmicro/sv-bugpoint/blob/main/README.md>`_ file for more
