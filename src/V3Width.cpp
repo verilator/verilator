@@ -5544,7 +5544,7 @@ class WidthVisitor final : public VNVisitor {
                     userIterate(modVarp->childDTypep(),
                                 WidthVP{SELF, BOTH}.p());  // May relink pointed to node
                     AstNodeDType* const setDtp = modVarp->childDTypep()->cloneTree(false);
-                    if (patternp->childDTypep() == nullptr) { patternp->childDTypep(setDtp); }
+                    if (!patternp->childDTypep()) patternp->childDTypep(setDtp);
                     userIterateChildren(nodep, WidthVP{setDtp, BOTH}.p());
                     didWidth = true;
                 }
