@@ -793,6 +793,10 @@ public:
         dtypep(nullptr);  // V3Width will resolve
         widthFromSub(subDTypep());
     }
+    AstEnumDType(const AstEnumDType& other)
+        : AstNodeDType(other)
+        , m_name(other.m_name)
+        , m_uniqueNum(uniqueNumInc()) {}
     ASTGEN_MEMBERS_AstEnumDType;
 
     const char* broken() const override;
