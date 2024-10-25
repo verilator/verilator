@@ -62,6 +62,8 @@ Finally, report the bug at `Verilator Issues
 <https://verilator.org/issues>`_.  The bug will become publicly visible; if
 this is unacceptable, mail the bug report to ``wsnyder@wsnyder.org``.
 
+.. _Minimizing bug-inducing code:
+
 Minimizing bug-inducing code
 ============================
 

@@ -384,6 +384,7 @@ Solaris
 Solomatnikov
 Solt
 Southwell
+Spack
 Srini
 Srinivasan
 Stamness

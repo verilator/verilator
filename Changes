@@ -36,6 +36,7 @@ Verilator 5.029 devel
 * Support ccache when compiling Verilated files with cmake.
 * Support `local` and `protected` on `typedef` (#5460).
 * Support unconstrained randomization for associative array and queue (#5515). [Yilou Wang]
+* Support `rand` dynamic arrays of objects (#5557) (#5564). [Ryszard Rozak, Antmicro Ltd.]
 * Add error on misused genvar (#408). [Alex Solomatnikov]
 * Add error on instances without parenthesis.
 * Add Docker pre-commit hook (#5238) (#5452). [Chris Bachhuber]
@@ -96,6 +97,11 @@ Verilator 5.029 devel
 * Fix container reduction methods (#5542). [Krzysztof Boroński]
 * Fix complex user type problem with `--x-assign` (#5543). [Todd Strader]
 * Fix long module names crashing string handling (#5546). [Filip Badáň]
+* Fix array trace splitting (#5549). [Todd Strader]
+* Fix queue element access (#5551). [Ryszard Rozak, Antmicro Ltd.]
+* Fix struct literal on pattern assignment (#5552) (#5559). [Todd Strader]
+* Fix build on gcc when using the Spack wrapper (#5555). [Eric Müller]
+* Fix enum name method (#5563). [Todd Strader]
 
 
 Verilator 5.028 2024-08-21
