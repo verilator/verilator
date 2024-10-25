@@ -63,10 +63,15 @@ class unconstrained_unpacked_array_test;
 
 endclass
 
+class Cls;
+  rand int x = 1;
+endclass
+
 class unconstrained_dynamic_array_test;
 
   rand int dynamic_array_1d[];
   rand int dynamic_array_2d[][];
+  rand Cls class_dynamic_array[];
 
   function new();
     // Initialize 1D dynamic array
@@ -83,6 +88,12 @@ class unconstrained_dynamic_array_test;
         dynamic_array_2d[i][j] = 'h0 + i + j;
       end
     end
+
+    class_dynamic_array = new[5];
+    foreach(class_dynamic_array[i]) begin
+      class_dynamic_array[i] = new;
+    end
+
   endfunction
 
   function void check_randomization();
@@ -93,6 +104,9 @@ class unconstrained_dynamic_array_test;
       foreach (dynamic_array_2d[i][j]) begin
         `check_rand(this, dynamic_array_2d[i][j])
       end
+    end
+    foreach (class_dynamic_array[i]) begin
+      `check_rand(this, class_dynamic_array[i].x)
     end
   endfunction
 
