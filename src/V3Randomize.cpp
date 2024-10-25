@@ -1380,7 +1380,7 @@ class RandomizeVisitor final : public VNVisitor {
         return newp;
     }
     AstNodeStmt* createArrayForeachLoop(FileLine* const fl, AstNodeDType* const dtypep,
-                                        AstNodeExpr* exprp) {
+                                        AstNodeExpr* exprp, AstVar* const outputVarp) {
         V3UniqueNames* uniqueNamep = new V3UniqueNames{"__Vrandarr"};
         AstNodeDType* tempDTypep = dtypep;
         AstVar* randLoopIndxp = nullptr;
@@ -1399,7 +1399,8 @@ class RandomizeVisitor final : public VNVisitor {
         auto createForeachLoop = [&](AstNodeExpr* tempElementp, AstVar* randLoopIndxp) {
             AstSelLoopVars* const randLoopVarp
                 = new AstSelLoopVars{fl, exprp->cloneTree(false), randLoopIndxp};
-            return new AstForeach{fl, randLoopVarp, newRandStmtsp(fl, tempElementp, nullptr)};
+            return new AstForeach{fl, randLoopVarp,
+                                  newRandStmtsp(fl, tempElementp, nullptr, outputVarp)};
         };
         AstNodeExpr* tempElementp = nullptr;
         while (VN_IS(tempDTypep, DynArrayDType) || VN_IS(tempDTypep, UnpackArrayDType)
@@ -1432,7 +1433,8 @@ class RandomizeVisitor final : public VNVisitor {
         stmtsp = createForeachLoop(tempElementp, randLoopIndxp);
         return stmtsp;
     }
-    AstNodeStmt* newRandStmtsp(FileLine* fl, AstNodeExpr* exprp, AstVar* randcVarp, int offset = 0,
+    AstNodeStmt* newRandStmtsp(FileLine* fl, AstNodeExpr* exprp, AstVar* randcVarp,
+                               AstVar* const outputVarp, int offset = 0,
                                AstMemberDType* memberp = nullptr) {
         AstNodeDType* const memberDtp
             = memberp ? memberp->subDTypep()->skipRefp() : exprp->dtypep()->skipRefp();
@@ -1444,13 +1446,13 @@ class RandomizeVisitor final : public VNVisitor {
                 AstNodeStmt* randp = nullptr;
                 if (structDtp->packed()) {
                     randp = newRandStmtsp(fl, stmtsp ? exprp->cloneTree(false) : exprp, nullptr,
-                                          offset, smemberp);
+                                          outputVarp, offset, smemberp);
                 } else {
                     AstStructSel* structSelp
                         = new AstStructSel{fl, exprp->cloneTree(false), smemberp->name()};
                     structSelp->dtypep(smemberp->childDTypep());
                     if (!structSelp->dtypep()) structSelp->dtypep(smemberp->subDTypep());
-                    randp = newRandStmtsp(fl, structSelp, nullptr);
+                    randp = newRandStmtsp(fl, structSelp, nullptr, outputVarp);
                 }
                 stmtsp = stmtsp ? stmtsp->addNext(randp) : randp;
             }
@@ -1462,23 +1464,25 @@ class RandomizeVisitor final : public VNVisitor {
                 return nullptr;
             }
             AstMemberDType* const firstMemberp = unionDtp->membersp();
-            return newRandStmtsp(fl, exprp, nullptr, offset, firstMemberp);
+            return newRandStmtsp(fl, exprp, nullptr, outputVarp, offset, firstMemberp);
         } else if (AstClassRefDType* const classRefDtp = VN_CAST(memberDtp, ClassRefDType)) {
             AstFunc* const memberFuncp
                 = V3Randomize::newRandomizeFunc(m_memberMap, classRefDtp->classp());
             AstMethodCall* const callp = new AstMethodCall{fl, exprp, "randomize", nullptr};
             callp->taskp(memberFuncp);
             callp->dtypeFrom(memberFuncp);
-            return new AstStmtExpr{fl, callp};
+            return new AstAssign{
+                fl, new AstVarRef{fl, outputVarp, VAccess::WRITE},
+                new AstAnd{fl, new AstVarRef{fl, outputVarp, VAccess::READ}, callp}};
         } else if (AstDynArrayDType* const dynarrayDtp = VN_CAST(memberDtp, DynArrayDType)) {
-            return createArrayForeachLoop(fl, dynarrayDtp, exprp);
+            return createArrayForeachLoop(fl, dynarrayDtp, exprp, outputVarp);
         } else if (AstQueueDType* const queueDtp = VN_CAST(memberDtp, QueueDType)) {
-            return createArrayForeachLoop(fl, queueDtp, exprp);
+            return createArrayForeachLoop(fl, queueDtp, exprp, outputVarp);
         } else if (AstUnpackArrayDType* const unpackarrayDtp
                    = VN_CAST(memberDtp, UnpackArrayDType)) {
-            return createArrayForeachLoop(fl, unpackarrayDtp, exprp);
+            return createArrayForeachLoop(fl, unpackarrayDtp, exprp, outputVarp);
         } else if (AstAssocArrayDType* const assocarrayDtp = VN_CAST(memberDtp, AssocArrayDType)) {
-            return createArrayForeachLoop(fl, assocarrayDtp, exprp);
+            return createArrayForeachLoop(fl, assocarrayDtp, exprp, outputVarp);
         } else {
             AstNodeExpr* valp;
             if (AstEnumDType* const enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
@@ -1684,7 +1688,7 @@ class RandomizeVisitor final : public VNVisitor {
             } else {
                 AstVar* const randcVarp = newRandcVarsp(memberVarp);
                 AstVarRef* const refp = new AstVarRef{fl, classp, memberVarp, VAccess::WRITE};
-                AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp);
+                AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp, basicFvarp);
                 basicRandomizep->addStmtsp(new AstBegin{fl, "", stmtp});
             }
         });
