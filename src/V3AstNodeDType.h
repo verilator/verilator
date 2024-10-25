@@ -209,6 +209,12 @@ protected:
         m_packed = (numericUnpack != VSigning::NOSIGN);
         numeric(VSigning::fromBool(numericUnpack.isSigned()));
     }
+    AstNodeUOrStructDType(const AstNodeUOrStructDType& other)
+        : AstNodeDType(other)
+        , m_name(other.m_name)
+        , m_uniqueNum(uniqueNumInc())
+        , m_packed(other.m_packed)
+        , m_isFourstate(other.m_isFourstate) {}
 
 public:
     ASTGEN_MEMBERS_AstNodeUOrStructDType;
@@ -664,6 +670,11 @@ public:
         childDTypep(dtp);  // Only for parser
         dtypep(nullptr);  // V3Width will resolve
     }
+    AstDefImplicitDType(const AstDefImplicitDType& other)
+        : AstNodeDType(other)
+        , m_name(other.m_name)
+        , m_containerp(other.m_containerp)
+        , m_uniqueNum(uniqueNumInc()) {}
     ASTGEN_MEMBERS_AstDefImplicitDType;
     int uniqueNum() const { return m_uniqueNum; }
     bool same(const AstNode* samep) const override {
@@ -793,6 +804,10 @@ public:
         dtypep(nullptr);  // V3Width will resolve
         widthFromSub(subDTypep());
     }
+    AstEnumDType(const AstEnumDType& other)
+        : AstNodeDType(other)
+        , m_name(other.m_name)
+        , m_uniqueNum(uniqueNumInc()) {}
     ASTGEN_MEMBERS_AstEnumDType;
 
     const char* broken() const override;
