@@ -2404,8 +2404,8 @@ class VlTest:
                         self.error(self.top_filename + ":" + str(flineno) +
                                    ": Unknown CHECK request: " + line)
 
-    @staticmethod
-    def cfg_with_ccache() -> bool:
+    @staticproperty
+    def cfg_with_ccache() -> bool:  # pylint: disable=no-method-argument
         if VlTest._cached_cfg_with_ccache is None:
             mkf = VlTest._file_contents_static(os.environ['VERILATOR_ROOT'] +
                                                "/include/verilated.mk")
