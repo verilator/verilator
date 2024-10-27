@@ -210,6 +210,9 @@ private:
         const double time  // max(_, 1), so we won't divide by zero
             = std::max<double>(chkvis.instrCount() * TABLE_BYTES_PER_INST + chkvis.dataCount(), 1);
         if (chkvis.isImpure()) chkvis.clearOptimizable(nodep, "Table creates side effects");
+        if (chkvis.isCoverage()) {
+            chkvis.clearOptimizable(nodep, "Table removes coverage points");
+        }
         if (!m_outWidthBytes || !m_inWidthBits) {
             chkvis.clearOptimizable(nodep, "Table has no outputs");
         }
@@ -315,6 +318,7 @@ private:
             for (TableOutputVar& tov : m_outVarps) {
                 if (V3Number* const outnump = simvis.fetchOutNumberNull(tov.varScopep())) {
                     UINFO(8, "   Output " << tov.name() << " = " << *outnump << endl);
+                    UASSERT_OBJ(!outnump->isAnyXZ(), outnump, "Table should not contain X/Z");
                     outputAssignedMask.setBit(tov.ord(), 1);  // Mark output as assigned
                     tov.addValue(inValue, *outnump);
                 } else {

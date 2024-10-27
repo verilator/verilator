@@ -20,13 +20,14 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3ThreadSafety.h"
+class AstNodeDType;
 
 //============================================================================
 
 class V3Common final {
 public:
     static void commonAll() VL_MT_DISABLED;
+    static string makeToStringCall(AstNodeDType* nodep, const std::string& lhs);
 };
 
 #endif  // Guard

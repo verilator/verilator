@@ -128,6 +128,7 @@ void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE
 
 #ifndef VL_USER_STOP  ///< Define this to override the vl_stop function
 void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
+    // $stop or $fatal reporting; would break current API to add param as to which
     const char* const msg = "Verilog $stop";
     Verilated::threadContextp()->gotError(true);
     Verilated::threadContextp()->gotFinish(true);
@@ -172,6 +173,7 @@ void vl_fatal(const char* filename, int linenum, const char* hier, const char* m
 
 #ifndef VL_USER_STOP_MAYBE  ///< Define this to override the vl_stop_maybe function
 void vl_stop_maybe(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_UNSAFE {
+    // $stop or $fatal
     Verilated::threadContextp()->errorCountInc();
     if (maybe
         && Verilated::threadContextp()->errorCount() < Verilated::threadContextp()->errorLimit()) {
@@ -1763,9 +1765,8 @@ IData VL_SYSTEM_IQ(QData lhs) VL_MT_SAFE {
     return VL_SYSTEM_IW(VL_WQ_WORDS_E, lhsw);
 }
 IData VL_SYSTEM_IW(int lhswords, const WDataInP lhsp) VL_MT_SAFE {
-    char filenamez[VL_VALUE_STRING_MAX_CHARS + 1];
-    _vl_vint_to_string(lhswords * VL_EDATASIZE, filenamez, lhsp);
-    return VL_SYSTEM_IN(filenamez);
+    const std::string lhs = VL_CVT_PACK_STR_NW(lhswords, lhsp);
+    return VL_SYSTEM_IN(lhs);
 }
 IData VL_SYSTEM_IN(const std::string& lhs) VL_MT_SAFE {
     const int code = std::system(lhs.c_str());  // Yes, std::system() is threadsafe
@@ -1915,20 +1916,16 @@ std::string VL_TOUPPER_NN(const std::string& ld) VL_PURE {
 
 std::string VL_CVT_PACK_STR_NW(int lwords, const WDataInP lwp) VL_PURE {
     // See also _vl_vint_to_string
-    char destout[VL_VALUE_STRING_MAX_CHARS + 1];
+    std::string result;
+    result.reserve((lwords * VL_EDATASIZE) / 8 + 1);
     const int obits = lwords * VL_EDATASIZE;
     int lsb = obits - 1;
-    char* destp = destout;
-    size_t len = 0;
     for (; lsb >= 0; --lsb) {
         lsb = (lsb / 8) * 8;  // Next digit
         const IData charval = VL_BITRSHIFT_W(lwp, lsb) & 0xff;
-        if (charval) {
-            *destp++ = static_cast<char>(charval);
-            ++len;
-        }
+        if (charval) result += static_cast<char>(charval);
     }
-    return std::string{destout, len};
+    return result;
 }
 
 std::string VL_CVT_PACK_STR_ND(const VlQueue<std::string>& q) VL_PURE {
@@ -3002,7 +2999,7 @@ const VerilatedScopeNameMap* VerilatedContext::scopeNameMap() VL_MT_SAFE {
 //======================================================================
 // VerilatedContext:: Methods - trace
 
-void VerilatedContext::trace(VerilatedTraceBaseC* tfp, int levels, int options) VL_MT_SAFE {
+void VerilatedContext::trace(VerilatedTraceBaseC* tfp, int levels, int options) {
     VL_DEBUG_IF(VL_DBG_MSGF("+ VerilatedContext::trace\n"););
     if (tfp->isOpen()) {
         VL_FATAL_MT("", 0, "",

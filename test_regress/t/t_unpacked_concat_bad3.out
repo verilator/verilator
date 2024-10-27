@@ -1,0 +1,4 @@
+%Error: Internal Error: t/t_unpacked_concat_bad3.v:9:41: ../V3EmitCConstInit.h:#: Missing array init element
+    9 |    localparam logic [7:0] TOO_FEW [5] = '{0, 1, 2**8-1};   
+      |                                         ^~
+                        ... See the manual at https://verilator.org/verilator_doc.html for more assistance.

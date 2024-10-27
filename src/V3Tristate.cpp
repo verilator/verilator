@@ -914,6 +914,51 @@ class TristateVisitor final : public TristateBaseVisitor {
                || (strength1 <= strength && assignmentOfValueOnAllBits(assignp, 1));
     }
 
+    AstNodeExpr* newMergeExpr(AstNodeExpr* const lhsp, AstNodeExpr* const rhsp, FileLine* const fl,
+                              bool isWor) {
+        AstNodeExpr* expr = nullptr;
+        if (isWor)
+            expr = new AstOr{fl, lhsp, rhsp};
+        else
+            expr = new AstAnd{fl, lhsp, rhsp};
+        return expr;
+    }
+
+    void mergeWiredNetsAssignments() {
+        // Support for WOR/TRIOR/WAND/TRIAND, by merging the Assignments for the
+        // same Net (merge by or for WOR/TIOR and merge by and for WAND/TRIAND).
+        for (auto& varpAssigns : m_assigns) {
+            Assigns& assigns = varpAssigns.second;
+            if (assigns.size() > 1) {
+                AstVar* varp = varpAssigns.first;
+                if (varp->isWiredNet()) {
+                    auto it = assigns.begin();
+                    AstAssignW* const assignWp0 = *it;
+                    FileLine* const fl = assignWp0->fileline();
+                    AstNodeExpr* wExp = nullptr;
+                    while (++it != assigns.end()) {
+                        AstAssignW* assignWpi = *it;
+                        if (!wExp) {
+                            wExp = newMergeExpr(assignWp0->rhsp()->cloneTreePure(false),
+                                                assignWpi->rhsp()->cloneTreePure(false), fl,
+                                                varp->isWor());
+                        } else {
+                            wExp = newMergeExpr(wExp, assignWpi->rhsp()->cloneTreePure(false), fl,
+                                                varp->isWor());
+                        }
+                        VL_DO_DANGLING((assignWpi->unlinkFrBack()->deleteTree()), assignWpi);
+                    }
+                    AstVarRef* const wVarRef = new AstVarRef{fl, varp, VAccess::WRITE};
+                    AstAssignW* const wAssignp = new AstAssignW{fl, wVarRef, wExp};
+                    assignWp0->replaceWith(wAssignp);
+                    VL_DO_DANGLING(pushDeletep(assignWp0), assignWp0);
+                    assigns.clear();
+                    assigns.push_back(wAssignp);
+                }
+            }
+        }
+    }
+
     void removeNotStrongerAssignments(Assigns& assigns, AstAssignW* strongestp,
                                       uint8_t greatestKnownStrength) {
         // Weaker assignments are these assignments that can't change the final value of the net.
@@ -1247,7 +1292,10 @@ class TristateVisitor final : public TristateBaseVisitor {
         VL_RESTORER(m_alhs);
         VL_RESTORER(m_currentStrength);
         if (m_graphing) {
-            if (AstAssignW* assignWp = VN_CAST(nodep, AssignW)) addToAssignmentList(assignWp);
+            if (AstAssignW* assignWp = VN_CAST(nodep, AssignW)) {
+                if (assignWp->timingControlp() || assignWp->getLhsNetDelay()) return;
+                addToAssignmentList(assignWp);
+            }
 
             if (nodep->user2() & U2_GRAPHING) return;
             VL_RESTORER(m_logicp);
@@ -1385,7 +1433,6 @@ class TristateVisitor final : public TristateBaseVisitor {
         dropop[1] = VN_IS(nodep->thsp(), Const) && VN_AS(nodep->thsp(), Const)->num().isAnyZ();
         dropop[2] = VN_IS(nodep->fhsp(), Const) && VN_AS(nodep->fhsp(), Const)->num().isAnyZ();
         UINFO(4, " COUNTBITS(" << dropop[0] << dropop[1] << dropop[2] << " " << nodep << endl);
-        const AstVarRef* const varrefp = VN_AS(nodep->lhsp(), VarRef);  // Input variable
         if (m_graphing) {
             iterateAndNextNull(nodep->lhsp());
             if (!dropop[0]) iterateAndNextNull(nodep->rhsp());
@@ -1406,7 +1453,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                 // do so at present, we only compare if there is a z in the equation. Otherwise
                 // we'd need to attach an enable to every signal, then optimize them away later
                 // when we determine the signal has no tristate
-                if (!VN_IS(nodep->lhsp(), VarRef)) {
+                const AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef);  // Input variable
+                if (!varrefp) {
                     nodep->v3warn(E_UNSUPPORTED, "Unsupported LHS tristate construct: "
                                                      << nodep->prettyTypeName());
                     return;
@@ -1773,6 +1821,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                 iterateChildren(nodep);
                 m_graphing = false;
             }
+            // Merge the assignments for very Wired net LHS : wor, trior, wand and triand
+            mergeWiredNetsAssignments();
             // Remove all assignments not stronger than the strongest uniform constant
             removeAssignmentsNotStrongerThanUniformConstant();
             // Use graph to find tristate signals

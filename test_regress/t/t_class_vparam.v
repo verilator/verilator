@@ -22,11 +22,7 @@ class arg_class_t;
    int ifield;
 endclass
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (/*AUTOARG*/);
 
    vclass vir;
    paramed_class_t#(arg_class_t) argu;

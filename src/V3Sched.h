@@ -21,7 +21,6 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
-#include "V3ThreadSafety.h"
 
 #include <functional>
 #include <unordered_map>

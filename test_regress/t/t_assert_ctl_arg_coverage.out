@@ -35,8 +35,8 @@ C 'ft/t_assert_ctl_arg.vl112n40pagev_user/tocover_final_deferred_immed
 C 'ft/t_assert_ctl_arg.vl112n43pagev_user/tocover_observed_deferred_immediate_112htop.t.cover_observed_deferred_immediate_112' 0
 C 'ft/t_assert_ctl_arg.vl112n45pagev_user/tocover_final_deferred_immediate_stmt_112htop.t.cover_final_deferred_immediate_stmt_112' 1
 C 'ft/t_assert_ctl_arg.vl112n48pagev_user/tocover_observed_deferred_immediate_stmt_112htop.t.cover_observed_deferred_immediate_stmt_112' 0
-C 'ft/t_assert_ctl_arg.vl190n22pagev_user/concurrentocover_concurrenthtop.t.concurrent.cover_concurrent' 0
-C 'ft/t_assert_ctl_arg.vl191n27pagev_user/concurrentocover_concurrent_stmthtop.t.concurrent.cover_concurrent_stmt' 0
+C 'ft/t_assert_ctl_arg.vl192n22pagev_user/concurrentocover_concurrenthtop.t.concurrent.cover_concurrent' 0
+C 'ft/t_assert_ctl_arg.vl193n27pagev_user/concurrentocover_concurrent_stmthtop.t.concurrent.cover_concurrent_stmt' 0
 C 'ft/t_assert_ctl_arg.vl49n31pagev_user/tocover_simple_immediate_49htop.t.cover_simple_immediate_49' 1
 C 'ft/t_assert_ctl_arg.vl49n36pagev_user/tocover_simple_immediate_stmt_49htop.t.cover_simple_immediate_stmt_49' 1
 C 'ft/t_assert_ctl_arg.vl49n39pagev_user/tocover_final_deferred_immediate_49htop.t.cover_final_deferred_immediate_49' 0

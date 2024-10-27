@@ -19,9 +19,12 @@ from argparse import ArgumentParser
 
 
 def interesting(s):
-    if 'assert' in s: return 1
-    if 'Assert' in s: return 1
-    if 'Aborted' in s: return 1
+    if 'assert' in s:
+        return 1
+    if 'Assert' in s:
+        return 1
+    if 'Aborted' in s:
+        return 1
     if 'terminate' in s:
         if 'unterminated' in s:
             return 0
@@ -41,8 +44,7 @@ def main():
     for infile in glob(args.dir + '/*'):
         # Input filenames are known not to contain spaces or other unusual
         # characters, therefore this works.
-        status, output = getstatusoutput('../../bin/verilator_bin --cc ' +
-                                         infile)
+        status, output = getstatusoutput('../../bin/verilator_bin --cc ' + infile)
         if interesting(output):
             print(infile)
             print(status)

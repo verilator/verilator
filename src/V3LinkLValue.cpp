@@ -311,6 +311,7 @@ class LinkLValueVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodePreSel* nodep) override {
+        if (AstSelBit* const selbitp = VN_CAST(nodep, SelBit)) selbitp->access(m_setRefLvalue);
         VL_RESTORER(m_setRefLvalue);
         {  // Only set lvalues on the from
             iterateAndNextNull(nodep->fromp());

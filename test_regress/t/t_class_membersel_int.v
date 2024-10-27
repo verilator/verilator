@@ -20,5 +20,5 @@ module Sub;
 endmodule
 
 module t;
-   Sub foo;
+   Sub foo();
 endmodule

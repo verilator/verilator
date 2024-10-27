@@ -20,8 +20,6 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3ThreadSafety.h"
-
 //============================================================================
 
 class V3CUse final {

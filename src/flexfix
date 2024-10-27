@@ -16,23 +16,19 @@ import sys
 
 for line in sys.stdin:
     # Fix flex 2.6.1 warning
-    line = re.sub(
-        r'for \( i = 0; i < _yybytes_len; \+\+i \)',
-        r'for ( i = 0; (yy_size_t)(i) < (yy_size_t)(_yybytes_len); ++i )',
-        line)
+    line = re.sub(r'for \( i = 0; i < _yybytes_len; \+\+i \)',
+                  r'for ( i = 0; (yy_size_t)(i) < (yy_size_t)(_yybytes_len); ++i )', line)
     # Fix flex 2.6.0 warning
     line = re.sub(
         r'\(\(int\) \(\(yy_n_chars\) \+ number_to_move\) > YY_CURRENT_BUFFER_LVALUE->yy_buf_size\)',
         r'((int) ((yy_n_chars) + number_to_move) > (int) YY_CURRENT_BUFFER_LVALUE->yy_buf_size)',
         line)
-    line = re.sub(r' number_to_move == YY_MORE_ADJ ',
-                  r' (int)number_to_move == (int)YY_MORE_ADJ ', line)
-    # Fix flex 2.5.4 namespace omission
-    line = re.sub(r'^class istream;',
-                  '#include <iostream>\nusing namespace std;\n', line)
-    # Fix flex 2.5.31 redefinition
-    line = re.sub(r'(\#define\s+yyFlexLexer\s+yyFlexLexer)', r'//flexfix: \1',
+    line = re.sub(r' number_to_move == YY_MORE_ADJ ', r' (int)number_to_move == (int)YY_MORE_ADJ ',
                   line)
+    # Fix flex 2.5.4 namespace omission
+    line = re.sub(r'^class istream;', '#include <iostream>\nusing namespace std;\n', line)
+    # Fix flex 2.5.31 redefinition
+    line = re.sub(r'(\#define\s+yyFlexLexer\s+yyFlexLexer)', r'//flexfix: \1', line)
     # Fix flex 2.5.1 yytext_ptr undef
     line = re.sub(r'(\#undef\s+yytext_ptr)', r'//flexfix: \1', line)
     # Fix flex 2.5.4 and GCC 4.1.0 warn_unused_result
@@ -41,8 +37,7 @@ for line in sys.stdin:
     line = re.sub(r'for \( n = 0; n < max_size && ',
                   r'for ( n = 0; ((size_t)n < (size_t)max_size) && ', line)
     # Fix flex 2.5.4 and GCC 4.0.2 under FLEX_DEBUG
-    line = re.sub(r'--accepting rule at line %d ',
-                  r'--accepting rule at line %ld ', line)
+    line = re.sub(r'--accepting rule at line %d ', r'--accepting rule at line %ld ', line)
     # Fix compiler warning filenames
     line = re.sub(r'(#line \d+ ".*)_pretmp', r'\1', line)
     # Fix 'register' storage class specifier is deprecated and incompatible with C++17

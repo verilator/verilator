@@ -20,7 +20,7 @@
 //          If operands are constant, replace this node with constant.
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -548,6 +548,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
                 VL_RESTORER(m_leafp);
                 Restorer restorer{*this};
                 LeafInfo leafInfo{m_lsb};
+                // cppcheck-suppress danglingLifetime
                 m_leafp = &leafInfo;
                 AstNodeExpr* opp = right ? nodep->rhsp() : nodep->lhsp();
                 const bool origFailed = m_failed;
@@ -1161,11 +1162,10 @@ class ConstVisitor final : public VNVisitor {
         } else if (const AstShiftL* const shiftp = VN_CAST(nodep->rhsp(), ShiftL)) {
             if (const AstConst* const scp = VN_CAST(shiftp->rhsp(), Const)) {
                 // Check if mask is full over the non-zero bits
-                V3Number maskLo{nodep, nodep->width()};
-                V3Number maskHi{nodep, nodep->width()};
-                maskLo.setMask(nodep->width() - scp->num().toUInt());
-                maskHi.opShiftL(maskLo, scp->num());
-                return checkMask(maskHi);
+                V3Number mask{nodep, nodep->width()};
+                const uint32_t shiftAmount = scp->num().toUInt();
+                mask.setMask(nodep->width() - shiftAmount, shiftAmount);
+                return checkMask(mask);
             }
         }
         return false;

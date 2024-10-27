@@ -4,15 +4,10 @@
 // without warranty, 2019 by Driss Hafdi.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-
-   input clk;
+module t (/*AUTOARG*/);
 
    // bug1624
-   test #(.param(32'd0)) test_i;
+   test #(.param(32'd0)) test_i();
 
    initial begin
       $write("*-* All Finished *-*\n");

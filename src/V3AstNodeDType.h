@@ -54,7 +54,7 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     virtual void dumpSmall(std::ostream& str) const VL_MT_STABLE;
-    bool hasDType() const override { return true; }
+    bool hasDType() const override VL_MT_SAFE { return true; }
     /// Require VlUnpacked, instead of [] for POD elements.
     /// A non-POD object is always compound, but some POD elements
     /// are compound when methods calls operate on object, or when
@@ -74,7 +74,7 @@ public:
     virtual int widthAlignBytes() const = 0;
     // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     virtual int widthTotalBytes() const = 0;
-    bool maybePointedTo() const override { return true; }
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
     // Iff has a non-null refDTypep(), as generic node function
     virtual AstNodeDType* virtRefDTypep() const { return nullptr; }
     // Iff has refDTypep(), set as generic node function
@@ -86,7 +86,7 @@ public:
     // Assignable equivalence.  Call skipRefp() on this and samep before calling
     virtual bool similarDType(const AstNodeDType* samep) const = 0;
     // Iff has a non-null subDTypep(), as generic node function
-    virtual AstNodeDType* subDTypep() const VL_MT_SAFE { return nullptr; }
+    virtual AstNodeDType* subDTypep() const VL_MT_STABLE { return nullptr; }
     virtual bool isFourstate() const;
     // Ideally an IEEE $typename
     virtual string prettyDTypeName(bool) const { return prettyTypeName(); }
@@ -105,14 +105,14 @@ public:
         m_numeric = nodep->m_numeric;
     }
     //
-    int width() const VL_MT_SAFE { return m_width; }
+    int width() const VL_MT_STABLE { return m_width; }
     void numeric(VSigning flag) { m_numeric = flag; }
-    bool isSigned() const VL_MT_SAFE { return m_numeric.isSigned(); }
+    bool isSigned() const VL_MT_STABLE { return m_numeric.isSigned(); }
     bool isNosign() const VL_MT_SAFE { return m_numeric.isNosign(); }
-    VSigning numeric() const { return m_numeric; }
-    int widthWords() const VL_MT_SAFE { return VL_WORDS_I(width()); }
-    int widthMin() const VL_MT_SAFE {  // If sized, the size,
-                                       // if unsized the min digits to represent it
+    VSigning numeric() const VL_MT_STABLE { return m_numeric; }
+    int widthWords() const VL_MT_STABLE { return VL_WORDS_I(width()); }
+    int widthMin() const VL_MT_STABLE {  // If sized, the size,
+                                         // if unsized the min digits to represent it
         return m_widthMin ? m_widthMin : m_width;
     }
     int widthPow2() const;
@@ -209,6 +209,12 @@ protected:
         m_packed = (numericUnpack != VSigning::NOSIGN);
         numeric(VSigning::fromBool(numericUnpack.isSigned()));
     }
+    AstNodeUOrStructDType(const AstNodeUOrStructDType& other)
+        : AstNodeDType(other)
+        , m_name(other.m_name)
+        , m_uniqueNum(uniqueNumInc())
+        , m_packed(other.m_packed)
+        , m_isFourstate(other.m_isFourstate) {}
 
 public:
     ASTGEN_MEMBERS_AstNodeUOrStructDType;
@@ -218,7 +224,7 @@ public:
     string prettyDTypeName(bool) const override;
     bool isCompound() const override { return !packed(); }
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
-    AstBasicDType* basicp() const override {
+    AstBasicDType* basicp() const override VL_MT_STABLE {
         if (!m_packed) return nullptr;
         return (isFourstate()
                     ? VN_AS(findLogicRangeDType(VNumRange{width() - 1, 0}, width(), numeric()),
@@ -244,9 +250,11 @@ public:
     static bool packedUnsup() { return true; }
     void isFourstate(bool flag) { m_isFourstate = flag; }
     bool isFourstate() const override VL_MT_SAFE { return m_isFourstate; }
-    static int lo() { return 0; }
-    int hi() const { return dtypep()->width() - 1; }  // Packed classes look like arrays
-    VNumRange declRange() const { return VNumRange{hi(), lo()}; }
+    static int lo() VL_MT_STABLE { return 0; }
+    int hi() const VL_MT_STABLE {
+        return dtypep()->width() - 1;
+    }  // Packed classes look like arrays
+    VNumRange declRange() const VL_MT_STABLE { return VNumRange{hi(), lo()}; }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* classpackagep) { m_classOrPackagep = classpackagep; }
 };
@@ -269,8 +277,8 @@ public:
     }
     ASTGEN_MEMBERS_AstEnumItem;
     string name() const override VL_MT_STABLE { return m_name; }
-    bool maybePointedTo() const override { return true; }
-    bool hasDType() const override { return true; }
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
+    bool hasDType() const override VL_MT_SAFE { return true; }
     void name(const string& flag) override { m_name = flag; }
 };
 
@@ -416,8 +424,8 @@ public:
         return m.m_keyword;
     }
     bool isBitLogic() const { return keyword().isBitLogic(); }
-    bool isDouble() const VL_MT_SAFE { return keyword().isDouble(); }
-    bool isEvent() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::EVENT; }
+    bool isDouble() const VL_MT_STABLE { return keyword().isDouble(); }
+    bool isEvent() const VL_MT_STABLE { return keyword() == VBasicDTypeKwd::EVENT; }
     bool isTriggerVec() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::TRIGGERVEC; }
     bool isForkSync() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::FORK_SYNC; }
     bool isProcessRef() const VL_MT_SAFE { return keyword() == VBasicDTypeKwd::PROCESS_REFERENCE; }
@@ -434,7 +442,7 @@ public:
         return keyword() == VBasicDTypeKwd::RANDOM_GENERATOR;
     }
     bool isOpaque() const VL_MT_SAFE { return keyword().isOpaque(); }
-    bool isString() const VL_MT_SAFE { return keyword().isString(); }
+    bool isString() const VL_MT_STABLE { return keyword().isString(); }
     bool isZeroInit() const { return keyword().isZeroInit(); }
     bool isRanged() const { return rangep() || m.m_nrange.ranged(); }
     bool isDpiBitVec() const {  // DPI uses svBitVecVal
@@ -479,7 +487,7 @@ public:
     // METHODS
     // Will be removed in V3Width, which relies on this
     // being a child not a dtype pointed node
-    bool maybePointedTo() const override { return false; }
+    bool maybePointedTo() const override VL_MT_SAFE { return false; }
     AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
     AstNodeDType* skipRefp() const override VL_MT_STABLE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
@@ -563,7 +571,7 @@ public:
     int widthTotalBytes() const override { return 0; }
     AstNodeDType* virtRefDTypep() const override { return nullptr; }
     void virtRefDTypep(AstNodeDType* nodep) override {}
-    AstNodeDType* subDTypep() const override VL_MT_SAFE { return nullptr; }
+    AstNodeDType* subDTypep() const override VL_MT_STABLE { return nullptr; }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
     AstClass* classp() const VL_MT_STABLE { return m_classp; }
@@ -624,10 +632,10 @@ public:
         dtypep(this);
     }
     ASTGEN_MEMBERS_AstConstraintRefDType;
-    bool hasDType() const override { return true; }
-    bool maybePointedTo() const override { return true; }
+    bool hasDType() const override VL_MT_SAFE { return true; }
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
     bool undead() const override { return true; }
-    AstNodeDType* subDTypep() const override VL_MT_SAFE { return nullptr; }
+    AstNodeDType* subDTypep() const override VL_MT_STABLE { return nullptr; }
     AstNodeDType* virtRefDTypep() const override { return nullptr; }
     void virtRefDTypep(AstNodeDType* nodep) override {}
     bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
@@ -662,6 +670,11 @@ public:
         childDTypep(dtp);  // Only for parser
         dtypep(nullptr);  // V3Width will resolve
     }
+    AstDefImplicitDType(const AstDefImplicitDType& other)
+        : AstNodeDType(other)
+        , m_name(other.m_name)
+        , m_containerp(other.m_containerp)
+        , m_uniqueNum(uniqueNumInc()) {}
     ASTGEN_MEMBERS_AstDefImplicitDType;
     int uniqueNum() const { return m_uniqueNum; }
     bool same(const AstNode* samep) const override {
@@ -749,10 +762,10 @@ public:
     }
     ASTGEN_MEMBERS_AstEmptyQueueDType;
     void dumpSmall(std::ostream& str) const override;
-    bool hasDType() const override { return true; }
-    bool maybePointedTo() const override { return true; }
+    bool hasDType() const override VL_MT_SAFE { return true; }
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
     bool undead() const override { return true; }
-    AstNodeDType* subDTypep() const override VL_MT_SAFE { return nullptr; }
+    AstNodeDType* subDTypep() const override VL_MT_STABLE { return nullptr; }
     AstNodeDType* virtRefDTypep() const override { return nullptr; }
     void virtRefDTypep(AstNodeDType* nodep) override {}
     bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
@@ -791,6 +804,10 @@ public:
         dtypep(nullptr);  // V3Width will resolve
         widthFromSub(subDTypep());
     }
+    AstEnumDType(const AstEnumDType& other)
+        : AstNodeDType(other)
+        , m_name(other.m_name)
+        , m_uniqueNum(uniqueNumInc()) {}
     ASTGEN_MEMBERS_AstEnumDType;
 
     const char* broken() const override;
@@ -931,8 +948,8 @@ public:
     ASTGEN_MEMBERS_AstMemberDType;
     void dumpSmall(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
-    bool hasDType() const override { return true; }
-    bool maybePointedTo() const override { return true; }
+    bool hasDType() const override VL_MT_SAFE { return true; }
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeUOrStructDType* getChildStructp() const;
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
@@ -979,11 +996,11 @@ public:
     }
     ASTGEN_MEMBERS_AstNBACommitQueueDType;
 
-    AstNodeDType* subDTypep() const override { return m_subDTypep; }
+    AstNodeDType* subDTypep() const override VL_MT_STABLE { return m_subDTypep; }
     bool partial() const { return m_partial; }
     bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
-    AstBasicDType* basicp() const override { return nullptr; }
-    AstNodeDType* skipRefp() const override { return (AstNodeDType*)this; }
+    AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     AstNodeDType* skipRefToEnump() const override { return (AstNodeDType*)this; }
     int widthAlignBytes() const override { return 1; }
@@ -1025,8 +1042,8 @@ public:
     int widthTotalBytes() const override { return dtypep()->widthTotalBytes(); }
     // METHODS
     string name() const override VL_MT_STABLE { return m_name; }
-    bool maybePointedTo() const override { return true; }
-    bool hasDType() const override { return true; }
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
+    bool hasDType() const override VL_MT_SAFE { return true; }
     void name(const string& flag) override { m_name = flag; }
     VVarType varType() const { return m_varType; }  // * = Type of variable
     bool isParam() const { return true; }
@@ -1044,7 +1061,7 @@ public:
     explicit AstParseTypeDType(FileLine* fl)
         : ASTGEN_SUPER_ParseTypeDType(fl) {}
     ASTGEN_MEMBERS_AstParseTypeDType;
-    AstNodeDType* dtypep() const { return nullptr; }
+    AstNodeDType* dtypep() const VL_MT_STABLE { return nullptr; }
     // METHODS
     bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
     AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
@@ -1119,7 +1136,7 @@ public:
     bool isCompound() const override { return true; }
 };
 class AstRefDType final : public AstNodeDType {
-    // @astgen op1 := typeofp : Optional[AstNode]
+    // @astgen op1 := typeofp : Optional[AstNode<AstNodeExpr|AstNodeDType>]
     // @astgen op2 := classOrPackageOpp : Optional[AstNodeExpr]
     // @astgen op3 := paramsp : List[AstPin]
     //
@@ -1263,10 +1280,10 @@ public:
     }
     ASTGEN_MEMBERS_AstStreamDType;
     void dumpSmall(std::ostream& str) const override;
-    bool hasDType() const override { return true; }
-    bool maybePointedTo() const override { return true; }
+    bool hasDType() const override VL_MT_SAFE { return true; }
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
     bool undead() const override { return true; }
-    AstNodeDType* subDTypep() const override VL_MT_SAFE { return nullptr; }
+    AstNodeDType* subDTypep() const override VL_MT_STABLE { return nullptr; }
     AstNodeDType* virtRefDTypep() const override { return nullptr; }
     void virtRefDTypep(AstNodeDType* nodep) override {}
     bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
@@ -1331,10 +1348,10 @@ public:
     }
     ASTGEN_MEMBERS_AstVoidDType;
     void dumpSmall(std::ostream& str) const override;
-    bool hasDType() const override { return true; }
-    bool maybePointedTo() const override { return true; }
+    bool hasDType() const override VL_MT_SAFE { return true; }
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
     bool undead() const override { return true; }
-    AstNodeDType* subDTypep() const override VL_MT_SAFE { return nullptr; }
+    AstNodeDType* subDTypep() const override VL_MT_STABLE { return nullptr; }
     AstNodeDType* virtRefDTypep() const override { return nullptr; }
     void virtRefDTypep(AstNodeDType* nodep) override {}
     bool similarDType(const AstNodeDType* samep) const override { return this == samep; }

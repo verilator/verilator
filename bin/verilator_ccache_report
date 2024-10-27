@@ -16,8 +16,7 @@ parser = argparse.ArgumentParser(
 
     For documentation see
     https://verilator.org/guide/latest/exe_verilator_ccache_report.html""",
-    epilog=
-    """Copyright 2002-2024 by Wilson Snyder. This program is free software; you
+    epilog="""Copyright 2002-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
@@ -67,30 +66,23 @@ else:
     wnames = max(len(_) for _ in results) + 1
     wresults = max(len(_) for _ in results.values()) + 1
     for k in sorted(results.keys()):
-        args.o.write("{:{wnames}} : {:{wresults}} : {}s\n".format(
-            k,
-            results[k],
-            elapsed[k].total_seconds(),
-            wnames=wnames,
-            wresults=wresults))
+        args.o.write("{:{wnames}} : {:{wresults}} : {}s\n".format(k,
+                                                                  results[k],
+                                                                  elapsed[k].total_seconds(),
+                                                                  wnames=wnames,
+                                                                  wresults=wresults))
 
     args.o.write("\nSummary:\n")
     counts = collections.Counter(_ for _ in results.values())
     total = sum(counts.values())
     for k in sorted(counts.keys()):
         c = counts[k]
-        args.o.write("{:{width}}| {} ({:.2%})\n".format(k,
-                                                        c,
-                                                        c / total,
-                                                        width=wresults))
+        args.o.write("{:{width}}| {} ({:.2%})\n".format(k, c, c / total, width=wresults))
 
     args.o.write("\nLongest:\n")
-    longest = sorted(list(elapsed.items()),
-                     key=lambda kv: -kv[1].total_seconds())
+    longest = sorted(list(elapsed.items()), key=lambda kv: -kv[1].total_seconds())
     for i, (k, v) in enumerate(longest):
-        args.o.write("{:{width}}| {}s\n".format(k,
-                                                v.total_seconds(),
-                                                width=wnames))
+        args.o.write("{:{width}}| {}s\n".format(k, v.total_seconds(), width=wnames))
         if i > 4:
             break
 

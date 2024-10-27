@@ -8,6 +8,103 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
+Verilator 5.030 2024-10-27
+==========================
+
+**Major:**
+
+* Add `-output-groups` to build with concatenated .cpp files (#5257). [Mariusz Glebocki]
+* Self-tests have been converted to Python, run `{test_name}.py` instead of `{test_name}.pl`.
+
+**Minor:**
+
+* Change .vlt config files to be read before .v files (#5185). [David Moberg]
+* Change to use maximum for cover point aggregation (#5402). [Andrew Nolte]
+* Change `--main` and `--binary` to use a TOP hierarchy name of "" (#5482).
+* Change install of public executables into bindir instead of pkgdatadir (#5140) (#5544). [Geza Lore]
+* Support IEEE-compliant intra-assign delays (#3711) (#5441). [Krzysztof Bieganski, Antmicro Ltd.]
+* Support `wor`, `trior`, `wand`, `triand` (#5386) (#5496). [Zhou Shen]
+* Support unconstrained randomization for unions (#5395) (#5396). [Yilou Wang]
+* Support basic constrained queue randomization (#5413). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support packed/unpacked and dynamic array unconstrained randomization (#5414) (#5415). [Yilou Wang]
+* Support appending to queue via `[]` (#5421). [Krzysztof Bieganski, Antmicro Ltd.]
+* Support named event locals (#5422). [Krzysztof Bieganski, Antmicro Ltd.]
+* Support basic `dist` constraints (#5431). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support unpacked array constrained randomization (#5437) (#5489). [Yilou Wang]
+* Support inside array constraints (#5448). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Support DPI imports and exports with double underscores (#5481).
+* Support ccache when compiling Verilated files with cmake.
+* Support `local` and `protected` on `typedef` (#5460).
+* Support unconstrained randomization for associative array and queue (#5515). [Yilou Wang]
+* Support `rand` dynamic arrays of objects (#5557) (#5564). [Ryszard Rozak, Antmicro Ltd.]
+* Add error on misused genvar (#408). [Alex Solomatnikov]
+* Add error on instances without parenthesis.
+* Add Docker pre-commit hook (#5238) (#5452). [Chris Bachhuber]
+* Add partial coverage symbol and branch data in lcov info files (#5388). [Andrew Nolte]
+* Add method to check if there are VPI callbacks of the given type (#5399). [Kaleb Barrett]
+* Remove warning on unsized numbers exceeding 32-bits.
+* Improve Verilation thread pool (#5161). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Improve performance of V3VariableOrder with parallelism (#5406). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Improve parser error handling (#5493). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Improve process trigger performance (#5483). [Geza Lore]
+* Fix suppression of WIDTH* warnings when immediately under a size cast (#3417).
+* Fix `$fatal` to not be affected by `+verilator+error+limit` (#5135). [Gökçe Aydos]
+* Fix equivalence checking when replacing type parameters (#5213) (#5255). [Han Qi]
+* Fix display with multiple string formats (#5311). [Luiza de Melo]
+* Fix performance of V3Trace when many activity blocks (#5372). [Deniz Güzel]
+* Fix REALCVT warning on integral timescale conversions (#5378). [Liam Braun]
+* Fix multidimensional function return value selects (#5382). [Gökçe Aydos]
+* Fix internal error in out-of-range select (#5393) (#5443). [Geza Lore]
+* Fix dot fallback finding wrong symbols (#5394). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Fix infinite recursion due to recursive functions/tasks (#5398). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix V3Randomize compile error on old GCC (#5403) (#5417). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix extra events in traces (#5405).
+* Fix empty `foreach` in `if` in constraints (#5408). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix queue `[$-i]` select as reference argument (#5411). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix `pre`/`post_randomize` on `randomize() with` (#5412). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix capturing params in `randomize() with` (#5416) (#5418). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix `sformatf` internal error on initial automatics (#5423). [Todd Strader]
+* Fix clearing trigger of events with no sensitivity trees (#5426). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Fix driving clocking block in reactive region (#5430). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix associative array next/prev/first/last mis-propagating constants (#5435). [Ethan Sifferman]
+* Fix randomize treated as std::randomize in classes (#5436). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Fix `foreach` colliding index names (#5444). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Fix fault on defparam with UNSUPPORTED ignored (#5450). [Luiza de Melo]
+* Fix class reference with pin that is a class reference (#5454).
+* Fix not reporting class reference with extra parameters (#5467).
+* Fix user-type parameter overlap (#5469). [Todd Strader]
+* Fix tracing when name() is empty (#5470). [Sam Shahrestani]
+* Fix timing mode not exiting on empty events (#5472).
+* Fix coverage counts missing due to table optimization (#5473) (#5474). [Vito Gamberini]
+* Fix `--binary` with .cpp PLI filenames under relative directory paths.
+* Fix extra dot in coverage point hierarchy when using name()=''.
+* Fix short-circuiting with associative array access (#5484). [Ethan Sifferman]
+* Fix short-circuiting on method calls (#5486). [Ethan Sifferman]
+* Fix exponential concatenate performance (#5488). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Fix V3Table trying to generate 'x' bits in the lookup table. (#5491). [Geza Lore]
+* Fix randomize with foreach constraints (#5492). [Arkadiusz Kozdra, Antmicro Ltd.]
+* Fix explicit CMAKE_INSTALL_PREFIX usages (#5500). [Fabian Keßler]
+* Fix configure inserting absolute paths for Python and Perl (#5504) (#5505). [Nathan Graybeal]
+* Fix pattern initialization with typedef key (#5512). [Eugene Feinberg]
+* Fix `-j` option without argument in hierarchical Verilation (#5514). [Ryszard Rozak, Antmicro Ltd.]
+* Fix `foreach` with 2-D queues and dynamic arrays (#5525) (#5529). [Yilou Wang]
+* Fix struct array assignment (#5455) (#5537). [Yilou Wang]
+* Fix copy constructor of classes that use std::process (#5528). [Ryszard Rozak, Antmicro Ltd.]
+* Fix foreach on associative array (#5530). [Yilou Wang]
+* Fix multi-range indices assignment (#5534) (#5547). [Yilou Wang]
+* Fix static function wrappers (#5536). [Ryszard Rozak, Antmicro Ltd.]
+* Fix assignments of concatenation to queues and dynamic arrays (#5540). [Ryszard Rozak, Antmicro Ltd.]
+* Fix container reduction methods (#5542). [Krzysztof Boroński]
+* Fix complex user type problem with `--x-assign` (#5543). [Todd Strader]
+* Fix long module names crashing string handling (#5546). [Filip Badáň]
+* Fix array trace splitting (#5549). [Todd Strader]
+* Fix queue element access (#5551). [Ryszard Rozak, Antmicro Ltd.]
+* Fix struct literal on pattern assignment (#5552) (#5559). [Todd Strader]
+* Fix build on gcc when using the Spack wrapper (#5555). [Eric Müller]
+* Fix enum name method (#5563). [Todd Strader]
+* Fix `$countbits` in assert with non-tristates (#5566). [Shou-Li Hsu]
+
+
 Verilator 5.028 2024-08-21
 ==========================
 
@@ -208,9 +305,10 @@ Verilator 5.024 2024-04-05
 * Fix preprocessor to respect strings in joins (#5007).
 * Fix tracing class parameters (#5014).
 * Fix memory leaks (#5016). [Geza Lore]
-* Fix $readmem with missing newline (#5019). [Josse Van Delm]
+* Fix `$readmem` with missing newline (#5019). [Josse Van Delm]
 * Fix internal error on missing pattern key (#5023).
 * Fix tracing replicated hierarchical models (#5027).
+* Fix false LIFETIME warning on `repeat` in `fork-join` (#5456).
 
 
 Verilator 5.022 2024-02-24
@@ -549,7 +647,7 @@ Verilator 5.012 2023-06-13
 * Fix wide structure VL_TOSTRING_W generation (#4188) (#4189). [Aylon Chaim Porat]
 * Fix references to members of parameterized base classes (#4196). [Ryszard Rozak, Antmicro Ltd]
 * Fix tracing undefined alignment (#4201) (#4288) [John Wehle]
-* Fix class specific same methods for AstVarScope, AstVar, and AstScope (#4203) (#4250). [John Wehle]
+* Fix class-specific same methods for AstVarScope, AstVar, and AstScope (#4203) (#4250). [John Wehle]
 * Fix dotted references in parameterized classes (#4206). [Ryszard Rozak, Antmicro Ltd]
 * Fix bit selections under parameterized classes (#4210). [Ryszard Rozak, Antmicro Ltd]
 * Fix duplicate std:: declaration with -I (#4215). [Harald Pretl]

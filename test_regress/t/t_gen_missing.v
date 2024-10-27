@@ -7,9 +7,9 @@
 module t;
    //  verilator lint_off PINMISSING
 `ifdef T_GEN_MISSING_BAD
-   foobar #(.FOO_TYPE(1)) foobar;  // This means we should instatiate missing module
+   foobar #(.FOO_TYPE(1)) foobar();  // This means we should instatiate missing module
 `elsif T_GEN_MISSING
-   foobar #(.FOO_TYPE(0)) foobar;  // This means we should instatiate foo0
+   foobar #(.FOO_TYPE(0)) foobar();  // This means we should instatiate foo0
 `else
  `error "Bad Test"
 `endif

@@ -50,6 +50,7 @@ class LinkResolveVisitor final : public VNVisitor {
     AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
     AstNodeCoverOrAssert* m_assertp = nullptr;  // Current assertion
     int m_senitemCvtNum = 0;  // Temporary signal counter
+    bool m_underGenFor = false;  // Under GenFor
     bool m_underGenerate = false;  // Under GenFor/GenIf
 
     // VISITs
@@ -105,6 +106,12 @@ class LinkResolveVisitor final : public VNVisitor {
     void visit(AstNodeVarRef* nodep) override {
         // VarRef: Resolve its reference
         if (nodep->varp()) nodep->varp()->usedParam(true);
+        // TODO should look for where genvar is valid, but for now catch
+        // just gross errors of using genvar outside any generate
+        if (nodep->varp() && nodep->varp()->isGenVar() && !m_underGenFor) {
+            nodep->v3error("Genvar " << nodep->prettyNameQ()
+                                     << " used outside generate for loop (IEEE 1800-2023 27.4)");
+        }
         iterateChildren(nodep);
     }
 
@@ -113,14 +120,7 @@ class LinkResolveVisitor final : public VNVisitor {
         // NodeTask: Remember its name for later resolution
         if (m_underGenerate) nodep->underGenerate(true);
         // Remember the existing symbol table scope
-        if (m_classp) {
-            if (nodep->name() == "randomize" || nodep->name() == "srandom") {
-                nodep->v3error(nodep->prettyNameQ()
-                               << " is a predefined class method; redefinition not allowed"
-                                  " (IEEE 1800-2023 18.6.3)");
-            }
-            nodep->classMethod(true);
-        }
+        if (m_classp) nodep->classMethod(true);
         // V3LinkDot moved the isExternDef into the class, the extern proto was
         // checked to exist, and now isn't needed
         nodep->isExternDef(false);
@@ -376,6 +376,7 @@ class LinkResolveVisitor final : public VNVisitor {
         expectFormat(nodep, nodep->text(), nodep->exprsp(), true);
     }
     void visit(AstSFormatF* nodep) override {
+        if (nodep->user2SetOnce()) return;
         iterateChildren(nodep);
         // Cleanup old-school displays without format arguments
         if (!nodep->hasFormat()) {
@@ -456,7 +457,9 @@ class LinkResolveVisitor final : public VNVisitor {
     // We keep Modport's themselves around for XML dump purposes
 
     void visit(AstGenFor* nodep) override {
+        VL_RESTORER(m_underGenFor);
         VL_RESTORER(m_underGenerate);
+        m_underGenFor = true;
         m_underGenerate = true;
         iterateChildren(nodep);
     }

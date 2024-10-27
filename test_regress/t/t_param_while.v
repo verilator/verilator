@@ -6,11 +6,7 @@
 
 //bug505
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (/*AUTOARG*/);
 
    parameter  WIDTH = 33;
    localparam MAX_WIDTH = 11;

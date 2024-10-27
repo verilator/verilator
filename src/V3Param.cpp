@@ -21,6 +21,7 @@
 //              (Interfaces also matter, as if a module is parameterized
 //              this effectively changes the width behavior of all that
 //              reference the iface.)
+//
 //              Clone module cell calls, renaming with __{par1}_{par2}_...
 //              Substitute constants for cell's module's parameters.
 //              Relink pins and cell and ifacerefdtype to point to new module.
@@ -65,7 +66,7 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
-// Hierarchical block and parameter db (modules without parameter is also handled)
+// Hierarchical block and parameter db (modules without parameters are also handled)
 
 class ParameterizedHierBlocks final {
     using HierBlockOptsByOrigName = std::multimap<std::string, const V3HierarchicalBlockOption*>;
@@ -200,7 +201,7 @@ public:
                 varNum.opIToRD(pinValuep->num());
                 var = varNum.toDouble();
             }
-            return v3EpsilonEqual(var, hierOptParamp->num().toDouble());
+            return V3Number::epsilonEqual(var, hierOptParamp->num().toDouble());
         } else {  // Now integer type is assumed
             // Bitwidth of hierOptParamp is accurate because V3Width already calculated in the
             // previous run. Bitwidth of pinValuep is before width analysis, so pinValuep is casted
@@ -231,10 +232,10 @@ class ParamProcessor final {
     //                          //        (0=not processed, 1=iterated, but no number,
     //                          //         65+ parameter numbered)
     // NODE STATE - Shared with ParamVisitor
-    //   AstClass::user3p()     // AstClass* Unchanged copy of the parameterized class node.
-    //                                    The class node may be modified according to parameter
-    //                                    values and an unchanged copy is needed to instantiate
-    //                                    classes with different parameters.
+    //   AstNodeModule::user3p()  // AstNodeModule* Unaltered copy of the parameterized module.
+    //                               The module/class node may be modified according to parameter
+    //                               values and an unchanged copy is needed to instantiate
+    //                               modules/classes with different parameters.
     //   AstNodeModule::user2() // bool   True if processed
     //   AstGenFor::user2()     // bool   True if processed
     //   AstVar::user2()        // bool   True if constant propagated
@@ -347,7 +348,24 @@ class ParamProcessor final {
             if (dtypep->isRanged()) {
                 key += "[" + cvtToStr(dtypep->left()) + ":" + cvtToStr(dtypep->right()) + "]";
             }
+        } else if (const AstPackArrayDType* const dtypep = VN_CAST(nodep, PackArrayDType)) {
+            key += "[";
+            key += cvtToStr(dtypep->left());
+            key += ":";
+            key += cvtToStr(dtypep->right());
+            key += "] ";
+            key += paramValueString(dtypep->subDTypep());
+        } else if (const AstInitArray* const initp = VN_CAST(nodep, InitArray)) {
+            key += "{";
+            for (auto it : initp->map()) {
+                key += paramValueString(it.second->valuep());
+                key += ",";
+            }
+            key += "}";
+        } else if (const AstNodeDType* const dtypep = VN_CAST(nodep, NodeDType)) {
+            key += dtypep->prettyDTypeName(true);
         }
+        UASSERT_OBJ(!key.empty(), nodep, "Parameter yielded no value string");
         return key;
     }
 
@@ -750,7 +768,8 @@ class ParamProcessor final {
                 }
             }
         } else if (AstParamTypeDType* const modvarp = pinp->modPTypep()) {
-            AstNodeDType* const exprp = VN_CAST(pinp->exprp(), NodeDType);
+            AstNodeDType* rawTypep = VN_CAST(pinp->exprp(), NodeDType);
+            AstNodeDType* const exprp = rawTypep ? rawTypep->skipRefToEnump() : nullptr;
             const AstNodeDType* const origp = modvarp->skipRefToEnump();
             if (!exprp) {
                 pinp->v3error("Parameter type pin value isn't a type: Param "
@@ -962,7 +981,9 @@ public:
         if (debug() >= 10) nodep->dumpTree("-  cell: ");
         // Evaluate all module constants
         V3Const::constifyParamsEdit(nodep);
-        srcModpr->someInstanceName(someInstanceName + "." + nodep->name());
+        // Set name for warnings for when we param propagate the module
+        const string instanceName = someInstanceName + "." + nodep->name();
+        srcModpr->someInstanceName(instanceName);
 
         if (auto* cellp = VN_CAST(nodep, Cell)) {
             cellDeparam(cellp, srcModpr);
@@ -975,6 +996,9 @@ public:
         } else {
             nodep->v3fatalSrc("Expected module parameterization");
         }
+
+        // Set name for later warnings (if srcModpr changed value due to cloning)
+        srcModpr->someInstanceName(instanceName);
 
         UINFO(8, "     Done with " << nodep << endl);
         // if (debug() >= 10)
@@ -1070,7 +1094,7 @@ class ParamVisitor final : public VNVisitor {
                 UASSERT_OBJ(srcModp, cellp, "Unlinked class ref");
 
                 // Update path
-                string someInstanceName(modp->someInstanceName());
+                string someInstanceName = modp->someInstanceName();
                 if (const string* const genHierNamep = cellp->user2u().to<string*>()) {
                     someInstanceName += *genHierNamep;
                     cellp->user2p(nullptr);

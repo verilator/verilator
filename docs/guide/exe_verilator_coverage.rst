@@ -58,32 +58,36 @@ to read multiple inputs.  If no data file is specified, by default,
 Specifies the directory name to which source files with annotated coverage
 data should be written.
 
-Converting from the Verilator coverage data format to the info format is
-lossy; the info will have all forms of coverage merged line coverage, and
-if there are multiple coverage points on a single line they will merge.
-The minimum coverage across all merged points will be used to report
-coverage of the line.
+Points are children of each line coverage- branches or toggle points.
+When point counts are aggregated into a line, the minimum and maximum counts
+are used to determine the status of the line (complete, partial, failing)
+The count is equal to the maximum of the points.
 
 Coverage data is annotated at the beginning of the line and is formatted
 as a special character followed by the number of coverage hits. The special
-characters " ,%,+,-" indicate summary of the coverage, and allow use of grep
+characters " ,%,~,+,-" indicate summary of the coverage, and allow use of grep
 to filter the report.
 
-* " " (whitespace) indicates that all points on the line are above the coverage limit.
-* "%" indicates at least one point on the line was below the coverage limit.
-* "+" coverage point was at or above the limit. Only used with :option:`--annotate-points`.
-* "-" coverage point was below the limit.  Only used with :option:`--annotate-points`.
+* " " (whitespace) indicates that all points on the line are above the coverage min.
+* "%" indicates that all points on the line are below the coverage min.
+* "~" indicates that some points on the line are above the coverage min and some are below.
+* "+" coverage point was at or above the min. Only used with :option:`--annotate-points`.
+* "-" coverage point was below the min.  Only used with :option:`--annotate-points`.
 
 .. code-block::
 
-   100000  input logic a;   // Begins with whitespace, because
-                            // number of hits (100000) is above the limit.
-  +100000  point: comment=a // Begins with +, because
-                            // number of hits (100000) is above the limit.
-  %000000  input logic b;   // Begins with %, because
-                            // number of hits (0) is below the limit.
-  -000000  point: comment=b // Begins with -, because
-                            // number of hits (0) is below the limit.
+   100000  input logic a;      // Begins with whitespace, because
+                               // number of hits (100000) is above the min.
+  +100000  point: comment=a    // Begins with +, because
+                               // number of hits (100000) is above the min.
+  %000000  input logic b;      // Begins with %, because
+                               // number of hits (0) is below the min.
+  -000000  point: comment=b    // Begins with -, because
+                               // number of hits (0) is below the min.
+  ~000010  if (cyc!=0) begin   // Begins with ~, because
+                               // branches are below and above the min.
+  +000010  point: comment=if   // The if branch is above the min.
+  -000000  point: comment=else // The else branch is below the min.
 
 .. option:: --annotate-all
 
@@ -154,10 +158,7 @@ generated from random test runs) into one master coverage file.
 Specifies the aggregate coverage results, summed across all the files,
 should be written to the given filename in :command:`lcov` .info format.
 This may be used to feed into :command:`lcov` to aggregate or generate
-reports.
-
-Converting from the Verilator coverage data format to the info format is
-lossy; the info will have all forms of coverage merged line coverage, and
-if there are multiple coverage points on a single line they will merge.
-The minimum coverage across all merged points will be used to report
-coverage of the line.
+reports. This format lacks the comments for cover points that the
+verilator_coverage format has. It can be used with :command:`genhtml`
+to generate an HTML report. :command:`genhtml --branch-coverage` will
+also display the branch coverage, analogous to :option:`--annotate-points`

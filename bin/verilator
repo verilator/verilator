@@ -69,7 +69,9 @@ if (! GetOptions(
     pod2usage(-exitstatus => 2, -verbose => 0);
 }
 
-my $verilator_root = realpath("$RealBin/..");
+# WARNING: $verilator_pkgdatadir_relpath is substituted during Verilator 'make install'
+my $verilator_pkgdatadir_relpath = "..";
+my $verilator_root = realpath("$RealBin/$verilator_pkgdatadir_relpath");
 if (defined $ENV{VERILATOR_ROOT}) {
     if ((!-d $ENV{VERILATOR_ROOT}) || $verilator_root ne realpath($ENV{VERILATOR_ROOT})) {
         warn "%Error: verilator: VERILATOR_ROOT is set to inconsistent path. Suggest leaving it unset.\n";
@@ -405,6 +407,7 @@ detailed descriptions of these arguments.
      -O3                        High-performance optimizations
      -O<optimization-letter>    Selectable optimizations
      -o <executable>            Name of final executable
+    --output-groups <numfiles>  Group .cpp files into larger ones
     --output-split <statements>          Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split model functions
     --output-split-ctrace <statements>   Split tracing functions

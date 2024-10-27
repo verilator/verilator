@@ -20,6 +20,7 @@ Ashutosh
 Ast
 Atmel
 Aurelien
+Badáň
 Bagri
 Balboni
 Baltazar
@@ -74,6 +75,7 @@ Deepa
 Defparams
 Delm
 Denio
+Deniz
 Deprecations
 Deroo
 Desai
@@ -109,8 +111,10 @@ Eugen
 Fabrizio
 Faucher
 Faure
+Feinberg
 Fekete
 Ferrandi
+Filip
 Flachs
 Flavien
 Florian
@@ -149,6 +153,7 @@ Grulfen
 Gu
 Gunter
 Guo
+Güzel
 Hameed
 Hao
 Haojin
@@ -243,6 +248,7 @@ Liwei
 Lockhart
 Longo
 Luca
+Luiza
 Lussier
 Lübeck
 MMD
@@ -273,6 +279,8 @@ MinW
 Mindspeed
 MingW
 Miodrag
+Moberg
+Mobert
 ModelSim
 Modport
 Moinak
@@ -354,6 +362,7 @@ Sasselli
 Scharrer
 Seitz
 Shahid
+Shahrestani
 Shankar
 Shanshan
 Sharad
@@ -364,6 +373,7 @@ Shi
 Shinkarovsky
 Shinya
 Shirakawa
+Shou
 Shuba
 Shunyao
 Slager
@@ -375,6 +385,7 @@ Solaris
 Solomatnikov
 Solt
 Southwell
+Spack
 Srini
 Srinivasan
 Stamness
@@ -516,6 +527,7 @@ basename
 bbox
 benchmarking
 biguint
+bindir
 biops
 bisonpre
 bitOpTree
@@ -585,6 +597,7 @@ datadir
 datafiles
 david
 ddd
+de
 deassign
 debugi
 defenv
@@ -865,6 +878,7 @@ phelter
 picoChip
 pinIndex
 pinout
+pkgdatadir
 plusargs
 pmos
 poping
@@ -929,6 +943,7 @@ redeclaring
 regs
 reloop
 replaceShiftOp
+reproducibility
 resetall
 respecified
 rodata
@@ -1018,6 +1033,8 @@ traceEverOn
 tran
 treei
 tri
+triand
+trior
 tristate
 tristates
 trunc
@@ -1093,6 +1110,7 @@ warmup
 waveforms
 whitespace
 widthed
+wor
 wreal
 writeb
 writeme
@@ -1112,4 +1130,3 @@ zdave
 Øyvind
 Алексеевич
 Исаак
-

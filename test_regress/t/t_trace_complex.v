@@ -8,11 +8,11 @@ bit global_bit;
 
 module t (clk);
    input clk;
-   integer      cyc = 0;
+   integer cyc = 0;
 
    typedef struct packed {
-      bit       b1;
-      bit       b0;
+      bit         b1;
+      bit         b0;
    } strp_t;
 
    typedef struct packed {
@@ -20,7 +20,7 @@ module t (clk);
       strp_t    x0;
    } strp_strp_t;
 
-   typedef union packed {
+   typedef union  packed {
       strp_t    x1;
       strp_t    x0;
    } unip_strp_t;
@@ -30,7 +30,7 @@ module t (clk);
 
    typedef strp_t [4:3] arrp_strp_t;
 
-   typedef bit arru_t [2:1];
+   typedef bit       arru_t [2:1];
    typedef arru_t arru_arru_t [4:3];
    typedef arrp_t arru_arrp_t [4:3];
    typedef strp_t arru_strp_t [4:3];
@@ -46,35 +46,35 @@ module t (clk);
    arru_arrp_t  v_arru_arrp;
    arru_strp_t  v_arru_strp;
 
-   real         v_real;
-   real         v_arr_real [2];
-   string       v_string;
-   chandle	v_chandle;
+   real              v_real;
+   real              v_arr_real [2];
+   string            v_string;
+   chandle           v_chandle;
 
-   string       v_assoc[string];
+   string            v_assoc[string];
    initial v_assoc["key"] = "value";
 
-   typedef struct packed {
-      logic [31:0] data;
+   typedef struct    packed {
+      logic [31:0]   data;
    } str32_t;
    str32_t [1:0] v_str32x2;  // If no --trace-struct, this packed array is traced as 63:0
    initial v_str32x2[0] = 32'hff;
    initial v_str32x2[1] = 0;
 
-   typedef enum int { ZERO=0, ONE, TWO, THREE } enumed_t;
+   typedef enum      int { ZERO=0, ONE, TWO, THREE } enumed_t;
    enumed_t v_enumed;
    enumed_t v_enumed2;
-   typedef enum logic [2:0] { BZERO=0, BONE, BTWO, BTHREE } enumb_t;
+   typedef enum      logic [2:0] { BZERO=0, BONE, BTWO, BTHREE } enumb_t;
    enumb_t v_enumb;
-   typedef struct packed {
+   typedef struct    packed {
       enumb_t a;
       enumb_t b;
    } enumb2_str_t;
    enumb2_str_t v_enumb2_str;
 
-   logic [7:0] unpacked_array[-2:0];
+   logic [7:0]       unpacked_array[-2:0];
 
-   bit         LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND;
+   bit               LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND;
 
    p #(.PARAM(2)) p2 ();
    p #(.PARAM(3)) p3 ();

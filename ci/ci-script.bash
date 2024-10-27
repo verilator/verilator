@@ -33,6 +33,7 @@ elif [ "$CI_OS_NAME" = "freebsd" ]; then
 else
   fatal "Unknown os: '$CI_OS_NAME'"
 fi
+NPROC=$(expr $NPROC '+' 1)
 
 if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
   ##############################################################################
@@ -61,6 +62,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   # Run tests
 
   export VERILATOR_TEST_NO_CONTRIBUTORS=1  # Separate workflow check
+  export VERILATOR_TEST_NO_LINT_PY=1  # Separate workflow check
 
   if [ "$CI_OS_NAME" = "osx" ]; then
     export VERILATOR_TEST_NO_GDB=1  # Pain to get GDB to work on OS X
@@ -85,7 +87,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   fi
 
   # Run sanitize on Ubuntu 22.04 only
-  [ "$CI_RUNS_ON" = 'ubuntu-22.04' ] && sanitize='--sanitize' || sanitize=''
+  ( [ "$CI_RUNS_ON" = 'ubuntu-22.04' ] || [ "$CI_RUNS_ON" = 'ubuntu-24.04' ] ) && sanitize='--sanitize' || sanitize=''
 
   TEST_REGRESS=test_regress
   if [ "$CI_RELOC" == 1 ]; then
@@ -193,6 +195,8 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
       ;;
   esac
 
+  # To see load average (1 minute, 5 minute, 15 minute)
+  uptime
   # 22.04: ccache -s -v
   ccache -s
 

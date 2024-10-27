@@ -247,10 +247,30 @@ class LinkCellsVisitor final : public VNVisitor {
         // Note cannot do modport resolution here; modports are allowed underneath generates
     }
 
+    void visit(AstPackageExport* nodep) override {
+        // Package Import: We need to do the package before the use of a package
+        iterateChildren(nodep);
+        if (!nodep->packagep()) {
+            AstNodeModule* const modp = resolveModule(nodep, nodep->pkgName());
+            if (AstPackage* const pkgp = VN_CAST(modp, Package)) nodep->packagep(pkgp);
+            if (!nodep->packagep()) {
+                nodep->v3error("Export package not found: " << nodep->prettyPkgNameQ());
+                return;
+            }
+        }
+    }
     void visit(AstPackageImport* nodep) override {
         // Package Import: We need to do the package before the use of a package
         iterateChildren(nodep);
-        UASSERT_OBJ(nodep->packagep(), nodep, "Unlinked package");  // Parser should set packagep
+        if (!nodep->packagep()) {
+            AstNodeModule* const modp = resolveModule(nodep, nodep->pkgName());
+            if (AstPackage* const pkgp = VN_CAST(modp, Package)) nodep->packagep(pkgp);
+            // If not found, V3LinkDot will report errors
+            if (!nodep->packagep()) {
+                nodep->v3error("Import package not found: " << nodep->prettyPkgNameQ());
+                return;
+            }
+        }
         new V3GraphEdge{&m_graph, vertex(m_modp), vertex(nodep->packagep()), 1, false};
     }
 
@@ -490,12 +510,13 @@ class LinkCellsVisitor final : public VNVisitor {
                 nodep->addNextHere(varp);
                 nodep->hasIfaceVar(true);
             }
-            if (nodep->hasNoParens()) {
-                nodep->v3error("Interface instantiation "
-                               << nodep->prettyNameQ() << " requires parenthesis\n"
-                               << nodep->warnMore() << "... Suggest use '" << nodep->prettyName()
-                               << "()'");
-            }
+        }
+        if (nodep->hasNoParens()) {
+            // Need in the grammar, otherwise it looks like "id/*data_type*/ id/*new_var*/;"
+            nodep->v3error("Instantiation " << nodep->prettyNameQ()
+                                            << " requires parenthesis (IEEE 1800-2023 23.3.2)\n"
+                                            << nodep->warnMore() << "... Suggest use '"
+                                            << nodep->prettyName() << "()'");
         }
         if (nodep->modp()) {  //
             iterateChildren(nodep);

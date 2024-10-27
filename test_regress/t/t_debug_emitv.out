@@ -297,18 +297,20 @@ module Vt_debug_emitv_t;
             $display("%g", $acosh(r));
             $display("%g", $atanh(r));
             force sum = 'sha;
-            __Vrepeat0 = 'sh2;
-            while ((__Vrepeat0 > 32'h0)) begin
-                if ((sum != 'sha)) begin
-                    $stop;
+            begin : unnamedblk1_1
+                integer signed [31:0]  __Vrepeat0;
+                __Vrepeat0 = 'sh2;
+                while ((__Vrepeat0 > 32'h0)) begin
+                    if ((sum != 'sha)) begin
+                        $stop;
+                    end
+                    __Vrepeat0 = (__Vrepeat0 - 32'h1);
                 end
-                __Vrepeat0 = (__Vrepeat0 - 32'h1);
             end
             release sum;
         end
     end
     /*verilator public_flat_rw @(posedge clk) pubflat*/
-    integer signed [31:0]  __Vrepeat0;
 endmodule
 package Vt_debug_emitv___024unit;
     class Vt_debug_emitv_Cls;

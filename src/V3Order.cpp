@@ -132,7 +132,7 @@ AstCFunc* V3Order::order(AstNetlist* netlistp,  //
     // Order it
     orderOrderGraph(*graph, tag);
     // Assign sensitivity domains to combinational logic
-    processDomains(netlistp, *graph, tag, trigToSen, externalDomains);
+    processDomains(netlistp, *graph, tag, externalDomains);
 
     if (parallel) {
         // Construct the parallel ExecGraph

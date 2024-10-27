@@ -21,7 +21,8 @@
 #include "verilatedos.h"
 
 #include "V3Graph.h"
-#include "V3ThreadSafety.h"
+
+#include <atomic>
 
 class AstNetlist;
 class AstMTaskBody;
@@ -34,7 +35,7 @@ class ExecMTask final : public V3GraphVertex {
 private:
     AstMTaskBody* const m_bodyp;  // Task body
     const uint32_t m_id;  // Unique ID of this ExecMTask.
-    static uint32_t s_nextId;  // Next ID to use
+    static std::atomic<uint32_t> s_nextId;  // Next ID to use
     const std::string m_hashName;  // Hashed name based on body for profile-driven optimization
     // Predicted critical path from the start of this mtask to the ends of the graph that are
     // reachable from this mtask. In abstract time units.
@@ -58,7 +59,7 @@ public:
     string hashName() const { return m_hashName; }
     void dump(std::ostream& str) const;
 
-    static uint32_t numUsedIds() { return s_nextId; }
+    static uint32_t numUsedIds() VL_MT_SAFE { return s_nextId; }
 };
 
 inline std::ostream& operator<<(std::ostream& os, const ExecMTask& rhs) {

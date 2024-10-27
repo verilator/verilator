@@ -38,7 +38,7 @@ module t;
   end
 
   Test test(.out(out), .in(in),
-	    .clk(clk), .rst(rst));
+            .clk(clk), .rst(rst));
 endmodule
 
 

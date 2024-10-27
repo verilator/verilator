@@ -53,11 +53,12 @@ class EmitCModel final : public EmitCFunc {
     }
 
     void emitHeader(AstNodeModule* modp) {
-        UASSERT(!m_ofp, "Output file should not be open");
+        UASSERT(!ofp(), "Output file should not be open");
 
         const string filename = v3Global.opt.makeDir() + "/" + topClassName() + ".h";
-        newCFile(filename, /* slow: */ false, /* source: */ false);
-        m_ofp = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
+        setOutputFile(v3Global.opt.systemC() ? new V3OutScFile{filename}
+                                             : new V3OutCFile{filename},
+                      newCFile(filename, /* slow: */ false, /* source: */ false));
 
         ofp()->putsHeader();
         puts("// DESCRIPTION: Verilator output: Primary model header\n");
@@ -269,7 +270,7 @@ class EmitCModel final : public EmitCFunc {
 
         ofp()->putsEndGuard();
 
-        VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+        closeOutputFile();
     }
 
     void emitConstructorImplementation(AstNodeModule* modp) {
@@ -551,11 +552,11 @@ class EmitCModel final : public EmitCFunc {
              "0.\");\n");
         puts("}\n");
         puts("vlSymsp->__Vm_baseCode = code;\n");
-        puts("if (strlen(vlSymsp->name())) tracep->pushPrefix(std::string{vlSymsp->name()}, "
+        puts("tracep->pushPrefix(std::string{vlSymsp->name()}, "
              "VerilatedTracePrefixType::SCOPE_MODULE);\n");
         puts(topModNameProtected + "__" + protect("trace_decl_types") + "(tracep);\n");
         puts(topModNameProtected + "__" + protect("trace_init_top") + "(vlSelf, tracep);\n");
-        puts("if (strlen(vlSymsp->name())) tracep->popPrefix();\n");
+        puts("tracep->popPrefix();\n");
         puts("}\n");
 
         // Forward declaration
@@ -612,11 +613,12 @@ class EmitCModel final : public EmitCFunc {
     }
 
     void emitImplementation(AstNodeModule* modp) {
-        UASSERT(!m_ofp, "Output file should not be open");
+        UASSERT(!ofp(), "Output file should not be open");
 
         const string filename = v3Global.opt.makeDir() + "/" + topClassName() + ".cpp";
-        newCFile(filename, /* slow: */ false, /* source: */ true);
-        m_ofp = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
+        setOutputFile(v3Global.opt.systemC() ? new V3OutScFile{filename}
+                                             : new V3OutCFile{filename},
+                      newCFile(filename, /* slow: */ false, /* source: */ true));
 
         ofp()->putsHeader();
         puts("// DESCRIPTION: Verilator output: "
@@ -635,11 +637,11 @@ class EmitCModel final : public EmitCFunc {
         if (v3Global.opt.trace()) emitTraceMethods(modp);
         if (v3Global.opt.savable()) emitSerializationFunctions();
 
-        VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+        closeOutputFile();
     }
 
     void emitDpiExportDispatchers(AstNodeModule* modp) {
-        UASSERT(!m_ofp, "Output file should not be open");
+        UASSERT(!ofp(), "Output file should not be open");
 
         // Emit DPI Export dispatchers
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
@@ -650,19 +652,19 @@ class EmitCModel final : public EmitCFunc {
                 // Splitting file, so using parallel build.
                 v3Global.useParallelBuild(true);
                 // Close old file
-                VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+                closeOutputFile();
             }
 
-            if (!m_ofp) {
+            if (!ofp()) {
                 string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Dpi_Export";
                 filename = m_uniqueNames.get(filename);
                 filename += ".cpp";
-                newCFile(filename, /* slow: */ false, /* source: */ true);
-                m_ofp = v3Global.opt.systemC() ? new V3OutScFile{filename}
-                                               : new V3OutCFile{filename};
+                setOutputFile(v3Global.opt.systemC() ? new V3OutScFile{filename}
+                                                     : new V3OutCFile{filename},
+                              newCFile(filename, /* slow: */ false, /* source: */ true));
                 splitSizeReset();  // Reset file size tracking
                 m_lazyDecls.reset();
-                m_ofp->putsHeader();
+                ofp()->putsHeader();
                 puts(
                     "// DESCRIPTION: Verilator output: Implementation of DPI export functions.\n");
                 puts("//\n");
@@ -675,7 +677,7 @@ class EmitCModel final : public EmitCFunc {
             iterateConst(funcp);
         }
 
-        if (m_ofp) VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+        if (ofp()) closeOutputFile();
     }
 
     void main(AstNodeModule* modp) {

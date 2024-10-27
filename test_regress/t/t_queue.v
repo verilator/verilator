@@ -6,8 +6,7 @@
 
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
-`define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
-`define checkg(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%g' exp='%g'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checkp(gotv,expv_s) do begin string gotv_s; gotv_s = $sformatf("%p", gotv); if ((gotv_s) !== (expv_s)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv_s), (expv_s)); `stop; end end while(0);
 
 module t (/*AUTOARG*/
@@ -22,9 +21,24 @@ module t (/*AUTOARG*/
 
    typedef integer q_t[$];
 
+   function void set_val(ref integer lhs, input integer rhs);
+      lhs = rhs;
+   endfunction
+
    initial begin
       q_t iq;
       iq.push_back(42);
+
+      // Resize via []
+      set_val(iq[0], 9000);
+      `checkh(iq.size(), 1);
+      `checks(iq[0], 9000);
+      iq[1]++;
+      `checkh(iq.size(), 2);
+      `checks(iq[1], 1);
+      iq[1000] = 1000;
+      `checkh(iq.size(), 2);
+      `checks(iq[1000], 0);
    end
 
    always @ (posedge clk) begin
@@ -184,6 +198,29 @@ module t (/*AUTOARG*/
          `checks(q[0], "front");
          //Unsup: `checks(q[$], "front");
 
+         // Resize via []
+         q[0] = "long";
+         `checkh(q.size(), 1);
+         `checks(q[0], "long");
+      end
+
+      // Append to queue of queues using []
+      begin
+         int q[$][$];
+         q[0][0] = 1;
+         `checkh(q.size(), 1);
+         `checkh(q[0].size(), 1);
+         `checks(q[0][0], 1);
+      end
+
+      // Do not append with [] if used as index
+      begin
+         int p[$];
+         int q[$];
+         q[p[0]] = 1;
+         `checkh(p.size(), 0);
+         `checkh(q.size(), 1);
+         `checks(q[0], 1);
       end
 
       begin

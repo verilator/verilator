@@ -48,9 +48,11 @@ def fully_qualified_name(node):
     if node.kind == CursorKind.TRANSLATION_UNIT:
         return []
     res = fully_qualified_name(node.semantic_parent)
+    displayname = node.displayname
+    displayname = [displayname] if displayname else []
     if res:
-        return res + ([node.displayname] if node.displayname else [])
-    return [node.displayname] if node.displayname else []
+        return res + displayname
+    return displayname
 
 
 # Returns True, if `class_node` contains node
@@ -106,9 +108,8 @@ class VlAnnotations:
 
     def is_mt_safe_call(self):
         return (not self.is_mt_unsafe_call()
-                and (self.mt_safe or self.mt_safe_postinit or self.pure
-                     or self.requires or self.excludes or self.acquire
-                     or self.release))
+                and (self.mt_safe or self.mt_safe_postinit or self.pure or self.requires
+                     or self.excludes or self.acquire or self.release))
 
     def is_pure_call(self):
         return self.pure
@@ -140,31 +141,32 @@ class VlAnnotations:
         result = VlAnnotations()
         for node in nodes:
             if node.kind == CursorKind.ANNOTATE_ATTR:
-                if node.displayname == "MT_START":
+                displayname = node.displayname
+                if displayname == "MT_START":
                     result.mt_start = True
-                elif node.displayname == "MT_SAFE":
+                elif displayname == "MT_SAFE":
                     result.mt_safe = True
-                elif node.displayname == "MT_STABLE":
+                elif displayname == "MT_STABLE":
                     result.stable_tree = True
-                elif node.displayname == "MT_SAFE_POSTINIT":
+                elif displayname == "MT_SAFE_POSTINIT":
                     result.mt_safe_postinit = True
-                elif node.displayname == "MT_UNSAFE":
+                elif displayname == "MT_UNSAFE":
                     result.mt_unsafe = True
-                elif node.displayname == "MT_UNSAFE_ONE":
+                elif displayname == "MT_UNSAFE_ONE":
                     result.mt_unsafe_one = True
-                elif node.displayname == "MT_DISABLED":
+                elif displayname == "MT_DISABLED":
                     result.mt_disabled = True
-                elif node.displayname == "PURE":
+                elif displayname == "PURE":
                     result.pure = True
-                elif node.displayname in ["ACQUIRE", "ACQUIRE_SHARED"]:
+                elif displayname in ["ACQUIRE", "ACQUIRE_SHARED"]:
                     result.acquire = True
-                elif node.displayname in ["RELEASE", "RELEASE_SHARED"]:
+                elif displayname in ["RELEASE", "RELEASE_SHARED"]:
                     result.release = True
-                elif node.displayname == "REQUIRES":
+                elif displayname == "REQUIRES":
                     result.requires = True
-                elif node.displayname in ["EXCLUDES", "MT_SAFE_EXCLUDES"]:
+                elif displayname in ["EXCLUDES", "MT_SAFE_EXCLUDES"]:
                     result.excludes = True
-                elif node.displayname == "GUARDED_BY":
+                elif displayname == "GUARDED_BY":
                     result.guarded = True
             # Attributes are always at the beginning
             elif not node.kind.is_attribute():
@@ -203,9 +205,7 @@ class FunctionInfo:
     annotations: VlAnnotations
     ftype: FunctionType
 
-    _hash: Optional[int] = dataclasses.field(default=None,
-                                             init=False,
-                                             repr=False)
+    _hash: Optional[int] = dataclasses.field(default=None, init=False, repr=False)
 
     @property
     def name(self):
@@ -220,15 +220,13 @@ class FunctionInfo:
         return self._hash
 
     def __eq__(self, other):
-        return (self.usr == other.usr and self.file == other.file
-                and self.line == other.line)
+        return (self.usr == other.usr and self.file == other.file and self.line == other.line)
 
     def copy(self, /, **changes):
         return dataclasses.replace(self, **changes)
 
     @staticmethod
-    def from_decl_file_line_and_refd_node(file: str, line: int,
-                                          refd: clang.cindex.Cursor,
+    def from_decl_file_line_and_refd_node(file: str, line: int, refd: clang.cindex.Cursor,
                                           annotations: VlAnnotations):
         file = os.path.abspath(file)
         refd = refd.canonical
@@ -277,14 +275,11 @@ class Diagnostic:
     source_ctx: FunctionInfo
     kind: DiagnosticKind
 
-    _hash: Optional[int] = dataclasses.field(default=None,
-                                             init=False,
-                                             repr=False)
+    _hash: Optional[int] = dataclasses.field(default=None, init=False, repr=False)
 
     def __hash__(self):
         if not self._hash:
-            self._hash = hash(
-                hash(self.target) ^ hash(self.source_ctx) ^ hash(self.kind))
+            self._hash = hash(hash(self.target) ^ hash(self.source_ctx) ^ hash(self.kind))
         return self._hash
 
 
@@ -292,9 +287,9 @@ class CallAnnotationsValidator:
 
     def __init__(self, diagnostic_cb: Callable[[Diagnostic], None],
                  is_ignored_top_level: Callable[[clang.cindex.Cursor], bool],
-                 is_ignored_def: Callable[
-                     [clang.cindex.Cursor, clang.cindex.Cursor], bool],
-                 is_ignored_call: Callable[[clang.cindex.Cursor], bool]):
+                 is_ignored_def: Callable[[clang.cindex.Cursor, clang.cindex.Cursor],
+                                          bool], is_ignored_call: Callable[[clang.cindex.Cursor],
+                                                                           bool]):
         self._diagnostic_cb = diagnostic_cb
         self._is_ignored_top_level = is_ignored_top_level
         self._is_ignored_call = is_ignored_call
@@ -312,6 +307,7 @@ class CallAnnotationsValidator:
         self._defines: dict[str, str] = {}
         self._call_location: Optional[FunctionInfo] = None
         self._caller: Optional[FunctionInfo] = None
+        self._base_func_declarations: dict[str, clang.cindex.Cursor] = {}
         self._constructor_context: list[clang.cindex.Cursor] = []
         self._level: int = 0
 
@@ -329,8 +325,7 @@ class CallAnnotationsValidator:
         with open(source_file, "r", encoding="utf-8") as file:
             for line in file:
                 line = line.strip()
-                match = re.fullmatch(
-                    r"^#\s*(define\s+(\w+)(?:\s+(.*))?|include\s+.*)$", line)
+                match = re.fullmatch(r"^#\s*(define\s+(\w+)(?:\s+(.*))?|include\s+.*)$", line)
                 if match:
                     if match.group(1).startswith("define"):
                         key = match.group(2)
@@ -341,16 +336,14 @@ class CallAnnotationsValidator:
         return defs
 
     @staticmethod
-    def filter_out_unsupported_compiler_args(
-            args: list[str]) -> tuple[list[str], dict[str, str]]:
+    def filter_out_unsupported_compiler_args(args: list[str]) -> tuple[list[str], dict[str, str]]:
         filtered_args = []
         defines = {}
         args_iter = iter(args)
         try:
             while arg := next(args_iter):
                 # Skip positional arguments (input file name).
-                if not arg.startswith("-") and (arg.endswith(".cpp")
-                                                or arg.endswith(".c")
+                if not arg.startswith("-") and (arg.endswith(".cpp") or arg.endswith(".c")
                                                 or arg.endswith(".h")):
                     continue
 
@@ -367,8 +360,7 @@ class CallAnnotationsValidator:
                 # Preserved options with separate value argument.
                 if arg in [
                         "-x"
-                        "-Xclang", "-I", "-isystem", "-iquote", "-include",
-                        "-include-pch"
+                        "-Xclang", "-I", "-isystem", "-iquote", "-include", "-include-pch"
                 ]:
                     filtered_args += [arg, next(args_iter)]
                     continue
@@ -406,14 +398,12 @@ class CallAnnotationsValidator:
 
         return (filtered_args, defines)
 
-    def compile_and_analyze_file(self, source_file: str,
-                                 compiler_args: list[str],
+    def compile_and_analyze_file(self, source_file: str, compiler_args: list[str],
                                  build_dir: Optional[str]):
         filename = os.path.abspath(source_file)
         initial_cwd = "."
 
-        filtered_args, defines = self.filter_out_unsupported_compiler_args(
-            compiler_args)
+        filtered_args, defines = self.filter_out_unsupported_compiler_args(compiler_args)
         defines.update(self.parse_initial_defines(source_file))
 
         if build_dir:
@@ -451,8 +441,7 @@ class CallAnnotationsValidator:
             self._diagnostic_cb(Diagnostic(target, source, source_ctx, kind))
         else:
             self._diagnostic_cb(
-                Diagnostic(FunctionInfo.from_node(target), source, source_ctx,
-                           kind))
+                Diagnostic(FunctionInfo.from_node(target), source, source_ctx, kind))
 
     def iterate_children(self, children: Iterable[clang.cindex.Cursor],
                          handler: Callable[[clang.cindex.Cursor], None]):
@@ -465,8 +454,7 @@ class CallAnnotationsValidator:
     @staticmethod
     def get_referenced_node_info(
         node: clang.cindex.Cursor
-    ) -> tuple[bool, Optional[clang.cindex.Cursor], VlAnnotations,
-               Iterable[clang.cindex.Cursor]]:
+    ) -> tuple[bool, Optional[clang.cindex.Cursor], VlAnnotations, Iterable[clang.cindex.Cursor]]:
         if not node.spelling and not node.displayname:
             return (False, None, VlAnnotations(), [])
 
@@ -480,8 +468,7 @@ class CallAnnotationsValidator:
         annotations = VlAnnotations.from_nodes_list(children)
         return (True, refd, annotations, children)
 
-    def check_mt_safe_call(self, node: clang.cindex.Cursor,
-                           refd: clang.cindex.Cursor,
+    def check_mt_safe_call(self, node: clang.cindex.Cursor, refd: clang.cindex.Cursor,
                            annotations: VlAnnotations):
         is_mt_safe = False
 
@@ -513,8 +500,7 @@ class CallAnnotationsValidator:
                 # we are calling local method. It is MT safe
                 # only if this method is also only calling local methods or
                 # MT-safe methods
-                self.iterate_children(refd.get_children(),
-                                      self.dispatch_node_inside_definition)
+                self.iterate_children(refd.get_children(), self.dispatch_node_inside_definition)
                 is_mt_safe = True
             # class/struct member
             elif refn and refn.kind == CursorKind.MEMBER_REF_EXPR and refn.referenced:
@@ -525,18 +511,15 @@ class CallAnnotationsValidator:
                 if self.is_constructor_context() and refn.semantic_parent:
                     # we are in constructor, so calling local members is MT_SAFE,
                     # make sure object that we are calling is local to the constructor
-                    constructor_class = self._constructor_context[
-                        -1].semantic_parent
+                    constructor_class = self._constructor_context[-1].semantic_parent
                     if refn.semantic_parent.spelling == constructor_class.spelling:
                         if check_class_member_exists(constructor_class, refn):
                             is_mt_safe = True
                     else:
                         # check if this class inherits from some base class
-                        base_class = get_base_class(constructor_class,
-                                                    refn.semantic_parent)
+                        base_class = get_base_class(constructor_class, refn.semantic_parent)
                         if base_class:
-                            if check_class_member_exists(
-                                    base_class.get_declaration(), refn):
+                            if check_class_member_exists(base_class.get_declaration(), refn):
                                 is_mt_safe = True
             # variable
             elif refn and refn.kind == CursorKind.DECL_REF_EXPR and refn.referenced:
@@ -567,8 +550,7 @@ class CallAnnotationsValidator:
 
     # Call handling
 
-    def process_method_call(self, node: clang.cindex.Cursor,
-                            refd: clang.cindex.Cursor,
+    def process_method_call(self, node: clang.cindex.Cursor, refd: clang.cindex.Cursor,
                             annotations: VlAnnotations):
         assert self._call_location
         ctx = self._call_location.annotations
@@ -576,58 +558,48 @@ class CallAnnotationsValidator:
         # MT-safe context
         if ctx.is_mt_safe_context():
             if not self.check_mt_safe_call(node, refd, annotations):
-                self.emit_diagnostic(
-                    FunctionInfo.from_node(refd, refd, annotations),
-                    DiagnosticKind.NON_MT_SAFE_CALL_IN_MT_SAFE_CTX)
+                self.emit_diagnostic(FunctionInfo.from_node(refd, refd, annotations),
+                                     DiagnosticKind.NON_MT_SAFE_CALL_IN_MT_SAFE_CTX)
 
         # stable tree context
         if ctx.is_stabe_tree_context():
             if annotations.is_mt_unsafe_call() or not (
-                    annotations.is_stabe_tree_call()
-                    or annotations.is_pure_call()
+                    annotations.is_stabe_tree_call() or annotations.is_pure_call()
                     or self.check_mt_safe_call(node, refd, annotations)):
-                self.emit_diagnostic(
-                    FunctionInfo.from_node(refd, refd, annotations),
-                    DiagnosticKind.NON_STABLE_TREE_CALL_IN_STABLE_TREE_CTX)
+                self.emit_diagnostic(FunctionInfo.from_node(refd, refd, annotations),
+                                     DiagnosticKind.NON_STABLE_TREE_CALL_IN_STABLE_TREE_CTX)
 
         # pure context
         if ctx.is_pure_context():
             if not annotations.is_pure_call():
-                self.emit_diagnostic(
-                    FunctionInfo.from_node(refd, refd, annotations),
-                    DiagnosticKind.NON_PURE_CALL_IN_PURE_CTX)
+                self.emit_diagnostic(FunctionInfo.from_node(refd, refd, annotations),
+                                     DiagnosticKind.NON_PURE_CALL_IN_PURE_CTX)
 
-    def process_function_call(self, refd: clang.cindex.Cursor,
-                              annotations: VlAnnotations):
+    def process_function_call(self, refd: clang.cindex.Cursor, annotations: VlAnnotations):
         assert self._call_location
         ctx = self._call_location.annotations
 
         # MT-safe context
         if ctx.is_mt_safe_context():
             if not annotations.is_mt_safe_call():
-                self.emit_diagnostic(
-                    FunctionInfo.from_node(refd, refd, annotations),
-                    DiagnosticKind.NON_MT_SAFE_CALL_IN_MT_SAFE_CTX)
+                self.emit_diagnostic(FunctionInfo.from_node(refd, refd, annotations),
+                                     DiagnosticKind.NON_MT_SAFE_CALL_IN_MT_SAFE_CTX)
 
         # stable tree context
         if ctx.is_stabe_tree_context():
-            if annotations.is_mt_unsafe_call() or not (
-                    annotations.is_pure_call()
-                    or annotations.is_mt_safe_call()
-                    or annotations.is_stabe_tree_call()):
-                self.emit_diagnostic(
-                    FunctionInfo.from_node(refd, refd, annotations),
-                    DiagnosticKind.NON_STABLE_TREE_CALL_IN_STABLE_TREE_CTX)
+            if annotations.is_mt_unsafe_call() or not (annotations.is_pure_call()
+                                                       or annotations.is_mt_safe_call()
+                                                       or annotations.is_stabe_tree_call()):
+                self.emit_diagnostic(FunctionInfo.from_node(refd, refd, annotations),
+                                     DiagnosticKind.NON_STABLE_TREE_CALL_IN_STABLE_TREE_CTX)
 
         # pure context
         if ctx.is_pure_context():
             if not annotations.is_pure_call():
-                self.emit_diagnostic(
-                    FunctionInfo.from_node(refd, refd, annotations),
-                    DiagnosticKind.NON_PURE_CALL_IN_PURE_CTX)
+                self.emit_diagnostic(FunctionInfo.from_node(refd, refd, annotations),
+                                     DiagnosticKind.NON_PURE_CALL_IN_PURE_CTX)
 
-    def process_constructor_call(self, refd: clang.cindex.Cursor,
-                                 annotations: VlAnnotations):
+    def process_constructor_call(self, refd: clang.cindex.Cursor, annotations: VlAnnotations):
         assert self._call_location
         ctx = self._call_location.annotations
 
@@ -635,31 +607,26 @@ class CallAnnotationsValidator:
         # only if they call local methods or MT-safe functions.
         if ctx.is_mt_safe_context() or self.is_constructor_context():
             self._constructor_context.append(refd)
-            self.iterate_children(refd.get_children(),
-                                  self.dispatch_node_inside_definition)
+            self.iterate_children(refd.get_children(), self.dispatch_node_inside_definition)
             self._constructor_context.pop()
 
         # stable tree context
         if ctx.is_stabe_tree_context():
             self._constructor_context.append(refd)
-            self.iterate_children(refd.get_children(),
-                                  self.dispatch_node_inside_definition)
+            self.iterate_children(refd.get_children(), self.dispatch_node_inside_definition)
             self._constructor_context.pop()
 
         # pure context
         if ctx.is_pure_context():
-            if not annotations.is_pure_call(
-            ) and not refd.is_default_constructor():
-                self.emit_diagnostic(
-                    FunctionInfo.from_node(refd, refd, annotations),
-                    DiagnosticKind.NON_PURE_CALL_IN_PURE_CTX)
+            if not annotations.is_pure_call() and not refd.is_default_constructor():
+                self.emit_diagnostic(FunctionInfo.from_node(refd, refd, annotations),
+                                     DiagnosticKind.NON_PURE_CALL_IN_PURE_CTX)
 
     def dispatch_call_node(self, node: clang.cindex.Cursor):
         [supported, refd, annotations, _] = self.get_referenced_node_info(node)
 
         if not supported:
-            self.iterate_children(node.get_children(),
-                                  self.dispatch_node_inside_definition)
+            self.iterate_children(node.get_children(), self.dispatch_node_inside_definition)
             return True
 
         assert refd is not None
@@ -676,19 +643,14 @@ class CallAnnotationsValidator:
 
         assert self._call_location is not None
         node_file = os.path.abspath(node.location.file.name)
-        self._call_location = self._call_location.copy(file=node_file,
-                                                       line=node.location.line)
+        self._call_location = self._call_location.copy(file=node_file, line=node.location.line)
 
         # Standalone functions and static class methods
         if (refd.kind == CursorKind.FUNCTION_DECL
-                or refd.kind == CursorKind.CXX_METHOD
-                and refd.is_static_method()):
+                or refd.kind == CursorKind.CXX_METHOD and refd.is_static_method()):
             self.process_function_call(refd, annotations)
         # Function pointer
-        elif refd.kind in [
-                CursorKind.VAR_DECL, CursorKind.FIELD_DECL,
-                CursorKind.PARM_DECL
-        ]:
+        elif refd.kind in [CursorKind.VAR_DECL, CursorKind.FIELD_DECL, CursorKind.PARM_DECL]:
             self.process_function_call(refd, annotations)
         # Non-static class methods
         elif refd.kind == CursorKind.CXX_METHOD:
@@ -726,17 +688,24 @@ class CallAnnotationsValidator:
             if self.dispatch_call_node(node) is False:
                 return None
         elif node.is_definition() and node.kind in [
-                CursorKind.CXX_METHOD, CursorKind.FUNCTION_DECL,
-                CursorKind.CONSTRUCTOR, CursorKind.CONVERSION_FUNCTION
+                CursorKind.CXX_METHOD, CursorKind.FUNCTION_DECL, CursorKind.CONSTRUCTOR,
+                CursorKind.CONVERSION_FUNCTION
         ]:
             self.process_function_definition(node)
             return None
 
-        return self.iterate_children(node.get_children(),
-                                     self.dispatch_node_inside_definition)
+        return self.iterate_children(node.get_children(), self.dispatch_node_inside_definition)
 
     def process_function_definition(self, node: clang.cindex.Cursor):
         [supported, refd, annotations, _] = self.get_referenced_node_info(node)
+
+        # Fetch virtual annotations from base class.
+        # Set refd to virtual definition if present.
+        signature = node.displayname
+        if signature in self._base_func_declarations:
+            refd = self._base_func_declarations[signature]
+            virtual_annotations = VlAnnotations.from_nodes_list(refd.get_children())
+            annotations = annotations | virtual_annotations
 
         if refd and self._is_ignored_def(node, refd):
             return None
@@ -752,30 +721,29 @@ class CallAnnotationsValidator:
         # Implicitly mark definitions in VL_MT_DISABLED_CODE_UNIT .cpp files as
         # VL_MT_DISABLED. Existence of the annotation on declarations in .h
         # files is verified below.
-        # Also sets VL_REQUIRES, as this annotation is added together with
+        # Also sets VL_EXCLUDES, as this annotation is added together with
         # explicit VL_MT_DISABLED.
         if self.is_mt_disabled_code_unit():
             if node.location.file.name == self._main_source_file:
                 annotations.mt_disabled = True
-                annotations.requires = True
+                annotations.excludes = True
             if refd.location.file.name == self._main_source_file:
                 def_annotations.mt_disabled = True
-                def_annotations.requires = True
+                def_annotations.excludes = True
 
-        if not (def_annotations.is_empty() or def_annotations == annotations):
+        if def_annotations != annotations:
             # Use definition's annotations for the diagnostic
             # source (i.e. the definition)
             self._caller = FunctionInfo.from_node(node, refd, def_annotations)
             self._call_location = self._caller
 
-            self.emit_diagnostic(
-                FunctionInfo.from_node(refd, refd, annotations),
-                DiagnosticKind.ANNOTATIONS_DEF_DECL_MISMATCH)
+            self.emit_diagnostic(FunctionInfo.from_node(refd, refd, annotations),
+                                 DiagnosticKind.ANNOTATIONS_DEF_DECL_MISMATCH)
 
-        # Use concatenation of definition and declaration annotations
-        # for calls validation.
-        self._caller = FunctionInfo.from_node(node, refd,
-                                              def_annotations | annotations)
+        else:
+            # Use concatenation of definition and declaration annotations
+            # for calls validation.
+            self._caller = FunctionInfo.from_node(node, refd, def_annotations | annotations)
         prev_call_location = self._call_location
         self._call_location = self._caller
 
@@ -793,8 +761,7 @@ class CallAnnotationsValidator:
                 if declarations:
                     del self._external_decls[usr]
 
-        self.iterate_children(node_children,
-                              self.dispatch_node_inside_definition)
+        self.iterate_children(node_children, self.dispatch_node_inside_definition)
 
         self._call_location = prev_call_location
         self._caller = prev_call_location
@@ -804,25 +771,37 @@ class CallAnnotationsValidator:
     # Nodes not located inside definition
 
     def dispatch_node(self, node: clang.cindex.Cursor):
-        if node.kind in [
-                CursorKind.CXX_METHOD, CursorKind.FUNCTION_DECL,
-                CursorKind.CONSTRUCTOR, CursorKind.CONVERSION_FUNCTION
+        kind = node.kind
+        if kind is CursorKind.CXX_BASE_SPECIFIER:
+            # Get referenced virtual declarations from base class.
+            for base in node.get_children():
+                if base.referenced:
+                    for declaration in base.referenced.get_children():
+                        self._base_func_declarations[declaration.displayname] = declaration
+        elif kind in [
+                CursorKind.CXX_METHOD, CursorKind.FUNCTION_DECL, CursorKind.CONSTRUCTOR,
+                CursorKind.CONVERSION_FUNCTION
         ]:
             if node.is_definition():
                 return self.process_function_definition(node)
-            # else:
             return self.process_function_declaration(node)
 
-        return self.iterate_children(node.get_children(), self.dispatch_node)
+        result = self.iterate_children(node.get_children(), self.dispatch_node)
 
-    def process_translation_unit(
-            self, translation_unit: clang.cindex.TranslationUnit):
+        # Clean declarations if class declaration processing is finished.
+        if kind in [
+                CursorKind.CLASS_DECL, CursorKind.STRUCT_DECL, CursorKind.UNION_DECL,
+                CursorKind.ENUM_DECL, CursorKind.UNEXPOSED_DECL
+        ]:
+            self._base_func_declarations = {}
+        return result
+
+    def process_translation_unit(self, translation_unit: clang.cindex.TranslationUnit):
         self._level += 1
         kv_defines = sorted([f"{k}={v}" for k, v in self._defines.items()])
         concat_defines = '\n'.join(kv_defines)
         # List of headers already processed in a TU with specified set of defines.
-        tu_processed_headers = self._processed_headers.setdefault(
-            concat_defines, set())
+        tu_processed_headers = self._processed_headers.setdefault(concat_defines, set())
         for child in translation_unit.cursor.get_children():
             if self._is_ignored_top_level(child):
                 continue
@@ -833,10 +812,8 @@ class CallAnnotationsValidator:
             self.dispatch_node(child)
         self._level -= 1
 
-        tu_processed_headers.update([
-            os.path.abspath(str(hdr.source))
-            for hdr in translation_unit.get_includes()
-        ])
+        tu_processed_headers.update(
+            [os.path.abspath(str(hdr.source)) for hdr in translation_unit.get_includes()])
 
 
 @dataclass
@@ -857,8 +834,7 @@ def get_filter_funcs(verilator_root: str):
         filename = os.path.abspath(node.location.file.name)
         return not filename.startswith(verilator_root)
 
-    def is_ignored_def(node: clang.cindex.Cursor,
-                       refd: clang.cindex.Cursor) -> bool:
+    def is_ignored_def(node: clang.cindex.Cursor, refd: clang.cindex.Cursor) -> bool:
         # __*
         if str(refd.spelling).startswith("__"):
             return True
@@ -901,8 +877,7 @@ def precompile_header(compile_command: CompileCommand, tmp_dir: str) -> str:
         os.chdir(compile_command.directory)
 
         index = Index.create()
-        translation_unit = index.parse(compile_command.filename,
-                                       compile_command.args)
+        translation_unit = index.parse(compile_command.filename, compile_command.args)
         for diag in translation_unit.diagnostics:
             if diag.severity >= clang.cindex.Diagnostic.Error:
                 errors.append(str(diag))
@@ -910,23 +885,20 @@ def precompile_header(compile_command: CompileCommand, tmp_dir: str) -> str:
         if len(errors) == 0:
             pch_file = os.path.join(
                 tmp_dir,
-                f"{compile_command.refid:02}_{os.path.basename(compile_command.filename)}.pch"
-            )
+                f"{compile_command.refid:02}_{os.path.basename(compile_command.filename)}.pch")
             translation_unit.save(pch_file)
 
             if pch_file:
                 return pch_file
 
-    except (TranslationUnitSaveError, TranslationUnitLoadError,
-            OSError) as exception:
+    except (TranslationUnitSaveError, TranslationUnitLoadError, OSError) as exception:
         print(f"%Warning: {exception}", file=sys.stderr)
 
     finally:
         os.chdir(initial_cwd)
 
-    print(
-        f"%Warning: Precompilation failed, skipping: {compile_command.filename}",
-        file=sys.stderr)
+    print(f"%Warning: Precompilation failed, skipping: {compile_command.filename}",
+          file=sys.stderr)
     for error in errors:
         print(f"          {error}", file=sys.stderr)
     return ""
@@ -934,10 +906,8 @@ def precompile_header(compile_command: CompileCommand, tmp_dir: str) -> str:
 
 # Compile and analyze inputs in a single process.
 def run_analysis(ccl: Iterable[CompileCommand], pccl: Iterable[CompileCommand],
-                 diagnostic_cb: Callable[[Diagnostic],
-                                         None], verilator_root: str):
-    (is_ignored_top_level, is_ignored_def,
-     is_ignored_call) = get_filter_funcs(verilator_root)
+                 diagnostic_cb: Callable[[Diagnostic], None], verilator_root: str):
+    (is_ignored_top_level, is_ignored_def, is_ignored_call) = get_filter_funcs(verilator_root)
 
     prefix = "verilator_clang_check_attributes_"
     with tempfile.TemporaryDirectory(prefix=prefix) as tmp_dir:
@@ -947,8 +917,8 @@ def run_analysis(ccl: Iterable[CompileCommand], pccl: Iterable[CompileCommand],
             if pch_file:
                 extra_args += ["-include-pch", pch_file]
 
-        cav = CallAnnotationsValidator(diagnostic_cb, is_ignored_top_level,
-                                       is_ignored_def, is_ignored_call)
+        cav = CallAnnotationsValidator(diagnostic_cb, is_ignored_top_level, is_ignored_def,
+                                       is_ignored_call)
         for compile_command in ccl:
             cav.compile_and_analyze_file(compile_command.filename,
                                          extra_args + compile_command.args,
@@ -963,12 +933,11 @@ class ParallelAnalysisProcess:
 
     @staticmethod
     def init_data(verilator_root: str, tmp_dir: str):
-        (is_ignored_top_level, is_ignored_def,
-         is_ignored_call) = get_filter_funcs(verilator_root)
+        (is_ignored_top_level, is_ignored_def, is_ignored_call) = get_filter_funcs(verilator_root)
 
         ParallelAnalysisProcess.cav = CallAnnotationsValidator(
-            ParallelAnalysisProcess._diagnostic_handler, is_ignored_top_level,
-            is_ignored_def, is_ignored_call)
+            ParallelAnalysisProcess._diagnostic_handler, is_ignored_top_level, is_ignored_def,
+            is_ignored_call)
         ParallelAnalysisProcess.tmp_dir = tmp_dir
 
     @staticmethod
@@ -979,31 +948,27 @@ class ParallelAnalysisProcess:
     def analyze_cpp_file(compile_command: CompileCommand) -> set[Diagnostic]:
         ParallelAnalysisProcess.diags = set()
         assert ParallelAnalysisProcess.cav is not None
-        ParallelAnalysisProcess.cav.compile_and_analyze_file(
-            compile_command.filename, compile_command.args,
-            compile_command.directory)
+        ParallelAnalysisProcess.cav.compile_and_analyze_file(compile_command.filename,
+                                                             compile_command.args,
+                                                             compile_command.directory)
         return ParallelAnalysisProcess.diags
 
     @staticmethod
     def precompile_header(compile_command: CompileCommand) -> str:
-        return precompile_header(compile_command,
-                                 ParallelAnalysisProcess.tmp_dir)
+        return precompile_header(compile_command, ParallelAnalysisProcess.tmp_dir)
 
 
 # Compile and analyze inputs in multiple processes.
-def run_parallel_analysis(ccl: Iterable[CompileCommand],
-                          pccl: Iterable[CompileCommand],
-                          diagnostic_cb: Callable[[Diagnostic], None],
-                          jobs_count: int, verilator_root: str):
+def run_parallel_analysis(ccl: Iterable[CompileCommand], pccl: Iterable[CompileCommand],
+                          diagnostic_cb: Callable[[Diagnostic],
+                                                  None], jobs_count: int, verilator_root: str):
     prefix = "verilator_clang_check_attributes_"
     with tempfile.TemporaryDirectory(prefix=prefix) as tmp_dir:
-        with multiprocessing.Pool(
-                processes=jobs_count,
-                initializer=ParallelAnalysisProcess.init_data,
-                initargs=[verilator_root, tmp_dir]) as pool:
+        with multiprocessing.Pool(processes=jobs_count,
+                                  initializer=ParallelAnalysisProcess.init_data,
+                                  initargs=[verilator_root, tmp_dir]) as pool:
             extra_args = []
-            for pch_file in pool.imap_unordered(
-                    ParallelAnalysisProcess.precompile_header, pccl):
+            for pch_file in pool.imap_unordered(ParallelAnalysisProcess.precompile_header, pccl):
                 if pch_file:
                     extra_args += ["-include-pch", pch_file]
 
@@ -1011,8 +976,7 @@ def run_parallel_analysis(ccl: Iterable[CompileCommand],
                 for compile_command in ccl:
                     compile_command.args = compile_command.args + extra_args
 
-            for diags in pool.imap_unordered(
-                    ParallelAnalysisProcess.analyze_cpp_file, ccl, 1):
+            for diags in pool.imap_unordered(ParallelAnalysisProcess.analyze_cpp_file, ccl, 1):
                 for diag in diags:
                     diagnostic_cb(diag)
 
@@ -1057,8 +1021,7 @@ class TopDownSummaryPrinter():
         row_groups: dict[str, list[list[str]]] = {}
         column_widths = [0, 0]
         for func in sorted(self._funcs.values(),
-                           key=lambda func:
-                           (func.info.file, func.info.line, func.info.usr)):
+                           key=lambda func: (func.info.file, func.info.line, func.info.usr)):
             func_info = func.info
             relfile = os.path.relpath(func_info.file, root_dir)
 
@@ -1082,31 +1045,23 @@ class TopDownSummaryPrinter():
             if func.mismatch:
                 mrelfile = os.path.relpath(func.mismatch.file, root_dir)
                 row_group.append([
-                    f"{mrelfile}:{func.mismatch.line}:",
-                    f"[{func.mismatch.annotations}]",
+                    f"{mrelfile}:{func.mismatch.line}:", f"[{func.mismatch.annotations}]",
                     func.mismatch.name + " [declaration]"
                 ])
 
-            row_group.append([
-                f"{relfile}:{func_info.line}:", f"[{func_info.annotations}]",
-                func_info.name
-            ])
+            row_group.append(
+                [f"{relfile}:{func_info.line}:", f"[{func_info.annotations}]", func_info.name])
 
-            for callee in sorted(func.calees,
-                                 key=lambda func:
-                                 (func.file, func.line, func.usr)):
+            for callee in sorted(func.calees, key=lambda func: (func.file, func.line, func.usr)):
                 crelfile = os.path.relpath(callee.file, root_dir)
-                row_group.append([
-                    f"{crelfile}:{callee.line}:", f"[{callee.annotations}]",
-                    "  " + callee.name
-                ])
+                row_group.append(
+                    [f"{crelfile}:{callee.line}:", f"[{callee.annotations}]", "  " + callee.name])
 
             row_groups[name] = row_group
 
             for row in row_group:
                 for row_id, value in enumerate(row[0:-1]):
-                    column_widths[row_id] = max(column_widths[row_id],
-                                                len(value))
+                    column_widths[row_id] = max(column_widths[row_id], len(value))
 
         for label, rows in sorted(row_groups.items(), key=lambda kv: kv[0]):
             self.begin_group(label)
@@ -1114,21 +1069,17 @@ class TopDownSummaryPrinter():
                 print(f"{row[0]:<{column_widths[0]}}  "
                       f"{row[1]:<{column_widths[1]}}    "
                       f"{row[2]}")
-        print(
-            f"Number of functions reported unsafe: {len(self._unsafe_in_safe)}"
-        )
+        print(f"Number of functions reported unsafe: {len(self._unsafe_in_safe)}")
 
 
 def main():
-    default_verilator_root = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), ".."))
+    default_verilator_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
     parser = argparse.ArgumentParser(
         allow_abbrev=False,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description="""Check function annotations for correctness""",
-        epilog=
-        """Copyright 2022-2024 by Wilson Snyder. Verilator is free software;
+        epilog="""Copyright 2022-2024 by Wilson Snyder. Verilator is free software;
     you can redistribute it and/or modify it under the terms of either the GNU
     Lesser General Public License Version 3 or the Apache License 2.0.
     SPDX-License-Identifier: LGPL-3.0-only OR Apache-2.0""")
@@ -1142,29 +1093,23 @@ def main():
                         type=int,
                         default=0,
                         help="Number of parallel jobs to use.")
-    parser.add_argument(
-        "--compile-commands-dir",
-        type=str,
-        default=None,
-        help="Path to directory containing compile_commands.json.")
+    parser.add_argument("--compile-commands-dir",
+                        type=str,
+                        default=None,
+                        help="Path to directory containing compile_commands.json.")
     parser.add_argument("--cxxflags",
                         type=str,
                         default=None,
                         help="Extra flags passed to clang++.")
-    parser.add_argument(
-        "--compilation-root",
-        type=str,
-        default=os.getcwd(),
-        help="Directory used as CWD when compiling source files.")
-    parser.add_argument(
-        "-c",
-        "--precompile",
-        action="append",
-        help="Header file to be precompiled and cached at the start.")
-    parser.add_argument("file",
+    parser.add_argument("--compilation-root",
                         type=str,
-                        nargs="+",
-                        help="Source file to analyze.")
+                        default=os.getcwd(),
+                        help="Directory used as CWD when compiling source files.")
+    parser.add_argument("-c",
+                        "--precompile",
+                        action="append",
+                        help="Header file to be precompiled and cached at the start.")
+    parser.add_argument("file", type=str, nargs="+", help="Source file to analyze.")
 
     cmdline = parser.parse_args()
 
@@ -1179,8 +1124,7 @@ def main():
 
     compdb: Optional[CompilationDatabase] = None
     if cmdline.compile_commands_dir:
-        compdb = CompilationDatabase.fromDirectory(
-            cmdline.compile_commands_dir)
+        compdb = CompilationDatabase.fromDirectory(cmdline.compile_commands_dir)
 
     if cmdline.cxxflags is not None:
         common_cxxflags = shlex.split(cmdline.cxxflags)
@@ -1230,8 +1174,7 @@ def main():
                      summary_printer.handle_diagnostic, verilator_root)
     else:
         run_parallel_analysis(compile_commands_list, precompile_commands_list,
-                              summary_printer.handle_diagnostic, cmdline.jobs,
-                              verilator_root)
+                              summary_printer.handle_diagnostic, cmdline.jobs, verilator_root)
 
     summary_printer.print_summary(verilator_root)
 

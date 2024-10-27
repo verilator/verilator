@@ -11,11 +11,12 @@ import sys
 
 ######################################################################
 
+Bison_Version = None
+
 
 def process():
     unlink_outputs()
 
-    bison_version_check()
     supports_report = Bison_Version >= 2.3
     # supports_counter_examples = Bison_Version >= 3.8
 
@@ -28,15 +29,14 @@ def process():
         + (" -d" if Args.definitions else "")  #
         + (" -k" if Args.token_table else "")  #
         + (" -v" if Args.verbose else "")  #
-        + (" --report=itemset --report=lookahead" if
-           (Args.verbose and supports_report) else "")
+        + (" -Wcounterexamples" if Args.Wcounterexamples else "")  #
+        + (" --report=itemset --report=lookahead" if (Args.verbose and supports_report) else "")
         # Useful but slow:
         # (" -Wcounterexamples" if
         # (Args.verbose and supports_counter_examples) else "")
         #
         # -p required for GLR parsers; they write to -p basename, not -o
-        + ((" -p " + Args.name_prefix) if Args.name_prefix else "") + " -b " +
-        tmp_prefix()  #
+        + ((" -p " + Args.name_prefix) if Args.name_prefix else "") + " -b " + tmp_prefix()  #
         + " -o " + tmp_prefix() + ".c"  #
         + " " + tmp_prefix() + ".y")
 
@@ -44,11 +44,10 @@ def process():
     status = subprocess.call(command, shell=True)
     if status != 0:
         unlink_outputs()
-        sys.exit("bisonpre: %Error: " + Args.yacc + " version " +
-                 str(Bison_Version) + " run failed due to errors\n")
+        sys.exit("bisonpre: %Error: " + Args.yacc + " version " + str(Bison_Version) +
+                 " run failed due to errors\n")
 
-    clean_output(tmp_prefix() + ".output",
-                 output_prefix() + ".output", True, False)
+    clean_output(tmp_prefix() + ".output", output_prefix() + ".output", True, False)
     warning_check(output_prefix() + ".output")
 
     clean_output(tmp_prefix() + ".c", output_prefix() + ".c", False, True)
@@ -88,9 +87,7 @@ def unlink_outputs():
 
 
 def bison_version_check():
-    with subprocess.Popen(Args.yacc + " --version",
-                          shell=True,
-                          stdout=subprocess.PIPE) as sp:
+    with subprocess.Popen(Args.yacc + " --version", shell=True, stdout=subprocess.PIPE) as sp:
         out = str(sp.stdout.read())
     match = re.search(r'([0-9]+\.[0-9]+)', out)
     if match:
@@ -98,12 +95,9 @@ def bison_version_check():
         if v < 1.875:
             sys.exit("bisonpre: %Error: '" + Args.yacc + "' is version " + v +
                      "; version 1.875 or newer is required\n")
-        global Bison_Version  # pylint: disable=global-variable-undefined
-        Bison_Version = v
-        return
+        return v
 
-    sys.exit("bisonpre: %Error: '" + Args.yacc +
-             "' is not installed, or not working\n")
+    sys.exit("bisonpre: %Error: '" + Args.yacc + "' is not installed, or not working\n")
 
 
 def clean_output(filename, outname, is_output, is_c):
@@ -141,8 +135,7 @@ def clean_output(filename, outname, is_output, is_c):
     if is_c:
         token_values = {}
         for line in lines:
-            if re.search(r'enum\s+yytokentype',
-                         line) and not re.search(r';', line):
+            if re.search(r'enum\s+yytokentype', line) and not re.search(r';', line):
                 match = re.search(r'\b(\S+) = (\d+)', line)
                 if match:
                     token_values[match.group(2)] = match.group(1)
@@ -151,8 +144,7 @@ def clean_output(filename, outname, is_output, is_c):
             if _enaline(line) and re.search(r'BISONPRE_TOKEN_NAMES', line):
                 out.append(line)
                 for tv in sorted(token_values.keys()):
-                    out.append("\tcase %d: return \"%s\";\n" %
-                               (tv, token_values[tv]))
+                    out.append("\tcase %d: return \"%s\";\n" % (tv, token_values[tv]))
                 continue
             out.append(line)
         lines = out
@@ -165,8 +157,7 @@ def clean_output(filename, outname, is_output, is_c):
             # Fix bison 2.3 and GCC 4.2.1
             line = re.sub(r'\(YY_\("', '(YY_((char*)"', line)
             # Fix bison 2.3 glr-parser warning about yyerrorloc.YYTYPE::yydummy uninit
-            line = re.sub(r'(YYLTYPE yyerrloc;)',
-                          r'\1 yyerrloc.yydummy=0;/*bisonpre*/', line)
+            line = re.sub(r'(YYLTYPE yyerrloc;)', r'\1 yyerrloc.yydummy=0;/*bisonpre*/', line)
             # Fix bison 3.6.1 unexpected nested-comment
             line = re.sub(r'/\* "/\*.*\*/"  \*/', '', line)
             fh.write(line)
@@ -177,11 +168,8 @@ def warning_check(filename):
         linenum = 0
         for line in fh:
             linenum += 1
-            if re.search(r'(conflicts|warning:|^useless)',
-                         line,
-                         flags=re.IGNORECASE):
-                sys.exit("%Error: " + filename + ":" + str(linenum) + ": " +
-                         line + "\n")
+            if re.search(r'(conflicts|warning:|^useless)', line, flags=re.IGNORECASE):
+                sys.exit("%Error: " + filename + ":" + str(linenum) + ": " + line + "\n")
 
 
 ######################################################################
@@ -214,12 +202,9 @@ def clean_input(filename, outname):
             #  ^/ to prevent comments from matching
             if re.match(r'^[a-zA-Z0-9_<>]+:[^/]*[a-zA-Z]', line):
                 sys.exit("%Error: " + filename + ":" + str(lineno) +
-                         ": Move text on rule line to next line: " + line +
-                         "\n")
+                         ": Move text on rule line to next line: " + line + "\n")
 
-            matcha = re.match(r'^([a-zA-Z0-9_]+)<(\S*)>(.*)$',
-                              line,
-                              flags=re.DOTALL)
+            matcha = re.match(r'^([a-zA-Z0-9_]+)<(\S*)>(.*)$', line, flags=re.DOTALL)
             matchb = re.match(r'^([a-zA-Z0-9_]+):', line)
 
             if re.match(r'^%%', line):
@@ -231,8 +216,8 @@ def clean_input(filename, outname):
                 dtype = matcha.group(2)
                 line = name + matcha.group(3)
                 if name in Rules:
-                    sys.exit("%Error: " + filename + ":" + str(lineno) +
-                             ": Redeclaring '" + name + "': " + line)
+                    sys.exit("%Error: " + filename + ":" + str(lineno) + ": Redeclaring '" + name +
+                             "': " + line)
                 if dtype not in types:
                     types[dtype] = {}
                 types[dtype][name] = 1
@@ -250,8 +235,8 @@ def clean_input(filename, outname):
                 name = matchb.group(1)
                 if name not in ('public', 'private'):
                     if name in Rules:
-                        sys.exit("%Error: " + filename + ":" + str(lineno) +
-                                 ": Redeclaring '" + name + "': " + line)
+                        sys.exit("%Error: " + filename + ":" + str(lineno) + ": Redeclaring '" +
+                                 name + "': " + line)
                     Rules[name] = {
                         'name': name,
                         'type': "",
@@ -268,8 +253,7 @@ def clean_input(filename, outname):
             cline = re.sub(r'//.*$', '\n', line)
             if re.match(r'^\s*;', cline):
                 if not last_rule:
-                    sys.exit("%Error: " + filename + ":" + str(lineno) +
-                             ": Stray semicolon\n")
+                    sys.exit("%Error: " + filename + ":" + str(lineno) + ": Stray semicolon\n")
                 last_rule = None
             elif last_rule:
                 Rules[last_rule]['rules_and_productions'] += cline
@@ -279,8 +263,8 @@ def clean_input(filename, outname):
                 dtype = match.group(1)
                 tok = match.group(2)
                 if tok in tokens:
-                    sys.exit("%Error: " + filename + ":" + str(lineno) +
-                             ": Redeclaring '" + tok + "': " + line)
+                    sys.exit("%Error: " + filename + ":" + str(lineno) + ": Redeclaring '" + tok +
+                             "': " + line)
                 tokens[tok] = dtype
 
             for tok in re.split(r'[^a-zA-Z0-9_]+', cline):
@@ -299,17 +283,16 @@ def clean_input(filename, outname):
             lineno += 1
             if _enaline(line) and re.search(r'BISONPRE_VERSION', line):
                 #                       1           2 3            4
-                match = re.search(
-                    r'BISONPRE_VERSION\((\S+)\s*,\s*((\S+)\s*,)?\s*([^\),]+)\)\s*$',
-                    line)
+                match = re.search(r'BISONPRE_VERSION\((\S+)\s*,\s*((\S+)\s*,)?\s*([^\),]+)\)\s*$',
+                                  line)
                 if not match:
                     sys.exit("%Error: " + filename + ":" + str(lineno) +
                              ": Bad form of BISONPRE_VERSION: " + line)
                 ver = match.group(1)
                 ver_max = match.group(3)
                 cmd = match.group(4)
-                if Bison_Version >= float(ver) and (
-                        not ver_max or Bison_Version <= float(ver_max)):
+                if Bison_Version >= float(ver) and (not ver_max
+                                                    or Bison_Version <= float(ver_max)):
                     line = cmd + "\n"
                 else:
                     line = "//NOP: " + line
@@ -323,10 +306,9 @@ def clean_input(filename, outname):
         for line in linesin:
             lineno += 1
             if _enaline(line) and re.search(r'BISONPRE_NOT', line):
-                match = re.search(
-                    r'(.*)BISONPRE_NOT\((\S+)\)\s*(\{[^}]+})\s*(.*)$',
-                    line,
-                    flags=re.DOTALL)
+                match = re.search(r'(.*)BISONPRE_NOT\((\S+)\)\s*(\{[^}]+})\s*(.*)$',
+                                  line,
+                                  flags=re.DOTALL)
                 if not match:
                     sys.exit("%Error: " + filename + ":" + str(lineno) +
                              ": Bad form of BISONPRE_NOT: " + line)
@@ -337,8 +319,7 @@ def clean_input(filename, outname):
                 for etok in endtoks:
                     if etok not in tokens:
                         sys.exit("%Error: " + filename + ":" + str(lineno) +
-                                 ": Can't find definition for token: " + etok +
-                                 "\n")
+                                 ": Can't find definition for token: " + etok + "\n")
                 # Push it all onto one line to avoid error messages changing
                 pipe = ""
                 for tok in sorted(tokens.keys()):
@@ -397,10 +378,8 @@ def clean_input(filename, outname):
                 # Bison doesn't have a #line directive, so we need somewhere to insert into
                 line = re.sub(r'^\s*//.*$', '', line)
                 if not re.match(r'^\s*$', line):
-                    sys.exit(
-                        "%Error: " + filename + ":" + str(lineno) + ": Need " +
-                        str(needmore) +
-                        " more blank lines to keep line numbers constant\n")
+                    sys.exit("%Error: " + filename + ":" + str(lineno) + ": Need " +
+                             str(needmore) + " more blank lines to keep line numbers constant\n")
                 needmore -= 1
             else:
                 lines.append(line)
@@ -418,8 +397,8 @@ def _bisonpre_copy(text, lineno, depth):
             text,
             flags=re.DOTALL)
         if not match:
-            sys.exit("%Error: " + Filename + ":" + str(lineno) +
-                     ": Bad form of BISONPRE_NOT: " + text)
+            sys.exit("%Error: " + Filename + ":" + str(lineno) + ": Bad form of BISONPRE_NOT: " +
+                     text)
         text = match.group(1) + '{HERE}' + match.group(5)
         once = match.group(2)
         rule = match.group(3)
@@ -448,8 +427,7 @@ def _bisonpre_copy(text, lineno, depth):
                 insert = re.sub(left, right, insert)
 
             insert = re.sub(r'[ \t\n]+\n', "\n", insert)
-            insert = re.sub(r'\n', " ",
-                            insert)  # Optional - preserve line numbering
+            insert = re.sub(r'\n', " ", insert)  # Optional - preserve line numbering
             text = re.sub(r'{HERE}', insert, text)
         depth += 1
     return text
@@ -465,8 +443,7 @@ def _enaline(line):
 parser = argparse.ArgumentParser(
     allow_abbrev=False,
     formatter_class=argparse.RawDescriptionHelpFormatter,
-    description=
-    """Bisonpre is a wrapper for the Bison YACC replacement.  Input to Bison is
+    description="""Bisonpre is a wrapper for the Bison YACC replacement.  Input to Bison is
 preprocessed with substitution as described below under EXTENSIONS.  Output
 from Bison is checked for additional errors, and corrected to work around
 various compile warnings.""",
@@ -522,39 +499,24 @@ parser.add_argument('--yacc',
                     help='name of the bison executable, defaults to "bison"')
 
 # Arguments passed through to bison
-parser.add_argument('-b',
-                    '--file-prefix',
-                    action='store',
-                    help='Passed to bison.')
-parser.add_argument('-d',
-                    '--definitions',
-                    action='store_true',
-                    help='Passed to bison.')
-parser.add_argument('-k',
-                    '--token-table',
-                    action='store_true',
-                    help='Passed to bison.')
+parser.add_argument('-b', '--file-prefix', action='store', help='Passed to bison.')
+parser.add_argument('-d', '--definitions', action='store_true', help='Passed to bison.')
+parser.add_argument('-k', '--token-table', action='store_true', help='Passed to bison.')
 parser.add_argument('-o',
                     '--output',
                     action='store',
                     required=True,
                     help='Passed to bison. Sets output file name')
-parser.add_argument('-p',
-                    '--name-prefix',
-                    action='store',
-                    help='Passed to bison.')
-parser.add_argument('-t',
-                    '--debug',
-                    action='store_true',
-                    help='Passed to bison.')
-parser.add_argument('-v',
-                    '--verbose',
-                    action='store_true',
-                    help='Passed to bison.')
+parser.add_argument('-p', '--name-prefix', action='store', help='Passed to bison.')
+parser.add_argument('-t', '--debug', action='store_true', help='Passed to bison.')
+parser.add_argument('-v', '--verbose', action='store_true', help='Passed to bison.')
+parser.add_argument('-Wcounterexamples', action='store_true', help='Passed to bison.')
 
 parser.add_argument('input', help='Passed to bison. Input grammar file.')
 
 Args = parser.parse_args()
+
+Bison_Version = bison_version_check()
 
 process()
 

@@ -395,6 +395,7 @@ void V3Options::addVFile(const string& filename) {
     // in a specific order and multiple of them.
     m_vFiles.push_back(filename);
 }
+void V3Options::addVltFile(const string& filename) { m_vltFiles.insert(filename); }
 void V3Options::addForceInc(const string& filename) { m_forceIncs.push_back(filename); }
 
 void V3Options::addLineArg(const string& arg) { m_impp->m_lineArgs.push_back(arg); }
@@ -415,8 +416,18 @@ string V3Options::allArgsStringForHierBlock(bool forTop, bool forCMake) const {
     std::set<string> vFiles;
     for (const auto& vFile : m_vFiles) vFiles.insert(vFile);
     string out;
+    bool stripArg = false;
+    bool stripArgIfNum = false;
     for (std::list<string>::const_iterator it = m_impp->m_lineArgs.begin();
          it != m_impp->m_lineArgs.end(); ++it) {
+        if (stripArg) {
+            stripArg = false;
+            continue;
+        }
+        if (stripArgIfNum) {
+            stripArgIfNum = false;
+            if (isdigit((*it)[0])) continue;
+        }
         int skip = 0;
         if (it->length() >= 2 && (*it)[0] == '-' && (*it)[1] == '-') {
             skip = 2;
@@ -427,8 +438,9 @@ string V3Options::allArgsStringForHierBlock(bool forTop, bool forCMake) const {
             const string opt = it->substr(skip);  // Remove '-' in the beginning
             const int numStrip = stripOptionsForChildRun(opt, forTop);
             if (numStrip) {
-                UASSERT(0 <= numStrip && numStrip <= 2, "should be one of 0, 1, 2");
-                if (numStrip == 2) ++it;
+                UASSERT(0 <= numStrip && numStrip <= 3, "should be one of 0, 1, 2, 3");
+                if (numStrip == 2) stripArg = true;
+                if (numStrip == 3) stripArgIfNum = true;
                 continue;
             }
         } else {  // Not an option
@@ -535,10 +547,12 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
 // 0: Keep the option including its argument
 // 1: Delete the option which has no argument
 // 2: Delete the option and its argument
+// 3: Delete the option and its argument if it is a number
 int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
-    if (opt == "Mdir" || opt == "clk" || opt == "lib-create" || opt == "f" || opt == "j"
+    if (opt == "j") return 3;
+    if (opt == "Mdir" || opt == "clk" || opt == "lib-create" || opt == "f" || opt == "v"
         || opt == "l2-name" || opt == "mod-prefix" || opt == "prefix" || opt == "protect-lib"
-        || opt == "protect-key" || opt == "threads" || opt == "top-module" || opt == "v") {
+        || opt == "protect-key" || opt == "threads" || opt == "top-module") {
         return 2;
     }
     if (opt == "build" || (!forTop && (opt == "cc" || opt == "exe" || opt == "sc"))
@@ -1407,6 +1421,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             fl->v3error("--output-split-ctrace must be >= 0: " << valp);
         }
     });
+    DECL_OPTION("-output-groups", CbVal, [this, fl](const char* valp) {
+        m_outputGroups = std::atoi(valp);
+        if (m_outputGroups < 0) { fl->v3error("--output-groups must be >= 0: " << valp); }
+    });
 
     DECL_OPTION("-P", Set, &m_preprocNoLine);
     DECL_OPTION("-pvalue+", CbPartialMatch,
@@ -1772,6 +1790,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                        || suffixed(filename, ".o")  //
                        || suffixed(filename, ".so")) {
                 V3Options::addLdLibs(filename);
+            } else if (suffixed(filename, ".vlt")) {
+                V3Options::addVltFile(filename);
             } else {
                 V3Options::addVFile(filename);
             }
@@ -2032,7 +2052,7 @@ unsigned V3Options::dumpLevel(const string& tag) const VL_MT_SAFE {
     return iter != m_dumpLevel.end() ? iter->second : 0;
 }
 
-unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const {
+unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const VL_MT_SAFE {
     // For simplicity, calling functions can just use __FILE__ for srcfile.
     // That means we need to strip the filenames: ../Foo.cpp -> Foo
     return dumpLevel(V3Os::filenameNonDirExt(srcfile_path));

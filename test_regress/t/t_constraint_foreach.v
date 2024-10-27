@@ -8,12 +8,15 @@
 begin \
    longint prev_result; \
    int ok = 0; \
-   for (int i = 0; i < 10; i++) begin \
+   if (!bit'(cl.randomize())) $stop; \
+   prev_result = longint'(field); \
+   if (!(cond)) $stop; \
+   repeat(9) begin \
       longint result; \
       if (!bit'(cl.randomize())) $stop; \
       result = longint'(field); \
       if (!(cond)) $stop; \
-      if (i > 0 && result != prev_result) ok = 1; \
+      if (result != prev_result) ok = 1; \
       prev_result = result; \
    end \
    if (ok != 1) $stop; \
@@ -26,14 +29,24 @@ class C;
       x < 7;
       foreach(q[i])
          x > i;
+      foreach(q[i])  // loop again with the same index name
+         x > i;
    };
 endclass
 
 class D;
    rand bit posit;
    rand int x;
+   int o[$];  // empty
+   int p[$] = {1};
    int q[$] = {0, 0, 0, 0, 0};
    constraint fore {
+      if (posit == 1) {
+         foreach(o[i]) o[i] > 0;
+      }
+      if (posit == 1) {
+         foreach(p[i]) p[i] > 0;
+      }
       if (posit == 1) {
          x < 7;
          foreach(q[i])

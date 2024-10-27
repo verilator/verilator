@@ -47,9 +47,12 @@ class AstseeCmd(gdb.Command):
 
     def _null_check(self, old, new):
         err = ""
-        if old == "<nullptr>\n": err += "old == <nullptr>\n"
-        if new == "<nullptr>\n": err += "new == <nullptr>"
-        if err: raise gdb.GdbError(err.strip("\n"))
+        if old == "<nullptr>\n":
+            err += "old == <nullptr>\n"
+        if new == "<nullptr>\n":
+            err += "new == <nullptr>"
+        if err:
+            raise gdb.GdbError(err.strip("\n"))
 
     def invoke(self, arg_str, from_tty):
         from astsee import verilator_cli as astsee  # pylint: disable=import-error,import-outside-toplevel
@@ -58,8 +61,8 @@ class AstseeCmd(gdb.Command):
         # We hack `astsee_verilator`'s arg parser to find arguments with nodes
         # After finding them, we replace them with proper files
         astsee_args = astsee.parser.parse_args(gdb.string_to_argv(arg_str))
-        with _vltgdb_tmpfile() as oldfile, _vltgdb_tmpfile(
-        ) as newfile, _vltgdb_tmpfile() as metafile:
+        with _vltgdb_tmpfile() as oldfile, _vltgdb_tmpfile() as newfile, _vltgdb_tmpfile(
+        ) as metafile:
             if astsee_args.file:
                 _vltgdb_fwrite(oldfile, _vltgdb_get_dump(astsee_args.file))
                 astsee_args.file = oldfile.name
@@ -68,8 +71,7 @@ class AstseeCmd(gdb.Command):
                 astsee_args.newfile = newfile.name
             if astsee_args.meta is None:
                 # pass
-                gdb.execute(
-                    f'call AstNode::dumpJsonMetaFileGdb("{metafile.name}")')
+                gdb.execute(f'call AstNode::dumpJsonMetaFileGdb("{metafile.name}")')
                 astsee_args.meta = metafile.name
             try:
                 astsee.main(astsee_args)

@@ -51,9 +51,11 @@ def write_file(filename, contents):
 
 def parse_line(s):
     # str->maybe str
-    if len(s) == 0: return None
+    if len(s) == 0:
+        return None
     part = skip_while(lambda x: x != '"', s)
-    if len(part) == 0 or part[0] != '"': return None
+    if len(part) == 0 or part[0] != '"':
+        return None
     literal_part = take_while(lambda x: x != '"', part[1:])
     return ''.join(filter(lambda x: x != '\\', literal_part))
 

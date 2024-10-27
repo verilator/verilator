@@ -41,6 +41,14 @@ module t (/*AUTOARG*/);
       if (c.pre != 10) $stop;
       if (c.r != RANDOMIZED) $stop;
       if (c.post != 30) $stop;
+
+      c = new;
+      rand_result = c.randomize() with { r == RANDOMIZED; };
+      if (rand_result != 1) $stop;
+      if (c.pre != 10) $stop;
+      if (c.r != RANDOMIZED) $stop;
+      if (c.post != 30) $stop;
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

@@ -85,12 +85,15 @@ private:
                         "Only rand_mode() and constraint_mode() can have no def");
             return;
         }
-        if (const auto varp = VN_CAST(defp, Var)) {
-            local = varp->isHideLocal();
-            prot = varp->isHideProtected();
-        } else if (const auto ftaskp = VN_CAST(defp, NodeFTask)) {
-            local = ftaskp->isHideLocal();
-            prot = ftaskp->isHideProtected();
+        if (const auto anodep = VN_CAST(defp, Var)) {
+            local = anodep->isHideLocal();
+            prot = anodep->isHideProtected();
+        } else if (const auto anodep = VN_CAST(defp, NodeFTask)) {
+            local = anodep->isHideLocal();
+            prot = anodep->isHideProtected();
+        } else if (const auto anodep = VN_CAST(defp, Typedef)) {
+            local = anodep->isHideLocal();
+            prot = anodep->isHideProtected();
         } else {
             nodep->v3fatalSrc("ref to unhandled definition type " << defp->prettyTypeName());
         }
@@ -177,6 +180,12 @@ private:
         // Move to type table as all dtype pointers must resolve there
         nodep->unlinkFrBack();  // Make non-child
         v3Global.rootp()->typeTablep()->addTypesp(nodep);
+    }
+    void visit(AstRefDType* nodep) override {
+        visitIterateNodeDType(nodep);
+        if (!nodep->typedefp()) return;  // Already checked and cleared
+        classEncapCheck(nodep, nodep->typedefp(), VN_CAST(nodep->classOrPackagep(), Class));
+        nodep->typedefp(nullptr);  // No longer needed
     }
     void visitIterateNodeDType(AstNodeDType* nodep) {
         // Rather than use dtypeChg which may make new nodes, we edit in place,

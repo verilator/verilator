@@ -22,7 +22,6 @@
 
 #include "V3Error.h"
 #include "V3LangCode.h"
-#include "V3ThreadSafety.h"
 
 #include <map>
 #include <set>
@@ -211,6 +210,7 @@ private:
     V3StringSet m_clockers;     // argument: Verilog -clk signals
     V3StringSet m_noClockers;   // argument: Verilog -noclk signals
     V3StringList m_vFiles;      // argument: Verilog files to read
+    V3StringSet m_vltFiles;     // argument: Verilator config files to read
     V3StringList m_forceIncs;   // argument: -FI
     DebugLevelMap m_debugLevel; // argument: --debugi-<srcfile/tag> <level>
     DebugLevelMap m_dumpLevel;  // argument: --dumpi-<srcfile/tag> <level>
@@ -316,6 +316,7 @@ private:
     VOptionBool m_makeDepend;  // main switch: -MMD
     int         m_maxNumWidth = 65536;  // main switch: --max-num-width
     int         m_moduleRecursion = 100;  // main switch: --module-recursion-depth
+    int         m_outputGroups = 0;  // main switch: --output-groups
     int         m_outputSplit = 20000;  // main switch: --output-split
     int         m_outputSplitCFuncs = -1;  // main switch: --output-split-cfuncs
     int         m_outputSplitCTrace = -1;  // main switch: --output-split-ctrace
@@ -433,7 +434,7 @@ public:
     unsigned debugLevel(const string& tag) const VL_MT_SAFE;
     unsigned debugSrcLevel(const string& srcfile_path) const VL_MT_SAFE;
     unsigned dumpLevel(const string& tag) const VL_MT_SAFE;
-    unsigned dumpSrcLevel(const string& srcfile_path) const;
+    unsigned dumpSrcLevel(const string& srcfile_path) const VL_MT_SAFE;
 
     // METHODS
     void addCppFile(const string& filename);
@@ -445,6 +446,7 @@ public:
     void addClocker(const string& signame);
     void addNoClocker(const string& signame);
     void addVFile(const string& filename);
+    void addVltFile(const string& filename);
     void addForceInc(const string& filename);
     bool available() const VL_MT_SAFE { return m_available; }
     void ccSet();
@@ -521,7 +523,7 @@ public:
     bool pinsInoutEnables() const { return m_pinsInoutEnables; }
     bool pinsScUint() const { return m_pinsScUint; }
     bool pinsScUintBool() const { return m_pinsScUintBool; }
-    bool pinsScBigUint() const { return m_pinsScBigUint; }
+    bool pinsScBigUint() const VL_MT_SAFE { return m_pinsScBigUint; }
     bool pinsUint8() const { return m_pinsUint8; }
     bool ppComments() const { return m_ppComments; }
     bool profC() const { return m_profC; }
@@ -564,14 +566,15 @@ public:
     int outputSplit() const { return m_outputSplit; }
     int outputSplitCFuncs() const { return m_outputSplitCFuncs; }
     int outputSplitCTrace() const { return m_outputSplitCTrace; }
-    int pinsBv() const { return m_pinsBv; }
+    int outputGroups() const { return m_outputGroups; }
+    int pinsBv() const VL_MT_SAFE { return m_pinsBv; }
     int publicDepth() const { return m_publicDepth; }
     int reloopLimit() const { return m_reloopLimit; }
     VOptionBool skipIdentical() const { return m_skipIdentical; }
     bool stopFail() const { return m_stopFail; }
     int threads() const VL_MT_SAFE { return m_threads; }
     int threadsMaxMTasks() const { return m_threadsMaxMTasks; }
-    bool mtasks() const { return (m_threads > 1); }
+    bool mtasks() const VL_MT_SAFE { return (m_threads > 1); }
     VTimescale timeDefaultPrec() const { return m_timeDefaultPrec; }
     VTimescale timeDefaultUnit() const { return m_timeDefaultUnit; }
     VTimescale timeOverridePrec() const { return m_timeOverridePrec; }
@@ -597,7 +600,7 @@ public:
     int verilateJobs() const { return m_verilateJobs; }
 
     int compLimitBlocks() const { return m_compLimitBlocks; }
-    int compLimitMembers() const { return m_compLimitMembers; }
+    int compLimitMembers() const VL_MT_SAFE { return m_compLimitMembers; }
     int compLimitParens() const { return m_compLimitParens; }
 
     string exeName() const { return m_exeName != "" ? m_exeName : prefix(); }
@@ -639,6 +642,7 @@ public:
     const V3StringList& makeFlags() const { return m_makeFlags; }
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
     const V3StringList& vFiles() const { return m_vFiles; }
+    const V3StringSet& vltFiles() const { return m_vltFiles; }
     const V3StringList& forceIncs() const { return m_forceIncs; }
 
     bool hasParameter(const string& name);
@@ -694,7 +698,7 @@ public:
     }
 
     bool hierarchical() const { return m_hierarchical; }
-    int hierChild() const { return m_hierChild; }
+    int hierChild() const VL_MT_SAFE { return m_hierChild; }
     bool hierTop() const VL_MT_SAFE { return !m_hierChild && !m_hierBlocks.empty(); }
     const V3HierBlockOptSet& hierBlocks() const { return m_hierBlocks; }
     // Directory to save .tree, .dot, .dat, .vpp for hierarchical block top

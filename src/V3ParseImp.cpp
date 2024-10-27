@@ -447,6 +447,20 @@ size_t V3ParseImp::tokenPipeScanTypeEq(size_t depth) {
     return depth;
 }
 
+int V3ParseImp::tokenPipelineId(int token) {
+    const V3ParseBisonYYSType* nexttokp = tokenPeekp(0);  // First char after yaID
+    const int nexttok = nexttokp->token;
+    UASSERT(yylval.token == yaID__LEX, "Start with ID");
+    if (nexttok == yP_COLONCOLON) { return yaID__CC; }
+    VL_RESTORER(yylval);  // Remember value, as about to read ahead
+    if (nexttok == '#') {
+        VL_RESTORER(yylval);  // Remember value, as about to read ahead
+        const size_t depth = tokenPipeScanParam(0);
+        if (tokenPeekp(depth)->token == yP_COLONCOLON) return yaID__CC;
+    }
+    return token;
+}
+
 void V3ParseImp::tokenPipeline() {
     // called from bison's "yylex", has a "this"
     if (m_tokensAhead.empty()) tokenPull();  // corrupts yylval
@@ -552,13 +566,7 @@ void V3ParseImp::tokenPipeline() {
                 token = yWITH__ETC;
             }
         } else if (token == yaID__LEX) {
-            if (nexttok == yP_COLONCOLON) {
-                token = yaID__CC;
-            } else if (nexttok == '#') {
-                VL_RESTORER(yylval);  // Remember value, as about to read ahead
-                const size_t depth = tokenPipeScanParam(0);
-                if (tokenPeekp(depth)->token == yP_COLONCOLON) token = yaID__CC;
-            }
+            token = tokenPipelineId(token);
         }
         // If add to above "else if", also add to "if (token" further above
     }
@@ -656,7 +664,8 @@ int V3ParseImp::tokenToBison() {
     m_bisonLastFileline = yylval.fl;
 
     // yylval.scp = nullptr;   // Symbol table not yet needed - no packages
-    if (debugFlex() >= 6 || debugBison() >= 6) {  // --debugi-flex and --debugi-bison
+    if (debug() >= 6 || debugFlex() >= 6
+        || debugBison() >= 6) {  // --debugi-flex and --debugi-bison
         cout << "tokenToBison  " << yylval << endl;
     }
     return yylval.token;

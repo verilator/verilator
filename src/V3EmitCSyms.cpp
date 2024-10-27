@@ -403,13 +403,9 @@ public:
 void EmitCSyms::emitSymHdr() {
     UINFO(6, __FUNCTION__ << ": " << endl);
     const string filename = v3Global.opt.makeDir() + "/" + symClassName() + ".h";
-    newCFile(filename, true /*slow*/, false /*source*/);
-
-    if (v3Global.opt.systemC()) {
-        m_ofp = new V3OutScFile{filename};
-    } else {
-        m_ofp = new V3OutCFile{filename};
-    }
+    AstCFile* const cfilep = newCFile(filename, true /*slow*/, false /*source*/);
+    V3OutCFile* const ofilep = optSystemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
+    setOutputFile(ofilep, cfilep);
 
     ofp()->putsHeader();
     puts("// DESCRIPTION: Verilator output: Symbol table internal header\n");
@@ -550,21 +546,18 @@ void EmitCSyms::emitSymHdr() {
 
     if (v3Global.hasEvents()) {
         if (v3Global.assignsEvents()) {
-            puts("void enqueueTriggeredEventForClearing(VlAssignableEvent& event) {\n");
+            puts("void fireEvent(VlAssignableEvent& event) {\n");
         } else {
-            puts("void enqueueTriggeredEventForClearing(VlEvent& event) {\n");
+            puts("void fireEvent(VlEvent& event) {\n");
         }
-        puts("#ifdef VL_DEBUG\n");
-        puts("if (VL_UNLIKELY(!event.isTriggered())) {\n");
-        puts("VL_FATAL_MT(__FILE__, __LINE__, __FILE__, \"event passed to "
-             "'enqueueTriggeredEventForClearing' was not triggered\");\n");
-        puts("}\n");
-        puts("#endif\n");
+        puts("if (VL_LIKELY(!event.isTriggered())) {\n");
         if (v3Global.assignsEvents()) {
             puts("__Vm_triggeredEvents.push_back(event);\n");
         } else {
             puts("__Vm_triggeredEvents.push_back(&event);\n");
         }
+        puts("}\n");
+        puts("event.fire();\n");
         puts("}\n");
         puts("void clearTriggeredEvents() {\n");
         if (v3Global.assignsEvents()) {
@@ -589,18 +582,18 @@ void EmitCSyms::emitSymHdr() {
     puts("};\n");
 
     ofp()->putsEndGuard();
-    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+    closeOutputFile();
 }
 
 void EmitCSyms::closeSplit() {
-    if (!m_ofp || m_ofp == m_ofpBase) return;
+    if (!ofp() || ofp() == m_ofpBase) return;
 
     puts("}\n");
-    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+    closeOutputFile();
 }
 
 void EmitCSyms::checkSplit(bool usesVfinal) {
-    if (m_ofp
+    if (ofp()
         && (!v3Global.opt.outputSplitCFuncs() || m_numStmts < v3Global.opt.outputSplitCFuncs())) {
         return;
     }
@@ -616,11 +609,8 @@ void EmitCSyms::checkSplit(bool usesVfinal) {
     m_usesVfinal[m_funcNum] = usesVfinal;
     closeSplit();
 
-    if (v3Global.opt.systemC()) {
-        m_ofp = new V3OutScFile{filename};
-    } else {
-        m_ofp = new V3OutCFile{filename};
-    }
+    V3OutCFile* const ofilep = optSystemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
+    setOutputFile(ofilep, cfilep);
 
     m_ofpBase->puts(symClassName() + "_" + cvtToStr(m_funcNum) + "(");
     if (usesVfinal) m_ofpBase->puts("__Vfinal");
@@ -700,13 +690,10 @@ void EmitCSyms::emitSymImp() {
     AstCFile* const cfilep = newCFile(filename, true /*slow*/, true /*source*/);
     cfilep->support(true);
 
-    if (v3Global.opt.systemC()) {
-        m_ofp = new V3OutScFile{filename};
-    } else {
-        m_ofp = new V3OutCFile{filename};
-    }
+    V3OutCFile* const ofilep = optSystemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
+    setOutputFile(ofilep, cfilep);
 
-    m_ofpBase = m_ofp;
+    m_ofpBase = ofp();
     emitSymImpPreamble();
 
     if (v3Global.opt.savable()) {
@@ -1036,7 +1023,7 @@ void EmitCSyms::emitSymImp() {
     m_ofpBase->puts("}\n");
 
     closeSplit();
-    m_ofp = nullptr;
+    setOutputFile(nullptr);
     VL_DO_CLEAR(delete m_ofpBase, m_ofpBase = nullptr);
 }
 
@@ -1048,9 +1035,9 @@ void EmitCSyms::emitDpiHdr() {
     AstCFile* const cfilep = newCFile(filename, false /*slow*/, false /*source*/);
     cfilep->support(true);
     V3OutCFile hf{filename};
-    m_ofp = &hf;
+    setOutputFile(&hf, cfilep);
 
-    m_ofp->putsHeader();
+    ofp()->putsHeader();
     puts("// DESCR"
          "IPTION: Verilator output: Prototypes for DPI import and export functions.\n");
     puts("//\n");
@@ -1092,7 +1079,7 @@ void EmitCSyms::emitDpiHdr() {
     puts("#endif\n");
 
     ofp()->putsEndGuard();
-    m_ofp = nullptr;
+    setOutputFile(nullptr);
 }
 
 //######################################################################
@@ -1103,9 +1090,9 @@ void EmitCSyms::emitDpiImp() {
     AstCFile* const cfilep = newCFile(filename, false /*slow*/, true /*source*/);
     cfilep->support(true);
     V3OutCFile hf(filename);
-    m_ofp = &hf;
+    setOutputFile(&hf, cfilep);
 
-    m_ofp->putsHeader();
+    ofp()->putsHeader();
     puts("// DESCR"
          "IPTION: Verilator output: Implementation of DPI export functions.\n");
     puts("//\n");
@@ -1149,7 +1136,7 @@ void EmitCSyms::emitDpiImp() {
             puts("\n");
         }
     }
-    m_ofp = nullptr;
+    setOutputFile(nullptr);
 }
 
 //######################################################################

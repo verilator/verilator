@@ -6,8 +6,7 @@
 
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
-`define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
-`define checkg(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%g' exp='%g'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checkp(gotv,expv_s) do begin string gotv_s; gotv_s = $sformatf("%p", gotv); if ((gotv_s) !== (expv_s)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv_s), (expv_s)); `stop; end end while(0);
 
 module t (/*AUTOARG*/
@@ -119,6 +118,29 @@ module t (/*AUTOARG*/
          a["two"] = 2;
          foreach (a[i]) sum += a[i];
          `checkh(sum, 1 + 2);
+      end
+
+      begin   // Issue #5435
+         int a;
+         int ok;
+         int dict [int];
+
+         dict[3] = 'h13;
+         dict[4] = 'h14;
+         dict[5] = 'h15;
+
+         a = 4;
+         ok = dict.first(a);
+         if (a != 3) $stop;
+         if (ok != 1) $stop;
+         a = 4;
+         ok = dict.next(a);
+         if (a != 5) $stop;
+         if (ok != 1) $stop;
+         a = 4;
+         ok = dict.last(a);
+         if (a != 5) $stop;
+         if (ok != 1) $stop;
       end
 
       $write("*-* All Finished *-*\n");

@@ -34,6 +34,13 @@ module t(/*AUTOARG*/);
       return 16'hf0ed;
    endfunction
 
+   int i;
+   typedef int arr_t[1:0][3:0];
+
+   function arr_t valarr();
+      return '{'{1,2,3,4}, '{5,6,7,8}};
+   endfunction
+
    initial begin
       aa = 8'haa;
       bb = 8'hbb;
@@ -83,6 +90,9 @@ module t(/*AUTOARG*/);
       `checkh(s8, 8'h0e);
       s8 = q.sum()[11-:8];
       `checkh(s8, 8'h0e);
+
+      i = valarr()[1][2];
+      $display(i);
 
       $write("*-* All Finished *-*\n");
       $finish;

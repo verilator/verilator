@@ -143,7 +143,7 @@ class EmitCGatherDependencies final : VNVisitorConst {
     }
 
 public:
-    static const std::set<std::string> gather(AstCFunc* cfuncp) {
+    static const std::set<std::string> gather(AstCFunc* cfuncp) VL_MT_STABLE {
         const EmitCGatherDependencies visitor{cfuncp};
         return std::move(visitor.m_dependencies);
     }
@@ -163,7 +163,7 @@ class EmitCImp final : EmitCFunc {
 
     // METHODS
     void openNextOutputFile(const std::set<string>& headers, const string& subFileName) {
-        UASSERT(!m_ofp, "Output file already open");
+        UASSERT(!ofp(), "Output file already open");
 
         splitSizeReset();  // Reset file size tracking
         m_lazyDecls.reset();  // Need to emit new lazy declarations
@@ -172,8 +172,10 @@ class EmitCImp final : EmitCFunc {
             // Unfortunately we have some lint checks here, so we can't just skip processing.
             // We should move them to a different stage.
             const string filename = VL_DEV_NULL;
-            m_cfilesr.push_back(createCFile(filename, /* slow: */ m_slow, /* source: */ true));
-            m_ofp = new V3OutCFile{filename};
+            AstCFile* const filep = createCFile(filename, /* slow: */ m_slow, /* source: */ true);
+            m_cfilesr.push_back(filep);
+            V3OutCFile* const ofilep = new V3OutCFile{filename};
+            setOutputFile(ofilep, filep);
         } else {
             string filename = v3Global.opt.makeDir() + "/" + prefixNameProtect(m_fileModp);
             if (!subFileName.empty()) {
@@ -182,8 +184,11 @@ class EmitCImp final : EmitCFunc {
             }
             if (m_slow) filename += "__Slow";
             filename += ".cpp";
-            m_cfilesr.push_back(createCFile(filename, /* slow: */ m_slow, /* source: */ true));
-            m_ofp = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
+            AstCFile* const filep = createCFile(filename, /* slow: */ m_slow, /* source: */ true);
+            m_cfilesr.push_back(filep);
+            V3OutCFile* const ofilep
+                = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
+            setOutputFile(ofilep, filep);
         }
 
         putsHeader();
@@ -321,6 +326,8 @@ class EmitCImp final : EmitCFunc {
             }
             // static doesn't need save-restore as is constant
             puts("static uint32_t fake_zero_count = 0;\n");
+            puts("std::string fullhier = std::string{VerilatedModule::name()} + hierp;\n");
+            puts("if (!fullhier.empty() && fullhier[0] == '.') fullhier = fullhier.substr(1);\n");
             // Used for second++ instantiation of identical bin
             puts("if (!enable) count32p = &fake_zero_count;\n");
             puts("*count32p = 0;\n");
@@ -329,9 +336,7 @@ class EmitCImp final : EmitCFunc {
             puts("  \"filename\",filenamep,");
             puts("  \"lineno\",lineno,");
             puts("  \"column\",column,\n");
-            // Need to move hier into scopes and back out if do this
-            // puts( "\"hier\",std::string{vlSymsp->name()} + hierp,");
-            puts("\"hier\",std::string{VerilatedModule::name()} + hierp,");
+            puts("\"hier\",fullhier,");
             puts("  \"page\",pagep,");
             puts("  \"comment\",commentp,");
             puts("  (linescovp[0] ? \"linescov\" : \"\"), linescovp);\n");
@@ -477,7 +482,7 @@ class EmitCImp final : EmitCFunc {
                 doCommonImp(classp);
             }
 
-            VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+            closeOutputFile();
         }
     }
     void emitCFuncImp(const AstNodeModule* modp) {
@@ -522,7 +527,7 @@ class EmitCImp final : EmitCFunc {
                 iterateConst(funcp);
             }
             // Close output file
-            VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+            closeOutputFile();
         }
     }
 
@@ -532,7 +537,7 @@ class EmitCImp final : EmitCFunc {
             // Splitting file, so using parallel build.
             v3Global.useParallelBuild(true);
             // Close old file
-            VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+            closeOutputFile();
             // Open a new file
             openNextOutputFile(*m_requiredHeadersp, m_subFileName);
         }
@@ -562,7 +567,8 @@ class EmitCImp final : EmitCFunc {
     ~EmitCImp() override = default;
 
 public:
-    static void main(const AstNodeModule* modp, bool slow, std::deque<AstCFile*>& cfilesr) {
+    static void main(const AstNodeModule* modp, bool slow,
+                     std::deque<AstCFile*>& cfilesr) VL_MT_STABLE {
         EmitCImp{modp, slow, cfilesr};
     }
 };
@@ -586,7 +592,7 @@ class EmitCTrace final : EmitCFunc {
 
     // METHODS
     void openNextOutputFile() {
-        UASSERT(!m_ofp, "Output file already open");
+        UASSERT(!ofp(), "Output file already open");
 
         splitSizeReset();  // Reset file size tracking
         m_lazyDecls.reset();  // Need to emit new lazy declarations
@@ -601,11 +607,10 @@ class EmitCTrace final : EmitCFunc {
         cfilep->support(true);
         m_cfilesr.push_back(cfilep);
 
-        if (optSystemC()) {
-            m_ofp = new V3OutScFile{filename};
-        } else {
-            m_ofp = new V3OutCFile{filename};
-        }
+        V3OutCFile* const ofilep
+            = optSystemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
+        setOutputFile(ofilep, cfilep);
+
         putsHeader();
         puts("// DESCR"
              "IPTION: Verilator output: Tracing implementation internals\n");
@@ -903,7 +908,7 @@ class EmitCTrace final : EmitCFunc {
             // Splitting file, so using parallel build.
             v3Global.useParallelBuild(true);
             // Close old file
-            VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+            closeOutputFile();
             // Open a new file
             openNextOutputFile();
         }
@@ -955,7 +960,7 @@ class EmitCTrace final : EmitCFunc {
             if (AstCFunc* const funcp = VN_CAST(nodep, CFunc)) iterateConst(funcp);
         }
         // Close output file
-        VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+        closeOutputFile();
         if (m_slow) {
             callTypeSubs();
             closeTypesFile();
@@ -977,7 +982,7 @@ void V3EmitC::emitcImp() {
     // Make parent module pointers available.
     const EmitCParentModule emitCParentModule;
     std::list<std::deque<AstCFile*>> cfiles;
-    std::list<std::future<void>> futures;
+    V3ThreadScope threadScope;
 
     // Process each module in turn
     for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
@@ -985,29 +990,29 @@ void V3EmitC::emitcImp() {
         const AstNodeModule* const modp = VN_AS(nodep, NodeModule);
         cfiles.emplace_back();
         auto& slowCfilesr = cfiles.back();
-        futures.push_back(V3ThreadPool::s().enqueue(
-            [modp, &slowCfilesr]() { EmitCImp::main(modp, /* slow: */ true, slowCfilesr); }));
+        threadScope.enqueue(
+            [modp, &slowCfilesr] { EmitCImp::main(modp, /* slow: */ true, slowCfilesr); });
         cfiles.emplace_back();
         auto& fastCfilesr = cfiles.back();
-        futures.push_back(V3ThreadPool::s().enqueue(
-            [modp, &fastCfilesr]() { EmitCImp::main(modp, /* slow: */ false, fastCfilesr); }));
+        threadScope.enqueue(
+            [modp, &fastCfilesr] { EmitCImp::main(modp, /* slow: */ false, fastCfilesr); });
     }
 
     // Emit trace routines (currently they can only exist in the top module)
     if (v3Global.opt.trace() && !v3Global.opt.lintOnly()) {
         cfiles.emplace_back();
         auto& slowCfilesr = cfiles.back();
-        futures.push_back(V3ThreadPool::s().enqueue([&slowCfilesr]() {
+        threadScope.enqueue([&slowCfilesr] {
             EmitCTrace::main(v3Global.rootp()->topModulep(), /* slow: */ true, slowCfilesr);
-        }));
+        });
         cfiles.emplace_back();
         auto& fastCfilesr = cfiles.back();
-        futures.push_back(V3ThreadPool::s().enqueue([&fastCfilesr]() {
+        threadScope.enqueue([&fastCfilesr] {
             EmitCTrace::main(v3Global.rootp()->topModulep(), /* slow: */ false, fastCfilesr);
-        }));
+        });
     }
     // Wait for futures
-    V3ThreadPool::waitForFutures(futures);
+    threadScope.wait();
     for (const auto& collr : cfiles) {
         for (const auto cfilep : collr) v3Global.rootp()->addFilesp(cfilep);
     }
@@ -1022,7 +1027,7 @@ void V3EmitC::emitcFiles() {
             V3OutCFile of{cfilep->name()};
             of.puts("// DESCR"
                     "IPTION: Verilator generated C++\n");
-            const EmitCFunc visitor{cfilep->tblockp(), &of, true};
+            const EmitCFunc visitor{cfilep->tblockp(), &of, cfilep, true};
         }
     }
 }

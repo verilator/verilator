@@ -485,6 +485,8 @@ private:
 
 public:
     using const_iterator = typename Deque::const_iterator;
+    template <class Func>
+    using WithFuncReturnType = decltype(std::declval<Func>()(0, std::declval<T_Value>()));
 
 private:
     // MEMBERS
@@ -593,18 +595,28 @@ public:
         return v;
     }
 
-    // Setting. Verilog: assoc[index] = v
-    // Can't just overload operator[] or provide a "at" reference to set,
-    // because we need to be able to insert only when the value is set
-    T_Value& at(int32_t index) {
+    // Setting. Verilog: assoc[index] = v (should only be used by dynamic arrays)
+    T_Value& atWrite(int32_t index) {
+        // cppcheck-suppress variableScope
         static thread_local T_Value t_throwAway;
         // Needs to work for dynamic arrays, so does not use T_MaxSize
         if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
             t_throwAway = atDefault();
             return t_throwAway;
-        } else {
-            return m_deque[index];
         }
+        return m_deque[index];
+    }
+    // Setting. Verilog: assoc[index] = v (should only be used by queues)
+    T_Value& atWriteAppend(int32_t index) {
+        // cppcheck-suppress variableScope
+        static thread_local T_Value t_throwAway;
+        if (VL_UNLIKELY(index < 0 || index > m_deque.size())) {
+            t_throwAway = atDefault();
+            return t_throwAway;
+        } else if (VL_UNLIKELY(index == m_deque.size())) {
+            push_back(atDefault());
+        }
+        return m_deque[index];
     }
     // Accessing. Verilog: v = assoc[index]
     const T_Value& at(int32_t index) const {
@@ -616,7 +628,7 @@ public:
         }
     }
     // Access with an index counted from end (e.g. q[$])
-    T_Value& atBack(int32_t index) { return at(m_deque.size() - 1 - index); }
+    T_Value& atWriteAppendBack(int32_t index) { return atWriteAppend(m_deque.size() - 1 - index); }
     const T_Value& atBack(int32_t index) const { return at(m_deque.size() - 1 - index); }
 
     // function void q.insert(index, value);
@@ -821,70 +833,63 @@ public:
         return out;
     }
     template <typename Func>
-    T_Value r_sum(Func with_func) const {
-        T_Value out(0);  // Type must have assignment operator
+    WithFuncReturnType<Func> r_sum(Func with_func) const {
+        WithFuncReturnType<Func> out = WithFuncReturnType<Func>(0);
         IData index = 0;
         for (const auto& i : m_deque) out += with_func(index++, i);
         return out;
     }
     T_Value r_product() const {
-        if (m_deque.empty()) return T_Value(0);
-        auto it = m_deque.cbegin();
-        T_Value out{*it};
-        ++it;
-        for (; it != m_deque.cend(); ++it) out *= *it;
+        if (m_deque.empty()) return T_Value(0);  // The big three do it this way
+        T_Value out = T_Value(1);
+        for (const auto& i : m_deque) out *= i;
         return out;
     }
     template <typename Func>
-    T_Value r_product(Func with_func) const {
-        if (m_deque.empty()) return T_Value(0);
-        auto it = m_deque.cbegin();
+    WithFuncReturnType<Func> r_product(Func with_func) const {
+        if (m_deque.empty()) return WithFuncReturnType<Func>(0);  // The big three do it this way
+        WithFuncReturnType<Func> out = WithFuncReturnType<Func>(1);
         IData index = 0;
-        T_Value out{with_func(index, *it)};
-        ++it;
-        ++index;
-        for (; it != m_deque.cend(); ++it) out *= with_func(index++, *it);
+        for (const auto& i : m_deque) out *= with_func(index++, i);
         return out;
     }
     T_Value r_and() const {
-        if (m_deque.empty()) return T_Value(0);
-        auto it = m_deque.cbegin();
-        T_Value out{*it};
-        ++it;
-        for (; it != m_deque.cend(); ++it) out &= *it;
+        if (m_deque.empty()) return T_Value(0);  // The big three do it this way
+        T_Value out = ~T_Value(0);
+        for (const auto& i : m_deque) out &= i;
         return out;
     }
     template <typename Func>
-    T_Value r_and(Func with_func) const {
-        if (m_deque.empty()) return T_Value(0);
-        auto it = m_deque.cbegin();
+    WithFuncReturnType<Func> r_and(Func with_func) const {
+        if (m_deque.empty()) return WithFuncReturnType<Func>(0);  // The big three do it this way
         IData index = 0;
-        T_Value out{with_func(index, *it)};
-        ++it;
-        ++index;
-        for (; it != m_deque.cend(); ++it) out &= with_func(index, *it);
+        WithFuncReturnType<Func> out = ~WithFuncReturnType<Func>(0);
+        for (const auto& i : m_deque) out &= with_func(index++, i);
         return out;
     }
     T_Value r_or() const {
-        T_Value out(0);  // Type must have assignment operator
+        T_Value out = T_Value(0);
         for (const auto& i : m_deque) out |= i;
         return out;
     }
     template <typename Func>
-    T_Value r_or(Func with_func) const {
-        T_Value out(0);  // Type must have assignment operator
+    WithFuncReturnType<Func> r_or(Func with_func) const {
+        WithFuncReturnType<Func> out = WithFuncReturnType<Func>(0);
         IData index = 0;
         for (const auto& i : m_deque) out |= with_func(index++, i);
         return out;
     }
     T_Value r_xor() const {
-        T_Value out(0);  // Type must have assignment operator
+#ifdef VERILATOR_BIG3_NULLARY_ARITHMETICS_QUIRKS
+        if (m_deque.empty()) return T_Value(0);
+#endif
+        T_Value out = T_Value(0);
         for (const auto& i : m_deque) out ^= i;
         return out;
     }
     template <typename Func>
-    T_Value r_xor(Func with_func) const {
-        T_Value out(0);  // Type must have assignment operator
+    WithFuncReturnType<Func> r_xor(Func with_func) const {
+        WithFuncReturnType<Func> out = WithFuncReturnType<Func>(0);
         IData index = 0;
         for (const auto& i : m_deque) out ^= with_func(index++, i);
         return out;
@@ -921,6 +926,9 @@ private:
 
 public:
     using const_iterator = typename Map::const_iterator;
+    template <class Func>
+    using WithFuncReturnType
+        = decltype(std::declval<Func>()(std::declval<T_Key>(), std::declval<T_Value>()));
 
 private:
     // MEMBERS
@@ -1167,64 +1175,56 @@ public:
         return out;
     }
     template <typename Func>
-    T_Value r_sum(Func with_func) const {
-        T_Value out(0);  // Type must have assignment operator
+    WithFuncReturnType<Func> r_sum(Func with_func) const {
+        WithFuncReturnType<Func> out = WithFuncReturnType<Func>(0);
         for (const auto& i : m_map) out += with_func(i.first, i.second);
         return out;
     }
     T_Value r_product() const {
-        if (m_map.empty()) return T_Value(0);
-        auto it = m_map.cbegin();
-        T_Value out{it->second};
-        ++it;
-        for (; it != m_map.cend(); ++it) out *= it->second;
+        if (m_map.empty()) return T_Value(0);  // The big three do it this way
+        T_Value out = T_Value(1);
+        for (const auto& i : m_map) out *= i.second;
         return out;
     }
     template <typename Func>
-    T_Value r_product(Func with_func) const {
-        if (m_map.empty()) return T_Value(0);
-        auto it = m_map.cbegin();
-        T_Value out{with_func(it->first, it->second)};
-        ++it;
-        for (; it != m_map.cend(); ++it) out *= with_func(it->first, it->second);
+    WithFuncReturnType<Func> r_product(Func with_func) const {
+        if (m_map.empty()) return WithFuncReturnType<Func>(0);  // The big three do it this way
+        WithFuncReturnType<Func> out = WithFuncReturnType<Func>(1);
+        for (const auto& i : m_map) out *= with_func(i.first, i.second);
         return out;
     }
     T_Value r_and() const {
-        if (m_map.empty()) return T_Value(0);
-        auto it = m_map.cbegin();
-        T_Value out{it->second};
-        ++it;
-        for (; it != m_map.cend(); ++it) out &= it->second;
+        if (m_map.empty()) return T_Value(0);  // The big three do it this way
+        T_Value out = ~T_Value(0);
+        for (const auto& i : m_map) out &= i.second;
         return out;
     }
     template <typename Func>
-    T_Value r_and(Func with_func) const {
-        if (m_map.empty()) return T_Value(0);
-        auto it = m_map.cbegin();
-        T_Value out{with_func(it->first, it->second)};
-        ++it;
-        for (; it != m_map.cend(); ++it) out &= with_func(it->first, it->second);
+    WithFuncReturnType<Func> r_and(Func with_func) const {
+        if (m_map.empty()) return WithFuncReturnType<Func>(0);  // The big three do it this way
+        WithFuncReturnType<Func> out = ~WithFuncReturnType<Func>(0);
+        for (const auto& i : m_map) out &= with_func(i.first, i.second);
         return out;
     }
     T_Value r_or() const {
-        T_Value out(0);  // Type must have assignment operator
+        T_Value out = T_Value(0);
         for (const auto& i : m_map) out |= i.second;
         return out;
     }
     template <typename Func>
     T_Value r_or(Func with_func) const {
-        T_Value out(0);  // Type must have assignment operator
+        T_Value out = T_Value(0);
         for (const auto& i : m_map) out |= with_func(i.first, i.second);
         return out;
     }
     T_Value r_xor() const {
-        T_Value out(0);  // Type must have assignment operator
+        T_Value out = T_Value(0);
         for (const auto& i : m_map) out ^= i.second;
         return out;
     }
     template <typename Func>
-    T_Value r_xor(Func with_func) const {
-        T_Value out(0);  // Type must have assignment operator
+    WithFuncReturnType<Func> r_xor(Func with_func) const {
+        WithFuncReturnType<Func> out = WithFuncReturnType<Func>(0);
         for (const auto& i : m_map) out ^= with_func(i.first, i.second);
         return out;
     }
@@ -1311,6 +1311,43 @@ public:
     // Raw access
     WData* data() { return &m_storage[0]; }
     const WData* data() const { return &m_storage[0]; }
+
+    std::size_t size() const { return T_Depth; }
+    // To fit C++14
+    template <std::size_t CurrentDimension = 0, typename U = T_Value>
+    int find_length(int dimension, std::false_type) const {
+        return size();
+    }
+
+    template <std::size_t CurrentDimension = 0, typename U = T_Value>
+    int find_length(int dimension, std::true_type) const {
+        if (dimension == CurrentDimension) {
+            return size();
+        } else {
+            return m_storage[0].template find_length<CurrentDimension + 1>(dimension);
+        }
+    }
+
+    template <std::size_t CurrentDimension = 0>
+    int find_length(int dimension) const {
+        return find_length<CurrentDimension>(dimension, std::is_class<T_Value>{});
+    }
+
+    template <std::size_t CurrentDimension = 0, typename U = T_Value>
+    auto& find_element(const std::vector<size_t>& indices, std::false_type) {
+        return m_storage[indices[CurrentDimension]];
+    }
+
+    template <std::size_t CurrentDimension = 0, typename U = T_Value>
+    auto& find_element(const std::vector<size_t>& indices, std::true_type) {
+        return m_storage[indices[CurrentDimension]].template find_element<CurrentDimension + 1>(
+            indices);
+    }
+
+    template <std::size_t CurrentDimension = 0>
+    auto& find_element(const std::vector<size_t>& indices) {
+        return find_element<CurrentDimension>(indices, std::is_class<T_Value>{});
+    }
 
     T_Value& operator[](size_t index) { return m_storage[index]; }
     const T_Value& operator[](size_t index) const { return m_storage[index]; }
@@ -1794,9 +1831,9 @@ public:
 
 struct VlNull final {
     operator bool() const { return false; }
-    bool operator==(void* ptr) const { return !ptr; }
+    bool operator==(const void* ptr) const { return !ptr; }
 };
-inline bool operator==(void* ptr, VlNull) { return !ptr; }
+inline bool operator==(const void* ptr, VlNull) { return !ptr; }
 
 //===================================================================
 // Verilog class reference container

@@ -120,6 +120,8 @@ module t (/*AUTOARG*/
       #10;
       $display("Enabling concurrent asserts, time: %g", $time);
       $assertcontrol(ON, CONCURRENT);
+
+      $write("*-* All Finished *-*\n");
       $finish;
    end
 endmodule

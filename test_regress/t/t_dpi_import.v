@@ -99,6 +99,9 @@ module t (/*AUTOARG*/
    import "DPI-C" dpii_fa_bit =  function int oth_f_int1(input int i);
    import "DPI-C" dpii_fa_bit =  function int oth_f_int2(input int i);
 
+   // Check Verilator doesn't convert double underscores
+   import "DPI-C" pure function int dpii__under___score(input int i);
+
    bit          i_b,    o_b;
    bit [7:0]    i_b8;
    bit [8:0]    i_b9;
@@ -255,6 +258,8 @@ module t (/*AUTOARG*/
       // Check alias
       if (oth_f_int1(32'd123) !== ~32'd123) $stop;
       if (oth_f_int2(32'd124) !== ~32'd124) $stop;
+
+      if (dpii__under___score(32'd60) != 32'd61) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

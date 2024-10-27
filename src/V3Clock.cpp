@@ -31,7 +31,7 @@
 
 #include "V3Clock.h"
 
-#include "V3Sched.h"
+#include "V3Const.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -176,6 +176,11 @@ public:
     // CONSTRUCTORS
     explicit ClockVisitor(AstNetlist* netlistp) {
         m_evalp = netlistp->evalp();
+        // Simplify all SenTrees
+        for (AstSenTree* senTreep = netlistp->topScopep()->senTreesp(); senTreep;
+             senTreep = VN_AS(senTreep->nextp(), SenTree)) {
+            V3Const::constifyExpensiveEdit(senTreep);
+        }
         iterate(netlistp);
     }
     ~ClockVisitor() override = default;

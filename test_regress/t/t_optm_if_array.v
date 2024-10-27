@@ -21,7 +21,7 @@ module t (/*AUTOARG*/
    reg [31:0] dinit [0:1];
    wire [31:0] dinitout = dinit[0] | dinit[1];
 
-   reg rstn_r;  // .pl file checks that this signal gets optimized away
+   reg rstn_r;  // .py file checks that this signal gets optimized away
    always @(posedge clk) begin
       rstn_r <= rstn;
    end

@@ -221,19 +221,6 @@ public:
     void unlock() VL_RELEASE() VL_MT_SAFE { m_mutex.unlock(); }
     /// Try to acquire mutex.  Returns true on success, and false on failure.
     bool try_lock() VL_TRY_ACQUIRE(true) VL_MT_SAFE { return m_mutex.try_lock(); }
-    /// Acquire/lock mutex and check for stop request
-    /// It tries to lock the mutex and if it fails, it check if stop request was send.
-    /// It returns after locking mutex.
-    /// This function should be extracted to V3ThreadPool, but due to clang thread-safety
-    /// limitations it needs to be placed here.
-    void lockCheckStopRequest(std::function<void()> checkStopRequestFunction)
-        VL_ACQUIRE() VL_MT_SAFE {
-        while (true) {
-            checkStopRequestFunction();
-            if (m_mutex.try_lock()) return;
-            VL_CPU_RELAX();
-        }
-    }
 };
 
 /// Lock guard for mutex (ala std::unique_lock), wrapped to allow -fthread_safety checks
@@ -809,8 +796,6 @@ class Verilated final {
 public:
     // METHODS - User called
 
-    /// Enable debug of internal verilated code
-    static void debug(int level) VL_MT_SAFE;
 #ifdef VL_DEBUG
     /// Return debug level
     /// When multithreaded this may not immediately react to another thread
@@ -820,6 +805,8 @@ public:
     /// Return constant 0 debug level, so C++'s optimizer rips up
     static constexpr int debug() VL_PURE { return 0; }
 #endif
+    /// Enable debug of internal verilated code
+    static void debug(int level) VL_MT_SAFE;
 
     /// Set the last VerilatedContext accessed
     /// Generally threadContextp(value) should be called instead
@@ -878,44 +865,44 @@ public:
     static const char* commandArgsPlusMatch(const char* prefixp) VL_MT_SAFE {
         return Verilated::threadContextp()->commandArgsPlusMatch(prefixp);
     }
-    /// Call VerilatedContext::errorLimit using current thread's VerilatedContext
-    static void errorLimit(int val) VL_MT_SAFE { Verilated::threadContextp()->errorLimit(val); }
     /// Return VerilatedContext::errorLimit using current thread's VerilatedContext
     static int errorLimit() VL_MT_SAFE { return Verilated::threadContextp()->errorLimit(); }
+    /// Call VerilatedContext::errorLimit using current thread's VerilatedContext
+    static void errorLimit(int val) VL_MT_SAFE { Verilated::threadContextp()->errorLimit(val); }
+    /// Return VerilatedContext::fatalOnError using current thread's VerilatedContext
+    static bool fatalOnError() VL_MT_SAFE { return Verilated::threadContextp()->fatalOnError(); }
     /// Call VerilatedContext::fatalOnError using current thread's VerilatedContext
     static void fatalOnError(bool flag) VL_MT_SAFE {
         Verilated::threadContextp()->fatalOnError(flag);
-    }
-    /// Return VerilatedContext::fatalOnError using current thread's VerilatedContext
-    static bool fatalOnError() VL_MT_SAFE { return Verilated::threadContextp()->fatalOnError(); }
-    /// Call VerilatedContext::fatalOnVpiError using current thread's VerilatedContext
-    static void fatalOnVpiError(bool flag) VL_MT_SAFE {
-        Verilated::threadContextp()->fatalOnVpiError(flag);
     }
     /// Return VerilatedContext::fatalOnVpiError using current thread's VerilatedContext
     static bool fatalOnVpiError() VL_MT_SAFE {
         return Verilated::threadContextp()->fatalOnVpiError();
     }
-    /// Call VerilatedContext::gotError using current thread's VerilatedContext
-    static void gotError(bool flag) VL_MT_SAFE { Verilated::threadContextp()->gotError(flag); }
+    /// Call VerilatedContext::fatalOnVpiError using current thread's VerilatedContext
+    static void fatalOnVpiError(bool flag) VL_MT_SAFE {
+        Verilated::threadContextp()->fatalOnVpiError(flag);
+    }
     /// Return VerilatedContext::gotError using current thread's VerilatedContext
     static bool gotError() VL_MT_SAFE { return Verilated::threadContextp()->gotError(); }
-    /// Call VerilatedContext::gotFinish using current thread's VerilatedContext
-    static void gotFinish(bool flag) VL_MT_SAFE { Verilated::threadContextp()->gotFinish(flag); }
+    /// Call VerilatedContext::gotError using current thread's VerilatedContext
+    static void gotError(bool flag) VL_MT_SAFE { Verilated::threadContextp()->gotError(flag); }
     /// Return VerilatedContext::gotFinish using current thread's VerilatedContext
     static bool gotFinish() VL_MT_SAFE { return Verilated::threadContextp()->gotFinish(); }
-    /// Call VerilatedContext::randReset using current thread's VerilatedContext
-    static void randReset(int val) VL_MT_SAFE { Verilated::threadContextp()->randReset(val); }
+    /// Call VerilatedContext::gotFinish using current thread's VerilatedContext
+    static void gotFinish(bool flag) VL_MT_SAFE { Verilated::threadContextp()->gotFinish(flag); }
     /// Return VerilatedContext::randReset using current thread's VerilatedContext
     static int randReset() VL_MT_SAFE { return Verilated::threadContextp()->randReset(); }
-    /// Call VerilatedContext::randSeed using current thread's VerilatedContext
-    static void randSeed(int val) VL_MT_SAFE { Verilated::threadContextp()->randSeed(val); }
+    /// Call VerilatedContext::randReset using current thread's VerilatedContext
+    static void randReset(int val) VL_MT_SAFE { Verilated::threadContextp()->randReset(val); }
     /// Return VerilatedContext::randSeed using current thread's VerilatedContext
     static int randSeed() VL_MT_SAFE { return Verilated::threadContextp()->randSeed(); }
-    /// Call VerilatedContext::time using current thread's VerilatedContext
-    static void time(uint64_t val) VL_MT_SAFE { Verilated::threadContextp()->time(val); }
+    /// Call VerilatedContext::randSeed using current thread's VerilatedContext
+    static void randSeed(int val) VL_MT_SAFE { Verilated::threadContextp()->randSeed(val); }
     /// Return VerilatedContext::time using current thread's VerilatedContext
     static uint64_t time() VL_MT_SAFE { return Verilated::threadContextp()->time(); }
+    /// Call VerilatedContext::time using current thread's VerilatedContext
+    static void time(uint64_t val) VL_MT_SAFE { Verilated::threadContextp()->time(val); }
     /// Call VerilatedContext::timeInc using current thread's VerilatedContext
     static void timeInc(uint64_t add) VL_MT_UNSAFE { Verilated::threadContextp()->timeInc(add); }
     // Deprecated

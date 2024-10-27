@@ -18,48 +18,86 @@
 // Convert AstAssignDly into temporaries an specially scheduled blocks.
 // For the Pre/Post scheduling semantics, see V3OrderGraph.
 //
-// A non-array LHS, outside suspendable processes and forks, e.g.::
-//   a <= RHS;
-// is converted as follows:
+// There are several "Schemes" we can choose from for implementing a
+// non-blocking assignment (NBA), repserented by an AstAssignDly.
+//
+// It is assumed and required in this pass that each NBA updates at
+// most one variable. Earlier passes should have ensured this.
+//
+// Each variable is associated with a single NBA scheme, that is, all
+// NBAs targeting the same variable will use the scheme assigned to
+// that variable. This necessitates a global analysis of all NBAs
+// before any decision can be made on how to handle them.
+//
+// The algorithm proceeds in 3 steps.
+// 1. Gather all AstAssignDly non-blocking assignments (NBAs) in the
+//    whole design. Note usage context of variables updated by these NBAs.
+//    This is implemented in the 'visit' methods
+// 2. For each variable that is the target of an NBA, decide which of
+//    the possible conversion schemes to use, based on info gathered in
+//    step 1.
+//    This is implemented in the 'chooseScheme' method
+// 3. For each NBA gathered in step 1, convert it based on the scheme
+//    selected in step 2.
+//    This is implemented in the 'prepare*'/'convert*' methods. The
+//    'prepare*' methods do the parts common for all NBAs updating
+//    the given variable. The 'convert*' methods then convert each
+//    AstAssignDly separately
+//
+// These are the possible NBA Schemes:
+// "Shadow variable" scheme. Used for non-unpackedarray target
+// variables in synthesizeable code. E.g.:
+//   LHS <= RHS;
+// is converted to:
 //  - Add new "Pre-scheduled" logic:
-//      __Vdly__a = a;
-//  - In the original logic, replace VarRefs on LHS with __Vdly__ variables:
-//      __Vdly__a = RHS;
+//      __Vdly__LHS = LHS;
+//  - In the original logic, replace the target variable 'LHS' with '__Vdly__LHS' variables:
+//      __Vdly__LHS = RHS;
 //  - Add new "Post-scheduled" logic:
-//      a = __Vdly__a;
+//      LHS = __Vdly__LHS;
 //
-// An array LHS, that is not inside a loop:
-//   a[idxa][idxb] <= RHS
-// is converted:
-//  - Add new "Pre_scheduled" logic:
-//      __VdlySet__a = 0;
+// "Shared flag" scheme. Used for unpacked array target variables
+// in synthesizeable code. E.g.:
+//   LHS[idxa][idxb] <= RHS
+// is converted to:
+//  - Add new "Pre-scheduled" logic:
+//      __VdlySet__LHS = 0;
 //  - In the original logic, replace the AstAssignDelay with:
-//      __VdlySet__a = 1;
-//      __VdlyDim0__a = idxa;
-//      __VdlyDim1__a = idxb;
-//      __VdlyVal__a = RHS;
+//      __VdlySet__LHS = 1;
+//      __VdlyDim0__LHS = idxa;
+//      __VdlyDim1__LHS = idxb;
+//      __VdlyVal__LHS = RHS;
 //  - Add new "Post-scheduled" logic:
-//      if (__VdlySet__a) a[__VdlyDim0__a][__VdlyDim1__a] = __VdlyVal__a;
+//      if (__VdlySet__LHS) a[__VdlyDim0__LHS][__VdlyDim1__LHS] = __VdlyVal__LHS;
+// Multiple consecutive NBAs of compatible form can share the same  __VdlySet* flag
 //
-// Any AstAssignDly in a suspendable process or fork also uses the
-// '__VdlySet' flag based scheme, like arrays,  with some modifications.
-//
-// An array LHS, which is updated inside a loop (that is, we don't know
-// statically how many updates there might be):
-//   a[idxa][idxb] <= RHS
+// "Unique flag" scheme. Used for all variables updated by NBAs
+// in suspendable processees or forks. E.g.:
+//   #1 LHS <= RHS;
 // is converted to:
 //  - In the original logic, replace the AstAssignDelay with:
-//      __VdlyDim0__a = idxa;
-//      __VdlyDim1__a = idxb;
-//      __VdlyVal__a = RHS;
-//      __VdlyCommitQueue.enqueue(RHS, idxa, idxb);
+//      __VdlySet__LHS = 1;
+//      __VdlyVal__LHS = RHS;
 //  - Add new "Post-scheduled" logic:
-//      __VdlyCommitQueue.commit(array-on-LHS);
+//      if (__VdlySet__LHS) {
+//         __VdlySet__LHS = 0;
+//         LHS = __VdlyVal__LHS;
+//      }
 //
-// Note that it is necessary to use the same commit queue for all NBAs
-// targeting the same array, if any NBAs require a commit queue. Hence
-// we can only decide whether to use a commit queue or not after having
-// examined all NBAs.
+// The "Value Queue Whole/Partial" schemes are used for cases where the
+// target of an assignment cannot be statically determined, for example,
+// with an array LHS in a loop:
+//   LHS[idxa][idxb] <= RHS
+// is converted to:
+//  - In the original logic, replace the AstAssignDelay with:
+//      __VdlyDim0__LHS = idxa;
+//      __VdlyDim1__LHS = idxb;
+//      __VdlyVal__LHS = RHS;
+//      __VdlyCommitQueue__LHS.enqueue(__VdlyVal__LHS, __VdlyDim0__LHS, __VdlyDim1__LHS);
+//  - Add new "Post-scheduled" logic:
+//      __VdlyCommitQueue.commit(LHS);
+//
+// TODO: generic LHS scheme as discussed in #5092
 //
 //*************************************************************************
 
@@ -76,102 +114,581 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
-// Delayed state, as a visitor of each AstNode
+// Convert AstAssignDlys (NBAs)
 
 class DelayedVisitor final : public VNVisitor {
     // TYPES
 
-    // Components of an AstAssignDly LHS expression, e.g.:
-    //   Sel(ArraySel(ArraySel(_: VarRef, _: Index), _: Index), _: Lsb, _: Width))
-    struct LhsComponents final {
-        AstVarRef* refp = nullptr;  // The referenced variable
-        std::vector<AstNodeExpr*> arrIdxps;  // The array indices applied to 'refp'
-        AstNodeExpr* selLsbp = nullptr;  // The bit select LSB expression, after the array selects
-        AstConst* selWidthp = nullptr;  // The width of the bit select
+    // The various NBA conversion schemes, including error cases
+    enum class Scheme : uint8_t {
+        Undecided = 0,
+        UnsupportedCompoundArrayInLoop,
+        ShadowVar,
+        FlagShared,
+        FlagUnique,
+        ValueQueueWhole,
+        ValueQueuePartial
+    };
+
+    // All info associated with a variable that is the target of an NBA
+    class VarScopeInfo final {
+    public:
+        // First write reference encountered to the VarScope as the target on an NBA
+        const AstVarRef* m_firstNbaRefp = nullptr;
+        // Active block 'm_firstNbaRefp' is under
+        const AstActive* m_fistActivep = nullptr;
+        bool m_partial = false;  // Used on LHS of NBA under a Sel
+        bool m_inLoop = false;  // Used on LHS of NBA in a loop
+        bool m_inSuspOrFork = false;  // Used on LHS of NBA in suspendable process or fork
+        Scheme m_scheme = Scheme::Undecided;  // Conversion scheme to use for this variable
+        uint32_t m_nTmp = 0;  // Temporary number for unique names
+
+    private:
+        // Combined sensitivities of all NBAs targeting this variable
+        AstSenTree* m_senTreep = nullptr;
+
+        // Union of stuff needed for the various schemes - use accessors below!
+        union {
+            struct {  // Stuff needed for Scheme::ShadowVar
+                AstVarScope* vscp;  // The shadow variable
+            } m_shadowVariableKit;
+            struct {  // Stuff needed for Scheme::FlagShared
+                AstActive* activep;  // The active block for the Pre/Post logic
+                AstAlwaysPost* postp;  // The post block for commiting results
+                AstIf* commitIfp;  // The previous if statement for committing, for reuse
+            } m_flagSharedKit;
+            struct {  // Stuff needed for Scheme::FlagUnique
+                AstAlwaysPost* postp;  // The post block for commiting results
+            } m_flagUniqueKit;
+            struct {  // Stuff needed for Scheme::ValueQueueWhole/Scheme::ValueQueuePartial
+                AstVarScope* vscp;  // The commit queue variable
+            } m_valueQueueKit;
+        } m_kitUnion;
+
+    public:
+        // Accessors for the above union fields
+        auto& shadowVariableKit() {
+            UASSERT(m_scheme == Scheme::ShadowVar, "Inconsistent Scheme");
+            return m_kitUnion.m_shadowVariableKit;
+        }
+        auto& flagSharedKit() {
+            UASSERT(m_scheme == Scheme::FlagShared, "Inconsistent Scheme");
+            return m_kitUnion.m_flagSharedKit;
+        }
+        auto& flagUniqueKit() {
+            UASSERT(m_scheme == Scheme::FlagUnique, "Inconsistent Scheme");
+            return m_kitUnion.m_flagUniqueKit;
+        }
+        auto& valueQueueKit() {
+            UASSERT(m_scheme == Scheme::ValueQueuePartial || m_scheme == Scheme::ValueQueueWhole,
+                    "Inconsistent Scheme");
+            return m_kitUnion.m_valueQueueKit;
+        }
+
+        // Accessor
+        AstSenTree* senTreep() const { return m_senTreep; }
+
+        // Add sensitivities
+        void addSensitivity(AstSenItem* nodep) {
+            if (!m_senTreep) m_senTreep = new AstSenTree{nodep->fileline(), nullptr};
+            // Add a copy of each term
+            m_senTreep->addSensesp(nodep->cloneTree(true));
+            // Remove duplicates
+            V3Const::constifyExpensiveEdit(m_senTreep);
+        }
+        void addSensitivity(AstSenTree* nodep) { addSensitivity(nodep->sensesp()); }
     };
 
     // Data required to lower AstAssignDelay later
-    struct Deferred final {
-        LhsComponents lhsComponents;  // The components of the LHS
-        AstNodeExpr* rhsp = nullptr;  // The captured value being assigned by the AstAssignDly
-        AstActive* activep = nullptr;  // The active block the AstAssignDly is under
-        AstNode* insertionPointp = nullptr;  // The insertion point after the AstAssignDly
-        std::string suffix;  // Suffix to add to additional variables created
-        bool consecutive = false;  // Record corresponds to an AstAssignDly immediately adjacent
+    struct NBA final {
+        AstAssignDly* nodep = nullptr;  // The NBA this record refers to
+        AstVarScope* vscp = nullptr;  // The target variable the NBA is updating
     };
 
     // NODE STATE
-    //  AstVarScope::user1p()   -> aux
-    //  AstVar::user1()         -> bool.  Set true if already made warning
-    //  AstVarRef::user1()      -> bool.  Set true if is a non-blocking reference
-    //  AstAlwaysPost::user1()  -> AstIf*.  Last IF (__VdlySet__) created under this AlwaysPost
-    //
-    // Cleared each scope/active:
-    //  AstVarScope::user2()      -> AstVarScope*.  Commit queue for this variable
-    //  AstVarRef::user2()        -> bool.  Set true if already processed
-    //  AstAssignDly::user2()     -> AstVarScope*.  __VdlySet__ created for this assign
-    //  AstAlwaysPost::user2()    -> AstVarScope*.  __VdlySet__ last referenced in IF
-    //  AstNodeProcedure::user2() -> AstAcive*.  Active block used by this suspendable process
-    const VNUser1InUse m_inuser1;
-    const VNUser2InUse m_inuser2;
-
-    struct AuxAstVarScope final {
-        // Points to temp (shadow) variable created.
-        AstVarScope* delayVscp = nullptr;
-        // Points to AstActive block of the shadow variable 'delayVscp/post block 'postp'
-        AstActive* activep = nullptr;
-        // Post block for this variable
-        AstAlwaysPost* postp = nullptr;
-        // First reference encountered to the VarScope
-        const AstNodeVarRef* firstRefp = nullptr;
-        // If the implementation cannot be deferred, this is the location why
-        FileLine* nonDeferredFlp = nullptr;
-        // Variable requires a commit queue due to dynamic NBA
-        bool needsCommitQueue = false;
-        // Array element is partially updated by at least some NBA
-        bool hasPartialUpdate = false;
-    };
-    AstUser1Allocator<AstVarScope, AuxAstVarScope> m_vscpAux;
+    //  AstVar::user1()         -> bool.  Set true if already issued MULTIDRIVEN warning
+    //  AstVarRef::user1()      -> bool.  Set true if target of NBA
+    //  AstNodeModule::user1p() -> std::unorded_map<std::string, AstVar*> temp map via m_varMap
+    //  AstVarScope::user1p()   -> VarScopeInfo via m_vscpInfo
+    //  AstVarScope::user2p()   -> AstVarRef*: First write reference to the Variable
+    const VNUser1InUse m_user1InUse{};
+    const VNUser2InUse m_user2InUse{};
+    AstUser1Allocator<AstNodeModule, std::unordered_map<std::string, AstVar*>> m_varMap;
+    AstUser1Allocator<AstVarScope, VarScopeInfo> m_vscpInfo;
 
     // STATE - across all visitors
-    std::unordered_map<const AstVarScope*, int> m_scopeVecMap;  // Next var number for each scope
     std::set<AstSenTree*> m_timingDomains;  // Timing resume domains
-    // Table of new var names created under module
-    std::map<const std::pair<AstNodeModule*, std::string>, AstVar*> m_modVarMap;
-    AstNode* m_insertionPointp = nullptr;  // Where to insert new statements
 
     // STATE - for current visit position (use VL_RESTORER)
     AstActive* m_activep = nullptr;  // Current activate
     const AstCFunc* m_cfuncp = nullptr;  // Current public C Function
-    AstAssignDly* m_nextDlyp = nullptr;  // The nextp of the previous AstAssignDly
     AstNodeProcedure* m_procp = nullptr;  // Current process
-    bool m_inDlyLhs = false;  // True in lhs of AstAssignDelay
     bool m_inLoop = false;  // True in for loops
     bool m_inSuspendableOrFork = false;  // True in suspendable processes and forks
     bool m_ignoreBlkAndNBlk = false;  // Suppress delayed assignment BLKANDNBLK
+    AstVarRef* m_currNbaLhsRefp = nullptr;  // Current NBA LHS variable reference
 
-    // STATE - for deferred conversion
-    std::deque<Deferred> m_deferred;  // Deferred AstAssignDly instances to lower at the end
-    AstVarScope* m_setVscp = nullptr;  // The last used set flag, for reuse
+    // STATE - during NBA conversion (after visit)
+    std::vector<NBA> m_nbas;  // AstAssignDly instances to lower at the end
+    std::vector<AstVarScope*> m_vscps;  // Target variables on LHSs of NBAs
+    AstAssignDly* m_nextDlyp = nullptr;  // The nextp of the previous AstAssignDly
+    AstVarScope* m_prevVscp = nullptr;  // The target of the previous AstAssignDly
 
     // STATE - Statistic tracking
-    VDouble0 m_statSharedSet;  // "VdlySet" variables eliminated by reuse
-    VDouble0 m_commitQueuesWhole;  // Variables needing a commit queue without partial updates
-    VDouble0 m_commitQueuesPartial;  // Variables needing a commit queue with partial updates
+    VDouble0 m_nSchemeShadowVar;  // Number of variables using Scheme::ShadowVar
+    VDouble0 m_nSchemeFlagShared;  // Number of variables using Scheme::FlagShared
+    VDouble0 m_nSchemeFlagUnique;  // Number of variables using Scheme::FlagUnique
+    VDouble0 m_nSchemeValueQueuesWhole;  //  Number of variables using Scheme::ValueQueueWhole
+    VDouble0 m_nSchemeValueQueuesPartial;  //  Number of variables using Scheme::ValueQueuePartial
+    VDouble0 m_nSharedSetFlags;  // "Set" flags actually shared by Scheme::FlagShared variables
 
     // METHODS
 
-    const AstNode* containingAssignment(const AstNode* nodep) {
-        while (nodep && !VN_IS(nodep, NodeAssign)) nodep = nodep->backp();
-        return nodep;
+    // Choose the NBA scheme used for the given variable.
+    static Scheme chooseScheme(const AstVarScope* vscp, const VarScopeInfo& vscpInfo) {
+        UASSERT_OBJ(vscpInfo.m_scheme == Scheme::Undecided, vscp, "NBA scheme already decided");
+
+        const AstNodeDType* const dtypep = vscp->dtypep()->skipRefp();
+        // Unpacked arrays
+        if (const AstUnpackArrayDType* const uaDTypep = VN_CAST(dtypep, UnpackArrayDType)) {
+            // If used in a loop, we must have a dynamic commit queue. (Also works in suspendables)
+            if (vscpInfo.m_inLoop) {
+                // Arrays with compound element types are currently not supported in loops
+                AstBasicDType* const basicp = uaDTypep->basicp();
+                if (!basicp
+                    || !(basicp->isIntegralOrPacked()  //
+                         || basicp->isDouble()  //
+                         || basicp->isString())) {
+                    return Scheme::UnsupportedCompoundArrayInLoop;
+                }
+                if (vscpInfo.m_partial) return Scheme::ValueQueuePartial;
+                return Scheme::ValueQueueWhole;
+            }
+            // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
+            if (vscpInfo.m_inSuspOrFork) return Scheme::FlagUnique;
+            // Otherwise use the shared flag scheme
+            return Scheme::FlagShared;
+        }
+
+        // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
+        if (vscpInfo.m_inSuspOrFork) return Scheme::FlagUnique;
+        // Otherwise use the simple shadow variable scheme
+        return Scheme::ShadowVar;
+    }
+
+    // Create new AstVarScope in the given 'scopep', with the given 'name' and 'dtypep'
+    AstVarScope* createTemp(FileLine* flp, AstScope* scopep, const std::string& name,
+                            AstNodeDType* dtypep) {
+        AstNodeModule* const modp = scopep->modp();
+        // Get/create the corresponding AstVar
+        AstVar*& varp = m_varMap(modp)[name];
+        if (!varp) {
+            varp = new AstVar{flp, VVarType::BLOCKTEMP, name, dtypep};
+            modp->addStmtsp(varp);
+        }
+        // Create the AstVarScope
+        AstVarScope* const varscp = new AstVarScope{flp, scopep, varp};
+        scopep->addVarsp(varscp);
+        return varscp;
+    }
+
+    // Same as above but create a 2-state scalar of the given 'width'
+    AstVarScope* createTemp(FileLine* flp, AstScope* scopep, const std::string& name, int width) {
+        AstNodeDType* const dtypep = scopep->findBitDType(width, width, VSigning::UNSIGNED);
+        return createTemp(flp, scopep, name, dtypep);
+    }
+
+    // Given an expression 'exprp', return a new expression that always evaluates to the
+    // value of the given expression at this point in the program. That is:
+    // - If given a non-constant expression, create a new temporary AstVarScope under the given
+    //   'scopep', with the given 'name', assign the expression to it, and return a read reference
+    //   to the new AstVarScope.
+    // - If given a constant, just return that constant.
+    // New statements are inserted before 'insertp'
+    AstNodeExpr* captureVal(AstScope* const scopep, AstNodeStmt* const insertp,
+                            AstNodeExpr* const exprp, const std::string& name) {
+        UASSERT_OBJ(!exprp->backp(), exprp, "Should have been unlinked");
+        FileLine* const flp = exprp->fileline();
+        if (VN_IS(exprp, Const)) return exprp;
+        // TODO: there are some const variables that could be simply referenced here
+        AstVarScope* const tmpVscp = createTemp(flp, scopep, name, exprp->dtypep());
+        insertp->addHereThisAsNext(
+            new AstAssign{flp, new AstVarRef{flp, tmpVscp, VAccess::WRITE}, exprp});
+        return new AstVarRef{flp, tmpVscp, VAccess::READ};
+    };
+
+    // Similar to 'captureVal', but captures an LValue expression. That is, the returned
+    // expression will reference the same location as the input expression, at this point in the
+    // program.
+    AstNodeExpr* captureLhs(AstScope* const scopep, AstNodeStmt* const insertp,
+                            AstNodeExpr* const lhsp, const std::string& baseName) {
+        UASSERT_OBJ(!lhsp->backp(), lhsp, "Should have been unlinked");
+        // Running node pointer
+        AstNode* nodep = lhsp;
+        // Capture AstSel indices - there should be only one
+        if (AstSel* const selp = VN_CAST(nodep, Sel)) {
+            const std::string tmpName{"__VdlyLsb" + baseName};
+            selp->lsbp(captureVal(scopep, insertp, selp->lsbp()->unlinkFrBack(), tmpName));
+            // Continue with target
+            nodep = selp->fromp();
+        }
+        UASSERT_OBJ(!VN_IS(nodep, Sel), lhsp, "Multiple 'AstSel' applied to LHS reference");
+        // Capture AstArraySel indices - might be many
+        size_t nArraySels = 0;
+        while (AstArraySel* const arrSelp = VN_CAST(nodep, ArraySel)) {
+            const std::string tmpName{"__VdlyDim" + std::to_string(nArraySels++) + baseName};
+            arrSelp->bitp(captureVal(scopep, insertp, arrSelp->bitp()->unlinkFrBack(), tmpName));
+            nodep = arrSelp->fromp();
+        }
+        // What remains must be an AstVarRef
+        UASSERT_OBJ(VN_IS(nodep, VarRef), lhsp, "Malformed LHS in NBA");
+        // Now have been converted to use the captured values
+        return lhsp;
+    }
+
+    // Create a temporary variable in the given 'scopep', with the given 'name', and with 'dtypep'
+    // type, with the bits selected by 'sLsbp'/'sWidthp' set to 'valuep', other bits set to zero.
+    // Insert new statements before 'insertp'.
+    // Returns a read reference to the temporary variable.
+    AstVarRef* createWidened(FileLine* flp, AstScope* scopep, AstNodeDType* dtypep,
+                             AstNodeExpr* sLsbp, AstNodeExpr* sWidthp, const std::string& name,
+                             AstNodeExpr* valuep, AstNode* insertp) {
+        // Create temporary variable.
+        AstVarScope* const tp = createTemp(flp, scopep, name, dtypep);
+        // Zero it
+        AstConst* const zerop = new AstConst{flp, AstConst::DTyped{}, dtypep};
+        zerop->num().setAllBits0();
+        insertp->addHereThisAsNext(
+            new AstAssign{flp, new AstVarRef{flp, tp, VAccess::WRITE}, zerop});
+        // Set the selected bits to 'valuep'
+        AstSel* const selp = new AstSel{flp, new AstVarRef{flp, tp, VAccess::WRITE},
+                                        sLsbp->cloneTreePure(true), sWidthp->cloneTreePure(true)};
+        insertp->addHereThisAsNext(new AstAssign{flp, selp, valuep});
+        // This is the expression to get the value of the temporary
+        return new AstVarRef{flp, tp, VAccess::READ};
+    }
+
+    // Scheme::ShadowVar
+    void prepareSchemeShadowVar(AstVarScope* vscp, VarScopeInfo& vscpInfo) {
+        UASSERT_OBJ(vscpInfo.m_scheme == Scheme::ShadowVar, vscp, "Inconsistent NBA scheme");
+        FileLine* const flp = vscp->fileline();
+        AstScope* const scopep = vscp->scopep();
+        // Create the shadow variable
+        const std::string name = "__Vdly__" + vscp->varp()->shortName();
+        AstVarScope* const shadowVscp = createTemp(flp, scopep, name, vscp->dtypep());
+        vscpInfo.shadowVariableKit().vscp = shadowVscp;
+        // Create the AstActive for the Pre/Post logic
+        AstActive* const activep = new AstActive{flp, "nba-shadow-variable", vscpInfo.senTreep()};
+        activep->sensesStorep(vscpInfo.senTreep());
+        scopep->addBlocksp(activep);
+        // Add 'Pre' scheduled 'shadowVariable = originalVariable' assignment
+        activep->addStmtsp(new AstAssignPre{flp, new AstVarRef{flp, shadowVscp, VAccess::WRITE},
+                                            new AstVarRef{flp, vscp, VAccess::READ}});
+        // Add 'Post' scheduled 'originalVariable = shadowVariable' assignment
+        activep->addStmtsp(new AstAssignPost{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
+                                             new AstVarRef{flp, shadowVscp, VAccess::READ}});
+    }
+    void convertSchemeShadowVar(AstAssignDly* nodep, AstVarScope* vscp, VarScopeInfo& vscpInfo) {
+        UASSERT_OBJ(vscpInfo.m_scheme == Scheme::ShadowVar, vscp, "Inconsistent NBA scheme");
+        AstVarScope* const shadowVscp = vscpInfo.shadowVariableKit().vscp;
+
+        // Replace the write ref on the LHS with the shadow variable
+        nodep->lhsp()->foreach([&](AstVarRef* const refp) {
+            if (!refp->access().isWriteOnly()) return;
+            UASSERT_OBJ(refp->varScopep() == vscp, nodep, "NBA not setting expected variable");
+            refp->varScopep(shadowVscp);
+            refp->varp(shadowVscp->varp());
+        });
+    }
+
+    // Scheme::FlagShared
+    void prepareSchemeFlagShared(AstVarScope* vscp, VarScopeInfo& vscpInfo) {
+        UASSERT_OBJ(vscpInfo.m_scheme == Scheme::FlagShared, vscp, "Inconsistent NBA scheme");
+        FileLine* const flp = vscp->fileline();
+        AstScope* const scopep = vscp->scopep();
+        // Create the AstActive for the Pre/Post logic
+        AstActive* const activep = new AstActive{flp, "nba-flag-shared", vscpInfo.senTreep()};
+        activep->sensesStorep(vscpInfo.senTreep());
+        scopep->addBlocksp(activep);
+        vscpInfo.flagSharedKit().activep = activep;
+        // Add 'Post' scheduled process to be populated later
+        AstAlwaysPost* const postp = new AstAlwaysPost{flp};
+        activep->addStmtsp(postp);
+        vscpInfo.flagSharedKit().postp = postp;
+    }
+    void convertSchemeFlagShared(AstAssignDly* nodep, AstVarScope* vscp, VarScopeInfo& vscpInfo) {
+        UASSERT_OBJ(vscpInfo.m_scheme == Scheme::FlagShared, vscp, "Inconsistent NBA scheme");
+        FileLine* const flp = vscp->fileline();
+        AstScope* const scopep = vscp->scopep();
+
+        // Base name suffix for signals constructed below
+        const std::string baseName{"__" + vscp->varp()->shortName() + "__v"
+                                   + std::to_string(vscpInfo.m_nTmp++)};
+
+        // Unlink and capture the RHS value
+        AstNodeExpr* const capturedRhsp
+            = captureVal(scopep, nodep, nodep->rhsp()->unlinkFrBack(), "__VdlyVal" + baseName);
+
+        // Unlink and capture the LHS reference
+        AstNodeExpr* const capturedLhsp
+            = captureLhs(scopep, nodep, nodep->lhsp()->unlinkFrBack(), baseName);
+
+        // Is this NBA adjacent after the previously processed NBA?
+        const bool consecutive = nodep == m_nextDlyp;
+        m_nextDlyp = VN_CAST(nodep->nextp(), AssignDly);
+
+        // We can reuse the flag of the previous assignment if:
+        const bool reuseTheFlag =
+            // Consecutive NBAs
+            consecutive
+            // ... that use the same scheme
+            && m_vscpInfo(m_prevVscp).m_scheme == Scheme::FlagShared
+            // ... and share the same overall update domain
+            && m_vscpInfo(m_prevVscp).senTreep()->sameTree(vscpInfo.senTreep());
+
+        if (!reuseTheFlag) {
+            // Create new flag
+            AstVarScope* const flagVscp = createTemp(flp, scopep, "__VdlySet" + baseName, 1);
+            // Set the flag at the original NBA
+            nodep->addHereThisAsNext(  //
+                new AstAssign{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
+                              new AstConst{flp, AstConst::BitTrue{}}});
+            // Add the 'Pre' scheduled reset for the flag
+            vscpInfo.flagSharedKit().activep->addStmtsp(
+                new AstAssignPre{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
+                                 new AstConst{flp, AstConst::BitFalse{}}});
+            // Add the 'Post' scheduled commit
+            AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, flagVscp, VAccess::READ}};
+            vscpInfo.flagSharedKit().postp->addStmtsp(ifp);
+            vscpInfo.flagSharedKit().commitIfp = ifp;
+        } else {
+            // Reuse the commit block of the previous assignment
+            vscpInfo.flagSharedKit().commitIfp = m_vscpInfo(m_prevVscp).flagSharedKit().commitIfp;
+            ++m_nSharedSetFlags;
+        }
+        // Commit the captured value to the captured destination
+        vscpInfo.flagSharedKit().commitIfp->addThensp(
+            new AstAssign{flp, capturedLhsp, capturedRhsp});
+
+        // Remember the variable for the next NBA
+        m_prevVscp = vscp;
+
+        // Delete original NBA
+        pushDeletep(nodep->unlinkFrBack());
+    }
+
+    // Scheme::FlagUnique
+    void prepareSchemeFlagUnique(AstVarScope* vscp, VarScopeInfo& vscpInfo) {
+        UASSERT_OBJ(vscpInfo.m_scheme == Scheme::FlagUnique, vscp, "Inconsistent NBA scheme");
+        FileLine* const flp = vscp->fileline();
+        AstScope* const scopep = vscp->scopep();
+        // Create the AstActive for the Pre/Post logic
+        AstActive* const activep = new AstActive{flp, "nba-flag-unique", vscpInfo.senTreep()};
+        activep->sensesStorep(vscpInfo.senTreep());
+        scopep->addBlocksp(activep);
+        // Add 'Post' scheduled process to be populated later
+        AstAlwaysPost* const postp = new AstAlwaysPost{flp};
+        activep->addStmtsp(postp);
+        vscpInfo.flagUniqueKit().postp = postp;
+    }
+    void convertSchemeFlagUnique(AstAssignDly* nodep, AstVarScope* vscp, VarScopeInfo& vscpInfo) {
+        UASSERT_OBJ(vscpInfo.m_scheme == Scheme::FlagUnique, vscp, "Inconsistent NBA scheme");
+        FileLine* const flp = vscp->fileline();
+        AstScope* const scopep = vscp->scopep();
+
+        // Base name suffix for signals constructed below
+        const std::string baseName{"__" + vscp->varp()->shortName() + "__v"
+                                   + std::to_string(vscpInfo.m_nTmp++)};
+
+        // Unlink and capture the RHS value
+        AstNodeExpr* const capturedRhsp
+            = captureVal(scopep, nodep, nodep->rhsp()->unlinkFrBack(), "__VdlyVal" + baseName);
+
+        // Unlink and capture the LHS reference
+        AstNodeExpr* const capturedLhsp
+            = captureLhs(scopep, nodep, nodep->lhsp()->unlinkFrBack(), baseName);
+
+        // Create new flag
+        AstVarScope* const flagVscp = createTemp(flp, scopep, "__VdlySet" + baseName, 1);
+        flagVscp->varp()->setIgnorePostWrite();
+        // Set the flag at the original NBA
+        nodep->addHereThisAsNext(  //
+            new AstAssign{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
+                          new AstConst{flp, AstConst::BitTrue{}}});
+        // Add the 'Post' scheduled commit
+        AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, flagVscp, VAccess::READ}};
+        vscpInfo.flagUniqueKit().postp->addStmtsp(ifp);
+        // Immediately clear the flag
+        ifp->addThensp(new AstAssign{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
+                                     new AstConst{flp, AstConst::BitFalse{}}});
+        // Commit the value
+        ifp->addThensp(new AstAssign{flp, capturedLhsp, capturedRhsp});
+
+        // Delete original NBA
+        pushDeletep(nodep->unlinkFrBack());
+    }
+
+    // Scheme::ValueQueuePartial/Scheme::ValueQueueWhole
+    template <bool Partial>
+    void prepareSchemeValueQueue(AstVarScope* vscp, VarScopeInfo& vscpInfo) {
+        UASSERT_OBJ(Partial ? vscpInfo.m_scheme == Scheme::ValueQueuePartial
+                            : vscpInfo.m_scheme == Scheme::ValueQueueWhole,
+                    vscp, "Inconsisten<t NBA s>cheme");
+        FileLine* const flp = vscp->fileline();
+        AstScope* const scopep = vscp->scopep();
+
+        // Create the commit queue variable
+        auto* const cqDTypep
+            = new AstNBACommitQueueDType{flp, vscp->dtypep()->skipRefp(), Partial};
+        v3Global.rootp()->typeTablep()->addTypesp(cqDTypep);
+        const std::string name = "__VdlyCommitQueue" + vscp->varp()->shortName();
+        AstVarScope* const queueVscp = createTemp(flp, scopep, name, cqDTypep);
+        queueVscp->varp()->noReset(true);
+        queueVscp->varp()->setIgnorePostWrite();
+        vscpInfo.valueQueueKit().vscp = queueVscp;
+        // Create the AstActive for the Post logic
+        AstActive* const activep
+            = new AstActive{flp, "nba-value-queue-whole", vscpInfo.senTreep()};
+        activep->sensesStorep(vscpInfo.senTreep());
+        scopep->addBlocksp(activep);
+        // Add 'Post' scheduled process for the commit
+        AstAlwaysPost* const postp = new AstAlwaysPost{flp};
+        activep->addStmtsp(postp);
+        // Add the commit
+        AstCMethodHard* const callp
+            = new AstCMethodHard{flp, new AstVarRef{flp, queueVscp, VAccess::READWRITE}, "commit"};
+        callp->dtypeSetVoid();
+        callp->addPinsp(new AstVarRef{flp, vscp, VAccess::WRITE});
+        postp->addStmtsp(callp->makeStmt());
+    }
+
+    void convertSchemeValueQueue(AstAssignDly* nodep, AstVarScope* vscp, VarScopeInfo& vscpInfo,
+                                 bool partial) {
+        UASSERT_OBJ(partial ? vscpInfo.m_scheme == Scheme::ValueQueuePartial
+                            : vscpInfo.m_scheme == Scheme::ValueQueueWhole,
+                    vscp, "Inconsistent NBA scheme");
+        FileLine* const flp = vscp->fileline();
+        AstScope* const scopep = vscp->scopep();
+
+        // Base name suffix for signals constructed below
+        const std::string baseName{"__" + vscp->varp()->shortName() + "__v"
+                                   + std::to_string(vscpInfo.m_nTmp++)};
+
+        // Unlink and capture the RHS value
+        AstNodeExpr* const capturedRhsp
+            = captureVal(scopep, nodep, nodep->rhsp()->unlinkFrBack(), "__VdlyVal" + baseName);
+
+        // Unlink and capture the LHS reference
+        AstNodeExpr* const capturedLhsp
+            = captureLhs(scopep, nodep, nodep->lhsp()->unlinkFrBack(), baseName);
+
+        // RHS value (can be widened/masked iff Partial)
+        AstNodeExpr* valuep = capturedRhsp;
+        // RHS mask (iff Partial)
+        AstNodeExpr* maskp = nullptr;
+
+        // Running node for LHS deconstruction
+        AstNodeExpr* lhsNodep = capturedLhsp;
+
+        // If partial updates are required, construct the mask and the widened value
+        if (partial) {
+            // Type of array element
+            AstNodeDType* const eDTypep = [&]() -> AstNodeDType* {
+                AstNodeDType* dtypep = vscp->dtypep()->skipRefp();
+                while (AstUnpackArrayDType* const ap = VN_CAST(dtypep, UnpackArrayDType)) {
+                    dtypep = ap->subDTypep()->skipRefp();
+                }
+                return dtypep;
+            }();
+
+            if (AstSel* const lSelp = VN_CAST(lhsNodep, Sel)) {
+                // This is a partial assignment.
+                // Need to create a mask and widen the value to element size.
+                lhsNodep = lSelp->fromp();
+                AstNodeExpr* const sLsbp = lSelp->lsbp();
+                AstConst* const sWidthp = VN_AS(lSelp->widthp(), Const);
+
+                // Create mask value
+                maskp = [&]() -> AstNodeExpr* {
+                    // Constant mask we can compute here
+                    if (AstConst* const cLsbp = VN_CAST(sLsbp, Const)) {
+                        AstConst* const cp = new AstConst{flp, AstConst::DTyped{}, eDTypep};
+                        cp->num().setMask(sWidthp->toSInt(), cLsbp->toSInt());
+                        return cp;
+                    }
+
+                    // A non-constant mask we must compute at run-time.
+                    AstConst* const onesp
+                        = new AstConst{flp, AstConst::WidthedValue{}, sWidthp->toSInt(), 0};
+                    onesp->num().setAllBits1();
+                    return createWidened(flp, scopep, eDTypep, sLsbp, sWidthp,
+                                         "__VdlyMask" + baseName, onesp, nodep);
+                }();
+
+                // Adjust value to element size
+                valuep = [&]() -> AstNodeExpr* {
+                    // Constant value with constant select we can compute here
+                    if (AstConst* const cValuep = VN_CAST(valuep, Const)) {
+                        if (AstConst* const cLsbp = VN_CAST(sLsbp, Const)) {
+                            AstConst* const cp = new AstConst{flp, AstConst::DTyped{}, eDTypep};
+                            cp->num().setAllBits0();
+                            cp->num().opSelInto(cValuep->num(), cLsbp->toSInt(),
+                                                sWidthp->toSInt());
+                            return cp;
+                        }
+                    }
+
+                    // A non-constant value we must adjust.
+                    return createWidened(flp, scopep, eDTypep, sLsbp, sWidthp,  //
+                                         "__VdlyElem" + baseName, valuep, nodep);
+                }();
+            } else {
+                // If this assignment is not partial, set mask to ones and we are done
+                AstConst* const ones = new AstConst{flp, AstConst::DTyped{}, eDTypep};
+                ones->num().setAllBits1();
+                maskp = ones;
+            }
+        }
+
+        // Extract array indices
+        std::vector<AstNodeExpr*> idxps;
+        {
+            UASSERT_OBJ(VN_IS(lhsNodep, ArraySel), lhsNodep, "Unexpected LHS form");
+            while (AstArraySel* const aSelp = VN_CAST(lhsNodep, ArraySel)) {
+                idxps.emplace_back(aSelp->bitp()->unlinkFrBack());
+                lhsNodep = aSelp->fromp();
+            }
+            UASSERT_OBJ(VN_IS(lhsNodep, VarRef), lhsNodep, "Unexpected LHS form");
+            std::reverse(idxps.begin(), idxps.end());
+        }
+
+        // Done with the LHS at this point
+        VL_DO_DANGLING(pushDeletep(capturedLhsp), capturedLhsp);
+
+        // Enqueue the update at the site of the original NBA
+        AstCMethodHard* const callp = new AstCMethodHard{
+            flp, new AstVarRef{flp, vscpInfo.valueQueueKit().vscp, VAccess::READWRITE}, "enqueue"};
+        callp->dtypeSetVoid();
+        callp->addPinsp(valuep);
+        if (partial) callp->addPinsp(maskp);
+        for (AstNodeExpr* const indexp : idxps) callp->addPinsp(indexp);
+        nodep->addHereThisAsNext(callp->makeStmt());
+
+        // Delete original NBA
+        pushDeletep(nodep->unlinkFrBack());
     }
 
     // Record and warn if a variable is assigned by both blocking and nonblocking assignments
-    void markVarUsage(AstNodeVarRef* nodep, bool nonBlocking) {
+    void checkVarUsage(AstVarRef* nodep, bool nonBlocking) {
         // Ignore references in certain contexts
         if (m_ignoreBlkAndNBlk) return;
         // Ignore if warning is disabled on this reference (used by V3Force).
         if (nodep->fileline()->warnIsOff(V3ErrorCode::BLKANDNBLK)) return;
+        // Ignore if it's an array
+        // TODO: we do this because it used to be the previous behaviour.
+        //       Is it still required, or should we warn for arrays as well?
+        //       Scheduling is no different for them...
+        if (VN_IS(nodep->varScopep()->dtypep()->skipRefp(), UnpackArrayDType)) return;
 
         // Mark ref as blocking/non-blocking
         nodep->user1(nonBlocking);
@@ -179,9 +696,9 @@ class DelayedVisitor final : public VNVisitor {
         AstVarScope* const vscp = nodep->varScopep();
 
         // Pick up/set the first reference to this variable
-        const AstNodeVarRef* const firstRefp = m_vscpAux(vscp).firstRefp;
+        const AstVarRef* const firstRefp = VN_AS(vscp->user2p(), VarRef);
         if (!firstRefp) {
-            m_vscpAux(vscp).firstRefp = nodep;
+            vscp->user2p(nodep);
             return;
         }
 
@@ -189,6 +706,11 @@ class DelayedVisitor final : public VNVisitor {
         if (firstRefp->user1() == static_cast<int>(nonBlocking)) return;
 
         // Otherwise warn that both blocking and non-blocking assignments are used
+        const auto containingAssignment = [](const AstNode* nodep) -> const AstNode* {
+            while (!VN_IS(nodep, NodeAssign)) nodep = nodep->backp();
+            return nodep;
+        };
+
         const AstNode* nonblockingp = nonBlocking ? nodep : firstRefp;
         if (const AstNode* np = containingAssignment(nonblockingp)) nonblockingp = np;
         const AstNode* blockingp = nonBlocking ? firstRefp : nodep;
@@ -203,466 +725,89 @@ class DelayedVisitor final : public VNVisitor {
                          << nonblockingp->warnContextSecondary());
     }
 
-    // Create new AstVarScope in the scope of the given 'vscp', with the given 'name' and 'dtypep'
-    AstVarScope* createNewVarScope(AstVarScope* vscp, const string& name, AstNodeDType* dtypep) {
-        FileLine* const flp = vscp->fileline();
-        AstScope* const scopep = vscp->scopep();
-        AstNodeModule* const modp = scopep->modp();
-        // Get/create the corresponding AstVar
-        AstVar*& varp = m_modVarMap[{modp, name}];
-        if (!varp) {
-            varp = new AstVar{flp, VVarType::BLOCKTEMP, name, dtypep};
-            modp->addStmtsp(varp);
-        }
-        // Create the AstVarScope
-        AstVarScope* const varscp = new AstVarScope{flp, scopep, varp};
-        scopep->addVarsp(varscp);
-        return varscp;
-    }
-
-    // Same as above but create a 2-state scalar of the given 'width'
-    AstVarScope* createNewVarScope(AstVarScope* vscp, const string& name, int width) {
-        AstNodeDType* const dtypep = vscp->findBitDType(width, width, VSigning::UNSIGNED);
-        return createNewVarScope(vscp, name, dtypep);
-    }
-
-    // Create a new AstActive, using the sensitivity list of the given 'activep'
-    static AstActive* createActiveLike(FileLine* flp, AstActive* activep) {
-        AstActive* const newActivep = new AstActive{flp, "sequentdly", activep->sensesp()};
-        activep->addNextHere(newActivep);
-        return newActivep;
-    }
-
-    // Check and ensure the given 'activep' contains the sensitivity of the 'currentActivep'.
-    // Warn if they don't match (multiple domains assign the same signal via an NBA).
-    static void checkActiveSense(AstVarRef* refp, AstActive* acivep, AstActive* currentActivep) {
-        if (acivep->sensesp() == currentActivep->sensesp()) return;
-
-        AstVar* const varp = refp->varScopep()->varp();
-        // Warn once, if not turned off
-        if (!varp->user1SetOnce() && !varp->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)) {
-            varp->v3warn(MULTIDRIVEN,
-                         "Signal has multiple driving blocks with different clocking: "
-                             << varp->prettyNameQ() << '\n'
-                             << refp->warnOther() << "... Location of first driving block\n"
-                             << refp->warnContextPrimary() << '\n'
-                             << acivep->warnOther() << "... Location of other driving block\n"
-                             << acivep->warnContextSecondary());
-        }
-
-        // Make a new sensitivity list, which is the combination of both blocks
-        AstSenItem* const sena = currentActivep->sensesp()->sensesp()->cloneTree(true);
-        AstSenItem* const senb = acivep->sensesp()->sensesp()->cloneTree(true);
-        AstSenTree* const treep = new AstSenTree{currentActivep->fileline(), sena};
-        V3Const::constifyExpensiveEdit(treep);  // Remove duplicates
-        treep->addSensesp(senb);
-        if (AstSenTree* const storep = acivep->sensesStorep()) {
-            VL_DO_DANGLING(storep->unlinkFrBack()->deleteTree(), storep);
-        }
-        acivep->sensesStorep(treep);
-        acivep->sensesp(treep);
-    }
-
-    // Gather components of the given 'lhsp'. The component sub-expressions
-    // are unlinked and unnecessary AstNodes deleted.
-    static LhsComponents deconstructLhs(AstNodeExpr* const lhsp) {
-        UASSERT_OBJ(!lhsp->backp(), lhsp, "Should have been unlinked");
-        // The result being populated
-        LhsComponents components;
-        // Running node pointer
-        AstNode* nodep = lhsp;
-        // Gather AstSel applied - there should only be one
-        if (AstSel* const selp = VN_CAST(nodep, Sel)) {
-            nodep = selp->fromp()->unlinkFrBack();
-            components.selLsbp = selp->lsbp()->unlinkFrBack();
-            components.selWidthp = VN_AS(selp->widthp()->unlinkFrBack(), Const);
-            VL_DO_DANGLING(selp->deleteTree(), selp);
-        }
-        UASSERT_OBJ(!VN_IS(nodep, Sel), lhsp, "Multiple 'AstSel' applied to LHS reference");
-        // Gather AstArraySels applied
-        while (AstArraySel* const arrSelp = VN_CAST(nodep, ArraySel)) {
-            nodep = arrSelp->fromp()->unlinkFrBack();
-            components.arrIdxps.push_back(arrSelp->bitp()->unlinkFrBack());
-            VL_DO_DANGLING(arrSelp->deleteTree(), arrSelp);
-        }
-        std::reverse(components.arrIdxps.begin(), components.arrIdxps.end());
-        // What remains must be an AstVarRef
-        components.refp = VN_AS(nodep, VarRef);
-        // Done
-        return components;
-    }
-
-    // Reconstruct an LHS expression from the given 'components'. The component members
-    // are linked under the returned expression without cloning, so they must be unlinked.
-    static AstNodeExpr* reconstructLhs(const LhsComponents& components, FileLine* flp) {
-        // Running node pointer
-        AstNodeExpr* nodep = components.refp;
-        // Apply AstArraySels
-        for (AstNodeExpr* const idxp : components.arrIdxps) {
-            nodep = new AstArraySel{flp, nodep, idxp};
-        }
-        // Apply AstSel, if any
-        if (components.selLsbp) {
-            nodep = new AstSel{flp, nodep, components.selLsbp, components.selWidthp};
-        }
-        // Done
-        return nodep;
-    }
-
-    // Insert 'stmtp; after 'm_insertionPoint', then set 'm_insertionPoint' to the given statement
-    // so the next insertion goes after the inserted statement.
-    void insert(AstNode* stmtp) {
-        m_insertionPointp->addNextHere(stmtp);
-        m_insertionPointp = stmtp;
-    }
-
-    // Process the given AstAssignDly. Returns 'true' if the conversion is complete and 'nodep' can
-    // be deleted. Returns 'false' if the 'nodep' must be retained for later processing.
-    bool processAssignDly(AstAssignDly* nodep) {
-        // Optimize consecutiev assignments
-        const bool consecutive = m_nextDlyp == nodep;
-        m_nextDlyp = VN_CAST(nodep->nextp(), AssignDly);
-
-        // Insertion point
-        UASSERT_OBJ(!m_insertionPointp, nodep, "Insertion point should be null");
-        VL_RESTORER(m_insertionPointp);
-        m_insertionPointp = nodep;
-
-        // Deconstruct the LHS
-        LhsComponents lhsComponents = deconstructLhs(nodep->lhsp()->unlinkFrBack());
-
-        // The referenced variable
-        AstVarScope* const vscp = lhsComponents.refp->varScopep();
-
-        // Location of the AstAssignDly
-        FileLine* const flp = nodep->fileline();
-
-        // Name suffix for signals constructed below
-        const std::string baseName
-            = "__" + vscp->varp()->shortName() + "__v" + std::to_string(m_scopeVecMap[vscp]++);
-
-        // Given an 'expression', return a new expression that always evaluates to the value of the
-        // given expression at this point in the program. That is:
-        // - If given a non-constant expression, create a new temporary AstVarScope with the given
-        //   'name' prefix, assign the expression to it, and return a read reference to the new
-        //   AstVarScope.
-        // - If given a constant, just return that constant.
-        const auto capture = [&](AstNodeExpr* exprp, const std::string& name) -> AstNodeExpr* {
-            UASSERT_OBJ(!exprp->backp(), exprp, "Should have been unlinked");
-            if (VN_IS(exprp, Const)) return exprp;
-            const std::string realName = "__" + name + baseName;
-            AstVarScope* const tmpVscp = createNewVarScope(vscp, realName, exprp->dtypep());
-            insert(new AstAssign{flp, new AstVarRef{flp, tmpVscp, VAccess::WRITE}, exprp});
-            return new AstVarRef{flp, tmpVscp, VAccess::READ};
-        };
-
-        // Unlink and Capture the RHS value
-        AstNodeExpr* const rhsp = capture(nodep->rhsp()->unlinkFrBack(), "VdlyVal");
-
-        // Capture the AstSel LSB - The width is always an AstConst, so nothing to do with that
-        if (lhsComponents.selLsbp) {
-            lhsComponents.selLsbp = capture(lhsComponents.selLsbp, "VdlyLsb");
-        }
-
-        // Capture the AstArraySel indices
-        for (size_t i = 0; i < lhsComponents.arrIdxps.size(); ++i) {
-            AstNodeExpr*& arrIdxpr = lhsComponents.arrIdxps[i];
-            arrIdxpr = capture(arrIdxpr, "VdlyDim" + std::to_string(i));
-        }
-
-        if (m_inSuspendableOrFork) {
-            if (m_inLoop && !lhsComponents.arrIdxps.empty()) {
-                nodep->v3warn(BLKLOOPINIT,
-                              "Unsupported: Non-blocking assignment to array inside loop "
-                              "in suspendable process or fork");
-                return true;
-            }
-
-            // Currently we convert all NBAs in suspendable blocks immediately.
-            if (!m_vscpAux(vscp).nonDeferredFlp) {
-                m_vscpAux(vscp).nonDeferredFlp = nodep->fileline();
-            }
-
-            // Get/Create 'Post' ordered block to commit the delayed value
-            AstAlwaysPost* postp = new AstAlwaysPost{flp};
-            if (!m_procp->user2p()) {
-                m_procp->user2p(createActiveLike(lhsComponents.refp->fileline(), m_activep));
-            }
-            VN_AS(m_procp->user2p(), Active)->addStmtsp(postp);
-
-            // Create the flag denoting an update is pending - no reuse here
-            AstVarScope* const setVscp = createNewVarScope(vscp, "__VdlySet" + baseName, 1);
-            // Set the flag here
-            insert(new AstAssign{flp, new AstVarRef{flp, setVscp, VAccess::WRITE},
-                                 new AstConst{flp, AstConst::BitTrue{}}});
-            // Create 'if (__VdlySet) { ... commit .. }'
-            AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, setVscp, VAccess::READ}};
-            postp->addStmtsp(ifp);
-            // Clear __VdlySet in the post block
-            ifp->addThensp(new AstAssign{flp, new AstVarRef{flp, setVscp, VAccess::WRITE},
-                                         new AstConst{flp, 0}});
-            // Finally assign the delayed value to the reconstructed LHS
-            AstNodeExpr* const newLhsp = reconstructLhs(lhsComponents, flp);
-            ifp->addThensp(new AstAssign{flp, newLhsp, rhsp});
-            // The original AstAssignDly ('nodep') can be deleted
-            return true;
-        } else {
-            if (m_inLoop) {
-                UASSERT_OBJ(!lhsComponents.arrIdxps.empty(), nodep, "Should be an array");
-                const AstBasicDType* const basicp = vscp->dtypep()->basicp();
-                if (!basicp
-                    || !(basicp->isIntegralOrPacked() || basicp->isDouble()
-                         || basicp->isString())) {
-                    nodep->v3warn(BLKLOOPINIT,
-                                  "Unsupported: Non-blocking assignment to array with "
-                                  "compound element type inside loop");
-                    return true;
-                }
-                m_vscpAux(vscp).needsCommitQueue = true;
-                if (lhsComponents.selLsbp) m_vscpAux(vscp).hasPartialUpdate = true;
-            }
-            // Record this AstAssignDly for deferred processing
-            m_deferred.emplace_back();
-            Deferred& record = m_deferred.back();
-            // Populate it
-            record.lhsComponents = std::move(lhsComponents);
-            record.rhsp = rhsp;
-            record.activep = m_activep;
-            record.insertionPointp = m_insertionPointp;
-            record.suffix = std::move(baseName);
-            record.consecutive = consecutive;
-            // Note consecutive assignment for optimization
-            // If we inserted new statements, the original AstAssignDly ('nodep')
-            // can be deleted. Otherwise, it must be kept as a placeholder.
-            return m_insertionPointp != nodep;
-        }
-    }
-
-    // Create a temporary variable in the scope of 'vscp',with the given 'name', and with 'dtypep'
-    // type, with the bits selected by 'sLsbp'/'sWidthp' set to 'insertp', other bits set to zero.
-    // Returns a read reference to the temporary variable.
-    AstVarRef* createWidened(FileLine* flp, AstVarScope* vscp, AstNodeDType* dtypep,
-                             AstNodeExpr* sLsbp, AstNodeExpr* sWidthp, const std::string& name,
-                             AstNodeExpr* insertp) {
-        // Create temporary variable.
-        AstVarScope* const tp = createNewVarScope(vscp, name, dtypep);
-        // Zero it
-        AstConst* const zerop = new AstConst{flp, AstConst::DTyped{}, dtypep};
-        zerop->num().setAllBits0();
-        insert(new AstAssign{flp, new AstVarRef{flp, tp, VAccess::WRITE}, zerop});
-        // Set the selected bits to 'insertp'
-        AstSel* const selp = new AstSel{flp, new AstVarRef{flp, tp, VAccess::WRITE},
-                                        sLsbp->cloneTreePure(true), sWidthp->cloneTreePure(true)};
-        insert(new AstAssign{flp, selp, insertp});
-        // This is the expression to get the value of the temporary
-        return new AstVarRef{flp, tp, VAccess::READ};
-    };
-
-    // Convert the given deferred assignment for the given AstVarScope
-    void convertDeferred(Deferred& record) {
-        // Unpack all the parts
-        LhsComponents lhsComponents = std::move(record.lhsComponents);
-        AstActive*& oActivep = record.activep;  // Original AstActive the AstAssignDly was under
-
-        // Insertion point
-        UASSERT_OBJ(!m_insertionPointp, record.insertionPointp, "Insertion point should be null");
-        VL_RESTORER(m_insertionPointp);
-        m_insertionPointp = record.insertionPointp;
-
-        // If the original AstAssignDly was kept as a placeholder, we will need to delete it
-        AstAssignDly* const dlyp = VN_CAST(m_insertionPointp, AssignDly);
-
-        FileLine* const flp = m_insertionPointp->fileline();
-        AstVarScope* const vscp = lhsComponents.refp->varScopep();
-
-        // Get/Create 'Post' ordered block to commit the delayed value
-        AstAlwaysPost* const postp = [&]() {
-            if (AstAlwaysPost* const p = m_vscpAux(vscp).postp) return p;
-            // Make the new AstActive with identical sensitivity tree
-            AstActive* const activep = createActiveLike(lhsComponents.refp->fileline(), oActivep);
-            m_vscpAux(vscp).activep = activep;
-            // Add the 'Post' scheduled block
-            AstAlwaysPost* const p = new AstAlwaysPost{flp};
-            activep->addStmtsp(p);
-            m_vscpAux(vscp).postp = p;
-            return p;
-        }();
-        // Pick up the active block containing 'postp'
-        AstActive* const activep = m_vscpAux(vscp).activep;
-        // Ensure it contains the current sensitivities
-        checkActiveSense(lhsComponents.refp, activep, oActivep);
-
-        if (m_vscpAux(vscp).needsCommitQueue) {
-            if (FileLine* const badFlp = m_vscpAux(vscp).nonDeferredFlp) {
-                m_insertionPointp->v3warn(
-                    BLKLOOPINIT,
-                    "Unsupported: Non-blocking assignment to array in both "
-                    "loop and suspendable process/fork\n"
-                        << badFlp->warnOther()
-                        << "... Location of non-blocking assignment in suspendable process/fork\n"
-                        << badFlp->warnContextSecondary() << m_insertionPointp->warnOther()
-                        << "... Location of non-blocking assignment inside loop\n");
-                return;
-            }
-
-            // Need special handling for variables that require partial updates
-            const bool partial = m_vscpAux(vscp).hasPartialUpdate;
-
-            // If partial updates are required, construct the mask and the widened value
-            AstNodeExpr* valuep = record.rhsp;
-            AstNodeExpr* maskp = nullptr;
-            if (partial) {
-                // Type of array element
-                AstNodeDType* const eDTypep = [&]() -> AstNodeDType* {
-                    AstNodeDType* dtypep = vscp->dtypep()->skipRefp();
-                    while (AstUnpackArrayDType* const ap = VN_CAST(dtypep, UnpackArrayDType)) {
-                        dtypep = ap->subDTypep()->skipRefp();
-                    }
-                    return dtypep;
-                }();
-
-                if (AstNodeExpr* const sLsbp = lhsComponents.selLsbp) {
-                    // This is a partial assignment. Need to create a mask and widen the value to
-                    // element size.
-                    AstConst* const sWidthp = lhsComponents.selWidthp;
-
-                    // Create mask value
-                    maskp = [&]() -> AstNodeExpr* {
-                        // Constant mask we can compute here
-                        if (AstConst* const cLsbp = VN_CAST(sLsbp, Const)) {
-                            AstConst* const cp = new AstConst{flp, AstConst::DTyped{}, eDTypep};
-                            cp->num().setAllBits0();
-                            const int lsb = cLsbp->toSInt();
-                            const int msb = lsb + sWidthp->toSInt() - 1;
-                            for (int bit = lsb; bit <= msb; ++bit) cp->num().setBit(bit, '1');
-                            return cp;
-                        }
-
-                        // A non-constant mask we must compute at run-time.
-                        AstConst* const onesp
-                            = new AstConst{flp, AstConst::WidthedValue{}, sWidthp->toSInt(), 0};
-                        onesp->num().setAllBits1();
-                        return createWidened(flp, vscp, eDTypep, sLsbp, sWidthp,  //
-                                             "__VdlyMask" + record.suffix, onesp);
-                    }();
-
-                    // Adjust value to element size
-                    valuep = [&]() -> AstNodeExpr* {
-                        // Constant value with constant select we can compute here
-                        if (AstConst* const cValuep = VN_CAST(valuep, Const)) {
-                            if (AstConst* const cLsbp = VN_CAST(sLsbp, Const)) {  //
-                                AstConst* const cp
-                                    = new AstConst{flp, AstConst::DTyped{}, eDTypep};
-                                cp->num().setAllBits0();
-                                cp->num().opSelInto(cValuep->num(), cLsbp->toSInt(),
-                                                    sWidthp->toSInt());
-                                return cp;
-                            }
-                        }
-
-                        // A non-constant value we must adjust.
-                        return createWidened(flp, vscp, eDTypep, sLsbp, sWidthp,  //
-                                             "__VdlyElem" + record.suffix, valuep);
-                    }();
-
-                    // Finished with the sel operands here
-                    VL_DO_DANGLING(lhsComponents.selLsbp->deleteTree(), lhsComponents.selLsbp);
-                    VL_DO_DANGLING(lhsComponents.selWidthp->deleteTree(), lhsComponents.selWidthp);
-                } else {
-                    // If this assignment is not partial, set mask to ones and we are done
-                    AstConst* const ones = new AstConst{flp, AstConst::DTyped{}, eDTypep};
-                    ones->num().setAllBits1();
-                    maskp = ones;
-                }
-            }
-
-            // Create/get the commit queue
-            if (!vscp->user2p()) {
-                FileLine* const vflp = vscp->fileline();
-
-                // Statistics
-                if (partial) {
-                    ++m_commitQueuesPartial;
-                } else {
-                    ++m_commitQueuesWhole;
-                }
-
-                // Create the commit queue variable
-                auto* const cqDTypep
-                    = new AstNBACommitQueueDType{vflp, vscp->dtypep()->skipRefp(), partial};
-                v3Global.rootp()->typeTablep()->addTypesp(cqDTypep);
-                const std::string name = "__VdlyCommitQueue" + record.suffix;
-                AstVarScope* const newCqp = createNewVarScope(vscp, name, cqDTypep);
-                newCqp->varp()->noReset(true);
-                vscp->user2p(newCqp);
-
-                // Commit it in the 'Post' block
-                AstCMethodHard* const callp = new AstCMethodHard{
-                    vflp, new AstVarRef{vflp, newCqp, VAccess::READWRITE}, "commit"};
-                callp->dtypeSetVoid();
-                callp->addPinsp(lhsComponents.refp->cloneTreePure(false));
-                postp->addStmtsp(callp->makeStmt());
-            }
-            AstVarScope* const cqp = VN_AS(vscp->user2p(), VarScope);
-
-            // Enqueue the update at the original location
-            AstCMethodHard* const callp
-                = new AstCMethodHard{flp, new AstVarRef{flp, cqp, VAccess::READWRITE}, "enqueue"};
-            callp->dtypeSetVoid();
-            callp->addPinsp(valuep);
-            if (maskp) callp->addPinsp(maskp);
-            for (AstNodeExpr* const indexp : lhsComponents.arrIdxps) callp->addPinsp(indexp);
-            insert(callp->makeStmt());
-        } else {
-            // Create the flag denoting an update is pending
-            if (record.consecutive) {
-                // Simplistic optimization.  If the previous assignment was immediately before this
-                // assignment, we can reuse the existing flag. This is good for code like:
-                //   arrayA[0] <= something;
-                //   arrayB[1] <= something;
-                ++m_statSharedSet;
-            } else {
-                // Create new flag
-                m_setVscp = createNewVarScope(vscp, "__VdlySet" + record.suffix, 1);
-                // Set it here
-                insert(new AstAssign{flp, new AstVarRef{flp, m_setVscp, VAccess::WRITE},
-                                     new AstConst{flp, AstConst::BitTrue{}}});
-                // Add the 'Pre' ordered reset for the flag
-                activep->addStmtsp(new AstAssignPre{
-                    flp, new AstVarRef{flp, m_setVscp, VAccess::WRITE}, new AstConst{flp, 0}});
-            };
-
-            // Create/Get 'if (__VdlySet) { ... commit .. }'
-            AstIf* ifp = nullptr;
-            if (postp->user2p() == m_setVscp) {
-                // Optimize as above. If sharing VdlySet *ON SAME VARIABLE*, we can share the 'if'
-                ifp = VN_AS(postp->user1p(), If);
-            } else {
-                ifp = new AstIf{flp, new AstVarRef{flp, m_setVscp, VAccess::READ}};
-                postp->addStmtsp(ifp);
-                postp->user1p(ifp);  // Remember the associated 'AstIf'
-                postp->user2p(m_setVscp);  // Remember the VdlySet variable used as the condition.
-            }
-
-            // Finally assign the delayed value to the reconstructed LHS
-            AstNodeExpr* const newLhsp = reconstructLhs(lhsComponents, flp);
-            ifp->addThensp(new AstAssign{flp, newLhsp, record.rhsp});
-        }
-
-        // If the original AstAssignDelay was kept as a placeholder, we can nuke it now.
-        if (dlyp) pushDeletep(dlyp->unlinkFrBack());
-    }
-
     // VISITORS
     void visit(AstNetlist* nodep) override {
         iterateChildren(nodep);
-        // Convert all AstAssignDelay instances that were not converted during the traversal
-        for (Deferred& record : m_deferred) convertDeferred(record);
+        // Decide which scheme to use for each variable and do the 'prepare' step
+        for (AstVarScope* const vscp : m_vscps) {
+            VarScopeInfo& vscpInfo = m_vscpInfo(vscp);
+            vscpInfo.m_scheme = chooseScheme(vscp, vscpInfo);
+            // Run 'prepare' step
+            switch (vscpInfo.m_scheme) {
+            case Scheme::Undecided:  // LCOV_EXCL_START
+                UASSERT_OBJ(false, vscp, "Failed to choose NBA scheme");
+                break;
+            case Scheme::UnsupportedCompoundArrayInLoop: {
+                // Will report error at the site of the NBA
+                break;
+            }
+            case Scheme::ShadowVar: {
+                ++m_nSchemeShadowVar;
+                prepareSchemeShadowVar(vscp, vscpInfo);
+                break;
+            }
+            case Scheme::FlagShared: {
+                ++m_nSchemeFlagShared;
+                prepareSchemeFlagShared(vscp, vscpInfo);
+                break;
+            }
+            case Scheme::FlagUnique: {
+                ++m_nSchemeFlagUnique;
+                prepareSchemeFlagUnique(vscp, vscpInfo);
+                break;
+            }
+            case Scheme::ValueQueueWhole: {
+                ++m_nSchemeValueQueuesWhole;
+                prepareSchemeValueQueue</* Partial: */ false>(vscp, vscpInfo);
+                break;
+            }
+            case Scheme::ValueQueuePartial: {
+                ++m_nSchemeValueQueuesPartial;
+                prepareSchemeValueQueue</* Partial: */ true>(vscp, vscpInfo);
+                break;
+            }
+            }
+        }
+        // Convert all NBAs
+        for (const NBA& nba : m_nbas) {
+            AstAssignDly* const nbap = nba.nodep;
+            AstVarScope* const vscp = nba.vscp;
+            VarScopeInfo& vscpInfo = m_vscpInfo(vscp);
+            // Run 'convert' step
+            switch (vscpInfo.m_scheme) {
+            case Scheme::Undecided: {  // LCOV_EXCL_START
+                UASSERT_OBJ(false, vscp, "Unreachable");
+                break;
+            }  // LCOV_EXCL_STOP
+            case Scheme::UnsupportedCompoundArrayInLoop: {
+                // TODO: make this an E_UNSUPPORTED...
+                nbap->v3warn(BLKLOOPINIT, "Unsupported: Non-blocking assignment to array with "
+                                          "compound element type inside loop");
+                break;
+            }
+            case Scheme::ShadowVar: {
+                convertSchemeShadowVar(nbap, vscp, vscpInfo);
+                break;
+            }
+            case Scheme::FlagShared: {
+                convertSchemeFlagShared(nbap, vscp, vscpInfo);
+                break;
+            }
+            case Scheme::FlagUnique: {
+                convertSchemeFlagUnique(nbap, vscp, vscpInfo);
+                break;
+            }
+            case Scheme::ValueQueueWhole: {
+                convertSchemeValueQueue(nbap, vscp, vscpInfo, /* partial: */ false);
+                break;
+            }
+            case Scheme::ValueQueuePartial:
+                convertSchemeValueQueue(nbap, vscp, vscpInfo, /* partial: */ true);
+                break;
+            }
+        }
     }
-    void visit(AstScope* nodep) override {
-        AstNode::user2ClearTree();
-        iterateChildren(nodep);
-    }
+    void visit(AstScope* nodep) override { iterateChildren(nodep); }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
         m_cfuncp = nodep;
@@ -675,11 +820,10 @@ class DelayedVisitor final : public VNVisitor {
         m_activep = nodep;
         AstSenTree* const senTreep = nodep->sensesp();
         m_ignoreBlkAndNBlk = senTreep->hasStatic() || senTreep->hasInitial();
-        // Two sets to same variable in different actives must use different vars.
-        AstNode::user2ClearTree();
         iterateChildren(nodep);
     }
     void visit(AstNodeProcedure* nodep) override {
+        const size_t firstNBAAddedIndex = m_nbas.size();
         {
             VL_RESTORER(m_inSuspendableOrFork);
             VL_RESTORER(m_procp);
@@ -688,26 +832,24 @@ class DelayedVisitor final : public VNVisitor {
             iterateChildren(nodep);
         }
         if (m_timingDomains.empty()) return;
-        if (AstActive* const actp = VN_AS(nodep->user2p(), Active)) {
-            // Merge all timing domains (and possibly the original active's domain)
-            // to create a sentree for the pre/post logic
-            // TODO: allow multiple sentrees per active, so we don't have
-            //       to merge them and create a new trigger
-            AstSenTree* senTreep = nullptr;
-            if (actp->sensesp()->hasClocked()) senTreep = actp->sensesp()->cloneTree(false);
-            for (AstSenTree* const domainp : m_timingDomains) {
-                if (!senTreep) {
-                    senTreep = domainp->cloneTree(false);
-                } else {
-                    senTreep->addSensesp(domainp->sensesp()->cloneTree(true));
-                    senTreep->multi(true);  // Comment that it was made from multiple domains
-                }
-            }
-            V3Const::constifyExpensiveEdit(senTreep);  // Remove duplicates
-            actp->sensesp(senTreep);
-            actp->sensesStorep(senTreep);
+
+        // There were some timing domains involved in the process. Add all of them as sensitivities
+        // of all NBA targets in this process. Note this is a bit of a sledgehammer, we should only
+        // need those that directly preceed the NBA in control flow, but that is hard to compute,
+        // so we will hammer away.
+
+        // First gather all senItems
+        AstSenItem* senItemp = nullptr;
+        for (AstSenTree* const domainp : m_timingDomains) {
+            senItemp = AstNode::addNext(senItemp, domainp->sensesp()->cloneTree(true));
         }
         m_timingDomains.clear();
+        // Add them to all nba targets we gathered in this process
+        for (size_t i = firstNBAAddedIndex; i < m_nbas.size(); ++i) {
+            m_vscpInfo(m_nbas[i].vscp).addSensitivity(senItemp);
+        }
+        // Done with these
+        VL_DO_DANGLING(senItemp->deleteTree(), senItemp);
     }
     void visit(AstFork* nodep) override {
         VL_RESTORER(m_inSuspendableOrFork);
@@ -720,11 +862,21 @@ class DelayedVisitor final : public VNVisitor {
     void visit(AstFireEvent* nodep) override {
         UASSERT_OBJ(v3Global.hasEvents(), nodep, "Inconsistent");
         FileLine* const flp = nodep->fileline();
+
+        AstNodeExpr* const eventp = nodep->operandp()->unlinkFrBack();
+
+        // Enqueue for clearing 'triggered' state on next eval
+        AstTextBlock* const blockp = new AstTextBlock{flp};
+        blockp->addText(flp, "vlSymsp->fireEvent(", true);
+        blockp->addNodesp(eventp);
+        blockp->addText(flp, ");\n", true);
+
+        AstNode* newp = new AstCStmt{flp, blockp};
         if (nodep->isDelayed()) {
-            AstVarRef* const vrefp = VN_AS(nodep->operandp(), VarRef);
-            vrefp->unlinkFrBack();
+            AstVarRef* const vrefp = VN_AS(eventp, VarRef);
             const std::string newvarname = "__Vdly__" + vrefp->varp()->shortName();
-            AstVarScope* const dlyvscp = createNewVarScope(vrefp->varScopep(), newvarname, 1);
+            AstVarScope* const dlyvscp
+                = createTemp(flp, vrefp->varScopep()->scopep(), newvarname, 1);
 
             const auto dlyRef = [=](VAccess access) {  //
                 return new AstVarRef{flp, dlyvscp, access};
@@ -736,32 +888,20 @@ class DelayedVisitor final : public VNVisitor {
             {
                 AstIf* const ifp = new AstIf{flp, dlyRef(VAccess::READ)};
                 postp->addStmtsp(ifp);
-                AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "fire"};
-                callp->dtypeSetVoid();
-                ifp->addThensp(callp->makeStmt());
+                ifp->addThensp(newp);
             }
 
-            AstActive* const activep = createActiveLike(flp, m_activep);
+            AstActive* const activep = new AstActive{flp, "nba-event", m_activep->sensesp()};
+            m_activep->addNextHere(activep);
             activep->addStmtsp(prep);
             activep->addStmtsp(postp);
 
-            AstAssign* const assignp = new AstAssign{flp, dlyRef(VAccess::WRITE),
-                                                     new AstConst{flp, AstConst::BitTrue{}}};
-            nodep->replaceWith(assignp);
-        } else {
-            AstCMethodHard* const callp
-                = new AstCMethodHard{flp, nodep->operandp()->unlinkFrBack(), "fire"};
-            callp->dtypeSetVoid();
-            nodep->replaceWith(callp->makeStmt());
+            newp = new AstAssign{flp, dlyRef(VAccess::WRITE),
+                                 new AstConst{flp, AstConst::BitTrue{}}};
         }
+        nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-
-    // Pre/Post logic are created here and their content need no further changes, so ignore.
-    void visit(AstAssignPre*) override {}
-    void visit(AstAssignPost*) override {}
-    void visit(AstAlwaysPost*) override {}
-
     void visit(AstAssignDly* nodep) override {
         if (m_cfuncp) {
             if (!v3Global.rootp()->nbaEventp()) {
@@ -772,85 +912,85 @@ class DelayedVisitor final : public VNVisitor {
             return;
         }
         UASSERT_OBJ(m_procp, nodep, "Delayed assignment not under process");
-        const bool isArray = VN_IS(nodep->lhsp(), ArraySel)
-                             || (VN_IS(nodep->lhsp(), Sel)
-                                 && VN_IS(VN_AS(nodep->lhsp(), Sel)->fromp(), ArraySel));
-        if (isArray) {
-            if (const AstBasicDType* const basicp = nodep->lhsp()->dtypep()->basicp()) {
-                // TODO: this message is not covered by tests
-                if (basicp->isEvent()) nodep->v3warn(E_UNSUPPORTED, "Unsupported: event arrays");
-            }
-            if (processAssignDly(nodep)) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-        } else if (m_inSuspendableOrFork) {
-            const bool converted = processAssignDly(nodep);
-            // Current implementation always converts these
-            UASSERT_OBJ(converted, nodep, "NBA in suspendable processes should have be converted");
-            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-        } else {
-            {
-                VL_RESTORER(m_inDlyLhs);
-                m_inDlyLhs = true;
-                iterate(nodep->lhsp());
-            }
-            iterate(nodep->rhsp());
-        }
-    }
+        UASSERT_OBJ(m_activep, nodep, "<= not under sensitivity block");
+        UASSERT_OBJ(m_inSuspendableOrFork || m_activep->hasClocked(), nodep,
+                    "<= assignment in non-clocked block, should have been converted in V3Active");
 
+        // Grab the reference to the target of the NBA
+        VL_RESTORER(m_currNbaLhsRefp);
+        UASSERT_OBJ(!m_currNbaLhsRefp, nodep, "NBAs should not nest");
+        nodep->lhsp()->foreach([&](AstVarRef* nodep) {
+            // Ignore reads (e.g.: '_[*here*] <= _')
+            if (nodep->access().isReadOnly()) return;
+            // A RW ref on the LHS (e.g.: '_[preInc(*here*)] <= _') is asking for trouble at this
+            // point. These should be lowered in an earlier pass into sequenced temporaries.
+            UASSERT_OBJ(!nodep->access().isRW(), nodep, "RW ref on LHS of NBA");
+            // Multiple target variables
+            // (e.g.: '{*here*, *and here*} <= _',or '*here*[*and here* = _] <= _').
+            // These should be lowered in an earlier pass into sequenced statements.
+            UASSERT_OBJ(!m_currNbaLhsRefp, nodep, "Multiple Write refs on LHS of NBA");
+            // Hold on to it
+            m_currNbaLhsRefp = nodep;
+        });
+        // The target variable of the NBA (there can only be one per NBA at this point)
+        AstVarScope* const vscp = m_currNbaLhsRefp->varScopep();
+        // Record it on first encounter
+        VarScopeInfo& vscpInfo = m_vscpInfo(vscp);
+        if (!vscpInfo.m_firstNbaRefp) {
+            vscpInfo.m_firstNbaRefp = m_currNbaLhsRefp;
+            vscpInfo.m_fistActivep = m_activep;
+            m_vscps.emplace_back(vscp);
+        }
+        // Note usage context
+        vscpInfo.m_partial |= VN_IS(nodep->lhsp(), Sel);
+        vscpInfo.m_inLoop |= m_inLoop;
+        vscpInfo.m_inSuspOrFork |= m_inSuspendableOrFork;
+        // Sensitivity might be non-clocked, in a suspendable process, which are handled elsewhere
+        if (m_activep->sensesp()->hasClocked()) {
+            if (vscpInfo.m_fistActivep != m_activep) {
+                AstVar* const varp = vscp->varp();
+                if (!varp->user1SetOnce()
+                    && !varp->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)) {
+                    varp->v3warn(MULTIDRIVEN,
+                                 "Signal has multiple driving blocks with different clocking: "
+                                     << varp->prettyNameQ() << '\n'
+                                     << vscpInfo.m_firstNbaRefp->warnOther()
+                                     << "... Location of first driving block\n"
+                                     << vscpInfo.m_firstNbaRefp->warnContextSecondary()
+                                     << m_currNbaLhsRefp->warnOther()
+                                     << "... Location of other driving block\n"
+                                     << m_currNbaLhsRefp->warnContextPrimary() << '\n');
+                }
+            }
+            // Add this sensitivity to the variable
+            vscpInfo.addSensitivity(m_activep->sensesp());
+        }
+
+        // Record the NBA for later processing
+        m_nbas.emplace_back();
+        NBA& nba = m_nbas.back();
+        nba.nodep = nodep;
+        nba.vscp = vscp;
+
+        // Check var usage
+        checkVarUsage(m_currNbaLhsRefp, true);
+
+        iterateChildren(nodep);
+    }
     void visit(AstVarRef* nodep) override {
-        // Ignore refs inserted by 'replaceWith' just below
-        if (nodep->user2()) return;
+        // Already checked the NBA LHS ref, ignore here
+        if (nodep == m_currNbaLhsRefp) return;
         // Only care about write refs
         if (!nodep->access().isWriteOrRW()) return;
         // Check var usage
-        markVarUsage(nodep, m_inDlyLhs);
-
-        // Below we rewrite the LHS of AstAssignDelay only
-        if (!m_inDlyLhs) return;
-
-        UASSERT_OBJ(!nodep->access().isRW(), nodep, "<= on read+write method");
-        UASSERT_OBJ(m_activep, nodep, "<= not under sensitivity block");
-        UASSERT_OBJ(m_activep->hasClocked(), nodep,
-                    "<= assignment in non-clocked block, should have been converted in V3Active");
-
-        // Replace with reference to the shadow variable
-        FileLine* const flp = nodep->fileline();
-        AstVarScope* const vscp = nodep->varScopep();
-        AstVarScope*& dlyVscp = m_vscpAux(vscp).delayVscp;
-
-        // Create the shadow variable and related active block if not yet exists
-        if (!dlyVscp) {
-            // Create the shadow variable
-            const std::string name = "__Vdly__" + vscp->varp()->shortName();
-            dlyVscp = createNewVarScope(vscp, name, vscp->dtypep());
-            // Make the new AstActive with identical sensitivity tree
-            AstActive* const activep = createActiveLike(flp, m_activep);
-            m_vscpAux(vscp).activep = activep;
-
-            // Add 'Pre' scheduled 'shadowVariable = originalVariable' assignment
-            activep->addStmtsp(new AstAssignPre{flp, new AstVarRef{flp, dlyVscp, VAccess::WRITE},
-                                                new AstVarRef{flp, vscp, VAccess::READ}});
-            // Add 'Post' scheduled 'originalVariable = shadowVariable' assignment
-            activep->addStmtsp(new AstAssignPost{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
-                                                 new AstVarRef{flp, dlyVscp, VAccess::READ}});
-        }
-
-        // Ensure the active block of the shadow variable contains the current sensitivities
-        checkActiveSense(nodep, m_vscpAux(vscp).activep, m_activep);
-
-        // Replace reference with reference to the shadow variable
-        AstVarRef* const newRefp = new AstVarRef{flp, dlyVscp, VAccess::WRITE};
-        newRefp->user2(true);  // skip visit after repalce
-        nodep->replaceWith(newRefp);
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        checkVarUsage(nodep, false);
     }
-
     void visit(AstNodeReadWriteMem* nodep) override {
         VL_RESTORER(m_ignoreBlkAndNBlk);
         // $readmem/$writemem often used in mem models so we suppress BLKANDNBLK warnings
         m_ignoreBlkAndNBlk = true;
         iterateChildren(nodep);
     }
-
     void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("For statements should have been converted to while statements");
     }
@@ -859,12 +999,11 @@ class DelayedVisitor final : public VNVisitor {
         m_inLoop = true;
         iterateChildren(nodep);
     }
-    void visit(AstExprStmt* nodep) override {
-        VL_RESTORER(m_inDlyLhs);
-        // Restoring is needed, because AstExprStmt may contain assignments
-        m_inDlyLhs = false;
-        iterateChildren(nodep);
-    }
+
+    // Pre/Post logic are created here and their content need no further changes, so ignore.
+    void visit(AstAssignPre*) override {}
+    void visit(AstAssignPost*) override {}
+    void visit(AstAlwaysPost*) override {}
 
     //--------------------
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
@@ -873,11 +1012,13 @@ public:
     // CONSTRUCTORS
     explicit DelayedVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~DelayedVisitor() override {
-        V3Stats::addStat("Optimizations, Delayed shared-sets", m_statSharedSet);
-        V3Stats::addStat("Dynamic NBA, variables needing commit queue with partial updates",
-                         m_commitQueuesPartial);
-        V3Stats::addStat("Dynamic NBA, variables needing commit queue without partial updates",
-                         m_commitQueuesWhole);
+        V3Stats::addStat("NBA, variables using ShadowVar scheme", m_nSchemeShadowVar);
+        V3Stats::addStat("NBA, variables using FlagShared scheme", m_nSchemeFlagShared);
+        V3Stats::addStat("NBA, variables using FlagUnique scheme", m_nSchemeFlagUnique);
+        V3Stats::addStat("NBA, variables using ValueQueueWhole scheme", m_nSchemeValueQueuesWhole);
+        V3Stats::addStat("NBA, variables using ValueQueuePartial scheme",
+                         m_nSchemeValueQueuesPartial);
+        V3Stats::addStat("Optimizations, NBA flags shared", m_nSharedSetFlags);
     }
 };
 

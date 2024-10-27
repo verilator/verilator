@@ -65,9 +65,9 @@ class Node:
         assert not self.isCompleted
         self._subClasses.append(subClass)
 
-    def addOp(self, n, name, monad, kind):
+    def addOp(self, n, name, monad, kind, legals):
         assert 1 <= n <= 4
-        self._ops[n] = (name, monad, kind)
+        self._ops[n] = (name, monad, kind, legals)
         self._arity = max(self._arity, n)
 
     def getOp(self, n):
@@ -79,9 +79,9 @@ class Node:
             return self.superClass.getOp(n)
         return None
 
-    def addPtr(self, name, monad, kind):
+    def addPtr(self, name, monad, kind, legals):
         name = re.sub(r'^m_', '', name)
-        self._ptrs.append({'name': name, 'monad': monad, 'kind': kind})
+        self._ptrs.append({'name': name, 'monad': monad, 'kind': kind, 'legals': legals})
 
     # Computes derived properties over entire class hierarchy.
     # No more changes to the hierarchy are allowed once this was called
@@ -89,8 +89,7 @@ class Node:
         assert not self.isCompleted
         # Sort sub-classes and convert to tuple, which marks completion
         self._subClasses = tuple(
-            sorted(self._subClasses,
-                   key=lambda _: (bool(_._subClasses), _.name)))  # pylint: disable=protected-access
+            sorted(self._subClasses, key=lambda _: (bool(_._subClasses), _.name)))  # pylint: disable=protected-access
 
         self._ordIdx = ordIdx
         ordIdx = ordIdx + 1
@@ -128,8 +127,7 @@ class Node:
             if self.superClass is None:
                 self._allSuperClasses = ()
             else:
-                self._allSuperClasses = self.superClass.allSuperClasses + (
-                    self.superClass, )
+                self._allSuperClasses = self.superClass.allSuperClasses + (self.superClass, )
         return self._allSuperClasses
 
     @property
@@ -139,9 +137,8 @@ class Node:
             if self.isLeaf:
                 self._allSubClasses = ()
             else:
-                self._allSubClasses = self.subClasses + tuple(
-                    _ for subClass in self.subClasses
-                    for _ in subClass.allSubClasses)
+                self._allSubClasses = self.subClasses + tuple(_ for subClass in self.subClasses
+                                                              for _ in subClass.allSubClasses)
         return self._allSubClasses
 
     @property
@@ -210,8 +207,7 @@ class Cpt:
         self._exec_syms = {}
 
     def error(self, txt):
-        sys.exit("%%Error: %s:%d: %s" %
-                 (self.in_filename, self.in_linenum, txt))
+        sys.exit("%%Error: %s:%d: %s" % (self.in_filename, self.in_linenum, txt))
 
     def print(self, txt):
         self.out_lines.append(txt)
@@ -220,8 +216,7 @@ class Cpt:
         self.out_lines.append(func)
 
     def _output_line(self):
-        self.print("#line " + str(self.out_linenum + 2) + " \"" +
-                   self.out_filename + "\"\n")
+        self.print("#line " + str(self.out_linenum + 2) + " \"" + self.out_filename + "\"\n")
 
     def process(self, in_filename, out_filename):
         self.in_filename = in_filename
@@ -234,8 +229,7 @@ class Cpt:
             for line in fhi:
                 ln += 1
                 if not didln:
-                    self.print("#line " + str(ln) + " \"" + self.in_filename +
-                               "\"\n")
+                    self.print("#line " + str(ln) + " \"" + self.in_filename + "\"\n")
                     didln = True
                 match = re.match(r'^\s+(TREE.*)$', line)
                 if match:
@@ -245,8 +239,8 @@ class Cpt:
                     self.output_func(lambda self: self._output_line())
                     self.tree_line(func)
                     didln = False
-                elif not re.match(r'^\s*(#define|/[/\*])\s*TREE',
-                                  line) and re.search(r'\s+TREE', line):
+                elif not re.match(r'^\s*(#define|/[/\*])\s*TREE', line) and re.search(
+                        r'\s+TREE', line):
                     self.error("Unknown astgen line: " + line)
                 else:
                     self.print(line)
@@ -275,8 +269,7 @@ class Cpt:
             #       1   2                 3                  4
             r'TREEOP(1?)([ACSV]?)\s*\(\s*\"([^\"]*)\"\s*,\s*\"([^\"]*)\"\s*\)',
             func)
-        match_skip = re.search(r'TREE_SKIP_VISIT\s*\(\s*\"([^\"]*)\"\s*\)',
-                               func)
+        match_skip = re.search(r'TREE_SKIP_VISIT\s*\(\s*\"([^\"]*)\"\s*\)', func)
 
         if match:
             order = match.group(1)
@@ -314,20 +307,18 @@ class Cpt:
                 if re.match(r'^\$([a-zA-Z0-9]+)$', subnode):
                     continue  # "$lhs" is just a comment that this op has a lhs
                 subnodeif = subnode
-                subnodeif = re.sub(
-                    r'\$([a-zA-Z0-9]+)\.cast([A-Z][A-Za-z0-9]+)$',
-                    r'VN_IS(nodep->\1(),\2)', subnodeif)
-                subnodeif = re.sub(r'\$([a-zA-Z0-9]+)\.([a-zA-Z0-9]+)$',
-                                   r'nodep->\1()->\2()', subnodeif)
+                subnodeif = re.sub(r'\$([a-zA-Z0-9]+)\.cast([A-Z][A-Za-z0-9]+)$',
+                                   r'VN_IS(nodep->\1(),\2)', subnodeif)
+                subnodeif = re.sub(r'\$([a-zA-Z0-9]+)\.([a-zA-Z0-9]+)$', r'nodep->\1()->\2()',
+                                   subnodeif)
                 subnodeif = self.add_nodep(subnodeif)
                 if mif != "" and subnodeif != "":
                     mif += " && "
                 mif += subnodeif
 
             exec_func = self.treeop_exec_func(to)
-            exec_func = re.sub(
-                r'([-()a-zA-Z0-9_>]+)->cast([A-Z][A-Za-z0-9]+)\(\)',
-                r'VN_CAST(\1,\2)', exec_func)
+            exec_func = re.sub(r'([-()a-zA-Z0-9_>]+)->cast([A-Z][A-Za-z0-9]+)\(\)',
+                               r'VN_CAST(\1,\2)', exec_func)
 
             if typen not in self.treeop:
                 self.treeop[typen] = []
@@ -431,14 +422,12 @@ class Cpt:
             self._exec_nsyms = 0
             self._exec_syms_recurse(aref)
 
-            for sym in sorted(self._exec_syms.keys(),
-                              key=lambda val: self._exec_syms[val]):
+            for sym in sorted(self._exec_syms.keys(), key=lambda val: self._exec_syms[val]):
                 argnp = self._exec_syms[sym]
                 arg = self.add_nodep(sym)
                 out += "AstNodeExpr* " + argnp + " = " + arg + "->unlinkFrBack();\n"
 
-            out += "AstNodeExpr* newp = " + self._exec_new_recurse(
-                aref) + ";\n"
+            out += "AstNodeExpr* newp = " + self._exec_new_recurse(aref) + ";\n"
             out += "nodep->replaceWith(newp);"
             out += "VL_DO_DANGLING(nodep->deleteTree(), nodep);"
         elif func == "NEVER":
@@ -454,19 +443,15 @@ class Cpt:
         self.tree_base()
 
     def tree_match(self):
-        self.print(
-            "    // TREEOP functions, each return true if they matched & transformed\n"
-        )
+        self.print("    // TREEOP functions, each return true if they matched & transformed\n")
         for base in sorted(self.treeop.keys()):
             for typefunc in self.treeop[base]:
                 self.print("    // Generated by astgen\n")
-                self.print("    bool " + typefunc['match_func'] + "(Ast" +
-                           base + "* nodep) {\n")
+                self.print("    bool " + typefunc['match_func'] + "(Ast" + base + "* nodep) {\n")
                 self.print("\t// " + typefunc['comment'] + "\n")
                 self.print("\tif (" + typefunc['match_if'] + ") {\n")
-                self.print("\t    UINFO(" + str(typefunc['uinfo_level']) +
-                           ", cvtToHex(nodep)" + " << \" " +
-                           typefunc['uinfo'] + "\\n\");\n")
+                self.print("\t    UINFO(" + str(typefunc['uinfo_level']) + ", cvtToHex(nodep)" +
+                           " << \" " + typefunc['uinfo'] + "\\n\");\n")
                 self.print("\t    " + typefunc['exec_func'] + "\n")
                 self.print("\t    return true;\n")
                 self.print("\t}\n")
@@ -475,9 +460,7 @@ class Cpt:
 
     def tree_base(self):
         self.print("    // TREEOP visitors, call each base type's match\n")
-        self.print(
-            "    // Bottom class up, as more simple transforms are generally better\n"
-        )
+        self.print("    // Bottom class up, as more simple transforms are generally better\n")
         for node in AstNodeList:
             out_for_type_sc = []
             out_for_type = []
@@ -488,15 +471,11 @@ class Cpt:
                 if base not in self.treeop:
                     continue
                 for typefunc in self.treeop[base]:
-                    lines = [
-                        "        if (" + typefunc['match_func'] +
-                        "(nodep)) return;\n"
-                    ]
+                    lines = ["        if (" + typefunc['match_func'] + "(nodep)) return;\n"]
                     if typefunc['short_circuit']:  # short-circuit match fn
                         out_for_type_sc.extend(lines)
                     else:  # Standard match fn
-                        if typefunc[
-                                'order']:  # TREEOP1's go in front of others
+                        if typefunc['order']:  # TREEOP1's go in front of others
                             out_for_type = lines + out_for_type
                         else:
                             out_for_type.extend(lines)
@@ -509,32 +488,26 @@ class Cpt:
             # For types without short-circuits, we just use iterateChildren, which
             # saves one comparison.
             if len(out_for_type_sc) > 0:  # Short-circuited types
-                self.print(
-                    "    // Generated by astgen with short-circuiting\n" +
-                    "    void visit(Ast" + node.name +
-                    "* nodep) override {\n" +
-                    "      iterateAndNextNull(nodep->{op1}());\n".format(
-                        op1=node.getOp(1)[0]) + "".join(out_for_type_sc))
+                self.print("    // Generated by astgen with short-circuiting\n" +
+                           "    void visit(Ast" + node.name + "* nodep) override {\n" +
+                           "      iterateAndNextNull(nodep->{op1}());\n".format(
+                               op1=node.getOp(1)[0]) + "".join(out_for_type_sc))
                 if out_for_type[0]:
                     self.print(
-                        "      iterateAndNextNull(nodep->{op2}());\n".format(
-                            op2=node.getOp(2)[0]))
+                        "      iterateAndNextNull(nodep->{op2}());\n".format(op2=node.getOp(2)[0]))
                     if node.isSubClassOf(AstNodes["NodeTriop"]):
-                        self.print(
-                            "      iterateAndNextNull(nodep->{op3}());\n".
-                            format(op3=node.getOp(3)[0]))
+                        self.print("      iterateAndNextNull(nodep->{op3}());\n".format(
+                            op3=node.getOp(3)[0]))
                     self.print("".join(out_for_type) + "    }\n")
             elif len(out_for_type) > 0:  # Other types with something to print
                 skip = node.name in self.tree_skip_visit
                 gen = "Gen" if skip else ""
                 virtual = "virtual " if skip else ""
                 override = "" if skip else " override"
-                self.print(
-                    "    // Generated by astgen\n" + "    " + virtual +
-                    "void visit" + gen + "(Ast" + node.name + "* nodep)" +
-                    override + " {\n" +
-                    ("" if skip else "        iterateChildren(nodep);\n") +
-                    ''.join(out_for_type) + "    }\n")
+                self.print("    // Generated by astgen\n" + "    " + virtual + "void visit" + gen +
+                           "(Ast" + node.name + "* nodep)" + override + " {\n" +
+                           ("" if skip else "        iterateChildren(nodep);\n") +
+                           ''.join(out_for_type) + "    }\n")
 
 
 ######################################################################
@@ -546,7 +519,8 @@ def partitionAndStrip(string, separator):
 
 
 def parseOpType(string):
-    match = re.match(r'^(\w+)\[(\w+)\]$', string)
+    # Return [Optional/List, AstNodeKind, LegalAstKinds]
+    match = re.match(r'^(\w+)\[(.*?)\]$', string)
     if match:
         monad, kind = match.groups()
         if monad not in ("Optional", "List"):
@@ -554,9 +528,16 @@ def parseOpType(string):
         kind = parseOpType(kind)
         if not kind or kind[0]:
             return None
-        return monad, kind[1]
-    if re.match(r'^Ast(\w+)$', string):
-        return "", string[3:]
+        return monad, kind[1], kind[2]
+    match = re.match(r'^Ast(\w+)<(.*?)>$', string)
+    if match:
+        kind = match.group(1)
+        legals = match.group(2)
+        legals = re.sub(r'\bAst', '', legals)
+        return "", kind, legals
+    match = re.match(r'^Ast(\w+)$', string)
+    if match:
+        return "", match.group(1), match.group(1)
     return None
 
 
@@ -565,8 +546,7 @@ def read_types(filename, Nodes, prefix):
 
     def error(lineno, message):
         nonlocal hasErrors
-        print(filename + ":" + str(lineno) + ": %Error: " + message,
-              file=sys.stderr)
+        print(filename + ":" + str(lineno) + ": %Error: " + message, file=sys.stderr)
         hasErrors = True
 
     node = None
@@ -579,8 +559,7 @@ def read_types(filename, Nodes, prefix):
         if not hasAstgenMembers:
             error(
                 node.lineno,
-                "'{p}{n}' does not contain 'ASTGEN_MEMBERS_{p}{n};'".format(
-                    p=prefix, n=node.name))
+                "'{p}{n}' does not contain 'ASTGEN_MEMBERS_{p}{n};'".format(p=prefix, n=node.name))
         hasAstgenMembers = False
 
     with open(filename, "r", encoding="utf8") as fh:
@@ -598,8 +577,7 @@ def read_types(filename, Nodes, prefix):
                     classn = re.sub(r'^' + prefix, '', classn)
                     supern = re.sub(r'^' + prefix, '', supern)
                     if not supern:
-                        sys.exit("%Error: '{p}{c}' has no super-class".format(
-                            p=prefix, c=classn))
+                        sys.exit("%Error: '{p}{c}' has no super-class".format(p=prefix, c=classn))
                     checkFinishedNode(node)
                     superClass = Nodes[supern]
                     node = Node(classn, superClass, filename, lineno)
@@ -608,8 +586,7 @@ def read_types(filename, Nodes, prefix):
             if not node:
                 continue
 
-            if re.match(r'^\s*ASTGEN_MEMBERS_' + prefix + node.name + ';',
-                        line):
+            if re.match(r'^\s*ASTGEN_MEMBERS_' + prefix + node.name + ';', line):
                 hasAstgenMembers = True
 
             if prefix != "Ast":
@@ -631,36 +608,29 @@ def read_types(filename, Nodes, prefix):
                     ident = ident.strip()
                     if not sep or not re.match(r'^\w+$', ident):
                         error(
-                            lineno, "Malformed '@astgen " + what +
-                            "' directive (expecting '" + what +
-                            " := <identifier> : <type>': " + decl)
+                            lineno, "Malformed '@astgen " + what + "' directive (expecting '" +
+                            what + " := <identifier> : <type>': " + decl)
                     else:
                         kind = parseOpType(kind)
                         if not kind:
                             error(
                                 lineno, "Bad type for '@astgen " + what +
-                                "' (expecting Ast*, Optional[Ast*], or List[Ast*]):"
-                                + decl)
+                                "' (expecting Ast*, Optional[Ast*], or List[Ast*]):" + decl)
                         elif node.getOp(n) is not None:
-                            error(
-                                lineno, "Already defined " + what + " for " +
-                                node.name)
+                            error(lineno, "Already defined " + what + " for " + node.name)
                         else:
                             node.addOp(n, ident, *kind)
-                elif what in ("alias op1", "alias op2", "alias op3",
-                              "alias op4"):
+                elif what in ("alias op1", "alias op2", "alias op3", "alias op4"):
                     n = int(what[-1])
                     ident = rest.strip()
                     if not re.match(r'^\w+$', ident):
                         error(
-                            lineno, "Malformed '@astgen " + what +
-                            "' directive (expecting '" + what +
-                            " := <identifier>': " + decl)
+                            lineno, "Malformed '@astgen " + what + "' directive (expecting '" +
+                            what + " := <identifier>': " + decl)
                     else:
                         op = node.getOp(n)
                         if op is None:
-                            error(lineno,
-                                  "Aliased op" + str(n) + " is not defined")
+                            error(lineno, "Aliased op" + str(n) + " is not defined")
                         else:
                             node.addOp(n, ident, *op[1:])
                 elif what == "ptr":
@@ -670,8 +640,7 @@ def read_types(filename, Nodes, prefix):
                     if not kind:
                         error(
                             lineno, "Bad type for '@astgen " + what +
-                            "' (expecting Ast*, Optional[Ast*], or List[Ast*]):"
-                            + decl)
+                            "' (expecting Ast*, Optional[Ast*], or List[Ast*]):" + decl)
                     if not re.match(r'^m_(\w+)$', ident):
                         error(
                             lineno, "Malformed '@astgen ptr'"
@@ -680,20 +649,15 @@ def read_types(filename, Nodes, prefix):
                         node.addPtr(ident, *kind)
                 else:
                     error(
-                        lineno,
-                        "Malformed @astgen what (expecting 'op1'..'op4'," +
+                        lineno, "Malformed @astgen what (expecting 'op1'..'op4'," +
                         " 'alias op1'.., 'ptr'): " + what)
             else:
                 line = re.sub(r'//.*$', '', line)
                 if re.match(r'.*[Oo]p[1-9].*', line):
-                    error(lineno,
-                          "Use generated accessors to access op<N> operands")
+                    error(lineno, "Use generated accessors to access op<N> operands")
 
-            if re.match(
-                    r'^\s*Ast[A-Z][A-Za-z0-9_]+\s*\*(\s*const)?\s+m_[A-Za-z0-9_]+\s*;',
-                    line):
-                error(lineno,
-                      "Use '@astgen ptr' for Ast pointer members: " + line)
+            if re.match(r'^\s*Ast[A-Z][A-Za-z0-9_]+\s*\*(\s*const)?\s+m_[A-Za-z0-9_]+\s*;', line):
+                error(lineno, "Use '@astgen ptr' for Ast pointer members: " + line)
 
         checkFinishedNode(node)
     if hasErrors:
@@ -707,33 +671,24 @@ def check_types(sortedTypes, prefix, abstractPrefix):
     for node in sortedTypes:
         if re.match(r'^' + abstractPrefix, node.name):
             if node.isLeaf:
-                sys.exit(
-                    "%Error: Final {b} subclasses must not be named {b}*: {p}{n}"
-                    .format(b=baseClass, p=prefix, n=node.name))
+                sys.exit("%Error: Final {b} subclasses must not be named {b}*: {p}{n}".format(
+                    b=baseClass, p=prefix, n=node.name))
         else:
             if not node.isLeaf:
-                sys.exit(
-                    "%Error: Non-final {b} subclasses must be named {b}*: {p}{n}"
-                    .format(b=baseClass, p=prefix, n=node.name))
+                sys.exit("%Error: Non-final {b} subclasses must be named {b}*: {p}{n}".format(
+                    b=baseClass, p=prefix, n=node.name))
 
     # Check ordering of node definitions
     hasOrderingError = False
 
-    files = tuple(
-        sorted(set(_.file for _ in sortedTypes if _.file is not None)))
+    files = tuple(sorted(set(_.file for _ in sortedTypes if _.file is not None)))
 
     for file in files:
         nodes = tuple(filter(lambda _, f=file: _.file == f, sortedTypes))
         expectOrder = tuple(sorted(nodes, key=lambda _: (_.isLeaf, _.ordIdx)))
         actualOrder = tuple(sorted(nodes, key=lambda _: _.lineno))
-        expect = {
-            node: pred
-            for pred, node in zip((None, ) + expectOrder[:-1], expectOrder)
-        }
-        actual = {
-            node: pred
-            for pred, node in zip((None, ) + actualOrder[:-1], actualOrder)
-        }
+        expect = {node: pred for pred, node in zip((None, ) + expectOrder[:-1], expectOrder)}
+        actual = {node: pred for pred, node in zip((None, ) + actualOrder[:-1], actualOrder)}
         for node in nodes:
             if expect[node] != actual[node]:
                 hasOrderingError = True
@@ -749,8 +704,7 @@ def check_types(sortedTypes, prefix, abstractPrefix):
                     file=sys.stderr)
 
     if hasOrderingError:
-        sys.exit(
-            "%Error: Stopping due to out of order definitions listed above")
+        sys.exit("%Error: Stopping due to out of order definitions listed above")
 
 
 def read_stages(filename):
@@ -783,8 +737,7 @@ def read_refs(filename):
                 if ref not in ClassRefs:
                     ClassRefs[ref] = {'newed': {}, 'used': {}}
                 ClassRefs[ref]['used'][basename] = 1
-            for match in re.finditer(
-                    r'(VN_IS|VN_AS|VN_CAST)\([^.]+, ([A-Za-z0-9_]+)', line):
+            for match in re.finditer(r'(VN_IS|VN_AS|VN_CAST)\([^.]+, ([A-Za-z0-9_]+)', line):
                 ref = "Ast" + match.group(2)
                 if ref not in ClassRefs:
                     ClassRefs[ref] = {'newed': {}, 'used': {}}
@@ -796,9 +749,7 @@ def open_file(filename):
     if re.search(r'\.txt$', filename):
         fh.write("// Generated by astgen\n")
     else:
-        fh.write(
-            '// Generated by astgen // -*- mode: C++; c-file-style: "cc-mode" -*-'
-            + "\n")
+        fh.write('// Generated by astgen // -*- mode: C++; c-file-style: "cc-mode" -*-' + "\n")
     return fh
 
 
@@ -808,9 +759,7 @@ def open_file(filename):
 def write_report(filename):
     with open_file(filename) as fh:
 
-        fh.write(
-            "Processing stages (approximate, based on order in Verilator.cpp):\n"
-        )
+        fh.write("Processing stages (approximate, based on order in Verilator.cpp):\n")
         for classn in sorted(Stages.keys(), key=lambda val: Stages[val]):
             fh.write("  " + classn + "\n")
 
@@ -831,14 +780,12 @@ def write_report(filename):
                 refs = ClassRefs["Ast" + node.name]
                 fh.write("    newed:  ")
                 for stage in sorted(refs['newed'].keys(),
-                                    key=lambda val: Stages[val]
-                                    if (val in Stages) else -1):
+                                    key=lambda val: Stages[val] if (val in Stages) else -1):
                     fh.write(stage + "  ")
                 fh.write("\n")
                 fh.write("    used:   ")
                 for stage in sorted(refs['used'].keys(),
-                                    key=lambda val: Stages[val]
-                                    if (val in Stages) else -1):
+                                    key=lambda val: Stages[val] if (val in Stages) else -1):
                     fh.write(stage + "  ")
                 fh.write("\n")
             fh.write("\n")
@@ -852,8 +799,7 @@ def write_report(filename):
 def write_forward_class_decls(prefix, nodeList):
     with open_file("V3{p}__gen_forward_class_decls.h".format(p=prefix)) as fh:
         for node in nodeList:
-            fh.write("class {p}{n:<17} // ".format(p=prefix,
-                                                   n=node.name + ";"))
+            fh.write("class {p}{n:<17} // ".format(p=prefix, n=node.name + ";"))
             for superClass in node.allSuperClasses:
                 fh.write("{p}{n:<12} ".format(p=prefix, n=superClass.name))
             fh.write("\n")
@@ -863,8 +809,7 @@ def write_visitor_decls(prefix, nodeList):
     with open_file("V3{p}__gen_visitor_decls.h".format(p=prefix)) as fh:
         for node in nodeList:
             if not node.isRoot:
-                fh.write("virtual void visit({p}{n}*);\n".format(p=prefix,
-                                                                 n=node.name))
+                fh.write("virtual void visit({p}{n}*);\n".format(p=prefix, n=node.name))
 
 
 def write_visitor_defns(prefix, nodeList, visitor):
@@ -873,13 +818,8 @@ def write_visitor_defns(prefix, nodeList, visitor):
         for node in nodeList:
             base = node.superClass
             if base is not None:
-                fh.write(
-                    "void {c}::visit({p}{n}* {v}) {{ visit(static_cast<{p}{b}*>({v})); }}\n"
-                    .format(c=visitor,
-                            p=prefix,
-                            n=node.name,
-                            b=base.name,
-                            v=variable))
+                fh.write("void {c}::visit({p}{n}* {v}) {{ visit(static_cast<{p}{b}*>({v})); }}\n".
+                         format(c=visitor, p=prefix, n=node.name, b=base.name, v=variable))
 
 
 def write_type_enum(prefix, nodeList):
@@ -887,27 +827,21 @@ def write_type_enum(prefix, nodeList):
     with open_file("V3{p}__gen_type_enum.h".format(p=prefix)) as fh:
 
         fh.write("    enum en : uint16_t {\n")
-        for node in sorted(filter(lambda _: _.isLeaf, nodeList),
-                           key=lambda _: _.typeId):
-            fh.write("        at{t} = {n},\n".format(t=node.name,
-                                                     n=node.typeId))
+        for node in sorted(filter(lambda _: _.isLeaf, nodeList), key=lambda _: _.typeId):
+            fh.write("        at{t} = {n},\n".format(t=node.name, n=node.typeId))
         fh.write("        _ENUM_END = {n}\n".format(n=root.typeIdMax + 1))
         fh.write("    };\n")
 
         fh.write("    enum bounds : uint16_t {\n")
-        for node in sorted(filter(lambda _: not _.isLeaf, nodeList),
-                           key=lambda _: _.typeIdMin):
-            fh.write("        first{t} = {n},\n".format(t=node.name,
-                                                        n=node.typeIdMin))
-            fh.write("        last{t}  = {n},\n".format(t=node.name,
-                                                        n=node.typeIdMax))
+        for node in sorted(filter(lambda _: not _.isLeaf, nodeList), key=lambda _: _.typeIdMin):
+            fh.write("        first{t} = {n},\n".format(t=node.name, n=node.typeIdMin))
+            fh.write("        last{t}  = {n},\n".format(t=node.name, n=node.typeIdMax))
         fh.write("        _BOUNDS_END\n")
         fh.write("    };\n")
 
         fh.write("    const char* ascii() const VL_MT_SAFE {\n")
         fh.write("        static const char* const names[_ENUM_END + 1] = {\n")
-        for node in sorted(filter(lambda _: _.isLeaf, nodeList),
-                           key=lambda _: _.typeId):
+        for node in sorted(filter(lambda _: _.isLeaf, nodeList), key=lambda _: _.typeId):
             fh.write('            "{T}",\n'.format(T=node.name.upper()))
         fh.write("            \"_ENUM_END\"\n")
         fh.write("        };\n")
@@ -926,10 +860,14 @@ def write_type_tests(prefix, nodeList):
             base = "DfgVertex"
             variable = "vtxp"
             enum = "VDfgType"
+        else:
+            base = None
+            variable = None
+            enum = None
         for node in nodeList:
             fh.write(
-                "template<> inline bool {b}::privateTypeTest<{p}{n}>(const {b}* {v}) {{ "
-                .format(b=base, p=prefix, n=node.name, v=variable))
+                "template<> inline bool {b}::privateTypeTest<{p}{n}>(const {b}* {v}) {{ ".format(
+                    b=base, p=prefix, n=node.name, v=variable))
             if node.isRoot:
                 fh.write("return true;")
             elif not node.isLeaf:
@@ -937,8 +875,9 @@ def write_type_tests(prefix, nodeList):
                     "return static_cast<int>({v}->type()) >= static_cast<int>({e}::first{t}) && static_cast<int>({v}->type()) <= static_cast<int>({e}::last{t});"
                     .format(v=variable, e=enum, t=node.name))
             else:
-                fh.write("return {v}->type() == {e}::at{t};".format(
-                    v=variable, e=enum, t=node.name))
+                fh.write("return {v}->type() == {e}::at{t};".format(v=variable,
+                                                                    e=enum,
+                                                                    t=node.name))
             fh.write(" }\n")
 
 
@@ -949,8 +888,7 @@ def write_type_tests(prefix, nodeList):
 
 def write_ast_type_info(filename):
     with open_file(filename) as fh:
-        for node in sorted(filter(lambda _: _.isLeaf, AstNodeList),
-                           key=lambda _: _.typeId):
+        for node in sorted(filter(lambda _: _.isLeaf, AstNodeList), key=lambda _: _.typeId):
             opTypeList = []
             opNameList = []
             for n in range(1, 5):
@@ -959,7 +897,7 @@ def write_ast_type_info(filename):
                     opTypeList.append('OP_UNUSED')
                     opNameList.append('op{0}p'.format(n))
                 else:
-                    name, monad, _ = op
+                    name, monad, _, _ = op
                     if not monad:
                         opTypeList.append('OP_USED')
                     elif monad == "Optional":
@@ -968,12 +906,11 @@ def write_ast_type_info(filename):
                         opTypeList.append('OP_LIST')
                     opNameList.append(name)
             # opTypeStr = ', '.join(opTypeList)
-            opTypeStr = ', '.join(
-                ['VNTypeInfo::{0}'.format(s) for s in opTypeList])
+            opTypeStr = ', '.join(['VNTypeInfo::{0}'.format(s) for s in opTypeList])
             opNameStr = ', '.join(['"{0}"'.format(s) for s in opNameList])
             fh.write(
-                '    {{ "Ast{name}", {{{opTypeStr}}}, {{{opNameStr}}}, sizeof(Ast{name}) }},\n'
-                .format(
+                '    {{ "Ast{name}", {{{opTypeStr}}}, {{{opNameStr}}}, sizeof(Ast{name}) }},\n'.
+                format(
                     name=node.name,
                     opTypeStr=opTypeStr,
                     opNameStr=opNameStr,
@@ -984,34 +921,58 @@ def write_ast_impl(filename):
     with open_file(filename) as fh:
 
         def emitBlock(pattern, **fmt):
-            fh.write(
-                textwrap.indent(textwrap.dedent(pattern),
-                                "    ").format(**fmt))
+            fh.write(pattern.format(**fmt))
 
         for node in AstNodeList:
             if node.name == "Node":
                 continue
-            emitBlock("const char* Ast{t}::brokenGen() const {{\n",
-                      t=node.name)
+            emitBlock("const char* Ast{t}::brokenGen() const {{\n", t=node.name)
             if node.superClass.name != 'Node':
                 emitBlock("    BROKEN_BASE_RTN(Ast{base}::brokenGen());\n",
                           base=node.superClass.name)
             for ptr in node.ptrs:
                 if ptr['monad'] == 'Optional':
-                    emitBlock(
-                        "    BROKEN_RTN(m_{name} && !m_{name}->brokeExists());\n",
-                        name=ptr['name'])
+                    emitBlock("    BROKEN_RTN(m_{name} && !m_{name}->brokeExists());\n",
+                              name=ptr['name'])
                 else:
                     emitBlock("    BROKEN_RTN(!m_{name});\n" +
                               "    BROKEN_RTN(!m_{name}->brokeExists());\n",
                               name=ptr['name'])
+                if ptr['legals'] != '':
+                    emitBlock("    BROKEN_RTN(m_{name} && !(", name=ptr['name'])
+                    eor = ""
+                    for legal in ptr['legals'].split('|'):
+                        # We use privateTypeTest, as VN_IS would assert that we know
+                        # the type is correct, but we want to check regardless,
+                        # to find errors after raw node edits/replacements
+                        emitBlock("{eor}privateTypeTest<Ast{legal}>(m_{name})",
+                                  eor=eor,
+                                  name=ptr['name'],
+                                  legal=legal)
+                        eor = " || "
+                    emitBlock("));\n")
+            for i in range(1, 5):
+                op = node.getOp(i)
+                if op is None:
+                    continue
+                name, _, _, legals = op
+                if legals != '':
+                    emitBlock("    BROKEN_RTN({name}() && !(", name=name)
+                    eor = ""
+                    for legal in legals.split('|'):
+                        emitBlock("{eor}privateTypeTest<Ast{legal}>({name}())",
+                                  eor=eor,
+                                  name=name,
+                                  legal=legal)
+                        eor = " || "
+                    emitBlock("));\n")
             # Node's broken rules can be specialized by declaring broken()
-            emitBlock("    return Ast{t}::broken(); }}\n", t=node.name)
+            emitBlock("    return Ast{t}::broken();\n", t=node.name)
+            emitBlock("}}\n", t=node.name)
 
             emitBlock("void Ast{t}::cloneRelinkGen() {{\n", t=node.name)
             if node.superClass.name != 'Node':
-                emitBlock("    Ast{base}::cloneRelinkGen();\n",
-                          base=node.superClass.name)
+                emitBlock("    Ast{base}::cloneRelinkGen();\n", base=node.superClass.name)
             for ptr in node.ptrs:
                 emitBlock(
                     "    if (m_{name} && m_{name}->clonep()) m_{name} = m_{name}->clonep();\n",
@@ -1020,14 +981,11 @@ def write_ast_impl(filename):
 
             emitBlock("}}\n")
 
-            emitBlock("void Ast{t}::dumpJsonGen(std::ostream& str) const {{\n",
-                      t=node.name)
+            emitBlock("void Ast{t}::dumpJsonGen(std::ostream& str) const {{\n", t=node.name)
             if node.superClass.name != 'Node':
-                emitBlock("    Ast{base}::dumpJson(str);\n",
-                          base=node.superClass.name)
+                emitBlock("    Ast{base}::dumpJson(str);\n", base=node.superClass.name)
             for ptr in node.ptrs:
-                emitBlock("    dumpJsonPtr(str, \"{name}\", m_{name});\n",
-                          name=ptr['name'])
+                emitBlock("    dumpJsonPtr(str, \"{name}\", m_{name});\n", name=ptr['name'])
             emitBlock("}}\n")
 
             emitBlock(
@@ -1037,10 +995,8 @@ def write_ast_impl(filename):
                 op = node.getOp(i)
                 if op is None:
                     continue
-                name, _, _ = op
-                emitBlock(
-                    "    dumpNodeListJson(str, {name}(), \"{name}\", indent);\n",
-                    name=name)
+                name, _, _, _ = op
+                emitBlock("    dumpNodeListJson(str, {name}(), \"{name}\", indent);\n", name=name)
             emitBlock("}}\n")
 
 
@@ -1059,9 +1015,7 @@ def write_ast_macros(filename):
                 if not any_ptr:
                     fh.write("private: \\\n")
                     any_ptr = True
-                emitBlock("Ast{kind}* m_{name} = nullptr;",
-                          name=ptr['name'],
-                          kind=ptr['kind'])
+                emitBlock("Ast{kind}* m_{name} = nullptr;", name=ptr['name'], kind=ptr['kind'])
             if any_ptr:
                 fh.write("public: \\\n")
             # TODO pointer accessors
@@ -1107,9 +1061,9 @@ def write_ast_macros(filename):
                 op = node.getOp(n)
                 if not op:
                     continue
-                name, monad, kind = op
-                retrieve = ("VN_DBG_AS(op{n}p(), {kind})" if kind != "Node"
-                            else "op{n}p()").format(n=n, kind=kind)
+                name, monad, kind, _ = op
+                retrieve = ("VN_DBG_AS(op{n}p(), {kind})"
+                            if kind != "Node" else "op{n}p()").format(n=n, kind=kind)
                 superOp = node.superClass.getOp(n)
                 superName = None
                 if superOp:
@@ -1126,8 +1080,7 @@ def write_ast_macros(filename):
                               n=n,
                               retrieve=retrieve)
                     if superOp:
-                        hiddenMethods.append("add" + superName[0].upper() +
-                                             superName[1:])
+                        hiddenMethods.append("add" + superName[0].upper() + superName[1:])
                 elif monad == "Optional":
                     emitBlock('''\
                     Ast{kind}* {name}() const VL_MT_STABLE {{ return {retrieve}; }}
@@ -1150,27 +1103,24 @@ def write_ast_macros(filename):
             if hiddenMethods:
                 fh.write("private: \\\n")
                 for method in hiddenMethods:
-                    fh.write("    using Ast{sup}::{method}; \\\n".format(
-                        sup=node.superClass.name, method=method))
+                    fh.write("    using Ast{sup}::{method}; \\\n".format(sup=node.superClass.name,
+                                                                         method=method))
                 fh.write("public: \\\n")
 
-            fh.write(
-                "    static_assert(true, \"\")\n")  # Swallowing the semicolon
+            fh.write("    static_assert(true, \"\")\n")  # Swallowing the semicolon
 
             # Only care about leaf classes for the rest
             if node.isLeaf:
                 fh.write(
-                    "#define ASTGEN_SUPER_{t}(...) Ast{b}(VNType::at{t}, __VA_ARGS__)\n"
-                    .format(t=node.name, b=node.superClass.name))
+                    "#define ASTGEN_SUPER_{t}(...) Ast{b}(VNType::at{t}, __VA_ARGS__)\n".format(
+                        t=node.name, b=node.superClass.name))
             fh.write("\n")
 
 
 def write_ast_yystype(filename):
     with open_file(filename) as fh:
         for node in AstNodeList:
-            fh.write("Ast{t}* {m}p;\n".format(t=node.name,
-                                              m=node.name[0].lower() +
-                                              node.name[1:]))
+            fh.write("Ast{t}* {m}p;\n".format(t=node.name, m=node.name[0].lower() + node.name[1:]))
 
 
 ################################################################################
@@ -1199,7 +1149,7 @@ def write_dfg_macros(filename):
                           s=node.superClass.name)
 
             for n in range(1, node.arity + 1):
-                name, _, _ = node.getOp(n)
+                name, _, _, _ = node.getOp(n)
                 emitBlock('''\
                 DfgVertex* {name}() const {{ return source<{n}>(); }}
                 void {name}(DfgVertex* vtxp) {{ relinkSource<{n}>(vtxp); }}
@@ -1207,8 +1157,7 @@ def write_dfg_macros(filename):
                           name=name,
                           n=n - 1)
 
-            operandNames = tuple(
-                node.getOp(n)[0] for n in range(1, node.arity + 1))
+            operandNames = tuple(node.getOp(n)[0] for n in range(1, node.arity + 1))
             if operandNames:
                 emitBlock('''\
                           const std::string srcName(size_t idx) const override {{
@@ -1217,10 +1166,8 @@ def write_dfg_macros(filename):
                           }}
                           ''',
                           a=node.arity,
-                          ns=", ".join(
-                              map(lambda _: '"' + _ + '"', operandNames)))
-            fh.write(
-                "    static_assert(true, \"\")\n")  # Swallowing the semicolon
+                          ns=", ".join(map(lambda _: '"' + _ + '"', operandNames)))
+            fh.write("    static_assert(true, \"\")\n")  # Swallowing the semicolon
 
 
 def write_dfg_auto_classes(filename):
@@ -1254,11 +1201,8 @@ def write_dfg_ast_to_dfg(filename):
             if (node.file is not None) or (not node.isLeaf):
                 continue
 
-            fh.write(
-                "void visit(Ast{t}* nodep) override {{\n".format(t=node.name))
-            fh.write(
-                '    UASSERT_OBJ(!nodep->user1p(), nodep, "Already has Dfg vertex");\n\n'
-            )
+            fh.write("void visit(Ast{t}* nodep) override {{\n".format(t=node.name))
+            fh.write('    UASSERT_OBJ(!nodep->user1p(), nodep, "Already has Dfg vertex");\n\n')
             fh.write("    if (unhandled(nodep)) return;\n\n")
             for i in range(node.arity):
                 fh.write("    iterate(nodep->op{j}p());\n".format(j=i + 1))
@@ -1267,9 +1211,8 @@ def write_dfg_ast_to_dfg(filename):
                     '    UASSERT_OBJ(nodep->op{j}p()->user1p(), nodep, "Child {j} missing Dfg vertex");\n'
                     .format(j=i + 1))
             fh.write("\n")
-            fh.write(
-                "    Dfg{t}* const vtxp = makeVertex<Dfg{t}>(nodep, *m_dfgp);\n"
-                .format(t=node.name))
+            fh.write("    Dfg{t}* const vtxp = makeVertex<Dfg{t}>(nodep, *m_dfgp);\n".format(
+                t=node.name))
             fh.write("    if (!vtxp) {\n")
             fh.write("        m_foundUnhandled = true;\n")
             fh.write("        ++m_ctx.m_nonRepNode;\n")
@@ -1277,8 +1220,8 @@ def write_dfg_ast_to_dfg(filename):
             fh.write("    }\n\n")
             for i in range(node.arity):
                 fh.write(
-                    "    vtxp->relinkSource<{i}>(nodep->op{j}p()->user1u().to<DfgVertex*>());\n"
-                    .format(i=i, j=i + 1))
+                    "    vtxp->relinkSource<{i}>(nodep->op{j}p()->user1u().to<DfgVertex*>());\n".
+                    format(i=i, j=i + 1))
             fh.write("\n")
             fh.write("    m_uncommittedVertices.push_back(vtxp);\n")
             fh.write("    nodep->user1p(vtxp);\n")
@@ -1292,14 +1235,12 @@ def write_dfg_dfg_to_ast(filename):
             if (node.file is not None) or (not node.isLeaf):
                 continue
 
-            fh.write(
-                "void visit(Dfg{t}* vtxp) override {{\n".format(t=node.name))
+            fh.write("void visit(Dfg{t}* vtxp) override {{\n".format(t=node.name))
             for i in range(node.arity):
                 fh.write(
                     "    AstNodeExpr* const op{j}p = convertDfgVertexToAstNodeExpr(vtxp->source<{i}>());\n"
                     .format(i=i, j=i + 1))
-            fh.write(
-                "    m_resultp = makeNode<Ast{t}>(vtxp".format(t=node.name))
+            fh.write("    m_resultp = makeNode<Ast{t}>(vtxp".format(t=node.name))
             for i in range(node.arity):
                 fh.write(", op{j}p".format(j=i + 1))
             fh.write(");\n")
@@ -1313,8 +1254,7 @@ parser = argparse.ArgumentParser(
     allow_abbrev=False,
     formatter_class=argparse.RawDescriptionHelpFormatter,
     description="""Generate V3Ast headers to reduce C++ code duplication.""",
-    epilog=
-    """Copyright 2002-2024 by Wilson Snyder. This program is free software; you
+    epilog="""Copyright 2002-2024 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
@@ -1322,15 +1262,9 @@ Version 2.0.
 SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
 
 parser.add_argument('-I', action='store', help='source code include directory')
-parser.add_argument('--astdef',
-                    action='append',
-                    help='add AST definition file (relative to -I)')
-parser.add_argument('--dfgdef',
-                    action='append',
-                    help='add DFG definition file (relative to -I)')
-parser.add_argument('--classes',
-                    action='store_true',
-                    help='makes class declaration files')
+parser.add_argument('--astdef', action='append', help='add AST definition file (relative to -I)')
+parser.add_argument('--dfgdef', action='append', help='add DFG definition file (relative to -I)')
+parser.add_argument('--classes', action='store_true', help='makes class declaration files')
 parser.add_argument('--debug', action='store_true', help='enable debug')
 
 parser.add_argument('infiles', nargs='*', help='list of input .cpp filenames')
@@ -1402,15 +1336,14 @@ for node in AstNodeList:
     for n in range(1, node.arity + 1):
         op = node.getOp(n)
         if op is not None:
-            name, monad, kind = op
+            name, monad, kind, legals = op
             assert monad == "", "Cannot represent AstNode as DfgVertex"
-            vertex.addOp(n, name, "", "")
+            vertex.addOp(n, name, "", "", "")
 
 # Compute derived properties over the whole DfgVertex hierarchy
 DfgVertices["Vertex"].complete()
 
-DfgVertexList = tuple(map(lambda _: DfgVertices[_],
-                          sorted(DfgVertices.keys())))
+DfgVertexList = tuple(map(lambda _: DfgVertices[_], sorted(DfgVertices.keys())))
 
 check_types(DfgVertexList, "Dfg", "Vertex")
 
@@ -1457,8 +1390,7 @@ for cpt in Args.infiles:
     if not re.search(r'.cpp$', cpt):
         sys.exit("%Error: Expected argument to be .cpp file: " + cpt)
     cpt = re.sub(r'.cpp$', '', cpt)
-    Cpt().process(in_filename=Args.I + "/" + cpt + ".cpp",
-                  out_filename=cpt + "__gen.cpp")
+    Cpt().process(in_filename=Args.I + "/" + cpt + ".cpp", out_filename=cpt + "__gen.cpp")
 
 ######################################################################
 # Local Variables:

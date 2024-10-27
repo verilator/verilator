@@ -230,7 +230,7 @@ static Process& getSolver() {
 
     const char* const* const cmd = &s_argv[0];
     s_solver.open(cmd);
-    s_solver << "(set-logic QF_BV)\n";
+    s_solver << "(set-logic QF_ABV)\n";
     s_solver << "(check-sat)\n";
     s_solver << "(reset)\n";
     std::string s;
@@ -250,32 +250,78 @@ static Process& getSolver() {
     return s_solver;
 }
 
+std::string readUntilBalanced(std::istream& stream) {
+    std::string result;
+    std::string token;
+    int parenCount = 1;
+    while (stream >> token) {
+        for (const char c : token) {
+            if (c == '(') {
+                ++parenCount;
+            } else if (c == ')') {
+                --parenCount;
+            }
+        }
+        result += token + " ";
+        if (parenCount == 0) break;
+    }
+    return result;
+}
+
+std::string parseNestedSelect(const std::string& nested_select_expr,
+                              std::vector<std::string>& indices) {
+    std::istringstream nestedStream(nested_select_expr);
+    std::string name, idx;
+    nestedStream >> name;
+    if (name == "(select") {
+        const std::string further_nested_expr = readUntilBalanced(nestedStream);
+        name = parseNestedSelect(further_nested_expr, indices);
+    }
+    std::getline(nestedStream, idx, ')');
+    indices.push_back(idx);
+    return name;
+}
+
+std::string flattenIndices(const std::vector<std::string>& indices, const VlRandomVar* const var) {
+    int flattenedIndex = 0;
+    int multiplier = 1;
+    for (int i = indices.size() - 1; i >= 0; --i) {
+        int indexValue = 0;
+        std::string trimmedIndex = indices[i];
+
+        trimmedIndex.erase(0, trimmedIndex.find_first_not_of(" \t"));
+        trimmedIndex.erase(trimmedIndex.find_last_not_of(" \t") + 1);
+
+        if (trimmedIndex.find("#x") == 0) {
+            indexValue = std::strtoul(trimmedIndex.substr(2).c_str(), nullptr, 16);
+        } else if (trimmedIndex.find("#b") == 0) {
+            indexValue = std::strtoul(trimmedIndex.substr(2).c_str(), nullptr, 2);
+        } else {
+            indexValue = std::strtoul(trimmedIndex.c_str(), nullptr, 10);
+        }
+        const int length = var->getLength(i);
+        if (length == -1) {
+            VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                       "Internal: Wrong Call: Only RandomArray can call getLength()");
+            break;
+        }
+        flattenedIndex += indexValue * multiplier;
+        multiplier *= length;
+    }
+    std::string hexString = std::to_string(flattenedIndex);
+    while (hexString.size() < 8) { hexString.insert(0, "0"); }
+    return "#x" + hexString;
+}
 //======================================================================
 // VlRandomizer:: Methods
 
-void VlRandomVar::emit(std::ostream& s) const { s << m_name; }
-void VlRandomConst::emit(std::ostream& s) const {
-    s << "#b";
-    for (int i = 0; i < m_width; i++) s << (VL_BITISSET_Q(m_val, m_width - i - 1) ? '1' : '0');
+void VlRandomVar::emitGetValue(std::ostream& s) const { s << ' ' << m_name; }
+void VlRandomVar::emitExtract(std::ostream& s, int i) const {
+    s << " ((_ extract " << i << ' ' << i << ") " << m_name << ')';
 }
-void VlRandomBinOp::emit(std::ostream& s) const {
-    s << '(' << m_op << ' ';
-    m_lhs->emit(s);
-    s << ' ';
-    m_rhs->emit(s);
-    s << ')';
-}
-void VlRandomExtract::emit(std::ostream& s) const {
-    s << "((_ extract " << m_idx << ' ' << m_idx << ") ";
-    m_expr->emit(s);
-    s << ')';
-}
-bool VlRandomVar::set(std::string&& val) const {
-    VlWide<VL_WQ_WORDS_E> qowp;
-    VL_SET_WQ(qowp, 0ULL);
-    WDataOutP owp = qowp;
-    int obits = width();
-    if (obits > VL_QUADSIZE) owp = reinterpret_cast<WDataOutP>(datap());
+void VlRandomVar::emitType(std::ostream& s) const { s << "(_ BitVec " << width() << ')'; }
+int VlRandomVar::totalWidth() const { return m_width; }
+static bool parseSMTNum(int obits, WDataOutP owp, const std::string& val) {
     int i;
     for (i = 0; val[i] && val[i] != '#'; i++) {}
     if (val[i++] != '#') return false;
@@ -289,17 +335,31 @@ bool VlRandomVar::set(std::string&& val) const {
                    "Internal: Unable to parse solver's randomized number");
         return false;
     }
+    return true;
+}
+bool VlRandomVar::set(const std::string& idx, const std::string& val) const {
+    VlWide<VL_WQ_WORDS_E> qowp;
+    VL_SET_WQ(qowp, 0ULL);
+    WDataOutP owp = qowp;
+    const int obits = width();
+    VlWide<VL_WQ_WORDS_E> qiwp;
+    VL_SET_WQ(qiwp, 0ULL);
+    if (!idx.empty() && !parseSMTNum(64, qiwp, idx)) return false;
+    const int nidx = qiwp[0];
+    if (obits > VL_QUADSIZE) owp = reinterpret_cast<WDataOutP>(datap(nidx));
+    if (!parseSMTNum(obits, owp, val)) return false;
+
     if (obits <= VL_BYTESIZE) {
-        CData* const p = static_cast<CData*>(datap());
+        CData* const p = static_cast<CData*>(datap(nidx));
         *p = VL_CLEAN_II(obits, obits, owp[0]);
     } else if (obits <= VL_SHORTSIZE) {
-        SData* const p = static_cast<SData*>(datap());
+        SData* const p = static_cast<SData*>(datap(nidx));
         *p = VL_CLEAN_II(obits, obits, owp[0]);
     } else if (obits <= VL_IDATASIZE) {
-        IData* const p = static_cast<IData*>(datap());
+        IData* const p = static_cast<IData*>(datap(nidx));
         *p = VL_CLEAN_II(obits, obits, owp[0]);
     } else if (obits <= VL_QUADSIZE) {
-        QData* const p = static_cast<QData*>(datap());
+        QData* const p = static_cast<QData*>(datap(nidx));
         *p = VL_CLEAN_QQ(obits, obits, VL_SET_QW(owp));
     } else {
         _vl_clean_inplace_w(obits, owp);
@@ -307,27 +367,31 @@ bool VlRandomVar::set(std::string&& val) const {
     return true;
 }
 
-std::shared_ptr<const VlRandomExpr> VlRandomizer::randomConstraint(VlRNG& rngr, int bits) {
-    unsigned long long hash = VL_RANDOM_RNG_I(rngr) & ((1 << bits) - 1);
-    std::shared_ptr<const VlRandomExpr> concat = nullptr;
-    std::vector<std::shared_ptr<const VlRandomExpr>> varbits;
-    for (const auto& var : m_vars) {
-        for (int i = 0; i < var.second->width(); i++)
-            varbits.emplace_back(std::make_shared<const VlRandomExtract>(var.second, i));
-    }
+void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits) {
+    const IData hash = VL_RANDOM_RNG_I(rngr) & ((1 << bits) - 1);
+    int varBits = 0;
+    for (const auto& var : m_vars) varBits += var.second->totalWidth();
+    os << "(= #b";
+    for (int i = bits - 1; i >= 0; i--) os << (VL_BITISSET_I(hash, i) ? '1' : '0');
+    if (bits > 1) os << " (concat";
     for (int i = 0; i < bits; i++) {
-        std::shared_ptr<const VlRandomExpr> bit = nullptr;
-        for (unsigned j = 0; j * 2 < varbits.size(); j++) {
-            unsigned idx = j + VL_RANDOM_RNG_I(rngr) % (varbits.size() - j);
-            auto sel = varbits[idx];
-            std::swap(varbits[idx], varbits[j]);
-            bit = bit == nullptr ? sel : std::make_shared<const VlRandomBinOp>("bvxor", bit, sel);
+        IData varBitsLeft = varBits;
+        IData varBitsWant = (varBits + 1) / 2;
+        if (varBits > 2) os << " (bvxor";
+        for (const auto& var : m_vars) {
+            for (int j = 0; j < var.second->totalWidth(); j++, varBitsLeft--) {
+                const bool doEmit = (VL_RANDOM_RNG_I(rngr) % varBitsLeft) < varBitsWant;
+                if (doEmit) {
+                    var.second->emitExtract(os, j);
+                    if (--varBitsWant == 0) break;
+                }
+            }
+            if (varBitsWant == 0) break;
         }
-        concat = concat == nullptr ? bit
-                                   : std::make_shared<const VlRandomBinOp>("concat", concat, bit);
+        if (varBits > 2) os << ')';
     }
-    return std::make_shared<const VlRandomBinOp>(
-        "=", concat, std::make_shared<const VlRandomConst>(hash, bits));
+    if (bits > 1) os << ')';
+    os << ')';
 }
 
 bool VlRandomizer::next(VlRNG& rngr) {
@@ -336,12 +400,17 @@ bool VlRandomizer::next(VlRNG& rngr) {
     if (!f) return false;
 
     f << "(set-option :produce-models true)\n";
-    f << "(set-logic QF_BV)\n";
+    f << "(set-logic QF_ABV)\n";
+    f << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
+    f << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
     for (const auto& var : m_vars) {
-        f << "(declare-fun " << var.second->name() << " () (_ BitVec " << var.second->width()
-          << "))\n";
+        f << "(declare-fun " << var.second->name() << " () ";
+        var.second->emitType(f);
+        f << ")\n";
     }
-    for (const std::string& constraint : m_constraints) { f << "(assert " << constraint << ")\n"; }
+    for (const std::string& constraint : m_constraints) {
+        f << "(assert (= #b1 " << constraint << "))\n";
+    }
     f << "(check-sat)\n";
 
     bool sat = parseSolution(f);
@@ -349,10 +418,9 @@ bool VlRandomizer::next(VlRNG& rngr) {
         f << "(reset)\n";
         return false;
     }
-
     for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; i++) {
         f << "(assert ";
-        randomConstraint(rngr, _VL_SOLVER_HASH_LEN)->emit(f);
+        randomConstraint(f, rngr, _VL_SOLVER_HASH_LEN);
         f << ")\n";
         f << "\n(check-sat)\n";
         sat = parseSolution(f);
@@ -376,7 +444,7 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
     }
 
     f << "(get-value (";
-    for (const auto& var : m_vars) f << var.second->name() << ' ';
+    for (const auto& var : m_vars) var.second->emitGetValue(f);
     f << "))\n";
 
     // Quasi-parse S-expression of the form ((x #xVALUE) (y #bVALUE) (z #xVALUE))
@@ -396,21 +464,29 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
                        "Internal: Unable to parse solver's response: invalid S-expression");
             return false;
         }
-
-        std::string name, value;
+        std::string name, idx, value;
+        std::vector<std::string> indices;
         f >> name;
+        indices.clear();
+        if (name == "(select") {
+            const std::string selectExpr = readUntilBalanced(f);
+            name = parseNestedSelect(selectExpr, indices);
+            idx = indices[0];
+        }
         std::getline(f, value, ')');
-
-        auto it = m_vars.find(name);
+        const auto it = m_vars.find(name);
         if (it == m_vars.end()) continue;
         const VlRandomVar& varr = *it->second;
         if (m_randmode && !varr.randModeIdxNone()) {
             if (!(m_randmode->at(varr.randModeIdx()))) continue;
         }
-
-        varr.set(std::move(value));
+        if (indices.size() > 1) {
+            const std::string flattenedIndex = flattenIndices(indices, &varr);
+            varr.set(flattenedIndex, value);
+        } else {
+            varr.set(idx, value);
+        }
     }
-
     return true;
 }
 

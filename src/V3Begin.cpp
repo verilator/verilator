@@ -427,7 +427,9 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     AstNode* bodyPointp = new AstBegin{nodep->fileline(), "[EditWrapper]", nullptr};
     AstNode* newp = nullptr;
     AstNode* lastp = nodep;
-
+    // subfromp used to traverse each dimension of multi-d variable-sized unpacked array (queue,
+    // dyn-arr and associative-arr)
+    AstNodeExpr* subfromp = fromp->cloneTreePure(false);
     // Major dimension first
     for (AstNode *argsp = loopsp->elementsp(), *next_argsp; argsp; argsp = next_argsp) {
         next_argsp = argsp->nextp();
@@ -458,7 +460,10 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
             } else if (VN_IS(fromDtp, DynArrayDType) || VN_IS(fromDtp, QueueDType)) {
                 AstConst* const leftp = new AstConst{fl, 0};
                 AstNodeExpr* const rightp
-                    = new AstCMethodHard{fl, fromp->cloneTreePure(false), "size"};
+                    = new AstCMethodHard{fl, subfromp->cloneTreePure(false), "size"};
+                AstVarRef* varRefp = new AstVarRef{fl, varp, VAccess::READ};
+                subfromp = new AstCMethodHard{fl, subfromp, "at", varRefp};
+                subfromp->dtypep(fromDtp);
                 rightp->dtypeSetSigned32();
                 rightp->protect(false);
                 loopp = createForeachLoop(nodep, bodyPointp, varp, leftp, rightp, VNType::atLt);
@@ -473,13 +478,16 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                 first_varp->usedLoopIdx(true);
                 first_varp->lifetime(VLifetime::AUTOMATIC);
                 AstNodeExpr* const firstp
-                    = new AstCMethodHard{fl, fromp->cloneTreePure(false), "first",
+                    = new AstCMethodHard{fl, subfromp->cloneTreePure(false), "first",
                                          new AstVarRef{fl, varp, VAccess::READWRITE}};
                 firstp->dtypeSetSigned32();
                 AstNodeExpr* const nextp
-                    = new AstCMethodHard{fl, fromp->cloneTreePure(false), "next",
+                    = new AstCMethodHard{fl, subfromp->cloneTreePure(false), "next",
                                          new AstVarRef{fl, varp, VAccess::READWRITE}};
                 nextp->dtypeSetSigned32();
+                AstVarRef* varRefp = new AstVarRef{fl, varp, VAccess::READ};
+                subfromp = new AstCMethodHard{fl, subfromp, "at", varRefp};
+                subfromp->dtypep(fromDtp);
                 AstNode* const first_clearp
                     = new AstAssign{fl, new AstVarRef{fl, first_varp, VAccess::WRITE},
                                     new AstConst{fl, AstConst::BitFalse{}}};

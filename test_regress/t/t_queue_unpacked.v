@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 `define stop $stop
-`define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
 module t (/*AUTOARG*/);
 
@@ -36,6 +36,11 @@ module t (/*AUTOARG*/);
          `checks(b0[1], "world");
          `checks(b1[0], "bye");
          `checks(b1[1], "world");
+
+         iq[2][0] = "goodbye";
+         iq[2][1] = "world";
+         `checks(iq[2][0], "goodbye");
+         `checks(iq[2][1], "world");
       end
 
 `ifndef verilator

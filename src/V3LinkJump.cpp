@@ -202,12 +202,13 @@ class LinkJumpVisitor final : public VNVisitor {
         // Note var can be signed or unsigned based on original number.
         AstNodeExpr* const countp = nodep->countp()->unlinkFrBackWithNext();
         const string name = "__Vrepeat"s + cvtToStr(m_modRepeatNum++);
+        AstBegin* const beginp = new AstBegin{nodep->fileline(), "", nullptr, false, true};
         // Spec says value is integral, if negative is ignored
         AstVar* const varp
             = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP, name, nodep->findSigned32DType()};
         varp->lifetime(VLifetime::AUTOMATIC);
         varp->usedLoopIdx(true);
-        m_modp->addStmtsp(varp);
+        beginp->addStmtsp(varp);
         AstNode* initsp = new AstAssign{
             nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE}, countp};
         AstNode* const decp = new AstAssign{
@@ -222,8 +223,9 @@ class LinkJumpVisitor final : public VNVisitor {
         AstWhile* const whilep = new AstWhile{nodep->fileline(), condp, bodysp, decp};
         if (!m_unrollFull.isDefault()) whilep->unrollFull(m_unrollFull);
         m_unrollFull = VOptionBool::OPT_DEFAULT_FALSE;
-        initsp = initsp->addNext(whilep);
-        nodep->replaceWith(initsp);
+        beginp->addStmtsp(initsp);
+        beginp->addStmtsp(whilep);
+        nodep->replaceWith(beginp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstWhile* nodep) override {

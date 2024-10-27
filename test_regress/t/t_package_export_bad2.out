@@ -1,0 +1,4 @@
+%Error: t/t_package_export_bad2.v:12:18: Export package not found: 'Pkg1b'
+   12 |    export Pkg1b::*;   
+      |                  ^
+%Error: Exiting due to

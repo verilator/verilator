@@ -1,0 +1,11 @@
+%Error-PINNOTFOUND: t/t_class_param_extra_bad.v:13:21: Parameter not found: '__paramNumber1'
+   13 |    localparam Cls1#(123, integer, "text")::bool_t PARAM = 1;
+      |                     ^~~
+                    ... For error description see https://verilator.org/warn/PINNOTFOUND?v=latest
+%Error-PINNOTFOUND: t/t_class_param_extra_bad.v:13:26: Parameter not found: '__paramNumber2'
+   13 |    localparam Cls1#(123, integer, "text")::bool_t PARAM = 1;
+      |                          ^~~~~~~
+%Error-PINNOTFOUND: t/t_class_param_extra_bad.v:13:35: Parameter not found: '__paramNumber3'
+   13 |    localparam Cls1#(123, integer, "text")::bool_t PARAM = 1;
+      |                                   ^~~~~~
+%Error: Exiting due to

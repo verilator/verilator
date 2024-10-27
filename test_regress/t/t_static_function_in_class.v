@@ -8,8 +8,8 @@ class string_utils;
   typedef string array_of_string[];
 
   static function array_of_string split_by_dash(string s);
-    string 	  parts[$];
-    int 	  last_char_position = -1;
+    string        parts[$];
+    int           last_char_position = -1;
     for (int i = 0; i < s.len(); i++) begin
       if (i == s.len()-1) begin
         parts.push_back(s.substr(last_char_position+1, i));

@@ -13,11 +13,7 @@ typedef logic [7:0]  mask_t [7:0];
 
 parameter mask_t IMP_MASK = '{8'hE1, 8'h03, 8'h07, 8'h3F, 8'h33, 8'hC3, 8'hC3, 8'h37};
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (/*AUTOARG*/);
 
    mask_t a;
    //logic [7:0] a[7:0];

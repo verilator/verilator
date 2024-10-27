@@ -82,7 +82,9 @@ protected:
             for (uint64_t n = 0; n < size; ++n) {
                 m_unpackedWord = n;
                 if (n) puts((n % tabMod) ? ", " : ",\n");
-                iterateConst(nodep->getIndexDefaultedValuep(n));
+                AstNode* const itemp = nodep->getIndexDefaultedValuep(n);
+                UASSERT_OBJ(itemp, nodep, "Missing array init element");
+                iterateConst(itemp);
             }
             puts("\n");
             puts("}");

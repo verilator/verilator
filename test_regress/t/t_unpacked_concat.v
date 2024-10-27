@@ -4,12 +4,7 @@
 // without warranty, 2023 by Yutetsu TAKATSUKASA.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-
-   input clk;
+module t (/*AUTOARG*/);
 
    typedef int AI3[1:3];
    AI3 A3;

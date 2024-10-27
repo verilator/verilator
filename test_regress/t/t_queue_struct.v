@@ -13,6 +13,10 @@ module t (/*AUTOARG*/);
       int b[$];
    } st_t;
 
+   typedef struct {
+      int v;
+   } st_in_t;
+
    function automatic st_t bar();
       // verilator no_inline_task
       for (int i = 0; i < 4; ++i) begin
@@ -21,6 +25,7 @@ module t (/*AUTOARG*/);
    endfunction // bar
 
    st_t res;
+   st_in_t q[$];
 
    initial begin
       res = bar();
@@ -28,6 +33,10 @@ module t (/*AUTOARG*/);
       `checkd(res.b[1], 1);
       `checkd(res.b[2], 2);
       `checkd(res.b[3], 3);
+
+      q.push_back(st_in_t'{15});
+      q[0].v++;
+      `checkd(q[0].v, 16);
 
       $write("*-* All Finished *-*\n");
       $finish;

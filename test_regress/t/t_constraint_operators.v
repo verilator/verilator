@@ -34,9 +34,9 @@ class Packet;
    constraint one_c { one == 1; }
    constraint sel { d[15:8] == 8'h55; }
    constraint ifelse {
-      if (one == 1) out0 == 'h333;
+      if (one) out0 == 'h333;
 
-      if (one == 0) tiny != tiny;
+      if (!one) tiny != tiny;
       else out1 == 'h333;
       if (one == 1) out2 == 'h333;
       else tiny != tiny;
@@ -58,6 +58,11 @@ class Packet;
       else
          if (one == 1) tiny != tiny;
          else { tiny != tiny; }
+
+      if (one && zero) tiny != tiny;
+      if (~one && zero) tiny != tiny;
+      if (zero || (one & zero)) tiny != tiny;
+      if (zero && (one | zero)) tiny != tiny;
    }
 
 endclass

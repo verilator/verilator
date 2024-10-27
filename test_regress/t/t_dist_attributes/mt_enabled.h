@@ -282,7 +282,7 @@ public:
 
 class ConstructorCallsUnsafeLocalFunction {
 public:
-    void unsafe_function() VL_MT_UNSAFE{};
+    void unsafe_function() VL_MT_UNSAFE {};
     ConstructorCallsUnsafeLocalFunction() { unsafe_function(); }
 };
 class ConstructorCallsStaticFunctionNoAnnotation {
@@ -367,6 +367,27 @@ public:
     ConstructorCallsGlobalObjectMember() { dummyGlobalVar.d.dummy_function2(); }
 };
 
+namespace VirtualInheritance {
+struct Base1 {
+    virtual int func(int a, int b) const VL_PURE = 0;
+    virtual ~Base1() = default;
+};
+
+struct Base2 {
+    virtual int func() const VL_PURE = 0;
+    virtual ~Base2() = default;
+};
+
+struct Derived final : public Base1, Base2 {
+    int func(int a, int b) const override VL_PURE { return notPure(); }
+    int func() const override VL_PURE { return notPure(); }
+    static int notPure() {
+        static int s_counter;
+        return ++s_counter;
+    }
+};
+}  //namespace VirtualInheritance
+
 class TestClassConstructor {
     void safe_function_unsafe_constructor_bad() VL_MT_SAFE {
         ConstructorCallsUnsafeLocalFunction f{};
@@ -408,6 +429,7 @@ class TestClassConstructor {
     void safe_function_calls_constructor_global_object_member_bad() VL_MT_STABLE {
         ConstructorCallsGlobalObjectMember f{};
     }
+    void virtual_function_mismatch() { VirtualInheritance::Derived pd{}; }
 };
 
 #endif  // T_DIST_ATTRIBUTES_MT_ENABLED_H_

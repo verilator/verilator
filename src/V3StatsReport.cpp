@@ -221,7 +221,7 @@ void V3Stats::statsStage(const string& name) {
 
 void V3Stats::infoHeader(std::ofstream& os, const string& prefix) {
     os << prefix << "Information:\n";
-    os << prefix << "  " << V3Options::version() << '\n';
+    os << prefix << "  Version: " << V3Options::version() << '\n';
     os << prefix << "  Arguments: " << v3Global.opt.allArgsString() << '\n';
     os << prefix << "  Build jobs: " << v3Global.opt.buildJobs() << '\n';
     os << prefix << "  Verilate jobs: " << v3Global.opt.verilateJobs() << '\n';

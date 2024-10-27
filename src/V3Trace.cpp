@@ -175,6 +175,7 @@ class TraceVisitor final : public VNVisitor {
     AstScope* const m_topScopep = v3Global.rootp()->topScopep()->scopep();  // The top AstScope
     AstCFunc* m_cfuncp = nullptr;  // C function adding to graph
     AstCFunc* m_regFuncp = nullptr;  // Trace registration function
+    AstCFunc* m_actAllFuncp = nullptr;  // Set all activity function
     AstTraceDecl* m_tracep = nullptr;  // Trace function adding to graph
     AstVarScope* m_activityVscp = nullptr;  // Activity variable
     uint32_t m_activityNumber = 0;  // Count of fields in activity variable
@@ -187,8 +188,10 @@ class TraceVisitor final : public VNVisitor {
     const uint32_t m_parallelism
         = v3Global.opt.useTraceParallel() ? static_cast<uint32_t>(v3Global.opt.threads()) : 1;
 
-    VDouble0 m_statUniqSigs;  // Statistic tracking
+    VDouble0 m_statSetters;  // Statistic tracking
+    VDouble0 m_statSettersSlow;  // Statistic tracking
     VDouble0 m_statUniqCodes;  // Statistic tracking
+    VDouble0 m_statUniqSigs;  // Statistic tracking
 
     // All activity numbers applying to a given trace
     using ActCodeSet = std::set<uint32_t>;
@@ -395,25 +398,32 @@ class TraceVisitor final : public VNVisitor {
         return new AstArraySel(flp, new AstVarRef{flp, m_activityVscp, access}, acode);
     }
 
-    void addActivitySetter(AstNode* insertp, uint32_t code) {
+    AstNode* newActivitySetter(AstNode* insertp, uint32_t code) {
+        ++m_statSetters;
         FileLine* const fl = insertp->fileline();
         AstAssign* const setterp = new AstAssign{fl, selectActivity(fl, code, VAccess::WRITE),
                                                  new AstConst{fl, AstConst::BitTrue{}}};
-        if (AstStmtExpr* const stmtp = VN_CAST(insertp, StmtExpr)) {
-            stmtp->addNextHere(setterp);
-        } else if (AstCFunc* const funcp = VN_CAST(insertp, CFunc)) {
-            // If there are awaits, insert the setter after each await
-            if (funcp->isCoroutine() && funcp->stmtsp()) {
-                funcp->stmtsp()->foreachAndNext([&](AstCAwait* awaitp) {
-                    AstNode* stmtp = awaitp->backp();
-                    while (VN_IS(stmtp, NodeExpr)) stmtp = stmtp->backp();
-                    stmtp->addNextHere(setterp->cloneTree(false));
-                });
+        return setterp;
+    }
+
+    AstNode* newActivityAll(AstNode* insertp) {
+        ++m_statSettersSlow;
+        if (!m_actAllFuncp) {
+            FileLine* const flp = m_topScopep->fileline();
+            AstCFunc* const funcp = new AstCFunc{flp, "__Vm_traceActivitySetAll", m_topScopep};
+            funcp->slow(true);
+            funcp->isStatic(false);
+            funcp->isLoose(true);
+            m_topScopep->addBlocksp(funcp);
+            for (uint32_t code = 0; code < m_activityNumber; ++code) {
+                AstNode* const setterp = newActivitySetter(insertp, code);
+                funcp->addStmtsp(setterp);
             }
-            funcp->addStmtsp(setterp);
-        } else {
-            insertp->v3fatalSrc("Bad trace activity vertex");
+            m_actAllFuncp = funcp;
         }
+        AstCCall* const callp = new AstCCall{insertp->fileline(), m_actAllFuncp};
+        callp->dtypeSetVoid();
+        return callp->makeStmt();
     }
 
     void createActivityFlags() {
@@ -441,14 +451,31 @@ class TraceVisitor final : public VNVisitor {
         // Insert activity setters
         for (const V3GraphVertex& vtx : m_graph.vertices()) {
             if (const TraceActivityVertex* const vtxp = vtx.cast<const TraceActivityVertex>()) {
+                AstNode* setterp = nullptr;
                 if (vtxp->activitySlow()) {
+                    setterp = newActivityAll(vtxp->insertp());
                     // Just set all flags in slow code as it should be rare.
                     // This will be rolled up into a loop by V3Reloop.
-                    for (uint32_t code = 0; code < m_activityNumber; ++code) {
-                        addActivitySetter(vtxp->insertp(), code);
-                    }
                 } else if (!vtxp->activityAlways()) {
-                    addActivitySetter(vtxp->insertp(), vtxp->activityCode());
+                    setterp = newActivitySetter(vtxp->insertp(), vtxp->activityCode());
+                }
+                if (setterp) {
+                    AstNode* const insertp = vtxp->insertp();
+                    if (AstStmtExpr* const stmtp = VN_CAST(insertp, StmtExpr)) {
+                        stmtp->addNextHere(setterp);
+                    } else if (AstCFunc* const funcp = VN_CAST(insertp, CFunc)) {
+                        // If there are awaits, insert the setter after each await
+                        if (funcp->isCoroutine() && funcp->stmtsp()) {
+                            funcp->stmtsp()->foreachAndNext([&](AstCAwait* awaitp) {
+                                AstNode* stmtp = awaitp->backp();
+                                while (VN_IS(stmtp, NodeExpr)) stmtp = stmtp->backp();
+                                stmtp->addNextHere(setterp->cloneTree(false));
+                            });
+                        }
+                        funcp->addStmtsp(setterp);
+                    } else {
+                        insertp->v3fatalSrc("Bad trace activity vertex");
+                    }
                 }
             }
         }
@@ -681,7 +708,13 @@ class TraceVisitor final : public VNVisitor {
                 // Track splitting due to size
                 UASSERT_OBJ(incFulp->nodeCount() == incChgp->nodeCount(), declp,
                             "Should have equal cost");
-                subStmts += incChgp->nodeCount();
+                const VNumRange range = declp->arrayRange();
+                if (range.ranged()) {
+                    // 2x because each element is a TraceInc and a VarRef
+                    subStmts += range.elements() * 2;
+                } else {
+                    subStmts += incChgp->nodeCount();
+                }
 
                 // Track partitioning
                 nCodes += declp->codeInc();
@@ -901,8 +934,10 @@ public:
         iterate(nodep);
     }
     ~TraceVisitor() override {
-        V3Stats::addStat("Tracing, Unique traced signals", m_statUniqSigs);
+        V3Stats::addStat("Tracing, Activity setters", m_statSetters);
+        V3Stats::addStat("Tracing, Activity slow blocks", m_statSettersSlow);
         V3Stats::addStat("Tracing, Unique trace codes", m_statUniqCodes);
+        V3Stats::addStat("Tracing, Unique traced signals", m_statUniqSigs);
     }
 };
 

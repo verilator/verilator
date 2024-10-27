@@ -41,11 +41,8 @@ class wrapped_int;
    endfunction
 endclass
 
-module t(/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t(/*AUTOARG*/);
+
    Cls bar;
    Cls baz;
    wrapped_int i1, i2;

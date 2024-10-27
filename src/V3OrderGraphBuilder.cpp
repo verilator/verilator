@@ -134,9 +134,8 @@ class OrderGraphBuilder final : public VNVisitor {
 
         // This is the original sensitivity of the block (i.e.: not the ref into the TRIGGERVEC)
 
-        const AstSenTree* const senTreep = nodep->sensesp()->hasCombo()
-                                               ? nodep->sensesp()
-                                               : m_trigToSen.at(nodep->sensesp()->sensesp());
+        const AstSenTree* const senTreep
+            = nodep->sensesp()->hasCombo() ? nodep->sensesp() : m_trigToSen.at(nodep->sensesp());
 
         m_inClocked = senTreep->hasClocked();
 
@@ -216,24 +215,20 @@ class OrderGraphBuilder final : public VNVisitor {
             // Update VarUsage
             varscp->user2(varscp->user2() | VU_GEN);
             // Add edges for produced variables
-            if (!m_inClocked || m_inPost) {
-                // Combinational logic
-                OrderVarVertex* const varVxp = getVarVertex(varscp, VarVertexType::STD);
-                // Add edge from producing LogicVertex -> produced VarStdVertex
-                if (m_inPost) {
-                    m_graphp->addSoftEdge(m_logicVxp, varVxp, WEIGHT_COMBO);
-                } else {
+            if (m_inPost) {
+                if (!varscp->varp()->ignorePostWrite()) {
+                    // Add edge from producing LogicVertex -> produced VarStdVertex
+                    OrderVarVertex* const varVxp = getVarVertex(varscp, VarVertexType::STD);
                     m_graphp->addHardEdge(m_logicVxp, varVxp, WEIGHT_NORMAL);
                 }
-
+                OrderVarVertex* const postVxp = getVarVertex(varscp, VarVertexType::POST);
                 // Add edge from produced VarPostVertex -> to producing LogicVertex
-
-                // For m_inPost:
-                //    Add edge consumed_var_POST->logic_vertex
-                //    This prevents a consumer of the "early" value to be scheduled
-                //   after we've changed to the next-cycle value
-                // ALWAYS do it:
-                //    There maybe a wire a=b; between the two blocks
+                m_graphp->addHardEdge(postVxp, m_logicVxp, WEIGHT_POST);
+            } else if (!m_inClocked) {  // Combinational logic
+                // Add edge from producing LogicVertex -> produced VarStdVertex
+                OrderVarVertex* const varVxp = getVarVertex(varscp, VarVertexType::STD);
+                m_graphp->addHardEdge(m_logicVxp, varVxp, WEIGHT_NORMAL);
+                // Add edge from produced VarPostVertex -> to producing LogicVertex
                 OrderVarVertex* const postVxp = getVarVertex(varscp, VarVertexType::POST);
                 m_graphp->addHardEdge(postVxp, m_logicVxp, WEIGHT_POST);
             } else if (m_inPre) {  // AstAssignPre

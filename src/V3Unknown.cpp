@@ -48,6 +48,7 @@ class UnknownVisitor final : public VNVisitor {
     //  AstNode::user2p()       -> AstIf* Inserted if assignment for conditional
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
+    static const std::string m_xrandPrefix;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -58,7 +59,7 @@ class UnknownVisitor final : public VNVisitor {
     bool m_allowXUnique = true;  // Allow unique assignments
     VDouble0 m_statUnkVars;  // Statistic tracking
     V3UniqueNames m_lvboundNames;  // For generating unique temporary variable names
-    V3UniqueNames m_xrandNames;  // For generating unique temporary variable names
+    std::unique_ptr<V3UniqueNames> m_xrandNames;  // For generating unique temporary variable names
 
     // METHODS
 
@@ -118,6 +119,28 @@ class UnknownVisitor final : public VNVisitor {
                 = new AstVar{fl, VVarType::MODULETEMP, m_lvboundNames.get(prep), prep->dtypep()};
             m_modp->addStmtsp(varp);
             AstNode* const abovep = prep->backp();  // Grab above point before we replace 'prep'
+            AstNode* currentStmtp = abovep;
+            while (currentStmtp && !VN_IS(currentStmtp, NodeStmt))
+                currentStmtp = currentStmtp->backp();
+            VNRelinker linkContext;
+            currentStmtp = currentStmtp->unlinkFrBackWithNext(&linkContext);
+            AstNodeExpr* const selExprp = prep->cloneTree(true);
+            AstNodeExpr* currentExprp = selExprp;
+            while (AstNodeExpr* itrSelExprp = VN_AS(currentExprp->op1p(), NodeExpr)) {
+                if (AstVarRef* const selRefp = VN_CAST(itrSelExprp, VarRef)) {
+                    // Mark the variable reference as READ access to avoid assignment issues
+                    selRefp->access(VAccess::READ);
+                    break;
+                }
+                currentExprp = itrSelExprp;
+            }
+            // Before assigning the value to the temporary variable, first assign the current array
+            // element to it. This ensures any field modifications happen on the correct instance
+            // and prevents overwriting other fields.
+            AstNode* const newAssignp
+                = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, selExprp};
+            newAssignp->addNextStmt(currentStmtp, newAssignp);
+            linkContext.relink(newAssignp);
             prep->replaceWith(new AstVarRef{fl, varp, VAccess::WRITE});
             if (m_timingControlp) m_timingControlp->unlinkFrBack();
             AstIf* const newp = new AstIf{
@@ -141,14 +164,16 @@ class UnknownVisitor final : public VNVisitor {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_constXCvt);
         VL_RESTORER(m_allowXUnique);
+        auto xrandNames = std::make_unique<V3UniqueNames>(m_xrandPrefix);
         {
             m_modp = nodep;
             m_constXCvt = true;
             // Class X randomization causes Vxrand in strange places, so disable
             if (VN_IS(nodep, Class)) m_allowXUnique = false;
             m_lvboundNames.reset();
-            m_xrandNames.reset();
+            xrandNames.swap(m_xrandNames);
             iterateChildren(nodep);
+            xrandNames.swap(m_xrandNames);
         }
     }
     void visit(AstAssignDly* nodep) override {
@@ -345,7 +370,7 @@ class UnknownVisitor final : public VNVisitor {
                 // We use the special XTEMP type so it doesn't break pure functions
                 UASSERT_OBJ(m_modp, nodep, "X number not under module");
                 AstVar* const newvarp
-                    = new AstVar{nodep->fileline(), VVarType::XTEMP, m_xrandNames.get(nodep),
+                    = new AstVar{nodep->fileline(), VVarType::XTEMP, m_xrandNames->get(nodep),
                                  VFlagLogicPacked{}, nodep->width()};
                 newvarp->lifetime(VLifetime::STATIC);
                 ++m_statUnkVars;
@@ -410,8 +435,10 @@ class UnknownVisitor final : public VNVisitor {
                 nodep->unlinkFrBack(&replaceHandle);
                 V3Number xnum{nodep, nodep->width()};
                 xnum.setAllBitsX();
-                AstNode* const newp = new AstCondBound{nodep->fileline(), condp, nodep,
-                                                       new AstConst{nodep->fileline(), xnum}};
+                AstNodeExpr* const xexprp = new AstConst{nodep->fileline(), xnum};
+                AstNodeExpr* const newp
+                    = condp->isZero() ? xexprp
+                                      : new AstCondBound{nodep->fileline(), condp, nodep, xexprp};
                 if (debug() >= 9) newp->dumpTree("-        _new: ");
                 // Link in conditional
                 replaceHandle.relink(newp);
@@ -515,13 +542,15 @@ public:
     // CONSTRUCTORS
     explicit UnknownVisitor(AstNetlist* nodep)
         : m_lvboundNames{"__Vlvbound"}
-        , m_xrandNames{"__Vxrand"} {
+        , m_xrandNames{std::make_unique<V3UniqueNames>(m_xrandPrefix)} {
         iterate(nodep);
     }
     ~UnknownVisitor() override {  //
         V3Stats::addStat("Unknowns, variables created", m_statUnkVars);
     }
 };
+
+const std::string UnknownVisitor::m_xrandPrefix = "__Vxrand";
 
 //######################################################################
 // Unknown class functions

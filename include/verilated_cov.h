@@ -92,8 +92,8 @@ public:
     std::string defaultFilename() VL_MT_SAFE;
     /// Make all data per_instance, overriding point's per_instance
     void forcePerInstance(bool flag) VL_MT_SAFE;
-    void write() VL_MT_SAFE { write(defaultFilename()); }
     /// Write all coverage data to a file
+    void write() VL_MT_SAFE { write(defaultFilename()); }
     void write(const std::string& filename) VL_MT_SAFE;
     /// Clear coverage points (and call delete on all items)
     void clear() VL_MT_SAFE;
@@ -165,8 +165,8 @@ public:
     /// Return default filename for the current thread
     static std::string defaultFilename() VL_MT_SAFE { return threadCovp()->defaultFilename(); }
     /// Write all coverage data to a file for the current thread
-    static void write(const std::string& filename) VL_MT_SAFE { threadCovp()->write(filename); }
     static void write() VL_MT_SAFE { write(defaultFilename()); }
+    static void write(const std::string& filename) VL_MT_SAFE { threadCovp()->write(filename); }
     /// Clear coverage points (and call delete on all items) for the current thread
     static void clear() VL_MT_SAFE { threadCovp()->clear(); }
     /// Clear items not matching the provided string for the current thread

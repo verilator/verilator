@@ -7,7 +7,7 @@
 module sub(input wire clk, cpu_reset);
    reg reset_r;
    always @(posedge clk) begin
-      reset_r <= cpu_reset;	 // The problematic one
+      reset_r <= cpu_reset;      // The problematic one
    end
 endmodule
 

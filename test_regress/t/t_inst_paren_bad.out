@@ -1,0 +1,5 @@
+%Error: t/t_inst_paren_bad.v:11:8: Instantiation 'sub_inst' requires parenthesis (IEEE 1800-2023 23.3.2)
+                                 : ... Suggest use 'sub_inst()'
+   11 |    sub sub_inst;   
+      |        ^~~~~~~~
+%Error: Exiting due to

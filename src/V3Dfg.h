@@ -38,7 +38,6 @@
 #include "V3Global.h"
 #include "V3Hash.h"
 #include "V3List.h"
-#include "V3ThreadSafety.h"
 
 #include "V3Dfg__gen_forward_class_decls.h"  // From ./astgen
 
@@ -207,11 +206,11 @@ public:
         UDEBUGONLY(UASSERT_OBJ(isSupportedDType(nodep->dtypep()), nodep, "Unsupported dtype"););
         // For simplicity, all packed types are represented with a fixed type
         if (AstUnpackArrayDType* const typep = VN_CAST(nodep->dtypep(), UnpackArrayDType)) {
-            AstNodeDType* const dtypep = new AstUnpackArrayDType{
+            AstNodeDType* const adtypep = new AstUnpackArrayDType{
                 typep->fileline(), dtypeForWidth(typep->subDTypep()->width()),
                 typep->rangep()->cloneTree(false)};
-            v3Global.rootp()->typeTablep()->addTypesp(dtypep);
-            return dtypep;
+            v3Global.rootp()->typeTablep()->addTypesp(adtypep);
+            return adtypep;
         }
         return dtypeForWidth(nodep->width());
     }

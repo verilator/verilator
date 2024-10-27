@@ -23,6 +23,7 @@
 # include "V3Stats.h"
 VL_DEFINE_DEBUG_FUNCTIONS;
 #endif
+#include <thread>
 // clang-format on
 
 //======================================================================
@@ -88,7 +89,18 @@ void V3ErrorGuarded::vlAbortOrExit() VL_REQUIRES(m_mutex) {
     if (V3Error::debugDefault()) {
         std::cerr << msgPrefix() << "Aborting since under --debug" << endl;
         V3Error::vlAbort();
-    } else {
+    }
+#ifndef V3ERROR_NO_GLOBAL_
+    else if (v3Global.opt.verilateJobs() > 1
+             && v3Global.mainThreadId() != std::this_thread::get_id()) {
+        VL_GCOV_DUMP();  // No static destructors are called, thus must be called manually.
+
+        // Exit without triggering any global destructors.
+        // Used to prevent detached V3ThreadPool jobs accessing destroyed static objects.
+        ::_exit(1);
+    }
+#endif
+    else {
         std::exit(1);
     }
 }
@@ -111,7 +123,7 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
     // Skip suppressed messages
     if (m_errorSuppressed
         // On debug, show only non default-off warning to prevent pages of warnings
-        && (!debug() || m_errorCode.defaultsOff()))
+        && (!debug() || debug() < 3 || m_errorCode.defaultsOff()))
         return;
     string msg = msgPrefix() + sstr.str();
     // If suppressed print only first line to reduce verbosity
@@ -209,7 +221,6 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
 #ifndef V3ERROR_NO_GLOBAL_
                 if (dumpTreeLevel() || dumpTreeJsonLevel() || debug()) {
                     V3Broken::allowMidvisitorCheck(true);
-                    const V3ThreadPool::ScopedExclusiveAccess exclusiveAccess;
                     if (dumpTreeLevel()) {
                         v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("final.tree", 990));
                     }
@@ -222,8 +233,6 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
                         V3Stats::statsFinalAll(v3Global.rootp());
                         V3Stats::statsReport();
                     }
-                    // Abort in exclusive access to make sure other threads
-                    // don't change error code
                     vlAbortOrExit();
                 }
 #endif
@@ -276,27 +285,14 @@ void V3Error::vlAbort() {
     VL_GCOV_DUMP();
     std::abort();
 }
-void V3Error::v3errorAcquireLock(bool mtDisabledCodeUnit) VL_ACQUIRE(s().m_mutex) {
-#if !defined(V3ERROR_NO_GLOBAL_)
-    if (!mtDisabledCodeUnit) {
-        V3Error::s().m_mutex.lockCheckStopRequest(
-            []() -> void { V3ThreadPool::s().waitIfStopRequested(); });
-    } else {
-        V3Error::s().m_mutex.lock();
-    }
-#else
+std::ostringstream& V3Error::v3errorPrep(V3ErrorCode code) VL_ACQUIRE(s().m_mutex) {
     V3Error::s().m_mutex.lock();
-#endif
-}
-std::ostringstream& V3Error::v3errorPrep(V3ErrorCode code, bool mtDisabledCodeUnit)
-    VL_ACQUIRE(s().m_mutex) {
-    v3errorAcquireLock(mtDisabledCodeUnit);
     s().v3errorPrep(code);
     return v3errorStr();
 }
-std::ostringstream& V3Error::v3errorPrepFileLine(V3ErrorCode code, const char* file, int line,
-                                                 bool mtDisabledCodeUnit) VL_ACQUIRE(s().m_mutex) {
-    v3errorPrep(code, mtDisabledCodeUnit) << file << ":" << std::dec << line << ": ";
+std::ostringstream& V3Error::v3errorPrepFileLine(V3ErrorCode code, const char* file, int line)
+    VL_ACQUIRE(s().m_mutex) {
+    v3errorPrep(code) << file << ":" << std::dec << line << ": ";
     return v3errorStr();
 }
 std::ostringstream& V3Error::v3errorStr() VL_REQUIRES(s().m_mutex) { return s().v3errorStr(); }
