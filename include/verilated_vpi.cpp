@@ -3419,58 +3419,68 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
         }
 
         return;
-    } else if(arrayvalue_p->format== vpiShortIntVal) {
-        PLI_INT16 *shortints=arrayvalue_p->value.shortints;
+    } else if (arrayvalue_p->format == vpiShortIntVal) {
+        PLI_INT16 *shortints = arrayvalue_p->value.shortints;
 
-        if(varp->vltype()==VLVT_UINT8) {
-            CData *ptr =reinterpret_cast<CData*>(vop->varDatap());
+        if (varp->vltype() == VLVT_UINT8) {
+            CData *ptr = reinterpret_cast<CData*>(vop->varDatap());
+
             for (int i = 0; i < num; i++) {
                 ptr[index++] = shortints[i];
                 index = index % size;
             }
-        } else if (varp->vltype(=VLVT_UINT16)) {
+        } else if (varp->vltype() == VLVT_UINT16) {
             SData *ptr = reinterpret_cast<SData*>(vop->varDatap());
+
             for (int i = 0; i < num; i++) {
                 ptr[index++] = shortints[i];
                 index = index % size;
             }
         }
+
         return;
-    } else if(arrayvalue_p->format==vpiLongIntVal) {
-        PLI_INT64 *longints=arrayvalue_p->value.longints;
+    } else if (arrayvalue_p->format == vpiLongIntVal) {
+        PLI_INT64 *longints = arrayvalue_p->value.longints;
 
         if (varp->vltype() == VLVT_UINT8) {
-            CData *ptr =reinterpret_cast<CData*>(vop->varDatap());
+            CData *ptr = reinterpret_cast<CData*>(vop->varDatap());
+
             for (int i = 0; i < num; i++) {
                 ptr[index++] = longints[i];
                 index = index % size;
             }
         } else if (varp->vltype() == VLVT_UINT16) {
             SData *ptr = reinterpret_cast<SData*>(vop->varDatap());
+
             for (int i = 0; i < num; i++) {
                 ptr[index++] = longints[i];
                 index = index % size;
             }
         } else if (varp->vltype() == VLVT_UINT64) {
             QData *ptr = reinterpret_cast<QData*>(vop->varDatap());
+
             for (int i = 0; i < num; i++) {
                 ptr[index++] = longints[i];
                 index = index % size;
             }
         }
+
         return;
-    } else if (arrayvalue_p->format==vpiRealVal) {
-        double *reals=arrayvalue_p->value.reals;
+    } else if (arrayvalue_p->format == vpiRealVal) {
+        double *reals = arrayvalue_p->value.reals;
 
         if (varp->vltype() == VLVT_UINT64) {
             double *ptr = reinterpret_cast<double*>(vop->varDatap());
+
             for (int i = 0; i < num; i++) {
-                ptr[index++]=reals[i] ;
+                ptr[index++] = reals[i];
                 index = index % size;
             }
         }
+
         return;
     }
+
     VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for %s", __func__,
                   VerilatedVpiError::strFromVpiVal(arrayvalue_p->format), vop->fullname());
 }
