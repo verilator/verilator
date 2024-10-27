@@ -102,6 +102,7 @@ Verilator 5.029 devel
 * Fix struct literal on pattern assignment (#5552) (#5559). [Todd Strader]
 * Fix build on gcc when using the Spack wrapper (#5555). [Eric Müller]
 * Fix enum name method (#5563). [Todd Strader]
+* Fix `$countbits` in assert with non-tristates (#5566). [Shou-Li Hsu]
 
 
 Verilator 5.028 2024-08-21

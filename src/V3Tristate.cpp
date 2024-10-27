@@ -1433,7 +1433,6 @@ class TristateVisitor final : public TristateBaseVisitor {
         dropop[1] = VN_IS(nodep->thsp(), Const) && VN_AS(nodep->thsp(), Const)->num().isAnyZ();
         dropop[2] = VN_IS(nodep->fhsp(), Const) && VN_AS(nodep->fhsp(), Const)->num().isAnyZ();
         UINFO(4, " COUNTBITS(" << dropop[0] << dropop[1] << dropop[2] << " " << nodep << endl);
-        const AstVarRef* const varrefp = VN_AS(nodep->lhsp(), VarRef);  // Input variable
         if (m_graphing) {
             iterateAndNextNull(nodep->lhsp());
             if (!dropop[0]) iterateAndNextNull(nodep->rhsp());
@@ -1454,7 +1453,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                 // do so at present, we only compare if there is a z in the equation. Otherwise
                 // we'd need to attach an enable to every signal, then optimize them away later
                 // when we determine the signal has no tristate
-                if (!VN_IS(nodep->lhsp(), VarRef)) {
+                const AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef);  // Input variable
+                if (!varrefp) {
                     nodep->v3warn(E_UNSUPPORTED, "Unsupported LHS tristate construct: "
                                                      << nodep->prettyTypeName());
                     return;
