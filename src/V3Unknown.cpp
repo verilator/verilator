@@ -127,7 +127,7 @@ class UnknownVisitor final : public VNVisitor {
             AstNodeExpr* const selExprp = prep->cloneTree(true);
             AstNodeExpr* currentExprp = selExprp;
             while (AstNodeExpr* itrSelExprp = VN_AS(currentExprp->op1p(), NodeExpr)) {
-                if (AstVarRef* const selRefp = VN_CAST(itrSelExprp, VarRef)) {
+                if (AstNodeVarRef* const selRefp = VN_CAST(itrSelExprp, NodeVarRef)) {
                     // Mark the variable reference as READ access to avoid assignment issues
                     selRefp->access(VAccess::READ);
                     break;
