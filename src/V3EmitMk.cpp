@@ -346,12 +346,14 @@ private:
                     }
                 }
 
-                if (bucket.m_concatenatedFilenames.size() == 1) {
+                bool lastBucketAndLeftovers
+                    = (i + 1 == list.m_bucketsNum) && (fileIt != list.m_files.end());
+                if (bucket.m_concatenatedFilenames.size() > 1 || lastBucketAndLeftovers) {
+                    m_outputFiles.push_back(std::move(bucket));
+                } else if (bucket.m_concatenatedFilenames.size() == 1) {
                     // Unwrap the bucket if it contains only one file.
                     m_outputFiles.push_back(
                         {std::move(bucket.m_concatenatedFilenames.front()), {}});
-                } else if (bucket.m_concatenatedFilenames.size() > 1) {
-                    m_outputFiles.push_back(std::move(bucket));
                 }
                 // Most likely no bucket will be empty in normal situations. If it happen the
                 // bucket will just be dropped.
@@ -359,6 +361,8 @@ private:
             for (; fileIt != list.m_files.end(); ++fileIt) {
                 // The Work List is out of buckets, but some files were left.
                 // Add them to the last bucket.
+                UASSERT(m_outputFiles.back().isConcatenatingFile(),
+                        "Cannot add leftover files to a single file");
                 m_outputFiles.back().m_concatenatedFilenames.push_back(fileIt->m_filename);
             }
         }
