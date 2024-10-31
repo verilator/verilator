@@ -268,6 +268,7 @@ protected:
     bool m_toplevel = false;
     const char* m_name;
     const char* m_fullname;
+    const char* m_defname;
 
 public:
     explicit VerilatedVpioScope(const VerilatedScope* scopep)
@@ -275,6 +276,7 @@ public:
         m_fullname = m_scopep->name();
         if (std::strncmp(m_fullname, "TOP.", 4) == 0) m_fullname += 4;
         m_name = m_scopep->identifier();
+        m_defname = m_scopep->defname();
     }
     ~VerilatedVpioScope() override = default;
     static VerilatedVpioScope* castp(vpiHandle h) {
@@ -284,6 +286,7 @@ public:
     const VerilatedScope* scopep() const { return m_scopep; }
     const char* name() const override { return m_name; }
     const char* fullname() const override { return m_fullname; }
+    const char* defname() const override { return m_defname; }
     bool toplevel() const { return m_toplevel; }
 };
 

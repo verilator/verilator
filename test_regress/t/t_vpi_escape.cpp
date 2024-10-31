@@ -132,7 +132,7 @@ int _mon_check_iter() {
     TEST_CHECK_CSTR(p, "\\mod.with_dot ");
     if (TestSimulator::is_verilator()) {
         p = vpi_get_str(vpiDefName, vh2);
-        TEST_CHECK_CSTR(p, "<null>");  // Unsupported
+        TEST_CHECK_CSTR(p, "sub");
     }
 
     TestVpiHandle vh10 = vpi_iterate(vpiReg, vh2);
