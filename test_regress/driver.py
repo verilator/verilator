@@ -683,7 +683,8 @@ class VlTest:
         self.all_run_flags = []
 
         self.pli_flags = [
-            "-I" + os.environ['VERILATOR_ROOT'] + "/include/vltstd", "-fPIC", "-shared"
+            "-I" + os.environ['VERILATOR_ROOT'] + "/include/vltstd",
+            "-I" + os.environ['VERILATOR_ROOT'] + "/include", "-fPIC", "-shared"
         ]
         if platform.system() == 'Darwin':
             self.pli_flags += ["-Wl,-undefined,dynamic_lookup"]
