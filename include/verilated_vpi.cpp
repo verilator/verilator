@@ -3479,6 +3479,53 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
         }
 
         return;
+    } else if (arrayvalue_p->format == vpiVectorVal) {
+
+        p_vpi_vecval vectors=arrayvalue_p->value.vectors;
+
+        if (varp->vltype() == VLVT_UINT8) {
+            CData *ptr = reinterpret_cast<CData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                ptr[index++]=vectors[i].aval;
+                index = index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT16) {
+            SData *ptr = reinterpret_cast<SData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                ptr[index++]=vectors[i].aval;
+                index = index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT32) {
+            IData *ptr = reinterpret_cast<IData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                ptr[index++]=vectors[i].aval;
+                index = index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT64) {
+            QData *ptr = reinterpret_cast<QData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                ptr[index++] = (static_cast<QData>(vectors[1].aval) << 32ULL) | static_cast<QData>(vectors[0].aval);
+                vectors += 2;
+                index = index % size;
+            }
+        } else if (varp->vltype() == VLVT_WDATA) {
+            EData *ptr = reinterpret_cast<EData*>(vop->varDatap());
+
+            const int words = VL_WORDS_I(varp->packed().elements());
+
+            for (int i = 0; i < num; i++) {
+                for (int j = 0; j < words; j++) {
+                    ptr[index * words + j] = vectors[i * words + j].aval;
+                }
+                index = ++index % size;
+            }
+        }
+
+        return;
     }
 
     VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for %s", __func__,
