@@ -85,7 +85,7 @@ public:
         // To simplify our free list, we use a size large enough for all derived types
         // We reserve word zero for the next pointer, as that's safer in case a
         // dangling reference to the original remains around.
-        static constexpr size_t CHUNK_SIZE = 96;
+        static constexpr size_t CHUNK_SIZE = 256;
         if (VL_UNCOVERABLE(size > CHUNK_SIZE))
             VL_FATAL_MT(__FILE__, __LINE__, "", "increase CHUNK_SIZE");
         if (VL_LIKELY(t_freeHeadp)) {
@@ -171,9 +171,9 @@ protected:
     const VerilatedVar* m_varp = nullptr;
     const VerilatedScope* m_scopep = nullptr;
     std::string m_fullname;
-    const VerilatedRange& get_range() const {
-        // Determine number of dimensions and return outermost
-        return (m_varp->dims() > 1) ? m_varp->unpacked() : m_varp->packed();
+    int32_t m_indexedDim = -1;
+    const VerilatedRange* get_range() const {
+        return m_varp->range(m_indexedDim + 1);
     }
 
 public:
@@ -186,17 +186,33 @@ public:
             m_varp = varp->m_varp;
             m_scopep = varp->m_scopep;
             m_fullname = varp->m_fullname;
+            m_indexedDim = varp->m_indexedDim;
         }
     }
     static VerilatedVpioVarBase* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioVarBase*>(reinterpret_cast<VerilatedVpio*>(h));
     }
+    int32_t indexedDim() const { return m_indexedDim; }
     const VerilatedVar* varp() const { return m_varp; }
     const VerilatedScope* scopep() const { return m_scopep; }
-    uint32_t size() const override { return get_range().elements(); }
-    const VerilatedRange* rangep() const override { return &get_range(); }
+    uint32_t size() const override {
+        int size = 1;
+        int maxDim;
+        if (indexedDim() + 1 < varp()->udims())
+            maxDim = varp()->udims() - 1;
+        else
+            maxDim = varp()->dims() - 1;
+
+        for (int dim = indexedDim() + 1; dim <= maxDim; dim++)
+            size *= varp()->range(dim)->elements();
+
+        return size;
+    }
+    const VerilatedRange* rangep() const override { return get_range(); }
     const char* name() const override { return m_varp->name(); }
     const char* fullname() const override { return m_fullname.c_str(); }
+    virtual void* varDatap() const { return m_varp->datap(); }
+    virtual uint32_t bitOffset() const { return 0; }
 };
 
 class VerilatedVpioParam final : public VerilatedVpioVarBase {
@@ -221,7 +237,6 @@ public:
         default: return vpiUndefined;
         }
     }
-    void* varDatap() const { return m_varp->datap(); }
 };
 
 class VerilatedVpioRange final : public VerilatedVpio {
@@ -240,25 +255,27 @@ public:
 };
 
 class VerilatedVpioRangeIter final : public VerilatedVpio {
-    // Only supports 1 dimension
-    const VerilatedRange* const m_rangep;
-    bool m_done = false;
+    const std::vector<VerilatedRange> m_ranges;
+    std::vector<VerilatedRange>::const_iterator m_iter;
 
 public:
-    explicit VerilatedVpioRangeIter(const VerilatedRange* rangep)
-        : m_rangep{rangep} {}
+    explicit VerilatedVpioRangeIter(const std::vector<VerilatedRange>& ranges)
+        : m_ranges{ranges} {
+            m_iter = m_ranges.begin();
+        }
     ~VerilatedVpioRangeIter() override = default;
     static VerilatedVpioRangeIter* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioRangeIter*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     uint32_t type() const override { return vpiIterator; }
     vpiHandle dovpi_scan() override {
-        if (VL_UNLIKELY(m_done)) {
+        if (VL_UNLIKELY(m_iter == m_ranges.end())) {
             delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
             return nullptr;
         }
-        m_done = true;
-        return ((new VerilatedVpioRange{m_rangep})->castVpiHandle());
+        auto range = new VerilatedRange(*m_iter);
+        m_iter++;
+        return ((new VerilatedVpioRange{range})->castVpiHandle());
     }
 };
 
@@ -294,14 +311,15 @@ class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpioVarBase {
         uint32_t u32;
     } m_mask;  // memoized variable mask
     uint32_t m_entSize = 0;  // memoized variable size
+    uint32_t m_bitOffset = 0;
 protected:
     void* m_varDatap = nullptr;  // varp()->datap() adjusted for array entries
-    int32_t m_index = 0;
+    std::vector<int32_t> m_index;
 
 public:
     VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep)
         : VerilatedVpioVarBase{varp, scopep} {
-        m_mask.u32 = VL_MASK_I(varp->packed().elements());
+        m_mask.u32 = VL_MASK_I(varp->entBits());
         m_entSize = varp->entSize();
         m_varDatap = varp->datap();
     }
@@ -323,10 +341,37 @@ public:
     static VerilatedVpioVar* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioVar*>(reinterpret_cast<VerilatedVpio*>(h));
     }
+    uint32_t bitOffset() const override { return m_bitOffset; }
     uint32_t mask() const { return m_mask.u32; }
     uint8_t mask_byte(int idx) const { return m_mask.u8[idx & 3]; }
     uint32_t entSize() const { return m_entSize; }
-    uint32_t index() const { return m_index; }
+    const std::vector<int32_t>& index() const { return m_index; }
+    VerilatedVpioVar* withIndex(int32_t index) const {
+        if (VL_UNLIKELY(indexedDim() + 1 >= varp()->dims()))
+            return nullptr;
+
+        auto ret = new VerilatedVpioVar{this};
+        ret->m_index.push_back(index);
+        ret->m_indexedDim++;
+
+        if (indexedDim() + 1 < varp()->udims()) {
+            // indexing an unpacked array
+            int chunkSize = 1;
+            for (int dim = varp()->udims() - 1; dim > indexedDim() + 1; dim--)
+                chunkSize *= varp()->range(dim)->elements();
+
+            ret->m_varDatap = (static_cast<uint8_t*>(ret->m_varDatap)) + entSize() * chunkSize * (index - get_range()->low());
+        } else {
+            // indexing a packed array
+            int chunkSize = 1;
+            for (int dim = varp()->dims() - 1; dim > indexedDim() + 1; dim--)
+                chunkSize *= varp()->range(dim)->elements();
+
+            ret->m_bitOffset += chunkSize * (index - get_range()->low());
+        }
+
+        return ret;
+    }
     uint32_t type() const override {
         uint32_t type = vpiReg;
         switch (varp()->vltype()) {
@@ -334,40 +379,26 @@ public:
         case VLVT_STRING: type = vpiStringVar; break;
         default: break;
         }
-        return (varp()->dims() > 1) ? vpiMemory : type;  // but might be wire, logic
+        if (indexedDim() + 1 < varp()->udims())
+            return vpiRegArray;
+        else
+            return type;
+    }
+    const char* fullname() const override {
+        static thread_local std::string t_out;
+        t_out = std::string{scopep()->name()} + "." + name();
+        for (auto idx : index()) {
+            t_out += "[" + std::to_string(idx) + "]";
+        }
+        return t_out.c_str();
     }
     void* prevDatap() const { return m_prevDatap; }
-    void* varDatap() const { return m_varDatap; }
+    void* varDatap() const override { return m_varDatap; }
     void createPrevDatap() {
         if (VL_UNLIKELY(!m_prevDatap)) {
             m_prevDatap = new uint8_t[entSize()];
             std::memcpy(prevDatap(), varp()->datap(), entSize());
         }
-    }
-};
-
-class VerilatedVpioMemoryWord final : public VerilatedVpioVar {
-public:
-    VerilatedVpioMemoryWord(const VerilatedVar* varp, const VerilatedScope* scopep, int32_t index,
-                            int offset)
-        : VerilatedVpioVar{varp, scopep} {
-        m_index = index;
-        m_varDatap = (static_cast<uint8_t*>(varp->datap())) + entSize() * offset;
-    }
-    ~VerilatedVpioMemoryWord() override = default;
-    static VerilatedVpioMemoryWord* castp(vpiHandle h) {
-        return dynamic_cast<VerilatedVpioMemoryWord*>(reinterpret_cast<VerilatedVpio*>(h));
-    }
-    uint32_t type() const override { return vpiMemoryWord; }
-    uint32_t size() const override { return varp()->packed().elements(); }
-    const VerilatedRange* rangep() const override { return &(varp()->packed()); }
-    const char* fullname() const override {
-        static thread_local std::string t_out;
-        constexpr size_t LEN_MAX_INDEX = 25;
-        char num[LEN_MAX_INDEX];
-        VL_SNPRINTF(num, LEN_MAX_INDEX, "%d", m_index);
-        t_out = std::string{scopep()->name()} + "." + name() + "[" + num + "]";
-        return t_out.c_str();
     }
 };
 
@@ -430,35 +461,54 @@ public:
     }
 };
 
-class VerilatedVpioMemoryWordIter final : public VerilatedVpio {
-    const vpiHandle m_handle;
-    const VerilatedVar* const m_varp;
-    int32_t m_iteration;
-    const int32_t m_direction;
-    bool m_done = false;
+class VerilatedVpioRegIter final : public VerilatedVpio {
+    VerilatedVpioVar* m_var;
+    std::vector<VerilatedRange> m_ranges;
+    std::vector<int> m_nextIndex;
+    const int32_t m_maxDim;
 
 public:
-    VerilatedVpioMemoryWordIter(const vpiHandle handle, const VerilatedVar* varp)
-        : m_handle{handle}
-        , m_varp{varp}
-        , m_iteration{varp->unpacked().right()}
-        , m_direction{VL_LIKELY(varp->unpacked().left() > varp->unpacked().right()) ? 1 : -1} {}
-    ~VerilatedVpioMemoryWordIter() override = default;
-    static VerilatedVpioMemoryWordIter* castp(vpiHandle h) {
-        return dynamic_cast<VerilatedVpioMemoryWordIter*>(reinterpret_cast<VerilatedVpio*>(h));
+    explicit VerilatedVpioRegIter(const VerilatedVpioVar* vop)
+        : m_var{new VerilatedVpioVar(vop)}
+        , m_maxDim{vop->indexedDim() + 1 >= vop->varp()->udims() ? vop->varp()->dims() - 1 : vop->varp()->udims() - 1} {
+            for (auto it = vop->indexedDim() + 1; it <= m_maxDim; it++)
+                m_ranges.push_back(*vop->varp()->range(it));
+            for (auto it : m_ranges)
+                m_nextIndex.push_back(it.right());
+        }
+    ~VerilatedVpioRegIter() override = default;
+    static VerilatedVpioRegIter* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioRegIter*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     uint32_t type() const override { return vpiIterator; }
-    void iterationInc() {
-        if (!(m_done = (m_iteration == m_varp->unpacked().left()))) m_iteration += m_direction;
-    }
     vpiHandle dovpi_scan() override {
-        if (VL_UNLIKELY(m_done)) {
-            delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
+        if (VL_UNLIKELY(m_var->indexedDim() == m_maxDim)) {
+            // Trying to iterate over a non-array object
+            delete this;
             return nullptr;
         }
-        const vpiHandle result = vpi_handle_by_index(m_handle, m_iteration);
-        iterationInc();
-        return result;
+        if (m_nextIndex.front() > m_ranges.front().high() ||
+            m_nextIndex.front() < m_ranges.front().low()) {
+            // Finished iterating
+            delete this;
+            return nullptr;
+        }
+
+        VerilatedVpioVar* ret = m_var;
+        for (auto it : m_nextIndex)
+            ret = ret->withIndex(it);
+
+        // Increase the index, pretending the dimensions are flattened
+        for (int32_t it = m_ranges.size() - 1; it >= 0; it--) {
+            m_nextIndex.at(it) += m_ranges.at(it).increment();
+            if (m_nextIndex.at(it) <= m_ranges.at(it).high() &&
+                m_nextIndex.at(it) >= m_ranges.at(it).low())
+                break;
+            else if (it > 0)
+                m_nextIndex.at(it) = m_ranges.at(it).right();
+        }
+
+        return ret->castVpiHandle();
     }
 };
 
@@ -683,7 +733,7 @@ public:
                 break;
             }
             case VLVT_WDATA: {
-                words = VL_WORDS_I(vop->varp()->packed().elements());
+                words = VL_WORDS_I(vop->varp()->entBits());
                 break;
             }
             default: break;
@@ -2044,26 +2094,17 @@ vpiHandle vpi_handle_by_index(vpiHandle object, PLI_INT32 indx) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_handle_by_index %p %d\n", object, indx););
     VerilatedVpiImp::assertOneCheck();
     VL_VPI_ERROR_RESET_();
-    // Memory words are not indexable
-    const VerilatedVpioMemoryWord* const vop = VerilatedVpioMemoryWord::castp(object);
-    if (VL_UNLIKELY(vop)) return nullptr;
     const VerilatedVpioVar* const varop = VerilatedVpioVar::castp(object);
     if (VL_LIKELY(varop)) {
-        if (varop->varp()->dims() < 2) return nullptr;
-        if (VL_LIKELY(varop->varp()->unpacked().left() >= varop->varp()->unpacked().right())) {
-            if (VL_UNLIKELY(indx > varop->varp()->unpacked().left()
-                            || indx < varop->varp()->unpacked().right()))
-                return nullptr;
-            return (new VerilatedVpioMemoryWord{varop->varp(), varop->scopep(), indx,
-                                                indx - varop->varp()->unpacked().right()})
-                ->castVpiHandle();
-        }
-        if (VL_UNLIKELY(indx < varop->varp()->unpacked().left()
-                        || indx > varop->varp()->unpacked().right()))
+        // Case: no dimensions left to index
+        if (VL_UNLIKELY(varop->indexedDim() + 1 > varop->varp()->dims() - 1))
             return nullptr;
-        return (new VerilatedVpioMemoryWord{varop->varp(), varop->scopep(), indx,
-                                            indx - varop->varp()->unpacked().left()})
-            ->castVpiHandle();
+
+        // Case: index out of range
+        if (VL_UNLIKELY(indx < varop->rangep()->low() || indx > varop->rangep()->high()))
+            return nullptr;
+
+        return varop->withIndex(indx)->castVpiHandle();
     }
     VL_VPI_INTERNAL_(__FILE__, __LINE__, "%s : can't resolve handle", __func__);
     return nullptr;
@@ -2105,7 +2146,7 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
     case vpiIndex: {
         const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
-        const int32_t val = vop->index();
+        const int32_t val = vop->index().back();
         return (new VerilatedVpioConst{val})->castVpiHandle();
     }
     case vpiScope: {
@@ -2114,7 +2155,7 @@ vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
         return (new VerilatedVpioScope{vop->scopep()})->castVpiHandle();
     }
     case vpiParent: {
-        const VerilatedVpioMemoryWord* const vop = VerilatedVpioMemoryWord::castp(object);
+        const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
         return (new VerilatedVpioVar{vop->varp(), vop->scopep()})->castVpiHandle();
     }
@@ -2136,35 +2177,27 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
     VerilatedVpiImp::assertOneCheck();
     VL_VPI_ERROR_RESET_();
     switch (type) {
-    case vpiMemoryWord: {
-        const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
-        if (VL_UNLIKELY(!vop)) return nullptr;
-        if (vop->varp()->dims() < 2) return nullptr;
-        if (vop->varp()->dims() > 2) {
-            VL_VPI_WARNING_(__FILE__, __LINE__,
-                            "%s: %s, object %s has unsupported number of indices (%d)", __func__,
-                            VerilatedVpiError::strFromVpiMethod(type), vop->fullname(),
-                            vop->varp()->dims());
-        }
-        return (new VerilatedVpioMemoryWordIter{object, vop->varp()})->castVpiHandle();
-    }
     case vpiRange: {
         const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
-        if (vop->varp()->dims() < 2) return nullptr;
-        // Unsupported is multidim list
-        if (vop->varp()->dims() > 2) {
-            VL_VPI_WARNING_(__FILE__, __LINE__,
-                            "%s: %s, object %s has unsupported number of indices (%d)", __func__,
-                            VerilatedVpiError::strFromVpiMethod(type), vop->fullname(),
-                            vop->varp()->dims());
-        }
-        return ((new VerilatedVpioRangeIter{vop->rangep()})->castVpiHandle());
+        std::vector<VerilatedRange> ranges;
+        int maxDim;
+        if (vop->indexedDim() + 1 < vop->varp()->udims())
+            maxDim = vop->varp()->udims() - 1;
+        else
+            maxDim = vop->varp()->dims() - 1;
+
+        for (int dim = vop->indexedDim() + 1; dim <= maxDim; dim++)
+            ranges.emplace_back(*vop->varp()->range(dim));
+
+        return ((new VerilatedVpioRangeIter{ranges})->castVpiHandle());
     }
     case vpiReg: {
-        const VerilatedVpioScope* const vop = VerilatedVpioScope::castp(object);
-        if (VL_UNLIKELY(!vop)) return nullptr;
-        return ((new VerilatedVpioVarIter{vop})->castVpiHandle());
+        const VerilatedVpioScope* const vscopep = VerilatedVpioScope::castp(object);
+        if (vscopep) return ((new VerilatedVpioVarIter{vscopep, false})->castVpiHandle());
+        const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
+        if (vop) return ((new VerilatedVpioRegIter{vop})->castVpiHandle());
+        return nullptr;
     }
     case vpiParameter: {
         const VerilatedVpioScope* const vop = VerilatedVpioScope::castp(object);
@@ -2246,7 +2279,7 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
     case vpiVector: {
         const VerilatedVpioVarBase* const vop = VerilatedVpioVarBase::castp(object);
         if (VL_UNLIKELY(!vop)) return vpiUndefined;
-        return (property == vpiVector) ^ (vop->varp()->dims() == 0);
+        return (property == vpiVector) ^ (vop->varp()->entBits() == 1);
     }
     case vpiSize: {
         const VerilatedVpioVarBase* const vop = VerilatedVpioVarBase::castp(object);
@@ -2381,8 +2414,66 @@ static void vl_strprintf(std::string& buffer, char const* fmt, ...) {
     va_end(args);
 }
 
-void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
-                  const char* fullname) {
+// vl_put_word / vl_get_word don't operate across word boundaries!
+// T should match the underlying datatype.
+template<typename T>
+void vl_put_word(const VerilatedVpioVar* vop, T word) {
+    size_t wordBits = sizeof(T) * 8;
+    uint32_t varBits = vop->size();
+
+    if (vop->indexedDim() + 1 < vop->varp()->udims())
+        varBits = vop->varp()->entBits();
+
+    switch (vop->varp()->vltype()) {
+        case VLVT_REAL: varBits *= sizeof(double) * 8; break;
+        case VLVT_STRING: // TODO
+        default: break;
+    }
+    T* ptr = reinterpret_cast<T*>(vop->varDatap());
+    T mask = 0;
+    assert(varBits > 0);
+    assert(varBits + vop->bitOffset() <= wordBits);
+    if (varBits < wordBits) {
+        mask = ((T)1 << varBits) - 1;
+        mask = mask << vop->bitOffset();
+    } else {
+        mask = ~mask;
+    }
+    *ptr = (*ptr & ~mask) | ((word << vop->bitOffset()) & mask);
+}
+
+template<typename T>
+T vl_get_word(const VerilatedVpioVarBase* vop) {
+    size_t wordBits = sizeof(T) * 8;
+    uint32_t varBits = vop->size();
+
+    if (vop->indexedDim() + 1 < vop->varp()->udims())
+        varBits = vop->varp()->entBits();
+
+    switch (vop->varp()->vltype()) {
+        case VLVT_REAL: varBits *= sizeof(double) * 8; break;
+        case VLVT_STRING: // TODO
+        default: break;
+    }
+    T* ptr = reinterpret_cast<T*>(vop->varDatap());
+    T mask = 0;
+    assert(varBits > 0);
+    assert(varBits + vop->bitOffset() <= wordBits);
+    if (varBits < wordBits) {
+        mask = ((T)1 << varBits) - 1;
+        mask = mask << vop->bitOffset();
+    } else {
+        mask = ~mask;
+    }
+    return (*ptr & mask) >> vop->bitOffset();
+}
+
+
+void vl_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
+    const VerilatedVar* varp = vop->varp();
+    void* varDatap = vop->varDatap();
+    const char* fullname = vop->fullname();
+
     if (!vl_check_format(varp, valuep, fullname, true)) return;
     // string data type is dynamic and may vary in size during simulation
     static thread_local std::string t_outDynamicStr;
@@ -2394,26 +2485,26 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
         static thread_local t_vpi_vecval t_out[VL_VALUE_STRING_MAX_WORDS * 2];
         valuep->value.vector = t_out;
         if (varp->vltype() == VLVT_UINT8) {
-            t_out[0].aval = *(reinterpret_cast<CData*>(varDatap));
+            t_out[0].aval = vl_get_word<CData>(vop);
             t_out[0].bval = 0;
             return;
         } else if (varp->vltype() == VLVT_UINT16) {
-            t_out[0].aval = *(reinterpret_cast<SData*>(varDatap));
+            t_out[0].aval = vl_get_word<SData>(vop);
             t_out[0].bval = 0;
             return;
         } else if (varp->vltype() == VLVT_UINT32) {
-            t_out[0].aval = *(reinterpret_cast<IData*>(varDatap));
+            t_out[0].aval = vl_get_word<IData>(vop);
             t_out[0].bval = 0;
             return;
         } else if (varp->vltype() == VLVT_UINT64) {
-            const QData data = *(reinterpret_cast<QData*>(varDatap));
+            const QData data = vl_get_word<QData>(vop);
             t_out[1].aval = static_cast<IData>(data >> 32ULL);
             t_out[1].bval = 0;
             t_out[0].aval = static_cast<IData>(data);
             t_out[0].bval = 0;
             return;
         } else if (varp->vltype() == VLVT_WDATA) {
-            const int words = VL_WORDS_I(varp->packed().elements());
+            const int words = VL_WORDS_I(varp->entBits());
             if (VL_UNCOVERABLE(words >= VL_VALUE_STRING_MAX_WORDS)) {
                 VL_FATAL_MT(__FILE__, __LINE__, "",
                             "vpi_get_value with more than VL_VALUE_STRING_MAX_WORDS; increase and "
@@ -2427,19 +2518,20 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             return;
         }
     } else if (valuep->format == vpiBinStrVal) {
-        int bits = varp->packed().elements();
+        const size_t bits = vop->size();
         t_outDynamicStr.resize(bits);
         const CData* datap = (reinterpret_cast<CData*>(varDatap));
         for (size_t i = 0; i < bits; ++i) {
-            const char val = (datap[i >> 3] >> (i & 7)) & 1;
+            size_t pos = i + vop->bitOffset();
+            const char val = (datap[pos >> 3] >> (pos & 7)) & 1;
             t_outDynamicStr[bits - i - 1] = val ? '1' : '0';
         }
         valuep->value.str = const_cast<PLI_BYTE8*>(t_outDynamicStr.c_str());
         return;
     } else if (valuep->format == vpiOctStrVal) {
-        int chars = (varp->packed().elements() + 2) / 3;
+        int chars = (vop->size() + 2) / 3;
         t_outDynamicStr.resize(chars);
-        const int bytes = VL_BYTES_I(varp->packed().elements());
+        const int bytes = VL_BYTES_I(varp->entBits());
         const CData* datap = (reinterpret_cast<CData*>(varDatap));
         for (size_t i = 0; i < chars; ++i) {
             const div_t idx = div(i * 3, 8);
@@ -2454,7 +2546,7 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             if (i == (chars - 1)) {
                 // most significant char, mask off nonexistent bits when vector
                 // size is not a multiple of 3
-                const unsigned int rem = varp->packed().elements() % 3;
+                const unsigned int rem = varp->entBits() % 3;
                 if (rem) {
                     // generate bit mask & zero nonexistent bits
                     val &= (1 << rem) - 1;
@@ -2467,21 +2559,21 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
     } else if (valuep->format == vpiDecStrVal) {
         if (varp->vltype() == VLVT_UINT8) {
             vl_strprintf(t_outDynamicStr, "%hhu",
-                         static_cast<unsigned char>(*(reinterpret_cast<CData*>(varDatap))));
+                         static_cast<unsigned char>(vl_get_word<CData>(vop)));
         } else if (varp->vltype() == VLVT_UINT16) {
             vl_strprintf(t_outDynamicStr, "%hu",
-                         static_cast<unsigned short>(*(reinterpret_cast<SData*>(varDatap))));
+                         static_cast<unsigned short>(vl_get_word<SData>(vop)));
         } else if (varp->vltype() == VLVT_UINT32) {
             vl_strprintf(t_outDynamicStr, "%u",
-                         static_cast<unsigned int>(*(reinterpret_cast<IData*>(varDatap))));
+                         static_cast<unsigned int>(vl_get_word<IData>(vop)));
         } else if (varp->vltype() == VLVT_UINT64) {
             vl_strprintf(t_outDynamicStr, "%llu",  // lintok-format-ll
-                         static_cast<unsigned long long>(*(reinterpret_cast<QData*>(varDatap))));
+                         static_cast<unsigned long long>(vl_get_word<QData>(vop)));
         }
         valuep->value.str = const_cast<PLI_BYTE8*>(t_outDynamicStr.c_str());
         return;
     } else if (valuep->format == vpiHexStrVal) {
-        int chars = (varp->packed().elements() + 3) >> 2;
+        int chars = (varp->entBits() + 3) >> 2;
         t_outDynamicStr.resize(chars);
         const CData* datap = (reinterpret_cast<CData*>(varDatap));
         for (size_t i = 0; i < chars; ++i) {
@@ -2489,7 +2581,7 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             if (i == (chars - 1)) {
                 // most significant char, mask off nonexistent bits when vector
                 // size is not a multiple of 4
-                const unsigned int rem = varp->packed().elements() & 3;
+                const unsigned int rem = varp->entBits() & 3;
                 if (rem) {
                     // generate bit mask & zero nonexistent bits
                     val &= (1 << rem) - 1;
@@ -2510,7 +2602,7 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
                 return;
             }
         } else {
-            int bytes = VL_BYTES_I(varp->packed().elements());
+            int bytes = VL_BYTES_I(varp->entBits());
             t_outDynamicStr.resize(bytes);
             const CData* datap = (reinterpret_cast<CData*>(varDatap));
             for (size_t i = 0; i < bytes; ++i) {
@@ -2523,13 +2615,13 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
         }
     } else if (valuep->format == vpiIntVal) {
         if (varp->vltype() == VLVT_UINT8) {
-            valuep->value.integer = *(reinterpret_cast<CData*>(varDatap));
+            valuep->value.integer = vl_get_word<CData>(vop);
             return;
         } else if (varp->vltype() == VLVT_UINT16) {
-            valuep->value.integer = *(reinterpret_cast<SData*>(varDatap));
+            valuep->value.integer = vl_get_word<SData>(vop);
             return;
         } else if (varp->vltype() == VLVT_UINT32) {
-            valuep->value.integer = *(reinterpret_cast<IData*>(varDatap));
+            valuep->value.integer = vl_get_word<IData>(vop);
             return;
         }
     } else if (valuep->format == vpiRealVal) {
@@ -2549,10 +2641,10 @@ void vpi_get_value(vpiHandle object, p_vpi_value valuep) {
     if (VL_UNLIKELY(!valuep)) return;
 
     if (const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object)) {
-        vl_get_value(vop->varp(), vop->varDatap(), valuep, vop->fullname());
+        vl_get_value(vop, valuep);
         return;
     } else if (const VerilatedVpioParam* const vop = VerilatedVpioParam::castp(object)) {
-        vl_get_value(vop->varp(), vop->varDatap(), valuep, vop->fullname());
+        vl_get_value(vop, valuep);
         return;
     } else if (const VerilatedVpioConst* const vop = VerilatedVpioConst::castp(object)) {
         if (valuep->format == vpiIntVal) {
@@ -2602,26 +2694,26 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             return nullptr;
         }
         if (!vl_check_format(vop->varp(), valuep, vop->fullname(), false)) return nullptr;
+        // TODO: ensure we're writing to packed?
         if (valuep->format == vpiVectorVal) {
             if (VL_UNLIKELY(!valuep->value.vector)) return nullptr;
             if (vop->varp()->vltype() == VLVT_UINT8) {
-                *(reinterpret_cast<CData*>(vop->varDatap()))
-                    = valuep->value.vector[0].aval & vop->mask();
+                vl_put_word<CData>(vop, valuep->value.vector[0].aval);
                 return object;
             } else if (vop->varp()->vltype() == VLVT_UINT16) {
-                *(reinterpret_cast<SData*>(vop->varDatap()))
-                    = valuep->value.vector[0].aval & vop->mask();
+                vl_put_word<SData>(vop, valuep->value.vector[0].aval);
                 return object;
             } else if (vop->varp()->vltype() == VLVT_UINT32) {
-                *(reinterpret_cast<IData*>(vop->varDatap()))
-                    = valuep->value.vector[0].aval & vop->mask();
+                vl_put_word<IData>(vop, valuep->value.vector[0].aval);
                 return object;
             } else if (vop->varp()->vltype() == VLVT_UINT64) {
-                *(reinterpret_cast<QData*>(vop->varDatap())) = VL_SET_QII(
-                    valuep->value.vector[1].aval & vop->mask(), valuep->value.vector[0].aval);
+                QData val = ((QData)valuep->value.vector[1].aval << 32)
+                            | (QData)valuep->value.vector[0].aval;
+                vl_put_word<QData>(vop, val);
                 return object;
             } else if (vop->varp()->vltype() == VLVT_WDATA) {
-                const int words = VL_WORDS_I(vop->varp()->packed().elements());
+                // TODO
+                const int words = VL_WORDS_I(vop->size());
                 WDataOutP datap = (reinterpret_cast<EData*>(vop->varDatap()));
                 for (int i = 0; i < words; ++i) {
                     datap[i] = valuep->value.vector[i].aval;
@@ -2630,23 +2722,22 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 return object;
             }
         } else if (valuep->format == vpiBinStrVal) {
-            const int bits = vop->varp()->packed().elements();
+            const int bits = vop->size();
             const int len = std::strlen(valuep->value.str);
             CData* const datap = (reinterpret_cast<CData*>(vop->varDatap()));
             for (int i = 0; i < bits; ++i) {
-                const char set = (i < len) ? (valuep->value.str[len - i - 1] == '1') : 0;
-                // zero bits 7:1 of byte when assigning to bit 0, else
-                // or in 1 if bit set
-                if (i & 7) {
-                    datap[i >> 3] |= set << (i & 7);
-                } else {
-                    datap[i >> 3] = set;
-                }
+                bool set = (i < len) && (valuep->value.str[len - i - 1] == '1');
+                size_t pos = vop->bitOffset() + i;
+
+                if (set)
+                    datap[pos >> 3] |= 1 << (pos & 7);
+                else
+                    datap[pos >> 3] &= ~(1 << (pos & 7));
             }
             return object;
         } else if (valuep->format == vpiOctStrVal) {
-            const int chars = (vop->varp()->packed().elements() + 2) / 3;
-            const int bytes = VL_BYTES_I(vop->varp()->packed().elements());
+            const int chars = (vop->size() + 2) / 3;
+            const int bytes = VL_BYTES_I(vop->varp()->entBits());
             const int len = std::strlen(valuep->value.str);
             CData* const datap = (reinterpret_cast<CData*>(vop->varDatap()));
             div_t idx;
@@ -2712,21 +2803,20 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                                 VerilatedVpiError::strFromVpiVal(valuep->format), vop->fullname());
             }
             if (vop->varp()->vltype() == VLVT_UINT8) {
-                *(reinterpret_cast<CData*>(vop->varDatap())) = val & vop->mask();
+                vl_put_word<CData>(vop, val);
                 return object;
             } else if (vop->varp()->vltype() == VLVT_UINT16) {
-                *(reinterpret_cast<SData*>(vop->varDatap())) = val & vop->mask();
+                vl_put_word<SData>(vop, val);
                 return object;
             } else if (vop->varp()->vltype() == VLVT_UINT32) {
-                *(reinterpret_cast<IData*>(vop->varDatap())) = val & vop->mask();
+                vl_put_word<IData>(vop, val);
                 return object;
             } else if (vop->varp()->vltype() == VLVT_UINT64) {
-                *(reinterpret_cast<QData*>(vop->varDatap())) = val;
-                (reinterpret_cast<IData*>(vop->varDatap()))[1] &= vop->mask();
+                vl_put_word<QData>(vop, val);
                 return object;
             }
         } else if (valuep->format == vpiHexStrVal) {
-            const int chars = (vop->varp()->packed().elements() + 3) >> 2;
+            const int chars = (vop->varp()->entBits() + 3) >> 2;
             CData* const datap = (reinterpret_cast<CData*>(vop->varDatap()));
             const char* val = valuep->value.str;
             // skip hex ident if one is detected at the start of the string
@@ -2770,7 +2860,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 *(reinterpret_cast<std::string*>(vop->varDatap())) = valuep->value.str;
                 return object;
             } else {
-                const int bytes = VL_BYTES_I(vop->varp()->packed().elements());
+                const int bytes = VL_BYTES_I(vop->size());
                 const int len = std::strlen(valuep->value.str);
                 CData* const datap = (reinterpret_cast<CData*>(vop->varDatap()));
                 for (int i = 0; i < bytes; ++i) {
@@ -2781,18 +2871,20 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             return object;
         } else if (valuep->format == vpiIntVal) {
             if (vop->varp()->vltype() == VLVT_UINT8) {
-                *(reinterpret_cast<CData*>(vop->varDatap())) = vop->mask() & valuep->value.integer;
+                vl_put_word<CData>(vop, valuep->value.integer);
                 return object;
             } else if (vop->varp()->vltype() == VLVT_UINT16) {
-                *(reinterpret_cast<SData*>(vop->varDatap())) = vop->mask() & valuep->value.integer;
+                vl_put_word<SData>(vop, valuep->value.integer);
                 return object;
             } else if (vop->varp()->vltype() == VLVT_UINT32) {
-                *(reinterpret_cast<IData*>(vop->varDatap())) = vop->mask() & valuep->value.integer;
+                vl_put_word<IData>(vop, valuep->value.integer);
                 return object;
             }
         } else if (valuep->format == vpiRealVal) {
             if (vop->varp()->vltype() == VLVT_REAL) {
-                *(reinterpret_cast<double*>(vop->varDatap())) = valuep->value.real;
+                QData val;
+                memcpy(&val, &valuep->value.real, sizeof(QData));
+                vl_put_word<QData>(vop, val);
                 return object;
             }
         }

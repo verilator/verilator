@@ -74,10 +74,11 @@ class VerilatedVarProps VL_NOT_FINAL {
     const uint32_t m_magic;  // Magic number
     const VerilatedVarType m_vltype;  // Data type
     const VerilatedVarFlags m_vlflags;  // Direction
-    const int m_pdims;  // Packed dimensions, 0 = none
     const int m_udims;  // Unpacked dimensions, 0 = none
-    VerilatedRange m_packed;  // Packed array range
+    const int m_pdims;  // Packed dimensions, 0 = none
     std::vector<VerilatedRange> m_unpacked;  // Unpacked array ranges
+    std::vector<VerilatedRange> m_packed;  // Packed array ranges
+    VerilatedRange m_packedDpi; // Flattened packed array range
     void initUnpacked(const int* ulims) {
         for (int i = 0; i < m_udims; ++i) {
             const int uleft = ulims ? ulims[2 * i + 0] : 0;
@@ -85,16 +86,32 @@ class VerilatedVarProps VL_NOT_FINAL {
             m_unpacked.emplace_back(uleft, uright);
         }
     }
+    void initPacked(const int* plims) {
+        int packedSize = 1;
+        for (int i = 0; i < m_pdims; ++i) {
+            const int pleft = plims ? plims[2 * i + 0] : 0;
+            const int pright = plims ? plims[2 * i + 1] : 0;
+            m_packed.emplace_back(pleft, pright);
+            packedSize *= abs(pleft - pright) + 1;
+        }
+        if (m_pdims == 1) {
+            // Preserve packed array range if the packed component is 1-D
+            m_packedDpi = m_packed.front();
+        } else {
+            m_packedDpi = VerilatedRange{packedSize - 1, 0};
+        }
+    }
     // CONSTRUCTORS
 protected:
     friend class VerilatedScope;
-    VerilatedVarProps(VerilatedVarType vltype, VerilatedVarFlags vlflags, int pdims, int udims)
+    VerilatedVarProps(VerilatedVarType vltype, VerilatedVarFlags vlflags, int udims, int pdims)
         : m_magic{MAGIC}
         , m_vltype{vltype}
         , m_vlflags{vlflags}
-        , m_pdims{pdims}
-        , m_udims{udims} {
+        , m_udims{udims}
+        , m_pdims{pdims} {
         initUnpacked(nullptr);
+        initPacked(nullptr);
     }
 
 public:
@@ -104,34 +121,35 @@ public:
         : m_magic{MAGIC}
         , m_vltype{vltype}
         , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
-        , m_pdims{0}
-        , m_udims{0} {}
+        , m_udims{0}
+        , m_pdims{0} {}
     VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulims)
         : m_magic{MAGIC}
         , m_vltype{vltype}
         , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
-        , m_pdims{0}
-        , m_udims{udims} {
+        , m_udims{udims}
+        , m_pdims{0} {
         initUnpacked(ulims);
     }
     // With packed
     class Packed {};
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pl, int pr)
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pdims, const int* plims)
         : m_magic{MAGIC}
         , m_vltype{vltype}
         , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
-        , m_pdims{1}
         , m_udims{0}
-        , m_packed{pl, pr} {}
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pl, int pr, Unpacked,
-                      int udims, const int* ulims)
+        , m_pdims{pdims} {
+        initPacked(plims);
+    }
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulims,
+                      Packed, int pdims, const int* plims)
         : m_magic{MAGIC}
         , m_vltype{vltype}
         , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
-        , m_pdims{1}
         , m_udims{udims}
-        , m_packed{pl, pr} {
+        , m_pdims{pdims} {
         initUnpacked(ulims);
+        initPacked(plims);
     }
 
     ~VerilatedVarProps() = default;
@@ -142,41 +160,56 @@ public:
         return static_cast<VerilatedVarFlags>(static_cast<int>(m_vlflags) & VLVF_MASK_DIR);
     }
     uint32_t entSize() const VL_MT_SAFE;
+    uint32_t entBits() const VL_MT_SAFE {
+        uint32_t bits = 1;
+        for (auto it : m_packed)
+            bits *= it.elements();
+        return bits;
+    }
     bool isPublicRW() const { return ((m_vlflags & VLVF_PUB_RW) != 0); }
     // DPI compatible C standard layout
     bool isDpiCLayout() const { return ((m_vlflags & VLVF_DPI_CLAY) != 0); }
     int udims() const VL_MT_SAFE { return m_udims; }
-    int dims() const { return m_pdims + m_udims; }
-    const VerilatedRange& packed() const VL_MT_SAFE { return m_packed; }
-    const VerilatedRange& unpacked() const { return m_unpacked[0]; }
-    // DPI accessors
+    int pdims() const VL_MT_SAFE { return m_pdims; }
+    int dims() const VL_MT_SAFE { return m_pdims + m_udims; }
+    const std::vector<VerilatedRange>& packedRanges() const VL_MT_SAFE { return m_packed; }
+    const std::vector<VerilatedRange>& unpackedRanges() const VL_MT_SAFE { return m_unpacked; }
+    const VerilatedRange* range(int dim) const VL_MT_SAFE {
+        if (dim < udims())
+            return &m_unpacked[dim];
+        else if (dim < dims())
+            return &m_packed[dim - udims()];
+        else
+            return nullptr;
+    }
+    // DPI accessors (with packed dimensions flattened!)
     int left(int dim) const VL_MT_SAFE {
-        return dim == 0                                ? m_packed.left()
+        return dim == 0                                ? m_packedDpi.left()
                : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].left()
                                                        : 0;
     }
     int right(int dim) const VL_MT_SAFE {
-        return dim == 0                                ? m_packed.right()
+        return dim == 0                                ? m_packedDpi.right()
                : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].right()
                                                        : 0;
     }
     int low(int dim) const VL_MT_SAFE {
-        return dim == 0                                ? m_packed.low()
+        return dim == 0                                ? m_packedDpi.low()
                : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].low()
                                                        : 0;
     }
     int high(int dim) const VL_MT_SAFE {
-        return dim == 0                                ? m_packed.high()
+        return dim == 0                                ? m_packedDpi.high()
                : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].high()
                                                        : 0;
     }
     int increment(int dim) const {
-        return dim == 0                                ? m_packed.increment()
+        return dim == 0                                ? m_packedDpi.increment()
                : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].increment()
                                                        : 0;
     }
     int elements(int dim) const VL_MT_SAFE {
-        return dim == 0                                ? m_packed.elements()
+        return dim == 0                                ? m_packedDpi.elements()
                : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].elements()
                                                        : 0;
     }
@@ -208,8 +241,7 @@ public:
     bool magicOk() const { return m_propsp->magicOk(); }
     VerilatedVarType vltype() const { return m_propsp->vltype(); }
     bool isDpiStdLayout() const { return m_propsp->isDpiCLayout(); }
-    const VerilatedRange& packed() const { return m_propsp->packed(); }
-    const VerilatedRange& unpacked() const { return m_propsp->unpacked(); }
+    int entBits() const { return m_propsp->entBits(); }
     int udims() const VL_MT_SAFE { return m_propsp->udims(); }
     int left(int dim) const VL_MT_SAFE { return m_propsp->left(dim); }
     int right(int dim) const VL_MT_SAFE { return m_propsp->right(dim); }
@@ -236,8 +268,8 @@ protected:
     friend class VerilatedScope;
     // CONSTRUCTORS
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
-                 VerilatedVarFlags vlflags, int dims, bool isParam)
-        : VerilatedVarProps{vltype, vlflags, (dims > 0 ? 1 : 0), ((dims > 1) ? dims - 1 : 0)}
+                 VerilatedVarFlags vlflags, int udims, int pdims, bool isParam)
+        : VerilatedVarProps{vltype, vlflags, udims, pdims}
         , m_datap{datap}
         , m_namep{namep}
         , m_isParam{isParam} {}
@@ -246,8 +278,6 @@ public:
     ~VerilatedVar() = default;
     // ACCESSORS
     void* datap() const { return m_datap; }
-    const VerilatedRange& range() const { return packed(); }  // Deprecated
-    const VerilatedRange& array() const { return unpacked(); }  // Deprecated
     const char* name() const { return m_namep; }
     bool isParam() const { return m_isParam; }
 };

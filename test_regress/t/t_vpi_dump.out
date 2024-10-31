@@ -7,18 +7,18 @@ t (vpiModule) t
     count (vpiReg) t.count
     do_generate (vpiParameter) t.do_generate
         vpiConstType=vpiDecConst
-    fourthreetwoone (vpiMemory) t.fourthreetwoone
-        vpiMemoryWord:
-        fourthreetwoone (vpiMemoryWord) t.fourthreetwoone[3]
-        fourthreetwoone (vpiMemoryWord) t.fourthreetwoone[4]
+    fourthreetwoone (vpiRegArray) t.fourthreetwoone
+        vpiReg:
+        fourthreetwoone (vpiReg) t.fourthreetwoone[3]
+        fourthreetwoone (vpiReg) t.fourthreetwoone[4]
     half_count (vpiReg) t.half_count
     long_int (vpiParameter) t.long_int
         vpiConstType=vpiDecConst
     onebit (vpiReg) t.onebit
-    quads (vpiMemory) t.quads
-        vpiMemoryWord:
-        quads (vpiMemoryWord) t.quads[3]
-        quads (vpiMemoryWord) t.quads[2]
+    quads (vpiRegArray) t.quads
+        vpiReg:
+        quads (vpiReg) t.quads[3]
+        quads (vpiReg) t.quads[2]
     real1 (vpiRealVar) t.real1
     status (vpiReg) t.status
     str1 (vpiStringVar) t.str1

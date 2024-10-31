@@ -944,14 +944,6 @@ void EmitCSyms::emitSymImp() {
             string bounds;
             if (AstBasicDType* const basicp = varp->basicp()) {
                 // Range is always first, it's not in "C" order
-                if (basicp->isRanged()) {
-                    bounds += " ,";
-                    bounds += cvtToStr(basicp->hi());
-                    bounds += ",";
-                    bounds += cvtToStr(basicp->lo());
-                    pdim++;
-                    pwidth *= basicp->elements();
-                }
                 for (AstNodeDType* dtypep = varp->dtypep(); dtypep;) {
                     dtypep
                         = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
@@ -968,20 +960,24 @@ void EmitCSyms::emitSymImp() {
                         }
                         dtypep = adtypep->subDTypep();
                     } else {
+                        if (basicp->isRanged()) {
+                            bounds += " ,";
+                            bounds += cvtToStr(basicp->hi());
+                            bounds += ",";
+                            bounds += cvtToStr(basicp->lo());
+                            pdim++;
+                            pwidth *= basicp->elements();
+                        }
                         break;  // AstBasicDType - nothing below, 1
                     }
                 }
             }
-            // TODO: actually expose packed arrays as vpiRegArray
-            if (pdim > 1 && udim == 0) {
-                bounds = ", ";
-                bounds += cvtToStr(pwidth - 1);
-                bounds += ",0";
+
+            if (pdim == 0) {
                 pdim = 1;
+                bounds += " ,0,0";
             }
-            if (pdim > 1 || udim > 1) {
-                puts("//UNSUP ");  // VerilatedImp can't deal with >2d or packed arrays
-            }
+
             putns(scopep, protect("__Vscope_" + it->second.m_scopeName));
             putns(varp, ".varInsert(__Vfinal,");
             putsQuoted(protect(it->second.m_varBasePretty));
@@ -1012,7 +1008,9 @@ void EmitCSyms::emitSymImp() {
             puts(",");
             puts(varp->vlEnumDir());  // VLVD_IN etc
             puts(",");
-            puts(cvtToStr(pdim + udim));
+            puts(cvtToStr(udim));
+            puts(",");
+            puts(cvtToStr(pdim));
             puts(bounds);
             puts(");\n");
             ++m_numStmts;
