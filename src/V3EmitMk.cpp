@@ -346,7 +346,7 @@ private:
                     }
                 }
 
-                bool lastBucketAndLeftovers
+                const bool lastBucketAndLeftovers
                     = (i + 1 == list.m_bucketsNum) && (fileIt != list.m_files.end());
                 if (bucket.m_concatenatedFilenames.size() > 1 || lastBucketAndLeftovers) {
                     m_outputFiles.push_back(std::move(bucket));
