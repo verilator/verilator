@@ -2416,7 +2416,7 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
             const int words = VL_WORDS_I(varp->packed().elements());
             if (VL_UNCOVERABLE(words >= VL_VALUE_STRING_MAX_WORDS)) {
                 VL_VPI_ERROR_(
-                    __FILE__, __LINE__, "",
+                    __FILE__, __LINE__,
                     "vpi_get_value with more than VL_VALUE_STRING_MAX_WORDS; increase and "
                     "recompile");
                 return;

@@ -8,20 +8,14 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
-import os
 
 test.scenarios('simulator')
-test.pli_filename = "t/t_vpi_var.cpp"
 
-os.environ["CFLAGS"] = "-I ../include"
 test.compile(make_top_shell=False,
              make_main=False,
              make_pli=True,
-             sim_time=2100,
-             iv_flags2=["-g2005-sv -D USE_VPI_NOT_DPI -DWAVES -DT_VPI_VAR3"],
-             v_flags2=["+define+USE_VPI_NOT_DPI"],
-             verilator_flags2=["--exe --vpi --no-l2name --public-flat-rw", test.pli_filename])
+             verilator_flags2=["--exe --vpi --no-l2name", test.pli_filename])
 
-test.execute(use_libvpi=True, all_run_flags=['+PLUS +INT=1234 +STRSTR'])
+test.execute()
 
 test.passes()
