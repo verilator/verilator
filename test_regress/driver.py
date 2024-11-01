@@ -48,6 +48,8 @@ test = None
 Arg_Tests = []
 Quitting = False
 Vltmt_Threads = 3
+forker = None
+Start = None
 
 # So an 'import vltest_bootstrap' inside test files will do nothing
 sys.modules['vltest_bootstrap'] = {}
@@ -2692,7 +2694,6 @@ if __name__ == '__main__':
         sys.exit("%Error: TEST_REGRESS environment variable is already set")
     os.environ['TEST_REGRESS'] = os.getcwd()
 
-    forker = None
     Start = time.time()
     _Parameter_Next_Level = None
 
