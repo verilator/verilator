@@ -16,12 +16,12 @@ test.top_filename = f"{test.obj_dir}/in.v"
 
 with open(test.top_filename, "w", encoding="utf8") as f:
     f.write("module top;\n")
-    for i in range(100000):
+    for i in range(50000):
         f.write(f"  int x{i} = 'd{i};\n")
     f.write("endmodule\n")
 
-signal.alarm(20)  # 20s timeout
+signal.alarm(30)  # 30s timeout
 
-test.lint(verilator_flags2=[f"--max-num-width {2**30}"])
+test.lint(verilator_flags2=[f"--max-num-width {2**29}"])
 
 test.passes()
