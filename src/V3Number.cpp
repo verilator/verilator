@@ -198,7 +198,12 @@ void V3Number::create(const char* sourcep) {
     }
     // Otherwise...
     else if (!sized()) {
-        width(v3Global.opt.maxNumWidth(), false);  // Will change width below
+        // We don't use v3Global.opt.maxNumWidth() here, as it can be arbitrarily large,
+        // and cause extremely slow parsing. We will resize the value at the end anyway.
+        // We just need a width big enough to fit the constant, so we use a conservative
+        // upper bound to start from. Should never need more than 4 bits per digit.
+        const int widthBound = std::max<int>(32, std::strlen(value_startp) * 4);
+        width(widthBound, false);  // Will change width below
         if (unbased) isSigned(true);  // Also says the spec.
     }
 
