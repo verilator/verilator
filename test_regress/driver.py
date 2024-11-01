@@ -2410,7 +2410,7 @@ class VlTest:
         if VlTest._cached_cfg_with_ccache is None:
             mkf = VlTest._file_contents_static(os.environ['VERILATOR_ROOT'] +
                                                "/include/verilated.mk")
-            VlTest._cached_cfg_with_ccache = bool(re.match(r'OBJCACHE \?= ccache', mkf))
+            VlTest._cached_cfg_with_ccache = bool(re.search(r'OBJCACHE \?= ccache', mkf))
         return VlTest._cached_cfg_with_ccache
 
     def glob_some(self, pattern: str) -> list:
