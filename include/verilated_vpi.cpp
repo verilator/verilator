@@ -3466,51 +3466,36 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
         }
 
         return;
-    } else if (arrayvalue_p->format == vpiRealVal) {
-        double *reals = arrayvalue_p->value.reals;
-
-        if (varp->vltype() == VLVT_UINT64) {
-            double *ptr = reinterpret_cast<double*>(vop->varDatap());
-
-            for (int i = 0; i < num; i++) {
-                ptr[index++] = reals[i];
-                index = index % size;
-            }
-        }
-
-        return;
     } else if (arrayvalue_p->format == vpiVectorVal) {
-
-        p_vpi_vecval vectors=arrayvalue_p->value.vectors;
+        p_vpi_vecval vectors = arrayvalue_p->value.vectors;
 
         if (varp->vltype() == VLVT_UINT8) {
             CData *ptr = reinterpret_cast<CData*>(vop->varDatap());
 
             for (int i = 0; i < num; i++) {
-                ptr[index++]=vectors[i].aval;
-                index = index % size;
+                ptr[index] = vectors[i].aval;
+                index = ++index % size;
             }
         } else if (varp->vltype() == VLVT_UINT16) {
             SData *ptr = reinterpret_cast<SData*>(vop->varDatap());
 
             for (int i = 0; i < num; i++) {
-                ptr[index++]=vectors[i].aval;
-                index = index % size;
+                ptr[index] = vectors[i].aval;
+                index = ++index % size;
             }
         } else if (varp->vltype() == VLVT_UINT32) {
             IData *ptr = reinterpret_cast<IData*>(vop->varDatap());
 
             for (int i = 0; i < num; i++) {
-                ptr[index++]=vectors[i].aval;
-                index = index % size;
+                ptr[index] = vectors[i].aval;
+                index = ++index % size;
             }
         } else if (varp->vltype() == VLVT_UINT64) {
             QData *ptr = reinterpret_cast<QData*>(vop->varDatap());
 
-            for (int i = 0; i < num; i++) {
-                ptr[index++] = (static_cast<QData>(vectors[1].aval) << 32ULL) | static_cast<QData>(vectors[0].aval);
-                vectors += 2;
-                index = index % size;
+            for (int i = 0; i < (num * 2); i += 2) {
+                ptr[index] = (static_cast<QData>(vectors[i + 1].aval) << 32ULL) | vectors[i].aval;
+                index = ++index % size;
             }
         } else if (varp->vltype() == VLVT_WDATA) {
             EData *ptr = reinterpret_cast<EData*>(vop->varDatap());
@@ -3521,7 +3506,138 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                 for (int j = 0; j < words; j++) {
                     ptr[index * words + j] = vectors[i * words + j].aval;
                 }
+
                 index = ++index % size;
+            }
+        }
+
+        return;
+    } else if (arrayvalue_p->format == vpiRawFourStateVal) {
+        PLI_BYTE8 *value_ptr = arrayvalue_p->value.rawvals;
+
+        if (varp->vltype() == VLVT_UINT8) {
+            CData *ptr = reinterpret_cast<CData*>(vop->varDatap());
+
+            struct s_rawvals {
+                uint8_t aval;
+                uint8_t bval;
+            } *rawvals = reinterpret_cast<s_rawvals*>(value_ptr);
+
+            for (int i = 0; i < num; i++) {
+                ptr[index] = rawvals[i].aval;
+                index = ++index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT16) {
+            SData *ptr = reinterpret_cast<SData*>(vop->varDatap());
+
+            struct s_rawvals {
+                uint16_t aval;
+                uint16_t bval;
+            } *rawvals = reinterpret_cast<s_rawvals*>(value_ptr);
+
+            for (int i = 0; i < num; i++) {
+                ptr[index] = rawvals[i].aval;
+                index = ++index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT32) {
+            IData *ptr = reinterpret_cast<IData*>(vop->varDatap());
+
+            struct s_rawvals {
+                uint32_t aval;
+                uint32_t bval;
+            } *rawvals = reinterpret_cast<s_rawvals*>(value_ptr);
+
+            for (int i = 0; i < num; i++) {
+                ptr[index] = rawvals[i].aval;
+                index = ++index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT64) {
+            QData *ptr = reinterpret_cast<QData*>(vop->varDatap());
+
+            struct s_rawvals {
+                uint64_t aval;
+                uint64_t bval;
+            } *rawvals = reinterpret_cast<s_rawvals*>(value_ptr);
+
+            for (int i = 0; i < num; i++) {
+                ptr[index] = rawvals[i].aval;
+                index = ++index % size;
+            }
+        } else if (varp->vltype() == VLVT_WDATA) {
+            EData *ptr = reinterpret_cast<EData*>(vop->varDatap());
+            EData *rawvals = reinterpret_cast<EData*>(value_ptr);
+
+            const int words = VL_WORDS_I(varp->packed().elements());
+
+            for (int i = 0; i < num; i++) {
+                for (int j = 0; j < words; j++) {
+                    ptr[index * words + j] = rawvals[i * words * 2 + j];
+                }
+
+                index = ++index % size;
+            }
+        }
+
+        return;
+    } else if (arrayvalue_p->format == vpiRawTwoStateVal) {
+        PLI_BYTE8 *value_ptr = arrayvalue_p->value.rawvals;
+
+        if (varp->vltype() == VLVT_UINT8) {
+            CData *ptr = reinterpret_cast<CData*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                ptr[index] = value_ptr[i];
+                index = ++index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT16) {
+            SData *ptr = reinterpret_cast<SData*>(vop->varDatap());
+            SData *rawvals = reinterpret_cast<SData*>(value_ptr);
+
+            for (int i = 0; i < num; i++) {
+                ptr[index] = value_ptr[i];
+                index = ++index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT32) {
+            IData *ptr = reinterpret_cast<IData*>(vop->varDatap());
+            IData *rawvals = reinterpret_cast<IData*>(value_ptr);
+
+            for (int i = 0; i < num; i++) {
+                ptr[index] = value_ptr[i];
+                index = ++index % size;
+            }
+        } else if (varp->vltype() == VLVT_UINT64) {
+            QData *ptr = reinterpret_cast<QData*>(vop->varDatap());
+            QData *rawvals = reinterpret_cast<QData*>(value_ptr);
+
+            for (int i = 0; i < num; i++) {
+                ptr[index] = value_ptr[i];
+                index = ++index % size;
+            }
+        } else if (varp->vltype() == VLVT_WDATA) {
+            EData *ptr = reinterpret_cast<EData*>(vop->varDatap());
+            EData *rawvals = reinterpret_cast<EData*>(value_ptr);
+
+            const int words = VL_WORDS_I(varp->packed().elements());
+
+            for (int i = 0; i < num; i++) {
+                for (int j = 0; j < words; j++) {
+                    ptr[index * words + j] = rawvals[i * words + j];
+                }
+
+                index = ++index % size;
+            }
+        }
+
+        return;
+    } else if (arrayvalue_p->format == vpiRealVal) {
+        double *reals = arrayvalue_p->value.reals;
+
+        if (varp->vltype() == VLVT_UINT64) {
+            double *ptr = reinterpret_cast<double*>(vop->varDatap());
+
+            for (int i = 0; i < num; i++) {
+                ptr[index++] = reals[i];
+                index = index % size;
             }
         }
 
