@@ -19,6 +19,7 @@ Verilator 5.031 devel
 * Fix VPI error instead of fatal for vpi_get_value() on large signals (#5571). [Todd Strader]
 * Fix --output-groups leftover files issue (#5574). [Todd Strader]
 * Fix slow unsized number parsing (#5577). [Geza Lore]
+* Fix negative assignment pattern keys (#5580). [Iztok Jeras]
 
 
 Verilator 5.030 2024-10-27

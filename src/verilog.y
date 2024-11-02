@@ -4006,11 +4006,18 @@ patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_patt
         //                      //   "foo"member (if structure)
         //                      //   So for now we only allow a true constant number, or an
         //                      //   identifier which we treat as a structure member name
-                yaINTNUM                                { $$ = new AstConst{$<fl>1, *$1}; }
-        |       yaFLOATNUM                              { $$ = new AstConst{$<fl>1, AstConst::RealDouble{}, $1}; }
-        |       id                                      { $$ = new AstText{$<fl>1, *$1}; }
-        |       strAsInt                                { $$ = $1; }
-        |       simple_typeNoRef                        { $$ = $1; }
+                yaINTNUM
+                        { $$ = new AstConst{$<fl>1, *$1}; }
+        |       '-' yaINTNUM
+                        { V3Number neg{*$2}; neg.opNegate(*$2); $$ = new AstConst{$<fl>2, neg}; }
+        |       yaFLOATNUM
+                        { $$ = new AstConst{$<fl>1, AstConst::RealDouble{}, $1}; }
+        |       id
+                        { $$ = new AstText{$<fl>1, *$1}; }
+        |       strAsInt
+                        { $$ = $1; }
+        |       simple_typeNoRef
+                        { $$ = $1; }
         //                      // expanded from simple_type ps_type_identifier (part of simple_type)
         //                      // expanded from simple_type ps_parameter_identifier (part of simple_type)
         |       packageClassScopeE idType
