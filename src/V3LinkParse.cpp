@@ -299,7 +299,8 @@ class LinkParseVisitor final : public VNVisitor {
             if (nodep->lifetime().isNone()) nodep->lifetime(m_lifetime);
         } else if (m_ftaskp) {
             nodep->lifetime(VLifetime::AUTOMATIC);
-        } else if (nodep->lifetime().isNone()) { // lifetime shouldn't be unknown, set static if none
+        } else if (nodep->lifetime()
+                       .isNone()) {  // lifetime shouldn't be unknown, set static if none
             nodep->lifetime(VLifetime::STATIC);
         }
 
