@@ -11,6 +11,14 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 5.031 devel
 ==========================
 
+**Minor:**
+
+* Add coverage point hierarchy to coverage reports (#5575) (#5576). [Andrew Nolte]
+* Fix can't locate scope error in interface task delayed assignment (#5462) (#5568). [Zhou Shen]
+* Fix BLKANDNBLK for for VARXREFs (#5569). [Todd Strader]
+* Fix VPI error instead of fatal for vpi_get_value() on large signals (#5571). [Todd Strader]
+* Fix --output-groups leftover files issue (#5574). [Todd Strader]
+* Fix slow unsized number parsing (#5577). [Geza Lore]
 
 
 Verilator 5.030 2024-10-27
