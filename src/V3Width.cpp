@@ -4265,8 +4265,8 @@ class WidthVisitor final : public VNVisitor {
         if (!nodep->dtypep() && m_vup->dtypeNullp()) {  // Get it from parent assignment/pin/etc
             nodep->dtypep(m_vup->dtypep());
         }
-        if(VN_IS( nodep->backp(), Arg) && VN_IS(nodep->backp()->backp() , MethodCall)){
-            if(nodep->backp()->backp()->name()=="push_back"){
+        if (VN_IS(nodep->backp(), Arg) && VN_IS(nodep->backp()->backp(), MethodCall)) {
+            if (nodep->backp()->backp()->name() == "push_back") {
                 AstMethodCall* pushBackCall = static_cast<AstMethodCall*>(nodep->backp()->backp());
                 nodep->dtypep(pushBackCall->fromp()->dtypep()->subDTypep());
             }
