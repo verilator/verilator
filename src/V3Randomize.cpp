@@ -1883,7 +1883,6 @@ class RandomizeVisitor final : public VNVisitor {
             AstTask* setupAllTaskp = getCreateConstraintSetupFunc(nodep);
             AstTaskRef* const setupTaskRefp = new AstTaskRef{fl, setupAllTaskp->name(), nullptr};
             setupTaskRefp->taskp(setupAllTaskp);
-            randomizep->addStmtsp(implementConstraintsClear(fl, genp));
             randomizep->addStmtsp(setupTaskRefp->makeStmt());
 
             AstNodeModule* const genModp = VN_AS(genp->user2p(), NodeModule);
