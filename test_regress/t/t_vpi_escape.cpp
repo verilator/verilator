@@ -135,6 +135,16 @@ int _mon_check_iter() {
         TEST_CHECK_CSTR(p, "<null>");  // Unsupported
     }
 
+    TestVpiHandle vh_null_name = MY_VPI_HANDLE("___0_");
+    TEST_CHECK_NZ(vh_null_name);
+    p = vpi_get_str(vpiName, vh_null_name);
+    TEST_CHECK_CSTR(p, "___0_");
+
+    TestVpiHandle vh_hex_name = MY_VPI_HANDLE("___0F_");
+    TEST_CHECK_NZ(vh_hex_name);
+    p = vpi_get_str(vpiName, vh_hex_name);
+    TEST_CHECK_CSTR(p, "___0F_");
+
     TestVpiHandle vh10 = vpi_iterate(vpiReg, vh2);
     TEST_CHECK_NZ(vh10);
     TEST_CHECK_EQ(vpi_get(vpiType, vh10), vpiIterator);
