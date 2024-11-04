@@ -19,7 +19,7 @@
 //
 // Note: this phase requires temporaries in a single static assignment form (SSA).
 //
-// V3ReuseWideTemps's Transformations:
+// V3Reuse's Transformations:
 //
 // Each function:
 //      Collect all temporaries and insert them to freeTemps pool.
@@ -37,7 +37,7 @@
 
 #include "V3PchAstMT.h"
 
-#include "V3ReuseWideTemps.h"
+#include "V3Reuse.h"
 
 #include "V3Global.h"
 #include "V3Stats.h"
@@ -47,7 +47,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 const string TEMP_PREFIX = "__Vtemp_";  // Prefix for temporary variables.
 
-class ReuseWideTempsVisitor final : public VNVisitor {
+class ReuseVisitor final : public VNVisitor {
     // TYPES
     using WidthType = int;
     using TempIdType = size_t;
@@ -209,25 +209,25 @@ class ReuseWideTempsVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit ReuseWideTempsVisitor(AstCFunc* nodep)
+    explicit ReuseVisitor(AstCFunc* nodep)
         : m_cfuncp{nodep} {
         excludeVars(nodep);
         iterate(nodep);
         removeUnusedVars();
     }
-    ~ReuseWideTempsVisitor() override {
+    ~ReuseVisitor() override {
         if (v3Global.opt.stats()) {
-            V3Stats::addStatSum("Optimizations, ReuseWideTemps total wide temps", m_totalTemps);
-            V3Stats::addStatSum("Optimizations, ReuseWideTemps removed temps",
+            V3Stats::addStatSum("Optimizations, Reuse total wide temps", m_totalTemps);
+            V3Stats::addStatSum("Optimizations, Reuse removed temps",
                                 VDouble0{m_removedTemps.size()});
         }
     }
 };
 
 //######################################################################
-// V3ReuseWideTemps class functions
+// V3Reuse class functions
 
-void V3ReuseWideTemps::reuseAll(AstNetlist* nodep) {
+void V3Reuse::reuseAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
         V3ThreadScope threadScope;
@@ -237,10 +237,10 @@ void V3ReuseWideTemps::reuseAll(AstNetlist* nodep) {
              modp = VN_AS(modp->nextp(), NodeModule)) {
             for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
                 if (AstCFunc* const cfuncp = VN_CAST(nodep, CFunc)) {
-                    threadScope.enqueue([cfuncp]() { ReuseWideTempsVisitor{cfuncp}; });
+                    threadScope.enqueue([cfuncp]() { ReuseVisitor{cfuncp}; });
                 }
             }
         }
     }
-    V3Global::dumpCheckGlobalTree("reuse-wide-temps", 0, dumpTreeEitherLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("reuse", 0, dumpTreeEitherLevel() >= 3);
 }

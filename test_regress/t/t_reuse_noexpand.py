@@ -10,16 +10,16 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_wide_temp_opt.v"
+test.top_filename = "t/t_reuse.v"
 
 test.compile(verilator_flags2=["--stats", "--trace", "-fno-expand"])
 
 if test.vlt:
-    test.file_grep(test.stats, r'Optimizations, ReuseWideTemps removed temps \s+(\d+)', 20)
-    test.file_grep(test.stats, r'Optimizations, ReuseWideTemps total wide temps \s+(\d+)', 25)
+    test.file_grep(test.stats, r'Optimizations, Reuse removed temps \s+(\d+)', 20)
+    test.file_grep(test.stats, r'Optimizations, Reuse total wide temps \s+(\d+)', 25)
 elif test.vltmt:
-    test.file_grep(test.stats, r'Optimizations, ReuseWideTemps removed temps \s+(\d+)', 12)
-    test.file_grep(test.stats, r'Optimizations, ReuseWideTemps total wide temps \s+(\d+)', 25)
+    test.file_grep(test.stats, r'Optimizations, Reuse removed temps \s+(\d+)', 12)
+    test.file_grep(test.stats, r'Optimizations, Reuse total wide temps \s+(\d+)', 25)
 
 test.execute()
 test.passes()

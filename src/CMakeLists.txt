@@ -150,7 +150,7 @@ set(HEADERS
     V3ProtectLib.h
     V3Randomize.h
     V3Reloop.h
-    V3ReuseWideTemps.h
+    V3Reuse.h
     V3Rtti.h
     V3Sampled.h
     V3Sched.h
@@ -298,7 +298,7 @@ set(COMMON_SOURCES
     V3ProtectLib.cpp
     V3Randomize.cpp
     V3Reloop.cpp
-    V3ReuseWideTemps.cpp
+    V3Reuse.cpp
     V3Sampled.cpp
     V3Sched.cpp
     V3SchedAcyclic.cpp

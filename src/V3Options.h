@@ -394,12 +394,12 @@ private:
     bool m_fMergeConstPool = true;  // main switch: -fno-merge-const-pool
     bool m_fReloop;      // main switch: -fno-reloop: reform loops
     bool m_fReorder;     // main switch: -fno-reorder: reorder assignments in blocks
+    bool m_fReuse = true;  // main switch: -fno-reuse
     bool m_fSplit;       // main switch: -fno-split: always assignment splitting
     bool m_fSubst;       // main switch: -fno-subst: substitute expression temp values
     bool m_fSubstConst;  // main switch: -fno-subst-const: final constant substitution
     bool m_fTable;       // main switch: -fno-table: lookup table creation
     bool m_fTaskifyAll = false;  // main switch: --ftaskify-all-forked
-    bool m_fWideTempOpt = true;  // main switch: -fno-wide-temp-opt
     // clang-format on
 
     bool m_available = false;  // Set to true at the end of option parsing
@@ -690,7 +690,7 @@ public:
     bool fSubstConst() const { return m_fSubstConst; }
     bool fTable() const { return m_fTable; }
     bool fTaskifyAll() const { return m_fTaskifyAll; }
-    bool fWideTempOpt() const { return m_fWideTempOpt; }
+    bool fReuse() const { return m_fReuse; }
 
     string traceClassBase() const VL_MT_SAFE { return m_traceFormat.classBase(); }
     string traceClassLang() const { return m_traceFormat.classBase() + (systemC() ? "Sc" : "C"); }

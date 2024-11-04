@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef VERILATOR_V3REUSE_WIDE_TEMPS_H_
-#define VERILATOR_V3REUSE_WIDE_TEMPS_H_
+#ifndef VERILATOR_V3REUSE_H_
+#define VERILATOR_V3REUSE_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -24,7 +24,7 @@ class AstNetlist;
 
 //============================================================================
 
-class V3ReuseWideTemps final {
+class V3Reuse final {
 public:
     static void reuseAll(AstNetlist* nodep);
 };
