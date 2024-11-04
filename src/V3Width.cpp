@@ -4266,9 +4266,10 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypep(m_vup->dtypep());
         }
         if (VN_IS(nodep->backp(), Arg) && VN_IS(nodep->backp()->backp(), MethodCall)) {
-            if (nodep->backp()->backp()->name() == "push_back") {
-                AstMethodCall* pushBackCall = static_cast<AstMethodCall*>(nodep->backp()->backp());
-                nodep->dtypep(pushBackCall->fromp()->dtypep()->subDTypep());
+            const std::string methodName = nodep->backp()->backp()->name();
+            if (methodName == "push_back" || methodName == "push_front") {
+                AstMethodCall* methodCallp = static_cast<AstMethodCall*>(nodep->backp()->backp());
+                nodep->dtypep(methodCallp->fromp()->dtypep()->subDTypep());
             }
         }
         AstNodeDType* dtypep = nodep->dtypep();
