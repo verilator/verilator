@@ -1150,6 +1150,8 @@ class RandomizeVisitor final : public VNVisitor {
     size_t m_enumValueTabCount = 0;  // Number of tables with enum values created
     int m_randCaseNum = 0;  // Randcase number within a module for var naming
     std::map<std::string, AstCDType*> m_randcDtypes;  // RandC data type deduplication
+    AstConstraint* m_constraintp = nullptr;
+    int m_sizeConstraintCnt = 0;
 
     // METHODS
     void createRandomGenerator(AstClass* const classp) {
@@ -1855,8 +1857,10 @@ class RandomizeVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_randCaseNum);
+        VL_RESTORER(m_sizeConstraintCnt);
         m_modp = nodep;
         m_randCaseNum = 0;
+        m_sizeConstraintCnt = 0;
         iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
@@ -1867,8 +1871,10 @@ class RandomizeVisitor final : public VNVisitor {
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_randCaseNum);
+        VL_RESTORER(m_sizeConstraintCnt);
         m_modp = nodep;
         m_randCaseNum = 0;
+        m_sizeConstraintCnt = 0;
 
         iterateChildren(nodep);
         if (!nodep->user1()) return;  // Doesn't need randomize, or already processed
@@ -2160,6 +2166,28 @@ class RandomizeVisitor final : public VNVisitor {
         nodep->classOrPackagep(classp);
         UINFO(9, "Added `%s` randomization procedure");
         VL_DO_DANGLING(withp->deleteTree(), withp);
+    }
+    void visit(AstConstraint* nodep) override {
+        VL_RESTORER(m_constraintp);
+        m_constraintp = nodep;
+        iterateChildren(nodep);
+    }
+    void visit(AstCMethodHard* nodep) override {
+        iterateChildren(nodep);
+        if (m_constraintp && nodep->fromp()->user1() && nodep->name() == "size") {
+            AstVar* const sizeVarp = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP,
+                                                "__Vsize_" + cvtToStr(++m_sizeConstraintCnt),
+                                                nodep->findSigned32DType()};
+            AstClass* const classp = VN_AS(m_modp, Class);
+            classp->addMembersp(sizeVarp);
+            m_memberMap.insert(classp, sizeVarp);
+            sizeVarp->user2p(classp);
+            AstVarRef* const sizeVarRefp
+                = new AstVarRef{nodep->fileline(), sizeVarp, VAccess::READ};
+            sizeVarRefp->user1(true);
+            nodep->replaceWith(sizeVarRefp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        }
     }
     void visit(AstNodeStmt* nodep) override {
         VL_RESTORER(m_stmtp);
