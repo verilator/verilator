@@ -17,7 +17,7 @@
 // ie. for wide temporaries are not expanded due to their width exceeding
 // expandLimit.
 //
-// Note: this phase requires temporaries in a single static assignment form (SSA).
+// This phase requires temporaries in a single static assignment form (SSA).
 //
 // V3Reuse's Transformations:
 //
