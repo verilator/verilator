@@ -48,6 +48,13 @@ class LinkLValueVisitor final : public VNVisitor {
         if (m_setIfRand && !(nodep->varp() && nodep->varp()->isRand())) return;
         if (m_setRefLvalue != VAccess::NOCHANGE) nodep->access(m_setRefLvalue);
         if (nodep->varp() && nodep->access().isWriteOrRW()) {
+            if (nodep->varp()->isParam()) {
+                // All parameters that did get constified happened before now
+                // as V3LinkLValue runs after V3Param
+                nodep->v3error("Storing to parameter variable "
+                               << nodep->prettyNameQ()
+                               << " in a context that is determed only at runtime");
+            }
             if (m_setContinuously) {
                 nodep->varp()->isContinuously(true);
                 // Strength may only be specified in continuous assignment,

@@ -2069,7 +2069,7 @@ public:
     bool isTristate() const { return m_tristate; }
     bool isPrimaryIO() const VL_MT_SAFE { return m_primaryIO; }
     bool isPrimaryInish() const { return isPrimaryIO() && isNonOutput(); }
-    bool isIfaceRef() const { return (varType() == VVarType::IFACEREF); }
+    bool isIfaceRef() const { return varType() == VVarType::IFACEREF; }
     bool isIfaceParent() const { return m_isIfaceParent; }
     bool isInternal() const { return m_isInternal; }
     bool isSignal() const { return varType().isSignal(); }
@@ -2085,11 +2085,11 @@ public:
                 && !isSc() && !isPrimaryIO() && !isConst() && !isDouble() && !isString());
     }
     bool isClassMember() const { return varType() == VVarType::MEMBER; }
-    bool isStatementTemp() const { return (varType() == VVarType::STMTTEMP); }
-    bool isXTemp() const { return (varType() == VVarType::XTEMP); }
+    bool isStatementTemp() const { return varType() == VVarType::STMTTEMP; }
+    bool isXTemp() const { return varType() == VVarType::XTEMP; }
     bool isParam() const { return varType().isParam(); }
-    bool isGParam() const { return (varType() == VVarType::GPARAM); }
-    bool isGenVar() const { return (varType() == VVarType::GENVAR); }
+    bool isGParam() const { return varType() == VVarType::GPARAM; }
+    bool isGenVar() const { return varType() == VVarType::GENVAR; }
     bool isBitLogic() const {
         AstBasicDType* bdtypep = basicp();
         return bdtypep && bdtypep->isBitLogic();
