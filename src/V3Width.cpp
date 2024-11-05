@@ -6131,6 +6131,15 @@ class WidthVisitor final : public VNVisitor {
             if (v3Global.opt.timing().isSetTrue()) {
                 iterateCheckBool(nodep, "Wait", nodep->condp(),
                                  BOTH);  // it's like an if() condition.
+                // TODO check also inside complex event expressions
+                if (AstNodeVarRef* const varrefp = VN_CAST(nodep->condp(), NodeVarRef)) {
+                    if (varrefp->isEvent()) {
+                        varrefp->v3error("Wait statement conditions do not take raw events"
+                                         " (IEEE 1800-2023 15.5.3)\n"
+                                         << varrefp->warnMore() << "... Suggest use '"
+                                         << varrefp->prettyName() << ".triggered'");
+                    }
+                }
                 iterateNull(nodep->stmtsp());
                 return;
             } else if (v3Global.opt.timing().isSetFalse()) {

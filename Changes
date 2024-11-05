@@ -14,6 +14,7 @@ Verilator 5.031 devel
 **Minor:**
 
 * Add error on illegal enum base type (#3010). [Iztok Jeras]
+* Add error on `wait` with missing `.triggered` (#4457).
 * Add error when improperly storing to parameter (#5147). [Gökçe Aydos]
 * Add coverage point hierarchy to coverage reports (#5575) (#5576). [Andrew Nolte]
 * Fix can't locate scope error in interface task delayed assignment (#5462) (#5568). [Zhou Shen]
