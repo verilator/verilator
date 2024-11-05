@@ -3128,7 +3128,7 @@ class WidthVisitor final : public VNVisitor {
         // Any AstWith is checked later when know types, in methodWithArgument
         for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
             if (AstArg* const argp = VN_CAST(pinp, Arg)) {
-                if (argp->exprp()) userIterate(argp->exprp(), WidthVP{SELF, BOTH}.p());
+                if (argp->exprp()) userIterate(argp->exprp(), WidthVP{nodep->fromp()->dtypep()->subDTypep(), BOTH}.p());
             }
         }
         // Find the fromp dtype - should be a class
@@ -4264,13 +4264,6 @@ class WidthVisitor final : public VNVisitor {
         }
         if (!nodep->dtypep() && m_vup->dtypeNullp()) {  // Get it from parent assignment/pin/etc
             nodep->dtypep(m_vup->dtypep());
-        }
-        if (VN_IS(nodep->backp(), Arg) && VN_IS(nodep->backp()->backp(), MethodCall)) {
-            const std::string methodName = nodep->backp()->backp()->name();
-            if (methodName == "push_back" || methodName == "push_front") {
-                AstMethodCall* methodCallp = static_cast<AstMethodCall*>(nodep->backp()->backp());
-                nodep->dtypep(methodCallp->fromp()->dtypep()->subDTypep());
-            }
         }
         AstNodeDType* dtypep = nodep->dtypep();
         if (!dtypep) {
