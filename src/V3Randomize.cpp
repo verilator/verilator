@@ -1132,6 +1132,7 @@ class RandomizeVisitor final : public VNVisitor {
     //  AstClass::user2p()      -> AstVar*.  Rand mode state variable
     //  AstVar::user3()         -> bool. Handled in constraints
     //  AstClass::user3p()      -> AstVar*.  Constrained randomizer variable
+    //  AstConstraint::user3p() -> AstTask*. Pointer to resize procedure
     //  AstClass::user4p()      -> AstVar*.  Constraint mode state variable
     // VNUser1InUse    m_inuser1;      (Allocated for use in RandomizeMarkVisitor)
     // VNUser2InUse    m_inuser2;      (Allocated for use in RandomizeMarkVisitor)
@@ -1181,6 +1182,17 @@ class RandomizeVisitor final : public VNVisitor {
         classp->addMembersp(setupAllTaskp);
         m_memberMap.insert(classp, setupAllTaskp);
         return setupAllTaskp;
+    }
+    AstTask* getCreateAggrResizeTask(AstClass* classp) {
+        static const char* const name = "__Vresize_constrained_arrays";
+        AstTask* resizeTaskp = VN_AS(m_memberMap.findMember(classp, name), Task);
+        if (resizeTaskp) return resizeTaskp;
+        resizeTaskp = new AstTask{classp->fileline(), name, nullptr};
+        resizeTaskp->classMethod(true);
+        resizeTaskp->isVirtual(true);
+        classp->addMembersp(resizeTaskp);
+        m_memberMap.insert(classp, resizeTaskp);
+        return resizeTaskp;
     }
     AstVar* getCreateRandModeVar(AstClass* const classp) {
         if (classp->user2p()) return VN_AS(classp->user2p(), Var);
@@ -1567,6 +1579,13 @@ class RandomizeVisitor final : public VNVisitor {
         nodep->addMembersp(taskp);
         return taskp;
     }
+    AstTask* newResizeConstrainedArrayTask(AstClass* const nodep, const std::string& name) {
+        AstTask* const taskp
+            = new AstTask{nodep->fileline(), name + "_resize_constrained_array", nullptr};
+        taskp->classMethod(true);
+        nodep->addMembersp(taskp);
+        return taskp;
+    }
     AstNodeStmt* implementConstraintsClear(FileLine* const fileline, AstVar* const genp) {
         AstCMethodHard* const clearp = new AstCMethodHard{
             fileline,
@@ -1904,6 +1923,16 @@ class RandomizeVisitor final : public VNVisitor {
 
                 setupAllTaskp->addStmtsp(setupTaskRefp->makeStmt());
 
+                if (AstTask* resizeTaskp = VN_CAST(constrp->user3p(), Task)) {
+                    AstTask* const resizeAllTaskp = getCreateAggrResizeTask(nodep);
+                    AstTaskRef* const resizeTaskRefp
+                        = new AstTaskRef{constrp->fileline(), resizeTaskp->name(), nullptr};
+                    resizeTaskRefp->taskp(resizeTaskp);
+                    resizeTaskRefp->classOrPackagep(classp);
+
+                    resizeAllTaskp->addStmtsp(resizeTaskRefp->makeStmt());
+                }
+
                 ConstraintExprVisitor{m_memberMap, constrp->itemsp(), nullptr, genp, randModeVarp};
                 if (constrp->itemsp()) {
                     taskp->addStmtsp(wrapIfConstraintMode(
@@ -1931,6 +1960,15 @@ class RandomizeVisitor final : public VNVisitor {
                     = VN_AS(m_memberMap.findMember(randModeClassp, "new"), NodeFTask);
                 UASSERT_OBJ(newp, randModeClassp, "No new() in class");
                 addSetRandMode(newp, genp, randModeVarp);
+            }
+
+            AstTask* const resizeAllTaskp
+                = VN_AS(m_memberMap.findMember(nodep, "__Vresize_constrained_arrays"), Task);
+            if (resizeAllTaskp) {
+                AstTaskRef* const resizeTaskRefp
+                    = new AstTaskRef{fl, resizeAllTaskp->name(), nullptr};
+                resizeTaskRefp->taskp(resizeAllTaskp);
+                randomizep->addStmtsp(resizeTaskRefp->makeStmt());
             }
         } else {
             beginValp = new AstConst{fl, AstConst::WidthedValue{}, 32, 1};
@@ -2174,18 +2212,29 @@ class RandomizeVisitor final : public VNVisitor {
     }
     void visit(AstCMethodHard* nodep) override {
         iterateChildren(nodep);
+        FileLine* fl = nodep->fileline();
         if (m_constraintp && nodep->fromp()->user1() && nodep->name() == "size") {
-            AstVar* const sizeVarp = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP,
-                                                "__Vsize_" + cvtToStr(++m_sizeConstraintCnt),
-                                                nodep->findSigned32DType()};
+            AstVar* const sizeVarp
+                = new AstVar{fl, VVarType::BLOCKTEMP, "__Vsize_" + cvtToStr(++m_sizeConstraintCnt),
+                             nodep->findSigned32DType()};
             AstClass* const classp = VN_AS(m_modp, Class);
             classp->addMembersp(sizeVarp);
             m_memberMap.insert(classp, sizeVarp);
             sizeVarp->user2p(classp);
-            AstVarRef* const sizeVarRefp
-                = new AstVarRef{nodep->fileline(), sizeVarp, VAccess::READ};
+            AstVarRef* const sizeVarRefp = new AstVarRef{fl, sizeVarp, VAccess::READ};
             sizeVarRefp->user1(true);
             nodep->replaceWith(sizeVarRefp);
+
+            AstTask* resizerTaskp = VN_AS(m_constraintp->user3p(), Task);
+            if (!resizerTaskp) {
+                resizerTaskp = newResizeConstrainedArrayTask(classp, m_constraintp->name());
+                m_constraintp->user3p(resizerTaskp);
+            }
+            AstCMethodHard* const resizep
+                = new AstCMethodHard{fl, nodep->fromp()->unlinkFrBack(), "renew",
+                                     new AstVarRef{fl, sizeVarp, VAccess::READ}};
+            resizep->dtypep(nodep->findVoidDType());
+            resizerTaskp->addStmtsp(new AstStmtExpr{fl, resizep});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
