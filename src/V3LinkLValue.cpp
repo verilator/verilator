@@ -36,11 +36,9 @@ class LinkLValueVisitor final : public VNVisitor {
     bool m_setContinuously = false;  // Set that var has some continuous assignment
     bool m_setForcedByCode = false;  // Set that var is the target of an AstAssignForce/AstRelease
     bool m_setIfRand = false;  // Update VarRefs if var declared as rand
-    bool m_inInitialStatic = false;  // Set if inside AstInitialStatic
-    bool m_inFunc = false;  // Set if inside AstNodeFTask
-
-    // STATE - TODO
     bool m_setStrengthSpecified = false;  // Set that var has assignment with strength specified.
+    bool m_inFunc = false;  // Set if inside AstNodeFTask
+    bool m_inInitialStatic = false;  // Set if inside AstInitialStatic
     VAccess m_setRefLvalue;  // Set VarRefs to lvalues for pin assignments
 
     // VISITs
@@ -76,6 +74,7 @@ class LinkLValueVisitor final : public VNVisitor {
 
     // Nodes that start propagating down lvalues
     void visit(AstPin* nodep) override {
+        VL_RESTORER(m_setRefLvalue);
         if (nodep->modVarp() && nodep->modVarp()->isWritable()) {
             // When the varref's were created, we didn't know the I/O state
             // Now that we do, and it's from a output, we know it's a lvalue
@@ -89,6 +88,7 @@ class LinkLValueVisitor final : public VNVisitor {
     void visit(AstNodeAssign* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         VL_RESTORER(m_setContinuously);
+        VL_RESTORER(m_setStrengthSpecified);
         {
             m_setRefLvalue = VAccess::WRITE;
             m_setContinuously = VN_IS(nodep, AssignW) || VN_IS(nodep, AssignAlias);
@@ -317,9 +317,9 @@ class LinkLValueVisitor final : public VNVisitor {
             AstNodeExpr* const pinp = argp->exprp();
             if (!pinp) continue;
             if (portp->isWritable()) {
+                VL_RESTORER(m_setRefLvalue);
                 m_setRefLvalue = VAccess::WRITE;
                 iterate(pinp);
-                m_setRefLvalue = VAccess::NOCHANGE;
             } else {
                 iterate(pinp);
             }
