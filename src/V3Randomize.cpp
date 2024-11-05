@@ -1134,6 +1134,7 @@ class RandomizeVisitor final : public VNVisitor {
     //  AstClass::user3p()      -> AstVar*.  Constrained randomizer variable
     //  AstConstraint::user3p() -> AstTask*. Pointer to resize procedure
     //  AstClass::user4p()      -> AstVar*.  Constraint mode state variable
+    //  AstVar::user4p()        -> AstVar*.  Size variable for constrained queues
     // VNUser1InUse    m_inuser1;      (Allocated for use in RandomizeMarkVisitor)
     // VNUser2InUse    m_inuser2;      (Allocated for use in RandomizeMarkVisitor)
     const VNUser3InUse m_inuser3;
@@ -1152,7 +1153,6 @@ class RandomizeVisitor final : public VNVisitor {
     int m_randCaseNum = 0;  // Randcase number within a module for var naming
     std::map<std::string, AstCDType*> m_randcDtypes;  // RandC data type deduplication
     AstConstraint* m_constraintp = nullptr;
-    int m_sizeConstraintCnt = 0;
 
     // METHODS
     void createRandomGenerator(AstClass* const classp) {
@@ -1876,10 +1876,8 @@ class RandomizeVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_randCaseNum);
-        VL_RESTORER(m_sizeConstraintCnt);
         m_modp = nodep;
         m_randCaseNum = 0;
-        m_sizeConstraintCnt = 0;
         iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
@@ -1890,10 +1888,8 @@ class RandomizeVisitor final : public VNVisitor {
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_randCaseNum);
-        VL_RESTORER(m_sizeConstraintCnt);
         m_modp = nodep;
         m_randCaseNum = 0;
-        m_sizeConstraintCnt = 0;
 
         iterateChildren(nodep);
         if (!nodep->user1()) return;  // Doesn't need randomize, or already processed
@@ -2214,27 +2210,33 @@ class RandomizeVisitor final : public VNVisitor {
         iterateChildren(nodep);
         FileLine* fl = nodep->fileline();
         if (m_constraintp && nodep->fromp()->user1() && nodep->name() == "size") {
-            AstVar* const sizeVarp
-                = new AstVar{fl, VVarType::BLOCKTEMP, "__Vsize_" + cvtToStr(++m_sizeConstraintCnt),
-                             nodep->findSigned32DType()};
             AstClass* const classp = VN_AS(m_modp, Class);
-            classp->addMembersp(sizeVarp);
-            m_memberMap.insert(classp, sizeVarp);
-            sizeVarp->user2p(classp);
+            AstVar* const queueVarp = VN_AS(nodep->fromp(), VarRef)->varp();
+            AstVar* sizeVarp = VN_CAST(queueVarp->user4p(), Var);
+            if (!sizeVarp) {
+                sizeVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__V" + queueVarp->name() + "_size",
+                                      nodep->findSigned32DType()};
+                classp->addMembersp(sizeVarp);
+                m_memberMap.insert(classp, sizeVarp);
+                sizeVarp->user2p(classp);
+
+                queueVarp->user4p(sizeVarp);
+
+                AstTask* resizerTaskp = VN_AS(m_constraintp->user3p(), Task);
+                if (!resizerTaskp) {
+                    resizerTaskp = newResizeConstrainedArrayTask(classp, m_constraintp->name());
+                    m_constraintp->user3p(resizerTaskp);
+                }
+                AstCMethodHard* const resizep
+                    = new AstCMethodHard{fl, nodep->fromp()->unlinkFrBack(), "renew",
+                                         new AstVarRef{fl, sizeVarp, VAccess::READ}};
+                resizep->dtypep(nodep->findVoidDType());
+                resizerTaskp->addStmtsp(new AstStmtExpr{fl, resizep});
+            }
             AstVarRef* const sizeVarRefp = new AstVarRef{fl, sizeVarp, VAccess::READ};
             sizeVarRefp->user1(true);
             nodep->replaceWith(sizeVarRefp);
 
-            AstTask* resizerTaskp = VN_AS(m_constraintp->user3p(), Task);
-            if (!resizerTaskp) {
-                resizerTaskp = newResizeConstrainedArrayTask(classp, m_constraintp->name());
-                m_constraintp->user3p(resizerTaskp);
-            }
-            AstCMethodHard* const resizep
-                = new AstCMethodHard{fl, nodep->fromp()->unlinkFrBack(), "renew",
-                                     new AstVarRef{fl, sizeVarp, VAccess::READ}};
-            resizep->dtypep(nodep->findVoidDType());
-            resizerTaskp->addStmtsp(new AstStmtExpr{fl, resizep});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
