@@ -3128,7 +3128,9 @@ class WidthVisitor final : public VNVisitor {
         // Any AstWith is checked later when know types, in methodWithArgument
         for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
             if (AstArg* const argp = VN_CAST(pinp, Arg)) {
-                if (argp->exprp()) userIterate(argp->exprp(), WidthVP{nodep->fromp()->dtypep()->subDTypep(), BOTH}.p());
+                if (argp->exprp())
+                    userIterate(argp->exprp(),
+                                WidthVP{nodep->fromp()->dtypep()->subDTypep(), BOTH}.p());
             }
         }
         // Find the fromp dtype - should be a class
