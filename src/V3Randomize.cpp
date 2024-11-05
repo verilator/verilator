@@ -1957,21 +1957,20 @@ class RandomizeVisitor final : public VNVisitor {
                 UASSERT_OBJ(newp, randModeClassp, "No new() in class");
                 addSetRandMode(newp, genp, randModeVarp);
             }
-
-            AstTask* const resizeAllTaskp
-                = VN_AS(m_memberMap.findMember(nodep, "__Vresize_constrained_arrays"), Task);
-            if (resizeAllTaskp) {
-                AstTaskRef* const resizeTaskRefp
-                    = new AstTaskRef{fl, resizeAllTaskp->name(), nullptr};
-                resizeTaskRefp->taskp(resizeAllTaskp);
-                randomizep->addStmtsp(resizeTaskRefp->makeStmt());
-            }
         } else {
             beginValp = new AstConst{fl, AstConst::WidthedValue{}, 32, 1};
         }
 
         AstVarRef* const fvarRefp = new AstVarRef{fl, fvarp, VAccess::WRITE};
         randomizep->addStmtsp(new AstAssign{fl, fvarRefp, beginValp});
+
+        AstTask* const resizeAllTaskp
+            = VN_AS(m_memberMap.findMember(nodep, "__Vresize_constrained_arrays"), Task);
+        if (resizeAllTaskp) {
+            AstTaskRef* const resizeTaskRefp = new AstTaskRef{fl, resizeAllTaskp->name(), nullptr};
+            resizeTaskRefp->taskp(resizeAllTaskp);
+            randomizep->addStmtsp(resizeTaskRefp->makeStmt());
+        }
 
         AstFunc* const basicRandomizep
             = V3Randomize::newRandomizeFunc(m_memberMap, nodep, "__Vbasic_randomize");
