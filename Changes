@@ -13,8 +13,9 @@ Verilator 5.031 devel
 
 **Minor:**
 
-* Add coverage point hierarchy to coverage reports (#5575) (#5576). [Andrew Nolte]
+* Add error on illegal enum base type (#3010). [Iztok Jeras]
 * Add error when improperly storing to parameter (#5147). [Gökçe Aydos]
+* Add coverage point hierarchy to coverage reports (#5575) (#5576). [Andrew Nolte]
 * Fix can't locate scope error in interface task delayed assignment (#5462) (#5568). [Zhou Shen]
 * Fix BLKANDNBLK for for VARXREFs (#5569). [Todd Strader]
 * Fix VPI error instead of fatal for vpi_get_value() on large signals (#5571). [Todd Strader]

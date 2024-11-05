@@ -20,7 +20,6 @@ Suppressed = {}
 for s in [
         ' exited with ',  # Is hit; driver.py filters out
         'EOF in unterminated string',  # Instead get normal unterminated
-        'Enum names without values only allowed on numeric types',  # Hard to hit
         'Enum ranges must be integral, per spec',  # Hard to hit
         'Import package not found: ',  # Errors earlier, until future parser released
         'Return with return value isn\'t underneath a function',  # Hard to hit, get other bad return messages

@@ -2346,6 +2346,13 @@ class WidthVisitor final : public VNVisitor {
         UINFO(5, "  ENUMDTYPE " << nodep << endl);
         nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         nodep->dtypep(nodep);
+        AstBasicDType* basicp = nodep->dtypep()->skipRefp()->basicp();
+        if (!basicp || !basicp->keyword().isIntNumeric()) {
+            nodep->v3error(
+                "Enum type must be an integer atom or vector type (IEEE 1800-2023 6.19)");
+            basicp = nodep->findSigned32DType()->basicp();
+            nodep->refDTypep(basicp);
+        }
         nodep->widthFromSub(nodep->subDTypep());
         // Assign widths
         userIterateAndNext(nodep->itemsp(), WidthVP{nodep->dtypep(), BOTH}.p());
@@ -2376,17 +2383,11 @@ class WidthVisitor final : public VNVisitor {
                     itemp->v3error("Enum value that is unassigned cannot follow value with X/Zs "
                                    "(IEEE 1800-2023 6.19)");
                 }
-                if (!nodep->dtypep()->basicp()
-                    && !nodep->dtypep()->basicp()->keyword().isIntNumeric()) {
-                    itemp->v3error("Enum names without values only allowed on numeric types");
-                    // as can't +1 to resolve them.
-                }
                 itemp->valuep(new AstConst{itemp->fileline(), num});
             }
 
             const AstConst* const constp = VN_AS(itemp->valuep(), Const);
-            if (constp->num().isFourState() && nodep->dtypep()->basicp()
-                && !nodep->dtypep()->basicp()->isFourstate()) {
+            if (constp->num().isFourState() && basicp->basicp() && !basicp->isFourstate()) {
                 itemp->v3error("Enum value with X/Zs cannot be assigned to non-fourstate type "
                                "(IEEE 1800-2023 6.19)");
             }
