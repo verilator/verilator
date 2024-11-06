@@ -2231,6 +2231,14 @@ class RandomizeVisitor final : public VNVisitor {
                                          new AstVarRef{fl, sizeVarp, VAccess::READ}};
                 resizep->dtypep(nodep->findVoidDType());
                 resizerTaskp->addStmtsp(new AstStmtExpr{fl, resizep});
+
+                // Since size variable is signed int, we need additional constraint
+                // to make sure it is always >= 0.
+                AstVarRef* const sizeVarRefp = new AstVarRef{fl, sizeVarp, VAccess::READ};
+                sizeVarRefp->user1(true);
+                AstGteS* const sizeGtep = new AstGteS{fl, sizeVarRefp, new AstConst{fl, 0}};
+                sizeGtep->user1(true);
+                m_constraintp->addItemsp(new AstConstraintExpr{fl, sizeGtep});
             }
             AstVarRef* const sizeVarRefp = new AstVarRef{fl, sizeVarp, VAccess::READ};
             sizeVarRefp->user1(true);
