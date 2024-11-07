@@ -478,10 +478,6 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
                            "Warning: indexed_name not found in m_arr_vars");
             }
         }
-#ifdef VL_DEBUG
-        std::cout << "Var : " << varr.name() << " Set, idx := " << idx << " ,value := " << value
-                  << std::endl;
-#endif
         varr.set(idx, value);
     }
     return true;
