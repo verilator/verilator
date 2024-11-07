@@ -31,7 +31,7 @@
 #include <ostream>
 //=============================================================================
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
-class ArrayInfo {
+class ArrayInfo final {
 public:
     const std::string m_name;
     void* const m_datap;
