@@ -271,8 +271,8 @@ void V3ParseImp::preprocDumps(std::ostream& os, bool forInputs) {
     for (auto& buf : m_ppBuffers) {
         if (noblanks) {
             bool blank = true;
-            for (string::iterator its = buf.begin(); its != buf.end(); ++its) {
-                if (!std::isspace(*its) && *its != '\n') {
+            for (const char ch : buf) {
+                if (!std::isspace(ch) && ch != '\n') {
                     blank = false;
                     break;
                 }
