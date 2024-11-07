@@ -71,10 +71,16 @@ public:
     virtual void emitExtract(std::ostream& s, int i) const;
     virtual void emitType(std::ostream& s) const;
     virtual int totalWidth() const;
-    mutable const std::map<std::string, std::shared_ptr<const ArrayInfo>>* m_arr_vars_ref = nullptr;
-    virtual void setArrayInfo(const std::map<std::string, std::shared_ptr<const ArrayInfo>>& arr_vars) const { m_arr_vars_ref = &arr_vars; }
+    mutable const std::map<std::string, std::shared_ptr<const ArrayInfo>>* m_arr_vars_ref
+        = nullptr;
+    virtual void
+    setArrayInfo(const std::map<std::string, std::shared_ptr<const ArrayInfo>>& arr_vars) const {
+        m_arr_vars_ref = &arr_vars;
+    }
     mutable std::map<std::string, int> count_cache;
-    int countMatchingElements(const std::map<std::string, std::shared_ptr<const ArrayInfo>>& arr_vars, const std::string& base_name) const {
+    int
+    countMatchingElements(const std::map<std::string, std::shared_ptr<const ArrayInfo>>& arr_vars,
+                          const std::string& base_name) const {
         if (count_cache.find(base_name) != count_cache.end()) return count_cache[base_name];
         int count = 0;
         for (int index = 0; arr_vars.find(base_name + std::to_string(index)) != arr_vars.end();
