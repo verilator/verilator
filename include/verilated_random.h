@@ -28,9 +28,19 @@
 #include "verilated.h"
 
 #include <ostream>
-
+#include <iostream>
 //=============================================================================
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
+class ArrayInfo {
+public:
+    const std::string m_name;
+    void* const m_datap;
+    const int m_index;
+    std::vector<size_t> m_indices;
+
+    ArrayInfo(const std::string name, void* datap, int index, const std::vector<size_t>& indices)
+        : m_name(name), m_datap(datap), m_index(index), m_indices(indices) {}
+};
 
 class VlRandomVar VL_NOT_FINAL {
     const char* const m_name;  // Variable name
@@ -58,7 +68,16 @@ public:
     virtual void emitExtract(std::ostream& s, int i) const;
     virtual void emitType(std::ostream& s) const;
     virtual int totalWidth() const;
-    virtual int getLength(int dimension) const { return -1; }
+    mutable const std::unordered_map<std::string, std::shared_ptr<const ArrayInfo>>* m_arr_vars_ref = nullptr;
+    virtual void setArrayInfo(const std::unordered_map<std::string, std::shared_ptr<const ArrayInfo>>& arr_vars) const { m_arr_vars_ref = &arr_vars; }
+    mutable std::unordered_map<std::string, int> count_cache;
+    int countMatchingElements(const std::unordered_map<std::string, std::shared_ptr<const ArrayInfo>>& arr_vars, const std::string& base_name) const {
+        if (count_cache.find(base_name) != count_cache.end()) return count_cache[base_name];
+        int count = 0;
+        for (int index = 0; arr_vars.find(base_name + std::to_string(index)) != arr_vars.end(); ++index) { count++; }
+        count_cache[base_name] = count;
+        return count;
+    }
 };
 
 template <typename T>
@@ -68,52 +87,13 @@ public:
                      std::uint32_t randModeIdx)
         : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
     void* datap(int idx) const override {
+        std::string indexed_name = name() + std::to_string(idx);
+        if (auto it = m_arr_vars_ref->find(indexed_name); it != m_arr_vars_ref->end()) {
+            return it->second->m_datap;
+        }
         return &static_cast<T*>(VlRandomVar::datap(idx))->atWrite(idx);
     }
-    void emitSelect(std::ostream& s, int i) const {
-        s << " (select " << name() << " #x";
-        for (int j = 28; j >= 0; j -= 4) s << "0123456789abcdef"[(i >> j) & 0xf];
-        s << ')';
-    }
-    void emitGetValue(std::ostream& s) const override {
-        const int length = static_cast<T*>(VlRandomVar::datap(0))->size();
-        for (int i = 0; i < length; i++) emitSelect(s, i);
-    }
-    void emitType(std::ostream& s) const override {
-        s << "(Array (_ BitVec 32) (_ BitVec " << width() << "))";
-    }
-    int totalWidth() const override {
-        const int length = static_cast<T*>(VlRandomVar::datap(0))->size();
-        return width() * length;
-    }
-    void emitExtract(std::ostream& s, int i) const override {
-        const int j = i / width();
-        i = i % width();
-        s << " ((_ extract " << i << ' ' << i << ')';
-        emitSelect(s, j);
-        s << ')';
-    }
-};
-
-template <typename T>
-class VlRandomArrayVar final : public VlRandomVar {
-public:
-    VlRandomArrayVar(const char* name, int width, void* datap, int dimension,
-                     std::uint32_t randModeIdx)
-        : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
-
-    void* datap(int idx) const override {
-        if (idx < 0) return &static_cast<T*>(VlRandomVar::datap(0))->operator[](0);
-        std::vector<size_t> indices(dimension());
-        for (int dim = dimension() - 1; dim >= 0; --dim) {
-            const int length = getLength(dim);
-            indices[dim] = idx % length;
-            idx /= length;
-        }
-        return &static_cast<T*>(VlRandomVar::datap(0))->find_element(indices);
-    }
-
-    void emitSelect(std::ostream& s, const std::vector<int>& indices) const {
+    void emitSelect(std::ostream& s, const std::vector<size_t>& indices) const {
         for (size_t idx = 0; idx < indices.size(); ++idx) s << "(select ";
         s << name();
         for (size_t idx = 0; idx < indices.size(); ++idx) {
@@ -124,33 +104,16 @@ public:
             s << ")";
         }
     }
-
-    int getLength(int dimension) const override {
-        const auto var = static_cast<const T*>(datap(-1));
-        const int lenth = var->find_length(dimension);
-        return lenth;
-    }
-
     void emitGetValue(std::ostream& s) const override {
-        const int total_dimensions = dimension();
-        std::vector<int> lengths;
-        for (int dim = 0; dim < total_dimensions; dim++) {
-            const int len = getLength(dim);
-            lengths.push_back(len);
-        }
-        std::vector<int> indices(total_dimensions, 0);
-        while (true) {
-            emitSelect(s, indices);
-            int currentDimension = total_dimensions - 1;
-            while (currentDimension >= 0
-                   && ++indices[currentDimension] >= lengths[currentDimension]) {
-                indices[currentDimension] = 0;
-                --currentDimension;
+        int elementCounts = countMatchingElements(*m_arr_vars_ref, name());
+        for (int i = 0; i < elementCounts; i++) {
+            std::string indexed_name = name() + std::to_string(i);
+            if (auto it = m_arr_vars_ref->find(indexed_name); it != m_arr_vars_ref->end()) {
+                std::vector<size_t> indices = it->second->m_indices;
+                emitSelect(s, indices);
             }
-            if (currentDimension < 0) break;
         }
     }
-
     void emitType(std::ostream& s) const override {
         if (dimension() > 0) {
             for (int i = 0; i < dimension(); ++i) s << "(Array (_ BitVec 32) ";
@@ -158,29 +121,77 @@ public:
             for (int i = 0; i < dimension(); ++i) s << ")";
         }
     }
-
     int totalWidth() const override {
-        int totalLength = 1;
-        for (int dim = 0; dim < dimension(); ++dim) {
-            const int length = getLength(dim);
-            if (length == -1) return 0;
-            totalLength *= length;
-        }
-        return width() * totalLength;
+        const int elementCounts = countMatchingElements(*m_arr_vars_ref, name());
+        return width() * elementCounts;
     }
-
     void emitExtract(std::ostream& s, int i) const override {
         const int j = i / width();
         i = i % width();
-        std::vector<int> indices(dimension());
-        int idx = j;
-        for (int dim = dimension() - 1; dim >= 0; --dim) {
-            int length = getLength(dim);
-            indices[dim] = idx % length;
-            idx /= length;
-        }
         s << " ((_ extract " << i << ' ' << i << ')';
-        emitSelect(s, indices);
+        std::string indexed_name = name() + std::to_string(j);
+        if (auto it = m_arr_vars_ref->find(indexed_name); it != m_arr_vars_ref->end()) {
+            std::vector<size_t> indices = it->second->m_indices;
+            emitSelect(s, indices);
+        }
+        s << ')';
+    }
+};
+
+template <typename T>
+class VlRandomArrayVar final : public VlRandomVar {
+public:
+    VlRandomArrayVar(const char* name, int width, void* datap, int dimension,
+                     std::uint32_t randModeIdx)
+        : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
+    void* datap(int idx) const override {
+        std::string indexed_name = name() + std::to_string(idx);
+        if (auto it = m_arr_vars_ref->find(indexed_name); it != m_arr_vars_ref->end()) {
+            return it->second->m_datap;
+        }
+        return &static_cast<T*>(VlRandomVar::datap(idx))->operator[](idx);
+    }
+    void emitSelect(std::ostream& s, const std::vector<size_t>& indices) const {
+        for (size_t idx = 0; idx < indices.size(); ++idx) s << "(select ";
+        s << name();
+        for (size_t idx = 0; idx < indices.size(); ++idx) {
+            s << " #x";
+            for (int j = 28; j >= 0; j -= 4) {
+                s << "0123456789abcdef"[(indices[idx] >> j) & 0xf];
+            }
+            s << ")";
+        }
+    }
+    void emitGetValue(std::ostream& s) const override {
+        int elementCounts = countMatchingElements(*m_arr_vars_ref, name());
+        for (int i = 0; i < elementCounts; i++) {
+            std::string indexed_name = name() + std::to_string(i);
+            if (auto it = m_arr_vars_ref->find(indexed_name); it != m_arr_vars_ref->end()) {
+                std::vector<size_t> indices = it->second->m_indices;
+                emitSelect(s, indices);
+            }
+        }
+    }
+    void emitType(std::ostream& s) const override {
+        if (dimension() > 0) {
+            for (int i = 0; i < dimension(); ++i) s << "(Array (_ BitVec 32) ";
+            s << "(_ BitVec " << width() << ")";
+            for (int i = 0; i < dimension(); ++i) s << ")";
+        }
+    }
+    int totalWidth() const override {
+        const int elementCounts = countMatchingElements(*m_arr_vars_ref, name());
+        return width() * elementCounts;
+    }
+    void emitExtract(std::ostream& s, int i) const override {
+        const int j = i / width();
+        i = i % width();
+        s << " ((_ extract " << i << ' ' << i << ')';
+        std::string indexed_name = name() + std::to_string(j);
+        if (auto it = m_arr_vars_ref->find(indexed_name); it != m_arr_vars_ref->end()) {
+            std::vector<size_t> indices = it->second->m_indices;
+            emitSelect(s, indices);
+        }
         s << ')';
     }
 };
@@ -192,6 +203,7 @@ class VlRandomizer final {
     std::vector<std::string> m_constraints;  // Solver-dependent constraints
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
                                                                        // variables
+    std::unordered_map<std::string, std::shared_ptr<const ArrayInfo>> m_arr_vars;
     const VlQueue<CData>* m_randmode;  // rand_mode state;
 
     // PRIVATE METHODS
@@ -220,6 +232,10 @@ public:
         if (m_vars.find(name) != m_vars.end()) return;
         m_vars[name] = std::make_shared<const VlRandomQueueVar<VlQueue<T>>>(
             name, width, &var, dimension, randmodeIdx);
+        if (dimension > 0) {
+            idx = 0;
+            record_arr_table(var, name, dimension, {});
+        }
     }
     template <typename T, std::size_t N>
     void write_var(VlUnpacked<T, N>& var, int width, const char* name, int dimension,
@@ -227,6 +243,76 @@ public:
         if (m_vars.find(name) != m_vars.end()) return;
         m_vars[name] = std::make_shared<const VlRandomArrayVar<VlUnpacked<T, N>>>(
             name, width, &var, dimension, randmodeIdx);
+        if (dimension > 0) {
+            idx = 0;
+            record_arr_table(var, name, dimension, {});
+        }
+    }
+    int idx = 0;
+    std::string generateKey(const std::string& name, int idx) {
+        size_t bracket_pos = name.find('[');
+        std::string base_name = (bracket_pos != std::string::npos) ? name.substr(0, bracket_pos) : name;
+        return base_name + std::to_string(idx);
+    }
+    template <typename T>
+    void record_arr_table(T& var, const std::string name, int dimension, std::vector<size_t> indices) {
+        std::string key = generateKey(name, idx);
+        m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices);
+        #ifdef VL_DEBUG
+        std::cout << "Basic Data :: Added ArrayInfo: current_name = " << name 
+              << ", current_idx = " << idx
+              << ", key : = " << key
+              << ", indices = [";
+        for (size_t index : indices) std::cout << index << " ";
+        std::cout << "]\n";
+        #endif
+        idx += 1;
+    }
+    template <typename T>
+    void record_arr_table(VlQueue<T>& var, const std::string name, int dimension, std::vector<size_t> indices) {
+        if ((dimension > 0) && (var.size() != 0)) {
+            for (size_t i = 0; i < var.size(); ++i) {
+                std::string indexed_name = name + "[" + std::to_string(i) + "]";
+                indices.push_back(i);
+                record_arr_table(var.atWrite(i), indexed_name, dimension-1, indices);
+                indices.pop_back();
+            }
+        } else {
+            std::string key = generateKey(name, idx);
+            m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices);
+            #ifdef VL_DEBUG
+            std::cout << "VlQueue :: Added ArrayInfo: name = " << name 
+                    << ", index = " << idx
+                    << ", key = " << key
+                    << ", indices = [";
+            for (size_t index : indices) std::cout << index << " ";
+            std::cout << "]\n";
+            #endif
+            idx += 1;
+        }
+    }
+    template <typename T, std::size_t N>
+    void record_arr_table(VlUnpacked<T, N>& var, const std::string name, int dimension, std::vector<size_t> indices) {
+        if ((dimension > 0) && (N != 0)) {
+            for (size_t i = 0; i < N; ++i) {
+                std::string indexed_name = name + "[" + std::to_string(i) + "]";
+                indices.push_back(i);
+                record_arr_table(var.operator[](i), indexed_name, dimension-1, indices);
+                indices.pop_back();
+            }
+        } else {
+            std::string key = generateKey(name, idx);
+            m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices);
+            #ifdef VL_DEBUG
+            std::cout << "VlQueue :: Added ArrayInfo: name = " << name 
+                    << ", index = " << idx
+                    << ", key = " << key
+                    << ", indices = [";
+            for (size_t index : indices) std::cout << index << " ";
+            std::cout << "]\n";
+            #endif
+            idx += 1;
+        }
     }
     void hard(std::string&& constraint);
     void clear();
