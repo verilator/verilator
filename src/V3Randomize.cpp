@@ -1295,8 +1295,7 @@ class RandomizeVisitor final : public VNVisitor {
         FileLine* fl = modeVarp->fileline();
         AstCMethodHard* const dynarrayNewp
             = new AstCMethodHard{fl, new AstVarRef{fl, modeVarModp, modeVarp, VAccess::WRITE},
-                                 "renew_copy", new AstConst{fl, modeCount}};
-        dynarrayNewp->addPinsp(new AstVarRef{fl, modeVarModp, modeVarp, VAccess::READ});
+                                 "resize", new AstConst{fl, modeCount}};
         dynarrayNewp->dtypeSetVoid();
         AstNodeFTask* const newp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
         UASSERT_OBJ(newp, classp, "No new() in class");
@@ -2227,7 +2226,7 @@ class RandomizeVisitor final : public VNVisitor {
                     m_constraintp->user3p(resizerTaskp);
                 }
                 AstCMethodHard* const resizep
-                    = new AstCMethodHard{fl, nodep->fromp()->unlinkFrBack(), "renew",
+                    = new AstCMethodHard{fl, nodep->fromp()->unlinkFrBack(), "resize",
                                          new AstVarRef{fl, sizeVarp, VAccess::READ}};
                 resizep->dtypep(nodep->findVoidDType());
                 resizerTaskp->addStmtsp(new AstStmtExpr{fl, resizep});

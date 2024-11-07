@@ -2903,6 +2903,7 @@ void AstCMethodHard::setPurity() {
                                                           {"r_xor", true},
                                                           {"renew", false},
                                                           {"renew_copy", false},
+                                                          {"resize", false},
                                                           {"resume", false},
                                                           {"reverse", false},
                                                           {"rsort", false},
