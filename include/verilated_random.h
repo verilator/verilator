@@ -101,9 +101,7 @@ public:
     void* datap(int idx) const override {
         std::string indexed_name = name() + std::to_string(idx);
         auto it = m_arr_vars_ref->find(indexed_name);
-        if (it != m_arr_vars_ref->end()) {
-            return it->second->m_datap;
-        }
+        if (it != m_arr_vars_ref->end()) { return it->second->m_datap; }
         return &static_cast<T*>(VlRandomVar::datap(idx))->atWrite(idx);
     }
     void emitSelect(std::ostream& s, const std::vector<size_t>& indices) const {
@@ -162,9 +160,7 @@ public:
     void* datap(int idx) const override {
         std::string indexed_name = name() + std::to_string(idx);
         auto it = m_arr_vars_ref->find(indexed_name);
-        if (it != m_arr_vars_ref->end()) {
-            return it->second->m_datap;
-        }
+        if (it != m_arr_vars_ref->end()) { return it->second->m_datap; }
         return &static_cast<T*>(VlRandomVar::datap(idx))->operator[](idx);
     }
     void emitSelect(std::ostream& s, const std::vector<size_t>& indices) const {
