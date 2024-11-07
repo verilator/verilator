@@ -22,10 +22,10 @@
 
 #include "verilated_random.h"
 
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <streambuf>
-#include <iomanip>
 
 #define _VL_SOLVER_HASH_LEN 1
 #define _VL_SOLVER_HASH_LEN_TOTAL 4
@@ -457,8 +457,8 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
             for (const auto& hex_index : indices) {
                 size_t start = hex_index.find_first_not_of(" ");
                 if (start == std::string::npos || hex_index.substr(start, 2) != "#x") {
-                    VL_WARN_MT(__FILE__, __LINE__, "randomize", 
-                            "Warning: hex_index contains invalid format");
+                    VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                               "Warning: hex_index contains invalid format");
                     continue;
                 }
                 int index = std::stoi(hex_index.substr(start + 2), nullptr, 16);
@@ -466,21 +466,22 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
             }
             std::string indexed_name = oss.str();
             auto it = std::find_if(m_arr_vars.begin(), m_arr_vars.end(),
-                           [&indexed_name](const auto& entry) {
-                               return entry.second->m_name == indexed_name;
-                           });
+                                   [&indexed_name](const auto& entry) {
+                                       return entry.second->m_name == indexed_name;
+                                   });
             if (it != m_arr_vars.end()) {
                 std::ostringstream ss;
                 ss << "#x" << std::hex << std::setw(8) << std::setfill('0') << it->second->m_index;
                 idx = ss.str();
             } else {
-                VL_WARN_MT(__FILE__, __LINE__, "randomize", 
-                        "Warning: indexed_name not found in m_arr_vars");
+                VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                           "Warning: indexed_name not found in m_arr_vars");
             }
         }
-        #ifdef VL_DEBUG
-        std::cout << "Var : " << varr.name() << " Set, idx := " << idx << " ,value := " << value << std::endl;
-        #endif
+#ifdef VL_DEBUG
+        std::cout << "Var : " << varr.name() << " Set, idx := " << idx << " ,value := " << value
+                  << std::endl;
+#endif
         varr.set(idx, value);
     }
     return true;

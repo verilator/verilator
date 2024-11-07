@@ -27,8 +27,8 @@
 
 #include "verilated.h"
 
-#include <ostream>
 #include <iostream>
+#include <ostream>
 //=============================================================================
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
 class ArrayInfo {
@@ -39,7 +39,10 @@ public:
     std::vector<size_t> m_indices;
 
     ArrayInfo(const std::string name, void* datap, int index, const std::vector<size_t>& indices)
-        : m_name(name), m_datap(datap), m_index(index), m_indices(indices) {}
+        : m_name(name)
+        , m_datap(datap)
+        , m_index(index)
+        , m_indices(indices) {}
 };
 
 class VlRandomVar VL_NOT_FINAL {
@@ -68,13 +71,22 @@ public:
     virtual void emitExtract(std::ostream& s, int i) const;
     virtual void emitType(std::ostream& s) const;
     virtual int totalWidth() const;
-    mutable const std::unordered_map<std::string, std::shared_ptr<const ArrayInfo>>* m_arr_vars_ref = nullptr;
-    virtual void setArrayInfo(const std::unordered_map<std::string, std::shared_ptr<const ArrayInfo>>& arr_vars) const { m_arr_vars_ref = &arr_vars; }
+    mutable const std::unordered_map<std::string, std::shared_ptr<const ArrayInfo>>* m_arr_vars_ref
+        = nullptr;
+    virtual void setArrayInfo(
+        const std::unordered_map<std::string, std::shared_ptr<const ArrayInfo>>& arr_vars) const {
+        m_arr_vars_ref = &arr_vars;
+    }
     mutable std::unordered_map<std::string, int> count_cache;
-    int countMatchingElements(const std::unordered_map<std::string, std::shared_ptr<const ArrayInfo>>& arr_vars, const std::string& base_name) const {
+    int countMatchingElements(
+        const std::unordered_map<std::string, std::shared_ptr<const ArrayInfo>>& arr_vars,
+        const std::string& base_name) const {
         if (count_cache.find(base_name) != count_cache.end()) return count_cache[base_name];
         int count = 0;
-        for (int index = 0; arr_vars.find(base_name + std::to_string(index)) != arr_vars.end(); ++index) { count++; }
+        for (int index = 0; arr_vars.find(base_name + std::to_string(index)) != arr_vars.end();
+             ++index) {
+            count++;
+        }
         count_cache[base_name] = count;
         return count;
     }
@@ -251,66 +263,64 @@ public:
     int idx = 0;
     std::string generateKey(const std::string& name, int idx) {
         size_t bracket_pos = name.find('[');
-        std::string base_name = (bracket_pos != std::string::npos) ? name.substr(0, bracket_pos) : name;
+        std::string base_name
+            = (bracket_pos != std::string::npos) ? name.substr(0, bracket_pos) : name;
         return base_name + std::to_string(idx);
     }
     template <typename T>
-    void record_arr_table(T& var, const std::string name, int dimension, std::vector<size_t> indices) {
+    void record_arr_table(T& var, const std::string name, int dimension,
+                          std::vector<size_t> indices) {
         std::string key = generateKey(name, idx);
         m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices);
-        #ifdef VL_DEBUG
-        std::cout << "Basic Data :: Added ArrayInfo: current_name = " << name 
-              << ", current_idx = " << idx
-              << ", key : = " << key
-              << ", indices = [";
+#ifdef VL_DEBUG
+        std::cout << "Basic Data :: Added ArrayInfo: current_name = " << name
+                  << ", current_idx = " << idx << ", key : = " << key << ", indices = [";
         for (size_t index : indices) std::cout << index << " ";
         std::cout << "]\n";
-        #endif
+#endif
         idx += 1;
     }
     template <typename T>
-    void record_arr_table(VlQueue<T>& var, const std::string name, int dimension, std::vector<size_t> indices) {
+    void record_arr_table(VlQueue<T>& var, const std::string name, int dimension,
+                          std::vector<size_t> indices) {
         if ((dimension > 0) && (var.size() != 0)) {
             for (size_t i = 0; i < var.size(); ++i) {
                 std::string indexed_name = name + "[" + std::to_string(i) + "]";
                 indices.push_back(i);
-                record_arr_table(var.atWrite(i), indexed_name, dimension-1, indices);
+                record_arr_table(var.atWrite(i), indexed_name, dimension - 1, indices);
                 indices.pop_back();
             }
         } else {
             std::string key = generateKey(name, idx);
             m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices);
-            #ifdef VL_DEBUG
-            std::cout << "VlQueue :: Added ArrayInfo: name = " << name 
-                    << ", index = " << idx
-                    << ", key = " << key
-                    << ", indices = [";
+#ifdef VL_DEBUG
+            std::cout << "VlQueue :: Added ArrayInfo: name = " << name << ", index = " << idx
+                      << ", key = " << key << ", indices = [";
             for (size_t index : indices) std::cout << index << " ";
             std::cout << "]\n";
-            #endif
+#endif
             idx += 1;
         }
     }
     template <typename T, std::size_t N>
-    void record_arr_table(VlUnpacked<T, N>& var, const std::string name, int dimension, std::vector<size_t> indices) {
+    void record_arr_table(VlUnpacked<T, N>& var, const std::string name, int dimension,
+                          std::vector<size_t> indices) {
         if ((dimension > 0) && (N != 0)) {
             for (size_t i = 0; i < N; ++i) {
                 std::string indexed_name = name + "[" + std::to_string(i) + "]";
                 indices.push_back(i);
-                record_arr_table(var.operator[](i), indexed_name, dimension-1, indices);
+                record_arr_table(var.operator[](i), indexed_name, dimension - 1, indices);
                 indices.pop_back();
             }
         } else {
             std::string key = generateKey(name, idx);
             m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices);
-            #ifdef VL_DEBUG
-            std::cout << "VlQueue :: Added ArrayInfo: name = " << name 
-                    << ", index = " << idx
-                    << ", key = " << key
-                    << ", indices = [";
+#ifdef VL_DEBUG
+            std::cout << "VlQueue :: Added ArrayInfo: name = " << name << ", index = " << idx
+                      << ", key = " << key << ", indices = [";
             for (size_t index : indices) std::cout << index << " ";
             std::cout << "]\n";
-            #endif
+#endif
             idx += 1;
         }
     }

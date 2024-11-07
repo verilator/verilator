@@ -612,7 +612,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                               VAccess::READWRITE},
                 "write_var"};
             uint32_t dimension = 0;
-            if (VN_IS(varp->dtypep(), UnpackArrayDType) || VN_IS(varp->dtypep(), DynArrayDType) || VN_IS(varp->dtypep(), QueueDType)) {
+            if (VN_IS(varp->dtypep(), UnpackArrayDType) || VN_IS(varp->dtypep(), DynArrayDType)
+                || VN_IS(varp->dtypep(), QueueDType)) {
                 const std::pair<uint32_t, uint32_t> dims
                     = varp->dtypep()->dimensions(/*includeBasic=*/true);
                 const uint32_t unpackedDimensions = dims.second;
@@ -626,8 +627,10 @@ class ConstraintExprVisitor final : public VNVisitor {
             methodp->addPinsp(varRefp);
             size_t width = varp->width();
             AstNodeDType* tmpDtypep = varp->dtypep();
-            if (VN_IS(tmpDtypep, UnpackArrayDType) || VN_IS(tmpDtypep, DynArrayDType) || VN_IS(tmpDtypep, QueueDType)) {
-                while (VN_IS(tmpDtypep, UnpackArrayDType) || VN_IS(tmpDtypep, DynArrayDType) || VN_IS(tmpDtypep, QueueDType)) {
+            if (VN_IS(tmpDtypep, UnpackArrayDType) || VN_IS(tmpDtypep, DynArrayDType)
+                || VN_IS(tmpDtypep, QueueDType)) {
+                while (VN_IS(tmpDtypep, UnpackArrayDType) || VN_IS(tmpDtypep, DynArrayDType)
+                       || VN_IS(tmpDtypep, QueueDType)) {
                     tmpDtypep = tmpDtypep->subDTypep();
                 }
                 width = tmpDtypep->width();
