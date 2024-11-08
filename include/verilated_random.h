@@ -33,12 +33,12 @@
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
 class ArrayInfo final {
 public:
-    const std::string m_name;
-    void* const m_datap;
-    const int m_index;
-    std::vector<size_t> m_indices;
+    const std::string m_name; // Name of the array variable, including index notation (e.g., arr[2][1])
+    void* const m_datap; // Reference to the array variable data
+    const int m_index;  // Flattened (1D) index of the array element
+    const std::vector<size_t> m_indices; // Multi-dimensional indices of the array element
 
-    ArrayInfo(const std::string name, void* datap, int index, const std::vector<size_t>& indices)
+    ArrayInfo(const std::string& name, void* datap, int index, const std::vector<size_t>& indices)
         : m_name(name)
         , m_datap(datap)
         , m_index(index)
@@ -71,21 +71,19 @@ public:
     virtual void emitExtract(std::ostream& s, int i) const;
     virtual void emitType(std::ostream& s) const;
     virtual int totalWidth() const;
-    mutable const std::map<std::string, std::shared_ptr<const ArrayInfo>>* m_arr_vars_ref
-        = nullptr;
-    virtual void
-    setArrayInfo(const std::map<std::string, std::shared_ptr<const ArrayInfo>>& arr_vars) const {
-        m_arr_vars_ref = &arr_vars;
+    mutable std::shared_ptr<const std::map<std::string, std::shared_ptr<const ArrayInfo>>> m_arr_vars_ref;
+    virtual void setArrayInfo(const std::shared_ptr<const std::map<std::string, std::shared_ptr<const ArrayInfo>>>& arr_vars) const {
+        m_arr_vars_ref = arr_vars;
     }
     mutable std::map<std::string, int> count_cache;
     int
     countMatchingElements(const std::map<std::string, std::shared_ptr<const ArrayInfo>>& arr_vars,
                           const std::string& base_name) const {
-        if (count_cache.find(base_name) != count_cache.end()) return count_cache[base_name];
+        if (VL_LIKELY(count_cache.find(base_name) != count_cache.end())) return count_cache[base_name];
         int count = 0;
         for (int index = 0; arr_vars.find(base_name + std::to_string(index)) != arr_vars.end();
              ++index) {
-            count++;
+            ++count;
         }
         count_cache[base_name] = count;
         return count;
@@ -99,9 +97,9 @@ public:
                      std::uint32_t randModeIdx)
         : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
     void* datap(int idx) const override {
-        std::string indexed_name = name() + std::to_string(idx);
-        auto it = m_arr_vars_ref->find(indexed_name);
-        if (it != m_arr_vars_ref->end()) { return it->second->m_datap; }
+        const std::string indexed_name = name() + std::to_string(idx);
+        const auto it = m_arr_vars_ref->find(indexed_name);
+        if (it != m_arr_vars_ref->end()) return it->second->m_datap;
         return &static_cast<T*>(VlRandomVar::datap(idx))->atWrite(idx);
     }
     void emitSelect(std::ostream& s, const std::vector<size_t>& indices) const {
@@ -116,12 +114,12 @@ public:
         }
     }
     void emitGetValue(std::ostream& s) const override {
-        int elementCounts = countMatchingElements(*m_arr_vars_ref, name());
+        const int elementCounts = countMatchingElements(*m_arr_vars_ref, name());
         for (int i = 0; i < elementCounts; i++) {
-            std::string indexed_name = name() + std::to_string(i);
-            auto it = m_arr_vars_ref->find(indexed_name);
+            const std::string indexed_name = name() + std::to_string(i);
+            const auto it = m_arr_vars_ref->find(indexed_name);
             if (it != m_arr_vars_ref->end()) {
-                std::vector<size_t> indices = it->second->m_indices;
+                const std::vector<size_t>& indices = it->second->m_indices;
                 emitSelect(s, indices);
             }
         }
@@ -141,10 +139,10 @@ public:
         const int j = i / width();
         i = i % width();
         s << " ((_ extract " << i << ' ' << i << ')';
-        std::string indexed_name = name() + std::to_string(j);
-        auto it = m_arr_vars_ref->find(indexed_name);
+        const std::string indexed_name = name() + std::to_string(j);
+        const auto it = m_arr_vars_ref->find(indexed_name);
         if (it != m_arr_vars_ref->end()) {
-            std::vector<size_t> indices = it->second->m_indices;
+            const std::vector<size_t>& indices = it->second->m_indices;
             emitSelect(s, indices);
         }
         s << ')';
@@ -158,9 +156,9 @@ public:
                      std::uint32_t randModeIdx)
         : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
     void* datap(int idx) const override {
-        std::string indexed_name = name() + std::to_string(idx);
-        auto it = m_arr_vars_ref->find(indexed_name);
-        if (it != m_arr_vars_ref->end()) { return it->second->m_datap; }
+        const std::string indexed_name = name() + std::to_string(idx);
+        const auto it = m_arr_vars_ref->find(indexed_name);
+        if (it != m_arr_vars_ref->end()) return it->second->m_datap;
         return &static_cast<T*>(VlRandomVar::datap(idx))->operator[](idx);
     }
     void emitSelect(std::ostream& s, const std::vector<size_t>& indices) const {
@@ -175,12 +173,12 @@ public:
         }
     }
     void emitGetValue(std::ostream& s) const override {
-        int elementCounts = countMatchingElements(*m_arr_vars_ref, name());
+        const int elementCounts = countMatchingElements(*m_arr_vars_ref, name());
         for (int i = 0; i < elementCounts; i++) {
-            std::string indexed_name = name() + std::to_string(i);
-            auto it = m_arr_vars_ref->find(indexed_name);
+            const std::string indexed_name = name() + std::to_string(i);
+            const auto it = m_arr_vars_ref->find(indexed_name);
             if (it != m_arr_vars_ref->end()) {
-                std::vector<size_t> indices = it->second->m_indices;
+                const std::vector<size_t>& indices = it->second->m_indices;
                 emitSelect(s, indices);
             }
         }
@@ -200,10 +198,10 @@ public:
         const int j = i / width();
         i = i % width();
         s << " ((_ extract " << i << ' ' << i << ')';
-        std::string indexed_name = name() + std::to_string(j);
-        auto it = m_arr_vars_ref->find(indexed_name);
+        const std::string indexed_name = name() + std::to_string(j);
+        const auto it = m_arr_vars_ref->find(indexed_name);
         if (it != m_arr_vars_ref->end()) {
-            std::vector<size_t> indices = it->second->m_indices;
+            const std::vector<size_t>& indices = it->second->m_indices;
             emitSelect(s, indices);
         }
         s << ')';
@@ -264,15 +262,17 @@ public:
     }
     int idx = 0;
     std::string generateKey(const std::string& name, int idx) {
-        size_t bracket_pos = name.find('[');
-        std::string base_name
-            = (bracket_pos != std::string::npos) ? name.substr(0, bracket_pos) : name;
-        return base_name + std::to_string(idx);
+        if (!name.empty() && name[0] == '\\') {
+            const size_t space_pos = name.find(' ');
+            return (space_pos != std::string::npos ? name.substr(0, space_pos) : name) + std::to_string(idx);
+        }
+        const size_t bracket_pos = name.find('[');
+        return (bracket_pos != std::string::npos ? name.substr(0, bracket_pos) : name) + std::to_string(idx);
     }
     template <typename T>
     void record_arr_table(T& var, const std::string name, int dimension,
                           std::vector<size_t> indices) {
-        std::string key = generateKey(name, idx);
+        const std::string key = generateKey(name, idx);
         m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices);
         idx += 1;
     }
@@ -281,13 +281,13 @@ public:
                           std::vector<size_t> indices) {
         if ((dimension > 0) && (var.size() != 0)) {
             for (size_t i = 0; i < var.size(); ++i) {
-                std::string indexed_name = name + "[" + std::to_string(i) + "]";
+                const std::string indexed_name = name + "[" + std::to_string(i) + "]";
                 indices.push_back(i);
                 record_arr_table(var.atWrite(i), indexed_name, dimension - 1, indices);
                 indices.pop_back();
             }
         } else {
-            std::string key = generateKey(name, idx);
+            const std::string key = generateKey(name, idx);
             m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices);
             idx += 1;
         }
@@ -297,13 +297,13 @@ public:
                           std::vector<size_t> indices) {
         if ((dimension > 0) && (N != 0)) {
             for (size_t i = 0; i < N; ++i) {
-                std::string indexed_name = name + "[" + std::to_string(i) + "]";
+                const std::string indexed_name = name + "[" + std::to_string(i) + "]";
                 indices.push_back(i);
                 record_arr_table(var.operator[](i), indexed_name, dimension - 1, indices);
                 indices.pop_back();
             }
         } else {
-            std::string key = generateKey(name, idx);
+            const std::string key = generateKey(name, idx);
             m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices);
             idx += 1;
         }

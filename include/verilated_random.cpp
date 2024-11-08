@@ -374,7 +374,10 @@ bool VlRandomizer::next(VlRNG& rngr) {
     f << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
     f << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
     for (const auto& var : m_vars) {
-        if (var.second->dimension() > 0) var.second->setArrayInfo(m_arr_vars);
+        if (var.second->dimension() > 0) {
+            auto m_arr_vars_ptr = std::make_shared<const std::map<std::string, std::shared_ptr<const ArrayInfo>>>(m_arr_vars);
+            var.second->setArrayInfo(m_arr_vars_ptr);
+        }
         f << "(declare-fun " << var.first << " () ";
         var.second->emitType(f);
         f << ")\n";
@@ -416,7 +419,10 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
 
     f << "(get-value (";
     for (const auto& var : m_vars) {
-        if (var.second->dimension() > 0) var.second->setArrayInfo(m_arr_vars);
+        if (var.second->dimension() > 0) {
+            auto m_arr_vars_ptr = std::make_shared<const std::map<std::string, std::shared_ptr<const ArrayInfo>>>(m_arr_vars);
+            var.second->setArrayInfo(m_arr_vars_ptr);
+        }
         var.second->emitGetValue(f);
     }
     f << "))\n";
@@ -455,17 +461,17 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
             std::ostringstream oss;
             oss << varr.name();
             for (const auto& hex_index : indices) {
-                size_t start = hex_index.find_first_not_of(" ");
+                const size_t start = hex_index.find_first_not_of(" ");
                 if (start == std::string::npos || hex_index.substr(start, 2) != "#x") {
-                    VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                               "Warning: hex_index contains invalid format");
+                    VL_FATAL_MT(__FILE__, __LINE__, "randomize",
+                               "Error: hex_index contains invalid format");
                     continue;
                 }
-                int index = std::stoi(hex_index.substr(start + 2), nullptr, 16);
+                const int index = std::stoi(hex_index.substr(start + 2), nullptr, 16);
                 oss << "[" << index << "]";
             }
-            std::string indexed_name = oss.str();
-            auto it = std::find_if(m_arr_vars.begin(), m_arr_vars.end(),
+            const std::string indexed_name = oss.str();
+            const auto it = std::find_if(m_arr_vars.begin(), m_arr_vars.end(),
                                    [&indexed_name](const auto& entry) {
                                        return entry.second->m_name == indexed_name;
                                    });
@@ -474,8 +480,8 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
                 ss << "#x" << std::hex << std::setw(8) << std::setfill('0') << it->second->m_index;
                 idx = ss.str();
             } else {
-                VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                           "Warning: indexed_name not found in m_arr_vars");
+                VL_FATAL_MT(__FILE__, __LINE__, "randomize",
+                           "Error: indexed_name not found in m_arr_vars");
             }
         }
         varr.set(idx, value);
