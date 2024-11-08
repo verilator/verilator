@@ -1471,9 +1471,12 @@ class RandomizeVisitor final : public VNVisitor {
             AstMethodCall* const callp = new AstMethodCall{fl, exprp, "randomize", nullptr};
             callp->taskp(memberFuncp);
             callp->dtypeFrom(memberFuncp);
-            return new AstAssign{
+            AstAssign* const assignp = new AstAssign{
                 fl, new AstVarRef{fl, outputVarp, VAccess::WRITE},
                 new AstAnd{fl, new AstVarRef{fl, outputVarp, VAccess::READ}, callp}};
+            return new AstIf{
+                fl, new AstNeq{fl, exprp->cloneTree(false), new AstConst{fl, AstConst::Null{}}},
+                assignp};
         } else if (AstDynArrayDType* const dynarrayDtp = VN_CAST(memberDtp, DynArrayDType)) {
             return createArrayForeachLoop(fl, dynarrayDtp, exprp, outputVarp);
         } else if (AstQueueDType* const queueDtp = VN_CAST(memberDtp, QueueDType)) {
