@@ -216,7 +216,7 @@ class VlRandomizer final {
     std::vector<std::string> m_constraints;  // Solver-dependent constraints
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
                                                                        // variables
-    ArrayInfoMap m_arr_vars;
+    ArrayInfoMap m_arr_vars; // Tracks each element in array structures for iteration
     const VlQueue<CData>* m_randmode;  // rand_mode state;
 
     // PRIVATE METHODS
