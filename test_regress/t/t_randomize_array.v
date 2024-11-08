@@ -72,6 +72,7 @@ class unconstrained_dynamic_array_test;
   rand int dynamic_array_1d[];
   rand int dynamic_array_2d[][];
   rand Cls class_dynamic_array[];
+  rand Cls class_dynamic_array_null[];
 
   function new();
     // Initialize 1D dynamic array
@@ -94,6 +95,8 @@ class unconstrained_dynamic_array_test;
       class_dynamic_array[i] = new;
     end
 
+    class_dynamic_array_null = new[2];
+
   endfunction
 
   function void check_randomization();
@@ -107,6 +110,9 @@ class unconstrained_dynamic_array_test;
     end
     foreach (class_dynamic_array[i]) begin
       `check_rand(this, class_dynamic_array[i].x)
+    end
+    foreach (class_dynamic_array_null[i]) begin
+      if (class_dynamic_array_null[i] != null) $stop;
     end
   endfunction
 
