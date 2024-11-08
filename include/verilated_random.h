@@ -99,8 +99,8 @@ public:
         : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
     void* datap(int idx) const override {
         const std::string indexed_name = name() + std::to_string(idx);
-        const auto it = m_arr_vars_ref->find(indexed_name);
-        if (it != m_arr_vars_ref->end()) return it->second->m_datap;
+        const auto it = m_arrVarsRefp->find(indexed_name);
+        if (it != m_arrVarsRefp->end()) return it->second->m_datap;
         return &static_cast<T*>(VlRandomVar::datap(idx))->atWrite(idx);
     }
     void emitSelect(std::ostream& s, const std::vector<size_t>& indices) const {
@@ -115,11 +115,11 @@ public:
         }
     }
     void emitGetValue(std::ostream& s) const override {
-        const int elementCounts = countMatchingElements(*m_arr_vars_ref, name());
+        const int elementCounts = countMatchingElements(*m_arrVarsRefp, name());
         for (int i = 0; i < elementCounts; i++) {
             const std::string indexed_name = name() + std::to_string(i);
-            const auto it = m_arr_vars_ref->find(indexed_name);
-            if (it != m_arr_vars_ref->end()) {
+            const auto it = m_arrVarsRefp->find(indexed_name);
+            if (it != m_arrVarsRefp->end()) {
                 const std::vector<size_t>& indices = it->second->m_indices;
                 emitSelect(s, indices);
             }
@@ -133,7 +133,7 @@ public:
         }
     }
     int totalWidth() const override {
-        const int elementCounts = countMatchingElements(*m_arr_vars_ref, name());
+        const int elementCounts = countMatchingElements(*m_arrVarsRefp, name());
         return width() * elementCounts;
     }
     void emitExtract(std::ostream& s, int i) const override {
@@ -141,8 +141,8 @@ public:
         i = i % width();
         s << " ((_ extract " << i << ' ' << i << ')';
         const std::string indexed_name = name() + std::to_string(j);
-        const auto it = m_arr_vars_ref->find(indexed_name);
-        if (it != m_arr_vars_ref->end()) {
+        const auto it = m_arrVarsRefp->find(indexed_name);
+        if (it != m_arrVarsRefp->end()) {
             const std::vector<size_t>& indices = it->second->m_indices;
             emitSelect(s, indices);
         }
@@ -158,8 +158,8 @@ public:
         : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
     void* datap(int idx) const override {
         const std::string indexed_name = name() + std::to_string(idx);
-        const auto it = m_arr_vars_ref->find(indexed_name);
-        if (it != m_arr_vars_ref->end()) return it->second->m_datap;
+        const auto it = m_arrVarsRefp->find(indexed_name);
+        if (it != m_arrVarsRefp->end()) return it->second->m_datap;
         return &static_cast<T*>(VlRandomVar::datap(idx))->operator[](idx);
     }
     void emitSelect(std::ostream& s, const std::vector<size_t>& indices) const {
@@ -174,11 +174,11 @@ public:
         }
     }
     void emitGetValue(std::ostream& s) const override {
-        const int elementCounts = countMatchingElements(*m_arr_vars_ref, name());
+        const int elementCounts = countMatchingElements(*m_arrVarsRefp, name());
         for (int i = 0; i < elementCounts; i++) {
             const std::string indexed_name = name() + std::to_string(i);
-            const auto it = m_arr_vars_ref->find(indexed_name);
-            if (it != m_arr_vars_ref->end()) {
+            const auto it = m_arrVarsRefp->find(indexed_name);
+            if (it != m_arrVarsRefp->end()) {
                 const std::vector<size_t>& indices = it->second->m_indices;
                 emitSelect(s, indices);
             }
@@ -192,7 +192,7 @@ public:
         }
     }
     int totalWidth() const override {
-        const int elementCounts = countMatchingElements(*m_arr_vars_ref, name());
+        const int elementCounts = countMatchingElements(*m_arrVarsRefp, name());
         return width() * elementCounts;
     }
     void emitExtract(std::ostream& s, int i) const override {
@@ -200,8 +200,8 @@ public:
         i = i % width();
         s << " ((_ extract " << i << ' ' << i << ')';
         const std::string indexed_name = name() + std::to_string(j);
-        const auto it = m_arr_vars_ref->find(indexed_name);
-        if (it != m_arr_vars_ref->end()) {
+        const auto it = m_arrVarsRefp->find(indexed_name);
+        if (it != m_arrVarsRefp->end()) {
             const std::vector<size_t>& indices = it->second->m_indices;
             emitSelect(s, indices);
         }
