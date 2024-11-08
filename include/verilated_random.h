@@ -33,10 +33,11 @@
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
 class ArrayInfo final {
 public:
-    const std::string m_name; // Name of the array variable, including index notation (e.g., arr[2][1])
-    void* const m_datap; // Reference to the array variable data
+    const std::string
+        m_name;  // Name of the array variable, including index notation (e.g., arr[2][1])
+    void* const m_datap;  // Reference to the array variable data
     const int m_index;  // Flattened (1D) index of the array element
-    const std::vector<size_t> m_indices; // Multi-dimensional indices of the array element
+    const std::vector<size_t> m_indices;  // Multi-dimensional indices of the array element
 
     ArrayInfo(const std::string& name, void* datap, int index, const std::vector<size_t>& indices)
         : m_name(name)
@@ -71,15 +72,19 @@ public:
     virtual void emitExtract(std::ostream& s, int i) const;
     virtual void emitType(std::ostream& s) const;
     virtual int totalWidth() const;
-    mutable std::shared_ptr<const std::map<std::string, std::shared_ptr<const ArrayInfo>>> m_arr_vars_ref;
-    virtual void setArrayInfo(const std::shared_ptr<const std::map<std::string, std::shared_ptr<const ArrayInfo>>>& arr_vars) const {
+    mutable std::shared_ptr<const std::map<std::string, std::shared_ptr<const ArrayInfo>>>
+        m_arr_vars_ref;
+    virtual void setArrayInfo(
+        const std::shared_ptr<const std::map<std::string, std::shared_ptr<const ArrayInfo>>>&
+            arr_vars) const {
         m_arr_vars_ref = arr_vars;
     }
     mutable std::map<std::string, int> count_cache;
     int
     countMatchingElements(const std::map<std::string, std::shared_ptr<const ArrayInfo>>& arr_vars,
                           const std::string& base_name) const {
-        if (VL_LIKELY(count_cache.find(base_name) != count_cache.end())) return count_cache[base_name];
+        if (VL_LIKELY(count_cache.find(base_name) != count_cache.end()))
+            return count_cache[base_name];
         int count = 0;
         for (int index = 0; arr_vars.find(base_name + std::to_string(index)) != arr_vars.end();
              ++index) {
@@ -264,10 +269,12 @@ public:
     std::string generateKey(const std::string& name, int idx) {
         if (!name.empty() && name[0] == '\\') {
             const size_t space_pos = name.find(' ');
-            return (space_pos != std::string::npos ? name.substr(0, space_pos) : name) + std::to_string(idx);
+            return (space_pos != std::string::npos ? name.substr(0, space_pos) : name)
+                   + std::to_string(idx);
         }
         const size_t bracket_pos = name.find('[');
-        return (bracket_pos != std::string::npos ? name.substr(0, bracket_pos) : name) + std::to_string(idx);
+        return (bracket_pos != std::string::npos ? name.substr(0, bracket_pos) : name)
+               + std::to_string(idx);
     }
     template <typename T>
     void record_arr_table(T& var, const std::string name, int dimension,
