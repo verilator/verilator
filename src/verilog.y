@@ -2348,7 +2348,7 @@ tf_variable_identifier<varp>:           // IEEE: part of list_of_tf_variable_ide
 variable_declExpr<nodep>:               // IEEE: part of variable_decl_assignment - rhs of expr
                 expr                                    { $$ = $1; }
         |       dynamic_array_new                       { $$ = $1; }
-        |       class_new                               { $$ = $1; }
+        |       class_newNoScope                        { $$ = $1; }
         ;
 
 variable_dimensionListE<nodeRangep>:    // IEEE: variable_dimension + empty
@@ -3609,7 +3609,7 @@ statement_item<nodep>:          // IEEE: statement_item
         //                      // IEEE: blocking_assignment
         //                      // 1800-2009 restricts LHS of assignment to new to not have a range
         //                      // This is ignored to avoid conflicts
-        |       fexprLvalue '=' class_new ';'           { $$ = new AstAssign{$2, $1, $3}; }
+        |       fexprLvalue '=' class_newNoScope ';'    { $$ = new AstAssign{$2, $1, $3}; }
         |       fexprLvalue '=' dynamic_array_new ';'   { $$ = new AstAssign{$2, $1, $3}; }
         //                      // IEEE: inc_or_dec_expression
         |       finc_or_dec_expression ';'              { $$ = $1; }
@@ -3858,8 +3858,8 @@ pinc_or_dec_expression<nodeExprp>:  // IEEE: inc_or_dec_expression (for property
 //UNSUP         BISONPRE_COPY(inc_or_dec_expression,{s/~l~/pev_/g})     // {copied}
 //UNSUP ;
 
-class_new<nodeExprp>:           // ==IEEE: class_new
-        //                      // Special precence so (...) doesn't match expr
+class_newNoScope<nodeExprp>:    // IEEE: class_new but no packageClassScope (issue #4199)
+        //                      // Special precedence so (...) doesn't match expr
                 yNEW__ETC                               { $$ = new AstNew{$1,  nullptr}; }
         |       yNEW__ETC expr                          { $$ = new AstNewCopy{$1, $2}; }
         |       yNEW__PAREN '(' list_of_argumentsE ')'  { $$ = new AstNew{$1, $3}; }
@@ -4137,14 +4137,14 @@ funcRef<nodeExprp>:             // IEEE: part of tf_call
 task_subroutine_callNoSemi<nodep>:  // similar to IEEE task_subroutine_call but without ';'
         //                      // Expr included here to resolve our not knowing what is a method call
         //                      // Expr here must result in a subroutine_call
-                task_subroutine_callNoMethod           { $$ = $1->makeStmt(); }
+                task_subroutine_callNoMethod            { $$ = $1->makeStmt(); }
         |       fexpr '.' task_subroutine_callNoMethod  { $$ = (new AstDot{$<fl>2, false, $1, $3})->makeStmt(); }
-        |       system_t_call                          { $$ = $1; }
+        |       system_t_call                           { $$ = $1; }
         //                      // Not here in IEEE; from class_constructor_declaration
         //                      // Because we've joined class_constructor_declaration into generic functions
         //                      // Way over-permissive;
         //                      // IEEE: [ ySUPER '.' yNEW [ '(' list_of_arguments ')' ] ';' ]
-        |       fexpr '.' class_new                    { $$ = (new AstDot{$<fl>2, false, $1, $3})->makeStmt(); }
+        |       fexpr '.' class_newNoScope              { $$ = (new AstDot{$<fl>2, false, $1, $3})->makeStmt(); }
         ;
 
 task_subroutine_callNoMethod<nodeExprp>:    // function_subroutine_callNoMethod (as task)
