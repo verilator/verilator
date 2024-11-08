@@ -375,8 +375,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
     f << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
     for (const auto& var : m_vars) {
         if (var.second->dimension() > 0) {
-            auto arrVarsp
-                = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+            auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
             var.second->setArrayInfo(arrVarsp);
         }
         f << "(declare-fun " << var.first << " () ";
@@ -421,8 +420,7 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
     f << "(get-value (";
     for (const auto& var : m_vars) {
         if (var.second->dimension() > 0) {
-            auto arrVarsp
-                = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+            auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
             var.second->setArrayInfo(arrVarsp);
         }
         var.second->emitGetValue(f);

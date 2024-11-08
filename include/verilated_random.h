@@ -74,10 +74,11 @@ public:
     virtual void emitType(std::ostream& s) const;
     virtual int totalWidth() const;
     mutable std::shared_ptr<const ArrayInfoMap> m_arrVarsRefp;
-    void setArrayInfo(const std::shared_ptr<const ArrayInfoMap>& arrVarsRefp) const { m_arrVarsRefp = arrVarsRefp; }
+    void setArrayInfo(const std::shared_ptr<const ArrayInfoMap>& arrVarsRefp) const {
+        m_arrVarsRefp = arrVarsRefp;
+    }
     mutable std::map<std::string, int> count_cache;
-    int countMatchingElements(const ArrayInfoMap& arr_vars,
-                          const std::string& base_name) const {
+    int countMatchingElements(const ArrayInfoMap& arr_vars, const std::string& base_name) const {
         if (VL_LIKELY(count_cache.find(base_name) != count_cache.end()))
             return count_cache[base_name];
         int count = 0;
