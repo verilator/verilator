@@ -45,6 +45,7 @@ public:
         , m_index(index)
         , m_indices(indices) {}
 };
+using ArrayInfoMap = std::map<std::string, std::shared_ptr<const ArrayInfo>>;
 
 class VlRandomVar VL_NOT_FINAL {
     const char* const m_name;  // Variable name
@@ -72,16 +73,10 @@ public:
     virtual void emitExtract(std::ostream& s, int i) const;
     virtual void emitType(std::ostream& s) const;
     virtual int totalWidth() const;
-    mutable std::shared_ptr<const std::map<std::string, std::shared_ptr<const ArrayInfo>>>
-        m_arr_vars_ref;
-    virtual void setArrayInfo(
-        const std::shared_ptr<const std::map<std::string, std::shared_ptr<const ArrayInfo>>>&
-            arr_vars) const {
-        m_arr_vars_ref = arr_vars;
-    }
+    mutable std::shared_ptr<const ArrayInfoMap> m_arrVarsRefp;
+    void setArrayInfo(const std::shared_ptr<const ArrayInfoMap>& arrVarsRefp) const { m_arrVarsRefp = arrVarsRefp; }
     mutable std::map<std::string, int> count_cache;
-    int
-    countMatchingElements(const std::map<std::string, std::shared_ptr<const ArrayInfo>>& arr_vars,
+    int countMatchingElements(const ArrayInfoMap& arr_vars,
                           const std::string& base_name) const {
         if (VL_LIKELY(count_cache.find(base_name) != count_cache.end()))
             return count_cache[base_name];
@@ -220,7 +215,7 @@ class VlRandomizer final {
     std::vector<std::string> m_constraints;  // Solver-dependent constraints
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
                                                                        // variables
-    std::map<std::string, std::shared_ptr<const ArrayInfo>> m_arr_vars;
+    ArrayInfoMap m_arr_vars;
     const VlQueue<CData>* m_randmode;  // rand_mode state;
 
     // PRIVATE METHODS
@@ -296,7 +291,7 @@ public:
         } else {
             const std::string key = generateKey(name, idx);
             m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices);
-            idx += 1;
+            ++idx;
         }
     }
     template <typename T, std::size_t N>
