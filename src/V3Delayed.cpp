@@ -891,6 +891,7 @@ class DelayedVisitor final : public VNVisitor {
                 ifp->addThensp(newp);
             }
 
+            UASSERT_OBJ(m_activep, nodep, "No active to handle FireEvent");
             AstActive* const activep = new AstActive{flp, "nba-event", m_activep->sensesp()};
             m_activep->addNextHere(activep);
             activep->addStmtsp(prep);
