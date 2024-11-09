@@ -274,6 +274,9 @@ public:
     // Predicate: has 1 or more sinks
     bool hasSinks() const { return m_sinksp != nullptr; }
 
+    // Predicate: has precisely 1 sink
+    bool hasSingleSink() const { return m_sinksp && !m_sinksp->m_nextp; }
+
     // Predicate: has 2 or more sinks
     bool hasMultipleSinks() const { return m_sinksp && m_sinksp->m_nextp; }
 
