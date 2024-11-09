@@ -236,7 +236,7 @@ void V3DfgOptimizer::extract(AstNetlist* netlistp) {
     V3Global::dumpCheckGlobalTree("dfg-extract", 0, dumpTreeEitherLevel() >= 3);
 }
 
-void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
+void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label, bool lastInvocation) {
     UINFO(2, __FUNCTION__ << ": " << endl);
 
     // NODE STATE
@@ -282,7 +282,7 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
         for (auto& component : acyclicComponents) {
             if (dumpDfgLevel() >= 7) component->dumpDotFilePrefixed(ctx.prefix() + "source");
             // Optimize the component
-            V3DfgPasses::optimize(*component, ctx);
+            V3DfgPasses::optimize(*component, ctx, lastInvocation);
             // Add back under the main DFG (we will convert everything back in one go)
             dfg->addGraph(*component);
         }
