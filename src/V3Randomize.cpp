@@ -401,6 +401,15 @@ class RandomizeMarkVisitor final : public VNVisitor {
             }
         }
     }
+    void visit(AstConstraintBefore* nodep) override {
+        nodep->foreach([&](AstVarRef* const refp) {
+            if (refp->varp() && refp->varp()->isRandC()) {
+                nodep->v3error(
+                    "Randc variables not allowed in 'solve before' (IEEE 1800-2023 18.5.9)");
+            }
+        });
+        iterateChildrenConst(nodep);
+    }
     void visit(AstConstraintExpr* nodep) override {
         VL_RESTORER(m_constraintExprp);
         m_constraintExprp = nodep;
