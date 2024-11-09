@@ -540,7 +540,7 @@ public:
 
 void V3Dead::deadifyModules(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    {
+    {  // node, elimUserVars, elimDTypes, elimScopes, elimCells, elimTopIfaces
         DeadVisitor{nodep, false, false, false, false, !v3Global.opt.topIfacesSupported()};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadModules", 0, dumpTreeEitherLevel() >= 6);
