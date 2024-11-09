@@ -376,6 +376,16 @@ void AstConstraint::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isStatic);
     dumpJsonGen(str);
 }
+void AstConstraintExpr::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (isDisableSoft()) str << " [DISSOFT]";
+    if (isSoft()) str << " [SOFT]";
+}
+void AstConstraintExpr::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, isDisableSoft);
+    dumpJsonBoolFunc(str, isSoft);
+    dumpJsonGen(str);
+}
 AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
     bool success = false;
     if (literal[0] == '"') {

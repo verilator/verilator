@@ -2763,14 +2763,16 @@ public:
 class AstConstraintExpr final : public AstNodeStmt {
     // Constraint expression
     // @astgen op1 := exprp : AstNodeExpr
-    bool m_isSoft = false;  // Soft constraint expression
     bool m_isDisableSoft = false;  // Disable soft constraint expression
+    bool m_isSoft = false;  // Soft constraint expression
 public:
     AstConstraintExpr(FileLine* fl, AstNodeExpr* exprp)
         : ASTGEN_SUPER_ConstraintExpr(fl) {
         this->exprp(exprp);
     }
     ASTGEN_MEMBERS_AstConstraintExpr;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool same(const AstNode* /*samep*/) const override { return true; }

@@ -131,7 +131,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
     BaseToDerivedMap m_baseToDerivedMap;  // Mapping from base classes to classes that extend them
     AstClass* m_classp = nullptr;  // Current class
-    AstNode* m_constraintExprp = nullptr;  // Current constraint expression
+    AstConstraintBefore* m_constraintBeforep = nullptr;  // Current before constraint
+    AstConstraintExpr* m_constraintExprp = nullptr;  // Current constraint expression
+    AstNode* m_constraintExprGenp = nullptr;  // Current constraint or constraint if expression
     AstNodeModule* m_modp;  // Current module
     AstNodeStmt* m_stmtp = nullptr;  // Current statement
     std::set<AstNodeVarRef*> m_staticRefs;  // References to static variables under `with` clauses
@@ -402,50 +404,57 @@ class RandomizeMarkVisitor final : public VNVisitor {
         }
     }
     void visit(AstConstraintBefore* nodep) override {
-        nodep->foreach([&](AstVarRef* const refp) {
-            if (refp->varp() && refp->varp()->isRandC()) {
-                nodep->v3error(
-                    "Randc variables not allowed in 'solve before' (IEEE 1800-2023 18.5.9)");
-            }
-        });
+        VL_RESTORER(m_constraintBeforep);
+        m_constraintBeforep = nodep;
         iterateChildrenConst(nodep);
     }
     void visit(AstConstraintExpr* nodep) override {
         VL_RESTORER(m_constraintExprp);
         m_constraintExprp = nodep;
+        VL_RESTORER(m_constraintExprGenp);
+        m_constraintExprGenp = nodep;
         iterateChildrenConst(nodep);
     }
     void visit(AstConstraintIf* nodep) override {
         {
-            VL_RESTORER(m_constraintExprp);
-            m_constraintExprp = nodep;
+            VL_RESTORER(m_constraintExprGenp);
+            m_constraintExprGenp = nodep;
             iterateConst(nodep->condp());
         }
         iterateAndNextConstNull(nodep->thensp());
         iterateAndNextConstNull(nodep->elsesp());
     }
     void visit(AstNodeVarRef* nodep) override {
-        if (!m_constraintExprp) return;
+        if (nodep->varp()->isRandC()) {
+            if (m_constraintExprp && m_constraintExprp->isSoft()) {
+                nodep->v3error(
+                    "Randc variables not allowed in 'constraint soft' (IEEE 1800-2023 18.5.13.1)");
+            } else if (m_constraintBeforep) {
+                nodep->v3error(
+                    "Randc variables not allowed in 'solve before' (IEEE 1800-2023 18.5.9)");
+            }
+        }
+        if (!m_constraintExprGenp) return;
 
         if (nodep->varp()->lifetime().isStatic()) m_staticRefs.emplace(nodep);
 
         if (!nodep->varp()->rand().isRandomizable()) return;
-        for (AstNode* backp = nodep; backp != m_constraintExprp && !backp->user1();
+        for (AstNode* backp = nodep; backp != m_constraintExprGenp && !backp->user1();
              backp = backp->backp())
             backp->user1(true);
     }
     void visit(AstMemberSel* nodep) override {
-        if (!m_constraintExprp) return;
+        if (!m_constraintExprGenp) return;
         if (VN_IS(nodep->fromp(), LambdaArgRef)) {
             if (!nodep->varp()->rand().isRandomizable()) return;
-            for (AstNode* backp = nodep; backp != m_constraintExprp && !backp->user1();
+            for (AstNode* backp = nodep; backp != m_constraintExprGenp && !backp->user1();
                  backp = backp->backp())
                 backp->user1(true);
         }
     }
     void visit(AstArraySel* nodep) override {
-        if (!m_constraintExprp) return;
-        for (AstNode* backp = nodep; backp != m_constraintExprp && !backp->user1();
+        if (!m_constraintExprGenp) return;
+        for (AstNode* backp = nodep; backp != m_constraintExprGenp && !backp->user1();
              backp = backp->backp())
             backp->user1(true);
         iterateChildrenConst(nodep);

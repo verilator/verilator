@@ -1,5 +1,5 @@
-%Error: t/t_randomize_before_randc_bad.v:11:29: Randc variables not allowed in 'solve before' (IEEE 1800-2023 18.5.9)
+%Error: t/t_randomize_before_randc_bad.v:11:45: Randc variables not allowed in 'solve before' (IEEE 1800-2023 18.5.9)
                                               : ... note: In instance 't'
    11 |     constraint raint2_bad { solve b1 before b2; }   
-      |                             ^~~~~
+      |                                             ^~
 %Error: Exiting due to
