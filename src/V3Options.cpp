@@ -1303,6 +1303,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fdead-assigns", FOnOff, &m_fDeadAssigns);
     DECL_OPTION("-fdead-cells", FOnOff, &m_fDeadCells);
     DECL_OPTION("-fexpand", FOnOff, &m_fExpand);
+    DECL_OPTION("-ffunc-opt", CbFOnOff, [this](bool flag) {  //
+        m_fFuncSplitCat = flag;
+    });
+    DECL_OPTION("-ffunc-opt-split-cat", FOnOff, &m_fFuncSplitCat);
     DECL_OPTION("-fgate", FOnOff, &m_fGate);
     DECL_OPTION("-finline", FOnOff, &m_fInline);
     DECL_OPTION("-flife", FOnOff, &m_fLife);

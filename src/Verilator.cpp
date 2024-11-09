@@ -53,6 +53,7 @@
 #include "V3File.h"
 #include "V3Force.h"
 #include "V3Fork.h"
+#include "V3FuncOpt.h"
 #include "V3Gate.h"
 #include "V3Global.h"
 #include "V3Graph.h"
@@ -497,6 +498,9 @@ static void process() {
         // --GENERATION------------------
 
         if (!v3Global.opt.serializeOnly()) {
+            // Generic optimizations on a per-function basis
+            if (v3Global.opt.fFunc()) V3FuncOpt::funcOptAll(v3Global.rootp());
+
             // Remove unused vars
             V3Const::constifyAll(v3Global.rootp());
             V3Dead::deadifyAll(v3Global.rootp());

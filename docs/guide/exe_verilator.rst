@@ -589,6 +589,10 @@ Summary:
 
 .. option:: -fno-expand
 
+.. option:: -fno-func-opt
+
+.. option:: -fno-func-opt-split-cat
+
 .. option:: -fno-gate
 
 .. option:: -fno-inline

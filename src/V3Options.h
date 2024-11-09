@@ -384,6 +384,7 @@ private:
     bool m_fDeadAssigns;     // main switch: -fno-dead-assigns: remove dead assigns
     bool m_fDeadCells;   // main switch: -fno-dead-cells: remove dead cells
     bool m_fExpand;      // main switch: -fno-expand: expansion of C macros
+    bool m_fFuncSplitCat = true;  // main switch: -fno-func-split-cat: expansion of C macros
     bool m_fGate;        // main switch: -fno-gate: gate wire elimination
     bool m_fInline;      // main switch: -fno-inline: module inlining
     bool m_fLife;        // main switch: -fno-life: variable lifetime
@@ -674,6 +675,8 @@ public:
     bool fDeadAssigns() const { return m_fDeadAssigns; }
     bool fDeadCells() const { return m_fDeadCells; }
     bool fExpand() const { return m_fExpand; }
+    bool fFuncSplitCat() const { return m_fFuncSplitCat; }
+    bool fFunc() const { return fFuncSplitCat(); }
     bool fGate() const { return m_fGate; }
     bool fInline() const { return m_fInline; }
     bool fLife() const { return m_fLife; }
