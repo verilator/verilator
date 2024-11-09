@@ -7824,7 +7824,10 @@ class WidthVisitor final : public VNVisitor {
         for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
              patp = VN_AS(patp->nextp(), PatMember)) {
             if (patp->keyp()) {
+                if (patp->varrefp()) V3Const::constifyParamsEdit(patp->varrefp());
                 if (const AstConst* const constp = VN_CAST(patp->keyp(), Const)) {
+                    element = constp->toSInt();
+                } else if (const AstConst* const constp = VN_CAST(patp->varrefp(), Const)) {
                     element = constp->toSInt();
                 } else {
                     patp->keyp()->v3error("Assignment pattern key not supported/understood: "
