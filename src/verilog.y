@@ -184,6 +184,14 @@ public:
     AstSenTree* createGlobalClockSenTree(FileLine* fl) {
         return createClockSenTree(fl, createGlobalClockParseRef(fl));
     }
+    AstNode* createNettype(FileLine* fl, const string& name) {
+        // As nettypes are unsupported, we just alias to logic
+        AstTypedef* const nodep = new AstTypedef{fl, name, nullptr, VFlagChildDType{},
+                                                 new AstBasicDType{fl, VFlagLogicPacked{}, 1}};
+        SYMP->reinsert(nodep);
+        PARSEP->tagNodep(nodep);
+        return nodep;
+    }
     AstNode* createTypedef(FileLine* fl, const string& name, AstNode* attrsp, AstNodeDType* basep,
                            AstNodeRange* rangep) {
         AstTypedef* const nodep = new AstTypedef{fl, name, attrsp, VFlagChildDType{},
@@ -2572,25 +2580,25 @@ nettype_declaration<nodep>:  // IEEE: nettype_declaration/net_type_declaration
         //                      // Union of data_typeAny and nettype_identifier matching
                 yNETTYPE data_typeNoRef
         /*cont*/   idAny/*nettype_identifier*/ ';'
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
+                        { $$ = GRAMMARP->createNettype($<fl>3, *$3); BBUNSUP($<fl>1, "Unsupported: nettype"); }
         |       yNETTYPE data_typeNoRef
         /*cont*/   idAny/*nettype_identifier*/
         /*cont*/   yWITH__ETC packageClassScopeE id/*tf_identifier*/ ';'
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype with"); }
+                        { $$ = GRAMMARP->createNettype($<fl>3, *$3); BBUNSUP($<fl>1, "Unsupported: nettype with"); }
         |       yNETTYPE packageClassScopeE idAny packed_dimensionListE
         /*cont*/   idAny/*nettype_identifier*/ ';'
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
+                        { $$ = GRAMMARP->createNettype($<fl>5, *$5); BBUNSUP($<fl>1, "Unsupported: nettype"); }
         |       yNETTYPE packageClassScopeE idAny packed_dimensionListE
         /*cont*/   idAny/*nettype_identifier*/
         /*cont*/   yWITH__ETC packageClassScopeE id/*tf_identifier*/ ';'
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype with"); }
+                        { $$ = GRAMMARP->createNettype($<fl>5, *$5); BBUNSUP($<fl>1, "Unsupported: nettype with"); }
         |       yNETTYPE packageClassScopeE idAny parameter_value_assignmentClass packed_dimensionListE
         /*cont*/   idAny/*nettype_identifier*/ ';'
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype"); }
+                        { $$ = GRAMMARP->createNettype($<fl>6, *$6); BBUNSUP($<fl>1, "Unsupported: nettype"); }
         |       yNETTYPE packageClassScopeE idAny parameter_value_assignmentClass packed_dimensionListE
         /*cont*/   idAny/*nettype_identifier*/
         /*cont*/   yWITH__ETC packageClassScopeE id/*tf_identifier*/ ';'
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: nettype with"); }
+                        { $$ = GRAMMARP->createNettype($<fl>6, *$6); BBUNSUP($<fl>1, "Unsupported: nettype with"); }
         ;
 
 implicit_typeE<nodeDTypep>:             // IEEE: part of *data_type_or_implicit
