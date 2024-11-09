@@ -15,8 +15,6 @@
     :target: https://hub.docker.com/r/verilator/verilator
 .. |badge6| image:: https://api.codacy.com/project/badge/Grade/fa78caa433c84a4ab9049c43e9debc6f
     :target: https://www.codacy.com/gh/verilator/verilator
-.. |badge7| image:: https://codecov.io/gh/verilator/verilator/branch/master/graph/badge.svg
-    :target: https://codecov.io/gh/verilator/verilator
 .. |badge8| image:: https://github.com/verilator/verilator/workflows/build/badge.svg
     :target: https://github.com/verilator/verilator/actions?query=workflow%3Abuild
 
