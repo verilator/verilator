@@ -442,7 +442,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<strp>            yaID__ETC       "IDENTIFIER"
 %token<strp>            yaID__CC        "IDENTIFIER-::"
 %token<strp>            yaID__LEX       "IDENTIFIER-in-lex"
-%token<strp>            yaID__aTYPE     "TYPE-IDENTIFIER"
+%token<strp>            yaID__aTYPE     "IDENTIFIER-for-type"
 //                      Can't predecode aFUNCTION, can declare after use
 //                      Can't predecode aINTERFACE, can declare after use
 //                      Can't predecode aTASK, can declare after use
