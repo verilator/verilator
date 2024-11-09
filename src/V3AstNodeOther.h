@@ -1026,7 +1026,8 @@ class AstConstraint final : public AstNode {
     // Constraint
     // @astgen op1 := itemsp : List[AstNode]
     string m_name;  // Name of constraint
-    bool m_isStatic = false;  // static constraint
+    bool m_isKwdPure = false;  // Pure constraint
+    bool m_isStatic = false;  // Static constraint
 public:
     AstConstraint(FileLine* fl, const string& name, AstNode* itemsp)
         : ASTGEN_SUPER_Constraint(fl)
@@ -1034,11 +1035,15 @@ public:
         this->addItemsp(itemsp);
     }
     ASTGEN_MEMBERS_AstConstraint;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     bool same(const AstNode* /*samep*/) const override { return true; }
+    void isKwdPure(bool flag) { m_isKwdPure = flag; }
+    bool isKwdPure() const { return m_isKwdPure; }
     void isStatic(bool flag) { m_isStatic = flag; }
     bool isStatic() const { return m_isStatic; }
 };

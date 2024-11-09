@@ -7391,8 +7391,7 @@ class_constraint<constraintp>:  // ==IEEE: class_constraint
                         { $$ = $4; $$->isStatic($1); SYMP->popScope($4);
                           BBUNSUP($1, "Unsupported: extern constraint"); }
         |       yPURE constraintStaticE yCONSTRAINT constraintIdNew ';'
-                        { $$ = $4; $$->isStatic($1); SYMP->popScope($4);
-                          BBUNSUP($1, "Unsupported: pure constraint"); }
+                        { $$ = $4; $$->isKwdPure($1); $$->isStatic($1); SYMP->popScope($4); }
         ;
 
 constraintIdNew<constraintp>:  // IEEE: id part of class_constraint

@@ -2334,13 +2334,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
              ++it) {
             if (AstNode* interfaceSubp = it->second->nodep()) {
                 UINFO(8, indent() << "  SymFunc " << interfaceSubp << endl);
+                const string impOrExtends
+                    = baseClassp->isInterfaceClass() ? " implements " : " extends ";
                 if (VN_IS(interfaceSubp, NodeFTask)) {
                     const VSymEnt* const foundp = m_curSymp->findIdFlat(interfaceSubp->name());
                     const AstNodeFTask* const interfaceFuncp = VN_CAST(interfaceSubp, NodeFTask);
                     if (!interfaceFuncp || !interfaceFuncp->pureVirtual()) continue;
                     bool existsInChild = foundp && !foundp->imported();
-                    const string impOrExtends
-                        = baseClassp->isInterfaceClass() ? " implements " : " extends ";
                     if (!existsInChild && !implementsClassp->isInterfaceClass()) {
                         implementsClassp->v3error(
                             "Class " << implementsClassp->prettyNameQ() << impOrExtends
@@ -2367,6 +2367,25 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                      << interfaceSubp->warnContextSecondary());
                     }
                     m_ifClassImpNames.emplace(interfaceSubp->name(), interfaceSubp);
+                }
+                if (VN_IS(interfaceSubp, Constraint)) {
+                    const VSymEnt* const foundp = m_curSymp->findIdFlat(interfaceSubp->name());
+                    const AstConstraint* const interfaceFuncp = VN_CAST(interfaceSubp, Constraint);
+                    if (!interfaceFuncp || !interfaceFuncp->isKwdPure()) continue;
+                    bool existsInChild = foundp && !foundp->imported();
+                    if (!existsInChild && !implementsClassp->isInterfaceClass()
+                        && !implementsClassp->isVirtual()) {
+                        implementsClassp->v3error(
+                            "Class " << implementsClassp->prettyNameQ() << impOrExtends
+                                     << baseClassp->prettyNameQ()
+                                     << " but is missing constraint implementation for "
+                                     << interfaceSubp->prettyNameQ()
+                                     << " (IEEE 1800-2023 18.5.2)\n"
+                                     << implementsClassp->warnContextPrimary() << '\n'
+                                     << interfaceSubp->warnOther()
+                                     << "... Location of interface class's pure constraint\n"
+                                     << interfaceSubp->warnContextSecondary());
+                    }
                 }
             }
         }

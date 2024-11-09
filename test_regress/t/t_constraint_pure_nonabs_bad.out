@@ -1,0 +1,5 @@
+%Error: t/t_constraint_pure_nonabs_bad.v:8:21: Illegal to have 'pure constraint' in non-abstract class (IEEE 1800-2023 18.5.2)
+                                             : ... note: In instance 't'
+    8 |     pure constraint raintBad;   
+      |                     ^~~~~~~~
+%Error: Exiting due to

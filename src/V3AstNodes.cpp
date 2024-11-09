@@ -366,7 +366,16 @@ void AstConsQueue::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, rhsIsValue);
     dumpJsonGen(str);
 }
-
+void AstConstraint::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (isKwdPure()) str << " [KWDPURE]";
+    if (isStatic()) str << " [STATIC]";
+}
+void AstConstraint::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, isKwdPure);
+    dumpJsonBoolFunc(str, isStatic);
+    dumpJsonGen(str);
+}
 AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
     bool success = false;
     if (literal[0] == '"') {
