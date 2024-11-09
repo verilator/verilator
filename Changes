@@ -13,6 +13,8 @@ Verilator 5.031 devel
 
 **Minor:**
 
+* Support queue's assignment `push_back/push_front('{})` (#5585) (#5586). [Yilou Wang]
+* Support basic constrained random for multi-dimensional dynamic array and queue (#5591). [Yilou Wang]
 * Add error on illegal enum base type (#3010). [Iztok Jeras]
 * Add error on `wait` with missing `.triggered` (#4457).
 * Add error when improperly storing to parameter (#5147). [Gökçe Aydos]
@@ -23,6 +25,8 @@ Verilator 5.031 devel
 * Fix --output-groups leftover files issue (#5574). [Todd Strader]
 * Fix slow unsized number parsing (#5577). [Geza Lore]
 * Fix negative assignment pattern keys (#5580). [Iztok Jeras]
+* Fix duplicate scope identifiers decoding (#5584). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix `rand` dynamic arrays with null handles (#5594). [Ryszard Rozak, Antmicro Ltd.]
 
 
 Verilator 5.030 2024-10-27
