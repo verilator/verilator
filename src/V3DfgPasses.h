@@ -68,17 +68,6 @@ public:
     ~V3DfgEliminateVarsContext() VL_MT_DISABLED;
 };
 
-class V3DfgBalanceTreesContext final {
-    const std::string m_label;  // Label to apply to stats
-
-public:
-    VDouble0 m_balancedConcats;  // Number of temporaries introduced
-
-    explicit V3DfgBalanceTreesContext(const std::string& label)
-        : m_label{label} {}
-    ~V3DfgBalanceTreesContext() VL_MT_DISABLED;
-};
-
 class V3DfgOptimizationContext final {
     const std::string m_label;  // Label to add to stats, etc.
     const std::string m_prefix;  // Prefix to add to file dumps (derived from label)
@@ -103,7 +92,6 @@ public:
     V3DfgPeepholeContext m_peepholeContext{m_label};
     V3DfgRegularizeContext m_regularizeContext{m_label};
     V3DfgEliminateVarsContext m_eliminateVarsContext{m_label};
-    V3DfgBalanceTreesContext m_balanceTreesContext{m_label};
 
     V3DfgPatternStats m_patternStats;
 
@@ -124,7 +112,7 @@ namespace V3DfgPasses {
 DfgGraph* astToDfg(AstModule&, V3DfgOptimizationContext&) VL_MT_DISABLED;
 
 // Optimize the given DfgGraph
-void optimize(DfgGraph&, V3DfgOptimizationContext&, bool lastInvocation) VL_MT_DISABLED;
+void optimize(DfgGraph&, V3DfgOptimizationContext&) VL_MT_DISABLED;
 
 // Convert DfgGraph back into Ast, and insert converted graph back into its parent module.
 // Returns the parent module.
@@ -146,8 +134,6 @@ void regularize(DfgGraph&, V3DfgRegularizeContext&) VL_MT_DISABLED;
 void removeUnused(DfgGraph&) VL_MT_DISABLED;
 // Eliminate (remove or replace) redundant variables. Also removes resulting unused logic.
 void eliminateVars(DfgGraph&, V3DfgEliminateVarsContext&) VL_MT_DISABLED;
-// Make computation trees balanced
-void balanceTrees(DfgGraph&, V3DfgBalanceTreesContext&) VL_MT_DISABLED;
 
 }  // namespace V3DfgPasses
 

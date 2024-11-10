@@ -13,12 +13,7 @@ test.scenarios('vlt')
 
 test.compile(verilator_flags2=["--stats"])
 
-test.file_grep(test.stats,
-               r' Optimizations, DFG pre inline BalanceTrees, concat trees balanced\s+(\d+)', 0)
-test.file_grep(test.stats,
-               r' Optimizations, DFG post inline BalanceTrees, concat trees balanced\s+(\d+)', 1)
-test.file_grep(test.stats, r'Optimizations, DFG pre inline Dfg2Ast, result equations\s+(\d+)', 1)
-test.file_grep(test.stats, r'Optimizations, DFG post inline Dfg2Ast, result equations\s+(\d+)', 1)
+test.file_grep(test.stats, r'Optimizations, FuncOpt concat trees balanced\s+(\d+)', 1)
 test.file_grep(test.stats, r'Optimizations, FuncOpt concat splits\s+(\d+)', 62)
 
 test.passes()

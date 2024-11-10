@@ -591,6 +591,8 @@ Summary:
 
 .. option:: -fno-func-opt
 
+.. option:: -fno-func-opt-balance-cat
+
 .. option:: -fno-func-opt-split-cat
 
 .. option:: -fno-gate
