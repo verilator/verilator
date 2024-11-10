@@ -6224,10 +6224,11 @@ property_port_itemDirE:
         ;
 
 property_declarationBody<nodep>:  // IEEE: part of property_declaration
-        //UNSUP assertion_variable_declarationList property_statement_spec  {}
+                assertion_variable_declarationList
+                        { $$ = nullptr; BBUNSUP($1->fileline(), "Unsupported: property variable declaration"); }
         //                      // IEEE-2012: Incorrectly has yCOVER ySEQUENCE then property_spec here.
         //                      // Fixed in IEEE 1800-2017
-                property_spec                           { $$ = $1; }
+        |       property_spec                           { $$ = $1; }
         |       property_spec ';'                       { $$ = $1; }
         ;
 
