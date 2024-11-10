@@ -135,21 +135,9 @@ public:
         string newtext = GRAMMARP->unquoteString(fileline, text);
         return new AstText{fileline, newtext};
     }
-    AstNode* createCellOrIfaceRef(FileLine* fileline, const string& name, AstPin* pinlistp,
-                                  AstNodeRange* rangelistp, bool parens) {
+    AstNode* createCell(FileLine* fileline, const string& name, AstPin* pinlistp,
+                        AstNodeRange* rangelistp) {
         // Must clone m_instParamp as may be comma'ed list of instances
-        VSymEnt* const foundp = SYMP->symCurrentp()->findIdFallback(name);
-        if (foundp && VN_IS(foundp->nodep(), Port)) {
-            // It's a non-ANSI interface, not a cell declaration
-            m_varAttrp = nullptr;
-            m_varDecl = VVarType::IFACEREF;
-            m_varIO = VDirection::NONE;
-            m_varLifetime = VLifetime::NONE;
-            setDType(new AstIfaceRefDType{fileline, "", GRAMMARP->m_instModule});
-            m_varDeclTyped = true;
-            AstVar* const nodep = createVariable(fileline, name, rangelistp, nullptr);
-            return nodep;
-        }
         AstCell* const nodep = new AstCell{
             fileline,
             GRAMMARP->m_instModuleFl,
@@ -158,7 +146,6 @@ public:
             pinlistp,
             (GRAMMARP->m_instParamp ? GRAMMARP->m_instParamp->cloneTree(true) : nullptr),
             GRAMMARP->scrubRange(rangelistp)};
-        nodep->hasNoParens(!parens);
         nodep->trace(GRAMMARP->allTracingOn(fileline));
         return nodep;
     }
@@ -450,6 +437,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<strp>            yaID__ETC       "IDENTIFIER"
 %token<strp>            yaID__CC        "IDENTIFIER-::"
 %token<strp>            yaID__LEX       "IDENTIFIER-in-lex"
+%token<strp>            yaID__aCELL     "IDENTIFIER-for-cell"
 %token<strp>            yaID__aTYPE     "IDENTIFIER-for-type"
 //                      Can't predecode aFUNCTION, can declare after use
 //                      Can't predecode aINTERFACE, can declare after use
@@ -1433,6 +1421,7 @@ parameter_value_assignmentClassE<pinp>:      // IEEE: [ parameter_value_assignme
 parameter_value_assignmentInst<pinp>:       // IEEE: parameter_value_assignment for instance
                 '#' '(' cellparamListE ')'              { $$ = $3; }
         //                      // Parentheses are optional around a single parameter
+        //                      // IMPORTANT: Below hardcoded in tokenPipeScanParam
         |       '#' yaINTNUM                            { $$ = new AstPin{$<fl>2, 1, "", new AstConst{$<fl>2, *$2}}; }
         |       '#' yaFLOATNUM                          { $$ = new AstPin{$<fl>2, 1, "",
                                                                           new AstConst{$<fl>2, AstConst::RealDouble{}, $2}}; }
@@ -2071,9 +2060,26 @@ port_declaration<nodep>:        // ==IEEE: port_declaration
         |       port_directionReset port_declNetE /*implicit*/
         /*mid*/         { VARDTYPE_NDECL(nullptr); /*default_nettype*/ }
         /*cont*/    list_of_variable_decl_assignments                   { $$ = $4; }
-        //                      // IEEE: interface_declaration
-        //                      // Looks just like variable declaration unless has a period
-        //                      // See etcInst
+        //
+        //                      // IEEE: interface_port_declaration
+        //                      // IEEE: interface_identifier list_of_interface_identifiers
+        |       id/*interface*/
+        /*mid*/         { VARRESET_NONLIST(VVarType::IFACEREF);
+                          AstIfaceRefDType* const dtp = new AstIfaceRefDType{$<fl>1, "", *$1};
+                          dtp->isPortDecl(true);
+                          VARDTYPE(dtp); }
+        /*cont*/    mpInstnameList
+                        { $$ = VARDONEP($3, nullptr, nullptr); }
+        //                      // IEEE: interface_port_declaration
+        //                      // IEEE: interface_identifier '.' modport_identifier list_of_interface_identifiers
+        |       id/*interface*/ '.' idAny/*modport*/
+        /*mid*/         { VARRESET_NONLIST(VVarType::IFACEREF);
+                          AstIfaceRefDType* const dtp = new AstIfaceRefDType{$<fl>1, $<fl>3, "", *$1, *$3};
+                          dtp->isPortDecl(true);
+                          VARDTYPE(dtp); }
+        /*cont*/    mpInstnameList
+                        { $$ = VARDONEP($5, nullptr, nullptr); }
+        //UNSUP: strengthSpecE for udp_instantiations
         ;
 
 tf_port_declaration<nodep>:     // ==IEEE: tf_port_declaration
@@ -3259,10 +3265,9 @@ etcInst<nodep>:                 // IEEE: module_instantiation + gate_instantiati
         ;
 
 instDecl<nodep>:
-        //                      // Currently disambiguated from data_declaration based on
-        //                      // VARs being type, and cells non-type.
-        //                      // IEEE requires a '(' to disambiguate, we need TODO force this
-                id parameter_value_assignmentInstE
+        //                      // Disambigurated from data_declaration based on
+        //                      // idCell which is found as IEEE requires a later '('
+                idCell parameter_value_assignmentInstE
         /*mid*/         { INSTPREP($<fl>1, *$1, $2); }
         /*cont*/    instnameList ';'
                         { $$ = $4;
@@ -3271,14 +3276,7 @@ instDecl<nodep>:
                               VL_DO_CLEAR(GRAMMARP->m_instParamp->deleteTree(),
                                           GRAMMARP->m_instParamp = nullptr);
                           } }
-        //                      // IEEE: interface_identifier' .' modport_identifier list_of_interface_identifiers
-        |       id/*interface*/ '.' idAny/*modport*/
-        /*mid*/         { VARRESET_NONLIST(VVarType::IFACEREF);
-                          AstNodeDType* const dtp = new AstIfaceRefDType{$<fl>1, $<fl>3, "", *$1, *$3};
-                          VARDTYPE(dtp); }
-        /*cont*/    mpInstnameList ';'
-                        { $$ = VARDONEP($5, nullptr, nullptr); }
-        //UNSUP: strengthSpecE for udp_instantiations
+        //
         //                      // IEEE: part of udp_instance when no name_of_instance
         //                      // Note no unpacked dimension nor list of instances
         |       id
@@ -3303,14 +3301,12 @@ instnameList<nodep>:
 
 instnameParen<nodep>:
                 id instRangeListE '(' cellpinListE ')'
-                        { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, $4, $2, true); }
-        |       id instRangeListE
-                        { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, *$1, nullptr, $2, false); }
+                        { $$ = GRAMMARP->createCell($<fl>1, *$1, $4, $2); }
         ;
 
 instnameParenUdpn<nodep>:  // IEEE: part of udp_instance when no name_of_instance
                 '(' cellpinListE ')'  // When UDP has empty name, unpacked dimensions must not be used
-                        { $$ = GRAMMARP->createCellOrIfaceRef($<fl>1, "", $2, nullptr, true); }
+                        { $$ = GRAMMARP->createCell($<fl>1, "", $2, nullptr); }
         ;
 
 instRangeListE<nodeRangep>:
@@ -4661,12 +4657,12 @@ funcId<nodeFTaskp>:             // IEEE: function_data_type_or_implicit + part o
                         { $$ = $2;
                           $$->fvarp($1);
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>2); }
-        |       packageClassScopeE idType packed_dimensionListE fIdScoped
+        |       packageClassScopeE idCellType packed_dimensionListE fIdScoped
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
                           $$ = $4;
                           $$->fvarp(GRAMMARP->createArray(refp, $3, true));
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>4); }
-        |       packageClassScopeE idType parameter_value_assignmentClass packed_dimensionListE fIdScoped
+        |       packageClassScopeE idCellType parameter_value_assignmentClass packed_dimensionListE fIdScoped
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, $3};
                           $$ = $5;
                           $$->fvarp(GRAMMARP->createArray(refp, $4, true));
@@ -5784,13 +5780,26 @@ id<strp>:
 
 idAny<strp>:                    // Any kind of identifier
                 yaID__ETC                               { $$ = $1; $<fl>$ = $<fl>1; }
+        |       yaID__aCELL                             { $$ = $1; $<fl>$ = $<fl>1; }
         |       yaID__aTYPE                             { $$ = $1; $<fl>$ = $<fl>1; }
         |       idRandomize                             { $$ = $1; $<fl>$ = $<fl>1; }
+        ;
+
+idCell<strp>:                   // IEEE: instance_identifier or similar with another id then '('
+        //                      // See V3ParseImp::tokenPipeScanIdCell
+        //                      //   [^': '@' '.'] yaID/*module_id*/ [ '#' '('...')' ] yaID/*name_of_instance*/ [ '['...']' ] '(' ...
+        //                      //   [^':' @' '.'] yaID/*module_id*/ [ '#' id|etc ] yaID/*name_of_instance*/ [ '['...']' ] '(' ...
+                yaID__aCELL                             { $$ = $1; $<fl>$ = $<fl>1; }
         ;
 
 idType<strp>:                   // IEEE: class_identifier or other type identifier
         //                      // Used where reference is needed
                 yaID__aTYPE                             { $$ = $1; $<fl>$ = $<fl>1; }
+        ;
+
+idCellType<strp>:               // type_identifier for functions which have a following id then '('
+                yaID__aCELL                             { $$ = $1; $<fl>$ = $<fl>1; }
+        |       yaID__aTYPE                             { $$ = $1; $<fl>$ = $<fl>1; }
         ;
 
 idCC<strp>:                     // IEEE: class/package then ::

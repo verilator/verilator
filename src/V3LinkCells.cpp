@@ -236,7 +236,11 @@ class LinkCellsVisitor final : public VNVisitor {
                 if (!nodep->cellp()) nodep->ifacep(VN_AS(modp, Iface));
             } else if (VN_IS(modp, NotFoundModule)) {  // Will error out later
             } else {
-                nodep->v3error("Non-interface used as an interface: " << nodep->ifaceNameQ());
+                nodep->v3error("Non-interface used as an interface: "
+                               << nodep->ifaceNameQ() << "\n"
+                               << nodep->warnMore()
+                                      + "... Perhaps intended an instantiation but "
+                                        "are missing parenthesis (IEEE 1800-2023 23.3.2)?");
             }
         }
         iterateChildren(nodep);
@@ -508,13 +512,6 @@ class LinkCellsVisitor final : public VNVisitor {
                 nodep->addNextHere(varp);
                 nodep->hasIfaceVar(true);
             }
-        }
-        if (nodep->hasNoParens()) {
-            // Need in the grammar, otherwise it looks like "id/*data_type*/ id/*new_var*/;"
-            nodep->v3error("Instantiation " << nodep->prettyNameQ()
-                                            << " requires parenthesis (IEEE 1800-2023 23.3.2)\n"
-                                            << nodep->warnMore() << "... Suggest use '"
-                                            << nodep->prettyName() << "()'");
         }
         if (nodep->modp()) {  //
             iterateChildren(nodep);

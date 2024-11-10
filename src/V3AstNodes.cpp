@@ -1779,6 +1779,8 @@ const char* AstEnumDType::broken() const {
 void AstEnumItemRef::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstIfaceRefDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
+    if (isPortDecl()) str << " [PORTDECL]";
+    if (isVirtual()) str << " [VIRT]";
     if (cellName() != "") str << " cell=" << cellName();
     if (ifaceName() != "") str << " if=" << ifaceName();
     if (modportName() != "") str << " mp=" << modportName();
@@ -1793,6 +1795,8 @@ void AstIfaceRefDType::dump(std::ostream& str) const {
     }
 }
 void AstIfaceRefDType::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, isPortDecl);
+    dumpJsonBoolFunc(str, isVirtual);
     dumpJsonStrFunc(str, cellName);
     dumpJsonStrFunc(str, ifaceName);
     dumpJsonStrFunc(str, modportName);

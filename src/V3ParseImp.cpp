@@ -394,19 +394,75 @@ const V3ParseBisonYYSType* V3ParseImp::tokenPeekp(size_t depth) {
     return &m_tokensAhead.at(depth);
 }
 
-size_t V3ParseImp::tokenPipeScanParam(size_t depth) {
+size_t V3ParseImp::tokenPipeScanIdCell(size_t depthIn) {
+    // Search around IEEE module_instantiation/interface_instantiation/program_instantiation
+    // Return location of following token, or input if not found
+    // yaID/*module_identifier*/ [ '#' '('...')' ] yaID/*name_of_instance*/ [ '['...']' ] '(' ...
+    // yaID/*module_identifier*/ [ '#' id|etc ] yaID/*name_of_instance*/ [ '['...']' ] '(' ...
+    size_t depth = depthIn;
+    depth = tokenPipeScanParam(depth, true);
+
+    if (tokenPeekp(depth)->token != yaID__LEX) return depthIn;
+    ++depth;
+
+    depth = tokenPipeScanBracket(depth);  // [ '['..']' ]*
+    if (tokenPeekp(depth)->token != '(') return depthIn;
+
+    return depth;
+}
+
+size_t V3ParseImp::tokenPipeScanBracket(size_t inDepth) {
+    // Return location of following token, or input if not found
+    // [ '['...']' ]*
+    int depth = inDepth;
+    int bra = 0;
+    while (tokenPeekp(depth)->token == '[') {
+        do {  // Scan brackets
+            const int tok = tokenPeekp(depth)->token;
+            if (tok == 0) {  // LCOV_EXCL_BR_LINE
+                UINFO(9, "tokenPipeScanBracket hit EOF; probably syntax error to come");
+                return inDepth;  // LCOV_EXCL_LINE
+            } else if (tok == '[') {
+                ++bra;
+                ++depth;
+            } else if (bra && tok == ']') {
+                --bra;
+                ++depth;
+            } else if (bra) {
+                ++depth;
+            }
+        } while (bra);
+    }
+    return depth;
+}
+
+size_t V3ParseImp::tokenPipeScanParam(size_t inDepth, bool forCell) {
     // Search around IEEE parameter_value_assignment to see if :: follows
     // Return location of following token, or input if not found
     // yaID [ '#(' ... ')' ]
-    if (tokenPeekp(depth)->token != '#') return depth;
-    if (tokenPeekp(depth + 1)->token != '(') return depth;
-    depth += 2;  // Past the (
+    // if forCell: yaID [ '#' number/etc ]
+    int depth = inDepth;
+    if (tokenPeekp(depth)->token != '#') return inDepth;
+    ++depth;
+
+    if (tokenPeekp(depth)->token != '(') {
+        if (!forCell) return inDepth;
+        // For module cells, we can have '#' and a number, or, annoyingly an idDotted
+        int ntoken = tokenPeekp(depth)->token;
+        if (ntoken == yaINTNUM || ntoken == yaFLOATNUM || ntoken == yaTIMENUM
+            || ntoken == yaID__LEX) {
+            ++depth;
+            return depth;
+        }
+        return inDepth;  // Miss
+    }
+    ++depth;
     int parens = 1;  // Count first (
     while (true) {
         const int tok = tokenPeekp(depth)->token;
         if (tok == 0) {  // LCOV_EXCL_BR_LINE
             UINFO(9, "tokenPipeScanParam hit EOF; probably syntax error to come");
-            break;  // LCOV_EXCL_LINE
+            return inDepth;  // LCOV_EXCL_LINE
         } else if (tok == '(') {
             ++parens;
         } else if (tok == ')') {
@@ -450,12 +506,17 @@ size_t V3ParseImp::tokenPipeScanTypeEq(size_t depth) {
 int V3ParseImp::tokenPipelineId(int token) {
     const V3ParseBisonYYSType* nexttokp = tokenPeekp(0);  // First char after yaID
     const int nexttok = nexttokp->token;
+    UINFO(9, "tokenPipelineId tok=" << yylval.token << endl);
     UASSERT(yylval.token == yaID__LEX, "Start with ID");
     if (nexttok == yP_COLONCOLON) { return yaID__CC; }
     VL_RESTORER(yylval);  // Remember value, as about to read ahead
+    if (m_tokenLastBison.token != '@' && m_tokenLastBison.token != '#'
+        && m_tokenLastBison.token != '.') {
+        if (const size_t depth = tokenPipeScanIdCell(0)) return yaID__aCELL;
+    }
     if (nexttok == '#') {
         VL_RESTORER(yylval);  // Remember value, as about to read ahead
-        const size_t depth = tokenPipeScanParam(0);
+        const size_t depth = tokenPipeScanParam(0, false);
         if (tokenPeekp(depth)->token == yP_COLONCOLON) return yaID__CC;
     }
     return token;
@@ -662,6 +723,7 @@ int V3ParseImp::tokenToBison() {
     // Called as global since bison doesn't have our pointer
     tokenPipelineSym();  // sets yylval
     m_bisonLastFileline = yylval.fl;
+    m_tokenLastBison = yylval;
 
     // yylval.scp = nullptr;   // Symbol table not yet needed - no packages
     if (debug() >= 6 || debugFlex() >= 6
@@ -680,6 +742,7 @@ std::ostream& operator<<(std::ostream& os, const V3ParseBisonYYSType& rhs) {
     if (rhs.token == yaID__ETC  //
         || rhs.token == yaID__CC  //
         || rhs.token == yaID__LEX  //
+        || rhs.token == yaID__aCELL  //
         || rhs.token == yaID__aTYPE) {
         os << " strp='" << *(rhs.strp) << "'";
     }

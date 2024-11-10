@@ -476,6 +476,15 @@ public:
             UINFO(9, "  insAllIface se" << cvtToHex(varSymp) << " " << varp << endl);
             AstIfaceRefDType* const ifacerefp = ifaceRefFromArray(varp->subDTypep());
             UASSERT_OBJ(ifacerefp, varp, "Non-ifacerefs on list!");
+            const bool varGotPort = varp && varp->user4();
+            if (ifacerefp->isPortDecl() && !varGotPort) {
+                varp->v3error("Interface port declaration "
+                              << varp->prettyNameQ() << " doesn't have corresponding port\n"
+                              << varp->warnMore()
+                                     + "... Perhaps intended an interface instantiation but "
+                                       "are missing parenthesis (IEEE 1800-2023 25.3)?");
+            }
+            ifacerefp->isPortDecl(false);  // Only needed for this warning; soon removing AstPort
             if (!ifacerefp->ifaceViaCellp()) {
                 if (!ifacerefp->cellp()) {  // Probably a NotFoundModule, or a normal module if
                                             // made mistake

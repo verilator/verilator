@@ -74,7 +74,7 @@
       {"type":"MEMBERDTYPE","name":"enable","addr":"(UB)","loc":"d,23:19,23:25","dtypep":"(UB)","generic":false,"childDTypep": [],"valuep": []},
       {"type":"MEMBERDTYPE","name":"data","addr":"(VB)","loc":"d,24:19,24:23","dtypep":"(VB)","generic":false,"childDTypep": [],"valuep": []}
     ]},
-    {"type":"IFACEREFDTYPE","name":"","addr":"(O)","loc":"d,29:8,29:12","dtypep":"(O)","cellName":"itop","ifaceName":"ifc","modportName":"","generic":false,"ifacep":"UNLINKED","cellp":"(L)","modportp":"UNLINKED","paramsp": []},
+    {"type":"IFACEREFDTYPE","name":"","addr":"(O)","loc":"d,29:8,29:12","dtypep":"(O)","isPortDecl":false,"isVirtual":false,"cellName":"itop","ifaceName":"ifc","modportName":"","generic":false,"ifacep":"UNLINKED","cellp":"(L)","modportp":"UNLINKED","paramsp": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(S)","loc":"d,31:27,31:28","dtypep":"(S)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
     {"type":"REFDTYPE","name":"my_struct","addr":"(WB)","loc":"d,31:4,31:13","dtypep":"(K)","generic":false,"typedefp":"UNLINKED","refDTypep":"(K)","classOrPackagep":"UNLINKED","typeofp": [],"classOrPackageOpp": [],"paramsp": []},
     {"type":"UNPACKARRAYDTYPE","name":"","addr":"(Q)","loc":"d,31:26,31:27","dtypep":"(Q)","isCompound":false,"declRange":"[0:1]","generic":false,"refDTypep":"(WB)","childDTypep": [],

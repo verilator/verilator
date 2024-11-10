@@ -807,7 +807,6 @@ class AstCell final : public AstNode {
     string m_origName;  // Original name before dot addition
     string m_modName;  // Module the cell instances
     bool m_hasIfaceVar : 1;  // True if a Var has been created for this cell
-    bool m_hasNoParens : 1;  // Instantiation has no parenthesis
     bool m_recursive : 1;  // Self-recursive module
     bool m_trace : 1;  // Trace this cell
 public:
@@ -819,7 +818,6 @@ public:
         , m_origName{instName}
         , m_modName{modName}
         , m_hasIfaceVar{false}
-        , m_hasNoParens{false}
         , m_recursive{false}
         , m_trace{true} {
         this->addPinsp(pinsp);
@@ -844,8 +842,6 @@ public:
     void modp(AstNodeModule* nodep) { m_modp = nodep; }
     bool hasIfaceVar() const { return m_hasIfaceVar; }
     void hasIfaceVar(bool flag) { m_hasIfaceVar = flag; }
-    bool hasNoParens() const { return m_hasNoParens; }
-    void hasNoParens(bool flag) { m_hasNoParens = flag; }
     void trace(bool flag) { m_trace = flag; }
     bool isTrace() const { return m_trace; }
     void recursive(bool flag) { m_recursive = flag; }
