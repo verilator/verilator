@@ -383,11 +383,9 @@ private:
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modTables);
-        {
-            m_modp = nodep;
-            m_modTables = 0;
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        m_modTables = 0;
+        iterateChildren(nodep);
     }
     void visit(AstScope* nodep) override {
         UINFO(4, " SCOPE " << nodep << endl);

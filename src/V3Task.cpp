@@ -217,20 +217,18 @@ private:
     }
     void visit(AstNodeFTask* nodep) override {
         UINFO(9, "  TASK " << nodep << endl);
-        {
-            VL_RESTORER(m_curVxp);
-            m_curVxp = getFTaskVertex(nodep);
-            if (nodep->dpiImport()) m_curVxp->noInline(true);
-            if (nodep->classMethod()) m_curVxp->noInline(true);  // Until V3Task supports it
-            if (nodep->recursive()) m_curVxp->noInline(true);
-            if (nodep->isConstructor()) {
-                m_curVxp->noInline(true);
-                m_ctorp = nodep;
-                UASSERT_OBJ(m_classp, nodep, "Ctor not under class");
-                m_funcToClassMap[nodep] = m_classp;
-            }
-            iterateChildren(nodep);
+        VL_RESTORER(m_curVxp);
+        m_curVxp = getFTaskVertex(nodep);
+        if (nodep->dpiImport()) m_curVxp->noInline(true);
+        if (nodep->classMethod()) m_curVxp->noInline(true);  // Until V3Task supports it
+        if (nodep->recursive()) m_curVxp->noInline(true);
+        if (nodep->isConstructor()) {
+            m_curVxp->noInline(true);
+            m_ctorp = nodep;
+            UASSERT_OBJ(m_classp, nodep, "Ctor not under class");
+            m_funcToClassMap[nodep] = m_classp;
         }
+        iterateChildren(nodep);
     }
     void visit(AstPragma* nodep) override {
         if (nodep->pragType() == VPragmaType::NO_INLINE_TASK) {
@@ -1393,10 +1391,8 @@ class TaskVisitor final : public VNVisitor {
         // scope then the caller, so we need to restore state.
         VL_RESTORER(m_scopep);
         VL_RESTORER(m_insStmtp);
-        {
-            m_scopep = m_statep->getScope(nodep);
-            iterate(nodep);
-        }
+        m_scopep = m_statep->getScope(nodep);
+        iterate(nodep);
     }
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         if (debug() >= 9) nodep->dumpTree("-  newstmt: ");
@@ -1409,12 +1405,10 @@ class TaskVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modNCalls);
-        {
-            m_modp = nodep;
-            m_insStmtp = nullptr;
-            m_modNCalls = 0;
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        m_insStmtp = nullptr;
+        m_modNCalls = 0;
+        iterateChildren(nodep);
     }
     void visit(AstWith* nodep) override {
         if (nodep->user1SetOnce()) {

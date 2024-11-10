@@ -71,35 +71,29 @@ class DepthVisitor final : public VNVisitor {
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
         VL_RESTORER(m_mtaskbodyp);
-        {
-            m_cfuncp = nodep;
-            m_mtaskbodyp = nullptr;
-            m_depth = 0;
-            m_maxdepth = 0;
-            m_tempNames.reset();
-            iterateChildren(nodep);
-        }
+        m_cfuncp = nodep;
+        m_mtaskbodyp = nullptr;
+        m_depth = 0;
+        m_maxdepth = 0;
+        m_tempNames.reset();
+        iterateChildren(nodep);
     }
     void visit(AstMTaskBody* nodep) override {
         VL_RESTORER(m_cfuncp);
         VL_RESTORER(m_mtaskbodyp);
-        {
-            m_cfuncp = nullptr;
-            m_mtaskbodyp = nodep;
-            m_depth = 0;
-            m_maxdepth = 0;
-            // We don't reset the names, as must share across tasks
-            iterateChildren(nodep);
-        }
+        m_cfuncp = nullptr;
+        m_mtaskbodyp = nodep;
+        m_depth = 0;
+        m_maxdepth = 0;
+        // We don't reset the names, as must share across tasks
+        iterateChildren(nodep);
     }
     void visitStmt(AstNodeStmt* nodep) {
         VL_RESTORER(m_stmtp);
-        {
-            m_stmtp = nodep;
-            m_depth = 0;
-            m_maxdepth = 0;
-            iterateChildren(nodep);
-        }
+        m_stmtp = nodep;
+        m_depth = 0;
+        m_maxdepth = 0;
+        iterateChildren(nodep);
     }
     void visit(AstNodeStmt* nodep) override { visitStmt(nodep); }
     // Operators

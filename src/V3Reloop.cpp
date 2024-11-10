@@ -145,11 +145,9 @@ class ReloopVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
-        {
-            m_cfuncp = nodep;
-            iterateChildren(nodep);
-            mergeEnd();  // Finish last pending merge, if any
-        }
+        m_cfuncp = nodep;
+        iterateChildren(nodep);
+        mergeEnd();  // Finish last pending merge, if any
     }
     void visit(AstNodeAssign* nodep) override {
         if (!m_cfuncp) return;

@@ -63,18 +63,14 @@ class LinkResolveVisitor final : public VNVisitor {
         if (nodep->dead()) return;
         VL_RESTORER(m_modp);
         VL_RESTORER(m_senitemCvtNum);
-        {
-            m_modp = nodep;
-            m_senitemCvtNum = 0;
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        m_senitemCvtNum = 0;
+        iterateChildren(nodep);
     }
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_classp);
-        {
-            m_classp = nodep;
-            iterateChildren(nodep);
-        }
+        m_classp = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstInitialAutomatic* nodep) override {
         iterateChildren(nodep);

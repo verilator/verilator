@@ -208,13 +208,11 @@ class DescopeVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            m_modFuncs.clear();
-            m_modSingleton = modIsSingleton(m_modp);
-            iterateChildren(nodep);
-            makePublicFuncWrappers();
-        }
+        m_modp = nodep;
+        m_modFuncs.clear();
+        m_modSingleton = modIsSingleton(m_modp);
+        iterateChildren(nodep);
+        makePublicFuncWrappers();
     }
     void visit(AstScope* nodep) override {
         m_scopep = nodep;

@@ -7963,36 +7963,28 @@ class WidthVisitor final : public VNVisitor {
     }
     void userIterate(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return;
-        {
-            VL_RESTORER(m_vup);
-            m_vup = vup;
-            iterate(nodep);
-        }
+        VL_RESTORER(m_vup);
+        m_vup = vup;
+        iterate(nodep);
     }
     void userIterateAndNext(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return;
         if (nodep->didWidth()) return;  // Avoid iterating list we have already iterated
-        {
-            VL_RESTORER(m_vup);
-            m_vup = vup;
-            iterateAndNextNull(nodep);
-        }
+        VL_RESTORER(m_vup);
+        m_vup = vup;
+        iterateAndNextNull(nodep);
     }
     void userIterateChildren(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return;
-        {
-            VL_RESTORER(m_vup);
-            m_vup = vup;
-            iterateChildren(nodep);
-        }
+        VL_RESTORER(m_vup);
+        m_vup = vup;
+        iterateChildren(nodep);
     }
     void userIterateChildrenBackwardsConst(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return;
-        {
-            VL_RESTORER(m_vup);
-            m_vup = vup;
-            iterateChildrenBackwardsConst(nodep);
-        }
+        VL_RESTORER(m_vup);
+        m_vup = vup;
+        iterateChildrenBackwardsConst(nodep);
     }
 
 public:

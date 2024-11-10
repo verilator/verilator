@@ -179,43 +179,33 @@ class UnknownVisitor final : public VNVisitor {
     void visit(AstAssignDly* nodep) override {
         VL_RESTORER(m_assigndlyp);
         VL_RESTORER(m_timingControlp);
-        {
-            m_assigndlyp = nodep;
-            m_timingControlp = nodep->timingControlp();
-            VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-        }
+        m_assigndlyp = nodep;
+        m_timingControlp = nodep->timingControlp();
+        VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
     }
     void visit(AstAssignW* nodep) override {
         VL_RESTORER(m_assignwp);
         VL_RESTORER(m_timingControlp);
-        {
-            m_assignwp = nodep;
-            m_timingControlp = nodep->timingControlp();
-            VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-        }
+        m_assignwp = nodep;
+        m_timingControlp = nodep->timingControlp();
+        VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
     }
     void visit(AstNodeAssign* nodep) override {
         VL_RESTORER(m_timingControlp);
-        {
-            m_timingControlp = nodep->timingControlp();
-            iterateChildren(nodep);
-        }
+        m_timingControlp = nodep->timingControlp();
+        iterateChildren(nodep);
     }
     void visit(AstCaseItem* nodep) override {
         VL_RESTORER(m_constXCvt);
-        {
-            m_constXCvt = false;  // Avoid losing the X's in casex
-            iterateAndNextNull(nodep->condsp());
-            m_constXCvt = true;
-            iterateAndNextNull(nodep->stmtsp());
-        }
+        m_constXCvt = false;  // Avoid losing the X's in casex
+        iterateAndNextNull(nodep->condsp());
+        m_constXCvt = true;
+        iterateAndNextNull(nodep->stmtsp());
     }
     void visit(AstNodeDType* nodep) override {
         VL_RESTORER(m_constXCvt);
-        {
-            m_constXCvt = false;  // Avoid losing the X's in casex
-            iterateChildren(nodep);
-        }
+        m_constXCvt = false;  // Avoid losing the X's in casex
+        iterateChildren(nodep);
     }
     void visit(AstVar* nodep) override {
         VL_RESTORER(m_allowXUnique);

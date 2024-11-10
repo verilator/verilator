@@ -286,12 +286,10 @@ class LinkCellsVisitor final : public VNVisitor {
             AstNode* const cellsp = nodep->cellsp()->unlinkFrBackWithNext();
             // Module may have already linked, so need to pick up these new cells
             VL_RESTORER(m_modp);
-            {
-                m_modp = modp;
-                // Important that this adds to end, as next iterate assumes does all cells
-                modp->addStmtsp(cellsp);
-                iterateAndNextNull(cellsp);
-            }
+            m_modp = modp;
+            // Important that this adds to end, as next iterate assumes does all cells
+            modp->addStmtsp(cellsp);
+            iterateAndNextNull(cellsp);
         }
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }

@@ -173,10 +173,8 @@ class CleanVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstNodeUniop* nodep) override {
         iterateChildren(nodep);

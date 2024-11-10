@@ -2333,20 +2333,16 @@ class ConstVisitor final : public VNVisitor {
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            m_concswapNames.reset();
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        m_concswapNames.reset();
+        iterateChildren(nodep);
     }
     void visit(AstCFunc* nodep) override {
         // No ASSIGNW removals under funcs, we've long eliminated INITIALs
         // (We should perhaps rename the assignw's to just assigns)
         VL_RESTORER(m_wremove);
-        {
-            m_wremove = false;
-            iterateChildren(nodep);
-        }
+        m_wremove = false;
+        iterateChildren(nodep);
     }
     void visit(AstCLocalScope* nodep) override {
         iterateChildren(nodep);
@@ -2359,11 +2355,9 @@ class ConstVisitor final : public VNVisitor {
         // No ASSIGNW removals under scope, we've long eliminated INITIALs
         VL_RESTORER(m_wremove);
         VL_RESTORER(m_scopep);
-        {
-            m_wremove = false;
-            m_scopep = nodep;
-            iterateChildren(nodep);
-        }
+        m_wremove = false;
+        m_scopep = nodep;
+        iterateChildren(nodep);
     }
 
     void swapSides(AstNodeBiCom* nodep) {
@@ -2695,10 +2689,8 @@ class ConstVisitor final : public VNVisitor {
 
     void visit(AstAttrOf* nodep) override {
         VL_RESTORER(m_attrp);
-        {
-            m_attrp = nodep;
-            iterateChildren(nodep);
-        }
+        m_attrp = nodep;
+        iterateChildren(nodep);
     }
 
     void visit(AstArraySel* nodep) override {

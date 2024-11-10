@@ -70,21 +70,17 @@ class DepthBlockVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            m_deepNum = 0;
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        m_deepNum = 0;
+        iterateChildren(nodep);
     }
     void visit(AstCFunc* nodep) override {
         // We recurse into this.
         VL_RESTORER(m_depth);
         VL_RESTORER(m_cfuncp);
-        {
-            m_depth = 0;
-            m_cfuncp = nodep;
-            iterateChildren(nodep);
-        }
+        m_depth = 0;
+        m_cfuncp = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstStmtExpr* nodep) override {}  // Stop recursion after introducing new function
     void visit(AstJumpBlock*) override {}  // Stop recursion as can't break up across a jump

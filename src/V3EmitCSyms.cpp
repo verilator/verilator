@@ -300,10 +300,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void visit(AstNodeModule* nodep) override {
         nameCheck(nodep);
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            iterateChildrenConst(nodep);
-        }
+        m_modp = nodep;
+        iterateChildrenConst(nodep);
     }
     void visit(AstCellInlineScope* nodep) override {
         if (v3Global.opt.vpi()) {
@@ -372,10 +370,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         nameCheck(nodep);
         if (nodep->dpiImportPrototype() || nodep->dpiExportDispatcher()) m_dpis.push_back(nodep);
         VL_RESTORER(m_cfuncp);
-        {
-            m_cfuncp = nodep;
-            iterateChildrenConst(nodep);
-        }
+        m_cfuncp = nodep;
+        iterateChildrenConst(nodep);
     }
 
     //---------------------------------------
