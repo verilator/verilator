@@ -66,7 +66,7 @@ class BalanceConcatTree final {
         terms.emplace_back(exprp);
     }
 
-    // Gather terms in the tree of given type, rooted at the given vertex.
+    // Gather terms in the tree rooted at the given node.
     // Results are right to left, that is, index 0 in the returned vector
     // is the rightmost term, index size()-1 is the leftmost term.
     static std::vector<AstNodeExpr*> gatherTerms(AstConcat* rootp) {
