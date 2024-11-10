@@ -7311,13 +7311,13 @@ dollarUnitNextId<nodeExprp>:    // $unit
                           SYMP->nextId(PARSEP->rootp()); }
         ;
 
-localNextId<nodeExprp>:         // local
+localNextId<nodeExprp>:         // local::
         //                      // IMPORTANT: The lexer will parse the following ID to be in the found package
         //                      //     if not needed must use packageClassScopeNoId
         //                      // Must call nextId without any additional tokens following
                 yLOCAL__COLONCOLON
-                        { $$ = new AstClassOrPackageRef{$1, "local::", PARSEP->unitPackage($<fl>1), nullptr};
-                          SYMP->nextId(PARSEP->rootp()); }
+                        { $$ = new AstClassOrPackageRef{$1, "local::", nullptr, nullptr};
+                          /* No SYMP->nextId(...); normal search upward we should find local's vars */ }
         ;
 
 //^^^=========

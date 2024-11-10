@@ -2792,12 +2792,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             "Bad package link");
                 AstClassOrPackageRef* const cpackagerefp
                     = VN_AS(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
-                classOrPackagep = cpackagerefp->classOrPackagep();
-                UASSERT_OBJ(classOrPackagep, m_ds.m_dotp->lhsp(), "Bad package link");
                 if (cpackagerefp->name() == "local::") {
                     m_randSymp = nullptr;
                     first = true;
                 } else {
+                    classOrPackagep = cpackagerefp->classOrPackagep();
+                    UASSERT_OBJ(classOrPackagep, m_ds.m_dotp->lhsp(), "Bad package link");
                     m_ds.m_dotSymp = m_statep->getNodeSym(classOrPackagep);
                 }
                 m_ds.m_dotPos = DP_SCOPE;
@@ -3169,6 +3169,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->v3error("Illegal 'local::' outside 'randomize() with'"
                                " (IEEE 1800-2023 18.7.1)");
                 m_ds.m_dotErr = true;
+                return;
             }
         }
         AstClass* const modClassp = VN_CAST(m_modp, Class);
@@ -3427,11 +3428,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
             staticAccess = true;
             AstClassOrPackageRef* const cpackagerefp
                 = VN_AS(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
-            UASSERT_OBJ(cpackagerefp->classOrPackagep(), m_ds.m_dotp->lhsp(), "Bad package link");
             if (cpackagerefp->name() == "local::") {
                 m_randSymp = nullptr;
                 first = true;
             } else {
+                UASSERT_OBJ(cpackagerefp->classOrPackagep(), m_ds.m_dotp->lhsp(), "Bad package link");
                 nodep->classOrPackagep(cpackagerefp->classOrPackagep());
             }
             // Class/package :: HERE function() . method_called_on_function_return_value()
