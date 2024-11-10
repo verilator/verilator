@@ -236,7 +236,7 @@ class LinkCellsVisitor final : public VNVisitor {
                 if (!nodep->cellp()) nodep->ifacep(VN_AS(modp, Iface));
             } else if (VN_IS(modp, NotFoundModule)) {  // Will error out later
             } else {
-                nodep->v3error("Non-interface used as an interface: " << nodep->prettyNameQ());
+                nodep->v3error("Non-interface used as an interface: " << nodep->ifaceNameQ());
             }
         }
         iterateChildren(nodep);
