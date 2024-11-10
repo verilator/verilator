@@ -1011,6 +1011,12 @@ class LinkDotFindVisitor final : public VNVisitor {
             if (!m_explicitNew && m_statep->forPrimary()) makeImplicitNew(nodep);
         }
     }
+    void visit(AstClassOrPackageRef* nodep) override {
+        if (!nodep->classOrPackageNodep() && nodep->name() == "$unit") {
+            nodep->classOrPackageNodep(v3Global.rootp()->dollarUnitPkgAddp());
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstScope* nodep) override {
         UASSERT_OBJ(m_statep->forScopeCreation(), nodep,
                     "Scopes should only exist right after V3Scope");
@@ -3806,6 +3812,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (AstClassOrPackageRef* lookNodep = VN_CAST(dotp->lhsp(), ClassOrPackageRef)) {
                     iterate(lookNodep);
                     cprp = dotp->rhsp();
+                    UASSERT_OBJ(lookNodep->classOrPackagep(), nodep, "Bad package link");
                     lookSymp = m_statep->getNodeSym(lookNodep->classOrPackagep());
                 } else {
                     dotp->lhsp()->v3error("Attempting to extend"  // LCOV_EXCL_LINE

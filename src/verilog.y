@@ -7307,7 +7307,7 @@ dollarUnitNextId<nodeExprp>:    // $unit
         //                      //     if not needed must use packageClassScopeNoId
         //                      // Must call nextId without any additional tokens following
                 yD_UNIT
-                        { $$ = new AstClassOrPackageRef{$1, "$unit", PARSEP->unitPackage($<fl>1), nullptr};
+                        { $$ = new AstClassOrPackageRef{$1, "$unit", nullptr, nullptr};
                           SYMP->nextId(PARSEP->rootp()); }
         ;
 
