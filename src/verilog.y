@@ -3075,7 +3075,7 @@ delay_control<delayp>:   //== IEEE: delay_control
 
 delay_value<nodeExprp>:         // ==IEEE:delay_value
         //                      // IEEE: ps_identifier
-                packageClassScopeE varRefBase           { $$ = AstDot::newIfPkg($<fl>2, $1, $2); }
+                idClass                                 { $$ = $1; }
         |       yaINTNUM                                { $$ = new AstConst{$<fl>1, *$1}; }
         |       yaFLOATNUM                              { $$ = new AstConst{$<fl>1, AstConst::RealDouble{}, $1}; }
         |       timeNumAdjusted                         { $$ = $1; }
@@ -5810,7 +5810,7 @@ idSVKwd<strp>:                  // Warn about non-forward compatible Verilog 200
                         { static string s = "final"; $$ = &s; ERRSVKWD($1, *$$); $<fl>$ = $<fl>1; }
         ;
 
-variable_lvalue<nodeExprp>:         // IEEE: variable_lvalue or net_lvalue
+variable_lvalue<nodeExprp>:     // IEEE: variable_lvalue or net_lvalue
         //                      // Note many variable_lvalue's must use exprOkLvalue when arbitrary expressions may also exist
                 idClassSel                              { $$ = $1; }
         |       '{' variable_lvalueConcList '}'         { $$ = $2; }
@@ -5832,8 +5832,19 @@ variable_lvalueConcList<nodeExprp>: // IEEE: part of variable_lvalue: '{' variab
 //UNSUP |       variable_lvalueList ',' variable_lvalue { $$ = addNextNull($1, $3); }
 //UNSUP ;
 
-// VarRef to dotted, and/or arrayed, and/or bit-ranged variable
-idClassSel<nodeExprp>:                      // Misc Ref to dotted, and/or arrayed, and/or bit-ranged variable
+idClass<nodeExprp>:             // Misc Ref to dotted, and/or arrayed, and/or bit-ranged variable
+                idDotted                                { $$ = $1; }
+        //                      // IEEE: [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
+        |       yTHIS '.' idDotted
+                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "this"}, $3}; }
+        |       ySUPER '.' idDotted
+                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "super"}, $3}; }
+        |       yTHIS '.' ySUPER '.' idDotted           { $$ = $5; BBUNSUP($1, "Unsupported: this.super"); }
+        //                      // Expanded: package_scope idDottedSel
+        |       packageClassScope idDotted              { $$ = new AstDot{$<fl>2, true, $1, $2}; }
+        ;
+
+idClassSel<nodeExprp>:          // Misc Ref to dotted, and/or arrayed, and/or bit-ranged variable
                 idDottedSel                             { $$ = $1; }
         //                      // IEEE: [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
         |       yTHIS '.' idDottedSel
@@ -5857,6 +5868,12 @@ idClassSelForeach<nodeExprp>:
         |       packageClassScope idDottedForeach       { $$ = new AstDot{$<fl>2, true, $1, $2}; }
         ;
 
+idDotted<nodeExprp>:
+                yD_ROOT '.' idDottedMore
+                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "$root"}, $3}; }
+        |       idDottedMore                            { $$ = $1; }
+        ;
+
 idDottedSel<nodeExprp>:
                 yD_ROOT '.' idDottedSelMore
                         { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "$root"}, $3}; }
@@ -5867,6 +5884,11 @@ idDottedForeach<nodeExprp>:
                 yD_ROOT '.' idDottedMoreForeach
                         { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "$root"}, $3}; }
         |       idDottedMoreForeach                     { $$ = $1; }
+        ;
+
+idDottedMore<nodeExprp>:
+                varRefBase                              { $$ = $1; }
+        |       idDottedMore '.' varRefBase             { $$ = new AstDot{$2, false, $1, $3}; }
         ;
 
 idDottedSelMore<nodeExprp>:
