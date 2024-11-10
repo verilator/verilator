@@ -21,6 +21,12 @@
 //    foo[_:_] = r;
 //    foo[_:_] = l;
 //
+// - Balance concatenation trees, e.g.:
+//    {a, {b, {c, d}}
+//   becomes:
+//    {{a, b}, {c, d}}
+//   Reality is more complex here, see the code.
+//
 //*************************************************************************
 
 #include "V3PchAstMT.h"
@@ -33,11 +39,144 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+class BalanceConcatTree final {
+    // STATELESS
+
+    // We keep the expressions, together with their offsets within a concatenation tree
+    struct Term final {
+        AstNodeExpr* exprp = nullptr;
+        size_t offset = 0;
+
+        Term() = default;
+        Term(AstNodeExpr* exprp, size_t offset)
+            : exprp{exprp}
+            , offset{offset} {}
+    };
+
+    // Recursive implementation of 'gatherTerms' below.
+    static void gatherTermsRecursive(AstNodeExpr* exprp, std::vector<AstNodeExpr*>& terms) {
+        if (AstConcat* const catp = VN_CAST(exprp, Concat)) {
+            // Recursive case: gather sub terms, right to left
+            gatherTermsRecursive(catp->rhsp(), terms);
+            gatherTermsRecursive(catp->lhsp(), terms);
+            return;
+        }
+
+        // Base case: different operation
+        terms.emplace_back(exprp);
+    }
+
+    // Gather terms in the tree of given type, rooted at the given vertex.
+    // Results are right to left, that is, index 0 in the returned vector
+    // is the rightmost term, index size()-1 is the leftmost term.
+    static std::vector<AstNodeExpr*> gatherTerms(AstConcat* rootp) {
+        std::vector<AstNodeExpr*> terms;
+        gatherTermsRecursive(rootp->rhsp(), terms);
+        gatherTermsRecursive(rootp->lhsp(), terms);
+        return terms;
+    }
+
+    // Construct a balanced concatenation from the given terms,
+    // between indices begin (inclusive), and end (exclusive).
+    // Note term[end].offset must be valid. term[end].vtxp is
+    // never referenced.
+    static AstNodeExpr* construct(const std::vector<Term>& terms, const size_t begin,
+                                  const size_t end) {
+        UASSERT(end < terms.size(), "Invalid end");
+        UASSERT(begin < end, "Invalid range");
+        // Base case: just return the term
+        if (end == begin + 1) return terms[begin].exprp;
+
+        // Recursive case:
+        // Compute the mid-point, trying to create roughly equal width intermediates
+        const size_t width = terms[end].offset - terms[begin].offset;
+        const size_t midOffset = width / 2 + terms[begin].offset;
+        const auto beginIt = terms.begin() + begin;
+        const auto endIt = terms.begin() + end;
+        const auto midIt = std::lower_bound(beginIt + 1, endIt - 1, midOffset,  //
+                                            [&](const Term& term, size_t value) {  //
+                                                return term.offset < value;
+                                            });
+        const size_t mid = begin + std::distance(beginIt, midIt);
+        UASSERT(begin < mid && mid < end, "Must make some progress");
+        // Construct the subtrees
+        AstNodeExpr* const rhsp = construct(terms, begin, mid);
+        AstNodeExpr* const lhsp = construct(terms, mid, end);
+        // Construct new node
+        AstNodeExpr* newp = new AstConcat{lhsp->fileline(), lhsp, rhsp};
+        newp->user1(true);  // Must not attempt to balance again.
+        return newp;
+    }
+
+    // Returns replacement node, or nullptr if no change
+    static AstConcat* balance(AstConcat* const rootp) {
+        UINFO(9, "balanceConcat " << rootp << "\n");
+        // Gather all input vertices of the tree
+        const std::vector<AstNodeExpr*> exprps = gatherTerms(rootp);
+        // Don't bother with trivial trees
+        if (exprps.size() <= 3) return nullptr;
+        // Don't do it if any of the terms are impure
+        for (AstNodeExpr* const exprp : exprps) {
+            if (!exprp->isPure()) return nullptr;
+        }
+
+        // Construct the terms Vector that we are going to do processing on
+        std::vector<Term> terms(exprps.size() + 1);
+        // These are redundant (constructor does the same), but here they are for clarity
+        terms[0].offset = 0;
+        terms[exprps.size()].exprp = nullptr;
+        for (size_t i = 0; i < exprps.size(); ++i) {
+            terms[i].exprp = exprps[i]->unlinkFrBack();
+            terms[i + 1].offset = terms[i].offset + exprps[i]->width();
+        }
+
+        // Round 1: try to create terms ending on VL_EDATASIZE boundaries.
+        // This ensures we pack bits within a VL_EDATASIZE first is possible,
+        // and then hopefully we can just assemble VL_EDATASIZE words afterward.
+        std::vector<Term> terms2;
+        {
+            terms2.reserve(terms.size());
+
+            size_t begin = 0;  // Start of current range considered
+            size_t end = 0;  // End of current range considered
+            size_t offset = 0;  // Offset of current range considered
+
+            // Create a term from the current range
+            const auto makeTerm = [&]() {
+                AstNodeExpr* const exprp = construct(terms, begin, end);
+                terms2.emplace_back(exprp, offset);
+                offset += exprp->width();
+                begin = end;
+            };
+
+            // Create all terms ending on a boundary.
+            while (++end < terms.size() - 1) {
+                if (terms[end].offset % VL_EDATASIZE == 0) makeTerm();
+            }
+            // Final term. Loop condition above ensures this always exists,
+            // and might or might not be on a boundary.
+            makeTerm();
+            // Sentinel term
+            terms2.emplace_back(nullptr, offset);
+            // should have ended up with the same number of bits at least...
+            UASSERT(terms2.back().offset == terms.back().offset, "Inconsitent terms");
+        }
+
+        // Round 2: Combine the partial terms
+        return VN_AS(construct(terms2, 0, terms2.size() - 1), Concat);
+    }
+
+public:
+    static AstConcat* apply(AstConcat* rootp) { return balance(rootp); }
+};
+
 class FuncOptVisitor final : public VNVisitor {
     // NODE STATE
     //  AstNodeAssign::user()     -> bool.  Already checked, safe to split. Omit expensive check.
+    //  AstConcat::user()         -> bool.  Already balanced.
 
     // STATE - Statistic tracking
+    VDouble0 m_balancedConcats;  // Number of concatenations balanced
     VDouble0 m_concatSplits;  // Number of splits in assignments with Concat on RHS
 
     // True for e.g.: foo = foo >> 1; or foo[foo[0]] = ...;
@@ -142,18 +281,34 @@ class FuncOptVisitor final : public VNVisitor {
     void visit(AstNodeAssign* nodep) override {
         // TODO: Only thing remaining inside functions should be AstAssign (that is, an actual
         //       assignment statemant), but we stil use AstAssignW, AstAssignDly, and all, fix.
+        iterateChildren(nodep);
+
         if (v3Global.opt.fFuncSplitCat()) {
             if (splitConcat(nodep)) return;  // Must return here, in case more code is added below
         }
     }
 
-    void visit(AstNodeExpr*) override {}  // No need to descend further (Ignore AstExprStmt...)
+    void visit(AstConcat* nodep) override {
+        if (v3Global.opt.fFuncBalanceCat() && !nodep->user1() && !VN_IS(nodep->backp(), Concat)) {
+            if (AstConcat* const newp = BalanceConcatTree::apply(nodep)) {
+                UINFO(5, "balanceConcat optimizing " << nodep << "\n");
+                ++m_balancedConcats;
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                newp->user1(true);  // Must not attempt again.
+                // Return here. The new node will be iterated next.
+                return;
+            }
+        }
+        iterateChildren(nodep);
+    }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // CONSTRUCTORS
     explicit FuncOptVisitor(AstCFunc* funcp) { iterateChildren(funcp); }
     ~FuncOptVisitor() override {
+        V3Stats::addStatSum("Optimizations, FuncOpt concat trees balanced", m_balancedConcats);
         V3Stats::addStatSum("Optimizations, FuncOpt concat splits", m_concatSplits);
     }
 

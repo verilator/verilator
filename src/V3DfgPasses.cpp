@@ -42,11 +42,6 @@ V3DfgEliminateVarsContext::~V3DfgEliminateVarsContext() {
                      m_varsRemoved);
 }
 
-V3DfgBalanceTreesContext::~V3DfgBalanceTreesContext() {
-    V3Stats::addStat("Optimizations, DFG " + m_label + " BalanceTrees, concat trees balanced",
-                     m_balancedConcats);
-}
-
 static std::string getPrefix(const std::string& label) {
     if (label.empty()) return "";
     std::string str = VString::removeWhitespace(label);
@@ -337,7 +332,7 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
     for (AstVar* const varp : replacedVariables) varp->unlinkFrBack()->deleteTree();
 }
 
-void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx, bool lastInvocation) {
+void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
     // There is absolutely nothing useful we can do with a graph of size 2 or less
     if (dfg.size() <= 2) return;
 
@@ -365,10 +360,6 @@ void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx, bool la
     }
     // Accumulate patterns for reporting
     if (v3Global.opt.stats()) ctx.m_patternStats.accumulate(dfg);
-    // The peephole pass covnerts all trees to right leaning, so only do this on the last DFG run.
-    if (lastInvocation) {
-        apply(4, "balanceTrees", [&]() { balanceTrees(dfg, ctx.m_balanceTreesContext); });
-    }
     apply(4, "regularize", [&]() { regularize(dfg, ctx.m_regularizeContext); });
     if (dumpDfgLevel() >= 8) dfg.dumpDotAllVarConesPrefixed(ctx.prefix() + "optimized");
 }
