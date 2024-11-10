@@ -3432,7 +3432,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 m_randSymp = nullptr;
                 first = true;
             } else {
-                UASSERT_OBJ(cpackagerefp->classOrPackagep(), m_ds.m_dotp->lhsp(), "Bad package link");
+                UASSERT_OBJ(cpackagerefp->classOrPackagep(), m_ds.m_dotp->lhsp(),
+                            "Bad package link");
                 nodep->classOrPackagep(cpackagerefp->classOrPackagep());
             }
             // Class/package :: HERE function() . method_called_on_function_return_value()
