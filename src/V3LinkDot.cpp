@@ -2143,7 +2143,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     VSymEnt* m_curSymp = nullptr;  // SymEnt for current lookup point
     VSymEnt* m_modSymp = nullptr;  // SymEnt for current module
     VSymEnt* m_pinSymp = nullptr;  // SymEnt for pin lookups
-    VSymEnt* m_fromSymp = nullptr;  // SymEnt for randomize lookups
+    VSymEnt* m_randSymp = nullptr;  // SymEnt for randomize target class's lookups
     const AstCell* m_cellp = nullptr;  // Current cell
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
@@ -2599,7 +2599,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         UINFO(8, indent() << m_ds.ascii() << endl);
         const DotStates lastStates = m_ds;
         const bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
-        VL_RESTORER(m_fromSymp);
+        VL_RESTORER(m_randSymp);
         {
             if (start) {  // Starting dot sequence
                 if (debug() >= 9) nodep->dumpTree("-  dot-in: ");
@@ -2795,7 +2795,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 classOrPackagep = cpackagerefp->classOrPackagep();
                 UASSERT_OBJ(classOrPackagep, m_ds.m_dotp->lhsp(), "Bad package link");
                 if (cpackagerefp->name() == "local::") {
-                    m_fromSymp = nullptr;
+                    m_randSymp = nullptr;
                     first = true;
                 } else {
                     m_ds.m_dotSymp = m_statep->getNodeSym(classOrPackagep);
@@ -2818,8 +2818,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VSymEnt* foundp;
             string baddot;
             VSymEnt* okSymp = nullptr;
-            if (m_fromSymp) {
-                foundp = m_fromSymp->findIdFlat(nodep->name());
+            if (m_randSymp) {
+                foundp = m_randSymp->findIdFlat(nodep->name());
                 if (foundp) {
                     if (!start) m_ds.m_dotPos = DP_MEMBER;
                     if (!m_inWith) {
@@ -3165,8 +3165,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
         iterateChildren(nodep);
 
         if (nodep->name() == "local::") {
-            if (!m_fromSymp) {
-                nodep->v3error("Illegal 'local::' outside 'randomize() with'");
+            if (!m_randSymp) {
+                nodep->v3error("Illegal 'local::' outside 'randomize() with'"
+                               " (IEEE 1800-2023 18.7.1)");
                 m_ds.m_dotErr = true;
             }
         }
@@ -3325,7 +3326,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep << endl);
         VL_RESTORER(m_ds);
-        VL_RESTORER(m_fromSymp);
+        VL_RESTORER(m_randSymp);
         VL_RESTORER(m_randMethodCallp);
         {
             m_ds.init(m_curSymp);
@@ -3368,7 +3369,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         nodep->v3error("'randomize() with' on a non-class-instance "
                                        << fromDtp->prettyNameQ());
                     else
-                        m_fromSymp = m_statep->getNodeSym(classDtp->classp());
+                        m_randSymp = m_statep->getNodeSym(classDtp->classp());
                 }
             }
             iterateChildren(nodep);
@@ -3404,7 +3405,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
         }
 
-        VL_RESTORER(m_fromSymp);
+        VL_RESTORER(m_randSymp);
 
         bool first = !m_ds.m_dotp || m_ds.m_dotPos == DP_FIRST;
         bool staticAccess = false;
@@ -3428,7 +3429,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 = VN_AS(m_ds.m_dotp->lhsp(), ClassOrPackageRef);
             UASSERT_OBJ(cpackagerefp->classOrPackagep(), m_ds.m_dotp->lhsp(), "Bad package link");
             if (cpackagerefp->name() == "local::") {
-                m_fromSymp = nullptr;
+                m_randSymp = nullptr;
                 first = true;
             } else {
                 nodep->classOrPackagep(cpackagerefp->classOrPackagep());
@@ -3500,8 +3501,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
                                                okSymp, true);  // Maybe nullptr
             }
-            if (m_fromSymp) {
-                VSymEnt* const foundp = m_fromSymp->findIdFlat(nodep->name());
+            if (m_randSymp) {
+                VSymEnt* const foundp = m_randSymp->findIdFlat(nodep->name());
                 if (foundp && m_inWith) {
                     UINFO(9, indent() << "randomize-with fromSym " << foundp->nodep() << endl);
                     AstNodeExpr* argsp = nullptr;

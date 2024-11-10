@@ -7240,12 +7240,6 @@ class_typeExtImpOne<nodeExprp>:  // part of IEEE: class_type, where we either ge
                         { $$ = new AstClassOrPackageRef{$<fl>1, "$unit", nullptr, nullptr};
                           $<scp>$ = nullptr;  // No purpose otherwise, every symtab can see root
                           SYMP->nextId(PARSEP->rootp()); }
-        //
-        |       yLOCAL__COLONCOLON yP_COLONCOLON
-                        { $$ = new AstClassOrPackageRef{$<fl>1, "local::", nullptr, nullptr};
-                          $<scp>$ = nullptr;  // UNSUP
-                          SYMP->nextId(PARSEP->rootp());
-                          BBUNSUP($1, "Unsupported: Randomize 'local::'"); }
         ;
 
 //=========
