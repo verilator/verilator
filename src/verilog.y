@@ -3705,7 +3705,7 @@ statement_item<nodep>:          // IEEE: statement_item
         |       yDISABLE yFORK ';'                      { $$ = new AstDisableFork{$1}; }
         |       yDISABLE idAny/*UNSUP: hierarchical_identifier-task_or_block*/ ';'
                         { $$ = new AstDisable{$1, *$2}; }
-        |       yDISABLE idAny '.' idDotted ';'
+        |       yDISABLE idAny '.' idDottedSel ';'
                         { $$ = nullptr; BBUNSUP($4, "Unsupported: disable with '.'"); }
         //                      // IEEE: event_trigger
         |       yP_MINUSGT expr ';'
@@ -4141,7 +4141,7 @@ funcRef<nodeExprp>:             // IEEE: part of tf_call
         |       packageClassScope id '(' list_of_argumentsE ')'
                         { $$ = AstDot::newIfPkg($<fl>2, $1, new AstFuncRef{$<fl>2, *$2, $4}); }
         //UNSUP list_of_argumentE should be pev_list_of_argumentE
-        //UNSUP: idDotted is really just id to allow dotted method calls
+        //UNSUP: idDottedSel is really just id to allow dotted method calls
         ;
 
 task_subroutine_callNoSemi<nodep>:  // similar to IEEE task_subroutine_call but without ';'
@@ -4194,7 +4194,7 @@ system_t_call<nodeStmtp>:       // IEEE: system_tf_call (as task)
                                                           refp->pli(true);
                                                           $$ = refp->makeStmt(); }
         //
-        |       yD_DUMPPORTS '(' idDotted ',' expr ')'  { $$ = new AstDumpCtl{$<fl>1, VDumpCtlType::FILE, $5}; DEL($3);
+        |       yD_DUMPPORTS '(' idDottedSel ',' expr ')'  { $$ = new AstDumpCtl{$<fl>1, VDumpCtlType::FILE, $5}; DEL($3);
                                                           $$->addNext(new AstDumpCtl{$<fl>1, VDumpCtlType::VARS,
                                                                                      new AstConst{$<fl>1, 1}}); }
         |       yD_DUMPPORTS '(' ',' expr ')'           { $$ = new AstDumpCtl{$<fl>1, VDumpCtlType::FILE, $4};
@@ -5834,15 +5834,15 @@ variable_lvalueConcList<nodeExprp>: // IEEE: part of variable_lvalue: '{' variab
 
 // VarRef to dotted, and/or arrayed, and/or bit-ranged variable
 idClassSel<nodeExprp>:                      // Misc Ref to dotted, and/or arrayed, and/or bit-ranged variable
-                idDotted                                { $$ = $1; }
+                idDottedSel                             { $$ = $1; }
         //                      // IEEE: [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
-        |       yTHIS '.' idDotted
+        |       yTHIS '.' idDottedSel
                         { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "this"}, $3}; }
-        |       ySUPER '.' idDotted
+        |       ySUPER '.' idDottedSel
                         { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "super"}, $3}; }
-        |       yTHIS '.' ySUPER '.' idDotted           { $$ = $5; BBUNSUP($1, "Unsupported: this.super"); }
-        //                      // Expanded: package_scope idDotted
-        |       packageClassScope idDotted              { $$ = new AstDot{$<fl>2, true, $1, $2}; }
+        |       yTHIS '.' ySUPER '.' idDottedSel        { $$ = $5; BBUNSUP($1, "Unsupported: this.super"); }
+        //                      // Expanded: package_scope idDottedSel
+        |       packageClassScope idDottedSel           { $$ = new AstDot{$<fl>2, true, $1, $2}; }
         ;
 
 idClassSelForeach<nodeExprp>:
@@ -5857,10 +5857,10 @@ idClassSelForeach<nodeExprp>:
         |       packageClassScope idDottedForeach       { $$ = new AstDot{$<fl>2, true, $1, $2}; }
         ;
 
-idDotted<nodeExprp>:
-                yD_ROOT '.' idDottedMore
+idDottedSel<nodeExprp>:
+                yD_ROOT '.' idDottedSelMore
                         { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "$root"}, $3}; }
-        |       idDottedMore                            { $$ = $1; }
+        |       idDottedSelMore                         { $$ = $1; }
         ;
 
 idDottedForeach<nodeExprp>:
@@ -5869,9 +5869,9 @@ idDottedForeach<nodeExprp>:
         |       idDottedMoreForeach                     { $$ = $1; }
         ;
 
-idDottedMore<nodeExprp>:
+idDottedSelMore<nodeExprp>:
                 idArrayed                               { $$ = $1; }
-        |       idDottedMore '.' idArrayed              { $$ = new AstDot{$2, false, $1, $3}; }
+        |       idDottedSelMore '.' idArrayed           { $$ = new AstDot{$2, false, $1, $3}; }
         ;
 
 idDottedMoreForeach<nodeExprp>:
