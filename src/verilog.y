@@ -2080,10 +2080,14 @@ tf_port_declaration<nodep>:     // ==IEEE: tf_port_declaration
         //                      // Used inside function; followed by ';'
         //                      // SEE ALSO port_declaration, port, data_declarationVarFront
         //
-                port_directionReset      data_type      { VARDTYPE($2); }  list_of_tf_variable_identifiers ';'  { $$ = $4; }
-        |       port_directionReset      implicit_typeE { VARDTYPE_NDECL($2); }  list_of_tf_variable_identifiers ';'    { $$ = $4; }
-        |       port_directionReset yVAR data_type      { VARDTYPE($3); }  list_of_tf_variable_identifiers ';'  { $$ = $5; }
-        |       port_directionReset yVAR implicit_typeE { VARDTYPE($3); }  list_of_tf_variable_identifiers ';'  { $$ = $5; }
+                port_directionReset      data_type      { VARDTYPE($2); }  list_of_tf_variable_identifiers ';'
+                        { $$ = $4; }
+        |       port_directionReset      implicit_typeE { VARDTYPE_NDECL($2); }  list_of_tf_variable_identifiers ';'
+                        { $$ = $4; }
+        |       port_directionReset yVAR data_type      { VARDTYPE($3); }  list_of_tf_variable_identifiers ';'
+                        { $$ = $5; }
+        |       port_directionReset yVAR implicit_typeE { VARDTYPE($3); }  list_of_tf_variable_identifiers ';'
+                        { $$ = $5; }
         ;
 
 integer_atom_type<basicDTypep>: // ==IEEE: integer_atom_type
@@ -2766,11 +2770,9 @@ always_construct<nodep>:        // IEEE: == always_construct
 
 continuous_assign<nodep>:       // IEEE: continuous_assign
                 yASSIGN driveStrengthE delay_controlE assignList ';'
-                {
-                    $$ = $4;
-                    STRENGTH_LIST($4, $2, AssignW);
-                    DELAY_LIST($3, $4);
-                }
+                        { $$ = $4;
+                          STRENGTH_LIST($4, $2, AssignW);
+                          DELAY_LIST($3, $4); }
         ;
 
 initial_construct<nodep>:       // IEEE: initial_construct
@@ -6039,11 +6041,11 @@ clocking_skew<nodeExprp>:           // IEEE: clocking_skew
 
 cycle_delay<delayp>:  // IEEE: cycle_delay
                yP_POUNDPOUND yaINTNUM
-                       { $$ = new AstDelay{$<fl>1, new AstConst{$<fl>2, *$2}, true}; }
+                        { $$ = new AstDelay{$<fl>1, new AstConst{$<fl>2, *$2}, true}; }
         |      yP_POUNDPOUND idAny
-                       { $$ = new AstDelay{$<fl>1, new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}, true}; }
+                        { $$ = new AstDelay{$<fl>1, new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}, true}; }
         |      yP_POUNDPOUND '(' expr ')'
-                       { $$ = new AstDelay{$<fl>1, $3, true}; }
+                        { $$ = new AstDelay{$<fl>1, $3, true}; }
         ;
 
 //************************************************
@@ -6172,9 +6174,9 @@ property_declarationFront<nodeFTaskp>:  // IEEE: part of property_declaration
         ;
 
 property_port_listE<nodep>:  // IEEE: [ ( [ property_port_list ] ) ]
-                /* empty */                       { $$ = nullptr; }
-        |       '(' ')'                           { $$ = nullptr; }
-        |       '(' property_port_list ')'        { $$ = $2; }
+                /* empty */                             { $$ = nullptr; }
+        |       '(' ')'                                 { $$ = nullptr; }
+        |       '(' property_port_list ')'              { $$ = $2; }
         ;
 
 property_port_list<nodep>:  // ==IEEE: property_port_list
@@ -6225,8 +6227,8 @@ property_declarationBody<nodep>:  // IEEE: part of property_declaration
         //UNSUP assertion_variable_declarationList property_statement_spec  {}
         //                      // IEEE-2012: Incorrectly has yCOVER ySEQUENCE then property_spec here.
         //                      // Fixed in IEEE 1800-2017
-                property_spec                 { $$ = $1; }
-        |       property_spec ';'             { $$ = $1; }
+                property_spec                           { $$ = $1; }
+        |       property_spec ';'                       { $$ = $1; }
         ;
 
 assertion_variable_declarationList<nodep>: // IEEE: part of assertion_variable_declaration
@@ -6968,7 +6970,7 @@ rs_prodList<nodep>:  // IEEE: rs_prod+
         ;
 
 rs_prod<nodep>:  // ==IEEE: rs_prod
-                rs_production_item                       { $$ = $1; }
+                rs_production_item                      { $$ = $1; }
         |       rs_code_block                           { $$ = $1; }
         //                      // IEEE: rs_if_else
         |       yIF '(' expr ')' rs_production_item %prec prLOWER_THAN_ELSE
@@ -7162,17 +7164,17 @@ classImplementsE<classExtendsp>:        // IEEE: part of class_declaration
         //                      // All 1800-2012
                 /* empty */                             { $$ = nullptr; $<scp>$ = nullptr; }
         |       yIMPLEMENTS
-        /*mid*/        { GRAMMARP->m_inImplements = true; $<scp>$ = nullptr; }
+        /*mid*/         { GRAMMARP->m_inImplements = true; $<scp>$ = nullptr; }
         /*cont*/    classImplementsList
-                       { $$ = $3; $<scp>$ = $<scp>3;
-                         GRAMMARP->m_inImplements = false; }
+                        { $$ = $3; $<scp>$ = $<scp>3;
+                          GRAMMARP->m_inImplements = false; }
         ;
 
 classImplementsList<classExtendsp>:     // IEEE: part of class_declaration
         //                      // All 1800-2012
                 classExtendsOne                         { $$ = $1; $<scp>$ = $<scp>1; }
         |       classImplementsList ',' classExtendsOne
-                       { $$ = addNextNull($1, $3); $<scp>$ = $<scp>3; }
+                        { $$ = addNextNull($1, $3); $<scp>$ = $<scp>3; }
         ;
 
 class_typeExtImpList<nodeExprp>:  // IEEE: class_type: "[package_scope] id [ parameter_value_assignment ]"
