@@ -816,9 +816,6 @@ class LinkParseVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }
-    void visit(AstClassOrPackageRef* nodep) override {  //
-        iterateChildren(nodep);
-    }
     void visit(AstClocking* nodep) override {
         cleanFileline(nodep);
         VL_RESTORER(m_defaultInSkewp);
