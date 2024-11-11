@@ -1018,8 +1018,12 @@ class LinkDotFindVisitor final : public VNVisitor {
         }
     }
     void visit(AstClassOrPackageRef* nodep) override {
-        if (!nodep->classOrPackageNodep() && nodep->name() == "$unit") {
-            nodep->classOrPackageNodep(v3Global.rootp()->dollarUnitPkgAddp());
+        if (!nodep->classOrPackageNodep()) {
+            if (nodep->name() == "$unit") {
+                nodep->classOrPackageNodep(v3Global.rootp()->dollarUnitPkgAddp());
+            } else if (nodep->name() == "std") {
+                nodep->classOrPackageNodep(v3Global.rootp()->stdPackagep());
+            }
         }
         iterateChildren(nodep);
     }
@@ -2202,7 +2206,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
             sstr << "ds=" << names[m_dotPos];
             sstr << "  dse" << cvtToHex(m_dotSymp);
             sstr << "(" << m_dotSymp->nodep()->typeName() << ")";
-
             if (m_dotErr) sstr << "  [dotErr]";
             if (m_super) sstr << "  [super]";
             if (m_unresolvedCell) sstr << "  [unrCell]";
@@ -2698,6 +2701,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // DOT(DOT(x,*here*),real-rhs) which we consider a RHS
                 if (start && m_ds.m_dotPos == DP_SCOPE) m_ds.m_dotPos = DP_FINAL;
                 UINFO(8, indent() << "iter.rhs   " << m_ds.ascii() << " " << nodep << endl);
+                // m_ds.m_dotSymp points at lhsp()'s symbol table, so resolve RHS under that
                 iterateAndNextNull(nodep->rhsp());
                 UINFO(8, indent() << "iter.rdone " << m_ds.ascii() << " " << nodep << endl);
                 // if (debug() >= 9) nodep->dumpTree("-  dot-rho: ");
@@ -3178,9 +3182,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
         VL_RESTORER(m_ds);
         VL_RESTORER(m_pinSymp);
 
-        if (nodep->name() == "std" && !nodep->classOrPackagep()) {
-            nodep->classOrPackagep(v3Global.rootp()->stdPackagep());
-        }
         // ClassRef's have pins, so track
         if (nodep->classOrPackagep()) {
             m_pinSymp = m_statep->getNodeSym(nodep->classOrPackagep());
