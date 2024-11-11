@@ -84,6 +84,12 @@ class LinkNodeMatcherClass final : public VNodeMatcher {
 public:
     bool nodeMatch(const AstNode* nodep) const override { return VN_IS(nodep, Class); }
 };
+class LinkNodeMatcherClassOrPackage final : public VNodeMatcher {
+public:
+    bool nodeMatch(const AstNode* nodep) const override {
+        return VN_IS(nodep, Class) || VN_IS(nodep, Package);
+    }
+};
 class LinkNodeMatcherFTask final : public VNodeMatcher {
 public:
     bool nodeMatch(const AstNode* nodep) const override { return VN_IS(nodep, NodeFTask); }
@@ -2300,6 +2306,23 @@ class LinkDotResolveVisitor final : public VNVisitor {
         UASSERT_OBJ(ifaceTopVarp, nodep, "Can't find interface var ref: " << findName);
         return ifaceTopVarp;
     }
+    VSymEnt* findClassOrPackage(VSymEnt* lookSymp, AstClassOrPackageRef* nodep, bool classOnly,
+                                const string& forWhat) {
+        if (nodep->classOrPackagep()) return m_statep->getNodeSym(nodep->classOrPackagep());
+        VSymEnt* const foundp = lookSymp->findIdFallback(nodep->name());
+        if (foundp) {
+            nodep->classOrPackageNodep(foundp->nodep());
+            return foundp;
+        } else {
+            const string suggest = m_statep->suggestSymFallback(lookSymp, nodep->name(),
+                                                                LinkNodeMatcherClassOrPackage{});
+            nodep->v3error((classOnly ? "Class" : "Package/Class")
+                           << " for '" << forWhat  // extends/implements
+                           << "' not found: " << nodep->prettyNameQ() << '\n'
+                           << (suggest.empty() ? "" : nodep->warnMore() + suggest));
+            return nullptr;
+        }
+    }
     void markAndCheckPinDup(AstPin* nodep, AstNode* refp, const char* whatp) {
         const auto pair = m_usedPins.emplace(refp, nodep);
         if (!pair.second) {
@@ -3812,6 +3835,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (AstClassOrPackageRef* lookNodep = VN_CAST(dotp->lhsp(), ClassOrPackageRef)) {
                     iterate(lookNodep);
                     cprp = dotp->rhsp();
+                    VSymEnt* const foundp
+                        = findClassOrPackage(lookSymp, lookNodep, false, nodep->verilogKwd());
+                    if (!foundp) return;
                     UASSERT_OBJ(lookNodep->classOrPackagep(), nodep, "Bad package link");
                     lookSymp = m_statep->getNodeSym(lookNodep->classOrPackagep());
                 } else {
@@ -3825,7 +3851,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->v3error("Attempting to extend using non-class");  // LCOV_EXCL_LINE
                 return;
             }
-            VSymEnt* const foundp = lookSymp->findIdFallback(cpackagerefp->name());
+            VSymEnt* const foundp
+                = findClassOrPackage(lookSymp, cpackagerefp, true, nodep->verilogKwd());
             if (foundp) {
                 if (AstClass* const classp = VN_CAST(foundp->nodep(), Class)) {
                     AstPin* paramsp = cpackagerefp->paramsp();
@@ -3850,12 +3877,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     return;
                 }
             } else {
-                const string suggest = m_statep->suggestSymFallback(
-                    m_curSymp, cpackagerefp->name(), LinkNodeMatcherClass{});
-                cpackagerefp->v3error(
-                    "Class for '" << nodep->verilogKwd()  // extends/implements
-                                  << "' not found: " << cpackagerefp->prettyNameQ() << '\n'
-                                  << (suggest.empty() ? "" : cpackagerefp->warnMore() + suggest));
                 return;
             }
             if (!nodep->childDTypep()) nodep->v3error("Attempting to extend using non-class");

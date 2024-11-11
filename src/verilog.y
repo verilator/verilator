@@ -7227,12 +7227,12 @@ class_typeExtImpOne<nodeExprp>:  // part of IEEE: class_type, where we either ge
                 idAny
         /*mid*/         { /* no nextId as not refing it above this*/ }
         /*cont*/    parameter_value_assignmentClassE
-                        { $$ = new AstClassOrPackageRef{$<fl>1, *$1, $<scp>1, $3};
+                        { $$ = new AstClassOrPackageRef{$<fl>1, *$1, nullptr, $3};
                           $<scp>$ = $<scp>1; }
         |       idCC
         /*mid*/         { /* no nextId as not refing it above this*/ }
         /*cont*/    parameter_value_assignmentClassE
-                        { $$ = new AstClassOrPackageRef{$<fl>1, *$1, $<scp>1, $3};
+                        { $$ = new AstClassOrPackageRef{$<fl>1, *$1, nullptr, $3};
                           $<scp>$ = $<scp>1; }
         //
         //                      // package_sopeIdFollows expanded
