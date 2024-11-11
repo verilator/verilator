@@ -4,13 +4,13 @@
 // any use, without warranty, 2023 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
 
-package foo;
+package Foo;
 endpackage
 
-package bar;
+package Bar;
     static int baz;
 endpackage
 
 module t;
-    int baz = foo::bar::baz;
+    int baz = Foo::Bar::baz;
 endmodule
