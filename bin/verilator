@@ -448,7 +448,8 @@ detailed descriptions of these arguments.
     --no-skip-identical         Disable skipping identical output
     --stats                     Create statistics file
     --stats-vars                Provide statistics on variables
-    --no-std                    Prevent parsing standard library
+    --no-std                    Prevent loading standard files
+    --no-std-package            Prevent parsing standard package
     --no-stop-fail              Do not call $stop when assertion fails
     --structs-packed            Convert all unpacked structures to packed structures
      -sv                        Enable SystemVerilog parsing

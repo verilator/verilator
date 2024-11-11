@@ -1363,7 +1363,13 @@ Summary:
 
 .. option:: --no-std
 
-   Prevents parsing standard library.
+   Prevents parsing standard input files, alias for
+   :opt:`--no-std-package`.  This may be extended to prevent reading other
+   standardized files in future versions.
+
+.. option:: --no-std-package
+
+   Prevents parsing standard `std::` package file.
 
 .. option:: --no-stop-fail
 

@@ -1258,7 +1258,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-json-edit-nums", OnOff, &m_jsonEditNums);
     DECL_OPTION("-json-ids", OnOff, &m_jsonIds);
     DECL_OPTION("-E", CbOnOff, [this](bool flag) {
-        if (flag) m_std = false;
+        if (flag) m_stdPackage = false;
         m_preprocOnly = flag;
     });
     DECL_OPTION("-emit-accessors", OnOff, &m_emitAccessors);
@@ -1512,7 +1512,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_statsVars = flag;
         m_stats |= flag;
     });
-    DECL_OPTION("-std", OnOff, &m_std);
+    DECL_OPTION("-std", CbOnOff, [this](bool flag) { m_stdPackage = flag; });
+    DECL_OPTION("-std-package", OnOff, &m_stdPackage);
     DECL_OPTION("-stop-fail", OnOff, &m_stopFail);
     DECL_OPTION("-structs-packed", OnOff, &m_structsPacked);
     DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2023; });

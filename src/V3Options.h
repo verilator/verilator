@@ -279,7 +279,7 @@ private:
     bool m_relativeIncludes = false;  // main switch: --relative-includes
     bool m_reportUnoptflat = false;  // main switch: --report-unoptflat
     bool m_savable = false;         // main switch: --savable
-    bool m_std = true;              // main switch: --std
+    bool m_stdPackage = true;       // main switch: --std-package
     bool m_structsPacked = false;   // main switch: --structs-packed
     bool m_systemC = false;         // main switch: --sc: System C instead of simple C++
     bool m_stats = false;           // main switch: --stats
@@ -465,7 +465,7 @@ public:
     bool savable() const VL_MT_SAFE { return m_savable; }
     bool stats() const { return m_stats; }
     bool statsVars() const { return m_statsVars; }
-    bool std() const { return m_std; }
+    bool stdPackage() const { return m_stdPackage; }
     bool structsPacked() const { return m_structsPacked; }
     bool assertOn() const { return m_assert; }  // assertOn as __FILE__ may be defined
     bool assertCaseOn() const { return m_assertCase || m_assert; }

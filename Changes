@@ -16,6 +16,7 @@ Verilator 5.031 devel
 * Support queue's assignment `push_back/push_front('{})` (#5585) (#5586). [Yilou Wang]
 * Support basic constrained random for multi-dimensional dynamic array and queue (#5591). [Yilou Wang]
 * Support `pure constraint`.
+* Add `--no-std-package` as subset-alias of `--no-std`.
 * Add error on illegal enum base type (#3010). [Iztok Jeras]
 * Add error on `wait` with missing `.triggered` (#4457).
 * Add error when improperly storing to parameter (#5147). [Gökçe Aydos]
