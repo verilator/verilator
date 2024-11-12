@@ -17,6 +17,7 @@ Verilator 5.031 devel
 * Support basic constrained random for multi-dimensional dynamic array and queue (#5591). [Yilou Wang]
 * Support `pure constraint`.
 * Add `--no-std-package` as subset-alias of `--no-std`.
+* Add `--waiver-multiline` for context-sensitive `--waiver-output`.
 * Add error on illegal enum base type (#3010). [Iztok Jeras]
 * Add error on `wait` with missing `.triggered` (#4457).
 * Add error when improperly storing to parameter (#5147). [Gökçe Aydos]

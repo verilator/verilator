@@ -413,24 +413,36 @@ bool FileLine::warnIsOff(V3ErrorCode code) const {
 // cppverilator-suppress constParameter
 void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra)
     VL_RELEASE(V3Error::s().m_mutex) {
-    std::ostringstream nsstr;
+    // 'extra' is appended to the message, and is is excluded in check for
+    // duplicate messages. Currently used for reporting instance name.
+    std::ostringstream nsstr;  // sstr with fileline prefix and context
+    std::ostringstream wsstr;  // sstr for waiver (no fileline) with context
     if (lastLineno()) nsstr << this;
     nsstr << sstr.str();
+    wsstr << sstr.str();
     nsstr << "\n";
-    std::ostringstream lstr;
+    wsstr << "\n";
+    std::ostringstream extrass;  // extra spaced out for prefix
     if (!extra.empty()) {
-        lstr << std::setw(ascii().length()) << " "
-             << ": " << extra;
+        extrass << std::setw(ascii().length()) << " "
+                << ": " << extra;
     }
-    m_waive = V3Config::waive(this, V3Error::s().errorCode(), sstr.str());
-    if (warnIsOff(V3Error::s().errorCode()) || m_waive) {
+    if (warnIsOff(V3Error::s().errorCode())) {
         V3Error::s().suppressThisWarning();
-    } else if (!V3Error::s().errorContexted()) {
-        nsstr << warnContextPrimary();
+    } else {
+        if (!V3Error::s().errorContexted()) {
+            const string add = warnContextPrimary();
+            wsstr << add;
+            nsstr << add;
+        }
+        m_waive = V3Config::waive(this, V3Error::s().errorCode(), wsstr.str());
+        if (m_waive) {
+            V3Error::s().suppressThisWarning();
+        } else {
+            V3Waiver::addEntry(V3Error::s().errorCode(), filename(), wsstr.str());
+        }
     }
-    if (!warnIsOff(V3Error::s().errorCode()) && !m_waive)
-        V3Waiver::addEntry(V3Error::s().errorCode(), filename(), sstr.str());
-    V3Error::v3errorEnd(nsstr, lstr.str());
+    V3Error::v3errorEnd(nsstr, extrass.str());
 }
 
 string FileLine::warnMore() const VL_REQUIRES(V3Error::s().m_mutex) {

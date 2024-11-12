@@ -1707,6 +1707,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         FileLine::globalWarnOff(V3ErrorCode::WIDTH, false);
         V3Error::pretendError(V3ErrorCode::WIDTH, false);
     });
+    DECL_OPTION("-waiver-multiline", OnOff, &m_waiverMultiline);
     DECL_OPTION("-waiver-output", Set, &m_waiverOutput);
 
     DECL_OPTION("-x-assign", CbVal, [this, fl](const char* valp) {

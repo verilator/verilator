@@ -1649,6 +1649,15 @@ Summary:
 
    Enable the use of VPI and linking against the :file:`verilated_vpi.cpp` files.
 
+.. option:: --waiver-multiline
+
+   When using :vlopt:`--waiver-output \<filename\>`, include a match
+   expression that includes the entire multiline error message as a match
+   regular expression, as opposed to the default of only matching the first
+   line of the error message.  This provides a starting point for creating
+   complex waivers, but such generated waivers will likely require editing
+   for brevity before being reused.
+
 .. option:: --waiver-output <filename>
 
    Generate a waiver file that contains all waiver statements to suppress

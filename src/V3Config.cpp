@@ -300,7 +300,11 @@ public:
         m_lastIgnore.it = m_ignLines.begin();
     }
     void addIgnoreMatch(V3ErrorCode code, const string& match) {
-        m_waivers.emplace_back(code, match);
+        // Since Verilator 5.031 the error message compared has context, so
+        // allow old rules to still match using a final '*'
+        string newMatch = match;
+        if (newMatch.empty() || newMatch.back() != '*') newMatch += '*';
+        m_waivers.emplace_back(code, newMatch);
     }
 
     void applyBlock(AstNodeBlock* nodep) {

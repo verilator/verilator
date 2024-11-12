@@ -488,7 +488,8 @@ detailed descriptions of these arguments.
      +verilog2001ext+<ext>      Synonym for +1364-2001ext+<ext>
     --version                   Show program version and exits
     --vpi                       Enable VPI compiles
-    --waiver-output <filename>  Create a waiver file based on the linter warnings
+    --waiver-multiline          Create multiline --match for waivers
+    --waiver-output <filename>  Create a waiver file based on linter warnings
      -Wall                      Enable all style warnings
      -Werror-<message>          Convert warnings to errors
      -Wfuture-<message>         Disable unknown message warnings

@@ -10,15 +10,15 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.top_filename = "t/t_waiveroutput.v"
 
-out_filename = test.obj_dir + "/" + test.name + "_waiver_gen.vlt"
-waiver_filename = test.obj_dir + "/" + test.name + "_waiver.vlt"
+out_filename = test.obj_dir + "/" + test.name + ".waiver_gen.out"
+waiver_filename = "t/t_waiveroutput.vlt"
 
-test.compile(v_flags2=['--waiver-output', out_filename], fails=True)
+test.lint(v_flags2=[
+    waiver_filename, '-Wall', '-Wno-fatal', '--waiver-multiline', '--waiver-output', out_filename
+])
 
-test.file_sed(out_filename, waiver_filename,
-              lambda line: re.sub(r'\/\/ lint_off', 'lint_off', line))
-
-test.compile(v_flags2=[waiver_filename])
+test.files_identical(out_filename, test.golden_filename)
 
 test.passes()
