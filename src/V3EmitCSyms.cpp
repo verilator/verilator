@@ -43,13 +43,15 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         const AstNode* m_nodep;
         const string m_symName;
         const string m_prettyName;
+        const string m_defName;
         const int m_timeunit;
         string m_type;
         ScopeData(const AstNode* nodep, const string& symName, const string& prettyName,
-                  int timeunit, const string& type)
+                  const string& defName, int timeunit, const string& type)
             : m_nodep{nodep}
             , m_symName{symName}
             , m_prettyName{prettyName}
+            , m_defName{defName}
             , m_timeunit{timeunit}
             , m_type{type} {}
     };
@@ -242,8 +244,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                     if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
                     if (m_scopeNames.find(scpSym) == m_scopeNames.end()) {
                         // cppcheck-suppress stlFindInsert
-                        m_scopeNames.emplace(scpSym,
-                                             ScopeData{varp, scpSym, scpPretty, 0, "SCOPE_OTHER"});
+                        m_scopeNames.emplace(scpSym, ScopeData{varp, scpSym, scpPretty, "<null>",
+                                                               0, "SCOPE_OTHER"});
                     }
                     m_scopeVars.emplace(scpSym + " " + varp->name(),
                                         ScopeVarData{scpSym, varBasePretty, varp, modp, scopep});
@@ -312,7 +314,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             const int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.emplace(
                 scopeSymString(name),
-                ScopeData{nodep, scopeSymString(name), name_pretty, timeunit, type});
+                ScopeData{nodep, scopeSymString(name), name_pretty,
+                          type == "SCOPE_MODULE" ? nodep->origModName() : "<null>", timeunit,
+                          type});
         }
     }
     void visit(AstScope* nodep) override {
@@ -325,9 +329,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             const string type = VN_IS(nodep->modp(), Package) ? "SCOPE_PACKAGE" : "SCOPE_MODULE";
             const string name_pretty = AstNode::vpiName(nodep->shortName());
             const int timeunit = m_modp->timeunit().powerOfTen();
-            m_vpiScopeCandidates.emplace(
-                scopeSymString(nodep->name()),
-                ScopeData{nodep, scopeSymString(nodep->name()), name_pretty, timeunit, type});
+            m_vpiScopeCandidates.emplace(scopeSymString(nodep->name()),
+                                         ScopeData{nodep, scopeSymString(nodep->name()),
+                                                   name_pretty, "<null>", timeunit, type});
         }
         iterateChildrenConst(nodep);
     }
@@ -336,8 +340,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         // UINFO(9, "scnameins sp " << nodep->name() << " sp " << nodep->scopePrettySymName()
         // << " ss" << name << endl);
         const int timeunit = m_modp ? m_modp->timeunit().powerOfTen() : 0;
-        m_scopeNames.emplace(
-            name, ScopeData{nodep, name, nodep->scopePrettySymName(), timeunit, "SCOPE_OTHER"});
+        m_scopeNames.emplace(name, ScopeData{nodep, name, nodep->scopePrettySymName(), "<null>",
+                                             timeunit, "SCOPE_OTHER"});
         if (nodep->dpiExport()) {
             UASSERT_OBJ(m_cfuncp, nodep, "ScopeName not under DPI function");
             m_scopeFuncs.emplace(name + " " + m_cfuncp->name(),
@@ -345,9 +349,10 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         } else {
             if (m_scopeNames.find(nodep->scopeDpiName()) == m_scopeNames.end()) {
                 // cppcheck-suppress stlFindInsert
-                m_scopeNames.emplace(nodep->scopeDpiName(), ScopeData{nodep, nodep->scopeDpiName(),
-                                                                      nodep->scopePrettyDpiName(),
-                                                                      timeunit, "SCOPE_OTHER"});
+                m_scopeNames.emplace(nodep->scopeDpiName(),
+                                     ScopeData{nodep, nodep->scopeDpiName(),
+                                               nodep->scopePrettyDpiName(), "<null>", timeunit,
+                                               "SCOPE_OTHER"});
             }
         }
     }
@@ -884,6 +889,8 @@ void EmitCSyms::emitSymImp() {
             putsQuoted(protectWordsIf(it->second.m_prettyName, true));
             puts(", ");
             putsQuoted(protect(scopeDecodeIdentifier(it->second.m_prettyName)));
+            puts(", ");
+            putsQuoted(it->second.m_defName);
             puts(", ");
             puts(cvtToStr(it->second.m_timeunit));
             puts(", VerilatedScope::" + it->second.m_type + ");\n");

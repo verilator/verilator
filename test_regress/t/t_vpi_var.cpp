@@ -443,7 +443,7 @@ int _mon_check_varlist() {
     CHECK_RESULT_CSTR(p, "sub");
     if (TestSimulator::is_verilator()) {
         p = vpi_get_str(vpiDefName, vh2);
-        CHECK_RESULT_CSTR(p, "<null>");  // Unsupported
+        CHECK_RESULT_CSTR(p, "sub");
     }
 
     TestVpiHandle vh10 = vpi_iterate(vpiReg, vh2);
