@@ -7559,77 +7559,77 @@ colon<fl>:                      // Generic colon that isn't making a label (e.g.
 // VLT Files
 
 vltItem:
-
+        //                      // TODO support arbitrary order of arguments
                 vltOffFront
                         { V3Config::addIgnore($1, false, "*", 0, 0); }
-        |       vltOffFront yVLT_D_FILE yaSTRING
-                        { V3Config::addIgnore($1, false, *$3, 0, 0); }
-        |       vltOffFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
-                        { V3Config::addIgnore($1, false, *$3, $5->toUInt(), $5->toUInt() + 1); }
-        |       vltOffFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM '-' yaINTNUM
-                        { V3Config::addIgnore($1, false, *$3, $5->toUInt(), $7->toUInt() + 1); }
-        |       vltOffFront yVLT_D_SCOPE yaSTRING
-                        { if ($1 != V3ErrorCode::I_TRACING) {
-                              $<fl>1->v3error("Argument -scope only supported for tracing_on/off");
-                          } else {
-                              V3Config::addScopeTraceOn(false, *$3, 0);
-                          }}
-        |       vltOffFront yVLT_D_SCOPE yaSTRING yVLT_D_LEVELS yaINTNUM
-                        { if ($1 != V3ErrorCode::I_TRACING) {
-                              $<fl>1->v3error("Argument -scope only supported for tracing_on/off_off");
-                          } else {
-                              V3Config::addScopeTraceOn(false, *$3, $5->toUInt());
-                          }}
-        |       vltOffFront yVLT_D_FILE yaSTRING yVLT_D_MATCH yaSTRING
+        |       vltOffFront vltDFile
+                        { V3Config::addIgnore($1, false, *$2, 0, 0); }
+        |       vltOffFront vltDFile yVLT_D_LINES yaINTNUM
+                        { V3Config::addIgnore($1, false, *$2, $4->toUInt(), $4->toUInt() + 1); }
+        |       vltOffFront vltDFile yVLT_D_LINES yaINTNUM '-' yaINTNUM
+                        { V3Config::addIgnore($1, false, *$2, $4->toUInt(), $6->toUInt() + 1); }
+        |       vltOffFront vltDFile vltDMatch
                         { if (($1 == V3ErrorCode::I_COVERAGE) || ($1 == V3ErrorCode::I_TRACING)) {
                               $<fl>1->v3error("Argument -match only supported for lint_off");
                           } else {
-                              V3Config::addIgnoreMatch($1, *$3, *$5);
+                              V3Config::addIgnoreMatch($1, *$2, *$3);
                           }}
-        |       vltOnFront
-                        { V3Config::addIgnore($1, true, "*", 0, 0); }
-        |       vltOnFront yVLT_D_FILE yaSTRING
-                        { V3Config::addIgnore($1, true, *$3, 0, 0); }
-        |       vltOnFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
-                        { V3Config::addIgnore($1, true, *$3, $5->toUInt(), $5->toUInt() + 1); }
-        |       vltOnFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM '-' yaINTNUM
-                        { V3Config::addIgnore($1, true, *$3, $5->toUInt(), $7->toUInt() + 1); }
-        |       vltOnFront yVLT_D_SCOPE yaSTRING
+        |       vltOffFront vltDScope
                         { if ($1 != V3ErrorCode::I_TRACING) {
                               $<fl>1->v3error("Argument -scope only supported for tracing_on/off");
                           } else {
-                              V3Config::addScopeTraceOn(true, *$3, 0);
+                              V3Config::addScopeTraceOn(false, *$2, 0);
                           }}
-        |       vltOnFront yVLT_D_SCOPE yaSTRING yVLT_D_LEVELS yaINTNUM
+        |       vltOffFront vltDScope vltDLevels
                         { if ($1 != V3ErrorCode::I_TRACING) {
                               $<fl>1->v3error("Argument -scope only supported for tracing_on/off_off");
                           } else {
-                              V3Config::addScopeTraceOn(true, *$3, $5->toUInt());
+                              V3Config::addScopeTraceOn(false, *$2, $3->toUInt());
+                          }}
+        |       vltOnFront
+                        { V3Config::addIgnore($1, true, "*", 0, 0); }
+        |       vltOnFront vltDFile
+                        { V3Config::addIgnore($1, true, *$2, 0, 0); }
+        |       vltOnFront vltDFile yVLT_D_LINES yaINTNUM
+                        { V3Config::addIgnore($1, true, *$2, $4->toUInt(), $4->toUInt() + 1); }
+        |       vltOnFront vltDFile yVLT_D_LINES yaINTNUM '-' yaINTNUM
+                        { V3Config::addIgnore($1, true, *$2, $4->toUInt(), $6->toUInt() + 1); }
+        |       vltOnFront vltDScope
+                        { if ($1 != V3ErrorCode::I_TRACING) {
+                              $<fl>1->v3error("Argument -scope only supported for tracing_on/off");
+                          } else {
+                              V3Config::addScopeTraceOn(true, *$2, 0);
+                          }}
+        |       vltOnFront vltDScope vltDLevels
+                        { if ($1 != V3ErrorCode::I_TRACING) {
+                              $<fl>1->v3error("Argument -scope only supported for tracing_on/off_off");
+                          } else {
+                              V3Config::addScopeTraceOn(true, *$2, $3->toUInt());
                           }}
         |       vltVarAttrFront vltDModuleE vltDFTaskE vltVarAttrVarE attr_event_controlE
                         { V3Config::addVarAttr($<fl>1, *$2, *$3, *$4, $1, $5); }
         |       vltInlineFront vltDModuleE vltDFTaskE
                         { V3Config::addInline($<fl>1, *$2, *$3, $1); }
-        |       yVLT_COVERAGE_BLOCK_OFF yVLT_D_FILE yaSTRING
-                        { V3Config::addCoverageBlockOff(*$3, 0); }
-        |       yVLT_COVERAGE_BLOCK_OFF yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
-                        { V3Config::addCoverageBlockOff(*$3, $5->toUInt()); }
-        |       yVLT_COVERAGE_BLOCK_OFF yVLT_D_MODULE yaSTRING yVLT_D_BLOCK yaSTRING
-                        { V3Config::addCoverageBlockOff(*$3, *$5); }
-        |       yVLT_FULL_CASE yVLT_D_FILE yaSTRING
-                        { V3Config::addCaseFull(*$3, 0); }
-        |       yVLT_FULL_CASE yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
-                        { V3Config::addCaseFull(*$3, $5->toUInt()); }
+        |       yVLT_COVERAGE_BLOCK_OFF vltDFile
+                        { V3Config::addCoverageBlockOff(*$2, 0); }
+        |       yVLT_COVERAGE_BLOCK_OFF vltDFile yVLT_D_LINES yaINTNUM
+                        { V3Config::addCoverageBlockOff(*$2, $4->toUInt()); }
+        |       yVLT_COVERAGE_BLOCK_OFF vltDModule vltDBlock
+                        { V3Config::addCoverageBlockOff(*$2, *$3); }
+        |       yVLT_FULL_CASE vltDFile
+                        { V3Config::addCaseFull(*$2, 0); }
+        |       yVLT_FULL_CASE vltDFile yVLT_D_LINES yaINTNUM
+                        { V3Config::addCaseFull(*$2, $4->toUInt()); }
         |       yVLT_HIER_BLOCK vltDModuleE
                         { V3Config::addModulePragma(*$2, VPragmaType::HIER_BLOCK); }
         |       yVLT_HIER_PARAMS vltDModuleE
                         { V3Config::addModulePragma(*$2, VPragmaType::HIER_PARAMS); }
-        |       yVLT_PARALLEL_CASE yVLT_D_FILE yaSTRING
-                        { V3Config::addCaseParallel(*$3, 0); }
-        |       yVLT_PARALLEL_CASE yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
-                        { V3Config::addCaseParallel(*$3, $5->toUInt()); }
-        |       yVLT_PROFILE_DATA yVLT_D_MODEL yaSTRING yVLT_D_MTASK yaSTRING yVLT_D_COST yaINTNUM
-                        { V3Config::addProfileData($<fl>1, *$3, *$5, $7->toUQuad()); }
+        |       yVLT_PARALLEL_CASE vltDFile
+                        { V3Config::addCaseParallel(*$2, 0); }
+        |       yVLT_PARALLEL_CASE vltDFile yVLT_D_LINES yaINTNUM
+                        { V3Config::addCaseParallel(*$2, $4->toUInt()); }
+        |       yVLT_PROFILE_DATA vltDModel vltDMtask vltDCost
+                        { V3Config::addProfileData($<fl>1, *$2, *$3, $4->toUQuad()); }
         ;
 
 vltOffFront<errcodeen>:
@@ -7656,9 +7656,45 @@ vltOnFront<errcodeen>:
                           if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown error code: '" << *$3 << "'"); } }
         ;
 
-vltDModuleE<strp>:
+vltDBlock<strp>:  // --block <arg>
+                yVLT_D_BLOCK str                        { $$ = $2; }
+        ;
+
+vltDCost<nump>:  // --cost <arg>
+                yVLT_D_COST yaINTNUM                    { $$ = $2; }
+        ;
+
+vltDFile<strp>:  // --file <arg>
+                yVLT_D_FILE str                         { $$ = $2; }
+        ;
+
+vltDLevels<nump>:  // --levels <arg>
+                yVLT_D_LEVELS yaINTNUM                  { $$ = $2; }
+        ;
+
+vltDMatch<strp>:  // --match <arg>
+                yVLT_D_MATCH str                        { $$ = $2; }
+        ;
+
+vltDModel<strp>:  // --model <arg>
+                yVLT_D_MODEL str                        { $$ = $2; }
+        ;
+
+vltDMtask<strp>:  // --mtask <arg>
+                yVLT_D_MTASK str                        { $$ = $2; }
+        ;
+
+vltDModule<strp>:  // --module <arg>
+                yVLT_D_MODULE str                       { $$ = $2; }
+        ;
+
+vltDModuleE<strp>:  // [--module <arg>]
                 /* empty */                             { static string unit = "__024unit"; $$ = &unit; }
-        |       yVLT_D_MODULE str                       { $$ = $2; }
+        |       vltDModule                              { $$ = $1; }
+        ;
+
+vltDScope<strp>:  // --scope <arg>
+                yVLT_D_SCOPE str                        { $$ = $2; }
         ;
 
 vltDFTaskE<strp>:

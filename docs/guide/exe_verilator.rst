@@ -2088,7 +2088,7 @@ The grammar of configuration commands is as follows:
 
 .. option:: lint_off [-rule <message>] [-file "<filename>" [-lines <line> [ - <line>]]]
 
-.. option:: lint_off [-rule <message>] [-file "<filename>"] [-match "<string>"]
+.. option:: lint_off [-rule <message>] [-file "<filename>"] [-match "<wildcard>"]
 
    Enable/disables the specified lint warning, in the specified filename
    (or wildcard with '\*' or '?', or all files if omitted) and range of
@@ -2097,17 +2097,18 @@ The grammar of configuration commands is as follows:
    With lint_off using "\*" will override any lint_on directives in the
    source, i.e. the warning will still not be printed.
 
-   If the -rule is omitted, all lint warnings (see list in
+   If the :code:`-rule` is omitted, all lint warnings (see list in
    :vlopt:`-Wno-lint`) are enabled/disabled.  This will override all later
    lint warning enables for the specified region.
 
-   If -match is set, the linter warnings are matched against this
-   (wildcard) string and are waived in case they match, provided with the
-   rule and file also match.
+   If :code:`-match` is provided, the linter warnings are matched against
+   the given wildcard (with '\*' or '?'), and are waived in case they
+   match, provided the :code:`-rule` and :code:`-file`
+   also match.  The wildcard is compared across the entire multi-line
+   message; see :vlopt:`--waiver-multiline`.
 
-   In previous versions -rule was named -msg. The latter is deprecated, but
-   still works with a deprecation info; it may be removed in future
-   versions.
+   Before version 4.026, :code:`-rule` was named :code:`-msg`, and
+   :code:`-msg` remained a deprecated alias until Version 5.000.
 
 .. option:: public [-module "<modulename>"] [-task/-function "<taskname>"]  -var "<signame>"
 
