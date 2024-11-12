@@ -1,0 +1,31 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2024 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+// Whole-file waivers
+lint_off -rule WIDTHEXPAND -file "*/uvm_*.svh"
+lint_off -rule WIDTHTRUNC -file "*/uvm_*.svh"
+
+// Context-sensitive waivers
+lint_off -rule CASEINCOMPLETE -file "*/uvm_*.svh" -match "* case ({is_R, is_W})*"
+lint_off -rule CASEINCOMPLETE -file "*/uvm_*.svh" -match "* case(orig_severity)*"
+lint_off -rule CASTCONST -file "*/uvm_*.svh" -match "*class{}uvm_callback*"
+lint_off -rule CASTCONST -file "*/uvm_*.svh" -match "*class{}uvm_component*"
+lint_off -rule CASTCONST -file "*/uvm_*.svh" -match "*class{}uvm_event*"
+lint_off -rule CASTCONST -file "*/uvm_*.svh" -match "*class{}uvm_report_object*"
+lint_off -rule CASTCONST -file "*/uvm_*.svh" -match "*class{}uvm_sequence_item*"
+lint_off -rule MISINDENT -file "*/uvm_*.svh" -match "* foreach (abstractions[i])*"
+lint_off -rule MISINDENT -file "*/uvm_*.svh" -match "* foreach (lock_list[i])*"
+lint_off -rule MISINDENT -file "*/uvm_*.svh" -match "* rw_access.data=*"
+lint_off -rule MISINDENT -file "*/uvm_*.svh" -match "* uvm_cmdline_proc =*"
+lint_off -rule REALCVT -file "*/uvm_*.svh" -match "* m_time *"
+lint_off -rule REALCVT -file "*/uvm_*.svh" -match "*$realtime*"
+lint_off -rule SYMRSVDWORD -file "*/uvm_*.svh" -match "*'delete'*"
+lint_off -rule SYMRSVDWORD -file "*/uvm_*.svh" -match "*'list'*"
+lint_off -rule SYMRSVDWORD -file "*/uvm_*.svh" -match "*'map'*"
+lint_off -rule SYMRSVDWORD -file "*/uvm_*.svh" -match "*'override'*"
+lint_off -rule SYMRSVDWORD -file "*/uvm_*.svh" -match "*'volatile'*"

@@ -13,7 +13,7 @@ test.scenarios('vlt')
 
 test.compile(
     v_flags2=[
-        "--binary --timing",  #
+        "--binary --timing +incdir+t/uvm",  #
         "-Wno-PKGNODECL -Wno-IMPLICITSTATIC -Wno-MISINDENT",
         "-Wno-CASEINCOMPLETE -Wno-CASTCONST -Wno-SYMRSVDWORD -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC",
         "-Wno-REALCVT",  # TODO note mostly related to $realtime - could suppress or fix upstream
