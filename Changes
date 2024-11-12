@@ -15,6 +15,7 @@ Verilator 5.031 devel
 
 * Support queue's assignment `push_back/push_front('{})` (#5585) (#5586). [Yilou Wang]
 * Support basic constrained random for multi-dimensional dynamic array and queue (#5591). [Yilou Wang]
+* Support vpiDefName (#3906) (#5572). [Krzysztof Starecki]
 * Support `pure constraint`.
 * Add `--no-std-package` as subset-alias of `--no-std`.
 * Add `--waiver-multiline` for context-sensitive `--waiver-output`.
@@ -23,6 +24,7 @@ Verilator 5.031 devel
 * Add error when improperly storing to parameter (#5147). [Gökçe Aydos]
 * Add coverage point hierarchy to coverage reports (#5575) (#5576). [Andrew Nolte]
 * Add error on `solve before` or soft constraints of `randc` variable.
+* Improve concatenation performance (#5598) (#5599) (#5602). [Geza Lore]
 * Fix dotted reference in delay value (#2410).
 * Fix can't locate scope error in interface task delayed assignment (#5462) (#5568). [Zhou Shen]
 * Fix BLKANDNBLK for for VARXREFs (#5569). [Todd Strader]
@@ -32,6 +34,7 @@ Verilator 5.031 devel
 * Fix negative assignment pattern keys (#5580). [Iztok Jeras]
 * Fix duplicate scope identifiers decoding (#5584). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix `rand` dynamic arrays with null handles (#5594). [Ryszard Rozak, Antmicro Ltd.]
+* Fix NBAs to unpacked arrays of unpacked structs (#5603). [Geza Lore]
 
 
 Verilator 5.030 2024-10-27

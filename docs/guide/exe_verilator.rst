@@ -1364,7 +1364,7 @@ Summary:
 .. option:: --no-std
 
    Prevents parsing standard input files, alias for
-   :opt:`--no-std-package`.  This may be extended to prevent reading other
+   :vlopt:`--no-std-package`.  This may be extended to prevent reading other
    standardized files in future versions.
 
 .. option:: --no-std-package
@@ -1651,7 +1651,7 @@ Summary:
 
 .. option:: --waiver-multiline
 
-   When using :vlopt:`--waiver-output \<filename\>`, include a match
+   When using :vlopt:`--waiver-output`, include a match
    expression that includes the entire multiline error message as a match
    regular expression, as opposed to the default of only matching the first
    line of the error message.  This provides a starting point for creating
