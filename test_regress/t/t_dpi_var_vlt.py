@@ -24,19 +24,19 @@ test.compile(make_top_shell=False,
 if test.vlt_all:
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"formatted","addr":"[^"]*","loc":"f,58:[^"]*",.*"origName":"formatted",.*"direction":"INPUT",.*"dtypeName":"string",.*"attrSFormat":true'
+        r'{"type":"VAR","name":"formatted","addr":"[^"]*","loc":"\w,58:[^"]*",.*"origName":"formatted",.*"direction":"INPUT",.*"dtypeName":"string",.*"attrSFormat":true'
     )
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"t.sub.in","addr":"[^"]*","loc":"f,81:[^"]*",.*"origName":"in",.*"dtypeName":"int",.*"isSigUserRdPublic":true'
+        r'{"type":"VAR","name":"t.sub.in","addr":"[^"]*","loc":"\w,81:[^"]*",.*"origName":"in",.*"dtypeName":"int",.*"isSigUserRdPublic":true'
     )
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"t.sub.fr_a","addr":"[^"]*","loc":"f,82:[^"]*",.*"origName":"fr_a",.*"dtypeName":"int",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true'
+        r'{"type":"VAR","name":"t.sub.fr_a","addr":"[^"]*","loc":"\w,82:[^"]*",.*"origName":"fr_a",.*"dtypeName":"int",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true'
     )
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"t.sub.fr_b","addr":"[^"]*","loc":"f,83:[^"]*",.*"origName":"fr_b",.*"dtypeName":"int",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true'
+        r'{"type":"VAR","name":"t.sub.fr_b","addr":"[^"]*","loc":"\w,83:[^"]*",.*"origName":"fr_b",.*"dtypeName":"int",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true'
     )
 
 test.execute()

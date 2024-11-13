@@ -19,16 +19,16 @@ test.compile(v_flags2=["--no-json-edit-nums", test.t_dir + "/t_func_dotted_inl0.
 if test.vlt_all:
     test.file_grep(
         out_filename,
-        r'{"type":"MODULE","name":"ma",.*"loc":"f,84:[^"]*",.*"origName":"ma",.*"modPublic":true')
+        r'{"type":"MODULE","name":"ma",.*"loc":"\w,84:[^"]*",.*"origName":"ma",.*"modPublic":true')
     test.file_grep(
         out_filename,
-        r'{"type":"MODULE","name":"mb",.*"loc":"f,99:[^"]*",.*"origName":"mb",.*"modPublic":true')
+        r'{"type":"MODULE","name":"mb",.*"loc":"\w,99:[^"]*",.*"origName":"mb",.*"modPublic":true')
     test.file_grep(
         out_filename,
-        r'{"type":"MODULE","name":"mc",.*"loc":"f,127:[^"]*",.*"origName":"mc",.*"modPublic":true')
+        r'{"type":"MODULE","name":"mc",.*"loc":"\w,127:[^"]*",.*"origName":"mc",.*"modPublic":true')
     test.file_grep(
         out_filename,
-        r'{"type":"MODULE","name":"mc__PB1",.*"loc":"f,127:[^"]*",.*"origName":"mc",.*"modPublic":true'
+        r'{"type":"MODULE","name":"mc__PB1",.*"loc":"\w,127:[^"]*",.*"origName":"mc",.*"modPublic":true'
     )
 
 test.execute()
