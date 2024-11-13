@@ -102,6 +102,7 @@
 #include "V3Trace.h"
 #include "V3TraceDecl.h"
 #include "V3Tristate.h"
+#include "V3Udp.h"
 #include "V3Undriven.h"
 #include "V3Unknown.h"
 #include "V3Unroll.h"
@@ -183,7 +184,9 @@ static void process() {
 
         // Remove any modules that were parameterized and are no longer referenced.
         V3Dead::deadifyModules(v3Global.rootp());
+
         v3Global.checkTree();
+        if (v3Global.hasTable()) { V3Udp::udpResolve(v3Global.rootp()); }
 
         // Create a hierarchical Verilation plan
         if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()

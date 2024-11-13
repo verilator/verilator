@@ -450,7 +450,12 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 
 %token<fl>              ygenSTRENGTH    "STRENGTH keyword (strong1/etc)"
 
-%token<strp>            yaTABLELINE     "TABLE LINE"
+%token<strp>            yaTABLE_LINE     "UDP table line"
+%token<strp>            yaTABLE_IFIELD   "UDP table input field"
+%token<fl>              yaTABLE_LRSEP    ":"
+%token<fl>              yaTABLE_SEP      "UDP table input field separator"
+%token<fl>              yaTABLE_LSEP     "UDP table input line field separator"
+%token<fl>              yaTABLE_LINEEND  "UDP table line end"
 
 %token<strp>            yaSCCTOR        "`systemc_ctor block"
 %token<strp>            yaSCDTOR        "`systemc_dtor block"
@@ -5782,17 +5787,47 @@ driveStrength<nodep>:
 // Tables
 
 combinational_body<nodep>:      // IEEE: combinational_body + sequential_body
-                yTABLE tableEntryList yENDTABLE         { $$ = new AstUdpTable{$1, $2}; }
+                yTABLE tableEntryList yENDTABLE                { $$ = new AstUdpTable{$1, $2}; }
         ;
 
-tableEntryList<udpTableLinep>:  // IEEE: { combinational_entry | sequential_entry }
+tableEntryList<udpTableLinep>:  // IEEE: { combinational_entry }
                 tableEntry                              { $$ = $1; }
         |       tableEntryList tableEntry               { $$ = addNextNull($1, $2); }
         ;
 
-tableEntry<udpTableLinep>:      // IEEE: combinational_entry + sequential_entry
-                yaTABLELINE                             { $$ = new AstUdpTableLine{$<fl>1, *$1}; }
+tableEntry<udpTableLinep>:      // IEEE: combinational_entry
+                tableLine                               { $$ = $1; }
         |       error                                   { $$ = nullptr; }
+        ;
+
+tableLine<udpTableLinep>:
+                tableIField yaTABLE_LRSEP tableOField yaTABLE_LINEEND
+                 { $$ = new AstUdpTableLine{$<fl>1, $1, $3, true}; }
+        |       tableIField tablelVal yaTABLE_LRSEP tableOField yaTABLE_LINEEND
+         { $$ = new AstUdpTableLine{$<fl>1, addNextNull($1, $2), $4, true}; }
+        |       tableIField yaTABLE_LRSEP tableOField yaTABLE_LRSEP tableOField yaTABLE_LINEEND
+         { $$ = new AstUdpTableLine{$<fl>1, $1, $3, $5, false}; }
+        |       tableIField yaTABLE_LRSEP tableOField yaTABLE_SEP yaTABLE_LRSEP tableOField yaTABLE_LINEEND
+         { $$ = new AstUdpTableLine{$<fl>1, $1, $3, $6, false}; }
+        |       tableIField tablelVal yaTABLE_LRSEP tableOField yaTABLE_SEP yaTABLE_LRSEP tableOField yaTABLE_LINEEND
+         { $$ = new AstUdpTableLine{$<fl>1, addNextNull($1, $2), $4, $7, true}; }
+        ;
+
+tableIField<udpTableLineValp>:
+                yaTABLE_SEP tablelVal               { $$ = $2; }
+        |       tablelVal yaTABLE_SEP               { $$ = $1; }
+        |       yaTABLE_SEP tablelVal yaTABLE_SEP   { $$ = $2; }
+        |       tableIField tablelVal yaTABLE_SEP   { $$ = addNextNull($1, $2); }
+        |       tableIField tablelVal yaTABLE_LSEP  { $$ = addNextNull($1, $2); }
+        ;
+
+tablelVal<udpTableLineValp>:
+                yaTABLE_IFIELD    { $$ = new AstUdpTableLineVal{$<fl>1, *$1}; }
+        ;
+
+tableOField<udpTableLineValp>:
+                yaTABLE_IFIELD { $$ = new AstUdpTableLineVal{$<fl>1, *$1}; }
+        |       yaTABLE_SEP yaTABLE_IFIELD { $$ = new AstUdpTableLineVal{$<fl>2, *$2}; }
         ;
 
 //************************************************

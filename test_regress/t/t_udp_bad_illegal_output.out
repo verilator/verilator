@@ -1,0 +1,30 @@
+%Error: t/t_udp_bad_illegal_output.v:9:8: For sequential udp, the output var should be the reg type!
+                                        : ... note: In instance 'top'
+    9 | output dout;
+      |        ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_udp_bad_illegal_output.v:16:22: Illegal value for sequential udp line output!
+                                          : ... note: In instance 'top'
+   16 |         1 1 ?  :  ?: *;
+      |                      ^
+%Error: t/t_udp_bad_illegal_output.v:17:11: There can be only one edge tigger signal!
+                                          : ... note: In instance 'top'
+   17 |         f r 0  :  ?: 0;
+      |           ^
+%Error: t/t_udp_bad_illegal_output.v:18:22: Illegal value for sequential udp line output!
+                                          : ... note: In instance 'top'
+   18 |         0 0 0  :  ?: *;
+      |                      ^
+%Error: t/t_udp_bad_illegal_output.v:28:9: There should not be an edge trigger for combinational UDP table line!
+                                         : ... note: In instance 'top'
+   28 |         r ? 1  :   1;
+      |         ^
+%Error: t/t_udp_bad_illegal_output.v:30:20: Illegal value for combinational udp line output!
+                                          : ... note: In instance 'top'
+   30 |         1 1 ?  :   *;
+      |                    ^
+%Error: t/t_udp_bad_illegal_output.v:32:20: Illegal value for combinational udp line output!
+                                          : ... note: In instance 'top'
+   32 |         0 0 0  :   *;
+      |                    ^
+%Error: Exiting due to

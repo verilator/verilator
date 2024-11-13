@@ -84,6 +84,7 @@ static double lexParseDouble(FileLine* fl, const char* textp, size_t length) {
 %s SYSCHDR SYSCHDRP SYSCINT SYSCIMP SYSCIMPH SYSCCTOR SYSCDTOR
 
 ws      [ \t\f\r]+
+tbbg    [ \t]*
 wsnr    [ \t\f]+
 crnl    [\r]*[\n]
 id      [a-zA-Z_][a-zA-Z0-9_$]*
@@ -394,7 +395,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "strong1"             { FL; return ySTRONG1; }
   "supply0"             { FL; return ySUPPLY0; }
   "supply1"             { FL; return ySUPPLY1; }
-  "table"               { FL; yy_push_state(TABLE); return yTABLE; }
+  "table"{tbbg}         { FL; yy_push_state(TABLE); return yTABLE; }
   "task"                { FL; return yTASK; }
   "time"                { FL; return yTIME; }
   "tran"                { FL; return yTRAN; }
@@ -1009,18 +1010,21 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /************************************************************************/
   /* Attributes */
   /* Note simulators vary in support for "(* /_*something*_/ foo*)" where _ doesn't exist */
-<V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,S23,SAX>{
+<V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,S23,SAX,TABLE>{
     "(*"({ws}|{crnl})*({id}|{escid})    { yymore(); yy_push_state(ATTRMODE); }  /* Doesn't match (*), but (* attr_spec */
 }
 
   /************************************************************************/
   /* Tables */
-<TABLE>\\{crnl}         { yymore(); }
-<TABLE>{crnl}           { yymore(); }
-<TABLE>";"              { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLELINE; }
-<TABLE>"endtable"       { yy_pop_state(); FL; return yENDTABLE; }
+<TABLE>([01xX\?bfrnpFRNP\*-]{1}|[01\?\*]{2}|\([01\?xXb]{2}\)) {FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLE_IFIELD; } /* Input field symbol. */
+<TABLE>[ \t]+           { FL; return yaTABLE_SEP; } /* Separator for table line. */
+<TABLE>[ \t]*[\\]+[ \t]*[\n][ \t]*           { FL; return yaTABLE_LSEP; } /* Separator for table line. */
+<TABLE>[:]              { FL; return yaTABLE_LRSEP; } /* LHS and RHS separator for table line. */
+<TABLE>[ \t]*[;][ \t]*    { FL; return yaTABLE_LINEEND; }
+<TABLE>[\r\n] { FL_FWD; FL_BRK; }
 <TABLE>"`line"{ws}+[^\n\r]*{crnl}       { FL_FWD; PARSEP->lexPpline(yytext); FL_BRK; }
-<TABLE>.                { yymore(); }
+<TABLE>^[ \t]*[\r\n] { FL_FWD; FL_BRK; }
+<TABLE>[ \t]*"endtable"[ \t\f]*[\n\r]       { yy_pop_state(); FL; return yENDTABLE; }
 <TABLE><<EOF>>          { FL; yylval.fl->v3error("EOF in 'table'");
                           yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
 

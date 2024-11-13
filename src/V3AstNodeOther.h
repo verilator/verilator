@@ -1799,18 +1799,45 @@ public:
     AstUdpTable(FileLine* fl, AstUdpTableLine* linesp)
         : ASTGEN_SUPER_UdpTable(fl) {
         addLinesp(linesp);
+        if (!v3Global.hasTable()) v3Global.setHasTable();
     }
     ASTGEN_MEMBERS_AstUdpTable;
 };
 class AstUdpTableLine final : public AstNode {
-    string m_text;
+    // @astgen op1 := iFieldp : List[AstUdpTableLineVal] // Input fields
+    // @astgen op2 := oFieldp : List[AstUdpTableLineVal] // Output fields
+private:
+    const bool m_isComb;
 
 public:
-    AstUdpTableLine(FileLine* fl, const string& text)
+    AstUdpTableLine(FileLine* fl, AstUdpTableLineVal* iFieldp, AstUdpTableLineVal* oFieldp,
+                    bool isComb)
         : ASTGEN_SUPER_UdpTableLine(fl)
-        , m_text{text} {}
+        , m_isComb{isComb} {
+        this->addIFieldp(iFieldp);
+        this->addOFieldp(oFieldp);
+    }
+    AstUdpTableLine(FileLine* fl, AstUdpTableLineVal* iFieldp, AstUdpTableLineVal* oFieldp1,
+                    AstUdpTableLineVal* oFieldp2, bool isComb)
+        : ASTGEN_SUPER_UdpTableLine(fl)
+        , m_isComb{isComb} {
+        this->addIFieldp(iFieldp);
+        this->addOFieldp(oFieldp1);
+        this->addOFieldp(oFieldp2);
+    }
     ASTGEN_MEMBERS_AstUdpTableLine;
+    bool isComb() const { return m_isComb; }
+};
+class AstUdpTableLineVal final : public AstNode {
+    string m_text;  // Value character
+
+public:
+    AstUdpTableLineVal(FileLine* fl, const string& text)
+        : ASTGEN_SUPER_UdpTableLineVal(fl)
+        , m_text{text} {}
+    ASTGEN_MEMBERS_AstUdpTableLineVal;
     string name() const override VL_MT_STABLE { return m_text; }
+    void name(std::string const& text) override VL_MT_STABLE { m_text = text; }
     string text() const VL_MT_SAFE { return m_text; }
 };
 class AstVar final : public AstNode {
