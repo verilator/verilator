@@ -495,6 +495,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_TRACING_ON             "tracing_on"
 
 %token<fl>              yVLT_D_BLOCK    "--block"
+%token<fl>              yVLT_D_CONTENTS "--contents"
 %token<fl>              yVLT_D_COST     "--cost"
 %token<fl>              yVLT_D_FILE     "--file"
 %token<fl>              yVLT_D_FUNCTION "--function"
@@ -7572,7 +7573,19 @@ vltItem:
                         { if (($1 == V3ErrorCode::I_COVERAGE) || ($1 == V3ErrorCode::I_TRACING)) {
                               $<fl>1->v3error("Argument -match only supported for lint_off");
                           } else {
-                              V3Config::addIgnoreMatch($1, *$2, *$3);
+                              V3Config::addIgnoreMatch($1, *$2, "", *$3);
+                          }}
+        |       vltOffFront vltDFile vltDContents
+                        { if (($1 == V3ErrorCode::I_COVERAGE) || ($1 == V3ErrorCode::I_TRACING)) {
+                              $<fl>1->v3error("Argument -match only supported for lint_off");
+                          } else {
+                              V3Config::addIgnoreMatch($1, *$2, *$3, "*");
+                          }}
+        |       vltOffFront vltDFile vltDContents vltDMatch
+                        { if (($1 == V3ErrorCode::I_COVERAGE) || ($1 == V3ErrorCode::I_TRACING)) {
+                              $<fl>1->v3error("Argument -match only supported for lint_off");
+                          } else {
+                              V3Config::addIgnoreMatch($1, *$2, *$3, *$4);
                           }}
         |       vltOffFront vltDScope
                         { if ($1 != V3ErrorCode::I_TRACING) {
@@ -7658,6 +7671,10 @@ vltOnFront<errcodeen>:
 
 vltDBlock<strp>:  // --block <arg>
                 yVLT_D_BLOCK str                        { $$ = $2; }
+        ;
+
+vltDContents<strp>:
+                yVLT_D_CONTENTS str                     { $$ = $2; }
         ;
 
 vltDCost<nump>:  // --cost <arg>

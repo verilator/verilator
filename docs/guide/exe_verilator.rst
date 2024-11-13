@@ -1364,7 +1364,7 @@ Summary:
 .. option:: --no-std
 
    Prevents parsing standard input files, alias for
-   :vlopt:`--no-std-package`.  This may be extended to prevent reading other
+   :opt:`--no-std-package`.  This may be extended to prevent reading other
    standardized files in future versions.
 
 .. option:: --no-std-package
@@ -1651,7 +1651,7 @@ Summary:
 
 .. option:: --waiver-multiline
 
-   When using :vlopt:`--waiver-output`, include a match
+   When using :vlopt:`--waiver-output \<filename\>`, include a match
    expression that includes the entire multiline error message as a match
    regular expression, as opposed to the default of only matching the first
    line of the error message.  This provides a starting point for creating
@@ -2088,7 +2088,7 @@ The grammar of configuration commands is as follows:
 
 .. option:: lint_off [-rule <message>] [-file "<filename>" [-lines <line> [ - <line>]]]
 
-.. option:: lint_off [-rule <message>] [-file "<filename>"] [-match "<wildcard>"]
+.. option:: lint_off [-rule <message>] [-file "<filename>"] [-contents "<wildcard>"] [-match "<wildcard>"]
 
    Enable/disables the specified lint warning, in the specified filename
    (or wildcard with '\*' or '?', or all files if omitted) and range of
@@ -2101,9 +2101,19 @@ The grammar of configuration commands is as follows:
    :vlopt:`-Wno-lint`) are enabled/disabled.  This will override all later
    lint warning enables for the specified region.
 
+   If :code:`-contents` is provided, the input files must contain the given
+   wildcard (with '\*' or '?'), and are waived in case they match, provided
+   the :code:`-rule`, :code:`-file`, and :code:`-contents` also match.  The
+   wildcard should be designed to match a single line; it is unspecified if
+   the wildcard is allowed to match across multiple lines. The input
+   contents does not include :vlopt:`--std` standard files, nor
+   configuration files (with :code:`verilator_config`). Typical use for
+   this is to match a version number present in the Verilog sources, so
+   that the waiver will only apply to that version of the sources.
+
    If :code:`-match` is provided, the linter warnings are matched against
    the given wildcard (with '\*' or '?'), and are waived in case they
-   match, provided the :code:`-rule` and :code:`-file`
+   match, provided the :code:`-rule`, :code:`-file`, and :code:`-contents`
    also match.  The wildcard is compared across the entire multi-line
    message; see :vlopt:`--waiver-multiline`.
 

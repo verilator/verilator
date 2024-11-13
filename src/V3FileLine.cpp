@@ -147,6 +147,7 @@ FileLineSingleton::msgEnSetIdx_t FileLineSingleton::msgEnAnd(msgEnSetIdx_t lhsId
 //  VFileContents class functions
 
 void VFileContent::pushText(const string& text) {
+    // Similar code in WildcardContents::pushText()
     if (m_lines.size() == 0) {
         m_lines.emplace_back("");  // no such thing as line [0]
         m_lines.emplace_back("");  // start with no leftover

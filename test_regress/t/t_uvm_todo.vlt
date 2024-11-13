@@ -4,28 +4,38 @@
 // any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+`ifdef _T_UVM_TODO_VLT_ `else
+`define _T_UVM_TODO_VLT_
+
 `verilator_config
 
+// Apply these rules to only UVM base files
+`define VLT_UVM_FILES -file "*/uvm_*.svh" -contents "*UVM_VERSION_STRING*"
+
 // Whole-file waivers
-lint_off -rule WIDTHEXPAND -file "*/uvm_*.svh"
-lint_off -rule WIDTHTRUNC -file "*/uvm_*.svh"
+lint_off -rule WIDTHEXPAND `VLT_UVM_FILES
+lint_off -rule WIDTHTRUNC `VLT_UVM_FILES
 
 // Context-sensitive waivers
-lint_off -rule CASEINCOMPLETE -file "*/uvm_*.svh" -match "* case ({is_R, is_W})*"
-lint_off -rule CASEINCOMPLETE -file "*/uvm_*.svh" -match "* case(orig_severity)*"
-lint_off -rule CASTCONST -file "*/uvm_*.svh" -match "*class{}uvm_callback*"
-lint_off -rule CASTCONST -file "*/uvm_*.svh" -match "*class{}uvm_component*"
-lint_off -rule CASTCONST -file "*/uvm_*.svh" -match "*class{}uvm_event*"
-lint_off -rule CASTCONST -file "*/uvm_*.svh" -match "*class{}uvm_report_object*"
-lint_off -rule CASTCONST -file "*/uvm_*.svh" -match "*class{}uvm_sequence_item*"
-lint_off -rule MISINDENT -file "*/uvm_*.svh" -match "* foreach (abstractions[i])*"
-lint_off -rule MISINDENT -file "*/uvm_*.svh" -match "* foreach (lock_list[i])*"
-lint_off -rule MISINDENT -file "*/uvm_*.svh" -match "* rw_access.data=*"
-lint_off -rule MISINDENT -file "*/uvm_*.svh" -match "* uvm_cmdline_proc =*"
-lint_off -rule REALCVT -file "*/uvm_*.svh" -match "* m_time *"
-lint_off -rule REALCVT -file "*/uvm_*.svh" -match "*$realtime*"
-lint_off -rule SYMRSVDWORD -file "*/uvm_*.svh" -match "*'delete'*"
-lint_off -rule SYMRSVDWORD -file "*/uvm_*.svh" -match "*'list'*"
-lint_off -rule SYMRSVDWORD -file "*/uvm_*.svh" -match "*'map'*"
-lint_off -rule SYMRSVDWORD -file "*/uvm_*.svh" -match "*'override'*"
-lint_off -rule SYMRSVDWORD -file "*/uvm_*.svh" -match "*'volatile'*"
+lint_off -rule CASEINCOMPLETE `VLT_UVM_FILES -match "* case ({is_R, is_W})*"
+lint_off -rule CASEINCOMPLETE `VLT_UVM_FILES -match "* case(orig_severity)*"
+lint_off -rule CASTCONST `VLT_UVM_FILES -match "*class{}uvm_callback*"
+lint_off -rule CASTCONST `VLT_UVM_FILES -match "*class{}uvm_component*"
+lint_off -rule CASTCONST `VLT_UVM_FILES -match "*class{}uvm_event*"
+lint_off -rule CASTCONST `VLT_UVM_FILES -match "*class{}uvm_report_object*"
+lint_off -rule CASTCONST `VLT_UVM_FILES -match "*class{}uvm_sequence_item*"
+lint_off -rule MISINDENT `VLT_UVM_FILES -match "* foreach (abstractions[i])*"
+lint_off -rule MISINDENT `VLT_UVM_FILES -match "* foreach (lock_list[i])*"
+lint_off -rule MISINDENT `VLT_UVM_FILES -match "* rw_access.data=*"
+lint_off -rule MISINDENT `VLT_UVM_FILES -match "* uvm_cmdline_proc =*"
+lint_off -rule REALCVT `VLT_UVM_FILES -match "* m_time *"
+lint_off -rule REALCVT `VLT_UVM_FILES -match "*$realtime*"
+lint_off -rule SYMRSVDWORD `VLT_UVM_FILES -match "*'delete'*"
+lint_off -rule SYMRSVDWORD `VLT_UVM_FILES -match "*'list'*"
+lint_off -rule SYMRSVDWORD `VLT_UVM_FILES -match "*'map'*"
+lint_off -rule SYMRSVDWORD `VLT_UVM_FILES -match "*'override'*"
+lint_off -rule SYMRSVDWORD `VLT_UVM_FILES -match "*'volatile'*"
+
+`undef VLT_UVM_FILES
+
+`endif  // Guard

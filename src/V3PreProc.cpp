@@ -824,6 +824,21 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
     flsp->newContent();
     for (const string& i : wholefile) flsp->contentp()->pushText(i);
 
+    // Save contents for V3Config --contents
+    if (filename != V3Options::getStdPackagePath()) {
+        bool containsVlt = false;
+        for (const string& i : wholefile) {
+            // TODO this is overly sensitive, might be in a comment
+            if (i.find("`verilator_config") != string::npos) {
+                containsVlt = true;
+                break;
+            }
+        }
+        if (!containsVlt) {
+            for (const string& i : wholefile) V3Config::contentsPushText(i);
+        }
+    }
+
     // Create new stream structure
     m_lexp->scanNewFile(flsp);
     addLineComment(1);  // Enter
