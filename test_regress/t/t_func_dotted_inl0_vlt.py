@@ -25,7 +25,8 @@ if test.vlt_all:
         r'{"type":"MODULE","name":"mb",.*"loc":"\w,99:[^"]*",.*"origName":"mb",.*"modPublic":true')
     test.file_grep(
         out_filename,
-        r'{"type":"MODULE","name":"mc",.*"loc":"\w,127:[^"]*",.*"origName":"mc",.*"modPublic":true')
+        r'{"type":"MODULE","name":"mc",.*"loc":"\w,127:[^"]*",.*"origName":"mc",.*"modPublic":true'
+    )
     test.file_grep(
         out_filename,
         r'{"type":"MODULE","name":"mc__PB1",.*"loc":"\w,127:[^"]*",.*"origName":"mc",.*"modPublic":true'
