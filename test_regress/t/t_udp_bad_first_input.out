@@ -1,0 +1,5 @@
+%Error: t/t_udp_bad_first_input.v:8:7: The first port must be the output port!
+                                     : ... note: In instance 'top'
+    8 | input a, b, c;
+      |       ^
+%Error: Exiting due to
