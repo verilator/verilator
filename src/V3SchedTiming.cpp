@@ -422,7 +422,6 @@ void transformForks(AstNetlist* const netlistp) {
         void visit(AstExprStmt* nodep) override { iterateChildren(nodep); }
 
         //--------------------
-        void visit(AstNodeExpr*) override {}  // Accelerate
         void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     public:

@@ -28,6 +28,7 @@ Verilator 5.031 devel
 * Add error on `solve before` or soft constraints of `randc` variable.
 * Improve concatenation performance (#5598) (#5599) (#5602). [Geza Lore]
 * Fix dotted reference in delay value (#2410).
+* Fix `function fork...join_none` regression with unknown type (#4449).
 * Fix can't locate scope error in interface task delayed assignment (#5462) (#5568). [Zhou Shen]
 * Fix BLKANDNBLK for for VARXREFs (#5569). [Todd Strader]
 * Fix VPI error instead of fatal for vpi_get_value() on large signals (#5571). [Todd Strader]
