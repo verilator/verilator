@@ -249,6 +249,7 @@ VL_INST_INC_BLDDIR_FILES = \
 # Files under srcdir, instead of build time
 VL_INST_INC_SRCDIR_FILES = \
 	include/*.[chv]* \
+	include/*.vlt \
 	include/*.sv \
 	include/gtkwave/*.[chv]* \
 	include/vltstd/*.[chv]* \
