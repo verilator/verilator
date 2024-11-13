@@ -12,11 +12,11 @@
 //
 // DESCRIPTION: Verilator: Include in verilog files to hide verilator defines
 
-`ifdef _VERILATED_V_ `else
+`ifndef _VERILATED_V_
  `define _VERILATED_V_ 1
 
  // Hide verilator pragmas from other tools
- `ifdef VERILATOR `else
+ `ifndef VERILATOR
   `define coverage_block_off
  `endif
 

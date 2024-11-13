@@ -58,6 +58,12 @@ void V3Global::readFiles() {
 
     V3Parse parser{v3Global.rootp(), &filter, &parseSyms};
 
+    // Parse the std waivers
+    if (v3Global.opt.stdWaiver()) {
+        parser.parseFile(
+            new FileLine{V3Options::getStdWaiverPath()}, V3Options::getStdWaiverPath(), false,
+            "Cannot find verilated_std_waiver.vlt containing built-in lint waivers: ");
+    }
     // Read .vlt files
     const V3StringSet& vltFiles = v3Global.opt.vltFiles();
     for (const string& filename : vltFiles) {

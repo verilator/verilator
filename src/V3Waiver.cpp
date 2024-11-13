@@ -28,6 +28,7 @@
 void V3Waiver::addEntry(V3ErrorCode errorCode, const std::string& filename, const std::string& msg)
     VL_MT_SAFE_EXCLUDES(s_mutex) {
     if (filename == V3Options::getStdPackagePath()) return;
+    if (filename == V3Options::getStdWaiverPath()) return;
     const V3LockGuard lock{s_mutex};
 
     string trimmsg = msg;

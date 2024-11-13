@@ -568,7 +568,7 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
     // Return "" if not found.
     const string filename = V3Os::filenameCleanup(VName::dehash(modname));
     if (!V3Os::filenameIsRel(filename)) {
-        // filename is an absolute path, so can find getStdPackagePath()
+        // filename is an absolute path, so can find getStdPackagePath()/getStdWaiverPath()
         string exists = filePathCheckOneDir(filename, "");
         if (exists != "") return exists;
     }
@@ -631,7 +631,7 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
 V3LangCode V3Options::fileLanguage(const string& filename) {
     string ext = V3Os::filenameNonDir(filename);
     string::size_type pos;
-    if (filename == V3Options::getStdPackagePath()) {
+    if (filename == V3Options::getStdPackagePath() || filename == V3Options::getStdWaiverPath()) {
         return V3LangCode::mostRecent();
     } else if ((pos = ext.rfind('.')) != string::npos) {
         ext.erase(0, pos + 1);
@@ -792,6 +792,9 @@ string V3Options::getenvVERILATOR_SOLVER() {
 
 string V3Options::getStdPackagePath() {
     return V3Os::filenameJoin(getenvVERILATOR_ROOT(), "include", "verilated_std.sv");
+}
+string V3Options::getStdWaiverPath() {
+    return V3Os::filenameJoin(getenvVERILATOR_ROOT(), "include", "verilated_std_waiver.vlt");
 }
 
 string V3Options::getSupported(const string& var) {
@@ -1258,7 +1261,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-json-edit-nums", OnOff, &m_jsonEditNums);
     DECL_OPTION("-json-ids", OnOff, &m_jsonIds);
     DECL_OPTION("-E", CbOnOff, [this](bool flag) {
-        if (flag) m_stdPackage = false;
+        if (flag) {
+            m_stdPackage = false;
+            m_stdWaiver = false;
+        }
         m_preprocOnly = flag;
     });
     DECL_OPTION("-emit-accessors", OnOff, &m_emitAccessors);
@@ -1512,8 +1518,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_statsVars = flag;
         m_stats |= flag;
     });
-    DECL_OPTION("-std", CbOnOff, [this](bool flag) { m_stdPackage = flag; });
+    DECL_OPTION("-std", CbOnOff, [this](bool flag) {
+        m_stdPackage = flag;
+        m_stdWaiver = flag;
+    });
     DECL_OPTION("-std-package", OnOff, &m_stdPackage);
+    DECL_OPTION("-std-waiver", OnOff, &m_stdWaiver);
     DECL_OPTION("-stop-fail", OnOff, &m_stopFail);
     DECL_OPTION("-structs-packed", OnOff, &m_structsPacked);
     DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2023; });

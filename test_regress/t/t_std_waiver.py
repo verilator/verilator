@@ -9,15 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('linter')
 
-test.compile(
-    v_flags2=[
-        "--binary --timing +incdir+t/uvm",  #
-        "--error-limit 200 --debug-exit-uvm"
-    ],
-    verilator_make_gmake=False)
-
-#test.execute()
+test.lint()
 
 test.passes()

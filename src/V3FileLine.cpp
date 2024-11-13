@@ -92,9 +92,13 @@ void FileLineSingleton::fileNameNumMapDumpJson(std::ostream& os) {
     std::string sep = "\n  ";
     os << "\"files\": {";
     for (const auto& itr : m_namemap) {
-        const std::string name
-            = itr.first == V3Options::getStdPackagePath() ? "<verilated_std>" : itr.first;
-        os << sep << '"' << filenameLetters(itr.second) << '"' << ": {\"filename\":\"" << name
+        std::string filename = itr.first;
+        if (filename == V3Options::getStdPackagePath()) {
+            filename = "<verilated_std>";
+        } else if (filename == V3Options::getStdWaiverPath()) {
+            filename = "<verilated_std_waiver>";
+        }
+        os << sep << '"' << filenameLetters(itr.second) << '"' << ": {\"filename\":\"" << filename
            << '"' << ", \"realpath\":\""
            << V3OutFormatter::quoteNameControls(V3Os::filenameRealPath(itr.first)) << '"'
            << ", \"language\":\"" << numberToLang(itr.second).ascii() << "\"}";

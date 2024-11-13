@@ -4,4 +4,10 @@
 // any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-`verilator_config
+// Rather than look at waivers, just check we included it
+`ifndef _VERILATED_STD_WAIVER_VLT_
+`error "Didn't include, no _VERILATED_STD_WAIVER_VLT_"
+`endif
+
+module t;
+endmodule

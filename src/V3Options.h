@@ -280,6 +280,7 @@ private:
     bool m_reportUnoptflat = false;  // main switch: --report-unoptflat
     bool m_savable = false;         // main switch: --savable
     bool m_stdPackage = true;       // main switch: --std-package
+    bool m_stdWaiver = true;        // main switch: --std-waiver
     bool m_structsPacked = false;   // main switch: --structs-packed
     bool m_systemC = false;         // main switch: --sc: System C instead of simple C++
     bool m_stats = false;           // main switch: --stats
@@ -467,6 +468,7 @@ public:
     bool stats() const { return m_stats; }
     bool statsVars() const { return m_statsVars; }
     bool stdPackage() const { return m_stdPackage; }
+    bool stdWaiver() const { return m_stdWaiver; }
     bool structsPacked() const { return m_structsPacked; }
     bool assertOn() const { return m_assert; }  // assertOn as __FILE__ may be defined
     bool assertCaseOn() const { return m_assertCase || m_assert; }
@@ -741,6 +743,7 @@ public:
     static string getenvVERILATOR_ROOT();
     static string getenvVERILATOR_SOLVER();
     static string getStdPackagePath();
+    static string getStdWaiverPath();
     static string getSupported(const string& var);
     static bool systemCSystemWide();
     static bool systemCFound();  // SystemC installed, or environment points to it
