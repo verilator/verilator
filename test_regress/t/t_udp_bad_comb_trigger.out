@@ -1,0 +1,5 @@
+%Error: t/t_udp_bad_comb_trigger.v:14:9: There should not be a edge trigger for combinational UDP table line!
+                                       : ... note: In instance 'top'
+   14 |         (01) 1 0  :   0;
+      |         ^~~~
+%Error: Exiting due to
