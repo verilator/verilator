@@ -449,6 +449,12 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              ygenSTRENGTH    "STRENGTH keyword (strong1/etc)"
 
 %token<strp>            yaTABLELINE     "TABLE LINE"
+%token<strp>            yaTABLEIFIELDVAL     "Table_line_input_field_value"
+%token<strp>            yaTABLEOFIELDVAL     "Table_line_output_field_value"
+%token<fl>              yaTABLELRSEP    ":"
+%token<fl>              yaTABLESEP      "Table_line_input_field_value_sep"
+%token<fl>              yaTABLELSEP     "Table_line_input_line_field_value_sep"
+%token<fl>              yaTABLELINEEND  "Table_line_end"
 
 %token<strp>            yaSCHDR         "`systemc_header BLOCK"
 %token<strp>            yaSCINT         "`systemc_ctor BLOCK"
@@ -5732,14 +5738,37 @@ combinational_body<nodep>:      // IEEE: combinational_body + sequential_body
                 yTABLE tableEntryList yENDTABLE         { $$ = new AstUdpTable{$1, $2}; }
         ;
 
-tableEntryList<udpTableLinep>:  // IEEE: { combinational_entry | sequential_entry }
+tableEntryList<udpTableLinep>:  // IEEE: { combinational_entry }
                 tableEntry                              { $$ = $1; }
         |       tableEntryList tableEntry               { $$ = addNextNull($1, $2); }
         ;
 
-tableEntry<udpTableLinep>:      // IEEE: combinational_entry + sequential_entry
-                yaTABLELINE                             { $$ = new AstUdpTableLine{$<fl>1, *$1}; }
+tableEntry<udpTableLinep>:      // IEEE: combinational_entry
+                tableLine                             { $$ = $1; }
         |       error                                   { $$ = nullptr; }
+        ;
+
+tableLine<udpTableLinep>:
+                tableIField yaTABLELRSEP tableOField yaTABLELINEEND { $$ = new AstUdpTableLine{$<fl>1, $1, $3, AstUdpTableLine::UDP_COMB}; }
+        |       tableIField yaTABLELRSEP tableOField yaTABLELRSEP tableOField yaTABLELINEEND { $$ = new AstUdpTableLine{$<fl>1, $1, $3, $5, AstUdpTableLine::UDP_SEQUENT}; }
+        |       tableIField yaTABLELRSEP tableOField yaTABLESEP yaTABLELRSEP tableOField yaTABLELINEEND { $$ = new AstUdpTableLine{$<fl>1, $1, $3, $6, AstUdpTableLine::UDP_SEQUENT}; }
+        ;
+
+tableIField<udpTableLineValp>:
+                yaTABLESEP tablelVal { $$ = $2; }
+        |       tablelVal yaTABLESEP { $$ = $1; }
+        |       yaTABLESEP tablelVal yaTABLESEP   { $$ = $2; }
+        |       tableIField tablelVal yaTABLESEP  { $$ = addNextNull($1, $2); }
+        |       tableIField tablelVal yaTABLELSEP { $$ = addNextNull($1, $2); }
+        ;
+
+tablelVal<udpTableLineValp>:
+                yaTABLEIFIELDVAL    { $$ = new AstUdpTableLineVal{$<fl>1, *$1}; }
+        ;
+
+tableOField<udpTableLineValp>:
+                yaTABLEIFIELDVAL { $$ = new AstUdpTableLineVal{$<fl>1, *$1}; }
+        |       yaTABLESEP yaTABLEIFIELDVAL { $$ = new AstUdpTableLineVal{$<fl>2, *$2}; }
         ;
 
 //************************************************

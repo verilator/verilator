@@ -1,5 +1,103 @@
-%Error-UNSUPPORTED: t/t_udp.v:104:4: Unsupported: Verilog 1995 UDP Tables. Use --bbox-unsup to ignore tables.
-  104 |    table
-      |    ^~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_udp.v:124:18: syntax error, unexpected Table_line_input_field_value_sep, expecting Table_line_end
+  124 |       0     1 : ? : 1;
+      |                  ^
+%Error: t/t_udp.v:125:18: syntax error, unexpected Table_line_input_field_value_sep, expecting Table_line_end
+  125 |       0     0 : ? : 0;
+      |                  ^
+%Error: t/t_udp.v:126:18: syntax error, unexpected Table_line_input_field_value_sep, expecting Table_line_end
+  126 |       1     ? : ? : -;
+      |                  ^
+%Error: t/t_udp.v:126:21: Missing verilog.l rule: Default rule invoked in state 13 '-'
+  126 |       1     ? : ? : -;
+      |                     ^
+%Error: t/t_udp.v:136:7: Missing verilog.l rule: Default rule invoked in state 13 'r'
+  136 |       r    0  1  ?  : ? : 0 ;
+      |       ^
+%Error: t/t_udp.v:136:8: syntax error, unexpected Table_line_input_field_value_sep, expecting Table_line_input_field_value
+  136 |       r    0  1  ?  : ? : 0 ;
+      |        ^~~~
+%Error: t/t_udp.v:136:24: syntax error, unexpected Table_line_input_field_value_sep, expecting Table_line_end
+  136 |       r    0  1  ?  : ? : 0 ;
+      |                        ^
+%Error: t/t_udp.v:137:7: Missing verilog.l rule: Default rule invoked in state 13 'r'
+  137 |       r    1  ?  1  : ? : 1 ;
+      |       ^
+%Error: t/t_udp.v:137:24: syntax error, unexpected Table_line_input_field_value_sep, expecting Table_line_end
+  137 |       r    1  ?  1  : ? : 1 ;
+      |                        ^
+%Error: t/t_udp.v:138:7: Missing verilog.l rule: Default rule invoked in state 13 '*'
+  138 |       *    1  ?  1  : 1 : 1 ;
+      |       ^
+%Error: t/t_udp.v:138:24: syntax error, unexpected Table_line_input_field_value_sep, expecting Table_line_end
+  138 |       *    1  ?  1  : 1 : 1 ;
+      |                        ^
+%Error: t/t_udp.v:139:7: Missing verilog.l rule: Default rule invoked in state 13 '*'
+  139 |       *    0  1  ?  : 0 : 0 ;
+      |       ^
+%Error: t/t_udp.v:139:24: syntax error, unexpected Table_line_input_field_value_sep, expecting Table_line_end
+  139 |       *    0  1  ?  : 0 : 0 ;
+      |                        ^
+%Error: t/t_udp.v:140:7: Missing verilog.l rule: Default rule invoked in state 13 'f'
+  140 |       f    ?  ?  ?  : ? : - ;
+      |       ^
+%Error: t/t_udp.v:140:24: syntax error, unexpected Table_line_input_field_value_sep, expecting Table_line_end
+  140 |       f    ?  ?  ?  : ? : - ;
+      |                        ^
+%Error: t/t_udp.v:140:27: Missing verilog.l rule: Default rule invoked in state 13 '-'
+  140 |       f    ?  ?  ?  : ? : - ;
+      |                           ^
+%Error: t/t_udp.v:141:7: Missing verilog.l rule: Default rule invoked in state 13 'b'
+  141 |       b    *  ?  ?  : ? : - ;
+      |       ^
+%Error: t/t_udp.v:141:12: Missing verilog.l rule: Default rule invoked in state 13 '*'
+  141 |       b    *  ?  ?  : ? : - ;
+      |            ^
+%Error: t/t_udp.v:141:24: syntax error, unexpected Table_line_input_field_value_sep, expecting Table_line_end
+  141 |       b    *  ?  ?  : ? : - ;
+      |                        ^
+%Error: t/t_udp.v:141:27: Missing verilog.l rule: Default rule invoked in state 13 '-'
+  141 |       b    *  ?  ?  : ? : - ;
+      |                           ^
+%Error: t/t_udp.v:142:24: syntax error, unexpected Table_line_input_field_value_sep, expecting Table_line_end
+  142 |       ?    ?  0  ?  : ? : 1 ;
+      |                        ^
+%Error: t/t_udp.v:143:7: Missing verilog.l rule: Default rule invoked in state 13 'b'
+  143 |       b    ?  *  1  : 1 : 1 ;
+      |       ^
+%Error: t/t_udp.v:143:15: Missing verilog.l rule: Default rule invoked in state 13 '*'
+  143 |       b    ?  *  1  : 1 : 1 ;
+      |               ^
+%Error: t/t_udp.v:143:16: syntax error, unexpected Table_line_input_field_value_sep, expecting Table_line_input_field_value or :
+  143 |       b    ?  *  1  : 1 : 1 ;
+      |                ^~
+%Error: t/t_udp.v:143:24: syntax error, unexpected Table_line_input_field_value_sep, expecting Table_line_end
+  143 |       b    ?  *  1  : 1 : 1 ;
+      |                        ^
+%Error: t/t_udp.v:144:15: Missing verilog.l rule: Default rule invoked in state 13 '*'
+  144 |       x    1  *  1  : 1 : 1 ;
+      |               ^
+%Error: t/t_udp.v:144:16: syntax error, unexpected Table_line_input_field_value_sep, expecting Table_line_input_field_value or :
+  144 |       x    1  *  1  : 1 : 1 ;
+      |                ^~
+%Error: t/t_udp.v:144:24: syntax error, unexpected Table_line_input_field_value_sep, expecting Table_line_end
+  144 |       x    1  *  1  : 1 : 1 ;
+      |                        ^
+%Error: t/t_udp.v:145:24: syntax error, unexpected Table_line_input_field_value_sep, expecting Table_line_end
+  145 |       ?    ?  1  0  : ? : 0 ;
+      |                        ^
+%Error: t/t_udp.v:146:7: Missing verilog.l rule: Default rule invoked in state 13 'b'
+  146 |       b    ?  1  *  : 0 : 0 ;
+      |       ^
+%Error: t/t_udp.v:146:18: Missing verilog.l rule: Default rule invoked in state 13 '*'
+  146 |       b    ?  1  *  : 0 : 0 ;
+      |                  ^
+%Error: t/t_udp.v:146:19: syntax error, unexpected Table_line_input_field_value_sep, expecting Table_line_input_field_value or :
+  146 |       b    ?  1  *  : 0 : 0 ;
+      |                   ^~
+%Error: t/t_udp.v:147:18: Missing verilog.l rule: Default rule invoked in state 13 '*'
+  147 |       x    0  1  *  : 0 : 0 ;
+      |                  ^
+%Error: t/t_udp.v:147:19: syntax error, unexpected Table_line_input_field_value_sep, expecting Table_line_input_field_value or :
+  147 |       x    0  1  *  : 0 : 0 ;
+      |                   ^~
 %Error: Exiting due to

@@ -1797,14 +1797,39 @@ public:
     ASTGEN_MEMBERS_AstUdpTable;
 };
 class AstUdpTableLine final : public AstNode {
+    // @astgen op1 := ifieldp : List[AstUdpTableLineVal]
+    // @astgen op2 := ofieldp : List[AstUdpTableLineVal]
+public:
+    enum UdpType : uint8_t { UDP_COMB, UDP_SEQUENT };
+private:
+    const UdpType m_type;
+public:
+    AstUdpTableLine(FileLine* fl, AstUdpTableLineVal* ifieldp, AstUdpTableLineVal* ofieldp, UdpType type = UDP_COMB)
+        : ASTGEN_SUPER_UdpTableLine(fl)
+        , m_type{type} {
+            this->addIfieldp(ifieldp);
+            this->addOfieldp(ofieldp);
+        }
+    AstUdpTableLine(FileLine* fl, AstUdpTableLineVal* ifieldp, AstUdpTableLineVal* ofieldp1, AstUdpTableLineVal* ofieldp2, UdpType type = UDP_COMB)
+        : ASTGEN_SUPER_UdpTableLine(fl)
+        , m_type{type} {
+            this->addIfieldp(ifieldp);
+            this->addOfieldp(ofieldp1);
+            this->addOfieldp(ofieldp2);
+        }
+    ASTGEN_MEMBERS_AstUdpTableLine;
+    int type() const { return m_type; }
+};
+class AstUdpTableLineVal final : public AstNode {
     string m_text;
 
 public:
-    AstUdpTableLine(FileLine* fl, const string& text)
-        : ASTGEN_SUPER_UdpTableLine(fl)
+    AstUdpTableLineVal(FileLine* fl, const string& text)
+        : ASTGEN_SUPER_UdpTableLineVal(fl)
         , m_text{text} {}
-    ASTGEN_MEMBERS_AstUdpTableLine;
+    ASTGEN_MEMBERS_AstUdpTableLineVal;
     string name() const override VL_MT_STABLE { return m_text; }
+    void name(std::string const &text) override VL_MT_STABLE { m_text = text; }
     string text() const VL_MT_SAFE { return m_text; }
 };
 class AstVar final : public AstNode {
