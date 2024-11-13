@@ -1784,13 +1784,24 @@ public:
     ASTGEN_MEMBERS_AstUdpTable;
 };
 class AstUdpTableLine final : public AstNode {
+    // @astgen op1 := ifieldp : List[AstUdpTableLineVal]
+    // @astgen op2 := ofieldp : List[AstUdpTableLineVal]
+public:
+    AstUdpTableLine(FileLine* fl, AstUdpTableLineVal* ifieldp, AstUdpTableLineVal* ofieldp)
+        : ASTGEN_SUPER_UdpTableLine(fl) {
+        this->addIfieldp(ifieldp);
+        this->addOfieldp(ofieldp);
+    }
+    ASTGEN_MEMBERS_AstUdpTableLine;
+};
+class AstUdpTableLineVal final : public AstNode {
     string m_text;
 
 public:
-    AstUdpTableLine(FileLine* fl, const string& text)
-        : ASTGEN_SUPER_UdpTableLine(fl)
+    AstUdpTableLineVal(FileLine* fl, const string& text)
+        : ASTGEN_SUPER_UdpTableLineVal(fl)
         , m_text{text} {}
-    ASTGEN_MEMBERS_AstUdpTableLine;
+    ASTGEN_MEMBERS_AstUdpTableLineVal;
     string name() const override VL_MT_STABLE { return m_text; }
     string text() const VL_MT_SAFE { return m_text; }
 };
