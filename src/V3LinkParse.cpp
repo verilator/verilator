@@ -62,6 +62,7 @@ class LinkParseVisitor final : public VNVisitor {
     int m_beginDepth = 0;  // How many begin blocks above current node within current AstNodeModule
     VLifetime m_lifetime = VLifetime::STATIC;  // Propagating lifetime
     bool m_insideLoop = false;  // True if the node is inside a loop
+    bool m_lifetimeAllowed = false;  // True to allow lifetime settings
     VDouble0 m_statModules;  // Number of modules seen
 
     // METHODS
@@ -185,6 +186,8 @@ class LinkParseVisitor final : public VNVisitor {
             VL_RESTORER(m_ftaskp);
             VL_RESTORER(m_lifetime);
             m_ftaskp = nodep;
+            VL_RESTORER(m_lifetimeAllowed);
+            m_lifetimeAllowed = true;
             if (!nodep->lifetime().isNone()) {
                 m_lifetime = nodep->lifetime();
             } else {
@@ -290,7 +293,13 @@ class LinkParseVisitor final : public VNVisitor {
                                      "loop converted to automatic");
         }
         if (nodep->varType() != VVarType::PORT) {
-            if (nodep->lifetime().isNone()) nodep->lifetime(m_lifetime);
+            if (nodep->lifetime().isNone()) {
+                if (m_lifetimeAllowed) {
+                    nodep->lifetime(m_lifetime);
+                } else {  // Module's always static per IEEE 1800-2023 6.21
+                    nodep->lifetime(VLifetime::STATIC);
+                }
+            }
         } else if (m_ftaskp) {
             nodep->lifetime(VLifetime::AUTOMATIC);
         } else if (nodep->lifetime()
@@ -612,6 +621,7 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_genblkNum);
         VL_RESTORER(m_beginDepth);
         VL_RESTORER(m_lifetime);
+        VL_RESTORER(m_lifetimeAllowed);
         {
             // Module: Create sim table for entire module and iterate
             cleanFileline(nodep);
@@ -624,6 +634,7 @@ class LinkParseVisitor final : public VNVisitor {
             m_beginDepth = 0;
             m_valueModp = nodep;
             m_lifetime = nodep->lifetime();
+            m_lifetimeAllowed = VN_IS(nodep, Class);
             if (m_lifetime.isNone()) {
                 m_lifetime = VN_IS(nodep, Class) ? VLifetime::AUTOMATIC : VLifetime::STATIC;
             }
@@ -643,10 +654,16 @@ class LinkParseVisitor final : public VNVisitor {
         m_valueModp = nullptr;
         iterateChildren(nodep);
     }
-    void visit(AstNodeProcedure* nodep) override { visitIterateNoValueMod(nodep); }
+    void visit(AstNodeProcedure* nodep) override {
+        VL_RESTORER(m_lifetimeAllowed);
+        m_lifetimeAllowed = true;
+        visitIterateNoValueMod(nodep);
+    }
     void visit(AstAlways* nodep) override {
         VL_RESTORER(m_inAlways);
         m_inAlways = true;
+        VL_RESTORER(m_lifetimeAllowed);
+        m_lifetimeAllowed = true;
         visitIterateNoValueMod(nodep);
     }
     void visit(AstCover* nodep) override { visitIterateNoValueMod(nodep); }
