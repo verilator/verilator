@@ -606,6 +606,12 @@ class ConstraintExprVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstNodeVarRef* nodep) override {
         AstVar* const varp = nodep->varp();
+        if (varp->user4p()) {
+            varp->user4p()->v3warn(
+                CONSTRAINTIGN,
+                "Size constraint combined with element constraint, may not work correctly");
+        }
+
         AstNodeModule* const classOrPackagep = nodep->classOrPackagep();
         const RandomizeMode randMode = {.asInt = varp->user1()};
         if (!randMode.usesMode && editFormat(nodep)) return;
