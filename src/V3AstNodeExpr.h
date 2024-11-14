@@ -1728,11 +1728,12 @@ public:
 class AstPatMember final : public AstNodeExpr {
     // Verilog '{a} or '{a{b}}
     // Parents: AstPattern
-    // Children: expression, AstPattern, replication count
+    // Children: expression, AstPattern, replication count, decoded nodep if TEXT
     // Expression to assign or another AstPattern (list if replicated)
     // @astgen op1 := lhssp : List[AstNodeExpr]
     // @astgen op2 := keyp : Optional[AstNode]
     // @astgen op3 := repp : Optional[AstNodeExpr]  // replication count, or nullptr for count 1
+    // @astgen op4 := varrefp : Optional[AstNodeExpr]  // Decoded variable if TEXT
     bool m_default = false;
 
 public:

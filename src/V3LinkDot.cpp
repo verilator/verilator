@@ -2744,6 +2744,24 @@ class LinkDotResolveVisitor final : public VNVisitor {
         m_inSens = true;
         iterateChildren(nodep);
     }
+    void visit(AstPatMember* nodep) override {
+        LINKDOT_VISIT_START();
+        if (nodep->varrefp()) return;  // only do this mapping once
+        // If we have a TEXT token as our key, lookup if it's a LPARAM
+        if (AstText* const textp = VN_CAST(nodep->keyp(), Text)) {
+            UINFO(9, indent() << "visit " << nodep << endl);
+            UINFO(9, indent() << "      " << textp << endl);
+            // Lookup
+            if (VSymEnt* const foundp = m_curSymp->findIdFallback(textp->text())) {
+                if (AstVar* const varp = VN_CAST(foundp->nodep(), Var)) {
+                    // Attach found Text reference to PatMember
+                    nodep->varrefp(new AstVarRef{nodep->fileline(), varp, VAccess::READ});
+                    UINFO(9, indent() << " new " << nodep->varrefp() << endl);
+                }
+            }
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstParseRef* nodep) override {
         if (nodep->user3SetOnce()) return;
         LINKDOT_VISIT_START();
