@@ -2147,7 +2147,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     enum DotPosition : uint8_t {
         // Must match ascii() method below
         DP_NONE = 0,  // Not under a DOT
-        DP_PACKAGE,  // {package}:: DOT
+        DP_PACKAGE,  // {package-or-class}:: DOT
         DP_FIRST,  // {scope-or-var} DOT
         DP_SCOPE,  // DOT... {scope-or-var} DOT
         DP_FINAL,  // [DOT...] {var-or-func-or-dtype} with no following dots
@@ -2814,7 +2814,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             bool allowFTask = false;
             bool staticAccess = false;
             if (m_ds.m_dotPos == DP_PACKAGE) {
-                // {package}::{a}
+                // {package-or-class}::{a}
                 AstNodeModule* classOrPackagep = nullptr;
                 expectWhat = "scope/variable/func";
                 allowScope = true;
@@ -3179,20 +3179,37 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     nodep, "ClassRef has unlinked class");
         UASSERT_OBJ(m_statep->forPrimary() || !nodep->paramsp(), nodep,
                     "class reference parameter not removed by V3Param");
-        VL_RESTORER(m_ds);
-        VL_RESTORER(m_pinSymp);
 
-        // ClassRef's have pins, so track
-        if (nodep->classOrPackagep()) {
-            m_pinSymp = m_statep->getNodeSym(nodep->classOrPackagep());
+        {
+            // ClassRef's have pins, so track
+            VL_RESTORER(m_ds);
+            VL_RESTORER(m_pinSymp);
+
+            if (nodep->classOrPackagep()) {
+                m_pinSymp = m_statep->getNodeSym(nodep->classOrPackagep());
+            }
+            AstClass* const refClassp = VN_CAST(nodep->classOrPackagep(), Class);
+            // Make sure any extends() are properly imported within referenced class
+            if (refClassp && !m_statep->forPrimary()) classExtendImport(refClassp);
+
+            m_ds.init(m_curSymp);
+            UINFO(4, indent() << "(Backto) Link ClassOrPackageRef: " << nodep << endl);
+            iterateChildren(nodep);
+
+            AstClass* const modClassp = VN_CAST(m_modp, Class);
+            if (m_statep->forPrimary() && refClassp && !nodep->paramsp()
+                && nodep->classOrPackagep()->hasGParam()
+                // Don't warn on typedefs, which are hard to know if there's a param somewhere
+                // buried
+                && VN_IS(nodep->classOrPackageNodep(), Class)
+                // References to class:: within class itself are OK per IEEE (UVM does this)
+                && modClassp != refClassp) {
+                nodep->v3error(
+                    "Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)\n"
+                    << nodep->warnMore() << "... Suggest use '"
+                    << nodep->classOrPackageNodep()->prettyName() << "#()'");
+            }
         }
-        AstClass* const refClassp = VN_CAST(nodep->classOrPackagep(), Class);
-        // Make sure any extends() are properly imported within referenced class
-        if (refClassp && !m_statep->forPrimary()) classExtendImport(refClassp);
-
-        m_ds.init(m_curSymp);
-        UINFO(4, indent() << "(Backto) Link ClassOrPackageRef: " << nodep << endl);
-        iterateChildren(nodep);
 
         if (nodep->name() == "local::") {
             if (!m_randSymp) {
@@ -3201,17 +3218,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 m_ds.m_dotErr = true;
                 return;
             }
-        }
-        AstClass* const modClassp = VN_CAST(m_modp, Class);
-        if (m_statep->forPrimary() && refClassp && !nodep->paramsp()
-            && nodep->classOrPackagep()->hasGParam()
-            // Don't warn on typedefs, which are hard to know if there's a param somewhere buried
-            && VN_IS(nodep->classOrPackageNodep(), Class)
-            // References to class:: within class itself are OK per IEEE (UVM does this)
-            && modClassp != refClassp) {
-            nodep->v3error("Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)\n"
-                           << nodep->warnMore() << "... Suggest use '"
-                           << nodep->classOrPackageNodep()->prettyName() << "#()'");
         }
     }
     void visit(AstConstraintRef* nodep) override {
