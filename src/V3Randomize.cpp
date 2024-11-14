@@ -2209,7 +2209,12 @@ class RandomizeVisitor final : public VNVisitor {
         FileLine* fl = nodep->fileline();
         if (m_constraintp && nodep->fromp()->user1() && nodep->name() == "size") {
             AstClass* const classp = VN_AS(m_modp, Class);
-            AstVar* const queueVarp = VN_AS(nodep->fromp(), VarRef)->varp();
+            AstVarRef* const queueVarRefp = VN_CAST(nodep->fromp(), VarRef);
+            if (!queueVarRefp) {
+                // Warning from ConstraintExprVisitor will be thrown
+                return;
+            }
+            AstVar* const queueVarp = queueVarRefp->varp();
             AstVar* sizeVarp = VN_CAST(queueVarp->user4p(), Var);
             if (!sizeVarp) {
                 sizeVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__V" + queueVarp->name() + "_size",
