@@ -546,9 +546,9 @@ public:
     /// 1 = Set all bits to one
     /// 2 = Randomize all bits
     void randReset(int val) VL_MT_SAFE;
-    /// Set default random seed, 0 = seed it automatically
-    int randSeed() const VL_MT_SAFE { return m_s.m_randSeed; }
     /// Return default random seed
+    int randSeed() const VL_MT_SAFE { return m_s.m_randSeed; }
+    /// Set default random seed, 0 = seed it automatically
     void randSeed(int val) VL_MT_SAFE;
 
     /// Return statistic: CPU time delta from model created until now
