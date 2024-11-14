@@ -24,9 +24,11 @@ end
 
 class Foo;
    rand int q[$];
+   rand int q2[$][$];
    int      x = 1;
    constraint c {
       q.size() == 15;
+      q2.size() == 10;
    }
 endclass
 
@@ -59,6 +61,7 @@ module t;
 
       void'(foo.randomize());
       if (foo.q.size() != 15) $stop;
+      if (foo.q2.size() != 10) $stop;
 
       `check_rand(bar, bar.q.size(), bar.q.size() > 2 && bar.q.size() < 10);
       `check_rand(bar, bar.q2.size(), bar.q2.size() < 7);
