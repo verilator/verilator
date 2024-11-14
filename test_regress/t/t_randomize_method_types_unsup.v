@@ -7,6 +7,7 @@
 class Cls;
    rand int assocarr[string];
    rand int dynarr[][];
+   rand int q[$];
    rand Cls cls;
    rand int i;
    int st;
@@ -16,6 +17,10 @@ class Cls;
       dynarr[1].size < 10;
    }
    constraint statedep { i < st + 2; }
+   constraint q_size_elem {
+      q.size < 5;
+      q[i] < 10;
+   }
 endclass
 
 module t (/*AUTOARG*/);
