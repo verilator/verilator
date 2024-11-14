@@ -1,7 +1,7 @@
 .. Github doesn't render images unless absolute URL
 .. Do not know of a conditional tag, "only: github" nor "github display" works
 
-|badge1| |badge2| |badge3| |badge4| |badge5| |badge6| |badge7| |badge8|
+|badge1| |badge2| |badge3| |badge4| |badge5| |badge6| |badge7|
 
 .. |badge1| image:: https://img.shields.io/badge/Website-Verilator.org-181717.svg
     :target: https://verilator.org
@@ -15,7 +15,7 @@
     :target: https://hub.docker.com/r/verilator/verilator
 .. |badge6| image:: https://api.codacy.com/project/badge/Grade/fa78caa433c84a4ab9049c43e9debc6f
     :target: https://www.codacy.com/gh/verilator/verilator
-.. |badge8| image:: https://github.com/verilator/verilator/workflows/build/badge.svg
+.. |badge7| image:: https://github.com/verilator/verilator/workflows/build/badge.svg
     :target: https://github.com/verilator/verilator/actions?query=workflow%3Abuild
 
 
