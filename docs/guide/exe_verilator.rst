@@ -1766,18 +1766,19 @@ Summary:
    ``-Wwarn-CASEX`` ``-Wwarn-CASTCONST`` ``-Wwarn-CMPCONST``
    ``-Wwarn-COLONPLUS`` ``-Wwarn-IMPLICIT`` ``-Wwarn-IMPLICITSTATIC``
    ``-Wwarn-LATCH`` ``-Wwarn-MISINDENT`` ``-Wwarn-NEWERSTD``
-   ``-Wwarn-PINMISSING`` ``-Wwarn-REALCVT`` ``-Wwarn-STATICVAR``
-   ``-Wwarn-UNSIGNED`` ``-Wwarn-WIDTHTRUNC`` ``-Wwarn-WIDTHEXPAND``
-   ``-Wwarn-WIDTHXZEXPAND``.
+   ``-Wwarn-PREPROCZERO`` ``-Wwarn-PINMISSING`` ``-Wwarn-REALCVT``
+   ``-Wwarn-STATICVAR`` ``-Wwarn-UNSIGNED`` ``-Wwarn-WIDTHTRUNC``
+   ``-Wwarn-WIDTHEXPAND`` ``-Wwarn-WIDTHXZEXPAND``.
 
 .. option:: -Wwarn-style
 
    Enable all code style-related warning messages.  This is equivalent to
-   ``-Wwarn-ASSIGNDLY`` ``-Wwarn-DECLFILENAME`` ``-Wwarn-DEFPARAM``
-   ``-Wwarn-EOFNEWLINE`` ``-Wwarn-GENUNNAMED`` ``-Wwarn-INCABSPATH``
+   ``-Wwarn-ASSIGNDLY`` ``-Wwarn-BLKSEQ`` ``-Wwarn-DECLFILENAME``
+   ``-Wwarn-DEFPARAM`` ``-Wwarn-EOFNEWLINE`` ``-Wwarn-GENUNNAMED``
+   ``-Wwarn-IMPORTSTAR`` ``-Wwarn-INCABSPATH`` ``-Wwarn-PINCONNECTEMPTY``
    ``-Wwarn-PINNOCONNECT`` ``-Wwarn-SYNCASYNCNET`` ``-Wwarn-UNDRIVEN``
-   ``-Wwarn-UNUSEDGENVAR`` ``-Wwarn-UNUSEDPARAM`` ``-Wwarn-UNUSEDSIGNAL``
-   ``-Wwarn-VARHIDDEN``.
+   ``-Wwarn-UNUSEDGENVAR`` ``-Wwarn-UNUSEDLOOP`` ``-Wwarn-UNUSEDPARAM``
+   ``-Wwarn-UNUSEDSIGNAL`` ``-Wwarn-VARHIDDEN``.
 
 .. option:: --x-assign 0
 
