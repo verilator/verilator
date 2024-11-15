@@ -96,7 +96,7 @@ static int _mon_check_props(TestVpiHandle& handle, int size, int direction, int 
     }
 
     // Icarus only supports ranges on memories
-    if (!scalar && !(TestSimulator::is_icarus() && type != vpiMemory)) {
+    if (!scalar && !(TestSimulator::is_icarus() && type != vpiRegArray)) {
         TestVpiHandle left_h, right_h;
 
         // check coherency for vectors
@@ -157,11 +157,11 @@ int mon_check_props() {
         = {{"onebit", {1, vpiNoDirection, 1, vpiReg}, {0, 0, 0, 0}},
            {"twoone", {2, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
            {"onetwo",
-            {2, vpiNoDirection, 0, TestSimulator::is_verilator() ? vpiReg : vpiMemory},
+            {2, vpiNoDirection, 0, TestSimulator::is_verilator() ? vpiReg : vpiRegArray},
             {0, 0, 0, 0}},
            {"fourthreetwoone",
-            {2, vpiNoDirection, 0, vpiMemory},
-            {2, vpiNoDirection, 0, vpiMemoryWord}},
+            {2, vpiNoDirection, 0, vpiRegArray},
+            {2, vpiNoDirection, 0, vpiReg}},
            {"theint", {32, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
            {"clk", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
            {"testin", {16, vpiInput, 0, vpiPort}, {0, 0, 0, 0}},
@@ -184,7 +184,7 @@ int mon_check_props() {
             return status;
         if (value->children.size) {
             int size = 0;
-            TestVpiHandle iter_h = vpi_iterate(vpiMemoryWord, h);
+            TestVpiHandle iter_h = vpi_iterate(vpiReg, h);
             while (TestVpiHandle word_h = vpi_scan(iter_h)) {
                 // check size and range
                 if (int status

@@ -86,8 +86,8 @@ void _mem_check(const char* name, int size, int left, int right, int words) {
     TEST_CHECK_NZ(mem_h);
     // check type
     int vpitype = vpi_get(vpiType, mem_h);
-    if (vpitype != vpiMemory && vpitype != vpiReg) {
-        printf("%%Error: %s:%d vpiType neither vpiMemory or vpiReg: %d\n", FILENM, __LINE__,
+    if (vpitype != vpiRegArray && vpitype != vpiReg) {
+        printf("%%Error: %s:%d vpiType neither vpiRegArray or vpiReg: %d\n", FILENM, __LINE__,
                vpitype);
         errors++;
     }
@@ -99,9 +99,9 @@ void _mem_check(const char* name, int size, int left, int right, int words) {
         }
     }
     // iterate and store
-    if (vpitype == vpiMemory) {
+    if (vpitype == vpiRegArray) {
         _mon_check_range(mem_h, words, words, 1);
-        TestVpiHandle iter_h = vpi_iterate(vpiMemoryWord, mem_h);
+        TestVpiHandle iter_h = vpi_iterate(vpiReg, mem_h);
         int cnt = 0;
         while (TestVpiHandle lcl_h = vpi_scan(iter_h)) {
             value.format = vpiIntVal;
@@ -121,9 +121,9 @@ void _mem_check(const char* name, int size, int left, int right, int words) {
         vpi_put_value(mem_h, &value, NULL, vpiNoDelay);
         TEST_CHECK_Z(vpi_chk_error(&e));
     }
-    if (vpitype == vpiMemory) {
+    if (vpitype == vpiRegArray) {
         // iterate and accumulate
-        TestVpiHandle iter_h = vpi_iterate(vpiMemoryWord, mem_h);
+        TestVpiHandle iter_h = vpi_iterate(vpiReg, mem_h);
         int cnt = 0;
         while (TestVpiHandle lcl_h = vpi_scan(iter_h)) {
             ++cnt;
@@ -138,7 +138,7 @@ void _mem_check(const char* name, int size, int left, int right, int words) {
         value.format = vpiBinStrVal;
         vpi_get_value(mem_h, &value);
         TEST_CHECK_Z(vpi_chk_error(&e));
-        TEST_CHECK_EQ(std::string{value.value.str}, binStr);
+        TEST_CHECK_EQ(std::string(value.value.str), binStr);
     }
 
     // don't care for non verilator
@@ -151,7 +151,7 @@ void _mem_check(const char* name, int size, int left, int right, int words) {
     {
         // make sure trying to get properties that don't exist
         // doesn't crash
-        TestVpiHandle iter_h = vpi_iterate(vpiMemoryWord, mem_h);
+        TestVpiHandle iter_h = vpi_iterate(vpiReg, mem_h);
         int should_be_undefined = vpi_get(vpiSize, iter_h);
         TEST_CHECK_EQ(should_be_undefined, vpiUndefined);
         should_be_undefined = vpi_get(vpiIndex, iter_h);
@@ -163,7 +163,7 @@ void _mem_check(const char* name, int size, int left, int right, int words) {
         should_be_NULL = vpi_handle(vpiScope, iter_h);
         TEST_CHECK_EQ(should_be_NULL, 0);
     }
-    if (vpitype == vpiMemory) {
+    if (vpitype == vpiRegArray) {
         // check vpiRange
         TestVpiHandle iter_h = vpi_iterate(vpiRange, mem_h);
         TEST_CHECK_NZ(iter_h);

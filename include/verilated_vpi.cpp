@@ -2936,7 +2936,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                 }
             } else {
                 for (int i = 0; i < num; i++) {
-                    integers[i] = ptr[index++];
+                    integers[i] = ptr[index];
                     index = (--index + size) % size;
                 }
             }
@@ -2950,7 +2950,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                 }
             } else {
                 for (int i = 0; i < num; i++) {
-                    integers[i] = ptr[index++];
+                    integers[i] = ptr[index];
                     index = (--index + size) % size;
                 }
             }
@@ -2964,7 +2964,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                 }
             } else {
                 for (int i = 0; i < num; i++) {
-                    integers[i] = ptr[index++];
+                    integers[i] = ptr[index];
                     index = (--index + size) % size;
                 }
             }
@@ -2998,7 +2998,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                 }
             } else {
                 for (int i = 0; i < num; i++) {
-                    shortints[i] = ptr[index++];
+                    shortints[i] = ptr[index];
                     index = (--index + size) % size;
                 }
             }
@@ -3012,7 +3012,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                 }
             } else {
                 for (int i = 0; i < num; i++) {
-                    shortints[i] = ptr[index++];
+                    shortints[i] = ptr[index];
                     index = (--index + size) % size;
                 }
             }
