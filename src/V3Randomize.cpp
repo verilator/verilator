@@ -1968,7 +1968,7 @@ class RandomizeVisitor final : public VNVisitor {
         AstVarRef* const fvarRefp = new AstVarRef{fl, fvarp, VAccess::WRITE};
         randomizep->addStmtsp(new AstAssign{fl, fvarRefp, beginValp});
 
-        if(AstTask* const resizeAllTaskp
+        if (AstTask* const resizeAllTaskp
             = VN_AS(m_memberMap.findMember(nodep, "__Vresize_constrained_arrays"), Task)) {
             AstTaskRef* const resizeTaskRefp = new AstTaskRef{fl, resizeAllTaskp->name(), nullptr};
             resizeTaskRefp->taskp(resizeAllTaskp);
