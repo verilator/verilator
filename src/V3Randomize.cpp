@@ -1189,7 +1189,7 @@ class RandomizeVisitor final : public VNVisitor {
         m_memberMap.insert(classp, setupAllTaskp);
         return setupAllTaskp;
     }
-    AstTask* getCreateAggrResizeTask(AstClass* classp) {
+    AstTask* getCreateAggrResizeTask(AstClass* const classp) {
         static const char* const name = "__Vresize_constrained_arrays";
         AstTask* resizeTaskp = VN_AS(m_memberMap.findMember(classp, name), Task);
         if (resizeTaskp) return resizeTaskp;
@@ -1924,7 +1924,7 @@ class RandomizeVisitor final : public VNVisitor {
 
                 setupAllTaskp->addStmtsp(setupTaskRefp->makeStmt());
 
-                if (AstTask* resizeTaskp = VN_CAST(constrp->user3p(), Task)) {
+                if (AstTask* const resizeTaskp = VN_CAST(constrp->user3p(), Task)) {
                     AstTask* const resizeAllTaskp = getCreateAggrResizeTask(nodep);
                     AstTaskRef* const resizeTaskRefp
                         = new AstTaskRef{constrp->fileline(), resizeTaskp->name(), nullptr};
