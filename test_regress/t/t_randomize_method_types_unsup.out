@@ -1,10 +1,17 @@
-%Warning-CONSTRAINTIGN: t/t_randomize_method_types_unsup.v:13:32: Unsupported: randomizing this expression, treating as state
-   13 |    constraint dynsize { dynarr.size < 20; }
-      |                                ^~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_method_types_unsup.v:17:17: Unsupported: randomizing this expression, treating as state
+   17 |       dynarr[1].size < 10;
+      |                 ^~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
-%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:10:13: Unsupported: random member variable with the type of the containing class
+%Warning-CONSTRAINTIGN: t/t_randomize_method_types_unsup.v:21:9: Size constraint combined with element constraint may not work correctly
+                                                               : ... note: In instance 't'
+   21 |       q.size < 5;
+      |         ^~~~
+%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:11:13: Unsupported: random member variable with the type of the containing class
                                                             : ... note: In instance 't'
-   10 |    rand Cls cls;
+   11 |    rand Cls cls;
       |             ^~~
+%Warning-CONSTRAINTIGN: t/t_randomize_method_types_unsup.v:33:43: Unsupported: randomizing this expression, treating as state
+   33 |       res = obj.randomize() with { dynarr.size > 2; };
+      |                                           ^~~~
 %Error: Exiting due to

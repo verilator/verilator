@@ -570,6 +570,7 @@ public:
             m_deque.resize(size, atDefault());
         }
     }
+    void resize(size_t size) { m_deque.resize(size, atDefault()); }
 
     // function void q.push_front(value)
     void push_front(const T_Value& value) {
