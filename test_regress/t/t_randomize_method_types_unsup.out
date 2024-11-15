@@ -3,7 +3,7 @@
       |                 ^~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
-%Warning-CONSTRAINTIGN: t/t_randomize_method_types_unsup.v:21:9: Size constraint combined with element constraint, may not work correctly
+%Warning-CONSTRAINTIGN: t/t_randomize_method_types_unsup.v:21:9: Size constraint combined with element constraint may not work correctly
                                                                : ... note: In instance 't'
    21 |       q.size < 5;
       |         ^~~~
