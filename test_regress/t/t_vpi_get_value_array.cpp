@@ -80,6 +80,7 @@ int mon_check_props(void) {
 
     {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_bytes", NULL);
+        CHECK_RESULT_NZ(object);
 
         arrayVal.format = vpiRawTwoStateVal;
         vpi_get_value_array(object, &arrayVal, indexArr, num);
@@ -94,6 +95,7 @@ int mon_check_props(void) {
 
     {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_shorts", NULL);
+        CHECK_RESULT_NZ(object);
 
         arrayVal.format = vpiShortIntVal;
         vpi_get_value_array(object, &arrayVal, indexArr, num);
@@ -108,6 +110,7 @@ int mon_check_props(void) {
 
     {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_integers", NULL);
+        CHECK_RESULT_NZ(object);
 
         arrayVal.format = vpiIntVal;
         vpi_get_value_array(object, &arrayVal, indexArr, num);
@@ -122,6 +125,7 @@ int mon_check_props(void) {
 
     {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_integers_rl", NULL);
+        CHECK_RESULT_NZ(object);
 
         arrayVal.format = vpiIntVal;
         vpi_get_value_array(object, &arrayVal, indexArr, num);
@@ -136,6 +140,7 @@ int mon_check_props(void) {
 
     {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_longs", NULL);
+        CHECK_RESULT_NZ(object);
 
         arrayVal.format = vpiLongIntVal;
         vpi_get_value_array(object, &arrayVal, indexArr, num);
@@ -151,6 +156,7 @@ int mon_check_props(void) {
 
     {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words", NULL);
+        CHECK_RESULT_NZ(object);
 
         arrayVal.format = vpiRawFourStateVal;
         vpi_get_value_array(object, &arrayVal, indexArr, num);
@@ -168,6 +174,7 @@ int mon_check_props(void) {
 
     {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_integers", NULL);
+        CHECK_RESULT_NZ(object);
 
         arrayVal.format = vpiVector;
         vpi_get_value_array(object, &arrayVal, indexArr, num);

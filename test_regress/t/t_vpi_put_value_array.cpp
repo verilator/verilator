@@ -80,6 +80,7 @@ int mon_check_props(void) {
 
     {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_bytes", NULL);
+        CHECK_RESULT_NZ(object);
 
         PLI_BYTE8 data[4] = {0xde, 0xad, 0xbe, 0xef};
 
@@ -97,6 +98,7 @@ int mon_check_props(void) {
 
     {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_shorts", NULL);
+        CHECK_RESULT_NZ(object);
 
         PLI_UINT16 data[4] = {0xdead, 0xbeef, 0xbeef, 0xdead};
 
@@ -114,6 +116,7 @@ int mon_check_props(void) {
 
     {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_integers", NULL);
+        CHECK_RESULT_NZ(object);
 
         PLI_UINT32 data[4] = {0x00000000, 0xdeadbeef, 0x00000000, 0xdeadbeef};
 
@@ -131,6 +134,7 @@ int mon_check_props(void) {
 
     {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_integers_rl", NULL);
+        CHECK_RESULT_NZ(object);
 
         indexArr[0] = 3;
 
@@ -152,6 +156,7 @@ int mon_check_props(void) {
 
     {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_longs", NULL);
+        CHECK_RESULT_NZ(object);
 
         PLI_UINT64 data[4] = {0x00000000deadbeef, 0x0000000000000000,
                                 0x00000000beefdead, 0x0000000000000000};
@@ -169,7 +174,8 @@ int mon_check_props(void) {
     }
 
     {
-        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words", NULL);
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_words", NULL);
+        CHECK_RESULT_NZ(object);
 
         PLI_UINT64 data[16] = {0x0000000000000000, 0x0000000000000000, 0x00, 0x00,
             0xbeefdead00000000, 0x00000000deadbeef, 0x00, 0x00,
@@ -189,7 +195,8 @@ int mon_check_props(void) {
     }
 
     {
-        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_integers", NULL);
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_integers", NULL);
+        CHECK_RESULT_NZ(object);
 
         s_vpi_vecval data[4] = {{0x00000000, 0x000000},
             {0xdeadbeef, 0x00000000}, {0x00000000, 0x00000000},
