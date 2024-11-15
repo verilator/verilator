@@ -609,7 +609,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (varp->user4p()) {
             varp->user4p()->v3warn(
                 CONSTRAINTIGN,
-                "Size constraint combined with element constraint, may not work correctly");
+                "Size constraint combined with element constraint may not work correctly");
         }
 
         AstNodeModule* const classOrPackagep = nodep->classOrPackagep();
@@ -1930,7 +1930,6 @@ class RandomizeVisitor final : public VNVisitor {
                         = new AstTaskRef{constrp->fileline(), resizeTaskp->name(), nullptr};
                     resizeTaskRefp->taskp(resizeTaskp);
                     resizeTaskRefp->classOrPackagep(classp);
-
                     resizeAllTaskp->addStmtsp(resizeTaskRefp->makeStmt());
                 }
 
@@ -1969,9 +1968,8 @@ class RandomizeVisitor final : public VNVisitor {
         AstVarRef* const fvarRefp = new AstVarRef{fl, fvarp, VAccess::WRITE};
         randomizep->addStmtsp(new AstAssign{fl, fvarRefp, beginValp});
 
-        AstTask* const resizeAllTaskp
-            = VN_AS(m_memberMap.findMember(nodep, "__Vresize_constrained_arrays"), Task);
-        if (resizeAllTaskp) {
+        if(AstTask* const resizeAllTaskp
+            = VN_AS(m_memberMap.findMember(nodep, "__Vresize_constrained_arrays"), Task)) {
             AstTaskRef* const resizeTaskRefp = new AstTaskRef{fl, resizeAllTaskp->name(), nullptr};
             resizeTaskRefp->taskp(resizeAllTaskp);
             randomizep->addStmtsp(resizeTaskRefp->makeStmt());
@@ -2212,7 +2210,7 @@ class RandomizeVisitor final : public VNVisitor {
     }
     void visit(AstCMethodHard* nodep) override {
         iterateChildren(nodep);
-        FileLine* fl = nodep->fileline();
+        FileLine* const fl = nodep->fileline();
         if (m_constraintp && nodep->fromp()->user1() && nodep->name() == "size") {
             AstClass* const classp = VN_AS(m_modp, Class);
             AstVarRef* const queueVarRefp = VN_CAST(nodep->fromp(), VarRef);
@@ -2253,7 +2251,6 @@ class RandomizeVisitor final : public VNVisitor {
             AstVarRef* const sizeVarRefp = new AstVarRef{fl, sizeVarp, VAccess::READ};
             sizeVarRefp->user1(true);
             nodep->replaceWith(sizeVarRefp);
-
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
