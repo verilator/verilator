@@ -38,6 +38,7 @@ else:
         def __getattr__(cls, name: str) -> clang.cindex.CursorKind:
             return getattr(clang.cindex.CursorKind, name)
 
+    # pylint: disable-next=invalid-enum-extension
     class CursorKind(clang.cindex.CursorKind, metaclass=CursorKindMeta):
         pass
 
