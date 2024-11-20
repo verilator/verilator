@@ -733,6 +733,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         handle.relink(indexp);
         editSMT(nodep, nodep->fromp(), indexp);
     }
+    void visit(AstMemberSel* nodep) override {
+        if (nodep->user1()) {
+            nodep->v3warn(CONSTRAINTIGN, "Global constraints ignored (unsupported)");
+        }
+        editFormat(nodep);
+    }
     void visit(AstSFormatF* nodep) override {}
     void visit(AstStmtExpr* nodep) override {}
     void visit(AstConstraintIf* nodep) override {
