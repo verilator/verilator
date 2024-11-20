@@ -138,7 +138,7 @@ void _mem_check(const char* name, int size, int left, int right, int words) {
         value.format = vpiBinStrVal;
         vpi_get_value(mem_h, &value);
         TEST_CHECK_Z(vpi_chk_error(&e));
-        TEST_CHECK_EQ(std::string(value.value.str), binStr);
+        TEST_CHECK_EQ(std::string{value.value.str}, binStr);
     }
 
     // don't care for non verilator

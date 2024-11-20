@@ -127,15 +127,19 @@ int mon_check_props(void) {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_integers_rl", NULL);
         CHECK_RESULT_NZ(object);
 
+        indexArr[0] = 3;
+
         arrayVal.format = vpiIntVal;
         vpi_get_value_array(object, &arrayVal, indexArr, num);
 
         PLI_UINT32* ptr = (PLI_UINT32*)arrayVal.value.integers;
 
-        PLI_UINT32 expected[4] = {0xdeadbeef, 0x00000000, 0x00000000, 0xdeadbeef};
+        PLI_UINT32 expected[4] = {0x00000000, 0x00000000, 0xdeadbeef, 0xdeadbeef};
 
         for (int i = 0; i < num; i++)
             CHECK_RESULT_HEX(ptr[i], expected[i]);
+
+        indexArr[0] = 0;
     }
 
     {
