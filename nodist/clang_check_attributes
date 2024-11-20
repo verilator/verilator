@@ -1149,7 +1149,11 @@ def main():
         cxxflags = []
         if compdb:
             entry = compdb.getCompileCommands(filename)
-            entry_list = list(entry)
+            if entry is None:
+                print(f"%Error: reading compile commands failed: {filename}", file=sys.stderr)
+                entry_list = []
+            else:
+                entry_list = list(entry)
             # Compilation database can contain multiple entries for single file,
             # e.g. when it has been updated by appending new entries.
             # Use last entry for the file, if it exists, as it is the newest one.
