@@ -1146,7 +1146,7 @@ def main():
     for refid, file in enumerate(cmdline.file):
         filename = os.path.abspath(file)
         root = default_compilation_root
-        cxxflags = []
+        cxxflags = common_cxxflags[:]
         if compdb:
             entry = compdb.getCompileCommands(filename)
             if entry is None:
@@ -1165,9 +1165,7 @@ def main():
                 # compiler executable name/path. CIndex (libclang) always
                 # implicitly prepends executable name, so it shouldn't be passed
                 # here.
-                cxxflags = common_cxxflags + entry_args[1:]
-        else:
-            cxxflags = common_cxxflags[:]
+                cxxflags.extend(entry_args[1:])
 
         compile_command = CompileCommand(refid, filename, cxxflags, root)
         compile_commands_list.append(compile_command)
