@@ -446,7 +446,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
         // Member select are randomized when both object and member are marked as rand.
         // Variable references in with clause are converted to member selects and their from() is
         // of type AstLambdaArgRef. They are randomized too.
-        bool randObject = nodep->fromp()->user1() || VN_IS(nodep->fromp(), LambdaArgRef);
+        const bool randObject = nodep->fromp()->user1() || VN_IS(nodep->fromp(), LambdaArgRef);
         nodep->user1(randObject && nodep->varp()->rand().isRandomizable());
     }
     void visit(AstNodeModule* nodep) override {
