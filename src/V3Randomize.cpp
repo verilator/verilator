@@ -438,26 +438,16 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
         if (nodep->varp()->lifetime().isStatic()) m_staticRefs.emplace(nodep);
 
-        if (!nodep->varp()->rand().isRandomizable()) return;
-        for (AstNode* backp = nodep; backp != m_constraintExprGenp && !backp->user1();
-             backp = backp->backp())
-            backp->user1(true);
+        if (nodep->varp()->rand().isRandomizable()) nodep->user1(true);
     }
     void visit(AstMemberSel* nodep) override {
         if (!m_constraintExprGenp) return;
-        if (VN_IS(nodep->fromp(), LambdaArgRef)) {
-            if (!nodep->varp()->rand().isRandomizable()) return;
-            for (AstNode* backp = nodep; backp != m_constraintExprGenp && !backp->user1();
-                 backp = backp->backp())
-                backp->user1(true);
-        }
-    }
-    void visit(AstArraySel* nodep) override {
-        if (!m_constraintExprGenp) return;
-        for (AstNode* backp = nodep; backp != m_constraintExprGenp && !backp->user1();
-             backp = backp->backp())
-            backp->user1(true);
         iterateChildrenConst(nodep);
+        // Member select are randomized when both object and member are marked as rand.
+        // Variable references in with clause are converted to member selects and their from() is
+        // of type AstLambdaArgRef. They are randomized too.
+        const bool randObject = nodep->fromp()->user1() || VN_IS(nodep->fromp(), LambdaArgRef);
+        nodep->user1(randObject && nodep->varp()->rand().isRandomizable());
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
@@ -473,6 +463,14 @@ class RandomizeMarkVisitor final : public VNVisitor {
         iterateChildrenConst(nodep);
     }
 
+    void visit(AstNodeExpr* nodep) override {
+        iterateChildrenConst(nodep);
+        if (!m_constraintExprGenp) return;
+        nodep->user1((nodep->op1p() && nodep->op1p()->user1())
+                     || (nodep->op2p() && nodep->op2p()->user1())
+                     || (nodep->op3p() && nodep->op3p()->user1())
+                     || (nodep->op4p() && nodep->op4p()->user1()));
+    }
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
@@ -734,6 +732,12 @@ class ConstraintExprVisitor final : public VNVisitor {
             = new AstSFormatF{fl, "#x%8x", false, nodep->bitp()->unlinkFrBack(&handle)};
         handle.relink(indexp);
         editSMT(nodep, nodep->fromp(), indexp);
+    }
+    void visit(AstMemberSel* nodep) override {
+        if (nodep->user1()) {
+            nodep->v3warn(CONSTRAINTIGN, "Global constraints ignored (unsupported)");
+        }
+        editFormat(nodep);
     }
     void visit(AstSFormatF* nodep) override {}
     void visit(AstStmtExpr* nodep) override {}
