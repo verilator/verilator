@@ -525,6 +525,54 @@ public:
 };
 
 //######################################################################
+// Iterate over vertices looking for wide expressions to exclude from inline
+
+class GateWideExprExclude final {
+    size_t m_statExcluded = 0;  // Statistic tracking
+
+    void exclude(GateVarVertex* const vVtxp) {
+        if (!vVtxp->varScp()->isWide()) return;
+        if (vVtxp->inEmpty() || !vVtxp->inEdges().frontp() || !vVtxp->inEdges().frontp()->fromp())
+            return;  // No driver, no exclusion.
+
+        const GateLogicVertex* const lVtxp
+            = vVtxp->inEdges().frontp()->fromp()->as<GateLogicVertex>();
+
+        if (const AstActive* const primaryActivep = lVtxp->activep()) {
+            // Exclude from inlining variables READ multiple times that are initialized by wide
+            // assigns.
+            int reads = 0;
+            for (const V3GraphEdge* const edgep : vVtxp->outEdges().unlinkable()) {
+                if (!edgep || !edgep->top()) continue;
+                if (const GateLogicVertex* const lvp = edgep->top()->as<GateLogicVertex>()) {
+                    // To decouple actives thus simplifying scheduling, exclude only those
+                    // VarRefs that are referenced under the same active as they were assigned.
+                    if (lvp->activep() == primaryActivep) reads += edgep->weight();
+                }
+            }
+            if (reads > 1 && VN_IS(lVtxp->nodep(), NodeAssign)) {
+                vVtxp->clearReducible("Multiple wide reads");
+                ++m_statExcluded;
+            }
+        }
+    }
+
+    // CONSTRUCTORS
+    explicit GateWideExprExclude(GateGraph& graph) {
+        for (V3GraphVertex& vtx : graph.vertices())
+            if (GateVarVertex* const vVtxp = vtx.cast<GateVarVertex>()) exclude(vVtxp);
+    }
+
+    ~GateWideExprExclude() {
+        V3Stats::addStat("Optimizations, Gate excluded wide expressions", m_statExcluded);
+    }
+
+public:
+    // PUBLIC METHODS
+    static void apply(GateGraph& graph) { GateWideExprExclude{graph}; }
+};
+
+//######################################################################
 // Is this a simple expression with a single input and single output?
 
 class GateOkVisitor final : public VNVisitorConst {
@@ -860,6 +908,7 @@ class GateInline final {
         : m_graph{graph} {
         // Find gate interconnect and optimize
         graph.userClearVertices();  // vertex->user(): bool. Indicates we've set it as consumed
+        GateWideExprExclude::apply(graph);
         // Get rid of buffers first,
         optimizeSignals(false);
         // Then propagate more complicated equations
