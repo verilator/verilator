@@ -16,6 +16,8 @@ Verilator 5.031 devel
 * Support queue's assignment `push_back/push_front('{})` (#5585) (#5586). [Yilou Wang]
 * Support basic constrained random for multi-dimensional dynamic array and queue (#5591). [Yilou Wang]
 * Support vpiDefName (#3906) (#5572). [Krzysztof Starecki]
+* Support parameter names in pattern initialization (#5593) (#5596). [Greg Davill]
+* Support randomize size constraints with restrictions (#5582 partial) (#5611). [Ryszard Rozak, Antmicro Ltd.]
 * Support `pure constraint`.
 * Add `--no-std-waiver` and default reading of standard lint waivers file (#5607).
 * Add `--no-std-package` as subset-alias of `--no-std` (#5607).
@@ -25,6 +27,7 @@ Verilator 5.031 devel
 * Add error on `wait` with missing `.triggered` (#4457).
 * Add error when improperly storing to parameter (#5147). [Gökçe Aydos]
 * Add coverage point hierarchy to coverage reports (#5575) (#5576). [Andrew Nolte]
+* Add warning on global constraints (#5625). [Ryszard Rozak, Antmicro Ltd.]
 * Add error on `solve before` or soft constraints of `randc` variable.
 * Improve concatenation performance (#5598) (#5599) (#5602). [Geza Lore]
 * Fix dotted reference in delay value (#2410).
@@ -38,6 +41,7 @@ Verilator 5.031 devel
 * Fix duplicate scope identifiers decoding (#5584). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix `rand` dynamic arrays with null handles (#5594). [Ryszard Rozak, Antmicro Ltd.]
 * Fix NBAs to unpacked arrays of unpacked structs (#5603). [Geza Lore]
+* Fix array of struct member overwrites on member update (#5605) (#5618) (#5628). [sumpster]
 
 
 Verilator 5.030 2024-10-27

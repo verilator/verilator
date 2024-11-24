@@ -1364,7 +1364,7 @@ Summary:
 .. option:: --no-std
 
    Prevents parsing standard input files, alias for
-   :opt:`--no-std-package`, :opt:`--no-std-waiver`.  This may be extended
+   :vlopt:`--no-std-package`, :vlopt:`--no-std-waiver`.  This may be extended
    to prevent reading other standardized files in future versions.
 
 .. option:: --no-std-package
@@ -1655,12 +1655,12 @@ Summary:
 
 .. option:: --waiver-multiline
 
-   When using :vlopt:`--waiver-output \<filename\>`, include a match
-   expression that includes the entire multiline error message as a match
-   regular expression, as opposed to the default of only matching the first
-   line of the error message.  This provides a starting point for creating
-   complex waivers, but such generated waivers will likely require editing
-   for brevity before being reused.
+   When using :vlopt:`--waiver-output \<filename\> <--waiver-output>`,
+   include a match expression that includes the entire multiline error
+   message as a match regular expression, as opposed to the default of only
+   matching the first line of the error message.  This provides a starting
+   point for creating complex waivers, but such generated waivers will
+   likely require editing for brevity before being reused.
 
 .. option:: --waiver-output <filename>
 
@@ -2111,7 +2111,7 @@ The grammar of configuration commands is as follows:
    the :code:`-rule`, :code:`-file`, and :code:`-contents` also match.  The
    wildcard should be designed to match a single line; it is unspecified if
    the wildcard is allowed to match across multiple lines. The input
-   contents does not include :vlopt:`--std` standard files, nor
+   contents does not include :vlopt:`--std <--no-std>` standard files, nor
    configuration files (with :code:`verilator_config`). Typical use for
    this is to match a version number present in the Verilog sources, so
    that the waiver will only apply to that version of the sources.
