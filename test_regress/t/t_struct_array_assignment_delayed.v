@@ -20,7 +20,7 @@ module tb;
             s[i].b <= 0;
         end
     end
-    
+
     initial begin
         clock = 0;
         s[0].a = 0;
