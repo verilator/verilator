@@ -99,7 +99,8 @@ class UnknownVisitor final : public VNVisitor {
         AstNodeExpr* prep = nodep;
 
         // Scan back to put the condlvalue above all selects (IE top of the lvalue)
-        while (VN_IS(prep->backp(), NodeSel) || VN_IS(prep->backp(), Sel) || VN_IS(prep->backp(), StructSel)) {
+        while (VN_IS(prep->backp(), NodeSel) || VN_IS(prep->backp(), Sel)
+               || VN_IS(prep->backp(), StructSel)) {
             prep = VN_AS(prep->backp(), NodeExpr);
         }
         FileLine* const fl = nodep->fileline();
