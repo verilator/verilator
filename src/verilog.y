@@ -1528,12 +1528,14 @@ port<nodep>:                    // ==IEEE: port
         //                      // Expanded interface_port_header
         //                      // We use instantCb here because the non-port form looks just like a module instantiation
                 portDirNetE id/*interface*/                      portSig variable_dimensionListE sigAttrListE
-                        { $$ = $3; VARDECL(IFACEREF); VARIO(NONE);
+                        { // VAR for now, but V3LinkCells may call setIfcaeRef on it later
+                          $$ = $3; VARDECL(VAR); VARIO(NONE);
                           AstNodeDType* const dtp = new AstIfaceRefDType{$<fl>2, "", *$2};
                           VARDTYPE(dtp);
                           addNextNull($$, VARDONEP($$, $4, $5)); }
         |       portDirNetE id/*interface*/ '.' idAny/*modport*/ portSig variable_dimensionListE sigAttrListE
-                        { $$ = $5; VARDECL(IFACEREF); VARIO(NONE);
+                        { // VAR for now, but V3LinkCells may call setIfcaeRef on it later
+                          $$ = $5; VARDECL(VAR); VARIO(NONE);
                           AstNodeDType* const dtp = new AstIfaceRefDType{$<fl>2, $<fl>4, "", *$2, *$4};
                           VARDTYPE(dtp);
                           addNextNull($$, VARDONEP($$, $6, $7)); }

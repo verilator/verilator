@@ -109,6 +109,7 @@ class LinkCellsVisitor final : public VNVisitor {
 
     // Below state needs to be preserved between each module call.
     AstNodeModule* m_modp = nullptr;  // Current module
+    AstVar* m_varp = nullptr;  // Current variable
     VSymGraph m_mods;  // Symbol table of all module names
     LinkCellsGraph m_graph;  // Linked graph of all cell interconnects
     LibraryVertex* m_libVertexp = nullptr;  // Vertex at root of all libraries
@@ -248,6 +249,9 @@ class LinkCellsVisitor final : public VNVisitor {
             pinp->param(true);
             if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
         }
+        // Parser didn't know what was interface, resolve now
+        // For historical reasons virtual interface reference variables remain VARs
+        if (m_varp && !nodep->isVirtual()) m_varp->setIfaceRef();
         // Note cannot do modport resolution here; modports are allowed underneath generates
     }
 
@@ -525,6 +529,10 @@ class LinkCellsVisitor final : public VNVisitor {
             pinp->param(true);
             if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
         }
+        if (m_varp) {  // Parser didn't know what was interface, resolve now
+            const AstNodeModule* const varModp = findModuleSym(nodep->name());
+            if (VN_IS(varModp, Iface)) m_varp->setIfaceRef();
+        }
     }
     void visit(AstClassOrPackageRef* nodep) override {
         iterateChildren(nodep);
@@ -536,6 +544,17 @@ class LinkCellsVisitor final : public VNVisitor {
             pinp->param(true);
             if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
         }
+    }
+
+    void visit(AstVar* nodep) override {
+        {
+            VL_RESTORER(m_varp);
+            m_varp = nodep;
+            iterateAndNextNull(nodep->childDTypep());
+        }
+        iterateAndNextNull(nodep->delayp());
+        iterateAndNextNull(nodep->valuep());
+        iterateAndNextNull(nodep->attrsp());
     }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
