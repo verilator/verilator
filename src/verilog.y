@@ -7295,12 +7295,12 @@ packageClassScopeItem<nodeExprp>:   // IEEE: package_scope or [package_scope]::[
                 idCC
         /*mid*/         { SYMP->nextId($<scp>1); }
         /*cont*/    yP_COLONCOLON
-                        { $$ = new AstClassOrPackageRef{$<fl>1, *$1, $<scp>1, nullptr}; $<scp>$ = $<scp>1; }
+                        { $$ = new AstClassOrPackageRef{$<fl>1, *$1, nullptr, nullptr}; $<scp>$ = $<scp>1; }
         //
         |       idCC parameter_value_assignmentClass
         /*mid*/         { SYMP->nextId($<scp>1); }   // Change next *after* we handle parameters, not before
         /*cont*/    yP_COLONCOLON
-                        { $$ = new AstClassOrPackageRef{$<fl>1, *$1, $<scp>1, $2}; $<scp>$ = $<scp>1; }
+                        { $$ = new AstClassOrPackageRef{$<fl>1, *$1, nullptr, $2}; $<scp>$ = $<scp>1; }
         ;
 
 dollarUnitNextId<nodeExprp>:    // $unit
