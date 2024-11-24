@@ -180,7 +180,7 @@ class Capabilities:
         if Capabilities._cached_have_solver is None:
             out = VtOs.run_capture('(z3 --help || cvc5 --help || cvc4 --help) 2>/dev/null',
                                    check=False)
-            Capabilities._cached_have_solver = bool('usage' in out.casefold())
+            Capabilities._cached_have_solver = bool('Usage' in out)
         return Capabilities._cached_have_solver
 
     @staticproperty
