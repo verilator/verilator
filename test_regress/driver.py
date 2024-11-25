@@ -660,7 +660,7 @@ class VlTest:
         scen_dir = re.sub(r'^t/\.\./', '', scen_dir)
         # Not mkpath so error if try to build somewhere odd
         VtOs.mkdir_ok(scen_dir)
-        self.obj_dir = scen_dir + "/" + self.name
+        self.obj_dir = scen_dir + "/" + self.name + Args.obj_suffix
 
         define_opt = self._define_opt_calc()
 
@@ -2744,6 +2744,10 @@ if __name__ == '__main__':
                         default=0,
                         type=int,
                         help='parallel job count (0=cpu count)')
+    parser.add_argument('--obj-suffix',
+                        action='store',
+                        default='',
+                        help='suffix to add to obj_ test directory name')
     parser.add_argument('--quiet',
                         action='store_true',
                         help='suppress output except failures and progress')
