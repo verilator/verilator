@@ -279,7 +279,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     bool m_inContAssign = false;  // In continuous assignment
     bool m_inProcAssign = false;  // In procedural assignment
     bool m_inFTaskRef = false;  // In function or task call
-    bool m_inInoutPin = false;  // Connected to pin that is inout
+    bool m_inInoutOrRefPin = false;  // Connected to pin that is inout
     const AstNodeFTask* m_taskp = nullptr;  // Current task
     const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
 
@@ -452,7 +452,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                 // Inouts have only isWrite set, as we don't have more
                 // information and operating on module boundary, treat as
                 // both read and writing
-                || m_inInoutPin)
+                || m_inInoutOrRefPin)
                 entryp->usedWhole();
         }
     }
@@ -503,8 +503,8 @@ class UndrivenVisitor final : public VNVisitorConst {
         iterateChildrenConst(nodep);
     }
     void visit(AstPin* nodep) override {
-        VL_RESTORER(m_inInoutPin);
-        m_inInoutPin = nodep->modVarp()->isInout();
+        VL_RESTORER(m_inInoutOrRefPin);
+        m_inInoutOrRefPin = nodep->modVarp()->isInoutOrRef();
         iterateChildrenConst(nodep);
     }
 
