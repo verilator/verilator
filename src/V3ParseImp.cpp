@@ -516,8 +516,7 @@ int V3ParseImp::tokenPipelineId(int token) {
         && m_tokenLastBison.token != '.') {
         if (const size_t depth = tokenPipeScanIdCell(0)) return yaID__aCELL;
     }
-    if (nexttok == '#') {
-        VL_RESTORER(yylval);  // Remember value, as about to read ahead
+    if (nexttok == '#') {  // e.g. class_type parameter_value_assignment '::'
         const size_t depth = tokenPipeScanParam(0, false);
         if (tokenPeekp(depth)->token == yP_COLONCOLON) return yaID__CC;
     }

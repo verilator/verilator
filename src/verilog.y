@@ -1433,7 +1433,7 @@ parameter_value_assignmentInst<pinp>:       // IEEE: parameter_value_assignment 
         //                      // '#' delay_value      { UNSUP }
         ;
 
-parameter_value_assignmentClass<pinp>:  // IEEE: [ parameter_value_assignment ] (for classes)
+parameter_value_assignmentClass<pinp>:  // IEEE: parameter_value_assignment (for classes)
         //                      // Like parameter_value_assignment, but for classes only, which always have #()
                 '#' '(' cellparamListE ')'              { $$ = $3; }
         ;
@@ -1695,8 +1695,8 @@ interface_item<nodep>:          // IEEE: interface_item + non_port_interface_ite
         ;
 
 interface_or_generate_item<nodep>:  // ==IEEE: interface_or_generate_item
-        //                          // module_common_item in interface_item, as otherwise duplicated
-        //                          // with module_or_generate_item's module_common_item
+        //                      // module_common_item in interface_item, as otherwise duplicated
+        //                      // with module_or_generate_item's module_common_item
                 modport_declaration                     { $$ = $1; }
         |       extern_tf_declaration                   { $$ = $1; }
         ;
@@ -3060,9 +3060,9 @@ assignOne<nodep>:
 
 delay_or_event_controlE<nodep>:  // IEEE: delay_or_event_control plus empty
                 /* empty */                             { $$ = nullptr; }
-        |        delay_control                          { $$ = $1; }
-        |        event_control                          { $$ = $1; }
-        |        yREPEAT '(' expr ')' event_control
+        |       delay_control                           { $$ = $1; }
+        |       event_control                           { $$ = $1; }
+        |       yREPEAT '(' expr ')' event_control
                         { $$ = $5; BBUNSUP($1, "Unsupported: repeat event control"); }
         ;
 
@@ -3936,11 +3936,11 @@ range_list<nodeExprp>:     // ==IEEE: range_list/open_range_list + value_range/o
 value_range<nodeExprp>:         // ==IEEE: value_range/open_value_range
                 expr                                    { $$ = $1; }
         |       '[' expr ':' expr ']'                   { $$ = new AstInsideRange{$1, $2, $4}; }
-        //              // IEEE-2023: added all four:
-        //              // Skipped as '$' is part of our expr
-        //              // IEEE-2023: '[' '$' ':' expr ']'
-        //              // Skipped as '$' is part of our expr
-        //              // IEEE-2023: '[' expr ':' '$' ']'
+        //                      // IEEE-2023: added all four:
+        //                      // Skipped as '$' is part of our expr
+        //                      // IEEE-2023: '[' '$' ':' expr ']'
+        //                      // Skipped as '$' is part of our expr
+        //                      // IEEE-2023: '[' expr ':' '$' ']'
         |       '[' expr yP_PLUSSLASHMINUS expr ']'
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: +/- range"); }
         |       '[' expr yP_PLUSPCTMINUS expr ']'
@@ -3951,11 +3951,11 @@ covergroup_value_range<nodeExprp>:  // ==IEEE-2012: covergroup_value_range
                 cgexpr                                  { $$ = $1; }
         |       '[' cgexpr ':' cgexpr ']'
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: covergroup value range"); }
-        //              // IEEE-2023: added all four:
-        //              // Skipped as '$' is part of our expr
-        //              // IEEE-2023: '[' '$' ':' cgexpr ']'
-        //              // Skipped as '$' is part of our expr
-        //              // IEEE-2023: '[' cgexpr ':' '$' ']'
+        //                      // IEEE-2023: added all four:
+        //                      // Skipped as '$' is part of our expr
+        //                      // IEEE-2023: '[' '$' ':' cgexpr ']'
+        //                      // Skipped as '$' is part of our expr
+        //                      // IEEE-2023: '[' cgexpr ':' '$' ']'
         |       '[' cgexpr yP_PLUSSLASHMINUS cgexpr ']'
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: covergroup value range"); }
         |       '[' cgexpr yP_PLUSPCTMINUS cgexpr ']'
@@ -5834,7 +5834,7 @@ variable_lvalue<nodeExprp>:     // IEEE: variable_lvalue or net_lvalue
         |       streaming_concatenation                 { $$ = $1; }
         ;
 
-variable_lvalueConcList<nodeExprp>: // IEEE: part of variable_lvalue: '{' variable_lvalue { ',' variable_lvalue } '}'
+variable_lvalueConcList<nodeExprp>:  // IEEE: part of variable_lvalue: '{' variable_lvalue { ',' variable_lvalue } '}'
                 variable_lvalue                                 { $$ = $1; }
         |       variable_lvalueConcList ',' variable_lvalue     { $$ = new AstConcat{$2, $1, $3}; }
         ;
@@ -6228,7 +6228,7 @@ property_port_item<nodep>:  // IEEE: property_port_item/sequence_port_item
                 property_port_itemFront property_port_itemAssignment { $$ = $2; }
         ;
 
-property_port_itemFront: // IEEE: part of property_port_item/sequence_port_item
+property_port_itemFront:  // IEEE: part of property_port_item/sequence_port_item
                 property_port_itemDirE property_formal_typeNoDt  { VARDTYPE($2); }
         //                      // data_type_or_implicit
         |       property_port_itemDirE data_type
@@ -6266,7 +6266,7 @@ property_declarationBody<nodep>:  // IEEE: part of property_declaration
         |       property_spec ';'                       { $$ = $1; }
         ;
 
-assertion_variable_declarationList<nodep>: // IEEE: part of assertion_variable_declaration
+assertion_variable_declarationList<nodep>:  // IEEE: part of assertion_variable_declaration
                 assertion_variable_declaration          { $$ = $1; }
         |       assertion_variable_declarationList assertion_variable_declaration
                         { $$ = addNextNull($1, $2); }
@@ -6332,8 +6332,8 @@ property_spec<propSpecp>:               // IEEE: property_spec
                 '@' '(' senitemEdge ')' yDISABLE yIFF '(' expr ')' pexpr
                         { $$ = new AstPropSpec{$1, $3, $8, $10}; }
         |       '@' '(' senitemEdge ')' pexpr           { $$ = new AstPropSpec{$1, $3, nullptr, $5}; }
-        //                              // Disable applied after the event occurs,
-        //                              // so no existing AST can represent this
+        //                      // Disable applied after the event occurs,
+        //                      // so no existing AST can represent this
         |       yDISABLE yIFF '(' expr ')' '@' '(' senitemEdge ')' pexpr
                         { $$ = new AstPropSpec{$1, $8, nullptr, new AstLogOr{$1, $4, $10}};
                           BBUNSUP($<fl>1, "Unsupported: property '(disable iff (...) @ (...)'\n"
@@ -7525,7 +7525,7 @@ dist_item<distItemp>:  // ==IEEE: dist_item + dist_weight
                         { $$ = new AstDistItem{$2, $1, $3}; }
         |       value_range yP_COLONDIV expr
                         { $$ = new AstDistItem{$2, $1, $3}; $$->isWhole(true); }
-        //                              // IEEE 1800-2023 added:
+        //                      // IEEE 1800-2023 added:
         |       yDEFAULT yP_COLONDIV expr
                         { BBUNSUP($<fl>2, "Unsupported: 'default :/' constraint");
                           $$ = nullptr; }
