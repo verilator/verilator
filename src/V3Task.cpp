@@ -515,7 +515,7 @@ class TaskVisitor final : public VNVisitor {
                         pinp->v3fatalSrc("ref argument should have caused non-inline of function");
                     }
                 }
-            } else if (portp->isInoutish()) {
+            } else if (portp->isInout()) {
                 // if (debug() >= 9) pinp->dumpTree("-pinrsize- ");
 
                 AstVarScope* const newvscp
@@ -900,7 +900,7 @@ class TaskVisitor final : public VNVisitor {
 
                     if (portp->isNonOutput()) {
                         std::string frName
-                            = portp->isInoutish() && portp->basicp()->isDpiPrimitive()
+                            = portp->isInout() && portp->basicp()->isDpiPrimitive()
                                       && portp->dtypep()->skipRefp()->arrayUnpackedElements() == 1
                                   ? "*"
                                   : "";

@@ -535,7 +535,7 @@ string AstVar::vlEnumType() const {
 
 string AstVar::vlEnumDir() const {
     string out;
-    if (isInoutish()) {
+    if (isInout()) {
         out = "VLVD_INOUT";
     } else if (isWritable()) {
         out = "VLVD_OUT";
@@ -2448,7 +2448,7 @@ int AstVarRef::instrCount() const {
 void AstVar::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isSc()) str << " [SC]";
-    if (isPrimaryIO()) str << (isInoutish() ? " [PIO]" : (isWritable() ? " [PO]" : " [PI]"));
+    if (isPrimaryIO()) str << (isInout() ? " [PIO]" : (isWritable() ? " [PO]" : " [PI]"));
     if (isIO()) str << " " << direction().ascii();
     if (isConst()) str << " [CONST]";
     if (isPullup()) str << " [PULLUP]";
@@ -2649,7 +2649,7 @@ bool AstNodeFTask::getPurityRecurse() const {
     // or any write reference to a variable that isn't an automatic function local.
     for (AstNode* stmtp = this->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
         if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
-            if (varp->isInoutish() || varp->isRef()) return false;
+            if (varp->isInoutOrRef()) return false;
         }
         if (!stmtp->isPure()) return false;
         if (stmtp->exists([](const AstNodeVarRef* const varrefp) {

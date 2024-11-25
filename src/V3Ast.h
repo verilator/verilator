@@ -786,8 +786,8 @@ public:
     }
     string prettyName() const { return verilogKwd(); }
     bool isAny() const { return m_e != NONE; }
-    // Looks like inout - "ish" because not identical to being an INOUT
-    bool isInoutish() const { return m_e == INOUT; }
+    bool isInout() const { return m_e == INOUT; }
+    bool isInoutOrRef() const { return m_e == INOUT || m_e == REF || m_e == CONSTREF; }
     bool isInput() const { return m_e == INPUT; }
     bool isNonOutput() const {
         return m_e == INPUT || m_e == INOUT || m_e == REF || m_e == CONSTREF;

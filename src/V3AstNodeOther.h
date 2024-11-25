@@ -2060,7 +2060,8 @@ public:
     bool isAnsi() const { return m_ansi; }
     bool isContinuously() const { return m_isContinuously; }
     bool isDeclTyped() const { return m_declTyped; }
-    bool isInoutish() const { return m_direction.isInoutish(); }
+    bool isInout() const { return m_direction.isInout(); }
+    bool isInoutOrRef() const { return m_direction.isInoutOrRef(); }
     bool isInput() const { return m_direction.isInput(); }
     bool isNonOutput() const { return m_direction.isNonOutput(); }
     bool isReadOnly() const VL_MT_SAFE { return m_direction.isReadOnly(); }

@@ -504,7 +504,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     }
     void visit(AstPin* nodep) override {
         VL_RESTORER(m_inInoutPin);
-        m_inInoutPin = nodep->modVarp()->isInoutish();
+        m_inInoutPin = nodep->modVarp()->isInout();
         iterateChildrenConst(nodep);
     }
 
