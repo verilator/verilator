@@ -88,9 +88,9 @@ int mon_check_props(void) {
         PLI_BYTE8* ptr = arrayVal.value.rawvals;
 
         PLI_BYTE8 expected[4] = {
-            static_cast<PLI_BYTE8>(0xde), 
-            static_cast<PLI_BYTE8>(0xad), 
-            static_cast<PLI_BYTE8>(0xbe), 
+            static_cast<PLI_BYTE8>(0xde),
+            static_cast<PLI_BYTE8>(0xad),
+            static_cast<PLI_BYTE8>(0xbe),
             static_cast<PLI_BYTE8>(0xef)};
 
         for (int i = 0; i < num; i++)
