@@ -2162,24 +2162,22 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
         return ((new VerilatedVpioRangeIter{vop->rangep()})->castVpiHandle());
     }
     case vpiReg: {
-        VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
-        if(VL_UNLIKELY(!vop)) {
-            VerilatedVpioScope* const vop = VerilatedVpioScope::castp(object);
-            if(VL_UNLIKELY(!vop)) return nullptr;
-            return ((new VerilatedVpioVarIter{vop})->castVpiHandle());
+        const VerilatedVpioVar* const vop_var = VerilatedVpioVar::castp(object);
+        if(VL_UNLIKELY(!vop_var)) {
+            const VerilatedVpioScope* const vop_scope = VerilatedVpioScope::castp(object);
+            if(VL_UNLIKELY(!vop_scope)) return nullptr;
+            return ((new VerilatedVpioVarIter{vop_scope})->castVpiHandle());
         }
 
-        VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
-        if (VL_UNLIKELY(!vop)) return nullptr;
-        if (vop->varp()->dims() < 2) return nullptr;
-        if (vop->varp()->dims() > 2) {
+        if (vop_var->varp()->dims() < 2) return nullptr;
+        if (vop_var->varp()->dims() > 2) {
             VL_VPI_WARNING_(__FILE__, __LINE__,
                             "%s: %s, object %s has unsupported number of indices (%d)",
                             __func__, VerilatedVpiError::strFromVpiMethod(type),
-                            vop->fullname(), vop->varp()->dims());
+                            vop_var->fullname(), vop_var->varp()->dims());
         }
 
-        return (new VerilatedVpioRegIter{object, vop->varp()})->castVpiHandle();
+        return (new VerilatedVpioRegIter{object, vop_var->varp()})->castVpiHandle();
     }
     case vpiParameter: {
         const VerilatedVpioScope* const vop = VerilatedVpioScope::castp(object);
