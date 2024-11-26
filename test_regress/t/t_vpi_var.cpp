@@ -337,14 +337,14 @@ int _mon_check_var() {
         CHECK_RESULT_CSTR(p, "vpiConstant");
     }
     {
-        TestVpiHandle vh10 = vpi_iterate(vpiMemoryWord, vh4);
+        TestVpiHandle vh10 = vpi_iterate(vpiReg, vh4);
         CHECK_RESULT_NZ(vh10);
         p = vpi_get_str(vpiType, vh10);
         CHECK_RESULT_CSTR(p, "vpiIterator");
         TestVpiHandle vh11 = vpi_scan(vh10);
         CHECK_RESULT_NZ(vh11);
         p = vpi_get_str(vpiType, vh11);
-        CHECK_RESULT_CSTR(p, "vpiMemoryWord");
+        CHECK_RESULT_CSTR(p, "vpiReg");
         TestVpiHandle vh12 = vpi_handle(vpiLeftRange, vh11);
         CHECK_RESULT_NZ(vh12);
         vpi_get_value(vh12, &tmpValue);
