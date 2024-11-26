@@ -109,16 +109,16 @@ class DeadVisitor final : public VNVisitor {
         if (m_modp) m_modp->user1Inc();  // e.g. Class under Package
         VL_RESTORER(m_modp);
         m_modp = nodep;
-        if (!nodep->dead()) {
-            iterateChildren(nodep);
-            checkAll(nodep);
-            if (AstClass* const classp = VN_CAST(nodep, Class)) {
-                if (classp->extendsp()) classp->extendsp()->user1Inc();
-                if (classp->classOrPackagep()) classp->classOrPackagep()->user1Inc();
-                m_classesp.push_back(classp);
-                // TODO we don't reclaim dead classes yet - graph implementation instead?
-                classp->user1Inc();
-            }
+        if (nodep->dead()) return;
+        if (nodep->modPublic()) m_modp->user1Inc();
+        iterateChildren(nodep);
+        checkAll(nodep);
+        if (AstClass* const classp = VN_CAST(nodep, Class)) {
+            if (classp->extendsp()) classp->extendsp()->user1Inc();
+            if (classp->classOrPackagep()) classp->classOrPackagep()->user1Inc();
+            m_classesp.push_back(classp);
+            // TODO we don't reclaim dead classes yet - graph implementation instead?
+            classp->user1Inc();
         }
     }
     void visit(AstCFunc* nodep) override {
