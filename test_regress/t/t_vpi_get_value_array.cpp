@@ -74,7 +74,7 @@
 #define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
 
 int mon_check_props(void) {
-    s_vpi_arrayvalue arrayVal = {0, 0, NULL};
+    s_vpi_arrayvalue arrayVal = {0, 0, {NULL}};
     int indexArr[2] = {0};
     int num = 4;
 
@@ -87,7 +87,11 @@ int mon_check_props(void) {
 
         PLI_BYTE8* ptr = arrayVal.value.rawvals;
 
-        PLI_BYTE8 expected[4] = {0xde, 0xad, 0xbe, 0xef};
+        PLI_BYTE8 expected[4] = {
+            static_cast<PLI_BYTE8>(0xde), 
+            static_cast<PLI_BYTE8>(0xad), 
+            static_cast<PLI_BYTE8>(0xbe), 
+            static_cast<PLI_BYTE8>(0xef)};
 
         for (int i = 0; i < num; i++)
             CHECK_RESULT_HEX(ptr[i], expected[i]);

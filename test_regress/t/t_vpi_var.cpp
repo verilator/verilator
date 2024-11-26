@@ -314,7 +314,7 @@ int _mon_check_var() {
         d = vpi_get(vpiVector, vh4);
         CHECK_RESULT(d, 1);
         p = vpi_get_str(vpiType, vh4);
-        CHECK_RESULT_CSTR(p, "vpiMemory");
+        CHECK_RESULT_CSTR(p, "vpiRegArray");
     }
 
     t_vpi_value tmpValue;
