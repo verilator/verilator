@@ -2847,13 +2847,6 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
             default:
                 ;
         }
-    } else if (arrayvalue_p->format == vpiRealVal) {
-        switch (varp->vltype()) {
-            case VLVT_UINT64:
-                return true;
-            default:
-                ;
-        }
     } else if ((arrayvalue_p->format == vpiRawTwoStateVal)
         || (arrayvalue_p->format == vpiRawFourStateVal)) {
         switch (varp->vltype()) {
@@ -3222,23 +3215,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
         }
 
         return;
-    } else if (arrayvalue_p->format == vpiRealVal) {
-        if (VL_UNCOVERABLE(num >= VL_VALUE_STRING_MAX_WORDS)) {
-                VL_FATAL_MT(__FILE__, __LINE__, "",
-                            "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; "
-                            "increase and recompile");
-            }
-
-            double* realsp = (double*)out_data;
-            arrayvalue_p->value.reals = realsp;
-
-        if (varp->vltype() == VLVT_UINT64) {
-            double *ptr = reinterpret_cast<double*>(vop->varDatap());
-            vl_copy_array_values(leftIsLow, index, num, size, ptr, realsp);
-        }
-
-        return;
-    }
+    } 
 
     arrayvalue_p->value.rawvals = nullptr;
 
@@ -3506,15 +3483,6 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 
                 if (index == size) index = 0;
             }
-        }
-
-        return;
-    } else if (arrayvalue_p->format == vpiRealVal) {
-        double* const realsp = arrayvalue_p->value.reals;
-
-        if (varp->vltype() == VLVT_UINT64) {
-            double* ptr = reinterpret_cast<double*>(vop->varDatap());
-            put_array_values(vop, index, num, size, realsp, ptr);
         }
 
         return;

@@ -24,10 +24,13 @@ extern "C" int mon_check();
 
    reg [7:0] write_bytes [0:3] `PUBLIC_FLAT_RW;
    reg [15:0] write_shorts [0:3] `PUBLIC_FLAT_RW;
-   reg [31:0] write_integers [0:3] `PUBLIC_FLAT_RW;
-   reg [31:0] write_integers_rl [3:0] `PUBLIC_FLAT_RW;
+   reg [31:0] write_words [0:3] `PUBLIC_FLAT_RW;
+   reg [31:0] write_words_rl [3:0] `PUBLIC_FLAT_RW;
    reg [63:0] write_longs [0:3] `PUBLIC_FLAT_RW;
-   reg [127:0] write_words [0:3] `PUBLIC_FLAT_RW;
+   reg [127:0] write_quads [0:3] `PUBLIC_FLAT_RW;
+   integer write_integers [0:3] `PUBLIC_FLAT_RW;
+   // real write_reals [0:3] `PUBLIC_FLAT_RW; //unsupported
+
 
    integer status;
 

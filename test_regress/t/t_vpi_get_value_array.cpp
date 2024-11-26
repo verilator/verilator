@@ -142,7 +142,6 @@ int mon_check_props(void) {
 
         for (int i = 0; i < num; i++)
             CHECK_RESULT_HEX(ptr[i], expected[i]);
-
         indexArr[0] = 0;
     }
 
@@ -199,6 +198,39 @@ int mon_check_props(void) {
         }
     }
 
+    {
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_longs", NULL);
+        CHECK_RESULT_NZ(object);
+
+        arrayVal.format = vpiRealVal;
+
+        PLI_INT32 indexp[1] = {0};
+        vpi_get_value_array(object, &arrayVal, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    }
+
+    {
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words", NULL);
+        CHECK_RESULT_NZ(object);
+
+        arrayVal.format = vpiShortRealVal;
+
+        PLI_INT32 indexp[1] = {0};
+        vpi_get_value_array(object, &arrayVal, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    }
+
+    {
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_longs", NULL);
+        CHECK_RESULT_NZ(object);
+
+        arrayVal.format = vpiTimeVal;
+
+        PLI_INT32 indexp[1] = {0};
+        vpi_get_value_array(object, &arrayVal, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    }
+
     return 0;
 }
 
@@ -213,7 +245,7 @@ int main(int argc, char** argv) {
 
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
     const std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{contextp.get()}};
-
+    contextp->fatalOnVpiError(0);
 #ifdef TEST_VERBOSE
     contextp->internalsDump();
 #endif
@@ -223,7 +255,7 @@ int main(int argc, char** argv) {
         VerilatedVpi::callValueCbs();
     }
 
-    return 0;
+    return 0;//TODO
 }
 
 #endif
