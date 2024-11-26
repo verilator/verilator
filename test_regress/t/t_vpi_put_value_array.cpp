@@ -74,7 +74,7 @@
 #define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
 
 int mon_check_props(void) {
-    s_vpi_arrayvalue arrayVal = {0, 0, NULL};
+    s_vpi_arrayvalue arrayVal = {0, 0, {NULL}};
     int indexArr[2] = {0};
     int num = 4;
 
