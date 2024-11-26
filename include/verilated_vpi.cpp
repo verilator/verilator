@@ -2892,9 +2892,9 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
 }
 
 template <typename T, typename K>
-static void get_array_values(const VerilatedVpioVar* const vop, int index, int num,
+static void vl_copy_array_values(bool leftIsLow, int index, int num,
                             int size, T* const src, K* dst) {
-    if (vop->rangep()->left() < vop->rangep()->right()) {
+    if (leftIsLow) {
         for (int i = 0; i < num; i++) {
             dst[i] = src[index++];
             if (index == size) index = 0;
@@ -2943,7 +2943,8 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                     __func__, num, size);
     }
 
-    index -= std::min(vop->rangep()->left(), vop->rangep()->right());
+    index -= vop->rangep()->low();
+    const bool leftIsLow = vop->rangep()->left() == vop->rangep()->low();
 
     if (arrayvalue_p->format == vpiIntVal) {
         if (VL_UNCOVERABLE(num >= VL_VALUE_STRING_MAX_WORDS)) {
@@ -2957,13 +2958,13 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 
         if (varp->vltype() == VLVT_UINT8) {
             CData* const ptr = reinterpret_cast<CData*>(vop->varDatap());
-            get_array_values(vop, index, num, size, ptr, integersp);
+            vl_copy_array_values(leftIsLow, index, num, size, ptr, integersp);
         } else if (varp->vltype() == VLVT_UINT16) {
             SData* const ptr = reinterpret_cast<SData*>(vop->varDatap());
-            get_array_values(vop, index, num, size, ptr, integersp);
+            vl_copy_array_values(leftIsLow, index, num, size, ptr, integersp);
         } else if (varp->vltype() == VLVT_UINT32) {
             IData* const ptr = reinterpret_cast<IData*>(vop->varDatap());
-            get_array_values(vop, index, num, size, ptr, integersp);
+            vl_copy_array_values(leftIsLow, index, num, size, ptr, integersp);
         }
 
         return;
@@ -2980,10 +2981,10 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 
         if (varp->vltype() == VLVT_UINT8) {
             CData* const ptr = reinterpret_cast<CData*>(vop->varDatap());
-            get_array_values(vop, index, num, size, ptr, shortintsp);
+            vl_copy_array_values(leftIsLow, index, num, size, ptr, shortintsp);
         } else if (varp->vltype() == VLVT_UINT16) {
             SData* const ptr = reinterpret_cast<SData*>(vop->varDatap());
-            get_array_values(vop, index, num, size, ptr, shortintsp);
+            vl_copy_array_values(leftIsLow, index, num, size, ptr, shortintsp);
         }
 
         return;
@@ -3000,13 +3001,13 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 
         if (varp->vltype() == VLVT_UINT8) {
             CData* const ptr = reinterpret_cast<CData*>(vop->varDatap());
-            get_array_values(vop, index, num, size, ptr, longintsp);
+            vl_copy_array_values(leftIsLow, index, num, size, ptr, longintsp);
         } else if (varp->vltype() == VLVT_UINT16) {
             SData* const ptr = reinterpret_cast<SData*>(vop->varDatap());
-            get_array_values(vop, index, num, size, ptr, longintsp);
+            vl_copy_array_values(leftIsLow, index, num, size, ptr, longintsp);
         } else if (varp->vltype() == VLVT_UINT64) {
             QData* const ptr = reinterpret_cast<QData*>(vop->varDatap());
-            get_array_values(vop, index, num, size, ptr, longintsp);
+            vl_copy_array_values(leftIsLow, index, num, size, ptr, longintsp);
         }
 
         return;
@@ -3179,22 +3180,22 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 
         if (varp->vltype() == VLVT_UINT8) {
             CData *ptr = reinterpret_cast<CData*>(vop->varDatap());
-            get_array_values(vop, index, num, size, ptr, valuep);
+            vl_copy_array_values(leftIsLow, index, num, size, ptr, valuep);
         } else if (varp->vltype() == VLVT_UINT16) {
             SData *ptr = reinterpret_cast<SData*>(vop->varDatap());
             SData *rawvals = reinterpret_cast<SData*>(valuep);
 
-            get_array_values(vop, index, num, size, ptr, rawvals);
+            vl_copy_array_values(leftIsLow, index, num, size, ptr, rawvals);
         } else if (varp->vltype() == VLVT_UINT32) {
             IData *ptr = reinterpret_cast<IData*>(vop->varDatap());
             IData *rawvals = reinterpret_cast<IData*>(valuep);
 
-            get_array_values(vop, index, num, size, ptr, rawvals);
+            vl_copy_array_values(leftIsLow, index, num, size, ptr, rawvals);
         } else if (varp->vltype() == VLVT_UINT64) {
             QData *ptr = reinterpret_cast<QData*>(vop->varDatap());
             QData *rawvals = reinterpret_cast<QData*>(valuep);
 
-            get_array_values(vop, index, num, size, ptr, rawvals);
+            vl_copy_array_values(leftIsLow, index, num, size, ptr, rawvals);
         } else if (varp->vltype() == VLVT_WDATA) {
             EData *ptr = reinterpret_cast<EData*>(vop->varDatap());
             EData *rawvals = reinterpret_cast<EData*>(valuep);
@@ -3233,7 +3234,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 
         if (varp->vltype() == VLVT_UINT64) {
             double *ptr = reinterpret_cast<double*>(vop->varDatap());
-            get_array_values(vop, index, num, size, ptr, realsp);
+            vl_copy_array_values(leftIsLow, index, num, size, ptr, realsp);
         }
 
         return;
@@ -3272,12 +3273,12 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 
     if (VL_UNLIKELY(!vop->rangep())) return;
 
-    int minRange = std::min(vop->rangep()->left(), vop->rangep()->right());
-    int maxRange = std::max(vop->rangep()->left(), vop->rangep()->right());
+    int lowRange = vop->rangep()->low();
+    int highRange = vop->rangep()->high();
 
-    if ((index_p[0] > maxRange) || (index_p[0] < minRange)) {
+    if ((index_p[0] > highRange) || (index_p[0] < lowRange)) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: index %u for object %s is out of bounds [%u,%u]",
-            __func__, index_p[0], vop->fullname(), minRange, maxRange);
+            __func__, index_p[0], vop->fullname(), lowRange, highRange);
     }
 
     if (arrayvalue_p->flags & vpiUserAllocFlag) {
