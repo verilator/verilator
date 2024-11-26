@@ -2450,7 +2450,7 @@ class VlTest:
         if not match:
             self.error("File_grep: " + filename + ": Regexp not found: " + regexp)
             return None
-        if expvalue and str(expvalue) != match.group(1):
+        if expvalue is not None and str(expvalue) != match.group(1):
             self.error("File_grep: " + filename + ": Got='" + match.group(1) + "' Expected='" +
                        str(expvalue) + "' in regexp: '" + regexp + "'")
             return None
@@ -2472,7 +2472,7 @@ class VlTest:
                 return
             match = re.search(regexp, contents)
             if match:
-                if expvalue and str(expvalue) != match.group(1):
+                if expvalue is not None and str(expvalue) != match.group(1):
                     self.error("file_grep: " + filename + ": Got='" + match.group(1) +
                                "' Expected='" + str(expvalue) + "' in regexp: " + regexp)
                 return

@@ -29,6 +29,7 @@ Verilator 5.031 devel
 * Add coverage point hierarchy to coverage reports (#5575) (#5576). [Andrew Nolte]
 * Add warning on global constraints (#5625). [Ryszard Rozak, Antmicro Ltd.]
 * Add error on `solve before` or soft constraints of `randc` variable.
+* Add `--fno-inline-funcs` to disable function inlining.
 * Improve concatenation performance (#5598) (#5599) (#5602). [Geza Lore]
 * Fix dotted reference in delay value (#2410).
 * Fix `function fork...join_none` regression with unknown type (#4449).

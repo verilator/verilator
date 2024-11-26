@@ -599,6 +599,8 @@ Summary:
 
 .. option:: -fno-inline
 
+.. option:: -fno-inline-funcs
+
 .. option:: -fno-life
 
 .. option:: -fno-life-post
