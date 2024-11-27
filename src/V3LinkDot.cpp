@@ -2766,6 +2766,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         UINFO(9, indent() << " new " << nodep->varrefp() << endl);
                     }
                 }
+                if (AstEnumItem* const itemp = VN_CAST(foundp->nodep(), EnumItem)) {
+                    // Attach enum item value to PatMember
+                    nodep->varrefp(
+                        new AstEnumItemRef{nodep->fileline(), itemp, foundp->classOrPackagep()});
+                    UINFO(9, indent() << " new " << itemp << endl);
+                }
             }
         }
         iterateChildren(nodep);
