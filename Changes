@@ -46,6 +46,7 @@ Verilator 5.031 devel
 * Fix `rand` dynamic arrays with null handles (#5594). [Ryszard Rozak, Antmicro Ltd.]
 * Fix NBAs to unpacked arrays of unpacked structs (#5603). [Geza Lore]
 * Fix array of struct member overwrites on member update (#5605) (#5618) (#5628). [sumpster]
+* Fix interface and struct pattern collision (#5639) (#5640). [Todd Strader]
 
 
 Verilator 5.030 2024-10-27
