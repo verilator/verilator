@@ -44,28 +44,28 @@ extern "C" int mon_check();
 
       read_shorts[0] = 16'hdead;
       read_shorts[1] = 16'hbeef;
-      read_shorts[2] = 16'hbeef;
-      read_shorts[3] = 16'hdead;
+      read_shorts[2] = 16'hcafe;
+      read_shorts[3] = 16'hf00d;
 
-      read_words[0] = 32'h00000000;
+      read_words[0] = 32'hcafef00d;
       read_words[1] = 32'hdeadbeef;
-      read_words[2] = 32'h00000000;
-      read_words[3] = 32'hdeadbeef;
+      read_words[2] = 32'h01234567;
+      read_words[3] = 32'h89abcdef;
 
       read_words_rl[0] = 32'hdeadbeef;
-      read_words_rl[1] = 32'hdeadbeef;
-      read_words_rl[2] = 32'h00000000;
-      read_words_rl[3] = 32'h00000000;
+      read_words_rl[1] = 32'hcafef00d;
+      read_words_rl[2] = 32'h01234567;
+      read_words_rl[3] = 32'h89abcdef;
 
-      read_longs[0] = 64'h00000000deadbeef;
-      read_longs[1] = 64'h0000000000000000;
-      read_longs[2] = 64'h00000000beefdead;
-      read_longs[3] = 64'h0000000000000000;
+      read_longs[0] = 64'hdeadbeefcafef00d;
+      read_longs[1] = 64'h0123456789abcdef;
+      read_longs[2] = 64'hbeefdeadf00dcafe;
+      read_longs[3] = 64'h45670123cdef89ab;
 
-      read_quads[0] = 128'h00000000000000000000000000000000;
-      read_quads[1] = 128'hbeefdead0000000000000000deadbeef;
-      read_quads[2] = 128'h000000000000000000000000beefdead;
-      read_quads[3] = 128'hbeefdeaddeadbeefbeefdeaddeadbeef;
+      read_quads[0] = 128'hdeadbeefcafef00d0123456789abcdef; // 0 -> 15
+      read_quads[1] = 128'hbeefdeadf00dcafe45670123cdef89ab; // 16 -> 31
+      read_quads[2] = 128'hefbeadde0df0feca67452301efcdab89; // 32 -> 47
+      read_quads[3] = 128'hfeebdaedd00fefac32107654ba98fedc; // 48 -> 63
 
       read_integers[0] = -2147483648;
       read_integers[1] = 2147483647;
