@@ -2760,9 +2760,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
             // Lookup
             if (VSymEnt* const foundp = m_curSymp->findIdFallback(textp->text())) {
                 if (AstVar* const varp = VN_CAST(foundp->nodep(), Var)) {
-                    // Attach found Text reference to PatMember
-                    nodep->varrefp(new AstVarRef{nodep->fileline(), varp, VAccess::READ});
-                    UINFO(9, indent() << " new " << nodep->varrefp() << endl);
+                    if (varp->isParam() || varp->isGenVar()) {
+                        // Attach found Text reference to PatMember
+                        nodep->varrefp(new AstVarRef{nodep->fileline(), varp, VAccess::READ});
+                        UINFO(9, indent() << " new " << nodep->varrefp() << endl);
+                    }
                 }
             }
         }
