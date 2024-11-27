@@ -561,6 +561,12 @@ int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
     return 0;
 }
 
+void V3Options::validateIdentifier(FileLine* fl, const string& arg, const string& opt) {
+    if (!VString::isIdentifier(arg)) {
+        fl->v3error(opt << " argument must be a legal C++ identifier: '" << arg << "'");
+    }
+}
+
 string V3Options::filePath(FileLine* fl, const string& modname, const string& lastpath,
                            const string& errmsg) {  // Error prefix or "" to suppress error
     // Find a filename to read the specified module name,
@@ -1386,7 +1392,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     };
     DECL_OPTION("-default-language", CbVal, setLang);
     DECL_OPTION("-language", CbVal, setLang);
-    DECL_OPTION("-lib-create", Set, &m_libCreate);
+    DECL_OPTION("-lib-create", CbVal, [this, fl](const char* valp) {
+        validateIdentifier(fl, valp, "--lib-create");
+        m_libCreate = valp;
+    });
     DECL_OPTION("-lint-only", OnOff, &m_lintOnly);
     DECL_OPTION("-localize-max-size", Set, &m_localizeMaxSize);
     DECL_OPTION("-main-top-name", Set, &m_mainTopName);
@@ -1409,7 +1418,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         }
     });
     DECL_OPTION("-max-num-width", Set, &m_maxNumWidth);
-    DECL_OPTION("-mod-prefix", Set, &m_modPrefix);
+    DECL_OPTION("-mod-prefix", CbVal, [this, fl](const char* valp) {
+        validateIdentifier(fl, valp, "--mod-prefix");
+        m_modPrefix = valp;
+    });
 
     DECL_OPTION("-O0", CbCall, [this]() { optimize(0); });
     DECL_OPTION("-O1", CbCall, [this]() { optimize(1); });
@@ -1460,7 +1472,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-pins-uint8", OnOff, &m_pinsUint8);
     DECL_OPTION("-pipe-filter", Set, &m_pipeFilter);
     DECL_OPTION("-pp-comments", OnOff, &m_ppComments);
-    DECL_OPTION("-prefix", Set, &m_prefix);
+    DECL_OPTION("-prefix", CbVal, [this, fl](const char* valp) {
+        validateIdentifier(fl, valp, "--prefix");
+        m_prefix = valp;
+    });
     DECL_OPTION("-private", CbCall, [this]() { m_public = false; });
     DECL_OPTION("-prof-c", OnOff, &m_profC);
     DECL_OPTION("-prof-cfuncs", CbCall, [this]() { m_profC = m_profCFuncs = true; });
@@ -1470,7 +1485,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-prof-pgo", OnOff, &m_profPgo);
     DECL_OPTION("-protect-ids", OnOff, &m_protectIds);
     DECL_OPTION("-protect-key", Set, &m_protectKey);
-    DECL_OPTION("-protect-lib", CbVal, [this](const char* valp) {
+    DECL_OPTION("-protect-lib", CbVal, [this, fl](const char* valp) {
+        validateIdentifier(fl, valp, "--protect-lib");
         m_libCreate = valp;
         m_protectIds = true;
     });

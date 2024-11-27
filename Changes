@@ -26,6 +26,7 @@ Verilator 5.031 devel
 * Add error on illegal enum base type (#3010). [Iztok Jeras]
 * Add error on `wait` with missing `.triggered` (#4457).
 * Add error when improperly storing to parameter (#5147). [Gökçe Aydos]
+* Add error on illegal `--prefix` etc. values (#5507). [Fabian Keßler]
 * Add coverage point hierarchy to coverage reports (#5575) (#5576). [Andrew Nolte]
 * Add warning on global constraints (#5625). [Ryszard Rozak, Antmicro Ltd.]
 * Add error on `solve before` or soft constraints of `randc` variable.

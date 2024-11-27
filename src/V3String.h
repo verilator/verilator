@@ -114,6 +114,10 @@ public:
     static string spaceUnprintable(const string& str) VL_PURE;
     // Remove any whitespace
     static string removeWhitespace(const string& str);
+    // Return true if only identifer or ""
+    static bool isIdentifier(const string& str);
+    // Return true if char is valid character in C identifiers
+    static bool isIdentifierChar(char c) { return isalnum(c) || c == '_'; }
     // Return true if only whitespace or ""
     static bool isWhitespace(const string& str);
     // Return number of spaces/tabs leading in string
@@ -128,8 +132,6 @@ public:
     static bool startsWith(const string& str, const string& prefix);
     // Predicate to check if 'str' ends with 'suffix'
     static bool endsWith(const string& str, const string& suffix);
-    // Return true if char is valid character in word
-    static bool isWordChar(char c) { return isalnum(c) || c == '_'; }
     // Return proper article (a/an) for a word. May be inaccurate for some special words
     static string aOrAn(const char* word);
     static string aOrAn(const string& word) { return aOrAn(word.c_str()); }
