@@ -216,6 +216,7 @@ int mon_check_props(void) {
     }
 
     {
+        // test unsupported format
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_longs", NULL);
         CHECK_RESULT_NZ(object);
 
@@ -227,6 +228,7 @@ int mon_check_props(void) {
     }
 
     {
+        // test unsupported foramt
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words", NULL);
         CHECK_RESULT_NZ(object);
 
@@ -238,6 +240,7 @@ int mon_check_props(void) {
     }
 
     {
+        // test unsupported format
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_longs", NULL);
         CHECK_RESULT_NZ(object);
 
@@ -245,6 +248,83 @@ int mon_check_props(void) {
 
         PLI_INT32 indexp[1] = {0};
         vpi_get_value_array(object, &arrayVal, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    }
+
+    {
+        // test unsupported vpiHandle
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test",NULL);
+        CHECK_RESULT_NZ(object);
+
+        arrayVal.format = vpiIntVal;
+
+        PLI_INT32 indexp[1] = {0};
+        vpi_get_value_array(object, &arrayVal, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    }
+
+    {
+        // test unsupported type
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_scalar",NULL);
+        CHECK_RESULT_NZ(object);
+
+        arrayVal.format = vpiIntVal;
+
+        PLI_INT32 indexp[1] = {0};
+        vpi_get_value_array(object, &arrayVal, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    }
+
+    {
+        // test indexp out of bounds
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_bounds",NULL);
+        CHECK_RESULT_NZ(object);
+
+        arrayVal.format = vpiIntVal;
+
+        PLI_INT32 indexp[1] = {4};
+        vpi_get_value_array(object, &arrayVal, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+
+        indexp[1] = {0};
+        vpi_get_value_array(object, &arrayVal, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    }
+
+    {
+        // test unsupported flags
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words",NULL);
+        CHECK_RESULT_NZ(object);
+
+        s_vpi_arrayvalue arrayvalue = {vpiIntVal,vpiUserAllocFlag,0};
+
+        PLI_INT32 indexp[1] = {0};
+        vpi_get_value_array(object, &arrayvalue, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+        arrayVal.flags = 0;
+    }
+
+    {
+        // test unsupported format & vltype combination
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words",NULL);
+        CHECK_RESULT_NZ(object);
+
+        s_vpi_arrayvalue arrayvalue = {vpiShortIntVal,0,0};
+        PLI_INT32 indexp[1] = {0};
+
+        vpi_get_value_array(object, &arrayvalue, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    }
+
+    {
+        // test num out of bounds
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words",NULL);
+        CHECK_RESULT_NZ(object);
+
+        s_vpi_arrayvalue arrayvalue = {vpiIntVal,0,0};
+        PLI_INT32 indexp[1] = {0};
+
+        vpi_get_value_array(object, &arrayvalue, indexp, 5);
         CHECK_RESULT_NZ(vpi_chk_error(nullptr));
     }
 
@@ -272,7 +352,7 @@ int main(int argc, char** argv) {
         VerilatedVpi::callValueCbs();
     }
 
-    return 0;//TODO
+    return 0;
 }
 
 #endif

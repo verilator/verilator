@@ -2934,6 +2934,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
     if (VL_UNCOVERABLE(num > size)) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: requested elements (%u) exceed array size (%u)",
                     __func__, num, size);
+        return;
     }
 
     index -= vop->rangep()->low();
@@ -3217,8 +3218,6 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
         return;
     } 
 
-    arrayvalue_p->value.rawvals = nullptr;
-
     VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for %s", __func__,
                   VerilatedVpiError::strFromVpiVal(arrayvalue_p->format), vop->fullname());
 }
@@ -3234,19 +3233,16 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
     const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
     if (VL_UNLIKELY(!vop)) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
+        return;
     }
 
     if (vop->type() != vpiRegArray) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported type (%p, %s)", __func__,
             object, VerilatedVpiError::strFromVpiObjType(vop->type()));
+        return;
     }
 
     const VerilatedVar* const varp = vop->varp();
-
-    if (varp->dims() != 2) {
-        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: object %s has unsupported number of indices (%d)",
-            __func__, vop->fullname(), varp->dims());
-    }
 
     if (VL_UNLIKELY(!vop->rangep())) return;
 
@@ -3256,11 +3252,13 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
     if ((index_p[0] > highRange) || (index_p[0] < lowRange)) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: index %u for object %s is out of bounds [%u,%u]",
             __func__, index_p[0], vop->fullname(), lowRange, highRange);
+        return;
     }
 
     if (arrayvalue_p->flags & vpiUserAllocFlag) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiUserAllocFlag (%x)",
                         __func__, arrayvalue_p->flags);
+        return;
     }
 
     vl_get_value_array(object, arrayvalue_p, index_p, num);
@@ -3299,6 +3297,7 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
     if (VL_UNCOVERABLE(num > size)) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: requested elements to set (%u) exceed array size (%u)",
                       __func__, num, size);
+        return;
     }
 
 
@@ -3482,35 +3481,34 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                          PLI_INT32* index_p, PLI_UINT32 num) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_put_value_array %p\n", object););
     VerilatedVpiImp::assertOneCheck();
-
     VL_VPI_ERROR_RESET_();
-    if (VL_UNLIKELY(!object)) return;
+
+    if(VL_UNLIKELY(!arrayvalue_p)){
+        VL_VPI_WARNING_(__FILE__, __LINE__, "Ignoring vpi_put_value_array with nullptr value pointer");
+        return;
+    }
 
     const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
     if (VL_UNLIKELY(!vop)) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
+        return;
     }
 
     if (vop->type() != vpiRegArray) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported type (%p, %s)", __func__,
             object, VerilatedVpiError::strFromVpiObjType(vop->type()));
+        return;
     }
 
     const VerilatedVar* const varp = vop->varp();
 
-    if (varp->dims() != 2) {
-        VL_VPI_ERROR_(__FILE__, __LINE__, "%s: object %s has unsupported number of indices (%d)",
-            __func__, vop->fullname(), varp->dims());
-    }
+    int lowRange = vop->rangep()->low();
+    int highRange = vop->rangep()->high();
 
-    if (VL_UNLIKELY(!vop->rangep())) return;
-
-    int minRange = std::min(vop->rangep()->left(), vop->rangep()->right());
-    int maxRange = std::max(vop->rangep()->left(), vop->rangep()->right());
-
-    if ((index_p[0] > maxRange) || (index_p[0] < minRange)) {
+    if ((index_p[0] > highRange) || (index_p[0] < lowRange)) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: index %u for object %s is out of bounds [%u,%u]",
-            __func__, index_p[0], vop->fullname(), minRange, maxRange);
+            __func__, index_p[0], vop->fullname(), lowRange, highRange);
+        return;
     }
 
     if (VL_UNLIKELY(!vop->varp()->isPublicRW())) {
@@ -3518,11 +3516,13 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                         "Ignoring vpi_put_value_array to signal marked read-only,"
                         " use public_flat_rw instead: %s",
                         vop->fullname());
+        return;
     }
 
-    if (arrayvalue_p->flags & ~(vpiPropagateOff | vpiOneValue | vpiNoDelay)) {
+    if (arrayvalue_p->flags & (vpiPropagateOff | vpiOneValue)) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported flags (%x)",
                         __func__, arrayvalue_p->flags);
+        return;
     }
 
     vl_put_value_array(object, arrayvalue_p, index_p, num);

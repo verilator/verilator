@@ -31,6 +31,8 @@ extern "C" int mon_check();
    reg [63:0] read_longs [0:3] `PUBLIC_FLAT_RD;
    reg [127:0] read_quads [0:3] `PUBLIC_FLAT_RD;
    integer read_integers [0:3] `PUBLIC_FLAT_RD;
+   reg [7:0] read_scalar `PUBLIC_FLAT_RD;
+   reg [7:0] read_bounds [1:3] `PUBLIC_FLAT_RD;
 
    integer status;
 

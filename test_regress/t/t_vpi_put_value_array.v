@@ -29,7 +29,9 @@ extern "C" int mon_check();
    reg [63:0] write_longs [0:3] `PUBLIC_FLAT_RW;
    reg [127:0] write_quads [0:3] `PUBLIC_FLAT_RW;
    integer write_integers [0:3] `PUBLIC_FLAT_RW;
-   // real write_reals [0:3] `PUBLIC_FLAT_RW; //unsupported
+   reg [7:0] write_scalar `PUBLIC_FLAT_RW;
+   reg [7:0] write_bounds [1:3] `PUBLIC_FLAT_RW;
+   reg [7:0] write_inaccessible [0:3] `PUBLIC_FLAT_RD;
 
 
    integer status;

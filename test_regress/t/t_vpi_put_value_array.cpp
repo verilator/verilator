@@ -243,6 +243,7 @@ int mon_check_props(void) {
     }
 
     {
+        // test unsupported format
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_longs", NULL);
         CHECK_RESULT_NZ(object);
 
@@ -254,6 +255,7 @@ int mon_check_props(void) {
     }
 
     {
+        // test unsupported format
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_words", NULL);
         CHECK_RESULT_NZ(object);
 
@@ -265,6 +267,7 @@ int mon_check_props(void) {
     }
 
     {
+        // test unsupported format
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_longs", NULL);
         CHECK_RESULT_NZ(object);
 
@@ -272,6 +275,120 @@ int mon_check_props(void) {
 
         PLI_INT32 indexp[1] = {0};
         vpi_put_value_array(object, &arrayVal, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    }
+
+    {
+        // test null array value
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_words", NULL);
+        CHECK_RESULT_NZ(object);
+
+        PLI_INT32 indexp[1] = {0};
+
+        vpi_put_value_array(object, nullptr, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    }
+
+    {
+        // test unsupported vpiHandle
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test", NULL);
+        CHECK_RESULT_NZ(object);
+
+        int datap[4] = {0,0,0,0};
+        s_vpi_arrayvalue arrayvalue = {vpiIntVal,0,datap};
+        PLI_INT32 indexp[1] = {0};
+
+        vpi_put_value_array(object, &arrayvalue, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    }
+
+    {
+        // test unsupported type
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_scalar", NULL);
+        CHECK_RESULT_NZ(object);
+
+        int datap[4] = {0,0,0,0};
+        s_vpi_arrayvalue arrayvalue = {vpiIntVal,0,datap};
+        PLI_INT32 indexp[1] = {0};
+
+        vpi_put_value_array(object, &arrayvalue, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    }
+
+    {
+        // test index out of bounds
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_bounds", NULL);
+        CHECK_RESULT_NZ(object);
+
+        int datap[4] = {0,0,0,0};
+        s_vpi_arrayvalue arrayvalue = {vpiIntVal,0,datap};
+        PLI_INT32 indexp[1] = {0};
+
+        vpi_put_value_array(object, &arrayvalue, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+
+        indexp[0] = {4};
+        vpi_put_value_array(object, &arrayvalue, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    }
+
+    {
+        // test inaccessible
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_inaccessible", NULL);
+        CHECK_RESULT_NZ(object);
+
+        int datap[4] = {0,0,0,0};
+        s_vpi_arrayvalue arrayvalue = {vpiIntVal,0,datap};
+        PLI_INT32 indexp[1] = {0};
+
+        vpi_put_value_array(object, &arrayvalue, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    }
+
+    {
+        // test unsupported flags
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_words", NULL);
+        CHECK_RESULT_NZ(object);
+
+        int datap[4] = {0,0,0,0};
+        s_vpi_arrayvalue arrayvalue = {vpiIntVal,vpiPropagateOff,datap};
+        PLI_INT32 indexp[1] = {0};
+
+        vpi_put_value_array(object, &arrayvalue, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+
+        arrayvalue.flags = vpiOneValue;
+        vpi_put_value_array(object, &arrayvalue, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    }
+
+    {
+        // test unsupported format & type combination
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_words", NULL);
+        CHECK_RESULT_NZ(object);
+
+        int datap[4] = {0,0,0,0};
+        s_vpi_arrayvalue arrayvalue = {vpiShortIntVal,0,datap};
+        PLI_INT32 indexp[1] = {0};
+
+        vpi_put_value_array(object, &arrayvalue, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+
+        arrayvalue.flags = vpiOneValue;
+        vpi_put_value_array(object, &arrayvalue, indexp, num);
+        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    }
+
+    {
+        // test num out of bounds
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_words", NULL);
+        CHECK_RESULT_NZ(object);
+
+        int datap[4] = {0,0,0,0};
+        s_vpi_arrayvalue arrayvalue = {vpiIntVal,0,datap};
+        PLI_INT32 indexp[1] = {0};
+
+        vpi_put_value_array(object, &arrayvalue, indexp, 5);
         CHECK_RESULT_NZ(vpi_chk_error(nullptr));
     }
 
