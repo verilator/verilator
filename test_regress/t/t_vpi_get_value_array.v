@@ -26,10 +26,11 @@ extern "C" int mon_check();
 
    reg [7:0] read_bytes [0:3] `PUBLIC_FLAT_RD;
    reg [15:0] read_shorts [0:3] `PUBLIC_FLAT_RD;
-   reg [31:0] read_integers [0:3] `PUBLIC_FLAT_RD;
-   reg [31:0] read_integers_rl [3:0] `PUBLIC_FLAT_RD;
+   reg [31:0] read_words [0:3] `PUBLIC_FLAT_RD;
+   reg [31:0] read_words_rl [3:0] `PUBLIC_FLAT_RD;
    reg [63:0] read_longs [0:3] `PUBLIC_FLAT_RD;
-   reg [127:0] read_words [0:3] `PUBLIC_FLAT_RD;
+   reg [127:0] read_quads [0:3] `PUBLIC_FLAT_RD;
+   integer read_integers [0:3] `PUBLIC_FLAT_RD;
 
    integer status;
 
@@ -44,25 +45,30 @@ extern "C" int mon_check();
       read_shorts[2] = 16'hbeef;
       read_shorts[3] = 16'hdead;
 
-      read_integers[0] = 32'h00000000;
-      read_integers[1] = 32'hdeadbeef;
-      read_integers[2] = 32'h00000000;
-      read_integers[3] = 32'hdeadbeef;
+      read_words[0] = 32'h00000000;
+      read_words[1] = 32'hdeadbeef;
+      read_words[2] = 32'h00000000;
+      read_words[3] = 32'hdeadbeef;
 
-      read_integers_rl[0] = 32'hdeadbeef;
-      read_integers_rl[1] = 32'hdeadbeef;
-      read_integers_rl[2] = 32'h00000000;
-      read_integers_rl[3] = 32'h00000000;
+      read_words_rl[0] = 32'hdeadbeef;
+      read_words_rl[1] = 32'hdeadbeef;
+      read_words_rl[2] = 32'h00000000;
+      read_words_rl[3] = 32'h00000000;
 
       read_longs[0] = 64'h00000000deadbeef;
       read_longs[1] = 64'h0000000000000000;
       read_longs[2] = 64'h00000000beefdead;
       read_longs[3] = 64'h0000000000000000;
 
-      read_words[0] = 128'h00000000000000000000000000000000;
-      read_words[1] = 128'hbeefdead0000000000000000deadbeef;
-      read_words[2] = 128'h000000000000000000000000beefdead;
-      read_words[3] = 128'hbeefdeaddeadbeefbeefdeaddeadbeef;
+      read_quads[0] = 128'h00000000000000000000000000000000;
+      read_quads[1] = 128'hbeefdead0000000000000000deadbeef;
+      read_quads[2] = 128'h000000000000000000000000beefdead;
+      read_quads[3] = 128'hbeefdeaddeadbeefbeefdeaddeadbeef;
+
+      read_integers[0] = -2147483648;
+      read_integers[1] = 2147483647;
+      read_integers[2] = 0;
+      read_integers[3] = 1234567890;
 
       status = $c32("mon_check()");
 

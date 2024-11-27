@@ -113,7 +113,7 @@ int mon_check_props(void) {
     }
 
     {
-        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_integers", NULL);
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words", NULL);
         CHECK_RESULT_NZ(object);
 
         arrayVal.format = vpiIntVal;
@@ -128,7 +128,7 @@ int mon_check_props(void) {
     }
 
     {
-        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_integers_rl", NULL);
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words_rl", NULL);
         CHECK_RESULT_NZ(object);
 
         indexArr[0] = 3;
@@ -162,7 +162,7 @@ int mon_check_props(void) {
     }
 
     {
-        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words", NULL);
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_quads", NULL);
         CHECK_RESULT_NZ(object);
 
         arrayVal.format = vpiRawFourStateVal;
@@ -180,7 +180,7 @@ int mon_check_props(void) {
     }
 
     {
-        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_integers", NULL);
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words", NULL);
         CHECK_RESULT_NZ(object);
 
         arrayVal.format = vpiVector;
@@ -196,6 +196,23 @@ int mon_check_props(void) {
             CHECK_RESULT_HEX(ptr[i].aval, expected[i].aval);
             CHECK_RESULT_HEX(ptr[i].bval, expected[i].bval);
         }
+    }
+
+    {
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_integers", NULL);
+        CHECK_RESULT_NZ(object);
+
+        indexArr[0] = rand() & 0x3;
+
+        arrayVal.format = vpiIntVal;
+        vpi_get_value_array(object, &arrayVal, indexArr, num);
+
+        PLI_INT32* ptr = arrayVal.value.integers;
+
+        PLI_INT32 expected[4] = {INT32_MIN, INT32_MAX, 0, 1234567890};
+
+        for (int i = 0; i < num; i++)
+            CHECK_RESULT_HEX(ptr[i], expected[(indexArr[0]+i) & 0x3]);
     }
 
     {
