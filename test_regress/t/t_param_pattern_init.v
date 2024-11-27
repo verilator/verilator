@@ -7,6 +7,11 @@
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
+package some_pkg;
+    localparam FOO = 5;
+    localparam BAR = 6;
+endpackage
+
 module t (/*AUTOARG*/
     // Inputs
     clk
@@ -67,6 +72,20 @@ module t (/*AUTOARG*/
         `checkh(enum_array[0], 32'h1234);
         `checkh(enum_array[1], 32'h7777);
         `checkh(enum_array[2], 32'ha5a5);
+    end
+
+    logic [31:0] package_array [7];
+
+    import some_pkg::BAR;
+    always_comb package_array = '{
+        some_pkg::FOO: 32'h9876,
+        BAR: 32'h1212,
+        default: 0
+    };
+
+    always_ff @(posedge clk) begin
+        `checkh(package_array[5], 32'h9876);
+        `checkh(package_array[6], 32'h1212);
     end
 
    always_ff @(posedge clk) begin
