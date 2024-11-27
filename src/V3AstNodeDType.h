@@ -1069,7 +1069,7 @@ public:
     // METHODS
     bool similarDType(const AstNodeDType* samep) const override { return this == samep; }
     AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
-    AstNodeDType* skipRefp() const override VL_MT_STABLE { return nullptr; }
+    AstNodeDType* skipRefp() const override VL_MT_STABLE { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
     AstNodeDType* skipRefToConstp() const override { return (AstNodeDType*)this; }
     // cppcheck-suppress csyleCast
