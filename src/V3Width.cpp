@@ -670,6 +670,11 @@ class WidthVisitor final : public VNVisitor {
             }
         }
     }
+    void visit(AstDefaultDisable* nodep) override {
+        assertAtStatement(nodep);
+        // it's like an if() condition.
+        iterateCheckBool(nodep, "default disable iff condiftion", nodep->condp(), BOTH);
+    }
     void visit(AstDelay* nodep) override {
         if (VN_IS(m_procedurep, Final)) {
             nodep->v3error("Delays are not legal in final blocks (IEEE 1800-2023 9.2.3)");
@@ -1390,6 +1395,9 @@ class WidthVisitor final : public VNVisitor {
         }
         // queue_slice[#:$] and queue_bitsel[$] etc handled in V3WidthSel
         nodep->v3warn(E_UNSUPPORTED, "Unsupported/illegal unbounded ('$') in this context.");
+    }
+    void visit(AstInferredDisable* nodep) override {
+        if (m_vup->prelim()) nodep->dtypeSetBit();
     }
     void visit(AstIsUnbounded* nodep) override {
         if (m_vup->prelim()) {

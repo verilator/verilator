@@ -18,6 +18,7 @@ Verilator 5.031 devel
 * Support vpiDefName (#3906) (#5572). [Krzysztof Starecki]
 * Support parameter names in pattern initialization (#5593) (#5596). [Greg Davill]
 * Support randomize size constraints with restrictions (#5582 partial) (#5611). [Ryszard Rozak, Antmicro Ltd.]
+* Support `default disable iff` and `$inferred_disable` (#4016). [Srinivasan Venkataramanan]
 * Support `pure constraint`.
 * Add `--no-std-waiver` and default reading of standard lint waivers file (#5607).
 * Add `--no-std-package` as subset-alias of `--no-std` (#5607).

@@ -4501,6 +4501,18 @@ public:
 };
 
 // === AstNodeTermop ===
+class AstInferredDisable final : public AstNodeTermop {
+public:
+    AstInferredDisable(FileLine* fl)
+        : ASTGEN_SUPER_InferredDisable(fl) {
+        dtypeSetLogicSized(1, VSigning::UNSIGNED);
+    }
+    ASTGEN_MEMBERS_AstInferredDisable;
+    string emitVerilog() override { return "%f$inferred_disable"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    bool same(const AstNode* /*samep*/) const override { return true; }
+};
 class AstTime final : public AstNodeTermop {
     VTimescale m_timeunit;  // Parent module time unit
 public:

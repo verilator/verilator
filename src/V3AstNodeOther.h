@@ -1076,6 +1076,16 @@ public:
     bool same(const AstNode*) const override { return true; }
     string path() const { return m_path; }
 };
+class AstDefaultDisable final : public AstNode {
+    // @astgen op1 := condp : AstNodeExpr
+
+public:
+    AstDefaultDisable(FileLine* fl, AstNodeExpr* condp)
+        : ASTGEN_SUPER_DefaultDisable(fl) {
+        this->condp(condp);
+    }
+    ASTGEN_MEMBERS_AstDefaultDisable;
+};
 class AstDpiExport final : public AstNode {
     // We could put an AstNodeFTaskRef instead of the verilog function name,
     // however we're not *calling* it, so that seems somehow wrong.

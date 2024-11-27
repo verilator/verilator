@@ -474,6 +474,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$fell_gclk"          { FL; return yD_FELL_GCLK; }
   "$high"               { FL; return yD_HIGH; }
   "$increment"          { FL; return yD_INCREMENT; }
+  "$inferred_disable"   { FL; return yD_INFERRED_DISABLE; }
   "$info"               { FL; return yD_INFO; }
   "$isunbounded"        { FL; return yD_ISUNBOUNDED; }
   "$isunknown"          { FL; return yD_ISUNKNOWN; }

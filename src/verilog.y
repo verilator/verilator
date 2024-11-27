@@ -888,6 +888,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_HIGH         "$high"
 %token<fl>              yD_HYPOT        "$hypot"
 %token<fl>              yD_INCREMENT    "$increment"
+%token<fl>              yD_INFERRED_DISABLE "$inferred_disable"
 %token<fl>              yD_INFO         "$info"
 %token<fl>              yD_ISUNBOUNDED  "$isunbounded"
 %token<fl>              yD_ISUNKNOWN    "$isunknown"
@@ -2798,8 +2799,12 @@ module_or_generate_item_declaration<nodep>:     // ==IEEE: module_or_generate_it
         |       clocking_declaration                    { $$ = $1; }
         |       yDEFAULT yCLOCKING idAny/*new-clocking_identifier*/ ';'
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: default clocking identifier"); }
-        |       yDEFAULT yDISABLE yIFF expr/*expression_or_dist*/ ';'
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: default disable iff"); }
+        |       defaultDisable                          { $$ = $1; }
+        ;
+
+defaultDisable<nodep>:  // IEEE: part of module_/checker_or_generate_item_declaration
+                yDEFAULT yDISABLE yIFF expr/*expression_or_dist*/ ';'
+                        { $$ = new AstDefaultDisable{$1, $4}; }
         ;
 
 aliasEqList:                    // IEEE: part of net_alias
@@ -4423,6 +4428,7 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_HYPOT '(' expr ',' expr ')'          { $$ = new AstHypotD{$1, $3, $5}; }
         |       yD_INCREMENT '(' exprOrDataType ')'     { $$ = new AstAttrOf{$1, VAttrType::DIM_INCREMENT, $3, nullptr}; }
         |       yD_INCREMENT '(' exprOrDataType ',' expr ')'    { $$ = new AstAttrOf{$1, VAttrType::DIM_INCREMENT, $3, $5}; }
+        |       yD_INFERRED_DISABLE parenE              { $$ = new AstInferredDisable{$1}; }
         |       yD_ISUNBOUNDED '(' expr ')'             { $$ = new AstIsUnbounded{$1, $3}; }
         |       yD_ISUNKNOWN '(' expr ')'               { $$ = new AstIsUnknown{$1, $3}; }
         |       yD_ITOR '(' expr ')'                    { $$ = new AstIToRD{$1, $3}; }
@@ -7113,7 +7119,7 @@ checker_or_generate_item_declaration<nodep>:  // ==IEEE: checker_or_generate_ite
         |       clocking_declaration                    { $$ = $1; }
         |       yDEFAULT yCLOCKING idAny/*clocking_identifier*/ ';'        { }
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: checker default clocking"); }
-        |       yDEFAULT yDISABLE yIFF expr/*expression_or_dist*/ ';'   { }
+        |       defaultDisable
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: checker default disable iff"); }
         |       ';'                                     { $$ = nullptr; }
         ;

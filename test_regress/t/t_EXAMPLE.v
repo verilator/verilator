@@ -16,6 +16,9 @@
 // any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: got=%0x exp=%0x (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+
 module t(/*AUTOARG*/
    // Inputs
    clk
@@ -64,10 +67,9 @@ module t(/*AUTOARG*/
       end
       else if (cyc == 99) begin
          $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
-         if (crc !== 64'hc77bb9b3784ea091) $stop;
+         `checkh(crc, 64'hc77bb9b3784ea091);
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'h4afe43fb79d7b71e
-         if (sum !== `EXPECTED_SUM) $stop;
+         `checkh(sum, 64'h4afe43fb79d7b71e);
          $write("*-* All Finished *-*\n");
          $finish;
       end
