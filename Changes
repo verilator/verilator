@@ -24,6 +24,8 @@ Verilator 5.031 devel
 * Add `--no-std-package` as subset-alias of `--no-std` (#5607).
 * Add `lint_off --contents` in configuration files (#5606).
 * Add `--waiver-multiline` for context-sensitive `--waiver-output` (#5608).
+* Add `--fno-inline-funcs` to disable function inlining.
+* Add `--fno-slice` to disable array assignment slicing (#5644).
 * Add error on illegal enum base type (#3010). [Iztok Jeras]
 * Add error on `wait` with missing `.triggered` (#4457).
 * Add error when improperly storing to parameter (#5147). [Gökçe Aydos]
@@ -31,7 +33,6 @@ Verilator 5.031 devel
 * Add coverage point hierarchy to coverage reports (#5575) (#5576). [Andrew Nolte]
 * Add warning on global constraints (#5625). [Ryszard Rozak, Antmicro Ltd.]
 * Add error on `solve before` or soft constraints of `randc` variable.
-* Add `--fno-inline-funcs` to disable function inlining.
 * Improve concatenation performance (#5598) (#5599) (#5602). [Geza Lore]
 * Fix dotted reference in delay value (#2410).
 * Fix `function fork...join_none` regression with unknown type (#4449).

@@ -617,6 +617,8 @@ Summary:
 
 .. option:: -fno-reorder
 
+.. option:: -fno-slice
+
 .. option:: -fno-split
 
 .. option:: -fno-subst

@@ -39,6 +39,8 @@
 
 #include "V3Slice.h"
 
+#include "V3Stats.h"
+
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //*************************************************************************
@@ -53,6 +55,9 @@ class SliceVisitor final : public VNVisitor {
     //  AstInitArray::user2()       -> Previously accessed itemIdx
     //  AstInitItem::user2()        -> Corresponding first elemIdx
     const VNUser2InUse m_inuser2;
+
+    // STATE - across all visitors
+    VDouble0 m_statAssigns;  // Statistic tracking
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNode* m_assignp = nullptr;  // Assignment we are under
@@ -218,6 +223,46 @@ class SliceVisitor final : public VNVisitor {
         return newp;
     }
 
+    bool assignOptimize(AstNodeAssign* nodep) {
+        // Return true if did optimization
+        AstNodeDType* const dtp = nodep->lhsp()->dtypep()->skipRefp();
+        AstNode* stp = nodep->rhsp();
+        const AstUnpackArrayDType* const arrayp = VN_CAST(dtp, UnpackArrayDType);
+        if (!arrayp) return false;
+        if (VN_IS(stp, CvtPackedToArray)) return false;
+
+        // Any isSc variables must be expanded regardless of --fno-slice
+        const bool hasSc
+            = nodep->exists([&](const AstVarRef* refp) -> bool { return refp->varp()->isSc(); });
+        if (!hasSc && !v3Global.opt.fSlice()) {
+            m_okInitArray = true;  // VL_RESTORER in visit(AstNodeAssign)
+            return false;
+        }
+
+        UINFO(4, "Slice optimizing " << nodep << endl);
+        ++m_statAssigns;
+
+        // Left and right could have different ascending/descending range,
+        // but #elements is common and all variables are realigned to start at zero
+        // Assign of an ascending range slice to a descending range one must reverse
+        // the elements
+        AstNodeAssign* newlistp = nullptr;
+        const int elements = arrayp->rangep()->elementsConst();
+        for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
+            AstNodeAssign* const newp
+                = nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx),
+                                   cloneAndSel(nodep->rhsp(), elements, elemIdx));
+            if (debug() >= 9) newp->dumpTree("-  new: ");
+            newlistp = AstNode::addNext(newlistp, newp);
+        }
+        if (debug() >= 9) nodep->dumpTree("-  Deslice-Dn: ");
+        nodep->replaceWith(newlistp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        // Normal edit iterator will now iterate on all of the expansion assignments
+        // This will potentially call this function again to resolve next level of slicing
+        return true;
+    }
+
     void visit(AstNodeAssign* nodep) override {
         // Called recursively on newly created assignments
         if (nodep->user1SetOnce()) return;  // Process once
@@ -225,34 +270,10 @@ class SliceVisitor final : public VNVisitor {
         if (debug() >= 9) nodep->dumpTree("-  Deslice-In: ");
         VL_RESTORER(m_assignError);
         VL_RESTORER(m_assignp);
+        VL_RESTORER(m_okInitArray);  // Set in assignOptimize
         m_assignError = false;
         m_assignp = nodep;
-        AstNodeDType* const dtp = nodep->lhsp()->dtypep()->skipRefp();
-        AstNode* stp = nodep->rhsp();
-        if (const AstUnpackArrayDType* const arrayp = VN_CAST(dtp, UnpackArrayDType)) {
-            if (!VN_IS(stp, CvtPackedToArray)) {
-                // Left and right could have different ascending/descending range,
-                // but #elements is common and all variables are realigned to start at zero
-                // Assign of an ascending range slice to a descending range one must reverse
-                // the elements
-                AstNodeAssign* newlistp = nullptr;
-                const int elements = arrayp->rangep()->elementsConst();
-                for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
-                    AstNodeAssign* const newp
-                        = nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx),
-                                           cloneAndSel(nodep->rhsp(), elements, elemIdx));
-                    if (debug() >= 9) newp->dumpTree("-  new: ");
-                    newlistp = AstNode::addNext(newlistp, newp);
-                }
-                if (debug() >= 9) nodep->dumpTree("-  Deslice-Dn: ");
-                nodep->replaceWith(newlistp);
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
-                // Normal edit iterator will now iterate on all of the expansion assignments
-                // This will potentially call this function again to resolve next level of
-                // slicing
-                return;
-            }
-        }
+        if (assignOptimize(nodep)) return;
         iterateChildren(nodep);
     }
 
@@ -337,7 +358,9 @@ class SliceVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     explicit SliceVisitor(AstNetlist* nodep) { iterate(nodep); }
-    ~SliceVisitor() override = default;
+    ~SliceVisitor() override {
+        V3Stats::addStat("Optimizations, Slice array assignments", m_statAssigns);
+    }
 };
 
 //######################################################################
