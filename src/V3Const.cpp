@@ -227,7 +227,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
             return m_knownResult == 1;
         }
         const AstVarRef* refp() const { return m_refp; }
-        bool sameVarAs(const AstNodeVarRef* otherp) const { return m_refp->same(otherp); }
+        bool sameVarAs(const AstNodeVarRef* otherp) const { return m_refp->sameNode(otherp); }
         void setPolarity(bool compBit, int bit) {
             // Ignore if already determined a known reduction
             if (m_knownResult >= 0) return;

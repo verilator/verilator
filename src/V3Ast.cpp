@@ -1101,7 +1101,7 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
         (!node1p->dtypep() && !node2p->dtypep()) || (node1p->dtypep() && node2p->dtypep()), node1p,
         "Comparison of a node with dtypep() with a node without dtypep()\n-node2=" << node2p);
     if (node1p->dtypep() && !node1p->dtypep()->similarDType(node2p->dtypep())) return false;
-    if (!node1p->same(node2p) || (gateOnly && !node1p->isGateOptimizable())) return false;
+    if (!node1p->sameNode(node2p) || (gateOnly && !node1p->isGateOptimizable())) return false;
     return (sameTreeIter(node1p->m_op1p, node2p->m_op1p, false, gateOnly)
             && sameTreeIter(node1p->m_op2p, node2p->m_op2p, false, gateOnly)
             && sameTreeIter(node1p->m_op3p, node2p->m_op3p, false, gateOnly)

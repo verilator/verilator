@@ -2122,7 +2122,7 @@ protected:
     }
 
     // Use instead isSame(), this is for each Ast* class, and assumes node is of same type
-    virtual bool same(const AstNode*) const { return true; }
+    virtual bool sameNode(const AstNode*) const { return true; }
 
 public:
     // ACCESSORS
@@ -2502,7 +2502,7 @@ public:
     virtual int instrCount() const { return 0; }
     // Iff node is identical to another node
     virtual bool isSame(const AstNode* samep) const {
-        return type() == samep->type() && same(samep);
+        return type() == samep->type() && sameNode(samep);
     }
     // Iff has a data type; dtype() must be non null
     virtual bool hasDType() const VL_MT_SAFE { return false; }

@@ -258,7 +258,7 @@ int AstBasicDType::widthTotalBytes() const {
     }
 }
 
-bool AstBasicDType::same(const AstNode* samep) const {
+bool AstBasicDType::sameNode(const AstNode* samep) const {
     const AstBasicDType* const sp = VN_DBG_AS(samep, BasicDType);
     if (!(m == sp->m) || numeric() != sp->numeric()) return false;
     if (!rangep() && !sp->rangep()) return true;
@@ -1912,10 +1912,10 @@ AstMemberSel::AstMemberSel(FileLine* fl, AstNodeExpr* fromp, AstVar* varp)
     this->varp(varp);
     dtypep(varp->dtypep());
 }
-bool AstMemberSel::same(const AstNode* samep) const {
+bool AstMemberSel::sameNode(const AstNode* samep) const {
     const AstMemberSel* const sp = VN_DBG_AS(samep, MemberSel);
     return sp != nullptr && access() == sp->access() && fromp()->isSame(sp->fromp())
-           && name() == sp->name() && varp()->same(sp->varp());
+           && name() == sp->name() && varp()->sameNode(sp->varp());
 }
 
 void AstMemberSel::dump(std::ostream& str) const {
@@ -2334,7 +2334,7 @@ void AstWildcardArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "[*]";
 }
-bool AstWildcardArrayDType::same(const AstNode* samep) const {
+bool AstWildcardArrayDType::sameNode(const AstNode* samep) const {
     const AstWildcardArrayDType* const asamep = VN_DBG_AS(samep, WildcardArrayDType);
     if (!asamep->subDTypep()) return false;
     return (subDTypep() == asamep->subDTypep());
@@ -2353,7 +2353,7 @@ void AstUnsizedArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "[]";
 }
-bool AstUnsizedArrayDType::same(const AstNode* samep) const {
+bool AstUnsizedArrayDType::sameNode(const AstNode* samep) const {
     const AstUnsizedArrayDType* const asamep = VN_DBG_AS(samep, UnsizedArrayDType);
     if (!asamep->subDTypep()) return false;
     return (subDTypep() == asamep->subDTypep());
@@ -2391,9 +2391,9 @@ void AstVarScope::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isTrace);
     dumpJsonGen(str);
 }
-bool AstVarScope::same(const AstNode* samep) const {
+bool AstVarScope::sameNode(const AstNode* samep) const {
     const AstVarScope* const asamep = VN_DBG_AS(samep, VarScope);
-    return varp()->same(asamep->varp()) && scopep()->same(asamep->scopep());
+    return varp()->sameNode(asamep->varp()) && scopep()->sameNode(asamep->scopep());
 }
 void AstNodeVarRef::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
@@ -2436,7 +2436,7 @@ const char* AstVarRef::broken() const {
     BROKEN_RTN(!varp());
     return nullptr;
 }
-bool AstVarRef::same(const AstNode* samep) const { return same(VN_DBG_AS(samep, VarRef)); }
+bool AstVarRef::sameNode(const AstNode* samep) const { return sameNode(VN_DBG_AS(samep, VarRef)); }
 int AstVarRef::instrCount() const {
     // Account for the target of hard-coded method calls as just an address computation
     if (const AstCMethodHard* const callp = VN_CAST(backp(), CMethodHard)) {
@@ -2502,7 +2502,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, attrSFormat);
     dumpJsonGen(str);
 }
-bool AstVar::same(const AstNode* samep) const {
+bool AstVar::sameNode(const AstNode* samep) const {
     const AstVar* const asamep = VN_DBG_AS(samep, Var);
     return name() == asamep->name() && varType() == asamep->varType();
 }
@@ -2520,7 +2520,7 @@ void AstScope::dump(std::ostream& str) const {
     str << " [modp=" << nodeAddr(modp()) << "]";
 }
 void AstScope::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
-bool AstScope::same(const AstNode* samep) const {
+bool AstScope::sameNode(const AstNode* samep) const {
     const AstScope* const asamep = VN_DBG_AS(samep, Scope);
     return name() == asamep->name()
            && ((!aboveScopep() && !asamep->aboveScopep())
