@@ -1,5 +1,9 @@
-%Error: t/t_class_param_bad2.v:12:4: Missing type parameter: 'PARAMB'
+%Error: t/t_class_param_bad2.v:12:4: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'PARAMB'
                                    : ... note: In instance 't'
    12 |    Cls c;   
       |    ^~~
+%Error: t/t_class_param_bad2.v:7:18: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'PARAMB'
+                                   : ... note: In instance 't'
+    7 | class Cls #(type PARAMB);
+      |                  ^~~~~~
 %Error: Exiting due to

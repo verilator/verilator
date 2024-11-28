@@ -924,13 +924,15 @@ class ParamProcessor final {
         for (auto* stmtp = srcModpr->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstParamTypeDType* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
                 if (VN_IS(dtypep->subDTypep(), VoidDType)) {
-                    nodep->v3error("Missing type parameter: " << dtypep->prettyNameQ());
+                    nodep->v3error(
+                        "Class parameter type without default value is never given value"
+                        << " (IEEE 1800-2023 6.20.1): " << dtypep->prettyNameQ());
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                 }
             }
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (VN_IS(srcModpr, Class) && varp->isParam() && !varp->valuep()) {
-                    nodep->v3error("Class parameter without initial value is never given value"
+                    nodep->v3error("Class parameter without default value is never given value"
                                    << " (IEEE 1800-2023 6.20.1): " << varp->prettyNameQ());
                 }
             }
@@ -1200,11 +1202,18 @@ class ParamVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (nodep->isParam()) {
             if (!nodep->valuep() && !VN_IS(m_modp, Class)) {
-                nodep->v3error("Parameter without initial value is never given value"
+                nodep->v3error("Parameter without default value is never given value"
                                << " (IEEE 1800-2023 6.20.1): " << nodep->prettyNameQ());
             } else {
                 V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
             }
+        }
+    }
+    void visit(AstParamTypeDType* nodep) override {
+        iterateChildren(nodep);
+        if (VN_IS(nodep->subDTypep(), VoidDType)) {
+            nodep->v3error("Parameter type without default value is never given value"
+                           << " (IEEE 1800-2023 6.20.1): " << nodep->prettyNameQ());
         }
     }
     // Make sure varrefs cause vars to constify before things above
