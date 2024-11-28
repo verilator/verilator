@@ -50,8 +50,8 @@ protected:
         m_inUnpacked = true;
         if (VN_IS(nodep->dtypep()->skipRefp(), AssocArrayDType)) {
             // Note the double {{ initializer. The first { starts the initializer of the
-            // VlUnpacked, and the second starts the initializer of m_storage within the
-            // VlUnpacked.
+            // VlAssocArray, and the second starts the initializer of m_storage within the
+            // VlAssocArray.
             puts("{");
             ofp()->putsNoTracking("{");
             puts("\n");

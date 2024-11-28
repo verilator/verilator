@@ -31,7 +31,7 @@
 //                ARRAYSEL
 //                  Modify bitp() for the new value and set ->length(1)
 //
-// TODO: This code was written before SLICESEL was a type it might be
+// TODO: This code was written before SLICESEL was a type, it might be
 // simplified to look primarily for SLICESELs.
 //*************************************************************************
 
@@ -54,13 +54,12 @@ class SliceVisitor final : public VNVisitor {
     //  AstInitItem::user2()        -> Corresponding first elemIdx
     const VNUser2InUse m_inuser2;
 
-    // STATE
+    // STATE - for current visit position (use VL_RESTORER)
     AstNode* m_assignp = nullptr;  // Assignment we are under
     bool m_assignError = false;  // True if the current assign already has an error
     bool m_okInitArray = false;  // Allow InitArray children
 
     // METHODS
-
     AstNodeExpr* cloneAndSel(AstNode* nodep, int elements, int elemIdx) {
         // Insert an ArraySel, except for a few special cases
         const AstUnpackArrayDType* const arrayp
@@ -221,40 +220,40 @@ class SliceVisitor final : public VNVisitor {
 
     void visit(AstNodeAssign* nodep) override {
         // Called recursively on newly created assignments
-        if (!nodep->user1() && !VN_IS(nodep, AssignAlias)) {
-            nodep->user1(true);
-            m_assignError = false;
-            if (debug() >= 9) nodep->dumpTree("-  Deslice-In: ");
-            AstNodeDType* const dtp = nodep->lhsp()->dtypep()->skipRefp();
-            AstNode* stp = nodep->rhsp();
-            if (const AstUnpackArrayDType* const arrayp = VN_CAST(dtp, UnpackArrayDType)) {
-                if (!VN_IS(stp, CvtPackedToArray)) {
-                    // Left and right could have different ascending/descending range,
-                    // but #elements is common and all variables are realigned to start at zero
-                    // Assign of an ascending range slice to a descending range one must reverse
-                    // the elements
-                    AstNodeAssign* newlistp = nullptr;
-                    const int elements = arrayp->rangep()->elementsConst();
-                    for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
-                        AstNodeAssign* const newp
-                            = nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx),
-                                               cloneAndSel(nodep->rhsp(), elements, elemIdx));
-                        if (debug() >= 9) newp->dumpTree("-  new: ");
-                        newlistp = AstNode::addNext(newlistp, newp);
-                    }
-                    if (debug() >= 9) nodep->dumpTree("-  Deslice-Dn: ");
-                    nodep->replaceWith(newlistp);
-                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
-                    // Normal edit iterator will now iterate on all of the expansion assignments
-                    // This will potentially call this function again to resolve next level of
-                    // slicing
-                    return;
+        if (nodep->user1SetOnce()) return;  // Process once
+        if (VN_IS(nodep, AssignAlias)) return;
+        if (debug() >= 9) nodep->dumpTree("-  Deslice-In: ");
+        VL_RESTORER(m_assignError);
+        VL_RESTORER(m_assignp);
+        m_assignError = false;
+        m_assignp = nodep;
+        AstNodeDType* const dtp = nodep->lhsp()->dtypep()->skipRefp();
+        AstNode* stp = nodep->rhsp();
+        if (const AstUnpackArrayDType* const arrayp = VN_CAST(dtp, UnpackArrayDType)) {
+            if (!VN_IS(stp, CvtPackedToArray)) {
+                // Left and right could have different ascending/descending range,
+                // but #elements is common and all variables are realigned to start at zero
+                // Assign of an ascending range slice to a descending range one must reverse
+                // the elements
+                AstNodeAssign* newlistp = nullptr;
+                const int elements = arrayp->rangep()->elementsConst();
+                for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
+                    AstNodeAssign* const newp
+                        = nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx),
+                                           cloneAndSel(nodep->rhsp(), elements, elemIdx));
+                    if (debug() >= 9) newp->dumpTree("-  new: ");
+                    newlistp = AstNode::addNext(newlistp, newp);
                 }
+                if (debug() >= 9) nodep->dumpTree("-  Deslice-Dn: ");
+                nodep->replaceWith(newlistp);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                // Normal edit iterator will now iterate on all of the expansion assignments
+                // This will potentially call this function again to resolve next level of
+                // slicing
+                return;
             }
-            VL_RESTORER(m_assignp);
-            m_assignp = nodep;
-            iterateChildren(nodep);
         }
+        iterateChildren(nodep);
     }
 
     void visit(AstConsPackUOrStruct* nodep) override {
@@ -278,57 +277,55 @@ class SliceVisitor final : public VNVisitor {
     }
 
     void expandBiOp(AstNodeBiop* nodep) {
-        if (!nodep->user1()) {
-            nodep->user1(true);
-            // If it's an unpacked array, blow it up into comparing each element
-            AstNodeDType* const fromDtp = nodep->lhsp()->dtypep()->skipRefp();
-            UINFO(9, "  Bi-Eq/Neq expansion " << nodep << endl);
-            if (const AstUnpackArrayDType* const adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
-                AstNodeBiop* logp = nullptr;
-                if (!VN_IS(nodep->lhsp()->dtypep()->skipRefp(), NodeArrayDType)) {
-                    nodep->lhsp()->v3error(
-                        "Slice operator "
-                        << nodep->lhsp()->prettyTypeName()
-                        << " on non-slicable (e.g. non-vector) left-hand-side operand");
-                } else if (!VN_IS(nodep->rhsp()->dtypep()->skipRefp(), NodeArrayDType)) {
-                    nodep->rhsp()->v3error(
-                        "Slice operator "
-                        << nodep->rhsp()->prettyTypeName()
-                        << " on non-slicable (e.g. non-vector) right-hand-side operand");
-                } else {
-                    const int elements = adtypep->rangep()->elementsConst();
-                    for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
-                        // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
-                        AstNodeBiop* const clonep = VN_AS(
-                            nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx),
-                                             cloneAndSel(nodep->rhsp(), elements, elemIdx)),
-                            NodeBiop);
-                        if (!logp) {
-                            logp = clonep;
-                        } else {
-                            switch (nodep->type()) {
-                            case VNType::atEq:  // FALLTHRU
-                            case VNType::atEqCase:
-                                logp = new AstLogAnd{nodep->fileline(), logp, clonep};
-                                break;
-                            case VNType::atNeq:  // FALLTHRU
-                            case VNType::atNeqCase:
-                                logp = new AstLogOr{nodep->fileline(), logp, clonep};
-                                break;
-                            default:
-                                nodep->v3fatalSrc("Unknown node type processing array slice");
-                                break;
-                            }
+        if (nodep->user1SetOnce()) return;  // Process once
+        // If it's an unpacked array, blow it up into comparing each element
+        AstNodeDType* const fromDtp = nodep->lhsp()->dtypep()->skipRefp();
+        UINFO(9, "  Bi-Eq/Neq expansion " << nodep << endl);
+        if (const AstUnpackArrayDType* const adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
+            AstNodeBiop* logp = nullptr;
+            if (!VN_IS(nodep->lhsp()->dtypep()->skipRefp(), NodeArrayDType)) {
+                nodep->lhsp()->v3error(
+                    "Slice operator "
+                    << nodep->lhsp()->prettyTypeName()
+                    << " on non-slicable (e.g. non-vector) left-hand-side operand");
+            } else if (!VN_IS(nodep->rhsp()->dtypep()->skipRefp(), NodeArrayDType)) {
+                nodep->rhsp()->v3error(
+                    "Slice operator "
+                    << nodep->rhsp()->prettyTypeName()
+                    << " on non-slicable (e.g. non-vector) right-hand-side operand");
+            } else {
+                const int elements = adtypep->rangep()->elementsConst();
+                for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
+                    // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
+                    AstNodeBiop* const clonep
+                        = VN_AS(nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx),
+                                                 cloneAndSel(nodep->rhsp(), elements, elemIdx)),
+                                NodeBiop);
+                    if (!logp) {
+                        logp = clonep;
+                    } else {
+                        switch (nodep->type()) {
+                        case VNType::atEq:  // FALLTHRU
+                        case VNType::atEqCase:
+                            logp = new AstLogAnd{nodep->fileline(), logp, clonep};
+                            break;
+                        case VNType::atNeq:  // FALLTHRU
+                        case VNType::atNeqCase:
+                            logp = new AstLogOr{nodep->fileline(), logp, clonep};
+                            break;
+                        default:
+                            nodep->v3fatalSrc("Unknown node type processing array slice");
+                            break;
                         }
                     }
-                    UASSERT_OBJ(logp, nodep, "Unpacked array with empty indices range");
-                    nodep->replaceWith(logp);
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                    nodep = logp;
                 }
+                UASSERT_OBJ(logp, nodep, "Unpacked array with empty indices range");
+                nodep->replaceWith(logp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                nodep = logp;
             }
-            iterateChildren(nodep);
         }
+        iterateChildren(nodep);
     }
     void visit(AstEq* nodep) override { expandBiOp(nodep); }
     void visit(AstNeq* nodep) override { expandBiOp(nodep); }
