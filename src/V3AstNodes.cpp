@@ -2598,9 +2598,14 @@ void AstClassOrPackageRef::dump(std::ostream& str) const {
 void AstClassOrPackageRef::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 AstNodeModule* AstClassOrPackageRef::classOrPackagep() const {
     AstNode* foundp = m_classOrPackageNodep;
-    if (auto* const anodep = VN_CAST(foundp, Typedef)) foundp = anodep->subDTypep();
-    if (auto* const anodep = VN_CAST(foundp, NodeDType)) foundp = anodep->skipRefp();
-    if (auto* const anodep = VN_CAST(foundp, ClassRefDType)) foundp = anodep->classp();
+    AstNode* lastp = nullptr;
+    while (foundp != lastp) {
+        lastp = foundp;
+        if (AstNodeDType* const anodep = VN_CAST(foundp, NodeDType)) foundp = anodep->skipRefp();
+        if (AstTypedef* const anodep = VN_CAST(foundp, Typedef)) foundp = anodep->subDTypep();
+        if (AstClassRefDType* const anodep = VN_CAST(foundp, ClassRefDType))
+            foundp = anodep->classp();
+    }
     return VN_CAST(foundp, NodeModule);
 }
 
