@@ -1286,10 +1286,17 @@ void AstNode::dumpPtrs(std::ostream& os) const {
 void AstNode::dumpTree(std::ostream& os, const string& indent, int maxDepth) const {
     static int s_debugFileline = v3Global.opt.debugSrcLevel("fileline");  // --debugi-fileline 9
     os << indent << " " << this << '\n';
+    if (VN_DELETED(this)) return;
     if (debug() > 8) {
         os << indent << "     ";
         dumpPtrs(os);
     }
+    if (VN_DELETED(op1p()) || VN_DELETED(op2p())  // LCOV_EXCL_START
+        || VN_DELETED(op3p()) || VN_DELETED(op4p())) {
+        os << indent << "1/2/3/4: %E-0x1/deleted! node " << cvtToHex(this)
+           << endl;  // endl intentional to do flush
+        return;
+    }  // LCOV_EXCL_STOP
     if (s_debugFileline >= 9) os << fileline()->warnContextSecondary();
     if (maxDepth == 1) {
         if (op1p() || op2p() || op3p() || op4p()) os << indent << "1: ...(maxDepth)\n";

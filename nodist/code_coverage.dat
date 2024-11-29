@@ -40,6 +40,7 @@ remove_gcda_regexp(r'test_regress/.*/(Vt_|Vtop_).*\.gcda')
 # Exclude line entirely, also excludes from function and branch coverage
 exclude_line_regexp(r'\bv3fatalSrc\b')
 exclude_line_regexp(r'\bfatalSrc\b')
+exclude_line_regexp(r'\bVL_DELETED\b')
 exclude_line_regexp(r'\bVL_UNCOVERABLE\b')
 exclude_line_regexp(r'\bVL_UNREACHABLE\b')
 exclude_line_regexp(r'\bVL_FATAL')

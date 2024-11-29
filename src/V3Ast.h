@@ -2992,8 +2992,10 @@ bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const Callable& p
 }
 
 inline std::ostream& operator<<(std::ostream& os, const AstNode* rhs) {
-    if (!rhs) {
-        os << "nullptr";
+    if (!rhs) {  // LCOV_EXCL_LINE
+        os << "nullptr";  // LCOV_EXCL_LINE
+    } else if (VN_DELETED(rhs)) {  // LCOV_EXCL_LINE
+        os << "%E-0x1/deleted!";  // LCOV_EXCL_LINE
     } else {
         rhs->dump(os);
     }
