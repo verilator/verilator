@@ -318,7 +318,7 @@ class ParamProcessor final {
 
     static string paramValueString(const AstNode* nodep) {
         if (const AstRefDType* const refp = VN_CAST(nodep, RefDType)) {
-            nodep = refp->skipRefToEnump();
+            nodep = refp->skipRefToNonRefp();
         }
         string key = nodep->name();
         if (const AstIfaceRefDType* const ifrtp = VN_CAST(nodep, IfaceRefDType)) {
@@ -373,7 +373,7 @@ class ParamProcessor final {
         // TODO: This parameter value number lookup via a constructed key string is not
         //       particularly robust for type parameters. We should really have a type
         //       equivalence predicate function.
-        if (AstRefDType* const refp = VN_CAST(nodep, RefDType)) { nodep = refp->skipRefToEnump(); }
+        if (AstRefDType* const refp = VN_CAST(nodep, RefDType)) nodep = refp->skipRefToNonRefp();
         const string paramStr = paramValueString(nodep);
         // cppcheck-has-bug-suppress unreadVariable
         V3Hash hash = V3Hasher::uncachedHash(nodep) + paramStr;
@@ -415,7 +415,7 @@ class ParamProcessor final {
         return nullptr;
     }
     bool isString(AstNodeDType* nodep) {
-        if (AstBasicDType* const basicp = VN_CAST(nodep->skipRefToEnump(), BasicDType))
+        if (AstBasicDType* const basicp = VN_CAST(nodep->skipRefToNonRefp(), BasicDType))
             return basicp->isString();
         return false;
     }
@@ -767,8 +767,8 @@ class ParamProcessor final {
             }
         } else if (AstParamTypeDType* const modvarp = pinp->modPTypep()) {
             AstNodeDType* rawTypep = VN_CAST(pinp->exprp(), NodeDType);
-            AstNodeDType* const exprp = rawTypep ? rawTypep->skipRefToEnump() : nullptr;
-            const AstNodeDType* const origp = modvarp->skipRefToEnump();
+            AstNodeDType* exprp = rawTypep ? rawTypep->skipRefToNonRefp() : nullptr;
+            const AstNodeDType* const origp = modvarp->skipRefToNonRefp();
             if (!exprp) {
                 pinp->v3error("Parameter type pin value isn't a type: Param "
                               << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
@@ -782,7 +782,9 @@ class ParamProcessor final {
                     // This prevents making additional modules, and makes coverage more
                     // obvious as it won't show up under a unique module page name.
                 } else {
-                    V3Const::constifyParamsEdit(exprp);
+                    VL_DO_DANGLING(V3Const::constifyParamsEdit(exprp), exprp);
+                    rawTypep = VN_CAST(pinp->exprp(), NodeDType);
+                    exprp = rawTypep ? rawTypep->skipRefToNonRefp() : nullptr;
                     longnamer += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
                     any_overridesr = true;
                 }
