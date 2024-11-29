@@ -783,6 +783,25 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
     return nullptr;
 }
 
+const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum) const VL_MT_STABLE {
+    const AstNodeDType* nodep = this;
+    while (true) {
+        if (VL_UNLIKELY(VN_IS(nodep, MemberDType) || VN_IS(nodep, ParamTypeDType)
+                        || VN_IS(nodep, RefDType)  //
+                        || (VN_IS(nodep, ConstDType) && skipConst)  //
+                        || (VN_IS(nodep, EnumDType) && skipEnum))) {
+            if (const AstNodeDType* subp = nodep->subDTypep()) {
+                nodep = subp;
+                continue;
+            } else {
+                v3fatalSrc("Typedef not linked");
+                return nullptr;
+            }
+        }
+        return nodep;
+    }
+}
+
 bool AstNodeDType::isFourstate() const { return basicp() && basicp()->isFourstate(); }
 
 class AstNodeDType::CTypeRecursed final {
@@ -1896,7 +1915,7 @@ void AstMemberDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "member";
 }
-AstNodeUOrStructDType* AstMemberDType::getChildStructp() const {
+AstNodeUOrStructDType* AstMemberDType::getChildStructp() {
     AstNodeDType* subdtp = skipRefp();
     while (AstNodeArrayDType* const asubdtp = VN_CAST(subdtp, NodeArrayDType)) {
         subdtp = asubdtp->subDTypep();

@@ -271,7 +271,7 @@ void V3HierBlock::writeParametersFile() const {
     const string moduleName = "Vhsh" + hash.digestSymbol();
     const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(typeParametersFilename())};
     *of << "module " << moduleName << ";\n";
-    for (const AstParamTypeDType* const gparam : m_params.gTypeParams()) {
+    for (AstParamTypeDType* const gparam : m_params.gTypeParams()) {
         AstTypedef* tdefp
             = new AstTypedef(new FileLine{FileLine::builtInFilename()}, gparam->name(), nullptr,
                              VFlagChildDType{}, gparam->skipRefp()->cloneTreePure(true));

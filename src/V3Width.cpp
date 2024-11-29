@@ -6868,7 +6868,7 @@ class WidthVisitor final : public VNVisitor {
         return false;
     }
     void checkClassAssign(AstNode* nodep, const char* side, AstNode* rhsp,
-                          const AstNodeDType* const lhsDTypep) {
+                          AstNodeDType* const lhsDTypep) {
         if (AstClassRefDType* const lhsClassRefp = VN_CAST(lhsDTypep->skipRefp(), ClassRefDType)) {
             UASSERT_OBJ(rhsp->dtypep(), rhsp, "Node has no type");
             AstNodeDType* const rhsDtypep = rhsp->dtypep()->skipRefp();

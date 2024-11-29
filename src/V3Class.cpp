@@ -208,7 +208,7 @@ class ClassVisitor final : public VNVisitor {
             m_names.get(dtypep->name() + (VN_IS(dtypep, UnionDType) ? "__union" : "__struct")));
         if (dtypep->packed()) m_strDtypeps.insert(dtypep);
 
-        for (const AstMemberDType* itemp = dtypep->membersp(); itemp;
+        for (AstMemberDType* itemp = dtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             AstNodeUOrStructDType* const subp = itemp->getChildStructp();
             // Recurse only into anonymous structs inside this definition,
@@ -271,7 +271,7 @@ public:
             AstNodeUOrStructDType* const dtypep = m_pubStrDtypeps.front();
             m_pubStrDtypeps.pop();
             if (pubStrDtypeps.insert(dtypep).second) {
-                for (const AstMemberDType* itemp = dtypep->membersp(); itemp;
+                for (AstMemberDType* itemp = dtypep->membersp(); itemp;
                      itemp = VN_AS(itemp->nextp(), MemberDType)) {
                     if (AstNodeUOrStructDType* const subp = itemp->getChildStructp())
                         m_pubStrDtypeps.push(subp);

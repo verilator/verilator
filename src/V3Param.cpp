@@ -373,9 +373,7 @@ class ParamProcessor final {
         // TODO: This parameter value number lookup via a constructed key string is not
         //       particularly robust for type parameters. We should really have a type
         //       equivalence predicate function.
-        if (const AstRefDType* const refp = VN_CAST(nodep, RefDType)) {
-            nodep = refp->skipRefToEnump();
-        }
+        if (AstRefDType* const refp = VN_CAST(nodep, RefDType)) { nodep = refp->skipRefToEnump(); }
         const string paramStr = paramValueString(nodep);
         // cppcheck-has-bug-suppress unreadVariable
         V3Hash hash = V3Hasher::uncachedHash(nodep) + paramStr;
@@ -532,7 +530,7 @@ class ParamProcessor final {
                         // nullptr means that the parameter is using some default value.
                         params.emplace(varp->name(), constp);
                     }
-                } else if (const AstParamTypeDType* const p = VN_CAST(stmtp, ParamTypeDType)) {
+                } else if (AstParamTypeDType* const p = VN_CAST(stmtp, ParamTypeDType)) {
                     params.emplace(p->name(), p->skipRefp());
                 }
             }
