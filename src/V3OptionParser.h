@@ -65,7 +65,7 @@ private:
 
     // METHODS
     ActionIfs* find(const char* optp) VL_MT_DISABLED;
-    template <class ACT, class ARG>
+    template <typename ACT, typename ARG>
     ActionIfs& add(const string& opt, ARG arg) VL_MT_DISABLED;
     // Returns true if strp starts with "-fno"
     static bool hasPrefixFNo(const char* strp) VL_MT_DISABLED;

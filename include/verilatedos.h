@@ -701,7 +701,7 @@ reverse_wrapper<T> reverse_view(const T& v) {
 // Object that is returned by this function is not considered
 // as MT_SAFE and any function call on this object still
 // needs to be `VL_MT_SAFE`.
-template <class T>
+template <typename T>
 T const& as_const(T& v) VL_MT_SAFE {
     return v;
 }

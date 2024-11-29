@@ -59,7 +59,7 @@ struct V3OptionParser::Impl final {
     class ActionCbCall;  // Callback without argument for "-opt"
     class ActionCbFOnOff;  // Callback for "-fopt" and "-fno-opt"
     class ActionCbOnOff;  // Callback for "-opt" and "-no-opt"
-    template <class T>
+    template <typename T>
     class ActionCbVal;  // Callback for "-opt val"
     class ActionCbPartialMatch;  // Callback "-O3" for "-O"
     class ActionCbPartialMatchVal;  // Callback "-debugi-V3Options 3" for "-debugi-"
@@ -171,7 +171,7 @@ V3OptionParser::ActionIfs* V3OptionParser::find(const char* optp) {
     return nullptr;
 }
 
-template <class ACT, class ARG>
+template <typename ACT, typename ARG>
 V3OptionParser::ActionIfs& V3OptionParser::add(const std::string& opt, ARG arg) {
     UASSERT(!m_pimpl->m_isFinalized, "Cannot add after finalize() is called");
     std::unique_ptr<ACT> act{new ACT{std::move(arg)}};

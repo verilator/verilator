@@ -186,7 +186,7 @@ struct SplitVarImpl VL_NOT_FINAL {
 
     static const char* cannotSplitPackedVarReason(const AstVar* varp);
 
-    template <class T_ALWAYSLIKE>
+    template <typename T_ALWAYSLIKE>
     void insertBeginCore(T_ALWAYSLIKE* ap, AstNodeStmt* stmtp, AstNodeModule* modp) {
         if (ap->isJustOneBodyStmt() && ap->stmtsp() == stmtp) {
             stmtp->unlinkFrBack();

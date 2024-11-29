@@ -309,7 +309,7 @@ public:
     size_t operator()() { return VL_MASK_I(31) & vl_rand64(); }
 };
 
-template <class T_Value, uint64_t T_numValues>
+template <typename T_Value, uint64_t T_numValues>
 class VlRandC final {
     T_Value m_remaining = 0;  // Number of values to pull before re-randomize
     T_Value m_lfsr = 1;  // LFSR state
@@ -477,7 +477,7 @@ std::string VL_TO_STRING(const VlWide<T_Words>& obj) {
 //
 // Bound here is the maximum size() allowed, e.g. 1 + SystemVerilog bound
 // For dynamic arrays it is always zero
-template <class T_Value, size_t T_MaxSize = 0>
+template <typename T_Value, size_t T_MaxSize = 0>
 class VlQueue final {
 private:
     // TYPES
@@ -485,7 +485,7 @@ private:
 
 public:
     using const_iterator = typename Deque::const_iterator;
-    template <class Func>
+    template <typename Func>
     using WithFuncReturnType = decltype(std::declval<Func>()(0, std::declval<T_Value>()));
 
 private:
@@ -909,7 +909,7 @@ public:
     }
 };
 
-template <class T_Value, size_t T_MaxSize>
+template <typename T_Value, size_t T_MaxSize>
 std::string VL_TO_STRING(const VlQueue<T_Value, T_MaxSize>& obj) {
     return obj.to_string();
 }
@@ -919,7 +919,7 @@ std::string VL_TO_STRING(const VlQueue<T_Value, T_MaxSize>& obj) {
 // There are no multithreaded locks on this; the base variable must
 // be protected by other means
 //
-template <class T_Key, class T_Value>
+template <typename T_Key, typename T_Value>
 class VlAssocArray final {
 private:
     // TYPES
@@ -927,7 +927,7 @@ private:
 
 public:
     using const_iterator = typename Map::const_iterator;
-    template <class Func>
+    template <typename Func>
     using WithFuncReturnType
         = decltype(std::declval<Func>()(std::declval<T_Key>(), std::declval<T_Value>()));
 
@@ -1244,12 +1244,12 @@ public:
     }
 };
 
-template <class T_Key, class T_Value>
+template <typename T_Key, typename T_Value>
 std::string VL_TO_STRING(const VlAssocArray<T_Key, T_Value>& obj) {
     return obj.to_string();
 }
 
-template <class T_Key, class T_Value>
+template <typename T_Key, typename T_Value>
 void VL_READMEM_N(bool hex, int bits, const std::string& filename,
                   VlAssocArray<T_Key, T_Value>& obj, QData start, QData end) VL_MT_SAFE {
     VlReadMem rmem{hex, bits, filename, start, end};
@@ -1265,7 +1265,7 @@ void VL_READMEM_N(bool hex, int bits, const std::string& filename,
     }
 }
 
-template <class T_Key, class T_Value>
+template <typename T_Key, typename T_Value>
 void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
                    const VlAssocArray<T_Key, T_Value>& obj, QData start, QData end) VL_MT_SAFE {
     VlWriteMem wmem{hex, bits, filename, start, end};
@@ -1287,9 +1287,8 @@ void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
 /// This class may get exposed to a Verilated Model's top I/O, if the top
 /// IO has an unpacked array.
 
-template <class T_Value, std::size_t T_Depth>
-struct VlUnpacked final {
-private:
+template <typename T_Value, std::size_t T_Depth>
+class VlUnpacked final {
     // TYPES
     using T_Key = IData;  // Index type, for uniformity with other containers
     using Unpacked = T_Value[T_Depth];
@@ -1569,7 +1568,7 @@ private:
     }
 };
 
-template <class T_Value, std::size_t T_Depth>
+template <typename T_Value, std::size_t T_Depth>
 std::string VL_TO_STRING(const VlUnpacked<T_Value, T_Depth>& obj) {
     return obj.to_string();
 }
@@ -2027,7 +2026,7 @@ public:
 #define VL_KEEP_THIS \
     VlClassRef<std::remove_pointer<decltype(this)>::type> __Vthisref { this }
 
-template <class T>  // T typically of type VlClassRef<x>
+template <typename T>  // T typically of type VlClassRef<x>
 inline T VL_NULL_CHECK(T t, const char* filename, int linenum) {
     if (VL_UNLIKELY(!t)) Verilated::nullPointerError(filename, linenum);
     return t;

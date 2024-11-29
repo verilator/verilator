@@ -40,7 +40,7 @@
 // not generally safe. If you want a raw pointer compare, see
 // GraphStreamUnordered below.
 
-template <class T_Compare>
+template <typename T_Compare>
 class GraphStream final {
     // TYPES
     class VxHolder final {

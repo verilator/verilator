@@ -300,7 +300,7 @@ inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, std::string& r
 VerilatedSerialize& operator<<(VerilatedSerialize& os, VerilatedContext* rhsp);
 VerilatedDeserialize& operator>>(VerilatedDeserialize& os, VerilatedContext* rhsp);
 
-template <class T_Key, class T_Value>
+template <typename T_Key, typename T_Value>
 VerilatedSerialize& operator<<(VerilatedSerialize& os, VlAssocArray<T_Key, T_Value>& rhs) {
     os << rhs.atDefault();
     const uint32_t len = rhs.size();
@@ -312,7 +312,7 @@ VerilatedSerialize& operator<<(VerilatedSerialize& os, VlAssocArray<T_Key, T_Val
     }
     return os;
 }
-template <class T_Key, class T_Value>
+template <typename T_Key, typename T_Value>
 VerilatedDeserialize& operator>>(VerilatedDeserialize& os, VlAssocArray<T_Key, T_Value>& rhs) {
     os >> rhs.atDefault();
     uint32_t len = 0;

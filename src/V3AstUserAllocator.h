@@ -27,7 +27,7 @@
 #include <utility>
 #include <vector>
 
-template <class T_Node, class T_Data, int T_UserN>
+template <typename T_Node, typename T_Data, int T_UserN>
 class AstUserAllocatorBase VL_NOT_FINAL {
     static_assert(1 <= T_UserN && T_UserN <= 4, "Wrong user pointer number");
     static_assert(std::is_base_of<AstNode, T_Node>::value, "T_Node must be an AstNode type");
@@ -107,13 +107,13 @@ public:
 // User pointer allocator classes. T_Node is the type of node the allocator should be applied to
 // and is there for a bit of extra type safety. T_Data is the type of the data structure
 // managed by the allocator.
-template <class T_Node, class T_Data>
+template <typename T_Node, typename T_Data>
 class AstUser1Allocator final : public AstUserAllocatorBase<T_Node, T_Data, 1> {};
-template <class T_Node, class T_Data>
+template <typename T_Node, typename T_Data>
 class AstUser2Allocator final : public AstUserAllocatorBase<T_Node, T_Data, 2> {};
-template <class T_Node, class T_Data>
+template <typename T_Node, typename T_Data>
 class AstUser3Allocator final : public AstUserAllocatorBase<T_Node, T_Data, 3> {};
-template <class T_Node, class T_Data>
+template <typename T_Node, typename T_Data>
 class AstUser4Allocator final : public AstUserAllocatorBase<T_Node, T_Data, 4> {};
 
 #endif  // Guard

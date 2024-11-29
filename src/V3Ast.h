@@ -1745,7 +1745,7 @@ public:
     explicit VNUser(void* p) { m_u.up = p; }
     ~VNUser() = default;
     // Casters
-    template <class T>
+    template <typename T>
     typename std::enable_if<std::is_pointer<T>::value, T>::type to() const VL_MT_SAFE {
         return reinterpret_cast<T>(m_u.up);
     }
