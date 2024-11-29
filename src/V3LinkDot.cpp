@@ -2228,7 +2228,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
             std::ostringstream sstr;
             sstr << "ds=" << names[m_dotPos];
             sstr << "  dse" << cvtToHex(m_dotSymp);
-            sstr << "(" << m_dotSymp->nodep()->typeName() << ")";
+            const string dsname = m_dotSymp->nodep()->name().substr(0, 8);
+            sstr << "(" << m_dotSymp->nodep()->typeName() << (dsname.empty() ? "" : ":") << dsname
+                 << ")";
             if (m_dotErr) sstr << "  [dotErr]";
             if (m_super) sstr << "  [super]";
             if (m_unresolvedCell) sstr << "  [unrCell]";
