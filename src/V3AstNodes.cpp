@@ -2596,7 +2596,7 @@ void AstClassOrPackageRef::dump(std::ostream& str) const {
     }
 }
 void AstClassOrPackageRef::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
-AstNodeModule* AstClassOrPackageRef::classOrPackagep() const {
+AstNodeModule* AstClassOrPackageRef::classOrPackageSkipp() const {
     AstNode* foundp = m_classOrPackageNodep;
     AstNode* lastp = nullptr;
     while (foundp != lastp) {

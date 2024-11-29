@@ -593,7 +593,8 @@ class ParamProcessor final {
         if (AstClassRefDType* const classRefp = VN_CAST(nodep, ClassRefDType)) {
             if (classRefp->classp() == oldClassp) classRefp->classp(newClassp);
         } else if (AstClassOrPackageRef* const classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
-            if (classRefp->classOrPackagep() == oldClassp) classRefp->classOrPackagep(newClassp);
+            if (classRefp->classOrPackageSkipp() == oldClassp)
+                classRefp->classOrPackagep(newClassp);
         }
 
         if (nodep->op1p()) replaceRefsRecurse(nodep->op1p(), oldClassp, newClassp);
@@ -1084,7 +1085,7 @@ class ParamVisitor final : public VNVisitor {
                 if (const auto* modCellp = VN_CAST(cellp, Cell)) {
                     srcModp = modCellp->modp();
                 } else if (const auto* classRefp = VN_CAST(cellp, ClassOrPackageRef)) {
-                    srcModp = classRefp->classOrPackagep();
+                    srcModp = classRefp->classOrPackageSkipp();
                     if (VN_IS(classRefp->classOrPackageNodep(), ParamTypeDType)) continue;
                 } else if (const auto* classRefp = VN_CAST(cellp, ClassRefDType)) {
                     srcModp = classRefp->classp();

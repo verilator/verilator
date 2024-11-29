@@ -780,9 +780,11 @@ public:
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
+    // There's no classOrPackagep(); use classOrPackageNodep() to get Node,
+    // or iterating to package with classOrPackageSkipp()
+    AstNodeModule* classOrPackageSkipp() const;
     AstNode* classOrPackageNodep() const { return m_classOrPackageNodep; }
     void classOrPackageNodep(AstNode* nodep) { m_classOrPackageNodep = nodep; }
-    AstNodeModule* classOrPackagep() const;
     AstPackage* packagep() const { return VN_CAST(classOrPackageNodep(), Package); }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackageNodep = (AstNode*)nodep; }
 
