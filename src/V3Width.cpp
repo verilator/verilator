@@ -573,7 +573,6 @@ class WidthVisitor final : public VNVisitor {
             // to determine if value or push
             userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{vdtypep, PRELIM}.p());
-            // Queue "element 0" is lhsp, so we need to swap arguments
             const bool lhsIsValue
                 = AstNode::computeCastable(adtypep->subDTypep(), nodep->lhsp()->dtypep(), nullptr)
                       .isAssignable();
@@ -4537,6 +4536,7 @@ class WidthVisitor final : public VNVisitor {
         UINFO(9, "ent " << range.left() << " to " << range.right() << endl);
         AstNode* newp = nullptr;
         bool allConstant = true;
+        const bool isConcat = nodep->itemsp() && VN_AS(nodep->itemsp(), PatMember)->isConcat();
         for (int entn = 0, ent = range.left(); entn < range.elements();
              ++entn, ent += range.leftToRightInc()) {
             AstPatMember* newpatp = nullptr;
@@ -4546,10 +4546,10 @@ class WidthVisitor final : public VNVisitor {
                 if (defaultp) {
                     newpatp = defaultp->cloneTree(false);
                     patp = newpatp;
-                } else if (!(VN_IS(arrayDtp, UnpackArrayDType) && !allConstant)) {
+                } else if (!(VN_IS(arrayDtp, UnpackArrayDType) && !allConstant && isConcat)) {
                     // If arrayDtp is an unpacked array and item is not constant,
-                    // the number of elemnt cannot be determined here as the dtype of each element
-                    // is not set yet. V3Slice checks for such cases.
+                    // the number of elements cannot be determined here as the dtype of each
+                    // element is not set yet. V3Slice checks for such cases.
                     nodep->v3error("Assignment pattern missed initializing elements: " << ent);
                 }
             } else {
@@ -7855,14 +7855,18 @@ class WidthVisitor final : public VNVisitor {
         if (AstConcat* lhsp = VN_CAST(nodep->lhsp(), Concat)) {
             patConcatConvertRecurse(patternp, lhsp);
         } else {
-            patternp->addItemsp(new AstPatMember{nodep->lhsp()->fileline(),
-                                                 nodep->lhsp()->unlinkFrBack(), nullptr, nullptr});
+            AstPatMember* const newp = new AstPatMember{
+                nodep->lhsp()->fileline(), nodep->lhsp()->unlinkFrBack(), nullptr, nullptr};
+            newp->isConcat(true);
+            patternp->addItemsp(newp);
         }
         if (AstConcat* rhsp = VN_CAST(nodep->rhsp(), Concat)) {
             patConcatConvertRecurse(patternp, rhsp);
         } else {
-            patternp->addItemsp(new AstPatMember{nodep->rhsp()->fileline(),
-                                                 nodep->rhsp()->unlinkFrBack(), nullptr, nullptr});
+            AstPatMember* const newp = new AstPatMember{
+                nodep->rhsp()->fileline(), nodep->rhsp()->unlinkFrBack(), nullptr, nullptr};
+            newp->isConcat(true);
+            patternp->addItemsp(newp);
         }
     }
 

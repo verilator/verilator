@@ -2263,9 +2263,11 @@ void AstPackageImport::pkgNameFrom() {
 }
 void AstPatMember::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
+    if (isConcat()) str << " [CONCAT]";
     if (isDefault()) str << " [DEFAULT]";
 }
 void AstPatMember::dumpJson(std::ostream& str) const {
+    if (isConcat()) dumpJsonBoolFunc(str, isConcat);
     if (isDefault()) dumpJsonBoolFunc(str, isDefault);
     dumpJsonGen(str);
 }

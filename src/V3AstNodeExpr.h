@@ -1738,7 +1738,8 @@ class AstPatMember final : public AstNodeExpr {
     // @astgen op2 := keyp : Optional[AstNode]
     // @astgen op3 := repp : Optional[AstNodeExpr]  // replication count, or nullptr for count 1
     // @astgen op4 := varrefp : Optional[AstNodeExpr]  // Decoded variable if TEXT
-    bool m_default = false;
+    bool m_isDefault = false;  // Has default
+    bool m_isConcat = false;  // From concatenate
 
 public:
     AstPatMember(FileLine* fl, AstNodeExpr* lhssp, AstNode* keyp, AstNodeExpr* repp)
@@ -1755,8 +1756,10 @@ public:
     int instrCount() const override { return widthInstrs() * 2; }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
-    bool isDefault() const { return m_default; }
-    void isDefault(bool flag) { m_default = flag; }
+    bool isConcat() const { return m_isConcat; }
+    void isConcat(bool flag) { m_isConcat = flag; }
+    bool isDefault() const { return m_isDefault; }
+    void isDefault(bool flag) { m_isDefault = flag; }
 };
 class AstPattern final : public AstNodeExpr {
     // Verilog '{a,b,c,d...}
