@@ -1,0 +1,5 @@
+%Error: Internal Error: t/t_iface_wire_bad_param.v:16:20: ../V3Broken.cpp:#: Broken link in node (or something without maybePointedTo): 'm_varp && !m_varp->brokeExists()' @ ./V3Ast__gen_impl.h:#
+                                                        : ... note: In instance 't'
+   16 |    wire wbad = sub.a;
+      |                    ^
+                        ... See the manual at https://verilator.org/verilator_doc.html for more assistance.
