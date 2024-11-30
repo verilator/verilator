@@ -250,11 +250,11 @@ public:
             record_arr_table(var, name, dimension, {});
         }
     }
-    template <typename T, std::size_t N>
-    void write_var(VlUnpacked<T, N>& var, int width, const char* name, int dimension,
+    template <typename T, std::size_t N_Depth>
+    void write_var(VlUnpacked<T, N_Depth>& var, int width, const char* name, int dimension,
                    std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
-        m_vars[name] = std::make_shared<const VlRandomArrayVar<VlUnpacked<T, N>>>(
+        m_vars[name] = std::make_shared<const VlRandomArrayVar<VlUnpacked<T, N_Depth>>>(
             name, width, &var, dimension, randmodeIdx);
         if (dimension > 0) {
             idx = 0;
@@ -295,11 +295,11 @@ public:
             ++idx;
         }
     }
-    template <typename T, std::size_t N>
-    void record_arr_table(VlUnpacked<T, N>& var, const std::string name, int dimension,
+    template <typename T, std::size_t N_Depth>
+    void record_arr_table(VlUnpacked<T, N_Depth>& var, const std::string name, int dimension,
                           std::vector<size_t> indices) {
-        if ((dimension > 0) && (N != 0)) {
-            for (size_t i = 0; i < N; ++i) {
+        if ((dimension > 0) && (N_Depth != 0)) {
+            for (size_t i = 0; i < N_Depth; ++i) {
                 const std::string indexed_name = name + "[" + std::to_string(i) + "]";
                 indices.push_back(i);
                 record_arr_table(var.operator[](i), indexed_name, dimension - 1, indices);

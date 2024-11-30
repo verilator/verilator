@@ -534,17 +534,17 @@ class DelayedVisitor final : public VNVisitor {
     }
 
     // Scheme::ValueQueuePartial/Scheme::ValueQueueWhole
-    template <bool Partial>
+    template <bool N_Partial>
     void prepareSchemeValueQueue(AstVarScope* vscp, VarScopeInfo& vscpInfo) {
-        UASSERT_OBJ(Partial ? vscpInfo.m_scheme == Scheme::ValueQueuePartial
-                            : vscpInfo.m_scheme == Scheme::ValueQueueWhole,
+        UASSERT_OBJ(N_Partial ? vscpInfo.m_scheme == Scheme::ValueQueuePartial
+                              : vscpInfo.m_scheme == Scheme::ValueQueueWhole,
                     vscp, "Inconsisten<t NBA s>cheme");
         FileLine* const flp = vscp->fileline();
         AstScope* const scopep = vscp->scopep();
 
         // Create the commit queue variable
         auto* const cqDTypep
-            = new AstNBACommitQueueDType{flp, vscp->dtypep()->skipRefp(), Partial};
+            = new AstNBACommitQueueDType{flp, vscp->dtypep()->skipRefp(), N_Partial};
         v3Global.rootp()->typeTablep()->addTypesp(cqDTypep);
         const std::string name = "__VdlyCommitQueue" + vscp->varp()->shortName();
         AstVarScope* const queueVscp = createTemp(flp, scopep, name, cqDTypep);

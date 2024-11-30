@@ -37,9 +37,9 @@ namespace {
 
 // Create a DfgVertex out of a AstNodeExpr. For most AstNodeExpr subtypes, this can be done
 // automatically. For the few special cases, we provide specializations below
-template <typename Vertex, typename Node>
-Vertex* makeVertex(const Node* nodep, DfgGraph& dfg) {
-    return new Vertex{dfg, nodep->fileline(), DfgVertex::dtypeFor(nodep)};
+template <typename T_Vertex, typename T_Node>
+T_Vertex* makeVertex(const T_Node* nodep, DfgGraph& dfg) {
+    return new T_Vertex{dfg, nodep->fileline(), DfgVertex::dtypeFor(nodep)};
 }
 
 //======================================================================

@@ -264,9 +264,9 @@ public:
     }
 
 private:
-    template <uint8_t T_Way>  //
+    template <uint8_t N_Way>  //
     VL_ATTR_NOINLINE void init(V3Graph* graphp) {
-        constexpr GraphWay way{T_Way};
+        constexpr GraphWay way{N_Way};
         // Assign every vertex without an incoming edge to ready, others to waiting
         for (V3GraphVertex& vertex : graphp->vertices()) {
             const uint32_t nDeps = vertex.edges<way.invert()>().size();
@@ -275,9 +275,9 @@ private:
         }
     }
 
-    template <uint8_t T_Way>  //
+    template <uint8_t N_Way>  //
     VL_ATTR_NOINLINE const V3GraphVertex* unblock(const V3GraphVertex* resultp) {
-        constexpr GraphWay way{T_Way};
+        constexpr GraphWay way{N_Way};
         for (const V3GraphEdge& edge : resultp->edges<way>()) {
             V3GraphVertex* const vertexp = edge.furtherp<way>();
 #if VL_DEBUG

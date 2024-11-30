@@ -53,9 +53,9 @@ struct GraphPCNode final {
 //######################################################################
 // GraphPathChecker implementation
 
-template <GraphWay::en T_Way>
+template <GraphWay::en N_Way>
 void GraphPathChecker::initHalfCriticalPaths(bool checkOnly) {
-    constexpr GraphWay way{T_Way};
+    constexpr GraphWay way{N_Way};
     constexpr GraphWay rev = way.invert();
     GraphStreamUnordered order(m_graphp, way);
     while (const V3GraphVertex* const vertexp = order.nextp()) {

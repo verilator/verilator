@@ -427,52 +427,52 @@ public:
 // Implementation of dataflow graph vertices with a fixed number of sources
 //------------------------------------------------------------------------------
 
-template <size_t Arity>
+template <size_t N_Arity>
 class DfgVertexWithArity VL_NOT_FINAL : public DfgVertex {
-    static_assert(1 <= Arity && Arity <= 4, "Arity must be between 1 and 4 inclusive");
+    static_assert(1 <= N_Arity && N_Arity <= 4, "N_Arity must be between 1 and 4 inclusive");
 
-    std::array<DfgEdge, Arity> m_srcs;  // Source edges
+    std::array<DfgEdge, N_Arity> m_srcs;  // Source edges
 
 protected:
     DfgVertexWithArity(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* dtypep)
         : DfgVertex{dfg, type, flp, dtypep} {
         // Initialize source edges
-        for (size_t i = 0; i < Arity; ++i) m_srcs[i].init(this);
+        for (size_t i = 0; i < N_Arity; ++i) m_srcs[i].init(this);
     }
 
     ~DfgVertexWithArity() override = default;
 
 public:
     std::pair<DfgEdge*, size_t> sourceEdges() final override {  //
-        return {m_srcs.data(), Arity};
+        return {m_srcs.data(), N_Arity};
     }
     std::pair<const DfgEdge*, size_t> sourceEdges() const final override {
-        return {m_srcs.data(), Arity};
+        return {m_srcs.data(), N_Arity};
     }
 
-    template <size_t Index>
+    template <size_t N_Index>
     DfgEdge* sourceEdge() {
-        static_assert(Index < Arity, "Source index out of range");
-        return &m_srcs[Index];
+        static_assert(N_Index < N_Arity, "Source index out of range");
+        return &m_srcs[N_Index];
     }
 
-    template <size_t Index>
+    template <size_t N_Index>
     const DfgEdge* sourceEdge() const {
-        static_assert(Index < Arity, "Source index out of range");
-        return &m_srcs[Index];
+        static_assert(N_Index < N_Arity, "Source index out of range");
+        return &m_srcs[N_Index];
     }
 
-    template <size_t Index>
+    template <size_t N_Index>
     DfgVertex* source() const {
-        static_assert(Index < Arity, "Source index out of range");
-        return m_srcs[Index].sourcep();
+        static_assert(N_Index < N_Arity, "Source index out of range");
+        return m_srcs[N_Index].sourcep();
     }
 
-    template <size_t Index>
+    template <size_t N_Index>
     void relinkSource(DfgVertex* newSourcep) {
-        static_assert(Index < Arity, "Source index out of range");
-        UASSERT_OBJ(m_srcs[Index].sinkp() == this, this, "Inconsistent");
-        m_srcs[Index].relinkSource(newSourcep);
+        static_assert(N_Index < N_Arity, "Source index out of range");
+        UASSERT_OBJ(m_srcs[N_Index].sinkp() == this, this, "Inconsistent");
+        m_srcs[N_Index].relinkSource(newSourcep);
     }
 };
 

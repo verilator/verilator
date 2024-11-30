@@ -161,10 +161,10 @@ public:
     ~VlWorkerThread();
 
     // METHODS
-    template <bool SpinWait>
+    template <bool N_SpinWait>
     void dequeWork(ExecRec* workp) VL_MT_SAFE_EXCLUDES(m_mutex) {
         // Spin for a while, waiting for new data
-        if VL_CONSTEXPR_CXX17 (SpinWait) {
+        if VL_CONSTEXPR_CXX17 (N_SpinWait) {
             for (unsigned i = 0; i < VL_LOCK_SPINS; ++i) {
                 if (VL_LIKELY(m_ready_size.load(std::memory_order_relaxed))) break;
                 VL_CPU_RELAX();

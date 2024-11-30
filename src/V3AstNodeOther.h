@@ -2401,13 +2401,13 @@ public:
     // Iterates top level members of the class, taking into account inheritance (starting from the
     // root superclass). Note: after V3Scope, several children are moved under an AstScope and will
     // not be found by this.
-    template <typename Callable>
-    void foreachMember(const Callable& f) {
-        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 1>::type;
+    template <typename T_Callable>
+    void foreachMember(const T_Callable& f) {
+        using T_Node = typename FunctionArgNoPointerNoCV<T_Callable, 1>::type;
         static_assert(
-            vlstd::is_invocable<Callable, AstClass*, T_Node*>::value
+            vlstd::is_invocable<T_Callable, AstClass*, T_Node*>::value
                 && std::is_base_of<AstNode, T_Node>::value,
-            "Callable 'f' must have a signature compatible with 'void(AstClass*, T_Node*)', "
+            "T_Callable 'f' must have a signature compatible with 'void(AstClass*, T_Node*)', "
             "with 'T_Node' being a subtype of 'AstNode'");
         if (AstClassExtends* const cextendsp = this->extendsp()) {
             cextendsp->classp()->foreachMember(f);
@@ -2417,13 +2417,14 @@ public:
         }
     }
     // Same as above, but stops after first match
-    template <typename Callable>
-    bool existsMember(const Callable& p) const {
-        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 1>::type;
-        static_assert(vlstd::is_invocable_r<bool, Callable, const AstClass*, const T_Node*>::value
-                          && std::is_base_of<AstNode, T_Node>::value,
-                      "Predicate 'p' must have a signature compatible with 'bool(const AstClass*, "
-                      "const T_Node*)', with 'T_Node' being a subtype of 'AstNode'");
+    template <typename T_Callable>
+    bool existsMember(const T_Callable& p) const {
+        using T_Node = typename FunctionArgNoPointerNoCV<T_Callable, 1>::type;
+        static_assert(
+            vlstd::is_invocable_r<bool, T_Callable, const AstClass*, const T_Node*>::value
+                && std::is_base_of<AstNode, T_Node>::value,
+            "Predicate 'p' must have a signature compatible with 'bool(const AstClass*, "
+            "const T_Node*)', with 'T_Node' being a subtype of 'AstNode'");
         if (AstClassExtends* const cextendsp = this->extendsp()) {
             if (cextendsp->classp()->existsMember(p)) return true;
         }

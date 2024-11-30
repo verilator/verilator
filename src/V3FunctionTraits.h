@@ -32,25 +32,25 @@ struct FunctionTraits final
     : public FunctionTraits<decltype(&std::remove_reference<T>::type::operator())> {};
 
 // Specialization for pointers to member function
-template <typename ClassType, typename ReturnType, typename... Args>
-struct FunctionTraits<ReturnType (ClassType::*)(Args...) const> VL_NOT_FINAL {
+template <typename T_ClassType, typename T_ReturnType, typename... Args>
+struct FunctionTraits<T_ReturnType (T_ClassType::*)(Args...) const> VL_NOT_FINAL {
     // Number of arguments
     static constexpr size_t arity = sizeof...(Args);
 
     // Type of result
-    using result_type = ReturnType;
+    using result_type = T_ReturnType;
 
     // Type of arguments
-    template <std::size_t I>
+    template <std::size_t N>
     struct arg final {
-        using type = typename std::tuple_element<I, std::tuple<Args...>>::type;
+        using type = typename std::tuple_element<N, std::tuple<Args...>>::type;
     };
 };
 
-template <typename T_Callable, size_t index>
+template <typename T_Callable, size_t N_Index>
 struct FunctionArgNoPointerNoCV final {
     using Traits = FunctionTraits<T_Callable>;
-    using T_Arg = typename Traits::template arg<index>::type;
+    using T_Arg = typename Traits::template arg<N_Index>::type;
     using T_ArgNoPtr = typename std::remove_pointer<T_Arg>::type;
     using type = typename std::remove_cv<T_ArgNoPtr>::type;
 };

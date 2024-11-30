@@ -934,14 +934,14 @@ class CaptureVisitor final : public VNVisitor {
         return false;
     }
 
-    template <typename NodeT>
-    void fixupClassOrPackage(AstNode* memberp, NodeT refp) {
+    template <typename T_Node>
+    void fixupClassOrPackage(AstNode* memberp, T_Node refp) {
         AstNodeModule* const declClassp = VN_AS(memberp->user2p(), NodeModule);
         if (declClassp != m_targetp) refp->classOrPackagep(declClassp);
     }
 
-    template <typename NodeT>
-    bool isReferenceToInnerMember(NodeT nodep) {
+    template <typename T_Node>
+    bool isReferenceToInnerMember(T_Node nodep) {
         return VN_IS(nodep->fromp(), LambdaArgRef);
     }
 

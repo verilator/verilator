@@ -36,8 +36,8 @@ class CMakeEmitter final {
     // STATIC FUNCTIONS
 
     // Concatenate all strings in 'strs' with ' ' between them.
-    template <typename List>
-    static string cmake_list(const List& strs) {
+    template <typename T_List>
+    static string cmake_list(const T_List& strs) {
         string s;
         for (auto it = strs.begin(); it != strs.end(); ++it) {
             s += '"';
