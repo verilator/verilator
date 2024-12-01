@@ -449,7 +449,7 @@ class Runner:
         else:
             error_msg = test.errors if test.errors else test.errors_keep_going
             test.oprint("FAILED: " + error_msg)
-            makecmd = VtOs.getenv_def('VERILATOR_MAKE', os.environ['MAKE']) + " &&"
+            makecmd = VtOs.getenv_def('VERILATOR_MAKE', os.environ['MAKE'] + "&&")
             upperdir = 'test_regress/' if re.search(r'test_regress', os.getcwd()) else ''
             self.fail_msgs.append("\t#" + test.soprint("%Error: " + error_msg) + "\t\t" + makecmd +
                                   " " + upperdir + test.py_filename + ' ' +
@@ -603,6 +603,7 @@ class VlTest:
         self.running_id = running_id
         self.scenario = scenario
 
+        self._force_pass = False
         self._have_solver_called = False
         self._inputs = {}
         self._ok = False
@@ -814,6 +815,8 @@ class VlTest:
         """Called from tests as: error("Reason message")
         Newline is optional. Only first line is passed to summaries
         Throws a VtErrorException, so rest of testing is not executed"""
+        if self._force_pass:
+            return
         message = message.rstrip() + "\n"
         print("%Warning: " + self.scenario + "/" + self.name + ": " + message,
               file=sys.stderr,
@@ -826,7 +829,7 @@ class VlTest:
     def error_keep_going(self, message: str) -> None:
         """Called from tests as: error_keep_going("Reason message")
         Newline is optional. Only first line is passed to summaries"""
-        if self._quit:
+        if self._quit or self._force_pass:
             return
         message = message.rstrip() + "\n"
         print("%Warning: " + self.scenario + "/" + self.name + ": " + message,
@@ -1710,6 +1713,9 @@ class VlTest:
                     got = proc.stdout.readinto(rawbuf)
                     if got:
                         data = rawbuf[0:got]
+                        if re.search(r'--debug-exit-uvm23: Exiting', str(data)):
+                            self._force_pass = True
+                            print("EXIT: " + str(data))
                         if tee:
                             sys.stdout.write(data.decode('latin-1'))
                             if Args.interactive_debugger:
@@ -1741,20 +1747,12 @@ class VlTest:
             print("driver: Leaving directory '" + os.path.abspath(entering) + "'")
 
         if not fails and status:
-            firstline = ""
-            if logfile:
-                with open(logfile, 'r', encoding="utf8") as fh:
-                    for line in fh:
-                        line = line.rstrip()
-                        if re.match(r'^- ', line):  # Debug message
-                            continue
-                        firstline = line
-                        break
-            self.error("Exec of " + cmd[0] + " failed: " + firstline)
+            firstline = self._error_log_summary(logfile)
+            self.error("Exec of " + self._error_cmd_simplify(cmd) + " failed: " + firstline)
         if fails and status:
             print("(Exec expected to fail, and did.)")
         if fails and not status:
-            self.error("Exec of " + cmd[0] + " ok, but expected to fail")
+            self.error("Exec of " + self._error_cmd_simplify(cmd) + " ok, but expected to fail")
         if self.errors or self._skips:
             return False
 
@@ -1793,17 +1791,34 @@ class VlTest:
     # Little utilities
 
     @staticmethod
-    def _try_regex(text: str, regex) -> None:
-        # Try to eval a regexp
-        # Returns:
-        #  1 if $text ~= /$regex/ms
-        #  0 if no match
-        # -1 if $regex is invalid, doesn't compile
-        try:
-            m = re.search(regex, text)
-            return 1 if m else 0
-        except re.error:
-            return -1
+    def _error_cmd_simplify(cmd: list) -> str:
+        if cmd[0] == "perl" and re.search(r'/bin/verilator', cmd[1]):
+            return "verilator"
+        return cmd[0]
+
+    def _error_log_summary(self, filename: str) -> str:
+        size = ""
+        if False:  # Show test size for fault grading  # pylint: disable=using-constant-test
+            if self.top_filename and os.path.exists(self.top_filename):
+                size = "(Test " + str(os.stat(self.top_filename).st_size) + " B) "
+        if not filename:
+            return size
+        firstline = ""
+        with open(filename, 'r', encoding="utf8") as fh:
+            lineno = 0
+            for line in fh:
+                lineno += 1
+                if lineno > 100:
+                    break
+                line = line.rstrip()
+                if re.match(r'^- ', line):  # Debug message
+                    continue
+                if not firstline:
+                    firstline = line
+                if (re.search(r'error|warn', line, re.IGNORECASE)
+                        and not re.search(r'-Werror', line)):
+                    return size + line
+        return size + firstline
 
     def _make_main(self, timing_loop: bool) -> None:
         if timing_loop and self.sc:
