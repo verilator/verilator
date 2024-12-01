@@ -1,5 +1,0 @@
-%Error: t/t_iface_wire_bad.v:16:20: Operator ASSIGNW expected non-interface on Assign RHS but 'a__Viftop' is an interface.
-                                  : ... note: In instance 't'
-   16 |    wire wbad = sub.a;
-      |                    ^
-%Error: Exiting due to

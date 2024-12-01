@@ -7,11 +7,12 @@
 interface Ifc;
 endinterface
 
-module Sub #(parameter P);
+module Sub;
    Ifc a();
 endmodule
 
 module t;
-   Sub #(0) sub();
+   Sub sub();
+   // Issue #5649
    wire wbad = sub.a;
 endmodule
