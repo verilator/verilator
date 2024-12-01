@@ -794,7 +794,7 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum) co
                 nodep = subp;
                 continue;
             } else {
-                v3fatalSrc("Typedef not linked");
+                nodep->v3fatalSrc(nodep->prettyTypeName() << " not linked to type");
                 return nullptr;
             }
         }

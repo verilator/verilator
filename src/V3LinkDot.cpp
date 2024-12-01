@@ -1692,7 +1692,6 @@ public:
     LinkDotFindVisitor(AstNetlist* rootp, LinkDotState* statep)
         : m_statep{statep} {
         UINFO(4, __FUNCTION__ << ": " << endl);
-
         iterate(rootp);
     }
     ~LinkDotFindVisitor() override = default;
@@ -4063,7 +4062,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 const AstClass* const clsp = VN_CAST(cpackagerefp->classOrPackageNodep(), Class);
                 if (clsp && clsp->isParameterized()) {
                     // Unable to link before the instantiation of parameter classes.
-                    // The class reference node has to be visited to properly link parameters.
+                    // The class reference node still has to be visited now to later link
+                    // parameters.
                     iterate(cpackagep);
                     return;
                 }
