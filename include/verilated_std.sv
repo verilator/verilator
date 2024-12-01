@@ -21,6 +21,9 @@
 /// It is only for internal use.
 ///
 //*************************************************************************
+//
+// The following keywords from this file are hardcoded for detection in the parser:
+// "mailbox", "process", "randomize", "semaphore", "std"
 
 // verilator lint_off DECLFILENAME
 // verilator lint_off TIMESCALEMOD

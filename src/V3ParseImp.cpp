@@ -70,6 +70,25 @@ V3ParseImp::~V3ParseImp() {
 //######################################################################
 // Parser utility methods
 
+void V3ParseImp::importIfInStd(FileLine* fileline, const string& id) {
+    // Keywords that auto-import to require use of verilated_std.vh.
+    // OK if overly sensitive; will over-import and keep std:: around
+    // longer than migt otherwise.
+    if (v3Global.usesStdPackage()) return;  // Run once then short-circuit
+    const bool identifierImportsStd = (id == "mailbox" || id == "process" || id == "randomize"
+                                       || id == "semaphore" || id == "std");
+    if (!identifierImportsStd) return;
+    // Ignore Std:: used inside verilated_std.vh itself
+    if (fileline->filename() == V3Options::getStdPackagePath()) return;
+    if (AstPackage* const stdpkgp
+        = v3Global.rootp()->stdPackagep()) {  // else e.g. --no-std-package
+        UINFO(9, "import and keep std:: for " << fileline << "\n");
+        AstPackageImport* const impp = new AstPackageImport{stdpkgp->fileline(), stdpkgp, "*"};
+        unitPackage(stdpkgp->fileline())->addStmtsp(impp);
+        v3Global.setUsesStdPackage();
+    }
+}
+
 void V3ParseImp::lexPpline(const char* textp) {
     // Handle lexer `line directive
     // FileLine* const prevFl = lexFileline();
@@ -647,6 +666,9 @@ void V3ParseImp::tokenPipelineSym() {
     // Note above sometimes converts yGLOBAL to a yaID__LEX
     tokenPipeline();  // sets yylval
     int token = yylval.token;
+    if (token == yaID__LEX || token == yaID__CC || token == yaID__aTYPE) {
+        importIfInStd(yylval.fl, *(yylval.strp));
+    }
     if (token == yaID__LEX || token == yaID__CC) {
         const VSymEnt* foundp;
         if (const VSymEnt* const look_underp = V3ParseImp::parsep()->symp()->nextId()) {
@@ -669,12 +691,6 @@ void V3ParseImp::tokenPipelineSym() {
                 VSymEnt* const stdsymp = stdpkgp->user4u().toSymEnt();
                 foundp = stdsymp->findIdFallback(*(yylval.strp));
             }
-            if (foundp && !v3Global.usesStdPackage()) {
-                AstPackageImport* const impp
-                    = new AstPackageImport{stdpkgp->fileline(), stdpkgp, "*"};
-                unitPackage(stdpkgp->fileline())->addStmtsp(impp);
-                v3Global.setUsesStdPackage();
-            }
         }
         if (foundp) {
             AstNode* const scp = foundp->nodep();
@@ -692,8 +708,6 @@ void V3ParseImp::tokenPipelineSym() {
                 } else {
                     token = yaID__ETC;
                 }
-            } else if (!m_afterColonColon && *(yylval.strp) == "std") {
-                v3Global.setUsesStdPackage();
             }
         } else {  // Not found
             yylval.scp = nullptr;
