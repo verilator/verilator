@@ -2745,7 +2745,7 @@ if __name__ == '__main__':
     parser.add_argument('--fail-max',
                         action='store',
                         default=None,
-                        help='run Verilator executable with gdb')
+                        help='after specified number of failures, skip remaining tests')
     parser.add_argument('--gdb', action='store_true', help='run Verilator executable with gdb')
     parser.add_argument('--gdbbt',
                         action='store_true',

@@ -257,6 +257,7 @@ class LinkCellsVisitor final : public VNVisitor {
         // For historical reasons virtual interface reference variables remain VARs
         if (m_varp && !nodep->isVirtual()) m_varp->setIfaceRef();
         // Note cannot do modport resolution here; modports are allowed underneath generates
+        UINFO(4, "Link IfaceRef done: " << nodep << endl);
     }
 
     void visit(AstPackageExport* nodep) override {
@@ -502,10 +503,10 @@ class LinkCellsVisitor final : public VNVisitor {
                 AstIfaceRefDType* const idtypep = new AstIfaceRefDType{
                     nodep->fileline(), nodep->name(), nodep->modp()->name()};
                 idtypep->ifacep(nullptr);  // cellp overrides
-                // In the case of arrayed interfaces, we replace cellp when de-arraying in V3Inst
                 idtypep->cellp(nodep);  // Only set when real parent cell known.
                 AstVar* varp;
                 if (nodep->rangep()) {
+                    // For arrayed interfaces, we replace cellp when de-arraying in V3Inst
                     AstNodeArrayDType* const arrp
                         = new AstUnpackArrayDType{nodep->fileline(), VFlagChildDType{}, idtypep,
                                                   nodep->rangep()->cloneTree(true)};
