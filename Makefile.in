@@ -452,13 +452,13 @@ analyzer-include:
 	scan-build $(MAKE) -k examples
 
 format:
-	$(MAKE) -j 4 clang-format yapf format-exec
+	$(MAKE) -j 4 format-c format-py format-exec
 
 CLANGFORMAT = clang-format-14
 CLANGFORMAT_FLAGS = -i
 CLANGFORMAT_FILES = $(CHECK_CPP) $(CHECK_H) $(CHECK_YL) test_regress/t/*.c* test_regress/t/*.h
 
-clang-format:
+format-c clang-format:
 	@$(CLANGFORMAT) --version | egrep 14.0 > /dev/null \
 		|| echo "*** You are not using clang-format-14, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
@@ -518,7 +518,7 @@ PY_TEST_FILES = \
 YAPF = yapf3
 YAPF_FLAGS = -i --parallel
 
-yapf:
+format-py yapf:
 	$(YAPF) $(YAPF_FLAGS) $(PY_FILES)
 
 GERSEMI = gersemi
