@@ -108,6 +108,8 @@ void V3Global::readFiles() {
         // Resolve all modules cells refer to
         V3LinkCells::link(v3Global.rootp(), &filter, &parseSyms);
     }
+
+    V3Global::dumpCheckGlobalTree("cells", false, dumpTreeEitherLevel() >= 9);
 }
 
 void V3Global::removeStd() {
