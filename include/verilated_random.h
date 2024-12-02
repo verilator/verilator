@@ -208,6 +208,66 @@ public:
         s << ')';
     }
 };
+
+template <typename T>
+class VlRandomAssocVar final : public VlRandomVar {
+public:
+    VlRandomAssocVar(const char* name, int width, void* datap, int dimension,
+                     std::uint32_t randModeIdx)
+        : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
+    void* datap(int idx) const override {
+        const std::string indexed_name = name() + std::to_string(idx);
+        const auto it = m_arrVarsRefp->find(indexed_name);
+        if (it != m_arrVarsRefp->end()) return it->second->m_datap;
+        return &static_cast<T*>(VlRandomVar::datap(idx))->at(idx);
+    }
+    void emitSelect(std::ostream& s, const std::vector<size_t>& indices) const {
+        for (size_t idx = 0; idx < indices.size(); ++idx) s << "(select ";
+        s << name();
+        for (size_t idx = 0; idx < indices.size(); ++idx) {
+            s << " #x";
+            for (int j = 28; j >= 0; j -= 4) {
+                s << "0123456789abcdef"[(indices[idx] >> j) & 0xf];
+            }
+            s << ")";
+        }
+    }
+    void emitGetValue(std::ostream& s) const override {
+        const int elementCounts = countMatchingElements(*m_arrVarsRefp, name());
+        for (int i = 0; i < elementCounts; i++) {
+            const std::string indexed_name = name() + std::to_string(i);
+            const auto it = m_arrVarsRefp->find(indexed_name);
+            if (it != m_arrVarsRefp->end()) {
+                const std::vector<size_t>& indices = it->second->m_indices;
+                emitSelect(s, indices);
+
+            }
+        }
+    }
+    void emitType(std::ostream& s) const override {
+        if (dimension() > 0) {
+            for (int i = 0; i < dimension(); ++i) s << "(Array (_ BitVec 32) ";
+            s << "(_ BitVec " << width() << ")";
+            for (int i = 0; i < dimension(); ++i) s << ")";
+        }
+    }
+    int totalWidth() const override {
+        const int elementCounts = countMatchingElements(*m_arrVarsRefp, name());
+        return width() * elementCounts;
+    }
+    void emitExtract(std::ostream& s, int i) const override {
+        const int j = i / width();
+        i = i % width();
+        s << " ((_ extract " << i << ' ' << i << ')';
+        const std::string indexed_name = name() + std::to_string(j);
+        const auto it = m_arrVarsRefp->find(indexed_name);
+        if (it != m_arrVarsRefp->end()) {
+            const std::vector<size_t>& indices = it->second->m_indices;
+            emitSelect(s, indices);
+        }
+        s << ')';
+    }
+};
 //=============================================================================
 // VlRandomizer is the object holding constraints and variable references.
 
@@ -261,6 +321,17 @@ public:
             record_arr_table(var, name, dimension, {});
         }
     }
+    template <typename T, typename V>
+    void write_var(VlAssocArray<T, V>& var, int width, const char* name, int dimension,
+                   std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
+        if (m_vars.find(name) != m_vars.end()) return;
+        m_vars[name] = std::make_shared<const VlRandomAssocVar<VlAssocArray<T, V>>>(
+            name, width, &var, dimension, randmodeIdx);
+        if (dimension > 0) {
+            idx = 0;
+            record_arr_table(var, name, dimension, {});
+        }
+    }
     int idx = 0;
     std::string generateKey(const std::string& name, int idx) {
         if (!name.empty() && name[0] == '\\') {
@@ -303,6 +374,22 @@ public:
                 const std::string indexed_name = name + "[" + std::to_string(i) + "]";
                 indices.push_back(i);
                 record_arr_table(var.operator[](i), indexed_name, dimension - 1, indices);
+                indices.pop_back();
+            }
+        } else {
+            const std::string key = generateKey(name, idx);
+            m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices);
+            idx += 1;
+        }
+    }
+    template <typename T, typename V>
+    void record_arr_table(VlAssocArray<T, V>& var, const std::string name, int dimension,
+                          std::vector<size_t> indices) {
+        if ((dimension > 0) && (var.size() != 0)) {
+            for (size_t i = 0; i < var.size(); ++i) {
+                const std::string indexed_name = name + "[" + std::to_string(i) + "]";
+                indices.push_back(i);
+                record_arr_table(var.at(i), indexed_name, dimension - 1, indices);
                 indices.pop_back();
             }
         } else {
