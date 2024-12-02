@@ -4137,7 +4137,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (foundp) {
                     nodep->v3error("Expecting a data type: " << nodep->prettyNameQ());
                 } else {
-                    nodep->v3error("Can't find typedef: " << nodep->prettyNameQ());
+                    nodep->v3error("Can't find typedef/interface: " << nodep->prettyNameQ());
                 }
             }
         }
