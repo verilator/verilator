@@ -38,6 +38,7 @@ else:
         def __getattr__(cls, name: str) -> clang.cindex.CursorKind:
             return getattr(clang.cindex.CursorKind, name)
 
+    # pylint: disable-next=invalid-enum-extension
     class CursorKind(clang.cindex.CursorKind, metaclass=CursorKindMeta):
         pass
 
@@ -1145,10 +1146,14 @@ def main():
     for refid, file in enumerate(cmdline.file):
         filename = os.path.abspath(file)
         root = default_compilation_root
-        cxxflags = []
+        cxxflags = common_cxxflags[:]
         if compdb:
             entry = compdb.getCompileCommands(filename)
-            entry_list = list(entry)
+            if entry is None:
+                print(f"%Error: reading compile commands failed: {filename}", file=sys.stderr)
+                entry_list = []
+            else:
+                entry_list = list(entry)
             # Compilation database can contain multiple entries for single file,
             # e.g. when it has been updated by appending new entries.
             # Use last entry for the file, if it exists, as it is the newest one.
@@ -1160,9 +1165,7 @@ def main():
                 # compiler executable name/path. CIndex (libclang) always
                 # implicitly prepends executable name, so it shouldn't be passed
                 # here.
-                cxxflags = common_cxxflags + entry_args[1:]
-        else:
-            cxxflags = common_cxxflags[:]
+                cxxflags.extend(entry_args[1:])
 
         compile_command = CompileCommand(refid, filename, cxxflags, root)
         compile_commands_list.append(compile_command)

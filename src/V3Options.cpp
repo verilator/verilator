@@ -418,24 +418,23 @@ string V3Options::allArgsStringForHierBlock(bool forTop, bool forCMake) const {
     string out;
     bool stripArg = false;
     bool stripArgIfNum = false;
-    for (std::list<string>::const_iterator it = m_impp->m_lineArgs.begin();
-         it != m_impp->m_lineArgs.end(); ++it) {
+    for (const string& arg : m_impp->m_lineArgs) {
         if (stripArg) {
             stripArg = false;
             continue;
         }
         if (stripArgIfNum) {
             stripArgIfNum = false;
-            if (isdigit((*it)[0])) continue;
+            if (isdigit(arg[0])) continue;
         }
         int skip = 0;
-        if (it->length() >= 2 && (*it)[0] == '-' && (*it)[1] == '-') {
+        if (arg.length() >= 2 && arg[0] == '-' && arg[1] == '-') {
             skip = 2;
-        } else if (it->length() >= 1 && (*it)[0] == '-') {
+        } else if (arg.length() >= 1 && arg[0] == '-') {
             skip = 1;
         }
-        if (skip > 0) {  // *it is an option
-            const string opt = it->substr(skip);  // Remove '-' in the beginning
+        if (skip > 0) {  // arg is an option
+            const string opt = arg.substr(skip);  // Remove '-' in the beginning
             const int numStrip = stripOptionsForChildRun(opt, forTop);
             if (numStrip) {
                 UASSERT(0 <= numStrip && numStrip <= 3, "should be one of 0, 1, 2, 3");
@@ -444,15 +443,15 @@ string V3Options::allArgsStringForHierBlock(bool forTop, bool forCMake) const {
                 continue;
             }
         } else {  // Not an option
-            if ((forCMake && vFiles.find(*it) != vFiles.end())  // Remove HDL
-                || m_cppFiles.find(*it) != m_cppFiles.end()) {  // Remove C++
+            if ((forCMake && vFiles.find(arg) != vFiles.end())  // Remove HDL
+                || m_cppFiles.find(arg) != m_cppFiles.end()) {  // Remove C++
                 continue;
             }
         }
         if (out != "") out += " ";
-        // Don't use opt here because '-' is removed in it
-        // Use double quote because *it may contain whitespaces
-        out += '"' + VString::quoteAny(*it, '"', '\\') + '"';
+        // Don't use opt here because '-' is removed in arg
+        // Use double quote because arg may contain whitespaces
+        out += '"' + VString::quoteAny(arg, '"', '\\') + '"';
     }
     return out;
 }
@@ -562,6 +561,12 @@ int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
     return 0;
 }
 
+void V3Options::validateIdentifier(FileLine* fl, const string& arg, const string& opt) {
+    if (!VString::isIdentifier(arg)) {
+        fl->v3error(opt << " argument must be a legal C++ identifier: '" << arg << "'");
+    }
+}
+
 string V3Options::filePath(FileLine* fl, const string& modname, const string& lastpath,
                            const string& errmsg) {  // Error prefix or "" to suppress error
     // Find a filename to read the specified module name,
@@ -569,7 +574,7 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
     // Return "" if not found.
     const string filename = V3Os::filenameCleanup(VName::dehash(modname));
     if (!V3Os::filenameIsRel(filename)) {
-        // filename is an absolute path, so can find getStdPackagePath()
+        // filename is an absolute path, so can find getStdPackagePath()/getStdWaiverPath()
         string exists = filePathCheckOneDir(filename, "");
         if (exists != "") return exists;
     }
@@ -632,7 +637,7 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
 V3LangCode V3Options::fileLanguage(const string& filename) {
     string ext = V3Os::filenameNonDir(filename);
     string::size_type pos;
-    if (filename == V3Options::getStdPackagePath()) {
+    if (filename == V3Options::getStdPackagePath() || filename == V3Options::getStdWaiverPath()) {
         return V3LangCode::mostRecent();
     } else if ((pos = ext.rfind('.')) != string::npos) {
         ext.erase(0, pos + 1);
@@ -793,6 +798,9 @@ string V3Options::getenvVERILATOR_SOLVER() {
 
 string V3Options::getStdPackagePath() {
     return V3Os::filenameJoin(getenvVERILATOR_ROOT(), "include", "verilated_std.sv");
+}
+string V3Options::getStdWaiverPath() {
+    return V3Os::filenameJoin(getenvVERILATOR_ROOT(), "include", "verilated_std_waiver.vlt");
 }
 
 string V3Options::getSupported(const string& var) {
@@ -1259,7 +1267,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-json-edit-nums", OnOff, &m_jsonEditNums);
     DECL_OPTION("-json-ids", OnOff, &m_jsonIds);
     DECL_OPTION("-E", CbOnOff, [this](bool flag) {
-        if (flag) m_std = false;
+        if (flag) {
+            m_stdPackage = false;
+            m_stdWaiver = false;
+        }
         m_preprocOnly = flag;
     });
     DECL_OPTION("-emit-accessors", OnOff, &m_emitAccessors);
@@ -1304,8 +1315,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fdead-assigns", FOnOff, &m_fDeadAssigns);
     DECL_OPTION("-fdead-cells", FOnOff, &m_fDeadCells);
     DECL_OPTION("-fexpand", FOnOff, &m_fExpand);
+    DECL_OPTION("-ffunc-opt", CbFOnOff, [this](bool flag) {  //
+        m_fFuncSplitCat = flag;
+        m_fFuncBalanceCat = flag;
+    });
+    DECL_OPTION("-ffunc-opt-balance-cat", FOnOff, &m_fFuncBalanceCat);
+    DECL_OPTION("-ffunc-opt-split-cat", FOnOff, &m_fFuncSplitCat);
     DECL_OPTION("-fgate", FOnOff, &m_fGate);
     DECL_OPTION("-finline", FOnOff, &m_fInline);
+    DECL_OPTION("-finline-funcs", FOnOff, &m_fInlineFuncs);
     DECL_OPTION("-flife", FOnOff, &m_fLife);
     DECL_OPTION("-flife-post", FOnOff, &m_fLifePost);
     DECL_OPTION("-flocalize", FOnOff, &m_fLocalize);
@@ -1314,6 +1332,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fmerge-const-pool", FOnOff, &m_fMergeConstPool);
     DECL_OPTION("-freloop", FOnOff, &m_fReloop);
     DECL_OPTION("-freorder", FOnOff, &m_fReorder);
+    DECL_OPTION("-fslice", FOnOff, &m_fSlice);
     DECL_OPTION("-fsplit", FOnOff, &m_fSplit);
     DECL_OPTION("-fsubst", FOnOff, &m_fSubst);
     DECL_OPTION("-fsubst-const", FOnOff, &m_fSubstConst);
@@ -1374,7 +1393,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     };
     DECL_OPTION("-default-language", CbVal, setLang);
     DECL_OPTION("-language", CbVal, setLang);
-    DECL_OPTION("-lib-create", Set, &m_libCreate);
+    DECL_OPTION("-lib-create", CbVal, [this, fl](const char* valp) {
+        validateIdentifier(fl, valp, "--lib-create");
+        m_libCreate = valp;
+    });
     DECL_OPTION("-lint-only", OnOff, &m_lintOnly);
     DECL_OPTION("-localize-max-size", Set, &m_localizeMaxSize);
     DECL_OPTION("-main-top-name", Set, &m_mainTopName);
@@ -1397,7 +1419,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         }
     });
     DECL_OPTION("-max-num-width", Set, &m_maxNumWidth);
-    DECL_OPTION("-mod-prefix", Set, &m_modPrefix);
+    DECL_OPTION("-mod-prefix", CbVal, [this, fl](const char* valp) {
+        validateIdentifier(fl, valp, "--mod-prefix");
+        m_modPrefix = valp;
+    });
 
     DECL_OPTION("-O0", CbCall, [this]() { optimize(0); });
     DECL_OPTION("-O1", CbCall, [this]() { optimize(1); });
@@ -1448,7 +1473,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-pins-uint8", OnOff, &m_pinsUint8);
     DECL_OPTION("-pipe-filter", Set, &m_pipeFilter);
     DECL_OPTION("-pp-comments", OnOff, &m_ppComments);
-    DECL_OPTION("-prefix", Set, &m_prefix);
+    DECL_OPTION("-prefix", CbVal, [this, fl](const char* valp) {
+        validateIdentifier(fl, valp, "--prefix");
+        m_prefix = valp;
+    });
     DECL_OPTION("-private", CbCall, [this]() { m_public = false; });
     DECL_OPTION("-prof-c", OnOff, &m_profC);
     DECL_OPTION("-prof-cfuncs", CbCall, [this]() { m_profC = m_profCFuncs = true; });
@@ -1458,7 +1486,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-prof-pgo", OnOff, &m_profPgo);
     DECL_OPTION("-protect-ids", OnOff, &m_protectIds);
     DECL_OPTION("-protect-key", Set, &m_protectKey);
-    DECL_OPTION("-protect-lib", CbVal, [this](const char* valp) {
+    DECL_OPTION("-protect-lib", CbVal, [this, fl](const char* valp) {
+        validateIdentifier(fl, valp, "--protect-lib");
         m_libCreate = valp;
         m_protectIds = true;
     });
@@ -1507,7 +1536,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_statsVars = flag;
         m_stats |= flag;
     });
-    DECL_OPTION("-std", OnOff, &m_std);
+    DECL_OPTION("-std", CbOnOff, [this](bool flag) {
+        m_stdPackage = flag;
+        m_stdWaiver = flag;
+    });
+    DECL_OPTION("-std-package", OnOff, &m_stdPackage);
+    DECL_OPTION("-std-waiver", OnOff, &m_stdWaiver);
     DECL_OPTION("-stop-fail", OnOff, &m_stopFail);
     DECL_OPTION("-structs-packed", OnOff, &m_structsPacked);
     DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2023; });
@@ -1701,6 +1735,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         FileLine::globalWarnOff(V3ErrorCode::WIDTH, false);
         V3Error::pretendError(V3ErrorCode::WIDTH, false);
     });
+    DECL_OPTION("-waiver-multiline", OnOff, &m_waiverMultiline);
     DECL_OPTION("-waiver-output", Set, &m_waiverOutput);
 
     DECL_OPTION("-x-assign", CbVal, [this, fl](const char* valp) {

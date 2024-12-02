@@ -23,7 +23,7 @@
 // Over each module, from child to parent:
 //   Build a graph, connecting signals together so we can propagate tristates
 //     Variable becomes tristate with
-//       VAR->isInoutish
+//       VAR->isInout
 //       VAR->isPullup/isPulldown (converted to AstPullup/AstPulldown
 //       BufIf0/1
 //   All variables on the LHS need to become tristate when there is:
@@ -487,8 +487,9 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Return the master __en for the specified input variable
         if (!invarp->user1p()) {
             AstVar* const newp
-                = new AstVar{invarp->fileline(), isTop ? VVarType::PORT : VVarType::MODULETEMP,
+                = new AstVar{invarp->fileline(), isTop ? VVarType::VAR : VVarType::MODULETEMP,
                              invarp->name() + "__en", invarp};
+            // Inherited VDirection::INPUT
             UINFO(9, "       newenv " << newp << endl);
             modAddStmtp(invarp, newp);
             invarp->user1p(newp);  // find envar given invarp
@@ -540,8 +541,9 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Return the master __out for the specified input variable
         if (!m_varAux(invarp).outVarp) {
             AstVar* const newp
-                = new AstVar{invarp->fileline(), isTop ? VVarType::PORT : VVarType::MODULETEMP,
+                = new AstVar{invarp->fileline(), isTop ? VVarType::VAR : VVarType::MODULETEMP,
                              invarp->name() + "__out", invarp};
+            // Inherited VDirection::OUTPUT
             UINFO(9, "       newout " << newp << endl);
             modAddStmtp(invarp, newp);
             m_varAux(invarp).outVarp = newp;  // find outvar given invarp
@@ -1779,7 +1781,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 nodep->addNextHere(newp);
                 // We'll iterate on the new AstPull later
             }
-            if (nodep->isInoutish()
+            if (nodep->isInout()
                 //|| varp->isOutput()
                 // Note unconnected output only changes behavior vs. previous
                 // versions and causes outputs that don't come from anywhere to

@@ -192,7 +192,7 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
         if (nodep->attrScClocked() && nodep->isReadOnly()) {
             putns(nodep, "sc_core::sc_in_clk ");
         } else {
-            if (nodep->isInoutish()) {
+            if (nodep->isInout()) {
                 putns(nodep, "sc_core::sc_inout<");
             } else if (nodep->isWritable()) {
                 putns(nodep, "sc_core::sc_out<");
@@ -213,7 +213,7 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
         emitDeclArrayBrackets(nodep);
         puts(";\n");
     } else if (nodep->isIO() && basicp && !basicp->isOpaque()) {
-        if (nodep->isInoutish()) {
+        if (nodep->isInout()) {
             putns(nodep, "VL_INOUT");
         } else if (nodep->isWritable()) {
             putns(nodep, "VL_OUT");

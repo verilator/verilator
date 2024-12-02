@@ -2,7 +2,7 @@
     7 | module t (input mispkg::foo_t a);
       |                 ^~~~~~
                   ... For error description see https://verilator.org/warn/PKGNODECL?v=latest
-%Error: t/t_lint_pkg_colon_bad.v:7:25: syntax error, unexpected IDENTIFIER, expecting TYPE-IDENTIFIER
+%Error: t/t_lint_pkg_colon_bad.v:7:25: syntax error, unexpected IDENTIFIER, expecting IDENTIFIER-for-type
     7 | module t (input mispkg::foo_t a);
       |                         ^~~~~
 %Error: Exiting due to

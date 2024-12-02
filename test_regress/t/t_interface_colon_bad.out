@@ -1,0 +1,7 @@
+%Error: t/t_interface_colon_bad.v:14:7: Package/class for ':: reference' not found: 'iface'
+   14 |       iface::func();   
+      |       ^~~~~
+%Error: t/t_interface_colon_bad.v:14:14: Can't find definition of task/function: 'func'
+   14 |       iface::func();   
+      |              ^~~~
+%Error: Exiting due to

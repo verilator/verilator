@@ -54,8 +54,10 @@ public:
 //######################################################################
 
 class BeginVisitor final : public VNVisitor {
-    // STATE
+    // STATE - across all visitors
     BeginState* const m_statep;  // Current global state
+
+    // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNode* m_liftedp = nullptr;  // Local  nodes we are lifting into m_ftaskp
@@ -145,10 +147,8 @@ class BeginVisitor final : public VNVisitor {
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
         UINFO(8, "  " << nodep << endl);
@@ -164,29 +164,28 @@ class BeginVisitor final : public VNVisitor {
         // inside the function.
         // Process children
         VL_RESTORER(m_displayScope);
+        VL_RESTORER(m_ftaskp);
+        VL_RESTORER(m_liftedp);
         VL_RESTORER(m_namedScope);
         VL_RESTORER(m_unnamedScope);
-        {
-            m_displayScope = dot(m_displayScope, nodep->name());
-            m_namedScope = "";
-            m_unnamedScope = "";
-            m_ftaskp = nodep;
-            m_liftedp = nullptr;
-            iterateChildren(nodep);
-            nodep->foreach([&](AstInitialStatic* const initp) {
-                initp->unlinkFrBack();
-                m_ftaskp->addHereThisAsNext(initp);
-            });
-            if (m_liftedp) {
-                // Place lifted nodes at beginning of stmtsp, so Var nodes appear before referenced
-                if (AstNode* const stmtsp = nodep->stmtsp()) {
-                    stmtsp->unlinkFrBackWithNext();
-                    m_liftedp->addNext(stmtsp);
-                }
-                nodep->addStmtsp(m_liftedp);
-                m_liftedp = nullptr;
+        m_displayScope = dot(m_displayScope, nodep->name());
+        m_namedScope = "";
+        m_unnamedScope = "";
+        m_ftaskp = nodep;
+        m_liftedp = nullptr;
+        iterateChildren(nodep);
+        nodep->foreach([&](AstInitialStatic* const initp) {
+            initp->unlinkFrBack();
+            m_ftaskp->addHereThisAsNext(initp);
+        });
+        if (m_liftedp) {
+            // Place lifted nodes at beginning of stmtsp, so Var nodes appear before referenced
+            if (AstNode* const stmtsp = nodep->stmtsp()) {
+                stmtsp->unlinkFrBackWithNext();
+                m_liftedp->addNext(stmtsp);
             }
-            m_ftaskp = nullptr;
+            nodep->addStmtsp(m_liftedp);
+            m_liftedp = nullptr;
         }
     }
     void visit(AstBegin* nodep) override {
@@ -196,30 +195,28 @@ class BeginVisitor final : public VNVisitor {
         VL_RESTORER(m_namedScope);
         VL_RESTORER(m_unnamedScope);
         {
-            {
-                VL_RESTORER(m_keepBegins);
-                m_keepBegins = false;
-                dotNames(nodep, "__BEGIN__");
-            }
-            UASSERT_OBJ(!nodep->genforp(), nodep, "GENFORs should have been expanded earlier");
-
-            // Cleanup
-            if (m_keepBegins) {
-                nodep->name("");
-                return;
-            }
-            AstNode* addsp = nullptr;
-            if (AstNode* const stmtsp = nodep->stmtsp()) {
-                stmtsp->unlinkFrBackWithNext();
-                addsp = AstNode::addNext(addsp, stmtsp);
-            }
-            if (addsp) {
-                nodep->replaceWith(addsp);
-            } else {
-                nodep->unlinkFrBack();
-            }
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            VL_RESTORER(m_keepBegins);
+            m_keepBegins = false;
+            dotNames(nodep, "__BEGIN__");
         }
+        UASSERT_OBJ(!nodep->genforp(), nodep, "GENFORs should have been expanded earlier");
+
+        // Cleanup
+        if (m_keepBegins) {
+            nodep->name("");
+            return;
+        }
+        AstNode* addsp = nullptr;
+        if (AstNode* const stmtsp = nodep->stmtsp()) {
+            stmtsp->unlinkFrBackWithNext();
+            addsp = AstNode::addNext(addsp, stmtsp);
+        }
+        if (addsp) {
+            nodep->replaceWith(addsp);
+        } else {
+            nodep->unlinkFrBack();
+        }
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstVar* nodep) override {
         // If static variable, move it outside a function.

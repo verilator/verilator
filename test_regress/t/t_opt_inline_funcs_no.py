@@ -10,15 +10,10 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.top_filename = "t/t_opt_inline_funcs.v"
 
-out_filename = test.obj_dir + "/" + test.name + "_waiver_gen.vlt"
-waiver_filename = test.obj_dir + "/" + test.name + "_waiver.vlt"
+test.compile(verilator_flags2=['--fno-inline-funcs', '--stats'], verilator_make_gmake=False)
 
-test.compile(v_flags2=['--waiver-output', out_filename], fails=True)
-
-test.file_sed(out_filename, waiver_filename,
-              lambda line: re.sub(r'\/\/ lint_off', 'lint_off', line))
-
-test.compile(v_flags2=[waiver_filename])
+test.file_grep(test.stats, r'Optimizations, Functions inlined\s+(\d+)', 0)
 
 test.passes()

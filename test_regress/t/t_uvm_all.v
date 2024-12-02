@@ -6,7 +6,7 @@
 
 `define UVM_NO_DPI
 
-`include "t_uvm_pkg_all.vh"
+`include "uvm_pkg_all.svh"
 
 module t(/*AUTOARG*/);
 

@@ -129,24 +129,20 @@ class ClassVisitor final : public VNVisitor {
         VL_RESTORER(m_classScopep);
         VL_RESTORER(m_packageScopep);
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            m_classPackagep = packagep;
-            m_classScopep = classScopep;
-            m_packageScopep = scopep;
-            m_prefix = nodep->name() + "__02e";  // .
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        m_classPackagep = packagep;
+        m_classScopep = classScopep;
+        m_packageScopep = scopep;
+        m_prefix = nodep->name() + "__02e";  // .
+        iterateChildren(nodep);
     }
     void visit(AstNodeModule* nodep) override {
         // Visit for NodeModules that are not AstClass (AstClass is-a AstNodeModule)
         VL_RESTORER(m_prefix);
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            m_prefix = nodep->name() + "__03a__03a";  // ::
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        m_prefix = nodep->name() + "__03a__03a";  // ::
+        iterateChildren(nodep);
     }
 
     void visit(AstVar* nodep) override {
@@ -174,12 +170,10 @@ class ClassVisitor final : public VNVisitor {
 
     void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_ftaskp);
-        {
-            m_ftaskp = nodep;
-            iterateChildren(nodep);
-            if (m_packageScopep && nodep->isStatic()) {
-                m_toScopeMoves.emplace_back(nodep, m_packageScopep);
-            }
+        m_ftaskp = nodep;
+        iterateChildren(nodep);
+        if (m_packageScopep && nodep->isStatic()) {
+            m_toScopeMoves.emplace_back(nodep, m_packageScopep);
         }
     }
     void visit(AstCFunc* nodep) override {
@@ -214,7 +208,7 @@ class ClassVisitor final : public VNVisitor {
             m_names.get(dtypep->name() + (VN_IS(dtypep, UnionDType) ? "__union" : "__struct")));
         if (dtypep->packed()) m_strDtypeps.insert(dtypep);
 
-        for (const AstMemberDType* itemp = dtypep->membersp(); itemp;
+        for (AstMemberDType* itemp = dtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             AstNodeUOrStructDType* const subp = itemp->getChildStructp();
             // Recurse only into anonymous structs inside this definition,
@@ -277,7 +271,7 @@ public:
             AstNodeUOrStructDType* const dtypep = m_pubStrDtypeps.front();
             m_pubStrDtypeps.pop();
             if (pubStrDtypeps.insert(dtypep).second) {
-                for (const AstMemberDType* itemp = dtypep->membersp(); itemp;
+                for (AstMemberDType* itemp = dtypep->membersp(); itemp;
                      itemp = VN_AS(itemp->nextp(), MemberDType)) {
                     if (AstNodeUOrStructDType* const subp = itemp->getChildStructp())
                         m_pubStrDtypeps.push(subp);

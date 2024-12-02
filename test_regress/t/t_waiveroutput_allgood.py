@@ -13,9 +13,9 @@ test.scenarios('vlt')
 test.top_filename = "t/t_waiveroutput.v"
 
 out_filename = test.obj_dir + "/" + test.name + ".waiver_gen.vlt"
-waiver_filename = "t/" + test.name + ".vlt"
 
-test.compile(v_flags2=[waiver_filename, '--waiver-output', out_filename])
+# Note no Wall
+test.lint(v_flags2=['-Wno-WIDTH', '--waiver-output', out_filename])
 
 test.files_identical(out_filename, test.golden_filename)
 

@@ -27,22 +27,22 @@
 #include <utility>
 #include <vector>
 
-template <class T_Node, class T_Data, int T_UserN>
+template <typename T_Node, typename T_Data, int N_UserN>
 class AstUserAllocatorBase VL_NOT_FINAL {
-    static_assert(1 <= T_UserN && T_UserN <= 4, "Wrong user pointer number");
+    static_assert(1 <= N_UserN && N_UserN <= 4, "Wrong user pointer number");
     static_assert(std::is_base_of<AstNode, T_Node>::value, "T_Node must be an AstNode type");
 
 private:
     std::deque<T_Data> m_allocated;
 
     T_Data* getUserp(const T_Node* nodep) const {
-        if VL_CONSTEXPR_CXX17 (T_UserN == 1) {
+        if VL_CONSTEXPR_CXX17 (N_UserN == 1) {
             const VNUser user = nodep->user1u();
             return user.to<T_Data*>();
-        } else if VL_CONSTEXPR_CXX17 (T_UserN == 2) {
+        } else if VL_CONSTEXPR_CXX17 (N_UserN == 2) {
             const VNUser user = nodep->user2u();
             return user.to<T_Data*>();
-        } else if VL_CONSTEXPR_CXX17 (T_UserN == 3) {
+        } else if VL_CONSTEXPR_CXX17 (N_UserN == 3) {
             const VNUser user = nodep->user3u();
             return user.to<T_Data*>();
         } else {
@@ -52,11 +52,11 @@ private:
     }
 
     void setUserp(T_Node* nodep, T_Data* userp) const {
-        if VL_CONSTEXPR_CXX17 (T_UserN == 1) {
+        if VL_CONSTEXPR_CXX17 (N_UserN == 1) {
             nodep->user1u(VNUser{userp});
-        } else if VL_CONSTEXPR_CXX17 (T_UserN == 2) {
+        } else if VL_CONSTEXPR_CXX17 (N_UserN == 2) {
             nodep->user2u(VNUser{userp});
-        } else if VL_CONSTEXPR_CXX17 (T_UserN == 3) {
+        } else if VL_CONSTEXPR_CXX17 (N_UserN == 3) {
             nodep->user3u(VNUser{userp});
         } else {
             nodep->user4u(VNUser{userp});
@@ -65,11 +65,11 @@ private:
 
 protected:
     AstUserAllocatorBase() {
-        if VL_CONSTEXPR_CXX17 (T_UserN == 1) {
+        if VL_CONSTEXPR_CXX17 (N_UserN == 1) {
             VNUser1InUse::check();
-        } else if VL_CONSTEXPR_CXX17 (T_UserN == 2) {
+        } else if VL_CONSTEXPR_CXX17 (N_UserN == 2) {
             VNUser2InUse::check();
-        } else if VL_CONSTEXPR_CXX17 (T_UserN == 3) {
+        } else if VL_CONSTEXPR_CXX17 (N_UserN == 3) {
             VNUser3InUse::check();
         } else {
             VNUser4InUse::check();
@@ -107,13 +107,13 @@ public:
 // User pointer allocator classes. T_Node is the type of node the allocator should be applied to
 // and is there for a bit of extra type safety. T_Data is the type of the data structure
 // managed by the allocator.
-template <class T_Node, class T_Data>
+template <typename T_Node, typename T_Data>
 class AstUser1Allocator final : public AstUserAllocatorBase<T_Node, T_Data, 1> {};
-template <class T_Node, class T_Data>
+template <typename T_Node, typename T_Data>
 class AstUser2Allocator final : public AstUserAllocatorBase<T_Node, T_Data, 2> {};
-template <class T_Node, class T_Data>
+template <typename T_Node, typename T_Data>
 class AstUser3Allocator final : public AstUserAllocatorBase<T_Node, T_Data, 3> {};
-template <class T_Node, class T_Data>
+template <typename T_Node, typename T_Data>
 class AstUser4Allocator final : public AstUserAllocatorBase<T_Node, T_Data, 4> {};
 
 #endif  // Guard

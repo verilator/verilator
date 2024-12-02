@@ -71,7 +71,7 @@ public:  // But only local to this file
 // This isn't in the header file for auto-magic conversion because it
 // inlines to too much code and makes compilation too slow.
 
-template <class T>
+template <typename T>
 class VerilatedCoverItemSpec final : public VerilatedCovImpItem {
 private:
     // MEMBERS

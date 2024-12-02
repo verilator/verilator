@@ -1,4 +1,4 @@
-%Error: t/t_param_type_bad.v:9:27: syntax error, unexpected INTEGER NUMBER, expecting IDENTIFIER or TYPE-IDENTIFIER or randomize
+%Error: t/t_param_type_bad.v:9:27: syntax error, unexpected INTEGER NUMBER, expecting IDENTIFIER or IDENTIFIER-for-cell or IDENTIFIER-for-type or randomize
     9 |    localparam type bad2 = 2;   
       |                           ^
 %Error: Exiting due to

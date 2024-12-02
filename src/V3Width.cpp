@@ -573,7 +573,6 @@ class WidthVisitor final : public VNVisitor {
             // to determine if value or push
             userIterateAndNext(nodep->lhsp(), WidthVP{vdtypep, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{vdtypep, PRELIM}.p());
-            // Queue "element 0" is lhsp, so we need to swap arguments
             const bool lhsIsValue
                 = AstNode::computeCastable(adtypep->subDTypep(), nodep->lhsp()->dtypep(), nullptr)
                       .isAssignable();
@@ -669,6 +668,11 @@ class WidthVisitor final : public VNVisitor {
                     WIDTHCONCAT, "Unsized numbers/parameters not allowed in concatenations.");
             }
         }
+    }
+    void visit(AstDefaultDisable* nodep) override {
+        assertAtStatement(nodep);
+        // it's like an if() condition.
+        iterateCheckBool(nodep, "default disable iff condiftion", nodep->condp(), BOTH);
     }
     void visit(AstDelay* nodep) override {
         if (VN_IS(m_procedurep, Final)) {
@@ -1390,6 +1394,9 @@ class WidthVisitor final : public VNVisitor {
         }
         // queue_slice[#:$] and queue_bitsel[$] etc handled in V3WidthSel
         nodep->v3warn(E_UNSUPPORTED, "Unsupported/illegal unbounded ('$') in this context.");
+    }
+    void visit(AstInferredDisable* nodep) override {
+        if (m_vup->prelim()) nodep->dtypeSetBit();
     }
     void visit(AstIsUnbounded* nodep) override {
         if (m_vup->prelim()) {
@@ -2346,6 +2353,13 @@ class WidthVisitor final : public VNVisitor {
         UINFO(5, "  ENUMDTYPE " << nodep << endl);
         nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         nodep->dtypep(nodep);
+        AstBasicDType* basicp = nodep->dtypep()->skipRefp()->basicp();
+        if (!basicp || !basicp->keyword().isIntNumeric()) {
+            nodep->v3error(
+                "Enum type must be an integer atom or vector type (IEEE 1800-2023 6.19)");
+            basicp = nodep->findSigned32DType()->basicp();
+            nodep->refDTypep(basicp);
+        }
         nodep->widthFromSub(nodep->subDTypep());
         // Assign widths
         userIterateAndNext(nodep->itemsp(), WidthVP{nodep->dtypep(), BOTH}.p());
@@ -2376,17 +2390,11 @@ class WidthVisitor final : public VNVisitor {
                     itemp->v3error("Enum value that is unassigned cannot follow value with X/Zs "
                                    "(IEEE 1800-2023 6.19)");
                 }
-                if (!nodep->dtypep()->basicp()
-                    && !nodep->dtypep()->basicp()->keyword().isIntNumeric()) {
-                    itemp->v3error("Enum names without values only allowed on numeric types");
-                    // as can't +1 to resolve them.
-                }
                 itemp->valuep(new AstConst{itemp->fileline(), num});
             }
 
             const AstConst* const constp = VN_AS(itemp->valuep(), Const);
-            if (constp->num().isFourState() && nodep->dtypep()->basicp()
-                && !nodep->dtypep()->basicp()->isFourstate()) {
+            if (constp->num().isFourState() && basicp->basicp() && !basicp->isFourstate()) {
                 itemp->v3error("Enum value with X/Zs cannot be assigned to non-fourstate type "
                                "(IEEE 1800-2023 6.19)");
             }
@@ -3128,7 +3136,9 @@ class WidthVisitor final : public VNVisitor {
         // Any AstWith is checked later when know types, in methodWithArgument
         for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
             if (AstArg* const argp = VN_CAST(pinp, Arg)) {
-                if (argp->exprp()) userIterate(argp->exprp(), WidthVP{SELF, BOTH}.p());
+                if (argp->exprp())
+                    userIterate(argp->exprp(),
+                                WidthVP{nodep->fromp()->dtypep()->subDTypep(), BOTH}.p());
             }
         }
         // Find the fromp dtype - should be a class
@@ -4526,6 +4536,7 @@ class WidthVisitor final : public VNVisitor {
         UINFO(9, "ent " << range.left() << " to " << range.right() << endl);
         AstNode* newp = nullptr;
         bool allConstant = true;
+        const bool isConcat = nodep->itemsp() && VN_AS(nodep->itemsp(), PatMember)->isConcat();
         for (int entn = 0, ent = range.left(); entn < range.elements();
              ++entn, ent += range.leftToRightInc()) {
             AstPatMember* newpatp = nullptr;
@@ -4535,10 +4546,10 @@ class WidthVisitor final : public VNVisitor {
                 if (defaultp) {
                     newpatp = defaultp->cloneTree(false);
                     patp = newpatp;
-                } else if (!(VN_IS(arrayDtp, UnpackArrayDType) && !allConstant)) {
+                } else if (!(VN_IS(arrayDtp, UnpackArrayDType) && !allConstant && isConcat)) {
                     // If arrayDtp is an unpacked array and item is not constant,
-                    // the number of elemnt cannot be determined here as the dtype of each element
-                    // is not set yet. V3Slice checks for such cases.
+                    // the number of elements cannot be determined here as the dtype of each
+                    // element is not set yet. V3Slice checks for such cases.
                     nodep->v3error("Assignment pattern missed initializing elements: " << ent);
                 }
             } else {
@@ -6130,6 +6141,15 @@ class WidthVisitor final : public VNVisitor {
             if (v3Global.opt.timing().isSetTrue()) {
                 iterateCheckBool(nodep, "Wait", nodep->condp(),
                                  BOTH);  // it's like an if() condition.
+                // TODO check also inside complex event expressions
+                if (AstNodeVarRef* const varrefp = VN_CAST(nodep->condp(), NodeVarRef)) {
+                    if (varrefp->isEvent()) {
+                        varrefp->v3error("Wait statement conditions do not take raw events"
+                                         " (IEEE 1800-2023 15.5.3)\n"
+                                         << varrefp->warnMore() << "... Suggest use '"
+                                         << varrefp->prettyName() << ".triggered'");
+                    }
+                }
                 iterateNull(nodep->stmtsp());
                 return;
             } else if (v3Global.opt.timing().isSetFalse()) {
@@ -6848,7 +6868,7 @@ class WidthVisitor final : public VNVisitor {
         return false;
     }
     void checkClassAssign(AstNode* nodep, const char* side, AstNode* rhsp,
-                          const AstNodeDType* const lhsDTypep) {
+                          AstNodeDType* const lhsDTypep) {
         if (AstClassRefDType* const lhsClassRefp = VN_CAST(lhsDTypep->skipRefp(), ClassRefDType)) {
             UASSERT_OBJ(rhsp->dtypep(), rhsp, "Node has no type");
             AstNodeDType* const rhsDtypep = rhsp->dtypep()->skipRefp();
@@ -7812,7 +7832,10 @@ class WidthVisitor final : public VNVisitor {
         for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
              patp = VN_AS(patp->nextp(), PatMember)) {
             if (patp->keyp()) {
+                if (patp->varrefp()) V3Const::constifyParamsEdit(patp->varrefp());
                 if (const AstConst* const constp = VN_CAST(patp->keyp(), Const)) {
+                    element = constp->toSInt();
+                } else if (const AstConst* const constp = VN_CAST(patp->varrefp(), Const)) {
                     element = constp->toSInt();
                 } else {
                     patp->keyp()->v3error("Assignment pattern key not supported/understood: "
@@ -7832,14 +7855,18 @@ class WidthVisitor final : public VNVisitor {
         if (AstConcat* lhsp = VN_CAST(nodep->lhsp(), Concat)) {
             patConcatConvertRecurse(patternp, lhsp);
         } else {
-            patternp->addItemsp(new AstPatMember{nodep->lhsp()->fileline(),
-                                                 nodep->lhsp()->unlinkFrBack(), nullptr, nullptr});
+            AstPatMember* const newp = new AstPatMember{
+                nodep->lhsp()->fileline(), nodep->lhsp()->unlinkFrBack(), nullptr, nullptr};
+            newp->isConcat(true);
+            patternp->addItemsp(newp);
         }
         if (AstConcat* rhsp = VN_CAST(nodep->rhsp(), Concat)) {
             patConcatConvertRecurse(patternp, rhsp);
         } else {
-            patternp->addItemsp(new AstPatMember{nodep->rhsp()->fileline(),
-                                                 nodep->rhsp()->unlinkFrBack(), nullptr, nullptr});
+            AstPatMember* const newp = new AstPatMember{
+                nodep->rhsp()->fileline(), nodep->rhsp()->unlinkFrBack(), nullptr, nullptr};
+            newp->isConcat(true);
+            patternp->addItemsp(newp);
         }
     }
 
@@ -7951,36 +7978,28 @@ class WidthVisitor final : public VNVisitor {
     }
     void userIterate(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return;
-        {
-            VL_RESTORER(m_vup);
-            m_vup = vup;
-            iterate(nodep);
-        }
+        VL_RESTORER(m_vup);
+        m_vup = vup;
+        iterate(nodep);
     }
     void userIterateAndNext(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return;
         if (nodep->didWidth()) return;  // Avoid iterating list we have already iterated
-        {
-            VL_RESTORER(m_vup);
-            m_vup = vup;
-            iterateAndNextNull(nodep);
-        }
+        VL_RESTORER(m_vup);
+        m_vup = vup;
+        iterateAndNextNull(nodep);
     }
     void userIterateChildren(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return;
-        {
-            VL_RESTORER(m_vup);
-            m_vup = vup;
-            iterateChildren(nodep);
-        }
+        VL_RESTORER(m_vup);
+        m_vup = vup;
+        iterateChildren(nodep);
     }
     void userIterateChildrenBackwardsConst(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return;
-        {
-            VL_RESTORER(m_vup);
-            m_vup = vup;
-            iterateChildrenBackwardsConst(nodep);
-        }
+        VL_RESTORER(m_vup);
+        m_vup = vup;
+        iterateChildrenBackwardsConst(nodep);
     }
 
 public:

@@ -37,14 +37,14 @@ struct V3OptionParser::Impl final {
         VALUE  // "-opt val"
     };
     // Base class of actual action classes
-    template <en MODE, bool ALLOW_PARTIAL_MATCH = false>
+    template <en N_Mode, bool N_Allow_Partial_Match = false>
     class ActionBase VL_NOT_FINAL : public ActionIfs {
         bool m_undocumented = false;  // This option is not documented
     public:
-        bool isValueNeeded() const override final { return MODE == en::VALUE; }
-        bool isFOnOffAllowed() const override final { return MODE == en::FONOFF; }
-        bool isOnOffAllowed() const override final { return MODE == en::ONOFF; }
-        bool isPartialMatchAllowed() const override final { return ALLOW_PARTIAL_MATCH; }
+        bool isValueNeeded() const override final { return N_Mode == en::VALUE; }
+        bool isFOnOffAllowed() const override final { return N_Mode == en::FONOFF; }
+        bool isOnOffAllowed() const override final { return N_Mode == en::ONOFF; }
+        bool isPartialMatchAllowed() const override final { return N_Allow_Partial_Match; }
         bool isUndocumented() const override { return m_undocumented; }
         void undocumented() override { m_undocumented = true; }
     };
@@ -52,14 +52,14 @@ struct V3OptionParser::Impl final {
     // Actual action classes
     template <typename T>
     class ActionSet;  // "-opt" for bool-ish, "-opt val" for int and string
-    template <typename BOOL>
+    template <typename N_Bool>
     class ActionFOnOff;  // "-fopt" and "-fno-opt" for bool-ish
-    template <typename BOOL>
+    template <typename N_Bool>
     class ActionOnOff;  // "-opt" and "-no-opt" for bool-ish
     class ActionCbCall;  // Callback without argument for "-opt"
     class ActionCbFOnOff;  // Callback for "-fopt" and "-fno-opt"
     class ActionCbOnOff;  // Callback for "-opt" and "-no-opt"
-    template <class T>
+    template <typename T>
     class ActionCbVal;  // Callback for "-opt val"
     class ActionCbPartialMatch;  // Callback "-O3" for "-O"
     class ActionCbPartialMatchVal;  // Callback "-debugi-V3Options 3" for "-debugi-"
@@ -171,10 +171,10 @@ V3OptionParser::ActionIfs* V3OptionParser::find(const char* optp) {
     return nullptr;
 }
 
-template <class ACT, class ARG>
-V3OptionParser::ActionIfs& V3OptionParser::add(const std::string& opt, ARG arg) {
+template <typename T_Act, typename T_Arg>
+V3OptionParser::ActionIfs& V3OptionParser::add(const std::string& opt, T_Arg arg) {
     UASSERT(!m_pimpl->m_isFinalized, "Cannot add after finalize() is called");
-    std::unique_ptr<ACT> act{new ACT{std::move(arg)}};
+    std::unique_ptr<T_Act> act{new T_Act{std::move(arg)}};
     UASSERT(opt.size() >= 2, opt << " is too short");
     UASSERT(opt[0] == '-' || opt[0] == '+', opt << " does not start with either '-' or '+'");
     UASSERT(!(opt[0] == '-' && opt[1] == '-'), "Option must have single '-', but " << opt);

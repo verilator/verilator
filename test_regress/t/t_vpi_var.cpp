@@ -34,6 +34,10 @@
 
 #endif
 
+#ifdef VERILATOR
+#include "verilated.h"
+#endif
+
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -253,6 +257,29 @@ int _mon_check_value_callbacks() {
     return 0;
 }
 
+int _mon_check_too_big() {
+#ifdef VERILATOR
+    s_vpi_value v;
+    v.format = vpiVectorVal;
+
+    TestVpiHandle h = VPI_HANDLE("too_big");
+    CHECK_RESULT_NZ(h);
+
+    Verilated::fatalOnVpiError(false);
+    vpi_get_value(h, &v);
+    Verilated::fatalOnVpiError(true);
+    s_vpi_error_info info;
+    CHECK_RESULT_NZ(vpi_chk_error(&info));
+
+    v.format = vpiStringVal;
+    vpi_get_value(h, &v);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    CHECK_RESULT_CSTR_STRIP(v.value.str, "some text");
+#endif
+
+    return 0;
+}
+
 int _mon_check_var() {
     TestVpiHandle vh1 = VPI_HANDLE("onebit");
     CHECK_RESULT_NZ(vh1);
@@ -416,7 +443,7 @@ int _mon_check_varlist() {
     CHECK_RESULT_CSTR(p, "sub");
     if (TestSimulator::is_verilator()) {
         p = vpi_get_str(vpiDefName, vh2);
-        CHECK_RESULT_CSTR(p, "<null>");  // Unsupported
+        CHECK_RESULT_CSTR(p, "sub");
     }
 
     TestVpiHandle vh10 = vpi_iterate(vpiReg, vh2);
@@ -935,6 +962,7 @@ extern "C" int mon_check() {
     if (int status = _mon_check_putget_str(NULL)) return status;
     if (int status = _mon_check_vlog_info()) return status;
     if (int status = _mon_check_delayed()) return status;
+    if (int status = _mon_check_too_big()) return status;
 #ifndef IS_VPI
     VerilatedVpi::selfTest();
 #endif

@@ -279,7 +279,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     bool m_inContAssign = false;  // In continuous assignment
     bool m_inProcAssign = false;  // In procedural assignment
     bool m_inFTaskRef = false;  // In function or task call
-    bool m_inInoutPin = false;  // Connected to pin that is inout
+    bool m_inInoutOrRefPin = false;  // Connected to pin that is inout
     const AstNodeFTask* m_taskp = nullptr;  // Current task
     const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
 
@@ -452,7 +452,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                 // Inouts have only isWrite set, as we don't have more
                 // information and operating on module boundary, treat as
                 // both read and writing
-                || m_inInoutPin)
+                || m_inInoutOrRefPin)
                 entryp->usedWhole();
         }
     }
@@ -460,46 +460,36 @@ class UndrivenVisitor final : public VNVisitorConst {
     // Don't know what black boxed calls do, assume in+out
     void visit(AstSysIgnore* nodep) override {
         VL_RESTORER(m_inBBox);
-        {
-            m_inBBox = true;
-            iterateChildrenConst(nodep);
-        }
+        m_inBBox = true;
+        iterateChildrenConst(nodep);
     }
 
     void visit(AstAssign* nodep) override {
         VL_RESTORER(m_inProcAssign);
-        {
-            m_inProcAssign = true;
-            iterateChildrenConst(nodep);
-        }
+        m_inProcAssign = true;
+        iterateChildrenConst(nodep);
     }
     void visit(AstAssignDly* nodep) override {
         VL_RESTORER(m_inProcAssign);
-        {
-            m_inProcAssign = true;
-            iterateChildrenConst(nodep);
-        }
+        m_inProcAssign = true;
+        iterateChildrenConst(nodep);
     }
     void visit(AstAssignW* nodep) override {
         VL_RESTORER(m_inContAssign);
-        {
-            m_inContAssign = true;
-            iterateChildrenConst(nodep);
-        }
+        m_inContAssign = true;
+        iterateChildrenConst(nodep);
     }
     void visit(AstAlways* nodep) override {
         VL_RESTORER(m_alwaysCombp);
-        {
-            AstNode::user2ClearTree();
-            if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) {
-                UINFO(9, "   " << nodep << endl);
-                m_alwaysCombp = nodep;
-            } else {
-                m_alwaysCombp = nullptr;
-            }
-            iterateChildrenConst(nodep);
-            if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep << endl);
+        AstNode::user2ClearTree();
+        if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) {
+            UINFO(9, "   " << nodep << endl);
+            m_alwaysCombp = nodep;
+        } else {
+            m_alwaysCombp = nullptr;
         }
+        iterateChildrenConst(nodep);
+        if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep << endl);
     }
     void visit(AstNodeFTaskRef* nodep) override {
         VL_RESTORER(m_inFTaskRef);
@@ -509,14 +499,12 @@ class UndrivenVisitor final : public VNVisitorConst {
 
     void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_taskp);
-        {
-            m_taskp = nodep;
-            iterateChildrenConst(nodep);
-        }
+        m_taskp = nodep;
+        iterateChildrenConst(nodep);
     }
     void visit(AstPin* nodep) override {
-        VL_RESTORER(m_inInoutPin);
-        m_inInoutPin = nodep->modVarp()->isInoutish();
+        VL_RESTORER(m_inInoutOrRefPin);
+        m_inInoutOrRefPin = nodep->modVarp()->isInoutOrRef();
         iterateChildrenConst(nodep);
     }
 

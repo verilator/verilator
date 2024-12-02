@@ -57,13 +57,13 @@ public:
     bool operator<(const V3Hash& rh) const { return m_value < rh.m_value; }
 
     // '+' combines hashes
-    template <class T>
+    template <typename T>
     V3Hash operator+(T that) const {
         return V3Hash{combine(m_value, V3Hash{that}.m_value)};
     }
 
     // '+=' combines in place
-    template <class T>
+    template <typename T>
     V3Hash& operator+=(T that) {
         return *this = *this + that;
     }

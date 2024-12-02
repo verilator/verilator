@@ -198,7 +198,7 @@ public:
 //=============================================================================
 // VlPgoProfiler is for collecting profiling data for PGO
 
-template <std::size_t T_Entries>
+template <std::size_t N_Entries>
 class VlPgoProfiler final {
     // TYPES
     struct Record final {
@@ -207,7 +207,7 @@ class VlPgoProfiler final {
     };
 
     // Counters are stored packed, all together to reduce cache effects
-    std::array<uint64_t, T_Entries> m_counters;  // Time spent on this record
+    std::array<uint64_t, N_Entries> m_counters;  // Time spent on this record
     std::vector<Record> m_records;  // Record information
 
 public:
@@ -216,7 +216,7 @@ public:
     ~VlPgoProfiler() = default;
     void write(const char* modelp, const std::string& filename) VL_MT_SAFE;
     void addCounter(size_t counter, const std::string& name) {
-        VL_DEBUG_IF(assert(counter < T_Entries););
+        VL_DEBUG_IF(assert(counter < N_Entries););
         m_records.emplace_back(Record{name, counter});
     }
     void startCounter(size_t counter) {
@@ -227,8 +227,8 @@ public:
     void stopCounter(size_t counter) { m_counters[counter] += VL_CPU_TICK(); }
 };
 
-template <std::size_t T_Entries>
-void VlPgoProfiler<T_Entries>::write(const char* modelp, const std::string& filename) VL_MT_SAFE {
+template <std::size_t N_Entries>
+void VlPgoProfiler<N_Entries>::write(const char* modelp, const std::string& filename) VL_MT_SAFE {
     static VerilatedMutex s_mutex;
     const VerilatedLockGuard lock{s_mutex};
 

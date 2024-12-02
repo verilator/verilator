@@ -1,5 +1,15 @@
-%Error: t/t_inst_paren_bad.v:11:8: Instantiation 'sub_inst' requires parenthesis (IEEE 1800-2023 23.3.2)
-                                 : ... Suggest use 'sub_inst()'
+%Error: t/t_inst_paren_bad.v:11:4: Non-interface used as an interface: 'sub'
+                                 : ... Perhaps intended an instantiation but are missing parenthesis (IEEE 1800-2023 23.3.2)?
    11 |    sub sub_inst;   
-      |        ^~~~~~~~
+      |    ^~~
+%Warning-MULTITOP: t/t_inst_paren_bad.v:10:8: Multiple top level modules
+                                            : ... Suggest see manual; fix the duplicates, or use --top-module to select top.
+                   ... For warning description see https://verilator.org/warn/MULTITOP?v=latest
+                   ... Use "/* verilator lint_off MULTITOP */" and lint_on around source to disable this message.
+                                            : ... Top module 'sub'
+    7 | module sub;
+      |        ^~~
+                                            : ... Top module 't'
+   10 | module t( );
+      |        ^
 %Error: Exiting due to

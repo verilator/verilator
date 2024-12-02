@@ -883,10 +883,8 @@ class TraceVisitor final : public VNVisitor {
             }
         }
         VL_RESTORER(m_cfuncp);
-        {
-            m_cfuncp = nodep;
-            iterateChildren(nodep);
-        }
+        m_cfuncp = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstTraceDecl* nodep) override {
         UINFO(8, "   TRACE " << nodep << endl);

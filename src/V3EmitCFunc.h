@@ -354,7 +354,7 @@ public:
              * executing in the wrong path to make verilator-generated code
              * run faster.
              */
-            puts("auto &vlSelfRef = std::ref(*vlSelf).get();\n");
+            puts("auto& vlSelfRef = std::ref(*vlSelf).get();\n");
         }
 
         if (nodep->initsp()) {

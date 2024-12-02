@@ -53,7 +53,7 @@ public:
 private:
     bool pathExistsInternal(const V3GraphVertex* ap, const V3GraphVertex* bp,
                             unsigned* costp = nullptr) VL_MT_DISABLED;
-    template <GraphWay::en T_Way>
+    template <GraphWay::en N_Way>
     void initHalfCriticalPaths(bool checkOnly) VL_MT_DISABLED;
     void incGeneration() { ++m_generation; }
 

@@ -157,8 +157,8 @@ public:
     };
 };
 
-template <typename Key, typename Val>
-using Cache = std::unordered_map<Key, Val, typename Key::Hash, typename Key::Equal>;
+template <typename T_Key, typename T_Val>
+using Cache = std::unordered_map<T_Key, T_Val, typename T_Key::Hash, typename T_Key::Equal>;
 
 using CacheSel = Cache<KeySel, DfgSel*>;
 using CacheUnary = Cache<KeyUnary, DfgVertexUnary*>;
@@ -246,10 +246,10 @@ inline void setOperands(DfgVertexTernary* vtxp, DfgVertex* src0p, DfgVertex* src
 }
 
 // Get or create (and insert) vertex with given operands
-template <typename Vertex, typename Cache, typename... Operands>
-inline Vertex* getOrCreate(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep, Cache& cache,
+template <typename Vertex, typename T_Cache, typename... Operands>
+inline Vertex* getOrCreate(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep, T_Cache& cache,
                            Operands... operands) {
-    typename Cache::mapped_type& entrypr = getEntry(cache, dtypep, operands...);
+    typename T_Cache::mapped_type& entrypr = getEntry(cache, dtypep, operands...);
     if (!entrypr) {
         Vertex* const newp = new Vertex{dfg, flp, dtypep};
         setOperands(newp, operands...);

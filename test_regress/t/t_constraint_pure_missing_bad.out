@@ -1,0 +1,7 @@
+%Error: t/t_constraint_pure_missing_bad.v:11:1: Class 'Cls' extends 'Base' but is missing constraint implementation for 'raint' (IEEE 1800-2023 18.5.2)
+   11 | class Cls extends Base;
+      | ^~~~~
+        t/t_constraint_pure_missing_bad.v:8:21: ... Location of interface class's pure constraint
+    8 |     pure constraint raint;
+      |                     ^~~~~
+%Error: Exiting due to

@@ -173,6 +173,7 @@ install(
     PATTERN "include/verilated_config.h"
     PATTERN "include/*.[chv]"
     PATTERN "include/*.cpp"
+    PATTERN "include/*.vlt"
     PATTERN "include/*.sv"
     PATTERN "include/gtkwave/*.[chv]*"
     PATTERN "include/vltstd/*.[chv]*"

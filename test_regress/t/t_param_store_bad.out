@@ -1,0 +1,4 @@
+%Error: t/t_param_store_bad.v:12:31: Storing to parameter variable 'S' in a context that is determed only at runtime
+   12 |       $value$plusargs("S=%s", S);   
+      |                               ^
+%Error: Exiting due to

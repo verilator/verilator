@@ -100,7 +100,7 @@ class VerilatedFstC;
 class VerilatedFstSc;
 class VerilatedScope;
 class VerilatedScopeNameMap;
-template <class, class>
+template <typename, typename>
 class VerilatedTrace;
 class VerilatedTraceBaseC;
 class VerilatedTraceConfig;
@@ -300,7 +300,7 @@ public:
 
 private:
     // The following are for use by Verilator internals only
-    template <class, class>
+    template <typename, typename>
     friend class VerilatedTrace;
     // Run-time trace configuration requested by this model
     virtual std::unique_ptr<VerilatedTraceConfig> traceConfig() const;
@@ -546,9 +546,9 @@ public:
     /// 1 = Set all bits to one
     /// 2 = Randomize all bits
     void randReset(int val) VL_MT_SAFE;
-    /// Set default random seed, 0 = seed it automatically
-    int randSeed() const VL_MT_SAFE { return m_s.m_randSeed; }
     /// Return default random seed
+    int randSeed() const VL_MT_SAFE { return m_s.m_randSeed; }
+    /// Set default random seed, 0 = seed it automatically
     void randSeed(int val) VL_MT_SAFE;
 
     /// Return statistic: CPU time delta from model created until now
@@ -714,6 +714,7 @@ private:
     VerilatedVarNameMap* m_varsp = nullptr;  // Variable map
     const char* m_namep = nullptr;  // Scope name (Slowpath)
     const char* m_identifierp = nullptr;  // Identifier of scope (with escapes removed)
+    const char* m_defnamep = nullptr;  // Definition name (SCOPE_MODULE only)
     int8_t m_timeunit = 0;  // Timeunit in negative power-of-10
     Type m_type = SCOPE_OTHER;  // Type of the scope
 
@@ -721,13 +722,15 @@ public:  // But internals only - called from VerilatedModule's
     VerilatedScope() = default;
     ~VerilatedScope();
     void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
-                   const char* identifier, int8_t timeunit, const Type& type) VL_MT_UNSAFE;
+                   const char* identifier, const char* defnamep, int8_t timeunit,
+                   const Type& type) VL_MT_UNSAFE;
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
     void varInsert(int finalize, const char* namep, void* datap, bool isParam,
                    VerilatedVarType vltype, int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }
     const char* identifier() const VL_MT_SAFE_POSTINIT { return m_identifierp; }
+    const char* defname() const VL_MT_SAFE_POSTINIT { return m_defnamep; }
     int8_t timeunit() const VL_MT_SAFE_POSTINIT { return m_timeunit; }
     VerilatedSyms* symsp() const VL_MT_SAFE_POSTINIT { return m_symsp; }
     VerilatedVar* varFind(const char* namep) const VL_MT_SAFE_POSTINIT;

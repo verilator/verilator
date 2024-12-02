@@ -45,7 +45,8 @@ private:
     AstNodeModule* m_modp = nullptr;  // Current module
     AstClocking* m_clockingp = nullptr;  // Current clocking block
     // Reset each module:
-    AstClocking* m_defaultClockingp = nullptr;  // Default clocking for the current module
+    AstClocking* m_defaultClockingp = nullptr;  // Default clocking for current module
+    AstDefaultDisable* m_defaultDisablep = nullptr;  // Default disable for current module
     // Reset each assertion:
     AstSenItem* m_senip = nullptr;  // Last sensitivity
     // Reset each always:
@@ -522,6 +523,21 @@ private:
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
+    void visit(AstDefaultDisable* nodep) override {
+        // Done with these
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
+    void visit(AstInferredDisable* nodep) override {
+        AstNode* newp;
+        if (m_defaultDisablep) {
+            newp = m_defaultDisablep->condp()->cloneTreePure(true);
+        } else {
+            newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+        }
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+
     void visit(AstPropSpec* nodep) override {
         nodep = substitutePropertyCall(nodep);
         // No need to iterate the body, once replace will get iterated
@@ -530,6 +546,9 @@ private:
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Only one PSL clock allowed per assertion");
         // Block is the new expression to evaluate
         AstNodeExpr* blockp = VN_AS(nodep->propp()->unlinkFrBack(), NodeExpr);
+        if (!nodep->disablep() && m_defaultDisablep) {
+            nodep->disablep(m_defaultDisablep->condp()->cloneTreePure(true));
+        }
         if (AstNodeExpr* const disablep = nodep->disablep()) {
             m_disablep = disablep->cloneTreePure(false);
             if (VN_IS(nodep->backp(), Cover)) {
@@ -547,6 +566,7 @@ private:
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_defaultClockingp);
+        VL_RESTORER(m_defaultDisablep);
         VL_RESTORER(m_modp);
         m_defaultClockingp = nullptr;
         nodep->foreach([&](AstClocking* const clockingp) {
@@ -557,6 +577,14 @@ private:
                 }
                 m_defaultClockingp = clockingp;
             }
+        });
+        m_defaultDisablep = nullptr;
+        nodep->foreach([&](AstDefaultDisable* const disablep) {
+            if (m_defaultDisablep) {
+                disablep->v3error("Only one 'default disable iff' allowed per module"
+                                  " (IEEE 1800-2023 16.15)");
+            }
+            m_defaultDisablep = disablep;
         });
         m_modp = nodep;
         iterateChildren(nodep);

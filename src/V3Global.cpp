@@ -58,6 +58,12 @@ void V3Global::readFiles() {
 
     V3Parse parser{v3Global.rootp(), &filter, &parseSyms};
 
+    // Parse the std waivers
+    if (v3Global.opt.stdWaiver()) {
+        parser.parseFile(
+            new FileLine{V3Options::getStdWaiverPath()}, V3Options::getStdWaiverPath(), false,
+            "Cannot find verilated_std_waiver.vlt containing built-in lint waivers: ");
+    }
     // Read .vlt files
     const V3StringSet& vltFiles = v3Global.opt.vltFiles();
     for (const string& filename : vltFiles) {
@@ -66,7 +72,7 @@ void V3Global::readFiles() {
     }
 
     // Parse the std package
-    if (v3Global.opt.std()) {
+    if (v3Global.opt.stdPackage()) {
         parser.parseFile(new FileLine{V3Options::getStdPackagePath()},
                          V3Options::getStdPackagePath(), false,
                          "Cannot find verilated_std.sv containing built-in std:: definitions: ");
@@ -102,6 +108,8 @@ void V3Global::readFiles() {
         // Resolve all modules cells refer to
         V3LinkCells::link(v3Global.rootp(), &filter, &parseSyms);
     }
+
+    V3Global::dumpCheckGlobalTree("cells", false, dumpTreeEitherLevel() >= 9);
 }
 
 void V3Global::removeStd() {

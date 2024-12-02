@@ -393,13 +393,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     }
     void visit(AstTextBlock* nodep) override {
         visit(static_cast<AstNodeSimpleText*>(nodep));
-        {
-            VL_RESTORER(m_suppressSemi);
-            m_suppressVarSemi = nodep->commas();
-            for (AstNode* childp = nodep->nodesp(); childp; childp = childp->nextp()) {
-                iterateConst(childp);
-                if (nodep->commas() && childp->nextp()) puts(", ");
-            }
+        VL_RESTORER(m_suppressSemi);
+        m_suppressVarSemi = nodep->commas();
+        for (AstNode* childp = nodep->nodesp(); childp; childp = childp->nextp()) {
+            iterateConst(childp);
+            if (nodep->commas() && childp->nextp()) puts(", ");
         }
     }
     void visit(AstScopeName* nodep) override {}

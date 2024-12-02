@@ -268,7 +268,7 @@ static_assert(!std::is_polymorphic<SiblingMC>::value, "Should not have a vtable"
 class MTaskEdge final : public V3GraphEdge, public MergeCandidate {
     VL_RTTI_IMPL(MTaskEdge, V3GraphEdge)
     friend class LogicMTask;
-    template <GraphWay::en T_Way>
+    template <GraphWay::en N_Way>
     friend class PropagateCp;
 
     // MEMBERS
@@ -280,7 +280,7 @@ public:
     // CONSTRUCTORS
     MTaskEdge(V3Graph* graphp, LogicMTask* fromp, LogicMTask* top, int weight);
     // METHODS
-    template <GraphWay::en T_Way>
+    template <GraphWay::en N_Way>
     inline LogicMTask* furtherMTaskp() const;
     inline LogicMTask* fromMTaskp() const;
     inline LogicMTask* toMTaskp() const;
@@ -307,7 +307,7 @@ private:
 
 class LogicMTask final : public V3GraphVertex {
     VL_RTTI_IMPL(LogicMTask, V3GraphVertex)
-    template <GraphWay::en T_Way>
+    template <GraphWay::en N_Way>
     friend class PropagateCp;
 
 public:
@@ -419,28 +419,28 @@ public:
 #endif
     }
 
-    template <GraphWay::en T_Way>
+    template <GraphWay::en N_Way>
     void addRelativeEdge(MTaskEdge* edgep) {
-        constexpr GraphWay way{T_Way};
+        constexpr GraphWay way{N_Way};
         constexpr GraphWay inv = way.invert();
         // Add to the edge heap
-        LogicMTask* const relativep = edgep->furtherMTaskp<T_Way>();
+        LogicMTask* const relativep = edgep->furtherMTaskp<N_Way>();
         // Value is !way cp to this edge
         const uint32_t cp = relativep->stepCost() + relativep->critPathCost(inv);
         //
         m_edgeHeap[way].insert(&edgep->m_edgeHeapNode[way], {relativep->id(), cp});
     }
-    template <GraphWay::en T_Way>
+    template <GraphWay::en N_Way>
     void stealRelativeEdge(MTaskEdge* edgep) {
-        constexpr GraphWay way{T_Way};
+        constexpr GraphWay way{N_Way};
         // Make heap node insertable, ruining the heap it is currently in.
         edgep->m_edgeHeapNode[way].yank();
         // Add the edge as new
-        addRelativeEdge<T_Way>(edgep);
+        addRelativeEdge<N_Way>(edgep);
     }
-    template <GraphWay::en T_Way>
+    template <GraphWay::en N_Way>
     void removeRelativeEdge(MTaskEdge* edgep) {
-        constexpr GraphWay way{T_Way};
+        constexpr GraphWay way{N_Way};
         // Remove from the edge heap
         m_edgeHeap[way].remove(&edgep->m_edgeHeapNode[way]);
     }
@@ -456,12 +456,12 @@ public:
     }
     bool hasRelativeMTask(LogicMTask* relativep) const { return m_edgeSet.count(relativep); }
 
-    template <GraphWay::en T_Way>
+    template <GraphWay::en N_Way>
     void checkRelativesCp() const {
-        constexpr GraphWay way{T_Way};
-        for (const V3GraphEdge& edge : edges<T_Way>()) {
+        constexpr GraphWay way{N_Way};
+        for (const V3GraphEdge& edge : edges<N_Way>()) {
             const LogicMTask* const relativep
-                = static_cast<const LogicMTask*>(edge.furtherp<T_Way>());
+                = static_cast<const LogicMTask*>(edge.furtherp<N_Way>());
             const uint32_t cachedCp = static_cast<const MTaskEdge&>(edge).cachedCp(way);
             const uint32_t cp = relativep->critPathCost(way.invert()) + relativep->stepCost();
             partCheckCachedScoreVsActual(cachedCp, cp);
@@ -479,14 +479,14 @@ public:
 
     void setCritPathCost(GraphWay way, uint32_t cost) { m_critPathCost[way] = cost; }
     uint32_t critPathCost(GraphWay way) const { return m_critPathCost[way]; }
-    template <GraphWay::en T_Way>
+    template <GraphWay::en N_Way>
     uint32_t critPathCostWithout(const V3GraphEdge* withoutp) const {
-        const GraphWay way{T_Way};
+        const GraphWay way{N_Way};
         const GraphWay inv = way.invert();
         // Compute the critical path cost wayward to this node, without considering edge
         // 'withoutp'. We need to look at two edges at most, the critical path if that is not via
         // 'withoutp', or the second-worst path, if the critical path is via 'withoutp'.
-        UDEBUGONLY(UASSERT(withoutp->furtherp<T_Way>() == this,
+        UDEBUGONLY(UASSERT(withoutp->furtherp<N_Way>() == this,
                            "In critPathCostWithout(), edge 'withoutp' must further to 'this'"););
         const EdgeHeap& edgeHeap = m_edgeHeap[inv];
         const EdgeHeap::Node* const maxp = edgeHeap.max();
@@ -690,9 +690,9 @@ MTaskEdge::MTaskEdge(V3Graph* graphp, LogicMTask* fromp, LogicMTask* top, int we
     top->addRelativeEdge<GraphWay::REVERSE>(this);
 }
 
-template <GraphWay::en T_Way>
+template <GraphWay::en N_Way>
 LogicMTask* MTaskEdge::furtherMTaskp() const {
-    return static_cast<LogicMTask*>(this->furtherp<T_Way>());
+    return static_cast<LogicMTask*>(this->furtherp<N_Way>());
 }
 LogicMTask* MTaskEdge::fromMTaskp() const { return static_cast<LogicMTask*>(fromp()); }
 LogicMTask* MTaskEdge::toMTaskp() const { return static_cast<LogicMTask*>(top()); }
@@ -716,9 +716,9 @@ void MTaskEdge::resetCriticalPaths() {
 
 // Look at vertex costs (in one way) to form critical paths for each
 // vertex.
-template <GraphWay::en T_Way>
+template <GraphWay::en N_Way>
 static void partInitHalfCriticalPaths(V3Graph& mTaskGraph, bool checkOnly) {
-    constexpr GraphWay way{T_Way};
+    constexpr GraphWay way{N_Way};
     constexpr GraphWay rev = way.invert();
     GraphStreamUnordered order{&mTaskGraph, way};
     for (const V3GraphVertex* vertexp; (vertexp = order.nextp());) {
@@ -776,7 +776,7 @@ static void partCheckCriticalPaths(V3Graph& mTaskGraph) {
 // ######################################################################
 //  PropagateCp
 
-template <GraphWay::en T_Way>
+template <GraphWay::en N_Way>
 class PropagateCp final {
     // Propagate increasing critical path (CP) costs through a graph.
     //
@@ -862,7 +862,7 @@ private:
 
 public:
     void cpHasIncreased(V3GraphVertex* vxp, uint32_t newInclusiveCp) {
-        constexpr GraphWay way{T_Way};
+        constexpr GraphWay way{N_Way};
         constexpr GraphWay inv{way.invert()};
 
         // For *vxp, whose CP-inclusive has just increased to
@@ -871,7 +871,7 @@ public:
         for (V3GraphEdge& graphEdge : vxp->edges<way>()) {
             MTaskEdge& edge = static_cast<MTaskEdge&>(graphEdge);
 
-            LogicMTask* const relativep = edge.furtherMTaskp<T_Way>();
+            LogicMTask* const relativep = edge.furtherMTaskp<N_Way>();
             EdgeHeap::Node& edgeHeapNode = edge.m_edgeHeapNode[inv];
             if (newInclusiveCp > edgeHeapNode.key().m_score) {
                 relativep->m_edgeHeap[inv].increaseKey(&edgeHeapNode, newInclusiveCp);
@@ -899,7 +899,7 @@ public:
     }
 
     void go() {
-        constexpr GraphWay way{T_Way};
+        constexpr GraphWay way{N_Way};
         constexpr GraphWay inv{way.invert()};
 
         // m_pending maps each pending vertex to the amount that it wayward
@@ -982,7 +982,7 @@ public:
 
         partInitCriticalPaths(graph);
 
-        PropagateCp<T_Way> prop{true};
+        PropagateCp<N_Way> prop{true};
 
         // Seed the propagator with every input node;
         // This should result in the complete graph getting all CP's assigned.
@@ -1316,9 +1316,9 @@ public:
     }
 
 private:
-    template <GraphWay::en T_Way>
+    template <GraphWay::en N_Way>
     NewCp newCp(LogicMTask* mtaskp, LogicMTask* otherp, MTaskEdge* mergeEdgep) {
-        constexpr GraphWay way{T_Way};
+        constexpr GraphWay way{N_Way};
         // Return new wayward-CP for mtaskp reflecting its upcoming merge
         // with otherp. Set 'result.propagate' if mtaskp's wayward
         // relatives will see a new wayward CP from this merge.
@@ -1528,9 +1528,9 @@ private:
         }
     }
 
-    template <GraphWay::en T_Way, bool Exhaustive>
+    template <GraphWay::en N_Way, bool N_Exhaustive>
     void siblingPairFromRelatives(V3GraphVertex* mtaskp) {
-        constexpr GraphWay way{T_Way};
+        constexpr GraphWay way{N_Way};
         // Need at least 2 edges
         auto& edges = mtaskp->edges<way>();
         if (!edges.hasMultipleElements()) return;
@@ -1575,7 +1575,7 @@ private:
         // Just make a few pairs.
         constexpr size_t MAX_NONEXHAUSTIVE_PAIRS = 3;
 
-        if (Exhaustive || n <= 2 * MAX_NONEXHAUSTIVE_PAIRS) {
+        if (N_Exhaustive || n <= 2 * MAX_NONEXHAUSTIVE_PAIRS) {
             const size_t end = n & ~static_cast<size_t>(1);  // Round down to even, (we want pairs)
             std::sort(sortRecs.begin(), sortRecs.begin() + n);
             for (size_t i = 0; i < end; i += 2) {

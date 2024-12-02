@@ -19,7 +19,7 @@ module t;
 
    string str [2:0][1:0];
 
-   a_if iface [2:0][1:0];
+   a_if iface [2:0][1:0] ();
 
    sub i_sub[2:0][1:0] (.s(str));
 

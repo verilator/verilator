@@ -510,10 +510,8 @@ class AssertVisitor final : public VNVisitor {
     // Don't sample sensitivities
     void visit(AstSenItem* nodep) override {
         VL_RESTORER(m_inSampled);
-        {
-            m_inSampled = false;
-            iterateChildren(nodep);
-        }
+        m_inSampled = false;
+        iterateChildren(nodep);
     }
 
     //========== Statements
@@ -691,12 +689,10 @@ class AssertVisitor final : public VNVisitor {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modPastNum);
         VL_RESTORER(m_modStrobeNum);
-        {
-            m_modp = nodep;
-            m_modPastNum = 0;
-            m_modStrobeNum = 0;
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        m_modPastNum = 0;
+        m_modStrobeNum = 0;
+        iterateChildren(nodep);
     }
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procedurep);
@@ -707,10 +703,8 @@ class AssertVisitor final : public VNVisitor {
         // This code is needed rather than a visitor in V3Begin,
         // because V3Assert is called before V3Begin
         VL_RESTORER(m_beginp);
-        {
-            m_beginp = nodep;
-            iterateChildren(nodep);
-        }
+        m_beginp = nodep;
+        iterateChildren(nodep);
     }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }

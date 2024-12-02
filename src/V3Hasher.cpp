@@ -138,6 +138,11 @@ class HasherVisitor final : public VNVisitorConst {
             iterateConstNull(nodep->virtRefDType2p());
         });
     }
+    void visit(AstBracketArrayDType* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {
+            iterateConstNull(nodep->virtRefDTypep());
+        });
+    }
     void visit(AstDynArrayDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
             iterateConstNull(nodep->virtRefDTypep());

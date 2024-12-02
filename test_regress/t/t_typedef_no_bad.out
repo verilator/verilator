@@ -1,4 +1,4 @@
-%Error: t/t_typedef_no_bad.v:10:4: Can't find typedef: 'sometype'
+%Error: t/t_typedef_no_bad.v:10:4: Can't find typedef/interface: 'sometype'
    10 |    sometype p;
       |    ^~~~~~~~
 %Error: Exiting due to

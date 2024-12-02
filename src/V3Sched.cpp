@@ -291,6 +291,7 @@ AstCFunc* splitCheckCreateNewSubFunc(AstCFunc* ofuncp) {
     subFuncp->isLoose(true);
     subFuncp->slow(ofuncp->slow());
     subFuncp->declPrivate(ofuncp->declPrivate());
+    if (ofuncp->needProcess()) subFuncp->setNeedProcess();
     return subFuncp;
 };
 

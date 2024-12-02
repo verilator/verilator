@@ -589,9 +589,17 @@ Summary:
 
 .. option:: -fno-expand
 
+.. option:: -fno-func-opt
+
+.. option:: -fno-func-opt-balance-cat
+
+.. option:: -fno-func-opt-split-cat
+
 .. option:: -fno-gate
 
 .. option:: -fno-inline
+
+.. option:: -fno-inline-funcs
 
 .. option:: -fno-life
 
@@ -608,6 +616,8 @@ Summary:
 .. option:: -fno-reloop
 
 .. option:: -fno-reorder
+
+.. option:: -fno-slice
 
 .. option:: -fno-split
 
@@ -1357,7 +1367,17 @@ Summary:
 
 .. option:: --no-std
 
-   Prevents parsing standard library.
+   Prevents parsing standard input files, alias for
+   :vlopt:`--no-std-package`, :vlopt:`--no-std-waiver`.  This may be extended
+   to prevent reading other standardized files in future versions.
+
+.. option:: --no-std-package
+
+   Prevents parsing standard `std::` package file.
+
+.. option:: --no-std-waiver
+
+   Prevents parsing standard lint waivers (`verilated_std_waiver.vlt`).
 
 .. option:: --no-stop-fail
 
@@ -1637,6 +1657,15 @@ Summary:
 
    Enable the use of VPI and linking against the :file:`verilated_vpi.cpp` files.
 
+.. option:: --waiver-multiline
+
+   When using :vlopt:`--waiver-output \<filename\> <--waiver-output>`,
+   include a match expression that includes the entire multiline error
+   message as a match regular expression, as opposed to the default of only
+   matching the first line of the error message.  This provides a starting
+   point for creating complex waivers, but such generated waivers will
+   likely require editing for brevity before being reused.
+
 .. option:: --waiver-output <filename>
 
    Generate a waiver file that contains all waiver statements to suppress
@@ -1741,18 +1770,19 @@ Summary:
    ``-Wwarn-CASEX`` ``-Wwarn-CASTCONST`` ``-Wwarn-CMPCONST``
    ``-Wwarn-COLONPLUS`` ``-Wwarn-IMPLICIT`` ``-Wwarn-IMPLICITSTATIC``
    ``-Wwarn-LATCH`` ``-Wwarn-MISINDENT`` ``-Wwarn-NEWERSTD``
-   ``-Wwarn-PINMISSING`` ``-Wwarn-REALCVT`` ``-Wwarn-STATICVAR``
-   ``-Wwarn-UNSIGNED`` ``-Wwarn-WIDTHTRUNC`` ``-Wwarn-WIDTHEXPAND``
-   ``-Wwarn-WIDTHXZEXPAND``.
+   ``-Wwarn-PREPROCZERO`` ``-Wwarn-PINMISSING`` ``-Wwarn-REALCVT``
+   ``-Wwarn-STATICVAR`` ``-Wwarn-UNSIGNED`` ``-Wwarn-WIDTHTRUNC``
+   ``-Wwarn-WIDTHEXPAND`` ``-Wwarn-WIDTHXZEXPAND``.
 
 .. option:: -Wwarn-style
 
    Enable all code style-related warning messages.  This is equivalent to
-   ``-Wwarn-ASSIGNDLY`` ``-Wwarn-DECLFILENAME`` ``-Wwarn-DEFPARAM``
-   ``-Wwarn-EOFNEWLINE`` ``-Wwarn-GENUNNAMED`` ``-Wwarn-INCABSPATH``
+   ``-Wwarn-ASSIGNDLY`` ``-Wwarn-BLKSEQ`` ``-Wwarn-DECLFILENAME``
+   ``-Wwarn-DEFPARAM`` ``-Wwarn-EOFNEWLINE`` ``-Wwarn-GENUNNAMED``
+   ``-Wwarn-IMPORTSTAR`` ``-Wwarn-INCABSPATH`` ``-Wwarn-PINCONNECTEMPTY``
    ``-Wwarn-PINNOCONNECT`` ``-Wwarn-SYNCASYNCNET`` ``-Wwarn-UNDRIVEN``
-   ``-Wwarn-UNUSEDGENVAR`` ``-Wwarn-UNUSEDPARAM`` ``-Wwarn-UNUSEDSIGNAL``
-   ``-Wwarn-VARHIDDEN``.
+   ``-Wwarn-UNUSEDGENVAR`` ``-Wwarn-UNUSEDLOOP`` ``-Wwarn-UNUSEDPARAM``
+   ``-Wwarn-UNUSEDSIGNAL`` ``-Wwarn-VARHIDDEN``.
 
 .. option:: --x-assign 0
 
@@ -2067,7 +2097,7 @@ The grammar of configuration commands is as follows:
 
 .. option:: lint_off [-rule <message>] [-file "<filename>" [-lines <line> [ - <line>]]]
 
-.. option:: lint_off [-rule <message>] [-file "<filename>"] [-match "<string>"]
+.. option:: lint_off [-rule <message>] [-file "<filename>"] [-contents "<wildcard>"] [-match "<wildcard>"]
 
    Enable/disables the specified lint warning, in the specified filename
    (or wildcard with '\*' or '?', or all files if omitted) and range of
@@ -2076,17 +2106,28 @@ The grammar of configuration commands is as follows:
    With lint_off using "\*" will override any lint_on directives in the
    source, i.e. the warning will still not be printed.
 
-   If the -rule is omitted, all lint warnings (see list in
+   If the :code:`-rule` is omitted, all lint warnings (see list in
    :vlopt:`-Wno-lint`) are enabled/disabled.  This will override all later
    lint warning enables for the specified region.
 
-   If -match is set, the linter warnings are matched against this
-   (wildcard) string and are waived in case they match, provided with the
-   rule and file also match.
+   If :code:`-contents` is provided, the input files must contain the given
+   wildcard (with '\*' or '?'), and are waived in case they match, provided
+   the :code:`-rule`, :code:`-file`, and :code:`-contents` also match.  The
+   wildcard should be designed to match a single line; it is unspecified if
+   the wildcard is allowed to match across multiple lines. The input
+   contents does not include :vlopt:`--std <--no-std>` standard files, nor
+   configuration files (with :code:`verilator_config`). Typical use for
+   this is to match a version number present in the Verilog sources, so
+   that the waiver will only apply to that version of the sources.
 
-   In previous versions -rule was named -msg. The latter is deprecated, but
-   still works with a deprecation info; it may be removed in future
-   versions.
+   If :code:`-match` is provided, the linter warnings are matched against
+   the given wildcard (with '\*' or '?'), and are waived in case they
+   match, provided the :code:`-rule`, :code:`-file`, and :code:`-contents`
+   also match.  The wildcard is compared across the entire multi-line
+   message; see :vlopt:`--waiver-multiline`.
+
+   Before version 4.026, :code:`-rule` was named :code:`-msg`, and
+   :code:`-msg` remained a deprecated alias until Version 5.000.
 
 .. option:: public [-module "<modulename>"] [-task/-function "<taskname>"]  -var "<signame>"
 

@@ -62,6 +62,7 @@ class LinkParseVisitor final : public VNVisitor {
     int m_beginDepth = 0;  // How many begin blocks above current node within current AstNodeModule
     VLifetime m_lifetime = VLifetime::STATIC;  // Propagating lifetime
     bool m_insideLoop = false;  // True if the node is inside a loop
+    bool m_lifetimeAllowed = false;  // True to allow lifetime settings
     VDouble0 m_statModules;  // Number of modules seen
 
     // METHODS
@@ -101,11 +102,9 @@ class LinkParseVisitor final : public VNVisitor {
     void visitIterateNodeDType(AstNodeDType* nodep) {
         if (!nodep->user1SetOnce()) {  // Process only once.
             cleanFileline(nodep);
-            {
-                VL_RESTORER(m_dtypep);
-                m_dtypep = nodep;
-                iterateChildren(nodep);
-            }
+            VL_RESTORER(m_dtypep);
+            m_dtypep = nodep;
+            iterateChildren(nodep);
         }
     }
 
@@ -186,58 +185,56 @@ class LinkParseVisitor final : public VNVisitor {
             cleanFileline(nodep);
             VL_RESTORER(m_ftaskp);
             VL_RESTORER(m_lifetime);
-            {
-                m_ftaskp = nodep;
-                if (!nodep->lifetime().isNone()) {
-                    m_lifetime = nodep->lifetime();
-                } else {
-                    if (nodep->classMethod()) {
-                        // Class methods are automatic by default
-                        m_lifetime = VLifetime::AUTOMATIC;
-                    } else if (nodep->dpiImport() || VN_IS(nodep, Property)) {
-                        // DPI-imported functions and properties don't have lifetime specifiers
-                        m_lifetime = VLifetime::NONE;
-                    }
-                    for (AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
-                        AstVar* const varp = VN_CAST(itemp, Var);
-                        if (varp && varp->valuep() && varp->lifetime().isNone()
-                            && m_lifetime.isStatic() && !varp->isIO()) {
-                            if (VN_IS(m_modp, Module)) {
-                                nodep->v3warn(IMPLICITSTATIC,
-                                              "Function/task's lifetime implicitly set to static\n"
-                                                  << nodep->warnMore()
-                                                  << "... Suggest use 'function automatic' or "
-                                                     "'function static'\n"
-                                                  << nodep->warnContextPrimary() << '\n'
-                                                  << varp->warnOther()
-                                                  << "... Location of implicit static variable\n"
-                                                  << varp->warnContextSecondary() << '\n'
-                                                  << "... Suggest use 'function automatic' or "
-                                                     "'function static'");
-                            } else {
-                                varp->v3warn(IMPLICITSTATIC,
-                                             "Variable's lifetime implicitly set to static\n"
-                                                 << nodep->warnMore()
-                                                 << "... Suggest use 'static' before "
-                                                    "variable declaration'");
-                            }
+            m_ftaskp = nodep;
+            VL_RESTORER(m_lifetimeAllowed);
+            m_lifetimeAllowed = true;
+            if (!nodep->lifetime().isNone()) {
+                m_lifetime = nodep->lifetime();
+            } else {
+                if (nodep->classMethod()) {
+                    // Class methods are automatic by default
+                    m_lifetime = VLifetime::AUTOMATIC;
+                } else if (nodep->dpiImport() || VN_IS(nodep, Property)) {
+                    // DPI-imported functions and properties don't have lifetime specifiers
+                    m_lifetime = VLifetime::NONE;
+                }
+                for (AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
+                    AstVar* const varp = VN_CAST(itemp, Var);
+                    if (varp && varp->valuep() && varp->lifetime().isNone()
+                        && m_lifetime.isStatic() && !varp->isIO()) {
+                        if (VN_IS(m_modp, Module)) {
+                            nodep->v3warn(IMPLICITSTATIC,
+                                          "Function/task's lifetime implicitly set to static\n"
+                                              << nodep->warnMore()
+                                              << "... Suggest use 'function automatic' or "
+                                                 "'function static'\n"
+                                              << nodep->warnContextPrimary() << '\n'
+                                              << varp->warnOther()
+                                              << "... Location of implicit static variable\n"
+                                              << varp->warnContextSecondary() << '\n'
+                                              << "... Suggest use 'function automatic' or "
+                                                 "'function static'");
+                        } else {
+                            varp->v3warn(IMPLICITSTATIC,
+                                         "Variable's lifetime implicitly set to static\n"
+                                             << nodep->warnMore()
+                                             << "... Suggest use 'static' before "
+                                                "variable declaration'");
                         }
                     }
-                    nodep->lifetime(m_lifetime);
                 }
-                iterateChildren(nodep);
+                nodep->lifetime(m_lifetime);
             }
+            iterateChildren(nodep);
         }
     }
     void visit(AstNodeFTaskRef* nodep) override {
         if (!nodep->user1SetOnce()) {  // Process only once.
             cleanFileline(nodep);
             UINFO(5, "   " << nodep << endl);
-            {
-                VL_RESTORER(m_valueModp);
-                m_valueModp = nullptr;
-                iterateChildren(nodep);
-            }
+            VL_RESTORER(m_valueModp);
+            m_valueModp = nullptr;
+            iterateChildren(nodep);
         }
     }
     void visit(AstNodeDType* nodep) override { visitIterateNodeDType(nodep); }
@@ -295,10 +292,19 @@ class LinkParseVisitor final : public VNVisitor {
             nodep->v3warn(STATICVAR, "Static variable with assignment declaration declared in a "
                                      "loop converted to automatic");
         }
-        if (nodep->varType() != VVarType::PORT) {
-            if (nodep->lifetime().isNone()) nodep->lifetime(m_lifetime);
+        if (!nodep->direction().isAny()) {  // Not a port
+            if (nodep->lifetime().isNone()) {
+                if (m_lifetimeAllowed) {
+                    nodep->lifetime(m_lifetime);
+                } else {  // Module's always static per IEEE 1800-2023 6.21
+                    nodep->lifetime(VLifetime::STATIC);
+                }
+            }
         } else if (m_ftaskp) {
             nodep->lifetime(VLifetime::AUTOMATIC);
+        } else if (nodep->lifetime()
+                       .isNone()) {  // lifetime shouldn't be unknown, set static if none
+            nodep->lifetime(VLifetime::STATIC);
         }
 
         if (nodep->isGParam() && !nodep->isAnsi()) {  // shadow some parameters into localparams
@@ -424,20 +430,23 @@ class LinkParseVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_PUBLIC) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            m_varp->sigUserRWPublic(true);
-            m_varp->sigModPublic(true);
+            // Public ifacerefs aren't supported - be compatible with older parser that ignored it
+            if (!m_varp->isIfaceRef()) {
+                m_varp->sigUserRWPublic(true);
+                m_varp->sigModPublic(true);
+            }
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_PUBLIC_FLAT) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            m_varp->sigUserRWPublic(true);
+            if (!m_varp->isIfaceRef()) m_varp->sigUserRWPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_PUBLIC_FLAT_RD) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            m_varp->sigUserRdPublic(true);
+            if (!m_varp->isIfaceRef()) m_varp->sigUserRdPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_PUBLIC_FLAT_RW) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            m_varp->sigUserRWPublic(true);
+            if (!m_varp->isIfaceRef()) m_varp->sigUserRWPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_ISOLATE_ASSIGNMENTS) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
@@ -577,19 +586,15 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstRepeat* nodep) override {
         cleanFileline(nodep);
         VL_RESTORER(m_insideLoop);
-        {
-            m_insideLoop = true;
-            checkIndent(nodep, nodep->stmtsp());
-            iterateChildren(nodep);
-        }
+        m_insideLoop = true;
+        checkIndent(nodep, nodep->stmtsp());
+        iterateChildren(nodep);
     }
     void visit(AstDoWhile* nodep) override {
         cleanFileline(nodep);
         VL_RESTORER(m_insideLoop);
-        {
-            m_insideLoop = true;
-            iterateChildren(nodep);
-        }
+        m_insideLoop = true;
+        iterateChildren(nodep);
     }
     void visit(AstWait* nodep) override {
         cleanFileline(nodep);
@@ -605,11 +610,9 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstWhile* nodep) override {
         cleanFileline(nodep);
         VL_RESTORER(m_insideLoop);
-        {
-            m_insideLoop = true;
-            checkIndent(nodep, nodep->stmtsp());
-            iterateChildren(nodep);
-        }
+        m_insideLoop = true;
+        checkIndent(nodep, nodep->stmtsp());
+        iterateChildren(nodep);
     }
     void visit(AstNodeModule* nodep) override {
         V3Config::applyModule(nodep);
@@ -621,6 +624,7 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_genblkNum);
         VL_RESTORER(m_beginDepth);
         VL_RESTORER(m_lifetime);
+        VL_RESTORER(m_lifetimeAllowed);
         {
             // Module: Create sim table for entire module and iterate
             cleanFileline(nodep);
@@ -633,6 +637,7 @@ class LinkParseVisitor final : public VNVisitor {
             m_beginDepth = 0;
             m_valueModp = nodep;
             m_lifetime = nodep->lifetime();
+            m_lifetimeAllowed = VN_IS(nodep, Class);
             if (m_lifetime.isNone()) {
                 m_lifetime = VN_IS(nodep, Class) ? VLifetime::AUTOMATIC : VLifetime::STATIC;
             }
@@ -648,16 +653,20 @@ class LinkParseVisitor final : public VNVisitor {
     void visitIterateNoValueMod(AstNode* nodep) {
         // Iterate a node which shouldn't have any local variables moved to an Initial
         cleanFileline(nodep);
-        {
-            VL_RESTORER(m_valueModp);
-            m_valueModp = nullptr;
-            iterateChildren(nodep);
-        }
+        VL_RESTORER(m_valueModp);
+        m_valueModp = nullptr;
+        iterateChildren(nodep);
     }
-    void visit(AstNodeProcedure* nodep) override { visitIterateNoValueMod(nodep); }
+    void visit(AstNodeProcedure* nodep) override {
+        VL_RESTORER(m_lifetimeAllowed);
+        m_lifetimeAllowed = true;
+        visitIterateNoValueMod(nodep);
+    }
     void visit(AstAlways* nodep) override {
         VL_RESTORER(m_inAlways);
         m_inAlways = true;
+        VL_RESTORER(m_lifetimeAllowed);
+        m_lifetimeAllowed = true;
         visitIterateNoValueMod(nodep);
     }
     void visit(AstCover* nodep) override { visitIterateNoValueMod(nodep); }
@@ -718,13 +727,11 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstGenCase* nodep) override {
         ++m_genblkNum;
         cleanFileline(nodep);
-        {
-            VL_RESTORER(m_genblkAbove);
-            VL_RESTORER(m_genblkNum);
-            m_genblkAbove = m_genblkNum;
-            m_genblkNum = 0;
-            iterateChildren(nodep);
-        }
+        VL_RESTORER(m_genblkAbove);
+        VL_RESTORER(m_genblkNum);
+        m_genblkAbove = m_genblkNum;
+        m_genblkNum = 0;
+        iterateChildren(nodep);
     }
     void visit(AstGenIf* nodep) override {
         cleanFileline(nodep);
@@ -828,9 +835,6 @@ class LinkParseVisitor final : public VNVisitor {
             if (nodep->stmtsp()) alwaysp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
-    }
-    void visit(AstClassOrPackageRef* nodep) override {  //
-        iterateChildren(nodep);
     }
     void visit(AstClocking* nodep) override {
         cleanFileline(nodep);

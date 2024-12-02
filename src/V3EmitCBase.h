@@ -146,8 +146,8 @@ public:
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);
     void emitVarDecl(const AstVar* nodep, bool asRef = false);
     void emitVarAccessors(const AstVar* nodep);
-    template <typename F>
-    static void forModCUse(const AstNodeModule* modp, VUseType useType, F action) {
+    template <typename T_Callable>
+    static void forModCUse(const AstNodeModule* modp, VUseType useType, T_Callable action) {
         for (AstNode* itemp = modp->stmtsp(); itemp; itemp = itemp->nextp()) {
             if (AstCUse* const usep = VN_CAST(itemp, CUse)) {
                 if (usep->useType().containsAny(useType)) {

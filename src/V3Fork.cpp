@@ -433,7 +433,7 @@ class DynScopeVisitor final : public VNVisitor {
                 nodep->v3warn(
                     E_UNSUPPORTED,
                     "Unsupported: Writing to a captured "
-                        << (nodep->varp()->isInoutish() ? "inout" : "output") << " variable in a "
+                        << (nodep->varp()->isInout() ? "inout" : "output") << " variable in a "
                         << (VN_IS(nodep->backp(), AssignDly) ? "non-blocking assignment" : "fork")
                         << " after a timing control");
             }
@@ -644,8 +644,7 @@ class ForkVisitor final : public VNVisitor {
         if (m_forkDepth && !nodep->varp()->isFuncLocal() && nodep->varp()->isClassMember()) return;
 
         if (m_forkDepth && (m_forkLocalsp.count(nodep->varp()) == 0)
-            && nodep->varp()->varType() != VVarType::PORT  // Basically static, so it's safe
-            && !nodep->varp()->lifetime().isStatic()) {
+            && !nodep->varp()->lifetime().isStatic()) {  // Basically static, so it's safe
             if (nodep->access().isWriteOrRW()
                 && (!nodep->isClassHandleValue() || nodep->user2())) {
                 nodep->v3warn(

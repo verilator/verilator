@@ -733,7 +733,7 @@ class EmitCTrace final : EmitCFunc {
         puts("," + cvtToStr(enumNum));
 
         // Direction
-        if (nodep->declDirection().isInoutish()) {
+        if (nodep->declDirection().isInout()) {
             puts(", VerilatedTraceSigDirection::INOUT");
         } else if (nodep->declDirection().isWritable()) {
             puts(", VerilatedTraceSigDirection::OUTPUT");

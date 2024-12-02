@@ -14,13 +14,16 @@
 /// \file
 /// \brief Verilated IEEE std:: header
 ///
-/// This file is included automatically by Verilator when a std::mailbox or
-/// std::semaphore is referenced.
+/// This file is included automatically by Verilator, unless '--no-std-package'
+/// is used.
 ///
 /// This file is not part of the Verilated public-facing API.
 /// It is only for internal use.
 ///
 //*************************************************************************
+//
+// The following keywords from this file are hardcoded for detection in the parser:
+// "mailbox", "process", "randomize", "semaphore", "std"
 
 // verilator lint_off DECLFILENAME
 // verilator lint_off TIMESCALEMOD

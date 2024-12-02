@@ -490,7 +490,7 @@ void V3PreProcImp::comment(const string& text) {
         if (VString::startsWith(cmd, "public_flat_rw")) {
             // "/*verilator public_flat_rw @(foo) */" -> "/*verilator public_flat_rw*/ @(foo)"
             string::size_type endOfCmd = std::strlen("public_flat_rw");
-            while (VString::isWordChar(cmd[endOfCmd])) ++endOfCmd;
+            while (VString::isIdentifierChar(cmd[endOfCmd])) ++endOfCmd;
             string baseCmd = cmd.substr(0, endOfCmd);
             string arg = cmd.substr(endOfCmd);
             while (std::isspace(arg[0])) arg = arg.substr(1);
@@ -823,6 +823,21 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
     flsp->lineno(1);
     flsp->newContent();
     for (const string& i : wholefile) flsp->contentp()->pushText(i);
+
+    // Save contents for V3Config --contents
+    if (filename != V3Options::getStdPackagePath()) {
+        bool containsVlt = false;
+        for (const string& i : wholefile) {
+            // TODO this is overly sensitive, might be in a comment
+            if (i.find("`verilator_config") != string::npos) {
+                containsVlt = true;
+                break;
+            }
+        }
+        if (!containsVlt) {
+            for (const string& i : wholefile) V3Config::contentsPushText(i);
+        }
+    }
 
     // Create new stream structure
     m_lexp->scanNewFile(flsp);

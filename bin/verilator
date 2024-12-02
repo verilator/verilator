@@ -448,7 +448,9 @@ detailed descriptions of these arguments.
     --no-skip-identical         Disable skipping identical output
     --stats                     Create statistics file
     --stats-vars                Provide statistics on variables
-    --no-std                    Prevent parsing standard library
+    --no-std                    Prevent loading standard files
+    --no-std-package            Prevent parsing standard package
+    --no-std-waiver             Prevent parsing standard lint waivers
     --no-stop-fail              Do not call $stop when assertion fails
     --structs-packed            Convert all unpacked structures to packed structures
      -sv                        Enable SystemVerilog parsing
@@ -487,7 +489,8 @@ detailed descriptions of these arguments.
      +verilog2001ext+<ext>      Synonym for +1364-2001ext+<ext>
     --version                   Show program version and exits
     --vpi                       Enable VPI compiles
-    --waiver-output <filename>  Create a waiver file based on the linter warnings
+    --waiver-multiline          Create multiline --match for waivers
+    --waiver-output <filename>  Create a waiver file based on linter warnings
      -Wall                      Enable all style warnings
      -Werror-<message>          Convert warnings to errors
      -Wfuture-<message>         Disable unknown message warnings

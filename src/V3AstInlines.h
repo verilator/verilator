@@ -172,7 +172,7 @@ AstVarRef::AstVarRef(FileLine* fl, AstVarScope* varscp, const VAccess& access)
 
 string AstVarRef::name() const { return varp() ? varp()->name() : "<null>"; }
 
-bool AstVarRef::same(const AstVarRef* samep) const {
+bool AstVarRef::sameNode(const AstVarRef* samep) const {
     if (varScopep()) {
         return (varScopep() == samep->varScopep() && access() == samep->access());
     } else {

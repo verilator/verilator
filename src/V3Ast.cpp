@@ -1101,7 +1101,7 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
         (!node1p->dtypep() && !node2p->dtypep()) || (node1p->dtypep() && node2p->dtypep()), node1p,
         "Comparison of a node with dtypep() with a node without dtypep()\n-node2=" << node2p);
     if (node1p->dtypep() && !node1p->dtypep()->similarDType(node2p->dtypep())) return false;
-    if (!node1p->same(node2p) || (gateOnly && !node1p->isGateOptimizable())) return false;
+    if (!node1p->sameNode(node2p) || (gateOnly && !node1p->isGateOptimizable())) return false;
     return (sameTreeIter(node1p->m_op1p, node2p->m_op1p, false, gateOnly)
             && sameTreeIter(node1p->m_op2p, node2p->m_op2p, false, gateOnly)
             && sameTreeIter(node1p->m_op3p, node2p->m_op3p, false, gateOnly)
@@ -1286,10 +1286,17 @@ void AstNode::dumpPtrs(std::ostream& os) const {
 void AstNode::dumpTree(std::ostream& os, const string& indent, int maxDepth) const {
     static int s_debugFileline = v3Global.opt.debugSrcLevel("fileline");  // --debugi-fileline 9
     os << indent << " " << this << '\n';
+    if (VN_DELETED(this)) return;
     if (debug() > 8) {
         os << indent << "     ";
         dumpPtrs(os);
     }
+    if (VN_DELETED(op1p()) || VN_DELETED(op2p())  // LCOV_EXCL_START
+        || VN_DELETED(op3p()) || VN_DELETED(op4p())) {
+        os << indent << "1/2/3/4: %E-0x1/deleted! node " << cvtToHex(this)
+           << endl;  // endl intentional to do flush
+        return;
+    }  // LCOV_EXCL_STOP
     if (s_debugFileline >= 9) os << fileline()->warnContextSecondary();
     if (maxDepth == 1) {
         if (op1p() || op2p() || op3p() || op4p()) os << indent << "1: ...(maxDepth)\n";
@@ -1423,8 +1430,13 @@ string AstNode::instanceStr() const {
     return "";
 }
 void AstNode::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
+    // Don't look for instance name when warning is disabled.
+    // In case of large number of warnings, this can
+    // take significant amount of time
+    const string instanceStrExtra
+        = m_fileline->warnIsOff(V3Error::s().errorCode()) ? "" : instanceStr();
     if (!m_fileline) {
-        V3Error::v3errorEnd(str, instanceStr());
+        V3Error::v3errorEnd(str, instanceStrExtra);
     } else {
         std::ostringstream nsstr;
         nsstr << str.str();
@@ -1434,11 +1446,7 @@ void AstNode::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().
             const_cast<AstNode*>(this)->dump(nsstr);
             nsstr << endl;
         }
-        // Don't look for instance name when warning is disabled.
-        // In case of large number of warnings, this can
-        // take significant amount of time
-        m_fileline->v3errorEnd(
-            nsstr, m_fileline->warnIsOff(V3Error::s().errorCode()) ? "" : instanceStr());
+        m_fileline->v3errorEnd(nsstr, instanceStrExtra);
     }
 }
 void AstNode::v3errorEndFatal(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {

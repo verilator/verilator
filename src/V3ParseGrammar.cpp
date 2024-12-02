@@ -193,7 +193,8 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     AstNodeDType* dtypep = GRAMMARP->m_varDTypep;
     UINFO(5, "  creVar " << name << "  decl=" << GRAMMARP->m_varDecl << "  io="
                          << GRAMMARP->m_varIO << "  dt=" << (dtypep ? "set" : "") << endl);
-    if (GRAMMARP->m_varIO == VDirection::NONE && GRAMMARP->m_varDecl == VVarType::PORT) {
+    if (GRAMMARP->m_varIO == VDirection::NONE  // In non-ANSI port list
+        && GRAMMARP->m_varDecl == VVarType::PORT) {
         // Just a port list with variable name (not v2k format); AstPort already created
         if (dtypep) fileline->v3warn(E_UNSUPPORTED, "Unsupported: Ranges ignored in port-lists");
         if (arrayp) VL_DO_DANGLING(arrayp->deleteTree(), arrayp);
@@ -222,7 +223,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     // UINFO(0,"CREVAR "<<fileline->ascii()<<" decl="<<GRAMMARP->m_varDecl.ascii()<<"
     // io="<<GRAMMARP->m_varIO.ascii()<<endl);
     VVarType type = GRAMMARP->m_varDecl;
-    if (type == VVarType::UNKNOWN) {
+    if (type == VVarType::UNKNOWN) {  // e.g. "output" non-ANSI standalone direction (vs "reg")
         if (GRAMMARP->m_varIO.isAny()) {
             type = VVarType::PORT;
         } else {

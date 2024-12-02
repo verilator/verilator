@@ -186,7 +186,7 @@ struct SplitVarImpl VL_NOT_FINAL {
 
     static const char* cannotSplitPackedVarReason(const AstVar* varp);
 
-    template <class T_ALWAYSLIKE>
+    template <typename T_ALWAYSLIKE>
     void insertBeginCore(T_ALWAYSLIKE* ap, AstNodeStmt* stmtp, AstNodeModule* modp) {
         if (ap->isJustOneBodyStmt() && ap->stmtsp() == stmtp) {
             stmtp->unlinkFrBack();
@@ -775,7 +775,7 @@ public:
         const std::pair<uint32_t, uint32_t> dim = nodep->dtypep()->dimensions(false);
         UINFO(7, nodep->prettyNameQ()
                      << " pub:" << nodep->isSigPublic() << " pri:" << nodep->isPrimaryIO()
-                     << " io:" << nodep->isInoutish() << " typ:" << nodep->varType() << "\n");
+                     << " io:" << nodep->isInout() << " typ:" << nodep->varType() << "\n");
         const char* reason = nullptr;
         // Public variable cannot be split.
         // at least one unpacked dimension must exist

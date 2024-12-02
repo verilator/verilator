@@ -1,0 +1,7 @@
+%Warning-UNUSEDSIGNAL: t/t_vlt_match_contents.v:11:10: Signal is not driven, nor used: 'usignal_contents_mismatch'
+                                                     : ... note: In instance 't'
+   11 |    logic usignal_contents_mismatch;   
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~
+                       ... For warning description see https://verilator.org/warn/UNUSEDSIGNAL?v=latest
+                       ... Use "/* verilator lint_off UNUSEDSIGNAL */" and lint_on around source to disable this message.
+%Error: Exiting due to

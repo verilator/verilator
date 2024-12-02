@@ -20,23 +20,23 @@ if test.vlt_all:
     test.file_grep(test.stats, r'Optimizations, isolate_assignments blocks\s+3')
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"t.b",.*"loc":"e,23:[^"]*",.*"origName":"b",.*"attrIsolateAssign":true,.*"dtypeName":"logic"'
+        r'{"type":"VAR","name":"t.b",.*"loc":"\w,23:[^"]*",.*"origName":"b",.*"attrIsolateAssign":true,.*"dtypeName":"logic"'
     )
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"__Vfunc_t.file.get_31_16__0__Vfuncout",.*"loc":"e,99:[^"]*",.*"origName":"__Vfunc_t__DOT__file__DOT__get_31_16__0__Vfuncout",.*"attrIsolateAssign":true,.*"dtypeName":"logic"'
+        r'{"type":"VAR","name":"__Vfunc_t.file.get_31_16__0__Vfuncout",.*"loc":"\w,99:[^"]*",.*"origName":"__Vfunc_t__DOT__file__DOT__get_31_16__0__Vfuncout",.*"attrIsolateAssign":true,.*"dtypeName":"logic"'
     )
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"__Vfunc_t.file.get_31_16__0__t_crc",.*"loc":"e,100:[^"]*",.*"origName":"__Vfunc_t__DOT__file__DOT__get_31_16__0__t_crc",.*"attrIsolateAssign":true,.*"dtypeName":"logic"'
+        r'{"type":"VAR","name":"__Vfunc_t.file.get_31_16__0__t_crc",.*"loc":"\w,100:[^"]*",.*"origName":"__Vfunc_t__DOT__file__DOT__get_31_16__0__t_crc",.*"attrIsolateAssign":true,.*"dtypeName":"logic"'
     )
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"__Vtask_t.file.set_b_d__1__t_crc",.*"loc":"e,112:[^"]*",.*"origName":"__Vtask_t__DOT__file__DOT__set_b_d__1__t_crc",.*"attrIsolateAssign":true,.*"dtypeName":"logic"'
+        r'{"type":"VAR","name":"__Vtask_t.file.set_b_d__1__t_crc",.*"loc":"\w,112:[^"]*",.*"origName":"__Vtask_t__DOT__file__DOT__set_b_d__1__t_crc",.*"attrIsolateAssign":true,.*"dtypeName":"logic"'
     )
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"__Vtask_t.file.set_b_d__1__t_c",.*"loc":"e,113:[^"]*",.*"origName":"__Vtask_t__DOT__file__DOT__set_b_d__1__t_c",.*"attrIsolateAssign":true,.*"dtypeName":"logic"'
+        r'{"type":"VAR","name":"__Vtask_t.file.set_b_d__1__t_c",.*"loc":"\w,113:[^"]*",.*"origName":"__Vtask_t__DOT__file__DOT__set_b_d__1__t_c",.*"attrIsolateAssign":true,.*"dtypeName":"logic"'
     )
 
 test.execute()
