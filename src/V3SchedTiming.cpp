@@ -368,7 +368,9 @@ void transformForks(AstNetlist* const netlistp) {
             // Start with children, so later we only find awaits that are actually in this begin
             m_beginHasAwaits = false;
             iterateChildrenConst(nodep);
-            if (m_beginHasAwaits || nodep->needProcess()) {
+            if (!nodep->stmtsp()) {
+                nodep->unlinkFrBack();
+            } else if (m_beginHasAwaits || nodep->needProcess()) {
                 UASSERT_OBJ(!nodep->name().empty(), nodep, "Begin needs a name");
                 // Create a function to put this begin's statements in
                 FileLine* const flp = nodep->fileline();
@@ -407,11 +409,7 @@ void transformForks(AstNetlist* const netlistp) {
             } else {
                 // The begin has neither awaits nor a process::self call, just inline the
                 // statements
-                if (nodep->stmtsp()) {
-                    nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
-                } else {
-                    nodep->unlinkFrBack();
-                }
+                nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
             }
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
