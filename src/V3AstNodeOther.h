@@ -2082,7 +2082,10 @@ public:
     bool isPrimaryIO() const VL_MT_SAFE { return m_primaryIO; }
     bool isPrimaryInish() const { return isPrimaryIO() && isNonOutput(); }
     bool isIfaceRef() const { return varType() == VVarType::IFACEREF; }
-    void setIfaceRef() { m_varType = VVarType::IFACEREF; }
+    void setIfaceRef() {
+        m_direction = VDirection::NONE;
+        m_varType = VVarType::IFACEREF;
+    }
     bool isIfaceParent() const { return m_isIfaceParent; }
     bool isInternal() const { return m_isInternal; }
     bool isSignal() const { return varType().isSignal(); }

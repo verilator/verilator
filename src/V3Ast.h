@@ -904,7 +904,7 @@ public:
         TRIWIRE,
         TRI0,
         TRI1,
-        PORT,  // Used in parser and V3Fork to recognize ports
+        PORT,  // Used in parser to recognize ports
         BLOCKTEMP,
         MODULETEMP,
         STMTTEMP,
