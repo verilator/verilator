@@ -487,8 +487,9 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Return the master __en for the specified input variable
         if (!invarp->user1p()) {
             AstVar* const newp
-                = new AstVar{invarp->fileline(), isTop ? VVarType::PORT : VVarType::MODULETEMP,
+                = new AstVar{invarp->fileline(), isTop ? VVarType::VAR : VVarType::MODULETEMP,
                              invarp->name() + "__en", invarp};
+            // Inherited VDirection::INPUT
             UINFO(9, "       newenv " << newp << endl);
             modAddStmtp(invarp, newp);
             invarp->user1p(newp);  // find envar given invarp
@@ -540,8 +541,9 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Return the master __out for the specified input variable
         if (!m_varAux(invarp).outVarp) {
             AstVar* const newp
-                = new AstVar{invarp->fileline(), isTop ? VVarType::PORT : VVarType::MODULETEMP,
+                = new AstVar{invarp->fileline(), isTop ? VVarType::VAR : VVarType::MODULETEMP,
                              invarp->name() + "__out", invarp};
+            // Inherited VDirection::OUTPUT
             UINFO(9, "       newout " << newp << endl);
             modAddStmtp(invarp, newp);
             m_varAux(invarp).outVarp = newp;  // find outvar given invarp
