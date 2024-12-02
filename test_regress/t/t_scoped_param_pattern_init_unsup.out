@@ -1,0 +1,4 @@
+%Error: t/t_scoped_param_pattern_init_unsup.v:30:22: syntax error, unexpected ':', expecting ',' or '}'
+   30 |         some_pkg::FOO: 32'h9876,
+      |                      ^
+%Error: Exiting due to
