@@ -240,7 +240,6 @@ public:
             if (it != m_arrVarsRefp->end()) {
                 const std::vector<size_t>& indices = it->second->m_indices;
                 emitSelect(s, indices);
-
             }
         }
     }

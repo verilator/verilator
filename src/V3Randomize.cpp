@@ -641,7 +641,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 "write_var"};
             uint32_t dimension = 0;
             if (VN_IS(varp->dtypep(), UnpackArrayDType) || VN_IS(varp->dtypep(), DynArrayDType)
-                || VN_IS(varp->dtypep(), QueueDType)|| VN_IS(varp->dtypep(), AssocArrayDType)) {
+                || VN_IS(varp->dtypep(), QueueDType) || VN_IS(varp->dtypep(), AssocArrayDType)) {
                 const std::pair<uint32_t, uint32_t> dims
                     = varp->dtypep()->dimensions(/*includeBasic=*/true);
                 const uint32_t unpackedDimensions = dims.second;
@@ -724,14 +724,14 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         editSMT(nodep, nodep->fromp(), lsbp, msbp);
     }
-    void visit(AstAssocSel* nodep){
-        cout<<"The assocsel"<<nodep <<endl;
+    void visit(AstAssocSel* nodep) {
+        cout << "The assocsel" << nodep << endl;
         if (editFormat(nodep)) return;
-         FileLine* const fl = nodep->fileline();
-        if( nodep->fromp()->user1()){
+        FileLine* const fl = nodep->fileline();
+        if (nodep->fromp()->user1()) {
             iterateChildren(nodep);
             AstNodeExpr* const argsp
-                    = AstNode::addNext(nodep->fromp()->unlinkFrBack(), nodep->bitp()->unlinkFrBack());
+                = AstNode::addNext(nodep->fromp()->unlinkFrBack(), nodep->bitp()->unlinkFrBack());
             AstSFormatF* const newp = new AstSFormatF{fl, "(select %@ %@)", false, argsp};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
