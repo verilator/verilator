@@ -2779,7 +2779,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (AstVar* const varp = VN_CAST(foundp->nodep(), Var)) {
                     if (varp->isParam() || varp->isGenVar()) {
                         // Attach found Text reference to PatMember
-                        nodep->varrefp(new AstVarRef{nodep->fileline(), varp, VAccess::READ});
+                        nodep->varrefp(
+                            new AstVarRef{nodep->fileline(),
+                                          foundp->imported() ? foundp->classOrPackagep() : nullptr,
+                                          varp, VAccess::READ});
                         UINFO(9, indent() << " new " << nodep->varrefp() << endl);
                     }
                 }
