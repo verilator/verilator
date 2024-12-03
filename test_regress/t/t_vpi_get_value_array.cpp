@@ -74,9 +74,6 @@
 #define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
 
 int mon_check_props(void) {
-    s_vpi_arrayvalue arrayVal = {0, 0, {NULL}};
-    int indexArr[2] = {0};
-    int num = 4;
     const int size = 4;
 
     {
@@ -85,9 +82,8 @@ int mon_check_props(void) {
 
         s_vpi_arrayvalue arrayVal{vpiRawTwoStateVal, 0, nullptr};
         int indexArr[1] = {rand() % size};
-        int num = rand() % (size + 1);
 
-        vpi_get_value_array(object, &arrayVal, indexArr, num);
+        vpi_get_value_array(object, &arrayVal, indexArr, size);
         CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
 
         PLI_BYTE8* ptr = arrayVal.value.rawvals;
@@ -98,7 +94,7 @@ int mon_check_props(void) {
             static_cast<PLI_BYTE8>(0xbe),
             static_cast<PLI_BYTE8>(0xef)};
 
-        for (int i = 0; i < num; i++){
+        for (int i = 0; i < size; i++){
             CHECK_RESULT_HEX(ptr[i], expected[(indexArr[0] + i) % size]);
         }
     }
@@ -108,10 +104,9 @@ int mon_check_props(void) {
         CHECK_RESULT_NZ(object);
 
         s_vpi_arrayvalue arrayVal{vpiShortIntVal, 0, nullptr};
-        int indexArr[1] = {rand() & size};
-        int num = rand() % (size + 1);
+        int indexArr[1] = {rand() % size};
 
-        vpi_get_value_array(object, &arrayVal, indexArr, num);
+        vpi_get_value_array(object, &arrayVal, indexArr, size);
         CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
 
         PLI_INT16* ptr = arrayVal.value.shortints;
@@ -122,7 +117,7 @@ int mon_check_props(void) {
             static_cast<PLI_INT16>(0xcafe),
             static_cast<PLI_INT16>(0xf00d)};
 
-        for (int i = 0; i < num; i++) {
+        for (int i = 0; i < size; i++) {
             const unsigned element_offset = (indexArr[0] + i) % size;
             CHECK_RESULT_HEX(ptr[i], expected[element_offset]);
         }
@@ -134,9 +129,8 @@ int mon_check_props(void) {
 
         s_vpi_arrayvalue arrayVal{vpiIntVal, 0, nullptr};
         int indexArr[1] = {rand() % size};
-        int num = rand() % (size + 1);
 
-        vpi_get_value_array(object, &arrayVal, indexArr, num);
+        vpi_get_value_array(object, &arrayVal, indexArr, size);
 
         PLI_INT32* ptr = arrayVal.value.integers;
 
@@ -146,7 +140,7 @@ int mon_check_props(void) {
             static_cast<PLI_INT32>(0x01234567),
             static_cast<PLI_INT32>(0x89abcdef)};
 
-        for (int i = 0; i < num; i++) {
+        for (int i = 0; i < size; i++) {
             const unsigned element_offset = (indexArr[0] + i) % size;
             CHECK_RESULT_HEX(ptr[i], expected[element_offset]);
         }
@@ -158,9 +152,8 @@ int mon_check_props(void) {
 
         s_vpi_arrayvalue arrayVal{vpiIntVal, 0, nullptr};
         int indexArr[1] = {rand() % size};
-        int num = rand() % (size + 1);
 
-        vpi_get_value_array(object, &arrayVal, indexArr, num);
+        vpi_get_value_array(object, &arrayVal, indexArr, size);
         CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
 
         PLI_INT32* ptr = arrayVal.value.integers;
@@ -172,7 +165,7 @@ int mon_check_props(void) {
             static_cast<PLI_INT32>(0x89abcdef)};
 
         unsigned element_offset = indexArr[0];
-        for (int i = 0; i < num; i++) {
+        for (int i = 0; i < size; i++) {
             CHECK_RESULT_HEX(ptr[i], expected[element_offset]);
             element_offset = element_offset == 0 ? size - 1 : element_offset - 1;
         }
@@ -184,9 +177,8 @@ int mon_check_props(void) {
 
         s_vpi_arrayvalue arrayVal{vpiLongIntVal, 0, nullptr};
         int indexArr[1] = {rand() % size};
-        int num = rand() % (size + 1);
 
-        vpi_get_value_array(object, &arrayVal, indexArr, num);
+        vpi_get_value_array(object, &arrayVal, indexArr, size);
         CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
 
         PLI_INT64* ptr = arrayVal.value.longints;
@@ -197,7 +189,7 @@ int mon_check_props(void) {
             static_cast<PLI_INT64>(0xbeefdeadf00dcafe),
             static_cast<PLI_INT64>(0x45670123cdef89ab)};
 
-        for (int i = 0; i < num; i++) {
+        for (int i = 0; i < size; i++) {
             const unsigned element_offset = (indexArr[0] + i) % size;
             CHECK_RESULT_HEX(ptr[i], expected[element_offset]);
         }
@@ -209,8 +201,7 @@ int mon_check_props(void) {
 
         s_vpi_arrayvalue arrayVal{vpiRawTwoStateVal, 0, nullptr};
         int indexArr[1] = {rand() % size};
-        int num = 4 % (size + 1);
-        vpi_get_value_array(object, &arrayVal, indexArr, num);
+        vpi_get_value_array(object, &arrayVal, indexArr, size);
 
         PLI_UBYTE8* ptr = (PLI_UBYTE8*)arrayVal.value.rawvals;
 
@@ -224,7 +215,7 @@ int mon_check_props(void) {
         const unsigned element_size_words = 3;
         const unsigned element_size_bytes = 9;
         unsigned element_offset = indexArr[0];
-        for (int i = 0; i < (num * 9); i++) {
+        for (int i = 0; i < (size * 9); i++) {
             const unsigned byte_offset = (i % element_size_bytes);
             const unsigned word_offset = (element_offset * element_size_words) + (byte_offset / 4);
             const uint32_t data_word = expected[word_offset];
@@ -243,8 +234,7 @@ int mon_check_props(void) {
 
         s_vpi_arrayvalue arrayVal{vpiRawTwoStateVal, 0, nullptr};
         int indexArr[1] = {rand() % size};
-        int num = 4 % (size + 1);
-        vpi_get_value_array(object, &arrayVal, indexArr, num);
+        vpi_get_value_array(object, &arrayVal, indexArr, size);
 
         PLI_UBYTE8* ptr = (PLI_UBYTE8*)arrayVal.value.rawvals;
 
@@ -258,7 +248,7 @@ int mon_check_props(void) {
         const unsigned element_size_words = 3;
         const unsigned element_size_bytes = 9;
         unsigned element_offset = indexArr[0];
-        for (int i = 0; i < (num * 9); i++) {
+        for (int i = 0; i < (size * 9); i++) {
             const unsigned byte_offset = (i % element_size_bytes);
             const unsigned word_offset = (element_offset * element_size_words) + (byte_offset / 4);
             const uint32_t data_word = expected[word_offset];
@@ -277,9 +267,8 @@ int mon_check_props(void) {
 
         s_vpi_arrayvalue arrayVal{vpiVector, 0, nullptr};
         int indexArr[1] = {rand() % size};
-        int num = rand() % (size + 1);
 
-        vpi_get_value_array(object, &arrayVal, indexArr, num);
+        vpi_get_value_array(object, &arrayVal, indexArr, size);
         CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
 
         p_vpi_vecval ptr = arrayVal.value.vectors;
@@ -290,7 +279,7 @@ int mon_check_props(void) {
             static_cast<PLI_INT32>(0x01234567),
             static_cast<PLI_INT32>(0x89abcdef)};
 
-        for (int i = 0; i < num; i++) {
+        for (int i = 0; i < size; i++) {
             const unsigned element_offset = (indexArr[0] + i) % size;
             CHECK_RESULT_HEX(ptr[i].aval, expected[element_offset]);
             CHECK_RESULT_HEX(ptr[i].bval, 0);
@@ -303,9 +292,8 @@ int mon_check_props(void) {
 
         s_vpi_arrayvalue arrayVal = {vpiIntVal, 0, nullptr};
         int indexArr[1] = {rand() & 0x3};
-        int num = rand() % (size + 1);
 
-        vpi_get_value_array(object, &arrayVal, indexArr, num);
+        vpi_get_value_array(object, &arrayVal, indexArr, size);
         CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
 
         PLI_INT32* ptr = arrayVal.value.integers;
@@ -316,7 +304,7 @@ int mon_check_props(void) {
             0,
             1234567890};
 
-        for (int i = 0; i < num; i++) {
+        for (int i = 0; i < size; i++) {
             const unsigned element_offset = (indexArr[0] + i) % size;
             CHECK_RESULT_HEX(ptr[i], expected[element_offset]);
         }
@@ -330,7 +318,7 @@ int mon_check_props(void) {
         s_vpi_arrayvalue arrayVal{vpiRealVal, 0, nullptr};
         PLI_INT32 indexp[1] = {0};
 
-        vpi_get_value_array(object, &arrayVal, indexp, num);
+        vpi_get_value_array(object, &arrayVal, indexp, size);
         CHECK_RESULT_NZ(vpi_chk_error(nullptr));
     }
 
@@ -342,7 +330,7 @@ int mon_check_props(void) {
         s_vpi_arrayvalue arrayVal{vpiShortRealVal, 0, nullptr};
         PLI_INT32 indexp[1] = {0};
 
-        vpi_get_value_array(object, &arrayVal, indexp, num);
+        vpi_get_value_array(object, &arrayVal, indexp, size);
         CHECK_RESULT_NZ(vpi_chk_error(nullptr));
     }
 
@@ -354,7 +342,7 @@ int mon_check_props(void) {
         s_vpi_arrayvalue arrayVal{vpiTimeVal, 0, nullptr};
         PLI_INT32 indexp[1] = {0};
 
-        vpi_get_value_array(object, &arrayVal, indexp, num);
+        vpi_get_value_array(object, &arrayVal, indexp, size);
         CHECK_RESULT_NZ(vpi_chk_error(nullptr));
     }
 
@@ -366,7 +354,7 @@ int mon_check_props(void) {
         s_vpi_arrayvalue arrayVal{vpiIntVal, 0, nullptr};
         PLI_INT32 indexp[1] = {0};
 
-        vpi_get_value_array(object, &arrayVal, indexp, num);
+        vpi_get_value_array(object, &arrayVal, indexp, size);
         CHECK_RESULT_NZ(vpi_chk_error(nullptr));
     }
 
@@ -378,7 +366,7 @@ int mon_check_props(void) {
         s_vpi_arrayvalue arrayVal{vpiIntVal, 0, nullptr};
         PLI_INT32 indexp[1] = {0};
 
-        vpi_get_value_array(object, &arrayVal, indexp, num);
+        vpi_get_value_array(object, &arrayVal, indexp, size);
         CHECK_RESULT_NZ(vpi_chk_error(nullptr));
     }
 
@@ -390,11 +378,11 @@ int mon_check_props(void) {
         s_vpi_arrayvalue arrayVal{vpiIntVal, 0, nullptr};
         PLI_INT32 indexp[1] = {4};
 
-        vpi_get_value_array(object, &arrayVal, indexp, num);
+        vpi_get_value_array(object, &arrayVal, indexp, size);
         CHECK_RESULT_NZ(vpi_chk_error(nullptr));
 
         indexp[1] = {0};
-        vpi_get_value_array(object, &arrayVal, indexp, num);
+        vpi_get_value_array(object, &arrayVal, indexp, size);
         CHECK_RESULT_NZ(vpi_chk_error(nullptr));
     }
 
@@ -406,7 +394,7 @@ int mon_check_props(void) {
         s_vpi_arrayvalue arrayVal = {vpiIntVal, vpiUserAllocFlag, nullptr};
         PLI_INT32 indexp[1] = {0};
 
-        vpi_get_value_array(object, &arrayVal, indexp, num);
+        vpi_get_value_array(object, &arrayVal, indexp, size);
         CHECK_RESULT_NZ(vpi_chk_error(nullptr));
     }
 
@@ -418,7 +406,7 @@ int mon_check_props(void) {
         s_vpi_arrayvalue arrayVal = {vpiShortIntVal, 0, nullptr};
         PLI_INT32 indexp[1] = {0};
 
-        vpi_get_value_array(object, &arrayVal, indexp, num);
+        vpi_get_value_array(object, &arrayVal, indexp, size);
         CHECK_RESULT_NZ(vpi_chk_error(nullptr));
     }
 
