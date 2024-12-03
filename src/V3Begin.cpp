@@ -424,6 +424,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     AstNode* bodyPointp = new AstBegin{nodep->fileline(), "[EditWrapper]", nullptr};
     AstNode* newp = nullptr;
     AstNode* lastp = nodep;
+    AstVar* nestedIndexp = nullptr;
     // subfromp used to traverse each dimension of multi-d variable-sized unpacked array (queue,
     // dyn-arr and associative-arr)
     AstNodeExpr* subfromp = fromp->cloneTreePure(false);
@@ -456,8 +457,13 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                 }
             } else if (VN_IS(fromDtp, DynArrayDType) || VN_IS(fromDtp, QueueDType)) {
                 AstConst* const leftp = new AstConst{fl, 0};
-                AstNodeExpr* const rightp
-                    = new AstCMethodHard{fl, subfromp->cloneTreePure(false), "size"};
+                AstNodeExpr* const rightp = new AstCMethodHard{
+                    fl,
+                    VN_IS(subfromp->dtypep(), NodeArrayDType)
+                        ? new AstArraySel{fl, subfromp->cloneTreePure(false),
+                                          new AstVarRef{fl, nestedIndexp, VAccess::READ}}
+                        : subfromp->cloneTreePure(false),
+                    "size"};
                 AstVarRef* varRefp = new AstVarRef{fl, varp, VAccess::READ};
                 subfromp = new AstCMethodHard{fl, subfromp, "at", varRefp};
                 subfromp->dtypep(fromDtp);
@@ -508,6 +514,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
             if (!newp) newp = loopp;
         }
         // Prep for next
+        nestedIndexp = varp;
         fromDtp = fromDtp->subDTypep();
     }
     // The parser validates we don't have "foreach (array[,,,])"
