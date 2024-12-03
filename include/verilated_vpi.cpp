@@ -3191,32 +3191,34 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 
             vl_copy_value_array(leftIsLow, index, num, size, ptr, rawvals);
         } else if (varp->vltype() == VLVT_WDATA) {
-            EData *ptr = reinterpret_cast<EData*>(vop->varDatap());
-            EData *rawvals = reinterpret_cast<EData*>(valuep);
+            WDataInP ptr = reinterpret_cast<WDataInP>(vop->varDatap());
 
-            const int words = VL_WORDS_I(varp->packed().elements());
+            const unsigned element_size_words = VL_WORDS_I(varp->packed().elements());
+            const unsigned element_size_bytes = VL_BYTES_I(varp->packed().elements());
+            unsigned out_byte_offset = 0;
+            unsigned element_offset = index_p[0];
+    
+            for(unsigned i = 0; i < num; i++){
+                const unsigned word_offset = element_offset * element_size_words;
+                unsigned byte_count = 0;
 
-            if (vop->rangep()->left() < vop->rangep()->right()) {
-                for (int i = 0; i < num; i++) {
-                    for (int j = 0; j < words; j++) {
-                        rawvals[i * words + j] = ptr[index * words + j];
+                for(unsigned j = 0; j < element_size_words; j++){
+                    const WData data_word = ptr[word_offset+j];
+                    for(unsigned k = 0; k < sizeof(WData); k++) {
+                        if(byte_count++ == element_size_bytes) break;
+                        const CData data_byte = (data_word >> (k*8)) & 0xFF;
+                        valuep[out_byte_offset++] = data_byte;
                     }
-
-                    if (index == size) index = 0;
                 }
-            } else {
-                for (int i = 0; i < num; i++) {
-                    for (int j = 0; j < words; j++) {
-                        rawvals[i * words + j] = ptr[index * words + j];
-                    }
 
-                    index = (index == 0) ? (size - 1) : (index - 1);
-                }
+                element_offset = leftIsLow ?
+                (element_offset == (size - 1) ? 0 : element_offset + 1) :
+                (element_offset == 0 ? size - 1 : element_offset - 1);
             }
         }
 
         return;
-    } 
+    }
 
     VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for %s", __func__,
                   VerilatedVpiError::strFromVpiVal(arrayvalue_p->format), vop->fullname());

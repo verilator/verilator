@@ -90,13 +90,13 @@ int mon_check_props(void) {
         vpi_get_value_array(object, &arrayVal, indexArr, num);
         CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
 
-        PLI_UBYTE8* ptr = (PLI_UBYTE8*)arrayVal.value.rawvals;
+        PLI_BYTE8* ptr = arrayVal.value.rawvals;
 
-        PLI_UBYTE8 expected[4] = {
-            static_cast<PLI_UBYTE8>(0xde),
-            static_cast<PLI_UBYTE8>(0xad),
-            static_cast<PLI_UBYTE8>(0xbe),
-            static_cast<PLI_UBYTE8>(0xef)};
+        PLI_BYTE8 expected[4] = {
+            static_cast<PLI_BYTE8>(0xde),
+            static_cast<PLI_BYTE8>(0xad),
+            static_cast<PLI_BYTE8>(0xbe),
+            static_cast<PLI_BYTE8>(0xef)};
 
         for (int i = 0; i < num; i++){
             CHECK_RESULT_HEX(ptr[i], expected[(indexArr[0] + i) % size]);
@@ -114,12 +114,17 @@ int mon_check_props(void) {
         vpi_get_value_array(object, &arrayVal, indexArr, num);
         CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
 
-        PLI_UINT16* ptr = (PLI_UINT16*)arrayVal.value.shortints;
+        PLI_INT16* ptr = arrayVal.value.shortints;
 
-        PLI_UINT16 expected[4] = {0xdead, 0xbeef, 0xbeef, 0xdead};
+        PLI_INT16 expected[4] = {
+            static_cast<PLI_INT16>(0xdead),
+            static_cast<PLI_INT16>(0xbeef),
+            static_cast<PLI_INT16>(0xcafe),
+            static_cast<PLI_INT16>(0xf00d)};
 
         for (int i = 0; i < num; i++) {
-            CHECK_RESULT_HEX(ptr[i], expected[(indexArr[0] + i) % size]);
+            const unsigned element_offset = (indexArr[0] + i) % size;
+            CHECK_RESULT_HEX(ptr[i], expected[element_offset]);
         }
     }
 
@@ -133,12 +138,17 @@ int mon_check_props(void) {
 
         vpi_get_value_array(object, &arrayVal, indexArr, num);
 
-        PLI_UINT32* ptr = (PLI_UINT32*)arrayVal.value.integers;
+        PLI_INT32* ptr = arrayVal.value.integers;
 
-        PLI_UINT32 expected[4] = {0x00000000, 0xdeadbeef, 0x00000000, 0xdeadbeef};
+        PLI_INT32 expected[4] = {
+            static_cast<PLI_INT32>(0xcafef00d),
+            static_cast<PLI_INT32>(0xdeadbeef),
+            static_cast<PLI_INT32>(0x01234567),
+            static_cast<PLI_INT32>(0x89abcdef)};
 
         for (int i = 0; i < num; i++) {
-            CHECK_RESULT_HEX(ptr[i], expected[(indexArr[0] + i) % size]);
+            const unsigned element_offset = (indexArr[0] + i) % size;
+            CHECK_RESULT_HEX(ptr[i], expected[element_offset]);
         }
     }
 
@@ -153,12 +163,19 @@ int mon_check_props(void) {
         vpi_get_value_array(object, &arrayVal, indexArr, num);
         CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
 
-        PLI_UINT32* ptr = (PLI_UINT32*)arrayVal.value.integers;
+        PLI_INT32* ptr = arrayVal.value.integers;
 
-        PLI_UINT32 expected[4] = {0xdeadbeef, 0xcafef00d, 0x01234567, 0x89abcdef};
+        PLI_INT32 expected[4] = {
+            static_cast<PLI_INT32>(0xdeadbeef),
+            static_cast<PLI_INT32>(0xcafef00d),
+            static_cast<PLI_INT32>(0x01234567),
+            static_cast<PLI_INT32>(0x89abcdef)};
 
-        for (int i = 0; i < num; i++)
-            CHECK_RESULT_HEX(ptr[i], expected[(indexArr[0] - i) % size]);
+        unsigned element_offset = indexArr[0];
+        for (int i = 0; i < num; i++) {
+            CHECK_RESULT_HEX(ptr[i], expected[element_offset]);
+            element_offset = element_offset == 0 ? size - 1 : element_offset - 1;
+        }
     }
 
     {
@@ -172,89 +189,138 @@ int mon_check_props(void) {
         vpi_get_value_array(object, &arrayVal, indexArr, num);
         CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
 
-        PLI_UINT64* ptr = (PLI_UINT64*)arrayVal.value.longints;
+        PLI_INT64* ptr = arrayVal.value.longints;
 
-        PLI_UINT64 expected[4] = {0xdeadbeefcafef00d, 0x0123456789abcdef,
-                                0xbeefdeadf00dcafe, 0x45670123cdef89ab};
+        PLI_INT64 expected[4] = {
+            static_cast<PLI_INT64>(0xdeadbeefcafef00d),
+            static_cast<PLI_INT64>(0x0123456789abcdef),
+            static_cast<PLI_INT64>(0xbeefdeadf00dcafe),
+            static_cast<PLI_INT64>(0x45670123cdef89ab)};
 
-        for (int i = 0; i < num; i++)
-            CHECK_RESULT_HEX(ptr[i], expected[(indexArr[0] - i) % size]);
+        for (int i = 0; i < num; i++) {
+            const unsigned element_offset = (indexArr[0] + i) % size;
+            CHECK_RESULT_HEX(ptr[i], expected[element_offset]);
+        }
     }
 
     {
-        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_quads", NULL);
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_unorthodox", NULL);
         CHECK_RESULT_NZ(object);
 
-        s_vpi_arrayvalue arrayVal{vpiRawFourStateVal, 0, nullptr};
+        s_vpi_arrayvalue arrayVal{vpiRawTwoStateVal, 0, nullptr};
         int indexArr[1] = {rand() % size};
-        int num = rand() % (size + 1);
+        int num = 4 % (size + 1);
         vpi_get_value_array(object, &arrayVal, indexArr, num);
 
         PLI_UBYTE8* ptr = (PLI_UBYTE8*)arrayVal.value.rawvals;
 
-        PLI_UINT32 expected[16] = {
-            0x89abcdef,0x01234567,
-            0xcafef00d,0xdeadbeef,
-            0xcdef89ab,0x45670123,
-            0xf00dcafe,0xbeefdead,
-            0xefcdab89,0x67452301,
-            0x0df0feca,0xefbeadde,
-            0xba98fedc,0x32107654,
-            0xd00fefac,0xfeebdaed
+        PLI_UINT32 expected[12] = {
+            0xcafef00d,0xdeadbeef,0x0,
+            0x89abcdef,0x01234567,0x1,
+            0xf00dcafe,0xbeefdead,0x2,
+            0xcdef89ab,0x45670123,0x3
         };
 
-        printf("index=%u num=%u size=%u\n",indexArr[0],num,size);
-        for (int i = 0; i < (num * 16); i++) {
-            const int shiftedIndex = ((indexArr[0] * 16) + i) % (size * 16);
-            // printf("shiftedIndex=%u\n",shiftedIndex);
-            const int wordIndex = shiftedIndex / 4;
-            // printf("wordIndex=%u\n",wordIndex);
-            const uint32_t word = expected[wordIndex];
+        const unsigned element_size_words = 3;
+        const unsigned element_size_bytes = 9;
+        unsigned element_offset = indexArr[0];
+        for (int i = 0; i < (num * 9); i++) {
+            const unsigned byte_offset = (i % element_size_bytes);
+            const unsigned word_offset = (element_offset * element_size_words) + (byte_offset / 4);
+            const uint32_t data_word = expected[word_offset];
+            const uint8_t data_byte = (data_word >> ((byte_offset & 0x3)*8)) & 0xFF;
+            CHECK_RESULT_HEX(ptr[i],data_byte);
 
-            const int byteIndex = shiftedIndex % size;
-            // printf("byteIndex=%u\n",byteIndex);
-            const uint8_t byte = (word >> (byteIndex*8)) & UINT8_MAX;
-
-            // printf("ptr[%u]=%x exp[?]=%x\n",i,ptr[i],byte);
-            // CHECK_RESULT_HEX(ptr[i], byte);
+            if (byte_offset == (element_size_bytes - 1)) {
+                element_offset = element_offset == size - 1 ? 0 : element_offset + 1;
+            }
         }
     }
 
-    // {
-    //     vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words", NULL);
-    //     CHECK_RESULT_NZ(object);
+    {
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_unorthodox_rl", NULL);
+        CHECK_RESULT_NZ(object);
 
-    //     arrayVal.format = vpiVector;
-    //     vpi_get_value_array(object, &arrayVal, indexArr, num);
+        s_vpi_arrayvalue arrayVal{vpiRawTwoStateVal, 0, nullptr};
+        int indexArr[1] = {rand() % size};
+        int num = 4 % (size + 1);
+        vpi_get_value_array(object, &arrayVal, indexArr, num);
 
-    //     p_vpi_vecval ptr = (p_vpi_vecval)arrayVal.value.vectors;
+        PLI_UBYTE8* ptr = (PLI_UBYTE8*)arrayVal.value.rawvals;
 
-    //     s_vpi_vecval expected[4] = {{0x00000000, 0x000000},
-    //         {0xdeadbeef, 0x00000000}, {0x00000000, 0x00000000},
-    //         {0xdeadbeef, 0x00000000}};
+        PLI_UINT32 expected[12] = {
+            0xcafef00d,0xdeadbeef,0x0,
+            0x89abcdef,0x01234567,0x1,
+            0xf00dcafe,0xbeefdead,0x2,
+            0xcdef89ab,0x45670123,0x3
+        };
 
-    //     for (int i = 0; i < num; i++) {
-    //         CHECK_RESULT_HEX(ptr[i].aval, expected[i].aval);
-    //         CHECK_RESULT_HEX(ptr[i].bval, expected[i].bval);
-    //     }
-    // }
+        const unsigned element_size_words = 3;
+        const unsigned element_size_bytes = 9;
+        unsigned element_offset = indexArr[0];
+        for (int i = 0; i < (num * 9); i++) {
+            const unsigned byte_offset = (i % element_size_bytes);
+            const unsigned word_offset = (element_offset * element_size_words) + (byte_offset / 4);
+            const uint32_t data_word = expected[word_offset];
+            const uint8_t data_byte = (data_word >> ((byte_offset & 0x3)*8)) & 0xFF;
+            CHECK_RESULT_HEX(ptr[i],data_byte);
 
-    // {
-    //     vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_integers", NULL);
-    //     CHECK_RESULT_NZ(object);
+            if (byte_offset == (element_size_bytes - 1)) {
+                element_offset = element_offset == 0 ? size - 1 : element_offset - 1;
+            }
+        }
+    }
 
-    //     indexArr[0] = rand() & 0x3;
+    {
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words", NULL);
+        CHECK_RESULT_NZ(object);
 
-    //     arrayVal.format = vpiIntVal;
-    //     vpi_get_value_array(object, &arrayVal, indexArr, num);
+        s_vpi_arrayvalue arrayVal{vpiVector, 0, nullptr};
+        int indexArr[1] = {rand() % size};
+        int num = rand() % (size + 1);
 
-    //     PLI_INT32* ptr = arrayVal.value.integers;
+        vpi_get_value_array(object, &arrayVal, indexArr, num);
+        CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
 
-    //     PLI_INT32 expected[4] = {INT32_MIN, INT32_MAX, 0, 1234567890};
+        p_vpi_vecval ptr = arrayVal.value.vectors;
 
-    //     for (int i = 0; i < num; i++)
-    //         CHECK_RESULT_HEX(ptr[i], expected[(indexArr[0]+i) & 0x3]);
-    // }
+        PLI_INT32 expected[4] = {
+            static_cast<PLI_INT32>(0xcafef00d),
+            static_cast<PLI_INT32>(0xdeadbeef),
+            static_cast<PLI_INT32>(0x01234567),
+            static_cast<PLI_INT32>(0x89abcdef)};
+
+        for (int i = 0; i < num; i++) {
+            const unsigned element_offset = (indexArr[0] + i) % size;
+            CHECK_RESULT_HEX(ptr[i].aval, expected[element_offset]);
+            CHECK_RESULT_HEX(ptr[i].bval, 0);
+        }
+    }
+
+    {
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_integers", NULL);
+        CHECK_RESULT_NZ(object);
+
+        s_vpi_arrayvalue arrayVal = {vpiIntVal, 0, nullptr};
+        int indexArr[1] = {rand() & 0x3};
+        int num = rand() % (size + 1);
+
+        vpi_get_value_array(object, &arrayVal, indexArr, num);
+        CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
+
+        PLI_INT32* ptr = arrayVal.value.integers;
+
+        PLI_INT32 expected[4] = {
+            INT32_MIN,
+            INT32_MAX,
+            0,
+            1234567890};
+
+        for (int i = 0; i < num; i++) {
+            const unsigned element_offset = (indexArr[0] + i) % size;
+            CHECK_RESULT_HEX(ptr[i], expected[element_offset]);
+        }
+    }
 
     {
         // test unsupported format

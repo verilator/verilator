@@ -29,10 +29,12 @@ extern "C" int mon_check();
    reg [31:0] read_words [0:3] `PUBLIC_FLAT_RD;
    reg [31:0] read_words_rl [3:0] `PUBLIC_FLAT_RD;
    reg [63:0] read_longs [0:3] `PUBLIC_FLAT_RD;
-   reg [127:0] read_quads [0:3] `PUBLIC_FLAT_RD;
    integer read_integers [0:3] `PUBLIC_FLAT_RD;
    reg [7:0] read_scalar `PUBLIC_FLAT_RD;
    reg [7:0] read_bounds [1:3] `PUBLIC_FLAT_RD;
+
+   reg [67:0] read_unorthodox [0:3] `PUBLIC_FLAT_RD;
+   reg [67:0] read_unorthodox_rl [3:0] `PUBLIC_FLAT_RD;
 
    integer status;
 
@@ -62,10 +64,15 @@ extern "C" int mon_check();
       read_longs[2] = 64'hbeefdeadf00dcafe;
       read_longs[3] = 64'h45670123cdef89ab;
 
-      read_quads[0] = 128'hdeadbeefcafef00d0123456789abcdef; // 0 -> 15
-      read_quads[1] = 128'hbeefdeadf00dcafe45670123cdef89ab; // 16 -> 31
-      read_quads[2] = 128'hefbeadde0df0feca67452301efcdab89; // 32 -> 47
-      read_quads[3] = 128'hfeebdaedd00fefac32107654ba98fedc; // 48 -> 63
+      read_unorthodox[0] = 68'h0deadbeefcafef00d; // 0 -> 15
+      read_unorthodox[1] = 68'h10123456789abcdef; // 16 -> 31
+      read_unorthodox[2] = 68'h2beefdeadf00dcafe; // 32 -> 47
+      read_unorthodox[3] = 68'h345670123cdef89ab; // 48 -> 63
+
+      read_unorthodox_rl[0] = 68'h0deadbeefcafef00d; // 0 -> 15
+      read_unorthodox_rl[1] = 68'h10123456789abcdef; // 16 -> 31
+      read_unorthodox_rl[2] = 68'h2beefdeadf00dcafe; // 32 -> 47
+      read_unorthodox_rl[3] = 68'h345670123cdef89ab; // 48 -> 63
 
       read_integers[0] = -2147483648;
       read_integers[1] = 2147483647;
