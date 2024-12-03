@@ -430,23 +430,20 @@ class LinkParseVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_PUBLIC) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            // Public ifacerefs aren't supported - be compatible with older parser that ignored it
-            if (!m_varp->isIfaceRef()) {
-                m_varp->sigUserRWPublic(true);
-                m_varp->sigModPublic(true);
-            }
+            m_varp->sigUserRWPublic(true);
+            m_varp->sigModPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_PUBLIC_FLAT) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            if (!m_varp->isIfaceRef()) m_varp->sigUserRWPublic(true);
+            m_varp->sigUserRWPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_PUBLIC_FLAT_RD) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            if (!m_varp->isIfaceRef()) m_varp->sigUserRdPublic(true);
+            m_varp->sigUserRdPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_PUBLIC_FLAT_RW) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            if (!m_varp->isIfaceRef()) m_varp->sigUserRWPublic(true);
+            m_varp->sigUserRWPublic(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_ISOLATE_ASSIGNMENTS) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");

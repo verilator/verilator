@@ -2121,9 +2121,9 @@ public:
     bool isScBigUint() const VL_MT_STABLE;
     bool isScSensitive() const { return m_scSensitive; }
     bool isSigPublic() const;
-    bool isSigModPublic() const { return m_sigModPublic; }
-    bool isSigUserRdPublic() const { return m_sigUserRdPublic; }
-    bool isSigUserRWPublic() const { return m_sigUserRWPublic; }
+    bool isSigModPublic() const { return m_sigModPublic && !isIfaceRef(); }
+    bool isSigUserRdPublic() const { return m_sigUserRdPublic && !isIfaceRef(); }
+    bool isSigUserRWPublic() const { return m_sigUserRWPublic && !isIfaceRef(); }
     bool isTrace() const { return m_trace; }
     bool isRand() const { return m_rand.isRand(); }
     bool isRandC() const { return m_rand.isRandC(); }

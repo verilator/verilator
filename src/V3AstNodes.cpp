@@ -437,7 +437,8 @@ void AstNetlist::timeprecisionMerge(FileLine*, const VTimescale& value) {
 }
 
 bool AstVar::isSigPublic() const {
-    return (m_sigPublic || (v3Global.opt.allPublic() && !isTemp() && !isGenVar()));
+    return (m_sigPublic || (v3Global.opt.allPublic() && !isTemp() && !isGenVar()))
+           && !isIfaceRef();
 }
 bool AstVar::isScQuad() const { return (isSc() && isQuad() && !isScBv() && !isScBigUint()); }
 bool AstVar::isScBv() const {
