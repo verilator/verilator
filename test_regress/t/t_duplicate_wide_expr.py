@@ -11,9 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=['--stats'])
+test.compile(verilator_flags2=['--stats', '--expand-limit 5'])
 
-test.file_grep(test.stats, r'Optimizations, Gate excluded wide expressions\s+(\d+)', 1)
-test.file_grep(test.stats, r'Optimizations, Substituted temps\s+(\d+)', 642)
+test.file_grep(test.stats, r'Optimizations, Gate excluded wide expressions\s+(\d+)', 3)
+test.file_grep(test.stats, r'Optimizations, expand wides\s+(\d+)', 162)
 
 test.passes()

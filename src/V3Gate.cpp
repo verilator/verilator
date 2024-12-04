@@ -686,7 +686,9 @@ class GateInline final {
     // METHODS
     static bool excludedWide(GateVarVertex* const vVtxp) {
         // Handle wides with logic drivers.
-        if (!vVtxp->varScp()->isWide() || vVtxp->inEmpty()) return false;
+        if (!vVtxp->varScp()->isWide() || vVtxp->inEmpty()
+            || vVtxp->varScp()->widthWords() <= v3Global.opt.expandLimit())
+            return false;
 
         const GateLogicVertex* const lVtxp
             = vVtxp->inEdges().frontp()->fromp()->as<GateLogicVertex>();
@@ -790,6 +792,7 @@ class GateInline final {
             if (!vVtxp->reducible()) continue;
             if (excludedWide(vVtxp)) {
                 ++m_statExcluded;
+                UINFO(9, "Gate inline exclude '" << vVtxp->name() << "'" << endl);
                 vVtxp->clearReducible("Excluded wide");  // Check once.
                 continue;
             }
