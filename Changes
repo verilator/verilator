@@ -146,6 +146,9 @@ Verilator 5.030 2024-10-27
 * Fix build on gcc when using the Spack wrapper (#5555). [Eric Müller]
 * Fix enum name method (#5563). [Todd Strader]
 * Fix `$countbits` in assert with non-tristates (#5566). [Shou-Li Hsu]
+* Fix missing VlProcess handle in coroutines with splits (#5623) (#5650). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix imported array assignment literals (#5642) (#5648). [Todd Strader]
+* Fix foreach mixed array (#5655) (#5656). [Yilou Wang]
 
 
 Verilator 5.028 2024-08-21
