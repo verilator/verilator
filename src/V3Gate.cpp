@@ -684,7 +684,14 @@ class GateInline final {
     size_t m_statExcluded = 0;  // Statistic tracking
 
     // METHODS
-    static bool excludedWide(GateVarVertex* const vVtxp) {
+    static bool isCheapWide(const GateLogicVertex* const lVtxp, const AstNodeExpr* const rhsp) {
+        if (const AstSel* const selp = VN_CAST(rhsp, Sel)) {
+            if (selp->lsbConst() % VL_EDATASIZE == 0) return true;
+        }
+        return lVtxp->slow() || VN_IS(rhsp, NodeVarRef) || VN_IS(rhsp, Const)
+               || VN_IS(rhsp, ArraySel);
+    }
+    static bool excludedWide(GateVarVertex* const vVtxp, const AstNodeExpr* const rhsp) {
         // Handle wides with logic drivers.
         if (!vVtxp->varScp()->isWide() || vVtxp->inEmpty()
             || vVtxp->varScp()->widthWords() <= v3Global.opt.expandLimit())
@@ -693,8 +700,7 @@ class GateInline final {
         const GateLogicVertex* const lVtxp
             = vVtxp->inEdges().frontp()->fromp()->as<GateLogicVertex>();
 
-        if (lVtxp->slow() || VN_IS(lVtxp->nodep(), AssignAlias))
-            return false;  // Do not optimize consts, aliases and slow parts.
+        if (isCheapWide(lVtxp, rhsp)) return false;
 
         // Exclude from inlining variables READ multiple times that are initialized by wide
         // assigns.
@@ -790,12 +796,6 @@ class GateInline final {
 
             // Can't inline if non-reducible, etc
             if (!vVtxp->reducible()) continue;
-            if (excludedWide(vVtxp)) {
-                ++m_statExcluded;
-                UINFO(9, "Gate inline exclude '" << vVtxp->name() << "'" << endl);
-                vVtxp->clearReducible("Excluded wide");  // Check once.
-                continue;
-            }
 
             // Grab the driving logic
             GateLogicVertex* const lVtxp
@@ -813,6 +813,12 @@ class GateInline final {
             if (!okVisitor.isSimple()) continue;
             // If the varScope is already removed from logicp, no need to try substitution.
             if (!okVisitor.varAssigned(vVtxp->varScp())) continue;
+            if (excludedWide(vVtxp, okVisitor.substitutionp())) {
+                ++m_statExcluded;
+                UINFO(9, "Gate inline exclude '" << vVtxp->name() << "'" << endl);
+                vVtxp->clearReducible("Excluded wide");  // Check once.
+                continue;
+            }
 
             // Does it read multiple source variables?
             if (okVisitor.readVscps().size() > 1) {
