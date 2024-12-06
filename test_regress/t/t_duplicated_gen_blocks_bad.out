@@ -1,0 +1,15 @@
+%Error: t/t_duplicated_gen_blocks_bad.v:11:12: Duplicate declaration of block: 'block'
+                                             : ... note: In instance 't'
+   11 |    begin : block
+      |            ^~~~~
+        t/t_duplicated_gen_blocks_bad.v:9:12: ... Location of original declaration
+    9 |    begin : block
+      |            ^~~~~
+%Error: t/t_duplicated_gen_blocks_bad.v:15:23: Duplicate declaration of block: 'block1'
+                                             : ... note: In instance 't'
+   15 |    if (X > 1) begin : block1
+      |                       ^~~~~~
+        t/t_duplicated_gen_blocks_bad.v:13:23: ... Location of original declaration
+   13 |    if (X > 0) begin : block1
+      |                       ^~~~~~
+%Error: Exiting due to
