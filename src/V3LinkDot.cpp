@@ -280,7 +280,7 @@ public:
         } else if (foundp->imported()) {  // From package
             // We don't throw VARHIDDEN as if the import is later the symbol
             // table's import wouldn't warn
-        } else if (VN_IS(nodep, Begin) && VN_IS(fnodep, Begin)
+        } else if (forPrimary() && VN_IS(nodep, Begin) && VN_IS(fnodep, Begin)
                    && VN_AS(nodep, Begin)->generate()) {
             // Begin: ... blocks often replicate under genif/genfor, so
             // suppress duplicate checks.  See t_gen_forif.v for an example.
