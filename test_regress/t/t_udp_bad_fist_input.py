@@ -9,11 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
-test.top_filename = "t/t_udp.v"
+test.scenarios('linter')
 
-test.lint(
-    # Unsupported: UDP Tables
-    verilator_flags2=["--lint-only --bbox-unsup"])
+test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

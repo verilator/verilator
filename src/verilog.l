@@ -1013,12 +1013,17 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /************************************************************************/
   /* Tables */
-<TABLE>\\{crnl}         { yymore(); }
-<TABLE>{crnl}           { yymore(); }
-<TABLE>";"              { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLELINE; }
-<TABLE>"endtable"       { yy_pop_state(); FL; return yENDTABLE; }
+<TABLE>[01xX\?] {FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLEIFIELDVAL; } /* Input field symbol. */
+<TABLE>[ \t]+           { FL; return yaTABLESEP; } /* Separator for table line. */
+<TABLE>[ \t]*[\\]+[ \t]*[\n][ \t]*           { FL; return yaTABLELSEP; } /* Separator for table line. */
+<TABLE>[:]              { FL; return yaTABLELRSEP; } /* LHS and RHS separator for table line. */
+<TABLE>[ \t]*[;]    { FL; return yaTABLELINEEND; }
+<TABLE>[\r\n] { FL_FWD; FL_BRK; }
 <TABLE>"`line"{ws}+[^\n\r]*{crnl}       { FL_FWD; PARSEP->lexPpline(yytext); FL_BRK; }
-<TABLE>.                { yymore(); }
+<TABLE>"//"[^\n]*   { FL_FWD; FL_BRK; }  /* throw away single line comments */
+<TABLE>"/*"*"*/"    { FL_FWD; FL_BRK; }  /* throw away multiple line comments */
+<TABLE>^[ \t]*[\r\n] { FL_FWD; FL_BRK; }
+<TABLE>[ \t]*"endtable"[ \t\f]*[\n\r]       { yy_pop_state(); FL; return yENDTABLE; }
 <TABLE><<EOF>>          { FL; yylval.fl->v3error("EOF in 'table'");
                           yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
 
