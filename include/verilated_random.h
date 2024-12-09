@@ -161,7 +161,7 @@ class VlRandomizer final {
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
                                                                        // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
-    std::unordered_map<size_t, std::string> seen_values;
+    std::map<size_t, std::string> seen_values; // Record String Index to avoid conflicts
     const VlQueue<CData>* m_randmode;  // rand_mode state;
 
     // PRIVATE METHODS
@@ -234,19 +234,6 @@ public:
                           std::vector<size_t> indices) {
         const std::string key = generateKey(name, idx);
         m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices);
-        /*
-        std::cout << "Debugging m_arr_vars insertion:" << std::endl;
-        std::cout << "Key: " << key << std::endl;
-        std::cout << "Name: " << name << std::endl;
-        std::cout << "Var Address: " << &var << std::endl;
-        std::cout << "Idx: " << idx << std::endl;
-
-        // Output the contents of indices
-        for (size_t i = 0; i < indices.size(); ++i) {
-            std::cout << indices[i] << " ";
-        }
-        std::cout << " " << std::endl;
-        */
         ++idx;
     }
     template <typename T>
@@ -276,20 +263,18 @@ public:
     template <typename T_Key, typename T_Value>
     void record_arr_table(VlAssocArray<T_Key, T_Value>& var, const std::string name, int dimension,
                           std::vector<size_t> indices) {
-        std::cout << "Size: " << var.size() << std::endl;
-        if ((dimension > 0)) {
-            //&& (var.size() != 0)) {
+        if ((dimension > 0) && (var.size() != 0)) {
             int count = 0;
             for (auto it = var.begin(); it != var.end(); ++it) {
                 const T_Key& key = it->first;
                 std::cout << key << std::endl;
                 const T_Value& value = it->second;
-                if constexpr (std::is_integral<T_Key>::value) {
+                if (std::is_integral<T_Key>::value) {
                     const std::string indexed_name = name + "[" + std::to_string(key) + "]";
                     indices.push_back(key);
                     record_arr_table(var.at(key), indexed_name, dimension - 1, indices);
                     indices.pop_back();
-                } else if constexpr (std::is_same<T_Key, std::string>::value) {
+                } else if (std::is_same<T_Key, std::string>::value) {
                     const std::string indexed_name
                         = name + "[" + std::to_string(string_to_integral(key)) + "]";
                     indices.push_back(string_to_integral(key));
@@ -297,7 +282,7 @@ public:
                     indices.pop_back();
                 } else {
                     VL_FATAL_MT(__FILE__, __LINE__, "randomize",
-                                "Unsupported: Only integral index of associative array is "
+                                "Unsupported: Only integral and string index of associative array is "
                                 "supported currently.");
                 }
             }
@@ -316,7 +301,6 @@ public:
         seen_values[result] = str;
         std::ostringstream oss;
         oss << "#x" << std::hex << std::setfill('0') << result;
-        std::cout << oss.str() << " " << result << std::endl;
         return result;
     }
     void hard(std::string&& constraint);
