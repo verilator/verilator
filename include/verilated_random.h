@@ -101,7 +101,8 @@ public:
         const std::string indexed_name = name() + std::to_string(idx);
         const auto it = m_arrVarsRefp->find(indexed_name);
         if (it != m_arrVarsRefp->end()) return it->second->m_datap;
-        return nullptr;
+        VL_FATAL_MT(__FILE__, __LINE__, "randomize",
+                "Error: indexed_name not found in m_arr_vars");
     }
     void emitSelect(std::ostream& s, const std::vector<size_t>& indices) const {
         for (size_t idx = 0; idx < indices.size(); ++idx) s << "(select ";
@@ -173,26 +174,7 @@ public:
     // METHODS
     // Finds the next solution satisfying the constraints
     bool next(VlRNG& rngr);
-    bool is_integral_type(const std::type_info& type) {
-        return (type == typeid(int) || type == typeid(unsigned int) || type == typeid(short)
-                || type == typeid(unsigned short) || type == typeid(long)
-                || type == typeid(unsigned long) || type == typeid(long long)
-                || type == typeid(unsigned long long) || type == typeid(char)
-                || type == typeid(unsigned char));
-    }
-    size_t string_to_integral(const std::string& str) {
-        size_t result = 0;
-        for (char c : str) {
-            result = (result << 8) | static_cast<size_t>(c);
-            result &= 0xFFFFFFFF;
-        }
-        if (seen_values.count(result) > 0 && seen_values[result] != str) {
-            VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                       "Conflict detected: Different strings mapped to the same 32-bit index.");
-        }
-        seen_values[result] = str;
-        return result;
-    }
+
     template <typename T>
     void write_var(T& var, int width, const char* name, int dimension,
                    std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
@@ -316,6 +298,18 @@ public:
         VL_FATAL_MT(__FILE__, __LINE__, "randomize",
                     "Unsupported: Only integral and string index of associative array is "
                     "supported currently.");
+    }
+    size_t string_to_integral(const std::string& str) {
+        size_t result = 0;
+        for (char c : str) {
+            result = (result << 8) | static_cast<size_t>(c);
+            result &= 0xFFFFFFFF;
+        }
+        if (seen_values.count(result) > 0 && seen_values[result] != str)
+            VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                       "Conflict detected: Different strings mapped to the same 32-bit index.");
+        seen_values[result] = str;
+        return result;
     }
     void hard(std::string&& constraint);
     void clear();
