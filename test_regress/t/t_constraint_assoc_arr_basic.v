@@ -8,7 +8,7 @@ class AssocArrTest;
 
     rand int int_index_arr [int];
     rand int string_index_arr [string];
-
+    /* verilator lint_off SIDEEFFECT */
     // Constraints for both arrays
     constraint int_index_constraints {
         foreach (int_index_arr[i]) int_index_arr[i] inside {10, 20, 30, 40};
@@ -40,14 +40,17 @@ class AssocArrTest;
                 (name == "Charlie" && string_index_arr[name] <= 25)) $stop;
         end
     endfunction
+    /* verilator lint_off SIDEEFFECT */
 endclass
 
 module t_constraint_assoc_arr_basic;
 
     AssocArrTest test_obj;
+    int success;
     initial begin
         test_obj = new();
-        if (!test_obj.randomize()) $stop;
+        success = test_obj.randomize();
+        if (success == 0) $stop;
 
         test_obj.check_and_display();
         $write("*-* All Finished *-*\n");

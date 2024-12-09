@@ -27,12 +27,9 @@
 
 #include "verilated.h"
 
-#include <cstddef>
-#include <iomanip>
 #include <iostream>
 #include <ostream>
-#include <sstream>
-#include <string>
+
 //=============================================================================
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
 class ArrayInfo final {
@@ -176,6 +173,31 @@ public:
     // METHODS
     // Finds the next solution satisfying the constraints
     bool next(VlRNG& rngr);
+    bool is_integral_type(const std::type_info& type) {
+        return (type == typeid(int) ||
+                type == typeid(unsigned int) ||
+                type == typeid(short) ||
+                type == typeid(unsigned short) ||
+                type == typeid(long) ||
+                type == typeid(unsigned long) ||
+                type == typeid(long long) ||
+                type == typeid(unsigned long long) ||
+                type == typeid(char) ||
+                type == typeid(unsigned char));
+    }
+    size_t string_to_integral(const std::string& str) {
+        size_t result = 0;
+        for (char c : str) {
+            result = (result << 8) | static_cast<size_t>(c);
+            result &= 0xFFFFFFFF;
+        }
+        if (seen_values.count(result) > 0 && seen_values[result] != str) {
+            VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                       "Conflict detected: Different strings mapped to the same 32-bit index.");
+        }
+        seen_values[result] = str;
+        return result;
+    }
     template <typename T>
     void write_var(T& var, int width, const char* name, int dimension,
                    std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
@@ -267,42 +289,33 @@ public:
             int count = 0;
             for (auto it = var.begin(); it != var.end(); ++it) {
                 const T_Key& key = it->first;
-                std::cout << key << std::endl;
                 const T_Value& value = it->second;
-                if (std::is_integral<T_Key>::value) {
-                    const std::string indexed_name = name + "[" + std::to_string(key) + "]";
-                    indices.push_back(key);
-                    record_arr_table(var.at(key), indexed_name, dimension - 1, indices);
-                    indices.pop_back();
-                } else if (std::is_same<T_Key, std::string>::value) {
-                    const std::string indexed_name
-                        = name + "[" + std::to_string(string_to_integral(key)) + "]";
-                    indices.push_back(string_to_integral(key));
-                    record_arr_table(var.at(key), indexed_name, dimension - 1, indices);
-                    indices.pop_back();
-                } else {
-                    VL_FATAL_MT(
-                        __FILE__, __LINE__, "randomize",
-                        "Unsupported: Only integral and string index of associative array is "
-                        "supported currently.");
-                }
+                std::string indexed_name;
+                size_t integral_index;
+                process_key(key, indexed_name, integral_index, name);
+                indices.push_back(integral_index);
+                record_arr_table(var.at(key), indexed_name, dimension - 1, indices);
+                indices.pop_back();
             }
         }
     }
-    size_t string_to_integral(const std::string& str) {
-        size_t result = 0;
-        for (char c : str) {
-            result = (result << 8) | static_cast<size_t>(c);
-            result &= 0xFFFFFFFF;
-        }
-        if (seen_values.count(result) > 0 && seen_values[result] != str) {
-            VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                       "Conflict detected: Different strings mapped to the same 32-bit index.");
-        }
-        seen_values[result] = str;
-        std::ostringstream oss;
-        oss << "#x" << std::hex << std::setfill('0') << result;
-        return result;
+    template <typename T_Key>
+    typename std::enable_if<std::is_integral<T_Key>::value>::type
+    process_key(const T_Key& key, std::string& indexed_name, size_t& integral_index, const std::string& base_name) {
+        integral_index = static_cast<size_t>(key);
+        indexed_name = base_name + "[" + std::to_string(integral_index) + "]";
+    }
+    template <typename T_Key>
+    typename std::enable_if<std::is_same<T_Key, std::string>::value>::type
+    process_key(const T_Key& key, std::string& indexed_name, size_t& integral_index, const std::string& base_name) {
+        integral_index = string_to_integral(key);
+        indexed_name = base_name + "[" + std::to_string(integral_index) + "]";
+    }
+    template <typename T_Key>
+    typename std::enable_if<!std::is_integral<T_Key>::value && !std::is_same<T_Key, std::string>::value>::type
+    process_key(const T_Key& key, std::string& indexed_name, size_t& integral_index, const std::string& base_name) {
+        VL_FATAL_MT(__FILE__, __LINE__, "randomize",
+                "Unsupported: Only integral and string index of associative array is supported currently.");
     }
     void hard(std::string&& constraint);
     void clear();
