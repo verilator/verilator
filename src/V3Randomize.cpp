@@ -724,7 +724,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         editSMT(nodep, nodep->fromp(), lsbp, msbp);
     }
-    void visit(AstAssocSel* nodep) {
+    void visit(AstAssocSel* nodep) override {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
         if (VN_IS(nodep->bitp(), CvtPackString)) {
