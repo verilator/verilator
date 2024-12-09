@@ -27,13 +27,12 @@
 
 #include "verilated.h"
 
+#include <cstddef>
+#include <iomanip>
 #include <iostream>
 #include <ostream>
-#include <iostream>
-#include <string>
 #include <sstream>
-#include <iomanip>
-#include <cstddef>
+#include <string>
 //=============================================================================
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
 class ArrayInfo final {
@@ -211,8 +210,9 @@ public:
     void write_var(VlAssocArray<T_Key, T_Value>& var, int width, const char* name, int dimension,
                    std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
-        m_vars[name] = std::make_shared<const VlRandomArrayVarTemplate<VlAssocArray<T_Key, T_Value>>>(
-            name, width, &var, dimension, randmodeIdx);
+        m_vars[name]
+            = std::make_shared<const VlRandomArrayVarTemplate<VlAssocArray<T_Key, T_Value>>>(
+                name, width, &var, dimension, randmodeIdx);
         if (dimension > 0) {
             idx = 0;
             record_arr_table(var, name, dimension, {});
@@ -277,7 +277,7 @@ public:
     void record_arr_table(VlAssocArray<T_Key, T_Value>& var, const std::string name, int dimension,
                           std::vector<size_t> indices) {
         std::cout << "Size: " << var.size() << std::endl;
-        if ((dimension > 0) ){
+        if ((dimension > 0)) {
             //&& (var.size() != 0)) {
             int count = 0;
             for (auto it = var.begin(); it != var.end(); ++it) {
@@ -290,13 +290,15 @@ public:
                     record_arr_table(var.at(key), indexed_name, dimension - 1, indices);
                     indices.pop_back();
                 } else if constexpr (std::is_same<T_Key, std::string>::value) {
-                    const std::string indexed_name = name + "[" + std::to_string(string_to_integral(key)) + "]";
+                    const std::string indexed_name
+                        = name + "[" + std::to_string(string_to_integral(key)) + "]";
                     indices.push_back(string_to_integral(key));
                     record_arr_table(var.at(key), indexed_name, dimension - 1, indices);
                     indices.pop_back();
                 } else {
                     VL_FATAL_MT(__FILE__, __LINE__, "randomize",
-                                "Unsupported: Only integral index of associative array is supported currently.");
+                                "Unsupported: Only integral index of associative array is "
+                                "supported currently.");
                 }
             }
         }
@@ -309,7 +311,7 @@ public:
         }
         if (seen_values.count(result) > 0 && seen_values[result] != str) {
             VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                   "Conflict detected: Different strings mapped to the same 32-bit index.");
+                       "Conflict detected: Different strings mapped to the same 32-bit index.");
         }
         seen_values[result] = str;
         std::ostringstream oss;

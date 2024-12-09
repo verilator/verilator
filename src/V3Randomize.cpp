@@ -733,12 +733,10 @@ class ConstraintExprVisitor final : public VNVisitor {
             VNRelinker handle;
             AstNodeExpr* const strIdxp
                 = new AstSFormatF{fl, "#x%8x", false,
-                    new AstAnd{
-                        fl, 
-                        stringp->lhsp()->unlinkFrBack(&handle), 
-                        new AstConst(fl, 0xFFFFFFFF) // Apply 32-bit mask
-                        }
-                    };
+                                  new AstAnd{
+                                      fl, stringp->lhsp()->unlinkFrBack(&handle),
+                                      new AstConst(fl, 0xFFFFFFFF)  // Apply 32-bit mask
+                                  }};
             handle.relink(strIdxp);
             editSMT(nodep, nodep->fromp(), strIdxp);
         } else {
