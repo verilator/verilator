@@ -929,8 +929,6 @@ void EmitCSyms::emitSymImp() {
             checkSplit(true);
             AstScope* const scopep = it->second.m_scopep;
             AstVar* const varp = it->second.m_varp;
-            //
-            int pwidth = 1;
             int pdim = 0;
             int udim = 0;
             string bounds;
@@ -944,12 +942,10 @@ void EmitCSyms::emitSymImp() {
                         bounds += cvtToStr(adtypep->left());
                         bounds += ",";
                         bounds += cvtToStr(adtypep->right());
-                        if (VN_IS(dtypep, PackArrayDType)) {
+                        if (VN_IS(dtypep, PackArrayDType))
                             pdim++;
-                            pwidth *= adtypep->elementsConst();
-                        } else {
+                        else
                             udim++;
-                        }
                         dtypep = adtypep->subDTypep();
                     } else {
                         if (basicp->isRanged()) {
@@ -958,17 +954,12 @@ void EmitCSyms::emitSymImp() {
                             bounds += ",";
                             bounds += cvtToStr(basicp->lo());
                             pdim++;
-                            pwidth *= basicp->elements();
                         }
                         break;  // AstBasicDType - nothing below, 1
                     }
                 }
             }
 
-            if (pdim == 0) {
-                pdim = 1;
-                bounds += " ,0,0";
-            }
 
             putns(scopep, protect("__Vscope_" + it->second.m_scopeName));
             putns(varp, ".varInsert(__Vfinal,");
