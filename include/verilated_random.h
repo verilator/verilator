@@ -102,7 +102,7 @@ public:
         const auto it = m_arrVarsRefp->find(indexed_name);
         if (it != m_arrVarsRefp->end()) return it->second->m_datap;
         VL_FATAL_MT(__FILE__, __LINE__, "randomize",
-                "Error: indexed_name not found in m_arr_vars");
+                    "Error: indexed_name not found in m_arr_vars");
     }
     void emitSelect(std::ostream& s, const std::vector<size_t>& indices) const {
         for (size_t idx = 0; idx < indices.size(); ++idx) s << "(select ";
