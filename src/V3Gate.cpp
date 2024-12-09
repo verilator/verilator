@@ -681,8 +681,44 @@ class GateInline final {
     std::unordered_map<AstNode*, size_t> m_hasPending;
     size_t m_statInlined = 0;  // Statistic tracking - signals inlined
     size_t m_statRefs = 0;  // Statistic tracking
+    size_t m_statExcluded = 0;  // Statistic tracking
 
     // METHODS
+    static bool isCheapWide(const AstNodeExpr* exprp) {
+        if (const AstSel* const selp = VN_CAST(exprp, Sel)) {
+            if (selp->lsbConst() % VL_EDATASIZE != 0) return false;
+            exprp = selp->fromp();
+        }
+        if (const AstArraySel* const aselp = VN_CAST(exprp, ArraySel)) exprp = aselp->fromp();
+        return VN_IS(exprp, Const) || VN_IS(exprp, NodeVarRef);
+    }
+    static bool excludedWide(GateVarVertex* const vVtxp, const AstNodeExpr* const rhsp) {
+        // Handle wides with logic drivers that are too wide for V3Expand.
+        if (!vVtxp->varScp()->isWide()  //
+            || vVtxp->varScp()->widthWords() <= v3Global.opt.expandLimit()  //
+            || vVtxp->inEmpty()  //
+            || isCheapWide(rhsp))
+            return false;
+
+        const GateLogicVertex* const lVtxp
+            = vVtxp->inEdges().frontp()->fromp()->as<GateLogicVertex>();
+
+        // Exclude from inlining variables READ multiple times.
+        // To decouple actives thus simplifying scheduling, exclude only those
+        // VarRefs that are referenced under the same active as they were assigned.
+        if (const AstActive* const primaryActivep = lVtxp->activep()) {
+            size_t reads = 0;
+            for (const V3GraphEdge& edge : vVtxp->outEdges()) {
+                const GateLogicVertex* const lvp = edge.top()->as<GateLogicVertex>();
+                if (lvp->activep() != primaryActivep) continue;
+
+                reads += edge.weight();
+                if (reads > 1) return true;
+            }
+        }
+        return false;
+    }
+
     void recordSubstitution(AstVarScope* vscp, AstNodeExpr* substp, AstNode* logicp) {
         m_hasPending.emplace(logicp, ++m_ord);  // It's OK if already present
         const auto pair = m_substitutions(logicp).emplace(vscp, nullptr);
@@ -777,6 +813,12 @@ class GateInline final {
             if (!okVisitor.isSimple()) continue;
             // If the varScope is already removed from logicp, no need to try substitution.
             if (!okVisitor.varAssigned(vVtxp->varScp())) continue;
+            if (excludedWide(vVtxp, okVisitor.substitutionp())) {
+                ++m_statExcluded;
+                UINFO(9, "Gate inline exclude '" << vVtxp->name() << "'" << endl);
+                vVtxp->clearReducible("Excluded wide");  // Check once.
+                continue;
+            }
 
             // Does it read multiple source variables?
             if (okVisitor.readVscps().size() > 1) {
@@ -876,6 +918,7 @@ class GateInline final {
     ~GateInline() {
         V3Stats::addStat("Optimizations, Gate sigs deleted", m_statInlined);
         V3Stats::addStat("Optimizations, Gate inputs replaced", m_statRefs);
+        V3Stats::addStat("Optimizations, Gate excluded wide expressions", m_statExcluded);
     }
 
 public:
