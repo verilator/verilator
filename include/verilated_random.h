@@ -174,16 +174,11 @@ public:
     // Finds the next solution satisfying the constraints
     bool next(VlRNG& rngr);
     bool is_integral_type(const std::type_info& type) {
-        return (type == typeid(int) ||
-                type == typeid(unsigned int) ||
-                type == typeid(short) ||
-                type == typeid(unsigned short) ||
-                type == typeid(long) ||
-                type == typeid(unsigned long) ||
-                type == typeid(long long) ||
-                type == typeid(unsigned long long) ||
-                type == typeid(char) ||
-                type == typeid(unsigned char));
+        return (type == typeid(int) || type == typeid(unsigned int) || type == typeid(short)
+                || type == typeid(unsigned short) || type == typeid(long)
+                || type == typeid(unsigned long) || type == typeid(long long)
+                || type == typeid(unsigned long long) || type == typeid(char)
+                || type == typeid(unsigned char));
     }
     size_t string_to_integral(const std::string& str) {
         size_t result = 0;
@@ -301,21 +296,26 @@ public:
     }
     template <typename T_Key>
     typename std::enable_if<std::is_integral<T_Key>::value>::type
-    process_key(const T_Key& key, std::string& indexed_name, size_t& integral_index, const std::string& base_name) {
+    process_key(const T_Key& key, std::string& indexed_name, size_t& integral_index,
+                const std::string& base_name) {
         integral_index = static_cast<size_t>(key);
         indexed_name = base_name + "[" + std::to_string(integral_index) + "]";
     }
     template <typename T_Key>
     typename std::enable_if<std::is_same<T_Key, std::string>::value>::type
-    process_key(const T_Key& key, std::string& indexed_name, size_t& integral_index, const std::string& base_name) {
+    process_key(const T_Key& key, std::string& indexed_name, size_t& integral_index,
+                const std::string& base_name) {
         integral_index = string_to_integral(key);
         indexed_name = base_name + "[" + std::to_string(integral_index) + "]";
     }
     template <typename T_Key>
-    typename std::enable_if<!std::is_integral<T_Key>::value && !std::is_same<T_Key, std::string>::value>::type
-    process_key(const T_Key& key, std::string& indexed_name, size_t& integral_index, const std::string& base_name) {
+    typename std::enable_if<!std::is_integral<T_Key>::value
+                            && !std::is_same<T_Key, std::string>::value>::type
+    process_key(const T_Key& key, std::string& indexed_name, size_t& integral_index,
+                const std::string& base_name) {
         VL_FATAL_MT(__FILE__, __LINE__, "randomize",
-                "Unsupported: Only integral and string index of associative array is supported currently.");
+                    "Unsupported: Only integral and string index of associative array is "
+                    "supported currently.");
     }
     void hard(std::string&& constraint);
     void clear();
