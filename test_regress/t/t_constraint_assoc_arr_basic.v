@@ -11,7 +11,7 @@ class AssocArrTest;
     /* verilator lint_off SIDEEFFECT */
     // Constraints for both arrays
     constraint int_index_constraints {
-        foreach (int_index_arr[i]) int_index_arr[i] inside {10, 20, 30, 40};
+        foreach (int_index_arr[i]) int_index_arr[i] inside {10, 20, 30, 40, 50};
     }
     constraint string_index_constraints {
         string_index_arr["Alice"] == 35;
@@ -21,7 +21,7 @@ class AssocArrTest;
 
     // Constructor to initialize arrays
     function new();
-        int_index_arr = '{1: 10, 2: 20, 3: 30};
+        int_index_arr = '{1: 0, 8: 0, 7: 0};
         string_index_arr = '{"Alice": 25, "Bob": 50, "Charlie": 45};
     endfunction
 
@@ -30,7 +30,7 @@ class AssocArrTest;
 
         foreach (int_index_arr[i]) begin
             $display("int_index_arr[%0d] = %0d", i, int_index_arr[i]);
-            if (!(int_index_arr[i] inside {10, 20, 30, 40})) $stop;
+            if (!(int_index_arr[i] inside {10, 20, 30, 40, 50})) $stop;
         end
 
         foreach (string_index_arr[name]) begin
