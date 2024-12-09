@@ -161,7 +161,7 @@ class VlRandomizer final {
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
                                                                        // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
-    std::map<size_t, std::string> seen_values; // Record String Index to avoid conflicts
+    std::map<size_t, std::string> seen_values;  // Record String Index to avoid conflicts
     const VlQueue<CData>* m_randmode;  // rand_mode state;
 
     // PRIVATE METHODS
@@ -281,9 +281,10 @@ public:
                     record_arr_table(var.at(key), indexed_name, dimension - 1, indices);
                     indices.pop_back();
                 } else {
-                    VL_FATAL_MT(__FILE__, __LINE__, "randomize",
-                                "Unsupported: Only integral and string index of associative array is "
-                                "supported currently.");
+                    VL_FATAL_MT(
+                        __FILE__, __LINE__, "randomize",
+                        "Unsupported: Only integral and string index of associative array is "
+                        "supported currently.");
                 }
             }
         }
