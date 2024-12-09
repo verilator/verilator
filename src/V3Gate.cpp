@@ -684,26 +684,26 @@ class GateInline final {
     size_t m_statExcluded = 0;  // Statistic tracking
 
     // METHODS
-    static bool isCheapWide(const GateLogicVertex* const lVtxp, const AstNodeExpr* const rhsp) {
-        if (const AstSel* const selp = VN_CAST(rhsp, Sel)) {
-            if (selp->lsbConst() % VL_EDATASIZE == 0) return true;
+    static bool isCheapWide(const AstNodeExpr* exprp) {
+        if (const AstSel* const selp = VN_CAST(exprp, Sel)) {
+            if (selp->lsbConst() % VL_EDATASIZE != 0) return false;
+            exprp = selp->fromp();
         }
-        return lVtxp->slow() || VN_IS(rhsp, NodeVarRef) || VN_IS(rhsp, Const)
-               || VN_IS(rhsp, ArraySel);
+        if (const AstArraySel* const aselp = VN_CAST(exprp, ArraySel)) exprp = aselp->fromp();
+        return VN_IS(exprp, Const) || VN_IS(exprp, NodeVarRef);
     }
     static bool excludedWide(GateVarVertex* const vVtxp, const AstNodeExpr* const rhsp) {
-        // Handle wides with logic drivers.
-        if (!vVtxp->varScp()->isWide() || vVtxp->inEmpty()
-            || vVtxp->varScp()->widthWords() <= v3Global.opt.expandLimit())
+        // Handle wides with logic drivers that are too wide for V3Expand.
+        if (!vVtxp->varScp()->isWide()  //
+            || vVtxp->varScp()->widthWords() <= v3Global.opt.expandLimit()  //
+            || vVtxp->inEmpty()  //
+            || isCheapWide(rhsp))
             return false;
 
         const GateLogicVertex* const lVtxp
             = vVtxp->inEdges().frontp()->fromp()->as<GateLogicVertex>();
 
-        if (isCheapWide(lVtxp, rhsp)) return false;
-
-        // Exclude from inlining variables READ multiple times that are initialized by wide
-        // assigns.
+        // Exclude from inlining variables READ multiple times.
         // To decouple actives thus simplifying scheduling, exclude only those
         // VarRefs that are referenced under the same active as they were assigned.
         if (const AstActive* const primaryActivep = lVtxp->activep()) {
