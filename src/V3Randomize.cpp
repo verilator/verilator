@@ -725,17 +725,24 @@ class ConstraintExprVisitor final : public VNVisitor {
         editSMT(nodep, nodep->fromp(), lsbp, msbp);
     }
     void visit(AstAssocSel* nodep) {
-        cout << "The assocsel" << nodep << endl;
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
-        if (nodep->fromp()->user1()) {
-            iterateChildren(nodep);
-            AstNodeExpr* const argsp
-                = AstNode::addNext(nodep->fromp()->unlinkFrBack(), nodep->bitp()->unlinkFrBack());
-            AstSFormatF* const newp = new AstSFormatF{fl, "(select %@ %@)", false, argsp};
-            nodep->replaceWith(newp);
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            return;
+        if (VN_IS(nodep->bitp(), CvtPackString)) {
+            // Extract and truncate the string index to fit within 32 bits
+            AstCvtPackString* const stringp = VN_AS(nodep->bitp(), CvtPackString);
+            VNRelinker handle;
+            AstNodeExpr* const strIdxp
+                = new AstSFormatF{fl, "#x%8x", false,
+                    new AstAnd{
+                        fl, 
+                        stringp->lhsp()->unlinkFrBack(&handle), 
+                        new AstConst(fl, 0xFFFFFFFF) // Apply 32-bit mask
+                        }
+                    };
+            handle.relink(strIdxp);
+            editSMT(nodep, nodep->fromp(), strIdxp);
+        } else {
+            editSMT(nodep, nodep->fromp(), nodep->bitp());
         }
     }
     void visit(AstArraySel* nodep) override {

@@ -29,6 +29,11 @@
 
 #include <iostream>
 #include <ostream>
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <cstddef>
 //=============================================================================
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
 class ArrayInfo final {
@@ -90,136 +95,17 @@ public:
         return count;
     }
 };
-
 template <typename T>
-class VlRandomQueueVar final : public VlRandomVar {
+class VlRandomArrayVarTemplate : public VlRandomVar {
 public:
-    VlRandomQueueVar(const char* name, int width, void* datap, int dimension,
-                     std::uint32_t randModeIdx)
+    VlRandomArrayVarTemplate(const char* name, int width, void* datap, int dimension,
+                             std::uint32_t randModeIdx)
         : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
     void* datap(int idx) const override {
         const std::string indexed_name = name() + std::to_string(idx);
         const auto it = m_arrVarsRefp->find(indexed_name);
         if (it != m_arrVarsRefp->end()) return it->second->m_datap;
-        return &static_cast<T*>(VlRandomVar::datap(idx))->atWrite(idx);
-    }
-    void emitSelect(std::ostream& s, const std::vector<size_t>& indices) const {
-        for (size_t idx = 0; idx < indices.size(); ++idx) s << "(select ";
-        s << name();
-        for (size_t idx = 0; idx < indices.size(); ++idx) {
-            s << " #x";
-            for (int j = 28; j >= 0; j -= 4) {
-                s << "0123456789abcdef"[(indices[idx] >> j) & 0xf];
-            }
-            s << ")";
-        }
-    }
-    void emitGetValue(std::ostream& s) const override {
-        const int elementCounts = countMatchingElements(*m_arrVarsRefp, name());
-        for (int i = 0; i < elementCounts; i++) {
-            const std::string indexed_name = name() + std::to_string(i);
-            const auto it = m_arrVarsRefp->find(indexed_name);
-            if (it != m_arrVarsRefp->end()) {
-                const std::vector<size_t>& indices = it->second->m_indices;
-                emitSelect(s, indices);
-            }
-        }
-    }
-    void emitType(std::ostream& s) const override {
-        if (dimension() > 0) {
-            for (int i = 0; i < dimension(); ++i) s << "(Array (_ BitVec 32) ";
-            s << "(_ BitVec " << width() << ")";
-            for (int i = 0; i < dimension(); ++i) s << ")";
-        }
-    }
-    int totalWidth() const override {
-        const int elementCounts = countMatchingElements(*m_arrVarsRefp, name());
-        return width() * elementCounts;
-    }
-    void emitExtract(std::ostream& s, int i) const override {
-        const int j = i / width();
-        i = i % width();
-        s << " ((_ extract " << i << ' ' << i << ')';
-        const std::string indexed_name = name() + std::to_string(j);
-        const auto it = m_arrVarsRefp->find(indexed_name);
-        if (it != m_arrVarsRefp->end()) {
-            const std::vector<size_t>& indices = it->second->m_indices;
-            emitSelect(s, indices);
-        }
-        s << ')';
-    }
-};
-
-template <typename T>
-class VlRandomArrayVar final : public VlRandomVar {
-public:
-    VlRandomArrayVar(const char* name, int width, void* datap, int dimension,
-                     std::uint32_t randModeIdx)
-        : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
-    void* datap(int idx) const override {
-        const std::string indexed_name = name() + std::to_string(idx);
-        const auto it = m_arrVarsRefp->find(indexed_name);
-        if (it != m_arrVarsRefp->end()) return it->second->m_datap;
-        return &static_cast<T*>(VlRandomVar::datap(idx))->operator[](idx);
-    }
-    void emitSelect(std::ostream& s, const std::vector<size_t>& indices) const {
-        for (size_t idx = 0; idx < indices.size(); ++idx) s << "(select ";
-        s << name();
-        for (size_t idx = 0; idx < indices.size(); ++idx) {
-            s << " #x";
-            for (int j = 28; j >= 0; j -= 4) {
-                s << "0123456789abcdef"[(indices[idx] >> j) & 0xf];
-            }
-            s << ")";
-        }
-    }
-    void emitGetValue(std::ostream& s) const override {
-        const int elementCounts = countMatchingElements(*m_arrVarsRefp, name());
-        for (int i = 0; i < elementCounts; i++) {
-            const std::string indexed_name = name() + std::to_string(i);
-            const auto it = m_arrVarsRefp->find(indexed_name);
-            if (it != m_arrVarsRefp->end()) {
-                const std::vector<size_t>& indices = it->second->m_indices;
-                emitSelect(s, indices);
-            }
-        }
-    }
-    void emitType(std::ostream& s) const override {
-        if (dimension() > 0) {
-            for (int i = 0; i < dimension(); ++i) s << "(Array (_ BitVec 32) ";
-            s << "(_ BitVec " << width() << ")";
-            for (int i = 0; i < dimension(); ++i) s << ")";
-        }
-    }
-    int totalWidth() const override {
-        const int elementCounts = countMatchingElements(*m_arrVarsRefp, name());
-        return width() * elementCounts;
-    }
-    void emitExtract(std::ostream& s, int i) const override {
-        const int j = i / width();
-        i = i % width();
-        s << " ((_ extract " << i << ' ' << i << ')';
-        const std::string indexed_name = name() + std::to_string(j);
-        const auto it = m_arrVarsRefp->find(indexed_name);
-        if (it != m_arrVarsRefp->end()) {
-            const std::vector<size_t>& indices = it->second->m_indices;
-            emitSelect(s, indices);
-        }
-        s << ')';
-    }
-};
-
-template <typename T>
-class VlRandomAssocVar final : public VlRandomVar {
-public:
-    VlRandomAssocVar(const char* name, int width, void* datap, int dimension,
-                     std::uint32_t randModeIdx)
-        : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
-    void* datap(int idx) const override {
-        const std::string indexed_name = name() + std::to_string(idx);
-        const auto it = m_arrVarsRefp->find(indexed_name);
-        if (it != m_arrVarsRefp->end()) return it->second->m_datap;
-        return &static_cast<T*>(VlRandomVar::datap(idx))->at(idx);
+        return nullptr;
     }
     void emitSelect(std::ostream& s, const std::vector<size_t>& indices) const {
         for (size_t idx = 0; idx < indices.size(); ++idx) s << "(select ";
@@ -276,6 +162,7 @@ class VlRandomizer final {
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
                                                                        // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
+    std::unordered_map<size_t, std::string> seen_values;
     const VlQueue<CData>* m_randmode;  // rand_mode state;
 
     // PRIVATE METHODS
@@ -302,7 +189,7 @@ public:
     void write_var(VlQueue<T>& var, int width, const char* name, int dimension,
                    std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
-        m_vars[name] = std::make_shared<const VlRandomQueueVar<VlQueue<T>>>(
+        m_vars[name] = std::make_shared<const VlRandomArrayVarTemplate<VlQueue<T>>>(
             name, width, &var, dimension, randmodeIdx);
         if (dimension > 0) {
             idx = 0;
@@ -313,25 +200,25 @@ public:
     void write_var(VlUnpacked<T, N_Depth>& var, int width, const char* name, int dimension,
                    std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
-        m_vars[name] = std::make_shared<const VlRandomArrayVar<VlUnpacked<T, N_Depth>>>(
+        m_vars[name] = std::make_shared<const VlRandomArrayVarTemplate<VlUnpacked<T, N_Depth>>>(
             name, width, &var, dimension, randmodeIdx);
         if (dimension > 0) {
             idx = 0;
             record_arr_table(var, name, dimension, {});
         }
     }
-    template <typename T, typename V>
-    void write_var(VlAssocArray<T, V>& var, int width, const char* name, int dimension,
+    template <typename T_Key, typename T_Value>
+    void write_var(VlAssocArray<T_Key, T_Value>& var, int width, const char* name, int dimension,
                    std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
-        m_vars[name] = std::make_shared<const VlRandomAssocVar<VlAssocArray<T, V>>>(
+        m_vars[name] = std::make_shared<const VlRandomArrayVarTemplate<VlAssocArray<T_Key, T_Value>>>(
             name, width, &var, dimension, randmodeIdx);
         if (dimension > 0) {
             idx = 0;
             record_arr_table(var, name, dimension, {});
         }
     }
-    int idx = 0;
+    int idx;
     std::string generateKey(const std::string& name, int idx) {
         if (!name.empty() && name[0] == '\\') {
             const size_t space_pos = name.find(' ');
@@ -347,7 +234,20 @@ public:
                           std::vector<size_t> indices) {
         const std::string key = generateKey(name, idx);
         m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices);
-        idx += 1;
+        /*
+        std::cout << "Debugging m_arr_vars insertion:" << std::endl;
+        std::cout << "Key: " << key << std::endl;
+        std::cout << "Name: " << name << std::endl;
+        std::cout << "Var Address: " << &var << std::endl;
+        std::cout << "Idx: " << idx << std::endl;
+
+        // Output the contents of indices
+        for (size_t i = 0; i < indices.size(); ++i) {
+            std::cout << indices[i] << " ";
+        }
+        std::cout << " " << std::endl;
+        */
+        ++idx;
     }
     template <typename T>
     void record_arr_table(VlQueue<T>& var, const std::string name, int dimension,
@@ -359,10 +259,6 @@ public:
                 record_arr_table(var.atWrite(i), indexed_name, dimension - 1, indices);
                 indices.pop_back();
             }
-        } else {
-            const std::string key = generateKey(name, idx);
-            m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices);
-            ++idx;
         }
     }
     template <typename T, std::size_t N_Depth>
@@ -375,27 +271,51 @@ public:
                 record_arr_table(var.operator[](i), indexed_name, dimension - 1, indices);
                 indices.pop_back();
             }
-        } else {
-            const std::string key = generateKey(name, idx);
-            m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices);
-            idx += 1;
         }
     }
-    template <typename T, typename V>
-    void record_arr_table(VlAssocArray<T, V>& var, const std::string name, int dimension,
+    template <typename T_Key, typename T_Value>
+    void record_arr_table(VlAssocArray<T_Key, T_Value>& var, const std::string name, int dimension,
                           std::vector<size_t> indices) {
-        if ((dimension > 0) && (var.size() != 0)) {
-            for (size_t i = 0; i < var.size(); ++i) {
-                const std::string indexed_name = name + "[" + std::to_string(i) + "]";
-                indices.push_back(i);
-                record_arr_table(var.at(i), indexed_name, dimension - 1, indices);
-                indices.pop_back();
+        std::cout << "Size: " << var.size() << std::endl;
+        if ((dimension > 0) ){
+            //&& (var.size() != 0)) {
+            int count = 0;
+            for (auto it = var.begin(); it != var.end(); ++it) {
+                const T_Key& key = it->first;
+                std::cout << key << std::endl;
+                const T_Value& value = it->second;
+                if constexpr (std::is_integral<T_Key>::value) {
+                    const std::string indexed_name = name + "[" + std::to_string(key) + "]";
+                    indices.push_back(key);
+                    record_arr_table(var.at(key), indexed_name, dimension - 1, indices);
+                    indices.pop_back();
+                } else if constexpr (std::is_same<T_Key, std::string>::value) {
+                    const std::string indexed_name = name + "[" + std::to_string(string_to_integral(key)) + "]";
+                    indices.push_back(string_to_integral(key));
+                    record_arr_table(var.at(key), indexed_name, dimension - 1, indices);
+                    indices.pop_back();
+                } else {
+                    VL_FATAL_MT(__FILE__, __LINE__, "randomize",
+                                "Unsupported: Only integral index of associative array is supported currently.");
+                }
             }
-        } else {
-            const std::string key = generateKey(name, idx);
-            m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices);
-            idx += 1;
         }
+    }
+    size_t string_to_integral(const std::string& str) {
+        size_t result = 0;
+        for (char c : str) {
+            result = (result << 8) | static_cast<size_t>(c);
+            result &= 0xFFFFFFFF;
+        }
+        if (seen_values.count(result) > 0 && seen_values[result] != str) {
+            VL_WARN_MT(__FILE__, __LINE__, "randomize",
+                   "Conflict detected: Different strings mapped to the same 32-bit index.");
+        }
+        seen_values[result] = str;
+        std::ostringstream oss;
+        oss << "#x" << std::hex << std::setfill('0') << result;
+        std::cout << oss.str() << " " << result << std::endl;
+        return result;
     }
     void hard(std::string&& constraint);
     void clear();
