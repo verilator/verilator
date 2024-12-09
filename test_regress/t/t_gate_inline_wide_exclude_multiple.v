@@ -24,4 +24,3 @@ module t(
    assign o_multiple1 = wide_multiple_assigns | i + 1;
    assign o_multiple2 = wide_multiple_assigns | i + 2;
 endmodule
-
