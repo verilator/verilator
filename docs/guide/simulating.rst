@@ -224,14 +224,6 @@ at branches).  At each such branch, a counter is incremented.  At the end
 of a test, the counters, filename, and line number corresponding to each
 counter are written into the coverage file.
 
-Verilator automatically disables coverage of branches with a $stop in
-them, as it is assumed that $stop branches contain an error check that should
-not occur.  A :option:`/*verilator&32;coverage_block_off*/` metacomment
-will perform a similar function on any code in that block or below, or
-:option:`/*verilator&32;coverage_off*/` and
-:option:`/*verilator&32;coverage_on*/` will disable and enable coverage
-respectively around a block of code.
-
 Verilator may over-count combinatorial (non-clocked) blocks when those
 blocks receive signals which have had the :option:`UNOPTFLAT` warning
 disabled; for the most accurate results, do not disable this warning when
@@ -277,6 +269,22 @@ A :option:`/*verilator&32;coverage_off*/`
 :option:`/*verilator&32;coverage_on*/` metacomment pair can be used around
 signals that do not need toggle analysis, such as RAMs and register files.
 
+
+.. _Suppressing Coverage:
+
+Suppressing Coverage
+--------------------
+
+Using :option:`/*verilator&32;coverage_off*/` and
+:option:`/*verilator&32;coverage_on*/` around a block of code will disable
+and enable coverage respectively around that block. Or, use the
+:option:`coverage_block_off` configuration file option.
+
+Verilator automatically disables coverage of lines and branches with a
+$stop in them, as it is assumed that $stop branches contain an error check
+that should not occur.  A :option:`/*verilator&32;coverage_block_off*/`
+metacomment will perform a similar function on any code in that block or
+below.
 
 .. _Coverage Collection:
 
