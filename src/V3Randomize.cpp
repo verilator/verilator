@@ -731,17 +731,15 @@ class ConstraintExprVisitor final : public VNVisitor {
             // Extract and truncate the string index to fit within 64 bits
             AstCvtPackString* const stringp = VN_AS(nodep->bitp(), CvtPackString);
             VNRelinker handle;
-            AstNodeExpr* const strIdxp
-                = new AstSFormatF{fl, "#x%16x", false,
-                                  new AstAnd{
-                                      fl, stringp->lhsp()->unlinkFrBack(&handle),
-                                      new AstConst(fl, AstConst::Unsized64{}, 0xFFFFFFFFFFFFFFFF)
-                                  }};
+            AstNodeExpr* const strIdxp = new AstSFormatF{
+                fl, "#x%16x", false,
+                new AstAnd{fl, stringp->lhsp()->unlinkFrBack(&handle),
+                           new AstConst(fl, AstConst::Unsized64{}, 0xFFFFFFFFFFFFFFFF)}};
             handle.relink(strIdxp);
             editSMT(nodep, nodep->fromp(), strIdxp);
         } else {
             VNRelinker handle;
-            const int actual_width = nodep->bitp()->width(); // Get actual bit width
+            const int actual_width = nodep->bitp()->width();  // Get actual bit width
             std::string fmt;
             // Normalize to standard bit width
             if (actual_width <= 8) {
@@ -753,12 +751,14 @@ class ConstraintExprVisitor final : public VNVisitor {
             } else if (actual_width <= 64) {
                 fmt = "#x%16x";
             } else {
-                nodep->v3warn(CONSTRAINTIGN,
-                    "Unsupported: Verilator does not currently support associative array index widths of 64 bits or more during constraint randomization.");
+                nodep->v3warn(
+                    CONSTRAINTIGN,
+                    "Unsupported: Verilator does not currently support associative array index "
+                    "widths of 64 bits or more during constraint randomization.");
                 return;
             }
             AstNodeExpr* const idxp
-                    = new AstSFormatF{fl, fmt, false, nodep->bitp()->unlinkFrBack(&handle)};
+                = new AstSFormatF{fl, fmt, false, nodep->bitp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
             editSMT(nodep, nodep->fromp(), idxp);
         }

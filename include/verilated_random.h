@@ -39,9 +39,10 @@ public:
     void* const m_datap;  // Reference to the array variable data
     const int m_index;  // Flattened (1D) index of the array element
     const std::vector<size_t> m_indices;  // Multi-dimensional indices of the array element
-    const std::vector<size_t> m_idx_widths; // Multi-dimensional indices' bit widths
+    const std::vector<size_t> m_idx_widths;  // Multi-dimensional indices' bit widths
 
-    ArrayInfo(const std::string& name, void* datap, int index, const std::vector<size_t>& indices, const std::vector<size_t>& idx_widths)
+    ArrayInfo(const std::string& name, void* datap, int index, const std::vector<size_t>& indices,
+              const std::vector<size_t>& idx_widths)
         : m_name(name)
         , m_datap(datap)
         , m_index(index)
@@ -106,11 +107,12 @@ public:
             return it->second->m_datap;
         } else {
             VL_FATAL_MT(__FILE__, __LINE__, "randomize",
-                    "Error: indexed_name not found in m_arr_vars");
+                        "Error: indexed_name not found in m_arr_vars");
             return nullptr;
         }
     }
-    void emitSelect(std::ostream& s, const std::vector<size_t>& indices, const std::vector<size_t>& idx_widths) const {
+    void emitSelect(std::ostream& s, const std::vector<size_t>& indices,
+                    const std::vector<size_t>& idx_widths) const {
         for (size_t idx = 0; idx < indices.size(); ++idx) s << "(select ";
         s << name();
         for (size_t idx = 0; idx < indices.size(); ++idx) {
@@ -133,7 +135,7 @@ public:
                 emitSelect(s, indices, idx_widths);
             } else {
                 VL_FATAL_MT(__FILE__, __LINE__, "randomize",
-                    "Error: indexed_name not found in m_arr_vars");
+                            "Error: indexed_name not found in m_arr_vars");
             }
         }
     }
@@ -147,13 +149,11 @@ public:
                     s << "(Array (_ BitVec " << idx_widths[i] << ") ";
                 }
                 s << "(_ BitVec " << width() << ")";
-                for (int i = 0; i < dimension(); ++i) {
-                    s << ")";
-                }
+                for (int i = 0; i < dimension(); ++i) { s << ")"; }
             }
         } else {
             VL_FATAL_MT(__FILE__, __LINE__, "randomize",
-                    "Error: indexed_name not found in m_arr_vars");
+                        "Error: indexed_name not found in m_arr_vars");
         }
     }
     int totalWidth() const override {
@@ -172,7 +172,7 @@ public:
             emitSelect(s, indices, idx_widths);
         } else {
             VL_FATAL_MT(__FILE__, __LINE__, "randomize",
-                    "Error: indexed_name not found in m_arr_vars");
+                        "Error: indexed_name not found in m_arr_vars");
         }
         s << ')';
     }
@@ -215,7 +215,7 @@ public:
                 const std::string& base_name, size_t& idx_width) {
         integral_index = string_to_integral(key);
         indexed_name = base_name + "[" + std::to_string(integral_index) + "]";
-        idx_width = 64; // 64-bit mask
+        idx_width = 64;  // 64-bit mask
     }
     template <typename T_Key>
     typename std::enable_if<!std::is_integral<T_Key>::value
@@ -319,7 +319,8 @@ public:
             for (size_t i = 0; i < N_Depth; ++i) {
                 const std::string indexed_name = name + "[" + std::to_string(i) + "]";
                 indices.push_back(i);
-                record_arr_table(var.operator[](i), indexed_name, dimension - 1, indices, idx_widths);
+                record_arr_table(var.operator[](i), indexed_name, dimension - 1, indices,
+                                 idx_widths);
                 indices.pop_back();
             }
         }
