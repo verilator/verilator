@@ -739,7 +739,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             editSMT(nodep, nodep->fromp(), strIdxp);
         } else {
             VNRelinker handle;
-            const int actual_width = nodep->bitp()->width();  // Get actual bit width
+            const int actual_width = nodep->bitp()->width();
             std::string fmt;
             // Normalize to standard bit width
             if (actual_width <= 8) {
@@ -753,8 +753,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             } else {
                 nodep->v3warn(
                     CONSTRAINTIGN,
-                    "Unsupported: Verilator does not currently support associative array index "
-                    "widths of 64 bits or more during constraint randomization.");
+                    "Unsupported: Associative array index "
+                    "widths of more than 64 bits during constraint randomization.");
                 return;
             }
             AstNodeExpr* const idxp
