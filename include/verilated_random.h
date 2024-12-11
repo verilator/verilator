@@ -39,12 +39,14 @@ public:
     void* const m_datap;  // Reference to the array variable data
     const int m_index;  // Flattened (1D) index of the array element
     const std::vector<size_t> m_indices;  // Multi-dimensional indices of the array element
+    const std::vector<size_t> m_idx_widths; // Multi-dimensional indices' bit widths
 
-    ArrayInfo(const std::string& name, void* datap, int index, const std::vector<size_t>& indices)
+    ArrayInfo(const std::string& name, void* datap, int index, const std::vector<size_t>& indices, const std::vector<size_t>& idx_widths)
         : m_name(name)
         , m_datap(datap)
         , m_index(index)
-        , m_indices(indices) {}
+        , m_indices(indices)
+        , m_idx_widths(idx_widths) {}
 };
 using ArrayInfoMap = std::map<std::string, std::shared_ptr<const ArrayInfo>>;
 
@@ -100,17 +102,21 @@ public:
     void* datap(int idx) const override {
         const std::string indexed_name = name() + std::to_string(idx);
         const auto it = m_arrVarsRefp->find(indexed_name);
-        if (it != m_arrVarsRefp->end()) return it->second->m_datap;
-        VL_FATAL_MT(__FILE__, __LINE__, "randomize",
+        if (it != m_arrVarsRefp->end()) {
+            return it->second->m_datap;
+        } else {
+            VL_FATAL_MT(__FILE__, __LINE__, "randomize",
                     "Error: indexed_name not found in m_arr_vars");
-        return nullptr;
+            return nullptr;
+        }
     }
-    void emitSelect(std::ostream& s, const std::vector<size_t>& indices) const {
+    void emitSelect(std::ostream& s, const std::vector<size_t>& indices, const std::vector<size_t>& idx_widths) const {
         for (size_t idx = 0; idx < indices.size(); ++idx) s << "(select ";
         s << name();
         for (size_t idx = 0; idx < indices.size(); ++idx) {
             s << " #x";
-            for (int j = 28; j >= 0; j -= 4) {
+            size_t bit_width = idx_widths[idx];
+            for (int j = bit_width - 4; j >= 0; j -= 4) {
                 s << "0123456789abcdef"[(indices[idx] >> j) & 0xf];
             }
             s << ")";
@@ -123,15 +129,31 @@ public:
             const auto it = m_arrVarsRefp->find(indexed_name);
             if (it != m_arrVarsRefp->end()) {
                 const std::vector<size_t>& indices = it->second->m_indices;
-                emitSelect(s, indices);
+                const std::vector<size_t>& idx_widths = it->second->m_idx_widths;
+                emitSelect(s, indices, idx_widths);
+            } else {
+                VL_FATAL_MT(__FILE__, __LINE__, "randomize",
+                    "Error: indexed_name not found in m_arr_vars");
             }
         }
     }
     void emitType(std::ostream& s) const override {
-        if (dimension() > 0) {
-            for (int i = 0; i < dimension(); ++i) s << "(Array (_ BitVec 32) ";
-            s << "(_ BitVec " << width() << ")";
-            for (int i = 0; i < dimension(); ++i) s << ")";
+        const std::string indexed_name = name() + std::to_string(0);
+        const auto it = m_arrVarsRefp->find(indexed_name);
+        if (it != m_arrVarsRefp->end()) {
+            const std::vector<size_t>& idx_widths = it->second->m_idx_widths;
+            if (dimension() > 0) {
+                for (int i = 0; i < dimension(); ++i) {
+                    s << "(Array (_ BitVec " << idx_widths[i] << ") ";
+                }
+                s << "(_ BitVec " << width() << ")";
+                for (int i = 0; i < dimension(); ++i) {
+                    s << ")";
+                }
+            }
+        } else {
+            VL_FATAL_MT(__FILE__, __LINE__, "randomize",
+                    "Error: indexed_name not found in m_arr_vars");
         }
     }
     int totalWidth() const override {
@@ -146,7 +168,11 @@ public:
         const auto it = m_arrVarsRefp->find(indexed_name);
         if (it != m_arrVarsRefp->end()) {
             const std::vector<size_t>& indices = it->second->m_indices;
-            emitSelect(s, indices);
+            const std::vector<size_t>& idx_widths = it->second->m_idx_widths;
+            emitSelect(s, indices, idx_widths);
+        } else {
+            VL_FATAL_MT(__FILE__, __LINE__, "randomize",
+                    "Error: indexed_name not found in m_arr_vars");
         }
         s << ')';
     }
@@ -178,22 +204,24 @@ public:
     template <typename T_Key>
     typename std::enable_if<std::is_integral<T_Key>::value>::type
     process_key(const T_Key& key, std::string& indexed_name, size_t& integral_index,
-                const std::string& base_name) {
+                const std::string& base_name, size_t& idx_width) {
         integral_index = static_cast<size_t>(key);
         indexed_name = base_name + "[" + std::to_string(integral_index) + "]";
+        idx_width = sizeof(T_Key) * 8;
     }
     template <typename T_Key>
     typename std::enable_if<std::is_same<T_Key, std::string>::value>::type
     process_key(const T_Key& key, std::string& indexed_name, size_t& integral_index,
-                const std::string& base_name) {
+                const std::string& base_name, size_t& idx_width) {
         integral_index = string_to_integral(key);
         indexed_name = base_name + "[" + std::to_string(integral_index) + "]";
+        idx_width = 64; // 64-bit mask
     }
     template <typename T_Key>
     typename std::enable_if<!std::is_integral<T_Key>::value
                             && !std::is_same<T_Key, std::string>::value>::type
     process_key(const T_Key& key, std::string& indexed_name, size_t& integral_index,
-                const std::string& base_name) {
+                const std::string& base_name, size_t& idx_width) {
         VL_FATAL_MT(__FILE__, __LINE__, "randomize",
                     "Unsupported: Only integral and string index of associative array is "
                     "supported currently.");
@@ -202,11 +230,11 @@ public:
         size_t result = 0;
         for (char c : str) {
             result = (result << 8) | static_cast<size_t>(c);
-            result &= 0xFFFFFFFF;
+            result &= 0xFFFFFFFFFFFFFFFF;
         }
         if (seen_values.count(result) > 0 && seen_values[result] != str)
             VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                       "Conflict detected: Different strings mapped to the same 32-bit index.");
+                       "Conflict detected: Different strings mapped to the same 64-bit index.");
         seen_values[result] = str;
         return result;
     }
@@ -226,7 +254,7 @@ public:
             name, width, &var, dimension, randmodeIdx);
         if (dimension > 0) {
             idx = 0;
-            record_arr_table(var, name, dimension, {});
+            record_arr_table(var, name, dimension, {}, {});
         }
     }
     template <typename T, std::size_t N_Depth>
@@ -237,7 +265,7 @@ public:
             name, width, &var, dimension, randmodeIdx);
         if (dimension > 0) {
             idx = 0;
-            record_arr_table(var, name, dimension, {});
+            record_arr_table(var, name, dimension, {}, {});
         }
     }
     template <typename T_Key, typename T_Value>
@@ -249,7 +277,7 @@ public:
                 name, width, &var, dimension, randmodeIdx);
         if (dimension > 0) {
             idx = 0;
-            record_arr_table(var, name, dimension, {});
+            record_arr_table(var, name, dimension, {}, {});
         }
     }
     int idx;
@@ -265,38 +293,41 @@ public:
     }
     template <typename T>
     void record_arr_table(T& var, const std::string name, int dimension,
-                          std::vector<size_t> indices) {
+                          std::vector<size_t> indices, std::vector<size_t> idx_widths) {
         const std::string key = generateKey(name, idx);
-        m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices);
+        m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices, idx_widths);
         ++idx;
     }
     template <typename T>
     void record_arr_table(VlQueue<T>& var, const std::string name, int dimension,
-                          std::vector<size_t> indices) {
+                          std::vector<size_t> indices, std::vector<size_t> idx_widths) {
         if ((dimension > 0) && (var.size() != 0)) {
+            idx_widths.push_back(32);
             for (size_t i = 0; i < var.size(); ++i) {
                 const std::string indexed_name = name + "[" + std::to_string(i) + "]";
                 indices.push_back(i);
-                record_arr_table(var.atWrite(i), indexed_name, dimension - 1, indices);
+                record_arr_table(var.atWrite(i), indexed_name, dimension - 1, indices, idx_widths);
                 indices.pop_back();
             }
         }
     }
     template <typename T, std::size_t N_Depth>
     void record_arr_table(VlUnpacked<T, N_Depth>& var, const std::string name, int dimension,
-                          std::vector<size_t> indices) {
+                          std::vector<size_t> indices, std::vector<size_t> idx_widths) {
         if ((dimension > 0) && (N_Depth != 0)) {
+            idx_widths.push_back(32);
             for (size_t i = 0; i < N_Depth; ++i) {
                 const std::string indexed_name = name + "[" + std::to_string(i) + "]";
                 indices.push_back(i);
-                record_arr_table(var.operator[](i), indexed_name, dimension - 1, indices);
+                record_arr_table(var.operator[](i), indexed_name, dimension - 1, indices, idx_widths);
                 indices.pop_back();
             }
         }
     }
     template <typename T_Key, typename T_Value>
     void record_arr_table(VlAssocArray<T_Key, T_Value>& var, const std::string name, int dimension,
-                          std::vector<size_t> indices) {
+                          std::vector<size_t> indices, std::vector<size_t> idx_widths) {
+        std::cout << "Size:= " << var.size() << std::endl;
         if ((dimension > 0) && (var.size() != 0)) {
             int count = 0;
             for (auto it = var.begin(); it != var.end(); ++it) {
@@ -304,9 +335,12 @@ public:
                 const T_Value& value = it->second;
                 std::string indexed_name;
                 size_t integral_index;
-                process_key(key, indexed_name, integral_index, name);
+                size_t idx_width;
+                process_key(key, indexed_name, integral_index, name, idx_width);
+                idx_widths.push_back(idx_width);
                 indices.push_back(integral_index);
-                record_arr_table(var.at(key), indexed_name, dimension - 1, indices);
+                record_arr_table(var.at(key), indexed_name, dimension - 1, indices, idx_widths);
+                idx_widths.pop_back();
                 indices.pop_back();
             }
         }

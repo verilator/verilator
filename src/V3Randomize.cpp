@@ -728,19 +728,39 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
         if (VN_IS(nodep->bitp(), CvtPackString)) {
-            // Extract and truncate the string index to fit within 32 bits
+            // Extract and truncate the string index to fit within 64 bits
             AstCvtPackString* const stringp = VN_AS(nodep->bitp(), CvtPackString);
             VNRelinker handle;
             AstNodeExpr* const strIdxp
-                = new AstSFormatF{fl, "#x%8x", false,
+                = new AstSFormatF{fl, "#x%16x", false,
                                   new AstAnd{
                                       fl, stringp->lhsp()->unlinkFrBack(&handle),
-                                      new AstConst(fl, 0xFFFFFFFF)  // Apply 32-bit mask
+                                      new AstConst(fl, AstConst::Unsized64{}, 0xFFFFFFFFFFFFFFFF)
                                   }};
             handle.relink(strIdxp);
             editSMT(nodep, nodep->fromp(), strIdxp);
         } else {
-            editSMT(nodep, nodep->fromp(), nodep->bitp());
+            VNRelinker handle;
+            const int actual_width = nodep->bitp()->width(); // Get actual bit width
+            std::string fmt;
+            // Normalize to standard bit width
+            if (actual_width <= 8) {
+                fmt = "#x%2x";
+            } else if (actual_width <= 16) {
+                fmt = "#x%4x";
+            } else if (actual_width <= 32) {
+                fmt = "#x%8x";
+            } else if (actual_width <= 64) {
+                fmt = "#x%16x";
+            } else {
+                nodep->v3warn(CONSTRAINTIGN,
+                    "Unsupported: Verilator does not currently support associative array index widths of 64 bits or more during constraint randomization.");
+                return;
+            }
+            AstNodeExpr* const idxp
+                    = new AstSFormatF{fl, fmt, false, nodep->bitp()->unlinkFrBack(&handle)};
+            handle.relink(idxp);
+            editSMT(nodep, nodep->fromp(), idxp);
         }
     }
     void visit(AstArraySel* nodep) override {
