@@ -473,8 +473,7 @@ class EmitCModel final : public EmitCFunc {
         } else {
             putns(modp, "bool " + topClassName() + "::eventsPending() { return false; }\n\n");
             puts("uint64_t " + topClassName() + "::nextTimeSlot() {\n");
-            puts("VL_FATAL_MT(__FILE__, __LINE__, \"\", \"%Error: No delays in the "
-                 "design\");\n");
+            puts("VL_FATAL_MT(__FILE__, __LINE__, \"\", \"No delays in the design\");\n");
             puts("return 0;\n}\n");
         }
 

@@ -233,7 +233,7 @@ private:
         // Little selftest
 #define SELF_CHECK(got, exp) \
     do { \
-        if ((got) != (exp)) VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: selftest"); \
+        if ((got) != (exp)) VL_FATAL_MT(__FILE__, __LINE__, "", "selftest"); \
     } while (0)
         SELF_CHECK(combineHier("a.b.c", "a.b.c"), "a.b.c");
         SELF_CHECK(combineHier("a.b.c", "a.b"), "a.b*");

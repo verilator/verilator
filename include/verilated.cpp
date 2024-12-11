@@ -2650,7 +2650,7 @@ const char* VerilatedContext::timeprecisionString() const VL_MT_SAFE {
 }
 
 void VerilatedContext::threads(unsigned n) {
-    if (n == 0) VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: Simulation threads must be >= 1");
+    if (n == 0) VL_FATAL_MT(__FILE__, __LINE__, "", "Simulation threads must be >= 1");
 
     if (m_threadPool) {
         VL_FATAL_MT(
