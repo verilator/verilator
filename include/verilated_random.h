@@ -328,9 +328,7 @@ public:
     template <typename T_Key, typename T_Value>
     void record_arr_table(VlAssocArray<T_Key, T_Value>& var, const std::string name, int dimension,
                           std::vector<size_t> indices, std::vector<size_t> idx_widths) {
-        std::cout << "Size:= " << var.size() << std::endl;
         if ((dimension > 0) && (var.size() != 0)) {
-            int count = 0;
             for (auto it = var.begin(); it != var.end(); ++it) {
                 const T_Key& key = it->first;
                 const T_Value& value = it->second;
