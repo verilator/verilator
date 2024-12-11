@@ -549,9 +549,9 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
 // 3: Delete the option and its argument if it is a number
 int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
     if (opt == "j") return 3;
-    if (opt == "Mdir" || opt == "clk" || opt == "lib-create" || opt == "v" || opt == "l2-name"
-        || opt == "mod-prefix" || opt == "prefix" || opt == "protect-lib" || opt == "protect-key"
-        || opt == "threads" || opt == "top-module") {
+    if (opt == "Mdir" || opt == "clk" || opt == "lib-create" || opt == "f" || opt == "v"
+        || opt == "l2-name" || opt == "mod-prefix" || opt == "prefix" || opt == "protect-lib"
+        || opt == "protect-key" || opt == "threads" || opt == "top-module") {
         return 2;
     }
     if (opt == "build" || (!forTop && (opt == "cc" || opt == "exe" || opt == "sc"))
