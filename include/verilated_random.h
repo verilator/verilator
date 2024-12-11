@@ -106,8 +106,7 @@ public:
         if (it != m_arrVarsRefp->end()) {
             return it->second->m_datap;
         } else {
-            VL_FATAL_MT(__FILE__, __LINE__, "randomize",
-                        "indexed_name not found in m_arr_vars");
+            VL_FATAL_MT(__FILE__, __LINE__, "randomize", "indexed_name not found in m_arr_vars");
             return nullptr;
         }
     }
@@ -152,8 +151,7 @@ public:
                 for (int i = 0; i < dimension(); ++i) { s << ")"; }
             }
         } else {
-            VL_FATAL_MT(__FILE__, __LINE__, "randomize",
-                        "indexed_name not found in m_arr_vars");
+            VL_FATAL_MT(__FILE__, __LINE__, "randomize", "indexed_name not found in m_arr_vars");
         }
     }
     int totalWidth() const override {
@@ -171,8 +169,7 @@ public:
             const std::vector<size_t>& idxWidths = it->second->m_idxWidths;
             emitSelect(s, indices, idxWidths);
         } else {
-            VL_FATAL_MT(__FILE__, __LINE__, "randomize",
-                        "indexed_name not found in m_arr_vars");
+            VL_FATAL_MT(__FILE__, __LINE__, "randomize", "indexed_name not found in m_arr_vars");
         }
         s << ')';
     }
@@ -232,12 +229,12 @@ public:
         uint64_t result = 0;
         for (char c : str) { result = (result << 8) | static_cast<uint64_t>(c); }
 
-        #ifdef VL_DEBUG
+#ifdef VL_DEBUG
         if (seen_values.count(result) > 0 && seen_values[result] != str)
             VL_WARN_MT(__FILE__, __LINE__, "randomize",
                        "Conflict detected: Different strings mapped to the same 64-bit index.");
         seen_values[result] = str;
-        #endif
+#endif
 
         return result;
     }

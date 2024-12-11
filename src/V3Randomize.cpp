@@ -751,10 +751,9 @@ class ConstraintExprVisitor final : public VNVisitor {
             } else if (actual_width <= 64) {
                 fmt = "#x%16x";
             } else {
-                nodep->v3warn(
-                    CONSTRAINTIGN,
-                    "Unsupported: Associative array index "
-                    "widths of more than 64 bits during constraint randomization.");
+                nodep->v3warn(CONSTRAINTIGN,
+                              "Unsupported: Associative array index "
+                              "widths of more than 64 bits during constraint randomization.");
                 return;
             }
             AstNodeExpr* const idxp
