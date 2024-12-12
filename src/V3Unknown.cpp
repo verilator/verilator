@@ -237,9 +237,11 @@ class UnknownVisitor final : public VNVisitor {
             AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
             AstNodeExpr* newp;
             if (!VN_IS(rhsp, Const)) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: RHS of ==? or !=? must be "
-                                             "constant to be synthesizable");  // Says spec.
-                // Replace with anything that won't cause more errors
+                if (rhsp->dtypep()->isFourstate()) {
+                    nodep->v3warn(
+                        E_UNSUPPORTED,
+                        "Unsupported: RHS of ==? or !=? is fourstate but not a constant");
+                }
                 newp = new AstEq{nodep->fileline(), lhsp, rhsp};
             } else {
                 // X or Z's become mask, ala case statements.
