@@ -464,10 +464,10 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
                 const size_t start = hex_index.find_first_not_of(" ");
                 if (start == std::string::npos || hex_index.substr(start, 2) != "#x") {
                     VL_FATAL_MT(__FILE__, __LINE__, "randomize",
-                                "Error: hex_index contains invalid format");
+                                "hex_index contains invalid format");
                     continue;
                 }
-                const int index = std::stoi(hex_index.substr(start + 2), nullptr, 16);
+                const long long index = std::stoll(hex_index.substr(start + 2), nullptr, 16);
                 oss << "[" << index << "]";
             }
             const std::string indexed_name = oss.str();
@@ -481,7 +481,7 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
                 idx = ss.str();
             } else {
                 VL_FATAL_MT(__FILE__, __LINE__, "randomize",
-                            "Error: indexed_name not found in m_arr_vars");
+                            "indexed_name not found in m_arr_vars");
             }
         }
         varr.set(idx, value);

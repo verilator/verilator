@@ -125,7 +125,7 @@ class con_rand_3d_array_test;
 endclass
 
 
-module t_randomize_array_constraints;
+module t_constraint_unpacked_array;
   con_rand_1d_array_test rand_test_1;
   con_rand_2d_array_test rand_test_2;
   con_rand_3d_array_test rand_test_3;
