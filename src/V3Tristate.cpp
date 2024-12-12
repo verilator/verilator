@@ -1412,9 +1412,9 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
     void visitEqNeqWild(AstNodeBiop* nodep) {
-        if (!VN_IS(nodep->rhsp(), Const)) {
-            nodep->v3warn(E_UNSUPPORTED,  // Says spac.
-                          "Unsupported: RHS of ==? or !=? must be constant to be synthesizable");
+        if (!VN_IS(nodep->rhsp(), Const) && nodep->rhsp()->dtypep()->isFourstate()) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: RHS of ==? or !=? is fourstate but not a constant");
             // rhs we want to keep X/Z intact, so otherwise ignore
         }
         iterateAndNextNull(nodep->lhsp());
