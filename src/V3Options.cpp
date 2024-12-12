@@ -412,7 +412,7 @@ string V3Options::allArgsString() const VL_MT_SAFE {
 }
 
 // Delete some options for Verilation of the hierarchical blocks.
-string V3Options::allArgsStringForHierBlock(bool forTop, bool forCMake) const {
+string V3Options::allArgsStringForHierBlock(bool forTop) const {
     std::set<string> vFiles;
     for (const auto& vFile : m_vFiles) vFiles.insert(vFile);
     string out;
@@ -443,7 +443,7 @@ string V3Options::allArgsStringForHierBlock(bool forTop, bool forCMake) const {
                 continue;
             }
         } else {  // Not an option
-            if ((forCMake && vFiles.find(arg) != vFiles.end())  // Remove HDL
+            if (vFiles.find(arg) != vFiles.end()  // Remove HDL
                 || m_cppFiles.find(arg) != m_cppFiles.end()) {  // Remove C++
                 continue;
             }
