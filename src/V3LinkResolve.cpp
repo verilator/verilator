@@ -72,6 +72,16 @@ class LinkResolveVisitor final : public VNVisitor {
         m_classp = nodep;
         iterateChildren(nodep);
     }
+    void visit(AstConstraint* nodep) override {
+        // V3LinkDot moved the isExternDef into the class, the extern proto was
+        // checked to exist, and now isn't needed
+        nodep->isExternDef(false);
+        if (nodep->isExternProto()) {
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstInitialAutomatic* nodep) override {
         iterateChildren(nodep);
         // Initial assignments under function/tasks can just be simple

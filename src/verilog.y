@@ -4181,7 +4181,6 @@ function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine
         //                      // We implement randomize as a normal funcRef, since randomize isn't a keyword
         //                      // Note yNULL is already part of expressions, so they come for free
         |       funcRef yWITH__CUR constraint_block     { $$ = new AstWithParse{$2, $1, $3}; }
-        |       funcRef yWITH__CUR '{' '}'              { $$ = new AstWithParse{$2, $1, nullptr}; }
         ;
 
 system_t_call<nodeStmtp>:       // IEEE: system_tf_call (as task)
@@ -7418,17 +7417,16 @@ memberQualOne<qualifiers>:                      // IEEE: property_qualifier + me
 class_constraint<constraintp>:  // ==IEEE: class_constraint
         //                      // IEEE: constraint_declaration
                 constraintStaticE yCONSTRAINT dynamic_override_specifiersE constraintIdNew constraint_block
-                        { $$ = $4; $$->isStatic($1); $$->addItemsp($5); SYMP->popScope($$); }
-        |       constraintStaticE yCONSTRAINT dynamic_override_specifiersE constraintIdNew '{' '}'
-                        { $$ = $4; $$->isStatic($1); SYMP->popScope($$); }
+                        { $$ = $4; $$->isStatic($1); $$->baseOverride($3); $$->addItemsp($5); SYMP->popScope($$); }
         //                      // IEEE: constraint_prototype + constraint_prototype_qualifier
         |       constraintStaticE yCONSTRAINT dynamic_override_specifiersE constraintIdNew ';'
-                        { $$ = $4; $$->isStatic($1); SYMP->popScope($$); }
-        |       yEXTERN constraintStaticE yCONSTRAINT constraintIdNew ';'
-                        { $$ = $4; $$->isStatic($1); SYMP->popScope($4);
-                          BBUNSUP($1, "Unsupported: extern constraint"); }
+                        { $$ = $4; $$->isStatic($1); $$->baseOverride($3);
+                          $$->isExternProto(true); SYMP->popScope($$); }
+        |       yEXTERN constraintStaticE yCONSTRAINT dynamic_override_specifiersE constraintIdNew ';'
+                        { $$ = $5; $$->isStatic($2); $$->baseOverride($4);
+                          $$->isExternProto(true); $$->isExternExplicit(true); SYMP->popScope($$); }
         |       yPURE constraintStaticE yCONSTRAINT constraintIdNew ';'
-                        { $$ = $4; $$->isKwdPure($1); $$->isStatic($1); SYMP->popScope($4); }
+                        { $$ = $4; $$->isKwdPure($1); $$->isStatic($2); SYMP->popScope($4); }
         ;
 
 constraintIdNew<constraintp>:  // IEEE: id part of class_constraint
@@ -7438,7 +7436,8 @@ constraintIdNew<constraintp>:  // IEEE: id part of class_constraint
         ;
 
 constraint_block<nodep>:  // ==IEEE: constraint_block
-                '{' constraint_block_itemList '}'               { $$ = $2; }
+                '{' '}'                                         { $$ = nullptr; }
+        |       '{' constraint_block_itemList '}'               { $$ = $2; }
         //
         |       '{' error '}'                                   { $$ = nullptr; }
         |       '{' constraint_block_itemList error '}'         { $$ = $2; }
@@ -7529,9 +7528,10 @@ dist_item<distItemp>:  // ==IEEE: dist_item + dist_weight
                           $$ = nullptr; }
         ;
 
-extern_constraint_declaration<nodep>:  // ==IEEE: extern_constraint_declaration
-                constraintStaticE yCONSTRAINT dynamic_override_specifiersE packageClassScopeE idAny constraint_block
-                        { $$ = nullptr; BBUNSUP($<fl>2, "Unsupported: extern constraint"); }
+extern_constraint_declaration<constraintp>:  // ==IEEE: extern_constraint_declaration
+                constraintStaticE yCONSTRAINT dynamic_override_specifiersE packageClassScopeE constraintIdNew constraint_block
+                        { $$ = $5; $$->isStatic($1); $$->isExternDef(true);
+                          $$->baseOverride($3); $$->classOrPackagep($4); $$->addItemsp($6); SYMP->popScope($5); }
         ;
 
 constraintStaticE<cbool>:  // IEEE: part of extern_constraint_declaration

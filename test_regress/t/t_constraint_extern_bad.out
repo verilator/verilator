@@ -1,0 +1,7 @@
+%Error: t/t_constraint_extern_bad.v:8:15: Definition not found for extern 'missing_bad'
+    8 |    constraint missing_bad;
+      |               ^~~~~~~~~~~
+%Error: t/t_constraint_extern_bad.v:11:20: extern not found that declares 'missing_extern'
+   11 | constraint Packet::missing_extern { }
+      |                    ^~~~~~~~~~~~~~
+%Error: Exiting due to

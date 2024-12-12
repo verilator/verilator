@@ -1207,8 +1207,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                 m_classOrPackagep = VN_AS(m_curSymp->nodep(), Class);
             }
             // Create symbol table for the task's vars
-            const string name
-                = std::string{nodep->isExternProto() ? "extern " : ""} + nodep->name();
+            const string name = (nodep->isExternProto() ? "extern "s : ""s) + nodep->name();
             m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, m_classOrPackagep);
             m_curSymp->fallbackp(upSymp);
             // Convert the func's range to the output variable
@@ -1299,7 +1298,35 @@ class LinkDotFindVisitor final : public VNVisitor {
     }
     void visit(AstConstraint* nodep) override {
         VL_RESTORER(m_curSymp);
-        m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
+        // Change to appropriate package if extern declaration (vs definition)
+        VSymEnt* upSymp = m_curSymp;
+        if (nodep->classOrPackagep()) {
+            AstClassOrPackageRef* const cpackagerefp
+                = VN_CAST(nodep->classOrPackagep(), ClassOrPackageRef);
+            if (!cpackagerefp) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: extern constraint definition with class-in-class");
+            } else {
+                if (!cpackagerefp->classOrPackageSkipp()) {
+                    m_statep->resolveClassOrPackage(m_curSymp, cpackagerefp, false,
+                                                    "External definition :: reference");
+                }
+                AstClass* const classp = VN_CAST(cpackagerefp->classOrPackageSkipp(), Class);
+                if (!classp) {
+                    nodep->v3error("Extern declaration's scope is not a defined class");
+                } else {
+                    m_curSymp = m_statep->getNodeSym(classp);
+                    upSymp = m_curSymp;
+                    // Move it to proper spot under the target class
+                    nodep->unlinkFrBack();
+                    classp->addStmtsp(nodep);
+                    nodep->classOrPackagep()->unlinkFrBack()->deleteTree();
+                }
+            }
+        }
+        // Set the class as package for iteration
+        const string name = (nodep->isExternProto() ? "extern "s : ""s) + nodep->name();
+        m_curSymp = m_statep->insertBlock(upSymp, name, nodep, m_classOrPackagep);
         iterateChildren(nodep);
     }
     void visit(AstVar* nodep) override {
@@ -3287,6 +3314,31 @@ class LinkDotResolveVisitor final : public VNVisitor {
             UINFO(9, indent() << "set sym " << m_ds.ascii() << endl);
         }
     }
+    void visit(AstConstraint* nodep) override {
+        LINKDOT_VISIT_START();
+        UINFO(5, indent() << "visit " << nodep << endl);
+        checkNoDot(nodep);
+        if (nodep->isExternDef()) {
+            if (const VSymEnt* const foundp
+                = m_curSymp->findIdFallback("extern " + nodep->name())) {
+                const AstConstraint* const protop = VN_AS(foundp->nodep(), Constraint);
+                // Copy specifiers.
+                // External definition cannot have any specifiers, so no value will be overwritten.
+                nodep->isStatic(protop->isStatic());
+            } else {
+                nodep->v3error("extern not found that declares " + nodep->prettyNameQ());
+            }
+        }
+        if (nodep->isExternProto()) {
+            if (!m_curSymp->findIdFallback(nodep->name()) && !nodep->isExternExplicit()) {
+                nodep->v3error("Definition not found for extern " + nodep->prettyNameQ());
+            }
+        }
+        VL_RESTORER(m_curSymp);
+        VL_RESTORER(m_ds);
+        m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
+        iterateChildren(nodep);
+    }
     void visit(AstConstraintRef* nodep) override {
         if (nodep->user3SetOnce()) return;
         LINKDOT_VISIT_START();
@@ -3819,14 +3871,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (nodep->isExternDef()) {
             if (const VSymEnt* const foundp
                 = m_curSymp->findIdFallback("extern " + nodep->name())) {
-                const AstNodeFTask* const funcProtop = VN_AS(foundp->nodep(), NodeFTask);
+                const AstNodeFTask* const protop = VN_AS(foundp->nodep(), NodeFTask);
                 // Copy specifiers.
                 // External definition cannot have any specifiers, so no value will be overwritten.
-                nodep->isHideLocal(funcProtop->isHideLocal());
-                nodep->isHideProtected(funcProtop->isHideProtected());
-                nodep->isStatic(funcProtop->isStatic());
-                nodep->isVirtual(funcProtop->isVirtual());
-                nodep->lifetime(funcProtop->lifetime());
+                nodep->isHideLocal(protop->isHideLocal());
+                nodep->isHideProtected(protop->isHideProtected());
+                nodep->isStatic(protop->isStatic());
+                nodep->isVirtual(protop->isVirtual());
+                nodep->lifetime(protop->lifetime());
             } else {
                 nodep->v3error("extern not found that declares " + nodep->prettyNameQ());
             }
