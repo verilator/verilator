@@ -412,7 +412,7 @@ string V3Options::allArgsString() const VL_MT_SAFE {
 }
 
 // Delete some options for Verilation of the hierarchical blocks.
-string V3Options::allArgsStringForHierBlock(bool forTop, bool forCMake) const {
+string V3Options::allArgsStringForHierBlock(bool forTop) const {
     std::set<string> vFiles;
     for (const auto& vFile : m_vFiles) vFiles.insert(vFile);
     string out;
@@ -443,7 +443,7 @@ string V3Options::allArgsStringForHierBlock(bool forTop, bool forCMake) const {
                 continue;
             }
         } else {  // Not an option
-            if ((forCMake && vFiles.find(arg) != vFiles.end())  // Remove HDL
+            if (vFiles.find(arg) != vFiles.end()  // Remove HDL
                 || m_cppFiles.find(arg) != m_cppFiles.end()) {  // Remove C++
                 continue;
             }
@@ -549,9 +549,10 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
 // 3: Delete the option and its argument if it is a number
 int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
     if (opt == "j") return 3;
-    if (opt == "Mdir" || opt == "clk" || opt == "lib-create" || opt == "f" || opt == "v"
-        || opt == "l2-name" || opt == "mod-prefix" || opt == "prefix" || opt == "protect-lib"
-        || opt == "protect-key" || opt == "threads" || opt == "top-module") {
+    if (opt == "Mdir" || opt == "clk" || opt == "lib-create" || opt == "f" || opt == "F"
+        || opt == "v" || opt == "l2-name" || opt == "mod-prefix" || opt == "prefix"
+        || opt == "protect-lib" || opt == "protect-key" || opt == "threads"
+        || opt == "top-module") {
         return 2;
     }
     if (opt == "build" || (!forTop && (opt == "cc" || opt == "exe" || opt == "sc"))
