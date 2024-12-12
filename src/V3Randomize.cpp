@@ -641,7 +641,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 "write_var"};
             uint32_t dimension = 0;
             if (VN_IS(varp->dtypep(), UnpackArrayDType) || VN_IS(varp->dtypep(), DynArrayDType)
-                || VN_IS(varp->dtypep(), QueueDType)) {
+                || VN_IS(varp->dtypep(), QueueDType) || VN_IS(varp->dtypep(), AssocArrayDType)) {
                 const std::pair<uint32_t, uint32_t> dims
                     = varp->dtypep()->dimensions(/*includeBasic=*/true);
                 const uint32_t unpackedDimensions = dims.second;
@@ -656,7 +656,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             size_t width = varp->width();
             AstNodeDType* tmpDtypep = varp->dtypep();
             while (VN_IS(tmpDtypep, UnpackArrayDType) || VN_IS(tmpDtypep, DynArrayDType)
-                   || VN_IS(tmpDtypep, QueueDType))
+                   || VN_IS(tmpDtypep, QueueDType) || VN_IS(tmpDtypep, AssocArrayDType))
                 tmpDtypep = tmpDtypep->subDTypep();
             width = tmpDtypep->width();
             methodp->addPinsp(
@@ -723,6 +723,44 @@ class ConstraintExprVisitor final : public VNVisitor {
         handle.relink(lsbp);
 
         editSMT(nodep, nodep->fromp(), lsbp, msbp);
+    }
+    void visit(AstAssocSel* nodep) override {
+        if (editFormat(nodep)) return;
+        FileLine* const fl = nodep->fileline();
+        if (VN_IS(nodep->bitp(), CvtPackString)) {
+            // Extract and truncate the string index to fit within 64 bits
+            AstCvtPackString* const stringp = VN_AS(nodep->bitp(), CvtPackString);
+            VNRelinker handle;
+            AstNodeExpr* const strIdxp = new AstSFormatF{
+                fl, "#x%16x", false,
+                new AstAnd{fl, stringp->lhsp()->unlinkFrBack(&handle),
+                           new AstConst(fl, AstConst::Unsized64{}, 0xFFFFFFFFFFFFFFFF)}};
+            handle.relink(strIdxp);
+            editSMT(nodep, nodep->fromp(), strIdxp);
+        } else {
+            VNRelinker handle;
+            const int actual_width = nodep->bitp()->width();
+            std::string fmt;
+            // Normalize to standard bit width
+            if (actual_width <= 8) {
+                fmt = "#x%2x";
+            } else if (actual_width <= 16) {
+                fmt = "#x%4x";
+            } else if (actual_width <= 32) {
+                fmt = "#x%8x";
+            } else if (actual_width <= 64) {
+                fmt = "#x%16x";
+            } else {
+                nodep->v3warn(CONSTRAINTIGN,
+                              "Unsupported: Associative array index "
+                              "widths of more than 64 bits during constraint randomization.");
+                return;
+            }
+            AstNodeExpr* const idxp
+                = new AstSFormatF{fl, fmt, false, nodep->bitp()->unlinkFrBack(&handle)};
+            handle.relink(idxp);
+            editSMT(nodep, nodep->fromp(), idxp);
+        }
     }
     void visit(AstArraySel* nodep) override {
         if (editFormat(nodep)) return;
