@@ -4,16 +4,15 @@
 // any use, without warranty, 2024 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
-class A;
-endclass
+function bit get_1_or_0(bit get_1);
+   return get_1 ? 1'b1 : 1'b0;
+endfunction
 
 module t (/*AUTOARG*/);
 
    initial begin
-      A a1 = new;
-      A a2 = new;
-      if (a1 ==? a2) $stop;
-      if (!a1 !=? a2) $stop;
+      if (get_1_or_0(0) ==? get_1_or_0(1)) $stop;
+      if (!(get_1_or_0(0) !=? get_1_or_0(1))) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
