@@ -1472,9 +1472,7 @@ class RandomizeVisitor final : public VNVisitor {
             if (VN_IS(tempDTypep, AssocArrayDType)) {
                 return new AstVar{
                     fl, VVarType::VAR, uniqueNamep->get(""),
-                    dtypep->findBasicDType(
-                        ((AstBasicDType*)VN_AS(tempDTypep, AssocArrayDType)->keyDTypep())
-                            ->keyword())};
+                    VN_AS(tempDTypep, AssocArrayDType)->keyDTypep()};
             }
             return new AstVar{fl, VVarType::VAR, uniqueNamep->get(""),
                               dtypep->findBasicDType(VBasicDTypeKwd::UINT32)};
