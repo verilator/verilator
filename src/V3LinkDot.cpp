@@ -3916,9 +3916,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep << endl);
         checkNoDot(nodep);
+        VL_RESTORER(m_curSymp);
         VL_RESTORER(m_inWith);
-        m_inWith = true;
-        symIterateChildren(nodep, m_statep->getNodeSym(nodep));
+        {
+            m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
+            m_inWith = true;
+            iterateChildren(nodep);
+        }
+        m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
     }
     void visit(AstLambdaArgRef* nodep) override {
         LINKDOT_VISIT_START();
