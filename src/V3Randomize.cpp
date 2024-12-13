@@ -1470,9 +1470,8 @@ class RandomizeVisitor final : public VNVisitor {
         AstNodeStmt* stmtsp = nullptr;
         auto createLoopIndex = [&](AstNodeDType* tempDTypep) {
             if (VN_IS(tempDTypep, AssocArrayDType)) {
-                return new AstVar{
-                    fl, VVarType::VAR, uniqueNamep->get(""),
-                    VN_AS(tempDTypep, AssocArrayDType)->keyDTypep()};
+                return new AstVar{fl, VVarType::VAR, uniqueNamep->get(""),
+                                  VN_AS(tempDTypep, AssocArrayDType)->keyDTypep()};
             }
             return new AstVar{fl, VVarType::VAR, uniqueNamep->get(""),
                               dtypep->findBasicDType(VBasicDTypeKwd::UINT32)};
