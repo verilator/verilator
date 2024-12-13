@@ -11,7 +11,7 @@ class Packet;
    extern function void f();
    constraint cone;
    extern constraint ctwo;
-   extern constraint cmissing;  // Ok per IEEE 1800-2023 18.5.1
+   constraint cmissing;  // Ok per IEEE 1800-2023 18.5.1
 
 endclass
 

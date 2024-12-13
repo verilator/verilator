@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Packet;
-   constraint missing_bad;
+   extern constraint missing_bad;
 endclass
 
 constraint Packet::missing_extern { }

@@ -3330,7 +3330,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
         }
         if (nodep->isExternProto()) {
-            if (!m_curSymp->findIdFallback(nodep->name()) && !nodep->isExternExplicit()) {
+            if (!m_curSymp->findIdFallback(nodep->name()) && nodep->isExternExplicit()) {
                 nodep->v3error("Definition not found for extern " + nodep->prettyNameQ());
             }
         }
