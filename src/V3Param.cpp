@@ -1249,18 +1249,20 @@ class ParamVisitor final : public VNVisitor {
                     UINFO(9, "Hit module boundary, done looking for interface" << endl);
                     break;
                 }
-                if (const auto* const varp = VN_CAST(backp, Var)) {
+                if (const AstVar* const varp = VN_CAST(backp, Var)) {
                     if (!varp->isIfaceRef()) { continue; }
                     const AstIfaceRefDType* ifacerefp = nullptr;
-                    if (const auto* const typep = varp->childDTypep()) {
+                    if (const AstNodeDType* const typep = varp->childDTypep()) {
                         ifacerefp = VN_CAST(typep, IfaceRefDType);
                         if (!ifacerefp) {
-                            if (const auto* const unpackp = VN_CAST(typep, UnpackArrayDType)) {
+                            if (const AstUnpackArrayDType* const unpackp
+                                = VN_CAST(typep, UnpackArrayDType)) {
                                 ifacerefp = VN_CAST(typep->getChildDTypep(), IfaceRefDType);
                             }
                         }
                         if (!ifacerefp) {
-                            if (const auto* const unpackp = VN_CAST(typep, BracketArrayDType)) {
+                            if (const AstBracketArrayDType* const unpackp
+                                = VN_CAST(typep, BracketArrayDType)) {
                                 ifacerefp = VN_CAST(typep->subDTypep(), IfaceRefDType);
                             }
                         }
