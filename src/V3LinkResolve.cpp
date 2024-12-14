@@ -47,6 +47,8 @@ class LinkResolveVisitor final : public VNVisitor {
     // Below state needs to be preserved between each module call.
     AstNodeModule* m_modp = nullptr;  // Current module
     AstClass* m_classp = nullptr;  // Class we're inside
+    string m_randcIllegalWhy;  // Why randc illegal
+    AstNode* m_randcIllegalp = nullptr;  // Node causing randc illegal
     AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
     AstNodeCoverOrAssert* m_assertp = nullptr;  // Current assertion
     int m_senitemCvtNum = 0;  // Temporary signal counter
@@ -82,6 +84,30 @@ class LinkResolveVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
+    void visit(AstConstraintBefore* nodep) override {
+        VL_RESTORER(m_randcIllegalWhy);
+        VL_RESTORER(m_randcIllegalp);
+        m_randcIllegalWhy = "'solve before' (IEEE 1800-2023 18.5.9)";
+        m_randcIllegalp = nodep;
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstDist* nodep) override {
+        VL_RESTORER(m_randcIllegalWhy);
+        VL_RESTORER(m_randcIllegalp);
+        m_randcIllegalWhy = "'constraint dist' (IEEE 1800-2023 18.5.3)";
+        m_randcIllegalp = nodep;
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstConstraintExpr* nodep) override {
+        VL_RESTORER(m_randcIllegalWhy);
+        VL_RESTORER(m_randcIllegalp);
+        if (nodep->isSoft()) {
+            m_randcIllegalWhy = "'constraint soft' (IEEE 1800-2023 18.5.13.1)";
+            m_randcIllegalp = nodep;
+        }
+        iterateChildrenConst(nodep);
+    }
+
     void visit(AstInitialAutomatic* nodep) override {
         iterateChildren(nodep);
         // Initial assignments under function/tasks can just be simple
@@ -110,13 +136,24 @@ class LinkResolveVisitor final : public VNVisitor {
     }
 
     void visit(AstNodeVarRef* nodep) override {
-        // VarRef: Resolve its reference
-        if (nodep->varp()) nodep->varp()->usedParam(true);
-        // TODO should look for where genvar is valid, but for now catch
-        // just gross errors of using genvar outside any generate
-        if (nodep->varp() && nodep->varp()->isGenVar() && !m_underGenFor) {
-            nodep->v3error("Genvar " << nodep->prettyNameQ()
-                                     << " used outside generate for loop (IEEE 1800-2023 27.4)");
+        if (nodep->varp()) {  // Else due to dead code, might not have var pointer
+            // VarRef: Resolve its reference
+            nodep->varp()->usedParam(true);
+            // TODO should look for where genvar is valid, but for now catch
+            // just gross errors of using genvar outside any generate
+            if (nodep->varp()->isGenVar() && !m_underGenFor) {
+                nodep->v3error("Genvar "
+                               << nodep->prettyNameQ()
+                               << " used outside generate for loop (IEEE 1800-2023 27.4)");
+            }
+            if (nodep->varp()->isRandC() && m_randcIllegalp) {
+                nodep->v3error("Randc variables not allowed in "
+                               << m_randcIllegalWhy << '\n'
+                               << nodep->warnContextPrimary() << '\n'
+                               << m_randcIllegalp->warnOther()
+                               << "... Location of restricting expression\n"
+                               << m_randcIllegalp->warnContextSecondary());
+            }
         }
         iterateChildren(nodep);
     }

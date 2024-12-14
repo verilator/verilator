@@ -131,8 +131,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
     BaseToDerivedMap m_baseToDerivedMap;  // Mapping from base classes to classes that extend them
     AstClass* m_classp = nullptr;  // Current class
-    AstConstraintBefore* m_constraintBeforep = nullptr;  // Current before constraint
-    AstConstraintExpr* m_constraintExprp = nullptr;  // Current constraint expression
     AstNode* m_constraintExprGenp = nullptr;  // Current constraint or constraint if expression
     AstNodeModule* m_modp;  // Current module
     AstNodeStmt* m_stmtp = nullptr;  // Current statement
@@ -403,14 +401,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             }
         }
     }
-    void visit(AstConstraintBefore* nodep) override {
-        VL_RESTORER(m_constraintBeforep);
-        m_constraintBeforep = nodep;
-        iterateChildrenConst(nodep);
-    }
     void visit(AstConstraintExpr* nodep) override {
-        VL_RESTORER(m_constraintExprp);
-        m_constraintExprp = nodep;
         VL_RESTORER(m_constraintExprGenp);
         m_constraintExprGenp = nodep;
         iterateChildrenConst(nodep);
@@ -425,15 +416,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
         iterateAndNextConstNull(nodep->elsesp());
     }
     void visit(AstNodeVarRef* nodep) override {
-        if (nodep->varp()->isRandC()) {
-            if (m_constraintExprp && m_constraintExprp->isSoft()) {
-                nodep->v3error(
-                    "Randc variables not allowed in 'constraint soft' (IEEE 1800-2023 18.5.13.1)");
-            } else if (m_constraintBeforep) {
-                nodep->v3error(
-                    "Randc variables not allowed in 'solve before' (IEEE 1800-2023 18.5.9)");
-            }
-        }
         if (!m_constraintExprGenp) return;
 
         if (nodep->varp()->lifetime().isStatic()) m_staticRefs.emplace(nodep);
