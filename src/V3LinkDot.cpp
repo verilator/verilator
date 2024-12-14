@@ -2400,66 +2400,62 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         return classSymp;
     }
-    void importImplementsClass(AstClass* implementsClassp, VSymEnt* interfaceSymp,
-                               AstClass* baseClassp) {
+    void importDerivedClass(AstClass* derivedClassp, VSymEnt* baseSymp, AstClass* baseClassp) {
         // Also used for standard 'extends' from a base class
-        UINFO(8, indent() << "importImplementsClass to " << implementsClassp << " from "
-                          << baseClassp << endl);
-        for (VSymEnt::const_iterator it = interfaceSymp->begin(); it != interfaceSymp->end();
-             ++it) {
-            if (AstNode* interfaceSubp = it->second->nodep()) {
-                UINFO(8, indent() << "  SymFunc " << interfaceSubp << endl);
+        UINFO(8, indent() << "importDerivedClass to " << derivedClassp << " from " << baseClassp
+                          << endl);
+        for (VSymEnt::const_iterator it = baseSymp->begin(); it != baseSymp->end(); ++it) {
+            if (AstNode* baseSubp = it->second->nodep()) {
+                UINFO(8, indent() << "  SymFunc " << baseSubp << endl);
                 const string impOrExtends
                     = baseClassp->isInterfaceClass() ? " implements " : " extends ";
-                if (VN_IS(interfaceSubp, NodeFTask)) {
-                    const VSymEnt* const foundp = m_curSymp->findIdFlat(interfaceSubp->name());
-                    const AstNodeFTask* const interfaceFuncp = VN_CAST(interfaceSubp, NodeFTask);
-                    if (!interfaceFuncp || !interfaceFuncp->pureVirtual()) continue;
-                    bool existsInChild = foundp && !foundp->imported();
-                    if (!existsInChild && !implementsClassp->isInterfaceClass()) {
-                        implementsClassp->v3error(
-                            "Class " << implementsClassp->prettyNameQ() << impOrExtends
+                if (VN_IS(baseSubp, NodeFTask)) {
+                    const VSymEnt* const foundp = m_curSymp->findIdFlat(baseSubp->name());
+                    const AstNodeFTask* const baseFuncp = VN_CAST(baseSubp, NodeFTask);
+                    if (!baseFuncp || !baseFuncp->pureVirtual()) continue;
+                    bool existsInDerived = foundp && !foundp->imported();
+                    if (!existsInDerived && !derivedClassp->isInterfaceClass()) {
+                        derivedClassp->v3error(
+                            "Class " << derivedClassp->prettyNameQ() << impOrExtends
                                      << baseClassp->prettyNameQ()
                                      << " but is missing implementation for "
-                                     << interfaceSubp->prettyNameQ() << " (IEEE 1800-2023 8.26)\n"
-                                     << implementsClassp->warnContextPrimary() << '\n'
-                                     << interfaceSubp->warnOther()
+                                     << baseSubp->prettyNameQ() << " (IEEE 1800-2023 8.26)\n"
+                                     << derivedClassp->warnContextPrimary() << '\n'
+                                     << baseSubp->warnOther()
                                      << "... Location of interface class's function\n"
-                                     << interfaceSubp->warnContextSecondary());
+                                     << baseSubp->warnContextSecondary());
                     }
-                    const auto itn = m_ifClassImpNames.find(interfaceSubp->name());
-                    if (!existsInChild && itn != m_ifClassImpNames.end()
-                        && itn->second != interfaceSubp) {  // Not exact same function from diamond
-                        implementsClassp->v3error(
-                            "Class " << implementsClassp->prettyNameQ() << impOrExtends
+                    const auto itn = m_ifClassImpNames.find(baseSubp->name());
+                    if (!existsInDerived && itn != m_ifClassImpNames.end()
+                        && itn->second != baseSubp) {  // Not exact same function from diamond
+                        derivedClassp->v3error(
+                            "Class " << derivedClassp->prettyNameQ() << impOrExtends
                                      << baseClassp->prettyNameQ()
                                      << " but missing inheritance conflict resolution for "
-                                     << interfaceSubp->prettyNameQ()
-                                     << " (IEEE 1800-2023 8.26.6.2)\n"
-                                     << implementsClassp->warnContextPrimary() << '\n'
-                                     << interfaceSubp->warnOther()
+                                     << baseSubp->prettyNameQ() << " (IEEE 1800-2023 8.26.6.2)\n"
+                                     << derivedClassp->warnContextPrimary() << '\n'
+                                     << baseSubp->warnOther()
                                      << "... Location of interface class's function\n"
-                                     << interfaceSubp->warnContextSecondary());
+                                     << baseSubp->warnContextSecondary());
                     }
-                    m_ifClassImpNames.emplace(interfaceSubp->name(), interfaceSubp);
+                    m_ifClassImpNames.emplace(baseSubp->name(), baseSubp);
                 }
-                if (VN_IS(interfaceSubp, Constraint)) {
-                    const VSymEnt* const foundp = m_curSymp->findIdFlat(interfaceSubp->name());
-                    const AstConstraint* const interfaceFuncp = VN_CAST(interfaceSubp, Constraint);
-                    if (!interfaceFuncp || !interfaceFuncp->isKwdPure()) continue;
-                    bool existsInChild = foundp && !foundp->imported();
-                    if (!existsInChild && !implementsClassp->isInterfaceClass()
-                        && !implementsClassp->isVirtual()) {
-                        implementsClassp->v3error(
-                            "Class " << implementsClassp->prettyNameQ() << impOrExtends
+                if (VN_IS(baseSubp, Constraint)) {
+                    const VSymEnt* const foundp = m_curSymp->findIdFlat(baseSubp->name());
+                    const AstConstraint* const baseFuncp = VN_CAST(baseSubp, Constraint);
+                    if (!baseFuncp || !baseFuncp->isKwdPure()) continue;
+                    bool existsInDerived = foundp && !foundp->imported();
+                    if (!existsInDerived && !derivedClassp->isInterfaceClass()
+                        && !derivedClassp->isVirtual()) {
+                        derivedClassp->v3error(
+                            "Class " << derivedClassp->prettyNameQ() << impOrExtends
                                      << baseClassp->prettyNameQ()
                                      << " but is missing constraint implementation for "
-                                     << interfaceSubp->prettyNameQ()
-                                     << " (IEEE 1800-2023 18.5.2)\n"
-                                     << implementsClassp->warnContextPrimary() << '\n'
-                                     << interfaceSubp->warnOther()
+                                     << baseSubp->prettyNameQ() << " (IEEE 1800-2023 18.5.2)\n"
+                                     << derivedClassp->warnContextPrimary() << '\n'
+                                     << baseSubp->warnOther()
                                      << "... Location of interface class's pure constraint\n"
-                                     << interfaceSubp->warnContextSecondary());
+                                     << baseSubp->warnContextSecondary());
                     }
                 }
             }
@@ -2468,7 +2464,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void importSymbolsFromExtended(AstClass* const nodep, AstClassExtends* const cextp) {
         AstClass* const baseClassp = cextp->classp();
         VSymEnt* const srcp = m_statep->getNodeSym(baseClassp);
-        importImplementsClass(nodep, srcp, baseClassp);
+        importDerivedClass(nodep, srcp, baseClassp);
         if (!cextp->isImplements()) m_curSymp->importFromClass(m_statep->symsp(), srcp);
     }
     void classExtendImport(AstClass* nodep) {
