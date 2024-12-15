@@ -3788,11 +3788,10 @@ class WidthVisitor final : public VNVisitor {
                 if (nodep->pinsp()) argsp = nodep->pinsp()->unlinkFrBackWithNext();
                 AstNodeFTaskRef* newp = nullptr;
                 if (VN_IS(ftaskp, Task)) {
-                    newp = new AstTaskRef{nodep->fileline(), ftaskp->name(), argsp};
+                    newp = new AstTaskRef{nodep->fileline(), VN_AS(ftaskp, Task), argsp};
                 } else {
-                    newp = new AstFuncRef{nodep->fileline(), ftaskp->name(), argsp};
+                    newp = new AstFuncRef{nodep->fileline(), VN_AS(ftaskp, Func), argsp};
                 }
-                newp->taskp(ftaskp);
                 newp->classOrPackagep(ifacep);
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -3927,11 +3926,10 @@ class WidthVisitor final : public VNVisitor {
                     if (nodep->pinsp()) argsp = nodep->pinsp()->unlinkFrBackWithNext();
                     AstNodeFTaskRef* newp = nullptr;
                     if (VN_IS(ftaskp, Task)) {
-                        newp = new AstTaskRef{nodep->fileline(), ftaskp->name(), argsp};
+                        newp = new AstTaskRef{nodep->fileline(), VN_AS(ftaskp, Task), argsp};
                     } else {
-                        newp = new AstFuncRef{nodep->fileline(), ftaskp->name(), argsp};
+                        newp = new AstFuncRef{nodep->fileline(), VN_AS(ftaskp, Func), argsp};
                     }
-                    newp->taskp(ftaskp);
                     newp->classOrPackagep(classp);
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);

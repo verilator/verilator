@@ -77,6 +77,12 @@ int AstNodeArrayDType::lo() const VL_MT_STABLE { return rangep()->loConst(); }
 int AstNodeArrayDType::elementsConst() const VL_MT_STABLE { return rangep()->elementsConst(); }
 VNumRange AstNodeArrayDType::declRange() const VL_MT_STABLE { return VNumRange{left(), right()}; }
 
+AstFuncRef::AstFuncRef(FileLine* fl, AstFunc* taskp, AstNodeExpr* pinsp)
+    : ASTGEN_SUPER_FuncRef(fl, taskp->name(), pinsp) {
+    this->taskp(taskp);
+    dtypeFrom(taskp);
+}
+
 AstRange::AstRange(FileLine* fl, int left, int right)
     : ASTGEN_SUPER_Range(fl) {
     leftp(new AstConst{fl, static_cast<uint32_t>(left)});
@@ -93,11 +99,6 @@ int AstRange::leftConst() const VL_MT_STABLE {
 }
 int AstRange::rightConst() const VL_MT_STABLE {
     AstConst* const constp = VN_CAST(rightp(), Const);
-    return (constp ? constp->toSInt() : 0);
-}
-
-int AstQueueDType::boundConst() const VL_MT_STABLE {
-    AstConst* const constp = VN_CAST(boundp(), Const);
     return (constp ? constp->toSInt() : 0);
 }
 
@@ -125,6 +126,17 @@ AstPackArrayDType::AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* 
     dtypep(this);
     const int width = subDTypep()->width() * rangep->elementsConst();
     widthForce(width, width);
+}
+
+int AstQueueDType::boundConst() const VL_MT_STABLE {
+    AstConst* const constp = VN_CAST(boundp(), Const);
+    return (constp ? constp->toSInt() : 0);
+}
+
+AstTaskRef::AstTaskRef(FileLine* fl, AstTask* taskp, AstNodeExpr* pinsp)
+    : ASTGEN_SUPER_TaskRef(fl, taskp->name(), pinsp) {
+    this->taskp(taskp);
+    dtypeSetVoid();
 }
 
 int AstBasicDType::hi() const { return (rangep() ? rangep()->hiConst() : m.m_nrange.hi()); }

@@ -603,9 +603,7 @@ class ForkVisitor final : public VNVisitor {
         m_modp->addStmtsp(taskp);
         UINFO(9, "new " << taskp << endl);
 
-        AstTaskRef* const taskrefp
-            = new AstTaskRef{nodep->fileline(), taskp->name(), m_capturedVarRefsp};
-        taskrefp->taskp(taskp);
+        AstTaskRef* const taskrefp = new AstTaskRef{nodep->fileline(), taskp, m_capturedVarRefsp};
         AstStmtExpr* const taskcallp = taskrefp->makeStmt();
         // Replaced nodes will be revisited, so we don't need to "lift" the arguments
         // as captures in case of nested forks.
