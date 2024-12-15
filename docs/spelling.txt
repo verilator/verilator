@@ -693,6 +693,7 @@ fno
 fopen
 forceable
 foreach
+fourstate
 fprintf
 fprofile
 fread
