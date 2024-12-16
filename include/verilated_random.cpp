@@ -496,7 +496,7 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
                                 "hex_index contains invalid format");
                     continue;
                 }
-                std::string index = hexToDecimal(hex_index.substr(start+2));
+                std::string index = hexToDecimal(hex_index.substr(start + 2));
                 //const long long index = std::stoll(hex_index.substr(start + 2), nullptr, 16);
                 oss << "[" << index << "]";
             }
