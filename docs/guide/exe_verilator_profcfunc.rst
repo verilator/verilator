@@ -15,6 +15,17 @@ reported as a rounding error.
 
 For an overview of the use of verilator_profcfunc, see :ref:`Profiling`.
 
+verilator_profcfunc Example Usage
+---------------------------------
+
+..
+
+    verilator_profcfunc --help
+    verilator_profcfunc --version
+
+    verilator_profcfunc gprof.out
+
+
 verilator_profcfunc Arguments
 -----------------------------
 

@@ -62,6 +62,17 @@ predicted_thread#_mtask
   executing.
 
 
+verilator_gantt Example Usage
+-----------------------------
+
+..
+
+    verilator_gantt --help
+    verilator_gantt --version
+
+    verilator_gantt profile_exec.dat
+
+
 verilator_gantt Arguments
 -------------------------
 
