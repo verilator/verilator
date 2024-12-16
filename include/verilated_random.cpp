@@ -381,13 +381,9 @@ bool VlRandomizer::next(VlRNG& rngr) {
         f << "(declare-fun " << var.first << " () ";
         var.second->emitType(f);
         f << ")\n";
-        std::cout << "VAR.FIRST   " << var.first << "  SIZE   ";
-        var.second->emitType(std::cout);
-        std::cout << std::endl;
     }
     for (const std::string& constraint : m_constraints) {
         f << "(assert (= #b1 " << constraint << "))\n";
-        std::cout << constraint << std::endl;
     }
     f << "(check-sat)\n";
 
@@ -407,7 +403,36 @@ bool VlRandomizer::next(VlRNG& rngr) {
     f << "(reset)\n";
     return true;
 }
+std::string hexToDecimal(const std::string& hexStr) {
+    const std::string digits = "0123456789ABCDEF";
+    std::string result = "0";
 
+    for (char c : hexStr) {
+        int value = (c >= '0' && c <= '9') ? (c - '0') : (toupper(c) - 'A' + 10);
+
+        // Multiply the current result by 16
+        std::string temp = "";
+        int carry = 0;
+        for (auto it = result.rbegin(); it != result.rend(); ++it) {
+            int digit = (*it - '0') * 16 + carry;
+            carry = digit / 10;
+            temp.insert(temp.begin(), (digit % 10) + '0');
+        }
+        if (carry > 0) temp.insert(temp.begin(), carry + '0');
+        result = temp;
+
+        // Add the current hex digit
+        carry = value;
+        for (auto it = result.rbegin(); it != result.rend(); ++it) {
+            int digit = (*it - '0') + carry;
+            carry = digit / 10;
+            *it = (digit % 10) + '0';
+        }
+        if (carry > 0) result.insert(result.begin(), carry + '0');
+    }
+
+    return result;
+}
 bool VlRandomizer::parseSolution(std::iostream& f) {
     std::string sat;
     do { std::getline(f, sat); } while (sat == "");
@@ -452,7 +477,6 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
         indices.clear();
         if (name == "(select") {
             const std::string selectExpr = readUntilBalanced(f);
-            std::cout << "The selectExpr  " << selectExpr << std::endl;
             name = parseNestedSelect(selectExpr, indices);
         }
         std::getline(f, value, ')');
@@ -472,13 +496,11 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
                                 "hex_index contains invalid format");
                     continue;
                 }
-                std::cout << "index" << hex_index << std::endl;
-                const long long index = std::stoll(hex_index.substr(start + 2), nullptr, 16);
-                std::cout << "indexxx   " << index << std::endl;
+                std::string index = hexToDecimal(hex_index.substr(start+2));
+                //const long long index = std::stoll(hex_index.substr(start + 2), nullptr, 16);
                 oss << "[" << index << "]";
             }
             const std::string indexed_name = oss.str();
-            std::cout << "The indexed_name  " << indexed_name << std::endl;
             const auto it = std::find_if(m_arr_vars.begin(), m_arr_vars.end(),
                                          [&indexed_name](const auto& entry) {
                                              return entry.second->m_name == indexed_name;
