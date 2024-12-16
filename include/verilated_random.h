@@ -382,7 +382,7 @@ public:
                 //indices.push_back(integral_index);
                 record_arr_table(var.at(key), indexed_name, dimension - 1, indices, idxWidths);
                 idxWidths.pop_back();
-                for (int i = 0; i < 5 && !indices.empty(); ++i) indices.pop_back();
+                for(int i = 0; i < removing_ele && !indices.empty(); ++i)    indices.pop_back();
             }
         }
     }
