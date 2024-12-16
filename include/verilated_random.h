@@ -220,9 +220,14 @@ public:
                             && !std::is_same<T_Key, std::string>::value>::type
     process_key(const T_Key& key, std::string& indexed_name, size_t& integral_index,
                 const std::string& base_name, size_t& idx_width) {
-        VL_FATAL_MT(__FILE__, __LINE__, "randomize",
-                    "Unsupported: Only integral and string index of associative array is "
-                    "supported currently.");
+        for(int i =key.Words;i>0;i--)
+            indexed_name +=  std::to_string(key[i-1]);
+        integral_index = std::stol(indexed_name);
+        indexed_name = base_name + "[" + std::to_string(integral_index) + "]";
+        idx_width = key.Words*32;  // 64-bit mask
+        // VL_FATAL_MT(__FILE__, __LINE__, "randomize",
+        //             "Unsupported: Only integral and string index of associative array is "
+        //             "supported currently.");
     }
 
     uint64_t string_to_integral(const std::string& str) {
