@@ -118,28 +118,23 @@ public:
     }
     void emitSelect(std::ostream& s, const std::vector<size_t>& indices,
                     const std::vector<size_t>& idxWidths) const {
-        for (size_t idx = 0; idx < idxWidths.size(); ++idx) s << "(select ";
+        const size_t num_indices = idxWidths.size();
+        size_t wide_size = 0;
+
+        for (size_t idx = 0; idx < num_indices; ++idx) s << "(select ";
         s << name();
-        for (size_t idx = 0; idx < idxWidths.size(); ++idx) {
-            s << " #x";
+
+        for (size_t idx = 0; idx < num_indices; ++idx) {
             const size_t bit_width = idxWidths[idx];
-            int wide_size = 0;
-            for (size_t subidx = 0; subidx <= idx; subidx++) {
-                if (idx == subidx) {
-                    for (size_t i = wide_size;
-                         i < (wide_size + (bit_width > 64 ? (idxWidths[idx] / 32) : 1)); i++)
-                        emitHexs(s, indices, bit_width > 64 ? 32 : bit_width, i);
-                } else {
-                    if (idxWidths[subidx] > 64) {
-                        wide_size += (idxWidths[subidx] / 32);
-                    } else {
-                        wide_size += 1;
-                    }
-                }
+            s << " #x";
+
+            const size_t emit_count = (bit_width > 64) ? (idxWidths[idx] / 32) : 1;
+
+            for (size_t i = 0; i < emit_count; ++i) {
+                emitHexs(s, indices, (bit_width > 64) ? 32 : bit_width, wide_size + i);
             }
-            // for (int j = bit_width - 4; j >= 0; j -= 4) {
-            //     s << "0123456789abcdef"[(indices[idx] >> j) & 0xf];
-            // }
+
+            wide_size += (idxWidths[idx] > 64) ? (idxWidths[idx] / 32) : 1;
             s << ")";
         }
     }
@@ -242,24 +237,23 @@ public:
                             && !std::is_same<T_Key, std::string>::value>::type
     process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
                 const std::string& base_name, size_t& idx_width) {
-        // Convert to hexadecimal
-
-        std::ostringstream ss;
-        for (int i = key.Words; i > 0; i--) {
-            ss << std::hex << key[i - 1];
-            //indexed_name +=  std::to_string(key[i-1]);
-            integral_index.push_back(key[i - 1]);
+        std::ostringstream hex_stream;
+        for (int i = key.Words; i > 0; --i) {
+            const size_t word_value = key[i - 1];
+            hex_stream << std::hex << word_value;
+            integral_index.push_back(word_value);
         }
-        indexed_name = ss.str();
-        indexed_name.erase(0, indexed_name.find_first_not_of('0'));
-        //integral_index = std::stol(indexed_name);
-        indexed_name = base_name + "[" + hexToDecimal(indexed_name) + "]";
-        idx_width = key.Words * 32;  // 64-bit mask
+
+        std::string hex_string = hex_stream.str();
+        hex_string.erase(0, hex_string.find_first_not_of('0'));
+
+        indexed_name = base_name + "[" + hexToDecimal(hex_string) + "]";
+
+        idx_width = key.Words * 32;
         // VL_FATAL_MT(__FILE__, __LINE__, "randomize",
         //             "Unsupported: Only integral and string index of associative array is "
         //             "supported currently.");
     }
-
     uint64_t string_to_integral(const std::string& str) {
         uint64_t result = 0;
         for (char c : str) { result = (result << 8) | static_cast<uint64_t>(c); }
@@ -334,7 +328,6 @@ public:
                           std::vector<size_t> indices, std::vector<size_t> idxWidths) {
         const std::string key = generateKey(name, idx);
         m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices, idxWidths);
-        // std::cout <<"the name is "<< name<<std::endl;
         ++idx;
     }
     template <typename T>
@@ -371,18 +364,22 @@ public:
             for (auto it = var.begin(); it != var.end(); ++it) {
                 const T_Key& key = it->first;
                 const T_Value& value = it->second;
+
                 std::string indexed_name;
                 std::vector<size_t> integral_index;
-                size_t idx_width;
+                size_t idx_width = 0;
+
                 process_key(key, indexed_name, integral_index, name, idx_width);
+
+                // Update indices and widths
                 idxWidths.push_back(idx_width);
-                int removing_ele = integral_index.size();
-                indices.insert(indices.end(), std::make_move_iterator(integral_index.begin()),
-                               std::make_move_iterator(integral_index.end()));
-                //indices.push_back(integral_index);
+                indices.insert(indices.end(), integral_index.begin(), integral_index.end());
+
                 record_arr_table(var.at(key), indexed_name, dimension - 1, indices, idxWidths);
+
+                // Cleanup indices and widths
                 idxWidths.pop_back();
-                for (int i = 0; i < removing_ele && !indices.empty(); ++i) indices.pop_back();
+                indices.resize(indices.size() - integral_index.size());
             }
         }
     }

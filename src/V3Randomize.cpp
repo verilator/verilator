@@ -755,10 +755,6 @@ class ConstraintExprVisitor final : public VNVisitor {
                       + std::to_string((actual_width % 32 == 0) ? (actual_width / 4)
                                                                 : 8 * (int(actual_width / 32) + 1))
                       + "x";
-                // nodep->v3warn(CONSTRAINTIGN,
-                //               "Unsupported: Associative array index "
-                //               "widths of more than 64 bits during constraint randomization.");
-                // return;
             }
             AstNodeExpr* const idxp
                 = new AstSFormatF{fl, fmt, false, nodep->bitp()->unlinkFrBack(&handle)};
