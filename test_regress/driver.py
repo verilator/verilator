@@ -1418,7 +1418,7 @@ class VlTest:
             cmd = [
                 "echo q | " + run_env + VtOs.getenv_def('VERILATOR_MODELSIM', "vsim"),
                 ' '.join(param['ms_run_flags']), ' '.join(param['all_run_flags']), pli_opt,
-                (" top")
+                (" t")
             ]
             self.run(cmd=cmd,
                      check_finished=param['check_finished'],
