@@ -100,6 +100,31 @@ int mon_check_props(void) {
     }
 
     {
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_bytes", NULL);
+        CHECK_RESULT_NZ(object);
+
+        s_vpi_arrayvalue arrayVal{vpiRawFourStateVal, 0, nullptr};
+        int indexArr[1] = {rand() % size};
+
+        vpi_get_value_array(object, &arrayVal, indexArr, size);
+        CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
+
+        PLI_BYTE8* ptr = arrayVal.value.rawvals;
+
+        PLI_BYTE8 expected[4] = {
+            static_cast<PLI_BYTE8>(0xde),
+            static_cast<PLI_BYTE8>(0xad),
+            static_cast<PLI_BYTE8>(0xbe),
+            static_cast<PLI_BYTE8>(0xef)};
+
+        for (int i = 0; i < size; i++){
+            CHECK_RESULT_HEX(ptr[(i*2)], expected[(indexArr[0] + i) % size]);
+            CHECK_RESULT_HEX(ptr[(i*2)+1], 0);
+        }
+    }
+
+
+    {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_shorts", NULL);
         CHECK_RESULT_NZ(object);
 
@@ -120,6 +145,33 @@ int mon_check_props(void) {
         for (int i = 0; i < size; i++) {
             const unsigned element_offset = (indexArr[0] + i) % size;
             CHECK_RESULT_HEX(ptr[i], expected[element_offset]);
+        }
+    }
+
+    {
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_shorts", NULL);
+        CHECK_RESULT_NZ(object);
+
+        s_vpi_arrayvalue arrayVal{vpiRawFourStateVal, 0, nullptr};
+        int indexArr[1] = {rand() % size};
+
+        vpi_get_value_array(object, &arrayVal, indexArr, size);
+        CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
+
+        PLI_BYTE8* ptr = arrayVal.value.rawvals;
+
+        PLI_INT16 expected[4] = {
+            static_cast<PLI_INT16>(0xdead),
+            static_cast<PLI_INT16>(0xbeef),
+            static_cast<PLI_INT16>(0xcafe),
+            static_cast<PLI_INT16>(0xf00d)};
+
+        for (int i = 0; i < size; i++) {
+            const unsigned element_offset = (indexArr[0] + i) % size;
+            CHECK_RESULT_HEX(ptr[(i*4)] & 0xFF, expected[element_offset] & 0xFF);
+            CHECK_RESULT_HEX(ptr[(i*4)+1] & 0xFF, (expected[element_offset] >> 8) & 0xFF);
+            CHECK_RESULT_HEX(ptr[(i*4)+2] & 0xFF, 0);
+            CHECK_RESULT_HEX(ptr[(i*4)+3] & 0xFF, 0);
         }
     }
 
@@ -229,6 +281,95 @@ int mon_check_props(void) {
     }
 
     {
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_unorthodox", NULL);
+        CHECK_RESULT_NZ(object);
+
+        s_vpi_arrayvalue arrayVal{vpiVectorVal, 0, nullptr};
+        int indexArr[1] = {rand() % size};
+        vpi_get_value_array(object, &arrayVal, indexArr, size);
+
+        p_vpi_vecval ptr = arrayVal.value.vectors;
+
+        PLI_UINT32 expected[12] = {
+            0xcafef00d,0xdeadbeef,0x0,
+            0x89abcdef,0x01234567,0x1,
+            0xf00dcafe,0xbeefdead,0x2,
+            0xcdef89ab,0x45670123,0x3
+        };
+
+        for (int i = 0; i < (size*3); i++) {
+            const unsigned element_offset = ((indexArr[0]*3) + i) % (size*3);
+            CHECK_RESULT_HEX(ptr[i].aval, expected[element_offset]);
+            CHECK_RESULT_HEX(ptr[i].bval, 0);
+        }
+    }
+
+    {
+        vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_unorthodox", NULL);
+        CHECK_RESULT_NZ(object);
+
+        s_vpi_arrayvalue arrayVal{vpiRawFourStateVal, 0, nullptr};
+        int indexArr[1] = {rand() % size};
+        vpi_get_value_array(object, &arrayVal, indexArr, size);
+
+        PLI_UBYTE8* ptr = (PLI_UBYTE8*)arrayVal.value.rawvals;
+
+        PLI_BYTE8 expected[36] = {
+            static_cast<PLI_BYTE8>(0x0d),
+            static_cast<PLI_BYTE8>(0xf0),
+            static_cast<PLI_BYTE8>(0xfe),
+            static_cast<PLI_BYTE8>(0xca),
+            static_cast<PLI_BYTE8>(0xef),
+            static_cast<PLI_BYTE8>(0xbe),
+            static_cast<PLI_BYTE8>(0xad),
+            static_cast<PLI_BYTE8>(0xde),
+            static_cast<PLI_BYTE8>(0x0),
+
+            static_cast<PLI_BYTE8>(0xef),
+            static_cast<PLI_BYTE8>(0xcd),
+            static_cast<PLI_BYTE8>(0xab),
+            static_cast<PLI_BYTE8>(0x89),
+            static_cast<PLI_BYTE8>(0x67),
+            static_cast<PLI_BYTE8>(0x45),
+            static_cast<PLI_BYTE8>(0x23),
+            static_cast<PLI_BYTE8>(0x01),
+            static_cast<PLI_BYTE8>(0x1),
+
+            static_cast<PLI_BYTE8>(0xfe),
+            static_cast<PLI_BYTE8>(0xca),
+            static_cast<PLI_BYTE8>(0x0d),
+            static_cast<PLI_BYTE8>(0xf0),
+            static_cast<PLI_BYTE8>(0xad),
+            static_cast<PLI_BYTE8>(0xde),
+            static_cast<PLI_BYTE8>(0xef),
+            static_cast<PLI_BYTE8>(0xbe),
+            static_cast<PLI_BYTE8>(0x2),
+
+            static_cast<PLI_BYTE8>(0xab),
+            static_cast<PLI_BYTE8>(0x89),
+            static_cast<PLI_BYTE8>(0xef),
+            static_cast<PLI_BYTE8>(0xcd),
+            static_cast<PLI_BYTE8>(0x23),
+            static_cast<PLI_BYTE8>(0x01),
+            static_cast<PLI_BYTE8>(0x67),
+            static_cast<PLI_BYTE8>(0x45),
+            static_cast<PLI_BYTE8>(0x3)
+        };
+
+        const unsigned element_size_bytes = 9;
+        unsigned element_offset = indexArr[0];
+        for (unsigned i = 0; i < size; i++) {
+            const unsigned element_offset = (indexArr[0] + i) % size;
+            for(unsigned j = 0; j < element_size_bytes; j++) {
+                CHECK_RESULT_HEX(ptr[(i*element_size_bytes*2)+j] & 0xFF,expected[(element_offset*element_size_bytes)+j] & 0xFF);
+            }
+            for(unsigned j = 0; j < element_size_bytes; j++) {
+                CHECK_RESULT_HEX(ptr[(i*element_size_bytes*2)+j+element_size_bytes] & 0xFF,0);
+            }
+        }
+    }
+
+    {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_unorthodox_rl", NULL);
         CHECK_RESULT_NZ(object);
 
@@ -265,7 +406,7 @@ int mon_check_props(void) {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words", NULL);
         CHECK_RESULT_NZ(object);
 
-        s_vpi_arrayvalue arrayVal{vpiVector, 0, nullptr};
+        s_vpi_arrayvalue arrayVal{vpiVectorVal, 0, nullptr};
         int indexArr[1] = {rand() % size};
 
         vpi_get_value_array(object, &arrayVal, indexArr, size);
