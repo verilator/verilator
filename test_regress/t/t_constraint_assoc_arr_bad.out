@@ -1,9 +1,0 @@
-%Warning-CONSTRAINTIGN: t/t_constraint_assoc_arr_bad.v:14:22: Unsupported: Associative array index widths of more than 64 bits during constraint randomization.
-   14 |         bit_index_arr[79'd66] == 65;
-      |                      ^
-                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
-                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
-%Warning-CONSTRAINTIGN: t/t_constraint_assoc_arr_bad.v:15:24: Unsupported: Associative array index widths of more than 64 bits during constraint randomization.
-   15 |         logic_index_arr[65'd3] == 70;
-      |                        ^
-%Error: Exiting due to
