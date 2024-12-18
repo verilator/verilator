@@ -2687,7 +2687,10 @@ class WidthVisitor final : public VNVisitor {
                 mwidth = std::max(mwidth, itemp->widthMin());
             }
             nodep->dtypeSetBit();
-            subDTypep = nodep->findLogicDType(width, mwidth, nodep->exprp()->dtypep()->numeric());
+            const VSigning numeric = nodep->exprp()->dtypep()->numeric();
+            subDTypep = nodep->exprp()->dtypep()->isFourstate()
+                            ? nodep->findLogicDType(width, mwidth, numeric)
+                            : nodep->findBitDType(width, mwidth, numeric);
         }
 
         iterateCheck(nodep, "Inside expression", nodep->exprp(), CONTEXT_DET, FINAL, subDTypep,
