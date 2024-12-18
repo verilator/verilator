@@ -79,6 +79,10 @@ public:
     DirMap m_dirMap;  // Directory listing
 
     // ACCESSOR METHODS
+    std::list<string> getIncDirUser() {
+        return m_incDirUsers;
+    }
+    // ACCESSOR METHODS
     void addIncDirUser(const string& incdir) {
         const string& dir = V3Os::filenameCleanup(incdir);
         const auto itFoundPair = m_incDirUserSet.insert(dir);
@@ -287,6 +291,7 @@ void VTimescale::parseSlashed(FileLine* fl, const char* textp, VTimescale& unitr
 //######################################################################
 // V3Options class functions
 
+std::list<string> V3Options::getIncDirUser() { return m_impp->getIncDirUser(); }
 void V3Options::addIncDirUser(const string& incdir) { m_impp->addIncDirUser(incdir); }
 void V3Options::addIncDirFallback(const string& incdir) { m_impp->addIncDirFallback(incdir); }
 void V3Options::addLangExt(const string& langext, const V3LangCode& lc) {

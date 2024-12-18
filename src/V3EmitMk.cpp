@@ -816,8 +816,22 @@ class EmitMkHierVerilation final {
         of.puts("# Verilation of hierarchical blocks are executed in this directory\n");
         of.puts("VM_HIER_RUN_DIR := " + cwd + "\n");
         of.puts("# Common options for hierarchical blocks\n");
-        const string fullpath_bin = V3Os::filenameRealPath(v3Global.opt.buildDepBin());
-        const string verilator_wrapper = V3Os::filenameDir(fullpath_bin) + "/verilator";
+
+        char buffer[1000];
+        ssize_t len = readlink("/proc/self/exe", buffer, 1000);
+
+        if (len == -1) {
+            std::cerr << "Error reading /proc/self/exe" << std::endl;
+        }
+
+        // Ensure null termination
+        //buffer[len] = '\0';
+
+        // Store the path in a const std::string
+        const std::string exe_path(buffer);
+
+        std::cout << "Executable path: " << exe_path << std::endl;
+        const string verilator_wrapper = exe_path;
         of.puts("VM_HIER_VERILATOR := " + verilator_wrapper + "\n");
         of.puts("VM_HIER_INPUT_FILES := \\\n");
         const V3StringList& vFiles = v3Global.opt.vFiles();
@@ -844,6 +858,11 @@ class EmitMkHierVerilation final {
         of.puts("\n");
         of.puts("ifndef VM_HIER_VERILATION_INCLUDED\n");
         of.puts("VM_HIER_VERILATION_INCLUDED = 1\n\n");
+
+        // Iterate over c++ list and add them to VPATH
+        for( const string& i : v3Global.opt.getIncDirUser()) {
+            of.puts("VPATH += " + V3Os::filenameRealPath(i) + "\n");
+        }
 
         of.puts(".SUFFIXES:\n");
         of.puts(".PHONY: hier_build hier_verilation hier_launch_verilator\n");
