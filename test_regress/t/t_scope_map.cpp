@@ -50,8 +50,8 @@ int main(int argc, char** argv) {
 
         for (const auto& varname : *varNameMap) {
             const VerilatedVar* varp = &(varname.second);
-            int varLeft = varp->packed().left();
-            int varRight = varp->packed().right();
+            int varLeft = varp->range(0)->left();
+            int varRight = varp->range(0)->right();
 
 #ifdef TEST_VERBOSE
             VL_PRINTF("\tVar = %s\n", varname.first);
@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
 
         for (const auto& varname : *varNameMap) {
             const VerilatedVar* varp = &(varname.second);
-            int varLeft = varp->packed().left();
+            int varLeft = varp->range(0)->left();
             int varBits = varLeft + 1;
             uint8_t* varData = reinterpret_cast<uint8_t*>(varp->datap());
 
