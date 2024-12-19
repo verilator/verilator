@@ -222,12 +222,14 @@ string AstNode::vpiName(const string& namein) {
     // This is slightly different from prettyName, in that when we encounter escaped characters,
     // we change that identifier to an escaped identifier, wrapping it with '\' and ' '
     // as specified in LRM 23.6
+    string name = namein;
+    if (0 == namein.substr(0, 7).compare("__SYM__")) { name = namein.substr(7); }
     string pretty;
-    pretty.reserve(namein.length());
+    pretty.reserve(name.length());
     bool inEscapedIdent = false;
     int lastIdent = 0;
 
-    for (const char* pos = namein.c_str(); *pos;) {
+    for (const char* pos = name.c_str(); *pos;) {
         char specialChar = 0;
         if (pos[0] == '-' && pos[1] == '>') {  // ->
             specialChar = '.';

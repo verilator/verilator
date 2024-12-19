@@ -74,6 +74,7 @@ extern "C" int mon_check();
 /*verilator public_flat_rw_on*/
    real           real1;
    string         str1;
+   localparam int nullptr = 123;
 /*verilator public_off*/
 
    sub sub();

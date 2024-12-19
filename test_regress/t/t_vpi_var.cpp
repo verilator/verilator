@@ -405,6 +405,16 @@ int _mon_check_var() {
         CHECK_RESULT_CSTR(p, "vpiConstant");
     }
 
+    // C++ keyword collision
+    {
+        TestVpiHandle vh10 = VPI_HANDLE("nullptr");
+        CHECK_RESULT_NZ(vh10);
+        vpi_get_value(vh10, &tmpValue);
+        CHECK_RESULT(tmpValue.value.integer, 123);
+        p = vpi_get_str(vpiType, vh10);
+        CHECK_RESULT_CSTR(p, "vpiParameter");
+    }
+
     // non-integer variables
     tmpValue.format = vpiRealVal;
     {

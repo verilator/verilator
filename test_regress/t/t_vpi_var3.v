@@ -55,6 +55,7 @@ extern "C" int mon_check();
 
    real           real1;
    string         str1;
+   localparam int nullptr = 123;
 
    sub sub();
 
