@@ -55,6 +55,9 @@ extern "C" int mon_check();
 
    real           real1          /*verilator public_flat_rw */;
    string         str1           /*verilator public_flat_rw */;
+   // specifically public and not public_flat_rw here so as to induce the C++
+   // keyword collision
+   localparam int nullptr        /*verilator public */ = 123;
 
    sub sub();
 
