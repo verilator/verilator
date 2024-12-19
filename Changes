@@ -31,6 +31,7 @@ Verilator 5.031 devel
 * Add error on `wait` with missing `.triggered` (#4457).
 * Add error when improperly storing to parameter (#5147). [Gökçe Aydos]
 * Add error on illegal `--prefix` etc. values (#5507). [Fabian Keßler]
+* Add error on `--savable --timing` (#5690). [Narcis Rodas]
 * Add coverage point hierarchy to coverage reports (#5575) (#5576). [Andrew Nolte]
 * Add warning on global constraints (#5625). [Ryszard Rozak, Antmicro Ltd.]
 * Add default CMAKE_BUILD_TYPE (#5691) (#5692). [Anthony Moore]

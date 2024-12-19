@@ -949,6 +949,9 @@ void V3Options::notify() VL_MT_DISABLED {
     if (coverage() && savable()) {
         cmdfl->v3error("Unsupported: --coverage and --savable not supported together");
     }
+    if (v3Global.opt.timing().isSetTrue() && savable()) {
+        cmdfl->v3error("Unsupported: --timing and --savable not supported together");
+    }
 
     // Mark options as available
     m_available = true;
