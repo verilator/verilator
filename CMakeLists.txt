@@ -21,6 +21,11 @@ project(
     LANGUAGES CXX
 )
 
+# Set default build type to Release if not specified
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+endif()
+
 option(
     DEBUG_AND_RELEASE_AND_COVERAGE
     "Builds both the debug and release binaries, overriding CMAKE_BUILD_TYPE. Not supported under MSBuild."
