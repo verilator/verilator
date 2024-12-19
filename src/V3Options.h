@@ -26,7 +26,6 @@
 #include <map>
 #include <set>
 #include <string>
-#include <list>
 #include <vector>
 
 class V3OptionsImp;
@@ -467,7 +466,6 @@ public:
     bool preprocNoLine() const { return m_preprocNoLine; }
     bool underlineZero() const { return m_underlineZero; }
     string flags() const { return m_flags; }
-    std::list<string> getIncDirUser();
     bool systemC() const VL_MT_SAFE { return m_systemC; }
     bool savable() const VL_MT_SAFE { return m_savable; }
     bool stats() const { return m_stats; }

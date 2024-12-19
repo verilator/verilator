@@ -859,11 +859,6 @@ class EmitMkHierVerilation final {
         of.puts("ifndef VM_HIER_VERILATION_INCLUDED\n");
         of.puts("VM_HIER_VERILATION_INCLUDED = 1\n\n");
 
-        // Iterate over c++ list and add them to VPATH
-        for( const string& i : v3Global.opt.getIncDirUser()) {
-            of.puts("VPATH += " + V3Os::filenameRealPath(i) + "\n");
-        }
-
         of.puts(".SUFFIXES:\n");
         of.puts(".PHONY: hier_build hier_verilation hier_launch_verilator\n");
 
