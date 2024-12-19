@@ -36,9 +36,6 @@
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
-// __FILE__ is too long
-#define FILENM "t_vpi_memory.cpp"
-
 #define DEBUG \
     if (0) printf
 
