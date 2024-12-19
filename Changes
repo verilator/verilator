@@ -33,6 +33,7 @@ Verilator 5.031 devel
 * Add error on illegal `--prefix` etc. values (#5507). [Fabian Keßler]
 * Add coverage point hierarchy to coverage reports (#5575) (#5576). [Andrew Nolte]
 * Add warning on global constraints (#5625). [Ryszard Rozak, Antmicro Ltd.]
+* Add default CMAKE_BUILD_TYPE (#5691) (#5692). [Anthony Moore]
 * Add error on `solve before` or soft constraints of `randc` variable.
 * Improve concatenation performance (#5598) (#5599) (#5602). [Geza Lore]
 * Improve optimization of duplicate wide expressions (#5637). [Bartłomiej Chmiel, Antmicro Ltd.]
@@ -56,6 +57,8 @@ Verilator 5.031 devel
 * Fix wildcard equality and inside operators for non-fourstate expressions (#5673). [Ryszard Rozak, Antmicro Ltd.]
 * Fix `randomize..with` of parameterized classes (#5676). [Ryszard Rozak, Antmicro Ltd.]
 * Fix interface bracketed array parameter access (#5677) (#5678). [Todd Strader]
+* Fix width extension of operands of `inside` operator (#5685). [Ryszard Rozak, Antmicro Ltd.]
+* Fix VPI + SYMRSVDWORD intersection (#5686). [Todd Strader]
 
 
 Verilator 5.030 2024-10-27
