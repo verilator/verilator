@@ -265,10 +265,10 @@ ifneq ($(VM_DEFAULT_RULES),0)
 %.o: %.cpp
 	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
 
-$(VK_OBJS_FAST): %.o: %.cpp $(VK_PCH_H).fast.gch
+$(VK_OBJS_FAST): %.o: %.cpp $(VK_PCH_H).fast$(CFG_GCH_IF_CLANG)
 	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(VK_PCH_I_FAST) -c -o $@ $<
 
-$(VK_OBJS_SLOW): %.o: %.cpp $(VK_PCH_H).slow.gch
+$(VK_OBJS_SLOW): %.o: %.cpp $(VK_PCH_H).slow$(CFG_GCH_IF_CLANG)
 	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(VK_PCH_I_SLOW) -c -o $@ $<
 
 $(VK_GLOBAL_OBJS): %.o: %.cpp
@@ -277,9 +277,9 @@ $(VK_GLOBAL_OBJS): %.o: %.cpp
 # Precompile a header file
 # PCH's compiler flags must match exactly the rules' above FAST/SLOW
 # arguments used for the .cpp files, or the PCH file won't be used.
-%.fast.gch: %
+%.fast$(CFG_GCH_IF_CLANG): %
 	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
-%.slow.gch: %
+%.slow$(CFG_GCH_IF_CLANG): %
 	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
 
 endif

@@ -738,7 +738,7 @@ public:
         }
 
         const string compilerIncludePch
-            = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_PCH_H).fast.gch";
+            = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_PCH_H).fast$(CFG_GCH_IF_CLANG)";
         const string compilerIncludeFlag
             = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_PCH_I_FAST)";
         for (const string& cppfile : cppFiles) {
