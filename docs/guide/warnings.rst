@@ -1692,6 +1692,9 @@ List Of Warnings
    Warning that a symbol matches a C++ reserved word, and using this as a
    symbol name would result in odd C++ compiler errors.  You may disable
    this warning, but Verilator will rename the symbol to avoid conflict.
+   If you are using `--vpi` and only mark things as public for VPI access
+   (and not C++ access) then it is advisable to disable this warning with
+   :code:`-Wno-SYMRSVDWORD`.
 
 
 .. option:: SYNCASYNCNET
