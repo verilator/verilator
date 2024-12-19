@@ -522,8 +522,7 @@ const char* strFromVpiConstType(PLI_INT32 constType) {
     return names[(constType <= vpiTimeConst) ? constType : 0];
 }
 
-#define FILENM \
-    basename(strdup(__FILE__))
+#define FILENM basename(strdup(__FILE__))
 
 #define CHECK_RESULT_VH(got, exp) \
     if ((got) != (exp)) { \
