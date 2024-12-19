@@ -105,8 +105,6 @@ int _mon_check_unimpl(p_cb_data cb_data) {
         vpi_get64(0, NULL);
         vpi_get_delays(NULL, NULL);
         vpi_put_delays(NULL, NULL);
-        vpi_get_value_array(NULL, NULL, NULL, 0);
-        vpi_put_value_array(NULL, NULL, NULL, 0);
         vpi_get_time(NULL, NULL);
         vpi_mcd_name(0);
         vpi_compare_objects(NULL, NULL);
