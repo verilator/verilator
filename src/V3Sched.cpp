@@ -226,7 +226,8 @@ EvalLoop createEvalLoop(
     AstNodeStmt* stmtps = nullptr;
 
     // Prof-exec section push
-    if (v3Global.opt.profExec()) stmtps = profExecSectionPush(flp, "loop " + tag);
+    if (v3Global.opt.profExec() && !v3Global.opt.hierChild())
+        stmtps = profExecSectionPush(flp, "loop " + tag);
 
     const auto addVar = [&](const std::string& name, int width, uint32_t initVal) {
         AstVarScope* const vscp = scopeTopp->createTemp("__V" + tag + name, width);
@@ -273,7 +274,8 @@ EvalLoop createEvalLoop(
     }
 
     // Prof-exec section pop
-    if (v3Global.opt.profExec()) stmtps->addNext(profExecSectionPop(flp));
+    if (v3Global.opt.profExec() && !v3Global.opt.hierChild())
+        stmtps->addNext(profExecSectionPop(flp));
 
     return {firstIterFlagp, stmtps};
 }
@@ -630,7 +632,8 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
     // Create the trigger computation function
     AstCFunc* const funcp = makeSubFunction(netlistp, "_eval_triggers__" + name, slow);
-    if (v3Global.opt.profExec()) funcp->addStmtsp(profExecSectionPush(flp, "trig " + name));
+    if (v3Global.opt.profExec() && !v3Global.opt.hierChild())
+        funcp->addStmtsp(profExecSectionPush(flp, "trig " + name));
 
     // Create the trigger dump function (for debugging, always 'slow')
     AstCFunc* const dumpp = makeSubFunction(netlistp, "_dump_triggers__" + name, true);
@@ -781,7 +784,8 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
         add("#endif\n");
     }
 
-    if (v3Global.opt.profExec()) funcp->addStmtsp(profExecSectionPop(flp));
+    if (v3Global.opt.profExec() && !v3Global.opt.hierChild())
+        funcp->addStmtsp(profExecSectionPop(flp));
 
     // The debug code might leak signal names, so simply delete it when using --protect-ids
     if (v3Global.opt.protectIds()) dumpp->stmtsp()->unlinkFrBackWithNext()->deleteTree();
@@ -1110,7 +1114,8 @@ void createEval(AstNetlist* netlistp,  //
     AstCFunc* const funcp = makeTopFunction(netlistp, "_eval", false);
     netlistp->evalp(funcp);
 
-    if (v3Global.opt.profExec()) funcp->addStmtsp(profExecSectionPush(flp, "eval"));
+    if (v3Global.opt.profExec() && !v3Global.opt.hierChild())
+        funcp->addStmtsp(profExecSectionPush(flp, "eval"));
 
     // Start with the ico loop, if any
     if (icoLoop) funcp->addStmtsp(icoLoop);
@@ -1121,7 +1126,8 @@ void createEval(AstNetlist* netlistp,  //
     // Add the Postponed eval call
     if (postponedFuncp) funcp->addStmtsp(callVoidFunc(postponedFuncp));
 
-    if (v3Global.opt.profExec()) funcp->addStmtsp(profExecSectionPop(flp));
+    if (v3Global.opt.profExec() && !v3Global.opt.hierChild())
+        funcp->addStmtsp(profExecSectionPop(flp));
 }
 
 }  // namespace
