@@ -59,7 +59,7 @@ endmodule
 module Test (/*AUTOARG*/
    // Inputs
    clk, in
-   );
+   ); /*verilator hier_block*/
    input clk;
    input [9:0] in;
 

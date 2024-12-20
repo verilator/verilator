@@ -122,7 +122,7 @@ AstCFunc* V3Order::order(AstNetlist* netlistp,  //
         return resp;
     }();
 
-    if (v3Global.opt.profExec()) {
+    if (v3Global.opt.profExec() && !v3Global.opt.hierChild()) {
         funcp->addStmtsp(new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"func "
                                                + tag + "\");\n"});
     }
@@ -152,7 +152,7 @@ AstCFunc* V3Order::order(AstNetlist* netlistp,  //
     // Dispose of the remnants of the inputs
     for (auto* const lbsp : logic) lbsp->deleteActives();
 
-    if (v3Global.opt.profExec()) {
+    if (v3Global.opt.profExec() && !v3Global.opt.hierChild()) {
         funcp->addStmtsp(new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();\n"});
     }
 
