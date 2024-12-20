@@ -324,7 +324,7 @@ def report_sections():
                 scope = scope[1].setdefault(item, [0, {}, 0])
             scope[2] += 1
         dt = time - prevTime
-        assert dt > 0
+        assert dt >= 0
         scope = sectionTree
         for item in prevStack:
             scope = scope[1].setdefault(item, [0, {}, 0])
