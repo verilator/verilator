@@ -176,8 +176,10 @@ AC_PROG_CXX
 AC_PROG_INSTALL
 
 AC_LANG_PUSH(C++)
-cxx_version=$($CXX --version | head -1)
-AC_MSG_RESULT([compiler is $CXX --version = $cxx_version])
+CFG_CXX_VERSION=`$CXX --version | head -1`
+AC_MSG_RESULT([compiler $CXX --version = $CFG_CXX_VERSION])
+AC_SUBST(CFG_CXX_VERSION)
+
 AC_MSG_CHECKING([that C++ compiler can compile simple program])
 AC_RUN_IFELSE(
    [AC_LANG_SOURCE([int main() { return 0; }])],

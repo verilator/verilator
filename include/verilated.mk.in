@@ -23,6 +23,12 @@ PYTHON3 = @PYTHON3@
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
 
+# Compiler version found during configure. This make variable is not used
+# here, but note that if this differs from what `$(CXX) --version` prints,
+# then there may be strange results such as unexpected warnings, as
+# configure determines compiler characteristics.
+CFG_CXX_VERSION = "@CFG_CXX_VERSION@"
+
 # Compiler flags to enable profiling
 CFG_CXXFLAGS_PROFILE = @CFG_CXXFLAGS_PROFILE@
 # Select language required to compile (often empty)
