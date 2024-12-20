@@ -672,7 +672,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstDefaultDisable* nodep) override {
         assertAtStatement(nodep);
         // it's like an if() condition.
-        iterateCheckBool(nodep, "default disable iff condiftion", nodep->condp(), BOTH);
+        iterateCheckBool(nodep, "default disable iff condition", nodep->condp(), BOTH);
     }
     void visit(AstDelay* nodep) override {
         if (VN_IS(m_procedurep, Final)) {

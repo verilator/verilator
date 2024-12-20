@@ -53,7 +53,7 @@ class LinkLValueVisitor final : public VNVisitor {
                 // as V3LinkLValue runs after V3Param
                 nodep->v3error("Storing to parameter variable "
                                << nodep->prettyNameQ()
-                               << " in a context that is determed only at runtime");
+                               << " in a context that is determined only at runtime");
             }
             if (m_setContinuously) {
                 nodep->varp()->isContinuously(true);
