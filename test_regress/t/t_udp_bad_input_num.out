@@ -1,0 +1,5 @@
+%Error: t/t_udp_bad_input_num.v:14:1: 3 input val required, while there are 2 input for the table line!
+                                    : ... note: In instance 'top'
+   14 |         1 0  :   0;
+      | ^~~~~~~~
+%Error: Exiting due to

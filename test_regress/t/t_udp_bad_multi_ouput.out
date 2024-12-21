@@ -1,0 +1,5 @@
+%Error: t/t_udp_bad_multi_ouput.v:8:15: 2 output ports for udp table, there must be one output port!
+                                      : ... note: In instance 'top'
+    8 | output dout1, dout2;
+      |               ^~~~~
+%Error: Exiting due to
