@@ -1,0 +1,5 @@
+%Error: t/t_udp_sequential_bad.v:10:1: sequetial UDP is not suppoted currently!
+                                     : ... note: In instance 'top'
+   10 | reg dout;
+      | ^~~
+%Error: Exiting due to
