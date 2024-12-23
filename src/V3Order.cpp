@@ -123,8 +123,10 @@ AstCFunc* V3Order::order(AstNetlist* netlistp,  //
     }();
 
     if (v3Global.opt.profExec()) {
-        funcp->addStmtsp(new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"func "
-                                               + tag + "\");\n"});
+        const string name
+            = (v3Global.opt.hierChild() ? (v3Global.opt.topModule() + " ") : "") + "func " + tag;
+        funcp->addStmtsp(new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\""
+                                               + name + "\");\n"});
     }
 
     // Build the OrderGraph

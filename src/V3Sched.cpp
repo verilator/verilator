@@ -156,7 +156,9 @@ AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVa
     return ifp;
 }
 
-AstNodeStmt* profExecSectionPush(FileLine* flp, const string& name) {
+AstNodeStmt* profExecSectionPush(FileLine* flp, const string& section) {
+    const string name
+        = (v3Global.opt.hierChild() ? (v3Global.opt.topModule() + " ") : "") + section;
     return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"" + name + "\");\n"};
 }
 
