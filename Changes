@@ -60,6 +60,7 @@ Verilator 5.031 devel
 * Fix interface bracketed array parameter access (#5677) (#5678). [Todd Strader]
 * Fix width extension of operands of `inside` operator (#5685). [Ryszard Rozak, Antmicro Ltd.]
 * Fix VPI + SYMRSVDWORD intersection (#5686). [Todd Strader]
+* Fix verilator_gantt for hierarchically Verilated models (#5700). [Bartłomiej Chmiel, Antmicro Ltd.]
 
 
 Verilator 5.030 2024-10-27

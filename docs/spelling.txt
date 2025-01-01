@@ -294,6 +294,7 @@ NaN
 Nalbantis
 Nandor
 Narayan
+Narcis
 Nassim
 Nauticus
 Newgard
@@ -343,6 +344,7 @@ Redhat
 Reitan
 Renga
 Requin
+Rodas
 Rodionov
 Rohan
 Rolfe
