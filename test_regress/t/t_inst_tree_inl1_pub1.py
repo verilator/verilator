@@ -22,15 +22,15 @@ test.compile(v_flags2=[
 if test.vlt_all:
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"u.u0.u0.z0",.*"loc":"f,70:[^"]*",.*"origName":"z0",.*"isSigPublic":true,.*"dtypeName":"logic",.*"isSigUserRdPublic":true.*"isSigUserRWPublic":true'
+        r'{"type":"VAR","name":"u.u0.u0.z0",.*"loc":"\w,70:[^"]*",.*"origName":"z0",.*"isSigPublic":true,.*"dtypeName":"logic",.*"isSigUserRdPublic":true.*"isSigUserRWPublic":true'
     )
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"u.u0.u0.u0.u0.z1",.*"loc":"f,85:[^"]*",.*"origName":"z1",.*"isSigPublic":true,.*"dtypeName":"logic",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true'
+        r'{"type":"VAR","name":"u.u0.u0.u0.u0.z1",.*"loc":"\w,85:[^"]*",.*"origName":"z1",.*"isSigPublic":true,.*"dtypeName":"logic",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true'
     )
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"u.u0.u1.u0.u0.z",.*"loc":"f,83:[^"]*",.*"origName":"z",.*,"isSigPublic":true,.*dtypeName":"logic",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true'
+        r'{"type":"VAR","name":"u.u0.u1.u0.u0.z",.*"loc":"\w,83:[^"]*",.*"origName":"z",.*,"isSigPublic":true,.*dtypeName":"logic",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true'
     )
 
 test.execute()

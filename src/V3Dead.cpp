@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -109,16 +109,16 @@ class DeadVisitor final : public VNVisitor {
         if (m_modp) m_modp->user1Inc();  // e.g. Class under Package
         VL_RESTORER(m_modp);
         m_modp = nodep;
-        if (!nodep->dead()) {
-            iterateChildren(nodep);
-            checkAll(nodep);
-            if (AstClass* const classp = VN_CAST(nodep, Class)) {
-                if (classp->extendsp()) classp->extendsp()->user1Inc();
-                if (classp->classOrPackagep()) classp->classOrPackagep()->user1Inc();
-                m_classesp.push_back(classp);
-                // TODO we don't reclaim dead classes yet - graph implementation instead?
-                classp->user1Inc();
-            }
+        if (nodep->dead()) return;
+        if (nodep->modPublic()) m_modp->user1Inc();
+        iterateChildren(nodep);
+        checkAll(nodep);
+        if (AstClass* const classp = VN_CAST(nodep, Class)) {
+            if (classp->extendsp()) classp->extendsp()->user1Inc();
+            if (classp->classOrPackagep()) classp->classOrPackagep()->user1Inc();
+            m_classesp.push_back(classp);
+            // TODO we don't reclaim dead classes yet - graph implementation instead?
+            classp->user1Inc();
         }
     }
     void visit(AstCFunc* nodep) override {
@@ -540,7 +540,7 @@ public:
 
 void V3Dead::deadifyModules(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    {
+    {  // node, elimUserVars, elimDTypes, elimScopes, elimCells, elimTopIfaces
         DeadVisitor{nodep, false, false, false, false, !v3Global.opt.topIfacesSupported()};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadModules", 0, dumpTreeEitherLevel() >= 6);

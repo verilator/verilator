@@ -11,11 +11,11 @@
            );
         
  000019    input clk;
-+000019  point: comment=clk
++000019  point: comment=clk hier=top.t
            input real check_real; // Check issue #2741
  000021    input real check_array_real [1:0];
-+000021  point: comment=check_array_real[0]
-+000021  point: comment=check_array_real[1]
++000021  point: comment=check_array_real[0] hier=top.t
++000021  point: comment=check_array_real[1] hier=top.t
            input string check_string; // Check issue #2766
         
            typedef struct packed {
@@ -27,11 +27,11 @@
            } str_t;
         
 %000002    reg   toggle; initial toggle='0;
--000002  point: comment=toggle
+-000002  point: comment=toggle hier=top.t
         
 %000002    str_t stoggle; initial stoggle='0;
--000002  point: comment=stoggle.b
--000002  point: comment=stoggle.u.ua
+-000002  point: comment=stoggle.b hier=top.t
+-000002  point: comment=stoggle.u.ua hier=top.t
         
            union {
               real val1;  // TODO use bit [7:0] here
@@ -41,23 +41,23 @@
            const reg aconst = '0;
         
 %000002    reg [1:0][1:0] ptoggle; initial ptoggle=0;
--000002  point: comment=ptoggle[0][0]
--000000  point: comment=ptoggle[0][1]
--000000  point: comment=ptoggle[1][0]
--000000  point: comment=ptoggle[1][1]
+-000002  point: comment=ptoggle[0][0] hier=top.t
+-000000  point: comment=ptoggle[0][1] hier=top.t
+-000000  point: comment=ptoggle[1][0] hier=top.t
+-000000  point: comment=ptoggle[1][1] hier=top.t
         
            integer cyc; initial cyc=1;
 ~000011    wire [7:0] cyc_copy = cyc[7:0];
-+000011  point: comment=cyc_copy[0]
--000005  point: comment=cyc_copy[1]
--000002  point: comment=cyc_copy[2]
--000001  point: comment=cyc_copy[3]
--000000  point: comment=cyc_copy[4]
--000000  point: comment=cyc_copy[5]
--000000  point: comment=cyc_copy[6]
--000000  point: comment=cyc_copy[7]
++000011  point: comment=cyc_copy[0] hier=top.t
+-000005  point: comment=cyc_copy[1] hier=top.t
+-000002  point: comment=cyc_copy[2] hier=top.t
+-000001  point: comment=cyc_copy[3] hier=top.t
+-000000  point: comment=cyc_copy[4] hier=top.t
+-000000  point: comment=cyc_copy[5] hier=top.t
+-000000  point: comment=cyc_copy[6] hier=top.t
+-000000  point: comment=cyc_copy[7] hier=top.t
 %000002    wire       toggle_up;
--000002  point: comment=toggle_up
+-000002  point: comment=toggle_up hier=top.t
         
            typedef struct {
               int q[$];
@@ -90,30 +90,30 @@
                      .toggle                    (toggle));
         
 %000001    reg [1:0]  memory[121:110];
--000001  point: comment=memory[110][0]
--000000  point: comment=memory[110][1]
--000000  point: comment=memory[111][0]
--000000  point: comment=memory[111][1]
--000000  point: comment=memory[112][0]
--000000  point: comment=memory[112][1]
--000000  point: comment=memory[113][0]
--000000  point: comment=memory[113][1]
--000000  point: comment=memory[114][0]
--000000  point: comment=memory[114][1]
--000000  point: comment=memory[115][0]
--000000  point: comment=memory[115][1]
--000000  point: comment=memory[116][0]
--000000  point: comment=memory[116][1]
--000000  point: comment=memory[117][0]
--000000  point: comment=memory[117][1]
--000000  point: comment=memory[118][0]
--000000  point: comment=memory[118][1]
--000000  point: comment=memory[119][0]
--000000  point: comment=memory[119][1]
--000000  point: comment=memory[120][0]
--000000  point: comment=memory[120][1]
--000000  point: comment=memory[121][0]
--000000  point: comment=memory[121][1]
+-000001  point: comment=memory[110][0] hier=top.t
+-000000  point: comment=memory[110][1] hier=top.t
+-000000  point: comment=memory[111][0] hier=top.t
+-000000  point: comment=memory[111][1] hier=top.t
+-000000  point: comment=memory[112][0] hier=top.t
+-000000  point: comment=memory[112][1] hier=top.t
+-000000  point: comment=memory[113][0] hier=top.t
+-000000  point: comment=memory[113][1] hier=top.t
+-000000  point: comment=memory[114][0] hier=top.t
+-000000  point: comment=memory[114][1] hier=top.t
+-000000  point: comment=memory[115][0] hier=top.t
+-000000  point: comment=memory[115][1] hier=top.t
+-000000  point: comment=memory[116][0] hier=top.t
+-000000  point: comment=memory[116][1] hier=top.t
+-000000  point: comment=memory[117][0] hier=top.t
+-000000  point: comment=memory[117][1] hier=top.t
+-000000  point: comment=memory[118][0] hier=top.t
+-000000  point: comment=memory[118][1] hier=top.t
+-000000  point: comment=memory[119][0] hier=top.t
+-000000  point: comment=memory[119][1] hier=top.t
+-000000  point: comment=memory[120][0] hier=top.t
+-000000  point: comment=memory[120][1] hier=top.t
+-000000  point: comment=memory[121][0] hier=top.t
+-000000  point: comment=memory[121][1] hier=top.t
         
            wire [1023:0] largeish = {992'h0, cyc};
            // CHECK_COVER_MISSING(-1)
@@ -154,22 +154,22 @@
            // t.a1 and t.a2 collapse to a count of 2
         
  000038    input clk;
-+000038  point: comment=clk
++000038  point: comment=clk hier=top.t.a*
         
 %000004    input toggle;
--000004  point: comment=toggle
+-000004  point: comment=toggle hier=top.t.a*
            // CHECK_COVER(-1,"top.t.a*",4)
            // 2 edges * (t.a1 and t.a2)
         
 ~000022    input [7:0] cyc_copy;
-+000022  point: comment=cyc_copy[0]
-+000010  point: comment=cyc_copy[1]
--000004  point: comment=cyc_copy[2]
--000002  point: comment=cyc_copy[3]
--000000  point: comment=cyc_copy[4]
--000000  point: comment=cyc_copy[5]
--000000  point: comment=cyc_copy[6]
--000000  point: comment=cyc_copy[7]
++000022  point: comment=cyc_copy[0] hier=top.t.a*
++000010  point: comment=cyc_copy[1] hier=top.t.a*
+-000004  point: comment=cyc_copy[2] hier=top.t.a*
+-000002  point: comment=cyc_copy[3] hier=top.t.a*
+-000000  point: comment=cyc_copy[4] hier=top.t.a*
+-000000  point: comment=cyc_copy[5] hier=top.t.a*
+-000000  point: comment=cyc_copy[6] hier=top.t.a*
+-000000  point: comment=cyc_copy[7] hier=top.t.a*
            // CHECK_COVER(-1,"top.t.a*","cyc_copy[0]",22)
            // CHECK_COVER(-2,"top.t.a*","cyc_copy[1]",10)
            // CHECK_COVER(-3,"top.t.a*","cyc_copy[2]",4)
@@ -180,12 +180,12 @@
            // CHECK_COVER(-8,"top.t.a*","cyc_copy[7]",0)
         
 %000004    reg         toggle_internal;
--000004  point: comment=toggle_internal
+-000004  point: comment=toggle_internal hier=top.t.a*
            // CHECK_COVER(-1,"top.t.a*",4)
            // 2 edges * (t.a1 and t.a2)
         
 %000004    output reg  toggle_up;
--000004  point: comment=toggle_up
+-000004  point: comment=toggle_up hier=top.t.a*
            // CHECK_COVER(-1,"top.t.a*",4)
            // 2 edges * (t.a1 and t.a2)
         
@@ -201,10 +201,10 @@
            );
         
  000019    input clk;
-+000019  point: comment=clk
++000019  point: comment=clk hier=top.t.b1
         
 %000002    input toggle_up;
--000002  point: comment=toggle_up
+-000002  point: comment=toggle_up hier=top.t.b1
            // CHECK_COVER(-1,"top.t.b1","toggle_up",2)
         
            /* verilator public_module */
@@ -225,7 +225,7 @@
         
            // verilator coverage_on
 %000002    input toggle;
--000002  point: comment=toggle
+-000002  point: comment=toggle hier=top.t.o1
            // CHECK_COVER(-1,"top.t.o1","toggle",2)
         
         endmodule

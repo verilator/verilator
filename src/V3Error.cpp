@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -117,6 +117,8 @@ void V3ErrorGuarded::suppressThisWarning() VL_REQUIRES(m_mutex) {
 // cppcheck-has-bug-suppress constParameter
 void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
     VL_REQUIRES(m_mutex) {
+    // 'extra' is appended to the message, and is is excluded in check for
+    // duplicate messages. Currently used for reporting instance name.
 #if defined(__COVERITY__) || defined(__cppcheck__)
     if (m_errorCode == V3ErrorCode::EC_FATAL) __coverity_panic__(x);
 #endif

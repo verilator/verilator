@@ -67,12 +67,14 @@ extern "C" int mon_check();
    reg [31:0]      text_word;
    reg [63:0]      text_long;
    reg [511:0]     text;
+   reg [2047:0]    too_big;
 /*verilator public_off*/
    integer        status;
 
 /*verilator public_flat_rw_on*/
    real           real1;
    string         str1;
+   localparam int nullptr = 123;
 /*verilator public_off*/
 
    sub sub();
@@ -88,6 +90,7 @@ extern "C" int mon_check();
       text_word = "Word";
       text_long = "Long64b";
       text = "Verilog Test module";
+      too_big = "some text";
 
       real1 = 1.0;
       str1 = "hello";

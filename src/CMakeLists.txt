@@ -4,7 +4,7 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -95,6 +95,7 @@ set(HEADERS
     V3Force.h
     V3Fork.h
     V3FunctionTraits.h
+    V3FuncOpt.h
     V3Gate.h
     V3Global.h
     V3Graph.h
@@ -254,6 +255,7 @@ set(COMMON_SOURCES
     V3FileLine.cpp
     V3Force.cpp
     V3Fork.cpp
+    V3FuncOpt.cpp
     V3Gate.cpp
     V3Global.cpp
     V3Graph.cpp

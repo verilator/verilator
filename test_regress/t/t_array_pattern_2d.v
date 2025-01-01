@@ -13,6 +13,8 @@ module t (/*AUTOARG*/);
    logic [31:0] larray_assign [0:3];
    logic [31:0] larray_other [0:3];
 
+   logic [31:0] array_neg [-1:1];
+
    initial begin
       array_assign[0] = 32'd1;
       array_assign[3:1] = '{32'd4, 32'd3, 32'd2};
@@ -33,6 +35,11 @@ module t (/*AUTOARG*/);
       if (larray_other[1] != 4) $stop;
       if (larray_other[2] != 3) $stop;
       if (larray_other[3] != 2) $stop;
+
+      array_neg = '{-1: 5, 1: 7, default: 'd6};
+      if (array_neg[-1] != 5) $stop;
+      if (array_neg[0] != 6) $stop;
+      if (array_neg[1] != 7) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

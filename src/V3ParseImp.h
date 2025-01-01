@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2009-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2009-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -156,6 +156,7 @@ class V3ParseImp final {
 
     int m_lexPrevToken = 0;  // previous parsed token (for lexer)
     bool m_afterColonColon = false;  // The previous token was '::'
+    V3ParseBisonYYSType m_tokenLastBison;  // Token we last sent to Bison
     std::deque<V3ParseBisonYYSType> m_tokensAhead;  // Tokens we parsed ahead of parser
 
     std::deque<string*> m_stringps;  // Created strings for later cleanup
@@ -308,11 +309,14 @@ private:
     void preprocDumps(std::ostream& os);
     void lexFile(const string& modname) VL_MT_DISABLED;
     void yylexReadTok() VL_MT_DISABLED;
+    void importIfInStd(FileLine* fileline, const string& id);
     void tokenPull() VL_MT_DISABLED;
     void tokenPipeline() VL_MT_DISABLED;  // Internal; called from tokenToBison
     int tokenPipelineId(int token) VL_MT_DISABLED;
     void tokenPipelineSym() VL_MT_DISABLED;
-    size_t tokenPipeScanParam(size_t depth) VL_MT_DISABLED;
+    size_t tokenPipeScanIdCell(size_t depth) VL_MT_DISABLED;
+    size_t tokenPipeScanBracket(size_t depth) VL_MT_DISABLED;
+    size_t tokenPipeScanParam(size_t depth, bool forCell) VL_MT_DISABLED;
     size_t tokenPipeScanTypeEq(size_t depth) VL_MT_DISABLED;
     const V3ParseBisonYYSType* tokenPeekp(size_t depth) VL_MT_DISABLED;
     void preprocDumps(std::ostream& os, bool forInputs) VL_MT_DISABLED;

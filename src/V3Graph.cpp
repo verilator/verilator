@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -79,12 +79,12 @@ void V3GraphVertex::rerouteEdges(V3Graph* graphp) {
     unlinkEdges(graphp);
 }
 
-template <GraphWay::en T_Way>
+template <GraphWay::en N_Way>
 V3GraphEdge* V3GraphVertex::findConnectingEdgep(V3GraphVertex* waywardp) {
     // O(edges) linear search. Searches search both nodes' edge lists in
     // parallel.  The lists probably aren't _both_ huge, so this is
     // unlikely to blow up even on fairly nasty graphs.
-    constexpr GraphWay way{T_Way};
+    constexpr GraphWay way{N_Way};
     constexpr GraphWay inv = way.invert();
     auto& aEdges = this->edges<way>();
     auto aIt = aEdges.begin();

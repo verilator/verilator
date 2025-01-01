@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -251,10 +251,11 @@ class DelayedVisitor final : public VNVisitor {
         const AstNodeDType* const dtypep = vscp->dtypep()->skipRefp();
         // Unpacked arrays
         if (const AstUnpackArrayDType* const uaDTypep = VN_CAST(dtypep, UnpackArrayDType)) {
+            // Basic underlying type of elements, if any.
+            AstBasicDType* const basicp = uaDTypep->basicp();
             // If used in a loop, we must have a dynamic commit queue. (Also works in suspendables)
             if (vscpInfo.m_inLoop) {
                 // Arrays with compound element types are currently not supported in loops
-                AstBasicDType* const basicp = uaDTypep->basicp();
                 if (!basicp
                     || !(basicp->isIntegralOrPacked()  //
                          || basicp->isDouble()  //
@@ -266,8 +267,12 @@ class DelayedVisitor final : public VNVisitor {
             }
             // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
             if (vscpInfo.m_inSuspOrFork) return Scheme::FlagUnique;
-            // Otherwise use the shared flag scheme
-            return Scheme::FlagShared;
+            // Otherwise if an array of packed/basic elements, use the shared flag scheme
+            if (basicp) return Scheme::FlagShared;
+            // Finally fall back on the shadow variable scheme, e.g. for
+            // arrays of unpacked structs. This will be slow.
+            // TODO: generic LHS scheme as discussed in #5092
+            return Scheme::ShadowVar;
         }
 
         // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
@@ -529,17 +534,17 @@ class DelayedVisitor final : public VNVisitor {
     }
 
     // Scheme::ValueQueuePartial/Scheme::ValueQueueWhole
-    template <bool Partial>
+    template <bool N_Partial>
     void prepareSchemeValueQueue(AstVarScope* vscp, VarScopeInfo& vscpInfo) {
-        UASSERT_OBJ(Partial ? vscpInfo.m_scheme == Scheme::ValueQueuePartial
-                            : vscpInfo.m_scheme == Scheme::ValueQueueWhole,
+        UASSERT_OBJ(N_Partial ? vscpInfo.m_scheme == Scheme::ValueQueuePartial
+                              : vscpInfo.m_scheme == Scheme::ValueQueueWhole,
                     vscp, "Inconsisten<t NBA s>cheme");
         FileLine* const flp = vscp->fileline();
         AstScope* const scopep = vscp->scopep();
 
         // Create the commit queue variable
         auto* const cqDTypep
-            = new AstNBACommitQueueDType{flp, vscp->dtypep()->skipRefp(), Partial};
+            = new AstNBACommitQueueDType{flp, vscp->dtypep()->skipRefp(), N_Partial};
         v3Global.rootp()->typeTablep()->addTypesp(cqDTypep);
         const std::string name = "__VdlyCommitQueue" + vscp->varp()->shortName();
         AstVarScope* const queueVscp = createTemp(flp, scopep, name, cqDTypep);
@@ -891,6 +896,7 @@ class DelayedVisitor final : public VNVisitor {
                 ifp->addThensp(newp);
             }
 
+            UASSERT_OBJ(m_activep, nodep, "No active to handle FireEvent");
             AstActive* const activep = new AstActive{flp, "nba-event", m_activep->sensesp()};
             m_activep->addNextHere(activep);
             activep->addStmtsp(prep);

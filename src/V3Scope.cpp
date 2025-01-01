@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -149,32 +149,30 @@ class ScopeVisitor final : public VNVisitor {
         VL_RESTORER(m_aboveCellp);
         VL_RESTORER(m_aboveScopep);
         VL_RESTORER(m_modp);
-        {
-            m_aboveScopep = m_scopep;
-            m_modp = nodep;
+        m_aboveScopep = m_scopep;
+        m_modp = nodep;
 
-            string scopename;
-            if (!m_aboveScopep) {
-                scopename = "TOP";
-            } else {
-                scopename = m_aboveScopep->name() + "." + nodep->name();
-            }
-
-            UINFO(4, " CLASS AT " << scopename << "  " << nodep << endl);
-            AstNode::user1ClearTree();
-
-            const AstNode* const abovep = (m_aboveCellp ? static_cast<AstNode*>(m_aboveCellp)
-                                                        : static_cast<AstNode*>(nodep));
-            m_scopep
-                = new AstScope{abovep->fileline(), m_modp, scopename, m_aboveScopep, m_aboveCellp};
-            m_packageScopes.emplace(nodep, m_scopep);
-
-            // Create scope for the current usage of this cell
-            AstNode::user1ClearTree();
-            nodep->addMembersp(m_scopep);
-
-            iterateChildren(nodep);
+        string scopename;
+        if (!m_aboveScopep) {
+            scopename = "TOP";
+        } else {
+            scopename = m_aboveScopep->name() + "." + nodep->name();
         }
+
+        UINFO(4, " CLASS AT " << scopename << "  " << nodep << endl);
+        AstNode::user1ClearTree();
+
+        const AstNode* const abovep
+            = (m_aboveCellp ? static_cast<AstNode*>(m_aboveCellp) : static_cast<AstNode*>(nodep));
+        m_scopep
+            = new AstScope{abovep->fileline(), m_modp, scopename, m_aboveScopep, m_aboveCellp};
+        m_packageScopes.emplace(nodep, m_scopep);
+
+        // Create scope for the current usage of this cell
+        AstNode::user1ClearTree();
+        nodep->addMembersp(m_scopep);
+
+        iterateChildren(nodep);
     }
     void visit(AstCellInline* nodep) override {  //
         if (v3Global.opt.vpi()) {
@@ -334,10 +332,8 @@ class ScopeCleanupVisitor final : public VNVisitor {
     void visit(AstScope* nodep) override {
         // Want to ignore blocks under it
         VL_RESTORER(m_scopep);
-        {
-            m_scopep = nodep;
-            iterateChildren(nodep);
-        }
+        m_scopep = nodep;
+        iterateChildren(nodep);
     }
 
     virtual void movedDeleteOrIterate(AstNode* nodep) {

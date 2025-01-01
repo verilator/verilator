@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -30,6 +30,7 @@
 #include "V3Const.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
+#include "V3Stats.h"
 
 #include <tuple>
 
@@ -132,7 +133,9 @@ public:
     void remapFuncClassp(AstNodeFTask* nodep, AstNodeFTask* newp) {
         m_funcToClassMap[newp] = getClassp(nodep);
     }
-    bool ftaskNoInline(AstNodeFTask* nodep) { return getFTaskVertex(nodep)->noInline(); }
+    bool ftaskNoInline(AstNodeFTask* nodep) {
+        return !v3Global.opt.fInlineFuncs() || getFTaskVertex(nodep)->noInline();
+    }
     AstCFunc* ftaskCFuncp(AstNodeFTask* nodep) { return getFTaskVertex(nodep)->cFuncp(); }
     void ftaskCFuncp(AstNodeFTask* nodep, AstCFunc* cfuncp) {
         getFTaskVertex(nodep)->cFuncp(cfuncp);
@@ -217,20 +220,18 @@ private:
     }
     void visit(AstNodeFTask* nodep) override {
         UINFO(9, "  TASK " << nodep << endl);
-        {
-            VL_RESTORER(m_curVxp);
-            m_curVxp = getFTaskVertex(nodep);
-            if (nodep->dpiImport()) m_curVxp->noInline(true);
-            if (nodep->classMethod()) m_curVxp->noInline(true);  // Until V3Task supports it
-            if (nodep->recursive()) m_curVxp->noInline(true);
-            if (nodep->isConstructor()) {
-                m_curVxp->noInline(true);
-                m_ctorp = nodep;
-                UASSERT_OBJ(m_classp, nodep, "Ctor not under class");
-                m_funcToClassMap[nodep] = m_classp;
-            }
-            iterateChildren(nodep);
+        VL_RESTORER(m_curVxp);
+        m_curVxp = getFTaskVertex(nodep);
+        if (nodep->dpiImport()) m_curVxp->noInline(true);
+        if (nodep->classMethod()) m_curVxp->noInline(true);  // Until V3Task supports it
+        if (nodep->recursive()) m_curVxp->noInline(true);
+        if (nodep->isConstructor()) {
+            m_curVxp->noInline(true);
+            m_ctorp = nodep;
+            UASSERT_OBJ(m_classp, nodep, "Ctor not under class");
+            m_funcToClassMap[nodep] = m_classp;
         }
+        iterateChildren(nodep);
     }
     void visit(AstPragma* nodep) override {
         if (nodep->pragType() == VPragmaType::NO_INLINE_TASK) {
@@ -367,7 +368,10 @@ class TaskVisitor final : public VNVisitor {
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
     bool m_inSensesp = false;  // Are we under a senitem?
     int m_modNCalls = 0;  // Incrementing func # for making symbols
+
+    // STATE - across all visitors
     DpiCFuncs m_dpiNames;  // Map of all created DPI functions
+    VDouble0 m_statInlines;  // Statistic tracking
 
     // METHODS
 
@@ -517,7 +521,7 @@ class TaskVisitor final : public VNVisitor {
                         pinp->v3fatalSrc("ref argument should have caused non-inline of function");
                     }
                 }
-            } else if (portp->isInoutish()) {
+            } else if (portp->isInout()) {
                 // if (debug() >= 9) pinp->dumpTree("-pinrsize- ");
 
                 AstVarScope* const newvscp
@@ -902,7 +906,7 @@ class TaskVisitor final : public VNVisitor {
 
                     if (portp->isNonOutput()) {
                         std::string frName
-                            = portp->isInoutish() && portp->basicp()->isDpiPrimitive()
+                            = portp->isInout() && portp->basicp()->isDpiPrimitive()
                                       && portp->dtypep()->skipRefp()->arrayUnpackedElements() == 1
                                   ? "*"
                                   : "";
@@ -1393,10 +1397,8 @@ class TaskVisitor final : public VNVisitor {
         // scope then the caller, so we need to restore state.
         VL_RESTORER(m_scopep);
         VL_RESTORER(m_insStmtp);
-        {
-            m_scopep = m_statep->getScope(nodep);
-            iterate(nodep);
-        }
+        m_scopep = m_statep->getScope(nodep);
+        iterate(nodep);
     }
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         if (debug() >= 9) nodep->dumpTree("-  newstmt: ");
@@ -1409,12 +1411,10 @@ class TaskVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modNCalls);
-        {
-            m_modp = nodep;
-            m_insStmtp = nullptr;
-            m_modNCalls = 0;
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        m_insStmtp = nullptr;
+        m_modNCalls = 0;
+        iterateChildren(nodep);
     }
     void visit(AstWith* nodep) override {
         if (nodep->user1SetOnce()) {
@@ -1460,6 +1460,7 @@ class TaskVisitor final : public VNVisitor {
             beginp = createNonInlinedFTask(nodep, namePrefix, outvscp, cnewp /*ref*/);
         } else {
             beginp = createInlinedFTask(nodep, namePrefix, outvscp);
+            ++m_statInlines;
         }
 
         if (VN_IS(nodep, New)) {
@@ -1612,7 +1613,7 @@ public:
         : m_statep{statep} {
         iterate(nodep);
     }
-    ~TaskVisitor() override = default;
+    ~TaskVisitor() { V3Stats::addStat("Optimizations, Functions inlined", m_statInlines); }
 };
 
 //######################################################################
@@ -1848,16 +1849,13 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
         newFVarp->name(newTaskp->name());
         newTaskp->fvarp(newFVarp);
         newTaskp->dtypeFrom(newFVarp);
-        newCallp = new AstFuncRef{taskp->fileline(), taskp->name(), nullptr};
-        newCallp->taskp(taskp);
-        newCallp->dtypeFrom(newFVarp);
+        newCallp = new AstFuncRef{taskp->fileline(), VN_AS(taskp, Func), nullptr};
         newCallInsertp
             = new AstAssign{taskp->fileline(),
                             new AstVarRef{fvarp->fileline(), newFVarp, VAccess::WRITE}, newCallp};
         newCallInsertp->dtypeFrom(newFVarp);
     } else if (VN_IS(taskp, Task)) {
-        newCallp = new AstTaskRef{taskp->fileline(), taskp->name(), nullptr};
-        newCallp->taskp(taskp);
+        newCallp = new AstTaskRef{taskp->fileline(), VN_AS(taskp, Task), nullptr};
         newCallInsertp = new AstStmtExpr{taskp->fileline(), newCallp};
     } else {
         taskp->v3fatalSrc("Unsupported: Non-constant default value in missing argument in a "

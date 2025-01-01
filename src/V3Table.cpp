@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -383,11 +383,9 @@ private:
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modTables);
-        {
-            m_modp = nodep;
-            m_modTables = 0;
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        m_modTables = 0;
+        iterateChildren(nodep);
     }
     void visit(AstScope* nodep) override {
         UINFO(4, " SCOPE " << nodep << endl);

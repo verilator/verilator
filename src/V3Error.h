@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -254,7 +254,7 @@ public:
     // Warnings that are style only
     bool styleError() const VL_MT_SAFE {
         return (m_e == ASSIGNDLY  // More than style, but for backward compatibility
-                || m_e == BLKSEQ || m_e == DEFPARAM || m_e == DECLFILENAME || m_e == EOFNEWLINE
+                || m_e == BLKSEQ || m_e == DECLFILENAME || m_e == DEFPARAM || m_e == EOFNEWLINE
                 || m_e == GENUNNAMED || m_e == IMPORTSTAR || m_e == INCABSPATH
                 || m_e == PINCONNECTEMPTY || m_e == PINNOCONNECT || m_e == SYNCASYNCNET
                 || m_e == UNDRIVEN || m_e == UNUSEDGENVAR || m_e == UNUSEDLOOP
@@ -564,9 +564,9 @@ void v3errorEndFatal(std::ostringstream& sstr)
 #define v3info(msg) v3warnCode(V3ErrorCode::EC_INFO, msg)
 #define v3error(msg) v3warnCode(V3ErrorCode::EC_ERROR, msg)
 #define v3fatal(msg) v3warnCodeFatal(V3ErrorCode::EC_FATAL, msg)
-// Use this instead of fatal() if message gets suppressed with --quiet-exit
+// Fatal exit; used instead of fatal() if message gets suppressed with --quiet-exit
 #define v3fatalExit(msg) v3warnCodeFatal(V3ErrorCode::EC_FATALEXIT, msg)
-// Use this instead of fatal() to mention the source code line.
+// Fatal exit; used instead of fatal() to mention the source code line
 #define v3fatalSrc(msg) \
     v3errorEndFatal(v3errorBuildMessage( \
         V3Error::v3errorPrepFileLine(V3ErrorCode::EC_FATALSRC, __FILE__, __LINE__), msg))
@@ -574,6 +574,10 @@ void v3errorEndFatal(std::ostringstream& sstr)
 #define v3fatalStatic(msg) \
     ::v3errorEndFatal(v3errorBuildMessage(V3Error::v3errorPrep(V3ErrorCode::EC_FATAL), msg))
 
+/// Print a message when debug() >= level.  stmsg is stream; e.g. use as '"foo=" << foo'
+//
+// Requires debug() function to exist in current scope, to hack this in temporarily:
+// auto debug = []() -> bool { return V3Error::debugDefault(); };
 #define UINFO(level, stmsg) \
     do { \
         if (VL_UNCOVERABLE(debug() >= (level))) { \
@@ -585,6 +589,7 @@ void v3errorEndFatal(std::ostringstream& sstr)
         if (VL_UNCOVERABLE(debug() >= (level))) { std::cout << stmsg; } \
     } while (false)
 
+/// Compile statements only when debug build
 #ifdef VL_DEBUG
 #define UDEBUGONLY(stmts) \
     do { stmts } while (false)
@@ -595,12 +600,12 @@ void v3errorEndFatal(std::ostringstream& sstr)
     } while (false)
 #endif
 
-// Assertion without object, generally UOBJASSERT preferred
+/// Assert without error location, generally UASSERT_OBJ preferred
 #define UASSERT(condition, stmsg) \
     do { \
         if (VL_UNCOVERABLE(!(condition))) v3fatalSrc(stmsg); \
     } while (false)
-// Assertion with object
+/// Assert with object to provide error location
 #define UASSERT_OBJ(condition, obj, stmsg) \
     do { \
         if (VL_UNCOVERABLE(!(condition))) (obj)->v3fatalSrc(stmsg); \
@@ -614,7 +619,7 @@ void v3errorEndFatal(std::ostringstream& sstr)
             V3Error::vlAbort(); \
         } \
     } while (false)
-// Check self test values for expected value.  Safe from side-effects.
+/// Check self test values for expected value.  Safe from side-effects.
 // Type argument can be removed when go to C++11 (use auto).
 #define UASSERT_SELFTEST(Type, got, exp) \
     do { \
@@ -625,6 +630,7 @@ void v3errorEndFatal(std::ostringstream& sstr)
                             << g << " expected=" << e); \
     } while (false)
 
+// Error that call not supported; only for some Ast functions
 #define V3ERROR_NA \
     do { \
         v3error("Internal: Unexpected Call"); \

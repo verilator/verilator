@@ -1656,7 +1656,7 @@ field in the section below.
 +---------------+--------------------------------------------------------+
 | ``1:2:``      | The hierarchy of the ``VAR`` is the ``op2p``           |
 |               | pointer under the ``MODULE``, which in turn is the     |
-|               | ``op1p`` pointer under the ``NETLIST``                 |
+|               | ``op1p`` pointer under the ``NETLIST``.                |
 +---------------+--------------------------------------------------------+
 | ``VAR``       | The AstNodeType (e.g. ``AstVar``).                     |
 +---------------+--------------------------------------------------------+
@@ -1670,7 +1670,7 @@ field in the section below.
 |               | and "aa" the 27th. Then line 22 in that file, then     |
 |               | column 8 (aa=0, az=25, ba=26, ...).                    |
 +---------------+--------------------------------------------------------+
-| ``@dt=0x...`` | The address of the data type this node contains.       |
+| ``@dt=0x...`` | The address of the data type this node references.     |
 +---------------+--------------------------------------------------------+
 | ``w32``       | The data-type width() is 32 bits.                      |
 +---------------+--------------------------------------------------------+
@@ -1678,7 +1678,7 @@ field in the section below.
 |               | variable.                                              |
 +---------------+--------------------------------------------------------+
 | ``[O]``       | Flags which vary with the type of node, in this        |
-|               | case, it means the variable is an output.              |
+|               | case of a VAR, it means the variable is an output.     |
 +---------------+--------------------------------------------------------+
 
 In more detail, the following fields are dumped common to all nodes. They
@@ -2411,7 +2411,7 @@ xsim_flags / xsim_flags2 / xsim_run_flags
 Distribution
 ============
 
-Copyright 2008-2024 by Wilson Snyder. Verilator is free software; you can
+Copyright 2008-2025 by Wilson Snyder. Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
 General Public License Version 3 or the Perl Artistic License Version 2.0.
 

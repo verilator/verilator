@@ -2,7 +2,7 @@
 ######################################################################
 # DESCRIPTION: Makefile commands for all verilated target files
 #
-# Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -22,6 +22,12 @@ PYTHON3 = @PYTHON3@
 # Configuration time options
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
+
+# Compiler version found during configure. This make variable is not used
+# here, but note that if this differs from what `$(CXX) --version` prints,
+# then there may be strange results such as unexpected warnings, as
+# configure determines compiler characteristics.
+CFG_CXX_VERSION = "@CFG_CXX_VERSION@"
 
 # Compiler flags to enable profiling
 CFG_CXXFLAGS_PROFILE = @CFG_CXXFLAGS_PROFILE@

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -156,7 +156,9 @@ AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVa
     return ifp;
 }
 
-AstNodeStmt* profExecSectionPush(FileLine* flp, const string& name) {
+AstNodeStmt* profExecSectionPush(FileLine* flp, const string& section) {
+    const string name
+        = (v3Global.opt.hierChild() ? (v3Global.opt.topModule() + " ") : "") + section;
     return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"" + name + "\");\n"};
 }
 
@@ -291,6 +293,7 @@ AstCFunc* splitCheckCreateNewSubFunc(AstCFunc* ofuncp) {
     subFuncp->isLoose(true);
     subFuncp->slow(ofuncp->slow());
     subFuncp->declPrivate(ofuncp->declPrivate());
+    if (ofuncp->needProcess()) subFuncp->setNeedProcess();
     return subFuncp;
 };
 

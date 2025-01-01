@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -230,7 +230,7 @@ class ActiveNamer final : public VNVisitor {
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // Specialized below for the special sensitivity classes
-    template <typename SenItemKind>
+    template <typename T_SenItemKind>
     AstActive*& getSpecialActive();
 
 public:
@@ -246,17 +246,17 @@ public:
     }
 
     // Make a new AstActive sensitive to the given special sensitivity class and return it
-    template <typename SenItemKind>
+    template <typename T_SenItemKind>
     AstActive* makeSpecialActive(FileLine* const fl) {
-        AstSenTree* const senTreep = new AstSenTree{fl, new AstSenItem{fl, SenItemKind{}}};
+        AstSenTree* const senTreep = new AstSenTree{fl, new AstSenItem{fl, T_SenItemKind{}}};
         return makeActive(fl, senTreep);
     }
 
     // Return an AstActive sensitive to the given special sensitivity class (possibly pre-created)
-    template <typename SenItemKind>
+    template <typename T_SenItemKind>
     AstActive* getSpecialActive(FileLine* fl) {
-        AstActive*& cachep = getSpecialActive<SenItemKind>();
-        if (!cachep) cachep = makeSpecialActive<SenItemKind>(fl);
+        AstActive*& cachep = getSpecialActive<T_SenItemKind>();
+        if (!cachep) cachep = makeSpecialActive<T_SenItemKind>(fl);
         return cachep;
     }
 

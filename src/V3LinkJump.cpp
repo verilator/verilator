@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -163,11 +163,9 @@ class LinkJumpVisitor final : public VNVisitor {
         if (nodep->dead()) return;
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modRepeatNum);
-        {
-            m_modp = nodep;
-            m_modRepeatNum = 0;
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        m_modRepeatNum = 0;
+        iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
         m_ftaskp = nodep;
@@ -236,15 +234,13 @@ class LinkJumpVisitor final : public VNVisitor {
         m_unrollFull = VOptionBool::OPT_DEFAULT_FALSE;
         VL_RESTORER(m_loopp);
         VL_RESTORER(m_loopInc);
-        {
-            m_loopp = nodep;
-            m_loopInc = false;
-            iterateAndNextNull(nodep->precondsp());
-            iterateAndNextNull(nodep->condp());
-            iterateAndNextNull(nodep->stmtsp());
-            m_loopInc = true;
-            iterateAndNextNull(nodep->incsp());
-        }
+        m_loopp = nodep;
+        m_loopInc = false;
+        iterateAndNextNull(nodep->precondsp());
+        iterateAndNextNull(nodep->condp());
+        iterateAndNextNull(nodep->stmtsp());
+        m_loopInc = true;
+        iterateAndNextNull(nodep->incsp());
     }
     void visit(AstDoWhile* nodep) override {
         // It is converted to AstWhile in this visit method
@@ -272,10 +268,8 @@ class LinkJumpVisitor final : public VNVisitor {
     }
     void visit(AstNodeForeach* nodep) override {
         VL_RESTORER(m_loopp);
-        {
-            m_loopp = nodep;
-            iterateAndNextNull(nodep->stmtsp());
-        }
+        m_loopp = nodep;
+        iterateAndNextNull(nodep->stmtsp());
     }
     void visit(AstReturn* nodep) override {
         iterateChildren(nodep);

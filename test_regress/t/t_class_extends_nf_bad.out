@@ -1,5 +1,9 @@
-%Error: t/t_class_extends_nf_bad.v:10:19: Class for 'extends' not found: 'IsNotFound'
+%Error: t/t_class_extends_nf_bad.v:15:19: Class for 'extends' not found: 'IsNotFound'
                                         : ... Suggested alternative: 'IsFound'
-   10 | class Cls extends IsNotFound;
+   15 | class Cls extends IsNotFound;   
       |                   ^~~~~~~~~~
+%Error: t/t_class_extends_nf_bad.v:18:25: Class for 'extends' not found: 'NotFound2'
+                                        : ... Suggested alternative: 'otFound2'
+   18 | class Cls2 extends Pkg::NotFound2;   
+      |                         ^~~~~~~~~
 %Error: Exiting due to

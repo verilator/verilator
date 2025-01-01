@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -432,7 +432,8 @@ class EmitCModel final : public EmitCFunc {
         puts(topModNameProtected + "__" + protect("_eval_settle") + "(&(vlSymsp->TOP));\n");
         puts("}\n");
 
-        if (v3Global.opt.profExec()) puts("vlSymsp->__Vm_executionProfilerp->configure();\n");
+        if (v3Global.opt.profExec() && !v3Global.opt.hierChild())
+            puts("vlSymsp->__Vm_executionProfilerp->configure();\n");
 
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+ Eval\\n\"););\n");
         puts(topModNameProtected + "__" + protect("_eval") + "(&(vlSymsp->TOP));\n");
@@ -473,8 +474,7 @@ class EmitCModel final : public EmitCFunc {
         } else {
             putns(modp, "bool " + topClassName() + "::eventsPending() { return false; }\n\n");
             puts("uint64_t " + topClassName() + "::nextTimeSlot() {\n");
-            puts("VL_FATAL_MT(__FILE__, __LINE__, \"\", \"%Error: No delays in the "
-                 "design\");\n");
+            puts("VL_FATAL_MT(__FILE__, __LINE__, \"\", \"No delays in the design\");\n");
             puts("return 0;\n}\n");
         }
 

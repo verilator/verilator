@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -161,6 +161,18 @@ private:
         UINFO(6, " Replace " << nodep << " w/ " << nodep->lhsp() << endl);
         nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    void visit(AstConstraint* nodep) override {
+        iterateChildren(nodep);
+        editDType(nodep);
+        {
+            const AstClass* const classp = VN_CAST(m_modp, Class);
+            if (nodep->isKwdPure()
+                && (!classp || (!classp->isInterfaceClass() && !classp->isVirtual()))) {
+                nodep->v3error("Illegal to have 'pure constraint' in non-abstract class"
+                               " (IEEE 1800-2023 18.5.2)");
+            }
+        }
     }
     void visit(AstNodeDType* nodep) override {
         // Note some specific dtypes have unique visitors

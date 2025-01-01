@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -2650,7 +2650,7 @@ const char* VerilatedContext::timeprecisionString() const VL_MT_SAFE {
 }
 
 void VerilatedContext::threads(unsigned n) {
-    if (n == 0) VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: Simulation threads must be >= 1");
+    if (n == 0) VL_FATAL_MT(__FILE__, __LINE__, "", "Simulation threads must be >= 1");
 
     if (m_threadPool) {
         VL_FATAL_MT(
@@ -3326,7 +3326,7 @@ VerilatedScope::~VerilatedScope() {
 }
 
 void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
-                               const char* identifier, int8_t timeunit,
+                               const char* identifier, const char* defnamep, int8_t timeunit,
                                const Type& type) VL_MT_UNSAFE {
     // Slowpath - called once/scope at construction
     // We don't want the space and reference-count access overhead of strings.
@@ -3343,6 +3343,7 @@ void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp, const 
         m_namep = namep;
     }
     m_identifierp = identifier;
+    m_defnamep = defnamep;
     Verilated::threadContextp()->impp()->scopeInsert(this);
 }
 

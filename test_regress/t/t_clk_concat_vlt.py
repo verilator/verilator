@@ -19,19 +19,19 @@ test.compile(verilator_flags2=["--no-json-edit-nums", "t/t_clk_concat.vlt"])
 if test.vlt_all:
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"clk0",.*"loc":"f,78:[^"]*",.*"origName":"clk0",.*"direction":"INPUT",.*"isSigPublic":true,.*"attrClocker":"clker",.*"varType":"PORT",.*"dtypeName":"logic"'
+        r'{"type":"VAR","name":"clk0",.*"loc":"\w,78:[^"]*",.*"origName":"clk0",.*"direction":"INPUT",.*"isSigPublic":true,.*"attrClocker":"clker",.*"varType":"PORT",.*"dtypeName":"logic"'
     )
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"clk1",.*"loc":"f,79:[^"]*",.*"origName":"clk1",.*"direction":"INPUT",.*"isSigPublic":true,.*"attrClocker":"clker",.*"varType":"PORT",.*"dtypeName":"logic"'
+        r'{"type":"VAR","name":"clk1",.*"loc":"\w,79:[^"]*",.*"origName":"clk1",.*"direction":"INPUT",.*"isSigPublic":true,.*"attrClocker":"clker",.*"varType":"PORT",.*"dtypeName":"logic"'
     )
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"clk2",.*"loc":"f,80:[^"]*",.*"origName":"clk2",.*"direction":"INPUT",.*"isSigPublic":true,.*"attrClocker":"clker",.*"varType":"PORT",.*"dtypeName":"logic"'
+        r'{"type":"VAR","name":"clk2",.*"loc":"\w,80:[^"]*",.*"origName":"clk2",.*"direction":"INPUT",.*"isSigPublic":true,.*"attrClocker":"clker",.*"varType":"PORT",.*"dtypeName":"logic"'
     )
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"data_in",.*"loc":"f,82:[^"]*",.*"origName":"data_in",.*"direction":"INPUT",.*"isSigPublic":true,.*"attrClocker":"non_clker",.*"varType":"PORT",.*"dtypeName":"logic"'
+        r'{"type":"VAR","name":"data_in",.*"loc":"\w,82:[^"]*",.*"origName":"data_in",.*"direction":"INPUT",.*"isSigPublic":true,.*"attrClocker":"non_clker",.*"varType":"PORT",.*"dtypeName":"logic"'
     )
 
 test.execute()

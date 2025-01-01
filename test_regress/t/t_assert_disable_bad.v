@@ -5,7 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
-      clk
+   // Inputs
+   clk
    );
 
    input clk;
@@ -18,8 +19,7 @@ module t (/*AUTOARG*/
    end
 
    property check(int cyc_mod_2, logic expected);
-      @(posedge clk)
-        disable iff (cyc == 0) cyc % 2 == cyc_mod_2 |=> val == expected;
+      @(posedge clk) disable iff (cyc == 0) cyc % 2 == cyc_mod_2 |=> val == expected;
    endproperty
 
    // Test should fail due to duplicated disable iff statements

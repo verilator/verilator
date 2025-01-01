@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2010-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2010-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -117,6 +117,70 @@ public:
 };
 
 using V3ConfigVarResolver = V3ConfigWildcardResolver<V3ConfigVar>;
+
+//======================================================================
+
+class WildcardContents final {
+    // Not mutex protected, current calling from V3Config::waive is protected by error's mutex
+    // MEMBERS
+    std::map<const std::string, bool> m_mapPatterns;  // Pattern match results
+    std::deque<string> m_lines;  // Source text lines
+
+    // METHODS
+    static WildcardContents& s() {  // Singleton
+        static WildcardContents s_s;
+        return s_s;
+    }
+    void clearCacheImp() { m_mapPatterns.clear(); }
+    void pushTextImp(const string& text) {
+        // Similar code in VFileContent::pushText()
+        // Any leftover text is stored on largest line (might be "")
+        const string leftover = m_lines.back() + text;
+        m_lines.pop_back();
+
+        // Insert line-by-line
+        string::size_type line_start = 0;
+        while (true) {
+            const string::size_type line_end = leftover.find('\n', line_start);
+            if (line_end != string::npos) {
+                const string oneline(leftover, line_start, line_end - line_start + 1);
+                if (oneline.size() > 1) m_lines.push_back(oneline);  // Keeps newline
+                UINFO(9, "Push[+" << (m_lines.size() - 1) << "]: " << oneline);
+                line_start = line_end + 1;
+            } else {
+                break;
+            }
+        }
+        // Keep leftover for next time
+        m_lines.emplace_back(string(leftover, line_start));  // Might be ""
+        clearCacheImp();
+    }
+
+    bool resolveUncachedImp(const string& name) {
+        for (const string& i : m_lines) {
+            if (VString::wildmatch(i, name)) return true;
+        }
+        return false;
+    }
+    bool resolveCachedImp(const string& name) {
+        // Lookup if it was resolved before, typically is
+        const auto pair = m_mapPatterns.emplace(name, false);
+        bool& entryr = pair.first->second;
+        // Resolve entry when first requested, cache the result
+        if (pair.second) entryr = resolveUncachedImp(name);
+        return entryr;
+    }
+
+public:
+    WildcardContents() {
+        m_lines.emplace_back("");  // start with no leftover
+    }
+    ~WildcardContents() = default;
+    // Return true iff name in parsed contents
+    static bool resolve(const string& name) { return s().resolveCachedImp(name); }
+    // Add arbitrary text (need not be line-by-line)
+    static void pushText(const string& text) { s().pushTextImp(text); }
+};
 
 //######################################################################
 // Function or task: Have variables and properties
@@ -256,11 +320,28 @@ std::ostream& operator<<(std::ostream& os, const V3ConfigIgnoresLine& rhs) {
 // and multiple attributes can be attached to a line
 using V3ConfigLineAttribute = std::bitset<VPragmaType::ENUM_SIZE>;
 
+class WaiverSetting final {
+public:
+    V3ErrorCode m_code;  // Error code
+    string m_contents;  // --contents regexp
+    string m_match;  // --match regexp
+    WaiverSetting(V3ErrorCode code, const string& contents, const string& match)
+        : m_code{code}
+        , m_contents{contents}
+        , m_match{match} {}
+    ~WaiverSetting() = default;
+    WaiverSetting& operator=(const WaiverSetting& rhs) {
+        m_code = rhs.m_code;
+        m_contents = rhs.m_contents;
+        m_match = rhs.m_match;
+        return *this;
+    }
+};
+
 // File entity
 class V3ConfigFile final {
     using LineAttrMap = std::map<int, V3ConfigLineAttribute>;  // Map line->bitset of attributes
     using IgnLines = std::multiset<V3ConfigIgnoresLine>;  // list of {line,code,on}
-    using WaiverSetting = std::pair<V3ErrorCode, std::string>;  // Waive code if string matches
     using Waivers = std::vector<WaiverSetting>;  // List of {code,wildcard string}
 
     LineAttrMap m_lineAttrs;  // Attributes to line mapping
@@ -299,8 +380,12 @@ public:
         m_ignLines.insert(V3ConfigIgnoresLine{code, lineno, on});
         m_lastIgnore.it = m_ignLines.begin();
     }
-    void addIgnoreMatch(V3ErrorCode code, const string& match) {
-        m_waivers.emplace_back(code, match);
+    void addIgnoreMatch(V3ErrorCode code, const string& contents, const string& match) {
+        // Since Verilator 5.031 the error message compared has context, so
+        // allow old rules to still match using a final '*'
+        string newMatch = match;
+        if (newMatch.empty() || newMatch.back() != '*') newMatch += '*';
+        m_waivers.emplace_back(WaiverSetting{code, contents, newMatch});
     }
 
     void applyBlock(AstNodeBlock* nodep) {
@@ -338,8 +423,9 @@ public:
     bool waive(V3ErrorCode code, const string& match) {
         if (code.hardError()) return false;
         for (const auto& itr : m_waivers) {
-            if ((code.isUnder(itr.first) || (itr.first == V3ErrorCode::I_LINT))
-                && VString::wildmatch(match, itr.second)) {
+            if ((code.isUnder(itr.m_code) || (itr.m_code == V3ErrorCode::I_LINT))
+                && VString::wildmatch(match, itr.m_match)
+                && WildcardContents::resolve(itr.m_contents)) {
                 return true;
             }
         }
@@ -512,8 +598,9 @@ void V3Config::addIgnore(V3ErrorCode code, bool on, const string& filename, int 
     }
 }
 
-void V3Config::addIgnoreMatch(V3ErrorCode code, const string& filename, const string& match) {
-    V3ConfigResolver::s().files().at(filename).addIgnoreMatch(code, match);
+void V3Config::addIgnoreMatch(V3ErrorCode code, const string& filename, const string& contents,
+                              const string& match) {
+    V3ConfigResolver::s().files().at(filename).addIgnoreMatch(code, contents, match);
 }
 
 void V3Config::addInline(FileLine* fl, const string& module, const string& ftask, bool on) {
@@ -646,6 +733,8 @@ FileLine* V3Config::getProfileDataFileLine() {
 bool V3Config::getScopeTraceOn(const string& scope) {
     return V3ConfigResolver::s().scopeTraces().getScopeTraceOn(scope);
 }
+
+void V3Config::contentsPushText(const string& text) { return WildcardContents::pushText(text); }
 
 bool V3Config::waive(FileLine* filelinep, V3ErrorCode code, const string& message) {
     V3ConfigFile* filep = V3ConfigResolver::s().files().resolve(filelinep->filename());

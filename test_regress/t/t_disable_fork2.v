@@ -15,7 +15,8 @@
 // - a function taking VlProcess argument shared between a process that
 //   allocates VlProcess, and one that doesnt,
 // - a function that has a delay and obtains VlProcess argument,
-// - a function that has a delay and doesn't obtain it.
+// - a function that has a delay and doesn't obtain it,
+// - an empty fork with disable fork.
 //
 // Blocks below contain info on whether they should (YES) or shouldn't (NO)
 // be emitted as functions with a VlProcess argument.
@@ -38,6 +39,13 @@ class Cls;
    task delay_func; /*NO*/
       fork /*NO*/ #1 $write("Finished *-*\n"); join_none
    endtask
+   task empty_fork;
+      fork
+         begin
+         end
+      join_none
+      disable fork;
+   endtask
 endclass
 
 module t;
@@ -47,6 +55,7 @@ module t;
       fork /*YES*/ cls.common_func(); join_none
       cls.fork_func();
       cls.disable_fork_func();
+      cls.empty_fork();
       cls.print();
    end
 

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -223,7 +223,7 @@ class EmitCHeader final : public EmitCConstInit {
                         std::set<AstNodeUOrStructDType*>& emitted) {
         if (emitted.count(sdtypep) > 0) return;
         emitted.insert(sdtypep);
-        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+        for (AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             AstNodeUOrStructDType* const subp = itemp->getChildStructp();
             if (subp && (!subp->packed() || sdtypep->packed())) {

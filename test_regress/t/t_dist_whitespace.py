@@ -103,13 +103,14 @@ if fcount < 50:
 
 if len(warns):
     # First warning lists everything as that's shown in the driver summary
+    msg = ""
     if 'HARNESS_UPDATE_GOLDEN' in os.environ:
-        test.error("Updated files with whitespace errors: " + ' '.join(sorted(warns.keys())))
-        test.error("To auto-fix: HARNESS_UPDATE_GOLDEN=1 {command} or --golden")
+        msg += "Updated files with whitespace errors: " + ' '.join(sorted(warns.keys())) + "\n"
     else:
-        test.error("Files have whitespace errors: " + ' '.join(sorted(warns.keys())))
-        test.error("To auto-fix: HARNESS_UPDATE_GOLDEN=1 {command} or --golden")
+        msg += "Files have whitespace errors: " + ' '.join(sorted(warns.keys())) + "\n"
+        msg += "To auto-fix: HARNESS_UPDATE_GOLDEN=1 {command} or --golden\n"
     for filename in sorted(warns.keys()):
-        test.error(warns[filename])
+        msg += warns[filename] + "\n"
+    test.error(msg)
 
 test.passes()

@@ -48,6 +48,8 @@ test = None
 Arg_Tests = []
 Quitting = False
 Vltmt_Threads = 3
+forker = None
+Start = None
 
 # So an 'import vltest_bootstrap' inside test files will do nothing
 sys.modules['vltest_bootstrap'] = {}
@@ -178,7 +180,7 @@ class Capabilities:
         if Capabilities._cached_have_solver is None:
             out = VtOs.run_capture('(z3 --help || cvc5 --help || cvc4 --help) 2>/dev/null',
                                    check=False)
-            Capabilities._cached_have_solver = bool('Usage' in out)
+            Capabilities._cached_have_solver = bool('usage' in out.casefold())
         return Capabilities._cached_have_solver
 
     @staticproperty
@@ -447,7 +449,7 @@ class Runner:
         else:
             error_msg = test.errors if test.errors else test.errors_keep_going
             test.oprint("FAILED: " + error_msg)
-            makecmd = VtOs.getenv_def('VERILATOR_MAKE', os.environ['MAKE']) + " &&"
+            makecmd = VtOs.getenv_def('VERILATOR_MAKE', os.environ['MAKE'] + "&&")
             upperdir = 'test_regress/' if re.search(r'test_regress', os.getcwd()) else ''
             self.fail_msgs.append("\t#" + test.soprint("%Error: " + error_msg) + "\t\t" + makecmd +
                                   " " + upperdir + test.py_filename + ' ' +
@@ -601,6 +603,7 @@ class VlTest:
         self.running_id = running_id
         self.scenario = scenario
 
+        self._force_pass = False
         self._have_solver_called = False
         self._inputs = {}
         self._ok = False
@@ -658,7 +661,7 @@ class VlTest:
         scen_dir = re.sub(r'^t/\.\./', '', scen_dir)
         # Not mkpath so error if try to build somewhere odd
         VtOs.mkdir_ok(scen_dir)
-        self.obj_dir = scen_dir + "/" + self.name
+        self.obj_dir = scen_dir + "/" + self.name + Args.obj_suffix
 
         define_opt = self._define_opt_calc()
 
@@ -683,7 +686,8 @@ class VlTest:
         self.all_run_flags = []
 
         self.pli_flags = [
-            "-I" + os.environ['VERILATOR_ROOT'] + "/include/vltstd", "-fPIC", "-shared"
+            "-I" + os.environ['VERILATOR_ROOT'] + "/include/vltstd",
+            "-I" + os.environ['VERILATOR_ROOT'] + "/include", "-fPIC", "-shared"
         ]
         if platform.system() == 'Darwin':
             self.pli_flags += ["-Wl,-undefined,dynamic_lookup"]
@@ -811,6 +815,8 @@ class VlTest:
         """Called from tests as: error("Reason message")
         Newline is optional. Only first line is passed to summaries
         Throws a VtErrorException, so rest of testing is not executed"""
+        if self._force_pass:
+            return
         message = message.rstrip() + "\n"
         print("%Warning: " + self.scenario + "/" + self.name + ": " + message,
               file=sys.stderr,
@@ -823,7 +829,7 @@ class VlTest:
     def error_keep_going(self, message: str) -> None:
         """Called from tests as: error_keep_going("Reason message")
         Newline is optional. Only first line is passed to summaries"""
-        if self._quit:
+        if self._quit or self._force_pass:
             return
         message = message.rstrip() + "\n"
         print("%Warning: " + self.scenario + "/" + self.name + ": " + message,
@@ -1628,7 +1634,7 @@ class VlTest:
         return VtOs.run_capture(cmd, check=check)
 
     def setenv(self, var: str, val: str) -> None:
-        """Set enviornment variable"""
+        """Set environment variable"""
         print("\texport %s='%s'" % (var, val))
         os.environ[var] = val
 
@@ -1707,6 +1713,9 @@ class VlTest:
                     got = proc.stdout.readinto(rawbuf)
                     if got:
                         data = rawbuf[0:got]
+                        if re.search(r'--debug-exit-uvm23: Exiting', str(data)):
+                            self._force_pass = True
+                            print("EXIT: " + str(data))
                         if tee:
                             sys.stdout.write(data.decode('latin-1'))
                             if Args.interactive_debugger:
@@ -1738,20 +1747,12 @@ class VlTest:
             print("driver: Leaving directory '" + os.path.abspath(entering) + "'")
 
         if not fails and status:
-            firstline = ""
-            if logfile:
-                with open(logfile, 'r', encoding="utf8") as fh:
-                    for line in fh:
-                        line = line.rstrip()
-                        if re.match(r'^- ', line):  # Debug message
-                            continue
-                        firstline = line
-                        break
-            self.error("Exec of " + cmd[0] + " failed: " + firstline)
+            firstline = self._error_log_summary(logfile)
+            self.error("Exec of " + self._error_cmd_simplify(cmd) + " failed: " + firstline)
         if fails and status:
             print("(Exec expected to fail, and did.)")
         if fails and not status:
-            self.error("Exec of " + cmd[0] + " ok, but expected to fail")
+            self.error("Exec of " + self._error_cmd_simplify(cmd) + " ok, but expected to fail")
         if self.errors or self._skips:
             return False
 
@@ -1790,17 +1791,34 @@ class VlTest:
     # Little utilities
 
     @staticmethod
-    def _try_regex(text: str, regex) -> None:
-        # Try to eval a regexp
-        # Returns:
-        #  1 if $text ~= /$regex/ms
-        #  0 if no match
-        # -1 if $regex is invalid, doesn't compile
-        try:
-            m = re.search(regex, text)
-            return 1 if m else 0
-        except re.error:
-            return -1
+    def _error_cmd_simplify(cmd: list) -> str:
+        if cmd[0] == "perl" and re.search(r'/bin/verilator', cmd[1]):
+            return "verilator"
+        return cmd[0]
+
+    def _error_log_summary(self, filename: str) -> str:
+        size = ""
+        if False:  # Show test size for fault grading  # pylint: disable=using-constant-test
+            if self.top_filename and os.path.exists(self.top_filename):
+                size = "(Test " + str(os.stat(self.top_filename).st_size) + " B) "
+        if not filename:
+            return size
+        firstline = ""
+        with open(filename, 'r', encoding="utf8") as fh:
+            lineno = 0
+            for line in fh:
+                lineno += 1
+                if lineno > 100:
+                    break
+                line = line.rstrip()
+                if re.match(r'^- ', line):  # Debug message
+                    continue
+                if not firstline:
+                    firstline = line
+                if (re.search(r'error|warn', line, re.IGNORECASE)
+                        and not re.search(r'-Werror', line)):
+                    return size + line
+        return size + firstline
 
     def _make_main(self, timing_loop: bool) -> None:
         if timing_loop and self.sc:
@@ -2409,7 +2427,7 @@ class VlTest:
         if VlTest._cached_cfg_with_ccache is None:
             mkf = VlTest._file_contents_static(os.environ['VERILATOR_ROOT'] +
                                                "/include/verilated.mk")
-            VlTest._cached_cfg_with_ccache = bool(re.match(r'OBJCACHE \?= ccache', mkf))
+            VlTest._cached_cfg_with_ccache = bool(re.search(r'OBJCACHE \?= ccache', mkf))
         return VlTest._cached_cfg_with_ccache
 
     def glob_some(self, pattern: str) -> list:
@@ -2447,7 +2465,7 @@ class VlTest:
         if not match:
             self.error("File_grep: " + filename + ": Regexp not found: " + regexp)
             return None
-        if expvalue and str(expvalue) != match.group(1):
+        if expvalue is not None and str(expvalue) != match.group(1):
             self.error("File_grep: " + filename + ": Got='" + match.group(1) + "' Expected='" +
                        str(expvalue) + "' in regexp: '" + regexp + "'")
             return None
@@ -2469,7 +2487,7 @@ class VlTest:
                 return
             match = re.search(regexp, contents)
             if match:
-                if expvalue and str(expvalue) != match.group(1):
+                if expvalue is not None and str(expvalue) != match.group(1):
                     self.error("file_grep: " + filename + ": Got='" + match.group(1) +
                                "' Expected='" + str(expvalue) + "' in regexp: " + regexp)
                 return
@@ -2691,7 +2709,6 @@ if __name__ == '__main__':
         sys.exit("%Error: TEST_REGRESS environment variable is already set")
     os.environ['TEST_REGRESS'] = os.getcwd()
 
-    forker = None
     Start = time.time()
     _Parameter_Next_Level = None
 
@@ -2715,7 +2732,7 @@ if __name__ == '__main__':
         epilog="""driver.py invokes Verilator or another simulator on each test file.
     See docs/internals.rst in the distribution for more information.
 
-    Copyright 2024-2024 by Wilson Snyder. This program is free software; you
+    Copyright 2024-2025 by Wilson Snyder. This program is free software; you
     can redistribute it and/or modify it under the terms of either the GNU
     Lesser General Public License Version 3 or the Perl Artistic License
     Version 2.0.
@@ -2728,7 +2745,7 @@ if __name__ == '__main__':
     parser.add_argument('--fail-max',
                         action='store',
                         default=None,
-                        help='run Verilator executable with gdb')
+                        help='after specified number of failures, skip remaining tests')
     parser.add_argument('--gdb', action='store_true', help='run Verilator executable with gdb')
     parser.add_argument('--gdbbt',
                         action='store_true',
@@ -2742,6 +2759,10 @@ if __name__ == '__main__':
                         default=0,
                         type=int,
                         help='parallel job count (0=cpu count)')
+    parser.add_argument('--obj-suffix',
+                        action='store',
+                        default='',
+                        help='suffix to add to obj_ test directory name')
     parser.add_argument('--quiet',
                         action='store_true',
                         help='suppress output except failures and progress')

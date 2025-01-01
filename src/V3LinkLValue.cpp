@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -32,13 +32,13 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class LinkLValueVisitor final : public VNVisitor {
     // NODE STATE
 
-    // STATE
+    // STATE - for current visit position (use VL_RESTORER)
     bool m_setContinuously = false;  // Set that var has some continuous assignment
-    bool m_setStrengthSpecified = false;  // Set that var has assignment with strength specified.
     bool m_setForcedByCode = false;  // Set that var is the target of an AstAssignForce/AstRelease
     bool m_setIfRand = false;  // Update VarRefs if var declared as rand
-    bool m_inInitialStatic = false;  // Set if inside AstInitialStatic
+    bool m_setStrengthSpecified = false;  // Set that var has assignment with strength specified.
     bool m_inFunc = false;  // Set if inside AstNodeFTask
+    bool m_inInitialStatic = false;  // Set if inside AstInitialStatic
     VAccess m_setRefLvalue;  // Set VarRefs to lvalues for pin assignments
 
     // VISITs
@@ -48,6 +48,13 @@ class LinkLValueVisitor final : public VNVisitor {
         if (m_setIfRand && !(nodep->varp() && nodep->varp()->isRand())) return;
         if (m_setRefLvalue != VAccess::NOCHANGE) nodep->access(m_setRefLvalue);
         if (nodep->varp() && nodep->access().isWriteOrRW()) {
+            if (nodep->varp()->isParam()) {
+                // All parameters that did get constified happened before now
+                // as V3LinkLValue runs after V3Param
+                nodep->v3error("Storing to parameter variable "
+                               << nodep->prettyNameQ()
+                               << " in a context that is determined only at runtime");
+            }
             if (m_setContinuously) {
                 nodep->varp()->isContinuously(true);
                 // Strength may only be specified in continuous assignment,
@@ -74,6 +81,7 @@ class LinkLValueVisitor final : public VNVisitor {
 
     // Nodes that start propagating down lvalues
     void visit(AstPin* nodep) override {
+        VL_RESTORER(m_setRefLvalue);
         if (nodep->modVarp() && nodep->modVarp()->isWritable()) {
             // When the varref's were created, we didn't know the I/O state
             // Now that we do, and it's from a output, we know it's a lvalue
@@ -87,6 +95,7 @@ class LinkLValueVisitor final : public VNVisitor {
     void visit(AstNodeAssign* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         VL_RESTORER(m_setContinuously);
+        VL_RESTORER(m_setStrengthSpecified);
         {
             m_setRefLvalue = VAccess::WRITE;
             m_setContinuously = VN_IS(nodep, AssignW) || VN_IS(nodep, AssignAlias);
@@ -137,75 +146,57 @@ class LinkLValueVisitor final : public VNVisitor {
         VL_RESTORER(m_setRefLvalue);
         VL_RESTORER(m_setContinuously);
         VL_RESTORER(m_setForcedByCode);
-        {
-            m_setRefLvalue = VAccess::WRITE;
-            m_setContinuously = false;
-            m_setForcedByCode = true;
-            iterateAndNextNull(nodep->lhsp());
-        }
+        m_setRefLvalue = VAccess::WRITE;
+        m_setContinuously = false;
+        m_setForcedByCode = true;
+        iterateAndNextNull(nodep->lhsp());
     }
     void visit(AstFireEvent* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        {
-            m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->operandp());
-        }
+        m_setRefLvalue = VAccess::WRITE;
+        iterateAndNextNull(nodep->operandp());
     }
     void visit(AstCastDynamic* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        {
-            m_setRefLvalue = VAccess::NOCHANGE;
-            iterateAndNextNull(nodep->fromp());
-            m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->top());
-        }
+        m_setRefLvalue = VAccess::NOCHANGE;
+        iterateAndNextNull(nodep->fromp());
+        m_setRefLvalue = VAccess::WRITE;
+        iterateAndNextNull(nodep->top());
     }
     void visit(AstFError* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        {
-            iterateAndNextNull(nodep->filep());
-            m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->strp());
-        }
+        iterateAndNextNull(nodep->filep());
+        m_setRefLvalue = VAccess::WRITE;
+        iterateAndNextNull(nodep->strp());
     }
     void visit(AstFGetS* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        {
-            iterateAndNextNull(nodep->filep());
-            m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->strgp());
-        }
+        iterateAndNextNull(nodep->filep());
+        m_setRefLvalue = VAccess::WRITE;
+        iterateAndNextNull(nodep->strgp());
     }
     void visit(AstFRead* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        {
-            iterateAndNextNull(nodep->filep());
-            m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->memp());
-        }
+        iterateAndNextNull(nodep->filep());
+        m_setRefLvalue = VAccess::WRITE;
+        iterateAndNextNull(nodep->memp());
     }
     void visit(AstFScanF* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        {
-            iterateAndNextNull(nodep->filep());
-            m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->exprsp());
-        }
+        iterateAndNextNull(nodep->filep());
+        m_setRefLvalue = VAccess::WRITE;
+        iterateAndNextNull(nodep->exprsp());
     }
     void visit(AstFUngetC* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        {
-            iterateAndNextNull(nodep->filep());
-            m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->rhsp());
-        }
+        iterateAndNextNull(nodep->filep());
+        m_setRefLvalue = VAccess::WRITE;
+        iterateAndNextNull(nodep->rhsp());
     }
     void visit(AstSScanF* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        {
-            m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->exprsp());
-        }
+        m_setRefLvalue = VAccess::WRITE;
+        iterateAndNextNull(nodep->exprsp());
     }
     void visit(AstSysIgnore* nodep) override {
         // Can't know if lvalue or not; presume not
@@ -213,46 +204,36 @@ class LinkLValueVisitor final : public VNVisitor {
     }
     void visit(AstRand* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        {
-            if (!nodep->urandom()) m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->seedp());
-        }
+        if (!nodep->urandom()) m_setRefLvalue = VAccess::WRITE;
+        iterateAndNextNull(nodep->seedp());
     }
     void visit(AstReadMem* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        {
-            m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->memp());
-            m_setRefLvalue = VAccess::NOCHANGE;
-            iterateAndNextNull(nodep->filenamep());
-            iterateAndNextNull(nodep->lsbp());
-            iterateAndNextNull(nodep->msbp());
-        }
+        m_setRefLvalue = VAccess::WRITE;
+        iterateAndNextNull(nodep->memp());
+        m_setRefLvalue = VAccess::NOCHANGE;
+        iterateAndNextNull(nodep->filenamep());
+        iterateAndNextNull(nodep->lsbp());
+        iterateAndNextNull(nodep->msbp());
     }
     void visit(AstTestPlusArgs* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        {
-            m_setRefLvalue = VAccess::NOCHANGE;
-            iterateAndNextNull(nodep->searchp());
-        }
+        m_setRefLvalue = VAccess::NOCHANGE;
+        iterateAndNextNull(nodep->searchp());
     }
     void visit(AstValuePlusArgs* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        {
-            m_setRefLvalue = VAccess::NOCHANGE;
-            iterateAndNextNull(nodep->searchp());
-            m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->outp());
-        }
+        m_setRefLvalue = VAccess::NOCHANGE;
+        iterateAndNextNull(nodep->searchp());
+        m_setRefLvalue = VAccess::WRITE;
+        iterateAndNextNull(nodep->outp());
     }
     void visit(AstSFormat* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        {
-            m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->lhsp());
-            m_setRefLvalue = VAccess::NOCHANGE;
-            iterateAndNextNull(nodep->fmtp());
-        }
+        m_setRefLvalue = VAccess::WRITE;
+        iterateAndNextNull(nodep->lhsp());
+        m_setRefLvalue = VAccess::NOCHANGE;
+        iterateAndNextNull(nodep->fmtp());
     }
     void visit(AstNodeDistBiop* nodep) override {
         VL_RESTORER(m_setRefLvalue);
@@ -271,13 +252,11 @@ class LinkLValueVisitor final : public VNVisitor {
     }
     void prepost_visit(AstNodeTriop* nodep) {
         VL_RESTORER(m_setRefLvalue);
-        {
-            m_setRefLvalue = VAccess::NOCHANGE;
-            iterateAndNextNull(nodep->lhsp());
-            iterateAndNextNull(nodep->rhsp());
-            m_setRefLvalue = VAccess::WRITE;
-            iterateAndNextNull(nodep->thsp());
-        }
+        m_setRefLvalue = VAccess::NOCHANGE;
+        iterateAndNextNull(nodep->lhsp());
+        iterateAndNextNull(nodep->rhsp());
+        m_setRefLvalue = VAccess::WRITE;
+        iterateAndNextNull(nodep->thsp());
     }
     void visit(AstPreAdd* nodep) override { prepost_visit(nodep); }
     void visit(AstPostAdd* nodep) override { prepost_visit(nodep); }
@@ -287,38 +266,33 @@ class LinkLValueVisitor final : public VNVisitor {
     // Nodes that change LValue state
     void visit(AstSel* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        {
-            iterateAndNextNull(nodep->fromp());
-            // Only set lvalues on the from
-            m_setRefLvalue = VAccess::NOCHANGE;
-            iterateAndNextNull(nodep->lsbp());
-            iterateAndNextNull(nodep->widthp());
-        }
+        iterateAndNextNull(nodep->fromp());
+        // Only set lvalues on the from
+        m_setRefLvalue = VAccess::NOCHANGE;
+        iterateAndNextNull(nodep->lsbp());
+        iterateAndNextNull(nodep->widthp());
     }
     void visit(AstNodeSel* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        {  // Only set lvalues on the from
-            iterateAndNextNull(nodep->fromp());
-            m_setRefLvalue = VAccess::NOCHANGE;
-            iterateAndNextNull(nodep->bitp());
-        }
+        // Only set lvalues on the from
+        iterateAndNextNull(nodep->fromp());
+        m_setRefLvalue = VAccess::NOCHANGE;
+        iterateAndNextNull(nodep->bitp());
     }
     void visit(AstCellArrayRef* nodep) override {
         VL_RESTORER(m_setRefLvalue);
-        {  // selp is not an lvalue
-            m_setRefLvalue = VAccess::NOCHANGE;
-            iterateAndNextNull(nodep->selp());
-        }
+        // selp is not an lvalue
+        m_setRefLvalue = VAccess::NOCHANGE;
+        iterateAndNextNull(nodep->selp());
     }
     void visit(AstNodePreSel* nodep) override {
         if (AstSelBit* const selbitp = VN_CAST(nodep, SelBit)) selbitp->access(m_setRefLvalue);
         VL_RESTORER(m_setRefLvalue);
-        {  // Only set lvalues on the from
-            iterateAndNextNull(nodep->fromp());
-            m_setRefLvalue = VAccess::NOCHANGE;
-            iterateAndNextNull(nodep->rhsp());
-            iterateAndNextNull(nodep->thsp());
-        }
+        // Only set lvalues on the from
+        iterateAndNextNull(nodep->fromp());
+        m_setRefLvalue = VAccess::NOCHANGE;
+        iterateAndNextNull(nodep->rhsp());
+        iterateAndNextNull(nodep->thsp());
     }
     void visit(AstMemberSel* nodep) override {
         if (m_setRefLvalue != VAccess::NOCHANGE) {
@@ -350,9 +324,9 @@ class LinkLValueVisitor final : public VNVisitor {
             AstNodeExpr* const pinp = argp->exprp();
             if (!pinp) continue;
             if (portp->isWritable()) {
+                VL_RESTORER(m_setRefLvalue);
                 m_setRefLvalue = VAccess::WRITE;
                 iterate(pinp);
-                m_setRefLvalue = VAccess::NOCHANGE;
             } else {
                 iterate(pinp);
             }

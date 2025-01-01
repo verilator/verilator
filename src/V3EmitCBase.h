@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -146,8 +146,8 @@ public:
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);
     void emitVarDecl(const AstVar* nodep, bool asRef = false);
     void emitVarAccessors(const AstVar* nodep);
-    template <typename F>
-    static void forModCUse(const AstNodeModule* modp, VUseType useType, F action) {
+    template <typename T_Callable>
+    static void forModCUse(const AstNodeModule* modp, VUseType useType, T_Callable action) {
         for (AstNode* itemp = modp->stmtsp(); itemp; itemp = itemp->nextp()) {
             if (AstCUse* const usep = VN_CAST(itemp, CUse)) {
                 if (usep->useType().containsAny(useType)) {

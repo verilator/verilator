@@ -10,73 +10,47 @@ module t (/*AUTOARG*/
    );
 
    input clk;
-   integer cyc; initial cyc=1;
+   int cyc;
 
    Test test (/*AUTOINST*/
               // Inputs
               .clk                      (clk));
 
-   always @ (posedge clk) begin
-      if (cyc!=0) begin
-         cyc <= cyc + 1;
-         if (cyc==10) begin
-            $write("*-* All Finished *-*\n");
-            $finish;
-         end
+   always @(posedge clk) begin
+      cyc <= cyc + 1;
+      if (cyc == 10) begin
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 
 endmodule
 
-module Test
-  (
-   input clk
-   );
+module Test (
+    input clk
+);
 
 `ifdef FAIL_ASSERT_1
-   assert property (
-     @(posedge clk) disable iff (0)
-     0
-   ) else $display("wrong disable");
+   assert property (@(posedge clk) disable iff (0) 0)
+   else $display("wrong disable");
 `endif
 
-   assert property (
-     @(posedge clk) disable iff (1)
-     0
-   );
+   assert property (@(posedge clk) disable iff (1) 0);
 
-   assert property (
-     @(posedge clk) disable iff (1)
-     1
-   );
+   assert property (@(posedge clk) disable iff (1) 1);
 
-   assert property (
-     @(posedge clk) disable iff (0)
-     1
-   );
+   assert property (@(posedge clk) disable iff (0) 1);
 
    //
    // Cover properties behave differently
    //
 
-   cover property (
-     @(posedge clk) disable iff (1)
-     1
-   ) $stop;
+   cover property (@(posedge clk) disable iff (1) 1) $stop;
 
-   cover property (
-     @(posedge clk) disable iff (1)
-     0
-   ) $stop;
+   cover property (@(posedge clk) disable iff (1) 0) $stop;
 
-   cover property (
-     @(posedge clk) disable iff (0)
-     1
-   ) $display("*COVER: ok");
+   cover property (@(posedge clk) disable iff (0) 1) $display("*COVER: ok");
 
-   cover property (
-     @(posedge clk) disable iff (0)
-     0
-   ) $stop;
+   cover property (@(posedge clk) disable iff (0) 0) $stop;
 
 endmodule

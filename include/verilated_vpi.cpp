@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2009-2024 by Wilson Snyder. This program is free software; you can
+// Copyright 2009-2025 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -268,6 +268,7 @@ protected:
     bool m_toplevel = false;
     const char* m_name;
     const char* m_fullname;
+    const char* m_defname;
 
 public:
     explicit VerilatedVpioScope(const VerilatedScope* scopep)
@@ -275,6 +276,7 @@ public:
         m_fullname = m_scopep->name();
         if (std::strncmp(m_fullname, "TOP.", 4) == 0) m_fullname += 4;
         m_name = m_scopep->identifier();
+        m_defname = m_scopep->defname();
     }
     ~VerilatedVpioScope() override = default;
     static VerilatedVpioScope* castp(vpiHandle h) {
@@ -284,6 +286,7 @@ public:
     const VerilatedScope* scopep() const { return m_scopep; }
     const char* name() const override { return m_name; }
     const char* fullname() const override { return m_fullname; }
+    const char* defname() const override { return m_defname; }
     bool toplevel() const { return m_toplevel; }
 };
 
@@ -2415,9 +2418,11 @@ void vl_get_value(const VerilatedVar* varp, void* varDatap, p_vpi_value valuep,
         } else if (varp->vltype() == VLVT_WDATA) {
             const int words = VL_WORDS_I(varp->packed().elements());
             if (VL_UNCOVERABLE(words >= VL_VALUE_STRING_MAX_WORDS)) {
-                VL_FATAL_MT(__FILE__, __LINE__, "",
-                            "vpi_get_value with more than VL_VALUE_STRING_MAX_WORDS; increase and "
-                            "recompile");
+                VL_VPI_ERROR_(
+                    __FILE__, __LINE__,
+                    "vpi_get_value with more than VL_VALUE_STRING_MAX_WORDS; increase and "
+                    "recompile");
+                return;
             }
             const WDataInP datap = (reinterpret_cast<EData*>(varDatap));
             for (int i = 0; i < words; ++i) {

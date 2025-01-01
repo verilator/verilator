@@ -1,4 +1,4 @@
-.. Copyright 2003-2024 by Wilson Snyder.
+.. Copyright 2003-2025 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 verilator_profcfunc
@@ -14,6 +14,17 @@ not total 100%.  In the verilator_profcfunc report this will get
 reported as a rounding error.
 
 For an overview of the use of verilator_profcfunc, see :ref:`Profiling`.
+
+verilator_profcfunc Example Usage
+---------------------------------
+
+..
+
+    verilator_profcfunc --help
+    verilator_profcfunc --version
+
+    verilator_profcfunc gprof.out
+
 
 verilator_profcfunc Arguments
 -----------------------------

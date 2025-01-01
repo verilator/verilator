@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -99,7 +99,8 @@ class UnknownVisitor final : public VNVisitor {
         AstNodeExpr* prep = nodep;
 
         // Scan back to put the condlvalue above all selects (IE top of the lvalue)
-        while (VN_IS(prep->backp(), NodeSel) || VN_IS(prep->backp(), Sel)) {
+        while (VN_IS(prep->backp(), NodeSel) || VN_IS(prep->backp(), Sel)
+               || VN_IS(prep->backp(), StructSel)) {
             prep = VN_AS(prep->backp(), NodeExpr);
         }
         FileLine* const fl = nodep->fileline();
@@ -119,28 +120,7 @@ class UnknownVisitor final : public VNVisitor {
                 = new AstVar{fl, VVarType::MODULETEMP, m_lvboundNames.get(prep), prep->dtypep()};
             m_modp->addStmtsp(varp);
             AstNode* const abovep = prep->backp();  // Grab above point before we replace 'prep'
-            AstNode* currentStmtp = abovep;
-            while (currentStmtp && !VN_IS(currentStmtp, NodeStmt))
-                currentStmtp = currentStmtp->backp();
-            VNRelinker linkContext;
-            currentStmtp = currentStmtp->unlinkFrBackWithNext(&linkContext);
-            AstNodeExpr* const selExprp = prep->cloneTree(true);
-            AstNodeExpr* currentExprp = selExprp;
-            while (AstNodeExpr* itrSelExprp = VN_AS(currentExprp->op1p(), NodeExpr)) {
-                if (AstVarRef* const selRefp = VN_CAST(itrSelExprp, VarRef)) {
-                    // Mark the variable reference as READ access to avoid assignment issues
-                    selRefp->access(VAccess::READ);
-                    break;
-                }
-                currentExprp = itrSelExprp;
-            }
-            // Before assigning the value to the temporary variable, first assign the current array
-            // element to it. This ensures any field modifications happen on the correct instance
-            // and prevents overwriting other fields.
-            AstNode* const newAssignp
-                = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, selExprp};
-            newAssignp->addNextStmt(currentStmtp, newAssignp);
-            linkContext.relink(newAssignp);
+
             prep->replaceWith(new AstVarRef{fl, varp, VAccess::WRITE});
             if (m_timingControlp) m_timingControlp->unlinkFrBack();
             AstIf* const newp = new AstIf{
@@ -179,43 +159,33 @@ class UnknownVisitor final : public VNVisitor {
     void visit(AstAssignDly* nodep) override {
         VL_RESTORER(m_assigndlyp);
         VL_RESTORER(m_timingControlp);
-        {
-            m_assigndlyp = nodep;
-            m_timingControlp = nodep->timingControlp();
-            VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-        }
+        m_assigndlyp = nodep;
+        m_timingControlp = nodep->timingControlp();
+        VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
     }
     void visit(AstAssignW* nodep) override {
         VL_RESTORER(m_assignwp);
         VL_RESTORER(m_timingControlp);
-        {
-            m_assignwp = nodep;
-            m_timingControlp = nodep->timingControlp();
-            VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-        }
+        m_assignwp = nodep;
+        m_timingControlp = nodep->timingControlp();
+        VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
     }
     void visit(AstNodeAssign* nodep) override {
         VL_RESTORER(m_timingControlp);
-        {
-            m_timingControlp = nodep->timingControlp();
-            iterateChildren(nodep);
-        }
+        m_timingControlp = nodep->timingControlp();
+        iterateChildren(nodep);
     }
     void visit(AstCaseItem* nodep) override {
         VL_RESTORER(m_constXCvt);
-        {
-            m_constXCvt = false;  // Avoid losing the X's in casex
-            iterateAndNextNull(nodep->condsp());
-            m_constXCvt = true;
-            iterateAndNextNull(nodep->stmtsp());
-        }
+        m_constXCvt = false;  // Avoid losing the X's in casex
+        iterateAndNextNull(nodep->condsp());
+        m_constXCvt = true;
+        iterateAndNextNull(nodep->stmtsp());
     }
     void visit(AstNodeDType* nodep) override {
         VL_RESTORER(m_constXCvt);
-        {
-            m_constXCvt = false;  // Avoid losing the X's in casex
-            iterateChildren(nodep);
-        }
+        m_constXCvt = false;  // Avoid losing the X's in casex
+        iterateChildren(nodep);
     }
     void visit(AstVar* nodep) override {
         VL_RESTORER(m_allowXUnique);
@@ -267,9 +237,11 @@ class UnknownVisitor final : public VNVisitor {
             AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
             AstNodeExpr* newp;
             if (!VN_IS(rhsp, Const)) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: RHS of ==? or !=? must be "
-                                             "constant to be synthesizable");  // Says spec.
-                // Replace with anything that won't cause more errors
+                if (rhsp->dtypep()->isFourstate()) {
+                    nodep->v3warn(
+                        E_UNSUPPORTED,
+                        "Unsupported: RHS of ==? or !=? is fourstate but not a constant");
+                }
                 newp = new AstEq{nodep->fileline(), lhsp, rhsp};
             } else {
                 // X or Z's become mask, ala case statements.

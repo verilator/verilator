@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -393,13 +393,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     }
     void visit(AstTextBlock* nodep) override {
         visit(static_cast<AstNodeSimpleText*>(nodep));
-        {
-            VL_RESTORER(m_suppressSemi);
-            m_suppressVarSemi = nodep->commas();
-            for (AstNode* childp = nodep->nodesp(); childp; childp = childp->nextp()) {
-                iterateConst(childp);
-                if (nodep->commas() && childp->nextp()) puts(", ");
-            }
+        VL_RESTORER(m_suppressSemi);
+        m_suppressVarSemi = nodep->commas();
+        for (AstNode* childp = nodep->nodesp(); childp; childp = childp->nextp()) {
+            iterateConst(childp);
+            if (nodep->commas() && childp->nextp()) puts(", ");
         }
     }
     void visit(AstScopeName* nodep) override {}
