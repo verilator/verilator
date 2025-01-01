@@ -1634,7 +1634,7 @@ class VlTest:
         return VtOs.run_capture(cmd, check=check)
 
     def setenv(self, var: str, val: str) -> None:
-        """Set enviornment variable"""
+        """Set environment variable"""
         print("\texport %s='%s'" % (var, val))
         os.environ[var] = val
 
@@ -2732,7 +2732,7 @@ if __name__ == '__main__':
         epilog="""driver.py invokes Verilator or another simulator on each test file.
     See docs/internals.rst in the distribution for more information.
 
-    Copyright 2024-2024 by Wilson Snyder. This program is free software; you
+    Copyright 2024-2025 by Wilson Snyder. This program is free software; you
     can redistribute it and/or modify it under the terms of either the GNU
     Lesser General Public License Version 3 or the Perl Artistic License
     Version 2.0.
