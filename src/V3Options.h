@@ -543,7 +543,7 @@ public:
     bool allPublic() const { return m_public; }
     bool publicParams() const { return m_public_params; }
     bool publicFlatRW() const { return m_publicFlatRW; }
-    int  publicDepth() const { return m_publicDepth; }
+    int publicDepth() const { return m_publicDepth; }
     bool anyPublicFlat() const { return m_public_params || m_publicFlatRW || m_publicDepth; }
     bool lintOnly() const VL_MT_SAFE { return m_lintOnly; }
     bool ignc() const { return m_ignc; }

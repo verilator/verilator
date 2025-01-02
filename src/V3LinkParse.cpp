@@ -340,19 +340,18 @@ class LinkParseVisitor final : public VNVisitor {
         // Maybe this variable has a signal attribute
         V3Config::applyVarAttr(m_modp, m_ftaskp, nodep);
 
-        if (v3Global.opt.anyPublicFlat() && nodep->varType().isVPIAccessible()){
-            if (v3Global.opt.publicFlatRW()){
+        if (v3Global.opt.anyPublicFlat() && nodep->varType().isVPIAccessible()) {
+            if (v3Global.opt.publicFlatRW()) {
                 nodep->sigUserRWPublic(true);
-            } else if (v3Global.opt.publicParams() && nodep->isParam()){
+            } else if (v3Global.opt.publicParams() && nodep->isParam()) {
                 nodep->sigUserRWPublic(true);
-            } else if (m_modp && v3Global.opt.publicDepth()){
-                if ((m_modp->level() - 1) <= v3Global.opt.publicDepth()){
+            } else if (m_modp && v3Global.opt.publicDepth()) {
+                if ((m_modp->level() - 1) <= v3Global.opt.publicDepth()) {
                     nodep->sigUserRWPublic(true);
-                } else if (VN_IS(m_modp, Package) && nodep->isParam()){
+                } else if (VN_IS(m_modp, Package) && nodep->isParam()) {
                     nodep->sigUserRWPublic(true);
                 }
             }
-            
         }
 
         // We used modTrace before leveling, and we may now

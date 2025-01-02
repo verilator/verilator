@@ -983,7 +983,8 @@ void EmitCSyms::emitSymImp() {
             varName += protect(varp->name());
 
             if (varp->isParam()) {
-                if (varp->vlEnumType() == "VLVT_STRING" && !VN_IS(varp->subDTypep(), UnpackArrayDType)) {
+                if (varp->vlEnumType() == "VLVT_STRING"
+                    && !VN_IS(varp->subDTypep(), UnpackArrayDType)) {
                     puts(", const_cast<void*>(static_cast<const void*>(");
                     puts(varName);
                     puts(".c_str())), ");
