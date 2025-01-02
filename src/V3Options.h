@@ -543,6 +543,8 @@ public:
     bool allPublic() const { return m_public; }
     bool publicParams() const { return m_public_params; }
     bool publicFlatRW() const { return m_publicFlatRW; }
+    int  publicDepth() const { return m_publicDepth; }
+    bool anyPublicFlat() const { return m_public_params || m_publicFlatRW || m_publicDepth; }
     bool lintOnly() const VL_MT_SAFE { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
     bool quietExit() const VL_MT_SAFE { return m_quietExit; }
@@ -577,7 +579,6 @@ public:
     int outputSplitCTrace() const { return m_outputSplitCTrace; }
     int outputGroups() const { return m_outputGroups; }
     int pinsBv() const VL_MT_SAFE { return m_pinsBv; }
-    int publicDepth() const { return m_publicDepth; }
     int reloopLimit() const { return m_reloopLimit; }
     VOptionBool skipIdentical() const { return m_skipIdentical; }
     bool stopFail() const { return m_stopFail; }
