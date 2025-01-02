@@ -352,6 +352,7 @@ class LinkParseVisitor final : public VNVisitor {
                     nodep->sigUserRWPublic(true);
                 }
             }
+
         }
 
         // We used modTrace before leveling, and we may now

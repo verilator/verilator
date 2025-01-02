@@ -16,7 +16,7 @@ package somepackage;
 endpackage
 
 module t (/*AUTOARG*/
-   ); 
+   );
 
    parameter int someOtherInt  = 7;
    parameter int yetAnotherInt = 9;
