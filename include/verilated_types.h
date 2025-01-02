@@ -451,6 +451,8 @@ struct VlWide final {
     // METHODS
     const EData& at(size_t index) const { return m_storage[index]; }
     EData& at(size_t index) { return m_storage[index]; }
+    const size_t size() const { return Words; }
+    size_t size() { return Words; }
     WData* data() { return &m_storage[0]; }
     const WData* data() const { return &m_storage[0]; }
     bool operator<(const VlWide<N_Words>& rhs) const {

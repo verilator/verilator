@@ -283,35 +283,6 @@ std::string parseNestedSelect(const std::string& nested_select_expr,
     return name;
 }
 
-std::string hexToDecimal(const std::string& hexStr) {
-    std::string result = "0";
-
-    for (char c : hexStr) {
-        // Convert current hex character to decimal
-        const int value = (c >= '0' && c <= '9') ? (c - '0') : (std::toupper(c) - 'A' + 10);
-
-        // Multiply current result by 16
-        int carry = 0;
-        for (auto it = result.rbegin(); it != result.rend(); ++it) {
-            int digit = (*it - '0') * 16 + carry;
-            carry = digit / 10;
-            *it = (digit % 10) + '0';
-        }
-        if (carry > 0) result.insert(result.begin(), carry + '0');
-
-        // Add current hex digit's decimal value
-        carry = value;
-        for (auto it = result.rbegin(); it != result.rend(); ++it) {
-            int digit = (*it - '0') + carry;
-            carry = digit / 10;
-            *it = (digit % 10) + '0';
-        }
-        if (carry > 0) result.insert(result.begin(), carry + '0');
-    }
-
-    return result;
-}
-
 //======================================================================
 // VlRandomizer:: Methods
 
@@ -497,7 +468,17 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
                                 "hex_index contains invalid format");
                     continue;
                 }
-                const std::string index = hexToDecimal(hex_index.substr(start + 2));
+                std::string trimmed_hex = hex_index.substr(start + 2);
+
+                // Remove leading zeros and handle empty case
+                trimmed_hex.erase(0, trimmed_hex.find_first_not_of('0'));
+                trimmed_hex = trimmed_hex.empty() ? "0" : trimmed_hex;
+
+                // Determine index: use stoll for small numbers, or keep as string for large numbers
+                std::string index = (trimmed_hex.size() <= 16)
+                    ? std::to_string(std::stoll(trimmed_hex, nullptr, 16))
+                    : trimmed_hex;
+
                 oss << "[" << index << "]";
             }
             const std::string indexed_name = oss.str();

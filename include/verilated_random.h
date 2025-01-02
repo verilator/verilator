@@ -191,7 +191,6 @@ public:
 };
 //=============================================================================
 // VlRandomizer is the object holding constraints and variable references.
-std::string hexToDecimal(const std::string& hexStr);
 class VlRandomizer final {
     // MEMBERS
     std::vector<std::string> m_constraints;  // Solver-dependent constraints
@@ -227,44 +226,60 @@ public:
     typename std::enable_if<std::is_same<T_Key, std::string>::value>::type
     process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
                 const std::string& base_name, size_t& idx_width) {
-        integral_index.push_back(string_to_integral(key));
-        indexed_name
-            = base_name + "[" + std::to_string(integral_index[integral_index.size() - 1]) + "]";
-        idx_width = 64;  // 64-bit mask
+        std::string hex_str = string_to_hex_integral(key);
+        std::size_t hex_str_size = hex_str.size() * 4; // Each hex digit represents 4 bits
+        hex_str_size = (hex_str_size % 32 == 0) ? (hex_str_size / 32) : (hex_str_size / 32 + 1);
+
+        if (hex_str_size <= 2) { // Small numbers: Convert to decimal
+            integral_index.push_back(std::stoll(hex_str, nullptr, 16));
+            indexed_name = base_name + "[" + std::to_string(integral_index.back()) + "]";
+        } else { // Large numbers: Split into chunks
+            for (int i = hex_str.size(); i > 0; i -= 8) {
+                size_t start = (i >= 8) ? i - 8 : 0;
+                integral_index.push_back(std::stoll(hex_str.substr(start, i - start), nullptr, 16));
+                if (start == 0) break;
+            }
+            std::reverse(integral_index.begin(), integral_index.end());
+            indexed_name = base_name + "[" + hex_str + "]"; // Use hex string as index
+        }
+        // Calculate width based on the number of 32-bit words
+        idx_width = hex_str_size * 32;
     }
     template <typename T_Key>
-    typename std::enable_if<!std::is_integral<T_Key>::value
-                            && !std::is_same<T_Key, std::string>::value>::type
+    typename std::enable_if<VlIsVlWide<T_Key>::value>::type
     process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
                 const std::string& base_name, size_t& idx_width) {
         std::ostringstream hex_stream;
-        for (int i = key.Words; i > 0; --i) {
-            const size_t word_value = key[i - 1];
-            hex_stream << std::hex << word_value;
-            integral_index.push_back(word_value);
+        for (int i = key.size(); i > 0; --i) {
+            const size_t segment_value = key.at(i-1);
+            hex_stream << std::hex << segment_value;
+            integral_index.push_back(segment_value);
         }
+        std::string index_string = hex_stream.str();
+        index_string.erase(0, index_string.find_first_not_of('0'));
+        index_string = index_string.empty() ? "0" : index_string;
 
-        std::string hex_string = hex_stream.str();
-        hex_string.erase(0, hex_string.find_first_not_of('0'));
+        indexed_name = base_name + "[" + index_string + "]";
 
-        indexed_name = base_name + "[" + hexToDecimal(hex_string) + "]";
-
-        idx_width = key.Words * 32;
-        // VL_FATAL_MT(__FILE__, __LINE__, "randomize",
-        //             "Unsupported: Only integral and string index of associative array is "
-        //             "supported currently.");
+        idx_width = key.size() * 32;
     }
-    uint64_t string_to_integral(const std::string& str) {
-        uint64_t result = 0;
-        for (char c : str) { result = (result << 8) | static_cast<uint64_t>(c); }
-
-#ifdef VL_DEBUG
-        if (seen_values.count(result) > 0 && seen_values[result] != str)
-            VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                       "Conflict detected: Different strings mapped to the same 64-bit index.");
-        seen_values[result] = str;
-#endif
-
+    template <typename T_Key>
+    typename std::enable_if<!std::is_integral<T_Key>::value
+                            && !std::is_same<T_Key, std::string>::value
+                            && !VlIsVlWide<T_Key>::value>::type
+    process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
+                const std::string& base_name, size_t& idx_width) {
+        VL_FATAL_MT(__FILE__, __LINE__, "randomize",
+                    "Unsupported: Only integral and string index of associative array is "
+                    "supported currently.");
+    }
+    std::string string_to_hex_integral(const std::string& str) {
+        std::string result;
+        for (char c : str) {
+            std::stringstream stream;
+            stream << std::hex  << (static_cast<int>(c) & 0xFF);
+            result += stream.str();
+        }
         return result;
     }
 

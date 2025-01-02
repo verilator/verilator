@@ -728,13 +728,16 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
         if (VN_IS(nodep->bitp(), CvtPackString)) {
-            // Extract and truncate the string index to fit within 64 bits
             AstCvtPackString* const stringp = VN_AS(nodep->bitp(), CvtPackString);
+            const size_t stringSize = VN_AS(stringp->lhsp(), Const)->width();
             VNRelinker handle;
             AstNodeExpr* const strIdxp = new AstSFormatF{
-                fl, "#x%16x", false,
-                new AstAnd{fl, stringp->lhsp()->unlinkFrBack(&handle),
-                           new AstConst(fl, AstConst::Unsized64{}, 0xFFFFFFFFFFFFFFFF)}};
+                fl,
+                "#x%"
+                    + std::to_string((stringSize % 32 == 0) ? (stringSize / 4)
+                                                            : 8 * (int(stringSize / 32) + 1))
+                    + "x",
+                false, stringp->lhsp()->unlinkFrBack(&handle)};
             handle.relink(strIdxp);
             editSMT(nodep, nodep->fromp(), strIdxp);
         } else {
