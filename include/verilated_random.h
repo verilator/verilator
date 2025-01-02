@@ -227,20 +227,21 @@ public:
     process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
                 const std::string& base_name, size_t& idx_width) {
         std::string hex_str = string_to_hex_integral(key);
-        std::size_t hex_str_size = hex_str.size() * 4; // Each hex digit represents 4 bits
+        std::size_t hex_str_size = hex_str.size() * 4;  // Each hex digit represents 4 bits
         hex_str_size = (hex_str_size % 32 == 0) ? (hex_str_size / 32) : (hex_str_size / 32 + 1);
 
-        if (hex_str_size <= 2) { // Small numbers: Convert to decimal
+        if (hex_str_size <= 2) {  // Small numbers: Convert to decimal
             integral_index.push_back(std::stoll(hex_str, nullptr, 16));
             indexed_name = base_name + "[" + std::to_string(integral_index.back()) + "]";
-        } else { // Large numbers: Split into chunks
+        } else {  // Large numbers: Split into chunks
             for (int i = hex_str.size(); i > 0; i -= 8) {
                 size_t start = (i >= 8) ? i - 8 : 0;
-                integral_index.push_back(std::stoll(hex_str.substr(start, i - start), nullptr, 16));
+                integral_index.push_back(
+                    std::stoll(hex_str.substr(start, i - start), nullptr, 16));
                 if (start == 0) break;
             }
             std::reverse(integral_index.begin(), integral_index.end());
-            indexed_name = base_name + "[" + hex_str + "]"; // Use hex string as index
+            indexed_name = base_name + "[" + hex_str + "]";  // Use hex string as index
         }
         // Calculate width based on the number of 32-bit words
         idx_width = hex_str_size * 32;
@@ -251,7 +252,7 @@ public:
                 const std::string& base_name, size_t& idx_width) {
         std::ostringstream hex_stream;
         for (int i = key.size(); i > 0; --i) {
-            const size_t segment_value = key.at(i-1);
+            const size_t segment_value = key.at(i - 1);
             hex_stream << std::hex << segment_value;
             integral_index.push_back(segment_value);
         }
@@ -277,7 +278,7 @@ public:
         std::string result;
         for (char c : str) {
             std::stringstream stream;
-            stream << std::hex  << (static_cast<int>(c) & 0xFF);
+            stream << std::hex << (static_cast<int>(c) & 0xFF);
             result += stream.str();
         }
         return result;

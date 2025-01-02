@@ -474,10 +474,11 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
                 trimmed_hex.erase(0, trimmed_hex.find_first_not_of('0'));
                 trimmed_hex = trimmed_hex.empty() ? "0" : trimmed_hex;
 
-                // Determine index: use stoll for small numbers, or keep as string for large numbers
+                // Determine index: use stoll for small numbers, or keep as string for large
+                // numbers
                 std::string index = (trimmed_hex.size() <= 16)
-                    ? std::to_string(std::stoll(trimmed_hex, nullptr, 16))
-                    : trimmed_hex;
+                                        ? std::to_string(std::stoll(trimmed_hex, nullptr, 16))
+                                        : trimmed_hex;
 
                 oss << "[" << index << "]";
             }
