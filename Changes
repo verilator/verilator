@@ -13,6 +13,9 @@ Verilator 5.033 devel
 
 **Minor:**
 
+* Fix V3Simulate constant reuse (#5709). [Geza Lore]
+* Fix man pages what-is section (#5710). [Ahmed El-Mahmoudy]
+
 
 Verilator 5.032 2025-01-01
 ==========================
