@@ -128,13 +128,13 @@ public:
             const size_t bit_width = idxWidths[idx];
             s << " #x";
 
-            const size_t emit_count = (bit_width > 64) ? (idxWidths[idx] / 32) : 1;
+            const size_t emit_count = (bit_width > 32) ? (idxWidths[idx] / 32) : 1;
 
             for (size_t i = 0; i < emit_count; ++i) {
-                emitHexs(s, indices, (bit_width > 64) ? 32 : bit_width, wide_size + i);
+                emitHexs(s, indices, (bit_width > 32) ? 32 : bit_width, wide_size + i);
             }
 
-            wide_size += (idxWidths[idx] > 64) ? (idxWidths[idx] / 32) : 1;
+            wide_size += (idxWidths[idx] > 32) ? (idxWidths[idx] / 32) : 1;
             s << ")";
         }
     }
@@ -214,13 +214,50 @@ public:
     bool next(VlRNG& rngr);
 
     template <typename T_Key>
-    typename std::enable_if<std::is_integral<T_Key>::value>::type
+    typename std::enable_if<std::is_integral<T_Key>::value && (sizeof(T_Key) <= 4)>::type
     process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
                 const std::string& base_name, size_t& idx_width) {
         integral_index.push_back(static_cast<size_t>(key));
         indexed_name
             = base_name + "[" + std::to_string(integral_index[integral_index.size() - 1]) + "]";
         idx_width = sizeof(T_Key) * 8;
+    }
+    template <typename T_Key>
+    typename std::enable_if<std::is_integral<T_Key>::value && (sizeof(T_Key) > 4)>::type
+    process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
+                const std::string& base_name, size_t& idx_width) {
+        constexpr size_t segment_bits = 32;
+        constexpr T_Key mask = (static_cast<T_Key>(1) << segment_bits) - 1;
+        integral_index.push_back(static_cast<size_t>(key >> segment_bits));
+        integral_index.push_back(static_cast<size_t>(key & mask));
+
+        std::ostringstream hex_stream;
+        hex_stream << std::hex << key;
+        std::string index_string = hex_stream.str();
+        index_string.erase(0, index_string.find_first_not_of('0'));
+        index_string = index_string.empty() ? "0" : index_string;
+
+        indexed_name = base_name + "[" + index_string + "]";
+
+        idx_width = sizeof(T_Key) * 8;
+    }
+    template <typename T_Key>
+    typename std::enable_if<VlIsVlWide<T_Key>::value>::type
+    process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
+                const std::string& base_name, size_t& idx_width) {
+        std::ostringstream hex_stream;
+        for (size_t i = key.size(); i > 0; --i) {
+            const size_t segment_value = key.at(i - 1);
+            hex_stream << std::hex << segment_value;
+            integral_index.push_back(segment_value);
+        }
+        std::string index_string = hex_stream.str();
+        index_string.erase(0, index_string.find_first_not_of('0'));
+        index_string = index_string.empty() ? "0" : index_string;
+
+        indexed_name = base_name + "[" + index_string + "]";
+
+        idx_width = key.size() * 32;
     }
     template <typename T_Key>
     typename std::enable_if<std::is_same<T_Key, std::string>::value>::type
@@ -245,24 +282,6 @@ public:
         }
         // Calculate width based on the number of 32-bit words
         idx_width = hex_str_size * 32;
-    }
-    template <typename T_Key>
-    typename std::enable_if<VlIsVlWide<T_Key>::value>::type
-    process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
-                const std::string& base_name, size_t& idx_width) {
-        std::ostringstream hex_stream;
-        for (int i = key.size(); i > 0; --i) {
-            const size_t segment_value = key.at(i - 1);
-            hex_stream << std::hex << segment_value;
-            integral_index.push_back(segment_value);
-        }
-        std::string index_string = hex_stream.str();
-        index_string.erase(0, index_string.find_first_not_of('0'));
-        index_string = index_string.empty() ? "0" : index_string;
-
-        indexed_name = base_name + "[" + index_string + "]";
-
-        idx_width = key.size() * 32;
     }
     template <typename T_Key>
     typename std::enable_if<!std::is_integral<T_Key>::value
