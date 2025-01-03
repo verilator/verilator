@@ -78,8 +78,7 @@ private:
     // Cleared on each always/assignw
     const VNUser1InUse m_inuser1;
 
-    // AstVar/AstVarScope::user1p()     -> See AuxAstVar via m_varAux
-    // AstConst::user1()    -> bool. This AstConst (allocated by this class) is in use
+    // AstNode::user1p()     -> See AuxAstVar via m_varAux
 
     enum VarUsage : uint8_t { VU_NONE = 0, VU_LV = 1, VU_RV = 2, VU_LVDLY = 4 };
 
@@ -95,6 +94,32 @@ private:
     };
 
     AstUser1Allocator<AstNode, AuxVariable> m_varAux;
+
+    // We want to re-use allocated constants across calls to clear(), but we want to be able
+    // to 'clear()' fast, so we use a generation number based allocator.
+    struct ConstAllocator final {
+        size_t m_generation = 0;
+        size_t m_nextFree = 0;
+        std::deque<AstConst*> m_constps;
+        AstConst* allocate(size_t currentGeneration, AstNode* nodep) {
+            if (m_generation != currentGeneration) {
+                m_generation = currentGeneration;
+                m_nextFree = 0;
+            }
+            UASSERT_OBJ(m_nextFree <= m_constps.size(), nodep, "Should only allocate at end");
+            if (m_nextFree == m_constps.size()) {
+                m_constps.push_back(
+                    new AstConst{nodep->fileline(), AstConst::DTyped{}, nodep->dtypep()});
+            }
+            AstConst* const constp = m_constps[m_nextFree++];
+            constp->num().nodep(nodep);
+            return constp;
+        }
+
+        ~ConstAllocator() {
+            for (AstConst* const constp : m_constps) VL_DO_DANGLING(delete constp, constp);
+        }
+    };
 
     // STATE
     // Major mode
@@ -113,8 +138,9 @@ private:
     int m_dataCount;  ///< Bytes of data
     AstJumpGo* m_jumpp = nullptr;  ///< Jump label we're branching from
     // Simulating:
-    std::unordered_map<const AstNodeDType*, std::deque<AstConst*>>
-        m_constps;  ///< Lists of all AstConst* allocated per dtype
+    // Allocators for constants of various data types
+    std::unordered_map<const AstNodeDType*, ConstAllocator> m_constps;
+    size_t m_constGeneration = 0;
     std::vector<SimStackNode*> m_callStack;  ///< Call stack for verbose error messages
 
     // Cleanup
@@ -223,37 +249,8 @@ public:
     // Simulation METHODS
 private:
     AstConst* allocConst(AstNode* nodep) {
-        // Save time - kept a list of allocated but unused values
-        // It would be more efficient to do this by size, but the extra accounting
-        // slows things down more than we gain.
-        AstConst* constp;
-        // Grab free list corresponding to this dtype
-        std::deque<AstConst*>& freeList = m_constps[nodep->dtypep()];
-        bool allocNewConst = true;
-        if (!freeList.empty()) {
-            constp = freeList.front();
-            if (!constp->user1()) {
-                // Front of free list is free, reuse it (otherwise allocate new node)
-                allocNewConst = false;  // No need to allocate
-                // Mark the AstConst node as used, and move it to the back of the free list. This
-                // ensures that when all AstConst instances within the list are used, then the
-                // front of the list will be marked as used, in which case the enclosing 'if' will
-                // fail and we fall back to allocation.
-                constp->user1(1);
-                freeList.pop_front();
-                freeList.push_back(constp);
-                // configure const
-                constp->num().nodep(nodep);
-            }
-        }
-        if (allocNewConst) {
-            // Need to allocate new constant
-            constp = new AstConst{nodep->fileline(), AstConst::DTyped{}, nodep->dtypep()};
-            // Mark as in use, add to free list for later reuse
-            constp->user1(1);
-            freeList.push_back(constp);
-        }
-        return constp;
+        // Allocate a constant with this dtype. Reuse them across a 'clear()' call for efficiency.
+        return m_constps[nodep->dtypep()].allocate(m_constGeneration, nodep);
     }
 
 public:
@@ -850,6 +847,8 @@ private:
             if (!itemp) {
                 clearOptimizable(nodep, "Array initialization has too few elements, need element "
                                             + cvtToStr(offset));
+            } else if (AstConst* const constp = VN_CAST(itemp, Const)) {
+                setValue(nodep, constp);
             } else {
                 setValue(nodep, fetchValue(itemp));
             }
@@ -1256,6 +1255,7 @@ public:
 
         AstNode::user1ClearTree();
         m_varAux.clear();
+        ++m_constGeneration;
     }
     void mainTableCheck(AstNode* nodep) {
         setMode(true /*scoped*/, true /*checking*/, false /*params*/);
@@ -1274,9 +1274,6 @@ public:
         mainGuts(nodep);
     }
     ~SimulateVisitor() override {
-        for (const auto& pair : m_constps) {
-            for (AstConst* const constp : pair.second) delete constp;
-        }
         m_constps.clear();
         for (AstNode* ip : m_reclaimValuesp) delete ip;
         m_reclaimValuesp.clear();
