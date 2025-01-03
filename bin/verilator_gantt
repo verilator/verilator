@@ -521,7 +521,7 @@ def write_vcd(filename):
 parser = argparse.ArgumentParser(
     allow_abbrev=False,
     formatter_class=argparse.RawDescriptionHelpFormatter,
-    description="""Create Gantt chart of multi-threaded execution.
+    description="""Create Gantt chart of Verilator multi-threaded execution
 
 Verilator_gantt creates a visual representation to help analyze Verilator
 #xmultithreaded simulation performance, by showing when each macro-task

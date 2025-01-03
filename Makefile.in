@@ -192,7 +192,7 @@ examples: all_nomsg
 # Docs
 
 .PHONY: docs
-docs: info
+docs: info $(VL_INST_MAN_FILES)
 
 info: $(INFOS)
 
