@@ -1898,7 +1898,7 @@ std::string VL_TO_STRING(CData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 8, lhs
 std::string VL_TO_STRING(SData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 16, lhs); }
 std::string VL_TO_STRING(IData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 32, lhs); }
 std::string VL_TO_STRING(QData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 64, lhs); }
-std::string VL_TO_STRING(double lhs) { return VL_SFORMATF_N_NX("%d", 0, 64, lhs); }
+std::string VL_TO_STRING(double lhs) { return VL_SFORMATF_N_NX("%g", 0, 64, lhs); }
 std::string VL_TO_STRING_W(int words, const WDataInP obj) {
     return VL_SFORMATF_N_NX("'h%0x", 0, words * VL_EDATASIZE, obj);
 }
