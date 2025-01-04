@@ -710,13 +710,16 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
         if (VN_IS(nodep->bitp(), CvtPackString)) {
-            // Extract and truncate the string index to fit within 64 bits
             AstCvtPackString* const stringp = VN_AS(nodep->bitp(), CvtPackString);
+            const size_t stringSize = VN_AS(stringp->lhsp(), Const)->width();
             VNRelinker handle;
             AstNodeExpr* const strIdxp = new AstSFormatF{
-                fl, "#x%16x", false,
-                new AstAnd{fl, stringp->lhsp()->unlinkFrBack(&handle),
-                           new AstConst(fl, AstConst::Unsized64{}, 0xFFFFFFFFFFFFFFFF)}};
+                fl,
+                "#x%"
+                    + std::to_string((stringSize % 32 == 0) ? (stringSize / 4)
+                                                            : 8 * (int(stringSize / 32) + 1))
+                    + "x",
+                false, stringp->lhsp()->unlinkFrBack(&handle)};
             handle.relink(strIdxp);
             editSMT(nodep, nodep->fromp(), strIdxp);
         } else {
@@ -733,10 +736,10 @@ class ConstraintExprVisitor final : public VNVisitor {
             } else if (actual_width <= 64) {
                 fmt = "#x%16x";
             } else {
-                nodep->v3warn(CONSTRAINTIGN,
-                              "Unsupported: Associative array index "
-                              "widths of more than 64 bits during constraint randomization.");
-                return;
+                fmt = "#x%"
+                      + std::to_string((actual_width % 32 == 0) ? (actual_width / 4)
+                                                                : 8 * (int(actual_width / 32) + 1))
+                      + "x";
             }
             AstNodeExpr* const idxp
                 = new AstSFormatF{fl, fmt, false, nodep->bitp()->unlinkFrBack(&handle)};
@@ -1450,11 +1453,8 @@ class RandomizeVisitor final : public VNVisitor {
         AstNodeStmt* stmtsp = nullptr;
         auto createLoopIndex = [&](AstNodeDType* tempDTypep) {
             if (VN_IS(tempDTypep, AssocArrayDType)) {
-                return new AstVar{
-                    fl, VVarType::VAR, uniqueNamep->get(""),
-                    dtypep->findBasicDType(
-                        ((AstBasicDType*)VN_AS(tempDTypep, AssocArrayDType)->keyDTypep())
-                            ->keyword())};
+                return new AstVar{fl, VVarType::VAR, uniqueNamep->get(""),
+                                  VN_AS(tempDTypep, AssocArrayDType)->keyDTypep()};
             }
             return new AstVar{fl, VVarType::VAR, uniqueNamep->get(""),
                               dtypep->findBasicDType(VBasicDTypeKwd::UINT32)};

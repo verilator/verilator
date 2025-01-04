@@ -147,11 +147,33 @@ class constrained_2d_associative_array;
     /* verilator lint_off SIDEEFFECT */
 endclass
 
+class AssocArray64bitMoreTest;
+
+    rand int bit_index_arr [bit[78:0]];
+    rand int logic_index_arr [logic[64:0]];
+
+    constraint c {
+        bit_index_arr[79'd66] == 65;
+        logic_index_arr[65'd3] == 70;
+    }
+    function new();
+        bit_index_arr = '{79'd66:0};
+        logic_index_arr = '{65'd3:0};
+    endfunction
+    function void self_check();
+        if (bit_index_arr[79'd66] != 65) $stop;
+        if (logic_index_arr[65'd3] != 70) $stop;
+    endfunction
+
+endclass
+
 module t_constraint_assoc_arr_basic;
 
     constrained_associative_array_basic my_array;
     constrained_1d_associative_array my_1d_array;
     constrained_2d_associative_array my_2d_array;
+
+    AssocArray64bitMoreTest test_obj;
     int success;
 
     initial begin
@@ -165,10 +187,16 @@ module t_constraint_assoc_arr_basic;
         if (success == 0) $stop;
         my_1d_array.self_check();
 
-        my_1d_array = new();
-        success = my_1d_array.randomize();
+        my_2d_array = new();
+        success = my_2d_array.randomize();
         if (success == 0) $stop;
-        my_1d_array.self_check();
+        my_2d_array.self_check();
+
+        test_obj = new();
+        repeat(2) begin
+            success = test_obj.randomize();
+            if (success != 1) $stop;
+        end
 
         // my_1d_array.debug_display();
         // my_2d_array.debug_display();
