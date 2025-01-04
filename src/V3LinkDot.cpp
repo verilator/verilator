@@ -2336,11 +2336,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
         nodep->addStmtsp(superNewStmtp);
         return superNewStmtp;
     }
-    void taskFuncSwapCheck(AstNodeFTaskRef* nodep) {
-        if (nodep->taskp() && VN_IS(nodep->taskp(), Task) && VN_IS(nodep, FuncRef)) {
-            nodep->v3error("Illegal call of a task as a function: " << nodep->prettyNameQ());
-        }
-    }
     void checkNoDot(AstNode* nodep) {
         if (VL_UNLIKELY(m_ds.m_dotPos != DP_NONE)) {
             // UINFO(9, indent() << "ds=" << m_ds.ascii() << endl);
@@ -3779,7 +3774,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     okSymp->cellErrorScopes(nodep);
                 }
             }
-            taskFuncSwapCheck(nodep);
         }
     }
     void visit(AstSelBit* nodep) override {

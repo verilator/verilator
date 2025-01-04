@@ -3929,11 +3929,14 @@ class WidthVisitor final : public VNVisitor {
                     AstNodeExpr* argsp = nullptr;
                     if (nodep->pinsp()) argsp = nodep->pinsp()->unlinkFrBackWithNext();
                     AstNodeFTaskRef* newp = nullptr;
-                    if (VN_IS(ftaskp, Task)) {
-                        newp = new AstTaskRef{nodep->fileline(), VN_AS(ftaskp, Task), argsp};
+                    // We use m_vup to determine task or function, so that later error checks
+                    // for funcref->task and taskref->func will pick up properly
+                    if (!m_vup) {  // Called as task
+                        newp = new AstTaskRef{nodep->fileline(), nodep->name(), argsp};
                     } else {
-                        newp = new AstFuncRef{nodep->fileline(), VN_AS(ftaskp, Func), argsp};
+                        newp = new AstFuncRef{nodep->fileline(), nodep->name(), argsp};
                     }
+                    newp->taskp(ftaskp);  // Not passed above as might be func vs task mismatch
                     newp->classOrPackagep(classp);
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -3941,7 +3944,18 @@ class WidthVisitor final : public VNVisitor {
                     nodep->taskp(ftaskp);
                     nodep->dtypeFrom(ftaskp);
                     nodep->classOrPackagep(classp);
-                    if (VN_IS(ftaskp, Task)) nodep->dtypeSetVoid();
+                    if (VN_IS(ftaskp, Task)) {
+                        if (!m_vup) {
+                            nodep->dtypeSetVoid();
+                        } else {
+                            if (m_vup->prelim()) {
+                                nodep->v3error(
+                                    "Cannot call a task/void-function as a member function: "
+                                    << nodep->prettyNameQ());
+                            }
+                            nodep->dtypeSetVoid();
+                        }
+                    }
                     if (withp) nodep->addPinsp(withp);
                     processFTaskRefArgs(nodep);
                 }
@@ -5824,7 +5838,15 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstFuncRef* nodep) override {
         visit(static_cast<AstNodeFTaskRef*>(nodep));
-        nodep->dtypeFrom(nodep->taskp());
+        if (nodep->taskp() && VN_IS(nodep->taskp(), Task)) {
+            UASSERT_OBJ(m_vup, nodep, "Function reference where widthed expression expection");
+            if (m_vup->prelim())
+                nodep->v3error(
+                    "Cannot call a task/void-function as a function: " << nodep->prettyNameQ());
+            nodep->dtypeSetVoid();
+        } else {
+            nodep->dtypeFrom(nodep->taskp());
+        }
         if (nodep->fileline()->timingOn()) {
             AstNodeModule* const classp = nodep->classOrPackagep();
             if (nodep->name() == "self" && classp->name() == "process") {
@@ -6089,6 +6111,7 @@ class WidthVisitor final : public VNVisitor {
         processFTaskRefArgs(nodep);
         nodep->addPinsp(withp);
         nodep->didWidth(true);
+        // See steps that follow in visit(AstFuncRef*)
     }
     void visit(AstNodeProcedure* nodep) override {
         assertAtStatement(nodep);
