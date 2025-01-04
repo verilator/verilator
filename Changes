@@ -15,6 +15,7 @@ Verilator 5.033 devel
 
 * Fix V3Simulate constant reuse (#5709). [Geza Lore]
 * Fix man pages what-is section (#5710). [Ahmed El-Mahmoudy]
+* Fix pattern assignment to real inside struct (#5713).
 * Fix %p format output for real inside struct (#5713).
 
 
