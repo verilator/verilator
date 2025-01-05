@@ -148,6 +148,18 @@ class BeginVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         m_modp = nodep;
+        // Rename it (e.g. class under a generate)
+        if (m_unnamedScope != "") {
+            nodep->name(dot(m_unnamedScope, nodep->name()));
+            UINFO(8, "     rename to " << nodep->name() << endl);
+            m_statep->userMarkChanged(nodep);
+        }
+        VL_RESTORER(m_displayScope);
+        VL_RESTORER(m_namedScope);
+        VL_RESTORER(m_unnamedScope);
+        m_displayScope = "";
+        m_namedScope = "";
+        m_unnamedScope = "";
         iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {

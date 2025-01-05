@@ -13,6 +13,7 @@ Verilator 5.033 devel
 
 **Minor:**
 
+* Support generated classes (#5665). [Shou-Li Hsu]
 * Fix error message when call task as a function (#3089). [Matthew Ballance]
 * Fix V3Simulate constant reuse (#5709). [Geza Lore]
 * Fix man pages what-is section (#5710). [Ahmed El-Mahmoudy]
