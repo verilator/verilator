@@ -275,6 +275,7 @@ public:
             warnOn(V3ErrorCode::WIDTHEXPAND, flag);
             warnOn(V3ErrorCode::WIDTHXZEXPAND, flag);
         }
+        if (code == V3ErrorCode::E_UNSUPPORTED) warnOn(V3ErrorCode::COVERIGN, flag);
         m_msgEnIdx = singleton().msgEnSetBit(m_msgEnIdx, code, flag);
     }
     void warnOff(V3ErrorCode code, bool flag) { warnOn(code, !flag); }

@@ -445,6 +445,18 @@ List Of Warnings
    correctly.
 
 
+.. option:: COVERIGN
+
+   Warns that Verilator does not support certain forms of
+   :code:`covergroup`, :code:`coverpoint`, and coverage options, and the
+   construct was are ignored.
+
+   Disabling the :option:`UNSUPPORTED` error also disables this warning.
+
+   Ignoring this warning may make Verilator ignore lint checking on the
+   construct, and collect coverage data differently from other simulators.
+
+
 .. option:: DECLFILENAME
 
    .. TODO better example

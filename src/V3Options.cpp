@@ -1744,6 +1744,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         V3Error::pretendError(V3ErrorCode::UNUSEDSIGNAL, false);
         V3Error::pretendError(V3ErrorCode::UNUSEDPARAM, false);
     });
+    DECL_OPTION("-Wwarn-UNSUPPORTED", CbCall, []() {
+        FileLine::globalWarnOff(V3ErrorCode::E_UNSUPPORTED, false);
+        FileLine::globalWarnOff(V3ErrorCode::COVERIGN, false);
+        V3Error::pretendError(V3ErrorCode::E_UNSUPPORTED, false);
+        V3Error::pretendError(V3ErrorCode::COVERIGN, false);
+    });
     DECL_OPTION("-Wwarn-WIDTH", CbCall, []() {
         FileLine::globalWarnOff(V3ErrorCode::WIDTH, false);
         V3Error::pretendError(V3ErrorCode::WIDTH, false);

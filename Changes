@@ -13,6 +13,7 @@ Verilator 5.033 devel
 
 **Minor:**
 
+* Add COVERIGN warning, as a more specific UNSUPPORTED error.
 * Support generated classes (#5665). [Shou-Li Hsu]
 * Support `+incdir` with multiple directories.
 * Fix error message when call task as a function (#3089). [Matthew Ballance]
