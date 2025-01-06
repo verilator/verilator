@@ -895,12 +895,9 @@ class LinkParseVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
-    void visit(AstClass* nodep) override {
-	cleanFileline(nodep);
-	for (AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
-	    if (VN_IS(itemp, PackageImport)) {
-		itemp->v3error("Import statement directly within a class scope is illegal");
-	    }
+    void visit(AstPackageImport* nodep) {
+	if (m_modp && !m_ftaskp && VN_IS(m_modp, Class)) {
+	    nodep->v3error("Import statement directly within a class scope is illegal");
 	}
 	iterateChildren(nodep);
     }
