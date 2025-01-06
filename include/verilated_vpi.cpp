@@ -2589,9 +2589,9 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
 
         if (VL_UNLIKELY(!vop->varp()->isPublicRW())) {
             VL_VPI_ERROR_(__FILE__, __LINE__,
-                            "vpi_put_value was used on signal marked read-only,"
-                            " use public_flat_rw instead for %s : %s",
-                            vop->fullname(), vop->scopep()->defname());
+                          "vpi_put_value was used on signal marked read-only,"
+                          " use public_flat_rw instead for %s : %s",
+                          vop->fullname(), vop->scopep()->defname());
             return nullptr;
         }
         if (!vl_check_format(vop->varp(), valuep, vop->fullname(), false)) return nullptr;
