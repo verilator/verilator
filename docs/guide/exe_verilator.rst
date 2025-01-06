@@ -751,7 +751,10 @@ Summary:
 
 .. option:: +incdir+<dir>
 
-   See :vlopt:`-y`.
+   See :vlopt:`-y`.  Unlike with :vlopt:`-y`, multiple directories may be
+   specified separated with a `+` symbol; this is for Verilog-XL
+   compatibility and is not recommended usage as this is not supported by
+   some third-party tools.
 
 .. option:: --inline-mult <value>
 

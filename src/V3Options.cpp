@@ -1127,8 +1127,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     // Plus options
     DECL_OPTION("+define+", CbPartialMatch,
                 [this](const char* optp) VL_MT_DISABLED { addDefine(optp, true); });
-    DECL_OPTION("+incdir+", CbPartialMatch,
-                [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
+    DECL_OPTION("+incdir+", CbPartialMatch, [this, &optdir](const char* optp) {
+        string dirs = optp;
+        string::size_type pos;
+        while ((pos = dirs.find('+')) != string::npos) {
+            addIncDirUser(parseFileArg(optdir, dirs.substr(0, pos)));
+            dirs = dirs.substr(pos + 1);
+        }
+        addIncDirUser(parseFileArg(optdir, dirs));
+    });
     DECL_OPTION("+libext+", CbPartialMatch, [this](const char* optp) {
         string exts = optp;
         string::size_type pos;
