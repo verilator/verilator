@@ -21,6 +21,7 @@ Verilator 5.033 devel
 * Fix pattern assignment to real inside struct (#5713).
 * Fix %p format output for real inside struct (#5713).
 * Fix segfault when only enum value referenced in package (#5714). [Dan Katz]
+* Fix matching language extension options including dots.
 
 
 Verilator 5.032 2025-01-01

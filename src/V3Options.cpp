@@ -99,8 +99,10 @@ public:
     }
     void addLangExt(const string& langext, const V3LangCode& lc) {
         // New language extension replaces any pre-existing one.
-        (void)m_langExts.erase(langext);
-        m_langExts[langext] = lc;
+        string addext = langext;
+        if (addext[0] == '.') addext = addext.substr(1);
+        (void)m_langExts.erase(addext);
+        m_langExts[addext] = lc;
     }
 
     void addLibExtV(const string& libext) {
