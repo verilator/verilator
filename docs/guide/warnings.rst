@@ -44,7 +44,7 @@ Warnings may be disabled in multiple ways:
 
    .. code-block:: sv
 
-         lint_off -rule UNSIGNED -file "*/example.v" -line 1
+         lint_off -rule UNSIGNED -file "*/example.v" -lines 1
 
 
 Error And Warning Format
@@ -2009,12 +2009,12 @@ List Of Warnings
 
    .. code-block:: sv
 
-         wire _unused_ok = &{1'b0,
+         wire _unused_ok = 1'b0 && &{1'b0,
                              sig_not_used_a,
                              sig_not_used_yet_b,  // To be fixed
                              1'b0};
 
-   The reduction AND and constant zeros mean the net will always be zero,
+   The AND with constant zero mean the net will always be zero,
    so won't use simulation runtime.  The redundant leading and trailing
    zeros avoid syntax errors if there are no signals between them.  The
    magic name "unused" (controlled by the :vlopt:`--unused-regexp` option)
