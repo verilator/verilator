@@ -4,7 +4,7 @@
 // any use, without warranty, 2025 by PlanV GmbH.
 // SPDX-License-Identifier: CC0-1.0
 
-class ConstrainedAssocArray;
+class AssocIntegralWide;
 
   rand bit [31:0] assoc_array[bit[64:0]];
   rand bit [31:0] assoc_array_128[bit[128:0]];
@@ -55,18 +55,60 @@ class ConstrainedAssocArray;
 
 endclass
 
-module t_constraint_assoc_arr_with_64bitMore_index;
+class AssocStringWide;
 
-  ConstrainedAssocArray constrained;
+  rand bit [31:0] array_32[string];
+  rand bit [31:0] array_64[string];
+  rand bit [31:0] array_96[string];
+  rand bit [31:0] array_128[string];
+
+  constraint valid_entries {
+    // <= 32 bits
+    array_32["pv"] == 32'd10;
+    // > 32 and <= 64 bits
+    array_64["verilog"] == 32'd20;
+    // > 32 and <= 64 bits
+    array_96["verilator"] == 32'd30;
+    // > 64 and <= 96 bits
+    array_128["systemverilog"] == 32'd40;
+  }
+
+  function new();
+    array_32["pv"] = 32'd0;
+    array_64["verilog"] = 32'd0;
+    array_96["verilator"] = 32'd0;
+    array_128["systemverilog"] = 32'd0;
+  endfunction
+
+  function void self_check();
+    if (array_32["pv"] != 32'd10) $stop;
+    if (array_64["verilog"] != 32'd20) $stop;
+    if (array_96["verilator"] != 32'd30) $stop;
+    if (array_128["systemverilog"] != 32'd40) $stop;
+  endfunction
+
+endclass
+
+
+module t_constraint_assoc_arr_wide;
+
+  AssocIntegralWide integral_wide;
+  AssocStringWide string_wide;
+
   int success;
   initial begin
 
-    constrained = new();
-    success = constrained.randomize();
-    if (success != 1) $stop;
-    constrained.self_check();
+    integral_wide = new();
+    string_wide = new();
 
-    // Successful execution marker
+    success = integral_wide.randomize();
+    if (success != 1) $stop;
+    integral_wide.self_check();
+
+    success = string_wide.randomize();
+    if (success != 1) $stop;
+    string_wide.self_check();
+
     $write("*-* All Finished *-*\n");
     $finish;
   end
