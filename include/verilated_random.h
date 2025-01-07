@@ -27,10 +27,10 @@
 
 #include "verilated.h"
 
+#include <iomanip>
 #include <iostream>
 #include <ostream>
 #include <sstream>
-#include <iomanip>
 
 //=============================================================================
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
@@ -43,8 +43,8 @@ public:
     const std::vector<uint32_t> m_indices;  // Multi-dimensional indices of the array element
     const std::vector<size_t> m_idxWidths;  // Multi-dimensional indices' bit widths
 
-    ArrayInfo(const std::string& name, void* datap, int index, const std::vector<uint32_t>& indices,
-              const std::vector<size_t>& idxWidths)
+    ArrayInfo(const std::string& name, void* datap, int index,
+              const std::vector<uint32_t>& indices, const std::vector<size_t>& idxWidths)
         : m_name(name)
         , m_datap(datap)
         , m_index(index)
@@ -271,9 +271,8 @@ public:
         }
         std::string hex_str = oss.str();
         // Ensure the hex string is exactly 128 bits (32 hex characters)
-        hex_str = hex_str.size() > 32
-              ? hex_str.substr(0, 32)
-              : std::string(32 - hex_str.size(), '0') + hex_str;
+        hex_str = hex_str.size() > 32 ? hex_str.substr(0, 32)
+                                      : std::string(32 - hex_str.size(), '0') + hex_str;
 
         // Split the hex string into 4 segments (32-bit per segment)
         integral_index.clear();
@@ -281,11 +280,11 @@ public:
             integral_index.push_back(std::stoul(hex_str.substr(i, 8), nullptr, 16));
         }
 
-        indexed_name = base_name + "[" +
-               (hex_str.find_first_not_of('0') == std::string::npos ? 
-                        "0" 
-                        : hex_str.substr(hex_str.find_first_not_of('0')))
-                + "]";
+        indexed_name = base_name + "["
+                       + (hex_str.find_first_not_of('0') == std::string::npos
+                              ? "0"
+                              : hex_str.substr(hex_str.find_first_not_of('0')))
+                       + "]";
 
         idx_width = 128;
     }

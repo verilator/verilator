@@ -731,14 +731,15 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstCvtPackString* const stringp = VN_AS(nodep->bitp(), CvtPackString);
             const size_t stringSize = VN_AS(stringp->lhsp(), Const)->width();
             if (stringSize > 128) {
-                stringp->v3warn(CONSTRAINTIGN, "For performance considerations, constrained randomization of associative arrays "
+                stringp->v3warn(
+                    CONSTRAINTIGN,
+                    "For performance considerations, constrained randomization of associative "
+                    "arrays "
                     "is only supported for string indices smaller than or equal to 128 bits.");
             }
             VNRelinker handle;
-            AstNodeExpr* const idxp = new AstSFormatF{
-                fl,
-                "#x%32x",
-                false, stringp->lhsp()->unlinkFrBack(&handle)};
+            AstNodeExpr* const idxp
+                = new AstSFormatF{fl, "#x%32x", false, stringp->lhsp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
             editSMT(nodep, nodep->fromp(), idxp);
         } else {
@@ -751,9 +752,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             } else if (actual_width <= 16) {
                 fmt = "#x%4x";
             } else {
-                fmt = "#x%"
-                      + std::to_string(VL_WORDS_I(actual_width)*8)
-                      + "x";
+                fmt = "#x%" + std::to_string(VL_WORDS_I(actual_width) * 8) + "x";
             }
 
             AstNodeExpr* const idxp
