@@ -433,6 +433,7 @@ detailed descriptions of these arguments.
     --public-depth <level>      Mark public to specified module depth
     --public-params             Mark all parameters as public_flat
     --public-flat-rw            Mark all variables, etc as public_flat_rw
+    --public-off                Ignore all public comment markings, allowing for config files to exclusively control this
      -pvalue+<name>=<value>     Overwrite toplevel parameter
     --quiet                     Minimize additional printing
     --quiet-exit                Don't print the command on failure

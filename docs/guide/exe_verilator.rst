@@ -1234,6 +1234,12 @@ Summary:
    :code:`/*verilator public_flat_rd*/`
    metacomments.
 
+.. option:: --public-off
+
+   Ignore all
+   :code:`/*verilator public* */`
+   metacomments. This is useful for optimized vpi builds, where a sim records reads/writes, then passes those with a .vlt file.
+
 .. option:: -pvalue+<name>=<value>
 
    Overwrites the given parameter(s) of the top-level module. See

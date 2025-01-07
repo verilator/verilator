@@ -486,7 +486,7 @@ void V3PreProcImp::comment(const string& text) {
             //}
             // else ignore the comment we don't recognize
         }  // else no assertions
-    } else if (vlcomment) {
+    } else if (vlcomment && !(v3Global.opt.publicOff() && VString::startsWith(cmd, "public"))) {
         if (VString::startsWith(cmd, "public_flat_rw")) {
             // "/*verilator public_flat_rw @(foo) */" -> "/*verilator public_flat_rw*/ @(foo)"
             string::size_type endOfCmd = std::strlen("public_flat_rw");
