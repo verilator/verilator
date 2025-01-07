@@ -4,7 +4,6 @@
 // any use, without warranty, 2024 by PlanV GmbH.
 // SPDX-License-Identifier: CC0-1.0
 
-
 class AssocArrayWarningTest;
 
     rand int string_arr [string];
