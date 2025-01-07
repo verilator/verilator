@@ -261,29 +261,26 @@ interface z_if;
                      import x6_trig
                      );
 endinterface
-package c_pkg;
-   import z_pkg::*;
-   class z_txn_class;
-      rand txn_type_t   req_txn_type;
-      rand cid_t        cid;
-      rand sid_t        sid;
-      rand ctag_t       ctag;
-      rand stag_t       stag;
-      rand size_t       size;
-      rand address_t    address;
-      rand state_t   state1;
-      rand state_t   state2;
-      rand state_t   state3;
-      rand logic               f1;
-      rand logic               f2;
-      rand logic               f3;
-      rand logic               f4;
-      data_t            data[];
-      mask_t            mask[];
-      bit                      corrupt[];
-      logic [2:0]              req_opcode;
-   endclass
-endpackage
+class z_txn_class;
+   rand z_pkg::txn_type_t   req_txn_type;
+   rand z_pkg::cid_t        cid;
+   rand z_pkg::sid_t        sid;
+   rand z_pkg::ctag_t       ctag;
+   rand z_pkg::stag_t       stag;
+   rand z_pkg::size_t       size;
+   rand z_pkg::address_t    address;
+   rand z_pkg::state_t      state1;
+   rand z_pkg::state_t      state2;
+   rand z_pkg::state_t      state3;
+   rand logic               f1;
+   rand logic               f2;
+   rand logic               f3;
+   rand logic               f4;
+   z_pkg::data_t            data[];
+   z_pkg::mask_t            mask[];
+   bit                      corrupt[];
+   logic [2:0]              req_opcode;
+endclass
 module z_bfm_sender import z_pkg::*;
    (
     input logic clk,
@@ -291,9 +288,9 @@ module z_bfm_sender import z_pkg::*;
     z_if.sender z_if_sender
     );
    channel_t ch;
-   typedef c_pkg::z_txn_class z_txn_q_t[$];
+   typedef z_txn_class z_txn_q_t[$];
    z_txn_q_t z_txn_qs[ch.num()];
-   c_pkg::z_txn_class z_txn[ch.num()];
+   z_txn_class z_txn[ch.num()];
    always @(posedge clk or negedge reset_l) begin
       if (!reset_l) begin
          z_if_sender.x1_valid <= '0;
