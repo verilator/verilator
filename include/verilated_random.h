@@ -30,6 +30,8 @@
 #include <iostream>
 #include <ostream>
 #include <sstream>
+#include <iomanip>
+
 //=============================================================================
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
 class ArrayInfo final {
@@ -38,10 +40,10 @@ public:
         m_name;  // Name of the array variable, including index notation (e.g., arr[2][1])
     void* const m_datap;  // Reference to the array variable data
     const int m_index;  // Flattened (1D) index of the array element
-    const std::vector<size_t> m_indices;  // Multi-dimensional indices of the array element
+    const std::vector<uint32_t> m_indices;  // Multi-dimensional indices of the array element
     const std::vector<size_t> m_idxWidths;  // Multi-dimensional indices' bit widths
 
-    ArrayInfo(const std::string& name, void* datap, int index, const std::vector<size_t>& indices,
+    ArrayInfo(const std::string& name, void* datap, int index, const std::vector<uint32_t>& indices,
               const std::vector<size_t>& idxWidths)
         : m_name(name)
         , m_datap(datap)
@@ -110,13 +112,13 @@ public:
             return nullptr;
         }
     }
-    void emitHexs(std::ostream& s, const std::vector<size_t>& indices, const size_t bit_width,
+    void emitHexs(std::ostream& s, const std::vector<uint32_t>& indices, const size_t bit_width,
                   size_t idx) const {
         for (int j = bit_width - 4; j >= 0; j -= 4) {
             s << "0123456789abcdef"[(indices[idx] >> j) & 0xf];
         }
     }
-    void emitSelect(std::ostream& s, const std::vector<size_t>& indices,
+    void emitSelect(std::ostream& s, const std::vector<uint32_t>& indices,
                     const std::vector<size_t>& idxWidths) const {
         const size_t num_indices = idxWidths.size();
         size_t wide_size = 0;
@@ -144,7 +146,7 @@ public:
             const std::string indexed_name = name() + std::to_string(i);
             const auto it = m_arrVarsRefp->find(indexed_name);
             if (it != m_arrVarsRefp->end()) {
-                const std::vector<size_t>& indices = it->second->m_indices;
+                const std::vector<uint32_t>& indices = it->second->m_indices;
                 const std::vector<size_t>& idxWidths = it->second->m_idxWidths;
                 emitSelect(s, indices, idxWidths);
             } else {
@@ -180,7 +182,7 @@ public:
         const std::string indexed_name = name() + std::to_string(j);
         const auto it = m_arrVarsRefp->find(indexed_name);
         if (it != m_arrVarsRefp->end()) {
-            const std::vector<size_t>& indices = it->second->m_indices;
+            const std::vector<uint32_t>& indices = it->second->m_indices;
             const std::vector<size_t>& idxWidths = it->second->m_idxWidths;
             emitSelect(s, indices, idxWidths);
         } else {
@@ -256,32 +258,36 @@ public:
         index_string = index_string.empty() ? "0" : index_string;
 
         indexed_name = base_name + "[" + index_string + "]";
-
         idx_width = key.size() * 32;
     }
     template <typename T_Key>
     typename std::enable_if<std::is_same<T_Key, std::string>::value>::type
     process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
                 const std::string& base_name, size_t& idx_width) {
-        std::string hex_str = string_to_hex_integral(key);
-        std::size_t hex_str_size = hex_str.size() * 4;  // Each hex digit represents 4 bits
-        hex_str_size = (hex_str_size % 32 == 0) ? (hex_str_size / 32) : (hex_str_size / 32 + 1);
-
-        if (hex_str_size <= 2) {  // Small numbers: Convert to decimal
-            integral_index.push_back(std::stoll(hex_str, nullptr, 16));
-            indexed_name = base_name + "[" + std::to_string(integral_index.back()) + "]";
-        } else {  // Large numbers: Split into chunks
-            for (int i = hex_str.size(); i > 0; i -= 8) {
-                size_t start = (i >= 8) ? i - 8 : 0;
-                integral_index.push_back(
-                    std::stoll(hex_str.substr(start, i - start), nullptr, 16));
-                if (start == 0) break;
-            }
-            std::reverse(integral_index.begin(), integral_index.end());
-            indexed_name = base_name + "[" + hex_str + "]";  // Use hex string as index
+        // Convert the input string to its ASCII hexadecimal representation
+        std::ostringstream oss;
+        for (unsigned char c : key) {
+            oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c);
         }
-        // Calculate width based on the number of 32-bit words
-        idx_width = hex_str_size * 32;
+        std::string hex_str = oss.str();
+        // Ensure the hex string is exactly 128 bits (32 hex characters)
+        hex_str = hex_str.size() > 32
+              ? hex_str.substr(0, 32)
+              : std::string(32 - hex_str.size(), '0') + hex_str;
+
+        // Split the hex string into 4 segments (32-bit per segment)
+        integral_index.clear();
+        for (size_t i = 0; i < hex_str.size(); i += 8) {
+            integral_index.push_back(std::stoul(hex_str.substr(i, 8), nullptr, 16));
+        }
+
+        indexed_name = base_name + "[" +
+               (hex_str.find_first_not_of('0') == std::string::npos ? 
+                        "0" 
+                        : hex_str.substr(hex_str.find_first_not_of('0')))
+                + "]";
+
+        idx_width = 128;
     }
     template <typename T_Key>
     typename std::enable_if<!std::is_integral<T_Key>::value
@@ -292,15 +298,6 @@ public:
         VL_FATAL_MT(__FILE__, __LINE__, "randomize",
                     "Unsupported: Only integral and string index of associative array is "
                     "supported currently.");
-    }
-    std::string string_to_hex_integral(const std::string& str) {
-        std::string result;
-        for (char c : str) {
-            std::stringstream stream;
-            stream << std::hex << (static_cast<int>(c) & 0xFF);
-            result += stream.str();
-        }
-        return result;
     }
 
     template <typename T>
@@ -360,14 +357,14 @@ public:
 
     template <typename T>
     void record_arr_table(T& var, const std::string name, int dimension,
-                          std::vector<size_t> indices, std::vector<size_t> idxWidths) {
+                          std::vector<uint32_t> indices, std::vector<size_t> idxWidths) {
         const std::string key = generateKey(name, idx);
         m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices, idxWidths);
         ++idx;
     }
     template <typename T>
     void record_arr_table(VlQueue<T>& var, const std::string name, int dimension,
-                          std::vector<size_t> indices, std::vector<size_t> idxWidths) {
+                          std::vector<uint32_t> indices, std::vector<size_t> idxWidths) {
         if ((dimension > 0) && (var.size() != 0)) {
             idxWidths.push_back(32);
             for (size_t i = 0; i < var.size(); ++i) {
@@ -380,7 +377,7 @@ public:
     }
     template <typename T, std::size_t N_Depth>
     void record_arr_table(VlUnpacked<T, N_Depth>& var, const std::string name, int dimension,
-                          std::vector<size_t> indices, std::vector<size_t> idxWidths) {
+                          std::vector<uint32_t> indices, std::vector<size_t> idxWidths) {
         if ((dimension > 0) && (N_Depth != 0)) {
             idxWidths.push_back(32);
             for (size_t i = 0; i < N_Depth; ++i) {
@@ -394,7 +391,7 @@ public:
     }
     template <typename T_Key, typename T_Value>
     void record_arr_table(VlAssocArray<T_Key, T_Value>& var, const std::string name, int dimension,
-                          std::vector<size_t> indices, std::vector<size_t> idxWidths) {
+                          std::vector<uint32_t> indices, std::vector<size_t> idxWidths) {
         if ((dimension > 0) && (var.size() != 0)) {
             for (auto it = var.begin(); it != var.end(); ++it) {
                 const T_Key& key = it->first;

@@ -469,19 +469,18 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
                     continue;
                 }
                 std::string trimmed_hex = hex_index.substr(start + 2);
-                std::string index;
+
                 if (trimmed_hex.size() <= 8) {  // Small numbers: <= 32 bits
-                    index = std::to_string(
-                        std::stoll(trimmed_hex, nullptr, 16));  // Convert to decimal
+                    // Convert to decimal and output directly
+                    oss << "[" << std::to_string(std::stoll(trimmed_hex, nullptr, 16)) << "]";
                 } else {  // Large numbers: > 32 bits
-                    trimmed_hex.erase(0,
-                                      trimmed_hex.find_first_not_of('0'));  // Trim leading zeros
-                    trimmed_hex = trimmed_hex.empty() ? "0" : trimmed_hex;
-                    index = trimmed_hex;  // Keep as hex string
+                    // Trim leading zeros and handle empty case
+                    trimmed_hex.erase(0, trimmed_hex.find_first_not_of('0'));
+                    oss << "[" << (trimmed_hex.empty() ? "0" : trimmed_hex) << "]";
                 }
-                oss << "[" << index << "]";
             }
             const std::string indexed_name = oss.str();
+
             const auto it = std::find_if(m_arr_vars.begin(), m_arr_vars.end(),
                                          [&indexed_name](const auto& entry) {
                                              return entry.second->m_name == indexed_name;

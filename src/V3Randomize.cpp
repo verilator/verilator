@@ -730,16 +730,17 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (VN_IS(nodep->bitp(), CvtPackString)) {
             AstCvtPackString* const stringp = VN_AS(nodep->bitp(), CvtPackString);
             const size_t stringSize = VN_AS(stringp->lhsp(), Const)->width();
+            if (stringSize > 128) {
+                stringp->v3warn(CONSTRAINTIGN, "For performance considerations, constrained randomization of associative arrays "
+                    "is only supported for string indices smaller than or equal to 128 bits.");
+            }
             VNRelinker handle;
-            AstNodeExpr* const strIdxp = new AstSFormatF{
+            AstNodeExpr* const idxp = new AstSFormatF{
                 fl,
-                "#x%"
-                    + std::to_string((stringSize % 32 == 0) ? (stringSize / 4)
-                                                            : 8 * (int(stringSize / 32) + 1))
-                    + "x",
+                "#x%32x",
                 false, stringp->lhsp()->unlinkFrBack(&handle)};
-            handle.relink(strIdxp);
-            editSMT(nodep, nodep->fromp(), strIdxp);
+            handle.relink(idxp);
+            editSMT(nodep, nodep->fromp(), idxp);
         } else {
             VNRelinker handle;
             const int actual_width = nodep->bitp()->width();
@@ -749,16 +750,12 @@ class ConstraintExprVisitor final : public VNVisitor {
                 fmt = "#x%2x";
             } else if (actual_width <= 16) {
                 fmt = "#x%4x";
-            } else if (actual_width <= 32) {
-                fmt = "#x%8x";
-            } else if (actual_width <= 64) {
-                fmt = "#x%16x";
             } else {
                 fmt = "#x%"
-                      + std::to_string((actual_width % 32 == 0) ? (actual_width / 4)
-                                                                : 8 * (int(actual_width / 32) + 1))
+                      + std::to_string(VL_WORDS_I(actual_width)*8)
                       + "x";
             }
+
             AstNodeExpr* const idxp
                 = new AstSFormatF{fl, fmt, false, nodep->bitp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
