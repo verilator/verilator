@@ -896,10 +896,11 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstPackageImport* nodep) override {
-	if (m_modp && !m_ftaskp && VN_IS(m_modp, Class)) {
-	    nodep->v3error("Import statement directly within a class scope is illegal");
-	}
-	iterateChildren(nodep);
+        cleanFileline(nodep);
+        if (m_modp && !m_ftaskp && VN_IS(m_modp, Class)) {
+            nodep->v3error("Import statement directly within a class scope is illegal");
+        }
+        iterateChildren(nodep);
     }
 
     void visit(AstNode* nodep) override {
