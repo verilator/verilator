@@ -216,6 +216,16 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     void visit(AstCoverInc*) override {}  // N/A
     void visit(AstCoverToggle*) override {}  // N/A
 
+    void visit(AstTestPlusArgs* nodep) override {
+        putfs(nodep, nodep->verilogKwd());
+        putbs("(");
+        if (const AstConst* const constp = VN_CAST(nodep->searchp(), Const)) {
+            putsQuoted(constp->num().toString());
+        } else {
+            UASSERT_OBJ(nodep->searchp(), nodep, "Unhandled $test$plusargs argument");
+        }
+        puts(");\n");
+    }
     void visitNodeDisplay(AstNode* nodep, AstNode* fileOrStrgp, const string& text,
                           AstNode* exprsp) {
         putfs(nodep, nodep->verilogKwd());
