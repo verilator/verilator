@@ -1234,11 +1234,12 @@ Summary:
    :code:`/*verilator public_flat_rd*/`
    metacomments.
 
-.. option:: --public-off
+.. option:: --public-ignore
 
    Ignore all
    :code:`/*verilator public* */`
    metacomments. This is useful for optimized vpi builds, where a sim records reads/writes, then passes those with a .vlt file.
+   Other control flags like :vlopt:`--public`, :vlopt:`--public-depth`, etc. will also work with this, as they are not metacomments.
 
 .. option:: -pvalue+<name>=<value>
 
