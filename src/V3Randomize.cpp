@@ -733,9 +733,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             if (stringSize > 128) {
                 stringp->v3warn(
                     CONSTRAINTIGN,
-                    "For performance considerations, constrained randomization of associative "
-                    "arrays "
-                    "is only supported for string indices smaller than or equal to 128 bits.");
+                    "Unsupported: Constrained randomization of associative array keys of "
+                        << stringSize << "bits, limit is 128 bits");
             }
             VNRelinker handle;
             AstNodeExpr* const idxp

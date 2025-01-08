@@ -1,4 +1,4 @@
-%Warning-CONSTRAINTIGN: t/t_constraint_assoc_arr_bad.v:12:20: For performance considerations, constrained randomization of associative arrays is only supported for string indices smaller than or equal to 128 bits.
+%Warning-CONSTRAINTIGN: t/t_constraint_assoc_arr_bad.v:12:20: Unsupported: Constrained randomization of associative array keys of 144bits, limit is 128 bits
    12 |         string_arr["a_very_long_string"] == 65;
       |                    ^~~~~~~~~~~~~~~~~~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest

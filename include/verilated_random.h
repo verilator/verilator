@@ -40,11 +40,11 @@ public:
         m_name;  // Name of the array variable, including index notation (e.g., arr[2][1])
     void* const m_datap;  // Reference to the array variable data
     const int m_index;  // Flattened (1D) index of the array element
-    const std::vector<uint32_t> m_indices;  // Multi-dimensional indices of the array element
+    const std::vector<IDATA> m_indices;  // Multi-dimensional indices of the array element
     const std::vector<size_t> m_idxWidths;  // Multi-dimensional indices' bit widths
 
-    ArrayInfo(const std::string& name, void* datap, int index,
-              const std::vector<uint32_t>& indices, const std::vector<size_t>& idxWidths)
+    ArrayInfo(const std::string& name, void* datap, int index, const std::vector<IDATA>& indices,
+              const std::vector<size_t>& idxWidths)
         : m_name(name)
         , m_datap(datap)
         , m_index(index)
@@ -112,13 +112,13 @@ public:
             return nullptr;
         }
     }
-    void emitHexs(std::ostream& s, const std::vector<uint32_t>& indices, const size_t bit_width,
+    void emitHexs(std::ostream& s, const std::vector<IDATA>& indices, const size_t bit_width,
                   size_t idx) const {
         for (int j = bit_width - 4; j >= 0; j -= 4) {
             s << "0123456789abcdef"[(indices[idx] >> j) & 0xf];
         }
     }
-    void emitSelect(std::ostream& s, const std::vector<uint32_t>& indices,
+    void emitSelect(std::ostream& s, const std::vector<IDATA>& indices,
                     const std::vector<size_t>& idxWidths) const {
         const size_t num_indices = idxWidths.size();
         size_t wide_size = 0;
@@ -146,7 +146,7 @@ public:
             const std::string indexed_name = name() + std::to_string(i);
             const auto it = m_arrVarsRefp->find(indexed_name);
             if (it != m_arrVarsRefp->end()) {
-                const std::vector<uint32_t>& indices = it->second->m_indices;
+                const std::vector<IDATA>& indices = it->second->m_indices;
                 const std::vector<size_t>& idxWidths = it->second->m_idxWidths;
                 emitSelect(s, indices, idxWidths);
             } else {
@@ -182,7 +182,7 @@ public:
         const std::string indexed_name = name() + std::to_string(j);
         const auto it = m_arrVarsRefp->find(indexed_name);
         if (it != m_arrVarsRefp->end()) {
-            const std::vector<uint32_t>& indices = it->second->m_indices;
+            const std::vector<IDATA>& indices = it->second->m_indices;
             const std::vector<size_t>& idxWidths = it->second->m_idxWidths;
             emitSelect(s, indices, idxWidths);
         } else {
@@ -356,14 +356,14 @@ public:
 
     template <typename T>
     void record_arr_table(T& var, const std::string name, int dimension,
-                          std::vector<uint32_t> indices, std::vector<size_t> idxWidths) {
+                          std::vector<IDATA> indices, std::vector<size_t> idxWidths) {
         const std::string key = generateKey(name, idx);
         m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices, idxWidths);
         ++idx;
     }
     template <typename T>
     void record_arr_table(VlQueue<T>& var, const std::string name, int dimension,
-                          std::vector<uint32_t> indices, std::vector<size_t> idxWidths) {
+                          std::vector<IDATA> indices, std::vector<size_t> idxWidths) {
         if ((dimension > 0) && (var.size() != 0)) {
             idxWidths.push_back(32);
             for (size_t i = 0; i < var.size(); ++i) {
@@ -376,7 +376,7 @@ public:
     }
     template <typename T, std::size_t N_Depth>
     void record_arr_table(VlUnpacked<T, N_Depth>& var, const std::string name, int dimension,
-                          std::vector<uint32_t> indices, std::vector<size_t> idxWidths) {
+                          std::vector<IDATA> indices, std::vector<size_t> idxWidths) {
         if ((dimension > 0) && (N_Depth != 0)) {
             idxWidths.push_back(32);
             for (size_t i = 0; i < N_Depth; ++i) {
@@ -390,7 +390,7 @@ public:
     }
     template <typename T_Key, typename T_Value>
     void record_arr_table(VlAssocArray<T_Key, T_Value>& var, const std::string name, int dimension,
-                          std::vector<uint32_t> indices, std::vector<size_t> idxWidths) {
+                          std::vector<IDATA> indices, std::vector<size_t> idxWidths) {
         if ((dimension > 0) && (var.size() != 0)) {
             for (auto it = var.begin(); it != var.end(); ++it) {
                 const T_Key& key = it->first;
