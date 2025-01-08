@@ -18,7 +18,8 @@ test.compile(make_top_shell=False,
              make_pli=True,
              iv_flags2=["-g2005-sv"],
              verilator_flags2=[
-                 "+define+USE_DOLLAR_C32 --exe --vpi --no-l2name", test.pli_filename,
+                 "+define+USE_DOLLAR_C32 --exe --vpi --no-l2name",
+                 test.pli_filename,
                  "--public-depth 1 --public-ignore",
              ],
              make_flags=['CPPFLAGS_ADD=-DTEST_VPI_PUBLIC_OFF'])
