@@ -216,6 +216,12 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     void visit(AstCoverInc*) override {}  // N/A
     void visit(AstCoverToggle*) override {}  // N/A
 
+    void visit(AstTestPlusArgs* nodep) override {
+        putfs(nodep, nodep->verilogKwd());
+        putbs("(");
+        iterateChildrenConst(nodep);
+        puts(");\n");
+    }
     void visitNodeDisplay(AstNode* nodep, AstNode* fileOrStrgp, const string& text,
                           AstNode* exprsp) {
         putfs(nodep, nodep->verilogKwd());
