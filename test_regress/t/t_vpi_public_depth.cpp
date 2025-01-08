@@ -91,7 +91,7 @@ int mon_check() {
 
     TestVpiHandle mod_a = vpi_handle_by_name(const_cast<PLI_BYTE8*>("\\mod.a "), topmod);
     #if defined(T_VPI_PUBLIC_OFF)
-    // metacomment from below should get ignored
+    // metacomment from module A should be ignored
     CHECK_RESULT_Z(mod_a);
     return 0;
     #endif

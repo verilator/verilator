@@ -65,7 +65,7 @@ module A(/*AUTOARG*/
    clk, a, b
    );
 
-   // this comment should get ignored for public-off
+   // this comment should get ignored for public-ignore
    input clk /* verilator public_flat_rw */;
 
    input a, b;
