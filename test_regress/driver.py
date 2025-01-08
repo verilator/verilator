@@ -1417,8 +1417,7 @@ class VlTest:
                 pli_opt = "-pli " + self.obj_dir + "/libvpi.so"
             cmd = [
                 "echo q | " + run_env + VtOs.getenv_def('VERILATOR_MODELSIM', "vsim"),
-                ' '.join(param['ms_run_flags']), ' '.join(param['all_run_flags']), pli_opt,
-                (" t")
+                ' '.join(param['ms_run_flags']), ' '.join(param['all_run_flags']), pli_opt, (" t")
             ]
             self.run(cmd=cmd,
                      check_finished=param['check_finished'],
