@@ -192,21 +192,32 @@ public:
     static VerilatedVpioVarBase* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioVarBase*>(reinterpret_cast<VerilatedVpio*>(h));
     }
-    int32_t indexedDim() const { return m_indexedDim; }
     const VerilatedVar* varp() const { return m_varp; }
     const VerilatedScope* scopep() const { return m_scopep; }
+    // Returns the number of the currently indexed dimension (starting at -1 for none).
+    int32_t indexedDim() const { return m_indexedDim; }
+    // Returns whether the currently indexed dimension is unpacked.
+    bool isIndexedDimUnpacked() const { return indexedDim() + 1 < varp()->udims(); }
+    // Returns a maximum accessible dimension number, counting only unpacked dimensions
+    // (if onlyUnpacked == true), or both unpacked + packed.
+    int32_t maxDim(bool onlyUnpacked) const {
+        return onlyUnpacked ? varp()->udims() - 1 : varp()->dims() - 1;
+    }
+    // Returns a number of elements in the array, stopping at the unpacked-packed boundary.
     uint32_t size() const override {
+        const int maxDimNum = maxDim(isIndexedDimUnpacked());
         int size = 1;
-        int maxDim;
-        if (indexedDim() + 1 < varp()->udims())
-            maxDim = varp()->udims() - 1;
-        else
-            maxDim = varp()->dims() - 1;
-
-        for (int dim = indexedDim() + 1; dim <= maxDim; dim++)
+        for (int dim = indexedDim() + 1; dim <= maxDimNum; dim++)
             size *= varp()->range(dim)->elements();
-
         return size;
+    }
+    // If the array is unpacked, returns the bitsize of a single underlying packed element.
+    // If the array is packed, returns the bitsize of the whole array.
+    uint32_t bitSize() const {
+        if (isIndexedDimUnpacked())
+            return varp()->entBits();
+        else
+            return size();
     }
     const VerilatedRange* rangep() const override { return get_range(); }
     const char* name() const override { return m_varp->name(); }
@@ -273,9 +284,9 @@ public:
             delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
             return nullptr;
         }
-        auto range = new VerilatedRange(*m_iter);
-        m_iter++;
-        return ((new VerilatedVpioRange{range})->castVpiHandle());
+        VerilatedRange* const rangep = new VerilatedRange(*m_iter);
+        ++m_iter;
+        return ((new VerilatedVpioRange{rangep})->castVpiHandle());
     }
 };
 
@@ -357,21 +368,14 @@ public:
         ret->m_index.push_back(index);
         ret->m_indexedDim++;
 
-        if (indexedDim() + 1 < varp()->udims()) {
-            // indexing an unpacked array
-            int chunkSize = 1;
-            for (int dim = varp()->udims() - 1; dim > indexedDim() + 1; dim--)
-                chunkSize *= varp()->range(dim)->elements();
+        int chunkSize = 1;
+        for (int dim = maxDim(isIndexedDimUnpacked()); dim > indexedDim() + 1; dim--)
+            chunkSize *= varp()->range(dim)->elements();
 
+        if (isIndexedDimUnpacked())
             ret->m_varDatap = (static_cast<uint8_t*>(ret->m_varDatap)) + entSize() * chunkSize * (index - get_range()->low());
-        } else {
-            // indexing a packed array
-            int chunkSize = 1;
-            for (int dim = varp()->dims() - 1; dim > indexedDim() + 1; dim--)
-                chunkSize *= varp()->range(dim)->elements();
-
+        else
             ret->m_bitOffset += chunkSize * (index - get_range()->low());
-        }
 
         return ret;
     }
@@ -382,7 +386,7 @@ public:
         case VLVT_STRING: type = vpiStringVar; break;
         default: break;
         }
-        if (indexedDim() + 1 < varp()->udims())
+        if (isIndexedDimUnpacked())
             return vpiRegArray;
         else
             return type;
@@ -2183,13 +2187,9 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
     case vpiRange: {
         const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
         if (VL_UNLIKELY(!vop)) return nullptr;
-        std::vector<VerilatedRange> ranges;
-        int maxDim;
-        if (vop->indexedDim() + 1 < vop->varp()->udims())
-            maxDim = vop->varp()->udims() - 1;
-        else
-            maxDim = vop->varp()->dims() - 1;
 
+        std::vector<VerilatedRange> ranges;
+        const int maxDim = vop->maxDim(vop->isIndexedDimUnpacked());
         for (int dim = vop->indexedDim() + 1; dim <= maxDim; dim++)
             ranges.emplace_back(*vop->varp()->range(dim));
 
@@ -2422,24 +2422,27 @@ static void vl_strprintf(std::string& buffer, char const* fmt, ...) {
     va_end(args);
 }
 
+// Information about how to access packed array data.
+// If underlying type is multi-word (VLVT_WDATA), the packed element might straddle word boundaries,
+// in which case m_maskHi != 0.
 template<typename T>
 struct VarAccessInfo final {
-    size_t bitOffset;
-    size_t wordOffset;
-    T mask_lo, mask_hi;
-    T* ptr;
+    T* m_datap; // Typed pointer to packed array base address
+    size_t m_bitOffset; // Data start location (bit offset)
+    size_t m_wordOffset; // Data start location (word offset, VLVT_WDATA only)
+    T m_maskLo; // Access mask for m_datap[m_wordOffset]
+    T m_maskHi; // Access mask for m_datap[m_wordOffset + 1] (VLVT_WDATA only)
 };
 
 template<typename T>
-VarAccessInfo<T> vl_var_access_info(const VerilatedVpioVarBase* vop, size_t bitCount, size_t addOffset) {
-    size_t wordBits = sizeof(T) * 8;
-    uint32_t varBits;
+VarAccessInfo<T> vl_vpi_var_access_info(const VerilatedVpioVarBase* vop, size_t bitCount, size_t addOffset) {
+    // VarAccessInfo generation
+    // vop - variable to access (already indexed)
+    // bitCount - how many bits to write/read
+    // addOffset - additional offset to apply (within the packed array element)
 
-    // find how many bits does the variable have
-    if (vop->indexedDim() + 1 < vop->varp()->udims())
-        varBits = vop->varp()->entBits();
-    else
-        varBits = vop->size();
+    const size_t wordBits = sizeof(T) * 8;
+    uint32_t varBits = vop->bitSize();
 
     if (vop->varp()->vltype() == VLVT_REAL)
         varBits *= sizeof(double) * 8;
@@ -2449,74 +2452,74 @@ VarAccessInfo<T> vl_var_access_info(const VerilatedVpioVarBase* vop, size_t bitC
     bitCount = std::min(bitCount, varBits - addOffset);
 
     VarAccessInfo<T> info;
-    info.ptr = reinterpret_cast<T*>(vop->varDatap());
+    info.m_datap = reinterpret_cast<T*>(vop->varDatap());
     if (vop->varp()->vltype() == VLVT_WDATA) {
         assert(sizeof(T) == sizeof(EData));
         assert(bitCount <= wordBits);
-        info.wordOffset = (vop->bitOffset() + addOffset) / wordBits;
-        info.bitOffset = (vop->bitOffset() + addOffset) % wordBits;
-        if (bitCount + info.bitOffset <= wordBits) {
+        info.m_wordOffset = (vop->bitOffset() + addOffset) / wordBits;
+        info.m_bitOffset = (vop->bitOffset() + addOffset) % wordBits;
+        if (bitCount + info.m_bitOffset <= wordBits) {
             // within single word
             if (bitCount == wordBits)
-                info.mask_lo = ~(T)0;
+                info.m_maskLo = ~static_cast<T>(0);
             else
-                info.mask_lo = ((T)1 << bitCount) - 1;
-            info.mask_lo = info.mask_lo << info.bitOffset;
-            info.mask_hi = 0;
+                info.m_maskLo = (static_cast<T>(1) << bitCount) - 1;
+            info.m_maskLo = info.m_maskLo << info.m_bitOffset;
+            info.m_maskHi = 0;
         } else {
             // straddles word boundary
-            info.mask_lo = ((T)1 << (wordBits - info.bitOffset)) - 1;
-            info.mask_lo = info.mask_lo << info.bitOffset;
-            info.mask_hi = ((T)1 << (bitCount + info.bitOffset - wordBits)) - 1;
+            info.m_maskLo = (static_cast<T>(1) << (wordBits - info.m_bitOffset)) - 1;
+            info.m_maskLo = info.m_maskLo << info.m_bitOffset;
+            info.m_maskHi = (static_cast<T>(1) << (bitCount + info.m_bitOffset - wordBits)) - 1;
         }
     } else {
-        info.wordOffset = 0;
-        info.bitOffset = vop->bitOffset() + addOffset;
-        assert(bitCount + info.bitOffset <= wordBits);
+        info.m_wordOffset = 0;
+        info.m_bitOffset = vop->bitOffset() + addOffset;
+        assert(bitCount + info.m_bitOffset <= wordBits);
         if (bitCount < wordBits) {
-            info.mask_lo = ((T)1 << bitCount) - 1;
-            info.mask_lo = info.mask_lo << info.bitOffset;
+            info.m_maskLo = (static_cast<T>(1) << bitCount) - 1;
+            info.m_maskLo = info.m_maskLo << info.m_bitOffset;
         } else {
-            info.mask_lo = ~(T)0;
+            info.m_maskLo = ~static_cast<T>(0);
         }
-        info.mask_hi = 0;
+        info.m_maskHi = 0;
     }
     return info;
 }
 
 template<typename T>
-T vl_get_word_gen(const VerilatedVpioVarBase* vop, size_t bitCount, size_t addOffset) {
-    size_t wordBits = sizeof(T) * 8;
-    VarAccessInfo<T> info = vl_var_access_info<T>(vop, bitCount, addOffset);
-    if (info.mask_hi)
-        return ((info.ptr[info.wordOffset] & info.mask_lo) >> info.bitOffset) |
-               ((info.ptr[info.wordOffset + 1] & info.mask_hi) << (wordBits - info.bitOffset));
+T vl_vpi_get_word_gen(const VerilatedVpioVarBase* vop, size_t bitCount, size_t addOffset) {
+    const size_t wordBits = sizeof(T) * 8;
+    const VarAccessInfo<T> info = vl_vpi_var_access_info<T>(vop, bitCount, addOffset);
+    if (info.m_maskHi)
+        return ((info.m_datap[info.m_wordOffset] & info.m_maskLo) >> info.m_bitOffset) |
+               ((info.m_datap[info.m_wordOffset + 1] & info.m_maskHi) << (wordBits - info.m_bitOffset));
     else
-        return (info.ptr[info.wordOffset] & info.mask_lo) >> info.bitOffset;
+        return (info.m_datap[info.m_wordOffset] & info.m_maskLo) >> info.m_bitOffset;
 }
 
 template<typename T>
-void vl_put_word_gen(const VerilatedVpioVar* vop, T word, size_t bitCount, size_t addOffset) {
-    size_t wordBits = sizeof(T) * 8;
-    VarAccessInfo<T> info = vl_var_access_info<T>(vop, bitCount, addOffset);
+void vl_vpi_put_word_gen(const VerilatedVpioVar* vop, T word, size_t bitCount, size_t addOffset) {
+    const size_t wordBits = sizeof(T) * 8;
+    const VarAccessInfo<T> info = vl_vpi_var_access_info<T>(vop, bitCount, addOffset);
 
-    if (info.mask_hi) {
-        info.ptr[info.wordOffset + 1] = (info.ptr[info.wordOffset+1] & ~info.mask_hi) |
-                                        ((word >> (wordBits - info.bitOffset)) & info.mask_hi);
+    if (info.m_maskHi) {
+        info.m_datap[info.m_wordOffset + 1] = (info.m_datap[info.m_wordOffset+1] & ~info.m_maskHi) |
+                                              ((word >> (wordBits - info.m_bitOffset)) & info.m_maskHi);
     }
-    info.ptr[info.wordOffset] = (info.ptr[info.wordOffset] & ~info.mask_lo) |
-                                ((word << info.bitOffset) & info.mask_lo);
+    info.m_datap[info.m_wordOffset] = (info.m_datap[info.m_wordOffset] & ~info.m_maskLo) |
+                                      ((word << info.m_bitOffset) & info.m_maskLo);
 }
 
 // bitCount: maximum number of bits to read, will stop earlier if it reaches the var bounds
 // addOffset: additional read bitoffset
-QData vl_get_word(const VerilatedVpioVarBase* vop, size_t bitCount, size_t addOffset) {
+QData vl_vpi_get_word(const VerilatedVpioVarBase* vop, size_t bitCount, size_t addOffset) {
     switch (vop->varp()->vltype()) {
-        case VLVT_UINT8: return vl_get_word_gen<CData>(vop, bitCount, addOffset);
-        case VLVT_UINT16: return vl_get_word_gen<SData>(vop, bitCount, addOffset);
-        case VLVT_UINT32: return vl_get_word_gen<IData>(vop, bitCount, addOffset);
-        case VLVT_UINT64: return vl_get_word_gen<QData>(vop, bitCount, addOffset);
-        case VLVT_WDATA: return vl_get_word_gen<EData>(vop, bitCount, addOffset);
+        case VLVT_UINT8: return vl_vpi_get_word_gen<CData>(vop, bitCount, addOffset);
+        case VLVT_UINT16: return vl_vpi_get_word_gen<SData>(vop, bitCount, addOffset);
+        case VLVT_UINT32: return vl_vpi_get_word_gen<IData>(vop, bitCount, addOffset);
+        case VLVT_UINT64: return vl_vpi_get_word_gen<QData>(vop, bitCount, addOffset);
+        case VLVT_WDATA: return vl_vpi_get_word_gen<EData>(vop, bitCount, addOffset);
         default:
             VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vltype (%d)", __func__, vop->varp()->vltype());
             return 0;
@@ -2526,19 +2529,19 @@ QData vl_get_word(const VerilatedVpioVarBase* vop, size_t bitCount, size_t addOf
 // word: data to be written
 // bitCount: maximum number of bits to write, will stop earlier if it reaches the var bounds
 // addOffset: additional write bitoffset
-void vl_put_word(const VerilatedVpioVar* vop, QData word, size_t bitCount, size_t addOffset) {
+void vl_vpi_put_word(const VerilatedVpioVar* vop, QData word, size_t bitCount, size_t addOffset) {
     switch (vop->varp()->vltype()) {
-        case VLVT_UINT8: vl_put_word_gen<CData>(vop, word, bitCount, addOffset); break;
-        case VLVT_UINT16: vl_put_word_gen<SData>(vop, word, bitCount, addOffset); break;
-        case VLVT_UINT32: vl_put_word_gen<IData>(vop, word, bitCount, addOffset); break;
-        case VLVT_UINT64: vl_put_word_gen<QData>(vop, word, bitCount, addOffset); break;
-        case VLVT_WDATA: vl_put_word_gen<EData>(vop, word, bitCount, addOffset); break;
+        case VLVT_UINT8: vl_vpi_put_word_gen<CData>(vop, word, bitCount, addOffset); break;
+        case VLVT_UINT16: vl_vpi_put_word_gen<SData>(vop, word, bitCount, addOffset); break;
+        case VLVT_UINT32: vl_vpi_put_word_gen<IData>(vop, word, bitCount, addOffset); break;
+        case VLVT_UINT64: vl_vpi_put_word_gen<QData>(vop, word, bitCount, addOffset); break;
+        case VLVT_WDATA: vl_vpi_put_word_gen<EData>(vop, word, bitCount, addOffset); break;
         default:
             VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vltype (%d)", __func__, vop->varp()->vltype());
     }
 }
 
-void vl_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
+void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
     const VerilatedVar* varp = vop->varp();
     void* varDatap = vop->varDatap();
     const char* fullname = vop->fullname();
@@ -2547,11 +2550,7 @@ void vl_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
     // string data type is dynamic and may vary in size during simulation
     static thread_local std::string t_outDynamicStr;
 
-    int varBits;
-    if (vop->indexedDim() + 1 < vop->varp()->udims())
-        varBits = vop->varp()->entBits();
-    else
-        varBits = vop->size();
+    const int varBits = vop->bitSize();
 
     // We used to presume vpiValue.format = vpiIntVal or if single bit vpiScalarVal
     // This may cause backward compatibility issues with older code.
@@ -2570,19 +2569,19 @@ void vl_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
                 return;
             }
             for (int i = 0; i < words; ++i) {
-                t_out[i].aval = vl_get_word(vop, 32, i * 32);
+                t_out[i].aval = vl_vpi_get_word(vop, 32, i * 32);
                 t_out[i].bval = 0;
             }
             return;
         } else if (varp->vltype() == VLVT_UINT64 && varBits > 32) {
-            const QData data = vl_get_word(vop, 64, 0);
+            const QData data = vl_vpi_get_word(vop, 64, 0);
             t_out[1].aval = static_cast<IData>(data >> 32ULL);
             t_out[1].bval = 0;
             t_out[0].aval = static_cast<IData>(data);
             t_out[0].bval = 0;
             return;
         } else {
-            t_out[0].aval = vl_get_word(vop, 32, 0);
+            t_out[0].aval = vl_vpi_get_word(vop, 32, 0);
             t_out[0].bval = 0;
             return;
         }
@@ -2590,7 +2589,7 @@ void vl_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
         t_outDynamicStr.resize(varBits);
         const CData* datap = (reinterpret_cast<CData*>(varDatap));
         for (size_t i = 0; i < varBits; ++i) {
-            size_t pos = i + vop->bitOffset();
+            const size_t pos = i + vop->bitOffset();
             const char val = (datap[pos >> 3] >> (pos & 7)) & 1;
             t_outDynamicStr[varBits - i - 1] = val ? '1' : '0';
         }
@@ -2600,7 +2599,7 @@ void vl_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
         const int chars = (varBits + 2) / 3;
         t_outDynamicStr.resize(chars);
         for (size_t i = 0; i < chars; ++i) {
-            const char val = vl_get_word(vop, 3, i * 3);
+            const char val = vl_vpi_get_word(vop, 3, i * 3);
             t_outDynamicStr[chars - i - 1] = '0' + val;
         }
         valuep->value.str = const_cast<PLI_BYTE8*>(t_outDynamicStr.c_str());
@@ -2608,16 +2607,16 @@ void vl_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
     } else if (valuep->format == vpiDecStrVal) {
         if (varp->vltype() == VLVT_UINT8) {
             vl_strprintf(t_outDynamicStr, "%hhu",
-                         static_cast<unsigned char>(vl_get_word(vop, 8, 0)));
+                         static_cast<unsigned char>(vl_vpi_get_word(vop, 8, 0)));
         } else if (varp->vltype() == VLVT_UINT16) {
             vl_strprintf(t_outDynamicStr, "%hu",
-                         static_cast<unsigned short>(vl_get_word(vop, 16, 0)));
+                         static_cast<unsigned short>(vl_vpi_get_word(vop, 16, 0)));
         } else if (varp->vltype() == VLVT_UINT32) {
             vl_strprintf(t_outDynamicStr, "%u",
-                         static_cast<unsigned int>(vl_get_word(vop, 32, 0)));
+                         static_cast<unsigned int>(vl_vpi_get_word(vop, 32, 0)));
         } else if (varp->vltype() == VLVT_UINT64) {
             vl_strprintf(t_outDynamicStr, "%llu",  // lintok-format-ll
-                         static_cast<unsigned long long>(vl_get_word(vop, 64, 0)));
+                         static_cast<unsigned long long>(vl_vpi_get_word(vop, 64, 0)));
         }
         valuep->value.str = const_cast<PLI_BYTE8*>(t_outDynamicStr.c_str());
         return;
@@ -2625,7 +2624,7 @@ void vl_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
         const int chars = (varBits + 3) >> 2;
         t_outDynamicStr.resize(chars);
         for (size_t i = 0; i < chars; ++i) {
-            const char val = vl_get_word(vop, 4, i * 4);
+            const char val = vl_vpi_get_word(vop, 4, i * 4);
             t_outDynamicStr[chars - i - 1] = "0123456789abcdef"[static_cast<int>(val)];
         }
         valuep->value.str = const_cast<PLI_BYTE8*>(t_outDynamicStr.c_str());
@@ -2644,7 +2643,7 @@ void vl_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
             const int chars = VL_BYTES_I(varBits);
             t_outDynamicStr.resize(chars);
             for (size_t i = 0; i < chars; ++i) {
-                const char val = vl_get_word(vop, 8, i * 8);
+                const char val = vl_vpi_get_word(vop, 8, i * 8);
                 // other simulators replace [leading?] zero chars with spaces, replicate here.
                 t_outDynamicStr[chars - i - 1] = val ? val : ' ';
             }
@@ -2652,7 +2651,7 @@ void vl_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
             return;
         }
     } else if (valuep->format == vpiIntVal) {
-        valuep->value.integer = vl_get_word(vop, 32, 0);
+        valuep->value.integer = vl_vpi_get_word(vop, 32, 0);
         return;
     } else if (valuep->format == vpiRealVal) {
         valuep->value.real = *(reinterpret_cast<double*>(varDatap));
@@ -2671,10 +2670,10 @@ void vpi_get_value(vpiHandle object, p_vpi_value valuep) {
     if (VL_UNLIKELY(!valuep)) return;
 
     if (const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object)) {
-        vl_get_value(vop, valuep);
+        vl_vpi_get_value(vop, valuep);
         return;
     } else if (const VerilatedVpioParam* const vop = VerilatedVpioParam::castp(object)) {
-        vl_get_value(vop, valuep);
+        vl_vpi_get_value(vop, valuep);
         return;
     } else if (const VerilatedVpioConst* const vop = VerilatedVpioConst::castp(object)) {
         if (valuep->format == vpiIntVal) {
@@ -2697,7 +2696,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         VL_VPI_WARNING_(__FILE__, __LINE__, "Ignoring vpi_put_value with nullptr value pointer");
         return nullptr;
     }
-    PLI_INT32 delay_mode = flags & 0xfff;
+    const PLI_INT32 delay_mode = flags & 0xfff;
     if (const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object)) {
         if (delay_mode == vpiInertialDelay) {
             if (!VerilatedVpiPutHolder::canInertialDelay(valuep)) {
@@ -2724,33 +2723,29 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             return nullptr;
         }
         if (!vl_check_format(vop->varp(), valuep, vop->fullname(), false)) return nullptr;
-        int varBits;
-        if (vop->indexedDim() + 1 < vop->varp()->udims())
-            varBits = vop->varp()->entBits();
-        else
-            varBits = vop->size();
+        const int varBits = vop->bitSize();
         if (valuep->format == vpiVectorVal) {
             if (VL_UNLIKELY(!valuep->value.vector)) return nullptr;
             if (vop->varp()->vltype() == VLVT_WDATA) {
                 const int words = VL_WORDS_I(varBits);
                 for (int i = 0; i < words; ++i)
-                    vl_put_word(vop, valuep->value.vector[i].aval, 32, i * 32);
+                    vl_vpi_put_word(vop, valuep->value.vector[i].aval, 32, i * 32);
                 return object;
             } else if (vop->varp()->vltype() == VLVT_UINT64 && varBits > 32) {
-                QData val = ((QData)valuep->value.vector[1].aval << 32)
-                            | (QData)valuep->value.vector[0].aval;
-                vl_put_word(vop, val, 64, 0);
+                const QData val = (static_cast<QData>(valuep->value.vector[1].aval) << 32) |
+                                  static_cast<QData>(valuep->value.vector[0].aval);
+                vl_vpi_put_word(vop, val, 64, 0);
                 return object;
             } else {
-                vl_put_word(vop, valuep->value.vector[0].aval, 32, 0);
+                vl_vpi_put_word(vop, valuep->value.vector[0].aval, 32, 0);
                 return object;
             }
         } else if (valuep->format == vpiBinStrVal) {
             const int len = std::strlen(valuep->value.str);
             CData* const datap = (reinterpret_cast<CData*>(vop->varDatap()));
             for (int i = 0; i < varBits; ++i) {
-                bool set = (i < len) && (valuep->value.str[len - i - 1] == '1');
-                size_t pos = vop->bitOffset() + i;
+                const bool set = (i < len) && (valuep->value.str[len - i - 1] == '1');
+                const size_t pos = vop->bitOffset() + i;
 
                 if (set)
                     datap[pos >> 3] |= 1 << (pos & 7);
@@ -2761,7 +2756,6 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         } else if (valuep->format == vpiOctStrVal) {
             const int chars = (varBits + 2) / 3;
             const int len = std::strlen(valuep->value.str);
-            CData* const datap = (reinterpret_cast<CData*>(vop->varDatap()));
             for (int i = 0; i < len; ++i) {
                 char digit = valuep->value.str[len - i - 1] - '0';
                 if (digit < 0 || digit > 7) {
@@ -2772,7 +2766,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                                     vop->fullname());
                     digit = 0;
                 }
-                vl_put_word(vop, digit, 3, i * 3);
+                vl_vpi_put_word(vop, digit, 3, i * 3);
             }
             return object;
         } else if (valuep->format == vpiDecStrVal) {
@@ -2792,7 +2786,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                                 remainder, valuep->value.str,
                                 VerilatedVpiError::strFromVpiVal(valuep->format), vop->fullname());
             }
-            vl_put_word(vop, val, 64, 0);
+            vl_vpi_put_word(vop, val, 64, 0);
             return object;
         } else if (valuep->format == vpiHexStrVal) {
             const int chars = (varBits + 3) >> 2;
@@ -2823,7 +2817,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                     hex = 0;
                 }
                 // assign hex digit value to destination
-                vl_put_word(vop, hex, 4, i * 4);
+                vl_vpi_put_word(vop, hex, 4, i * 4);
             }
             return object;
         } else if (valuep->format == vpiStringVal) {
@@ -2836,12 +2830,12 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 for (int i = 0; i < chars; ++i) {
                     // prepend with 0 values before placing string the least significant bytes
                     const char c = (i < len) ? valuep->value.str[len - i - 1] : 0;
-                    vl_put_word(vop, c, 8, i * 8);
+                    vl_vpi_put_word(vop, c, 8, i * 8);
                 }
             }
             return object;
         } else if (valuep->format == vpiIntVal) {
-            vl_put_word(vop, valuep->value.integer, 64, 0);
+            vl_vpi_put_word(vop, valuep->value.integer, 64, 0);
             return object;
         } else if (valuep->format == vpiRealVal) {
             if (vop->varp()->vltype() == VLVT_REAL) {

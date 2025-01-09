@@ -564,6 +564,8 @@ string AstVar::vlPropDecl(const string& propName) const {
     std::vector<int> plims;  // Packed dimension limits
     std::vector<int> ulims;  // Unpacked dimension limits
 
+    printf("propName: %s\n", propName.c_str());
+
     if (const AstBasicDType* const bdtypep = basicp()) {
         for (const AstNodeDType* dtp = dtypep(); dtp;) {
             dtp = dtp->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
@@ -619,13 +621,13 @@ string AstVar::vlPropDecl(const string& propName) const {
     out += ", " + vlEnumDir();  // VLVD_IN etc
 
     if (!ulims.empty()) {
-        out += ", VerilatedVarProps::Unpacked()";
+        out += ", VerilatedVarProps::Unpacked{}";
         out += ", " + cvtToStr(ulims.size() / 2);
         out += ", " + propName + "__ulims";
     }
 
     if (!plims.empty()) {
-        out += ", VerilatedVarProps::Packed()";
+        out += ", VerilatedVarProps::Packed{}";
         out += ", " + cvtToStr(plims.size() / 2);
         out += ", " + propName + "__plims";
     }

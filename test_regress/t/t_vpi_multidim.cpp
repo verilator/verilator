@@ -44,17 +44,32 @@ int errors = 0;
 
 // TEST START
 
-void _arr_iter_check(const char* name, int wordSize) {
-    TestVpiHandle arr_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(name), NULL);
+void _arr_type_check(TestVpiHandle& arr_h, int expType, int expSize, int expRangeHigh, int expRangeLow)
+{
+    const int vpitype = vpi_get(vpiType, arr_h);
+    TEST_CHECK_EQ(vpitype, expType);
+    const int vpisize = vpi_get(vpiSize, arr_h);
+    TEST_CHECK_EQ(vpisize, expSize);
+
+    s_vpi_value value;
+    value.format = vpiIntVal;
+
+    TestVpiHandle left_h = vpi_handle(vpiLeftRange, arr_h);
+    TEST_CHECK_NZ(left_h);
+    vpi_get_value(left_h, &value);
+    TEST_CHECK_EQ(value.value.integer, expRangeHigh);
+
+    TestVpiHandle right_h = vpi_handle(vpiRightRange, arr_h);
+    TEST_CHECK_NZ(right_h);
+    vpi_get_value(right_h, &value);
+    TEST_CHECK_EQ(value.value.integer, expRangeLow);
+}
+
+void _arr_iter_check(const char* name, int wordSize, const int* lows) {
+    TestVpiHandle arr_h = vpi_handle_by_name(const_cast<PLI_BYTE8*>(TestSimulator::rooted(name)), NULL);
     TEST_CHECK_NZ(arr_h);
 
-    {
-        // variable is size-4 RegArray
-        int vpitype = vpi_get(vpiType, arr_h);
-        TEST_CHECK_EQ(vpitype, vpiRegArray);
-        int vpisize = vpi_get(vpiSize, arr_h);
-        TEST_CHECK_EQ(vpisize, 4);
-    }
+    _arr_type_check(arr_h, vpiRegArray, 4, lows[0] + 1, lows[0]);
 
     {
         // can't iterate through RegArrays on a nested RegArray
@@ -65,26 +80,19 @@ void _arr_iter_check(const char* name, int wordSize) {
 
     if (!TestSimulator::is_questa()) {
         // but we can access them by index (Questa can't)
-        for (int idx = 0; idx < 2; idx++) {
+        for (int idx = lows[0]; idx < lows[0] + 2; idx++) {
             TestVpiHandle arr_elem_h = vpi_handle_by_index(arr_h, idx);
             TEST_CHECK_NZ(arr_elem_h);
-            {
-                // first indexing yields size-2 RegArrays
-                int vpitype = vpi_get(vpiType, arr_elem_h);
-                TEST_CHECK_EQ(vpitype, vpiRegArray);
-                int vpisize = vpi_get(vpiSize, arr_elem_h);
-                TEST_CHECK_EQ(vpisize, 2);
-            }
-            for (int idx2 = 0; idx2 < 2; idx2++) {
+
+            // first indexing yields size-2 RegArrays
+            _arr_type_check(arr_elem_h, vpiRegArray, 2, lows[1] + 1, lows[1]);
+
+            for (int idx2 = lows[1]; idx2 < lows[1] + 2; idx2++) {
                 TestVpiHandle arr_elem2_h = vpi_handle_by_index(arr_elem_h, idx2);
                 TEST_CHECK_NZ(arr_elem2_h);
-                {
-                    // second indexing yields wordSize Regs
-                    int vpitype = vpi_get(vpiType, arr_elem2_h);
-                    TEST_CHECK_EQ(vpitype, vpiReg);
-                    int vpisize = vpi_get(vpiSize, arr_elem2_h);
-                    TEST_CHECK_EQ(vpisize, wordSize);
-                }
+
+                // second indexing yields wordSize Regs
+                _arr_type_check(arr_elem2_h, vpiReg, wordSize, lows[2] + 1, lows[2]);
             }
         }
     }
@@ -95,13 +103,9 @@ void _arr_iter_check(const char* name, int wordSize) {
         for (int idx = 0; idx < 4; idx++) {
             TestVpiHandle arr_elem_h = vpi_scan(arr_iter_h);
             TEST_CHECK_NZ(arr_elem_h);
-            {
-                // which gives us wordSize Regs
-                int vpitype = vpi_get(vpiType, arr_elem_h);
-                TEST_CHECK_EQ(vpitype, vpiReg);
-                int vpisize = vpi_get(vpiSize, arr_elem_h);
-                TEST_CHECK_EQ(vpisize, wordSize);
-            }
+
+            // which gives us wordSize Regs
+            _arr_type_check(arr_elem_h, vpiReg, wordSize, lows[2] + 1, lows[2]);
 
             {
                 // can't iterate through Regs on a nested Reg
@@ -111,25 +115,25 @@ void _arr_iter_check(const char* name, int wordSize) {
             }
 
             // but we can access them by index
-            for (int idx2 = 0; idx2 < 2; idx2++) {
+            for (int idx2 = lows[2]; idx2 < lows[2] + 2; idx2++) {
                 TestVpiHandle arr_elem2_h = vpi_handle_by_index(arr_elem_h, idx2);
                 TEST_CHECK_NZ(arr_elem2_h);
-                {
-                    // first indexing yields wordSize / 2 Regs
-                    int vpitype = vpi_get(vpiType, arr_elem2_h);
-                    TEST_CHECK_EQ(vpitype, vpiReg);
-                    int vpisize = vpi_get(vpiSize, arr_elem2_h);
-                    TEST_CHECK_EQ(vpisize, wordSize / 2);
-                }
 
-                for (int idx3 = 0; idx3 < wordSize / 2; idx3++) {
+                // first indexing yields wordSize / 2 Regs
+                _arr_type_check(arr_elem2_h, vpiReg, wordSize / 2, lows[3] + wordSize / 2 - 1, lows[3]);
+
+                for (int idx3 = lows[3]; idx3 < lows[3] + wordSize / 2; idx3++) {
                     TestVpiHandle arr_elem3_h = vpi_handle_by_index(arr_elem2_h, idx3);
                     TEST_CHECK_NZ(arr_elem3_h);
                     {
                         // second indexing yields size-1 RegBits (no support for RegBit VPI type yet)
-                        int vpitype = vpi_get(vpiType, arr_elem3_h);
-                        //TEST_CHECK_EQ(vpitype, vpiRegBit);
-                        int vpisize = vpi_get(vpiSize, arr_elem3_h);
+                        const int vpitype = vpi_get(vpiType, arr_elem3_h);
+                        if (TestSimulator::is_verilator()) {
+                            TEST_CHECK_EQ(vpitype, vpiReg);
+                        } else {
+                            TEST_CHECK_EQ(vpitype, vpiRegBit);
+                        }
+                        const int vpisize = vpi_get(vpiSize, arr_elem3_h);
                         TEST_CHECK_EQ(vpisize, 1);
                     }
                 }
@@ -147,14 +151,18 @@ void _arr_iter_check(const char* name, int wordSize) {
                     TEST_CHECK_NZ(side_h);
                     vpi_get_value(side_h, &value);
                     if (idx2 == 0) {
-                        TEST_CHECK_EQ(value.value.integer, 1);
+                        TEST_CHECK_EQ(value.value.integer, lows[2] + 1);
                     } else {
-                        TEST_CHECK_EQ(value.value.integer, wordSize / 2 - 1);
+                        TEST_CHECK_EQ(value.value.integer, lows[3] + wordSize / 2 - 1);
                     }
                     side_h = vpi_handle(vpiRightRange, range_h);
                     TEST_CHECK_NZ(side_h);
                     vpi_get_value(side_h, &value);
-                    TEST_CHECK_EQ(value.value.integer, 0);
+                    if (idx2 == 0) {
+                        TEST_CHECK_EQ(value.value.integer, lows[2]);
+                    } else {
+                        TEST_CHECK_EQ(value.value.integer, lows[3]);
+                    }
                 }
             }
             TEST_CHECK_Z(vpi_scan(range_iter_h));
@@ -176,11 +184,19 @@ void _arr_iter_check(const char* name, int wordSize) {
                 TestVpiHandle side_h = vpi_handle(vpiLeftRange, range_h);
                 TEST_CHECK_NZ(side_h);
                 vpi_get_value(side_h, &value);
-                TEST_CHECK_EQ(value.value.integer, 1);
+                if (idx == 0) {
+                    TEST_CHECK_EQ(value.value.integer, lows[0] + 1);
+                } else {
+                    TEST_CHECK_EQ(value.value.integer, lows[1] + 1);
+                }
                 side_h = vpi_handle(vpiRightRange, range_h);
                 TEST_CHECK_NZ(side_h);
                 vpi_get_value(side_h, &value);
-                TEST_CHECK_EQ(value.value.integer, 0);
+                if (idx == 0) {
+                    TEST_CHECK_EQ(value.value.integer, lows[0]);
+                } else {
+                    TEST_CHECK_EQ(value.value.integer, lows[1]);
+                }
             }
         }
         TEST_CHECK_Z(vpi_scan(range_iter_h));
@@ -188,7 +204,7 @@ void _arr_iter_check(const char* name, int wordSize) {
     }
 }
 
-void _arr_access_format_check(TestVpiHandle &reg_h, int wordSize, char *octVal_s, PLI_INT32 format)
+void _arr_access_format_check(TestVpiHandle &reg_h, int wordSize, const int* lows, const char *octVal_s, PLI_INT32 format)
 {
     const int spanSize = wordSize / 2;
     s_vpi_value value_in;
@@ -206,7 +222,7 @@ void _arr_access_format_check(TestVpiHandle &reg_h, int wordSize, char *octVal_s
     value_out.format = format;
 
     for (int i = 0; i < 2; i++) {
-        TestVpiHandle subreg_h = vpi_handle_by_index(reg_h, i);
+        TestVpiHandle subreg_h = vpi_handle_by_index(reg_h, lows[2] + i);
         TEST_CHECK_NZ(subreg_h);
 
         char octSpan_s[spanSize / 3 + 1];
@@ -283,8 +299,8 @@ void _arr_access_format_check(TestVpiHandle &reg_h, int wordSize, char *octVal_s
 
 std::default_random_engine rng;
 
-void _arr_access_check(const char* name, int wordSize) {
-    TestVpiHandle arr_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(name), NULL);
+void _arr_access_check(const char* name, int wordSize, const int* lows) {
+    TestVpiHandle arr_h = vpi_handle_by_name(const_cast<PLI_BYTE8*>(TestSimulator::rooted(name)), NULL);
     TEST_CHECK_NZ(arr_h);
 
     std::uniform_int_distribution<uint64_t> rand64(
@@ -296,10 +312,10 @@ void _arr_access_check(const char* name, int wordSize) {
 
     // fill octVal_s with random octal digits
     if (wordSize < 64) {
-        sprintf(octVal_s, "%0*" PRIo64, wordSize / 3, rand64(rng) % (1ULL << wordSize));
+        sprintf(octVal_s, "%0*" PRIo64, wordSize / 3, rand64(rng) % (static_cast<uint64_t>(1) << wordSize));
     } else {
         sprintf(octVal_s, "%0*" PRIo64, 63 / 3, rand64(rng));
-        sprintf(octVal_s + 63 / 3, "%0*" PRIo64, (wordSize - 63) / 3, rand64(rng) % (1ULL << (wordSize - 63)));
+        sprintf(octVal_s + 63 / 3, "%0*" PRIo64, (wordSize - 63) / 3, rand64(rng) % (static_cast<uint64_t>(1) << (wordSize - 63)));
     }
 
     // Assume that reading/writing to the "flattened" packed register is already tested,
@@ -321,14 +337,14 @@ void _arr_access_check(const char* name, int wordSize) {
 
             // test each I/O data format
             if (wordSize <= 64) {
-                _arr_access_format_check(reg_h, wordSize, octVal_s, vpiIntVal);
-                _arr_access_format_check(reg_h, wordSize, octVal_s, vpiDecStrVal);
+                _arr_access_format_check(reg_h, wordSize, lows, octVal_s, vpiIntVal);
+                _arr_access_format_check(reg_h, wordSize, lows, octVal_s, vpiDecStrVal);
             }
-            _arr_access_format_check(reg_h, wordSize, octVal_s, vpiVectorVal);
-            _arr_access_format_check(reg_h, wordSize, octVal_s, vpiBinStrVal);
-            _arr_access_format_check(reg_h, wordSize, octVal_s, vpiOctStrVal);
-            _arr_access_format_check(reg_h, wordSize, octVal_s, vpiHexStrVal);
-            _arr_access_format_check(reg_h, wordSize, octVal_s, vpiStringVal);
+            _arr_access_format_check(reg_h, wordSize, lows, octVal_s, vpiVectorVal);
+            _arr_access_format_check(reg_h, wordSize, lows, octVal_s, vpiBinStrVal);
+            _arr_access_format_check(reg_h, wordSize, lows, octVal_s, vpiOctStrVal);
+            _arr_access_format_check(reg_h, wordSize, lows, octVal_s, vpiHexStrVal);
+            _arr_access_format_check(reg_h, wordSize, lows, octVal_s, vpiStringVal);
         }
         arr_iter_h.freed();
     }
@@ -337,21 +353,22 @@ void _arr_access_check(const char* name, int wordSize) {
 struct params {
     const char* name;
     int wordSize;
+    const int lows[4];
 };
 
 void _multidim_check() {
     static struct params values[] = {
-        {"arr_cdata", 6},
-        {"arr_sdata", 12},
-        {"arr_idata", 30},
-        {"arr_qdata", 60},
-        {"arr_wdata", 126},
+        {"arr_cdata", 6, {0, 1, 2, 3}},
+        {"arr_sdata", 12, {4, 5, 6, 7}},
+        {"arr_idata", 30, {8, 9, 10, 11}},
+        {"arr_qdata", 60, {12, 13, 14, 15}},
+        {"arr_wdata", 126, {16, 17, 18, 19}},
         {NULL}
     };
     struct params* value = values;
     while (value->name) {
-        _arr_iter_check(value->name, value->wordSize);
-        _arr_access_check(value->name, value->wordSize);
+        _arr_iter_check(value->name, value->wordSize, value->lows);
+        _arr_access_check(value->name, value->wordSize, value->lows);
         value++;
     }
 }

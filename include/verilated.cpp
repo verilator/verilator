@@ -3308,7 +3308,7 @@ void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const 
     uint8_t* bytep = reinterpret_cast<uint8_t*>(datap);
     // If on index 1 of a 2 index array, then each index 1 is index2sz*entsz
     size_t slicesz = entSize();
-    for (int d = dim + 1; d <= m_udims; ++d) slicesz *= elements(d);
+    for (int d = dim + 1; d <= udims(); ++d) slicesz *= elements(d);
     bytep += indxAdj * slicesz;
     return bytep;
 }

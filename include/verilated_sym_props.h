@@ -74,27 +74,25 @@ class VerilatedVarProps VL_NOT_FINAL {
     const uint32_t m_magic;  // Magic number
     const VerilatedVarType m_vltype;  // Data type
     const VerilatedVarFlags m_vlflags;  // Direction
-    const int m_udims;  // Unpacked dimensions, 0 = none
-    const int m_pdims;  // Packed dimensions, 0 = none
     std::vector<VerilatedRange> m_unpacked;  // Unpacked array ranges
     std::vector<VerilatedRange> m_packed;  // Packed array ranges
     VerilatedRange m_packedDpi; // Flattened packed array range
-    void initUnpacked(const int* ulims) {
-        for (int i = 0; i < m_udims; ++i) {
+    void initUnpacked(int udims, const int* ulims) {
+        for (int i = 0; i < udims; ++i) {
             const int uleft = ulims ? ulims[2 * i + 0] : 0;
             const int uright = ulims ? ulims[2 * i + 1] : 0;
             m_unpacked.emplace_back(uleft, uright);
         }
     }
-    void initPacked(const int* plims) {
+    void initPacked(int pdims, const int* plims) {
         int packedSize = 1;
-        for (int i = 0; i < m_pdims; ++i) {
+        for (int i = 0; i < pdims; ++i) {
             const int pleft = plims ? plims[2 * i + 0] : 0;
             const int pright = plims ? plims[2 * i + 1] : 0;
             m_packed.emplace_back(pleft, pright);
             packedSize *= abs(pleft - pright) + 1;
         }
-        if (m_pdims == 1) {
+        if (pdims == 1) {
             // Preserve packed array range if the packed component is 1-D
             m_packedDpi = m_packed.front();
         } else {
@@ -107,11 +105,10 @@ protected:
     VerilatedVarProps(VerilatedVarType vltype, VerilatedVarFlags vlflags, int udims, int pdims)
         : m_magic{MAGIC}
         , m_vltype{vltype}
-        , m_vlflags{vlflags}
-        , m_udims{udims}
-        , m_pdims{pdims} {
-        initUnpacked(nullptr);
-        initPacked(nullptr);
+        , m_vlflags{vlflags} {
+        // Only preallocate the ranges
+        initUnpacked(udims, nullptr);
+        initPacked(pdims, nullptr);
     }
 
 public:
@@ -120,36 +117,29 @@ public:
     VerilatedVarProps(VerilatedVarType vltype, int vlflags)
         : m_magic{MAGIC}
         , m_vltype{vltype}
-        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
-        , m_udims{0}
-        , m_pdims{0} {}
+        , m_vlflags(VerilatedVarFlags(vlflags)) {}  // Need () or GCC 4.8 false warning
+
     VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulims)
         : m_magic{MAGIC}
         , m_vltype{vltype}
-        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
-        , m_udims{udims}
-        , m_pdims{0} {
-        initUnpacked(ulims);
+        , m_vlflags(VerilatedVarFlags(vlflags)) {  // Need () or GCC 4.8 false warning
+        initUnpacked(udims, ulims);
     }
     // With packed
     class Packed {};
     VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pdims, const int* plims)
         : m_magic{MAGIC}
         , m_vltype{vltype}
-        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
-        , m_udims{0}
-        , m_pdims{pdims} {
-        initPacked(plims);
+        , m_vlflags(VerilatedVarFlags(vlflags)) {  // Need () or GCC 4.8 false warning
+        initPacked(pdims, plims);
     }
     VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulims,
                       Packed, int pdims, const int* plims)
         : m_magic{MAGIC}
         , m_vltype{vltype}
-        , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
-        , m_udims{udims}
-        , m_pdims{pdims} {
-        initUnpacked(ulims);
-        initPacked(plims);
+        , m_vlflags(VerilatedVarFlags(vlflags)) {  // Need () or GCC 4.8 false warning
+        initUnpacked(udims, ulims);
+        initPacked(pdims, plims);
     }
 
     ~VerilatedVarProps() = default;
@@ -169,9 +159,9 @@ public:
     bool isPublicRW() const { return ((m_vlflags & VLVF_PUB_RW) != 0); }
     // DPI compatible C standard layout
     bool isDpiCLayout() const { return ((m_vlflags & VLVF_DPI_CLAY) != 0); }
-    int udims() const VL_MT_SAFE { return m_udims; }
-    int pdims() const VL_MT_SAFE { return m_pdims; }
-    int dims() const VL_MT_SAFE { return m_pdims + m_udims; }
+    int udims() const VL_MT_SAFE { return m_unpacked.size(); }
+    int pdims() const VL_MT_SAFE { return m_packed.size(); }
+    int dims() const VL_MT_SAFE { return pdims() + udims(); }
     const std::vector<VerilatedRange>& packedRanges() const VL_MT_SAFE { return m_packed; }
     const std::vector<VerilatedRange>& unpackedRanges() const VL_MT_SAFE { return m_unpacked; }
     const VerilatedRange* range(int dim) const VL_MT_SAFE {

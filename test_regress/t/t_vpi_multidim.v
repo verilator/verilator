@@ -19,11 +19,11 @@ extern "C" int mon_check();
 
    input clk;
 
-   logic [1:0][2:0] arr_cdata [1:0][1:0]; // 2x3 (6) bit words
-   logic [1:0][5:0] arr_sdata [1:0][1:0]; // 2x6 (12) bit words
-   logic [1:0][14:0] arr_idata [1:0][1:0]; // 2x15 (30) bit words
-   logic [1:0][29:0] arr_qdata [1:0][1:0]; // 2x30 (60) bit words
-   logic [1:0][62:0] arr_wdata [1:0][1:0]; // 2x63 (126) bit words
+   logic [3:2][5:3] arr_cdata [1:0][2:1]; // 2x3 (6) bit words
+   logic [7:6][12:7] arr_sdata [5:4][6:5]; // 2x6 (12) bit words
+   logic [11:10][25:11] arr_idata [9:8][10:9]; // 2x15 (30) bit words
+   logic [15:14][44:15] arr_qdata [13:12][14:13]; // 2x30 (60) bit words
+   logic [19:18][81:19] arr_wdata [17:16][18:17]; // 2x63 (126) bit words
 
    int status;
 
