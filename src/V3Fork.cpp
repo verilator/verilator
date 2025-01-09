@@ -7,7 +7,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -603,9 +603,7 @@ class ForkVisitor final : public VNVisitor {
         m_modp->addStmtsp(taskp);
         UINFO(9, "new " << taskp << endl);
 
-        AstTaskRef* const taskrefp
-            = new AstTaskRef{nodep->fileline(), taskp->name(), m_capturedVarRefsp};
-        taskrefp->taskp(taskp);
+        AstTaskRef* const taskrefp = new AstTaskRef{nodep->fileline(), taskp, m_capturedVarRefsp};
         AstStmtExpr* const taskcallp = taskrefp->makeStmt();
         // Replaced nodes will be revisited, so we don't need to "lift" the arguments
         // as captures in case of nested forks.

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -237,9 +237,11 @@ class UnknownVisitor final : public VNVisitor {
             AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
             AstNodeExpr* newp;
             if (!VN_IS(rhsp, Const)) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: RHS of ==? or !=? must be "
-                                             "constant to be synthesizable");  // Says spec.
-                // Replace with anything that won't cause more errors
+                if (rhsp->dtypep()->isFourstate()) {
+                    nodep->v3warn(
+                        E_UNSUPPORTED,
+                        "Unsupported: RHS of ==? or !=? is fourstate but not a constant");
+                }
                 newp = new AstEq{nodep->fileline(), lhsp, rhsp};
             } else {
                 // X or Z's become mask, ala case statements.

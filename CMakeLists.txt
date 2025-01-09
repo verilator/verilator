@@ -4,7 +4,7 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -16,10 +16,15 @@ cmake_minimum_required(VERSION 3.15)
 cmake_policy(SET CMP0091 NEW) # Use MSVC_RUNTIME_LIBRARY to select the runtime
 project(
     Verilator
-    VERSION 5.031
+    VERSION 5.033
     HOMEPAGE_URL https://verilator.org
     LANGUAGES CXX
 )
+
+# Set default build type to Release if not specified
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+endif()
 
 option(
     DEBUG_AND_RELEASE_AND_COVERAGE

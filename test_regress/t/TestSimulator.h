@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2013-2024 by Wilson Snyder. This program is free software; you can
+// Copyright 2013-2025 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -17,12 +17,12 @@
 class TestSimulator {
 private:
     struct SimTypes {
-        int verilator;
-        int icarus;
-        int mti;
-        int ncsim;
-        int vcs;
-        int questa;
+        bool verilator = false;
+        bool icarus = false;
+        bool mti = false;
+        bool ncsim = false;
+        bool vcs = false;
+        bool questa = false;
     };
     s_vpi_vlog_info m_info;
     SimTypes m_simulators;

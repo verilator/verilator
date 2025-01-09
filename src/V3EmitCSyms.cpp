@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -970,7 +970,8 @@ void EmitCSyms::emitSymImp() {
             varName += protect(varp->name());
 
             if (varp->isParam()) {
-                if (varp->vlEnumType() == "VLVT_STRING") {
+                if (varp->vlEnumType() == "VLVT_STRING"
+                    && !VN_IS(varp->subDTypep(), UnpackArrayDType)) {
                     puts(", const_cast<void*>(static_cast<const void*>(");
                     puts(varName);
                     puts(".c_str())), ");

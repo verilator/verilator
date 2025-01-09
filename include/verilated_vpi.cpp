@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2009-2024 by Wilson Snyder. This program is free software; you can
+// Copyright 2009-2025 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -2698,6 +2698,19 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
     }
     const PLI_INT32 delay_mode = flags & 0xfff;
     if (const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object)) {
+        VL_DEBUG_IF_PLI(
+            VL_DBG_MSGF("- vpi:   vpi_put_value name=%s fmt=%d vali=%d\n", vop->fullname(),
+                        valuep->format, valuep->value.integer);
+            VL_DBG_MSGF("- vpi:   varp=%p  putatp=%p\n", vop->varp()->datap(), vop->varDatap()););
+
+        if (VL_UNLIKELY(!vop->varp()->isPublicRW())) {
+            VL_VPI_ERROR_(__FILE__, __LINE__,
+                          "vpi_put_value was used on signal marked read-only,"
+                          " use public_flat_rw instead for %s : %s",
+                          vop->fullname(), vop->scopep()->defname());
+            return nullptr;
+        }
+        if (!vl_check_format(vop->varp(), valuep, vop->fullname(), false)) return nullptr;
         if (delay_mode == vpiInertialDelay) {
             if (!VerilatedVpiPutHolder::canInertialDelay(valuep)) {
                 VL_VPI_WARNING_(
@@ -2709,20 +2722,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             VerilatedVpiImp::inertialDelay(vop, valuep);
             return object;
         }
-        VL_DEBUG_IF_PLI(
-            VL_DBG_MSGF("- vpi:   vpi_put_value name=%s fmt=%d vali=%d\n", vop->fullname(),
-                        valuep->format, valuep->value.integer);
-            VL_DBG_MSGF("- vpi:   varp=%p  putatp=%p\n", vop->varp()->datap(), vop->varDatap()););
         VerilatedVpiImp::evalNeeded(true);
-
-        if (VL_UNLIKELY(!vop->varp()->isPublicRW())) {
-            VL_VPI_WARNING_(__FILE__, __LINE__,
-                            "Ignoring vpi_put_value to signal marked read-only,"
-                            " use public_flat_rw instead: %s",
-                            vop->fullname());
-            return nullptr;
-        }
-        if (!vl_check_format(vop->varp(), valuep, vop->fullname(), false)) return nullptr;
         const int varBits = vop->bitSize();
         if (valuep->format == vpiVectorVal) {
             if (VL_UNLIKELY(!valuep->value.vector)) return nullptr;

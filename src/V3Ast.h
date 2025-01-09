@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -2077,6 +2077,7 @@ private:
     string instanceStr() const;
 
 public:
+    void purityCheck();
     static void relinkOneLink(AstNode*& pointpr, AstNode* newp);
     // cppcheck-suppress functionConst
     static void debugTreeChange(const AstNode* nodep, const char* prefix, int lineno, bool next);

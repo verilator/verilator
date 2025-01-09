@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1207,8 +1207,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                 m_classOrPackagep = VN_AS(m_curSymp->nodep(), Class);
             }
             // Create symbol table for the task's vars
-            const string name
-                = std::string{nodep->isExternProto() ? "extern " : ""} + nodep->name();
+            const string name = (nodep->isExternProto() ? "extern "s : ""s) + nodep->name();
             m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, m_classOrPackagep);
             m_curSymp->fallbackp(upSymp);
             // Convert the func's range to the output variable
@@ -1299,7 +1298,35 @@ class LinkDotFindVisitor final : public VNVisitor {
     }
     void visit(AstConstraint* nodep) override {
         VL_RESTORER(m_curSymp);
-        m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
+        // Change to appropriate package if extern declaration (vs definition)
+        VSymEnt* upSymp = m_curSymp;
+        if (nodep->classOrPackagep()) {
+            AstClassOrPackageRef* const cpackagerefp
+                = VN_CAST(nodep->classOrPackagep(), ClassOrPackageRef);
+            if (!cpackagerefp) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: extern constraint definition with class-in-class");
+            } else {
+                if (!cpackagerefp->classOrPackageSkipp()) {
+                    m_statep->resolveClassOrPackage(m_curSymp, cpackagerefp, false,
+                                                    "External definition :: reference");
+                }
+                AstClass* const classp = VN_CAST(cpackagerefp->classOrPackageSkipp(), Class);
+                if (!classp) {
+                    nodep->v3error("Extern declaration's scope is not a defined class");
+                } else {
+                    m_curSymp = m_statep->getNodeSym(classp);
+                    upSymp = m_curSymp;
+                    // Move it to proper spot under the target class
+                    nodep->unlinkFrBack();
+                    classp->addStmtsp(nodep);
+                    nodep->classOrPackagep()->unlinkFrBack()->deleteTree();
+                }
+            }
+        }
+        // Set the class as package for iteration
+        const string name = (nodep->isExternProto() ? "extern "s : ""s) + nodep->name();
+        m_curSymp = m_statep->insertBlock(upSymp, name, nodep, m_classOrPackagep);
         iterateChildren(nodep);
     }
     void visit(AstVar* nodep) override {
@@ -2309,11 +2336,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
         nodep->addStmtsp(superNewStmtp);
         return superNewStmtp;
     }
-    void taskFuncSwapCheck(AstNodeFTaskRef* nodep) {
-        if (nodep->taskp() && VN_IS(nodep->taskp(), Task) && VN_IS(nodep, FuncRef)) {
-            nodep->v3error("Illegal call of a task as a function: " << nodep->prettyNameQ());
-        }
-    }
     void checkNoDot(AstNode* nodep) {
         if (VL_UNLIKELY(m_ds.m_dotPos != DP_NONE)) {
             // UINFO(9, indent() << "ds=" << m_ds.ascii() << endl);
@@ -2373,66 +2395,62 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         return classSymp;
     }
-    void importImplementsClass(AstClass* implementsClassp, VSymEnt* interfaceSymp,
-                               AstClass* baseClassp) {
+    void importDerivedClass(AstClass* derivedClassp, VSymEnt* baseSymp, AstClass* baseClassp) {
         // Also used for standard 'extends' from a base class
-        UINFO(8, indent() << "importImplementsClass to " << implementsClassp << " from "
-                          << baseClassp << endl);
-        for (VSymEnt::const_iterator it = interfaceSymp->begin(); it != interfaceSymp->end();
-             ++it) {
-            if (AstNode* interfaceSubp = it->second->nodep()) {
-                UINFO(8, indent() << "  SymFunc " << interfaceSubp << endl);
+        UINFO(8, indent() << "importDerivedClass to " << derivedClassp << " from " << baseClassp
+                          << endl);
+        for (VSymEnt::const_iterator it = baseSymp->begin(); it != baseSymp->end(); ++it) {
+            if (AstNode* baseSubp = it->second->nodep()) {
+                UINFO(8, indent() << "  SymFunc " << baseSubp << endl);
                 const string impOrExtends
                     = baseClassp->isInterfaceClass() ? " implements " : " extends ";
-                if (VN_IS(interfaceSubp, NodeFTask)) {
-                    const VSymEnt* const foundp = m_curSymp->findIdFlat(interfaceSubp->name());
-                    const AstNodeFTask* const interfaceFuncp = VN_CAST(interfaceSubp, NodeFTask);
-                    if (!interfaceFuncp || !interfaceFuncp->pureVirtual()) continue;
-                    bool existsInChild = foundp && !foundp->imported();
-                    if (!existsInChild && !implementsClassp->isInterfaceClass()) {
-                        implementsClassp->v3error(
-                            "Class " << implementsClassp->prettyNameQ() << impOrExtends
+                if (VN_IS(baseSubp, NodeFTask)) {
+                    const VSymEnt* const foundp = m_curSymp->findIdFlat(baseSubp->name());
+                    const AstNodeFTask* const baseFuncp = VN_CAST(baseSubp, NodeFTask);
+                    if (!baseFuncp || !baseFuncp->pureVirtual()) continue;
+                    bool existsInDerived = foundp && !foundp->imported();
+                    if (!existsInDerived && !derivedClassp->isInterfaceClass()) {
+                        derivedClassp->v3error(
+                            "Class " << derivedClassp->prettyNameQ() << impOrExtends
                                      << baseClassp->prettyNameQ()
                                      << " but is missing implementation for "
-                                     << interfaceSubp->prettyNameQ() << " (IEEE 1800-2023 8.26)\n"
-                                     << implementsClassp->warnContextPrimary() << '\n'
-                                     << interfaceSubp->warnOther()
+                                     << baseSubp->prettyNameQ() << " (IEEE 1800-2023 8.26)\n"
+                                     << derivedClassp->warnContextPrimary() << '\n'
+                                     << baseSubp->warnOther()
                                      << "... Location of interface class's function\n"
-                                     << interfaceSubp->warnContextSecondary());
+                                     << baseSubp->warnContextSecondary());
                     }
-                    const auto itn = m_ifClassImpNames.find(interfaceSubp->name());
-                    if (!existsInChild && itn != m_ifClassImpNames.end()
-                        && itn->second != interfaceSubp) {  // Not exact same function from diamond
-                        implementsClassp->v3error(
-                            "Class " << implementsClassp->prettyNameQ() << impOrExtends
+                    const auto itn = m_ifClassImpNames.find(baseSubp->name());
+                    if (!existsInDerived && itn != m_ifClassImpNames.end()
+                        && itn->second != baseSubp) {  // Not exact same function from diamond
+                        derivedClassp->v3error(
+                            "Class " << derivedClassp->prettyNameQ() << impOrExtends
                                      << baseClassp->prettyNameQ()
                                      << " but missing inheritance conflict resolution for "
-                                     << interfaceSubp->prettyNameQ()
-                                     << " (IEEE 1800-2023 8.26.6.2)\n"
-                                     << implementsClassp->warnContextPrimary() << '\n'
-                                     << interfaceSubp->warnOther()
+                                     << baseSubp->prettyNameQ() << " (IEEE 1800-2023 8.26.6.2)\n"
+                                     << derivedClassp->warnContextPrimary() << '\n'
+                                     << baseSubp->warnOther()
                                      << "... Location of interface class's function\n"
-                                     << interfaceSubp->warnContextSecondary());
+                                     << baseSubp->warnContextSecondary());
                     }
-                    m_ifClassImpNames.emplace(interfaceSubp->name(), interfaceSubp);
+                    m_ifClassImpNames.emplace(baseSubp->name(), baseSubp);
                 }
-                if (VN_IS(interfaceSubp, Constraint)) {
-                    const VSymEnt* const foundp = m_curSymp->findIdFlat(interfaceSubp->name());
-                    const AstConstraint* const interfaceFuncp = VN_CAST(interfaceSubp, Constraint);
-                    if (!interfaceFuncp || !interfaceFuncp->isKwdPure()) continue;
-                    bool existsInChild = foundp && !foundp->imported();
-                    if (!existsInChild && !implementsClassp->isInterfaceClass()
-                        && !implementsClassp->isVirtual()) {
-                        implementsClassp->v3error(
-                            "Class " << implementsClassp->prettyNameQ() << impOrExtends
+                if (VN_IS(baseSubp, Constraint)) {
+                    const VSymEnt* const foundp = m_curSymp->findIdFlat(baseSubp->name());
+                    const AstConstraint* const baseFuncp = VN_CAST(baseSubp, Constraint);
+                    if (!baseFuncp || !baseFuncp->isKwdPure()) continue;
+                    bool existsInDerived = foundp && !foundp->imported();
+                    if (!existsInDerived && !derivedClassp->isInterfaceClass()
+                        && !derivedClassp->isVirtual()) {
+                        derivedClassp->v3error(
+                            "Class " << derivedClassp->prettyNameQ() << impOrExtends
                                      << baseClassp->prettyNameQ()
                                      << " but is missing constraint implementation for "
-                                     << interfaceSubp->prettyNameQ()
-                                     << " (IEEE 1800-2023 18.5.2)\n"
-                                     << implementsClassp->warnContextPrimary() << '\n'
-                                     << interfaceSubp->warnOther()
+                                     << baseSubp->prettyNameQ() << " (IEEE 1800-2023 18.5.2)\n"
+                                     << derivedClassp->warnContextPrimary() << '\n'
+                                     << baseSubp->warnOther()
                                      << "... Location of interface class's pure constraint\n"
-                                     << interfaceSubp->warnContextSecondary());
+                                     << baseSubp->warnContextSecondary());
                     }
                 }
             }
@@ -2441,7 +2459,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void importSymbolsFromExtended(AstClass* const nodep, AstClassExtends* const cextp) {
         AstClass* const baseClassp = cextp->classp();
         VSymEnt* const srcp = m_statep->getNodeSym(baseClassp);
-        importImplementsClass(nodep, srcp, baseClassp);
+        importDerivedClass(nodep, srcp, baseClassp);
         if (!cextp->isImplements()) m_curSymp->importFromClass(m_statep->symsp(), srcp);
     }
     void classExtendImport(AstClass* nodep) {
@@ -3287,6 +3305,31 @@ class LinkDotResolveVisitor final : public VNVisitor {
             UINFO(9, indent() << "set sym " << m_ds.ascii() << endl);
         }
     }
+    void visit(AstConstraint* nodep) override {
+        LINKDOT_VISIT_START();
+        UINFO(5, indent() << "visit " << nodep << endl);
+        checkNoDot(nodep);
+        if (nodep->isExternDef()) {
+            if (const VSymEnt* const foundp
+                = m_curSymp->findIdFallback("extern " + nodep->name())) {
+                const AstConstraint* const protop = VN_AS(foundp->nodep(), Constraint);
+                // Copy specifiers.
+                // External definition cannot have any specifiers, so no value will be overwritten.
+                nodep->isStatic(protop->isStatic());
+            } else {
+                nodep->v3error("extern not found that declares " + nodep->prettyNameQ());
+            }
+        }
+        if (nodep->isExternProto()) {
+            if (!m_curSymp->findIdFallback(nodep->name()) && nodep->isExternExplicit()) {
+                nodep->v3error("Definition not found for extern " + nodep->prettyNameQ());
+            }
+        }
+        VL_RESTORER(m_curSymp);
+        VL_RESTORER(m_ds);
+        m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
+        iterateChildren(nodep);
+    }
     void visit(AstConstraintRef* nodep) override {
         if (nodep->user3SetOnce()) return;
         LINKDOT_VISIT_START();
@@ -3731,7 +3774,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     okSymp->cellErrorScopes(nodep);
                 }
             }
-            taskFuncSwapCheck(nodep);
         }
     }
     void visit(AstSelBit* nodep) override {
@@ -3819,14 +3861,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (nodep->isExternDef()) {
             if (const VSymEnt* const foundp
                 = m_curSymp->findIdFallback("extern " + nodep->name())) {
-                const AstNodeFTask* const funcProtop = VN_AS(foundp->nodep(), NodeFTask);
+                const AstNodeFTask* const protop = VN_AS(foundp->nodep(), NodeFTask);
                 // Copy specifiers.
                 // External definition cannot have any specifiers, so no value will be overwritten.
-                nodep->isHideLocal(funcProtop->isHideLocal());
-                nodep->isHideProtected(funcProtop->isHideProtected());
-                nodep->isStatic(funcProtop->isStatic());
-                nodep->isVirtual(funcProtop->isVirtual());
-                nodep->lifetime(funcProtop->lifetime());
+                nodep->isHideLocal(protop->isHideLocal());
+                nodep->isHideProtected(protop->isHideProtected());
+                nodep->isStatic(protop->isStatic());
+                nodep->isVirtual(protop->isVirtual());
+                nodep->lifetime(protop->lifetime());
             } else {
                 nodep->v3error("extern not found that declares " + nodep->prettyNameQ());
             }
@@ -3864,9 +3906,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep << endl);
         checkNoDot(nodep);
+        VL_RESTORER(m_curSymp);
         VL_RESTORER(m_inWith);
-        m_inWith = true;
-        symIterateChildren(nodep, m_statep->getNodeSym(nodep));
+        {
+            m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
+            m_inWith = true;
+            iterateChildren(nodep);
+        }
+        m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
     }
     void visit(AstLambdaArgRef* nodep) override {
         LINKDOT_VISIT_START();

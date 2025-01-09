@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1849,16 +1849,13 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
         newFVarp->name(newTaskp->name());
         newTaskp->fvarp(newFVarp);
         newTaskp->dtypeFrom(newFVarp);
-        newCallp = new AstFuncRef{taskp->fileline(), taskp->name(), nullptr};
-        newCallp->taskp(taskp);
-        newCallp->dtypeFrom(newFVarp);
+        newCallp = new AstFuncRef{taskp->fileline(), VN_AS(taskp, Func), nullptr};
         newCallInsertp
             = new AstAssign{taskp->fileline(),
                             new AstVarRef{fvarp->fileline(), newFVarp, VAccess::WRITE}, newCallp};
         newCallInsertp->dtypeFrom(newFVarp);
     } else if (VN_IS(taskp, Task)) {
-        newCallp = new AstTaskRef{taskp->fileline(), taskp->name(), nullptr};
-        newCallp->taskp(taskp);
+        newCallp = new AstTaskRef{taskp->fileline(), VN_AS(taskp, Task), nullptr};
         newCallInsertp = new AstStmtExpr{taskp->fileline(), newCallp};
     } else {
         taskp->v3fatalSrc("Unsupported: Non-constant default value in missing argument in a "

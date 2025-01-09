@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -368,12 +368,21 @@ void AstConsQueue::dumpJson(std::ostream& str) const {
 }
 void AstConstraint::dump(std::ostream& str) const {
     this->AstNode::dump(str);
+    if (isExternDef()) str << " [EXTDEF]";
+    if (isExternExplicit())
+        str << " [PROTOEXP]";
+    else if (isExternProto())
+        str << " [PROTO]";
     if (isKwdPure()) str << " [KWDPURE]";
     if (isStatic()) str << " [STATIC]";
 }
 void AstConstraint::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, isExternDef);
+    dumpJsonBoolFunc(str, isExternExplicit);
+    dumpJsonBoolFunc(str, isExternProto);
     dumpJsonBoolFunc(str, isKwdPure);
     dumpJsonBoolFunc(str, isStatic);
+    if (baseOverride().isAny()) dumpJsonStr(str, "baseOverride", baseOverride().ascii());
     dumpJsonGen(str);
 }
 void AstConstraintExpr::dump(std::ostream& str) const {
@@ -1686,9 +1695,11 @@ void AstCellInlineScope::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
 }
 bool AstClass::isCacheableChild(const AstNode* nodep) {
-    return (VN_IS(nodep, Var) || VN_IS(nodep, Constraint) || VN_IS(nodep, EnumItemRef)
-            || (VN_IS(nodep, NodeFTask) && !VN_AS(nodep, NodeFTask)->isExternProto())
-            || VN_IS(nodep, CFunc));
+    return VN_IS(nodep, Var)
+           || (VN_IS(nodep, Constraint) && !VN_AS(nodep, Constraint)->isExternProto())
+           || VN_IS(nodep, EnumItemRef)
+           || (VN_IS(nodep, NodeFTask) && !VN_AS(nodep, NodeFTask)->isExternProto())
+           || VN_IS(nodep, CFunc);
 }
 AstClass* AstClass::baseMostClassp() {
     AstClass* basep = this;
@@ -2681,6 +2692,8 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if (dpiImport()) str << " [DPII]";
     if (dpiOpenChild()) str << " [DPIOPENCHILD]";
     if (dpiOpenParent()) str << " [DPIOPENPARENT]";
+    if (isExternDef()) str << " [EXTDEF]";
+    if (isExternProto()) str << " [EXTPROTO]";
     if (prototype()) str << " [PROTOTYPE]";
     if (pureVirtual()) str << " [PUREVIRTUAL]";
     if (recursive()) str << " [RECURSIVE]";
@@ -2718,6 +2731,8 @@ void AstNodeFTask::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, dpiImport);
     dumpJsonBoolFunc(str, dpiOpenChild);
     dumpJsonBoolFunc(str, dpiOpenParent);
+    dumpJsonBoolFunc(str, isExternDef);
+    dumpJsonBoolFunc(str, isExternProto);
     dumpJsonBoolFunc(str, prototype);
     dumpJsonBoolFunc(str, recursive);
     dumpJsonBoolFunc(str, taskPublic);

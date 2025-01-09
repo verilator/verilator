@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -131,8 +131,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
     BaseToDerivedMap m_baseToDerivedMap;  // Mapping from base classes to classes that extend them
     AstClass* m_classp = nullptr;  // Current class
-    AstConstraintBefore* m_constraintBeforep = nullptr;  // Current before constraint
-    AstConstraintExpr* m_constraintExprp = nullptr;  // Current constraint expression
     AstNode* m_constraintExprGenp = nullptr;  // Current constraint or constraint if expression
     AstNodeModule* m_modp;  // Current module
     AstNodeStmt* m_stmtp = nullptr;  // Current statement
@@ -403,14 +401,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             }
         }
     }
-    void visit(AstConstraintBefore* nodep) override {
-        VL_RESTORER(m_constraintBeforep);
-        m_constraintBeforep = nodep;
-        iterateChildrenConst(nodep);
-    }
     void visit(AstConstraintExpr* nodep) override {
-        VL_RESTORER(m_constraintExprp);
-        m_constraintExprp = nodep;
         VL_RESTORER(m_constraintExprGenp);
         m_constraintExprGenp = nodep;
         iterateChildrenConst(nodep);
@@ -425,15 +416,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
         iterateAndNextConstNull(nodep->elsesp());
     }
     void visit(AstNodeVarRef* nodep) override {
-        if (nodep->varp()->isRandC()) {
-            if (m_constraintExprp && m_constraintExprp->isSoft()) {
-                nodep->v3error(
-                    "Randc variables not allowed in 'constraint soft' (IEEE 1800-2023 18.5.13.1)");
-            } else if (m_constraintBeforep) {
-                nodep->v3error(
-                    "Randc variables not allowed in 'solve before' (IEEE 1800-2023 18.5.9)");
-            }
-        }
         if (!m_constraintExprGenp) return;
 
         if (nodep->varp()->lifetime().isStatic()) m_staticRefs.emplace(nodep);
@@ -641,7 +623,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 "write_var"};
             uint32_t dimension = 0;
             if (VN_IS(varp->dtypep(), UnpackArrayDType) || VN_IS(varp->dtypep(), DynArrayDType)
-                || VN_IS(varp->dtypep(), QueueDType)) {
+                || VN_IS(varp->dtypep(), QueueDType) || VN_IS(varp->dtypep(), AssocArrayDType)) {
                 const std::pair<uint32_t, uint32_t> dims
                     = varp->dtypep()->dimensions(/*includeBasic=*/true);
                 const uint32_t unpackedDimensions = dims.second;
@@ -656,7 +638,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             size_t width = varp->width();
             AstNodeDType* tmpDtypep = varp->dtypep();
             while (VN_IS(tmpDtypep, UnpackArrayDType) || VN_IS(tmpDtypep, DynArrayDType)
-                   || VN_IS(tmpDtypep, QueueDType))
+                   || VN_IS(tmpDtypep, QueueDType) || VN_IS(tmpDtypep, AssocArrayDType))
                 tmpDtypep = tmpDtypep->subDTypep();
             width = tmpDtypep->width();
             methodp->addPinsp(
@@ -723,6 +705,44 @@ class ConstraintExprVisitor final : public VNVisitor {
         handle.relink(lsbp);
 
         editSMT(nodep, nodep->fromp(), lsbp, msbp);
+    }
+    void visit(AstAssocSel* nodep) override {
+        if (editFormat(nodep)) return;
+        FileLine* const fl = nodep->fileline();
+        if (VN_IS(nodep->bitp(), CvtPackString)) {
+            // Extract and truncate the string index to fit within 64 bits
+            AstCvtPackString* const stringp = VN_AS(nodep->bitp(), CvtPackString);
+            VNRelinker handle;
+            AstNodeExpr* const strIdxp = new AstSFormatF{
+                fl, "#x%16x", false,
+                new AstAnd{fl, stringp->lhsp()->unlinkFrBack(&handle),
+                           new AstConst(fl, AstConst::Unsized64{}, 0xFFFFFFFFFFFFFFFF)}};
+            handle.relink(strIdxp);
+            editSMT(nodep, nodep->fromp(), strIdxp);
+        } else {
+            VNRelinker handle;
+            const int actual_width = nodep->bitp()->width();
+            std::string fmt;
+            // Normalize to standard bit width
+            if (actual_width <= 8) {
+                fmt = "#x%2x";
+            } else if (actual_width <= 16) {
+                fmt = "#x%4x";
+            } else if (actual_width <= 32) {
+                fmt = "#x%8x";
+            } else if (actual_width <= 64) {
+                fmt = "#x%16x";
+            } else {
+                nodep->v3warn(CONSTRAINTIGN,
+                              "Unsupported: Associative array index "
+                              "widths of more than 64 bits during constraint randomization.");
+                return;
+            }
+            AstNodeExpr* const idxp
+                = new AstSFormatF{fl, fmt, false, nodep->bitp()->unlinkFrBack(&handle)};
+            handle.relink(idxp);
+            editSMT(nodep, nodep->fromp(), idxp);
+        }
     }
     void visit(AstArraySel* nodep) override {
         if (editFormat(nodep)) return;
@@ -1085,13 +1105,11 @@ class CaptureVisitor final : public VNVisitor {
         AstNodeExpr* const pinsp
             = nodep->pinsp() ? nodep->pinsp()->unlinkFrBackWithNext() : nullptr;
         AstNodeFTaskRef* taskRefp = nullptr;
-        if (VN_IS(nodep->taskp(), Task))
-            taskRefp = new AstTaskRef{nodep->fileline(), nodep->name(), pinsp};
-        else if (VN_IS(nodep->taskp(), Func))
-            taskRefp = new AstFuncRef{nodep->fileline(), nodep->name(), pinsp};
+        if (AstTask* const taskp = VN_CAST(nodep->taskp(), Task))
+            taskRefp = new AstTaskRef{nodep->fileline(), taskp, pinsp};
+        else if (AstFunc* const taskp = VN_CAST(nodep->taskp(), Func))
+            taskRefp = new AstFuncRef{nodep->fileline(), taskp, pinsp};
         UASSERT_OBJ(taskRefp, nodep, "Node needs to point to regular method");
-        taskRefp->taskp(nodep->taskp());
-        taskRefp->dtypep(nodep->dtypep());
         fixupClassOrPackage(nodep->taskp(), taskRefp);
         taskRefp->user1(nodep->user1());
         nodep->replaceWith(taskRefp);
@@ -1576,9 +1594,7 @@ class RandomizeVisitor final : public VNVisitor {
     }
     void addPrePostCall(AstClass* const classp, AstFunc* const funcp, const string& name) {
         if (AstTask* userFuncp = VN_CAST(m_memberMap.findMember(classp, name), Task)) {
-            AstTaskRef* const callp
-                = new AstTaskRef{userFuncp->fileline(), userFuncp->name(), nullptr};
-            callp->taskp(userFuncp);
+            AstTaskRef* const callp = new AstTaskRef{userFuncp->fileline(), userFuncp, nullptr};
             funcp->addStmtsp(callp->makeStmt());
         }
     }
@@ -1920,8 +1936,7 @@ class RandomizeVisitor final : public VNVisitor {
                     constrp->user2p(taskp);
                 }
                 AstTaskRef* const setupTaskRefp
-                    = new AstTaskRef{constrp->fileline(), taskp->name(), nullptr};
-                setupTaskRefp->taskp(taskp);
+                    = new AstTaskRef{constrp->fileline(), taskp, nullptr};
                 setupTaskRefp->classOrPackagep(classp);
 
                 AstTask* const setupAllTaskp = getCreateConstraintSetupFunc(nodep);
@@ -1931,8 +1946,7 @@ class RandomizeVisitor final : public VNVisitor {
                 if (AstTask* const resizeTaskp = VN_CAST(constrp->user3p(), Task)) {
                     AstTask* const resizeAllTaskp = getCreateAggrResizeTask(nodep);
                     AstTaskRef* const resizeTaskRefp
-                        = new AstTaskRef{constrp->fileline(), resizeTaskp->name(), nullptr};
-                    resizeTaskRefp->taskp(resizeTaskp);
+                        = new AstTaskRef{constrp->fileline(), resizeTaskp, nullptr};
                     resizeTaskRefp->classOrPackagep(classp);
                     resizeAllTaskp->addStmtsp(resizeTaskRefp->makeStmt());
                 }
@@ -1945,8 +1959,7 @@ class RandomizeVisitor final : public VNVisitor {
             });
             randomizep->addStmtsp(implementConstraintsClear(fl, genp));
             AstTask* setupAllTaskp = getCreateConstraintSetupFunc(nodep);
-            AstTaskRef* const setupTaskRefp = new AstTaskRef{fl, setupAllTaskp->name(), nullptr};
-            setupTaskRefp->taskp(setupAllTaskp);
+            AstTaskRef* const setupTaskRefp = new AstTaskRef{fl, setupAllTaskp, nullptr};
             randomizep->addStmtsp(setupTaskRefp->makeStmt());
 
             AstNodeModule* const genModp = VN_AS(genp->user2p(), NodeModule);
@@ -1974,17 +1987,14 @@ class RandomizeVisitor final : public VNVisitor {
 
         if (AstTask* const resizeAllTaskp
             = VN_AS(m_memberMap.findMember(nodep, "__Vresize_constrained_arrays"), Task)) {
-            AstTaskRef* const resizeTaskRefp = new AstTaskRef{fl, resizeAllTaskp->name(), nullptr};
-            resizeTaskRefp->taskp(resizeAllTaskp);
+            AstTaskRef* const resizeTaskRefp = new AstTaskRef{fl, resizeAllTaskp, nullptr};
             randomizep->addStmtsp(resizeTaskRefp->makeStmt());
         }
 
         AstFunc* const basicRandomizep
             = V3Randomize::newRandomizeFunc(m_memberMap, nodep, "__Vbasic_randomize");
         addBasicRandomizeBody(basicRandomizep, nodep, randModeVarp);
-        AstFuncRef* const basicRandomizeCallp = new AstFuncRef{fl, "__Vbasic_randomize", nullptr};
-        basicRandomizeCallp->taskp(basicRandomizep);
-        basicRandomizeCallp->dtypep(basicRandomizep->dtypep());
+        AstFuncRef* const basicRandomizeCallp = new AstFuncRef{fl, basicRandomizep, nullptr};
         AstVarRef* const fvarRefReadp = fvarRefp->cloneTree(false);
         fvarRefReadp->access(VAccess::READ);
 
@@ -2156,16 +2166,12 @@ class RandomizeVisitor final : public VNVisitor {
         AstFunc* const basicRandomizeFuncp
             = V3Randomize::newRandomizeFunc(m_memberMap, classp, "__Vbasic_randomize");
         AstFuncRef* const basicRandomizeFuncCallp
-            = new AstFuncRef{nodep->fileline(), "__Vbasic_randomize", nullptr};
-        basicRandomizeFuncCallp->taskp(basicRandomizeFuncp);
-        basicRandomizeFuncCallp->dtypep(basicRandomizeFuncp->dtypep());
+            = new AstFuncRef{nodep->fileline(), basicRandomizeFuncp, nullptr};
 
         // Copy (derive) class constraints if present
         if (classGenp) {
             AstTask* const constrSetupFuncp = getCreateConstraintSetupFunc(classp);
-            AstTaskRef* const callp
-                = new AstTaskRef{nodep->fileline(), constrSetupFuncp->name(), nullptr};
-            callp->taskp(constrSetupFuncp);
+            AstTaskRef* const callp = new AstTaskRef{nodep->fileline(), constrSetupFuncp, nullptr};
             randomizeFuncp->addStmtsp(callp->makeStmt());
             randomizeFuncp->addStmtsp(new AstAssign{
                 nodep->fileline(), new AstVarRef{nodep->fileline(), localGenp, VAccess::WRITE},

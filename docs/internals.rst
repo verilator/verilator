@@ -2411,7 +2411,7 @@ xsim_flags / xsim_flags2 / xsim_run_flags
 Distribution
 ============
 
-Copyright 2008-2024 by Wilson Snyder. Verilator is free software; you can
+Copyright 2008-2025 by Wilson Snyder. Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
 General Public License Version 3 or the Perl Artistic License Version 2.0.
 

@@ -53,7 +53,7 @@ module t (/*AUTOARG*/
    covergroup cg_bracket;
       {}
    endgroup
-   covergroup cg_bracket;
+   covergroup cg_bracket2;
       { option.name = "option"; }
    endgroup
    covergroup cg_cp;
@@ -90,7 +90,7 @@ module t (/*AUTOARG*/
    covergroup cg_cross3;
       cross a, b { option.comment = "cross"; option.weight = 12; }
    endgroup
-   covergroup cg_cross3;
+   covergroup cg_cross4;
       cross a, b { function void crossfunc; endfunction; }
    endgroup
    covergroup cg_cross_id;

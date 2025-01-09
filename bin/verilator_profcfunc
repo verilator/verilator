@@ -164,7 +164,7 @@ def profcfunc(filename):
 parser = argparse.ArgumentParser(
     allow_abbrev=False,
     formatter_class=argparse.RawDescriptionHelpFormatter,
-    description="""Read gprof report created with --prof-cfuncs.
+    description="""Read gprof report created with Verilator --prof-cfuncs
 
 Verilator_profcfunc reads a profile report created by gprof.  The names of
 the functions are then transformed, assuming the user used Verilator's
@@ -173,7 +173,7 @@ in each Verilog block.
 
 For documentation see
 https://verilator.org/guide/latest/exe_verilator_profcfunc.html""",
-    epilog="""Copyright 2002-2024 by Wilson Snyder. This program is free software; you
+    epilog="""Copyright 2002-2025 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

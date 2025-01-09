@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1412,9 +1412,9 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
     void visitEqNeqWild(AstNodeBiop* nodep) {
-        if (!VN_IS(nodep->rhsp(), Const)) {
-            nodep->v3warn(E_UNSUPPORTED,  // Says spac.
-                          "Unsupported: RHS of ==? or !=? must be constant to be synthesizable");
+        if (!VN_IS(nodep->rhsp(), Const) && nodep->rhsp()->dtypep()->isFourstate()) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: RHS of ==? or !=? is fourstate but not a constant");
             // rhs we want to keep X/Z intact, so otherwise ignore
         }
         iterateAndNextNull(nodep->lhsp());

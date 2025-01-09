@@ -51,7 +51,7 @@ extern "C" int mon_check();
    reg             invisible1;
    // verilator lint_on ASCRANGE
 
-/*verilator public_flat_rd_on*/
+/*verilator public_flat_on*/
    reg [31:0]      count;
    reg [31:0]      half_count;
 /*verilator public_off*/
@@ -74,6 +74,7 @@ extern "C" int mon_check();
 /*verilator public_flat_rw_on*/
    real           real1;
    string         str1;
+   localparam int nullptr = 123;
 /*verilator public_off*/
 
    sub sub();

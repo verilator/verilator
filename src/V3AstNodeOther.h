@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -68,8 +68,6 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     bool m_taskPublic : 1;  // Public task
     bool m_attrIsolateAssign : 1;  // User isolate_assignments attribute
     bool m_classMethod : 1;  // Class method
-    bool m_externProto : 1;  // Extern prototype
-    bool m_externDef : 1;  // Extern definition
     bool m_prototype : 1;  // Just a prototype
     bool m_dpiExport : 1;  // DPI exported
     bool m_dpiImport : 1;  // DPI imported
@@ -77,6 +75,8 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     bool m_dpiOpenChild : 1;  // DPI import open array child wrapper
     bool m_dpiTask : 1;  // DPI import task (vs. void function)
     bool m_isConstructor : 1;  // Class constructor
+    bool m_isExternProto : 1;  // Extern prototype
+    bool m_isExternDef : 1;  // Extern definition
     bool m_isHideLocal : 1;  // Verilog local
     bool m_isHideProtected : 1;  // Verilog protected
     bool m_dpiPure : 1;  // DPI import pure (vs. virtual pure)
@@ -97,8 +97,6 @@ protected:
         , m_taskPublic{false}
         , m_attrIsolateAssign{false}
         , m_classMethod{false}
-        , m_externProto{false}
-        , m_externDef{false}
         , m_prototype{false}
         , m_dpiExport{false}
         , m_dpiImport{false}
@@ -106,6 +104,8 @@ protected:
         , m_dpiOpenChild{false}
         , m_dpiTask{false}
         , m_isConstructor{false}
+        , m_isExternProto{false}
+        , m_isExternDef{false}
         , m_isHideLocal{false}
         , m_isHideProtected{false}
         , m_dpiPure{false}
@@ -144,10 +144,10 @@ public:
     void attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     bool classMethod() const { return m_classMethod; }
     void classMethod(bool flag) { m_classMethod = flag; }
-    bool isExternProto() const { return m_externProto; }
-    void isExternProto(bool flag) { m_externProto = flag; }
-    bool isExternDef() const { return m_externDef; }
-    void isExternDef(bool flag) { m_externDef = flag; }
+    bool isExternProto() const { return m_isExternProto; }
+    void isExternProto(bool flag) { m_isExternProto = flag; }
+    bool isExternDef() const { return m_isExternDef; }
+    void isExternDef(bool flag) { m_isExternDef = flag; }
     bool prototype() const { return m_prototype; }
     void prototype(bool flag) { m_prototype = flag; }
     bool dpiExport() const { return m_dpiExport; }
@@ -1021,7 +1021,12 @@ public:
 class AstConstraint final : public AstNode {
     // Constraint
     // @astgen op1 := itemsp : List[AstNode]
+    // @astgen op2 := classOrPackagep : Optional[AstNode]
     string m_name;  // Name of constraint
+    VBaseOverride m_baseOverride;  // BaseOverride (inital/final/extends)
+    bool m_isExternDef = false;  // Extern prototype definition
+    bool m_isExternExplicit = false;  // Explicit prototype declaration (has extern)
+    bool m_isExternProto = false;  // Prototype declaration (implicit or explicit)
     bool m_isKwdPure = false;  // Pure constraint
     bool m_isStatic = false;  // Static constraint
 public:
@@ -1038,6 +1043,14 @@ public:
     bool isPredictOptimizable() const override { return false; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    void baseOverride(const VBaseOverride& flag) { m_baseOverride = flag; }
+    VBaseOverride baseOverride() const { return m_baseOverride; }
+    bool isExternDef() const { return m_isExternDef; }
+    void isExternDef(bool flag) { m_isExternDef = flag; }
+    void isExternExplicit(bool flag) { m_isExternExplicit = flag; }
+    bool isExternExplicit() const { return m_isExternExplicit; }
+    void isExternProto(bool flag) { m_isExternProto = flag; }
+    bool isExternProto() const { return m_isExternProto; }
     void isKwdPure(bool flag) { m_isKwdPure = flag; }
     bool isKwdPure() const { return m_isKwdPure; }
     void isStatic(bool flag) { m_isStatic = flag; }

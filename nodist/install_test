@@ -114,7 +114,7 @@ parser = argparse.ArgumentParser(
     description="""install_test performs several make-and-install iterations to verify the
 Verilator kit.  It isn't part of the normal "make test" due to the number
 of builds required.""",
-    epilog="""Copyright 2009-2024 by Wilson Snyder. This program is free software; you
+    epilog="""Copyright 2009-2025 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

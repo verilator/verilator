@@ -341,6 +341,9 @@ module Vt_debug_emitv_sub;
     endfunction
     real signed r;
 endmodule
+package Vt_debug_emitv_p;
+    logic pkgvar;
+endpackage
 package Vt_debug_emitv_Pkg;
     logic signed [31:0]  PKG_PARAM;
 endpackage

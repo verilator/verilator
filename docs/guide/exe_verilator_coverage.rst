@@ -1,4 +1,4 @@
-.. Copyright 2003-2024 by Wilson Snyder.
+.. Copyright 2003-2025 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 verilator_coverage
@@ -35,11 +35,11 @@ verilator_coverage Example Usage
     verilator_coverage --help
     verilator_coverage --version
 
-    verilator_coverage --annotate <obj>
+    verilator_coverage --annotate obj_dir coverage.dat
 
-    verilator_coverage  -write merged.dat <datafiles>...
+    verilator_coverage --write merged.dat coverage.dat ...
 
-    verilator_coverage  -write-info merged.info <datafiles>...
+    verilator_coverage --write-info merged.info coverage.dat ...
 
 
 verilator_coverage Arguments

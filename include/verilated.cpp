@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1898,7 +1898,7 @@ std::string VL_TO_STRING(CData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 8, lhs
 std::string VL_TO_STRING(SData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 16, lhs); }
 std::string VL_TO_STRING(IData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 32, lhs); }
 std::string VL_TO_STRING(QData lhs) { return VL_SFORMATF_N_NX("'h%0x", 0, 64, lhs); }
-std::string VL_TO_STRING(double lhs) { return VL_SFORMATF_N_NX("%d", 0, 64, lhs); }
+std::string VL_TO_STRING(double lhs) { return VL_SFORMATF_N_NX("%g", 0, 64, lhs); }
 std::string VL_TO_STRING_W(int words, const WDataInP obj) {
     return VL_SFORMATF_N_NX("'h%0x", 0, words * VL_EDATASIZE, obj);
 }
@@ -2650,7 +2650,7 @@ const char* VerilatedContext::timeprecisionString() const VL_MT_SAFE {
 }
 
 void VerilatedContext::threads(unsigned n) {
-    if (n == 0) VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: Simulation threads must be >= 1");
+    if (n == 0) VL_FATAL_MT(__FILE__, __LINE__, "", "Simulation threads must be >= 1");
 
     if (m_threadPool) {
         VL_FATAL_MT(

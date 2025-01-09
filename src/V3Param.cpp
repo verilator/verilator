@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1249,18 +1249,25 @@ class ParamVisitor final : public VNVisitor {
                     UINFO(9, "Hit module boundary, done looking for interface" << endl);
                     break;
                 }
-                if (VN_IS(backp, Var) && VN_AS(backp, Var)->isIfaceRef()
-                    && VN_AS(backp, Var)->childDTypep()
-                    && (VN_CAST(VN_CAST(backp, Var)->childDTypep(), IfaceRefDType)
-                        || (VN_CAST(VN_CAST(backp, Var)->childDTypep(), UnpackArrayDType)
-                            && VN_CAST(VN_CAST(backp, Var)->childDTypep()->getChildDTypep(),
-                                       IfaceRefDType)))) {
-                    const AstIfaceRefDType* ifacerefp
-                        = VN_CAST(VN_CAST(backp, Var)->childDTypep(), IfaceRefDType);
-                    if (!ifacerefp) {
-                        ifacerefp = VN_CAST(VN_CAST(backp, Var)->childDTypep()->getChildDTypep(),
-                                            IfaceRefDType);
+                if (const AstVar* const varp = VN_CAST(backp, Var)) {
+                    if (!varp->isIfaceRef()) { continue; }
+                    const AstIfaceRefDType* ifacerefp = nullptr;
+                    if (const AstNodeDType* const typep = varp->childDTypep()) {
+                        ifacerefp = VN_CAST(typep, IfaceRefDType);
+                        if (!ifacerefp) {
+                            if (const AstUnpackArrayDType* const unpackp
+                                = VN_CAST(typep, UnpackArrayDType)) {
+                                ifacerefp = VN_CAST(typep->getChildDTypep(), IfaceRefDType);
+                            }
+                        }
+                        if (!ifacerefp) {
+                            if (const AstBracketArrayDType* const unpackp
+                                = VN_CAST(typep, BracketArrayDType)) {
+                                ifacerefp = VN_CAST(typep->subDTypep(), IfaceRefDType);
+                            }
+                        }
                     }
+                    if (!ifacerefp) { continue; }
                     // Interfaces passed in on the port map have ifaces
                     if (const AstIface* const ifacep = ifacerefp->ifacep()) {
                         if (dotted == backp->name()) {

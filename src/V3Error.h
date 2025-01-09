@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -88,6 +88,7 @@ public:
         COMBDLY,        // Combinatorial delayed assignment
         CONSTRAINTIGN,  // Constraint ignored
         CONTASSREG,     // Continuous assignment on reg
+        COVERIGN,       // Coverage ignored
         DECLFILENAME,   // Declaration doesn't match filename
         DEFPARAM,       // Style: Defparam
         DEPRECATED,     // Feature will be deprecated
@@ -194,7 +195,7 @@ public:
             "ALWCOMBORDER", "ASCRANGE", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
             "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
-            "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN", "CONTASSREG",
+            "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN", "CONTASSREG", "COVERIGN",
             "DECLFILENAME", "DEFPARAM", "DEPRECATED",
             "ENCAPSULATED", "ENDLABEL", "ENUMVALUE", "EOFNEWLINE", "GENCLK",
             "GENUNNAMED", "HIERBLOCK",

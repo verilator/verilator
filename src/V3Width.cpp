@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -672,7 +672,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstDefaultDisable* nodep) override {
         assertAtStatement(nodep);
         // it's like an if() condition.
-        iterateCheckBool(nodep, "default disable iff condiftion", nodep->condp(), BOTH);
+        iterateCheckBool(nodep, "default disable iff condition", nodep->condp(), BOTH);
     }
     void visit(AstDelay* nodep) override {
         if (VN_IS(m_procedurep, Final)) {
@@ -2670,33 +2670,37 @@ class WidthVisitor final : public VNVisitor {
         }
 
         AstBasicDType* dtype = VN_CAST(nodep->exprp()->dtypep(), BasicDType);
-        AstNodeDType* subDTypep = nullptr;
+        AstNodeDType* expDTypep = nullptr;
 
         if (dtype && dtype->isString()) {
             nodep->dtypeSetString();
-            subDTypep = nodep->findStringDType();
+            expDTypep = nodep->findStringDType();
         } else if (dtype && dtype->isDouble()) {
             nodep->dtypeSetDouble();
-            subDTypep = nodep->findDoubleDType();
+            expDTypep = nodep->findDoubleDType();
         } else {
             // Take width as maximum across all items
             int width = nodep->exprp()->width();
             int mwidth = nodep->exprp()->widthMin();
+            bool isFourstate = nodep->exprp()->dtypep()->isFourstate();
             for (const AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
                 width = std::max(width, itemp->width());
                 mwidth = std::max(mwidth, itemp->widthMin());
+                isFourstate |= itemp->dtypep()->isFourstate();
             }
             nodep->dtypeSetBit();
-            subDTypep = nodep->findLogicDType(width, mwidth, nodep->exprp()->dtypep()->numeric());
+            const VSigning numeric = nodep->exprp()->dtypep()->numeric();
+            expDTypep = isFourstate ? nodep->findLogicDType(width, mwidth, numeric)
+                                    : nodep->findBitDType(width, mwidth, numeric);
         }
 
-        iterateCheck(nodep, "Inside expression", nodep->exprp(), CONTEXT_DET, FINAL, subDTypep,
+        iterateCheck(nodep, "Inside expression", nodep->exprp(), CONTEXT_DET, FINAL, expDTypep,
                      EXTEND_EXP);
         for (AstNode *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = itemp->nextp();  // iterate may cause the node to get replaced
             // InsideRange will get replaced with Lte&Gte and finalized later
             if (!VN_IS(itemp, InsideRange))
-                iterateCheck(nodep, "Inside Item", itemp, CONTEXT_DET, FINAL, subDTypep,
+                iterateCheck(nodep, "Inside Item", itemp, CONTEXT_DET, FINAL, expDTypep,
                              EXTEND_EXP);
         }
 
@@ -2870,8 +2874,8 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         // Iterate into subDTypep() to resolve that type and update pointer.
         nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
-        nodep->dtypep(nodep);  // The member itself, not subDtype
         nodep->widthFromSub(nodep->subDTypep());
+        nodep->dtypeFrom(nodep->subDTypep());
         if (nodep->valuep()) {
             userIterateAndNext(nodep->valuep(), WidthVP{nodep->dtypep(), PRELIM}.p());
             iterateCheckAssign(nodep, "Initial value", nodep->valuep(), FINAL, nodep->dtypep());
@@ -3788,11 +3792,10 @@ class WidthVisitor final : public VNVisitor {
                 if (nodep->pinsp()) argsp = nodep->pinsp()->unlinkFrBackWithNext();
                 AstNodeFTaskRef* newp = nullptr;
                 if (VN_IS(ftaskp, Task)) {
-                    newp = new AstTaskRef{nodep->fileline(), ftaskp->name(), argsp};
+                    newp = new AstTaskRef{nodep->fileline(), VN_AS(ftaskp, Task), argsp};
                 } else {
-                    newp = new AstFuncRef{nodep->fileline(), ftaskp->name(), argsp};
+                    newp = new AstFuncRef{nodep->fileline(), VN_AS(ftaskp, Func), argsp};
                 }
-                newp->taskp(ftaskp);
                 newp->classOrPackagep(ifacep);
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -3926,12 +3929,14 @@ class WidthVisitor final : public VNVisitor {
                     AstNodeExpr* argsp = nullptr;
                     if (nodep->pinsp()) argsp = nodep->pinsp()->unlinkFrBackWithNext();
                     AstNodeFTaskRef* newp = nullptr;
-                    if (VN_IS(ftaskp, Task)) {
-                        newp = new AstTaskRef{nodep->fileline(), ftaskp->name(), argsp};
+                    // We use m_vup to determine task or function, so that later error checks
+                    // for funcref->task and taskref->func will pick up properly
+                    if (!m_vup) {  // Called as task
+                        newp = new AstTaskRef{nodep->fileline(), nodep->name(), argsp};
                     } else {
-                        newp = new AstFuncRef{nodep->fileline(), ftaskp->name(), argsp};
+                        newp = new AstFuncRef{nodep->fileline(), nodep->name(), argsp};
                     }
-                    newp->taskp(ftaskp);
+                    newp->taskp(ftaskp);  // Not passed above as might be func vs task mismatch
                     newp->classOrPackagep(classp);
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -3939,7 +3944,18 @@ class WidthVisitor final : public VNVisitor {
                     nodep->taskp(ftaskp);
                     nodep->dtypeFrom(ftaskp);
                     nodep->classOrPackagep(classp);
-                    if (VN_IS(ftaskp, Task)) nodep->dtypeSetVoid();
+                    if (VN_IS(ftaskp, Task)) {
+                        if (!m_vup) {
+                            nodep->dtypeSetVoid();
+                        } else {
+                            if (m_vup->prelim()) {
+                                nodep->v3error(
+                                    "Cannot call a task/void-function as a member function: "
+                                    << nodep->prettyNameQ());
+                            }
+                            nodep->dtypeSetVoid();
+                        }
+                    }
                     if (withp) nodep->addPinsp(withp);
                     processFTaskRefArgs(nodep);
                 }
@@ -4221,9 +4237,8 @@ class WidthVisitor final : public VNVisitor {
             UASSERT_OBJ(classp, nodep, "Unlinked classOrPackagep()");
             UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked taskp()");
         }
-        userIterate(nodep->taskp(), nullptr);
-        if (!assign) nodep->dtypeFrom(nodep->taskp());
         processFTaskRefArgs(nodep);
+        if (!assign) nodep->dtypeFrom(nodep->taskp());
     }
     void visit(AstNewCopy* nodep) override {
         if (nodep->didWidthAndSet()) return;
@@ -5823,7 +5838,15 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstFuncRef* nodep) override {
         visit(static_cast<AstNodeFTaskRef*>(nodep));
-        nodep->dtypeFrom(nodep->taskp());
+        if (nodep->taskp() && VN_IS(nodep->taskp(), Task)) {
+            UASSERT_OBJ(m_vup, nodep, "Function reference where widthed expression expection");
+            if (m_vup->prelim())
+                nodep->v3error(
+                    "Cannot call a task/void-function as a function: " << nodep->prettyNameQ());
+            nodep->dtypeSetVoid();
+        } else {
+            nodep->dtypeFrom(nodep->taskp());
+        }
         if (nodep->fileline()->timingOn()) {
             AstNodeModule* const classp = nodep->classOrPackagep();
             if (nodep->name() == "self" && classp->name() == "process") {
@@ -6084,17 +6107,17 @@ class WidthVisitor final : public VNVisitor {
             nodep->v3error("Cannot call non-static member function "
                            << nodep->prettyNameQ() << " without object (IEEE 1800-2023 8.10)");
         }
-        userIterate(nodep->taskp(), nullptr);
         // And do the arguments to the task/function too
         processFTaskRefArgs(nodep);
         nodep->addPinsp(withp);
         nodep->didWidth(true);
+        // See steps that follow in visit(AstFuncRef*)
     }
     void visit(AstNodeProcedure* nodep) override {
         assertAtStatement(nodep);
+        VL_RESTORER(m_procedurep);
         m_procedurep = nodep;
         userIterateChildren(nodep, nullptr);
-        m_procedurep = nullptr;
     }
     void visit(AstSenItem* nodep) override {
         UASSERT_OBJ(nodep->isClocked(), nodep, "Invalid edge");

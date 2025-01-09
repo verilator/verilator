@@ -1,8 +1,0 @@
-%Error-UNSUPPORTED: t/t_randomize_extern.v:17:4: Unsupported: extern constraint
-   17 |    extern constraint ex;
-      |    ^~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_randomize_extern.v:21:1: Unsupported: extern constraint
-   21 | constraint Packet::ex { header == 2; }
-      | ^~~~~~~~~~
-%Error: Exiting due to

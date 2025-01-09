@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -99,8 +99,10 @@ public:
     }
     void addLangExt(const string& langext, const V3LangCode& lc) {
         // New language extension replaces any pre-existing one.
-        (void)m_langExts.erase(langext);
-        m_langExts[langext] = lc;
+        string addext = langext;
+        if (addext[0] == '.') addext = addext.substr(1);
+        (void)m_langExts.erase(addext);
+        m_langExts[addext] = lc;
     }
 
     void addLibExtV(const string& libext) {
@@ -412,7 +414,7 @@ string V3Options::allArgsString() const VL_MT_SAFE {
 }
 
 // Delete some options for Verilation of the hierarchical blocks.
-string V3Options::allArgsStringForHierBlock(bool forTop, bool forCMake) const {
+string V3Options::allArgsStringForHierBlock(bool forTop) const {
     std::set<string> vFiles;
     for (const auto& vFile : m_vFiles) vFiles.insert(vFile);
     string out;
@@ -443,7 +445,7 @@ string V3Options::allArgsStringForHierBlock(bool forTop, bool forCMake) const {
                 continue;
             }
         } else {  // Not an option
-            if ((forCMake && vFiles.find(arg) != vFiles.end())  // Remove HDL
+            if (vFiles.find(arg) != vFiles.end()  // Remove HDL
                 || m_cppFiles.find(arg) != m_cppFiles.end()) {  // Remove C++
                 continue;
             }
@@ -549,9 +551,10 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
 // 3: Delete the option and its argument if it is a number
 int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
     if (opt == "j") return 3;
-    if (opt == "Mdir" || opt == "clk" || opt == "lib-create" || opt == "f" || opt == "v"
-        || opt == "l2-name" || opt == "mod-prefix" || opt == "prefix" || opt == "protect-lib"
-        || opt == "protect-key" || opt == "threads" || opt == "top-module") {
+    if (opt == "Mdir" || opt == "clk" || opt == "lib-create" || opt == "f" || opt == "F"
+        || opt == "v" || opt == "l2-name" || opt == "mod-prefix" || opt == "prefix"
+        || opt == "protect-lib" || opt == "protect-key" || opt == "threads"
+        || opt == "top-module") {
         return 2;
     }
     if (opt == "build" || (!forTop && (opt == "cc" || opt == "exe" || opt == "sc"))
@@ -948,6 +951,9 @@ void V3Options::notify() VL_MT_DISABLED {
     if (coverage() && savable()) {
         cmdfl->v3error("Unsupported: --coverage and --savable not supported together");
     }
+    if (v3Global.opt.timing().isSetTrue() && savable()) {
+        cmdfl->v3error("Unsupported: --timing and --savable not supported together");
+    }
 
     // Mark options as available
     m_available = true;
@@ -1123,8 +1129,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     // Plus options
     DECL_OPTION("+define+", CbPartialMatch,
                 [this](const char* optp) VL_MT_DISABLED { addDefine(optp, true); });
-    DECL_OPTION("+incdir+", CbPartialMatch,
-                [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
+    DECL_OPTION("+incdir+", CbPartialMatch, [this, &optdir](const char* optp) {
+        string dirs = optp;
+        string::size_type pos;
+        while ((pos = dirs.find('+')) != string::npos) {
+            addIncDirUser(parseFileArg(optdir, dirs.substr(0, pos)));
+            dirs = dirs.substr(pos + 1);
+        }
+        addIncDirUser(parseFileArg(optdir, dirs));
+    });
     DECL_OPTION("+libext+", CbPartialMatch, [this](const char* optp) {
         string exts = optp;
         string::size_type pos;
@@ -1731,6 +1744,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         V3Error::pretendError(V3ErrorCode::UNUSEDSIGNAL, false);
         V3Error::pretendError(V3ErrorCode::UNUSEDPARAM, false);
     });
+    DECL_OPTION("-Wwarn-UNSUPPORTED", CbCall, []() {
+        FileLine::globalWarnOff(V3ErrorCode::E_UNSUPPORTED, false);
+        FileLine::globalWarnOff(V3ErrorCode::COVERIGN, false);
+        V3Error::pretendError(V3ErrorCode::E_UNSUPPORTED, false);
+        V3Error::pretendError(V3ErrorCode::COVERIGN, false);
+    });
     DECL_OPTION("-Wwarn-WIDTH", CbCall, []() {
         FileLine::globalWarnOff(V3ErrorCode::WIDTH, false);
         V3Error::pretendError(V3ErrorCode::WIDTH, false);
@@ -1998,7 +2017,7 @@ void V3Options::showVersion(bool verbose) {
     if (!verbose) return;
 
     cout << "\n";
-    cout << "Copyright 2003-2024 by Wilson Snyder.  Verilator is free software; you can\n";
+    cout << "Copyright 2003-2025 by Wilson Snyder.  Verilator is free software; you can\n";
     cout << "redistribute it and/or modify the Verilator internals under the terms of\n";
     cout << "either the GNU Lesser General Public License Version 3 or the Perl Artistic\n";
     cout << "License Version 2.0.\n";

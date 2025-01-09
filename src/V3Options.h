@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -543,6 +543,8 @@ public:
     bool allPublic() const { return m_public; }
     bool publicParams() const { return m_public_params; }
     bool publicFlatRW() const { return m_publicFlatRW; }
+    int publicDepth() const { return m_publicDepth; }
+    bool anyPublicFlat() const { return m_public_params || m_publicFlatRW || m_publicDepth; }
     bool lintOnly() const VL_MT_SAFE { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
     bool quietExit() const VL_MT_SAFE { return m_quietExit; }
@@ -577,7 +579,6 @@ public:
     int outputSplitCTrace() const { return m_outputSplitCTrace; }
     int outputGroups() const { return m_outputGroups; }
     int pinsBv() const VL_MT_SAFE { return m_pinsBv; }
-    int publicDepth() const { return m_publicDepth; }
     int reloopLimit() const { return m_reloopLimit; }
     VOptionBool skipIdentical() const { return m_skipIdentical; }
     bool stopFail() const { return m_stopFail; }
@@ -727,7 +728,7 @@ public:
     string allArgsString() const VL_MT_SAFE;  ///< Return all passed arguments as simple string
     // Return options for child hierarchical blocks when forTop==false, otherwise returns args for
     // the top module.
-    string allArgsStringForHierBlock(bool forTop, bool forCMake) const;
+    string allArgsStringForHierBlock(bool forTop) const;
     void parseOpts(FileLine* fl, int argc, char** argv) VL_MT_DISABLED;
     void parseOptsList(FileLine* fl, const string& optdir, int argc, char** argv) VL_MT_DISABLED;
     void parseOptsFile(FileLine* fl, const string& filename, bool rel) VL_MT_DISABLED;
