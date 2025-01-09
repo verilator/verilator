@@ -38,8 +38,6 @@
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
-#define FILENM "t_vpi_multidim.cpp"
-
 int errors = 0;
 
 // TEST START
@@ -363,7 +361,7 @@ void _multidim_check() {
         {"arr_idata", 30, {8, 9, 10, 11}},
         {"arr_qdata", 60, {12, 13, 14, 15}},
         {"arr_wdata", 126, {16, 17, 18, 19}},
-        {NULL}
+        {nullptr, 0, {0, 0, 0, 0}}
     };
     struct params* value = values;
     while (value->name) {
