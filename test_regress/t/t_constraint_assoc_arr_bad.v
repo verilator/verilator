@@ -4,19 +4,15 @@
 // any use, without warranty, 2024 by PlanV GmbH.
 // SPDX-License-Identifier: CC0-1.0
 
-
 class AssocArrayWarningTest;
 
-    rand int bit_index_arr [bit[78:0]];
-    rand int logic_index_arr [logic[64:0]];
+    rand int string_arr [string];
 
     constraint c {
-        bit_index_arr[79'd66] == 65;
-        logic_index_arr[65'd3] == 70;
+        string_arr["a_very_long_string"] == 65;
     }
     function new();
-        bit_index_arr = '{79'd66:0};
-        logic_index_arr = '{65'd3:0};
+        string_arr["a_very_long_string"] = 0;
     endfunction
 
 endclass

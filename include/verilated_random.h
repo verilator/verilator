@@ -27,8 +27,10 @@
 
 #include "verilated.h"
 
+#include <iomanip>
 #include <iostream>
 #include <ostream>
+#include <sstream>
 
 //=============================================================================
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
@@ -38,10 +40,10 @@ public:
         m_name;  // Name of the array variable, including index notation (e.g., arr[2][1])
     void* const m_datap;  // Reference to the array variable data
     const int m_index;  // Flattened (1D) index of the array element
-    const std::vector<size_t> m_indices;  // Multi-dimensional indices of the array element
+    const std::vector<IData> m_indices;  // Multi-dimensional indices of the array element
     const std::vector<size_t> m_idxWidths;  // Multi-dimensional indices' bit widths
 
-    ArrayInfo(const std::string& name, void* datap, int index, const std::vector<size_t>& indices,
+    ArrayInfo(const std::string& name, void* datap, int index, const std::vector<IData>& indices,
               const std::vector<size_t>& idxWidths)
         : m_name(name)
         , m_datap(datap)
@@ -110,16 +112,31 @@ public:
             return nullptr;
         }
     }
-    void emitSelect(std::ostream& s, const std::vector<size_t>& indices,
+    void emitHexs(std::ostream& s, const std::vector<IData>& indices, const size_t bit_width,
+                  size_t idx) const {
+        for (int j = bit_width - 4; j >= 0; j -= 4) {
+            s << "0123456789abcdef"[(indices[idx] >> j) & 0xf];
+        }
+    }
+    void emitSelect(std::ostream& s, const std::vector<IData>& indices,
                     const std::vector<size_t>& idxWidths) const {
-        for (size_t idx = 0; idx < indices.size(); ++idx) s << "(select ";
+        const size_t num_indices = idxWidths.size();
+        size_t wide_size = 0;
+
+        for (size_t idx = 0; idx < num_indices; ++idx) s << "(select ";
         s << name();
-        for (size_t idx = 0; idx < indices.size(); ++idx) {
-            s << " #x";
+
+        for (size_t idx = 0; idx < num_indices; ++idx) {
             const size_t bit_width = idxWidths[idx];
-            for (int j = bit_width - 4; j >= 0; j -= 4) {
-                s << "0123456789abcdef"[(indices[idx] >> j) & 0xf];
+            s << " #x";
+
+            const size_t emit_count = (bit_width > 32) ? (idxWidths[idx] / 32) : 1;
+
+            for (size_t i = 0; i < emit_count; ++i) {
+                emitHexs(s, indices, (bit_width > 32) ? 32 : bit_width, wide_size + i);
             }
+
+            wide_size += (idxWidths[idx] > 32) ? (idxWidths[idx] / 32) : 1;
             s << ")";
         }
     }
@@ -129,7 +146,7 @@ public:
             const std::string indexed_name = name() + std::to_string(i);
             const auto it = m_arrVarsRefp->find(indexed_name);
             if (it != m_arrVarsRefp->end()) {
-                const std::vector<size_t>& indices = it->second->m_indices;
+                const std::vector<IData>& indices = it->second->m_indices;
                 const std::vector<size_t>& idxWidths = it->second->m_idxWidths;
                 emitSelect(s, indices, idxWidths);
             } else {
@@ -165,7 +182,7 @@ public:
         const std::string indexed_name = name() + std::to_string(j);
         const auto it = m_arrVarsRefp->find(indexed_name);
         if (it != m_arrVarsRefp->end()) {
-            const std::vector<size_t>& indices = it->second->m_indices;
+            const std::vector<IData>& indices = it->second->m_indices;
             const std::vector<size_t>& idxWidths = it->second->m_idxWidths;
             emitSelect(s, indices, idxWidths);
         } else {
@@ -176,7 +193,6 @@ public:
 };
 //=============================================================================
 // VlRandomizer is the object holding constraints and variable references.
-
 class VlRandomizer final {
     // MEMBERS
     std::vector<std::string> m_constraints;  // Solver-dependent constraints
@@ -200,43 +216,87 @@ public:
     bool next(VlRNG& rngr);
 
     template <typename T_Key>
-    typename std::enable_if<std::is_integral<T_Key>::value>::type
-    process_key(const T_Key& key, std::string& indexed_name, size_t& integral_index,
+    typename std::enable_if<std::is_integral<T_Key>::value && (sizeof(T_Key) <= 4)>::type
+    process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
                 const std::string& base_name, size_t& idx_width) {
-        integral_index = static_cast<size_t>(key);
-        indexed_name = base_name + "[" + std::to_string(integral_index) + "]";
+        integral_index.push_back(static_cast<size_t>(key));
+        indexed_name
+            = base_name + "[" + std::to_string(integral_index[integral_index.size() - 1]) + "]";
         idx_width = sizeof(T_Key) * 8;
     }
     template <typename T_Key>
-    typename std::enable_if<std::is_same<T_Key, std::string>::value>::type
-    process_key(const T_Key& key, std::string& indexed_name, size_t& integral_index,
+    typename std::enable_if<std::is_integral<T_Key>::value && (sizeof(T_Key) > 4)>::type
+    process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
                 const std::string& base_name, size_t& idx_width) {
-        integral_index = string_to_integral(key);
-        indexed_name = base_name + "[" + std::to_string(integral_index) + "]";
-        idx_width = 64;  // 64-bit mask
+        constexpr size_t segment_bits = 32;
+        constexpr T_Key mask = (static_cast<T_Key>(1) << segment_bits) - 1;
+        integral_index.push_back(static_cast<size_t>(key >> segment_bits));
+        integral_index.push_back(static_cast<size_t>(key & mask));
+
+        std::ostringstream hex_stream;
+        hex_stream << std::hex << key;
+        std::string index_string = hex_stream.str();
+        index_string.erase(0, index_string.find_first_not_of('0'));
+        index_string = index_string.empty() ? "0" : index_string;
+
+        indexed_name = base_name + "[" + index_string + "]";
+
+        idx_width = sizeof(T_Key) * 8;
+    }
+    template <typename T_Key>
+    typename std::enable_if<VlIsVlWide<T_Key>::value>::type
+    process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
+                const std::string& base_name, size_t& idx_width) {
+        std::ostringstream hex_stream;
+        for (size_t i = key.size(); i > 0; --i) {
+            const size_t segment_value = key.at(i - 1);
+            hex_stream << std::hex << segment_value;
+            integral_index.push_back(segment_value);
+        }
+        std::string index_string = hex_stream.str();
+        index_string.erase(0, index_string.find_first_not_of('0'));
+        index_string = index_string.empty() ? "0" : index_string;
+
+        indexed_name = base_name + "[" + index_string + "]";
+        idx_width = key.size() * 32;
+    }
+    template <typename T_Key>
+    typename std::enable_if<std::is_same<T_Key, std::string>::value>::type
+    process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
+                const std::string& base_name, size_t& idx_width) {
+        // Convert the input string to its ASCII hexadecimal representation
+        std::ostringstream oss;
+        for (unsigned char c : key) {
+            oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c);
+        }
+        std::string hex_str = oss.str();
+        // Ensure the hex string is exactly 128 bits (32 hex characters)
+        hex_str = hex_str.size() > 32 ? hex_str.substr(0, 32)
+                                      : std::string(32 - hex_str.size(), '0') + hex_str;
+
+        // Split the hex string into 4 segments (32-bit per segment)
+        integral_index.clear();
+        for (size_t i = 0; i < hex_str.size(); i += 8) {
+            integral_index.push_back(std::stoul(hex_str.substr(i, 8), nullptr, 16));
+        }
+
+        indexed_name = base_name + "["
+                       + (hex_str.find_first_not_of('0') == std::string::npos
+                              ? "0"
+                              : hex_str.substr(hex_str.find_first_not_of('0')))
+                       + "]";
+
+        idx_width = 128;
     }
     template <typename T_Key>
     typename std::enable_if<!std::is_integral<T_Key>::value
-                            && !std::is_same<T_Key, std::string>::value>::type
-    process_key(const T_Key& key, std::string& indexed_name, size_t& integral_index,
+                            && !std::is_same<T_Key, std::string>::value
+                            && !VlIsVlWide<T_Key>::value>::type
+    process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
                 const std::string& base_name, size_t& idx_width) {
         VL_FATAL_MT(__FILE__, __LINE__, "randomize",
                     "Unsupported: Only integral and string index of associative array is "
                     "supported currently.");
-    }
-
-    uint64_t string_to_integral(const std::string& str) {
-        uint64_t result = 0;
-        for (char c : str) { result = (result << 8) | static_cast<uint64_t>(c); }
-
-#ifdef VL_DEBUG
-        if (seen_values.count(result) > 0 && seen_values[result] != str)
-            VL_WARN_MT(__FILE__, __LINE__, "randomize",
-                       "Conflict detected: Different strings mapped to the same 64-bit index.");
-        seen_values[result] = str;
-#endif
-
-        return result;
     }
 
     template <typename T>
@@ -296,14 +356,14 @@ public:
 
     template <typename T>
     void record_arr_table(T& var, const std::string name, int dimension,
-                          std::vector<size_t> indices, std::vector<size_t> idxWidths) {
+                          std::vector<IData> indices, std::vector<size_t> idxWidths) {
         const std::string key = generateKey(name, idx);
         m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices, idxWidths);
         ++idx;
     }
     template <typename T>
     void record_arr_table(VlQueue<T>& var, const std::string name, int dimension,
-                          std::vector<size_t> indices, std::vector<size_t> idxWidths) {
+                          std::vector<IData> indices, std::vector<size_t> idxWidths) {
         if ((dimension > 0) && (var.size() != 0)) {
             idxWidths.push_back(32);
             for (size_t i = 0; i < var.size(); ++i) {
@@ -316,7 +376,7 @@ public:
     }
     template <typename T, std::size_t N_Depth>
     void record_arr_table(VlUnpacked<T, N_Depth>& var, const std::string name, int dimension,
-                          std::vector<size_t> indices, std::vector<size_t> idxWidths) {
+                          std::vector<IData> indices, std::vector<size_t> idxWidths) {
         if ((dimension > 0) && (N_Depth != 0)) {
             idxWidths.push_back(32);
             for (size_t i = 0; i < N_Depth; ++i) {
@@ -330,20 +390,27 @@ public:
     }
     template <typename T_Key, typename T_Value>
     void record_arr_table(VlAssocArray<T_Key, T_Value>& var, const std::string name, int dimension,
-                          std::vector<size_t> indices, std::vector<size_t> idxWidths) {
+                          std::vector<IData> indices, std::vector<size_t> idxWidths) {
         if ((dimension > 0) && (var.size() != 0)) {
             for (auto it = var.begin(); it != var.end(); ++it) {
                 const T_Key& key = it->first;
                 const T_Value& value = it->second;
+
                 std::string indexed_name;
-                size_t integral_index;
-                size_t idx_width;
+                std::vector<size_t> integral_index;
+                size_t idx_width = 0;
+
                 process_key(key, indexed_name, integral_index, name, idx_width);
+
+                // Update indices and widths
                 idxWidths.push_back(idx_width);
-                indices.push_back(integral_index);
+                indices.insert(indices.end(), integral_index.begin(), integral_index.end());
+
                 record_arr_table(var.at(key), indexed_name, dimension - 1, indices, idxWidths);
+
+                // Cleanup indices and widths
                 idxWidths.pop_back();
-                indices.pop_back();
+                indices.resize(indices.size() - integral_index.size());
             }
         }
     }

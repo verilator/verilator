@@ -282,6 +282,7 @@ std::string parseNestedSelect(const std::string& nested_select_expr,
     indices.push_back(idx);
     return name;
 }
+
 //======================================================================
 // VlRandomizer:: Methods
 
@@ -467,10 +468,19 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
                                 "hex_index contains invalid format");
                     continue;
                 }
-                const long long index = std::stoll(hex_index.substr(start + 2), nullptr, 16);
-                oss << "[" << index << "]";
+                std::string trimmed_hex = hex_index.substr(start + 2);
+
+                if (trimmed_hex.size() <= 8) {  // Small numbers: <= 32 bits
+                    // Convert to decimal and output directly
+                    oss << "[" << std::to_string(std::stoll(trimmed_hex, nullptr, 16)) << "]";
+                } else {  // Large numbers: > 32 bits
+                    // Trim leading zeros and handle empty case
+                    trimmed_hex.erase(0, trimmed_hex.find_first_not_of('0'));
+                    oss << "[" << (trimmed_hex.empty() ? "0" : trimmed_hex) << "]";
+                }
             }
             const std::string indexed_name = oss.str();
+
             const auto it = std::find_if(m_arr_vars.begin(), m_arr_vars.end(),
                                          [&indexed_name](const auto& entry) {
                                              return entry.second->m_name == indexed_name;
