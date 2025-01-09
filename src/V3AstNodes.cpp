@@ -573,8 +573,6 @@ string AstVar::vlPropDecl(const string& propName) const {
     std::vector<int> plims;  // Packed dimension limits
     std::vector<int> ulims;  // Unpacked dimension limits
 
-    printf("propName: %s\n", propName.c_str());
-
     if (const AstBasicDType* const bdtypep = basicp()) {
         for (const AstNodeDType* dtp = dtypep(); dtp;) {
             dtp = dtp->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
