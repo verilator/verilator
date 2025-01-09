@@ -797,13 +797,7 @@ void AstNode::swapWith(AstNode* bp) {
 
 AstNode* AstNode::cloneTreeIter(bool needPure) {
     // private: Clone single node and children
-    if (VL_UNLIKELY(needPure && !isPure())) {
-        this->v3warn(SIDEEFFECT,
-                     "Expression side effect may be mishandled\n"
-                         << this->warnMore()
-                         << "... Suggest use a temporary variable in place of this expression");
-        // this->v3fatalSrc("cloneTreePure debug backtrace");  // Comment in to debug where caused
-    }
+    if (needPure) purityCheck();
     AstNode* const newp = this->clone();
     if (this->m_op1p) newp->op1p(this->m_op1p->cloneTreeIterList(needPure));
     if (this->m_op2p) newp->op2p(this->m_op2p->cloneTreeIterList(needPure));
@@ -848,6 +842,16 @@ AstNode* AstNode::cloneTree(bool cloneNextLink, bool needPure) {
     newp->cloneRelinkTree();
     debugTreeChange(newp, "-cloneOut: ", __LINE__, true);
     return newp;
+}
+
+void AstNode::purityCheck() {
+    if (VL_UNLIKELY(!isPure())) {
+        this->v3warn(SIDEEFFECT,
+                     "Expression side effect may be mishandled\n"
+                         << this->warnMore()
+                         << "... Suggest use a temporary variable in place of this expression");
+        // this->v3fatalSrc("cloneTreePure debug backtrace");  // Comment in to debug where caused
+    }
 }
 
 //======================================================================
