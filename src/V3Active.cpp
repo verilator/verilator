@@ -349,7 +349,7 @@ public:
 
 class ActiveDlyVisitor final : public VNVisitor {
 public:
-    enum CheckType : uint8_t { CT_SEQ, CT_COMB, CT_INITIAL };
+    enum CheckType : uint8_t { CT_SEQ, CT_COMB, CT_INITIAL, CT_SUSPENDABLE };
 
 private:
     // MEMBERS
@@ -358,7 +358,7 @@ private:
     // VISITORS
     void visit(AstAssignDly* nodep) override {
         // Non-blocking assignments are OK in sequential processes
-        if (m_check == CT_SEQ) return;
+        if (m_check == CT_SEQ || m_check == CT_SUSPENDABLE) return;
 
         // Issue appropriate warning
         if (m_check == CT_INITIAL) {
@@ -477,10 +477,8 @@ class ActiveVisitor final : public VNVisitor {
         AstActive* const wantactivep
             = !m_clockedProcess ? m_namer.getSpecialActive<AstSenItem::Combo>(nodep->fileline())
               : oldsensesp      ? m_namer.getActive(nodep->fileline(), oldsensesp)
-                                : m_namer.getSpecialActive<AstSenItem::Initial>(nodep->fileline());
-
-        // Delete sensitivity list
-        if (oldsensesp) VL_DO_DANGLING(oldsensesp->deleteTree(), oldsensesp);
+                           // Clocked, no sensitivity lists, it's a suspendable, put it in initial
+                           : m_namer.getSpecialActive<AstSenItem::Initial>(nodep->fileline());
 
         // Move node to new active
         nodep->unlinkFrBack();
@@ -488,9 +486,13 @@ class ActiveVisitor final : public VNVisitor {
 
         // Warn and convert any delayed assignments
         {
-            ActiveDlyVisitor{nodep, m_clockedProcess ? ActiveDlyVisitor::CT_SEQ
-                                                     : ActiveDlyVisitor::CT_COMB};
+            ActiveDlyVisitor{nodep, !m_clockedProcess ? ActiveDlyVisitor::CT_COMB
+                                    : oldsensesp      ? ActiveDlyVisitor::CT_SEQ
+                                                      : ActiveDlyVisitor::CT_SUSPENDABLE};
         }
+
+        // Delete sensitivity list
+        if (oldsensesp) VL_DO_DANGLING(oldsensesp->deleteTree(), oldsensesp);
 
         // check combinational processes for latches
         if (!m_clockedProcess || kwd == VAlwaysKwd::ALWAYS_LATCH) {
