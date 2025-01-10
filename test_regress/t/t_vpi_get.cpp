@@ -89,7 +89,8 @@ static int _mon_check_props(TestVpiHandle& handle, int size, int direction, int 
         int vpidir = vpi_get(vpiDirection, handle);
         // Don't check port directions in verilator
         // See issue #681
-        if (!TestSimulator::is_verilator() && !TestSimulator::is_questa()) CHECK_RESULT(vpidir, direction);
+        if (!TestSimulator::is_verilator() && !TestSimulator::is_questa())
+            CHECK_RESULT(vpidir, direction);
     }
 
     // check type of object
@@ -120,25 +121,25 @@ int mon_check_props() {
     // the code that sets up the VerilatedAssertOneThread() check in
     // verilated_vpi.cc, it was causing the check to falsely fail
     // (due to m_threadid within the check not being initted yet.)
-    static struct params values[]
-        = {{"onebit", {1, vpiNoDirection, 1, vpiReg}, {0, 0, 0, 0}},
-           {"twoone", {2, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
-           {"onetwo", {2, vpiNoDirection, 1, vpiRegArray}, {0, 0, 0, 0}},
-           {"fourthreetwoone",
-            {2, vpiNoDirection, 0, vpiRegArray},
-            {2, vpiNoDirection, 0, vpiReg}},
-           {"theint", {32, vpiNoDirection, 0, TestSimulator::is_verilator() ? vpiReg : vpiIntVar}, {0, 0, 0, 0}},
-           {"clk", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
-           {"testin", {16, vpiInput, 0, vpiPort}, {0, 0, 0, 0}},
-           {"testout", {24, vpiOutput, 0, vpiPort}, {0, 0, 0, 0}},
-           {"sub.subin", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
-           {"sub.subout", {1, vpiOutput, 1, vpiPort}, {0, 0, 0, 0}},
-           {"sub.subparam", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
-           {"sub.the_intf.bytesig", {8, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
-           {"sub.the_intf.param", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
-           {"sub.the_intf.lparam", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
-           {"twobytwo", {4, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
-           {NULL, {0, 0, 0, 0}, {0, 0, 0, 0}}};
+    static struct params values[] = {
+        {"onebit", {1, vpiNoDirection, 1, vpiReg}, {0, 0, 0, 0}},
+        {"twoone", {2, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
+        {"onetwo", {2, vpiNoDirection, 1, vpiRegArray}, {0, 0, 0, 0}},
+        {"fourthreetwoone", {2, vpiNoDirection, 0, vpiRegArray}, {2, vpiNoDirection, 0, vpiReg}},
+        {"theint",
+         {32, vpiNoDirection, 0, TestSimulator::is_verilator() ? vpiReg : vpiIntVar},
+         {0, 0, 0, 0}},
+        {"clk", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
+        {"testin", {16, vpiInput, 0, vpiPort}, {0, 0, 0, 0}},
+        {"testout", {24, vpiOutput, 0, vpiPort}, {0, 0, 0, 0}},
+        {"sub.subin", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
+        {"sub.subout", {1, vpiOutput, 1, vpiPort}, {0, 0, 0, 0}},
+        {"sub.subparam", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
+        {"sub.the_intf.bytesig", {8, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
+        {"sub.the_intf.param", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
+        {"sub.the_intf.lparam", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
+        {"twobytwo", {4, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
+        {NULL, {0, 0, 0, 0}, {0, 0, 0, 0}}};
     struct params* value = values;
     while (value->signal) {
         TestVpiHandle h = VPI_HANDLE(value->signal);

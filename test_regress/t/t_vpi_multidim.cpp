@@ -28,10 +28,10 @@
 #endif
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <random>
-#include <cstdlib>
 
 // These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
@@ -42,8 +42,8 @@ int errors = 0;
 
 // TEST START
 
-void _arr_type_check(TestVpiHandle& arr_h, int expType, int expSize, int expRangeHigh, int expRangeLow)
-{
+void _arr_type_check(TestVpiHandle& arr_h, int expType, int expSize, int expRangeHigh,
+                     int expRangeLow) {
     const int vpitype = vpi_get(vpiType, arr_h);
     TEST_CHECK_EQ(vpitype, expType);
     const int vpisize = vpi_get(vpiSize, arr_h);
@@ -64,7 +64,8 @@ void _arr_type_check(TestVpiHandle& arr_h, int expType, int expSize, int expRang
 }
 
 void _arr_iter_check(const char* name, int wordSize, const int* lows) {
-    TestVpiHandle arr_h = vpi_handle_by_name(const_cast<PLI_BYTE8*>(TestSimulator::rooted(name)), NULL);
+    TestVpiHandle arr_h
+        = vpi_handle_by_name(const_cast<PLI_BYTE8*>(TestSimulator::rooted(name)), NULL);
     TEST_CHECK_NZ(arr_h);
 
     _arr_type_check(arr_h, vpiRegArray, 4, lows[0] + 1, lows[0]);
@@ -118,13 +119,15 @@ void _arr_iter_check(const char* name, int wordSize, const int* lows) {
                 TEST_CHECK_NZ(arr_elem2_h);
 
                 // first indexing yields wordSize / 2 Regs
-                _arr_type_check(arr_elem2_h, vpiReg, wordSize / 2, lows[3] + wordSize / 2 - 1, lows[3]);
+                _arr_type_check(arr_elem2_h, vpiReg, wordSize / 2, lows[3] + wordSize / 2 - 1,
+                                lows[3]);
 
                 for (int idx3 = lows[3]; idx3 < lows[3] + wordSize / 2; idx3++) {
                     TestVpiHandle arr_elem3_h = vpi_handle_by_index(arr_elem2_h, idx3);
                     TEST_CHECK_NZ(arr_elem3_h);
                     {
-                        // second indexing yields size-1 RegBits (no support for RegBit VPI type yet)
+                        // second indexing yields size-1 RegBits (no support for RegBit VPI type
+                        // yet)
                         const int vpitype = vpi_get(vpiType, arr_elem3_h);
                         if (TestSimulator::is_verilator()) {
                             TEST_CHECK_EQ(vpitype, vpiReg);
@@ -202,8 +205,8 @@ void _arr_iter_check(const char* name, int wordSize, const int* lows) {
     }
 }
 
-void _arr_access_format_check(TestVpiHandle &reg_h, int wordSize, const int* lows, const char *octVal_s, PLI_INT32 format)
-{
+void _arr_access_format_check(TestVpiHandle& reg_h, int wordSize, const int* lows,
+                              const char* octVal_s, PLI_INT32 format) {
     const int spanSize = wordSize / 2;
     s_vpi_value value_in;
     s_vpi_value value_out;
@@ -230,7 +233,7 @@ void _arr_access_format_check(TestVpiHandle &reg_h, int wordSize, const int* low
         uint64_t intVal;
         t_vpi_vecval vecVal[2];
         sscanf(octSpan_s, "%" SCNo64, &intVal);
-        char strVal_s[spanSize + 1]; // max length of the string happens for binary
+        char strVal_s[spanSize + 1];  // max length of the string happens for binary
 
         if (format == vpiIntVal) {
             value_in.value.integer = intVal;
@@ -269,23 +272,20 @@ void _arr_access_format_check(TestVpiHandle &reg_h, int wordSize, const int* low
 
         vpi_get_value(subreg_h, &value_out);
         switch (format) {
-            case vpiIntVal:
-                TEST_CHECK_EQ(value_out.value.integer, value_in.value.integer);
-                break;
-            case vpiVectorVal:
-                if (spanSize > 32)
-                    TEST_CHECK_EQ(value_out.value.vector[1].aval, value_in.value.vector[1].aval);
-                TEST_CHECK_EQ(value_out.value.vector[0].aval, value_in.value.vector[0].aval);
-                break;
-            case vpiStringVal:
-                TEST_CHECK_EQ(value_out.value.str[0], value_in.value.str[0] ? value_in.value.str[0] : ' ');
-                break;
-            case vpiBinStrVal:
-            case vpiDecStrVal:
-            case vpiHexStrVal:
-            case vpiOctStrVal:
-                TEST_CHECK_CSTR(value_out.value.str, value_in.value.str);
-                break;
+        case vpiIntVal: TEST_CHECK_EQ(value_out.value.integer, value_in.value.integer); break;
+        case vpiVectorVal:
+            if (spanSize > 32)
+                TEST_CHECK_EQ(value_out.value.vector[1].aval, value_in.value.vector[1].aval);
+            TEST_CHECK_EQ(value_out.value.vector[0].aval, value_in.value.vector[0].aval);
+            break;
+        case vpiStringVal:
+            TEST_CHECK_EQ(value_out.value.str[0],
+                          value_in.value.str[0] ? value_in.value.str[0] : ' ');
+            break;
+        case vpiBinStrVal:
+        case vpiDecStrVal:
+        case vpiHexStrVal:
+        case vpiOctStrVal: TEST_CHECK_CSTR(value_out.value.str, value_in.value.str); break;
         }
     }
 
@@ -298,22 +298,23 @@ void _arr_access_format_check(TestVpiHandle &reg_h, int wordSize, const int* low
 std::default_random_engine rng;
 
 void _arr_access_check(const char* name, int wordSize, const int* lows) {
-    TestVpiHandle arr_h = vpi_handle_by_name(const_cast<PLI_BYTE8*>(TestSimulator::rooted(name)), NULL);
+    TestVpiHandle arr_h
+        = vpi_handle_by_name(const_cast<PLI_BYTE8*>(TestSimulator::rooted(name)), NULL);
     TEST_CHECK_NZ(arr_h);
 
-    std::uniform_int_distribution<uint64_t> rand64(
-        std::numeric_limits<uint64_t>::min(),
-        std::numeric_limits<uint64_t>::max()
-    );
+    std::uniform_int_distribution<uint64_t> rand64(std::numeric_limits<uint64_t>::min(),
+                                                   std::numeric_limits<uint64_t>::max());
 
     char octVal_s[wordSize / 3 + 1];
 
     // fill octVal_s with random octal digits
     if (wordSize < 64) {
-        sprintf(octVal_s, "%0*" PRIo64, wordSize / 3, rand64(rng) % (static_cast<uint64_t>(1) << wordSize));
+        sprintf(octVal_s, "%0*" PRIo64, wordSize / 3,
+                rand64(rng) % (static_cast<uint64_t>(1) << wordSize));
     } else {
         sprintf(octVal_s, "%0*" PRIo64, 63 / 3, rand64(rng));
-        sprintf(octVal_s + 63 / 3, "%0*" PRIo64, (wordSize - 63) / 3, rand64(rng) % (static_cast<uint64_t>(1) << (wordSize - 63)));
+        sprintf(octVal_s + 63 / 3, "%0*" PRIo64, (wordSize - 63) / 3,
+                rand64(rng) % (static_cast<uint64_t>(1) << (wordSize - 63)));
     }
 
     // Assume that reading/writing to the "flattened" packed register is already tested,
@@ -355,14 +356,10 @@ struct params {
 };
 
 void _multidim_check() {
-    static struct params values[] = {
-        {"arr_cdata", 6, {0, 1, 2, 3}},
-        {"arr_sdata", 12, {4, 5, 6, 7}},
-        {"arr_idata", 30, {8, 9, 10, 11}},
-        {"arr_qdata", 60, {12, 13, 14, 15}},
-        {"arr_wdata", 126, {16, 17, 18, 19}},
-        {nullptr, 0, {0, 0, 0, 0}}
-    };
+    static struct params values[]
+        = {{"arr_cdata", 6, {0, 1, 2, 3}},       {"arr_sdata", 12, {4, 5, 6, 7}},
+           {"arr_idata", 30, {8, 9, 10, 11}},    {"arr_qdata", 60, {12, 13, 14, 15}},
+           {"arr_wdata", 126, {16, 17, 18, 19}}, {nullptr, 0, {0, 0, 0, 0}}};
     struct params* value = values;
     while (value->name) {
         _arr_iter_check(value->name, value->wordSize, value->lows);
@@ -411,7 +408,7 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 int main(int argc, char** argv) {
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
 
-    uint64_t sim_time = 1100; // TODO
+    uint64_t sim_time = 1100;  // TODO
     contextp->debug(0);
     contextp->commandArgs(argc, argv);
 

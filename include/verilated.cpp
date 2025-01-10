@@ -3369,14 +3369,16 @@ void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_
 }
 
 void VerilatedScope::varInsert(int finalize, const char* namep, void* datap, bool isParam,
-                               VerilatedVarType vltype, int vlflags, int udims, int pdims ...) VL_MT_UNSAFE {
+                               VerilatedVarType vltype, int vlflags, int udims,
+                               int pdims...) VL_MT_UNSAFE {
     // Grab dimensions
     // In the future we may just create a large table at emit time and
     // statically construct from that.
     if (!finalize) return;
 
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
-    VerilatedVar var(namep, datap, vltype, static_cast<VerilatedVarFlags>(vlflags), udims, pdims, isParam);
+    VerilatedVar var(namep, datap, vltype, static_cast<VerilatedVarFlags>(vlflags), udims, pdims,
+                     isParam);
 
     va_list ap;
     va_start(ap, pdims);

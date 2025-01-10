@@ -76,7 +76,7 @@ class VerilatedVarProps VL_NOT_FINAL {
     const VerilatedVarFlags m_vlflags;  // Direction
     std::vector<VerilatedRange> m_unpacked;  // Unpacked array ranges
     std::vector<VerilatedRange> m_packed;  // Packed array ranges
-    VerilatedRange m_packedDpi; // Flattened packed array range
+    VerilatedRange m_packedDpi;  // Flattened packed array range
     void initUnpacked(int udims, const int* ulims) {
         for (int i = 0; i < udims; ++i) {
             const int uleft = ulims ? ulims[2 * i + 0] : 0;
@@ -152,8 +152,7 @@ public:
     uint32_t entSize() const VL_MT_SAFE;
     uint32_t entBits() const VL_MT_SAFE {
         uint32_t bits = 1;
-        for (auto it : m_packed)
-            bits *= it.elements();
+        for (auto it : m_packed) bits *= it.elements();
         return bits;
     }
     bool isPublicRW() const { return ((m_vlflags & VLVF_PUB_RW) != 0); }
