@@ -709,14 +709,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstAssocSel* nodep) override {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
-        std::cout << nodep->bitp() << std::endl;
-        std::cout << nodep->bitp()->dtypep() << std::endl;
-        std::cout << nodep->bitp()->width() << std::endl;
-        if (VN_IS(nodep->bitp(), CvtPackString)) {
-            //AstBasicDType* const dtypep = VN_AS(nodep->bitp()->dtypep(), BasicDType);
-            //if (dtypep->isString()) {
-            //    std::cout << dtypep << nodep->bitp() << std::endl;
-            //}
+        if (VN_IS(nodep->bitp(), CvtPackString) && VN_IS(nodep->bitp()->dtypep(), BasicDType)) {
             AstCvtPackString* const stringp = VN_AS(nodep->bitp(), CvtPackString);
             const size_t stringSize = VN_AS(stringp->lhsp(), Const)->width();
             if (stringSize > 128) {
@@ -725,7 +718,6 @@ class ConstraintExprVisitor final : public VNVisitor {
                     "Unsupported: Constrained randomization of associative array keys of "
                         << stringSize << "bits, limit is 128 bits");
             }
-            std::cout << "Mei jin Lai???" << stringSize << std::endl;
             VNRelinker handle;
             AstNodeExpr* const idxp
                 = new AstSFormatF{fl, "#x%32x", false, stringp->lhsp()->unlinkFrBack(&handle)};
