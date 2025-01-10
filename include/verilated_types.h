@@ -505,7 +505,8 @@ public:
     VlQueue& operator=(VlQueue&&) = default;
     bool operator==(const VlQueue& rhs) const { return m_deque == rhs.m_deque; }
     bool operator!=(const VlQueue& rhs) const { return m_deque != rhs.m_deque; }
-
+    bool operator<(const VlQueue& rhs) const { return m_deque < rhs.m_deque; }
+    
     // Standard copy constructor works. Verilog: assoca = assocb
     // Also must allow conversion from a different N_MaxSize queue
     template <size_t N_RhsMaxSize = 0>
@@ -1365,7 +1366,7 @@ public:
     void assign(const T_Value that[N_Depth]) { std::copy_n(that, N_Depth, m_storage); }
     void operator=(const T_Value that[N_Depth]) { assign(that); }
     bool operator<(const VlUnpacked<T_Value, N_Depth>& that) const { return m_storage < that.m_storage ;}
-    
+
     // inside (set membership operator)
     bool inside(const T_Value& value) const {
         return std::find(std::begin(m_storage), std::end(m_storage), value) != std::end(m_storage);
