@@ -1510,7 +1510,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_publicFlatRW = flag;
         v3Global.dpi(true);
     });
-    DECL_OPTION("-public-ignore", CbOnOff, [this](bool flag) { m_publicOff = flag; });
+    DECL_OPTION("-public-ignore", CbOnOff, [this](bool flag) { m_publicIgnore = flag; });
     DECL_OPTION("-public-params", CbOnOff, [this](bool flag) {
         m_publicParams = flag;
         v3Global.dpi(true);
