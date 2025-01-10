@@ -1239,7 +1239,7 @@ Summary:
    Ignore all
    :code:`/*verilator public* */`
    metacomments. This is useful for speed-optimizing VPI builds where VPI is not being used.
-   Other control flags like :vlopt:`--public`, :vlopt:`--public-depth`, etc. will also work with this, as they are not metacomments.
+   This only affects metacomments; options such as :vlopt:`--public`, :vlopt:`--public-depth`, etc. work normally.
 
 .. option:: -pvalue+<name>=<value>
 
