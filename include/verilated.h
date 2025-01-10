@@ -726,7 +726,7 @@ public:  // But internals only - called from VerilatedModule's
                    const Type& type) VL_MT_UNSAFE;
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
     void varInsert(int finalize, const char* namep, void* datap, bool isParam,
-                   VerilatedVarType vltype, int vlflags, int dims, ...) VL_MT_UNSAFE;
+                   VerilatedVarType vltype, int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }
     const char* identifier() const VL_MT_SAFE_POSTINIT { return m_identifierp; }
