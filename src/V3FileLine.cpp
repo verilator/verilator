@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -92,9 +92,13 @@ void FileLineSingleton::fileNameNumMapDumpJson(std::ostream& os) {
     std::string sep = "\n  ";
     os << "\"files\": {";
     for (const auto& itr : m_namemap) {
-        const std::string name
-            = itr.first == V3Options::getStdPackagePath() ? "<verilated_std>" : itr.first;
-        os << sep << '"' << filenameLetters(itr.second) << '"' << ": {\"filename\":\"" << name
+        std::string filename = itr.first;
+        if (filename == V3Options::getStdPackagePath()) {
+            filename = "<verilated_std>";
+        } else if (filename == V3Options::getStdWaiverPath()) {
+            filename = "<verilated_std_waiver>";
+        }
+        os << sep << '"' << filenameLetters(itr.second) << '"' << ": {\"filename\":\"" << filename
            << '"' << ", \"realpath\":\""
            << V3OutFormatter::quoteNameControls(V3Os::filenameRealPath(itr.first)) << '"'
            << ", \"language\":\"" << numberToLang(itr.second).ascii() << "\"}";
@@ -147,6 +151,7 @@ FileLineSingleton::msgEnSetIdx_t FileLineSingleton::msgEnAnd(msgEnSetIdx_t lhsId
 //  VFileContents class functions
 
 void VFileContent::pushText(const string& text) {
+    // Similar code in WildcardContents::pushText()
     if (m_lines.size() == 0) {
         m_lines.emplace_back("");  // no such thing as line [0]
         m_lines.emplace_back("");  // start with no leftover
@@ -413,24 +418,36 @@ bool FileLine::warnIsOff(V3ErrorCode code) const {
 // cppverilator-suppress constParameter
 void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra)
     VL_RELEASE(V3Error::s().m_mutex) {
-    std::ostringstream nsstr;
+    // 'extra' is appended to the message, and is is excluded in check for
+    // duplicate messages. Currently used for reporting instance name.
+    std::ostringstream nsstr;  // sstr with fileline prefix and context
+    std::ostringstream wsstr;  // sstr for waiver (no fileline) with context
     if (lastLineno()) nsstr << this;
     nsstr << sstr.str();
+    wsstr << sstr.str();
     nsstr << "\n";
-    std::ostringstream lstr;
+    wsstr << "\n";
+    std::ostringstream extrass;  // extra spaced out for prefix
     if (!extra.empty()) {
-        lstr << std::setw(ascii().length()) << " "
-             << ": " << extra;
+        extrass << std::setw(ascii().length()) << " "
+                << ": " << extra;
     }
-    m_waive = V3Config::waive(this, V3Error::s().errorCode(), sstr.str());
-    if (warnIsOff(V3Error::s().errorCode()) || m_waive) {
+    if (warnIsOff(V3Error::s().errorCode())) {
         V3Error::s().suppressThisWarning();
-    } else if (!V3Error::s().errorContexted()) {
-        nsstr << warnContextPrimary();
+    } else {
+        if (!V3Error::s().errorContexted()) {
+            const string add = warnContextPrimary();
+            wsstr << add;
+            nsstr << add;
+        }
+        m_waive = V3Config::waive(this, V3Error::s().errorCode(), wsstr.str());
+        if (m_waive) {
+            V3Error::s().suppressThisWarning();
+        } else {
+            V3Waiver::addEntry(V3Error::s().errorCode(), filename(), wsstr.str());
+        }
     }
-    if (!warnIsOff(V3Error::s().errorCode()) && !m_waive)
-        V3Waiver::addEntry(V3Error::s().errorCode(), filename(), sstr.str());
-    V3Error::v3errorEnd(nsstr, lstr.str());
+    V3Error::v3errorEnd(nsstr, extrass.str());
 }
 
 string FileLine::warnMore() const VL_REQUIRES(V3Error::s().m_mutex) {

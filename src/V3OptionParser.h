@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -65,8 +65,8 @@ private:
 
     // METHODS
     ActionIfs* find(const char* optp) VL_MT_DISABLED;
-    template <class ACT, class ARG>
-    ActionIfs& add(const string& opt, ARG arg) VL_MT_DISABLED;
+    template <typename T_Act, typename T_Arg>
+    ActionIfs& add(const string& opt, T_Arg arg) VL_MT_DISABLED;
     // Returns true if strp starts with "-fno"
     static bool hasPrefixFNo(const char* strp) VL_MT_DISABLED;
     // Returns true if strp starts with "-no"

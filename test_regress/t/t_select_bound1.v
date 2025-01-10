@@ -83,6 +83,8 @@ module Test (/*AUTOARG*/
       // verilator lint_off WIDTH
       out <= p[15 + in -: 5];
       // verilator lint_on WIDTH
+   end
+   always @(posedge clk) begin
       mask[3] <= ((15 + in - 5) < 12);
       mask[2] <= ((15 + in - 5) < 13);
       mask[1] <= ((15 + in - 5) < 14);

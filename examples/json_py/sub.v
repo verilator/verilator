@@ -13,6 +13,6 @@ module sub
     );
 
    // Some simple logic
-   always_comb out = ~ in;
+   always_comb out = ~in;
 
 endmodule

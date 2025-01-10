@@ -8,6 +8,7 @@ module t;
    // verilator_no_inline_module
    initial begin
       case (1'b1) // synopsys_full_case
+        1'b0: $stop;
       endcase
       $stop; // Should have failed
    end

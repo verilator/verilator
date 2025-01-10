@@ -33,6 +33,7 @@ elif [ "$CI_OS_NAME" = "freebsd" ]; then
 else
   fatal "Unknown os: '$CI_OS_NAME'"
 fi
+NPROC=$(expr $NPROC '+' 1)
 
 if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
   ##############################################################################
@@ -194,6 +195,8 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
       ;;
   esac
 
+  # To see load average (1 minute, 5 minute, 15 minute)
+  uptime
   # 22.04: ccache -s -v
   ccache -s
 

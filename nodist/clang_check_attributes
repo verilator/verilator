@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # pylint: disable=C0114,C0115,C0116,C0209,C0302,R0902,R0911,R0912,R0914,R0915,E1101
 #
-# Copyright 2022-2024 by Wilson Snyder. Verilator is free software; you
+# Copyright 2022-2025 by Wilson Snyder. Verilator is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU Lesser
 # General Public License Version 3 or the Apache License 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Apache-2.0
@@ -38,6 +38,7 @@ else:
         def __getattr__(cls, name: str) -> clang.cindex.CursorKind:
             return getattr(clang.cindex.CursorKind, name)
 
+    # pylint: disable-next=invalid-enum-extension
     class CursorKind(clang.cindex.CursorKind, metaclass=CursorKindMeta):
         pass
 
@@ -48,9 +49,11 @@ def fully_qualified_name(node):
     if node.kind == CursorKind.TRANSLATION_UNIT:
         return []
     res = fully_qualified_name(node.semantic_parent)
+    displayname = node.displayname
+    displayname = [displayname] if displayname else []
     if res:
-        return res + ([node.displayname] if node.displayname else [])
-    return [node.displayname] if node.displayname else []
+        return res + displayname
+    return displayname
 
 
 # Returns True, if `class_node` contains node
@@ -139,31 +142,32 @@ class VlAnnotations:
         result = VlAnnotations()
         for node in nodes:
             if node.kind == CursorKind.ANNOTATE_ATTR:
-                if node.displayname == "MT_START":
+                displayname = node.displayname
+                if displayname == "MT_START":
                     result.mt_start = True
-                elif node.displayname == "MT_SAFE":
+                elif displayname == "MT_SAFE":
                     result.mt_safe = True
-                elif node.displayname == "MT_STABLE":
+                elif displayname == "MT_STABLE":
                     result.stable_tree = True
-                elif node.displayname == "MT_SAFE_POSTINIT":
+                elif displayname == "MT_SAFE_POSTINIT":
                     result.mt_safe_postinit = True
-                elif node.displayname == "MT_UNSAFE":
+                elif displayname == "MT_UNSAFE":
                     result.mt_unsafe = True
-                elif node.displayname == "MT_UNSAFE_ONE":
+                elif displayname == "MT_UNSAFE_ONE":
                     result.mt_unsafe_one = True
-                elif node.displayname == "MT_DISABLED":
+                elif displayname == "MT_DISABLED":
                     result.mt_disabled = True
-                elif node.displayname == "PURE":
+                elif displayname == "PURE":
                     result.pure = True
-                elif node.displayname in ["ACQUIRE", "ACQUIRE_SHARED"]:
+                elif displayname in ["ACQUIRE", "ACQUIRE_SHARED"]:
                     result.acquire = True
-                elif node.displayname in ["RELEASE", "RELEASE_SHARED"]:
+                elif displayname in ["RELEASE", "RELEASE_SHARED"]:
                     result.release = True
-                elif node.displayname == "REQUIRES":
+                elif displayname == "REQUIRES":
                     result.requires = True
-                elif node.displayname in ["EXCLUDES", "MT_SAFE_EXCLUDES"]:
+                elif displayname in ["EXCLUDES", "MT_SAFE_EXCLUDES"]:
                     result.excludes = True
-                elif node.displayname == "GUARDED_BY":
+                elif displayname == "GUARDED_BY":
                     result.guarded = True
             # Attributes are always at the beginning
             elif not node.kind.is_attribute():
@@ -304,6 +308,7 @@ class CallAnnotationsValidator:
         self._defines: dict[str, str] = {}
         self._call_location: Optional[FunctionInfo] = None
         self._caller: Optional[FunctionInfo] = None
+        self._base_func_declarations: dict[str, clang.cindex.Cursor] = {}
         self._constructor_context: list[clang.cindex.Cursor] = []
         self._level: int = 0
 
@@ -695,6 +700,14 @@ class CallAnnotationsValidator:
     def process_function_definition(self, node: clang.cindex.Cursor):
         [supported, refd, annotations, _] = self.get_referenced_node_info(node)
 
+        # Fetch virtual annotations from base class.
+        # Set refd to virtual definition if present.
+        signature = node.displayname
+        if signature in self._base_func_declarations:
+            refd = self._base_func_declarations[signature]
+            virtual_annotations = VlAnnotations.from_nodes_list(refd.get_children())
+            annotations = annotations | virtual_annotations
+
         if refd and self._is_ignored_def(node, refd):
             return None
 
@@ -719,7 +732,7 @@ class CallAnnotationsValidator:
                 def_annotations.mt_disabled = True
                 def_annotations.excludes = True
 
-        if not (def_annotations.is_empty() or def_annotations == annotations):
+        if def_annotations != annotations:
             # Use definition's annotations for the diagnostic
             # source (i.e. the definition)
             self._caller = FunctionInfo.from_node(node, refd, def_annotations)
@@ -728,9 +741,10 @@ class CallAnnotationsValidator:
             self.emit_diagnostic(FunctionInfo.from_node(refd, refd, annotations),
                                  DiagnosticKind.ANNOTATIONS_DEF_DECL_MISMATCH)
 
-        # Use concatenation of definition and declaration annotations
-        # for calls validation.
-        self._caller = FunctionInfo.from_node(node, refd, def_annotations | annotations)
+        else:
+            # Use concatenation of definition and declaration annotations
+            # for calls validation.
+            self._caller = FunctionInfo.from_node(node, refd, def_annotations | annotations)
         prev_call_location = self._call_location
         self._call_location = self._caller
 
@@ -758,16 +772,30 @@ class CallAnnotationsValidator:
     # Nodes not located inside definition
 
     def dispatch_node(self, node: clang.cindex.Cursor):
-        if node.kind in [
+        kind = node.kind
+        if kind is CursorKind.CXX_BASE_SPECIFIER:
+            # Get referenced virtual declarations from base class.
+            for base in node.get_children():
+                if base.referenced:
+                    for declaration in base.referenced.get_children():
+                        self._base_func_declarations[declaration.displayname] = declaration
+        elif kind in [
                 CursorKind.CXX_METHOD, CursorKind.FUNCTION_DECL, CursorKind.CONSTRUCTOR,
                 CursorKind.CONVERSION_FUNCTION
         ]:
             if node.is_definition():
                 return self.process_function_definition(node)
-            # else:
             return self.process_function_declaration(node)
 
-        return self.iterate_children(node.get_children(), self.dispatch_node)
+        result = self.iterate_children(node.get_children(), self.dispatch_node)
+
+        # Clean declarations if class declaration processing is finished.
+        if kind in [
+                CursorKind.CLASS_DECL, CursorKind.STRUCT_DECL, CursorKind.UNION_DECL,
+                CursorKind.ENUM_DECL, CursorKind.UNEXPOSED_DECL
+        ]:
+            self._base_func_declarations = {}
+        return result
 
     def process_translation_unit(self, translation_unit: clang.cindex.TranslationUnit):
         self._level += 1
@@ -1052,7 +1080,7 @@ def main():
         allow_abbrev=False,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description="""Check function annotations for correctness""",
-        epilog="""Copyright 2022-2024 by Wilson Snyder. Verilator is free software;
+        epilog="""Copyright 2022-2025 by Wilson Snyder. Verilator is free software;
     you can redistribute it and/or modify it under the terms of either the GNU
     Lesser General Public License Version 3 or the Apache License 2.0.
     SPDX-License-Identifier: LGPL-3.0-only OR Apache-2.0""")
@@ -1118,10 +1146,14 @@ def main():
     for refid, file in enumerate(cmdline.file):
         filename = os.path.abspath(file)
         root = default_compilation_root
-        cxxflags = []
+        cxxflags = common_cxxflags[:]
         if compdb:
             entry = compdb.getCompileCommands(filename)
-            entry_list = list(entry)
+            if entry is None:
+                print(f"%Error: reading compile commands failed: {filename}", file=sys.stderr)
+                entry_list = []
+            else:
+                entry_list = list(entry)
             # Compilation database can contain multiple entries for single file,
             # e.g. when it has been updated by appending new entries.
             # Use last entry for the file, if it exists, as it is the newest one.
@@ -1133,9 +1165,7 @@ def main():
                 # compiler executable name/path. CIndex (libclang) always
                 # implicitly prepends executable name, so it shouldn't be passed
                 # here.
-                cxxflags = common_cxxflags + entry_args[1:]
-        else:
-            cxxflags = common_cxxflags[:]
+                cxxflags.extend(entry_args[1:])
 
         compile_command = CompileCommand(refid, filename, cxxflags, root)
         compile_commands_list.append(compile_command)

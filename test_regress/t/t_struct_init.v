@@ -83,31 +83,31 @@ module t;
       //
       // Initialization
       begin
-         b4_t q = '{1'b1, 1'b1, 1'b0, 1'b0};
+         b4_t q; q = '{1'b1, 1'b1, 1'b0, 1'b0};
          if (q != 4'b1100) $stop;
       end
       begin
-         b4_t q = '{3{1'b1}, 1'b0};
+         b4_t q; q = '{3{1'b1}, 1'b0};
          if (q != 4'b1110) $stop;
       end
       begin
-         b4_t q = '{4{1'b1}};   // Repeats the {}
+         b4_t q; q = '{4{1'b1}};   // Repeats the {}
          if (q != 4'b1111) $stop;
       end
       begin
-         b4x2_t m = '{4'b1001, '{1'b1, 1'b0, 1'b1, 1'b1}};
+         b4x2_t m; m = '{4'b1001, '{1'b1, 1'b0, 1'b1, 1'b1}};
          if (m != 8'b10011011) $stop;
       end
       begin
-         b4_t q = '{default:1'b1};
+         b4_t q; q = '{default:1'b1};
          if (q != 4'b1111) $stop;
       end
       begin
-         b4_t q = '{b0:1'b1, b2:1'b1, b3:1'b1, b1:1'b0};
+         b4_t q; q = '{b0:1'b1, b2:1'b1, b3:1'b1, b1:1'b0};
          if (q != 4'b1101) $stop;
       end
       begin
-         b4_t q = '{b2:1'b0, default:1'b1};
+         b4_t q; q = '{b2:1'b0, default:1'b1};
          if (q != 4'b1011) $stop;
       end
 

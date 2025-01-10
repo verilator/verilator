@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -118,7 +118,6 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     VMemberMap m_memberMap;
     AstVarRef* m_wideTempRefp = nullptr;  // Variable that _WW macros should be setting
     int m_labelNum = 0;  // Next label number
-    int m_splitSize = 0;  // # of cfunc nodes placed into output file
     bool m_inUC = false;  // Inside an AstUCStmt or AstUCExpr
     bool m_emitConstInit = false;  // Emitting constant initializer
 
@@ -355,7 +354,7 @@ public:
              * executing in the wrong path to make verilator-generated code
              * run faster.
              */
-            puts("auto &vlSelfRef = std::ref(*vlSelf).get();\n");
+            puts("auto& vlSelfRef = std::ref(*vlSelf).get();\n");
         }
 
         if (nodep->initsp()) {
@@ -1004,6 +1003,7 @@ public:
         puts(", ");
         puts(cvtToStr(nodep->fileline()->lineno()));
         puts(", \"\"");
+        if (nodep->isFatal()) puts(", false");
         puts(");\n");
     }
     void visit(AstFinish* nodep) override {
@@ -1214,9 +1214,8 @@ public:
         puts(")");
     }
     void visit(AstNewCopy* nodep) override {
-        putns(nodep, "VL_NEW(" + prefixNameProtect(nodep->dtypep()) + ", "
-                         + optionalProcArg(nodep->dtypep()));
-        puts("*");  // i.e. make into a reference
+        putns(nodep, "VL_NEW(" + prefixNameProtect(nodep->dtypep()));
+        puts(", *");  // i.e. make into a reference
         iterateAndNextConstNull(nodep->rhsp());
         puts(")");
     }
@@ -1454,9 +1453,9 @@ public:
 
     EmitCFunc()
         : m_lazyDecls(*this) {}
-    EmitCFunc(AstNode* nodep, V3OutCFile* ofp, bool trackText = false)
+    EmitCFunc(AstNode* nodep, V3OutCFile* ofp, AstCFile* cfilep, bool trackText = false)
         : EmitCFunc{} {
-        m_ofp = ofp;
+        setOutputFile(ofp, cfilep);
         m_trackText = trackText;
         iterateConst(nodep);
     }

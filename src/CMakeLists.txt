@@ -4,7 +4,7 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -14,14 +14,23 @@
 
 #
 # Utilities
-macro (addBuildType sourceConfig newConfig)
+macro(addBuildType sourceConfig newConfig)
     get_cmake_property(variableNames VARIABLES)
-    foreach (variableName ${variableNames})
-        if (variableName MATCHES "^CMAKE_.*_${sourceConfig}(|_.*)$")
-            string(REPLACE _${sourceConfig} _${newConfig} newVariableName ${variableName})
+    foreach(variableName ${variableNames})
+        if(variableName MATCHES "^CMAKE_.*_${sourceConfig}(|_.*)$")
+            string(
+                REPLACE
+                _${sourceConfig}
+                _${newConfig}
+                newVariableName
+                ${variableName}
+            )
             set(${newVariableName} ${${variableName}})
             mark_as_advanced(${newVariableName})
-            message(DEBUG "   Propagating ${variableName} to ${newVariableName} = ${${newVariableName}}")
+            message(
+                DEBUG
+                "   Propagating ${variableName} to ${newVariableName} = ${${newVariableName}}"
+            )
         endif()
     endforeach()
 endmacro()
@@ -86,6 +95,7 @@ set(HEADERS
     V3Force.h
     V3Fork.h
     V3FunctionTraits.h
+    V3FuncOpt.h
     V3Gate.h
     V3Global.h
     V3Graph.h
@@ -245,6 +255,7 @@ set(COMMON_SOURCES
     V3FileLine.cpp
     V3Force.cpp
     V3Fork.cpp
+    V3FuncOpt.cpp
     V3Gate.cpp
     V3Global.cpp
     V3Graph.cpp
@@ -327,9 +338,7 @@ set(COMMON_SOURCES
     V3PreProc.cpp
 )
 
-SET(COVERAGE_SOURCES
-    VlcMain.cpp
-)
+set(COVERAGE_SOURCES VlcMain.cpp)
 
 # Note about tests:
 # VlcMain.cpp #includes the following files:
@@ -352,34 +361,49 @@ configure_file(config_package.h.in config_package.h @ONLY)
 add_custom_command(
     OUTPUT V3Ast__gen_forward_class_decls.h V3Dfg__gen_forward_class_decls.h
     DEPENDS ./V3Ast.h ${ASTGEN}
-    COMMAND ${PYTHON3} ARGS
-    ${ASTGEN} -I "${srcdir}" --astdef V3AstNodeDType.h --astdef V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h --classes
+    COMMAND ${PYTHON3}
+    ARGS
+        ${ASTGEN} -I "${srcdir}" --astdef V3AstNodeDType.h --astdef
+        V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h
+        --classes
 )
-list(APPEND GENERATED_FILES V3Ast__gen_forward_class_decls.h V3Dfg__gen_forward_class_decls.h)
+list(
+    APPEND
+    GENERATED_FILES
+    V3Ast__gen_forward_class_decls.h
+    V3Dfg__gen_forward_class_decls.h
+)
 # Output used directly by the `verilator` target
 
-set(verilog_y "${srcdir}/verilog.y" )
-set(BISON_V3ParseBison_OUTPUT_HEADER "${CMAKE_CURRENT_BINARY_DIR}/V3ParseBison.h")
-set(BISON_V3ParseBison_OUTPUT_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/V3ParseBison.c")
+set(verilog_y "${srcdir}/verilog.y")
+set(BISON_V3ParseBison_OUTPUT_HEADER
+    "${CMAKE_CURRENT_BINARY_DIR}/V3ParseBison.h"
+)
+set(BISON_V3ParseBison_OUTPUT_SOURCE
+    "${CMAKE_CURRENT_BINARY_DIR}/V3ParseBison.c"
+)
 add_custom_command(
     OUTPUT V3ParseBison.c V3ParseBison.h
     MAIN_DEPENDENCY ./verilog.y
     DEPENDS ${BISONPRE}
-    COMMAND ${PYTHON3} ARGS
-        ${BISONPRE} --yacc "${BISON_EXECUTABLE}" -d -v
-            -o "${BISON_V3ParseBison_OUTPUT_SOURCE}" "${verilog_y}"
+    COMMAND ${PYTHON3}
+    ARGS
+        ${BISONPRE} --yacc "${BISON_EXECUTABLE}" -d -v -o
+        "${BISON_V3ParseBison_OUTPUT_SOURCE}" "${verilog_y}"
 )
 list(APPEND GENERATED_FILES V3ParseBison.c V3ParseBison.h)
 # Output used directly by the `verilator` target
 
 set(verilog_l "${srcdir}/verilog.l")
-set(FLEX_V3Lexer_pregen_OUTPUTS "${CMAKE_CURRENT_BINARY_DIR}/V3Lexer_pregen.yy.cpp")
+set(FLEX_V3Lexer_pregen_OUTPUTS
+    "${CMAKE_CURRENT_BINARY_DIR}/V3Lexer_pregen.yy.cpp"
+)
 add_custom_command(
     OUTPUT V3Lexer_pregen.yy.cpp
     MAIN_DEPENDENCY ./verilog.l
     DEPENDS ${BISON_V3ParseBison_OUTPUT_HEADER} ${HEADERS}
-    COMMAND ${FLEX_EXECUTABLE} ARGS
-        ${LFLAGS} -o "${FLEX_V3Lexer_pregen_OUTPUTS}" "${verilog_l}"
+    COMMAND ${FLEX_EXECUTABLE}
+    ARGS ${LFLAGS} -o "${FLEX_V3Lexer_pregen_OUTPUTS}" "${verilog_l}"
 )
 # Output used by another command
 
@@ -388,19 +412,26 @@ add_custom_command(
     OUTPUT V3Lexer.yy.cpp
     MAIN_DEPENDENCY ${FLEX_V3Lexer_pregen_OUTPUTS}
     DEPENDS ${FLEXFIX}
-    COMMAND ${PYTHON3} ARGS
-        ${FLEXFIX} V3Lexer < "$<SHELL_PATH:${FLEX_V3Lexer_pregen_OUTPUTS}>" > "$<SHELL_PATH:${FLEX_V3Lexer_OUTPUTS}>"
+    COMMAND ${PYTHON3}
+    ARGS
+        ${FLEXFIX} V3Lexer < "$<SHELL_PATH:${FLEX_V3Lexer_pregen_OUTPUTS}>" >
+        "$<SHELL_PATH:${FLEX_V3Lexer_OUTPUTS}>"
 )
-add_custom_target(V3Lexer_yy_cpp${CMAKE_BUILD_TYPE} DEPENDS ${FLEX_V3Lexer_OUTPUTS})
+add_custom_target(
+    V3Lexer_yy_cpp${CMAKE_BUILD_TYPE}
+    DEPENDS ${FLEX_V3Lexer_OUTPUTS}
+)
 # Output included by another source file
 
-set(FLEX_V3PreLex_pregen_OUTPUTS ${CMAKE_CURRENT_BINARY_DIR}/V3PreLex_pregen.yy.cpp)
+set(FLEX_V3PreLex_pregen_OUTPUTS
+    ${CMAKE_CURRENT_BINARY_DIR}/V3PreLex_pregen.yy.cpp
+)
 add_custom_command(
     OUTPUT V3PreLex_pregen.yy.cpp
     MAIN_DEPENDENCY ./V3PreLex.l
     DEPENDS ${HEADERS}
-    COMMAND ${FLEX_EXECUTABLE} ARGS
-        ${LFLAGS} -o "${FLEX_V3PreLex_pregen_OUTPUTS}" "${srcdir}/V3PreLex.l"
+    COMMAND ${FLEX_EXECUTABLE}
+    ARGS ${LFLAGS} -o "${FLEX_V3PreLex_pregen_OUTPUTS}" "${srcdir}/V3PreLex.l"
 )
 # Output used by another command
 
@@ -409,37 +440,45 @@ add_custom_command(
     OUTPUT V3PreLex.yy.cpp
     MAIN_DEPENDENCY ${FLEX_V3PreLex_pregen_OUTPUTS}
     DEPENDS ${FLEXFIX}
-    COMMAND ${PYTHON3} ARGS
-        ${FLEXFIX} V3PreLex < "$<SHELL_PATH:${FLEX_V3PreLex_pregen_OUTPUTS}>" > "$<SHELL_PATH:${FLEX_V3PreLex_OUTPUTS}>"
+    COMMAND ${PYTHON3}
+    ARGS
+        ${FLEXFIX} V3PreLex < "$<SHELL_PATH:${FLEX_V3PreLex_pregen_OUTPUTS}>" >
+        "$<SHELL_PATH:${FLEX_V3PreLex_OUTPUTS}>"
 )
-add_custom_target(V3PreLex_yy_cpp${CMAKE_BUILD_TYPE} DEPENDS ${FLEX_V3PreLex_OUTPUTS})
+add_custom_target(
+    V3PreLex_yy_cpp${CMAKE_BUILD_TYPE}
+    DEPENDS ${FLEX_V3PreLex_OUTPUTS}
+)
 # Output included by another source file
 
 set(gitHead ${srcdir}/../.git/logs/HEAD)
-if (NOT EXISTS ${githead})
+if(NOT EXISTS ${githead})
     set(gitHead "")
 endif()
 add_custom_command(
     OUTPUT config_rev.h
     MAIN_DEPENDENCY ${gitHead}
     DEPENDS ${CONFIG_REV}
-    COMMAND ${PYTHON3} ARGS
-        ${CONFIG_REV} "${srcdir}" > "$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/config_rev.h>"
+    COMMAND ${PYTHON3}
+    ARGS
+        ${CONFIG_REV} "${srcdir}" >
+        "$<SHELL_PATH:${CMAKE_CURRENT_BINARY_DIR}/config_rev.h>"
 )
 list(APPEND GENERATED_FILES config_rev.h)
 # Output used directly by the `verilator` target
 
-set(ASTGENERATED_NAMES
-    V3Const
-)
+set(ASTGENERATED_NAMES V3Const)
 
 foreach(astgen_name ${ASTGENERATED_NAMES})
     add_custom_command(
         OUTPUT ${astgen_name}__gen.cpp
         MAIN_DEPENDENCY ${astgen_name}.cpp
         DEPENDS ${ASTGEN} V3Ast.h
-        COMMAND ${PYTHON3} ARGS
-            ${ASTGEN} -I "${srcdir}" --astdef V3AstNodeDType.h --astdef V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h ${astgen_name}.cpp
+        COMMAND ${PYTHON3}
+        ARGS
+            ${ASTGEN} -I "${srcdir}" --astdef V3AstNodeDType.h --astdef
+            V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h
+            ${astgen_name}.cpp
     )
     list(APPEND GENERATED_FILES ${astgen_name}__gen.cpp)
 endforeach()
@@ -447,7 +486,7 @@ endforeach()
 #
 # Set up the Coverage build type
 
-addBuildType(DEBUG COVERAGE)
+addbuildtype(DEBUG COVERAGE)
 
 # This regenerates include/verilated_cov_key.h in the source tree.
 # It is a custom_target, not custom_command, because vlcovgen.d is
@@ -456,8 +495,7 @@ add_custom_target(
     vlcovgen.d${CMAKE_BUILD_TYPE}
     DEPENDS ../include/verilated_cov_key.h ${VLCOVGEN}
     COMMENT "Updating include/verilated_cov_key.h"
-    COMMAND ${PYTHON3}
-        ${VLCOVGEN} --srcdir ${srcdir}
+    COMMAND ${PYTHON3} ${VLCOVGEN} --srcdir ${srcdir}
 )
 
 #
@@ -465,24 +503,29 @@ add_custom_target(
 
 set(verilator verilator${CMAKE_BUILD_TYPE})
 
-add_executable(${verilator}
+add_executable(
+    ${verilator}
     $<$<NOT:$<CONFIG:COVERAGE>>:${COMMON_SOURCES}>
     $<$<NOT:$<CONFIG:COVERAGE>>:${GENERATED_FILES}>
-    $<$<CONFIG:COVERAGE>:${COVERAGE_SOURCES} config_rev.h>
+    $<$<CONFIG:COVERAGE>:${COVERAGE_SOURCES}
+    config_rev.h>
 )
 
-set_target_properties(${verilator} PROPERTIES
-    OUTPUT_NAME_RELEASE   verilator_bin
-    OUTPUT_NAME_DEBUG     verilator_bin_dbg
-    OUTPUT_NAME_COVERAGE  verilator_coverage_bin_dbg
-    #UNITY_BUILD $<IF:$<CONFIG:DEBUG>,FALSE,${CMAKE_UNITY_BUILD}>
-    MSVC_RUNTIME_LIBRARY  MultiThreaded$<IF:$<CONFIG:Release>,,DebugDLL>
-    #JOB_POOL_LINK         one_job      # Linking takes lots of resources
-    INTERPROCEDURAL_OPTIMIZATION_RELEASE  $<IF:MINGW,FALSE,TRUE>
-    INCLUDE_DIRECTORIES ${FLEX_INCLUDE_DIR}
+set_target_properties(
+    ${verilator}
+    PROPERTIES
+        OUTPUT_NAME_RELEASE verilator_bin
+        OUTPUT_NAME_DEBUG verilator_bin_dbg
+        OUTPUT_NAME_COVERAGE verilator_coverage_bin_dbg
+        #UNITY_BUILD $<IF:$<CONFIG:DEBUG>,FALSE,${CMAKE_UNITY_BUILD}>
+        MSVC_RUNTIME_LIBRARY MultiThreaded$<IF:$<CONFIG:Release>,,DebugDLL>
+        #JOB_POOL_LINK         one_job      # Linking takes lots of resources
+        INTERPROCEDURAL_OPTIMIZATION_RELEASE $<IF:MINGW,FALSE,TRUE>
+        INCLUDE_DIRECTORIES ${FLEX_INCLUDE_DIR}
 )
 
-add_dependencies(${verilator}
+add_dependencies(
+    ${verilator}
     V3Lexer_yy_cpp${CMAKE_BUILD_TYPE}
     V3PreLex_yy_cpp${CMAKE_BUILD_TYPE}
 )
@@ -492,41 +535,49 @@ target_link_libraries(${verilator} PRIVATE Threads::Threads)
 # verilated_cov_key.h is only regenerated in a single-configuration environment.
 # This limitation can be lifted when `add_dependencies` will support generator
 # expressions. See https://gitlab.kitware.com/cmake/cmake/issues/19467
-if (CMAKE_BUILD_TYPE STREQUAL Coverage)
+if(CMAKE_BUILD_TYPE STREQUAL Coverage)
     add_dependencies(${verilator} vlcovgen.d${CMAKE_BUILD_TYPE})
 endif()
 
-if (NOT MSVC)
+if(NOT MSVC)
     target_compile_features(${verilator} PRIVATE cxx_std_11)
 endif()
 
-target_compile_definitions(${verilator} PRIVATE
-    YYDEBUG # Required to get nice error messages
-    $<$<CONFIG:DEBUG>:VL_DEBUG>
-    $<$<CONFIG:DEBUG>:_GLIBCXX_DEBUG>
-)
-
-target_include_directories(${verilator}
+target_compile_definitions(
+    ${verilator}
     PRIVATE
-    ../include
-    ${WIN_FLEX_BISON}
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}/../include
-    ${CMAKE_CURRENT_SOURCE_DIR}
+        YYDEBUG # Required to get nice error messages
+        $<$<CONFIG:DEBUG>:VL_DEBUG>
+        $<$<CONFIG:DEBUG>:_GLIBCXX_DEBUG>
 )
 
-if (WIN32)
+target_include_directories(
+    ${verilator}
+    PRIVATE
+        ../include
+        ${WIN_FLEX_BISON}
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ${CMAKE_CURRENT_BINARY_DIR}/../include
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+if(WIN32)
     if(MINGW)
         target_compile_options(${verilator} PRIVATE -Wa,-mbig-obj)
-        target_link_options(${verilator} PRIVATE -Wl,--stack,10000000 -mconsole -lcomctl32 -DWIN_32_LEAN_AND_MEAN)
+        target_link_options(
+            ${verilator}
+            PRIVATE
+                -Wl,--stack,10000000
+                -mconsole
+                -lcomctl32
+                -DWIN_32_LEAN_AND_MEAN
+        )
     else()
         target_compile_options(${verilator} PRIVATE /bigobj)
         target_link_options(${verilator} PRIVATE /STACK:10000000)
     endif()
 
-    target_compile_definitions(${verilator} PRIVATE
-        YY_NO_UNISTD_H
-    )
+    target_compile_definitions(${verilator} PRIVATE YY_NO_UNISTD_H)
     target_include_directories(${verilator} PRIVATE ../platform/win32)
     target_link_libraries(${verilator} PRIVATE bcrypt psapi)
 endif()

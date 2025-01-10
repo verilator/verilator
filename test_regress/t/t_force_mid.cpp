@@ -10,10 +10,12 @@
 // OS header
 #include "verilatedos.h"
 // Generated header
-#include "Vt_force_mid.h"
+#include VM_PREFIX_INCLUDE
 // General headers
 #include "verilated.h"
-std::unique_ptr<Vt_force_mid> topp;
+
+std::unique_ptr<VM_PREFIX> topp;
+
 int main(int argc, char** argv) {
     uint64_t sim_time = 1100;
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};

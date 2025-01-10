@@ -6,12 +6,7 @@
 // without warranty, 2012 by Jeremy Bennett.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-
-   input clk;
+module t (/*AUTOARG*/);
 
    // Note that if we declare "wire [0:0] b", this works just fine.
    wire  a;

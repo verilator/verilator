@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -45,7 +45,6 @@ class LinkParseVisitor final : public VNVisitor {
     using ImplTypedefMap = std::map<const std::pair<void*, std::string>, AstTypedef*>;
 
     // STATE
-    AstPackage* const m_stdPackagep;  // SystemVerilog std package
     AstVar* m_varp = nullptr;  // Variable we're under
     ImplTypedefMap m_implTypedef;  // Created typedefs for each <container,name>
     std::unordered_set<FileLine*> m_filelines;  // Filelines that have been seen
@@ -63,6 +62,7 @@ class LinkParseVisitor final : public VNVisitor {
     int m_beginDepth = 0;  // How many begin blocks above current node within current AstNodeModule
     VLifetime m_lifetime = VLifetime::STATIC;  // Propagating lifetime
     bool m_insideLoop = false;  // True if the node is inside a loop
+    bool m_lifetimeAllowed = false;  // True to allow lifetime settings
     VDouble0 m_statModules;  // Number of modules seen
 
     // METHODS
@@ -102,11 +102,9 @@ class LinkParseVisitor final : public VNVisitor {
     void visitIterateNodeDType(AstNodeDType* nodep) {
         if (!nodep->user1SetOnce()) {  // Process only once.
             cleanFileline(nodep);
-            {
-                VL_RESTORER(m_dtypep);
-                m_dtypep = nodep;
-                iterateChildren(nodep);
-            }
+            VL_RESTORER(m_dtypep);
+            m_dtypep = nodep;
+            iterateChildren(nodep);
         }
     }
 
@@ -187,60 +185,56 @@ class LinkParseVisitor final : public VNVisitor {
             cleanFileline(nodep);
             VL_RESTORER(m_ftaskp);
             VL_RESTORER(m_lifetime);
-            {
-                m_ftaskp = nodep;
-                if (!nodep->lifetime().isNone()) {
-                    m_lifetime = nodep->lifetime();
-                } else {
-                    const AstClassOrPackageRef* const classPkgRefp
-                        = VN_AS(nodep->classOrPackagep(), ClassOrPackageRef);
-                    if (classPkgRefp && VN_IS(classPkgRefp->classOrPackageNodep(), Class)) {
-                        // Class methods are automatic by default
-                        m_lifetime = VLifetime::AUTOMATIC;
-                    } else if (nodep->dpiImport() || VN_IS(nodep, Property)) {
-                        // DPI-imported functions and properties don't have lifetime specifiers
-                        m_lifetime = VLifetime::NONE;
-                    }
-                    for (AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
-                        AstVar* const varp = VN_CAST(itemp, Var);
-                        if (varp && varp->valuep() && varp->lifetime().isNone()
-                            && m_lifetime.isStatic() && !varp->isIO()) {
-                            if (VN_IS(m_modp, Module)) {
-                                nodep->v3warn(IMPLICITSTATIC,
-                                              "Function/task's lifetime implicitly set to static\n"
-                                                  << nodep->warnMore()
-                                                  << "... Suggest use 'function automatic' or "
-                                                     "'function static'\n"
-                                                  << nodep->warnContextPrimary() << '\n'
-                                                  << varp->warnOther()
-                                                  << "... Location of implicit static variable\n"
-                                                  << varp->warnContextSecondary() << '\n'
-                                                  << "... Suggest use 'function automatic' or "
-                                                     "'function static'");
-                            } else {
-                                varp->v3warn(IMPLICITSTATIC,
-                                             "Variable's lifetime implicitly set to static\n"
-                                                 << nodep->warnMore()
-                                                 << "... Suggest use 'static' before "
-                                                    "variable declaration'");
-                            }
+            m_ftaskp = nodep;
+            VL_RESTORER(m_lifetimeAllowed);
+            m_lifetimeAllowed = true;
+            if (!nodep->lifetime().isNone()) {
+                m_lifetime = nodep->lifetime();
+            } else {
+                if (nodep->classMethod()) {
+                    // Class methods are automatic by default
+                    m_lifetime = VLifetime::AUTOMATIC;
+                } else if (nodep->dpiImport() || VN_IS(nodep, Property)) {
+                    // DPI-imported functions and properties don't have lifetime specifiers
+                    m_lifetime = VLifetime::NONE;
+                }
+                for (AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
+                    AstVar* const varp = VN_CAST(itemp, Var);
+                    if (varp && varp->valuep() && varp->lifetime().isNone()
+                        && m_lifetime.isStatic() && !varp->isIO()) {
+                        if (VN_IS(m_modp, Module)) {
+                            nodep->v3warn(IMPLICITSTATIC,
+                                          "Function/task's lifetime implicitly set to static\n"
+                                              << nodep->warnMore()
+                                              << "... Suggest use 'function automatic' or "
+                                                 "'function static'\n"
+                                              << nodep->warnContextPrimary() << '\n'
+                                              << varp->warnOther()
+                                              << "... Location of implicit static variable\n"
+                                              << varp->warnContextSecondary() << '\n'
+                                              << "... Suggest use 'function automatic' or "
+                                                 "'function static'");
+                        } else {
+                            varp->v3warn(IMPLICITSTATIC,
+                                         "Variable's lifetime implicitly set to static\n"
+                                             << nodep->warnMore()
+                                             << "... Suggest use 'static' before "
+                                                "variable declaration'");
                         }
                     }
-                    nodep->lifetime(m_lifetime);
                 }
-                iterateChildren(nodep);
+                nodep->lifetime(m_lifetime);
             }
+            iterateChildren(nodep);
         }
     }
     void visit(AstNodeFTaskRef* nodep) override {
         if (!nodep->user1SetOnce()) {  // Process only once.
             cleanFileline(nodep);
             UINFO(5, "   " << nodep << endl);
-            {
-                VL_RESTORER(m_valueModp);
-                m_valueModp = nullptr;
-                iterateChildren(nodep);
-            }
+            VL_RESTORER(m_valueModp);
+            m_valueModp = nullptr;
+            iterateChildren(nodep);
         }
     }
     void visit(AstNodeDType* nodep) override { visitIterateNodeDType(nodep); }
@@ -298,10 +292,19 @@ class LinkParseVisitor final : public VNVisitor {
             nodep->v3warn(STATICVAR, "Static variable with assignment declaration declared in a "
                                      "loop converted to automatic");
         }
-        if (nodep->varType() != VVarType::PORT) {
-            if (nodep->lifetime().isNone()) nodep->lifetime(m_lifetime);
+        if (!nodep->direction().isAny()) {  // Not a port
+            if (nodep->lifetime().isNone()) {
+                if (m_lifetimeAllowed) {
+                    nodep->lifetime(m_lifetime);
+                } else {  // Module's always static per IEEE 1800-2023 6.21
+                    nodep->lifetime(VLifetime::STATIC);
+                }
+            }
         } else if (m_ftaskp) {
             nodep->lifetime(VLifetime::AUTOMATIC);
+        } else if (nodep->lifetime()
+                       .isNone()) {  // lifetime shouldn't be unknown, set static if none
+            nodep->lifetime(VLifetime::STATIC);
         }
 
         if (nodep->isGParam() && !nodep->isAnsi()) {  // shadow some parameters into localparams
@@ -337,21 +340,19 @@ class LinkParseVisitor final : public VNVisitor {
         // Maybe this variable has a signal attribute
         V3Config::applyVarAttr(m_modp, m_ftaskp, nodep);
 
-        if (v3Global.opt.publicFlatRW()
-            || (v3Global.opt.publicDepth() && m_modp
-                && (m_modp->level() - 1) <= v3Global.opt.publicDepth())) {
-
-            switch (nodep->varType()) {
-            case VVarType::VAR:  // FALLTHRU
-            case VVarType::GPARAM:  // FALLTHRU
-            case VVarType::LPARAM:  // FALLTHRU
-            case VVarType::PORT:  // FALLTHRU
-            case VVarType::WIRE: nodep->sigUserRWPublic(true); break;
-            default: break;
+        if (v3Global.opt.anyPublicFlat() && nodep->varType().isVPIAccessible()) {
+            if (v3Global.opt.publicFlatRW()) {
+                nodep->sigUserRWPublic(true);
+            } else if (v3Global.opt.publicParams() && nodep->isParam()) {
+                nodep->sigUserRWPublic(true);
+            } else if (m_modp && v3Global.opt.publicDepth()) {
+                if ((m_modp->level() - 1) <= v3Global.opt.publicDepth()) {
+                    nodep->sigUserRWPublic(true);
+                } else if (VN_IS(m_modp, Package) && nodep->isParam()) {
+                    nodep->sigUserRWPublic(true);
+                }
             }
         }
-
-        if (v3Global.opt.publicParams() && nodep->isParam()) nodep->sigUserRWPublic(true);
 
         // We used modTrace before leveling, and we may now
         // want to turn it off now that we know the levelizations
@@ -399,15 +400,6 @@ class LinkParseVisitor final : public VNVisitor {
                 nodep->addNextHere(
                     new AstAssign{fl, new AstVarRef{fl, nodep, VAccess::WRITE},
                                   VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)});
-            }
-        }
-        if (nodep->isIfaceRef() && !nodep->isIfaceParent() && !v3Global.opt.topIfacesSupported()) {
-            // Only AstIfaceRefDType's at this point correspond to ports;
-            // haven't made additional ones for interconnect yet, so assert is simple
-            // What breaks later is we don't have a Scope/Cell representing
-            // the interface to attach to
-            if (m_modp->level() <= 2) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Interfaced port on top level module");
             }
         }
     }
@@ -589,19 +581,15 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstRepeat* nodep) override {
         cleanFileline(nodep);
         VL_RESTORER(m_insideLoop);
-        {
-            m_insideLoop = true;
-            checkIndent(nodep, nodep->stmtsp());
-            iterateChildren(nodep);
-        }
+        m_insideLoop = true;
+        checkIndent(nodep, nodep->stmtsp());
+        iterateChildren(nodep);
     }
     void visit(AstDoWhile* nodep) override {
         cleanFileline(nodep);
         VL_RESTORER(m_insideLoop);
-        {
-            m_insideLoop = true;
-            iterateChildren(nodep);
-        }
+        m_insideLoop = true;
+        iterateChildren(nodep);
     }
     void visit(AstWait* nodep) override {
         cleanFileline(nodep);
@@ -617,11 +605,9 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstWhile* nodep) override {
         cleanFileline(nodep);
         VL_RESTORER(m_insideLoop);
-        {
-            m_insideLoop = true;
-            checkIndent(nodep, nodep->stmtsp());
-            iterateChildren(nodep);
-        }
+        m_insideLoop = true;
+        checkIndent(nodep, nodep->stmtsp());
+        iterateChildren(nodep);
     }
     void visit(AstNodeModule* nodep) override {
         V3Config::applyModule(nodep);
@@ -633,6 +619,7 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_genblkNum);
         VL_RESTORER(m_beginDepth);
         VL_RESTORER(m_lifetime);
+        VL_RESTORER(m_lifetimeAllowed);
         {
             // Module: Create sim table for entire module and iterate
             cleanFileline(nodep);
@@ -645,6 +632,7 @@ class LinkParseVisitor final : public VNVisitor {
             m_beginDepth = 0;
             m_valueModp = nodep;
             m_lifetime = nodep->lifetime();
+            m_lifetimeAllowed = VN_IS(nodep, Class);
             if (m_lifetime.isNone()) {
                 m_lifetime = VN_IS(nodep, Class) ? VLifetime::AUTOMATIC : VLifetime::STATIC;
             }
@@ -660,16 +648,20 @@ class LinkParseVisitor final : public VNVisitor {
     void visitIterateNoValueMod(AstNode* nodep) {
         // Iterate a node which shouldn't have any local variables moved to an Initial
         cleanFileline(nodep);
-        {
-            VL_RESTORER(m_valueModp);
-            m_valueModp = nullptr;
-            iterateChildren(nodep);
-        }
+        VL_RESTORER(m_valueModp);
+        m_valueModp = nullptr;
+        iterateChildren(nodep);
     }
-    void visit(AstNodeProcedure* nodep) override { visitIterateNoValueMod(nodep); }
+    void visit(AstNodeProcedure* nodep) override {
+        VL_RESTORER(m_lifetimeAllowed);
+        m_lifetimeAllowed = true;
+        visitIterateNoValueMod(nodep);
+    }
     void visit(AstAlways* nodep) override {
         VL_RESTORER(m_inAlways);
         m_inAlways = true;
+        VL_RESTORER(m_lifetimeAllowed);
+        m_lifetimeAllowed = true;
         visitIterateNoValueMod(nodep);
     }
     void visit(AstCover* nodep) override { visitIterateNoValueMod(nodep); }
@@ -730,13 +722,11 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstGenCase* nodep) override {
         ++m_genblkNum;
         cleanFileline(nodep);
-        {
-            VL_RESTORER(m_genblkAbove);
-            VL_RESTORER(m_genblkNum);
-            m_genblkAbove = m_genblkNum;
-            m_genblkNum = 0;
-            iterateChildren(nodep);
-        }
+        VL_RESTORER(m_genblkAbove);
+        VL_RESTORER(m_genblkNum);
+        m_genblkAbove = m_genblkNum;
+        m_genblkNum = 0;
+        iterateChildren(nodep);
     }
     void visit(AstGenIf* nodep) override {
         cleanFileline(nodep);
@@ -841,11 +831,6 @@ class LinkParseVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }
-    void visit(AstClassOrPackageRef* nodep) override {
-        if (nodep->name() == "std" && !nodep->classOrPackagep()) {
-            nodep->classOrPackagep(m_stdPackagep);
-        }
-    }
     void visit(AstClocking* nodep) override {
         cleanFileline(nodep);
         VL_RESTORER(m_defaultInSkewp);
@@ -908,6 +893,13 @@ class LinkParseVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
+    void visit(AstPackageImport* nodep) override {
+        cleanFileline(nodep);
+        if (m_modp && !m_ftaskp && VN_IS(m_modp, Class)) {
+            nodep->v3error("Import statement directly within a class scope is illegal");
+        }
+        iterateChildren(nodep);
+    }
 
     void visit(AstNode* nodep) override {
         // Default: Just iterate
@@ -917,10 +909,7 @@ class LinkParseVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit LinkParseVisitor(AstNetlist* rootp)
-        : m_stdPackagep{rootp->stdPackagep()} {
-        iterate(rootp);
-    }
+    explicit LinkParseVisitor(AstNetlist* rootp) { iterate(rootp); }
     ~LinkParseVisitor() override {
         V3Stats::addStatSum(V3Stats::STAT_SOURCE_MODULES, m_statModules);
     }

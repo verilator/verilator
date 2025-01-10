@@ -8,12 +8,15 @@
 begin \
    longint prev_result; \
    int ok = 0; \
-   for (int i = 0; i < 10; i++) begin \
+   if (!bit'(cl.randomize() with { constr; })) $stop; \
+   prev_result = longint'(field); \
+   if (!(cond)) $stop; \
+   repeat(9) begin \
       longint result; \
       if (!bit'(cl.randomize() with { constr; })) $stop; \
       result = longint'(field); \
       if (!(cond)) $stop; \
-      if (i > 0 && result != prev_result) ok = 1; \
+      if (result != prev_result) ok = 1; \
       prev_result = result; \
    end \
    if (ok != 1) $stop; \

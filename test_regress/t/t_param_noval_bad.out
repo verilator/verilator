@@ -1,7 +1,11 @@
-%Error: t/t_param_noval_bad.v:7:22: Parameter without initial value is never given value (IEEE 1800-2023 6.20.1): 'P'
+%Error: t/t_param_noval_bad.v:7:22: Parameter without default value is never given value (IEEE 1800-2023 6.20.1): 'P'
                                   : ... note: In instance 't'
-    7 | module t #(parameter P);
+    7 | module t #(parameter P, parameter type T);
       |                      ^
+%Error: t/t_param_noval_bad.v:7:40: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
+                                  : ... note: In instance 't'
+    7 | module t #(parameter P, parameter type T);
+      |                                        ^
 %Warning-WIDTHTRUNC: t/t_param_noval_bad.v:10:7: Logical operator GENFOR expects 1 bit on the For Test Condition, but For Test Condition's VARREF 'P' generates 32 bits.
                                                : ... note: In instance 't'
    10 |       for (j=0; P; j++)

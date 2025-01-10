@@ -13,6 +13,7 @@ endclass
 localparam int PARAM = 42;
 class Cls;
    rand int x;
+   int q[$] = {0};
    rand enum {
       ONE_Y,
       TWO_Y
@@ -98,6 +99,8 @@ class SubC extends SubB;
       if (f.x != 0) $stop;
       doit &= f.randomize() with { x == op(local::op(op(local::op(1)))); };
       if (f.x != 1) $stop;
+      doit &= f.randomize() with { foreach (q[i]) x == i; };
+      if (f.x != 0) $stop;
    endfunction
 endclass
 

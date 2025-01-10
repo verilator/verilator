@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -30,6 +30,9 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Const pool emitter
 
 class EmitCConstPool final : public EmitCConstInit {
+    // TYPES
+    using OutCFilePair = std::pair<V3OutCFile*, AstCFile*>;
+
     // MEMBERS
     uint32_t m_outFileCount = 0;
     int m_outFileSize = 0;
@@ -38,17 +41,17 @@ class EmitCConstPool final : public EmitCConstInit {
 
     // METHODS
 
-    V3OutCFile* newOutCFile() const {
+    OutCFilePair newOutCFile() const {
         const string fileName = v3Global.opt.makeDir() + "/" + topClassName() + "__ConstPool_"
                                 + cvtToStr(m_outFileCount) + ".cpp";
-        newCFile(fileName, /* slow: */ true, /* source: */ true);
+        AstCFile* const cfilep = newCFile(fileName, /* slow: */ true, /* source: */ true);
         V3OutCFile* const ofp = new V3OutCFile{fileName};
         ofp->putsHeader();
         ofp->puts("// DESCRIPTION: Verilator output: Constant pool\n");
         ofp->puts("//\n");
         ofp->puts("\n");
         ofp->puts("#include \"verilated.h\"\n");
-        return ofp;
+        return {ofp, cfilep};
     }
 
     void maybeSplitCFile() {
@@ -56,11 +59,12 @@ class EmitCConstPool final : public EmitCConstInit {
         // Splitting file, so using parallel build.
         v3Global.useParallelBuild(true);
         // Close current file
-        VL_DO_DANGLING(delete m_ofp, m_ofp);
+        closeOutputFile();
         // Open next file
         m_outFileSize = 0;
         ++m_outFileCount;
-        m_ofp = newOutCFile();
+        const OutCFilePair outFileAndNodePair = newOutCFile();
+        setOutputFile(outFileAndNodePair.first, outFileAndNodePair.second);
     }
 
     void emitVars(const AstConstPool* poolp) {
@@ -75,7 +79,8 @@ class EmitCConstPool final : public EmitCConstInit {
             return ap->name() < bp->name();
         });
 
-        m_ofp = newOutCFile();
+        const OutCFilePair outFileAndNodePair = newOutCFile();
+        setOutputFile(outFileAndNodePair.first, outFileAndNodePair.second);
 
         for (const AstVar* varp : varps) {
             maybeSplitCFile();
@@ -95,7 +100,7 @@ class EmitCConstPool final : public EmitCConstInit {
             }
         }
 
-        VL_DO_DANGLING(delete m_ofp, m_ofp);
+        closeOutputFile();
     }
 
     // VISITORS

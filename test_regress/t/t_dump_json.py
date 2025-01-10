@@ -14,7 +14,7 @@ test.top_filename = "t/t_dump.v"
 
 test.lint(v_flags=["--dump-tree-json --no-json-edit-nums"])
 
-test.files_identical(test.obj_dir + "/Vt_dump_json_001_cells.tree.json", test.golden_filename,
+test.files_identical(test.obj_dir + "/Vt_dump_json_002_cellsort.tree.json", test.golden_filename,
                      'logfile')
 
 test.passes()

@@ -30,12 +30,7 @@ class Cls;
    endfunction
 endclass
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-
-   input clk;
+module t (/*AUTOARG*/);
 
    Cls a = new;
    Cls b = new;

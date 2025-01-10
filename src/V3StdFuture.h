@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -22,7 +22,7 @@
 namespace vlstd {
 
 // constexpr std::max with arguments passed by value (required by constexpr before C++14)
-template <class T>
+template <typename T>
 constexpr T max(T a, T b) {
     return a > b ? a : b;
 }

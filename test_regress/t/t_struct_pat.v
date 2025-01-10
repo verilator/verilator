@@ -31,8 +31,14 @@ module t(/*AUTOARG*/);
       bit [3:0][31:0] b4;
    } sab4p_t;
 
+   typedef struct {
+      int i;
+      real r;
+   } sir_t;
+
    sab4u_t ab4u[2][3];
    sab4p_t ab4p[2][3];
+   sir_t sir;
 
    initial begin
       abcp = '{1, 2, 3};
@@ -95,6 +101,10 @@ module t(/*AUTOARG*/);
       if (ab4u[1][2].b4[1] !== 30) $stop;
       if (ab4u[1][2].b4[2] !== 20) $stop;
       if (ab4u[1][2].b4[3] !== 30) $stop;
+
+      sir = '{1, 2.2};
+      if (sir.i !== 1) $stop;
+      if (sir.r !== 2.2) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

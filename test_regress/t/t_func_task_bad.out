@@ -1,4 +1,9 @@
-%Error: t/t_func_task_bad.v:10:11: Illegal call of a task as a function: 'task_as_func'
+%Error: t/t_func_task_bad.v:10:11: Cannot call a task/void-function as a function: 'task_as_func'
+                                 : ... note: In instance 't'
    10 |       if (task_as_func(1'b0)) $stop;
       |           ^~~~~~~~~~~~
+%Error: t/t_func_task_bad.v:10:7: Logical operator IF expects a non-complex data type on the If.
+                                : ... note: In instance 't'
+   10 |       if (task_as_func(1'b0)) $stop;
+      |       ^~
 %Error: Exiting due to

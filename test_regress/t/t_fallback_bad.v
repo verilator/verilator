@@ -14,11 +14,11 @@ module subm;
 endmodule
 
 module submo;
-   subm sub2;
+   subm sub2();
 endmodule
 
 module t;
-   submo sub1;
+   submo sub1();
 
    class Base;endclass
    class Cls extends Base;

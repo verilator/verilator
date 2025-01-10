@@ -60,9 +60,6 @@ module sub (/*AUTOARG*/
    output reg [4:0]  out2;
 
    always @* begin
-      // Test empty cases
-      casez (in[0])
-      endcase
       casez (in)
         24'b0000_0000_0000_0000_0000_0000 : {out1,out2} = {1'b0,5'h00};
         24'b????_????_????_????_????_???1 : {out1,out2} = {1'b1,5'h00};

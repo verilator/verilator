@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -216,6 +216,13 @@ string VString::removeWhitespace(const string& str) {
     return result;
 }
 
+bool VString::isIdentifier(const string& str) {
+    for (const char c : str) {
+        if (!isIdentifierChar(c)) return false;
+    }
+    return true;
+}
+
 bool VString::isWhitespace(const string& str) {
     for (const char c : str) {
         if (!std::isspace(c)) return false;
@@ -256,8 +263,8 @@ string VString::replaceWord(const string& str, const string& from, const string&
     UASSERT_STATIC(len > 0, "Cannot replace empty string");
     for (size_t pos = 0; (pos = result.find(from, pos)) != string::npos; pos += len) {
         // Only replace whole words
-        if (((pos > 0) && VString::isWordChar(result[pos - 1])) ||  //
-            ((pos + len < result.size()) && VString::isWordChar(result[pos + len]))) {
+        if (((pos > 0) && VString::isIdentifierChar(result[pos - 1])) ||  //
+            ((pos + len < result.size()) && VString::isIdentifierChar(result[pos + len]))) {
             continue;
         }
         result.replace(pos, len, to);

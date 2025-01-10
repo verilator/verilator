@@ -53,6 +53,7 @@ if test.vlt_all:
     check_relative_refs("l5__P1", True)
     check_relative_refs("l5__P2", True)
 
-test.execute(expect=r"\] (%m|.*t\.ps): Clocked")
+test.execute()
+test.file_grep(test.run_log_filename, r"\] (%m|.*t\.ps): Clocked")
 
 test.passes()

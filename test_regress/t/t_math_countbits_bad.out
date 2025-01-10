@@ -1,5 +1,5 @@
-%Error-UNSUPPORTED: t/t_math_countbits_bad.v:14:54: Unsupported: $countbits with more than 3 control fields
-   14 |    assign count = $countbits(32'h123456, '0, '1, 'x, 'z);
+%Error-UNSUPPORTED: t/t_math_countbits_bad.v:10:54: Unsupported: $countbits with more than 3 control fields
+   10 |    assign count = $countbits(32'h123456, '0, '1, 'x, 'z);
       |                                                      ^~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

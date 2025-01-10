@@ -2,7 +2,7 @@
    14 |    foo_intf foo
       |    ^~~~~~~~
 %Error: t/t_interface_typo_bad.v:22:4: Cannot find file containing interface: 'fo_intf'
-   22 |    fo_intf the_foo;
+   22 |    fo_intf the_foo();
       |    ^~~~~~~
 %Error: t/t_interface_typo_bad.v:27:15: Found definition of 'the_foo' as a CELL but expected a variable
    27 |         .foo (the_foo)

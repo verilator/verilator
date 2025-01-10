@@ -43,6 +43,8 @@ gen(test.top_filename)
 
 test.compile()
 
-test.execute(expect=hi)
+test.execute()
+
+test.file_grep(test.run_log_filename, hi)
 
 test.passes()

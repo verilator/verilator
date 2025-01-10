@@ -1,5 +1,5 @@
-%Error: t/t_interface_paren_missing_bad.v:13:9: Interface instantiation 'intf_i' requires parenthesis
-                                              : ... Suggest use 'intf_i()'
+%Error: t/t_interface_paren_missing_bad.v:13:9: Interface port declaration 'intf_i' doesn't have corresponding port
+                                              : ... Perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
    13 |    intf intf_i;
       |         ^~~~~~
 %Error: Exiting due to

@@ -1,4 +1,0 @@
-%Error: t/t_no_typedef_bad.v:10:4: Can't find typedef: 'sometype'
-   10 |    sometype p;
-      |    ^~~~~~~~
-%Error: Exiting due to

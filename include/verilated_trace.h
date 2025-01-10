@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -41,18 +41,20 @@
 // clang-format on
 
 class VlThreadPool;
-template <class T_Buffer>
+template <typename T_Buffer>
 class VerilatedTraceBuffer;
-template <class T_Buffer>
+template <typename T_Buffer>
 class VerilatedTraceOffloadBuffer;
 
 //=============================================================================
 // Common enumerations
 
-enum class VerilatedTracePrefixType : uint32_t {
+enum class VerilatedTracePrefixType : uint8_t {
     // Note: Entries must match VTracePrefixType (by name, not necessarily by value)
     ARRAY_PACKED,
     ARRAY_UNPACKED,
+    ROOTIO_MODULE,  // $rootio, used when name()=="", other modules become peers
+    ROOTIO_WRAPPER,  // "Above" ROOTIO_MODULE
     SCOPE_MODULE,
     SCOPE_INTERFACE,
     STRUCT_PACKED,
@@ -61,7 +63,7 @@ enum class VerilatedTracePrefixType : uint32_t {
 };
 
 // Direction attribute for ports
-enum class VerilatedTraceSigDirection : uint32_t {
+enum class VerilatedTraceSigDirection : uint8_t {
     NONE,
     INPUT,
     OUTPUT,
@@ -69,7 +71,7 @@ enum class VerilatedTraceSigDirection : uint32_t {
 };
 
 // Kind of signal. Similar to nettype but with a few more alternatives
-enum class VerilatedTraceSigKind : uint32_t {
+enum class VerilatedTraceSigKind : uint8_t {
     PARAMETER,
     SUPPLY0,
     SUPPLY1,
@@ -81,7 +83,7 @@ enum class VerilatedTraceSigKind : uint32_t {
 };
 
 // Base data type of signal
-enum class VerilatedTraceSigType : uint32_t {
+enum class VerilatedTraceSigType : uint8_t {
     DOUBLE,
     INTEGER,
     BIT,
@@ -98,7 +100,7 @@ enum class VerilatedTraceSigType : uint32_t {
 // Offloaded tracing
 
 // A simple synchronized first in first out queue
-template <class T>
+template <typename T>
 class VerilatedThreadQueue final {  // LCOV_EXCL_LINE  // lcov bug
 private:
     mutable VerilatedMutex m_mutex;  // Protects m_queue
@@ -200,7 +202,7 @@ public:
 
 // T_Trace is the format-specific subclass of VerilatedTrace.
 // T_Buffer is the format-specific base class of VerilatedTraceBuffer.
-template <class T_Trace, class T_Buffer>
+template <typename T_Trace, typename T_Buffer>
 class VerilatedTrace VL_NOT_FINAL {
 public:
     using Buffer = VerilatedTraceBuffer<T_Buffer>;
@@ -440,7 +442,7 @@ public:
 
 // T_Buffer is the format-specific base class of VerilatedTraceBuffer.
 // The format-specific hot-path methods use duck-typing via T_Buffer for performance.
-template <class T_Buffer>
+template <typename T_Buffer>
 class VerilatedTraceBuffer VL_NOT_FINAL : public T_Buffer {
 protected:
     // Type of the owner trace file
@@ -541,7 +543,7 @@ public:
 
 // T_Buffer is the format-specific base class of VerilatedTraceBuffer.
 // The format-specific hot-path methods use duck-typing via T_Buffer for performance.
-template <class T_Buffer>
+template <typename T_Buffer>
 class VerilatedTraceOffloadBuffer final : public VerilatedTraceBuffer<T_Buffer> {
     using typename VerilatedTraceBuffer<T_Buffer>::Trace;
 

@@ -14,14 +14,16 @@ test.scenarios('vlt_all')
 test.compile()
 
 test.execute(all_run_flags=["+verilator+debug +verilator+debugi+9 +verilator+rand+reset+1"],
-             expect=r'.*Verilated::debug is on.*')
+             logfile=test.obj_dir + "/vlt_1.log")
+test.file_grep(test.obj_dir + "/vlt_1.log", r'Verilated::debug is on')
 
-test.execute(all_run_flags=["+verilator+help"],
-             fails=True,
-             expect=r".*For help, please see 'verilator --help'.*")
+test.execute(all_run_flags=["+verilator+help"], fails=True, logfile=test.obj_dir + "/vlt_2.log")
+test.file_grep(test.obj_dir + "/vlt_2.log", r"For help, please see 'verilator --help'")
 
-test.execute(all_run_flags=["+verilator+V"], fails=True, expect=r'.*Version:.*')
+test.execute(all_run_flags=["+verilator+V"], fails=True, logfile=test.obj_dir + "/vlt_3.log")
+test.file_grep(test.obj_dir + "/vlt_3.log", r'Version:')
 
-test.execute(all_run_flags=["+verilator+version"], fails=True, expect=r'.*Version:.*')
+test.execute(all_run_flags=["+verilator+version"], fails=True, logfile=test.obj_dir + "/vlt_4.log")
+test.file_grep(test.obj_dir + "/vlt_4.log", r'Version:')
 
 test.passes()

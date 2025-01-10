@@ -15,7 +15,8 @@ int signed Y; // "int"
 
 package A;
    enum {A,B,C=99} X; // "enum{A=32'sd0,B=32'sd1,C=32'sd99}A::e$1"
-   typedef bit [9:1'b1] word; // "A::bit[9:1]"
+   typedef bit [9:1'b1] word_t; // "A::bit[9:1]"
+   localparam type WORD_T = word_t;
 endpackage : A
 
 import A::*;
@@ -31,6 +32,7 @@ module t(/*AUTOARG*/);
    real r;
    logic l;
    typedef bit mybit_t;
+   localparam type MYBIT_T = mybit_t;
    mybit_t [2:0] bitp20;
    mybit_t bitu32 [3:2];
    mybit_t bitu31 [3:1][4:5];
@@ -69,7 +71,8 @@ module t(/*AUTOARG*/);
       `printtype(X, "bit[2:0]");
       `printtype(Y, "int");
 
-      `printtype(A::word, "bit[9:1]");
+      `printtype(A::word_t, "bit[9:1]");
+      `printtype(A::WORD_T, "bit[9:1]");
       `printtype(assoc, "string$[longint]");
       `printtype(q, "int$[$]");
       `printtype(q3, "int$[$:3]");  // Some omit :3 - need it so != unbounded

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -20,11 +20,14 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+class AstNodeDType;
+
 //============================================================================
 
 class V3Common final {
 public:
     static void commonAll() VL_MT_DISABLED;
+    static string makeToStringCall(AstNodeDType* nodep, const std::string& lhs);
 };
 
 #endif  // Guard

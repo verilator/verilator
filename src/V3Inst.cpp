@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -67,7 +67,7 @@ class InstVisitor final : public VNVisitor {
             AstNodeExpr* const exprp = VN_AS(nodep->exprp(), NodeExpr)->cloneTree(false);
             UASSERT_OBJ(exprp->width() == nodep->modVarp()->width(), nodep,
                         "Width mismatch, should have been handled in pinReconnectSimple");
-            if (nodep->modVarp()->isInoutish()) {
+            if (nodep->modVarp()->isInout()) {
                 nodep->v3fatalSrc("Unsupported: Verilator is a 2-state simulator");
             } else if (nodep->modVarp()->isWritable()) {
                 AstNodeExpr* const rhsp = new AstVarXRef{exprp->fileline(), nodep->modVarp(),
@@ -558,7 +558,7 @@ public:
             // Important to add statement next to cell, in case there is a
             // generate with same named cell
             cellp->addNextHere(newvarp);
-            if (pinVarp->isInoutish()) {
+            if (pinVarp->isInout()) {
                 pinVarp->v3fatalSrc("Unsupported: Inout connections to pins must be"
                                     " direct one-to-one connection (without any expression)");
             } else if (pinVarp->isWritable()) {

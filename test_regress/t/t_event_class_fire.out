@@ -1,0 +1,5 @@
+%Error: Internal Error: t/t_event_class_fire.v:10:7: ../V3Delayed.cpp:#: No active to handle FireEvent
+                                                   : ... note: In instance '$unit::Cls'
+   10 |       ->> e;
+      |       ^~~
+                        ... See the manual at https://verilator.org/verilator_doc.html for more assistance.

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -70,21 +70,17 @@ class DepthBlockVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep << endl);
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            m_deepNum = 0;
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        m_deepNum = 0;
+        iterateChildren(nodep);
     }
     void visit(AstCFunc* nodep) override {
         // We recurse into this.
         VL_RESTORER(m_depth);
         VL_RESTORER(m_cfuncp);
-        {
-            m_depth = 0;
-            m_cfuncp = nodep;
-            iterateChildren(nodep);
-        }
+        m_depth = 0;
+        m_cfuncp = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstStmtExpr* nodep) override {}  // Stop recursion after introducing new function
     void visit(AstJumpBlock*) override {}  // Stop recursion as can't break up across a jump

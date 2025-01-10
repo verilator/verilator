@@ -30,6 +30,8 @@ endclass
       Cls c;  // BAd
    } illegal_t;
 
+   illegal_t s;
+
    initial begin
       $stop;
    end

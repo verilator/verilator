@@ -41,7 +41,7 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
     description="""lint_py_test_filter is used to filter
 pylint output for expected errors in Verilator test_regress/*.py tests.""",
-    epilog="""Copyright 2024-2024 by Wilson Snyder. This program is free software; you
+    epilog="""Copyright 2024-2025 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

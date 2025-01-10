@@ -8,11 +8,13 @@
 begin \
    longint prev_result; \
    int ok = 0; \
-   for (int i = 0; i < 10; i++) begin \
+   void'(cl.randomize()); \
+   prev_result = longint'(field); \
+   repeat(9) begin \
       longint result; \
       void'(cl.randomize()); \
       result = longint'(field); \
-      if (i > 0 && result != prev_result) ok = 1; \
+      if (result != prev_result) ok = 1; \
       prev_result = result; \
    end \
    if (ok != 1) $stop; \
@@ -134,6 +136,13 @@ module mwith();
     if (cls.b != 1) $stop;
     `check_rand(cls2, cls2.a);
     `check_rand(cls2, cls2.c);
+
+    // Check randomize as a task
+    // verilator lint_off IGNOREDRETURN
+    cls.randomize() with { b == 2;};
+    // verilator lint_on IGNOREDRETURN
+    if (cls.b != 2) $stop;
+
     // Check capture of a static variable
     if (foo.randomize() with { a > sub1.sub_var; } != 1) $stop;
     // Check reference to a function

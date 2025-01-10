@@ -1,0 +1,4 @@
+%Error: t/t_package_import_bad2.v:12:11: Importing from missing package 'Pkg1b'
+   12 |    import Pkg1b::*;   
+      |           ^~~~~
+%Error: Exiting due to

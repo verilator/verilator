@@ -13,8 +13,9 @@ test.scenarios('simulator')
 
 test.compile()
 
-test.execute(expect="""[10] hello
-[20] world
-""")
+test.execute()
+
+test.file_grep(test.run_log_filename, r"\[10\] hello")
+test.file_grep(test.run_log_filename, r"\[20\] world")
 
 test.passes()

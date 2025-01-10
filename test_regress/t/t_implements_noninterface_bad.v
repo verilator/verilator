@@ -17,5 +17,5 @@ class ClsBad2 extends Icls;
 endclass
 
 module t (/*AUTOARG*/);
-   Cls c;
+   ClsBad2 c;
 endmodule

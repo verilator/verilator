@@ -17,6 +17,7 @@ class Cls;
    bit [15:0] carray4 [4];
    bit [64:0] cwide[2];
    string     name;
+   real r;
    task debug();
       $display("DEBUG: %s (@%0t) %s", this.name, $realtime, "message");
    endtask
@@ -28,6 +29,7 @@ module t (/*AUTOARG*/);
       c = new;
       c.b = '1;
       c.i = 42;
+      c.r = 2.2;
       c.name = "object_name";
 
       c.carray4[0] = 16'h11;

@@ -10,9 +10,8 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
+test.top_filename = "t/t_std_identifier.v"
 
 test.lint(fails=True, expect_filename=test.golden_filename)
-
-test.lint(verilator_flags2=["-DTEST_DECLARE_STD"])
 
 test.passes()

@@ -59,6 +59,8 @@ extern void dpix_t_reg15(const svLogicVecVal* i, svLogicVecVal* o);
 extern void dpix_t_reg95(const svLogicVecVal* i, svLogicVecVal* o);
 extern void dpix_t_integer(const svLogicVecVal* i, svLogicVecVal* o);
 extern void dpix_t_time(const svLogicVecVal* i, svLogicVecVal* o);
+
+extern int dpix__under___score(int i);
 }
 
 #endif
@@ -224,6 +226,8 @@ int dpix_run_tests() {
         CHECK_RESULT(int, o[1].bval, 0);
     }
 #endif
+
+    CHECK_RESULT(int, dpix__under___score(77), 78);
 
     if (int bad = check_sub("top.t.a", 1)) return bad;
     if (int bad = check_sub("top.t.b", 2)) return bad;

@@ -17,11 +17,14 @@ module t (/*AUTOARG*/
    input [63:0]  iv[N-1:0];
    output logic [63:0] ov[N-1:0];
 
+   genvar        j;  // Bypass first genvar check
    genvar        i;
    generate
-      always @(posedge clk) begin
-         for (i=0; i<N; i=i+1) begin
-            ov[i] <= iv[i];
+      for (j=0; j<1; j=j+1) begin
+         always @(posedge clk) begin
+            for (i=0; i<N; i=i+1) begin
+               ov[i] <= iv[i];
+            end
          end
       end
    endgenerate

@@ -21,7 +21,7 @@ test.compile(v_flags2=[
 
 test.execute(fails=test.vlt_all)
 
-test.file_grep(test.obj_dir + "/vlt_compile.log",
+test.file_grep(test.compile_log_filename,
                r'%Warning-USERFATAL: "Parameter   5 is invalid...string and constant both work"')
 
 test.passes()

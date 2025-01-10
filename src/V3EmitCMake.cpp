@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2004-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -36,8 +36,8 @@ class CMakeEmitter final {
     // STATIC FUNCTIONS
 
     // Concatenate all strings in 'strs' with ' ' between them.
-    template <typename List>
-    static string cmake_list(const List& strs) {
+    template <typename T_List>
+    static string cmake_list(const T_List& strs) {
         string s;
         for (auto it = strs.begin(); it != strs.end(); ++it) {
             s += '"';

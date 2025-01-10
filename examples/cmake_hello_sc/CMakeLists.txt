@@ -24,8 +24,11 @@ cmake_policy(SET CMP0074 NEW)
 project(cmake_hello_sc CXX)
 
 find_package(verilator HINTS $ENV{VERILATOR_ROOT} ${VERILATOR_ROOT})
-if (NOT verilator_FOUND)
-  message(FATAL_ERROR "Verilator was not found. Either install it, or set the VERILATOR_ROOT environment variable")
+if(NOT verilator_FOUND)
+    message(
+        FATAL_ERROR
+        "Verilator was not found. Either install it, or set the VERILATOR_ROOT environment variable"
+    )
 endif()
 
 # SystemC dependencies
@@ -39,14 +42,12 @@ find_package(SystemCLanguage QUIET)
 add_executable(example ../make_hello_sc/sc_main.cpp)
 target_compile_features(example PUBLIC cxx_std_14)
 
-set_property(
-  TARGET example
-  PROPERTY CXX_STANDARD ${SystemC_CXX_STANDARD}
-  )
+set_property(TARGET example PROPERTY CXX_STANDARD ${SystemC_CXX_STANDARD})
 
 # Add the Verilated circuit to the target
 verilate(example SYSTEMC
   INCLUDE_DIRS "../make_hello_sc"
-  SOURCES ../make_hello_sc/top.v)
+  SOURCES ../make_hello_sc/top.v
+)
 
 verilator_link_systemc(example)

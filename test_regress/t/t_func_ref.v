@@ -24,6 +24,16 @@ module t (/*AUTOARG*/);
    int b;
    int arr[1];
    MyInt mi;
+
+   task update_inout(inout int flag, input bit upflag);
+      flag = upflag ? 1 + flag : flag;
+   endtask
+   task update_ref(ref int flag, input bit upflag);
+      flag = upflag ? 1 + flag : flag;
+   endtask
+
+   int my_flag;
+
    initial begin
       mi = new(1);
       b = get_val_set_5(mi.x);
@@ -34,6 +44,15 @@ module t (/*AUTOARG*/);
       b = get_val_set_5(arr[0]);
       `checkh(arr[0], 5);
       `checkh(b, 10);
+
+      update_ref(my_flag, 1);
+      if (my_flag !== 1) $stop;
+      update_ref(my_flag, 0);
+      if (my_flag !== 1) $stop;
+      update_inout(my_flag, 1);
+      if (my_flag !== 2) $stop;
+      update_inout(my_flag, 0);
+      if (my_flag !== 2) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

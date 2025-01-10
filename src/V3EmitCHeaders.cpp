@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -18,6 +18,7 @@
 
 #include "V3EmitC.h"
 #include "V3EmitCConstInit.h"
+#include "V3File.h"
 #include "V3UniqueNames.h"
 
 #include <algorithm>
@@ -222,7 +223,7 @@ class EmitCHeader final : public EmitCConstInit {
                         std::set<AstNodeUOrStructDType*>& emitted) {
         if (emitted.count(sdtypep) > 0) return;
         emitted.insert(sdtypep);
-        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+        for (AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             AstNodeUOrStructDType* const subp = itemp->getChildStructp();
             if (subp && (!subp->packed() || sdtypep->packed())) {
@@ -498,8 +499,11 @@ class EmitCHeader final : public EmitCConstInit {
 
         // Open output file
         const string filename = v3Global.opt.makeDir() + "/" + prefixNameProtect(modp) + ".h";
-        newCFile(filename, /* slow: */ false, /* source: */ false);
-        m_ofp = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
+        AstCFile* const cfilep = newCFile(filename, /* slow: */ false, /* source: */ false);
+        V3OutCFile* const ofilep
+            = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
+
+        setOutputFile(ofilep, cfilep);
 
         ofp()->putsHeader();
         puts("// DESCRIPTION: Verilator output: Design internal header\n");
@@ -539,7 +543,7 @@ class EmitCHeader final : public EmitCConstInit {
         ofp()->putsEndGuard();
 
         // Close output file
-        VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+        closeOutputFile();
     }
     ~EmitCHeader() override = default;
 

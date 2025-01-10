@@ -14,7 +14,7 @@ test.scenarios('simulator')
 test.compile(verilator_flags2=["--stats"])
 
 if test.vlt_all:
-    test.file_grep(test.stats, r'Optimizations, Delayed shared-sets\s+(\d+)', 14)
+    test.file_grep(test.stats, r'Optimizations, NBA flags shared\s+(\d+)', 14)
 
 test.execute()
 

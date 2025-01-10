@@ -65,9 +65,9 @@ class Node:
         assert not self.isCompleted
         self._subClasses.append(subClass)
 
-    def addOp(self, n, name, monad, kind):
+    def addOp(self, n, name, monad, kind, legals):
         assert 1 <= n <= 4
-        self._ops[n] = (name, monad, kind)
+        self._ops[n] = (name, monad, kind, legals)
         self._arity = max(self._arity, n)
 
     def getOp(self, n):
@@ -79,9 +79,9 @@ class Node:
             return self.superClass.getOp(n)
         return None
 
-    def addPtr(self, name, monad, kind):
+    def addPtr(self, name, monad, kind, legals):
         name = re.sub(r'^m_', '', name)
-        self._ptrs.append({'name': name, 'monad': monad, 'kind': kind})
+        self._ptrs.append({'name': name, 'monad': monad, 'kind': kind, 'legals': legals})
 
     # Computes derived properties over entire class hierarchy.
     # No more changes to the hierarchy are allowed once this was called
@@ -519,7 +519,8 @@ def partitionAndStrip(string, separator):
 
 
 def parseOpType(string):
-    match = re.match(r'^(\w+)\[(\w+)\]$', string)
+    # Return [Optional/List, AstNodeKind, LegalAstKinds]
+    match = re.match(r'^(\w+)\[(.*?)\]$', string)
     if match:
         monad, kind = match.groups()
         if monad not in ("Optional", "List"):
@@ -527,9 +528,16 @@ def parseOpType(string):
         kind = parseOpType(kind)
         if not kind or kind[0]:
             return None
-        return monad, kind[1]
-    if re.match(r'^Ast(\w+)$', string):
-        return "", string[3:]
+        return monad, kind[1], kind[2]
+    match = re.match(r'^Ast(\w+)<(.*?)>$', string)
+    if match:
+        kind = match.group(1)
+        legals = match.group(2)
+        legals = re.sub(r'\bAst', '', legals)
+        return "", kind, legals
+    match = re.match(r'^Ast(\w+)$', string)
+    if match:
+        return "", match.group(1), match.group(1)
     return None
 
 
@@ -852,6 +860,10 @@ def write_type_tests(prefix, nodeList):
             base = "DfgVertex"
             variable = "vtxp"
             enum = "VDfgType"
+        else:
+            base = None
+            variable = None
+            enum = None
         for node in nodeList:
             fh.write(
                 "template<> inline bool {b}::privateTypeTest<{p}{n}>(const {b}* {v}) {{ ".format(
@@ -885,7 +897,7 @@ def write_ast_type_info(filename):
                     opTypeList.append('OP_UNUSED')
                     opNameList.append('op{0}p'.format(n))
                 else:
-                    name, monad, _ = op
+                    name, monad, _, _ = op
                     if not monad:
                         opTypeList.append('OP_USED')
                     elif monad == "Optional":
@@ -909,7 +921,7 @@ def write_ast_impl(filename):
     with open_file(filename) as fh:
 
         def emitBlock(pattern, **fmt):
-            fh.write(textwrap.indent(textwrap.dedent(pattern), "    ").format(**fmt))
+            fh.write(pattern.format(**fmt))
 
         for node in AstNodeList:
             if node.name == "Node":
@@ -926,8 +938,37 @@ def write_ast_impl(filename):
                     emitBlock("    BROKEN_RTN(!m_{name});\n" +
                               "    BROKEN_RTN(!m_{name}->brokeExists());\n",
                               name=ptr['name'])
+                if ptr['legals'] != '':
+                    emitBlock("    BROKEN_RTN(m_{name} && !(", name=ptr['name'])
+                    eor = ""
+                    for legal in ptr['legals'].split('|'):
+                        # We use privateTypeTest, as VN_IS would assert that we know
+                        # the type is correct, but we want to check regardless,
+                        # to find errors after raw node edits/replacements
+                        emitBlock("{eor}privateTypeTest<Ast{legal}>(m_{name})",
+                                  eor=eor,
+                                  name=ptr['name'],
+                                  legal=legal)
+                        eor = " || "
+                    emitBlock("));\n")
+            for i in range(1, 5):
+                op = node.getOp(i)
+                if op is None:
+                    continue
+                name, _, _, legals = op
+                if legals != '':
+                    emitBlock("    BROKEN_RTN({name}() && !(", name=name)
+                    eor = ""
+                    for legal in legals.split('|'):
+                        emitBlock("{eor}privateTypeTest<Ast{legal}>({name}())",
+                                  eor=eor,
+                                  name=name,
+                                  legal=legal)
+                        eor = " || "
+                    emitBlock("));\n")
             # Node's broken rules can be specialized by declaring broken()
-            emitBlock("    return Ast{t}::broken(); }}\n", t=node.name)
+            emitBlock("    return Ast{t}::broken();\n", t=node.name)
+            emitBlock("}}\n", t=node.name)
 
             emitBlock("void Ast{t}::cloneRelinkGen() {{\n", t=node.name)
             if node.superClass.name != 'Node':
@@ -954,7 +995,7 @@ def write_ast_impl(filename):
                 op = node.getOp(i)
                 if op is None:
                     continue
-                name, _, _ = op
+                name, _, _, _ = op
                 emitBlock("    dumpNodeListJson(str, {name}(), \"{name}\", indent);\n", name=name)
             emitBlock("}}\n")
 
@@ -1020,7 +1061,7 @@ def write_ast_macros(filename):
                 op = node.getOp(n)
                 if not op:
                     continue
-                name, monad, kind = op
+                name, monad, kind, _ = op
                 retrieve = ("VN_DBG_AS(op{n}p(), {kind})"
                             if kind != "Node" else "op{n}p()").format(n=n, kind=kind)
                 superOp = node.superClass.getOp(n)
@@ -1108,7 +1149,7 @@ def write_dfg_macros(filename):
                           s=node.superClass.name)
 
             for n in range(1, node.arity + 1):
-                name, _, _ = node.getOp(n)
+                name, _, _, _ = node.getOp(n)
                 emitBlock('''\
                 DfgVertex* {name}() const {{ return source<{n}>(); }}
                 void {name}(DfgVertex* vtxp) {{ relinkSource<{n}>(vtxp); }}
@@ -1213,7 +1254,7 @@ parser = argparse.ArgumentParser(
     allow_abbrev=False,
     formatter_class=argparse.RawDescriptionHelpFormatter,
     description="""Generate V3Ast headers to reduce C++ code duplication.""",
-    epilog="""Copyright 2002-2024 by Wilson Snyder. This program is free software; you
+    epilog="""Copyright 2002-2025 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
@@ -1295,9 +1336,9 @@ for node in AstNodeList:
     for n in range(1, node.arity + 1):
         op = node.getOp(n)
         if op is not None:
-            name, monad, kind = op
+            name, monad, kind, legals = op
             assert monad == "", "Cannot represent AstNode as DfgVertex"
-            vertex.addOp(n, name, "", "")
+            vertex.addOp(n, name, "", "", "")
 
 # Compute derived properties over the whole DfgVertex hierarchy
 DfgVertices["Vertex"].complete()

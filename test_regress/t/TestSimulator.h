@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2013-2024 by Wilson Snyder. This program is free software; you can
+// Copyright 2013-2025 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -17,11 +17,12 @@
 class TestSimulator {
 private:
     struct SimTypes {
-        int verilator;
-        int icarus;
-        int mti;
-        int ncsim;
-        int vcs;
+        bool verilator = false;
+        bool icarus = false;
+        bool mti = false;
+        bool ncsim = false;
+        bool vcs = false;
+        bool questa = false;
     };
     s_vpi_vlog_info m_info;
     SimTypes m_simulators;
@@ -37,6 +38,8 @@ public:
                    == strncmp(m_info.product, "Chronologic Simulation VCS",
                               std::strlen("Chronologic Simulation VCS"))) {
             m_simulators.vcs = true;
+        } else if (0 == strcmp(m_info.product, "ModelSim for Questa-64")) {
+            m_simulators.questa = true;
         } else {
             printf("%%Warning: %s:%d: Unknown simulator in TestSimulator.h: %s\n", __FILE__,
                    __LINE__, m_info.product);
@@ -59,12 +62,13 @@ public:
     static bool is_mti() { return simulators().mti; }
     static bool is_ncsim() { return simulators().ncsim; }
     static bool is_vcs() { return simulators().vcs; }
+    static bool is_questa() { return simulators().questa; }
     // Simulator properties
     static bool is_event_driven() { return !simulators().verilator; }
     static bool has_get_scalar() { return !simulators().icarus; }
     // return test level scope
     static const char* top() {
-        if (simulators().verilator || simulators().icarus) {
+        if (simulators().verilator || simulators().icarus || simulators().questa) {
             return "t";
         } else {
             return "top.t";

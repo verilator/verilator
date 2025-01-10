@@ -21,6 +21,9 @@ class C #(parameter P=1);
    rand int irand;
    randc int icrand;
 
+   rand typedef int irand_t;
+   randc typedef int icrand_t;
+
    task classtask; endtask
    function int classfunc; endfunction
    virtual function void func_virtual; endfunction

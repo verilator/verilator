@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -43,13 +43,15 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         const AstNode* m_nodep;
         const string m_symName;
         const string m_prettyName;
+        const string m_defName;
         const int m_timeunit;
         string m_type;
         ScopeData(const AstNode* nodep, const string& symName, const string& prettyName,
-                  int timeunit, const string& type)
+                  const string& defName, int timeunit, const string& type)
             : m_nodep{nodep}
             , m_symName{symName}
             , m_prettyName{prettyName}
+            , m_defName{defName}
             , m_timeunit{timeunit}
             , m_type{type} {}
     };
@@ -156,7 +158,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
 
     static string scopeDecodeIdentifier(const string& scpname) {
-        string out = scpname;
         string::size_type pos = string::npos;
 
         // Remove hierarchy
@@ -172,17 +173,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             }
         }
 
-        if (pos != std::string::npos) out.erase(0, pos + 1);
-
-        // Decode all escaped characters
-        while ((pos = out.find("__0")) != string::npos) {
-            unsigned int x;
-            std::stringstream ss;
-            ss << std::hex << out.substr(pos + 3, 2);
-            ss >> x;
-            out.replace(pos, 5, 1, (char)x);
-        }
-        return out;
+        return pos != string::npos ? scpname.substr(pos + 1) : scpname;
     }
 
     /// (scp, m_vpiScopeCandidates, m_scopeNames) -> m_scopeNames
@@ -253,8 +244,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                     if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
                     if (m_scopeNames.find(scpSym) == m_scopeNames.end()) {
                         // cppcheck-suppress stlFindInsert
-                        m_scopeNames.emplace(scpSym,
-                                             ScopeData{varp, scpSym, scpPretty, 0, "SCOPE_OTHER"});
+                        m_scopeNames.emplace(scpSym, ScopeData{varp, scpSym, scpPretty, "<null>",
+                                                               0, "SCOPE_OTHER"});
                     }
                     m_scopeVars.emplace(scpSym + " " + varp->name(),
                                         ScopeVarData{scpSym, varBasePretty, varp, modp, scopep});
@@ -311,10 +302,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void visit(AstNodeModule* nodep) override {
         nameCheck(nodep);
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            iterateChildrenConst(nodep);
-        }
+        m_modp = nodep;
+        iterateChildrenConst(nodep);
     }
     void visit(AstCellInlineScope* nodep) override {
         if (v3Global.opt.vpi()) {
@@ -325,7 +314,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             const int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.emplace(
                 scopeSymString(name),
-                ScopeData{nodep, scopeSymString(name), name_pretty, timeunit, type});
+                ScopeData{nodep, scopeSymString(name), name_pretty,
+                          type == "SCOPE_MODULE" ? nodep->origModName() : "<null>", timeunit,
+                          type});
         }
     }
     void visit(AstScope* nodep) override {
@@ -338,9 +329,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             const string type = VN_IS(nodep->modp(), Package) ? "SCOPE_PACKAGE" : "SCOPE_MODULE";
             const string name_pretty = AstNode::vpiName(nodep->shortName());
             const int timeunit = m_modp->timeunit().powerOfTen();
-            m_vpiScopeCandidates.emplace(
-                scopeSymString(nodep->name()),
-                ScopeData{nodep, scopeSymString(nodep->name()), name_pretty, timeunit, type});
+            m_vpiScopeCandidates.emplace(scopeSymString(nodep->name()),
+                                         ScopeData{nodep, scopeSymString(nodep->name()),
+                                                   name_pretty, "<null>", timeunit, type});
         }
         iterateChildrenConst(nodep);
     }
@@ -349,8 +340,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         // UINFO(9, "scnameins sp " << nodep->name() << " sp " << nodep->scopePrettySymName()
         // << " ss" << name << endl);
         const int timeunit = m_modp ? m_modp->timeunit().powerOfTen() : 0;
-        m_scopeNames.emplace(
-            name, ScopeData{nodep, name, nodep->scopePrettySymName(), timeunit, "SCOPE_OTHER"});
+        m_scopeNames.emplace(name, ScopeData{nodep, name, nodep->scopePrettySymName(), "<null>",
+                                             timeunit, "SCOPE_OTHER"});
         if (nodep->dpiExport()) {
             UASSERT_OBJ(m_cfuncp, nodep, "ScopeName not under DPI function");
             m_scopeFuncs.emplace(name + " " + m_cfuncp->name(),
@@ -358,9 +349,10 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         } else {
             if (m_scopeNames.find(nodep->scopeDpiName()) == m_scopeNames.end()) {
                 // cppcheck-suppress stlFindInsert
-                m_scopeNames.emplace(nodep->scopeDpiName(), ScopeData{nodep, nodep->scopeDpiName(),
-                                                                      nodep->scopePrettyDpiName(),
-                                                                      timeunit, "SCOPE_OTHER"});
+                m_scopeNames.emplace(nodep->scopeDpiName(),
+                                     ScopeData{nodep, nodep->scopeDpiName(),
+                                               nodep->scopePrettyDpiName(), "<null>", timeunit,
+                                               "SCOPE_OTHER"});
             }
         }
     }
@@ -383,10 +375,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         nameCheck(nodep);
         if (nodep->dpiImportPrototype() || nodep->dpiExportDispatcher()) m_dpis.push_back(nodep);
         VL_RESTORER(m_cfuncp);
-        {
-            m_cfuncp = nodep;
-            iterateChildrenConst(nodep);
-        }
+        m_cfuncp = nodep;
+        iterateChildrenConst(nodep);
     }
 
     //---------------------------------------
@@ -403,13 +393,9 @@ public:
 void EmitCSyms::emitSymHdr() {
     UINFO(6, __FUNCTION__ << ": " << endl);
     const string filename = v3Global.opt.makeDir() + "/" + symClassName() + ".h";
-    newCFile(filename, true /*slow*/, false /*source*/);
-
-    if (v3Global.opt.systemC()) {
-        m_ofp = new V3OutScFile{filename};
-    } else {
-        m_ofp = new V3OutCFile{filename};
-    }
+    AstCFile* const cfilep = newCFile(filename, true /*slow*/, false /*source*/);
+    V3OutCFile* const ofilep = optSystemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
+    setOutputFile(ofilep, cfilep);
 
     ofp()->putsHeader();
     puts("// DESCRIPTION: Verilator output: Symbol table internal header\n");
@@ -586,18 +572,18 @@ void EmitCSyms::emitSymHdr() {
     puts("};\n");
 
     ofp()->putsEndGuard();
-    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+    closeOutputFile();
 }
 
 void EmitCSyms::closeSplit() {
-    if (!m_ofp || m_ofp == m_ofpBase) return;
+    if (!ofp() || ofp() == m_ofpBase) return;
 
     puts("}\n");
-    VL_DO_CLEAR(delete m_ofp, m_ofp = nullptr);
+    closeOutputFile();
 }
 
 void EmitCSyms::checkSplit(bool usesVfinal) {
-    if (m_ofp
+    if (ofp()
         && (!v3Global.opt.outputSplitCFuncs() || m_numStmts < v3Global.opt.outputSplitCFuncs())) {
         return;
     }
@@ -613,11 +599,8 @@ void EmitCSyms::checkSplit(bool usesVfinal) {
     m_usesVfinal[m_funcNum] = usesVfinal;
     closeSplit();
 
-    if (v3Global.opt.systemC()) {
-        m_ofp = new V3OutScFile{filename};
-    } else {
-        m_ofp = new V3OutCFile{filename};
-    }
+    V3OutCFile* const ofilep = optSystemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
+    setOutputFile(ofilep, cfilep);
 
     m_ofpBase->puts(symClassName() + "_" + cvtToStr(m_funcNum) + "(");
     if (usesVfinal) m_ofpBase->puts("__Vfinal");
@@ -697,13 +680,10 @@ void EmitCSyms::emitSymImp() {
     AstCFile* const cfilep = newCFile(filename, true /*slow*/, true /*source*/);
     cfilep->support(true);
 
-    if (v3Global.opt.systemC()) {
-        m_ofp = new V3OutScFile{filename};
-    } else {
-        m_ofp = new V3OutCFile{filename};
-    }
+    V3OutCFile* const ofilep = optSystemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
+    setOutputFile(ofilep, cfilep);
 
-    m_ofpBase = m_ofp;
+    m_ofpBase = ofp();
     emitSymImpPreamble();
 
     if (v3Global.opt.savable()) {
@@ -910,6 +890,8 @@ void EmitCSyms::emitSymImp() {
             puts(", ");
             putsQuoted(protect(scopeDecodeIdentifier(it->second.m_prettyName)));
             puts(", ");
+            putsQuoted(it->second.m_defName);
+            puts(", ");
             puts(cvtToStr(it->second.m_timeunit));
             puts(", VerilatedScope::" + it->second.m_type + ");\n");
             ++m_numStmts;
@@ -947,21 +929,11 @@ void EmitCSyms::emitSymImp() {
             checkSplit(true);
             AstScope* const scopep = it->second.m_scopep;
             AstVar* const varp = it->second.m_varp;
-            //
-            int pwidth = 1;
             int pdim = 0;
             int udim = 0;
             string bounds;
             if (AstBasicDType* const basicp = varp->basicp()) {
                 // Range is always first, it's not in "C" order
-                if (basicp->isRanged()) {
-                    bounds += " ,";
-                    bounds += cvtToStr(basicp->hi());
-                    bounds += ",";
-                    bounds += cvtToStr(basicp->lo());
-                    pdim++;
-                    pwidth *= basicp->elements();
-                }
                 for (AstNodeDType* dtypep = varp->dtypep(); dtypep;) {
                     dtypep
                         = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
@@ -970,28 +942,24 @@ void EmitCSyms::emitSymImp() {
                         bounds += cvtToStr(adtypep->left());
                         bounds += ",";
                         bounds += cvtToStr(adtypep->right());
-                        if (VN_IS(dtypep, PackArrayDType)) {
+                        if (VN_IS(dtypep, PackArrayDType))
                             pdim++;
-                            pwidth *= adtypep->elementsConst();
-                        } else {
+                        else
                             udim++;
-                        }
                         dtypep = adtypep->subDTypep();
                     } else {
+                        if (basicp->isRanged()) {
+                            bounds += " ,";
+                            bounds += cvtToStr(basicp->hi());
+                            bounds += ",";
+                            bounds += cvtToStr(basicp->lo());
+                            pdim++;
+                        }
                         break;  // AstBasicDType - nothing below, 1
                     }
                 }
             }
-            // TODO: actually expose packed arrays as vpiRegArray
-            if (pdim > 1 && udim == 0) {
-                bounds = ", ";
-                bounds += cvtToStr(pwidth - 1);
-                bounds += ",0";
-                pdim = 1;
-            }
-            if (pdim > 1 || udim > 1) {
-                puts("//UNSUP ");  // VerilatedImp can't deal with >2d or packed arrays
-            }
+
             putns(scopep, protect("__Vscope_" + it->second.m_scopeName));
             putns(varp, ".varInsert(__Vfinal,");
             putsQuoted(protect(it->second.m_varBasePretty));
@@ -1001,7 +969,8 @@ void EmitCSyms::emitSymImp() {
             varName += protect(varp->name());
 
             if (varp->isParam()) {
-                if (varp->vlEnumType() == "VLVT_STRING") {
+                if (varp->vlEnumType() == "VLVT_STRING"
+                    && !VN_IS(varp->subDTypep(), UnpackArrayDType)) {
                     puts(", const_cast<void*>(static_cast<const void*>(");
                     puts(varName);
                     puts(".c_str())), ");
@@ -1022,7 +991,9 @@ void EmitCSyms::emitSymImp() {
             puts(",");
             puts(varp->vlEnumDir());  // VLVD_IN etc
             puts(",");
-            puts(cvtToStr(pdim + udim));
+            puts(cvtToStr(udim));
+            puts(",");
+            puts(cvtToStr(pdim));
             puts(bounds);
             puts(");\n");
             ++m_numStmts;
@@ -1033,7 +1004,7 @@ void EmitCSyms::emitSymImp() {
     m_ofpBase->puts("}\n");
 
     closeSplit();
-    m_ofp = nullptr;
+    setOutputFile(nullptr);
     VL_DO_CLEAR(delete m_ofpBase, m_ofpBase = nullptr);
 }
 
@@ -1045,9 +1016,9 @@ void EmitCSyms::emitDpiHdr() {
     AstCFile* const cfilep = newCFile(filename, false /*slow*/, false /*source*/);
     cfilep->support(true);
     V3OutCFile hf{filename};
-    m_ofp = &hf;
+    setOutputFile(&hf, cfilep);
 
-    m_ofp->putsHeader();
+    ofp()->putsHeader();
     puts("// DESCR"
          "IPTION: Verilator output: Prototypes for DPI import and export functions.\n");
     puts("//\n");
@@ -1089,7 +1060,7 @@ void EmitCSyms::emitDpiHdr() {
     puts("#endif\n");
 
     ofp()->putsEndGuard();
-    m_ofp = nullptr;
+    setOutputFile(nullptr);
 }
 
 //######################################################################
@@ -1100,9 +1071,9 @@ void EmitCSyms::emitDpiImp() {
     AstCFile* const cfilep = newCFile(filename, false /*slow*/, true /*source*/);
     cfilep->support(true);
     V3OutCFile hf(filename);
-    m_ofp = &hf;
+    setOutputFile(&hf, cfilep);
 
-    m_ofp->putsHeader();
+    ofp()->putsHeader();
     puts("// DESCR"
          "IPTION: Verilator output: Implementation of DPI export functions.\n");
     puts("//\n");
@@ -1146,7 +1117,7 @@ void EmitCSyms::emitDpiImp() {
             puts("\n");
         }
     }
-    m_ofp = nullptr;
+    setOutputFile(nullptr);
 }
 
 //######################################################################

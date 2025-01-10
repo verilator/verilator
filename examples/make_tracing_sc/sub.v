@@ -14,7 +14,7 @@ module sub
 
    // Example counter/flop
    reg [31:0] count_f;
-   always_ff @ (posedge fastclk) begin
+   always_ff @(posedge fastclk) begin
       if (!reset_l) begin
          /*AUTORESET*/
          // Beginning of autoreset for uninitialized flops
@@ -28,7 +28,7 @@ module sub
 
    // Another example flop
    reg [31:0] count_c;
-   always_ff @ (posedge clk) begin
+   always_ff @(posedge clk) begin
       if (!reset_l) begin
          /*AUTORESET*/
          // Beginning of autoreset for uninitialized flops
@@ -38,8 +38,7 @@ module sub
       else begin
          count_c <= count_c + 1;
          if (count_c >= 3) begin
-            $display("[%0t] fastclk is %0d times faster than clk\n",
-                     $time, count_f/count_c);
+            $display("[%0t] fastclk is %0d times faster than clk\n", $time, count_f / count_c);
             // This write is a magic value the Makefile uses to make sure the
             // test completes successfully.
             $write("*-* All Finished *-*\n");
@@ -49,11 +48,11 @@ module sub
    end
 
    // An example assertion
-   always_ff @ (posedge clk) begin
-      AssertionExample: assert(!reset_l || count_c<100);
+   always_ff @(posedge clk) begin
+      AssertionExample : assert (!reset_l || count_c < 100);
    end
 
    // And example coverage analysis
-   cover property (@(posedge clk) count_c==3);
+   cover property (@(posedge clk) count_c == 3);
 
 endmodule

@@ -63,6 +63,10 @@ extern "C" int mon_check();
 
    sub \mod.with_dot (.cyc(cyc));
 
+   // Check if scope names are not decoded twice
+   sub ___0F_ (.cyc(cyc));
+   sub ___0_ (.cyc(cyc));
+
    initial begin
 
 `ifdef VERILATOR

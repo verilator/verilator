@@ -17,10 +17,9 @@ if not test.have_gdb:
 
 test.lint(verilator_flags2=["--lint-only --debug --gdbbt --debug-sigsegv"],
           sanitize=0,
-          fails=test.vlt_all,
-          expect=""".*
-Program received signal SIGSEGV, Segmentation fault.
-.*in V3Options::.*
-.*%Error: Command Failed.*""")
+          fails=test.vlt_all)
+
+test.file_grep(test.compile_log_filename, r'Program received signal SIGSEGV')
+test.file_grep(test.compile_log_filename, r'in V3Options::')
 
 test.passes()

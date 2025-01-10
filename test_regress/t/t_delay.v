@@ -18,12 +18,14 @@ module t (/*AUTOARG*/
    wire [31:0] dly1;
    wire [31:0] dly2 = dly1 + 32'h1;
    wire [31:0] dly3;
+   wire [31:0] dly4;
 
    typedef struct packed { int dly; } dly_s_t;
    dly_s_t dly_s;
 
    assign #(1.2000000000000000) dly1 = dly0 + 32'h1;
    assign #(sub.delay) dly3 = dly1 + 1;
+   assign #sub.delay dly4 = dly1 + 1;
 
    sub sub();
 

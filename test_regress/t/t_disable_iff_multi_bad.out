@@ -1,8 +1,5 @@
-%Error-UNSUPPORTED: t/t_disable_iff_multi_bad.v:13:4: Unsupported: default disable iff
-   13 |    default disable iff (!rstn);
-      |    ^~~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_disable_iff_multi_bad.v:14:4: Unsupported: default disable iff
+%Error: t/t_disable_iff_multi_bad.v:14:4: Only one 'default disable iff' allowed per module (IEEE 1800-2023 16.15)
+                                        : ... note: In instance 't'
    14 |    default disable iff (!rstn);
       |    ^~~~~~~
 %Error: Exiting due to

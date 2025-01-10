@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -69,6 +69,25 @@ V3ParseImp::~V3ParseImp() {
 
 //######################################################################
 // Parser utility methods
+
+void V3ParseImp::importIfInStd(FileLine* fileline, const string& id) {
+    // Keywords that auto-import to require use of verilated_std.vh.
+    // OK if overly sensitive; will over-import and keep std:: around
+    // longer than migt otherwise.
+    if (v3Global.usesStdPackage()) return;  // Run once then short-circuit
+    const bool identifierImportsStd = (id == "mailbox" || id == "process" || id == "randomize"
+                                       || id == "semaphore" || id == "std");
+    if (!identifierImportsStd) return;
+    // Ignore Std:: used inside verilated_std.vh itself
+    if (fileline->filename() == V3Options::getStdPackagePath()) return;
+    if (AstPackage* const stdpkgp
+        = v3Global.rootp()->stdPackagep()) {  // else e.g. --no-std-package
+        UINFO(9, "import and keep std:: for " << fileline << "\n");
+        AstPackageImport* const impp = new AstPackageImport{stdpkgp->fileline(), stdpkgp, "*"};
+        unitPackage(stdpkgp->fileline())->addStmtsp(impp);
+        v3Global.setUsesStdPackage();
+    }
+}
 
 void V3ParseImp::lexPpline(const char* textp) {
     // Handle lexer `line directive
@@ -271,8 +290,8 @@ void V3ParseImp::preprocDumps(std::ostream& os, bool forInputs) {
     for (auto& buf : m_ppBuffers) {
         if (noblanks) {
             bool blank = true;
-            for (string::iterator its = buf.begin(); its != buf.end(); ++its) {
-                if (!std::isspace(*its) && *its != '\n') {
+            for (const char ch : buf) {
+                if (!std::isspace(ch) && ch != '\n') {
                     blank = false;
                     break;
                 }
@@ -332,7 +351,9 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     }
 
     V3Stats::addStatSum(V3Stats::STAT_SOURCE_CHARS, m_ppBytes);
-    if (debug() && modfilename != V3Options::getStdPackagePath()) dumpInputsFile();
+    if (debug() && modfilename != V3Options::getStdPackagePath()
+        && modfilename != V3Options::getStdWaiverPath())
+        dumpInputsFile();
 
     // Parse it
     if (!v3Global.opt.preprocOnly()) {
@@ -394,19 +415,75 @@ const V3ParseBisonYYSType* V3ParseImp::tokenPeekp(size_t depth) {
     return &m_tokensAhead.at(depth);
 }
 
-size_t V3ParseImp::tokenPipeScanParam(size_t depth) {
+size_t V3ParseImp::tokenPipeScanIdCell(size_t depthIn) {
+    // Search around IEEE module_instantiation/interface_instantiation/program_instantiation
+    // Return location of following token, or input if not found
+    // yaID/*module_identifier*/ [ '#' '('...')' ] yaID/*name_of_instance*/ [ '['...']' ] '(' ...
+    // yaID/*module_identifier*/ [ '#' id|etc ] yaID/*name_of_instance*/ [ '['...']' ] '(' ...
+    size_t depth = depthIn;
+    depth = tokenPipeScanParam(depth, true);
+
+    if (tokenPeekp(depth)->token != yaID__LEX) return depthIn;
+    ++depth;
+
+    depth = tokenPipeScanBracket(depth);  // [ '['..']' ]*
+    if (tokenPeekp(depth)->token != '(') return depthIn;
+
+    return depth;
+}
+
+size_t V3ParseImp::tokenPipeScanBracket(size_t inDepth) {
+    // Return location of following token, or input if not found
+    // [ '['...']' ]*
+    int depth = inDepth;
+    int bra = 0;
+    while (tokenPeekp(depth)->token == '[') {
+        do {  // Scan brackets
+            const int tok = tokenPeekp(depth)->token;
+            if (tok == 0) {  // LCOV_EXCL_BR_LINE
+                UINFO(9, "tokenPipeScanBracket hit EOF; probably syntax error to come");
+                return inDepth;  // LCOV_EXCL_LINE
+            } else if (tok == '[') {
+                ++bra;
+                ++depth;
+            } else if (bra && tok == ']') {
+                --bra;
+                ++depth;
+            } else if (bra) {
+                ++depth;
+            }
+        } while (bra);
+    }
+    return depth;
+}
+
+size_t V3ParseImp::tokenPipeScanParam(size_t inDepth, bool forCell) {
     // Search around IEEE parameter_value_assignment to see if :: follows
     // Return location of following token, or input if not found
     // yaID [ '#(' ... ')' ]
-    if (tokenPeekp(depth)->token != '#') return depth;
-    if (tokenPeekp(depth + 1)->token != '(') return depth;
-    depth += 2;  // Past the (
+    // if forCell: yaID [ '#' number/etc ]
+    int depth = inDepth;
+    if (tokenPeekp(depth)->token != '#') return inDepth;
+    ++depth;
+
+    if (tokenPeekp(depth)->token != '(') {
+        if (!forCell) return inDepth;
+        // For module cells, we can have '#' and a number, or, annoyingly an idDotted
+        int ntoken = tokenPeekp(depth)->token;
+        if (ntoken == yaINTNUM || ntoken == yaFLOATNUM || ntoken == yaTIMENUM
+            || ntoken == yaID__LEX) {
+            ++depth;
+            return depth;
+        }
+        return inDepth;  // Miss
+    }
+    ++depth;
     int parens = 1;  // Count first (
     while (true) {
         const int tok = tokenPeekp(depth)->token;
         if (tok == 0) {  // LCOV_EXCL_BR_LINE
             UINFO(9, "tokenPipeScanParam hit EOF; probably syntax error to come");
-            break;  // LCOV_EXCL_LINE
+            return inDepth;  // LCOV_EXCL_LINE
         } else if (tok == '(') {
             ++parens;
         } else if (tok == ')') {
@@ -445,6 +522,24 @@ size_t V3ParseImp::tokenPipeScanTypeEq(size_t depth) {
         ++depth;
     }
     return depth;
+}
+
+int V3ParseImp::tokenPipelineId(int token) {
+    const V3ParseBisonYYSType* nexttokp = tokenPeekp(0);  // First char after yaID
+    const int nexttok = nexttokp->token;
+    UINFO(9, "tokenPipelineId tok=" << yylval.token << endl);
+    UASSERT(yylval.token == yaID__LEX, "Start with ID");
+    if (nexttok == yP_COLONCOLON) { return yaID__CC; }
+    VL_RESTORER(yylval);  // Remember value, as about to read ahead
+    if (m_tokenLastBison.token != '@' && m_tokenLastBison.token != '#'
+        && m_tokenLastBison.token != '.') {
+        if (const size_t depth = tokenPipeScanIdCell(0)) return yaID__aCELL;
+    }
+    if (nexttok == '#') {  // e.g. class_type parameter_value_assignment '::'
+        const size_t depth = tokenPipeScanParam(0, false);
+        if (tokenPeekp(depth)->token == yP_COLONCOLON) return yaID__CC;
+    }
+    return token;
 }
 
 void V3ParseImp::tokenPipeline() {
@@ -552,13 +647,7 @@ void V3ParseImp::tokenPipeline() {
                 token = yWITH__ETC;
             }
         } else if (token == yaID__LEX) {
-            if (nexttok == yP_COLONCOLON) {
-                token = yaID__CC;
-            } else if (nexttok == '#') {
-                VL_RESTORER(yylval);  // Remember value, as about to read ahead
-                const size_t depth = tokenPipeScanParam(0);
-                if (tokenPeekp(depth)->token == yP_COLONCOLON) token = yaID__CC;
-            }
+            token = tokenPipelineId(token);
         }
         // If add to above "else if", also add to "if (token" further above
     }
@@ -577,6 +666,9 @@ void V3ParseImp::tokenPipelineSym() {
     // Note above sometimes converts yGLOBAL to a yaID__LEX
     tokenPipeline();  // sets yylval
     int token = yylval.token;
+    if (token == yaID__LEX || token == yaID__CC || token == yaID__aTYPE) {
+        importIfInStd(yylval.fl, *(yylval.strp));
+    }
     if (token == yaID__LEX || token == yaID__CC) {
         const VSymEnt* foundp;
         if (const VSymEnt* const look_underp = V3ParseImp::parsep()->symp()->nextId()) {
@@ -599,12 +691,6 @@ void V3ParseImp::tokenPipelineSym() {
                 VSymEnt* const stdsymp = stdpkgp->user4u().toSymEnt();
                 foundp = stdsymp->findIdFallback(*(yylval.strp));
             }
-            if (foundp && !v3Global.usesStdPackage()) {
-                AstPackageImport* const impp
-                    = new AstPackageImport{stdpkgp->fileline(), stdpkgp, "*"};
-                unitPackage(stdpkgp->fileline())->addStmtsp(impp);
-                v3Global.setUsesStdPackage();
-            }
         }
         if (foundp) {
             AstNode* const scp = foundp->nodep();
@@ -622,8 +708,6 @@ void V3ParseImp::tokenPipelineSym() {
                 } else {
                     token = yaID__ETC;
                 }
-            } else if (!m_afterColonColon && *(yylval.strp) == "std") {
-                v3Global.setUsesStdPackage();
             }
         } else {  // Not found
             yylval.scp = nullptr;
@@ -654,9 +738,11 @@ int V3ParseImp::tokenToBison() {
     // Called as global since bison doesn't have our pointer
     tokenPipelineSym();  // sets yylval
     m_bisonLastFileline = yylval.fl;
+    m_tokenLastBison = yylval;
 
     // yylval.scp = nullptr;   // Symbol table not yet needed - no packages
-    if (debugFlex() >= 6 || debugBison() >= 6) {  // --debugi-flex and --debugi-bison
+    if (debug() >= 6 || debugFlex() >= 6
+        || debugBison() >= 6) {  // --debugi-flex and --debugi-bison
         cout << "tokenToBison  " << yylval << endl;
     }
     return yylval.token;
@@ -671,6 +757,7 @@ std::ostream& operator<<(std::ostream& os, const V3ParseBisonYYSType& rhs) {
     if (rhs.token == yaID__ETC  //
         || rhs.token == yaID__CC  //
         || rhs.token == yaID__LEX  //
+        || rhs.token == yaID__aCELL  //
         || rhs.token == yaID__aTYPE) {
         os << " strp='" << *(rhs.strp) << "'";
     }

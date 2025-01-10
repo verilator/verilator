@@ -20,6 +20,7 @@ Ashutosh
 Ast
 Atmel
 Aurelien
+Badáň
 Bagri
 Balboni
 Baltazar
@@ -110,8 +111,10 @@ Eugen
 Fabrizio
 Faucher
 Faure
+Feinberg
 Fekete
 Ferrandi
+Filip
 Flachs
 Flavien
 Florian
@@ -245,6 +248,7 @@ Liwei
 Lockhart
 Longo
 Luca
+Luiza
 Lussier
 Lübeck
 MMD
@@ -275,6 +279,8 @@ MinW
 Mindspeed
 MingW
 Miodrag
+Moberg
+Mobert
 ModelSim
 Modport
 Moinak
@@ -288,6 +294,7 @@ NaN
 Nalbantis
 Nandor
 Narayan
+Narcis
 Nassim
 Nauticus
 Newgard
@@ -337,6 +344,7 @@ Redhat
 Reitan
 Renga
 Requin
+Rodas
 Rodionov
 Rohan
 Rolfe
@@ -356,6 +364,7 @@ Sasselli
 Scharrer
 Seitz
 Shahid
+Shahrestani
 Shankar
 Shanshan
 Sharad
@@ -366,6 +375,7 @@ Shi
 Shinkarovsky
 Shinya
 Shirakawa
+Shou
 Shuba
 Shunyao
 Slager
@@ -377,6 +387,7 @@ Solaris
 Solomatnikov
 Solt
 Southwell
+Spack
 Srini
 Srinivasan
 Stamness
@@ -518,6 +529,7 @@ basename
 bbox
 benchmarking
 biguint
+bindir
 biops
 bisonpre
 bitOpTree
@@ -587,6 +599,7 @@ datadir
 datafiles
 david
 ddd
+de
 deassign
 debugi
 defenv
@@ -682,6 +695,7 @@ fno
 fopen
 forceable
 foreach
+fourstate
 fprintf
 fprofile
 fread
@@ -867,6 +881,7 @@ phelter
 picoChip
 pinIndex
 pinout
+pkgdatadir
 plusargs
 pmos
 poping
@@ -931,6 +946,7 @@ redeclaring
 regs
 reloop
 replaceShiftOp
+reproducibility
 resetall
 respecified
 rodata
@@ -1020,6 +1036,8 @@ traceEverOn
 tran
 treei
 tri
+triand
+trior
 tristate
 tristates
 trunc
@@ -1095,6 +1113,7 @@ warmup
 waveforms
 whitespace
 widthed
+wor
 wreal
 writeb
 writeme

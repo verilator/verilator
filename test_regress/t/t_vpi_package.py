@@ -14,7 +14,7 @@ test.scenarios('simulator')
 test.compile(make_top_shell=False,
              make_main=False,
              make_pli=True,
-             verilator_flags2=["--exe --vpi --no-l2name", test.pli_filename])
+             verilator_flags2=["--exe --vpi --no-l2name --public-depth 1", test.pli_filename])
 
 test.execute(use_libvpi=True)
 

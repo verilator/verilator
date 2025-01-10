@@ -1,0 +1,6 @@
+%Error: t/t_wait_no_triggered_bad.v:15:12: Wait statement conditions do not take raw events (IEEE 1800-2023 15.5.3)
+                                         : ... note: In instance 't'
+                                         : ... Suggest use 'e_my_event.triggered'
+   15 |       wait(e_my_event);   
+      |            ^~~~~~~~~~
+%Error: Exiting due to

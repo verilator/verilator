@@ -74,7 +74,7 @@ test.run(
     # headers from the `../include` directory.
     cmd=[
         "python3", aroot + "/nodist/clang_check_attributes", "--verilator-root=.",
-        "--compile-commands-dir=" + test.obj_dir, srcfiles_str
+        "--compile-commands-dir=" + test.obj_dir, "--jobs=1", srcfiles_str
     ])
 
 test.files_identical(test.run_log_filename, test.golden_filename)

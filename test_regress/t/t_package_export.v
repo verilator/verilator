@@ -50,11 +50,7 @@ package pkg31;
    import pkg30::*;
 endpackage
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (/*AUTOARG*/);
 
    reg [pkg11::PARAM1 : 0] bus11;
    reg [pkg11::PARAM2 : 0] bus12;

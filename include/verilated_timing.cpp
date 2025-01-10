@@ -89,7 +89,7 @@ void VlDelayScheduler::resume() {
 uint64_t VlDelayScheduler::nextTimeSlot() const {
     if (!m_queue.empty()) return m_queue.cbegin()->first;
     if (m_zeroDelayed.empty())
-        VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: There is no next time slot scheduled");
+        VL_FATAL_MT(__FILE__, __LINE__, "", "There is no next time slot scheduled");
     return m_context.time();
 }
 

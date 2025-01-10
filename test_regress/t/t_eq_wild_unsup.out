@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_eq_wild_unsup.v:13:13: Unsupported: RHS of ==? or !=? is fourstate but not a constant
+                                             : ... note: In instance 't'
+   13 |       if (1 ==? get_x_or_0(0)) $stop;
+      |             ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

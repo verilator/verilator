@@ -9,12 +9,7 @@ function static int func();
    return ++cnt;
 endfunction
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-
-   input clk;
+module t (/*AUTOARG*/);
 
    int   a;
    initial begin

@@ -12,9 +12,10 @@ import vltest_bootstrap
 test.scenarios('vlt')
 
 test.compile(v_flags2=["--generate-key"],
-             expect=r'VL-KEY',
              verilator_make_gmake=False,
              make_top_shell=False,
              make_main=False)
+
+test.file_grep(test.compile_log_filename, r'VL-KEY')
 
 test.passes()

@@ -11,6 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
+n = 0
+
 for prog in [
         # See also t_flag_help.py
         os.environ["VERILATOR_ROOT"] + "/bin/verilator",
@@ -19,24 +21,22 @@ for prog in [
         #os.environ["VERILATOR_ROOT"] + "/bin/verilator_gantt",
         #os.environ["VERILATOR_ROOT"] + "/bin/verilator_profcfunc",
 ]:
+    n += 1
+    log_filename = test.obj_dir + "/vlt_" + str(n) + ".log"
     test.run(fails=False,
              cmd=["perl", prog, "--version"],
              tee=test.verbose,
-             logfile=test.obj_dir + "/t_help.log",
-             expect=r'^Verilator',
+             logfile=log_filename,
              verilator_run=True)
+    test.file_grep(log_filename, r'Verilator')
 
+    n += 1
+    log_filename = test.obj_dir + "/vlt_" + str(n) + ".log"
     test.run(fails=False,
              cmd=["perl", prog, "-V"],
              tee=test.verbose,
-             logfile=test.obj_dir + "/t_help.log",
-             expect=r'^Verilator',
+             logfile=log_filename,
              verilator_run=True)
-
-    test.run(fails=False,
-             cmd=["perl", prog, "-V"],
-             logfile=test.obj_dir + "/t_help.log",
-             expect=r'^Verilator',
-             verilator_run=True)
+    test.file_grep(log_filename, r'Verilator')
 
 test.passes()

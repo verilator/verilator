@@ -1,0 +1,7 @@
+%Error: t/t_constraint_soft_randc_bad.v:10:28: Randc variables not allowed in 'constraint soft' (IEEE 1800-2023 18.5.13.1)
+   10 |    constraint c_bad { soft rc > 4; }   
+      |                            ^~
+        t/t_constraint_soft_randc_bad.v:10:23: ... Location of restricting expression
+   10 |    constraint c_bad { soft rc > 4; }   
+      |                       ^~~~
+%Error: Exiting due to

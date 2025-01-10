@@ -1,22 +1,20 @@
-%Warning-CONSTRAINTIGN: t/t_randomize_method_types_unsup.v:14:32: Unsupported: randomizing this expression, treating as state
-   14 |    constraint dynsize { dynarr.size < 20; }
-      |                                ^~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_method_types_unsup.v:23:17: Unsupported: randomizing this expression, treating as state
+   23 |       dynarr[1].size < 10;
+      |                 ^~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
-%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:8:13: Unsupported: random member variable with type 'int$[string]'
-                                                           : ... note: In instance 't'
-    8 |    rand int assocarr[string];
-      |             ^~~~~~~~
-%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:9:13: Unsupported: random member variable with type 'int$[]'
-                                                           : ... note: In instance 't'
-    9 |    rand int dynarr[];
-      |             ^~~~~~
-%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:10:13: Unsupported: random member variable with type 'int$[0:4]'
+%Warning-CONSTRAINTIGN: t/t_randomize_method_types_unsup.v:27:9: Size constraint combined with element constraint may not work correctly
+                                                               : ... note: In instance 't'
+   27 |       q.size < 5;
+      |         ^~~~
+%Warning-CONSTRAINTIGN: t/t_randomize_method_types_unsup.v:31:10: Global constraints ignored (unsupported)
+   31 |      foo.x < y;
+      |          ^
+%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:15:13: Unsupported: random member variable with the type of the containing class
                                                             : ... note: In instance 't'
-   10 |    rand int unpackarr[5];
-      |             ^~~~~~~~~
-%Error-UNSUPPORTED: t/t_randomize_method_types_unsup.v:11:13: Unsupported: random member variable with the type of the containing class
-                                                            : ... note: In instance 't'
-   11 |    rand Cls cls;
+   15 |    rand Cls cls;
       |             ^~~
+%Warning-CONSTRAINTIGN: t/t_randomize_method_types_unsup.v:43:43: Unsupported: randomizing this expression, treating as state
+   43 |       res = obj.randomize() with { dynarr.size > 2; };
+      |                                           ^~~~
 %Error: Exiting due to

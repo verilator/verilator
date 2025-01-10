@@ -1,0 +1,14 @@
+%Error-ENCAPSULATED: t/t_class_local_typedef_bad.v:13:8: 't1' is hidden as 'local' within this context (IEEE 1800-2023 8.18)
+   13 |   Cls::t1 var1;   
+      |        ^~
+                     t/t_class_local_typedef_bad.v:13:8: ... Location of definition
+    9 |     local typedef bit t1;
+      |                       ^~
+                     ... For error description see https://verilator.org/warn/ENCAPSULATED?v=latest
+%Error-ENCAPSULATED: t/t_class_local_typedef_bad.v:14:8: 't2' is hidden as 'protected' within this context (IEEE 1800-2023 8.18)
+   14 |   Cls::t2 var2;   
+      |        ^~
+                     t/t_class_local_typedef_bad.v:14:8: ... Location of definition
+   10 |     protected typedef bit t2;
+      |                           ^~
+%Error: Exiting due to

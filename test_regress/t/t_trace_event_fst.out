@@ -1,5 +1,5 @@
 $date
-	Tue Sep 10 16:34:40 2024
+	Sun Sep 22 22:54:12 2024
 
 $end
 $version
@@ -8,13 +8,13 @@ $end
 $timescale
 	1ps
 $end
-$scope module TOP $end
+$scope module $rootio $end
+$upscope $end
 $scope module t $end
 $var event 1 ! ev_test $end
 $var int 32 " i [31:0] $end
 $var bit 1 # toggle $end
 $var bit 1 $ clk $end
-$upscope $end
 $upscope $end
 $enddefinitions $end
 #0

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -230,7 +230,7 @@ class ActiveNamer final : public VNVisitor {
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // Specialized below for the special sensitivity classes
-    template <typename SenItemKind>
+    template <typename T_SenItemKind>
     AstActive*& getSpecialActive();
 
 public:
@@ -246,17 +246,17 @@ public:
     }
 
     // Make a new AstActive sensitive to the given special sensitivity class and return it
-    template <typename SenItemKind>
+    template <typename T_SenItemKind>
     AstActive* makeSpecialActive(FileLine* const fl) {
-        AstSenTree* const senTreep = new AstSenTree{fl, new AstSenItem{fl, SenItemKind{}}};
+        AstSenTree* const senTreep = new AstSenTree{fl, new AstSenItem{fl, T_SenItemKind{}}};
         return makeActive(fl, senTreep);
     }
 
     // Return an AstActive sensitive to the given special sensitivity class (possibly pre-created)
-    template <typename SenItemKind>
+    template <typename T_SenItemKind>
     AstActive* getSpecialActive(FileLine* fl) {
-        AstActive*& cachep = getSpecialActive<SenItemKind>();
-        if (!cachep) cachep = makeSpecialActive<SenItemKind>(fl);
+        AstActive*& cachep = getSpecialActive<T_SenItemKind>();
+        if (!cachep) cachep = makeSpecialActive<T_SenItemKind>(fl);
         return cachep;
     }
 
@@ -349,7 +349,7 @@ public:
 
 class ActiveDlyVisitor final : public VNVisitor {
 public:
-    enum CheckType : uint8_t { CT_SEQ, CT_COMB, CT_INITIAL };
+    enum CheckType : uint8_t { CT_SEQ, CT_COMB, CT_INITIAL, CT_SUSPENDABLE };
 
 private:
     // MEMBERS
@@ -358,7 +358,7 @@ private:
     // VISITORS
     void visit(AstAssignDly* nodep) override {
         // Non-blocking assignments are OK in sequential processes
-        if (m_check == CT_SEQ) return;
+        if (m_check == CT_SEQ || m_check == CT_SUSPENDABLE) return;
 
         // Issue appropriate warning
         if (m_check == CT_INITIAL) {
@@ -477,10 +477,8 @@ class ActiveVisitor final : public VNVisitor {
         AstActive* const wantactivep
             = !m_clockedProcess ? m_namer.getSpecialActive<AstSenItem::Combo>(nodep->fileline())
               : oldsensesp      ? m_namer.getActive(nodep->fileline(), oldsensesp)
-                                : m_namer.getSpecialActive<AstSenItem::Initial>(nodep->fileline());
-
-        // Delete sensitivity list
-        if (oldsensesp) VL_DO_DANGLING(oldsensesp->deleteTree(), oldsensesp);
+                           // Clocked, no sensitivity lists, it's a suspendable, put it in initial
+                           : m_namer.getSpecialActive<AstSenItem::Initial>(nodep->fileline());
 
         // Move node to new active
         nodep->unlinkFrBack();
@@ -488,9 +486,13 @@ class ActiveVisitor final : public VNVisitor {
 
         // Warn and convert any delayed assignments
         {
-            ActiveDlyVisitor{nodep, m_clockedProcess ? ActiveDlyVisitor::CT_SEQ
-                                                     : ActiveDlyVisitor::CT_COMB};
+            ActiveDlyVisitor{nodep, !m_clockedProcess ? ActiveDlyVisitor::CT_COMB
+                                    : oldsensesp      ? ActiveDlyVisitor::CT_SEQ
+                                                      : ActiveDlyVisitor::CT_SUSPENDABLE};
         }
+
+        // Delete sensitivity list
+        if (oldsensesp) VL_DO_DANGLING(oldsensesp->deleteTree(), oldsensesp);
 
         // check combinational processes for latches
         if (!m_clockedProcess || kwd == VAlwaysKwd::ALWAYS_LATCH) {

@@ -3,5 +3,5 @@ Process::open: execvp(someimaginarysolver): No such file or directory
 %Warning: Unable to communicate with SAT solver, please check its installation or specify a different one in VERILATOR_SOLVER environment variable.
  ... Tried: $ someimaginarysolver
 
-%Error: t/t_constraint.v:23: Verilog $stop
+%Error: t/t_constraint.v:25: Verilog $stop
 Aborting...

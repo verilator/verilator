@@ -30,9 +30,17 @@ module t
 endmodule
 
 primitive CINV (a, b);
-output b;
-input a;
-assign b = ~a;
+   output b;
+   input a;
+`ifdef VERILATOR
+   assign b = ~a;
+`else
+   table
+      //b a
+      0 : ? : 1;
+      1 : ? : 0;
+   endtable
+`endif
 endprimitive
 
 

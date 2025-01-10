@@ -11,10 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(
-    verilator_flags2=["--lint-only --bbox-unsup"],
-    fails=test.vlt_all,
-    # Cannot use .out, get "$end" or "end of file" depending on bison version
-    expect=r"EOF in 'table'")
+test.lint(verilator_flags2=["--lint-only --bbox-unsup"], fails=test.vlt_all)
+
+# Cannot use .out, get "$end" or "end of file" depending on bison version
+test.file_grep(test.compile_log_filename, r"EOF in 'table'")
 
 test.passes()

@@ -20,7 +20,7 @@
 [9e-06] clkb is 1
 [9.5e-06] clkb is 0
 [1e-05] clkb is 1
-[1e-05] Finishing (TOP.t.bot)
+[1e-05] Finishing (t.bot)
 *-* All Finished *-*
-[10500] final (TOP.t)
-[1.05e-05] final (TOP.t.bot) count was 21
+[10500] final (t)
+[1.05e-05] final (t.bot) count was 21

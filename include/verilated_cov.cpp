@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2001-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2001-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -71,7 +71,7 @@ public:  // But only local to this file
 // This isn't in the header file for auto-magic conversion because it
 // inlines to too much code and makes compilation too slow.
 
-template <class T>
+template <typename T>
 class VerilatedCoverItemSpec final : public VerilatedCovImpItem {
 private:
     // MEMBERS
@@ -233,7 +233,7 @@ private:
         // Little selftest
 #define SELF_CHECK(got, exp) \
     do { \
-        if ((got) != (exp)) VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: selftest"); \
+        if ((got) != (exp)) VL_FATAL_MT(__FILE__, __LINE__, "", "selftest"); \
     } while (0)
         SELF_CHECK(combineHier("a.b.c", "a.b.c"), "a.b.c");
         SELF_CHECK(combineHier("a.b.c", "a.b"), "a.b*");

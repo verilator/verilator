@@ -1,4 +1,4 @@
-.. Copyright 2003-2024 by Wilson Snyder.
+.. Copyright 2003-2025 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 .. _Simulation Runtime Arguments:
@@ -40,8 +40,8 @@ Summary:
 .. option:: +verilator+error+limit+<value>
 
    Set number of non-fatal errors (e.g. assertion failures) before exiting
-   simulation runtime. Also affects number of $stop calls needed before
-   exit. Defaults to 1.
+   simulation runtime. Also affects number of `$stop` calls needed before
+   exit. Does not affect `$fatal`. Defaults to 1.
 
 .. option:: +verilator+help
 

@@ -18,18 +18,19 @@ test.compile(v_flags2=["--no-json-edit-nums", test.t_dir + "/" + test.name + ".v
 
 if test.vlt_all:
     test.file_grep(out_filename,
-                   r'{"type":"MODULE","name":"l1",.*"loc":"f,56:[^"]*",.*"origName":"l1"')
+                   r'{"type":"MODULE","name":"l1",.*"loc":"\w,56:[^"]*",.*"origName":"l1"')
     test.file_grep(out_filename,
-                   r'{"type":"MODULE","name":"l2",.*"loc":"f,62:[^"]*",.*"origName":"l2"')
+                   r'{"type":"MODULE","name":"l2",.*"loc":"\w,62:[^"]*",.*"origName":"l2"')
     test.file_grep(out_filename,
-                   r'{"type":"MODULE","name":"l3",.*"loc":"f,69:[^"]*",.*"origName":"l3"')
+                   r'{"type":"MODULE","name":"l3",.*"loc":"\w,69:[^"]*",.*"origName":"l3"')
     test.file_grep(out_filename,
-                   r'{"type":"MODULE","name":"l4",.*"loc":"f,76:[^"]*",.*"origName":"l4"')
+                   r'{"type":"MODULE","name":"l4",.*"loc":"\w,76:[^"]*",.*"origName":"l4"')
     test.file_grep(out_filename,
-                   r'{"type":"MODULE","name":"l5__P1",.*"loc":"f,83:[^"]*",.*"origName":"l5"')
+                   r'{"type":"MODULE","name":"l5__P1",.*"loc":"\w,83:[^"]*",.*"origName":"l5"')
     test.file_grep(out_filename,
-                   r'{"type":"MODULE","name":"l5__P2",.*"loc":"f,83:[^"]*",.*"origName":"l5"')
+                   r'{"type":"MODULE","name":"l5__P2",.*"loc":"\w,83:[^"]*",.*"origName":"l5"')
 
-test.execute(expect=r"\] (%m|.*t\.ps): Clocked", )
+test.execute()
+test.file_grep(test.run_log_filename, r"\] (%m|.*t\.ps): Clocked")
 
 test.passes()

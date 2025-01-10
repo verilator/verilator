@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -145,11 +145,9 @@ class ReloopVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
-        {
-            m_cfuncp = nodep;
-            iterateChildren(nodep);
-            mergeEnd();  // Finish last pending merge, if any
-        }
+        m_cfuncp = nodep;
+        iterateChildren(nodep);
+        mergeEnd();  // Finish last pending merge, if any
     }
     void visit(AstNodeAssign* nodep) override {
         if (!m_cfuncp) return;

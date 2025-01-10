@@ -1,0 +1,4 @@
+%Error: t/t_typedef_id_bad.v:9:34: Expecting a data type: 'i'
+    9 | class Cls #(parameter type P_T = i);
+      |                                  ^
+%Error: Exiting due to

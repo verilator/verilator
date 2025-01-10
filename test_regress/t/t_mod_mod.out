@@ -1,0 +1,17 @@
+%Error-UNSUPPORTED: t/t_mod_mod.v:10:3: Unsupported: module decls within module decls
+   10 |   program p_in_m();
+      |   ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_mod_mod.v:12:3: Unsupported: program decls within module decls
+   12 |   interface i_in_m();
+      |   ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_mod_mod.v:14:1: Unsupported: interface decls within module decls
+   14 | endmodule
+      | ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_mod_mod.v:19:3: Unsupported: interface decls within interface decls
+   19 |   program p_in_i();
+      |   ^~~~~~~
+%Error-UNSUPPORTED: t/t_mod_mod.v:21:1: Unsupported: program decls within interface decls
+   21 | endinterface
+      | ^~~~~~~~~~~~
+%Error: Exiting due to

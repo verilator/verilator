@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -64,12 +64,12 @@ public:
 
     void dumpIterate(std::ostream& os, VSymConstMap& doneSymsr, const string& indent,
                      int numLevels, const string& searchName) const {
-        os << indent << "+ " << std::left << std::setw(30)
-           << (searchName == "" ? "\"\"" : searchName) << std::setw(0) << std::right;
+        os << indent << "+ " << std::left << std::setw(30) << ("'"s + searchName + "'"s)
+           << std::setw(0) << std::right;
         os << "  se" << cvtToHex(this) << std::setw(0);
         os << "  fallb=se" << cvtToHex(m_fallbackp);
         if (m_symPrefix != "") os << "  symPrefix=" << m_symPrefix;
-        os << "  n=" << nodep();
+        if (nodep()) os << "  n=" << nodep();
         os << '\n';
         if (VL_UNCOVERABLE(!doneSymsr.insert(this).second)) {
             os << indent << "| ^ duplicate, so no children printed\n";  // LCOV_EXCL_LINE

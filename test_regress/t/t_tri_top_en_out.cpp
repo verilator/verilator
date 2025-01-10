@@ -7,7 +7,7 @@
 #include "verilated.h"
 
 #include "TestCheck.h"
-#include "Vt_tri_top_en_out.h"
+#include VM_PREFIX_INCLUDE
 
 #include <ctime>
 
@@ -18,7 +18,7 @@ int main(int argc, char** argv, char**) {
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
     contextp->commandArgs(argc, argv);
     // Construct the Verilated model, from Vtop.h generated from Verilating
-    const std::unique_ptr<Vt_tri_top_en_out> topp{new Vt_tri_top_en_out{contextp.get()}};
+    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get()}};
 
     // Initial input
     topp->drv_en = 0;

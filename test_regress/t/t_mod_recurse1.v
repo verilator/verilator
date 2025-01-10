@@ -15,13 +15,13 @@ module rec;
 
    generate
       if (DEPTH==1) begin
-         rec #(.DEPTH(DEPTH+1)) sub;
+         rec #(.DEPTH(DEPTH+1)) sub();
       end
       else if (DEPTH==2) begin
-         rec #(.DEPTH(DEPTH+1)) subb;
+         rec #(.DEPTH(DEPTH+1)) subb();
       end
       else if (DEPTH==3) begin
-         bottom #(.DEPTH(DEPTH+1)) bot;
+         bottom #(.DEPTH(DEPTH+1)) bot();
       end
    endgenerate
 endmodule

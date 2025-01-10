@@ -11,9 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(
-    fails=True,
-    # EOF result varies with Bison version, so can't use .out
-    expect=r'define or other nested inclusion')
+test.lint(fails=True)
+
+# EOF result varies with Bison version, so can't use .out
+test.file_grep(test.compile_log_filename, r'define or other nested inclusion')
 
 test.passes()

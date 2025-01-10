@@ -17,11 +17,7 @@ endpackage // pkg1
 
 module t
   import pkg1::*;   // Test SV 2012 import format
-  (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+  (/*AUTOARG*/);
 
    reg [PARAM1:0] bus1;
 

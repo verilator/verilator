@@ -13,21 +13,19 @@ test.scenarios('vlt')
 
 if test.have_coroutines:
     test.run(cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator --get-supported COROUTINES"],
-             expect="""1
-""",
              logfile=test.obj_dir + "/vlt_coroutines.log",
+             expect_filename="t/t_flag_supported_1.out",
              verilator_run=True)
 
 if test.have_sc:
     test.run(cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator --get-supported SYSTEMC"],
-             expect="""1
-""",
              logfile=test.obj_dir + "/vlt_systemc.log",
+             expect_filename="t/t_flag_supported_1.out",
              verilator_run=True)
 
 test.run(cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator --get-supported DOES_NOT_EXIST"],
-         expect='',
          logfile=test.obj_dir + "/vlt_does_not_exist.log",
+         expect_filename="t/t_flag_supported_empty.out",
          verilator_run=True)
 
 test.passes()

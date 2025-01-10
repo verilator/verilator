@@ -183,6 +183,8 @@ void dpii_v_bit96(const svBitVecVal* i, svBitVecVal* o) {
 
 int dpii_f_strlen(const char* i) { return strlen(i); }
 
+int dpii__under___score(int i) { return i + 1; }
+
 //======================================================================
 
 void dpii_f_void() {}

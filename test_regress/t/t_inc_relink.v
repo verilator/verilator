@@ -28,7 +28,7 @@ module C;  // Like above but in a module
 endmodule
 
 module t;  // Actually use those to test relinking
-   C c;
+   C c();
 
    initial begin
       A::t();

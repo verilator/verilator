@@ -6,13 +6,6 @@
 
 // Very simple test for interface pathclearing
 
-`ifdef VCS
- `define UNSUPPORTED_MOD_IN_GENS
-`endif
-`ifdef VERILATOR
- `define UNSUPPORTED_MOD_IN_GENS
-`endif
-
 module t (/*AUTOARG*/
    // Inputs
    clk
@@ -51,38 +44,22 @@ module sub
    input integer i_value
    );
 
-`ifdef UNSUPPORTED_MOD_IN_GENS
    always @* isub.value = i_value;
-`else
-   generate if (MODE == 1) begin
-      always @* isub.valuea = i_value;
-   end
-   else if (MODE == 2) begin
-      always @* isub.valueb = i_value;
-   end
-   endgenerate
-`endif
 
 endmodule
 
 interface ifc;
    parameter MODE = 0;
    // Modports under generates not supported by all commercial simulators
-`ifdef UNSUPPORTED_MOD_IN_GENS
+
    integer value;
    modport out_modport (output value);
    function integer get_value(); return value; endfunction
-`else
-   generate if (MODE == 0) begin
-      integer valuea;
-      modport out_modport (output valuea);
-      function integer get_valuea(); return valuea; endfunction
-   end
-   else begin
-      integer valueb;
-      modport out_modport (output valueb);
-      function integer get_valueb(); return valueb; endfunction
-   end
-   endgenerate
-`endif
+
+   // IEEE 1800-2017 deprecated alowing modports inside generates
+   // generate if (MODE == 0) begin
+   //    integer valuea;
+   //    modport out_modport (output valuea);
+   //    function integer get_valuea(); return valuea; endfunction
+   // end
 endinterface

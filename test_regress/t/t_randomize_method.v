@@ -8,11 +8,13 @@
 begin \
    longint prev_result; \
    int ok = 0; \
-   for (int i = 0; i < 10; i++) begin \
+   void'(cl.randomize()); \
+   prev_result = longint'(field); \
+   repeat(9) begin \
       longint result; \
       void'(cl.randomize()); \
       result = longint'(field); \
-      if (i > 0 && result != prev_result) ok = 1; \
+      if (result != prev_result) ok = 1; \
       prev_result = result; \
    end \
    if (ok != 1) $stop; \

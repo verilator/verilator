@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -30,7 +30,7 @@ class V3Waiver final {
     static WaiverList s_waiverList VL_GUARDED_BY(s_mutex);
 
 public:
-    static void addEntry(V3ErrorCode errorCode, const string& filename, const std::string& str)
+    static void addEntry(V3ErrorCode errorCode, const string& filename, const std::string& msg)
         VL_MT_SAFE_EXCLUDES(s_mutex);
     static void write(const std::string& filename) VL_MT_SAFE_EXCLUDES(s_mutex);
 };

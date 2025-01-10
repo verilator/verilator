@@ -13,4 +13,6 @@ test.scenarios('vlt')
 
 test.compile(make_main=False, verilator_flags2=["--emit-accessors", "--exe", test.pli_filename])
 
+test.execute()
+
 test.passes()

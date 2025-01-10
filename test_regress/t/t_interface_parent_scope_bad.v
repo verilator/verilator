@@ -17,12 +17,7 @@ module Baz();
    Bar bar();
 endmodule
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-
-   input clk;
+module t (/*AUTOARG*/);
 
    Baz baz();
 

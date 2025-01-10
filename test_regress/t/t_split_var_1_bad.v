@@ -24,8 +24,8 @@ module t();
 
    sub0 i_sub0(.addr(addr), .rd_data(rd_data0));
    sub1 i_sub1(.addr(addr), .rd_data(rd_data2));
-   sub2 i_sub2;
-   sub3 i_sub3;
+   sub2 i_sub2();
+   sub3 i_sub3();
    ifs i_ifs();
 
    function int bad_func(inout logic [3:0] inout_port /*verilator split_var*/,

@@ -24,8 +24,11 @@ cmake_policy(SET CMP0074 NEW)
 project(cmake_protect_lib)
 
 find_package(verilator HINTS $ENV{VERILATOR_ROOT} ${VERILATOR_ROOT})
-if (NOT verilator_FOUND)
-  message(FATAL_ERROR "Verilator was not found. Either install it, or set the VERILATOR_ROOT environment variable")
+if(NOT verilator_FOUND)
+    message(
+        FATAL_ERROR
+        "Verilator was not found. Either install it, or set the VERILATOR_ROOT environment variable"
+    )
 endif()
 
 # Create the main executable target
@@ -55,9 +58,11 @@ verilate(verilated_secret
   VERILATOR_ARGS --protect-lib verilated_secret
                  --protect-key ${PROTECT_KEY}
   DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/verilated_secret
-  SOURCES ../make_protect_lib/secret_impl.v)
+  SOURCES ../make_protect_lib/secret_impl.v
+)
 
 # Include location of verilated_secret.sv wrapper
 verilate(example
   VERILATOR_ARGS "-I${CMAKE_CURRENT_BINARY_DIR}/verilated_secret"
-  SOURCES ../make_protect_lib/top.v)
+  SOURCES ../make_protect_lib/top.v
+)

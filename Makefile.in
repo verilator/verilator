@@ -7,7 +7,7 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -97,6 +97,7 @@ PACKAGE_VERSION = @PACKAGE_VERSION@
 
 #### End of system configuration section. ####
 ######################################################################
+# Main build targets
 
 .SUFFIXES:
 
@@ -147,6 +148,9 @@ verilator_exe verilator_bin$(EXEEXT) verilator_bin_dbg$(EXEEXT) verilator_covera
 	@echo "making verilator in src"
 	$(MAKE) -C src $(OBJCACHE_JOBS)
 
+######################################################################
+# Tests
+
 .PHONY:msg_test
 msg_test: all_nomsg
 	@echo "Build complete!"
@@ -184,8 +188,11 @@ examples: all_nomsg
 	  $(MAKE) -C $$p VERILATOR_ROOT=`pwd` || exit 10; \
 	done
 
+######################################################################
+# Docs
+
 .PHONY: docs
-docs: info
+docs: info $(VL_INST_MAN_FILES)
 
 info: $(INFOS)
 
@@ -194,7 +201,8 @@ verilator.1: ${srcdir}/bin/verilator
 verilator_coverage.1: ${srcdir}/bin/verilator_coverage
 	pod2man $< $@
 %.1: ${srcdir}/bin/%
-	help2man --no-info --no-discard-stderr --version-string=- $< -o $@
+	help2man --no-info --no-discard-stderr --version-string=- \
+		-n "$(shell $< --help | head -n 3 | tail -n 1)" $< -o $@
 
 .PHONY: verilator.html
 verilator.html:
@@ -204,6 +212,20 @@ verilator.html:
 .PHONY: verilator.pdf
 verilator.pdf: Makefile
 	$(MAKE) -C docs verilator.pdf
+
+TAGFILES=${srcdir}/*/*.cpp ${srcdir}/*/*.h ${srcdir}/*/*.in \
+	${srcdir}/*.in ${srcdir}/*.pod
+
+TAGS: $(TAGFILES)
+	etags $(TAGFILES)
+
+.PHONY: doxygen
+
+doxygen:
+	$(MAKE) -C docs doxygen
+
+######################################################################
+# Install
 
 # Public executables intended to be invoked directly by the user
 # Don't put wildcards in these variables, it might cause an uninstall of other stuff
@@ -228,6 +250,7 @@ VL_INST_INC_BLDDIR_FILES = \
 # Files under srcdir, instead of build time
 VL_INST_INC_SRCDIR_FILES = \
 	include/*.[chv]* \
+	include/*.vlt \
 	include/*.sv \
 	include/gtkwave/*.[chv]* \
 	include/vltstd/*.[chv]* \
@@ -245,11 +268,15 @@ mkbindirs:
 installbin: | mkbindirs
 	cd $(srcdir)/bin; \
 	for p in $(VL_INST_PUBLIC_SCRIPT_FILES) ; do \
-	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkgdatadir)/bin/$$p; \
+	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/$$p; \
 	done
+	perl -p -i -e 'use File::Spec;' \
+	           -e' $$path = File::Spec->abs2rel("$(realpath $(DESTDIR)$(pkgdatadir))", "$(realpath $(DESTDIR)$(bindir))");' \
+	           -e 's/my \$$verilator_pkgdatadir_relpath = .*/my \$$verilator_pkgdatadir_relpath = "$$path";/g' \
+	           -- "$(DESTDIR)/$(bindir)/verilator"
 	cd bin; \
 	for p in $(VL_INST_PUBLIC_BIN_FILES) ; do \
-	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(pkgdatadir)/bin/$$p; \
+	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/$$p; \
 	done
 	cd $(srcdir)/bin; \
 	for p in $(VL_INST_PRIVATE_SCRIPT_FILES) ; do \
@@ -259,11 +286,11 @@ installbin: | mkbindirs
 installredirect: installbin | mkbindirs
 	cp ${srcdir}/bin/redirect ${srcdir}/bin/redirect.tmp
 	perl -p -i -e 'use File::Spec;' \
-	           -e' $$path = File::Spec->abs2rel("$(realpath $(DESTDIR)$(pkgdatadir)/bin)", "$(realpath $(DESTDIR)$(bindir))");' \
+	           -e' $$path = File::Spec->abs2rel("$(realpath $(DESTDIR)$(bindir))", "$(realpath $(DESTDIR)$(pkgdatadir)/bin)");' \
 	           -e 's/RELPATH.*/"$$path";/g' -- "${srcdir}/bin/redirect.tmp"
 	cd $(srcdir)/bin; \
 	for p in $(VL_INST_PUBLIC_SCRIPT_FILES) $(VL_INST_PUBLIC_BIN_FILES) ; do \
-	  $(INSTALL_PROGRAM) redirect.tmp $(DESTDIR)$(bindir)/$$p; \
+	  $(INSTALL_PROGRAM) redirect.tmp $(DESTDIR)$(pkgdatadir)/bin/$$p; \
 	done
 	rm ${srcdir}/bin/redirect.tmp
 
@@ -345,6 +372,19 @@ install-all: installbin installredirect installman installdata install-msg
 
 install-here: installman info
 
+install-msg:
+	@echo
+	@echo "Installed binaries to $(DESTDIR)$(bindir)/verilator"
+	@echo "Installed man to $(DESTDIR)$(mandir)/man1"
+	@echo "Installed examples to $(DESTDIR)$(pkgdatadir)/examples"
+	@echo
+	@echo "For documentation see 'man verilator' or 'verilator --help'"
+	@echo "For forums and to report bugs see https://verilator.org"
+	@echo
+
+######################################################################
+# Format/Lint
+
 # Use --xml flag to see the cppcheck code to use for suppression
 CPPCHECK1_CPP = $(wildcard $(srcdir)/include/*.cpp)
 CPPCHECK2_CPP = $(wildcard $(srcdir)/examples/*/*.cpp)
@@ -413,16 +453,29 @@ analyzer-include:
 	scan-build $(MAKE) -k examples
 
 format:
-	$(MAKE) -j 4 clang-format yapf format-exec
+	$(MAKE) -j 4 format-c format-py format-exec
 
 CLANGFORMAT = clang-format-14
 CLANGFORMAT_FLAGS = -i
 CLANGFORMAT_FILES = $(CHECK_CPP) $(CHECK_H) $(CHECK_YL) test_regress/t/*.c* test_regress/t/*.h
 
-clang-format:
+format-c clang-format:
 	@$(CLANGFORMAT) --version | egrep 14.0 > /dev/null \
 		|| echo "*** You are not using clang-format-14, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
+
+YAMLFIX = YAMLFIX_WHITELINES=1 YAMLFIX_LINE_LENGTH=130 YAMLFIX_preserve_quotes=true yamlfix
+
+yamlfix:
+	$(YAMLFIX) .
+
+# CMake files
+CMAKE_FILES = \
+	CMakeLists.txt \
+	examples/*/CMakeLists.txt \
+	src/CMakeLists.txt \
+	test_regress/CMakeLists.txt \
+	*.cmake.in \
 
 # Python programs, subject to format and lint
 PY_PROGRAMS = \
@@ -466,8 +519,14 @@ PY_TEST_FILES = \
 YAPF = yapf3
 YAPF_FLAGS = -i --parallel
 
-yapf:
+format-py yapf:
 	$(YAPF) $(YAPF_FLAGS) $(PY_FILES)
+
+GERSEMI = gersemi
+GERSEMI_FLAGS = -i
+
+format-cmake:
+	$(GERSEMI) $(GERSEMI_FLAGS) $(CMAKE_FILES)
 
 PYLINT = pylint
 PYLINT_FLAGS = --recursive=n --score=n --disable=R0801
@@ -492,15 +551,8 @@ lint-py-ruff:
 format-exec:
 	-chmod a+x test_regress/t/*.py
 
-install-msg:
-	@echo
-	@echo "Installed binaries to $(DESTDIR)$(bindir)/verilator"
-	@echo "Installed man to $(DESTDIR)$(mandir)/man1"
-	@echo "Installed examples to $(DESTDIR)$(pkgdatadir)/examples"
-	@echo
-	@echo "For documentation see 'man verilator' or 'verilator --help'"
-	@echo "For forums and to report bugs see https://verilator.org"
-	@echo
+######################################################################
+# Configure
 
 IN_WILD := ${srcdir}/*.in ${srcdir}/*/*.in
 
@@ -520,6 +572,9 @@ ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users
 else
 	autoconf
 endif
+
+######################################################################
+# Clean
 
 maintainer-clean::
 	@echo "This command is intended for maintainers to use;"
@@ -550,17 +605,6 @@ distclean maintainer-clean::
 	rm -f verilator_bin* verilator_coverage_bin*
 	rm -f bin/verilator_bin* bin/verilator_coverage_bin*
 	rm -f include/verilated.mk include/verilated_config.h
-
-TAGFILES=${srcdir}/*/*.cpp ${srcdir}/*/*.h ${srcdir}/*/*.in \
-	${srcdir}/*.in ${srcdir}/*.pod
-
-TAGS: $(TAGFILES)
-	etags $(TAGFILES)
-
-.PHONY: doxygen
-
-doxygen:
-	$(MAKE) -C docs doxygen
 
 ######################################################################
 # Distributions

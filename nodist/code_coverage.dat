@@ -1,7 +1,7 @@
 # -*- Python -*-
 # DESCRIPTION: Verilator: Internal C++ code lcov control file
 #
-# Copyright 2019-2024 by Wilson Snyder. This program is free software; you
+# Copyright 2019-2025 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -40,6 +40,7 @@ remove_gcda_regexp(r'test_regress/.*/(Vt_|Vtop_).*\.gcda')
 # Exclude line entirely, also excludes from function and branch coverage
 exclude_line_regexp(r'\bv3fatalSrc\b')
 exclude_line_regexp(r'\bfatalSrc\b')
+exclude_line_regexp(r'\bVL_DELETED\b')
 exclude_line_regexp(r'\bVL_UNCOVERABLE\b')
 exclude_line_regexp(r'\bVL_UNREACHABLE\b')
 exclude_line_regexp(r'\bVL_FATAL')

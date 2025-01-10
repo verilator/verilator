@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -89,7 +89,7 @@ class V3List final {
 
     // Iterator class template for V3List. This is just enough to support range based for loops
     // and basic usage. Feel free to extend as required.
-    template <typename T_IteratorElement, bool T_Reverse>
+    template <typename T_IteratorElement, bool N_Reverse>
     class SimpleItertatorImpl final {
         static_assert(std::is_same<T_IteratorElement, T_Element>::value
                           || std::is_same<T_IteratorElement, const T_Element>::value,
@@ -99,7 +99,7 @@ class V3List final {
         template <typename B, V3ListLinks<B>& (B::*)(), typename>
         friend class V3List;
 
-        using IteratorType = SimpleItertatorImpl<T_IteratorElement, T_Reverse>;
+        using IteratorType = SimpleItertatorImpl<T_IteratorElement, N_Reverse>;
 
         T_Base* m_currp;  // Currently iterated element, or 'nullptr' for 'end()' iterator
 
@@ -109,7 +109,7 @@ class V3List final {
 
         VL_ATTR_ALWINLINE
         static T_Base* step(T_Base* currp) {
-            if VL_CONSTEXPR_CXX17 (T_Reverse) {
+            if VL_CONSTEXPR_CXX17 (N_Reverse) {
                 return toLinks(currp).m_prevp;
             } else {
                 return toLinks(currp).m_nextp;
@@ -145,8 +145,8 @@ class V3List final {
         bool operator!=(const IteratorType& other) const { return m_currp != other.m_currp; }
         // Convert to const iterator
         VL_ATTR_ALWINLINE
-        operator SimpleItertatorImpl<const T_IteratorElement, T_Reverse>() const {
-            return SimpleItertatorImpl<const T_IteratorElement, T_Reverse>{m_currp};
+        operator SimpleItertatorImpl<const T_IteratorElement, N_Reverse>() const {
+            return SimpleItertatorImpl<const T_IteratorElement, N_Reverse>{m_currp};
         }
     };
 
@@ -221,10 +221,10 @@ class V3List final {
     };
 
 public:
-    using iterator = SimpleItertatorImpl<T_Element, /* T_Reverse: */ false>;
-    using const_iterator = SimpleItertatorImpl<const T_Element, /* T_Reverse: */ false>;
-    using reverse_iterator = SimpleItertatorImpl<T_Element, /* T_Reverse: */ true>;
-    using const_reverse_iterator = SimpleItertatorImpl<const T_Element, /* T_Reverse: */ true>;
+    using iterator = SimpleItertatorImpl<T_Element, /* N_Reverse: */ false>;
+    using const_iterator = SimpleItertatorImpl<const T_Element, /* N_Reverse: */ false>;
+    using reverse_iterator = SimpleItertatorImpl<T_Element, /* N_Reverse: */ true>;
+    using const_reverse_iterator = SimpleItertatorImpl<const T_Element, /* N_Reverse: */ true>;
 
     // CONSTRUCTOR
     V3List() = default;

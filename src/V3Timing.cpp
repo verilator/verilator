@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -233,8 +233,8 @@ class TimingSuspendableVisitor final : public VNVisitor {
             if (passFlag(parentp, depp, flag)) propagateFlags(depVxp, flag);
         }
     }
-    template <typename Predicate>
-    void propagateFlagsIf(DepVtx* const vxp, NodeFlag flag, Predicate p) {
+    template <typename T_Predicate>
+    void propagateFlagsIf(DepVtx* const vxp, NodeFlag flag, T_Predicate p) {
         auto* const parentp = vxp->nodep();
         for (V3GraphEdge& edge : vxp->outEdges()) {
             auto* const depVxp = static_cast<DepVtx*>(edge.top());
@@ -242,8 +242,8 @@ class TimingSuspendableVisitor final : public VNVisitor {
             if (p(&edge) && passFlag(parentp, depp, flag)) propagateFlagsIf(depVxp, flag, p);
         }
     }
-    template <typename Predicate>
-    void propagateFlagsReversedIf(DepVtx* const vxp, NodeFlag flag, Predicate p) {
+    template <typename T_Predicate>
+    void propagateFlagsReversedIf(DepVtx* const vxp, NodeFlag flag, T_Predicate p) {
         auto* const parentp = vxp->nodep();
         for (V3GraphEdge& edge : vxp->inEdges()) {
             auto* const depVxp = static_cast<DepVtx*>(edge.fromp());

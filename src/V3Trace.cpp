@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -708,7 +708,13 @@ class TraceVisitor final : public VNVisitor {
                 // Track splitting due to size
                 UASSERT_OBJ(incFulp->nodeCount() == incChgp->nodeCount(), declp,
                             "Should have equal cost");
-                subStmts += incChgp->nodeCount();
+                const VNumRange range = declp->arrayRange();
+                if (range.ranged()) {
+                    // 2x because each element is a TraceInc and a VarRef
+                    subStmts += range.elements() * 2;
+                } else {
+                    subStmts += incChgp->nodeCount();
+                }
 
                 // Track partitioning
                 nCodes += declp->codeInc();
@@ -877,10 +883,8 @@ class TraceVisitor final : public VNVisitor {
             }
         }
         VL_RESTORER(m_cfuncp);
-        {
-            m_cfuncp = nodep;
-            iterateChildren(nodep);
-        }
+        m_cfuncp = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstTraceDecl* nodep) override {
         UINFO(8, "   TRACE " << nodep << endl);

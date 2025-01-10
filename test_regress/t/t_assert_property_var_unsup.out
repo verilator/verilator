@@ -1,10 +1,14 @@
-%Error: t/t_assert_property_var_unsup.v:17:11: syntax error, unexpected IDENTIFIER, expecting "'{"
+%Error-UNSUPPORTED: t/t_assert_property_var_unsup.v:17:11: Unsupported: property variable declaration
    17 |       int prevcyc;
       |           ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_assert_property_var_unsup.v:18:7: syntax error, unexpected '(', expecting endproperty
+   18 |       (valid, prevcyc = cyc) |=> (cyc == prevcyc + 1);
+      |       ^
 %Error-UNSUPPORTED: t/t_assert_property_var_unsup.v:24:31: Unsupported: property variable default value
    24 |    property with_def(int nine = 9);
       |                               ^
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Internal Error: t/t_assert_property_var_unsup.v:7:8: ../V3ParseSym.h:#: Symbols suggest ending PROPERTY 'prop' but parser thinks ending MODULE 't'
     7 | module t ( 
       |        ^
+                        ... See the manual at https://verilator.org/verilator_doc.html for more assistance.

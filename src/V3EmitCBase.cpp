@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -192,7 +192,7 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
         if (nodep->attrScClocked() && nodep->isReadOnly()) {
             putns(nodep, "sc_core::sc_in_clk ");
         } else {
-            if (nodep->isInoutish()) {
+            if (nodep->isInout()) {
                 putns(nodep, "sc_core::sc_inout<");
             } else if (nodep->isWritable()) {
                 putns(nodep, "sc_core::sc_out<");
@@ -213,7 +213,7 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
         emitDeclArrayBrackets(nodep);
         puts(";\n");
     } else if (nodep->isIO() && basicp && !basicp->isOpaque()) {
-        if (nodep->isInoutish()) {
+        if (nodep->isInout()) {
             putns(nodep, "VL_INOUT");
         } else if (nodep->isWritable()) {
             putns(nodep, "VL_OUT");

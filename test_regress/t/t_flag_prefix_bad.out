@@ -1,0 +1,2 @@
+%Error: --prefix argument must be a legal C++ identifier: 'bad/name'
+%Error: Exiting due to

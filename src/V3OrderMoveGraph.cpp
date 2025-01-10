@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -111,7 +111,7 @@ class OrderMoveGraphBuilder final {
                 if (senTreep->sensesp()->nextp()) return nullptr;
 
                 // Find the original AstSenTree
-                auto it = m_trigToSen.find(senTreep->sensesp());
+                auto it = m_trigToSen.find(senTreep);
                 if (it == m_trigToSen.end()) return nullptr;
 
                 // If more than one AstSenItems on the original, then not a simple AstSenTree

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -53,9 +53,9 @@ struct GraphPCNode final {
 //######################################################################
 // GraphPathChecker implementation
 
-template <GraphWay::en T_Way>
+template <GraphWay::en N_Way>
 void GraphPathChecker::initHalfCriticalPaths(bool checkOnly) {
-    constexpr GraphWay way{T_Way};
+    constexpr GraphWay way{N_Way};
     constexpr GraphWay rev = way.invert();
     GraphStreamUnordered order(m_graphp, way);
     while (const V3GraphVertex* const vertexp = order.nextp()) {

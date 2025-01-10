@@ -26,6 +26,8 @@ files = re.sub(r'\s+', ' ', files)
 
 regex = r'(FIX[M]E|BO[Z]O)'
 for filename in files.split():
+    if re.search(regex, filename):
+        names[filename] = True
     filename = os.path.join(root, filename)
     if not os.path.exists(filename):
         continue
