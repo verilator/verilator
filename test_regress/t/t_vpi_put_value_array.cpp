@@ -82,11 +82,8 @@ int mon_check_props(void) {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_bytes", NULL);
         CHECK_RESULT_NZ(object);
 
-        PLI_BYTE8 data[4] = {
-            static_cast<PLI_BYTE8>(0xde), 
-            static_cast<PLI_BYTE8>(0xad), 
-            static_cast<PLI_BYTE8>(0xbe), 
-            static_cast<PLI_BYTE8>(0xef)};
+        PLI_BYTE8 data[4] = {static_cast<PLI_BYTE8>(0xde), static_cast<PLI_BYTE8>(0xad),
+                             static_cast<PLI_BYTE8>(0xbe), static_cast<PLI_BYTE8>(0xef)};
 
         arrayVal.value.rawvals = data;
         arrayVal.format = vpiRawTwoStateVal;
@@ -96,8 +93,7 @@ int mon_check_props(void) {
 
         PLI_BYTE8* ptr = arrayVal.value.rawvals;
 
-        for (int i = 0; i < num; i++)
-            CHECK_RESULT_HEX(ptr[i], data[i]);
+        for (int i = 0; i < num; i++) CHECK_RESULT_HEX(ptr[i], data[i]);
     }
 
     {
@@ -114,8 +110,7 @@ int mon_check_props(void) {
 
         PLI_UINT16* ptr = (PLI_UINT16*)arrayVal.value.shortints;
 
-        for (int i = 0; i < num; i++)
-            CHECK_RESULT_HEX(ptr[i], data[i]);
+        for (int i = 0; i < num; i++) CHECK_RESULT_HEX(ptr[i], data[i]);
     }
 
     {
@@ -132,8 +127,7 @@ int mon_check_props(void) {
 
         PLI_UINT32* ptr = (PLI_UINT32*)arrayVal.value.integers;
 
-        for (int i = 0; i < num; i++)
-            CHECK_RESULT_HEX(ptr[i], data[i]);
+        for (int i = 0; i < num; i++) CHECK_RESULT_HEX(ptr[i], data[i]);
     }
 
     {
@@ -152,8 +146,7 @@ int mon_check_props(void) {
 
         PLI_UINT32* ptr = (PLI_UINT32*)arrayVal.value.integers;
 
-        for (int i = 0; i < num; i++)
-            CHECK_RESULT_HEX(ptr[i], data[i]);
+        for (int i = 0; i < num; i++) CHECK_RESULT_HEX(ptr[i], data[i]);
 
         indexArr[0] = 0;
     }
@@ -162,8 +155,8 @@ int mon_check_props(void) {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_longs", NULL);
         CHECK_RESULT_NZ(object);
 
-        PLI_UINT64 data[4] = {0x00000000deadbeef, 0x0000000000000000,
-                                0x00000000beefdead, 0x0000000000000000};
+        PLI_UINT64 data[4]
+            = {0x00000000deadbeef, 0x0000000000000000, 0x00000000beefdead, 0x0000000000000000};
 
         arrayVal.value.longints = (PLI_INT64*)data;
         arrayVal.format = vpiLongIntVal;
@@ -173,8 +166,7 @@ int mon_check_props(void) {
 
         PLI_UINT64* ptr = (PLI_UINT64*)arrayVal.value.longints;
 
-        for (int i = 0; i < num; i++)
-            CHECK_RESULT_HEX(ptr[i], data[i]);
+        for (int i = 0; i < num; i++) CHECK_RESULT_HEX(ptr[i], data[i]);
     }
 
     {
@@ -182,9 +174,9 @@ int mon_check_props(void) {
         CHECK_RESULT_NZ(object);
 
         PLI_UINT64 data[16] = {0x0000000000000000, 0x0000000000000000, 0x00, 0x00,
-            0xbeefdead00000000, 0x00000000deadbeef, 0x00, 0x00,
-            0x0000000000000000, 0x00000000beefdead, 0x00, 0x00,
-            0xbeefdeaddeadbeef, 0xbeefdeaddeadbeef, 0x00, 0x00};
+                               0xbeefdead00000000, 0x00000000deadbeef, 0x00, 0x00,
+                               0x0000000000000000, 0x00000000beefdead, 0x00, 0x00,
+                               0xbeefdeaddeadbeef, 0xbeefdeaddeadbeef, 0x00, 0x00};
 
         arrayVal.value.rawvals = (PLI_BYTE8*)data;
         arrayVal.format = vpiRawFourStateVal;
@@ -203,8 +195,9 @@ int mon_check_props(void) {
         CHECK_RESULT_NZ(object);
 
         s_vpi_vecval data[4] = {{0x00000000, 0x000000},
-            {0xdeadbeef, 0x00000000}, {0x00000000, 0x00000000},
-            {0xdeadbeef, 0x00000000}};
+                                {0xdeadbeef, 0x00000000},
+                                {0x00000000, 0x00000000},
+                                {0xdeadbeef, 0x00000000}};
 
         arrayVal.value.vectors = data;
         arrayVal.format = vpiVector;
@@ -235,11 +228,9 @@ int mon_check_props(void) {
 
         vpi_get_value_array(object, &arrayVal, indexp, num);
 
-        PLI_INT32 * ptr = arrayVal.value.integers;
+        PLI_INT32* ptr = arrayVal.value.integers;
 
-        for (int i = 0; i < num; i++) {
-            CHECK_RESULT_HEX(ptr[i], data[i]);
-        }
+        for (int i = 0; i < num; i++) { CHECK_RESULT_HEX(ptr[i], data[i]); }
     }
 
     {
@@ -294,8 +285,8 @@ int mon_check_props(void) {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test", NULL);
         CHECK_RESULT_NZ(object);
 
-        int datap[4] = {0,0,0,0};
-        s_vpi_arrayvalue arrayvalue = {vpiIntVal,0,datap};
+        int datap[4] = {0, 0, 0, 0};
+        s_vpi_arrayvalue arrayvalue = {vpiIntVal, 0, {datap}};
         PLI_INT32 indexp[1] = {0};
 
         vpi_put_value_array(object, &arrayvalue, indexp, num);
@@ -307,8 +298,8 @@ int mon_check_props(void) {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_scalar", NULL);
         CHECK_RESULT_NZ(object);
 
-        int datap[4] = {0,0,0,0};
-        s_vpi_arrayvalue arrayvalue = {vpiIntVal,0,datap};
+        int datap[4] = {0, 0, 0, 0};
+        s_vpi_arrayvalue arrayvalue = {vpiIntVal, 0, {datap}};
         PLI_INT32 indexp[1] = {0};
 
         vpi_put_value_array(object, &arrayvalue, indexp, num);
@@ -320,8 +311,8 @@ int mon_check_props(void) {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_bounds", NULL);
         CHECK_RESULT_NZ(object);
 
-        int datap[4] = {0,0,0,0};
-        s_vpi_arrayvalue arrayvalue = {vpiIntVal,0,datap};
+        int datap[4] = {0, 0, 0, 0};
+        s_vpi_arrayvalue arrayvalue = {vpiIntVal, 0, {datap}};
         PLI_INT32 indexp[1] = {0};
 
         vpi_put_value_array(object, &arrayvalue, indexp, num);
@@ -337,8 +328,8 @@ int mon_check_props(void) {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_inaccessible", NULL);
         CHECK_RESULT_NZ(object);
 
-        int datap[4] = {0,0,0,0};
-        s_vpi_arrayvalue arrayvalue = {vpiIntVal,0,datap};
+        int datap[4] = {0, 0, 0, 0};
+        s_vpi_arrayvalue arrayvalue = {vpiIntVal, 0, {datap}};
         PLI_INT32 indexp[1] = {0};
 
         vpi_put_value_array(object, &arrayvalue, indexp, num);
@@ -350,8 +341,8 @@ int mon_check_props(void) {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_words", NULL);
         CHECK_RESULT_NZ(object);
 
-        int datap[4] = {0,0,0,0};
-        s_vpi_arrayvalue arrayvalue = {vpiIntVal,vpiPropagateOff,datap};
+        int datap[4] = {0, 0, 0, 0};
+        s_vpi_arrayvalue arrayvalue = {vpiIntVal, vpiPropagateOff, {datap}};
         PLI_INT32 indexp[1] = {0};
 
         vpi_put_value_array(object, &arrayvalue, indexp, num);
@@ -367,8 +358,8 @@ int mon_check_props(void) {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_words", NULL);
         CHECK_RESULT_NZ(object);
 
-        int datap[4] = {0,0,0,0};
-        s_vpi_arrayvalue arrayvalue = {vpiShortIntVal,0,datap};
+        int datap[4] = {0, 0, 0, 0};
+        s_vpi_arrayvalue arrayvalue = {vpiShortIntVal, 0, {datap}};
         PLI_INT32 indexp[1] = {0};
 
         vpi_put_value_array(object, &arrayvalue, indexp, num);
@@ -384,8 +375,8 @@ int mon_check_props(void) {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_words", NULL);
         CHECK_RESULT_NZ(object);
 
-        int datap[4] = {0,0,0,0};
-        s_vpi_arrayvalue arrayvalue = {vpiIntVal,0,datap};
+        int datap[4] = {0, 0, 0, 0};
+        s_vpi_arrayvalue arrayvalue = {vpiIntVal, 0, {datap}};
         PLI_INT32 indexp[1] = {0};
 
         vpi_put_value_array(object, &arrayvalue, indexp, 5);
@@ -395,9 +386,7 @@ int mon_check_props(void) {
     return 0;
 }
 
-extern "C" int mon_check(void) {
-    return mon_check_props();
-}
+extern "C" int mon_check(void) { return mon_check_props(); }
 
 #ifndef IS_VPI
 
