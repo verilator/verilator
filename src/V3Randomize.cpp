@@ -709,7 +709,14 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstAssocSel* nodep) override {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
+        std::cout << nodep->bitp() << std::endl;
+        std::cout << nodep->bitp()->dtypep() << std::endl;
+        std::cout << nodep->bitp()->width() << std::endl;
         if (VN_IS(nodep->bitp(), CvtPackString)) {
+            //AstBasicDType* const dtypep = VN_AS(nodep->bitp()->dtypep(), BasicDType);
+            //if (dtypep->isString()) {
+            //    std::cout << dtypep << nodep->bitp() << std::endl;
+            //}
             AstCvtPackString* const stringp = VN_AS(nodep->bitp(), CvtPackString);
             const size_t stringSize = VN_AS(stringp->lhsp(), Const)->width();
             if (stringSize > 128) {
@@ -718,28 +725,34 @@ class ConstraintExprVisitor final : public VNVisitor {
                     "Unsupported: Constrained randomization of associative array keys of "
                         << stringSize << "bits, limit is 128 bits");
             }
+            std::cout << "Mei jin Lai???" << stringSize << std::endl;
             VNRelinker handle;
             AstNodeExpr* const idxp
                 = new AstSFormatF{fl, "#x%32x", false, stringp->lhsp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
             editSMT(nodep, nodep->fromp(), idxp);
         } else {
-            VNRelinker handle;
-            const int actual_width = nodep->bitp()->width();
-            std::string fmt;
-            // Normalize to standard bit width
-            if (actual_width <= 8) {
-                fmt = "#x%2x";
-            } else if (actual_width <= 16) {
-                fmt = "#x%4x";
-            } else {
-                fmt = "#x%" + std::to_string(VL_WORDS_I(actual_width) * 8) + "x";
-            }
+            if (VN_IS(nodep->bitp()->dtypep(), BasicDType) || (VN_IS(nodep->bitp()->dtypep(), StructDType)  && VN_AS(nodep->bitp()->dtypep(), StructDType)->packed()) || VN_IS(nodep->bitp()->dtypep(), EnumDType) || VN_IS(nodep->bitp()->dtypep(), PackArrayDType)) {
+                VNRelinker handle;
+                const int actual_width = nodep->bitp()->width();
+                std::string fmt;
+                // Normalize to standard bit width
+                if (actual_width <= 8) {
+                    fmt = "#x%2x";
+                } else if (actual_width <= 16) {
+                    fmt = "#x%4x";
+                } else {
+                    fmt = "#x%" + std::to_string(VL_WORDS_I(actual_width) * 8) + "x";
+                }
 
-            AstNodeExpr* const idxp
-                = new AstSFormatF{fl, fmt, false, nodep->bitp()->unlinkFrBack(&handle)};
-            handle.relink(idxp);
-            editSMT(nodep, nodep->fromp(), idxp);
+                AstNodeExpr* const idxp
+                    = new AstSFormatF{fl, fmt, false, nodep->bitp()->unlinkFrBack(&handle)};
+                handle.relink(idxp);
+                editSMT(nodep, nodep->fromp(), idxp);
+            } else {
+                nodep->bitp()->v3error( "Illegal non-integral expression or subexpression in random constraint."
+                                        " (IEEE 1800-2023 18.3)");
+            }
         }
     }
     void visit(AstArraySel* nodep) override {

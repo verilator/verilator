@@ -387,7 +387,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
         f << "(assert (= #b1 " << constraint << "))\n";
     }
     f << "(check-sat)\n";
-
+    dump();
     bool sat = parseSolution(f);
     if (!sat) {
         f << "(reset)\n";
