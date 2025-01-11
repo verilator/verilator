@@ -14,7 +14,7 @@ Verilator 5.033 devel
 **Minor:**
 
 * Add `COVERIGN` warning, as a more specific UNSUPPORTED error.
-* Add `--public-ignore` to ignore public metacomments (#7819). [Andrew Nolte]
+* Add `--public-ignore` to ignore public metacomments (#5716). [Andrew Nolte]
 * Add lint error on importing package within a class (#5634) (#5679). [Nick Brereton]
 * Support multidimensional array access via VPI (#2812) (#5573). [Krzysztof Starecki]
 * Support generated classes (#5665). [Shou-Li Hsu]
