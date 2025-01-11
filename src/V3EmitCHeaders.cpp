@@ -265,16 +265,16 @@ class EmitCHeader final : public EmitCConstInit {
         putns(sdtypep, "\nbool operator<(const " + EmitCBase::prefixNameProtect(sdtypep)
                            + "& rhs) const {\n");
         puts("return ");
-        puts("std::tie( ");
+        puts("std::tie(");
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            if (itemp != sdtypep->membersp()) puts("  , ");
+            if (itemp != sdtypep->membersp()) puts(", ");
             putns(itemp, itemp->nameProtect());
         }
-        puts(")\n    <  std::tie( ");
+        puts(")\n    <  std::tie(");
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            if (itemp != sdtypep->membersp()) puts(" , ");
+            if (itemp != sdtypep->membersp()) puts(", ");
             putns(itemp, "rhs." + itemp->nameProtect());
         }
         puts(");\n");
