@@ -15,16 +15,23 @@ Verilator 5.033 devel
 
 * Add `COVERIGN` warning, as a more specific UNSUPPORTED error.
 * Add `--public-ignore` to ignore public metacomments (#7819). [Andrew Nolte]
+* Add lint error on importing package within a class (#5634) (#5679). [Nick Brereton]
+* Support multidimensional array access via VPI (#2812) (#5573). [Krzysztof Starecki]
 * Support generated classes (#5665). [Shou-Li Hsu]
+* Support constraints on associative array user-defined keys (#5671) (#5729). [Yilou Wang]
 * Support `+incdir` with multiple directories.
 * Support side effects of form 'variable[index_function()]++'.
+* Improve VPI write errors (#5712). [Andrew Nolte]
 * Fix error message when call task as a function (#3089). [Matthew Ballance]
+* Fix constrained random for > 64-bit associative arrays (#5670) (#5682). [Yilou Wang]
+* Fix mis-optimizing away `$urandom` (#5703). [Parker Schless]
+* Fix packages with `--public-depth 1` (#5708). [Andrew Nolte]
 * Fix V3Simulate constant reuse (#5709). [Geza Lore]
 * Fix man pages what-is section (#5710). [Ahmed El-Mahmoudy]
 * Fix pattern assignment to real inside struct (#5713).
 * Fix %p format output for real inside struct (#5713).
 * Fix segfault when only enum value referenced in package (#5714). [Dan Katz]
-* Fix misoptimizing away `$urandom` (#5703). [Parker Schless]
+* Fix `BLKSEQ` on suspendable processes (#5722). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix matching language extension options including dots.
 
 
