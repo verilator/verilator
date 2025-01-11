@@ -968,10 +968,10 @@ public:
         putns(nodep, "if (");
         if (!nodep->branchPred().unknown()) {
             puts(nodep->branchPred().ascii());
-            puts("(");
+            puts("((");  // Two parens, so that VL_UNLIKELY((class<foo,bar>)) works
         }
         iterateAndNextConstNull(nodep->condp());
-        if (!nodep->branchPred().unknown()) puts(")");
+        if (!nodep->branchPred().unknown()) puts("))");
         puts(") {\n");
         iterateAndNextConstNull(nodep->thensp());
         puts("}");

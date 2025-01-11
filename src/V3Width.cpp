@@ -4574,8 +4574,8 @@ class WidthVisitor final : public VNVisitor {
 
             if (patp) {
                 // Don't want the RHS an array
-                patp->dtypep(arrayDtp->subDTypep());
                 allConstant &= VN_IS(patp->lhssp(), Const);
+                patp->dtypep(arrayDtp->subDTypep());
                 AstNodeExpr* const valuep = patternMemberValueIterate(patp);
                 if (VN_IS(arrayDtp, UnpackArrayDType)) {
                     if (!newp) {
