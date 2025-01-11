@@ -273,7 +273,8 @@ private:
     bool m_protectIds = false;      // main switch: --protect-ids
     bool m_public = false;          // main switch: --public
     bool m_publicFlatRW = false;    // main switch: --public-flat-rw
-    bool m_public_params = false;   // main switch: --public-params
+    bool m_publicIgnore = false;    // main switch: --public-ignore
+    bool m_publicParams = false;    // main switch: --public-params
     bool m_quietExit = false;       // main switch: --quiet-exit
     bool m_quietStats = false;      // main switch: --quiet-stats
     bool m_relativeIncludes = false;  // main switch: --relative-includes
@@ -541,10 +542,11 @@ public:
     bool usesProfiler() const { return profExec() || profPgo(); }
     bool protectIds() const VL_MT_SAFE { return m_protectIds; }
     bool allPublic() const { return m_public; }
-    bool publicParams() const { return m_public_params; }
+    bool publicParams() const { return m_publicParams; }
+    bool publicOff() const { return m_publicIgnore; }
     bool publicFlatRW() const { return m_publicFlatRW; }
     int publicDepth() const { return m_publicDepth; }
-    bool anyPublicFlat() const { return m_public_params || m_publicFlatRW || m_publicDepth; }
+    bool anyPublicFlat() const { return m_publicParams || m_publicFlatRW || m_publicDepth; }
     bool lintOnly() const VL_MT_SAFE { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
     bool quietExit() const VL_MT_SAFE { return m_quietExit; }

@@ -26,6 +26,8 @@
 #include "Vt_vpi_public_depth__Dpi.h"
 #elif defined(T_VPI_PUBLIC_DEPTH_OFF)
 #include "Vt_vpi_public_depth_off__Dpi.h"
+#elif defined(T_VPI_PUBLIC_OFF)
+#include "Vt_vpi_public_off__Dpi.h"
 #else
 #error "Bad test"
 #endif
@@ -86,6 +88,15 @@ int mon_check() {
     TestVpiHandle topmod_done_should_be_0 = (vpi_scan(it));
     it.freed();  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
     CHECK_RESULT_Z(topmod_done_should_be_0);
+
+    TestVpiHandle mod_a = vpi_handle_by_name(const_cast<PLI_BYTE8*>("\\mod.a "), topmod);
+#if defined(T_VPI_PUBLIC_OFF)
+    // metacomment from module A should be ignored
+    CHECK_RESULT_Z(mod_a);
+    return 0;
+#endif
+
+    CHECK_RESULT_NZ(mod_a);
 
     TestVpiHandle it2 = vpi_iterate(vpiModule, topmod);
     CHECK_RESULT_NZ(it2);

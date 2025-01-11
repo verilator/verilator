@@ -13,7 +13,8 @@ Verilator 5.033 devel
 
 **Minor:**
 
-* Add COVERIGN warning, as a more specific UNSUPPORTED error.
+* Add `COVERIGN` warning, as a more specific UNSUPPORTED error.
+* Add `--public-ignore` to ignore public metacomments (#7819). [Andrew Nolte]
 * Support generated classes (#5665). [Shou-Li Hsu]
 * Support `+incdir` with multiple directories.
 * Support side effects of form 'variable[index_function()]++'.
