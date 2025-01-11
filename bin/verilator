@@ -431,9 +431,9 @@ detailed descriptions of these arguments.
     --protect-lib <name>        Create a DPI protected library
     --public                    Mark signals as public; see docs
     --public-depth <level>      Mark public to specified module depth
-    --public-params             Mark all parameters as public_flat
     --public-flat-rw            Mark all variables, etc as public_flat_rw
     --public-ignore             Ignore all public comment markings
+    --public-params             Mark all parameters as public_flat
      -pvalue+<name>=<value>     Overwrite toplevel parameter
     --quiet                     Minimize additional printing
     --quiet-exit                Don't print the command on failure

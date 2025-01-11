@@ -1211,6 +1211,13 @@ Summary:
    module specifically enabled it with
    :option:`/*verilator&32;inline_module*/`.
 
+
+.. option:: --public-depth <level>
+
+   Enables public as with :vlopt:`--public-flat-rw`, but only to the specified depth of modules.
+   It operates at the module maximum level, so if a module's cells are A.B.X and A.X, the
+   a --public-depth 3 must be used to make module X public, and both A.B.X and A.X will be public.
+
 .. option:: --public-flat-rw
 
    Declares all variables, ports, and wires public as if they had
@@ -1221,12 +1228,13 @@ Summary:
    in mis-simulation of generated clocks.  Instead of this global option,
    marking only those signals that need public_flat_rw is typically
    significantly better performing.
+   
+.. option:: --public-ignore
 
-.. option:: --public-depth <level>
-
-   Enables public as with :vlopt:`--public-flat-rw`, but only to the specified depth of modules.
-   It operates at the module maximum level, so if a module's cells are A.B.X and A.X, the
-   a --public-depth 3 must be used to make module X public, and both A.B.X and A.X will be public.
+   Ignore all
+   :code:`/*verilator public* */`
+   metacomments. This is useful for speed-optimizing VPI builds where VPI is not being used.
+   This only affects metacomments; options such as :vlopt:`--public`, :vlopt:`--public-depth`, etc. work normally.
 
 .. option:: --public-params
 
@@ -1234,12 +1242,6 @@ Summary:
    :code:`/*verilator public_flat_rd*/`
    metacomments.
 
-.. option:: --public-ignore
-
-   Ignore all
-   :code:`/*verilator public* */`
-   metacomments. This is useful for speed-optimizing VPI builds where VPI is not being used.
-   This only affects metacomments; options such as :vlopt:`--public`, :vlopt:`--public-depth`, etc. work normally.
 
 .. option:: -pvalue+<name>=<value>
 
