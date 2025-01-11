@@ -1820,7 +1820,6 @@ public:
                 return "VL_RANDOM_SEEDED_%nq%lq(%li)";
             }
         }
-
         if (isWide()) {
             return "VL_RANDOM_%nq(%nw, %P)";
         } else {
@@ -1830,6 +1829,7 @@ public:
     bool cleanOut() const override { return false; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
+    bool isPure() override { return !m_reset && !seedp(); }
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool combinable(const AstRand* samep) const {
