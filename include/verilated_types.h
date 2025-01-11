@@ -505,12 +505,12 @@ public:
     VlQueue& operator=(VlQueue&&) = default;
     bool operator==(const VlQueue& rhs) const { return m_deque == rhs.m_deque; }
     bool operator!=(const VlQueue& rhs) const { return m_deque != rhs.m_deque; }
-    bool operator<(const VlQueue& rhs) const { 
-        return m_deque<rhs.m_deque;
-        for(int index =0 ; index< m_deque.size(); index++){
-            if(m_deque[index]< rhs.m_deque[index]) return true;
+    bool operator<(const VlQueue& rhs) const {
+        return m_deque < rhs.m_deque;
+        for (int index = 0; index < m_deque.size(); index++) {
+            if (m_deque[index] < rhs.m_deque[index]) return true;
         }
-        return false; 
+        return false;
     }
 
     // Standard copy constructor works. Verilog: assoca = assocb
@@ -1373,10 +1373,10 @@ public:
     void operator=(const T_Value that[N_Depth]) { assign(that); }
     bool operator<(const VlUnpacked<T_Value, N_Depth>& that) const {
         // return m_storage< that.m_storage;
-        for(int index =0 ; index< N_Depth; index++){
-            if(m_storage[index]< that.m_storage[index]) return true;
+        for (int index = 0; index < N_Depth; index++) {
+            if (m_storage[index] < that.m_storage[index]) return true;
         }
-        return false; 
+        return false;
     }
 
     // inside (set membership operator)
