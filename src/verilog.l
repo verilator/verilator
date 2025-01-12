@@ -1062,7 +1062,11 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`protect"                            { FL_FWD; FL_BRK; }
   "`remove_gatenames"                   { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`remove_netnames"                    { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
-  "`resetall"                           { FL; PARSEP->lexFileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true);
+  "`resetall"                           { FL;
+                                          PARSEP->lexFileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true);
+                                          v3Global.rootp()->timeInit();
+                                          PARSEP->lexFileline()->celldefineOn(false);
+                                          PARSEP->unconnectedDrive(VOptionBool::OPT_DEFAULT_FALSE);
                                           return yaT_RESETALL; }  // Rest handled by preproc
   "`suppress_faults"                    { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`timescale"{ws}+[^\n\r]*             { FL; PARSEP->lexTimescaleParse(yylval.fl,
