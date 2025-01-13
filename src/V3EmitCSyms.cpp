@@ -181,7 +181,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     /// Then add/update entry in m_scopeNames if not already there
     void varHierarchyScopes(string scp) {
 
-        // we want no result to be -1, so use ints
         string::size_type prd_pos = scp.rfind('.');
         string::size_type dot_pos = scp.rfind("__DOT__");
 
@@ -195,7 +194,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             }
 
             // resize and advance pointers
-            if (prd_pos < dot_pos && dot_pos != string::npos) {
+            if ((prd_pos < dot_pos || prd_pos == string::npos) && dot_pos != string::npos) {
                 scp.resize(dot_pos);
                 dot_pos = scp.rfind("__DOT__");
             } else {
