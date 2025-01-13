@@ -330,7 +330,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             const int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.emplace(scopeSymString(nodep->name()),
                                          ScopeData{nodep, scopeSymString(nodep->name()),
-                                                   name_pretty, "<null>", timeunit, type});
+                                                   name_pretty, nodep->modp()->origName(), timeunit, type});
         }
         iterateChildrenConst(nodep);
     }

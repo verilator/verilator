@@ -1,4 +1,4 @@
-t (vpiModule) t  vpiDefName=<null>
+t (vpiModule) t  vpiDefName=t
     vpiReg:
     LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND (vpiReg) t.LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND 
     a (vpiReg) TOP.a 
@@ -63,25 +63,25 @@ t (vpiModule) t  vpiDefName=<null>
         vpiParameter:
         scoped_wire (vpiParameter) t.cond_scope.scoped_wire  vpiConstType=vpiDecConst
         vpiInternalScope:
-        scoped_sub (vpiModule) t.cond_scope.scoped_sub  vpiDefName=<null>
+        scoped_sub (vpiModule) t.cond_scope.scoped_sub  vpiDefName=ModSub
             vpiReg:
             subsig1 (vpiReg) t.cond_scope.scoped_sub.subsig1 
             subsig2 (vpiReg) t.cond_scope.scoped_sub.subsig2 
             vpiParameter:
-        sub_wrap_gen (vpiModule) t.cond_scope.sub_wrap_gen  vpiDefName=<null>
+        sub_wrap_gen (vpiModule) t.cond_scope.sub_wrap_gen  vpiDefName=ModSubWrapper
             vpiReg:
             vpiParameter:
             vpiInternalScope:
-            my_sub (vpiModule) t.cond_scope.sub_wrap_gen.my_sub  vpiDefName=<null>
+            my_sub (vpiModule) t.cond_scope.sub_wrap_gen.my_sub  vpiDefName=ModSub
                 vpiReg:
                 subsig1 (vpiReg) t.cond_scope.sub_wrap_gen.my_sub.subsig1 
                 subsig2 (vpiReg) t.cond_scope.sub_wrap_gen.my_sub.subsig2 
                 vpiParameter:
-    intf_arr[0] (vpiModule) t.intf_arr[0]  vpiDefName=<null>
+    intf_arr[0] (vpiModule) t.intf_arr[0]  vpiDefName=TestInterface
         vpiReg:
         addr (vpiReg) t.intf_arr[0].addr 
         vpiParameter:
-    intf_arr[1] (vpiModule) t.intf_arr[1]  vpiDefName=<null>
+    intf_arr[1] (vpiModule) t.intf_arr[1]  vpiDefName=TestInterface
         vpiReg:
         addr (vpiReg) t.intf_arr[1].addr 
         vpiParameter:
@@ -238,16 +238,16 @@ t (vpiModule) t  vpiDefName=<null>
                 verbose (vpiReg) t.outer_scope[3].inner_scope[3].arr.verbose 
                 vpiParameter:
                 LENGTH (vpiParameter) t.outer_scope[3].inner_scope[3].arr.LENGTH  vpiConstType=vpiDecConst
-    sub (vpiModule) t.sub  vpiDefName=<null>
+    sub (vpiModule) t.sub  vpiDefName=ModSub
         vpiReg:
         subsig1 (vpiReg) t.sub.subsig1 
         subsig2 (vpiReg) t.sub.subsig2 
         vpiParameter:
-    sub_wrap (vpiModule) t.sub_wrap  vpiDefName=<null>
+    sub_wrap (vpiModule) t.sub_wrap  vpiDefName=ModSubWrapper
         vpiReg:
         vpiParameter:
         vpiInternalScope:
-        my_sub (vpiModule) t.sub_wrap.my_sub  vpiDefName=<null>
+        my_sub (vpiModule) t.sub_wrap.my_sub  vpiDefName=ModSub
             vpiReg:
             subsig1 (vpiReg) t.sub_wrap.my_sub.subsig1 
             subsig2 (vpiReg) t.sub_wrap.my_sub.subsig2 
