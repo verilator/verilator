@@ -35,7 +35,7 @@ t (vpiModule) t  vpiDefName=t
         vpiReg:
         vpiParameter:
         vpiInternalScope:
-        arr (vpiModule) t.arr[1].arr  vpiDefName=<null>
+        arr (vpiModule) t.arr[1].arr  vpiDefName=ModArr
             vpiReg:
             LENGTH (vpiParameter) t.arr[1].arr.LENGTH  vpiConstType=vpiDecConst
             check (vpiReg) t.arr[1].arr.check 
@@ -48,7 +48,7 @@ t (vpiModule) t  vpiDefName=t
         vpiReg:
         vpiParameter:
         vpiInternalScope:
-        arr (vpiModule) t.arr[2].arr  vpiDefName=<null>
+        arr (vpiModule) t.arr[2].arr  vpiDefName=ModArr
             vpiReg:
             LENGTH (vpiParameter) t.arr[2].arr.LENGTH  vpiConstType=vpiDecConst
             check (vpiReg) t.arr[2].arr.check 
@@ -97,7 +97,7 @@ t (vpiModule) t  vpiDefName=t
             vpiParameter:
             scoped_param_inner (vpiParameter) t.outer_scope[1].inner_scope[1].scoped_param_inner  vpiConstType=vpiDecConst
             vpiInternalScope:
-            arr (vpiModule) t.outer_scope[1].inner_scope[1].arr  vpiDefName=<null>
+            arr (vpiModule) t.outer_scope[1].inner_scope[1].arr  vpiDefName=ModArr
                 vpiReg:
                 LENGTH (vpiParameter) t.outer_scope[1].inner_scope[1].arr.LENGTH  vpiConstType=vpiDecConst
                 check (vpiReg) t.outer_scope[1].inner_scope[1].arr.check 
@@ -112,7 +112,7 @@ t (vpiModule) t  vpiDefName=t
             vpiParameter:
             scoped_param_inner (vpiParameter) t.outer_scope[1].inner_scope[2].scoped_param_inner  vpiConstType=vpiDecConst
             vpiInternalScope:
-            arr (vpiModule) t.outer_scope[1].inner_scope[2].arr  vpiDefName=<null>
+            arr (vpiModule) t.outer_scope[1].inner_scope[2].arr  vpiDefName=ModArr
                 vpiReg:
                 LENGTH (vpiParameter) t.outer_scope[1].inner_scope[2].arr.LENGTH  vpiConstType=vpiDecConst
                 check (vpiReg) t.outer_scope[1].inner_scope[2].arr.check 
@@ -127,7 +127,7 @@ t (vpiModule) t  vpiDefName=t
             vpiParameter:
             scoped_param_inner (vpiParameter) t.outer_scope[1].inner_scope[3].scoped_param_inner  vpiConstType=vpiDecConst
             vpiInternalScope:
-            arr (vpiModule) t.outer_scope[1].inner_scope[3].arr  vpiDefName=<null>
+            arr (vpiModule) t.outer_scope[1].inner_scope[3].arr  vpiDefName=ModArr
                 vpiReg:
                 LENGTH (vpiParameter) t.outer_scope[1].inner_scope[3].arr.LENGTH  vpiConstType=vpiDecConst
                 check (vpiReg) t.outer_scope[1].inner_scope[3].arr.check 
@@ -148,7 +148,7 @@ t (vpiModule) t  vpiDefName=t
             vpiParameter:
             scoped_param_inner (vpiParameter) t.outer_scope[2].inner_scope[1].scoped_param_inner  vpiConstType=vpiDecConst
             vpiInternalScope:
-            arr (vpiModule) t.outer_scope[2].inner_scope[1].arr  vpiDefName=<null>
+            arr (vpiModule) t.outer_scope[2].inner_scope[1].arr  vpiDefName=ModArr
                 vpiReg:
                 LENGTH (vpiParameter) t.outer_scope[2].inner_scope[1].arr.LENGTH  vpiConstType=vpiDecConst
                 check (vpiReg) t.outer_scope[2].inner_scope[1].arr.check 
@@ -163,7 +163,7 @@ t (vpiModule) t  vpiDefName=t
             vpiParameter:
             scoped_param_inner (vpiParameter) t.outer_scope[2].inner_scope[2].scoped_param_inner  vpiConstType=vpiDecConst
             vpiInternalScope:
-            arr (vpiModule) t.outer_scope[2].inner_scope[2].arr  vpiDefName=<null>
+            arr (vpiModule) t.outer_scope[2].inner_scope[2].arr  vpiDefName=ModArr
                 vpiReg:
                 LENGTH (vpiParameter) t.outer_scope[2].inner_scope[2].arr.LENGTH  vpiConstType=vpiDecConst
                 check (vpiReg) t.outer_scope[2].inner_scope[2].arr.check 
@@ -178,7 +178,7 @@ t (vpiModule) t  vpiDefName=t
             vpiParameter:
             scoped_param_inner (vpiParameter) t.outer_scope[2].inner_scope[3].scoped_param_inner  vpiConstType=vpiDecConst
             vpiInternalScope:
-            arr (vpiModule) t.outer_scope[2].inner_scope[3].arr  vpiDefName=<null>
+            arr (vpiModule) t.outer_scope[2].inner_scope[3].arr  vpiDefName=ModArr
                 vpiReg:
                 LENGTH (vpiParameter) t.outer_scope[2].inner_scope[3].arr.LENGTH  vpiConstType=vpiDecConst
                 check (vpiReg) t.outer_scope[2].inner_scope[3].arr.check 
@@ -199,7 +199,7 @@ t (vpiModule) t  vpiDefName=t
             vpiParameter:
             scoped_param_inner (vpiParameter) t.outer_scope[3].inner_scope[1].scoped_param_inner  vpiConstType=vpiDecConst
             vpiInternalScope:
-            arr (vpiModule) t.outer_scope[3].inner_scope[1].arr  vpiDefName=<null>
+            arr (vpiModule) t.outer_scope[3].inner_scope[1].arr  vpiDefName=ModArr
                 vpiReg:
                 LENGTH (vpiParameter) t.outer_scope[3].inner_scope[1].arr.LENGTH  vpiConstType=vpiDecConst
                 check (vpiReg) t.outer_scope[3].inner_scope[1].arr.check 
@@ -214,7 +214,7 @@ t (vpiModule) t  vpiDefName=t
             vpiParameter:
             scoped_param_inner (vpiParameter) t.outer_scope[3].inner_scope[2].scoped_param_inner  vpiConstType=vpiDecConst
             vpiInternalScope:
-            arr (vpiModule) t.outer_scope[3].inner_scope[2].arr  vpiDefName=<null>
+            arr (vpiModule) t.outer_scope[3].inner_scope[2].arr  vpiDefName=ModArr
                 vpiReg:
                 LENGTH (vpiParameter) t.outer_scope[3].inner_scope[2].arr.LENGTH  vpiConstType=vpiDecConst
                 check (vpiReg) t.outer_scope[3].inner_scope[2].arr.check 
@@ -229,7 +229,7 @@ t (vpiModule) t  vpiDefName=t
             vpiParameter:
             scoped_param_inner (vpiParameter) t.outer_scope[3].inner_scope[3].scoped_param_inner  vpiConstType=vpiDecConst
             vpiInternalScope:
-            arr (vpiModule) t.outer_scope[3].inner_scope[3].arr  vpiDefName=<null>
+            arr (vpiModule) t.outer_scope[3].inner_scope[3].arr  vpiDefName=ModArr
                 vpiReg:
                 LENGTH (vpiParameter) t.outer_scope[3].inner_scope[3].arr.LENGTH  vpiConstType=vpiDecConst
                 check (vpiReg) t.outer_scope[3].inner_scope[3].arr.check 

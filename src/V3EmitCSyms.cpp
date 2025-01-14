@@ -106,7 +106,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     std::vector<ModVarPair> m_modVars;  // Each public {mod,var}
     std::map<const std::string, ScopeFuncData> m_scopeFuncs;  // Each {scope,dpi-export-func}
     std::map<const std::string, ScopeVarData> m_scopeVars;  // Each {scope,public-var}
-    ScopeNames m_scopeNames;  // Each unique AstScopeName
+    ScopeNames m_scopeNames;  // Each unique AstScopeName. Dpi scopes added later
+    ScopeNames m_dpiScopeNames;  // Each unique AstScopeName for DPI export
     ScopeNames m_vpiScopeCandidates;  // All scopes for VPI
     ScopeNameHierarchy m_vpiScopeHierarchy;  // The actual hierarchy of scopes
     int m_coverBins = 0;  // Coverage bin number
@@ -208,7 +209,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void varsExpand() {
         // We didn't have all m_scopes loaded when we encountered variables, so expand them now
         // It would be less code if each module inserted its own variables.
-        // Someday.  For now public isn't common.
+        // Someday.
         for (std::vector<ScopeModPair>::iterator itsc = m_scopes.begin(); itsc != m_scopes.end();
              ++itsc) {
             AstScope* const scopep = itsc->first;
@@ -282,6 +283,15 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
         if (v3Global.opt.vpi()) buildVpiHierarchy();
 
+        if (v3Global.dpi()) {
+            // add dpi scopes to m_scopeNames if not already there
+            for (const auto& scp : m_dpiScopeNames) {
+                if (m_scopeNames.find(scp.first) == m_scopeNames.end()) {
+                    m_scopeNames.emplace(scp.first, scp.second);
+                }
+            }
+        }
+
         // Sort by names, so line/process order matters less
         stable_sort(m_scopes.begin(), m_scopes.end(), CmpName());
         stable_sort(m_dpis.begin(), m_dpis.end(), CmpDpi());
@@ -330,7 +340,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             const int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.emplace(scopeSymString(nodep->name()),
                                          ScopeData{nodep, scopeSymString(nodep->name()),
-                                                   name_pretty, nodep->modp()->origName(), timeunit, type});
+                                                   name_pretty, nodep->modp()->origName(),
+                                                   timeunit, type});
         }
         iterateChildrenConst(nodep);
     }
@@ -339,19 +350,19 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         // UINFO(9, "scnameins sp " << nodep->name() << " sp " << nodep->scopePrettySymName()
         // << " ss" << name << endl);
         const int timeunit = m_modp ? m_modp->timeunit().powerOfTen() : 0;
-        m_scopeNames.emplace(name, ScopeData{nodep, name, nodep->scopePrettySymName(), "<null>",
-                                             timeunit, "SCOPE_OTHER"});
+        m_dpiScopeNames.emplace(name, ScopeData{nodep, name, nodep->scopePrettySymName(), "<null>",
+                                                timeunit, "SCOPE_OTHER"});
         if (nodep->dpiExport()) {
             UASSERT_OBJ(m_cfuncp, nodep, "ScopeName not under DPI function");
             m_scopeFuncs.emplace(name + " " + m_cfuncp->name(),
                                  ScopeFuncData(nodep, m_cfuncp, m_modp));
         } else {
-            if (m_scopeNames.find(nodep->scopeDpiName()) == m_scopeNames.end()) {
+            if (m_dpiScopeNames.find(nodep->scopeDpiName()) == m_dpiScopeNames.end()) {
                 // cppcheck-suppress stlFindInsert
-                m_scopeNames.emplace(nodep->scopeDpiName(),
-                                     ScopeData{nodep, nodep->scopeDpiName(),
-                                               nodep->scopePrettyDpiName(), "<null>", timeunit,
-                                               "SCOPE_OTHER"});
+                m_dpiScopeNames.emplace(nodep->scopeDpiName(),
+                                        ScopeData{nodep, nodep->scopeDpiName(),
+                                                  nodep->scopePrettyDpiName(), "<null>", timeunit,
+                                                  "SCOPE_OTHER"});
             }
         }
     }
