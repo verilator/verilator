@@ -257,7 +257,7 @@ Summary:
 
    Enables expression coverage analysis. See :ref:`Expression Coverage`.
 
-.. option:: --coverage-expr-max <max>
+.. option:: --coverage-expr-max <value>
 
    Rarely needed.  Specifies the maximum number of permutations able to be
    covered for a given expression.  Defaults to 32.  Increasing may slow
