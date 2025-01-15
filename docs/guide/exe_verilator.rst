@@ -261,7 +261,7 @@ Summary:
 
    Rarely needed.  Specifies the maximum number of permutations able to be
    covered for a given expression.  Defaults to 32.  Increasing may slow
-   coverage sims and make the results unwieldy.
+   coverage simulations and make analyzing the results unwieldy.
 
 .. option:: --coverage-underscore
 
