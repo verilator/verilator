@@ -76,6 +76,10 @@ class CoverageVisitor final : public VNVisitor {
             return m_on && !m_inModOff && nodep->fileline()->coverageOn()
                    && v3Global.opt.coverageLine();
         }
+        bool exprCoverageOn(const AstNode* nodep) const {
+            return m_on && !m_inModOff && nodep->fileline()->coverageOn()
+                   && v3Global.opt.coverageExpr();
+        }
     };
 
     enum Objective : uint8_t { NONE, SEEKING, ABORTED };
@@ -589,7 +593,7 @@ class CoverageVisitor final : public VNVisitor {
     }
 
     void coverExprs(AstNodeExpr* nodep) {
-        if (!v3Global.opt.coverageExpr() || nodep->dtypep()->width() != 1 || m_proc == nullptr) {
+        if (!m_state.exprCoverageOn(nodep) || nodep->dtypep()->width() != 1 || m_proc == nullptr) {
             return;
         }
 

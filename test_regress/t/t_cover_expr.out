@@ -171,6 +171,9 @@
 -000002  point: comment=(invert(t1)=1 && t2=1) => 1 hier=top.t
 -000005  point: comment=(t2=0) => 0 hier=top.t
 -000002  point: comment=if hier=top.t
+                //verilator coverage_off
+                if (t1 && t2) $write("");
+                //verilator coverage_on
 %000005         if ((~t1 && t2)
 -000005  point: comment=else hier=top.t
 -000004  point: comment=if hier=top.t

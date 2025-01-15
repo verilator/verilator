@@ -54,6 +54,9 @@ module t (/*AUTOARG*/
             $write("");
         end
         if (invert(t1) && t2) $write("");
+        //verilator coverage_off
+        if (t1 && t2) $write("");
+        //verilator coverage_on
         if ((~t1 && t2)
             ||
            (~t3 && t4)) $write("");
