@@ -581,7 +581,7 @@ class CoverageVisitor final : public VNVisitor {
     }
 
     void checkMaxExprs() {
-        if (m_exprs.size() <= v3Global.opt.coverageExprMax()) { return; }
+        if (static_cast<int>(m_exprs.size()) <= v3Global.opt.coverageExprMax()) { return; }
 
         m_seeking = ABORTED;
         for (CoverExpr& expr : m_exprs) { expr.m_expr->deleteTree(); }
