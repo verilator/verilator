@@ -332,7 +332,7 @@ detailed descriptions of these arguments.
     --coverage-max-width <width>   Maximum array depth for coverage
     --coverage-toggle           Enable toggle coverage
     --coverage-expr             Enable expression coverage
-    --coverage-expr-max         Maximum permutations allowed for an expression
+    --coverage-expr-max <value>     Maximum permutations allowed for an expression
     --coverage-underscore       Enable coverage of _signals
     --coverage-user             Enable SVL user coverage
      -D<var>[=<value>]          Set preprocessor define
