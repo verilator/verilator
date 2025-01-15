@@ -44,6 +44,10 @@ module t (/*AUTOARG*/
         if (~(t1 & t2)) $write();
         if (t1 -> t2) $write();
         if (t1 <-> t2) $write();
+        if (&cyc[2:0]) $write("");
+        if (&cyc[3:2]) $write("");
+        if (|cyc[2:0]) $write("");
+        if (^cyc[2:0]) $write("");
         if (t1 & t2 & 1'b1) $write("");
         if (t1 & t2 & 1'b0) $write("");
         if (t1 & t2 & ONE) $write("");
@@ -72,31 +76,10 @@ module t (/*AUTOARG*/
         // no expression coverage for multi-bit expressions
         if ((cyc[1:0] & cyc[3:2]) == 2'b11) $write("");
         // truth table is too large
-        // will be easier to express with reduction opers
-        if (cyc[0] ^
-            cyc[1] ^
-            cyc[2] ^
-            cyc[3] ^
-            cyc[4] ^
-            cyc[5] ^
-            cyc[6]) $write("");
+        // NOCOMMIT -- will be easier to express with reduction opers
+        if (^cyc[6:0]) $write("");
         // this one is too big even for t_cover_expr_max
-        if (cyc[0] ^
-            cyc[1] ^
-            cyc[2] ^
-            cyc[3] ^
-            cyc[4] ^
-            cyc[5] ^
-            cyc[6] ^
-            cyc[7] ^
-            cyc[8] ^
-            cyc[9] ^
-            cyc[10] ^
-            cyc[11] ^
-            cyc[12] ^
-            cyc[13] ^
-            cyc[14] ^
-            cyc[15]) $write("");
+        if (^cyc) $write("");
         if (cyc==9) begin
             $write("*-* All Finished *-*\n");
             $finish;
@@ -112,7 +95,6 @@ module t (/*AUTOARG*/
 
     // TODO
     // pragma for expr coverage off / on
-    // reduction opers
     // investigate cover point sorting in annotated source
     // consider reporting don't care terms
     //

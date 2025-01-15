@@ -579,17 +579,19 @@ class CoverageVisitor final : public VNVisitor {
 
     void finalizeExprComments() {
         for (CoverExpr& expr : m_exprs) {
-            UASSERT(m_seeking == SEEKING, "Finalizing expression comments without an objective");
+            UASSERT(m_seeking != NONE, "Finalizing expression comments without an objective");
             expr.m_comment = "(" + expr.m_comment + ") => " + (m_objective ? "1" : "0");
         }
     }
 
-    void checkMaxExprs() {
-        if (static_cast<int>(m_exprs.size()) <= v3Global.opt.coverageExprMax()) { return; }
+    bool checkMaxExprs() {
+        if (m_seeking == ABORTED) { return true; }
+        if (static_cast<int>(m_exprs.size()) <= v3Global.opt.coverageExprMax()) { return false; }
 
         m_seeking = ABORTED;
         for (CoverExpr& expr : m_exprs) { expr.m_expr->deleteTree(); }
         m_exprs.clear();
+        return true;
     }
 
     void coverExprs(AstNodeExpr* nodep) {
@@ -635,6 +637,7 @@ class CoverageVisitor final : public VNVisitor {
 
         if (overrideObjective) { m_objective = lObj; }
         iterate(lhsp);
+        if (checkMaxExprs()) { return; }
         CoverExprs lhsExprs;
         m_exprs.swap(lhsExprs);
         if (overrideObjective) { m_objective = rObj; }
@@ -665,9 +668,9 @@ class CoverageVisitor final : public VNVisitor {
                 m_exprs.emplace_back(
                     new AstLogAnd(fl, l.m_expr->cloneTree(true), r.m_expr->cloneTree(true)),
                     comment);
+                if (checkMaxExprs()) { return; }
             }
         }
-        checkMaxExprs();
     }
 
     void orExpr(AstNodeBiop* nodep) {
@@ -706,8 +709,8 @@ class CoverageVisitor final : public VNVisitor {
                 bool rObj = lObj ^ m_objective;
                 exprBoth(nodep, true, lObj, rObj);
                 m_exprs.splice(m_exprs.end(), prevExprs);
+                if (checkMaxExprs()) { break; }
             }
-            checkMaxExprs();
         }
         lineTrack(nodep);
     }
@@ -725,6 +728,31 @@ class CoverageVisitor final : public VNVisitor {
     }
     void visit(AstNot* nodep) override { exprNot(nodep); }
     void visit(AstLogNot* nodep) override { exprNot(nodep); }
+
+    template <typename T_Oper>
+    void exprReduce(AstNodeUniop* nodep) {
+        if (m_seeking == NONE) {
+            FileLine* fl = nodep->fileline();
+            AstNodeExpr* lhsp = nodep->lhsp();
+            // NOCOMMIT -- short circuit aborting based on width
+            int width = lhsp->dtypep()->width();
+            AstNodeExpr* unrolledp = new AstSel(fl, lhsp->cloneTree(true),
+                                                new AstConst(fl, width - 1), new AstConst(fl, 1));
+            for (int bit = width - 2; bit >= 0; bit--) {
+                AstSel* selp = new AstSel(fl, lhsp->cloneTree(true), new AstConst(fl, bit),
+                                          new AstConst(fl, 1));
+                unrolledp = new T_Oper(fl, selp, unrolledp);
+            }
+            iterate(unrolledp);
+            unrolledp->deleteTree();
+        } else {
+            iterateChildren(nodep);
+            lineTrack(nodep);
+        }
+    }
+    void visit(AstRedOr* nodep) override { exprReduce<AstOr>(nodep); }
+    void visit(AstRedAnd* nodep) override { exprReduce<AstAnd>(nodep); }
+    void visit(AstRedXor* nodep) override { exprReduce<AstXor>(nodep); }
 
     void visit(AstLogIf* nodep) override {
         if (m_seeking == NONE) {
