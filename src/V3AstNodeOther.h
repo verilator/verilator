@@ -672,7 +672,7 @@ public:
         m_dpiImportPrototype = false;
         m_dpiImportWrapper = false;
         m_recursive = false;
-        m_cost = v3Global.opt.instrCountDpi();    // As proxy for unknown general DPI cost
+        m_cost = v3Global.opt.instrCountDpi();  // As proxy for unknown general DPI cost
     }
     ASTGEN_MEMBERS_AstCFunc;
     string name() const override VL_MT_STABLE { return m_name; }
