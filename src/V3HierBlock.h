@@ -105,6 +105,7 @@ public:
     string hierPrefix() const VL_MT_DISABLED;
     string hierSomeFilename(bool withDir, const char* prefix,
                             const char* suffix) const VL_MT_DISABLED;
+    string hierArgsFilename() const VL_MT_DISABLED;
     string hierWrapperFilename(bool withDir) const VL_MT_DISABLED;
     string hierMkFilename(bool withDir) const VL_MT_DISABLED;
     string hierLibFilename(bool withDir) const VL_MT_DISABLED;

@@ -1259,6 +1259,11 @@ class TaskVisitor final : public VNVisitor {
         if (nodep->name() == "new") cfuncp->isConstructor(true);
         if (cfuncp->dpiExportImpl()) cfuncp->cname(nodep->cname());
 
+        if (cfuncp->dpiImportWrapper()) {
+            cfuncp->cname(nodep->cname());
+            cfuncp->cost(v3Global.opt.hierDpiCost(cfuncp->cname()));
+        }
+
         if (!nodep->dpiImport() && !nodep->taskPublic()) {
             // Need symbol table
             cfuncp->argTypes(EmitCBase::symClassVar());

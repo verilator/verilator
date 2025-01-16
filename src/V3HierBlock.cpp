@@ -215,6 +215,12 @@ string V3HierBlock::hierSomeFilename(bool withDir, const char* prefix, const cha
     return s;
 }
 
+string V3HierBlock::hierArgsFilename() const {
+    std::stringstream filename;
+    filename << v3Global.opt.makeDir() << '/' << hierPrefix() << '/' << modp()->name() << ".f";
+    return filename.str();
+}
+
 string V3HierBlock::hierWrapperFilename(bool withDir) const {
     return hierSomeFilename(withDir, "", ".sv");
 }
@@ -456,6 +462,7 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
         // Load wrappers first not to be overwritten by the original HDL
         for (const_iterator it = begin(); it != end(); ++it) {
             *of << it->second->hierWrapperFilename(true) << "\n";
+            *of << "-f " << it->second->hierArgsFilename() << "\n";
         }
     }
     V3HierWriteCommonInputs(nullptr, of.get(), forCMake);

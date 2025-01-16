@@ -18,7 +18,9 @@
 
 #include "V3ProtectLib.h"
 
+#include "V3File.h"
 #include "V3Hasher.h"
+#include "V3InstrCount.h"
 #include "V3String.h"
 #include "V3Task.h"
 
@@ -62,6 +64,24 @@ class ProtectVisitor final : public VNVisitor {
     bool m_foundTop = false;  // Have seen the top module
     bool m_hasClk = false;  // True if the top module has sequential logic
 
+    void createDpiCostArgsFile(AstNetlist* netlistp) {
+        const std::unique_ptr<std::ofstream> of{
+            V3File::new_ofstream(v3Global.opt.makeDir() + "/" + m_libName + ".f")};
+
+        // The `eval` function is called inside both update functions. As those functions
+        // are created by text bashing, we need to find cost of `_eval` which is the first function
+        // with a real cost in AST.
+        uint32_t cost = 0;
+        netlistp->foreach([&cost](AstCFunc* cfuncp) {
+            if (cfuncp->name() == "_eval") cost = V3InstrCount::count(cfuncp, false);
+        });
+        *of << "--hierarchical-dpi-cost " << cost << ',' << m_libName
+            << "_protectlib_combo_update\n";
+        *of << "--hierarchical-dpi-cost " << cost << ',' << m_libName
+            << "_protectlib_seq_update\n";
+        *of << "--hierarchical-dpi-cost "
+            << "0," << m_libName << "_protectlib_combo_ignore\n";
+    }
     // VISITORS
     void visit(AstNetlist* nodep) override {
         m_vfilep
@@ -70,6 +90,8 @@ class ProtectVisitor final : public VNVisitor {
         m_cfilep
             = new AstCFile{nodep->fileline(), v3Global.opt.makeDir() + "/" + m_libName + ".cpp"};
         nodep->addFilesp(m_cfilep);
+
+        createDpiCostArgsFile(nodep);
         iterateChildren(nodep);
     }
 
