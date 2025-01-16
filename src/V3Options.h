@@ -185,17 +185,6 @@ public:
 
 using V3HierBlockOptSet = std::map<const std::string, V3HierarchicalBlockOption>;
 
-class V3HierarchicalDpiCostOption final {
-private:
-    int m_cost = 0;  // cost of DPI function call
-    string m_name;  // associated DPI function name
-
-public:
-    explicit V3HierarchicalDpiCostOption(const string& optstring);
-    int cost() const { return m_cost; }
-    const string& name() const { return m_name; }
-};
-
 //######################################################################
 // V3Options - Command line options
 
@@ -227,7 +216,6 @@ private:
     DebugLevelMap m_dumpLevel;  // argument: --dumpi-<srcfile/tag> <level>
     std::map<const string, string> m_parameters;  // Parameters
     std::map<const string, V3HierarchicalBlockOption> m_hierBlocks;  // main switch: --hierarchical-block
-    std::map<const string, int> m_hierDpiCosts;  // main switch: --hierarchical-dpi-cost
     V3StringSet m_fDfgPeepholeDisabled; // argument: -f[no-]dfg-peephole-<name>
 
     bool m_preprocOnly = false;     // main switch: -E
@@ -730,10 +718,6 @@ public:
     int hierChild() const VL_MT_SAFE { return m_hierChild; }
     bool hierTop() const VL_MT_SAFE { return !m_hierChild && !m_hierBlocks.empty(); }
     const V3HierBlockOptSet& hierBlocks() const { return m_hierBlocks; }
-    int hierDpiCost(const string& dpiWrapperName) const {
-        const auto it = m_hierDpiCosts.find(dpiWrapperName);
-        return it != m_hierDpiCosts.end() ? it->second : 0;
-    }
     // Directory to save .tree, .dot, .dat, .vpp for hierarchical block top
     // Returns makeDir() unless top module of hierarchical Verilation.
     string hierTopDataDir() const VL_MT_SAFE {

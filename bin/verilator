@@ -378,7 +378,6 @@ detailed descriptions of these arguments.
     --get-supported <feature>   Get if feature is supported
     --help                      Show this help
     --hierarchical              Enable hierarchical Verilation
-    --hierarchical-dpi-cost <cost>,<name> Internal option that specifies DPI function cost
     --hierarchical-params-file <name> Internal option that specifies parameters file for hier blocks
      -I<dir>                    Directory to search for includes
     --if-depth <value>          Tune IFDEPTH warning

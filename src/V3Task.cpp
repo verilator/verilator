@@ -27,6 +27,7 @@
 
 #include "V3Task.h"
 
+#include "V3Config.h"
 #include "V3Const.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
@@ -1261,7 +1262,7 @@ class TaskVisitor final : public VNVisitor {
 
         if (cfuncp->dpiImportWrapper()) {
             cfuncp->cname(nodep->cname());
-            cfuncp->cost(v3Global.opt.hierDpiCost(cfuncp->cname()));
+            cfuncp->cost(V3Config::getProfileData(cfuncp->cname()));
         }
 
         if (!nodep->dpiImport() && !nodep->taskPublic()) {

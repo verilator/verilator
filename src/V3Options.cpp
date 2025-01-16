@@ -232,19 +232,6 @@ V3HierarchicalBlockOption::V3HierarchicalBlockOption(const string& opts) {
 }
 
 //######################################################################
-// V3HierarchicalDpiCostOption class functions
-
-// Parse "--hierarchical-dpi-cost cost,dpi_name" option
-// The format of value is: 'int,string'
-V3HierarchicalDpiCostOption::V3HierarchicalDpiCostOption(const string& optstring) {
-    const auto commaIt = optstring.find(',');
-    if (commaIt != string::npos) {
-        m_cost = std::stoi(optstring.substr(0, commaIt));
-        m_name = optstring.substr(commaIt + 1);
-    }
-}
-
-//######################################################################
 // V3Options class functions
 
 void VTimescale::parseSlashed(FileLine* fl, const char* textp, VTimescale& unitr,
@@ -1388,10 +1375,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_hierBlocks.emplace(opt.mangledName(), opt);
     });
     DECL_OPTION("-hierarchical-child", Set, &m_hierChild);
-    DECL_OPTION("-hierarchical-dpi-cost", CbVal, [this](const char* valp) {
-        const V3HierarchicalDpiCostOption opt{valp};
-        m_hierDpiCosts.emplace(opt.name(), opt.cost());
-    });
     DECL_OPTION("-hierarchical-params-file", CbVal,
                 [this](const char* optp) { m_hierParamsFile = optp; });
 

@@ -733,13 +733,6 @@ Summary:
    :option:`/*verilator&32;hier_block*/` metacomment is ignored.  See
    :ref:`Hierarchical Verilation`.
 
-.. option:: --hierarchical-dpi-cost <cost>,<name>
-
-   Internal flag inserted used during :vlopt:`--hierarchical`; specifies
-   execution cost of a hierarchical DPI wrappers for modules with
-   :option:`/*verilator&32;hier_block*/` metacomment. See
-   :ref:`Hierarchical Verilation`.
-
 .. option:: --hierarchical-params-file <filename>
 
    Internal flag inserted used during :vlopt:`--hierarchical`; specifies
@@ -2160,6 +2153,13 @@ The grammar of configuration commands is as follows:
    :option:`/*verilator&32;public*/` or
    :option:`/*verilator&32;public_flat*/`, etc., metacomments. See
    also :ref:`VPI Example`.
+
+.. option:: profile_data -hier-dpi "<function_name>" -cost <cost_value>
+
+   Internal profiling data inserted during :vlopt:`--hierarchical`; specifies
+   execution cost of a hierarchical DPI wrappers for modules with
+   :option:`/*verilator&32;hier_block*/` metacomment. See
+   :ref:`Hierarchical Verilation`.
 
 .. option:: profile_data -mtask "<mtask_hash>" -cost <cost_value>
 

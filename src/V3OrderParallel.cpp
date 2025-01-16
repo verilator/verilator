@@ -1710,7 +1710,7 @@ class DpiImportCallVisitor final : public VNVisitor {
         if (nodep->dpiImportWrapper()) {
             if (nodep->dpiPure() ? !v3Global.opt.threadsDpiPure()
                                  : !v3Global.opt.threadsDpiUnpure()) {
-                m_hasDpiHazard = v3Global.opt.hierDpiCost(nodep->cname()) == 0;
+                m_hasDpiHazard = V3Config::getProfileData(nodep->cname()) == 0;
                 UINFO(9, "DPI wrapper '" << nodep->cname()
                                          << "' has dpi hazard = " << m_hasDpiHazard << endl);
             }
