@@ -22,7 +22,9 @@ Verilator 5.033 devel
 * Support `+incdir` with multiple directories.
 * Support side effects of form 'variable[index_function()]++'.
 * Improve VPI write errors (#5712). [Andrew Nolte]
+* Improve `resetall support (#5728) (#5730). [Ethan Sifferman]
 * Fix error message when call task as a function (#3089). [Matthew Ballance]
+* Fix VPI iteration over hierarchy (#5314) (#5731). [Natan Kreimer]
 * Fix constrained random for > 64-bit associative arrays (#5670) (#5682). [Yilou Wang]
 * Fix mis-optimizing away `$urandom` (#5703). [Parker Schless]
 * Fix packages with `--public-depth 1` (#5708). [Andrew Nolte]
@@ -32,8 +34,9 @@ Verilator 5.033 devel
 * Fix %p format output for real inside struct (#5713).
 * Fix segfault when only enum value referenced in package (#5714). [Dan Katz]
 * Fix `BLKSEQ` on suspendable processes (#5722). [Krzysztof Bieganski, Antmicro Ltd.]
-* Fix matching language extension options including dots.
+* Fix vpiDefName issues with non-inlined scopes and dpi conflicts (#5732). [Andrew Nolte]
 * Fix duplicate-named class variable equivalence (#5737).
+* Fix matching language extension options including dots.
 
 
 Verilator 5.032 2025-01-01
