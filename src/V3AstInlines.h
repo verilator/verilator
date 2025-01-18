@@ -188,8 +188,9 @@ bool AstVarRef::sameNode(const AstVarRef* samep) const {
     if (varScopep()) {
         return (varScopep() == samep->varScopep() && access() == samep->access());
     } else {
-        return (selfPointer() == samep->selfPointer() && varp()->name() == samep->varp()->name()
-                && access() == samep->access());
+        return (selfPointer() == samep->selfPointer()
+                && classOrPackagep() == samep->classOrPackagep()
+                && varp()->name() == samep->varp()->name() && access() == samep->access());
     }
 }
 bool AstVarRef::sameNoLvalue(AstVarRef* samep) const {
@@ -197,6 +198,7 @@ bool AstVarRef::sameNoLvalue(AstVarRef* samep) const {
         return (varScopep() == samep->varScopep());
     } else {
         return (selfPointer() == samep->selfPointer()
+                && classOrPackagep() == samep->classOrPackagep()
                 && (!selfPointer().isEmpty() || !samep->selfPointer().isEmpty())
                 && varp()->name() == samep->varp()->name());
     }

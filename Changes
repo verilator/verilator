@@ -33,6 +33,7 @@ Verilator 5.033 devel
 * Fix segfault when only enum value referenced in package (#5714). [Dan Katz]
 * Fix `BLKSEQ` on suspendable processes (#5722). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix matching language extension options including dots.
+* Fix duplicate-named class variable equivalence (#5737).
 
 
 Verilator 5.032 2025-01-01
