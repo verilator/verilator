@@ -27,6 +27,7 @@
 
 #include "V3Task.h"
 
+#include "V3Config.h"
 #include "V3Const.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
@@ -1258,6 +1259,11 @@ class TaskVisitor final : public VNVisitor {
         cfuncp->dpiPure(nodep->dpiPure());
         if (nodep->name() == "new") cfuncp->isConstructor(true);
         if (cfuncp->dpiExportImpl()) cfuncp->cname(nodep->cname());
+
+        if (cfuncp->dpiImportWrapper()) {
+            cfuncp->cname(nodep->cname());
+            cfuncp->cost(V3Config::getProfileData(cfuncp->cname()));
+        }
 
         if (!nodep->dpiImport() && !nodep->taskPublic()) {
             // Need symbol table

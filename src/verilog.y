@@ -492,6 +492,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_D_COST     "--cost"
 %token<fl>              yVLT_D_FILE     "--file"
 %token<fl>              yVLT_D_FUNCTION "--function"
+%token<fl>              yVLT_D_HIER_DPI "--hier-dpi"
 %token<fl>              yVLT_D_LEVELS   "--levels"
 %token<fl>              yVLT_D_LINES    "--lines"
 %token<fl>              yVLT_D_MATCH    "--match"
@@ -7655,6 +7656,8 @@ vltItem:
                         { V3Config::addCaseParallel(*$2, 0); }
         |       yVLT_PARALLEL_CASE vltDFile yVLT_D_LINES yaINTNUM
                         { V3Config::addCaseParallel(*$2, $4->toUInt()); }
+        |       yVLT_PROFILE_DATA vltDHierDpi vltDCost
+                        { V3Config::addProfileData($<fl>1, *$2, $3->toUQuad()); }
         |       yVLT_PROFILE_DATA vltDModel vltDMtask vltDCost
                         { V3Config::addProfileData($<fl>1, *$2, *$3, $4->toUQuad()); }
         ;
@@ -7697,6 +7700,10 @@ vltDCost<nump>:  // --cost <arg>
 
 vltDFile<strp>:  // --file <arg>
                 yVLT_D_FILE str                         { $$ = $2; }
+        ;
+
+vltDHierDpi<strp>:  // --hier-dpi <arg>
+                yVLT_D_HIER_DPI str                     { $$ = $2; }
         ;
 
 vltDLevels<nump>:  // --levels <arg>

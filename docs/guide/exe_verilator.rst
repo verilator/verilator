@@ -2154,6 +2154,13 @@ The grammar of configuration commands is as follows:
    :option:`/*verilator&32;public_flat*/`, etc., metacomments. See
    also :ref:`VPI Example`.
 
+.. option:: profile_data -hier-dpi "<function_name>" -cost <cost_value>
+
+   Internal profiling data inserted during :vlopt:`--hierarchical`; specifies
+   execution cost of a hierarchical DPI wrappers for modules with
+   :option:`/*verilator&32;hier_block*/` metacomment. See
+   :ref:`Hierarchical Verilation`.
+
 .. option:: profile_data -mtask "<mtask_hash>" -cost <cost_value>
 
    Feeds profile-guided optimization data into the Verilator algorithms in
