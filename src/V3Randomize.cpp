@@ -709,13 +709,17 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstAssocSel* nodep) override {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
-        if (VN_IS(nodep->bitp(),VarRef) &&VN_AS(nodep->bitp(),VarRef)->varp()->dtypep()->basicp()&& VN_AS(nodep->bitp(),VarRef)->dtypep()->basicp()->keyword() == VBasicDTypeKwd::STRING) {
+        if (VN_IS(nodep->bitp(), VarRef)
+            && VN_AS(nodep->bitp(), VarRef)->varp()->dtypep()->basicp()
+            && VN_AS(nodep->bitp(), VarRef)->dtypep()->basicp()->keyword()
+                   == VBasicDTypeKwd::STRING) {
             VNRelinker handle;
             AstNodeExpr* const idxp
-                    = new AstSFormatF{fl, "#x%32p", false, nodep->bitp()->unlinkFrBack(&handle)};
+                = new AstSFormatF{fl, "#x%32p", false, nodep->bitp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
             editSMT(nodep, nodep->fromp(), idxp);
-        } else if (VN_IS(nodep->bitp(), CvtPackString) && VN_IS(nodep->bitp()->dtypep(), BasicDType)) {
+        } else if (VN_IS(nodep->bitp(), CvtPackString)
+                   && VN_IS(nodep->bitp()->dtypep(), BasicDType)) {
             AstCvtPackString* const stringp = VN_AS(nodep->bitp(), CvtPackString);
             const size_t stringSize = VN_AS(stringp->lhsp(), Const)->width();
             if (stringSize > 128) {
