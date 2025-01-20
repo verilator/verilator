@@ -28,6 +28,9 @@
 
 #include "V3Coverage.h"
 
+#include "V3EmitV.h"
+
+#include <list>
 #include <unordered_map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -38,6 +41,15 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class CoverageVisitor final : public VNVisitor {
     // TYPES
     using LinenoSet = std::set<int>;
+
+    struct CoverExpr final {
+        AstNodeExpr* m_expr;
+        std::string m_comment;
+        CoverExpr(AstNodeExpr* expr, const string& comment)
+            : m_expr{expr}
+            , m_comment(comment) {}
+    };
+    using CoverExprs = std::list<CoverExpr>;
 
     struct ToggleEnt final {
         const string m_comment;  // Comment for coverage dump
@@ -64,12 +76,20 @@ class CoverageVisitor final : public VNVisitor {
             return m_on && !m_inModOff && nodep->fileline()->coverageOn()
                    && v3Global.opt.coverageLine();
         }
+        bool exprCoverageOn(const AstNode* nodep) const {
+            return m_on && !m_inModOff && nodep->fileline()->coverageOn()
+                   && v3Global.opt.coverageExpr();
+        }
     };
+
+    enum Objective : uint8_t { NONE, SEEKING, ABORTED };
 
     // NODE STATE
     // Entire netlist:
     //  AstIf::user1()                  -> bool.  True indicates ifelse processed
+    //  AstIf::user2()                  -> bool.  True indicates coverage-generated
     const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
 
     // STATE - across all visitors
     int m_nextHandle = 0;
@@ -77,6 +97,11 @@ class CoverageVisitor final : public VNVisitor {
     // STATE - for current visit position (use VL_RESTORER)
     CheckState m_state;  // State save-restored on each new coverage scope/block
     AstNodeModule* m_modp = nullptr;  // Current module to add statement to
+    AstNode* m_proc = nullptr;  // Current procedure to add expr coverage to
+    CoverExprs m_exprs;  // List of expressions that can reach objective
+    Objective m_seeking = NONE;  // Seeking objective for expression coverage
+    bool m_objective = false;  // Expression objective
+    bool m_ifCond = false;  // Visiting if condition
     bool m_inToggleOff = false;  // In function/task etc
     string m_beginHier;  // AstBegin hier name for user coverage points
 
@@ -160,7 +185,7 @@ class CoverageVisitor final : public VNVisitor {
         UINFO(9, "line create h" << m_state.m_handle << " " << nodep << endl);
     }
     void lineTrack(const AstNode* nodep) {
-        if (m_state.lineCoverageOn(nodep)
+        if (m_state.lineCoverageOn(nodep) && !m_ifCond
             && m_state.m_nodep->fileline()->filenameno() == nodep->fileline()->filenameno()) {
             for (int lineno = nodep->fileline()->firstLineno();
                  lineno <= nodep->fileline()->lastLineno(); ++lineno) {
@@ -226,9 +251,22 @@ class CoverageVisitor final : public VNVisitor {
     void visit(AstNodeFTask* nodep) override {
         if (!nodep->dpiImport()) iterateProcedure(nodep);
     }
+    void insertProcStatement(AstNode* nodep, AstNode* stmtp) {
+        if (AstNodeProcedure* const itemp = VN_CAST(nodep, NodeProcedure)) {
+            itemp->addStmtsp(stmtp);
+        } else if (AstNodeFTask* const itemp = VN_CAST(nodep, NodeFTask)) {
+            itemp->addStmtsp(stmtp);
+        } else if (AstWhile* const itemp = VN_CAST(nodep, While)) {
+            itemp->addStmtsp(stmtp);
+        } else {
+            nodep->v3fatalSrc("Bad node type");
+        }
+    }
     void iterateProcedure(AstNode* nodep) {
         VL_RESTORER(m_state);
+        VL_RESTORER(m_proc);
         VL_RESTORER(m_inToggleOff);
+        m_proc = nodep;
         m_inToggleOff = true;
         createHandle(nodep);
         iterateChildren(nodep);
@@ -237,15 +275,7 @@ class CoverageVisitor final : public VNVisitor {
             AstNode* const newp
                 = newCoverInc(nodep->fileline(), "", "v_line", "block", linesCov(m_state, nodep),
                               0, traceNameForLine(nodep, "block"));
-            if (AstNodeProcedure* const itemp = VN_CAST(nodep, NodeProcedure)) {
-                itemp->addStmtsp(newp);
-            } else if (AstNodeFTask* const itemp = VN_CAST(nodep, NodeFTask)) {
-                itemp->addStmtsp(newp);
-            } else if (AstWhile* const itemp = VN_CAST(nodep, While)) {
-                itemp->addStmtsp(newp);
-            } else {
-                nodep->v3fatalSrc("Bad node type");
-            }
+            insertProcStatement(nodep, newp);
         }
     }
 
@@ -404,6 +434,8 @@ class CoverageVisitor final : public VNVisitor {
     // VISITORS - LINE COVERAGE
     // Note not AstNodeIf; other types don't get covered
     void visit(AstIf* nodep) override {
+        if (nodep->user2()) { return; }
+
         UINFO(4, " IF: " << nodep << endl);
         if (m_state.m_on) {
             // An else-if.  When we iterate the if, use "elsif" marking
@@ -478,6 +510,9 @@ class CoverageVisitor final : public VNVisitor {
             }
             m_state = lastState;
         }
+        VL_RESTORER(m_ifCond);
+        m_ifCond = true;
+        iterateAndNextNull(nodep->condp());
         UINFO(9, " done HANDLE " << m_state.m_handle << " for " << nodep << endl);
     }
     void visit(AstCaseItem* nodep) override {
@@ -539,6 +574,230 @@ class CoverageVisitor final : public VNVisitor {
             m_beginHier = m_beginHier + (m_beginHier != "" ? "." : "") + nodep->name();
         }
         iterateChildren(nodep);
+        lineTrack(nodep);
+    }
+
+    void finalizeExprComments() {
+        for (CoverExpr& expr : m_exprs) {
+            UASSERT(m_seeking != NONE, "Finalizing expression comments without an objective");
+            expr.m_comment = "(" + expr.m_comment + ") => " + (m_objective ? "1" : "0");
+        }
+    }
+
+    bool checkMaxExprs() {
+        if (m_seeking == ABORTED) { return true; }
+        if (static_cast<int>(m_exprs.size()) <= v3Global.opt.coverageExprMax()) { return false; }
+
+        m_seeking = ABORTED;
+        for (CoverExpr& expr : m_exprs) { expr.m_expr->deleteTree(); }
+        m_exprs.clear();
+        return true;
+    }
+
+    void coverExprs(AstNodeExpr* nodep) {
+        if (!m_state.exprCoverageOn(nodep) || nodep->dtypep()->width() != 1 || m_proc == nullptr) {
+            return;
+        }
+
+        VL_RESTORER(m_seeking);
+        VL_RESTORER(m_objective);
+        FileLine* fl = nodep->fileline();
+
+        m_seeking = SEEKING;
+        m_exprs.clear();
+        m_objective = false;
+        iterate(nodep);
+        finalizeExprComments();
+        CoverExprs falseExprs;
+        m_exprs.swap(falseExprs);
+
+        m_objective = true;
+        iterate(nodep);
+        finalizeExprComments();
+        m_exprs.splice(m_exprs.end(), falseExprs);
+        checkMaxExprs();
+
+        int count = 0;
+        for (CoverExpr& expr : m_exprs) {
+            string name = "expr_" + std::to_string(count);
+            AstNode* const newp = newCoverInc(fl, "", "v_expr", expr.m_comment, "", 0,
+                                              traceNameForLine(nodep, name));
+            AstIf* ifp = new AstIf(fl, expr.m_expr, newp, nullptr);
+            ifp->user2(true);
+            insertProcStatement(m_proc, ifp);
+            count++;
+        }
+    }
+
+    void exprEither(AstNodeBiop* nodep, bool overrideObjective = false, bool lObj = false,
+                    bool rObj = false) {
+        VL_RESTORER(m_objective);
+        AstNodeExpr* lhsp = nodep->lhsp();
+        AstNodeExpr* rhsp = nodep->rhsp();
+
+        if (overrideObjective) { m_objective = lObj; }
+        iterate(lhsp);
+        if (checkMaxExprs()) { return; }
+        CoverExprs lhsExprs;
+        m_exprs.swap(lhsExprs);
+        if (overrideObjective) { m_objective = rObj; }
+        iterate(rhsp);
+        m_exprs.splice(m_exprs.end(), lhsExprs);
+        checkMaxExprs();
+    }
+
+    void exprBoth(AstNodeBiop* nodep, bool overrideObjective = false, bool lObj = false,
+                  bool rObj = false) {
+        VL_RESTORER(m_objective);
+        FileLine* fl = nodep->fileline();
+        AstNodeExpr* lhsp = nodep->lhsp();
+        AstNodeExpr* rhsp = nodep->rhsp();
+
+        if (overrideObjective) { m_objective = lObj; }
+        iterate(lhsp);
+        CoverExprs lhsExprs;
+        m_exprs.swap(lhsExprs);
+        if (overrideObjective) { m_objective = rObj; }
+        iterate(rhsp);
+        CoverExprs rhsExprs;
+        m_exprs.swap(rhsExprs);
+
+        for (CoverExpr& l : lhsExprs) {
+            for (CoverExpr& r : rhsExprs) {
+                std::string comment = l.m_comment + " && " + r.m_comment;
+                m_exprs.emplace_back(
+                    new AstLogAnd(fl, l.m_expr->cloneTree(true), r.m_expr->cloneTree(true)),
+                    comment);
+                if (checkMaxExprs()) { return; }
+            }
+        }
+    }
+
+    void orExpr(AstNodeBiop* nodep) {
+        if (m_seeking == NONE) {
+            coverExprs(nodep);
+        } else if (m_objective) {
+            exprEither(nodep);
+        } else {
+            exprBoth(nodep);
+        }
+        lineTrack(nodep);
+    }
+    void visit(AstLogOr* nodep) override { orExpr(nodep); }
+    void visit(AstOr* nodep) override { orExpr(nodep); }
+
+    void andExpr(AstNodeBiop* nodep) {
+        if (m_seeking == NONE) {
+            coverExprs(nodep);
+        } else if (m_objective) {
+            exprBoth(nodep);
+        } else {
+            exprEither(nodep);
+        }
+        lineTrack(nodep);
+    }
+    void visit(AstLogAnd* nodep) override { andExpr(nodep); }
+    void visit(AstAnd* nodep) override { andExpr(nodep); }
+
+    void xorExpr(AstNodeBiop* nodep) {
+        if (m_seeking == NONE) {
+            coverExprs(nodep);
+        } else {
+            for (bool lObj : {false, true}) {
+                CoverExprs prevExprs;
+                m_exprs.swap(prevExprs);
+                bool rObj = lObj ^ m_objective;
+                exprBoth(nodep, true, lObj, rObj);
+                m_exprs.splice(m_exprs.end(), prevExprs);
+                if (checkMaxExprs()) { break; }
+            }
+        }
+        lineTrack(nodep);
+    }
+    void visit(AstXor* nodep) override { xorExpr(nodep); }
+
+    void exprNot(AstNodeExpr* nodep) {
+        VL_RESTORER(m_objective);
+        if (m_seeking == NONE) {
+            coverExprs(nodep);
+        } else {
+            m_objective ^= true;
+            iterateChildren(nodep);
+            lineTrack(nodep);
+        }
+    }
+    void visit(AstNot* nodep) override { exprNot(nodep); }
+    void visit(AstLogNot* nodep) override { exprNot(nodep); }
+
+    template <typename T_Oper>
+    void exprReduce(AstNodeUniop* nodep) {
+        if (m_seeking == NONE) {
+            FileLine* fl = nodep->fileline();
+            AstNodeExpr* lhsp = nodep->lhsp();
+            // NOCOMMIT -- short circuit aborting based on width
+            int width = lhsp->dtypep()->width();
+            AstNodeExpr* unrolledp = new AstSel(fl, lhsp->cloneTree(true),
+                                                new AstConst(fl, width - 1), new AstConst(fl, 1));
+            for (int bit = width - 2; bit >= 0; bit--) {
+                AstSel* selp = new AstSel(fl, lhsp->cloneTree(true), new AstConst(fl, bit),
+                                          new AstConst(fl, 1));
+                unrolledp = new T_Oper(fl, selp, unrolledp);
+            }
+            iterate(unrolledp);
+            unrolledp->deleteTree();
+        } else {
+            iterateChildren(nodep);
+            lineTrack(nodep);
+        }
+    }
+    void visit(AstRedOr* nodep) override { exprReduce<AstOr>(nodep); }
+    void visit(AstRedAnd* nodep) override { exprReduce<AstAnd>(nodep); }
+    void visit(AstRedXor* nodep) override { exprReduce<AstXor>(nodep); }
+
+    void visit(AstLogIf* nodep) override {
+        if (m_seeking == NONE) {
+            coverExprs(nodep);
+        } else if (m_objective) {
+            exprEither(nodep, true, false, true);
+        } else {
+            exprBoth(nodep, true, true, false);
+        }
+        lineTrack(nodep);
+    }
+
+    void visit(AstLogEq* nodep) override {
+        VL_RESTORER(m_objective);
+        if (m_seeking == NONE) {
+            coverExprs(nodep);
+        } else {
+            m_objective ^= true;
+            xorExpr(nodep);
+            lineTrack(nodep);
+        }
+    }
+
+    void visit(AstCond* nodep) override {
+        // TODO -- fully unroll single bit results?
+        if (m_seeking == NONE) { coverExprs(nodep->condp()); }
+        lineTrack(nodep);
+    }
+
+    void visit(AstNodeExpr* nodep) override {
+        if (m_seeking == NONE) {
+            iterateChildren(nodep);
+        } else {
+            std::stringstream expr;
+            V3EmitV::verilogForTree(nodep, expr);
+            if (m_objective) {
+                expr << "=1";
+                m_exprs.emplace_back(nodep->cloneTree(true), expr.str());
+            } else {
+                expr << "=0";
+                m_exprs.emplace_back(new AstLogNot(nodep->fileline(), nodep->cloneTree(true)),
+                                     expr.str());
+            }
+            checkMaxExprs();
+        }
         lineTrack(nodep);
     }
 
