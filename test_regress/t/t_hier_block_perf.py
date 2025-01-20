@@ -16,8 +16,14 @@ test.sim_time = test.cycles * 10 + 1000
 THREADS = int(os.environ["SIM_THREADS"]) if "SIM_THREADS" in os.environ else 2
 
 test.compile(benchmarksim=1,
-             v_flags2=["+define+SIM_CYCLES=" + str(test.cycles), "--prof-exec", "--hierarchical"],
+             v_flags2=[
+                 "+define+SIM_CYCLES=" + str(test.cycles), "--prof-exec", "--hierarchical",
+                 "--stats"
+             ],
              threads=(THREADS if test.vltmt else 1))
+
+test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
+               r'Optimizations, Hierarchical DPI wrappers with costs\s+(\d+)', 3)
 
 test.execute(all_run_flags=[
     "+verilator+prof+exec+start+2",
