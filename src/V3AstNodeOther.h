@@ -687,9 +687,7 @@ public:
     }
     //
     void name(const string& name) override { m_name = name; }
-    int instrCount() const override {
-        return dpiImportPrototype() ? v3Global.opt.instrCountDpi() : m_cost;
-    }
+    int instrCount() const override { return m_cost; }
     VBoolOrUnknown isConst() const { return m_isConst; }
     void isConst(bool flag) { m_isConst.setTrueOrFalse(flag); }
     void isConst(VBoolOrUnknown flag) { m_isConst = flag; }
