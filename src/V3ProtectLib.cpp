@@ -116,9 +116,11 @@ class ProtectVisitor final : public VNVisitor {
         txtp->addText(fl, "profile_data -hier-dpi \"" + m_libName
                               + "_protectlib_seq_update\" -cost 64'd" + std::to_string(cost)
                               + "\n");
-        // Add all protectlib wrappers as those need to be marked as non-hazardious later.
+
+        // Mark remaining NDA protectlib wrapper DPIs as non-hazardous by deliberately forwarding
+        // them with non-zero cost.
         txtp->addText(fl, "profile_data -hier-dpi \"" + m_libName
-                              + "_protectlib_combo_ignore\" -cost 64'd0\n");
+                              + "_protectlib_combo_ignore\" -cost 64'd1\n");
         txtp->addText(fl, "`verilog\n");
         txtp->addText(fl, "`endif\n");
     }
