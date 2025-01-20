@@ -141,6 +141,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   -?"-cost"             { FL; return yVLT_D_COST; }
   -?"-file"             { FL; return yVLT_D_FILE; }
   -?"-function"         { FL; return yVLT_D_FUNCTION; }
+  -?"-hier-dpi"         { FL; return yVLT_D_HIER_DPI; }
   -?"-levels"           { FL; return yVLT_D_LEVELS; }
   -?"-lines"            { FL; return yVLT_D_LINES; }
   -?"-match"            { FL; return yVLT_D_MATCH; }

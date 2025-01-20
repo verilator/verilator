@@ -19,6 +19,7 @@
 #include "V3ProtectLib.h"
 
 #include "V3Hasher.h"
+#include "V3InstrCount.h"
 #include "V3String.h"
 #include "V3Task.h"
 
@@ -96,6 +97,32 @@ class ProtectVisitor final : public VNVisitor {
 
     void addComment(AstTextBlock* txtp, FileLine* fl, const string& comment) {
         txtp->addNodesp(new AstComment{fl, comment});
+    }
+
+    void configSection(AstNodeModule* modp, AstTextBlock* txtp, FileLine* fl) {
+        txtp->addText(fl, "\n`ifdef VERILATOR\n");
+        txtp->addText(fl, "`verilator_config\n");
+
+        // The `eval` function is called inside both update functions. As those functions
+        // are created by text bashing, we need to find cost of `_eval` which is the first function
+        // with a real cost in AST.
+        uint32_t cost = 0;
+        modp->foreach([&cost](AstCFunc* cfuncp) {
+            if (cfuncp->name() == "_eval") cost = V3InstrCount::count(cfuncp, false);
+        });
+        txtp->addText(fl, "profile_data -hier-dpi \"" + m_libName
+                              + "_protectlib_combo_update\" -cost 64'd" + std::to_string(cost)
+                              + "\n");
+        txtp->addText(fl, "profile_data -hier-dpi \"" + m_libName
+                              + "_protectlib_seq_update\" -cost 64'd" + std::to_string(cost)
+                              + "\n");
+
+        // Mark remaining NDA protectlib wrapper DPIs as non-hazardous by deliberately forwarding
+        // them with non-zero cost.
+        txtp->addText(fl, "profile_data -hier-dpi \"" + m_libName
+                              + "_protectlib_combo_ignore\" -cost 64'd1\n");
+        txtp->addText(fl, "`verilog\n");
+        txtp->addText(fl, "`endif\n");
     }
 
     void hashComment(AstTextBlock* txtp, FileLine* fl) {
@@ -283,6 +310,9 @@ class ProtectVisitor final : public VNVisitor {
         txtp->addText(fl, "final " + m_libName + "_protectlib_final(handle__V);\n\n");
 
         txtp->addText(fl, "endmodule\n");
+
+        configSection(modp, txtp, fl);
+
         m_vfilep->tblockp(txtp);
     }
 

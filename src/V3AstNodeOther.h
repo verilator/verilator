@@ -643,6 +643,7 @@ class AstCFunc final : public AstNode {
     bool m_dpiImportWrapper : 1;  // Wrapper for invoking DPI import prototype from generated code
     bool m_needProcess : 1;  // Needs access to VlProcess of the caller
     bool m_recursive : 1;  // Recursive or part of recursion
+    int m_cost;  // Function call cost
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
         : ASTGEN_SUPER_CFunc(fl) {
@@ -671,6 +672,7 @@ public:
         m_dpiImportPrototype = false;
         m_dpiImportWrapper = false;
         m_recursive = false;
+        m_cost = v3Global.opt.instrCountDpi();  // As proxy for unknown general DPI cost
     }
     ASTGEN_MEMBERS_AstCFunc;
     string name() const override VL_MT_STABLE { return m_name; }
@@ -685,9 +687,7 @@ public:
     }
     //
     void name(const string& name) override { m_name = name; }
-    int instrCount() const override {
-        return dpiImportPrototype() ? v3Global.opt.instrCountDpi() : 0;
-    }
+    int instrCount() const override { return m_cost; }
     VBoolOrUnknown isConst() const { return m_isConst; }
     void isConst(bool flag) { m_isConst.setTrueOrFalse(flag); }
     void isConst(VBoolOrUnknown flag) { m_isConst = flag; }
@@ -746,6 +746,7 @@ public:
     bool isCoroutine() const { return m_rtnType == "VlCoroutine"; }
     void recursive(bool flag) { m_recursive = flag; }
     bool recursive() const { return m_recursive; }
+    void cost(int cost) { m_cost = cost; }
     // Special methods
     bool emptyBody() const {
         return argsp() == nullptr && initsp() == nullptr && stmtsp() == nullptr

@@ -38,6 +38,7 @@ public:
                                const string& match);
     static void addInline(FileLine* fl, const string& module, const string& ftask, bool on);
     static void addModulePragma(const string& module, VPragmaType pragma);
+    static void addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost);
     static void addProfileData(FileLine* fl, const string& model, const string& key,
                                uint64_t cost);
     static void addScopeTraceOn(bool on, const string& scope, int levels);
@@ -51,11 +52,14 @@ public:
     static void applyModule(AstNodeModule* modulep);
     static void applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar* varp);
 
+    static uint64_t getProfileData(const string& hierDpi);
     static uint64_t getProfileData(const string& model, const string& key);
     static FileLine* getProfileDataFileLine();
     static bool getScopeTraceOn(const string& scope);
 
     static void contentsPushText(const string& text);
+
+    static bool containsMTaskProfileData();
 
     static bool waive(FileLine* filelinep, V3ErrorCode code, const string& message);
 };
