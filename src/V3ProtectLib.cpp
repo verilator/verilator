@@ -100,7 +100,8 @@ class ProtectVisitor final : public VNVisitor {
     }
 
     void configSection(AstNodeModule* modp, AstTextBlock* txtp, FileLine* fl) {
-        txtp->addText(fl, "\n`verilator_config\n");
+        txtp->addText(fl, "\n`ifdef VERILATOR\n");
+        txtp->addText(fl, "`verilator_config\n");
 
         // The `eval` function is called inside both update functions. As those functions
         // are created by text bashing, we need to find cost of `_eval` which is the first function
@@ -118,7 +119,8 @@ class ProtectVisitor final : public VNVisitor {
         // Add all protectlib wrappers as those need to be marked as non-hazardious later.
         txtp->addText(fl, "profile_data -hier-dpi \"" + m_libName
                               + "_protectlib_combo_ignore\" -cost 64'd0\n");
-        txtp->addText(fl, "\n");
+        txtp->addText(fl, "`verilog\n");
+        txtp->addText(fl, "`endif\n");
     }
 
     void hashComment(AstTextBlock* txtp, FileLine* fl) {
