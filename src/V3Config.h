@@ -59,7 +59,7 @@ public:
 
     static void contentsPushText(const string& text);
 
-    static bool isProfileDataDpiOnly();
+    static bool containsMTaskProfileData();
 
     static bool waive(FileLine* filelinep, V3ErrorCode code, const string& message);
 };

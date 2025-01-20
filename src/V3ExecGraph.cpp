@@ -528,7 +528,7 @@ void fillinCosts(V3Graph* execMTaskGraphp) {
 
     if (missingProfiles) {
         if (FileLine* const fl = V3Config::getProfileDataFileLine()) {
-            if (!V3Config::isProfileDataDpiOnly()) {
+            if (V3Config::containsMTaskProfileData()) {
                 fl->v3warn(PROFOUTOFDATE, "Profile data for mtasks may be out of date. "
                                               << missingProfiles << " of " << totalEstimates
                                               << " mtasks had no data");
