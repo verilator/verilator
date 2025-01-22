@@ -4151,7 +4151,7 @@ public:
         return new AstArraySel{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
-        V3ERROR_NA; /* How can from be a const? */
+        V3ERROR_NA;  // How can from be a const?
     }
     string emitVerilog() override { return "%k(%l%f[%r])"; }
     string emitC() override { return "%li%k[%ri]"; }

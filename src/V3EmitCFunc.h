@@ -345,16 +345,14 @@ public:
 
         if (m_useSelfForThis) {
             m_usevlSelfRef = true;
-            /*
-             * Using reference to the vlSelf pointer will help the C++
-             * compiler to have dereferenceable hints, which can help to
-             * reduce the need for branch instructions in the generated
-             * code to allow the compiler to generate load store after the
-             * if condition (including short-circuit evaluation)
-             * speculatively and also reduce the data cache pollution when
-             * executing in the wrong path to make verilator-generated code
-             * run faster.
-             */
+            // Using reference to the vlSelf pointer will help the C++
+            // compiler to have dereferenceable hints, which can help to
+            // reduce the need for branch instructions in the generated
+            // code to allow the compiler to generate load store after the
+            // if condition (including short-circuit evaluation)
+            // speculatively and also reduce the data cache pollution when
+            // executing in the wrong path to make verilator-generated code
+            // run faster.
             puts("auto& vlSelfRef = std::ref(*vlSelf).get();\n");
         }
 

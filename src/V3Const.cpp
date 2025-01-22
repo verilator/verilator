@@ -3377,7 +3377,7 @@ class ConstVisitor final : public VNVisitor {
 
     void visit(AstJumpGo* nodep) override {
         iterateChildren(nodep);
-        // Jump to label where label immediately follows this go is not useful
+        // Jump to label where label immediately follows this JumpGo is not useful
         if (nodep->labelp() == VN_CAST(nodep->nextp(), JumpLabel)) {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             // Keep the label, might be other jumps pointing to it, gets cleaned later
