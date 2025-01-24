@@ -112,7 +112,6 @@ module t (/*AUTOARG*/
         ta = '1;
         tb = '0;
         tc = '0;
-        // NOCOMMIT -- not quite right yet
         while (ta || tb || tc) begin
             tc = tb;
             tb = ta;

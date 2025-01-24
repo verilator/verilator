@@ -250,7 +250,10 @@ class CoverageVisitor final : public VNVisitor {
     }
 
     void visit(AstNodeProcedure* nodep) override { iterateProcedure(nodep); }
-    void visit(AstWhile* nodep) override { iterateProcedure(nodep); }
+    // we can cover expressions in while loops, but the counting goes outside
+    // the while, see: "minimally-intelligent decision about ... clock domain"
+    // in the Toggle Coverage docs
+    void visit(AstWhile* nodep) override { iterateProcedure(nodep, false); }
     void visit(AstNodeFTask* nodep) override {
         if (!nodep->dpiImport()) iterateProcedure(nodep);
     }
@@ -265,11 +268,11 @@ class CoverageVisitor final : public VNVisitor {
             nodep->v3fatalSrc("Bad node type");
         }
     }
-    void iterateProcedure(AstNode* nodep) {
+    void iterateProcedure(AstNode* nodep, bool exprProc = true) {
         VL_RESTORER(m_state);
         VL_RESTORER(m_procp);
         VL_RESTORER(m_inToggleOff);
-        m_procp = nodep;
+        if (exprProc) m_procp = nodep;
         m_inToggleOff = true;
         createHandle(nodep);
         iterateChildren(nodep);

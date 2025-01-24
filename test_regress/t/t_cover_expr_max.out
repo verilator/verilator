@@ -374,12 +374,11 @@
                 ta = '1;
                 tb = '0;
                 tc = '0;
-                // NOCOMMIT -- not quite right yet
 %000001         while (ta || tb || tc) begin
 -000001  point: comment=(ta=0 && tb=0 && tc=0) => 0 hier=top.t
 -000000  point: comment=(ta=1) => 1 hier=top.t
--000001  point: comment=(tb=1) => 1 hier=top.t
--000001  point: comment=(tc=1) => 1 hier=top.t
+-000000  point: comment=(tb=1) => 1 hier=top.t
+-000000  point: comment=(tc=1) => 1 hier=top.t
                     tc = tb;
                     tb = ta;
                     ta = '0;
