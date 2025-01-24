@@ -32,6 +32,9 @@
 #include <ostream>
 #include <sstream>
 
+//Type trait for custom struct
+template <typename>
+struct VlIsCustomStruct : public std::false_type {};
 //=============================================================================
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
 class ArrayInfo final {
@@ -303,7 +306,7 @@ public:
     }
 
     template <typename T>
-    typename std::enable_if<!std::is_class<T>::value, void>::type
+    typename std::enable_if<!VlIsCustomStruct<T>::value, void>::type
     write_var(T& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
@@ -354,9 +357,9 @@ public:
                                           0)...};
     }
 
-    template <typename T_Key>
-    typename std::enable_if<std::is_class<T_Key>::value && !VlIsVlWide<T_Key>::value, void>::type
-    write_var(T_Key& var, int width, const char* name, int dimension,
+    template <typename T>
+    typename std::enable_if<VlIsCustomStruct<T>::value, void>::type
+    write_var(T& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         modifyMembers(var, var.seq(), name);
     }

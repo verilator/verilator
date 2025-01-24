@@ -308,6 +308,9 @@ class EmitCHeader final : public EmitCConstInit {
         puts(");\n");
         puts("}\n");
         puts("};\n");
+        puts("template <>\n");
+        putns(sdtypep, "struct VlIsCustomStruct<"+EmitCBase::prefixNameProtect(sdtypep)+ "> : public std::true_type {};\n");
+
     }
 
     // getfunc: VL_ASSIGNSEL_XX(rbits, obits, off, lhsdata, rhsdata);
