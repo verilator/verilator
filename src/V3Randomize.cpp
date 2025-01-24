@@ -713,8 +713,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstStructSel* nodep) override {
         iterateChildren(nodep);
         if (editFormat(nodep)) return;
-        const int actual_width = nodep->dtypep()->width();
         FileLine* const fl = nodep->fileline();
+        // const int actual_width = nodep->dtypep()->width();
         // std::string smtExpr = nodep->emitSMT(); //"(select %l %r)"
         // for(string::iterator pos = smtExpr.begin(); pos != smtExpr.end(); ++pos){
         //     if(pos[0]=='%' )pos[1]='@';
