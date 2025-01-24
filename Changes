@@ -36,6 +36,7 @@ Verilator 5.033 devel
 * Fix `BLKSEQ` on suspendable processes (#5722). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix vpiDefName issues with non-inlined scopes and dpi conflicts (#5732). [Andrew Nolte]
 * Fix duplicate-named class variable equivalence (#5737).
+* Fix `-j` ignored after `-f` (#5749). [Luca Colagrande]
 * Fix matching language extension options including dots.
 
 

@@ -955,9 +955,6 @@ void V3Options::notify() VL_MT_DISABLED {
         cmdfl->v3error("Unsupported: --timing and --savable not supported together");
     }
 
-    // Mark options as available
-    m_available = true;
-
     // --dump-tree-dot will turn on tree dumping.
     if (!m_dumpLevel.count("tree") && m_dumpLevel.count("tree-dot")) {
         m_dumpLevel["tree"] = m_dumpLevel["tree-dot"];
@@ -965,9 +962,15 @@ void V3Options::notify() VL_MT_DISABLED {
 
     // Sanity check of expected configuration
     UASSERT(threads() >= 1, "'threads()' must return a value >= 1");
+    if (m_buildJobs == -1) m_buildJobs = 1;
+    if (m_verilateJobs == -1) m_verilateJobs = 1;
 
     // Preprocessor defines based on options used
     if (timing().isSetTrue()) V3PreShell::defineCmdLine("VERILATOR_TIMING", "1");
+
+    // === Leave last
+    // Mark options as available
+    m_available = true;
 }
 
 //######################################################################
@@ -1853,8 +1856,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             ++i;
         }
     }
-    if (m_buildJobs == -1) m_buildJobs = 1;
-    if (m_verilateJobs == -1) m_verilateJobs = 1;
 }
 
 //======================================================================
