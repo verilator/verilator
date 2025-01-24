@@ -32,7 +32,6 @@
 #include <ostream>
 #include <sstream>
 
-
 //=============================================================================
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
 class ArrayInfo final {
