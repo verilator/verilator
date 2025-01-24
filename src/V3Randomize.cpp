@@ -629,8 +629,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                 const uint32_t unpackedDimensions = dims.second;
                 dimension = unpackedDimensions;
             }
-            if(VN_IS(varp->dtypeSkipRefp(), StructDType) && !VN_AS(varp->dtypeSkipRefp(), StructDType)->packed()){
-                dimension=1;
+            if (VN_IS(varp->dtypeSkipRefp(), StructDType)
+                && !VN_AS(varp->dtypeSkipRefp(), StructDType)->packed()) {
+                dimension = 1;
             }
             methodp->dtypeSetVoid();
             AstClass* const classp = VN_AS(varp->user2p(), Class);
@@ -725,7 +726,9 @@ class ConstraintExprVisitor final : public VNVisitor {
         // lhsp = VN_AS(iterateSubtreeReturnEdits(lhsp), NodeExpr);
         // argsp = AstNode::addNext(argsp, lhsp);
         // argsp = AstNode::addNext(argsp, rhsp);
-        AstSFormatF* const newp = new AstSFormatF{fl, nodep->fromp()->name()+"."+nodep->name(), false, nullptr}; //AstSFormatF* const newp = new AstSFormatF{fl, smtExpr, false, argsp};
+        AstSFormatF* const newp = new AstSFormatF{
+            fl, nodep->fromp()->name() + "." + nodep->name(), false,
+            nullptr};  //AstSFormatF* const newp = new AstSFormatF{fl, smtExpr, false, argsp};
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         //editSMT(nodep, nodep->fromp(), nodep->cloneTreePure(false));
