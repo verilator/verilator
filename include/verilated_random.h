@@ -32,9 +32,7 @@
 #include <ostream>
 #include <sstream>
 
-//Type trait for custom struct
-template <typename>
-struct VlIsCustomStruct : public std::false_type {};
+
 //=============================================================================
 // VlRandomExpr and subclasses represent expressions for the constraint solver.
 class ArrayInfo final {
