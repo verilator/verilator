@@ -611,6 +611,9 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     void visit(AstBasicDType* nodep) override {
         putfs(nodep, nodep->prettyName());
         if (nodep->isSigned()) putfs(nodep, " signed");
+        // Do not emit ranges for integer atoms.
+        if (nodep->keyword().isIntNumeric() && !nodep->keyword().isBitLogic()) return;
+
         if (nodep->rangep()) {
             puts(" ");
             iterateAndNextConstNull(nodep->rangep());
