@@ -54,7 +54,7 @@ public:
 using ArrayInfoMap = std::map<std::string, std::shared_ptr<const ArrayInfo>>;
 
 class VlRandomVar VL_NOT_FINAL {
-    const char* const m_name;  // Variable name
+    const char* m_name;  // Variable name
     void* const m_datap;  // Reference to variable data
     const int m_width;  // Variable width in bits
     const int m_dimension;  //Variable dimension, default is 0
@@ -66,8 +66,13 @@ public:
         , m_datap{datap}
         , m_width{width}
         , m_dimension{dimension}
-        , m_randModeIdx{randModeIdx} {}
-    virtual ~VlRandomVar() = default;
+        , m_randModeIdx{randModeIdx} {
+        m_name = new char[std::strlen(name) + 1];
+        std::strcpy(const_cast<char*>(m_name), name);
+        }
+    virtual ~VlRandomVar(){
+        delete [] m_name;
+    }
     const char* name() const { return m_name; }
     int width() const { return m_width; }
     int dimension() const { return m_dimension; }
@@ -300,7 +305,8 @@ public:
     }
 
     template <typename T>
-    void write_var(T& var, int width, const char* name, int dimension,
+    typename std::enable_if<!std::is_class<T>::value, void>::type
+    write_var(T& var, int width, const char* name, int dimension,
                    std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
         // TODO: make_unique once VlRandomizer is per-instance not per-ref
@@ -341,6 +347,21 @@ public:
             record_arr_table(var, name, dimension, {}, {});
         }
     }
+    template <typename T, std::size_t... I>
+    void modifyMembers(T& obj, std::index_sequence<I...>, std::string name) {
+    // Use the indices to access each member via std::get
+    (void)std::initializer_list<int>{
+        (write_var(std::get<I>(obj.getMembers(obj))
+                    ,sizeof(std::get<I>(obj.getMembers(obj)))*8
+                    ,(name +"."+obj.nameList()[I]).c_str(),0), 0)...};
+    }
+
+    template <typename T_Key>
+    typename std::enable_if<std::is_class<T_Key>::value, void>::type
+    write_var(T_Key& var, int width, const char* name, int dimension,
+                   std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
+        modifyMembers(var, var.seq(), name);
+    }
 
     int idx;
     std::string generateKey(const std::string& name, int idx) {
@@ -355,7 +376,8 @@ public:
     }
 
     template <typename T>
-    void record_arr_table(T& var, const std::string name, int dimension,
+    typename std::enable_if<!std::is_class<T>::value, void>::type
+    record_arr_table(T& var, const std::string name, int dimension,
                           std::vector<IData> indices, std::vector<size_t> idxWidths) {
         const std::string key = generateKey(name, idx);
         m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices, idxWidths);

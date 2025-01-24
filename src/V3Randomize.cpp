@@ -629,6 +629,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                 const uint32_t unpackedDimensions = dims.second;
                 dimension = unpackedDimensions;
             }
+            if(VN_IS(varp->dtypeSkipRefp(), StructDType) && !VN_AS(varp->dtypeSkipRefp(), StructDType)->packed()){
+                dimension=1;
+            }
             methodp->dtypeSetVoid();
             AstClass* const classp = VN_AS(varp->user2p(), Class);
             AstVarRef* const varRefp
@@ -705,6 +708,27 @@ class ConstraintExprVisitor final : public VNVisitor {
         handle.relink(lsbp);
 
         editSMT(nodep, nodep->fromp(), lsbp, msbp);
+    }
+    void visit(AstStructSel* nodep) override {
+        iterateChildren(nodep);
+        if (editFormat(nodep)) return;
+        const int actual_width = nodep->dtypep()->width();
+        FileLine* const fl = nodep->fileline();
+        // std::string smtExpr = nodep->emitSMT(); //"(select %l %r)"
+        // for(string::iterator pos = smtExpr.begin(); pos != smtExpr.end(); ++pos){
+        //     if(pos[0]=='%' )pos[1]='@';
+        // }
+        // AstNodeExpr* argsp = nullptr;
+        // AstNodeExpr* rhsp = nodep->cloneTreePure(false);
+        // AstStructSel * cloned = nodep->cloneTreePure(false);
+        // AstNodeExpr* lhsp = cloned->fromp()->unlinkFrBack();
+        // lhsp = VN_AS(iterateSubtreeReturnEdits(lhsp), NodeExpr);
+        // argsp = AstNode::addNext(argsp, lhsp);
+        // argsp = AstNode::addNext(argsp, rhsp);
+        AstSFormatF* const newp = new AstSFormatF{fl, nodep->fromp()->name()+"."+nodep->name(), false, nullptr}; //AstSFormatF* const newp = new AstSFormatF{fl, smtExpr, false, argsp};
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        //editSMT(nodep, nodep->fromp(), nodep->cloneTreePure(false));
     }
     void visit(AstAssocSel* nodep) override {
         if (editFormat(nodep)) return;
