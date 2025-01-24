@@ -355,7 +355,7 @@ public:
     }
 
     template <typename T_Key>
-    typename std::enable_if<std::is_class<T_Key>::value, void>::type
+    typename std::enable_if<std::is_class<T_Key>::value && !VlIsVlWide<T_Key>::value, void>::type
     write_var(T_Key& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         modifyMembers(var, var.seq(), name);
