@@ -30,6 +30,10 @@ module t (/*AUTOARG*/
         return ~x;
     endfunction
 
+    function automatic bit and_oper(bit a, bit b);
+        return a & b;
+    endfunction
+
     always @ (posedge clk) begin
         cyc <= cyc + 1;
         if ((~cyc[0] && cyc[1]) || (~cyc[2] && cyc[3])) $write("");
@@ -58,6 +62,7 @@ module t (/*AUTOARG*/
             $write("");
         end
         if (invert(t1) && t2) $write("");
+        if (and_oper(t1, t2)) $write("");
         // stop at the first layer even if there's more to find
         if ((cyc[3+32'(t1 && t2)+:2] == cyc[5+32'(t3 || t4)+:2]) || cyc[31]) $write("");
         // impossible branches and redundant terms

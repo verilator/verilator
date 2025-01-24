@@ -33,6 +33,13 @@
 +000015  point: comment=(x=1) => 0 hier=top.t
             endfunction
         
+            function automatic bit and_oper(bit a, bit b);
+%000005         return a & b;
+-000004  point: comment=(a=0) => 0 hier=top.t
+-000002  point: comment=(a=1 && b=1) => 1 hier=top.t
+-000005  point: comment=(b=0) => 0 hier=top.t
+            endfunction
+        
             always @ (posedge clk) begin
                 cyc <= cyc + 1;
 %000004         if ((~cyc[0] && cyc[1]) || (~cyc[2] && cyc[3])) $write("");
@@ -152,6 +159,7 @@
 -000005  point: comment=(invert(t1)=0) => 0 hier=top.t
 -000002  point: comment=(invert(t1)=1 && t2=1) => 1 hier=top.t
 -000005  point: comment=(t2=0) => 0 hier=top.t
+                if (and_oper(t1, t2)) $write("");
                 // stop at the first layer even if there's more to find
 %000007         if ((cyc[3+32'(t1 && t2)+:2] == cyc[5+32'(t3 || t4)+:2]) || cyc[31]) $write("");
 -000002  point: comment=((cyc[(32'sh3 + (t1 && t2))[4:0]+:32'sh2]] == cyc[(32'sh5 + (t3 || t4))[4:0]+:32'sh2]])=0 && cyc[31]=0) => 0 hier=top.t
