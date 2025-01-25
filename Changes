@@ -20,7 +20,9 @@ Verilator 5.033 devel
 * Support generated classes (#5665). [Shou-Li Hsu]
 * Support constraints on associative array user-defined keys (#5671) (#5729). [Yilou Wang]
 * Support `+incdir` with multiple directories.
+* Support integer atom type ports in `--hierarchical` (#5748). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Support side effects of form 'variable[index_function()]++'.
+* Improve hierarchical DPI wrapper scheduling performance (#2583) (#5734). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Improve VPI write errors (#5712). [Andrew Nolte]
 * Improve `resetall support (#5728) (#5730). [Ethan Sifferman]
 * Fix error message when call task as a function (#3089). [Matthew Ballance]
@@ -35,6 +37,7 @@ Verilator 5.033 devel
 * Fix segfault when only enum value referenced in package (#5714). [Dan Katz]
 * Fix `BLKSEQ` on suspendable processes (#5722). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix vpiDefName issues with non-inlined scopes and dpi conflicts (#5732). [Andrew Nolte]
+* Fix inlined expression with assignment under LHS of NBA (#5736) (#5740). [Geza Lore]
 * Fix duplicate-named class variable equivalence (#5737).
 * Fix `-j` ignored after `-f` (#5749). [Luca Colagrande]
 * Fix matching language extension options including dots.
