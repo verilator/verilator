@@ -2865,15 +2865,17 @@ void AstCFile::dumpJson(std::ostream& str) const {
 void AstCFunc::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (slow()) str << " [SLOW]";
-    if (dpiPure()) str << " [DPIPURE]";
     if (isStatic()) str << " [STATIC]";
+    if (dpiContext()) str << " [DPICTX]";
     if (dpiExportDispatcher()) str << " [DPIED]";
     if (dpiExportImpl()) str << " [DPIEI]";
     if (dpiImportPrototype()) str << " [DPIIP]";
     if (dpiImportWrapper()) str << " [DPIIW]";
-    if (dpiContext()) str << " [DPICTX]";
+    if (dpiPure()) str << " [DPIPURE]";
     if (isConstructor()) str << " [CTOR]";
     if (isDestructor()) str << " [DTOR]";
+    if (isMethod()) str << " [METHOD]";
+    if (isLoose()) str << " [LOOSE]";
     if (isVirtual()) str << " [VIRT]";
     if (isCoroutine()) str << " [CORO]";
     if (needProcess()) str << " [NPRC]";

@@ -280,6 +280,7 @@ public:
     // VISITORS
     using EmitCConstInit::visit;
     void visit(AstCFunc* nodep) override {
+        if (nodep->emptyBody() && !nodep->isLoose()) return;
         VL_RESTORER(m_useSelfForThis);
         VL_RESTORER(m_cfuncp);
         VL_RESTORER(m_instantiatesOwnProcess)

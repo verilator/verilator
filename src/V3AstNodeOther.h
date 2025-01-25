@@ -625,6 +625,7 @@ class AstCFunc final : public AstNode {
     bool m_isTrace : 1;  // Function is related to tracing
     bool m_dontCombine : 1;  // V3Combine shouldn't compare this func tree, it's special
     bool m_declPrivate : 1;  // Declare it private
+    bool m_keepIfEmpty : 1;  // Keep declaration and definition separate, even if empty
     bool m_slow : 1;  // Slow routine, called once or just at init time
     bool m_funcPublic : 1;  // From user public task/function
     bool m_isConstructor : 1;  // Is C class constructor
@@ -655,6 +656,7 @@ public:
         m_isTrace = false;
         m_dontCombine = false;
         m_declPrivate = false;
+        m_keepIfEmpty = false;
         m_slow = false;
         m_funcPublic = false;
         m_isConstructor = false;
@@ -706,6 +708,8 @@ public:
     bool dontInline() const { return dontCombine() || slow() || funcPublic(); }
     bool declPrivate() const { return m_declPrivate; }
     void declPrivate(bool flag) { m_declPrivate = flag; }
+    bool keepIfEmpty() const VL_MT_SAFE { return m_keepIfEmpty; }
+    void keepIfEmpty(bool flag) { m_keepIfEmpty = flag; }
     bool slow() const VL_MT_SAFE { return m_slow; }
     void slow(bool flag) { m_slow = flag; }
     bool funcPublic() const { return m_funcPublic; }
@@ -749,8 +753,7 @@ public:
     void cost(int cost) { m_cost = cost; }
     // Special methods
     bool emptyBody() const {
-        return argsp() == nullptr && initsp() == nullptr && stmtsp() == nullptr
-               && finalsp() == nullptr;
+        return !keepIfEmpty() && !argsp() && !initsp() && !stmtsp() && !finalsp();
     }
 };
 class AstCLocalScope final : public AstNode {

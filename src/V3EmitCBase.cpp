@@ -171,7 +171,11 @@ void EmitCBaseVisitorConst::emitCFuncDecl(const AstCFunc* funcp, const AstNodeMo
         putns(funcp, "virtual ");
     }
     emitCFuncHeader(funcp, modp, /* withScope: */ false);
-    putns(funcp, ";\n");
+    if (funcp->emptyBody() && !funcp->isLoose() && !cLinkage) {
+        putns(funcp, " {}\n");
+    } else {
+        putns(funcp, ";\n");
+    }
     if (!funcp->ifdef().empty()) putns(funcp, "#endif  // " + funcp->ifdef() + "\n");
 }
 
