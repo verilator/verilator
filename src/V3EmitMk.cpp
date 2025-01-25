@@ -479,6 +479,9 @@ class EmitMk final {
     using FileOrConcatenatedFilesList = EmitGroup::FileOrConcatenatedFilesList;
     using FilenameWithScore = EmitGroup::FilenameWithScore;
 
+    // MEMBERS
+    double m_putClassCount = 0;  // Number of classEntries printed
+
 public:
     // METHODS
 
@@ -494,6 +497,7 @@ public:
 
     void putMakeClassEntry(V3OutMkFile& of, const string& name) {
         of.puts("\t" + V3Os::filenameNonDirExt(name) + " \\\n");
+        ++m_putClassCount;
     }
 
     void emitClassMake() {
@@ -577,9 +581,12 @@ public:
                 } else {
                     of.puts(", fast-path, compile with highest optimization\n");
                 }
-                of.puts(support == 2 ? "VM_GLOBAL" : support == 1 ? "VM_SUPPORT" : "VM_CLASSES");
-                of.puts(slow ? "_SLOW" : "_FAST");
-                of.puts(" += \\\n");
+                const string targetVar = (support == 2   ? "VM_GLOBAL"s
+                                          : support == 1 ? "VM_SUPPORT"s
+                                                         : "VM_CLASSES"s)
+                                         + (slow ? "_SLOW" : "_FAST");
+                m_putClassCount = 0;
+                of.puts(targetVar + " += \\\n");
                 if (support == 2 && v3Global.opt.hierChild()) {
                     // Do nothing because VM_GLOBAL is necessary per executable. Top module will
                     // have them.
@@ -605,7 +612,7 @@ public:
                     const std::vector<FileOrConcatenatedFilesList>& list
                         = slow ? vmClassesSlowList : vmClassesFastList;
                     for (const FileOrConcatenatedFilesList& entry : list) {
-                        if (entry.isConcatenatingFile()) { emitConcatenatingFile(entry); }
+                        if (entry.isConcatenatingFile()) emitConcatenatingFile(entry);
                         putMakeClassEntry(of, entry.m_filename);
                     }
                 } else {
@@ -619,6 +626,7 @@ public:
                     }
                 }
                 of.puts("\n");
+                V3Stats::addStat("Makefile targets, " + targetVar, m_putClassCount);
             }
         }
 
@@ -808,6 +816,7 @@ public:
 };
 
 //######################################################################
+
 class EmitMkHierVerilation final {
     const V3HierBlockPlan* const m_planp;
     const string m_makefile;  // path of this makefile
