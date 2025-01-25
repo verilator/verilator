@@ -304,21 +304,24 @@ public:
         }
         puts(" {\n");
 
-        if (nodep->isLoose()) {
-            m_lazyDecls.declared(nodep);  // Defined here, so no longer needs declaration
-            if (!nodep->isStatic()) {  // Standard prologue
-                m_useSelfForThis = true;
-                puts("(void)vlSelf;  // Prevent unused variable warning\n");
-                if (!VN_IS(m_modp, Class)) puts(symClassAssign());
-            }
-        }
-
         // "+" in the debug indicates a print from the model
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+  ");
         for (int i = 0; i < m_modp->level(); ++i) puts("  ");
         puts(prefixNameProtect(m_modp));
         puts(nodep->isLoose() ? "__" : "::");
         puts(nodep->nameProtect() + "\\n\"); );\n");
+
+        if (nodep->isLoose()) {
+            m_lazyDecls.declared(nodep);  // Defined here, so no longer needs declaration
+            if (!nodep->isStatic()) {  // Standard prologue
+                m_useSelfForThis = true;
+                if (!VN_IS(m_modp, Class)) {
+                    puts(symClassAssign());  // Uses vlSelf
+                } else {
+                    puts("(void)vlSelf;  // Prevent unused variable warning\n");
+                }
+            }
+        }
 
         // Instantiate a process class if it's going to be needed somewhere later
         nodep->forall([&](const AstNodeCCall* ccallp) -> bool {
