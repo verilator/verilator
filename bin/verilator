@@ -374,8 +374,8 @@ detailed descriptions of these arguments.
     --gdb                       Run Verilator under GDB interactively
     --gdbbt                     Run Verilator under GDB for backtrace
     --generate-key              Create random key for --protect-key
-    --getenv <var>              Get environment variable with defaults
     --get-supported <feature>   Get if feature is supported
+    --getenv <var>              Get environment variable with defaults
     --help                      Show this help
     --hierarchical              Enable hierarchical Verilation
     --hierarchical-params-file <name> Internal option that specifies parameters file for hier blocks
@@ -385,6 +385,11 @@ detailed descriptions of these arguments.
     --inline-mult <value>       Tune module inlining
     --instr-count-dpi <value>   Assumed dynamic instruction count of DPI imports
      -j <jobs>                  Parallelism for --build-jobs/--verilate-jobs
+    --no-json-edit-nums         Don't dump editNum in .tree.json files
+    --no-json-ids               Don't use short identifiers instead of adresses/paths in .tree.json
+    --json-only                 Create JSON parser output (.tree.json and .meta.json)
+    --json-only-output          .tree.json output filename
+    --json-only-meta-output     .tree.meta.json output filename
     --l2-name <value>           Verilog scope name of the top module
     --language <lang>           Default language standard to parse
      -LDFLAGS <flags>           Linker pre-object arguments for makefile
@@ -506,11 +511,6 @@ detailed descriptions of these arguments.
     --x-assign <mode>           Assign non-initial Xs to this value
     --x-initial <mode>          Assign initial Xs to this value
     --x-initial-edge            Enable initial X->0 and X->1 edge triggers
-    --no-json-edit-nums         Don't dump editNum in .tree.json files
-    --no-json-ids               Don't use short identifiers instead of adresses/paths in .tree.json
-    --json-only                 Create JSON parser output (.tree.json and .meta.json)
-    --json-only-output          .tree.json output filename
-    --json-only-meta-output     .tree.meta.json output filename
     --xml-only                  Create XML parser output
     --xml-output                XML output filename
      -y <dir>                   Directory to search for modules

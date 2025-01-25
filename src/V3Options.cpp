@@ -1236,8 +1236,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         }
     });
     DECL_OPTION("-compiler-include", CbVal, callStrSetter(&V3Options::addCompilerIncludes));
-    DECL_OPTION("-coverage", CbOnOff, [this](bool flag) { coverage(flag); });
     DECL_OPTION("-converge-limit", Set, &m_convergeLimit);
+    DECL_OPTION("-coverage", CbOnOff, [this](bool flag) { coverage(flag); });
     DECL_OPTION("-coverage-line", OnOff, &m_coverageLine);
     DECL_OPTION("-coverage-max-width", Set, &m_coverageMaxWidth);
     DECL_OPTION("-coverage-toggle", OnOff, &m_coverageToggle);
@@ -1280,8 +1280,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-dumpi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
         m_dumpLevel[optp] = std::atoi(valp);
     });
-    DECL_OPTION("-json-edit-nums", OnOff, &m_jsonEditNums);
-    DECL_OPTION("-json-ids", OnOff, &m_jsonIds);
+
     DECL_OPTION("-E", CbOnOff, [this](bool flag) {
         if (flag) {
             m_stdPackage = false;
@@ -1314,6 +1313,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fconst", FOnOff, &m_fConst);
     DECL_OPTION("-fconst-before-dfg", FOnOff, &m_fConstBeforeDfg);
     DECL_OPTION("-fconst-bit-op-tree", FOnOff, &m_fConstBitOpTree);
+    DECL_OPTION("-fdead-assigns", FOnOff, &m_fDeadAssigns);
+    DECL_OPTION("-fdead-cells", FOnOff, &m_fDeadCells);
     DECL_OPTION("-fdedup", FOnOff, &m_fDedupe);
     DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) {
         m_fDfgPreInline = flag;
@@ -1328,8 +1329,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-fdfg-pre-inline", FOnOff, &m_fDfgPreInline);
     DECL_OPTION("-fdfg-post-inline", FOnOff, &m_fDfgPostInline);
-    DECL_OPTION("-fdead-assigns", FOnOff, &m_fDeadAssigns);
-    DECL_OPTION("-fdead-cells", FOnOff, &m_fDeadCells);
     DECL_OPTION("-fexpand", FOnOff, &m_fExpand);
     DECL_OPTION("-ffunc-opt", CbFOnOff, [this](bool flag) {  //
         m_fFuncSplitCat = flag;
@@ -1391,6 +1390,18 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         if (m_instrCountDpi < 0) fl->v3fatal("--instr-count-dpi must be non-negative: " << val);
     });
 
+    DECL_OPTION("-json-edit-nums", OnOff, &m_jsonEditNums);
+    DECL_OPTION("-json-ids", OnOff, &m_jsonIds);
+    DECL_OPTION("-json-only", OnOff, &m_jsonOnly);
+    DECL_OPTION("-json-only-meta-output", CbVal, [this](const char* valp) {
+        m_jsonOnlyMetaOutput = valp;
+        m_jsonOnly = true;
+    });
+    DECL_OPTION("-json-only-output", CbVal, [this](const char* valp) {
+        m_jsonOnlyOutput = valp;
+        m_jsonOnly = true;
+    });
+
     DECL_OPTION("-LDFLAGS", CbVal, callStrSetter(&V3Options::addLdLibs));
     DECL_OPTION("-l2-name", Set, &m_l2Name);
     DECL_OPTION("-no-l2name", CbCall, [this]() { m_l2Name = ""; }).undocumented();  // Historical
@@ -1415,7 +1426,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-lint-only", OnOff, &m_lintOnly);
     DECL_OPTION("-localize-max-size", Set, &m_localizeMaxSize);
-    DECL_OPTION("-main-top-name", Set, &m_mainTopName);
 
     DECL_OPTION("-MAKEFLAGS", CbVal, callStrSetter(&V3Options::addMakeFlags));
     DECL_OPTION("-MMD", OnOff, &m_makeDepend);
@@ -1425,6 +1435,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         addIncDirFallback(m_makeDir);  // Need to find generated files there too
     });
     DECL_OPTION("-main", OnOff, &m_main);
+    DECL_OPTION("-main-top-name", Set, &m_mainTopName);
     DECL_OPTION("-make", CbVal, [this, fl](const char* valp) {
         if (!std::strcmp(valp, "cmake")) {
             m_cmake = true;
@@ -1449,6 +1460,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-order-clock-delay", CbOnOff, [fl](bool /*flag*/) {
         fl->v3warn(DEPRECATED, "Option order-clock-delay is deprecated and has no effect.");
     });
+    DECL_OPTION("-output-groups", CbVal, [this, fl](const char* valp) {
+        m_outputGroups = std::atoi(valp);
+        if (m_outputGroups < 0) { fl->v3error("--output-groups must be >= 0: " << valp); }
+    });
     DECL_OPTION("-output-split", Set, &m_outputSplit);
     DECL_OPTION("-output-split-cfuncs", CbVal, [this, fl](const char* valp) {
         m_outputSplitCFuncs = std::atoi(valp);
@@ -1462,20 +1477,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             fl->v3error("--output-split-ctrace must be >= 0: " << valp);
         }
     });
-    DECL_OPTION("-output-groups", CbVal, [this, fl](const char* valp) {
-        m_outputGroups = std::atoi(valp);
-        if (m_outputGroups < 0) { fl->v3error("--output-groups must be >= 0: " << valp); }
-    });
 
     DECL_OPTION("-P", Set, &m_preprocNoLine);
-    DECL_OPTION("-pvalue+", CbPartialMatch,
-                [this](const char* varp) { addParameter(varp, false); });
     DECL_OPTION("-pins64", CbCall, [this]() { m_pinsBv = 65; });
     DECL_OPTION("-no-pins64", CbCall, [this]() { m_pinsBv = 33; });
     DECL_OPTION("-pins-bv", CbVal, [this, fl](const char* valp) {
         m_pinsBv = std::atoi(valp);
         if (m_pinsBv > 65) fl->v3fatal("--pins-bv maximum is 65: " << valp);
     });
+    DECL_OPTION("-pins-inout-enables", OnOff, &m_pinsInoutEnables);
     DECL_OPTION("-pins-sc-uint", CbOnOff, [this](bool flag) {
         m_pinsScUint = flag;
         if (!m_pinsScBigUint) m_pinsBv = 65;
@@ -1485,7 +1495,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_pinsScBigUint = flag;
         m_pinsBv = 513;
     });
-    DECL_OPTION("-pins-inout-enables", OnOff, &m_pinsInoutEnables);
     DECL_OPTION("-pins-uint8", OnOff, &m_pinsUint8);
     DECL_OPTION("-pipe-filter", Set, &m_pipeFilter);
     DECL_OPTION("-pp-comments", OnOff, &m_ppComments);
@@ -1496,10 +1505,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-private", CbCall, [this]() { m_public = false; });
     DECL_OPTION("-prof-c", OnOff, &m_profC);
     DECL_OPTION("-prof-cfuncs", CbCall, [this]() { m_profC = m_profCFuncs = true; });
-    DECL_OPTION("-profile-cfuncs", CbCall,
-                [this]() { m_profC = m_profCFuncs = true; });  // Renamed
     DECL_OPTION("-prof-exec", OnOff, &m_profExec);
     DECL_OPTION("-prof-pgo", OnOff, &m_profPgo);
+    DECL_OPTION("-profile-cfuncs", CbCall,
+                [this]() { m_profC = m_profCFuncs = true; });  // Renamed
     DECL_OPTION("-protect-ids", OnOff, &m_protectIds);
     DECL_OPTION("-protect-key", Set, &m_protectKey);
     DECL_OPTION("-protect-lib", CbVal, [this, fl](const char* valp) {
@@ -1518,6 +1527,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_publicParams = flag;
         v3Global.dpi(true);
     });
+    DECL_OPTION("-pvalue+", CbPartialMatch,
+                [this](const char* varp) { addParameter(varp, false); });
+
     DECL_OPTION("-quiet", CbOnOff, [this](bool flag) {
         m_quietExit = flag;
         m_quietStats = flag;
@@ -1563,7 +1575,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-structs-packed", OnOff, &m_structsPacked);
     DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2023; });
 
-    DECL_OPTION("-threads-coarsen", OnOff, &m_threadsCoarsen).undocumented();  // Debug
     DECL_OPTION("-no-threads", CbCall, [this, fl]() {
         fl->v3warn(DEPRECATED, "Option --no-threads is deprecated, use '--threads 1' instead");
         m_threads = 1;
@@ -1576,6 +1587,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             m_threads = 1;
         }
     });
+    DECL_OPTION("-threads-coarsen", OnOff, &m_threadsCoarsen).undocumented();  // Debug
     DECL_OPTION("-threads-dpi", CbVal, [this, fl](const char* valp) {
         if (!std::strcmp(valp, "all")) {
             m_threadsDpiPure = true;
@@ -1617,9 +1629,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         }
     });
     DECL_OPTION("-timing", OnOff, &m_timing);
-    DECL_OPTION("-top-module", Set, &m_topModule);
     DECL_OPTION("-top", Set, &m_topModule);
-    DECL_OPTION("-no-trace-top", Set, &m_noTraceTop);
+    DECL_OPTION("-top-module", Set, &m_topModule);
     DECL_OPTION("-trace", OnOff, &m_trace);
     DECL_OPTION("-trace-coverage", OnOff, &m_traceCoverage);
     DECL_OPTION("-trace-depth", Set, &m_traceDepth);
@@ -1645,6 +1656,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_traceThreads = std::atoi(valp);
         if (m_traceThreads < 1) fl->v3fatal("--trace-threads must be >= 1: " << valp);
     });
+    DECL_OPTION("-no-trace-top", Set, &m_noTraceTop);
     DECL_OPTION("-trace-underscore", OnOff, &m_traceUnderscore);
 
     DECL_OPTION("-U", CbPartialMatch, &V3PreShell::undef);
@@ -1662,6 +1674,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         V3Options::addLibraryFile(parseFileArg(optdir, valp));
     });
     DECL_OPTION("-valgrind", CbCall, []() {});  // Processed only in bin/verilator shell
+    DECL_OPTION("-verilate", OnOff, &m_verilate);
     DECL_OPTION("-verilate-jobs", CbVal, [this, fl](const char* valp) {
         int val = std::atoi(valp);
         if (val < 0) {
@@ -1673,17 +1686,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         }
         m_verilateJobs = val;
     });
-    DECL_OPTION("-verilate", OnOff, &m_verilate);
     DECL_OPTION("-version", CbCall, [this]() {
         showVersion(false);
         std::exit(0);
     });
     DECL_OPTION("-vpi", OnOff, &m_vpi);
 
-    DECL_OPTION("-Wpedantic", CbCall, [this]() {
-        m_pedantic = true;
-        V3Error::pretendError(V3ErrorCode::ASSIGNIN, false);
-    });
     DECL_OPTION("-Wall", CbCall, []() {
         FileLine::globalWarnLintOff(false);
         FileLine::globalWarnStyleOff(false);
@@ -1726,6 +1734,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-Wno-style", CbCall, []() { FileLine::globalWarnStyleOff(true); });
     DECL_OPTION("-Wno-UNUSED", CbCall, []() { FileLine::globalWarnUnusedOff(true); });
     DECL_OPTION("-Wno-WIDTH", CbCall, []() { FileLine::globalWarnOff(V3ErrorCode::WIDTH, true); });
+    DECL_OPTION("-Wpedantic", CbCall, [this]() {
+        m_pedantic = true;
+        V3Error::pretendError(V3ErrorCode::ASSIGNIN, false);
+    });
     DECL_OPTION("-Wwarn-", CbPartialMatch, [this, fl, &parser](const char* optp) VL_MT_DISABLED {
         const V3ErrorCode code{optp};
         if (code == V3ErrorCode::EC_ERROR) {
@@ -1795,19 +1807,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_xmlOutput = valp;
         m_xmlOnly = true;
     });
-    DECL_OPTION("-json-only", OnOff, &m_jsonOnly);
-    DECL_OPTION("-json-only-output", CbVal, [this](const char* valp) {
-        m_jsonOnlyOutput = valp;
-        m_jsonOnly = true;
-    });
-    DECL_OPTION("-json-only-meta-output", CbVal, [this](const char* valp) {
-        m_jsonOnlyMetaOutput = valp;
-        m_jsonOnly = true;
-    });
 
     DECL_OPTION("-y", CbVal, [this, &optdir](const char* valp) {
         addIncDirUser(parseFileArg(optdir, string{valp}));
     });
+
     parser.finalize();
 
     for (int i = 0; i < argc;) {
