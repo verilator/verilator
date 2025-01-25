@@ -543,18 +543,18 @@ class ParamProcessor final {
         for (auto&& defaultValue : paramsIt->second) {
             const auto pinIt = pins.find(defaultValue.first);
             // If the pin does not have a value assigned, use the default one.
-            const AstNode* const node = pinIt == pins.end() ? defaultValue.second : pinIt->second;
+            const AstNode* const nodep = pinIt == pins.end() ? defaultValue.second : pinIt->second;
             // This longname is not valid as verilog symbol, but ok, because it will be hashed
             longname += "_" + defaultValue.first + "=";
             // constp can be nullptr
 
-            if (const AstConst* const p = VN_CAST(node, Const)) {
+            if (const AstConst* const p = VN_CAST(nodep, Const)) {
                 // Treat modules parametrized with the same values but with different type as the
                 // same.
                 longname += p->num().ascii(false);
-            } else if (node) {
+            } else if (nodep) {
                 std::stringstream type;
-                V3EmitV::verilogForTree(node, type);
+                V3EmitV::verilogForTree(nodep, type);
                 longname += type.str();
             }
         }
