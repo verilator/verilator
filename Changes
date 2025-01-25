@@ -25,6 +25,7 @@ Verilator 5.033 devel
 * Improve hierarchical DPI wrapper scheduling performance (#2583) (#5734). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Improve VPI write errors (#5712). [Andrew Nolte]
 * Improve `resetall support (#5728) (#5730). [Ethan Sifferman]
+* Optimize labels as final `if` block statements (#5744).
 * Fix error message when call task as a function (#3089). [Matthew Ballance]
 * Fix VPI iteration over hierarchy (#5314) (#5731). [Natan Kreimer]
 * Fix constrained random for > 64-bit associative arrays (#5670) (#5682). [Yilou Wang]

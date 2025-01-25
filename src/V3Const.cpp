@@ -2266,6 +2266,19 @@ class ConstVisitor final : public VNVisitor {
         }
         return false;
     }
+    bool replaceJumpGoNext(AstJumpGo* nodep, AstNode* abovep) {
+        // If JumpGo has an upper JumpBlock that is to same label, then
+        // code will by normal sequential operation do the JUMPGO and it
+        // can be removed.
+        if (nodep->nextp()) return false;  // Label jumps other statements
+        AstJumpBlock* const aboveBlockp = VN_CAST(abovep, JumpBlock);
+        if (!aboveBlockp) return false;
+        if (aboveBlockp != nodep->labelp()->blockp()) return false;
+        if (aboveBlockp->endStmtsp() != nodep->labelp()) return false;
+        UINFO(4, "JUMPGO => last remove " << nodep << endl);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        return true;
+    }
 
     // Boolean replacements
     bool operandBoolShift(const AstNode* nodep) {
@@ -3158,8 +3171,9 @@ class ConstVisitor final : public VNVisitor {
                 nodep->condp(new AstLogAnd{lowerIfp->fileline(), condp, lowerCondp});
                 lowerIfp->replaceWith(lowerThensp);
                 VL_DO_DANGLING(pushDeletep(lowerIfp), lowerIfp);
-            } else if (operandBoolShift(nodep->condp())) {
-                replaceBoolShift(nodep->condp());
+            } else {
+                // Optimizations that don't reform the IF itself
+                if (operandBoolShift(nodep->condp())) replaceBoolShift(nodep->condp());
             }
         }
     }
@@ -3390,14 +3404,14 @@ class ConstVisitor final : public VNVisitor {
             }
             // If last statement in a jump label we have JumpLabel(...., JumpGo)
             // Often caused by "return" in a Verilog function.  The Go is pointless, remove.
+            if (replaceJumpGoNext(nodep, nodep->abovep())) return;
+            // Also optimize If with a then or else's final statement being this JumpGo
+            // We only do single ifs... Ideally we'd look at control flow and delete any
+            // Jumps where any following control flow point is the label
             if (!nodep->nextp()) {
-                if (AstJumpBlock* const aboveBlockp = VN_CAST(nodep->abovep(), JumpBlock)) {
-                    if (aboveBlockp == nodep->labelp()->blockp()) {
-                        if (aboveBlockp->endStmtsp() == nodep->labelp()) {
-                            UINFO(4, "JUMPGO => last remove " << nodep << endl);
-                            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-                            return;
-                        }
+                if (AstNodeIf* const aboveIfp = VN_CAST(nodep->abovep(), NodeIf)) {
+                    if (!aboveIfp->nextp()) {
+                        if (replaceJumpGoNext(nodep, aboveIfp->abovep())) return;
                     }
                 }
             }
