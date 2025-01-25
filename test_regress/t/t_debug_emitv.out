@@ -1,94 +1,65 @@
 module Vt_debug_emitv_t;
     input logic clk;
     input logic in;
-    typedef 
-    ???? // ENUMDTYPE 't.e_t'
-
-    ???? // ENUMITEM 'ZERO'
-    32'h0
-    ???? // ENUMITEM 'ONE'
-    32'h1int signedstruct packed 
-    {int signed a;}logic signed [2:0] struct 
-    {logic signed [2:0]  a;}logicunion 
-    {logic a;}struct packed 
-    {int signed a;}bit [31:0] const struct packed 
-    {int signed a;}const struct packed 
-    {int signed a;}[0:2]struct 
-    {logic signed [2:0]  a;}union 
-    {logic a;}int signedint signed[0:2]logic [15:0] logic [15:0] logic [15:0] int signedint signedint signed
-    ???? // QUEUEDTYPE
-    int signedstring
-    ???? // ASSOCARRAYDTYPE
-    int signed
-    ???? // DYNARRAYDTYPE
-    int signedint signedint signedint signedint signedint signedint signedreal signedstringIDatalogic signed [31:0] int signed e_t;
-    typedef struct packed 
-    {int signed a;}logic signed [2:0] struct 
-    {logic signed [2:0]  a;}logicunion 
-    {logic a;}struct packed 
-    {int signed a;}bit [31:0] const struct packed 
-    {int signed a;}const struct packed 
-    {int signed a;}[0:2]struct 
-    {logic signed [2:0]  a;}union 
-    {logic a;}int signedint signed[0:2]logic [15:0] logic [15:0] logic [15:0] int signedint signedint signed
-    ???? // QUEUEDTYPE
-    int signedstring
-    ???? // ASSOCARRAYDTYPE
-    int signed
-    ???? // DYNARRAYDTYPE
-    int signedint signedint signedint signedint signedint signedint signedreal signedstringIDatalogic signed [31:0] int signed ps_t;
-    typedef struct 
-    {logic signed [2:0]  a;}logicunion 
-    {logic a;}struct packed 
-    {int signed a;}bit [31:0] const struct packed 
-    {int signed a;}const struct packed 
-    {int signed a;}[0:2]struct 
-    {logic signed [2:0]  a;}union 
-    {logic a;}int signedint signed[0:2]logic [15:0] logic [15:0] logic [15:0] int signedint signedint signed
-    ???? // QUEUEDTYPE
-    int signedstring
-    ???? // ASSOCARRAYDTYPE
-    int signed
-    ???? // DYNARRAYDTYPE
-    int signedint signedint signedint signedint signedint signedint signedreal signedstringIDatalogic signed [31:0] int signed us_t;
-    typedef union 
-    {logic a;}struct packed 
-    {int signed a;}bit [31:0] const struct packed 
-    {int signed a;}const struct packed 
-    {int signed a;}[0:2]struct 
-    {logic signed [2:0]  a;}union 
-    {logic a;}int signedint signed[0:2]logic [15:0] logic [15:0] logic [15:0] int signedint signedint signed
-    ???? // QUEUEDTYPE
-    int signedstring
-    ???? // ASSOCARRAYDTYPE
-    int signed
-    ???? // DYNARRAYDTYPE
-    int signedint signedint signedint signedint signedint signedint signedreal signedstringIDatalogic signed [31:0] int signed union_t;
-    struct packed 
-    {int signed a;} ps[0:2];
-    struct 
-    {logic signed [2:0]  a;} us;
-    union 
-    {logic a;} unu;
+    typedef enum logic [2:0] {
+        ZERO = 3'h0,
+        ONE = 3'h1
+    } e_t;
+    typedef struct packed {
+        logic [2:0]  a;
+    } ps_t;
+    typedef struct {
+        logic signed [2:0]  a;
+    } us_t;
+    typedef union {
+        logic a;
+    } union_t;
+    const struct packed {
+        logic [2:0]  a;
+    } ps[0:2];
+    struct {
+        logic signed [2:0]  a;
+    } us;
+    union {
+        logic a;
+    } unu;
     int signed array[0:2];
     initial begin
         array = '{0:32'sh1, 1:32'sh2, 2:32'sh3};
     end
+    bit [6:5] [4:3] [2:1]  arraymanyd[10:11][12:13][14:15];
     logic [15:0]  pubflat;
     logic [15:0]  pubflat_r;
     logic [15:0]  pubflat_w;
     assign pubflat_w = pubflat;
     int signed fd;
     int signed i;
-
-    ???? // QUEUEDTYPE
-     q;
-
-    ???? // ASSOCARRAYDTYPE
-     assoc;
-
-    ???? // DYNARRAYDTYPE
-     dyn;
+    int signed q[$];
+    int signed qb[$:'sh3];
+    int signed assoc[string];
+    int signed assocassoc[string][real];
+    int signed dyn[];
+    typedef struct packed {
+        logic nn1;
+    } nested_named_t;
+    typedef struct packed {
+        struct packed {
+            logic nn2;
+        } nested_anonymous;
+        struct packed {
+            logic nn1;
+        } nested_named;
+        logic [11:10]  nn3;
+    } nibble_t;
+    struct packed {
+        struct packed {
+            logic nn2;
+        } nested_anonymous;
+        struct packed {
+            logic nn1;
+        } nested_named;
+        logic [11:10]  nn3;
+    } [5:4] nibblearray[3:2];
     task t;
         $display("stmt");
     endtask
@@ -111,7 +82,7 @@ module Vt_debug_emitv_t;
                         begin
                             other = f(i);
                             $display("stmt %~ %~", 
-                                     iother, other);
+                                     i, other);
                             t();
                         end
                         i = (i + 'h1);
@@ -128,7 +99,7 @@ module Vt_debug_emitv_t;
             $display("stmt");
         end
     end
-    always @([changed] in) begin
+    always @( in) begin
         begin
             $display("stmt");
         end
@@ -147,7 +118,7 @@ module Vt_debug_emitv_t;
     int signed cyc;
     int signed fo;
     int signed sum;
-    real signed r;
+    real r;
     string str;
     always @(posedge clk) begin
         begin
@@ -156,7 +127,7 @@ module Vt_debug_emitv_t;
             fo = cyc;
             sub.inc(fosum);
             sum = sub.f(sum);
-            $display("[%0t] sum = %~", $timesum, sum);
+            $display("[%0t] sum = %~", $time, sum);
             $display("a?= %d", ($c('sh1) ? $c('sh14)
                                  : $c('sh1e)));
             $c(;);
@@ -248,32 +219,23 @@ module Vt_debug_emitv_t;
             else begin
                 $display("0");
             end
-            $display("%~%~", $past(cyc)$past(cyc, 'sh1), 
-                     $past(cyc, 'sh1));
+            $display("%~%~", $past(cyc), $past(cyc, 
+                                               'sh1));
             str = $sformatf("cyc=%~", cyc);
             ;
             $display("str = %@", str);
-            $display("%% [%t] [%^] to=%o td=%d", $time
-                     $realtime$time$time, $realtime
-                     $time$time, $time$time, $time);
+            $display("%% [%t] [%^] to=%o td=%d", $time, 
+                     $realtime, $time, $time);
             $sscanf(40'h666f6f3d35, "foo=%d", i);
             ;
             $printtimescale;
             if ((i != 'sh5)) begin
                 $stop;
             end
-            sum = 
-            ???? // RAND
-            ;
-            sum = 
-            ???? // RAND
-            'sha;
-            sum = 
-            ???? // RAND
-            ;
-            sum = 
-            ???? // RAND
-            'sha;
+            sum = $random();
+            sum = $random('sha);
+            sum = $urandom();
+            sum = $urandom('sha);
             if ((PKG_PARAM != 'sh1)) begin
                 $stop;
             end
@@ -318,8 +280,8 @@ package Vt_debug_emitv___024unit;
         member = 'sh1;
         task method;
         endtask
-        task new;
-        endtask
+        function new;
+        endfunction
     endclass
 endpackage
 module Vt_debug_emitv_sub;
@@ -339,7 +301,7 @@ module Vt_debug_emitv_sub;
             disable label0;
         end
     endfunction
-    real signed r;
+    real r;
 endmodule
 package Vt_debug_emitv_p;
     logic pkgvar;
