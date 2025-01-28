@@ -286,8 +286,8 @@ public:
     VNumRange declRange() const VL_MT_STABLE { return VNumRange{hi(), lo()}; }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* classpackagep) { m_classOrPackagep = classpackagep; }
-    bool randomized() {return m_rand;}
-    void randomized(bool rand) {m_rand = rand;}
+    bool randomized() { return m_rand; }
+    void randomized(bool rand) { m_rand = rand; }
 };
 
 // === Concrete node types =====================================================

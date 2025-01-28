@@ -248,11 +248,11 @@ class EmitCHeader final : public EmitCConstInit {
             putns(itemp, itemp->dtypep()->cType(itemp->nameProtect(), false, false));
             puts(";\n");
         }
-        if(sdtypep->randomized()){
+        if (sdtypep->randomized()) {
             putns(sdtypep, "\nstd::vector<std::string> nameList(void) const {\n");
             puts("return {");
             for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-                itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
                 putns(itemp, "\"" + itemp->shortName() + "\"");
                 if (itemp->nextp()) puts(",\n");
             }
@@ -261,7 +261,7 @@ class EmitCHeader final : public EmitCConstInit {
             putns(sdtypep, "\nauto seq(void) const {\n");
             puts("return std::index_sequence_for<");
             for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-                itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
                 putns(itemp, itemp->dtypep()->cType("", false, false));
                 if (itemp->nextp()) puts(",\n");
             }
@@ -271,7 +271,7 @@ class EmitCHeader final : public EmitCConstInit {
             putns(sdtypep, "\nauto getMembers(T& obj) {\n");
             puts("return std::tie(");
             for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-                itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
                 if (itemp != sdtypep->membersp()) puts(", ");
                 putns(itemp, "obj." + itemp->nameProtect());
             }
