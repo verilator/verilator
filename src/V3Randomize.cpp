@@ -716,8 +716,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
         // AstSFormatF* const newp = new AstSFormatF{fl, smtExpr, false, argsp};
-        AstSFormatF* const newp = new AstSFormatF{
-            fl, nodep->fromp()->name() + "." + nodep->name(), false, nullptr};
+        AstSFormatF* const newp
+            = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false, nullptr};
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }

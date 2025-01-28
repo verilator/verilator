@@ -230,7 +230,7 @@ class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     const int m_uniqueNum;
     bool m_packed;
     bool m_isFourstate = false;  // V3Width computes
-    bool m_constrainedRand = false; // True if struct has constraint expression
+    bool m_constrainedRand = false;  // True if struct has constraint expression
 
 protected:
     AstNodeUOrStructDType(VNType t, FileLine* fl, VSigning numericUnpack)
