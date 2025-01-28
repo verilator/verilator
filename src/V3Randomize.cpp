@@ -631,6 +631,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
             if (VN_IS(varp->dtypeSkipRefp(), StructDType)
                 && !VN_AS(varp->dtypeSkipRefp(), StructDType)->packed()) {
+                VN_AS(varp->dtypeSkipRefp(), StructDType)->randomized(true);// mark the struct dtype is randomized;
                 dimension = 1;
             }
             methodp->dtypeSetVoid();
