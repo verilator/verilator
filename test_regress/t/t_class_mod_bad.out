@@ -1,5 +1,7 @@
-%Error: t/t_class_mod_bad.v:21:7: '::' expected to reference a class/package but referenced 'MODULE 'M''
-                                : ... Suggest '.' instead of '::'
+%Error: t/t_class_mod_bad.v:21:7: Package/class for ':: reference' not found: 'M'
+   21 |       M::Cls p;
+      |       ^
+%Error: t/t_class_mod_bad.v:21:7: Package/class for 'class/package reference' not found: 'M'
    21 |       M::Cls p;
       |       ^
 %Error: Exiting due to

@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 `define stop $stop
-`define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
 interface a_if ();
    string s;
@@ -15,15 +15,11 @@ module sub (output string s);
    initial s = $sformatf("%m");
 endmodule
 
-module t
-  (
-   clk
-   );
-   input clk;
+module t;
 
    string str [2:0][1:0];
 
-   a_if iface [2:0][1:0];
+   a_if iface [2:0][1:0] ();
 
    sub i_sub[2:0][1:0] (.s(str));
 

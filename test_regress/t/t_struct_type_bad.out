@@ -1,0 +1,4 @@
+%Error: t/t_struct_type_bad.v:13:7: Expecting a data type: 'i'
+   13 |       i badi;   
+      |       ^
+%Error: Exiting due to

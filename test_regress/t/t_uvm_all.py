@@ -11,12 +11,12 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(v_flags2=[
-    "--binary --timing", "-Wno-PKGNODECL -Wno-IMPLICITSTATIC -Wno-CONSTRAINTIGN -Wno-MISINDENT",
-    "-Wno-WIDTHEXPAND -Wno-WIDTHTRUNC -Wno-CASTCONST -Wno-REALCVT",
-    "--error-limit 200 --debug-exit-uvm"
-],
-             verilator_make_gmake=False)
+test.compile(
+    v_flags2=[
+        "--binary --timing +incdir+t/uvm",  #
+        "--error-limit 200 --debug-exit-uvm"
+    ],
+    verilator_make_gmake=False)
 
 #test.execute()
 

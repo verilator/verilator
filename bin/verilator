@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 ######################################################################
 #
-# Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -69,7 +69,9 @@ if (! GetOptions(
     pod2usage(-exitstatus => 2, -verbose => 0);
 }
 
-my $verilator_root = realpath("$RealBin/..");
+# WARNING: $verilator_pkgdatadir_relpath is substituted during Verilator 'make install'
+my $verilator_pkgdatadir_relpath = "..";
+my $verilator_root = realpath("$RealBin/$verilator_pkgdatadir_relpath");
 if (defined $ENV{VERILATOR_ROOT}) {
     if ((!-d $ENV{VERILATOR_ROOT}) || $verilator_root ne realpath($ENV{VERILATOR_ROOT})) {
         warn "%Error: verilator: VERILATOR_ROOT is set to inconsistent path. Suggest leaving it unset.\n";
@@ -267,8 +269,7 @@ __END__
 
 =head1 NAME
 
-Verilator - Translate and simulate SystemVerilog code using C++/SystemC
-
+Verilator - Lint, compile and simulate SystemVerilog code using C++/SystemC
 
 =head1 SYNOPSIS
 
@@ -405,6 +406,7 @@ detailed descriptions of these arguments.
      -O3                        High-performance optimizations
      -O<optimization-letter>    Selectable optimizations
      -o <executable>            Name of final executable
+    --output-groups <numfiles>  Group .cpp files into larger ones
     --output-split <statements>          Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split model functions
     --output-split-ctrace <statements>   Split tracing functions
@@ -445,7 +447,9 @@ detailed descriptions of these arguments.
     --no-skip-identical         Disable skipping identical output
     --stats                     Create statistics file
     --stats-vars                Provide statistics on variables
-    --no-std                    Prevent parsing standard library
+    --no-std                    Prevent loading standard files
+    --no-std-package            Prevent parsing standard package
+    --no-std-waiver             Prevent parsing standard lint waivers
     --no-stop-fail              Do not call $stop when assertion fails
     --structs-packed            Convert all unpacked structures to packed structures
      -sv                        Enable SystemVerilog parsing
@@ -484,7 +488,8 @@ detailed descriptions of these arguments.
      +verilog2001ext+<ext>      Synonym for +1364-2001ext+<ext>
     --version                   Show program version and exits
     --vpi                       Enable VPI compiles
-    --waiver-output <filename>  Create a waiver file based on the linter warnings
+    --waiver-multiline          Create multiline --match for waivers
+    --waiver-output <filename>  Create a waiver file based on linter warnings
      -Wall                      Enable all style warnings
      -Werror-<message>          Convert warnings to errors
      -Wfuture-<message>         Disable unknown message warnings
@@ -537,7 +542,7 @@ description of these arguments.
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2003-2024 by Wilson Snyder. This program is free software; you can
+Copyright 2003-2025 by Wilson Snyder. This program is free software; you can
 redistribute it and/or modify the Verilator internals under the terms of
 either the GNU Lesser General Public License Version 3 or the Perl Artistic
 License Version 2.0.

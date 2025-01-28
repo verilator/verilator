@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -23,7 +23,7 @@
 // Over each module, from child to parent:
 //   Build a graph, connecting signals together so we can propagate tristates
 //     Variable becomes tristate with
-//       VAR->isInoutish
+//       VAR->isInout
 //       VAR->isPullup/isPulldown (converted to AstPullup/AstPulldown
 //       BufIf0/1
 //   All variables on the LHS need to become tristate when there is:
@@ -487,8 +487,9 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Return the master __en for the specified input variable
         if (!invarp->user1p()) {
             AstVar* const newp
-                = new AstVar{invarp->fileline(), isTop ? VVarType::PORT : VVarType::MODULETEMP,
+                = new AstVar{invarp->fileline(), isTop ? VVarType::VAR : VVarType::MODULETEMP,
                              invarp->name() + "__en", invarp};
+            // Inherited VDirection::INPUT
             UINFO(9, "       newenv " << newp << endl);
             modAddStmtp(invarp, newp);
             invarp->user1p(newp);  // find envar given invarp
@@ -540,8 +541,9 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Return the master __out for the specified input variable
         if (!m_varAux(invarp).outVarp) {
             AstVar* const newp
-                = new AstVar{invarp->fileline(), isTop ? VVarType::PORT : VVarType::MODULETEMP,
+                = new AstVar{invarp->fileline(), isTop ? VVarType::VAR : VVarType::MODULETEMP,
                              invarp->name() + "__out", invarp};
+            // Inherited VDirection::OUTPUT
             UINFO(9, "       newout " << newp << endl);
             modAddStmtp(invarp, newp);
             m_varAux(invarp).outVarp = newp;  // find outvar given invarp
@@ -912,6 +914,51 @@ class TristateVisitor final : public TristateBaseVisitor {
         return (strength0 <= strength && strength1 <= strength)
                || (strength0 <= strength && assignmentOfValueOnAllBits(assignp, 0))
                || (strength1 <= strength && assignmentOfValueOnAllBits(assignp, 1));
+    }
+
+    AstNodeExpr* newMergeExpr(AstNodeExpr* const lhsp, AstNodeExpr* const rhsp, FileLine* const fl,
+                              bool isWor) {
+        AstNodeExpr* expr = nullptr;
+        if (isWor)
+            expr = new AstOr{fl, lhsp, rhsp};
+        else
+            expr = new AstAnd{fl, lhsp, rhsp};
+        return expr;
+    }
+
+    void mergeWiredNetsAssignments() {
+        // Support for WOR/TRIOR/WAND/TRIAND, by merging the Assignments for the
+        // same Net (merge by or for WOR/TIOR and merge by and for WAND/TRIAND).
+        for (auto& varpAssigns : m_assigns) {
+            Assigns& assigns = varpAssigns.second;
+            if (assigns.size() > 1) {
+                AstVar* varp = varpAssigns.first;
+                if (varp->isWiredNet()) {
+                    auto it = assigns.begin();
+                    AstAssignW* const assignWp0 = *it;
+                    FileLine* const fl = assignWp0->fileline();
+                    AstNodeExpr* wExp = nullptr;
+                    while (++it != assigns.end()) {
+                        AstAssignW* assignWpi = *it;
+                        if (!wExp) {
+                            wExp = newMergeExpr(assignWp0->rhsp()->cloneTreePure(false),
+                                                assignWpi->rhsp()->cloneTreePure(false), fl,
+                                                varp->isWor());
+                        } else {
+                            wExp = newMergeExpr(wExp, assignWpi->rhsp()->cloneTreePure(false), fl,
+                                                varp->isWor());
+                        }
+                        VL_DO_DANGLING((assignWpi->unlinkFrBack()->deleteTree()), assignWpi);
+                    }
+                    AstVarRef* const wVarRef = new AstVarRef{fl, varp, VAccess::WRITE};
+                    AstAssignW* const wAssignp = new AstAssignW{fl, wVarRef, wExp};
+                    assignWp0->replaceWith(wAssignp);
+                    VL_DO_DANGLING(pushDeletep(assignWp0), assignWp0);
+                    assigns.clear();
+                    assigns.push_back(wAssignp);
+                }
+            }
+        }
     }
 
     void removeNotStrongerAssignments(Assigns& assigns, AstAssignW* strongestp,
@@ -1365,9 +1412,9 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
     void visitEqNeqWild(AstNodeBiop* nodep) {
-        if (!VN_IS(nodep->rhsp(), Const)) {
-            nodep->v3warn(E_UNSUPPORTED,  // Says spac.
-                          "Unsupported: RHS of ==? or !=? must be constant to be synthesizable");
+        if (!VN_IS(nodep->rhsp(), Const) && nodep->rhsp()->dtypep()->isFourstate()) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: RHS of ==? or !=? is fourstate but not a constant");
             // rhs we want to keep X/Z intact, so otherwise ignore
         }
         iterateAndNextNull(nodep->lhsp());
@@ -1388,7 +1435,6 @@ class TristateVisitor final : public TristateBaseVisitor {
         dropop[1] = VN_IS(nodep->thsp(), Const) && VN_AS(nodep->thsp(), Const)->num().isAnyZ();
         dropop[2] = VN_IS(nodep->fhsp(), Const) && VN_AS(nodep->fhsp(), Const)->num().isAnyZ();
         UINFO(4, " COUNTBITS(" << dropop[0] << dropop[1] << dropop[2] << " " << nodep << endl);
-        const AstVarRef* const varrefp = VN_AS(nodep->lhsp(), VarRef);  // Input variable
         if (m_graphing) {
             iterateAndNextNull(nodep->lhsp());
             if (!dropop[0]) iterateAndNextNull(nodep->rhsp());
@@ -1409,7 +1455,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                 // do so at present, we only compare if there is a z in the equation. Otherwise
                 // we'd need to attach an enable to every signal, then optimize them away later
                 // when we determine the signal has no tristate
-                if (!VN_IS(nodep->lhsp(), VarRef)) {
+                const AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef);  // Input variable
+                if (!varrefp) {
                     nodep->v3warn(E_UNSUPPORTED, "Unsupported LHS tristate construct: "
                                                      << nodep->prettyTypeName());
                     return;
@@ -1734,7 +1781,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 nodep->addNextHere(newp);
                 // We'll iterate on the new AstPull later
             }
-            if (nodep->isInoutish()
+            if (nodep->isInout()
                 //|| varp->isOutput()
                 // Note unconnected output only changes behavior vs. previous
                 // versions and causes outputs that don't come from anywhere to
@@ -1776,6 +1823,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                 iterateChildren(nodep);
                 m_graphing = false;
             }
+            // Merge the assignments for very Wired net LHS : wor, trior, wand and triand
+            mergeWiredNetsAssignments();
             // Remove all assignments not stronger than the strongest uniform constant
             removeAssignmentsNotStrongerThanUniformConstant();
             // Use graph to find tristate signals

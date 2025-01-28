@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2005-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -189,7 +189,7 @@ class AssertVisitor final : public VNVisitor {
         AstNodeStmt* const bodysp = dispp;
         replaceDisplay(dispp, "%%Error");  // Convert to standard DISPLAY format
         if (exprsp) dispp->fmtp()->exprsp()->addNext(exprsp);
-        if (v3Global.opt.stopFail()) bodysp->addNext(new AstStop{nodep->fileline(), true});
+        if (v3Global.opt.stopFail()) bodysp->addNext(new AstStop{nodep->fileline(), false});
         return bodysp;
     }
 
@@ -510,10 +510,8 @@ class AssertVisitor final : public VNVisitor {
     // Don't sample sensitivities
     void visit(AstSenItem* nodep) override {
         VL_RESTORER(m_inSampled);
-        {
-            m_inSampled = false;
-            iterateChildren(nodep);
-        }
+        m_inSampled = false;
+        iterateChildren(nodep);
     }
 
     //========== Statements
@@ -691,12 +689,10 @@ class AssertVisitor final : public VNVisitor {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modPastNum);
         VL_RESTORER(m_modStrobeNum);
-        {
-            m_modp = nodep;
-            m_modPastNum = 0;
-            m_modStrobeNum = 0;
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        m_modPastNum = 0;
+        m_modStrobeNum = 0;
+        iterateChildren(nodep);
     }
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procedurep);
@@ -707,10 +703,8 @@ class AssertVisitor final : public VNVisitor {
         // This code is needed rather than a visitor in V3Begin,
         // because V3Assert is called before V3Begin
         VL_RESTORER(m_beginp);
-        {
-            m_beginp = nodep;
-            iterateChildren(nodep);
-        }
+        m_beginp = nodep;
+        iterateChildren(nodep);
     }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }

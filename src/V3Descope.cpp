@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -208,13 +208,11 @@ class DescopeVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            m_modFuncs.clear();
-            m_modSingleton = modIsSingleton(m_modp);
-            iterateChildren(nodep);
-            makePublicFuncWrappers();
-        }
+        m_modp = nodep;
+        m_modFuncs.clear();
+        m_modSingleton = modIsSingleton(m_modp);
+        iterateChildren(nodep);
+        makePublicFuncWrappers();
     }
     void visit(AstScope* nodep) override {
         m_scopep = nodep;

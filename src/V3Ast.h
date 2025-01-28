@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -786,8 +786,8 @@ public:
     }
     string prettyName() const { return verilogKwd(); }
     bool isAny() const { return m_e != NONE; }
-    // Looks like inout - "ish" because not identical to being an INOUT
-    bool isInoutish() const { return m_e == INOUT; }
+    bool isInout() const { return m_e == INOUT; }
+    bool isInoutOrRef() const { return m_e == INOUT || m_e == REF || m_e == CONSTREF; }
     bool isInput() const { return m_e == INPUT; }
     bool isNonOutput() const {
         return m_e == INPUT || m_e == INOUT || m_e == REF || m_e == CONSTREF;
@@ -899,10 +899,12 @@ public:
         SUPPLY1,
         WIRE,
         WREAL,
+        TRIAND,
+        TRIOR,
         TRIWIRE,
         TRI0,
         TRI1,
-        PORT,  // Used in parser and V3Fork to recognize ports
+        PORT,  // Used in parser to recognize ports
         BLOCKTEMP,
         MODULETEMP,
         STMTTEMP,
@@ -919,20 +921,24 @@ public:
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[]
-            = {"?",          "GPARAM",   "LPARAM",  "GENVAR",   "VAR",   "SUPPLY0", "SUPPLY1",
-               "WIRE",       "WREAL",    "TRIWIRE", "TRI0",     "TRI1",  "PORT",    "BLOCKTEMP",
-               "MODULETEMP", "STMTTEMP", "XTEMP",   "IFACEREF", "MEMBER"};
+            = {"?",    "GPARAM",    "LPARAM",     "GENVAR",   "VAR",     "SUPPLY0",  "SUPPLY1",
+               "WIRE", "WREAL",     "TRIAND",     "TRIOR",    "TRIWIRE", "TRI0",     "TRI1",
+               "PORT", "BLOCKTEMP", "MODULETEMP", "STMTTEMP", "XTEMP",   "IFACEREF", "MEMBER"};
         return names[m_e];
     }
     bool isParam() const { return m_e == GPARAM || m_e == LPARAM; }
     bool isSignal() const {
         return (m_e == WIRE || m_e == WREAL || m_e == TRIWIRE || m_e == TRI0 || m_e == TRI1
-                || m_e == PORT || m_e == SUPPLY0 || m_e == SUPPLY1 || m_e == VAR);
+                || m_e == PORT || m_e == SUPPLY0 || m_e == SUPPLY1 || m_e == VAR || m_e == TRIOR
+                || m_e == TRIAND);
     }
     bool isNet() const {
         return (m_e == WIRE || m_e == TRIWIRE || m_e == TRI0 || m_e == TRI1 || m_e == SUPPLY0
-                || m_e == SUPPLY1);
+                || m_e == SUPPLY1 || m_e == TRIOR || m_e == TRIAND);
     }
+    bool isWor() const { return (m_e == TRIOR); }
+    bool isWand() const { return (m_e == TRIAND); }
+    bool isWiredNet() const { return (m_e == TRIOR || m_e == TRIAND); }
     bool isContAssignable() const {  // In Verilog, always ok in SystemVerilog
         return (m_e == SUPPLY0 || m_e == SUPPLY1 || m_e == WIRE || m_e == WREAL || m_e == TRIWIRE
                 || m_e == TRI0 || m_e == TRI1 || m_e == PORT || m_e == BLOCKTEMP
@@ -963,6 +969,8 @@ public:
             /* SUPPLY1:      */ "SUPPLY1",
             /* WIRE:         */ "WIRE",
             /* WREAL:        */ "WIRE",
+            /* TRIAND:       */ "TRIAND",
+            /* TRIOR:        */ "TRIOR",
             /* TRIWIRE:      */ "TRI",
             /* TRI0:         */ "TRI0",
             /* TRI1:         */ "TRI1",
@@ -1737,7 +1745,7 @@ public:
     explicit VNUser(void* p) { m_u.up = p; }
     ~VNUser() = default;
     // Casters
-    template <class T>
+    template <typename T>
     typename std::enable_if<std::is_pointer<T>::value, T>::type to() const VL_MT_SAFE {
         return reinterpret_cast<T>(m_u.up);
     }
@@ -2069,6 +2077,7 @@ private:
     string instanceStr() const;
 
 public:
+    void purityCheck();
     static void relinkOneLink(AstNode*& pointpr, AstNode* newp);
     // cppcheck-suppress functionConst
     static void debugTreeChange(const AstNode* nodep, const char* prefix, int lineno, bool next);
@@ -2114,7 +2123,7 @@ protected:
     }
 
     // Use instead isSame(), this is for each Ast* class, and assumes node is of same type
-    virtual bool same(const AstNode*) const { return true; }
+    virtual bool sameNode(const AstNode*) const { return true; }
 
 public:
     // ACCESSORS
@@ -2362,8 +2371,9 @@ public:
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicRangeDType(const VNumRange& range, int widthMin,
-                                      VSigning numeric) const;
-    AstNodeDType* findBitRangeDType(const VNumRange& range, int widthMin, VSigning numeric) const;
+                                      VSigning numeric) const VL_MT_STABLE;
+    AstNodeDType* findBitRangeDType(const VNumRange& range, int widthMin,
+                                    VSigning numeric) const VL_MT_STABLE;
     AstNodeDType* findBasicDType(VBasicDTypeKwd kwd) const;
     static AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
@@ -2493,7 +2503,7 @@ public:
     virtual int instrCount() const { return 0; }
     // Iff node is identical to another node
     virtual bool isSame(const AstNode* samep) const {
-        return type() == samep->type() && same(samep);
+        return type() == samep->type() && sameNode(samep);
     }
     // Iff has a data type; dtype() must be non null
     virtual bool hasDType() const VL_MT_SAFE { return false; }
@@ -2544,21 +2554,21 @@ protected:
     inline static bool privateTypeTest(const AstNode* nodep);
 
     // For internal use only.
-    template <typename TargetType, typename DeclType>
+    template <typename T_TargetType, typename T_DeclType>
     constexpr static bool uselessCast() VL_PURE {
-        using NonRef = typename std::remove_reference<DeclType>::type;
+        using NonRef = typename std::remove_reference<T_DeclType>::type;
         using NonPtr = typename std::remove_pointer<NonRef>::type;
         using NonCV = typename std::remove_cv<NonPtr>::type;
-        return std::is_base_of<TargetType, NonCV>::value;
+        return std::is_base_of<T_TargetType, NonCV>::value;
     }
 
     // For internal use only.
-    template <typename TargetType, typename DeclType>
+    template <typename T_TargetType, typename T_DeclType>
     constexpr static bool impossibleCast() VL_PURE {
-        using NonRef = typename std::remove_reference<DeclType>::type;
+        using NonRef = typename std::remove_reference<T_DeclType>::type;
         using NonPtr = typename std::remove_pointer<NonRef>::type;
         using NonCV = typename std::remove_cv<NonPtr>::type;
-        return !std::is_base_of<NonCV, TargetType>::value;
+        return !std::is_base_of<NonCV, T_TargetType>::value;
     }
 
 public:
@@ -2646,12 +2656,12 @@ private:
     using ConstCorrectAstNode =
         typename std::conditional<std::is_const<T_Arg>::value, const AstNode, AstNode>::type;
 
-    template <typename T_Arg, typename Callable>
-    inline static void foreachImpl(ConstCorrectAstNode<T_Arg>* nodep, const Callable& f,
+    template <typename T_Arg, typename T_Callable>
+    inline static void foreachImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable& f,
                                    bool visitNext);
 
-    template <typename T_Arg, bool Default, typename Callable>
-    inline static bool predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const Callable& p);
+    template <typename T_Arg, bool N_Default, typename T_Callable>
+    inline static bool predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable& p);
 
 public:
     // Given a callable 'f' that takes a single argument of some AstNode subtype 'T_Node', traverse
@@ -2661,46 +2671,48 @@ public:
     // handle a single (or a few) node types, as it's easier to write, but more importantly, the
     // dispatch to the callable in 'foreach' should be completely predictable by branch target
     // caches in modern CPUs, while it is basically unpredictable for VNVisitor.
-    template <typename Callable>
-    void foreach(Callable&& f) {
-        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
-        static_assert(vlstd::is_invocable<Callable, T_Node*>::value
+    template <typename T_Callable>
+    void foreach(T_Callable&& f) {
+        using T_Node = typename FunctionArgNoPointerNoCV<T_Callable, 0>::type;
+        static_assert(vlstd::is_invocable<T_Callable, T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
-                      "Callable 'f' must have a signature compatible with 'void(T_Node*)', "
+                      "T_Callable 'f' must have a signature compatible with 'void(T_Node*)', "
                       "with 'T_Node' being a subtype of 'AstNode'");
         foreachImpl<T_Node>(this, f, /* visitNext: */ false);
     }
 
     // Same as above, but for 'const' nodes
-    template <typename Callable>
-    void foreach(Callable&& f) const {
-        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
-        static_assert(vlstd::is_invocable<Callable, const T_Node*>::value
-                          && std::is_base_of<AstNode, T_Node>::value,
-                      "Callable 'f' must have a signature compatible with 'void(const T_Node*)', "
-                      "with 'T_Node' being a subtype of 'AstNode'");
+    template <typename T_Callable>
+    void foreach(T_Callable&& f) const {
+        using T_Node = typename FunctionArgNoPointerNoCV<T_Callable, 0>::type;
+        static_assert(
+            vlstd::is_invocable<T_Callable, const T_Node*>::value
+                && std::is_base_of<AstNode, T_Node>::value,
+            "T_Callable 'f' must have a signature compatible with 'void(const T_Node*)', "
+            "with 'T_Node' being a subtype of 'AstNode'");
         foreachImpl<const T_Node>(this, f, /* visitNext: */ false);
     }
 
     // Same as 'foreach' but also traverses 'this->nextp()' transitively
-    template <typename Callable>
-    void foreachAndNext(Callable&& f) {
-        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
-        static_assert(vlstd::is_invocable<Callable, T_Node*>::value
+    template <typename T_Callable>
+    void foreachAndNext(T_Callable&& f) {
+        using T_Node = typename FunctionArgNoPointerNoCV<T_Callable, 0>::type;
+        static_assert(vlstd::is_invocable<T_Callable, T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
-                      "Callable 'f' must have a signature compatible with 'void(T_Node*)', "
+                      "T_Callable 'f' must have a signature compatible with 'void(T_Node*)', "
                       "with 'T_Node' being a subtype of 'AstNode'");
         foreachImpl<T_Node>(this, f, /* visitNext: */ true);
     }
 
     // Same as above, but for 'const' nodes
-    template <typename Callable>
-    void foreachAndNext(Callable&& f) const {
-        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
-        static_assert(vlstd::is_invocable<Callable, const T_Node*>::value
-                          && std::is_base_of<AstNode, T_Node>::value,
-                      "Callable 'f' must have a signature compatible with 'void(const T_Node*)', "
-                      "with 'T_Node' being a subtype of 'AstNode'");
+    template <typename T_Callable>
+    void foreachAndNext(T_Callable&& f) const {
+        using T_Node = typename FunctionArgNoPointerNoCV<T_Callable, 0>::type;
+        static_assert(
+            vlstd::is_invocable<T_Callable, const T_Node*>::value
+                && std::is_base_of<AstNode, T_Node>::value,
+            "T_Callable 'f' must have a signature compatible with 'void(const T_Node*)', "
+            "with 'T_Node' being a subtype of 'AstNode'");
         foreachImpl<const T_Node>(this, f, /* visitNext: */ true);
     }
 
@@ -2709,50 +2721,50 @@ public:
     // that satisfies the predicate 'p'. Returns false if no node of type 'T_Node' is present.
     // Traversal is performed in some arbitrary order and is terminated as soon as the result can
     // be determined.
-    template <typename Callable>
-    bool exists(Callable&& p) {
-        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
-        static_assert(vlstd::is_invocable_r<bool, Callable, T_Node*>::value
+    template <typename T_Callable>
+    bool exists(T_Callable&& p) {
+        using T_Node = typename FunctionArgNoPointerNoCV<T_Callable, 0>::type;
+        static_assert(vlstd::is_invocable_r<bool, T_Callable, T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Predicate 'p' must have a signature compatible with 'bool(T_Node*)', "
                       "with 'T_Node' being a subtype of 'AstNode'");
-        return predicateImpl<T_Node, /* Default: */ false>(this, p);
+        return predicateImpl<T_Node, /* N_Default: */ false>(this, p);
     }
 
     // Same as above, but for 'const' nodes
-    template <typename Callable>
-    bool exists(Callable&& p) const {
-        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
-        static_assert(vlstd::is_invocable_r<bool, Callable, const T_Node*>::value
+    template <typename T_Callable>
+    bool exists(T_Callable&& p) const {
+        using T_Node = typename FunctionArgNoPointerNoCV<T_Callable, 0>::type;
+        static_assert(vlstd::is_invocable_r<bool, T_Callable, const T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Predicate 'p' must have a signature compatible with 'bool(const T_Node*)', "
                       "with 'T_Node' being a subtype of 'AstNode'");
-        return predicateImpl<const T_Node, /* Default: */ false>(this, p);
+        return predicateImpl<const T_Node, /* N_Default: */ false>(this, p);
     }
 
     // Given a predicate 'p' that takes a single argument of some AstNode subtype 'T_Node', return
     // true if and only if all nodes of type 'T_Node' in the tree rooted at this node satisfy the
     // predicate 'p'. Returns true if no node of type 'T_Node' is present. Traversal is performed
     // in some arbitrary order and is terminated as soon as the result can be determined.
-    template <typename Callable>
-    bool forall(Callable&& p) {
-        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
-        static_assert(vlstd::is_invocable_r<bool, Callable, T_Node*>::value
+    template <typename T_Callable>
+    bool forall(T_Callable&& p) {
+        using T_Node = typename FunctionArgNoPointerNoCV<T_Callable, 0>::type;
+        static_assert(vlstd::is_invocable_r<bool, T_Callable, T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Predicate 'p' must have a signature compatible with 'bool(T_Node*)', "
                       "with 'T_Node' being a subtype of 'AstNode'");
-        return predicateImpl<T_Node, /* Default: */ true>(this, p);
+        return predicateImpl<T_Node, /* N_Default: */ true>(this, p);
     }
 
     // Same as above, but for 'const' nodes
-    template <typename Callable>
-    bool forall(Callable&& p) const {
-        using T_Node = typename FunctionArgNoPointerNoCV<Callable, 0>::type;
-        static_assert(vlstd::is_invocable_r<bool, Callable, const T_Node*>::value
+    template <typename T_Callable>
+    bool forall(T_Callable&& p) const {
+        using T_Node = typename FunctionArgNoPointerNoCV<T_Callable, 0>::type;
+        static_assert(vlstd::is_invocable_r<bool, T_Callable, const T_Node*>::value
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Predicate 'p' must have a signature compatible with 'bool(const T_Node*)', "
                       "with 'T_Node' being a subtype of 'AstNode'");
-        return predicateImpl<const T_Node, /* Default: */ true>(this, p);
+        return predicateImpl<const T_Node, /* N_Default: */ true>(this, p);
     }
 
     int nodeCount() const {
@@ -2825,8 +2837,8 @@ constexpr bool AstNode::isLeaf<AstVarXRef>() {
 }
 
 // foreach implementation
-template <typename T_Arg, typename Callable>
-void AstNode::foreachImpl(ConstCorrectAstNode<T_Arg>* nodep, const Callable& f, bool visitNext) {
+template <typename T_Arg, typename T_Callable>
+void AstNode::foreachImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable& f, bool visitNext) {
     // Pre-order traversal implemented directly (without recursion) for speed reasons. The very
     // first iteration (the one that operates on the input nodep) is special, as we might or
     // might not need to enqueue nodep->nextp() depending on VisitNext, while in all other
@@ -2906,8 +2918,8 @@ void AstNode::foreachImpl(ConstCorrectAstNode<T_Arg>* nodep, const Callable& f, 
 }
 
 // predicate implementation
-template <typename T_Arg, bool Default, typename Callable>
-bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const Callable& p) {
+template <typename T_Arg, bool N_Default, typename T_Callable>
+bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable& p) {
     // Implementation similar to foreach, but abort traversal as soon as result is determined
     using T_Arg_NonConst = typename std::remove_const<T_Arg>::type;
     using Node = ConstCorrectAstNode<T_Arg>;
@@ -2942,7 +2954,7 @@ bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const Callable& p
         // Type test this node
         if (AstNode::privateTypeTest<T_Arg_NonConst>(currp)) {
             // Call the client function
-            if (p(static_cast<T_Arg*>(currp)) != Default) return true;
+            if (p(static_cast<T_Arg*>(currp)) != N_Default) return true;
             // Short circuit if iterating leaf nodes
             if VL_CONSTEXPR_CXX17 (isLeaf<T_Arg_NonConst>()) return false;
         }
@@ -2959,7 +2971,7 @@ bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const Callable& p
     };
 
     // Visit the root node
-    if (visit(nodep)) return !Default;
+    if (visit(nodep)) return !N_Default;
 
     // Visit the rest of the tree
     while (VL_LIKELY(topp > basep)) {
@@ -2976,15 +2988,17 @@ bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const Callable& p
         if (headp->nextp()) *topp++ = headp->nextp();
 
         // Visit the head node
-        if (visit(headp)) return !Default;
+        if (visit(headp)) return !N_Default;
     }
 
-    return Default;
+    return N_Default;
 }
 
 inline std::ostream& operator<<(std::ostream& os, const AstNode* rhs) {
-    if (!rhs) {
-        os << "nullptr";
+    if (!rhs) {  // LCOV_EXCL_LINE
+        os << "nullptr";  // LCOV_EXCL_LINE
+    } else if (VN_DELETED(rhs)) {  // LCOV_EXCL_LINE
+        os << "%E-0x1/deleted!";  // LCOV_EXCL_LINE
     } else {
         rhs->dump(os);
     }

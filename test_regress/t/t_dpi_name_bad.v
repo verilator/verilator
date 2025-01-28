@@ -8,8 +8,10 @@
 
 module t ();
 
-   // Can't handle logic (yet?)
    import "DPI-C" function int \badly.named (int i);
+
+   export "DPI-C" function \badly.expt ;
+   function int \badly.expt ; return 0; endfunction
 
    initial begin
       $stop;

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -62,7 +62,8 @@ class DeadVisitor final : public VNVisitor {
     const bool m_elimCells;  // Allow removal of Cells
     // List of all encountered to avoid another loop through tree
     std::vector<AstVar*> m_varsp;
-    std::vector<AstNode*> m_dtypesp;
+    std::vector<AstNode*> m_dtypeElimsp;  // Data types might eliminate
+    std::map<AstNodeDType*, AstNodeModule*> m_dtypePkgsp;  // Data type's containing package
     std::vector<AstVarScope*> m_vscsp;
     std::vector<AstScope*> m_scopesp;
     std::vector<AstCell*> m_cellsp;
@@ -73,6 +74,7 @@ class DeadVisitor final : public VNVisitor {
 
     // STATE - for current visit position (use VL_RESTORER)
     bool m_inAssign = false;  // Currently in an assign
+    AstNodeDType* m_curDTypep = nullptr;  // Current NodeDType
     AstNodeModule* m_modp = nullptr;  // Current module
     AstSelLoopVars* m_selloopvarsp = nullptr;  // Current loop vars
 
@@ -84,8 +86,11 @@ class DeadVisitor final : public VNVisitor {
     }
 
     void checkAll(AstNode* nodep) {
-        if (nodep != nodep->dtypep()) {  // NodeDTypes reference themselves
-            if (AstNode* const subnodep = nodep->dtypep()) subnodep->user1Inc();
+        if (AstNode* const subnodep = nodep->dtypep()) {
+            if (nodep != subnodep  // Not NodeDTypes reference themselves
+                && m_curDTypep != subnodep) {  // Not EnumItem referencing parent Enum
+                subnodep->user1Inc();
+            }
         }
         if (AstNode* const subnodep = nodep->getChildDTypep()) subnodep->user1Inc();
     }
@@ -98,8 +103,9 @@ class DeadVisitor final : public VNVisitor {
             && !VN_IS(nodep, MemberDType)  // Keep member names iff upper type exists
             && !nodep->undead()  // VoidDType or something Netlist points to
         ) {
-            m_dtypesp.push_back(nodep);
+            m_dtypeElimsp.push_back(nodep);
         }
+        if (VN_IS(m_modp, Package) || VN_IS(m_modp, Class)) m_dtypePkgsp.emplace(nodep, m_modp);
         if (AstNode* const subnodep = nodep->virtRefDTypep()) subnodep->user1Inc();
         if (AstNode* const subnodep = nodep->virtRefDType2p()) subnodep->user1Inc();
     }
@@ -109,16 +115,16 @@ class DeadVisitor final : public VNVisitor {
         if (m_modp) m_modp->user1Inc();  // e.g. Class under Package
         VL_RESTORER(m_modp);
         m_modp = nodep;
-        if (!nodep->dead()) {
-            iterateChildren(nodep);
-            checkAll(nodep);
-            if (AstClass* const classp = VN_CAST(nodep, Class)) {
-                if (classp->extendsp()) classp->extendsp()->user1Inc();
-                if (classp->classOrPackagep()) classp->classOrPackagep()->user1Inc();
-                m_classesp.push_back(classp);
-                // TODO we don't reclaim dead classes yet - graph implementation instead?
-                classp->user1Inc();
-            }
+        if (nodep->dead()) return;
+        if (nodep->modPublic()) m_modp->user1Inc();
+        iterateChildren(nodep);
+        checkAll(nodep);
+        if (AstClass* const classp = VN_CAST(nodep, Class)) {
+            if (classp->extendsp()) classp->extendsp()->user1Inc();
+            if (classp->classOrPackagep()) classp->classOrPackagep()->user1Inc();
+            m_classesp.push_back(classp);
+            // TODO we don't reclaim dead classes yet - graph implementation instead?
+            classp->user1Inc();
         }
     }
     void visit(AstCFunc* nodep) override {
@@ -212,6 +218,8 @@ class DeadVisitor final : public VNVisitor {
         if (nodep->ifaceViaCellp()) nodep->ifaceViaCellp()->user1Inc();
     }
     void visit(AstNodeDType* nodep) override {
+        VL_RESTORER(m_curDTypep);
+        m_curDTypep = nodep;
         iterateChildren(nodep);
         checkDType(nodep);
         checkAll(nodep);
@@ -442,7 +450,8 @@ class DeadVisitor final : public VNVisitor {
                 }
             }
         }
-        for (std::vector<AstNode*>::iterator it = m_dtypesp.begin(); it != m_dtypesp.end(); ++it) {
+        for (std::vector<AstNode*>::iterator it = m_dtypeElimsp.begin(); it != m_dtypeElimsp.end();
+             ++it) {
             if ((*it)->user1() == 0) {
                 // It's possible that there if a reference to each individual member, but
                 // not to the dtype itself.  Check and don't remove the parent dtype if
@@ -517,6 +526,11 @@ public:
             vscp->varp()->user1Inc();
         }
 
+        // If data type has a reference in another package, then keep defining package around
+        for (auto& itr : m_dtypePkgsp) {
+            if (itr.first->user1()) itr.second->user1Inc();
+        }
+
         deadCheckTypedefs();
         deadCheckVar();
         // We only eliminate scopes when in a flattened structure
@@ -540,7 +554,7 @@ public:
 
 void V3Dead::deadifyModules(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    {
+    {  // node, elimUserVars, elimDTypes, elimScopes, elimCells, elimTopIfaces
         DeadVisitor{nodep, false, false, false, false, !v3Global.opt.topIfacesSupported()};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadModules", 0, dumpTreeEitherLevel() >= 6);

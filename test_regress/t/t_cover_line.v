@@ -43,6 +43,10 @@ module t (/*AUTOARG*/
              // Inputs
              .clk                       (clk),
              .toggle                    (toggle));
+   tab tab1 (/*AUTOINST*/
+             // Inputs
+             .clk                       (clk));
+   par par1 (/*AUTOINST*/);
 
    always @ (posedge clk) begin
       if (cyc!=0) begin
@@ -130,11 +134,11 @@ module alpha (/*AUTOARG*/
    input clk;
    input toggle;
    always @ (posedge clk) begin
-      if (toggle) begin  // CHECK_COVER(0,"top.t.a*",2)
+      if (toggle) begin  // CHECK_COVER(0,"top.t.a*",18)
          $write("");
          // t.a1 and t.a2 collapse to a count of 2
       end
-      if (toggle) begin
+      if (toggle) begin  // *** t_cover_line.vlt turns this off
          $write("");  // CHECK_COVER_MISSING(0)
          // This doesn't even get added
 `ifdef ATTRIBUTE
@@ -168,7 +172,7 @@ module beta (/*AUTOARG*/
 `ifdef ATTRIBUTE
          // verilator coverage_block_off
 `endif
-         begin end  // Needed for .vlt to attach coverage_block_off
+         begin end  // *** t_cover_line.vlt turns this off (so need begin/end)
          if (1) begin end  // CHECK_COVER_MISSING(0)
          $write("");  // CHECK_COVER_MISSING(0)
       end
@@ -189,7 +193,7 @@ class Cls;
       end
    endfunction
    function void fauto();
-      if (m_toggle) begin  // CHECK_COVER(0,"top.$unit::Cls",1)
+      if (m_toggle) begin  // CHECK_COVER(0,"top.$unit::Cls",11)
          $write("");
       end
    endfunction
@@ -224,7 +228,6 @@ module tsk (/*AUTOARG*/
          Cls::fstatic(1'b1);
       end
    endtask
-
 endmodule
 
 module off (/*AUTOARG*/
@@ -249,5 +252,42 @@ module off (/*AUTOARG*/
          if (0) ;  // CHECK_COVER(0,"top.t.o1",1)
       end
    end
+endmodule
+
+module tab (input clk);
+   bit [3:0] cyc4;
+   int decoded;
+
+   always @ (posedge clk) begin
+      case (cyc4)
+        1: decoded = 10;
+        2: decoded = 20;
+        3: decoded = 30;
+        4: decoded = 40;
+        5: decoded = 50;
+        default: decoded = 0;
+      endcase
+   end
+
+   always @ (posedge clk) begin
+      cyc4 <= cyc4 + 1;
+   end
+endmodule
+
+module par();
+   localparam int CALLS_FUNC = param_func(1);
+
+   // We don't currently count elaboration time use towards coverage.  This
+   // seems safer for functions used both at elaboration time and not - but may
+   // revisit this.
+   function automatic int param_func(int i);
+      if (i == 0) begin
+         i = 99; // Uncovered
+      end
+      else begin
+         i = i + 1;
+      end
+      return i;
+   endfunction
 
 endmodule

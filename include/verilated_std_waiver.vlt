@@ -1,0 +1,64 @@
+// DESCRIPTION: Verilator: built-in standard lint waivers
+//
+// Code available from: https://verilator.org
+//
+//*************************************************************************
+//
+// Copyright 2022-2025 by Wilson Snyder. This program is free software; you can
+// redistribute it and/or modify it under the terms of either the GNU Lesser
+// General Public License Version 3 or the Perl Artistic License Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+//
+//*************************************************************************
+///
+/// \file
+/// \brief Verilated built-in standard lint waivers
+///
+/// This file is included automatically by Verilator, unless '--no-std-waiver'
+/// is used.
+///
+/// To assist in building new rules, use:
+///      'verilator --waiver-multiline --waiver-output <filename>'
+///
+//*************************************************************************
+
+`ifndef _VERILATED_STD_WAIVER_VLT_
+`define _VERILATED_STD_WAIVER_VLT_
+
+`verilator_config
+
+//=========================================================================
+// UVM
+
+// Apply these rules to only UVM base files
+`define VLT_UVM_FILES -file "*/uvm_*.svh" -contents "*UVM_VERSION_STRING*"
+
+// Whole-package file waivers
+lint_off -rule DECLFILENAME `VLT_UVM_FILES
+lint_off -rule VARHIDDEN `VLT_UVM_FILES
+lint_off -rule WIDTHEXPAND `VLT_UVM_FILES
+lint_off -rule WIDTHTRUNC `VLT_UVM_FILES
+
+// Context-sensitive waivers
+lint_off -rule CASEINCOMPLETE `VLT_UVM_FILES -match "* case ({is_R, is_W})*"
+lint_off -rule CASEINCOMPLETE `VLT_UVM_FILES -match "* case(orig_severity)*"
+lint_off -rule CASTCONST `VLT_UVM_FILES -match "*class{}uvm_callback*"
+lint_off -rule CASTCONST `VLT_UVM_FILES -match "*class{}uvm_component*"
+lint_off -rule CASTCONST `VLT_UVM_FILES -match "*class{}uvm_event*"
+lint_off -rule CASTCONST `VLT_UVM_FILES -match "*class{}uvm_report_object*"
+lint_off -rule CASTCONST `VLT_UVM_FILES -match "*class{}uvm_sequence_item*"
+lint_off -rule MISINDENT `VLT_UVM_FILES -match "* foreach (abstractions[i])*"
+lint_off -rule MISINDENT `VLT_UVM_FILES -match "* foreach (lock_list[i])*"
+lint_off -rule MISINDENT `VLT_UVM_FILES -match "* rw_access.data=*"
+lint_off -rule MISINDENT `VLT_UVM_FILES -match "* uvm_cmdline_proc =*"
+lint_off -rule REALCVT `VLT_UVM_FILES -match "* m_time *"
+lint_off -rule REALCVT `VLT_UVM_FILES -match "*$realtime*"
+lint_off -rule SYMRSVDWORD `VLT_UVM_FILES -match "*'delete'*"
+lint_off -rule SYMRSVDWORD `VLT_UVM_FILES -match "*'list'*"
+lint_off -rule SYMRSVDWORD `VLT_UVM_FILES -match "*'map'*"
+lint_off -rule SYMRSVDWORD `VLT_UVM_FILES -match "*'override'*"
+lint_off -rule SYMRSVDWORD `VLT_UVM_FILES -match "*'volatile'*"
+
+//=========================================================================
+`undef VLT_UVM_FILES
+`endif  // Guard

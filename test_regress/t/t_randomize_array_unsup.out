@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_randomize_array_unsup.v:28:8: Unsupported: CreateArrayForeachLoop currently does not support this data type. (Struct-Array unconstrained randomization is not fully supported)
+   28 |   rand simple_struct_t struct_array_2[];   
+      |        ^~~~~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_randomize_array_unsup.v:29:8: Unsupported: CreateArrayForeachLoop currently does not support this data type. (Struct-Array unconstrained randomization is not fully supported)
+   29 |   rand simple_struct_t struct_array_1[3];  
+      |        ^~~~~~~~~~~~~~~
+%Error: Exiting due to

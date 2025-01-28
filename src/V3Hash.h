@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -57,13 +57,13 @@ public:
     bool operator<(const V3Hash& rh) const { return m_value < rh.m_value; }
 
     // '+' combines hashes
-    template <class T>
+    template <typename T>
     V3Hash operator+(T that) const {
         return V3Hash{combine(m_value, V3Hash{that}.m_value)};
     }
 
     // '+=' combines in place
-    template <class T>
+    template <typename T>
     V3Hash& operator+=(T that) {
         return *this = *this + that;
     }

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -78,8 +78,7 @@ private:
     // Cleared on each always/assignw
     const VNUser1InUse m_inuser1;
 
-    // AstVar/AstVarScope::user1p()     -> See AuxAstVar via m_varAux
-    // AstConst::user1()    -> bool. This AstConst (allocated by this class) is in use
+    // AstNode::user1p()     -> See AuxAstVar via m_varAux
 
     enum VarUsage : uint8_t { VU_NONE = 0, VU_LV = 1, VU_RV = 2, VU_LVDLY = 4 };
 
@@ -96,6 +95,32 @@ private:
 
     AstUser1Allocator<AstNode, AuxVariable> m_varAux;
 
+    // We want to re-use allocated constants across calls to clear(), but we want to be able
+    // to 'clear()' fast, so we use a generation number based allocator.
+    struct ConstAllocator final {
+        size_t m_generation = 0;
+        size_t m_nextFree = 0;
+        std::deque<AstConst*> m_constps;
+        AstConst* allocate(size_t currentGeneration, AstNode* nodep) {
+            if (m_generation != currentGeneration) {
+                m_generation = currentGeneration;
+                m_nextFree = 0;
+            }
+            UASSERT_OBJ(m_nextFree <= m_constps.size(), nodep, "Should only allocate at end");
+            if (m_nextFree == m_constps.size()) {
+                m_constps.push_back(
+                    new AstConst{nodep->fileline(), AstConst::DTyped{}, nodep->dtypep()});
+            }
+            AstConst* const constp = m_constps[m_nextFree++];
+            constp->num().nodep(nodep);
+            return constp;
+        }
+
+        ~ConstAllocator() {
+            for (AstConst* const constp : m_constps) VL_DO_DANGLING(delete constp, constp);
+        }
+    };
+
     // STATE
     // Major mode
     bool m_checkOnly;  ///< Checking only (no simulation) mode
@@ -108,12 +133,14 @@ private:
     bool m_anyAssignComb;  ///< True if found a non-delayed assignment
     bool m_inDlyAssign;  ///< Under delayed assignment
     bool m_isImpure;  // Not pure
+    bool m_isCoverage;  // Has coverage
     int m_instrCount;  ///< Number of nodes
     int m_dataCount;  ///< Bytes of data
     AstJumpGo* m_jumpp = nullptr;  ///< Jump label we're branching from
     // Simulating:
-    std::unordered_map<const AstNodeDType*, std::deque<AstConst*>>
-        m_constps;  ///< Lists of all AstConst* allocated per dtype
+    // Allocators for constants of various data types
+    std::unordered_map<const AstNodeDType*, ConstAllocator> m_constps;
+    size_t m_constGeneration = 0;
     std::vector<SimStackNode*> m_callStack;  ///< Call stack for verbose error messages
 
     // Cleanup
@@ -215,49 +242,22 @@ public:
 
     bool isAssignDly() const { return m_anyAssignDly; }
     bool isImpure() const { return m_isImpure; }
+    bool isCoverage() const { return m_isCoverage; }
     int instrCount() const { return m_instrCount; }
     int dataCount() const { return m_dataCount; }
 
     // Simulation METHODS
 private:
     AstConst* allocConst(AstNode* nodep) {
-        // Save time - kept a list of allocated but unused values
-        // It would be more efficient to do this by size, but the extra accounting
-        // slows things down more than we gain.
-        AstConst* constp;
-        // Grab free list corresponding to this dtype
-        std::deque<AstConst*>& freeList = m_constps[nodep->dtypep()];
-        bool allocNewConst = true;
-        if (!freeList.empty()) {
-            constp = freeList.front();
-            if (!constp->user1()) {
-                // Front of free list is free, reuse it (otherwise allocate new node)
-                allocNewConst = false;  // No need to allocate
-                // Mark the AstConst node as used, and move it to the back of the free list. This
-                // ensures that when all AstConst instances within the list are used, then the
-                // front of the list will be marked as used, in which case the enclosing 'if' will
-                // fail and we fall back to allocation.
-                constp->user1(1);
-                freeList.pop_front();
-                freeList.push_back(constp);
-                // configure const
-                constp->num().nodep(nodep);
-            }
-        }
-        if (allocNewConst) {
-            // Need to allocate new constant
-            constp = new AstConst{nodep->fileline(), AstConst::DTyped{}, nodep->dtypep()};
-            // Mark as in use, add to free list for later reuse
-            constp->user1(1);
-            freeList.push_back(constp);
-        }
-        return constp;
+        // Allocate a constant with this dtype. Reuse them across a 'clear()' call for efficiency.
+        return m_constps[nodep->dtypep()].allocate(m_constGeneration, nodep);
     }
 
 public:
     void newValue(AstNode* nodep, const AstNodeExpr* valuep) {
         if (const AstConst* const constp = VN_CAST(valuep, Const)) {
             newConst(nodep)->num().opAssign(constp->num());
+            UINFO(9, "     new val " << valuep->name() << " on " << nodep << endl);
         } else if (fetchValueNull(nodep) != valuep) {
             // const_cast, as clonep() is set on valuep, but nothing should care
             setValue(nodep, newTrackedClone(const_cast<AstNodeExpr*>(valuep)));
@@ -266,6 +266,7 @@ public:
     void newOutValue(AstNode* nodep, const AstNodeExpr* valuep) {
         if (const AstConst* const constp = VN_CAST(valuep, Const)) {
             newOutConst(nodep)->num().opAssign(constp->num());
+            UINFO(9, "     new oval " << valuep->name() << " on " << nodep << endl);
         } else if (fetchOutValueNull(nodep) != valuep) {
             // const_cast, as clonep() is set on valuep, but nothing should care
             setOutValue(nodep, newTrackedClone(const_cast<AstNodeExpr*>(valuep)));
@@ -282,7 +283,7 @@ private:
         // Set a constant value for this node
         if (!VN_IS(m_varAux(nodep).valuep, Const)) {
             AstConst* const constp = allocConst(nodep);
-            setValue(nodep, constp);
+            m_varAux(nodep).valuep = constp;
             return constp;
         } else {
             return fetchConst(nodep);
@@ -292,7 +293,7 @@ private:
         // Set a var-output constant value for this node
         if (!VN_IS(m_varAux(nodep).outValuep, Const)) {
             AstConst* const constp = allocConst(nodep);
-            setOutValue(nodep, constp);
+            m_varAux(nodep).outValuep = constp;
             return constp;
         } else {
             return fetchOutConst(nodep);
@@ -594,9 +595,18 @@ private:
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
         if (!m_checkOnly && optimizable()) {
+            AstConst* const valuep = newConst(nodep);
             nodep->numberOperate(newConst(nodep)->num(), fetchConst(nodep->lhsp())->num(),
                                  fetchConst(nodep->rhsp())->num(),
                                  fetchConst(nodep->thsp())->num());
+            // See #5490. 'numberOperate' on partially out of range select yields 'x' bits,
+            // but in reality it would yield '0's without V3Table, so force 'x' bits to '0',
+            // to ensure the result is the same with and without V3Table.
+            if (!m_params && VN_IS(nodep, Sel) && valuep->num().isAnyX()) {
+                V3Number num{valuep, valuep->width()};
+                num.opAssign(valuep->num());
+                valuep->num().opBitsOne(num);
+            }
         }
     }
     void visit(AstNodeQuadop* nodep) override {
@@ -837,6 +847,8 @@ private:
             if (!itemp) {
                 clearOptimizable(nodep, "Array initialization has too few elements, need element "
                                             + cvtToStr(offset));
+            } else if (AstConst* const constp = VN_CAST(itemp, Const)) {
+                setValue(nodep, constp);
             } else {
                 setValue(nodep, fetchValue(itemp));
             }
@@ -1185,8 +1197,7 @@ private:
         }
     }
 
-    // Ignore coverage - from a function we're inlining
-    void visit(AstCoverInc* nodep) override {}
+    void visit(AstCoverInc* nodep) override { m_isCoverage = true; }
 
     // ====
     // Known Bad
@@ -1237,12 +1248,14 @@ public:
         m_anyAssignDly = false;
         m_inDlyAssign = false;
         m_isImpure = false;
+        m_isCoverage = false;
         m_instrCount = 0;
         m_dataCount = 0;
         m_jumpp = nullptr;
 
         AstNode::user1ClearTree();
         m_varAux.clear();
+        ++m_constGeneration;
     }
     void mainTableCheck(AstNode* nodep) {
         setMode(true /*scoped*/, true /*checking*/, false /*params*/);
@@ -1261,9 +1274,6 @@ public:
         mainGuts(nodep);
     }
     ~SimulateVisitor() override {
-        for (const auto& pair : m_constps) {
-            for (AstConst* const constp : pair.second) delete constp;
-        }
         m_constps.clear();
         for (AstNode* ip : m_reclaimValuesp) delete ip;
         m_reclaimValuesp.clear();

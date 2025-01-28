@@ -71,22 +71,6 @@ bool verbose = false;
 #define END_TEST return __LINE__;
 #endif
 
-#define CHECK_RESULT_NZ(got) \
-    if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", __FILE__, __LINE__); \
-        got_error = true; \
-        END_TEST \
-    }
-
-// Use cout to avoid issues with %d/%lx etc
-#define CHECK_RESULT(got, exp) \
-    if ((got) != (exp)) { \
-        std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": GOT = " << (got) \
-                  << "   EXP = " << (exp) << std::endl; \
-        got_error = true; \
-        END_TEST \
-    }
-
 #define STRINGIFY_CB_CASE(_cb) \
     case _cb: return #_cb
 

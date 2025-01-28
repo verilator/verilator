@@ -6,11 +6,7 @@
 
 `begin_keywords "VAMS-2.3"
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (/*AUTOARG*/);
 
    task check (integer line, real got, real expec);
       real delta;

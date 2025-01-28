@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module mod_a;
-   mod_inner u_inner;
-   mod_a_mon u_a_mon;
+   mod_inner u_inner();
+   mod_a_mon u_a_mon();
 
    initial begin
       bit x;

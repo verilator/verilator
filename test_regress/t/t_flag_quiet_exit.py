@@ -16,7 +16,7 @@ test.top_filename = "t/t_file_does_not_exist.v"
 # "Command Failed" line
 test.compile(v_flags2=["--quiet-exit"], fails=True)
 
-test.file_grep_not(test.obj_dir + "/vlt_compile.log", r'Exiting due to')
-test.file_grep_not(test.obj_dir + "/vlt_compile.log", r'Command Failed')
+test.file_grep_not(test.compile_log_filename, r'Exiting due to')
+test.file_grep_not(test.compile_log_filename, r'Command Failed')
 
 test.passes()

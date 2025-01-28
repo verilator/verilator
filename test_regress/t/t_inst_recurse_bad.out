@@ -1,6 +1,6 @@
-%Error-UNSUPPORTED: t/t_inst_recurse_bad.v:18:8: Unsupported: Recursive multiple modules (module instantiates something leading back to itself): 'looped'
+%Error-UNSUPPORTED: t/t_inst_recurse_bad.v:13:8: Unsupported: Recursive multiple modules (module instantiates something leading back to itself): 'looped'
                                                : ... note: self-recursion (module instantiating itself directly) is supported.
-   18 | module looped ( );
+   13 | module looped ( );
       |        ^~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

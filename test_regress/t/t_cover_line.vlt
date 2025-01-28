@@ -6,6 +6,6 @@
 
 `verilator_config
 
-coverage_block_off -file "t/t_cover_line.v" -lines 137
-coverage_block_off -file "t/t_cover_line.v" -lines 171
+coverage_block_off -file "t/t_cover_line.v" -lines 141
+coverage_block_off -file "t/t_cover_line.v" -lines 175
 coverage_block_off -module "beta" -block "block"

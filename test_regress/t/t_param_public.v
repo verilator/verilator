@@ -6,11 +6,7 @@
 
 //bug505
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t (/*AUTOARG*/);
 
    parameter TOP_PARAM /*verilator public*/ = 20;
 

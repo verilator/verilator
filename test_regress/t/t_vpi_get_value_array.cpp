@@ -18,14 +18,9 @@
 
 #endif
 
-#include <cstdio>
-
 // These require the above. Comment prevents clang-format moving them
 #include "TestSimulator.h"
 #include "TestVpi.h"
-
-// __FILE__ is too long
-#define FILENM "t_vpi_get_value_array.cpp"
 
 #ifdef TEST_VERBOSE
 #define TEST_MSG printf
@@ -38,12 +33,6 @@
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
         printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM, __LINE__); \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT_HEX(got, exp) \
-    if ((got) != (exp)) { \
-        printf("%%Error: %s:%d: GOT = 0x%" PRIx64 " EXP = 0x%" PRIx64 "\n",FILENM,__LINE__,static_cast<uint64_t>(got),static_cast<uint64_t>(exp)); \
         return __LINE__; \
     }
 

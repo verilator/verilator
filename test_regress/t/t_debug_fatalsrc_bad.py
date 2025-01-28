@@ -14,9 +14,9 @@ test.scenarios('vlt')
 if not test.have_gdb:
     test.skip("No gdb installed")
 
-test.lint(verilator_flags2=["--debug-fatalsrc"],
-          fails=test.vlt_all,
-          expect="""%Error: Internal Error: .*: --debug-fatal-src
-.* See the manual .*""")
+test.lint(verilator_flags2=["--debug-fatalsrc"], fails=test.vlt_all)
+
+test.file_grep(test.compile_log_filename, r'%Error: Internal Error: .*: --debug-fatal-src')
+test.file_grep(test.compile_log_filename, r'See the manual')
 
 test.passes()

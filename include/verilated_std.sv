@@ -4,7 +4,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2022-2024 by Wilson Snyder. This program is free software; you can
+// Copyright 2022-2025 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU Lesser
 // General Public License Version 3 or the Perl Artistic License Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
@@ -14,13 +14,16 @@
 /// \file
 /// \brief Verilated IEEE std:: header
 ///
-/// This file is included automatically by Verilator when a std::mailbox or
-/// std::semaphore is referenced.
+/// This file is included automatically by Verilator, unless '--no-std-package'
+/// is used.
 ///
 /// This file is not part of the Verilated public-facing API.
 /// It is only for internal use.
 ///
 //*************************************************************************
+//
+// The following keywords from this file are hardcoded for detection in the parser:
+// "mailbox", "process", "randomize", "semaphore", "std"
 
 // verilator lint_off DECLFILENAME
 // verilator lint_off TIMESCALEMOD

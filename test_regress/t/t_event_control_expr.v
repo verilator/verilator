@@ -142,7 +142,7 @@ module t(/*AUTOARG*/
 `endif
    `endif
 
-   t_cstmt u_cstmt;
+   t_cstmt u_cstmt();
 
    int cyc = 0;
 

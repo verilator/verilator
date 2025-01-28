@@ -13,6 +13,4 @@ test.scenarios('simulator')
 
 test.lint(verilator_flags2=["--exe --main --timing"])
 
-test.lint(verilator_flags2=["--exe --main --timing --DUSE_STD_PREFIX"])
-
 test.passes()

@@ -139,7 +139,7 @@ module t(input clk);
   endfunction
 
   iface iface();
-  prog prog;
+  prog prog();
 
   logic in;
   no_warn no_warn(.in(in), .clk(clk));

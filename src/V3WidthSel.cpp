@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -215,24 +215,6 @@ class WidthSelVisitor final : public VNVisitor {
         }
     }
 
-    static bool isPossibleWrite(AstNodeExpr* nodep) {
-        AstNode* abovep = nodep->firstAbovep();
-        if (AstNodeAssign* const assignp = VN_CAST(abovep, NodeAssign)) {
-            // On an assign LHS, assume a write
-            return assignp->lhsp() == nodep;
-        }
-        if (AstMethodCall* const methodCallp = VN_CAST(abovep, MethodCall)) {
-            // A method call can write
-            return methodCallp->fromp() == nodep;
-        }
-        if (AstNodePreSel* const preSelp = VN_CAST(abovep, NodePreSel)) {
-            // If we're not selected from, it's not a write (we're the index)
-            if (preSelp->fromp() != nodep) return false;
-        }
-        AstNodeExpr* exprp = VN_CAST(abovep, NodeExpr);
-        return exprp ? isPossibleWrite(exprp) : false;
-    }
-
     // VISITORS
     // If adding new visitors, ensure V3Width's visit(TYPE) calls into here
 
@@ -300,7 +282,7 @@ class WidthSelVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (const AstDynArrayDType* const adtypep = VN_CAST(ddtypep, DynArrayDType)) {
             // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
-            const char* methodName = isPossibleWrite(nodep) ? "atWrite" : "at";
+            const char* methodName = nodep->access().isWriteOrRW() ? "atWrite" : "at";
             AstCMethodHard* const newp
                 = new AstCMethodHard{nodep->fileline(), fromp, methodName, rhsp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
@@ -310,7 +292,7 @@ class WidthSelVisitor final : public VNVisitor {
         } else if (const AstQueueDType* const adtypep = VN_CAST(ddtypep, QueueDType)) {
             // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
             AstCMethodHard* newp;
-            const char* methodName = isPossibleWrite(nodep) ? "atWriteAppend" : "at";
+            const char* methodName = nodep->access().isWriteOrRW() ? "atWriteAppend" : "at";
             if (AstNodeExpr* const backnessp = selQueueBackness(rhsp)) {
                 newp = new AstCMethodHard{nodep->fileline(), fromp,
                                           std::string(methodName) + "Back", backnessp};

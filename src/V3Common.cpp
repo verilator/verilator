@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -30,6 +30,24 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 // Common component builders
+
+string V3Common::makeToStringCall(AstNodeDType* nodep, const std::string& lhs) {
+    std::string stmt;
+    if (VN_IS(nodep->skipRefp(), BasicDType) && nodep->isWide()) {
+        stmt += "VL_TO_STRING_W(";
+        stmt += cvtToStr(nodep->widthWords());
+        stmt += ", ";
+    } else if (VN_IS(nodep->skipRefp(), BasicDType) && nodep->isWide()) {
+        stmt += "VL_TO_STRING_W(";
+        stmt += cvtToStr(nodep->widthWords());
+        stmt += ", ";
+    } else {
+        stmt += "VL_TO_STRING(";
+    }
+    stmt += lhs;
+    stmt += ")";
+    return stmt;
+}
 
 static void makeVlToString(AstClass* nodep) {
     AstCFunc* const funcp
@@ -78,14 +96,8 @@ static void makeVlToString(AstNodeUOrStructDType* nodep) {
             stmt += ", ";
         }
         stmt += VIdProtect::protect(itemp->prettyName()) + ":\" + ";
-        if (VN_IS(itemp->dtypep()->skipRefp(), BasicDType) && itemp->isWide()) {
-            stmt += "VL_TO_STRING_W(";
-            stmt += cvtToStr(itemp->widthWords());
-            stmt += ", ";
-        } else {
-            stmt += "VL_TO_STRING(";
-        }
-        stmt += "obj." + itemp->nameProtect() + ");\n";
+        stmt += V3Common::makeToStringCall(itemp->dtypep(), "obj."s + itemp->nameProtect());
+        stmt += ";\n";
         funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
     }
     funcp->addStmtsp(new AstCStmt{nodep->fileline(), "out += \"}\";\n"});
@@ -121,15 +133,8 @@ static void makeToStringMiddle(AstClass* nodep) {
                 comma = ", ";
                 stmt += itemp->origNameProtect();
                 stmt += ":\" + ";
-                if (VN_IS(itemp->dtypep()->skipRefp(), BasicDType) && itemp->isWide()) {
-                    stmt += "VL_TO_STRING_W(";
-                    stmt += cvtToStr(itemp->widthWords());
-                    stmt += ", ";
-                } else {
-                    stmt += "VL_TO_STRING(";
-                }
-                stmt += itemp->nameProtect();
-                stmt += ");\n";
+                stmt += V3Common::makeToStringCall(itemp->dtypep(), itemp->nameProtect());
+                stmt += ";\n";
                 nodep->user1(true);  // So what we extend dumps this
                 funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
             }

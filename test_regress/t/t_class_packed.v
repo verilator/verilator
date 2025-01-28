@@ -10,11 +10,11 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   //TODO sub #(.WIDTH(1)) w1;
-   //TODO sub #(.WIDTH(2)) w2;
-   //TODO sub #(.WIDTH(3)) w3;
-   //TODO sub #(.WIDTH(4)) w4;
-   sub #(.WIDTH(5)) w5;
+   //TODO sub #(.WIDTH(1)) w1();
+   //TODO sub #(.WIDTH(2)) w2();
+   //TODO sub #(.WIDTH(3)) w3();
+   //TODO sub #(.WIDTH(4)) w4();
+   sub #(.WIDTH(5)) w5();
 
    always @ (posedge clk) begin
       $write("*-* All Finished *-*\n");

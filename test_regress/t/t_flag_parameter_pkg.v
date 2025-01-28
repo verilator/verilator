@@ -9,12 +9,7 @@ package pack_a;
 endpackage : pack_a
 
 //module t;
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-
-   input clk;
+module t (/*AUTOARG*/);
 
    parameter PARAM_A = 0;
 

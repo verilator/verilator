@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -187,9 +187,9 @@ public:
     uint64_t user() const { return m_user; }
     V3GraphVertex* fromp() const { return m_fromp; }
     V3GraphVertex* top() const { return m_top; }
-    template <GraphWay::en T_Way>
+    template <GraphWay::en N_Way>
     V3GraphVertex* furtherp() const {
-        return T_Way == GraphWay::FORWARD ? top() : fromp();
+        return N_Way == GraphWay::FORWARD ? top() : fromp();
     }
     // STATIC ACCESSORS
     static bool followNotCutable(const V3GraphEdge* edgep) { return !edgep->m_cutable; }
@@ -301,9 +301,9 @@ public:
     void* userp() const VL_MT_STABLE { return m_userp; }
     V3GraphEdge::IList& inEdges() { return m_ins; }
     const V3GraphEdge::IList& inEdges() const { return m_ins; }
-    template <GraphWay::en T_Way>
+    template <GraphWay::en N_Way>
     inline auto& edges();
-    template <GraphWay::en T_Way>
+    template <GraphWay::en N_Way>
     inline const auto& edges() const;
     bool inEmpty() const { return m_ins.empty(); }
     bool inSize1() const { return m_ins.hasSingleElement(); }
@@ -320,7 +320,7 @@ public:
     void rerouteEdges(V3Graph* graphp) VL_MT_DISABLED;
     // Find the edge connecting this vertex to the given vertex.
     // If edge is not found returns nullptr. O(edges) performance.
-    template <GraphWay::en T_Way>
+    template <GraphWay::en N_Way>
     V3GraphEdge* findConnectingEdgep(V3GraphVertex* otherp) VL_MT_DISABLED;
 };
 

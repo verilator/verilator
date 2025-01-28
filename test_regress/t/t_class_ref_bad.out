@@ -1,0 +1,5 @@
+%Error: t/t_class_ref_bad.v:15:11: Package/class for ':: reference' not found: 'ClsRigh'
+                                 : ... Suggested alternative: 'ClsRight'
+   15 |       s = ClsRigh::m_s;   
+      |           ^~~~~~~
+%Error: Exiting due to

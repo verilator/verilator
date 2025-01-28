@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -37,9 +37,9 @@ namespace {
 
 // Create a DfgVertex out of a AstNodeExpr. For most AstNodeExpr subtypes, this can be done
 // automatically. For the few special cases, we provide specializations below
-template <typename Vertex, typename Node>
-Vertex* makeVertex(const Node* nodep, DfgGraph& dfg) {
-    return new Vertex{dfg, nodep->fileline(), DfgVertex::dtypeFor(nodep)};
+template <typename T_Vertex, typename T_Node>
+T_Vertex* makeVertex(const T_Node* nodep, DfgGraph& dfg) {
+    return new T_Vertex{dfg, nodep->fileline(), DfgVertex::dtypeFor(nodep)};
 }
 
 //======================================================================

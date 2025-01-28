@@ -34,6 +34,10 @@
 
 #endif
 
+#ifdef VERILATOR
+#include "verilated.h"
+#endif
+
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -46,8 +50,6 @@
 #include "TestVpi.h"
 
 int errors = 0;
-// __FILE__ is too long
-#define FILENM "t_vpi_var.cpp"
 
 #define TEST_MSG \
     if (0) printf
@@ -60,48 +62,6 @@ unsigned int callback_count_strs = 0;
 unsigned int callback_count_strs_max = 500;
 
 //======================================================================
-
-#define CHECK_RESULT_VH(got, exp) \
-    if ((got) != (exp)) { \
-        printf("%%Error: %s:%d: GOT = %p   EXP = %p\n", FILENM, __LINE__, (got), (exp)); \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT_NZ(got) \
-    if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM, __LINE__); \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT_Z(got) \
-    if ((got)) { \
-        printf("%%Error: %s:%d: GOT = !NULL  EXP = NULL\n", FILENM, __LINE__); \
-        return __LINE__; \
-    }
-
-// Use cout to avoid issues with %d/%lx etc
-#define CHECK_RESULT(got, exp) \
-    if ((got) != (exp)) { \
-        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
-                  << "   EXP = " << (exp) << std::endl; \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT_HEX(got, exp) \
-    if ((got) != (exp)) { \
-        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << std::hex \
-                  << ": GOT = " << (got) << "   EXP = " << (exp) << std::endl; \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT_CSTR(got, exp) \
-    if (std::strcmp((got), (exp))) { \
-        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
-               ((got) != NULL) ? (got) : "<null>", ((exp) != NULL) ? (exp) : "<null>"); \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
 
 // We cannot replace those with VL_STRINGIFY, not available when PLI is build
 #define STRINGIFY(x) STRINGIFY2(x)
@@ -253,6 +213,29 @@ int _mon_check_value_callbacks() {
     return 0;
 }
 
+int _mon_check_too_big() {
+#ifdef VERILATOR
+    s_vpi_value v;
+    v.format = vpiVectorVal;
+
+    TestVpiHandle h = VPI_HANDLE("too_big");
+    CHECK_RESULT_NZ(h);
+
+    Verilated::fatalOnVpiError(false);
+    vpi_get_value(h, &v);
+    Verilated::fatalOnVpiError(true);
+    s_vpi_error_info info;
+    CHECK_RESULT_NZ(vpi_chk_error(&info));
+
+    v.format = vpiStringVal;
+    vpi_get_value(h, &v);
+    CHECK_RESULT_Z(vpi_chk_error(nullptr));
+    CHECK_RESULT_CSTR_STRIP(v.value.str, "some text");
+#endif
+
+    return 0;
+}
+
 int _mon_check_var() {
     TestVpiHandle vh1 = VPI_HANDLE("onebit");
     CHECK_RESULT_NZ(vh1);
@@ -378,6 +361,16 @@ int _mon_check_var() {
         CHECK_RESULT_CSTR(p, "vpiConstant");
     }
 
+    // C++ keyword collision
+    {
+        TestVpiHandle vh10 = VPI_HANDLE("nullptr");
+        CHECK_RESULT_NZ(vh10);
+        vpi_get_value(vh10, &tmpValue);
+        CHECK_RESULT(tmpValue.value.integer, 123);
+        p = vpi_get_str(vpiType, vh10);
+        CHECK_RESULT_CSTR(p, "vpiParameter");
+    }
+
     // non-integer variables
     tmpValue.format = vpiRealVal;
     {
@@ -416,7 +409,7 @@ int _mon_check_varlist() {
     CHECK_RESULT_CSTR(p, "sub");
     if (TestSimulator::is_verilator()) {
         p = vpi_get_str(vpiDefName, vh2);
-        CHECK_RESULT_CSTR(p, "<null>");  // Unsupported
+        CHECK_RESULT_CSTR(p, "sub");
     }
 
     TestVpiHandle vh10 = vpi_iterate(vpiReg, vh2);
@@ -650,15 +643,15 @@ int _mon_check_quad() {
     TestVpiHandle vhidx3 = vpi_handle_by_index(vh2, 3);
     CHECK_RESULT_NZ(vhidx3);
 
-    // Memory words should not be indexable
+    // Packed words should be indexable
     TestVpiHandle vhidx3idx0 = vpi_handle_by_index(vhidx3, 0);
-    CHECK_RESULT(vhidx3idx0, 0);
+    CHECK_RESULT_NZ(vhidx3idx0);
     TestVpiHandle vhidx2idx2 = vpi_handle_by_index(vhidx2, 2);
-    CHECK_RESULT(vhidx2idx2, 0);
+    CHECK_RESULT_NZ(vhidx2idx2);
     TestVpiHandle vhidx3idx3 = vpi_handle_by_index(vhidx3, 3);
-    CHECK_RESULT(vhidx3idx3, 0);
+    CHECK_RESULT_NZ(vhidx3idx3);
     TestVpiHandle vhidx2idx61 = vpi_handle_by_index(vhidx2, 61);
-    CHECK_RESULT(vhidx2idx61, 0);
+    CHECK_RESULT_NZ(vhidx2idx61);
 
     v.format = vpiVectorVal;
     v.value.vector = vv;
@@ -709,6 +702,7 @@ int _mon_check_delayed() {
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
 
     // test unsupported vpiInertialDelay cases
+    // - should these also throw vpi errors?
     v.format = vpiStringVal;
     v.value.str = nullptr;
     vpi_put_value(vh, &v, &t, vpiInertialDelay);
@@ -719,9 +713,11 @@ int _mon_check_delayed() {
     vpi_put_value(vh, &v, &t, vpiInertialDelay);
     CHECK_RESULT_NZ(vpi_chk_error(nullptr));
 
+    // This format throws an error now
+    Verilated::fatalOnVpiError(false);
     v.format = vpiObjTypeVal;
     vpi_put_value(vh, &v, &t, vpiInertialDelay);
-    CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    Verilated::fatalOnVpiError(true);
 
     return 0;
 }
@@ -935,6 +931,7 @@ extern "C" int mon_check() {
     if (int status = _mon_check_putget_str(NULL)) return status;
     if (int status = _mon_check_vlog_info()) return status;
     if (int status = _mon_check_delayed()) return status;
+    if (int status = _mon_check_too_big()) return status;
 #ifndef IS_VPI
     VerilatedVpi::selfTest();
 #endif

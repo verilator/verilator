@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -85,12 +85,15 @@ private:
                         "Only rand_mode() and constraint_mode() can have no def");
             return;
         }
-        if (const auto varp = VN_CAST(defp, Var)) {
-            local = varp->isHideLocal();
-            prot = varp->isHideProtected();
-        } else if (const auto ftaskp = VN_CAST(defp, NodeFTask)) {
-            local = ftaskp->isHideLocal();
-            prot = ftaskp->isHideProtected();
+        if (const auto anodep = VN_CAST(defp, Var)) {
+            local = anodep->isHideLocal();
+            prot = anodep->isHideProtected();
+        } else if (const auto anodep = VN_CAST(defp, NodeFTask)) {
+            local = anodep->isHideLocal();
+            prot = anodep->isHideProtected();
+        } else if (const auto anodep = VN_CAST(defp, Typedef)) {
+            local = anodep->isHideLocal();
+            prot = anodep->isHideProtected();
         } else {
             nodep->v3fatalSrc("ref to unhandled definition type " << defp->prettyTypeName());
         }
@@ -159,6 +162,18 @@ private:
         nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
+    void visit(AstConstraint* nodep) override {
+        iterateChildren(nodep);
+        editDType(nodep);
+        {
+            const AstClass* const classp = VN_CAST(m_modp, Class);
+            if (nodep->isKwdPure()
+                && (!classp || (!classp->isInterfaceClass() && !classp->isVirtual()))) {
+                nodep->v3error("Illegal to have 'pure constraint' in non-abstract class"
+                               " (IEEE 1800-2023 18.5.2)");
+            }
+        }
+    }
     void visit(AstNodeDType* nodep) override {
         // Note some specific dtypes have unique visitors
         visitIterateNodeDType(nodep);
@@ -177,6 +192,12 @@ private:
         // Move to type table as all dtype pointers must resolve there
         nodep->unlinkFrBack();  // Make non-child
         v3Global.rootp()->typeTablep()->addTypesp(nodep);
+    }
+    void visit(AstRefDType* nodep) override {
+        visitIterateNodeDType(nodep);
+        if (!nodep->typedefp()) return;  // Already checked and cleared
+        classEncapCheck(nodep, nodep->typedefp(), VN_CAST(nodep->classOrPackagep(), Class));
+        nodep->typedefp(nullptr);  // No longer needed
     }
     void visitIterateNodeDType(AstNodeDType* nodep) {
         // Rather than use dtypeChg which may make new nodes, we edit in place,

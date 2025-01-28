@@ -1,0 +1,9 @@
+%Error: t/t_unpacked_concat_bad3.v:9:41: Assignment pattern missed initializing elements: 3
+                                       : ... note: In instance 't'
+    9 |    localparam logic [7:0] TOO_FEW [5] = '{0, 1, 2**8-1};   
+      |                                         ^~
+%Error: t/t_unpacked_concat_bad3.v:9:41: Assignment pattern missed initializing elements: 4
+                                       : ... note: In instance 't'
+    9 |    localparam logic [7:0] TOO_FEW [5] = '{0, 1, 2**8-1};   
+      |                                         ^~
+%Error: Exiting due to

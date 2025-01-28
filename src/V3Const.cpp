@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -20,7 +20,7 @@
 //          If operands are constant, replace this node with constant.
 //*************************************************************************
 
-#define VL_MT_DISABLED_CODE_UNIT 1
+#include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -57,7 +57,7 @@ static bool isConst(const AstNode* nodep, uint64_t v) {
     return constp && constp->toUQuad() == v;
 }
 
-template <class T>
+template <typename T>
 static typename std::enable_if<std::is_integral<T>::value, bool>::type isPow2(T val) {
     return (val & (val - 1)) == 0;
 }
@@ -227,7 +227,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
             return m_knownResult == 1;
         }
         const AstVarRef* refp() const { return m_refp; }
-        bool sameVarAs(const AstNodeVarRef* otherp) const { return m_refp->same(otherp); }
+        bool sameVarAs(const AstNodeVarRef* otherp) const { return m_refp->sameNode(otherp); }
         void setPolarity(bool compBit, int bit) {
             // Ignore if already determined a known reduction
             if (m_knownResult >= 0) return;
@@ -1162,11 +1162,10 @@ class ConstVisitor final : public VNVisitor {
         } else if (const AstShiftL* const shiftp = VN_CAST(nodep->rhsp(), ShiftL)) {
             if (const AstConst* const scp = VN_CAST(shiftp->rhsp(), Const)) {
                 // Check if mask is full over the non-zero bits
-                V3Number maskLo{nodep, nodep->width()};
-                V3Number maskHi{nodep, nodep->width()};
-                maskLo.setMask(nodep->width() - scp->num().toUInt());
-                maskHi.opShiftL(maskLo, scp->num());
-                return checkMask(maskHi);
+                V3Number mask{nodep, nodep->width()};
+                const uint32_t shiftAmount = scp->num().toUInt();
+                mask.setMask(nodep->width() - shiftAmount, shiftAmount);
+                return checkMask(mask);
             }
         }
         return false;
@@ -2334,20 +2333,16 @@ class ConstVisitor final : public VNVisitor {
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
-        {
-            m_modp = nodep;
-            m_concswapNames.reset();
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        m_concswapNames.reset();
+        iterateChildren(nodep);
     }
     void visit(AstCFunc* nodep) override {
         // No ASSIGNW removals under funcs, we've long eliminated INITIALs
         // (We should perhaps rename the assignw's to just assigns)
         VL_RESTORER(m_wremove);
-        {
-            m_wremove = false;
-            iterateChildren(nodep);
-        }
+        m_wremove = false;
+        iterateChildren(nodep);
     }
     void visit(AstCLocalScope* nodep) override {
         iterateChildren(nodep);
@@ -2360,11 +2355,9 @@ class ConstVisitor final : public VNVisitor {
         // No ASSIGNW removals under scope, we've long eliminated INITIALs
         VL_RESTORER(m_wremove);
         VL_RESTORER(m_scopep);
-        {
-            m_wremove = false;
-            m_scopep = nodep;
-            iterateChildren(nodep);
-        }
+        m_wremove = false;
+        m_scopep = nodep;
+        iterateChildren(nodep);
     }
 
     void swapSides(AstNodeBiCom* nodep) {
@@ -2696,10 +2689,8 @@ class ConstVisitor final : public VNVisitor {
 
     void visit(AstAttrOf* nodep) override {
         VL_RESTORER(m_attrp);
-        {
-            m_attrp = nodep;
-            iterateChildren(nodep);
-        }
+        m_attrp = nodep;
+        iterateChildren(nodep);
     }
 
     void visit(AstArraySel* nodep) override {

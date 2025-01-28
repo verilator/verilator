@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_class_extends_arg.v:14:25: Unsupported: 'extends' with 'default'
+   14 | class Cls1 extends Base1(default);
+      |                         ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_class_extends_arg.v:18:25: Unsupported: 'extends' with class list_of_arguments
+   18 | class Cls5 extends Base1(5);
+      |                         ^
+%Error: Exiting due to
