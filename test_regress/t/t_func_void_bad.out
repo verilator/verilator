@@ -1,9 +1,12 @@
-%Warning-IGNOREDRETURN: t/t_func_void_bad.v:21:7: Ignoring return value of non-void function (IEEE 1800-2023 13.4.1)
-   21 |       f1();   
+%Warning-IGNOREDRETURN: t/t_func_void_bad.v:24:7: Ignoring return value of non-void function (IEEE 1800-2023 13.4.1)
+   24 |       f1();   
       |       ^~
                         ... For warning description see https://verilator.org/warn/IGNOREDRETURN?v=latest
                         ... Use "/* verilator lint_off IGNOREDRETURN */" and lint_on around source to disable this message.
-%Warning-IGNOREDRETURN: t/t_func_void_bad.v:24:9: Ignoring return value of non-void function (IEEE 1800-2023 13.4.1)
-   24 |       c.fi();   
+%Warning-IGNOREDRETURN: t/t_func_void_bad.v:27:9: Ignoring return value of non-void function (IEEE 1800-2023 13.4.1)
+   27 |       c.fi();   
       |         ^~
+%Warning-IGNOREDRETURN: t/t_func_void_bad.v:28:9: Ignoring return value of non-void function (IEEE 1800-2023 13.4.1)
+   28 |       c.sfi();   
+      |         ^~~
 %Error: Exiting due to

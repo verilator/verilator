@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -50,8 +50,8 @@ protected:
         m_inUnpacked = true;
         if (VN_IS(nodep->dtypep()->skipRefp(), AssocArrayDType)) {
             // Note the double {{ initializer. The first { starts the initializer of the
-            // VlUnpacked, and the second starts the initializer of m_storage within the
-            // VlUnpacked.
+            // VlAssocArray, and the second starts the initializer of m_storage within the
+            // VlAssocArray.
             puts("{");
             ofp()->putsNoTracking("{");
             puts("\n");
@@ -82,7 +82,9 @@ protected:
             for (uint64_t n = 0; n < size; ++n) {
                 m_unpackedWord = n;
                 if (n) puts((n % tabMod) ? ", " : ",\n");
-                iterateConst(nodep->getIndexDefaultedValuep(n));
+                AstNode* const itemp = nodep->getIndexDefaultedValuep(n);
+                UASSERT_OBJ(itemp, nodep, "Missing array init element");
+                iterateConst(itemp);
             }
             puts("\n");
             puts("}");

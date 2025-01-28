@@ -1,0 +1,5 @@
+[0] %Error: t_runflag_errorlimit_fatal_bad.v:9: Assertion failed in top.t: One
+-Info: t/t_runflag_errorlimit_fatal_bad.v:9: Verilog $stop, ignored due to +verilator+error+limit
+[0] %Fatal: t_runflag_errorlimit_fatal_bad.v:10: Assertion failed in top.t
+%Error: t/t_runflag_errorlimit_fatal_bad.v:10: Verilog $stop
+Aborting...

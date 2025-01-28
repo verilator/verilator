@@ -19,7 +19,7 @@ endmodule
 module t (/*AUTOARG*/);
    // Intentional typo, compiler should point this out, or that fo_intf does
    // not match foo_intf on the submod port map
-   fo_intf the_foo;
+   fo_intf the_foo();
 
    submod
      submod_inst

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -40,9 +40,9 @@ namespace {
 
 // Create an AstNodeExpr out of a DfgVertex. For most AstNodeExpr subtypes, this can be done
 // automatically. For the few special cases, we provide specializations below
-template <typename Node, typename Vertex, typename... Ops>
-Node* makeNode(const Vertex* vtxp, Ops... ops) {
-    Node* const nodep = new Node{vtxp->fileline(), ops...};
+template <typename T_Node, typename T_Vertex, typename... Ops>
+T_Node* makeNode(const T_Vertex* vtxp, Ops... ops) {
+    T_Node* const nodep = new T_Node{vtxp->fileline(), ops...};
     UASSERT_OBJ(nodep->width() == static_cast<int>(vtxp->width()), vtxp,
                 "Incorrect width in AstNode created from DfgVertex "
                     << vtxp->typeName() << ": " << nodep->width() << " vs " << vtxp->width());

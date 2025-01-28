@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -63,6 +63,7 @@ public:
     // KEY ACCESSORS
     string filename() const { return keyExtract(VL_CIK_FILENAME); }
     string comment() const { return keyExtract(VL_CIK_COMMENT); }
+    string hier() const { return keyExtract(VL_CIK_HIER); }
     string type() const { return keyExtract(VL_CIK_TYPE); }
     string thresh() const { return keyExtract(VL_CIK_THRESH); }  // string as maybe ""
     string linescov() const { return keyExtract(VL_CIK_LINESCOV); }
@@ -98,7 +99,7 @@ public:
     void dumpAnnotate(std::ostream& os, unsigned annotateMin) const {
         os << (ok(annotateMin) ? "+" : "-");
         os << std::setw(6) << std::setfill('0') << count();
-        os << "  point: comment=" << comment();
+        os << "  point: comment=" << comment() << " hier=" << hier();
         os << "\n";
     }
 };

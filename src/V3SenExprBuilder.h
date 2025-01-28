@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -151,7 +151,7 @@ class SenExprBuilder final {
         return prevp;
     }
 
-    std::pair<AstNodeExpr*, bool> createTerm(AstSenItem* senItemp) {
+    std::pair<AstNodeExpr*, bool> createTerm(const AstSenItem* senItemp) {
         FileLine* const flp = senItemp->fileline();
         AstNodeExpr* const senp = senItemp->sensp();
 
@@ -210,6 +210,15 @@ class SenExprBuilder final {
 public:
     // Returns the expression computing the trigger, and a bool indicating that
     // this trigger should be fired on the first evaluation (at initialization)
+    std::pair<AstNodeExpr*, bool> build(const AstSenItem* senItemp) {
+        auto term = createTerm(senItemp);
+        if (AstNodeExpr* const condp = senItemp->condp()) {
+            term.first = new AstAnd{senItemp->fileline(), condp->cloneTreePure(false), term.first};
+        }
+        return term;
+    }
+
+    // Like above, but for a whole SenTree
     std::pair<AstNodeExpr*, bool> build(const AstSenTree* senTreep) {
         FileLine* const flp = senTreep->fileline();
         AstNodeExpr* resultp = nullptr;
@@ -218,8 +227,6 @@ public:
              senItemp = VN_AS(senItemp->nextp(), SenItem)) {
             const auto& pair = createTerm(senItemp);
             if (AstNodeExpr* termp = pair.first) {
-                AstNodeExpr* const condp = senItemp->condp();
-                if (condp) termp = new AstAnd{flp, condp->cloneTreePure(false), termp};
                 resultp = resultp ? new AstOr{flp, resultp, termp} : termp;
                 firedAtInitialization |= pair.second;
             }

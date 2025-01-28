@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -38,9 +38,6 @@ class V3OrderProcessDomains final {
 
     // STATE
     OrderGraph& m_graph;  // The ordering graph
-
-    // Map from Trigger reference AstSenItem to the original AstSenTree
-    const V3Order::TrigToSenMap& m_trigToSen;
 
     // This is a function provided by the invoker of the ordering that can provide additional
     // sensitivity expression that when triggered indicates the passed AstVarScope might have
@@ -165,11 +162,6 @@ class V3OrderProcessDomains final {
 
         std::deque<string> report;
 
-        // Rebuild the trigger to original AstSenTree map using equality key comparison, as
-        // merging domains have created new AstSenTree instances which are not in the map
-        std::unordered_map<VNRef<const AstSenItem>, const AstSenTree*> trigToSen;
-        for (const auto& pair : m_trigToSen) trigToSen.emplace(*pair.first, pair.second);
-
         for (V3GraphVertex& vtx : m_graph.vertices()) {
             if (OrderVarVertex* const vvertexp = vtx.cast<OrderVarVertex>()) {
                 string name(vvertexp->vscp()->prettyName());
@@ -190,12 +182,7 @@ class V3OrderProcessDomains final {
                     for (AstSenItem* senItemp = senTreep->sensesp(); senItemp;
                          senItemp = VN_AS(senItemp->nextp(), SenItem)) {
                         if (senItemp != senTreep->sensesp()) os << " or ";
-                        const auto it = trigToSen.find(*senItemp);
-                        if (it != trigToSen.end()) {
-                            V3EmitV::verilogForTree(it->second, os);
-                        } else {
-                            V3EmitV::verilogForTree(senItemp, os);
-                        }
+                        V3EmitV::verilogForTree(senItemp, os);
                     }
                 }
                 report.push_back(os.str());
@@ -209,10 +196,8 @@ class V3OrderProcessDomains final {
 
     // CONSTRUCTOR
     V3OrderProcessDomains(AstNetlist* netlistp, OrderGraph& graph, const string& tag,
-                          const V3Order::TrigToSenMap& trigToSen,
                           const V3Order::ExternalDomainsProvider& externalDomains)
         : m_graph{graph}
-        , m_trigToSen{trigToSen}
         , m_externalDomains{externalDomains}
         , m_finder{netlistp}
         , m_tag{tag} {
@@ -238,16 +223,14 @@ class V3OrderProcessDomains final {
 public:
     // Order the logic
     static void apply(AstNetlist* netlistp, OrderGraph& graph, const string& tag,
-                      const V3Order::TrigToSenMap& trigToSen,
                       const V3Order::ExternalDomainsProvider& externalDomains) {
-        V3OrderProcessDomains{netlistp, graph, tag, trigToSen, externalDomains};
+        V3OrderProcessDomains{netlistp, graph, tag, externalDomains};
     }
 };
 
 void V3Order::processDomains(AstNetlist* netlistp,  //
                              OrderGraph& graph,  //
                              const std::string& tag,  //
-                             const V3Order::TrigToSenMap& trigToSen,  //
                              const ExternalDomainsProvider& externalDomains) {
-    V3OrderProcessDomains::apply(netlistp, graph, tag, trigToSen, externalDomains);
+    V3OrderProcessDomains::apply(netlistp, graph, tag, externalDomains);
 }

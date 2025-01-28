@@ -19,15 +19,15 @@ module b9
    c9
    #(.A (A),
      .B (9))
-   c9;
+   c9();
 
 endmodule
 
 module t;
 
-   b9 b9;
-   b9 #(.A (100)) b900;
-   b9 #(.A (1000)) b9k;
+   b9 b9();
+   b9 #(.A (100)) b900();
+   b9 #(.A (1000)) b9k();
 
    initial begin
       // Should never get here

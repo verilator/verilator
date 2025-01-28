@@ -156,4 +156,4 @@ module b;
 
 endmodule : b
 
-bind ma b u_b[0:1];
+bind ma b u_b[0:1]();

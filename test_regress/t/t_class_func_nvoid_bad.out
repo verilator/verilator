@@ -1,0 +1,25 @@
+%Error: t/t_class_func_nvoid_bad.v:47:11: Cannot call a task/void-function as a function: 'mod_fv'
+                                        : ... note: In instance 't'
+   47 |       if (mod_fv() == 10) $stop;   
+      |           ^~~~~~
+%Error: t/t_class_func_nvoid_bad.v:50:11: Cannot call a task/void-function as a function: 'mod_t'
+                                        : ... note: In instance 't'
+   50 |       if (mod_t() == 10) $stop;   
+      |           ^~~~~
+%Error: t/t_class_func_nvoid_bad.v:58:13: Cannot call a task/void-function as a member function: 'fv'
+                                        : ... note: In instance 't'
+   58 |       if (c.fv() == 10) $stop;   
+      |             ^~
+%Error: t/t_class_func_nvoid_bad.v:61:13: Cannot call a task/void-function as a member function: 't'
+                                        : ... note: In instance 't'
+   61 |       if (c.t() == 10) $stop;   
+      |             ^
+%Error: t/t_class_func_nvoid_bad.v:69:13: Cannot call a task/void-function as a function: 'sfv'
+                                        : ... note: In instance 't'
+   69 |       if (c.sfv() == 10) $stop;   
+      |             ^~~
+%Error: t/t_class_func_nvoid_bad.v:72:13: Cannot call a task/void-function as a function: 'st'
+                                        : ... note: In instance 't'
+   72 |       if (c.st() == 10) $stop;   
+      |             ^~
+%Error: Exiting due to

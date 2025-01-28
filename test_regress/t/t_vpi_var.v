@@ -39,7 +39,7 @@ extern "C" int mon_check();
    reg [0:61]   quads[2:3]      /*verilator public_flat_rw @(posedge clk) */;
    // verilator lint_on ASCRANGE
 
-   reg [31:0]      count        /*verilator public_flat_rd */;
+   reg [31:0]      count        /*verilator public_flat */;
    reg [31:0]      half_count   /*verilator public_flat_rd */;
    reg [31:0]      delayed      /*verilator public_flat_rw */;
    reg [31:0]      delayed_mem [16] /*verilator public_flat_rw */;
@@ -49,11 +49,15 @@ extern "C" int mon_check();
    reg [31:0]      text_word    /*verilator public_flat_rw @(posedge clk) */;
    reg [63:0]      text_long    /*verilator public_flat_rw @(posedge clk) */;
    reg [511:0]     text         /*verilator public_flat_rw @(posedge clk) */;
+   reg [2047:0]    too_big      /*verilator public_flat_rw @(posedge clk) */;
 
    integer        status;
 
    real           real1          /*verilator public_flat_rw */;
    string         str1           /*verilator public_flat_rw */;
+   // specifically public and not public_flat_rw here so as to induce the C++
+   // keyword collision
+   localparam int nullptr        /*verilator public */ = 123;
 
    sub sub();
 
@@ -68,6 +72,7 @@ extern "C" int mon_check();
       text_word = "Word";
       text_long = "Long64b";
       text = "Verilog Test module";
+      too_big = "some text";
 
       real1 = 1.0;
       str1 = "hello";

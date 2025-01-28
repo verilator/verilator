@@ -38,10 +38,7 @@ module sub();
 
 endmodule
 
-module t(/*AUTOARG*/
-   // Inputs
-   clk
-   );
+module t(/*AUTOARG*/);
 
    import defs::*;
 
@@ -50,8 +47,6 @@ module t(/*AUTOARG*/
 
    localparam MAX_EXPONENT         = log2(MAX_COUNT);
    localparam EXPONENT_WIDTH       = ceil_log2(MAX_EXPONENT + 1);
-
-   input                           clk;
 
    generate
       if (WHICH == 1)

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -48,6 +48,7 @@ class UnknownVisitor final : public VNVisitor {
     //  AstNode::user2p()       -> AstIf* Inserted if assignment for conditional
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
+    static const std::string m_xrandPrefix;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -58,7 +59,7 @@ class UnknownVisitor final : public VNVisitor {
     bool m_allowXUnique = true;  // Allow unique assignments
     VDouble0 m_statUnkVars;  // Statistic tracking
     V3UniqueNames m_lvboundNames;  // For generating unique temporary variable names
-    V3UniqueNames m_xrandNames;  // For generating unique temporary variable names
+    std::unique_ptr<V3UniqueNames> m_xrandNames;  // For generating unique temporary variable names
 
     // METHODS
 
@@ -98,7 +99,8 @@ class UnknownVisitor final : public VNVisitor {
         AstNodeExpr* prep = nodep;
 
         // Scan back to put the condlvalue above all selects (IE top of the lvalue)
-        while (VN_IS(prep->backp(), NodeSel) || VN_IS(prep->backp(), Sel)) {
+        while (VN_IS(prep->backp(), NodeSel) || VN_IS(prep->backp(), Sel)
+               || VN_IS(prep->backp(), StructSel)) {
             prep = VN_AS(prep->backp(), NodeExpr);
         }
         FileLine* const fl = nodep->fileline();
@@ -118,6 +120,7 @@ class UnknownVisitor final : public VNVisitor {
                 = new AstVar{fl, VVarType::MODULETEMP, m_lvboundNames.get(prep), prep->dtypep()};
             m_modp->addStmtsp(varp);
             AstNode* const abovep = prep->backp();  // Grab above point before we replace 'prep'
+
             prep->replaceWith(new AstVarRef{fl, varp, VAccess::WRITE});
             if (m_timingControlp) m_timingControlp->unlinkFrBack();
             AstIf* const newp = new AstIf{
@@ -141,56 +144,48 @@ class UnknownVisitor final : public VNVisitor {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_constXCvt);
         VL_RESTORER(m_allowXUnique);
+        auto xrandNames = std::make_unique<V3UniqueNames>(m_xrandPrefix);
         {
             m_modp = nodep;
             m_constXCvt = true;
             // Class X randomization causes Vxrand in strange places, so disable
             if (VN_IS(nodep, Class)) m_allowXUnique = false;
             m_lvboundNames.reset();
-            m_xrandNames.reset();
+            xrandNames.swap(m_xrandNames);
             iterateChildren(nodep);
+            xrandNames.swap(m_xrandNames);
         }
     }
     void visit(AstAssignDly* nodep) override {
         VL_RESTORER(m_assigndlyp);
         VL_RESTORER(m_timingControlp);
-        {
-            m_assigndlyp = nodep;
-            m_timingControlp = nodep->timingControlp();
-            VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-        }
+        m_assigndlyp = nodep;
+        m_timingControlp = nodep->timingControlp();
+        VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
     }
     void visit(AstAssignW* nodep) override {
         VL_RESTORER(m_assignwp);
         VL_RESTORER(m_timingControlp);
-        {
-            m_assignwp = nodep;
-            m_timingControlp = nodep->timingControlp();
-            VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-        }
+        m_assignwp = nodep;
+        m_timingControlp = nodep->timingControlp();
+        VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
     }
     void visit(AstNodeAssign* nodep) override {
         VL_RESTORER(m_timingControlp);
-        {
-            m_timingControlp = nodep->timingControlp();
-            iterateChildren(nodep);
-        }
+        m_timingControlp = nodep->timingControlp();
+        iterateChildren(nodep);
     }
     void visit(AstCaseItem* nodep) override {
         VL_RESTORER(m_constXCvt);
-        {
-            m_constXCvt = false;  // Avoid losing the X's in casex
-            iterateAndNextNull(nodep->condsp());
-            m_constXCvt = true;
-            iterateAndNextNull(nodep->stmtsp());
-        }
+        m_constXCvt = false;  // Avoid losing the X's in casex
+        iterateAndNextNull(nodep->condsp());
+        m_constXCvt = true;
+        iterateAndNextNull(nodep->stmtsp());
     }
     void visit(AstNodeDType* nodep) override {
         VL_RESTORER(m_constXCvt);
-        {
-            m_constXCvt = false;  // Avoid losing the X's in casex
-            iterateChildren(nodep);
-        }
+        m_constXCvt = false;  // Avoid losing the X's in casex
+        iterateChildren(nodep);
     }
     void visit(AstVar* nodep) override {
         VL_RESTORER(m_allowXUnique);
@@ -242,9 +237,11 @@ class UnknownVisitor final : public VNVisitor {
             AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
             AstNodeExpr* newp;
             if (!VN_IS(rhsp, Const)) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: RHS of ==? or !=? must be "
-                                             "constant to be synthesizable");  // Says spec.
-                // Replace with anything that won't cause more errors
+                if (rhsp->dtypep()->isFourstate()) {
+                    nodep->v3warn(
+                        E_UNSUPPORTED,
+                        "Unsupported: RHS of ==? or !=? is fourstate but not a constant");
+                }
                 newp = new AstEq{nodep->fileline(), lhsp, rhsp};
             } else {
                 // X or Z's become mask, ala case statements.
@@ -345,7 +342,7 @@ class UnknownVisitor final : public VNVisitor {
                 // We use the special XTEMP type so it doesn't break pure functions
                 UASSERT_OBJ(m_modp, nodep, "X number not under module");
                 AstVar* const newvarp
-                    = new AstVar{nodep->fileline(), VVarType::XTEMP, m_xrandNames.get(nodep),
+                    = new AstVar{nodep->fileline(), VVarType::XTEMP, m_xrandNames->get(nodep),
                                  VFlagLogicPacked{}, nodep->width()};
                 newvarp->lifetime(VLifetime::STATIC);
                 ++m_statUnkVars;
@@ -517,13 +514,15 @@ public:
     // CONSTRUCTORS
     explicit UnknownVisitor(AstNetlist* nodep)
         : m_lvboundNames{"__Vlvbound"}
-        , m_xrandNames{"__Vxrand"} {
+        , m_xrandNames{std::make_unique<V3UniqueNames>(m_xrandPrefix)} {
         iterate(nodep);
     }
     ~UnknownVisitor() override {  //
         V3Stats::addStat("Unknowns, variables created", m_statUnkVars);
     }
 };
+
+const std::string UnknownVisitor::m_xrandPrefix = "__Vxrand";
 
 //######################################################################
 // Unknown class functions

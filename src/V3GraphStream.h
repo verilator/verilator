@@ -7,7 +7,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -40,7 +40,7 @@
 // not generally safe. If you want a raw pointer compare, see
 // GraphStreamUnordered below.
 
-template <class T_Compare>
+template <typename T_Compare>
 class GraphStream final {
     // TYPES
     class VxHolder final {
@@ -264,9 +264,9 @@ public:
     }
 
 private:
-    template <uint8_t T_Way>  //
+    template <uint8_t N_Way>  //
     VL_ATTR_NOINLINE void init(V3Graph* graphp) {
-        constexpr GraphWay way{T_Way};
+        constexpr GraphWay way{N_Way};
         // Assign every vertex without an incoming edge to ready, others to waiting
         for (V3GraphVertex& vertex : graphp->vertices()) {
             const uint32_t nDeps = vertex.edges<way.invert()>().size();
@@ -275,9 +275,9 @@ private:
         }
     }
 
-    template <uint8_t T_Way>  //
+    template <uint8_t N_Way>  //
     VL_ATTR_NOINLINE const V3GraphVertex* unblock(const V3GraphVertex* resultp) {
-        constexpr GraphWay way{T_Way};
+        constexpr GraphWay way{N_Way};
         for (const V3GraphEdge& edge : resultp->edges<way>()) {
             V3GraphVertex* const vertexp = edge.furtherp<way>();
 #if VL_DEBUG

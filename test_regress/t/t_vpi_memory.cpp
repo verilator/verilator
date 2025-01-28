@@ -36,9 +36,6 @@
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
-// __FILE__ is too long
-#define FILENM "t_vpi_memory.cpp"
-
 #define DEBUG \
     if (0) printf
 
@@ -55,25 +52,27 @@ void _mon_check_range(const TestVpiHandle& handle, int size, int left, int right
         int vpisize = vpi_get(vpiSize, handle);
         TEST_CHECK_EQ(vpisize, size);
     }
-    int coherency;
+    // check coherency
+    int coherency = 1;
     {
-        // check left hand side of range
-        TestVpiHandle left_h = vpi_handle(vpiLeftRange, handle);
-        TEST_CHECK_NZ(left_h);
-        vpi_get_value(left_h, &value);
-        TEST_CHECK_EQ(value.value.integer, left);
-        coherency = value.value.integer;
+        TestVpiHandle iter_h = vpi_iterate(vpiRange, handle);
+        while (TestVpiHandle range_h = vpi_scan(iter_h)) {
+            int rangeSize;
+            TestVpiHandle left_h, right_h;
+            // get left hand side of range
+            left_h = vpi_handle(vpiLeftRange, range_h);
+            TEST_CHECK_NZ(left_h);
+            vpi_get_value(left_h, &value);
+            rangeSize = value.value.integer;
+            // get right hand side of range
+            right_h = vpi_handle(vpiRightRange, range_h);
+            TEST_CHECK_NZ(right_h);
+            vpi_get_value(right_h, &value);
+            rangeSize = abs(rangeSize - value.value.integer) + 1;
+            coherency *= rangeSize;
+        }
+        iter_h.freed();
     }
-    {
-        // check right hand side of range
-        TestVpiHandle right_h = vpi_handle(vpiRightRange, handle);
-        TEST_CHECK_NZ(right_h);
-        vpi_get_value(right_h, &value);
-        TEST_CHECK_EQ(value.value.integer, right);
-        coherency -= value.value.integer;
-    }
-    // calculate size & check
-    coherency = abs(coherency) + 1;
     TEST_CHECK_EQ(coherency, size);
 }
 
@@ -115,7 +114,7 @@ void _mem_check(const char* name, int size, int left, int right, int words) {
         TEST_CHECK_EQ(cnt, words);  // should be words addresses
     } else {
         int expSize = size * words;
-        _mon_check_range(mem_h, expSize, expSize - 1, 0);
+        _mon_check_range(mem_h, expSize, words, 1);
         value.format = vpiBinStrVal;
         value.value.str = const_cast<char*>(binStr.c_str());
         vpi_put_value(mem_h, &value, NULL, vpiNoDelay);

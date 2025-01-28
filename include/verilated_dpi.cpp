@@ -3,7 +3,7 @@
 //
 // Code available from: https://verilator.org
 //
-// Copyright 2009-2024 by Wilson Snyder. This program is free software; you can
+// Copyright 2009-2025 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -289,7 +289,7 @@ static void _vl_svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s,
     }
     case VLVT_WDATA: {
         WDataOutP wdatap = (reinterpret_cast<WDataOutP>(datap));
-        for (int i = 0; i < VL_WORDS_I(varp->packed().elements()); ++i) d[i] = wdatap[i];
+        for (int i = 0; i < VL_WORDS_I(varp->entBits()); ++i) d[i] = wdatap[i];
         return;
     }
     default:  // LCOV_EXCL_START  // Errored earlier
@@ -328,7 +328,7 @@ static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandl
     }
     case VLVT_WDATA: {
         WDataOutP wdatap = (reinterpret_cast<WDataOutP>(datap));
-        for (int i = 0; i < VL_WORDS_I(varp->packed().elements()); ++i) {
+        for (int i = 0; i < VL_WORDS_I(varp->entBits()); ++i) {
             d[i].aval = wdatap[i];
             d[i].bval = 0;
         }
@@ -354,7 +354,7 @@ static void _vl_svPutBitArrElemVecVal(const svOpenArrayHandle d, const svBitVecV
     case VLVT_UINT64: *(reinterpret_cast<QData*>(datap)) = VL_SET_QII(s[1], s[0]); break;
     case VLVT_WDATA: {
         WDataOutP wdatap = (reinterpret_cast<WDataOutP>(datap));
-        for (int i = 0; i < VL_WORDS_I(varp->packed().elements()); ++i) wdatap[i] = s[i];
+        for (int i = 0; i < VL_WORDS_I(varp->entBits()); ++i) wdatap[i] = s[i];
         return;
     }
     default:  // LCOV_EXCL_START  // Errored earlier
@@ -376,7 +376,7 @@ static void _vl_svPutLogicArrElemVecVal(const svOpenArrayHandle d, const svLogic
     case VLVT_UINT64: *(reinterpret_cast<QData*>(datap)) = VL_SET_QII(s[1].aval, s[0].aval); break;
     case VLVT_WDATA: {
         WDataOutP wdatap = (reinterpret_cast<WDataOutP>(datap));
-        for (int i = 0; i < VL_WORDS_I(varp->packed().elements()); ++i) wdatap[i] = s[i].aval;
+        for (int i = 0; i < VL_WORDS_I(varp->entBits()); ++i) wdatap[i] = s[i].aval;
         return;
     }
     default:  // LCOV_EXCL_START  // Errored earlier

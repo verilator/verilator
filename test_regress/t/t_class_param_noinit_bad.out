@@ -1,5 +1,10 @@
-%Error: t/t_class_param_noinit_bad.v:13:7: Class parameter without initial value is never given value (IEEE 1800-2023 6.20.1): 'B'
+%Error: t/t_class_param_noinit_bad.v:13:7: Class parameter without default value is never given value (IEEE 1800-2023 6.20.1): 'B'
                                          : ... note: In instance 't'
    13 |       Cls #(1) c;   
       |       ^~~
-%Error: Exiting due to
+%Error: t/t_class_param_noinit_bad.v:13:7: Class parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
+                                         : ... note: In instance 't'
+   13 |       Cls #(1) c;   
+      |       ^~~
+%Error: Verilator internal fault, sorry. Suggest trying --debug --gdbbt
+%Error: Command Failed

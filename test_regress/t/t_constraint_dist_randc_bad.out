@@ -1,0 +1,7 @@
+%Error: t/t_constraint_dist_randc_bad.v:10:23: Randc variables not allowed in 'constraint dist' (IEEE 1800-2023 18.5.3)
+   10 |    constraint c_bad { rc dist {3 := 0, 10 := 5}; }   
+      |                       ^~
+        t/t_constraint_dist_randc_bad.v:10:26: ... Location of restricting expression
+   10 |    constraint c_bad { rc dist {3 := 0, 10 := 5}; }   
+      |                          ^~~~
+%Error: Exiting due to

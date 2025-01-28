@@ -63,4 +63,8 @@
                                                           : is dependent on function/task I/O variable
    49 |     logic tmp = in;
       |                 ^~
+%Error-UNSUPPORTED: t/t_var_static_assign_decl_bad.v:72:17: Static variable initializer
+                                                          : is dependent on function/task I/O variable
+   72 |     logic tmp = in;
+      |                 ^~
 %Error: Exiting due to

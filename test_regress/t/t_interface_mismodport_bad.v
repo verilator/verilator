@@ -10,12 +10,8 @@ interface ifc;
    modport out_modport (output ok);
 endinterface
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+module t (/*AUTOARG*/);
 
-   input clk;
    integer cyc=1;
 
    ifc itop();

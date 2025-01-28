@@ -11,12 +11,13 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(
-    fails=test.vlt_all,
-    # Used to be %Error: t/t_order_wireloop.v:\d+: Wire inputs its own output, creating circular logic .wire x=x.
-    # However we no longer gate optimize this
-    # Can't use expect_filename here as unstable output
-    expect=
+test.compile(fails=test.vlt_all)
+
+# Used to be %Error: t/t_order_wireloop.v:\d+: Wire inputs its own output, creating circular logic .wire x=x.
+# However we no longer gate optimize this
+# Can't use expect_filename here as unstable output
+test.file_grep(
+    test.compile_log_filename,
     r"%Warning-UNOPTFLAT: t/t_order_wireloop.v:\d+:\d+: Signal unoptimizable: Circular combinational logic: \'bar\'"
 )
 

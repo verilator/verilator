@@ -10,9 +10,11 @@
 #if VM_TRACE_FST
 #include <verilated_fst_c.h>
 #define TRACE_FILE_NAME "simx.fst"
+#define TRACE_CLASS VerilatedFstC
 #elif VM_TRACE_VCD
 #include <verilated_vcd_c.h>
 #define TRACE_FILE_NAME "simx.vcd"
+#define TRACE_CLASS VerilatedVcdC
 #endif
 
 #include <memory>
@@ -31,13 +33,7 @@ int main(int argc, char** argv) {
 
     std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{"top"}};
 
-#if defined(T_TRACE_DUMPVARS_DYN_VCD_0) || defined(T_TRACE_DUMPVARS_DYN_VCD_1)
-    std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};
-#elif defined(T_TRACE_DUMPVARS_DYN_FST_0) || defined(T_TRACE_DUMPVARS_DYN_FST_1)
-    std::unique_ptr<VerilatedFstC> tfp{new VerilatedFstC};
-#else
-#error "Bad test"
-#endif
+    std::unique_ptr<TRACE_CLASS> tfp{new TRACE_CLASS};
 
 #if defined(T_TRACE_DUMPVARS_DYN_VCD_0) || defined(T_TRACE_DUMPVARS_DYN_FST_0)
     tfp->dumpvars(0, "");

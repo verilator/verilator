@@ -17,7 +17,7 @@ test.compile(make_top_shell=False,
              sim_time=2100,
              iv_flags2=["-g2005-sv -D USE_VPI_NOT_DPI -DWAVES"],
              v_flags2=["+define+USE_VPI_NOT_DPI"],
-             verilator_flags2=["--exe --vpi --no-l2name", test.pli_filename])
+             verilator_flags2=["-Wno-SYMRSVDWORD --exe --vpi --no-l2name", test.pli_filename])
 
 test.execute(use_libvpi=True, all_run_flags=['+PLUS +INT=1234 +STRSTR'])
 

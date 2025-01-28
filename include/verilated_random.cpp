@@ -22,6 +22,7 @@
 
 #include "verilated_random.h"
 
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <streambuf>
@@ -250,6 +251,38 @@ static Process& getSolver() {
     return s_solver;
 }
 
+std::string readUntilBalanced(std::istream& stream) {
+    std::string result;
+    std::string token;
+    int parenCount = 1;
+    while (stream >> token) {
+        for (const char c : token) {
+            if (c == '(') {
+                ++parenCount;
+            } else if (c == ')') {
+                --parenCount;
+            }
+        }
+        result += token + " ";
+        if (parenCount == 0) break;
+    }
+    return result;
+}
+
+std::string parseNestedSelect(const std::string& nested_select_expr,
+                              std::vector<std::string>& indices) {
+    std::istringstream nestedStream(nested_select_expr);
+    std::string name, idx;
+    nestedStream >> name;
+    if (name == "(select") {
+        const std::string further_nested_expr = readUntilBalanced(nestedStream);
+        name = parseNestedSelect(further_nested_expr, indices);
+    }
+    std::getline(nestedStream, idx, ')');
+    indices.push_back(idx);
+    return name;
+}
+
 //======================================================================
 // VlRandomizer:: Methods
 
@@ -342,7 +375,11 @@ bool VlRandomizer::next(VlRNG& rngr) {
     f << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
     f << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
     for (const auto& var : m_vars) {
-        f << "(declare-fun " << var.second->name() << " () ";
+        if (var.second->dimension() > 0) {
+            auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+            var.second->setArrayInfo(arrVarsp);
+        }
+        f << "(declare-fun " << var.first << " () ";
         var.second->emitType(f);
         f << ")\n";
     }
@@ -356,7 +393,6 @@ bool VlRandomizer::next(VlRNG& rngr) {
         f << "(reset)\n";
         return false;
     }
-
     for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; i++) {
         f << "(assert ";
         randomConstraint(f, rngr, _VL_SOLVER_HASH_LEN);
@@ -383,9 +419,14 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
     }
 
     f << "(get-value (";
-    for (const auto& var : m_vars) var.second->emitGetValue(f);
+    for (const auto& var : m_vars) {
+        if (var.second->dimension() > 0) {
+            auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
+            var.second->setArrayInfo(arrVarsp);
+        }
+        var.second->emitGetValue(f);
+    }
     f << "))\n";
-
     // Quasi-parse S-expression of the form ((x #xVALUE) (y #bVALUE) (z #xVALUE))
     char c;
     f >> c;
@@ -394,7 +435,6 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
                    "Internal: Unable to parse solver's response: invalid S-expression");
         return false;
     }
-
     while (true) {
         f >> c;
         if (c == ')') break;
@@ -403,25 +443,59 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
                        "Internal: Unable to parse solver's response: invalid S-expression");
             return false;
         }
-
         std::string name, idx, value;
+        std::vector<std::string> indices;
         f >> name;
+        indices.clear();
         if (name == "(select") {
-            f >> name;
-            std::getline(f, idx, ')');
+            const std::string selectExpr = readUntilBalanced(f);
+            name = parseNestedSelect(selectExpr, indices);
         }
         std::getline(f, value, ')');
-
-        auto it = m_vars.find(name);
+        const auto it = m_vars.find(name);
         if (it == m_vars.end()) continue;
         const VlRandomVar& varr = *it->second;
         if (m_randmode && !varr.randModeIdxNone()) {
             if (!(m_randmode->at(varr.randModeIdx()))) continue;
         }
+        if (!indices.empty()) {
+            std::ostringstream oss;
+            oss << varr.name();
+            for (const auto& hex_index : indices) {
+                const size_t start = hex_index.find_first_not_of(" ");
+                if (start == std::string::npos || hex_index.substr(start, 2) != "#x") {
+                    VL_FATAL_MT(__FILE__, __LINE__, "randomize",
+                                "hex_index contains invalid format");
+                    continue;
+                }
+                std::string trimmed_hex = hex_index.substr(start + 2);
 
+                if (trimmed_hex.size() <= 8) {  // Small numbers: <= 32 bits
+                    // Convert to decimal and output directly
+                    oss << "[" << std::to_string(std::stoll(trimmed_hex, nullptr, 16)) << "]";
+                } else {  // Large numbers: > 32 bits
+                    // Trim leading zeros and handle empty case
+                    trimmed_hex.erase(0, trimmed_hex.find_first_not_of('0'));
+                    oss << "[" << (trimmed_hex.empty() ? "0" : trimmed_hex) << "]";
+                }
+            }
+            const std::string indexed_name = oss.str();
+
+            const auto it = std::find_if(m_arr_vars.begin(), m_arr_vars.end(),
+                                         [&indexed_name](const auto& entry) {
+                                             return entry.second->m_name == indexed_name;
+                                         });
+            if (it != m_arr_vars.end()) {
+                std::ostringstream ss;
+                ss << "#x" << std::hex << std::setw(8) << std::setfill('0') << it->second->m_index;
+                idx = ss.str();
+            } else {
+                VL_FATAL_MT(__FILE__, __LINE__, "randomize",
+                            "indexed_name not found in m_arr_vars");
+            }
+        }
         varr.set(idx, value);
     }
-
     return true;
 }
 

@@ -1,0 +1,7 @@
+%Error: t/t_genvar_misuse_bad.v:16:31: Genvar 'i' used outside generate for loop (IEEE 1800-2023 27.4)
+   16 |    assign            q[i] = d[i];
+      |                               ^
+%Error: t/t_genvar_misuse_bad.v:16:24: Genvar 'i' used outside generate for loop (IEEE 1800-2023 27.4)
+   16 |    assign            q[i] = d[i];
+      |                        ^
+%Error: Exiting due to

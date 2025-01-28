@@ -5,11 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 //
 
-module t(/*AUTOARG*/
-   // Inputs
-   clk
-   );
-   input clk;
+module t(/*AUTOARG*/);
+
    bit [3:0] addr;
    initial begin
       super.addr = 2;

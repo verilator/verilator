@@ -8,6 +8,9 @@ class Cls;
    function int fi();
       return 10;
    endfunction
+   static function int sfi();
+      return 10;
+   endfunction
 endclass
 
 module t;
@@ -22,6 +25,7 @@ module t;
       //
       c = new;
       c.fi();  // Bad - ignored result
+      c.sfi();  // Bad - ignored result
       //
       $write("*-* All Finished *-*\n");
       $finish;

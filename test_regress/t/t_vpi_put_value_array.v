@@ -8,13 +8,13 @@
 
 `ifdef VERILATOR_COMMENTS
  `define PUBLIC_FLAT_RD /*verilator public_flat_rd*/
- `define PUBLIC_FLAT_RW /*verilator public_flat_rw @(posedge clk)*/
+ `define PUBLIC_FLAT_RW /*verilator public_flat_rw*/
 `else
  `define PUBLIC_FLAT_RD
  `define PUBLIC_FLAT_RW
 `endif
 
-module test #() (input clk);
+module test ();
 
 `ifdef VERILATOR
 `systemc_header
@@ -23,16 +23,20 @@ extern "C" int mon_check();
 `endif
 
    reg [7:0] write_bytes [0:3] `PUBLIC_FLAT_RW;
+   reg [7:0] write_bytes_rl [3:0] `PUBLIC_FLAT_RW;
+   reg [7:0] write_bytes_nonzero_index [1:4] `PUBLIC_FLAT_RW;
+
    reg [15:0] write_shorts [0:3] `PUBLIC_FLAT_RW;
    reg [31:0] write_words [0:3] `PUBLIC_FLAT_RW;
-   reg [31:0] write_words_rl [3:0] `PUBLIC_FLAT_RW;
    reg [63:0] write_longs [0:3] `PUBLIC_FLAT_RW;
-   reg [127:0] write_quads [0:3] `PUBLIC_FLAT_RW;
+   reg [68:0] write_customs [0:3] `PUBLIC_FLAT_RW;
+   reg [68:0] write_customs_nonzero_index_rl [4:1] `PUBLIC_FLAT_RW;
+
    integer write_integers [0:3] `PUBLIC_FLAT_RW;
+
    reg [7:0] write_scalar `PUBLIC_FLAT_RW;
    reg [7:0] write_bounds [1:3] `PUBLIC_FLAT_RW;
    reg [7:0] write_inaccessible [0:3] `PUBLIC_FLAT_RD;
-
 
    integer status;
 
@@ -40,7 +44,7 @@ extern "C" int mon_check();
       status = $c32("mon_check()");
 
       if (status != 0) begin
-         $write("%%Error: t_vpi_get.cpp:%0d: C Test failed\n", status);
+         $write("%%Error: t_vpi_put_value_array.cpp:%0d: C Test failed\n", status);
          $stop;
       end
 

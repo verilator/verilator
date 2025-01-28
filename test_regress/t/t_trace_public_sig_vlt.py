@@ -26,7 +26,7 @@ test.compile(make_top_shell=False,
 if test.vlt_all:
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"GSR",.*"loc":"f,47:[^"]*",.*"origName":"GSR",.*"isSigPublic":true,.*"dtypeName":"logic",.*"isSigUserRdPublic":true.*"isSigUserRWPublic":true'
+        r'{"type":"VAR","name":"GSR",.*"loc":"\w,47:[^"]*",.*"origName":"GSR",.*"isSigPublic":true,.*"dtypeName":"logic",.*"isSigUserRdPublic":true.*"isSigUserRWPublic":true'
     )
 
 test.execute()

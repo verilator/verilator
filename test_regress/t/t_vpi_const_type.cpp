@@ -35,38 +35,6 @@
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
-// __FILE__ is too long
-#define FILENM "t_vpi_const_type.cpp"
-
-#define DEBUG \
-    if (0) printf
-
-#define CHECK_RESULT_NZ(got) \
-    if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM, __LINE__); \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT_Z(got) \
-    if (got) { \
-        printf("%%Error: %s:%d: GOT = !NULL  EXP = NULL\n", FILENM, __LINE__); \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT(got, exp) \
-    if ((got) != (exp)) { \
-        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
-                  << "   EXP = " << (exp) << std::endl; \
-        return __LINE__; \
-    }
-
-#define CHECK_RESULT_CSTR(got, exp) \
-    if (std::strcmp((got), (exp))) { \
-        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
-               (got) ? (got) : "<null>", (exp) ? (exp) : "<null>"); \
-        return __LINE__; \
-    }
-
 extern "C" {
 int mon_check() {
 #ifdef TEST_VERBOSE
@@ -94,13 +62,32 @@ int mon_check() {
     const char* strConstTypeStr = vpi_get_str(vpiConstType, strHandle);
     CHECK_RESULT_CSTR(strConstTypeStr, "vpiStringConst")
 
-    TestVpiHandle sigHandle = vpi_handle_by_name((PLI_BYTE8*)"t.signal", NULL);
+    // t.signal_rd is not constant, and should error on a write
+    TestVpiHandle sigHandle = vpi_handle_by_name((PLI_BYTE8*)"t.signal_rd", NULL);
     CHECK_RESULT_NZ(sigHandle)
     PLI_INT32 sigConstType = vpi_get(vpiConstType, sigHandle);
-    // t.signal is not constant
     CHECK_RESULT(sigConstType, vpiUndefined)
     const char* sigConstTypeStr = vpi_get_str(vpiConstType, sigHandle);
     CHECK_RESULT_CSTR(sigConstTypeStr, "*undefined*")
+    // and should error on a write
+    s_vpi_value vpi_value;
+    vpi_value.format = vpiIntVal;
+    vpi_value.value.integer = 1;
+    vpi_put_value(sigHandle, &vpi_value, NULL, vpiNoDelay);
+    CHECK_RESULT(vpi_chk_error(nullptr), vpiError);
+    // and an intertial write
+    vpi_put_value(sigHandle, &vpi_value, NULL, vpiInertialDelay);
+    CHECK_RESULT(vpi_chk_error(nullptr), vpiError);
+
+    // t.signal_rw is not constant
+    sigHandle = vpi_handle_by_name((PLI_BYTE8*)"t.signal_rw", NULL);
+    CHECK_RESULT_NZ(sigHandle)
+    sigConstType = vpi_get(vpiConstType, sigHandle);
+    CHECK_RESULT(sigConstType, vpiUndefined)
+    sigConstTypeStr = vpi_get_str(vpiConstType, sigHandle);
+    CHECK_RESULT_CSTR(sigConstTypeStr, "*undefined*")
+
+    // left range of t.signal_rw
     TestVpiHandle leftHandle = vpi_handle(vpiLeftRange, sigHandle);
     CHECK_RESULT_NZ(leftHandle)
     PLI_INT32 leftConstType = vpi_get(vpiConstType, leftHandle);

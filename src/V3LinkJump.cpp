@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -163,11 +163,9 @@ class LinkJumpVisitor final : public VNVisitor {
         if (nodep->dead()) return;
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modRepeatNum);
-        {
-            m_modp = nodep;
-            m_modRepeatNum = 0;
-            iterateChildren(nodep);
-        }
+        m_modp = nodep;
+        m_modRepeatNum = 0;
+        iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
         m_ftaskp = nodep;
@@ -202,12 +200,13 @@ class LinkJumpVisitor final : public VNVisitor {
         // Note var can be signed or unsigned based on original number.
         AstNodeExpr* const countp = nodep->countp()->unlinkFrBackWithNext();
         const string name = "__Vrepeat"s + cvtToStr(m_modRepeatNum++);
+        AstBegin* const beginp = new AstBegin{nodep->fileline(), "", nullptr, false, true};
         // Spec says value is integral, if negative is ignored
         AstVar* const varp
             = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP, name, nodep->findSigned32DType()};
         varp->lifetime(VLifetime::AUTOMATIC);
         varp->usedLoopIdx(true);
-        m_modp->addStmtsp(varp);
+        beginp->addStmtsp(varp);
         AstNode* initsp = new AstAssign{
             nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE}, countp};
         AstNode* const decp = new AstAssign{
@@ -222,8 +221,9 @@ class LinkJumpVisitor final : public VNVisitor {
         AstWhile* const whilep = new AstWhile{nodep->fileline(), condp, bodysp, decp};
         if (!m_unrollFull.isDefault()) whilep->unrollFull(m_unrollFull);
         m_unrollFull = VOptionBool::OPT_DEFAULT_FALSE;
-        initsp = initsp->addNext(whilep);
-        nodep->replaceWith(initsp);
+        beginp->addStmtsp(initsp);
+        beginp->addStmtsp(whilep);
+        nodep->replaceWith(beginp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstWhile* nodep) override {
@@ -234,15 +234,13 @@ class LinkJumpVisitor final : public VNVisitor {
         m_unrollFull = VOptionBool::OPT_DEFAULT_FALSE;
         VL_RESTORER(m_loopp);
         VL_RESTORER(m_loopInc);
-        {
-            m_loopp = nodep;
-            m_loopInc = false;
-            iterateAndNextNull(nodep->precondsp());
-            iterateAndNextNull(nodep->condp());
-            iterateAndNextNull(nodep->stmtsp());
-            m_loopInc = true;
-            iterateAndNextNull(nodep->incsp());
-        }
+        m_loopp = nodep;
+        m_loopInc = false;
+        iterateAndNextNull(nodep->precondsp());
+        iterateAndNextNull(nodep->condp());
+        iterateAndNextNull(nodep->stmtsp());
+        m_loopInc = true;
+        iterateAndNextNull(nodep->incsp());
     }
     void visit(AstDoWhile* nodep) override {
         // It is converted to AstWhile in this visit method
@@ -270,10 +268,8 @@ class LinkJumpVisitor final : public VNVisitor {
     }
     void visit(AstNodeForeach* nodep) override {
         VL_RESTORER(m_loopp);
-        {
-            m_loopp = nodep;
-            iterateAndNextNull(nodep->stmtsp());
-        }
+        m_loopp = nodep;
+        iterateAndNextNull(nodep->stmtsp());
     }
     void visit(AstReturn* nodep) override {
         iterateChildren(nodep);

@@ -9,6 +9,8 @@ class Packet;
 
    constraint a { one > 0 && one < 2; }
 
+   constraint empty { }
+
 endclass
 
 module t (/*AUTOARG*/);

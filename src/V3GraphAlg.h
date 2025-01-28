@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -27,7 +27,7 @@
 // Algorithms - common class
 // For internal use, most graph algorithms use this as a base class
 
-template <class T_Graph = V3Graph>  // Or sometimes const V3Graph
+template <typename T_Graph = V3Graph>  // Or sometimes const V3Graph
 class GraphAlg VL_NOT_FINAL {
 protected:
     T_Graph* const m_graphp;  // Graph we're operating upon

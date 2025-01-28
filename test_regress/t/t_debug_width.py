@@ -10,7 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_const_opt.v"
+test.top_filename = "t/t_opt_const.v"
 
 test.lint(verilator_flags2=["--lint-only", "--debug-width"],
           fails=True,

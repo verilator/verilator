@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2024 by Wilson Snyder. This program is free software; you
+// Copyright 2003-2025 by Wilson Snyder. This program is free software; you
 // can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -21,6 +21,7 @@
 //              (Interfaces also matter, as if a module is parameterized
 //              this effectively changes the width behavior of all that
 //              reference the iface.)
+//
 //              Clone module cell calls, renaming with __{par1}_{par2}_...
 //              Substitute constants for cell's module's parameters.
 //              Relink pins and cell and ifacerefdtype to point to new module.
@@ -65,7 +66,7 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
-// Hierarchical block and parameter db (modules without parameter is also handled)
+// Hierarchical block and parameter db (modules without parameters are also handled)
 
 class ParameterizedHierBlocks final {
     using HierBlockOptsByOrigName = std::multimap<std::string, const V3HierarchicalBlockOption*>;
@@ -231,10 +232,10 @@ class ParamProcessor final {
     //                          //        (0=not processed, 1=iterated, but no number,
     //                          //         65+ parameter numbered)
     // NODE STATE - Shared with ParamVisitor
-    //   AstClass::user3p()     // AstClass* Unchanged copy of the parameterized class node.
-    //                                    The class node may be modified according to parameter
-    //                                    values and an unchanged copy is needed to instantiate
-    //                                    classes with different parameters.
+    //   AstNodeModule::user3p()  // AstNodeModule* Unaltered copy of the parameterized module.
+    //                               The module/class node may be modified according to parameter
+    //                               values and an unchanged copy is needed to instantiate
+    //                               modules/classes with different parameters.
     //   AstNodeModule::user2() // bool   True if processed
     //   AstGenFor::user2()     // bool   True if processed
     //   AstVar::user2()        // bool   True if constant propagated
@@ -317,7 +318,7 @@ class ParamProcessor final {
 
     static string paramValueString(const AstNode* nodep) {
         if (const AstRefDType* const refp = VN_CAST(nodep, RefDType)) {
-            nodep = refp->skipRefToEnump();
+            nodep = refp->skipRefToNonRefp();
         }
         string key = nodep->name();
         if (const AstIfaceRefDType* const ifrtp = VN_CAST(nodep, IfaceRefDType)) {
@@ -347,7 +348,24 @@ class ParamProcessor final {
             if (dtypep->isRanged()) {
                 key += "[" + cvtToStr(dtypep->left()) + ":" + cvtToStr(dtypep->right()) + "]";
             }
+        } else if (const AstPackArrayDType* const dtypep = VN_CAST(nodep, PackArrayDType)) {
+            key += "[";
+            key += cvtToStr(dtypep->left());
+            key += ":";
+            key += cvtToStr(dtypep->right());
+            key += "] ";
+            key += paramValueString(dtypep->subDTypep());
+        } else if (const AstInitArray* const initp = VN_CAST(nodep, InitArray)) {
+            key += "{";
+            for (auto it : initp->map()) {
+                key += paramValueString(it.second->valuep());
+                key += ",";
+            }
+            key += "}";
+        } else if (const AstNodeDType* const dtypep = VN_CAST(nodep, NodeDType)) {
+            key += dtypep->prettyDTypeName(true);
         }
+        UASSERT_OBJ(!key.empty(), nodep, "Parameter yielded no value string");
         return key;
     }
 
@@ -355,9 +373,7 @@ class ParamProcessor final {
         // TODO: This parameter value number lookup via a constructed key string is not
         //       particularly robust for type parameters. We should really have a type
         //       equivalence predicate function.
-        if (const AstRefDType* const refp = VN_CAST(nodep, RefDType)) {
-            nodep = refp->skipRefToEnump();
-        }
+        if (AstRefDType* const refp = VN_CAST(nodep, RefDType)) nodep = refp->skipRefToNonRefp();
         const string paramStr = paramValueString(nodep);
         // cppcheck-has-bug-suppress unreadVariable
         V3Hash hash = V3Hasher::uncachedHash(nodep) + paramStr;
@@ -399,7 +415,7 @@ class ParamProcessor final {
         return nullptr;
     }
     bool isString(AstNodeDType* nodep) {
-        if (AstBasicDType* const basicp = VN_CAST(nodep->skipRefToEnump(), BasicDType))
+        if (AstBasicDType* const basicp = VN_CAST(nodep->skipRefToNonRefp(), BasicDType))
             return basicp->isString();
         return false;
     }
@@ -514,7 +530,7 @@ class ParamProcessor final {
                         // nullptr means that the parameter is using some default value.
                         params.emplace(varp->name(), constp);
                     }
-                } else if (const AstParamTypeDType* const p = VN_CAST(stmtp, ParamTypeDType)) {
+                } else if (AstParamTypeDType* const p = VN_CAST(stmtp, ParamTypeDType)) {
                     params.emplace(p->name(), p->skipRefp());
                 }
             }
@@ -577,7 +593,8 @@ class ParamProcessor final {
         if (AstClassRefDType* const classRefp = VN_CAST(nodep, ClassRefDType)) {
             if (classRefp->classp() == oldClassp) classRefp->classp(newClassp);
         } else if (AstClassOrPackageRef* const classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
-            if (classRefp->classOrPackagep() == oldClassp) classRefp->classOrPackagep(newClassp);
+            if (classRefp->classOrPackageSkipp() == oldClassp)
+                classRefp->classOrPackagep(newClassp);
         }
 
         if (nodep->op1p()) replaceRefsRecurse(nodep->op1p(), oldClassp, newClassp);
@@ -750,8 +767,9 @@ class ParamProcessor final {
                 }
             }
         } else if (AstParamTypeDType* const modvarp = pinp->modPTypep()) {
-            AstNodeDType* const exprp = VN_CAST(pinp->exprp(), NodeDType);
-            const AstNodeDType* const origp = modvarp->skipRefToEnump();
+            AstNodeDType* rawTypep = VN_CAST(pinp->exprp(), NodeDType);
+            AstNodeDType* exprp = rawTypep ? rawTypep->skipRefToNonRefp() : nullptr;
+            const AstNodeDType* const origp = modvarp->skipRefToNonRefp();
             if (!exprp) {
                 pinp->v3error("Parameter type pin value isn't a type: Param "
                               << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
@@ -765,7 +783,9 @@ class ParamProcessor final {
                     // This prevents making additional modules, and makes coverage more
                     // obvious as it won't show up under a unique module page name.
                 } else {
-                    V3Const::constifyParamsEdit(exprp);
+                    VL_DO_DANGLING(V3Const::constifyParamsEdit(exprp), exprp);
+                    rawTypep = VN_CAST(pinp->exprp(), NodeDType);
+                    exprp = rawTypep ? rawTypep->skipRefToNonRefp() : nullptr;
                     longnamer += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
                     any_overridesr = true;
                 }
@@ -905,13 +925,15 @@ class ParamProcessor final {
         for (auto* stmtp = srcModpr->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstParamTypeDType* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
                 if (VN_IS(dtypep->subDTypep(), VoidDType)) {
-                    nodep->v3error("Missing type parameter: " << dtypep->prettyNameQ());
+                    nodep->v3error(
+                        "Class parameter type without default value is never given value"
+                        << " (IEEE 1800-2023 6.20.1): " << dtypep->prettyNameQ());
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                 }
             }
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (VN_IS(srcModpr, Class) && varp->isParam() && !varp->valuep()) {
-                    nodep->v3error("Class parameter without initial value is never given value"
+                    nodep->v3error("Class parameter without default value is never given value"
                                    << " (IEEE 1800-2023 6.20.1): " << varp->prettyNameQ());
                 }
             }
@@ -962,7 +984,9 @@ public:
         if (debug() >= 10) nodep->dumpTree("-  cell: ");
         // Evaluate all module constants
         V3Const::constifyParamsEdit(nodep);
-        srcModpr->someInstanceName(someInstanceName + "." + nodep->name());
+        // Set name for warnings for when we param propagate the module
+        const string instanceName = someInstanceName + "." + nodep->name();
+        srcModpr->someInstanceName(instanceName);
 
         if (auto* cellp = VN_CAST(nodep, Cell)) {
             cellDeparam(cellp, srcModpr);
@@ -975,6 +999,9 @@ public:
         } else {
             nodep->v3fatalSrc("Expected module parameterization");
         }
+
+        // Set name for later warnings (if srcModpr changed value due to cloning)
+        srcModpr->someInstanceName(instanceName);
 
         UINFO(8, "     Done with " << nodep << endl);
         // if (debug() >= 10)
@@ -1058,7 +1085,7 @@ class ParamVisitor final : public VNVisitor {
                 if (const auto* modCellp = VN_CAST(cellp, Cell)) {
                     srcModp = modCellp->modp();
                 } else if (const auto* classRefp = VN_CAST(cellp, ClassOrPackageRef)) {
-                    srcModp = classRefp->classOrPackagep();
+                    srcModp = classRefp->classOrPackageSkipp();
                     if (VN_IS(classRefp->classOrPackageNodep(), ParamTypeDType)) continue;
                 } else if (const auto* classRefp = VN_CAST(cellp, ClassRefDType)) {
                     srcModp = classRefp->classp();
@@ -1070,7 +1097,7 @@ class ParamVisitor final : public VNVisitor {
                 UASSERT_OBJ(srcModp, cellp, "Unlinked class ref");
 
                 // Update path
-                string someInstanceName(modp->someInstanceName());
+                string someInstanceName = modp->someInstanceName();
                 if (const string* const genHierNamep = cellp->user2u().to<string*>()) {
                     someInstanceName += *genHierNamep;
                     cellp->user2p(nullptr);
@@ -1176,11 +1203,18 @@ class ParamVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (nodep->isParam()) {
             if (!nodep->valuep() && !VN_IS(m_modp, Class)) {
-                nodep->v3error("Parameter without initial value is never given value"
+                nodep->v3error("Parameter without default value is never given value"
                                << " (IEEE 1800-2023 6.20.1): " << nodep->prettyNameQ());
             } else {
                 V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
             }
+        }
+    }
+    void visit(AstParamTypeDType* nodep) override {
+        iterateChildren(nodep);
+        if (VN_IS(nodep->subDTypep(), VoidDType)) {
+            nodep->v3error("Parameter type without default value is never given value"
+                           << " (IEEE 1800-2023 6.20.1): " << nodep->prettyNameQ());
         }
     }
     // Make sure varrefs cause vars to constify before things above
@@ -1215,18 +1249,25 @@ class ParamVisitor final : public VNVisitor {
                     UINFO(9, "Hit module boundary, done looking for interface" << endl);
                     break;
                 }
-                if (VN_IS(backp, Var) && VN_AS(backp, Var)->isIfaceRef()
-                    && VN_AS(backp, Var)->childDTypep()
-                    && (VN_CAST(VN_CAST(backp, Var)->childDTypep(), IfaceRefDType)
-                        || (VN_CAST(VN_CAST(backp, Var)->childDTypep(), UnpackArrayDType)
-                            && VN_CAST(VN_CAST(backp, Var)->childDTypep()->getChildDTypep(),
-                                       IfaceRefDType)))) {
-                    const AstIfaceRefDType* ifacerefp
-                        = VN_CAST(VN_CAST(backp, Var)->childDTypep(), IfaceRefDType);
-                    if (!ifacerefp) {
-                        ifacerefp = VN_CAST(VN_CAST(backp, Var)->childDTypep()->getChildDTypep(),
-                                            IfaceRefDType);
+                if (const AstVar* const varp = VN_CAST(backp, Var)) {
+                    if (!varp->isIfaceRef()) { continue; }
+                    const AstIfaceRefDType* ifacerefp = nullptr;
+                    if (const AstNodeDType* const typep = varp->childDTypep()) {
+                        ifacerefp = VN_CAST(typep, IfaceRefDType);
+                        if (!ifacerefp) {
+                            if (const AstUnpackArrayDType* const unpackp
+                                = VN_CAST(typep, UnpackArrayDType)) {
+                                ifacerefp = VN_CAST(typep->getChildDTypep(), IfaceRefDType);
+                            }
+                        }
+                        if (!ifacerefp) {
+                            if (const AstBracketArrayDType* const unpackp
+                                = VN_CAST(typep, BracketArrayDType)) {
+                                ifacerefp = VN_CAST(typep->subDTypep(), IfaceRefDType);
+                            }
+                        }
                     }
+                    if (!ifacerefp) { continue; }
                     // Interfaces passed in on the port map have ifaces
                     if (const AstIface* const ifacep = ifacerefp->ifacep()) {
                         if (dotted == backp->name()) {

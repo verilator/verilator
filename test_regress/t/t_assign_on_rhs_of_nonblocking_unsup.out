@@ -4,8 +4,8 @@
                    t/t_assign_on_rhs_of_nonblocking_unsup.v:24:18: ... Location of blocking assignment
    24 |          y <= (x = 2);
       |                  ^
-                   t/t_assign_on_rhs_of_nonblocking_unsup.v:21:10: ... Location of nonblocking assignment
+                   t/t_assign_on_rhs_of_nonblocking_unsup.v:21:12: ... Location of nonblocking assignment
    21 |          x <= 1;
-      |          ^
+      |            ^~
                    ... For error description see https://verilator.org/warn/BLKANDNBLK?v=latest
 %Error: Exiting due to

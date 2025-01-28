@@ -27,12 +27,7 @@ class Cls;
 endclass
 endpackage
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
-
-   input clk;
+module t (/*AUTOARG*/);
 
    Pkg::Cls a = new;
    Pkg::Cls b = new;

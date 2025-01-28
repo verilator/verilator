@@ -16,6 +16,6 @@ test.compile(verilator_flags2=['--cc --debug-nondeterminism --no-skip-identical'
 
 test.execute()
 
-test.file_grep(test.obj_dir + "/vlt_compile.log", r'Hash of shape')
+test.file_grep(test.compile_log_filename, r'Hash of shape')
 
 test.passes()

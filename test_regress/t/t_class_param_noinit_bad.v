@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // No init value is legal with classes, as long as not used without the parameter
-class Cls #(int A, int B);
+class Cls #(int A, int B, type T);
 endclass
 
 module t(/*AUTOARG*/);

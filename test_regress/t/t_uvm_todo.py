@@ -12,16 +12,9 @@ import multiprocessing
 
 test.scenarios('vlt')
 
-test.compile(
-    v_flags2=[
-        "--timing",
-        "-Wno-PKGNODECL -Wno-IMPLICITSTATIC -Wno-CONSTRAINTIGN -Wno-MISINDENT",
-        "-Wno-CASEINCOMPLETE -Wno-CASTCONST -Wno-SYMRSVDWORD -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC",
-        "-Wno-REALCVT",  # TODO note mostly related to $realtime - could suppress or fix upstream
-        "-Wno-ZERODLY",  # TODO issue #4494, add support
-    ],
-    make_flags=['-k -j ' + str(multiprocessing.cpu_count())],
-    verilator_make_gmake=False)
+test.compile(v_flags2=["--timing", "+incdir+t/uvm", "t/t_uvm_todo.vlt"],
+             make_flags=['-k -j ' + str(multiprocessing.cpu_count())],
+             verilator_make_gmake=False)
 
 #test.execute()
 

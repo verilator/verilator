@@ -20,8 +20,8 @@ Suppressed = {}
 for s in [
         ' exited with ',  # Is hit; driver.py filters out
         'EOF in unterminated string',  # Instead get normal unterminated
-        'Enum names without values only allowed on numeric types',  # Hard to hit
         'Enum ranges must be integral, per spec',  # Hard to hit
+        'Import package not found: ',  # Errors earlier, until future parser released
         'Return with return value isn\'t underneath a function',  # Hard to hit, get other bad return messages
         'Syntax error: Range \':\', \'+:\' etc are not allowed in the instance ',  # Instead get syntax error
         'Syntax error parsing real: \'',  # Instead can't lex the number
@@ -47,14 +47,12 @@ for s in [
         'Illegal +: or -: select; type already selected, or bad dimension: ',
         'Illegal bit or array select; type already selected, or bad dimension: ',
         'Illegal range select; type already selected, or bad dimension: ',
-        'Interface port ',
         'Member selection of non-struct/union object \'',
         'Modport item is not a function/task: ',
         'Modport item is not a variable: ',
         'Modport item not found: ',
         'Modport not referenced as <interface>.',
         'Modport not referenced from underneath an interface: ',
-        'Non-interface used as an interface: ',
         'Parameter type pin value isn\'t a type: Param ',
         'Parameter type variable isn\'t a type: Param ',
         'Pattern replication value of 0 is not legal.',
@@ -73,21 +71,49 @@ for s in [
         'Unsupported/unknown built-in dynamic array method ',
         'Unsupported: $bits for queue',
         'Unsupported: $c can\'t generate wider than 64 bits',
+        'Unsupported: &&& expression',
+        'Unsupported: \'default :/\' constraint',
+        'Unsupported: \'{} .* patterns',
+        'Unsupported: \'{} tagged patterns',
+        'Unsupported: +%- range',
+        'Unsupported: +/- range',
         'Unsupported: 4-state numbers in this context',
+        'Unsupported: Bind with instance list',
         'Unsupported: Concatenation to form ',
-        'Unsupported: Non-variable on LHS of built-in method \'',
+        'Unsupported: Modport clocking',
+        'Unsupported: Modport dotted port name',
+        'Unsupported: Modport export with prototype',
+        'Unsupported: Modport import with prototype',
         'Unsupported: Only one PSL clock allowed per assertion',
         'Unsupported: Per-bit array instantiations ',
         'Unsupported: Public functions with >64 bit outputs; ',
-        'Unsupported: RHS of ==? or !=? must be ',
         'Unsupported: Replication to form ',
         'Unsupported: Shifting of by over 32-bit number isn\'t supported.',
         'Unsupported: Signal strengths are unsupported ',
         'Unsupported: Size-changing cast on non-basic data type',
         'Unsupported: Slice of non-constant bounds',
         'Unsupported: Unclocked assertion',
+        'Unsupported: Verilog 1995 deassign',
+        'Unsupported: Verilog 1995 gate primitive: ',
+        'Unsupported: [] dimensions',
+        'Unsupported: always[] (in property expression)',
+        'Unsupported: assertion items in clocking blocks',
+        'Unsupported: covergroup within class',
+        'Unsupported: default clocking identifier',
         'Unsupported: don\'t know how to deal with ',
-        'Unsupported: event arrays',
+        'Unsupported: eventually[] (in property expression)',
+        'Unsupported: extern forkjoin',
+        'Unsupported: extern interface',
+        'Unsupported: extern module',
+        'Unsupported: extern task',
+        'Unsupported: property port \'local\'',
+        'Unsupported: randsequence production list',
+        'Unsupported: randsequence repeat',
+        'Unsupported: repeat event control',
+        'Unsupported: s_always (in property expression)',
+        'Unsupported: this.super',
+        'Unsupported: trireg',
+        'Unsupported: with[] stream expression',
         'Unsupported: modport export',
         'Unsupported: no_inline for tasks',
         'Unsupported: static cast to ',
@@ -111,11 +137,11 @@ def read_messages():
                     continue
                 if re.match(r'^\s*/\*', line):
                     continue
-                if re.search(r'\b(v3error|v3warn)\b\($', line):
+                if re.search(r'\b(v3error|v3warn|BBUNSUP)\b\($', line):
                     if 'LCOV_EXCL_LINE' not in line:
                         read_next = True
                     continue
-                m = re.search(r'.*\b(v3error|v3warn)\b(.*)', line)
+                m = re.search(r'.*\b(v3error|v3warn|BBUNSUP)\b(.*)', line)
                 if m:
                     line = m.group(2)
                     if 'LCOV_EXCL_LINE' not in line:
@@ -194,8 +220,9 @@ def check():
             if test.verbose:
                 print(fileline + ": Suppressed check for message in source: '" + msg + "'")
         else:
-            test.error(fileline + ": Missing test_regress/t/*.out test for message in source: '" +
-                       msg + "'")
+            test.error_keep_going(fileline +
+                                  ": Missing test_regress/t/*.out test for message in source: '" +
+                                  msg + "'")
             if test.verbose:
                 print("  Line is: " + line)
 
