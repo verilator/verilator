@@ -2936,11 +2936,11 @@ template <typename T>
 void vl_get_value_array_vectors(unsigned index, const unsigned num, const unsigned size,
                                 const unsigned packedSize, const bool leftIsLow,
                                 const T * src, p_vpi_vecval dst) {
-    static_assert(std::is_unsigned_v<T>); // ensure logical right shift
+    static_assert(std::is_unsigned<T>::value); // ensure logical right shift
     const unsigned element_size_bytes = VL_BYTES_I(packedSize);
     const unsigned element_size_words = VL_WORDS_I(packedSize);
     const unsigned element_size_repr = (element_size_bytes + sizeof(T) - 1) / sizeof(T);
-    if constexpr (sizeof(T) == sizeof(QData)) {
+    if (sizeof(T) == sizeof(QData)) {
         for(unsigned i = 0; i < num; i++) {
             dst[i*2].aval = src[index];
             dst[i*2].bval = 0;
@@ -2967,7 +2967,7 @@ void vl_put_value_array_vectors(unsigned index, const unsigned num, const unsign
                                 const p_vpi_vecval src, T * dst) {
     const unsigned element_size_bytes VL_BYTES_I(packedSize);
     const unsigned element_size_words VL_WORDS_I(packedSize);
-    if constexpr (sizeof(T) == sizeof(QData)) { //destination is QDATA
+    if (sizeof(T) == sizeof(QData)) { //destination is QDATA
         const QData mask = element_size_bytes == sizeof(T) ? UINT64_MAX : ~(UINT64_MAX << (element_size_bytes*8));
         for(unsigned i = 0; i < num; i++) {
             dst[index] = src[i*2].aval;
@@ -2992,7 +2992,7 @@ template <typename T>
 void vl_get_value_array_rawvals(unsigned index, unsigned num, const unsigned size,
                                 const unsigned packedSize, const bool leftIsLow, const bool fourState,
                                 const T * src, PLI_BYTE8 * dst) {
-    static_assert(std::is_unsigned_v<T>); //ensure loigcal right shift
+    static_assert(std::is_unsigned<T>::value); //ensure loigcal right shift
     const unsigned element_size_bytes VL_BYTES_I(packedSize);
     const unsigned element_size_repr = (element_size_bytes + sizeof(T) - 1) / sizeof(T);
     size_t dst_index = 0;
