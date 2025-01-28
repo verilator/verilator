@@ -230,7 +230,7 @@ class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     const int m_uniqueNum;
     bool m_packed;
     bool m_isFourstate = false;  // V3Width computes
-    bool m_rand = false;
+    bool m_constrainedRand = false; // True if struct has constraint expression
 
 protected:
     AstNodeUOrStructDType(VNType t, FileLine* fl, VSigning numericUnpack)
@@ -246,7 +246,7 @@ protected:
         , m_uniqueNum(uniqueNumInc())
         , m_packed(other.m_packed)
         , m_isFourstate(other.m_isFourstate)
-        , m_rand(false) {}
+        , m_constrainedRand(false) {}
 
 public:
     ASTGEN_MEMBERS_AstNodeUOrStructDType;
@@ -286,8 +286,8 @@ public:
     VNumRange declRange() const VL_MT_STABLE { return VNumRange{hi(), lo()}; }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* classpackagep) { m_classOrPackagep = classpackagep; }
-    bool randomized() { return m_rand; }
-    void randomized(bool rand) { m_rand = rand; }
+    bool isConstrainedRand() { return m_constrainedRand; }
+    void markConstrainedRand(bool flag) { m_constrainedRand = flag; }
 };
 
 // === Concrete node types =====================================================

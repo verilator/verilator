@@ -346,19 +346,19 @@ public:
         }
     }
     template <typename T, std::size_t... I>
-    void modifyMembers(T& obj, std::index_sequence<I...>, std::string name) {
+    void modifyMembers(T& obj, std::index_sequence<I...>, std::string baseName) {
         // Use the indices to access each member via std::get
-        (void)std::initializer_list<int>{(write_var(std::get<I>(obj.getMembers(obj)),
-                                                    sizeof(std::get<I>(obj.getMembers(obj))) * 8,
-                                                    (name + "." + obj.nameList()[I]).c_str(), 0),
-                                          0)...};
+        (void)std::initializer_list<int>{
+            (write_var(std::get<I>(obj.getMembers(obj)),
+                        sizeof(std::get<I>(obj.getMembers(obj))) * 8,
+                        (baseName + "." + obj.memberNames()[I]).c_str(), 0), 0)...};
     }
 
     template <typename T>
     typename std::enable_if<VlIsCustomStruct<T>::value, void>::type
     write_var(T& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        modifyMembers(var, var.seq(), name);
+        modifyMembers(var, var.memberIndices(), name);
     }
 
     int idx;

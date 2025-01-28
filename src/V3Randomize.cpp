@@ -631,8 +631,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
             if (VN_IS(varp->dtypeSkipRefp(), StructDType)
                 && !VN_AS(varp->dtypeSkipRefp(), StructDType)->packed()) {
-                VN_AS(varp->dtypeSkipRefp(), StructDType)
-                    ->randomized(true);  // mark the struct dtype is randomized;
+                VN_AS(varp->dtypeSkipRefp(), StructDType)->markConstrainedRand(true);
                 dimension = 1;
             }
             methodp->dtypeSetVoid();
@@ -716,24 +715,11 @@ class ConstraintExprVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
-        // const int actual_width = nodep->dtypep()->width();
-        // std::string smtExpr = nodep->emitSMT(); //"(select %l %r)"
-        // for(string::iterator pos = smtExpr.begin(); pos != smtExpr.end(); ++pos){
-        //     if(pos[0]=='%' )pos[1]='@';
-        // }
-        // AstNodeExpr* argsp = nullptr;
-        // AstNodeExpr* rhsp = nodep->cloneTreePure(false);
-        // AstStructSel * cloned = nodep->cloneTreePure(false);
-        // AstNodeExpr* lhsp = cloned->fromp()->unlinkFrBack();
-        // lhsp = VN_AS(iterateSubtreeReturnEdits(lhsp), NodeExpr);
-        // argsp = AstNode::addNext(argsp, lhsp);
-        // argsp = AstNode::addNext(argsp, rhsp);
+        // AstSFormatF* const newp = new AstSFormatF{fl, smtExpr, false, argsp};
         AstSFormatF* const newp = new AstSFormatF{
-            fl, nodep->fromp()->name() + "." + nodep->name(), false,
-            nullptr};  //AstSFormatF* const newp = new AstSFormatF{fl, smtExpr, false, argsp};
+            fl, nodep->fromp()->name() + "." + nodep->name(), false, nullptr};
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        //editSMT(nodep, nodep->fromp(), nodep->cloneTreePure(false));
     }
     void visit(AstAssocSel* nodep) override {
         if (editFormat(nodep)) return;

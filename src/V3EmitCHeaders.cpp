@@ -248,8 +248,12 @@ class EmitCHeader final : public EmitCConstInit {
             putns(itemp, itemp->dtypep()->cType(itemp->nameProtect(), false, false));
             puts(";\n");
         }
-        if (sdtypep->randomized()) {
-            putns(sdtypep, "\nstd::vector<std::string> nameList(void) const {\n");
+        // Three helper functions for struct constrained randomization:
+        // - memberNames: Get member names
+        // - getMembers: Access member references
+        // - memberIndices: Retrieve member indices
+        if (sdtypep->isConstrainedRand()) {
+            putns(sdtypep, "\nstd::vector<std::string> memberNames(void) const {\n");
             puts("return {");
             for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
@@ -258,7 +262,7 @@ class EmitCHeader final : public EmitCConstInit {
             }
             puts("};\n}\n");
 
-            putns(sdtypep, "\nauto seq(void) const {\n");
+            putns(sdtypep, "\nauto memberIndices(void) const {\n");
             puts("return std::index_sequence_for<");
             for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
