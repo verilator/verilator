@@ -186,9 +186,7 @@ bool VerilatedSaif::preChangeDump() {
     return isOpen();
 }
 
-void VerilatedSaif::emitTimeChange(uint64_t timeui) {
-    m_time = timeui;
-}
+void VerilatedSaif::emitTimeChange(uint64_t timeui) { m_time = timeui; }
 
 VerilatedSaif::~VerilatedSaif() {
     close();
@@ -256,8 +254,8 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
         }
         activity.lastTime = m_time;
     }
-    printStr("))"); // INSTANCE/NET
-    printStr(")\n"); // SAIFILE
+    printStr("))");  // INSTANCE/NET
+    printStr(")\n");  // SAIFILE
     // This function is on the flush() call path
     const VerilatedLockGuard lock{m_mutex};
     if (!isOpen()) return;
@@ -273,9 +271,7 @@ void VerilatedSaif::flush() VL_MT_SAFE_EXCLUDES(m_mutex) {
     bufferFlush();
 }
 
-void VerilatedSaif::printStr(const char* str) {
-    m_filep->write(str, strlen(str));
-}
+void VerilatedSaif::printStr(const char* str) { m_filep->write(str, strlen(str)); }
 
 void VerilatedSaif::bufferResize(size_t minsize) {
     // minsize is size of largest write.  We buffer at least 8 times as much data,
@@ -371,8 +367,7 @@ void VerilatedSaif::popPrefix() {
     case VerilatedTracePrefixType::SCOPE_INTERFACE:
     case VerilatedTracePrefixType::STRUCT_PACKED:
     case VerilatedTracePrefixType::STRUCT_UNPACKED:
-    case VerilatedTracePrefixType::UNION_PACKED:
-        break;
+    case VerilatedTracePrefixType::UNION_PACKED: break;
     default: break;
     }
     m_prefixStack.pop_back();
@@ -380,7 +375,7 @@ void VerilatedSaif::popPrefix() {
 }
 
 void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, bool array,
-                           int arraynum, bool bussed, int msb, int lsb) {
+                            int arraynum, bool bussed, int msb, int lsb) {
     if (code >= m_activity.size()) m_codeToActivity.resize(code + 1);
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
@@ -410,53 +405,49 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
     m_codeToActivity[code] = m_activity.size();
     m_activity.push_back({
         .name = name,
-        .lsb = (uint32_t) lsb,
-        .width = (uint32_t) bits,
+        .lsb = (uint32_t)lsb,
+        .width = (uint32_t)bits,
         .bits = m_activityArena.back().data() + bitsIdx,
     });
 }
 
 void VerilatedSaif::declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                             VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                             VerilatedTraceSigType, bool array, int arraynum) {
+                              VerilatedTraceSigDirection, VerilatedTraceSigKind,
+                              VerilatedTraceSigType, bool array, int arraynum) {
     declare(code, name, "event", array, arraynum, false, 0, 0);
 }
 void VerilatedSaif::declBit(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                           VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                           VerilatedTraceSigType, bool array, int arraynum) {
+                            VerilatedTraceSigDirection, VerilatedTraceSigKind,
+                            VerilatedTraceSigType, bool array, int arraynum) {
     declare(code, name, "wire", array, arraynum, false, 0, 0);
 }
 void VerilatedSaif::declBus(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                           VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                           VerilatedTraceSigType, bool array, int arraynum, int msb, int lsb) {
-    declare(code, name, "wire", array, arraynum, true, msb, lsb);
-}
-void VerilatedSaif::declQuad(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
                             VerilatedTraceSigDirection, VerilatedTraceSigKind,
                             VerilatedTraceSigType, bool array, int arraynum, int msb, int lsb) {
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
-void VerilatedSaif::declArray(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+void VerilatedSaif::declQuad(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
                              VerilatedTraceSigDirection, VerilatedTraceSigKind,
                              VerilatedTraceSigType, bool array, int arraynum, int msb, int lsb) {
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
-void VerilatedSaif::declDouble(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+void VerilatedSaif::declArray(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
                               VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                              VerilatedTraceSigType, bool array, int arraynum) {
+                              VerilatedTraceSigType, bool array, int arraynum, int msb, int lsb) {
+    declare(code, name, "wire", array, arraynum, true, msb, lsb);
+}
+void VerilatedSaif::declDouble(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                               VerilatedTraceSigDirection, VerilatedTraceSigKind,
+                               VerilatedTraceSigType, bool array, int arraynum) {
     declare(code, name, "real", array, arraynum, false, 63, 0);
 }
 
 //=============================================================================
 // Get/commit trace buffer
 
-VerilatedSaif::Buffer* VerilatedSaif::getTraceBuffer(uint32_t fidx) {
-    return new Buffer{*this};
-}
+VerilatedSaif::Buffer* VerilatedSaif::getTraceBuffer(uint32_t fidx) { return new Buffer{*this}; }
 
-void VerilatedSaif::commitTraceBuffer(VerilatedSaif::Buffer* bufp) {
-    delete bufp;
-}
+void VerilatedSaif::commitTraceBuffer(VerilatedSaif::Buffer* bufp) { delete bufp; }
 
 //=============================================================================
 // VerilatedSaifBuffer implementation
@@ -469,9 +460,7 @@ void VerilatedSaif::commitTraceBuffer(VerilatedSaif::Buffer* bufp) {
 // so always inline them.
 
 VL_ATTR_ALWINLINE
-void VerilatedSaifBuffer::emitEvent(uint32_t code) {
-    std::abort();
-}
+void VerilatedSaifBuffer::emitEvent(uint32_t code) { std::abort(); }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitBit(uint32_t code, CData newval) {
@@ -542,6 +531,4 @@ void VerilatedSaifBuffer::emitWData(uint32_t code, const WData* newvalp, int bit
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedSaifBuffer::emitDouble(uint32_t code, double newval) {
-    std::abort();
-}
+void VerilatedSaifBuffer::emitDouble(uint32_t code, double newval) { std::abort(); }
