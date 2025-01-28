@@ -25,64 +25,72 @@ extern "C" int mon_check();
 `endif
 
    reg [7:0] read_bytes [0:3] `PUBLIC_FLAT_RD;
+   reg [7:0] read_bytes_nonzero_index [1:4] `PUBLIC_FLAT_RD;
+   reg [7:0] read_bytes_rl [3:0] `PUBLIC_FLAT_RD;
+
    reg [15:0] read_shorts [0:3] `PUBLIC_FLAT_RD;
    reg [31:0] read_words [0:3] `PUBLIC_FLAT_RD;
    reg [31:0] read_words_rl [3:0] `PUBLIC_FLAT_RD;
    reg [63:0] read_longs [0:3] `PUBLIC_FLAT_RD;
    integer read_integers [0:3] `PUBLIC_FLAT_RD;
+   reg [68:0] read_customs [0:3] `PUBLIC_FLAT_RD;
+   reg [68:0] read_customs_nonzero_index_rl [4:1] `PUBLIC_FLAT_RD;
+
    reg [7:0] read_scalar `PUBLIC_FLAT_RD;
    reg [7:0] read_bounds [1:3] `PUBLIC_FLAT_RD;
-
-   reg [67:0] read_unorthodox [0:3] `PUBLIC_FLAT_RD;
-   reg [67:0] read_unorthodox_rl [3:0] `PUBLIC_FLAT_RD;
 
    integer status;
 
    initial begin
-      read_bytes[0] = 8'hde;
-      read_bytes[1] = 8'had;
-      read_bytes[2] = 8'hbe;
-      read_bytes[3] = 8'hef;
+      read_bytes[0] = 8'had;
+      read_bytes[1] = 8'hde;
+      read_bytes[2] = 8'hef;
+      read_bytes[3] = 8'hbe;
+
+      read_bytes_rl[3] = 8'had;
+      read_bytes_rl[2] = 8'hde;
+      read_bytes_rl[1] = 8'hef;
+      read_bytes_rl[0] = 8'hbe;
+
+      read_bytes_nonzero_index[1] = 8'had;
+      read_bytes_nonzero_index[2] = 8'hde;
+      read_bytes_nonzero_index[3] = 8'hef;
+      read_bytes_nonzero_index[4] = 8'hbe;
 
       read_shorts[0] = 16'hdead;
       read_shorts[1] = 16'hbeef;
       read_shorts[2] = 16'hcafe;
       read_shorts[3] = 16'hf00d;
 
-      read_words[0] = 32'hcafef00d;
-      read_words[1] = 32'hdeadbeef;
-      read_words[2] = 32'h01234567;
-      read_words[3] = 32'h89abcdef;
+      read_words[0] = 32'hdeadbeef;
+      read_words[1] = 32'hcafef00d;
+      read_words[2] = 32'h00010203;
+      read_words[3] = 32'h04050607;
 
-      read_words_rl[0] = 32'hdeadbeef;
-      read_words_rl[1] = 32'hcafef00d;
-      read_words_rl[2] = 32'h01234567;
-      read_words_rl[3] = 32'h89abcdef;
+      read_integers[0] = 32'hdeadbeef;
+      read_integers[1] = 32'hcafef00d;
+      read_integers[2] = 32'h00010203;
+      read_integers[3] = 32'h04050607;
 
       read_longs[0] = 64'hdeadbeefcafef00d;
-      read_longs[1] = 64'h0123456789abcdef;
-      read_longs[2] = 64'hbeefdeadf00dcafe;
-      read_longs[3] = 64'h45670123cdef89ab;
+      read_longs[1] = 64'h0001020304050607;
+      read_longs[2] = 64'h08090a0b0c0d0e0f;
+      read_longs[3] = 64'h1011121314151617;
 
-      read_unorthodox[0] = 68'h0deadbeefcafef00d; // 0 -> 15
-      read_unorthodox[1] = 68'h10123456789abcdef; // 16 -> 31
-      read_unorthodox[2] = 68'h2beefdeadf00dcafe; // 32 -> 47
-      read_unorthodox[3] = 68'h345670123cdef89ab; // 48 -> 63
+      read_customs[0] = 69'hFAdeadbeefcafef00d; //0x001F'FFFF'FFFF'FFFF'FFFF
+      read_customs[1] = 69'hF50001020304050607;
+      read_customs[2] = 69'h0A08090a0b0c0d0e0f;
+      read_customs[3] = 69'h051011121314151617;
 
-      read_unorthodox_rl[0] = 68'h0deadbeefcafef00d; // 0 -> 15
-      read_unorthodox_rl[1] = 68'h10123456789abcdef; // 16 -> 31
-      read_unorthodox_rl[2] = 68'h2beefdeadf00dcafe; // 32 -> 47
-      read_unorthodox_rl[3] = 68'h345670123cdef89ab; // 48 -> 63
-
-      read_integers[0] = -2147483648;
-      read_integers[1] = 2147483647;
-      read_integers[2] = 0;
-      read_integers[3] = 1234567890;
+      read_customs_nonzero_index_rl[4] = 69'hFAdeadbeefcafef00d; //0x001F'FFFF'FFFF'FFFF'FFFF
+      read_customs_nonzero_index_rl[3] = 69'hF50001020304050607;
+      read_customs_nonzero_index_rl[2] = 69'h0A08090a0b0c0d0e0f;
+      read_customs_nonzero_index_rl[1] = 69'h051011121314151617;
 
       status = $c32("mon_check()");
 
       if (status != 0) begin
-         $write("%%Error: t_vpi_get.cpp:%0d: C Test failed\n", status);
+         $write("%%Error: t_vpi_get_value_array.cpp:%0d: C Test failed\n", status);
          $stop;
       end
 
