@@ -126,7 +126,7 @@ protected:
     void commitTraceBuffer(Buffer*) override;
 
     // Configure sub-class
-    void configure(const VerilatedTraceConfig&) override {};
+    void configure(const VerilatedTraceConfig&) override{};
 
 public:
     //=========================================================================
