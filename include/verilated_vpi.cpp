@@ -2925,7 +2925,8 @@ void vl_put_value_array_integrals(unsigned index, const unsigned num, const unsi
                                 const T * src, K * dst) {
     static_assert(sizeof(T) >= sizeof(K));
     const unsigned element_size_bytes = VL_BYTES_I(packedSize);
-    const T mask = element_size_bytes == sizeof(T) ? UINT64_MAX : ~(UINT64_MAX << (element_size_bytes*8));
+    const T zero = 0;
+    const T mask = element_size_bytes == sizeof(T) ? ~zero : ~(~zero << (element_size_bytes*8));
     for(unsigned i = 0; i < num; i++) {
         dst[index] = src[i] & mask;
         index = leftIsLow ? index == (size - 1) ? 0 : index + 1 : index == 0 ? size - 1 : index - 1;
@@ -2968,7 +2969,8 @@ void vl_put_value_array_vectors(unsigned index, const unsigned num, const unsign
     const unsigned element_size_bytes VL_BYTES_I(packedSize);
     const unsigned element_size_words VL_WORDS_I(packedSize);
     if (sizeof(T) == sizeof(QData)) { //destination is QDATA
-        const QData mask = element_size_bytes == sizeof(T) ? UINT64_MAX : ~(UINT64_MAX << (element_size_bytes*8));
+        const T zero = 0;
+        const QData mask = element_size_bytes == sizeof(T) ? ~zero : ~(~zero << (element_size_bytes*8));
         for(unsigned i = 0; i < num; i++) {
             dst[index] = src[i*2].aval;
             dst[index] |= (static_cast<QData>(src[(i*2)+1].aval) << (sizeof(PLI_UINT32)*8)) & mask;
