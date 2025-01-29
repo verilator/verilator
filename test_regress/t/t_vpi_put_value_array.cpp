@@ -24,6 +24,7 @@
 // These require the above. Comment prevents clang-format moving them
 #include "TestSimulator.h"
 #include "TestVpi.h"
+#include <vector>
 
 //======================================================================
 
@@ -40,13 +41,14 @@ int test_vpiRawFourStateVal(char * name, PLI_BYTE8 * test_data, int index, const
 
     // prepare index and test data arrays
     int index_arr[1] = {index};
-    PLI_BYTE8 test_data_four_state[size*elem_size*2];
+    std::vector<PLI_BYTE8> test_data_four_state;
+    test_data_four_state.reserve(size*elem_size*2);
     for(unsigned i = 0; i < size; i++) {
         for(unsigned j = 0; j < elem_size; j++) {
             test_data_four_state[(i*2*elem_size) + j] = test_data[(i*elem_size) + j];
         }
         for(unsigned j = 0; j < elem_size; j++) {
-            test_data_four_state[(((i*2)+1)*elem_size)+j] = 1;// bval should be ignored
+            test_data_four_state[(((i*2)+1)*elem_size)+j] = -1;// bval should be ignored
         }
     }
 
@@ -55,8 +57,10 @@ int test_vpiRawFourStateVal(char * name, PLI_BYTE8 * test_data, int index, const
     CHECK_RESULT_NZ(arrayhandle);
 
     // test raw fourstate
-    s_vpi_arrayvalue arrayvalue{vpiRawFourStateVal,0,0};
-    arrayvalue.value.rawvals = test_data_four_state;
+    s_vpi_arrayvalue arrayvalue;
+    arrayvalue.format = vpiRawFourStateVal;
+    arrayvalue.flags = 0;
+    arrayvalue.value.rawvals = test_data_four_state.data();
     vpi_put_value_array(arrayhandle,&arrayvalue,index_arr,num);
     CHECK_RESULT_NZ(!vpi_chk_error(0));
 
@@ -100,7 +104,9 @@ int test_vpiRawTwoStateVal(char * name, PLI_BYTE8 * test_data, int index, const 
     CHECK_RESULT_NZ(arrayhandle);
 
     // test raw fourstate
-    s_vpi_arrayvalue arrayvalue{vpiRawTwoStateVal,0,0};
+    s_vpi_arrayvalue arrayvalue;
+    arrayvalue.format = vpiRawTwoStateVal;
+    arrayvalue.flags = 0;
     arrayvalue.value.rawvals = test_data;
     vpi_put_value_array(arrayhandle,&arrayvalue,index_arr,num);
     CHECK_RESULT_NZ(!vpi_chk_error(0));
@@ -138,14 +144,15 @@ int test_vpiVectorVal(char * name, PLI_BYTE8 * test_data, int index, const unsig
     int index_arr[1] = {index};
     const unsigned elem_size_words = (elem_size + 3) / sizeof(PLI_UINT32);
     const unsigned vec_size = elem_size_words * size;
-    s_vpi_vecval test_data_vectors[vec_size];
-    const s_vpi_vecval init_val{0,UINT32_MAX};
-    std::fill(test_data_vectors,test_data_vectors+vec_size,init_val);
+    std::vector<s_vpi_vecval> test_data_vectors;
+    test_data_vectors.reserve(vec_size);
     unsigned test_data_index = 0;
     for(unsigned i = 0; i < size; i++){
         unsigned count = 0;
         for(unsigned j = 0; j < elem_size_words; j++) {
             PLI_UINT32 & aval = test_data_vectors[(i*elem_size_words) + j].aval;
+            test_data_vectors[(i*elem_size_words) + j].bval = UINT32_MAX;
+            aval = 0;
             for(unsigned k = 0; k < sizeof(PLI_UINT32); k++) {
                 if(count++ == elem_size) break;
                 aval |= static_cast<PLI_UINT32>(test_data[test_data_index++] & 0xFF) << (k*8);
@@ -158,8 +165,10 @@ int test_vpiVectorVal(char * name, PLI_BYTE8 * test_data, int index, const unsig
     CHECK_RESULT_NZ(arrayhandle);
 
     // test raw fourstate
-    s_vpi_arrayvalue arrayvalue{vpiVectorVal,0,0};
-    arrayvalue.value.vectors = test_data_vectors;
+    s_vpi_arrayvalue arrayvalue;
+    arrayvalue.format = vpiVectorVal;
+    arrayvalue.flags = 0;
+    arrayvalue.value.vectors = test_data_vectors.data();
     vpi_put_value_array(arrayhandle,&arrayvalue,index_arr,num);
     CHECK_RESULT_NZ(!vpi_chk_error(0));
 
@@ -198,10 +207,11 @@ int test_vpiIntVal(char * name, PLI_BYTE8 * test_data, int index, const unsigned
 
     // prepare index
     int index_arr[1] = {index};
-    PLI_INT32 test_data_integers[size];
-    std::fill(test_data_integers,test_data_integers+size,0);
+    std::vector<PLI_INT32> test_data_integers;
+    test_data_integers.reserve(size);
     for(unsigned i = 0; i < size; i++){
         PLI_INT32 & integer = test_data_integers[i];
+        integer = 0;
         for(unsigned j = 0; j < elem_size; j++) {
             integer |= (static_cast<PLI_INT32>(test_data[(i*elem_size)+j]) & 0xFF) << (j*8);
         }
@@ -212,8 +222,10 @@ int test_vpiIntVal(char * name, PLI_BYTE8 * test_data, int index, const unsigned
     CHECK_RESULT_NZ(arrayhandle);
 
     // test raw fourstate
-    s_vpi_arrayvalue arrayvalue{vpiIntVal,0,0};
-    arrayvalue.value.integers = test_data_integers;
+    s_vpi_arrayvalue arrayvalue;
+    arrayvalue.format = vpiIntVal;
+    arrayvalue.flags = 0;
+    arrayvalue.value.integers = test_data_integers.data();
     vpi_put_value_array(arrayhandle,&arrayvalue,index_arr,num);
     CHECK_RESULT_NZ(!vpi_chk_error(0));
 
@@ -246,7 +258,8 @@ int test_vpiShortIntVal(char * name, PLI_BYTE8 * test_data, int index, const uns
 
     // prepare index
     int index_arr[1] = {index};
-    PLI_INT16 test_data_shortints[size];
+    std::vector<PLI_INT16> test_data_shortints;
+    test_data_shortints.reserve(size);
     for(unsigned i = 0; i < size; i++){
         if(elem_size == 2) {
             test_data_shortints[i] = test_data[i*2] & 0xFF;
@@ -261,8 +274,10 @@ int test_vpiShortIntVal(char * name, PLI_BYTE8 * test_data, int index, const uns
     CHECK_RESULT_NZ(arrayhandle);
 
     // test raw fourstate
-    s_vpi_arrayvalue arrayvalue{vpiShortIntVal,0,0};
-    arrayvalue.value.shortints = test_data_shortints;
+    s_vpi_arrayvalue arrayvalue;
+    arrayvalue.format = vpiShortIntVal;
+    arrayvalue.flags = 0;
+    arrayvalue.value.shortints = test_data_shortints.data();
     vpi_put_value_array(arrayhandle,&arrayvalue,index_arr,num);
     CHECK_RESULT_NZ(!vpi_chk_error(0));
 
@@ -295,7 +310,8 @@ int test_vpiLongIntVal(char * name, PLI_BYTE8 * test_data, int index, const unsi
 
     // prepare index
     int index_arr[1] = {index};
-    PLI_INT64 test_data_longints[size];
+    std::vector<PLI_INT64> test_data_longints;
+    test_data_longints.reserve(size);
     for(unsigned i = 0; i < size; i++){
         PLI_INT64 & longint = test_data_longints[i];
         longint = 0;
@@ -309,8 +325,10 @@ int test_vpiLongIntVal(char * name, PLI_BYTE8 * test_data, int index, const unsi
     CHECK_RESULT_NZ(arrayhandle);
 
     // test raw fourstate
-    s_vpi_arrayvalue arrayvalue{vpiLongIntVal,0,0};
-    arrayvalue.value.longints = test_data_longints;
+    s_vpi_arrayvalue arrayvalue;
+    arrayvalue.format = vpiLongIntVal;
+    arrayvalue.flags = 0;
+    arrayvalue.value.longints = test_data_longints.data();
     vpi_put_value_array(arrayhandle,&arrayvalue,index_arr,num);
     CHECK_RESULT_NZ(!vpi_chk_error(0));
 
@@ -507,10 +525,13 @@ int mon_check_props(void) {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_longs", NULL);
         CHECK_RESULT_NZ(object);
 
-        int datap[4] = {0,0,0,0};
-        s_vpi_arrayvalue arrayvalue{vpiRealVal,0,datap};
-
+        double datap[4] = {0,0,0,0};
+        s_vpi_arrayvalue arrayvalue;
+        arrayvalue.format = vpiRealVal;
+        arrayvalue.flags = 0;
+        arrayvalue.value.reals = datap;
         PLI_INT32 indexp[1] = {0};
+
         vpi_put_value_array(object, &arrayvalue, indexp, 4);
         CHECK_RESULT_NZ(vpi_chk_error(0));
 
@@ -540,7 +561,10 @@ int mon_check_props(void) {
         CHECK_RESULT_NZ(object);
 
         int datap[4] = {0, 0, 0, 0};
-        s_vpi_arrayvalue arrayvalue = {vpiIntVal, 0, datap};
+        s_vpi_arrayvalue arrayvalue;
+        arrayvalue.format = vpiIntVal;
+        arrayvalue.flags = 0;
+        arrayvalue.value.integers = datap;
         PLI_INT32 indexp[1] = {0};
 
         vpi_put_value_array(object, &arrayvalue, indexp, 4);
@@ -553,7 +577,10 @@ int mon_check_props(void) {
         CHECK_RESULT_NZ(object);
 
         int datap[4] = {0, 0, 0, 0};
-        s_vpi_arrayvalue arrayvalue = {vpiIntVal, 0, {datap}};
+        s_vpi_arrayvalue arrayvalue;
+        arrayvalue.format = vpiIntVal;
+        arrayvalue.flags = 0;
+        arrayvalue.value.integers = datap;
         PLI_INT32 indexp[1] = {0};
 
         vpi_put_value_array(object, &arrayvalue, indexp, 4);
@@ -566,13 +593,16 @@ int mon_check_props(void) {
         CHECK_RESULT_NZ(object);
 
         int datap[4] = {0, 0, 0, 0};
-        s_vpi_arrayvalue arrayvalue = {vpiIntVal, 0, datap};
-        PLI_INT32 indexp[1] = {0};
+        s_vpi_arrayvalue arrayvalue;
+        arrayvalue.format = vpiIntVal;
+        arrayvalue.flags = 0;
+        arrayvalue.value.integers = datap;
+        PLI_INT32 indexp[1] = {4};
 
         vpi_put_value_array(object, &arrayvalue, indexp, 4);
         CHECK_RESULT_NZ(vpi_chk_error(0));
 
-        indexp[0] = {4};
+        indexp[0] = 0;
         vpi_put_value_array(object, &arrayvalue, indexp, 4);
         CHECK_RESULT_NZ(vpi_chk_error(0));
     }
@@ -583,7 +613,10 @@ int mon_check_props(void) {
         CHECK_RESULT_NZ(object);
 
         int datap[4] = {0, 0, 0, 0};
-        s_vpi_arrayvalue arrayvalue = {vpiIntVal, 0, datap};
+        s_vpi_arrayvalue arrayvalue;
+        arrayvalue.format = vpiIntVal;
+        arrayvalue.flags = 0;
+        arrayvalue.value.integers = datap;
         PLI_INT32 indexp[1] = {0};
 
         vpi_put_value_array(object, &arrayvalue, indexp, 4);
@@ -596,7 +629,10 @@ int mon_check_props(void) {
         CHECK_RESULT_NZ(object);
 
         int datap[4] = {0, 0, 0, 0};
-        s_vpi_arrayvalue arrayvalue = {vpiIntVal, vpiPropagateOff, datap};
+        s_vpi_arrayvalue arrayvalue;
+        arrayvalue.format = vpiPropagateOff;
+        arrayvalue.flags = 0;
+        arrayvalue.value.integers = datap;
         PLI_INT32 indexp[1] = {0};
 
         vpi_put_value_array(object, &arrayvalue, indexp, 4);
@@ -613,7 +649,10 @@ int mon_check_props(void) {
         CHECK_RESULT_NZ(object);
 
         int datap[4] = {0, 0, 0, 0};
-        s_vpi_arrayvalue arrayvalue = {vpiShortIntVal, 0, datap};
+        s_vpi_arrayvalue arrayvalue;
+        arrayvalue.format = vpiShortIntVal;
+        arrayvalue.flags = 0;
+        arrayvalue.value.integers = datap;
         PLI_INT32 indexp[1] = {0};
 
         vpi_put_value_array(object, &arrayvalue, indexp, 4);
@@ -630,7 +669,10 @@ int mon_check_props(void) {
         CHECK_RESULT_NZ(object);
 
         int datap[4] = {0, 0, 0, 0};
-        s_vpi_arrayvalue arrayvalue = {vpiIntVal, 0, datap};
+        s_vpi_arrayvalue arrayvalue;
+        arrayvalue.format = vpiIntVal;
+        arrayvalue.flags = 0;
+        arrayvalue.value.integers = datap;
         PLI_INT32 indexp[1] = {0};
 
         vpi_put_value_array(object, &arrayvalue, indexp, 5);
@@ -653,10 +695,13 @@ int mon_check_props(void) {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.write_words",NULL);
         CHECK_RESULT_NZ(object);
 
-        int datap[4] = {0,0,0,0};
-        s_vpi_arrayvalue arrayVal{vpiIntVal, 0, datap};
+        int datap[4] = {0, 0, 0, 0};
+        s_vpi_arrayvalue arrayvalue;
+        arrayvalue.format = vpiIntVal;
+        arrayvalue.flags = 0;
+        arrayvalue.value.integers = datap;
 
-        vpi_get_value_array(object, &arrayVal, 0, 0);
+        vpi_get_value_array(object, &arrayvalue, 0, 0);
         CHECK_RESULT_NZ(vpi_chk_error(0));
     }
 

@@ -2923,12 +2923,13 @@ template <typename T, typename K>
 void vl_put_value_array_integrals(unsigned index, const unsigned num, const unsigned size,
                                 const unsigned packedSize, const bool leftIsLow,
                                 const T * src, K * dst) {
+    static_assert(std::is_integral<T>::value, "type T is not an integral type");
+    static_assert(std::is_unsigned<T>::value, "type T is not unsigned");
     static_assert(sizeof(T) >= sizeof(K), "size of type T is less than size of type K");
     const unsigned element_size_bytes = VL_BYTES_I(packedSize);
-    const T zero = 0;
-    const T mask = element_size_bytes == sizeof(T) ? ~zero : ~(~zero << (element_size_bytes*8));
+    const T mask = element_size_bytes == sizeof(T) ? static_cast<T>(-1) : ~(static_cast<T>(-1) << (element_size_bytes*8));
     for(unsigned i = 0; i < num; i++) {
-        dst[index] = src[i] & mask;
+        dst[index] = src[i] & static_cast<T>(mask);
         index = leftIsLow ? index == (size - 1) ? 0 : index + 1 : index == 0 ? size - 1 : index - 1;
     }
 }
@@ -2966,11 +2967,12 @@ template <typename T>
 void vl_put_value_array_vectors(unsigned index, const unsigned num, const unsigned size,
                                 const unsigned packedSize, const bool leftIsLow, const bool fourState,
                                 const p_vpi_vecval src, T * dst) {
+    static_assert(std::is_unsigned<T>::value, "type T is not unsigned");
+    static_assert(std::is_integral<T>::value, "type T is not an integral type");
     const unsigned element_size_bytes VL_BYTES_I(packedSize);
     const unsigned element_size_words VL_WORDS_I(packedSize);
-    const T zero = 0;
     if (sizeof(T) == sizeof(QData)) { //destination is QDATA
-        const QData mask = element_size_bytes == sizeof(T) ? ~zero : ~(~zero << (element_size_bytes*8));
+        const QData mask = element_size_bytes == sizeof(T) ? static_cast<QData>(-1) : ~(static_cast<QData>(-1) << (element_size_bytes*8));
         for(unsigned i = 0; i < num; i++) {
             dst[index] = src[i*2].aval;
             dst[index] |= (static_cast<QData>(src[(i*2)+1].aval) << (sizeof(PLI_UINT32)*8)) & mask;
@@ -2981,7 +2983,7 @@ void vl_put_value_array_vectors(unsigned index, const unsigned num, const unsign
             unsigned bytes_stored = 0;
             for(unsigned j = 0; j < element_size_words; j++) {
                 if(bytes_stored >= element_size_bytes) break;
-                const T mask = (element_size_bytes-bytes_stored) >= sizeof(PLI_UINT32) ? ~zero : ~(~zero << ((element_size_bytes-bytes_stored)*8));
+                const T mask = (element_size_bytes-bytes_stored) >= sizeof(PLI_UINT32) ? static_cast<T>(-1) : ~(static_cast<T>(-1) << ((element_size_bytes-bytes_stored)*8));
                 dst[(index*element_size_words)+j] = static_cast<T>(src[(i*element_size_words)+j].aval) & mask;
                 bytes_stored += sizeof(PLI_UINT32);
             }
@@ -3019,11 +3021,11 @@ void vl_get_value_array_rawvals(unsigned index, unsigned num, const unsigned siz
 template <typename T>
 void vl_put_value_array_rawvals(unsigned index, const unsigned num, const unsigned size,
                                 const unsigned packedSize, const bool leftIsLow, const bool fourState,
-                                const PLI_BYTE8 * src, T * dst) {
+                                const PLI_UBYTE8 * src, T * dst) {
     const unsigned element_size_bytes VL_BYTES_I(packedSize);
     const unsigned element_size_repr = (element_size_bytes + sizeof(T) - 1) / sizeof(T);
     for(unsigned i = 0; i < num; i++ ){
-        size_t bytes_copied = 0;
+        unsigned bytes_copied = 0;
         const size_t dst_offset = index*element_size_repr;
         const size_t src_offset = i*element_size_bytes;
         for(unsigned j = 0; j < element_size_repr; j++) {
@@ -3045,7 +3047,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
     const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
     if (!vl_check_array_format(vop->varp(), arrayvalue_p, vop->fullname())) return;
 
-    const VerilatedVar* const varp = vop->varp();
+    const VerilatedVar * const varp = vop->varp();
 
     static thread_local EData out_data[VL_VALUE_STRING_MAX_WORDS * 2];
 
@@ -3066,14 +3068,33 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
     const bool leftIsLow = vop->rangep()->left() == vop->rangep()->low();
     int index = leftIsLow ? index_p[0] - vop->rangep()->left() : vop->rangep()->left() - index_p[0];
 
-    if (arrayvalue_p->format == vpiIntVal) {
+    if (arrayvalue_p->format == vpiShortIntVal) {
+        if (VL_UNCOVERABLE((sizeof(PLI_INT16)*num) >= VL_VALUE_STRING_MAX_CHARS)) {
+            VL_FATAL_MT(__FILE__, __LINE__, "",
+                        "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; "
+                        "increase and recompile");
+        }
+
+        PLI_INT16 * shortintsp = (PLI_INT16*)out_data;
+        arrayvalue_p->value.shortints = shortintsp;
+
+        if (varp->vltype() == VLVT_UINT8) {
+            const CData* ptr = reinterpret_cast<CData*>(vop->varDatap());
+            vl_get_value_array_integrals(index,num,size,varp->entBits(),leftIsLow,ptr,shortintsp);
+        } else if (varp->vltype() == VLVT_UINT16) {
+            const SData* ptr = reinterpret_cast<SData*>(vop->varDatap());
+            vl_get_value_array_integrals(index,num,size,varp->entBits(),leftIsLow,ptr,shortintsp);
+        }
+
+        return;
+    } else if (arrayvalue_p->format == vpiIntVal) {
         if (VL_UNCOVERABLE(num >= VL_VALUE_STRING_MAX_WORDS)) {
             VL_FATAL_MT(__FILE__, __LINE__, "",
                         "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; "
                         "increase and recompile");
         }
 
-        PLI_INT32* integersp = (PLI_INT32*)out_data;
+        PLI_INT32 * integersp = (PLI_INT32*)out_data;
         arrayvalue_p->value.integers = integersp;
 
         if (varp->vltype() == VLVT_UINT8) {
@@ -3088,25 +3109,6 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
         }
 
         return;
-    } else if (arrayvalue_p->format == vpiShortIntVal) {
-        if (VL_UNCOVERABLE((sizeof(PLI_INT16)*num) >= VL_VALUE_STRING_MAX_CHARS)) {
-            VL_FATAL_MT(__FILE__, __LINE__, "",
-                        "vpi_get_value_array with more than VL_VALUE_STRING_MAX_WORDS; "
-                        "increase and recompile");
-        }
-
-        PLI_INT16* shortintsp = (PLI_INT16*)out_data;
-        arrayvalue_p->value.shortints = shortintsp;
-
-        if (varp->vltype() == VLVT_UINT8) {
-            const CData* ptr = reinterpret_cast<CData*>(vop->varDatap());
-            vl_get_value_array_integrals(index,num,size,varp->entBits(),leftIsLow,ptr,shortintsp);
-        } else if (varp->vltype() == VLVT_UINT16) {
-            const SData* ptr = reinterpret_cast<SData*>(vop->varDatap());
-            vl_get_value_array_integrals(index,num,size,varp->entBits(),leftIsLow,ptr,shortintsp);
-        }
-
-        return;
     } else if (arrayvalue_p->format == vpiLongIntVal) {
         if (VL_UNCOVERABLE((sizeof(PLI_INT64)*num) >= VL_VALUE_STRING_MAX_CHARS)) {
             VL_FATAL_MT(__FILE__, __LINE__, "",
@@ -3114,20 +3116,20 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
                         "increase and recompile");
         }
 
-        PLI_INT64* longintsp = (PLI_INT64*)out_data;
+        PLI_INT64 * longintsp = (PLI_INT64*)out_data;
         arrayvalue_p->value.longints = longintsp;
 
         if (varp->vltype() == VLVT_UINT8) {
-            const CData* ptr = reinterpret_cast<CData*>(vop->varDatap());
+            const CData * ptr = reinterpret_cast<CData*>(vop->varDatap());
             vl_get_value_array_integrals(index,num,size,varp->entBits(),leftIsLow,ptr,longintsp);
         } else if (varp->vltype() == VLVT_UINT16) {
-            const SData* ptr = reinterpret_cast<SData*>(vop->varDatap());
+            const SData * ptr = reinterpret_cast<SData*>(vop->varDatap());
             vl_get_value_array_integrals(index,num,size,varp->entBits(),leftIsLow,ptr,longintsp);
         } else if (varp->vltype() == VLVT_UINT32) {
-            const IData* ptr = reinterpret_cast<IData*>(vop->varDatap());
+            const IData * ptr = reinterpret_cast<IData*>(vop->varDatap());
             vl_get_value_array_integrals(index,num,size,varp->entBits(),leftIsLow,ptr,longintsp);
         } else if (varp->vltype() == VLVT_UINT64) {
-            const QData* ptr = reinterpret_cast<QData*>(vop->varDatap());
+            const QData * ptr = reinterpret_cast<QData*>(vop->varDatap());
             vl_get_value_array_integrals(index,num,size,varp->entBits(),leftIsLow,ptr,longintsp);
         }
 
@@ -3143,19 +3145,19 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
         arrayvalue_p->value.vectors = vectorsp;
 
         if (varp->vltype() == VLVT_UINT8) {
-            const CData* ptr = reinterpret_cast<CData*>(vop->varDatap());
+            const CData * ptr = reinterpret_cast<CData*>(vop->varDatap());
             vl_get_value_array_vectors(index,num,size,varp->entBits(),leftIsLow,ptr,vectorsp);
         } else if (varp->vltype() == VLVT_UINT16) {
-            const SData* ptr = reinterpret_cast<SData*>(vop->varDatap());
+            const SData * ptr = reinterpret_cast<SData*>(vop->varDatap());
             vl_get_value_array_vectors(index,num,size,varp->entBits(),leftIsLow,ptr,vectorsp);
         } else if (varp->vltype() == VLVT_UINT32) {
-            const IData* ptr = reinterpret_cast<IData*>(vop->varDatap());
+            const IData * ptr = reinterpret_cast<IData*>(vop->varDatap());
             vl_get_value_array_vectors(index,num,size,varp->entBits(),leftIsLow,ptr,vectorsp);
         } else if (varp->vltype() == VLVT_UINT64) {
-            const QData* ptr = reinterpret_cast<QData*>(vop->varDatap());
+            const QData * ptr = reinterpret_cast<QData*>(vop->varDatap());
             vl_get_value_array_vectors(index,num,size,varp->entBits(),leftIsLow,ptr,vectorsp);
         } else if (varp->vltype() == VLVT_WDATA) {
-            const EData* ptr = reinterpret_cast<EData*>(vop->varDatap());
+            const EData * ptr = reinterpret_cast<EData*>(vop->varDatap());
             vl_get_value_array_vectors(index,num,size,varp->entBits(),leftIsLow,ptr,vectorsp);
         }
 
@@ -3171,19 +3173,19 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
         arrayvalue_p->value.rawvals = valuep;
 
         if (varp->vltype() == VLVT_UINT8) {
-            const CData* ptr = reinterpret_cast<CData*>(vop->varDatap());
+            const CData * ptr = reinterpret_cast<CData*>(vop->varDatap());
             vl_get_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,true,ptr,valuep);
         } else if (varp->vltype() == VLVT_UINT16) {
-            const SData* ptr = reinterpret_cast<SData*>(vop->varDatap());
+            const SData * ptr = reinterpret_cast<SData*>(vop->varDatap());
             vl_get_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,true,ptr,valuep);
         } else if (varp->vltype() == VLVT_UINT32) {
-            const IData* ptr = reinterpret_cast<IData*>(vop->varDatap());
+            const IData * ptr = reinterpret_cast<IData*>(vop->varDatap());
             vl_get_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,true,ptr,valuep);
         } else if (varp->vltype() == VLVT_UINT64) {
-            const QData* ptr = reinterpret_cast<QData*>(vop->varDatap());
+            const QData * ptr = reinterpret_cast<QData*>(vop->varDatap());
             vl_get_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,true,ptr,valuep);
         } else if (varp->vltype() == VLVT_WDATA) {
-            const EData* ptr = reinterpret_cast<EData*>(vop->varDatap());
+            const EData * ptr = reinterpret_cast<EData*>(vop->varDatap());
             vl_get_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,true,ptr,valuep);
         }
 
@@ -3199,19 +3201,19 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
         arrayvalue_p->value.rawvals = valuep;
 
         if (varp->vltype() == VLVT_UINT8) {
-            const CData* ptr = reinterpret_cast<CData*>(vop->varDatap());
+            const CData * ptr = reinterpret_cast<CData*>(vop->varDatap());
             vl_get_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,false,ptr,valuep);
         } else if (varp->vltype() == VLVT_UINT16) {
-            const SData* ptr = reinterpret_cast<SData*>(vop->varDatap());
+            const SData * ptr = reinterpret_cast<SData*>(vop->varDatap());
             vl_get_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,false,ptr,valuep);
         } else if (varp->vltype() == VLVT_UINT32) {
-            const IData* ptr = reinterpret_cast<IData*>(vop->varDatap());
+            const IData * ptr = reinterpret_cast<IData*>(vop->varDatap());
             vl_get_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,false,ptr,valuep);
         } else if (varp->vltype() == VLVT_UINT64) {
-            const QData* ptr = reinterpret_cast<QData*>(vop->varDatap());
+            const QData * ptr = reinterpret_cast<QData*>(vop->varDatap());
             vl_get_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,false,ptr,valuep);
         } else if (varp->vltype() == VLVT_WDATA) {
-            const EData* ptr = reinterpret_cast<EData*>(vop->varDatap());
+            const EData * ptr = reinterpret_cast<EData*>(vop->varDatap());
             vl_get_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,false,ptr,valuep);
         }
 
@@ -3240,7 +3242,7 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
         return;
     }
 
-    const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
+    const VerilatedVpioVar * const vop = VerilatedVpioVar::castp(object);
     if (VL_UNLIKELY(!vop)) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
         return;
@@ -3252,7 +3254,7 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
         return;
     }
 
-    const VerilatedVar* const varp = vop->varp();
+    const VerilatedVar * const varp = vop->varp();
 
     int lowRange = vop->rangep()->low();
     int highRange = vop->rangep()->high();
@@ -3291,109 +3293,109 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
     int index = leftIsLow ? index_p[0] - vop->rangep()->left() : vop->rangep()->left() - index_p[0];
 
     if (arrayvalue_p->format == vpiShortIntVal) {
-        PLI_INT16* const shortintsp = arrayvalue_p->value.shortints;
+        const PLI_UINT16 * shortintsp = reinterpret_cast<PLI_UINT16*>(arrayvalue_p->value.shortints);
 
         if (varp->vltype() == VLVT_UINT8) {
-            CData* ptr = reinterpret_cast<CData*>(vop->varDatap());
+            CData * ptr = reinterpret_cast<CData*>(vop->varDatap());
             vl_put_value_array_integrals(index,num,size,varp->entBits(),leftIsLow,shortintsp,ptr);
         } else if (varp->vltype() == VLVT_UINT16) {
-            SData* ptr = reinterpret_cast<SData*>(vop->varDatap());
+            SData * ptr = reinterpret_cast<SData*>(vop->varDatap());
             vl_put_value_array_integrals(index,num,size,varp->entBits(),leftIsLow,shortintsp,ptr);
         }
 
         return;
     } else if (arrayvalue_p->format == vpiIntVal) {
-        PLI_INT32* const integersp = arrayvalue_p->value.integers;
+        const PLI_UINT32 * integersp = reinterpret_cast<PLI_UINT32*>(arrayvalue_p->value.integers);
 
         if (varp->vltype() == VLVT_UINT8) {
-            CData* ptr = reinterpret_cast<CData*>(vop->varDatap());
+            CData * ptr = reinterpret_cast<CData*>(vop->varDatap());
             vl_put_value_array_integrals(index,num,size,varp->entBits(),leftIsLow,integersp,ptr);
         } else if (varp->vltype() == VLVT_UINT16) {
-            SData* ptr = reinterpret_cast<SData*>(vop->varDatap());
+            SData * ptr = reinterpret_cast<SData*>(vop->varDatap());
             vl_put_value_array_integrals(index,num,size,varp->entBits(),leftIsLow,integersp,ptr);
         } else if (varp->vltype() == VLVT_UINT32) {
-            IData* ptr = reinterpret_cast<IData*>(vop->varDatap());
+            IData * ptr = reinterpret_cast<IData*>(vop->varDatap());
             vl_put_value_array_integrals(index,num,size,varp->entBits(),leftIsLow,integersp,ptr);
         }
 
         return;
     } else if (arrayvalue_p->format == vpiLongIntVal) {
-        PLI_INT64* const longintsp = arrayvalue_p->value.longints;
+        const PLI_UINT64 * longintsp = reinterpret_cast<PLI_UINT64*>(arrayvalue_p->value.longints);
 
         if (varp->vltype() == VLVT_UINT8) {
-            CData* ptr = reinterpret_cast<CData*>(vop->varDatap());
+            CData * ptr = reinterpret_cast<CData*>(vop->varDatap());
             vl_put_value_array_integrals(index,num,size,varp->entBits(),leftIsLow,longintsp,ptr);
         } else if (varp->vltype() == VLVT_UINT16) {
-            SData* ptr = reinterpret_cast<SData*>(vop->varDatap());
+            SData * ptr = reinterpret_cast<SData*>(vop->varDatap());
             vl_put_value_array_integrals(index,num,size,varp->entBits(),leftIsLow,longintsp,ptr);
         } else if (varp->vltype() == VLVT_UINT32) {
-            IData* ptr = reinterpret_cast<IData*>(vop->varDatap());
+            IData * ptr = reinterpret_cast<IData*>(vop->varDatap());
             vl_put_value_array_integrals(index,num,size,varp->entBits(),leftIsLow,longintsp,ptr);
         } else if (varp->vltype() == VLVT_UINT64) {
-            QData* ptr = reinterpret_cast<QData*>(vop->varDatap());
+            QData * ptr = reinterpret_cast<QData*>(vop->varDatap());
             vl_put_value_array_integrals(index,num,size,varp->entBits(),leftIsLow,longintsp,ptr);
         }
 
         return;
     } else if (arrayvalue_p->format == vpiVectorVal) {
-        p_vpi_vecval const vectorsp = arrayvalue_p->value.vectors;
+        const p_vpi_vecval vectorsp = arrayvalue_p->value.vectors;
 
         if (varp->vltype() == VLVT_UINT8) {
-            CData* ptr = reinterpret_cast<CData*>(vop->varDatap());
+            CData * ptr = reinterpret_cast<CData*>(vop->varDatap());
             vl_put_value_array_vectors(index,num,size,varp->entBits(),leftIsLow,true,vectorsp,ptr);
         } else if (varp->vltype() == VLVT_UINT16) {
-            SData* ptr = reinterpret_cast<SData*>(vop->varDatap());
+            SData * ptr = reinterpret_cast<SData*>(vop->varDatap());
             vl_put_value_array_vectors(index,num,size,varp->entBits(),leftIsLow,true,vectorsp,ptr);
         } else if (varp->vltype() == VLVT_UINT32) {
-            IData* ptr = reinterpret_cast<IData*>(vop->varDatap());
+            IData * ptr = reinterpret_cast<IData*>(vop->varDatap());
             vl_put_value_array_vectors(index,num,size,varp->entBits(),leftIsLow,true,vectorsp,ptr);
         } else if (varp->vltype() == VLVT_UINT64) {
-            QData* ptr = reinterpret_cast<QData*>(vop->varDatap());
+            QData * ptr = reinterpret_cast<QData*>(vop->varDatap());
             vl_put_value_array_vectors(index,num,size,varp->entBits(),leftIsLow,true,vectorsp,ptr);
         } else if (varp->vltype() == VLVT_WDATA) {
-            EData* ptr = reinterpret_cast<EData*>(vop->varDatap());
+            EData * ptr = reinterpret_cast<EData*>(vop->varDatap());
             vl_put_value_array_vectors(index,num,size,varp->entBits(),leftIsLow,true,vectorsp,ptr);
         }
 
         return;
     } else if (arrayvalue_p->format == vpiRawFourStateVal) {
-        PLI_BYTE8* const valuep = arrayvalue_p->value.rawvals;
+        const PLI_UBYTE8 * valuep = reinterpret_cast<PLI_UBYTE8 *>(arrayvalue_p->value.rawvals);
 
         if (varp->vltype() == VLVT_UINT8) {
-            CData* ptr = reinterpret_cast<CData*>(vop->varDatap());
+            CData * ptr = reinterpret_cast<CData*>(vop->varDatap());
             vl_put_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,true,valuep,ptr);
         } else if (varp->vltype() == VLVT_UINT16) {
-            SData* ptr = reinterpret_cast<SData*>(vop->varDatap());
+            SData * ptr = reinterpret_cast<SData*>(vop->varDatap());
             vl_put_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,true,valuep,ptr);
         } else if (varp->vltype() == VLVT_UINT32) {
-            IData* ptr = reinterpret_cast<IData*>(vop->varDatap());
+            IData * ptr = reinterpret_cast<IData*>(vop->varDatap());
             vl_put_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,true,valuep,ptr);
         } else if (varp->vltype() == VLVT_UINT64) {
-            QData* ptr = reinterpret_cast<QData*>(vop->varDatap());
+            QData * ptr = reinterpret_cast<QData*>(vop->varDatap());
             vl_put_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,true,valuep,ptr);
         } else if (varp->vltype() == VLVT_WDATA) {
-            EData* ptr = reinterpret_cast<EData*>(vop->varDatap());
+            EData * ptr = reinterpret_cast<EData*>(vop->varDatap());
             vl_put_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,true,valuep,ptr);
         }
 
         return;
     } else if (arrayvalue_p->format == vpiRawTwoStateVal) {
-        PLI_BYTE8* const valuep = arrayvalue_p->value.rawvals;
+        const PLI_UBYTE8 * valuep = reinterpret_cast<PLI_UBYTE8 *>(arrayvalue_p->value.rawvals);
 
         if (varp->vltype() == VLVT_UINT8) {
-            CData* ptr = reinterpret_cast<CData*>(vop->varDatap());
+            CData * ptr = reinterpret_cast<CData*>(vop->varDatap());
             vl_put_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,false,valuep,ptr);
         } else if (varp->vltype() == VLVT_UINT16) {
-            SData* ptr = reinterpret_cast<SData*>(vop->varDatap());
+            SData * ptr = reinterpret_cast<SData*>(vop->varDatap());
             vl_put_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,false,valuep,ptr);
         } else if (varp->vltype() == VLVT_UINT32) {
-            IData* ptr = reinterpret_cast<IData*>(vop->varDatap());
+            IData * ptr = reinterpret_cast<IData*>(vop->varDatap());
             vl_put_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,false,valuep,ptr);
         } else if (varp->vltype() == VLVT_UINT64) {
-            QData* ptr = reinterpret_cast<QData*>(vop->varDatap());
+            QData * ptr = reinterpret_cast<QData*>(vop->varDatap());
             vl_put_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,false,valuep,ptr);
         } else if (varp->vltype() == VLVT_WDATA) {
-            EData* ptr = reinterpret_cast<EData*>(vop->varDatap());
+            EData * ptr = reinterpret_cast<EData*>(vop->varDatap());
             vl_put_value_array_rawvals(index,num,size,varp->entBits(),leftIsLow,false,valuep,ptr);
         }
 
@@ -3420,7 +3422,7 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
         return;
     }
 
-    const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
+    const VerilatedVpioVar * const vop = VerilatedVpioVar::castp(object);
     if (VL_UNLIKELY(!vop)) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle (%p)", __func__, object);
         return;
@@ -3432,7 +3434,7 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
         return;
     }
 
-    const VerilatedVar* const varp = vop->varp();
+    const VerilatedVar * const varp = vop->varp();
 
     int lowRange = vop->rangep()->low();
     int highRange = vop->rangep()->high();
