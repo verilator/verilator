@@ -2912,7 +2912,7 @@ template <typename T, typename K>
 void vl_get_value_array_integrals(unsigned index, const unsigned num, const unsigned size,
                                 const unsigned packedSize, const bool leftIsLow,
                                 const T * src, K * dst) {
-    static_assert(sizeof(K) >= sizeof(T));
+    static_assert(sizeof(K) >= sizeof(T), "size of type K is less than size of type T");
     for (int i = 0; i < num; i++) {
         dst[i] = src[index];
         index = leftIsLow ? index == (size - 1) ? 0 : index + 1 : index == 0 ? size - 1 : index - 1;
@@ -2923,7 +2923,7 @@ template <typename T, typename K>
 void vl_put_value_array_integrals(unsigned index, const unsigned num, const unsigned size,
                                 const unsigned packedSize, const bool leftIsLow,
                                 const T * src, K * dst) {
-    static_assert(sizeof(T) >= sizeof(K));
+    static_assert(sizeof(T) >= sizeof(K), "size of type T is less than size of type K");
     const unsigned element_size_bytes = VL_BYTES_I(packedSize);
     const T zero = 0;
     const T mask = element_size_bytes == sizeof(T) ? ~zero : ~(~zero << (element_size_bytes*8));
@@ -2937,7 +2937,7 @@ template <typename T>
 void vl_get_value_array_vectors(unsigned index, const unsigned num, const unsigned size,
                                 const unsigned packedSize, const bool leftIsLow,
                                 const T * src, p_vpi_vecval dst) {
-    static_assert(std::is_unsigned<T>::value); // ensure logical right shift
+    static_assert(std::is_unsigned<T>::value, "type T is not unsigned"); // ensure logical right shift
     const unsigned element_size_bytes = VL_BYTES_I(packedSize);
     const unsigned element_size_words = VL_WORDS_I(packedSize);
     const unsigned element_size_repr = (element_size_bytes + sizeof(T) - 1) / sizeof(T);
@@ -2994,7 +2994,7 @@ template <typename T>
 void vl_get_value_array_rawvals(unsigned index, unsigned num, const unsigned size,
                                 const unsigned packedSize, const bool leftIsLow, const bool fourState,
                                 const T * src, PLI_BYTE8 * dst) {
-    static_assert(std::is_unsigned<T>::value); //ensure loigcal right shift
+    static_assert(std::is_unsigned<T>::value, "type T is not unsigned"); //ensure loigcal right shift
     const unsigned element_size_bytes VL_BYTES_I(packedSize);
     const unsigned element_size_repr = (element_size_bytes + sizeof(T) - 1) / sizeof(T);
     size_t dst_index = 0;
