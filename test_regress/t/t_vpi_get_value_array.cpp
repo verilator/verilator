@@ -22,12 +22,6 @@
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
-#ifdef TEST_VERBOSE
-#define TEST_MSG printf
-#else
-#define TEST_MSG
-#endif
-
 //======================================================================
 
 #define CHECK_RESULT_NZ(got) \
@@ -37,7 +31,9 @@
     }
 
 int test_vpiRawFourStateVal(char * name, PLI_BYTE8 * test_data, int index, const unsigned low, const unsigned num, const unsigned size, const unsigned elem_size) {
-    TEST_MSG("%%\n%s: name=%s index=%u low=%u num=%u size=%u elem_size=%u\n\n",__func__,name,index,low,num,size,elem_size);
+#ifdef TEST_VERBOSE
+    printf("%%\n%s: name=%s index=%u low=%u num=%u size=%u elem_size=%u\n\n",__func__,name,index,low,num,size,elem_size);
+#endif
 
     // prepare index
     int index_arr[1] = {index};
@@ -47,9 +43,9 @@ int test_vpiRawFourStateVal(char * name, PLI_BYTE8 * test_data, int index, const
     CHECK_RESULT_NZ(arrayhandle);
 
     // test raw fourstate
-    s_vpi_arrayvalue arrayvalue{vpiRawFourStateVal,0,nullptr};
+    s_vpi_arrayvalue arrayvalue{vpiRawFourStateVal,0,0};
     vpi_get_value_array(arrayhandle,&arrayvalue,index_arr,num);
-    CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
+    CHECK_RESULT_NZ(!vpi_chk_error(0));
 
 
     // compare to test data
@@ -57,7 +53,9 @@ int test_vpiRawFourStateVal(char * name, PLI_BYTE8 * test_data, int index, const
     for(unsigned i = 0; i < num; i++) {
         const unsigned offset = (index + i) % size;
         for(unsigned j = 0; j < elem_size; j++) {
-            TEST_MSG("arr[%u] == test[%u]\n",(i*2*elem_size) + j,(offset*elem_size) + j);
+#ifdef TEST_VERBOSE
+            printf("arr[%u] == test[%u]\n",(i*2*elem_size) + j,(offset*elem_size) + j);
+#endif
             CHECK_RESULT_HEX(arrayvalue.value.rawvals[(i*2*elem_size) + j],test_data[(offset*elem_size) + j]);
         }
         for(unsigned j = 0; j < elem_size; j++) {
@@ -69,7 +67,9 @@ int test_vpiRawFourStateVal(char * name, PLI_BYTE8 * test_data, int index, const
 }
 
 int test_vpiRawTwoStateVal(char * name, PLI_BYTE8 * test_data, int index, const unsigned low, const unsigned num, const unsigned size, const unsigned elem_size) {
-    TEST_MSG("%%\n%s: name=%s index=%u low=%u num=%u size=%u elem_size=%u\n\n",__func__,name,index,low,num,size,elem_size);
+#ifdef TEST_VERBOSE
+    printf("%%\n%s: name=%s index=%u low=%u num=%u size=%u elem_size=%u\n\n",__func__,name,index,low,num,size,elem_size);
+#endif
 
     // prepare index
     int index_arr[1] = {index};
@@ -79,16 +79,18 @@ int test_vpiRawTwoStateVal(char * name, PLI_BYTE8 * test_data, int index, const 
     CHECK_RESULT_NZ(arrayhandle);
 
     // test raw two state
-    s_vpi_arrayvalue arrayvalue{vpiRawTwoStateVal,0,nullptr};
+    s_vpi_arrayvalue arrayvalue{vpiRawTwoStateVal,0,0};
     vpi_get_value_array(arrayhandle,&arrayvalue,index_arr,num);
-    CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
+    CHECK_RESULT_NZ(!vpi_chk_error(0));
 
     // compare to test data
     index -= low;
     for(unsigned i = 0; i < num; i++) {
         const unsigned offset = (index + i) % size;
         for(unsigned j = 0; j < elem_size; j++) {
-            TEST_MSG("arr[%u] == test[%u]\n",(i*elem_size) + j,(offset*elem_size) + j);
+#ifdef TEST_VERBOSE
+            printf("arr[%u] == test[%u]\n",(i*elem_size) + j,(offset*elem_size) + j);
+#endif
             CHECK_RESULT_HEX(arrayvalue.value.rawvals[(i*elem_size) + j],test_data[(offset*elem_size) + j]);
         }
     }
@@ -97,7 +99,9 @@ int test_vpiRawTwoStateVal(char * name, PLI_BYTE8 * test_data, int index, const 
 }
 
 int test_vpiVectorVal(char * name, PLI_BYTE8 * test_data, int index, const unsigned low, const unsigned num, const unsigned size, const unsigned elem_size) {
-    TEST_MSG("%%\n%s: name=%s index=%u low=%u num=%u size=%u elem_size=%u\n\n",__func__,name,index,low,num,size,elem_size);
+#ifdef TEST_VERBOSE
+    printf("%%\n%s: name=%s index=%u low=%u num=%u size=%u elem_size=%u\n\n",__func__,name,index,low,num,size,elem_size);
+#endif
 
     // prepare index
     int index_arr[1] = {index};
@@ -124,21 +128,24 @@ int test_vpiVectorVal(char * name, PLI_BYTE8 * test_data, int index, const unsig
     CHECK_RESULT_NZ(arrayhandle);
 
     // test vector
-    s_vpi_arrayvalue arrayvalue{vpiVectorVal,0,nullptr};
+    s_vpi_arrayvalue arrayvalue{vpiVectorVal,0,0};
     vpi_get_value_array(arrayhandle,&arrayvalue,index_arr,num);
-    CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
+    CHECK_RESULT_NZ(!vpi_chk_error(0));
 
+#ifdef TEST_VERBOSE
     for(unsigned i = 0; i < vec_size; i++) {
-        TEST_MSG("arr[%u]=%x test[%u]=%x\n",i,arrayvalue.value.vectors[i].aval,i,test_data_vectors[i].aval);
+        printf("arr[%u]=%x test[%u]=%x\n",i,arrayvalue.value.vectors[i].aval,i,test_data_vectors[i].aval);
     }
-
+#endif
 
     // compare to test data
     index -= low;
     for(unsigned i = 0; i < num; i++) {
         const unsigned offset = (index + i) % size;
         for(unsigned j = 0; j < elem_size_words; j++) {
-            TEST_MSG("array[%u] == test[%u]\n",(i*elem_size_words) + j,(offset*elem_size_words) + j);
+#ifdef TEST_VERBOSE
+            printf("array[%u] == test[%u]\n",(i*elem_size_words) + j,(offset*elem_size_words) + j);
+#endif
             CHECK_RESULT_HEX(arrayvalue.value.vectors[(i*elem_size_words) + j].aval,test_data_vectors[(offset*elem_size_words) + j].aval);
             CHECK_RESULT_HEX(arrayvalue.value.vectors[(i*elem_size_words) + j].bval,0);
         }
@@ -148,7 +155,9 @@ int test_vpiVectorVal(char * name, PLI_BYTE8 * test_data, int index, const unsig
 }
 
 int test_vpiIntVal(char * name, PLI_BYTE8 * test_data, int index, const unsigned low, const unsigned num, const unsigned size, const unsigned elem_size) {
-    TEST_MSG("%%\n%s: name=%s index=%u low=%u num=%u size=%u elem_size=%u\n\n",__func__,name,index,low,num,size,elem_size);
+#ifdef TEST_VERBOSE
+    printf("%%\n%s: name=%s index=%u low=%u num=%u size=%u elem_size=%u\n\n",__func__,name,index,low,num,size,elem_size);
+#endif
 
     // prepare index
     int index_arr[1] = {index};
@@ -166,19 +175,23 @@ int test_vpiIntVal(char * name, PLI_BYTE8 * test_data, int index, const unsigned
     CHECK_RESULT_NZ(arrayhandle);
 
     // test raw fourstate
-    s_vpi_arrayvalue arrayvalue{vpiIntVal,0,nullptr};
+    s_vpi_arrayvalue arrayvalue{vpiIntVal,0,0};
     vpi_get_value_array(arrayhandle,&arrayvalue,index_arr,num);
-    CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
+    CHECK_RESULT_NZ(!vpi_chk_error(0));
 
+#ifdef TEST_VERBOSE
     for(unsigned i = 0; i < size; i++) {
-        TEST_MSG("arr[%u]=%x test[%u]=%x\n",i,arrayvalue.value.integers[i],i,test_data_integers[i]);
+        printf("arr[%u]=%x test[%u]=%x\n",i,arrayvalue.value.integers[i],i,test_data_integers[i]);
     }
+#endif
 
     // compare to test data
     index -= low;
     for(unsigned i = 0; i < num; i++) {
         const unsigned offset = (index + i) % size;
-        TEST_MSG("array[%u] == test[%u]\n",i,offset);
+#ifdef TEST_VERBOSE
+        printf("array[%u] == test[%u]\n",i,offset);
+#endif
         CHECK_RESULT_HEX(arrayvalue.value.integers[i],test_data_integers[offset]);
     }
 
@@ -186,7 +199,9 @@ int test_vpiIntVal(char * name, PLI_BYTE8 * test_data, int index, const unsigned
 }
 
 int test_vpiShortIntVal(char * name, PLI_BYTE8 * test_data, int index, const unsigned low, const unsigned num, const unsigned size, const unsigned elem_size) {
-    TEST_MSG("%%\n%s: name=%s index=%u low=%u num=%u size=%u elem_size=%u\n\n",__func__,name,index,low,num,size,elem_size);
+#ifdef TEST_VERBOSE
+    printf("%%\n%s: name=%s index=%u low=%u num=%u size=%u elem_size=%u\n\n",__func__,name,index,low,num,size,elem_size);
+#endif
 
     // prepare index
     int index_arr[1] = {index};
@@ -205,19 +220,23 @@ int test_vpiShortIntVal(char * name, PLI_BYTE8 * test_data, int index, const uns
     CHECK_RESULT_NZ(arrayhandle);
 
     // test raw fourstate
-    s_vpi_arrayvalue arrayvalue{vpiShortIntVal,0,nullptr};
+    s_vpi_arrayvalue arrayvalue{vpiShortIntVal,0,0};
     vpi_get_value_array(arrayhandle,&arrayvalue,index_arr,num);
-    CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
+    CHECK_RESULT_NZ(!vpi_chk_error(0));
 
+#ifdef TEST_VERBOSE
     for(unsigned i = 0; i < size; i++) {
-        TEST_MSG("arr[%u]=%x test[%u]=%x\n",i,arrayvalue.value.shortints[i],i,test_data_shortints[i]);
+        printf("arr[%u]=%x test[%u]=%x\n",i,arrayvalue.value.shortints[i],i,test_data_shortints[i]);
     }
+#endif
 
     // compare to test data
     index -= low;
     for(unsigned i = 0; i < num; i++) {
         const unsigned offset = (index + i) % size;
-        TEST_MSG("array[%u] == test[%u]\n",i,offset);
+#ifdef TEST_VERBOSE
+        printf("array[%u] == test[%u]\n",i,offset);
+#endif
         CHECK_RESULT_HEX(arrayvalue.value.shortints[i],test_data_shortints[offset]);
     }
 
@@ -225,7 +244,9 @@ int test_vpiShortIntVal(char * name, PLI_BYTE8 * test_data, int index, const uns
 }
 
 int test_vpiLongIntVal(char * name, PLI_BYTE8 * test_data, int index, const unsigned low, const unsigned num, const unsigned size, const unsigned elem_size) {
-    TEST_MSG("%%\n%s: name=%s index=%u low=%u num=%u size=%u elem_size=%u\n\n",__func__,name,index,low,num,size,elem_size);
+#ifdef TEST_VERBOSE
+    printf("%%\n%s: name=%s index=%u low=%u num=%u size=%u elem_size=%u\n\n",__func__,name,index,low,num,size,elem_size);
+#endif
 
     // prepare index
     int index_arr[1] = {index};
@@ -243,15 +264,17 @@ int test_vpiLongIntVal(char * name, PLI_BYTE8 * test_data, int index, const unsi
     CHECK_RESULT_NZ(arrayhandle);
 
     // test raw fourstate
-    s_vpi_arrayvalue arrayvalue{vpiLongIntVal,0,nullptr};
+    s_vpi_arrayvalue arrayvalue{vpiLongIntVal,0,0};
     vpi_get_value_array(arrayhandle,&arrayvalue,index_arr,num);
-    CHECK_RESULT_NZ(!vpi_chk_error(nullptr));
+    CHECK_RESULT_NZ(!vpi_chk_error(0));
 
     // compare to test data
     index -= low;
     for(unsigned i = 0; i < num; i++) {
         const unsigned offset = (index + i) % size;
-        TEST_MSG("array[%u] == test[%u]\n",i,offset);
+#ifdef TEST_VERBOSE
+        printf("array[%u] == test[%u]\n",i,offset);
+#endif
         CHECK_RESULT_HEX(arrayvalue.value.longints[i],test_data_longints[offset]);
     }
 
@@ -435,11 +458,11 @@ int mon_check_props() {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_longs", NULL);
         CHECK_RESULT_NZ(object);
 
-        s_vpi_arrayvalue arrayVal{vpiRealVal, 0, {nullptr}};
+        s_vpi_arrayvalue arrayVal{vpiRealVal, 0, 0};
         PLI_INT32 indexp[1] = {0};
 
         vpi_get_value_array(object, &arrayVal, indexp, NUM_ELEMENTS);
-        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+        CHECK_RESULT_NZ(vpi_chk_error(0));
     }
 
     {
@@ -447,11 +470,11 @@ int mon_check_props() {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words", NULL);
         CHECK_RESULT_NZ(object);
 
-        s_vpi_arrayvalue arrayVal{vpiShortRealVal, 0, {nullptr}};
+        s_vpi_arrayvalue arrayVal{vpiShortRealVal, 0, 0};
         PLI_INT32 indexp[1] = {0};
 
         vpi_get_value_array(object, &arrayVal, indexp, NUM_ELEMENTS);
-        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+        CHECK_RESULT_NZ(vpi_chk_error(0));
     }
 
     {
@@ -459,11 +482,11 @@ int mon_check_props() {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_longs", NULL);
         CHECK_RESULT_NZ(object);
 
-        s_vpi_arrayvalue arrayVal{vpiTimeVal, 0, {nullptr}};
+        s_vpi_arrayvalue arrayVal{vpiTimeVal, 0, 0};
         PLI_INT32 indexp[1] = {0};
 
         vpi_get_value_array(object, &arrayVal, indexp, NUM_ELEMENTS);
-        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+        CHECK_RESULT_NZ(vpi_chk_error(0));
     }
 
     {
@@ -471,11 +494,11 @@ int mon_check_props() {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test", NULL);
         CHECK_RESULT_NZ(object);
 
-        s_vpi_arrayvalue arrayVal{vpiIntVal, 0, {nullptr}};
+        s_vpi_arrayvalue arrayVal{vpiIntVal, 0, 0};
         PLI_INT32 indexp[1] = {0};
 
         vpi_get_value_array(object, &arrayVal, indexp, NUM_ELEMENTS);
-        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+        CHECK_RESULT_NZ(vpi_chk_error(0));
     }
 
     {
@@ -483,11 +506,11 @@ int mon_check_props() {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_scalar", NULL);
         CHECK_RESULT_NZ(object);
 
-        s_vpi_arrayvalue arrayVal{vpiIntVal, 0, {nullptr}};
+        s_vpi_arrayvalue arrayVal{vpiIntVal, 0, 0};
         PLI_INT32 indexp[1] = {0};
 
         vpi_get_value_array(object, &arrayVal, indexp, NUM_ELEMENTS);
-        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+        CHECK_RESULT_NZ(vpi_chk_error(0));
     }
 
     {
@@ -495,15 +518,15 @@ int mon_check_props() {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_bounds", NULL);
         CHECK_RESULT_NZ(object);
 
-        s_vpi_arrayvalue arrayVal{vpiIntVal, 0, {nullptr}};
+        s_vpi_arrayvalue arrayVal{vpiIntVal, 0, 0};
         PLI_INT32 indexp[1] = {4};
 
         vpi_get_value_array(object, &arrayVal, indexp, NUM_ELEMENTS);
-        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+        CHECK_RESULT_NZ(vpi_chk_error(0));
 
         indexp[1] = {0};
         vpi_get_value_array(object, &arrayVal, indexp, NUM_ELEMENTS);
-        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+        CHECK_RESULT_NZ(vpi_chk_error(0));
     }
 
     {
@@ -511,11 +534,11 @@ int mon_check_props() {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words", NULL);
         CHECK_RESULT_NZ(object);
 
-        s_vpi_arrayvalue arrayVal = {vpiIntVal, vpiUserAllocFlag, {nullptr}};
+        s_vpi_arrayvalue arrayVal = {vpiIntVal, vpiUserAllocFlag, 0};
         PLI_INT32 indexp[1] = {0};
 
         vpi_get_value_array(object, &arrayVal, indexp, NUM_ELEMENTS);
-        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+        CHECK_RESULT_NZ(vpi_chk_error(0));
     }
 
     {
@@ -523,11 +546,11 @@ int mon_check_props() {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words", NULL);
         CHECK_RESULT_NZ(object);
 
-        s_vpi_arrayvalue arrayVal = {vpiShortIntVal, 0, {nullptr}};
+        s_vpi_arrayvalue arrayVal = {vpiShortIntVal, 0, 0};
         PLI_INT32 indexp[1] = {0};
 
         vpi_get_value_array(object, &arrayVal, indexp, NUM_ELEMENTS);
-        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+        CHECK_RESULT_NZ(vpi_chk_error(0));
     }
 
     {
@@ -535,11 +558,11 @@ int mon_check_props() {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words", NULL);
         CHECK_RESULT_NZ(object);
 
-        s_vpi_arrayvalue arrayVal{vpiIntVal, 0, {nullptr}};
+        s_vpi_arrayvalue arrayVal{vpiIntVal, 0, 0};
         PLI_INT32 indexp[1] = {0};
 
         vpi_get_value_array(object, &arrayVal, indexp, 5);
-        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+        CHECK_RESULT_NZ(vpi_chk_error(0));
     }
 
     {
@@ -549,8 +572,8 @@ int mon_check_props() {
 
         PLI_INT32 indexp[1] = {0};
 
-        vpi_get_value_array(object, nullptr, indexp, 0);
-        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+        vpi_get_value_array(object, 0, indexp, 0);
+        CHECK_RESULT_NZ(vpi_chk_error(0));
     }
 
     {
@@ -558,10 +581,10 @@ int mon_check_props() {
         vpiHandle object = vpi_handle_by_name((PLI_BYTE8*)"TOP.test.read_words",NULL);
         CHECK_RESULT_NZ(object);
 
-        s_vpi_arrayvalue arrayVal{vpiIntVal, 0, nullptr};
+        s_vpi_arrayvalue arrayVal{vpiIntVal, 0, 0};
 
-        vpi_get_value_array(object, &arrayVal, nullptr, 0);
-        CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+        vpi_get_value_array(object, &arrayVal, 0, 0);
+        CHECK_RESULT_NZ(vpi_chk_error(0));
     }
 
     return 0;

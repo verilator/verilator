@@ -2968,8 +2968,8 @@ void vl_put_value_array_vectors(unsigned index, const unsigned num, const unsign
                                 const p_vpi_vecval src, T * dst) {
     const unsigned element_size_bytes VL_BYTES_I(packedSize);
     const unsigned element_size_words VL_WORDS_I(packedSize);
+    const T zero = 0;
     if (sizeof(T) == sizeof(QData)) { //destination is QDATA
-        const T zero = 0;
         const QData mask = element_size_bytes == sizeof(T) ? ~zero : ~(~zero << (element_size_bytes*8));
         for(unsigned i = 0; i < num; i++) {
             dst[index] = src[i*2].aval;
@@ -2981,7 +2981,7 @@ void vl_put_value_array_vectors(unsigned index, const unsigned num, const unsign
             unsigned bytes_stored = 0;
             for(unsigned j = 0; j < element_size_words; j++) {
                 if(bytes_stored >= element_size_bytes) break;
-                const T mask = (element_size_bytes-bytes_stored) >= sizeof(PLI_UINT32) ? UINT32_MAX : ~(UINT32_MAX << ((element_size_bytes-bytes_stored)*8));
+                const T mask = (element_size_bytes-bytes_stored) >= sizeof(PLI_UINT32) ? ~zero : ~(~zero << ((element_size_bytes-bytes_stored)*8));
                 dst[(index*element_size_words)+j] = static_cast<T>(src[(i*element_size_words)+j].aval) & mask;
                 bytes_stored += sizeof(PLI_UINT32);
             }
