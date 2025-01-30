@@ -42,7 +42,7 @@ class UnpackedStructTest;
     function new();
         unpacked_struct.byte_value = 8'h00;
         unpacked_struct.int_value = 0;
-        unpacked_struct.non_rand_value = 42;  
+        unpacked_struct.non_rand_value = 42;
     endfunction
 
     // Constraint block for unpacked struct
