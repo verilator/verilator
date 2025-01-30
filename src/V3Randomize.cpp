@@ -712,6 +712,18 @@ class ConstraintExprVisitor final : public VNVisitor {
         editSMT(nodep, nodep->fromp(), lsbp, msbp);
     }
     void visit(AstStructSel* nodep) override {
+        if(VN_IS(nodep->fromp()->dtypep()->skipRefp(),StructDType)){
+            AstMemberDType* memberp = VN_AS(nodep->fromp()->dtypep()->skipRefp(),StructDType)->membersp();
+            while(memberp->nextp()){
+                if(memberp->name() == nodep->name()){
+                    memberp->markConstrainedRand(true);
+                    break;
+                }
+                else
+                    memberp = VN_CAST(memberp->nextp(),MemberDType);
+
+            }
+        }
         iterateChildren(nodep);
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();

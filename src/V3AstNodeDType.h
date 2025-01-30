@@ -909,12 +909,14 @@ class AstMemberDType final : public AstNodeDType {
     string m_name;  // Name of variable
     string m_tag;  // Holds the string of the verilator tag -- used in XML output.
     int m_lsb = -1;  // Within this level's packed struct, the LSB of the first bit of the member
+    bool m_constrainedRand = false;
     // UNSUP: int m_randType;    // Randomization type (IEEE)
 public:
     AstMemberDType(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtp,
                    AstNode* valuep)
         : ASTGEN_SUPER_MemberDType(fl)
-        , m_name{name} {
+        , m_name{name}
+        , m_constrainedRand(false) {
         childDTypep(dtp);  // Only for parser
         this->valuep(valuep);
         dtypep(nullptr);  // V3Width will resolve
@@ -922,7 +924,8 @@ public:
     }
     AstMemberDType(FileLine* fl, const string& name, AstNodeDType* dtp)
         : ASTGEN_SUPER_MemberDType(fl)
-        , m_name{name} {
+        , m_name{name}
+        , m_constrainedRand(false) {
         UASSERT(dtp, "AstMember created with no dtype");
         refDTypep(dtp);
         dtypep(this);
@@ -962,6 +965,8 @@ public:
         v3fatalSrc("call isCompound on subdata type, not reference");
         return false;
     }
+    bool isConstrainedRand() const { return m_constrainedRand; }
+    void markConstrainedRand(bool flag) { m_constrainedRand = flag; }
 };
 class AstNBACommitQueueDType final : public AstNodeDType {
     // @astgen ptr := m_subDTypep : AstNodeDType  // Type of the corresponding variable

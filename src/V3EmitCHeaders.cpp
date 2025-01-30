@@ -257,8 +257,8 @@ class EmitCHeader final : public EmitCConstInit {
             puts("return {");
             for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
-                putns(itemp, "\"" + itemp->shortName() + "\"");
-                if (itemp->nextp()) puts(",\n");
+                if(itemp->isConstrainedRand()) putns(itemp, "\"" + itemp->shortName() + "\"");
+                if (itemp->nextp() &&  VN_AS(itemp->nextp(), MemberDType)->isConstrainedRand()) puts(",\n");
             }
             puts("};\n}\n");
 
@@ -266,8 +266,8 @@ class EmitCHeader final : public EmitCConstInit {
             puts("return std::index_sequence_for<");
             for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
-                putns(itemp, itemp->dtypep()->cType("", false, false));
-                if (itemp->nextp()) puts(",\n");
+                if(itemp->isConstrainedRand()) putns(itemp, itemp->dtypep()->cType("", false, false));
+                if (itemp->nextp() && VN_AS(itemp->nextp(), MemberDType)->isConstrainedRand()) puts(",\n");
             }
             puts(">{};\n}\n");
 
@@ -276,8 +276,8 @@ class EmitCHeader final : public EmitCConstInit {
             puts("return std::tie(");
             for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
-                if (itemp != sdtypep->membersp()) puts(", ");
-                putns(itemp, "obj." + itemp->nameProtect());
+                if(itemp->isConstrainedRand())  putns(itemp, "obj." + itemp->nameProtect());
+                if (itemp->nextp() && VN_AS(itemp->nextp(), MemberDType)->isConstrainedRand()) puts(", ");
             }
             puts(");\n}\n");
         }
