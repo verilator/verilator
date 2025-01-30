@@ -195,7 +195,7 @@ public:
 //
 // The simplest thing that could possibly work would be to assume that our
 // predictions of task runtimes are precise, and that every thread will
-// make progress at an equal rate. Simulate a single "clock", pack the the
+// make progress at an equal rate. Simulate a single "clock", pack the
 // highest priority ready task into whatever thread becomes ready earliest,
 // repeating until no tasks remain.
 //
@@ -671,7 +671,7 @@ const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& schedul
         funcp->entryPoint(true);
         funcp->argTypes("void* voidSelf, bool even_cycle");
 
-        // Setup vlSelf an vlSyms
+        // Setup vlSelf and vlSyms
         funcp->addStmtsp(new AstCStmt{fl, EmitCBase::voidSelfAssign(modp)});
         funcp->addStmtsp(new AstCStmt{fl, EmitCBase::symClassAssign()});
 
@@ -798,7 +798,7 @@ void implementExecGraph(AstExecGraph* const execGraphp, const ThreadSchedule& sc
     if (execGraphp->depGraphp()->empty()) return;
 
     // Create a function to be run by each thread. Note this moves all AstMTaskBody nodes form the
-    // AstExecGrap into the AstCFunc created
+    // AstExecGraph into the AstCFunc created
     const std::vector<AstCFunc*>& funcps = createThreadFunctions(schedule, execGraphp->name());
     UASSERT(!funcps.empty(), "Non-empty ExecGraph yields no threads?");
 
@@ -818,7 +818,7 @@ void implement(AstNetlist* netlistp) {
         finalizeCosts(execGraphp->depGraphp());
 
         // Schedule the mtasks: statically associate each mtask with a thread,
-        // and determine the order in which each thread will runs its mtasks.
+        // and determine the order in which each thread will run its mtasks.
         const ThreadSchedule& schedule = PackThreads::apply(*execGraphp->depGraphp());
 
         // Wrap each MTask body into a CFunc for better profiling/debugging

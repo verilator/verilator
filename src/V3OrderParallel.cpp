@@ -158,7 +158,7 @@ static void partCheckCachedScoreVsActual(uint32_t cached, uint32_t actual) {
 // We keep MTaskEdge graph edges in a PairingHeap, sorted by score and id
 
 struct EdgeKey final {
-    // Node: Structure layout chosen to minimize padding in PairingHeao<*>::Node
+    // Node: Structure layout chosen to minimize padding in PairingHeap<*>::Node
     uint64_t m_id;  // Unique ID part of edge score
     uint32_t m_score;  // Score part of ID
     void increase(uint32_t score) {
@@ -177,7 +177,7 @@ using EdgeHeap = PairingHeap<EdgeKey>;
 // MTask utility classes
 
 struct MergeCandidateKey final {
-    // Note: Structure layout chosen to minimize padding in PairingHeao<*>::Node
+    // Note: Structure layout chosen to minimize padding in PairingHeap<*>::Node
     uint64_t m_id;  // Unique ID part of edge score
     uint32_t m_score;  // Score part of ID
     bool operator<(const MergeCandidateKey& other) const {
@@ -1940,7 +1940,7 @@ class FixDataHazards final {
         }
 
         // Handle nodes containing DPI calls, we want to serialize those
-        // by default unless user gave --threads-dpi-concurrent.
+        // by default unless user gave '--threads-dpi none'.
         // Same basic strategy as above to serialize access to SC vars.
         if (!v3Global.opt.threadsDpiPure() || !v3Global.opt.threadsDpiUnpure()) {
             TasksByRank tasksByRank;
@@ -1961,7 +1961,7 @@ class FixDataHazards final {
                 tasksByRank[writerMtaskp->rank()].insert(writerMtaskp);
             }
         }
-        // Not: Find all reader tasks for this variable, group by rank.
+        // Note: Find all reader tasks for this variable, group by rank.
         // There was "broken" code here to find readers, but fixing it to
         // work properly harmed performance on some tests, see issue #3360.
     }
