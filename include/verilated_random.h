@@ -54,24 +54,22 @@ public:
 using ArrayInfoMap = std::map<std::string, std::shared_ptr<const ArrayInfo>>;
 
 class VlRandomVar VL_NOT_FINAL {
-    const char* m_name;  // Variable name
+    std::string m_name;  // Variable name
     void* const m_datap;  // Reference to variable data
     const int m_width;  // Variable width in bits
     const int m_dimension;  //Variable dimension, default is 0
     const std::uint32_t m_randModeIdx;  // rand_mode index
 
 public:
-    VlRandomVar(const char* name, int width, void* datap, int dimension, std::uint32_t randModeIdx)
+    VlRandomVar(const std::string& name, int width, void* datap, int dimension, std::uint32_t randModeIdx)
         : m_name{name}
         , m_datap{datap}
         , m_width{width}
         , m_dimension{dimension}
         , m_randModeIdx{randModeIdx} {
-        m_name = new char[std::strlen(name) + 1];
-        std::strcpy(const_cast<char*>(m_name), name);
     }
-    virtual ~VlRandomVar() { delete[] m_name; }
-    const char* name() const { return m_name; }
+    virtual ~VlRandomVar() = default;
+    std::string name() const { return m_name; }
     int width() const { return m_width; }
     int dimension() const { return m_dimension; }
     virtual void* datap(int idx) const { return m_datap; }
@@ -102,7 +100,7 @@ public:
 template <typename T>
 class VlRandomArrayVarTemplate final : public VlRandomVar {
 public:
-    VlRandomArrayVarTemplate(const char* name, int width, void* datap, int dimension,
+    VlRandomArrayVarTemplate(const std::string& name, int width, void* datap, int dimension,
                              std::uint32_t randModeIdx)
         : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
     void* datap(int idx) const override {

@@ -932,6 +932,8 @@ public:
         widthFromSub(subDTypep());
     }
     ASTGEN_MEMBERS_AstMemberDType;
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     bool hasDType() const override VL_MT_SAFE { return true; }
