@@ -221,6 +221,34 @@ public:
     const char* name() const override { return m_varp->name(); }
     const char* fullname() const override { return m_fullname.c_str(); }
     virtual void* varDatap() const { return m_varp->datap(); }
+    CData* varCDatap() const {
+      VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT8););
+      return reinterpret_cast<CData*>(varDatap());
+    }
+    SData* varSDatap() const {
+      VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT16););
+      return reinterpret_cast<SData*>(varDatap());
+    }
+    IData* varIDatap() const {
+      VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT32););
+      return reinterpret_cast<IData*>(varDatap());
+    }
+    QData* varQDatap() const {
+      VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT64););
+      return reinterpret_cast<QData*>(varDatap());
+    }
+    EData* varEDatap() const {
+      VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_WDATA););
+      return reinterpret_cast<EData*>(varDatap());
+    }
+    double* varRealDatap() const {
+      VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_REAL););
+      return reinterpret_cast<double*>(varDatap());
+    }
+    std::string* varStringDatap() const {
+      VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_STRING););
+      return reinterpret_cast<std::string*>(varDatap());
+    }
     virtual uint32_t bitOffset() const { return 0; }
 };
 
@@ -2584,7 +2612,7 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
         }
     } else if (valuep->format == vpiBinStrVal) {
         t_outDynamicStr.resize(varBits);
-        const CData* datap = (reinterpret_cast<CData*>(varDatap));
+        const CData* datap = vop->varCDatap();
         for (size_t i = 0; i < varBits; ++i) {
             const size_t pos = i + vop->bitOffset();
             const char val = (datap[pos >> 3] >> (pos & 7)) & 1;
@@ -2632,7 +2660,7 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
                 valuep->value.str = reinterpret_cast<char*>(varDatap);
                 return;
             } else {
-                t_outDynamicStr = *(reinterpret_cast<std::string*>(varDatap));
+                t_outDynamicStr = *(vop->varStringDatap());
                 valuep->value.str = const_cast<char*>(t_outDynamicStr.c_str());
                 return;
             }
@@ -2651,7 +2679,7 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
         valuep->value.integer = vl_vpi_get_word(vop, 32, 0);
         return;
     } else if (valuep->format == vpiRealVal) {
-        valuep->value.real = *(reinterpret_cast<double*>(varDatap));
+        valuep->value.real = *(vop->varRealDatap());
         return;
     } else if (valuep->format == vpiSuppressVal) {
         return;
@@ -2739,7 +2767,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             }
         } else if (valuep->format == vpiBinStrVal) {
             const int len = std::strlen(valuep->value.str);
-            CData* const datap = (reinterpret_cast<CData*>(vop->varDatap()));
+            CData* const datap = vop->varCDatap();
             for (int i = 0; i < varBits; ++i) {
                 const bool set = (i < len) && (valuep->value.str[len - i - 1] == '1');
                 const size_t pos = vop->bitOffset() + i;
@@ -2819,7 +2847,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             return object;
         } else if (valuep->format == vpiStringVal) {
             if (vop->varp()->vltype() == VLVT_STRING) {
-                *(reinterpret_cast<std::string*>(vop->varDatap())) = valuep->value.str;
+                *(vop->varStringDatap()) = valuep->value.str;
                 return object;
             } else {
                 const int chars = VL_BYTES_I(varBits);
@@ -2836,7 +2864,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             return object;
         } else if (valuep->format == vpiRealVal) {
             if (vop->varp()->vltype() == VLVT_REAL) {
-                *(reinterpret_cast<double*>(vop->varDatap())) = valuep->value.real;
+                *(vop->varRealDatap()) = valuep->value.real;
                 return object;
             }
         }
