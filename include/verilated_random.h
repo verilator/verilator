@@ -61,13 +61,13 @@ class VlRandomVar VL_NOT_FINAL {
     const std::uint32_t m_randModeIdx;  // rand_mode index
 
 public:
-    VlRandomVar(const std::string& name, int width, void* datap, int dimension, std::uint32_t randModeIdx)
+    VlRandomVar(const std::string& name, int width, void* datap, int dimension,
+                std::uint32_t randModeIdx)
         : m_name{name}
         , m_datap{datap}
         , m_width{width}
         , m_dimension{dimension}
-        , m_randModeIdx{randModeIdx} {
-    }
+        , m_randModeIdx{randModeIdx} {}
     virtual ~VlRandomVar() = default;
     std::string name() const { return m_name; }
     int width() const { return m_width; }
