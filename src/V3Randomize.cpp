@@ -629,6 +629,11 @@ class ConstraintExprVisitor final : public VNVisitor {
                 const uint32_t unpackedDimensions = dims.second;
                 dimension = unpackedDimensions;
             }
+            if (VN_IS(varp->dtypeSkipRefp(), StructDType)
+                && !VN_AS(varp->dtypeSkipRefp(), StructDType)->packed()) {
+                VN_AS(varp->dtypeSkipRefp(), StructDType)->markConstrainedRand(true);
+                dimension = 1;
+            }
             methodp->dtypeSetVoid();
             AstClass* const classp = VN_AS(varp->user2p(), Class);
             AstVarRef* const varRefp
@@ -705,6 +710,26 @@ class ConstraintExprVisitor final : public VNVisitor {
         handle.relink(lsbp);
 
         editSMT(nodep, nodep->fromp(), lsbp, msbp);
+    }
+    void visit(AstStructSel* nodep) override {
+        if (VN_IS(nodep->fromp()->dtypep()->skipRefp(), StructDType)) {
+            AstMemberDType* memberp
+                = VN_AS(nodep->fromp()->dtypep()->skipRefp(), StructDType)->membersp();
+            while (memberp->nextp()) {
+                if (memberp->name() == nodep->name()) {
+                    memberp->markConstrainedRand(true);
+                    break;
+                } else
+                    memberp = VN_CAST(memberp->nextp(), MemberDType);
+            }
+        }
+        iterateChildren(nodep);
+        if (editFormat(nodep)) return;
+        FileLine* const fl = nodep->fileline();
+        AstSFormatF* const newp
+            = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false, nullptr};
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstAssocSel* nodep) override {
         if (editFormat(nodep)) return;

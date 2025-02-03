@@ -54,21 +54,22 @@ public:
 using ArrayInfoMap = std::map<std::string, std::shared_ptr<const ArrayInfo>>;
 
 class VlRandomVar VL_NOT_FINAL {
-    const char* const m_name;  // Variable name
+    std::string m_name;  // Variable name
     void* const m_datap;  // Reference to variable data
     const int m_width;  // Variable width in bits
     const int m_dimension;  //Variable dimension, default is 0
     const std::uint32_t m_randModeIdx;  // rand_mode index
 
 public:
-    VlRandomVar(const char* name, int width, void* datap, int dimension, std::uint32_t randModeIdx)
+    VlRandomVar(const std::string& name, int width, void* datap, int dimension,
+                std::uint32_t randModeIdx)
         : m_name{name}
         , m_datap{datap}
         , m_width{width}
         , m_dimension{dimension}
         , m_randModeIdx{randModeIdx} {}
     virtual ~VlRandomVar() = default;
-    const char* name() const { return m_name; }
+    std::string name() const { return m_name; }
     int width() const { return m_width; }
     int dimension() const { return m_dimension; }
     virtual void* datap(int idx) const { return m_datap; }
@@ -99,7 +100,7 @@ public:
 template <typename T>
 class VlRandomArrayVarTemplate final : public VlRandomVar {
 public:
-    VlRandomArrayVarTemplate(const char* name, int width, void* datap, int dimension,
+    VlRandomArrayVarTemplate(const std::string& name, int width, void* datap, int dimension,
                              std::uint32_t randModeIdx)
         : VlRandomVar{name, width, datap, dimension, randModeIdx} {}
     void* datap(int idx) const override {
@@ -300,8 +301,9 @@ public:
     }
 
     template <typename T>
-    void write_var(T& var, int width, const char* name, int dimension,
-                   std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
+    typename std::enable_if<!VlIsCustomStruct<T>::value, void>::type
+    write_var(T& var, int width, const char* name, int dimension,
+              std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
         // TODO: make_unique once VlRandomizer is per-instance not per-ref
         m_vars[name]
@@ -341,6 +343,22 @@ public:
             record_arr_table(var, name, dimension, {}, {});
         }
     }
+    template <typename T, std::size_t... I>
+    void modifyMembers(T& obj, std::index_sequence<I...>, std::string baseName) {
+        // Use the indices to access each member via std::get
+        (void)std::initializer_list<int>{
+            (write_var(std::get<I>(obj.getMembers(obj)),
+                       sizeof(std::get<I>(obj.getMembers(obj))) * 8,
+                       (baseName + "." + obj.memberNames()[I]).c_str(), 0),
+             0)...};
+    }
+
+    template <typename T>
+    typename std::enable_if<VlIsCustomStruct<T>::value, void>::type
+    write_var(T& var, int width, const char* name, int dimension,
+              std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
+        modifyMembers(var, var.memberIndices(), name);
+    }
 
     int idx;
     std::string generateKey(const std::string& name, int idx) {
@@ -355,8 +373,9 @@ public:
     }
 
     template <typename T>
-    void record_arr_table(T& var, const std::string name, int dimension,
-                          std::vector<IData> indices, std::vector<size_t> idxWidths) {
+    typename std::enable_if<!std::is_class<T>::value, void>::type
+    record_arr_table(T& var, const std::string name, int dimension, std::vector<IData> indices,
+                     std::vector<size_t> idxWidths) {
         const std::string key = generateKey(name, idx);
         m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices, idxWidths);
         ++idx;

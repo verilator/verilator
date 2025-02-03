@@ -175,6 +175,9 @@ enum class VerilatedAssertDirectiveType : uint8_t {
 using VerilatedAssertType_t = std::underlying_type<VerilatedAssertType>::type;
 using VerilatedAssertDirectiveType_t = std::underlying_type<VerilatedAssertDirectiveType>::type;
 
+// Type trait for custom struct
+template <typename>
+struct VlIsCustomStruct : public std::false_type {};
 //=============================================================================
 // Utility functions
 
