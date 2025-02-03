@@ -142,6 +142,11 @@ class CoverageVisitor final : public VNVisitor {
     bool m_objective = false;  // Expression objective
     bool m_ifCond = false;  // Visiting if condition
     bool m_inToggleOff = false;  // In function/task etc
+    bool m_condBranchOff = false;  // Do not include cond expr in branch coverage
+    AstIf* m_condCovIfp = nullptr;  // If created for measuring branch coverage of cond expression
+    bool m_condCovThen
+        = false;  // Whether we should add nested if for then or else branch of m_condCovIfp
+    AstBegin* m_condBeginp = nullptr;  // Begin node to m_condCovIfp nodes
     string m_beginHier;  // AstBegin hier name for user coverage points
 
     // STATE - cleared each module
@@ -274,6 +279,8 @@ class CoverageVisitor final : public VNVisitor {
         const AstNodeModule* const origModp = m_modp;
         VL_RESTORER(m_modp);
         VL_RESTORER(m_state);
+        VL_RESTORER(m_condBeginp);
+        m_condBeginp = nullptr;
         createHandle(nodep);
         m_modp = nodep;
         m_state.m_inModOff
@@ -480,8 +487,87 @@ class CoverageVisitor final : public VNVisitor {
                                << dtypep->prettyTypeName());
         }
     }
+    AstNodeStmt* getContainingStmt(AstNode* nodep) {
+        while (VN_IS(nodep, NodeExpr)) nodep = nodep->backp();
+        return VN_CAST(nodep, NodeStmt);
+    }
 
     // VISITORS - LINE COVERAGE
+    void visit(AstCond* nodep) override {
+        VL_RESTORER(m_condCovIfp);
+        VL_RESTORER(m_condCovThen);
+        VL_RESTORER(m_condBranchOff);
+        UINFO(4, " COND: " << nodep << endl);
+
+        if (m_seeking == NONE) {
+            VL_RESTORER(m_condBranchOff);
+            m_condBranchOff = true;
+            coverExprs(nodep->condp());
+        }
+
+        if (!m_state.lineCoverageOn(nodep) || !nodep->condp()->isPure()) {
+            // Current method cannot run coverage for impure statements
+            m_condBranchOff = true;
+            lineTrack(nodep);
+            return;
+        }
+
+        if (!m_condBranchOff && VN_IS(m_modp, Module)) {
+            AstIf* const condCovIfp
+                = new AstIf{nodep->fileline(), nodep->condp()->cloneTree(false)};
+            condCovIfp->user2(true);
+            if (m_condCovIfp) {
+                if (m_condCovThen) {
+                    m_condCovIfp->addThensp(condCovIfp);
+                } else {
+                    m_condCovIfp->addElsesp(condCovIfp);
+                }
+            } else {
+                AstNodeStmt* const stmtp = getContainingStmt(nodep);
+                if (stmtp && !VN_IS(stmtp, AssignW)) {
+                    stmtp->addNext(condCovIfp);
+                } else {
+                    if (!m_condBeginp) {
+                        FileLine* const newFl = new FileLine{nodep->fileline()};
+                        // Disable coverage for these fake always and begin blocks
+                        newFl->coverageOn(false);
+
+                        m_condBeginp = new AstBegin{newFl, "", condCovIfp};
+                        AstAlways* const alwaysp
+                            = new AstAlways{newFl, VAlwaysKwd::ALWAYS, nullptr, m_condBeginp};
+                        m_modp->addStmtsp(alwaysp);
+                    } else {
+                        m_condBeginp->addStmtsp(condCovIfp);
+                    }
+                }
+            }
+            VL_RESTORER(m_seeking);
+            // Disable expression coverage in sub-expressions, since they were already visited
+            m_seeking = ABORTED;
+            m_condCovIfp = condCovIfp;
+
+            const CheckState lastState = m_state;
+            createHandle(nodep);
+            m_condCovThen = true;
+            iterate(nodep->thenp());
+            lineTrack(nodep);
+            m_condCovIfp->addThensp(newCoverInc(nodep->fileline(), "", "v_branch", "cond_then",
+                                                linesCov(m_state, nodep), 0,
+                                                traceNameForLine(nodep, "cond_then")));
+
+            m_state = lastState;
+            createHandle(nodep);
+            m_condCovThen = false;
+            iterate(nodep->elsep());
+            m_condCovIfp->addElsesp(newCoverInc(nodep->fileline(), "", "v_branch", "cond_else",
+                                                linesCov(m_state, nodep), 1,
+                                                traceNameForLine(nodep, "cond_else")));
+
+            m_state = lastState;
+        } else {
+            lineTrack(nodep);
+        }
+    }
     // Note not AstNodeIf; other types don't get covered
     void visit(AstIf* nodep) override {
         if (nodep->user2()) return;
@@ -625,9 +711,12 @@ class CoverageVisitor final : public VNVisitor {
         // generate blocks; each point should get separate consideration.
         // (Currently ignored for line coverage, since any generate iteration
         // covers the code in that line.)
+        VL_RESTORER(m_condBeginp);
         VL_RESTORER(m_beginHier);
         VL_RESTORER(m_inToggleOff);
         m_inToggleOff = true;
+        // Normal if statement can't be put under generate begin block
+        m_condBeginp = nodep->generate() ? nullptr : nodep;
         if (nodep->name() != "") {
             m_beginHier = m_beginHier + (m_beginHier != "" ? "." : "") + nodep->name();
         }
@@ -900,11 +989,6 @@ class CoverageVisitor final : public VNVisitor {
             xorExpr(nodep);
             lineTrack(nodep);
         }
-    }
-
-    void visit(AstCond* nodep) override {
-        if (m_seeking == NONE) coverExprs(nodep->condp());
-        lineTrack(nodep);
     }
 
     void visit(AstFuncRef* nodep) override {
