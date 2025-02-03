@@ -50,6 +50,10 @@
                      // Inputs
                      .clk                       (clk));
            par par1 (/*AUTOINST*/);
+           cond cond1 (/*AUTOINST*/
+                       // Inputs
+                       .clk                     (clk),
+                       .cyc                     (cyc));
         
  000010    always @ (posedge clk) begin
 +000010  point: comment=block hier=top.t
@@ -413,5 +417,62 @@
 -000000  point: comment=block hier=top.t.par1
            endfunction
         
+        endmodule
+        
+        package my_pkg;
+%000001    int x = 1 ? 1 : 0;
+-000001  point: comment=block hier=top.my_pkg
+        endpackage
+        
+        module cond(input logic clk, input int cyc);
+           logic a, b, c, d, e, f, g, h;
+        
+ 000021    function logic func_side_effect;
++000021  point: comment=block hier=top.t.cond1
+ 000021       $display("SIDE EFFECT");
++000021  point: comment=block hier=top.t.cond1
+ 000021       return 1;
++000021  point: comment=block hier=top.t.cond1
+           endfunction
+        
+~000031    assign a = (cyc == 0) ? clk : 0;
+-000000  point: comment=cond_then hier=top.t.cond1
++000031  point: comment=cond_else hier=top.t.cond1
+~000028    assign b = (cyc == 1) ? clk : 0;
+-000003  point: comment=cond_then hier=top.t.cond1
++000028  point: comment=cond_else hier=top.t.cond1
+           assign c = func_side_effect() ? clk : 0;
+ 000010    always @(posedge clk) begin
++000010  point: comment=block hier=top.t.cond1
+~000010       d = (cyc % 3 == 0) ? 1 : 0;
++000010  point: comment=block hier=top.t.cond1
+-000003  point: comment=cond_then hier=top.t.cond1
+-000007  point: comment=cond_else hier=top.t.cond1
+           end
+~000019    assign e = (cyc % 3 == 1) ? (clk ? 1 : 0) : 1;
++000012  point: comment=cond_then hier=top.t.cond1
++000019  point: comment=cond_else hier=top.t.cond1
+-000007  point: comment=cond_then hier=top.t.cond1
+-000005  point: comment=cond_else hier=top.t.cond1
+~000031    assign f = (cyc != 0 ? 1 : 0) ? 1 : 0;
++000031  point: comment=cond_then hier=top.t.cond1
+-000000  point: comment=cond_else hier=top.t.cond1
+        
+           for (genvar i = 0; i < 2; i++) begin
+ 000022       assign g = clk ? 1 : 0;
++000020  point: comment=cond_then hier=top.t.cond1
++000022  point: comment=cond_else hier=top.t.cond1
+           end
+        
+ 000011    always begin
++000011  point: comment=block hier=top.t.cond1
+~000010       if (cyc == 5) h = cyc > 5 ? 1 : 0;
+-000000  point: comment=cond_then hier=top.t.cond1
+-000001  point: comment=cond_else hier=top.t.cond1
+-000001  point: comment=if hier=top.t.cond1
++000010  point: comment=else hier=top.t.cond1
+ 000010       else h = 1;
++000010  point: comment=else hier=top.t.cond1
+           end
         endmodule
         

@@ -47,6 +47,10 @@ module t (/*AUTOARG*/
              // Inputs
              .clk                       (clk));
    par par1 (/*AUTOINST*/);
+   cond cond1 (/*AUTOINST*/
+               // Inputs
+               .clk                     (clk),
+               .cyc                     (cyc));
 
    always @ (posedge clk) begin
       if (cyc!=0) begin
@@ -290,4 +294,35 @@ module par();
       return i;
    endfunction
 
+endmodule
+
+package my_pkg;
+   int x = 1 ? 1 : 0;
+endpackage
+
+module cond(input logic clk, input int cyc);
+   logic a, b, c, d, e, f, g, h;
+
+   function logic func_side_effect;
+      $display("SIDE EFFECT");
+      return 1;
+   endfunction
+
+   assign a = (cyc == 0) ? clk : 0;
+   assign b = (cyc == 1) ? clk : 0;
+   assign c = func_side_effect() ? clk : 0;
+   always @(posedge clk) begin
+      d = (cyc % 3 == 0) ? 1 : 0;
+   end
+   assign e = (cyc % 3 == 1) ? (clk ? 1 : 0) : 1;
+   assign f = (cyc != 0 ? 1 : 0) ? 1 : 0;
+
+   for (genvar i = 0; i < 2; i++) begin
+      assign g = clk ? 1 : 0;
+   end
+
+   always begin
+      if (cyc == 5) h = cyc > 5 ? 1 : 0;
+      else h = 1;
+   end
 endmodule

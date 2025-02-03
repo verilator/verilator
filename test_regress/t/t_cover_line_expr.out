@@ -1,0 +1,482 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: Verilog Test module
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain, for
+        // any use, without warranty, 2024 by Wilson Snyder.
+        // SPDX-License-Identifier: CC0-1.0
+        
+%000001 class cls;
+-000001  point: comment=block hier=top.$unit::cls__Vclpkg
+            rand int x;
+        endclass
+        
+        module t (/*AUTOARG*/
+            // Inputs
+            clk
+            );
+        
+            input clk;
+        
+            integer cyc;
+%000001     initial cyc=1;
+-000001  point: comment=block hier=top.t
+        
+            logic [63:32] cyc2;
+%000001     always_comb cyc2 = cyc;
+-000001  point: comment=block hier=top.t
+        
+            integer some_int;
+            integer other_int;
+            logic some_bool;
+        
+            wire t1 = cyc[0];
+            wire t2 = cyc[1];
+            wire t3 = cyc[2];
+            wire t4 = cyc[3];
+        
+            localparam bit ONE = 1'b1;
+            localparam bit ZERO = 1'b0;
+        
+ 000027     function automatic bit invert(bit x);
++000027  point: comment=block hier=top.t
+ 000027         return ~x;
++000027  point: comment=block hier=top.t
++000012  point: comment=(x==0) => 1 hier=top.t
++000015  point: comment=(x==1) => 0 hier=top.t
+            endfunction
+        
+%000009     function automatic bit and_oper(bit a, bit b);
+-000009  point: comment=block hier=top.t
+%000009         return a & b;
+-000009  point: comment=block hier=top.t
+-000004  point: comment=(a==0) => 0 hier=top.t
+-000002  point: comment=(a==1 && b==1) => 1 hier=top.t
+-000005  point: comment=(b==0) => 0 hier=top.t
+            endfunction
+        
+            localparam int num_intfs = 4;
+            intf the_intfs [num_intfs-1:0] ();
+            genvar intf_i;
+%000004     for (intf_i = 0; intf_i < num_intfs; intf_i++) begin
+-000004  point: comment=block hier=top.t
+%000004         always_comb the_intfs[intf_i].t = cyc[intf_i];
+-000004  point: comment=block hier=top.t
+            end
+        
+%000009     always @ (posedge clk) begin
+-000009  point: comment=block hier=top.t
+%000009         cyc <= cyc + 1;
+-000009  point: comment=block hier=top.t
+%000005         if ((~cyc[0] && cyc[1]) || (~cyc[2] && cyc[3])) $write("");
+-000005  point: comment=else hier=top.t
+-000002  point: comment=(cyc[0]==0 && cyc[1]==1) => 1 hier=top.t
+-000002  point: comment=(cyc[0]==1 && cyc[2]==1) => 0 hier=top.t
+-000004  point: comment=(cyc[0]==1 && cyc[3]==0) => 0 hier=top.t
+-000002  point: comment=(cyc[1]==0 && cyc[2]==1) => 0 hier=top.t
+-000003  point: comment=(cyc[1]==0 && cyc[3]==0) => 0 hier=top.t
+-000002  point: comment=(cyc[2]==0 && cyc[3]==1) => 1 hier=top.t
+-000004  point: comment=if hier=top.t
+%000005         if ((~cyc2[32] && cyc2[33]) || (~cyc2[34] && cyc2[35])) $write("");
+-000005  point: comment=else hier=top.t
+-000002  point: comment=(cyc2[32]==0 && cyc2[33]==1) => 1 hier=top.t
+-000002  point: comment=(cyc2[32]==1 && cyc2[34]==1) => 0 hier=top.t
+-000004  point: comment=(cyc2[32]==1 && cyc2[35]==0) => 0 hier=top.t
+-000002  point: comment=(cyc2[33]==0 && cyc2[34]==1) => 0 hier=top.t
+-000003  point: comment=(cyc2[33]==0 && cyc2[35]==0) => 0 hier=top.t
+-000002  point: comment=(cyc2[34]==0 && cyc2[35]==1) => 1 hier=top.t
+-000004  point: comment=if hier=top.t
+%000005         if ((~the_intfs[0].t && the_intfs[1].t) || (~the_intfs[2].t && the_intfs[3].t)) $write("");
+-000005  point: comment=else hier=top.t
+-000002  point: comment=(the_intfs[0].t==0 && the_intfs[1].t==1) => 1 hier=top.t
+-000002  point: comment=(the_intfs[0].t==1 && the_intfs[2].t==1) => 0 hier=top.t
+-000004  point: comment=(the_intfs[0].t==1 && the_intfs[3].t==0) => 0 hier=top.t
+-000002  point: comment=(the_intfs[1].t==0 && the_intfs[2].t==1) => 0 hier=top.t
+-000003  point: comment=(the_intfs[1].t==0 && the_intfs[3].t==0) => 0 hier=top.t
+-000002  point: comment=(the_intfs[2].t==0 && the_intfs[3].t==1) => 1 hier=top.t
+-000004  point: comment=if hier=top.t
+%000005         if ((~t1 && t2) || (~t3 && t4)) $write("");
+-000005  point: comment=else hier=top.t
+-000002  point: comment=(t1==0 && t2==1) => 1 hier=top.t
+-000002  point: comment=(t1==1 && t3==1) => 0 hier=top.t
+-000004  point: comment=(t1==1 && t4==0) => 0 hier=top.t
+-000002  point: comment=(t2==0 && t3==1) => 0 hier=top.t
+-000003  point: comment=(t2==0 && t4==0) => 0 hier=top.t
+-000002  point: comment=(t3==0 && t4==1) => 1 hier=top.t
+-000004  point: comment=if hier=top.t
+%000007         if (t3 && (t1 == t2)) $write("");
+-000007  point: comment=else hier=top.t
+-000005  point: comment=((t1 == t2)==0) => 0 hier=top.t
+-000005  point: comment=(t3==0) => 0 hier=top.t
+-000002  point: comment=(t3==1 && (t1 == t2)==1) => 1 hier=top.t
+-000002  point: comment=if hier=top.t
+%000007         if (123 == (124 - 32'(t1 || t2))) $write("");
+-000002  point: comment=else hier=top.t
+-000002  point: comment=(t1==0 && t2==0) => 0 hier=top.t
+-000005  point: comment=(t1==1) => 1 hier=top.t
+-000004  point: comment=(t2==1) => 1 hier=top.t
+-000007  point: comment=if hier=top.t
+%000009         some_int <= (t2 || t3) ? 345 : 567;
+-000009  point: comment=block hier=top.t
+-000003  point: comment=(t2==0 && t3==0) => 0 hier=top.t
+-000004  point: comment=(t2==1) => 1 hier=top.t
+-000004  point: comment=(t3==1) => 1 hier=top.t
+-000006  point: comment=cond_then hier=top.t
+-000003  point: comment=cond_else hier=top.t
+%000009         some_bool <= t1 && t2;
+-000009  point: comment=block hier=top.t
+-000004  point: comment=(t1==0) => 0 hier=top.t
+-000002  point: comment=(t1==1 && t2==1) => 1 hier=top.t
+-000005  point: comment=(t2==0) => 0 hier=top.t
+%000007         if (t1 & t2) $write("");
+-000007  point: comment=else hier=top.t
+-000004  point: comment=(t1==0) => 0 hier=top.t
+-000002  point: comment=(t1==1 && t2==1) => 1 hier=top.t
+-000005  point: comment=(t2==0) => 0 hier=top.t
+-000002  point: comment=if hier=top.t
+%000005         if ((!t1 && t2) | (~t3 && t4)) $write("");
+-000005  point: comment=else hier=top.t
+-000002  point: comment=(t1==0 && t2==1) => 1 hier=top.t
+-000002  point: comment=(t1==1 && t3==1) => 0 hier=top.t
+-000004  point: comment=(t1==1 && t4==0) => 0 hier=top.t
+-000002  point: comment=(t2==0 && t3==1) => 0 hier=top.t
+-000003  point: comment=(t2==0 && t4==0) => 0 hier=top.t
+-000002  point: comment=(t3==0 && t4==1) => 1 hier=top.t
+-000004  point: comment=if hier=top.t
+%000005         if (t1 ^ t2) $write("");
+-000004  point: comment=else hier=top.t
+-000002  point: comment=(t1==0 && t2==0) => 0 hier=top.t
+-000002  point: comment=(t1==0 && t2==1) => 1 hier=top.t
+-000003  point: comment=(t1==1 && t2==0) => 1 hier=top.t
+-000002  point: comment=(t1==1 && t2==1) => 0 hier=top.t
+-000005  point: comment=if hier=top.t
+%000007         if (~(t1 & t2)) $write("");
+-000002  point: comment=else hier=top.t
+-000004  point: comment=(t1==0) => 1 hier=top.t
+-000002  point: comment=(t1==1 && t2==1) => 0 hier=top.t
+-000005  point: comment=(t2==0) => 1 hier=top.t
+-000007  point: comment=if hier=top.t
+%000006         if (t1 -> t2) $write("");
+-000003  point: comment=else hier=top.t
+-000004  point: comment=(t1==0) => 1 hier=top.t
+-000003  point: comment=(t1==1 && t2==0) => 0 hier=top.t
+-000004  point: comment=(t2==1) => 1 hier=top.t
+-000006  point: comment=if hier=top.t
+%000005         if (t1 <-> t2) $write("");
+-000005  point: comment=else hier=top.t
+-000002  point: comment=(t1==0 && t2==0) => 1 hier=top.t
+-000002  point: comment=(t1==0 && t2==1) => 0 hier=top.t
+-000003  point: comment=(t1==1 && t2==0) => 0 hier=top.t
+-000002  point: comment=(t1==1 && t2==1) => 1 hier=top.t
+-000004  point: comment=if hier=top.t
+%000008         if (&cyc[2:0]) $write("");
+-000008  point: comment=else hier=top.t
+-000004  point: comment=(cyc[2:0][0]==0) => 0 hier=top.t
+-000001  point: comment=(cyc[2:0][0]==1 && cyc[2:0][1]==1 && cyc[2:0][2]==1) => 1 hier=top.t
+-000005  point: comment=(cyc[2:0][1]==0) => 0 hier=top.t
+-000005  point: comment=(cyc[2:0][2]==0) => 0 hier=top.t
+-000001  point: comment=if hier=top.t
+%000009         if (&cyc[3:2]) $write("");
+-000009  point: comment=else hier=top.t
+-000005  point: comment=(cyc[3:2][0]==0) => 0 hier=top.t
+-000000  point: comment=(cyc[3:2][0]==1 && cyc[3:2][1]==1) => 1 hier=top.t
+-000007  point: comment=(cyc[3:2][1]==0) => 0 hier=top.t
+-000000  point: comment=if hier=top.t
+%000008         if (|cyc[2:0]) $write("");
+-000001  point: comment=else hier=top.t
+-000001  point: comment=(cyc[2:0][0]==0 && cyc[2:0][1]==0 && cyc[2:0][2]==0) => 0 hier=top.t
+-000005  point: comment=(cyc[2:0][0]==1) => 1 hier=top.t
+-000004  point: comment=(cyc[2:0][1]==1) => 1 hier=top.t
+-000004  point: comment=(cyc[2:0][2]==1) => 1 hier=top.t
+-000008  point: comment=if hier=top.t
+%000005         if (^cyc[2:0]) $write("");
+-000004  point: comment=else hier=top.t
+-000001  point: comment=(cyc[2:0][0]==0 && cyc[2:0][1]==0 && cyc[2:0][2]==0) => 0 hier=top.t
+-000001  point: comment=(cyc[2:0][0]==0 && cyc[2:0][1]==0 && cyc[2:0][2]==1) => 1 hier=top.t
+-000001  point: comment=(cyc[2:0][0]==0 && cyc[2:0][1]==1 && cyc[2:0][2]==0) => 1 hier=top.t
+-000001  point: comment=(cyc[2:0][0]==0 && cyc[2:0][1]==1 && cyc[2:0][2]==1) => 0 hier=top.t
+-000002  point: comment=(cyc[2:0][0]==1 && cyc[2:0][1]==0 && cyc[2:0][2]==0) => 1 hier=top.t
+-000001  point: comment=(cyc[2:0][0]==1 && cyc[2:0][1]==0 && cyc[2:0][2]==1) => 0 hier=top.t
+-000001  point: comment=(cyc[2:0][0]==1 && cyc[2:0][1]==1 && cyc[2:0][2]==0) => 0 hier=top.t
+-000001  point: comment=(cyc[2:0][0]==1 && cyc[2:0][1]==1 && cyc[2:0][2]==1) => 1 hier=top.t
+-000005  point: comment=if hier=top.t
+%000009         if (|cyc[2:0] || cyc[3]) $write("");
+-000000  point: comment=else hier=top.t
+-000000  point: comment=(cyc[2:0][0]==0 && cyc[2:0][1]==0 && cyc[2:0][2]==0 && cyc[3]==0) => 0 hier=top.t
+-000005  point: comment=(cyc[2:0][0]==1) => 1 hier=top.t
+-000004  point: comment=(cyc[2:0][1]==1) => 1 hier=top.t
+-000004  point: comment=(cyc[2:0][2]==1) => 1 hier=top.t
+-000002  point: comment=(cyc[3]==1) => 1 hier=top.t
+-000009  point: comment=if hier=top.t
+%000007         if (t1 & t2 & 1'b1) $write("");
+-000007  point: comment=else hier=top.t
+-000000  point: comment=(1'h1==0) => 0 hier=top.t
+-000004  point: comment=(t1==0) => 0 hier=top.t
+-000002  point: comment=(t1==1 && t2==1 && 1'h1==1) => 1 hier=top.t
+-000005  point: comment=(t2==0) => 0 hier=top.t
+-000002  point: comment=if hier=top.t
+%000009         if (t1 & t2 & 1'b0) $write("");
+-000009  point: comment=else hier=top.t
+-000009  point: comment=(1'h0==0) => 0 hier=top.t
+-000004  point: comment=(t1==0) => 0 hier=top.t
+-000000  point: comment=(t1==1 && t2==1 && 1'h0==1) => 1 hier=top.t
+-000005  point: comment=(t2==0) => 0 hier=top.t
+-000000  point: comment=if hier=top.t
+%000007         if (t1 & t2 & ONE) $write("");
+-000007  point: comment=else hier=top.t
+-000000  point: comment=(ONE==0) => 0 hier=top.t
+-000004  point: comment=(t1==0) => 0 hier=top.t
+-000002  point: comment=(t1==1 && t2==1 && ONE==1) => 1 hier=top.t
+-000005  point: comment=(t2==0) => 0 hier=top.t
+-000002  point: comment=if hier=top.t
+%000009         if (t1 & t2 & ZERO) $write("");
+-000009  point: comment=else hier=top.t
+-000009  point: comment=(ZERO==0) => 0 hier=top.t
+-000004  point: comment=(t1==0) => 0 hier=top.t
+-000000  point: comment=(t1==1 && t2==1 && ZERO==1) => 1 hier=top.t
+-000005  point: comment=(t2==0) => 0 hier=top.t
+-000000  point: comment=if hier=top.t
+%000005         if (t1 && t2) begin
+-000004  point: comment=(t1==0) => 0 hier=top.t
+-000002  point: comment=(t1==1 && t2==1) => 1 hier=top.t
+-000005  point: comment=(t2==0) => 0 hier=top.t
+-000002  point: comment=elsif hier=top.t
+%000002             $write("");
+-000002  point: comment=elsif hier=top.t
+%000005         end else if (t1 || t2) begin
+-000005  point: comment=if hier=top.t
+-000002  point: comment=else hier=top.t
+-000002  point: comment=(t1==0 && t2==0) => 0 hier=top.t
+-000003  point: comment=(t1==1) => 1 hier=top.t
+-000002  point: comment=(t2==1) => 1 hier=top.t
+%000005             $write("");
+-000005  point: comment=if hier=top.t
+                end
+%000007         if (invert(t1) && t2) $write("");
+-000007  point: comment=else hier=top.t
+-000005  point: comment=(invert(t1)==0) => 0 hier=top.t
+-000002  point: comment=(invert(t1)==1 && t2==1) => 1 hier=top.t
+-000005  point: comment=(t2==0) => 0 hier=top.t
+-000002  point: comment=if hier=top.t
+%000007         if (and_oper(t1, t2)) $write("");
+-000007  point: comment=else hier=top.t
+-000002  point: comment=if hier=top.t
+%000007         if (t2 && t3) begin
+-000007  point: comment=else hier=top.t
+-000005  point: comment=(t2==0) => 0 hier=top.t
+-000002  point: comment=(t2==1 && t3==1) => 1 hier=top.t
+-000005  point: comment=(t3==0) => 0 hier=top.t
+-000002  point: comment=if hier=top.t
+%000001             if (t1 && t2) $write("");
+-000001  point: comment=if hier=top.t
+-000001  point: comment=else hier=top.t
+-000001  point: comment=(t1==0) => 0 hier=top.t
+-000001  point: comment=(t1==1 && t2==1) => 1 hier=top.t
+-000000  point: comment=(t2==0) => 0 hier=top.t
+                end
+%000009         if (0 == 1) begin
+-000009  point: comment=else hier=top.t
+-000000  point: comment=if hier=top.t
+%000000             for (int loop_var = 0; loop_var < 1; loop_var++) begin
+-000000  point: comment=if hier=top.t
+-000000  point: comment=block hier=top.t
+%000000                 if (cyc[loop_var] && t2) $write("");
+-000000  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+-000000  point: comment=(cyc[loop_var[4:0]+:32'h1]]==0) => 0 hier=top.t
+-000000  point: comment=(cyc[loop_var[4:0]+:32'h1]]==1 && t2==1) => 1 hier=top.t
+-000000  point: comment=(t2==0) => 0 hier=top.t
+                    end
+                end
+                // stop at the first layer even if there's more to find
+%000007         if ((cyc[3+32'(t1 && t2)+:2] == cyc[5+32'(t3 || t4)+:2]) || cyc[31]) $write("");
+-000002  point: comment=else hier=top.t
+-000002  point: comment=((cyc[(32'sh3 + (t1 && t2))[4:0]+:32'sh2]] == cyc[(32'sh5 + (t3 || t4))[4:0]+:32'sh2]])==0 && cyc[31]==0) => 0 hier=top.t
+-000007  point: comment=((cyc[(32'sh3 + (t1 && t2))[4:0]+:32'sh2]] == cyc[(32'sh5 + (t3 || t4))[4:0]+:32'sh2]])==1) => 1 hier=top.t
+-000000  point: comment=(cyc[31]==1) => 1 hier=top.t
+-000007  point: comment=if hier=top.t
+                // impossible branches and redundant terms
+%000008         if ((t1 && t2) && ~(t1 && t3) && (t1 || t4)) $write("");
+-000008  point: comment=else hier=top.t
+-000003  point: comment=(t1==0 && t4==0) => 0 hier=top.t
+-000004  point: comment=(t1==0) => 0 hier=top.t
+-000000  point: comment=(t1==1 && t2==1 && t3==0 && t4==1) => 1 hier=top.t
+-000001  point: comment=(t1==1 && t2==1 && t3==0) => 1 hier=top.t
+-000002  point: comment=(t1==1 && t3==1) => 0 hier=top.t
+-000005  point: comment=(t2==0) => 0 hier=top.t
+-000001  point: comment=if hier=top.t
+%000008         if ((cyc[0] && cyc[1]) && ~(cyc[0] && cyc[2]) && (cyc[0] || cyc[3])) $write("");
+-000008  point: comment=else hier=top.t
+-000003  point: comment=(cyc[0]==0 && cyc[3]==0) => 0 hier=top.t
+-000004  point: comment=(cyc[0]==0) => 0 hier=top.t
+-000000  point: comment=(cyc[0]==1 && cyc[1]==1 && cyc[2]==0 && cyc[3]==1) => 1 hier=top.t
+-000001  point: comment=(cyc[0]==1 && cyc[1]==1 && cyc[2]==0) => 1 hier=top.t
+-000002  point: comment=(cyc[0]==1 && cyc[2]==1) => 0 hier=top.t
+-000005  point: comment=(cyc[1]==0) => 0 hier=top.t
+-000001  point: comment=if hier=top.t
+                // demonstrate current limitations of term matching scheme
+%000008         if ((cyc[0] && cyc[1]) && ~(cyc[1-1] && cyc[2]) && (cyc[2-2] || cyc[3])) $write("");
+-000008  point: comment=else hier=top.t
+-000002  point: comment=(cyc[(32'sh1 - 32'sh1)[4:0]+:32'h1]]==1 && cyc[2]==1) => 0 hier=top.t
+-000003  point: comment=(cyc[(32'sh2 - 32'sh2)[4:0]+:32'h1]]==0 && cyc[3]==0) => 0 hier=top.t
+-000004  point: comment=(cyc[0]==0) => 0 hier=top.t
+-000000  point: comment=(cyc[0]==1 && cyc[1]==1 && cyc[(32'sh1 - 32'sh1)[4:0]+:32'h1]]==0 && cyc[(32'sh2 - 32'sh2)[4:0]+:32'h1]]==1) => 1 hier=top.t
+-000000  point: comment=(cyc[0]==1 && cyc[1]==1 && cyc[(32'sh1 - 32'sh1)[4:0]+:32'h1]]==0 && cyc[3]==1) => 1 hier=top.t
+-000001  point: comment=(cyc[0]==1 && cyc[1]==1 && cyc[2]==0 && cyc[(32'sh2 - 32'sh2)[4:0]+:32'h1]]==1) => 1 hier=top.t
+-000000  point: comment=(cyc[0]==1 && cyc[1]==1 && cyc[2]==0 && cyc[3]==1) => 1 hier=top.t
+-000005  point: comment=(cyc[1]==0) => 0 hier=top.t
+-000001  point: comment=if hier=top.t
+                //verilator coverage_off
+                if (t1 && t2) $write("");
+                //verilator coverage_on
+%000005         if ((~t1 && t2)
+-000005  point: comment=else hier=top.t
+-000004  point: comment=if hier=top.t
+%000004             ||
+-000002  point: comment=(t1==0 && t2==1) => 1 hier=top.t
+-000002  point: comment=(t1==1 && t3==1) => 0 hier=top.t
+-000004  point: comment=(t1==1 && t4==0) => 0 hier=top.t
+-000002  point: comment=(t2==0 && t3==1) => 0 hier=top.t
+-000003  point: comment=(t2==0 && t4==0) => 0 hier=top.t
+-000002  point: comment=(t3==0 && t4==1) => 1 hier=top.t
+%000004            (~t3 && t4)) $write("");
+-000004  point: comment=if hier=top.t
+                // intentionally testing wonkified expression terms
+%000007         if (
+-000007  point: comment=else hier=top.t
+-000002  point: comment=if hier=top.t
+                    cyc[
+                      0
+%000005             ] &
+-000004  point: comment=(cyc[0]==0) => 0 hier=top.t
+-000002  point: comment=(cyc[0]==1 && cyc[1]==1) => 1 hier=top.t
+-000005  point: comment=(cyc[1]==0) => 0 hier=top.t
+                    cyc
+%000002               [1]) $write("");
+-000002  point: comment=if hier=top.t
+                // for now each ternary condition is considered in isolation
+%000009         other_int <= t1 ? t2 ? 1 : 2 : 3;
+-000004  point: comment=(t1==0) => 0 hier=top.t
+-000005  point: comment=(t1==1) => 1 hier=top.t
+-000005  point: comment=cond_then hier=top.t
+-000004  point: comment=cond_else hier=top.t
+-000002  point: comment=cond_then hier=top.t
+-000003  point: comment=cond_else hier=top.t
+-000009  point: comment=block hier=top.t
+                // no expression coverage for multi-bit expressions
+%000009         if ((cyc[1:0] & cyc[3:2]) == 2'b11) $write("");
+-000009  point: comment=else hier=top.t
+-000000  point: comment=if hier=top.t
+                // truth table is too large
+%000005         if (^cyc[6:0]) $write("");
+-000004  point: comment=else hier=top.t
+-000005  point: comment=if hier=top.t
+                // this one is too big even for t_cover_expr_max
+%000005         if (^cyc) $write("");
+-000004  point: comment=else hier=top.t
+-000005  point: comment=if hier=top.t
+%000008         if (cyc==9) begin
+-000008  point: comment=else hier=top.t
+-000001  point: comment=if hier=top.t
+%000001             $write("*-* All Finished *-*\n");
+-000001  point: comment=if hier=top.t
+%000001             $finish;
+-000001  point: comment=if hier=top.t
+                end
+            end
+        
+ 000010     always_comb begin
++000010  point: comment=block hier=top.t
+%000008         if (t1 && t2) $write("");
+-000008  point: comment=else hier=top.t
+-000005  point: comment=(t1==0) => 0 hier=top.t
+-000002  point: comment=(t1==1 && t2==1) => 1 hier=top.t
+-000005  point: comment=(t2==0) => 0 hier=top.t
+-000002  point: comment=if hier=top.t
+            end
+        
+            logic ta, tb, tc;
+%000001     initial begin
+-000001  point: comment=block hier=top.t
+%000001         cls obj = new;
+-000001  point: comment=block hier=top.t
+%000001         cls null_obj = null;
+-000001  point: comment=block hier=top.t
+                int q[5];
+                int qv[$];
+        
+%000001         q = '{1, 2, 2, 4, 3};
+-000001  point: comment=block hier=top.t
+                // lambas not handled
+                // NB: there is a bug w/ tracing find_first (maybe lambdas in general?)
+                //     tracing_off does not work around the bug
+%000001         qv = q.find_first with (item[0] & item[1]);
+-000001  point: comment=block hier=top.t
+%000001         ta = '1;
+-000001  point: comment=block hier=top.t
+%000001         tb = '0;
+-000001  point: comment=block hier=top.t
+%000001         tc = '0;
+-000001  point: comment=block hier=top.t
+%000003         while (ta || tb || tc) begin
+-000001  point: comment=(ta==0 && tb==0 && tc==0) => 0 hier=top.t
+-000000  point: comment=(ta==1) => 1 hier=top.t
+-000000  point: comment=(tb==1) => 1 hier=top.t
+-000000  point: comment=(tc==1) => 1 hier=top.t
+-000003  point: comment=block hier=top.t
+%000003             tc = tb;
+-000003  point: comment=block hier=top.t
+%000003             tb = ta;
+-000003  point: comment=block hier=top.t
+%000003             ta = '0;
+-000003  point: comment=block hier=top.t
+                end
+%000001         if (!bit'(obj.randomize() with {x < 100;})) $write("");
+-000000  point: comment=else hier=top.t
+-000001  point: comment=if hier=top.t
+%000001         if (null_obj != null && null_obj.x == 5) $write("");
+-000001  point: comment=else hier=top.t
+-000000  point: comment=if hier=top.t
+            end
+        
+            sub the_sub_1 (.p(t1), .q(t2));
+            sub the_sub_2 (.p(t3), .q(t4));
+            // TODO -- non-process expressions
+%000005     sub the_sub_3 (.p(t1 ? t2 : t3), .q(t4));
+-000005  point: comment=cond_then hier=top.t
+-000005  point: comment=cond_else hier=top.t
+        
+            // TODO
+            // pragma for expr coverage off / on
+            // investigate cover point sorting in annotated source
+            // consider reporting don't care terms
+            //
+            // Branches which are statically impossible to reach are still reported.
+            // E.g.
+            // -000000  point: comment=(t1=1 && t2=1 && 1'h0=1) => 1 hier=top.t
+            // These could potentially be pruned, but they currently follow suit for
+            // what branch coverage does.  Perhaps a switch should be added to not
+            // count statically impossible things.
+        
+        endmodule
+        
+        module sub (
+            input p,
+            input q
+        );
+        
+ 000030     always_comb begin
++000030  point: comment=block hier=top.t.the_sub_*
+~000028         if (p && q) $write("");
++000028  point: comment=else hier=top.t.the_sub_*
++000017  point: comment=(p==0) => 0 hier=top.t.the_sub_*
+-000002  point: comment=(p==1 && q==1) => 1 hier=top.t.the_sub_*
++000019  point: comment=(q==0) => 0 hier=top.t.the_sub_*
+-000002  point: comment=if hier=top.t.the_sub_*
+            end
+        
+        endmodule
+        
+        interface intf();
+            logic t;
+        endinterface
+        
