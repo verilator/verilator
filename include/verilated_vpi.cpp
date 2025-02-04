@@ -222,32 +222,32 @@ public:
     const char* fullname() const override { return m_fullname.c_str(); }
     virtual void* varDatap() const { return m_varp->datap(); }
     CData* varCDatap() const {
-      VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT8););
-      return reinterpret_cast<CData*>(varDatap());
+        VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT8););
+        return reinterpret_cast<CData*>(varDatap());
     }
     SData* varSDatap() const {
-      VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT16););
-      return reinterpret_cast<SData*>(varDatap());
+        VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT16););
+        return reinterpret_cast<SData*>(varDatap());
     }
     IData* varIDatap() const {
-      VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT32););
-      return reinterpret_cast<IData*>(varDatap());
+        VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT32););
+        return reinterpret_cast<IData*>(varDatap());
     }
     QData* varQDatap() const {
-      VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT64););
-      return reinterpret_cast<QData*>(varDatap());
+        VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT64););
+        return reinterpret_cast<QData*>(varDatap());
     }
     EData* varEDatap() const {
-      VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_WDATA););
-      return reinterpret_cast<EData*>(varDatap());
+        VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_WDATA););
+        return reinterpret_cast<EData*>(varDatap());
     }
     double* varRealDatap() const {
-      VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_REAL););
-      return reinterpret_cast<double*>(varDatap());
+        VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_REAL););
+        return reinterpret_cast<double*>(varDatap());
     }
     std::string* varStringDatap() const {
-      VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_STRING););
-      return reinterpret_cast<std::string*>(varDatap());
+        VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_STRING););
+        return reinterpret_cast<std::string*>(varDatap());
     }
     virtual uint32_t bitOffset() const { return 0; }
 };
@@ -2612,7 +2612,7 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
         }
     } else if (valuep->format == vpiBinStrVal) {
         t_outDynamicStr.resize(varBits);
-        const CData* datap = vop->varCDatap();
+        const CData* datap = reinterpret_cast<CData*>(varDatap);
         for (size_t i = 0; i < varBits; ++i) {
             const size_t pos = i + vop->bitOffset();
             const char val = (datap[pos >> 3] >> (pos & 7)) & 1;
@@ -2767,7 +2767,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             }
         } else if (valuep->format == vpiBinStrVal) {
             const int len = std::strlen(valuep->value.str);
-            CData* const datap = vop->varCDatap();
+            CData* const datap = reinterpret_cast<CData*>(vop->varDatap());
             for (int i = 0; i < varBits; ++i) {
                 const bool set = (i < len) && (valuep->value.str[len - i - 1] == '1');
                 const size_t pos = vop->bitOffset() + i;
