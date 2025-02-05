@@ -8,15 +8,13 @@
 
 `ifdef VERILATOR_COMMENTS
  `define PUBLIC_FLAT_RD /*verilator public_flat_rd*/
- `define PUBLIC_FLAT_RW /*verilator public_flat_rw @(posedge clk)*/
+ `define PUBLIC_FLAT_RW /*verilator public_flat_rw*/
 `else
  `define PUBLIC_FLAT_RD
  `define PUBLIC_FLAT_RW
 `endif
 
-module test #(
-    parameter WIDTH `PUBLIC_FLAT_RD = 32
-) (input clk);
+module test ();
 
 `ifdef VERILATOR
 `systemc_header
@@ -87,7 +85,14 @@ extern "C" int mon_check();
       read_customs_nonzero_index_rl[2] = 69'h0A08090a0b0c0d0e0f;
       read_customs_nonzero_index_rl[1] = 69'h051011121314151617;
 
-      status = $c32("mon_check()");
+
+`ifdef IVERILOG
+     status = $mon_check;
+`endif
+
+`ifdef VERILATOR
+   status = $c32("mon_check()");
+`endif
 
       if (status != 0) begin
          $write("%%Error: t_vpi_get_value_array.cpp:%0d: C Test failed\n", status);
