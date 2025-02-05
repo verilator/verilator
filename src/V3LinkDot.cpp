@@ -986,8 +986,8 @@ class LinkDotFindVisitor final : public VNVisitor {
             if (nodep->hierParams()) {
                 UINFO(1, "Found module with hier type parameters" << endl);
                 m_hierParamsName = nodep->name();
-                for (const AstNode* node = nodep->op2p(); node; node = node->nextp()) {
-                    if (const AstTypedef* const tdef = VN_CAST(node, Typedef)) {
+                for (const AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                    if (const AstTypedef* const tdef = VN_CAST(stmtp, Typedef)) {
                         UINFO(1, "Inserting hier type parameter typedef: " << tdef << endl);
                         VSymEnt* const upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
                         m_curSymp = m_modSymp = m_statep->insertBlock(upperSymp, nodep->name(),
@@ -1501,9 +1501,9 @@ class LinkDotFindVisitor final : public VNVisitor {
             if (const VSymEnt* const typedefEntp = m_curSymp->findIdFallback(m_hierParamsName)) {
                 const AstModule* modp = VN_CAST(typedefEntp->nodep(), Module);
 
-                for (const AstNode* node = modp ? modp->stmtsp() : nullptr; node;
-                     node = node->nextp()) {
-                    const AstTypedef* tdefp = VN_CAST(node, Typedef);
+                for (const AstNode* stmtp = modp ? modp->stmtsp() : nullptr; stmtp;
+                     stmtp = stmtp->nextp()) {
+                    const AstTypedef* tdefp = VN_CAST(stmtp, Typedef);
 
                     if (tdefp && tdefp->name() == nodep->name() && m_statep->forPrimary()) {
                         UINFO(8, "Replacing type of" << nodep << endl

@@ -208,6 +208,7 @@ public:
     void emitCvtPackStr(AstNode* nodep);
     void emitCvtWideArray(AstNode* nodep, AstNode* fromp);
     void emitConstant(AstConst* nodep, AstVarRef* assigntop, const string& assignString);
+    void emitConstantString(const AstConst* nodep);
     void emitSetVarConstant(const string& assignString, AstConst* constp);
     void emitVarReset(AstVar* varp);
     string emitVarResetRecurse(const AstVar* varp, const string& varNameProtected,
@@ -279,6 +280,7 @@ public:
     // VISITORS
     using EmitCConstInit::visit;
     void visit(AstCFunc* nodep) override {
+        if (nodep->emptyBody() && !nodep->isLoose()) return;
         VL_RESTORER(m_useSelfForThis);
         VL_RESTORER(m_cfuncp);
         VL_RESTORER(m_instantiatesOwnProcess)
@@ -303,21 +305,24 @@ public:
         }
         puts(" {\n");
 
-        if (nodep->isLoose()) {
-            m_lazyDecls.declared(nodep);  // Defined here, so no longer needs declaration
-            if (!nodep->isStatic()) {  // Standard prologue
-                m_useSelfForThis = true;
-                puts("(void)vlSelf;  // Prevent unused variable warning\n");
-                if (!VN_IS(m_modp, Class)) puts(symClassAssign());
-            }
-        }
-
         // "+" in the debug indicates a print from the model
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+  ");
         for (int i = 0; i < m_modp->level(); ++i) puts("  ");
         puts(prefixNameProtect(m_modp));
         puts(nodep->isLoose() ? "__" : "::");
         puts(nodep->nameProtect() + "\\n\"); );\n");
+
+        if (nodep->isLoose()) {
+            m_lazyDecls.declared(nodep);  // Defined here, so no longer needs declaration
+            if (!nodep->isStatic()) {  // Standard prologue
+                m_useSelfForThis = true;
+                if (!VN_IS(m_modp, Class)) {
+                    puts(symClassAssign());  // Uses vlSelf
+                } else {
+                    puts("(void)vlSelf;  // Prevent unused variable warning\n");
+                }
+            }
+        }
 
         // Instantiate a process class if it's going to be needed somewhere later
         nodep->forall([&](const AstNodeCCall* ccallp) -> bool {
@@ -344,16 +349,14 @@ public:
 
         if (m_useSelfForThis) {
             m_usevlSelfRef = true;
-            /*
-             * Using reference to the vlSelf pointer will help the C++
-             * compiler to have dereferenceable hints, which can help to
-             * reduce the need for branch instructions in the generated
-             * code to allow the compiler to generate load store after the
-             * if condition (including short-circuit evaluation)
-             * speculatively and also reduce the data cache pollution when
-             * executing in the wrong path to make verilator-generated code
-             * run faster.
-             */
+            // Using reference to the vlSelf pointer will help the C++
+            // compiler to have dereferenceable hints, which can help to
+            // reduce the need for branch instructions in the generated
+            // code to allow the compiler to generate load store after the
+            // if condition (including short-circuit evaluation)
+            // speculatively and also reduce the data cache pollution when
+            // executing in the wrong path to make verilator-generated code
+            // run faster.
             puts("auto& vlSelfRef = std::ref(*vlSelf).get();\n");
         }
 
@@ -968,10 +971,10 @@ public:
         putns(nodep, "if (");
         if (!nodep->branchPred().unknown()) {
             puts(nodep->branchPred().ascii());
-            puts("(");
+            puts("((");  // Two parens, so that VL_UNLIKELY((class<foo,bar>)) works
         }
         iterateAndNextConstNull(nodep->condp());
-        if (!nodep->branchPred().unknown()) puts(")");
+        if (!nodep->branchPred().unknown()) puts("))");
         puts(") {\n");
         iterateAndNextConstNull(nodep->thensp());
         puts("}");

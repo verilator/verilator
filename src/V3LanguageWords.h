@@ -56,7 +56,6 @@ private:
 inline void V3LanguageWords::Singleton::init() {
     // C++ keywords
     // clang-format off
-    addKwd("nullptr",                  "C++ common word");
     addKwd("abort",                 "C++ common word");
     addKwd("alignas",               "C++11 keyword");
     addKwd("alignof",               "C++11 keyword");
@@ -91,7 +90,6 @@ inline void V3LanguageWords::Singleton::init() {
     addKwd("decltype",              "C++11 keyword");
     addKwd("default",               "C++ keyword");
     addKwd("delete",                "C++ keyword");
-    addKwd("deque",                 "C++ common word");
     addKwd("do",                    "C++ keyword");
     addKwd("double",                "C++ keyword");
     addKwd("dynamic_cast",          "C++ keyword");
@@ -113,12 +111,8 @@ inline void V3LanguageWords::Singleton::init() {
     addKwd("int",                   "C++ keyword");
     addKwd("interrupt",             "C++ common word");
     addKwd("iterator",              "C++ common word");
-    addKwd("list",                  "C++ common word");
     addKwd("long",                  "C++ keyword");
-    addKwd("map",                   "C++ common word");
     addKwd("module",                "C++ modules TS keyword");
-    addKwd("std::multimap",         "C++ common word");
-    addKwd("std::multiset",         "C++ common word");
     addKwd("mutable",               "C++ keyword");
     addKwd("namespace",             "C++ keyword");
     addKwd("near",                  "C++ common word");
@@ -126,6 +120,7 @@ inline void V3LanguageWords::Singleton::init() {
     addKwd("noexcept",              "C++11 keyword");
     addKwd("not",                   "C++ keyword");
     addKwd("not_eq",                "C++ keyword");
+    addKwd("nullptr",               "C++ common word");
     addKwd("nullptr",               "C++11 keyword");
     addKwd("operator",              "C++ keyword");
     addKwd("or",                    "C++ keyword");
@@ -142,7 +137,6 @@ inline void V3LanguageWords::Singleton::init() {
     addKwd("requires",              "C++20 keyword");
     addKwd("restrict",              "C++ keyword");
     addKwd("return",                "C++ keyword");
-    addKwd("set",                   "C++ common word");
     addKwd("short",                 "C++ keyword");
     addKwd("signed",                "C++ keyword");
     addKwd("sizeof",                "C++ keyword");
@@ -150,6 +144,13 @@ inline void V3LanguageWords::Singleton::init() {
     addKwd("static",                "C++ keyword");
     addKwd("static_assert",         "C++11 keyword");
     addKwd("static_cast",           "C++ keyword");
+    addKwd("std::deque",            "C++ common word");
+    addKwd("std::list",             "C++ common word");
+    addKwd("std::map",              "C++ common word");
+    addKwd("std::multimap",         "C++ common word");
+    addKwd("std::multiset",         "C++ common word");
+    addKwd("std::set",              "C++ common word");
+    addKwd("std::vector",           "C++ common word");
     addKwd("struct",                "C++ keyword");
     addKwd("switch",                "C++ keyword");
     addKwd("synchronized",          "C++ TM TS keyword");
@@ -171,7 +172,6 @@ inline void V3LanguageWords::Singleton::init() {
     addKwd("union",                 "C++ keyword");
     addKwd("unsigned",              "C++ keyword");
     addKwd("using",                 "C++ keyword");
-    addKwd("vector",                "C++ common word");
     addKwd("virtual",               "C++ keyword");
     addKwd("void",                  "C++ keyword");
     addKwd("volatile",              "C++ keyword");

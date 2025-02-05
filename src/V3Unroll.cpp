@@ -57,7 +57,7 @@ class UnrollVisitor final : public VNVisitor {
     bool cantUnroll(AstNode* nodep, const char* reason) const {
         if (m_generate)
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Can't unroll generate for; " << reason);
-        UINFO(3, "   Can't Unroll: " << reason << " :" << nodep << endl);
+        UINFO(4, "   Can't Unroll: " << reason << " :" << nodep << endl);
         // if (debug() >= 9) nodep->dumpTree("-  cant: ");
         V3Stats::addStatSum("Unrolling gave up, "s + reason, 1);
         return false;
@@ -210,7 +210,7 @@ class UnrollVisitor final : public VNVisitor {
         SimulateVisitor simvis;
         simvis.mainParamEmulate(clonep);
         if (!simvis.optimizable()) {
-            UINFO(3, "Unable to simulate" << endl);
+            UINFO(4, "Unable to simulate" << endl);
             if (debug() >= 9) nodep->dumpTree("-  _simtree: ");
             VL_DO_DANGLING(clonep->deleteTree(), clonep);
             return false;

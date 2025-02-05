@@ -33,7 +33,7 @@ module t (/*AUTOARG*/
 
    // verilator lint_off UNPACKED
 
-   typedef enum {
+   typedef enum [2:0] {
                  ZERO,
                  ONE = 1
    } e_t;
@@ -52,19 +52,35 @@ module t (/*AUTOARG*/
    us_t us;
    union_t unu;
 
-   int            array[3];
+   int array[3];
    initial array = '{1,2,3};
 
-   reg [15:0]     pubflat /*verilator public_flat_rw @(posedge clk) */;
+   bit [6:5][4:3][2:1] arraymanyd[10:11][12:13][14:15];
 
-   reg [15:0]    pubflat_r;
-   wire [15:0]    pubflat_w = pubflat;
-   int            fd;
-   int            i;
+   reg [15:0] pubflat /*verilator public_flat_rw @(posedge clk) */;
 
-   int            q[$];
-   int            assoc[string];
-   int            dyn[];
+   reg [15:0] pubflat_r;
+   wire [15:0] pubflat_w = pubflat;
+   int fd;
+   int i;
+
+   int q[$];
+   int qb[$ : 3];
+   int assoc[string];
+   int assocassoc[string][real];
+   int dyn[];
+
+   typedef struct packed {
+      logic nn1;
+   } nested_named_t;
+   typedef struct packed {
+      struct packed {
+         logic nn2;
+      } nested_anonymous;
+      nested_named_t nested_named;
+      logic [11:10] nn3;
+   } nibble_t;
+   nibble_t [5:4] nibblearray[3:2];
 
    task t;
       $display("stmt");

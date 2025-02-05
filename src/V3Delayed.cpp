@@ -208,6 +208,7 @@ class DelayedVisitor final : public VNVisitor {
     // NODE STATE
     //  AstVar::user1()         -> bool.  Set true if already issued MULTIDRIVEN warning
     //  AstVarRef::user1()      -> bool.  Set true if target of NBA
+    //  AstAssignDly::user1()   -> bool.  Set true if already visited
     //  AstNodeModule::user1p() -> std::unorded_map<std::string, AstVar*> temp map via m_varMap
     //  AstVarScope::user1p()   -> VarScopeInfo via m_vscpInfo
     //  AstVarScope::user2p()   -> AstVarRef*: First write reference to the Variable
@@ -909,6 +910,9 @@ class DelayedVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstAssignDly* nodep) override {
+        // Prevent double processing due to AstExprStmt being moved before this node
+        if (nodep->user1SetOnce()) return;
+
         if (m_cfuncp) {
             if (!v3Global.rootp()->nbaEventp()) {
                 nodep->v3warn(
@@ -922,21 +926,31 @@ class DelayedVisitor final : public VNVisitor {
         UASSERT_OBJ(m_inSuspendableOrFork || m_activep->hasClocked(), nodep,
                     "<= assignment in non-clocked block, should have been converted in V3Active");
 
-        // Grab the reference to the target of the NBA
+        // Grab the reference to the target of the NBA, also lift ExprStmt statements on the LHS
         VL_RESTORER(m_currNbaLhsRefp);
         UASSERT_OBJ(!m_currNbaLhsRefp, nodep, "NBAs should not nest");
-        nodep->lhsp()->foreach([&](AstVarRef* nodep) {
-            // Ignore reads (e.g.: '_[*here*] <= _')
-            if (nodep->access().isReadOnly()) return;
-            // A RW ref on the LHS (e.g.: '_[preInc(*here*)] <= _') is asking for trouble at this
-            // point. These should be lowered in an earlier pass into sequenced temporaries.
-            UASSERT_OBJ(!nodep->access().isRW(), nodep, "RW ref on LHS of NBA");
-            // Multiple target variables
-            // (e.g.: '{*here*, *and here*} <= _',or '*here*[*and here* = _] <= _').
-            // These should be lowered in an earlier pass into sequenced statements.
-            UASSERT_OBJ(!m_currNbaLhsRefp, nodep, "Multiple Write refs on LHS of NBA");
-            // Hold on to it
-            m_currNbaLhsRefp = nodep;
+        nodep->lhsp()->foreach([&](AstNode* currp) {
+            if (AstExprStmt* const exprp = VN_CAST(currp, ExprStmt)) {
+                // Move statements before the NBA
+                nodep->addHereThisAsNext(exprp->stmtsp()->unlinkFrBackWithNext());
+                // Replace with result
+                currp->replaceWith(exprp->resultp()->unlinkFrBack());
+                // Get rid of the AstExprStmt
+                VL_DO_DANGLING(pushDeletep(currp), currp);
+            } else if (AstVarRef* const refp = VN_CAST(currp, VarRef)) {
+                // Ignore reads (e.g.: '_[*here*] <= _')
+                if (refp->access().isReadOnly()) return;
+                // A RW ref on the LHS (e.g.: '_[preInc(*here*)] <= _') is asking for trouble at
+                // this point. These should be lowered in an earlier pass into sequenced
+                // temporaries.
+                UASSERT_OBJ(!refp->access().isRW(), refp, "RW ref on LHS of NBA");
+                // Multiple target variables
+                // (e.g.: '{*here*, *and here*} <= _',or '*here*[*and here* = _] <= _').
+                // These should be lowered in an earlier pass into sequenced statements.
+                UASSERT_OBJ(!m_currNbaLhsRefp, refp, "Multiple Write refs on LHS of NBA");
+                // Hold on to it
+                m_currNbaLhsRefp = refp;
+            }
         });
         // The target variable of the NBA (there can only be one per NBA at this point)
         AstVarScope* const vscp = m_currNbaLhsRefp->varScopep();

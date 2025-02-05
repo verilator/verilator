@@ -28,13 +28,17 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //  Emit statements and expressions
 
 class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
-    // MEMBERS
-    bool m_suppressSemi = false;
+    // STATE - across all visitors
     const bool m_suppressUnknown = false;
+
+    // STATE - for current visit position (use VL_RESTORER)
     AstSenTree* m_sensesp;  // Domain for printing one a ALWAYS under a ACTIVE
+    bool m_suppressSemi = false;  // Non-statement, don't print ;
+    bool m_suppressVarSemi = false;  // Suppress emitting semicolon for AstVars
+    bool m_arrayPost = false;  // Print array information that goes after identifier (vs after)
+    std::deque<AstNodeArrayDType*> m_packedps;  // Packed arrays to print with BasicDType
 
     // METHODS
-
     virtual void puts(const string& str) = 0;
     virtual void putbs(const string& str) = 0;
     virtual void putfs(AstNode* nodep, const string& str) = 0;  // Fileline and node %% mark
@@ -49,6 +53,20 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         putsNoTracking("\"");
     }
 
+    void iterateAndCommaConstNull(AstNode* nodep) {
+        for (; nodep; nodep = nodep->nextp()) {
+            iterateConst(nodep);
+            if (nodep->nextp()) puts(", ");
+        }
+    }
+    void emitPacked() {
+        for (AstNodeArrayDType* packedp : m_packedps) {
+            puts(" ");
+            iterateConstNull(packedp->rangep());
+        }
+        m_packedps.clear();
+    }
+
     // VISITORS
     void visit(AstNetlist* nodep) override { iterateAndNextConstNull(nodep->modulesp()); }
     void visit(AstNodeModule* nodep) override {
@@ -58,13 +76,14 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     }
     void visit(AstPort* nodep) override {}
     void visit(AstNodeFTask* nodep) override {
-        putfs(nodep, nodep->isFunction() ? "function" : "task");
+        const bool func = nodep->isFunction() || nodep->name() == "new";
+        putfs(nodep, func ? "function" : "task");
         puts(" ");
         puts(nodep->prettyName());
         puts(";\n");
         // Only putfs the first time for each visitor; later for same node is putqs
         iterateAndNextConstNull(nodep->stmtsp());
-        putfs(nodep, nodep->isFunction() ? "endfunction\n" : "endtask\n");
+        putfs(nodep, func ? "endfunction\n" : "endtask\n");
     }
 
     void visit(AstBegin* nodep) override {
@@ -169,7 +188,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     }
     void visit(AstSenItem* nodep) override {
         putfs(nodep, "");
-        puts(nodep->edgeType().verilogKwd());
+        if (nodep->edgeType() != VEdgeType::ET_CHANGED) puts(nodep->edgeType().verilogKwd());
         if (nodep->sensp()) puts(" ");
         iterateChildrenConst(nodep);
     }
@@ -221,13 +240,13 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         putfs(nodep, nodep->verilogKwd());
         putbs("(");
         if (fileOrStrgp) {
-            iterateAndNextConstNull(fileOrStrgp);
+            iterateConstNull(fileOrStrgp);
             putbs(", ");
         }
         putsQuoted(text);
         for (AstNode* expp = exprsp; expp; expp = expp->nextp()) {
             puts(", ");
-            iterateAndNextConstNull(expp);
+            iterateConstNull(expp);
         }
         puts(");\n");
     }
@@ -393,7 +412,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     }
     void visit(AstTextBlock* nodep) override {
         visit(static_cast<AstNodeSimpleText*>(nodep));
-        VL_RESTORER(m_suppressSemi);
+        VL_RESTORER(m_suppressVarSemi);
         m_suppressVarSemi = nodep->commas();
         for (AstNode* childp = nodep->nodesp(); childp; childp = childp->nextp()) {
             iterateConst(childp);
@@ -403,17 +422,17 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     void visit(AstScopeName* nodep) override {}
     void visit(AstCStmt* nodep) override {
         putfs(nodep, "$_CSTMT(");
-        iterateAndNextConstNull(nodep->exprsp());
+        iterateAndCommaConstNull(nodep->exprsp());
         puts(");\n");
     }
     void visit(AstCExpr* nodep) override {
         putfs(nodep, "$_CEXPR(");
-        iterateAndNextConstNull(nodep->exprsp());
+        iterateAndCommaConstNull(nodep->exprsp());
         puts(")");
     }
     void visit(AstUCStmt* nodep) override {
         putfs(nodep, "$c(");
-        iterateAndNextConstNull(nodep->exprsp());
+        iterateAndCommaConstNull(nodep->exprsp());
         puts(");\n");
     }
     void visit(AstUCFunc* nodep) override {
@@ -431,19 +450,13 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     void visit(AstCMethodHard* nodep) override {
         iterateConst(nodep->fromp());
         puts("." + nodep->name() + "(");
-        for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
-            if (pinp != nodep->pinsp()) puts(", ");
-            iterateConst(pinp);
-        }
+        iterateAndCommaConstNull(nodep->pinsp());
         puts(")");
     }
     void visit(AstCMethodCall* nodep) override {
         iterateConst(nodep->fromp());
         puts("." + nodep->name() + "(");
-        for (AstNode* pinp = nodep->argsp(); pinp; pinp = pinp->nextp()) {
-            if (pinp != nodep->argsp()) puts(", ");
-            iterateConst(pinp);
-        }
+        iterateAndCommaConstNull(nodep->argsp());
         puts(")");
     }
 
@@ -565,13 +578,15 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
             puts(cvtToStr(nodep->leftConst()));
             puts(":");
             puts(cvtToStr(nodep->rightConst()));
-            puts("]");
         } else {
             iterateAndNextConstNull(nodep->leftp());
             puts(":");
             iterateAndNextConstNull(nodep->rightp());
-            puts("]");
         }
+        puts("]");
+    }
+    void visit(AstRand* nodep) override {
+        emitVerilogFormat(nodep, nodep->emitVerilog(), nodep->seedp());
     }
     void visit(AstSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
@@ -603,14 +618,31 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     }
     void visit(AstTypedef* nodep) override {
         putfs(nodep, "typedef ");
-        iterateAndNextConstNull(nodep->subDTypep());
+        iterateConstNull(nodep->subDTypep());
         puts(" ");
         puts(nodep->prettyName());
         puts(";\n");
     }
+    void visit(AstAssocArrayDType* nodep) override {
+        if (!m_arrayPost) {
+            iterateConst(nodep->subDTypep());
+        } else {
+            VL_RESTORER(m_arrayPost);
+            m_arrayPost = false;
+            puts("[");
+            iterateConst(nodep->keyDTypep());
+            puts("]");
+            m_arrayPost = true;
+            iterateConst(nodep->subDTypep());  // For post's key
+        }
+    }
     void visit(AstBasicDType* nodep) override {
+        if (m_arrayPost) return;
         putfs(nodep, nodep->prettyName());
-        if (nodep->isSigned()) putfs(nodep, " signed");
+        if (nodep->isSigned() && !nodep->keyword().isDouble()) putfs(nodep, " signed");
+        // Do not emit ranges for integer atoms.
+        if (nodep->keyword().isIntNumeric() && !nodep->keyword().isBitLogic()) return;
+        emitPacked();
         if (nodep->rangep()) {
             puts(" ");
             iterateAndNextConstNull(nodep->rangep());
@@ -624,12 +656,50 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         }
     }
     void visit(AstConstDType* nodep) override {
+        if (m_arrayPost) return;
         putfs(nodep, "const ");
         iterateConst(nodep->subDTypep());
     }
-    void visit(AstNodeArrayDType* nodep) override {
+    void visit(AstDynArrayDType* nodep) override {
+        if (!m_arrayPost) {
+            iterateConst(nodep->subDTypep());
+        } else {
+            puts("[]");
+            iterateConst(nodep->subDTypep());  // For post's key
+        }
+    }
+    void visit(AstEnumDType* nodep) override {
+        if (m_arrayPost) return;
+        putfs(nodep, "enum ");
         iterateConst(nodep->subDTypep());
-        iterateAndNextConstNull(nodep->rangep());
+        puts("{\n");
+        iterateAndNextConstNull(nodep->itemsp());
+        puts("}");
+    }
+    void visit(AstEnumItem* nodep) override {
+        putfs(nodep, nodep->name());
+        iterateConstNull(nodep->rangep());
+        puts(" = ");
+        iterateConstNull(nodep->valuep());
+        if (nodep->nextp()) puts(",");
+        puts("\n");
+    }
+    void visit(AstNodeArrayDType* nodep) override {
+        if (!m_arrayPost) {
+            if (VN_IS(nodep, PackArrayDType)) {
+                // Unpacked ranges handled in BasicDType, as they print "backwards"
+                m_packedps.push_back(nodep);
+            }
+            iterateConst(nodep->subDTypep());
+        } else {
+            if (VN_IS(nodep, UnpackArrayDType)) {
+                VL_RESTORER(m_arrayPost);
+                m_arrayPost = false;
+                iterateAndNextConstNull(nodep->rangep());
+                m_arrayPost = true;
+            }
+            iterateConst(nodep->subDTypep());  // For post's key
+        }
     }
     void visit(AstRefDType* nodep) override {
         if (nodep->subDTypep()) {
@@ -639,21 +709,43 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         }
     }
     void visit(AstNodeUOrStructDType* nodep) override {
+        if (m_arrayPost) return;
         puts(nodep->verilogKwd() + " ");
         if (nodep->packed()) puts("packed ");
-        puts("\n");
-        puts("{");
-        for (AstMemberDType* itemp = nodep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            iterateConst(itemp);
-            puts(";");
+        {
+            puts("{\n");
+            VL_RESTORER(m_packedps);
+            m_packedps.clear();
+            for (AstMemberDType* itemp = nodep->membersp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                iterateConst(itemp);
+            }
+            puts("}");
         }
-        puts("}");
+        emitPacked();
     }
     void visit(AstMemberDType* nodep) override {
+        if (m_arrayPost) return;
         iterateConst(nodep->subDTypep());
         puts(" ");
         puts(nodep->name());
+        puts(";\n");
+    }
+    void visit(AstQueueDType* nodep) override {
+        if (!m_arrayPost) {
+            iterateConst(nodep->subDTypep());
+        } else {
+            VL_RESTORER(m_arrayPost);
+            m_arrayPost = false;
+            puts("[$");
+            if (nodep->boundp()) {
+                puts(":");
+                iterateConst(nodep->boundp());
+            }
+            puts("]");
+            m_arrayPost = true;
+            iterateConst(nodep->subDTypep());  // For post's key
+        }
     }
     void visit(AstNodeFTaskRef* nodep) override {
         if (nodep->dotted() != "") {
@@ -716,37 +808,23 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
             putfs(nodep, nodep->verilogKwd());
             puts(" ");
         }
-        std::vector<const AstUnpackArrayDType*> unpackps;
-        for (AstNodeDType* dtypep = nodep->dtypep(); dtypep;) {
-            dtypep = dtypep->skipRefp();
-            if (const AstUnpackArrayDType* const unpackp = VN_CAST(dtypep, UnpackArrayDType)) {
-                unpackps.push_back(unpackp);
-                dtypep = unpackp->subDTypep();
-            } else {
-                iterateConst(dtypep);
-                puts(" ");
-                puts(nodep->prettyName());
-                dtypep = nullptr;
-            }
-        }
-        // If nodep is an unpacked array, append unpacked dimensions
-        for (const auto& unpackp : unpackps) {
-            puts("[");
-            puts(cvtToStr(unpackp->rangep()->leftConst()));
-            puts(":");
-            puts(cvtToStr(unpackp->rangep()->rightConst()));
-            puts("]");
-        }
+        VL_RESTORER(m_arrayPost);
+        m_arrayPost = false;
+        iterateConstNull(nodep->dtypep());  // Dtype part before identifier
+        puts(" ");
+        puts(nodep->prettyName());
+        m_arrayPost = true;
+        iterateConstNull(nodep->dtypep());  // Dtype part after identifier
         puts(m_suppressVarSemi ? "\n" : ";\n");
     }
     void visit(AstActive* nodep) override {
+        VL_RESTORER(m_sensesp);
         m_sensesp = nodep->sensesp();
         iterateAndNextConstNull(nodep->stmtsp());
-        m_sensesp = nullptr;
     }
     void visit(AstParseRef* nodep) override { puts(nodep->prettyName()); }
-    void visit(AstVarScope*) override {}
     void visit(AstNodeText*) override {}
+    void visit(AstVarScope*) override {}
     void visit(AstTraceDecl*) override {}
     void visit(AstTraceInc*) override {}
     // NOPs
@@ -764,7 +842,6 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     }
 
 public:
-    bool m_suppressVarSemi = false;  // Suppress emitting semicolon for AstVars
     explicit EmitVBaseVisitorConst(bool suppressUnknown, AstSenTree* domainp)
         : m_suppressUnknown{suppressUnknown}
         , m_sensesp{domainp} {}

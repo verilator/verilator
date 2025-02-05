@@ -70,6 +70,7 @@ AstCFunc* makeSubFunction(AstNetlist* netlistp, const string& name, bool slow) {
 AstCFunc* makeTopFunction(AstNetlist* netlistp, const string& name, bool slow) {
     AstCFunc* const funcp = makeSubFunction(netlistp, name, slow);
     funcp->entryPoint(true);
+    funcp->keepIfEmpty(true);
     return funcp;
 }
 

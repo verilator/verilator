@@ -478,6 +478,7 @@ m4_foreach([cflag],[
         [-Wno-parentheses-equality],
         [-Wno-shadow],
         [-Wno-sign-compare],
+        [-Wno-subobject-linkage],
         [-Wno-tautological-bitwise-compare],
         [-Wno-tautological-compare],
         [-Wno-uninitialized],
@@ -538,7 +539,7 @@ _MY_LDLIBS_CHECK_IFELSE(
   [if test "$CFG_WITH_TCMALLOC" != "no"; then
     CFG_LIBS="$LTCMALLOC $CFG_LIBS";
     # If using tcmalloc, add some extra options to make the compiler not assume
-    # it is using it's own versions of the standard library functions
+    # it is using its own versions of the standard library functions
     _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-malloc)
     _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-calloc)
     _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-realloc)
