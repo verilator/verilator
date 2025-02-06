@@ -1950,6 +1950,20 @@ void AstJumpLabel::dump(std::ostream& str) const {
 }
 void AstJumpLabel::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 
+void AstMemberDType::dump(std::ostream& str) const {
+    this->AstNodeDType::dump(str);
+    if (isConstrainedRand()) str << " [CONSTRAINEDRAND]";
+    if (name() != "") str << " name=" << name();
+    if (tag() != "") str << " tag=" << tag();
+}
+
+void AstMemberDType::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, isConstrainedRand);
+    dumpJsonStrFunc(str, name);
+    dumpJsonStrFunc(str, tag);
+    dumpJsonGen(str);
+}
+
 void AstMemberDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "member";

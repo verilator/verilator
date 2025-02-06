@@ -69,10 +69,10 @@
     {"type":"BASICDTYPE","name":"logic","addr":"(RB)","loc":"d,24:7,24:12","dtypep":"(RB)","keyword":"logic","generic":false,"rangep": []},
     {"type":"STRUCTDTYPE","name":"m.my_struct","addr":"(K)","loc":"d,20:12,20:18","dtypep":"(K)","packed":true,"isFourstate":true,"generic":false,"classOrPackagep":"UNLINKED",
      "membersp": [
-      {"type":"MEMBERDTYPE","name":"clk","addr":"(SB)","loc":"d,21:19,21:22","dtypep":"(OB)","generic":false,"childDTypep": [],"valuep": []},
-      {"type":"MEMBERDTYPE","name":"k","addr":"(TB)","loc":"d,22:19,22:20","dtypep":"(PB)","generic":false,"childDTypep": [],"valuep": []},
-      {"type":"MEMBERDTYPE","name":"enable","addr":"(UB)","loc":"d,23:19,23:25","dtypep":"(QB)","generic":false,"childDTypep": [],"valuep": []},
-      {"type":"MEMBERDTYPE","name":"data","addr":"(VB)","loc":"d,24:19,24:23","dtypep":"(RB)","generic":false,"childDTypep": [],"valuep": []}
+      {"type":"MEMBERDTYPE","name":"clk","addr":"(SB)","loc":"d,21:19,21:22","dtypep":"(OB)","isConstrainedRand":false,"name":"clk","tag":"this is clk","generic":false,"refDTypep":"(OB)","childDTypep": [],"valuep": []},
+      {"type":"MEMBERDTYPE","name":"k","addr":"(TB)","loc":"d,22:19,22:20","dtypep":"(PB)","isConstrainedRand":false,"name":"k","tag":"","generic":false,"refDTypep":"(PB)","childDTypep": [],"valuep": []},
+      {"type":"MEMBERDTYPE","name":"enable","addr":"(UB)","loc":"d,23:19,23:25","dtypep":"(QB)","isConstrainedRand":false,"name":"enable","tag":"enable","generic":false,"refDTypep":"(QB)","childDTypep": [],"valuep": []},
+      {"type":"MEMBERDTYPE","name":"data","addr":"(VB)","loc":"d,24:19,24:23","dtypep":"(RB)","isConstrainedRand":false,"name":"data","tag":"data","generic":false,"refDTypep":"(RB)","childDTypep": [],"valuep": []}
     ]},
     {"type":"IFACEREFDTYPE","name":"","addr":"(O)","loc":"d,29:8,29:12","dtypep":"(O)","isPortDecl":false,"isVirtual":false,"cellName":"itop","ifaceName":"ifc","modportName":"","generic":false,"ifacep":"UNLINKED","cellp":"(L)","modportp":"UNLINKED","paramsp": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(S)","loc":"d,31:27,31:28","dtypep":"(S)","keyword":"logic","range":"31:0","generic":true,"rangep": []},

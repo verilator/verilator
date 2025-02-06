@@ -508,7 +508,7 @@ void VlRandomizer::clear() { m_constraints.clear(); }
 #ifdef VL_DEBUG
 void VlRandomizer::dump() const {
     for (const auto& var : m_vars) {
-        VL_PRINTF("Variable (%d): %s\n", var.second->width(), var.second->name());
+        VL_PRINTF("Variable (%d): %s\n", var.second->width(), var.second->name().c_str());
     }
     for (const std::string& c : m_constraints) VL_PRINTF("Constraint: %s\n", c.c_str());
 }

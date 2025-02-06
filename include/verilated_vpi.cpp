@@ -2612,7 +2612,7 @@ void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
         }
     } else if (valuep->format == vpiBinStrVal) {
         t_outDynamicStr.resize(varBits);
-        const CData* datap = (reinterpret_cast<CData*>(varDatap));
+        const CData* datap = reinterpret_cast<CData*>(varDatap);
         for (size_t i = 0; i < varBits; ++i) {
             const size_t pos = i + vop->bitOffset();
             const char val = (datap[pos >> 3] >> (pos & 7)) & 1;
@@ -2767,7 +2767,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             }
         } else if (valuep->format == vpiBinStrVal) {
             const int len = std::strlen(valuep->value.str);
-            CData* const datap = (reinterpret_cast<CData*>(vop->varDatap()));
+            CData* const datap = reinterpret_cast<CData*>(vop->varDatap());
             for (int i = 0; i < varBits; ++i) {
                 const bool set = (i < len) && (valuep->value.str[len - i - 1] == '1');
                 const size_t pos = vop->bitOffset() + i;
