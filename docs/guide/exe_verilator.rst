@@ -1142,6 +1142,12 @@ Summary:
    prepended to the name of the :vlopt:`--top` option, or V prepended to
    the first Verilog filename passed on the command line.
 
+.. option:: --preproc-token-limit
+
+   Rarely needed. Configure the limit of the number of tokens Verilator
+   can process on a single line to prevent infinite loops and other hangs.
+   Defaults to 40000 tokens.
+
 .. option:: --private
 
    Opposite of :vlopt:`--public`.  This is the default; this option exists for
