@@ -1503,9 +1503,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_prefix = valp;
     });
     DECL_OPTION("-preproc-token-limit", CbVal, [this, fl](const char* valp) {
-            m_preprocTokenLimit = std::atoi(valp);
-            if (m_preprocTokenLimit <= 0) fl->v3error("--preproc-token-limit must be > 0: " << valp);
-            });
+        m_preprocTokenLimit = std::atoi(valp);
+        if (m_preprocTokenLimit <= 0) fl->v3error("--preproc-token-limit must be > 0: " << valp);
+    });
     DECL_OPTION("-private", CbCall, [this]() { m_public = false; });
     DECL_OPTION("-prof-c", OnOff, &m_profC);
     DECL_OPTION("-prof-cfuncs", CbCall, [this]() { m_profC = m_profCFuncs = true; });
