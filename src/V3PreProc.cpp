@@ -963,9 +963,9 @@ int V3PreProcImp::getRawToken() {
         if (m_lastLineno != m_lexp->m_tokFilelinep->lineno()) {
             m_lastLineno = m_lexp->m_tokFilelinep->lineno();
             m_tokensOnLine = 0;
-        } else if (++m_tokensOnLine > LINE_TOKEN_MAX) {
-            error("Too many preprocessor tokens on a line (>" + cvtToStr(LINE_TOKEN_MAX)
-                  + "); perhaps recursive `define");
+        } else if (++m_tokensOnLine > v3Global.opt.preprocTokenLimit()) {
+            error("Too many preprocessor tokens on a line (>"
+                  + cvtToStr(v3Global.opt.preprocTokenLimit()) + "); perhaps recursive `define");
             tok = VP_EOF_ERROR;
         }
 

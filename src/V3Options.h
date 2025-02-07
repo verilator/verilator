@@ -325,6 +325,7 @@ private:
     int         m_outputSplitCTrace = -1;  // main switch: --output-split-ctrace
     int         m_pinsBv = 65;       // main switch: --pins-bv
     int         m_publicDepth = 0;   // main switch: --public-depth
+    int         m_preprocTokenLimit = 40000; // main switch: --preproc-token-limit
     int         m_reloopLimit = 40; // main switch: --reloop-limit
     VOptionBool m_skipIdentical;  // main switch: --skip-identical
     bool        m_stopFail = true;  // main switch: --stop-fail
@@ -465,6 +466,7 @@ public:
     bool preprocOnly() const { return m_preprocOnly; }
     bool makePhony() const { return m_makePhony; }
     bool preprocNoLine() const { return m_preprocNoLine; }
+    int preprocTokenLimit() const { return m_preprocTokenLimit; }
     bool underlineZero() const { return m_underlineZero; }
     string flags() const { return m_flags; }
     bool systemC() const VL_MT_SAFE { return m_systemC; }

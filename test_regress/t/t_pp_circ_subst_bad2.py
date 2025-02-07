@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
-# Copyright 2024 by Wilson Snyder. This program is free software; you
+# Copyright 2025 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -9,12 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('linter')
+test.top_filename = "t/t_pp_circ_subst_bad.v"
 
-test.lint(verilator_flags2=[
-    "--output-split-cfuncs -1", "--output-split-ctrace -1", "--preproc-token-limit 0",
-    "--reloop-limit -1"
-],
+test.lint(verilator_flags2=["--preproc-token-limit 20000"],
           fails=True,
           expect_filename=test.golden_filename)
 

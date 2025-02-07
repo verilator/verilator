@@ -443,6 +443,7 @@ detailed descriptions of these arguments.
     --quiet                     Minimize additional printing
     --quiet-exit                Don't print the command on failure
     --quiet-stats               Don't print statistics
+    --preproc-token-limit       Maximum tokens on a line allowed by preprocessor
     --relative-includes         Resolve includes relative to current file
     --reloop-limit              Minimum iterations for forming loops
     --report-unoptflat          Extra diagnostics for UNOPTFLAT

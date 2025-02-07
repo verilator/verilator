@@ -1294,6 +1294,12 @@ Summary:
    Disable printing the Verilation statistics report, see :ref:`Verilation
    Summary Report`.
 
+.. option:: --preproc-token-limit
+
+   Verilator limits the number of tokens it can process on a single line to
+   prevent infinite loops and other hangs. This argument allows configuring
+   that limit. The default is 40000 tokens.
+
 .. option:: --relative-includes
 
    When a file references an include file, resolve the filename relative to

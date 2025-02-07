@@ -1538,6 +1538,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-quiet-stats", OnOff, &m_quietStats);
 
     DECL_OPTION("-relative-includes", OnOff, &m_relativeIncludes);
+    DECL_OPTION("-preproc-token-limit", CbVal, [this, fl](const char* valp) {
+        m_preprocTokenLimit = std::atoi(valp);
+        if (m_preprocTokenLimit <= 0) fl->v3error("--preproc-token-limit must be > 0: " << valp);
+    });
     DECL_OPTION("-reloop-limit", CbVal, [this, fl](const char* valp) {
         m_reloopLimit = std::atoi(valp);
         if (m_reloopLimit < 2) fl->v3error("--reloop-limit must be >= 2: " << valp);
