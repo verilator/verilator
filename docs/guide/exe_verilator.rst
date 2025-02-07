@@ -1296,9 +1296,9 @@ Summary:
 
 .. option:: --preproc-token-limit
 
-   Verilator limits the number of tokens it can process on a single line to
-   prevent infinite loops and other hangs. This argument allows configuring
-   that limit. The default is 40000 tokens.
+   Rarely needed. Configure the limit of the number of tokens Verilator
+   can process on a single line to prevent infinite loops and other hangs.
+   Defaults to 40000 tokens.
 
 .. option:: --relative-includes
 
