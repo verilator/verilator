@@ -113,11 +113,15 @@ void VerilatedSaif::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     openNextImp(m_rolloverSize != 0);
     if (!isOpen()) return;
 
+    // NOTE: maybe extract those keywords to some variables to keep them in one place
     printStr("(SAIFILE\n");
     printStr("(SAIFVERSION \"2.0\")\n");
     printStr("(DIRECTION \"backward\")\n");
     printStr("(DESIGN \"foo\")\n");
+    //printStr("(DATE \"foo\")\n");
+    //printStr("(VENDOR \"foo\")\n");
     printStr("(PROGRAM_NAME \"Verilator\")\n");
+    //printStr("(PROGRAM_VERSION \"foo\")\n");
     printStr("(VERSION \"5.032\")\n");
     printStr("(DIVIDER .)\n");
     printStr("(TIMESCALE ");
@@ -251,6 +255,8 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
             printStr(") (TX 0) (TC ");
             printStr(std::to_string(bit.transitions).c_str());
             printStr("))\n");
+
+            // NOTE: I.3.4 and I.3.5 mentions also about TZ, TB, TG, IG and IK
         }
         activity.lastTime = m_time;
     }
@@ -403,12 +409,14 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
     size_t bitsIdx = m_activityArena.back().size();
     m_activityArena.back().resize(m_activityArena.back().size() + bits);
     m_codeToActivity[code] = m_activity.size();
-    m_activity.push_back({
-        .name = name,
-        .lsb = (uint32_t)lsb,
-        .width = (uint32_t)bits,
-        .bits = m_activityArena.back().data() + bitsIdx,
-    });
+
+    m_activity.emplace_back(
+        name,
+        static_cast<uint32_t>(lsb),
+        static_cast<uint32_t>(bits),
+        m_activityArena.back().data() + bitsIdx,
+        0
+    );
 }
 
 void VerilatedSaif::declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
@@ -520,6 +528,8 @@ void VerilatedSaifBuffer::emitWData(uint32_t code, const WData* newvalp, int bit
     auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
     assert(bits <= activity.width);
     auto dt = m_owner.m_time - activity.lastTime;
+
+    //NOTE: is (i = bitsInMSW; i < bitsInMSW) intentional
     for (size_t i = bitsInMSW; i < bitsInMSW; i++) {
         activity.bits[i].aggregateVal(dt, (newvalp[0] >> VL_BITBIT_E(i)) & 1);
     }
