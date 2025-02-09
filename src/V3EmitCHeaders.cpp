@@ -252,12 +252,23 @@ class EmitCHeader final : public EmitCConstInit {
         // - memberNames: Get member names
         // - getMembers: Access member references
         // - memberIndices: Retrieve member indices
+        // - memberWidth: Retrieve member width
         if (sdtypep->isConstrainedRand()) {
             putns(sdtypep, "\nstd::vector<std::string> memberNames(void) const {\n");
             puts("return {");
             for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
                 if (itemp->isConstrainedRand()) putns(itemp, "\"" + itemp->shortName() + "\"");
+                if (itemp->nextp() && VN_AS(itemp->nextp(), MemberDType)->isConstrainedRand())
+                    puts(",\n");
+            }
+            puts("};\n}\n");
+
+            putns(sdtypep, "\nstd::vector<int> memberWidth(void) const {\n");
+            puts("return {");
+            for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                if (itemp->isConstrainedRand()) putns(itemp, std::to_string(itemp->width()));
                 if (itemp->nextp() && VN_AS(itemp->nextp(), MemberDType)->isConstrainedRand())
                     puts(",\n");
             }

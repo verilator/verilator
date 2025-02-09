@@ -713,9 +713,12 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void visit(AstStructSel* nodep) override {
         if (VN_IS(nodep->fromp()->dtypep()->skipRefp(), StructDType)) {
-            AstMemberDType* memberp
-                = VN_AS(nodep->fromp()->dtypep()->skipRefp(), StructDType)->membersp();
-            while (memberp->nextp()) {
+            AstNodeExpr* const fromp = nodep->fromp();
+            if (VN_IS(fromp, StructSel)) {
+                VN_AS(fromp->dtypep()->skipRefp(), StructDType)->markConstrainedRand(true);
+            }
+            AstMemberDType* memberp = VN_AS(fromp->dtypep()->skipRefp(), StructDType)->membersp();
+            while (memberp) {
                 if (memberp->name() == nodep->name()) {
                     memberp->markConstrainedRand(true);
                     break;
