@@ -347,8 +347,7 @@ public:
     void modifyMembers(T& obj, std::index_sequence<I...>, std::string baseName) {
         // Use the indices to access each member via std::get
         (void)std::initializer_list<int>{
-            (write_var(std::get<I>(obj.getMembers(obj)),
-                       obj.memberWidth()[I],
+            (write_var(std::get<I>(obj.getMembers(obj)), obj.memberWidth()[I],
                        (baseName + "." + obj.memberNames()[I]).c_str(), 1),
              0)...};
     }
