@@ -228,6 +228,8 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     printStr("(DURATION ");
     printStr(std::to_string(m_time).c_str());
     printStr(")\n");
+
+    //NOTE: for now only care about
     printStr("(INSTANCE foo (NET\n");
     for (auto& activity : m_activity) {
         for (size_t i = 0; i < activity.width; i++) {
@@ -256,6 +258,7 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
             printStr(std::to_string(bit.transitions).c_str());
             printStr("))\n");
 
+            // NOTE: TZ, TX and TB will be allways 0
             // NOTE: I.3.4 and I.3.5 mentions also about TZ, TB, TG, IG and IK
         }
         activity.lastTime = m_time;
@@ -410,13 +413,12 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
     m_activityArena.back().resize(m_activityArena.back().size() + bits);
     m_codeToActivity[code] = m_activity.size();
 
-    m_activity.emplace_back(
+    m_activity.push_back({
         name,
         static_cast<uint32_t>(lsb),
         static_cast<uint32_t>(bits),
-        m_activityArena.back().data() + bitsIdx,
-        0
-    );
+        m_activityArena.back().data() + bitsIdx
+    });
 }
 
 void VerilatedSaif::declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
@@ -468,7 +470,9 @@ void VerilatedSaif::commitTraceBuffer(VerilatedSaif::Buffer* bufp) { delete bufp
 // so always inline them.
 
 VL_ATTR_ALWINLINE
-void VerilatedSaifBuffer::emitEvent(uint32_t code) { std::abort(); }
+void VerilatedSaifBuffer::emitEvent(uint32_t code) {
+    fprintf(stdout, "Emitting event not implemented\n");
+}
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitBit(uint32_t code, CData newval) {
@@ -481,7 +485,11 @@ void VerilatedSaifBuffer::emitBit(uint32_t code, CData newval) {
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitCData(uint32_t code, CData newval, int bits) {
     auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
-    assert(bits <= activity.width);
+    
+    if (bits > activity.width) {
+        fprintf(stdout, "Trying to emit more bits than activity width\n");
+    }
+
     auto dt = m_owner.m_time - activity.lastTime;
     for (size_t i = 0; i < activity.width; i++) {
         activity.bits[i].aggregateVal(dt, (newval >> i) & 1);
@@ -492,7 +500,11 @@ void VerilatedSaifBuffer::emitCData(uint32_t code, CData newval, int bits) {
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitSData(uint32_t code, SData newval, int bits) {
     auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
-    assert(bits <= activity.width);
+    
+    if (bits > activity.width) {
+        fprintf(stdout, "Trying to emit more bits than activity width\n");
+    }
+
     auto dt = m_owner.m_time - activity.lastTime;
     for (size_t i = 0; i < activity.width; i++) {
         activity.bits[i].aggregateVal(dt, (newval >> i) & 1);
@@ -503,7 +515,11 @@ void VerilatedSaifBuffer::emitSData(uint32_t code, SData newval, int bits) {
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitIData(uint32_t code, IData newval, int bits) {
     auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
-    assert(bits <= activity.width);
+    
+    if (bits > activity.width) {
+        fprintf(stdout, "Trying to emit more bits than activity width\n");
+    }
+    
     auto dt = m_owner.m_time - activity.lastTime;
     for (size_t i = 0; i < activity.width; i++) {
         activity.bits[i].aggregateVal(dt, (newval >> i) & 1);
@@ -514,7 +530,11 @@ void VerilatedSaifBuffer::emitIData(uint32_t code, IData newval, int bits) {
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitQData(uint32_t code, QData newval, int bits) {
     auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
-    assert(bits <= activity.width);
+    
+    if (bits > activity.width) {
+        fprintf(stdout, "Trying to emit more bits than activity width\n");
+    }
+    
     auto dt = m_owner.m_time - activity.lastTime;
     for (size_t i = 0; i < activity.width; i++) {
         activity.bits[i].aggregateVal(dt, (newval >> i) & 1);
@@ -526,7 +546,11 @@ VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitWData(uint32_t code, const WData* newvalp, int bits) {
     const int bitsInMSW = VL_BITBIT_E(bits) ? VL_BITBIT_E(bits) : VL_EDATASIZE;
     auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
-    assert(bits <= activity.width);
+    
+    if (bits > activity.width) {
+        fprintf(stdout, "Trying to emit more bits than activity width\n");
+    }
+
     auto dt = m_owner.m_time - activity.lastTime;
 
     //NOTE: is (i = bitsInMSW; i < bitsInMSW) intentional
@@ -541,4 +565,6 @@ void VerilatedSaifBuffer::emitWData(uint32_t code, const WData* newvalp, int bit
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedSaifBuffer::emitDouble(uint32_t code, double newval) { std::abort(); }
+void VerilatedSaifBuffer::emitDouble(uint32_t code, double newval) {
+    fprintf(stdout, "Emitting double not implemented\n");
+}
