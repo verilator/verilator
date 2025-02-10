@@ -183,6 +183,19 @@ public:
         , m_filenameno{singleton().nameToNumber(filename)}
         , m_waive{false}
         , m_contentLineno{0} {}
+    explicit FileLine(const FileLine& from)
+        : m_msgEnIdx{from.m_msgEnIdx}
+        , m_filenameno{from.m_filenameno}
+        , m_waive{from.m_waive}
+        , m_contentLineno{from.m_contentLineno}
+        , m_firstLineno{from.m_firstLineno}
+        , m_firstColumn{from.m_firstColumn}
+        , m_lastLineno{from.m_lastLineno}
+        , m_lastColumn{from.m_lastColumn}
+        , m_contentp{from.m_contentp}
+        , m_parent{from.m_parent} {
+        if (m_contentp) m_contentp->refInc();
+    }
     explicit FileLine(FileLine* fromp)
         : m_msgEnIdx{fromp->m_msgEnIdx}
         , m_filenameno{fromp->m_filenameno}
