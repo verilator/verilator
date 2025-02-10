@@ -413,6 +413,8 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
     m_activityArena.back().resize(m_activityArena.back().size() + bits);
     m_codeToActivity[code] = m_activity.size();
 
+    fprintf(stdout, "Creating new activity - name: %s, lsb: %d, width: %d\n", name, lsb, bits);
+
     m_activity.push_back({
         name,
         static_cast<uint32_t>(lsb),
@@ -424,31 +426,37 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
 void VerilatedSaif::declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
                               VerilatedTraceSigDirection, VerilatedTraceSigKind,
                               VerilatedTraceSigType, bool array, int arraynum) {
+    fprintf(stdout, "Declaring event - name: %s, code: %d, lsb: %d, msb: %d\n", name, code, 0, 0);
     declare(code, name, "event", array, arraynum, false, 0, 0);
 }
 void VerilatedSaif::declBit(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
                             VerilatedTraceSigDirection, VerilatedTraceSigKind,
                             VerilatedTraceSigType, bool array, int arraynum) {
+    fprintf(stdout, "Declaring bit - name: %s, code: %d, lsb: %d, msb: %d\n", name, code, 0, 0);
     declare(code, name, "wire", array, arraynum, false, 0, 0);
 }
 void VerilatedSaif::declBus(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
                             VerilatedTraceSigDirection, VerilatedTraceSigKind,
                             VerilatedTraceSigType, bool array, int arraynum, int msb, int lsb) {
+    fprintf(stdout, "Declaring bus - name: %s, code: %d, lsb: %d, msb: %d\n", name, code, msb, lsb);
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
 void VerilatedSaif::declQuad(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
                              VerilatedTraceSigDirection, VerilatedTraceSigKind,
                              VerilatedTraceSigType, bool array, int arraynum, int msb, int lsb) {
+    fprintf(stdout, "Declaring quad - name: %s, code: %d, lsb: %d, msb: %d\n", name, code, msb, lsb);
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
 void VerilatedSaif::declArray(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
                               VerilatedTraceSigDirection, VerilatedTraceSigKind,
                               VerilatedTraceSigType, bool array, int arraynum, int msb, int lsb) {
+    fprintf(stdout, "Declaring array - name: %s, code: %d, lsb: %d, msb: %d\n", name, code, msb, lsb);
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
 void VerilatedSaif::declDouble(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
                                VerilatedTraceSigDirection, VerilatedTraceSigKind,
                                VerilatedTraceSigType, bool array, int arraynum) {
+    fprintf(stdout, "Declaring double - name: %s, code: %d, lsb: %d, msb: %d\n", name, code, 63, 0);
     declare(code, name, "real", array, arraynum, false, 63, 0);
 }
 
@@ -477,6 +485,9 @@ void VerilatedSaifBuffer::emitEvent(uint32_t code) {
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitBit(uint32_t code, CData newval) {
     auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
+
+    fprintf(stdout, "Emitting bit - name: %s, code: %d, newval: %d, activity.width: %d\n", activity.name, code, newval, activity.width);
+
     auto& bit = activity.bits[0];
     bit.aggregateVal(m_owner.m_time - activity.lastTime, newval);
     activity.lastTime = m_owner.m_time;
@@ -485,6 +496,8 @@ void VerilatedSaifBuffer::emitBit(uint32_t code, CData newval) {
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitCData(uint32_t code, CData newval, int bits) {
     auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
+
+    fprintf(stdout, "Emitting char - name: %s, code: %d, newval: %d, bits: %d, activity.width: %d\n", activity.name, code, newval, bits, activity.width);
     
     if (bits > activity.width) {
         fprintf(stdout, "Trying to emit more bits than activity width\n");
@@ -500,6 +513,8 @@ void VerilatedSaifBuffer::emitCData(uint32_t code, CData newval, int bits) {
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitSData(uint32_t code, SData newval, int bits) {
     auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
+
+    fprintf(stdout, "Emitting short - name: %s, code: %d, newval: %d, bits: %d, activity.width: %d\n", activity.name, code, newval, bits, activity.width);
     
     if (bits > activity.width) {
         fprintf(stdout, "Trying to emit more bits than activity width\n");
@@ -515,6 +530,8 @@ void VerilatedSaifBuffer::emitSData(uint32_t code, SData newval, int bits) {
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitIData(uint32_t code, IData newval, int bits) {
     auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
+
+    fprintf(stdout, "Emitting integer - name: %s, code: %d, newval: %d, bits: %d, activity.width: %d\n", activity.name, code, newval, bits, activity.width);
     
     if (bits > activity.width) {
         fprintf(stdout, "Trying to emit more bits than activity width\n");
@@ -530,6 +547,8 @@ void VerilatedSaifBuffer::emitIData(uint32_t code, IData newval, int bits) {
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitQData(uint32_t code, QData newval, int bits) {
     auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
+
+    fprintf(stdout, "Emitting quad - name: %s, code: %d, newval: %d, bits: %d, activity.width: %d\n", activity.name, code, newval, bits, activity.width);
     
     if (bits > activity.width) {
         fprintf(stdout, "Trying to emit more bits than activity width\n");
@@ -546,6 +565,8 @@ VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitWData(uint32_t code, const WData* newvalp, int bits) {
     const int bitsInMSW = VL_BITBIT_E(bits) ? VL_BITBIT_E(bits) : VL_EDATASIZE;
     auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
+
+    fprintf(stdout, "Emitting wide - name: %s, code: %d, bits: %d, activity.width: %d\n", activity.name, code, bits, activity.width);
     
     if (bits > activity.width) {
         fprintf(stdout, "Trying to emit more bits than activity width\n");
