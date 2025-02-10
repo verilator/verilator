@@ -259,7 +259,7 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
             printStr("))\n");
 
             // NOTE: TZ, TX and TB will be allways 0
-            // NOTE: I.3.4 and I.3.5 mentions also about TZ, TB, TG, IG and IK
+            // NOTE: I.3.4 and I.3.5 mentions also about TG, IG and IK
         }
         activity.lastTime = m_time;
     }
@@ -392,21 +392,27 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
 
     const bool enabled = Super::declCode(code, hierarchicalName, bits);
 
+    //NOTE: m_suffixes currently not used anywhere
     if (m_suffixes.size() <= nextCode() * VL_TRACE_SUFFIX_ENTRY_SIZE) {
         m_suffixes.resize(nextCode() * VL_TRACE_SUFFIX_ENTRY_SIZE * 2, 0);
     }
 
+    //NOTE: m_maxSignalBytes currently used only here
     // Keep upper bound on bytes a single signal can emit into the buffer
     m_maxSignalBytes = std::max<size_t>(m_maxSignalBytes, bits + 32);
     // Make sure write buffer is large enough, plus header
     bufferResize(m_maxSignalBytes + 1024);
 
+    //NOTE: enabled is set much earlier but returned here
     if (!enabled) return;
 
     const size_t block_size = 1024;
     if (m_activityArena.empty()
         || m_activityArena.back().size() + bits > m_activityArena.back().capacity()) {
         m_activityArena.emplace_back();
+
+        fprintf(stdout, "Adding new activity arena block with size %d\n", block_size);
+
         m_activityArena.back().reserve(block_size);
     }
     size_t bitsIdx = m_activityArena.back().size();
