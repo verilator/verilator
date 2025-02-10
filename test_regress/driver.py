@@ -1009,6 +1009,11 @@ class VlTest:
                 self.trace_format = 'fst-sc'  # pylint: disable=attribute-defined-outside-init
             else:
                 self.trace_format = 'fst-c'  # pylint: disable=attribute-defined-outside-init
+        elif re.search(r'-trace-saif', checkflags):
+            # if self.sc:
+                # self.trace_format = 'fst-sc'  # pylint: disable=attribute-defined-outside-init
+            # else:
+            self.trace_format = 'saif-c'  # pylint: disable=attribute-defined-outside-init
         elif self.sc:
             self.trace_format = 'vcd-sc'  # pylint: disable=attribute-defined-outside-init
         else:
@@ -1563,6 +1568,8 @@ class VlTest:
     def trace_filename(self) -> str:
         if re.match(r'^fst', self.trace_format):
             return self.obj_dir + "/simx.fst"
+        if re.match(r'^saif', self.trace_format):
+            return self.obj_dir + "/simx.saif"
         return self.obj_dir + "/simx.vcd"
 
     def skip_if_too_few_cores(self) -> None:
@@ -1865,6 +1872,10 @@ class VlTest:
                 fh.write("#include \"verilated_vcd_c.h\"\n")
             if self.trace and self.trace_format == 'vcd-sc':
                 fh.write("#include \"verilated_vcd_sc.h\"\n")
+            if self.trace and self.trace_format == 'saif-c':
+                fh.write("#include \"verilated_saif_c.h\"\n")
+            # if self.trace and self.trace_format == 'saif-sc':
+                # fh.write("#include \"verilated_saif_sc.h\"\n")
             if self.savable:
                 fh.write("#include \"verilated_save.h\"\n")
 
@@ -1948,6 +1959,10 @@ class VlTest:
                     fh.write("    std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};\n")
                 if self.trace_format == 'vcd-sc':
                     fh.write("    std::unique_ptr<VerilatedVcdSc> tfp{new VerilatedVcdSc};\n")
+                if self.trace_format == 'saif-c':
+                    fh.write("    std::unique_ptr<VerilatedSaifC> tfp{new VerilatedSaifC};\n")
+                # if self.trace_format == 'saif-sc':
+                    # fh.write("    std::unique_ptr<VerilatedSaifSc> tfp{new VerilatedSaifSc};\n")
                 if self.sc:
                     fh.write("    sc_core::sc_start(sc_core::SC_ZERO_TIME);" +
                              "  // Finish elaboration before trace and open\n")
