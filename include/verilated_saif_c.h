@@ -212,7 +212,7 @@ class VerilatedSaifBuffer VL_NOT_FINAL {
     char* const m_wrFlushp = m_owner.parallel() ? nullptr : m_owner.m_wrFlushp;
 
     // SAIF line end string codes + metadata
-    const char* const m_suffixes = m_owner.m_suffixes.data();
+    const char* const m_suffixes = m_owner.m_suffixes.data(); //NOTE: currently not used anywhere
     // The maximum number of bytes a single signal can emit
     const size_t m_maxSignalBytes = m_owner.m_maxSignalBytes;
 
