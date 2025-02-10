@@ -563,25 +563,32 @@ void VerilatedSaifBuffer::emitQData(uint32_t code, QData newval, int bits) {
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitWData(uint32_t code, const WData* newvalp, int bits) {
-    const int bitsInMSW = VL_BITBIT_E(bits) ? VL_BITBIT_E(bits) : VL_EDATASIZE;
     auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
 
-    fprintf(stdout, "Emitting wide - name: %s, code: %d, bits: %d, activity.width: %d\n", activity.name, code, bits, activity.width);
+    fprintf(stdout, "Emitting words - name: %s, code: %d, bits: %d, activity.width: %d\n", activity.name, code, bits, activity.width);
     
     if (bits > activity.width) {
         fprintf(stdout, "Trying to emit more bits than activity width\n");
     }
 
+    const int bitsInMSW = VL_BITBIT_E(bits) ? VL_BITBIT_E(bits) : VL_EDATASIZE;
+    int numOfWords = VL_WORDS_I(bits);
+
+    fprintf(stdout, "Number of bits in most significant word: %d\n", bitsInMSW);
+    fprintf(stdout, "Number of bits in a word: %d\n", VL_EDATASIZE);
+    fprintf(stdout, "Number of words: %d\n", numOfWords);
+
     auto dt = m_owner.m_time - activity.lastTime;
 
-    //NOTE: is (i = bitsInMSW; i < bitsInMSW) intentional
-    for (size_t i = bitsInMSW; i < bitsInMSW; i++) {
+    for (std::size_t i = 0; i < bitsInMSW; ++i) {
         activity.bits[i].aggregateVal(dt, (newvalp[0] >> VL_BITBIT_E(i)) & 1);
     }
-    for (size_t i = bitsInMSW; i < activity.width; i++) {
-        size_t j = VL_WORDS_I(i);
-        activity.bits[i].aggregateVal(dt, (newvalp[j] >> VL_BITBIT_E(i)) & 1);
+
+    for (std::size_t i = bitsInMSW; i < activity.width; ++i) {
+        size_t wordIndex = VL_WORDS_I(i);
+        activity.bits[i].aggregateVal(dt, (newvalp[wordIndex] >> VL_BITBIT_E(i)) & 1);
     }
+
     activity.lastTime = m_owner.m_time;
 }
 
