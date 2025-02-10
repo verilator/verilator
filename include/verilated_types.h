@@ -1319,7 +1319,7 @@ public:
     WData* data() { return &m_storage[0]; }
     const WData* data() const { return &m_storage[0]; }
 
-    std::size_t size() const { return N_Depth; }
+    constexpr std::size_t size() const { return N_Depth; }
     // To fit C++14
     template <std::size_t N_CurrentDimension = 0, typename U = T_Value>
     int find_length(int dimension, std::false_type) const {
@@ -1357,7 +1357,7 @@ public:
     }
 
     T_Value& operator[](size_t index) { return m_storage[index]; }
-    const T_Value& operator[](size_t index) const { return m_storage[index]; }
+    constexpr const T_Value& operator[](size_t index) const { return m_storage[index]; }
 
     // *this != that, which might be used for change detection/trigger computation, but avoid
     // operator overloading in VlUnpacked for safety in other contexts.
