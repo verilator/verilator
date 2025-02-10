@@ -56,13 +56,13 @@
 #include <cctype>
 #include <cerrno>
 #include <cstdlib>
+#include <iostream>
 #include <limits>
 #include <list>
 #include <sstream>
 #include <utility>
 
 #include <sys/stat.h>  // mkdir
-#include <iostream>
 // clang-format off
 #if defined(_WIN32) || defined(__MINGW32__)
 # include <direct.h>  // mkdir
@@ -924,8 +924,8 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
                 std::string hex_str = oss.str();
                 if (width > 0 && widthSet) {
                     hex_str = hex_str.size() > width
-                                    ? hex_str.substr(0, width)
-                                    : std::string(width - hex_str.size(), '0') + hex_str;
+                                  ? hex_str.substr(0, width)
+                                  : std::string(width - hex_str.size(), '0') + hex_str;
                     output += hex_str;
                 }
                 break;
