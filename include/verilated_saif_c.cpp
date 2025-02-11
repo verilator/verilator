@@ -612,7 +612,7 @@ void VerilatedSaif::commitTraceBuffer(VerilatedSaif::Buffer* bufp) { delete bufp
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitEvent(uint32_t code) {
-    fprintf(stdout, "Emitting event not implemented\n");
+    // Noop
 }
 
 VL_ATTR_ALWINLINE
@@ -733,5 +733,5 @@ void VerilatedSaifBuffer::emitWData(uint32_t code, const WData* newvalp, int bit
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitDouble(uint32_t code, double newval) {
-    fprintf(stdout, "Emitting double not implemented\n");
+    // Noop
 }
