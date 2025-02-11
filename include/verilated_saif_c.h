@@ -78,7 +78,6 @@ private:
     size_t m_maxSignalBytes = 0;  // Upper bound on number of bytes a single signal can generate
     uint64_t m_wroteBytes = 0;  // Number of bytes written to this file
 
-    std::vector<char> m_suffixes;  // SAIF line end string codes + metadata
     std::vector<ActivityVar> m_activity;
     std::vector<uint32_t> m_codeToActivity;
     std::vector<std::vector<ActivityBit>> m_activityArena;
@@ -102,7 +101,6 @@ private:
     void openNextImp(bool incFilename);
     void closePrev();
     void closeErr();
-    void printIndent(int level_change);
     void printStr(const char* str);
     void declare(uint32_t code, const char* name, const char* wirep, bool array, int arraynum,
                  bool bussed, int msb, int lsb);
@@ -211,20 +209,10 @@ class VerilatedSaifBuffer VL_NOT_FINAL {
     // Output buffer flush trigger location (only used when not parallel)
     char* const m_wrFlushp = m_owner.parallel() ? nullptr : m_owner.m_wrFlushp;
 
-    // SAIF line end string codes + metadata
-    const char* const m_suffixes = m_owner.m_suffixes.data(); //NOTE: currently not used anywhere
-    // The maximum number of bytes a single signal can emit
-    const size_t m_maxSignalBytes = m_owner.m_maxSignalBytes;
-
     // Additional data for parallel tracing only
     char* m_bufp = nullptr;  // The beginning of the trace buffer
     size_t m_size = 0;  // The size of the buffer at m_bufp
     char* m_growp = nullptr;  // Resize limit pointer
-
-    void adjustGrowp() {
-        m_growp = (m_bufp + m_size) - (2 * m_maxSignalBytes);
-        assert(m_growp >= m_bufp + m_maxSignalBytes);
-    }
 
     // CONSTRUCTOR
     explicit VerilatedSaifBuffer(VerilatedSaif& owner)
