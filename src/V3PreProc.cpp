@@ -1065,6 +1065,11 @@ int V3PreProcImp::getStateToken() {
                 // FALLTHRU, handle as with VP_SYMBOL_JOIN
             }
         }
+        if (state() == ps_STRIFY) {
+            // Ignore joins and symbol joins in stringify as they don't affect the final string
+            if (tok == VP_JOIN) goto next_tok;
+            if (tok == VP_SYMBOL_JOIN) tok = VP_SYMBOL;
+        }
         if (tok == VP_SYMBOL_JOIN  // not else if, can fallthru from above if()
             || tok == VP_DEFREF_JOIN || tok == VP_JOIN) {
             // a`` -> string doesn't include the ``, so can just grab next and continue
