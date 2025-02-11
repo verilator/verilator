@@ -26,6 +26,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 class VerilatedSaifBuffer;
 class VerilatedSaifFile;
@@ -78,8 +79,7 @@ private:
     size_t m_maxSignalBytes = 0;  // Upper bound on number of bytes a single signal can generate
     uint64_t m_wroteBytes = 0;  // Number of bytes written to this file
 
-    std::vector<ActivityVar> m_activity;
-    std::vector<uint32_t> m_codeToActivity;
+    std::unordered_map<uint32_t, ActivityVar> m_activity;
     std::vector<std::vector<ActivityBit>> m_activityArena;
     uint64_t m_time;
 

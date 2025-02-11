@@ -231,18 +231,14 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
 
     //NOTE: for now only care about NET, also PORT will be added
     printStr("(INSTANCE foo (NET\n");
-    for (auto& activity : m_activity) {
+    for (auto& [code, activity] : m_activity) {
         for (size_t i = 0; i < activity.width; i++) {
             auto& bit = activity.bits[i];
             if (bit.lastVal && activity.lastTime < m_time) {
                 bit.highTime += m_time - activity.lastTime;
             }
             if (!bit.transitions) {
-                // FIXME for some reason, signals are duplicated.
-                // The duplicates have no transitions, so we skip them.
-
-                fprintf(stdout, "Possible duplicate activity - name: %s, bit index: %d\n", activity.name, i);
-
+		        // Skip bits with no transitions
                 continue;
             }
             assert(m_time >= bit.highTime);
@@ -382,7 +378,11 @@ void VerilatedSaif::popPrefix() {
 
 void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, bool array,
                             int arraynum, bool bussed, int msb, int lsb) {
-    if (code >= m_activity.size()) m_codeToActivity.resize(code + 1);
+    // check if already declared to avoid duplicates
+    if (m_activity.count(code)) {
+        return;
+    }
+    
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
     const std::string hierarchicalName = m_prefixStack.back().first + name;
@@ -391,8 +391,7 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
     if (!enabled) return;
 
     const size_t block_size = 1024;
-    if (m_activityArena.empty()
-        || m_activityArena.back().size() + bits > m_activityArena.back().capacity()) {
+    if (m_activityArena.empty() || m_activityArena.back().size() + bits > m_activityArena.back().capacity()) {
         m_activityArena.emplace_back();
 
         fprintf(stdout, "Adding new activity arena block with size %d\n", block_size);
@@ -401,11 +400,10 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
     }
     size_t bitsIdx = m_activityArena.back().size();
     m_activityArena.back().resize(m_activityArena.back().size() + bits);
-    m_codeToActivity[code] = m_activity.size();
 
     fprintf(stdout, "Creating new activity - name: %s, lsb: %d, width: %d\n", name, lsb, bits);
 
-    m_activity.push_back({
+    m_activity.emplace(code, ActivityVar{
         name,
         static_cast<uint32_t>(lsb),
         static_cast<uint32_t>(bits),
@@ -474,7 +472,8 @@ void VerilatedSaifBuffer::emitEvent(uint32_t code) {
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitBit(uint32_t code, CData newval) {
-    auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
+    assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
+    auto& activity = m_owner.m_activity.at(code);
 
     fprintf(stdout, "Emitting bit - name: %s, code: %d, newval: %d, activity.width: %d\n", activity.name, code, newval, activity.width);
 
@@ -485,7 +484,8 @@ void VerilatedSaifBuffer::emitBit(uint32_t code, CData newval) {
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitCData(uint32_t code, CData newval, int bits) {
-    auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
+    assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
+    auto& activity = m_owner.m_activity.at(code);
 
     fprintf(stdout, "Emitting char - name: %s, code: %d, newval: %d, bits: %d, activity.width: %d\n", activity.name, code, newval, bits, activity.width);
     
@@ -502,7 +502,8 @@ void VerilatedSaifBuffer::emitCData(uint32_t code, CData newval, int bits) {
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitSData(uint32_t code, SData newval, int bits) {
-    auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
+    assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
+    auto& activity = m_owner.m_activity.at(code);
 
     fprintf(stdout, "Emitting short - name: %s, code: %d, newval: %d, bits: %d, activity.width: %d\n", activity.name, code, newval, bits, activity.width);
     
@@ -519,7 +520,8 @@ void VerilatedSaifBuffer::emitSData(uint32_t code, SData newval, int bits) {
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitIData(uint32_t code, IData newval, int bits) {
-    auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
+    assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
+    auto& activity = m_owner.m_activity.at(code);
 
     fprintf(stdout, "Emitting integer - name: %s, code: %d, newval: %d, bits: %d, activity.width: %d\n", activity.name, code, newval, bits, activity.width);
     
@@ -536,7 +538,8 @@ void VerilatedSaifBuffer::emitIData(uint32_t code, IData newval, int bits) {
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitQData(uint32_t code, QData newval, int bits) {
-    auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
+    assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
+    auto& activity = m_owner.m_activity.at(code);
 
     fprintf(stdout, "Emitting quad - name: %s, code: %d, newval: %d, bits: %d, activity.width: %d\n", activity.name, code, newval, bits, activity.width);
     
@@ -553,7 +556,8 @@ void VerilatedSaifBuffer::emitQData(uint32_t code, QData newval, int bits) {
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitWData(uint32_t code, const WData* newvalp, int bits) {
-    auto& activity = m_owner.m_activity[m_owner.m_codeToActivity[code]];
+    assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
+    auto& activity = m_owner.m_activity.at(code);
 
     fprintf(stdout, "Emitting words - name: %s, code: %d, bits: %d, activity.width: %d\n", activity.name, code, bits, activity.width);
     
