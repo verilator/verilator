@@ -954,6 +954,12 @@ public:
     VlAssocArray& operator=(VlAssocArray&&) = default;
     bool operator==(const VlAssocArray& rhs) const { return m_map == rhs.m_map; }
     bool operator!=(const VlAssocArray& rhs) const { return m_map != rhs.m_map; }
+    bool operator<(const VlAssocArray& rhs) const {
+        for (auto it = m_map.cbegin(), its = rhs.m_map.cbegin(); (it != m_map.end() || it != rhs.m_map.end()) ; ++it, ++its) {
+            if (it->second < its->second) return true;
+        }
+        return false;
+    }
 
     // METHODS
     T_Value& atDefault() { return m_defaultValue; }

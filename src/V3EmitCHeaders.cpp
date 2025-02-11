@@ -268,7 +268,9 @@ class EmitCHeader final : public EmitCConstInit {
             puts("return {");
             for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
-                if (itemp->isConstrainedRand()) putns(itemp, std::to_string(itemp->width()));
+                if(itemp->isConstrainedRand() && (VN_IS(itemp->dtypep(),DynArrayDType) || VN_IS(itemp->dtypep(),QueueDType) ||  VN_IS(itemp->dtypep(),AssocArrayDType))) putns(itemp, std::to_string(itemp->dtypep()->subDTypep()->width()));
+                else if (itemp->isConstrainedRand()) putns(itemp, std::to_string(itemp->width()));
+
                 if (itemp->nextp() && VN_AS(itemp->nextp(), MemberDType)->isConstrainedRand())
                     puts(",\n");
             }
