@@ -229,7 +229,7 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     printStr(std::to_string(m_time).c_str());
     printStr(")\n");
 
-    //NOTE: for now only care about
+    //NOTE: for now only care about NET, also PORT will be added
     printStr("(INSTANCE foo (NET\n");
     for (auto& activity : m_activity) {
         for (size_t i = 0; i < activity.width; i++) {
@@ -240,6 +240,9 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
             if (!bit.transitions) {
                 // FIXME for some reason, signals are duplicated.
                 // The duplicates have no transitions, so we skip them.
+
+                fprintf(stdout, "Possible duplicate activity - name: %s, bit index: %d\n", activity.name, i);
+
                 continue;
             }
             assert(m_time >= bit.highTime);
@@ -332,12 +335,6 @@ void VerilatedSaif::bufferFlush() VL_MT_UNSAFE_ONE {
 //=============================================================================
 // Definitions
 
-void VerilatedSaif::printIndent(int level_change) {
-    if (level_change < 0) m_indent += level_change;
-    for (int i = 0; i < m_indent; ++i) printStr(" ");
-    if (level_change > 0) m_indent += level_change;
-}
-
 void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType type) {
     assert(!m_prefixStack.empty());  // Constructor makes an empty entry
     std::string pname = name;
@@ -391,19 +388,6 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
     const std::string hierarchicalName = m_prefixStack.back().first + name;
 
     const bool enabled = Super::declCode(code, hierarchicalName, bits);
-
-    //NOTE: m_suffixes currently not used anywhere
-    if (m_suffixes.size() <= nextCode() * VL_TRACE_SUFFIX_ENTRY_SIZE) {
-        m_suffixes.resize(nextCode() * VL_TRACE_SUFFIX_ENTRY_SIZE * 2, 0);
-    }
-
-    //NOTE: m_maxSignalBytes currently used only here
-    // Keep upper bound on bytes a single signal can emit into the buffer
-    m_maxSignalBytes = std::max<size_t>(m_maxSignalBytes, bits + 32);
-    // Make sure write buffer is large enough, plus header
-    bufferResize(m_maxSignalBytes + 1024);
-
-    //NOTE: enabled is set much earlier but returned here
     if (!enabled) return;
 
     const size_t block_size = 1024;
