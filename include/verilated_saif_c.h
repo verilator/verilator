@@ -174,6 +174,12 @@ public:
     void declDouble(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
                     VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
                     bool array, int arraynum);
+
+// For debugging purposes
+private:
+    void printSignalDirection(VerilatedTraceSigDirection signalDirection);
+    void printSignalKind(VerilatedTraceSigKind signalKind);
+    void printSignalType(VerilatedTraceSigType signalType);
 };
 
 #ifndef DOXYGEN

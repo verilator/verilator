@@ -393,15 +393,10 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
     const size_t block_size = 1024;
     if (m_activityArena.empty() || m_activityArena.back().size() + bits > m_activityArena.back().capacity()) {
         m_activityArena.emplace_back();
-
-        fprintf(stdout, "Adding new activity arena block with size %d\n", block_size);
-
         m_activityArena.back().reserve(block_size);
     }
     size_t bitsIdx = m_activityArena.back().size();
     m_activityArena.back().resize(m_activityArena.back().size() + bits);
-
-    fprintf(stdout, "Creating new activity - name: %s, lsb: %d, width: %d\n", name, lsb, bits);
 
     m_activity.emplace(code, ActivityVar{
         name,
@@ -411,40 +406,190 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
     });
 }
 
-void VerilatedSaif::declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                              VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                              VerilatedTraceSigType, bool array, int arraynum) {
-    fprintf(stdout, "Declaring event - name: %s, code: %d, lsb: %d, msb: %d\n", name, code, 0, 0);
+void VerilatedSaif::declEvent(
+        uint32_t code, uint32_t fidx, const char* name, int dtypenum, VerilatedTraceSigDirection signalDirection,
+        VerilatedTraceSigKind signalKind, VerilatedTraceSigType signalType, bool array, int arraynum) {
+    fprintf(stdout, "Declaring event - code: %d, fidx: %d, name: %s, \n", code, fidx, name, dtypenum, array, arraynum);
+    printSignalDirection(signalDirection);
+    printSignalKind(signalKind);
+    printSignalType(signalType);
     declare(code, name, "event", array, arraynum, false, 0, 0);
 }
-void VerilatedSaif::declBit(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                            VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                            VerilatedTraceSigType, bool array, int arraynum) {
-    fprintf(stdout, "Declaring bit - name: %s, code: %d, lsb: %d, msb: %d\n", name, code, 0, 0);
+
+void VerilatedSaif::printSignalDirection(VerilatedTraceSigDirection signalDirection)
+{
+    switch (signalDirection) {
+        case VerilatedTraceSigDirection::INPUT:
+        {
+            fprintf(stdout, "Signal direction INPUT\n");
+            break;
+        }
+        case VerilatedTraceSigDirection::OUTPUT:
+        {
+            fprintf(stdout, "Signal direction OUTPUT\n");
+            break;
+        }
+        case VerilatedTraceSigDirection::INOUT:
+        {
+            fprintf(stdout, "Signal direction INOUT\n");
+            break;
+        }
+        default:
+        {
+            fprintf(stdout, "Signal direction NONE\n");
+            break;
+        }
+    }
+}
+
+void VerilatedSaif::printSignalKind(VerilatedTraceSigKind signalKind)
+{
+    switch (signalKind) {
+        case VerilatedTraceSigKind::PARAMETER:
+        {
+            fprintf(stdout, "Signal kind PARAMETER\n");
+            break;
+        }
+        case VerilatedTraceSigKind::SUPPLY0:
+        {
+            fprintf(stdout, "Signal kind SUPPLY0\n");
+            break;
+        }
+        case VerilatedTraceSigKind::SUPPLY1:
+        {
+            fprintf(stdout, "Signal kind SUPPLY1\n");
+            break;
+        }
+        case VerilatedTraceSigKind::TRI:
+        {
+            fprintf(stdout, "Signal kind TRI\n");
+            break;
+        }
+        case VerilatedTraceSigKind::TRI0:
+        {
+            fprintf(stdout, "Signal kind TRI0\n");
+            break;
+        }
+        case VerilatedTraceSigKind::WIRE:
+        {
+            fprintf(stdout, "Signal kind WIRE\n");
+            break;
+        }
+        case VerilatedTraceSigKind::VAR:
+        {
+            fprintf(stdout, "Signal kind VAR\n");
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+}
+
+void VerilatedSaif::printSignalType(VerilatedTraceSigType signalType)
+{
+    switch (signalType) {
+        case VerilatedTraceSigType::DOUBLE:
+        {
+            fprintf(stdout, "Signal type DOUBLE\n");
+            break;
+        }
+        case VerilatedTraceSigType::INTEGER:
+        {
+            fprintf(stdout, "Signal type INTEGER\n");
+            break;
+        }
+        case VerilatedTraceSigType::BIT:
+        {
+            fprintf(stdout, "Signal type BIT\n");
+            break;
+        }
+        case VerilatedTraceSigType::LOGIC:
+        {
+            fprintf(stdout, "Signal type LOGIC\n");
+            break;
+        }
+        case VerilatedTraceSigType::INT:
+        {
+            fprintf(stdout, "Signal type INT\n");
+            break;
+        }
+        case VerilatedTraceSigType::SHORTINT:
+        {
+            fprintf(stdout, "Signal type SHORTINT\n");
+            break;
+        }
+        case VerilatedTraceSigType::LONGINT:
+        {
+            fprintf(stdout, "Signal type LONGINT\n");
+            break;
+        }
+        case VerilatedTraceSigType::BYTE:
+        {
+            fprintf(stdout, "Signal type BYTE\n");
+            break;
+        }
+        case VerilatedTraceSigType::EVENT:
+        {
+            fprintf(stdout, "Signal type EVENT\n");
+            break;
+        }
+        case VerilatedTraceSigType::TIME:
+        {
+            fprintf(stdout, "Signal type TIME\n");
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+}
+
+void VerilatedSaif::declBit(
+        uint32_t code, uint32_t fidx, const char* name, int dtypenum, VerilatedTraceSigDirection signalDirection,
+        VerilatedTraceSigKind signalKind, VerilatedTraceSigType signalType, bool array, int arraynum) {
+    fprintf(stdout, "Declaring bit - code: %d, fidx: %d, name: %s, dtypenum: %d, array: %d, arraynum: %d\n", code, fidx, name, dtypenum, array, arraynum);
+    printSignalDirection(signalDirection);
+    printSignalKind(signalKind);
+    printSignalType(signalType);
     declare(code, name, "wire", array, arraynum, false, 0, 0);
 }
-void VerilatedSaif::declBus(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                            VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                            VerilatedTraceSigType, bool array, int arraynum, int msb, int lsb) {
-    fprintf(stdout, "Declaring bus - name: %s, code: %d, lsb: %d, msb: %d\n", name, code, msb, lsb);
+void VerilatedSaif::declBus(
+        uint32_t code, uint32_t fidx, const char* name, int dtypenum, VerilatedTraceSigDirection signalDirection,
+        VerilatedTraceSigKind signalKind, VerilatedTraceSigType signalType, bool array, int arraynum, int msb, int lsb) {
+    fprintf(stdout, "Declaring bus - code: %d, fidx: %d, name: %s, dtypenum: %d, array: %d, arraynum: %d\n", code, fidx, name, dtypenum, array, arraynum);
+    printSignalDirection(signalDirection);
+    printSignalKind(signalKind);
+    printSignalType(signalType);
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
-void VerilatedSaif::declQuad(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                             VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                             VerilatedTraceSigType, bool array, int arraynum, int msb, int lsb) {
-    fprintf(stdout, "Declaring quad - name: %s, code: %d, lsb: %d, msb: %d\n", name, code, msb, lsb);
+void VerilatedSaif::declQuad(
+        uint32_t code, uint32_t fidx, const char* name, int dtypenum, VerilatedTraceSigDirection signalDirection,
+        VerilatedTraceSigKind signalKind, VerilatedTraceSigType signalType, bool array, int arraynum, int msb, int lsb) {
+    fprintf(stdout, "Declaring quad - code: %d, fidx: %d, name: %s, dtypenum: %d, array: %d, arraynum: %d\n", code, fidx, name, dtypenum, array, arraynum);
+    printSignalDirection(signalDirection);
+    printSignalKind(signalKind);
+    printSignalType(signalType);
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
-void VerilatedSaif::declArray(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                              VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                              VerilatedTraceSigType, bool array, int arraynum, int msb, int lsb) {
-    fprintf(stdout, "Declaring array - name: %s, code: %d, lsb: %d, msb: %d\n", name, code, msb, lsb);
+void VerilatedSaif::declArray(
+        uint32_t code, uint32_t fidx, const char* name, int dtypenum, VerilatedTraceSigDirection signalDirection,
+        VerilatedTraceSigKind signalKind, VerilatedTraceSigType signalType, bool array, int arraynum, int msb, int lsb) {
+    fprintf(stdout, "Declaring array - code: %d, fidx: %d, name: %s, dtypenum: %d, array: %d, arraynum: %d\n", code, fidx, name, dtypenum, array, arraynum);
+    printSignalDirection(signalDirection);
+    printSignalKind(signalKind);
+    printSignalType(signalType);
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
-void VerilatedSaif::declDouble(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                               VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                               VerilatedTraceSigType, bool array, int arraynum) {
-    fprintf(stdout, "Declaring double - name: %s, code: %d, lsb: %d, msb: %d\n", name, code, 63, 0);
+void VerilatedSaif::declDouble(
+        uint32_t code, uint32_t fidx, const char* name, int dtypenum, VerilatedTraceSigDirection signalDirection,
+        VerilatedTraceSigKind signalKind, VerilatedTraceSigType signalType, bool array, int arraynum) {
+    fprintf(stdout, "Declaring double - code: %d, fidx: %d, name: %s, dtypenum: %d, array: %d, arraynum: %d\n", code, fidx, name, dtypenum, array, arraynum);
+    printSignalDirection(signalDirection);
+    printSignalKind(signalKind);
+    printSignalType(signalType);
     declare(code, name, "real", array, arraynum, false, 63, 0);
 }
 
