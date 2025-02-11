@@ -253,7 +253,7 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
             printStr(std::to_string(m_time - bit.highTime).c_str());
             printStr(") (T1 ");
             printStr(std::to_string(bit.highTime).c_str());
-            printStr(") (TX 0) (TC ");
+            printStr(") (TZ 0) (TX 0) (TB 0) (TC ");
             printStr(std::to_string(bit.transitions).c_str());
             printStr("))\n");
 
