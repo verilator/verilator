@@ -33,12 +33,17 @@ module t (/*AUTOARG*/);
       // read
       if (str[0] != "b") $stop;
       if (get_str()[1] != "a") $stop;
+      if (str[3] != "\0") $stop;
       if (st.str[2] != "x") $stop;
+      if (st.str[99] != "\0") $stop;
       if (o.str[0] != "f") $stop;
       if (o.get_str()[1] != "o") $stop;
+      if (o.str[-1] != "\0") $stop;
       if (sc[2] != "o") $stop;
       if ($sformatf("foo%s", "bar")[3] != "b") $stop;
+      if (sc[-1] != "\0") $stop;
       if (sc[6] != "\0") $stop;
+      if (sc[99] != "\0") $stop;
 
       // write
       sc[5] = "z";
