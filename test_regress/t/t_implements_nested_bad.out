@@ -1,5 +1,4 @@
-%Error-UNSUPPORTED: t/t_implements_nested_bad.v:8:14: Unsupported: class within class
-    8 |    interface class bad_cannot_nest;
-      |              ^~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_implements_nested_bad.v:9:17: Interface class shall not be nested within another interface class. (IEEE 1800-2023 8.26)
+    9 |       interface class bad_cannot_nest;
+      |                 ^~~~~
 %Error: Exiting due to

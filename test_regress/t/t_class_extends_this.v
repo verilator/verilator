@@ -7,7 +7,20 @@
 typedef class Cls;
 
 class Base;
+   class BaseInner;
+      int value = 10;
+      function void test;
+         if (value != 10) $stop;
+         if (this.value != 10) $stop;
+         value = 20;
+         if (value != 20) $stop;
+         this.value = 30;
+         if (value != 30) $stop;
+      endfunction
+   endclass
+
    int value = 1;
+   BaseInner inner = new;
    function void test;
       if (value != 1) $stop;
       if (this.value != 1) $stop;
@@ -19,7 +32,25 @@ class Base;
 endclass
 
 class Cls extends Base;
+   class BaseInner extends Base::BaseInner;
+      int value = 100;
+      function void test;
+         if (value != 100) $stop;
+         if (this.value != 100) $stop;
+         if (super.value != 10) $stop;
+         super.test();
+         if (value != 100) $stop;
+         if (this.value != 100) $stop;
+         if (super.value != 30) $stop;
+         value = 200;
+         if (value != 200) $stop;
+         this.value = 300;
+         if (value != 300) $stop;
+      endfunction
+   endclass
+
    int value = 20;
+   BaseInner inner = new;
    function void test;
       if (value != 20) $stop;
       if (this.value != 20) $stop;
@@ -31,7 +62,9 @@ class Cls extends Base;
       super.value = 9;
       this.value = 29;
       if (super.value != 9) $stop;
-      if (value != 29) $stop;;
+      if (value != 29) $stop;
+
+      inner.test();
    endfunction
 endclass
 
