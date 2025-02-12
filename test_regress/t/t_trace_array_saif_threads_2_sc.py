@@ -11,8 +11,12 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 test.top_filename = "t/t_trace_array.v"
+test.golden_filename = "t/t_trace_array_fst_sc.out"
 
-test.compile(verilator_flags2=['--cc --trace-saif --trace-structs'])
+if not test.have_sc:
+    test.skip("No SystemC installed")
+
+test.compile(verilator_flags2=['--sc --trace-saif --trace-threads 2 --trace-structs'])
 
 test.execute()
 

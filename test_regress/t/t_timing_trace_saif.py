@@ -9,10 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
-test.top_filename = "t/t_trace_array.v"
+test.scenarios('simulator')
+test.top_filename = "t/t_timing_trace.v"
 
-test.compile(verilator_flags2=['--cc --trace-saif --trace-structs'])
+test.compile(verilator_flags2=["--exe --main --timing --trace-saif -Wno-MINTYPMAXDLY"])
 
 test.execute()
 
