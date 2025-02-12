@@ -9,13 +9,15 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
-test.top_filename = "t/t_trace_array.v"
+test.scenarios('vlt_all')
 
-test.compile(verilator_flags2=['--cc --trace-saif --trace-structs'])
+test.compile(make_top_shell=False,
+             make_main=False,
+             v_flags2=["--trace-saif --exe", test.pli_filename])
 
 test.execute()
 
-test.saif_identical(test.trace_filename, test.golden_filename)
+test.saif_identical(test.obj_dir + "/simpart_0000.fst", "t/" + test.name + "_0000.out")
+test.saif_identical(test.obj_dir + "/simpart_0100.fst", "t/" + test.name + "_0100.out")
 
 test.passes()

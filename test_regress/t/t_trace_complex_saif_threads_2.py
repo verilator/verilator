@@ -9,10 +9,11 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
-test.top_filename = "t/t_trace_array.v"
+test.scenarios('simulator')
+test.top_filename = "t/t_trace_complex.v"
+test.golden_filename = "t/t_trace_complex_fst.out"
 
-test.compile(verilator_flags2=['--cc --trace-saif --trace-structs'])
+test.compile(verilator_flags2=['--cc --trace-saif --trace-threads 2'])
 
 test.execute()
 

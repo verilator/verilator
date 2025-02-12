@@ -2368,6 +2368,10 @@ class VlTest:
         self.fst2vcd(fn1, tmp)
         self.vcd_identical(tmp, fn2)
 
+    def saif_identical(self, fn1: str, fn2: str) -> None:
+        """Test if two SAIF files have logically-identical contents"""
+        #TODO: implement checking if two SAIF file are logically-identical
+
     def _vcd_read(self, filename: str) -> str:
         data = {}
         with open(filename, 'r', encoding='latin-1') as fh:

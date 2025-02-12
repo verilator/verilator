@@ -10,9 +10,10 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_trace_array.v"
+test.pli_filename = "t/t_trace_no_top_name2.cpp"
+test.top_filename = "t/t_trace_no_top_name2.v"
 
-test.compile(verilator_flags2=['--cc --trace-saif --trace-structs'])
+test.compile(make_main=False, verilator_flags2=["--trace-saif --exe", test.pli_filename])
 
 test.execute()
 

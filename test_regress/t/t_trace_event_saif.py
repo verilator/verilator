@@ -10,9 +10,9 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_trace_array.v"
+test.top_filename = "t/t_trace_event.v"
 
-test.compile(verilator_flags2=['--cc --trace-saif --trace-structs'])
+test.compile(verilator_flags2=['--trace-saif --binary'])
 
 test.execute()
 

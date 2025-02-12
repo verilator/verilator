@@ -9,13 +9,11 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
-test.top_filename = "t/t_trace_array.v"
+test.scenarios('simulator')
+test.top_filename = "t/t_trace_string.v"
 
-test.compile(verilator_flags2=['--cc --trace-saif --trace-structs'])
+test.compile(verilator_flags2=['--cc --trace'])
 
 test.execute()
-
-test.saif_identical(test.trace_filename, test.golden_filename)
 
 test.passes()

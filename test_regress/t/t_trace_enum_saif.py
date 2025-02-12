@@ -9,13 +9,21 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
-test.top_filename = "t/t_trace_array.v"
+test.scenarios('simulator')
+test.top_filename = "t/t_trace_enum.v"
 
-test.compile(verilator_flags2=['--cc --trace-saif --trace-structs'])
+test.compile(verilator_flags2=['--cc --trace-saif --output-split-ctrace 1'])
 
 test.execute()
 
 test.saif_identical(test.trace_filename, test.golden_filename)
+
+# Five $attrbegin expected:
+# - state_t declaration
+# - t.v_enumed
+# - t.sink.state
+# - other_state_t declaration
+# - t.v_other_enumed
+test.file_grep_count(test.golden_filename, r'attrbegin', 5)
 
 test.passes()
