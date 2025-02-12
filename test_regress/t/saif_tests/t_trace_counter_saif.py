@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_trace_counter.v"
 
-test.compile(verilator_flags2=['--cc --trace-saif'])
+test.compile(verilator_flags2=['--cc --trace'])
 
 test.execute()
 
