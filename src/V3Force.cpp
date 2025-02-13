@@ -56,6 +56,9 @@ static bool isRangedDType(AstNode* nodep) {
     const AstBasicDType* const basicp = nodep->dtypep()->skipRefp()->basicp();
     return basicp && basicp->isRanged();
 }
+static bool isNotReplaceable(const AstVarRef* const nodep) { return nodep->user2(); }
+static void markNonReplaceable(AstVarRef* const nodep) { nodep->user2SetOnce(); }
+
 struct ForceComponentsVar final {
     AstVar* const m_rdVarp;  // New variable to replace read references with
     AstVar* const m_valVarp;  // Forced value
@@ -103,28 +106,18 @@ struct ForceComponentsVarScope final {
         }
         {  // Add the combinational override
             AstVarRef* const lhsp = new AstVarRef{flp, m_rdVscp, VAccess::WRITE};
-            AstVarRef* const origp = new AstVarRef{flp, vscp, VAccess::READ};
-            origp->user2(1);  // Don't replace this read ref with the read signal
-            AstNodeExpr* rhsp;
-            if (isRangedDType(vscp)) {
-                rhsp = new AstOr{
-                    flp,
-                    new AstAnd{flp, new AstVarRef{flp, m_enVscp, VAccess::READ},
-                               new AstVarRef{flp, m_valVscp, VAccess::READ}},
-                    new AstAnd{flp, new AstNot{flp, new AstVarRef{flp, m_enVscp, VAccess::READ}},
-                               origp}};
-            } else {
-                rhsp = new AstCond{flp, new AstVarRef{flp, m_enVscp, VAccess::READ},
-                                   new AstVarRef{flp, m_valVscp, VAccess::READ}, origp};
-            }
+            AstNodeExpr* const rhsp = forcedUpdate(vscp);
 
             // Explicitly list dependencies for update.
+            // Note: rdVscp is also needed to retrigger assignment for the first time.
             AstSenItem* const itemsp = new AstSenItem{flp, VEdgeType::ET_CHANGED,
                                                       new AstVarRef{flp, m_rdVscp, VAccess::READ}};
             itemsp->addNext(new AstSenItem{flp, VEdgeType::ET_CHANGED,
                                            new AstVarRef{flp, m_valVscp, VAccess::READ}});
             itemsp->addNext(new AstSenItem{flp, VEdgeType::ET_CHANGED,
                                            new AstVarRef{flp, m_enVscp, VAccess::READ}});
+            AstVarRef* const origp = new AstVarRef{flp, vscp, VAccess::READ};
+            markNonReplaceable(origp);
             itemsp->addNext(new AstSenItem{flp, VEdgeType::ET_CHANGED, origp->cloneTree(false)});
             AstActive* const activep
                 = new AstActive{flp, "force-update", new AstSenTree{flp, itemsp}};
@@ -134,15 +127,21 @@ struct ForceComponentsVarScope final {
             vscp->scopep()->addBlocksp(activep);
         }
     }
-};
-
-struct ForceComponentsValUpdates final {
-    struct Args {
-        AstVarScope* const m_valVscp;
-        AstVarScope* const m_rhsp;
-    };
-    std::list<Args> m_assign;
-    void addValUpdate(const Args& args) { m_assign.emplace_back(args); }
+    AstNodeExpr* forcedUpdate(AstVarScope* const vscp) const {
+        FileLine* const flp = vscp->fileline();
+        AstVarRef* const origp = new AstVarRef{flp, vscp, VAccess::READ};
+        markNonReplaceable(origp);
+        if (isRangedDType(vscp)) {
+            return new AstOr{
+                flp,
+                new AstAnd{flp, new AstVarRef{flp, m_enVscp, VAccess::READ},
+                           new AstVarRef{flp, m_valVscp, VAccess::READ}},
+                new AstAnd{flp, new AstNot{flp, new AstVarRef{flp, m_enVscp, VAccess::READ}},
+                           origp}};
+        }
+        return new AstCond{flp, new AstVarRef{flp, m_enVscp, VAccess::READ},
+                           new AstVarRef{flp, m_valVscp, VAccess::READ}, origp};
+    }
 };
 
 class ForceConvertVisitor final : public VNVisitor {
@@ -150,9 +149,15 @@ class ForceConvertVisitor final : public VNVisitor {
     //  AstVar::user1p        -> ForceComponentsVar* instance (via m_forceComponentsVar)
     //  AstVarScope::user1p   -> ForceComponentsVarScope* instance (via m_forceComponentsVarScope)
     //  AstVarRef::user2      -> Flag indicating not to replace reference
+    //  AstVarScope::user3      -> AstVarScope*, a `valVscp` force component for each VarScope of
+    //  forced RHS
     AstUser1Allocator<AstVar, ForceComponentsVar> m_forceComponentsVar;
     AstUser1Allocator<AstVarScope, ForceComponentsVarScope>& m_forceComponentsVarScope;
-    AstUser3Allocator<AstVarScope, ForceComponentsValUpdates>& m_forceComponentsValUpdates;
+
+    // STATIC METHODS
+    static void setValVscp(AstNodeVarRef* const refp, AstVarScope* const vscp) {
+        refp->varScopep()->user3p(vscp);
+    }
 
     // METHODS
     const ForceComponentsVarScope& getForceComponents(AstVarScope* vscp) {
@@ -175,7 +180,7 @@ class ForceConvertVisitor final : public VNVisitor {
         });
     }
 
-    // VISIT methods
+    // VISITORS
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     void visit(AstAssignForce* nodep) override {
@@ -200,11 +205,8 @@ class ForceConvertVisitor final : public VNVisitor {
             = new AstAssign{flp, lhsp->cloneTreePure(false), rhsp->cloneTreePure(false)};
         transformWritenVarScopes(setValp->lhsp(), [this, rhsp](AstVarScope* vscp) {
             AstVarScope* const valVscp = getForceComponents(vscp).m_valVscp;
-            // TODO handle case with multiple refs on RHS.
-            if (AstVarRef* const refp = VN_CAST(rhsp, VarRef)) {
-                m_forceComponentsValUpdates(refp->varScopep())
-                    .addValUpdate(ForceComponentsValUpdates::Args{valVscp, refp->varScopep()});
-            }
+            // TODO support multiple VarRefs on RHS
+            if (AstVarRef* const refp = VN_CAST(rhsp, VarRef)) setValVscp(refp, valVscp);
             return valVscp;
         });
 
@@ -262,28 +264,14 @@ class ForceConvertVisitor final : public VNVisitor {
         resetRdp->rhsp()->foreach([this](AstNodeVarRef* refp) {
             if (refp->access() != VAccess::WRITE) return;
             AstVarScope* const vscp = refp->varScopep();
-            FileLine* const flp = new FileLine{refp->fileline()};
-            AstVarRef* const newpRefp = new AstVarRef{refp->fileline(), vscp, VAccess::READ};
-            newpRefp->user2(1);  // Don't replace this read ref with the read signal
             if (vscp->varp()->isContinuously()) {
+                AstVarRef* const newpRefp = new AstVarRef{refp->fileline(), vscp, VAccess::READ};
+                markNonReplaceable(newpRefp);
                 refp->replaceWith(newpRefp);
-            } else if (isRangedDType(vscp)) {
-                refp->replaceWith(new AstOr{
-                    flp,
-                    new AstAnd{
-                        flp, new AstVarRef{flp, getForceComponents(vscp).m_enVscp, VAccess::READ},
-                        new AstVarRef{flp, getForceComponents(vscp).m_valVscp, VAccess::READ}},
-                    new AstAnd{
-                        flp,
-                        new AstNot{flp, new AstVarRef{flp, getForceComponents(vscp).m_enVscp,
-                                                      VAccess::READ}},
-                        newpRefp}});
             } else {
-                refp->replaceWith(new AstCond{
-                    flp, new AstVarRef{flp, getForceComponents(vscp).m_enVscp, VAccess::READ},
-                    new AstVarRef{flp, getForceComponents(vscp).m_valVscp, VAccess::READ},
-                    newpRefp});
+                refp->replaceWith(getForceComponents(vscp).forcedUpdate(vscp));
             }
+
             VL_DO_DANGLING(refp->deleteTree(), refp);
         });
 
@@ -300,23 +288,14 @@ class ForceConvertVisitor final : public VNVisitor {
         }
     }
 
+public:
     // CONSTRUCTOR
     explicit ForceConvertVisitor(
         AstNetlist* nodep,
-        AstUser1Allocator<AstVarScope, ForceComponentsVarScope>& forceComponentsVarScope,
-        AstUser3Allocator<AstVarScope, ForceComponentsValUpdates>& forceComponentsValUpdates)
-        : m_forceComponentsVarScope{forceComponentsVarScope}
-        , m_forceComponentsValUpdates{forceComponentsValUpdates} {
+        AstUser1Allocator<AstVarScope, ForceComponentsVarScope>& forceComponentsVarScope)
+        : m_forceComponentsVarScope{forceComponentsVarScope} {
         // Transform all force and release statements
         iterateAndNextNull(nodep->modulesp());
-    }
-
-public:
-    static void
-    apply(AstNetlist* nodep,
-          AstUser1Allocator<AstVarScope, ForceComponentsVarScope>& forceComponentsVarScope,
-          AstUser3Allocator<AstVarScope, ForceComponentsValUpdates>& forceComponentsValUpdates) {
-        { ForceConvertVisitor{nodep, forceComponentsVarScope, forceComponentsValUpdates}; }
     }
 };
 
@@ -324,14 +303,18 @@ class ForceReplaceVisitor final : public VNVisitor {
     // NODE STATE
     //  AstVarScope::user1p   -> ForceComponentsVarScope* instance (via m_forceComponentsVarScope)
     //  AstVarRef::user2      -> Flag indicating not to replace reference
-    //  AstVarScope::user3p   -> ForceComponentsValUpdates* instance (via
-    //  m_forceComponentsValUpdates)
+    //  AstVarScope::user3      -> AstVarScope*, a `valVscp` force component for each VarScope of
+    //  forced RHS
     AstUser1Allocator<AstVarScope, ForceComponentsVarScope>& m_forceComponentsVarScope;
-    AstUser3Allocator<AstVarScope, ForceComponentsValUpdates>& m_forceComponentsValUpdates;
 
     // STATE
     AstNodeStmt* m_stmtp = nullptr;
     bool m_inLogic = false;
+
+    // STATIC METHODS
+    static AstVarScope* getValVscp(AstVarRef* const refp) {
+        return VN_CAST(refp->varScopep()->user3p(), VarScope);
+    }
 
     // METHODS
     void iterateLogic(AstNode* logicp) {
@@ -352,16 +335,16 @@ class ForceReplaceVisitor final : public VNVisitor {
     void visit(AstNodeProcedure* nodep) override { iterateLogic(nodep); }
     void visit(AstSenItem* nodep) override { iterateLogic(nodep); }
     void visit(AstVarRef* nodep) override {
-        if (!nodep->varScopep() || nodep->user2()) return;
+        if (isNotReplaceable(nodep)) return;
 
         switch (nodep->access()) {
         case VAccess::READ: {
+            // Replace VarRef from forced LHS with rdVscp.
             if (ForceComponentsVarScope* const fcp
                 = m_forceComponentsVarScope.tryGet(nodep->varScopep())) {
-                // Read references replaced to read the new, possibly forced signal
                 FileLine* const flp = nodep->fileline();
                 AstVarRef* const origp = new AstVarRef{flp, nodep->varScopep(), VAccess::READ};
-                origp->user2SetOnce();  // Don't replace this read ref with the read signal
+                markNonReplaceable(origp);
                 nodep->varp(fcp->m_rdVscp->varp());
                 nodep->varScopep(fcp->m_rdVscp);
             }
@@ -369,18 +352,24 @@ class ForceReplaceVisitor final : public VNVisitor {
         }
         case VAccess::WRITE: {
             if (!m_inLogic) return;
-            if (ForceComponentsValUpdates* const fcvup
-                = m_forceComponentsValUpdates.tryGet(nodep->varScopep())) {
-                for (auto s : fcvup->m_assign) {
-                    FileLine* const flp = nodep->fileline();
-                    AstVarRef* const valp = new AstVarRef{flp, s.m_valVscp, VAccess::WRITE};
-                    AstVarRef* const rhsp = new AstVarRef{flp, s.m_rhsp, VAccess::READ};
+            // Emit rdVscp update after each write to any VarRef on forced LHS.
+            if (ForceComponentsVarScope* const fcp
+                = m_forceComponentsVarScope.tryGet(nodep->varScopep())) {
+                FileLine* const flp = nodep->fileline();
+                AstVarRef* const lhsp = new AstVarRef{flp, fcp->m_rdVscp, VAccess::WRITE};
+                AstNodeExpr* const rhsp = fcp->forcedUpdate(nodep->varScopep());
+                m_stmtp->addNextHere(new AstAssign{flp, lhsp, rhsp});
+            }
+            // Emit valVscp update after each write to any VarRef on forced RHS.
+            if (AstVarScope* valVscp = getValVscp(nodep)) {
+                FileLine* const flp = nodep->fileline();
+                AstVarRef* const valp = new AstVarRef{flp, valVscp, VAccess::WRITE};
+                AstVarRef* const rhsp = new AstVarRef{flp, nodep->varScopep(), VAccess::READ};
 
-                    valp->user2SetOnce();
-                    rhsp->user2SetOnce();
+                markNonReplaceable(valp);
+                markNonReplaceable(rhsp);
 
-                    m_stmtp->addNextHere(new AstAssign{flp, valp, rhsp});
-                }
+                m_stmtp->addNextHere(new AstAssign{flp, valp, rhsp});
             }
             break;
         }
@@ -391,21 +380,13 @@ class ForceReplaceVisitor final : public VNVisitor {
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
+public:
+    // CONSTRUCTOR
     explicit ForceReplaceVisitor(
         AstNetlist* nodep,
-        AstUser1Allocator<AstVarScope, ForceComponentsVarScope>& forceComponentsVarScope,
-        AstUser3Allocator<AstVarScope, ForceComponentsValUpdates>& forceComponentsValUpdates)
-        : m_forceComponentsVarScope{forceComponentsVarScope}
-        , m_forceComponentsValUpdates{forceComponentsValUpdates} {
+        AstUser1Allocator<AstVarScope, ForceComponentsVarScope>& forceComponentsVarScope)
+        : m_forceComponentsVarScope{forceComponentsVarScope} {
         iterateChildren(nodep);
-    }
-
-public:
-    static void
-    apply(AstNetlist* nodep,
-          AstUser1Allocator<AstVarScope, ForceComponentsVarScope>& forceComponentsVarScope,
-          AstUser3Allocator<AstVarScope, ForceComponentsValUpdates>& forceComponentsValUpdates) {
-        ForceReplaceVisitor{nodep, forceComponentsVarScope, forceComponentsValUpdates};
     }
 };
 //######################################################################
@@ -419,9 +400,8 @@ void V3Force::forceAll(AstNetlist* nodep) {
         const VNUser2InUse m_user2InUse;
         const VNUser3InUse m_user3InUse;
         AstUser1Allocator<AstVarScope, ForceComponentsVarScope> forceComponentsVarScope;
-        AstUser3Allocator<AstVarScope, ForceComponentsValUpdates> forceComponentsValUpdates;
-        ForceConvertVisitor::apply(nodep, forceComponentsVarScope, forceComponentsValUpdates);
-        ForceReplaceVisitor::apply(nodep, forceComponentsVarScope, forceComponentsValUpdates);
+        { ForceConvertVisitor{nodep, forceComponentsVarScope}; }
+        { ForceReplaceVisitor{nodep, forceComponentsVarScope}; }
     }
     V3Global::dumpCheckGlobalTree("force", 0, dumpTreeEitherLevel() >= 3);
 }
