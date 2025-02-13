@@ -1,0 +1,15 @@
+(SAIFILE
+(SAIFVERSION "2.0")
+(DIRECTION "backward")
+(DESIGN "foo")
+(PROGRAM_NAME "Verilator")
+(VERSION "5.032")
+(DIVIDER .)
+(TIMESCALE 1ps)
+(DURATION 75)
+(INSTANCE foo (NET
+(cyc[0] (T0 40) (T1 35) (TZ 0) (TX 0) (TB 0) (TC 7))
+(cyc[1] (T0 40) (T1 35) (TZ 0) (TX 0) (TB 0) (TC 3))
+(cyc[2] (T0 40) (T1 35) (TZ 0) (TX 0) (TB 0) (TC 1))
+(clk (T0 40) (T1 35) (TZ 0) (TX 0) (TB 0) (TC 14))
+)))
