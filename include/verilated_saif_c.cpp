@@ -243,7 +243,7 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
             }
             assert(m_time >= bit.highTime);
             printStr("(");
-            printStr(activity.name);
+            printStr(activity.name.c_str());
             if (activity.width > 1) {
                 printStr("[");
                 printStr(std::to_string(activity.lsb + i).c_str());
@@ -332,6 +332,7 @@ void VerilatedSaif::bufferFlush() VL_MT_UNSAFE_ONE {
 // Definitions
 
 void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType type) {
+    fprintf(stdout, "Pushing prefix: %s\n", name.c_str());
     assert(!m_prefixStack.empty());  // Constructor makes an empty entry
     std::string pname = name;
     // An empty name means this is the root of a model created with name()=="".  The
@@ -372,6 +373,7 @@ void VerilatedSaif::popPrefix() {
     case VerilatedTracePrefixType::UNION_PACKED: break;
     default: break;
     }
+    fprintf(stdout, "Popping prefix: %s\n", m_prefixStack.back().first.c_str());
     m_prefixStack.pop_back();
     assert(!m_prefixStack.empty());  // Always one left, the constructor's initial one
 }
@@ -398,8 +400,15 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
     size_t bitsIdx = m_activityArena.back().size();
     m_activityArena.back().resize(m_activityArena.back().size() + bits);
 
+    std::string finalName = lastWord(hierarchicalName);
+    if (array) {
+        finalName += '[';
+        finalName += std::to_string(arraynum);
+        finalName += ']';
+    }
+
     m_activity.emplace(code, ActivityVar{
-        name,
+        finalName,
         static_cast<uint32_t>(lsb),
         static_cast<uint32_t>(bits),
         m_activityArena.back().data() + bitsIdx
@@ -620,7 +629,7 @@ void VerilatedSaifBuffer::emitBit(uint32_t code, CData newval) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     auto& activity = m_owner.m_activity.at(code);
 
-    fprintf(stdout, "Emitting bit - name: %s, code: %d, newval: %d, activity.width: %d\n", activity.name, code, newval, activity.width);
+    fprintf(stdout, "Emitting bit - name: %s, code: %d, newval: %d, activity.width: %d\n", activity.name.c_str(), code, newval, activity.width);
 
     auto& bit = activity.bits[0];
     bit.aggregateVal(m_owner.m_time - activity.lastTime, newval);
@@ -632,7 +641,7 @@ void VerilatedSaifBuffer::emitCData(uint32_t code, CData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     auto& activity = m_owner.m_activity.at(code);
 
-    fprintf(stdout, "Emitting char - name: %s, code: %d, newval: %d, bits: %d, activity.width: %d\n", activity.name, code, newval, bits, activity.width);
+    fprintf(stdout, "Emitting char - name: %s, code: %d, newval: %d, bits: %d, activity.width: %d\n", activity.name.c_str(), code, newval, bits, activity.width);
     
     if (bits > activity.width) {
         fprintf(stdout, "Trying to emit more bits than activity width\n");
@@ -650,7 +659,7 @@ void VerilatedSaifBuffer::emitSData(uint32_t code, SData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     auto& activity = m_owner.m_activity.at(code);
 
-    fprintf(stdout, "Emitting short - name: %s, code: %d, newval: %d, bits: %d, activity.width: %d\n", activity.name, code, newval, bits, activity.width);
+    fprintf(stdout, "Emitting short - name: %s, code: %d, newval: %d, bits: %d, activity.width: %d\n", activity.name.c_str(), code, newval, bits, activity.width);
     
     if (bits > activity.width) {
         fprintf(stdout, "Trying to emit more bits than activity width\n");
@@ -668,7 +677,7 @@ void VerilatedSaifBuffer::emitIData(uint32_t code, IData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     auto& activity = m_owner.m_activity.at(code);
 
-    fprintf(stdout, "Emitting integer - name: %s, code: %d, newval: %d, bits: %d, activity.width: %d\n", activity.name, code, newval, bits, activity.width);
+    fprintf(stdout, "Emitting integer - name: %s, code: %d, newval: %d, bits: %d, activity.width: %d\n", activity.name.c_str(), code, newval, bits, activity.width);
     
     if (bits > activity.width) {
         fprintf(stdout, "Trying to emit more bits than activity width\n");
@@ -686,7 +695,7 @@ void VerilatedSaifBuffer::emitQData(uint32_t code, QData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     auto& activity = m_owner.m_activity.at(code);
 
-    fprintf(stdout, "Emitting quad - name: %s, code: %d, newval: %d, bits: %d, activity.width: %d\n", activity.name, code, newval, bits, activity.width);
+    fprintf(stdout, "Emitting quad - name: %s, code: %d, newval: %d, bits: %d, activity.width: %d\n", activity.name.c_str(), code, newval, bits, activity.width);
     
     if (bits > activity.width) {
         fprintf(stdout, "Trying to emit more bits than activity width\n");
@@ -704,7 +713,7 @@ void VerilatedSaifBuffer::emitWData(uint32_t code, const WData* newvalp, int bit
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     auto& activity = m_owner.m_activity.at(code);
 
-    fprintf(stdout, "Emitting words - name: %s, code: %d, bits: %d, activity.width: %d\n", activity.name, code, bits, activity.width);
+    fprintf(stdout, "Emitting words - name: %s, code: %d, bits: %d, activity.width: %d\n", activity.name.c_str(), code, bits, activity.width);
     
     if (bits > activity.width) {
         fprintf(stdout, "Trying to emit more bits than activity width\n");

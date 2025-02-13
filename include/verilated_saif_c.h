@@ -43,7 +43,7 @@ struct ActivityBit {
     }
 };
 struct ActivityVar {
-    const char* name;
+    std::string name;
     uint32_t lsb;
     uint32_t width;
     ActivityBit* bits;
