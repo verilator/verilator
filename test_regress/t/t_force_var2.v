@@ -8,37 +8,26 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
 
 module t;
-  reg [1:0] a = 0;
-  reg [1:0] b = 2;
+
+  reg [2:0] a = 3'b000;
 
   initial begin
-     force b = a;
-     `checkh(a, 0);
-     `checkh(b, 0);
-  end
-
-  initial begin
-    #1 a = 1;
+    a = 3'b001;
     `checkh(a, 1);
-    `checkh(b, 0);
 
-    #1 a = 2;
+    force a = 3'b010;
     `checkh(a, 2);
-    `checkh(b, 1);
 
-    #1 a = 3;
-    `checkh(a, 3);
-    `checkh(b, 2);
+    a = 3'b011;
+    `checkh(a, 2);
 
-    #1 release b;
-    `checkh(a, 3);
-    `checkh(b, 3);
+    release a;
+    `checkh(a, 2);
 
-    b = 0;
-    #1;
-    `checkh(b, 0);
+    a = 3'b100;
+    `checkh(a, 4);
 
-    #1 $finish;
+    $finish;
   end
 
 endmodule

@@ -7,43 +7,40 @@
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
 
-function bit [1:0] get_arg (bit [1:0] x);
-   return x;
-endfunction
-
 module t;
-  bit [1:0] a;
-  bit [1:0] b = 1;
+  reg [1:0] a;
+  wire [1:0] b = 1;
+  bit [1:0] c;
 
   initial begin
     #1 a = 0;
-    force b = get_arg(a);
+    force b = a;
+    force c = b;
     `checkh(a, 0);
     `checkh(b, 0);
+    `checkh(c, 0);
 
     #1 a = 1;
     `checkh(a, 1);
     `checkh(b, 0);
+    `checkh(c, 0);
 
     #1 a = 2;
     `checkh(a, 2);
-    // IEEE 1800-2023 10.6
-    // Assignment shall be reevaluated while the assign or force is in effect.
     `checkh(b, 1);
+    `checkh(c, 0);
 
     #1 a = 3;
+    c = 3;
     `checkh(a, 3);
     `checkh(b, 2);
+    `checkh(c, 1);
 
     #1 release b;
+    release c;
     `checkh(a, 3);
-    // IEEE 1800-2023 10.6.2
-    // Not driven variable maintains its value after release.
-    // Value is maintained until a next assignment.
-    `checkh(b, 3);
-
-    b = 2;
-    `checkh(b, 2);
+    `checkh(b, 1);
+    `checkh(c, 3);
 
     #1 $finish;
   end

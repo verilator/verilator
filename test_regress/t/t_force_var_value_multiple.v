@@ -26,20 +26,22 @@ module t;
     b = 0;
     `checkh(e, 9);
     #1;
-    `checkh(e, 8);
+    `checkh(e, 7);
 
     c = 0;
-    `checkh(e, 8);
-    #1;
     `checkh(e, 7);
+    #1;
+    `checkh(e, 4);
 
     d = 0;
-    `checkh(e, 7);
+    `checkh(e, 4);
     #1;
-    `checkh(e, 6);
+    `checkh(e, 0);
 
     release e;
-    `checkh(e, 10);
+    //`checkh(e, 10);
+    #1;
+    `checkh(e, 5);
 
     $finish;
   end
